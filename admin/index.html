@@ -67,6 +67,20 @@
   .namebar a { cursor:pointer; }
   .namebar input { width:auto; display:inline-block; padding:7px 10px; font-size:14px; }
   .namebar .send { padding:7px 12px; margin-left:4px; }
+  select { width:100%; padding:11px 13px; background:#0a0e14; border:1px solid var(--line);
+    border-radius:10px; color:var(--text); font-size:15px; font-family:inherit; }
+  select:focus { outline:none; border-color:#33414f; }
+  .conv { display:flex; justify-content:space-between; gap:12px; padding:14px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+  .conv:last-child { border-bottom:none; }
+  .conv:first-child { padding-top:2px; }
+  .conv .c-name { font-weight:600; }
+  .conv .c-prev { color:var(--muted); font-size:13px; margin-top:3px; max-width:380px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .conv .c-time { color:var(--muted); font-size:12px; white-space:nowrap; }
+  .msg-thread { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .bub { max-width:82%; padding:10px 14px; border-radius:14px; font-size:14px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .bub.mine { align-self:flex-end; background:var(--text); color:#0a0e14; }
+  .bub.theirs { align-self:flex-start; background:#141b24; border:1px solid var(--line); }
+  .bub .b-meta { display:block; font-size:11px; opacity:0.65; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -102,7 +116,7 @@
   }
   function topbar(title, email, isAdmin){
     return '<div class="topbar"><h1 style="margin:0">'+title+'</h1>'+
-      '<span class="who">'+esc(email)+(isAdmin?' \u00b7 admin':'')+' \u00b7 <a href="#" id="signout">sign out</a></span></div>';
+      '<span class="who">'+esc(email)+(isAdmin?' \u00b7 admin':'')+' \u00b7 <a href="#" id="tomsg">messages</a> \u00b7 <a href="#" id="signout">sign out</a></span></div>';
   }
   function wireSignout(){
     const so=document.getElementById("signout");
@@ -277,7 +291,118 @@
     };
   }
 
-  /* ---------- Contributor area ---------- */
+  /* ---------- Messages ---------- */
+  async function renderMessages(session){
+    root.innerHTML =
+      '<div class="topbar"><h1 style="margin:0">Messages</h1>' +
+      '<span class="who"><a href="#" id="backmain">\u2190 back</a></span></div>' +
+      '<div class="card">' +
+        '<label for="to">New message to</label>' +
+        '<select id="to"><option value="">Loading members\u2026</option></select>' +
+        '<label for="mbody">Message</label>' +
+        '<textarea id="mbody" maxlength="4000" placeholder="Write a private message\u2026"></textarea>' +
+        '<div class="actions"><span></span><button class="send" id="msend">Send</button></div>' +
+        '<div class="msg" id="mmsg"></div>' +
+      '</div>' +
+      '<h2 class="section">Conversations</h2>' +
+      '<div class="card" id="convs"><div class="hint">Loading\u2026</div></div>';
+    document.getElementById("backmain").onclick = (e)=>{ e.preventDefault(); boot(); };
+    try{
+      const { data } = await supabase.from("people").select("handle,display_name,auth_user_id");
+      const others = (data||[]).filter(p => p.auth_user_id !== session.user.id);
+      const sel = document.getElementById("to");
+      if(others.length===0){ sel.innerHTML = '<option value="">No other members yet</option>'; }
+      else {
+        sel.innerHTML = '<option value="">Choose a member\u2026</option>' +
+          others.map(p => '<option value="'+escA(p.auth_user_id)+'">'+esc((p.display_name&&p.display_name.trim())?p.display_name:p.handle)+'</option>').join('');
+      }
+    }catch(e){}
+    document.getElementById("msend").onclick = async ()=>{
+      const recipient = document.getElementById("to").value;
+      const body = document.getElementById("mbody").value.trim();
+      const mmsg = document.getElementById("mmsg");
+      if(!recipient){ mmsg.className="msg err"; mmsg.textContent="Choose who to message."; return; }
+      if(!body){ mmsg.className="msg err"; mmsg.textContent="Write a message first."; return; }
+      document.getElementById("msend").disabled = true; mmsg.className="msg"; mmsg.textContent="Sending\u2026";
+      const { error } = await supabase.rpc("send_message",{ recipient, body });
+      document.getElementById("msend").disabled = false;
+      if(error){ mmsg.className="msg err"; mmsg.textContent="Refused: "+error.message; return; }
+      document.getElementById("mbody").value=""; mmsg.className="msg ok"; mmsg.textContent="Sent \u2713";
+      loadConversations(session);
+    };
+    loadConversations(session);
+  }
+
+  async function loadConversations(session){
+    const c = document.getElementById("convs"); if(!c) return;
+    const me = session.user.id;
+    const { data, error } = await supabase.from("messages")
+      .select("id,sender_id,recipient_id,sender_handle,recipient_handle,body,created_at")
+      .order("created_at",{ ascending:false });
+    if(error){ c.innerHTML = '<div class="hint">'+esc(error.message)+'</div>'; return; }
+    if(!data || data.length===0){ c.innerHTML = '<div class="hint">No conversations yet. Start one above.</div>'; return; }
+    const seen = {}; const convs = [];
+    for(const m of data){
+      const mine = m.sender_id === me;
+      const otherId = mine ? m.recipient_id : m.sender_id;
+      const otherName = mine ? m.recipient_handle : m.sender_handle;
+      if(!seen[otherId]){ seen[otherId] = true; convs.push({ otherId, otherName, last:m }); }
+    }
+    c.innerHTML = "";
+    for(const cv of convs){
+      const el = document.createElement("div"); el.className = "conv";
+      el.innerHTML = '<div><div class="c-name">'+esc(cv.otherName)+'</div><div class="c-prev">'+esc(cv.last.body)+'</div></div>'+
+                     '<div class="c-time">'+ago(cv.last.created_at)+'</div>';
+      el.onclick = ()=> openThread(session, cv.otherId, cv.otherName);
+      c.appendChild(el);
+    }
+  }
+
+  async function openThread(session, otherId, otherName){
+    root.innerHTML =
+      '<div class="topbar"><h1 style="margin:0">'+esc(otherName)+'</h1>' +
+      '<span class="who"><a href="#" id="backmsgs">\u2190 messages</a></span></div>' +
+      '<div class="card">' +
+        '<div class="msg-thread" id="thread"><div class="hint">Loading\u2026</div></div>' +
+        '<label for="rbody">Reply</label>' +
+        '<textarea id="rbody" maxlength="4000" placeholder="Write a reply\u2026"></textarea>' +
+        '<div class="actions"><span></span><button class="send" id="rsend">Send</button></div>' +
+        '<div class="msg" id="rmsg"></div>' +
+      '</div>';
+    document.getElementById("backmsgs").onclick = (e)=>{ e.preventDefault(); renderMessages(session); };
+    document.getElementById("rsend").onclick = async ()=>{
+      const body = document.getElementById("rbody").value.trim();
+      const rmsg = document.getElementById("rmsg");
+      if(!body){ rmsg.className="msg err"; rmsg.textContent="Write a reply first."; return; }
+      document.getElementById("rsend").disabled = true; rmsg.className="msg"; rmsg.textContent="Sending\u2026";
+      const { error } = await supabase.rpc("send_message",{ recipient: otherId, body });
+      document.getElementById("rsend").disabled = false;
+      if(error){ rmsg.className="msg err"; rmsg.textContent="Refused: "+error.message; return; }
+      document.getElementById("rbody").value=""; rmsg.className="msg ok"; rmsg.textContent="Sent \u2713";
+      loadThread(session, otherId);
+    };
+    loadThread(session, otherId);
+  }
+
+  async function loadThread(session, otherId){
+    const t = document.getElementById("thread"); if(!t) return;
+    const me = session.user.id;
+    const { data, error } = await supabase.from("messages")
+      .select("id,sender_id,recipient_id,sender_handle,recipient_handle,body,created_at")
+      .order("created_at",{ ascending:true });
+    if(error){ t.innerHTML = '<div class="hint">'+esc(error.message)+'</div>'; return; }
+    const thread = (data||[]).filter(m =>
+      (m.sender_id===me && m.recipient_id===otherId) || (m.sender_id===otherId && m.recipient_id===me));
+    if(thread.length===0){ t.innerHTML = '<div class="hint">No messages yet. Say the first thing below.</div>'; return; }
+    t.innerHTML = "";
+    for(const m of thread){
+      const mine = m.sender_id===me;
+      const el = document.createElement("div");
+      el.className = "bub " + (mine ? "mine" : "theirs");
+      el.innerHTML = esc(m.body) + '<span class="b-meta">'+(mine?"you":esc(m.sender_handle))+' \u00b7 '+ago(m.created_at)+'</span>';
+      t.appendChild(el);
+    }
+  }
   async function renderUser(session) {
     root.innerHTML =
       topbar("You\u2019re in", session.user.email, false) +
@@ -288,6 +413,7 @@
       backlinks;
     wireSignout();
     setNameBar(session, () => loadMyPosts(session));
+    const tm = document.getElementById("tomsg"); if(tm) tm.onclick = (e)=>{ e.preventDefault(); renderMessages(session); };
     wireCompose(() => loadMyPosts(session));
     loadMyPosts(session);
   }
@@ -317,6 +443,7 @@
       '<div class="links">Changes are live immediately. <a href="/" target="_blank" rel="noopener">Open the public site \u2197</a></div>';
     wireSignout();
     setNameBar(session, () => loadAllPosts());
+    const tm = document.getElementById("tomsg"); if(tm) tm.onclick = (e)=>{ e.preventDefault(); renderMessages(session); };
     wireCompose(() => loadAllPosts());
     renderList();
     loadAllPosts();
