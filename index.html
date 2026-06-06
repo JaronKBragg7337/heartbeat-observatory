@@ -44,6 +44,18 @@
   .pill.live .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); }
   footer { margin-top:42px; text-align:center; color:var(--muted); font-size:12px; line-height:1.7; }
   .skeleton { color:var(--muted); text-align:center; padding:30px 0; }
+  .feed-wrap { margin-top:46px; }
+  .feed-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .feed-head h2 { font-size:16px; font-weight:600; letter-spacing:0.02em; }
+  .feed-head .add { font-size:13px; color:#7aa2d6; text-decoration:none; }
+  .feed-head .add:hover { text-decoration:underline; }
+  .feed { display:flex; flex-direction:column; gap:12px; }
+  .post { border:1px solid var(--line); background:var(--panel); border-radius:12px; padding:16px 18px; }
+  .post .meta { font-size:12px; color:var(--muted); margin-bottom:7px; }
+  .post .meta .who { color:var(--text); font-weight:600; }
+  .post .body { font-size:15px; line-height:1.6; white-space:pre-wrap; word-wrap:break-word; overflow-wrap:anywhere; }
+  .empty { border:1px dashed var(--line); border-radius:12px; padding:26px; text-align:center; color:var(--muted); font-size:14px; }
+  .empty a { color:#7aa2d6; text-decoration:none; } .empty a:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -61,6 +73,14 @@
     </header>
 
     <div class="grid" id="grid"><div class="skeleton">Loading sections&hellip;</div></div>
+
+    <section class="feed-wrap" id="feedwrap">
+      <div class="feed-head">
+        <h2>The signal so far</h2>
+        <a class="add" id="addlink" href="/admin">Sign in to add yours &rarr;</a>
+      </div>
+      <div class="feed" id="feed"><div class="skeleton">Loading the feed&hellip;</div></div>
+    </section>
 
     <footer>
       Served from Vercel &middot; data from Supabase &middot; no third parties in between.<br />
@@ -88,7 +108,11 @@
   async function reflectSession() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) authlink.textContent = "Account";
+      if (session) {
+        authlink.textContent = "Account";
+        const addlink = document.getElementById("addlink");
+        if (addlink) addlink.textContent = "Add yours \u2192";
+      }
     } catch (e) {}
   }
 
@@ -112,8 +136,41 @@
       grid.innerHTML = '<div class="skeleton">' + (e && e.message ? e.message : "Unknown error") + '</div>';
     }
   }
+  function esc(s){ const d=document.createElement("div"); d.textContent=s==null?"":s; return d.innerHTML; }
+  function ago(iso){
+    const t=new Date(iso).getTime(); const s=Math.floor((Date.now()-t)/1000);
+    if(s<60) return "just now";
+    const m=Math.floor(s/60); if(m<60) return m+"m ago";
+    const h=Math.floor(m/60); if(h<24) return h+"h ago";
+    const d=Math.floor(h/24); if(d<7) return d+"d ago";
+    return new Date(iso).toLocaleDateString();
+  }
+  async function loadFeed(){
+    const feed=document.getElementById("feed");
+    try{
+      const { data, error } = await supabase
+        .from("posts").select("id,author_handle,body,created_at")
+        .order("created_at",{ascending:false}).limit(50);
+      if(error) throw error;
+      if(!data || data.length===0){
+        feed.innerHTML='<div class="empty">Nothing has been posted yet. <a href="/admin">Sign in</a> and be the first to put something on the board.</div>';
+        return;
+      }
+      feed.innerHTML="";
+      for(const p of data){
+        const el=document.createElement("div");
+        el.className="post";
+        el.innerHTML='<div class="meta"><span class="who">'+esc(p.author_handle)+'</span> \u00b7 '+ago(p.created_at)+'</div>'+
+                     '<div class="body">'+esc(p.body)+'</div>';
+        feed.appendChild(el);
+      }
+    }catch(e){
+      feed.innerHTML='<div class="empty">Could not load the feed: '+esc(e&&e.message?e.message:"unknown")+'</div>';
+    }
+  }
   reflectSession();
   load();
+  loadFeed();
 </script>
 </body>
 </html>

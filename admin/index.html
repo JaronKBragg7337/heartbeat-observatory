@@ -16,7 +16,7 @@
     text-transform:uppercase; color:var(--muted); }
   .pulse { width:9px; height:9px; border-radius:50%; background:var(--beat); }
   h1 { font-size:24px; font-weight:600; margin:14px 0 4px; }
-  .lede { color:var(--muted); font-size:14px; margin-bottom:26px; }
+  .lede { color:var(--muted); font-size:14px; margin-bottom:26px; line-height:1.6; }
   .card { border:1px solid var(--line); background:var(--panel); border-radius:14px; padding:22px; }
   label { display:block; font-size:13px; color:var(--muted); margin:14px 0 6px; }
   input { width:100%; padding:11px 13px; background:#0a0e14; border:1px solid var(--line);
@@ -36,7 +36,7 @@
   .row:last-child { border-bottom:none; }
   .row .name { font-size:16px; font-weight:600; }
   .seg { display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-  .seg button { border:none; border-radius:0; padding:8px 12px; font-size:12px; background:transparent; color:var(--muted); }
+  .seg button { border:none; border-radius:0; padding:8px 12px; font-size:12px; background:transparent; color:var(--muted); width:auto; }
   .seg button.on { background:#1c2530; color:var(--text); }
   .seg button.on.live { color:var(--ok); } .seg button.on.preview { color:var(--amber); }
   .links { margin-top:22px; font-size:13px; }
@@ -47,6 +47,21 @@
   .pwtoggle { position:absolute; top:50%; right:6px; transform:translateY(-50%);
     background:transparent; border:none; color:var(--muted); font-size:12px; padding:6px 10px; border-radius:8px; width:auto; }
   .pwtoggle:hover { color:var(--text); background:#141b24; }
+  textarea { width:100%; padding:11px 13px; background:#0a0e14; border:1px solid var(--line);
+    border-radius:10px; color:var(--text); font-size:15px; font-family:inherit; min-height:96px; resize:vertical; line-height:1.5; }
+  textarea:focus { outline:none; border-color:#33414f; }
+  .actions { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+  .count { font-size:12px; color:var(--muted); }
+  button.send { width:auto; margin-top:0; background:var(--text); color:#0a0e14; border-color:var(--text); font-weight:600; padding:9px 18px; }
+  h2.section { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin:26px 0 10px; }
+  .post { border-top:1px solid var(--line); padding:14px 0; }
+  .post:first-child { border-top:none; padding-top:2px; }
+  .post .meta { font-size:12px; color:var(--muted); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .post .body { font-size:14px; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .del { width:auto; font-size:12px; color:var(--muted); background:transparent; border:none; padding:4px 8px; }
+  .del:hover { color:var(--beat); }
+  .toggle-line { margin-top:16px; font-size:13px; }
+  .toggle-line a { cursor:pointer; }
 </style>
 </head>
 <body>
@@ -65,12 +80,36 @@
   const STATES = [["live","Live"],["preview","Preview"],["coming_soon","Coming soon"]];
   let surfaces = [];
 
-  function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+  function esc(s){ const d=document.createElement("div"); d.textContent=(s==null?"":s); return d.innerHTML; }
+  function escA(s){ return esc(s).replace(/"/g,"&quot;"); }
+  function ago(iso){
+    const t=new Date(iso).getTime(); const s=Math.floor((Date.now()-t)/1000);
+    if(s<60) return "just now";
+    const m=Math.floor(s/60); if(m<60) return m+"m ago";
+    const h=Math.floor(m/60); if(h<24) return h+"h ago";
+    const d=Math.floor(h/24); if(d<7) return d+"d ago";
+    return new Date(iso).toLocaleDateString();
+  }
+  function wireToggle(pwId, tgId){
+    const pw=document.getElementById(pwId), tg=document.getElementById(tgId);
+    if(!pw||!tg) return;
+    tg.onclick=()=>{ const s=pw.type==="password"; pw.type=s?"text":"password"; tg.textContent=s?"Hide":"Show"; pw.focus(); };
+  }
+  function topbar(title, email, isAdmin){
+    return '<div class="topbar"><h1 style="margin:0">'+title+'</h1>'+
+      '<span class="who">'+esc(email)+(isAdmin?' \u00b7 admin':'')+' \u00b7 <a href="#" id="signout">sign out</a></span></div>';
+  }
+  function wireSignout(){
+    const so=document.getElementById("signout");
+    if(so) so.onclick=async(e)=>{ e.preventDefault(); await supabase.auth.signOut(); boot(); };
+  }
+  const backlinks = '<div class="links"><a href="/">\u2190 Back to the public site</a></div>';
 
+  /* ---------- Sign in ---------- */
   function renderLogin(error) {
     root.innerHTML =
       '<h1>Sign in</h1>' +
-      '<p class="lede">Sign in to reach your area. Viewing the site never requires this.</p>' +
+      '<p class="lede">Sign in to post or to steer the site. Viewing never requires this.</p>' +
       '<div class="card">' +
         '<label for="email">Email</label>' +
         '<input id="email" type="email" autocomplete="username" placeholder="you@example.com" />' +
@@ -81,20 +120,13 @@
         '</div>' +
         '<button class="primary" id="signin">Sign in</button>' +
         '<div class="msg ' + (error ? 'err' : '') + '" id="msg">' + (error ? esc(error) : '') + '</div>' +
-        '<p class="note">Access is invite-only while the contributor side is being built. ' +
-        'Open accounts for posting will arrive with the social layer.</p>' +
       '</div>' +
-      '<div class="links"><a href="/">\u2190 Back to the public site</a></div>';
+      '<div class="toggle-line">New here? <a id="toSignup">Create an account</a></div>' +
+      backlinks;
     document.getElementById("signin").onclick = doSignIn;
     document.getElementById("password").addEventListener("keydown", e => { if (e.key === "Enter") doSignIn(); });
-    const pw = document.getElementById("password");
-    const tg = document.getElementById("pwtoggle");
-    tg.onclick = () => {
-      const show = pw.type === "password";
-      pw.type = show ? "text" : "password";
-      tg.textContent = show ? "Hide" : "Show";
-      pw.focus();
-    };
+    document.getElementById("toSignup").onclick = () => renderSignup(null, null);
+    wireToggle("password","pwtoggle");
   }
 
   async function doSignIn() {
@@ -108,37 +140,156 @@
     boot();
   }
 
+  /* ---------- Create account ---------- */
+  function renderSignup(error, prefill) {
+    const n = prefill && prefill.name ? escA(prefill.name) : "";
+    const em = prefill && prefill.email ? escA(prefill.email) : "";
+    root.innerHTML =
+      '<h1>Create your account</h1>' +
+      '<p class="lede">Choose a name to post under and set a password. You can start posting right away.</p>' +
+      '<div class="card">' +
+        '<label for="name">Display name</label>' +
+        '<input id="name" type="text" autocomplete="nickname" placeholder="What should appear on your posts" value="' + n + '" />' +
+        '<label for="email">Email</label>' +
+        '<input id="email" type="email" autocomplete="email" placeholder="you@example.com" value="' + em + '" />' +
+        '<label for="password">Password</label>' +
+        '<div class="pwwrap">' +
+          '<input id="password" type="password" autocomplete="new-password" placeholder="At least 6 characters" />' +
+          '<button type="button" class="pwtoggle" id="pwtoggle">Show</button>' +
+        '</div>' +
+        '<label for="password2">Confirm password</label>' +
+        '<div class="pwwrap">' +
+          '<input id="password2" type="password" autocomplete="new-password" placeholder="Type it again" />' +
+          '<button type="button" class="pwtoggle" id="pwtoggle2">Show</button>' +
+        '</div>' +
+        '<button class="primary" id="signup">Create account</button>' +
+        '<div class="msg ' + (error ? 'err' : '') + '" id="msg">' + (error ? esc(error) : '') + '</div>' +
+      '</div>' +
+      '<div class="toggle-line">Already have an account? <a id="toSignin">Sign in</a></div>' +
+      backlinks;
+    wireToggle("password","pwtoggle");
+    wireToggle("password2","pwtoggle2");
+    document.getElementById("signup").onclick = doSignUp;
+    document.getElementById("toSignin").onclick = () => renderLogin(null);
+    document.getElementById("password2").addEventListener("keydown", e => { if (e.key === "Enter") doSignUp(); });
+  }
+
+  async function doSignUp() {
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const pw = document.getElementById("password").value;
+    const pw2 = document.getElementById("password2").value;
+    const fail = (m) => renderSignup(m, { name, email });
+    if (!name) return fail("Please choose a display name.");
+    if (!email) return fail("Please enter your email.");
+    if (pw.length < 6) return fail("Use at least 6 characters for your password.");
+    if (pw !== pw2) return fail("The two passwords don\u2019t match \u2014 check with Show.");
+    const btn = document.getElementById("signup"); btn.disabled = true;
+    const msg = document.getElementById("msg"); msg.className = "msg"; msg.textContent = "Creating your account\u2026";
+    const { data, error } = await supabase.auth.signUp({ email, password: pw, options: { data: { display_name: name } } });
+    if (error) return fail(error.message);
+    let session = data.session;
+    if (!session) {
+      const r = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (r.error) { renderLogin("Account created \u2014 please sign in."); return; }
+      session = r.data.session;
+    }
+    try { await supabase.from("people").update({ display_name: name }).eq("auth_user_id", session.user.id); } catch (e) {}
+    boot();
+  }
+
+  /* ---------- Routing ---------- */
   async function route(session) {
     let isAdmin = false;
     try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {}
     if (isAdmin) renderCockpit(session); else renderUser(session);
   }
 
-  async function renderUser(session) {
-    root.innerHTML =
-      '<div class="topbar"><h1 style="margin:0">You\u2019re in</h1>' +
-      '<span class="who">' + esc(session.user.email) + ' \u00b7 <a href="#" id="signout">sign out</a></span></div>' +
-      '<div class="card"><p style="line-height:1.6">You\u2019re signed in, but there\u2019s nothing to contribute yet. ' +
-      'The posting side \u2014 where you\u2019ll be able to put your own work onto the system \u2014 is still being built. ' +
-      'When it opens, this is where it will appear.</p></div>' +
-      '<div class="links"><a href="/">\u2190 Back to the public site</a></div>';
-    document.getElementById("signout").onclick = async (e) => { e.preventDefault(); await supabase.auth.signOut(); boot(); };
+  /* ---------- Compose (shared) ---------- */
+  function composeHtml(){
+    return '<label for="body">Post to the board</label>' +
+      '<textarea id="body" maxlength="2000" placeholder="Share something that works, something you\u2019re building, a question\u2026"></textarea>' +
+      '<div class="actions"><span class="count" id="count">0 / 2000</span><button class="send" id="send">Post</button></div>' +
+      '<div class="msg" id="cmsg"></div>';
+  }
+  function wireCompose(reloadFn){
+    const body=document.getElementById("body"), count=document.getElementById("count"),
+          send=document.getElementById("send"), cmsg=document.getElementById("cmsg");
+    body.oninput=()=>{ count.textContent=body.value.length+" / 2000"; };
+    send.onclick=async()=>{
+      const text=body.value.trim();
+      if(!text){ cmsg.className="msg err"; cmsg.textContent="Write something first."; return; }
+      send.disabled=true; cmsg.className="msg"; cmsg.textContent="Posting\u2026";
+      const { error }=await supabase.from("posts").insert({ body: text });
+      send.disabled=false;
+      if(error){ cmsg.className="msg err"; cmsg.textContent="Refused: "+error.message; return; }
+      body.value=""; count.textContent="0 / 2000"; cmsg.className="msg ok"; cmsg.textContent="Posted \u2713";
+      reloadFn();
+    };
+  }
+  function renderPosts(containerId, rows, emptyText, reloadFn){
+    const c=document.getElementById(containerId);
+    if(!rows || rows.length===0){ c.innerHTML='<div class="hint">'+emptyText+'</div>'; return; }
+    c.innerHTML="";
+    for(const p of rows){
+      const el=document.createElement("div"); el.className="post";
+      el.innerHTML='<div class="meta"><span><span style="color:var(--text);font-weight:600">'+esc(p.author_handle)+'</span> \u00b7 '+ago(p.created_at)+'</span>'+
+        '<button class="del" data-id="'+p.id+'">delete</button></div>'+
+        '<div class="body">'+esc(p.body)+'</div>';
+      c.appendChild(el);
+    }
+    c.querySelectorAll("button.del").forEach(b=>{ b.onclick=()=>removePost(b.getAttribute("data-id"), reloadFn); });
+  }
+  async function removePost(id, reloadFn){
+    const { error } = await supabase.from("posts").delete().eq("id", id);
+    if(!error) reloadFn();
   }
 
+  /* ---------- Contributor area ---------- */
+  async function renderUser(session) {
+    root.innerHTML =
+      topbar("You\u2019re in", session.user.email, false) +
+      '<div class="card">' + composeHtml() + '</div>' +
+      '<h2 class="section">Your posts</h2>' +
+      '<div class="card" id="myposts"><div class="hint">Loading\u2026</div></div>' +
+      backlinks;
+    wireSignout();
+    wireCompose(() => loadMyPosts(session));
+    loadMyPosts(session);
+  }
+  async function loadMyPosts(session){
+    const { data } = await supabase.from("posts")
+      .select("id,author_handle,body,created_at")
+      .eq("author_id", session.user.id)
+      .order("created_at", { ascending:false });
+    renderPosts("myposts", data, "You haven\u2019t posted yet. Say the first thing above.", () => loadMyPosts(session));
+  }
+
+  /* ---------- Operator cockpit ---------- */
   async function renderCockpit(session) {
     const { data, error } = await supabase
       .from("surfaces").select("id,key,name,status,position").order("position", { ascending: true });
     if (error) { root.innerHTML = '<div class="card"><div class="msg err">'+esc(error.message)+'</div></div>'; return; }
     surfaces = data;
     root.innerHTML =
-      '<div class="topbar"><h1 style="margin:0">Steering</h1>' +
-      '<span class="who">' + esc(session.user.email) + ' \u00b7 admin \u00b7 <a href="#" id="signout">sign out</a></span></div>' +
+      topbar("Steering", session.user.email, true) +
+      '<div class="card">' + composeHtml() + '</div>' +
+      '<h2 class="section">Sections</h2>' +
       '<div class="card" id="list"></div>' +
       '<div class="msg ok" id="saved"></div>' +
-      '<div class="links">Changes are live immediately. <a href="/" target="_blank" rel="noopener">Open the public site \u2197</a></div>' +
-      '<p class="hint">Flip a section and refresh the public site to watch it change.</p>';
-    document.getElementById("signout").onclick = async (e) => { e.preventDefault(); await supabase.auth.signOut(); boot(); };
+      '<h2 class="section">Recent posts \u2014 yours to moderate</h2>' +
+      '<div class="card" id="allposts"><div class="hint">Loading\u2026</div></div>' +
+      '<div class="links">Changes are live immediately. <a href="/" target="_blank" rel="noopener">Open the public site \u2197</a></div>';
+    wireSignout();
+    wireCompose(() => loadAllPosts());
     renderList();
+    loadAllPosts();
+  }
+  async function loadAllPosts(){
+    const { data } = await supabase.from("posts")
+      .select("id,author_handle,body,created_at")
+      .order("created_at", { ascending:false }).limit(50);
+    renderPosts("allposts", data, "No posts yet.", () => loadAllPosts());
   }
 
   function renderList() {
