@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Standards &amp; Terms — Heartbeat Observatory</title>
+<style>
+  :root { --bg:#070a0f; --panel:#0e131b; --line:#1c2530; --text:#e6edf3;
+    --muted:#7d8896; --beat:#e23a45; --ok:#3fb950; --amber:#d9a23a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height:100vh; }
+  .topnav { display:flex; align-items:center; justify-content:space-between;
+    padding:16px 22px; border-bottom:1px solid var(--line); position:sticky; top:0;
+    background:rgba(7,10,15,0.85); backdrop-filter:blur(8px); z-index:10; }
+  .brand { display:inline-flex; align-items:center; gap:9px; font-size:12px;
+    letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); text-decoration:none; }
+  .pulse { width:8px; height:8px; border-radius:50%; background:var(--beat); animation:beat 1.6s infinite; }
+  @keyframes beat { 0%{box-shadow:0 0 0 0 rgba(226,58,69,0.55);} 70%{box-shadow:0 0 0 10px rgba(226,58,69,0);} 100%{box-shadow:0 0 0 0 rgba(226,58,69,0);} }
+  .back { font-size:13px; color:var(--text); text-decoration:none; border:1px solid var(--line);
+    border-radius:999px; padding:7px 16px; transition:border-color .15s; }
+  .back:hover { border-color:#33414f; }
+  .wrap { max-width:720px; margin:0 auto; padding:54px 20px 60px; }
+  header.hero { text-align:center; margin-bottom:10px; }
+  h1 { font-size:34px; font-weight:600; margin:0 0 12px; letter-spacing:-0.01em; }
+  .sub { color:var(--muted); font-size:15px; line-height:1.6; max-width:560px; margin:0 auto; }
+  .lead { color:var(--muted); font-size:13px; margin-top:40px; letter-spacing:0.04em;
+    text-transform:uppercase; }
+  p { line-height:1.7; margin-top:14px; color:var(--text); font-size:15px; }
+  p.note { color:var(--muted); font-size:14px; }
+  .rule { border:1px solid var(--line); background:var(--panel); border-radius:14px;
+    padding:20px; margin-top:14px; }
+  .rule h2 { font-size:17px; font-weight:600; display:flex; align-items:center; gap:10px; }
+  .rule p { margin-top:8px; font-size:14px; color:var(--muted); line-height:1.65; }
+  .tag { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; border-radius:999px;
+    padding:4px 10px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+  .tag.floor { color:var(--beat); border:1px solid rgba(226,58,69,0.45); }
+  .tag.correctable { color:var(--amber); border:1px solid rgba(217,162,58,0.4); }
+  .num { color:var(--muted); font-variant-numeric:tabular-nums; }
+  .step { border-left:2px solid var(--line); padding:4px 0 4px 16px; margin-top:14px; }
+  .step strong { color:var(--text); }
+  hr.div { border:none; border-top:1px solid var(--line); margin:34px 0 0; }
+  footer { margin-top:42px; text-align:center; color:var(--muted); font-size:12px; line-height:1.7; }
+</style>
+</head>
+<body>
+  <nav class="topnav">
+    <span class="brand"><span class="pulse"></span> Heartbeat Observatory</span>
+    <a class="back" href="/">&larr; Back</a>
+  </nav>
+
+  <div class="wrap">
+    <header class="hero">
+      <h1>Standards &amp; Terms</h1>
+      <p class="sub">This platform is built to a standard. Using it, or hosting work on it,
+      means agreeing to the five rules below. They are checked for, and they are enforced.</p>
+    </header>
+
+    <p class="note">These rules exist so that what gets built and shared here stays safe,
+    lawful, reproducible, and never used to put basic human needs behind a paywall. They are
+    stated plainly on purpose. Anyone is free to fork this platform and run it under their own
+    terms; these are the terms of this one.</p>
+
+    <p class="lead">The five rules</p>
+
+    <div class="rule">
+      <h2><span class="num">1.</span> No weapons <span class="tag floor">Immediate removal</span></h2>
+      <p>This platform does not create, assist with, or promote weapons or the manufacture of
+      weapons of any kind. This is an absolute floor with no grace period. A confirmed violation
+      results in immediate removal of the content and the account, because this is not something
+      that happens by accident, and allowing it to continue for any length of time is not acceptable.</p>
+    </div>
+
+    <div class="rule">
+      <h2><span class="num">2.</span> Follow all laws and regulations <span class="tag floor">Immediate removal</span></h2>
+      <p>Everything hosted or run here must comply with applicable laws and regulations. This is
+      an absolute floor with no grace period. A confirmed violation results in immediate removal,
+      for the same reason as the rule above: unlawful activity is not a misunderstanding to be
+      corrected over time, and it will not be carried on this platform while someone decides what
+      to do about it.</p>
+    </div>
+
+    <div class="rule">
+      <h2><span class="num">3.</span> Respect the terms of the systems you operate inside <span class="tag correctable">Correctable</span></h2>
+      <p>Any third-party system, service, or platform used within your work here must be used in
+      accordance with its own terms of service. Because this can be a genuine misunderstanding,
+      it follows the correction process below rather than immediate removal.</p>
+    </div>
+
+    <div class="rule">
+      <h2><span class="num">4.</span> Anything created must be repeatable for everyone <span class="tag correctable">Correctable</span></h2>
+      <p>Once the rules above are met, whatever is built here must be reproducible by anyone. No
+      secret dependency, no hidden step, no piece that only the original maker can run. If it
+      cannot be forked and rebuilt by a stranger, it does not yet meet the standard. This is
+      treated as correctable and follows the process below.</p>
+    </div>
+
+    <div class="rule">
+      <h2><span class="num">5.</span> Never charge for housing and land, food, or water <span class="tag correctable">Correctable</span></h2>
+      <p>No system on this platform may place housing or land, food, or water behind payment.
+      These are foundational human necessities and are never to be charged for here. Where a
+      system touches these necessities, both the system and what it provides in that domain must
+      remain free. This is treated as correctable and follows the process below.</p>
+    </div>
+
+    <p class="lead">How violations are handled</p>
+
+    <p>Rules 1 and 2 — weapons and law — are absolute floors. A confirmed violation of either
+    results in immediate removal of the content and the account, with no warning and no grace
+    period.</p>
+
+    <p>Rules 3, 4, and 5 can be genuine, correctable mistakes, and are handled through the
+    following steps:</p>
+
+    <div class="step"><strong>Warning.</strong> When a violation is found, the operator is
+    notified rather than banned, and is told exactly what broke the standard.</div>
+
+    <div class="step"><strong>One week to resolve.</strong> The operator has seven days to do one
+    of three things: remove the violating content, change their system so it no longer breaks the
+    rule, or accept assistance from this platform in building their own system from scratch so they
+    can run it under their own terms. This assistance is offered only for good-faith, correctable
+    conflicts &mdash; never to help relocate activity that breaks Rules 1, 2, or 3 to somewhere else.</div>
+
+    <div class="step"><strong>Final 24-hour notice.</strong> If the week passes without
+    resolution, a final twenty-four-hour notice is issued.</div>
+
+    <div class="step"><strong>Removal.</strong> If that notice also passes without action, the
+    account is banned.</div>
+
+    <div class="step"><strong>On record.</strong> If the operator resolves the issue in time and
+    is not banned, the matter is recorded. Because the standard has now been explained to them
+    directly, a second confirmed violation results in an immediate and permanent ban with no
+    further warning.</div>
+
+    <hr class="div" />
+
+    <p class="note">No review process is perfect, and these terms do not claim that prohibited
+    content can never appear. What they establish is the standard, the commitment to check for it,
+    and the consequence when it is found. This platform does not create or promote anything that
+    violates these rules. Responsibility for a violation rests with the person who broke the rule.</p>
+
+    <footer>
+      Served from Vercel &middot; data from Supabase &middot; no third parties in between.<br />
+      heartbeatobservatory.com
+    </footer>
+  </div>
+</body>
+</html>
