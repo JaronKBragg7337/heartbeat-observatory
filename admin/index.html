@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Cockpit · Heartbeat Observatory</title>
+<title>Sign in · Heartbeat Observatory</title>
 <style>
   :root { --bg:#070a0f; --panel:#0e131b; --line:#1c2530; --text:#e6edf3; --muted:#7d8896;
     --beat:#e23a45; --ok:#3fb950; --amber:#d9a23a; }
@@ -28,6 +28,7 @@
   button:disabled { opacity:0.5; cursor:default; }
   .msg { margin-top:14px; font-size:13px; min-height:18px; }
   .msg.err { color:var(--beat); } .msg.ok { color:var(--ok); }
+  .note { color:var(--muted); font-size:12px; margin-top:16px; line-height:1.6; }
   .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
   .who { font-size:13px; color:var(--muted); }
   .row { display:flex; align-items:center; justify-content:space-between; gap:12px;
@@ -45,7 +46,7 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="mark"><span class="pulse"></span> Cockpit</div>
+    <div class="mark"><span class="pulse"></span> Heartbeat Observatory</div>
     <div id="root"></div>
   </div>
 
@@ -63,8 +64,8 @@
 
   function renderLogin(error) {
     root.innerHTML =
-      '<h1>Operator sign-in</h1>' +
-      '<p class="lede">This door is yours. Public visitors never see it.</p>' +
+      '<h1>Sign in</h1>' +
+      '<p class="lede">Sign in to reach your area. Viewing the site never requires this.</p>' +
       '<div class="card">' +
         '<label for="email">Email</label>' +
         '<input id="email" type="email" autocomplete="username" placeholder="you@example.com" />' +
@@ -72,40 +73,54 @@
         '<input id="password" type="password" autocomplete="current-password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" />' +
         '<button class="primary" id="signin">Sign in</button>' +
         '<div class="msg ' + (error ? 'err' : '') + '" id="msg">' + (error ? esc(error) : '') + '</div>' +
-      '</div>';
+        '<p class="note">Access is invite-only while the contributor side is being built. ' +
+        'Open accounts for posting will arrive with the social layer.</p>' +
+      '</div>' +
+      '<div class="links"><a href="/">\u2190 Back to the public site</a></div>';
     document.getElementById("signin").onclick = doSignIn;
     document.getElementById("password").addEventListener("keydown", e => { if (e.key === "Enter") doSignIn(); });
   }
 
   async function doSignIn() {
-    const btn = document.getElementById("signin");
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
     const msg = document.getElementById("msg");
-    btn.disabled = true; msg.className = "msg"; msg.textContent = "Signing in\u2026";
+    document.getElementById("signin").disabled = true;
+    msg.className = "msg"; msg.textContent = "Signing in\u2026";
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { renderLogin(error.message); return; }
     boot();
   }
 
-  async function renderCockpit(session) {
+  async function route(session) {
     let isAdmin = false;
     try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {}
+    if (isAdmin) renderCockpit(session); else renderUser(session);
+  }
 
+  async function renderUser(session) {
+    root.innerHTML =
+      '<div class="topbar"><h1 style="margin:0">You\u2019re in</h1>' +
+      '<span class="who">' + esc(session.user.email) + ' \u00b7 <a href="#" id="signout">sign out</a></span></div>' +
+      '<div class="card"><p style="line-height:1.6">You\u2019re signed in, but there\u2019s nothing to contribute yet. ' +
+      'The posting side \u2014 where you\u2019ll be able to put your own work onto the system \u2014 is still being built. ' +
+      'When it opens, this is where it will appear.</p></div>' +
+      '<div class="links"><a href="/">\u2190 Back to the public site</a></div>';
+    document.getElementById("signout").onclick = async (e) => { e.preventDefault(); await supabase.auth.signOut(); boot(); };
+  }
+
+  async function renderCockpit(session) {
     const { data, error } = await supabase
       .from("surfaces").select("id,key,name,status,position").order("position", { ascending: true });
     if (error) { root.innerHTML = '<div class="card"><div class="msg err">'+esc(error.message)+'</div></div>'; return; }
     surfaces = data;
-
     root.innerHTML =
       '<div class="topbar"><h1 style="margin:0">Steering</h1>' +
-      '<span class="who">' + esc(session.user.email) + (isAdmin ? '' : ' \u00b7 not admin') + ' \u00b7 <a href="#" id="signout">sign out</a></span></div>' +
-      (isAdmin ? '' : '<p class="lede" style="color:var(--beat)">This account is not marked admin, so changes will be refused by the database.</p>') +
+      '<span class="who">' + esc(session.user.email) + ' \u00b7 admin \u00b7 <a href="#" id="signout">sign out</a></span></div>' +
       '<div class="card" id="list"></div>' +
       '<div class="msg ok" id="saved"></div>' +
       '<div class="links">Changes are live immediately. <a href="/" target="_blank" rel="noopener">Open the public site \u2197</a></div>' +
       '<p class="hint">Flip a section and refresh the public site to watch it change.</p>';
-
     document.getElementById("signout").onclick = async (e) => { e.preventDefault(); await supabase.auth.signOut(); boot(); };
     renderList();
   }
@@ -137,13 +152,12 @@
     if (error) { saved.className = "msg err"; saved.textContent = "Refused: " + error.message; return; }
     const s = surfaces.find(x => x.id === id); if (s) s.status = value;
     renderList();
-    const name = s ? s.name : "Section";
-    saved.className = "msg ok"; saved.textContent = name + " set to " + value.replace("_"," ") + " \u2713";
+    saved.className = "msg ok"; saved.textContent = (s ? s.name : "Section") + " set to " + value.replace("_"," ") + " \u2713";
   }
 
   async function boot() {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) renderCockpit(session); else renderLogin(null);
+    if (session) route(session); else renderLogin(null);
   }
   boot();
 </script>
