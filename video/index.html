@@ -5,6 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Video · Heartbeat Observatory</title>
 <link rel="stylesheet" href="/section.css" />
+<style>
+  .screen { margin-top:24px; border:1px solid var(--line); border-radius:16px; overflow:hidden;
+    background:radial-gradient(120% 90% at 50% -10%, #0d1828 0%, #060a12 60%, #04060b 100%); }
+  .scr-top { display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 16px; border-bottom:1px solid var(--line); font-size:12px; color:var(--muted); flex-wrap:wrap; }
+  .scr-top .title { color:var(--text); font-weight:600; letter-spacing:0.04em; }
+  .livepill { display:inline-flex; align-items:center; gap:7px; color:var(--ok); border:1px solid rgba(63,185,80,0.5);
+    border-radius:999px; padding:3px 10px; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; }
+  .livepill .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); animation:blink 1.6s infinite; }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .scr-body { padding:18px 16px; display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:600px){ .scr-body { grid-template-columns:1fr; } }
+  .gauges { display:flex; flex-direction:column; gap:11px; }
+  .g { font-size:12px; }
+  .g .grow { display:flex; justify-content:space-between; margin-bottom:4px; color:var(--muted); }
+  .g .gval { color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
+  .gbar { height:8px; background:rgba(255,255,255,0.07); border-radius:999px; overflow:hidden; }
+  .gbar > span { display:block; height:100%; border-radius:999px; transition:width .6s ease; }
+  .gbar .p-power { background:linear-gradient(90deg,#ffd700,#ffaa00); }
+  .gbar .p-o2 { background:linear-gradient(90deg,#43d692,#0077ff); }
+  .gbar .p-water { background:linear-gradient(90deg,#56d364,#3fb950); }
+  .gbar .p-he3 { background:linear-gradient(90deg,#a479e2,#7aa2d6); }
+  .crew { display:flex; flex-direction:column; gap:9px; }
+  .crew h3, .feed h3 { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .cw { display:flex; align-items:flex-start; gap:9px; font-size:13px; }
+  .cw .cd { width:7px; height:7px; border-radius:50%; background:var(--ok); margin-top:5px; flex:none; }
+  .cw .cd.rest { background:var(--muted); }
+  .cw .who { color:var(--text); font-weight:600; }
+  .cw .role { color:var(--muted); font-size:11px; }
+  .cw .doing { color:#c9d3de; }
+  .feed { grid-column:1 / -1; border-top:1px solid var(--line); padding-top:14px; }
+  .feed ul { list-style:none; display:flex; flex-direction:column; gap:7px; }
+  .feed li { font-size:13px; color:#c9d3de; line-height:1.5; }
+  .feed li .stamp { color:var(--muted); font-variant-numeric:tabular-nums; margin-right:8px; }
+  .disclosure { margin-top:20px; }
+  .disclosure .panel { margin-top:0; }
+  .badge { display:inline-block; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--amber);
+    border:1px solid rgba(217,162,58,0.45); border-radius:999px; padding:3px 10px; margin-bottom:10px; }
+</style>
 </head>
 <body>
   <nav class="topnav">
@@ -15,28 +54,149 @@
     <a class="back" href="/">&larr; All sections</a>
     <header class="hero">
       <h1>Video</h1>
-      <p class="sub">Short-form video, uploaded and watched here.</p>
+      <p class="sub">When the operator goes live, this is the stream. The rest of the time it doesn&rsquo;t go dark &mdash; it carries an ambient broadcast of a small simulated world, running on its own.</p>
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
     </header>
-    <div class="panel">
-      <p>This section isn&rsquo;t open yet.</p>
-      <p class="muted">When it opens, short videos you upload will live here &mdash; on its own page, kept separate from every other section.</p>
+
+    <div class="screen">
+      <div class="scr-top">
+        <span class="title" id="scr-title">Mare Tranquillitatis &middot; Helium-3 Outpost</span>
+        <span id="scr-clock">Sol &mdash; &middot; Shift &mdash;</span>
+        <span class="livepill"><span class="ld"></span>Live &middot; simulated</span>
+      </div>
+      <div class="scr-body">
+        <div class="gauges" id="gauges"></div>
+        <div class="crew" id="crew"><h3>Crew</h3></div>
+        <div class="feed" id="feed"><h3>Outpost log</h3><ul id="feedlist"></ul></div>
+      </div>
+    </div>
+
+    <div class="disclosure">
+      <div class="panel">
+        <span class="badge">Simulated &middot; AI-generated</span>
+        <p>This is a simulation, not a live person or a real place &mdash; a small world that keeps running on its own.</p>
+        <p class="muted">It runs in your browser, so you&rsquo;re watching a living instance of it. A single shared world that everyone watches together would run on a server; this is the lightweight version. When the operator streams, the stream takes this slot.</p>
+      </div>
     </div>
     <footer><a href="/">heartbeatobservatory.com</a></footer>
   </div>
+
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
   const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
-  const authlink = document.getElementById("authlink");
-  const dot = document.getElementById("dot");
-  const statusText = document.getElementById("statusText");
+  const authlink=document.getElementById("authlink");
+  const dot=document.getElementById("dot"); const statusText=document.getElementById("statusText");
   (async()=>{ try{ const { data:{ session } }=await supabase.auth.getSession(); if(session) authlink.textContent="Account"; }catch(e){} })();
   (async()=>{ try{
     const { data }=await supabase.from("surfaces").select("status").eq("key","video").maybeSingle();
-    const st = data ? data.status : "coming_soon";
+    const st=data?data.status:"coming_soon";
     dot.className="dot"+(st==="live"?" live":"");
     statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
-  }catch(e){ statusText.textContent="Coming soon"; } })();
+  }catch(e){ statusText.textContent=""; } })();
+
+  // ---- the simulated world ----
+  function clamp(v){ return Math.max(0, Math.min(100, v)); }
+  function r(a,b){ return a + Math.random()*(b-a); }
+  const SECTORS=["Tranquillis 7","Cauchy Rille","Maskelyne F","Ariadaeus Cleft","Sabine Ridge"];
+
+  // Sol seeded from the calendar so the outpost reads as long-established.
+  const startSol = 400 + Math.floor((Date.now() - Date.UTC(2025,0,1)) / 86400000);
+
+  const crew = [
+    { name:"Verdant", role:"Commander",     task:"Reviewing the shift plan",        rest:false },
+    { name:"Solace",  role:"Driller",        task:"Spinning up the bore",            rest:false },
+    { name:"Forge",   role:"Refiner",        task:"Warming the separator",           rest:false },
+    { name:"Loom",    role:"Reactor Eng.",   task:"Balancing the array",             rest:false },
+    { name:"Ledger",  role:"Quartermaster",  task:"Auditing the stores",             rest:false },
+    { name:"Briar",   role:"Safety",         task:"Cycling the airlocks",            rest:false },
+    { name:"Hearth",  role:"Life Support",   task:"Running the water loop",          rest:false },
+  ];
+
+  const S = {
+    tick:0, sol:startSol, shift:"A",
+    he3:r(1.2,3.4), ore:r(0.4,1.6),
+    power:r(74,90), oxygen:r(90,98), water:r(85,95), credits:Math.floor(r(8000,42000)),
+    mined:0, shipped:0, price:r(900,1200),
+    drillMod:1, solarMod:1,
+    log:[],
+  };
+  const SHIP_AT = 6.0;        // kg refined He-3 before a shipment goes out
+  const TICKS_PER_SHIFT = 16;
+
+  function stamp(){ return "Sol "+S.sol+"\u00b7"+S.shift; }
+  function logEvent(msg){ S.log.unshift({ s:stamp(), m:msg }); if(S.log.length>14) S.log.pop(); }
+
+  const EVENTS = [
+    ()=>{ S.power=clamp(S.power-r(6,11)); S.solarMod=0.6; logEvent("Solar flare \u2014 array shielding engaged, power dipped."); },
+    ()=>{ S.drillMod=0.55; logEvent("Regolith dust is fouling the drills \u2014 Solace reports reduced yield."); },
+    ()=>{ S.drillMod=1.7; logEvent("Solace struck a helium-rich seam at "+SECTORS[Math.floor(Math.random()*SECTORS.length)]+" \u2014 yield surging."); },
+    ()=>{ S.oxygen=clamp(S.oxygen-r(5,9)); logEvent("Micrometeorite ping on the north hull \u2014 Briar moving to seal it."); },
+    ()=>{ S.oxygen=clamp(S.oxygen+15); S.water=clamp(S.water+15); logEvent("Supply shuttle docked \u2014 oxygen and water topped up."); },
+    ()=>{ S.power=clamp(S.power-r(4,7)); logEvent("Reactor fault flagged \u2014 Loom rerouting power around it."); },
+    ()=>{ S.price=clamp ? S.price : S.price; S.price = Math.max(700, S.price*r(1.04,1.12)); logEvent("He-3 spot price climbed on the lunar exchange."); },
+    ()=>{ S.price = Math.max(600, S.price*r(0.9,0.97)); logEvent("He-3 demand softened this cycle \u2014 price eased."); },
+    ()=>{ logEvent("Quiet shift. Hearth ran crew health checks; all green."); },
+  ];
+
+  function ease(m){ return m + (1-m)*0.12; }
+
+  function step(){
+    S.tick++;
+    if(S.tick % TICKS_PER_SHIFT === 0){ S.shift = (S.shift==="A"?"B":"A"); if(S.shift==="A") S.sol++; }
+    S.drillMod = ease(S.drillMod); S.solarMod = ease(S.solarMod);
+
+    if(Math.random() < 0.16){ EVENTS[Math.floor(Math.random()*EVENTS.length)](); }
+
+    // crew rotation: one crew member rests per few ticks
+    const restIdx = Math.floor(S.tick/4) % crew.length;
+    crew.forEach((c,i)=> c.rest = (i===restIdx));
+
+    // Driller -> ore
+    if(!crew[1].rest && S.power>14){ const g=r(0.18,0.42)*S.drillMod; S.ore+=g; S.mined+=g; S.power-=1.4;
+      crew[1].task="Boring at "+SECTORS[S.tick%SECTORS.length]; } else crew[1].task = crew[1].rest?"Off shift, resting":"Holding \u2014 low power";
+    // Refiner -> he3
+    if(!crew[2].rest && S.ore>0.15 && S.power>10){ const a=Math.min(S.ore,0.35); S.ore-=a; S.he3+=a*0.62; S.power-=1.1;
+      crew[2].task="Separating a "+(a*0.62).toFixed(2)+" kg batch"; } else crew[2].task = crew[2].rest?"Off shift, resting":"Separator idle";
+    // Reactor engineer -> power
+    if(!crew[3].rest){ S.power=clamp(S.power + r(1.6,3.0)*S.solarMod); crew[3].task="Tuning the solar array"; } else crew[3].task="Off shift, resting";
+    // Quartermaster -> shipment
+    if(!crew[4].rest && S.he3>=SHIP_AT){ const earned=Math.round(S.he3*S.price); S.credits+=earned; S.shipped++;
+      logEvent("Shipment away: "+S.he3.toFixed(1)+" kg He-3 \u2192 +"+earned.toLocaleString()+" S\u00a2."); S.he3=0; crew[4].task="Sealing the shipment pod"; }
+    else crew[4].task = crew[4].rest?"Off shift, resting":"Logging stores";
+    // Safety -> oxygen
+    if(!crew[5].rest){ S.oxygen=clamp(S.oxygen + r(0.5,1.1)); crew[5].task="Scrubbing CO\u2082, cycling locks"; } else crew[5].task="Off shift, resting";
+    // Life support -> water
+    if(!crew[6].rest){ S.water=clamp(S.water + r(0.4,0.9)); crew[6].task="Reclaiming the water loop"; } else crew[6].task="Off shift, resting";
+    // Commander
+    crew[0].task = crew[0].rest ? "Off shift, resting" : ["Coordinating the shift","Plotting the next dig","Reading the long-range forecast","Logging the day"][S.tick%4];
+
+    // passive life-support draw
+    S.oxygen=clamp(S.oxygen-0.45); S.water=clamp(S.water-0.35); S.power=clamp(S.power-0.4);
+
+    render();
+  }
+
+  function bar(cls,val){ return '<div class="gbar"><span class="'+cls+'" style="width:'+clamp(val)+'%"></span></div>'; }
+  function render(){
+    document.getElementById("scr-clock").innerHTML = "Sol "+S.sol+" \u00b7 Shift "+S.shift;
+    const g=document.getElementById("gauges");
+    g.innerHTML =
+      '<div class="g"><div class="grow"><span>Refined He-3 in store</span><span class="gval">'+S.he3.toFixed(2)+' kg</span></div>'+bar('p-he3', (S.he3/SHIP_AT)*100)+'</div>'+
+      '<div class="g"><div class="grow"><span>Reactor power</span><span class="gval">'+Math.round(S.power)+'%</span></div>'+bar('p-power',S.power)+'</div>'+
+      '<div class="g"><div class="grow"><span>Oxygen</span><span class="gval">'+Math.round(S.oxygen)+'%</span></div>'+bar('p-o2',S.oxygen)+'</div>'+
+      '<div class="g"><div class="grow"><span>Water</span><span class="gval">'+Math.round(S.water)+'%</span></div>'+bar('p-water',S.water)+'</div>'+
+      '<div class="g"><div class="grow"><span>Treasury</span><span class="gval">'+S.credits.toLocaleString()+' S\u00a2</span></div></div>'+
+      '<div class="g"><div class="grow"><span>Mined total \u00b7 shipments</span><span class="gval">'+S.mined.toFixed(1)+' kg \u00b7 '+S.shipped+'</span></div></div>';
+    const c=document.getElementById("crew");
+    c.innerHTML='<h3>Crew</h3>'+crew.map(m=>
+      '<div class="cw"><span class="cd'+(m.rest?' rest':'')+'"></span><div><span class="who">'+m.name+'</span> <span class="role">'+m.role+'</span><br><span class="doing">'+m.task+'</span></div></div>').join('');
+    const f=document.getElementById("feedlist");
+    f.innerHTML = S.log.map(e=>'<li><span class="stamp">'+e.s+'</span>'+e.m+'</li>').join('') || '<li class="muted">Shift just started\u2026</li>';
+  }
+
+  logEvent("Shift change \u2014 the outpost comes back to life.");
+  render();
+  setInterval(step, 2500);
 </script>
 </body>
 </html>
