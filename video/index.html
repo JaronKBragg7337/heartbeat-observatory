@@ -6,29 +6,40 @@
 <title>Video · Heartbeat Observatory</title>
 <link rel="stylesheet" href="/section.css" />
 <style>
-  .screen { margin-top:24px; border:1px solid var(--line); border-radius:16px; overflow:hidden;
-    background:radial-gradient(120% 90% at 50% -10%, #0d1828 0%, #060a12 60%, #04060b 100%); }
-  .scr-top { display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:12px 16px; border-bottom:1px solid var(--line); font-size:12px; color:var(--muted); flex-wrap:wrap; }
-  .scr-top .title { color:var(--text); font-weight:600; letter-spacing:0.04em; }
-  .livepill { display:inline-flex; align-items:center; gap:7px; color:var(--ok); border:1px solid rgba(63,185,80,0.5);
-    border-radius:999px; padding:3px 10px; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; }
-  .livepill .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); animation:blink 1.6s infinite; }
+  .screen { position:relative; margin-top:24px; border:1px solid var(--line); border-radius:16px; overflow:hidden;
+    background:#04060b; aspect-ratio:16/9; min-height:240px; }
+  #c3d { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .fallback { position:absolute; inset:0; display:none; align-items:center; justify-content:center; text-align:center;
+    color:var(--muted); font-size:13px; padding:20px; }
+  .hud { position:absolute; inset:0; pointer-events:none; }
+  .hud > div { position:absolute; }
+  .hud-tl { top:12px; left:14px; font-size:13px; color:var(--text); text-shadow:0 1px 4px rgba(0,0,0,0.8); }
+  .hud-tl .muted { font-size:11px; }
+  .hud-tr { top:12px; right:12px; }
+  .livepill { display:inline-flex; align-items:center; gap:7px; color:var(--ok);
+    border:1px solid rgba(63,185,80,0.5); background:rgba(4,6,11,0.4); border-radius:999px; padding:3px 10px;
+    font-size:10px; letter-spacing:0.06em; text-transform:uppercase; }
+  .livepill .ld { width:6px; height:6px; border-radius:50%; background:var(--ok); animation:blink 1.6s infinite; }
   @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-  .scr-body { padding:18px 16px; display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-  @media (max-width:600px){ .scr-body { grid-template-columns:1fr; } }
+  .hud-bot { bottom:12px; left:14px; right:14px; font-size:12px; color:#c9d3de;
+    text-shadow:0 1px 4px rgba(0,0,0,0.9); }
+
+  .telemetry { margin-top:18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); padding:18px 16px; }
+  .telemetry h3 { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+  .tgrid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:600px){ .tgrid { grid-template-columns:1fr; } }
   .gauges { display:flex; flex-direction:column; gap:11px; }
   .g { font-size:12px; }
   .g .grow { display:flex; justify-content:space-between; margin-bottom:4px; color:var(--muted); }
   .g .gval { color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
   .gbar { height:8px; background:rgba(255,255,255,0.07); border-radius:999px; overflow:hidden; }
   .gbar > span { display:block; height:100%; border-radius:999px; transition:width .6s ease; }
-  .gbar .p-power { background:linear-gradient(90deg,#ffd700,#ffaa00); }
-  .gbar .p-o2 { background:linear-gradient(90deg,#43d692,#0077ff); }
-  .gbar .p-water { background:linear-gradient(90deg,#56d364,#3fb950); }
-  .gbar .p-he3 { background:linear-gradient(90deg,#a479e2,#7aa2d6); }
+  .p-power { background:linear-gradient(90deg,#ffd700,#ffaa00); }
+  .p-o2 { background:linear-gradient(90deg,#43d692,#0077ff); }
+  .p-water { background:linear-gradient(90deg,#56d364,#3fb950); }
+  .p-he3 { background:linear-gradient(90deg,#a479e2,#7aa2d6); }
   .crew { display:flex; flex-direction:column; gap:9px; }
-  .crew h3, .feed h3 { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .crew h4, .feed h4 { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
   .cw { display:flex; align-items:flex-start; gap:9px; font-size:13px; }
   .cw .cd { width:7px; height:7px; border-radius:50%; background:var(--ok); margin-top:5px; flex:none; }
   .cw .cd.rest { background:var(--muted); }
@@ -40,7 +51,6 @@
   .feed li { font-size:13px; color:#c9d3de; line-height:1.5; }
   .feed li .stamp { color:var(--muted); font-variant-numeric:tabular-nums; margin-right:8px; }
   .disclosure { margin-top:20px; }
-  .disclosure .panel { margin-top:0; }
   .badge { display:inline-block; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--amber);
     border:1px solid rgba(217,162,58,0.45); border-radius:999px; padding:3px 10px; margin-bottom:10px; }
 </style>
@@ -58,16 +68,22 @@
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
     </header>
 
-    <div class="screen">
-      <div class="scr-top">
-        <span class="title" id="scr-title">Mare Tranquillitatis &middot; Helium-3 Outpost</span>
-        <span id="scr-clock">Sol &mdash; &middot; Shift &mdash;</span>
-        <span class="livepill"><span class="ld"></span>Live &middot; simulated</span>
+    <div class="screen" id="screen">
+      <canvas id="c3d"></canvas>
+      <div class="fallback" id="fallback">Your browser couldn&rsquo;t start the 3-D view &mdash; the live readout below is still running.</div>
+      <div class="hud">
+        <div class="hud-tl"><span id="hud-name">Mare Tranquillitatis &middot; He-3 Outpost</span><br><span class="muted" id="hud-clock">Sol &mdash; &middot; Shift &mdash;</span></div>
+        <div class="hud-tr"><span class="livepill"><span class="ld"></span>Live &middot; simulated</span></div>
+        <div class="hud-bot" id="hud-ticker">Booting the outpost&hellip;</div>
       </div>
-      <div class="scr-body">
+    </div>
+
+    <div class="telemetry">
+      <h3>Telemetry</h3>
+      <div class="tgrid">
         <div class="gauges" id="gauges"></div>
-        <div class="crew" id="crew"><h3>Crew</h3></div>
-        <div class="feed" id="feed"><h3>Outpost log</h3><ul id="feedlist"></ul></div>
+        <div class="crew" id="crew"><h4>Crew</h4></div>
+        <div class="feed" id="feed"><h4>Outpost log</h4><ul id="feedlist"></ul></div>
       </div>
     </div>
 
@@ -75,12 +91,13 @@
       <div class="panel">
         <span class="badge">Simulated &middot; AI-generated</span>
         <p>This is a simulation, not a live person or a real place &mdash; a small world that keeps running on its own.</p>
-        <p class="muted">It runs in your browser, so you&rsquo;re watching a living instance of it. A single shared world that everyone watches together would run on a server; this is the lightweight version. When the operator streams, the stream takes this slot.</p>
+        <p class="muted">It renders in your browser, so you&rsquo;re watching a living instance of it. A single shared world that everyone watches together would run on a server; this is the lightweight version. When the operator streams, the stream takes this slot.</p>
       </div>
     </div>
     <footer><a href="/">heartbeatobservatory.com</a></footer>
   </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
   const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
@@ -94,22 +111,20 @@
     statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
   }catch(e){ statusText.textContent=""; } })();
 
-  // ---- the simulated world ----
+  /* ============ the simulation (engine) ============ */
   function clamp(v){ return Math.max(0, Math.min(100, v)); }
   function r(a,b){ return a + Math.random()*(b-a); }
   const SECTORS=["Tranquillis 7","Cauchy Rille","Maskelyne F","Ariadaeus Cleft","Sabine Ridge"];
-
-  // Sol seeded from the calendar so the outpost reads as long-established.
   const startSol = 400 + Math.floor((Date.now() - Date.UTC(2025,0,1)) / 86400000);
 
   const crew = [
-    { name:"Verdant", role:"Commander",     task:"Reviewing the shift plan",        rest:false },
-    { name:"Solace",  role:"Driller",        task:"Spinning up the bore",            rest:false },
-    { name:"Forge",   role:"Refiner",        task:"Warming the separator",           rest:false },
-    { name:"Loom",    role:"Reactor Eng.",   task:"Balancing the array",             rest:false },
-    { name:"Ledger",  role:"Quartermaster",  task:"Auditing the stores",             rest:false },
-    { name:"Briar",   role:"Safety",         task:"Cycling the airlocks",            rest:false },
-    { name:"Hearth",  role:"Life Support",   task:"Running the water loop",          rest:false },
+    { name:"Verdant", role:"Commander",     task:"Reviewing the shift plan", rest:false },
+    { name:"Solace",  role:"Driller",        task:"Spinning up the bore",     rest:false },
+    { name:"Forge",   role:"Refiner",        task:"Warming the separator",    rest:false },
+    { name:"Loom",    role:"Reactor Eng.",   task:"Balancing the array",      rest:false },
+    { name:"Ledger",  role:"Quartermaster",  task:"Auditing the stores",      rest:false },
+    { name:"Briar",   role:"Safety",         task:"Cycling the airlocks",     rest:false },
+    { name:"Hearth",  role:"Life Support",   task:"Running the water loop",   rest:false },
   ];
 
   const S = {
@@ -117,86 +132,217 @@
     he3:r(1.2,3.4), ore:r(0.4,1.6),
     power:r(74,90), oxygen:r(90,98), water:r(85,95), credits:Math.floor(r(8000,42000)),
     mined:0, shipped:0, price:r(900,1200),
-    drillMod:1, solarMod:1,
-    log:[],
+    drillMod:1, solarMod:1, log:[],
   };
-  const SHIP_AT = 6.0;        // kg refined He-3 before a shipment goes out
-  const TICKS_PER_SHIFT = 16;
+  const SHIP_AT = 6.0, TICKS_PER_SHIFT = 16;
+
+  /* visual effect flags read by the 3-D loop (safe even if 3-D is off) */
+  let flareFlash = 0;
+  const shuttleAnim = { active:false, mode:null, t:0 };
+  function fxShuttle(mode){ shuttleAnim.active=true; shuttleAnim.mode=mode; shuttleAnim.t=0; }
 
   function stamp(){ return "Sol "+S.sol+"\u00b7"+S.shift; }
   function logEvent(msg){ S.log.unshift({ s:stamp(), m:msg }); if(S.log.length>14) S.log.pop(); }
 
   const EVENTS = [
-    ()=>{ S.power=clamp(S.power-r(6,11)); S.solarMod=0.6; logEvent("Solar flare \u2014 array shielding engaged, power dipped."); },
+    ()=>{ S.power=clamp(S.power-r(6,11)); S.solarMod=0.6; flareFlash=1.0; logEvent("Solar flare \u2014 array shielding engaged, power dipped."); },
     ()=>{ S.drillMod=0.55; logEvent("Regolith dust is fouling the drills \u2014 Solace reports reduced yield."); },
     ()=>{ S.drillMod=1.7; logEvent("Solace struck a helium-rich seam at "+SECTORS[Math.floor(Math.random()*SECTORS.length)]+" \u2014 yield surging."); },
     ()=>{ S.oxygen=clamp(S.oxygen-r(5,9)); logEvent("Micrometeorite ping on the north hull \u2014 Briar moving to seal it."); },
-    ()=>{ S.oxygen=clamp(S.oxygen+15); S.water=clamp(S.water+15); logEvent("Supply shuttle docked \u2014 oxygen and water topped up."); },
+    ()=>{ S.oxygen=clamp(S.oxygen+15); S.water=clamp(S.water+15); fxShuttle("descend"); logEvent("Supply shuttle docked \u2014 oxygen and water topped up."); },
     ()=>{ S.power=clamp(S.power-r(4,7)); logEvent("Reactor fault flagged \u2014 Loom rerouting power around it."); },
-    ()=>{ S.price=clamp ? S.price : S.price; S.price = Math.max(700, S.price*r(1.04,1.12)); logEvent("He-3 spot price climbed on the lunar exchange."); },
+    ()=>{ S.price = Math.max(700, S.price*r(1.04,1.12)); logEvent("He-3 spot price climbed on the lunar exchange."); },
     ()=>{ S.price = Math.max(600, S.price*r(0.9,0.97)); logEvent("He-3 demand softened this cycle \u2014 price eased."); },
     ()=>{ logEvent("Quiet shift. Hearth ran crew health checks; all green."); },
   ];
-
   function ease(m){ return m + (1-m)*0.12; }
 
   function step(){
     S.tick++;
     if(S.tick % TICKS_PER_SHIFT === 0){ S.shift = (S.shift==="A"?"B":"A"); if(S.shift==="A") S.sol++; }
     S.drillMod = ease(S.drillMod); S.solarMod = ease(S.solarMod);
-
     if(Math.random() < 0.16){ EVENTS[Math.floor(Math.random()*EVENTS.length)](); }
 
-    // crew rotation: one crew member rests per few ticks
     const restIdx = Math.floor(S.tick/4) % crew.length;
     crew.forEach((c,i)=> c.rest = (i===restIdx));
 
-    // Driller -> ore
     if(!crew[1].rest && S.power>14){ const g=r(0.18,0.42)*S.drillMod; S.ore+=g; S.mined+=g; S.power-=1.4;
       crew[1].task="Boring at "+SECTORS[S.tick%SECTORS.length]; } else crew[1].task = crew[1].rest?"Off shift, resting":"Holding \u2014 low power";
-    // Refiner -> he3
     if(!crew[2].rest && S.ore>0.15 && S.power>10){ const a=Math.min(S.ore,0.35); S.ore-=a; S.he3+=a*0.62; S.power-=1.1;
       crew[2].task="Separating a "+(a*0.62).toFixed(2)+" kg batch"; } else crew[2].task = crew[2].rest?"Off shift, resting":"Separator idle";
-    // Reactor engineer -> power
     if(!crew[3].rest){ S.power=clamp(S.power + r(1.6,3.0)*S.solarMod); crew[3].task="Tuning the solar array"; } else crew[3].task="Off shift, resting";
-    // Quartermaster -> shipment
     if(!crew[4].rest && S.he3>=SHIP_AT){ const earned=Math.round(S.he3*S.price); S.credits+=earned; S.shipped++;
-      logEvent("Shipment away: "+S.he3.toFixed(1)+" kg He-3 \u2192 +"+earned.toLocaleString()+" S\u00a2."); S.he3=0; crew[4].task="Sealing the shipment pod"; }
+      logEvent("Shipment away: "+S.he3.toFixed(1)+" kg He-3 \u2192 +"+earned.toLocaleString()+" S\u00a2."); S.he3=0; fxShuttle("launch"); crew[4].task="Sealing the shipment pod"; }
     else crew[4].task = crew[4].rest?"Off shift, resting":"Logging stores";
-    // Safety -> oxygen
     if(!crew[5].rest){ S.oxygen=clamp(S.oxygen + r(0.5,1.1)); crew[5].task="Scrubbing CO\u2082, cycling locks"; } else crew[5].task="Off shift, resting";
-    // Life support -> water
     if(!crew[6].rest){ S.water=clamp(S.water + r(0.4,0.9)); crew[6].task="Reclaiming the water loop"; } else crew[6].task="Off shift, resting";
-    // Commander
     crew[0].task = crew[0].rest ? "Off shift, resting" : ["Coordinating the shift","Plotting the next dig","Reading the long-range forecast","Logging the day"][S.tick%4];
 
-    // passive life-support draw
     S.oxygen=clamp(S.oxygen-0.45); S.water=clamp(S.water-0.35); S.power=clamp(S.power-0.4);
-
-    render();
+    updateReadout(); updateHud();
   }
 
+  /* ============ readout + hud (always work) ============ */
   function bar(cls,val){ return '<div class="gbar"><span class="'+cls+'" style="width:'+clamp(val)+'%"></span></div>'; }
-  function render(){
-    document.getElementById("scr-clock").innerHTML = "Sol "+S.sol+" \u00b7 Shift "+S.shift;
-    const g=document.getElementById("gauges");
-    g.innerHTML =
-      '<div class="g"><div class="grow"><span>Refined He-3 in store</span><span class="gval">'+S.he3.toFixed(2)+' kg</span></div>'+bar('p-he3', (S.he3/SHIP_AT)*100)+'</div>'+
+  function updateReadout(){
+    document.getElementById("gauges").innerHTML =
+      '<div class="g"><div class="grow"><span>Refined He-3 in store</span><span class="gval">'+S.he3.toFixed(2)+' kg</span></div>'+bar('p-he3',(S.he3/SHIP_AT)*100)+'</div>'+
       '<div class="g"><div class="grow"><span>Reactor power</span><span class="gval">'+Math.round(S.power)+'%</span></div>'+bar('p-power',S.power)+'</div>'+
       '<div class="g"><div class="grow"><span>Oxygen</span><span class="gval">'+Math.round(S.oxygen)+'%</span></div>'+bar('p-o2',S.oxygen)+'</div>'+
       '<div class="g"><div class="grow"><span>Water</span><span class="gval">'+Math.round(S.water)+'%</span></div>'+bar('p-water',S.water)+'</div>'+
       '<div class="g"><div class="grow"><span>Treasury</span><span class="gval">'+S.credits.toLocaleString()+' S\u00a2</span></div></div>'+
       '<div class="g"><div class="grow"><span>Mined total \u00b7 shipments</span><span class="gval">'+S.mined.toFixed(1)+' kg \u00b7 '+S.shipped+'</span></div></div>';
-    const c=document.getElementById("crew");
-    c.innerHTML='<h3>Crew</h3>'+crew.map(m=>
+    document.getElementById("crew").innerHTML='<h4>Crew</h4>'+crew.map(m=>
       '<div class="cw"><span class="cd'+(m.rest?' rest':'')+'"></span><div><span class="who">'+m.name+'</span> <span class="role">'+m.role+'</span><br><span class="doing">'+m.task+'</span></div></div>').join('');
-    const f=document.getElementById("feedlist");
-    f.innerHTML = S.log.map(e=>'<li><span class="stamp">'+e.s+'</span>'+e.m+'</li>').join('') || '<li class="muted">Shift just started\u2026</li>';
+    document.getElementById("feedlist").innerHTML = S.log.map(e=>'<li><span class="stamp">'+e.s+'</span>'+e.m+'</li>').join('') || '<li class="muted">Shift just started\u2026</li>';
+  }
+  function updateHud(){
+    document.getElementById("hud-clock").innerHTML = "Sol "+S.sol+" \u00b7 Shift "+S.shift;
+    if(S.log[0]) document.getElementById("hud-ticker").textContent = S.log[0].m;
   }
 
   logEvent("Shift change \u2014 the outpost comes back to life.");
-  render();
+  updateReadout(); updateHud();
   setInterval(step, 2500);
+
+  /* ============ the 3-D world (a casing on the same engine) ============ */
+  let panelMat, tankMat, bitPivot, beacon, sun, shuttle, shuttleFlame, crewFig=[], renderer, camera;
+  function W(){ return document.getElementById("screen").clientWidth; }
+  function H(){ return Math.max(220, W()*9/16); }
+
+  function init3D(){
+    const THREE = window.THREE;
+    if(!THREE) throw new Error("three missing");
+    const canvas=document.getElementById("c3d");
+    renderer=new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.setSize(W(),H(),false);
+    const scene=new THREE.Scene();
+    scene.fog=new THREE.Fog(0x04060b, 55, 110);
+    camera=new THREE.PerspectiveCamera(50, W()/H(), 0.1, 600);
+
+    // sky: stars + Earth
+    const sg=new THREE.BufferGeometry(); const N=800; const pos=new Float32Array(N*3);
+    for(let i=0;i<N;i++){ const rad=220, u=Math.random(), v=Math.random(); const th=2*Math.PI*u, ph=Math.acos(2*v-1);
+      pos[i*3]=rad*Math.sin(ph)*Math.cos(th); pos[i*3+1]=Math.abs(rad*Math.cos(ph))*0.8+8; pos[i*3+2]=rad*Math.sin(ph)*Math.sin(th); }
+    sg.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    scene.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff,size:0.8})));
+    const earth=new THREE.Mesh(new THREE.SphereGeometry(8,32,32),
+      new THREE.MeshStandardMaterial({color:0x2f6fb0, emissive:0x12354f, emissiveIntensity:0.7, roughness:1}));
+    earth.position.set(-46,40,-66); scene.add(earth);
+
+    // lights
+    const amb=new THREE.AmbientLight(0x35425c, 0.55); scene.add(amb);
+    sun=new THREE.DirectionalLight(0xfff3e0, 1.1); sun.position.set(-30,42,22); scene.add(sun);
+
+    // ground
+    const ground=new THREE.Mesh(new THREE.CircleGeometry(72,64),
+      new THREE.MeshStandardMaterial({color:0x595d64, roughness:1, metalness:0}));
+    ground.rotation.x=-Math.PI/2; scene.add(ground);
+    const craterMat=new THREE.MeshStandardMaterial({color:0x474b51, roughness:1});
+    for(let i=0;i<7;i++){ const cr=new THREE.Mesh(new THREE.TorusGeometry(r(1.5,4),0.25,6,22), craterMat);
+      cr.rotation.x=-Math.PI/2; cr.position.set(r(-55,55),0.02,r(-55,55)); scene.add(cr); }
+
+    const base=new THREE.Group(); scene.add(base);
+    const metalMat=new THREE.MeshStandardMaterial({color:0x9aa0a8, roughness:0.5, metalness:0.35});
+    const shellMat=new THREE.MeshStandardMaterial({color:0xb7bcc4, roughness:0.55, metalness:0.2});
+    function dome(rad,x,z){ const m=new THREE.Mesh(new THREE.SphereGeometry(rad,24,16,0,Math.PI*2,0,Math.PI/2), shellMat);
+      m.position.set(x,0,z); base.add(m); return m; }
+    dome(4,0,0); dome(2.6,-6,5); dome(2.6,-7,-3); dome(2.0,5,3);
+    // connecting tubes
+    const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,6.5,10), metalMat);
+    tube.rotation.z=Math.PI/2; tube.position.set(-3,0.8,3); base.add(tube);
+
+    // solar field (Loom / power)
+    panelMat=new THREE.MeshStandardMaterial({color:0x16243a, emissive:0x1d3a6b, emissiveIntensity:0.8, roughness:0.4, metalness:0.2});
+    const solar=new THREE.Group();
+    for(let i=0;i<3;i++)for(let j=0;j<2;j++){ const p=new THREE.Mesh(new THREE.BoxGeometry(3,0.12,2), panelMat);
+      p.position.set(i*3.4, 1.2, j*2.5); p.rotation.x=-0.5; solar.add(p);
+      const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1.2,6), metalMat); leg.position.set(i*3.4,0.6,j*2.5); solar.add(leg); }
+    solar.position.set(11,0,7); base.add(solar);
+
+    // drill rig (Solace / mining)
+    const rig=new THREE.Group();
+    rig.add(Object.assign(new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.5,6,8), metalMat), {position:new THREE.Vector3(0,3,0)}));
+    rig.add(Object.assign(new THREE.Mesh(new THREE.ConeGeometry(0.7,1.3,8), metalMat), {position:new THREE.Vector3(0,6.4,0)}));
+    bitPivot=new THREE.Group();
+    const bit=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,2.2,6), new THREE.MeshStandardMaterial({color:0xd9a23a, metalness:0.6, roughness:0.3}));
+    bit.position.y=1.1; bitPivot.add(bit); rig.add(bitPivot);
+    rig.position.set(19,0,-11); base.add(rig);
+
+    // refinery (Forge)
+    tankMat=new THREE.MeshStandardMaterial({color:0x9aa0a8, emissive:0xff7a18, emissiveIntensity:0.0, roughness:0.5, metalness:0.3});
+    const refinery=new THREE.Group();
+    const rbox=new THREE.Mesh(new THREE.BoxGeometry(4,2.4,3), metalMat); rbox.position.y=1.2; refinery.add(rbox);
+    const t1=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.7,3,12), tankMat); t1.position.set(2.6,1.5,-0.6); refinery.add(t1);
+    const t2=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.7,3,12), tankMat); t2.position.set(2.6,1.5,1.0); refinery.add(t2);
+    refinery.position.set(10,0,-15); base.add(refinery);
+
+    // landing pad + storage (Ledger)
+    const pad=new THREE.Mesh(new THREE.CircleGeometry(4,32), new THREE.MeshStandardMaterial({color:0x24282f, roughness:1}));
+    pad.rotation.x=-Math.PI/2; pad.position.set(-18,0.02,14); base.add(pad);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(3.2,0.16,8,32), new THREE.MeshStandardMaterial({color:0xd9a23a, emissive:0x4a3410, emissiveIntensity:0.5}));
+    ring.rotation.x=-Math.PI/2; ring.position.set(-18,0.06,14); base.add(ring);
+    const store=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,2.4,14), metalMat); store.position.set(-13,1.2,11); base.add(store);
+
+    // comms mast + beacon
+    const mast=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,7,6), metalMat); mast.position.set(2,3.5,-6); base.add(mast);
+    beacon=new THREE.Mesh(new THREE.SphereGeometry(0.26,8,8), new THREE.MeshBasicMaterial({color:0xe23a45})); beacon.position.set(2,7.2,-6); base.add(beacon);
+
+    // shuttle (shipment / supply)
+    shuttle=new THREE.Group();
+    const sb=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.95,2.4,12), new THREE.MeshStandardMaterial({color:0xcfd5dc, roughness:0.4, metalness:0.5})); sb.position.y=1.2; shuttle.add(sb);
+    const sn=new THREE.Mesh(new THREE.ConeGeometry(0.7,1.2,12), new THREE.MeshStandardMaterial({color:0xcfd5dc, roughness:0.4, metalness:0.5})); sn.position.y=3.0; shuttle.add(sn);
+    shuttleFlame=new THREE.Mesh(new THREE.ConeGeometry(0.5,1.6,12), new THREE.MeshBasicMaterial({color:0xffaa33}));
+    shuttleFlame.position.y=-0.5; shuttleFlame.rotation.x=Math.PI; shuttle.add(shuttleFlame);
+    shuttle.position.set(-18,0,14); shuttle.visible=false; scene.add(shuttle);
+
+    // crew figures at stations (order matches the crew array)
+    const stations=[[3,3],[19,-11],[10,-15],[11,7],[-17,13],[-6,5],[-7,-3]];
+    for(let i=0;i<7;i++){
+      const g=new THREE.Group();
+      const bodyMat=new THREE.MeshStandardMaterial({color:0xd8dde3, roughness:0.6});
+      const body=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.36,0.95,10), bodyMat); body.position.y=0.78; g.add(body);
+      const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,12,12), new THREE.MeshStandardMaterial({color:0x9fb6c9, roughness:0.3, metalness:0.4})); head.position.y=1.45; g.add(head);
+      const lightMat=new THREE.MeshBasicMaterial({color:0x3fb950});
+      const stat=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8), lightMat); stat.position.y=2.0; g.add(stat);
+      g.position.set(stations[i][0], 0, stations[i][1]); g.userData={lightMat:lightMat};
+      scene.add(g); crewFig.push(g);
+    }
+
+    window.addEventListener("resize", ()=>{ renderer.setSize(W(),H(),false); camera.aspect=W()/H(); camera.updateProjectionMatrix(); });
+
+    let ang=0, prev=performance.now();
+    function frame(now){
+      requestAnimationFrame(frame);
+      const dt=Math.min(0.05,(now-prev)/1000)||0; prev=now; const t=now/1000;
+      ang += dt*0.06;
+      camera.position.set(Math.cos(ang)*44, 22, Math.sin(ang)*44); camera.lookAt(0,4,0);
+      for(let i=0;i<crewFig.length;i++){
+        const rest=crew[i].rest;
+        crewFig[i].userData.lightMat.color.setHex(rest?0x7d8896:0x3fb950);
+        crewFig[i].position.y = rest?0 : Math.sin(t*2+i)*0.06;
+      }
+      panelMat.emissiveIntensity = (0.25 + 0.75*(S.power/100)) + flareFlash*0.9;
+      if(!crew[1].rest) bitPivot.rotation.y += dt*5;
+      const glow = (!crew[2].rest)?0.95:0.0;
+      tankMat.emissiveIntensity += (glow - tankMat.emissiveIntensity)*0.08;
+      beacon.material.color.setHex((Math.floor(t*1.5)%2)?0xe23a45:0x551015);
+      if(flareFlash>0){ flareFlash=Math.max(0,flareFlash-dt*0.7); sun.intensity=1.1+flareFlash*1.6; sun.color.setHex(0xffd9a0); }
+      else { sun.intensity += (1.1-sun.intensity)*0.05; sun.color.setHex(0xfff3e0); }
+      if(shuttleAnim.active){
+        shuttleAnim.t += dt/3.2; const tt=shuttleAnim.t; shuttle.visible=true; shuttleFlame.visible=true;
+        if(shuttleAnim.mode==="launch"){ shuttle.position.y = tt*tt*70; }
+        else { shuttle.position.y = 70*(1-tt)*(1-tt); }
+        if(tt>=1){ shuttleAnim.active=false; shuttle.visible=false; }
+      }
+      renderer.render(scene,camera);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  try { init3D(); }
+  catch(e){ document.getElementById("c3d").style.display="none"; document.getElementById("fallback").style.display="flex"; }
 </script>
 </body>
 </html>
