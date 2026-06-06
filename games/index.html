@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Games · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style>
+  .game-wrap { margin-top:30px; display:flex; flex-direction:column; align-items:center; }
+  .scoreline { display:flex; align-items:center; gap:18px; margin-bottom:12px; font-size:14px; color:var(--muted); }
+  #score { color:var(--text); font-weight:600; }
+  canvas { background:#0a0e14; border:1px solid var(--line); border-radius:12px; width:100%; max-width:360px; height:auto; touch-action:none; }
+  .over { display:none; margin-top:12px; color:var(--beat); font-size:14px; font-weight:600; }
+  .pad { margin-top:16px; display:grid; grid-template-columns:repeat(3,56px); grid-template-rows:repeat(2,56px); gap:8px; justify-content:center; }
+  .pad button { border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:10px; font-size:18px; cursor:pointer; }
+  .pad button:active { background:#1c2530; }
+  .pad .u { grid-column:2; grid-row:1; } .pad .l { grid-column:1; grid-row:2; }
+  .pad .d { grid-column:2; grid-row:2; } .pad .r { grid-column:3; grid-row:2; }
+  .restart { margin-top:14px; }
+  .restart button { background:var(--text); color:#0a0e14; border-color:var(--text); font-weight:600; border-radius:10px; border:1px solid var(--text); padding:9px 18px; cursor:pointer; }
+  .demo-note { margin-top:30px; }
+  .demo-note .panel { margin-top:0; }
+</style>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/">&larr; All sections</a>
+    <header class="hero">
+      <h1>Games</h1>
+      <p class="sub">Small games, hosted right here in the page. Here&rsquo;s one running now &mdash; proof that this section can carry a real, playable thing, not just a description of one.</p>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
+    </header>
+
+    <div class="game-wrap">
+      <div class="scoreline"><span id="score">Score 0</span><span>Snake &mdash; arrows, WASD, or the pad</span></div>
+      <canvas id="game" width="360" height="360"></canvas>
+      <div class="over" id="over">Game over</div>
+      <div class="pad">
+        <button class="u" id="up" aria-label="up">&uarr;</button>
+        <button class="l" id="left" aria-label="left">&larr;</button>
+        <button class="d" id="down" aria-label="down">&darr;</button>
+        <button class="r" id="right" aria-label="right">&rarr;</button>
+      </div>
+      <div class="restart"><button id="restart">Restart</button></div>
+    </div>
+
+    <div class="demo-note">
+      <div class="panel">
+        <p>This is a placeholder game to show the capability.</p>
+        <p class="muted">Your own game drops into this page in its place. When you&rsquo;re ready, hand me the game and I&rsquo;ll host it here.</p>
+      </div>
+    </div>
+    <footer><a href="/">heartbeatobservatory.com</a></footer>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+  const authlink=document.getElementById("authlink");
+  const dot=document.getElementById("dot"); const statusText=document.getElementById("statusText");
+  (async()=>{ try{ const { data:{ session } }=await supabase.auth.getSession(); if(session) authlink.textContent="Account"; }catch(e){} })();
+  (async()=>{ try{
+    const { data }=await supabase.from("surfaces").select("status").eq("key","games").maybeSingle();
+    const st=data?data.status:"coming_soon";
+    dot.className="dot"+(st==="live"?" live":"");
+    statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
+  }catch(e){ statusText.textContent=""; } })();
+
+  const canvas=document.getElementById("game"), ctx=canvas.getContext("2d");
+  const N=20, CELL=canvas.width/N;
+  let snake, dir, nextDir, food, score, loop, over;
+  function placeFood(){ while(true){ const f={x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)}; if(!snake.some(s=>s.x===f.x&&s.y===f.y)){ food=f; return; } } }
+  function reset(){ snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; dir={x:1,y:0}; nextDir=dir; score=0; over=false;
+    document.getElementById("score").textContent="Score 0"; document.getElementById("over").style.display="none";
+    placeFood(); if(loop) clearInterval(loop); loop=setInterval(tick,110); draw(); }
+  function tick(){ dir=nextDir; const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+    if(head.x<0||head.y<0||head.x>=N||head.y>=N||snake.some(s=>s.x===head.x&&s.y===head.y)){ end(); return; }
+    snake.unshift(head);
+    if(head.x===food.x&&head.y===food.y){ score++; document.getElementById("score").textContent="Score "+score; placeFood(); }
+    else { snake.pop(); }
+    draw(); }
+  function draw(){ ctx.fillStyle="#0a0e14"; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#e23a45"; ctx.fillRect(food.x*CELL+1,food.y*CELL+1,CELL-2,CELL-2);
+    snake.forEach((s,i)=>{ ctx.fillStyle = i===0 ? "#56d364" : "#3fb950"; ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2); }); }
+  function end(){ over=true; clearInterval(loop); document.getElementById("over").style.display="block"; }
+  function setDir(x,y){ if(over) return; if(x===-dir.x&&y===-dir.y) return; nextDir={x,y}; }
+  addEventListener("keydown",e=>{ const k=e.key;
+    if(k==="ArrowUp"||k==="w"){ setDir(0,-1); e.preventDefault(); }
+    else if(k==="ArrowDown"||k==="s"){ setDir(0,1); e.preventDefault(); }
+    else if(k==="ArrowLeft"||k==="a"){ setDir(-1,0); e.preventDefault(); }
+    else if(k==="ArrowRight"||k==="d"){ setDir(1,0); e.preventDefault(); } });
+  document.getElementById("up").onclick=()=>setDir(0,-1);
+  document.getElementById("down").onclick=()=>setDir(0,1);
+  document.getElementById("left").onclick=()=>setDir(-1,0);
+  document.getElementById("right").onclick=()=>setDir(1,0);
+  document.getElementById("restart").onclick=reset;
+  reset();
+</script>
+</body>
+</html>

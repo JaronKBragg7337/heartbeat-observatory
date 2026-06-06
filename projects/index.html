@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Projects · Heartbeat Observatory</title>
 <link rel="stylesheet" href="/section.css" />
+<style>
+  .proj { margin-top:34px; border:1px solid var(--line); background:var(--panel); border-radius:14px; padding:24px; text-align:left; }
+  .proj h2 { font-size:20px; font-weight:600; }
+  .proj .tag { display:inline-block; margin-top:6px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ok); border:1px solid rgba(63,185,80,0.5); border-radius:999px; padding:3px 10px; }
+  .proj p { line-height:1.7; font-size:15px; margin-top:14px; color:#c9d3de; }
+  .proj h3 { font-size:13px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-top:24px; margin-bottom:8px; }
+  .proj ul { margin:0 0 0 18px; }
+  .proj li { line-height:1.7; font-size:14px; color:#c9d3de; margin-bottom:4px; }
+  .proj a.btn { display:inline-block; margin-top:16px; background:var(--text); color:#0a0e14; font-weight:600;
+    text-decoration:none; border-radius:10px; padding:10px 18px; font-size:14px; }
+  .proj code { background:#0a0e14; border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:13px; color:#e6edf3; }
+  .placeholder { color:var(--amber); }
+  .muted-line { color:var(--muted); font-size:13px; }
+</style>
 </head>
 <body>
   <nav class="topnav">
@@ -15,28 +30,61 @@
     <a class="back" href="/">&larr; All sections</a>
     <header class="hero">
       <h1>Projects</h1>
-      <p class="sub">A place to host work openly, like a project shelf anyone can read.</p>
+      <p class="sub">Work hosted in the open. The first project here is this site itself &mdash; every file of it, free to read and rebuild.</p>
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
     </header>
-    <div class="panel">
-      <p>This section isn&rsquo;t open yet.</p>
-      <p class="muted">When it opens, open-source projects, hosted in the open will live here &mdash; on its own page, kept separate from every other section.</p>
+
+    <div class="proj">
+      <h2>Heartbeat Observatory</h2>
+      <div class="tag">Open source</div>
+      <p>This is the website you are on, opened up completely. It is a public viewing layer, a place for people to
+      post and talk, a games page, and a private cockpit for steering it &mdash; built on a small, plain stack with
+      no hidden parts.</p>
+
+      <h3>What it is built from</h3>
+      <ul>
+        <li>The pages and code are plain HTML and JavaScript, served by Vercel.</li>
+        <li>The data &mdash; accounts, posts, and section states &mdash; lives in Supabase, reached straight from the page.</li>
+        <li>The domain is registered at Cloudflare.</li>
+        <li>No frameworks, no build step, no third parties sitting in between.</li>
+      </ul>
+
+      <h3>What it cost</h3>
+      <ul>
+        <li>A Claude Max subscription, $124. It was likely more than this needed, but it was already in hand and it
+        certainly helped.</li>
+        <li>The domain at Cloudflare, under $10.</li>
+        <li>Built in a single day, and kept deliberately simple.</li>
+      </ul>
+
+      <h3>The whole thing is open</h3>
+      <p>Every file is in the public repository. Nothing secret lives in the code: the database address and the
+      public key in the pages are meant to be seen, and the database protects itself with its own rules rather than
+      by hiding those values.</p>
+
+      <h3>If you rebuild it yourself</h3>
+      <p>There is exactly one private value, and it is never stored in the site: the token used to publish changes to
+      the code. Where that token would go, you put your own. In the setup notes it reads:</p>
+      <p class="placeholder">GitHub access token: <code>(paste your own GitHub token here)</code></p>
+      <p class="muted-line">That is the only blank to fill. Everything else in the repository works as-is.</p>
+
+      <a class="btn" href="https://github.com/JaronKBragg7337/heartbeat-observatory" target="_blank" rel="noopener">Read every file on GitHub &rarr;</a>
     </div>
     <footer><a href="/">heartbeatobservatory.com</a></footer>
   </div>
+
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
   const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
-  const authlink = document.getElementById("authlink");
-  const dot = document.getElementById("dot");
-  const statusText = document.getElementById("statusText");
+  const authlink=document.getElementById("authlink");
+  const dot=document.getElementById("dot"); const statusText=document.getElementById("statusText");
   (async()=>{ try{ const { data:{ session } }=await supabase.auth.getSession(); if(session) authlink.textContent="Account"; }catch(e){} })();
   (async()=>{ try{
     const { data }=await supabase.from("surfaces").select("status").eq("key","host").maybeSingle();
-    const st = data ? data.status : "coming_soon";
+    const st=data?data.status:"coming_soon";
     dot.className="dot"+(st==="live"?" live":"");
     statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
-  }catch(e){ statusText.textContent="Coming soon"; } })();
+  }catch(e){ statusText.textContent=""; } })();
 </script>
 </body>
 </html>

@@ -62,6 +62,11 @@
   .del:hover { color:var(--beat); }
   .toggle-line { margin-top:16px; font-size:13px; }
   .toggle-line a { cursor:pointer; }
+  .namebar { font-size:13px; color:var(--muted); margin-bottom:16px; }
+  .namebar .nm { color:var(--text); font-weight:600; }
+  .namebar a { cursor:pointer; }
+  .namebar input { width:auto; display:inline-block; padding:7px 10px; font-size:14px; }
+  .namebar .send { padding:7px 12px; margin-left:4px; }
 </style>
 </head>
 <body>
@@ -245,15 +250,44 @@
     if(!error) reloadFn();
   }
 
+  async function loadMyName(session){
+    try{
+      const { data } = await supabase.from("people").select("display_name,handle").eq("auth_user_id", session.user.id).maybeSingle();
+      if(!data) return "";
+      return (data.display_name && data.display_name.trim()) ? data.display_name : data.handle;
+    }catch(e){ return ""; }
+  }
+  async function setNameBar(session, reloadFn){
+    const bar=document.getElementById("namebar"); if(!bar) return;
+    const cur=await loadMyName(session);
+    bar.innerHTML='Posting as <span class="nm" id="curname"></span> <a id="editname">change</a>';
+    document.getElementById("curname").textContent=cur;
+    document.getElementById("editname").onclick=()=>{
+      bar.innerHTML='<input id="nameinput" type="text" maxlength="60" /> <button class="send" id="savename">Save</button> <a id="cancelname">cancel</a><div class="msg" id="nmsg"></div>';
+      const inp=document.getElementById("nameinput"); inp.value=cur; inp.focus();
+      document.getElementById("cancelname").onclick=()=>setNameBar(session, reloadFn);
+      document.getElementById("savename").onclick=async()=>{
+        const newname=inp.value.trim(); const nmsg=document.getElementById("nmsg");
+        if(!newname){ nmsg.className="msg err"; nmsg.textContent="Name can\u2019t be empty."; return; }
+        document.getElementById("savename").disabled=true; nmsg.className="msg"; nmsg.textContent="Saving\u2026";
+        const { error }=await supabase.rpc("rename_me",{ newname });
+        if(error){ nmsg.className="msg err"; nmsg.textContent="Refused: "+error.message; document.getElementById("savename").disabled=false; return; }
+        await setNameBar(session, reloadFn); reloadFn();
+      };
+    };
+  }
+
   /* ---------- Contributor area ---------- */
   async function renderUser(session) {
     root.innerHTML =
       topbar("You\u2019re in", session.user.email, false) +
+      '<div class="namebar" id="namebar"></div>' +
       '<div class="card">' + composeHtml() + '</div>' +
       '<h2 class="section">Your posts</h2>' +
       '<div class="card" id="myposts"><div class="hint">Loading\u2026</div></div>' +
       backlinks;
     wireSignout();
+    setNameBar(session, () => loadMyPosts(session));
     wireCompose(() => loadMyPosts(session));
     loadMyPosts(session);
   }
@@ -273,6 +307,7 @@
     surfaces = data;
     root.innerHTML =
       topbar("Steering", session.user.email, true) +
+      '<div class="namebar" id="namebar"></div>' +
       '<div class="card">' + composeHtml() + '</div>' +
       '<h2 class="section">Sections</h2>' +
       '<div class="card" id="list"></div>' +
@@ -281,6 +316,7 @@
       '<div class="card" id="allposts"><div class="hint">Loading\u2026</div></div>' +
       '<div class="links">Changes are live immediately. <a href="/" target="_blank" rel="noopener">Open the public site \u2197</a></div>';
     wireSignout();
+    setNameBar(session, () => loadAllPosts());
     wireCompose(() => loadAllPosts());
     renderList();
     loadAllPosts();
