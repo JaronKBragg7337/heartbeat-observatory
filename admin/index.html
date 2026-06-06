@@ -181,6 +181,10 @@
           '<input id="password2" type="password" autocomplete="new-password" placeholder="Type it again" />' +
           '<button type="button" class="pwtoggle" id="pwtoggle2">Show</button>' +
         '</div>' +
+        '<label for="agree" style="display:flex;align-items:flex-start;gap:9px;margin:18px 0 0;color:var(--muted);cursor:pointer;line-height:1.5;font-size:13px;">' +
+          '<input id="agree" type="checkbox" style="width:auto;margin:2px 0 0;flex:none;"' + (prefill && prefill.agree ? ' checked' : '') + ' />' +
+          '<span>I agree to the <a href="/standards" target="_blank" rel="noopener" style="color:var(--text);">Standards &amp; Terms</a> \u2014 no weapons, lawful use, work others can reproduce, and never charging for food, water, or shelter.</span>' +
+        '</label>' +
         '<button class="primary" id="signup">Create account</button>' +
         '<div class="msg ' + (error ? 'err' : '') + '" id="msg">' + (error ? esc(error) : '') + '</div>' +
       '</div>' +
@@ -198,11 +202,13 @@
     const email = document.getElementById("email").value.trim();
     const pw = document.getElementById("password").value;
     const pw2 = document.getElementById("password2").value;
-    const fail = (m) => renderSignup(m, { name, email });
+    const agree = document.getElementById("agree").checked;
+    const fail = (m) => renderSignup(m, { name, email, agree });
     if (!name) return fail("Please choose a display name.");
     if (!email) return fail("Please enter your email.");
     if (pw.length < 6) return fail("Use at least 6 characters for your password.");
     if (pw !== pw2) return fail("The two passwords don\u2019t match \u2014 check with Show.");
+    if (!agree) return fail("Please agree to the Standards & Terms to create an account.");
     const btn = document.getElementById("signup"); btn.disabled = true;
     const msg = document.getElementById("msg"); msg.className = "msg"; msg.textContent = "Creating your account\u2026";
     const { data, error } = await supabase.auth.signUp({ email, password: pw, options: { data: { display_name: name } } });
