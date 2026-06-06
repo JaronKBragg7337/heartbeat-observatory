@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Heartbeat Observatory</title>
+<style>
+  :root {
+    --bg: #070a0f; --panel: #0e131b; --line: #1c2530; --text: #e6edf3;
+    --muted: #7d8896; --beat: #e23a45; --ok: #3fb950; --amber: #d9a23a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 20px; }
+  .wrap { width: 100%; max-width: 720px; }
+  header { text-align: center; }
+  .mark { display: inline-flex; align-items: center; gap: 10px; font-size: 13px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+  .pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--beat);
+    animation: beat 1.6s infinite; }
+  @keyframes beat { 0% { box-shadow: 0 0 0 0 rgba(226,58,69,0.55);} 70% { box-shadow: 0 0 0 12px rgba(226,58,69,0);} 100% { box-shadow: 0 0 0 0 rgba(226,58,69,0);} }
+  h1 { font-size: 34px; font-weight: 600; margin: 18px 0 10px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 540px; margin: 0 auto; }
+  .status { display: inline-flex; align-items: center; gap: 8px; margin: 28px auto 0;
+    padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px;
+    color: var(--muted); background: var(--panel); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.live { background: var(--ok); } .dot.err { background: var(--beat); }
+  .grid { margin-top: 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+  .card { border: 1px solid var(--line); background: var(--panel); border-radius: 14px;
+    padding: 20px; min-height: 96px; display: flex; flex-direction: column; justify-content: space-between; }
+  .card.is-live { border-color: rgba(63,185,80,0.4); }
+  .card h2 { font-size: 18px; font-weight: 600; }
+  .pill { align-self: flex-start; margin-top: 14px; font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; border-radius: 999px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px; }
+  .pill.coming { color: var(--muted); border: 1px solid var(--line); }
+  .pill.preview { color: var(--amber); border: 1px solid rgba(217,162,58,0.4); }
+  .pill.live { color: var(--ok); border: 1px solid rgba(63,185,80,0.5); }
+  .pill.live .ld { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+  footer { margin-top: 40px; text-align: center; color: var(--muted); font-size: 12px; line-height: 1.7; }
+  .skeleton { color: var(--muted); text-align: center; padding: 30px 0; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="mark"><span class="pulse"></span> Heartbeat Observatory</div>
+      <h1>The signal is being wired.</h1>
+      <p class="sub">A place to watch live systems, host work openly, and share what actually
+      works. What you see below is read live from the database, the instant it changes.</p>
+      <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting&hellip;</span></div>
+    </header>
+
+    <div class="grid" id="grid"><div class="skeleton">Loading sections&hellip;</div></div>
+
+    <footer>
+      Served from Vercel &middot; data from Supabase &middot; no third parties in between.<br />
+      heartbeatobservatory.com
+    </footer>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
+
+  const dot = document.getElementById("dot");
+  const statusText = document.getElementById("statusText");
+  const grid = document.getElementById("grid");
+
+  function pill(status) {
+    if (status === "live") return '<span class="pill live"><span class="ld"></span>Live</span>';
+    if (status === "preview") return '<span class="pill preview">Preview</span>';
+    return '<span class="pill coming">Coming soon</span>';
+  }
+
+  async function load() {
+    try {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+      const { data, error } = await supabase
+        .from("surfaces").select("key,name,status,position").order("position", { ascending: true });
+      if (error) throw error;
+      dot.classList.add("live");
+      statusText.textContent = "Connected \u00b7 live from your database";
+      grid.innerHTML = "";
+      for (const s of data) {
+        const card = document.createElement("div");
+        card.className = "card" + (s.status === "live" ? " is-live" : "");
+        card.innerHTML = '<h2>' + s.name + '</h2>' + pill(s.status);
+        grid.appendChild(card);
+      }
+    } catch (e) {
+      dot.classList.add("err");
+      statusText.textContent = "Could not reach the database";
+      grid.innerHTML = '<div class="skeleton">' + (e && e.message ? e.message : "Unknown error") + '</div>';
+    }
+  }
+  load();
+</script>
+</body>
+</html>
