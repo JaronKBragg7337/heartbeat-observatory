@@ -42,6 +42,11 @@
   .links { margin-top:22px; font-size:13px; }
   a { color:#7aa2d6; text-decoration:none; } a:hover { text-decoration:underline; }
   .hint { color:var(--muted); font-size:12px; margin-top:6px; }
+  .pwwrap { position:relative; }
+  .pwwrap input { padding-right:70px; }
+  .pwtoggle { position:absolute; top:50%; right:6px; transform:translateY(-50%);
+    background:transparent; border:none; color:var(--muted); font-size:12px; padding:6px 10px; border-radius:8px; width:auto; }
+  .pwtoggle:hover { color:var(--text); background:#141b24; }
 </style>
 </head>
 <body>
@@ -70,7 +75,10 @@
         '<label for="email">Email</label>' +
         '<input id="email" type="email" autocomplete="username" placeholder="you@example.com" />' +
         '<label for="password">Password</label>' +
-        '<input id="password" type="password" autocomplete="current-password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" />' +
+        '<div class="pwwrap">' +
+          '<input id="password" type="password" autocomplete="current-password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" />' +
+          '<button type="button" class="pwtoggle" id="pwtoggle">Show</button>' +
+        '</div>' +
         '<button class="primary" id="signin">Sign in</button>' +
         '<div class="msg ' + (error ? 'err' : '') + '" id="msg">' + (error ? esc(error) : '') + '</div>' +
         '<p class="note">Access is invite-only while the contributor side is being built. ' +
@@ -79,6 +87,14 @@
       '<div class="links"><a href="/">\u2190 Back to the public site</a></div>';
     document.getElementById("signin").onclick = doSignIn;
     document.getElementById("password").addEventListener("keydown", e => { if (e.key === "Enter") doSignIn(); });
+    const pw = document.getElementById("password");
+    const tg = document.getElementById("pwtoggle");
+    tg.onclick = () => {
+      const show = pw.type === "password";
+      pw.type = show ? "text" : "password";
+      tg.textContent = show ? "Hide" : "Show";
+      pw.focus();
+    };
   }
 
   async function doSignIn() {
