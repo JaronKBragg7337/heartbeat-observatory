@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Engine · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style>
+  .stage { position:relative; margin-top:24px; border:1px solid var(--line); border-radius:16px; overflow:hidden;
+    background:radial-gradient(120% 90% at 50% -10%, #0d1828 0%, #060a12 60%, #04060b 100%); aspect-ratio:16/9; min-height:240px; }
+  #world { position:absolute; inset:0; width:100%; height:100%; border:0; display:none; background:#04060b; }
+  .stage-empty { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:10px; color:var(--muted); padding:24px; }
+  .stage-empty .big { color:var(--text); font-size:15px; }
+  .stage-badge { position:absolute; top:12px; left:14px; font-size:11px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--amber); border:1px solid rgba(217,162,58,0.45); background:rgba(4,6,11,0.5); border-radius:999px; padding:3px 10px; }
+  .minds { margin-top:18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); padding:18px 16px; }
+  .minds h3, .events h3 { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+  .mlist { display:grid; grid-template-columns:1fr 1fr; gap:10px 18px; }
+  @media (max-width:600px){ .mlist { grid-template-columns:1fr; } }
+  .m { display:flex; align-items:flex-start; gap:10px; font-size:13px; }
+  .m .md { width:8px; height:8px; border-radius:50%; margin-top:5px; flex:none; background:var(--muted); }
+  .m .md.idle { background:var(--muted); }
+  .m .md.exploring { background:#4a86e8; }
+  .m .md.working { background:var(--amber); animation:pulsei 1.3s infinite; }
+  .m .md.deploy_complete { background:var(--ok); }
+  .m .md.error { background:var(--beat); }
+  @keyframes pulsei { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+  .m .who { color:var(--text); font-weight:600; }
+  .m .role { color:var(--muted); font-size:11px; }
+  .m .doing { color:#c9d3de; font-size:12px; }
+  .m .st { margin-left:auto; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+  .events { margin-top:16px; border-top:1px solid var(--line); padding-top:14px; }
+  .events ul { list-style:none; display:flex; flex-direction:column; gap:7px; }
+  .events li { font-size:13px; color:#c9d3de; line-height:1.5; }
+  .events li .stamp { color:var(--muted); font-variant-numeric:tabular-nums; margin-right:8px; }
+  .explain { margin-top:20px; }
+  .explain .panel { margin-top:0; }
+</style>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/">&larr; All sections</a>
+    <header class="hero">
+      <h1>The Engine</h1>
+      <p class="sub">The brain inside the machine, shown as a place. The minds roam a living world while the work is quiet; when a change is requested, the mind doing the job walks into the workshop &mdash; and that is the work actually happening, not a picture of it.</p>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
+    </header>
+
+    <div class="stage" id="stage">
+      <span class="stage-badge">The engine &middot; live state</span>
+      <iframe id="world" title="Heartbeat world" allow="autoplay; fullscreen"></iframe>
+      <div class="stage-empty" id="stageEmpty">
+        <div class="big">The world is being built.</div>
+        <div>The 3-D world renders here once its build is in place. The signal below is already live &mdash; it is the real state the world will move to.</div>
+      </div>
+    </div>
+
+    <div class="minds">
+      <h3>Minds in the world</h3>
+      <div class="mlist" id="mlist"></div>
+    </div>
+
+    <div class="events">
+      <h3>Engine log</h3>
+      <ul id="events"></ul>
+    </div>
+
+    <div class="explain">
+      <div class="panel">
+        <p>This is the Heartbeat engine itself &mdash; not a section others build under. Each mind has a place and a role, and the world is the one window onto what the engine is doing right now.</p>
+        <p class="muted">The world only ever shows display-safe state. The real work, and any keys, live on the backend &mdash; never in this page.</p>
+      </div>
+    </div>
+    <footer><a href="/">heartbeatobservatory.com</a></footer>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+  const authlink=document.getElementById("authlink");
+  const dot=document.getElementById("dot"); const statusText=document.getElementById("statusText");
+  const mlist=document.getElementById("mlist"); const eventsEl=document.getElementById("events");
+  const worldFrame=document.getElementById("world"); const stageEmpty=document.getElementById("stageEmpty");
+
+  (async()=>{ try{ const { data:{ session } }=await supabase.auth.getSession(); if(session) authlink.textContent="Account"; }catch(e){} })();
+  (async()=>{ try{
+    const { data }=await supabase.from("surfaces").select("status").eq("key","engine").maybeSingle();
+    const st=data?data.status:"preview";
+    dot.className="dot"+(st==="live"?" live":"");
+    statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
+  }catch(e){ statusText.textContent=""; } })();
+
+  // ---- WORLD MOUNT ----
+  // When Codex's Unity WebGL build is exported to /engine/world/ , set HAS_WORLD = true.
+  // This page then shows the iframe and forwards every state change into it via postMessage.
+  // The Unity WebGL template needs a tiny relay that listens for that message and calls:
+  //   unityInstance.SendMessage("WorldEventBridge", "ReceiveAgentState", payloadString);
+  const HAS_WORLD = false; // flip to true once /engine/world/ exists
+  if (HAS_WORLD) { worldFrame.src = "/engine/world/"; worldFrame.style.display="block"; stageEmpty.style.display="none"; }
+
+  function pushToWorld(state){
+    // 1) into the Unity world if it is mounted (iframe relay or same-page instance)
+    const payload = JSON.stringify(state);
+    if (HAS_WORLD && worldFrame.contentWindow) {
+      try { worldFrame.contentWindow.postMessage({ type:"agent_state", payload }, "*"); } catch(e){}
+    }
+    if (window.unityInstance && window.unityInstance.SendMessage) {
+      try { window.unityInstance.SendMessage("WorldEventBridge","ReceiveAgentState", payload); } catch(e){}
+    }
+    // 2) the page itself always reflects state, so the loop is visible even before the world exists
+    renderMinds();
+  }
+
+  // ---- live state ----
+  let minds = {};
+  function stamp(ts){ try{ const d=new Date(ts); return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}); }catch(e){ return ""; } }
+  function esc(s){ const d=document.createElement("div"); d.textContent=(s==null?"":s); return d.innerHTML; }
+
+  function renderMinds(){
+    const rows=Object.values(minds).sort((a,b)=> (a.display_name||"").localeCompare(b.display_name||""));
+    mlist.innerHTML = rows.map(m =>
+      '<div class="m"><span class="md '+esc(m.state)+'"></span>'+
+      '<div><span class="who">'+esc(m.display_name)+'</span> <span class="role">'+esc(m.role||"")+'</span>'+
+      '<br><span class="doing">'+esc(m.label||m.location||"")+'</span></div>'+
+      '<span class="st">'+esc(m.state)+'</span></div>'
+    ).join("") || '<div class="muted">No minds yet.</div>';
+  }
+  function renderEvents(list){
+    eventsEl.innerHTML = list.map(e =>
+      '<li><span class="stamp">'+stamp(e.created_at)+'</span>'+esc(e.message||e.type)+'</li>'
+    ).join("") || '<li class="muted">Quiet for now\u2026</li>';
+  }
+
+  async function boot(){
+    try {
+      const { data:st } = await supabase.from("agent_state").select("*");
+      (st||[]).forEach(r => { minds[r.mind]=r; });
+      renderMinds();
+      const { data:ev } = await supabase.from("agent_events").select("*").order("created_at",{ascending:false}).limit(14);
+      renderEvents(ev||[]);
+    } catch(e){}
+
+    // Realtime: the world hears state the instant the backend writes it.
+    supabase.channel("engine-state")
+      .on("postgres_changes", { event:"*", schema:"public", table:"agent_state" }, (p)=>{
+        const row=p.new; if(!row||!row.mind) return;
+        minds[row.mind]=row; pushToWorld(row);
+      })
+      .on("postgres_changes", { event:"INSERT", schema:"public", table:"agent_events" }, (p)=>{
+        const li=document.createElement("li");
+        li.innerHTML='<span class="stamp">'+stamp(p.new.created_at)+'</span>'+esc(p.new.message||p.new.type);
+        eventsEl.prepend(li); while(eventsEl.children.length>14) eventsEl.removeChild(eventsEl.lastChild);
+      })
+      .subscribe();
+  }
+  boot();
+</script>
+</body>
+</html>
