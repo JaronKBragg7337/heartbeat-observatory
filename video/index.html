@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Video · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/">&larr; All sections</a>
+    <header class="hero">
+      <h1>Video</h1>
+      <p class="sub">Short-form video, uploaded and watched here.</p>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
+    </header>
+    <div class="panel">
+      <p>This section isn&rsquo;t open yet.</p>
+      <p class="muted">When it opens, short videos you upload will live here &mdash; on its own page, kept separate from every other section.</p>
+    </div>
+    <footer><a href="/">heartbeatobservatory.com</a></footer>
+  </div>
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+  const authlink = document.getElementById("authlink");
+  const dot = document.getElementById("dot");
+  const statusText = document.getElementById("statusText");
+  (async()=>{ try{ const { data:{ session } }=await supabase.auth.getSession(); if(session) authlink.textContent="Account"; }catch(e){} })();
+  (async()=>{ try{
+    const { data }=await supabase.from("surfaces").select("status").eq("key","video").maybeSingle();
+    const st = data ? data.status : "coming_soon";
+    dot.className="dot"+(st==="live"?" live":"");
+    statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
+  }catch(e){ statusText.textContent="Coming soon"; } })();
+</script>
+</body>
+</html>

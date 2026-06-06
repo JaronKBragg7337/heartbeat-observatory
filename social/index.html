@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Social · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/">&larr; All sections</a>
+    <header class="hero">
+      <h1>Social</h1>
+      <p class="sub">Open posts from anyone signed in. Read freely &mdash; signing in is only needed to add your own.</p>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
+    </header>
+    <div class="feed-head">
+      <h2>The signal so far</h2>
+      <a class="add" id="addlink" href="/admin">Sign in to add yours &rarr;</a>
+    </div>
+    <div class="feed" id="feed"><div class="skeleton">Loading the feed&hellip;</div></div>
+    <footer><a href="/">heartbeatobservatory.com</a></footer>
+  </div>
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+  const authlink = document.getElementById("authlink");
+  const dot = document.getElementById("dot");
+  const statusText = document.getElementById("statusText");
+  function esc(s){ const d=document.createElement("div"); d.textContent=(s==null?"":s); return d.innerHTML; }
+  function ago(iso){
+    const t=new Date(iso).getTime(); const s=Math.floor((Date.now()-t)/1000);
+    if(s<60) return "just now";
+    const m=Math.floor(s/60); if(m<60) return m+"m ago";
+    const h=Math.floor(m/60); if(h<24) return h+"h ago";
+    const d=Math.floor(h/24); if(d<7) return d+"d ago";
+    return new Date(iso).toLocaleDateString();
+  }
+  (async()=>{ try{ const { data:{ session } }=await supabase.auth.getSession();
+    if(session){ authlink.textContent="Account"; document.getElementById("addlink").textContent="Add yours \u2192"; }
+  }catch(e){} })();
+  (async()=>{ try{
+    const { data }=await supabase.from("surfaces").select("status").eq("key","social").maybeSingle();
+    const st = data ? data.status : "coming_soon";
+    dot.className="dot"+(st==="live"?" live":"");
+    statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
+  }catch(e){ statusText.textContent=""; } })();
+  (async()=>{
+    const feed=document.getElementById("feed");
+    try{
+      const { data, error }=await supabase.from("posts")
+        .select("id,author_handle,body,created_at").order("created_at",{ascending:false}).limit(50);
+      if(error) throw error;
+      if(!data || data.length===0){
+        feed.innerHTML='<div class="empty">Nothing has been posted yet. <a href="/admin">Sign in</a> and be the first to put something on the board.</div>';
+        return;
+      }
+      feed.innerHTML="";
+      for(const p of data){
+        const el=document.createElement("div"); el.className="post";
+        el.innerHTML='<div class="meta"><span class="who">'+esc(p.author_handle)+'</span> \u00b7 '+ago(p.created_at)+'</div>'+
+                     '<div class="body">'+esc(p.body)+'</div>';
+        feed.appendChild(el);
+      }
+    }catch(e){ feed.innerHTML='<div class="empty">Could not load the feed: '+esc(e&&e.message?e.message:"unknown")+'</div>'; }
+  })();
+</script>
+</body>
+</html>

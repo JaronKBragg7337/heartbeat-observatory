@@ -9,13 +9,12 @@
     --muted:#7d8896; --beat:#e23a45; --ok:#3fb950; --amber:#d9a23a; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    min-height:100vh; }
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height:100vh; }
   .topnav { display:flex; align-items:center; justify-content:space-between;
     padding:16px 22px; border-bottom:1px solid var(--line); position:sticky; top:0;
     background:rgba(7,10,15,0.85); backdrop-filter:blur(8px); z-index:10; }
   .brand { display:inline-flex; align-items:center; gap:9px; font-size:12px;
-    letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); }
+    letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); text-decoration:none; }
   .pulse { width:8px; height:8px; border-radius:50%; background:var(--beat); animation:beat 1.6s infinite; }
   @keyframes beat { 0%{box-shadow:0 0 0 0 rgba(226,58,69,0.55);} 70%{box-shadow:0 0 0 10px rgba(226,58,69,0);} 100%{box-shadow:0 0 0 0 rgba(226,58,69,0);} }
   .signin { font-size:13px; color:var(--text); text-decoration:none; border:1px solid var(--line);
@@ -30,12 +29,18 @@
     color:var(--muted); background:var(--panel); }
   .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
   .dot.live { background:var(--ok); } .dot.err { background:var(--beat); }
-  .grid { margin-top:36px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .lead { text-align:center; color:var(--muted); font-size:13px; margin-top:34px; letter-spacing:0.04em; }
+  .grid { margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:520px){ .grid { grid-template-columns:1fr; } }
   .card { border:1px solid var(--line); background:var(--panel); border-radius:14px;
-    padding:20px; min-height:96px; display:flex; flex-direction:column; justify-content:space-between; }
+    padding:20px; min-height:104px; display:flex; flex-direction:column; justify-content:space-between;
+    text-decoration:none; color:var(--text); cursor:pointer; transition:border-color .15s, transform .08s; }
+  .card:hover { border-color:#33414f; }
+  .card:active { transform:translateY(1px); }
   .card.is-live { border-color:rgba(63,185,80,0.4); }
+  .card.is-live:hover { border-color:rgba(63,185,80,0.7); }
   .card h2 { font-size:18px; font-weight:600; }
+  .card .go { font-size:12px; color:var(--muted); margin-top:4px; }
   .pill { align-self:flex-start; margin-top:14px; font-size:11px; letter-spacing:0.08em;
     text-transform:uppercase; border-radius:999px; padding:4px 10px; display:inline-flex; align-items:center; gap:6px; }
   .pill.coming { color:var(--muted); border:1px solid var(--line); }
@@ -44,18 +49,6 @@
   .pill.live .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); }
   footer { margin-top:42px; text-align:center; color:var(--muted); font-size:12px; line-height:1.7; }
   .skeleton { color:var(--muted); text-align:center; padding:30px 0; }
-  .feed-wrap { margin-top:46px; }
-  .feed-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-  .feed-head h2 { font-size:16px; font-weight:600; letter-spacing:0.02em; }
-  .feed-head .add { font-size:13px; color:#7aa2d6; text-decoration:none; }
-  .feed-head .add:hover { text-decoration:underline; }
-  .feed { display:flex; flex-direction:column; gap:12px; }
-  .post { border:1px solid var(--line); background:var(--panel); border-radius:12px; padding:16px 18px; }
-  .post .meta { font-size:12px; color:var(--muted); margin-bottom:7px; }
-  .post .meta .who { color:var(--text); font-weight:600; }
-  .post .body { font-size:15px; line-height:1.6; white-space:pre-wrap; word-wrap:break-word; overflow-wrap:anywhere; }
-  .empty { border:1px dashed var(--line); border-radius:12px; padding:26px; text-align:center; color:var(--muted); font-size:14px; }
-  .empty a { color:#7aa2d6; text-decoration:none; } .empty a:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -68,19 +61,12 @@
     <header class="hero">
       <h1>The signal is being wired.</h1>
       <p class="sub">A place to watch live systems, host work openly, and share what actually
-      works. What you see below is read live from the database, the instant it changes.</p>
+      works. Each section is its own space &mdash; choose one to enter.</p>
       <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting&hellip;</span></div>
     </header>
 
+    <p class="lead">Sections</p>
     <div class="grid" id="grid"><div class="skeleton">Loading sections&hellip;</div></div>
-
-    <section class="feed-wrap" id="feedwrap">
-      <div class="feed-head">
-        <h2>The signal so far</h2>
-        <a class="add" id="addlink" href="/admin">Sign in to add yours &rarr;</a>
-      </div>
-      <div class="feed" id="feed"><div class="skeleton">Loading the feed&hellip;</div></div>
-    </section>
 
     <footer>
       Served from Vercel &middot; data from Supabase &middot; no third parties in between.<br />
@@ -94,28 +80,21 @@
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
   const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+  const SLUGS = { social:"/social", video:"/video", host:"/projects", showcase:"/live-systems" };
   const dot = document.getElementById("dot");
   const statusText = document.getElementById("statusText");
   const grid = document.getElementById("grid");
   const authlink = document.getElementById("authlink");
 
+  function esc(s){ const d=document.createElement("div"); d.textContent=(s==null?"":s); return d.innerHTML; }
   function pill(status) {
     if (status === "live") return '<span class="pill live"><span class="ld"></span>Live</span>';
     if (status === "preview") return '<span class="pill preview">Preview</span>';
     return '<span class="pill coming">Coming soon</span>';
   }
-
   async function reflectSession() {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        authlink.textContent = "Account";
-        const addlink = document.getElementById("addlink");
-        if (addlink) addlink.textContent = "Add yours \u2192";
-      }
-    } catch (e) {}
+    try { const { data: { session } } = await supabase.auth.getSession(); if (session) authlink.textContent = "Account"; } catch (e) {}
   }
-
   async function load() {
     try {
       const { data, error } = await supabase
@@ -125,10 +104,11 @@
       statusText.textContent = "Connected \u00b7 live from your database";
       grid.innerHTML = "";
       for (const s of data) {
-        const card = document.createElement("div");
-        card.className = "card" + (s.status === "live" ? " is-live" : "");
-        card.innerHTML = '<h2>' + s.name + '</h2>' + pill(s.status);
-        grid.appendChild(card);
+        const a = document.createElement("a");
+        a.className = "card" + (s.status === "live" ? " is-live" : "");
+        a.href = SLUGS[s.key] || "#";
+        a.innerHTML = '<div><h2>' + esc(s.name) + '</h2><div class="go">Open \u2192</div></div>' + pill(s.status);
+        grid.appendChild(a);
       }
     } catch (e) {
       dot.classList.add("err");
@@ -136,41 +116,8 @@
       grid.innerHTML = '<div class="skeleton">' + (e && e.message ? e.message : "Unknown error") + '</div>';
     }
   }
-  function esc(s){ const d=document.createElement("div"); d.textContent=s==null?"":s; return d.innerHTML; }
-  function ago(iso){
-    const t=new Date(iso).getTime(); const s=Math.floor((Date.now()-t)/1000);
-    if(s<60) return "just now";
-    const m=Math.floor(s/60); if(m<60) return m+"m ago";
-    const h=Math.floor(m/60); if(h<24) return h+"h ago";
-    const d=Math.floor(h/24); if(d<7) return d+"d ago";
-    return new Date(iso).toLocaleDateString();
-  }
-  async function loadFeed(){
-    const feed=document.getElementById("feed");
-    try{
-      const { data, error } = await supabase
-        .from("posts").select("id,author_handle,body,created_at")
-        .order("created_at",{ascending:false}).limit(50);
-      if(error) throw error;
-      if(!data || data.length===0){
-        feed.innerHTML='<div class="empty">Nothing has been posted yet. <a href="/admin">Sign in</a> and be the first to put something on the board.</div>';
-        return;
-      }
-      feed.innerHTML="";
-      for(const p of data){
-        const el=document.createElement("div");
-        el.className="post";
-        el.innerHTML='<div class="meta"><span class="who">'+esc(p.author_handle)+'</span> \u00b7 '+ago(p.created_at)+'</div>'+
-                     '<div class="body">'+esc(p.body)+'</div>';
-        feed.appendChild(el);
-      }
-    }catch(e){
-      feed.innerHTML='<div class="empty">Could not load the feed: '+esc(e&&e.message?e.message:"unknown")+'</div>';
-    }
-  }
   reflectSession();
   load();
-  loadFeed();
 </script>
 </body>
 </html>
