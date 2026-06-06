@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cockpit · Heartbeat Observatory</title>
+<style>
+  :root { --bg:#070a0f; --panel:#0e131b; --line:#1c2530; --text:#e6edf3; --muted:#7d8896;
+    --beat:#e23a45; --ok:#3fb950; --amber:#d9a23a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:40px 20px; }
+  .wrap { width:100%; max-width:640px; }
+  .mark { display:inline-flex; align-items:center; gap:10px; font-size:13px; letter-spacing:0.18em;
+    text-transform:uppercase; color:var(--muted); }
+  .pulse { width:9px; height:9px; border-radius:50%; background:var(--beat); }
+  h1 { font-size:24px; font-weight:600; margin:14px 0 4px; }
+  .lede { color:var(--muted); font-size:14px; margin-bottom:26px; }
+  .card { border:1px solid var(--line); background:var(--panel); border-radius:14px; padding:22px; }
+  label { display:block; font-size:13px; color:var(--muted); margin:14px 0 6px; }
+  input { width:100%; padding:11px 13px; background:#0a0e14; border:1px solid var(--line);
+    border-radius:10px; color:var(--text); font-size:15px; }
+  input:focus { outline:none; border-color:#33414f; }
+  button { cursor:pointer; font-size:14px; border-radius:10px; border:1px solid var(--line);
+    background:#141b24; color:var(--text); padding:11px 16px; }
+  button.primary { background:var(--text); color:#0a0e14; border-color:var(--text); font-weight:600; width:100%; margin-top:20px; }
+  button:disabled { opacity:0.5; cursor:default; }
+  .msg { margin-top:14px; font-size:13px; min-height:18px; }
+  .msg.err { color:var(--beat); } .msg.ok { color:var(--ok); }
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .who { font-size:13px; color:var(--muted); }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:16px 0; border-bottom:1px solid var(--line); }
+  .row:last-child { border-bottom:none; }
+  .row .name { font-size:16px; font-weight:600; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .seg button { border:none; border-radius:0; padding:8px 12px; font-size:12px; background:transparent; color:var(--muted); }
+  .seg button.on { background:#1c2530; color:var(--text); }
+  .seg button.on.live { color:var(--ok); } .seg button.on.preview { color:var(--amber); }
+  .links { margin-top:22px; font-size:13px; }
+  a { color:#7aa2d6; text-decoration:none; } a:hover { text-decoration:underline; }
+  .hint { color:var(--muted); font-size:12px; margin-top:6px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="mark"><span class="pulse"></span> Cockpit</div>
+    <div id="root"></div>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  const root = document.getElementById("root");
+  const STATES = [["live","Live"],["preview","Preview"],["coming_soon","Coming soon"]];
+  let surfaces = [];
+
+  function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+
+  function renderLogin(error) {
+    root.innerHTML =
+      '<h1>Operator sign-in</h1>' +
+      '<p class="lede">This door is yours. Public visitors never see it.</p>' +
+      '<div class="card">' +
+        '<label for="email">Email</label>' +
+        '<input id="email" type="email" autocomplete="username" placeholder="you@example.com" />' +
+        '<label for="password">Password</label>' +
+        '<input id="password" type="password" autocomplete="current-password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" />' +
+        '<button class="primary" id="signin">Sign in</button>' +
+        '<div class="msg ' + (error ? 'err' : '') + '" id="msg">' + (error ? esc(error) : '') + '</div>' +
+      '</div>';
+    document.getElementById("signin").onclick = doSignIn;
+    document.getElementById("password").addEventListener("keydown", e => { if (e.key === "Enter") doSignIn(); });
+  }
+
+  async function doSignIn() {
+    const btn = document.getElementById("signin");
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const msg = document.getElementById("msg");
+    btn.disabled = true; msg.className = "msg"; msg.textContent = "Signing in\u2026";
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { renderLogin(error.message); return; }
+    boot();
+  }
+
+  async function renderCockpit(session) {
+    let isAdmin = false;
+    try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {}
+
+    const { data, error } = await supabase
+      .from("surfaces").select("id,key,name,status,position").order("position", { ascending: true });
+    if (error) { root.innerHTML = '<div class="card"><div class="msg err">'+esc(error.message)+'</div></div>'; return; }
+    surfaces = data;
+
+    root.innerHTML =
+      '<div class="topbar"><h1 style="margin:0">Steering</h1>' +
+      '<span class="who">' + esc(session.user.email) + (isAdmin ? '' : ' \u00b7 not admin') + ' \u00b7 <a href="#" id="signout">sign out</a></span></div>' +
+      (isAdmin ? '' : '<p class="lede" style="color:var(--beat)">This account is not marked admin, so changes will be refused by the database.</p>') +
+      '<div class="card" id="list"></div>' +
+      '<div class="msg ok" id="saved"></div>' +
+      '<div class="links">Changes are live immediately. <a href="/" target="_blank" rel="noopener">Open the public site \u2197</a></div>' +
+      '<p class="hint">Flip a section and refresh the public site to watch it change.</p>';
+
+    document.getElementById("signout").onclick = async (e) => { e.preventDefault(); await supabase.auth.signOut(); boot(); };
+    renderList();
+  }
+
+  function renderList() {
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+    for (const s of surfaces) {
+      const row = document.createElement("div");
+      row.className = "row";
+      let seg = '<div class="seg">';
+      for (const [val,label] of STATES) {
+        const on = s.status === val ? (" on " + val) : "";
+        seg += '<button class="' + on.trim() + '" data-id="' + s.id + '" data-val="' + val + '">' + label + '</button>';
+      }
+      seg += '</div>';
+      row.innerHTML = '<span class="name">' + esc(s.name) + '</span>' + seg;
+      list.appendChild(row);
+    }
+    list.querySelectorAll("button[data-val]").forEach(b => {
+      b.onclick = () => setStatus(b.getAttribute("data-id"), b.getAttribute("data-val"));
+    });
+  }
+
+  async function setStatus(id, value) {
+    const saved = document.getElementById("saved");
+    saved.className = "msg"; saved.textContent = "Saving\u2026";
+    const { error } = await supabase.from("surfaces").update({ status: value }).eq("id", id);
+    if (error) { saved.className = "msg err"; saved.textContent = "Refused: " + error.message; return; }
+    const s = surfaces.find(x => x.id === id); if (s) s.status = value;
+    renderList();
+    const name = s ? s.name : "Section";
+    saved.className = "msg ok"; saved.textContent = name + " set to " + value.replace("_"," ") + " \u2713";
+  }
+
+  async function boot() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) renderCockpit(session); else renderLogin(null);
+  }
+  boot();
+</script>
+</body>
+</html>
