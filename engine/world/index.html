@@ -118,8 +118,14 @@
       document.querySelector("#unity-loading-bar").style.display = "block";
 
       window.addEventListener("message", function (e) {
+        function heartbeatPayload(payload) {
+          return typeof payload === "string" ? payload : JSON.stringify(payload || {});
+        }
         if (e.data && e.data.type === "agent_state" && window.unityInstance) {
-          window.unityInstance.SendMessage("WorldEventBridge", "ReceiveAgentState", e.data.payload);
+          window.unityInstance.SendMessage("WorldEventBridge", "ReceiveAgentState", heartbeatPayload(e.data.payload));
+        }
+        if (e.data && e.data.type === "world_character" && window.unityInstance) {
+          window.unityInstance.SendMessage("WorldEventBridge", "ReceiveWorldCharacter", heartbeatPayload(e.data.payload));
         }
       });
 
