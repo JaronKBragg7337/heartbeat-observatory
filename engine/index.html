@@ -100,7 +100,7 @@
   // This page then shows the iframe and forwards every state change into it via postMessage.
   // The Unity WebGL template needs a tiny relay that listens for that message and calls:
   //   unityInstance.SendMessage("WorldEventBridge", "ReceiveAgentState", payloadString);
-  const HAS_WORLD = false; // flip to true once /engine/world/ exists
+  const HAS_WORLD = true; // flip to true once /engine/world/ exists
   if (HAS_WORLD) { worldFrame.src = "/engine/world/"; worldFrame.style.display="block"; stageEmpty.style.display="none"; }
 
   function pushToWorld(state){
