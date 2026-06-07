@@ -145,6 +145,11 @@
   .status-row .v.live .sd{background:var(--green);box-shadow:0 0 6px var(--green);}
   .status-row .v.live{color:var(--green);}
   .ev{padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);line-height:1.5;}
+  .news-item{display:block;padding:9px 0;border-bottom:1px solid var(--border);}
+  .news-item:last-child{border-bottom:0;}
+  .news-item .nt{font-size:13px;color:var(--text);line-height:1.4;}
+  .news-item a.nt:hover{color:var(--green);}
+  .news-item .ns{font-size:11px;color:var(--text3);margin-top:3px;}
   .ev:last-child{border-bottom:0;}
   .ev .t{color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums;}
 
@@ -259,7 +264,7 @@
     <aside class="col right-col">
       <div class="panel">
         <div class="panel-head">Live Signal &mdash; News <span class="live" id="newsLive"><span class="ld"></span></span></div>
-        <div class="panel-body"><div class="panel-empty">A live news feed is coming online here. Until it is wired to a real source, this stays empty rather than showing anything invented.</div></div>
+        <div class="panel-body" id="newsBody"><div class="panel-empty">A live news feed is coming online here. Until it is wired to a real source, this stays empty rather than showing anything invented.</div></div>
       </div>
       <div class="panel">
         <div class="panel-head">Trending in the Observatory</div>
@@ -444,6 +449,23 @@
     }catch(e){ body.innerHTML='<div class="panel-empty">Status unavailable right now.</div>'; }
   }
 
+  async function loadNews(){
+    const body=document.getElementById("newsBody"), dot=document.getElementById("newsLive");
+    try{
+      const r=await fetch("/api/news"); const d=await r.json();
+      const items=(d&&d.items)||[];
+      if(items.length){
+        body.innerHTML=items.map(it=>{
+          const t=esc(it.title||""); const s=esc(it.source||"");
+          const inner='<div class="nt">'+t+'</div>'+(s?'<div class="ns">'+s+'</div>':"");
+          return it.url ? '<a class="news-item" href="'+esc(it.url)+'" target="_blank" rel="noopener">'+inner+'</a>'
+                        : '<div class="news-item">'+inner+'</div>';
+        }).join("");
+        if(dot) dot.classList.add("on");
+      }
+    }catch(e){ /* keep honest placeholder on failure */ }
+  }
+
   // ---- render feed by tab ----
   function postHTML(p){
     const person=peopleById[p.author_id];
@@ -520,7 +542,7 @@
   (async()=>{
     await initAuth();
     await loadPeople();
-    await Promise.all([loadPosts(), loadEngineEvents(), loadStatus()]);
+    await Promise.all([loadPosts(), loadEngineEvents(), loadStatus(), loadNews()]);
     renderProfile();
     subscribe();
   })();
