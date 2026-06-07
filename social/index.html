@@ -151,15 +151,24 @@
   .footer-note{max-width:1280px;margin:0 auto;padding:16px 20px 40px;color:var(--text3);font-size:12px;text-align:center;}
   .footer-note a{color:var(--text2);}
 
+  .editbtn{background:var(--surface3);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .editbtn:hover{border-color:var(--green);color:var(--green);}
+
+  /* mobile bottom tabs */
+  .mtabs{display:none;}
   @media (max-width:1080px){
-    .layout{grid-template-columns:1fr 300px;}
-    .left-col{display:none;}
-  }
-  @media (max-width:760px){
-    .layout{grid-template-columns:1fr;}
-    .right-col{display:none;}
+    .layout{grid-template-columns:1fr;padding-bottom:64px;}
+    .left-col,.center-col,.right-col{position:static;height:auto;overflow:visible;border:0;}
+    .left-col,.right-col{display:none;}
+    body[data-mtab="profile"] .left-col{display:flex;}
+    body[data-mtab="profile"] .center-col{display:none;}
+    body[data-mtab="observatory"] .right-col{display:flex;}
+    body[data-mtab="observatory"] .center-col{display:none;}
     .nav-tabs{display:none;}
     .nav-search{max-width:none;}
+    .mtabs{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(10,10,11,0.96);backdrop-filter:blur(16px);border-top:1px solid var(--border);}
+    .mtabs button{flex:1;background:none;border:0;color:var(--text3);font-size:12px;font-weight:600;padding:13px 0;cursor:pointer;font-family:inherit;letter-spacing:.02em;}
+    .mtabs button.active{color:var(--green);}
   }
 </style>
 </head>
@@ -196,8 +205,6 @@
           <div id="pfBadge"></div>
           <div class="profile-stats">
             <div class="stat"><span class="stat-num" id="pfPosts">0</span><span class="stat-label">Posts</span></div>
-            <div class="stat"><span class="stat-num">&mdash;</span><span class="stat-label">Following</span></div>
-            <div class="stat"><span class="stat-num">&mdash;</span><span class="stat-label">Followers</span></div>
           </div>
           <div class="profile-edit" id="pfEditWrap"></div>
         </div>
@@ -270,6 +277,12 @@
   </div>
   <div class="footer-note"><a href="/">heartbeatobservatory.com</a> &middot; The signal so far is real. Empty spaces are honest, not broken.</div>
 
+  <nav class="mtabs" id="mtabs">
+    <button data-mtab="feed" class="active" type="button">Feed</button>
+    <button data-mtab="profile" type="button">Profile</button>
+    <button data-mtab="observatory" type="button">Observatory</button>
+  </nav>
+
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
   const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
@@ -312,8 +325,7 @@
       $("pfHandle").textContent="@"+(me.handle||"");
       $("pfBio").textContent=me.bio||"";
       $("pfBadge").innerHTML=me.is_admin?'<span class="profile-badge">&#9670; Observatory Admin</span>':"";
-      $("pfEditWrap").innerHTML='<button class="linklike" id="pfEditBtn">Edit name & bio</button>';
-      $("pfEditBtn").addEventListener("click",openEdit);
+      $("pfEditWrap").innerHTML='<button class="editbtn" data-act="editProfile">Edit profile</button>';
     } else {
       $("pfAvatar").textContent="\u00b7";
       $("pfName").textContent="You are not signed in";
@@ -326,24 +338,34 @@
   }
 
   function openEdit(){
+    if(!me) return;
     $("pfEditWrap").innerHTML=
       '<input class="pf-field" id="edName" maxlength="40" placeholder="Display name" />'+
       '<textarea class="pf-field" id="edBio" rows="2" maxlength="160" placeholder="Short bio"></textarea>'+
-      '<button class="pf-save" id="edSave">Save</button> '+
-      '<button class="linklike" id="edCancel" style="margin-left:8px">Cancel</button>';
+      '<div style="margin-top:8px"><button class="pf-save" data-act="saveProfile">Save</button>'+
+      '<button class="linklike" data-act="cancelEdit" style="margin-left:10px">Cancel</button></div>';
     $("edName").value=me.display_name||"";
     $("edBio").value=me.bio||"";
-    $("edCancel").addEventListener("click",renderProfile);
-    $("edSave").addEventListener("click",async()=>{
-      const dn=$("edName").value.trim(), bio=$("edBio").value.trim();
-      $("edSave").disabled=true; $("edSave").textContent="Saving\u2026";
-      try{
-        const { error }=await supabase.from("people").update({ display_name:dn||me.display_name, bio:bio }).eq("auth_user_id",session.user.id);
-        if(!error){ me.display_name=dn||me.display_name; me.bio=bio; }
-      }catch(e){}
-      renderProfile(); renderFeed();
-    });
   }
+  async function saveProfile(){
+    const nameEl=$("edName"); if(!nameEl||!me) return;
+    const dn=nameEl.value.trim(), bio=$("edBio").value.trim();
+    const btn=document.querySelector('[data-act="saveProfile"]');
+    if(btn){ btn.disabled=true; btn.textContent="Saving\u2026"; }
+    try{
+      const { error }=await supabase.from("people").update({ display_name:dn||me.display_name, bio:bio }).eq("auth_user_id",session.user.id);
+      if(!error){ me.display_name=dn||me.display_name; me.bio=bio; }
+    }catch(e){}
+    renderProfile(); renderFeed();
+  }
+  // one delegated handler so re-renders never orphan profile buttons
+  document.addEventListener("click",(e)=>{
+    const t=e.target; if(!t||!t.getAttribute) return;
+    const act=t.getAttribute("data-act"); if(!act) return;
+    if(act==="editProfile") openEdit();
+    else if(act==="saveProfile") saveProfile();
+    else if(act==="cancelEdit") renderProfile();
+  });
 
   function refreshCounts(){
     if(me){ const n=allPosts.filter(p=>p.author_id===session?.user?.id).length; $("pfPosts").textContent=n; }
@@ -467,10 +489,19 @@
   // search
   $("search").addEventListener("input",e=>{ searchTerm=e.target.value.trim();
     if(curTab!=="foryou"){ curTab="foryou"; document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab==="foryou")); }
-    renderFeed();
+    setMtab("feed"); renderFeed();
   });
-  // ask keava / keava nav -> focus honest widget
-  function toKeava(){ const w=$("keavaWidget"); if(w) w.scrollIntoView({behavior:"smooth",block:"center"}); }
+
+  // mobile bottom tabs
+  function setMtab(t){ document.body.dataset.mtab=t;
+    document.querySelectorAll(".mtabs button").forEach(b=>b.classList.toggle("active",b.dataset.mtab===t));
+    window.scrollTo(0,0);
+  }
+  document.querySelectorAll(".mtabs button").forEach(b=>b.addEventListener("click",()=>setMtab(b.dataset.mtab)));
+  document.body.dataset.mtab="feed";
+
+  // ask keava / keava nav -> open the Profile tab (where the widget lives) and focus it
+  function toKeava(){ setMtab("profile"); const w=$("keavaWidget"); if(w) w.scrollIntoView({behavior:"smooth",block:"center"}); }
   $("askkeava").addEventListener("click",toKeava);
   $("navKeava").addEventListener("click",toKeava);
 
