@@ -124,8 +124,15 @@
   // ---- WORLD MOUNT ----
   // Unity WebGL build lives at /engine/world/. The page forwards state into it.
   // The WebGL template relays postMessage -> unityInstance.SendMessage(...).
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "");
   const HAS_WORLD = true;
-  if (HAS_WORLD) { worldFrame.src = "/engine/world/"; worldFrame.style.display="block"; stageEmpty.style.display="none"; }
+  if (HAS_WORLD && !isMobile) {
+    worldFrame.src = "/engine/world/"; worldFrame.style.display="block"; stageEmpty.style.display="none";
+  } else if (isMobile) {
+    stageEmpty.innerHTML = '<div class="big">The 3-D world runs on desktop for now.</div>'
+      + '<div>It is too large to load in a phone browser yet &mdash; a phone- and headset-friendly version is on the way. Everything below is the world&rsquo;s real, live state, and it is accurate whether or not the 3-D view is showing.</div>';
+    stageEmpty.style.display = "flex";
+  }
 
   function toWorld(type, obj){
     const payload = JSON.stringify(obj);
