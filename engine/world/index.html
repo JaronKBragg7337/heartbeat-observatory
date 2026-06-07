@@ -121,11 +121,36 @@
         function heartbeatPayload(payload) {
           return typeof payload === "string" ? payload : JSON.stringify(payload || {});
         }
+        function heartbeatFocus() {
+          if (canvas) {
+            canvas.tabIndex = 1;
+            canvas.focus({ preventScroll: true });
+          }
+        }
         if (e.data && e.data.type === "agent_state" && window.unityInstance) {
           window.unityInstance.SendMessage("WorldEventBridge", "ReceiveAgentState", heartbeatPayload(e.data.payload));
         }
         if (e.data && e.data.type === "world_character" && window.unityInstance) {
           window.unityInstance.SendMessage("WorldEventBridge", "ReceiveWorldCharacter", heartbeatPayload(e.data.payload));
+        }
+        if (e.data && e.data.type === "world_layout" && window.unityInstance) {
+          window.unityInstance.SendMessage("WorldEventBridge", "ReceiveWorldLayout", heartbeatPayload(e.data.payload));
+        }
+        if (e.data && (e.data.type === "player_control" || e.data.type === "enter_world") && window.unityInstance) {
+          heartbeatFocus();
+          window.unityInstance.SendMessage("WorldEventBridge", "ReceivePlayerControl", heartbeatPayload(e.data.payload || { enabled: true }));
+        }
+        if (e.data && e.data.type === "exit_world" && window.unityInstance) {
+          window.unityInstance.SendMessage("WorldEventBridge", "ReceivePlayerControl", heartbeatPayload({ enabled: false }));
+        }
+      });
+      document.addEventListener("fullscreenchange", function () {
+        if (document.fullscreenElement) {
+          var unityCanvas = document.querySelector("#unity-canvas");
+          if (unityCanvas) {
+            unityCanvas.tabIndex = 1;
+            unityCanvas.focus({ preventScroll: true });
+          }
         }
       });
 
