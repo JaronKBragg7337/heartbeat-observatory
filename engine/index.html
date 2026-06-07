@@ -42,6 +42,13 @@
   .explain { margin-top:18px; }
   .explain .panel { margin-top:0; }
   .youtag { font-size:10px; color:var(--ok); border:1px solid rgba(63,185,80,0.4); border-radius:999px; padding:1px 7px; margin-left:6px; }
+  .world-controls { margin-top:12px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .enterbtn { font:inherit; font-size:13px; font-weight:600; letter-spacing:0.02em; color:#04060b; background:var(--ok);
+    border:0; border-radius:999px; padding:9px 18px; cursor:pointer; }
+  .enterbtn:hover { filter:brightness(1.08); }
+  .enterbtn.in { background:var(--amber); }
+  .world-hint { color:var(--muted); font-size:12px; line-height:1.5; }
+  .world-hint a { color:var(--ok); text-decoration:none; border-bottom:1px solid rgba(63,185,80,0.5); }
 </style>
 </head>
 <body>
@@ -64,6 +71,11 @@
         <div class="big">The world is loading&hellip;</div>
         <div>If it does not appear, the live state below is still real.</div>
       </div>
+    </div>
+
+    <div class="world-controls" id="worldControls" style="display:none">
+      <button class="enterbtn" id="enterBtn" type="button">Enter the world</button>
+      <span class="world-hint" id="worldHint">Click the world to look around with your mouse. Enter to walk as your character. Press Esc to step back out.</span>
     </div>
 
     <div class="invite">
@@ -112,7 +124,7 @@
       document.getElementById("joinlink").textContent="You\u2019re in the world \u2192";
       try{ await supabase.rpc("world_presence",{ p_present:true }); }catch(e){}
     }
-  }catch(e){} renderResidents(); })();
+  }catch(e){} renderResidents(); showControls(); flushToWorld(); })();
 
   (async()=>{ try{
     const { data }=await supabase.from("surfaces").select("status").eq("key","engine").maybeSingle();
@@ -142,6 +154,58 @@
       try { window.unityInstance.SendMessage("WorldEventBridge", method, payload); } catch(e){}
     }
   }
+
+  // ---- enter / look / control ----
+  const worldControls=document.getElementById("worldControls");
+  const enterBtn=document.getElementById("enterBtn");
+  const worldHint=document.getElementById("worldHint");
+  const stageEl=document.getElementById("stage");
+  let inControl=false;
+
+  function postWorld(type, obj){
+    if (HAS_WORLD && worldFrame.contentWindow){ try{ worldFrame.contentWindow.postMessage({ type, payload: JSON.stringify(obj||{}) }, "*"); }catch(e){} }
+  }
+  function focusWorld(){ try{ worldFrame.focus(); if(worldFrame.contentWindow) worldFrame.contentWindow.focus(); }catch(e){} }
+  function flushToWorld(){ try{
+    Object.values(minds).forEach(m=>{ if(m&&m.connected) toWorld("agent_state", m); });
+    Object.values(residents).forEach(r=>{ if(r) toWorld("world_character", r); });
+  }catch(e){} }
+
+  function showControls(){
+    if (isMobile || !HAS_WORLD) return;
+    worldControls.style.display="flex";
+    if (myUserId){
+      enterBtn.style.display="";
+      enterBtn.textContent = inControl ? "Step back out (Esc)" : "Enter the world";
+      enterBtn.classList.toggle("in", inControl);
+      worldHint.innerHTML = "Click the world to look around with your mouse. Enter to walk as your character. Press Esc to step back out.";
+    } else {
+      enterBtn.style.display="none";
+      worldHint.innerHTML = 'Click the world to look around. <a href="/admin">Sign in</a> to walk around as your own character.';
+    }
+  }
+  function enterWorld(){
+    if (!myUserId || inControl || isMobile) return;
+    inControl=true;
+    postWorld("enter_world", {});
+    postWorld("player_control", { auth_user_id: myUserId, enabled:true });
+    try{ if(worldFrame.requestFullscreen) worldFrame.requestFullscreen(); else if(worldFrame.webkitRequestFullscreen) worldFrame.webkitRequestFullscreen(); }catch(e){}
+    focusWorld(); showControls();
+  }
+  function exitWorld(){
+    if (!inControl) return;
+    inControl=false;
+    postWorld("exit_world", {});
+    if (myUserId) postWorld("player_control", { auth_user_id: myUserId, enabled:false });
+    try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+    showControls();
+  }
+  if (enterBtn) enterBtn.addEventListener("click", ()=>{ inControl ? exitWorld() : enterWorld(); });
+  if (stageEl) stageEl.addEventListener("click", focusWorld);
+  document.addEventListener("fullscreenchange", ()=>{ if(!document.fullscreenElement && inControl) exitWorld(); });
+  window.addEventListener("message", (ev)=>{ const t=ev&&ev.data&&ev.data.type; if(t==="world_ready"||t==="ready"||t==="unity_ready") flushToWorld(); });
+  worldFrame.addEventListener("load", ()=>{ [1500,4000,8000,13000].forEach(d=> setTimeout(flushToWorld, d)); });
+  showControls();
 
   // ---- live state ----
   let minds={}, residents={}, apartments={};
