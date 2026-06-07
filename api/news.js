@@ -1,3 +1,4 @@
+// v2 — force rebuild to bind env
 // /api/news.js — secret-safe live news via Perplexity (Sonar).
 // The PERPLEXITY_API_KEY lives only in Vercel env and is read here on the server.
 // The browser never sees the key — it only receives a finished, safe list of headlines.
