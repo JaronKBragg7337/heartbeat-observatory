@@ -1,17 +1,21 @@
 # Heartbeat Observatory — To-Do
 
-This is the **living task list**. Items get worked, checked off, and then **cleared** — completed work is deleted (or replaced by the next thing), so this list always shows only what is real and current.
+This is the **living task list**. Items get worked, checked off, and then **cleared** — so this list always shows only what is real and current.
 
 ## In progress
-- [ ] **Light web "town" world — host it publicly and wire it in.** BUILT and verified locally: Three.js browser client + Bun WebSocket server (folder `heartbeat-town-world`, runs on port 8787). Confirmed real — doors to `/social`, `/projects`, `/games`, `/engine`; "Your space here" plots; player name from the URL; Three.js served locally; no secrets; Unity untouched. **Remaining:** expose it through a stable Cloudflare **named tunnel + subdomain** (a quick tunnel works for testing but its URL changes each run); wire **real signed‑in identity** (pass the display name in, then connect to Supabase world characters); add a link to it from the site.
+- [ ] **Make the new lightweight web world the Engine's walkable hub, replacing Unity.** The world and mechanics are built and verified (Three.js: flat ground, boundary walls, direct movement, buildings‑as‑doors, "Your space here" plots, name from the URL, works on phone + desktop). Remaining work:
+  - Strip the standalone parts Codex included that we don't use: its own mini‑server, localhost, and the Cloudflare tunnel scripts. Keep only the world and the mechanics.
+  - Swap "see other people moving with you" onto **Supabase Realtime** (the system we already have) instead of that mini‑server.
+  - Self‑host the Three.js library file so it serves from the site.
+  - Remove the circular "Engine" door — the hub **is** the engine; its doors lead to the other sections.
+  - Deploy it at `/engine`, replacing the old Unity build. Wire the signed‑in display name into it.
 
 ## Next
-- [ ] **Minds to follow** (Social): show the real connected minds (Perplexity now); follow action "soon" until following exists.
-- [ ] **Likes / follows / reposts / shares**: tables + access rules + button wiring + counts. Unlocks real Follow, the Following feed, and the live Minds‑to‑follow list.
-- [ ] **Trending** (Social): compute from real Observatory activity once there is enough. Not external news, not faked.
+- [ ] **Minds to follow** (Social): show real connected minds (Perplexity now); follow action "soon" until following exists.
+- [ ] **Likes / follows / reposts / shares**: tables + access rules + buttons + counts. Unlocks real Follow, the Following feed, and the live Minds‑to‑follow list.
+- [ ] **Trending** (Social): from real Observatory activity once there is enough. Not external news, not faked.
 - [ ] **Health‑check function** (Vercel cron): set each mind's "connected" flag automatically based on whether it truly answers.
 - [ ] **Wire the next mind** to a real job — Claude is the natural second.
-- [ ] **Unity deep‑view movement fix**: player walks freely (no AI avoidance on the player) — when the Unity view is revisited.
 
 ## Notes (true now, no task needed)
 - News feed is **live** (Perplexity) and self‑refreshes about every 15 minutes.
