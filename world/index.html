@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Heartbeat Observatory Town</title>
+    <link rel="stylesheet" href="/world/styles.css">
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="hud" aria-live="polite">
+      <div class="meter">
+        <span id="status">connecting</span>
+        <span id="playerCount">0 players</span>
+        <span id="rtt">-- ms</span>
+      </div>
+      <div class="meter">
+        <span id="identity">Guest</span>
+        <span id="place">Town Square</span>
+      </div>
+    </div>
+
+    <button id="menuButton" class="icon-button" type="button" aria-label="Menu">☰</button>
+    <aside id="roster" aria-label="People here"></aside>
+
+    <div id="doorPrompt" class="hidden">
+      <span id="doorPromptText">Press E</span>
+      <button id="doorPromptButton" type="button">Enter</button>
+    </div>
+
+    <div id="feed"></div>
+
+    <section id="settingsPanel" class="hidden" aria-label="Settings">
+      <div class="settings-shell">
+        <div class="settings-head">
+          <h2>Settings</h2>
+          <button id="closeSettingsButton" class="icon-button" type="button" aria-label="Close">×</button>
+        </div>
+        <label>
+          <span>Sensitivity</span>
+          <input id="sensitivitySlider" type="range" min="0.5" max="3" step="0.1" value="1">
+        </label>
+        <label>
+          <span>FOV</span>
+          <input id="fovSlider" type="range" min="62" max="92" step="1" value="74">
+        </label>
+        <label class="toggle-row">
+          <span>Invert Y</span>
+          <input id="invertYToggle" type="checkbox">
+        </label>
+        <label class="toggle-row">
+          <span>Roster</span>
+          <input id="rosterToggle" type="checkbox" checked>
+        </label>
+        <button id="leaveTownButton" class="secondary-button" type="button">Leave Town</button>
+      </div>
+    </section>
+
+    <div id="overlay">
+      <div class="panel">
+        <h1>Heartbeat Observatory Town</h1>
+        <p id="welcomeName">Guest</p>
+        <button id="enterButton" type="button">Enter</button>
+      </div>
+    </div>
+
+    <div id="touchControls" aria-hidden="true">
+      <div id="movePad"><div id="moveKnob"></div></div>
+      <button id="jumpButton" type="button">Jump</button>
+      <button id="crouchButton" type="button">Duck</button>
+      <button id="actionButton" type="button">Enter</button>
+    </div>
+
+    <script type="module" src="/world/main.js"></script>
+  </body>
+</html>
