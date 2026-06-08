@@ -232,6 +232,8 @@ let roomGroup = null;
 let savedTownColliders = null;
 let hiddenForRoom = [];
 let townReturn = { x: 0, z: 0, yaw: 0 };
+let myRoomLayout = { wall: "#8a9aa6", floor: "#b8a98f" };
+let roomSaveTimer = null;
 animate();
 try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
 
@@ -522,7 +524,7 @@ async function loadIdentity() {
       try {
         const { data: character } = await supa
           .from("world_characters")
-          .select("auth_user_id, display_name, presence, appearance, kind, location, last_seen_at")
+          .select("auth_user_id, display_name, presence, appearance, kind, location, last_seen_at, room_layout")
           .eq("auth_user_id", myUserId)
           .maybeSingle();
         if (character) {
@@ -572,7 +574,7 @@ async function loadCharacters() {
   try {
     const { data, error } = await ensureSupabase()
       .from("world_characters")
-      .select("auth_user_id, display_name, presence, appearance, kind, location, last_seen_at");
+      .select("auth_user_id, display_name, presence, appearance, kind, location, last_seen_at, room_layout");
     if (error) throw error;
     for (const row of data || []) upsertCharacter(row);
     renderCharacters();
@@ -609,6 +611,8 @@ function upsertCharacter(row) {
   if (row.auth_user_id === myUserId) {
     myAppearance = characterAppearance(character);
     myColor = myAppearance.color;
+    myRoomLayout = normalizeRoomLayout(character.room_layout);
+    if (inRoom) applyRoomLayout();
     renderAppearanceControls();
   }
 }
@@ -1558,9 +1562,54 @@ function buildRoomGroup() {
   scene.add(roomGroup);
 }
 
+function normalizeRoomLayout(layout) {
+  const hex = (v, d) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v)) ? v.toLowerCase() : d;
+  layout = (layout && typeof layout === "object") ? layout : {};
+  return { wall: hex(layout.wall, "#8a9aa6"), floor: hex(layout.floor, "#b8a98f") };
+}
+
 function applyRoomLayout() {
   if (!roomGroup || !roomGroup.userData) return;
-  // Customization (recolor + items) lands in the next increment; safe no-op for now.
+  try {
+    if (roomGroup.userData.wallMat) roomGroup.userData.wallMat.color.set(myRoomLayout.wall);
+    if (roomGroup.userData.floorMat) roomGroup.userData.floorMat.color.set(myRoomLayout.floor);
+  } catch (e) {}
+}
+
+function setRoomColor(target, hex) {
+  if (target !== "wall" && target !== "floor") return;
+  myRoomLayout[target] = hex;
+  applyRoomLayout();
+  document.querySelectorAll('#roomPanel [data-rt="' + target + '"]').forEach((bn) => {
+    bn.style.borderColor = (bn.getAttribute("data-rc") === hex) ? "#eef3f6" : "transparent";
+  });
+  const st = document.getElementById("roomSaveStatus");
+  if (!myUserId) { if (st) st.textContent = "Guest \u2014 changes won't save"; return; }
+  if (st) st.textContent = "Saving\u2026";
+  clearTimeout(roomSaveTimer);
+  roomSaveTimer = setTimeout(saveRoomLayout, 350);
+}
+
+async function saveRoomLayout() {
+  if (!myUserId) return;
+  const st = document.getElementById("roomSaveStatus");
+  try {
+    const { error } = await ensureSupabase().rpc("set_world_room_layout", { p_layout: myRoomLayout });
+    if (error) throw error;
+    if (st) st.textContent = "Saved.";
+  } catch (e) {
+    if (st) st.textContent = "Could not save room.";
+  }
+}
+
+function roomSwatchRow(target) {
+  const colors = target === "wall"
+    ? ["#8a9aa6","#6f7e8c","#42505c","#a8b6a0","#c8a99a","#9a8fb0"]
+    : ["#b8a98f","#9c8f72","#caa56f","#8f9c8a","#a98f9c","#5c5448"];
+  return colors.map((c) => {
+    const sel = (myRoomLayout[target] === c) ? "#eef3f6" : "transparent";
+    return '<button type="button" data-rt="' + target + '" data-rc="' + c + '" style="width:26px;height:26px;border-radius:50%;border:2px solid ' + sel + ';background:' + c + ';cursor:pointer;padding:0;flex:none;"></button>';
+  }).join("");
 }
 
 function showRoomPanel() {
@@ -1568,13 +1617,22 @@ function showRoomPanel() {
   if (!p) {
     p = document.createElement("div");
     p.id = "roomPanel";
-    p.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(10,15,18,0.92);border:1px solid #2c3940;border-radius:12px;padding:9px 11px;z-index:99980;color:#eef3f6;font-size:13px;box-shadow:0 8px 28px rgba(0,0,0,0.4);";
-    p.innerHTML = '<span style="font-weight:600;margin-right:2px;">Your room</span><button id="roomExitBtn" style="padding:8px 12px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:600;font-size:13px;cursor:pointer;">Exit to town</button>';
+    p.style.cssText = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:stretch;background:rgba(10,15,18,0.94);border:1px solid #2c3940;border-radius:14px;padding:11px 13px;z-index:99980;color:#eef3f6;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,0.45);width:min(92vw,360px);";
     document.body.appendChild(p);
-    const xb = document.getElementById("roomExitBtn");
-    if (xb) xb.addEventListener("click", exitRoom);
+    p.addEventListener("click", (e) => {
+      const t = e.target;
+      if (!t) return;
+      if (t.id === "roomExitBtn") { exitRoom(); return; }
+      if (t.getAttribute && t.getAttribute("data-rt")) setRoomColor(t.getAttribute("data-rt"), t.getAttribute("data-rc"));
+    });
   }
+  p.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-weight:700;">Your room</span><span id="roomSaveStatus" style="font-size:11px;color:#8aa0a8;"></span></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Walls</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("wall") + '</div></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Floor</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("floor") + '</div></div>' +
+    '<button id="roomExitBtn" type="button" style="margin-top:2px;padding:9px 12px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:700;font-size:13px;cursor:pointer;">Exit to town</button>';
   p.style.display = "flex";
+  if (!myUserId) { const st = document.getElementById("roomSaveStatus"); if (st) st.textContent = "Guest \u2014 won't save"; }
 }
 
 function hideRoomPanel() {
