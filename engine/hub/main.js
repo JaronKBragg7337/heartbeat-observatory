@@ -238,6 +238,7 @@ let mySpace = "town";
 let roomOwnerId = null;
 let roomOwnerName = "";
 let activeRoomLayout = null;
+let roomPanelCollapsed = false;
 animate();
 try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
 
@@ -1734,9 +1735,11 @@ function showRoomPanel() {
     p.id = "roomPanel";
     p.style.cssText = "position:fixed;left:50%;top:max(120px, calc(env(safe-area-inset-top, 0px) + 104px));transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:stretch;background:rgba(10,15,18,0.94);border:1px solid #2c3940;border-radius:14px;padding:11px 13px;z-index:99980;color:#eef3f6;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,0.45);width:min(92vw,360px);";
     document.body.appendChild(p);
+    try { roomPanelCollapsed = localStorage.getItem("hb_room_collapsed") === "1"; } catch (e) {}
     p.addEventListener("click", (e) => {
       const t = e.target;
       if (!t) return;
+      if (t.id === "roomCollapseBtn") { roomPanelCollapsed = !roomPanelCollapsed; try { localStorage.setItem("hb_room_collapsed", roomPanelCollapsed ? "1" : "0"); } catch (er) {} showRoomPanel(); return; }
       if (t.id === "roomExitBtn") { exitRoom(); return; }
       if (t.getAttribute && t.getAttribute("data-visit")) { visitRoom(t.getAttribute("data-visit")); return; }
       if (t.getAttribute && t.getAttribute("data-it")) { toggleRoomItem(t.getAttribute("data-it")); return; }
@@ -1744,20 +1747,28 @@ function showRoomPanel() {
     });
   }
   const own = isOwnRoom();
+  const collapsed = roomPanelCollapsed;
+  const title = own ? "Your room" : ("Visiting " + (roomOwnerName || "a room"));
+  const toggleBtn = '<button id="roomCollapseBtn" type="button" aria-label="' + (collapsed ? "Expand room panel" : "Minimize room panel") + '" style="width:30px;height:30px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:18px;line-height:1;font-weight:700;cursor:pointer;padding:0;flex:none;">' + (collapsed ? "+" : "\u2013") + '</button>';
+  const statusSpan = collapsed ? "" : '<span id="roomSaveStatus" style="font-size:11px;color:#8aa0a8;"></span>';
   let html =
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-weight:700;">' + (own ? "Your room" : ("Visiting " + (roomOwnerName || "a room"))) + '</span><span id="roomSaveStatus" style="font-size:11px;color:#8aa0a8;"></span></div>';
-  if (own) {
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-weight:700;">' + title + '</span><div style="display:flex;align-items:center;gap:8px;">' + statusSpan + toggleBtn + '</div></div>';
+  if (!collapsed) {
+    if (own) {
+      html +=
+        '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Walls</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("wall") + '</div></div>' +
+        '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Floor</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("floor") + '</div></div>' +
+        '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Items</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomItemRow() + '</div></div>';
+    }
     html +=
-      '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Walls</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("wall") + '</div></div>' +
-      '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Floor</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("floor") + '</div></div>' +
-      '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Items</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomItemRow() + '</div></div>';
+      '<div style="display:flex;align-items:flex-start;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;padding-top:5px;">Visit</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomVisitRow() + '</div></div>' +
+      '<button id="roomExitBtn" type="button" style="margin-top:2px;padding:9px 12px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:700;font-size:13px;cursor:pointer;">Exit to town</button>';
   }
-  html +=
-    '<div style="display:flex;align-items:flex-start;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;padding-top:5px;">Visit</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomVisitRow() + '</div></div>' +
-    '<button id="roomExitBtn" type="button" style="margin-top:2px;padding:9px 12px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:700;font-size:13px;cursor:pointer;">Exit to town</button>';
   p.innerHTML = html;
   p.style.display = "flex";
-  if (own && !myUserId) { const st = document.getElementById("roomSaveStatus"); if (st) st.textContent = "Guest \u2014 won't save"; }
+  p.style.width = collapsed ? "auto" : "min(92vw,360px)";
+  p.style.padding = collapsed ? "7px 12px" : "11px 13px";
+  if (!collapsed && own && !myUserId) { const st = document.getElementById("roomSaveStatus"); if (st) st.textContent = "Guest \u2014 won't save"; }
 }
 
 function hideRoomPanel() {
