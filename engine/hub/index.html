@@ -19,6 +19,13 @@
       body { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
       input, textarea { -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }
       #settingsPanel .settings-shell { max-height:86vh; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+      #buildPanel { position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:60; background:rgba(12,16,19,.93); border:1px solid #2c3940; border-radius:13px; padding:10px 11px; display:flex; flex-direction:column; gap:8px; max-width:94vw; box-shadow:0 8px 28px rgba(0,0,0,.4); }
+      #buildPanel.hidden { display:none; }
+      #buildPanel .build-row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+      #buildPanel button { padding:8px 11px; border-radius:8px; border:1px solid #2c3940; background:#0a0f12; color:#dfe6ec; font-size:13px; cursor:pointer; }
+      #buildPanel .buildPropBtn.active { background:#cda16a; color:#1a1208; border-color:#cda16a; }
+      #buildPanel #buildPlace { background:#7bd88f; color:#0c1a0f; border:0; font-weight:600; }
+      #buildPanel .build-hint { font-size:12px; opacity:.85; text-align:center; max-width:340px; }
     </style>
     <script>try{if(window.top!==window.self||new URLSearchParams(location.search).get("preview")==="1")document.documentElement.classList.add("preview");}catch(e){document.documentElement.classList.add("preview");}</script>
   </head>
@@ -126,6 +133,7 @@
         </div>
         <button id="leaveTownButton" class="secondary-button" type="button">Leave Town</button>
         <button id="removeHomeButton" class="secondary-button" type="button" style="display:none;">Remove my home</button>
+        <button id="buildModeButton" class="secondary-button" type="button" style="display:none;">Build mode</button>
       </div>
     </section>
 
@@ -159,5 +167,22 @@
 
     <script type="module" src="/engine/hub/main.js"></script>
   <script defer src="/bubble.js"></script>
+  <div id="buildPanel" class="hidden" aria-label="Build mode">
+    <div class="build-row" id="buildPalette">
+      <button class="buildPropBtn" data-prop="table" type="button">Table</button>
+      <button class="buildPropBtn" data-prop="chair" type="button">Chair</button>
+      <button class="buildPropBtn" data-prop="streetlight" type="button">Light</button>
+      <button class="buildPropBtn" data-prop="planter" type="button">Planter</button>
+      <button class="buildPropBtn" data-prop="tree" type="button">Tree</button>
+      <button class="buildPropBtn" data-prop="bench" type="button">Bench</button>
+    </div>
+    <div id="buildHint" class="build-hint">Pick a prop, walk where you want it, tap Place here.</div>
+    <div class="build-row">
+      <button id="buildRotate" type="button">Rotate &#x27F3;</button>
+      <button id="buildPlace" type="button">Place here</button>
+      <button id="buildRemove" type="button">Remove nearest</button>
+      <button id="buildDone" type="button">Done</button>
+    </div>
+  </div>
 </body>
 </html>
