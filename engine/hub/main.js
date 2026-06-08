@@ -240,6 +240,8 @@ let roomOwnerName = "";
 let activeRoomLayout = null;
 let roomPanelCollapsed = false;
 let myRoomCode = null;
+let hintEl = null;
+let explainerEl = null;
 animate();
 try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
 
@@ -1473,6 +1475,36 @@ function hideNudge() {
   nudgeEl.style.opacity = "0";
   nudgeEl.style.transform = "translateX(-50%) translateY(8px)";
 }
+
+// Proximity hint: re-readable, shows whenever you're near, hides when you leave
+function showHint(text) {
+  if (!hintEl) {
+    hintEl = document.createElement("div");
+    hintEl.id = "proxHint";
+    hintEl.style.cssText = "position:fixed;left:50%;top:max(120px, calc(env(safe-area-inset-top, 0px) + 104px));transform:translateX(-50%);max-width:min(88vw,440px);background:rgba(10,15,18,0.92);color:#eef3f6;border:1px solid #2c3940;border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.42;z-index:99970;box-shadow:0 10px 30px rgba(0,0,0,0.4);text-align:center;pointer-events:none;";
+    document.body.appendChild(hintEl);
+  }
+  hintEl.innerHTML = text;
+  hintEl.style.display = "block";
+}
+function hideHint() { if (hintEl) hintEl.style.display = "none"; }
+
+// Re-readable explainer card (room onboarding + reopen via "?")
+function showExplainer(title, bodyHtml) {
+  if (!explainerEl) {
+    explainerEl = document.createElement("div");
+    explainerEl.id = "explainer";
+    explainerEl.style.cssText = "position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(90vw,420px);background:rgba(10,15,18,0.97);color:#eef3f6;border:1px solid #2c3940;border-radius:16px;padding:18px;font-size:14px;line-height:1.5;z-index:100000;box-shadow:0 16px 48px rgba(0,0,0,0.6);";
+    document.body.appendChild(explainerEl);
+    explainerEl.addEventListener("click", (e) => { if (e.target && e.target.id === "explainerClose") hideExplainer(); });
+  }
+  explainerEl.innerHTML = '<div style="font-weight:700;font-size:16px;margin-bottom:8px;">' + title + '</div><div style="color:#cfe0e6;">' + bodyHtml + '</div><button id="explainerClose" type="button" style="margin-top:14px;width:100%;padding:10px 12px;border-radius:10px;border:0;background:#9fd0a0;color:#0a1410;font-weight:700;font-size:14px;cursor:pointer;">Got it</button>';
+  explainerEl.style.display = "block";
+}
+function hideExplainer() { if (explainerEl) explainerEl.style.display = "none"; }
+function showRoomHelp() {
+  showExplainer("Your room", "Walk into any apartment to get your own private room.<br><br>\u2022 Tap a <b>Walls</b> or <b>Floor</b> swatch to recolor.<br>\u2022 Toggle <b>Items</b> (rug, plant, lamp, table) to furnish it.<br>\u2022 Your <b>room code</b> is at the top \u2014 share it so friends can visit.<br>\u2022 Type someone\u2019s code in the <b>Visit</b> box and tap Go to drop into their room.<br><br>Changes save automatically when you\u2019re signed in.");
+}
 function maybeGhostNudge() {
   if (nudgeShown.ghost || !hasEntered || npcs.size === 0) return;
   for (const npc of npcs.values()) {
@@ -1524,9 +1556,15 @@ function updateActiveDoor() {
   if (activeDoor === nextDoor && activePlot === nextPlot) return;
   activeDoor = nextDoor;
   activePlot = nextPlot;
-  if (activePlot) showNudge("plot", myUserId
-    ? "This is an open plot. Press E (or tap the action button) to claim it with a GitHub repo \u2014 it becomes a real building everyone can see."
-    : "This is an open plot. Sign in and you can claim it with a GitHub repo, turning it into a real building everyone can see.");
+  if (activePlot) {
+    showHint(myUserId
+      ? "<b>Open plot.</b> Walk up and claim it with a GitHub repo \u2014 it becomes a real building everyone can see."
+      : "<b>Open plot.</b> Sign in to claim it with a GitHub repo and turn it into a real building everyone can see.");
+  } else if (activeDoor && activeDoor.room) {
+    showHint("<b>Apartment.</b> Step inside for your own private room \u2014 recolor it, add furniture, and share your room code so friends can visit.");
+  } else {
+    hideHint();
+  }
 
   for (const door of doors) {
     if (door.pad) door.pad.material.emissiveIntensity = door === activeDoor ? 0.38 : 0.08;
@@ -1772,6 +1810,7 @@ function showRoomPanel() {
       const t = e.target;
       if (!t) return;
       if (t.id === "roomCollapseBtn") { roomPanelCollapsed = !roomPanelCollapsed; try { localStorage.setItem("hb_room_collapsed", roomPanelCollapsed ? "1" : "0"); } catch (er) {} showRoomPanel(); return; }
+      if (t.id === "roomHelpBtn") { showRoomHelp(); return; }
       if (t.id === "roomExitBtn") { exitRoom(); return; }
       if (t.id === "roomVisitGo") { const el = document.getElementById("roomVisitInput"); visitByCode(el ? el.value : ""); return; }
       if (t.getAttribute && t.getAttribute("data-visit")) { visitRoom(t.getAttribute("data-visit")); return; }
@@ -1783,9 +1822,10 @@ function showRoomPanel() {
   const collapsed = roomPanelCollapsed;
   const title = own ? "Your room" : ("Visiting " + (roomOwnerName || "a room"));
   const toggleBtn = '<button id="roomCollapseBtn" type="button" aria-label="' + (collapsed ? "Expand room panel" : "Minimize room panel") + '" style="width:30px;height:30px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:18px;line-height:1;font-weight:700;cursor:pointer;padding:0;flex:none;">' + (collapsed ? "+" : "\u2013") + '</button>';
+  const helpBtn = collapsed ? "" : '<button id="roomHelpBtn" type="button" aria-label="How rooms work" style="width:30px;height:30px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:15px;line-height:1;font-weight:700;cursor:pointer;padding:0;flex:none;">?</button>';
   const statusSpan = collapsed ? "" : '<span id="roomSaveStatus" style="font-size:11px;color:#8aa0a8;"></span>';
   let html =
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-weight:700;">' + title + '</span><div style="display:flex;align-items:center;gap:8px;">' + statusSpan + toggleBtn + '</div></div>';
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-weight:700;">' + title + '</span><div style="display:flex;align-items:center;gap:8px;">' + statusSpan + helpBtn + toggleBtn + '</div></div>';
   if (!collapsed) {
     if (own) {
       html +=
@@ -1835,6 +1875,7 @@ function enterRoom() {
     showRoomPanel();
     doorPrompt.classList.add("hidden");
     try { trackSelf(); sendState(true); } catch (e) {}
+    try { if (localStorage.getItem("hb_seen_room") !== "1") { localStorage.setItem("hb_seen_room", "1"); showRoomHelp(); } } catch (e) {}
   } catch (e) {
     try { forceExitRoom(); } catch (_) {}
   }
