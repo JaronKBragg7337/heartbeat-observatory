@@ -35,6 +35,9 @@ const welcomeName = document.querySelector("#welcomeName");
 const params = new URLSearchParams(location.search);
 let displayName = sanitizeDisplayName(params.get("name"));
 const hintedUserId = params.get("uid");
+const requestedVisitorKind = /^(ai|ai-visitor)$/i.test(params.get("visitor") || params.get("kind") || "")
+  ? "ai-visitor"
+  : "guest";
 const isTouch = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 
 // ---- Supabase realtime transport (replaces the old WebSocket server) ----
@@ -44,6 +47,8 @@ const peerColors = ["#4fa3ff", "#5fd38d", "#f6b45b", "#e36d7c", "#a67cff", "#47c
 const appearancePatterns = new Set(["plain", "stripe", "band", "glow"]);
 let myId = null;
 let myUserId = null;
+let guestId = null;
+let visitorKind = "resident";
 let myColor = peerColors[0];
 let myAppearance = { color: myColor, pattern: "plain" };
 let supa = null;
@@ -394,7 +399,15 @@ window.addEventListener("blur", clearMovementInput);
 window.addEventListener("pagehide", pageLeavePresence);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) clearMovementInput();
-  if (myUserId) setMyWorldPresence(!document.hidden);
+  if (myUserId) {
+    setMyWorldPresence(!document.hidden);
+  } else if (guestId) {
+    wantsSelfPresence = !document.hidden && hasEntered;
+    if (wantsSelfPresence) trackSelf();
+    else {
+      try { channel?.untrack(); } catch {}
+    }
+  }
 });
 
 async function initWorld() {
@@ -416,12 +429,80 @@ function ensureSupabase() {
   return supa;
 }
 
+function selfRealtimeId() {
+  return myUserId || guestId;
+}
+
+function getSessionVisitorId(kind) {
+  const prefix = kind === "ai-visitor" ? "ai-visitor" : "guest";
+  const key = `hb_${prefix}_id`;
+  try {
+    const existing = sessionStorage.getItem(key);
+    if (existing && existing.startsWith(`${prefix}:`)) return existing;
+    const next = `${prefix}:${randomIdChunk()}`;
+    sessionStorage.setItem(key, next);
+    return next;
+  } catch {
+    return `${prefix}:${randomIdChunk()}`;
+  }
+}
+
+function randomIdChunk() {
+  try {
+    if (crypto?.randomUUID) return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  } catch {}
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`.slice(0, 12);
+}
+
+function defaultVisitorName(kind, id) {
+  const suffix = String(id || "").split(":").pop().slice(0, 4).toUpperCase() || "0000";
+  return kind === "ai-visitor" ? `AI Visitor ${suffix}` : `Guest ${suffix}`;
+}
+
+function isTransientId(id) {
+  return typeof id === "string" && /^(guest|ai-visitor):/.test(id);
+}
+
+function isTransientPeer(player) {
+  return !!player && isTransientId(player.id);
+}
+
+function transientKindLabel(player) {
+  return player?.kind === "ai-visitor" || String(player?.id || "").startsWith("ai-visitor:")
+    ? "visiting AI"
+    : "guest";
+}
+
+function transientPlayerFromPresence(meta) {
+  if (!meta?.id || !isTransientId(meta.id)) return null;
+  const kind = meta.kind === "ai-visitor" || String(meta.id).startsWith("ai-visitor:") ? "ai-visitor" : "guest";
+  const appearance = normalizeAppearance(meta.appearance || { color: meta.color }, meta.id);
+  return {
+    id: meta.id,
+    name: sanitizeDisplayName(meta.name || defaultVisitorName(kind, meta.id)),
+    kind,
+    temporary: true,
+    color: appearance.color,
+    appearance,
+    x: Number.isFinite(meta.x) ? meta.x : 0,
+    y: Number.isFinite(meta.y) ? meta.y : standingEyeHeight,
+    z: Number.isFinite(meta.z) ? meta.z : 8,
+    yaw: Number.isFinite(meta.yaw) ? meta.yaw : 0,
+    pitch: Number.isFinite(meta.pitch) ? meta.pitch : 0,
+    stance: meta.stance === "crouch" ? "crouch" : "stand",
+    presence: "present"
+  };
+}
+
 async function loadIdentity() {
   try {
     const { data: { session } } = await ensureSupabase().auth.getSession();
     if (session?.user?.id) {
       myUserId = session.user.id;
       myId = myUserId;
+      guestId = null;
+      visitorKind = "resident";
+      wantsSelfPresence = true;
       if (hintedUserId && hintedUserId !== myUserId) {
         addFeed("Signed-in account verified");
       }
@@ -449,10 +530,20 @@ async function loadIdentity() {
         } catch {}
       }
     } else {
-      myId = null;
+      myUserId = null;
+      visitorKind = requestedVisitorKind;
+      guestId = getSessionVisitorId(visitorKind);
+      myId = guestId;
+      wantsSelfPresence = false;
+      if (displayName === "Guest") displayName = defaultVisitorName(visitorKind, guestId);
     }
   } catch {
-    myId = null;
+    myUserId = null;
+    visitorKind = requestedVisitorKind;
+    guestId = getSessionVisitorId(visitorKind);
+    myId = guestId;
+    wantsSelfPresence = false;
+    if (displayName === "Guest") displayName = defaultVisitorName(visitorKind, guestId);
   }
 
   myAppearance = normalizeAppearance(myAppearance, myUserId || displayName);
@@ -522,15 +613,47 @@ function renderCharacters() {
     characterName(a).localeCompare(characterName(b))
   );
   for (const row of rows) reconcileCharacter(row);
-  latestPlayers = rows.map((row) => ({
+  const residentPlayers = rows.map((row) => ({
     id: row.auth_user_id,
     name: characterName(row),
     color: characterColor(row),
     presence: characterPresence(row)
   }));
+  const transientPlayers = [...peers.values()]
+    .filter(isTransientPeer)
+    .map(transientSummary)
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  if (guestId && hasEntered && wantsSelfPresence) {
+    transientPlayers.unshift({
+      id: guestId,
+      name: displayName,
+      color: myColor,
+      presence: "present",
+      temporary: true,
+      kind: visitorKind
+    });
+  }
+  latestPlayers = residentPlayers.concat(transientPlayers);
   const liveCount = latestPlayers.filter((p) => p.presence === "present").length;
-  playerCountEl.textContent = `${liveCount} live / ${latestPlayers.length} people`;
+  const guestCount = transientPlayers.length;
+  const residentLabel = rows.length === 1 ? "resident" : "residents";
+  const guestLabel = guestCount === 1 ? "guest" : "guests";
+  playerCountEl.textContent = guestCount
+    ? `${liveCount} live / ${rows.length} ${residentLabel} / ${guestCount} ${guestLabel}`
+    : `${liveCount} live / ${rows.length} people`;
   renderRoster();
+}
+
+function transientSummary(player) {
+  const appearance = normalizeAppearance(player.appearance || { color: player.color }, player.id);
+  return {
+    id: player.id,
+    name: sanitizeDisplayName(player.name || defaultVisitorName(player.kind, player.id)),
+    color: appearance.color,
+    presence: "present",
+    temporary: true,
+    kind: player.kind === "ai-visitor" ? "ai-visitor" : "guest"
+  };
 }
 
 function reconcileCharacter(row) {
@@ -697,15 +820,34 @@ async function setMyWorldPresence(present) {
 }
 
 function pageLeavePresence() {
-  if (!myUserId) return;
+  if (!selfRealtimeId()) return;
   wantsSelfPresence = false;
-  setLocalCharacterPresence(false);
-  try { ensureSupabase().rpc("world_presence", { p_present: false }); } catch {}
+  try { channel?.untrack(); } catch {}
+  if (myUserId) {
+    setLocalCharacterPresence(false);
+    try { ensureSupabase().rpc("world_presence", { p_present: false }); } catch {}
+  }
 }
 
 function trackSelf() {
-  if (!channel || !myUserId || !wantsSelfPresence) return;
-  try { channel.track({ id: myUserId, name: displayName, color: myColor, appearance: myAppearance }); } catch {}
+  const id = selfRealtimeId();
+  if (!channel || !id || !wantsSelfPresence) return;
+  try {
+    channel.track({
+      id,
+      name: displayName,
+      kind: visitorKind,
+      temporary: !myUserId,
+      color: myColor,
+      appearance: myAppearance,
+      x: state.x,
+      y: state.y,
+      z: state.z,
+      yaw: state.yaw,
+      pitch: state.pitch,
+      stance: state.stance
+    });
+  } catch {}
 }
 
 function setMyAppearance(next) {
@@ -714,7 +856,10 @@ function setMyAppearance(next) {
   renderAppearanceControls("Saving...");
 
   if (!myUserId) {
-    renderAppearanceControls("Sign in to save your character.", true);
+    renderAppearanceControls("Guest look is temporary. Sign in to keep it.", false, true);
+    trackSelf();
+    sendState(true);
+    renderCharacters();
     return;
   }
 
@@ -753,7 +898,7 @@ function renderAppearanceControls(message = "", isError = false, isOk = false) {
     button.classList.toggle("selected", button.dataset.pattern === myAppearance.pattern);
   });
   if (appearanceStatus) {
-    appearanceStatus.textContent = message || (myUserId ? "Changes save to your account." : "Sign in to save your character.");
+    appearanceStatus.textContent = message || (myUserId ? "Changes save to your account." : "Guest look is temporary. Sign in to keep it.");
     appearanceStatus.classList.toggle("error", isError);
     appearanceStatus.classList.toggle("ok", isOk);
   }
@@ -763,6 +908,7 @@ function enterTown() {
   if (settingsOpen) return;
   hasEntered = true;
   wantsConnection = true;
+  wantsSelfPresence = true;
   if (!channel) connect();
   if (myUserId) setMyWorldPresence(true);
   trackSelf();
@@ -832,8 +978,9 @@ function leaveTown() {
   overlay.classList.remove("hidden");
   if (document.pointerLockElement) document.exitPointerLock?.();
   if (pseudoOn) pseudoFs(false);
+  wantsSelfPresence = false;
+  try { channel?.untrack(); } catch {}
   if (myUserId) {
-    try { channel?.untrack(); } catch {}
     setMyWorldPresence(false);
   }
   setStatus(connected ? "watching" : "offline", connected);
@@ -852,7 +999,7 @@ function connect() {
 
   channel = supa.channel("engine-town", {
     config: {
-      presence: { key: myUserId || `preview-${crypto.randomUUID().slice(0, 8)}` },
+      presence: { key: selfRealtimeId() || `preview-${randomIdChunk().slice(0, 8)}` },
       broadcast: { self: false }
     }
   });
@@ -863,20 +1010,32 @@ function connect() {
 
   channel.on("presence", { event: "join" }, ({ newPresences }) => {
     for (const p of newPresences || []) {
-      if (p.id && p.id !== myUserId && characters.has(p.id)) {
+      if (!p.id || p.id === selfRealtimeId()) continue;
+      if (characters.has(p.id)) {
         markCharacterPresence(p.id, true);
         removeNpc(p.id);
         addFeed(`${p.name || "Guest"} joined`);
+      } else if (isTransientId(p.id)) {
+        const player = transientPlayerFromPresence(p);
+        if (player) applyPeerState(player);
+        addFeed(`${p.name || "Guest"} is visiting`);
       }
     }
   });
 
   channel.on("presence", { event: "leave" }, ({ leftPresences }) => {
     for (const p of leftPresences || []) {
-      if (p.id && p.id !== myUserId && characters.has(p.id)) {
+      if (!p.id || p.id === selfRealtimeId()) continue;
+      if (characters.has(p.id)) {
         markCharacterPresence(p.id, false);
         peers.delete(p.id);
         addFeed(`${p.name || "Guest"} wandered off`);
+      } else if (isTransientId(p.id)) {
+        peers.delete(p.id);
+        removeRemote(p.id);
+        removeNpc(p.id);
+        addFeed(`${p.name || "Guest"} left`);
+        renderCharacters();
       }
     }
   });
@@ -888,6 +1047,7 @@ function connect() {
       rttEl.textContent = "realtime";
       trackSelf();
       if (myUserId) addFeed(`joined as ${displayName}`);
+      else addFeed("watching as a temporary guest");
       sendState(true);
     } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
       connected = false;
@@ -899,14 +1059,25 @@ function connect() {
 }
 
 function applyPeerState(player) {
-  if (!player || !player.id || player.id === myUserId || !characters.has(player.id)) return;
+  if (!player || !player.id || player.id === selfRealtimeId()) return;
   const character = characters.get(player.id);
+  const transient = !character && isTransientPeer(player);
+  if (!character && !transient) return;
+  const wasKnownTransient = transient && peers.has(player.id);
   if (character) {
     player.appearance = normalizeAppearance(player.appearance || character.appearance, player.id);
     player.color = player.appearance.color;
+    player.kind = "resident";
+    player.temporary = false;
+  } else {
+    player.name = sanitizeDisplayName(player.name || defaultVisitorName(player.kind, player.id));
+    player.appearance = normalizeAppearance(player.appearance || { color: player.color }, player.id);
+    player.color = player.appearance.color;
+    player.kind = player.kind === "ai-visitor" || String(player.id).startsWith("ai-visitor:") ? "ai-visitor" : "guest";
+    player.temporary = true;
   }
   if (npcs.has(player.id)) removeNpc(player.id);
-  markCharacterPresence(player.id, true, false);
+  if (character) markCharacterPresence(player.id, true, false);
   peers.set(player.id, player);
 
   let remote = remotes.get(player.id);
@@ -919,25 +1090,43 @@ function applyPeerState(player) {
   remote.target.set(player.x, remoteGroundY(player), player.z);
   remote.targetYaw = player.yaw;
   remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
+  if (transient && !wasKnownTransient) renderCharacters();
 }
 
 function syncPresence() {
   if (!channel) return;
   const presenceState = channel.presenceState();
+  const liveTransientIds = new Set();
 
   for (const key in presenceState) {
     const metas = presenceState[key];
     if (metas && metas[0]) {
       const meta = metas[0];
       const id = meta.id || key;
-      if (id && characters.has(id)) markCharacterPresence(id, true, false);
+      if (!id || id === selfRealtimeId()) continue;
+      if (characters.has(id)) {
+        markCharacterPresence(id, true, false);
+      } else if (isTransientId(id)) {
+        liveTransientIds.add(id);
+        if (!peers.has(id)) {
+          const player = transientPlayerFromPresence({ ...meta, id });
+          if (player) applyPeerState(player);
+        }
+      }
     }
+  }
+  for (const [id] of peers) {
+    if (!isTransientId(id) || liveTransientIds.has(id)) continue;
+    peers.delete(id);
+    removeRemote(id);
+    removeNpc(id);
   }
   renderCharacters();
 }
 
 function sendState(force = false) {
-  if (!connected || !channel || !myUserId || !hasEntered) return;
+  const id = selfRealtimeId();
+  if (!connected || !channel || !id || !hasEntered || !wantsSelfPresence) return;
   if (!force && sendAccumulator < 0.05) return;
 
   sendAccumulator = 0;
@@ -945,8 +1134,10 @@ function sendState(force = false) {
     type: "broadcast",
     event: "state",
     payload: {
-      id: myUserId,
+      id,
       name: displayName,
+      kind: visitorKind,
+      temporary: !myUserId,
       color: myColor,
       appearance: myAppearance,
       x: state.x,
@@ -1268,9 +1459,9 @@ function updateActiveDoor() {
     actionButton.disabled = false;
   } else if (activePlot) {
     doorPrompt.classList.remove("hidden");
-    doorPromptText.textContent = isTouch
-      ? "Claim this space"
-      : "Press E to claim this space";
+    doorPromptText.textContent = myUserId
+      ? (isTouch ? "Claim this space" : "Press E to claim this space")
+      : "Sign in to claim this space";
     actionButton.disabled = false;
   } else {
     doorPrompt.classList.add("hidden");
@@ -1334,8 +1525,27 @@ function parseRepoName(url) {
   } catch (e) { return null; }
 }
 
+function parseRepoParts(url) {
+  try {
+    const u = new URL(url || "");
+    if (!/(^|\.)github\.com$/i.test(u.hostname)) return null;
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length < 2) return null;
+    return {
+      owner: parts[0],
+      repo: parts[1].replace(/\.git$/i, "")
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
 async function submitClaim() {
   if (!currentClaimPlot) return;
+  if (!myUserId) {
+    claimError.textContent = "Sign in to claim a permanent space. Guests can look around live, then disappear when they leave.";
+    return;
+  }
   const url = claimInput.value.trim();
   const repo = parseRepoName(url);
   if (!repo) { claimError.textContent = "Enter a full GitHub link (github.com/owner/project)."; return; }
@@ -1364,32 +1574,85 @@ async function submitClaim() {
 
 function applyClaim(plotState, data) {
   if (!plotState) return;
+  const meta = normalizeRepoMetadata(data?.repo_metadata);
+  const repoParts = parseRepoParts(data?.github_url);
+  const projectName = meta.name || data.project_name || repoParts?.repo || "Claimed space";
+  const palette = claimedSpacePalette(data, meta);
+  const language = meta.language || "";
   plotState.claimed = true;
   plotState.github_url = data.github_url;
   if (plotState === activePlot) { activePlot = null; }
   if (plotState.sign) { try { scene.remove(plotState.sign); } catch (e) {} }
-  const label = createLabelSprite(data.project_name, {
-    background: "rgba(14, 22, 18, 0.82)",
-    foreground: "#dff7e2",
+  if (plotState.metaSign) { try { scene.remove(plotState.metaSign); } catch (e) {} }
+  const label = createLabelSprite(projectName, {
+    background: palette.labelBackground,
+    foreground: palette.labelForeground,
     fontSize: 32,
     scale: 0.014
   });
-  label.position.set(plotState.x, 2.15, plotState.z);
+  label.position.set(plotState.x, language ? 2.38 : 2.15, plotState.z);
   scene.add(label);
   plotState.sign = label;
+  if (language) {
+    const metaLabel = createLabelSprite(language, {
+      background: "rgba(8, 12, 14, 0.78)",
+      foreground: "#f6fbff",
+      fontSize: 24,
+      scale: 0.01,
+      paddingX: 15,
+      paddingY: 8
+    });
+    metaLabel.position.set(plotState.x, 1.92, plotState.z);
+    scene.add(metaLabel);
+    plotState.metaSign = metaLabel;
+  }
   if (!plotState.built) {
     plotState.built = true;
-    const body = new THREE.MeshStandardMaterial({ color: 0x86b59a, roughness: 0.72 });
-    const roof = new THREE.MeshStandardMaterial({ color: 0x466b57, roughness: 0.6 });
+    plotState.bodyMaterial = new THREE.MeshStandardMaterial({ color: palette.body, roughness: 0.72 });
+    plotState.roofMaterial = new THREE.MeshStandardMaterial({ color: palette.roof, roughness: 0.6 });
+    plotState.accentMaterial = new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.46, metalness: 0.03 });
     const w = plotState.width * 0.66, d = plotState.depth * 0.66;
-    addBox(plotState.x, 0.9, plotState.z, w, 1.8, d, body);
-    addBox(plotState.x, 1.92, plotState.z, w + 0.34, 0.42, d + 0.34, roof);
+    plotState.bodyMesh = addBox(plotState.x, 0.9, plotState.z, w, 1.8, d, plotState.bodyMaterial);
+    plotState.roofMesh = addBox(plotState.x, 1.92, plotState.z, w + 0.34, 0.42, d + 0.34, plotState.roofMaterial);
+    plotState.accentMesh = addBox(plotState.x, 1.82, plotState.z - d / 2 - 0.035, w * 0.42, 0.12, 0.08, plotState.accentMaterial);
+  } else {
+    plotState.bodyMaterial?.color.setHex(palette.body);
+    plotState.roofMaterial?.color.setHex(palette.roof);
+    plotState.accentMaterial?.color.setHex(palette.accent);
   }
+}
+
+function normalizeRepoMetadata(metadata) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {};
+  return {
+    name: sanitizeDisplayName(metadata.name || metadata.repo || ""),
+    full_name: typeof metadata.full_name === "string" ? metadata.full_name.slice(0, 80) : "",
+    description: typeof metadata.description === "string" ? metadata.description.slice(0, 220) : "",
+    homepage: typeof metadata.homepage === "string" ? metadata.homepage.slice(0, 180) : "",
+    language: typeof metadata.language === "string" ? metadata.language.slice(0, 24) : "",
+    topics: Array.isArray(metadata.topics) ? metadata.topics.filter((t) => typeof t === "string").slice(0, 8) : [],
+    stars: Number.isFinite(metadata.stars) ? metadata.stars : Number.isFinite(metadata.stargazers_count) ? metadata.stargazers_count : null,
+    pushed_at: typeof metadata.pushed_at === "string" ? metadata.pushed_at : ""
+  };
+}
+
+function claimedSpacePalette(data, meta) {
+  const seed = `${data?.github_url || ""}|${meta.language || ""}|${data?.project_name || ""}`;
+  const palettes = [
+    { body: 0x86b59a, roof: 0x466b57, accent: 0xdff7e2, labelBackground: "rgba(14, 22, 18, 0.86)", labelForeground: "#dff7e2" },
+    { body: 0x7fa6c8, roof: 0x345d7c, accent: 0xe3f2ff, labelBackground: "rgba(9, 20, 32, 0.86)", labelForeground: "#e3f2ff" },
+    { body: 0xc8a96f, roof: 0x6f5434, accent: 0xfff0c8, labelBackground: "rgba(32, 23, 10, 0.86)", labelForeground: "#fff0c8" },
+    { body: 0xb7839b, roof: 0x704358, accent: 0xffe6f0, labelBackground: "rgba(30, 13, 22, 0.86)", labelForeground: "#ffe6f0" },
+    { body: 0x8f91c7, roof: 0x4c4e82, accent: 0xeeefff, labelBackground: "rgba(16, 17, 36, 0.86)", labelForeground: "#eeefff" }
+  ];
+  let hash = 0;
+  for (const ch of seed) hash = ((hash << 5) - hash + ch.charCodeAt(0)) | 0;
+  return palettes[Math.abs(hash) % palettes.length];
 }
 
 async function loadSpaces() {
   try {
-    const { data } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by");
+    const { data } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by, repo_metadata, repo_error");
     (data || []).forEach((row) => {
       const ps = plotList[row.plot];
       if (ps && !ps.claimed) applyClaim(ps, row);
@@ -1397,11 +1660,11 @@ async function loadSpaces() {
   } catch (e) {}
   try {
     supa.channel("engine-spaces")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "world_spaces" }, (p) => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "world_spaces" }, (p) => {
         const r = p.new;
         if (!r) return;
         const ps = plotList[r.plot];
-        if (ps && !ps.claimed) applyClaim(ps, r);
+        if (ps) applyClaim(ps, r);
       })
       .subscribe();
   } catch (e) {}
@@ -1956,7 +2219,8 @@ function renderRoster() {
 
     const name = document.createElement("span");
     name.className = "player-name";
-    const suffix = `${isSelf ? " (you)" : ""}${isAway ? " · away" : ""}`;
+    const kind = player.temporary ? ` · ${transientKindLabel(player)}` : "";
+    const suffix = `${isSelf ? " (you)" : ""}${kind}${isAway ? " · away" : ""}`;
     name.textContent = `${player.name}${suffix}`;
 
     row.append(color, name);

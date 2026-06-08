@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/engine/world",
+      "destination": "/engine",
+      "permanent": false
+    },
+    {
+      "source": "/engine/world/",
+      "destination": "/engine",
+      "permanent": false
+    },
+    {
+      "source": "/engine/world/:path*",
+      "destination": "/engine",
+      "permanent": false
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/enrich-world-spaces",
+      "schedule": "0 5 * * *"
+    }
+  ]
+}

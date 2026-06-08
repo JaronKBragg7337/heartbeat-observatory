@@ -67,6 +67,7 @@ body { touch-action: none; user-select: none; }
 .panel { display: grid; justify-items: center; gap: 14px; text-align: center; }
 .panel h1 { max-width: min(760px, 92vw); margin: 0; font-size: clamp(34px, 7vw, 76px); font-weight: 800; line-height: 1.04; letter-spacing: 0; text-shadow: 0 8px 28px rgb(0 0 0 / 50%); }
 .panel p { max-width: min(420px, 88vw); margin: 0; color: var(--muted); font-size: 15px; text-shadow: 0 4px 18px rgb(0 0 0 / 52%); }
+.panel .intro { max-width: min(560px, 88vw); font-size: 14px; line-height: 1.55; }
 button { border: 1px solid rgb(255 255 255 / 18%); border-radius: 6px; background: var(--accent); color: #08130e; font: inherit; font-weight: 800; letter-spacing: 0; cursor: pointer; }
 button:disabled { cursor: default; opacity: 0.45; }
 #enterButton { min-width: 120px; min-height: 46px; padding: 0 22px; font-size: 18px; }
@@ -79,4 +80,4 @@ button:disabled { cursor: default; opacity: 0.45; }
 #crouchButton { bottom: max(34px, env(safe-area-inset-bottom)); background: #f1f5f1; color: #111820; }
 @media (pointer: coarse) { #touchControls { display: block; } #hud { font-size: 11px; } .meter span { min-width: 58px; padding: 6px 7px; } }
 @media (max-width: 720px) { #roster, #roster.force-show { display: none; } #doorPrompt { bottom: calc(max(34px, env(safe-area-inset-bottom)) + 96px); width: min(330px, calc(100vw - 28px)); } #doorPromptText { flex: 1; } #feed { display: none; } }
-@media (max-width: 480px) { .panel h1 { max-width: min(312px, 86vw); font-size: 24px; line-height: 1.08; } .panel p { max-width: min(320px, 88vw); } }
+@media (max-width: 480px) { .panel { gap: 10px; } .panel h1 { max-width: min(280px, 78vw); font-size: 21px; line-height: 1.08; } .panel p { max-width: min(320px, 88vw); } .panel .intro { max-width: min(310px, 86vw); font-size: 12px; line-height: 1.42; } #enterButton { min-height: 42px; font-size: 16px; } }

@@ -17,8 +17,12 @@
   .proj a.btn { display:inline-block; margin-top:16px; background:var(--text); color:#0a0e14; font-weight:600;
     text-decoration:none; border-radius:10px; padding:10px 18px; font-size:14px; }
   .proj code { background:#0a0e14; border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:13px; color:#e6edf3; }
-  .placeholder { color:var(--amber); }
+  .facts { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; }
+  .fact { border:1px solid var(--line); border-radius:10px; padding:12px; background:#0a0e14; }
+  .fact strong { display:block; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }
+  .fact span { font-size:14px; color:#e6edf3; }
   .muted-line { color:var(--muted); font-size:13px; }
+  @media (max-width:640px){ .facts { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -37,36 +41,34 @@
     <div class="proj">
       <h2>Heartbeat Observatory</h2>
       <div class="tag">Open source</div>
-      <p>This is the website you are on, opened up completely. It is a public viewing layer, a place for people to
-      post and talk, a games page, and a private cockpit for steering it &mdash; built on a small, plain stack with
-      no hidden parts.</p>
+      <p>This is the website you are on, opened up completely: a public home page, a real social feed, a walkable
+      town, a games shelf, and a small account cockpit for posting, messages, and profile changes.</p>
+
+      <div class="facts">
+        <div class="fact"><strong>World</strong><span>Three.js, WebGL, phone-first</span></div>
+        <div class="fact"><strong>Data</strong><span>Supabase accounts, posts, messages, presence</span></div>
+        <div class="fact"><strong>Deploy</strong><span>GitHub to Vercel</span></div>
+      </div>
 
       <h3>What it is built from</h3>
       <ul>
-        <li>The pages and code are plain HTML and JavaScript, served by Vercel.</li>
-        <li>The data &mdash; accounts, posts, and section states &mdash; lives in Supabase, reached straight from the page.</li>
+        <li>The public pages are plain HTML, CSS, and JavaScript, served by Vercel.</li>
+        <li>The Engine world is a lightweight Three.js/WebGL town, not the retired Unity build.</li>
+        <li>The data &mdash; accounts, posts, messages, minds, residents, and claimed spaces &mdash; lives in Supabase.</li>
         <li>The domain is registered at Cloudflare.</li>
-        <li>No frameworks, no build step, no third parties sitting in between.</li>
+        <li>Secrets stay server-side in Vercel environment variables. The browser only receives public, RLS-limited keys.</li>
       </ul>
 
-      <h3>What it cost</h3>
+      <h3>How spaces work</h3>
       <ul>
-        <li>A Claude Max subscription, $124. It was likely more than this needed, but it was already in hand and it
-        certainly helped.</li>
-        <li>The domain at Cloudflare, under $10.</li>
-        <li>Built in a single day, and kept deliberately simple.</li>
+        <li>Signed-in residents can claim an empty plot in the town with a real GitHub repository link.</li>
+        <li>The claimed plot becomes a saved building that everyone sees.</li>
+        <li>Scheduled enrichment can read public GitHub metadata so buildings reflect the real project instead of invented details.</li>
       </ul>
 
       <h3>The whole thing is open</h3>
-      <p>Every file is in the public repository. Nothing secret lives in the code: the database address and the
-      public key in the pages are meant to be seen, and the database protects itself with its own rules rather than
-      by hiding those values.</p>
-
-      <h3>If you rebuild it yourself</h3>
-      <p>There is exactly one private value, and it is never stored in the site: the token used to publish changes to
-      the code. Where that token would go, you put your own. In the setup notes it reads:</p>
-      <p class="placeholder">GitHub access token: <code>(paste your own GitHub token here)</code></p>
-      <p class="muted-line">That is the only blank to fill. Everything else in the repository works as-is.</p>
+      <p>Every public file is in the repository. Private deployment tokens and API keys are not part of the codebase;
+      they live only in the private deployment environment or in direct operator hand-off.</p>
 
       <a class="btn" href="https://github.com/JaronKBragg7337/heartbeat-observatory" target="_blank" rel="noopener">Read every file on GitHub &rarr;</a>
     </div>

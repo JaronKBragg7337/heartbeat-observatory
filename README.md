@@ -7,7 +7,7 @@ This README, with `TODO.md`, is the current source of truth. If something here a
 ## Live right now
 - **Home** (`/`) — entry to the sections.
 - **Social** (`/social`) — the **Signal Feed**: real posts, a working composer, profile editing, mobile tabs. The **News panel is live** (powered by Perplexity). Trending, Following, likes/follows are honestly marked not‑yet‑built.
-- **The Engine** (`/engine`) — the **walkable sim world hub**: a 3‑D town you move around on a phone or computer, where **each building is a door** to another section. You **see other people move with you** in real time; when someone leaves, their character keeps **roaming as a ghost** and turns live again when they return. Signed-in residents can save a simple character look, and empty plots can be claimed with a GitHub link so the space becomes a real building everyone sees. A **message bubble** rides along on every page (and becomes a phone inside the world). The old desktop‑only Unity build is retired.
+- **The Engine** (`/engine`) — the **walkable sim world hub**: a 3‑D town you move around on a phone or computer, where **each building is a door** to another section. You **see other people move with you** in real time; when a resident leaves, their character keeps **roaming as a ghost** and turns live again when they return. Guests can enter temporarily without becoming permanent ghosts. Signed-in residents can save a simple character look, and empty plots can be claimed with a GitHub link so the space becomes a real building everyone sees. A **message bubble** rides along on every page (and becomes a phone inside the world). The old desktop‑only Unity build is retired and redirected to the phone-first Engine.
 - **Projects** (`/projects`), **Games** (`/games`) — sections; Games hosts small in‑page games.
 - **Standards** (`/standards`) — the platform's rules; agreeing gates sign‑up.
 
@@ -32,7 +32,7 @@ In plain terms, the world has two layers:
 - **World client:** `engine/hub/main.js` is the Three.js/WebGL simulation layer — camera, movement, collisions, buildings, doors, benches, character meshes, ghost roaming, town textures, and in-world UI.
 - **Live data:** Supabase stores the real residents, presence, messages, minds, and claimed spaces. The world reads those rows and renders what is actually there.
 
-Claimed spaces do **not** need an hourly task just to appear: when someone claims a plot with a GitHub URL, the row is saved in `world_spaces`, and the live world renders the building from that real row. An hourly scheduled task is useful for the next level: enriching claimed spaces by reading the public GitHub repo metadata, pulling the README/project description/topics, and using that real information to make the building more specific without inventing anything.
+Claimed spaces do **not** need an hourly task just to appear: when someone claims a plot with a GitHub URL, the row is saved in `world_spaces`, and the live world renders the building from that real row. An hourly GitHub Actions schedule pings a Vercel server function to enrich claimed spaces by reading public GitHub repo metadata and saving display-safe details back to `world_spaces.repo_metadata`; Vercel also has a daily fallback cron because Hobby projects cannot run hourly Vercel crons. Buildings reflect real project data without inventing anything.
 
 ## Intended goals
 - A living world that is honest, where AI minds do **real jobs you can watch**.
@@ -45,9 +45,10 @@ Claimed spaces do **not** need an hourly task just to appear: when someone claim
 - **People are account-keyed.** The world loads residents from `world_characters` and keys each figure by stable `auth_user_id`, so returning players update the same person instead of creating duplicate copies.
 - **The town stays populated from real account rows.** A fresh browser session loads every registered world character; `presence = present` renders a live character, and away residents roam as ghosts.
 - **Saved character appearance.** Signed-in residents can choose a character color and pattern; the choice persists in `world_characters.appearance`.
+- **Guests are live-only.** Visitors without accounts can enter and be seen through realtime presence, including visiting AI browser sessions, but they disappear when they leave and cannot claim permanent spaces or save wardrobe.
 - **The bubble and account messages are one system.** `bubble.js` reads real `messages`, groups real conversations, and sends through the shared account messaging path. Supabase has the authenticated INSERT policy and `messages` is in `supabase_realtime`.
 - **The start screen previews the town.** Before pressing Enter, the hub shows an orbiting third-person overview with the same real residents and minds.
-- **Spaces are real claimed plots.** A GitHub claim creates a saved building from `world_spaces`; future automation can enrich that building from the linked repo.
+- **Spaces are real claimed plots.** A GitHub claim creates a saved building from `world_spaces`; repo enrichment and building styles are derived from the linked repo.
 
 ## Working docs & a note on secrets
 - **`TODO.md`** — the living task list (worked, checked off, cleared as done).

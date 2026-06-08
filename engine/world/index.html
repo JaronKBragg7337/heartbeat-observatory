@@ -1,178 +1,39 @@
-<!DOCTYPE html>
-<html lang="en-us">
+<!doctype html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Heartbeat Observatory World</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-    <style id="heartbeat-world-iframe-style">
-      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #0b0d10; }
-      #unity-container { width: 100vw; height: 100vh; }
-      #unity-canvas { width: 100% !important; height: 100% !important; display: block; background: #0b0d10; }
-      #unity-footer { display: none !important; }
-      #unity-loading-bar { transform: translate(-50%, -50%) scale(0.85); }
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="0; url=/engine">
+    <title>Engine moved</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background: #070a0f;
+        color: #e6edf3;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main {
+        width: min(520px, calc(100vw - 40px));
+        padding: 28px;
+        border: 1px solid #1c2530;
+        border-radius: 10px;
+        background: #0e131b;
+        text-align: center;
+      }
+      h1 { margin: 0 0 10px; font-size: 24px; }
+      p { margin: 0; color: #9aa6b2; line-height: 1.6; }
+      a { color: #e6edf3; }
     </style>
   </head>
   <body>
-    <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
-      <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
-        </div>
-      </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-logo-title-footer"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">HeartbeatSimWorldUnity</div>
-      </div>
-    </div>
-    <script>
-      var canvas = document.querySelector("#unity-canvas");
-
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
-      function unityShowBanner(msg, type) {
-        var warningBanner = document.querySelector("#unity-warning");
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
-      }
-
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/world.loader.js";
-      var config = {
-        arguments: [],
-        dataUrl: buildUrl + "/world.data",
-        frameworkUrl: buildUrl + "/world.framework.js",
-        codeUrl: buildUrl + "/world.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "HeartbeatSimWorldUnity",
-        productVersion: "1.0",
-        showBanner: unityShowBanner,
-        // errorHandler: function(err, url, line) {
-        //    alert("error " + err + " occurred at line " + line);
-        //    // Return 'true' if you handled this error and don't want Unity
-        //    // to process it further, 'false' otherwise.
-        //    return true;
-        // },
-      };
-
-      // By default, Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
-
-      // If you would like all file writes inside Unity Application.persistentDataPath
-      // directory to automatically persist so that the contents are remembered when
-      // the user revisits the site the next time, uncomment the following line:
-      // config.autoSyncPersistentDataPath = true;
-      // This autosyncing is currently not the default behavior to avoid regressing
-      // existing user projects that might rely on the earlier manual
-      // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
-      // expected to change.
-
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
-
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        document.querySelector("#unity-container").className = "unity-mobile";
-        canvas.className = "unity-mobile";
-
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
-
-
-      } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
-      }
-
-      document.querySelector("#unity-loading-bar").style.display = "block";
-
-      window.addEventListener("message", function (e) {
-        function heartbeatPayload(payload) {
-          return typeof payload === "string" ? payload : JSON.stringify(payload || {});
-        }
-        function heartbeatFocus() {
-          if (canvas) {
-            canvas.tabIndex = 1;
-            canvas.focus({ preventScroll: true });
-          }
-        }
-        if (e.data && e.data.type === "agent_state" && window.unityInstance) {
-          window.unityInstance.SendMessage("WorldEventBridge", "ReceiveAgentState", heartbeatPayload(e.data.payload));
-        }
-        if (e.data && e.data.type === "world_character" && window.unityInstance) {
-          window.unityInstance.SendMessage("WorldEventBridge", "ReceiveWorldCharacter", heartbeatPayload(e.data.payload));
-        }
-        if (e.data && e.data.type === "world_layout" && window.unityInstance) {
-          window.unityInstance.SendMessage("WorldEventBridge", "ReceiveWorldLayout", heartbeatPayload(e.data.payload));
-        }
-        if (e.data && (e.data.type === "player_control" || e.data.type === "enter_world") && window.unityInstance) {
-          heartbeatFocus();
-          window.unityInstance.SendMessage("WorldEventBridge", "ReceivePlayerControl", heartbeatPayload(e.data.payload || { enabled: true }));
-        }
-        if (e.data && e.data.type === "exit_world" && window.unityInstance) {
-          window.unityInstance.SendMessage("WorldEventBridge", "ReceivePlayerControl", heartbeatPayload({ enabled: false }));
-        }
-      });
-      document.addEventListener("fullscreenchange", function () {
-        if (document.fullscreenElement) {
-          var unityCanvas = document.querySelector("#unity-canvas");
-          if (unityCanvas) {
-            unityCanvas.tabIndex = 1;
-            unityCanvas.focus({ preventScroll: true });
-          }
-        }
-      });
-
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
-              }).then((unityInstance) => {
-                window.unityInstance = unityInstance;
-                document.querySelector("#unity-loading-bar").style.display = "none";
-                document.querySelector("#unity-fullscreen-button").onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
-
-              }).catch((message) => {
-                alert(message);
-              });
-            };
-
-      document.body.appendChild(script);
-
-    </script>
+    <main>
+      <h1>The Engine moved</h1>
+      <p>The retired Unity build is no longer the Observatory core. The phone-first world now lives at <a href="/engine">/engine</a>.</p>
+    </main>
+    <script>location.replace("/engine");</script>
   </body>
 </html>
