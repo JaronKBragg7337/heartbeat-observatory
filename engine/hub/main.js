@@ -232,7 +232,7 @@ let roomGroup = null;
 let savedTownColliders = null;
 let hiddenForRoom = [];
 let townReturn = { x: 0, z: 0, yaw: 0 };
-let myRoomLayout = { wall: "#8a9aa6", floor: "#b8a98f" };
+let myRoomLayout = { wall: "#8a9aa6", floor: "#b8a98f", items: { rug: false, plant: false, lamp: false, table: false } };
 let roomSaveTimer = null;
 animate();
 try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
@@ -1557,15 +1557,44 @@ function buildRoomGroup() {
   exitPad.position.set(0, 0.05, FD / 2 - 1.4); roomGroup.add(exitPad);
   const exitLabel = createLabelSprite("Exit to town", { background: "rgba(10, 20, 14, 0.82)", foreground: "#dff7e2", fontSize: 26, scale: 0.011 });
   exitLabel.position.set(0, 1.4, FD / 2 - 1.4); roomGroup.add(exitLabel);
-  roomGroup.userData = { colliders: colliders, floorMat: floorMat, wallMat: wallMat };
+  roomGroup.userData = { colliders: colliders, floorMat: floorMat, wallMat: wallMat, items: buildRoomItems(roomGroup) };
   roomGroup.visible = false;
   scene.add(roomGroup);
+}
+
+function buildRoomItems(group) {
+  const items = {};
+  const rug = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.06, 3.4), new THREE.MeshStandardMaterial({ color: 0x7a4a4a, roughness: 0.95 }));
+  rug.position.set(0, 0.04, -0.6); rug.receiveShadow = true; items.rug = rug;
+  const plant = new THREE.Group();
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.24, 0.42, 16), new THREE.MeshStandardMaterial({ color: 0x9c6b4a, roughness: 0.8 })); pot.position.y = 0.21;
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.7, 10), new THREE.MeshStandardMaterial({ color: 0x5a4630 })); stem.position.y = 0.72;
+  const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 14), new THREE.MeshStandardMaterial({ color: 0x4f8a52, roughness: 0.85 })); leaves.position.y = 1.25;
+  plant.add(pot, stem, leaves); plant.position.set(-3.7, 0, -3.7); items.plant = plant;
+  const lamp = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.8, 10), new THREE.MeshStandardMaterial({ color: 0x33414a })); pole.position.y = 0.9;
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 14), new THREE.MeshStandardMaterial({ color: 0xffe6b0, emissive: 0xffca6b, emissiveIntensity: 0.85, roughness: 0.4 })); bulb.position.y = 1.95;
+  lamp.add(pole, bulb); lamp.position.set(3.7, 0, -3.7); items.lamp = lamp;
+  const table = new THREE.Group();
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x8a6a44, roughness: 0.7 });
+  const top = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 0.95), woodMat); top.position.y = 0.66; table.add(top);
+  for (const lp of [[-0.65, -0.38], [0.65, -0.38], [-0.65, 0.38], [0.65, 0.38]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.66, 0.1), woodMat); leg.position.set(lp[0], 0.33, lp[1]); table.add(leg);
+  }
+  table.position.set(3.0, 0, 2.6); items.table = table;
+  for (const k in items) { items[k].visible = false; group.add(items[k]); }
+  return items;
 }
 
 function normalizeRoomLayout(layout) {
   const hex = (v, d) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v)) ? v.toLowerCase() : d;
   layout = (layout && typeof layout === "object") ? layout : {};
-  return { wall: hex(layout.wall, "#8a9aa6"), floor: hex(layout.floor, "#b8a98f") };
+  const it = (layout.items && typeof layout.items === "object") ? layout.items : {};
+  return {
+    wall: hex(layout.wall, "#8a9aa6"),
+    floor: hex(layout.floor, "#b8a98f"),
+    items: { rug: !!it.rug, plant: !!it.plant, lamp: !!it.lamp, table: !!it.table }
+  };
 }
 
 function applyRoomLayout() {
@@ -1573,6 +1602,9 @@ function applyRoomLayout() {
   try {
     if (roomGroup.userData.wallMat) roomGroup.userData.wallMat.color.set(myRoomLayout.wall);
     if (roomGroup.userData.floorMat) roomGroup.userData.floorMat.color.set(myRoomLayout.floor);
+    const objs = roomGroup.userData.items || {};
+    const want = myRoomLayout.items || {};
+    for (const k in objs) { objs[k].visible = !!want[k]; }
   } catch (e) {}
 }
 
@@ -1602,6 +1634,33 @@ async function saveRoomLayout() {
   }
 }
 
+function toggleRoomItem(key) {
+  if (!myRoomLayout.items) myRoomLayout.items = { rug: false, plant: false, lamp: false, table: false };
+  myRoomLayout.items[key] = !myRoomLayout.items[key];
+  applyRoomLayout();
+  const bn = document.querySelector('#roomPanel [data-it="' + key + '"]');
+  if (bn) {
+    const on = myRoomLayout.items[key];
+    bn.style.background = on ? "#9fd0a0" : "transparent";
+    bn.style.color = on ? "#0a1410" : "#cfe0e6";
+    bn.style.borderColor = on ? "#9fd0a0" : "#3a4750";
+  }
+  const st = document.getElementById("roomSaveStatus");
+  if (!myUserId) { if (st) st.textContent = "Guest \u2014 changes won't save"; return; }
+  if (st) st.textContent = "Saving\u2026";
+  clearTimeout(roomSaveTimer);
+  roomSaveTimer = setTimeout(saveRoomLayout, 350);
+}
+
+function roomItemRow() {
+  const defs = [["rug", "Rug"], ["plant", "Plant"], ["lamp", "Lamp"], ["table", "Table"]];
+  const want = myRoomLayout.items || {};
+  return defs.map((d) => {
+    const on = !!want[d[0]];
+    return '<button type="button" data-it="' + d[0] + '" style="padding:6px 11px;border-radius:8px;border:1px solid ' + (on ? "#9fd0a0" : "#3a4750") + ';background:' + (on ? "#9fd0a0" : "transparent") + ';color:' + (on ? "#0a1410" : "#cfe0e6") + ';font-size:12px;font-weight:600;cursor:pointer;">' + d[1] + '</button>';
+  }).join("");
+}
+
 function roomSwatchRow(target) {
   const colors = target === "wall"
     ? ["#8a9aa6","#6f7e8c","#42505c","#a8b6a0","#c8a99a","#9a8fb0"]
@@ -1623,6 +1682,7 @@ function showRoomPanel() {
       const t = e.target;
       if (!t) return;
       if (t.id === "roomExitBtn") { exitRoom(); return; }
+      if (t.getAttribute && t.getAttribute("data-it")) { toggleRoomItem(t.getAttribute("data-it")); return; }
       if (t.getAttribute && t.getAttribute("data-rt")) setRoomColor(t.getAttribute("data-rt"), t.getAttribute("data-rc"));
     });
   }
@@ -1630,6 +1690,7 @@ function showRoomPanel() {
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-weight:700;">Your room</span><span id="roomSaveStatus" style="font-size:11px;color:#8aa0a8;"></span></div>' +
     '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Walls</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("wall") + '</div></div>' +
     '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Floor</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("floor") + '</div></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Items</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomItemRow() + '</div></div>' +
     '<button id="roomExitBtn" type="button" style="margin-top:2px;padding:9px 12px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:700;font-size:13px;cursor:pointer;">Exit to town</button>';
   p.style.display = "flex";
   if (!myUserId) { const st = document.getElementById("roomSaveStatus"); if (st) st.textContent = "Guest \u2014 won't save"; }
