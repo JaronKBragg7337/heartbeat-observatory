@@ -1427,7 +1427,7 @@ function updateViewmodel() {
   if (!viewmodel) return;
   if (!hasEntered || settingsOpen) { viewmodel.visible = false; return; }
   viewmodel.visible = true;
-  _vmOff.set(0.34, -0.30, -0.6).applyQuaternion(camera.quaternion);
+  _vmOff.set(0.2, -0.18, -0.55).applyQuaternion(camera.quaternion);
   viewmodel.position.copy(camera.position).add(_vmOff);
   viewmodel.quaternion.copy(camera.quaternion);
 }
