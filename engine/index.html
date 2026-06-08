@@ -150,10 +150,6 @@
   function toWorld(type, obj){
     const payload = JSON.stringify(obj);
     if (HAS_WORLD && worldFrame.contentWindow) { try { worldFrame.contentWindow.postMessage({ type, payload }, "*"); } catch(e){} }
-    if (window.unityInstance && window.unityInstance.SendMessage) {
-      const method = type==="world_character" ? "ReceiveWorldCharacter" : "ReceiveAgentState";
-      try { window.unityInstance.SendMessage("WorldEventBridge", method, payload); } catch(e){}
-    }
   }
 
   // ---- enter / look / control ----
@@ -203,7 +199,7 @@
   if (enterBtn) enterBtn.addEventListener("click", ()=>{ inControl ? exitWorld() : enterWorld(); });
   if (stageEl) stageEl.addEventListener("click", focusWorld);
   document.addEventListener("fullscreenchange", ()=>{ if(!document.fullscreenElement && inControl) exitWorld(); });
-  window.addEventListener("message", (ev)=>{ const t=ev&&ev.data&&ev.data.type; if(t==="world_ready"||t==="ready"||t==="unity_ready") flushToWorld(); });
+  window.addEventListener("message", (ev)=>{ const t=ev&&ev.data&&ev.data.type; if(t==="world_ready"||t==="ready") flushToWorld(); });
   worldFrame.addEventListener("load", ()=>{ [1500,4000,8000,13000].forEach(d=> setTimeout(flushToWorld, d)); });
   showControls();
 
