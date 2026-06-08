@@ -13,7 +13,10 @@
       .controls .ctl b { color:var(--text); font-weight:700; margin-right:6px; }
       .controls .ctl-touch { display:none; }
       @media (pointer: coarse) { .controls .ctl-desktop { display:none; } .controls .ctl-touch { display:grid; } }
+      html.preview body > *:not(#game):not(script) { display:none !important; }
+      html.preview, html.preview body { overflow:hidden; background:#04060b; }
     </style>
+    <script>try{if(window.top!==window.self||new URLSearchParams(location.search).get("preview")==="1")document.documentElement.classList.add("preview");}catch(e){document.documentElement.classList.add("preview");}</script>
   </head>
   <body>
     <canvas id="game"></canvas>
