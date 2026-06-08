@@ -30,6 +30,8 @@ body { touch-action: none; user-select: none; }
 #roster.hidden { display: none; }
 .player-row { display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 8px; min-width: 0; padding: 8px 9px; border: 1px solid var(--panel-border); border-radius: 6px; background: var(--panel-bg); box-shadow: 0 10px 22px rgb(0 0 0 / 22%); font-size: 12px; text-transform: uppercase; }
 .player-row.self { border-color: rgb(120 215 166 / 62%); }
+.player-row.away { opacity: 0.72; }
+.player-row.away .player-color { filter: grayscale(0.55); }
 .player-color { width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 2px rgb(255 255 255 / 16%); }
 .player-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #doorPrompt { position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 28px); transform: translateX(-50%); padding: 8px; border: 1px solid rgb(255 255 255 / 20%); border-radius: 8px; background: var(--panel-strong); box-shadow: 0 16px 38px rgb(0 0 0 / 30%); z-index: 16; }
@@ -64,5 +66,5 @@ button:disabled { cursor: default; opacity: 0.45; }
 #jumpButton { bottom: calc(max(34px, env(safe-area-inset-bottom)) + 82px); background: var(--blue); color: #06111f; }
 #crouchButton { bottom: max(34px, env(safe-area-inset-bottom)); background: #f1f5f1; color: #111820; }
 @media (pointer: coarse) { #touchControls { display: block; } #hud { font-size: 11px; } .meter span { min-width: 58px; padding: 6px 7px; } }
-@media (max-width: 720px) { #roster { display: none; } #roster.force-show { display: grid; } #doorPrompt { bottom: calc(max(34px, env(safe-area-inset-bottom)) + 96px); width: min(330px, calc(100vw - 28px)); } #doorPromptText { flex: 1; } #feed { display: none; } }
+@media (max-width: 720px) { #roster, #roster.force-show { display: none; } #doorPrompt { bottom: calc(max(34px, env(safe-area-inset-bottom)) + 96px); width: min(330px, calc(100vw - 28px)); } #doorPromptText { flex: 1; } #feed { display: none; } }
 @media (max-width: 480px) { .panel h1 { max-width: min(312px, 86vw); font-size: 24px; line-height: 1.08; } .panel p { max-width: min(320px, 88vw); } }

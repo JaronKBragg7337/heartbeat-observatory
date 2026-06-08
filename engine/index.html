@@ -129,7 +129,7 @@
   }catch(e){} mountWorld(); renderResidents(); })();
 
   function mountWorld(){
-    worldFrame.src = "/engine/hub/?name=" + encodeURIComponent(myName);
+    worldFrame.src = "/engine/hub/?name=" + encodeURIComponent(myName) + (myUserId ? "&uid=" + encodeURIComponent(myUserId) : "");
     worldFrame.style.display = "block";
     stageEmpty.style.display = "none";
   }

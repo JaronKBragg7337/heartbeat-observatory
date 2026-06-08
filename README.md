@@ -34,18 +34,14 @@ The Engine is a walkable 3‑D **hub** anyone can enter from a phone or a comput
 - A place that **grows with its community** — new sections appear as new buildings; others claim spaces (**now live** — claim a plot with a GitHub link) — judged on the work, not on who is behind it.
 - **Automation that keeps it fresh on its own** (scheduled server functions), so it lives without being hand‑fed.
 
-## Open issues — to fix next
-These are the live gaps as of the latest walk‑through. Files named are in this repo; tables named are in Supabase (its *publishable* key is the only public‑safe credential — see the secrets note below).
+## Latest Engine hub fixes
+The latest walk-through gaps are fixed in the live hub code:
 
-1. **Returning players duplicate into copies.** When a player leaves, their character becomes a roaming ghost; when they come back the ghost should vanish and they should be live again — instead the ghost stays, and repeating leave/return spawns many copies. Cause: world identity uses a fresh random per‑session id (`myId` in `engine/hub/main.js`), so a returning person looks like a brand‑new id and their old ghost is never matched or removed. Fix by identifying each person by their **stable account id** (`world_characters.auth_user_id`), not a per‑session id, so a return reliably removes their ghost and nothing duplicates.
-
-2. **The world empties out over time.** After everyone has been gone a while there are no ghosts and no characters at all. Ghosts today exist only for people whose leaving was seen in the current browser session, so they disappear on reload. Fix by driving the world's population from the shared **`world_characters`** table, so the town stays populated even when you arrive to an otherwise empty session.
-
-3. **Show every registered account.** Three accounts exist, so there should be three figures in the world — **live when that person is present, a roaming ghost when away** — and every new sign‑up should appear automatically. Drive this from **`world_characters` / `people`** plus the existing presence signal (`world_presence`), not from real‑time presence alone. (Issues 1–3 are really one change: the world's people come from accounts, keyed by `auth_user_id`; present = live, away = ghost.)
-
-4. **Messaging must be one real system.** The message bubble / in‑world phone (`bubble.js`) currently has no way to type and is not connected to the accounts' messaging — they should be the **same** system. Account messaging already lives in the **`messages`** table (`sender_id`, `recipient_id`, `sender_handle`, `recipient_handle`, `body`, `created_at`). Give the bubble a composer (type + send) that writes to `messages` and reads real threads from it, so the bubble and the account inbox are one shared system — not two. Keep the honesty rule: show real messages or an honest empty state, never invented threads.
-
-5. **Third‑person preview before entering.** Like the old world, the start screen should let you watch the whole town from an overview / third‑person camera — seeing characters and minds roaming — before you choose to enter and take control. Add an orbiting overview on the entry screen in `engine/hub/main.js`, then "Enter" drops you into first‑person control.
+1. **People are account-keyed.** The world now loads residents from `world_characters` and keys each figure by stable `auth_user_id`, so returning players update the same person instead of creating duplicate copies.
+2. **The town stays populated from real account rows.** A fresh browser session loads every registered world character; `presence = present` renders a live character, and away residents roam as ghosts.
+3. **The roster shows every registered account.** New sign-ups appear automatically through `world_characters`; the compact count shows live people and total residents.
+4. **The bubble and account messages are one system.** `bubble.js` now reads real `messages`, groups real conversations, and sends through the shared account messaging path. Supabase now has the authenticated INSERT policy and `messages` is in `supabase_realtime`.
+5. **The start screen previews the town.** Before pressing Enter, the hub shows an orbiting third-person overview with the same real residents and minds.
 
 ## Working docs & a note on secrets
 - **`TODO.md`** — the living task list (worked, checked off, cleared as done).

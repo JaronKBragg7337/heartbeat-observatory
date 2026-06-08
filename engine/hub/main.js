@@ -30,18 +30,21 @@ const crouchButton = document.querySelector("#crouchButton");
 const welcomeName = document.querySelector("#welcomeName");
 
 const params = new URLSearchParams(location.search);
-const displayName = sanitizeDisplayName(params.get("name"));
+let displayName = sanitizeDisplayName(params.get("name"));
+const hintedUserId = params.get("uid");
 const isTouch = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 
 // ---- Supabase realtime transport (replaces the old WebSocket server) ----
 const SUPA_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
 const SUPA_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
 const peerColors = ["#4fa3ff", "#5fd38d", "#f6b45b", "#e36d7c", "#a67cff", "#47c7b8", "#f0d461", "#d987e8"];
-const myId = crypto.randomUUID().slice(0, 8);
-const myColor = peerColors[Math.floor(Math.random() * peerColors.length)];
+let myId = null;
+let myUserId = null;
+let myColor = peerColors[0];
 let supa = null;
 let channel = null;
 let connected = false;
+let wantsSelfPresence = true;
 
 let sendAccumulator = 0;
 let hasEntered = false;
@@ -52,12 +55,15 @@ let activePlot = null;
 let pseudoOn = false;
 const plotList = [];
 let spacesLoaded = false;
+let charactersLoaded = false;
+let previewAngle = -0.55;
 
 const keys = new Set();
 const remotes = new Map();
 const peers = new Map();
 const mindActors = new Map();
 const npcs = new Map();
+const characters = new Map();
 let mindsLoaded = false;
 let latestPlayers = [];
 
@@ -198,8 +204,9 @@ identityEl.textContent = displayName;
 welcomeName.textContent = displayName;
 actionButton.disabled = true;
 buildTown();
-connect();
+initWorld();
 animate();
+try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
 
 enterButton.addEventListener("click", enterTown);
 
@@ -361,15 +368,296 @@ window.addEventListener("resize", () => {
 });
 
 window.addEventListener("blur", clearMovementInput);
+window.addEventListener("pagehide", pageLeavePresence);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) clearMovementInput();
+  if (myUserId) setMyWorldPresence(!document.hidden);
 });
+
+async function initWorld() {
+  ensureSupabase();
+  await loadIdentity();
+  if (!mindsLoaded) { mindsLoaded = true; loadMinds(); }
+  if (!spacesLoaded) { spacesLoaded = true; loadSpaces(); }
+  await loadCharacters();
+  connect();
+  if (myUserId) setMyWorldPresence(true);
+}
+
+function ensureSupabase() {
+  if (!supa) {
+    supa = createClient(SUPA_URL, SUPA_KEY, {
+      realtime: { params: { eventsPerSecond: 24 } }
+    });
+  }
+  return supa;
+}
+
+async function loadIdentity() {
+  try {
+    const { data: { session } } = await ensureSupabase().auth.getSession();
+    if (session?.user?.id) {
+      myUserId = session.user.id;
+      myId = myUserId;
+      if (hintedUserId && hintedUserId !== myUserId) {
+        addFeed("Signed-in account verified");
+      }
+      try {
+        const { data: character } = await supa
+          .from("world_characters")
+          .select("auth_user_id, display_name, presence, appearance, kind, location, last_seen_at")
+          .eq("auth_user_id", myUserId)
+          .maybeSingle();
+        if (character) {
+          upsertCharacter(character);
+          if (character.display_name) displayName = sanitizeDisplayName(character.display_name);
+        }
+      } catch {}
+      if (displayName === "Guest") {
+        try {
+          const { data: person } = await supa
+            .from("people")
+            .select("display_name, handle")
+            .eq("auth_user_id", myUserId)
+            .maybeSingle();
+          const name = person?.display_name || person?.handle;
+          if (name) displayName = sanitizeDisplayName(name);
+        } catch {}
+      }
+    } else {
+      myId = null;
+    }
+  } catch {
+    myId = null;
+  }
+
+  myColor = colorForId(myUserId || displayName);
+  identityEl.textContent = displayName;
+  welcomeName.textContent = displayName;
+}
+
+async function loadCharacters() {
+  if (charactersLoaded) return;
+  charactersLoaded = true;
+  try {
+    const { data, error } = await ensureSupabase()
+      .from("world_characters")
+      .select("auth_user_id, display_name, presence, appearance, kind, location, last_seen_at");
+    if (error) throw error;
+    for (const row of data || []) upsertCharacter(row);
+    renderCharacters();
+  } catch {
+    renderCharacters();
+  }
+
+  try {
+    supa.channel("engine-characters")
+      .on("postgres_changes", { event: "*", schema: "public", table: "world_characters" }, (p) => {
+        const row = p.new || p.old;
+        if (!row?.auth_user_id) return;
+        if (p.eventType === "DELETE") {
+          characters.delete(row.auth_user_id);
+          removeRemote(row.auth_user_id);
+          removeNpc(row.auth_user_id);
+          peers.delete(row.auth_user_id);
+        } else {
+          upsertCharacter(row);
+        }
+        renderCharacters();
+      })
+      .subscribe();
+  } catch {}
+}
+
+function upsertCharacter(row) {
+  if (!row?.auth_user_id) return;
+  characters.set(row.auth_user_id, {
+    ...row,
+    display_name: sanitizeDisplayName(row.display_name)
+  });
+}
+
+function renderCharacters() {
+  const ids = new Set(characters.keys());
+  for (const id of [...remotes.keys()]) {
+    if (!ids.has(id)) removeRemote(id);
+  }
+  for (const id of [...npcs.keys()]) {
+    if (!ids.has(id)) removeNpc(id);
+  }
+
+  const rows = [...characters.values()].sort((a, b) =>
+    characterName(a).localeCompare(characterName(b))
+  );
+  for (const row of rows) reconcileCharacter(row);
+  latestPlayers = rows.map((row) => ({
+    id: row.auth_user_id,
+    name: characterName(row),
+    color: characterColor(row),
+    presence: characterPresence(row)
+  }));
+  const liveCount = latestPlayers.filter((p) => p.presence === "present").length;
+  playerCountEl.textContent = `${liveCount} live / ${latestPlayers.length} people`;
+  renderRoster();
+}
+
+function reconcileCharacter(row) {
+  const id = row.auth_user_id;
+  if (!id) return;
+
+  if (characterPresence(row) !== "present") {
+    peers.delete(id);
+    removeRemote(id);
+    ensureNpcForCharacter(row);
+    return;
+  }
+
+  removeNpc(id);
+  if (id === myUserId && hasEntered) {
+    removeRemote(id);
+    return;
+  }
+
+  const peer = peers.get(id);
+  const player = peer || characterPlayer(row);
+  let remote = remotes.get(id);
+  if (!remote) {
+    remote = createRemote(player);
+    remotes.set(id, remote);
+    scene.add(remote.group);
+  }
+  remote.target.set(player.x, remoteGroundY(player), player.z);
+  remote.targetYaw = player.yaw;
+  remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
+}
+
+function characterPlayer(row) {
+  const spawn = row.auth_user_id === myUserId ? new THREE.Vector3(state.x, 0, state.z) : characterSpawn(row.auth_user_id);
+  return {
+    id: row.auth_user_id,
+    name: characterName(row),
+    color: characterColor(row),
+    x: spawn.x,
+    y: standingEyeHeight,
+    z: spawn.z,
+    yaw: spawn.yaw || 0,
+    pitch: 0,
+    stance: "stand"
+  };
+}
+
+function ensureNpcForCharacter(row) {
+  const id = row.auth_user_id;
+  if (!id) return;
+  let npc = npcs.get(id);
+  if (npc) {
+    if (npc.name !== characterName(row)) {
+      removeNpc(id);
+      npc = null;
+    } else {
+      return;
+    }
+  }
+
+  const remote = remotes.get(id);
+  const known = peers.get(id);
+  const spawn = remote
+    ? remote.group.position.clone()
+    : known
+      ? new THREE.Vector3(known.x, remoteGroundY(known), known.z)
+      : characterSpawn(id);
+  removeRemote(id);
+
+  let seed = 0;
+  for (const ch of id) seed += ch.charCodeAt(0);
+  const group = buildNpcAvatar(characterColor(row), characterName(row));
+  group.position.copy(spawn);
+  group.position.y = 0;
+  npcs.set(id, { group, name: characterName(row), seed: (seed % 100) / 100 * Math.PI * 2, base: spawn.clone() });
+  scene.add(group);
+}
+
+function characterPresence(row) {
+  return String(row?.presence || "away").toLowerCase() === "present" ? "present" : "away";
+}
+
+function characterName(row) {
+  return sanitizeDisplayName(row?.display_name || "Resident");
+}
+
+function characterColor(row) {
+  const appearance = row?.appearance && typeof row.appearance === "object" ? row.appearance : {};
+  const color = appearance.color || appearance.bodyColor || appearance.tint;
+  return typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color) ? color : colorForId(row?.auth_user_id || characterName(row));
+}
+
+function characterSpawn(id) {
+  const hash = hashString(id || "resident");
+  const angle = ((hash % 360) / 360) * Math.PI * 2;
+  const radius = 4.8 + (hash % 45) / 10;
+  return new THREE.Vector3(
+    Math.cos(angle) * radius,
+    0,
+    Math.sin(angle) * radius
+  );
+}
+
+function colorForId(id) {
+  return peerColors[Math.abs(hashString(id || "guest")) % peerColors.length];
+}
+
+function hashString(value) {
+  let hash = 0;
+  const text = String(value || "");
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+function setLocalCharacterPresence(present) {
+  if (!myUserId) return;
+  markCharacterPresence(myUserId, present);
+}
+
+function markCharacterPresence(id, present, rerender = true) {
+  const row = characters.get(id);
+  if (!row) return;
+  row.presence = present ? "present" : "away";
+  row.last_seen_at = new Date().toISOString();
+  characters.set(id, row);
+  if (rerender) renderCharacters();
+}
+
+async function setMyWorldPresence(present) {
+  if (!myUserId) return;
+  wantsSelfPresence = present;
+  setLocalCharacterPresence(present);
+  try {
+    await ensureSupabase().rpc("world_presence", { p_present: present });
+  } catch {}
+}
+
+function pageLeavePresence() {
+  if (!myUserId) return;
+  wantsSelfPresence = false;
+  setLocalCharacterPresence(false);
+  try { ensureSupabase().rpc("world_presence", { p_present: false }); } catch {}
+}
+
+function trackSelf() {
+  if (!channel || !myUserId || !wantsSelfPresence) return;
+  try { channel.track({ id: myUserId, name: displayName, color: myColor }); } catch {}
+}
 
 function enterTown() {
   if (settingsOpen) return;
   hasEntered = true;
   wantsConnection = true;
   if (!channel) connect();
+  if (myUserId) setMyWorldPresence(true);
+  trackSelf();
+  renderCharacters();
   overlay.classList.add("hidden");
   goFullscreen();
   if (!isTouch) {
@@ -429,22 +717,18 @@ function toggleSettings(open) {
 }
 
 function leaveTown() {
-  wantsConnection = false;
   hasEntered = false;
   toggleSettings(false);
   clearMovementInput();
   overlay.classList.remove("hidden");
-  setStatus("left", false);
-  latestPlayers = [];
-  renderRoster();
-  clearWorldActors();
-
-  if (channel) {
-    try { channel.untrack(); } catch {}
-    try { supa.removeChannel(channel); } catch {}
-    channel = null;
-    connected = false;
+  if (document.pointerLockElement) document.exitPointerLock?.();
+  if (pseudoOn) pseudoFs(false);
+  if (myUserId) {
+    try { channel?.untrack(); } catch {}
+    setMyWorldPresence(false);
   }
+  setStatus(connected ? "watching" : "offline", connected);
+  renderCharacters();
 }
 
 function connect() {
@@ -452,17 +736,14 @@ function connect() {
   if (channel) return;
 
   setStatus("connecting", false);
-  if (!supa) {
-    supa = createClient(SUPA_URL, SUPA_KEY, {
-      realtime: { params: { eventsPerSecond: 24 } }
-    });
-  }
+  ensureSupabase();
   if (!mindsLoaded) { mindsLoaded = true; loadMinds(); }
   if (!spacesLoaded) { spacesLoaded = true; loadSpaces(); }
+  if (!charactersLoaded) loadCharacters();
 
   channel = supa.channel("engine-town", {
     config: {
-      presence: { key: myId },
+      presence: { key: myUserId || `preview-${crypto.randomUUID().slice(0, 8)}` },
       broadcast: { self: false }
     }
   });
@@ -473,7 +754,8 @@ function connect() {
 
   channel.on("presence", { event: "join" }, ({ newPresences }) => {
     for (const p of newPresences || []) {
-      if (p.id && p.id !== myId) {
+      if (p.id && p.id !== myUserId && characters.has(p.id)) {
+        markCharacterPresence(p.id, true);
         removeNpc(p.id);
         addFeed(`${p.name || "Guest"} joined`);
       }
@@ -482,8 +764,8 @@ function connect() {
 
   channel.on("presence", { event: "leave" }, ({ leftPresences }) => {
     for (const p of leftPresences || []) {
-      if (p.id && p.id !== myId) {
-        convertToNpc(p);
+      if (p.id && p.id !== myUserId && characters.has(p.id)) {
+        markCharacterPresence(p.id, false);
         peers.delete(p.id);
         addFeed(`${p.name || "Guest"} wandered off`);
       }
@@ -495,8 +777,8 @@ function connect() {
       connected = true;
       setStatus("online", true);
       rttEl.textContent = "realtime";
-      channel.track({ id: myId, name: displayName, color: myColor });
-      addFeed(`joined as ${displayName}`);
+      trackSelf();
+      if (myUserId) addFeed(`joined as ${displayName}`);
       sendState(true);
     } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
       connected = false;
@@ -508,8 +790,9 @@ function connect() {
 }
 
 function applyPeerState(player) {
-  if (!player || !player.id || player.id === myId) return;
+  if (!player || !player.id || player.id === myUserId || !characters.has(player.id)) return;
   if (npcs.has(player.id)) removeNpc(player.id);
+  markCharacterPresence(player.id, true, false);
   peers.set(player.id, player);
 
   let remote = remotes.get(player.id);
@@ -527,36 +810,20 @@ function applyPeerState(player) {
 function syncPresence() {
   if (!channel) return;
   const presenceState = channel.presenceState();
-  const present = new Map();
 
   for (const key in presenceState) {
     const metas = presenceState[key];
     if (metas && metas[0]) {
       const meta = metas[0];
-      present.set(meta.id || key, meta);
+      const id = meta.id || key;
+      if (id && characters.has(id)) markCharacterPresence(id, true, false);
     }
   }
-
-  // Drop characters whose people are no longer present.
-  for (const id of [...remotes.keys()]) {
-    if (!present.has(id)) {
-      removeRemote(id);
-      peers.delete(id);
-    }
-  }
-
-  // Roster + count: self first, then everyone else who is present.
-  const list = [{ id: myId, name: displayName, color: myColor }];
-  for (const [id, meta] of present) {
-    if (id !== myId) list.push({ id, name: meta.name || "Guest", color: meta.color || "#8aa0a8" });
-  }
-  latestPlayers = list;
-  playerCountEl.textContent = `${list.length} player${list.length === 1 ? "" : "s"}`;
-  renderRoster();
+  renderCharacters();
 }
 
 function sendState(force = false) {
-  if (!connected || !channel) return;
+  if (!connected || !channel || !myUserId || !hasEntered) return;
   if (!force && sendAccumulator < 0.05) return;
 
   sendAccumulator = 0;
@@ -564,7 +831,7 @@ function sendState(force = false) {
     type: "broadcast",
     event: "state",
     payload: {
-      id: myId,
+      id: myUserId,
       name: displayName,
       color: myColor,
       x: state.x,
@@ -582,7 +849,7 @@ function animate() {
   sendAccumulator += dt;
 
   updateLocal(dt);
-  updateCamera();
+  updateCamera(dt);
   updateRemotes(dt);
   updateMinds();
   updateNpcs();
@@ -660,7 +927,14 @@ function updateLocal(dt) {
   state.y += (eyeTarget - state.y) * Math.min(1, dt * 14);
 }
 
-function updateCamera() {
+function updateCamera(dt) {
+  if (!hasEntered) {
+    previewAngle += dt * 0.085;
+    const radius = 24;
+    camera.position.set(Math.sin(previewAngle) * radius, 15.5, Math.cos(previewAngle) * radius);
+    camera.lookAt(0, 1.2, 0);
+    return;
+  }
   camera.position.set(state.x, state.y, state.z);
   camera.rotation.y = state.yaw;
   camera.rotation.x = state.pitch;
@@ -1444,7 +1718,9 @@ function renderRoster() {
 
   for (const player of ordered) {
     const row = document.createElement("div");
-    row.className = `player-row${player.id === myId ? " self" : ""}`;
+    const isSelf = player.id === myId;
+    const isAway = player.presence !== "present";
+    row.className = `player-row${isSelf ? " self" : ""}${isAway ? " away" : ""}`;
 
     const color = document.createElement("span");
     color.className = "player-color";
@@ -1452,7 +1728,8 @@ function renderRoster() {
 
     const name = document.createElement("span");
     name.className = "player-name";
-    name.textContent = player.id === myId ? `${player.name} (you)` : player.name;
+    const suffix = `${isSelf ? " (you)" : ""}${isAway ? " · away" : ""}`;
+    name.textContent = `${player.name}${suffix}`;
 
     row.append(color, name);
     fragment.append(row);

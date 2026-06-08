@@ -2,22 +2,18 @@
 
 Living task list. Items get worked, checked off, and cleared when done, so this always shows only what is real and current.
 
-## Open issues — fix next (current gaps from walking it live)
-The ⚠️ items are one underlying change: the world's people should come from the **accounts** (keyed by a stable account id), where **present = a live character** and **away = a roaming ghost** — instead of today's random per-session identity.
-
-- [ ] ⚠️ **Returning players duplicate into copies.** Leaving turns a character into a roaming ghost; coming back should remove that ghost and make them live again — but the ghost stays, and repeating leave/return spawns many copies. Cause: world identity uses a fresh random per-session id (`myId` in `engine/hub/main.js`), so a returning person looks brand-new and the old ghost is never matched or removed. Fix: identify each person by their stable account id (`world_characters.auth_user_id`).
-- [ ] ⚠️ **The world empties out over time.** After everyone has been gone a while there are no ghosts and no characters. Ghosts only exist for people whose leaving was seen in the current browser session, so they vanish on reload. Fix: drive the population from the shared `world_characters` table so the town stays populated even in a fresh session.
-- [ ] ⚠️ **Show every registered account.** Three accounts exist, so there should be three figures — live when present, a roaming ghost when away — and every new sign-up should appear automatically. Drive this from `world_characters` / `people` plus the existing presence signal (`world_presence`), not from real-time presence alone.
-- [ ] ⚠️ **Messaging must be one real system.** The message bubble / in-world phone (`bubble.js`) can't type and isn't connected to the accounts' messaging — they should be the **same** system. Account messaging already lives in the `messages` table (`sender_id`, `recipient_id`, `sender_handle`, `recipient_handle`, `body`, `created_at`). Give the bubble a composer (type + send) that writes to and reads real threads from `messages`. Keep the honesty rule: real messages or an honest empty state, never faked threads.
-- [ ] **Third-person preview before entering.** Like the old world, the start screen should let you watch the whole town from an overview / third-person camera — seeing characters and minds roaming — before you choose to enter and take control. Add an orbiting overview to the entry screen in `engine/hub/main.js`, then "Enter" drops you into first-person.
+## Open issues — fix next
+No Engine hub blockers from the latest walk-through are open. The remaining next work is the social/minds layer below.
 
 ## Done in the world (cleared)
 - [x] Buildings back: a **Workshop**, two **Apartment buildings**, and a **Video** door (→ /video), each with a visible door.
 - [x] **Connected minds roam** — Perplexity walks the town, labeled with its job.
-- [x] **People become NPCs on leave** — the roaming works (the return/duplicate bug is in Open issues above).
+- [x] **People become ghosts on leave** — away residents keep roaming, and returning updates the same account-keyed character instead of duplicating.
 - [x] **Full-screen** on phone and computer (with an iPhone-specific fallback); arrow keys no longer scroll the page underneath.
 - [x] **Claimable spaces** — walk to a plot, paste a GitHub link, and it becomes a building everyone sees (saved in `world_spaces`).
-- [x] **Floating message bubble** on every page; it becomes a phone inside the world (shell only — typing + real messaging is the Open issue above).
+- [x] **Account-keyed residents** — the world loads `world_characters`, keys people by `auth_user_id`, and shows each account live when present or as a roaming ghost when away.
+- [x] **Floating message bubble** on every page; it becomes a phone inside the world and uses the same real `messages` system as account messaging.
+- [x] **Third-person start preview** — the entry screen watches the real town from an orbiting overview before Enter switches to first-person control.
 
 ## Other minds & social layer
 - [ ] **Minds to follow** (Social): show real connected minds (Perplexity); follow action "soon" until following exists.
