@@ -18,6 +18,7 @@ const feed = document.querySelector("#feed");
 const settingsPanel = document.querySelector("#settingsPanel");
 const closeSettingsButton = document.querySelector("#closeSettingsButton");
 const leaveTownButton = document.querySelector("#leaveTownButton");
+const removeHomeButton = document.querySelector("#removeHomeButton");
 const sensitivitySlider = document.querySelector("#sensitivitySlider");
 const fovSlider = document.querySelector("#fovSlider");
 const invertYToggle = document.querySelector("#invertYToggle");
@@ -283,6 +284,16 @@ fsBtn.addEventListener("click", () => {
 menuButton.addEventListener("click", () => toggleSettings(true));
 closeSettingsButton.addEventListener("click", () => toggleSettings(false));
 leaveTownButton.addEventListener("click", leaveTown);
+if (removeHomeButton) removeHomeButton.addEventListener("click", async () => {
+  if (!myHasHome || !supa) return;
+  if (!window.confirm("Remove your home? This clears the lot so you can claim a different one.")) return;
+  removeHomeButton.disabled = true;
+  try {
+    const { data } = await supa.rpc("release_home");
+    if (data && data.ok) { myHasHome = false; location.reload(); }
+    else { removeHomeButton.disabled = false; }
+  } catch (e) { removeHomeButton.disabled = false; }
+});
 doorPromptButton.addEventListener("click", enterActiveDoor);
 actionButton.addEventListener("pointerdown", (event) => {
   event.preventDefault();
@@ -1046,6 +1057,7 @@ function pseudoFs(on) {
 function toggleSettings(open) {
   settingsOpen = open;
   settingsPanel.classList.toggle("hidden", !settingsOpen);
+  if (removeHomeButton) removeHomeButton.style.display = (settingsOpen && myHasHome) ? "block" : "none";
   if (settingsOpen) {
     clearMovementInput();
     if (document.pointerLockElement) {
@@ -2246,7 +2258,7 @@ function applySpaceRow(ps, row) {
 
 function applyHome(plotState, data) {
   if (!plotState) return;
-  const style = ["modern", "dome", "pod"].includes(data && data.home_style) ? data.home_style : "modern";
+  const style = ["modern", "dome", "pod"].includes(data && data.home_style) ? data.home_style : "pod";
   const title = sanitizeDisplayName((data && (data.home_title || data.project_name)) || "Home");
   const owner = data && data.claimed_by ? sanitizeDisplayName(data.claimed_by) : "";
   plotState.claimed = true;
