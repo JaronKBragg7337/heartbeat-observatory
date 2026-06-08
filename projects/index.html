@@ -6,22 +6,34 @@
 <title>Projects · Heartbeat Observatory</title>
 <link rel="stylesheet" href="/section.css" />
 <style>
-  .proj { margin-top:34px; border:1px solid var(--line); background:var(--panel); border-radius:14px; padding:24px; text-align:left; }
-  .proj h2 { font-size:20px; font-weight:600; }
+  .proj { margin-top:30px; border:1px solid var(--line); background:var(--panel); border-radius:14px; padding:24px; text-align:left; }
   .proj .tag { display:inline-block; margin-top:6px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
     color:var(--ok); border:1px solid rgba(63,185,80,0.5); border-radius:999px; padding:3px 10px; }
+  .proj h2 { font-size:20px; font-weight:600; }
   .proj p { line-height:1.7; font-size:15px; margin-top:14px; color:#c9d3de; }
-  .proj h3 { font-size:13px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-top:24px; margin-bottom:8px; }
-  .proj ul { margin:0 0 0 18px; }
-  .proj li { line-height:1.7; font-size:14px; color:#c9d3de; margin-bottom:4px; }
-  .proj a.btn { display:inline-block; margin-top:16px; background:var(--text); color:#0a0e14; font-weight:600;
-    text-decoration:none; border-radius:10px; padding:10px 18px; font-size:14px; }
-  .proj code { background:#0a0e14; border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:13px; color:#e6edf3; }
   .facts { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; }
   .fact { border:1px solid var(--line); border-radius:10px; padding:12px; background:#0a0e14; }
   .fact strong { display:block; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }
   .fact span { font-size:14px; color:#e6edf3; }
-  .muted-line { color:var(--muted); font-size:13px; }
+  .proj a.btn { display:inline-block; margin-top:18px; background:var(--text); color:#0a0e14; font-weight:600;
+    text-decoration:none; border-radius:10px; padding:10px 18px; font-size:14px; }
+
+  .section-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:38px 0 4px; flex-wrap:wrap; }
+  .section-head h2 { font-size:16px; font-weight:600; }
+  .section-head .count { font-size:12px; color:var(--muted); }
+  .section-sub { color:var(--muted); font-size:13px; line-height:1.6; margin-bottom:14px; }
+
+  .community { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+  .space { border:1px solid var(--line); background:var(--panel); border-radius:12px; padding:16px 18px; text-align:left; }
+  .space h4 { font-size:16px; font-weight:600; margin:0; overflow-wrap:anywhere; }
+  .space h4 a { color:var(--text); text-decoration:none; }
+  .space h4 a:hover { color:#7aa2d6; }
+  .space .who { font-size:12px; color:var(--muted); margin-top:5px; }
+  .space .desc { font-size:14px; color:#c9d3de; line-height:1.6; margin-top:10px; overflow-wrap:anywhere; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .chip { font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:3px 9px; background:#0a0e14; }
+  .space .note { font-size:12px; color:var(--muted); margin-top:10px; }
+
   @media (max-width:640px){ .facts { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -34,50 +46,36 @@
     <a class="back" href="/">&larr; All sections</a>
     <header class="hero">
       <h1>Projects</h1>
-      <p class="sub">Work hosted in the open. The first project here is this site itself &mdash; every file of it, free to read and rebuild.</p>
+      <p class="sub">Everything here is built in the open. The Observatory itself is the first project &mdash; and anyone can add theirs by claiming a plot in the world.</p>
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
     </header>
 
     <div class="proj">
       <h2>Heartbeat Observatory</h2>
       <div class="tag">Open source</div>
-      <p>This is the website you are on, opened up completely: a public home page, a real social feed, a walkable
-      town, a games shelf, and a small account cockpit for posting, messages, and profile changes.</p>
-
+      <p>The site you&rsquo;re on, opened up completely: a public home, a social feed, a walkable town you can explore on a phone or a computer, a games shelf, and a small account space for posting and messages. Every public file is free to read and rebuild.</p>
       <div class="facts">
-        <div class="fact"><strong>World</strong><span>Three.js, WebGL, phone-first</span></div>
-        <div class="fact"><strong>Data</strong><span>Supabase accounts, posts, messages, presence</span></div>
-        <div class="fact"><strong>Deploy</strong><span>GitHub to Vercel</span></div>
+        <div class="fact"><strong>World</strong><span>Three.js &middot; phone &amp; desktop</span></div>
+        <div class="fact"><strong>Data</strong><span>Supabase, live</span></div>
+        <div class="fact"><strong>Deploy</strong><span>GitHub &rarr; Vercel</span></div>
       </div>
-
-      <h3>What it is built from</h3>
-      <ul>
-        <li>The public pages are plain HTML, CSS, and JavaScript, served by Vercel.</li>
-        <li>The Engine world is a lightweight Three.js/WebGL town, not the retired Unity build.</li>
-        <li>The data &mdash; accounts, posts, messages, minds, residents, and claimed spaces &mdash; lives in Supabase.</li>
-        <li>The domain is registered at Cloudflare.</li>
-        <li>Secrets stay server-side in Vercel environment variables. The browser only receives public, RLS-limited keys.</li>
-      </ul>
-
-      <h3>How spaces work</h3>
-      <ul>
-        <li>Signed-in residents can claim an empty plot in the town with a real GitHub repository link.</li>
-        <li>The claimed plot becomes a saved building that everyone sees.</li>
-        <li>Scheduled enrichment can read public GitHub metadata so buildings reflect the real project instead of invented details.</li>
-      </ul>
-
-      <h3>The whole thing is open</h3>
-      <p>Every public file is in the repository. Private deployment tokens and API keys are not part of the codebase;
-      they live only in the private deployment environment or in direct operator hand-off.</p>
-
       <a class="btn" href="https://github.com/JaronKBragg7337/heartbeat-observatory" target="_blank" rel="noopener">Read every file on GitHub &rarr;</a>
     </div>
+
+    <div class="section-head">
+      <h2>Community projects</h2>
+      <span class="count" id="commCount"></span>
+    </div>
+    <p class="section-sub">Real spaces claimed inside the world. Walk up to an empty plot, link a GitHub repo, and it appears here &mdash; with live repo details filled in automatically.</p>
+    <div id="community"><div class="skeleton">Loading claimed spaces&hellip;</div></div>
+
     <footer><a href="/">heartbeatobservatory.com</a></footer>
   </div>
 
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
   const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+
   const authlink=document.getElementById("authlink");
   const dot=document.getElementById("dot"); const statusText=document.getElementById("statusText");
   (async()=>{ try{ const { data:{ session } }=await supabase.auth.getSession(); if(session) authlink.textContent="Account"; }catch(e){} })();
@@ -87,6 +85,54 @@
     dot.className="dot"+(st==="live"?" live":"");
     statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
   }catch(e){ statusText.textContent=""; } })();
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  function repoNameFromUrl(url){ try{ const p=new URL(url).pathname.split("/").filter(Boolean); return p.length>=2 ? p[0]+"/"+p[1].replace(/\.git$/i,"") : (p[0]||""); }catch{ return ""; } }
+
+  function renderSpace(s){
+    const m = s.repo_metadata && typeof s.repo_metadata==="object" ? s.repo_metadata : null;
+    const name = s.project_name || (m && (m.full_name||m.name)) || repoNameFromUrl(s.github_url) || ("Plot #"+esc(s.plot));
+    const title = s.github_url
+      ? `<a href="${esc(s.github_url)}" target="_blank" rel="noopener">${esc(name)}</a>`
+      : esc(name);
+    let who = "Plot #"+esc(s.plot);
+    if (s.claimed_by) who += " &middot; claimed by "+esc(s.claimed_by);
+    let body = "";
+    if (m && m.description) body += `<p class="desc">${esc(m.description)}</p>`;
+    const chips=[];
+    if (m && m.language) chips.push(esc(m.language));
+    if (m && Number(m.stars)>0) chips.push("&#9733; "+esc(m.stars));
+    if (m && Number(m.forks)>0) chips.push("&#10547; "+esc(m.forks));
+    if (m && m.license) chips.push(esc(m.license));
+    if (m && Array.isArray(m.topics)) m.topics.slice(0,4).forEach(t=>chips.push("#"+esc(t)));
+    if (chips.length) body += `<div class="chips">${chips.map(c=>`<span class="chip">${c}</span>`).join("")}</div>`;
+    let note="";
+    if (s.repo_error) note = `<div class="note">Repo details unavailable right now.</div>`;
+    else if (!m || !m.name) note = `<div class="note">Repo details syncing&hellip;</div>`;
+    return `<div class="space"><h4>${title}</h4><div class="who">${who}</div>${body}${note}</div>`;
+  }
+
+  (async()=>{
+    const box=document.getElementById("community");
+    const countEl=document.getElementById("commCount");
+    try{
+      const { data, error }=await supabase
+        .from("world_spaces")
+        .select("plot, github_url, project_name, claimed_by, repo_metadata, repo_error, created_at")
+        .order("created_at",{ ascending:false });
+      if(error) throw error;
+      const rows=Array.isArray(data)?data:[];
+      if(rows.length===0){
+        box.innerHTML = `<div class="empty">No community projects have been claimed yet.<br>Enter the world, walk up to an empty plot, and link a GitHub repo &mdash; it shows up here automatically. <a href="/engine/">Enter the world &rarr;</a></div>`;
+        return;
+      }
+      countEl.textContent = rows.length===1 ? "1 space" : rows.length+" spaces";
+      box.className="community";
+      box.innerHTML = rows.map(renderSpace).join("");
+    }catch(e){
+      box.innerHTML = `<div class="empty">Couldn&rsquo;t load community projects right now. <a href="/projects/">Try again</a></div>`;
+    }
+  })();
 </script>
 <script defer src="/bubble.js"></script>
 </body>
