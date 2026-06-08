@@ -118,13 +118,21 @@
   const worldFrame=document.getElementById("world"); const stageEmpty=document.getElementById("stageEmpty");
 
   let myUserId = null;
+  let myName = "Guest";
   (async()=>{ try{
     const { data:{ session } }=await supabase.auth.getSession();
     if(session){ authlink.textContent="Account"; myUserId=session.user.id;
       document.getElementById("joinlink").textContent="You\u2019re in the world \u2192";
+      try{ const { data:me }=await supabase.from("people").select("display_name").eq("auth_user_id", myUserId).maybeSingle(); if(me&&me.display_name) myName=me.display_name; }catch(e){}
       try{ await supabase.rpc("world_presence",{ p_present:true }); }catch(e){}
     }
-  }catch(e){} renderResidents(); showControls(); flushToWorld(); })();
+  }catch(e){} mountWorld(); renderResidents(); })();
+
+  function mountWorld(){
+    worldFrame.src = "/engine/hub/?name=" + encodeURIComponent(myName);
+    worldFrame.style.display = "block";
+    stageEmpty.style.display = "none";
+  }
 
   (async()=>{ try{
     const { data }=await supabase.from("surfaces").select("status").eq("key","engine").maybeSingle();
@@ -134,17 +142,10 @@
   }catch(e){ statusText.textContent=""; } })();
 
   // ---- WORLD MOUNT ----
-  // Unity WebGL build lives at /engine/world/. The page forwards state into it.
-  // The WebGL template relays postMessage -> unityInstance.SendMessage(...).
+  // The walkable world is the lightweight web hub at /engine/hub/ (phones + computers).
+  // It mounts via mountWorld() once the signed-in name is known.
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "");
   const HAS_WORLD = true;
-  if (HAS_WORLD && !isMobile) {
-    worldFrame.src = "/engine/world/"; worldFrame.style.display="block"; stageEmpty.style.display="none";
-  } else if (isMobile) {
-    stageEmpty.innerHTML = '<div class="big">The 3-D world runs on desktop for now.</div>'
-      + '<div>It is too large to load in a phone browser yet &mdash; a phone- and headset-friendly version is on the way. Everything below is the world&rsquo;s real, live state, and it is accurate whether or not the 3-D view is showing.</div>';
-    stageEmpty.style.display = "flex";
-  }
 
   function toWorld(type, obj){
     const payload = JSON.stringify(obj);
@@ -172,8 +173,7 @@
   }catch(e){} }
 
   function showControls(){
-    if (isMobile || !HAS_WORLD) return;
-    worldControls.style.display="flex";
+    worldControls.style.display="none"; return;
     if (myUserId){
       enterBtn.style.display="";
       enterBtn.textContent = inControl ? "Step back out (Esc)" : "Enter the world";
