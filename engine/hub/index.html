@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Heartbeat Observatory Town</title>
     <link rel="stylesheet" href="/engine/hub/styles.css">
+    <style>
+      /* onboarding: device-adaptive controls in the welcome overlay */
+      .controls { display:grid; gap:8px; width:min(440px,92vw); margin-top:2px; }
+      .controls .ctl { display:grid; gap:6px; padding:12px 14px; text-align:left; border:1px solid var(--panel-border); border-radius:8px; background:var(--panel-bg); }
+      .controls .ctl span { color:var(--muted); font-size:13px; line-height:1.45; }
+      .controls .ctl b { color:var(--text); font-weight:700; margin-right:6px; }
+      .controls .ctl-touch { display:none; }
+      @media (pointer: coarse) { .controls .ctl-desktop { display:none; } .controls .ctl-touch { display:grid; } }
+    </style>
   </head>
   <body>
     <canvas id="game"></canvas>
@@ -80,6 +89,18 @@
         <h1>Heartbeat Observatory Town</h1>
         <p id="welcomeName">Guest</p>
         <p class="intro">Doors open real sections. Residents leave ghosts; guests vanish when they leave. Sign in to save looks or claim GitHub spaces.</p>
+        <div class="controls" aria-label="How to get around">
+          <div class="ctl ctl-desktop">
+            <span><b>Move</b> WASD or arrow keys</span>
+            <span><b>Look</b> move your mouse</span>
+            <span><b>Enter a building</b> walk up to it and press E</span>
+          </div>
+          <div class="ctl ctl-touch">
+            <span><b>Move</b> the pad at the bottom-left</span>
+            <span><b>Look</b> drag the right side of the screen</span>
+            <span><b>Enter a building</b> walk up to it and tap Enter</span>
+          </div>
+        </div>
         <button id="enterButton" type="button">Enter</button>
       </div>
     </div>
