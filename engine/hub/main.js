@@ -1062,6 +1062,18 @@ function leaveTown() {
   (window.top || window).location.assign("/engine");
 }
 
+let reconnectTimer = null;
+function scheduleReconnect() {
+  if (!wantsConnection || reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (!wantsConnection) return;
+    try { if (channel) supa.removeChannel(channel); } catch (e) {}
+    channel = null;
+    connect();
+  }, 2200);
+}
+
 function connect() {
   if (!wantsConnection) return;
   if (channel) return;
@@ -1104,6 +1116,8 @@ function connect() {
       if (characters.has(p.id)) {
         markCharacterPresence(p.id, false);
         peers.delete(p.id);
+        removeRemote(p.id);
+        renderCharacters();
         addFeed(`${p.name || "Guest"} wandered off`);
       } else if (isTransientId(p.id)) {
         peers.delete(p.id);
@@ -1127,8 +1141,10 @@ function connect() {
     } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
       connected = false;
       setStatus("offline", false);
+      scheduleReconnect();
     } else if (status === "CLOSED") {
       connected = false;
+      scheduleReconnect();
     }
   });
 }
@@ -1166,6 +1182,7 @@ function applyPeerState(player) {
   remote.targetYaw = player.yaw;
   remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
   remote.space = player.space || "town";
+  remote.lastUpdate = performance.now();
   if (transient && !wasKnownTransient) renderCharacters();
 }
 
@@ -1326,9 +1343,11 @@ function updateCamera(dt) {
 }
 
 function applySpaceVisibility() {
+  const now = performance.now();
   const townVisible = (mySpace === "town");
   for (const remote of remotes.values()) {
-    if (remote.group) remote.group.visible = ((remote.space || "town") === mySpace);
+    const fresh = !remote.lastUpdate || (now - remote.lastUpdate) < 9000;
+    if (remote.group) remote.group.visible = fresh && ((remote.space || "town") === mySpace);
   }
   for (const npc of npcs.values()) { if (npc.group) npc.group.visible = townVisible; }
   for (const actor of mindActors.values()) { if (actor.group) actor.group.visible = townVisible; }
@@ -2685,8 +2704,10 @@ function buildAvatarBody(look, name, ghost) {
     const footGeo = new THREE.BoxGeometry(0.18, 0.1, 0.3);
     const lF = new THREE.Mesh(footGeo, darkM); lF.position.set(-legX, 0.05, -0.05); group.add(lF);
     const rF = new THREE.Mesh(footGeo, darkM); rF.position.set(legX, 0.05, -0.05); group.add(rF);
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44 * bw, 0.66, 0.27 * (0.92 + 0.08 * bw)), shirtM);
+    const torsoDepth = 0.27 * (0.92 + 0.08 * bw);
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44 * bw, 0.66, torsoDepth), shirtM);
     torso.position.y = 0.97; torso.castShadow = !ghost; group.add(torso);
+    addPersonPattern(group, look, ghost, bw, torsoDepth);
     const armGeo = new THREE.BoxGeometry(0.13, 0.5, 0.15);
     const lA = new THREE.Mesh(armGeo, shirtM); lA.position.set(-armX, 1.0, 0); lA.castShadow = !ghost; group.add(lA);
     const rA = new THREE.Mesh(armGeo, shirtM); rA.position.set(armX, 1.0, 0); rA.castShadow = !ghost; group.add(rA);
@@ -2707,6 +2728,25 @@ function buildAvatarBody(look, name, ghost) {
   });
   label.position.set(0, 2.04, 0); group.add(label);
   return group;
+}
+
+function addPersonPattern(group, look, ghost, bw, depth) {
+  if (!look || look.pattern === "plain") return;
+  const op = ghost ? 0.7 : 1;
+  const w = 0.44 * bw, d = depth;
+  if (look.pattern === "stripe") {
+    const m = new THREE.MeshStandardMaterial({ color: 0xf5fbff, roughness: 0.5, transparent: ghost, opacity: op });
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(w + 0.02, 0.15, d + 0.02), m);
+    stripe.position.y = 0.93; stripe.castShadow = !ghost; group.add(stripe);
+  } else if (look.pattern === "band") {
+    const m = new THREE.MeshStandardMaterial({ color: 0xf5fbff, roughness: 0.5, transparent: ghost, opacity: op });
+    const sash = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.82, 0.05), m);
+    sash.position.set(-0.05, 0.95, -(d / 2 + 0.02)); sash.rotation.z = -0.5; sash.castShadow = !ghost; group.add(sash);
+  } else if (look.pattern === "glow") {
+    const m = new THREE.MeshStandardMaterial({ color: 0xdffcff, emissive: 0x74e5ff, emissiveIntensity: ghost ? 0.45 : 0.8, transparent: true, opacity: ghost ? 0.45 : 0.7 });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(Math.max(w, d) * 0.62 + 0.06, 0.03, 8, 28), m);
+    ring.position.y = 1.04; ring.rotation.x = Math.PI / 2; group.add(ring);
+  }
 }
 
 function addAvatarPattern(group, appearance, ghost) {
