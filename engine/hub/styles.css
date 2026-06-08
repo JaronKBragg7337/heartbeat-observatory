@@ -81,3 +81,5 @@ button:disabled { cursor: default; opacity: 0.45; }
 @media (pointer: coarse) { #touchControls { display: block; } #hud { font-size: 11px; } .meter span { min-width: 58px; padding: 6px 7px; } }
 @media (max-width: 720px) { #roster, #roster.force-show { display: none; } #doorPrompt { bottom: calc(max(34px, env(safe-area-inset-bottom)) + 96px); width: min(330px, calc(100vw - 28px)); } #doorPromptText { flex: 1; } #feed { display: none; } }
 @media (max-width: 480px) { .panel { gap: 10px; } .panel h1 { max-width: min(280px, 78vw); font-size: 21px; line-height: 1.08; } .panel p { max-width: min(320px, 88vw); } .panel .intro { max-width: min(310px, 86vw); font-size: 12px; line-height: 1.42; } #enterButton { min-height: 42px; font-size: 16px; } }
+
+#throwButton { position: absolute; right: calc(max(24px, env(safe-area-inset-right)) + 102px); bottom: calc(max(34px, env(safe-area-inset-bottom)) + 164px); width: 68px; height: 68px; border-radius: 50%; pointer-events: auto; font-size: 12px; background: #cfeffe; color: #06243a; border: none; }
