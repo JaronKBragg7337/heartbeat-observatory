@@ -1016,19 +1016,12 @@ function toggleSettings(open) {
 }
 
 function leaveTown() {
-  hasEntered = false;
-  toggleSettings(false);
-  clearMovementInput();
-  overlay.classList.remove("hidden");
-  if (document.pointerLockElement) document.exitPointerLock?.();
-  if (pseudoOn) pseudoFs(false);
   wantsSelfPresence = false;
   try { channel?.untrack(); } catch {}
-  if (myUserId) {
-    setMyWorldPresence(false);
-  }
-  setStatus(connected ? "watching" : "offline", connected);
-  renderCharacters();
+  if (myUserId) { try { setMyWorldPresence(false); } catch {} }
+  try { if (document.pointerLockElement) document.exitPointerLock?.(); } catch {}
+  if (pseudoOn) { try { pseudoFs(false); } catch {} }
+  (window.top || window).location.assign("/engine");
 }
 
 function connect() {
@@ -2801,6 +2794,6 @@ function lerpAngle(from, to, amount) {
 function sanitizeDisplayName(value) {
   const raw = typeof value === "string" ? value : "";
   const normalized = raw.trim().replace(/\s+/g, " ");
-  const visible = normalized.replace(/[^\p{L}\p{N} _.'-]/gu, "").slice(0, 24).trim();
+  const visible = normalized.replace(/[^\p{L}\p{N} _.'-]/gu, "").slice(0, 16).trim();
   return visible || "Guest";
 }
