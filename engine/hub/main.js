@@ -144,6 +144,7 @@ const gravity = 17.5;
 const jumpVelocity = 6.4;
 
 const buildingColliders = [];
+const platforms = [];
 
 const doors = [
   {
@@ -1291,17 +1292,25 @@ function updateLocal(dt) {
   }
 
   state.stance = crouching ? "crouch" : "stand";
+  const support = supportHeightAt(state.x, state.z, motion.verticalOffset);
   if (input.jumpQueued && motion.onGround && !crouching) {
     motion.verticalVelocity = jumpVelocity;
     motion.onGround = false;
   }
   input.jumpQueued = false;
 
+  if (motion.onGround) {
+    if (support >= motion.verticalOffset - 0.001 || motion.verticalOffset - support <= 0.6) {
+      motion.verticalOffset = support;
+    } else {
+      motion.onGround = false;
+    }
+  }
   if (!motion.onGround) {
     motion.verticalVelocity -= gravity * dt;
     motion.verticalOffset += motion.verticalVelocity * dt;
-    if (motion.verticalOffset <= 0) {
-      motion.verticalOffset = 0;
+    if (motion.verticalOffset <= support) {
+      motion.verticalOffset = support;
       motion.verticalVelocity = 0;
       motion.onGround = true;
     }
@@ -2259,49 +2268,70 @@ function applyHome(plotState, data) {
 
 function buildHomeMesh(plotState, style) {
   const x = plotState.x, z = plotState.z;
-  const doorM = new THREE.MeshStandardMaterial({ color: 0x2f302a, roughness: 0.64 });
-  let collW = plotState.width * 0.7, collD = plotState.depth * 0.7;
+  const mat = (c, r, extra) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: r == null ? 0.7 : r }, extra || {}));
+  const doorM = mat(0x2f302a, 0.64);
   if (style === "modern") {
-    // biggest tier: two-story box with a roof parapet (balcony footprint)
-    const w = plotState.width * 0.92, d = plotState.depth * 0.92, h = 3.7;
-    const body = new THREE.MeshStandardMaterial({ color: 0xd0d6db, roughness: 0.72 });
-    const trim = new THREE.MeshStandardMaterial({ color: 0x6a7178, roughness: 0.6 });
-    const glass = new THREE.MeshStandardMaterial({ color: 0x8fd0e6, roughness: 0.18, metalness: 0.05, transparent: true, opacity: 0.8 });
-    addBox(x, h / 2, z, w, h, d, body);
-    addBox(x, h * 0.5, z, w + 0.05, 0.12, d + 0.05, trim);
-    addBox(x, h + 0.09, z, w + 0.16, 0.18, d + 0.16, trim);
-    addBox(x, h + 0.34, z + d / 2 + 0.05, w + 0.16, 0.34, 0.1, trim);
-    addBox(x, h * 0.3, z + d / 2 + 0.02, w * 0.62, h * 0.32, 0.06, glass);
-    addBox(x, h * 0.72, z + d / 2 + 0.02, w * 0.62, h * 0.32, 0.06, glass);
-    addBox(x - w * 0.3, 0.85, z + d / 2 + 0.04, 0.8, 1.7, 0.08, doorM);
-    collW = w + 0.16; collD = d + 0.16;
+    // walk-in ground room + external stairs up to a rooftop balcony
+    const w = plotState.width * 0.98, d = plotState.depth * 0.98, h = 2.6, t = 0.16;
+    const hw = w / 2, hd = d / 2;
+    const body = mat(0xd0d6db, 0.72), trim = mat(0x6a7178, 0.6);
+    const glass = mat(0x8fd0e6, 0.18, { metalness: 0.05, transparent: true, opacity: 0.78 });
+    const doorW = 1.1, segW = (w - doorW) / 2, segOff = doorW / 2 + segW / 2;
+    const frontZ = z + hd, backZ = z - hd;
+    addBox(x - segOff, h / 2, frontZ, segW, h, t, body);
+    addBox(x + segOff, h / 2, frontZ, segW, h, t, body);
+    addBox(x, h - 0.3, frontZ, doorW, 0.6, t, body);
+    addBox(x - segOff, h * 0.52, frontZ + 0.03, segW * 0.78, h * 0.5, 0.04, glass);
+    addBox(x + segOff, h * 0.52, frontZ + 0.03, segW * 0.78, h * 0.5, 0.04, glass);
+    addBox(x - segOff, h / 2, backZ, segW, h, t, body);
+    addBox(x + segOff, h / 2, backZ, segW, h, t, body);
+    addBox(x, h - 0.3, backZ, doorW, 0.6, t, body);
+    addBox(x - hw, h / 2, z, t, h, d, body);
+    addBox(x + hw, h / 2, z, t, h, d, body);
+    addBox(x, h + 0.06, z, w + 0.12, 0.12, d + 0.12, trim);
+    const ph = 0.55, py = h + 0.12 + ph / 2;
+    addBox(x - segOff, py, frontZ, segW, ph, 0.08, trim);
+    addBox(x + segOff, py, frontZ, segW, ph, 0.08, trim);
+    addBox(x - hw, py, z, 0.08, ph, d + 0.12, trim);
+    addBox(x + hw, py, z, 0.08, ph, d + 0.12, trim);
+    const steps = 6, stepH = h / steps, stepDepth = 0.46, stepW = doorW;
+    for (let i = 0; i < steps; i++) {
+      const top = stepH * (i + 1);
+      const zNear = backZ - (steps - i - 1) * stepDepth;
+      const zFar = zNear - stepDepth;
+      addBox(x, top / 2, (zFar + zNear) / 2, stepW, top, stepDepth, trim);
+      platforms.push({ minX: x - stepW / 2, maxX: x + stepW / 2, minZ: zFar, maxZ: zNear, top });
+    }
+    platforms.push({ minX: x - hw, maxX: x + hw, minZ: backZ, maxZ: frontZ, top: h });
+    buildingColliders.push({ x: x - segOff, z: frontZ, width: segW, depth: t });
+    buildingColliders.push({ x: x + segOff, z: frontZ, width: segW, depth: t });
+    buildingColliders.push({ x: x - segOff, z: backZ, width: segW, depth: t });
+    buildingColliders.push({ x: x + segOff, z: backZ, width: segW, depth: t });
+    buildingColliders.push({ x: x - hw, z: z, width: t, depth: d });
+    buildingColliders.push({ x: x + hw, z: z, width: t, depth: d });
   } else if (style === "dome") {
-    // medium tier
-    const w = plotState.width * 0.62, d = plotState.depth * 0.62;
-    const shell = new THREE.MeshStandardMaterial({ color: 0xdfe7ea, roughness: 0.5, metalness: 0.04, flatShading: true });
-    const base = new THREE.MeshStandardMaterial({ color: 0x9aa6ad, roughness: 0.7 });
-    const r = Math.min(w, d) * 0.74;
-    const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.14, r + 0.2, 0.32, 16), base);
-    baseMesh.position.set(x, 0.16, z); baseMesh.castShadow = true; baseMesh.receiveShadow = true; scene.add(baseMesh);
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), shell);
-    dome.position.set(x, 0.32, z); dome.castShadow = true; dome.receiveShadow = true; scene.add(dome);
-    addBox(x, 0.66, z + r - 0.04, 0.72, 1.05, 0.08, doorM);
-    collW = collD = (r + 0.2) * 2;
+    const w = plotState.width * 0.66, d = plotState.depth * 0.66;
+    const shell = mat(0xdfe7ea, 0.5, { metalness: 0.04, flatShading: true, side: THREE.DoubleSide });
+    const base = mat(0x9aa6ad, 0.7);
+    const r = Math.min(w, d) * 0.82;
+    const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.14, r + 0.2, 0.2, 16), base);
+    baseMesh.position.set(x, 0.1, z); baseMesh.receiveShadow = true; scene.add(baseMesh);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2), shell);
+    dome.position.set(x, 0.18, z); dome.castShadow = true; scene.add(dome);
+    addBox(x, 0.72, z + r - 0.02, 0.8, 1.25, 0.07, doorM);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), mat(0xfff2cf, 0.4, { emissive: 0xffe6a8, emissiveIntensity: 0.7 }));
+    lamp.position.set(x, r * 0.78, z); scene.add(lamp);
   } else {
-    // small tier: cozy pod
-    const w = plotState.width * 0.46, d = plotState.depth * 0.46;
-    const body = new THREE.MeshStandardMaterial({ color: 0xcf9a6e, roughness: 0.74 });
-    const cap = new THREE.MeshStandardMaterial({ color: 0x6f5434, roughness: 0.6, flatShading: true });
-    const r = Math.min(w, d) * 0.62;
-    const bodyH = 0.95;
-    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, bodyH, 16), body);
-    cyl.position.set(x, bodyH / 2, z); cyl.castShadow = true; cyl.receiveShadow = true; scene.add(cyl);
-    const cap2 = new THREE.Mesh(new THREE.SphereGeometry(r * 1.03, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), cap);
-    cap2.position.set(x, bodyH, z); cap2.castShadow = true; cap2.receiveShadow = true; scene.add(cap2);
-    addBox(x, 0.48, z + r - 0.02, 0.5, 0.8, 0.08, doorM);
-    collW = collD = r * 2.1;
+    const w = plotState.width * 0.5, d = plotState.depth * 0.5;
+    const body = mat(0xcf9a6e, 0.74, { side: THREE.DoubleSide });
+    const cap = mat(0x6f5434, 0.6, { flatShading: true, side: THREE.DoubleSide });
+    const r = Math.min(w, d) * 0.7, bodyH = 1.15;
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, bodyH, 18, 1, true), body);
+    cyl.position.set(x, bodyH / 2, z); cyl.castShadow = true; scene.add(cyl);
+    const cap2 = new THREE.Mesh(new THREE.SphereGeometry(r * 1.03, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), cap);
+    cap2.position.set(x, bodyH, z); cap2.castShadow = true; scene.add(cap2);
+    addBox(x, 0.55, z + r - 0.02, 0.55, 0.95, 0.06, doorM);
   }
-  buildingColliders.push({ x: x, z: z, width: collW + 0.2, depth: collD + 0.2 });
 }
 
 async function loadSpaces() {
@@ -2815,6 +2845,22 @@ function clearWorldActors() {
   for (const id of [...npcs.keys()]) removeNpc(id);
   peers.clear();
   playerCountEl.textContent = "0 players";
+}
+
+function supportHeightAt(x, z, offset) {
+  let best = 0;
+  for (const p of platforms) {
+    if (x < p.minX || x > p.maxX || z < p.minZ || z > p.maxZ) continue;
+    let top = p.top;
+    if (p.ramp) {
+      let t = p.axis === "x" ? (x - p.minX) / (p.maxX - p.minX) : (z - p.minZ) / (p.maxZ - p.minZ);
+      if (p.flip) t = 1 - t;
+      t = Math.max(0, Math.min(1, t));
+      top = p.low + (p.high - p.low) * t;
+    }
+    if (top <= offset + 0.55 && top > best) best = top;
+  }
+  return best;
 }
 
 function resolveCollision() {
