@@ -235,6 +235,9 @@ let townReturn = { x: 0, z: 0, yaw: 0 };
 let myRoomLayout = { wall: "#8a9aa6", floor: "#b8a98f", items: { rug: false, plant: false, lamp: false, table: false } };
 let roomSaveTimer = null;
 let mySpace = "town";
+let roomOwnerId = null;
+let roomOwnerName = "";
+let activeRoomLayout = null;
 animate();
 try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
 
@@ -1614,17 +1617,19 @@ function normalizeRoomLayout(layout) {
 
 function applyRoomLayout() {
   if (!roomGroup || !roomGroup.userData) return;
+  const L = isOwnRoom() ? myRoomLayout : (activeRoomLayout || myRoomLayout);
   try {
-    if (roomGroup.userData.wallMat) roomGroup.userData.wallMat.color.set(myRoomLayout.wall);
-    if (roomGroup.userData.floorMat) roomGroup.userData.floorMat.color.set(myRoomLayout.floor);
+    if (roomGroup.userData.wallMat) roomGroup.userData.wallMat.color.set(L.wall);
+    if (roomGroup.userData.floorMat) roomGroup.userData.floorMat.color.set(L.floor);
     const objs = roomGroup.userData.items || {};
-    const want = myRoomLayout.items || {};
+    const want = L.items || {};
     for (const k in objs) { objs[k].visible = !!want[k]; }
   } catch (e) {}
 }
 
 function setRoomColor(target, hex) {
   if (target !== "wall" && target !== "floor") return;
+  if (!isOwnRoom()) return;
   myRoomLayout[target] = hex;
   applyRoomLayout();
   document.querySelectorAll('#roomPanel [data-rt="' + target + '"]').forEach((bn) => {
@@ -1650,6 +1655,7 @@ async function saveRoomLayout() {
 }
 
 function toggleRoomItem(key) {
+  if (!isOwnRoom()) return;
   if (!myRoomLayout.items) myRoomLayout.items = { rug: false, plant: false, lamp: false, table: false };
   myRoomLayout.items[key] = !myRoomLayout.items[key];
   applyRoomLayout();
@@ -1686,6 +1692,41 @@ function roomSwatchRow(target) {
   }).join("");
 }
 
+function isOwnRoom() {
+  return !roomOwnerId || roomOwnerId === (myUserId || selfRealtimeId());
+}
+
+function visitRoom(ownerId) {
+  if (!inRoom) return;
+  const selfId = myUserId || selfRealtimeId();
+  if (!ownerId || ownerId === selfId) {
+    roomOwnerId = selfId; roomOwnerName = displayName; activeRoomLayout = null;
+  } else {
+    const ch = characters.get(ownerId);
+    roomOwnerId = ownerId; roomOwnerName = ch ? characterName(ch) : "Resident";
+    activeRoomLayout = normalizeRoomLayout(ch && ch.room_layout);
+  }
+  mySpace = "room:" + roomOwnerId;
+  applyRoomLayout();
+  showRoomPanel();
+  try { trackSelf(); sendState(true); } catch (e) {}
+}
+
+function roomVisitRow() {
+  const selfId = myUserId || selfRealtimeId();
+  const btns = [];
+  if (!isOwnRoom()) {
+    btns.push('<button type="button" data-visit="' + selfId + '" style="padding:6px 11px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:12px;font-weight:600;cursor:pointer;">\u2190 My room</button>');
+  }
+  for (const [id, ch] of characters.entries()) {
+    if (id === selfId) continue;
+    const here = (roomOwnerId === id);
+    btns.push('<button type="button" data-visit="' + id + '" style="padding:6px 11px;border-radius:8px;border:1px solid ' + (here ? "#9fd0a0" : "#3a4750") + ';background:' + (here ? "#9fd0a0" : "transparent") + ';color:' + (here ? "#0a1410" : "#cfe0e6") + ';font-size:12px;font-weight:600;cursor:pointer;">' + characterName(ch) + '</button>');
+  }
+  if (btns.length === 0) return '<span style="font-size:11px;color:#8aa0a8;">No other rooms yet</span>';
+  return btns.join("");
+}
+
 function showRoomPanel() {
   let p = document.getElementById("roomPanel");
   if (!p) {
@@ -1697,18 +1738,26 @@ function showRoomPanel() {
       const t = e.target;
       if (!t) return;
       if (t.id === "roomExitBtn") { exitRoom(); return; }
+      if (t.getAttribute && t.getAttribute("data-visit")) { visitRoom(t.getAttribute("data-visit")); return; }
       if (t.getAttribute && t.getAttribute("data-it")) { toggleRoomItem(t.getAttribute("data-it")); return; }
       if (t.getAttribute && t.getAttribute("data-rt")) setRoomColor(t.getAttribute("data-rt"), t.getAttribute("data-rc"));
     });
   }
-  p.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-weight:700;">Your room</span><span id="roomSaveStatus" style="font-size:11px;color:#8aa0a8;"></span></div>' +
-    '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Walls</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("wall") + '</div></div>' +
-    '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Floor</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("floor") + '</div></div>' +
-    '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Items</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomItemRow() + '</div></div>' +
+  const own = isOwnRoom();
+  let html =
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-weight:700;">' + (own ? "Your room" : ("Visiting " + (roomOwnerName || "a room"))) + '</span><span id="roomSaveStatus" style="font-size:11px;color:#8aa0a8;"></span></div>';
+  if (own) {
+    html +=
+      '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Walls</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("wall") + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Floor</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("floor") + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Items</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomItemRow() + '</div></div>';
+  }
+  html +=
+    '<div style="display:flex;align-items:flex-start;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;padding-top:5px;">Visit</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomVisitRow() + '</div></div>' +
     '<button id="roomExitBtn" type="button" style="margin-top:2px;padding:9px 12px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:700;font-size:13px;cursor:pointer;">Exit to town</button>';
+  p.innerHTML = html;
   p.style.display = "flex";
-  if (!myUserId) { const st = document.getElementById("roomSaveStatus"); if (st) st.textContent = "Guest \u2014 won't save"; }
+  if (own && !myUserId) { const st = document.getElementById("roomSaveStatus"); if (st) st.textContent = "Guest \u2014 won't save"; }
 }
 
 function hideRoomPanel() {
@@ -1726,6 +1775,9 @@ function enterRoom() {
       if (o === roomGroup || o === camera || o.isLight) continue;
       if (o.visible) { hiddenForRoom.push(o); o.visible = false; }
     }
+    roomOwnerId = myUserId || selfRealtimeId();
+    roomOwnerName = displayName;
+    activeRoomLayout = null;
     roomGroup.visible = true;
     applyRoomLayout();
     savedTownColliders = buildingColliders.slice();
@@ -1756,6 +1808,7 @@ function exitRoom() {
     state.x = townReturn.x; state.z = townReturn.z; state.yaw = townReturn.yaw;
     inRoom = false;
     mySpace = "town";
+    roomOwnerId = null; roomOwnerName = ""; activeRoomLayout = null;
     hideRoomPanel();
     try { trackSelf(); sendState(true); } catch (e) {}
   } catch (e) {
@@ -1773,6 +1826,7 @@ function forceExitRoom() {
   }
   inRoom = false;
   mySpace = "town";
+  roomOwnerId = null; roomOwnerName = ""; activeRoomLayout = null;
   hideRoomPanel();
 }
 
