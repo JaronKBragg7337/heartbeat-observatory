@@ -132,7 +132,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 
 const clock = new THREE.Clock();
-const worldBounds = 17.5;
+const worldBounds = 30;
 const playerRadius = 0.35;
 const standingEyeHeight = 1.65;
 const crouchEyeHeight = 1.15;
@@ -146,8 +146,8 @@ const doors = [
     id: "social",
     label: "Social",
     path: "/social",
-    x: -9.2,
-    z: -7.6,
+    x: -16,
+    z: -13,
     width: 4.9,
     depth: 4.1,
     height: 2.75,
@@ -160,8 +160,8 @@ const doors = [
     id: "projects",
     label: "Projects",
     path: "/projects",
-    x: 9.2,
-    z: -7.6,
+    x: 16,
+    z: -13,
     width: 5.1,
     depth: 4.1,
     height: 2.9,
@@ -174,8 +174,8 @@ const doors = [
     id: "games",
     label: "Games",
     path: "/games",
-    x: -9.2,
-    z: 5.9,
+    x: -16,
+    z: 10,
     width: 4.8,
     depth: 4.2,
     height: 2.65,
@@ -189,7 +189,7 @@ const doors = [
     label: "Video",
     path: "/video",
     x: 0,
-    z: -13,
+    z: -21,
     width: 5.0,
     depth: 4.0,
     height: 2.85,
@@ -201,14 +201,18 @@ const doors = [
 ];
 
 const plots = [
-  { x: -6, z: 12.5, width: 4.2, depth: 3.4 },
-  { x: 6, z: 12.5, width: 4.2, depth: 3.4 }
+  { x: -8, z: 18, width: 4.2, depth: 3.4 },
+  { x: 8, z: 18, width: 4.2, depth: 3.4 },
+  { x: -24, z: -10, width: 4.2, depth: 3.4 },
+  { x: 24, z: -10, width: 4.2, depth: 3.4 },
+  { x: -24, z: 10, width: 4.2, depth: 3.4 },
+  { x: 24, z: 10, width: 4.2, depth: 3.4 }
 ];
 
 const structures = [
-  { id: "workshop", label: "Workshop", x: 9.2, z: 5.9, width: 5.2, depth: 4.3, height: 3.05, body: 0x6e65a8, roof: 0x3f345f, windows: false, face: "north" },
-  { id: "apt-w", label: "Apartments", x: -14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "east", room: true },
-  { id: "apt-e", label: "Apartments", x: 14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "west", room: true }
+  { id: "workshop", label: "Workshop", x: 16, z: 10, width: 5.2, depth: 4.3, height: 3.05, body: 0x6e65a8, roof: 0x3f345f, windows: false, face: "north" },
+  { id: "apt-w", label: "Apartments", x: -25, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "east", room: true },
+  { id: "apt-e", label: "Apartments", x: 25, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "west", room: true }
 ];
 
 const doorStructures = [];
@@ -2124,21 +2128,21 @@ function buildTown() {
   sun.position.set(8, 14, 6);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.left = -24;
-  sun.shadow.camera.right = 24;
-  sun.shadow.camera.top = 24;
-  sun.shadow.camera.bottom = -24;
+  sun.shadow.camera.left = -32;
+  sun.shadow.camera.right = 32;
+  sun.shadow.camera.top = 32;
+  sun.shadow.camera.bottom = -32;
   scene.add(sun);
 
   const groundMaterial = makeGroundMaterial();
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(38, 38), groundMaterial);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(64, 64), groundMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
 
-  addGroundRect(0, 0, 5.2, 35, 0xb9aa88);
-  addGroundRect(0, 0, 35, 5.2, 0xb9aa88);
-  addGroundRect(0, 0, 8.2, 8.2, 0xc7bc9b);
+  addGroundRect(0, 0, 6, 60, 0xb9aa88);
+  addGroundRect(0, 0, 60, 6, 0xb9aa88);
+  addGroundRect(0, 0, 11, 11, 0xc7bc9b);
 
   const fountainBase = new THREE.Mesh(
     new THREE.CylinderGeometry(1.25, 1.45, 0.32, 28),
@@ -2166,10 +2170,10 @@ function buildTown() {
     color: 0x586a5f,
     roughness: 0.82
   });
-  addBox(0, 1, -18, 36, 2, 0.5, wallMaterial);
-  addBox(0, 1, 18, 36, 2, 0.5, wallMaterial);
-  addBox(-18, 1, 0, 0.5, 2, 36, wallMaterial);
-  addBox(18, 1, 0, 0.5, 2, 36, wallMaterial);
+  addBox(0, 1, -31, 62, 2, 0.5, wallMaterial);
+  addBox(0, 1, 31, 62, 2, 0.5, wallMaterial);
+  addBox(-31, 1, 0, 0.5, 2, 62, wallMaterial);
+  addBox(31, 1, 0, 0.5, 2, 62, wallMaterial);
 
   for (const door of doors) {
     buildDoorBuilding(door);
@@ -2181,12 +2185,17 @@ function buildTown() {
 
   plots.forEach((plot, index) => buildPlot(plot, index));
 
-  addBench(-3.5, 2.9, benchRotationToward(-3.5, 2.9));
-  addBench(3.5, -2.9, benchRotationToward(3.5, -2.9));
-  addTree(-14, -12);
-  addTree(14, -12);
-  addTree(-14, 12);
-  addTree(14, 12);
+  addBench(-4, 4, benchRotationToward(-4, 4));
+  addBench(4, -4, benchRotationToward(4, -4));
+  addBench(-7, -4, benchRotationToward(-7, -4));
+  addBench(7, 4, benchRotationToward(7, 4));
+  const treeSpots = [
+    [-12, 5], [12, 5], [-12, -5], [12, -5],
+    [-20, -16], [20, -16], [-20, 16], [20, 16],
+    [-29, -6], [29, -6], [-29, 6], [29, 6],
+    [-5, 14], [5, 14], [0, 26], [0, -26]
+  ];
+  for (const t of treeSpots) addTree(t[0], t[1]);
 }
 
 function buildDoorBuilding(door) {
