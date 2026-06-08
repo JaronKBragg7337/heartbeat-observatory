@@ -76,6 +76,9 @@ let dayClock = 120;
 const HB_DAY = new THREE.Color(0xb8d3df);
 const HB_DUSK = new THREE.Color(0xe89b5a);
 const HB_NIGHT = new THREE.Color(0x0f1b2e);
+let heldItem = null;
+let viewmodel = null;
+const _vmOff = new THREE.Vector3();
 let propsLoaded = false;
 let wantsConnection = true;
 let activeDoor = null;
@@ -402,6 +405,7 @@ document.querySelectorAll(".buildPropBtn").forEach((bb) => bb.addEventListener("
   const _rb = document.querySelector("#buildRemove"); if (_rb) _rb.addEventListener("click", removeNearest);
   const _rotb = document.querySelector("#buildRotate"); if (_rotb) _rotb.addEventListener("click", () => { placeRot += Math.PI / 4; setBuildHint("Rotating \u2014 the ghost shows the facing. Place here."); });
   const _db = document.querySelector("#buildDone"); if (_db) _db.addEventListener("click", () => toggleBuildMode(false));
+  document.querySelectorAll("[data-hold]").forEach((hb) => hb.addEventListener("click", () => setHeld(hb.getAttribute("data-hold") || null)));
 }
 doorPromptButton.addEventListener("click", enterActiveDoor);
 actionButton.addEventListener("pointerdown", (event) => {
@@ -504,6 +508,7 @@ document.addEventListener("keydown", (event) => {
   if (hasEntered && (event.code === "ArrowUp" || event.code === "ArrowDown" || event.code === "ArrowLeft" || event.code === "ArrowRight")) {
     event.preventDefault();
   }
+  if (event.code === "KeyH") { event.preventDefault(); cycleHeld(); return; }
   keys.add(event.code);
   if (event.code === "Space") {
     event.preventDefault();
@@ -870,6 +875,10 @@ function reconcileCharacter(row) {
   remote.target.set(player.x, remoteGroundY(player), player.z);
   remote.targetYaw = player.yaw;
   remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
+  if (remote.heldType !== (player.holding || null)) {
+    remote.heldType = player.holding || null;
+    setHeldOnGroup(remote.group, remote.heldType);
+  }
 }
 
 function characterPlayer(row) {
@@ -1035,6 +1044,7 @@ function trackSelf() {
       yaw: state.yaw,
       pitch: state.pitch,
       stance: state.stance,
+      holding: heldItem,
       space: mySpace
     });
   } catch {}
@@ -1364,11 +1374,61 @@ function sendState(force = false) {
       yaw: state.yaw,
       pitch: state.pitch,
       stance: state.stance,
+      holding: heldItem,
       space: mySpace
     }
   });
 }
 
+function makeHeldItem(type) {
+  if (!type) return null;
+  const g = new THREE.Group();
+  if (type === "coffee") {
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.055, 0.13, 14), new THREE.MeshStandardMaterial({ color: 0xf3efe7, roughness: 0.5 }));
+    cup.position.y = 0.065; g.add(cup);
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.076, 0.076, 0.025, 14), new THREE.MeshStandardMaterial({ color: 0x5f4128, roughness: 0.6 }));
+    lid.position.y = 0.142; g.add(lid);
+  } else if (type === "ball") {
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), new THREE.MeshStandardMaterial({ color: 0xe23b4e, roughness: 0.45 }));
+    b.position.y = 0.11; g.add(b);
+  } else if (type === "balloon") {
+    const bal = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), new THREE.MeshStandardMaterial({ color: 0x49b3e8, roughness: 0.3 }));
+    bal.position.y = 0.4; bal.scale.y = 1.2; g.add(bal);
+    const str = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.42, 6), new THREE.MeshStandardMaterial({ color: 0xe8e8e8, roughness: 0.7 }));
+    str.position.y = 0.19; g.add(str);
+  } else { return null; }
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+  return g;
+}
+function setHeld(type) {
+  heldItem = type || null;
+  if (viewmodel) { scene.remove(viewmodel); viewmodel = null; }
+  const m = makeHeldItem(heldItem);
+  if (m) { viewmodel = m; scene.add(viewmodel); updateViewmodel(); }
+  try { if (channel && connected) sendState(true); } catch (e) {}
+}
+function cycleHeld() {
+  const order = [null, "coffee", "ball", "balloon"];
+  const i = order.indexOf(heldItem);
+  setHeld(order[(i + 1) % order.length]);
+}
+function setHeldOnGroup(group, type) {
+  if (!group) return;
+  for (let i = group.children.length - 1; i >= 0; i--) {
+    const c = group.children[i];
+    if (c.userData && c.userData.heldTag) group.remove(c);
+  }
+  const m = makeHeldItem(type);
+  if (m) { m.userData.heldTag = true; m.position.set(0.24, 0.86, 0.24); group.add(m); }
+}
+function updateViewmodel() {
+  if (!viewmodel) return;
+  if (!hasEntered || settingsOpen) { viewmodel.visible = false; return; }
+  viewmodel.visible = true;
+  _vmOff.set(0.34, -0.36, -0.62).applyQuaternion(camera.quaternion);
+  viewmodel.position.copy(camera.position).add(_vmOff);
+  viewmodel.quaternion.copy(camera.quaternion);
+}
 function placementSpot() {
   const d = 1.8;
   const x = Math.max(-29, Math.min(29, state.x - Math.sin(state.yaw) * d));
@@ -1447,6 +1507,7 @@ function animate() {
   updateBuildPreview();
   updateDayNight(dt);
   updateCamera(dt);
+  updateViewmodel();
   updateRemotes(dt);
   updateMinds();
   updateNpcs();
@@ -3131,12 +3192,14 @@ function createRemote(player) {
   group.position.set(player.x, remoteGroundY(player), player.z);
   group.scale.y = player.stance === "crouch" ? 0.72 : 1;
   group.rotation.y = player.yaw;
+  if (player.holding) setHeldOnGroup(group, player.holding);
   return {
     group,
     appearanceKey: appearanceSignature(appearance),
     target: new THREE.Vector3(player.x, remoteGroundY(player), player.z),
     targetYaw: player.yaw,
-    targetScaleY: player.stance === "crouch" ? 0.72 : 1
+    targetScaleY: player.stance === "crouch" ? 0.72 : 1,
+    heldType: player.holding || null
   };
 }
 
