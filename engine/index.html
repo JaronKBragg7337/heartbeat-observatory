@@ -8,7 +8,7 @@
 <style>
   .stage { position:relative; margin-top:24px; border:1px solid var(--line); border-radius:16px; overflow:hidden;
     background:radial-gradient(120% 90% at 50% -10%, #0d1828 0%, #060a12 60%, #04060b 100%); aspect-ratio:16/9; min-height:240px; }
-  #world { position:absolute; inset:0; width:100%; height:100%; border:0; display:none; background:#04060b; }
+  #world { position:absolute; inset:0; width:100%; height:100%; border:0; display:none; background:#04060b; pointer-events:none; }
   .stage-empty { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     text-align:center; gap:10px; color:var(--muted); padding:24px; }
   .stage-empty .big { color:var(--text); font-size:15px; }
@@ -49,6 +49,12 @@
   .enterbtn.in { background:var(--amber); }
   .world-hint { color:var(--muted); font-size:12px; line-height:1.5; }
   .world-hint a { color:var(--ok); text-decoration:none; border-bottom:1px solid rgba(63,185,80,0.5); }
+  .enter-cta { margin-top:16px; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
+  .enterbig { font:inherit; font-size:16px; font-weight:700; letter-spacing:0.01em; color:#04060b; background:var(--ok);
+    border:0; border-radius:12px; padding:14px 28px; cursor:pointer; width:100%; max-width:340px; box-shadow:0 6px 22px rgba(63,185,80,0.28); }
+  .enterbig:hover { filter:brightness(1.08); }
+  .enterbig:active { transform:translateY(1px); }
+  .enter-sub { color:var(--muted); font-size:12.5px; line-height:1.5; margin:0; max-width:420px; }
 </style>
 </head>
 <body>
@@ -71,6 +77,11 @@
         <div class="big">The world is loading&hellip;</div>
         <div>If it does not appear, the live state below is still real.</div>
       </div>
+    </div>
+
+    <div class="enter-cta">
+      <button class="enterbig" id="enterWorldBtn" type="button">Enter the world &rarr;</button>
+      <p class="enter-sub">A live peek is above. Tap to walk around as your character &mdash; full screen, on phone or computer.</p>
     </div>
 
     <div class="world-controls" id="worldControls" style="display:none">
@@ -129,7 +140,7 @@
   }catch(e){} mountWorld(); renderResidents(); })();
 
   function mountWorld(){
-    worldFrame.src = "/engine/hub/?name=" + encodeURIComponent(myName) + (myUserId ? "&uid=" + encodeURIComponent(myUserId) : "");
+    worldFrame.src = "/engine/hub/?name=" + encodeURIComponent(myName) + (myUserId ? "&uid=" + encodeURIComponent(myUserId) : "") + "&preview=1";
     worldFrame.style.display = "block";
     stageEmpty.style.display = "none";
   }
@@ -202,6 +213,11 @@
   window.addEventListener("message", (ev)=>{ const t=ev&&ev.data&&ev.data.type; if(t==="world_ready"||t==="ready") flushToWorld(); });
   worldFrame.addEventListener("load", ()=>{ [1500,4000,8000,13000].forEach(d=> setTimeout(flushToWorld, d)); });
   showControls();
+
+  // ---- primary entry: open the full-screen world as its own page (works on phone + desktop) ----
+  const enterWorldBtn = document.getElementById("enterWorldBtn");
+  function fullWorldUrl(){ return "/engine/hub/?name=" + encodeURIComponent(myName) + (myUserId ? "&uid=" + encodeURIComponent(myUserId) : ""); }
+  if (enterWorldBtn) enterWorldBtn.addEventListener("click", function(){ window.location.assign(fullWorldUrl()); });
 
   // ---- live state ----
   let minds={}, residents={}, apartments={};
