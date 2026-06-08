@@ -25,6 +25,10 @@ const rosterToggle = document.querySelector("#rosterToggle");
 const colorSwatches = document.querySelector("#colorSwatches");
 const patternButtons = document.querySelector("#patternButtons");
 const bodyButtons = document.querySelector("#bodyButtons");
+const bodyTypeButtons = document.querySelector("#bodyTypeButtons");
+const skinSwatches = document.querySelector("#skinSwatches");
+const hairSwatches = document.querySelector("#hairSwatches");
+const pantsSwatches = document.querySelector("#pantsSwatches");
 const appearanceStatus = document.querySelector("#appearanceStatus");
 const movePad = document.querySelector("#movePad");
 const moveKnob = document.querySelector("#moveKnob");
@@ -319,6 +323,19 @@ bodyButtons?.querySelectorAll("[data-body]").forEach((button) => {
   button.addEventListener("click", () => {
     setMyAppearance({ ...myAppearance, body: button.dataset.body });
   });
+});
+
+bodyTypeButtons?.querySelectorAll("[data-build]").forEach((button) => {
+  button.addEventListener("click", () => { setMyAppearance({ ...myAppearance, build: button.dataset.build }); });
+});
+skinSwatches?.querySelectorAll("[data-skin]").forEach((button) => {
+  button.addEventListener("click", () => { setMyAppearance({ ...myAppearance, skin: button.dataset.skin }); });
+});
+hairSwatches?.querySelectorAll("[data-hair]").forEach((button) => {
+  button.addEventListener("click", () => { setMyAppearance({ ...myAppearance, hair: button.dataset.hair }); });
+});
+pantsSwatches?.querySelectorAll("[data-pants]").forEach((button) => {
+  button.addEventListener("click", () => { setMyAppearance({ ...myAppearance, pants: button.dataset.pants }); });
 });
 
 canvas.addEventListener("click", () => {
@@ -812,13 +829,14 @@ function normalizeAppearance(appearance, seed) {
     shirt: hex(source.shirt, color),
     skin: hex(source.skin, "#c8a07a"),
     pants: hex(source.pants, "#3a4654"),
-    hair: hex(source.hair, "#2c2420")
+    hair: hex(source.hair, "#2c2420"),
+    build: ["slim", "regular", "broad"].includes(source.build) ? source.build : "regular"
   };
 }
 
 function appearanceSignature(appearance) {
   const clean = normalizeAppearance(appearance, "resident");
-  return `${clean.color}:${clean.pattern}:${clean.body}:${clean.shirt}:${clean.skin}:${clean.pants}:${clean.hair}`;
+  return `${clean.color}:${clean.pattern}:${clean.body}:${clean.shirt}:${clean.skin}:${clean.pants}:${clean.hair}:${clean.build}`;
 }
 
 function characterSpawn(id) {
@@ -948,6 +966,18 @@ function renderAppearanceControls(message = "", isError = false, isOk = false) {
   });
   bodyButtons?.querySelectorAll("[data-body]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.body === myAppearance.body);
+  });
+  bodyTypeButtons?.querySelectorAll("[data-build]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.build === myAppearance.build);
+  });
+  skinSwatches?.querySelectorAll("[data-skin]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.skin?.toLowerCase() === myAppearance.skin);
+  });
+  hairSwatches?.querySelectorAll("[data-hair]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.hair?.toLowerCase() === myAppearance.hair);
+  });
+  pantsSwatches?.querySelectorAll("[data-pants]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.pants?.toLowerCase() === myAppearance.pants);
   });
   if (appearanceStatus) {
     appearanceStatus.textContent = message || (myUserId ? "Changes save to your account." : "Guest look is temporary. Sign in to keep it.");
@@ -2646,21 +2676,23 @@ function buildAvatarBody(look, name, ghost) {
     const face = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.045), darkM);
     face.position.set(0, 1.48, -0.245); group.add(face);
   } else {
+    const bw = look.build === "slim" ? 0.84 : look.build === "broad" ? 1.22 : 1;
     const skinM = M(look.skin), shirtM = M(look.shirt, { roughness: 0.7 }), pantsM = M(look.pants, { roughness: 0.72 }), hairM = M(look.hair, { roughness: 0.85 });
+    const legX = 0.12 * bw, armX = 0.305 * bw;
     const legGeo = new THREE.BoxGeometry(0.16, 0.62, 0.18);
-    const lL = new THREE.Mesh(legGeo, pantsM); lL.position.set(-0.12, 0.31, 0); lL.castShadow = !ghost; group.add(lL);
-    const rL = new THREE.Mesh(legGeo, pantsM); rL.position.set(0.12, 0.31, 0); rL.castShadow = !ghost; group.add(rL);
+    const lL = new THREE.Mesh(legGeo, pantsM); lL.position.set(-legX, 0.31, 0); lL.castShadow = !ghost; group.add(lL);
+    const rL = new THREE.Mesh(legGeo, pantsM); rL.position.set(legX, 0.31, 0); rL.castShadow = !ghost; group.add(rL);
     const footGeo = new THREE.BoxGeometry(0.18, 0.1, 0.3);
-    const lF = new THREE.Mesh(footGeo, darkM); lF.position.set(-0.12, 0.05, -0.05); group.add(lF);
-    const rF = new THREE.Mesh(footGeo, darkM); rF.position.set(0.12, 0.05, -0.05); group.add(rF);
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.66, 0.27), shirtM);
+    const lF = new THREE.Mesh(footGeo, darkM); lF.position.set(-legX, 0.05, -0.05); group.add(lF);
+    const rF = new THREE.Mesh(footGeo, darkM); rF.position.set(legX, 0.05, -0.05); group.add(rF);
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44 * bw, 0.66, 0.27 * (0.92 + 0.08 * bw)), shirtM);
     torso.position.y = 0.97; torso.castShadow = !ghost; group.add(torso);
     const armGeo = new THREE.BoxGeometry(0.13, 0.5, 0.15);
-    const lA = new THREE.Mesh(armGeo, shirtM); lA.position.set(-0.305, 1.0, 0); lA.castShadow = !ghost; group.add(lA);
-    const rA = new THREE.Mesh(armGeo, shirtM); rA.position.set(0.305, 1.0, 0); rA.castShadow = !ghost; group.add(rA);
+    const lA = new THREE.Mesh(armGeo, shirtM); lA.position.set(-armX, 1.0, 0); lA.castShadow = !ghost; group.add(lA);
+    const rA = new THREE.Mesh(armGeo, shirtM); rA.position.set(armX, 1.0, 0); rA.castShadow = !ghost; group.add(rA);
     const handGeo = new THREE.BoxGeometry(0.12, 0.13, 0.15);
-    const lH = new THREE.Mesh(handGeo, skinM); lH.position.set(-0.305, 0.7, 0); group.add(lH);
-    const rH = new THREE.Mesh(handGeo, skinM); rH.position.set(0.305, 0.7, 0); group.add(rH);
+    const lH = new THREE.Mesh(handGeo, skinM); lH.position.set(-armX, 0.7, 0); group.add(lH);
+    const rH = new THREE.Mesh(handGeo, skinM); rH.position.set(armX, 0.7, 0); group.add(rH);
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 14), skinM);
     head.position.y = 1.45; head.castShadow = !ghost; group.add(head);
     const hair = new THREE.Mesh(new THREE.SphereGeometry(0.215, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62), hairM);
