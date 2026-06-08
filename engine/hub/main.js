@@ -48,7 +48,10 @@ let hasEntered = false;
 let settingsOpen = false;
 let wantsConnection = true;
 let activeDoor = null;
+let activePlot = null;
 let pseudoOn = false;
+const plotList = [];
+let spacesLoaded = false;
 
 const keys = new Set();
 const remotes = new Map();
@@ -278,9 +281,10 @@ document.addEventListener("keydown", (event) => {
   }
 
   if (settingsOpen) return;
+  if (claimOverlay && claimOverlay.style.display === "flex") return;
 
   if (event.code === "KeyE" || event.code === "Enter") {
-    if (activeDoor) {
+    if (activeDoor || activePlot) {
       event.preventDefault();
       enterActiveDoor();
       return;
@@ -454,6 +458,7 @@ function connect() {
     });
   }
   if (!mindsLoaded) { mindsLoaded = true; loadMinds(); }
+  if (!spacesLoaded) { spacesLoaded = true; loadSpaces(); }
 
   channel = supa.channel("engine-town", {
     config: {
@@ -837,8 +842,26 @@ function updateActiveDoor() {
     }
   }
 
-  if (activeDoor === nextDoor) return;
+  let nextPlot = null;
+  if (!nextDoor) {
+    let bestPlot = Infinity;
+    for (const ps of plotList) {
+      if (!ps || ps.claimed) continue;
+      const t = ps.trigger;
+      const dx = state.x - t.x;
+      const dz = state.z - t.z;
+      if (Math.abs(dx) > t.width / 2 || Math.abs(dz) > t.depth / 2) continue;
+      const d = Math.hypot(dx, dz);
+      if (d < bestPlot) {
+        bestPlot = d;
+        nextPlot = ps;
+      }
+    }
+  }
+
+  if (activeDoor === nextDoor && activePlot === nextPlot) return;
   activeDoor = nextDoor;
+  activePlot = nextPlot;
 
   for (const door of doors) {
     door.pad.material.emissiveIntensity = door === activeDoor ? 0.38 : 0.08;
@@ -850,6 +873,12 @@ function updateActiveDoor() {
       ? `Enter ${activeDoor.label}`
       : `Press E for ${activeDoor.label}`;
     actionButton.disabled = false;
+  } else if (activePlot) {
+    doorPrompt.classList.remove("hidden");
+    doorPromptText.textContent = isTouch
+      ? "Claim this space"
+      : "Press E to claim this space";
+    actionButton.disabled = false;
   } else {
     doorPrompt.classList.add("hidden");
     actionButton.disabled = true;
@@ -857,9 +886,132 @@ function updateActiveDoor() {
 }
 
 function enterActiveDoor() {
-  if (!activeDoor) return;
-  const target = window.top || window;
-  target.location.assign(activeDoor.path);
+  if (activeDoor) {
+    const target = window.top || window;
+    target.location.assign(activeDoor.path);
+    return;
+  }
+  if (activePlot) openClaim(activePlot);
+}
+
+// ---- Claimable spaces ----
+let currentClaimPlot = null;
+document.body.insertAdjacentHTML("beforeend", `
+<div id="claimOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,10,12,.62);z-index:100000;padding:18px;">
+  <div style="width:min(430px,92vw);background:#0e1417;border:1px solid #243036;border-radius:14px;padding:18px;color:#dfe6ec;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 18px 50px rgba(0,0,0,.5);">
+    <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Claim this space</div>
+    <div style="font-size:12.5px;opacity:.78;line-height:1.5;margin-bottom:13px;">Paste a GitHub link to a project. It becomes a building here that everyone in the world can see.</div>
+    <input id="claimInput" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://github.com/you/your-project" style="width:100%;box-sizing:border-box;padding:11px 12px;border-radius:9px;border:1px solid #2c3940;background:#0a0f12;color:#eef3f6;font-size:14px;">
+    <div id="claimError" style="font-size:12px;color:#e69191;min-height:16px;margin:6px 0 10px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button id="claimCancel" style="flex:1;padding:11px;border-radius:9px;border:1px solid #2c3940;background:transparent;color:#cdd6db;font-size:14px;cursor:pointer;">Cancel</button>
+      <button id="claimSubmit" style="flex:1;padding:11px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:600;font-size:14px;cursor:pointer;">Claim</button>
+    </div>
+  </div>
+</div>`);
+const claimOverlay = document.querySelector("#claimOverlay");
+const claimInput = document.querySelector("#claimInput");
+const claimError = document.querySelector("#claimError");
+document.querySelector("#claimCancel").addEventListener("click", closeClaim);
+document.querySelector("#claimSubmit").addEventListener("click", submitClaim);
+claimOverlay.addEventListener("click", (e) => { if (e.target === claimOverlay) closeClaim(); });
+claimInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitClaim(); } });
+
+function openClaim(plotState) {
+  currentClaimPlot = plotState;
+  claimInput.value = "";
+  claimError.textContent = "";
+  try { document.exitPointerLock && document.exitPointerLock(); } catch (e) {}
+  claimOverlay.style.display = "flex";
+  setTimeout(() => { try { claimInput.focus(); } catch (e) {} }, 30);
+}
+
+function closeClaim() {
+  claimOverlay.style.display = "none";
+  currentClaimPlot = null;
+}
+
+function parseRepoName(url) {
+  try {
+    const u = new URL(url.trim());
+    if (!/(^|\.)github\.com$/i.test(u.hostname)) return null;
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length < 2) return null;
+    return parts[1].replace(/\.git$/i, "");
+  } catch (e) { return null; }
+}
+
+async function submitClaim() {
+  if (!currentClaimPlot) return;
+  const url = claimInput.value.trim();
+  const repo = parseRepoName(url);
+  if (!repo) { claimError.textContent = "Enter a full GitHub link (github.com/owner/project)."; return; }
+  if (!supa) { claimError.textContent = "Still connecting — try again in a moment."; return; }
+  claimError.textContent = "Claiming…";
+  try {
+    const { error } = await supa.from("world_spaces").insert({
+      plot: currentClaimPlot.index,
+      github_url: url,
+      project_name: repo,
+      claimed_by: displayName
+    });
+    if (error) {
+      claimError.textContent = /duplicate|unique/i.test(error.message || "")
+        ? "That spot was just claimed by someone else."
+        : "Could not save the claim.";
+      return;
+    }
+    applyClaim(currentClaimPlot, { project_name: repo, github_url: url });
+    addFeed(`${displayName} claimed a space: ${repo}`);
+    closeClaim();
+  } catch (e) {
+    claimError.textContent = "Could not save the claim.";
+  }
+}
+
+function applyClaim(plotState, data) {
+  if (!plotState) return;
+  plotState.claimed = true;
+  plotState.github_url = data.github_url;
+  if (plotState === activePlot) { activePlot = null; }
+  if (plotState.sign) { try { scene.remove(plotState.sign); } catch (e) {} }
+  const label = createLabelSprite(data.project_name, {
+    background: "rgba(14, 22, 18, 0.82)",
+    foreground: "#dff7e2",
+    fontSize: 32,
+    scale: 0.014
+  });
+  label.position.set(plotState.x, 2.15, plotState.z);
+  scene.add(label);
+  plotState.sign = label;
+  if (!plotState.built) {
+    plotState.built = true;
+    const body = new THREE.MeshStandardMaterial({ color: 0x86b59a, roughness: 0.72 });
+    const roof = new THREE.MeshStandardMaterial({ color: 0x466b57, roughness: 0.6 });
+    const w = plotState.width * 0.66, d = plotState.depth * 0.66;
+    addBox(plotState.x, 0.9, plotState.z, w, 1.8, d, body);
+    addBox(plotState.x, 1.92, plotState.z, w + 0.34, 0.42, d + 0.34, roof);
+  }
+}
+
+async function loadSpaces() {
+  try {
+    const { data } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by");
+    (data || []).forEach((row) => {
+      const ps = plotList[row.plot];
+      if (ps && !ps.claimed) applyClaim(ps, row);
+    });
+  } catch (e) {}
+  try {
+    supa.channel("engine-spaces")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "world_spaces" }, (p) => {
+        const r = p.new;
+        if (!r) return;
+        const ps = plotList[r.plot];
+        if (ps && !ps.claimed) applyClaim(ps, r);
+      })
+      .subscribe();
+  } catch (e) {}
 }
 
 function buildTown() {
@@ -927,9 +1079,7 @@ function buildTown() {
     buildStructure(structure);
   }
 
-  for (const plot of plots) {
-    buildPlot(plot);
-  }
+  plots.forEach((plot, index) => buildPlot(plot, index));
 
   addBench(-3.5, 2.9, Math.PI / 2);
   addBench(3.5, -2.9, -Math.PI / 2);
@@ -1033,7 +1183,7 @@ function buildStructure(b) {
   buildingColliders.push({ x: b.x, z: b.z, width: b.width, depth: b.depth });
 }
 
-function buildPlot(plot) {
+function buildPlot(plot, index) {
   const fillMaterial = new THREE.MeshStandardMaterial({
     color: 0x8bae78,
     roughness: 0.9
@@ -1065,6 +1215,18 @@ function buildPlot(plot) {
   });
   label.position.set(plot.x, 1.55, plot.z);
   scene.add(label);
+
+  plotList[index] = {
+    index,
+    x: plot.x,
+    z: plot.z,
+    width: plot.width,
+    depth: plot.depth,
+    trigger: { x: plot.x, z: plot.z, width: plot.width + 1.8, depth: plot.depth + 1.8 },
+    claimed: false,
+    built: false,
+    sign: label
+  };
 }
 
 function addGroundRect(x, z, width, depth, color) {
