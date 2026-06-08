@@ -234,6 +234,7 @@ let hiddenForRoom = [];
 let townReturn = { x: 0, z: 0, yaw: 0 };
 let myRoomLayout = { wall: "#8a9aa6", floor: "#b8a98f", items: { rug: false, plant: false, lamp: false, table: false } };
 let roomSaveTimer = null;
+let mySpace = "town";
 animate();
 try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
 
@@ -505,6 +506,7 @@ function transientPlayerFromPresence(meta) {
     yaw: Number.isFinite(meta.yaw) ? meta.yaw : 0,
     pitch: Number.isFinite(meta.pitch) ? meta.pitch : 0,
     stance: meta.stance === "crouch" ? "crouch" : "stand",
+    space: meta.space || "town",
     presence: "present"
   };
 }
@@ -862,7 +864,8 @@ function trackSelf() {
       z: state.z,
       yaw: state.yaw,
       pitch: state.pitch,
-      stance: state.stance
+      stance: state.stance,
+      space: mySpace
     });
   } catch {}
 }
@@ -1107,6 +1110,7 @@ function applyPeerState(player) {
   remote.target.set(player.x, remoteGroundY(player), player.z);
   remote.targetYaw = player.yaw;
   remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
+  remote.space = player.space || "town";
   if (transient && !wasKnownTransient) renderCharacters();
 }
 
@@ -1162,7 +1166,8 @@ function sendState(force = false) {
       z: state.z,
       yaw: state.yaw,
       pitch: state.pitch,
-      stance: state.stance
+      stance: state.stance,
+      space: mySpace
     }
   });
 }
@@ -1176,6 +1181,7 @@ function animate() {
   updateRemotes(dt);
   updateMinds();
   updateNpcs();
+  applySpaceVisibility();
   maybeGhostNudge();
   updateHud();
   sendState();
@@ -1262,6 +1268,15 @@ function updateCamera(dt) {
   camera.position.set(state.x, state.y, state.z);
   camera.rotation.y = state.yaw;
   camera.rotation.x = state.pitch;
+}
+
+function applySpaceVisibility() {
+  const townVisible = (mySpace === "town");
+  for (const remote of remotes.values()) {
+    if (remote.group) remote.group.visible = ((remote.space || "town") === mySpace);
+  }
+  for (const npc of npcs.values()) { if (npc.group) npc.group.visible = townVisible; }
+  for (const actor of mindActors.values()) { if (actor.group) actor.group.visible = townVisible; }
 }
 
 function updateRemotes(dt) {
@@ -1718,8 +1733,10 @@ function enterRoom() {
     for (const c of roomGroup.userData.colliders) buildingColliders.push(c);
     state.x = 0; state.z = 2.6; state.yaw = Math.PI;
     inRoom = true;
+    mySpace = "room:" + (myUserId || selfRealtimeId());
     showRoomPanel();
     doorPrompt.classList.add("hidden");
+    try { trackSelf(); sendState(true); } catch (e) {}
   } catch (e) {
     try { forceExitRoom(); } catch (_) {}
   }
@@ -1738,7 +1755,9 @@ function exitRoom() {
     }
     state.x = townReturn.x; state.z = townReturn.z; state.yaw = townReturn.yaw;
     inRoom = false;
+    mySpace = "town";
     hideRoomPanel();
+    try { trackSelf(); sendState(true); } catch (e) {}
   } catch (e) {
     forceExitRoom();
   }
@@ -1753,6 +1772,7 @@ function forceExitRoom() {
     savedTownColliders = null;
   }
   inRoom = false;
+  mySpace = "town";
   hideRoomPanel();
 }
 
