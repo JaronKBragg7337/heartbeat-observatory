@@ -25,7 +25,7 @@ body { touch-action: none; user-select: none; }
 #status.offline { color: var(--danger); }
 #place { color: var(--blue); }
 .icon-button { display: inline-grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid var(--panel-border); border-radius: 6px; background: var(--panel-bg); color: var(--text); box-shadow: 0 10px 24px rgb(0 0 0 / 26%); }
-#menuButton { position: fixed; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); z-index: 15; }
+#menuButton { position: fixed; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); z-index: 35; }
 #roster { position: fixed; right: max(14px, env(safe-area-inset-right)); top: calc(max(14px, env(safe-area-inset-top)) + 50px); display: grid; gap: 7px; width: min(260px, calc(100vw - 28px)); pointer-events: none; z-index: 8; }
 #roster.hidden { display: none; }
 .player-row { display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 8px; min-width: 0; padding: 8px 9px; border: 1px solid var(--panel-border); border-radius: 6px; background: var(--panel-bg); box-shadow: 0 10px 22px rgb(0 0 0 / 22%); font-size: 12px; text-transform: uppercase; }
@@ -49,6 +49,18 @@ body { touch-action: none; user-select: none; }
 .settings-shell input[type="range"] { width: 100%; accent-color: var(--accent); }
 .toggle-row { grid-template-columns: 1fr auto; align-items: center; }
 .toggle-row input { width: 20px; height: 20px; accent-color: var(--accent); }
+.settings-group { display: grid; gap: 10px; }
+.settings-label { color: var(--muted); font-size: 13px; text-transform: uppercase; }
+.swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.swatch { width: 100%; aspect-ratio: 1; min-height: 34px; border-radius: 50%; border: 2px solid rgb(255 255 255 / 18%); background: var(--swatch); box-shadow: inset 0 0 0 3px rgb(0 0 0 / 16%); }
+.swatch.selected { border-color: var(--text); box-shadow: 0 0 0 2px rgb(120 215 166 / 44%), inset 0 0 0 3px rgb(0 0 0 / 16%); }
+.segmented { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden; }
+.segmented button { min-height: 36px; border: 0; border-right: 1px solid var(--panel-border); border-radius: 0; background: rgb(255 255 255 / 5%); color: var(--muted); font-size: 12px; font-weight: 800; }
+.segmented button:last-child { border-right: 0; }
+.segmented button.selected { background: var(--accent); color: #08130e; }
+.settings-note { min-height: 16px; color: var(--muted); font-size: 12px; line-height: 1.35; }
+.settings-note.error { color: var(--danger); }
+.settings-note.ok { color: var(--accent); }
 .secondary-button { width: 100%; min-height: 42px; background: transparent; color: var(--text); }
 #overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: rgb(6 10 12 / 46%); transition: opacity 160ms ease; z-index: 30; }
 #overlay.hidden { opacity: 0; pointer-events: none; }

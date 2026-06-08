@@ -22,6 +22,9 @@ const sensitivitySlider = document.querySelector("#sensitivitySlider");
 const fovSlider = document.querySelector("#fovSlider");
 const invertYToggle = document.querySelector("#invertYToggle");
 const rosterToggle = document.querySelector("#rosterToggle");
+const colorSwatches = document.querySelector("#colorSwatches");
+const patternButtons = document.querySelector("#patternButtons");
+const appearanceStatus = document.querySelector("#appearanceStatus");
 const movePad = document.querySelector("#movePad");
 const moveKnob = document.querySelector("#moveKnob");
 const actionButton = document.querySelector("#actionButton");
@@ -38,13 +41,16 @@ const isTouch = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoi
 const SUPA_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
 const SUPA_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
 const peerColors = ["#4fa3ff", "#5fd38d", "#f6b45b", "#e36d7c", "#a67cff", "#47c7b8", "#f0d461", "#d987e8"];
+const appearancePatterns = new Set(["plain", "stripe", "band", "glow"]);
 let myId = null;
 let myUserId = null;
 let myColor = peerColors[0];
+let myAppearance = { color: myColor, pattern: "plain" };
 let supa = null;
 let channel = null;
 let connected = false;
 let wantsSelfPresence = true;
+let appearanceSaveTimer = null;
 
 let sendAccumulator = 0;
 let hasEntered = false;
@@ -205,6 +211,7 @@ scene.add(camera);
 identityEl.textContent = displayName;
 welcomeName.textContent = displayName;
 actionButton.disabled = true;
+renderAppearanceControls();
 buildTown();
 initWorld();
 animate();
@@ -221,7 +228,7 @@ fsBtn.textContent = "\u26F6";
 fsBtn.style.position = "fixed";
 fsBtn.style.top = "max(14px, env(safe-area-inset-top))";
 fsBtn.style.right = "calc(max(14px, env(safe-area-inset-right)) + 48px)";
-fsBtn.style.zIndex = "15";
+fsBtn.style.zIndex = "35";
 document.body.appendChild(fsBtn);
 fsBtn.addEventListener("click", () => {
   if (document.fullscreenElement) {
@@ -258,6 +265,18 @@ invertYToggle.addEventListener("change", () => {
 rosterToggle.addEventListener("change", () => {
   settings.showRoster = rosterToggle.checked;
   renderRoster();
+});
+
+colorSwatches?.querySelectorAll("[data-color]").forEach((button) => {
+  button.addEventListener("click", () => {
+    setMyAppearance({ ...myAppearance, color: button.dataset.color });
+  });
+});
+
+patternButtons?.querySelectorAll("[data-pattern]").forEach((button) => {
+  button.addEventListener("click", () => {
+    setMyAppearance({ ...myAppearance, pattern: button.dataset.pattern });
+  });
 });
 
 canvas.addEventListener("click", () => {
@@ -414,6 +433,7 @@ async function loadIdentity() {
           .maybeSingle();
         if (character) {
           upsertCharacter(character);
+          myAppearance = characterAppearance(character);
           if (character.display_name) displayName = sanitizeDisplayName(character.display_name);
         }
       } catch {}
@@ -435,9 +455,11 @@ async function loadIdentity() {
     myId = null;
   }
 
-  myColor = colorForId(myUserId || displayName);
+  myAppearance = normalizeAppearance(myAppearance, myUserId || displayName);
+  myColor = myAppearance.color;
   identityEl.textContent = displayName;
   welcomeName.textContent = displayName;
+  renderAppearanceControls();
 }
 
 async function loadCharacters() {
@@ -475,10 +497,16 @@ async function loadCharacters() {
 
 function upsertCharacter(row) {
   if (!row?.auth_user_id) return;
-  characters.set(row.auth_user_id, {
+  const character = {
     ...row,
     display_name: sanitizeDisplayName(row.display_name)
-  });
+  };
+  characters.set(row.auth_user_id, character);
+  if (row.auth_user_id === myUserId) {
+    myAppearance = characterAppearance(character);
+    myColor = myAppearance.color;
+    renderAppearanceControls();
+  }
 }
 
 function renderCharacters() {
@@ -524,7 +552,12 @@ function reconcileCharacter(row) {
 
   const peer = peers.get(id);
   const player = peer || characterPlayer(row);
+  const appearanceKey = appearanceSignature(player.appearance || characterAppearance(row));
   let remote = remotes.get(id);
+  if (remote && remote.appearanceKey !== appearanceKey) {
+    removeRemote(id);
+    remote = null;
+  }
   if (!remote) {
     remote = createRemote(player);
     remotes.set(id, remote);
@@ -537,10 +570,12 @@ function reconcileCharacter(row) {
 
 function characterPlayer(row) {
   const spawn = row.auth_user_id === myUserId ? new THREE.Vector3(state.x, 0, state.z) : characterSpawn(row.auth_user_id);
+  const appearance = characterAppearance(row);
   return {
     id: row.auth_user_id,
     name: characterName(row),
-    color: characterColor(row),
+    color: appearance.color,
+    appearance,
     x: spawn.x,
     y: standingEyeHeight,
     z: spawn.z,
@@ -553,9 +588,11 @@ function characterPlayer(row) {
 function ensureNpcForCharacter(row) {
   const id = row.auth_user_id;
   if (!id) return;
+  const appearance = characterAppearance(row);
+  const appearanceKey = appearanceSignature(appearance);
   let npc = npcs.get(id);
   if (npc) {
-    if (npc.name !== characterName(row)) {
+    if (npc.name !== characterName(row) || npc.appearanceKey !== appearanceKey) {
       removeNpc(id);
       npc = null;
     } else {
@@ -574,10 +611,10 @@ function ensureNpcForCharacter(row) {
 
   let seed = 0;
   for (const ch of id) seed += ch.charCodeAt(0);
-  const group = buildNpcAvatar(characterColor(row), characterName(row));
+  const group = buildNpcAvatar(appearance, characterName(row));
   group.position.copy(spawn);
   group.position.y = 0;
-  npcs.set(id, { group, name: characterName(row), seed: (seed % 100) / 100 * Math.PI * 2, base: spawn.clone() });
+  npcs.set(id, { group, name: characterName(row), appearanceKey, seed: (seed % 100) / 100 * Math.PI * 2, base: spawn.clone() });
   scene.add(group);
 }
 
@@ -590,9 +627,26 @@ function characterName(row) {
 }
 
 function characterColor(row) {
-  const appearance = row?.appearance && typeof row.appearance === "object" ? row.appearance : {};
-  const color = appearance.color || appearance.bodyColor || appearance.tint;
-  return typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color) ? color : colorForId(row?.auth_user_id || characterName(row));
+  return characterAppearance(row).color;
+}
+
+function characterAppearance(row) {
+  return normalizeAppearance(row?.appearance, row?.auth_user_id || characterName(row));
+}
+
+function normalizeAppearance(appearance, seed) {
+  const source = appearance && typeof appearance === "object" ? appearance : {};
+  const color = source.color || source.bodyColor || source.tint;
+  const pattern = String(source.pattern || "plain").toLowerCase();
+  return {
+    color: typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : colorForId(seed),
+    pattern: appearancePatterns.has(pattern) ? pattern : "plain"
+  };
+}
+
+function appearanceSignature(appearance) {
+  const clean = normalizeAppearance(appearance, "resident");
+  return `${clean.color}:${clean.pattern}`;
 }
 
 function characterSpawn(id) {
@@ -651,7 +705,58 @@ function pageLeavePresence() {
 
 function trackSelf() {
   if (!channel || !myUserId || !wantsSelfPresence) return;
-  try { channel.track({ id: myUserId, name: displayName, color: myColor }); } catch {}
+  try { channel.track({ id: myUserId, name: displayName, color: myColor, appearance: myAppearance }); } catch {}
+}
+
+function setMyAppearance(next) {
+  myAppearance = normalizeAppearance(next, myUserId || displayName);
+  myColor = myAppearance.color;
+  renderAppearanceControls("Saving...");
+
+  if (!myUserId) {
+    renderAppearanceControls("Sign in to save your character.", true);
+    return;
+  }
+
+  const row = characters.get(myUserId);
+  if (row) {
+    row.appearance = { ...(row.appearance || {}), ...myAppearance };
+    characters.set(myUserId, row);
+  }
+  renderCharacters();
+  trackSelf();
+  sendState(true);
+
+  window.clearTimeout(appearanceSaveTimer);
+  appearanceSaveTimer = window.setTimeout(saveMyAppearance, 350);
+}
+
+async function saveMyAppearance() {
+  if (!myUserId) return;
+  try {
+    const { error } = await ensureSupabase().rpc("set_world_appearance", {
+      p_color: myAppearance.color,
+      p_pattern: myAppearance.pattern
+    });
+    if (error) throw error;
+    renderAppearanceControls("Saved.", false, true);
+  } catch (error) {
+    renderAppearanceControls(error?.message || "Could not save character.", true);
+  }
+}
+
+function renderAppearanceControls(message = "", isError = false, isOk = false) {
+  colorSwatches?.querySelectorAll("[data-color]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.color?.toLowerCase() === myAppearance.color);
+  });
+  patternButtons?.querySelectorAll("[data-pattern]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.pattern === myAppearance.pattern);
+  });
+  if (appearanceStatus) {
+    appearanceStatus.textContent = message || (myUserId ? "Changes save to your account." : "Sign in to save your character.");
+    appearanceStatus.classList.toggle("error", isError);
+    appearanceStatus.classList.toggle("ok", isOk);
+  }
 }
 
 function enterTown() {
@@ -795,6 +900,11 @@ function connect() {
 
 function applyPeerState(player) {
   if (!player || !player.id || player.id === myUserId || !characters.has(player.id)) return;
+  const character = characters.get(player.id);
+  if (character) {
+    player.appearance = normalizeAppearance(player.appearance || character.appearance, player.id);
+    player.color = player.appearance.color;
+  }
   if (npcs.has(player.id)) removeNpc(player.id);
   markCharacterPresence(player.id, true, false);
   peers.set(player.id, player);
@@ -838,6 +948,7 @@ function sendState(force = false) {
       id: myUserId,
       name: displayName,
       color: myColor,
+      appearance: myAppearance,
       x: state.x,
       y: state.y,
       z: state.z,
@@ -1026,13 +1137,15 @@ function updateMinds() {
   }
 }
 
-function buildNpcAvatar(color, name) {
+function buildNpcAvatar(appearance, name) {
   const group = new THREE.Group();
-  const c = new THREE.Color(color || "#8aa0a8");
+  const look = normalizeAppearance(appearance, name || "Guest");
+  const c = new THREE.Color(look.color);
   const bodyMaterial = new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, metalness: 0.02, transparent: true, opacity: 0.78 });
   const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x172024, roughness: 0.82, transparent: true, opacity: 0.78 });
   const body = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 1.12, 14), bodyMaterial);
   body.position.y = 0.75; group.add(body);
+  addAvatarPattern(group, look, true);
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), bodyMaterial);
   head.position.y = 1.46; group.add(head);
   const face = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.045), darkMaterial);
@@ -1054,10 +1167,11 @@ function convertToNpc(p) {
   if (remote) removeRemote(p.id);
   let seed = 0;
   for (const ch of p.id) seed += ch.charCodeAt(0);
-  const group = buildNpcAvatar(color, name);
+  const appearance = normalizeAppearance({ color, pattern: p.appearance?.pattern || known.appearance?.pattern || "plain" }, p.id);
+  const group = buildNpcAvatar(appearance, name);
   group.position.copy(pos);
   group.position.y = 0;
-  npcs.set(p.id, { group, seed: (seed % 100) / 100 * Math.PI * 2, base: pos.clone() });
+  npcs.set(p.id, { group, name, appearanceKey: appearanceSignature(appearance), seed: (seed % 100) / 100 * Math.PI * 2, base: pos.clone() });
   scene.add(group);
   if (npcs.size > 12) removeNpc(npcs.keys().next().value);
 }
@@ -1306,10 +1420,7 @@ function buildTown() {
   sun.shadow.camera.bottom = -24;
   scene.add(sun);
 
-  const groundMaterial = new THREE.MeshStandardMaterial({
-    color: 0x6fa46e,
-    roughness: 0.92
-  });
+  const groundMaterial = makeGroundMaterial();
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(38, 38), groundMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
@@ -1360,8 +1471,8 @@ function buildTown() {
 
   plots.forEach((plot, index) => buildPlot(plot, index));
 
-  addBench(-3.5, 2.9, Math.PI / 2);
-  addBench(3.5, -2.9, -Math.PI / 2);
+  addBench(-3.5, 2.9, benchRotationToward(-3.5, 2.9));
+  addBench(3.5, -2.9, benchRotationToward(3.5, -2.9));
   addTree(-14, -12);
   addTree(14, -12);
   addTree(-14, 12);
@@ -1520,14 +1631,75 @@ function buildPlot(plot, index) {
 }
 
 function addGroundRect(x, z, width, depth, color) {
-  const material = new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.88
-  });
+  const material = makePavingMaterial(color);
   const rect = new THREE.Mesh(new THREE.BoxGeometry(width, 0.04, depth), material);
   rect.position.set(x, 0.025, z);
   rect.receiveShadow = true;
   scene.add(rect);
+}
+
+function makeGroundMaterial() {
+  const canvasTexture = document.createElement("canvas");
+  canvasTexture.width = 128;
+  canvasTexture.height = 128;
+  const ctx = canvasTexture.getContext("2d");
+  ctx.fillStyle = "#6fa46e";
+  ctx.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 360; i++) {
+    const x = (i * 37) % 128;
+    const y = (i * 61) % 128;
+    const shade = i % 3 === 0 ? "#82b57c" : i % 3 === 1 ? "#5f955f" : "#78aa73";
+    ctx.fillStyle = shade;
+    ctx.globalAlpha = 0.22;
+    ctx.fillRect(x, y, 1 + (i % 3), 1 + ((i + 1) % 3));
+  }
+  ctx.globalAlpha = 1;
+  const texture = new THREE.CanvasTexture(canvasTexture);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(14, 14);
+  return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.96 });
+}
+
+function makePavingMaterial(color) {
+  const canvasTexture = document.createElement("canvas");
+  canvasTexture.width = 96;
+  canvasTexture.height = 96;
+  const ctx = canvasTexture.getContext("2d");
+  const base = `#${new THREE.Color(color).getHexString()}`;
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, 96, 96);
+  ctx.strokeStyle = "rgba(74, 61, 47, 0.16)";
+  ctx.lineWidth = 2;
+  for (let x = 0; x <= 96; x += 24) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 96);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= 96; y += 24) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(96, y);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(255,255,255,0.07)";
+  for (let i = 0; i < 36; i++) {
+    ctx.fillRect((i * 19) % 96, (i * 31) % 96, 2, 1);
+  }
+  const texture = new THREE.CanvasTexture(canvasTexture);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(2, 2);
+  return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9 });
+}
+
+function benchRotationToward(x, z, targetX = 0, targetZ = 0) {
+  const dx = targetX - x;
+  const dz = targetZ - z;
+  return Math.atan2(-dx, -dz);
 }
 
 function addBench(x, z, rotationY) {
@@ -1586,8 +1758,46 @@ function addBox(x, y, z, width, height, depth, material) {
   return box;
 }
 
+function addAvatarPattern(group, appearance, ghost) {
+  const opacity = ghost ? 0.7 : 1;
+  const markMaterial = new THREE.MeshStandardMaterial({
+    color: 0xf5fbff,
+    roughness: 0.5,
+    metalness: 0.02,
+    transparent: ghost,
+    opacity
+  });
+  if (appearance.pattern === "stripe") {
+    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.355, 0.435, 0.12, 14, 1, true), markMaterial);
+    stripe.position.y = 0.88;
+    stripe.castShadow = !ghost;
+    group.add(stripe);
+  } else if (appearance.pattern === "band") {
+    const sash = new THREE.Mesh(new THREE.BoxGeometry(0.13, 1.0, 0.07), markMaterial);
+    sash.position.set(-0.08, 0.86, -0.34);
+    sash.rotation.z = -0.52;
+    sash.castShadow = !ghost;
+    group.add(sash);
+  } else if (appearance.pattern === "glow") {
+    const glow = new THREE.Mesh(
+      new THREE.TorusGeometry(0.48, 0.025, 8, 28),
+      new THREE.MeshStandardMaterial({
+        color: 0xdffcff,
+        emissive: 0x74e5ff,
+        emissiveIntensity: ghost ? 0.45 : 0.75,
+        transparent: true,
+        opacity: ghost ? 0.42 : 0.68
+      })
+    );
+    glow.position.y = 1.12;
+    glow.rotation.x = Math.PI / 2;
+    group.add(glow);
+  }
+}
+
 function createRemote(player) {
-  const color = new THREE.Color(player.color || "#8aa0a8");
+  const appearance = normalizeAppearance(player.appearance || { color: player.color }, player.id || player.name || "Guest");
+  const color = new THREE.Color(appearance.color);
   const group = new THREE.Group();
   group.position.set(player.x, remoteGroundY(player), player.z);
   group.scale.y = player.stance === "crouch" ? 0.72 : 1;
@@ -1607,6 +1817,7 @@ function createRemote(player) {
   body.position.y = 0.75;
   body.castShadow = true;
   group.add(body);
+  addAvatarPattern(group, appearance, false);
 
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), bodyMaterial);
   head.position.y = 1.46;
@@ -1628,6 +1839,7 @@ function createRemote(player) {
 
   return {
     group,
+    appearanceKey: appearanceSignature(appearance),
     target: new THREE.Vector3(player.x, remoteGroundY(player), player.z),
     targetYaw: player.yaw,
     targetScaleY: player.stance === "crouch" ? 0.72 : 1

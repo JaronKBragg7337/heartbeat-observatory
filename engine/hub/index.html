@@ -53,6 +53,24 @@
           <span>Roster</span>
           <input id="rosterToggle" type="checkbox" checked>
         </label>
+        <div class="settings-group" aria-label="Character">
+          <div class="settings-label">Character</div>
+          <div id="colorSwatches" class="swatches" aria-label="Character color">
+            <button type="button" class="swatch" data-color="#4fa3ff" style="--swatch:#4fa3ff" aria-label="Blue"></button>
+            <button type="button" class="swatch" data-color="#5fd38d" style="--swatch:#5fd38d" aria-label="Green"></button>
+            <button type="button" class="swatch" data-color="#f6b45b" style="--swatch:#f6b45b" aria-label="Gold"></button>
+            <button type="button" class="swatch" data-color="#e36d7c" style="--swatch:#e36d7c" aria-label="Rose"></button>
+            <button type="button" class="swatch" data-color="#a67cff" style="--swatch:#a67cff" aria-label="Violet"></button>
+            <button type="button" class="swatch" data-color="#47c7b8" style="--swatch:#47c7b8" aria-label="Teal"></button>
+          </div>
+          <div id="patternButtons" class="segmented" aria-label="Character pattern">
+            <button type="button" data-pattern="plain">Plain</button>
+            <button type="button" data-pattern="stripe">Stripe</button>
+            <button type="button" data-pattern="band">Band</button>
+            <button type="button" data-pattern="glow">Glow</button>
+          </div>
+          <div id="appearanceStatus" class="settings-note" aria-live="polite"></div>
+        </div>
         <button id="leaveTownButton" class="secondary-button" type="button">Leave Town</button>
       </div>
     </section>

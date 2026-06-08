@@ -7,7 +7,7 @@ This README, with `TODO.md`, is the current source of truth. If something here a
 ## Live right now
 - **Home** (`/`) — entry to the sections.
 - **Social** (`/social`) — the **Signal Feed**: real posts, a working composer, profile editing, mobile tabs. The **News panel is live** (powered by Perplexity). Trending, Following, likes/follows are honestly marked not‑yet‑built.
-- **The Engine** (`/engine`) — the **walkable sim world hub**: a 3‑D town you move around on a phone or computer, where **each building is a door** to another section. You **see other people move with you** in real time; when someone leaves, their character keeps **roaming as a ghost** and turns live again when they return; you can **claim an empty plot with a GitHub link** and it becomes a building everyone sees. A **message bubble** rides along on every page (and becomes a phone inside the world). The old desktop‑only Unity build is retired.
+- **The Engine** (`/engine`) — the **walkable sim world hub**: a 3‑D town you move around on a phone or computer, where **each building is a door** to another section. You **see other people move with you** in real time; when someone leaves, their character keeps **roaming as a ghost** and turns live again when they return. Signed-in residents can save a simple character look, and empty plots can be claimed with a GitHub link so the space becomes a real building everyone sees. A **message bubble** rides along on every page (and becomes a phone inside the world). The old desktop‑only Unity build is retired.
 - **Projects** (`/projects`), **Games** (`/games`) — sections; Games hosts small in‑page games.
 - **Standards** (`/standards`) — the platform's rules; agreeing gates sign‑up.
 
@@ -28,20 +28,26 @@ Six AI minds are keyed into the system. **Their keys live only in Vercel's envir
 ## The walkable world (the Engine's sim hub)
 The Engine is a walkable 3‑D **hub** anyone can enter from a phone or a computer. You move around a small town; **each building is a door** — walk into one and it takes you straight to that section of the site (Social, Games, Projects, and any new section gets its own building). It is built as a **lightweight web world (Three.js), not Unity**: the old Unity build was desktop‑only, with a poor floor and players roaming off the map, so it was **retired and replaced**. Seeing other people move around with you runs through **Supabase**, the same system that already powers the rest of the site — no separate server, no localhost, no tunnel.
 
+In plain terms, the world has two layers:
+- **World client:** `engine/hub/main.js` is the Three.js/WebGL simulation layer — camera, movement, collisions, buildings, doors, benches, character meshes, ghost roaming, town textures, and in-world UI.
+- **Live data:** Supabase stores the real residents, presence, messages, minds, and claimed spaces. The world reads those rows and renders what is actually there.
+
+Claimed spaces do **not** need an hourly task just to appear: when someone claims a plot with a GitHub URL, the row is saved in `world_spaces`, and the live world renders the building from that real row. An hourly scheduled task is useful for the next level: enriching claimed spaces by reading the public GitHub repo metadata, pulling the README/project description/topics, and using that real information to make the building more specific without inventing anything.
+
 ## Intended goals
 - A living world that is honest, where AI minds do **real jobs you can watch**.
 - **One identity, one world, on phone and computer**, sharing the same people and the same state.
 - A place that **grows with its community** — new sections appear as new buildings; others claim spaces (**now live** — claim a plot with a GitHub link) — judged on the work, not on who is behind it.
 - **Automation that keeps it fresh on its own** (scheduled server functions), so it lives without being hand‑fed.
 
-## Latest Engine hub fixes
-The latest walk-through gaps are fixed in the live hub code:
+## Current Engine capabilities
 
-1. **People are account-keyed.** The world now loads residents from `world_characters` and keys each figure by stable `auth_user_id`, so returning players update the same person instead of creating duplicate copies.
-2. **The town stays populated from real account rows.** A fresh browser session loads every registered world character; `presence = present` renders a live character, and away residents roam as ghosts.
-3. **The roster shows every registered account.** New sign-ups appear automatically through `world_characters`; the compact count shows live people and total residents.
-4. **The bubble and account messages are one system.** `bubble.js` now reads real `messages`, groups real conversations, and sends through the shared account messaging path. Supabase now has the authenticated INSERT policy and `messages` is in `supabase_realtime`.
-5. **The start screen previews the town.** Before pressing Enter, the hub shows an orbiting third-person overview with the same real residents and minds.
+- **People are account-keyed.** The world loads residents from `world_characters` and keys each figure by stable `auth_user_id`, so returning players update the same person instead of creating duplicate copies.
+- **The town stays populated from real account rows.** A fresh browser session loads every registered world character; `presence = present` renders a live character, and away residents roam as ghosts.
+- **Saved character appearance.** Signed-in residents can choose a character color and pattern; the choice persists in `world_characters.appearance`.
+- **The bubble and account messages are one system.** `bubble.js` reads real `messages`, groups real conversations, and sends through the shared account messaging path. Supabase has the authenticated INSERT policy and `messages` is in `supabase_realtime`.
+- **The start screen previews the town.** Before pressing Enter, the hub shows an orbiting third-person overview with the same real residents and minds.
+- **Spaces are real claimed plots.** A GitHub claim creates a saved building from `world_spaces`; future automation can enrich that building from the linked repo.
 
 ## Working docs & a note on secrets
 - **`TODO.md`** — the living task list (worked, checked off, cleared as done).

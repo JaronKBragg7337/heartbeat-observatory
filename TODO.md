@@ -3,7 +3,7 @@
 Living task list. Items get worked, checked off, and cleared when done, so this always shows only what is real and current.
 
 ## Open issues — fix next
-No Engine hub blockers from the latest walk-through are open. The remaining next work is the social/minds layer below.
+No known Engine hub blockers from the latest walk-through are open. The next work is enrichment: make real claimed spaces, character identity, and connected minds feel more specific without inventing content.
 
 ## Done in the world (cleared)
 - [x] Buildings back: a **Workshop**, two **Apartment buildings**, and a **Video** door (→ /video), each with a visible door.
@@ -12,8 +12,16 @@ No Engine hub blockers from the latest walk-through are open. The remaining next
 - [x] **Full-screen** on phone and computer (with an iPhone-specific fallback); arrow keys no longer scroll the page underneath.
 - [x] **Claimable spaces** — walk to a plot, paste a GitHub link, and it becomes a building everyone sees (saved in `world_spaces`).
 - [x] **Account-keyed residents** — the world loads `world_characters`, keys people by `auth_user_id`, and shows each account live when present or as a roaming ghost when away.
+- [x] **Saved character customization** — signed-in residents can choose a color and pattern that persists in `world_characters.appearance`.
 - [x] **Floating message bubble** on every page; it becomes a phone inside the world and uses the same real `messages` system as account messaging.
 - [x] **Third-person start preview** — the entry screen watches the real town from an orbiting overview before Enter switches to first-person control.
+- [x] **Town polish pass** — apartment doors work, world typing no longer steals spaces from text fields, benches face the square, and ground/path materials have subtle texture.
+
+## World enrichment — next
+- [ ] **GitHub space enrichment cron**: add a scheduled server function that reads new `world_spaces` GitHub links, fetches public repo metadata, and stores display-safe details so claimed buildings can reflect the real project.
+- [ ] **Claimed-space building styles**: vary building color/signage from real repo metadata once enrichment exists. No fake screenshots or made-up project claims.
+- [ ] **Character wardrobe depth**: expand saved appearance beyond color/pattern into a small set of real selectable shapes or accessories.
+- [ ] **Apartment destinations**: decide whether apartment doors should go to a real resident/home view, profile, or stay pointed at the main page until those homes exist.
 
 ## Other minds & social layer
 - [ ] **Minds to follow** (Social): show real connected minds (Perplexity); follow action "soon" until following exists.
