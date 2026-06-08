@@ -24,6 +24,7 @@ const invertYToggle = document.querySelector("#invertYToggle");
 const rosterToggle = document.querySelector("#rosterToggle");
 const colorSwatches = document.querySelector("#colorSwatches");
 const patternButtons = document.querySelector("#patternButtons");
+const bodyButtons = document.querySelector("#bodyButtons");
 const appearanceStatus = document.querySelector("#appearanceStatus");
 const movePad = document.querySelector("#movePad");
 const moveKnob = document.querySelector("#moveKnob");
@@ -297,13 +298,19 @@ rosterToggle.addEventListener("change", () => {
 
 colorSwatches?.querySelectorAll("[data-color]").forEach((button) => {
   button.addEventListener("click", () => {
-    setMyAppearance({ ...myAppearance, color: button.dataset.color });
+    setMyAppearance({ ...myAppearance, color: button.dataset.color, shirt: button.dataset.color });
   });
 });
 
 patternButtons?.querySelectorAll("[data-pattern]").forEach((button) => {
   button.addEventListener("click", () => {
     setMyAppearance({ ...myAppearance, pattern: button.dataset.pattern });
+  });
+});
+
+bodyButtons?.querySelectorAll("[data-body]").forEach((button) => {
+  button.addEventListener("click", () => {
+    setMyAppearance({ ...myAppearance, body: button.dataset.body });
   });
 });
 
@@ -786,17 +793,24 @@ function characterAppearance(row) {
 
 function normalizeAppearance(appearance, seed) {
   const source = appearance && typeof appearance === "object" ? appearance : {};
-  const color = source.color || source.bodyColor || source.tint;
+  const hex = (v, fb) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v)) ? v.toLowerCase() : fb;
+  const color = hex(source.color || source.bodyColor || source.tint, colorForId(seed));
   const pattern = String(source.pattern || "plain").toLowerCase();
+  const body = (source.body === "classic" || source.body === "person") ? source.body : "person";
   return {
-    color: typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : colorForId(seed),
-    pattern: appearancePatterns.has(pattern) ? pattern : "plain"
+    color,
+    pattern: appearancePatterns.has(pattern) ? pattern : "plain",
+    body,
+    shirt: hex(source.shirt, color),
+    skin: hex(source.skin, "#c8a07a"),
+    pants: hex(source.pants, "#3a4654"),
+    hair: hex(source.hair, "#2c2420")
   };
 }
 
 function appearanceSignature(appearance) {
   const clean = normalizeAppearance(appearance, "resident");
-  return `${clean.color}:${clean.pattern}`;
+  return `${clean.color}:${clean.pattern}:${clean.body}:${clean.shirt}:${clean.skin}:${clean.pants}:${clean.hair}`;
 }
 
 function characterSpawn(id) {
@@ -908,8 +922,7 @@ async function saveMyAppearance() {
   if (!myUserId) return;
   try {
     const { error } = await ensureSupabase().rpc("set_world_appearance", {
-      p_color: myAppearance.color,
-      p_pattern: myAppearance.pattern
+      p_appearance: myAppearance
     });
     if (error) throw error;
     renderAppearanceControls("Saved.", false, true);
@@ -924,6 +937,9 @@ function renderAppearanceControls(message = "", isError = false, isOk = false) {
   });
   patternButtons?.querySelectorAll("[data-pattern]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.pattern === myAppearance.pattern);
+  });
+  bodyButtons?.querySelectorAll("[data-body]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.body === myAppearance.body);
   });
   if (appearanceStatus) {
     appearanceStatus.textContent = message || (myUserId ? "Changes save to your account." : "Guest look is temporary. Sign in to keep it.");
@@ -1370,23 +1386,7 @@ function updateMinds() {
 }
 
 function buildNpcAvatar(appearance, name) {
-  const group = new THREE.Group();
-  const look = normalizeAppearance(appearance, name || "Guest");
-  const c = new THREE.Color(look.color);
-  const bodyMaterial = new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, metalness: 0.02, transparent: true, opacity: 0.78 });
-  const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x172024, roughness: 0.82, transparent: true, opacity: 0.78 });
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 1.12, 14), bodyMaterial);
-  body.position.y = 0.75; group.add(body);
-  addAvatarPattern(group, look, true);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), bodyMaterial);
-  head.position.y = 1.46; group.add(head);
-  const face = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.045), darkMaterial);
-  face.position.set(0, 1.48, -0.245); group.add(face);
-  const label = createLabelSprite(name || "Guest", {
-    background: "rgba(11, 16, 18, 0.62)", foreground: "#dfe6ec", fontSize: 30, scale: 0.0085
-  });
-  label.position.set(0, 2.02, 0); group.add(label);
-  return group;
+  return buildAvatarBody(normalizeAppearance(appearance, name || "Guest"), name || "Guest", true);
 }
 
 function convertToNpc(p) {
@@ -2475,6 +2475,52 @@ function addBox(x, y, z, width, height, depth, material) {
   return box;
 }
 
+function buildAvatarBody(look, name, ghost) {
+  const group = new THREE.Group();
+  const op = ghost ? 0.78 : 1;
+  const M = (hex, extra) => new THREE.MeshStandardMaterial(Object.assign({ color: new THREE.Color(hex), roughness: 0.62, metalness: 0.02, transparent: !!ghost, opacity: op }, extra || {}));
+  const darkM = M("#172024", { roughness: 0.82 });
+  if (look.body === "classic") {
+    const bodyM = M(look.color, { roughness: 0.56 });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 1.12, 14), bodyM);
+    body.position.y = 0.75; body.castShadow = !ghost; group.add(body);
+    addAvatarPattern(group, look, ghost);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), bodyM);
+    head.position.y = 1.46; head.castShadow = !ghost; group.add(head);
+    const face = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.045), darkM);
+    face.position.set(0, 1.48, -0.245); group.add(face);
+  } else {
+    const skinM = M(look.skin), shirtM = M(look.shirt, { roughness: 0.7 }), pantsM = M(look.pants, { roughness: 0.72 }), hairM = M(look.hair, { roughness: 0.85 });
+    const legGeo = new THREE.BoxGeometry(0.16, 0.62, 0.18);
+    const lL = new THREE.Mesh(legGeo, pantsM); lL.position.set(-0.12, 0.31, 0); lL.castShadow = !ghost; group.add(lL);
+    const rL = new THREE.Mesh(legGeo, pantsM); rL.position.set(0.12, 0.31, 0); rL.castShadow = !ghost; group.add(rL);
+    const footGeo = new THREE.BoxGeometry(0.18, 0.1, 0.3);
+    const lF = new THREE.Mesh(footGeo, darkM); lF.position.set(-0.12, 0.05, -0.05); group.add(lF);
+    const rF = new THREE.Mesh(footGeo, darkM); rF.position.set(0.12, 0.05, -0.05); group.add(rF);
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.66, 0.27), shirtM);
+    torso.position.y = 0.97; torso.castShadow = !ghost; group.add(torso);
+    const armGeo = new THREE.BoxGeometry(0.13, 0.5, 0.15);
+    const lA = new THREE.Mesh(armGeo, shirtM); lA.position.set(-0.305, 1.0, 0); lA.castShadow = !ghost; group.add(lA);
+    const rA = new THREE.Mesh(armGeo, shirtM); rA.position.set(0.305, 1.0, 0); rA.castShadow = !ghost; group.add(rA);
+    const handGeo = new THREE.BoxGeometry(0.12, 0.13, 0.15);
+    const lH = new THREE.Mesh(handGeo, skinM); lH.position.set(-0.305, 0.7, 0); group.add(lH);
+    const rH = new THREE.Mesh(handGeo, skinM); rH.position.set(0.305, 0.7, 0); group.add(rH);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 14), skinM);
+    head.position.y = 1.45; head.castShadow = !ghost; group.add(head);
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.215, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62), hairM);
+    hair.position.y = 1.47; group.add(hair);
+    const eyes = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.05, 0.04), darkM);
+    eyes.position.set(0, 1.46, -0.18); group.add(eyes);
+  }
+  const label = createLabelSprite(name || "Guest", {
+    background: ghost ? "rgba(11, 16, 18, 0.62)" : "rgba(11, 16, 18, 0.72)",
+    foreground: ghost ? "#dfe6ec" : "#ffffff",
+    fontSize: ghost ? 30 : 34, scale: 0.0085
+  });
+  label.position.set(0, 2.04, 0); group.add(label);
+  return group;
+}
+
 function addAvatarPattern(group, appearance, ghost) {
   const opacity = ghost ? 0.7 : 1;
   const markMaterial = new THREE.MeshStandardMaterial({
@@ -2514,46 +2560,10 @@ function addAvatarPattern(group, appearance, ghost) {
 
 function createRemote(player) {
   const appearance = normalizeAppearance(player.appearance || { color: player.color }, player.id || player.name || "Guest");
-  const color = new THREE.Color(appearance.color);
-  const group = new THREE.Group();
+  const group = buildAvatarBody(appearance, player.name || "Guest", false);
   group.position.set(player.x, remoteGroundY(player), player.z);
   group.scale.y = player.stance === "crouch" ? 0.72 : 1;
   group.rotation.y = player.yaw;
-
-  const bodyMaterial = new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.56,
-    metalness: 0.02
-  });
-  const darkMaterial = new THREE.MeshStandardMaterial({
-    color: 0x172024,
-    roughness: 0.82
-  });
-
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 1.12, 14), bodyMaterial);
-  body.position.y = 0.75;
-  body.castShadow = true;
-  group.add(body);
-  addAvatarPattern(group, appearance, false);
-
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), bodyMaterial);
-  head.position.y = 1.46;
-  head.castShadow = true;
-  group.add(head);
-
-  const face = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.045), darkMaterial);
-  face.position.set(0, 1.48, -0.245);
-  group.add(face);
-
-  const label = createLabelSprite(player.name || "Guest", {
-    background: "rgba(11, 16, 18, 0.72)",
-    foreground: "#ffffff",
-    fontSize: 34,
-    scale: 0.0085
-  });
-  label.position.set(0, 2.02, 0);
-  group.add(label);
-
   return {
     group,
     appearanceKey: appearanceSignature(appearance),
