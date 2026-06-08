@@ -195,9 +195,11 @@ const plots = [
 
 const structures = [
   { id: "workshop", label: "Workshop", x: 9.2, z: 5.9, width: 5.2, depth: 4.3, height: 3.05, body: 0x6e65a8, roof: 0x3f345f, windows: false, face: "north" },
-  { id: "apt-w", label: "Apartments", x: -14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "east" },
-  { id: "apt-e", label: "Apartments", x: 14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "west" }
+  { id: "apt-w", label: "Apartments", x: -14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "east", path: "/" },
+  { id: "apt-e", label: "Apartments", x: 14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "west", path: "/" }
 ];
+
+const doorStructures = [];
 
 scene.add(camera);
 identityEl.textContent = displayName;
@@ -275,6 +277,8 @@ document.addEventListener("mousemove", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  const _t = event.target;
+  if (_t && (_t.tagName === "INPUT" || _t.tagName === "TEXTAREA" || _t.tagName === "SELECT" || _t.isContentEditable)) return;
   if (event.code === "KeyP" || event.code === "KeyM") {
     event.preventDefault();
     toggleSettings(!settingsOpen);
@@ -1103,8 +1107,9 @@ function updateActiveDoor() {
   let nextDoor = null;
   let bestDistance = Infinity;
 
-  for (const door of doors) {
+  for (const door of doors.concat(doorStructures)) {
     const trigger = door.trigger;
+    if (!trigger) continue;
     const dx = state.x - trigger.x;
     const dz = state.z - trigger.z;
     if (Math.abs(dx) > trigger.width / 2 || Math.abs(dz) > trigger.depth / 2) continue;
@@ -1138,7 +1143,7 @@ function updateActiveDoor() {
   activePlot = nextPlot;
 
   for (const door of doors) {
-    door.pad.material.emissiveIntensity = door === activeDoor ? 0.38 : 0.08;
+    if (door.pad) door.pad.material.emissiveIntensity = door === activeDoor ? 0.38 : 0.08;
   }
 
   if (activeDoor) {
@@ -1429,6 +1434,17 @@ function buildStructure(b) {
   else if (b.face === "south") addBox(b.x, dh / 2, b.z + b.depth / 2 + dt / 2, dw, dh, dt, doorMaterial);
   else if (b.face === "east") addBox(b.x + b.width / 2 + dt / 2, dh / 2, b.z, dt, dh, dw, doorMaterial);
   else if (b.face === "west") addBox(b.x - b.width / 2 - dt / 2, dh / 2, b.z, dt, dh, dw, doorMaterial);
+
+  if (b.path) {
+    const off = 1.1;
+    let tx = b.x, tz = b.z, tw = b.width, td = b.depth;
+    if (b.face === "north") { tz = b.z - b.depth / 2 - off; td = 2.4; }
+    else if (b.face === "south") { tz = b.z + b.depth / 2 + off; td = 2.4; }
+    else if (b.face === "east") { tx = b.x + b.width / 2 + off; tw = 2.4; }
+    else if (b.face === "west") { tx = b.x - b.width / 2 - off; tw = 2.4; }
+    b.trigger = { x: tx, z: tz, width: tw, depth: td };
+    doorStructures.push(b);
+  }
 
   if (b.windows) {
     const winMaterial = new THREE.MeshStandardMaterial({
