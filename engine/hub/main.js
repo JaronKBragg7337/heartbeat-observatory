@@ -2282,54 +2282,60 @@ function buildHomeMesh(plotState, style) {
   const x = plotState.x, z = plotState.z;
   const mat = (c, r, extra) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: r == null ? 0.7 : r }, extra || {}));
   const doorM = mat(0x2f302a, 0.64);
+  // orient the home so its front (door/stairs/balcony) faces the plaza/town center
+  let fx = 0, fz = 0;
+  if (Math.abs(x) >= Math.abs(z)) fx = x > 0 ? -1 : 1; else fz = z > 0 ? -1 : 1;
+  if (fx === 0 && fz === 0) fz = -1;
+  const swap = fx !== 0;
+  const wX = (lx, lz) => x + lx * fz + lz * fx;
+  const wZ = (lx, lz) => z - lx * fx + lz * fz;
+  const lbox = (lx, ly, lz, w, h, d, m) => addBox(wX(lx, lz), ly, wZ(lx, lz), swap ? d : w, h, swap ? w : d, m);
+  const lcol = (lx, lz, w, d) => buildingColliders.push({ x: wX(lx, lz), z: wZ(lx, lz), width: swap ? d : w, depth: swap ? w : d });
+  const lplat = (aX, bX, aZ, bZ, top) => {
+    const xs = [wX(aX, aZ), wX(bX, aZ), wX(aX, bZ), wX(bX, bZ)];
+    const zs = [wZ(aX, aZ), wZ(bX, aZ), wZ(aX, bZ), wZ(bX, bZ)];
+    platforms.push({ minX: Math.min.apply(null, xs), maxX: Math.max.apply(null, xs), minZ: Math.min.apply(null, zs), maxZ: Math.max.apply(null, zs), top });
+  };
   if (style === "modern") {
-    // public mansion: bigger two-floor walk-in with interior stairs to a 2nd-floor balcony over town
+    // public mansion: two floors, interior stairs to a 2nd-floor balcony, front faces the plaza
     const W = 7.8, D = 6.6, t = 0.2, hw = W / 2, hd = D / 2;
     const h1 = 3.0, h2 = 2.7, roofY = h1 + h2;
-    const frontZ = z + hd, backZ = z - hd, leftX = x - hw, rightX = x + hw;
     const body = mat(0xd6dade, 0.72), trim = mat(0x5f676e, 0.6), floorM = mat(0xb7bdc2, 0.78);
     const glass = mat(0x8fd0e6, 0.18, { metalness: 0.05, transparent: true, opacity: 0.74 });
     const doorW = 1.6, segW = (W - doorW) / 2, segOff = doorW / 2 + segW / 2;
-    // ground-floor walls (front door gap)
-    addBox(x - segOff, h1 / 2, frontZ, segW, h1, t, body);
-    addBox(x + segOff, h1 / 2, frontZ, segW, h1, t, body);
-    addBox(x, h1 - 0.35, frontZ, doorW, 0.7, t, body);
-    addBox(x - segOff, h1 * 0.55, frontZ + 0.03, segW * 0.78, h1 * 0.5, 0.04, glass);
-    addBox(x + segOff, h1 * 0.55, frontZ + 0.03, segW * 0.78, h1 * 0.5, 0.04, glass);
-    addBox(x, h1 / 2, backZ, W, h1, t, body);
-    addBox(leftX, h1 / 2, z, t, h1, D, body);
-    addBox(rightX, h1 / 2, z, t, h1, D, body);
-    // ground colliders (height-agnostic, so they also fence the upper floor)
-    buildingColliders.push({ x: x - segOff, z: frontZ, width: segW, depth: t });
-    buildingColliders.push({ x: x + segOff, z: frontZ, width: segW, depth: t });
-    buildingColliders.push({ x: x, z: backZ, width: W, depth: t });
-    buildingColliders.push({ x: leftX, z: z, width: t, depth: D });
-    buildingColliders.push({ x: rightX, z: z, width: t, depth: D });
-    // interior straight stairs hugging the right wall, front -> back, up to the 2nd floor
-    const stairW = 1.6, stairX = rightX - 0.95;
-    const steps = 9, stepH = h1 / steps, stepRun = (D - 1.2) / steps, stairZ0 = frontZ - 0.7;
+    lbox(-segOff, h1 / 2, hd, segW, h1, t, body);
+    lbox(segOff, h1 / 2, hd, segW, h1, t, body);
+    lbox(0, h1 - 0.35, hd, doorW, 0.7, t, body);
+    lbox(-segOff, h1 * 0.55, hd + 0.03, segW * 0.78, h1 * 0.5, 0.04, glass);
+    lbox(segOff, h1 * 0.55, hd + 0.03, segW * 0.78, h1 * 0.5, 0.04, glass);
+    lbox(0, h1 / 2, -hd, W, h1, t, body);
+    lbox(-hw, h1 / 2, 0, t, h1, D, body);
+    lbox(hw, h1 / 2, 0, t, h1, D, body);
+    lcol(-segOff, hd, segW, t);
+    lcol(segOff, hd, segW, t);
+    lcol(0, -hd, W, t);
+    lcol(-hw, 0, t, D);
+    lcol(hw, 0, t, D);
+    const stairW = 1.6, stairLX = hw - 0.95;
+    const steps = 9, stepH = h1 / steps, stepRun = (D - 1.2) / steps, lz0 = hd - 0.7;
     for (let i = 0; i < steps; i++) {
       const top = stepH * (i + 1);
-      const cz = stairZ0 - stepRun * (i + 0.5);
-      addBox(stairX, top / 2, cz, stairW, top, stepRun + 0.02, trim);
-      platforms.push({ minX: stairX - stairW / 2, maxX: stairX + stairW / 2, minZ: cz - stepRun / 2, maxZ: cz + stepRun / 2, top });
+      const lz = lz0 - stepRun * (i + 0.5);
+      lbox(stairLX, top / 2, lz, stairW, top, stepRun + 0.02, trim);
+      lplat(stairLX - stairW / 2, stairLX + stairW / 2, lz - stepRun / 2, lz + stepRun / 2, top);
     }
-    // 2nd-floor loft slab (covers all but the right stair strip) + back landing bridging stairs to loft
-    const loftRight = rightX - 1.9, slabW = loftRight - leftX, slabCx = (leftX + loftRight) / 2;
-    addBox(slabCx, h1 - 0.1, z, slabW, 0.2, D, floorM);
-    platforms.push({ minX: leftX, maxX: loftRight, minZ: backZ, maxZ: frontZ, top: h1 });
-    addBox((loftRight + rightX) / 2, h1 - 0.1, backZ + 0.85, rightX - loftRight, 0.2, 1.7, floorM);
-    platforms.push({ minX: loftRight - 0.1, maxX: rightX, minZ: backZ, maxZ: backZ + 1.7, top: h1 });
-    // 2nd-floor walls (visual only; building edges already fenced by ground colliders). Front stays open = balcony
-    addBox(x, h1 + h2 / 2, backZ, W, h2, t, body);
-    addBox(leftX, h1 + h2 / 2, z, t, h2, D, body);
-    addBox(rightX, h1 + h2 / 2, z, t, h2, D, body);
-    addBox(leftX + 0.04, h1 + h2 * 0.5, z, 0.04, h2 * 0.55, D * 0.66, glass);
-    addBox(rightX - 0.04, h1 + h2 * 0.5, z, 0.04, h2 * 0.55, D * 0.66, glass);
-    // balcony railing across the open front of the loft
-    addBox(slabCx, h1 + 0.5, frontZ - 0.15, slabW, 1.0, 0.12, trim);
-    // roof
-    addBox(x, roofY + 0.09, z, W + 0.2, 0.18, D + 0.2, trim);
+    const loftR = hw - 1.9, slabW = loftR + hw, slabCLX = (loftR - hw) / 2;
+    lbox(slabCLX, h1 - 0.1, 0, slabW, 0.2, D, floorM);
+    lplat(-hw, loftR, -hd, hd, h1);
+    lbox(hw - 0.95, h1 - 0.1, -hd + 0.85, 1.9, 0.2, 1.7, floorM);
+    lplat(loftR - 0.1, hw, -hd, -hd + 1.7, h1);
+    lbox(0, h1 + h2 / 2, -hd, W, h2, t, body);
+    lbox(-hw, h1 + h2 / 2, 0, t, h2, D, body);
+    lbox(hw, h1 + h2 / 2, 0, t, h2, D, body);
+    lbox(-hw + 0.04, h1 + h2 * 0.5, 0, 0.04, h2 * 0.55, D * 0.66, glass);
+    lbox(hw - 0.04, h1 + h2 * 0.5, 0, 0.04, h2 * 0.55, D * 0.66, glass);
+    lbox(slabCLX, h1 + 0.5, hd - 0.15, slabW, 1.0, 0.12, trim);
+    lbox(0, roofY + 0.09, 0, W + 0.2, 0.18, D + 0.2, trim);
   } else if (style === "dome") {
     const w = plotState.width * 0.66, d = plotState.depth * 0.66;
     const shell = mat(0xdfe7ea, 0.5, { metalness: 0.04, flatShading: true, side: THREE.DoubleSide });
@@ -2339,7 +2345,7 @@ function buildHomeMesh(plotState, style) {
     baseMesh.position.set(x, 0.1, z); baseMesh.receiveShadow = true; scene.add(baseMesh);
     const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2), shell);
     dome.position.set(x, 0.18, z); dome.castShadow = true; scene.add(dome);
-    addBox(x, 0.72, z + r - 0.02, 0.8, 1.25, 0.07, doorM);
+    lbox(0, 0.72, r - 0.02, 0.8, 1.25, 0.07, doorM);
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), mat(0xfff2cf, 0.4, { emissive: 0xffe6a8, emissiveIntensity: 0.7 }));
     lamp.position.set(x, r * 0.78, z); scene.add(lamp);
   } else {
@@ -2351,10 +2357,9 @@ function buildHomeMesh(plotState, style) {
     cyl.position.set(x, bodyH / 2, z); cyl.castShadow = true; scene.add(cyl);
     const cap2 = new THREE.Mesh(new THREE.SphereGeometry(r * 1.03, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), cap);
     cap2.position.set(x, bodyH, z); cap2.castShadow = true; scene.add(cap2);
-    addBox(x, 0.55, z + r - 0.02, 0.55, 0.95, 0.06, doorM);
+    lbox(0, 0.55, r - 0.02, 0.55, 0.95, 0.06, doorM);
   }
 }
-
 async function loadSpaces() {
   try {
     const { data } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by, repo_metadata, repo_error, space_type, home_style, home_title");
