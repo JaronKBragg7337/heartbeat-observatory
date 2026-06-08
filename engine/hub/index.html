@@ -15,6 +15,9 @@
       @media (pointer: coarse) { .controls .ctl-desktop { display:none; } .controls .ctl-touch { display:grid; } }
       html.preview body > *:not(#game):not(script) { display:none !important; }
       html.preview, html.preview body { overflow:hidden; background:#04060b; }
+      /* game UI: no iOS copy/select callout on button taps; inputs stay typeable */
+      body { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+      input, textarea { -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }
     </style>
     <script>try{if(window.top!==window.self||new URLSearchParams(location.search).get("preview")==="1")document.documentElement.classList.add("preview");}catch(e){document.documentElement.classList.add("preview");}</script>
   </head>
