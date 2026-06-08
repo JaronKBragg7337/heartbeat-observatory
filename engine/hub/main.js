@@ -36,6 +36,7 @@ const moveKnob = document.querySelector("#moveKnob");
 const actionButton = document.querySelector("#actionButton");
 const jumpButton = document.querySelector("#jumpButton");
 const crouchButton = document.querySelector("#crouchButton");
+const throwButton = document.querySelector("#throwButton");
 const welcomeName = document.querySelector("#welcomeName");
 
 const params = new URLSearchParams(location.search);
@@ -79,6 +80,9 @@ const HB_NIGHT = new THREE.Color(0x0f1b2e);
 let heldItem = null;
 let viewmodel = null;
 const _vmOff = new THREE.Vector3();
+const projectiles = [];
+const snowPuffs = [];
+let lastThrow = 0;
 let propsLoaded = false;
 let wantsConnection = true;
 let activeDoor = null;
@@ -406,6 +410,7 @@ document.querySelectorAll(".buildPropBtn").forEach((bb) => bb.addEventListener("
   const _rotb = document.querySelector("#buildRotate"); if (_rotb) _rotb.addEventListener("click", () => { placeRot += Math.PI / 4; setBuildHint("Rotating \u2014 the ghost shows the facing. Place here."); });
   const _db = document.querySelector("#buildDone"); if (_db) _db.addEventListener("click", () => toggleBuildMode(false));
   document.querySelectorAll("[data-hold]").forEach((hb) => hb.addEventListener("click", () => setHeld(hb.getAttribute("data-hold") || null)));
+  if (throwButton) throwButton.addEventListener("pointerdown", (e) => { e.preventDefault(); throwSnowball(); });
 }
 doorPromptButton.addEventListener("click", enterActiveDoor);
 actionButton.addEventListener("pointerdown", (event) => {
@@ -509,6 +514,7 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
   }
   if (event.code === "KeyH") { event.preventDefault(); cycleHeld(); return; }
+  if (event.code === "KeyF") { event.preventDefault(); throwSnowball(); return; }
   keys.add(event.code);
   if (event.code === "Space") {
     event.preventDefault();
@@ -1227,6 +1233,10 @@ function connect() {
   });
 
   channel.on("broadcast", { event: "state" }, ({ payload }) => applyPeerState(payload));
+  channel.on("broadcast", { event: "throw" }, ({ payload }) => {
+    if (!payload || payload.id === selfRealtimeId()) return;
+    spawnProjectile(new THREE.Vector3(payload.ox, payload.oy, payload.oz), new THREE.Vector3(payload.vx, payload.vy, payload.vz), payload.id);
+  });
 
   channel.on("presence", { event: "sync" }, () => syncPresence());
 
@@ -1380,6 +1390,63 @@ function sendState(force = false) {
   });
 }
 
+function makeSnowballMesh() {
+  return new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }));
+}
+function spawnProjectile(origin, vel, owner) {
+  const mesh = makeSnowballMesh();
+  mesh.position.copy(origin);
+  mesh.castShadow = false;
+  scene.add(mesh);
+  projectiles.push({ mesh: mesh, vel: vel.clone(), life: 0, owner: owner });
+}
+function throwSnowball() {
+  if (!hasEntered || settingsOpen) return;
+  const now = performance.now();
+  if (now - lastThrow < 320) return;
+  lastThrow = now;
+  const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+  const origin = camera.position.clone().addScaledVector(dir, 0.5);
+  const vel = dir.clone().multiplyScalar(17);
+  vel.y += 2.4;
+  spawnProjectile(origin, vel, selfRealtimeId());
+  try {
+    if (channel && connected) channel.send({ type: "broadcast", event: "throw", payload: { id: selfRealtimeId(), ox: origin.x, oy: origin.y, oz: origin.z, vx: vel.x, vy: vel.y, vz: vel.z } });
+  } catch (e) {}
+}
+function popSnow(pos) {
+  for (let k = 0; k < 7; k++) {
+    const f = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 }));
+    f.position.set(pos.x + (Math.random() - 0.5) * 0.28, Math.max(0.05, pos.y) + Math.random() * 0.28, pos.z + (Math.random() - 0.5) * 0.28);
+    scene.add(f);
+    snowPuffs.push({ mesh: f, life: 0, vy: 0.4 + Math.random() * 0.6 });
+  }
+}
+function updateProjectiles(dt) {
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.vel.y -= 18 * dt;
+    p.mesh.position.addScaledVector(p.vel, dt);
+    p.life += dt;
+    let dead = false;
+    if (p.mesh.position.y <= 0.13) { popSnow(p.mesh.position); dead = true; }
+    else if (p.life > 4.5) { dead = true; }
+    else if (p.owner !== selfRealtimeId() && hasEntered) {
+      const dx = p.mesh.position.x - state.x, dy = p.mesh.position.y - (state.y - 0.2), dz = p.mesh.position.z - state.z;
+      if (dx * dx + dy * dy + dz * dz < 0.5 * 0.5) { popSnow(p.mesh.position); addFeed("You got snowballed! \u2744"); dead = true; }
+    }
+    if (dead) { scene.remove(p.mesh); if (p.mesh.geometry) p.mesh.geometry.dispose(); projectiles.splice(i, 1); }
+  }
+}
+function updateSnowPuffs(dt) {
+  for (let i = snowPuffs.length - 1; i >= 0; i--) {
+    const f = snowPuffs[i];
+    f.life += dt;
+    f.mesh.position.y += f.vy * dt;
+    f.mesh.material.opacity = Math.max(0, 0.95 - f.life * 2.2);
+    if (f.life > 0.45) { scene.remove(f.mesh); f.mesh.geometry.dispose(); f.mesh.material.dispose(); snowPuffs.splice(i, 1); }
+  }
+}
 function makeHeldItem(type) {
   if (!type) return null;
   const g = new THREE.Group();
@@ -1510,6 +1577,8 @@ function animate() {
   updateDayNight(dt);
   updateCamera(dt);
   updateViewmodel();
+  updateProjectiles(dt);
+  updateSnowPuffs(dt);
   updateRemotes(dt);
   updateMinds();
   updateNpcs();
