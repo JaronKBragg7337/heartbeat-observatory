@@ -206,8 +206,8 @@ const plots = [
 
 const structures = [
   { id: "workshop", label: "Workshop", x: 9.2, z: 5.9, width: 5.2, depth: 4.3, height: 3.05, body: 0x6e65a8, roof: 0x3f345f, windows: false, face: "north" },
-  { id: "apt-w", label: "Apartments", x: -14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "east", path: "/" },
-  { id: "apt-e", label: "Apartments", x: 14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "west", path: "/" }
+  { id: "apt-w", label: "Apartments", x: -14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "east", room: true },
+  { id: "apt-e", label: "Apartments", x: 14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "west", room: true }
 ];
 
 const doorStructures = [];
@@ -1455,6 +1455,7 @@ function maybeGhostNudge() {
 }
 
 function updateActiveDoor() {
+  if (inRoom) { doorPrompt.classList.add("hidden"); actionButton.disabled = true; return; }
   let nextDoor = null;
   let bestDistance = Infinity;
 
@@ -1518,8 +1519,127 @@ function updateActiveDoor() {
   }
 }
 
+// ---- Apartment rooms (your personal space) ----
+let inRoom = false;
+let roomGroup = null;
+let savedTownColliders = null;
+let hiddenForRoom = [];
+let townReturn = { x: 0, z: 0, yaw: 0 };
+
+function buildRoomGroup() {
+  roomGroup = new THREE.Group();
+  const FW = 11, FD = 11, WH = 3.4, T = 0.3;
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0xb8a98f, roughness: 0.92 });
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(FW, 0.2, FD), floorMat);
+  floor.position.set(0, -0.1, 0); floor.receiveShadow = true; roomGroup.add(floor);
+  const ceilMat = new THREE.MeshStandardMaterial({ color: 0x1b2228, roughness: 0.9 });
+  const ceil = new THREE.Mesh(new THREE.BoxGeometry(FW, 0.2, FD), ceilMat);
+  ceil.position.set(0, WH + 0.1, 0); roomGroup.add(ceil);
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x8a9aa6, roughness: 0.85 });
+  const wallDefs = [
+    { x: 0, z: -FD / 2, w: FW, d: T },
+    { x: 0, z: FD / 2, w: FW, d: T },
+    { x: -FW / 2, z: 0, w: T, d: FD },
+    { x: FW / 2, z: 0, w: T, d: FD }
+  ];
+  const colliders = [];
+  for (const wd of wallDefs) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(wd.w, WH, wd.d), wallMat);
+    m.position.set(wd.x, WH / 2, wd.z); m.castShadow = true; roomGroup.add(m);
+    colliders.push({ x: wd.x, z: wd.z, width: wd.w, depth: wd.d });
+  }
+  const exitMat = new THREE.MeshStandardMaterial({ color: 0x9fd0a0, emissive: 0x4f8f5f, emissiveIntensity: 0.55, roughness: 0.5 });
+  const exitPad = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 1.6), exitMat);
+  exitPad.position.set(0, 0.05, FD / 2 - 1.4); roomGroup.add(exitPad);
+  const exitLabel = createLabelSprite("Exit to town", { background: "rgba(10, 20, 14, 0.82)", foreground: "#dff7e2", fontSize: 26, scale: 0.011 });
+  exitLabel.position.set(0, 1.4, FD / 2 - 1.4); roomGroup.add(exitLabel);
+  roomGroup.userData = { colliders: colliders, floorMat: floorMat, wallMat: wallMat };
+  roomGroup.visible = false;
+  scene.add(roomGroup);
+}
+
+function applyRoomLayout() {
+  if (!roomGroup || !roomGroup.userData) return;
+  // Customization (recolor + items) lands in the next increment; safe no-op for now.
+}
+
+function showRoomPanel() {
+  let p = document.getElementById("roomPanel");
+  if (!p) {
+    p = document.createElement("div");
+    p.id = "roomPanel";
+    p.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(10,15,18,0.92);border:1px solid #2c3940;border-radius:12px;padding:9px 11px;z-index:99980;color:#eef3f6;font-size:13px;box-shadow:0 8px 28px rgba(0,0,0,0.4);";
+    p.innerHTML = '<span style="font-weight:600;margin-right:2px;">Your room</span><button id="roomExitBtn" style="padding:8px 12px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:600;font-size:13px;cursor:pointer;">Exit to town</button>';
+    document.body.appendChild(p);
+    const xb = document.getElementById("roomExitBtn");
+    if (xb) xb.addEventListener("click", exitRoom);
+  }
+  p.style.display = "flex";
+}
+
+function hideRoomPanel() {
+  const p = document.getElementById("roomPanel");
+  if (p) p.style.display = "none";
+}
+
+function enterRoom() {
+  if (inRoom) return;
+  try {
+    if (!roomGroup) buildRoomGroup();
+    townReturn = { x: state.x, z: state.z, yaw: state.yaw };
+    hiddenForRoom = [];
+    for (const o of scene.children) {
+      if (o === roomGroup || o === camera || o.isLight) continue;
+      if (o.visible) { hiddenForRoom.push(o); o.visible = false; }
+    }
+    roomGroup.visible = true;
+    applyRoomLayout();
+    savedTownColliders = buildingColliders.slice();
+    buildingColliders.length = 0;
+    for (const c of roomGroup.userData.colliders) buildingColliders.push(c);
+    state.x = 0; state.z = 2.6; state.yaw = Math.PI;
+    inRoom = true;
+    showRoomPanel();
+    doorPrompt.classList.add("hidden");
+  } catch (e) {
+    try { forceExitRoom(); } catch (_) {}
+  }
+}
+
+function exitRoom() {
+  if (!inRoom) return;
+  try {
+    if (roomGroup) roomGroup.visible = false;
+    for (const o of hiddenForRoom) o.visible = true;
+    hiddenForRoom = [];
+    if (savedTownColliders) {
+      buildingColliders.length = 0;
+      for (const c of savedTownColliders) buildingColliders.push(c);
+      savedTownColliders = null;
+    }
+    state.x = townReturn.x; state.z = townReturn.z; state.yaw = townReturn.yaw;
+    inRoom = false;
+    hideRoomPanel();
+  } catch (e) {
+    forceExitRoom();
+  }
+}
+
+function forceExitRoom() {
+  if (roomGroup) roomGroup.visible = false;
+  for (const o of scene.children) { if (o === roomGroup) continue; o.visible = true; }
+  if (savedTownColliders) {
+    buildingColliders.length = 0;
+    for (const c of savedTownColliders) buildingColliders.push(c);
+    savedTownColliders = null;
+  }
+  inRoom = false;
+  hideRoomPanel();
+}
+
 function enterActiveDoor() {
   if (activeDoor) {
+    if (activeDoor.room) { enterRoom(); return; }
     const target = window.top || window;
     target.location.assign(activeDoor.path);
     return;
@@ -1863,7 +1983,7 @@ function buildStructure(b) {
   else if (b.face === "east") addBox(b.x + b.width / 2 + dt / 2, dh / 2, b.z, dt, dh, dw, doorMaterial);
   else if (b.face === "west") addBox(b.x - b.width / 2 - dt / 2, dh / 2, b.z, dt, dh, dw, doorMaterial);
 
-  if (b.path) {
+  if (b.path || b.room) {
     const off = 1.1;
     let tx = b.x, tz = b.z, tw = b.width, td = b.depth;
     if (b.face === "north") { tz = b.z - b.depth / 2 - off; td = 2.4; }
