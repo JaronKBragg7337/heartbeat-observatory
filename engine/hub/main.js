@@ -219,6 +219,19 @@ actionButton.disabled = true;
 renderAppearanceControls();
 buildTown();
 initWorld();
+// ---- room + nudge state (must exist before animate() starts the render loop) ----
+const nudgeShown = { ghost: false, plot: false };
+try {
+  if (localStorage.getItem("hb_nudge_ghost") === "1") nudgeShown.ghost = true;
+  if (localStorage.getItem("hb_nudge_plot") === "1") nudgeShown.plot = true;
+} catch (e) {}
+let nudgeEl = null;
+let nudgeTimer = null;
+let inRoom = false;
+let roomGroup = null;
+let savedTownColliders = null;
+let hiddenForRoom = [];
+let townReturn = { x: 0, z: 0, yaw: 0 };
 animate();
 try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
 
@@ -1409,14 +1422,7 @@ function queueJump() {
   input.jumpQueued = true;
 }
 
-// ---- One-time onboarding nudges (layer 2) ----
-const nudgeShown = { ghost: false, plot: false };
-try {
-  if (localStorage.getItem("hb_nudge_ghost") === "1") nudgeShown.ghost = true;
-  if (localStorage.getItem("hb_nudge_plot") === "1") nudgeShown.plot = true;
-} catch (e) {}
-let nudgeEl = null;
-let nudgeTimer = null;
+// ---- One-time onboarding nudges (layer 2) ----  (state declared near top, before animate())
 function showNudge(kind, text) {
   if (nudgeShown[kind]) return;
   nudgeShown[kind] = true;
@@ -1519,13 +1525,7 @@ function updateActiveDoor() {
   }
 }
 
-// ---- Apartment rooms (your personal space) ----
-let inRoom = false;
-let roomGroup = null;
-let savedTownColliders = null;
-let hiddenForRoom = [];
-let townReturn = { x: 0, z: 0, yaw: 0 };
-
+// ---- Apartment rooms (your personal space) ----  (state declared near top, before animate())
 function buildRoomGroup() {
   roomGroup = new THREE.Group();
   const FW = 11, FD = 11, WH = 3.4, T = 0.3;
