@@ -342,17 +342,27 @@ async function loadProps() {
     if (Array.isArray(data)) for (const p of data) renderProp(p.prop_type, p.x, p.z, p.rot, p.id, p.owner_uid);
   } catch (e) {}
 }
-function placeHere() {
-  if (!myUserId) { setBuildHint("Sign in to place things."); return; }
-  if (!supa || !selectedBuildProp) { setBuildHint("Pick a prop first."); return; }
+async function placeHere() {
+  if (!myUserId) { setBuildHint("Sign in on your account to place things."); return; }
+  if (!selectedBuildProp) { setBuildHint("Pick a prop first."); return; }
   const px = Math.max(-29, Math.min(29, state.x));
   const pz = Math.max(-29, Math.min(29, state.z));
   setBuildHint("Placing\u2026");
-  supa.rpc("place_prop", { p_type: selectedBuildProp, p_x: px, p_z: pz, p_rot: placeRot }).then(({ data, error }) => {
-    if (error || !data || !data.ok) { setBuildHint("Could not place that."); return; }
-    renderProp(data.prop_type, data.x, data.z, data.rot, data.id, myUserId);
-    setBuildHint("Placed a " + data.prop_type + ". Walk and place more.");
-  });
+  try {
+    const sb = ensureSupabase();
+    const { data, error } = await sb.rpc("place_prop", { p_type: selectedBuildProp, p_x: px, p_z: pz, p_rot: placeRot });
+    if (error) { setBuildHint("Place error: " + (error.message || error.code || JSON.stringify(error))); return; }
+    if (!data || !data.ok) { setBuildHint("Rejected: " + ((data && data.error) || "unknown")); return; }
+    try {
+      renderProp(data.prop_type, data.x, data.z, data.rot, data.id, myUserId);
+    } catch (re) {
+      setBuildHint("Render error: " + (re && re.message ? re.message : String(re)));
+      return;
+    }
+    setBuildHint("Placed a " + data.prop_type + " at your feet \u2014 step back to see it.");
+  } catch (ex) {
+    setBuildHint("Place crashed: " + (ex && ex.message ? ex.message : String(ex)));
+  }
 }
 function removeNearest() {
   if (!myUserId || !supa) return;
