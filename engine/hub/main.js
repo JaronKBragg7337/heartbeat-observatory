@@ -48,6 +48,7 @@ let hasEntered = false;
 let settingsOpen = false;
 let wantsConnection = true;
 let activeDoor = null;
+let pseudoOn = false;
 
 const keys = new Set();
 const remotes = new Map();
@@ -183,9 +184,9 @@ const plots = [
 ];
 
 const structures = [
-  { id: "workshop", label: "Workshop", x: 9.2, z: 5.9, width: 5.2, depth: 4.3, height: 3.05, body: 0x6e65a8, roof: 0x3f345f, windows: false },
-  { id: "apt-w", label: "Apartments", x: -14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true },
-  { id: "apt-e", label: "Apartments", x: 14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true }
+  { id: "workshop", label: "Workshop", x: 9.2, z: 5.9, width: 5.2, depth: 4.3, height: 3.05, body: 0x6e65a8, roof: 0x3f345f, windows: false, face: "north" },
+  { id: "apt-w", label: "Apartments", x: -14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "east" },
+  { id: "apt-e", label: "Apartments", x: 14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "west" }
 ];
 
 scene.add(camera);
@@ -212,6 +213,8 @@ document.body.appendChild(fsBtn);
 fsBtn.addEventListener("click", () => {
   if (document.fullscreenElement) {
     try { document.exitFullscreen(); } catch (e) {}
+  } else if (pseudoOn) {
+    pseudoFs(false);
   } else {
     goFullscreen();
   }
@@ -376,9 +379,36 @@ function enterTown() {
 
 function goFullscreen() {
   const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+  if (req && !document.fullscreenElement) {
+    try {
+      const r = req.call(el);
+      if (r && r.catch) r.catch(() => pseudoFs(true));
+      return;
+    } catch (e) {}
+  }
+  // iOS Safari has no Fullscreen API for this element — expand the embedded frame instead.
+  pseudoFs(true);
+}
+
+function pseudoFs(on) {
   try {
-    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
-    if (req && !document.fullscreenElement) req.call(el);
+    const fe = window.frameElement;
+    if (!fe) return;
+    if (on) {
+      if (!pseudoOn) fe.dataset.fsPrev = fe.style.cssText;
+      fe.style.position = "fixed";
+      fe.style.inset = "0";
+      fe.style.width = "100%";
+      fe.style.height = "100%";
+      fe.style.zIndex = "99999";
+      fe.style.border = "0";
+      pseudoOn = true;
+    } else {
+      fe.style.cssText = fe.dataset.fsPrev || "";
+      pseudoOn = false;
+    }
+    window.dispatchEvent(new Event("resize"));
   } catch (e) {}
 }
 
@@ -901,6 +931,13 @@ function buildStructure(b) {
   const roofMaterial = new THREE.MeshStandardMaterial({ color: b.roof, roughness: 0.66 });
   addBox(b.x, b.height / 2, b.z, b.width, b.height, b.depth, bodyMaterial);
   addBox(b.x, b.height + 0.28, b.z, b.width + 0.55, 0.56, b.depth + 0.55, roofMaterial);
+
+  const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x2f302a, roughness: 0.64 });
+  const dw = 1.05, dh = 1.7, dt = 0.08;
+  if (b.face === "north") addBox(b.x, dh / 2, b.z - b.depth / 2 - dt / 2, dw, dh, dt, doorMaterial);
+  else if (b.face === "south") addBox(b.x, dh / 2, b.z + b.depth / 2 + dt / 2, dw, dh, dt, doorMaterial);
+  else if (b.face === "east") addBox(b.x + b.width / 2 + dt / 2, dh / 2, b.z, dt, dh, dw, doorMaterial);
+  else if (b.face === "west") addBox(b.x - b.width / 2 - dt / 2, dh / 2, b.z, dt, dh, dw, doorMaterial);
 
   if (b.windows) {
     const winMaterial = new THREE.MeshStandardMaterial({
