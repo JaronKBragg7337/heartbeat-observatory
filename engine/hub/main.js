@@ -1384,10 +1384,12 @@ function makeHeldItem(type) {
   if (!type) return null;
   const g = new THREE.Group();
   if (type === "coffee") {
-    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.055, 0.13, 14), new THREE.MeshStandardMaterial({ color: 0xf3efe7, roughness: 0.5 }));
-    cup.position.y = 0.065; g.add(cup);
-    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.076, 0.076, 0.025, 14), new THREE.MeshStandardMaterial({ color: 0x5f4128, roughness: 0.6 }));
-    lid.position.y = 0.142; g.add(lid);
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.062, 0.18, 16), new THREE.MeshStandardMaterial({ color: 0xf4efe6, roughness: 0.5 }));
+    cup.position.y = 0.09; g.add(cup);
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.092, 0.078, 0.07, 16), new THREE.MeshStandardMaterial({ color: 0xb9763e, roughness: 0.7 }));
+    sleeve.position.y = 0.082; g.add(sleeve);
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.094, 0.09, 0.032, 16), new THREE.MeshStandardMaterial({ color: 0x4a3322, roughness: 0.6 }));
+    lid.position.y = 0.197; g.add(lid);
   } else if (type === "ball") {
     const b = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), new THREE.MeshStandardMaterial({ color: 0xe23b4e, roughness: 0.45 }));
     b.position.y = 0.11; g.add(b);
@@ -1425,7 +1427,7 @@ function updateViewmodel() {
   if (!viewmodel) return;
   if (!hasEntered || settingsOpen) { viewmodel.visible = false; return; }
   viewmodel.visible = true;
-  _vmOff.set(0.34, -0.36, -0.62).applyQuaternion(camera.quaternion);
+  _vmOff.set(0.34, -0.30, -0.6).applyQuaternion(camera.quaternion);
   viewmodel.position.copy(camera.position).add(_vmOff);
   viewmodel.quaternion.copy(camera.quaternion);
 }
