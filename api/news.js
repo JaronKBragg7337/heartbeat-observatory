@@ -59,8 +59,8 @@ export default async function handler(req, res) {
       url: typeof citations[i] === "string" ? citations[i] : ""
     })).filter(x => x.title);
 
-    // CDN-cache for 15 min so we don't spend credits on every page view
-    res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=1800");
+    // CDN-cache for 6 hours so a fresh Perplexity call happens at most ~4x/day
+    res.setHeader("Cache-Control", "s-maxage=21600, stale-while-revalidate=3600");
     res.status(200).json({ items });
   } catch (e) {
     res.setHeader("Cache-Control", "no-store");
