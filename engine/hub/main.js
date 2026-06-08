@@ -52,6 +52,8 @@ let activeDoor = null;
 const keys = new Set();
 const remotes = new Map();
 const peers = new Map();
+const mindActors = new Map();
+let mindsLoaded = false;
 let latestPlayers = [];
 
 const state = {
@@ -158,14 +160,32 @@ const doors = [
     roof: 0x2f5f8f,
     sign: 0xf4fbff,
     front: "north"
+  },
+  {
+    id: "video",
+    label: "Video",
+    path: "/video",
+    x: 0,
+    z: -13,
+    width: 5.0,
+    depth: 4.0,
+    height: 2.85,
+    body: 0x5f8f7a,
+    roof: 0x32503f,
+    sign: 0xeafff4,
+    front: "south"
   }
 ];
 
 const plots = [
-  { x: 0, z: -9.8, width: 5.2, depth: 3.3 },
-  { x: -13.2, z: 0, width: 3.7, depth: 5.1 },
-  { x: 13.2, z: 0, width: 3.7, depth: 5.1 },
-  { x: 9.2, z: 5.9, width: 4.6, depth: 4.2 }
+  { x: -6, z: 12.5, width: 4.2, depth: 3.4 },
+  { x: 6, z: 12.5, width: 4.2, depth: 3.4 }
+];
+
+const structures = [
+  { id: "workshop", label: "Workshop", x: 9.2, z: 5.9, width: 5.2, depth: 4.3, height: 3.05, body: 0x6e65a8, roof: 0x3f345f, windows: false },
+  { id: "apt-w", label: "Apartments", x: -14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true },
+  { id: "apt-e", label: "Apartments", x: 14, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true }
 ];
 
 scene.add(camera);
@@ -177,6 +197,25 @@ connect();
 animate();
 
 enterButton.addEventListener("click", enterTown);
+
+const fsBtn = document.createElement("button");
+fsBtn.id = "fsButton";
+fsBtn.className = "icon-button";
+fsBtn.type = "button";
+fsBtn.setAttribute("aria-label", "Full screen");
+fsBtn.textContent = "\u26F6";
+fsBtn.style.position = "fixed";
+fsBtn.style.top = "max(14px, env(safe-area-inset-top))";
+fsBtn.style.right = "calc(max(14px, env(safe-area-inset-right)) + 48px)";
+fsBtn.style.zIndex = "15";
+document.body.appendChild(fsBtn);
+fsBtn.addEventListener("click", () => {
+  if (document.fullscreenElement) {
+    try { document.exitFullscreen(); } catch (e) {}
+  } else {
+    goFullscreen();
+  }
+});
 menuButton.addEventListener("click", () => toggleSettings(true));
 closeSettingsButton.addEventListener("click", () => toggleSettings(false));
 leaveTownButton.addEventListener("click", leaveTown);
@@ -244,6 +283,9 @@ document.addEventListener("keydown", (event) => {
     }
   }
 
+  if (hasEntered && (event.code === "ArrowUp" || event.code === "ArrowDown" || event.code === "ArrowLeft" || event.code === "ArrowRight")) {
+    event.preventDefault();
+  }
   keys.add(event.code);
   if (event.code === "Space") {
     event.preventDefault();
@@ -321,6 +363,7 @@ function enterTown() {
   wantsConnection = true;
   if (!channel) connect();
   overlay.classList.add("hidden");
+  goFullscreen();
   if (!isTouch) {
     try {
       const lockAttempt = canvas.requestPointerLock?.();
@@ -329,6 +372,14 @@ function enterTown() {
       // Headless browsers and some embedded webviews reject pointer lock.
     }
   }
+}
+
+function goFullscreen() {
+  const el = document.documentElement;
+  try {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (req && !document.fullscreenElement) req.call(el);
+  } catch (e) {}
 }
 
 function toggleSettings(open) {
@@ -371,6 +422,7 @@ function connect() {
       realtime: { params: { eventsPerSecond: 24 } }
     });
   }
+  if (!mindsLoaded) { mindsLoaded = true; loadMinds(); }
 
   channel = supa.channel("engine-town", {
     config: {
@@ -492,6 +544,7 @@ function animate() {
   updateLocal(dt);
   updateCamera();
   updateRemotes(dt);
+  updateMinds();
   updateHud();
   sendState();
 
@@ -578,6 +631,79 @@ function updateRemotes(dt) {
     remote.group.position.lerp(remote.target, blend);
     remote.group.rotation.y = lerpAngle(remote.group.rotation.y, remote.targetYaw, blend);
     remote.group.scale.y += (remote.targetScaleY - remote.group.scale.y) * blend;
+  }
+}
+
+async function loadMinds() {
+  try {
+    const { data } = await supa.from("agent_state").select("mind, display_name, role, connected").eq("connected", true);
+    (data || []).forEach(addMind);
+  } catch (e) {}
+  try {
+    supa.channel("engine-minds")
+      .on("postgres_changes", { event: "*", schema: "public", table: "agent_state" }, (p) => {
+        const r = p.new; if (!r || !r.mind) return;
+        if (r.connected) addMind(r); else removeMind(r.mind);
+      })
+      .subscribe();
+  } catch (e) {}
+}
+
+function addMind(m) {
+  if (!m || !m.mind || mindActors.has(m.mind)) return;
+  let seed = 0;
+  for (const c of m.mind) seed += c.charCodeAt(0);
+  const actor = createMindActor(m);
+  actor.seed = (seed % 100) / 100 * Math.PI * 2;
+  mindActors.set(m.mind, actor);
+  scene.add(actor.group);
+}
+
+function removeMind(id) {
+  const actor = mindActors.get(id);
+  if (!actor) return;
+  scene.remove(actor.group);
+  disposeObject(actor.group);
+  mindActors.delete(id);
+}
+
+function createMindActor(m) {
+  const group = new THREE.Group();
+  const tint = new THREE.Color(0x8ad7ff);
+  const bodyMaterial = new THREE.MeshStandardMaterial({
+    color: tint, roughness: 0.3, metalness: 0.1, emissive: 0x2a6f9e, emissiveIntensity: 0.5, transparent: true, opacity: 0.92
+  });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.4, 1.1, 16), bodyMaterial);
+  body.position.y = 0.78; group.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.27, 18, 14), bodyMaterial);
+  head.position.y = 1.5; group.add(head);
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(0.34, 0.04, 8, 24),
+    new THREE.MeshStandardMaterial({ color: 0xbfe9ff, emissive: 0x7fd2ff, emissiveIntensity: 0.8 })
+  );
+  halo.position.y = 1.94; halo.rotation.x = Math.PI / 2; group.add(halo);
+  const label = createLabelSprite((m.display_name || m.mind) + (m.role ? " \u00b7 " + m.role : ""), {
+    background: "rgba(10, 28, 38, 0.78)", foreground: "#dff4ff", fontSize: 32, scale: 0.0085
+  });
+  label.position.set(0, 2.3, 0); group.add(label);
+  return { group, seed: 0 };
+}
+
+function updateMinds() {
+  if (mindActors.size === 0) return;
+  const t = Date.now();
+  for (const actor of mindActors.values()) {
+    const a = t * 0.00010 + actor.seed;
+    const x = Math.sin(a) * 9 + Math.sin(a * 0.6 + actor.seed) * 2.5;
+    const z = Math.cos(a * 0.8 + actor.seed) * 7 + Math.cos(a * 0.45) * 2.5;
+    const cx = Math.max(-worldBounds, Math.min(worldBounds, x));
+    const cz = Math.max(-worldBounds, Math.min(worldBounds, z));
+    const g = actor.group;
+    const dx = cx - g.position.x, dz = cz - g.position.z;
+    g.position.x = cx;
+    g.position.z = cz;
+    g.position.y = Math.sin(t * 0.004 + actor.seed) * 0.05;
+    if (Math.abs(dx) + Math.abs(dz) > 0.00001) g.rotation.y = Math.atan2(dx, dz);
   }
 }
 
@@ -700,6 +826,10 @@ function buildTown() {
     buildDoorBuilding(door);
   }
 
+  for (const structure of structures) {
+    buildStructure(structure);
+  }
+
   for (const plot of plots) {
     buildPlot(plot);
   }
@@ -764,6 +894,39 @@ function buildDoorBuilding(door) {
     width: door.width,
     depth: door.depth
   });
+}
+
+function buildStructure(b) {
+  const bodyMaterial = new THREE.MeshStandardMaterial({ color: b.body, roughness: 0.78 });
+  const roofMaterial = new THREE.MeshStandardMaterial({ color: b.roof, roughness: 0.66 });
+  addBox(b.x, b.height / 2, b.z, b.width, b.height, b.depth, bodyMaterial);
+  addBox(b.x, b.height + 0.28, b.z, b.width + 0.55, 0.56, b.depth + 0.55, roofMaterial);
+
+  if (b.windows) {
+    const winMaterial = new THREE.MeshStandardMaterial({
+      color: 0xdfeefb, emissive: 0x9fb9d8, emissiveIntensity: 0.22, roughness: 0.4
+    });
+    const rows = Math.max(2, Math.floor(b.height / 1.5));
+    for (let r = 0; r < rows; r++) {
+      const wy = 0.95 + r * 1.4;
+      if (wy > b.height - 0.4) break;
+      for (const wx of [-b.width / 4, b.width / 4]) {
+        addBox(b.x + wx, wy, b.z + b.depth / 2 + 0.03, 0.7, 0.6, 0.06, winMaterial);
+        addBox(b.x + wx, wy, b.z - b.depth / 2 - 0.03, 0.7, 0.6, 0.06, winMaterial);
+      }
+    }
+  }
+
+  const label = createLabelSprite(b.label, {
+    background: "rgba(13, 18, 20, 0.74)",
+    foreground: "#f4f8ff",
+    fontSize: 38,
+    scale: 0.016
+  });
+  label.position.set(b.x, b.height + 1.05, b.z);
+  scene.add(label);
+
+  buildingColliders.push({ x: b.x, z: b.z, width: b.width, depth: b.depth });
 }
 
 function buildPlot(plot) {
