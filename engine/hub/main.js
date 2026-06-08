@@ -2210,35 +2210,49 @@ function applyHome(plotState, data) {
 
 function buildHomeMesh(plotState, style) {
   const x = plotState.x, z = plotState.z;
-  const w = plotState.width * 0.62, d = plotState.depth * 0.62;
   const doorM = new THREE.MeshStandardMaterial({ color: 0x2f302a, roughness: 0.64 });
+  let collW = plotState.width * 0.7, collD = plotState.depth * 0.7;
   if (style === "modern") {
+    // biggest tier: two-story box with a roof parapet (balcony footprint)
+    const w = plotState.width * 0.92, d = plotState.depth * 0.92, h = 3.7;
     const body = new THREE.MeshStandardMaterial({ color: 0xd0d6db, roughness: 0.72 });
-    const roof = new THREE.MeshStandardMaterial({ color: 0x6a7178, roughness: 0.6 });
+    const trim = new THREE.MeshStandardMaterial({ color: 0x6a7178, roughness: 0.6 });
     const glass = new THREE.MeshStandardMaterial({ color: 0x8fd0e6, roughness: 0.18, metalness: 0.05, transparent: true, opacity: 0.8 });
-    addBox(x, 0.95, z, w, 1.9, d, body);
-    addBox(x, 1.99, z, w + 0.22, 0.18, d + 0.22, roof);
-    addBox(x, 1.02, z + d / 2 + 0.02, w * 0.7, 1.05, 0.06, glass);
+    addBox(x, h / 2, z, w, h, d, body);
+    addBox(x, h * 0.5, z, w + 0.05, 0.12, d + 0.05, trim);
+    addBox(x, h + 0.09, z, w + 0.16, 0.18, d + 0.16, trim);
+    addBox(x, h + 0.34, z + d / 2 + 0.05, w + 0.16, 0.34, 0.1, trim);
+    addBox(x, h * 0.3, z + d / 2 + 0.02, w * 0.62, h * 0.32, 0.06, glass);
+    addBox(x, h * 0.72, z + d / 2 + 0.02, w * 0.62, h * 0.32, 0.06, glass);
+    addBox(x - w * 0.3, 0.85, z + d / 2 + 0.04, 0.8, 1.7, 0.08, doorM);
+    collW = w + 0.16; collD = d + 0.16;
   } else if (style === "dome") {
+    // medium tier
+    const w = plotState.width * 0.62, d = plotState.depth * 0.62;
     const shell = new THREE.MeshStandardMaterial({ color: 0xdfe7ea, roughness: 0.5, metalness: 0.04, flatShading: true });
     const base = new THREE.MeshStandardMaterial({ color: 0x9aa6ad, roughness: 0.7 });
-    const r = Math.min(w, d) * 0.66;
-    const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.14, r + 0.2, 0.3, 14), base);
-    baseMesh.position.set(x, 0.15, z); baseMesh.castShadow = true; baseMesh.receiveShadow = true; scene.add(baseMesh);
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), shell);
-    dome.position.set(x, 0.3, z); dome.castShadow = true; dome.receiveShadow = true; scene.add(dome);
-    addBox(x, 0.6, z + r - 0.04, 0.7, 1.0, 0.08, doorM);
+    const r = Math.min(w, d) * 0.74;
+    const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.14, r + 0.2, 0.32, 16), base);
+    baseMesh.position.set(x, 0.16, z); baseMesh.castShadow = true; baseMesh.receiveShadow = true; scene.add(baseMesh);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), shell);
+    dome.position.set(x, 0.32, z); dome.castShadow = true; dome.receiveShadow = true; scene.add(dome);
+    addBox(x, 0.66, z + r - 0.04, 0.72, 1.05, 0.08, doorM);
+    collW = collD = (r + 0.2) * 2;
   } else {
+    // small tier: cozy pod
+    const w = plotState.width * 0.46, d = plotState.depth * 0.46;
     const body = new THREE.MeshStandardMaterial({ color: 0xcf9a6e, roughness: 0.74 });
     const cap = new THREE.MeshStandardMaterial({ color: 0x6f5434, roughness: 0.6, flatShading: true });
-    const r = Math.min(w, d) * 0.58;
-    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1.3, 16), body);
-    cyl.position.set(x, 0.65, z); cyl.castShadow = true; cyl.receiveShadow = true; scene.add(cyl);
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(r * 1.03, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), cap);
-    dome.position.set(x, 1.3, z); dome.castShadow = true; dome.receiveShadow = true; scene.add(dome);
-    addBox(x, 0.55, z + r - 0.02, 0.6, 0.95, 0.08, doorM);
+    const r = Math.min(w, d) * 0.62;
+    const bodyH = 0.95;
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, bodyH, 16), body);
+    cyl.position.set(x, bodyH / 2, z); cyl.castShadow = true; cyl.receiveShadow = true; scene.add(cyl);
+    const cap2 = new THREE.Mesh(new THREE.SphereGeometry(r * 1.03, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), cap);
+    cap2.position.set(x, bodyH, z); cap2.castShadow = true; cap2.receiveShadow = true; scene.add(cap2);
+    addBox(x, 0.48, z + r - 0.02, 0.5, 0.8, 0.08, doorM);
+    collW = collD = r * 2.1;
   }
-  buildingColliders.push({ x: x, z: z, width: w + 0.3, depth: d + 0.3 });
+  buildingColliders.push({ x: x, z: z, width: collW + 0.2, depth: collD + 0.2 });
 }
 
 async function loadSpaces() {
