@@ -69,6 +69,13 @@ let settingsOpen = false;
 let buildMode = false;
 let selectedBuildProp = null;
 let placeRot = 0;
+let buildPreview = null;
+let _pvX = null, _pvZ = null, _pvRot = null, _pvType = null;
+let sunLight = null, sunDisc = null, hemiLight = null;
+let dayClock = 120;
+const HB_DAY = new THREE.Color(0xb8d3df);
+const HB_DUSK = new THREE.Color(0xe89b5a);
+const HB_NIGHT = new THREE.Color(0x0f1b2e);
 let propsLoaded = false;
 let wantsConnection = true;
 let activeDoor = null;
@@ -311,7 +318,9 @@ function toggleBuildMode(on) {
     toggleSettings(false);
     if (document.pointerLockElement) { try { document.exitPointerLock(); } catch (e) {} }
     placeRot = benchRotationToward(state.x, state.z);
-    setBuildHint("Pick a prop, walk where you want it, tap Place here.");
+    setBuildHint("Pick a prop, aim with the ghost, tap Place here.");
+  } else {
+    clearBuildPreview();
   }
 }
 function spawnByType(type, x, z, rot) {
@@ -345,8 +354,9 @@ async function loadProps() {
 async function placeHere() {
   if (!myUserId) { setBuildHint("Sign in on your account to place things."); return; }
   if (!selectedBuildProp) { setBuildHint("Pick a prop first."); return; }
-  const px = Math.max(-29, Math.min(29, state.x));
-  const pz = Math.max(-29, Math.min(29, state.z));
+  const _spot = placementSpot();
+  const px = _spot.x;
+  const pz = _spot.z;
   setBuildHint("Placing\u2026");
   try {
     const sb = ensureSupabase();
@@ -359,7 +369,7 @@ async function placeHere() {
       setBuildHint("Render error: " + (re && re.message ? re.message : String(re)));
       return;
     }
-    setBuildHint("Placed a " + data.prop_type + " at your feet \u2014 step back to see it.");
+    setBuildHint("Placed a " + data.prop_type + " \u2014 there it is.");
   } catch (ex) {
     setBuildHint("Place crashed: " + (ex && ex.message ? ex.message : String(ex)));
   }
@@ -390,7 +400,7 @@ document.querySelectorAll(".buildPropBtn").forEach((bb) => bb.addEventListener("
 {
   const _pb = document.querySelector("#buildPlace"); if (_pb) _pb.addEventListener("click", placeHere);
   const _rb = document.querySelector("#buildRemove"); if (_rb) _rb.addEventListener("click", removeNearest);
-  const _rotb = document.querySelector("#buildRotate"); if (_rotb) _rotb.addEventListener("click", () => { placeRot += Math.PI / 4; setBuildHint("Rotated. Tap Place here."); });
+  const _rotb = document.querySelector("#buildRotate"); if (_rotb) _rotb.addEventListener("click", () => { placeRot += Math.PI / 4; setBuildHint("Rotating \u2014 the ghost shows the facing. Place here."); });
   const _db = document.querySelector("#buildDone"); if (_db) _db.addEventListener("click", () => toggleBuildMode(false));
 }
 doorPromptButton.addEventListener("click", enterActiveDoor);
@@ -1359,11 +1369,83 @@ function sendState(force = false) {
   });
 }
 
+function placementSpot() {
+  const d = 1.8;
+  const x = Math.max(-29, Math.min(29, state.x - Math.sin(state.yaw) * d));
+  const z = Math.max(-29, Math.min(29, state.z - Math.cos(state.yaw) * d));
+  return { x: x, z: z };
+}
+function clearBuildPreview() {
+  if (buildPreview) { scene.remove(buildPreview); buildPreview = null; }
+  _pvType = null;
+}
+function updateBuildPreview() {
+  if (!buildMode || !selectedBuildProp) { if (buildPreview) clearBuildPreview(); return; }
+  const spot = placementSpot();
+  const moved = (_pvX === null) || Math.abs(spot.x - _pvX) > 0.04 || Math.abs(spot.z - _pvZ) > 0.04;
+  const rotated = (_pvRot === null) || Math.abs(placeRot - _pvRot) > 0.0001;
+  const typed = (_pvType !== selectedBuildProp);
+  if (buildPreview && !moved && !rotated && !typed) return;
+  _pvX = spot.x; _pvZ = spot.z; _pvRot = placeRot; _pvType = selectedBuildProp;
+  if (buildPreview) { scene.remove(buildPreview); buildPreview = null; }
+  const colLen = buildingColliders.length;
+  const before = scene.children.slice();
+  try { spawnByType(selectedBuildProp, spot.x, spot.z, placeRot); } catch (e) { return; }
+  if (buildingColliders.length > colLen) buildingColliders.length = colLen;
+  const added = scene.children.filter((o) => before.indexOf(o) === -1);
+  if (!added.length) return;
+  let root;
+  if (added.length === 1) { root = added[0]; }
+  else { root = new THREE.Group(); added.forEach((o) => { scene.remove(o); root.add(o); }); scene.add(root); }
+  root.traverse((o) => {
+    if (o.isMesh && o.material && o.material.clone) {
+      o.material = o.material.clone();
+      o.material.transparent = true;
+      o.material.opacity = 0.42;
+      o.material.depthWrite = false;
+      o.castShadow = false; o.receiveShadow = false;
+    }
+  });
+  root.userData = root.userData || {}; root.userData.isPreview = true;
+  buildPreview = root;
+}
+function pickSky(e) {
+  if (e >= 0.22) return HB_DAY;
+  if (e >= 0) return HB_DUSK.clone().lerp(HB_DAY, e / 0.22);
+  if (e >= -0.22) return HB_DUSK.clone().lerp(HB_NIGHT, (-e) / 0.22);
+  return HB_NIGHT;
+}
+function updateDayNight(dt) {
+  if (!sunLight) return;
+  dayClock += dt;
+  const CYCLE = 300;
+  const t = (dayClock % CYCLE) / CYCLE;
+  const a = t * Math.PI * 2;
+  const e = Math.sin(a);
+  const horiz = Math.cos(a);
+  sunLight.position.set(horiz * 34, e * 40, 14 + e * 4);
+  const day = Math.max(0, Math.min(1, e * 1.6 + 0.08));
+  sunLight.intensity = 0.12 + 2.0 * day;
+  if (hemiLight) hemiLight.intensity = 0.4 + 1.0 * Math.max(0, Math.min(1, e + 0.3));
+  sunLight.color.setRGB(1, 0.92 - 0.16 * (1 - day), 0.82 - 0.28 * (1 - day));
+  const sky = pickSky(e);
+  if (scene.background && scene.background.copy) scene.background.copy(sky);
+  if (scene.fog && scene.fog.color) scene.fog.color.copy(sky);
+  if (sunDisc) {
+    const dir = sunLight.position.clone();
+    const len = dir.length() || 1; dir.multiplyScalar(78 / len);
+    sunDisc.position.copy(dir);
+    sunDisc.visible = e > -0.08;
+    sunDisc.material.color.setRGB(1, 0.78 + 0.18 * day, 0.55 + 0.40 * day);
+  }
+}
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   sendAccumulator += dt;
 
   updateLocal(dt);
+  updateBuildPreview();
+  updateDayNight(dt);
   updateCamera(dt);
   updateRemotes(dt);
   updateMinds();
@@ -2483,7 +2565,8 @@ async function loadSpaces() {
 }
 
 function buildTown() {
-  scene.add(new THREE.HemisphereLight(0xe5f6ff, 0x5b5f4b, 1.35));
+  hemiLight = new THREE.HemisphereLight(0xe5f6ff, 0x5b5f4b, 1.35);
+  scene.add(hemiLight);
 
   const sun = new THREE.DirectionalLight(0xfff6e8, 2.1);
   sun.position.set(8, 14, 6);
@@ -2494,6 +2577,10 @@ function buildTown() {
   sun.shadow.camera.top = 32;
   sun.shadow.camera.bottom = -32;
   scene.add(sun);
+  sunLight = sun;
+  sunDisc = new THREE.Mesh(new THREE.SphereGeometry(2.6, 18, 12), new THREE.MeshBasicMaterial({ color: 0xfff1c0, fog: false }));
+  sunDisc.castShadow = false;
+  scene.add(sunDisc);
 
   const groundMaterial = makeGroundMaterial();
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(64, 64), groundMaterial);
