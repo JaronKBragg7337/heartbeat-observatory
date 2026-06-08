@@ -2455,6 +2455,17 @@ function buildTown() {
     [-5, 14], [5, 14], [-7, 25], [7, -26]
   ];
   for (const t of treeSpots) addTree(t[0], t[1]);
+
+  // starter prop demo: a small outdoor cafe corner (sample placement; easy to move/remove)
+  addPath(4, 7, 10.5, 10, 1.7);
+  addCafeCounter(12, 12.4, Math.PI);
+  addTable(9.4, 10);
+  addChair(9.4, 9.2, 0); addChair(9.4, 10.8, Math.PI); addChair(8.6, 10, Math.PI / 2); addChair(10.2, 10, -Math.PI / 2);
+  addTable(13.2, 9.6);
+  addChair(13.2, 8.8, 0); addChair(13.2, 10.4, Math.PI);
+  addStreetlight(7.8, 12);
+  addPlanter(7.4, 9); addPlanter(14.2, 11);
+  addFence(7, 13.6, 15, 13.6);
 }
 
 function buildDoorBuilding(door) {
@@ -2725,6 +2736,100 @@ function addTree(x, z) {
   leaves.position.set(x, 2.05, z);
   leaves.castShadow = true;
   scene.add(leaves);
+}
+
+// ---- starter prop catalog (all code-built; reusable for placement + themed zones) ----
+function addTable(x, z) {
+  const wood = new THREE.MeshStandardMaterial({ color: 0x8a6240, roughness: 0.74 });
+  const metal = new THREE.MeshStandardMaterial({ color: 0x3d433d, roughness: 0.6 });
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.08, 16), wood);
+  top.position.y = 0.74; top.castShadow = true; g.add(top);
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.74, 10), metal);
+  post.position.y = 0.37; g.add(post);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.06, 14), metal);
+  base.position.y = 0.03; g.add(base);
+  scene.add(g);
+}
+function addChair(x, z, rotationY) {
+  const wood = new THREE.MeshStandardMaterial({ color: 0x9a6b45, roughness: 0.76 });
+  const leg = new THREE.MeshStandardMaterial({ color: 0x3d433d, roughness: 0.66 });
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotationY || 0;
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.5), wood);
+  seat.position.y = 0.46; seat.castShadow = true; g.add(seat);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.09), wood);
+  back.position.set(0, 0.72, -0.205); back.castShadow = true; g.add(back);
+  for (const lx of [-0.19, 0.19]) for (const lz of [-0.19, 0.19]) {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.46, 0.07), leg);
+    l.position.set(lx, 0.23, lz); g.add(l);
+  }
+  scene.add(g);
+}
+function addStreetlight(x, z) {
+  const poleM = new THREE.MeshStandardMaterial({ color: 0x2f343a, roughness: 0.6, metalness: 0.2 });
+  const glowM = new THREE.MeshStandardMaterial({ color: 0xfff2c4, roughness: 0.4, emissive: 0xffe39a, emissiveIntensity: 0.9 });
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 3.2, 12), poleM);
+  pole.position.y = 1.6; pole.castShadow = true; g.add(pole);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.5), poleM);
+  head.position.y = 3.2; g.add(head);
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), glowM);
+  lamp.position.y = 3.06; g.add(lamp);
+  scene.add(g);
+}
+function addPlanter(x, z) {
+  const boxM = new THREE.MeshStandardMaterial({ color: 0x6f5a44, roughness: 0.82 });
+  const greenM = new THREE.MeshStandardMaterial({ color: 0x4c8a55, roughness: 0.8 });
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  const tub = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.42, 0.7), boxM);
+  tub.position.y = 0.21; tub.castShadow = true; tub.receiveShadow = true; g.add(tub);
+  const bush = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 9), greenM);
+  bush.position.y = 0.68; bush.castShadow = true; g.add(bush);
+  scene.add(g);
+}
+function addFence(x1, z1, x2, z2) {
+  const woodM = new THREE.MeshStandardMaterial({ color: 0x7c6047, roughness: 0.82 });
+  const dx = x2 - x1, dz = z2 - z1, len = Math.hypot(dx, dz);
+  if (len < 0.001) return;
+  const g = new THREE.Group();
+  g.position.set((x1 + x2) / 2, 0, (z1 + z2) / 2);
+  g.rotation.y = Math.atan2(dx, dz);
+  for (const ry of [0.85, 0.5]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, len), woodM);
+    rail.position.set(0, ry, 0); rail.castShadow = true; g.add(rail);
+  }
+  const posts = Math.max(2, Math.round(len / 1.2));
+  for (let i = 0; i <= posts; i++) {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.05, 0.12), woodM);
+    p.position.set(0, 0.52, -len / 2 + (len * i) / posts); p.castShadow = true; g.add(p);
+  }
+  scene.add(g);
+  if (Math.abs(dz) < 0.001) buildingColliders.push({ x: (x1 + x2) / 2, z: z1, width: Math.abs(dx), depth: 0.25 });
+  else if (Math.abs(dx) < 0.001) buildingColliders.push({ x: x1, z: (z1 + z2) / 2, width: 0.25, depth: Math.abs(dz) });
+}
+function addPath(x1, z1, x2, z2, width) {
+  const w = width || 1.6, dx = x2 - x1, dz = z2 - z1, len = Math.hypot(dx, dz);
+  if (len < 0.001) return;
+  const rect = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, len), makePavingMaterial(0xc7bc9b));
+  rect.position.set((x1 + x2) / 2, 0.03, (z1 + z2) / 2);
+  rect.rotation.y = Math.atan2(dx, dz);
+  rect.receiveShadow = true; scene.add(rect);
+}
+function addCafeCounter(x, z, rotationY) {
+  const woodM = new THREE.MeshStandardMaterial({ color: 0x6b4a30, roughness: 0.76 });
+  const topM = new THREE.MeshStandardMaterial({ color: 0xc9b48c, roughness: 0.6 });
+  const signM = new THREE.MeshStandardMaterial({ color: 0xb6483b, roughness: 0.66 });
+  const ry = rotationY || 0;
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.05, 0.8), woodM);
+  body.position.y = 0.52; body.castShadow = true; body.receiveShadow = true; g.add(body);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.1, 0.95), topM);
+  top.position.y = 1.08; top.castShadow = true; g.add(top);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.55, 0.09), signM);
+  sign.position.set(0, 1.75, 0); sign.castShadow = true; g.add(sign);
+  scene.add(g);
+  const wide = Math.abs(Math.cos(ry)) > 0.5;
+  buildingColliders.push({ x: x, z: z, width: wide ? 2.8 : 0.95, depth: wide ? 0.95 : 2.8 });
 }
 
 function addBox(x, y, z, width, height, depth, material) {
