@@ -351,12 +351,37 @@ function renderProp(type, x, z, rot, id, ownerUid) {
   placedProps.push({ id: id, type: type, x: x, z: z, ownerUid: ownerUid, root: root });
   return root;
 }
+let propsSubscribed = false;
+function removePropById(id) {
+  const idx = placedProps.findIndex((x) => x.id === id);
+  if (idx === -1) return;
+  scene.remove(placedProps[idx].root);
+  placedProps.splice(idx, 1);
+}
+function subscribeProps() {
+  if (propsSubscribed) return; propsSubscribed = true;
+  try {
+    ensureSupabase().channel("engine-props")
+      .on("postgres_changes", { event: "*", schema: "public", table: "world_props" }, (p) => {
+        const row = p.new || p.old;
+        if (!row || !row.id) return;
+        if (p.eventType === "DELETE") {
+          removePropById(row.id);
+        } else if (p.eventType === "INSERT") {
+          if (placedProps.some((x) => x.id === row.id)) return;
+          renderProp(row.prop_type, row.x, row.z, row.rot, row.id, row.owner_uid);
+        }
+      })
+      .subscribe();
+  } catch (e) {}
+}
 async function loadProps() {
   if (propsLoaded) return; propsLoaded = true;
   try {
     const { data } = await ensureSupabase().from("world_props").select("id,prop_type,x,z,rot,owner_uid");
     if (Array.isArray(data)) for (const p of data) renderProp(p.prop_type, p.x, p.z, p.rot, p.id, p.owner_uid);
   } catch (e) {}
+  subscribeProps();
 }
 async function placeHere() {
   if (!myUserId) { setBuildHint("Sign in on your account to place things."); return; }
@@ -1414,6 +1439,18 @@ function throwSnowball() {
     if (channel && connected) channel.send({ type: "broadcast", event: "throw", payload: { id: selfRealtimeId(), ox: origin.x, oy: origin.y, oz: origin.z, vx: vel.x, vy: vel.y, vz: vel.z } });
   } catch (e) {}
 }
+function flashHit() {
+  let el = document.getElementById("hitFlash");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "hitFlash";
+    el.style.cssText = "position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;transition:opacity 0.5s ease;background:radial-gradient(circle, rgba(255,255,255,0) 38%, rgba(150,205,255,0.6) 100%);";
+    document.body.appendChild(el);
+  }
+  el.style.transition = "opacity 0.04s ease";
+  el.style.opacity = "1";
+  setTimeout(function () { el.style.transition = "opacity 0.5s ease"; el.style.opacity = "0"; }, 70);
+}
 function popSnow(pos) {
   for (let k = 0; k < 7; k++) {
     const f = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 }));
@@ -1433,7 +1470,7 @@ function updateProjectiles(dt) {
     else if (p.life > 4.5) { dead = true; }
     else if (p.owner !== selfRealtimeId() && hasEntered) {
       const dx = p.mesh.position.x - state.x, dy = p.mesh.position.y - (state.y - 0.2), dz = p.mesh.position.z - state.z;
-      if (dx * dx + dy * dy + dz * dz < 0.5 * 0.5) { popSnow(p.mesh.position); addFeed("You got snowballed! \u2744"); dead = true; }
+      if (dx * dx + dy * dy + dz * dz < 0.7 * 0.7) { popSnow(p.mesh.position); flashHit(); addFeed("You got snowballed! \u2744"); dead = true; }
     }
     if (dead) { scene.remove(p.mesh); if (p.mesh.geometry) p.mesh.geometry.dispose(); projectiles.splice(i, 1); }
   }
@@ -1488,7 +1525,7 @@ function setHeldOnGroup(group, type) {
     if (c.userData && c.userData.heldTag) group.remove(c);
   }
   const m = makeHeldItem(type);
-  if (m) { m.userData.heldTag = true; m.position.set(0.24, 0.86, 0.24); group.add(m); }
+  if (m) { m.userData.heldTag = true; m.position.set(0.2, 0.85, -0.3); group.add(m); }
 }
 function updateViewmodel() {
   if (!viewmodel) return;
