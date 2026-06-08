@@ -239,6 +239,7 @@ let roomOwnerId = null;
 let roomOwnerName = "";
 let activeRoomLayout = null;
 let roomPanelCollapsed = false;
+let myRoomCode = null;
 animate();
 try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
 
@@ -620,6 +621,7 @@ function upsertCharacter(row) {
     myRoomLayout = normalizeRoomLayout(character.room_layout);
     if (inRoom) applyRoomLayout();
     renderAppearanceControls();
+    loadRoomCode();
   }
 }
 
@@ -1693,24 +1695,38 @@ function roomSwatchRow(target) {
   }).join("");
 }
 
-function roomCodeFor(id) {
-  let h = 0;
-  const str = String(id || "");
-  for (let i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) >>> 0; }
-  return String(1000 + (h % 9000));
+async function loadRoomCode() {
+  if (myRoomCode || !myUserId) return;
+  try {
+    const { data, error } = await ensureSupabase().rpc("ensure_room_code");
+    if (error) throw error;
+    if (data) { myRoomCode = String(data); if (inRoom && isOwnRoom()) showRoomPanel(); }
+  } catch (e) {}
 }
 
-function visitByCode(code) {
+async function visitByCode(code) {
   code = String(code || "").trim();
   const msg = document.getElementById("roomVisitMsg");
-  if (!/^[0-9]{4}$/.test(code)) { if (msg) msg.textContent = "Enter a 4-digit room code."; return; }
+  if (!/^[0-9]{6}$/.test(code)) { if (msg) msg.textContent = "Enter a 6-digit room code."; return; }
   const selfId = myUserId || selfRealtimeId();
-  if (code === roomCodeFor(selfId)) { visitRoom(selfId); return; }
-  for (const [id] of characters.entries()) {
-    if (id === selfId) continue;
-    if (roomCodeFor(id) === code) { visitRoom(id); return; }
+  if (myRoomCode && code === myRoomCode) { visitRoom(selfId); return; }
+  if (msg) msg.textContent = "Finding room\u2026";
+  try {
+    const { data, error } = await ensureSupabase().rpc("resolve_room_code", { p_code: code });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || !row.auth_user_id) { if (msg) msg.textContent = "No room found for code " + code + "."; return; }
+    if (!inRoom) return;
+    roomOwnerId = row.auth_user_id;
+    roomOwnerName = sanitizeDisplayName(row.display_name || "Resident");
+    activeRoomLayout = normalizeRoomLayout(row.room_layout);
+    mySpace = "room:" + roomOwnerId;
+    applyRoomLayout();
+    showRoomPanel();
+    try { trackSelf(); sendState(true); } catch (e) {}
+  } catch (e) {
+    if (msg) msg.textContent = "Couldn't reach the directory. Try again.";
   }
-  if (msg) msg.textContent = "No room found for code " + code + ".";
 }
 
 function isOwnRoom() {
@@ -1738,7 +1754,7 @@ function roomVisitRow() {
   const back = !isOwnRoom()
     ? '<button type="button" data-visit="' + selfId + '" style="padding:7px 11px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:12px;font-weight:600;cursor:pointer;flex:none;">\u2190 My room</button>'
     : "";
-  return '<input id="roomVisitInput" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="Room code" style="width:90px;padding:7px 9px;border-radius:8px;border:1px solid #3a4750;background:#0e1519;color:#eef3f6;font-size:13px;outline:none;flex:none;">' +
+  return '<input id="roomVisitInput" type="text" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="Room code" style="width:90px;padding:7px 9px;border-radius:8px;border:1px solid #3a4750;background:#0e1519;color:#eef3f6;font-size:13px;outline:none;flex:none;">' +
     '<button id="roomVisitGo" type="button" style="padding:7px 14px;border-radius:8px;border:0;background:#9fd0a0;color:#0a1410;font-size:12px;font-weight:700;cursor:pointer;flex:none;">Go</button>' +
     back +
     '<span id="roomVisitMsg" style="font-size:11px;color:#8aa0a8;flex:1 1 100%;"></span>';
@@ -1765,8 +1781,7 @@ function showRoomPanel() {
   }
   const own = isOwnRoom();
   const collapsed = roomPanelCollapsed;
-  const myCode = roomCodeFor(myUserId || selfRealtimeId());
-  const title = own ? "Your room" : ("Visiting " + (roomOwnerName || "a room") + " \u00b7 #" + roomCodeFor(roomOwnerId));
+  const title = own ? "Your room" : ("Visiting " + (roomOwnerName || "a room"));
   const toggleBtn = '<button id="roomCollapseBtn" type="button" aria-label="' + (collapsed ? "Expand room panel" : "Minimize room panel") + '" style="width:30px;height:30px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:18px;line-height:1;font-weight:700;cursor:pointer;padding:0;flex:none;">' + (collapsed ? "+" : "\u2013") + '</button>';
   const statusSpan = collapsed ? "" : '<span id="roomSaveStatus" style="font-size:11px;color:#8aa0a8;"></span>';
   let html =
@@ -1774,7 +1789,7 @@ function showRoomPanel() {
   if (!collapsed) {
     if (own) {
       html +=
-        '<div style="font-size:11px;color:#9fb0b8;">Your code <b style="color:#eef3f6;letter-spacing:1px;font-size:13px;">' + myCode + '</b> \u2014 share it to invite</div>' +
+        '<div style="font-size:11px;color:#9fb0b8;">' + (myRoomCode ? ('Your code <b style="color:#eef3f6;letter-spacing:1px;font-size:13px;">' + myRoomCode + '</b> \u2014 share it to invite') : (myUserId ? 'Your code \u2014 loading\u2026' : 'Sign in to get a shareable code')) + '</div>' +
         '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Walls</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("wall") + '</div></div>' +
         '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Floor</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("floor") + '</div></div>' +
         '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Items</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomItemRow() + '</div></div>';
