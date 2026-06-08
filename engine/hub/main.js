@@ -247,6 +247,9 @@ let roomPanelCollapsed = false;
 let myRoomCode = null;
 let hintEl = null;
 let explainerEl = null;
+let myHomeEligible = false;
+let myHasHome = false;
+let selectedHomeStyle = "modern";
 animate();
 try { window.parent?.postMessage({ type: "world_ready" }, "*"); } catch {}
 
@@ -635,6 +638,7 @@ function upsertCharacter(row) {
     if (inRoom) applyRoomLayout();
     renderAppearanceControls();
     loadRoomCode();
+    loadHomeEligibility();
   }
 }
 
@@ -1730,6 +1734,16 @@ function roomSwatchRow(target) {
   }).join("");
 }
 
+async function loadHomeEligibility() {
+  try {
+    const { data, error } = await ensureSupabase().rpc("home_eligibility");
+    if (!error && Array.isArray(data) && data[0]) {
+      myHomeEligible = !!data[0].eligible;
+      myHasHome = !!data[0].has_home;
+    }
+  } catch (e) {}
+}
+
 async function loadRoomCode() {
   if (myRoomCode || !myUserId) return;
   try {
@@ -1937,6 +1951,19 @@ document.body.insertAdjacentHTML("beforeend", `
       <button id="claimCancel" style="flex:1;padding:11px;border-radius:9px;border:1px solid #2c3940;background:transparent;color:#cdd6db;font-size:14px;cursor:pointer;">Cancel</button>
       <button id="claimSubmit" style="flex:1;padding:11px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:600;font-size:14px;cursor:pointer;">Claim</button>
     </div>
+    <div id="homeSection" style="display:none;border-top:1px solid #243036;margin-top:15px;padding-top:13px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Or make this your home</div>
+      <div style="font-size:11.5px;opacity:.72;margin-bottom:9px;">A personal place in the world \u2014 not tied to a repo.</div>
+      <div id="homeStyles" style="display:flex;gap:7px;margin-bottom:9px;">
+        <button type="button" class="homeStyleBtn" data-style="modern" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid #2c3940;background:#0a0f12;color:#dfe6ec;font-size:12.5px;cursor:pointer;">Modern</button>
+        <button type="button" class="homeStyleBtn" data-style="dome" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid #2c3940;background:#0a0f12;color:#dfe6ec;font-size:12.5px;cursor:pointer;">Dome</button>
+        <button type="button" class="homeStyleBtn" data-style="pod" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid #2c3940;background:#0a0f12;color:#dfe6ec;font-size:12.5px;cursor:pointer;">Pod</button>
+      </div>
+      <input id="homeTitleInput" maxlength="28" autocomplete="off" placeholder="Name your home" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:9px;border:1px solid #2c3940;background:#0a0f12;color:#eef3f6;font-size:14px;">
+      <div id="homeError" style="font-size:12px;color:#e69191;min-height:15px;margin:6px 0 9px;"></div>
+      <button id="homeCreate" style="width:100%;padding:11px;border-radius:9px;border:0;background:#cda16a;color:#1a1208;font-weight:600;font-size:14px;cursor:pointer;">Create home</button>
+    </div>
+    <div id="homeLocked" style="display:none;font-size:11.5px;opacity:.7;border-top:1px solid #243036;margin-top:15px;padding-top:12px;line-height:1.5;">Personal homes unlock after 30 days \u2014 or right away once you've claimed a space or customized a room.</div>
   </div>
 </div>`);
 const claimOverlay = document.querySelector("#claimOverlay");
@@ -1946,14 +1973,67 @@ document.querySelector("#claimCancel").addEventListener("click", closeClaim);
 document.querySelector("#claimSubmit").addEventListener("click", submitClaim);
 claimOverlay.addEventListener("click", (e) => { if (e.target === claimOverlay) closeClaim(); });
 claimInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitClaim(); } });
+document.querySelectorAll(".homeStyleBtn").forEach((btn) => btn.addEventListener("click", () => { selectedHomeStyle = btn.getAttribute("data-style") || "modern"; updateHomeStyleButtons(); }));
+const homeCreateBtn = document.querySelector("#homeCreate");
+if (homeCreateBtn) homeCreateBtn.addEventListener("click", submitHome);
+const homeTitleEl = document.querySelector("#homeTitleInput");
+if (homeTitleEl) homeTitleEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitHome(); } });
+
+function updateHomeStyleButtons() {
+  document.querySelectorAll(".homeStyleBtn").forEach((btn) => {
+    const on = btn.getAttribute("data-style") === selectedHomeStyle;
+    btn.style.borderColor = on ? "#cda16a" : "#2c3940";
+    btn.style.background = on ? "#2a2014" : "#0a0f12";
+    btn.style.color = on ? "#ffe9cf" : "#dfe6ec";
+  });
+}
 
 function openClaim(plotState) {
   currentClaimPlot = plotState;
   claimInput.value = "";
   claimError.textContent = "";
+  const homeSection = document.querySelector("#homeSection");
+  const homeLocked = document.querySelector("#homeLocked");
+  const homeError = document.querySelector("#homeError");
+  const homeTitle = document.querySelector("#homeTitleInput");
+  if (homeError) homeError.textContent = "";
+  if (homeTitle) homeTitle.value = "";
+  const canHome = !!myUserId && myHomeEligible && !myHasHome;
+  if (homeSection) homeSection.style.display = canHome ? "block" : "none";
+  if (homeLocked) homeLocked.style.display = (!!myUserId && !myHomeEligible) ? "block" : "none";
+  if (canHome) { selectedHomeStyle = "modern"; updateHomeStyleButtons(); }
   try { document.exitPointerLock && document.exitPointerLock(); } catch (e) {}
   claimOverlay.style.display = "flex";
   setTimeout(() => { try { claimInput.focus(); } catch (e) {} }, 30);
+}
+
+async function submitHome() {
+  const homeError = document.querySelector("#homeError");
+  const homeTitle = document.querySelector("#homeTitleInput");
+  if (!currentClaimPlot) return;
+  if (!myUserId) { if (homeError) homeError.textContent = "Sign in first."; return; }
+  if (!supa) { if (homeError) homeError.textContent = "Still connecting \u2014 try again in a moment."; return; }
+  const title = (homeTitle && homeTitle.value || "").trim();
+  if (homeError) homeError.textContent = "Creating\u2026";
+  try {
+    const { data, error } = await supa.rpc("claim_home", { p_plot: currentClaimPlot.index, p_style: selectedHomeStyle, p_title: title });
+    const res = data || {};
+    if (error || !res.ok) {
+      const code = res.error || "";
+      if (homeError) homeError.textContent =
+        code === "plot_taken" ? "That spot was just taken." :
+        code === "already_home" ? "You already have a home \u2014 one per person for now." :
+        code === "not_eligible" ? "Not eligible yet \u2014 30 days, or claim a space / customize a room first." :
+        "Could not create the home.";
+      return;
+    }
+    applyHome(currentClaimPlot, { home_style: res.home_style, home_title: res.home_title, claimed_by: res.claimed_by || displayName });
+    addFeed(displayName + " built a home: " + res.home_title);
+    myHasHome = true;
+    closeClaim();
+  } catch (e) {
+    if (homeError) homeError.textContent = "Could not create the home.";
+  }
 }
 
 function closeClaim() {
@@ -2101,12 +2181,72 @@ function claimedSpacePalette(data, meta) {
   return palettes[Math.abs(hash) % palettes.length];
 }
 
+function applySpaceRow(ps, row) {
+  if (row && row.space_type === "home") applyHome(ps, row);
+  else applyClaim(ps, row);
+}
+
+function applyHome(plotState, data) {
+  if (!plotState) return;
+  const style = ["modern", "dome", "pod"].includes(data && data.home_style) ? data.home_style : "modern";
+  const title = sanitizeDisplayName((data && (data.home_title || data.project_name)) || "Home");
+  const owner = data && data.claimed_by ? sanitizeDisplayName(data.claimed_by) : "";
+  plotState.claimed = true;
+  if (plotState === activePlot) activePlot = null;
+  if (plotState.sign) { try { scene.remove(plotState.sign); } catch (e) {} }
+  if (plotState.metaSign) { try { scene.remove(plotState.metaSign); } catch (e) {} }
+  const label = createLabelSprite(title, { background: "rgba(22, 16, 10, 0.86)", foreground: "#ffe9cf", fontSize: 32, scale: 0.014 });
+  label.position.set(plotState.x, 2.62, plotState.z);
+  scene.add(label); plotState.sign = label;
+  if (owner) {
+    const meta = createLabelSprite("home \u00b7 " + owner, { background: "rgba(10, 12, 14, 0.78)", foreground: "#f6fbff", fontSize: 22, scale: 0.0095, paddingX: 15, paddingY: 8 });
+    meta.position.set(plotState.x, 2.2, plotState.z);
+    scene.add(meta); plotState.metaSign = meta;
+  }
+  if (plotState.built) return;
+  plotState.built = true;
+  buildHomeMesh(plotState, style);
+}
+
+function buildHomeMesh(plotState, style) {
+  const x = plotState.x, z = plotState.z;
+  const w = plotState.width * 0.62, d = plotState.depth * 0.62;
+  const doorM = new THREE.MeshStandardMaterial({ color: 0x2f302a, roughness: 0.64 });
+  if (style === "modern") {
+    const body = new THREE.MeshStandardMaterial({ color: 0xd0d6db, roughness: 0.72 });
+    const roof = new THREE.MeshStandardMaterial({ color: 0x6a7178, roughness: 0.6 });
+    const glass = new THREE.MeshStandardMaterial({ color: 0x8fd0e6, roughness: 0.18, metalness: 0.05, transparent: true, opacity: 0.8 });
+    addBox(x, 0.95, z, w, 1.9, d, body);
+    addBox(x, 1.99, z, w + 0.22, 0.18, d + 0.22, roof);
+    addBox(x, 1.02, z + d / 2 + 0.02, w * 0.7, 1.05, 0.06, glass);
+  } else if (style === "dome") {
+    const shell = new THREE.MeshStandardMaterial({ color: 0xdfe7ea, roughness: 0.5, metalness: 0.04, flatShading: true });
+    const base = new THREE.MeshStandardMaterial({ color: 0x9aa6ad, roughness: 0.7 });
+    const r = Math.min(w, d) * 0.66;
+    const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.14, r + 0.2, 0.3, 14), base);
+    baseMesh.position.set(x, 0.15, z); baseMesh.castShadow = true; baseMesh.receiveShadow = true; scene.add(baseMesh);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), shell);
+    dome.position.set(x, 0.3, z); dome.castShadow = true; dome.receiveShadow = true; scene.add(dome);
+    addBox(x, 0.6, z + r - 0.04, 0.7, 1.0, 0.08, doorM);
+  } else {
+    const body = new THREE.MeshStandardMaterial({ color: 0xcf9a6e, roughness: 0.74 });
+    const cap = new THREE.MeshStandardMaterial({ color: 0x6f5434, roughness: 0.6, flatShading: true });
+    const r = Math.min(w, d) * 0.58;
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1.3, 16), body);
+    cyl.position.set(x, 0.65, z); cyl.castShadow = true; cyl.receiveShadow = true; scene.add(cyl);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(r * 1.03, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), cap);
+    dome.position.set(x, 1.3, z); dome.castShadow = true; dome.receiveShadow = true; scene.add(dome);
+    addBox(x, 0.55, z + r - 0.02, 0.6, 0.95, 0.08, doorM);
+  }
+  buildingColliders.push({ x: x, z: z, width: w + 0.3, depth: d + 0.3 });
+}
+
 async function loadSpaces() {
   try {
-    const { data } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by, repo_metadata, repo_error");
+    const { data } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by, repo_metadata, repo_error, space_type, home_style, home_title");
     (data || []).forEach((row) => {
       const ps = plotList[row.plot];
-      if (ps && !ps.claimed) applyClaim(ps, row);
+      if (ps && !ps.claimed) applySpaceRow(ps, row);
     });
   } catch (e) {}
   try {
@@ -2115,7 +2255,7 @@ async function loadSpaces() {
         const r = p.new;
         if (!r) return;
         const ps = plotList[r.plot];
-        if (ps) applyClaim(ps, r);
+        if (ps) applySpaceRow(ps, r);
       })
       .subscribe();
   } catch (e) {}
