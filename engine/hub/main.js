@@ -1693,6 +1693,26 @@ function roomSwatchRow(target) {
   }).join("");
 }
 
+function roomCodeFor(id) {
+  let h = 0;
+  const str = String(id || "");
+  for (let i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) >>> 0; }
+  return String(1000 + (h % 9000));
+}
+
+function visitByCode(code) {
+  code = String(code || "").trim();
+  const msg = document.getElementById("roomVisitMsg");
+  if (!/^[0-9]{4}$/.test(code)) { if (msg) msg.textContent = "Enter a 4-digit room code."; return; }
+  const selfId = myUserId || selfRealtimeId();
+  if (code === roomCodeFor(selfId)) { visitRoom(selfId); return; }
+  for (const [id] of characters.entries()) {
+    if (id === selfId) continue;
+    if (roomCodeFor(id) === code) { visitRoom(id); return; }
+  }
+  if (msg) msg.textContent = "No room found for code " + code + ".";
+}
+
 function isOwnRoom() {
   return !roomOwnerId || roomOwnerId === (myUserId || selfRealtimeId());
 }
@@ -1715,17 +1735,13 @@ function visitRoom(ownerId) {
 
 function roomVisitRow() {
   const selfId = myUserId || selfRealtimeId();
-  const btns = [];
-  if (!isOwnRoom()) {
-    btns.push('<button type="button" data-visit="' + selfId + '" style="padding:6px 11px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:12px;font-weight:600;cursor:pointer;">\u2190 My room</button>');
-  }
-  for (const [id, ch] of characters.entries()) {
-    if (id === selfId) continue;
-    const here = (roomOwnerId === id);
-    btns.push('<button type="button" data-visit="' + id + '" style="padding:6px 11px;border-radius:8px;border:1px solid ' + (here ? "#9fd0a0" : "#3a4750") + ';background:' + (here ? "#9fd0a0" : "transparent") + ';color:' + (here ? "#0a1410" : "#cfe0e6") + ';font-size:12px;font-weight:600;cursor:pointer;">' + characterName(ch) + '</button>');
-  }
-  if (btns.length === 0) return '<span style="font-size:11px;color:#8aa0a8;">No other rooms yet</span>';
-  return btns.join("");
+  const back = !isOwnRoom()
+    ? '<button type="button" data-visit="' + selfId + '" style="padding:7px 11px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:12px;font-weight:600;cursor:pointer;flex:none;">\u2190 My room</button>'
+    : "";
+  return '<input id="roomVisitInput" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="Room code" style="width:90px;padding:7px 9px;border-radius:8px;border:1px solid #3a4750;background:#0e1519;color:#eef3f6;font-size:13px;outline:none;flex:none;">' +
+    '<button id="roomVisitGo" type="button" style="padding:7px 14px;border-radius:8px;border:0;background:#9fd0a0;color:#0a1410;font-size:12px;font-weight:700;cursor:pointer;flex:none;">Go</button>' +
+    back +
+    '<span id="roomVisitMsg" style="font-size:11px;color:#8aa0a8;flex:1 1 100%;"></span>';
 }
 
 function showRoomPanel() {
@@ -1741,6 +1757,7 @@ function showRoomPanel() {
       if (!t) return;
       if (t.id === "roomCollapseBtn") { roomPanelCollapsed = !roomPanelCollapsed; try { localStorage.setItem("hb_room_collapsed", roomPanelCollapsed ? "1" : "0"); } catch (er) {} showRoomPanel(); return; }
       if (t.id === "roomExitBtn") { exitRoom(); return; }
+      if (t.id === "roomVisitGo") { const el = document.getElementById("roomVisitInput"); visitByCode(el ? el.value : ""); return; }
       if (t.getAttribute && t.getAttribute("data-visit")) { visitRoom(t.getAttribute("data-visit")); return; }
       if (t.getAttribute && t.getAttribute("data-it")) { toggleRoomItem(t.getAttribute("data-it")); return; }
       if (t.getAttribute && t.getAttribute("data-rt")) setRoomColor(t.getAttribute("data-rt"), t.getAttribute("data-rc"));
@@ -1748,7 +1765,8 @@ function showRoomPanel() {
   }
   const own = isOwnRoom();
   const collapsed = roomPanelCollapsed;
-  const title = own ? "Your room" : ("Visiting " + (roomOwnerName || "a room"));
+  const myCode = roomCodeFor(myUserId || selfRealtimeId());
+  const title = own ? "Your room" : ("Visiting " + (roomOwnerName || "a room") + " \u00b7 #" + roomCodeFor(roomOwnerId));
   const toggleBtn = '<button id="roomCollapseBtn" type="button" aria-label="' + (collapsed ? "Expand room panel" : "Minimize room panel") + '" style="width:30px;height:30px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:18px;line-height:1;font-weight:700;cursor:pointer;padding:0;flex:none;">' + (collapsed ? "+" : "\u2013") + '</button>';
   const statusSpan = collapsed ? "" : '<span id="roomSaveStatus" style="font-size:11px;color:#8aa0a8;"></span>';
   let html =
@@ -1756,6 +1774,7 @@ function showRoomPanel() {
   if (!collapsed) {
     if (own) {
       html +=
+        '<div style="font-size:11px;color:#9fb0b8;">Your code <b style="color:#eef3f6;letter-spacing:1px;font-size:13px;">' + myCode + '</b> \u2014 share it to invite</div>' +
         '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Walls</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("wall") + '</div></div>' +
         '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Floor</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomSwatchRow("floor") + '</div></div>' +
         '<div style="display:flex;align-items:center;gap:8px;"><span style="width:40px;font-size:11px;color:#9fb0b8;">Items</span><div style="display:flex;gap:7px;flex-wrap:wrap;">' + roomItemRow() + '</div></div>';
@@ -1768,6 +1787,7 @@ function showRoomPanel() {
   p.style.display = "flex";
   p.style.width = collapsed ? "auto" : "min(92vw,360px)";
   p.style.padding = collapsed ? "7px 12px" : "11px 13px";
+  if (!collapsed) { const vi = document.getElementById("roomVisitInput"); if (vi) vi.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); visitByCode(vi.value); } }); }
   if (!collapsed && own && !myUserId) { const st = document.getElementById("roomSaveStatus"); if (st) st.textContent = "Guest \u2014 won't save"; }
 }
 
