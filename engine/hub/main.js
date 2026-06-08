@@ -54,6 +54,7 @@ const keys = new Set();
 const remotes = new Map();
 const peers = new Map();
 const mindActors = new Map();
+const npcs = new Map();
 let mindsLoaded = false;
 let latestPlayers = [];
 
@@ -467,16 +468,19 @@ function connect() {
 
   channel.on("presence", { event: "join" }, ({ newPresences }) => {
     for (const p of newPresences || []) {
-      if (p.id && p.id !== myId) addFeed(`${p.name || "Guest"} joined`);
+      if (p.id && p.id !== myId) {
+        removeNpc(p.id);
+        addFeed(`${p.name || "Guest"} joined`);
+      }
     }
   });
 
   channel.on("presence", { event: "leave" }, ({ leftPresences }) => {
     for (const p of leftPresences || []) {
       if (p.id && p.id !== myId) {
-        removeRemote(p.id);
+        convertToNpc(p);
         peers.delete(p.id);
-        addFeed(`${p.name || "Guest"} left`);
+        addFeed(`${p.name || "Guest"} wandered off`);
       }
     }
   });
@@ -500,6 +504,7 @@ function connect() {
 
 function applyPeerState(player) {
   if (!player || !player.id || player.id === myId) return;
+  if (npcs.has(player.id)) removeNpc(player.id);
   peers.set(player.id, player);
 
   let remote = remotes.get(player.id);
@@ -575,6 +580,7 @@ function animate() {
   updateCamera();
   updateRemotes(dt);
   updateMinds();
+  updateNpcs();
   updateHud();
   sendState();
 
@@ -733,6 +739,67 @@ function updateMinds() {
     g.position.x = cx;
     g.position.z = cz;
     g.position.y = Math.sin(t * 0.004 + actor.seed) * 0.05;
+    if (Math.abs(dx) + Math.abs(dz) > 0.00001) g.rotation.y = Math.atan2(dx, dz);
+  }
+}
+
+function buildNpcAvatar(color, name) {
+  const group = new THREE.Group();
+  const c = new THREE.Color(color || "#8aa0a8");
+  const bodyMaterial = new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, metalness: 0.02, transparent: true, opacity: 0.78 });
+  const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x172024, roughness: 0.82, transparent: true, opacity: 0.78 });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 1.12, 14), bodyMaterial);
+  body.position.y = 0.75; group.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), bodyMaterial);
+  head.position.y = 1.46; group.add(head);
+  const face = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.045), darkMaterial);
+  face.position.set(0, 1.48, -0.245); group.add(face);
+  const label = createLabelSprite(name || "Guest", {
+    background: "rgba(11, 16, 18, 0.62)", foreground: "#dfe6ec", fontSize: 30, scale: 0.0085
+  });
+  label.position.set(0, 2.02, 0); group.add(label);
+  return group;
+}
+
+function convertToNpc(p) {
+  if (!p || !p.id || npcs.has(p.id)) return;
+  const remote = remotes.get(p.id);
+  const known = peers.get(p.id) || {};
+  const pos = remote ? remote.group.position.clone() : new THREE.Vector3(0, 0, 8);
+  const color = p.color || known.color || "#8aa0a8";
+  const name = p.name || known.name || "Guest";
+  if (remote) removeRemote(p.id);
+  let seed = 0;
+  for (const ch of p.id) seed += ch.charCodeAt(0);
+  const group = buildNpcAvatar(color, name);
+  group.position.copy(pos);
+  group.position.y = 0;
+  npcs.set(p.id, { group, seed: (seed % 100) / 100 * Math.PI * 2, base: pos.clone() });
+  scene.add(group);
+  if (npcs.size > 12) removeNpc(npcs.keys().next().value);
+}
+
+function removeNpc(id) {
+  const npc = npcs.get(id);
+  if (!npc) return;
+  scene.remove(npc.group);
+  disposeObject(npc.group);
+  npcs.delete(id);
+}
+
+function updateNpcs() {
+  if (npcs.size === 0) return;
+  const t = Date.now();
+  for (const npc of npcs.values()) {
+    const a = t * 0.00008 + npc.seed;
+    const x = npc.base.x * 0.3 + Math.sin(a) * 6 + Math.sin(a * 0.5 + npc.seed) * 2;
+    const z = npc.base.z * 0.3 + Math.cos(a * 0.7 + npc.seed) * 6 + Math.cos(a * 0.4) * 2;
+    const cx = Math.max(-worldBounds, Math.min(worldBounds, x));
+    const cz = Math.max(-worldBounds, Math.min(worldBounds, z));
+    const g = npc.group;
+    const dx = cx - g.position.x, dz = cz - g.position.z;
+    g.position.x = cx;
+    g.position.z = cz;
     if (Math.abs(dx) + Math.abs(dz) > 0.00001) g.rotation.y = Math.atan2(dx, dz);
   }
 }
@@ -1126,6 +1193,7 @@ function removeRemote(id) {
 
 function clearWorldActors() {
   for (const id of [...remotes.keys()]) removeRemote(id);
+  for (const id of [...npcs.keys()]) removeNpc(id);
   peers.clear();
   playerCountEl.textContent = "0 players";
 }
