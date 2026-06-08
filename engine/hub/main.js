@@ -1159,6 +1159,7 @@ function animate() {
   updateRemotes(dt);
   updateMinds();
   updateNpcs();
+  maybeGhostNudge();
   updateHud();
   sendState();
 
@@ -1408,6 +1409,51 @@ function queueJump() {
   input.jumpQueued = true;
 }
 
+// ---- One-time onboarding nudges (layer 2) ----
+const nudgeShown = { ghost: false, plot: false };
+try {
+  if (localStorage.getItem("hb_nudge_ghost") === "1") nudgeShown.ghost = true;
+  if (localStorage.getItem("hb_nudge_plot") === "1") nudgeShown.plot = true;
+} catch (e) {}
+let nudgeEl = null;
+let nudgeTimer = null;
+function showNudge(kind, text) {
+  if (nudgeShown[kind]) return;
+  nudgeShown[kind] = true;
+  try { localStorage.setItem("hb_nudge_" + kind, "1"); } catch (e) {}
+  if (!nudgeEl) {
+    nudgeEl = document.createElement("div");
+    nudgeEl.id = "nudgeToast";
+    nudgeEl.style.cssText = "position:fixed;left:50%;bottom:104px;transform:translateX(-50%) translateY(8px);max-width:min(86vw,430px);background:rgba(10,15,18,0.93);color:#eef3f6;border:1px solid #2c3940;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.42;z-index:99990;box-shadow:0 10px 34px rgba(0,0,0,0.45);opacity:0;transition:opacity .25s ease, transform .25s ease;cursor:pointer;text-align:center;";
+    nudgeEl.addEventListener("click", hideNudge);
+    document.body.appendChild(nudgeEl);
+  }
+  nudgeEl.innerHTML = text + '<div style="margin-top:7px;font-size:11px;color:#8aa0a8;">tap to dismiss</div>';
+  requestAnimationFrame(() => {
+    if (!nudgeEl) return;
+    nudgeEl.style.opacity = "1";
+    nudgeEl.style.transform = "translateX(-50%) translateY(0)";
+  });
+  clearTimeout(nudgeTimer);
+  nudgeTimer = setTimeout(hideNudge, 7000);
+}
+function hideNudge() {
+  if (!nudgeEl) return;
+  nudgeEl.style.opacity = "0";
+  nudgeEl.style.transform = "translateX(-50%) translateY(8px)";
+}
+function maybeGhostNudge() {
+  if (nudgeShown.ghost || !hasEntered || npcs.size === 0) return;
+  for (const npc of npcs.values()) {
+    const p = npc.group && npc.group.position;
+    if (!p) continue;
+    if (Math.hypot(state.x - p.x, state.z - p.z) < 3.6) {
+      showNudge("ghost", "That\u2019s someone who stepped away \u2014 their character keeps roaming as a ghost until they return.");
+      return;
+    }
+  }
+}
+
 function updateActiveDoor() {
   let nextDoor = null;
   let bestDistance = Infinity;
@@ -1446,6 +1492,9 @@ function updateActiveDoor() {
   if (activeDoor === nextDoor && activePlot === nextPlot) return;
   activeDoor = nextDoor;
   activePlot = nextPlot;
+  if (activePlot) showNudge("plot", myUserId
+    ? "This is an open plot. Press E (or tap the action button) to claim it with a GitHub repo \u2014 it becomes a real building everyone can see."
+    : "This is an open plot. Sign in and you can claim it with a GitHub repo, turning it into a real building everyone can see.");
 
   for (const door of doors) {
     if (door.pad) door.pad.material.emissiveIntensity = door === activeDoor ? 0.38 : 0.08;
@@ -1579,6 +1628,11 @@ function applyClaim(plotState, data) {
   const projectName = meta.name || data.project_name || repoParts?.repo || "Claimed space";
   const palette = claimedSpacePalette(data, meta);
   const language = meta.language || "";
+  const metaBits = [];
+  if (language) metaBits.push(language);
+  if (Number.isFinite(meta.stars) && meta.stars > 0) metaBits.push("\u2605 " + meta.stars);
+  if (meta.topics && meta.topics.length) metaBits.push("#" + meta.topics[0]);
+  const metaText = metaBits.join("  \u00b7  ");
   plotState.claimed = true;
   plotState.github_url = data.github_url;
   if (plotState === activePlot) { activePlot = null; }
@@ -1590,11 +1644,11 @@ function applyClaim(plotState, data) {
     fontSize: 32,
     scale: 0.014
   });
-  label.position.set(plotState.x, language ? 2.38 : 2.15, plotState.z);
+  label.position.set(plotState.x, metaText ? 2.38 : 2.15, plotState.z);
   scene.add(label);
   plotState.sign = label;
-  if (language) {
-    const metaLabel = createLabelSprite(language, {
+  if (metaText) {
+    const metaLabel = createLabelSprite(metaText, {
       background: "rgba(8, 12, 14, 0.78)",
       foreground: "#f6fbff",
       fontSize: 24,
