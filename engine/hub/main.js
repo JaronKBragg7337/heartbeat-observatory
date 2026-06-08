@@ -1676,7 +1676,7 @@ function showRoomPanel() {
   if (!p) {
     p = document.createElement("div");
     p.id = "roomPanel";
-    p.style.cssText = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:stretch;background:rgba(10,15,18,0.94);border:1px solid #2c3940;border-radius:14px;padding:11px 13px;z-index:99980;color:#eef3f6;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,0.45);width:min(92vw,360px);";
+    p.style.cssText = "position:fixed;left:50%;top:max(120px, calc(env(safe-area-inset-top, 0px) + 104px));transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:stretch;background:rgba(10,15,18,0.94);border:1px solid #2c3940;border-radius:14px;padding:11px 13px;z-index:99980;color:#eef3f6;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,0.45);width:min(92vw,360px);";
     document.body.appendChild(p);
     p.addEventListener("click", (e) => {
       const t = e.target;
