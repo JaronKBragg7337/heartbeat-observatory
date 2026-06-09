@@ -26,6 +26,7 @@ Ordered; top first.
 - Fence/Path two-point "structures" tool; cafe-counter as a placeable (collider cleanup on remove).
 
 ## LATER — polish & vision
+- **Multi-world & sharded servers (the scaling answer):** the engine is parameterizable. A "world" = map definition + data/realtime scope. (a) A *different* world = a new route serving its own map + data (e.g. /engine vs a second world page) -> good for variants or when one world gets too heavy. (b) A *server/shard* of the SAME world = identical map code joined to a different realtime channel + presence scope, with a per-shard player cap (server 1/2/3, same map, isolated players). Both coexist with content pages (projects/social). Seam already exists: routes are free, realtime is channel-based, and room_code is already a sharding primitive. This is how it scales without any single instance getting too big.
 - Desktop build-mode look-while-placing (pointer-lock vs on-screen buttons).
 - Held-item viewmodel polish (per-aspect framing; subtle hand so items don't float).
 - world_spaces DELETE realtime (released homes vanish live for others).
