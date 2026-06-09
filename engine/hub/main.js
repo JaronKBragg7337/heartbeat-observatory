@@ -86,6 +86,9 @@ let arenaTargets = [];
 let arenaScore = 0;
 let arenaScoreEl = null;
 let tagScore = 0;
+let outScore = 0;
+let scoreboardEl = null;
+let lastBoardRender = 0;
 const PAINT_COLORS = [0xe23b4e, 0x36d07a, 0x4a86e8, 0xf2c94c, 0xb24ae8];
 const _vmOff = new THREE.Vector3();
 const projectiles = [];
@@ -1105,6 +1108,9 @@ function trackSelf() {
       pitch: state.pitch,
       stance: state.stance,
       holding: heldItem,
+      tags: tagScore,
+      outs: outScore,
+      arena: inArena,
       space: mySpace
     });
   } catch {}
@@ -1299,7 +1305,7 @@ function connect() {
   channel.on("broadcast", { event: "tag" }, ({ payload }) => {
     if (!payload || payload.by !== selfRealtimeId()) return;
     addFeed("You tagged " + (payload.victimName || "someone") + "!");
-    if (payload.arena) { tagScore++; refreshArenaScore(); }
+    if (payload.arena) { tagScore++; refreshArenaScore(); try { sendState(true); } catch (e) {} }
   });
 
   channel.on("presence", { event: "sync" }, () => syncPresence());
@@ -1453,6 +1459,9 @@ function sendState(force = false) {
       pitch: state.pitch,
       stance: state.stance,
       holding: heldItem,
+      tags: tagScore,
+      outs: outScore,
+      arena: inArena,
       space: mySpace
     }
   });
@@ -1558,6 +1567,7 @@ function updateProjectiles(dt) {
         popSnow(p.mesh.position, p.color); flashHit(p.color);
         var byNm = (peers.get(p.owner) && peers.get(p.owner).name) || "Someone";
         addFeed(inArena ? (byNm + " splatted you!") : (byNm + " got you! \u2744"));
+        if (inArena) { outScore++; refreshArenaScore(); try { sendState(true); } catch (e) {} }
         try { if (channel && connected) channel.send({ type: "broadcast", event: "tag", payload: { by: p.owner, victimName: displayName, arena: inArena } }); } catch (e) {}
         dead = true;
       }
@@ -1745,13 +1755,19 @@ function buildArenaTargets() {
     arenaScoreEl.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 92px);z-index:18;display:none;padding:7px 15px;border-radius:999px;border:1px solid rgba(120,215,166,.5);background:rgba(10,16,18,.82);color:#cdebd9;font:600 13px/1 system-ui,-apple-system,sans-serif;letter-spacing:.05em;pointer-events:none;white-space:nowrap;";
     document.body.appendChild(arenaScoreEl);
   }
+  if (!scoreboardEl) {
+    scoreboardEl = document.createElement("div");
+    scoreboardEl.id = "arenaBoard";
+    scoreboardEl.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 130px);z-index:18;display:none;flex-direction:column;gap:4px;min-width:200px;max-width:78vw;padding:9px 13px;border-radius:12px;border:1px solid rgba(120,215,166,.35);background:rgba(10,16,18,.78);color:#cdebd9;font:600 12px/1.45 system-ui,-apple-system,sans-serif;letter-spacing:.04em;pointer-events:none;";
+    document.body.appendChild(scoreboardEl);
+  }
 }
 function downTarget(t, impactPos, color) {
   try { popSnow(impactPos || new THREE.Vector3(t.x, t.y, t.z), color); } catch (e) {}
   t.alive = false; t.group.visible = false; t.respawnAt = performance.now() + 2200;
 }
 function refreshArenaScore() {
-  if (arenaScoreEl) arenaScoreEl.textContent = "TAGS " + tagScore + "   TARGETS " + arenaScore;
+  if (arenaScoreEl) arenaScoreEl.textContent = "TAGS " + tagScore + "   OUTS " + outScore + "   TARGETS " + arenaScore;
 }
 function hitArenaTarget(t, impactPos, byMe, idx, color) {
   downTarget(t, impactPos, color);
@@ -1777,6 +1793,29 @@ function updateArenaTargets(dt) {
     }
   }
 }
+function renderScoreboard() {
+  if (!scoreboardEl) return;
+  var rows = [{ name: displayName + " (you)", tags: tagScore, outs: outScore }];
+  peers.forEach(function (pl) {
+    var t = pl.tags | 0, o = pl.outs | 0;
+    if (t > 0 || o > 0 || pl.arena) rows.push({ name: pl.name || "Player", tags: t, outs: o });
+  });
+  rows.sort(function (a, b) { return (b.tags - a.tags) || (a.outs - b.outs); });
+  var html = '<div style="opacity:.72;display:flex;justify-content:space-between;gap:16px;"><span>PLAYER</span><span>TAGS \u00b7 OUTS</span></div>';
+  for (var i = 0; i < Math.min(rows.length, 8); i++) {
+    var r = rows[i];
+    var nm = String(r.name).replace(/[<>&"]/g, "");
+    html += '<div style="display:flex;justify-content:space-between;gap:16px;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;">' + nm + '</span><span>' + (r.tags | 0) + ' \u00b7 ' + (r.outs | 0) + '</span></div>';
+  }
+  scoreboardEl.innerHTML = html;
+}
+function updateScoreboard() {
+  if (!inArena || !scoreboardEl || scoreboardEl.style.display === "none") return;
+  var nw = performance.now();
+  if (nw - lastBoardRender < 900) return;
+  lastBoardRender = nw;
+  renderScoreboard();
+}
 function updateArenaZone() {
   const now = hasEntered && state.z > 31.5 && state.z < 55 && Math.abs(state.x) < 17;
   if (now === inArena) return;
@@ -1785,6 +1824,7 @@ function updateArenaZone() {
   if (inArena) { preArenaHeld = heldItem; setHeld("paintgun"); }
   else { setHeld(preArenaHeld); preArenaHeld = null; }
   if (arenaScoreEl) { refreshArenaScore(); arenaScoreEl.style.display = inArena ? "block" : "none"; }
+  if (scoreboardEl) { scoreboardEl.style.display = inArena ? "flex" : "none"; if (inArena) { lastBoardRender = performance.now(); renderScoreboard(); } }
 }
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -1798,6 +1838,7 @@ function animate() {
   updateProjectiles(dt);
   updateArenaZone();
   updateArenaTargets(dt);
+  updateScoreboard();
   updateSnowPuffs(dt);
   updatePaintSplats(dt);
   updateRemotes(dt);
