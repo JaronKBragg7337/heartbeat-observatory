@@ -87,6 +87,7 @@ let propsLoaded = false;
 let wantsConnection = true;
 let activeDoor = null;
 let activePlot = null;
+let activeMind = null;
 let pseudoOn = false;
 const plotList = [];
 let spacesLoaded = false;
@@ -535,7 +536,7 @@ document.addEventListener("keydown", (event) => {
   if (askOverlay && askOverlay.style.display === "flex") return;
 
   if (event.code === "KeyE" || event.code === "Enter") {
-    if (activeDoor || activePlot) {
+    if (activeDoor || activePlot || activeMind) {
       event.preventDefault();
       enterActiveDoor();
       return;
@@ -1984,9 +1985,19 @@ function updateActiveDoor() {
     }
   }
 
-  if (activeDoor === nextDoor && activePlot === nextPlot) return;
+  let nextMind = null;
+  if (!nextDoor && !nextPlot) {
+    const _claude = mindActors.get("claude");
+    if (_claude && _claude.group) {
+      const mdx = state.x - _claude.group.position.x;
+      const mdz = state.z - _claude.group.position.z;
+      if (Math.hypot(mdx, mdz) < 3.0) nextMind = _claude;
+    }
+  }
+  if (activeDoor === nextDoor && activePlot === nextPlot && activeMind === nextMind) return;
   activeDoor = nextDoor;
   activePlot = nextPlot;
+  activeMind = nextMind;
   if (activePlot) {
     showHint(myUserId
       ? "<b>Open plot.</b> Walk up and claim it with a GitHub repo \u2014 it becomes a real building everyone can see."
@@ -2012,6 +2023,10 @@ function updateActiveDoor() {
     doorPromptText.textContent = myUserId
       ? (isTouch ? "Claim this space" : "Press E to claim this space")
       : "Sign in to claim this space";
+    actionButton.disabled = false;
+  } else if (activeMind) {
+    doorPrompt.classList.remove("hidden");
+    doorPromptText.textContent = isTouch ? "Talk to Claude" : "Press E to talk to Claude";
     actionButton.disabled = false;
   } else {
     doorPrompt.classList.add("hidden");
@@ -2365,7 +2380,8 @@ function enterActiveDoor() {
     target.location.assign(activeDoor.path);
     return;
   }
-  if (activePlot) openClaim(activePlot);
+  if (activePlot) { openClaim(activePlot); return; }
+  if (activeMind) { openAsk(); }
 }
 
 // ---- Claimable spaces ----
