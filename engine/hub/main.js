@@ -2595,7 +2595,17 @@ function openAsk() {
 }
 function resetViewportAfterInput(inp) {
   try { if (inp) inp.blur(); } catch (e) {}
-  try { window.scrollTo(0, 0); document.body.scrollTop = 0; if (document.documentElement) document.documentElement.scrollTop = 0; } catch (e) {}
+  try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+  var doReset = function () {
+    try { window.scrollTo(0, 0); } catch (e) {}
+    try { document.body.scrollTop = 0; } catch (e) {}
+    try { if (document.documentElement) document.documentElement.scrollTop = 0; } catch (e) {}
+    try { if (document.scrollingElement) document.scrollingElement.scrollTop = 0; } catch (e) {}
+  };
+  doReset();
+  setTimeout(doReset, 60);
+  setTimeout(doReset, 250);
+  setTimeout(doReset, 450);
 }
 function closeAsk() { askOverlay.style.display = "none"; resetViewportAfterInput(askInput); }
 async function sendAsk() {
