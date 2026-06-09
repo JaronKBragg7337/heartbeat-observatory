@@ -82,6 +82,9 @@ let heldItem = null;
 let viewmodel = null;
 let inArena = false;
 let preArenaHeld = null;
+let arenaTargets = [];
+let arenaScore = 0;
+let arenaScoreEl = null;
 const PAINT_COLORS = [0xe23b4e, 0x36d07a, 0x4a86e8, 0xf2c94c, 0xb24ae8];
 const _vmOff = new THREE.Vector3();
 const projectiles = [];
@@ -1496,6 +1499,14 @@ function updateProjectiles(dt) {
       const dx = p.mesh.position.x - state.x, dy = p.mesh.position.y - (state.y - 0.2), dz = p.mesh.position.z - state.z;
       if (dx * dx + dy * dy + dz * dz < 0.7 * 0.7) { popSnow(p.mesh.position); flashHit(); addFeed("You got snowballed! \u2744"); dead = true; }
     }
+    if (!dead && arenaTargets.length) {
+      for (var ti = 0; ti < arenaTargets.length; ti++) {
+        var tg = arenaTargets[ti]; if (!tg.alive) continue;
+        var tdx = p.mesh.position.x - tg.x, tdy = p.mesh.position.y - tg.y, tdz = p.mesh.position.z - tg.z;
+        var rr = tg.r + 0.25;
+        if (tdx * tdx + tdy * tdy + tdz * tdz < rr * rr) { hitArenaTarget(tg, p.mesh.position, p.owner === selfRealtimeId()); dead = true; break; }
+      }
+    }
     if (dead) { scene.remove(p.mesh); if (p.mesh.geometry) p.mesh.geometry.dispose(); projectiles.splice(i, 1); }
   }
 }
@@ -1647,6 +1658,57 @@ function flashGear() {
   el.style.transition = "opacity 0.05s ease"; el.style.opacity = "0.65";
   setTimeout(function () { el.style.transition = "opacity 0.4s ease"; el.style.opacity = "0"; }, 80);
 }
+function buildArenaTargets() {
+  if (arenaTargets.length) return;
+  var spots = [[-13,1.5,40],[13,1.5,40],[0,2.3,47],[-13,1.7,50],[13,1.7,50],[0,1.5,53.5]];
+  var postM = new THREE.MeshStandardMaterial({ color: 0x33403a, roughness: 0.8 });
+  for (var i = 0; i < spots.length; i++) {
+    var sx = spots[i][0], sy = spots[i][1], sz = spots[i][2], r = 0.55;
+    var g = new THREE.Group(); g.position.set(sx, 0, sz);
+    var post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, sy, 8), postM);
+    post.position.y = sy / 2; post.castShadow = true; g.add(post);
+    var ring = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.12, 20), new THREE.MeshStandardMaterial({ color: 0xe0a83a, roughness: 0.6 }));
+    ring.rotation.x = Math.PI / 2; ring.position.y = sy; ring.castShadow = true; g.add(ring);
+    var white = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.62, r * 0.62, 0.14, 20), new THREE.MeshStandardMaterial({ color: 0xf3f6f4, roughness: 0.5 }));
+    white.rotation.x = Math.PI / 2; white.position.y = sy; g.add(white);
+    var dot = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.26, r * 0.26, 0.16, 16), new THREE.MeshStandardMaterial({ color: 0xd6483b, roughness: 0.5 }));
+    dot.rotation.x = Math.PI / 2; dot.position.y = sy; g.add(dot);
+    scene.add(g);
+    arenaTargets.push({ group: g, x: sx, y: sy, z: sz, r: r, alive: true, respawnAt: 0, spawnT: 1 });
+  }
+  if (!arenaScoreEl) {
+    arenaScoreEl = document.createElement("div");
+    arenaScoreEl.id = "arenaScore";
+    arenaScoreEl.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 92px);z-index:18;display:none;padding:7px 15px;border-radius:999px;border:1px solid rgba(120,215,166,.5);background:rgba(10,16,18,.82);color:#cdebd9;font:600 13px/1 system-ui,-apple-system,sans-serif;letter-spacing:.05em;pointer-events:none;white-space:nowrap;";
+    document.body.appendChild(arenaScoreEl);
+  }
+}
+function hitArenaTarget(t, impactPos, byMe) {
+  try { popSnow(impactPos); } catch (e) {}
+  t.alive = false; t.group.visible = false; t.respawnAt = performance.now() + 2200;
+  if (byMe) {
+    arenaScore++;
+    if (arenaScoreEl) arenaScoreEl.textContent = "ARENA: " + arenaScore;
+    addFeed("Target hit! +1");
+  }
+}
+function updateArenaTargets(dt) {
+  if (!arenaTargets.length) return;
+  var now = performance.now();
+  for (var i = 0; i < arenaTargets.length; i++) {
+    var t = arenaTargets[i];
+    if (!t.alive) {
+      if (now >= t.respawnAt) { t.alive = true; t.group.visible = true; t.spawnT = 0; t.group.scale.setScalar(0.25); }
+      continue;
+    }
+    if (t.spawnT < 0.3) {
+      t.spawnT += dt;
+      var k = t.spawnT / 0.3; if (k > 1) k = 1;
+      var sc = 0.25 + 0.75 * (1 - (1 - k) * (1 - k));
+      t.group.scale.setScalar(k >= 1 ? 1 : sc);
+    }
+  }
+}
 function updateArenaZone() {
   const now = hasEntered && state.z > 31.5;
   if (now === inArena) return;
@@ -1654,6 +1716,7 @@ function updateArenaZone() {
   flashGear();
   if (inArena) { preArenaHeld = heldItem; setHeld("paintgun"); }
   else { setHeld(preArenaHeld); preArenaHeld = null; }
+  if (arenaScoreEl) { arenaScoreEl.textContent = "ARENA: " + arenaScore; arenaScoreEl.style.display = inArena ? "block" : "none"; }
 }
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -1666,6 +1729,7 @@ function animate() {
   updateViewmodel();
   updateProjectiles(dt);
   updateArenaZone();
+  updateArenaTargets(dt);
   updateSnowPuffs(dt);
   updateRemotes(dt);
   updateMinds();
@@ -3002,6 +3066,7 @@ function buildArena() {
   var blocks = [[-8, 38, 3, 1.2, 1.5], [8, 38, 3, 1.2, 1.5], [0, 44, 2.2, 1.6, 2.2], [-10, 49, 2.6, 1.3, 2.6], [10, 49, 2.6, 1.3, 2.6], [0, 52.5, 6, 1.0, 1.2]];
   for (var bi = 0; bi < blocks.length; bi++) { var b = blocks[bi]; addBox(b[0], b[3] / 2, b[1], b[2], b[3], b[4], cover); }
   addTree(-4, 28); addTree(4, 28); addTree(-6, 29.5); addTree(6, 29.5);
+  buildArenaTargets();
 }
 
 function buildDoorBuilding(door) {
