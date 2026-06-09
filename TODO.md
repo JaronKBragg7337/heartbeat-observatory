@@ -52,3 +52,25 @@ No known Engine hub blockers are open. The next work, in build order:
 - The Engine loads the lightweight walkable hub at `/engine` (phones + computers). Identity comes from the signed-in account; Unity is retired; the standalone `/world` page was removed.
 - News feed is live (Perplexity) and refreshes at most about 4 times a day (6-hour edge cache) to limit credit spend. Display names sync across Social and the world. Perplexity is the first connected mind (current events).
 - **No API keys are public.** Every page's client uses only the Supabase *publishable* key, which is designed to be public and is limited by row-level security. All real secrets — Perplexity, GitHub, Vercel, the other minds — live only in Vercel's environment or in private hand-offs, never in this repo.
+
+## Open follow-ups — multiplayer build sprint (newest)
+From live two-person testing, roughly by leverage.
+- [ ] **Admin allowlist (build permissions):** restrict `place_prop`/`remove_prop` to specific `auth_user_id`s (the core team's three accounts). Everyone else explores; only admins build. Need the third profile's id. Fixes "anyone signed in can build."
+- [ ] **Admin override removal:** let admins remove **any** prop (not just their own) so a flooded area can be cleared. Removal is currently owner-only by design.
+- [ ] **Per-user prop cap (spam guard):** cap props per owner (~60) in `place_prop` so one person cannot flood the world (a road got spammed with chairs in testing). Pairs with admin work.
+- [ ] **Bug — held item vanishes on throw:** holding coffee/ball/balloon then throwing a snowball makes the held item disappear until re-selected. Reproduce, then fix; the throw path does not currently modify `heldItem`/viewmodel, so cause is unknown.
+- [ ] **Bug — remote movement glitches spot-to-spot:** smooth/interpolate remote positions; check realtime state cadence and the lerp in `updateRemotes`.
+- [ ] **Verify prop remove realtime:** confirm the `world_props` DELETE event removes the prop on every other client every time (was "kind of working"). Consider `replica identity full` if old-row id is missing.
+- [ ] **Fence / Path two-point tool:** line tools need a tap-start / tap-end mode distinct from single-tap props — add a "structures" sub-mode.
+- [ ] **Café counter as a placeable:** carries a solid collider; placement + removal needs collider cleanup so removed counters do not leave invisible walls.
+- [ ] **Build-mode look-while-placing (desktop):** mobile drag-look works; desktop look is off (pointer-lock vs DOM-button conflict). Ghost preview mitigates; revisit.
+- [ ] **Held-item viewmodel polish:** per-aspect framing (portrait vs landscape); possibly a subtle hand so items don't float.
+
+## Done in the world — build sprint (cleared)
+- [x] **In-world Build Mode** with live ghost placement preview; props persist in `world_props` and sync live to all clients.
+- [x] **Prop catalog** (table/chair/streetlight/planter/tree/bench) walk-and-place.
+- [x] **Day/night cycle** — arcing sun, sky/fog/light shift, lamps at night.
+- [x] **Carryable held items** (coffee/ball/balloon) — first-person viewmodel + synced to others (`holding` on the state broadcast); touch buttons + H key.
+- [x] **Snowball throw** — synced arcing projectile, lands+pops, screen-flash when hit; Throw button + F key. Reusable projectile/hit/sync core for future arcade games.
+- [x] **Homes face the plaza** + **remove-my-home** (release) in Settings.
+- [x] **world_props added to the Supabase realtime publication** so placements/removals broadcast live.
