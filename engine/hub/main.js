@@ -82,6 +82,10 @@ let heldItem = null;
 let viewmodel = null;
 const _vmOff = new THREE.Vector3();
 const projectiles = [];
+const arcadeTargets = [];
+let arcadeScore = 0;
+let arcadeHud = null;
+const ARCADE = { x: 0, z: 7 };
 const snowPuffs = [];
 let lastThrow = 0;
 let propsLoaded = false;
@@ -255,6 +259,7 @@ welcomeName.textContent = displayName;
 actionButton.disabled = true;
 renderAppearanceControls();
 buildTown();
+buildArcade();
 initWorld();
 // ---- room + nudge state (must exist before animate() starts the render loop) ----
 const nudgeShown = { ghost: false, plot: false };
@@ -1479,6 +1484,65 @@ function popSnow(pos) {
     snowPuffs.push({ mesh: f, life: 0, vy: 0.4 + Math.random() * 0.6 });
   }
 }
+function makeTarget() {
+  const g = new THREE.Group();
+  const ring = (r, c, z) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.08, 24), new THREE.MeshStandardMaterial({ color: c, roughness: 0.55 }));
+    m.rotation.x = Math.PI / 2; m.position.z = z; m.castShadow = false; g.add(m);
+  };
+  ring(0.55, 0xf4f4f4, 0); ring(0.37, 0xe23b4e, 0.03); ring(0.17, 0xf4f4f4, 0.06);
+  return g;
+}
+function makeArcadeSign(text) {
+  const cv = document.createElement("canvas"); cv.width = 512; cv.height = 128;
+  const x = cv.getContext("2d");
+  x.fillStyle = "#11181d"; x.fillRect(0, 0, 512, 128);
+  x.strokeStyle = "#3a99ff"; x.lineWidth = 8; x.strokeRect(6, 6, 500, 116);
+  x.fillStyle = "#eaf3ff"; x.font = "bold 54px system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+  x.fillText(text, 256, 64);
+  const tex = new THREE.CanvasTexture(cv); tex.anisotropy = 4;
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 0.675), new THREE.MeshBasicMaterial({ map: tex }));
+  mesh.castShadow = false; return mesh;
+}
+function ensureArcadeHud() {
+  if (arcadeHud) return;
+  arcadeHud = document.createElement("div");
+  arcadeHud.id = "arcadeHud";
+  arcadeHud.style.cssText = "position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:55;display:none;background:rgba(10,16,20,0.82);border:1px solid #2c3940;border-radius:10px;padding:7px 14px;color:#eaf3ff;font:600 14px/1.2 system-ui,sans-serif;text-align:center;pointer-events:none;transition:border-color 0.16s ease;";
+  document.body.appendChild(arcadeHud);
+  updateArcadeHud(false);
+}
+function updateArcadeHud(flash) {
+  if (!arcadeHud) return;
+  arcadeHud.innerHTML = "Throw Range &nbsp;&middot;&nbsp; Hits: <b>" + arcadeScore + "</b>";
+  if (flash) { arcadeHud.style.borderColor = "#3a99ff"; setTimeout(function () { if (arcadeHud) arcadeHud.style.borderColor = "#2c3940"; }, 160); }
+}
+function buildArcade() {
+  const cx = ARCADE.x, cz = ARCADE.z;
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(5.5, 5.5, 0.06, 32), new THREE.MeshStandardMaterial({ color: 0x243038, roughness: 0.95 }));
+  pad.position.set(cx, 0.03, cz); pad.receiveShadow = true; scene.add(pad);
+  const sign = makeArcadeSign("THROW RANGE");
+  sign.position.set(cx, 3.0, cz); scene.add(sign);
+  const sign2 = makeArcadeSign("THROW RANGE");
+  sign2.position.set(cx, 3.0, cz); sign2.rotation.y = Math.PI; scene.add(sign2);
+  const spots = [[-4, 1.6], [-2, 2.15], [0, 1.55], [2, 2.15], [4, 1.6]];
+  for (const sp of spots) {
+    const g = makeTarget();
+    g.position.set(cx + sp[0], sp[1], cz);
+    scene.add(g);
+    arcadeTargets.push({ group: g, x: cx + sp[0], y: sp[1], z: cz, r: 0.6, alive: true, respawnAt: 0 });
+  }
+  ensureArcadeHud();
+}
+function updateArcade() {
+  const now = performance.now();
+  for (const tg of arcadeTargets) {
+    if (!tg.alive && now >= tg.respawnAt) { tg.alive = true; tg.group.visible = true; }
+  }
+  if (!arcadeHud) return;
+  const near = hasEntered && !inRoom && Math.hypot(state.x - ARCADE.x, state.z - ARCADE.z) < 12;
+  arcadeHud.style.display = near ? "block" : "none";
+}
 function updateProjectiles(dt) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
@@ -1486,11 +1550,23 @@ function updateProjectiles(dt) {
     p.mesh.position.addScaledVector(p.vel, dt);
     p.life += dt;
     let dead = false;
-    if (p.mesh.position.y <= 0.13) { popSnow(p.mesh.position); dead = true; }
-    else if (p.life > 4.5) { dead = true; }
-    else if (p.owner !== selfRealtimeId() && hasEntered) {
-      const dx = p.mesh.position.x - state.x, dy = p.mesh.position.y - (state.y - 0.2), dz = p.mesh.position.z - state.z;
-      if (dx * dx + dy * dy + dz * dz < 0.7 * 0.7) { popSnow(p.mesh.position); flashHit(); addFeed("You got snowballed! \u2744"); dead = true; }
+    for (const tg of arcadeTargets) {
+      if (!tg.alive) continue;
+      const tdx = p.mesh.position.x - tg.x, tdy = p.mesh.position.y - tg.y, tdz = p.mesh.position.z - tg.z;
+      if (tdx * tdx + tdy * tdy + tdz * tdz < tg.r * tg.r) {
+        popSnow(p.mesh.position);
+        tg.alive = false; tg.group.visible = false; tg.respawnAt = performance.now() + 1200;
+        if (p.owner === selfRealtimeId()) { arcadeScore++; updateArcadeHud(true); }
+        dead = true; break;
+      }
+    }
+    if (!dead) {
+      if (p.mesh.position.y <= 0.13) { popSnow(p.mesh.position); dead = true; }
+      else if (p.life > 4.5) { dead = true; }
+      else if (p.owner !== selfRealtimeId() && hasEntered) {
+        const dx = p.mesh.position.x - state.x, dy = p.mesh.position.y - (state.y - 0.2), dz = p.mesh.position.z - state.z;
+        if (dx * dx + dy * dy + dz * dz < 0.7 * 0.7) { popSnow(p.mesh.position); flashHit(); addFeed("You got snowballed! \u2744"); dead = true; }
+      }
     }
     if (dead) { scene.remove(p.mesh); if (p.mesh.geometry) p.mesh.geometry.dispose(); projectiles.splice(i, 1); }
   }
@@ -1635,6 +1711,7 @@ function animate() {
   updateCamera(dt);
   updateViewmodel();
   updateProjectiles(dt);
+  updateArcade();
   updateSnowPuffs(dt);
   updateRemotes(dt);
   updateMinds();
