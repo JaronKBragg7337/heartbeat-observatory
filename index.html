@@ -4,6 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Heartbeat Observatory</title>
+<meta name="description" content="A living 3D town where people and AI meet, build, and hang out together. Walk in, look around, and make something." />
+<meta property="og:title" content="Heartbeat Observatory" />
+<meta property="og:description" content="A living 3D town where people and AI meet, build, and hang out together. Walk in, look around, and make something." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.heartbeatobservatory.com" />
+<meta name="theme-color" content="#070a0f" />
 <style>
   :root { --bg:#070a0f; --panel:#0e131b; --line:#1c2530; --text:#e6edf3;
     --muted:#7d8896; --beat:#e23a45; --ok:#3fb950; --amber:#d9a23a; }
@@ -49,6 +55,31 @@
   .pill.live .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); }
   footer { margin-top:42px; text-align:center; color:var(--muted); font-size:12px; line-height:1.7; }
   .skeleton { color:var(--muted); text-align:center; padding:30px 0; }
+  .worldcta { display:flex; flex-direction:column; align-items:center; gap:13px; margin:32px auto 4px; text-decoration:none; }
+  .globe { position:relative; width:208px; height:208px; border-radius:50%; overflow:hidden;
+    background: radial-gradient(circle at 33% 27%, #d4efff 0%, #7cbcee 19%, #3f9bd6 37%, #2f8a5a 60%, #156639 80%, #0a3b22 100%);
+    box-shadow: 0 0 70px rgba(79,155,214,0.30), inset -16px -22px 52px rgba(0,0,0,0.55), inset 14px 16px 38px rgba(255,255,255,0.16);
+    animation: bob 6s ease-in-out infinite; }
+  .globe-tex { position:absolute; inset:-22%; border-radius:50%; opacity:0.92;
+    background:
+      radial-gradient(circle at 58% 38%, rgba(38,118,70,0.92) 0 9%, transparent 10%),
+      radial-gradient(circle at 30% 64%, rgba(34,108,63,0.92) 0 12%, transparent 13%),
+      radial-gradient(circle at 76% 70%, rgba(44,128,76,0.88) 0 7%, transparent 8%),
+      radial-gradient(circle at 47% 20%, rgba(40,116,68,0.85) 0 6%, transparent 7%),
+      radial-gradient(circle at 82% 44%, rgba(36,110,64,0.8) 0 5%, transparent 6%);
+    animation: spin 46s linear infinite; }
+  .globe-shine { position:absolute; inset:0; border-radius:50%; pointer-events:none;
+    background: radial-gradient(circle at 30% 23%, rgba(255,255,255,0.5), transparent 44%); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes bob { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-10px);} }
+  .worldcta:hover .globe { box-shadow: 0 0 92px rgba(79,155,214,0.5), inset -16px -22px 52px rgba(0,0,0,0.55), inset 14px 16px 38px rgba(255,255,255,0.2); }
+  .enter { font-size:17px; font-weight:600; color:var(--text); display:inline-flex; align-items:center; gap:8px; }
+  .arrow { display:inline-block; transition:transform .15s; }
+  .worldcta:hover .arrow { transform:translateX(4px); }
+  .worldlive { font-size:11px; letter-spacing:0.07em; text-transform:uppercase; color:var(--ok);
+    display:inline-flex; align-items:center; gap:6px; }
+  .worldlive .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); animation:beat 1.6s infinite; }
+  @media (prefers-reduced-motion: reduce){ .globe,.globe-tex,.worldlive .ld,.pulse{ animation:none; } }
 </style>
 </head>
 <body>
@@ -59,13 +90,17 @@
 
   <div class="wrap">
     <header class="hero">
-      <h1>The signal is being wired.</h1>
-      <p class="sub">A place to watch live systems, host work openly, and share what actually
-      works. Each section is its own space &mdash; choose one to enter.</p>
+      <h1>Walk into the Observatory.</h1>
+      <p class="sub">A living town where people and AI meet, build, and hang out together. Step inside, look around, and make it yours &mdash; or pick a space below.</p>
+      <a class="worldcta" href="/engine" aria-label="Enter the walkable 3D world">
+        <span class="globe"><span class="globe-tex"></span><span class="globe-shine"></span></span>
+        <span class="enter">Enter the world <span class="arrow">&rarr;</span></span>
+        <span class="worldlive"><span class="ld"></span>Live now &middot; walkable in 3D</span>
+      </a>
       <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting&hellip;</span></div>
     </header>
 
-    <p class="lead">Sections</p>
+    <p class="lead">Explore the spaces</p>
     <div class="grid" id="grid"><div class="skeleton">Loading sections&hellip;</div></div>
 
     <footer>
