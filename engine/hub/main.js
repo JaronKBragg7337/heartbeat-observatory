@@ -158,7 +158,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 
 const clock = new THREE.Clock();
-const worldBounds = 30;
+const worldBounds = 56;
 const playerRadius = 0.35;
 const standingEyeHeight = 1.65;
 const crouchEyeHeight = 1.15;
@@ -1726,9 +1726,9 @@ function updateLocal(dt) {
 function updateCamera(dt) {
   if (!hasEntered) {
     previewAngle += dt * 0.085;
-    const radius = 24;
-    camera.position.set(Math.sin(previewAngle) * radius, 15.5, Math.cos(previewAngle) * radius);
-    camera.lookAt(0, 1.2, 0);
+    const radius = 44;
+    camera.position.set(Math.sin(previewAngle) * radius, 28, 12 + Math.cos(previewAngle) * radius);
+    camera.lookAt(0, 1.2, 12);
     return;
   }
   camera.position.set(state.x, state.y, state.z);
@@ -2880,7 +2880,7 @@ function buildTown() {
   scene.add(sunDisc);
 
   const groundMaterial = makeGroundMaterial();
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(64, 64), groundMaterial);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), groundMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
@@ -2916,7 +2916,8 @@ function buildTown() {
     roughness: 0.82
   });
   addBox(0, 1, -31, 62, 2, 0.5, wallMaterial);
-  addBox(0, 1, 31, 62, 2, 0.5, wallMaterial);
+  addBox(-16.75, 1, 31, 28.5, 2, 0.5, wallMaterial);
+  addBox(16.75, 1, 31, 28.5, 2, 0.5, wallMaterial);
   addBox(-31, 1, 0, 0.5, 2, 62, wallMaterial);
   addBox(31, 1, 0, 0.5, 2, 62, wallMaterial);
 
@@ -2941,6 +2942,20 @@ function buildTown() {
     [-5, 14], [5, 14], [-7, 25], [7, -26]
   ];
   for (const t of treeSpots) addTree(t[0], t[1]);
+  buildArena();
+}
+
+function buildArena() {
+  var z1 = 55, ax = 17, cz = 43, depth = 24;
+  addGroundRect(0, cz, 38, 28, 0x3a4a3f);
+  var aw = new THREE.MeshStandardMaterial({ color: 0x4a5a50, roughness: 0.85 });
+  addBox(0, 1.4, z1, ax * 2, 2.8, 0.5, aw);
+  addBox(-ax, 1.4, cz, 0.5, 2.8, depth, aw);
+  addBox(ax, 1.4, cz, 0.5, 2.8, depth, aw);
+  var cover = new THREE.MeshStandardMaterial({ color: 0x6a7b6e, roughness: 0.8 });
+  var blocks = [[-8, 38, 3, 1.2, 1.5], [8, 38, 3, 1.2, 1.5], [0, 44, 2.2, 1.6, 2.2], [-10, 49, 2.6, 1.3, 2.6], [10, 49, 2.6, 1.3, 2.6], [0, 52.5, 6, 1.0, 1.2]];
+  for (var bi = 0; bi < blocks.length; bi++) { var b = blocks[bi]; addBox(b[0], b[3] / 2, b[1], b[2], b[3], b[4], cover); }
+  addTree(-4, 28); addTree(4, 28); addTree(-6, 29.5); addTree(6, 29.5);
 }
 
 function buildDoorBuilding(door) {
