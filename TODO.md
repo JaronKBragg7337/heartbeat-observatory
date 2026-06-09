@@ -1,7 +1,7 @@
 # Heartbeat Observatory — MASTER BUILD PLAN
 _Single source of truth, worked top-down. The detailed sprint log + older backlog are kept below this section so nothing is lost._
 
-## NOW — pre-promotion critical path (the gate before promoting on GitHub)
+## NOW — pre-launch critical path (the gate before promoting the live site publicly — e.g. an X post driving people to heartbeatobservatory.com; the repo is already public)
 Ordered; top first.
 1. **World-forward home page (Tier 1)** — landing leads with the walkable world: a floating globe hero that doubles as "Enter the world," plain-language intro (replacing "the signal is being wired"), section cards kept below as secondary doors; + SEO/OpenGraph meta for clean shared-link previews. _(in progress)_
 2. **In-world first-run onboarding overlay** — what this is + move/look/jump + interact + throw. Zero API cost, works for everyone, dismissible, remembers it was seen.
