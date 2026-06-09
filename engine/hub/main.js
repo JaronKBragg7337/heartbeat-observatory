@@ -54,6 +54,7 @@ const peerColors = ["#4fa3ff", "#5fd38d", "#f6b45b", "#e36d7c", "#a67cff", "#47c
 const appearancePatterns = new Set(["plain", "stripe", "band", "glow"]);
 let myId = null;
 let myUserId = null;
+let isAdmin = false;
 let guestId = null;
 let visitorKind = "resident";
 let myColor = peerColors[0];
@@ -717,6 +718,7 @@ function transientPlayerFromPresence(meta) {
 
 async function loadIdentity() {
   try {
+    isAdmin = false;
     const { data: { session } } = await ensureSupabase().auth.getSession();
     if (session?.user?.id) {
       myUserId = session.user.id;
@@ -724,6 +726,10 @@ async function loadIdentity() {
       guestId = null;
       visitorKind = "resident";
       wantsSelfPresence = true;
+      try {
+        const { data: adminRow } = await supa.from("world_admins").select("auth_user_id").eq("auth_user_id", myUserId).maybeSingle();
+        isAdmin = !!adminRow;
+      } catch (e) { isAdmin = false; }
       if (hintedUserId && hintedUserId !== myUserId) {
         addFeed("Signed-in account verified");
       }
@@ -1217,7 +1223,7 @@ function toggleSettings(open) {
   settingsOpen = open;
   settingsPanel.classList.toggle("hidden", !settingsOpen);
   if (removeHomeButton) removeHomeButton.style.display = (settingsOpen && myHasHome) ? "block" : "none";
-  if (buildModeButton) buildModeButton.style.display = (settingsOpen && myUserId) ? "block" : "none";
+  if (buildModeButton) buildModeButton.style.display = (settingsOpen && myUserId && isAdmin) ? "block" : "none";
   if (settingsOpen) {
     clearMovementInput();
     if (document.pointerLockElement) {
