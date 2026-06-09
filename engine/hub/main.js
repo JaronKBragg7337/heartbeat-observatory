@@ -1703,9 +1703,8 @@ function pickSky(e) {
 }
 function updateDayNight(dt) {
   if (!sunLight) return;
-  dayClock += dt;
   const CYCLE = 300;
-  const t = (dayClock % CYCLE) / CYCLE;
+  const t = ((Date.now() / 1000) % CYCLE) / CYCLE;
   const a = t * Math.PI * 2;
   const e = Math.sin(a);
   const horiz = Math.cos(a);
