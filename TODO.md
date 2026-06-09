@@ -7,8 +7,8 @@ Ordered; top first.
 2. **In-world first-run onboarding overlay** — what this is + move/look/jump + interact + throw. Zero API cost, works for everyone, dismissible, remembers it was seen.
 3. **Claude as the in-world guide** — named as Claude, front-and-center; a walkable character you approach and talk to; scoped to the world + friendly all-ages knowledge via a character brief (a frame, not a word-for-word script); served from a backend function (key stays server-side); cost guards = small model + short answers + per-person rate limit + sign-in gate + cached common answers.
 4. **Public-click rough edges** (don't embarrass a first-time visitor):
-   - hide the Build button from non-admin signed-in users
-   - bug: held item vanishes when that player throws a snowball (reproduce -> fix)
+   - ~~hide the Build button from non-admin signed-in users~~ DONE — button renders only for admins
+   - ~~bug: held item vanishes when that player throws a snowball~~ FIXED — root cause was holding never being applied in `applyPeerState` (sync was incidental, not state-driven) plus a wipe path in `reconcileCharacter`; both corrected
    - bug: remote movement jitter moving spot-to-spot (reproduce -> smooth)
    - verify placed-prop removal syncs to every client every time
    - guest vs account clarity: what you can do signed-out, and how to sign up to appear / get a space
@@ -25,7 +25,7 @@ Ordered; top first.
 - **Automated maintenance loop (stand up AT promotion time, not before):** once the site is promoted and real people may be in the world, stop doing live edits mid-conversation. Instead, Claude Code (e.g. hourly) and Codex (offset schedule) each read this TODO, do the next item, and commit to the repo — staggered so they never touch the same files at the same time — paired with scheduled downtime windows so players aren't disrupted. Jaron + Claude (this chat) orchestrate what's on the TODO; the scheduled agents execute it. Runs via Claude Code on the Max subscription (confirm current terms first). Compliance rule: follow third-party terms directly, never evade; where their rules don't fit, build our own equivalent guardrail.
 - Tier 2 home: the walkable world itself becomes the landing; sections become buildings you walk into (already half-there via claimable plots).
 - Social page build-out (its own space; same all-ages tone rules as the guide).
-- Arcade reskins off the projectile/hit/sync core: paintball, dodgeball, basketball hoop, target range, water balloons.
+- Arcade reskins off the projectile/hit/sync core — **paintball + target range are LIVE in the arena**; still to build: dodgeball, basketball hoop, water balloons.
 - Themed zones assembled from catalog + carry + effects (cafe, arcade).
 - Fence/Path two-point "structures" tool; cafe-counter as a placeable (collider cleanup on remove).
 
@@ -40,6 +40,7 @@ Ordered; top first.
 - Name profanity handling; project-space detail doors; immersive section transitions; WebXR/VR; movement-captured roaming AIs (laptop/RTX lane).
 
 ## DONE — recent world sprint
+- **Arena sprint (June 9):** PvP paintball arena (south doorway, paintgun gear-swap), shooting gallery (6 splat/score/respawn targets), shared multiplayer (targets sync via `thit`, mutual named tags via `tag`, TAGS · TARGETS chip), paint-true effects (colored pops, fading ground splats, tinted hit flash, shooter-colored target splats on all clients), iOS keyboard auto-zoom fix, welcome overlay now mentions the arena, held-item sync root-cause fix.
 - In-world Build Mode + live ghost preview; code-built prop catalog; live prop realtime.
 - Day/night cycle. Carryable held items (synced, shown in front of the avatar, first-person viewmodel). Snowball throw — the reusable projectile/hit/sync core, screen-flash on hit.
 - Homes face the plaza + remove-my-home. Admin build permissions (allowlist of the 3 accounts, override-removal, 60-prop cap per person).
@@ -107,7 +108,7 @@ From live two-person testing, roughly by leverage.
 - [x] **Admin allowlist (build permissions):** restrict `place_prop`/`remove_prop` to specific `auth_user_id`s (the core team's three accounts). Everyone else explores; only admins build. Need the third profile's id. Fixes "anyone signed in can build."
 - [x] **Admin override removal:** let admins remove **any** prop (not just their own) so a flooded area can be cleared. Removal is currently owner-only by design.
 - [x] **Per-user prop cap (spam guard):** cap props per owner (~60) in `place_prop` so one person cannot flood the world (a road got spammed with chairs in testing). Pairs with admin work.
-- [ ] **Bug — held item vanishes on throw:** holding coffee/ball/balloon then throwing a snowball makes the held item disappear until re-selected. Reproduce, then fix; the throw path does not currently modify `heldItem`/viewmodel, so cause is unknown.
+- [x] **Bug — held item vanishes on throw — FIXED:** root cause was structural, not the throw — `applyPeerState` never applied `holding` from state broadcasts (items only updated on remote creation / incidental re-renders), and `reconcileCharacter` could wipe an item by falling back to a DB row with no holding field. Holding now applies on every state message; reconcile only updates from live peer data.
 - [ ] **Bug — remote movement glitches spot-to-spot:** smooth/interpolate remote positions; check realtime state cadence and the lerp in `updateRemotes`.
 - [ ] **Verify prop remove realtime:** confirm the `world_props` DELETE event removes the prop on every other client every time (was "kind of working"). Consider `replica identity full` if old-row id is missing.
 - [ ] **Fence / Path two-point tool:** line tools need a tap-start / tap-end mode distinct from single-tap props — add a "structures" sub-mode.
