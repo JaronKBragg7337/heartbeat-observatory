@@ -65,7 +65,7 @@ All live in `engine/hub/` and synced through Supabase. Built via blind-deploy wi
 
 ## Known bugs / rough edges (open — tracked in `TODO.md`)
 Honest list from live two-person testing, not yet fixed:
-- **No build permissions yet:** *any signed-in account* can place props (not just the core team), and removal is owner-only — so one person can flood an area and others cannot clear it. Planned fix: an **admin allowlist** + **admin override removal** + an optional per-user prop cap.
+- **Build permissions — RESOLVED:** building is now limited to an **admin allowlist** (`world_admins` table; the three core accounts). Non-admins explore but cannot place/remove. Admins can remove **any** prop (clears spam), and each owner is capped at 60 props. *(Minor follow-up: hide the Build-mode button for non-admin signed-in users; it currently shows but rejects with a friendly message.)*
 - **Held item appears to vanish when that player throws a snowball**, returning when they switch held items. Reported in co-testing; not reproduced yet (the throw path does not touch the held item). Needs a clean repro.
 - **Remote movement can glitch** when another player moves quickly between spots — remote position smoothing to revisit.
 - **Prop remove sync is intermittent** ("kind of working") — verify the realtime DELETE path removes the prop on every other client reliably.
