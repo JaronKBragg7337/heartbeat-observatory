@@ -8,9 +8,9 @@ Ordered; top first.
 3. **Claude as the in-world guide** — named as Claude, front-and-center; a walkable character you approach and talk to; scoped to the world + friendly all-ages knowledge via a character brief (a frame, not a word-for-word script); served from a backend function (key stays server-side); cost guards = small model + short answers + per-person rate limit + sign-in gate + cached common answers.
 4. **Public-click rough edges** (don't embarrass a first-time visitor):
    - ~~hide the Build button from non-admin signed-in users~~ DONE — button renders only for admins
+   - ~~bug: remote movement jitter moving spot-to-spot~~ FIXED — snapshot interpolation
    - ~~bug: held item vanishes when that player throws a snowball~~ FIXED — root cause was holding never being applied in `applyPeerState` (sync was incidental, not state-driven) plus a wipe path in `reconcileCharacter`; both corrected
-   - bug: remote movement jitter moving spot-to-spot (reproduce -> smooth)
-   - verify placed-prop removal syncs to every client every time
+      - verify placed-prop removal syncs to every client every time
    - guest vs account clarity: what you can do signed-out, and how to sign up to appear / get a space
 5. **Repo storefront (README)** — hook up top: one line on what it is, a screenshot or short clip, the live link, and "why it's different" (humans + real AIs sharing a place, honesty principle, built live). Dev detail moves below the pitch.
 
@@ -40,7 +40,7 @@ Ordered; top first.
 - Name profanity handling; project-space detail doors; immersive section transitions; WebXR/VR; movement-captured roaming AIs (laptop/RTX lane).
 
 ## DONE — recent world sprint
-- **Arena sprint (June 9):** PvP paintball arena (south doorway, paintgun gear-swap), shooting gallery (6 splat/score/respawn targets), shared multiplayer (targets sync via `thit`, mutual named tags via `tag`, TAGS · TARGETS chip), paint-true effects (colored pops, fading ground splats, tinted hit flash, shooter-colored target splats on all clients), iOS keyboard auto-zoom fix, welcome overlay now mentions the arena, held-item sync root-cause fix, solid geometry (town perimeter walls, arena walls, and cover blocks gained real collision for both movement and projectiles — fixed walking/shooting through walls and escaping the map; arena zone is now the true rectangle, not a half-plane), live ranked PvP scoreboard (TAGS desc / OUTS asc, scores ride state broadcasts so late joiners see current standings; splats in the arena count as OUTS; chip now TAGS · OUTS · TARGETS).
+- **Arena sprint (June 9):** PvP paintball arena (south doorway, paintgun gear-swap), shooting gallery (6 splat/score/respawn targets), shared multiplayer (targets sync via `thit`, mutual named tags via `tag`, TAGS · TARGETS chip), paint-true effects (colored pops, fading ground splats, tinted hit flash, shooter-colored target splats on all clients), iOS keyboard auto-zoom fix, welcome overlay now mentions the arena, held-item sync root-cause fix, solid geometry (town perimeter walls, arena walls, and cover blocks gained real collision for both movement and projectiles — fixed walking/shooting through walls and escaping the map; arena zone is now the true rectangle, not a half-plane), live ranked PvP scoreboard (TAGS desc / OUTS asc, scores ride state broadcasts so late joiners see current standings; splats in the arena count as OUTS; chip now TAGS · OUTS · TARGETS), remote-movement snapshot interpolation, arena venue pass (court markings, glowing wall stripe, corner floodlight posts, night floodlight, PAINTBALL ARENA doorway sign).
 - In-world Build Mode + live ghost preview; code-built prop catalog; live prop realtime.
 - Day/night cycle. Carryable held items (synced, shown in front of the avatar, first-person viewmodel). Snowball throw — the reusable projectile/hit/sync core, screen-flash on hit.
 - Homes face the plaza + remove-my-home. Admin build permissions (allowlist of the 3 accounts, override-removal, 60-prop cap per person).
@@ -109,7 +109,7 @@ From live two-person testing, roughly by leverage.
 - [x] **Admin override removal:** let admins remove **any** prop (not just their own) so a flooded area can be cleared. Removal is currently owner-only by design.
 - [x] **Per-user prop cap (spam guard):** cap props per owner (~60) in `place_prop` so one person cannot flood the world (a road got spammed with chairs in testing). Pairs with admin work.
 - [x] **Bug — held item vanishes on throw — FIXED:** root cause was structural, not the throw — `applyPeerState` never applied `holding` from state broadcasts (items only updated on remote creation / incidental re-renders), and `reconcileCharacter` could wipe an item by falling back to a DB row with no holding field. Holding now applies on every state message; reconcile only updates from live peer data.
-- [ ] **Bug — remote movement glitches spot-to-spot:** smooth/interpolate remote positions; check realtime state cadence and the lerp in `updateRemotes`.
+- [x] **Bug — remote movement glitches spot-to-spot — FIXED:** remote players now render via snapshot interpolation (120ms buffer between their two latest state packets) instead of snap-and-chase lerp; smooth regardless of packet timing, old lerp kept as fallback for DB-driven moves.
 - [ ] **Verify prop remove realtime:** confirm the `world_props` DELETE event removes the prop on every other client every time (was "kind of working"). Consider `replica identity full` if old-row id is missing.
 - [ ] **Fence / Path two-point tool:** line tools need a tap-start / tap-end mode distinct from single-tap props — add a "structures" sub-mode.
 - [ ] **Café counter as a placeable:** carries a solid collider; placement + removal needs collider cleanup so removed counters do not leave invisible walls.
