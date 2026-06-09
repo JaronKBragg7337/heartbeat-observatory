@@ -1765,6 +1765,7 @@ function addMind(m) {
   for (const c of m.mind) seed += c.charCodeAt(0);
   const actor = createMindActor(m);
   actor.seed = (seed % 100) / 100 * Math.PI * 2;
+  actor.mind = m.mind;
   mindActors.set(m.mind, actor);
   scene.add(actor.group);
 }
@@ -1803,6 +1804,11 @@ function updateMinds() {
   if (mindActors.size === 0) return;
   const t = Date.now();
   for (const actor of mindActors.values()) {
+    if (actor.mind === "claude" && askOverlay && askOverlay.style.display === "flex") {
+      const fdx = state.x - actor.group.position.x, fdz = state.z - actor.group.position.z;
+      if (Math.abs(fdx) + Math.abs(fdz) > 0.0001) actor.group.rotation.y = Math.atan2(fdx, fdz);
+      continue;
+    }
     const a = t * 0.00010 + actor.seed;
     const x = Math.sin(a) * 9 + Math.sin(a * 0.6 + actor.seed) * 2.5;
     const z = Math.cos(a * 0.8 + actor.seed) * 7 + Math.cos(a * 0.45) * 2.5;
@@ -2539,6 +2545,7 @@ async function sendAsk() {
     const data = await r.json();
     const reply = (data && data.reply) ? String(data.reply) : "";
     if (reply) pending.textContent = reply;
+    else if (data && data.note === "rate_limited") pending.textContent = "You\u2019ve asked a few times just now, so the guide is taking a short breather. Try again in a bit.";
     else if (data && data.note === "not_configured") pending.textContent = "The guide is offline right now \u2014 check back soon.";
     else pending.textContent = "Couldn't reach the guide just now \u2014 try again in a moment.";
   } catch (e) {
