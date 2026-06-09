@@ -87,6 +87,7 @@ let lastThrow = 0;
 let propsLoaded = false;
 let wantsConnection = true;
 let activeDoor = null;
+let surfaceStatus = {};
 let activePlot = null;
 let activeMind = null;
 let pseudoOn = false;
@@ -171,6 +172,7 @@ const placedProps = [];
 const doors = [
   {
     id: "social",
+    surface: "social",
     label: "Social",
     path: "/social",
     x: -16,
@@ -185,6 +187,7 @@ const doors = [
   },
   {
     id: "projects",
+    surface: "host",
     label: "Projects",
     path: "/projects",
     x: 16,
@@ -199,6 +202,7 @@ const doors = [
   },
   {
     id: "games",
+    surface: "games",
     label: "Games",
     path: "/games",
     x: -16,
@@ -213,6 +217,7 @@ const doors = [
   },
   {
     id: "video",
+    surface: "video",
     label: "Video",
     path: "/video",
     x: 0,
@@ -633,6 +638,7 @@ document.addEventListener("visibilitychange", () => {
 async function initWorld() {
   ensureSupabase();
   await loadIdentity();
+  loadSurfaces();
   if (!mindsLoaded) { mindsLoaded = true; loadMinds(); }
   if (!spacesLoaded) { spacesLoaded = true; loadSpaces(); }
   loadProps();
@@ -1961,6 +1967,15 @@ function maybeGhostNudge() {
   }
 }
 
+async function loadSurfaces() {
+  try {
+    const { data } = await ensureSupabase().from("surfaces").select("key,status");
+    if (data) { const m = {}; for (const r of data) m[r.key] = r.status; surfaceStatus = m; activeDoor = null; }
+  } catch (e) {}
+}
+function doorStatus(door) {
+  return (door && door.surface && surfaceStatus[door.surface]) || "live";
+}
 function updateActiveDoor() {
   if (inRoom) { doorPrompt.classList.add("hidden"); actionButton.disabled = true; return; }
   let nextDoor = null;
@@ -2025,11 +2040,18 @@ function updateActiveDoor() {
   }
 
   if (activeDoor) {
+    const _ds = doorStatus(activeDoor);
     doorPrompt.classList.remove("hidden");
-    doorPromptText.textContent = isTouch
-      ? `Enter ${activeDoor.label}`
-      : `Press E for ${activeDoor.label}`;
-    actionButton.disabled = false;
+    if (_ds === "coming_soon") {
+      doorPromptText.textContent = `${activeDoor.label} (coming soon)`;
+      actionButton.disabled = true;
+    } else if (_ds === "preview") {
+      doorPromptText.textContent = isTouch ? `Enter ${activeDoor.label} (preview)` : `Press E for ${activeDoor.label} (preview)`;
+      actionButton.disabled = false;
+    } else {
+      doorPromptText.textContent = isTouch ? `Enter ${activeDoor.label}` : `Press E for ${activeDoor.label}`;
+      actionButton.disabled = false;
+    }
   } else if (activePlot) {
     doorPrompt.classList.remove("hidden");
     doorPromptText.textContent = myUserId
@@ -2388,6 +2410,7 @@ function forceExitRoom() {
 function enterActiveDoor() {
   if (activeDoor) {
     if (activeDoor.room) { enterRoom(); return; }
+    if (doorStatus(activeDoor) === "coming_soon") { return; }
     const target = window.top || window;
     target.location.assign(activeDoor.path);
     return;
