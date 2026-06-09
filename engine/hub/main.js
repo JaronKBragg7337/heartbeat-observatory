@@ -90,6 +90,7 @@ const PAINT_COLORS = [0xe23b4e, 0x36d07a, 0x4a86e8, 0xf2c94c, 0xb24ae8];
 const _vmOff = new THREE.Vector3();
 const projectiles = [];
 const snowPuffs = [];
+const paintSplats = [];
 let lastThrow = 0;
 let propsLoaded = false;
 let wantsConnection = true;
@@ -933,8 +934,8 @@ function reconcileCharacter(row) {
   remote.target.set(player.x, remoteGroundY(player), player.z);
   remote.targetYaw = player.yaw;
   remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
-  if (remote.heldType !== (player.holding || null)) {
-    remote.heldType = player.holding || null;
+  if (peer && remote.heldType !== (peer.holding || null)) {
+    remote.heldType = peer.holding || null;
     setHeldOnGroup(remote.group, remote.heldType);
   }
 }
@@ -1292,7 +1293,7 @@ function connect() {
   channel.on("broadcast", { event: "thit" }, ({ payload }) => {
     if (!payload || typeof payload.idx !== "number") return;
     var t = arenaTargets[payload.idx];
-    if (t && t.alive) downTarget(t, null);
+    if (t && t.alive) downTarget(t, null, payload.c);
   });
   channel.on("broadcast", { event: "tag" }, ({ payload }) => {
     if (!payload || payload.by !== selfRealtimeId()) return;
@@ -1390,6 +1391,10 @@ function applyPeerState(player) {
   remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
   remote.space = player.space || "town";
   remote.lastUpdate = performance.now();
+  if (remote.heldType !== (player.holding || null)) {
+    remote.heldType = player.holding || null;
+    setHeldOnGroup(remote.group, remote.heldType);
+  }
   if (transient && !wasKnownTransient) renderCharacters();
 }
 
@@ -1460,7 +1465,7 @@ function spawnProjectile(origin, vel, owner, color) {
   mesh.position.copy(origin);
   mesh.castShadow = false;
   scene.add(mesh);
-  projectiles.push({ mesh: mesh, vel: vel.clone(), life: 0, owner: owner });
+  projectiles.push({ mesh: mesh, vel: vel.clone(), life: 0, owner: owner, color: (color === undefined ? 0xffffff : color) });
 }
 function throwSnowball() {
   if (!hasEntered || settingsOpen) return;
@@ -1477,7 +1482,7 @@ function throwSnowball() {
     if (channel && connected) channel.send({ type: "broadcast", event: "throw", payload: { id: selfRealtimeId(), ox: origin.x, oy: origin.y, oz: origin.z, vx: vel.x, vy: vel.y, vz: vel.z, c: pColor } });
   } catch (e) {}
 }
-function flashHit() {
+function flashHit(color) {
   let el = document.getElementById("hitFlash");
   if (!el) {
     el = document.createElement("div");
@@ -1485,16 +1490,42 @@ function flashHit() {
     el.style.cssText = "position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;transition:opacity 0.5s ease;background:radial-gradient(circle, rgba(255,255,255,0) 38%, rgba(150,205,255,0.6) 100%);";
     document.body.appendChild(el);
   }
+  var fr = 150, fg = 205, fb = 255;
+  if (color !== undefined && color !== null && color !== 0xffffff) { fr = (color >> 16) & 255; fg = (color >> 8) & 255; fb = color & 255; }
+  el.style.background = "radial-gradient(circle, rgba(255,255,255,0) 38%, rgba(" + fr + "," + fg + "," + fb + ",0.6) 100%)";
   el.style.transition = "opacity 0.04s ease";
   el.style.opacity = "1";
   setTimeout(function () { el.style.transition = "opacity 0.5s ease"; el.style.opacity = "0"; }, 70);
 }
-function popSnow(pos) {
+function popSnow(pos, color) {
+  const col = (color === undefined || color === null) ? 0xffffff : color;
   for (let k = 0; k < 7; k++) {
-    const f = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 }));
+    const f = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.95 }));
     f.position.set(pos.x + (Math.random() - 0.5) * 0.28, Math.max(0.05, pos.y) + Math.random() * 0.28, pos.z + (Math.random() - 0.5) * 0.28);
     scene.add(f);
     snowPuffs.push({ mesh: f, life: 0, vy: 0.4 + Math.random() * 0.6 });
+  }
+}
+function addPaintSplat(pos, color) {
+  if (color === undefined || color === null || color === 0xffffff) return;
+  const g = new THREE.CircleGeometry(0.22 + Math.random() * 0.18, 14);
+  const m = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.85, depthWrite: false });
+  const sp = new THREE.Mesh(g, m);
+  sp.rotation.x = -Math.PI / 2;
+  sp.rotation.z = Math.random() * Math.PI * 2;
+  sp.position.set(pos.x, 0.02 + (paintSplats.length % 25) * 0.0006, pos.z);
+  scene.add(sp);
+  paintSplats.push({ mesh: sp, life: 0 });
+  if (paintSplats.length > 40) { const old = paintSplats.shift(); scene.remove(old.mesh); old.mesh.geometry.dispose(); old.mesh.material.dispose(); }
+}
+function updatePaintSplats(dt) {
+  for (let i = paintSplats.length - 1; i >= 0; i--) {
+    const sp = paintSplats[i];
+    sp.life += dt;
+    if (sp.life > 7) {
+      sp.mesh.material.opacity = Math.max(0, 0.85 - (sp.life - 7) * 0.57);
+      if (sp.life > 8.5) { scene.remove(sp.mesh); sp.mesh.geometry.dispose(); sp.mesh.material.dispose(); paintSplats.splice(i, 1); }
+    }
   }
 }
 function updateProjectiles(dt) {
@@ -1504,12 +1535,12 @@ function updateProjectiles(dt) {
     p.mesh.position.addScaledVector(p.vel, dt);
     p.life += dt;
     let dead = false;
-    if (p.mesh.position.y <= 0.13) { popSnow(p.mesh.position); dead = true; }
+    if (p.mesh.position.y <= 0.13) { popSnow(p.mesh.position, p.color); addPaintSplat(p.mesh.position, p.color); dead = true; }
     else if (p.life > 4.5) { dead = true; }
     else if (p.owner !== selfRealtimeId() && hasEntered) {
       const dx = p.mesh.position.x - state.x, dy = p.mesh.position.y - (state.y - 0.2), dz = p.mesh.position.z - state.z;
       if (dx * dx + dy * dy + dz * dz < 0.7 * 0.7) {
-        popSnow(p.mesh.position); flashHit();
+        popSnow(p.mesh.position, p.color); flashHit(p.color);
         var byNm = (peers.get(p.owner) && peers.get(p.owner).name) || "Someone";
         addFeed(inArena ? (byNm + " splatted you!") : (byNm + " got you! \u2744"));
         try { if (channel && connected) channel.send({ type: "broadcast", event: "tag", payload: { by: p.owner, victimName: displayName, arena: inArena } }); } catch (e) {}
@@ -1521,7 +1552,7 @@ function updateProjectiles(dt) {
         var tg = arenaTargets[ti]; if (!tg.alive) continue;
         var tdx = p.mesh.position.x - tg.x, tdy = p.mesh.position.y - tg.y, tdz = p.mesh.position.z - tg.z;
         var rr = tg.r + 0.25;
-        if (tdx * tdx + tdy * tdy + tdz * tdz < rr * rr) { hitArenaTarget(tg, p.mesh.position, p.owner === selfRealtimeId(), ti); dead = true; break; }
+        if (tdx * tdx + tdy * tdy + tdz * tdz < rr * rr) { hitArenaTarget(tg, p.mesh.position, p.owner === selfRealtimeId(), ti, p.color); dead = true; break; }
       }
     }
     if (dead) { scene.remove(p.mesh); if (p.mesh.geometry) p.mesh.geometry.dispose(); projectiles.splice(i, 1); }
@@ -1700,18 +1731,18 @@ function buildArenaTargets() {
     document.body.appendChild(arenaScoreEl);
   }
 }
-function downTarget(t, impactPos) {
-  try { popSnow(impactPos || new THREE.Vector3(t.x, t.y, t.z)); } catch (e) {}
+function downTarget(t, impactPos, color) {
+  try { popSnow(impactPos || new THREE.Vector3(t.x, t.y, t.z), color); } catch (e) {}
   t.alive = false; t.group.visible = false; t.respawnAt = performance.now() + 2200;
 }
 function refreshArenaScore() {
   if (arenaScoreEl) arenaScoreEl.textContent = "TAGS " + tagScore + "   TARGETS " + arenaScore;
 }
-function hitArenaTarget(t, impactPos, byMe, idx) {
-  downTarget(t, impactPos);
+function hitArenaTarget(t, impactPos, byMe, idx, color) {
+  downTarget(t, impactPos, color);
   if (byMe) {
     arenaScore++; refreshArenaScore(); addFeed("Target hit! +1");
-    try { if (channel && connected) channel.send({ type: "broadcast", event: "thit", payload: { idx: idx } }); } catch (e) {}
+    try { if (channel && connected) channel.send({ type: "broadcast", event: "thit", payload: { idx: idx, c: color } }); } catch (e) {}
   }
 }
 function updateArenaTargets(dt) {
@@ -1753,6 +1784,7 @@ function animate() {
   updateArenaZone();
   updateArenaTargets(dt);
   updateSnowPuffs(dt);
+  updatePaintSplats(dt);
   updateRemotes(dt);
   updateMinds();
   updateNpcs();
