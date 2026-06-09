@@ -85,6 +85,7 @@ let preArenaHeld = null;
 let arenaTargets = [];
 let arenaScore = 0;
 let arenaScoreEl = null;
+let tagScore = 0;
 const PAINT_COLORS = [0xe23b4e, 0x36d07a, 0x4a86e8, 0xf2c94c, 0xb24ae8];
 const _vmOff = new THREE.Vector3();
 const projectiles = [];
@@ -1288,6 +1289,16 @@ function connect() {
     if (!payload || payload.id === selfRealtimeId()) return;
     spawnProjectile(new THREE.Vector3(payload.ox, payload.oy, payload.oz), new THREE.Vector3(payload.vx, payload.vy, payload.vz), payload.id, payload.c);
   });
+  channel.on("broadcast", { event: "thit" }, ({ payload }) => {
+    if (!payload || typeof payload.idx !== "number") return;
+    var t = arenaTargets[payload.idx];
+    if (t && t.alive) downTarget(t, null);
+  });
+  channel.on("broadcast", { event: "tag" }, ({ payload }) => {
+    if (!payload || payload.by !== selfRealtimeId()) return;
+    addFeed("You tagged " + (payload.victimName || "someone") + "!");
+    if (payload.arena) { tagScore++; refreshArenaScore(); }
+  });
 
   channel.on("presence", { event: "sync" }, () => syncPresence());
 
@@ -1497,14 +1508,20 @@ function updateProjectiles(dt) {
     else if (p.life > 4.5) { dead = true; }
     else if (p.owner !== selfRealtimeId() && hasEntered) {
       const dx = p.mesh.position.x - state.x, dy = p.mesh.position.y - (state.y - 0.2), dz = p.mesh.position.z - state.z;
-      if (dx * dx + dy * dy + dz * dz < 0.7 * 0.7) { popSnow(p.mesh.position); flashHit(); addFeed("You got snowballed! \u2744"); dead = true; }
+      if (dx * dx + dy * dy + dz * dz < 0.7 * 0.7) {
+        popSnow(p.mesh.position); flashHit();
+        var byNm = (peers.get(p.owner) && peers.get(p.owner).name) || "Someone";
+        addFeed(inArena ? (byNm + " splatted you!") : (byNm + " got you! \u2744"));
+        try { if (channel && connected) channel.send({ type: "broadcast", event: "tag", payload: { by: p.owner, victimName: displayName, arena: inArena } }); } catch (e) {}
+        dead = true;
+      }
     }
     if (!dead && arenaTargets.length) {
       for (var ti = 0; ti < arenaTargets.length; ti++) {
         var tg = arenaTargets[ti]; if (!tg.alive) continue;
         var tdx = p.mesh.position.x - tg.x, tdy = p.mesh.position.y - tg.y, tdz = p.mesh.position.z - tg.z;
         var rr = tg.r + 0.25;
-        if (tdx * tdx + tdy * tdy + tdz * tdz < rr * rr) { hitArenaTarget(tg, p.mesh.position, p.owner === selfRealtimeId()); dead = true; break; }
+        if (tdx * tdx + tdy * tdy + tdz * tdz < rr * rr) { hitArenaTarget(tg, p.mesh.position, p.owner === selfRealtimeId(), ti); dead = true; break; }
       }
     }
     if (dead) { scene.remove(p.mesh); if (p.mesh.geometry) p.mesh.geometry.dispose(); projectiles.splice(i, 1); }
@@ -1683,13 +1700,18 @@ function buildArenaTargets() {
     document.body.appendChild(arenaScoreEl);
   }
 }
-function hitArenaTarget(t, impactPos, byMe) {
-  try { popSnow(impactPos); } catch (e) {}
+function downTarget(t, impactPos) {
+  try { popSnow(impactPos || new THREE.Vector3(t.x, t.y, t.z)); } catch (e) {}
   t.alive = false; t.group.visible = false; t.respawnAt = performance.now() + 2200;
+}
+function refreshArenaScore() {
+  if (arenaScoreEl) arenaScoreEl.textContent = "TAGS " + tagScore + "   TARGETS " + arenaScore;
+}
+function hitArenaTarget(t, impactPos, byMe, idx) {
+  downTarget(t, impactPos);
   if (byMe) {
-    arenaScore++;
-    if (arenaScoreEl) arenaScoreEl.textContent = "ARENA: " + arenaScore;
-    addFeed("Target hit! +1");
+    arenaScore++; refreshArenaScore(); addFeed("Target hit! +1");
+    try { if (channel && connected) channel.send({ type: "broadcast", event: "thit", payload: { idx: idx } }); } catch (e) {}
   }
 }
 function updateArenaTargets(dt) {
@@ -1716,7 +1738,7 @@ function updateArenaZone() {
   flashGear();
   if (inArena) { preArenaHeld = heldItem; setHeld("paintgun"); }
   else { setHeld(preArenaHeld); preArenaHeld = null; }
-  if (arenaScoreEl) { arenaScoreEl.textContent = "ARENA: " + arenaScore; arenaScoreEl.style.display = inArena ? "block" : "none"; }
+  if (arenaScoreEl) { refreshArenaScore(); arenaScoreEl.style.display = inArena ? "block" : "none"; }
 }
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
