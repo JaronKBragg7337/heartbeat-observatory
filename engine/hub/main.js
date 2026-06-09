@@ -174,6 +174,7 @@ const gravity = 17.5;
 const jumpVelocity = 6.4;
 
 const buildingColliders = [];
+const solidBlockers = [];
 const platforms = [];
 const placedProps = [];
 
@@ -1532,10 +1533,24 @@ function updateProjectiles(dt) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
     p.vel.y -= 18 * dt;
+    const prevX = p.mesh.position.x, prevY = p.mesh.position.y, prevZ = p.mesh.position.z;
     p.mesh.position.addScaledVector(p.vel, dt);
     p.life += dt;
     let dead = false;
-    if (p.mesh.position.y <= 0.13) { popSnow(p.mesh.position, p.color); addPaintSplat(p.mesh.position, p.color); dead = true; }
+    if (solidBlockers.length) {
+      const mx = (prevX + p.mesh.position.x) / 2, my = (prevY + p.mesh.position.y) / 2, mz = (prevZ + p.mesh.position.z) / 2;
+      for (var sbi = 0; sbi < solidBlockers.length; sbi++) {
+        var sb = solidBlockers[sbi];
+        var hw = sb.width / 2 + 0.13, hd = sb.depth / 2 + 0.13;
+        if ((p.mesh.position.y < sb.top + 0.13 && Math.abs(p.mesh.position.x - sb.x) < hw && Math.abs(p.mesh.position.z - sb.z) < hd) ||
+            (my < sb.top + 0.13 && Math.abs(mx - sb.x) < hw && Math.abs(mz - sb.z) < hd)) {
+          popSnow(p.mesh.position, p.color);
+          dead = true; break;
+        }
+      }
+    }
+    if (dead) {}
+    else if (p.mesh.position.y <= 0.13) { popSnow(p.mesh.position, p.color); addPaintSplat(p.mesh.position, p.color); dead = true; }
     else if (p.life > 4.5) { dead = true; }
     else if (p.owner !== selfRealtimeId() && hasEntered) {
       const dx = p.mesh.position.x - state.x, dy = p.mesh.position.y - (state.y - 0.2), dz = p.mesh.position.z - state.z;
@@ -1763,7 +1778,7 @@ function updateArenaTargets(dt) {
   }
 }
 function updateArenaZone() {
-  const now = hasEntered && state.z > 31.5;
+  const now = hasEntered && state.z > 31.5 && state.z < 55 && Math.abs(state.x) < 17;
   if (now === inArena) return;
   inArena = now;
   flashGear();
@@ -3084,6 +3099,11 @@ function buildTown() {
   addBox(16.75, 1, 31, 28.5, 2, 0.5, wallMaterial);
   addBox(-31, 1, 0, 0.5, 2, 62, wallMaterial);
   addBox(31, 1, 0, 0.5, 2, 62, wallMaterial);
+  addSolid(0, -31, 62, 0.5, 2);
+  addSolid(-16.75, 31, 28.5, 0.5, 2);
+  addSolid(16.75, 31, 28.5, 0.5, 2);
+  addSolid(-31, 0, 0.5, 62, 2);
+  addSolid(31, 0, 0.5, 62, 2);
 
   for (const door of doors) {
     buildDoorBuilding(door);
@@ -3116,9 +3136,12 @@ function buildArena() {
   addBox(0, 1.4, z1, ax * 2, 2.8, 0.5, aw);
   addBox(-ax, 1.4, cz, 0.5, 2.8, depth, aw);
   addBox(ax, 1.4, cz, 0.5, 2.8, depth, aw);
+  addSolid(0, z1, ax * 2, 0.5, 2.8);
+  addSolid(-ax, cz, 0.5, depth, 2.8);
+  addSolid(ax, cz, 0.5, depth, 2.8);
   var cover = new THREE.MeshStandardMaterial({ color: 0x6a7b6e, roughness: 0.8 });
   var blocks = [[-8, 38, 3, 1.2, 1.5], [8, 38, 3, 1.2, 1.5], [0, 44, 2.2, 1.6, 2.2], [-10, 49, 2.6, 1.3, 2.6], [10, 49, 2.6, 1.3, 2.6], [0, 52.5, 6, 1.0, 1.2]];
-  for (var bi = 0; bi < blocks.length; bi++) { var b = blocks[bi]; addBox(b[0], b[3] / 2, b[1], b[2], b[3], b[4], cover); }
+  for (var bi = 0; bi < blocks.length; bi++) { var b = blocks[bi]; addBox(b[0], b[3] / 2, b[1], b[2], b[3], b[4], cover); addSolid(b[0], b[1], b[2], b[4], b[3]); }
   addTree(-4, 28); addTree(4, 28); addTree(-6, 29.5); addTree(6, 29.5);
   buildArenaTargets();
 }
@@ -3175,6 +3198,7 @@ function buildDoorBuilding(door) {
     width: door.width,
     depth: door.depth
   });
+  solidBlockers.push({ x: door.x, z: door.z, width: door.width, depth: door.depth, top: door.height });
 }
 
 function buildStructure(b) {
@@ -3487,6 +3511,10 @@ function addCafeCounter(x, z, rotationY) {
   buildingColliders.push({ x: x, z: z, width: wide ? 2.8 : 0.95, depth: wide ? 0.95 : 2.8 });
 }
 
+function addSolid(x, z, width, depth, top) {
+  buildingColliders.push({ x: x, z: z, width: width, depth: depth });
+  solidBlockers.push({ x: x, z: z, width: width, depth: depth, top: top });
+}
 function addBox(x, y, z, width, height, depth, material) {
   const box = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
   box.position.set(x, y, z);
