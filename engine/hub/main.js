@@ -232,9 +232,9 @@ const doors = [
   {
     id: "video",
     surface: "video",
-    label: "Video",
+    label: "Theater",
     path: "/video",
-    x: 0,
+    x: 9,
     z: -21,
     width: 5.0,
     depth: 4.0,
@@ -252,7 +252,13 @@ const plots = [
   { x: -24, z: -10, width: 4.2, depth: 3.4 },
   { x: 24, z: -10, width: 4.2, depth: 3.4 },
   { x: -24, z: 10, width: 4.2, depth: 3.4 },
-  { x: 24, z: 10, width: 4.2, depth: 3.4 }
+  { x: 24, z: 10, width: 4.2, depth: 3.4 },
+  { x: -20, z: -27.4, width: 4.2, depth: 3.4 },
+  { x: -12, z: -27.4, width: 4.2, depth: 3.4 },
+  { x: -4, z: -27.4, width: 4.2, depth: 3.4 },
+  { x: 4, z: -27.4, width: 4.2, depth: 3.4 },
+  { x: 12, z: -27.4, width: 4.2, depth: 3.4 },
+  { x: 20, z: -27.4, width: 4.2, depth: 3.4 }
 ];
 
 const structures = [
@@ -3203,13 +3209,32 @@ function buildTown() {
     [-12, 5], [12, 5], [-12, -5], [12, -5],
     [-20, -16], [20, -16], [-20, 16], [20, 16],
     [-29, -6], [29, -6], [-29, 6], [29, 6],
-    [-5, 14], [5, 14], [-7, 25], [7, -26]
+    [-5, 14], [5, 14], [-7, 25],
+    [-26, 22], [26, 22], [-26, -22], [26, -22]
   ];
   for (const t of treeSpots) addTree(t[0], t[1]);
+  buildNeighborhood();
   buildFountain();
   buildArena();
 }
 
+function buildNeighborhood() {
+  addGroundRect(0, -23.4, 46, 3.2, 0xb9aa88);
+  const nbSign = createLabelSprite("THE NEIGHBORHOOD", { background: "rgba(13, 18, 20, 0.78)", foreground: "#ffd9a8", fontSize: 38, scale: 0.02 });
+  nbSign.position.set(0, 3.6, -23.4);
+  scene.add(nbSign);
+  addStreetlight(-15, -21.6);
+  addStreetlight(15, -21.6);
+  addTree(-16.2, -29.6); addTree(-0.2, -29.6); addTree(16.2, -29.6);
+  addTree(-25.5, -24); addTree(25.5, -24);
+  const hedgeM = new THREE.MeshStandardMaterial({ color: 0x4e7d4a, roughness: 0.95 });
+  for (const hx of [-16, -8, 0, 8, 16]) {
+    const hedge = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), hedgeM);
+    hedge.position.set(hx, 0.42, -25.5);
+    hedge.scale.set(1.25, 0.8, 0.9);
+    scene.add(hedge);
+  }
+}
 function buildFountain() {
   const stoneM = new THREE.MeshStandardMaterial({ color: 0x9aa3a8, roughness: 0.9 });
   const stoneD = new THREE.MeshStandardMaterial({ color: 0x848d92, roughness: 0.95 });
