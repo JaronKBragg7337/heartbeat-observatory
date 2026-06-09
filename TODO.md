@@ -55,9 +55,9 @@ No known Engine hub blockers are open. The next work, in build order:
 
 ## Open follow-ups — multiplayer build sprint (newest)
 From live two-person testing, roughly by leverage.
-- [ ] **Admin allowlist (build permissions):** restrict `place_prop`/`remove_prop` to specific `auth_user_id`s (the core team's three accounts). Everyone else explores; only admins build. Need the third profile's id. Fixes "anyone signed in can build."
-- [ ] **Admin override removal:** let admins remove **any** prop (not just their own) so a flooded area can be cleared. Removal is currently owner-only by design.
-- [ ] **Per-user prop cap (spam guard):** cap props per owner (~60) in `place_prop` so one person cannot flood the world (a road got spammed with chairs in testing). Pairs with admin work.
+- [x] **Admin allowlist (build permissions):** restrict `place_prop`/`remove_prop` to specific `auth_user_id`s (the core team's three accounts). Everyone else explores; only admins build. Need the third profile's id. Fixes "anyone signed in can build."
+- [x] **Admin override removal:** let admins remove **any** prop (not just their own) so a flooded area can be cleared. Removal is currently owner-only by design.
+- [x] **Per-user prop cap (spam guard):** cap props per owner (~60) in `place_prop` so one person cannot flood the world (a road got spammed with chairs in testing). Pairs with admin work.
 - [ ] **Bug — held item vanishes on throw:** holding coffee/ball/balloon then throwing a snowball makes the held item disappear until re-selected. Reproduce, then fix; the throw path does not currently modify `heldItem`/viewmodel, so cause is unknown.
 - [ ] **Bug — remote movement glitches spot-to-spot:** smooth/interpolate remote positions; check realtime state cadence and the lerp in `updateRemotes`.
 - [ ] **Verify prop remove realtime:** confirm the `world_props` DELETE event removes the prop on every other client every time (was "kind of working"). Consider `replica identity full` if old-row id is missing.
