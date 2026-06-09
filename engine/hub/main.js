@@ -80,6 +80,9 @@ const HB_DUSK = new THREE.Color(0xe89b5a);
 const HB_NIGHT = new THREE.Color(0x0f1b2e);
 let heldItem = null;
 let viewmodel = null;
+let inArena = false;
+let preArenaHeld = null;
+const PAINT_COLORS = [0xe23b4e, 0x36d07a, 0x4a86e8, 0xf2c94c, 0xb24ae8];
 const _vmOff = new THREE.Vector3();
 const projectiles = [];
 const snowPuffs = [];
@@ -1280,7 +1283,7 @@ function connect() {
   channel.on("broadcast", { event: "state" }, ({ payload }) => applyPeerState(payload));
   channel.on("broadcast", { event: "throw" }, ({ payload }) => {
     if (!payload || payload.id === selfRealtimeId()) return;
-    spawnProjectile(new THREE.Vector3(payload.ox, payload.oy, payload.oz), new THREE.Vector3(payload.vx, payload.vy, payload.vz), payload.id);
+    spawnProjectile(new THREE.Vector3(payload.ox, payload.oy, payload.oz), new THREE.Vector3(payload.vx, payload.vy, payload.vz), payload.id, payload.c);
   });
 
   channel.on("presence", { event: "sync" }, () => syncPresence());
@@ -1435,11 +1438,11 @@ function sendState(force = false) {
   });
 }
 
-function makeSnowballMesh() {
-  return new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }));
+function makeSnowballMesh(color) {
+  return new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), new THREE.MeshStandardMaterial({ color: (color === undefined ? 0xffffff : color), roughness: 0.9 }));
 }
-function spawnProjectile(origin, vel, owner) {
-  const mesh = makeSnowballMesh();
+function spawnProjectile(origin, vel, owner, color) {
+  const mesh = makeSnowballMesh(color);
   mesh.position.copy(origin);
   mesh.castShadow = false;
   scene.add(mesh);
@@ -1452,11 +1455,12 @@ function throwSnowball() {
   lastThrow = now;
   const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
   const origin = camera.position.clone().addScaledVector(dir, 0.5);
-  const vel = dir.clone().multiplyScalar(17);
-  vel.y += 2.4;
-  spawnProjectile(origin, vel, selfRealtimeId());
+  const vel = dir.clone().multiplyScalar(inArena ? 23 : 17);
+  vel.y += inArena ? 0.7 : 2.4;
+  const pColor = inArena ? PAINT_COLORS[(Math.random() * PAINT_COLORS.length) | 0] : 0xffffff;
+  spawnProjectile(origin, vel, selfRealtimeId(), pColor);
   try {
-    if (channel && connected) channel.send({ type: "broadcast", event: "throw", payload: { id: selfRealtimeId(), ox: origin.x, oy: origin.y, oz: origin.z, vx: vel.x, vy: vel.y, vz: vel.z } });
+    if (channel && connected) channel.send({ type: "broadcast", event: "throw", payload: { id: selfRealtimeId(), ox: origin.x, oy: origin.y, oz: origin.z, vx: vel.x, vy: vel.y, vz: vel.z, c: pColor } });
   } catch (e) {}
 }
 function flashHit() {
@@ -1522,6 +1526,13 @@ function makeHeldItem(type) {
     bal.position.y = 0.4; bal.scale.y = 1.2; g.add(bal);
     const str = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.42, 6), new THREE.MeshStandardMaterial({ color: 0xe8e8e8, roughness: 0.7 }));
     str.position.y = 0.19; g.add(str);
+  } else if (type === "paintgun") {
+    const gm = new THREE.MeshStandardMaterial({ color: 0x2c3038, roughness: 0.5 });
+    const ac = new THREE.MeshStandardMaterial({ color: 0x36d07a, roughness: 0.4 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.26), gm); body.position.set(0, 0, -0.02); g.add(body);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.34, 12), gm); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.02, -0.22); g.add(barrel);
+    const hopper = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), ac); hopper.position.set(0, 0.1, 0.02); g.add(hopper);
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.12, 0.06), gm); grip.position.set(0, -0.1, 0.06); grip.rotation.x = 0.3; g.add(grip);
   } else { return null; }
   g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
   return g;
@@ -1625,6 +1636,25 @@ function updateDayNight(dt) {
     sunDisc.material.color.setRGB(1, 0.78 + 0.18 * day, 0.55 + 0.40 * day);
   }
 }
+function flashGear() {
+  let el = document.getElementById("gearFlash");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "gearFlash";
+    el.style.cssText = "position:fixed;inset:0;z-index:61;pointer-events:none;opacity:0;transition:opacity 0.4s ease;background:#eaf3ff;";
+    document.body.appendChild(el);
+  }
+  el.style.transition = "opacity 0.05s ease"; el.style.opacity = "0.65";
+  setTimeout(function () { el.style.transition = "opacity 0.4s ease"; el.style.opacity = "0"; }, 80);
+}
+function updateArenaZone() {
+  const now = hasEntered && state.z > 31.5;
+  if (now === inArena) return;
+  inArena = now;
+  flashGear();
+  if (inArena) { preArenaHeld = heldItem; setHeld("paintgun"); }
+  else { setHeld(preArenaHeld); preArenaHeld = null; }
+}
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   sendAccumulator += dt;
@@ -1635,6 +1665,7 @@ function animate() {
   updateCamera(dt);
   updateViewmodel();
   updateProjectiles(dt);
+  updateArenaZone();
   updateSnowPuffs(dt);
   updateRemotes(dt);
   updateMinds();
