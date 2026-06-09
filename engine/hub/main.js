@@ -85,6 +85,7 @@ let preArenaHeld = null;
 let arenaTargets = [];
 let arenaScore = 0;
 let arenaScoreEl = null;
+let arenaLight = null;
 let tagScore = 0;
 let outScore = 0;
 let scoreboardEl = null;
@@ -1398,6 +1399,9 @@ function applyPeerState(player) {
   remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
   remote.space = player.space || "town";
   remote.lastUpdate = performance.now();
+  if (!remote.buf) remote.buf = [];
+  remote.buf.push({ t: remote.lastUpdate, x: player.x, y: remoteGroundY(player), z: player.z, yaw: player.yaw });
+  if (remote.buf.length > 10) remote.buf.shift();
   if (remote.heldType !== (player.holding || null)) {
     remote.heldType = player.holding || null;
     setHeldOnGroup(remote.group, remote.heldType);
@@ -1709,6 +1713,7 @@ function updateDayNight(dt) {
   sunLight.intensity = 0.12 + 2.0 * day;
   if (hemiLight) hemiLight.intensity = 0.4 + 1.0 * Math.max(0, Math.min(1, e + 0.3));
   sunLight.color.setRGB(1, 0.92 - 0.16 * (1 - day), 0.82 - 0.28 * (1 - day));
+  if (arenaLight) arenaLight.intensity = (1 - day) * 1.55;
   const sky = pickSky(e);
   if (scene.background && scene.background.copy) scene.background.copy(sky);
   if (scene.fog && scene.fog.color) scene.fog.color.copy(sky);
@@ -1954,9 +1959,20 @@ function applySpaceVisibility() {
 
 function updateRemotes(dt) {
   const blend = Math.min(1, dt * 12);
+  const renderT = performance.now() - 120;
   for (const remote of remotes.values()) {
-    remote.group.position.lerp(remote.target, blend);
-    remote.group.rotation.y = lerpAngle(remote.group.rotation.y, remote.targetYaw, blend);
+    const buf = remote.buf;
+    if (buf && buf.length >= 2 && buf[buf.length - 1].t >= renderT) {
+      while (buf.length > 2 && buf[1].t <= renderT) buf.shift();
+      const a = buf[0], b = buf[1] || a;
+      const span = Math.max(1, b.t - a.t);
+      const k = Math.max(0, Math.min(1, (renderT - a.t) / span));
+      remote.group.position.set(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k);
+      remote.group.rotation.y = lerpAngle(a.yaw, b.yaw, k);
+    } else {
+      remote.group.position.lerp(remote.target, blend);
+      remote.group.rotation.y = lerpAngle(remote.group.rotation.y, remote.targetYaw, blend);
+    }
     remote.group.scale.y += (remote.targetScaleY - remote.group.scale.y) * blend;
   }
 }
@@ -3184,6 +3200,32 @@ function buildArena() {
   var blocks = [[-8, 38, 3, 1.2, 1.5], [8, 38, 3, 1.2, 1.5], [0, 44, 2.2, 1.6, 2.2], [-10, 49, 2.6, 1.3, 2.6], [10, 49, 2.6, 1.3, 2.6], [0, 52.5, 6, 1.0, 1.2]];
   for (var bi = 0; bi < blocks.length; bi++) { var b = blocks[bi]; addBox(b[0], b[3] / 2, b[1], b[2], b[3], b[4], cover); addSolid(b[0], b[1], b[2], b[4], b[3]); }
   addTree(-4, 28); addTree(4, 28); addTree(-6, 29.5); addTree(6, 29.5);
+  var lineM = new THREE.MeshStandardMaterial({ color: 0xf2f5f0, roughness: 0.6, emissive: 0xdfe6df, emissiveIntensity: 0.18 });
+  addBox(0, 0.055, 43, 33, 0.02, 0.18, lineM);
+  addBox(0, 0.055, 34.5, 33, 0.02, 0.14, lineM);
+  addBox(0, 0.055, 51.5, 33, 0.02, 0.14, lineM);
+  addBox(-16, 0.055, 43, 0.14, 0.02, 22, lineM);
+  addBox(16, 0.055, 43, 0.14, 0.02, 22, lineM);
+  var stripeM = new THREE.MeshStandardMaterial({ color: 0x78d7a6, roughness: 0.5, emissive: 0x78d7a6, emissiveIntensity: 0.6 });
+  addBox(0, 1.0, 54.7, 33.4, 0.18, 0.06, stripeM);
+  addBox(-16.7, 1.0, 43, 0.06, 0.18, 23.4, stripeM);
+  addBox(16.7, 1.0, 43, 0.06, 0.18, 23.4, stripeM);
+  var poleM = new THREE.MeshStandardMaterial({ color: 0x3c4448, roughness: 0.7 });
+  var floodM = new THREE.MeshStandardMaterial({ color: 0xfff2c4, roughness: 0.4, emissive: 0xffe39a, emissiveIntensity: 0.95 });
+  var corners = [[-15, 33.5], [15, 33.5], [-15, 53.5], [15, 53.5]];
+  for (var ci = 0; ci < corners.length; ci++) {
+    var cc = corners[ci];
+    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 4.6, 10), poleM);
+    pole.position.set(cc[0], 2.3, cc[1]); scene.add(pole);
+    var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), floodM);
+    bulb.position.set(cc[0], 4.7, cc[1]); scene.add(bulb);
+  }
+  arenaLight = new THREE.PointLight(0xfff1d6, 0, 60, 1.6);
+  arenaLight.position.set(0, 9, 43);
+  scene.add(arenaLight);
+  var arenaSign = createLabelSprite("PAINTBALL ARENA", { background: "rgba(13, 18, 20, 0.78)", foreground: "#9fe8c0", fontSize: 40, scale: 0.02 });
+  arenaSign.position.set(0, 3.4, 31);
+  scene.add(arenaSign);
   buildArenaTargets();
 }
 
@@ -3684,7 +3726,8 @@ function createRemote(player) {
     target: new THREE.Vector3(player.x, remoteGroundY(player), player.z),
     targetYaw: player.yaw,
     targetScaleY: player.stance === "crouch" ? 0.72 : 1,
-    heldType: player.holding || null
+    heldType: player.holding || null,
+    buf: []
   };
 }
 
