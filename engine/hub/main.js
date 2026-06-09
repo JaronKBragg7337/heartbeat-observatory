@@ -1726,9 +1726,9 @@ function updateLocal(dt) {
 function updateCamera(dt) {
   if (!hasEntered) {
     previewAngle += dt * 0.085;
-    const radius = 44;
-    camera.position.set(Math.sin(previewAngle) * radius, 28, 12 + Math.cos(previewAngle) * radius);
-    camera.lookAt(0, 1.2, 12);
+    const radius = 24;
+    camera.position.set(Math.sin(previewAngle) * radius, 15.5, Math.cos(previewAngle) * radius);
+    camera.lookAt(0, 1.2, 0);
     return;
   }
   camera.position.set(state.x, state.y, state.z);
