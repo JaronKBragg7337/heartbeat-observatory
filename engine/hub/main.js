@@ -394,7 +394,11 @@ async function placeHere() {
     const sb = ensureSupabase();
     const { data, error } = await sb.rpc("place_prop", { p_type: selectedBuildProp, p_x: px, p_z: pz, p_rot: placeRot });
     if (error) { setBuildHint("Place error: " + (error.message || error.code || JSON.stringify(error))); return; }
-    if (!data || !data.ok) { setBuildHint("Rejected: " + ((data && data.error) || "unknown")); return; }
+    if (!data || !data.ok) {
+      const e = (data && data.error) || "unknown";
+      setBuildHint(e === "not_admin" ? "Building is limited to the team right now." : e === "limit_reached" ? "You hit the 60-prop limit \u2014 remove some to add more." : e === "signin" ? "Sign in to build." : e === "bad_type" ? "Can't place that." : ("Rejected: " + e));
+      return;
+    }
     try {
       renderProp(data.prop_type, data.x, data.z, data.rot, data.id, myUserId);
     } catch (re) {
@@ -410,16 +414,18 @@ function removeNearest() {
   if (!myUserId || !supa) return;
   let best = null, bd = Infinity;
   for (const p of placedProps) {
-    if (p.ownerUid !== myUserId) continue;
     const d = (p.x - state.x) * (p.x - state.x) + (p.z - state.z) * (p.z - state.z);
     if (d < bd) { bd = d; best = p; }
   }
-  if (!best) { setBuildHint("Nothing of yours nearby to remove."); return; }
+  if (!best) { setBuildHint("Nothing nearby to remove."); return; }
   supa.rpc("remove_prop", { p_id: best.id }).then(({ data }) => {
     if (data && data.ok) {
       scene.remove(best.root);
       const i = placedProps.indexOf(best); if (i >= 0) placedProps.splice(i, 1);
       setBuildHint("Removed.");
+    } else {
+      const e = (data && data.error) || "unknown";
+      setBuildHint(e === "not_admin" ? "Removing is limited to the team right now." : ("Couldn't remove: " + e));
     }
   });
 }
