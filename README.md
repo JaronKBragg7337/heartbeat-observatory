@@ -53,3 +53,19 @@ Claimed spaces do **not** need an hourly task just to appear: when someone claim
 ## Working docs & a note on secrets
 - **`TODO.md`** — the living task list (worked, checked off, cleared as done).
 - **Operational credentials are deliberately NOT in this public repo.** A token committed to a public repo is detected and revoked automatically, which would break the workflow — so tokens and passwords are held privately and shared directly with whoever does privileged work. The only key‑like value safe in public client code is Supabase's *publishable* key, which is designed to be public.
+
+## Recently shipped — world build sprint (phone-first, laptop kept in parity)
+All live in `engine/hub/` and synced through Supabase. Built via blind-deploy with on-device testing; touch and keyboard/mouse are wired together on every feature so the platforms do not drift.
+- **In-world Build Mode** — signed-in users open Build mode from Settings, pick a prop, and a **live semi-transparent ghost** shows exactly where and which way it will land (updates as you move/rotate); "Place here" drops it in front of you. Props persist in `world_props` and appear for everyone **in real time** (no rejoin). Removal is **owner-only** (you can delete only your own props).
+- **Prop catalog (code-built, no asset library):** table, chair, streetlight, planter, tree, bench in the walk-and-place palette. Fence, path (two-point line tools) and café counter (solid collider) exist as functions but are **not in the palette yet** — they need a different placement mode (see `TODO.md`).
+- **Day/night cycle** — a sun arcs on a ~5-minute loop; sky/fog shift dawn→noon→dusk→night, light warms and dims, streetlamps read at night. Additive to the existing lights.
+- **Carryable held items** — coffee, ball, balloon. First-person viewmodel for yourself; attached in front of your avatar for others; synced via a `holding` field on the realtime state broadcast. Settings buttons (touch) + **H** to cycle (keyboard).
+- **Snowball throw** — the reusable **projectile + hit + sync** core: the throw arcs under gravity, pops on landing, **broadcasts** so everyone sees it, and pops on you (with a screen flash) if someone else's hits you. Throw button (touch) + **F** (keyboard). Future arcade games (dodgeball, paintball, targets) are reskins of this.
+- **Homes** — claimed plots (modern/dome/pod) face the plaza; **remove-my-home** (release) in Settings.
+
+## Known bugs / rough edges (open — tracked in `TODO.md`)
+Honest list from live two-person testing, not yet fixed:
+- **No build permissions yet:** *any signed-in account* can place props (not just the core team), and removal is owner-only — so one person can flood an area and others cannot clear it. Planned fix: an **admin allowlist** + **admin override removal** + an optional per-user prop cap.
+- **Held item appears to vanish when that player throws a snowball**, returning when they switch held items. Reported in co-testing; not reproduced yet (the throw path does not touch the held item). Needs a clean repro.
+- **Remote movement can glitch** when another player moves quickly between spots — remote position smoothing to revisit.
+- **Prop remove sync is intermittent** ("kind of working") — verify the realtime DELETE path removes the prop on every other client reliably.
