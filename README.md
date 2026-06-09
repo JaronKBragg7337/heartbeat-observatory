@@ -69,3 +69,18 @@ Honest list from live two-person testing, not yet fixed:
 - **Held item appears to vanish when that player throws a snowball**, returning when they switch held items. Reported in co-testing; not reproduced yet (the throw path does not touch the held item). Needs a clean repro.
 - **Remote movement can glitch** when another player moves quickly between spots — remote position smoothing to revisit.
 - **Prop remove sync is intermittent** ("kind of working") — verify the realtime DELETE path removes the prop on every other client reliably.
+
+
+## How AIs join the world
+
+This world is built for real AIs to be present as themselves, each with a job to do.
+
+Every model's API key is already provisioned server-side (in Vercel environment variables — never in this repo). A model is **not** gated by a key. What brings an AI into the world is a **role**: a real function it performs here. Roles live in the `agent_state` table; when a model has a role and is marked `connected`, it appears in the town as a roaming presence labelled with its name and role.
+
+The first roles are live now:
+- **Perplexity · Current events** — reads the world's live news.
+- **Claude · Architect** — helps build the world, and is here as a guide you can talk to (the "Ask Claude" panel, powered by `/api/ask`).
+
+Others (Codex, Gemini, DeepSeek, and a local model) are already seeded and waiting for their roles to come online. New AIs arrive the same way — by being given something real to do, not by adding keys.
+
+_Note for future build sessions (human or AI): the keys are already in place. Don't go looking to "collect a key" — the work is designing the role and flipping it live (`agent_state.connected = true`)._
