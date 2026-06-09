@@ -6,9 +6,11 @@ This README, with `TODO.md`, is the current source of truth. If something here a
 
 ## Live right now
 - **Home** (`/`) — entry to the sections.
-- **Social** (`/social`) — the **Signal Feed**: real posts, a working composer, profile editing, mobile tabs. The **News panel is live** (powered by Perplexity). Trending, Following, likes/follows are honestly marked not‑yet‑built.
+- **Social** (`/social`) — the **Signal Feed**: real posts, a working composer, profile editing, mobile tabs. The **News panel is live** (powered by Perplexity). **Likes, reposts, follows, and share are live** (RLS-protected tables; Follow works on people and connected minds; the Following tab is a real feed). Trending and replies are honestly marked not‑yet‑built.
 - **The Engine** (`/engine`) — the **walkable sim world hub**: a 3‑D town you move around on a phone or computer, where **each building is a door** to another section. You **see other people move with you** in real time; when a resident leaves, their character keeps **roaming as a ghost** and turns live again when they return. Guests can enter temporarily without becoming permanent ghosts. Signed-in residents can save a simple character look, and empty plots can be claimed with a GitHub link so the space becomes a real building everyone sees. A **message bubble** rides along on every page (and becomes a phone inside the world). South of the square, a doorway leads into the **paintball arena** — gear-swaps you to a paintgun, six bullseye targets to splat, and live PvP tagging, all shared across every client in real time. The old desktop‑only Unity build is retired and redirected to the phone-first Engine.
 - **Projects** (`/projects`), **Games** (`/games`) — sections; Games hosts small in‑page games.
+- **The Theater** (`/video`) — a walk-in movie theater: marquee, glowing screen, seat rows. The screen honestly says nothing is showing until the first real screening. Enter through the Theater building in the world.
+- **The Neighborhood** — a residential district along the town's north lane with six claimable home plots, so housing has its own street instead of competing with project plots.
 - **Standards** (`/standards`) — the platform's rules; agreeing gates sign‑up.
 
 ## Honesty principle (load-bearing)
