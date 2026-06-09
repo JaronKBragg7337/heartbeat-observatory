@@ -1,3 +1,42 @@
+# Heartbeat Observatory — MASTER BUILD PLAN
+_Single source of truth, worked top-down. The detailed sprint log + older backlog are kept below this section so nothing is lost._
+
+## NOW — pre-promotion critical path (the gate before promoting on GitHub)
+Ordered; top first.
+1. **World-forward home page (Tier 1)** — landing leads with the walkable world: a floating globe hero that doubles as "Enter the world," plain-language intro (replacing "the signal is being wired"), section cards kept below as secondary doors; + SEO/OpenGraph meta for clean shared-link previews. _(in progress)_
+2. **In-world first-run onboarding overlay** — what this is + move/look/jump + interact + throw. Zero API cost, works for everyone, dismissible, remembers it was seen.
+3. **Claude as the in-world guide** — named as Claude, front-and-center; a walkable character you approach and talk to; scoped to the world + friendly all-ages knowledge via a character brief (a frame, not a word-for-word script); served from a backend function (key stays server-side); cost guards = small model + short answers + per-person rate limit + sign-in gate + cached common answers.
+4. **Public-click rough edges** (don't embarrass a first-time visitor):
+   - hide the Build button from non-admin signed-in users
+   - bug: held item vanishes when that player throws a snowball (reproduce -> fix)
+   - bug: remote movement jitter moving spot-to-spot (reproduce -> smooth)
+   - verify placed-prop removal syncs to every client every time
+   - guest vs account clarity: what you can do signed-out, and how to sign up to appear / get a space
+5. **Repo storefront (README)** — hook up top: one line on what it is, a screenshot or short clip, the live link, and "why it's different" (humans + real AIs sharing a place, honesty principle, built live). Dev detail moves below the pitch.
+
+## SOON — right after the launch basics
+- Tier 2 home: the walkable world itself becomes the landing; sections become buildings you walk into (already half-there via claimable plots).
+- Social page build-out (its own space; same all-ages tone rules as the guide).
+- Arcade reskins off the projectile/hit/sync core: paintball, dodgeball, basketball hoop, target range, water balloons.
+- Themed zones assembled from catalog + carry + effects (cafe, arcade).
+- Fence/Path two-point "structures" tool; cafe-counter as a placeable (collider cleanup on remove).
+
+## LATER — polish & vision
+- Desktop build-mode look-while-placing (pointer-lock vs on-screen buttons).
+- Held-item viewmodel polish (per-aspect framing; subtle hand so items don't float).
+- world_spaces DELETE realtime (released homes vanish live for others).
+- By-feel tuning knobs as needed: day length, throw speed/arc, held-item position, hit radius.
+- Keava Owent as its own character/role when it genuinely fits (not forced into a slot).
+- Name profanity handling; project-space detail doors; immersive section transitions; WebXR/VR; movement-captured roaming AIs (laptop/RTX lane).
+
+## DONE — recent world sprint
+- In-world Build Mode + live ghost preview; code-built prop catalog; live prop realtime.
+- Day/night cycle. Carryable held items (synced, shown in front of the avatar, first-person viewmodel). Snowball throw — the reusable projectile/hit/sync core, screen-flash on hit.
+- Homes face the plaza + remove-my-home. Admin build permissions (allowlist of the 3 accounts, override-removal, 60-prop cap per person).
+
+---
+_Older sprint detail and backlog follow below._
+
 # Heartbeat Observatory — To-Do
 
 Living task list. Items get worked, checked off, and cleared when done, so this always shows only what is real and current.
