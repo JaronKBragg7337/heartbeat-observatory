@@ -532,6 +532,7 @@ document.addEventListener("keydown", (event) => {
 
   if (settingsOpen) return;
   if (claimOverlay && claimOverlay.style.display === "flex") return;
+  if (askOverlay && askOverlay.style.display === "flex") return;
 
   if (event.code === "KeyE" || event.code === "Enter") {
     if (activeDoor || activePlot) {
@@ -2469,6 +2470,75 @@ function closeClaim() {
   claimOverlay.style.display = "none";
   currentClaimPlot = null;
 }
+
+// ---- Ask Claude (in-world guide) ----
+document.body.insertAdjacentHTML("beforeend", `
+<button id="askLaunch" style="position:fixed;left:10px;top:46%;transform:translateY(-50%);display:none;z-index:70;padding:9px 12px;border-radius:11px;border:1px solid #2c3940;background:rgba(12,16,19,.92);color:#dfe6ec;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4);">Ask Claude</button>
+<div id="askOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,10,12,.62);z-index:100000;padding:18px;">
+  <div style="width:min(440px,94vw);max-height:80vh;display:flex;flex-direction:column;background:#0e1417;border:1px solid #243036;border-radius:14px;padding:16px;color:#dfe6ec;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 18px 50px rgba(0,0,0,.5);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:15px;font-weight:600;">Ask Claude</div>
+      <button id="askClose" style="background:transparent;border:0;color:#9fb0bb;font-size:22px;line-height:1;cursor:pointer;padding:0 6px;">\u00d7</button>
+    </div>
+    <div style="font-size:12px;opacity:.7;line-height:1.5;margin-bottom:10px;">Claude is here as a guide to the world \u2014 ask about getting around, claiming a spot, or what this place is.</div>
+    <div id="askLog" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:9px;margin-bottom:10px;min-height:60px;"></div>
+    <div style="display:flex;gap:8px;">
+      <input id="askInput" type="text" autocomplete="off" placeholder="Ask Claude\u2026" style="flex:1;box-sizing:border-box;padding:11px 12px;border-radius:9px;border:1px solid #2c3940;background:#0a0f12;color:#eef3f6;font-size:14px;">
+      <button id="askSend" style="padding:11px 15px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:600;font-size:14px;cursor:pointer;">Send</button>
+    </div>
+  </div>
+</div>`);
+const askOverlay = document.querySelector("#askOverlay");
+const askLog = document.querySelector("#askLog");
+const askInput = document.querySelector("#askInput");
+const askSend = document.querySelector("#askSend");
+const askLaunch = document.querySelector("#askLaunch");
+function addAskBubble(role, text) {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;" + (role === "you" ? "justify-content:flex-end;" : "justify-content:flex-start;");
+  const b = document.createElement("div");
+  b.textContent = text;
+  b.style.cssText = "max-width:82%;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;" + (role === "you" ? "background:#274b30;color:#eaf6ec;border-bottom-right-radius:4px;" : "background:#141b20;color:#dfe6ec;border:1px solid #243036;border-bottom-left-radius:4px;");
+  wrap.appendChild(b);
+  askLog.appendChild(wrap);
+  askLog.scrollTop = askLog.scrollHeight;
+  return b;
+}
+function openAsk() {
+  try { document.exitPointerLock && document.exitPointerLock(); } catch (e) {}
+  askOverlay.style.display = "flex";
+  if (!askLog.childElementCount) addAskBubble("claude", "Hey \u2014 I'm Claude, your guide here. Ask me anything about the world.");
+  setTimeout(() => { try { askInput.focus(); } catch (e) {} }, 30);
+}
+function closeAsk() { askOverlay.style.display = "none"; }
+async function sendAsk() {
+  const msg = (askInput.value || "").trim();
+  if (!msg) return;
+  askInput.value = "";
+  addAskBubble("you", msg);
+  askSend.disabled = true;
+  const pending = addAskBubble("claude", "\u2026");
+  try {
+    const r = await fetch("/api/ask", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: msg }) });
+    const data = await r.json();
+    const reply = (data && data.reply) ? String(data.reply) : "";
+    if (reply) pending.textContent = reply;
+    else if (data && data.note === "not_configured") pending.textContent = "The guide is offline right now \u2014 check back soon.";
+    else pending.textContent = "Couldn't reach the guide just now \u2014 try again in a moment.";
+  } catch (e) {
+    pending.textContent = "Couldn't reach the guide just now \u2014 try again in a moment.";
+  }
+  askSend.disabled = false;
+  askLog.scrollTop = askLog.scrollHeight;
+}
+if (askLaunch) askLaunch.addEventListener("click", openAsk);
+document.querySelector("#askClose").addEventListener("click", closeAsk);
+askSend.addEventListener("click", sendAsk);
+askInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendAsk(); } });
+askOverlay.addEventListener("click", (e) => { if (e.target === askOverlay) closeAsk(); });
+const _askEnterBtn = document.querySelector("#enterButton");
+if (_askEnterBtn) _askEnterBtn.addEventListener("click", () => { if (askLaunch) askLaunch.style.display = "flex"; });
+
 
 function parseRepoName(url) {
   try {
