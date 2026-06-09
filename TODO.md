@@ -15,6 +15,7 @@ Ordered; top first.
 5. **Repo storefront (README)** — hook up top: one line on what it is, a screenshot or short clip, the live link, and "why it's different" (humans + real AIs sharing a place, honesty principle, built live). Dev detail moves below the pitch.
 
 ## SOON — right after the launch basics
+- **Automated maintenance loop (stand up AT promotion time, not before):** once the site is promoted and real people may be in the world, stop doing live edits mid-conversation. Instead, Claude Code (e.g. hourly) and Codex (offset schedule) each read this TODO, do the next item, and commit to the repo — staggered so they never touch the same files at the same time — paired with scheduled downtime windows so players aren't disrupted. Jaron + Claude (this chat) orchestrate what's on the TODO; the scheduled agents execute it. Runs via Claude Code on the Max subscription (confirm current terms first). Compliance rule: follow third-party terms directly, never evade; where their rules don't fit, build our own equivalent guardrail.
 - Tier 2 home: the walkable world itself becomes the landing; sections become buildings you walk into (already half-there via claimable plots).
 - Social page build-out (its own space; same all-ages tone rules as the guide).
 - Arcade reskins off the projectile/hit/sync core: paintball, dodgeball, basketball hoop, target range, water balloons.
