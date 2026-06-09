@@ -14,6 +14,26 @@ const SYSTEM_PROMPT = [
   "Stay on the world and this project. Politely skip politics, real public figures, and online drama \u2014 a quick redirect back to the Observatory is perfect. Keep people feeling welcome."
 ].join("\n");
 
+const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
+
+// Soft rate limit (for now): ~3 replies/hour per IP via a SECURITY DEFINER RPC.
+// Fails OPEN so a limiter hiccup never takes the guide offline.
+async function askAllowed(ip) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/ask_allow`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: "Bearer " + SUPABASE_PUBLISHABLE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_ip: ip || "unknown" })
+    });
+    if (!r.ok) return true;
+    const v = await r.json();
+    return v !== false;
+  } catch (e) {
+    return true;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -34,6 +54,13 @@ export default async function handler(req, res) {
   if (!message) {
     res.setHeader("Cache-Control", "no-store");
     res.status(200).json({ reply: "", note: "empty" });
+    return;
+  }
+
+  const ip = String(req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "").split(",")[0].trim();
+  if (!(await askAllowed(ip))) {
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).json({ reply: "", note: "rate_limited" });
     return;
   }
 
