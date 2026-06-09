@@ -2313,7 +2313,7 @@ function roomVisitRow() {
   const back = !isOwnRoom()
     ? '<button type="button" data-visit="' + selfId + '" style="padding:7px 11px;border-radius:8px;border:1px solid #3a4750;background:transparent;color:#cfe0e6;font-size:12px;font-weight:600;cursor:pointer;flex:none;">\u2190 My room</button>'
     : "";
-  return '<input id="roomVisitInput" type="text" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="Room code" style="width:90px;padding:7px 9px;border-radius:8px;border:1px solid #3a4750;background:#0e1519;color:#eef3f6;font-size:13px;outline:none;flex:none;">' +
+  return '<input id="roomVisitInput" type="text" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="Room code" style="width:90px;padding:7px 9px;border-radius:8px;border:1px solid #3a4750;background:#0e1519;color:#eef3f6;font-size:16px;outline:none;flex:none;">' +
     '<button id="roomVisitGo" type="button" style="padding:7px 14px;border-radius:8px;border:0;background:#9fd0a0;color:#0a1410;font-size:12px;font-weight:700;cursor:pointer;flex:none;">Go</button>' +
     back +
     '<span id="roomVisitMsg" style="font-size:11px;color:#8aa0a8;flex:1 1 100%;"></span>';
@@ -2457,7 +2457,7 @@ document.body.insertAdjacentHTML("beforeend", `
   <div style="width:min(430px,92vw);background:#0e1417;border:1px solid #243036;border-radius:14px;padding:18px;color:#dfe6ec;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 18px 50px rgba(0,0,0,.5);">
     <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Claim this space</div>
     <div style="font-size:12.5px;opacity:.78;line-height:1.5;margin-bottom:13px;">Paste a GitHub link to a project. It becomes a building here that everyone in the world can see.</div>
-    <input id="claimInput" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://github.com/you/your-project" style="width:100%;box-sizing:border-box;padding:11px 12px;border-radius:9px;border:1px solid #2c3940;background:#0a0f12;color:#eef3f6;font-size:14px;">
+    <input id="claimInput" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://github.com/you/your-project" style="width:100%;box-sizing:border-box;padding:11px 12px;border-radius:9px;border:1px solid #2c3940;background:#0a0f12;color:#eef3f6;font-size:16px;">
     <div id="claimError" style="font-size:12px;color:#e69191;min-height:16px;margin:6px 0 10px;"></div>
     <div style="display:flex;gap:10px;">
       <button id="claimCancel" style="flex:1;padding:11px;border-radius:9px;border:1px solid #2c3940;background:transparent;color:#cdd6db;font-size:14px;cursor:pointer;">Cancel</button>
@@ -2566,7 +2566,7 @@ document.body.insertAdjacentHTML("beforeend", `
     <div style="font-size:12px;opacity:.7;line-height:1.5;margin-bottom:10px;">Claude is here as a guide to the world \u2014 ask about getting around, claiming a spot, or what this place is.</div>
     <div id="askLog" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:9px;margin-bottom:10px;min-height:60px;"></div>
     <div style="display:flex;gap:8px;">
-      <input id="askInput" type="text" autocomplete="off" placeholder="Ask Claude\u2026" style="flex:1;box-sizing:border-box;padding:11px 12px;border-radius:9px;border:1px solid #2c3940;background:#0a0f12;color:#eef3f6;font-size:14px;">
+      <input id="askInput" type="text" autocomplete="off" placeholder="Ask Claude\u2026" style="flex:1;box-sizing:border-box;padding:11px 12px;border-radius:9px;border:1px solid #2c3940;background:#0a0f12;color:#eef3f6;font-size:16px;">
       <button id="askSend" style="padding:11px 15px;border-radius:9px;border:0;background:#9fd0a0;color:#0a1410;font-weight:600;font-size:14px;cursor:pointer;">Send</button>
     </div>
   </div>
