@@ -74,6 +74,7 @@ let placeRot = 0;
 let buildPreview = null;
 let _pvX = null, _pvZ = null, _pvRot = null, _pvType = null;
 let sunLight = null, sunDisc = null, hemiLight = null;
+let stars = null, moonDisc = null;
 let dayClock = 120;
 const HB_DAY = new THREE.Color(0xb8d3df);
 const HB_DUSK = new THREE.Color(0xe89b5a);
@@ -1714,6 +1715,14 @@ function updateDayNight(dt) {
   if (hemiLight) hemiLight.intensity = 0.4 + 1.0 * Math.max(0, Math.min(1, e + 0.3));
   sunLight.color.setRGB(1, 0.92 - 0.16 * (1 - day), 0.82 - 0.28 * (1 - day));
   if (arenaLight) arenaLight.intensity = (1 - day) * 1.55;
+  const nightF = Math.max(0, Math.min(1, -e * 1.5 + 0.1));
+  if (stars) stars.material.opacity = nightF * 0.95;
+  if (moonDisc) {
+    const md = sunLight.position.clone().multiplyScalar(-1);
+    const ml = md.length() || 1; md.multiplyScalar(80 / ml);
+    moonDisc.position.copy(md);
+    moonDisc.visible = e < 0.08;
+  }
   const sky = pickSky(e);
   if (scene.background && scene.background.copy) scene.background.copy(sky);
   if (scene.fog && scene.fog.color) scene.fog.color.copy(sky);
@@ -3112,6 +3121,21 @@ function buildTown() {
   scene.add(sun);
   sunLight = sun;
   sunDisc = new THREE.Mesh(new THREE.SphereGeometry(2.6, 18, 12), new THREE.MeshBasicMaterial({ color: 0xfff1c0, fog: false }));
+  const starGeo = new THREE.BufferGeometry();
+  const starPos = new Float32Array(420 * 3);
+  for (let si = 0; si < 420; si++) {
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(0.06 + Math.random() * 0.86);
+    starPos[si * 3] = 88 * Math.sin(ph) * Math.cos(th);
+    starPos[si * 3 + 1] = 88 * Math.cos(ph);
+    starPos[si * 3 + 2] = 88 * Math.sin(ph) * Math.sin(th);
+  }
+  starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+  stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xcfe2ff, size: 0.55, sizeAttenuation: true, transparent: true, opacity: 0, fog: false, depthWrite: false }));
+  scene.add(stars);
+  moonDisc = new THREE.Mesh(new THREE.SphereGeometry(1.9, 16, 12), new THREE.MeshBasicMaterial({ color: 0xdfe8f4, fog: false }));
+  moonDisc.visible = false;
+  scene.add(moonDisc);
   sunDisc.castShadow = false;
   scene.add(sunDisc);
 
@@ -3183,9 +3207,29 @@ function buildTown() {
     [-5, 14], [5, 14], [-7, 25], [7, -26]
   ];
   for (const t of treeSpots) addTree(t[0], t[1]);
+  buildFountain();
   buildArena();
 }
 
+function buildFountain() {
+  const stoneM = new THREE.MeshStandardMaterial({ color: 0x9aa3a8, roughness: 0.9 });
+  const stoneD = new THREE.MeshStandardMaterial({ color: 0x848d92, roughness: 0.95 });
+  const waterM = new THREE.MeshStandardMaterial({ color: 0x4f9dc9, roughness: 0.25, metalness: 0.1, emissive: 0x2a6f9e, emissiveIntensity: 0.25, transparent: true, opacity: 0.92 });
+  const basin = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.45, 0.55, 22), stoneM); basin.position.set(0, 0.275, 0); scene.add(basin);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(2.3, 0.09, 8, 22), stoneD); lip.rotation.x = Math.PI / 2; lip.position.set(0, 0.56, 0); scene.add(lip);
+  const water = new THREE.Mesh(new THREE.CylinderGeometry(2.12, 2.12, 0.06, 22), waterM); water.position.set(0, 0.54, 0); scene.add(water);
+  const column = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 1.5, 14), stoneM); column.position.set(0, 1.05, 0); scene.add(column);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.5, 0.3, 16), stoneD); bowl.position.set(0, 1.85, 0); scene.add(bowl);
+  const bowlWater = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.68, 0.05, 16), waterM); bowlWater.position.set(0, 1.95, 0); scene.add(bowlWater);
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), waterM); orb.position.set(0, 2.12, 0); scene.add(orb);
+  for (let fi = 0; fi < 6; fi++) {
+    const fa = fi / 6 * Math.PI * 2;
+    const fl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), stoneD);
+    fl.position.set(Math.cos(fa) * 3.2, 0.06, Math.sin(fa) * 3.2);
+    fl.rotation.y = fa; scene.add(fl);
+  }
+  addSolid(0, 0, 4.6, 4.6, 1.4);
+}
 function buildArena() {
   var z1 = 55, ax = 17, cz = 43, depth = 24;
   addGroundRect(0, cz, 38, 28, 0x3a4a3f);
