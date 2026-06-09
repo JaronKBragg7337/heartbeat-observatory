@@ -2520,6 +2520,7 @@ async function submitHome() {
 function closeClaim() {
   claimOverlay.style.display = "none";
   currentClaimPlot = null;
+  resetViewportAfterInput(claimInput);
 }
 
 // ---- Ask Claude (in-world guide) ----
@@ -2561,7 +2562,11 @@ function openAsk() {
   if (!askLog.childElementCount) addAskBubble("claude", "Hey \u2014 I'm Claude, your guide here. Ask me anything about the world.");
   setTimeout(() => { try { askInput.focus(); } catch (e) {} }, 30);
 }
-function closeAsk() { askOverlay.style.display = "none"; }
+function resetViewportAfterInput(inp) {
+  try { if (inp) inp.blur(); } catch (e) {}
+  try { window.scrollTo(0, 0); document.body.scrollTop = 0; if (document.documentElement) document.documentElement.scrollTop = 0; } catch (e) {}
+}
+function closeAsk() { askOverlay.style.display = "none"; resetViewportAfterInput(askInput); }
 async function sendAsk() {
   const msg = (askInput.value || "").trim();
   if (!msg) return;
