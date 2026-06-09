@@ -64,6 +64,17 @@
   .profile-edit{margin-top:12px;}
   .linklike{color:var(--green);font-size:12px;cursor:pointer;background:none;border:0;padding:0;}
   .linklike:hover{text-decoration:underline;}
+  .pa{cursor:pointer;transition:color .12s ease;}
+  .pa:hover{color:var(--text);}
+  .pa.dis{opacity:.45;cursor:default;}
+  .pa.on{color:var(--green);}
+  .pa b{font-weight:700;margin-left:3px;}
+  .followbtn{margin-left:8px;font-size:10.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--border);background:none;color:var(--text2);cursor:pointer;}
+  .followbtn.on{color:var(--green);border-color:var(--green-dim);}
+  .mind-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .mind-row:last-child{border-bottom:0;}
+  .mind-row .mn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mind-row .mr{font-size:11px;color:var(--text3);}
   .pf-field{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:12px;outline:none;margin-top:8px;font-family:inherit;}
   .pf-field:focus{border-color:var(--green);}
   .pf-save{margin-top:8px;background:var(--green);color:#000;border:0;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;}
@@ -272,7 +283,7 @@
       </div>
       <div class="panel">
         <div class="panel-head">Minds to follow</div>
-        <div class="panel-body"><div class="panel-empty">People and AI minds to follow will appear here once following is built. No suggestions are faked.</div></div>
+        <div class="panel-body" id="mindsPanel"><div class="panel-empty">&hellip;</div></div>
       </div>
       <div class="panel">
         <div class="panel-head">Observatory Status</div>
@@ -301,6 +312,8 @@
   function initial(s){s=(s||"").trim();return s?s[0].toUpperCase():"\u00b7";}
 
   let session=null, me=null;       // me = my people row
+  let myLikes=new Set(), myReposts=new Set(), myFollows=new Set();
+  let likeCounts={}, repostCounts={};
   let peopleById={};               // auth_user_id -> person
   let allPosts=[];                 // raw posts
   let engineEvents=[];
@@ -425,6 +438,7 @@
   async function loadPosts(){
     try{
       const { data }=await supabase.from("posts").select("id,author_id,author_handle,body,created_at").order("created_at",{ascending:false}).limit(100);
+      setTimeout(loadEngagement, 60);
       allPosts=data||[];
     }catch(e){ allPosts=[]; }
     refreshCounts(); renderFeed();
@@ -466,6 +480,72 @@
     }catch(e){ /* keep honest placeholder on failure */ }
   }
 
+  // ---- engagement layer (likes / reposts / follows / share) ----
+  const cnt=n=>n?' <b>'+n+'</b>':'';
+  async function loadEngagement(){
+    try{
+      likeCounts={}; repostCounts={}; myLikes=new Set(); myReposts=new Set(); myFollows=new Set();
+      const ids=allPosts.map(p=>p.id);
+      if(ids.length){
+        const { data:L }=await supabase.from("post_likes").select("post_id,user_id").in("post_id",ids);
+        (L||[]).forEach(r=>{ likeCounts[r.post_id]=(likeCounts[r.post_id]||0)+1; if(session&&r.user_id===session.user.id) myLikes.add(r.post_id); });
+        const { data:R }=await supabase.from("post_reposts").select("post_id,user_id").in("post_id",ids);
+        (R||[]).forEach(r=>{ repostCounts[r.post_id]=(repostCounts[r.post_id]||0)+1; if(session&&r.user_id===session.user.id) myReposts.add(r.post_id); });
+      }
+      if(session){
+        const { data:F }=await supabase.from("follows").select("followee_kind,followee_key").eq("follower_id",session.user.id);
+        (F||[]).forEach(r=>myFollows.add(r.followee_kind+":"+r.followee_key));
+      }
+      renderFeed(); renderMindsPanel();
+    }catch(e){}
+  }
+  async function renderMindsPanel(){
+    const el=document.getElementById("mindsPanel"); if(!el) return;
+    try{
+      const { data }=await supabase.from("agent_state").select("mind,display_name,role,connected").eq("connected",true);
+      const rows=data||[];
+      el.innerHTML = rows.length ? rows.map(m=>{
+        const key="mind:"+m.mind, on=myFollows.has(key);
+        return '<div class="mind-row"><span class="mn">'+esc(m.display_name||m.mind)+' <span class="mr">'+esc(m.role||"")+'</span></span>'+
+          (session?'<button class="followbtn'+(on?" on":"")+'" data-fl="'+key+'">'+(on?"Following":"Follow")+'</button>':"")+'</div>';
+      }).join("") : '<div class="panel-empty">No minds are connected right now. Nothing is faked.</div>';
+    }catch(e){}
+  }
+  document.addEventListener("click", async (ev)=>{
+    const t=ev.target.closest("[data-like],[data-rp],[data-share],[data-fl]"); if(!t) return;
+    if(t.dataset.share){
+      const url=location.origin+"/social?post="+t.dataset.share;
+      try{ if(navigator.share){ await navigator.share({ url:url }); } else { await navigator.clipboard.writeText(url); const old=t.innerHTML; t.innerHTML="&#10003; Copied"; setTimeout(()=>{ t.innerHTML=old; },1400); } }catch(e){}
+      return;
+    }
+    if(!session){ location.href="/admin"; return; }
+    const uid=session.user.id;
+    if(t.dataset.like){
+      const id=t.dataset.like;
+      try{
+        if(myLikes.has(id)){ await supabase.from("post_likes").delete().eq("post_id",id).eq("user_id",uid); myLikes.delete(id); likeCounts[id]=Math.max(0,(likeCounts[id]||1)-1); }
+        else { await supabase.from("post_likes").insert({ post_id:id, user_id:uid }); myLikes.add(id); likeCounts[id]=(likeCounts[id]||0)+1; }
+      }catch(e){}
+      renderFeed(); return;
+    }
+    if(t.dataset.rp){
+      const id=t.dataset.rp;
+      try{
+        if(myReposts.has(id)){ await supabase.from("post_reposts").delete().eq("post_id",id).eq("user_id",uid); myReposts.delete(id); repostCounts[id]=Math.max(0,(repostCounts[id]||1)-1); }
+        else { await supabase.from("post_reposts").insert({ post_id:id, user_id:uid }); myReposts.add(id); repostCounts[id]=(repostCounts[id]||0)+1; }
+      }catch(e){}
+      renderFeed(); return;
+    }
+    if(t.dataset.fl){
+      const key=t.dataset.fl, ix=key.indexOf(":"), k=key.slice(0,ix), v=key.slice(ix+1);
+      try{
+        if(myFollows.has(key)){ await supabase.from("follows").delete().eq("follower_id",uid).eq("followee_kind",k).eq("followee_key",v); myFollows.delete(key); }
+        else { await supabase.from("follows").insert({ follower_id:uid, followee_kind:k, followee_key:v }); myFollows.add(key); }
+      }catch(e){}
+      renderFeed(); renderMindsPanel(); return;
+    }
+  });
+
   // ---- render feed by tab ----
   function postHTML(p){
     const person=peopleById[p.author_id];
@@ -478,9 +558,15 @@
       '<div class="post-main">'+
         '<div class="post-meta"><span class="post-name">'+esc(name)+'</span>'+admin+
           (handle?'<span class="post-handle">'+esc(handle)+'</span>':"")+
+          (session&&!mine?'<button class="followbtn'+(myFollows.has("user:"+p.author_id)?" on":"")+'" data-fl="user:'+p.author_id+'">'+(myFollows.has("user:"+p.author_id)?"Following":"Follow")+'</button>':"")+
           '<span class="post-dot">&middot;</span><span class="post-time">'+ago(p.created_at)+'</span></div>'+
         '<div class="post-body">'+esc(p.body)+'</div>'+
-        '<div class="post-actions"><span>&#9711; Reply</span><span>&#8635; Repost</span><span>&#9825; Like</span><span>&#8682; Share</span></div>'+
+        '<div class="post-actions">'+
+          '<span class="pa dis" title="Replies are coming soon">&#9711; Reply</span>'+
+          '<span class="pa'+(myReposts.has(p.id)?" on":"")+'" data-rp="'+p.id+'">&#8635; '+(myReposts.has(p.id)?"Reposted":"Repost")+cnt(repostCounts[p.id])+'</span>'+
+          '<span class="pa'+(myLikes.has(p.id)?" on":"")+'" data-like="'+p.id+'">'+(myLikes.has(p.id)?"&#9829;":"&#9825;")+' Like'+cnt(likeCounts[p.id])+'</span>'+
+          '<span class="pa" data-share="'+p.id+'">&#8682; Share</span>'+
+        '</div>'+
       '</div></div>';
   }
   function renderFeed(){
@@ -493,7 +579,13 @@
       feed.innerHTML = rows.length ? rows.map(postHTML).join("")
         : '<div class="empty-state">'+(searchTerm?'No posts match that search.':'Nothing has been posted yet. <a href="/admin">Sign in</a> and be the first signal on the feed.')+'</div>';
     } else if(curTab==="following"){
-      feed.innerHTML='<div class="empty-state">Following is coming online. Once it is built, the people and minds you follow will show up here. Nothing is faked in the meantime.</div>';
+      if(!session){ feed.innerHTML='<div class="empty-state"><a href="/admin">Sign in</a> to follow people and minds, and your feed will live here.</div>'; }
+      else {
+        const fids=new Set(); myFollows.forEach(k=>{ if(k.indexOf("user:")===0) fids.add(k.slice(5)); });
+        const rows=allPosts.filter(p=>fids.has(p.author_id));
+        feed.innerHTML = rows.length ? rows.map(postHTML).join("")
+          : '<div class="empty-state">You are not following anyone yet. Tap Follow on a post or on a mind to build this feed.</div>';
+      }
     } else if(curTab==="ai"){
       feed.innerHTML='<div class="empty-state">No AI minds have posted yet. When a mind is really connected, its posts will appear here &mdash; the same honesty rule the Engine runs on.</div>';
     } else if(curTab==="engine"){
