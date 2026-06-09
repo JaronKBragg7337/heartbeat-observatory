@@ -3,39 +3,73 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Video · Heartbeat Observatory</title>
-<link rel="stylesheet" href="/section.css" />
+<title>The Theater · Heartbeat Observatory</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #07090c; color: #e8edf2; font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  .room { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 22px 16px 30px; background: radial-gradient(ellipse at 50% 0%, #11161c 0%, #07090c 62%); }
+  .marquee { display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px; border: 2px solid #c9a35a; border-radius: 14px; background: #12100a; box-shadow: 0 0 26px rgba(201, 163, 90, 0.22), inset 0 0 14px rgba(201, 163, 90, 0.1); margin-bottom: 8px; }
+  .marquee .bulb { width: 7px; height: 7px; border-radius: 50%; background: #ffd98a; box-shadow: 0 0 8px #ffd98a; }
+  .marquee h1 { font-size: clamp(19px, 4.5vw, 28px); letter-spacing: 0.18em; color: #ffe2a8; font-weight: 800; }
+  .tag { font-size: 12.5px; color: #97a4ae; letter-spacing: 0.06em; margin-bottom: 22px; }
+  .screenframe { width: min(860px, 96vw); background: #04050700; }
+  .screen { aspect-ratio: 16 / 9; width: 100%; border-radius: 10px; background: linear-gradient(180deg, #0e141b 0%, #0a0f14 100%); border: 1px solid #243038; box-shadow: 0 0 60px rgba(140, 190, 230, 0.12), 0 12px 50px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; text-align: center; }
+  .screen .now { font-size: 11px; letter-spacing: 0.3em; color: #6f8290; }
+  .screen .title { font-size: clamp(18px, 4.2vw, 30px); font-weight: 800; letter-spacing: 0.08em; color: #cfe2ee; }
+  .screen .honest { font-size: 13.5px; line-height: 1.55; color: #8da0ac; max-width: 560px; }
+  .glowline { width: min(860px, 96vw); height: 14px; margin-top: 2px; background: radial-gradient(ellipse at 50% 0%, rgba(150, 200, 240, 0.18), transparent 70%); }
+  .seats { width: min(820px, 94vw); display: flex; flex-direction: column; gap: 9px; margin-top: 26px; }
+  .row { display: flex; justify-content: center; gap: 7px; }
+  .seat { width: clamp(26px, 5.2vw, 44px); height: clamp(18px, 3.4vw, 28px); background: #57222a; border: 1px solid #6e2d36; border-radius: 7px 7px 3px 3px; box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.45); }
+  .row:nth-child(2) { transform: scale(1.04); }
+  .row:nth-child(3) { transform: scale(1.08); }
+  .row:nth-child(4) { transform: scale(1.12); }
+  .exits { margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .exit { padding: 10px 18px; border-radius: 10px; border: 1px solid #2c3940; background: rgba(12, 17, 21, 0.9); color: #cfe0e6; text-decoration: none; font-size: 13.5px; font-weight: 600; }
+  .exit.green { border-color: #3f6e52; color: #b9e6c6; }
+  .status { margin-top: 16px; font-size: 12px; color: #7e909b; display: flex; align-items: center; gap: 7px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #5a6a74; }
+  .dot.live { background: #57d98a; box-shadow: 0 0 8px #57d98a; }
+</style>
 </head>
 <body>
-  <nav class="topnav">
-    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
-    <a class="signin" id="authlink" href="/admin">Sign in</a>
-  </nav>
-  <div class="wrap">
-    <a class="back" href="/">&larr; All sections</a>
-    <header class="hero">
-      <h1>Video</h1>
-      <p class="sub">This section is for the live stream &mdash; the operator broadcasting in real time. When there is no stream, it stays quiet here rather than pretending to be live.</p>
-      <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
-    </header>
-    <div class="panel" style="margin-top:24px;">
-      <p>The live stream isn&rsquo;t running right now.</p>
-      <p class="muted">The simulated world that was briefly shown here has moved to its own home &mdash; <a href="/engine" style="color:var(--text);">The Engine</a> &mdash; where it belongs as the brain inside the machine. This slot is reserved for an actual live broadcast.</p>
+  <div class="room">
+    <div class="marquee"><span class="bulb"></span><h1>THE THEATER</h1><span class="bulb"></span></div>
+    <div class="tag">Heartbeat Observatory &middot; one screen, honest programming</div>
+    <div class="screenframe">
+      <div class="screen">
+        <div class="now">NOW SHOWING</div>
+        <div class="title">FIRST SCREENING COMING SOON</div>
+        <div class="honest">This screen will play real, AI-made films and requested videos. Nothing here is ever faked &mdash; when there is something to watch, it plays; until then, the screen tells you the truth.</div>
+      </div>
+      <div class="glowline"></div>
     </div>
-    <footer><a href="/">heartbeatobservatory.com</a></footer>
+    <div class="seats">
+      <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
+      <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
+      <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
+      <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
+    </div>
+    <div class="exits">
+      <a class="exit green" href="/engine">&larr; Back to town</a>
+      <a class="exit" href="/">All sections</a>
+    </div>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
   </div>
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
-  const authlink=document.getElementById("authlink");
-  const dot=document.getElementById("dot"); const statusText=document.getElementById("statusText");
-  (async()=>{ try{ const { data:{ session } }=await supabase.auth.getSession(); if(session) authlink.textContent="Account"; }catch(e){} })();
-  (async()=>{ try{
-    const { data }=await supabase.from("surfaces").select("status").eq("key","video").maybeSingle();
-    const st=data?data.status:"coming_soon";
-    dot.className="dot"+(st==="live"?" live":"");
-    statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
-  }catch(e){ statusText.textContent=""; } })();
+  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co", "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+  const dot = document.getElementById("dot");
+  const statusText = document.getElementById("statusText");
+  (async () => {
+    try {
+      const { data } = await supabase.from("surfaces").select("status").eq("key", "video").maybeSingle();
+      const st = data ? data.status : "coming_soon";
+      dot.className = "dot" + (st === "live" ? " live" : "");
+      statusText.textContent = st === "live" ? "The Theater is open" : "Coming soon";
+    } catch (e) { statusText.textContent = ""; }
+  })();
 </script>
 <script defer src="/bubble.js"></script>
 </body>
