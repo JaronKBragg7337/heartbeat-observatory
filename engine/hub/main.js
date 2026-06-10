@@ -230,21 +230,6 @@ const doors = [
     front: "north"
   },
   {
-    id: "library",
-    surface: "library",
-    label: "Library",
-    path: "/library",
-    x: -9,
-    z: -18.6,
-    width: 5.0,
-    depth: 4.0,
-    height: 3.0,
-    body: 0x7a5c3e,
-    roof: 0x4a3826,
-    sign: 0xf2e3c2,
-    front: "south"
-  },
-  {
     id: "video",
     surface: "video",
     label: "Theater",
