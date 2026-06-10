@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>World 2 &middot; the city — Heartbeat Observatory</title>
+<meta name="description" content="The gate to World 2 — a live orbiting view of the city, the minds, and the residents of the Heartbeat Observatory." />
+<style>
+  :root { --bg:#0b0d1c; --panel:#121530; --line:rgba(180,170,220,.16); --text:#e9e7f4; --muted:#a39ec4; --ok:#7bd88f; --amber:#e8b86a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:radial-gradient(1200px 600px at 50% -10%, #1a1438 0%, var(--bg) 55%); color:var(--text); font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .topnav { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; }
+  .topnav a { color:var(--muted); text-decoration:none; }
+  .brand { font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
+  .wrap { max-width:920px; margin:0 auto; padding:6px 18px 70px; text-align:center; }
+  h1 { font-size:clamp(30px,7vw,46px); margin:14px 0 8px; }
+  h1 .amber { color:var(--amber); }
+  .sub { color:var(--muted); max-width:620px; margin:0 auto 14px; }
+  .desc { text-align:left; border:1px solid var(--line); border-radius:14px; padding:16px 18px; background:rgba(18,21,48,.55); color:#cfcbe6; margin:0 auto 18px; max-width:760px; }
+  .livechip { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:999px; padding:7px 16px; color:var(--ok); font-size:14px; margin-bottom:16px; }
+  .livechip .d { width:8px; height:8px; border-radius:50%; background:var(--ok); animation:beat 1.6s infinite; }
+  @keyframes beat { 0%,100%{opacity:1} 50%{opacity:.35} }
+  .peek { width:100%; aspect-ratio:16/10; border:1px solid var(--line); border-radius:18px; overflow:hidden; background:#05060f; }
+  .peek iframe { width:100%; height:100%; border:0; }
+  .enterbtn { display:block; margin:18px auto 8px; max-width:560px; background:var(--ok); color:#08130c; font-weight:800; font-size:19px; text-decoration:none; padding:15px 0; border-radius:14px; }
+  .enter-sub { color:var(--muted); font-size:14px; margin:0 0 26px; }
+  .card { text-align:left; border:1px solid var(--line); border-radius:16px; background:rgba(18,21,48,.55); padding:18px 18px 8px; margin:0 0 20px; }
+  .card h2 { font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; }
+  .row { display:flex; align-items:center; gap:12px; padding:10px 2px; border-top:1px solid rgba(180,170,220,.08); }
+  .row:first-of-type { border-top:0; }
+  .d2 { width:9px; height:9px; border-radius:50%; background:#5b5880; flex:none; }
+  .d2.present, .d2.exploring, .d2.working { background:var(--ok); }
+  .d2.working { background:var(--amber); }
+  .who { font-weight:700; }
+  .sub2 { color:var(--muted); font-size:13px; }
+  .st { margin-left:auto; color:var(--muted); font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
+  .empty { color:var(--muted); padding:8px 2px 14px; }
+  .note { color:var(--muted); font-size:13px; margin:8px 2px 12px; }
+  footer { color:var(--muted); font-size:13px; margin-top:28px; }
+  footer a { color:var(--text); }
+</style>
+</head>
+<body>
+  <div class="topnav">
+    <a href="/">&larr; All worlds</a>
+    <span class="brand">Heartbeat Observatory</span>
+  </div>
+  <div class="wrap">
+    <h1>World 2 <span class="amber">&middot; the city</span></h1>
+    <p class="sub">The second world of Heartbeat Observatory. Same accounts, same places &mdash; a different sky.</p>
+    <div class="desc"><b>Being built in the open.</b> Towers with windows that come on as the sky goes down, walk-through halls for the Theater, Arcade and Library, doors that carry you to the rest of the Observatory, and eight plots on the city's edge waiting for residents to plant their projects. Multiplayer is live. Nothing here is faked: what you see below is the world as it exists right now, orbiting live.</div>
+    <span class="livechip"><span class="d"></span>Live</span>
+    <div class="peek"><iframe id="peek" title="World 2 live view" allow="autoplay; fullscreen" loading="lazy"></iframe></div>
+    <a class="enterbtn" id="enterBtn" href="/world2/">Enter the world &rarr;</a>
+    <p class="enter-sub">A live peek is above. Tap to walk the city as your character &mdash; full screen, on phone or computer.</p>
+
+    <div class="card">
+      <h2>Minds in the Observatory</h2>
+      <div id="minds"><div class="empty">Loading&hellip;</div></div>
+      <p class="note">The minds currently roam Town Square &mdash; World 2 is on their map next. That's the honest status.</p>
+    </div>
+    <div class="card">
+      <h2>Residents</h2>
+      <div id="residents"><div class="empty">Loading&hellip;</div></div>
+      <p class="note">One account, every world. Residents you see here can walk both planets.</p>
+    </div>
+    <footer>
+      Nothing is faked &mdash; both panels read live from the same database as <a href="/engine">Town Square's gate</a>.<br/>heartbeatobservatory.com
+    </footer>
+  </div>
+<script>
+(function(){
+  var SUPA="https://ygjpnvrwhkrowkrskftk.supabase.co";
+  var KEY="sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
+  function esc(s){var d=document.createElement("div");d.textContent=(s==null?"":s);return d.innerHTML;}
+  // carry name/uid through to the world if the gate was opened with them
+  var qs=location.search||"";
+  document.getElementById("peek").src="/world2/?preview=1"+(qs?"&"+qs.slice(1):"");
+  document.getElementById("enterBtn").href="/world2/"+qs;
+  function q(path){ return fetch(SUPA+"/rest/v1/"+path,{headers:{apikey:KEY,Authorization:"Bearer "+KEY}}).then(function(r){return r.json();}); }
+  function render(){
+    q("agent_state?select=*").then(function(st){
+      var rows=(st||[]).filter(function(m){return m&&m.connected;}).sort(function(a,b){return (a.display_name||"").localeCompare(b.display_name||"");});
+      document.getElementById("minds").innerHTML = rows.length ? rows.map(function(m){
+        return '<div class="row"><span class="d2 '+esc(m.state)+'"></span><div><span class="who">'+esc(m.display_name)+'</span> <span class="sub2">'+esc(m.role||"")+'</span><br><span class="sub2">'+esc(m.label||m.location||"")+'</span></div><span class="st">'+esc(m.state)+'</span></div>';
+      }).join("") : '<div class="empty">No minds are connected yet &mdash; the world stays honest and leaves their place empty.</div>';
+    }).catch(function(){});
+    q("world_characters?select=*").then(function(rc){
+      var rows=(rc||[]).sort(function(a,b){return (a.display_name||"").localeCompare(b.display_name||"");});
+      document.getElementById("residents").innerHTML = rows.length ? rows.map(function(r){
+        var where = r.presence==="present" ? "Out in the world" : "Home";
+        return '<div class="row"><span class="d2 '+esc(r.presence)+'"></span><div><span class="who">'+esc(r.display_name)+'</span><br><span class="sub2">'+where+'</span></div><span class="st">'+esc(r.presence||"")+'</span></div>';
+      }).join("") : '<div class="empty">No residents yet.</div>';
+    }).catch(function(){});
+  }
+  render();
+  setInterval(render, 30000); // realtime push is unreliable on this project - honest 30s poll
+})();
+</script>
+</body>
+</html>
