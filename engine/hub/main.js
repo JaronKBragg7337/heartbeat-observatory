@@ -70,6 +70,8 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
+const BUILD = "2026-06-10b"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 let settingsOpen = false;
 let buildMode = false;
