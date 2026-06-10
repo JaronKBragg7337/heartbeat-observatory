@@ -182,6 +182,9 @@ const buildingColliders = [];
 const solidBlockers = [];
 const noteBars = [];
 const BANDSTAND = { x: -16, z: 22 };
+let inInterior = false, interiorKind = null, interiorReturn = null;
+let interiorHidden = [], savedTownCollidersI = null, activeStation = null;
+const interiorGroups = {};
 const platforms = [];
 const placedProps = [];
 
@@ -221,6 +224,7 @@ const doors = [
     surface: "games",
     label: "Games",
     path: "/games",
+    interior: "games",
     x: -16,
     z: 10,
     width: 4.8,
@@ -236,6 +240,7 @@ const doors = [
     surface: "library",
     label: "Library",
     path: "/library",
+    interior: "library",
     x: -9,
     z: -18.6,
     width: 5.0,
@@ -251,6 +256,7 @@ const doors = [
     surface: "video",
     label: "Theater",
     path: "/video",
+    interior: "theater",
     x: 9,
     z: -18.6,
     width: 5.0,
@@ -2341,6 +2347,7 @@ function doorStatus(door) {
   return (door && door.surface && surfaceStatus[door.surface]) || "live";
 }
 function updateActiveDoor() {
+  if (inInterior) { updateActiveStation(); return; }
   if (inRoom) { doorPrompt.classList.add("hidden"); actionButton.disabled = true; return; }
   let nextDoor = null;
   let bestDistance = Infinity;
@@ -2705,6 +2712,176 @@ function hideRoomPanel() {
   if (p) p.style.display = "none";
 }
 
+// ---- Generic walk-in interiors (games / library / theater) ----
+function interiorShell(w, d, floorC, wallC, ceilC) {
+  const g = new THREE.Group();
+  const WH = 3.4, T = 0.3;
+  const floorMat = new THREE.MeshStandardMaterial({ color: floorC, roughness: 0.92 });
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), floorMat);
+  floor.position.set(0, -0.1, 0); floor.receiveShadow = true; g.add(floor);
+  const ceil = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), new THREE.MeshStandardMaterial({ color: ceilC, roughness: 0.9 }));
+  ceil.position.set(0, WH + 0.1, 0); g.add(ceil);
+  const wallMat = new THREE.MeshStandardMaterial({ color: wallC, roughness: 0.85 });
+  const colliders = [];
+  for (const wd of [
+    { x: 0, z: -d / 2, w: w, d: T }, { x: 0, z: d / 2, w: w, d: T },
+    { x: -w / 2, z: 0, w: T, d: d }, { x: w / 2, z: 0, w: T, d: d }
+  ]) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(wd.w, WH, wd.d), wallMat);
+    m.position.set(wd.x, WH / 2, wd.z); m.castShadow = true; g.add(m);
+    colliders.push({ x: wd.x, z: wd.z, width: wd.w, depth: wd.d });
+  }
+  const exitPad = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 1.6), new THREE.MeshStandardMaterial({ color: 0x9fd0a0, emissive: 0x4f8f5f, emissiveIntensity: 0.55, roughness: 0.5 }));
+  exitPad.position.set(0, 0.05, d / 2 - 1.1); g.add(exitPad);
+  const stations = [{ x: 0, z: d / 2 - 1.1, label: "Exit to town", exit: true }];
+  g.userData = { colliders: colliders, stations: stations, depth: d };
+  g.visible = false;
+  scene.add(g);
+  return g;
+}
+function addArcadeCabinet(g, x, z, label, color, lit) {
+  const bodyM = new THREE.MeshStandardMaterial({ color: 0x1c2026, roughness: 0.6 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.9, 0.75), bodyM);
+  body.position.set(x, 0.95, z); body.castShadow = true; g.add(body);
+  const scr = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.06),
+    new THREE.MeshStandardMaterial({ color: lit ? color : 0x10141a, emissive: lit ? color : 0x000000, emissiveIntensity: lit ? 0.85 : 0, roughness: 0.4 }));
+  scr.position.set(x, 1.35, z + 0.39); g.add(scr);
+  const marq = createLabelSprite(label, { background: "rgba(10, 14, 18, 0.85)", foreground: lit ? "#b9ffd2" : "#5a6470", fontSize: 24, scale: 0.011 });
+  marq.position.set(x, 2.25, z); g.add(marq);
+}
+function buildInterior(kind) {
+  if (kind === "games") {
+    const g = interiorShell(11, 11, 0x14161a, 0x1f242c, 0x0d1014);
+    addArcadeCabinet(g, -3.4, -4.6, "PRESIDENT SIM", 0x57d98a, true);
+    g.userData.stations.push({ x: -3.4, z: -4.0, label: "Play President Sim", url: "https://jaronkbragg7337.github.io/President-Sim/", external: true });
+    addArcadeCabinet(g, 0, -4.6, "COMING SOON", 0x000000, false);
+    addArcadeCabinet(g, 3.4, -4.6, "COMING SOON", 0x000000, false);
+    const term = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.5), new THREE.MeshStandardMaterial({ color: 0x24303a, roughness: 0.5, emissive: 0x183040, emissiveIntensity: 0.4 }));
+    term.position.set(4.6, 0.55, 0); g.add(term);
+    const tl = createLabelSprite("All games (page)", { background: "rgba(10, 14, 18, 0.85)", foreground: "#cfe2ee", fontSize: 24, scale: 0.011 });
+    tl.position.set(4.6, 1.7, 0); g.add(tl);
+    g.userData.stations.push({ x: 4.6, z: 0.7, label: "Open the Games page", url: "/games" });
+    return g;
+  }
+  if (kind === "library") {
+    const g = interiorShell(13, 11, 0x9a8a6e, 0x5e4c34, 0x241c12);
+    const SHELVES = [
+      ["Project Gutenberg", "https://www.gutenberg.org"],
+      ["Wikipedia", "https://en.wikipedia.org"],
+      ["Open Library", "https://openlibrary.org"],
+      ["Khan Academy", "https://www.khanacademy.org"],
+      ["LibriVox", "https://librivox.org"],
+      ["Standard Ebooks", "https://standardebooks.org"],
+      ["Wikisource", "https://en.wikisource.org"],
+      ["OpenStax", "https://openstax.org"]
+    ];
+    const shelfM = new THREE.MeshStandardMaterial({ color: 0x6b4a30, roughness: 0.78 });
+    const BOOKC = [0x8a3a2e, 0x2e5a8a, 0x3a7a44, 0xa8842e, 0x6a3a7a];
+    for (let i = 0; i < 8; i++) {
+      const side = i < 4 ? -1 : 1;
+      const sx = side * 5.9, sz = -3.9 + (i % 4) * 2.2;
+      const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.3, 1.7), shelfM);
+      shelf.position.set(sx, 1.15, sz); shelf.castShadow = true; g.add(shelf);
+      for (let b = 0; b < 5; b++) {
+        const book = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.42, 0.24),
+          new THREE.MeshStandardMaterial({ color: BOOKC[(i + b) % 5], roughness: 0.8 }));
+        book.position.set(sx - side * 0.28, 0.62 + (b % 3) * 0.62, sz - 0.6 + b * 0.3);
+        g.add(book);
+      }
+      const lbl = createLabelSprite(SHELVES[i][0], { background: "rgba(20, 14, 8, 0.85)", foreground: "#f0dcae", fontSize: 22, scale: 0.0105 });
+      lbl.position.set(sx - side * 0.6, 2.7, sz); g.add(lbl);
+      g.userData.colliders.push({ x: sx, z: sz, width: 0.6, depth: 1.8 });
+      g.userData.stations.push({ x: sx - side * 1.0, z: sz, label: "Open " + SHELVES[i][0], url: SHELVES[i][1], external: true });
+    }
+    const desk = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.85, 0.9), shelfM);
+    desk.position.set(0, 0.42, -4.6); desk.castShadow = true; g.add(desk);
+    const dl = createLabelSprite("Write a book \u00b7 Written Here", { background: "rgba(20, 14, 8, 0.85)", foreground: "#f0dcae", fontSize: 24, scale: 0.011 });
+    dl.position.set(0, 1.7, -4.6); g.add(dl);
+    g.userData.colliders.push({ x: 0, z: -4.6, width: 2.3, depth: 1.0 });
+    g.userData.stations.push({ x: 0, z: -3.9, label: "Open the writing desk", url: "/library" });
+    return g;
+  }
+  if (kind === "theater") {
+    const g = interiorShell(13, 15, 0x17141a, 0x241e2a, 0x0c0a0e);
+    const screen = new THREE.Mesh(new THREE.BoxGeometry(9.5, 3.0, 0.12),
+      new THREE.MeshStandardMaterial({ color: 0xbfd6e4, emissive: 0x9cc2dc, emissiveIntensity: 0.5, roughness: 0.35 }));
+    screen.position.set(0, 1.85, -7.3); g.add(screen);
+    const nl = createLabelSprite("NOW SHOWING \u00b7 FIRST SCREENING COMING SOON", { background: "rgba(8, 10, 14, 0.88)", foreground: "#cfe2ee", fontSize: 22, scale: 0.012 });
+    nl.position.set(0, 2.0, -7.1); g.add(nl);
+    const seatM = new THREE.MeshStandardMaterial({ color: 0x57222a, roughness: 0.75 });
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 6; c++) {
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.55, 0.7), seatM);
+        seat.position.set(-3.75 + c * 1.5, 0.27, -3.4 + r * 1.7);
+        seat.castShadow = true; g.add(seat);
+        const back = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.7, 0.14), seatM);
+        back.position.set(-3.75 + c * 1.5, 0.85, -3.05 + r * 1.7); g.add(back);
+      }
+    }
+    g.userData.stations.push({ x: 4.9, z: 5.6, label: "Theater booth (page)", url: "/video" });
+    const booth = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 0.6), new THREE.MeshStandardMaterial({ color: 0x2a2030, roughness: 0.55, emissive: 0x3a2848, emissiveIntensity: 0.35 }));
+    booth.position.set(4.9, 0.6, 6.3); g.add(booth);
+    return g;
+  }
+  return null;
+}
+function enterInterior(kind) {
+  if (inRoom || inInterior) return;
+  try {
+    if (!interiorGroups[kind]) interiorGroups[kind] = buildInterior(kind);
+    const g = interiorGroups[kind];
+    if (!g) return;
+    interiorReturn = { x: state.x, z: state.z, yaw: state.yaw };
+    interiorHidden = [];
+    for (const o of scene.children) {
+      if (o === g || o === camera || o.isLight) continue;
+      if (o.visible) { interiorHidden.push(o); o.visible = false; }
+    }
+    g.visible = true;
+    savedTownCollidersI = buildingColliders.slice();
+    buildingColliders.length = 0;
+    for (const c of g.userData.colliders) buildingColliders.push(c);
+    state.x = 0; state.z = g.userData.depth / 2 - 2.3; state.yaw = Math.PI;
+    inInterior = true; interiorKind = kind; activeStation = null;
+    mySpace = "interior:" + kind;
+    doorPrompt.classList.add("hidden");
+    try { trackSelf(); sendState(true); } catch (e) {}
+  } catch (e) { try { exitInterior(); } catch (_) {} }
+}
+function exitInterior() {
+  if (!inInterior) return;
+  const g = interiorGroups[interiorKind];
+  if (g) g.visible = false;
+  for (const o of interiorHidden) o.visible = true;
+  interiorHidden = [];
+  if (savedTownCollidersI) {
+    buildingColliders.length = 0;
+    for (const c of savedTownCollidersI) buildingColliders.push(c);
+    savedTownCollidersI = null;
+  }
+  if (interiorReturn) { state.x = interiorReturn.x; state.z = interiorReturn.z; state.yaw = interiorReturn.yaw; }
+  inInterior = false; interiorKind = null; activeStation = null;
+  mySpace = "town";
+  try { trackSelf(); sendState(true); } catch (e) {}
+}
+function updateActiveStation() {
+  const g = interiorGroups[interiorKind];
+  if (!g) { doorPrompt.classList.add("hidden"); actionButton.disabled = true; activeStation = null; return; }
+  let best = null, bestD = Infinity;
+  for (const st of g.userData.stations) {
+    const d = Math.hypot(state.x - st.x, state.z - st.z);
+    if (d < 1.7 && d < bestD) { bestD = d; best = st; }
+  }
+  activeStation = best;
+  if (best) {
+    doorPromptText.textContent = best.label;
+    doorPrompt.classList.remove("hidden");
+    actionButton.disabled = false;
+  } else {
+    doorPrompt.classList.add("hidden");
+    actionButton.disabled = true;
+  }
+}
 function enterRoom() {
   if (inRoom) return;
   try {
@@ -2772,7 +2949,17 @@ function forceExitRoom() {
 }
 
 function enterActiveDoor() {
+  if (inInterior) {
+    if (!activeStation) return;
+    if (activeStation.exit) { exitInterior(); return; }
+    if (activeStation.url) {
+      if (activeStation.external) { try { window.open(activeStation.url, "_blank", "noopener"); } catch (e) {} }
+      else { const target = window.top || window; target.location.assign(activeStation.url); }
+    }
+    return;
+  }
   if (activeDoor) {
+    if (activeDoor.interior) { enterInterior(activeDoor.interior); return; }
     if (activeDoor.room) { enterRoom(); return; }
     if (doorStatus(activeDoor) === "coming_soon") { return; }
     const target = window.top || window;
@@ -3151,6 +3338,8 @@ function buildHomeMesh(plotState, style) {
   const wZ = (lx, lz) => z - lx * fx + lz * fz;
   const lbox = (lx, ly, lz, w, h, d, m) => addBox(wX(lx, lz), ly, wZ(lx, lz), swap ? d : w, h, swap ? w : d, m);
   const lcol = (lx, lz, w, d) => buildingColliders.push({ x: wX(lx, lz), z: wZ(lx, lz), width: swap ? d : w, depth: swap ? w : d });
+  if (style === "dome") lcol(0, 0, 3.3, 3.3);
+  else if (style === "pod") lcol(0, 0, 2.7, 2.7);
   const lplat = (aX, bX, aZ, bZ, top) => {
     const xs = [wX(aX, aZ), wX(bX, aZ), wX(aX, bZ), wX(bX, bZ)];
     const zs = [wZ(aX, aZ), wZ(bX, aZ), wZ(aX, bZ), wZ(bX, bZ)];
