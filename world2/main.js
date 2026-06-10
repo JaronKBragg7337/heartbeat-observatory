@@ -12,7 +12,8 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const BUILD = "2026-06-10-w2h"; // bumped with ?v= in /world2/index.html on every deploy
+const BUILD = "2026-06-10-w2i";
+const PREVIEW = new URLSearchParams(location.search).get("preview") === "1"; // gate-page spectate: orbit forever, join nothing // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
 // ---- DOM ----
@@ -983,6 +984,7 @@ function updateRemotes(dt) {
 }
 
 function trackSelf() {
+  if (PREVIEW) return; // spectators are not residents
   // LAW: presence.track() is join/leave identity ONLY. It is called once on subscribe and
   // NEVER from the movement cycle (per-client presence rate limit throttles the whole socket).
   if (!channel) return;
@@ -992,6 +994,7 @@ function trackSelf() {
 }
 
 function sendState(force = false) {
+  if (PREVIEW) return;
   if (!connected || !channel || !hasEntered) return;
   if (!force && sendAccumulator < 0.1) return; // LAW: state sends capped at 10Hz
   // LAW: idle suppression — skip sends when nothing visible changed; 5s keepalive while idle
@@ -1757,6 +1760,12 @@ function clearMovementInput() {
 
 // ---- input wiring ----
 enterButton.addEventListener("click", enterWorld);
+if (PREVIEW) {
+  // Gate-page embed: hide the intro and every control, keep the orbit camera circling the
+  // plaza (updateCamera already orbits while !hasEntered - we simply never enter).
+  document.body.classList.add("preview");
+  overlay.classList.add("hidden");
+}
 
 canvas.addEventListener("click", () => {
   if (!isTouch && hasEntered && document.pointerLockElement !== canvas) {
