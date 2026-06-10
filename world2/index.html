@@ -34,6 +34,8 @@
       #moveKnob { position:absolute; left:50%; top:50%; width:52px; height:52px; border-radius:50%; background:rgba(190,215,230,.32); border:1px solid rgba(200,225,240,.4); transform:translate(-50%,-50%); pointer-events:none; }
       .pad-buttons { position:fixed; right:calc(env(safe-area-inset-right) + 18px); bottom:calc(env(safe-area-inset-bottom) + 26px); z-index:30; display:none; flex-direction:column; gap:12px; }
       .pad-buttons button { width:62px; height:62px; border-radius:50%; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); font-size:12px; font-weight:700; letter-spacing:.04em; touch-action:none; }
+      #doorEnterBtn { width:74px; height:74px; background:rgba(36,84,56,.6); border-color:rgba(123,216,143,.45); }
+      #doorEnterBtn.active { background:rgba(63,158,96,.85); border-color:#7bd88f; color:#08130c; }
       @media (pointer: coarse) { #movePad, .pad-buttons { display:flex; } #movePad { display:block; } }
 
       #doorPrompt { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 110px); transform:translateX(-50%); z-index:32; padding:11px 22px; border-radius:999px; border:1px solid rgba(123,216,143,.55); background:rgba(10,16,18,.88); color:#cdebd9; font:600 14px/1 system-ui,sans-serif; letter-spacing:.04em; cursor:pointer; }
@@ -89,8 +91,9 @@
     <div class="pad-buttons">
       <button id="jumpButton" type="button" aria-label="Jump">JUMP</button>
       <button id="crouchButton" type="button" aria-label="Crouch">DUCK</button>
+      <button id="doorEnterBtn" type="button" aria-label="Enter">ENTER</button>
     </div>
 
-    <script type="module" src="/world2/main.js?v=2026-06-10-w2g"></script>
+    <script type="module" src="/world2/main.js?v=2026-06-10-w2h"></script>
   </body>
 </html>
