@@ -70,7 +70,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-06-10c"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-06-10d"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 let settingsOpen = false;
@@ -818,6 +818,8 @@ async function loadIdentity() {
       guestId = null;
       visitorKind = "resident";
       wantsSelfPresence = true;
+      // Reality ledger: record that this resident is walking Town Square (two-world truth).
+      try { supa.rpc("touch_world", { p_world: "town" }).then(() => {}, () => {}); } catch (e) {}
       try {
         const { data: adminRow } = await supa.from("world_admins").select("auth_user_id").eq("auth_user_id", myUserId).maybeSingle();
         isAdmin = !!adminRow;
