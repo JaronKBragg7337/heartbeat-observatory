@@ -70,7 +70,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-06-10b"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-06-10c"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 let settingsOpen = false;
@@ -2479,7 +2479,7 @@ function updateActiveDoor() {
       ? "<b>Open plot.</b> Walk up and claim it with a GitHub repo \u2014 it becomes a real building everyone can see."
       : "<b>Open plot.</b> Sign in to claim it with a GitHub repo and turn it into a real building everyone can see.");
   } else if (activeDoor && activeDoor.repo) {
-    showHint("<b>Claimed project.</b> A resident planted this repo here \u2014 step up and press Enter to visit it on GitHub.");
+    showHint("<b>Claimed project.</b> A resident planted this repo here \u2014 press Enter to step into its project hall.");
   } else if (activeDoor && activeDoor.room) {
     showHint("<b>Apartment.</b> Step inside for your own private room \u2014 recolor it, add furniture, and share your room code so friends can visit.");
   } else {
@@ -2494,7 +2494,7 @@ function updateActiveDoor() {
     const _ds = activeDoor.repo ? "repo" : doorStatus(activeDoor);
     doorPrompt.classList.remove("hidden");
     if (_ds === "repo") {
-      doorPromptText.textContent = isTouch ? ("Enter \u2014 " + activeDoor.label + " on GitHub") : ("Press E \u2014 " + activeDoor.label + " on GitHub");
+      doorPromptText.textContent = isTouch ? ("Enter " + activeDoor.label) : ("Press E to enter " + activeDoor.label);
       actionButton.disabled = false;
     } else if (_ds === "coming_soon") {
       doorPromptText.textContent = `${activeDoor.label} (coming soon)`;
@@ -3042,7 +3042,7 @@ function enterActiveDoor() {
     return;
   }
   if (activeDoor) {
-    if (activeDoor.repo) { if (activeDoor.url) { try { window.open(activeDoor.url, "_blank", "noopener"); } catch (e) {} } return; }
+    if (activeDoor.repo) { const target = window.top || window; target.location.assign("/space/?plot=" + activeDoor.plot); return; }
     if (activeDoor.interior) { enterInterior(activeDoor.interior); return; }
     if (activeDoor.room) { enterRoom(); return; }
     if (doorStatus(activeDoor) === "coming_soon") { return; }
@@ -3363,7 +3363,7 @@ function applyClaim(plotState, data) {
     // Solid + enterable, automatically, for every claim (June 10): the building blocks movement
     // like every other building, and walking up shows "Enter - view on GitHub".
     buildingColliders.push({ x: plotState.x, z: plotState.z, width: w, depth: d, plotId: plotState.index });
-    plotState.repoDoor = { repo: true, label: projectName, url: (data && data.github_url) || plotState.github_url || "", trigger: { x: plotState.x, z: plotState.z, width: plotState.width + 1.4, depth: plotState.depth + 1.4 } };
+    plotState.repoDoor = { repo: true, plot: plotState.index, label: projectName, url: (data && data.github_url) || plotState.github_url || "", trigger: { x: plotState.x, z: plotState.z, width: plotState.width + 1.4, depth: plotState.depth + 1.4 } };
     repoDoors.push(plotState.repoDoor);
   } else {
     plotState.bodyMaterial?.color.setHex(palette.body);
