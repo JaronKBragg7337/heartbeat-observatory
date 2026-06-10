@@ -218,6 +218,8 @@
     .mtabs button{flex:1;background:none;border:0;color:var(--text3);font-size:12px;font-weight:600;padding:13px 0;cursor:pointer;font-family:inherit;letter-spacing:.02em;}
     .mtabs button.active{color:var(--green);}
   }
+.bodylink{color:#39e58c;text-decoration:underline;overflow-wrap:anywhere;}
+.bodylink:hover{opacity:.85;}
 </style>
 </head>
 <body>
@@ -339,6 +341,13 @@
 
   const $=id=>document.getElementById(id);
   function esc(s){const d=document.createElement("div");d.textContent=(s==null?"":s);return d.innerHTML;}
+  // URLs in signals become real links (June 10, Jaron sharing his X profile). Text is escaped
+  // FIRST, then https:// runs are wrapped in anchors - nothing a poster types can inject markup.
+  function linkify(s){ return esc(s).replace(/https?:\/\/[^\s<]+/g, (m) => {
+    let url = m, trail = "";
+    const t = url.match(/[.,!?;:)\]]+$/); if (t) { trail = t[0]; url = url.slice(0, -trail.length); }
+    return '<a class="bodylink" href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>' + trail;
+  }); }
   function ago(iso){const t=new Date(iso).getTime();const s=Math.floor((Date.now()-t)/1000);
     if(s<60)return"just now";const m=Math.floor(s/60);if(m<60)return m+"m";
     const h=Math.floor(m/60);if(h<24)return h+"h";const d=Math.floor(h/24);if(d<7)return d+"d";
@@ -652,7 +661,7 @@
           (handle?'<span class="post-handle">'+esc(handle)+'</span>':"")+
           (session&&!mine?'<button class="followbtn'+(myFollows.has("user:"+p.author_id)?" on":"")+'" data-fl="user:'+p.author_id+'">'+(myFollows.has("user:"+p.author_id)?"Following":"Follow")+'</button>':"")+
           '<span class="post-dot">&middot;</span><span class="post-time">'+ago(p.created_at)+'</span></div>'+
-        '<div class="post-body">'+esc(p.body)+'</div>'+
+        '<div class="post-body">'+linkify(p.body)+'</div>'+
         '<div class="post-actions">'+
           '<span class="pa'+(openReplies.has(p.id)?" on":"")+'" data-reply="'+p.id+'">&#9711; Reply'+cnt(replyCounts[p.id])+'</span>'+
           '<span class="pa'+(myReposts.has(p.id)?" on":"")+'" data-rp="'+p.id+'">&#8635; '+(myReposts.has(p.id)?"Reposted":"Repost")+cnt(repostCounts[p.id])+'</span>'+
@@ -666,7 +675,7 @@
   function threadHTML(p){
     const rs=repliesByPost[p.id]||[];
     const items=rs.map(r=>{ const per=peopleById[r.author_id]; const nm=(per&&per.display_name)||r.author_handle||"Someone";
-      return '<div class="reply"><span class="rn">'+esc(nm)+'</span><span class="rt">'+ago(r.created_at)+'</span><div>'+esc(r.body)+'</div></div>'; }).join("");
+      return '<div class="reply"><span class="rn">'+esc(nm)+'</span><span class="rt">'+ago(r.created_at)+'</span><div>'+linkify(r.body)+'</div></div>'; }).join("");
     const box=session?'<div class="reply-row"><input class="reply-input" data-rinput="'+p.id+'" maxlength="280" placeholder="Reply\u2026" /><button class="reply-send" data-rsend="'+p.id+'">Reply</button></div>'
       :'<div class="panel-empty" style="margin-top:4px"><a href="/admin" style="color:var(--green)">Sign in</a> to reply.</div>';
     return '<div class="thread">'+(items||'<div class="panel-empty">No replies yet \u2014 be the first.</div>')+box+'</div>';
