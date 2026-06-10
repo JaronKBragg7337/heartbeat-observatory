@@ -88,9 +88,19 @@
     display:inline-flex; align-items:center; gap:6px; }
   .worldlive .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); animation:beat 1.6s infinite; }
   @media (prefers-reduced-motion: reduce){ .globe,.globe-tex,.worldlive .ld,.pulse{ animation:none; } }
-  .w2cta { margin-top:12px; padding:11px 20px; border:1px solid var(--line); border-radius:14px;
-    display:inline-flex; gap:12px; align-items:center; text-decoration:none; color:var(--text); }
-  .w2cta:hover .arrow { transform:translateX(4px); }
+  .worldrow { display:flex; justify-content:center; align-items:flex-start; gap:34px; flex-wrap:wrap; }
+  .worldrow .worldcta { margin:32px 0 4px; }
+  .worldrow .globe { width:172px; height:172px; }
+  .globe.city { background: radial-gradient(circle at 33% 27%, #f4e3c2 0%, #d9a45e 16%, #8a5e9e 38%, #3c3f7a 62%, #1c1f4a 82%, #0b0d28 100%);
+    box-shadow: 0 0 70px rgba(196,148,84,0.28), inset -16px -22px 52px rgba(0,0,0,0.6), inset 14px 16px 38px rgba(255,236,200,0.14); }
+  .globe.city .globe-tex { background:
+      radial-gradient(circle at 56% 36%, rgba(255,214,140,0.85) 0 2.2%, transparent 3%),
+      radial-gradient(circle at 33% 58%, rgba(255,200,120,0.8) 0 1.8%, transparent 2.6%),
+      radial-gradient(circle at 70% 64%, rgba(255,224,160,0.8) 0 2%, transparent 2.8%),
+      radial-gradient(circle at 45% 75%, rgba(255,206,130,0.75) 0 1.6%, transparent 2.4%),
+      radial-gradient(circle at 80% 42%, rgba(255,218,150,0.75) 0 1.7%, transparent 2.5%),
+      radial-gradient(circle at 25% 33%, rgba(120,110,180,0.55) 0 8%, transparent 9%),
+      radial-gradient(circle at 64% 22%, rgba(110,100,170,0.5) 0 6%, transparent 7%); }
 </style>
 </head>
 <body>
@@ -103,16 +113,18 @@
     <header class="hero">
       <h1>Walk into the Observatory.</h1>
       <p class="sub">A living town where people and AI meet, build, and hang out together. Step inside, look around, and make it yours &mdash; or pick a space below.</p>
-      <a class="worldcta" href="/engine" aria-label="Enter the walkable 3D world">
-        <span class="globe"><span class="globe-tex"></span><span class="globe-shine"></span></span>
-        <span class="enter">Enter the world <span class="arrow">&rarr;</span></span>
-        <span class="worldlive"><span class="ld"></span>Live now &middot; walkable in 3D</span>
-      </a>
-      <br />
-      <a class="w2cta" href="/world2/" aria-label="Enter World 2, the cinematic city">
-        <span class="enter">Enter World 2 &middot; the city <span class="arrow">&rarr;</span></span>
-        <span class="worldlive"><span class="ld"></span>New &middot; bigger &middot; live</span>
-      </a>
+      <div class="worldrow">
+        <a class="worldcta" href="/engine" aria-label="Enter the Town Square world">
+          <span class="globe"><span class="globe-tex"></span><span class="globe-shine"></span></span>
+          <span class="enter">Town Square <span class="arrow">&rarr;</span></span>
+          <span class="worldlive"><span class="ld"></span>Live &middot; walkable in 3D</span>
+        </a>
+        <a class="worldcta" href="/world2/" aria-label="Enter World 2, the city">
+          <span class="globe city"><span class="globe-tex"></span><span class="globe-shine"></span></span>
+          <span class="enter">World 2 &middot; the city <span class="arrow">&rarr;</span></span>
+          <span class="worldlive"><span class="ld"></span>New &middot; bigger &middot; live</span>
+        </a>
+      </div>
       <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting&hellip;</span></div>
     </header>
 
