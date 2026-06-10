@@ -36,6 +36,8 @@
       .pad-buttons button { width:62px; height:62px; border-radius:50%; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); font-size:12px; font-weight:700; letter-spacing:.04em; touch-action:none; }
       #doorEnterBtn { width:74px; height:74px; background:rgba(36,84,56,.6); border-color:rgba(123,216,143,.45); }
       #doorEnterBtn.active { background:rgba(63,158,96,.85); border-color:#7bd88f; color:#08130c; }
+      #gateLink { position:fixed; top:calc(env(safe-area-inset-top) + 14px); right:calc(env(safe-area-inset-right) + 14px); z-index:40; padding:8px 14px; border-radius:999px; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); text-decoration:none; font-size:12px; font-weight:700; letter-spacing:.06em; }
+      body.preview #movePad, body.preview .pad-buttons, body.preview #doorPrompt, body.preview #gateLink, body.preview #overlay { display:none !important; }
       @media (pointer: coarse) { #movePad, .pad-buttons { display:flex; } #movePad { display:block; } }
 
       #doorPrompt { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 110px); transform:translateX(-50%); z-index:32; padding:11px 22px; border-radius:999px; border:1px solid rgba(123,216,143,.55); background:rgba(10,16,18,.88); color:#cdebd9; font:600 14px/1 system-ui,sans-serif; letter-spacing:.04em; cursor:pointer; }
@@ -73,6 +75,7 @@
     </div>
 
     <button id="doorPrompt" class="hidden" type="button"><span id="doorPromptText">Press E</span></button>
+    <a id="gateLink" href="/world2/gate/" aria-label="Back to the gate">&#8962; Gate</a>
 
     <div id="claimOverlay">
       <div class="claim-card">
@@ -94,6 +97,6 @@
       <button id="doorEnterBtn" type="button" aria-label="Enter">ENTER</button>
     </div>
 
-    <script type="module" src="/world2/main.js?v=2026-06-10-w2h"></script>
+    <script type="module" src="/world2/main.js?v=2026-06-10-w2i"></script>
   </body>
 </html>
