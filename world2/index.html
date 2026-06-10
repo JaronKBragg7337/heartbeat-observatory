@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>Heartbeat Observatory — World 2</title>
-    <meta name="description" content="The second world of Heartbeat Observatory — being built in the open. Phase 4: walk the city in the hills together — live multiplayer.">
+    <meta name="description" content="The second world of Heartbeat Observatory — being built in the open. Phase 5: doors to every place in the Observatory, and claimable plots.">
     <style>
       :root { --text:#e8eef4; --muted:#9fb0bd; --panel-bg:rgba(10,14,18,.88); --panel-border:rgba(120,150,170,.25); }
       * { box-sizing:border-box; }
@@ -35,6 +35,17 @@
       .pad-buttons { position:fixed; right:calc(env(safe-area-inset-right) + 18px); bottom:calc(env(safe-area-inset-bottom) + 26px); z-index:30; display:none; flex-direction:column; gap:12px; }
       .pad-buttons button { width:62px; height:62px; border-radius:50%; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); font-size:12px; font-weight:700; letter-spacing:.04em; touch-action:none; }
       @media (pointer: coarse) { #movePad, .pad-buttons { display:flex; } #movePad { display:block; } }
+
+      #doorPrompt { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 110px); transform:translateX(-50%); z-index:32; padding:11px 22px; border-radius:999px; border:1px solid rgba(123,216,143,.55); background:rgba(10,16,18,.88); color:#cdebd9; font:600 14px/1 system-ui,sans-serif; letter-spacing:.04em; cursor:pointer; }
+      #claimOverlay { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(4,7,11,.72); }
+      .claim-card { display:flex; flex-direction:column; gap:10px; width:min(440px,94vw); padding:22px 20px; border:1px solid var(--panel-border); border-radius:14px; background:var(--panel-bg); }
+      .claim-card h2 { margin:0; font-size:18px; }
+      .claim-card p { margin:0; font-size:13px; color:var(--muted); line-height:1.5; }
+      .claim-card input { padding:11px 12px; border-radius:9px; border:1px solid var(--panel-border); background:#0a0f14; color:var(--text); font-size:14px; }
+      .claim-error { min-height:18px; font-size:12.5px; color:#f0b9a0; line-height:1.4; }
+      .claim-row { display:flex; gap:9px; }
+      .claim-row button { flex:1; padding:11px 0; border-radius:9px; border:0; font-weight:700; font-size:14px; cursor:pointer; background:#7bd88f; color:#0d1a12; }
+      .claim-row button.ghost { background:transparent; border:1px solid var(--panel-border); color:var(--muted); }
     </style>
   </head>
   <body>
@@ -50,12 +61,27 @@
       <div class="overlay-card">
         <h1>World 2</h1>
         <p class="tagline">The second world of Heartbeat Observatory.</p>
-        <p class="phase-note"><b>Being built in the open.</b> This is Phase 4 of the build: the city got its real street grid, and the world is now LIVE multiplayer — everyone walking it shares it. Buildings are still shells (no doors yet); doors to the town&#39;s places and claimable plots arrive in the next phase. Nothing here is faked: what you see is exactly what exists so far.</p>
+        <p class="phase-note"><b>Being built in the open.</b> This is Phase 5 of the build: the plaza now holds real doors — Social, Library, Projects, Theater, Arcade, and the Town Square of World 1 — and six empty plots wait to be claimed with a GitHub repo (signed-in residents; a claimed plot becomes a real building with its own Project Hall). Multiplayer is live. Same accounts, same places, different world. Nothing here is faked: what you see is exactly what exists so far.</p>
         <div class="controls">
           <div class="ctl ctl-desktop"><b>Move</b> WASD or arrows · <b>Look</b> mouse · <b>Sprint</b> Shift · <b>Jump</b> Space · <b>Crouch</b> C or Ctrl</div>
           <div class="ctl ctl-touch"><b>Move</b> left pad · <b>Look</b> drag the right side · <b>Jump / Crouch</b> right buttons</div>
         </div>
         <button id="enterButton" type="button">Walk the world</button>
+      </div>
+    </div>
+
+    <button id="doorPrompt" class="hidden" type="button"><span id="doorPromptText">Press E</span></button>
+
+    <div id="claimOverlay">
+      <div class="claim-card">
+        <h2>Claim this plot</h2>
+        <p>Paste a GitHub repository link. The plot becomes that project&#39;s building, with a Project Hall of its own — automatically, forever, tied to your account.</p>
+        <input id="claimInput" type="url" placeholder="https://github.com/owner/project" autocomplete="off">
+        <div id="claimError" class="claim-error"></div>
+        <div class="claim-row">
+          <button id="claimSubmit" type="button">Claim</button>
+          <button id="claimCancel" type="button" class="ghost">Cancel</button>
+        </div>
       </div>
     </div>
 
@@ -65,6 +91,6 @@
       <button id="crouchButton" type="button" aria-label="Crouch">DUCK</button>
     </div>
 
-    <script type="module" src="/world2/main.js?v=2026-06-10-w2d"></script>
+    <script type="module" src="/world2/main.js?v=2026-06-10-w2e"></script>
   </body>
 </html>

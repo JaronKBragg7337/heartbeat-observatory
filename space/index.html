@@ -71,12 +71,14 @@
     return ps[Math.abs(h) % ps.length];
   }
 
-  const plot = parseInt(new URLSearchParams(location.search).get("plot"), 10);
+  const _sp = new URLSearchParams(location.search);
+  const plot = parseInt(_sp.get("plot"), 10);
+  const world = (_sp.get("world") === "world2") ? "world2" : "town";
   if (!Number.isFinite(plot)) { state.textContent = "No plot given. Walk up to a claimed building in the world and press Enter."; return; }
 
   let row = null;
   try {
-    const r = await fetch(SUPA + "/rest/v1/world_spaces?plot=eq." + plot + "&select=plot,github_url,project_name,claimed_by,repo_metadata,space_type", { headers: { apikey: KEY, Authorization: "Bearer " + KEY } });
+    const r = await fetch(SUPA + "/rest/v1/world_spaces?world=eq." + world + "&plot=eq." + plot + "&select=plot,github_url,project_name,claimed_by,repo_metadata,space_type", { headers: { apikey: KEY, Authorization: "Bearer " + KEY } });
     row = (await r.json())[0] || null;
   } catch (e) {}
   if (!row || row.space_type !== "repo" || !row.github_url) { state.textContent = "This plot has no claimed project yet. The hall will exist the moment someone plants one."; return; }
@@ -93,7 +95,7 @@
   document.title = name + " \u2014 Project Hall \u2014 Heartbeat Observatory";
 
   $("pname").textContent = name;
-  $("pby").textContent = "Planted in the Observatory" + (row.claimed_by ? " by " + row.claimed_by : "") + " \u00b7 plot " + row.plot;
+  $("pby").textContent = "Planted in the Observatory" + (row.claimed_by ? " by " + row.claimed_by : "") + " \u00b7 plot " + row.plot + (world === "world2" ? " \u00b7 world 2" : "");
   const chips = [];
   if (lang) chips.push(lang);
   if (stars && stars > 0) chips.push("\u2605 " + stars);

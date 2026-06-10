@@ -12,7 +12,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const BUILD = "2026-06-10-w2d"; // bumped with ?v= in /world2/index.html on every deploy
+const BUILD = "2026-06-10-w2e"; // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
 // ---- DOM ----
@@ -21,6 +21,13 @@ const overlay = document.querySelector("#overlay");
 const enterButton = document.querySelector("#enterButton");
 const timeChip = document.querySelector("#timeChip");
 const presenceChip = document.querySelector("#presenceChip");
+const doorPrompt = document.querySelector("#doorPrompt");
+const doorPromptText = document.querySelector("#doorPromptText");
+const claimOverlay = document.querySelector("#claimOverlay");
+const claimInput = document.querySelector("#claimInput");
+const claimError = document.querySelector("#claimError");
+const claimSubmit = document.querySelector("#claimSubmit");
+const claimCancel = document.querySelector("#claimCancel");
 const movePad = document.querySelector("#movePad");
 const moveKnob = document.querySelector("#moveKnob");
 const jumpButton = document.querySelector("#jumpButton");
@@ -59,6 +66,19 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: keepalive clock
 const peers = new Map();
 const remotes = new Map();
+let myUserId = null;       // signed-in residents claim; guests walk and watch (same law as World 1)
+
+// ---- Phase 5: doors + plots. Doors lead to the SAME living pages as World 1's buildings. ----
+const doors = [];          // { label, path, x, z, hw, hd }
+let activeDoor = null;
+let activePlot = null;
+const plotPads = [];       // { plot, x, z, claimed, row, group, sign }
+const claimedPadCenters = [];
+let currentClaimPlot = null;
+let spacesLoaded = false;
+let spacesTimer = null;
+// reserved city blocks [gi, gj] that stay open as claimable plots (block centers, see buildCity)
+const W2_PLOT_BLOCKS = [[-2, 0], [1, -2], [-2, -2], [1, 1], [-1, 1], [0, -2]];
 
 // ---- day/night palette (World 2's own — warmer dusk, deeper night than the town) ----
 const W2_DAY = new THREE.Color(0xaecde4);
@@ -399,6 +419,8 @@ function buildWorld() {
   buildCity();
   buildLamps();
   buildFireflies();
+  buildDoors();
+  buildPlotPads();
 }
 
 // ---- Phase 3: the city — instanced boxes wearing procedural facade + emissive-window
@@ -456,6 +478,15 @@ function buildCity() {
       const cd = Math.hypot(bx - CITY.x, bz - CITY.z);
       if (cd > CITY.r - 5) continue;
       if (cd < 11) continue; // plaza blocks stay open
+      let reserved = false;
+      for (let pi = 0; pi < W2_PLOT_BLOCKS.length; pi++) {
+        if (W2_PLOT_BLOCKS[pi][0] === gi && W2_PLOT_BLOCKS[pi][1] === gj) {
+          plotPads.push({ plot: pi, x: bx, z: bz, claimed: false, row: null, group: null, sign: null });
+          reserved = true;
+          break;
+        }
+      }
+      if (reserved) continue; // this block is a claimable plot, not a building
       const s1 = hash2(gi * 7 + 103, gj * 13 + 59);
       const s2 = hash2(gi * 17 + 5, gj * 29 + 11);
       const seed = (gi + 9) * 100 + (gj + 9);
@@ -744,7 +775,12 @@ function updateGrass() {
         const x = (cellX + hash2(cellX * 31 + k * 7, cellZ * 57 + k * 13) - 0.5) * GRASS_CELL;
         const z = (cellZ + hash2(cellX * 17 + k * 11, cellZ * 91 + k * 5) - 0.5) * GRASS_CELL;
         const gy = groundHeight(x, z);
-        const bare = groundSlope(x, z) > 0.55 || gy > 5.8 || Math.hypot(x, z) < 3.2 || pavedAt(x, z) > 0.25;
+        let bare = groundSlope(x, z) > 0.55 || gy > 5.8 || Math.hypot(x, z) < 3.2 || pavedAt(x, z) > 0.25;
+        if (!bare) {
+          for (let ci = 0; ci < claimedPadCenters.length; ci++) {
+            if (Math.abs(x - claimedPadCenters[ci].x) < 4.4 && Math.abs(z - claimedPadCenters[ci].z) < 4.4) { bare = true; break; }
+          }
+        }
         const s = bare ? 0.0001 : 0.7 + hash2(cellX * 13 + k, cellZ * 7 + k * 3) * 0.8;
         _vp.set(x, gy, z);
         _eu.set(0, hash2(cellX + k * 29, cellZ + k * 37) * Math.PI, 0);
@@ -789,7 +825,7 @@ function ensureIdentity() {
   myColor = peerColors[hashStr(selfId()) % peerColors.length];
 }
 
-function makeNameSprite(name) {
+function makeNameSprite(name, scaleMul) {
   const c = document.createElement("canvas");
   c.width = 256; c.height = 64;
   const ctx = c.getContext("2d");
@@ -806,7 +842,7 @@ function makeNameSprite(name) {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
-  sprite.scale.set(1.9, 0.475, 1);
+  sprite.scale.set(1.9 * (scaleMul || 1), 0.475 * (scaleMul || 1), 1);
   return sprite;
 }
 
@@ -996,6 +1032,9 @@ function connect() {
     }
   });
   channel.on("broadcast", { event: "state" }, ({ payload }) => applyPeerState(payload));
+  channel.on("broadcast", { event: "space" }, ({ payload }) => {
+    if (payload && payload.id !== selfId() && typeof payload.plot === "number") refetchPlot(payload.plot);
+  });
   channel.on("presence", { event: "sync" }, () => syncPresence());
   channel.on("presence", { event: "leave" }, ({ leftPresences }) => {
     for (const p of leftPresences || []) {
@@ -1023,6 +1062,233 @@ function updatePresenceChip() {
   const n = remotes.size;
   const label = !connected ? "connecting" : n === 0 ? "alone here" : n === 1 ? "1 other here" : n + " others here";
   if (presenceChip.textContent !== label) presenceChip.textContent = label;
+}
+
+// ---- Phase 5: doors to the same living pages World 1's buildings open (one body, two skins) ----
+function buildDoors() {
+  const stops = [
+    { label: "Social", path: "/social" },
+    { label: "Library", path: "/library" },
+    { label: "Projects", path: "/projects" },
+    { label: "Theater", path: "/video" },
+    { label: "Arcade", path: "/games" },
+    { label: "Town Square (World 1)", path: "/engine" }
+  ];
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x2c3138, roughness: 0.6, metalness: 0.4 });
+  const panelMat = new THREE.MeshStandardMaterial({ color: 0x0d1a1c, emissive: 0x57d8c4, emissiveIntensity: 0.55, roughness: 0.4, transparent: true, opacity: 0.92 });
+  for (let i = 0; i < stops.length; i++) {
+    const a = (i / stops.length) * Math.PI * 2 + 0.45;
+    const x = CITY.x + Math.cos(a) * 12.6;
+    const z = CITY.z + Math.sin(a) * 12.6;
+    const gy = groundHeight(x, z);
+    const g = new THREE.Group();
+    g.position.set(x, gy, z);
+    g.rotation.y = Math.atan2(CITY.x - x, CITY.z - z) + Math.PI; // face the plaza
+    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.1, 0.3), postMat);
+    p1.position.set(-1.25, 1.55, 0); p1.castShadow = true; g.add(p1);
+    const p2 = p1.clone(); p2.position.x = 1.25; g.add(p2);
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.3, 0.3), postMat);
+    lintel.position.y = 3.1; lintel.castShadow = true; g.add(lintel);
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.9), panelMat);
+    panel.position.y = 1.5;
+    g.add(panel);
+    const sign = makeNameSprite(stops[i].label, 1.5);
+    sign.position.y = 3.9;
+    g.add(sign);
+    scene.add(g);
+    doors.push({ label: stops[i].label, path: stops[i].path, x, z, hw: 2.3, hd: 2.3 });
+  }
+}
+
+function buildPlotPads() {
+  const padMat = new THREE.MeshStandardMaterial({ color: 0x8e8a80, roughness: 0.85 });
+  for (const pad of plotPads) {
+    const gy = groundHeight(pad.x, pad.z);
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 3.3, 0.22, 22), padMat);
+    disc.position.set(pad.x, gy + 0.11, pad.z);
+    disc.receiveShadow = true;
+    scene.add(disc);
+    const sign = makeNameSprite("Empty plot — sign in to claim", 1.25);
+    sign.position.set(pad.x, gy + 2.2, pad.z);
+    scene.add(sign);
+    pad.sign = sign;
+    pad.pad = disc;
+  }
+}
+
+// a claimed plot becomes a real building, automatically — same law as World 1
+function applySpaceRow(pad, row) {
+  if (!pad || !row || !row.github_url || pad.claimed) return;
+  pad.claimed = true;
+  pad.row = row;
+  if (pad.sign) { scene.remove(pad.sign); pad.sign = null; }
+  claimedPadCenters.push({ x: pad.x, z: pad.z });
+  const gy = groundHeight(pad.x, pad.z);
+  const h = 9 + (hashStr(String(row.project_name || pad.plot)) % 9);
+  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+  boxGeo.translate(0, 0.5, 0);
+  const tower = new THREE.Mesh(boxGeo, glassMat);
+  tower.position.set(pad.x, gy - 0.4, pad.z);
+  tower.scale.set(6.2, h, 6.2);
+  tower.castShadow = true;
+  tower.receiveShadow = true;
+  scene.add(tower);
+  const sign = makeNameSprite((row.project_name || "Project") + " · " + (row.claimed_by || "Resident"), 1.45);
+  sign.position.set(pad.x, gy + h + 0.9, pad.z);
+  scene.add(sign);
+  pad.group = tower;
+  pad.topSign = sign;
+  buildingColliders.push({ x: pad.x, z: pad.z, width: 6.2, depth: 6.2 });
+  doors.push({ label: (row.project_name || "Project") + " — Project Hall", path: "/space/?plot=" + pad.plot + "&world=world2", x: pad.x, z: pad.z, hw: 4.6, hd: 4.6 });
+  if (grass) { grassCellX = 1e9; } // force a grass rebuild so tufts clear the new footprint
+}
+
+async function loadSpaces() {
+  if (spacesLoaded || !supa) return;
+  spacesLoaded = true;
+  const refetch = async () => {
+    try {
+      const { data } = await supa.from("world_spaces")
+        .select("plot, github_url, project_name, claimed_by, repo_metadata, repo_fetched_at, space_type")
+        .eq("world", "world2");
+      for (const row of data || []) {
+        const pad = plotPads[row.plot];
+        if (pad && !pad.claimed) applySpaceRow(pad, row);
+      }
+      if ((data || []).some((r) => r.space_type === "repo" && !r.repo_fetched_at)) {
+        try { fetch("/api/enrich-world-spaces").catch(() => {}); } catch (e) {}
+      }
+    } catch (e) {}
+  };
+  await refetch();
+  // LAW: postgres_changes is unreliable on this project — shared objects sync by
+  // broadcast events + a ground-truth reconcile refetch loop (World 1's prop pattern).
+  if (!spacesTimer) spacesTimer = setInterval(refetch, 30000);
+}
+
+function updateActiveDoor() {
+  if (!hasEntered) { activeDoor = null; activePlot = null; return; }
+  let next = null, best = Infinity;
+  for (const door of doors) {
+    const dx = state.x - door.x, dz = state.z - door.z;
+    if (Math.abs(dx) > door.hw || Math.abs(dz) > door.hd) continue;
+    const d = Math.hypot(dx, dz);
+    if (d < best) { best = d; next = door; }
+  }
+  activeDoor = next;
+  let nextPlot = null;
+  if (!next) {
+    let bp = Infinity;
+    for (const pad of plotPads) {
+      if (pad.claimed) continue;
+      const dx = state.x - pad.x, dz = state.z - pad.z;
+      if (Math.abs(dx) > 4 || Math.abs(dz) > 4) continue;
+      const d = Math.hypot(dx, dz);
+      if (d < bp) { bp = d; nextPlot = pad; }
+    }
+  }
+  activePlot = nextPlot;
+  if (doorPrompt && doorPromptText) {
+    if (activeDoor) {
+      doorPromptText.textContent = (isTouch ? "Tap — " : "Press E — ") + activeDoor.label;
+      doorPrompt.classList.remove("hidden");
+    } else if (activePlot) {
+      doorPromptText.textContent = (isTouch ? "Tap — " : "Press E — ") + "Claim this plot with a GitHub repo";
+      doorPrompt.classList.remove("hidden");
+    } else {
+      doorPrompt.classList.add("hidden");
+    }
+  }
+}
+
+function enterActive() {
+  if (claimOverlay && claimOverlay.style.display === "flex") return;
+  if (activeDoor) {
+    location.assign(activeDoor.path);
+    return;
+  }
+  if (activePlot) openClaim(activePlot);
+}
+
+function openClaim(pad) {
+  currentClaimPlot = pad;
+  if (!claimOverlay) return;
+  claimError.textContent = "";
+  claimInput.value = "";
+  claimOverlay.style.display = "flex";
+  setTimeout(() => { try { claimInput.focus(); } catch (e) {} }, 50);
+}
+
+function closeClaim() {
+  currentClaimPlot = null;
+  if (claimOverlay) claimOverlay.style.display = "none";
+}
+
+async function submitClaim() {
+  if (!currentClaimPlot) return;
+  if (!myUserId) {
+    claimError.textContent = "Sign in on the account page to claim a permanent space — guests can look around, residents plant buildings.";
+    return;
+  }
+  const url = claimInput.value.trim();
+  if (!supa) { claimError.textContent = "Still connecting — try again in a moment."; return; }
+  claimError.textContent = "Claiming…";
+  try {
+    // Same gated RPC as World 1, now world-aware: sign-in enforced at the database,
+    // URL validated, one project space per account, owner recorded.
+    const { data, error } = await supa.rpc("claim_repo", { p_plot: currentClaimPlot.plot, p_url: url, p_world: "world2" });
+    if (error || !data || !data.ok) {
+      const e = (data && data.error) || "";
+      claimError.textContent =
+        e === "signin" ? "Sign in to claim a permanent space — then it's yours, tied to your account." :
+        e === "plot_taken" ? "That plot was just claimed by someone else." :
+        e === "already_claimed" ? "One project space per account — yours is already standing (maybe in the town)." :
+        e === "bad_url" ? "Enter a full GitHub link (github.com/owner/project)." :
+        "Could not save the claim.";
+      return;
+    }
+    const pad = currentClaimPlot;
+    applySpaceRow(pad, { github_url: url, project_name: data.project_name, claimed_by: displayName });
+    closeClaim();
+    try { fetch("/api/enrich-world-spaces").catch(() => {}); } catch (e) {}
+    if (channel && connected) {
+      try { channel.send({ type: "broadcast", event: "space", payload: { id: selfId(), plot: pad.plot } }); } catch (e) {}
+    }
+  } catch (e) {
+    claimError.textContent = "Could not save the claim.";
+  }
+}
+
+async function refetchPlot(plotIndex) {
+  if (!supa) return;
+  try {
+    const { data } = await supa.from("world_spaces")
+      .select("plot, github_url, project_name, claimed_by, repo_metadata, repo_fetched_at, space_type")
+      .eq("world", "world2").eq("plot", plotIndex);
+    if (data && data[0]) {
+      const pad = plotPads[plotIndex];
+      if (pad && !pad.claimed) applySpaceRow(pad, data[0]);
+    }
+  } catch (e) {}
+}
+
+// identity plug-in: the same account is ONE person across both worlds
+async function resolveIdentity() {
+  try {
+    if (!supa) supa = createClient(SUPA_URL, SUPA_KEY);
+    const { data: { session } } = await supa.auth.getSession();
+    if (session && session.user) {
+      myUserId = session.user.id;
+      const { data } = await supa.from("world_characters").select("display_name, appearance").eq("auth_user_id", myUserId);
+      if (data && data[0]) {
+        if (data[0].display_name) displayName = sanitizeDisplayName(data[0].display_name) || displayName;
+        const ap = data[0].appearance;
+        if (ap && typeof ap.color === "string" && /^#[0-9a-f]{6}$/i.test(ap.color)) myColor = ap.color;
+      }
+      if (channel && connected) { trackSelf(); sendState(true); } // one re-track: identity changed, not movement
+    }
+  } catch (e) {}
+  loadSpaces();
 }
 
 // ---- day/night (wall-clock driven like World 1: every visitor sees the same sky) ----
@@ -1156,6 +1422,7 @@ function updateLocal(dt) {
   state.z += (-sin * strafe + -cos * forward) * speed * dt;
 
   resolveCollision();
+  updateActiveDoor();
 
   const eyeTarget = eyeHeightForStance(state.stance) + groundHeight(state.x, state.z) + motion.airOffset;
   state.y += (eyeTarget - state.y) * Math.min(1, dt * 14);
@@ -1281,9 +1548,18 @@ document.addEventListener("mousemove", (event) => {
 document.addEventListener("keydown", (event) => {
   const t = event.target;
   if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+  if (claimOverlay && claimOverlay.style.display === "flex") {
+    if (event.code === "Escape") { event.preventDefault(); closeClaim(); }
+    return;
+  }
   if (!hasEntered && (event.code === "Enter" || event.code === "Space")) {
     event.preventDefault();
     enterWorld();
+    return;
+  }
+  if (hasEntered && (event.code === "KeyE" || event.code === "Enter") && (activeDoor || activePlot)) {
+    event.preventDefault();
+    enterActive();
     return;
   }
   if (hasEntered && (event.code === "ArrowUp" || event.code === "ArrowDown" || event.code === "ArrowLeft" || event.code === "ArrowRight")) {
@@ -1373,6 +1649,11 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+doorPrompt.addEventListener("click", () => enterActive());
+claimSubmit.addEventListener("click", submitClaim);
+claimCancel.addEventListener("click", closeClaim);
+claimInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitClaim(); } });
+
 window.addEventListener("pagehide", () => { try { channel?.untrack(); } catch (e) {} });
 window.addEventListener("blur", clearMovementInput);
 document.addEventListener("visibilitychange", () => {
@@ -1382,3 +1663,4 @@ document.addEventListener("visibilitychange", () => {
 // ---- BOOT (end of file by design: every const/let above is initialized before these run — TDZ law) ----
 buildWorld();
 animate();
+resolveIdentity();

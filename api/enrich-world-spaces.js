@@ -25,12 +25,12 @@ export default async function handler(request, response) {
     for (const space of spaces) {
       const repo = parseGitHubRepo(space.github_url);
       if (!repo) {
-        results.push(await saveMetadata(space.plot, {}, "Invalid GitHub repository URL"));
+        results.push(await saveMetadata(space.world, space.plot, {}, "Invalid GitHub repository URL"));
         continue;
       }
 
       const metadata = await fetchRepoMetadata(repo);
-      results.push(await saveMetadata(space.plot, metadata, metadata.error || null));
+      results.push(await saveMetadata(space.world, space.plot, metadata, metadata.error || null));
     }
 
     return response.status(200).json({
@@ -47,7 +47,7 @@ export default async function handler(request, response) {
 async function selectSpacesForEnrichment() {
   const staleBefore = new Date(Date.now() - 55 * 60 * 1000).toISOString();
   const query = new URLSearchParams({
-    select: "plot,github_url,project_name,repo_fetched_at",
+    select: "world,plot,github_url,project_name,repo_fetched_at",
     github_url: "not.is.null",
     order: "repo_fetched_at.asc.nullsfirst",
     limit: "12"
@@ -105,12 +105,13 @@ async function fetchRepoMetadata(repo) {
   };
 }
 
-async function saveMetadata(plot, metadata, error) {
+async function saveMetadata(world, plot, metadata, error) {
   try {
     await supabaseFetch("/rest/v1/rpc/set_world_space_repo_metadata", {
       method: "POST",
       body: JSON.stringify({
         p_secret: process.env.WORLD_SPACE_ENRICH_SECRET,
+        p_world: world || "town",
         p_plot: plot,
         p_metadata: metadata || {},
         p_error: error || null
