@@ -11,7 +11,7 @@
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 
-const BUILD = "2026-06-10-w2a"; // bumped with ?v= in /world2/index.html on every deploy
+const BUILD = "2026-06-10-w2b"; // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
 // ---- DOM ----
@@ -49,7 +49,7 @@ const keys = new Set();
 let hasEntered = false;
 let previewAngle = -0.55;
 
-// ---- colliders (empty in Phase 1; Phase 3 fills them — same shape as World 1) ----
+// ---- colliders (tree trunks now; Phase 3 adds buildings — same shape as World 1) ----
 const buildingColliders = []; // { x, z, width, depth }
 
 // ---- scene / renderer (the cinematic foundation — this alone is half the look) ----
@@ -75,9 +75,22 @@ const clock = new THREE.Clock();
 let sunLight = null, hemiLight = null;
 let skyAnchor = null, sunDisc = null, moonDisc = null, stars = null;
 
+// ---- grass system (deterministic world-grid: tufts live in fixed world cells, so the set
+// only changes at the far edge as you walk — no pop-in next to the player) ----
+const GRASS_CELL = 10;          // world units per cell
+const GRASS_CELL_RADIUS = 3;    // cells each side of the player -> 7x7 grid
+const GRASS_PER_CELL = 18;      // 7*7*18 = 882 tufts, ONE draw call
+let grass = null;
+let grassCellX = 1e9, grassCellZ = 1e9;
+
 // ---- module temps (reused every frame — no per-frame allocations) ----
 const _sky = new THREE.Color();
 const _sunOff = new THREE.Vector3();
+const _m4 = new THREE.Matrix4();
+const _q = new THREE.Quaternion();
+const _eu = new THREE.Euler();
+const _vs = new THREE.Vector3();
+const _vp = new THREE.Vector3();
 
 // ---- seeded value noise (tiny, no library) + groundHeight ----
 function hash2(ix, iz) {
@@ -92,37 +105,55 @@ function vnoise(x, z) {
   const a = hash2(ix, iz), b = hash2(ix + 1, iz), c = hash2(ix, iz + 1), d = hash2(ix + 1, iz + 1);
   return a + (b - a) * sx + (c - a) * sz + (a - b - c + d) * sx * sz;
 }
-// Phase 1: gentle, flat-ish swells. Phase 2 raises amplitude + octaves; movement code won't change.
+// Phase 2: real hills. Domain-warped FBM — the warp bends the noise grid so ridgelines
+// meander like real terrain instead of sitting on an obvious lattice. Movement code did
+// not change for this (the Phase 1 promise): it already follows groundHeight.
 function groundHeight(x, z) {
-  let h = (vnoise(x * 0.012, z * 0.012) - 0.5) * 2 * 1.4;
-  h += (vnoise(x * 0.05 + 37.7, z * 0.05 + 19.3) - 0.5) * 2 * 0.35;
+  const wx = x + (vnoise(x * 0.01 + 113.7, z * 0.01 + 41.2) - 0.5) * 34;
+  const wz = z + (vnoise(x * 0.01 + 77.1, z * 0.01 + 9.8) - 0.5) * 34;
+  let h = (vnoise(wx * 0.008, wz * 0.008) - 0.5) * 2 * 5.6;             // broad hills
+  h += (vnoise(wx * 0.024 + 37.7, wz * 0.024 + 19.3) - 0.5) * 2 * 1.9;  // mid swells
+  h += (vnoise(x * 0.07 + 7.3, z * 0.07 + 3.1) - 0.5) * 2 * 0.45;       // surface detail
   const d = Math.hypot(x, z);
-  const flat = Math.min(1, Math.max(0, (d - 8) / 18)); // spawn stays level
+  const flat = Math.min(1, Math.max(0, (d - 10) / 26)); // spawn clearing stays level
   return h * flat;
+}
+
+// average gradient magnitude — used at build time for tree/grass placement, never per frame
+function groundSlope(x, z) {
+  const e = 0.6;
+  const hx = groundHeight(x + e, z) - groundHeight(x - e, z);
+  const hz = groundHeight(x, z + e) - groundHeight(x, z - e);
+  return Math.hypot(hx, hz) / (2 * e);
 }
 
 // ---- build the world ----
 function buildWorld() {
-  // ground: heightfield plane, vertex-colored by height (no textures yet — Phase 2 deepens this)
+  // ground: heightfield plane. Displace first, compute normals, THEN color by height AND
+  // slope — the normal.y we get from computeVertexNormals is a free slope measure per vertex.
   const size = 600, segs = 196;
   const groundGeo = new THREE.PlaneGeometry(size, size, segs, segs);
   groundGeo.rotateX(-Math.PI / 2);
   const pos = groundGeo.attributes.position;
-  const colors = new Float32Array(pos.count * 3);
-  const cLow = new THREE.Color(0x46604a), cMid = new THREE.Color(0x55714a), cHigh = new THREE.Color(0x84775a);
   for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i), z = pos.getZ(i);
-    const h = groundHeight(x, z);
-    pos.setY(i, h);
-    const t = Math.min(1, Math.max(0, (h + 1.6) / 3.2));
+    pos.setY(i, groundHeight(pos.getX(i), pos.getZ(i)));
+  }
+  groundGeo.computeVertexNormals();
+  const nrm = groundGeo.attributes.normal;
+  const colors = new Float32Array(pos.count * 3);
+  const cLush = new THREE.Color(0x4c6b46), cDry = new THREE.Color(0x7d7a4e), cHigh = new THREE.Color(0x8a8378), cRock = new THREE.Color(0x6e685e);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i), h = pos.getY(i), ny = nrm.getY(i);
+    const t = Math.min(1, Math.max(0, (h + 1) / 7));
+    _sky.copy(cLush).lerp(cDry, Math.min(1, t * 1.5)).lerp(cHigh, Math.max(0, t - 0.6) * 2.5);
+    const steep = Math.min(1, Math.max(0, (0.82 - ny) / 0.25)); // cliffsides read as rock
+    _sky.lerp(cRock, steep);
     const jitter = (vnoise(x * 0.3 + 91, z * 0.3 + 17) - 0.5) * 0.06;
-    _sky.copy(cLow).lerp(cMid, Math.min(1, t * 1.6)).lerp(cHigh, Math.max(0, t - 0.55) * 2.2);
     colors[i * 3] = _sky.r + jitter;
     colors[i * 3 + 1] = _sky.g + jitter;
     colors[i * 3 + 2] = _sky.b + jitter;
   }
   groundGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  groundGeo.computeVertexNormals();
   const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 }));
   ground.receiveShadow = true;
   scene.add(ground);
@@ -143,18 +174,17 @@ function buildWorld() {
     new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }),
     rockCount
   );
-  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), p = new THREE.Vector3();
   for (let i = 0; i < rockCount; i++) {
     const ang = hash2(i, 11) * Math.PI * 2;
     const dist = 15 + hash2(i, 23) * 115;
     const x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
     const sc = 0.4 + hash2(i, 41) * 1.3;
-    e.set(hash2(i, 5) * Math.PI, hash2(i, 7) * Math.PI, hash2(i, 9) * Math.PI);
-    q.setFromEuler(e);
-    s.set(sc, sc * (0.7 + hash2(i, 13) * 0.5), sc);
-    p.set(x, groundHeight(x, z) + sc * 0.18, z);
-    m.compose(p, q, s);
-    rocks.setMatrixAt(i, m);
+    _eu.set(hash2(i, 5) * Math.PI, hash2(i, 7) * Math.PI, hash2(i, 9) * Math.PI);
+    _q.setFromEuler(_eu);
+    _vs.set(sc, sc * (0.7 + hash2(i, 13) * 0.5), sc);
+    _vp.set(x, groundHeight(x, z) + sc * 0.18, z);
+    _m4.compose(_vp, _q, _vs);
+    rocks.setMatrixAt(i, _m4);
     const g = 0.42 + hash2(i, 57) * 0.2;
     _sky.setRGB(g, g * (0.97 + hash2(i, 61) * 0.06), g * (0.94 + hash2(i, 67) * 0.06));
     rocks.setColorAt(i, _sky);
@@ -162,6 +192,83 @@ function buildWorld() {
   rocks.castShadow = true;
   rocks.receiveShadow = true;
   scene.add(rocks);
+
+  // ---- trees: two archetypes, all instanced — 4 draw calls for the whole forest ----
+  // placement: seeded rejection sampling; no trees on cliffsides, ridgetops, or the spawn clearing
+  const treeSpots = [];
+  for (let i = 0; i < 2600 && treeSpots.length < 440; i++) {
+    const x = (hash2(i, 211) - 0.5) * 2 * 280;
+    const z = (hash2(i, 223) - 0.5) * 2 * 280;
+    const d = Math.hypot(x, z);
+    if (d < 16) continue;
+    if (groundSlope(x, z) > 0.55) continue;
+    if (groundHeight(x, z) > 6.2) continue;
+    treeSpots.push({ x, z, s: 0.75 + hash2(i, 227) * 0.7, kind: hash2(i, 229) < 0.58 ? 0 : 1, seed: i });
+  }
+  const conifers = treeSpots.filter((t) => t.kind === 0);
+  const broadleafs = treeSpots.filter((t) => t.kind === 1);
+
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
+  const canopyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
+
+  function plantTrees(spots, trunkGeo, trunkH, canopyGeo, canopyY, canopyColors) {
+    if (!spots.length) return;
+    const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, spots.length);
+    const canopies = new THREE.InstancedMesh(canopyGeo, canopyMat, spots.length);
+    for (let i = 0; i < spots.length; i++) {
+      const t = spots[i];
+      const gy = groundHeight(t.x, t.z);
+      _eu.set(0, hash2(t.seed, 233) * Math.PI * 2, 0);
+      _q.setFromEuler(_eu);
+      _vs.set(t.s, t.s, t.s);
+      _vp.set(t.x, gy + (trunkH / 2 - 0.15) * t.s, t.z);
+      _m4.compose(_vp, _q, _vs);
+      trunks.setMatrixAt(i, _m4);
+      _vp.set(t.x, gy + canopyY * t.s, t.z);
+      _m4.compose(_vp, _q, _vs);
+      canopies.setMatrixAt(i, _m4);
+      const shade = 0.85 + hash2(t.seed, 239) * 0.3;
+      _sky.setRGB(0.32 * shade, 0.24 * shade, 0.16 * shade);
+      trunks.setColorAt(i, _sky);
+      const golden = hash2(t.seed, 241) < 0.08; // a few autumn-gold trees in the green
+      _sky.set(canopyColors[golden ? 2 : (hash2(t.seed, 251) < 0.5 ? 0 : 1)]);
+      const v = 0.86 + hash2(t.seed, 257) * 0.28;
+      _sky.multiplyScalar(v);
+      canopies.setColorAt(i, _sky);
+      // trunks are solid where the player can actually reach (same collider shape as World 1)
+      if (Math.hypot(t.x, t.z) <= worldBounds + 5) {
+        buildingColliders.push({ x: t.x, z: t.z, width: 0.55 * t.s + 0.25, depth: 0.55 * t.s + 0.25 });
+      }
+    }
+    trunks.castShadow = true;
+    canopies.castShadow = true;
+    canopies.receiveShadow = true;
+    scene.add(trunks);
+    scene.add(canopies);
+  }
+
+  plantTrees(
+    conifers,
+    new THREE.CylinderGeometry(0.14, 0.22, 2.4, 6), 2.4,
+    new THREE.ConeGeometry(1.5, 4.4, 7), 2.4 * 0.8 + 2.2,
+    [0x2e4a32, 0x3a5638, 0x8a6b2e]
+  );
+  plantTrees(
+    broadleafs,
+    new THREE.CylinderGeometry(0.16, 0.26, 2.0, 6), 2.0,
+    new THREE.IcosahedronGeometry(1.75, 0), 2.0 + 1.1,
+    [0x4a6b35, 0x55763c, 0x8a7a3a]
+  );
+
+  // ---- grass: one instanced mesh of crossed quads wearing a procedural CanvasTexture ----
+  grass = new THREE.InstancedMesh(
+    makeGrassGeometry(),
+    new THREE.MeshStandardMaterial({ map: makeGrassTexture(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 1, metalness: 0 }),
+    (GRASS_CELL_RADIUS * 2 + 1) * (GRASS_CELL_RADIUS * 2 + 1) * GRASS_PER_CELL
+  );
+  grass.receiveShadow = true;
+  grass.frustumCulled = false; // matrices move with the player; one mesh, skip the stale-bounds cull
+  scene.add(grass);
 
   // one sun, PCFSoft shadows, tight shadow camera that follows the player
   sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
@@ -212,6 +319,84 @@ function buildWorld() {
   skyAnchor.add(stars);
 }
 
+// ---- grass helpers (procedural texture: zero downloads, zero copyright questions) ----
+function makeGrassTexture() {
+  const c = document.createElement("canvas");
+  c.width = 64; c.height = 64;
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0, 0, 64, 64);
+  for (let i = 0; i < 9; i++) {
+    const bx = 5 + hash2(i, 401) * 54;
+    const lean = (hash2(i, 409) - 0.5) * 14;
+    const w = 2.4 + hash2(i, 419) * 2.4;
+    const top = 4 + hash2(i, 421) * 14;
+    const g = 96 + Math.floor(hash2(i, 431) * 70);
+    ctx.fillStyle = `rgb(${Math.floor(g * 0.55)},${g},${Math.floor(g * 0.42)})`;
+    ctx.beginPath();
+    ctx.moveTo(bx - w, 64);
+    ctx.quadraticCurveTo(bx - w * 0.3 + lean * 0.4, 34, bx + lean, top);
+    ctx.quadraticCurveTo(bx + w * 0.3 + lean * 0.4, 34, bx + w, 64);
+    ctx.closePath();
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// two crossed quads, anchored at the bottom, normals up so grass takes light like the ground
+function makeGrassGeometry() {
+  const geo = new THREE.BufferGeometry();
+  const w = 0.42, h = 0.6;
+  const positions = new Float32Array([
+    -w, 0, 0,  w, 0, 0,  w, h, 0,  -w, h, 0,
+    0, 0, -w,  0, 0, w,  0, h, w,  0, h, -w
+  ]);
+  const uvs = new Float32Array([0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1]);
+  const normals = new Float32Array(24);
+  for (let i = 0; i < 8; i++) normals[i * 3 + 1] = 1;
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+  geo.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+  geo.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7]);
+  return geo;
+}
+
+// runs only when the player crosses a 10-unit cell boundary — never per frame
+function updateGrass() {
+  if (!grass) return;
+  const cx = Math.round(state.x / GRASS_CELL), cz = Math.round(state.z / GRASS_CELL);
+  if (cx === grassCellX && cz === grassCellZ) return;
+  grassCellX = cx; grassCellZ = cz;
+  let idx = 0;
+  for (let dxc = -GRASS_CELL_RADIUS; dxc <= GRASS_CELL_RADIUS; dxc++) {
+    for (let dzc = -GRASS_CELL_RADIUS; dzc <= GRASS_CELL_RADIUS; dzc++) {
+      const cellX = cx + dxc, cellZ = cz + dzc;
+      for (let k = 0; k < GRASS_PER_CELL; k++) {
+        // position is a pure function of (cellX, cellZ, k): tufts in cells you keep
+        // walking through land in EXACTLY the same world spot every rebuild
+        const x = (cellX + hash2(cellX * 31 + k * 7, cellZ * 57 + k * 13) - 0.5) * GRASS_CELL;
+        const z = (cellZ + hash2(cellX * 17 + k * 11, cellZ * 91 + k * 5) - 0.5) * GRASS_CELL;
+        const gy = groundHeight(x, z);
+        const bare = groundSlope(x, z) > 0.55 || gy > 5.8 || Math.hypot(x, z) < 3.2;
+        const s = bare ? 0.0001 : 0.7 + hash2(cellX * 13 + k, cellZ * 7 + k * 3) * 0.8;
+        _vp.set(x, gy, z);
+        _eu.set(0, hash2(cellX + k * 29, cellZ + k * 37) * Math.PI, 0);
+        _q.setFromEuler(_eu);
+        _vs.set(s, s, s);
+        _m4.compose(_vp, _q, _vs);
+        grass.setMatrixAt(idx, _m4);
+        const v = 0.8 + hash2(cellX * 3 + k, cellZ * 11 + k) * 0.45;
+        _sky.setRGB(0.62 * v, 0.78 * v, 0.5 * v);
+        grass.setColorAt(idx, _sky);
+        idx++;
+      }
+    }
+  }
+  grass.instanceMatrix.needsUpdate = true;
+  if (grass.instanceColor) grass.instanceColor.needsUpdate = true;
+}
+
 // ---- day/night (wall-clock driven like World 1: every visitor sees the same sky) ----
 function pickSky(e) {
   if (e > 0.18) _sky.copy(W2_DAY);
@@ -241,6 +426,9 @@ function updateDayNight() {
   const sky = pickSky(e);
   scene.background.copy(sky);
   scene.fog.color.copy(sky);
+  // golden hour: fog leans warmer than the sky itself — distant trees melt into amber
+  const golden = Math.max(0, 1 - Math.abs(e) / 0.18);
+  if (golden > 0) scene.fog.color.lerp(W2_DUSK, golden * 0.3);
   scene.fog.density = 0.0095 + (1 - day) * 0.0065;
   renderer.toneMappingExposure = 0.92 + 0.24 * day;
 
@@ -380,6 +568,7 @@ function updateCamera(dt) {
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   updateLocal(dt);
+  updateGrass();
   updateDayNight();
   updateCamera(dt);
   renderer.render(scene, camera);
