@@ -3270,16 +3270,18 @@ async function submitClaim() {
   if (!supa) { claimError.textContent = "Still connecting — try again in a moment."; return; }
   claimError.textContent = "Claiming…";
   try {
-    const { error } = await supa.from("world_spaces").insert({
-      plot: currentClaimPlot.index,
-      github_url: url,
-      project_name: repo,
-      claimed_by: displayName
-    });
-    if (error) {
-      claimError.textContent = /duplicate|unique/i.test(error.message || "")
-        ? "That spot was just claimed by someone else."
-        : "Could not save the claim.";
+    // Claims go through the gated claim_repo RPC (June 10): sign-in required server-side,
+    // GitHub URL validated, one project space per account, and the claim is tied to your
+    // account forever (owner_uid) - launch night's open-insert policy is closed.
+    const { data, error } = await supa.rpc("claim_repo", { p_plot: currentClaimPlot.index, p_url: url });
+    if (error || !data || !data.ok) {
+      const e = (data && data.error) || "";
+      claimError.textContent =
+        e === "signin" ? "Sign in to claim a permanent space \u2014 then it's yours, tied to your account." :
+        e === "plot_taken" ? "That spot was just claimed by someone else." :
+        e === "already_claimed" ? "One project space per account for now \u2014 yours is already standing." :
+        e === "bad_url" ? "Enter a full GitHub link (github.com/owner/project)." :
+        "Could not save the claim.";
       return;
     }
     applyClaim(currentClaimPlot, { project_name: repo, github_url: url });
