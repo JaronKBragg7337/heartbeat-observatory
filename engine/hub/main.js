@@ -235,7 +235,7 @@ const doors = [
     label: "Theater",
     path: "/video",
     x: 9,
-    z: -21,
+    z: -18.6,
     width: 5.0,
     depth: 4.0,
     height: 2.85,
