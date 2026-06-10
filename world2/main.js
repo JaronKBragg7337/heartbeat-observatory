@@ -10,8 +10,9 @@
 //     Phase 2 terrain only has to raise the amplitude, not rewire movement.
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const BUILD = "2026-06-10-w2c"; // bumped with ?v= in /world2/index.html on every deploy
+const BUILD = "2026-06-10-w2d"; // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
 // ---- DOM ----
@@ -19,6 +20,7 @@ const canvas = document.querySelector("#game");
 const overlay = document.querySelector("#overlay");
 const enterButton = document.querySelector("#enterButton");
 const timeChip = document.querySelector("#timeChip");
+const presenceChip = document.querySelector("#presenceChip");
 const movePad = document.querySelector("#movePad");
 const moveKnob = document.querySelector("#moveKnob");
 const jumpButton = document.querySelector("#jumpButton");
@@ -36,7 +38,27 @@ const jumpVelocity = 6.4;
 const WORLD_SEED = 7337;
 
 // ---- the city district (Phase 3) — off-spawn, so the skyline is a destination you walk toward ----
-const CITY = { x: 55, z: -45, r: 38, blend: 20, base: 1.2, street: 12 };
+const CITY = { x: 55, z: -45, r: 40, blend: 20, base: 1.2, street: 14 };
+
+// ---- Phase 4: multiplayer — same Supabase project as World 1, NEW channel (world2-town).
+// Sharing World 1's engine-town channel would double its traffic; this world has its own. ----
+const SUPA_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
+const SUPA_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
+const W2_CHANNEL = "world2-town";
+const peerColors = ["#4fa3ff", "#5fd38d", "#f6b45b", "#e36d7c", "#a67cff", "#47c7b8", "#f0d461", "#d987e8"];
+let supa = null;
+let channel = null;
+let connected = false;
+let wantsConnection = false;
+let reconnectTimer = null;
+let myId = null;
+let displayName = null;
+let myColor = peerColors[0];
+let sendAccumulator = 0;
+let lastSentSig = "";   // idle-send guard: signature of the last broadcast state
+let lastSentAt = 0;     // idle-send guard: keepalive clock
+const peers = new Map();
+const remotes = new Map();
 
 // ---- day/night palette (World 2's own — warmer dusk, deeper night than the town) ----
 const W2_DAY = new THREE.Color(0xaecde4);
@@ -87,7 +109,7 @@ let grass = null;
 let grassCellX = 1e9, grassCellZ = 1e9;
 
 // ---- city handles (emissive intensity driven by the day/night cycle) ----
-let towerMat = null, lowMat = null, bulbMat = null;
+let towerMat = null, lowMat = null, glassMat = null, bulbMat = null;
 const FIREFLY_COUNT = 130;
 let fireflies = null, fireflyBase = null;
 
@@ -165,8 +187,8 @@ function pavedAt(x, z) {
   let p = Math.min(1, Math.max(0, (3.2 - roadDist(x, z)) / 1.2));
   const cd = cityDist(x, z);
   if (cd < CITY.r + 4) {
-    p = Math.max(p, Math.min(1, Math.max(0, (3.4 - streetDist(x, z)) / 1.2)));
-    p = Math.max(p, Math.min(1, Math.max(0, (8.5 - cd) / 1.5)));
+    p = Math.max(p, Math.min(1, Math.max(0, (3.6 - streetDist(x, z)) / 1.2)));
+    p = Math.max(p, Math.min(1, Math.max(0, (10.4 - cd) / 1.5)));
   }
   return p;
 }
@@ -381,25 +403,30 @@ function buildWorld() {
 
 // ---- Phase 3: the city — instanced boxes wearing procedural facade + emissive-window
 // textures. Hundreds of windows, a handful of draw calls. The Bilawal-demo technique. ----
-function makeFacadeTextures(cols, rows) {
+function makeFacadeTextures(cols, rows, opts) {
+  opts = opts || {};
+  const baseCol = opts.base || "#3a4049";
+  const darkWin = opts.darkWin || "#14181f";
+  const faceLit = opts.faceLit || "#322f27"; // dim on the facade — the night glow is emissive's job
+  const litRatio = opts.litRatio === undefined ? 0.36 : opts.litRatio;
+  const warm = opts.palette || ["#ffb066", "#ffd093", "#ffe9c4", "#bcd6ff"];
   const W = 192, H = 256;
   const face = document.createElement("canvas"); face.width = W; face.height = H;
   const glow = document.createElement("canvas"); glow.width = W; glow.height = H;
   const fc = face.getContext("2d"), gc = glow.getContext("2d");
-  fc.fillStyle = "#252a31"; fc.fillRect(0, 0, W, H);
+  fc.fillStyle = baseCol; fc.fillRect(0, 0, W, H);
   for (let i = 0; i < 340; i++) { // concrete speckle
-    const v = 30 + Math.floor(hash2(i, rows * 97) * 28);
+    const v = 44 + Math.floor(hash2(i, rows * 97) * 30);
     fc.fillStyle = "rgb(" + v + "," + (v + 3) + "," + (v + 7) + ")";
     fc.fillRect(hash2(i, 501) * W, hash2(i, 503) * H, 2, 2);
   }
   gc.fillStyle = "#000"; gc.fillRect(0, 0, W, H);
-  const warm = ["#ffb066", "#ffd093", "#ffe9c4", "#bcd6ff"];
   const x0 = 10, y0 = 8, gw = (W - 20) / cols, gh = (H * 0.78) / rows;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const wx = x0 + c * gw + 2, wy = y0 + r * gh + 2, ww = gw - 5, wh = gh - 6;
-      const lit = hash2(c * 13 + cols, r * 29 + rows) < 0.36;
-      fc.fillStyle = lit ? "#4a473c" : "#0b0e13";
+      const lit = hash2(c * 13 + cols, r * 29 + rows) < litRatio;
+      fc.fillStyle = lit ? faceLit : darkWin;
       fc.fillRect(wx, wy, ww, wh);
       if (lit) {
         gc.fillStyle = warm[Math.floor(hash2(c * 7 + 3, r * 11 + 5) * warm.length)];
@@ -416,69 +443,97 @@ function makeFacadeTextures(cols, rows) {
 }
 
 function buildCity() {
-  const towers = [], lows = [];
-  // block grid between the streets; the plaza stays open
-  for (let gi = -3; gi <= 2; gi++) {
-    for (let gj = -3; gj <= 2; gj++) {
-      const bx = CITY.x + gi * CITY.street + 6;
-      const bz = CITY.z + gj * CITY.street + 6;
+  // one composition per block, ALIGNED to the street grid — orderly rows, not scatter.
+  // Archetypes: podium+tower (downtown, some glass), stepped tower, twin slabs, plain
+  // tower, low slab pairs (edge ring). Every part is still a box instance: 3 draw calls.
+  const towerParts = [], lowParts = [], glassParts = [];
+  const solid = (x, z, w, d) => buildingColliders.push({ x, z, width: w, depth: d });
+
+  for (let gi = -4; gi <= 3; gi++) {
+    for (let gj = -4; gj <= 3; gj++) {
+      const bx = CITY.x + gi * CITY.street + CITY.street / 2;
+      const bz = CITY.z + gj * CITY.street + CITY.street / 2;
       const cd = Math.hypot(bx - CITY.x, bz - CITY.z);
-      if (cd > CITY.r - 4) continue;
-      if (cd < 9) continue;
-      for (let k = 0; k < 2; k++) {
-        const sgn = k === 0 ? -1 : 1;
-        const x = bx + sgn * 2.7 + (hash2(gi * 31 + k, gj * 17 + k * 7) - 0.5) * 1.2;
-        const z = bz + sgn * 2.7 + (hash2(gi * 13 + k * 3, gj * 41 + k) - 0.5) * 1.2;
-        const core = Math.max(0, 1 - cd / CITY.r);
-        const w = 4.2 + hash2(gi * 3 + k, gj * 5 + k) * 1.5;
-        const d = 4.2 + hash2(gi * 11 + k, gj * 23 + k) * 1.5;
-        const isTower = hash2(gi * 29 + k * 13, gj * 37 + k * 17) < 0.25 + core * 0.65;
-        const h = isTower
-          ? 8 + hash2(gi * 41 + k, gj * 53 + k) * (9 + core * 15)
-          : 3.4 + hash2(gi * 43 + k, gj * 59 + k) * 3;
-        (isTower ? towers : lows).push({ x, z, w, d, h, seed: (gi + 9) * 100 + (gj + 9) * 10 + k });
+      if (cd > CITY.r - 5) continue;
+      if (cd < 11) continue; // plaza blocks stay open
+      const s1 = hash2(gi * 7 + 103, gj * 13 + 59);
+      const s2 = hash2(gi * 17 + 5, gj * 29 + 11);
+      const seed = (gi + 9) * 100 + (gj + 9);
+      const core = Math.max(0, 1 - cd / CITY.r);
+      if (core > 0.55) {
+        // downtown: podium + tower; some towers are glass
+        lowParts.push({ x: bx, z: bz, w: 8.8, h: 2.8 + s2 * 1.2, d: 8.8, seed });
+        (s2 < 0.45 ? glassParts : towerParts).push({ x: bx, z: bz, w: 5.4, h: 15 + s1 * 14, d: 5.4, seed: seed + 1 });
+        solid(bx, bz, 8.8, 8.8);
+      } else if (core > 0.3) {
+        if (s1 < 0.34) {
+          // stepped tower: wide base, thinner shaft rising past it
+          towerParts.push({ x: bx, z: bz, w: 6.8, h: 8 + s2 * 5, d: 6.8, seed });
+          towerParts.push({ x: bx, z: bz, w: 4.4, h: 13 + s2 * 7, d: 4.4, seed: seed + 1 });
+          solid(bx, bz, 6.8, 6.8);
+        } else if (s1 < 0.67) {
+          // twin slabs, axis alternating by block parity — reads as rows along the streets
+          const flip = (gi + gj) & 1;
+          const ox = flip ? 0 : 2.55, oz = flip ? 2.55 : 0;
+          const w = flip ? 8 : 3.7, d = flip ? 3.7 : 8;
+          towerParts.push({ x: bx - ox, z: bz - oz, w, h: 9 + s2 * 7, d, seed });
+          towerParts.push({ x: bx + ox, z: bz + oz, w, h: 9 + s1 * 6, d, seed: seed + 1 });
+          solid(bx - ox, bz - oz, w, d);
+          solid(bx + ox, bz + oz, w, d);
+        } else {
+          (s2 < 0.3 ? glassParts : towerParts).push({ x: bx, z: bz, w: 7, h: 10 + s2 * 9, d: 7, seed });
+          solid(bx, bz, 7, 7);
+        }
+      } else {
+        // edge ring: low and orderly
+        if (s1 < 0.5) {
+          lowParts.push({ x: bx, z: bz, w: 8.4, h: 3.2 + s2 * 2.4, d: 8.4, seed });
+          solid(bx, bz, 8.4, 8.4);
+        } else {
+          const flip = (gi + gj) & 1;
+          const ox = flip ? 0 : 2.55, oz = flip ? 2.55 : 0;
+          const w = flip ? 7.8 : 3.5, d = flip ? 3.5 : 7.8;
+          lowParts.push({ x: bx - ox, z: bz - oz, w, h: 3 + s2 * 2, d, seed });
+          lowParts.push({ x: bx + ox, z: bz + oz, w, h: 3 + s1 * 2, d, seed: seed + 1 });
+          solid(bx - ox, bz - oz, w, d);
+          solid(bx + ox, bz + oz, w, d);
+        }
       }
     }
-  }
-  // outer fringe: scattered low workshops between forest and skyline
-  for (let i = 0; i < 70 && lows.length < 60; i++) {
-    const ang = hash2(i, 601) * Math.PI * 2;
-    const dist = CITY.r - 6 + hash2(i, 607) * 16;
-    const x = CITY.x + Math.cos(ang) * dist, z = CITY.z + Math.sin(ang) * dist;
-    if (roadDist(x, z) < 5) continue;
-    if (cityDist(x, z) < CITY.r + 4 && streetDist(x, z) < 4) continue;
-    if (groundSlope(x, z) > 0.5) continue;
-    lows.push({ x, z, w: 3.6 + hash2(i, 613) * 2, d: 3.6 + hash2(i, 617) * 2, h: 2.8 + hash2(i, 619) * 2.6, seed: 7000 + i });
   }
 
   const boxGeo = new THREE.BoxGeometry(1, 1, 1);
   boxGeo.translate(0, 0.5, 0); // origin at the base: scale = footprint + height directly
-  const tTex = makeFacadeTextures(5, 13); // tall, narrow window grid for towers
-  towerMat = new THREE.MeshStandardMaterial({ map: tTex.map, emissive: 0xffffff, emissiveMap: tTex.emissiveMap, emissiveIntensity: 0.06, roughness: 0.85, metalness: 0.05 });
-  const lTex = makeFacadeTextures(7, 5);  // wide, low grid for the small buildings
-  lowMat = new THREE.MeshStandardMaterial({ map: lTex.map, emissive: 0xffffff, emissiveMap: lTex.emissiveMap, emissiveIntensity: 0.06, roughness: 0.9, metalness: 0 });
+  const tTex = makeFacadeTextures(5, 13, { base: "#363c45", litRatio: 0.34 });
+  towerMat = new THREE.MeshStandardMaterial({ map: tTex.map, emissive: 0xffffff, emissiveMap: tTex.emissiveMap, emissiveIntensity: 0.03, roughness: 0.85, metalness: 0.05 });
+  const lTex = makeFacadeTextures(7, 5, { base: "#3d4140" });
+  lowMat = new THREE.MeshStandardMaterial({ map: lTex.map, emissive: 0xffffff, emissiveMap: lTex.emissiveMap, emissiveIntensity: 0.03, roughness: 0.9, metalness: 0 });
+  const gTex = makeFacadeTextures(6, 14, { base: "#2a3744", darkWin: "#1c2733", faceLit: "#2e3b48", litRatio: 0.5, palette: ["#cfe2ff", "#e8f1ff", "#ffe9c4", "#bcd6ff"] });
+  glassMat = new THREE.MeshStandardMaterial({ map: gTex.map, emissive: 0xffffff, emissiveMap: gTex.emissiveMap, emissiveIntensity: 0.03, roughness: 0.55, metalness: 0.25 });
 
-  function instanceBuildings(list, mat) {
+  function instanceParts(list, mat) {
     if (!list.length) return;
     const mesh = new THREE.InstancedMesh(boxGeo, mat, list.length);
     for (let i = 0; i < list.length; i++) {
       const b = list[i];
-      _vp.set(b.x, groundHeight(b.x, b.z) - 0.5, b.z); // sunk foundation: no floating edges on slopes
+      _vp.set(b.x, groundHeight(b.x, b.z) - 0.5, b.z); // sunk foundation
       _q.identity();
       _vs.set(b.w, b.h + 0.5, b.d);
       _m4.compose(_vp, _q, _vs);
       mesh.setMatrixAt(i, _m4);
-      const v = 0.78 + hash2(b.seed, 701) * 0.3; // per-instance facade tint (windows stay uniform warm)
+      const v = 0.82 + hash2(b.seed, 701) * 0.26;
       _sky.setRGB(v, v * (0.96 + hash2(b.seed, 703) * 0.07), v * (0.92 + hash2(b.seed, 709) * 0.12));
       mesh.setColorAt(i, _sky);
-      buildingColliders.push({ x: b.x, z: b.z, width: b.w, depth: b.d });
     }
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     scene.add(mesh);
   }
-  instanceBuildings(towers, towerMat);
-  instanceBuildings(lows, lowMat);
+  instanceParts(towerParts, towerMat);
+  instanceParts(lowParts, lowMat);
+  instanceParts(glassParts, glassMat);
+
+  buildRoads();
 
   // plaza waymark — a quiet stone spire; the city has no name yet, and the stone doesn't pretend to one
   const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8e8a80, roughness: 0.85 });
@@ -493,6 +548,66 @@ function buildCity() {
   buildingColliders.push({ x: CITY.x, z: CITY.z, width: 3.4, depth: 3.4 });
 }
 
+// real, visible road geometry: instanced street strips on the flat plateau, a plaza disc,
+// and a main-road ribbon that conforms to the hills from the spawn stone to the plaza
+function buildRoads() {
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0x3b3b39, roughness: 1, metalness: 0, side: THREE.DoubleSide });
+  const strip = new THREE.PlaneGeometry(1, 1);
+  strip.rotateX(-Math.PI / 2);
+  const lines = [];
+  for (let k = -2; k <= 2; k++) {
+    const off = k * CITY.street;
+    const half = Math.sqrt(Math.max(0, (CITY.r - 1.5) * (CITY.r - 1.5) - off * off));
+    if (half < 6) continue;
+    lines.push({ axis: 0, off, len: half * 2 });
+    lines.push({ axis: 1, off, len: half * 2 });
+  }
+  const streets = new THREE.InstancedMesh(strip, roadMat, lines.length);
+  _q.identity();
+  for (let i = 0; i < lines.length; i++) {
+    const L = lines[i];
+    if (L.axis === 0) { _vp.set(CITY.x, CITY.base + 0.04, CITY.z + L.off); _vs.set(L.len, 1, 4.6); }
+    else { _vp.set(CITY.x + L.off, CITY.base + 0.04, CITY.z); _vs.set(4.6, 1, L.len); }
+    _m4.compose(_vp, _q, _vs);
+    streets.setMatrixAt(i, _m4);
+  }
+  streets.receiveShadow = true;
+  scene.add(streets);
+
+  const plaza = new THREE.Mesh(new THREE.CircleGeometry(10, 36), roadMat);
+  plaza.rotation.x = -Math.PI / 2;
+  plaza.position.set(CITY.x, CITY.base + 0.03, CITY.z);
+  plaza.receiveShadow = true;
+  scene.add(plaza);
+
+  const len = Math.hypot(CITY.x, CITY.z);
+  const ux = CITY.x / len, uz = CITY.z / len, nx = -uz, nz = ux;
+  const t0 = 2.4 / len, t1 = 1 - 9.6 / len, segs = 72, wHalf = 2.1;
+  const pos = new Float32Array((segs + 1) * 2 * 3);
+  const idx = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = t0 + (t1 - t0) * (i / segs);
+    const cx = CITY.x * t, cz = CITY.z * t;
+    for (let s = 0; s < 2; s++) {
+      const side = s === 0 ? -1 : 1;
+      const x = cx + nx * wHalf * side, z = cz + nz * wHalf * side;
+      const o = (i * 2 + s) * 3;
+      pos[o] = x; pos[o + 1] = groundHeight(x, z) + 0.1; pos[o + 2] = z;
+    }
+    if (i < segs) {
+      const a = i * 2, b = i * 2 + 1, c = i * 2 + 2, d = i * 2 + 3;
+      idx.push(a, b, c, b, d, c);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  const ribbon = new THREE.Mesh(geo, roadMat);
+  ribbon.receiveShadow = true;
+  scene.add(ribbon);
+}
+
 // street lamps: emissive bulbs only (no per-lamp lights — the glow illusion is fog + tone mapping)
 function buildLamps() {
   const spots = [];
@@ -503,9 +618,12 @@ function buildLamps() {
     const side = i % 2 === 0 ? 1 : -1;
     spots.push({ x: CITY.x * t + nx * 3.1 * side, z: CITY.z * t + nz * 3.1 * side });
   }
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    spots.push({ x: CITY.x + Math.cos(a) * 9.5, z: CITY.z + Math.sin(a) * 9.5 });
+  for (let k = -2; k <= 2; k++) {
+    for (let l = -2; l <= 2; l++) {
+      const lx = CITY.x + k * CITY.street + 2.9, lz = CITY.z + l * CITY.street + 2.9;
+      if (cityDist(lx, lz) > CITY.r - 4) continue;
+      spots.push({ x: lx, z: lz });
+    }
   }
   const posts = new THREE.InstancedMesh(
     new THREE.CylinderGeometry(0.06, 0.08, 3.4, 6),
@@ -645,6 +763,268 @@ function updateGrass() {
   if (grass.instanceColor) grass.instanceColor.needsUpdate = true;
 }
 
+// ---- Phase 4: presence + state (World 1's launch-night laws, ported verbatim) ----
+function sanitizeDisplayName(raw) {
+  if (!raw) return null;
+  const s = String(raw).replace(/[<>&"']/g, "").trim().slice(0, 24);
+  return s.length ? s : null;
+}
+function randomIdChunk() {
+  return Math.random().toString(36).slice(2, 10);
+}
+function selfId() {
+  if (!myId) myId = "guest:" + randomIdChunk() + randomIdChunk().slice(0, 4);
+  return myId;
+}
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function ensureIdentity() {
+  if (displayName) return;
+  const params = new URLSearchParams(location.search);
+  displayName = sanitizeDisplayName(params.get("name")) || "Wanderer " + selfId().slice(6, 10);
+  myColor = peerColors[hashStr(selfId()) % peerColors.length];
+}
+
+function makeNameSprite(name) {
+  const c = document.createElement("canvas");
+  c.width = 256; c.height = 64;
+  const ctx = c.getContext("2d");
+  ctx.font = "600 30px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(8,12,16,0.55)";
+  const tw = Math.min(244, ctx.measureText(name).width + 26);
+  ctx.beginPath();
+  ctx.roundRect((256 - tw) / 2, 8, tw, 48, 14);
+  ctx.fill();
+  ctx.fillStyle = "#eef4fa";
+  ctx.fillText(name, 128, 34);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  sprite.scale.set(1.9, 0.475, 1);
+  return sprite;
+}
+
+function buildAvatarBody(colorHex, name) {
+  const group = new THREE.Group();
+  const col = new THREE.Color(colorHex || "#4fa3ff");
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.26, 0.3, 1.0, 10),
+    new THREE.MeshStandardMaterial({ color: col, roughness: 0.7 })
+  );
+  body.position.y = 0.78;
+  body.castShadow = true;
+  group.add(body);
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.21, 12, 10),
+    new THREE.MeshStandardMaterial({ color: 0xe8d3b8, roughness: 0.8 })
+  );
+  head.position.y = 1.46;
+  head.castShadow = true;
+  group.add(head);
+  const plate = makeNameSprite(name || "Guest");
+  plate.position.y = 1.95;
+  group.add(plate);
+  return group;
+}
+
+function remoteFootY(player) {
+  return player.y - (player.stance === "crouch" ? crouchEyeHeight : standingEyeHeight);
+}
+
+function createRemote(player) {
+  const group = buildAvatarBody(player.color, player.name);
+  group.position.set(player.x, remoteFootY(player), player.z);
+  group.rotation.y = player.yaw || 0;
+  return {
+    group,
+    target: new THREE.Vector3(player.x, remoteFootY(player), player.z),
+    targetYaw: player.yaw || 0,
+    targetScaleY: player.stance === "crouch" ? 0.72 : 1,
+    lastUpdate: performance.now(),
+    buf: []
+  };
+}
+
+function removeRemote(id) {
+  const remote = remotes.get(id);
+  if (!remote) return;
+  scene.remove(remote.group);
+  remote.group.traverse((o) => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); }
+  });
+  remotes.delete(id);
+}
+
+function applyPeerState(player) {
+  if (!player || !player.id || player.id === selfId()) return;
+  player.name = sanitizeDisplayName(player.name) || "Guest";
+  peers.set(player.id, player);
+  let remote = remotes.get(player.id);
+  if (!remote) {
+    remote = createRemote(player);
+    remotes.set(player.id, remote);
+    scene.add(remote.group);
+    updatePresenceChip();
+  }
+  remote.target.set(player.x, remoteFootY(player), player.z);
+  remote.targetYaw = player.yaw;
+  remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
+  remote.lastUpdate = performance.now();
+  remote.buf.push({ t: remote.lastUpdate, x: player.x, y: remoteFootY(player), z: player.z, yaw: player.yaw });
+  if (remote.buf.length > 10) remote.buf.shift();
+}
+
+function lerpAngle(a, b, k) {
+  let d = b - a;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return a + d * k;
+}
+
+function updateRemotes(dt) {
+  const blend = Math.min(1, dt * 12);
+  // LAW: interpolation delay >= 2x the send interval (250ms at 10Hz). Less and network jitter
+  // makes this flap between the buffered path and the chase fallback — that flap IS teleporting.
+  const renderT = performance.now() - 250;
+  for (const [id, remote] of remotes) {
+    if (performance.now() - remote.lastUpdate > 20000) { removeRemote(id); updatePresenceChip(); continue; }
+    const buf = remote.buf;
+    if (buf && buf.length >= 2 && buf[buf.length - 1].t >= renderT) {
+      while (buf.length > 2 && buf[1].t <= renderT) buf.shift();
+      const a = buf[0], b = buf[1] || a;
+      if (b.t - a.t > 1200) {
+        // idle-resume guard: never glide across a keepalive gap — snap once to the fresh packet
+        buf.splice(0, buf.length - 1);
+        remote.group.position.set(b.x, b.y, b.z);
+        remote.group.rotation.y = b.yaw;
+        remote.group.scale.y += (remote.targetScaleY - remote.group.scale.y) * blend;
+        continue;
+      }
+      const span = Math.max(1, b.t - a.t);
+      const k = Math.max(0, Math.min(1, (renderT - a.t) / span));
+      remote.group.position.set(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k);
+      remote.group.rotation.y = lerpAngle(a.yaw, b.yaw, k);
+    } else {
+      // dry buffer = they stopped moving. Hold/ease to the NEWEST buffered packet, never the
+      // live target — the buffered path renders 250ms in the past; chasing live on every
+      // pause/resume is a visible forward/back jump.
+      if (buf && buf.length) {
+        const hb = buf[buf.length - 1];
+        remote.target.set(hb.x, hb.y, hb.z);
+        remote.targetYaw = hb.yaw;
+      }
+      remote.group.position.lerp(remote.target, blend);
+      remote.group.rotation.y = lerpAngle(remote.group.rotation.y, remote.targetYaw, blend);
+    }
+    remote.group.scale.y += (remote.targetScaleY - remote.group.scale.y) * blend;
+  }
+}
+
+function trackSelf() {
+  // LAW: presence.track() is join/leave identity ONLY. It is called once on subscribe and
+  // NEVER from the movement cycle (per-client presence rate limit throttles the whole socket).
+  if (!channel) return;
+  try {
+    channel.track({ id: selfId(), name: displayName, color: myColor, x: state.x, y: state.y, z: state.z, yaw: state.yaw, stance: state.stance });
+  } catch (e) {}
+}
+
+function sendState(force = false) {
+  if (!connected || !channel || !hasEntered) return;
+  if (!force && sendAccumulator < 0.1) return; // LAW: state sends capped at 10Hz
+  // LAW: idle suppression — skip sends when nothing visible changed; 5s keepalive while idle
+  const sig = state.x.toFixed(2) + "|" + state.y.toFixed(2) + "|" + state.z.toFixed(2) + "|" + state.yaw.toFixed(1) + "|" + state.pitch.toFixed(1) + "|" + state.stance;
+  if (!force && sig === lastSentSig && performance.now() - lastSentAt < 5000) return;
+  lastSentSig = sig; lastSentAt = performance.now();
+  sendAccumulator = 0;
+  channel.send({
+    type: "broadcast",
+    event: "state",
+    payload: { id: selfId(), name: displayName, color: myColor, x: state.x, y: state.y, z: state.z, yaw: state.yaw, pitch: state.pitch, stance: state.stance }
+  });
+}
+
+function syncPresence() {
+  if (!channel) return;
+  const presenceState = channel.presenceState();
+  const live = new Set();
+  for (const key in presenceState) {
+    const metas = presenceState[key];
+    if (metas && metas[0]) {
+      const meta = metas[0];
+      const id = meta.id || key;
+      if (!id || id === selfId()) continue;
+      live.add(id);
+      if (!peers.has(id) && typeof meta.x === "number") applyPeerState({ ...meta, id });
+    }
+  }
+  for (const id of [...peers.keys()]) {
+    if (!live.has(id)) {
+      peers.delete(id);
+      removeRemote(id);
+    }
+  }
+  updatePresenceChip();
+}
+
+function scheduleReconnect() {
+  if (!wantsConnection || reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (!wantsConnection) return;
+    try { if (channel) supa.removeChannel(channel); } catch (e) {}
+    channel = null;
+    connect();
+  }, 2200);
+}
+
+function connect() {
+  if (!wantsConnection || channel) return;
+  ensureIdentity();
+  if (!supa) supa = createClient(SUPA_URL, SUPA_KEY);
+  channel = supa.channel(W2_CHANNEL, {
+    config: {
+      presence: { key: selfId() },
+      broadcast: { self: false }
+    }
+  });
+  channel.on("broadcast", { event: "state" }, ({ payload }) => applyPeerState(payload));
+  channel.on("presence", { event: "sync" }, () => syncPresence());
+  channel.on("presence", { event: "leave" }, ({ leftPresences }) => {
+    for (const p of leftPresences || []) {
+      if (!p.id || p.id === selfId()) continue;
+      peers.delete(p.id);
+      removeRemote(p.id);
+    }
+    updatePresenceChip();
+  });
+  channel.subscribe((status) => {
+    if (status === "SUBSCRIBED") {
+      connected = true;
+      trackSelf(); // once, at join — identity only
+      sendState(true);
+      updatePresenceChip();
+    } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+      connected = false;
+      scheduleReconnect();
+    }
+  });
+}
+
+function updatePresenceChip() {
+  if (!presenceChip) return;
+  const n = remotes.size;
+  const label = !connected ? "connecting" : n === 0 ? "alone here" : n === 1 ? "1 other here" : n + " others here";
+  if (presenceChip.textContent !== label) presenceChip.textContent = label;
+}
+
 // ---- day/night (wall-clock driven like World 1: every visitor sees the same sky) ----
 function pickSky(e) {
   if (e > 0.18) _sky.copy(W2_DAY);
@@ -698,9 +1078,10 @@ function updateDayNight() {
   if (stars) stars.material.opacity = nightF * 0.95;
 
   // the night-city moment: windows brighten exactly as the sky darkens
-  const glow = 0.06 + (1 - day) * 1.35;
+  const glow = 0.03 + Math.pow(1 - day, 1.6) * 1.5;
   if (towerMat) towerMat.emissiveIntensity = glow;
   if (lowMat) lowMat.emissiveIntensity = glow;
+  if (glassMat) glassMat.emissiveIntensity = glow * 0.9;
   if (bulbMat) bulbMat.emissiveIntensity = 0.1 + (1 - day) * 2.4;
   if (fireflies) {
     fireflies.visible = nightF > 0.04;
@@ -825,11 +1206,14 @@ function updateCamera(dt) {
 // ---- frame loop ----
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
+  sendAccumulator += dt;
   updateLocal(dt);
+  updateRemotes(dt);
   updateGrass();
   updateFireflies();
   updateDayNight();
   updateCamera(dt);
+  sendState();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
@@ -837,6 +1221,8 @@ function animate() {
 // ---- enter flow ----
 function enterWorld() {
   hasEntered = true;
+  wantsConnection = true;
+  connect();
   overlay.classList.add("hidden");
   goFullscreen();
   if (!isTouch) {
@@ -987,6 +1373,7 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+window.addEventListener("pagehide", () => { try { channel?.untrack(); } catch (e) {} });
 window.addEventListener("blur", clearMovementInput);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) clearMovementInput();
