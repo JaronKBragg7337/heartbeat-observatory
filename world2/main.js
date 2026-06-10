@@ -12,7 +12,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const BUILD = "2026-06-10-w2f"; // bumped with ?v= in /world2/index.html on every deploy
+const BUILD = "2026-06-10-w2g"; // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
 // ---- DOM ----
@@ -1168,20 +1168,31 @@ function buildInteriors() {
   const nowShowing = makeNameSprite("NOW SHOWING \u00b7 first screening coming soon", 1.7);
   nowShowing.position.set(tr.x, 3.1, tr.z - 8.2);
   scene.add(nowShowing);
-  const seatGeo = new THREE.BoxGeometry(0.95, 1.0, 0.95);
-  seatGeo.translate(0, 0.5, 0);
-  const seats = new THREE.InstancedMesh(seatGeo, new THREE.MeshStandardMaterial({ color: 0x6e3a40, roughness: 0.85 }), 24);
+  // Real theater chairs (June 10): cushion + backrest sharing one matrix set - two draw
+  // calls for 24 seats, all facing the screen. The old cubes read as boxes, not chairs.
+  const seatMat = new THREE.MeshStandardMaterial({ color: 0x7a3640, roughness: 0.85 });
+  const backMat = new THREE.MeshStandardMaterial({ color: 0x652c36, roughness: 0.85 });
+  const cushionGeo = new THREE.BoxGeometry(0.95, 0.5, 0.9);
+  cushionGeo.translate(0, 0.25, 0);
+  const backGeo = new THREE.BoxGeometry(0.95, 1.05, 0.18);
+  backGeo.translate(0, 0.92, 0.36);
+  const cushions = new THREE.InstancedMesh(cushionGeo, seatMat, 24);
+  const backs = new THREE.InstancedMesh(backGeo, backMat, 24);
   let si = 0;
   _q.identity(); _vs.set(1, 1, 1);
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 6; col++) {
       _vp.set(tr.x - 5 + col * 2 + (row % 2) * 0.5, 0, tr.z - 3.6 + row * 2.2);
       _m4.compose(_vp, _q, _vs);
-      seats.setMatrixAt(si++, _m4);
+      cushions.setMatrixAt(si, _m4);
+      backs.setMatrixAt(si, _m4);
+      si++;
     }
   }
-  seats.castShadow = true;
-  scene.add(seats);
+  cushions.castShadow = true;
+  backs.castShadow = true;
+  scene.add(cushions);
+  scene.add(backs);
   interiorStations.theater.push({ label: "Theater page \u00b7 pick your seat soon", x: tr.x + 9.5, z: tr.z + 5.5, hw: 2, hd: 2, act: { type: "page", path: "/video" } });
 
   // ARCADE — neon dark, one REAL cabinet (President Sim lives on the Games page), honest shells.
@@ -1232,7 +1243,9 @@ function buildInteriors() {
   _q.identity();
   for (let i = 0; i < 8; i++) {
     const side = i < 4 ? -1 : 1;
-    const ox = -9 + (i % 4) * 4.6;
+    // South row leaves the exit doorway clear (the old spacing put a shelf dead-center
+    // in front of the door - Jaron walked into it). Door zone is +/-1.8 around center.
+    const ox = side > 0 ? [-10, -5.4, 5.4, 10][i % 4] : (-9 + (i % 4) * 4.6);
     const sx = lr.x + ox, sz = lr.z + side * 7.6;
     const shelf = new THREE.Mesh(shelfGeo, shelfMat);
     shelf.position.set(sx, 0, sz);
