@@ -68,7 +68,7 @@ let appearanceSaveTimer = null;
 let sendAccumulator = 0;
 let lastSentSig = "";   // idle-send guard: signature of the last broadcast state
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
-let wasIdleSend = false; // idle-send guard: true while suppressing identical sends
+let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 let hasEntered = false;
 let settingsOpen = false;
 let buildMode = false;
@@ -442,6 +442,23 @@ async function loadProps() {
     if (Array.isArray(data)) for (const p of data) renderProp(p.prop_type, p.x, p.z, p.rot, p.id, p.owner_uid);
   } catch (e) {}
   subscribeProps();
+  // Ground-truth reconcile (Jaron's "refresh" idea, June 10): every 30s the props table is
+  // re-fetched and diffed - missing props render, deleted props vanish, colliders cleaned via
+  // removePropById. The honest backstop that self-corrects the world no matter what realtime drops.
+  if (!propsReconcileTimer) propsReconcileTimer = setInterval(reconcileProps, 30000);
+}
+async function reconcileProps() {
+  try {
+    const { data } = await ensureSupabase().from("world_props").select("id,prop_type,x,z,rot,owner_uid");
+    if (!Array.isArray(data)) return;
+    const liveIds = new Set(data.map((p) => p.id));
+    for (const p of [...placedProps]) { if (!liveIds.has(p.id)) removePropById(p.id); }
+    for (const p of data) {
+      if (!placedProps.some((x) => x.id === p.id)) {
+        try { renderProp(p.prop_type, p.x, p.z, p.rot, p.id, p.owner_uid); } catch (e) {}
+      }
+    }
+  } catch (e) {}
 }
 async function placeHere() {
   if (!myUserId) { setBuildHint("Sign in on your account to place things."); return; }
@@ -465,6 +482,7 @@ async function placeHere() {
       setBuildHint("Render error: " + (re && re.message ? re.message : String(re)));
       return;
     }
+    try { if (channel && connected) channel.send({ type: "broadcast", event: "prop", payload: { id: selfRealtimeId(), op: "add", prop: { id: data.id, prop_type: data.prop_type, x: data.x, z: data.z, rot: data.rot, owner_uid: myUserId } } }); } catch (e) {}
     try { SFX.place(); } catch (e) {}
     setBuildHint("Placed a " + data.prop_type + " \u2014 there it is.");
   } catch (ex) {
@@ -487,11 +505,13 @@ function removeNearest() {
       // the later DELETE-event cleanup, because removePropById early-returns once the prop is
       // already gone from placedProps).
       removePropById(best.id);
+      try { if (channel && connected) channel.send({ type: "broadcast", event: "prop", payload: { id: selfRealtimeId(), op: "del", propId: best.id } }); } catch (e) {}
       setBuildHint("Removed.");
     } else if (data && data.removed === 0) {
       // Ghost prop: the DB row was already deleted (a missed DELETE event left a stale local copy).
       // Self-heal: clean it up locally so stale clients recover instead of getting stuck.
       removePropById(best.id);
+      try { if (channel && connected) channel.send({ type: "broadcast", event: "prop", payload: { id: selfRealtimeId(), op: "del", propId: best.id } }); } catch (e) {}
       setBuildHint("That one was already removed \u2014 cleaned it up.");
     } else {
       const e = (data && data.error) || "unknown";
@@ -1344,6 +1364,18 @@ function connect() {
   });
 
   channel.on("broadcast", { event: "state" }, ({ payload }) => applyPeerState(payload));
+  channel.on("broadcast", { event: "prop" }, ({ payload }) => {
+    // Props sync over the SAME channel that movement provably uses - postgres_changes delivery is
+    // unreliable server-side (verified June 10 with a clean test subscriber that received nothing).
+    if (!payload || payload.id === selfRealtimeId()) return;
+    if (payload.op === "add" && payload.prop && payload.prop.id) {
+      if (!placedProps.some((x) => x.id === payload.prop.id)) {
+        try { renderProp(payload.prop.prop_type, payload.prop.x, payload.prop.z, payload.prop.rot, payload.prop.id, payload.prop.owner_uid); } catch (e) {}
+      }
+    } else if (payload.op === "del" && payload.propId) {
+      removePropById(payload.propId);
+    }
+  });
   channel.on("broadcast", { event: "throw" }, ({ payload }) => {
     if (!payload || payload.id === selfRealtimeId()) return;
     spawnProjectile(new THREE.Vector3(payload.ox, payload.oy, payload.oz), new THREE.Vector3(payload.vx, payload.vy, payload.vz), payload.id, payload.c);
@@ -1499,18 +1531,14 @@ function sendState(force = false) {
   if (!connected || !channel || !id || !hasEntered || !wantsSelfPresence) return;
   if (!force && sendAccumulator < 0.1) return;
 
-  // Rate + idle guard (June 9): 10Hz cap (snapshot interpolation buffers 120ms, so 100ms spacing fits) and
-  // skip sends when nothing peers can see has changed. Reason: the Realtime msg/sec cap tripped in live
-  // testing - broadcasts fan out as rate x players^2, so 20Hz with a few players already hit the limit and
-  // dropped events (the intermittent prop-removal sync). Idle players send a 5s keepalive; on going idle,
-  // presence is re-tracked once so late joiners see the true resting spot.
+  // Rate + idle guard (June 9): 10Hz cap; skip sends when nothing peers can see has changed
+  // (5s keepalive while idle). LAW (June 10): the earlier version also called trackSelf() on every
+  // transition to idle - on a phone joystick that fires constantly and tripped the per-client
+  // presence rate limit (ClientPresenceRateLimitReached in the realtime logs), which throttles the
+  // WHOLE socket and starves state + broadcast delivery for that player. Presence is join/leave
+  // identity ONLY; positions ride state broadcasts. Never put movement-cycle calls on presence.track().
   const sig = state.x.toFixed(2) + "|" + state.y.toFixed(2) + "|" + state.z.toFixed(2) + "|" + state.yaw.toFixed(1) + "|" + state.pitch.toFixed(1) + "|" + state.stance + "|" + (heldItem || "") + "|" + tagScore + "|" + outScore + "|" + inArena + "|" + (mySpace || "");
-  if (!force && sig === lastSentSig) {
-    if (!wasIdleSend) { wasIdleSend = true; try { trackSelf(); } catch (e) {} }
-    if (performance.now() - lastSentAt < 5000) return;
-  } else {
-    wasIdleSend = false;
-  }
+  if (!force && sig === lastSentSig && performance.now() - lastSentAt < 5000) return;
   lastSentSig = sig; lastSentAt = performance.now();
 
   sendAccumulator = 0;
@@ -2157,6 +2185,15 @@ function updateRemotes(dt) {
       remote.group.position.set(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k);
       remote.group.rotation.y = lerpAngle(a.yaw, b.yaw, k);
     } else {
+      // Dry buffer = the player stopped sending because they stopped moving. Hold/ease to the
+      // NEWEST buffered packet (where they actually stand) instead of jumping to the live target:
+      // the buffered path renders ~250ms in the past, so chasing the live target on every
+      // pause/resume caused a visible forward/back jump each time (the "teleporting").
+      if (buf && buf.length) {
+        const hb = buf[buf.length - 1];
+        remote.target.set(hb.x, hb.y, hb.z);
+        remote.targetYaw = hb.yaw;
+      }
       remote.group.position.lerp(remote.target, blend);
       remote.group.rotation.y = lerpAngle(remote.group.rotation.y, remote.targetYaw, blend);
     }
