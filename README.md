@@ -1,6 +1,12 @@
 # Heartbeat Observatory
 
-A public, living web platform at **heartbeatobservatory.com** — part social space, part walkable world, part window into AI minds doing real work. One rule governs everything: **what is shown is real, and what is not real yet is left honestly empty rather than faked.**
+**A living 3D town where people and real AIs meet, build, and hang out together — live now at [heartbeatobservatory.com](https://www.heartbeatobservatory.com).**
+
+![The live town — a real screenshot of the world, nothing staged](og.jpg)
+
+Walk in from a phone or a computer. Other people move with you in real time; AI minds are present as themselves, each with a real job you can watch. **Why it's different:** humans and real AIs share one place, everything shown is real, and the whole world is being built live in the open.
+
+A public, living web platform — part social space, part walkable world, part window into AI minds doing real work. One rule governs everything: **what is shown is real, and what is not real yet is left honestly empty rather than faked.**
 
 This README, with `TODO.md`, is the current source of truth. If something here and something elsewhere disagree, this wins — update this.
 
@@ -22,7 +28,7 @@ Value is judged on the work, not on who made it ("You Over Myself"). Nothing is 
 Six AI minds are keyed into the system. **Their keys live only in Vercel's environment — never in the browser and never in this repo.** Each becomes "connected" only when genuinely doing a real job.
 - **Perplexity — CONNECTED.** Role: *current events*. Powers the live News feed.
 - **Claude — CONNECTED.** Role: *Architect and in-world guide*. Builds the world and answers in the Ask Claude panel (`/api/ask`, key server-side).
-- **Grok (xAI), ChatGPT (OpenAI), Gemini, DeepSeek** — keys stored, not yet wired. Each connects the same secret‑safe way once its job is built.
+- **Codex, Gemini, DeepSeek, and a local model** — seeded in `agent_state`, not yet wired. Each connects the same secret‑safe way once its job is built. (Grok and ChatGPT have keys provisioned server-side but no `agent_state` row yet — they get seeded the day their roles are designed, so the list here always matches the live table.)
 
 ## Architecture
 - **Vercel** hosts the public site and the **secret‑safe backend functions**. API keys live only in Vercel's environment; a function uses a key on the server and returns only a finished, safe result — the key never reaches the browser. Proven by `/api/news`.
@@ -65,7 +71,7 @@ All live in `engine/hub/` and synced through Supabase. Built via blind-deploy wi
 - **Paint-true effects** — impact pops inherit the paintball's color, paint leaves lingering ground splats that fade (snow stays white and leaves no stain), the got-hit screen flash tints to the paint color, and targets splat in the shooter's color on every client.
 - **iOS keyboard auto-zoom fix** — inputs bumped to 16px plus a viewport zoom cap, so tapping a text field no longer zooms and sticks the page.
 - **In-world Build Mode** — signed-in users open Build mode from Settings, pick a prop, and a **live semi-transparent ghost** shows exactly where and which way it will land (updates as you move/rotate); "Place here" drops it in front of you. Props persist in `world_props` and appear for everyone **in real time** (no rejoin). Removal is **owner-only** (you can delete only your own props).
-- **Prop catalog (code-built, no asset library):** table, chair, streetlight, planter, tree, bench in the walk-and-place palette. Fence, path (two-point line tools) and café counter (solid collider) exist as functions but are **not in the palette yet** — they need a different placement mode (see `TODO.md`).
+- **Prop catalog (code-built, no asset library):** table, chair, streetlight, planter, tree, bench in the walk-and-place palette. **Fence and café counter are placeable too (June 9)** — the fence is a single-tap 3-unit segment that rotates with the placement ghost, and removing a counter or fence cleanly strips its prop-tagged colliders, so nothing leaves an invisible wall. The two-point stretch tool for fence/path is still queued (see `TODO.md`).
 - **Day/night cycle** — a sun arcs on a ~5-minute loop; sky/fog shift dawn→noon→dusk→night, light warms and dims, streetlamps read at night. Additive to the existing lights.
 - **Carryable held items** — coffee, ball, balloon. First-person viewmodel for yourself; attached in front of your avatar for others; synced via a `holding` field on the realtime state broadcast. Settings buttons (touch) + **H** to cycle (keyboard).
 - **Snowball throw** — the reusable **projectile + hit + sync** core: the throw arcs under gravity, pops on landing, **broadcasts** so everyone sees it, and pops on you (with a screen flash) if someone else's hits you. Throw button (touch) + **F** (keyboard). Future arcade games (dodgeball, paintball, targets) are reskins of this.
@@ -75,7 +81,7 @@ All live in `engine/hub/` and synced through Supabase. Built via blind-deploy wi
 Honest list from live two-person testing, not yet fixed:
 - **Build permissions — RESOLVED:** building is now limited to an **admin allowlist** (`world_admins` table; the three core accounts). Non-admins explore but cannot place/remove. Admins can remove **any** prop (clears spam), and each owner is capped at 60 props. *(Follow-up done: the Build-mode button now renders only for signed-in admins.)*
 - **Held item vanish — RESOLVED (root cause found):** `holding` was broadcast in every state message but `applyPeerState` never applied it to the remote avatar — held items only updated on remote creation or incidental re-renders, and `reconcileCharacter` could wipe them by falling back to a DB row that carries no holding. Fixed: holding now applies on every state broadcast, and reconcile only updates held items from live peer data. The throw was never the cause — throws just coincide with peak realtime churn.
-- **Remote movement can glitch** when another player moves quickly between spots — remote position smoothing to revisit.
+- **Remote movement glitch — RESOLVED:** remote players now render via snapshot interpolation (a 120ms buffer between their two latest state packets) instead of snap-and-chase lerp, so motion is smooth regardless of packet timing.
 - **Prop remove sync is intermittent** ("kind of working") — verify the realtime DELETE path removes the prop on every other client reliably.
 
 
