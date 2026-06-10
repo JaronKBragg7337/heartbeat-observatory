@@ -364,10 +364,14 @@ function spawnByType(type, x, z, rot) {
   if (type === "planter") return addPlanter(x, z);
   if (type === "tree") return addTree(x, z);
   if (type === "bench") return addBench(x, z, rot);
+  if (type === "cafe") return addCafeCounter(x, z, rot);
+  if (type === "fence") return addFenceSegment(x, z, rot);
 }
 function renderProp(type, x, z, rot, id, ownerUid) {
   const before = scene.children.slice();
+  const colBefore = buildingColliders.length;
   spawnByType(type, x, z, rot);
+  for (let ci = colBefore; ci < buildingColliders.length; ci++) buildingColliders[ci].propId = id;
   const added = scene.children.filter((o) => before.indexOf(o) === -1);
   if (!added.length) return null;
   let root;
@@ -384,6 +388,9 @@ function removePropById(id) {
   if (idx === -1) return;
   scene.remove(placedProps[idx].root);
   placedProps.splice(idx, 1);
+  for (let ci = buildingColliders.length - 1; ci >= 0; ci--) {
+    if (buildingColliders[ci].propId === id) buildingColliders.splice(ci, 1);
+  }
 }
 function subscribeProps() {
   if (propsSubscribed) return; propsSubscribed = true;
@@ -3644,6 +3651,23 @@ function addPath(x1, z1, x2, z2, width) {
   rect.position.set((x1 + x2) / 2, 0.03, (z1 + z2) / 2);
   rect.rotation.y = Math.atan2(dx, dz);
   rect.receiveShadow = true; scene.add(rect);
+}
+function addFenceSegment(x, z, rotationY) {
+  const woodM = new THREE.MeshStandardMaterial({ color: 0x7c6047, roughness: 0.82 });
+  const ry = rotationY || 0, len = 3;
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
+  for (const railY of [0.85, 0.5]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, len), woodM);
+    rail.position.set(0, railY, 0); rail.castShadow = true; g.add(rail);
+  }
+  for (let i = 0; i <= 2; i++) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.05, 0.12), woodM);
+    post.position.set(0, 0.52, -len / 2 + (len * i) / 2); post.castShadow = true; g.add(post);
+  }
+  scene.add(g);
+  const sn = Math.abs(Math.sin(ry)), cs = Math.abs(Math.cos(ry));
+  if (cs > 0.92) buildingColliders.push({ x: x, z: z, width: 0.25, depth: len });
+  else if (sn > 0.92) buildingColliders.push({ x: x, z: z, width: len, depth: 0.25 });
 }
 function addCafeCounter(x, z, rotationY) {
   const woodM = new THREE.MeshStandardMaterial({ color: 0x6b4a30, roughness: 0.76 });
