@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Library · Heartbeat Observatory</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0b0a08; color: #ece5d8; font-family: Georgia, 'Times New Roman', serif; min-height: 100vh; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 26px 16px 60px; }
+  .marq { text-align: center; margin-bottom: 6px; }
+  .marq h1 { font-size: clamp(24px, 6vw, 38px); letter-spacing: 0.14em; color: #e8c98a; font-weight: 700; }
+  .tag { text-align: center; font-size: 13.5px; color: #9c917e; font-style: italic; margin-bottom: 6px; }
+  .vow { text-align: center; font-size: 12.5px; color: #7e7363; margin-bottom: 26px; }
+  .rule { height: 1px; background: linear-gradient(90deg, transparent, #5c4d35, transparent); margin: 22px 0; }
+  h2 { font-size: 15px; letter-spacing: 0.22em; color: #c9b890; font-weight: 700; margin-bottom: 4px; }
+  .h2sub { font-size: 12.5px; color: #8d8270; margin-bottom: 14px; }
+  .shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .shelfcard { display: block; text-decoration: none; background: #14110c; border: 1px solid #2c2418; border-left: 3px solid #8a6a3a; border-radius: 8px; padding: 12px 13px; }
+  .shelfcard b { color: #e8d8b8; font-size: 14.5px; display: block; margin-bottom: 3px; }
+  .shelfcard span { color: #968a74; font-size: 12.5px; line-height: 1.45; }
+  .booklist { display: flex; flex-direction: column; gap: 9px; }
+  .bookrow { background: #14110c; border: 1px solid #2c2418; border-radius: 8px; padding: 13px 15px; cursor: pointer; }
+  .bookrow b { color: #ecd9ad; font-size: 16px; }
+  .bookrow .bmeta { font-size: 12px; color: #8d8270; margin-top: 3px; }
+  .empty { font-size: 13.5px; color: #8d8270; font-style: italic; padding: 14px 4px; }
+  .writer { background: #14110c; border: 1px solid #2c2418; border-radius: 10px; padding: 16px; }
+  .writer input, .writer textarea { width: 100%; background: #0d0b08; border: 1px solid #342b1c; border-radius: 7px; color: #ece5d8; font-family: inherit; font-size: 14.5px; padding: 10px 12px; }
+  .writer input { margin-bottom: 10px; }
+  .writer textarea { min-height: 220px; line-height: 1.6; resize: vertical; }
+  .writer .row2 { display: flex; align-items: center; justify-content: space-between; margin-top: 11px; gap: 10px; }
+  .btn { background: #8a6a3a; border: 0; color: #16110a; font-weight: 700; font-family: inherit; font-size: 14px; padding: 10px 22px; border-radius: 8px; cursor: pointer; }
+  .btn[disabled] { opacity: 0.45; cursor: default; }
+  .note { font-size: 12px; color: #8d8270; }
+  .note a { color: #cdb586; }
+  #reader { display: none; }
+  #reader .rtitle { font-size: clamp(22px, 5vw, 32px); color: #ecd9ad; margin-bottom: 4px; }
+  #reader .rmeta { font-size: 12.5px; color: #8d8270; margin-bottom: 22px; }
+  #reader .rbody p { line-height: 1.75; font-size: 16px; margin-bottom: 15px; color: #e4dccc; }
+  .back { display: inline-block; margin-bottom: 18px; color: #cdb586; text-decoration: none; font-size: 13.5px; border: 1px solid #3a3022; border-radius: 8px; padding: 8px 14px; }
+  .topexits { display: flex; gap: 10px; justify-content: center; margin-top: 34px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="hall">
+    <div class="marq"><h1>THE LIBRARY</h1></div>
+    <div class="tag">the memory of the world</div>
+    <div class="vow">Knowledge here is free. It will never cost anything, and nothing on these shelves is faked.</div>
+
+    <h2>FREE SHELVES</h2>
+    <div class="h2sub">Real institutions giving knowledge away, legally and forever. These links leave the Observatory.</div>
+    <div class="shelf">
+      <a class="shelfcard" href="https://www.gutenberg.org" target="_blank" rel="noopener"><b>Project Gutenberg</b><span>75,000+ free books whose copyrights have expired &mdash; the classics, free forever.</span></a>
+      <a class="shelfcard" href="https://en.wikipedia.org" target="_blank" rel="noopener"><b>Wikipedia</b><span>The free encyclopedia anyone can read and improve.</span></a>
+      <a class="shelfcard" href="https://openlibrary.org" target="_blank" rel="noopener"><b>Open Library</b><span>A page for every book ever published; borrow many for free.</span></a>
+      <a class="shelfcard" href="https://www.khanacademy.org" target="_blank" rel="noopener"><b>Khan Academy</b><span>Free courses, math through history, for any age.</span></a>
+      <a class="shelfcard" href="https://librivox.org" target="_blank" rel="noopener"><b>LibriVox</b><span>Free public-domain audiobooks read by volunteers.</span></a>
+      <a class="shelfcard" href="https://standardebooks.org" target="_blank" rel="noopener"><b>Standard Ebooks</b><span>Beautifully formatted free editions of public-domain books.</span></a>
+      <a class="shelfcard" href="https://en.wikisource.org" target="_blank" rel="noopener"><b>Wikisource</b><span>Free source texts &mdash; speeches, documents, historical works.</span></a>
+      <a class="shelfcard" href="https://openstax.org" target="_blank" rel="noopener"><b>OpenStax</b><span>Free, peer-reviewed college textbooks from Rice University.</span></a>
+    </div>
+
+    <div class="rule"></div>
+    <h2>WRITTEN HERE</h2>
+    <div class="h2sub">Books written by people of this world. Published here, kept here &mdash; the community's own shelf.</div>
+    <div class="booklist" id="bookList"><div class="empty">&hellip;</div></div>
+
+    <div class="rule"></div>
+    <h2>WRITE A BOOK</h2>
+    <div class="h2sub">What you publish joins the memory of the world.</div>
+    <div class="writer" id="writer">
+      <div class="empty" id="writerGate">&hellip;</div>
+      <div id="writerForm" style="display:none;">
+        <input id="wTitle" maxlength="120" placeholder="Title" />
+        <textarea id="wBody" placeholder="Write. Short story, chapter one, a whole book &mdash; it all belongs here."></textarea>
+        <div class="row2">
+          <span class="note" id="wNote">Published books are public.</span>
+          <button class="btn" id="wPublish" type="button">Publish</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="topexits">
+      <a class="back" href="/engine">&larr; Back to town</a>
+      <a class="back" href="/">All sections</a>
+    </div>
+  </div>
+
+  <div id="reader">
+    <a class="back" href="#" id="readerBack">&larr; Back to the shelves</a>
+    <div class="rtitle" id="rTitle"></div>
+    <div class="rmeta" id="rMeta"></div>
+    <div class="rbody" id="rBody"></div>
+  </div>
+</div>
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co", "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  let session = null, books = [];
+
+  function ago(ts) {
+    const d = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+    if (d < 3600) return Math.max(1, Math.floor(d / 60)) + "m ago";
+    if (d < 86400) return Math.floor(d / 3600) + "h ago";
+    return Math.floor(d / 86400) + "d ago";
+  }
+  function renderList() {
+    const el = $("bookList");
+    el.innerHTML = books.length
+      ? books.map((b) => '<div class="bookrow" data-book="' + b.id + '"><b>' + esc(b.title) + '</b><div class="bmeta">by ' + esc(b.author_name) + ' &middot; ' + ago(b.created_at) + ' &middot; ' + Math.max(1, Math.round((b.body || "").length / 1100)) + ' min read</div></div>').join("")
+      : '<div class="empty">No books have been written here yet. The first one starts the memory \u2014 it could be yours.</div>';
+  }
+  function openBook(id) {
+    const b = books.find((x) => x.id === id); if (!b) return;
+    $("rTitle").textContent = b.title;
+    $("rMeta").textContent = "by " + b.author_name + " \u00b7 " + new Date(b.created_at).toLocaleDateString();
+    $("rBody").innerHTML = String(b.body || "").split(/\n{2,}|\n/).filter((x) => x.trim()).map((par) => "<p>" + esc(par) + "</p>").join("");
+    $("hall").style.display = "none"; $("reader").style.display = "block"; window.scrollTo(0, 0);
+  }
+  document.addEventListener("click", (ev) => {
+    const row = ev.target.closest("[data-book]");
+    if (row) { openBook(row.getAttribute("data-book")); return; }
+    if (ev.target.id === "readerBack" || (ev.target.closest && ev.target.closest("#readerBack"))) {
+      ev.preventDefault(); $("reader").style.display = "none"; $("hall").style.display = "block";
+    }
+  });
+
+  (async () => {
+    try {
+      const { data } = await supabase.from("library_books").select("id,author_name,title,body,created_at").eq("published", true).order("created_at", { ascending: false }).limit(100);
+      books = data || [];
+    } catch (e) { books = []; }
+    renderList();
+  })();
+
+  (async () => {
+    try { const { data: { session: s } } = await supabase.auth.getSession(); session = s; } catch (e) {}
+    if (!session) {
+      $("writerGate").innerHTML = '<a href="/admin" style="color:#cdb586">Sign in</a> to write a book. Reading is free for everyone, always.';
+    } else {
+      $("writerGate").style.display = "none"; $("writerForm").style.display = "block";
+    }
+  })();
+
+  $("wPublish").addEventListener("click", async () => {
+    if (!session) { location.href = "/admin"; return; }
+    const title = $("wTitle").value.trim(), body = $("wBody").value.trim();
+    if (!title || !body) { $("wNote").textContent = "A book needs a title and words."; return; }
+    $("wPublish").disabled = true; $("wNote").textContent = "Publishing\u2026";
+    let authorName = "Someone";
+    try {
+      const { data: p } = await supabase.from("people").select("display_name,handle").eq("auth_user_id", session.user.id).maybeSingle();
+      if (p) authorName = p.display_name || p.handle || authorName;
+    } catch (e) {}
+    try {
+      const { data, error } = await supabase.from("library_books").insert({ author_id: session.user.id, author_name: authorName, title: title, body: body }).select().single();
+      if (error) { $("wNote").textContent = "Couldn't publish: " + error.message; $("wPublish").disabled = false; return; }
+      books.unshift(data); renderList();
+      $("wTitle").value = ""; $("wBody").value = "";
+      $("wNote").textContent = "Published \u2014 it's on the shelf.";
+    } catch (e) { $("wNote").textContent = "Couldn't publish."; }
+    $("wPublish").disabled = false;
+  });
+</script>
+<script defer src="/bubble.js"></script>
+</body>
+</html>
