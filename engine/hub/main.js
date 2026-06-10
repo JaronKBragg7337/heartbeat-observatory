@@ -439,6 +439,7 @@ async function placeHere() {
       setBuildHint("Render error: " + (re && re.message ? re.message : String(re)));
       return;
     }
+    try { SFX.place(); } catch (e) {}
     setBuildHint("Placed a " + data.prop_type + " \u2014 there it is.");
   } catch (ex) {
     setBuildHint("Place crashed: " + (ex && ex.message ? ex.message : String(ex)));
@@ -1312,6 +1313,10 @@ function connect() {
     if (!payload || payload.id === selfRealtimeId()) return;
     spawnProjectile(new THREE.Vector3(payload.ox, payload.oy, payload.oz), new THREE.Vector3(payload.vx, payload.vy, payload.vz), payload.id, payload.c);
   });
+  channel.on("broadcast", { event: "note" }, ({ payload }) => {
+    if (!payload || payload.id === selfRealtimeId() || typeof payload.i !== "number") return;
+    playBar(payload.i, false, volByDist(payload.x, payload.z));
+  });
   channel.on("broadcast", { event: "thit" }, ({ payload }) => {
     if (!payload || typeof payload.idx !== "number") return;
     var t = arenaTargets[payload.idx];
@@ -1495,11 +1500,110 @@ function spawnProjectile(origin, vel, owner, color) {
   scene.add(mesh);
   projectiles.push({ mesh: mesh, vel: vel.clone(), life: 0, owner: owner, color: (color === undefined ? 0xffffff : color) });
 }
+// ---- sound: synthesized Web Audio engine (no assets, honest code-built sound) ----
+let AC = null, masterGain = null, fountainGain = null;
+const noteBars = [];
+function audioInit() {
+  if (AC) return;
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = AC.createGain(); masterGain.gain.value = 0.5; masterGain.connect(AC.destination);
+    const dur = 1.6, n = (AC.sampleRate * dur) | 0, buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * 0.6;
+    const src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+    const f = AC.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 950;
+    fountainGain = AC.createGain(); fountainGain.gain.value = 0;
+    src.connect(f); f.connect(fountainGain); fountainGain.connect(masterGain); src.start();
+    setInterval(() => {
+      try {
+        const dx = camera.position.x, dz = camera.position.z;
+        const dist = Math.hypot(dx, dz);
+        fountainGain.gain.value = 0.16 * Math.max(0, 1 - dist / 13);
+      } catch (e) {}
+    }, 180);
+  } catch (e) {}
+}
+document.addEventListener("pointerdown", audioInit, { once: true });
+document.addEventListener("keydown", audioInit, { once: true });
+function sfxEnv(freq, type, dur, vol, slide) {
+  if (!AC) return;
+  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq * slide), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t + dur + 0.02);
+}
+function sfxNoise(dur, vol, fc) {
+  if (!AC) return;
+  const t = AC.currentTime, n = (AC.sampleRate * dur) | 0, buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = AC.createBufferSource(); src.buffer = buf;
+  const f = AC.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = fc || 1800;
+  const g = AC.createGain(); g.gain.value = vol;
+  src.connect(f); f.connect(g); g.connect(masterGain); src.start(t);
+}
+function volByDist(x, z, range) {
+  const r = range || 24;
+  const d = Math.hypot(x - camera.position.x, z - camera.position.z);
+  return Math.max(0, 1 - d / r);
+}
+const NOTE_FREQS = [262, 294, 330, 392, 440, 523, 587, 659];
+const SFX = {
+  jump() { sfxEnv(300, "sine", 0.16, 0.14, 2.1); },
+  toss() { sfxNoise(0.15, 0.2, 2600); },
+  pop(v) { const k = v == null ? 1 : v; if (k <= 0.02) return; sfxNoise(0.12, 0.28 * k, 1400); sfxEnv(190, "triangle", 0.1, 0.1 * k, 0.5); },
+  hit() { sfxEnv(160, "sawtooth", 0.22, 0.2, 0.4); },
+  place() { sfxEnv(120, "triangle", 0.12, 0.24, 0.7); },
+  note(i, v) {
+    const k = v == null ? 1 : v; if (k <= 0.02) return;
+    const fq = NOTE_FREQS[((i % 8) + 8) % 8];
+    sfxEnv(fq, "sine", 0.55, 0.28 * k, 1);
+    sfxEnv(fq * 2, "triangle", 0.22, 0.07 * k, 1);
+  }
+};
+function playBar(i, isLocal, vol) {
+  try { SFX.note(i, vol); } catch (e) {}
+  const bar = noteBars[((i % 8) + 8) % 8];
+  if (bar && bar.material) {
+    bar.material.emissiveIntensity = 0.95;
+    setTimeout(() => { try { bar.material.emissiveIntensity = 0.18; } catch (e) {} }, 240);
+  }
+  if (isLocal) {
+    try {
+      if (channel && connected) channel.send({ type: "broadcast", event: "note", payload: { id: selfRealtimeId(), i: i, x: camera.position.x, z: camera.position.z } });
+    } catch (e) {}
+  }
+}
+const BANDSTAND = { x: -16, z: 22 };
+function tryPlayBarAt(cx, cy) {
+  if (!hasEntered || settingsOpen || !noteBars.length) return;
+  if (Math.hypot(BANDSTAND.x - camera.position.x, BANDSTAND.z - camera.position.z) > 10) return;
+  const ndc = new THREE.Vector2((cx / window.innerWidth) * 2 - 1, -(cy / window.innerHeight) * 2 + 1);
+  const rc = new THREE.Raycaster(); rc.setFromCamera(ndc, camera);
+  const hits = rc.intersectObjects(noteBars);
+  if (hits.length) playBar(hits[0].object.userData.noteIndex, true, 1);
+}
+let _tapSX = 0, _tapSY = 0;
+canvas.addEventListener("pointerdown", (e) => { _tapSX = e.clientX; _tapSY = e.clientY; });
+canvas.addEventListener("pointerup", (e) => {
+  if (Math.hypot(e.clientX - _tapSX, e.clientY - _tapSY) > 10) return;
+  tryPlayBarAt(e.clientX, e.clientY);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+  const k = parseInt(e.key, 10);
+  if (!(k >= 1 && k <= 8)) return;
+  if (!hasEntered || settingsOpen) return;
+  if (Math.hypot(BANDSTAND.x - camera.position.x, BANDSTAND.z - camera.position.z) > 10) return;
+  playBar(k - 1, true, 1);
+});
+
 function throwSnowball() {
   if (!hasEntered || settingsOpen) return;
   const now = performance.now();
   if (now - lastThrow < 320) return;
   lastThrow = now;
+  try { SFX.toss(); } catch (e) {}
   const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
   const origin = camera.position.clone().addScaledVector(dir, 0.5);
   const vel = dir.clone().multiplyScalar(inArena ? 23 : 17);
@@ -1511,6 +1615,7 @@ function throwSnowball() {
   } catch (e) {}
 }
 function flashHit(color) {
+  try { SFX.hit(); } catch (e) {}
   let el = document.getElementById("hitFlash");
   if (!el) {
     el = document.createElement("div");
@@ -1526,6 +1631,7 @@ function flashHit(color) {
   setTimeout(function () { el.style.transition = "opacity 0.5s ease"; el.style.opacity = "0"; }, 70);
 }
 function popSnow(pos, color) {
+  try { SFX.pop(volByDist(pos.x, pos.z)); } catch (e) {}
   const col = (color === undefined || color === null) ? 0xffffff : color;
   for (let k = 0; k < 7; k++) {
     const f = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.95 }));
@@ -1912,6 +2018,7 @@ function updateLocal(dt) {
   if (input.jumpQueued && motion.onGround && !crouching) {
     motion.verticalVelocity = jumpVelocity;
     motion.onGround = false;
+    try { SFX.jump(); } catch (e) {}
   }
   input.jumpQueued = false;
 
@@ -3221,10 +3328,41 @@ function buildTown() {
   ];
   for (const t of treeSpots) addTree(t[0], t[1]);
   buildNeighborhood();
+  buildBandstand();
   buildFountain();
   buildArena();
 }
 
+function buildBandstand() {
+  const bx = BANDSTAND.x, bz = BANDSTAND.z;
+  const woodM = new THREE.MeshStandardMaterial({ color: 0x8a6a4d, roughness: 0.78 });
+  const roofM = new THREE.MeshStandardMaterial({ color: 0x4d3b58, roughness: 0.7 });
+  const deck = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.3, 0.14, 16), woodM);
+  deck.position.set(bx, 0.07, bz); deck.receiveShadow = true; scene.add(deck);
+  for (const a of [0.79, 2.36, 3.93, 5.5]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 2.6, 0.16), woodM);
+    post.position.set(bx + Math.sin(a) * 2.6, 1.35, bz + Math.cos(a) * 2.6);
+    post.castShadow = true; scene.add(post);
+  }
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(3.5, 1.2, 12), roofM);
+  roof.position.set(bx, 3.2, bz); roof.castShadow = true; scene.add(roof);
+  const sign = createLabelSprite("THE BANDSTAND", { background: "rgba(13, 18, 20, 0.78)", foreground: "#d9b8ff", fontSize: 36, scale: 0.02 });
+  sign.position.set(bx, 4.2, bz); scene.add(sign);
+  const standTop = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.08, 0.55), woodM);
+  standTop.position.set(bx, 0.96, bz - 2.55); standTop.castShadow = true; scene.add(standTop);
+  for (const lx of [-1.55, 1.55]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.92, 0.1), woodM);
+    leg.position.set(bx + lx, 0.46, bz - 2.55); scene.add(leg);
+  }
+  const BAR_COLORS = [0xe4572e, 0xf3a712, 0xf7d046, 0x76b041, 0x17bebb, 0x3d8bfd, 0x7768ae, 0xd76fa3];
+  for (let i = 0; i < 8; i++) {
+    const barM = new THREE.MeshStandardMaterial({ color: BAR_COLORS[i], roughness: 0.5, emissive: BAR_COLORS[i], emissiveIntensity: 0.18 });
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.92 - i * 0.055), barM);
+    bar.position.set(bx - 1.47 + i * 0.42, 1.06, bz - 2.55);
+    bar.castShadow = true; bar.userData.noteIndex = i;
+    scene.add(bar); noteBars.push(bar);
+  }
+}
 function buildNeighborhood() {
   addGroundRect(0, -23.4, 46, 3.2, 0xb9aa88);
   const nbSign = createLabelSprite("THE NEIGHBORHOOD", { background: "rgba(13, 18, 20, 0.78)", foreground: "#ffd9a8", fontSize: 38, scale: 0.02 });
