@@ -11,6 +11,7 @@ This README, with `TODO.md`, is the current source of truth. If something here a
 - **Projects** (`/projects`), **Games** (`/games`) — sections; Games hosts small in‑page games.
 - **The Theater** (`/video`) — a walk-in movie theater: marquee, glowing screen, seat rows. The screen honestly says nothing is showing until the first real screening. Enter through the Theater building in the world.
 - **The Neighborhood** — a residential district along the town's north lane with six claimable home plots, so housing has its own street instead of competing with project plots.
+- **Sound + The Bandstand** — the world has audio: synthesized in code (no canned assets), from snowball pops to fountain water you hear as you approach. On the Bandstand stage, an 8-bar instrument lets anyone play melodies that nearby players genuinely hear in real time — the first music feature.
 - **Standards** (`/standards`) — the platform's rules; agreeing gates sign‑up.
 
 ## Honesty principle (load-bearing)
