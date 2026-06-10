@@ -66,6 +66,9 @@ let wantsSelfPresence = true;
 let appearanceSaveTimer = null;
 
 let sendAccumulator = 0;
+let lastSentSig = "";   // idle-send guard: signature of the last broadcast state
+let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
+let wasIdleSend = false; // idle-send guard: true while suppressing identical sends
 let hasEntered = false;
 let settingsOpen = false;
 let buildMode = false;
@@ -1485,7 +1488,21 @@ function syncPresence() {
 function sendState(force = false) {
   const id = selfRealtimeId();
   if (!connected || !channel || !id || !hasEntered || !wantsSelfPresence) return;
-  if (!force && sendAccumulator < 0.05) return;
+  if (!force && sendAccumulator < 0.1) return;
+
+  // Rate + idle guard (June 9): 10Hz cap (snapshot interpolation buffers 120ms, so 100ms spacing fits) and
+  // skip sends when nothing peers can see has changed. Reason: the Realtime msg/sec cap tripped in live
+  // testing - broadcasts fan out as rate x players^2, so 20Hz with a few players already hit the limit and
+  // dropped events (the intermittent prop-removal sync). Idle players send a 5s keepalive; on going idle,
+  // presence is re-tracked once so late joiners see the true resting spot.
+  const sig = state.x.toFixed(2) + "|" + state.y.toFixed(2) + "|" + state.z.toFixed(2) + "|" + state.yaw.toFixed(1) + "|" + state.pitch.toFixed(1) + "|" + state.stance + "|" + (heldItem || "") + "|" + tagScore + "|" + outScore + "|" + inArena + "|" + (mySpace || "");
+  if (!force && sig === lastSentSig) {
+    if (!wasIdleSend) { wasIdleSend = true; try { trackSelf(); } catch (e) {} }
+    if (performance.now() - lastSentAt < 5000) return;
+  } else {
+    wasIdleSend = false;
+  }
+  lastSentSig = sig; lastSentAt = performance.now();
 
   sendAccumulator = 0;
   channel.send({
