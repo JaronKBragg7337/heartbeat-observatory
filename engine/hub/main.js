@@ -2125,12 +2125,24 @@ function applySpaceVisibility() {
 
 function updateRemotes(dt) {
   const blend = Math.min(1, dt * 12);
-  const renderT = performance.now() - 120;
+  // 250ms interpolation delay (June 9 late fix): the delay must be >= 2x the send interval or network
+  // jitter makes this renderer flap between the buffered path and the snap-chase fallback below - that
+  // flapping WAS the "teleporting" seen in two-player testing right after the 10Hz rate change.
+  // 120ms only ever worked because the old 20Hz spam kept the buffer constantly fresh.
+  const renderT = performance.now() - 250;
   for (const remote of remotes.values()) {
     const buf = remote.buf;
     if (buf && buf.length >= 2 && buf[buf.length - 1].t >= renderT) {
       while (buf.length > 2 && buf[1].t <= renderT) buf.shift();
       const a = buf[0], b = buf[1] || a;
+      if (b.t - a.t > 1200) {
+        // idle-resume guard: never glide across a keepalive gap - snap to the fresh packet once
+        buf.splice(0, buf.length - 1);
+        remote.group.position.set(b.x, b.y, b.z);
+        remote.group.rotation.y = b.yaw;
+        remote.group.scale.y += (remote.targetScaleY - remote.group.scale.y) * blend;
+        continue;
+      }
       const span = Math.max(1, b.t - a.t);
       const k = Math.max(0, Math.min(1, (renderT - a.t) / span));
       remote.group.position.set(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k);
