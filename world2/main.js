@@ -11,7 +11,7 @@
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 
-const BUILD = "2026-06-10-w2b"; // bumped with ?v= in /world2/index.html on every deploy
+const BUILD = "2026-06-10-w2c"; // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
 // ---- DOM ----
@@ -34,6 +34,9 @@ const crouchEyeHeight = 1.15;
 const gravity = 17.5;
 const jumpVelocity = 6.4;
 const WORLD_SEED = 7337;
+
+// ---- the city district (Phase 3) — off-spawn, so the skyline is a destination you walk toward ----
+const CITY = { x: 55, z: -45, r: 38, blend: 20, base: 1.2, street: 12 };
 
 // ---- day/night palette (World 2's own — warmer dusk, deeper night than the town) ----
 const W2_DAY = new THREE.Color(0xaecde4);
@@ -83,6 +86,11 @@ const GRASS_PER_CELL = 18;      // 7*7*18 = 882 tufts, ONE draw call
 let grass = null;
 let grassCellX = 1e9, grassCellZ = 1e9;
 
+// ---- city handles (emissive intensity driven by the day/night cycle) ----
+let towerMat = null, lowMat = null, bulbMat = null;
+const FIREFLY_COUNT = 130;
+let fireflies = null, fireflyBase = null;
+
 // ---- module temps (reused every frame — no per-frame allocations) ----
 const _sky = new THREE.Color();
 const _sunOff = new THREE.Vector3();
@@ -116,7 +124,15 @@ function groundHeight(x, z) {
   h += (vnoise(x * 0.07 + 7.3, z * 0.07 + 3.1) - 0.5) * 2 * 0.45;       // surface detail
   const d = Math.hypot(x, z);
   const flat = Math.min(1, Math.max(0, (d - 10) / 26)); // spawn clearing stays level
-  return h * flat;
+  let g = h * flat;
+  // Phase 3: the city rests on a plateau; terrain blends to it across a soft shoulder
+  const cd = Math.hypot(x - CITY.x, z - CITY.z);
+  if (cd < CITY.r + CITY.blend) {
+    let cf = Math.min(1, Math.max(0, (cd - CITY.r) / CITY.blend));
+    cf = cf * cf * (3 - 2 * cf);
+    g = CITY.base + (g - CITY.base) * cf;
+  }
+  return g;
 }
 
 // average gradient magnitude — used at build time for tree/grass placement, never per frame
@@ -125,6 +141,34 @@ function groundSlope(x, z) {
   const hx = groundHeight(x + e, z) - groundHeight(x - e, z);
   const hz = groundHeight(x, z + e) - groundHeight(x, z - e);
   return Math.hypot(hx, hz) / (2 * e);
+}
+
+// ---- roads (Phase 3): painted into the terrain, not separate geometry — phone-cheap,
+// and every system (ground color, grass, trees, rocks, lamps) samples the same truth ----
+function cityDist(x, z) { return Math.hypot(x - CITY.x, z - CITY.z); }
+// distance to the main road: the straight line from spawn to the city heart
+function roadDist(x, z) {
+  const L2 = CITY.x * CITY.x + CITY.z * CITY.z;
+  let t = (x * CITY.x + z * CITY.z) / L2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(x - CITY.x * t, z - CITY.z * t);
+}
+// distance to the nearest city street line (12-unit grid in city-local coordinates)
+function streetDist(x, z) {
+  const dx = x - CITY.x, dz = z - CITY.z;
+  const mx = Math.abs(dx - Math.round(dx / CITY.street) * CITY.street);
+  const mz = Math.abs(dz - Math.round(dz / CITY.street) * CITY.street);
+  return Math.min(mx, mz);
+}
+// 0..1 how paved this spot is (main road, city streets, central plaza)
+function pavedAt(x, z) {
+  let p = Math.min(1, Math.max(0, (3.2 - roadDist(x, z)) / 1.2));
+  const cd = cityDist(x, z);
+  if (cd < CITY.r + 4) {
+    p = Math.max(p, Math.min(1, Math.max(0, (3.4 - streetDist(x, z)) / 1.2)));
+    p = Math.max(p, Math.min(1, Math.max(0, (8.5 - cd) / 1.5)));
+  }
+  return p;
 }
 
 // ---- build the world ----
@@ -142,12 +186,18 @@ function buildWorld() {
   const nrm = groundGeo.attributes.normal;
   const colors = new Float32Array(pos.count * 3);
   const cLush = new THREE.Color(0x4c6b46), cDry = new THREE.Color(0x7d7a4e), cHigh = new THREE.Color(0x8a8378), cRock = new THREE.Color(0x6e685e);
+  const cRoad = new THREE.Color(0x3f3f3d), cDust = new THREE.Color(0x6b6456);
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), z = pos.getZ(i), h = pos.getY(i), ny = nrm.getY(i);
     const t = Math.min(1, Math.max(0, (h + 1) / 7));
     _sky.copy(cLush).lerp(cDry, Math.min(1, t * 1.5)).lerp(cHigh, Math.max(0, t - 0.6) * 2.5);
     const steep = Math.min(1, Math.max(0, (0.82 - ny) / 0.25)); // cliffsides read as rock
     _sky.lerp(cRock, steep);
+    // Phase 3: streets and the city floor are painted into the terrain itself
+    const dust = Math.min(1, Math.max(0, (CITY.r - cityDist(x, z)) / 8)) * 0.4;
+    if (dust > 0) _sky.lerp(cDust, dust);
+    const pv = pavedAt(x, z);
+    if (pv > 0) _sky.lerp(cRoad, pv * 0.85);
     const jitter = (vnoise(x * 0.3 + 91, z * 0.3 + 17) - 0.5) * 0.06;
     colors[i * 3] = _sky.r + jitter;
     colors[i * 3 + 1] = _sky.g + jitter;
@@ -174,21 +224,25 @@ function buildWorld() {
     new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }),
     rockCount
   );
+  let rocksPlaced = 0;
   for (let i = 0; i < rockCount; i++) {
     const ang = hash2(i, 11) * Math.PI * 2;
     const dist = 15 + hash2(i, 23) * 115;
     const x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
+    if (cityDist(x, z) < CITY.r + 6 || roadDist(x, z) < 4.5) continue; // streets stay clear
     const sc = 0.4 + hash2(i, 41) * 1.3;
     _eu.set(hash2(i, 5) * Math.PI, hash2(i, 7) * Math.PI, hash2(i, 9) * Math.PI);
     _q.setFromEuler(_eu);
     _vs.set(sc, sc * (0.7 + hash2(i, 13) * 0.5), sc);
     _vp.set(x, groundHeight(x, z) + sc * 0.18, z);
     _m4.compose(_vp, _q, _vs);
-    rocks.setMatrixAt(i, _m4);
+    rocks.setMatrixAt(rocksPlaced, _m4);
     const g = 0.42 + hash2(i, 57) * 0.2;
     _sky.setRGB(g, g * (0.97 + hash2(i, 61) * 0.06), g * (0.94 + hash2(i, 67) * 0.06));
-    rocks.setColorAt(i, _sky);
+    rocks.setColorAt(rocksPlaced, _sky);
+    rocksPlaced++;
   }
+  rocks.count = rocksPlaced; // unused instances would otherwise render as identity boulders at spawn
   rocks.castShadow = true;
   rocks.receiveShadow = true;
   scene.add(rocks);
@@ -201,6 +255,8 @@ function buildWorld() {
     const z = (hash2(i, 223) - 0.5) * 2 * 280;
     const d = Math.hypot(x, z);
     if (d < 16) continue;
+    if (cityDist(x, z) < CITY.r + 10) continue; // the city carves its clearing from the forest
+    if (roadDist(x, z) < 4.5) continue;         // the road stays open
     if (groundSlope(x, z) > 0.55) continue;
     if (groundHeight(x, z) > 6.2) continue;
     treeSpots.push({ x, z, s: 0.75 + hash2(i, 227) * 0.7, kind: hash2(i, 229) < 0.58 ? 0 : 1, seed: i });
@@ -317,6 +373,198 @@ function buildWorld() {
   starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
   stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xeaf2ff, size: 1.7, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false }));
   skyAnchor.add(stars);
+
+  buildCity();
+  buildLamps();
+  buildFireflies();
+}
+
+// ---- Phase 3: the city — instanced boxes wearing procedural facade + emissive-window
+// textures. Hundreds of windows, a handful of draw calls. The Bilawal-demo technique. ----
+function makeFacadeTextures(cols, rows) {
+  const W = 192, H = 256;
+  const face = document.createElement("canvas"); face.width = W; face.height = H;
+  const glow = document.createElement("canvas"); glow.width = W; glow.height = H;
+  const fc = face.getContext("2d"), gc = glow.getContext("2d");
+  fc.fillStyle = "#252a31"; fc.fillRect(0, 0, W, H);
+  for (let i = 0; i < 340; i++) { // concrete speckle
+    const v = 30 + Math.floor(hash2(i, rows * 97) * 28);
+    fc.fillStyle = "rgb(" + v + "," + (v + 3) + "," + (v + 7) + ")";
+    fc.fillRect(hash2(i, 501) * W, hash2(i, 503) * H, 2, 2);
+  }
+  gc.fillStyle = "#000"; gc.fillRect(0, 0, W, H);
+  const warm = ["#ffb066", "#ffd093", "#ffe9c4", "#bcd6ff"];
+  const x0 = 10, y0 = 8, gw = (W - 20) / cols, gh = (H * 0.78) / rows;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const wx = x0 + c * gw + 2, wy = y0 + r * gh + 2, ww = gw - 5, wh = gh - 6;
+      const lit = hash2(c * 13 + cols, r * 29 + rows) < 0.36;
+      fc.fillStyle = lit ? "#4a473c" : "#0b0e13";
+      fc.fillRect(wx, wy, ww, wh);
+      if (lit) {
+        gc.fillStyle = warm[Math.floor(hash2(c * 7 + 3, r * 11 + 5) * warm.length)];
+        gc.globalAlpha = 0.55 + hash2(c * 3, r * 17) * 0.45;
+        gc.fillRect(wx, wy, ww, wh);
+        gc.globalAlpha = 1;
+      }
+    }
+  }
+  // the unwindowed band at the canvas bottom = street level (flipY: canvas top is building top)
+  const map = new THREE.CanvasTexture(face); map.colorSpace = THREE.SRGBColorSpace;
+  const emissiveMap = new THREE.CanvasTexture(glow); emissiveMap.colorSpace = THREE.SRGBColorSpace;
+  return { map, emissiveMap };
+}
+
+function buildCity() {
+  const towers = [], lows = [];
+  // block grid between the streets; the plaza stays open
+  for (let gi = -3; gi <= 2; gi++) {
+    for (let gj = -3; gj <= 2; gj++) {
+      const bx = CITY.x + gi * CITY.street + 6;
+      const bz = CITY.z + gj * CITY.street + 6;
+      const cd = Math.hypot(bx - CITY.x, bz - CITY.z);
+      if (cd > CITY.r - 4) continue;
+      if (cd < 9) continue;
+      for (let k = 0; k < 2; k++) {
+        const sgn = k === 0 ? -1 : 1;
+        const x = bx + sgn * 2.7 + (hash2(gi * 31 + k, gj * 17 + k * 7) - 0.5) * 1.2;
+        const z = bz + sgn * 2.7 + (hash2(gi * 13 + k * 3, gj * 41 + k) - 0.5) * 1.2;
+        const core = Math.max(0, 1 - cd / CITY.r);
+        const w = 4.2 + hash2(gi * 3 + k, gj * 5 + k) * 1.5;
+        const d = 4.2 + hash2(gi * 11 + k, gj * 23 + k) * 1.5;
+        const isTower = hash2(gi * 29 + k * 13, gj * 37 + k * 17) < 0.25 + core * 0.65;
+        const h = isTower
+          ? 8 + hash2(gi * 41 + k, gj * 53 + k) * (9 + core * 15)
+          : 3.4 + hash2(gi * 43 + k, gj * 59 + k) * 3;
+        (isTower ? towers : lows).push({ x, z, w, d, h, seed: (gi + 9) * 100 + (gj + 9) * 10 + k });
+      }
+    }
+  }
+  // outer fringe: scattered low workshops between forest and skyline
+  for (let i = 0; i < 70 && lows.length < 60; i++) {
+    const ang = hash2(i, 601) * Math.PI * 2;
+    const dist = CITY.r - 6 + hash2(i, 607) * 16;
+    const x = CITY.x + Math.cos(ang) * dist, z = CITY.z + Math.sin(ang) * dist;
+    if (roadDist(x, z) < 5) continue;
+    if (cityDist(x, z) < CITY.r + 4 && streetDist(x, z) < 4) continue;
+    if (groundSlope(x, z) > 0.5) continue;
+    lows.push({ x, z, w: 3.6 + hash2(i, 613) * 2, d: 3.6 + hash2(i, 617) * 2, h: 2.8 + hash2(i, 619) * 2.6, seed: 7000 + i });
+  }
+
+  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+  boxGeo.translate(0, 0.5, 0); // origin at the base: scale = footprint + height directly
+  const tTex = makeFacadeTextures(5, 13); // tall, narrow window grid for towers
+  towerMat = new THREE.MeshStandardMaterial({ map: tTex.map, emissive: 0xffffff, emissiveMap: tTex.emissiveMap, emissiveIntensity: 0.06, roughness: 0.85, metalness: 0.05 });
+  const lTex = makeFacadeTextures(7, 5);  // wide, low grid for the small buildings
+  lowMat = new THREE.MeshStandardMaterial({ map: lTex.map, emissive: 0xffffff, emissiveMap: lTex.emissiveMap, emissiveIntensity: 0.06, roughness: 0.9, metalness: 0 });
+
+  function instanceBuildings(list, mat) {
+    if (!list.length) return;
+    const mesh = new THREE.InstancedMesh(boxGeo, mat, list.length);
+    for (let i = 0; i < list.length; i++) {
+      const b = list[i];
+      _vp.set(b.x, groundHeight(b.x, b.z) - 0.5, b.z); // sunk foundation: no floating edges on slopes
+      _q.identity();
+      _vs.set(b.w, b.h + 0.5, b.d);
+      _m4.compose(_vp, _q, _vs);
+      mesh.setMatrixAt(i, _m4);
+      const v = 0.78 + hash2(b.seed, 701) * 0.3; // per-instance facade tint (windows stay uniform warm)
+      _sky.setRGB(v, v * (0.96 + hash2(b.seed, 703) * 0.07), v * (0.92 + hash2(b.seed, 709) * 0.12));
+      mesh.setColorAt(i, _sky);
+      buildingColliders.push({ x: b.x, z: b.z, width: b.w, depth: b.d });
+    }
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+  }
+  instanceBuildings(towers, towerMat);
+  instanceBuildings(lows, lowMat);
+
+  // plaza waymark — a quiet stone spire; the city has no name yet, and the stone doesn't pretend to one
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8e8a80, roughness: 0.85 });
+  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.9, 0.5, 18), stoneMat);
+  plinth.position.set(CITY.x, groundHeight(CITY.x, CITY.z) + 0.25, CITY.z);
+  plinth.castShadow = true; plinth.receiveShadow = true;
+  scene.add(plinth);
+  const spire = new THREE.Mesh(new THREE.BoxGeometry(0.6, 4.2, 0.6), new THREE.MeshStandardMaterial({ color: 0x6e685e, roughness: 0.7 }));
+  spire.position.set(CITY.x, groundHeight(CITY.x, CITY.z) + 2.6, CITY.z);
+  spire.castShadow = true;
+  scene.add(spire);
+  buildingColliders.push({ x: CITY.x, z: CITY.z, width: 3.4, depth: 3.4 });
+}
+
+// street lamps: emissive bulbs only (no per-lamp lights — the glow illusion is fog + tone mapping)
+function buildLamps() {
+  const spots = [];
+  const roadLen = Math.hypot(CITY.x, CITY.z);
+  const nx = -CITY.z / roadLen, nz = CITY.x / roadLen;
+  for (let i = 0; i < 22; i++) {
+    const t = 0.06 + (i / 21) * 0.88;
+    const side = i % 2 === 0 ? 1 : -1;
+    spots.push({ x: CITY.x * t + nx * 3.1 * side, z: CITY.z * t + nz * 3.1 * side });
+  }
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    spots.push({ x: CITY.x + Math.cos(a) * 9.5, z: CITY.z + Math.sin(a) * 9.5 });
+  }
+  const posts = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.06, 0.08, 3.4, 6),
+    new THREE.MeshStandardMaterial({ color: 0x2c3138, roughness: 0.6, metalness: 0.4 }),
+    spots.length
+  );
+  bulbMat = new THREE.MeshStandardMaterial({ color: 0x665d4a, emissive: 0xffd9a0, emissiveIntensity: 0.1, roughness: 0.5 });
+  const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.17, 10, 8), bulbMat, spots.length);
+  _q.identity();
+  _vs.set(1, 1, 1);
+  for (let i = 0; i < spots.length; i++) {
+    const s = spots[i];
+    const gy = groundHeight(s.x, s.z);
+    _vp.set(s.x, gy + 1.7, s.z);
+    _m4.compose(_vp, _q, _vs);
+    posts.setMatrixAt(i, _m4);
+    _vp.set(s.x, gy + 3.5, s.z);
+    _m4.compose(_vp, _q, _vs);
+    bulbs.setMatrixAt(i, _m4);
+  }
+  posts.castShadow = true;
+  scene.add(posts);
+  scene.add(bulbs);
+}
+
+// fireflies: one Points draw call, visible only at night, drifting on cheap sine paths
+function buildFireflies() {
+  fireflyBase = new Float32Array(FIREFLY_COUNT * 3);
+  const pos = new Float32Array(FIREFLY_COUNT * 3);
+  for (let i = 0; i < FIREFLY_COUNT; i++) {
+    const a = hash2(i, 801) * Math.PI * 2;
+    const dd = 12 + hash2(i, 807) * 100;
+    const x = Math.cos(a) * dd, z = Math.sin(a) * dd;
+    fireflyBase[i * 3] = x;
+    fireflyBase[i * 3 + 1] = groundHeight(x, z) + 0.5 + hash2(i, 809) * 1.4;
+    fireflyBase[i * 3 + 2] = z;
+    pos[i * 3] = fireflyBase[i * 3];
+    pos[i * 3 + 1] = fireflyBase[i * 3 + 1];
+    pos[i * 3 + 2] = fireflyBase[i * 3 + 2];
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  fireflies = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xd8ffa0, size: 0.16, sizeAttenuation: true, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+  fireflies.frustumCulled = false;
+  fireflies.visible = false;
+  scene.add(fireflies);
+}
+
+function updateFireflies() {
+  if (!fireflies || !fireflies.visible) return;
+  const t = performance.now() * 0.001;
+  const arr = fireflies.geometry.attributes.position.array;
+  for (let i = 0; i < FIREFLY_COUNT; i++) {
+    const p = i * 3;
+    arr[p] = fireflyBase[p] + Math.sin(t * 0.5 + i * 1.7) * 1.6;
+    arr[p + 1] = fireflyBase[p + 1] + Math.sin(t * 0.9 + i * 2.3) * 0.5;
+    arr[p + 2] = fireflyBase[p + 2] + Math.cos(t * 0.45 + i * 1.1) * 1.6;
+  }
+  fireflies.geometry.attributes.position.needsUpdate = true;
 }
 
 // ---- grass helpers (procedural texture: zero downloads, zero copyright questions) ----
@@ -378,7 +626,7 @@ function updateGrass() {
         const x = (cellX + hash2(cellX * 31 + k * 7, cellZ * 57 + k * 13) - 0.5) * GRASS_CELL;
         const z = (cellZ + hash2(cellX * 17 + k * 11, cellZ * 91 + k * 5) - 0.5) * GRASS_CELL;
         const gy = groundHeight(x, z);
-        const bare = groundSlope(x, z) > 0.55 || gy > 5.8 || Math.hypot(x, z) < 3.2;
+        const bare = groundSlope(x, z) > 0.55 || gy > 5.8 || Math.hypot(x, z) < 3.2 || pavedAt(x, z) > 0.25;
         const s = bare ? 0.0001 : 0.7 + hash2(cellX * 13 + k, cellZ * 7 + k * 3) * 0.8;
         _vp.set(x, gy, z);
         _eu.set(0, hash2(cellX + k * 29, cellZ + k * 37) * Math.PI, 0);
@@ -448,6 +696,16 @@ function updateDayNight() {
   }
   const nightF = Math.max(0, Math.min(1, -e * 1.5 + 0.1));
   if (stars) stars.material.opacity = nightF * 0.95;
+
+  // the night-city moment: windows brighten exactly as the sky darkens
+  const glow = 0.06 + (1 - day) * 1.35;
+  if (towerMat) towerMat.emissiveIntensity = glow;
+  if (lowMat) lowMat.emissiveIntensity = glow;
+  if (bulbMat) bulbMat.emissiveIntensity = 0.1 + (1 - day) * 2.4;
+  if (fireflies) {
+    fireflies.visible = nightF > 0.04;
+    fireflies.material.opacity = nightF * 0.9;
+  }
 
   if (timeChip) {
     const label = e > 0.25 ? "daylight" : e > 0 ? "golden hour" : e > -0.12 ? "dusk" : "night";
@@ -569,6 +827,7 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   updateLocal(dt);
   updateGrass();
+  updateFireflies();
   updateDayNight();
   updateCamera(dt);
   renderer.render(scene, camera);
