@@ -180,6 +180,8 @@ const jumpVelocity = 6.4;
 
 const buildingColliders = [];
 const solidBlockers = [];
+const noteBars = [];
+const BANDSTAND = { x: -16, z: 22 };
 const platforms = [];
 const placedProps = [];
 
@@ -228,6 +230,21 @@ const doors = [
     roof: 0x2f5f8f,
     sign: 0xf4fbff,
     front: "north"
+  },
+  {
+    id: "library",
+    surface: "library",
+    label: "Library",
+    path: "/library",
+    x: -9,
+    z: -18.6,
+    width: 5.0,
+    depth: 4.0,
+    height: 3.0,
+    body: 0x7a5c3e,
+    roof: 0x4a3826,
+    sign: 0xf2e3c2,
+    front: "south"
   },
   {
     id: "video",
@@ -1502,7 +1519,6 @@ function spawnProjectile(origin, vel, owner, color) {
 }
 // ---- sound: synthesized Web Audio engine (no assets, honest code-built sound) ----
 let AC = null, masterGain = null, fountainGain = null;
-const noteBars = [];
 function audioInit() {
   if (AC) return;
   try {
@@ -1574,7 +1590,6 @@ function playBar(i, isLocal, vol) {
     } catch (e) {}
   }
 }
-const BANDSTAND = { x: -16, z: 22 };
 function tryPlayBarAt(cx, cy) {
   if (!hasEntered || settingsOpen || !noteBars.length) return;
   if (Math.hypot(BANDSTAND.x - camera.position.x, BANDSTAND.z - camera.position.z) > 10) return;
