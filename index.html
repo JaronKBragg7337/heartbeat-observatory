@@ -88,6 +88,9 @@
     display:inline-flex; align-items:center; gap:6px; }
   .worldlive .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); animation:beat 1.6s infinite; }
   @media (prefers-reduced-motion: reduce){ .globe,.globe-tex,.worldlive .ld,.pulse{ animation:none; } }
+  .w2cta { margin-top:12px; padding:11px 20px; border:1px solid var(--line); border-radius:14px;
+    display:inline-flex; gap:12px; align-items:center; text-decoration:none; color:var(--text); }
+  .w2cta:hover .arrow { transform:translateX(4px); }
 </style>
 </head>
 <body>
@@ -104,6 +107,11 @@
         <span class="globe"><span class="globe-tex"></span><span class="globe-shine"></span></span>
         <span class="enter">Enter the world <span class="arrow">&rarr;</span></span>
         <span class="worldlive"><span class="ld"></span>Live now &middot; walkable in 3D</span>
+      </a>
+      <br />
+      <a class="w2cta" href="/world2/" aria-label="Enter World 2, the cinematic city">
+        <span class="enter">Enter World 2 &middot; the city <span class="arrow">&rarr;</span></span>
+        <span class="worldlive"><span class="ld"></span>New &middot; bigger &middot; live</span>
       </a>
       <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting&hellip;</span></div>
     </header>
