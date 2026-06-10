@@ -479,11 +479,20 @@ function removeNearest() {
     if (d < bd) { bd = d; best = p; }
   }
   if (!best) { setBuildHint("Nothing nearby to remove."); return; }
+  if (bd > 36) { setBuildHint("Walk closer to the prop you want to remove."); return; }
   supa.rpc("remove_prop", { p_id: best.id }).then(({ data }) => {
     if (data && data.ok) {
-      scene.remove(best.root);
-      const i = placedProps.indexOf(best); if (i >= 0) placedProps.splice(i, 1);
+      // Full cleanup through removePropById so the prop's tagged colliders go too (June 9 fix:
+      // the old partial cleanup here left invisible walls on the remover's own client AND blocked
+      // the later DELETE-event cleanup, because removePropById early-returns once the prop is
+      // already gone from placedProps).
+      removePropById(best.id);
       setBuildHint("Removed.");
+    } else if (data && data.removed === 0) {
+      // Ghost prop: the DB row was already deleted (a missed DELETE event left a stale local copy).
+      // Self-heal: clean it up locally so stale clients recover instead of getting stuck.
+      removePropById(best.id);
+      setBuildHint("That one was already removed \u2014 cleaned it up.");
     } else {
       const e = (data && data.error) || "unknown";
       setBuildHint(e === "not_admin" ? "Removing is limited to the team right now." : ("Couldn't remove: " + e));
