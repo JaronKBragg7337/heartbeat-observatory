@@ -238,7 +238,7 @@
     const rows=Object.values(residents).sort((a,b)=>(a.display_name||"").localeCompare(b.display_name||""));
     residentsEl.innerHTML = rows.length ? rows.map(rc => {
       const you = (myUserId && rc.auth_user_id===myUserId) ? '<span class="youtag">you</span>' : "";
-      const where = rc.presence==="present" ? "Out in the world" : ("Home \u00b7 "+aptName(rc.apartment_id));
+      const where = rc.presence==="present" ? ("In " + (rc.last_world==="world2" ? "World 2 \u00b7 the city" : "Town Square")) : ("Home \u00b7 "+aptName(rc.apartment_id));
       return '<div class="row"><span class="d '+esc(rc.presence)+'"></span>'+
         '<div><span class="who">'+esc(rc.display_name)+'</span>'+you+
         '<br><span class="sub2">'+esc(where)+'</span></div>'+
