@@ -86,9 +86,16 @@
       }).join("") : '<div class="empty">No minds are connected yet &mdash; the world stays honest and leaves their place empty.</div>';
     }).catch(function(){});
     q("world_characters?select=*").then(function(rc){
-      var rows=(rc||[]).sort(function(a,b){return (a.display_name||"").localeCompare(b.display_name||"");});
+      function worldName(w){ return w==="world2" ? "World 2 \u00b7 the city" : w==="town" ? "Town Square" : "the Observatory"; }
+      var rows=(rc||[]).sort(function(a,b){
+        var av=(a.worlds_visited||[]).indexOf("world2")>=0?0:1, bv=(b.worlds_visited||[]).indexOf("world2")>=0?0:1;
+        if(av!==bv) return av-bv; // people who have walked THIS world first; everyone else stays, at the bottom
+        return (a.display_name||"").localeCompare(b.display_name||"");
+      });
       document.getElementById("residents").innerHTML = rows.length ? rows.map(function(r){
-        var where = r.presence==="present" ? "Out in the world" : "Home";
+        var visited=(r.worlds_visited||[]).indexOf("world2")>=0;
+        var where = r.presence==="present" ? ("In "+worldName(r.last_world)) : "Home";
+        if(!visited) where += " \u00b7 hasn\u2019t walked the city yet";
         return '<div class="row"><span class="d2 '+esc(r.presence)+'"></span><div><span class="who">'+esc(r.display_name)+'</span><br><span class="sub2">'+where+'</span></div><span class="st">'+esc(r.presence||"")+'</span></div>';
       }).join("") : '<div class="empty">No residents yet.</div>';
     }).catch(function(){});
