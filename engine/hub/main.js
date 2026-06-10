@@ -69,6 +69,7 @@ let sendAccumulator = 0;
 let lastSentSig = "";   // idle-send guard: signature of the last broadcast state
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
+const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
 let hasEntered = false;
 let settingsOpen = false;
 let buildMode = false;
@@ -2427,7 +2428,7 @@ function updateActiveDoor() {
   let nextDoor = null;
   let bestDistance = Infinity;
 
-  for (const door of doors.concat(doorStructures)) {
+  for (const door of doors.concat(doorStructures, repoDoors)) {
     const trigger = door.trigger;
     if (!trigger) continue;
     const dx = state.x - trigger.x;
@@ -2475,6 +2476,8 @@ function updateActiveDoor() {
     showHint(myUserId
       ? "<b>Open plot.</b> Walk up and claim it with a GitHub repo \u2014 it becomes a real building everyone can see."
       : "<b>Open plot.</b> Sign in to claim it with a GitHub repo and turn it into a real building everyone can see.");
+  } else if (activeDoor && activeDoor.repo) {
+    showHint("<b>Claimed project.</b> A resident planted this repo here \u2014 step up and press Enter to visit it on GitHub.");
   } else if (activeDoor && activeDoor.room) {
     showHint("<b>Apartment.</b> Step inside for your own private room \u2014 recolor it, add furniture, and share your room code so friends can visit.");
   } else {
@@ -2486,9 +2489,12 @@ function updateActiveDoor() {
   }
 
   if (activeDoor) {
-    const _ds = doorStatus(activeDoor);
+    const _ds = activeDoor.repo ? "repo" : doorStatus(activeDoor);
     doorPrompt.classList.remove("hidden");
-    if (_ds === "coming_soon") {
+    if (_ds === "repo") {
+      doorPromptText.textContent = isTouch ? ("Enter \u2014 " + activeDoor.label + " on GitHub") : ("Press E \u2014 " + activeDoor.label + " on GitHub");
+      actionButton.disabled = false;
+    } else if (_ds === "coming_soon") {
       doorPromptText.textContent = `${activeDoor.label} (coming soon)`;
       actionButton.disabled = true;
     } else if (_ds === "preview") {
@@ -3034,6 +3040,7 @@ function enterActiveDoor() {
     return;
   }
   if (activeDoor) {
+    if (activeDoor.repo) { if (activeDoor.url) { try { window.open(activeDoor.url, "_blank", "noopener"); } catch (e) {} } return; }
     if (activeDoor.interior) { enterInterior(activeDoor.interior); return; }
     if (activeDoor.room) { enterRoom(); return; }
     if (doorStatus(activeDoor) === "coming_soon") { return; }
@@ -3284,9 +3291,19 @@ async function submitClaim() {
         "Could not save the claim.";
       return;
     }
-    applyClaim(currentClaimPlot, { project_name: repo, github_url: url });
+    const claimedIndex = currentClaimPlot.index;
+    applyClaim(currentClaimPlot, { project_name: repo, github_url: url, claimed_by: displayName });
     addFeed(`${displayName} claimed a space: ${repo}`);
     closeClaim();
+    // Automatic enrichment for the fresh claim: server fetches the repo's real details
+    // (language, stars, topics), then this client re-applies the building with them.
+    try { fetch("/api/enrich-world-spaces").catch(() => {}); } catch (e) {}
+    setTimeout(async () => {
+      try {
+        const { data: rows } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by, repo_metadata, repo_error, repo_fetched_at, space_type, home_style, home_title").eq("plot", claimedIndex);
+        if (rows && rows[0]) applySpaceRow(plotList[claimedIndex], rows[0]);
+      } catch (e) {}
+    }, 9000);
   } catch (e) {
     claimError.textContent = "Could not save the claim.";
   }
@@ -3303,6 +3320,7 @@ function applyClaim(plotState, data) {
   if (language) metaBits.push(language);
   if (Number.isFinite(meta.stars) && meta.stars > 0) metaBits.push("\u2605 " + meta.stars);
   if (meta.topics && meta.topics.length) metaBits.push("#" + meta.topics[0]);
+  if (data && data.claimed_by) metaBits.push("by " + sanitizeDisplayName(data.claimed_by));
   const metaText = metaBits.join("  \u00b7  ");
   plotState.claimed = true;
   plotState.github_url = data.github_url;
@@ -3340,10 +3358,19 @@ function applyClaim(plotState, data) {
     plotState.bodyMesh = addBox(plotState.x, 0.9, plotState.z, w, 1.8, d, plotState.bodyMaterial);
     plotState.roofMesh = addBox(plotState.x, 1.92, plotState.z, w + 0.34, 0.42, d + 0.34, plotState.roofMaterial);
     plotState.accentMesh = addBox(plotState.x, 1.82, plotState.z - d / 2 - 0.035, w * 0.42, 0.12, 0.08, plotState.accentMaterial);
+    // Solid + enterable, automatically, for every claim (June 10): the building blocks movement
+    // like every other building, and walking up shows "Enter - view on GitHub".
+    buildingColliders.push({ x: plotState.x, z: plotState.z, width: w, depth: d, plotId: plotState.index });
+    plotState.repoDoor = { repo: true, label: projectName, url: (data && data.github_url) || plotState.github_url || "", trigger: { x: plotState.x, z: plotState.z, width: plotState.width + 1.4, depth: plotState.depth + 1.4 } };
+    repoDoors.push(plotState.repoDoor);
   } else {
     plotState.bodyMaterial?.color.setHex(palette.body);
     plotState.roofMaterial?.color.setHex(palette.roof);
     plotState.accentMaterial?.color.setHex(palette.accent);
+  }
+  if (plotState.repoDoor) {
+    plotState.repoDoor.label = projectName;
+    if (data && data.github_url) plotState.repoDoor.url = data.github_url;
   }
 }
 
@@ -3488,11 +3515,23 @@ function buildHomeMesh(plotState, style) {
 }
 async function loadSpaces() {
   try {
-    const { data } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by, repo_metadata, repo_error, space_type, home_style, home_title");
-    (data || []).forEach((row) => {
+    const { data } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by, repo_metadata, repo_error, repo_fetched_at, space_type, home_style, home_title");
+    const rows = data || [];
+    rows.forEach((row) => {
       const ps = plotList[row.plot];
       if (ps && !ps.claimed) applySpaceRow(ps, row);
     });
+    // Auto-enrich (June 10): if any claimed project still lacks repo metadata, trigger the
+    // server-side GitHub fetch and re-apply when it lands. No manual step for anyone, ever.
+    if (rows.some((r) => r.space_type === "repo" && !r.repo_fetched_at)) {
+      try { fetch("/api/enrich-world-spaces").catch(() => {}); } catch (e) {}
+      setTimeout(async () => {
+        try {
+          const { data: fresh } = await supa.from("world_spaces").select("plot, github_url, project_name, claimed_by, repo_metadata, repo_error, repo_fetched_at, space_type, home_style, home_title");
+          (fresh || []).forEach((row) => { const ps = plotList[row.plot]; if (ps) applySpaceRow(ps, row); });
+        } catch (e) {}
+      }, 9000);
+    }
   } catch (e) {}
   try {
     supa.channel("engine-spaces")
