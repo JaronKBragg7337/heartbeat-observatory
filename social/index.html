@@ -170,6 +170,38 @@
   .editbtn{background:var(--surface3);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
   .editbtn:hover{border-color:var(--green);color:var(--green);}
 
+  /* replies */
+  .thread{margin-top:10px;border-left:2px solid var(--border);padding-left:12px;display:flex;flex-direction:column;gap:8px;}
+  .reply{font-size:13px;color:var(--text2);line-height:1.5;}
+  .reply .rn{font-weight:700;color:var(--text);}
+  .reply .rt{color:var(--text3);font-size:11px;margin-left:6px;}
+  .reply-row{display:flex;gap:6px;margin-top:2px;}
+  .reply-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:6px 12px;color:var(--text);font-size:12px;outline:none;font-family:inherit;}
+  .reply-input:focus{border-color:var(--green);}
+  .reply-send{background:var(--green);color:#000;border:0;border-radius:16px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;}
+  /* notifications */
+  .notif{padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);line-height:1.5;}
+  .notif:last-child{border-bottom:0;}
+  .notif b{color:var(--text);}
+  .notif .t{color:var(--text3);font-size:11px;margin-left:6px;}
+  .notif .x{display:block;color:var(--text3);font-size:12px;margin-top:2px;}
+  .navbadge{margin-left:auto;background:var(--green);color:#000;font-size:10px;font-weight:800;border-radius:10px;padding:1px 7px;}
+  /* trending */
+  .trend-row{padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);line-height:1.45;}
+  .trend-row:last-child{border-bottom:0;}
+  .trend-row .tm{color:var(--text3);font-size:11px;margin-top:2px;}
+  /* right rail: panels scroll instead of clipping */
+  #newsBody{max-height:300px;overflow-y:auto;}
+  .panel-body{scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+  .panel-body::-webkit-scrollbar{width:6px;}
+  .panel-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+  /* spice */
+  @keyframes hbPulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .panel-head .live.on .ld,.status-row .v.live .sd,.logo-dot{animation:hbPulse 2.4s ease-in-out infinite;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .post{animation:fadeUp .28s ease both;transition:background .15s ease;}
+  .post:hover{background:rgba(255,255,255,0.015);}
+
   /* mobile bottom tabs */
   .mtabs{display:none;}
   @media (max-width:1080px){
@@ -220,7 +252,9 @@
           <div class="profile-bio" id="pfBio"></div>
           <div id="pfBadge"></div>
           <div class="profile-stats">
-            <div class="stat"><span class="stat-num" id="pfPosts">0</span><span class="stat-label">Posts</span></div>
+            <div class="stat"><span class="stat-num" id="pfPosts">0</span><span class="stat-label">Signals</span></div>
+            <div class="stat"><span class="stat-num" id="pfFollowing">0</span><span class="stat-label">Following</span></div>
+            <div class="stat"><span class="stat-num" id="pfFollowers">0</span><span class="stat-label">Followers</span></div>
           </div>
           <div class="profile-edit" id="pfEditWrap"></div>
         </div>
@@ -228,11 +262,11 @@
 
       <nav class="side-nav">
         <span class="side-cap">Navigate</span>
-        <div class="side-nav-item active"><span class="icon">&#9678;</span> Feed</div>
-        <div class="side-nav-item"><span class="icon">&#9737;</span> Explore <span class="soon">soon</span></div>
+        <div class="side-nav-item active" data-view="feed"><span class="icon">&#9678;</span> Feed</div>
+        <div class="side-nav-item" data-view="explore"><span class="icon">&#9737;</span> Explore</div>
         <div class="side-nav-item" id="navKeava"><span class="icon">&#9728;</span> Keava AI <span class="soon">soon</span></div>
-        <div class="side-nav-item"><span class="icon">&#9633;</span> Bookmarks <span class="soon">soon</span></div>
-        <div class="side-nav-item"><span class="icon">&#9711;</span> Notifications <span class="soon">soon</span></div>
+        <div class="side-nav-item" data-view="bookmarks"><span class="icon">&#9633;</span> Bookmarks</div>
+        <div class="side-nav-item" data-view="notifications"><span class="icon">&#9711;</span> Notifications <span class="navbadge" id="notifBadge" style="display:none">0</span></div>
         <span class="side-cap">Sections</span>
         <a class="side-nav-item" href="/projects"><span class="icon">&#9635;</span> Projects</a>
         <a class="side-nav-item" href="/games"><span class="icon">&#9638;</span> Games</a>
@@ -279,7 +313,7 @@
       </div>
       <div class="panel">
         <div class="panel-head">Trending in the Observatory</div>
-        <div class="panel-body"><div class="panel-empty">Trending signals will appear as the Observatory fills with real posts and activity. Nothing is shown here until it is real.</div></div>
+        <div class="panel-body" id="trendBody"><div class="panel-empty">Trending signals will appear as the Observatory fills with real posts and activity. Nothing is shown here until it is real.</div></div>
       </div>
       <div class="panel">
         <div class="panel-head">Minds to follow</div>
@@ -319,6 +353,9 @@
   let engineEvents=[];
   let curTab="foryou";
   let searchTerm="";
+  let curView="feed";
+  let myBookmarks=new Set(), replyCounts={}, repliesByPost={}, openReplies=new Set();
+  let followerCount=0, notifItems=[];
 
   const feed=$("feed");
 
@@ -343,7 +380,7 @@
       $("pfHandle").textContent="@"+(me.handle||"");
       $("pfBio").textContent=me.bio||"";
       $("pfBadge").innerHTML=me.is_admin?'<span class="profile-badge">&#9670; Observatory Admin</span>':"";
-      $("pfEditWrap").innerHTML='<button class="editbtn" data-act="editProfile">Edit profile</button>';
+      $("pfEditWrap").innerHTML='<button class="editbtn" data-act="editProfile">Edit profile</button><a class="linklike" href="/admin" style="margin-left:12px">Account &rarr;</a>';
     } else {
       $("pfAvatar").textContent="\u00b7";
       $("pfName").textContent="You are not signed in";
@@ -388,6 +425,8 @@
   function refreshCounts(){
     if(me){ const n=allPosts.filter(p=>p.author_id===session?.user?.id).length; $("pfPosts").textContent=n; }
     else { $("pfPosts").textContent="0"; }
+    $("pfFollowing").textContent=myFollows.size;
+    $("pfFollowers").textContent=followerCount;
   }
 
   // ---- composer ----
@@ -492,10 +531,34 @@
         const { data:R }=await supabase.from("post_reposts").select("post_id,user_id").in("post_id",ids);
         (R||[]).forEach(r=>{ repostCounts[r.post_id]=(repostCounts[r.post_id]||0)+1; if(session&&r.user_id===session.user.id) myReposts.add(r.post_id); });
       }
-      if(session){
-        const { data:F }=await supabase.from("follows").select("followee_kind,followee_key").eq("follower_id",session.user.id);
-        (F||[]).forEach(r=>myFollows.add(r.followee_kind+":"+r.followee_key));
+      replyCounts={};
+      if(ids.length){
+        const { data:RE }=await supabase.from("post_replies").select("post_id").in("post_id",ids);
+        (RE||[]).forEach(r=>{ replyCounts[r.post_id]=(replyCounts[r.post_id]||0)+1; });
       }
+      if(session){
+        const uid=session.user.id;
+        const { data:F }=await supabase.from("follows").select("followee_kind,followee_key").eq("follower_id",uid);
+        (F||[]).forEach(r=>myFollows.add(r.followee_kind+":"+r.followee_key));
+        const { data:B }=await supabase.from("post_bookmarks").select("post_id").eq("user_id",uid);
+        myBookmarks=new Set((B||[]).map(r=>r.post_id));
+        // Notifications: computed from REAL events on your things - no invented feed, no extra table.
+        const { data:FW }=await supabase.from("follows").select("follower_id,created_at").eq("followee_kind","user").eq("followee_key",uid);
+        followerCount=(FW||[]).length;
+        notifItems=[];
+        const myIds=allPosts.filter(p=>p.author_id===uid).map(p=>p.id);
+        if(myIds.length){
+          const { data:NL }=await supabase.from("post_likes").select("post_id,user_id,created_at").in("post_id",myIds);
+          (NL||[]).forEach(r=>{ if(r.user_id!==uid) notifItems.push({t:r.created_at,who:r.user_id,verb:"liked your signal",post:r.post_id}); });
+          const { data:NR }=await supabase.from("post_reposts").select("post_id,user_id,created_at").in("post_id",myIds);
+          (NR||[]).forEach(r=>{ if(r.user_id!==uid) notifItems.push({t:r.created_at,who:r.user_id,verb:"reposted your signal",post:r.post_id}); });
+          const { data:NRE }=await supabase.from("post_replies").select("post_id,author_id,body,created_at").in("post_id",myIds);
+          (NRE||[]).forEach(r=>{ if(r.author_id!==uid) notifItems.push({t:r.created_at,who:r.author_id,verb:"replied to your signal",post:r.post_id,extra:r.body}); });
+        }
+        (FW||[]).forEach(r=>{ if(r.follower_id!==uid) notifItems.push({t:r.created_at,who:r.follower_id,verb:"followed you"}); });
+        notifItems.sort((a,b)=>new Date(b.t)-new Date(a.t));
+      }
+      refreshCounts(); updateNotifBadge(); renderTrending();
       renderFeed(); renderMindsPanel();
     }catch(e){}
   }
@@ -512,14 +575,43 @@
     }catch(e){}
   }
   document.addEventListener("click", async (ev)=>{
-    const t=ev.target.closest("[data-like],[data-rp],[data-share],[data-fl]"); if(!t) return;
+    const t=ev.target.closest("[data-like],[data-rp],[data-share],[data-fl],[data-bm],[data-reply],[data-rsend]"); if(!t) return;
     if(t.dataset.share){
       const url=location.origin+"/social?post="+t.dataset.share;
       try{ if(navigator.share){ await navigator.share({ url:url }); } else { await navigator.clipboard.writeText(url); const old=t.innerHTML; t.innerHTML="&#10003; Copied"; setTimeout(()=>{ t.innerHTML=old; },1400); } }catch(e){}
       return;
     }
+    if(t.dataset.reply){
+      const id=t.dataset.reply;
+      if(openReplies.has(id)){ openReplies.delete(id); renderFeed(); return; }
+      try{ const { data }=await supabase.from("post_replies").select("author_id,author_handle,body,created_at").eq("post_id",id).order("created_at",{ascending:true});
+        repliesByPost[id]=data||[]; }catch(e){ repliesByPost[id]=repliesByPost[id]||[]; }
+      openReplies.add(id); renderFeed(); return;
+    }
     if(!session){ location.href="/admin"; return; }
     const uid=session.user.id;
+    if(t.dataset.bm){
+      const id=t.dataset.bm;
+      try{
+        if(myBookmarks.has(id)){ await supabase.from("post_bookmarks").delete().eq("post_id",id).eq("user_id",uid); myBookmarks.delete(id); }
+        else { await supabase.from("post_bookmarks").insert({ post_id:id, user_id:uid }); myBookmarks.add(id); }
+      }catch(e){}
+      renderFeed(); return;
+    }
+    if(t.dataset.rsend){
+      const id=t.dataset.rsend;
+      const inp=document.querySelector('[data-rinput="'+id+'"]'); if(!inp) return;
+      const body=inp.value.trim(); if(!body) return;
+      t.disabled=true;
+      try{
+        const { error }=await supabase.from("post_replies").insert({ post_id:id, author_id:uid, author_handle:(me&&(me.display_name||me.handle))||"you", body });
+        if(!error){
+          (repliesByPost[id]=repliesByPost[id]||[]).push({ author_id:uid, author_handle:(me&&(me.display_name||me.handle))||"you", body, created_at:new Date().toISOString() });
+          replyCounts[id]=(replyCounts[id]||0)+1;
+        }
+      }catch(e){}
+      renderFeed(); return;
+    }
     if(t.dataset.like){
       const id=t.dataset.like;
       try{
@@ -562,14 +654,77 @@
           '<span class="post-dot">&middot;</span><span class="post-time">'+ago(p.created_at)+'</span></div>'+
         '<div class="post-body">'+esc(p.body)+'</div>'+
         '<div class="post-actions">'+
-          '<span class="pa dis" title="Replies are coming soon">&#9711; Reply</span>'+
+          '<span class="pa'+(openReplies.has(p.id)?" on":"")+'" data-reply="'+p.id+'">&#9711; Reply'+cnt(replyCounts[p.id])+'</span>'+
           '<span class="pa'+(myReposts.has(p.id)?" on":"")+'" data-rp="'+p.id+'">&#8635; '+(myReposts.has(p.id)?"Reposted":"Repost")+cnt(repostCounts[p.id])+'</span>'+
           '<span class="pa'+(myLikes.has(p.id)?" on":"")+'" data-like="'+p.id+'">'+(myLikes.has(p.id)?"&#9829;":"&#9825;")+' Like'+cnt(likeCounts[p.id])+'</span>'+
+          '<span class="pa'+(myBookmarks.has(p.id)?" on":"")+'" data-bm="'+p.id+'">'+(myBookmarks.has(p.id)?"&#9632; Saved":"&#9633; Save")+'</span>'+
           '<span class="pa" data-share="'+p.id+'">&#8682; Share</span>'+
         '</div>'+
+        (openReplies.has(p.id)?threadHTML(p):"")+
       '</div></div>';
   }
+  function threadHTML(p){
+    const rs=repliesByPost[p.id]||[];
+    const items=rs.map(r=>{ const per=peopleById[r.author_id]; const nm=(per&&per.display_name)||r.author_handle||"Someone";
+      return '<div class="reply"><span class="rn">'+esc(nm)+'</span><span class="rt">'+ago(r.created_at)+'</span><div>'+esc(r.body)+'</div></div>'; }).join("");
+    const box=session?'<div class="reply-row"><input class="reply-input" data-rinput="'+p.id+'" maxlength="280" placeholder="Reply\u2026" /><button class="reply-send" data-rsend="'+p.id+'">Reply</button></div>'
+      :'<div class="panel-empty" style="margin-top:4px"><a href="/admin" style="color:var(--green)">Sign in</a> to reply.</div>';
+    return '<div class="thread">'+(items||'<div class="panel-empty">No replies yet \u2014 be the first.</div>')+box+'</div>';
+  }
+  function updateNotifBadge(){
+    const b=$("notifBadge"); if(!b) return;
+    const last=+(localStorage.getItem("hbNotifSeen")||0);
+    const n=notifItems.filter(i=>new Date(i.t).getTime()>last).length;
+    b.style.display=n?"":"none"; b.textContent=n;
+  }
+  function renderTrending(){
+    const el=$("trendBody"); if(!el) return;
+    const scored=allPosts.map(p=>({p,s:(likeCounts[p.id]||0)+(repostCounts[p.id]||0)+(replyCounts[p.id]||0)})).filter(x=>x.s>0)
+      .sort((a,b)=>b.s-a.s||new Date(b.p.created_at)-new Date(a.p.created_at)).slice(0,3);
+    if(!scored.length) return; // honest empty stays until real engagement exists
+    el.innerHTML=scored.map(x=>{ const per=peopleById[x.p.author_id]; const nm=(per&&per.display_name)||x.p.author_handle||"Someone";
+      const b=x.p.body.length>64?x.p.body.slice(0,64)+"\u2026":x.p.body;
+      return '<div class="trend-row">'+esc(b)+'<div class="tm">'+esc(nm)+' \u00b7 \u2665 '+(likeCounts[x.p.id]||0)+' \u00b7 \u21bb '+(repostCounts[x.p.id]||0)+'</div></div>'; }).join("");
+  }
+  function postList(rows,emptyHTML){ return rows.length?rows.map(postHTML).join(""):'<div class="empty-state">'+emptyHTML+'</div>'; }
+  function renderAltView(){
+    if(curView==="explore"){
+      const ranked=[...allPosts].map(p=>({p,s:(likeCounts[p.id]||0)+(repostCounts[p.id]||0)+(replyCounts[p.id]||0)}))
+        .sort((a,b)=>b.s-a.s||new Date(b.p.created_at)-new Date(a.p.created_at)).map(x=>x.p);
+      const people=Object.values(peopleById).filter(per=>!session||per.auth_user_id!==session.user.id);
+      const dir=people.length?'<div class="panel" style="margin-top:14px"><div class="panel-head">People in the Observatory</div><div class="panel-body">'+
+        people.map(per=>{ const key="user:"+per.auth_user_id, on=myFollows.has(key);
+          return '<div class="mind-row"><span class="mn">'+esc(per.display_name||per.handle||"Someone")+' <span class="mr">@'+esc(per.handle||"")+'</span></span>'+
+            (session?'<button class="followbtn'+(on?" on":"")+'" data-fl="'+key+'">'+(on?"Following":"Follow")+'</button>':"")+'</div>'; }).join("")+
+        '</div></div>':"";
+      feed.innerHTML=postList(ranked,'Nothing to explore yet \u2014 the feed is waiting for its first signals.')+dir;
+    } else if(curView==="bookmarks"){
+      if(!session){ feed.innerHTML='<div class="empty-state"><a href="/admin">Sign in</a> and saved signals will live here \u2014 private to you.</div>'; return; }
+      feed.innerHTML=postList(allPosts.filter(p=>myBookmarks.has(p.id)),'Nothing saved yet. Tap Save on any signal and it lives here \u2014 private to you.');
+    } else if(curView==="notifications"){
+      if(!session){ feed.innerHTML='<div class="empty-state"><a href="/admin">Sign in</a> to see who liked, reposted, replied to, and followed you.</div>'; return; }
+      const snip=id=>{ const p=allPosts.find(x=>x.id===id); if(!p) return ""; const b=p.body.length>48?p.body.slice(0,48)+"\u2026":p.body; return ' \u2014 \u201c'+esc(b)+'\u201d'; };
+      feed.innerHTML=notifItems.length
+        ?'<div class="panel" style="margin-top:8px"><div class="panel-body">'+notifItems.map(n=>{ const per=peopleById[n.who]; const nm=(per&&per.display_name)||"Someone";
+            return '<div class="notif"><b>'+esc(nm)+'</b> '+esc(n.verb)+(n.post?snip(n.post):"")+(n.extra?'<span class="x">\u201c'+esc(n.extra.length>80?n.extra.slice(0,80)+"\u2026":n.extra)+'\u201d</span>':"")+'<span class="t">'+ago(n.t)+'</span></div>'; }).join("")+'</div></div>'
+        :'<div class="empty-state">No notifications yet. When someone likes, reposts, replies to, or follows you \u2014 the real events show up here.</div>';
+    }
+  }
   function renderFeed(){
+    // preserve an in-progress reply across any re-render
+    const af=document.activeElement; const rid=af&&af.getAttribute&&af.getAttribute("data-rinput"); const rval=rid?af.value:null;
+    const titles={feed:"Signal Feed",explore:"Explore",bookmarks:"Bookmarks",notifications:"Notifications"};
+    const ft=document.querySelector(".feed-title"); if(ft) ft.textContent=titles[curView]||"Signal Feed";
+    const tb=document.querySelector(".tabs"); if(tb) tb.style.display=(curView==="feed")?"":"none";
+    const cp=$("composer"); if(cp) cp.style.display=(curView==="feed")?"":"none";
+    if(curView!=="feed"){ renderAltView(); restoreReply(rid,rval); return; }
+    renderFeedTabs(); restoreReply(rid,rval);
+  }
+  function restoreReply(rid,rval){
+    if(!rid) return; const el=document.querySelector('[data-rinput="'+rid+'"]');
+    if(el){ el.value=rval; el.focus(); try{ el.setSelectionRange(rval.length,rval.length); }catch(e){} }
+  }
+  function renderFeedTabs(){
     if(curTab==="foryou"){
       let rows=allPosts;
       if(searchTerm){ const q=searchTerm.toLowerCase();
@@ -595,13 +750,24 @@
     }
   }
 
+  // left-rail views
+  document.querySelectorAll("[data-view]").forEach(n=>n.addEventListener("click",()=>{
+    curView=n.dataset.view;
+    document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x===n));
+    if(curView==="notifications"){ localStorage.setItem("hbNotifSeen",Date.now()); updateNotifBadge(); }
+    setMtab("feed"); renderFeed();
+  }));
+
   // tabs
   document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    t.classList.add("active"); curTab=t.dataset.tab; renderFeed();
+    t.classList.add("active"); curTab=t.dataset.tab; curView="feed";
+    document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x.dataset.view==="feed"));
+    renderFeed();
   }));
   // search
   $("search").addEventListener("input",e=>{ searchTerm=e.target.value.trim();
+    curView="feed"; document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x.dataset.view==="feed"));
     if(curTab!=="foryou"){ curTab="foryou"; document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab==="foryou")); }
     setMtab("feed"); renderFeed();
   });
@@ -637,6 +803,13 @@
     await Promise.all([loadPosts(), loadEngineEvents(), loadStatus(), loadNews()]);
     renderProfile();
     subscribe();
+    // postgres_changes delivery is unreliable server-side (verified June 10) - honest fallback:
+    // re-pull the feed every 60s unless the person is mid-typing.
+    setInterval(()=>{
+      const a=document.activeElement;
+      const typing=a&&((a.id==="cbody"&&a.value)||(a.getAttribute&&a.getAttribute("data-rinput")));
+      if(!typing) loadPosts();
+    },60000);
   })();
 </script>
 <script defer src="/bubble.js"></script>
