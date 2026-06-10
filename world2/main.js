@@ -12,7 +12,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const BUILD = "2026-06-10-w2e"; // bumped with ?v= in /world2/index.html on every deploy
+const BUILD = "2026-06-10-w2f"; // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
 // ---- DOM ----
@@ -45,7 +45,7 @@ const jumpVelocity = 6.4;
 const WORLD_SEED = 7337;
 
 // ---- the city district (Phase 3) — off-spawn, so the skyline is a destination you walk toward ----
-const CITY = { x: 55, z: -45, r: 40, blend: 20, base: 1.2, street: 14 };
+const CITY = { x: 55, z: -45, r: 52, blend: 22, base: 1.2, street: 14 };
 
 // ---- Phase 4: multiplayer — same Supabase project as World 1, NEW channel (world2-town).
 // Sharing World 1's engine-town channel would double its traffic; this world has its own. ----
@@ -77,8 +77,23 @@ const claimedPadCenters = [];
 let currentClaimPlot = null;
 let spacesLoaded = false;
 let spacesTimer = null;
-// reserved city blocks [gi, gj] that stay open as claimable plots (block centers, see buildCity)
-const W2_PLOT_BLOCKS = [[-2, 0], [1, -2], [-2, -2], [1, 1], [-1, 1], [0, -2]];
+// civic buildings: the big PERMANENT towers nearest the plaza, each with a real door in its
+// face — Theater/Arcade/Library open into walk-in interiors styled for this world; the others
+// go to the same living pages World 1's buildings open. Plots for residents ring the outskirts.
+const CIVICS = [
+  { id: "theater", label: "Theater", tint: 0xc97a6a, block: [1, 0], act: { type: "interior", id: "theater" }, h: 21 },
+  { id: "arcade", label: "Arcade", tint: 0x6a93d6, block: [1, -1], act: { type: "interior", id: "arcade" }, h: 18 },
+  { id: "library", label: "Library", tint: 0xb08a56, block: [-2, 0], act: { type: "interior", id: "library" }, h: 17 },
+  { id: "social", label: "Social", tint: 0xd67a96, block: [-2, -1], act: { type: "page", path: "/social" }, h: 25 },
+  { id: "projects", label: "Projects", tint: 0xd6b266, block: [0, 1], act: { type: "page", path: "/projects" }, h: 23 },
+  { id: "town", label: "Town Square \u00b7 World 1", tint: 0x77c98a, block: [0, -2], act: { type: "page", path: "/engine" }, h: 16 }
+];
+const PLOT_COUNT = 8;
+const ROOM = { theater: { x: 620, z: -160 }, arcade: { x: 620, z: -45 }, library: { x: 620, z: 70 } };
+let inInterior = null;          // interior id or null
+let interiorReturn = null;
+const interiorColliders = { theater: [], arcade: [], library: [] };
+const interiorStations = { theater: [], arcade: [], library: [] };
 
 // ---- day/night palette (World 2's own — warmer dusk, deeper night than the town) ----
 const W2_DAY = new THREE.Color(0xaecde4);
@@ -299,6 +314,12 @@ function buildWorld() {
     if (d < 16) continue;
     if (cityDist(x, z) < CITY.r + 10) continue; // the city carves its clearing from the forest
     if (roadDist(x, z) < 4.5) continue;         // the road stays open
+    let nearPlot = false;
+    for (let pp = 0; pp < PLOT_COUNT; pp++) {
+      const s = plotSpot(pp);
+      if (Math.abs(x - s.x) < 8 && Math.abs(z - s.z) < 8) { nearPlot = true; break; }
+    }
+    if (nearPlot) continue; // residents' plots stay open
     if (groundSlope(x, z) > 0.55) continue;
     if (groundHeight(x, z) > 6.2) continue;
     treeSpots.push({ x, z, s: 0.75 + hash2(i, 227) * 0.7, kind: hash2(i, 229) < 0.58 ? 0 : 1, seed: i });
@@ -417,9 +438,10 @@ function buildWorld() {
   skyAnchor.add(stars);
 
   buildCity();
+  buildCivic();
+  buildInteriors();
   buildLamps();
   buildFireflies();
-  buildDoors();
   buildPlotPads();
 }
 
@@ -478,15 +500,11 @@ function buildCity() {
       const cd = Math.hypot(bx - CITY.x, bz - CITY.z);
       if (cd > CITY.r - 5) continue;
       if (cd < 11) continue; // plaza blocks stay open
-      let reserved = false;
-      for (let pi = 0; pi < W2_PLOT_BLOCKS.length; pi++) {
-        if (W2_PLOT_BLOCKS[pi][0] === gi && W2_PLOT_BLOCKS[pi][1] === gj) {
-          plotPads.push({ plot: pi, x: bx, z: bz, claimed: false, row: null, group: null, sign: null });
-          reserved = true;
-          break;
-        }
+      let civicHere = false;
+      for (let ci = 0; ci < CIVICS.length; ci++) {
+        if (CIVICS[ci].block[0] === gi && CIVICS[ci].block[1] === gj) { civicHere = true; break; }
       }
-      if (reserved) continue; // this block is a claimable plot, not a building
+      if (civicHere) continue; // a civic tower stands here (built with its door in buildCivic)
       const s1 = hash2(gi * 7 + 103, gj * 13 + 59);
       const s2 = hash2(gi * 17 + 5, gj * 29 + 11);
       const seed = (gi + 9) * 100 + (gj + 9);
@@ -586,7 +604,7 @@ function buildRoads() {
   const strip = new THREE.PlaneGeometry(1, 1);
   strip.rotateX(-Math.PI / 2);
   const lines = [];
-  for (let k = -2; k <= 2; k++) {
+  for (let k = -3; k <= 3; k++) {
     const off = k * CITY.street;
     const half = Math.sqrt(Math.max(0, (CITY.r - 1.5) * (CITY.r - 1.5) - off * off));
     if (half < 6) continue;
@@ -649,8 +667,8 @@ function buildLamps() {
     const side = i % 2 === 0 ? 1 : -1;
     spots.push({ x: CITY.x * t + nx * 3.1 * side, z: CITY.z * t + nz * 3.1 * side });
   }
-  for (let k = -2; k <= 2; k++) {
-    for (let l = -2; l <= 2; l++) {
+  for (let k = -3; k <= 3; k++) {
+    for (let l = -3; l <= 3; l++) {
       const lx = CITY.x + k * CITY.street + 2.9, lz = CITY.z + l * CITY.street + 2.9;
       if (cityDist(lx, lz) > CITY.r - 4) continue;
       spots.push({ x: lx, z: lz });
@@ -761,7 +779,7 @@ function makeGrassGeometry() {
 
 // runs only when the player crosses a 10-unit cell boundary — never per frame
 function updateGrass() {
-  if (!grass) return;
+  if (!grass || inInterior) return;
   const cx = Math.round(state.x / GRASS_CELL), cz = Math.round(state.z / GRASS_CELL);
   if (cx === grassCellX && cz === grassCellZ) return;
   grassCellX = cx; grassCellZ = cz;
@@ -1064,51 +1082,234 @@ function updatePresenceChip() {
   if (presenceChip.textContent !== label) presenceChip.textContent = label;
 }
 
-// ---- Phase 5: doors to the same living pages World 1's buildings open (one body, two skins) ----
-function buildDoors() {
-  const stops = [
-    { label: "Social", path: "/social" },
-    { label: "Library", path: "/library" },
-    { label: "Projects", path: "/projects" },
-    { label: "Theater", path: "/video" },
-    { label: "Arcade", path: "/games" },
-    { label: "Town Square (World 1)", path: "/engine" }
-  ];
-  const postMat = new THREE.MeshStandardMaterial({ color: 0x2c3138, roughness: 0.6, metalness: 0.4 });
-  const panelMat = new THREE.MeshStandardMaterial({ color: 0x0d1a1c, emissive: 0x57d8c4, emissiveIntensity: 0.55, roughness: 0.4, transparent: true, opacity: 0.92 });
-  for (let i = 0; i < stops.length; i++) {
-    const a = (i / stops.length) * Math.PI * 2 + 0.45;
-    const x = CITY.x + Math.cos(a) * 12.6;
-    const z = CITY.z + Math.sin(a) * 12.6;
+// ---- Phase 5.5: civic towers with doors in their faces (the World 1 way), and
+// walk-in interiors styled for this world. The buildings ARE the city — no gaps, no portals. ----
+function buildCivic() {
+  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+  boxGeo.translate(0, 0.5, 0);
+  const civicMesh = new THREE.InstancedMesh(boxGeo, towerMat, CIVICS.length);
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0x07090c, roughness: 0.55 });
+  const padMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: 0.5, emissive: 0xffffff, emissiveIntensity: 0.08 });
+  for (let i = 0; i < CIVICS.length; i++) {
+    const c = CIVICS[i];
+    const x = CITY.x + c.block[0] * CITY.street + CITY.street / 2;
+    const z = CITY.z + c.block[1] * CITY.street + CITY.street / 2;
     const gy = groundHeight(x, z);
-    const g = new THREE.Group();
-    g.position.set(x, gy, z);
-    g.rotation.y = Math.atan2(CITY.x - x, CITY.z - z) + Math.PI; // face the plaza
-    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.1, 0.3), postMat);
-    p1.position.set(-1.25, 1.55, 0); p1.castShadow = true; g.add(p1);
-    const p2 = p1.clone(); p2.position.x = 1.25; g.add(p2);
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.3, 0.3), postMat);
-    lintel.position.y = 3.1; lintel.castShadow = true; g.add(lintel);
-    const panel = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.9), panelMat);
-    panel.position.y = 1.5;
-    g.add(panel);
-    const sign = makeNameSprite(stops[i].label, 1.5);
-    sign.position.y = 3.9;
-    g.add(sign);
-    scene.add(g);
-    doors.push({ label: stops[i].label, path: stops[i].path, x, z, hw: 2.3, hd: 2.3 });
+    const W = 9.6;
+    _vp.set(x, gy - 0.5, z);
+    _q.identity();
+    _vs.set(W, c.h + 0.5, W);
+    _m4.compose(_vp, _q, _vs);
+    civicMesh.setMatrixAt(i, _m4);
+    _sky.set(c.tint);
+    civicMesh.setColorAt(i, _sky);
+    buildingColliders.push({ x, z, width: W, depth: W });
+    // the door sits on the plaza-facing side, snapped to the dominant axis
+    const lx = x - CITY.x, lz = z - CITY.z;
+    let dx = 0, dz = 0;
+    if (Math.abs(lx) >= Math.abs(lz)) dx = lx > 0 ? -1 : 1; else dz = lz > 0 ? -1 : 1;
+    const doorX = x + dx * (W / 2 + 0.05), doorZ = z + dz * (W / 2 + 0.05);
+    const doorway = new THREE.Mesh(new THREE.BoxGeometry(dx === 0 ? 2.4 : 0.5, 3.4, dz === 0 ? 2.4 : 0.5), doorMat);
+    doorway.position.set(doorX, gy + 1.7, doorZ);
+    scene.add(doorway);
+    const stepPad = new THREE.Mesh(new THREE.BoxGeometry(dx === 0 ? 3.6 : 2.4, 0.16, dz === 0 ? 3.6 : 2.4), padMat);
+    stepPad.position.set(x + dx * (W / 2 + 1.4), gy + 0.08, z + dz * (W / 2 + 1.4));
+    stepPad.receiveShadow = true;
+    scene.add(stepPad);
+    const sign = makeNameSprite(c.label, 2.1);
+    sign.position.set(doorX + dx * 0.6, gy + 5.0, doorZ + dz * 0.6);
+    scene.add(sign);
+    doors.push({ label: c.label, x: x + dx * (W / 2 + 1.6), z: z + dz * (W / 2 + 1.6), hw: 2.6, hd: 2.6, act: c.act });
   }
+  civicMesh.castShadow = true;
+  civicMesh.receiveShadow = true;
+  scene.add(civicMesh);
+}
+
+// ---- walk-in interiors (Theater / Arcade / Library), this world's own style:
+// dark cinematic rooms, emissive light, honest signs. Same body as World 1 — the library
+// shelves open the SAME real free-knowledge sources, the booth opens the same pages. ----
+function roomShell(id, wHalf, dHalf, wallColor) {
+  const r = ROOM[id];
+  const mat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.95 });
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(wHalf * 2, 0.4, dHalf * 2), new THREE.MeshStandardMaterial({ color: 0x2a2622, roughness: 0.9 }));
+  floor.position.set(r.x, -0.2, r.z);
+  floor.receiveShadow = true;
+  scene.add(floor);
+  const ceil = new THREE.Mesh(new THREE.BoxGeometry(wHalf * 2, 0.3, dHalf * 2), mat);
+  ceil.position.set(r.x, 6.4, r.z);
+  scene.add(ceil);
+  const wallDefs = [
+    { x: r.x, z: r.z - dHalf, w: wHalf * 2, d: 0.4 },
+    { x: r.x, z: r.z + dHalf, w: wHalf * 2, d: 0.4 },
+    { x: r.x - wHalf, z: r.z, w: 0.4, d: dHalf * 2 },
+    { x: r.x + wHalf, z: r.z, w: 0.4, d: dHalf * 2 }
+  ];
+  for (const wd of wallDefs) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(wd.w, 6.5, wd.d), mat);
+    wall.position.set(wd.x, 3.05, wd.z);
+    scene.add(wall);
+    interiorColliders[id].push({ x: wd.x, z: wd.z, width: wd.w, depth: wd.d });
+  }
+  // exit door: glowing slab on the south wall + station
+  const exitMesh = new THREE.Mesh(new THREE.BoxGeometry(2.2, 3.2, 0.5), new THREE.MeshStandardMaterial({ color: 0x0d1a12, emissive: 0x7bd88f, emissiveIntensity: 0.35, roughness: 0.6 }));
+  exitMesh.position.set(r.x, 1.6, r.z + dHalf - 0.45);
+  scene.add(exitMesh);
+  interiorStations[id].push({ label: "Exit to the city", x: r.x, z: r.z + dHalf - 1.4, hw: 1.8, hd: 1.6, act: { type: "exit" } });
+}
+
+function buildInteriors() {
+  // THEATER — dark hall, glowing screen wall, seat rows. Honest: first screening coming soon.
+  roomShell("theater", 13, 9, 0x241f22);
+  const tr = ROOM.theater;
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(16, 5.4), new THREE.MeshStandardMaterial({ color: 0x0a0d12, emissive: 0xcfe2ff, emissiveIntensity: 0.85, roughness: 0.4 }));
+  screen.position.set(tr.x, 3.1, tr.z - 8.7);
+  scene.add(screen);
+  const nowShowing = makeNameSprite("NOW SHOWING \u00b7 first screening coming soon", 1.7);
+  nowShowing.position.set(tr.x, 3.1, tr.z - 8.2);
+  scene.add(nowShowing);
+  const seatGeo = new THREE.BoxGeometry(0.95, 1.0, 0.95);
+  seatGeo.translate(0, 0.5, 0);
+  const seats = new THREE.InstancedMesh(seatGeo, new THREE.MeshStandardMaterial({ color: 0x6e3a40, roughness: 0.85 }), 24);
+  let si = 0;
+  _q.identity(); _vs.set(1, 1, 1);
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 6; col++) {
+      _vp.set(tr.x - 5 + col * 2 + (row % 2) * 0.5, 0, tr.z - 3.6 + row * 2.2);
+      _m4.compose(_vp, _q, _vs);
+      seats.setMatrixAt(si++, _m4);
+    }
+  }
+  seats.castShadow = true;
+  scene.add(seats);
+  interiorStations.theater.push({ label: "Theater page \u00b7 pick your seat soon", x: tr.x + 9.5, z: tr.z + 5.5, hw: 2, hd: 2, act: { type: "page", path: "/video" } });
+
+  // ARCADE — neon dark, one REAL cabinet (President Sim lives on the Games page), honest shells.
+  roomShell("arcade", 11, 8, 0x171c26);
+  const ar = ROOM.arcade;
+  const neon = new THREE.Mesh(new THREE.BoxGeometry(21, 0.18, 0.18), new THREE.MeshStandardMaterial({ color: 0x0a0f14, emissive: 0x57d8c4, emissiveIntensity: 1.4 }));
+  neon.position.set(ar.x, 5.6, ar.z - 7.6);
+  scene.add(neon);
+  const cabGeo = new THREE.BoxGeometry(1.5, 2.4, 1.1);
+  cabGeo.translate(0, 1.2, 0);
+  const cabMat = new THREE.MeshStandardMaterial({ color: 0x10141c, roughness: 0.7 });
+  const cabs = [[-6, "PRESIDENT SIM", true], [-2, "coming soon", false], [2, "coming soon", false], [6, "coming soon", false]];
+  for (const [ox, label, live] of cabs) {
+    const cab = new THREE.Mesh(cabGeo, cabMat);
+    cab.position.set(ar.x + ox, 0, ar.z - 6.6);
+    cab.castShadow = true;
+    scene.add(cab);
+    const screenP = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.85), new THREE.MeshStandardMaterial({ color: 0x05140c, emissive: live ? 0x6fe89a : 0x111418, emissiveIntensity: live ? 1.1 : 0.15 }));
+    screenP.position.set(ar.x + ox, 1.55, ar.z - 6.04);
+    scene.add(screenP);
+    const cs = makeNameSprite(label, live ? 1.2 : 0.95);
+    cs.position.set(ar.x + ox, 2.95, ar.z - 6.2);
+    scene.add(cs);
+    interiorColliders.arcade.push({ x: ar.x + ox, z: ar.z - 6.6, width: 1.5, depth: 1.1 });
+    if (live) interiorStations.arcade.push({ label: "Play President Sim \u00b7 Games page", x: ar.x + ox, z: ar.z - 5.2, hw: 1.6, hd: 1.4, act: { type: "page", path: "/games" } });
+  }
+
+  // LIBRARY — shelves of real free knowledge (the same eight sources World 1's hall opens) + the writing desk.
+  roomShell("library", 13, 9, 0x2a2118);
+  const lr = ROOM.library;
+  const shelfGeo = new THREE.BoxGeometry(2.6, 3.4, 0.7);
+  shelfGeo.translate(0, 1.7, 0);
+  const shelfMat = new THREE.MeshStandardMaterial({ color: 0x4a3826, roughness: 0.85 });
+  const spineGeo = new THREE.BoxGeometry(0.34, 0.55, 0.18);
+  const spineColors = [0xb84a4a, 0x4a7ab8, 0x4ab86e, 0xb8a44a, 0x8a4ab8, 0xb8784a];
+  const spines = new THREE.InstancedMesh(spineGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }), 8 * 6);
+  const SOURCES = [
+    ["Khan Academy", "https://www.khanacademy.org"],
+    ["Open Library", "https://openlibrary.org"],
+    ["Wikipedia", "https://www.wikipedia.org"],
+    ["Project Gutenberg", "https://www.gutenberg.org"],
+    ["LibriVox", "https://librivox.org"],
+    ["Standard Ebooks", "https://standardebooks.org"],
+    ["Wikisource", "https://wikisource.org"],
+    ["OpenStax", "https://openstax.org"]
+  ];
+  let spi = 0;
+  _q.identity();
+  for (let i = 0; i < 8; i++) {
+    const side = i < 4 ? -1 : 1;
+    const ox = -9 + (i % 4) * 4.6;
+    const sx = lr.x + ox, sz = lr.z + side * 7.6;
+    const shelf = new THREE.Mesh(shelfGeo, shelfMat);
+    shelf.position.set(sx, 0, sz);
+    shelf.castShadow = true;
+    scene.add(shelf);
+    interiorColliders.library.push({ x: sx, z: sz, width: 2.6, depth: 0.7 });
+    for (let b = 0; b < 6; b++) {
+      _vp.set(sx - 0.95 + b * 0.38, 1.2 + (b % 2) * 0.9, sz + side * -0.45);
+      _vs.set(1, 1, 1);
+      _m4.compose(_vp, _q, _vs);
+      spines.setMatrixAt(spi, _m4);
+      _sky.set(spineColors[(i + b) % spineColors.length]);
+      spines.setColorAt(spi, _sky);
+      spi++;
+    }
+    const label = makeNameSprite(SOURCES[i][0], 1.25);
+    label.position.set(sx, 4.1, sz);
+    scene.add(label);
+    interiorStations.library.push({ label: "Open " + SOURCES[i][0], x: sx, z: sz + side * -1.5, hw: 1.7, hd: 1.5, act: { type: "ext", url: SOURCES[i][1] } });
+  }
+  scene.add(spines);
+  const desk = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.0, 1.4), shelfMat);
+  desk.position.set(lr.x + 9.5, 0.5, lr.z + 3);
+  desk.castShadow = true;
+  scene.add(desk);
+  interiorColliders.library.push({ x: lr.x + 9.5, z: lr.z + 3, width: 3.4, depth: 1.4 });
+  const deskSign = makeNameSprite("Write a book \u00b7 Written Here", 1.35);
+  deskSign.position.set(lr.x + 9.5, 2.4, lr.z + 3);
+  scene.add(deskSign);
+  interiorStations.library.push({ label: "Write a book \u00b7 Written Here", x: lr.x + 9.5, z: lr.z + 1.6, hw: 1.9, hd: 1.5, act: { type: "page", path: "/library" } });
+}
+
+function enterInterior(id) {
+  if (!ROOM[id]) return;
+  interiorReturn = { x: state.x, z: state.z, yaw: state.yaw };
+  inInterior = id;
+  state.x = ROOM[id].x;
+  state.z = ROOM[id].z + 6.2;
+  state.yaw = Math.PI; // face into the room
+  if (grass) grass.visible = false;
+}
+
+function exitInterior() {
+  inInterior = null;
+  if (interiorReturn) {
+    state.x = interiorReturn.x;
+    state.z = interiorReturn.z;
+    state.yaw = interiorReturn.yaw;
+  }
+  if (grass) { grass.visible = true; grassCellX = 1e9; }
+}
+
+// plots ring the OUTSKIRTS — residents build the city's edge, the core stays civic
+function plotSpot(i) {
+  let a = (i / PLOT_COUNT) * Math.PI * 2 + 0.32;
+  let x = CITY.x + Math.cos(a) * (CITY.r + 13);
+  let z = CITY.z + Math.sin(a) * (CITY.r + 13);
+  if (roadDist(x, z) < 7) {
+    a += 0.38;
+    x = CITY.x + Math.cos(a) * (CITY.r + 13);
+    z = CITY.z + Math.sin(a) * (CITY.r + 13);
+  }
+  return { x, z };
 }
 
 function buildPlotPads() {
   const padMat = new THREE.MeshStandardMaterial({ color: 0x8e8a80, roughness: 0.85 });
-  for (const pad of plotPads) {
+  for (let i = 0; i < PLOT_COUNT; i++) {
+    const s = plotSpot(i);
+    const pad = { plot: i, x: s.x, z: s.z, claimed: false, row: null, group: null, sign: null };
+    plotPads.push(pad);
     const gy = groundHeight(pad.x, pad.z);
     const disc = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 3.3, 0.22, 22), padMat);
     disc.position.set(pad.x, gy + 0.11, pad.z);
     disc.receiveShadow = true;
     scene.add(disc);
-    const sign = makeNameSprite("Empty plot — sign in to claim", 1.25);
+    const sign = makeNameSprite("Empty plot \u00b7 sign in to claim", 1.25);
     sign.position.set(pad.x, gy + 2.2, pad.z);
     scene.add(sign);
     pad.sign = sign;
@@ -1139,7 +1340,7 @@ function applySpaceRow(pad, row) {
   pad.group = tower;
   pad.topSign = sign;
   buildingColliders.push({ x: pad.x, z: pad.z, width: 6.2, depth: 6.2 });
-  doors.push({ label: (row.project_name || "Project") + " — Project Hall", path: "/space/?plot=" + pad.plot + "&world=world2", x: pad.x, z: pad.z, hw: 4.6, hd: 4.6 });
+  doors.push({ label: (row.project_name || "Project") + " \u2014 Project Hall", x: pad.x, z: pad.z, hw: 4.8, hd: 4.8, act: { type: "page", path: "/space/?plot=" + pad.plot + "&world=world2" } });
   if (grass) { grassCellX = 1e9; } // force a grass rebuild so tufts clear the new footprint
 }
 
@@ -1168,8 +1369,9 @@ async function loadSpaces() {
 
 function updateActiveDoor() {
   if (!hasEntered) { activeDoor = null; activePlot = null; return; }
+  const list = inInterior ? interiorStations[inInterior] : doors;
   let next = null, best = Infinity;
-  for (const door of doors) {
+  for (const door of list) {
     const dx = state.x - door.x, dz = state.z - door.z;
     if (Math.abs(dx) > door.hw || Math.abs(dz) > door.hd) continue;
     const d = Math.hypot(dx, dz);
@@ -1177,7 +1379,7 @@ function updateActiveDoor() {
   }
   activeDoor = next;
   let nextPlot = null;
-  if (!next) {
+  if (!next && !inInterior) {
     let bp = Infinity;
     for (const pad of plotPads) {
       if (pad.claimed) continue;
@@ -1204,7 +1406,12 @@ function updateActiveDoor() {
 function enterActive() {
   if (claimOverlay && claimOverlay.style.display === "flex") return;
   if (activeDoor) {
-    location.assign(activeDoor.path);
+    const act = activeDoor.act || { type: "page", path: activeDoor.path };
+    if (act.type === "interior") enterInterior(act.id);
+    else if (act.type === "exit") exitInterior();
+    else if (act.type === "ext") { try { window.open(act.url, "_blank", "noopener"); } catch (e) {} }
+    else location.assign(act.path);
+    activeDoor = null;
     return;
   }
   if (activePlot) openClaim(activePlot);
@@ -1424,15 +1631,22 @@ function updateLocal(dt) {
   resolveCollision();
   updateActiveDoor();
 
-  const eyeTarget = eyeHeightForStance(state.stance) + groundHeight(state.x, state.z) + motion.airOffset;
+  const floorY = inInterior ? 0 : groundHeight(state.x, state.z);
+  const eyeTarget = eyeHeightForStance(state.stance) + floorY + motion.airOffset;
   state.y += (eyeTarget - state.y) * Math.min(1, dt * 14);
 }
 
 function resolveCollision() {
-  state.x = Math.max(-worldBounds, Math.min(worldBounds, state.x));
-  state.z = Math.max(-worldBounds, Math.min(worldBounds, state.z));
-
-  for (const collider of buildingColliders) {
+  if (inInterior) {
+    const r = ROOM[inInterior];
+    state.x = Math.max(r.x - 12.4, Math.min(r.x + 12.4, state.x));
+    state.z = Math.max(r.z - 8.4, Math.min(r.z + 8.4, state.z));
+  } else {
+    state.x = Math.max(-worldBounds, Math.min(worldBounds, state.x));
+    state.z = Math.max(-worldBounds, Math.min(worldBounds, state.z));
+  }
+  const colliderList = inInterior ? interiorColliders[inInterior] : buildingColliders;
+  for (const collider of colliderList) {
     const halfW = collider.width / 2 + playerRadius;
     const halfD = collider.depth / 2 + playerRadius;
     const dx = state.x - collider.x;
