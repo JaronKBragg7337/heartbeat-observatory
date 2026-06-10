@@ -12,7 +12,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const BUILD = "2026-06-10-w2i";
+const BUILD = "2026-06-10-w2j";
 const PREVIEW = new URLSearchParams(location.search).get("preview") === "1"; // gate-page spectate: orbit forever, join nothing // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
@@ -1506,6 +1506,8 @@ async function resolveIdentity() {
     const { data: { session } } = await supa.auth.getSession();
     if (session && session.user) {
       myUserId = session.user.id;
+      // Reality ledger: record that this resident has walked World 2 (spectators never count).
+      if (!PREVIEW) { try { supa.rpc("touch_world", { p_world: "world2" }).then(() => {}, () => {}); } catch (e) {} }
       const { data } = await supa.from("world_characters").select("display_name, appearance").eq("auth_user_id", myUserId);
       if (data && data[0]) {
         if (data[0].display_name) displayName = sanitizeDisplayName(data[0].display_name) || displayName;
