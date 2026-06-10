@@ -12,7 +12,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const BUILD = "2026-06-10-w2g"; // bumped with ?v= in /world2/index.html on every deploy
+const BUILD = "2026-06-10-w2h"; // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
 // ---- DOM ----
@@ -23,6 +23,7 @@ const timeChip = document.querySelector("#timeChip");
 const presenceChip = document.querySelector("#presenceChip");
 const doorPrompt = document.querySelector("#doorPrompt");
 const doorPromptText = document.querySelector("#doorPromptText");
+const doorEnterBtn = document.querySelector("#doorEnterBtn"); // phone ENTER - World 1 muscle memory
 const claimOverlay = document.querySelector("#claimOverlay");
 const claimInput = document.querySelector("#claimInput");
 const claimError = document.querySelector("#claimError");
@@ -1407,11 +1408,14 @@ function updateActiveDoor() {
     if (activeDoor) {
       doorPromptText.textContent = (isTouch ? "Tap — " : "Press E — ") + activeDoor.label;
       doorPrompt.classList.remove("hidden");
+      if (doorEnterBtn) doorEnterBtn.classList.add("active");
     } else if (activePlot) {
       doorPromptText.textContent = (isTouch ? "Tap — " : "Press E — ") + "Claim this plot with a GitHub repo";
       doorPrompt.classList.remove("hidden");
+      if (doorEnterBtn) doorEnterBtn.classList.add("active");
     } else {
       doorPrompt.classList.add("hidden");
+      if (doorEnterBtn) doorEnterBtn.classList.remove("active");
     }
   }
 }
@@ -1877,6 +1881,7 @@ window.addEventListener("resize", () => {
 });
 
 doorPrompt.addEventListener("click", () => enterActive());
+if (doorEnterBtn) doorEnterBtn.addEventListener("click", (e) => { e.preventDefault(); enterActive(); });
 claimSubmit.addEventListener("click", submitClaim);
 claimCancel.addEventListener("click", closeClaim);
 claimInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitClaim(); } });
