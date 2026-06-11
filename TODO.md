@@ -39,7 +39,9 @@ unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/metho
   it's waiting). Jaron's black-screen visit predates the movement fix, so the start station was
   effectively unreachable; playback is now CONFIRMED WORKING (June 11: Jaron retested
   post-movement-fix - NASA Artemis reel playing on the screen wall with audio and credit).
-  Next: add an idle-screen "walk to the projector to start" card, then port to the live theaters.
+  SHIPPED June 11 (commit ee73867): house lights bright while
+  idle / dim to 15% on play / restored on leave, glowing labeled START + NEXT REEL floor pads,
+  idle screen now says what it's waiting for. Remaining: port the whole pattern to the live theaters.
 - **MEDIA SURFACES (unlocked by the Marquee Row proof - Jaron's vision):** any flat surface can
   wear moving images - billboards, jumbotrons, tickers, marquees (downtown-New-York look).
   Engineering law: phones decode 1-3 <video> elements, never dozens - share ONE video texture
