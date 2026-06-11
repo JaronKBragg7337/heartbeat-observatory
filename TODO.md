@@ -37,8 +37,16 @@ unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/metho
   reads: the screen idles PURE BLACK by design until the "Start the screening" floor station is
   used, with no hint on the screen itself (honest-empty-state gap - the idle screen should say
   it's waiting). Jaron's black-screen visit predates the movement fix, so the start station was
-  effectively unreachable; playback is UNTESTED since the fix. Next: retest Marquee Row, add an
-  idle-screen "walk to the projector to start" card, then port the pattern to the live theaters.
+  effectively unreachable; playback is now CONFIRMED WORKING (June 11: Jaron retested
+  post-movement-fix - NASA Artemis reel playing on the screen wall with audio and credit).
+  Next: add an idle-screen "walk to the projector to start" card, then port to the live theaters.
+- **MEDIA SURFACES (unlocked by the Marquee Row proof - Jaron's vision):** any flat surface can
+  wear moving images - billboards, jumbotrons, tickers, marquees (downtown-New-York look).
+  Engineering law: phones decode 1-3 <video> elements, never dozens - share ONE video texture
+  across many surfaces, and use cheap procedural CanvasTextures for everything ticker-like.
+  The killer version: render the Observatory's OWN live data as signage - the Perplexity news
+  feed as a scrolling tower ticker, the social feed on a jumbotron. Real data, nothing faked,
+  alive by definition. Also feeds Fort Wayne (Embassy marquee w/ real reels, stadium screen).
 - Home doors → private rooms (apartment-room system reuse); finish home interiors.
 - Build on upper floors: world_props.y column + place_prop p_y + render/preview honoring y.
 - Guest vs account clarity: what signed-out visitors can do and how to join.
