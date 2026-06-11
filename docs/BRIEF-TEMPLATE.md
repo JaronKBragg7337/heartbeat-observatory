@@ -8,7 +8,8 @@ Fill in the TASK line and the two keys (keys live with Jaron, never in this file
 >
 > Before doing anything, read these from the repo, in order: README.md (handoff at top),
 > docs/CHARTER.md, docs/SHELL.md, docs/METHOD.md, then whichever sits closest to the
-> task: docs/WORLD-STANDARD.md, docs/EDITOR.md, or WORLD2-PLAN.md. Then TODO.md. Tell me in one short paragraph what
+> task: docs/WORLD-STANDARD.md, docs/EDITOR.md, WORLD2-PLAN.md, or docs/LOOK.md for
+> anything visual/aesthetic. Then TODO.md. Tell me in one short paragraph what
 > you understood before you start. If the docs disagree with the live site, tell me -
 > reality wins.
 >
