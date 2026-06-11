@@ -1,3 +1,12 @@
+
+## THE DOCUMENTS (read in this order)
+1. **docs/CHARTER.md** - what this is, the laws and their reasons, the Live-Reference clause (reality > text; amend, don't obey)
+2. **docs/SHELL.md** - what carries into EVERY world (gold master: engine/hub/main.js)
+3. **docs/WORLD-STANDARD.md** - what makes a world real: planet>gate>world, buildings as containers, the connection set, promotion checklist
+4. **docs/EDITOR.md** - Build Mode / Phase 7 (worlds become data)
+5. **docs/BRIEF-TEMPLATE.md** - how to brief any AI + the next Cowork brief, ready to paste
+TODO.md stays the live truth; ARCHIVE.md holds completed work verbatim; WORLD2-PLAN.md holds the worlds roadmap.
+
 # Heartbeat Observatory
 
 **A living 3D town where people and real AIs meet, build, and hang out together — live now at [heartbeatobservatory.com](https://www.heartbeatobservatory.com).**
