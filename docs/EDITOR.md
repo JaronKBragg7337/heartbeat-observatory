@@ -44,6 +44,15 @@ rails, coaster, rides, aircraft, space, cinema, layouts.)
   writes world_props rows → same publish gate as hands. Everyone else's Ask Claude
   stays a guide. Admin roster may grow beyond Jaron — gating is by world_admins.
 
+## Non-negotiable guardrails for 7e (carried from the original "speak it into existence" spec)
+1. Verify the admin SERVER-SIDE: the API route checks the caller's Supabase session
+   against is_world_admin(). NEVER trust a client "I am admin" flag — otherwise anyone
+   could write to the world or, worse, the repo.
+2. Whitelist what can be written (world_props rows; safe-template pages) and hard-block
+   sensitive paths (api/, .github/, vercel.json, core engine files).
+3. Prefer draft/preview over instant-live: bad generations must never break the live
+   world. The publish gate (7d) is that protection — keep it in the path always.
+
 ## Prerequisite already fixed
 kit.js movement math (input rotated by -yaw; two sign flips corrected, June 11).
 You cannot build a world you cannot walk.
