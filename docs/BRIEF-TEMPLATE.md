@@ -1,3 +1,29 @@
+# THE KICKOFF MESSAGE (paste this to start ANY new AI conversation)
+Fill in the TASK line and the two keys (keys live with Jaron, never in this file):
+
+> I'm Jaron, owner of Heartbeat Observatory - a live 3D multiplayer web world.
+> Live site: https://www.heartbeatobservatory.com
+> GitHub: https://github.com/JaronKBragg7337/heartbeat-observatory (branch main, auto-deploys to Vercel)
+> GitHub key: [paste] / Vercel key: [paste] - tool use only, never committed to any file.
+>
+> Before doing anything, read these from the repo, in order: README.md (handoff at top),
+> docs/CHARTER.md, docs/SHELL.md, then docs/WORLD-STANDARD.md or docs/EDITOR.md
+> (whichever is closest to the task), then TODO.md. Tell me in one short paragraph what
+> you understood before you start. If the docs disagree with the live site, tell me -
+> reality wins.
+>
+> YOUR TASK: [one or two sentences]
+>
+> Rules that never bend: new folders only unless the task says otherwise - not one line
+> of live code touched without being told. Nothing faked, honest empty states. Verify on
+> the live site before calling it done, and report concretely: what changed, where, and
+> how I can test it from my phone.
+
+Why each part exists: keys first (nothing works without access); forced reading WITH a
+comprehension check (the paragraph it reports back is the insurance - stop it if the
+summary sounds wrong); one tight task; guardrails; and a testable report that closes
+the loop.
+
 # BRIEFING AN AI — the template, and the next brief ready to paste
 **Living document, June 11, 2026.**
 
