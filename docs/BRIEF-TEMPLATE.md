@@ -12,7 +12,7 @@ Fill in the TASK line and the two keys (keys live with Jaron, never in this file
 > you understood before you start. If the docs disagree with the live site, tell me -
 > reality wins.
 >
-> YOUR TASK: [one or two sentences]
+> YOUR TASK: [Build Phase 1 of the Fort Wayne world per the FUTURE WORLD: FORT WAYNE section of WORLD2-PLAN.md — lab world, new folder, recognition is the win condition.]
 >
 > Rules that never bend: new folders only unless the task says otherwise - not one line
 > of live code touched without being told. Nothing faked, honest empty states. Verify on
