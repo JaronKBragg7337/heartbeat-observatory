@@ -6,6 +6,7 @@
 4. **docs/EDITOR.md** - Build Mode / Phase 7 (worlds become data)
 5. **docs/BRIEF-TEMPLATE.md** - how to brief any AI + the next Cowork brief, ready to paste
 6. **docs/METHOD.md** - the operational laws: deploy loop, TDZ law, cache-busting, token rule, multiplayer laws
+7. **docs/LOOK.md** - visual doctrine: chase alive over realistic; the media-surface toolbox and its watch-fors
 TODO.md stays the live truth; ARCHIVE.md holds completed work verbatim; WORLD2-PLAN.md holds the worlds roadmap.
 
 # Heartbeat Observatory
