@@ -69,6 +69,13 @@ export function cinema(kit, o) {
   video.volume = 0.85;
   let idx = 0, started = false, videoTex = null, failures = 0, triedFallback = false;
   let screenMat = null, statusBoard = null, nowBoard = null, plaqueBoard = null;
+  let houseLights = [], padMats = [];
+  // House lights: bright while idle (so people can FIND the stations - Jaron & Lillith
+  // couldn't), dim when the show starts, restored on leave. Real-theater behavior.
+  function setHouse(bright) {
+    houseLights.forEach((l) => { l.intensity = bright ? l.userData.up : l.userData.down; });
+    padMats.forEach((m) => { m.emissiveIntensity = bright ? 1.0 : 0.22; });
+  }
 
   function setStatus(text) {
     if (!statusBoard) return;
@@ -96,6 +103,7 @@ export function cinema(kit, o) {
     screenMat.emissiveIntensity = 0.85;
     screenMat.color = new THREE.Color(0xffffff);
     screenMat.needsUpdate = true;
+    setHouse(false); // lights down - the show is on
   }
   video.addEventListener("playing", () => { attachTexture(); failures = 0; setStatus(films[idx].credit); });
   video.addEventListener("error", () => {
@@ -149,8 +157,31 @@ export function cinema(kit, o) {
     const ox = api.origin.x, oz = api.origin.z;
     buildRoomShell(kit, api, { carpet: "#4d1d26", curtains: "#5e1f2b", wallH: 6.4 });
 
+    // HOUSE LIGHTS - two warm points, on while idle, dimmed by setHouse() when playing
+    houseLights = [];
+    [[ox - half * 0.4, oz - half * 0.1], [ox + half * 0.4, oz + half * 0.3]].forEach((p) => {
+      const l = new THREE.PointLight(0xffe9c4, 1.4, half * 3.4, 1.6);
+      l.position.set(p[0], 5.6, p[1]);
+      l.userData = { up: 1.4, down: 0.2 };
+      kit.scene.add(l); houseLights.push(l);
+    });
+
+    // GLOWING STATION PADS - the start/next zones announce themselves
+    padMats = [];
+    [[ox, oz - half + 2.6, "#7bd88f", "START THE SCREENING"], [ox - half + 2.4, oz - half + 3.4, "#ffd166", "NEXT REEL"]].forEach((p) => {
+      const pm = new THREE.MeshStandardMaterial({ color: new THREE.Color(p[2]), emissive: new THREE.Color(p[2]), emissiveIntensity: 1.0, roughness: 0.6 });
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.06, 20), pm);
+      pad.position.set(p[0], 0.03, p[1]);
+      kit.scene.add(pad); padMats.push(pm);
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 0.5), new THREE.MeshStandardMaterial({ map: textTexture([p[3]], { w: 512, h: 96, bg: "#0a0d12", accent: p[2] }), emissive: 0xffffff, emissiveIntensity: 0.25, emissiveMap: textTexture([p[3]], { w: 512, h: 96, bg: "#0a0d12", accent: p[2] }) }));
+      sign.position.set(p[0], 1.55, p[1]);
+      kit.scene.add(sign);
+    });
+
     // the far wall IS the screen (the house flagship-theater spec)
-    screenMat = new THREE.MeshStandardMaterial({ color: 0x05070a, roughness: 0.4, emissive: 0x0a0e14, emissiveIntensity: 0.4 });
+    // The idle screen TELLS you it's idle (honest empty states apply to pixels too).
+    const idleMap = textTexture(["The screen is waiting", "Step on the glowing green pad to start the screening", "Amber pad changes the reel"], { w: 1024, h: 576, bg: "#070a10", accent: "#ffd166", font: "bold 52px system-ui, sans-serif", subFont: "30px system-ui, sans-serif" });
+    screenMat = new THREE.MeshStandardMaterial({ map: idleMap, color: 0xffffff, roughness: 0.4, emissive: 0x3a4252, emissiveIntensity: 0.55, emissiveMap: idleMap });
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(half * 1.6, half * 0.9), screenMat);
     screen.position.set(ox, half * 0.45 + 1.1, oz - half + 0.25);
     kit.scene.add(screen);
@@ -196,7 +227,7 @@ export function cinema(kit, o) {
     // stations
     api.addDoor({ label: "Start the screening", x: ox, z: oz - half + 2.6, hw: 2.6, hd: 1.6, act: { type: "fn", fn: () => { if (!toggleSound() || !started) startShow(); } } });
     api.addDoor({ label: "Next reel", x: ox - half + 2.4, z: oz - half + 3.4, hw: 1.5, hd: 1.5, act: { type: "fn", fn: () => next(false) } });
-    api.addDoor({ label: "Leave the theater", x: ox, z: oz + half - 1.6, hw: 2.2, hd: 1.8, act: { type: "fn", fn: () => { try { video.pause(); } catch (e) {} started = false; kit.exitInterior(); } } });
+    api.addDoor({ label: "Leave the theater", x: ox, z: oz + half - 1.6, hw: 2.2, hd: 1.8, act: { type: "fn", fn: () => { try { video.pause(); } catch (e) {} started = false; setHouse(true); kit.exitInterior(); } } });
 
     // projector booth glow at the back
     const boothMat = M(0xfff1cc, { emissive: 0xfff1cc, emissiveIntensity: 0.9 });
