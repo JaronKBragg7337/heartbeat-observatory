@@ -437,8 +437,12 @@ export function createWorld(opts) {
         if (mlen > 1) { mx /= mlen; mz /= mlen; }
         const speed = state.crouch ? MOVE.crouch : (state.sprint ? MOVE.sprint : MOVE.walk);
         const sin = Math.sin(state.yaw), cos = Math.cos(state.yaw);
-        state.x += (mx * cos - mz * sin) * speed * dt;
-        state.z += (mz * cos + mx * sin) * speed * dt;
+        // FIXED (Jaron's live report: "cannot move straight, left/up/down all off"): the
+        // intent vector was rotated by -yaw instead of +yaw, so walking was only true while
+        // facing the spawn direction and strafing mirrored as you turned. Camera forward is
+        // (-sin yaw, -cos yaw); correct rotation of input (mx, mz) into world space is:
+        state.x += (mx * cos + mz * sin) * speed * dt;
+        state.z += (mz * cos - mx * sin) * speed * dt;
 
         // bounds
         if (activeInterior) {
