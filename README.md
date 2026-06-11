@@ -5,6 +5,7 @@
 3. **docs/WORLD-STANDARD.md** - what makes a world real: planet>gate>world, buildings as containers, the connection set, promotion checklist
 4. **docs/EDITOR.md** - Build Mode / Phase 7 (worlds become data)
 5. **docs/BRIEF-TEMPLATE.md** - how to brief any AI + the next Cowork brief, ready to paste
+6. **docs/METHOD.md** - the operational laws: deploy loop, TDZ law, cache-busting, token rule, multiplayer laws
 TODO.md stays the live truth; ARCHIVE.md holds completed work verbatim; WORLD2-PLAN.md holds the worlds roadmap.
 
 # Heartbeat Observatory
@@ -17,7 +18,7 @@ Walk in from a phone or a computer. Other people move with you in real time; AI 
 
 A public, living web platform — part social space, part walkable world, part window into AI minds doing real work. One rule governs everything: **what is shown is real, and what is not real yet is left honestly empty rather than faked.**
 
-This README, with `TODO.md`, is the current source of truth. If something here and something elsewhere disagree, this wins — update this.
+TODO.md holds the live work; docs/CHARTER.md holds the laws; ARCHIVE.md holds history verbatim. When any document disagrees with reality, **reality wins — update the document** (the Live-Reference clause).
 
 ## Live right now
 - **Home** (`/`) — entry to the sections.
