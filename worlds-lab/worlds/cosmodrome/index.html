@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Cosmodrome 7 — Worlds Lab — Heartbeat Observatory</title>
+    <meta name="description" content="Cosmodrome 7 — rockets, UFOs and a NASA mission theater in the Worlds Lab.">
+    <style>
+      :root { --text:#e8eef4; --muted:#9fb0bd; --panel-bg:rgba(10,14,18,.88); --panel-border:rgba(120,150,170,.25); --accent:#9ae8ff; }
+      * { box-sizing:border-box; }
+      html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#05070d; }
+      body { font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--text); -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+      #game { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+      .hidden { display:none !important; }
+
+      #overlay { position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; padding:18px; background:radial-gradient(ellipse at center, rgba(6,9,14,.55), rgba(6,9,14,.92)); }
+      .overlay-card { display:flex; flex-direction:column; align-items:center; gap:12px; max-width:min(480px,94vw); max-height:92vh; overflow-y:auto; padding:26px 22px; border:1px solid var(--panel-border); border-radius:16px; background:var(--panel-bg); text-align:center; }
+      .overlay-card h1 { margin:0; font-size:22px; letter-spacing:.02em; color:var(--accent); }
+      .overlay-card .tagline { margin:0; color:var(--muted); font-size:14px; }
+      .overlay-card .phase-note { margin:0; font-size:12.5px; color:var(--muted); border:1px solid var(--panel-border); border-radius:8px; padding:8px 10px; line-height:1.45; text-align:left; }
+      .controls { display:grid; gap:7px; width:100%; margin-top:2px; }
+      .controls .ctl { padding:9px 12px; text-align:left; border:1px solid var(--panel-border); border-radius:8px; background:rgba(255,255,255,.02); font-size:13px; color:var(--muted); }
+      .controls .ctl b { color:var(--text); margin-right:6px; }
+      .controls .ctl-touch { display:none; }
+      @media (pointer: coarse) { .controls .ctl-desktop { display:none; } .controls .ctl-touch { display:block; } }
+      #enterButton { margin-top:4px; padding:13px 34px; font-size:16px; font-weight:700; letter-spacing:.03em; color:#0d1a12; background:var(--accent); border:0; border-radius:999px; cursor:pointer; }
+      #enterButton:active { transform:scale(.97); }
+
+      #hud { position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:10px; z-index:20; display:flex; gap:6px; pointer-events:none; flex-wrap:wrap; max-width:70vw; }
+      #hud .chip { padding:6px 12px; border-radius:999px; border:1px solid var(--panel-border); background:var(--panel-bg); font-size:12px; font-weight:600; letter-spacing:.05em; color:var(--muted); }
+      #hud .chip b { color:var(--text); }
+
+      #movePad { position:fixed; left:calc(env(safe-area-inset-left) + 18px); bottom:calc(env(safe-area-inset-bottom) + 22px); z-index:30; width:124px; height:124px; border-radius:50%; border:1px solid rgba(140,170,190,.35); background:rgba(12,18,24,.45); display:none; touch-action:none; }
+      #moveKnob { position:absolute; left:50%; top:50%; width:52px; height:52px; border-radius:50%; background:rgba(190,215,230,.32); border:1px solid rgba(200,225,240,.4); transform:translate(-50%,-50%); pointer-events:none; }
+      .pad-buttons { position:fixed; right:calc(env(safe-area-inset-right) + 18px); bottom:calc(env(safe-area-inset-bottom) + 26px); z-index:30; display:none; flex-direction:column; gap:12px; }
+      .pad-buttons button { width:62px; height:62px; border-radius:50%; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); font-size:12px; font-weight:700; letter-spacing:.04em; touch-action:none; }
+      #doorEnterBtn { width:74px; height:74px; background:rgba(36,84,56,.6); border-color:rgba(123,216,143,.45); }
+      #doorEnterBtn.active { background:rgba(63,158,96,.85); border-color:#7bd88f; color:#08130c; }
+      #gateLink { position:fixed; top:calc(env(safe-area-inset-top) + 14px); right:calc(env(safe-area-inset-right) + 14px); z-index:40; padding:8px 14px; border-radius:999px; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); text-decoration:none; font-size:12px; font-weight:700; letter-spacing:.06em; }
+      @media (pointer: coarse) { #movePad, .pad-buttons { display:flex; } #movePad { display:block; } }
+
+      #doorPrompt { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 110px); transform:translateX(-50%); z-index:32; padding:11px 22px; border-radius:999px; border:1px solid var(--accent); background:rgba(10,16,18,.88); color:var(--text); font:600 14px/1 system-ui,sans-serif; letter-spacing:.04em; cursor:pointer; max-width:92vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="hud" aria-live="polite">
+      <span class="chip" id="worldChip"><b>Cosmodrome 7</b></span>
+      <span class="chip" id="timeChip">—</span>
+      <span class="chip" id="modeChip">lab · solo preview</span>
+    </div>
+
+    <div id="overlay">
+      <div class="overlay-card">
+        <h1 id="overlayTitle">Cosmodrome 7</h1>
+        <p class="tagline" id="overlayTagline">Launch a rocket to the edge of the sky. UFOs are about.</p>
+        <p class="phase-note" id="overlayNote"><b>Worlds Lab.</b> The rocket launch is a full ride — countdown, climb, a quiet float in the stars, descent. The Mission Theater screens true NASA footage (public domain, courtesy NASA). This is a lab world — a real, walkable build running solo (no shared presence yet). Everything you see is exactly what exists. Built in the open at heartbeatobservatory.com.</p>
+        <div class="controls">
+          <div class="ctl ctl-desktop"><b>Move</b> WASD or arrows · <b>Look</b> mouse · <b>Sprint</b> Shift · <b>Jump</b> Space · <b>Use</b> E</div>
+          <div class="ctl ctl-touch"><b>Move</b> left pad · <b>Look</b> drag the screen · <b>Use</b> green ENTER button</div>
+        </div>
+        <button id="enterButton" type="button">Walk the world</button>
+      </div>
+    </div>
+
+    <button id="doorPrompt" class="hidden" type="button"><span id="doorPromptText">Press E</span></button>
+    <a id="gateLink" href="/worlds-lab/" aria-label="Back to the Worlds Lab">&#8962; Lab</a>
+
+    <div id="movePad"><div id="moveKnob"></div></div>
+    <div class="pad-buttons">
+      <button id="jumpButton" type="button" aria-label="Jump">JUMP</button>
+      <button id="crouchButton" type="button" aria-label="Crouch">DUCK</button>
+      <button id="doorEnterBtn" type="button" aria-label="Enter">ENTER</button>
+    </div>
+
+    <script type="module" src="/worlds-lab/worlds/cosmodrome/main.js?v=2026-06-11-lab1"></script>
+  </body>
+</html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Worlds Lab — Heartbeat Observatory</title>
+    <meta name="description" content="The Worlds Lab: new walkable 3D worlds for Heartbeat Observatory — rideable coasters, trains, helicopters, rockets, real movie theaters, and honest coming-soon gates. Staged here, unlinked from the live town, until each one is promoted.">
+    <style>
+      :root { --text:#e8eef4; --muted:#9fb0bd; --panel:#10151c; --border:rgba(120,150,170,.22); --accent:#7bd88f; }
+      * { box-sizing:border-box; }
+      body { margin:0; background:#070a0e; color:var(--text); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; padding:0 0 60px; }
+      .wrap { max-width:1060px; margin:0 auto; padding:0 18px; }
+      header { padding:42px 0 8px; }
+      h1 { margin:0 0 6px; font-size:30px; letter-spacing:.01em; }
+      h1 .tag { display:inline-block; margin-left:10px; font-size:12px; vertical-align:middle; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted); letter-spacing:.08em; }
+      .lede { color:var(--muted); max-width:760px; margin:0 0 10px; }
+      .honest { font-size:13.5px; color:var(--muted); border:1px solid var(--border); border-radius:10px; padding:10px 14px; background:var(--panel); max-width:760px; }
+      .honest b { color:var(--text); }
+      h2 { font-size:15px; letter-spacing:.14em; color:var(--muted); margin:34px 0 14px; text-transform:uppercase; }
+      .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(235px, 1fr)); gap:14px; }
+      a.card { display:flex; flex-direction:column; gap:7px; padding:18px 16px 16px; border:1px solid var(--border); border-radius:14px; background:var(--panel); text-decoration:none; color:var(--text); transition:transform .12s ease, border-color .12s ease; }
+      a.card:hover { transform:translateY(-2px); border-color:var(--c, var(--accent)); }
+      .card .glyph { font-size:26px; line-height:1; }
+      .card .name { font-weight:700; font-size:17px; color:var(--c, var(--text)); }
+      .card .desc { font-size:13.5px; color:var(--muted); }
+      .card .status { margin-top:auto; align-self:flex-start; font-size:11px; font-weight:700; letter-spacing:.1em; padding:3px 9px; border-radius:999px; border:1px solid var(--c, var(--border)); color:var(--c, var(--muted)); }
+      .kits { display:grid; grid-template-columns:repeat(auto-fill, minmax(235px, 1fr)); gap:10px; }
+      .kit { border:1px solid var(--border); border-radius:10px; background:var(--panel); padding:12px 14px; font-size:13.5px; color:var(--muted); }
+      .kit b { color:var(--text); display:block; margin-bottom:2px; }
+      footer { margin-top:44px; font-size:13px; color:var(--muted); border-top:1px solid var(--border); padding-top:18px; }
+      footer a { color:var(--accent); }
+      .back { display:inline-block; margin:18px 0 0; color:var(--accent); text-decoration:none; font-weight:600; font-size:14px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <a class="back" href="/">&larr; Heartbeat Observatory</a>
+        <h1>Worlds Lab <span class="tag">STAGED · NOT YET ON THE TOWN MAP</span></h1>
+        <p class="lede">New walkable worlds for the Observatory, built in the open. Everything below runs right now on a phone or a computer — rideable coasters, trains, helicopter tours, a rocket launch, and movie theaters playing real, legally free films.</p>
+        <p class="honest"><b>Honest by design.</b> Lab worlds are solo previews: no shared presence, no accounts, nothing pretending otherwise — each world says so on its way in. They live in new folders only; not one line of the live town's code was touched. When a world earns promotion, the plug-in checklist in <a href="https://github.com/JaronKBragg7337/heartbeat-observatory/tree/main/worlds-lab" style="color:var(--accent)">worlds-lab/README.md</a> wires it into the real map.</p>
+      </header>
+
+      <h2>Walkable now — lab worlds</h2>
+      <div class="grid">
+        <a class="card" style="--c:#ff6ad8" href="/worlds-lab/worlds/theme-park/">
+          <span class="glyph">&#127906;</span><span class="name">Starlight Park</span>
+          <span class="desc">Ride the Comet coaster, the Sky Wheel, the carousel and the swings — all genuinely boardable.</span>
+          <span class="status">LAB WORLD</span>
+        </a>
+        <a class="card" style="--c:#ffd166" href="/worlds-lab/worlds/railway-valley/">
+          <span class="glyph">&#128646;</span><span class="name">Whistle Stop Valley</span>
+          <span class="desc">A steam train loops green hills between two stations. Board at either one.</span>
+          <span class="status">LAB WORLD</span>
+        </a>
+        <a class="card" style="--c:#7bd8ff" href="/worlds-lab/worlds/skyport/">
+          <span class="glyph">&#128641;</span><span class="name">Skyport Mesa</span>
+          <span class="desc">A desert airfield: helicopter tour, balloon hop, blimp overhead, rotors always turning.</span>
+          <span class="status">LAB WORLD</span>
+        </a>
+        <a class="card" style="--c:#9ae8ff" href="/worlds-lab/worlds/cosmodrome/">
+          <span class="glyph">&#128640;</span><span class="name">Cosmodrome 7</span>
+          <span class="desc">Launch a rocket to the edge of the sky. UFOs about. NASA footage in the Star Dome.</span>
+          <span class="status">LAB WORLD</span>
+        </a>
+        <a class="card" style="--c:#ffd166" href="/worlds-lab/worlds/cinema-district/">
+          <span class="glyph">&#127910;</span><span class="name">Marquee Row</span>
+          <span class="desc">Three walk-in theaters: Blender open movies, public-domain classics, NASA reels. All legally free.</span>
+          <span class="status">LAB WORLD</span>
+        </a>
+        <a class="card" style="--c:#4ad8c4" href="/worlds-lab/worlds/island-resort/">
+          <span class="glyph">&#127965;</span><span class="name">Coral Cay</span>
+          <span class="desc">Palms, huts, boats on the bay, and a lighthouse that turns at dusk.</span>
+          <span class="status">LAB WORLD</span>
+        </a>
+        <a class="card" style="--c:#bfe2ff" href="/worlds-lab/worlds/winter-hollow/">
+          <span class="glyph">&#10052;</span><span class="name">Winter Hollow</span>
+          <span class="desc">Snowfields, cabins, torches and snowmen — the complete winter pattern kit.</span>
+          <span class="status">LAB WORLD</span>
+        </a>
+        <a class="card" style="--c:#ff6ad8" href="/worlds-lab/worlds/neon-bazaar/">
+          <span class="glyph">&#127982;</span><span class="name">Neon Bazaar</span>
+          <span class="desc">A permanent night market under lit towers — the fixed time-of-day demo.</span>
+          <span class="status">LAB WORLD</span>
+        </a>
+      </div>
+
+      <h2>Honest gates — coming soon</h2>
+      <div class="grid">
+        <a class="card" style="--c:#4ad8c4" href="/worlds-lab/coming-soon/underwater-reef/">
+          <span class="glyph">&#129432;</span><span class="name">The Reef</span>
+          <span class="desc">A world below the waterline. The gate is real; the plaque says plainly nothing is behind it yet.</span>
+          <span class="status">COMING SOON</span>
+        </a>
+        <a class="card" style="--c:#bfe2ff" href="/worlds-lab/coming-soon/sky-islands/">
+          <span class="glyph">&#9729;</span><span class="name">Sky Islands</span>
+          <span class="desc">Floating gardens, rope bridges, balloon ferries. Gate plaza walkable now.</span>
+          <span class="status">COMING SOON</span>
+        </a>
+        <a class="card" style="--c:#ff9a6a" href="/worlds-lab/coming-soon/mars-colony/">
+          <span class="glyph">&#128309;</span><span class="name">Dome Nine</span>
+          <span class="desc">A red-dust settlement under a butterscotch sky. Preview dome on the pedestal.</span>
+          <span class="status">COMING SOON</span>
+        </a>
+        <a class="card" style="--c:#c8b8e8" href="/worlds-lab/coming-soon/haunted-manor/">
+          <span class="glyph">&#127959;</span><span class="name">Hollow Manor</span>
+          <span class="desc">A dusk estate with one warm window. Friendly-spooky, and honest about being unbuilt.</span>
+          <span class="status">COMING SOON</span>
+        </a>
+      </div>
+
+      <h2>What's in the kit (lib/v1 — frozen)</h2>
+      <div class="kits">
+        <div class="kit"><b>kit.js</b> The world chassis: renderer, day/night, World-1 movement feel, touch + keyboard parity, colliders, doors, interiors, and the ride system.</div>
+        <div class="kit"><b>textures.js</b> 20+ procedural canvas textures — brick, planks, sand, snow, water, neon, facades, marquees, posters. Zero downloaded art.</div>
+        <div class="kit"><b>props.js</b> 25+ code-built props: lamps, benches, trees, fountains, carts, stalls, torches, snowmen, coral, arcade cabinets…</div>
+        <div class="kit"><b>buildings.js</b> Houses (7 styles), shops, lit towers, lighthouse, castle keep, observatory, control tower, barn, walk-in room shells.</div>
+        <div class="kit"><b>vehicles.js</b> Cars, taxis, buses, trucks, golf carts, boats — parked, patrolling, or rideable.</div>
+        <div class="kit"><b>rails.js</b> Track splines, stations, steam trains you can board.</div>
+        <div class="kit"><b>coaster.js</b> A full roller coaster builder with energy-based speed and support pillars.</div>
+        <div class="kit"><b>rides.js</b> Ferris wheel, carousel, sky swings — all rideable.</div>
+        <div class="kit"><b>aircraft.js</b> Helicopters with scripted tours, hot air balloons, blimps.</div>
+        <div class="kit"><b>space.js</b> Rockets with launch rides, UFOs, shuttle displays, dishes, moon buggies.</div>
+        <div class="kit"><b>cinema.js</b> Walk-in theaters with real video on the screen and the license credit on the wall.</div>
+        <div class="kit"><b>layouts.js</b> Terrains (hills, island, canyon, dunes, snow, craters) and street/plaza/boardwalk layouts.</div>
+        <div class="kit"><b>comingsoon.js</b> The honest coming-soon gate, ready for any future world.</div>
+      </div>
+
+      <footer>
+        Every theater reel streams from its original free source — Blender Foundation open movies (CC BY, credited in-world), Internet Archive public-domain features, and NASA public-domain footage. Sources and the verification trail live in <a href="https://github.com/JaronKBragg7337/heartbeat-observatory/blob/main/worlds-lab/CREDITS.md">CREDITS.md</a>. Built in the open — <a href="https://github.com/JaronKBragg7337/heartbeat-observatory">github.com/JaronKBragg7337/heartbeat-observatory</a>.
+      </footer>
+    </div>
+  </body>
+</html>
