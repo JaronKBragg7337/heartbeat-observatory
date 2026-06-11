@@ -113,3 +113,36 @@ BUILD ORDER:
 
 PREREQUISITE FIXED THIS SESSION: kit.js movement math (input rotated by -yaw; two sign flips corrected).
 You cannot build a world you cannot walk.
+
+---
+
+## FUTURE WORLD: FORT WAYNE (logged June 11, 2026 - Jaron's home city, Lanier-inspired)
+**The idea:** downtown Fort Wayne as an INTERPRETED digital twin - not 1:1 realism, a
+playable spatial layer. Keep the road skeleton, the three-rivers confluence, bridge
+positions, landmark placement, downtown density. Simplify buildings to low-poly.
+Stylize light and atmosphere. The win condition is RECOGNITION: someone from Fort
+Wayne walks in and says "wait... this feels like downtown" from geometry alone.
+
+**How it's built (this is Phase 7a wearing a city costume):** OpenStreetMap data is
+free and legal (ODbL - credit "(c) OpenStreetMap contributors" in CREDITS.md; Apple/
+Google imagery is NOT usable). A converter script reads the OSM extract for roughly
+bbox (41.072,-85.148) to (41.087,-85.126), projects lat/lon to meters, and emits
+world data: roads as ribbons, building footprints extruded (use building:levels
+where tagged), rivers as water, bridges connecting. Worlds-become-data, city edition.
+
+**The craft:** ~10 hand-built hero landmarks carry recognition - Embassy Theatre
+marquee, Parkview Field bowl, courthouse dome, the bridges - everything else stays
+humble boxes. The three-rivers confluence (St. Joseph + St. Marys -> Maumee) is the
+signature almost no city has; get the water right first.
+
+**Performance notes:** thousands of footprints means merged/instanced geometry and
+near-player colliders only; chunk or trim the bbox if phones struggle.
+
+**Phasing:** P1 recognition lab world (rivers, roads, bridges, blocks, hero anchors)
+- one or two focused Cowork runs. P2 explorable districts + container buildings per
+WORLD-STANDARD. P3 promotion to real world (shell, gate, multiplayer, touch_world
+allowlist). P4 the living layer: events at the Embassy, riverfront walks, social
+anchors tied to real places.
+
+**Why it fits the Observatory's soul:** a world anchored to live geography is the
+Live-Reference Principle made walkable - and it's Jaron's hometown.
