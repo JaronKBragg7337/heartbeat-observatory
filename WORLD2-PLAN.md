@@ -83,3 +83,33 @@ Jaron is right: the main landing page (the planet, "Enter the world") is the fro
 
 ## FOR THE NEXT SESSION (Cowork or claude.ai) — START HERE
 You are building World 2 of Heartbeat Observatory. Read, in order: this file top to bottom, TODO.md (SESSION HANDOFF + laws), ARCHIVE.md (how World 1 was actually built and what broke). The repo is JaronKBragg7337/heartbeat-observatory, deployed on Vercel at heartbeatobservatory.com, Supabase project ygjpnvrwhkrowkrskftk. Jaron builds from his phone by voice; put prerequisites at the top of every message; never fake anything; verify live before saying done. World 1's /engine/hub/main.js is your reference for every multiplayer/door/claim pattern — copy its proven shapes, don't reinvent them. Phase 1 starts at "Skeleton" above.
+
+---
+
+## PHASE 7 - BUILD MODE (Jaron's vision, June 11 - the editor, in his words)
+"I pictured being able to go in third person and design the world myself, then update the world to that,
+without needing to be inside code or talk to AI on my phone for them to push it. I wanted everything to be
+in game. Each individual item should be a prop that can be placed - the train tracks shouldn't be one giant
+chain, it's different types of track pieces that snap in place. Everything snappable and buildable."
+
+THE ARCHITECTURAL SHIFT THIS REQUIRES: worlds stop being hardcoded geometry and become DATA.
+A world_props table (world, prop_type, x, y, z, rotation, params jsonb, placed_by, placed_at) that the
+client reads and renders at boot. Once props are data, every editing tool is just a writer to that table -
+Jaron's hands in the editor AND Claude taking an admin's word both write the same rows. Repo claims already
+proved this pattern (a database row that becomes a building).
+
+BUILD ORDER:
+- 7a  world_props table + loader. Start in a LAB world (safe), kit props as the palette.
+- 7b  Build Mode v1: admin-gated, third-person camera, prop palette, ghost preview, grid snap,
+      place / rotate / delete, save. Phone AND keyboard parity from day one.
+- 7c  Snap sockets: modular segments (track, rail, road, fence) with male/female connector points -
+      pieces click together; one chain becomes many parts. This is the heart of Jaron's ask.
+- 7d  Publish + world version: a version stamp in the DB; clients poll (realtime push unreliable) and show
+      "The world changed - refresh to see it" so every player crosses into the new world together.
+      Visitors only ever see PUBLISHED versions; drafts are admin-eyes-only. Nothing faked.
+- 7e  Claude in-world for admins: admin chat command ("bring a fountain here") -> API route -> Claude
+      writes world_props rows -> same pipeline, same publish gate. Non-admin Ask Claude stays scoped to
+      Observatory topics as today.
+
+PREREQUISITE FIXED THIS SESSION: kit.js movement math (input rotated by -yaw; two sign flips corrected).
+You cannot build a world you cannot walk.
