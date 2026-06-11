@@ -31,7 +31,14 @@ unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/metho
 
 ## SOON
 - Theater seat assignment (booth picks seat → binds to character; seats table + sit mechanic).
-- Video playback on theater hall screens (legally-free reels; cinema.js in the lab kit is prior art).
+- Video playback on theater hall screens (legally-free reels). DIAGNOSED June 11: the only
+  implementation is worlds-lab Marquee Row (cinema.js) - well-built (real <video> -> VideoTexture,
+  legal sources w/ credits, fallbacks, muted-first phone handling) and NOT broken as far as code
+  reads: the screen idles PURE BLACK by design until the "Start the screening" floor station is
+  used, with no hint on the screen itself (honest-empty-state gap - the idle screen should say
+  it's waiting). Jaron's black-screen visit predates the movement fix, so the start station was
+  effectively unreachable; playback is UNTESTED since the fix. Next: retest Marquee Row, add an
+  idle-screen "walk to the projector to start" card, then port the pattern to the live theaters.
 - Home doors → private rooms (apartment-room system reuse); finish home interiors.
 - Build on upper floors: world_props.y column + place_prop p_y + render/preview honoring y.
 - Guest vs account clarity: what signed-out visitors can do and how to join.
