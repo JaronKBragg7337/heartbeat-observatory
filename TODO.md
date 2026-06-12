@@ -15,7 +15,11 @@ unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/metho
 1. **Starter World (Cowork run):** execute the brief at the bottom of docs/BRIEF-TEMPLATE.md.
    Empty biome + World 1's full shell, /worlds-lab/starter/, new folders only.
 2. **Fort Wayne Phase 2+ (P1 SHIPPED June 12 — archived):** P1 recognition lab is live at
-   /worlds-lab/worlds/fort-wayne/ (BUILD 2026-06-12-fw2; details in ARCHIVE.md + the folder README).
+   /worlds-lab/worlds/fort-wayne/ (BUILD 2026-06-12-fw3; details in ARCHIVE.md + the folder README).
+   fw3 (June 12, same day): 146 OSM-named buildings + tap-to-identify — tap any building, the
+   HUD chip says what it is (Taco Bell, Subway, the YMCA...); POI storefronts matched into
+   footprints; unnamed buildings honestly say "no name in OSM". Idea credit: Jaron's Perplexity
+   comparison run; built natively in the repo's own OSM pipeline, zero foreign code.
    Next per WORLD2-PLAN.md: P2 explorable districts + container buildings per WORLD-STANDARD;
    P3 promotion (shell, gate, multiplayer channel, touch_world allowlist); P4 living layer
    (Embassy events via the media-surfaces pattern, riverfront walks). Jaron's phone walk =
