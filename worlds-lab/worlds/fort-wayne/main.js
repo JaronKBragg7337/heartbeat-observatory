@@ -14,7 +14,7 @@ import { place, streetLamp, signPost, statue, bench, tree } from "../../lib/v1/p
 import { textTexture } from "../../lib/v1/textures.js";
 import { FW } from "./data.js";
 
-const BUILD = "2026-06-12-fw1"; // bumped with ?v= in index.html on every deploy
+const BUILD = "2026-06-12-fw2"; // bumped with ?v= in index.html on every deploy
 
 // ---- world constants ----
 const WATER_Y = -1.7;   // river surface, below street grade (the levee feel)
@@ -315,6 +315,11 @@ function buildBlocks() {
     if (b.h < 7) continue;
     const bb = polyBBox(b.p);
     const w = bb.maxX - bb.minX, d = bb.maxZ - bb.minZ;
+    // panes hang on bbox faces — only safe when the footprint actually FILLS its bbox
+    // (L-shaped/diagonal footprints otherwise grow floating panes in mid-air)
+    let fpArea = 0;
+    for (let k = 0; k < b.p.length - 1; k++) fpArea += b.p[k][0] * b.p[k + 1][1] - b.p[k + 1][0] * b.p[k][1];
+    if (Math.abs(fpArea / 2) < w * d * 0.72) continue;
     const rows = Math.min(26, Math.floor(b.h / 1.8));
     const faces = [
       { axis: "x", fixed: bb.maxZ + 0.06, len: w, ox: bb.minX, dir: [1, 0] },
