@@ -19,6 +19,13 @@ density.
   (tagged ones, plus inferred decks where a road provably crosses water — Clinton St's
   crossing carries no bridge tag in OSM; reality wins).
 - **26 street labels + river + park names**, placed from the data.
+- **146 named buildings, tappable** — tap any building and the HUD chip says what it
+  is. 125 carry their own OSM name tag (Allen County Public Library, Taco Bell,
+  Subway, McDonald's, Rally's, the YMCA...); 43 named POI nodes (storefronts) are
+  point-in-polygon matched into the footprint that contains them, so one block
+  building can answer with several businesses (e.g. PNC Bank · Full Circle Grill &
+  BBQ). POIs inside no footprint are dropped, not guessed. Unnamed buildings answer
+  "no name in OSM" — nothing is invented.
 
 ## What is interpreted (and why)
 - **Scale**: 1 world unit = 2 m. Heights from `height`/`building:levels` tags where
@@ -61,7 +68,8 @@ data.js                    generated output — do not hand-edit
 ```
 Regenerate: fetch the query against any Overpass mirror, then
 `node tools/convert-osm.mjs /path/to/extract.json`. OSM snapshot used:
-2026-06-08 (timestamp in data.js meta).
+2026-06-12 (timestamp in data.js meta). The query also pulls named POI nodes
+(amenity/shop/tourism/office/leisure) for tap-to-identify.
 
 ## Phase plan (from WORLD2-PLAN.md)
 - **P1 (this)** — recognition lab: rivers, roads, bridges, blocks, hero anchors. ✔
