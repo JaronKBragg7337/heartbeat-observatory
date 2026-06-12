@@ -8,14 +8,18 @@ Worlds work: docs/WORLD-STANDARD.md + WORLD2-PLAN.md. Editor work: docs/EDITOR.m
 Launched June 10; real visitors; first organic repo claim (plot 2, second-brain).
 Live: two worlds (Town Square + World 2) with planet → gate → world flow, shared shell
 pieces, reality ledger (touch_world / worlds_visited / last_world), Project Halls,
-social, library, games. Staged: /worlds-lab/ (8 solo lab worlds + frozen kit lib/v1,
+social, library, games. Staged: /worlds-lab/ (9 solo lab worlds incl. Fort Wayne P1 + frozen kit lib/v1,
 unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/method).
 
 ## NOW — Jaron's current queue
 1. **Starter World (Cowork run):** execute the brief at the bottom of docs/BRIEF-TEMPLATE.md.
    Empty biome + World 1's full shell, /worlds-lab/starter/, new folders only.
-2. **Fort Wayne Phase 1 (Cowork run):** per "FUTURE WORLD: FORT WAYNE" in WORLD2-PLAN.md.
-   Lab world; rivers first; recognition is the win condition.
+2. **Fort Wayne Phase 2+ (P1 SHIPPED June 12 — archived):** P1 recognition lab is live at
+   /worlds-lab/worlds/fort-wayne/ (BUILD 2026-06-12-fw2; details in ARCHIVE.md + the folder README).
+   Next per WORLD2-PLAN.md: P2 explorable districts + container buildings per WORLD-STANDARD;
+   P3 promotion (shell, gate, multiplayer channel, touch_world allowlist); P4 living layer
+   (Embassy events via the media-surfaces pattern, riverfront walks). Jaron's phone walk =
+   the recognition test.
 3. **World 2 Phase 6b–6e** (WORLD2-PLAN.md): avatar look parity → items/Throw →
    apartments + three-floor suite homes at city scale → remaining shell chips per SHELL.md.
 4. **Shared spawn plaza + "walk to" pointer:** Jaron & Lillith were both in W2 and never

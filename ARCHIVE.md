@@ -6,6 +6,16 @@ Convention: newest sections at the top. Text is moved verbatim from TODO.md — 
 
 ---
 
+## Archived June 12, 2026 (Fort Wayne Phase 1 — Cowork run)
+
+Moved verbatim from TODO.md NOW queue item 2:
+> **Fort Wayne Phase 1 (Cowork run):** per "FUTURE WORLD: FORT WAYNE" in WORLD2-PLAN.md.
+> Lab world; rivers first; recognition is the win condition.
+
+**FORT WAYNE PHASE 1 SHIPPED (`6b82e67` + pane fix `d5456af`, verified live June 12: all files byte-exact md5 vs pushed, BUILD `2026-06-12-fw2` boot-logged in console, entered and walked in a live browser session):** downtown Fort Wayne as an interpreted digital twin at `/worlds-lab/worlds/fort-wayne/` — new folder only, zero live-code edits (one additive ODbL credit section appended to worlds-lab/CREDITS.md, per the plan's credit requirement). Worlds-become-data, city edition: `tools/overpass-query.txt` (the exact OSM query) + `tools/convert-osm.mjs` (zero-dep converter: bbox clip, meter projection at 1u=2m, multipolygon ring stitching, Douglas-Peucker, centerline buffering, bridge inference, hero anchoring) emit `data.js` (453 road pieces, 1,200 building footprints, 13 water polys, 17 parks, 34 labels). The three rivers + THE CONFLUENCE computed from the data itself (the shared endpoint of the named centerlines, (208.6,−274.8) in world units); rivers carved below street grade (levee feel), wadeable with eyes above water, walkable bridge decks with chained spans. Eight hand-built hero anchors per LOOK.md (heroes carry recognition, everything else humble boxes): courthouse green dome + gold finial, Embassy blade sign + marquee (emissive at dusk), Lincoln Bank Tower deco setbacks (untagged in OSM — anchored by footprint containment, true ~95 m), I&M Power Center + blinking beacon, cathedral twin spires, Parkview Field open bowl (walk in via the NE gate), Wells Street truss (pedestrian in OSM, true to life), MLK Memorial Bridge white arches (lit at night). Night windows = one InstancedMesh, panes only on footprints that fill their bbox (the fw2 fix — L-shaped buildings grew floating panes). OSM data gaps repaired from reality, documented in the folder README: Clinton St's St. Marys crossing carries no bridge tag (inferred from water crossing); the bbox was widened ~300 m south because the plan's "roughly" spec clipped Parkview Field. Honest empty states: no doors (so no ENTER pad button — no dead buttons), `lab · solo preview` chip, permanent "map data © OpenStreetMap" HUD chip. Remaining phases live in TODO.md (P2 districts/containers, P3 promotion w/ shell+gate+multiplayer+touch_world, P4 living layer).
+
+---
+
 ## Archived June 9, 2026 (launch-eve sprint)
 
 ### NOW gate items completed (June 9)
