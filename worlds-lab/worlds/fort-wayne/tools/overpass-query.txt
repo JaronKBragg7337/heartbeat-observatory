@@ -10,5 +10,10 @@
   relation[waterway=riverbank];
   way[leisure~"^(park|garden|stadium|pitch)$"];
   relation[leisure~"^(park|garden|stadium)$"];
+  node[name][amenity];
+  node[name][shop];
+  node[name][tourism];
+  node[name][office];
+  node[name][leisure];
 );
 out geom;
