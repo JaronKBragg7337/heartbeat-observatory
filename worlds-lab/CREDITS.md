@@ -58,3 +58,11 @@ avoided; the chosen reel's description carries no music credit.
 Then add the entry to `FILMS` in `lib/v1/cinema.js`-style world code (worlds
 pass their own playlists — the frozen lib doesn't need editing for new reels:
 `cinema(kit, { films: [...] })`).
+
+## Fort Wayne lab world — map data (added 2026-06-12)
+
+The Fort Wayne recognition lab (`worlds/fort-wayne/`) is built from **OpenStreetMap**
+data: **(c) OpenStreetMap contributors, ODbL 1.0** (openstreetmap.org/copyright).
+Attribution is shown in-world (permanent HUD chip + entry overlay). The exact query,
+converter, and per-world details live in `worlds/fort-wayne/CREDITS.md`. No Google or
+Apple imagery was used anywhere in that world.

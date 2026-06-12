@@ -1,0 +1,14 @@
+[out:json][timeout:120][bbox:41.0690,-85.1480,41.0870,-85.1260];
+(
+  way[highway~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|pedestrian)$"];
+  way[railway=rail];
+  way[building];
+  relation[building];
+  way[natural=water];
+  relation[natural=water];
+  way[waterway~"^(riverbank|river|canal)$"];
+  relation[waterway=riverbank];
+  way[leisure~"^(park|garden|stadium|pitch)$"];
+  relation[leisure~"^(park|garden|stadium)$"];
+);
+out geom;
