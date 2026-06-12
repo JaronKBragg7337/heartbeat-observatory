@@ -30,6 +30,7 @@
       #hud { position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:10px; z-index:20; display:flex; gap:6px; pointer-events:none; flex-wrap:wrap; max-width:70vw; }
       #hud .chip { padding:6px 12px; border-radius:999px; border:1px solid var(--panel-border); background:var(--panel-bg); font-size:12px; font-weight:600; letter-spacing:.05em; color:var(--muted); }
       #hud .chip b { color:var(--text); }
+      #hud #nameChip { color:var(--text); }
       #hud .chip a { color:var(--muted); text-decoration:none; pointer-events:auto; }
 
       #movePad { position:fixed; left:calc(env(safe-area-inset-left) + 18px); bottom:calc(env(safe-area-inset-bottom) + 22px); z-index:30; width:124px; height:124px; border-radius:50%; border:1px solid rgba(140,170,190,.35); background:rgba(12,18,24,.45); display:none; touch-action:none; }
@@ -49,6 +50,7 @@
       <span class="chip" id="worldChip"><b>Fort Wayne</b></span>
       <span class="chip" id="timeChip">—</span>
       <span class="chip" id="modeChip">lab · solo preview</span>
+      <span class="chip" id="nameChip" style="display:none"></span>
       <span class="chip"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">map data © OpenStreetMap</a></span>
     </div>
 
@@ -74,6 +76,6 @@
       <button id="crouchButton" type="button" aria-label="Crouch">DUCK</button>
     </div>
 
-    <script type="module" src="/worlds-lab/worlds/fort-wayne/main.js?v=2026-06-12-fw2"></script>
+    <script type="module" src="/worlds-lab/worlds/fort-wayne/main.js?v=2026-06-12-fw3"></script>
   </body>
 </html>
