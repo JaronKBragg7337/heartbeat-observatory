@@ -14,7 +14,7 @@ import { place, streetLamp, signPost, statue, bench, tree } from "../../lib/v1/p
 import { textTexture } from "../../lib/v1/textures.js";
 import { FW } from "./data.js";
 
-const BUILD = "2026-06-12-fw2"; // bumped with ?v= in index.html on every deploy
+const BUILD = "2026-06-12-fw3"; // bumped with ?v= in index.html on every deploy
 
 // ---- world constants ----
 const WATER_Y = -1.7;   // river surface, below street grade (the levee feel)
@@ -38,6 +38,69 @@ function polyBBox(pts) {
   return { minX, maxX, minZ, maxZ };
 }
 function srgb(hex) { return new THREE.Color().setStyle(hex, THREE.SRGBColorSpace); }
+
+// ---- tap-to-identify: tap any building, the chip says what it is ----------------
+// Names are real OSM tags (building name + matched POI storefronts) carried in
+// data.js. Unnamed buildings say so plainly — nothing is invented (honest empty
+// state). Raycasts only on a confirmed tap; zero per-frame cost. Declared at module
+// scope per the TDZ law; listeners attach in setupTapIdentify() from BOOT.
+const tapTargets = [];                 // merged block mesh + footprint-hero meshes
+const _ray = new THREE.Raycaster();
+const _ndc = new THREE.Vector2();
+const nameChipEl = document.getElementById("nameChip");
+let nameChipTimer = 0;
+let tapId = null, tapX = 0, tapY = 0, tapT = 0;
+function showNameChip(text) {
+  if (!nameChipEl) return;
+  nameChipEl.textContent = text;
+  nameChipEl.style.display = "inline-block";
+  clearTimeout(nameChipTimer);
+  nameChipTimer = setTimeout(() => { nameChipEl.style.display = "none"; }, 6000);
+}
+function identifyAt(nx, ny) {
+  _ndc.set(nx, ny);
+  _ray.setFromCamera(_ndc, kit.camera);
+  const hits = _ray.intersectObjects(tapTargets, false);
+  if (!hits.length) { if (nameChipEl) nameChipEl.style.display = "none"; return; }
+  // step the hit point slightly along the ray so a wall hit lands INSIDE the footprint
+  const px = hits[0].point.x + _ray.ray.direction.x * 0.6;
+  const pz = hits[0].point.z + _ray.ray.direction.z * 0.6;
+  for (const k in FW.heroes) { // heroes first — they are named by definition
+    const h = FW.heroes[k];
+    if (!h.p) continue; // bridge heroes carry no footprint
+    if (px < h.minX - 0.5 || px > h.maxX + 0.5 || pz < h.minZ - 0.5 || pz > h.maxZ + 0.5) continue;
+    if (!pip(px, pz, h.p)) continue;
+    showNameChip(h.n + " · ≈" + Math.round(h.h * 2) + " m");
+    return;
+  }
+  for (const b of FW.bldgs) {
+    const bb = polyBBox(b.p);
+    if (px < bb.minX - 0.5 || px > bb.maxX + 0.5 || pz < bb.minZ - 0.5 || pz > bb.maxZ + 0.5) continue;
+    if (!pip(px, pz, b.p)) continue;
+    const names = [];
+    if (b.n) names.push(b.n);
+    if (b.biz) for (const x of b.biz) if (x !== b.n) names.push(x);
+    showNameChip((names.length ? names.join(" · ") : "no name in OSM") + " · ≈" + Math.round(b.h * 2) + " m");
+    return;
+  }
+  if (nameChipEl) nameChipEl.style.display = "none";
+}
+function setupTapIdentify() {
+  const canvas = kit.renderer.domElement;
+  canvas.addEventListener("pointerdown", (e) => {
+    if (tapId === null) { tapId = e.pointerId; tapX = e.clientX; tapY = e.clientY; tapT = performance.now(); }
+  });
+  canvas.addEventListener("pointerup", (e) => {
+    if (e.pointerId !== tapId) return;
+    tapId = null;
+    if (performance.now() - tapT > 350) return;                        // a hold/drag, not a tap
+    if (Math.hypot(e.clientX - tapX, e.clientY - tapY) > 8) return;    // a look-drag, not a tap
+    if (document.pointerLockElement === canvas) { identifyAt(0, 0); return; } // desktop lock: crosshair center
+    const r = canvas.getBoundingClientRect();
+    identifyAt(((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1));
+  });
+  canvas.addEventListener("pointercancel", (e) => { if (e.pointerId === tapId) tapId = null; });
+}
 
 // ---- height grid: flat city grade, rivers carved, bridge decks kept ----
 const GX0 = -512, GZ0 = -512, GW = 172, GH = 172, GS = 1024 / 171; // ~6u cells
@@ -303,7 +366,7 @@ function buildBlocks() {
     const w = bb.maxX - bb.minX, d = bb.maxZ - bb.minZ;
     if (w * d >= 10) kit.addCollider({ x: (bb.minX + bb.maxX) / 2, z: (bb.minZ + bb.maxZ) / 2, w: w * 0.92, d: d * 0.92 });
   }
-  scene.add(bucketMesh(bucket, { roughness: 0.95 }));
+  const blocksMesh = bucketMesh(bucket, { roughness: 0.95 }); scene.add(blocksMesh); tapTargets.push(blocksMesh);
 
   // night windows: instanced lit panes on every building tall enough to read as a tower
   const inst = [];
@@ -374,7 +437,7 @@ function buildCourthouse() {
   lant.translate(h.cx, h.h + 14.4, h.cz); addGeom(b, lant, stone);
   const fig = new THREE.ConeGeometry(0.5, 1.8, 6);
   fig.translate(h.cx, h.h + 16.4, h.cz); addGeom(b, fig, gold); // the gilded Lady Liberty, abstracted
-  scene.add(bucketMesh(b, { roughness: 0.8, metalness: 0.12 }));
+  const hm = bucketMesh(b, { roughness: 0.8, metalness: 0.12 }); scene.add(hm); tapTargets.push(hm);
   heroCollider(h);
   place(kit, signPost(["ALLEN COUNTY COURTHOUSE", "1902 - the green dome", "hand-built hero anchor"], { accent: "#8fd8b8" }), h.maxX + 4, h.cz + 8, Math.PI / 2);
 }
@@ -389,7 +452,7 @@ function buildLincoln() {
   boxInto(b, h.cx, h.h * 0.86, h.cz, w * 0.42, h.h * 0.22, d * 0.42, 0, buffD); // upper setback
   const tip = new THREE.ConeGeometry(Math.min(w, d) * 0.18, 3.2, 4);
   tip.translate(h.cx, h.h + 1.4, h.cz); addGeom(b, tip, gold);             // the deco crown
-  scene.add(bucketMesh(b, { roughness: 0.85 }));
+  const hm = bucketMesh(b, { roughness: 0.85 }); scene.add(hm); tapTargets.push(hm);
   heroCollider(h);
   place(kit, signPost(["LINCOLN BANK TOWER", "1930 art deco - 22 floors", "height hand-anchored (untagged in OSM)"], { accent: "#e8c87f" }), h.maxX + 3, h.maxZ + 3, Math.PI * 0.75);
 }
@@ -402,7 +465,7 @@ function buildIMTower() {
   boxInto(b, h.cx, h.h + 1.4, h.cz, (h.maxX - h.minX) * 0.5, 2.8, (h.maxZ - h.minZ) * 0.5, 0, dark); // mech penthouse
   const mast = new THREE.CylinderGeometry(0.22, 0.32, 9, 6);
   mast.translate(h.cx, h.h + 7.2, h.cz); addGeom(b, mast, dark);
-  scene.add(bucketMesh(b, { roughness: 0.6, metalness: 0.18 }));
+  const hm = bucketMesh(b, { roughness: 0.6, metalness: 0.18 }); scene.add(hm); tapTargets.push(hm);
   const beaconMat = new THREE.MeshStandardMaterial({ color: 0x220000, emissive: srgb("#ff3b30"), emissiveIntensity: 0.4 });
   kit.bindEmissive(beaconMat, 2.6, 0.4);
   const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8), beaconMat);
@@ -419,7 +482,7 @@ function buildEmbassy() {
   const brick = srgb("#7d4f3a"), brickD = srgb("#6a4231");
   addGeom(b, extrudeFootprint(h.p, h.h), brick);
   boxInto(b, h.cx, h.h + 0.3, h.cz, (h.maxX - h.minX) * 0.99, 0.6, (h.maxZ - h.minZ) * 0.99, 0, brickD);
-  scene.add(bucketMesh(b, { roughness: 0.92 }));
+  const hm = bucketMesh(b, { roughness: 0.92 }); scene.add(hm); tapTargets.push(hm);
   heroCollider(h);
   // the marquee + vertical blade sign on the Jefferson Blvd face (south = +z)
   const south = h.maxZ, cx = h.cx;
@@ -451,7 +514,7 @@ function buildCathedral() {
     spire.translate(h.minX + 2.0, Math.max(h.h, 7.5) + 11.2, zz);
     addGeom(b, spire, slate);
   }
-  scene.add(bucketMesh(b, { roughness: 0.95 }));
+  const hm = bucketMesh(b, { roughness: 0.95 }); scene.add(hm); tapTargets.push(hm);
   heroCollider(h);
   place(kit, signPost(["CATHEDRAL OF THE", "IMMACULATE CONCEPTION", "twin spires since 1860"], { accent: "#d8b8c8" }), h.minX - 4, h.cz, -Math.PI / 2);
 }
@@ -472,7 +535,7 @@ function buildParkview() {
     boxInto(wallB, mx, 2.4, mz, L + 0.4, 4.8, 1.1, ang, conc);
     kit.addCollider({ x: mx, z: mz, w: Math.max(1.4, Math.abs(bx - ax)), d: Math.max(1.4, Math.abs(bz - az)) });
   }
-  scene.add(bucketMesh(wallB, { roughness: 0.9 }));
+  const hm = bucketMesh(wallB, { roughness: 0.9 }); scene.add(hm); tapTargets.push(hm);
   // the field
   const fieldGeo = new THREE.ShapeGeometry(shapeFrom(h.p));
   fieldGeo.rotateX(-Math.PI / 2);
@@ -654,4 +717,5 @@ buildWellsBridge();
 buildMLKBridge();
 buildLabels();
 buildSignsAndLife();
+setupTapIdentify();
 kit.start();
