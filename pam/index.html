@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PAM · Heartbeat Observatory</title>
+<style>
+  :root {
+    --bg:#070a0f; --rail:#0a0f16; --panel:#0e151f; --panel2:#121b27;
+    --line:#1e2a38; --line2:#314256; --text:#edf5fb; --muted:#8b99a8;
+    --beat:#e23a45; --ok:#3fb950; --cyan:#24b7f4; --amber:#d9a23a;
+    --violet:#9d74ff;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    min-height:100vh; background:
+      radial-gradient(circle at 52% 0%, rgba(36,183,244,.12), transparent 34%),
+      radial-gradient(circle at 80% 18%, rgba(157,116,255,.10), transparent 30%),
+      var(--bg);
+    color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color:inherit; text-decoration:none; }
+  button, input, textarea { font:inherit; }
+  .topnav {
+    height:56px; display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:0 20px; border-bottom:1px solid var(--line); background:rgba(7,10,15,.88);
+    backdrop-filter:blur(12px); position:sticky; top:0; z-index:20;
+  }
+  .brand { display:flex; align-items:center; gap:9px; color:var(--muted); font-size:12px;
+    letter-spacing:.16em; text-transform:uppercase; }
+  .pulse { width:8px; height:8px; border-radius:50%; background:var(--beat); animation:beat 1.6s infinite; }
+  @keyframes beat { 0%{box-shadow:0 0 0 0 rgba(226,58,69,.55);} 70%{box-shadow:0 0 0 10px rgba(226,58,69,0);} 100%{box-shadow:0 0 0 0 rgba(226,58,69,0);} }
+  .navlinks { display:flex; align-items:center; gap:6px; }
+  .navlinks a { color:var(--muted); font-size:13px; padding:7px 12px; border-radius:999px; }
+  .navlinks a:hover, .navlinks a.active { color:var(--text); background:var(--panel); }
+  .auth { border:1px solid var(--line2); color:var(--text)!important; }
+
+  .app {
+    min-height:calc(100vh - 56px);
+    display:grid;
+    grid-template-columns:282px minmax(0,1fr) 360px;
+  }
+  .threads, .inspector { background:rgba(10,15,22,.94); }
+  .threads { border-right:1px solid var(--line); display:flex; flex-direction:column; min-width:0; }
+  .inspector { border-left:1px solid var(--line); display:grid; grid-template-columns:74px minmax(0,1fr); min-width:0; }
+  .thread-head { padding:18px 16px; border-bottom:1px solid var(--line); }
+  .thread-head h1 { font-size:18px; font-weight:720; letter-spacing:-.01em; }
+  .thread-head span { display:block; margin-top:5px; color:var(--muted); font-size:12px; line-height:1.4; }
+  .new-chat {
+    margin:14px; min-height:42px; border:1px solid #159fe4; background:#0b9fe4; color:white;
+    border-radius:9px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700;
+  }
+  .profile {
+    margin:0 14px 12px; border:1px solid var(--line); background:rgba(14,21,31,.82);
+    border-radius:10px; padding:12px; display:grid; gap:7px;
+  }
+  .profile span { color:var(--muted); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+  .profile strong { font-size:14px; }
+  .profile small { color:var(--muted); line-height:1.45; }
+  .thread-list { padding:4px 8px 14px; overflow:auto; display:grid; gap:5px; }
+  .thread {
+    min-height:64px; border:1px solid transparent; border-radius:9px; background:transparent; color:#c6d4e2;
+    text-align:left; padding:11px 12px; display:grid; gap:5px;
+  }
+  .thread.active { background:#111d2a; border-color:var(--line); }
+  .thread strong { font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .thread small { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .thread-foot { margin-top:auto; border-top:1px solid var(--line); min-height:52px; display:flex; align-items:center; gap:9px; padding:0 16px; color:var(--muted); font-size:12px; }
+
+  .chat { min-width:0; display:grid; grid-template-rows:64px minmax(0,1fr) auto; }
+  .chat-head { border-bottom:1px solid var(--line); padding:0 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; background:rgba(7,10,15,.62); }
+  .eyebrow { color:var(--muted); font-size:9px; letter-spacing:.13em; text-transform:uppercase; }
+  .chat-head h2 { margin-top:2px; font-size:17px; font-weight:720; }
+  .runtime-pill { border:1px solid rgba(217,162,58,.45); color:var(--amber); border-radius:999px; padding:7px 12px; font-size:12px; }
+  .messages { padding:36px max(24px,7vw); overflow:auto; }
+  .welcome { max-width:760px; margin:7vh auto 0; text-align:center; display:grid; justify-items:center; gap:14px; }
+  .orb { position:relative; width:96px; aspect-ratio:1; border:1px solid rgba(36,183,244,.35); border-radius:24px; display:grid; place-items:center; background:radial-gradient(circle, rgba(36,183,244,.13), transparent 62%); box-shadow:0 0 48px rgba(36,183,244,.18); overflow:hidden; }
+  .orb span, .orb i, .orb b { position:absolute; display:block; border-radius:50%; }
+  .orb span { width:56px; aspect-ratio:1; background:radial-gradient(circle at 35% 30%, #f4ffff, #29c6ff 35%, #8054ff 69%, transparent 71%); box-shadow:0 0 32px rgba(36,183,244,.78); }
+  .orb i { width:74px; aspect-ratio:1; border:1px solid rgba(63,185,80,.5); }
+  .orb b { width:88px; aspect-ratio:1; border:1px dashed rgba(157,116,255,.45); }
+  .welcome h2 { font-size:clamp(42px,7vw,80px); line-height:.94; letter-spacing:-.02em; }
+  .welcome p { color:#b4c5d5; line-height:1.6; max-width:620px; }
+  .honest-empty { margin-top:12px; border:1px dashed var(--line2); border-radius:14px; padding:16px; color:var(--muted); line-height:1.55; text-align:left; background:rgba(14,21,31,.48); }
+  .sample-row { max-width:860px; margin:0 auto 18px; display:grid; grid-template-columns:36px minmax(0,1fr); gap:12px; }
+  .sample-row.user { grid-template-columns:minmax(0,1fr) 36px; }
+  .avatar { width:36px; height:36px; border:1px solid var(--line2); border-radius:50%; display:grid; place-items:center; color:var(--cyan); background:#111b27; font-weight:800; }
+  .sample-row.user .avatar { grid-column:2; grid-row:1; background:#173a4f; }
+  .bubble { border:1px solid var(--line); background:rgba(14,21,31,.78); border-radius:15px; padding:14px 16px; line-height:1.55; }
+  .sample-row.user .bubble { grid-column:1; grid-row:1; background:#102236; border-color:#264b67; }
+  .bubble span { display:block; color:var(--muted); font-size:10px; letter-spacing:.09em; text-transform:uppercase; margin-bottom:7px; }
+  .bubble p { white-space:pre-wrap; }
+  .composer { width:min(880px, calc(100% - 44px)); margin:0 auto; padding:0 0 24px; display:grid; grid-template-columns:minmax(0,1fr) 54px; gap:10px; }
+  .composer textarea { min-height:58px; max-height:150px; resize:vertical; border:1px solid var(--line2); background:rgba(14,21,31,.9); color:var(--text); border-radius:16px; padding:16px; outline:0; }
+  .composer button { height:58px; border:1px solid var(--line2); background:#142233; color:var(--muted); border-radius:16px; }
+  .composer-note { grid-column:1/-1; color:var(--muted); font-size:12px; line-height:1.45; }
+
+  .tabs { border-right:1px solid var(--line); padding:10px 8px; display:grid; align-content:start; gap:7px; }
+  .tabs button { min-height:58px; border:1px solid transparent; background:transparent; color:#aebdcc; border-radius:9px; display:grid; place-items:center; gap:4px; cursor:pointer; font-size:10px; }
+  .tabs button.active { color:var(--cyan); background:#111d2a; border-color:var(--line); }
+  .panel { padding:22px 16px 32px; overflow:auto; }
+  .panel h2 { font-size:16px; margin-bottom:16px; }
+  .card { border:1px solid var(--line); background:rgba(14,21,31,.78); border-radius:12px; padding:14px; margin-bottom:12px; display:grid; gap:8px; }
+  .card span { color:var(--muted); font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
+  .card strong { font-size:13px; line-height:1.45; }
+  .card p, .card li { color:#aebdcc; font-size:12px; line-height:1.55; }
+  .card ul { padding-left:18px; display:grid; gap:5px; }
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat { border:1px solid var(--line); border-radius:12px; padding:12px; background:rgba(14,21,31,.72); }
+  .stat span { display:block; color:var(--muted); font-size:9px; text-transform:uppercase; letter-spacing:.08em; }
+  .stat strong { display:block; color:var(--cyan); font-size:20px; font-family:Consolas, monospace; margin-top:4px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; background:var(--muted); }
+  .dot.ok { background:var(--ok); box-shadow:0 0 8px rgba(63,185,80,.45); }
+  .dot.wait { background:var(--amber); }
+  code { color:#cfe8ff; font-family:Consolas, monospace; font-size:.95em; }
+
+  @media (max-width:1120px) {
+    .app { grid-template-columns:240px minmax(0,1fr); }
+    .inspector { grid-column:1/-1; min-height:390px; border-left:0; border-top:1px solid var(--line); }
+  }
+  @media (max-width:760px) {
+    .app { display:block; }
+    .threads { min-height:260px; }
+    .chat { min-height:78vh; }
+    .messages { padding:24px 16px; }
+    .composer { width:calc(100% - 24px); }
+    .inspector { grid-template-columns:64px minmax(0,1fr); }
+    .tabs button span { display:none; }
+    .navlinks a:not(.auth) { display:none; }
+  }
+</style>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <div class="navlinks">
+      <a href="/engine">Engine</a>
+      <a href="/social">Social</a>
+      <a href="/pam" class="active">PAM</a>
+      <a class="auth" id="authlink" href="/admin">Sign in</a>
+    </div>
+  </nav>
+
+  <div class="app">
+    <aside class="threads">
+      <div class="thread-head">
+        <h1>PAM</h1>
+        <span>Personal AI Model. Product face first; simulation, memory, and crew work behind it.</span>
+      </div>
+      <button class="new-chat" type="button" disabled>+ New chat</button>
+      <div class="profile">
+        <span>Account</span>
+        <strong id="accountName">Visitor</strong>
+        <small id="accountNote">Sign in through Heartbeat Observatory to attach PAM to a real user partition.</small>
+      </div>
+      <div class="thread-list">
+        <button class="thread active" type="button">
+          <strong>PAM runtime bridge</strong>
+          <small>Public chat waits for hosted runtime</small>
+        </button>
+        <button class="thread" type="button">
+          <strong>Application map</strong>
+          <small>Blender, Unreal, Unity, Obsidian, Slack, Ollama</small>
+        </button>
+        <button class="thread" type="button">
+          <strong>Simulation substrate</strong>
+          <small>Memory and compute surfaces behind the face</small>
+        </button>
+      </div>
+      <div class="thread-foot"><span class="dot wait"></span><span>Hosted PAM bridge pending</span></div>
+    </aside>
+
+    <main class="chat">
+      <header class="chat-head">
+        <div>
+          <div class="eyebrow">Personal AI Model</div>
+          <h2>PAM</h2>
+        </div>
+        <div class="runtime-pill">runtime bridge not connected yet</div>
+      </header>
+
+      <section class="messages">
+        <div class="sample-row user">
+          <div class="avatar">J</div>
+          <div class="bubble"><span>Jaron</span><p>I want PAM to be a real AI app, not a localhost demo.</p></div>
+        </div>
+        <div class="sample-row">
+          <div class="avatar">P</div>
+          <div class="bubble">
+            <span>PAM</span>
+            <p>Observed. This page is the public product surface. The chat runtime is intentionally not faked here; the next build is the hosted PAM bridge that connects this account-aware interface to the local/simulation-backed PAM service.</p>
+          </div>
+        </div>
+        <div class="welcome">
+          <div class="orb" aria-hidden="true"><span></span><i></i><b></b></div>
+          <h2>PAM</h2>
+          <p>An AI face for the Heartbeat Observatory: chat in front, simulation behind, memory partitioned by user, and real application surfaces mapped as placement.</p>
+          <div class="honest-empty">
+            <strong>Honesty boundary:</strong> this is a real website page at <code>/pam</code>. It is not yet the live hosted chat backend. The current local PAM runtime exists on Jaron's machine; the public bridge that makes it available here still needs to be built.
+          </div>
+        </div>
+      </section>
+
+      <form class="composer">
+        <textarea disabled placeholder="PAM public chat is waiting for the hosted runtime bridge..."></textarea>
+        <button type="button" disabled>↗</button>
+        <div class="composer-note">No fake replies are generated on this public page. When the bridge is live, this composer will send to PAM through the authenticated account partition.</div>
+      </form>
+    </main>
+
+    <aside class="inspector">
+      <nav class="tabs" aria-label="PAM tabs">
+        <button class="active" data-tab="state" type="button">◌<span>State</span></button>
+        <button data-tab="map" type="button">▣<span>Map</span></button>
+        <button data-tab="memory" type="button">◎<span>Memory</span></button>
+        <button data-tab="install" type="button">⇩<span>Install</span></button>
+      </nav>
+      <div class="panel" id="panel"></div>
+    </aside>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  const panel = document.getElementById("panel");
+  const authlink = document.getElementById("authlink");
+  const accountName = document.getElementById("accountName");
+  const accountNote = document.getElementById("accountNote");
+
+  const tabs = {
+    state: `
+      <h2>Current State</h2>
+      <div class="card"><span>Observed</span><strong>PAM has a local working runtime and this public Heartbeat page is now the website surface.</strong><p>The hosted bridge is not connected yet. The page leaves that gap visible instead of pretending.</p></div>
+      <div class="card"><span>Top focus pair</span><strong>The Facing Field + The Steerable Reach</strong><p>The memory/training architecture and the purpose/reach are read together.</p></div>
+      <div class="card"><span>Next executable build</span><strong>Hosted PAM bridge + reachable application graph</strong><p>Connect this authenticated page to the simulation-backed PAM service, then expose the application map as navigable placement.</p></div>
+    `,
+    map: `
+      <h2>Application Map v0</h2>
+      <div class="stat-grid"><div class="stat"><span>Apps observed</span><strong>10</strong></div><div class="stat"><span>Map state</span><strong>v0</strong></div></div>
+      <div class="card"><span>Simulation surfaces</span><ul><li>Blender 5.1</li><li>Unreal Engine 5.6 / 5.8</li><li>Unity 6000.4</li><li>Obsidian, Slack, Ollama, Docker, VS Code, Chrome, Edge</li></ul></div>
+      <div class="card"><span>Next graph</span><p>Convert inventory into reachable-from and similar-to coordinates so PAM can reason about what surface to use for each job.</p></div>
+    `,
+    memory: `
+      <h2>Memory Architecture</h2>
+      <div class="card"><span>Places</span><p>Memory is a set of places, not one database: user partition, conversation threads, vault, simulation state, pantry, evaluation history, and eventual weights.</p></div>
+      <div class="card"><span>Privacy</span><strong>Per-user memory partition is absolute.</strong><p>A user sees the system and their own spot, never another user's memory.</p></div>
+      <div class="card"><span>Public page status</span><p>This page can see Heartbeat account state. It cannot yet read private PAM vault memory until the hosted bridge exists.</p></div>
+    `,
+    install: `
+      <h2>Install Path</h2>
+      <div class="card"><span>Website</span><strong>/pam on Heartbeat Observatory</strong><p>This is the public product surface.</p></div>
+      <div class="card"><span>App</span><strong>Desktop/mobile package not built yet.</strong><p>The installable client should be the small local part per user. The heavier simulation/memory layer lives behind it.</p></div>
+      <div class="card"><span>Bridge</span><p>Needed: authenticated hosted PAM service that can talk to the local/simulation-backed runtime without exposing private machine paths or secrets.</p></div>
+    `
+  };
+
+  function renderTab(name) { panel.innerHTML = tabs[name] || tabs.state; }
+  document.querySelectorAll("[data-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll("[data-tab]").forEach((b) => b.classList.remove("active"));
+      button.classList.add("active");
+      renderTab(button.dataset.tab);
+    });
+  });
+  renderTab("state");
+
+  async function reflectSession() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      authlink.textContent = "Account";
+      const meta = session.user.user_metadata || {};
+      accountName.textContent = meta.display_name || session.user.email || "Signed-in user";
+      accountNote.textContent = "Signed in. PAM user partition can be attached when the hosted runtime bridge is built.";
+    } catch (error) {
+      accountNote.textContent = "Could not read account state.";
+    }
+  }
+  reflectSession();
+</script>
+<script defer src="/bubble.js"></script>
+</body>
+</html>

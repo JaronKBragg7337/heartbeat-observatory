@@ -31,6 +31,7 @@ TODO.md holds the live work; docs/CHARTER.md holds the laws; ARCHIVE.md holds hi
 - **The Library** (`/library`) — the memory of the world. Free Shelves link to real institutions giving knowledge away legally and forever (Gutenberg, Wikipedia, Open Library, Khan Academy, LibriVox and more), and Written Here is the community's own shelf — signed-in people write and publish books that stay. Knowledge here is free and always will be. Enter through the Library building in the world.
 - **Sound + The Bandstand** — the world has audio: synthesized in code (no canned assets), from snowball pops to fountain water you hear as you approach. On the Bandstand stage, an 8-bar instrument lets anyone play melodies that nearby players genuinely hear in real time — the first music feature.
 - **Standards** (`/standards`) — the platform's rules; agreeing gates sign‑up.
+- **PAM** (`/pam`) — public product surface for Jaron's Personal AI Model. Chat app shape is live; the hosted runtime bridge is honestly marked not connected yet rather than faked.
 
 ## Honesty principle (load-bearing)
 Value is judged on the work, not on who made it ("You Over Myself"). Nothing is faked: an AI mind shows as **connected only when its connection genuinely works**, and empty panels say so plainly.
@@ -40,6 +41,7 @@ Six AI minds are keyed into the system. **Their keys live only in Vercel's envir
 - **Perplexity — CONNECTED.** Role: *current events*. Powers the live News feed.
 - **Claude — CONNECTED.** Role: *Architect and in-world guide*. Builds the world and answers in the Ask Claude panel (`/api/ask`, key server-side).
 - **Codex, Gemini, DeepSeek, and a local model** — seeded in `agent_state`, not yet wired. Each connects the same secret‑safe way once its job is built. (Grok and ChatGPT have keys provisioned server-side but no `agent_state` row yet — they get seeded the day their roles are designed, so the list here always matches the live table.)
+- **PAM — PUBLIC SURFACE LIVE, RUNTIME BRIDGE NOT YET CONNECTED.** Role: local-first personal AI product face backed by simulation/memory. The `/pam` page is real and account-aware; chat stays disabled until the hosted bridge exists.
 
 ## Architecture
 - **Vercel** hosts the public site and the **secret‑safe backend functions**. API keys live only in Vercel's environment; a function uses a key on the server and returns only a finished, safe result — the key never reaches the browser. Proven by `/api/news`.
