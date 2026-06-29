@@ -168,7 +168,7 @@
           <small>Memory and compute surfaces behind the face</small>
         </button>
       </div>
-      <div class="thread-foot"><span class="dot wait"></span><span>Hosted PAM bridge pending</span></div>
+      <div class="thread-foot"><span class="dot ok"></span><span>Bridge path live · temporary tunnel</span></div>
     </aside>
 
     <main class="chat">
@@ -177,7 +177,7 @@
           <div class="eyebrow">Personal AI Model</div>
           <h2>PAM</h2>
         </div>
-        <div class="runtime-pill">runtime bridge not connected yet</div>
+        <div class="runtime-pill">signed-in bridge path live</div>
       </header>
 
       <section class="messages" id="messages">
@@ -189,7 +189,7 @@
           <div class="avatar">P</div>
           <div class="bubble">
             <span>PAM</span>
-            <p>Observed. This page is the public product surface. The chat runtime is intentionally not faked here; the next build is the hosted PAM bridge that connects this account-aware interface to the local/simulation-backed PAM service.</p>
+            <p>Observed. This page is the public product surface. The chat runtime is not faked: signed-in messages go through the server-side PAM bridge path, currently backed by Jaron's local machine through a temporary tunnel.</p>
           </div>
         </div>
         <div class="welcome">
@@ -197,7 +197,7 @@
           <h2>PAM</h2>
           <p>An AI face for the Heartbeat Observatory: chat in front, simulation behind, memory partitioned by user, and real application surfaces mapped as placement.</p>
           <div class="honest-empty">
-            <strong>Honesty boundary:</strong> this is a real website page at <code>/pam</code>. It is not yet the live hosted chat backend. The current local PAM runtime exists on Jaron's machine; the public bridge that makes it available here still needs to be built.
+            <strong>Honesty boundary:</strong> this is a real website page at <code>/pam</code>. The bridge path exists and reaches the local PAM runtime while Jaron's computer, PAM server, proxy, and tunnel are running. The durable named bridge/app package is still the next build.
           </div>
         </div>
       </section>
@@ -205,7 +205,7 @@
       <form class="composer" id="composer">
         <textarea id="messageInput" placeholder="Sign in, then message PAM through the hosted bridge..."></textarea>
         <button type="submit" id="sendButton">↗</button>
-        <div class="composer-note" id="composerNote">No fake replies are generated on this public page. When the bridge is live, this composer sends to PAM through the authenticated account partition.</div>
+        <div class="composer-note" id="composerNote">No fake replies are generated on this public page. Signed-in messages go through the authenticated PAM bridge; visitors must sign in first.</div>
       </form>
     </main>
 
@@ -241,9 +241,9 @@
   const tabs = {
     state: `
       <h2>Current State</h2>
-      <div class="card"><span>Observed</span><strong>PAM has a local working runtime and this public Heartbeat page is now the website surface.</strong><p>The hosted bridge is not connected yet. The page leaves that gap visible instead of pretending.</p></div>
+      <div class="card"><span>Observed</span><strong>PAM has a local working runtime and this public Heartbeat page is now the website surface.</strong><p>The bridge contract is live and reaches the local runtime through a temporary tunnel. Durable named hosting is still next.</p></div>
       <div class="card"><span>Top focus pair</span><strong>The Facing Field + The Steerable Reach</strong><p>The memory/training architecture and the purpose/reach are read together.</p></div>
-      <div class="card"><span>Next executable build</span><strong>Hosted PAM bridge + reachable application graph</strong><p>Connect this authenticated page to the simulation-backed PAM service, then expose the application map as navigable placement.</p></div>
+      <div class="card"><span>Next executable build</span><strong>Durable PAM bridge + reachable application graph</strong><p>Replace the temporary tunnel with a stable bridge, then expose the application map as navigable placement.</p></div>
     `,
     map: `
       <h2>Application Map v0</h2>
@@ -255,13 +255,13 @@
       <h2>Memory Architecture</h2>
       <div class="card"><span>Places</span><p>Memory is a set of places, not one database: user partition, conversation threads, vault, simulation state, pantry, evaluation history, and eventual weights.</p></div>
       <div class="card"><span>Privacy</span><strong>Per-user memory partition is absolute.</strong><p>A user sees the system and their own spot, never another user's memory.</p></div>
-      <div class="card"><span>Public page status</span><p>This page can see Heartbeat account state. It cannot yet read private PAM vault memory until the hosted bridge exists.</p></div>
+      <div class="card"><span>Public page status</span><p>This page can see Heartbeat account state and call the PAM bridge. Private PAM vault memory remains behind the local runtime and per-user partition.</p></div>
     `,
     install: `
       <h2>Install Path</h2>
       <div class="card"><span>Website</span><strong>/pam on Heartbeat Observatory</strong><p>This is the public product surface.</p></div>
       <div class="card"><span>App</span><strong>Desktop/mobile package not built yet.</strong><p>The installable client should be the small local part per user. The heavier simulation/memory layer lives behind it.</p></div>
-      <div class="card"><span>Bridge</span><p>Needed: authenticated hosted PAM service that can talk to the local/simulation-backed runtime without exposing private machine paths or secrets.</p></div>
+      <div class="card"><span>Bridge</span><p>Current: authenticated Vercel function to a temporary Cloudflare tunnel. Needed: durable named bridge or packaged app service without exposing private machine paths or secrets.</p></div>
     `
   };
 
@@ -333,7 +333,7 @@
         appendMessage("assistant", data.reply);
         composerNote.textContent = "Reply returned from the configured PAM bridge.";
       } else if (data.note === "bridge_not_configured") {
-        appendMessage("assistant", "Bridge not configured yet. The public page reached the server-side PAM bridge endpoint, but Vercel does not yet have PAM_BRIDGE_URL and PAM_BRIDGE_TOKEN.");
+        appendMessage("assistant", "Bridge not configured. The public page reached the server-side PAM bridge endpoint, but Vercel does not currently have a usable PAM_BRIDGE_URL and PAM_BRIDGE_TOKEN.");
         composerNote.textContent = "Observed: /api/pam-chat is live; hosted runtime bridge env is not configured yet.";
       } else {
         appendMessage("assistant", "No PAM reply returned. Server note: " + (data.note || "unknown"));

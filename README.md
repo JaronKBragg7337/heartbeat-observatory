@@ -41,14 +41,14 @@ Six AI minds are keyed into the system. **Their keys live only in Vercel's envir
 - **Perplexity — CONNECTED.** Role: *current events*. Powers the live News feed.
 - **Claude — CONNECTED.** Role: *Architect and in-world guide*. Builds the world and answers in the Ask Claude panel (`/api/ask`, key server-side).
 - **Codex, Gemini, DeepSeek, and a local model** — seeded in `agent_state`, not yet wired. Each connects the same secret‑safe way once its job is built. (Grok and ChatGPT have keys provisioned server-side but no `agent_state` row yet — they get seeded the day their roles are designed, so the list here always matches the live table.)
-- **PAM — PUBLIC SURFACE LIVE, RUNTIME BRIDGE NOT YET CONNECTED.** Role: local-first personal AI product face backed by simulation/memory. The `/pam` page is real and account-aware; chat stays disabled until the hosted bridge exists.
+- **PAM — PUBLIC SURFACE LIVE, BRIDGE PATH LIVE THROUGH TEMPORARY TUNNEL.** Role: local-first personal AI product face backed by simulation/memory. The `/pam` page is real and account-aware; signed-in chat calls `/api/pam-chat`, which forwards to the local PAM runtime while Jaron's machine/proxy/tunnel are running.
 
 ## Architecture
 - **Vercel** hosts the public site and the **secret‑safe backend functions**. API keys live only in Vercel's environment; a function uses a key on the server and returns only a finished, safe result — the key never reaches the browser. Proven by `/api/news`.
 - **Supabase** is the single source of truth **and the live, real‑time layer**: accounts, posts, the minds, and the people moving around in the world all run through it.
 - **One identity across everything:** signing in once makes you a person here, a poster on Social, and a character in the world. Display names sync automatically.
 - **No always‑on personal machine is required.** The world is part of the site and its live presence runs through Supabase, so everything stays up on its own — no localhost, no tunnel, no laptop kept awake.
-- **PAM bridge:** `/api/pam-chat` is the server-side bridge contract. It verifies the Heartbeat Supabase session, then forwards to `PAM_BRIDGE_URL` using `PAM_BRIDGE_TOKEN` once those Vercel env vars exist. Until then it returns `bridge_not_configured` and the browser shows that honestly.
+- **PAM bridge:** `/api/pam-chat` is the server-side bridge contract. It verifies the Heartbeat Supabase session, then forwards to `PAM_BRIDGE_URL` using `PAM_BRIDGE_TOKEN`. Current bridge path uses a temporary Cloudflare tunnel to a narrow local proxy; next step is a durable named bridge/app service.
 
 ## The walkable world (the Engine's sim hub)
 The Engine is a walkable 3‑D **hub** anyone can enter from a phone or a computer. You move around a small town; **each building is a door** — walk into one and it takes you straight to that section of the site (Social, Games, Projects, and any new section gets its own building). It is built as a **lightweight web world (Three.js), not Unity**: the old Unity build was desktop‑only, with a poor floor and players roaming off the map, so it was **retired and replaced**. Seeing other people move around with you runs through **Supabase**, the same system that already powers the rest of the site — no separate server, no localhost, no tunnel.
