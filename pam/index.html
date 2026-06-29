@@ -180,7 +180,7 @@
         <div class="runtime-pill">runtime bridge not connected yet</div>
       </header>
 
-      <section class="messages">
+      <section class="messages" id="messages">
         <div class="sample-row user">
           <div class="avatar">J</div>
           <div class="bubble"><span>Jaron</span><p>I want PAM to be a real AI app, not a localhost demo.</p></div>
@@ -202,10 +202,10 @@
         </div>
       </section>
 
-      <form class="composer">
-        <textarea disabled placeholder="PAM public chat is waiting for the hosted runtime bridge..."></textarea>
-        <button type="button" disabled>↗</button>
-        <div class="composer-note">No fake replies are generated on this public page. When the bridge is live, this composer will send to PAM through the authenticated account partition.</div>
+      <form class="composer" id="composer">
+        <textarea id="messageInput" placeholder="Sign in, then message PAM through the hosted bridge..."></textarea>
+        <button type="submit" id="sendButton">↗</button>
+        <div class="composer-note" id="composerNote">No fake replies are generated on this public page. When the bridge is live, this composer sends to PAM through the authenticated account partition.</div>
       </form>
     </main>
 
@@ -230,6 +230,13 @@
   const authlink = document.getElementById("authlink");
   const accountName = document.getElementById("accountName");
   const accountNote = document.getElementById("accountNote");
+  const composer = document.getElementById("composer");
+  const messageInput = document.getElementById("messageInput");
+  const composerNote = document.getElementById("composerNote");
+  const sendButton = document.getElementById("sendButton");
+  const messages = document.getElementById("messages");
+  let session = null;
+  let threadId = "";
 
   const tabs = {
     state: `
@@ -270,17 +277,75 @@
 
   async function reflectSession() {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session: nextSession } } = await supabase.auth.getSession();
+      session = nextSession;
       if (!session) return;
       authlink.textContent = "Account";
       const meta = session.user.user_metadata || {};
       accountName.textContent = meta.display_name || session.user.email || "Signed-in user";
-      accountNote.textContent = "Signed in. PAM user partition can be attached when the hosted runtime bridge is built.";
+      accountNote.textContent = "Signed in. Messages now go through the server-side PAM bridge contract.";
+      messageInput.placeholder = "Message PAM...";
     } catch (error) {
       accountNote.textContent = "Could not read account state.";
     }
   }
   reflectSession();
+
+  function esc(value) {
+    const div = document.createElement("div");
+    div.textContent = value == null ? "" : String(value);
+    return div.innerHTML;
+  }
+
+  function appendMessage(role, text) {
+    const row = document.createElement("div");
+    row.className = "sample-row" + (role === "user" ? " user" : "");
+    row.innerHTML = '<div class="avatar">' + (role === "user" ? "J" : "P") + '</div>' +
+      '<div class="bubble"><span>' + (role === "user" ? "You" : "PAM") + '</span><p>' + esc(text) + '</p></div>';
+    messages.insertBefore(row, messages.querySelector(".welcome"));
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  composer.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const text = messageInput.value.trim();
+    if (!text) return;
+    if (!session) {
+      composerNote.innerHTML = 'Sign in first so PAM can attach the conversation to a real account partition. <a href="/admin">Sign in</a>';
+      return;
+    }
+    appendMessage("user", text);
+    messageInput.value = "";
+    sendButton.disabled = true;
+    composerNote.textContent = "Sending through /api/pam-chat...";
+    try {
+      const response = await fetch("/api/pam-chat", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer " + session.access_token
+        },
+        body: JSON.stringify({ message: text, thread_id: threadId })
+      });
+      const data = await response.json();
+      if (data.thread_id) threadId = data.thread_id;
+      if (data.reply) {
+        appendMessage("assistant", data.reply);
+        composerNote.textContent = "Reply returned from the configured PAM bridge.";
+      } else if (data.note === "bridge_not_configured") {
+        appendMessage("assistant", "Bridge not configured yet. The public page reached the server-side PAM bridge endpoint, but Vercel does not yet have PAM_BRIDGE_URL and PAM_BRIDGE_TOKEN.");
+        composerNote.textContent = "Observed: /api/pam-chat is live; hosted runtime bridge env is not configured yet.";
+      } else {
+        appendMessage("assistant", "No PAM reply returned. Server note: " + (data.note || "unknown"));
+        composerNote.textContent = "Server note: " + (data.note || "unknown");
+      }
+    } catch (error) {
+      appendMessage("assistant", "Could not reach the PAM bridge endpoint.");
+      composerNote.textContent = "Bridge request failed in the browser.";
+    } finally {
+      sendButton.disabled = false;
+    }
+  });
 </script>
 <script defer src="/bubble.js"></script>
 </body>
