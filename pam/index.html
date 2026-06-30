@@ -148,27 +148,19 @@
         <h1>PAM</h1>
         <span>Personal AI Model. Product face first; simulation, memory, and crew work behind it.</span>
       </div>
-      <button class="new-chat" type="button" disabled>+ New chat</button>
+      <button class="new-chat" id="newChat" type="button" disabled>+ New chat</button>
       <div class="profile">
         <span>Account</span>
         <strong id="accountName">Visitor</strong>
         <small id="accountNote">Sign in through Heartbeat Observatory to attach PAM to a real user partition.</small>
       </div>
-      <div class="thread-list">
+      <div class="thread-list" id="threadList">
         <button class="thread active" type="button">
-          <strong>PAM runtime bridge</strong>
-          <small>Public chat waits for hosted runtime</small>
-        </button>
-        <button class="thread" type="button">
-          <strong>Application map</strong>
-          <small>Blender, Unreal, Unity, Obsidian, Slack, Ollama</small>
-        </button>
-        <button class="thread" type="button">
-          <strong>Simulation substrate</strong>
-          <small>Memory and compute surfaces behind the face</small>
+          <strong>Sign in to load threads</strong>
+          <small>PAM conversations persist per account</small>
         </button>
       </div>
-      <div class="thread-foot"><span class="dot ok"></span><span>Bridge path live · temporary tunnel</span></div>
+      <div class="thread-foot" id="threadFoot"><span class="dot wait"></span><span>Account partition required</span></div>
     </aside>
 
     <main class="chat">
@@ -181,23 +173,12 @@
       </header>
 
       <section class="messages" id="messages">
-        <div class="sample-row user">
-          <div class="avatar">J</div>
-          <div class="bubble"><span>Jaron</span><p>I want PAM to be a real AI app, not a localhost demo.</p></div>
-        </div>
-        <div class="sample-row">
-          <div class="avatar">P</div>
-          <div class="bubble">
-            <span>PAM</span>
-            <p>Observed. This page is the public product surface. The chat runtime is not faked: signed-in messages go through the server-side PAM bridge path, currently backed by Jaron's local machine through a temporary tunnel.</p>
-          </div>
-        </div>
-        <div class="welcome">
+        <div class="welcome" id="welcomeCard">
           <div class="orb" aria-hidden="true"><span></span><i></i><b></b></div>
           <h2>PAM</h2>
           <p>An AI face for the Heartbeat Observatory: chat in front, simulation behind, memory partitioned by user, and real application surfaces mapped as placement.</p>
           <div class="honest-empty">
-            <strong>Honesty boundary:</strong> this is a real website page at <code>/pam</code>. The bridge path exists and reaches the local PAM runtime while Jaron's computer, PAM server, proxy, and tunnel are running. The durable named bridge/app package is still the next build.
+            <strong>Honesty boundary:</strong> this is a real website page at <code>/pam</code>. Signed-in conversations now persist in PAM's Supabase control plane. The local runtime bridge may still be offline, but your thread will not disappear.
           </div>
         </div>
       </section>
@@ -230,20 +211,26 @@
   const authlink = document.getElementById("authlink");
   const accountName = document.getElementById("accountName");
   const accountNote = document.getElementById("accountNote");
+  const newChat = document.getElementById("newChat");
+  const threadList = document.getElementById("threadList");
+  const threadFoot = document.getElementById("threadFoot");
   const composer = document.getElementById("composer");
   const messageInput = document.getElementById("messageInput");
   const composerNote = document.getElementById("composerNote");
   const sendButton = document.getElementById("sendButton");
   const messages = document.getElementById("messages");
+  const welcomeCard = document.getElementById("welcomeCard");
   let session = null;
-  let threadId = "";
+  let pamInstanceId = "";
+  let activeThreadId = "";
+  let threads = [];
 
   const tabs = {
     state: `
       <h2>Current State</h2>
-      <div class="card"><span>Observed</span><strong>PAM has a local working runtime and this public Heartbeat page is now the website surface.</strong><p>The bridge contract is live and reaches the local runtime through a temporary tunnel. Durable named hosting is still next.</p></div>
+      <div class="card"><span>Observed</span><strong>PAM has a live account-backed chat surface and a paired Windows desktop device.</strong><p>Threads and messages persist in Supabase. The local runtime bridge is still a separate availability layer.</p></div>
       <div class="card"><span>Top focus pair</span><strong>The Facing Field + The Steerable Reach</strong><p>The memory/training architecture and the purpose/reach are read together.</p></div>
-      <div class="card"><span>Next executable build</span><strong>Durable PAM bridge + reachable application graph</strong><p>Replace the temporary tunnel with a stable bridge, then expose the application map as navigable placement.</p></div>
+      <div class="card"><span>Next executable build</span><strong>Desktop floating presence + action ledger</strong><p>The control plane now has a place to receive user messages and device heartbeats. Next, make the local body act on queued work with receipts.</p></div>
     `,
     map: `
       <h2>Application Map v0</h2>
@@ -255,13 +242,13 @@
       <h2>Memory Architecture</h2>
       <div class="card"><span>Places</span><p>Memory is a set of places, not one database: user partition, conversation threads, vault, simulation state, pantry, evaluation history, and eventual weights.</p></div>
       <div class="card"><span>Privacy</span><strong>Per-user memory partition is absolute.</strong><p>A user sees the system and their own spot, never another user's memory.</p></div>
-      <div class="card"><span>Public page status</span><p>This page can see Heartbeat account state and call the PAM bridge. Private PAM vault memory remains behind the local runtime and per-user partition.</p></div>
+      <div class="card"><span>Public page status</span><p>This page loads your PAM threads from the control plane and saves messages before attempting the runtime bridge. Private vault memory remains behind the local runtime and per-user partition.</p></div>
     `,
     install: `
       <h2>Install Path</h2>
       <div class="card"><span>Website</span><strong>/pam on Heartbeat Observatory</strong><p>This is the public product surface.</p></div>
       <div class="card"><span>App</span><strong>Desktop/mobile package not built yet.</strong><p>The installable client should be the small local part per user. The heavier simulation/memory layer lives behind it.</p></div>
-      <div class="card"><span>Bridge</span><p>Current: authenticated Vercel function to a temporary Cloudflare tunnel. Needed: durable named bridge or packaged app service without exposing private machine paths or secrets.</p></div>
+      <div class="card"><span>Bridge</span><p>Current: authenticated Vercel function persists account threads, then attempts the configured runtime bridge. Needed next: packaged desktop service and action ledger.</p></div>
     `
   };
 
@@ -275,36 +262,191 @@
   });
   renderTab("state");
 
-  async function reflectSession() {
-    try {
-      const { data: { session: nextSession } } = await supabase.auth.getSession();
-      session = nextSession;
-      if (!session) return;
-      authlink.textContent = "Account";
-      const meta = session.user.user_metadata || {};
-      accountName.textContent = meta.display_name || session.user.email || "Signed-in user";
-      accountNote.textContent = "Signed in. Messages now go through the server-side PAM bridge contract.";
-      messageInput.placeholder = "Message PAM...";
-    } catch (error) {
-      accountNote.textContent = "Could not read account state.";
-    }
-  }
-  reflectSession();
-
   function esc(value) {
     const div = document.createElement("div");
     div.textContent = value == null ? "" : String(value);
     return div.innerHTML;
   }
 
-  function appendMessage(role, text) {
+  function clearMessageRows() {
+    messages.querySelectorAll(".sample-row").forEach((row) => row.remove());
+  }
+
+  function appendMessage(role, text, label) {
     const row = document.createElement("div");
-    row.className = "sample-row" + (role === "user" ? " user" : "");
-    row.innerHTML = '<div class="avatar">' + (role === "user" ? "J" : "P") + '</div>' +
-      '<div class="bubble"><span>' + (role === "user" ? "You" : "PAM") + '</span><p>' + esc(text) + '</p></div>';
-    messages.insertBefore(row, messages.querySelector(".welcome"));
+    const isUser = role === "user";
+    row.className = "sample-row" + (isUser ? " user" : "");
+    row.innerHTML = '<div class="avatar">' + (isUser ? "J" : "P") + '</div>' +
+      '<div class="bubble"><span>' + esc(label || (isUser ? "You" : "PAM")) + '</span><p>' + esc(text) + '</p></div>';
+    messages.insertBefore(row, welcomeCard);
     messages.scrollTop = messages.scrollHeight;
   }
+
+  function showWelcome(copy) {
+    clearMessageRows();
+    welcomeCard.style.display = "grid";
+    const note = welcomeCard.querySelector(".honest-empty");
+    if (copy) note.innerHTML = copy;
+  }
+
+  function renderThreads() {
+    threadList.innerHTML = "";
+    if (!session) {
+      threadList.innerHTML = '<button class="thread active" type="button"><strong>Sign in to load threads</strong><small>PAM conversations persist per account</small></button>';
+      threadFoot.innerHTML = '<span class="dot wait"></span><span>Account partition required</span>';
+      return;
+    }
+    if (!threads.length) {
+      threadList.innerHTML = '<button class="thread active" type="button"><strong>No threads yet</strong><small>Start a new PAM conversation</small></button>';
+      threadFoot.innerHTML = '<span class="dot ok"></span><span>Signed in · no threads yet</span>';
+      return;
+    }
+    threads.forEach((thread) => {
+      const button = document.createElement("button");
+      button.className = "thread" + (thread.id === activeThreadId ? " active" : "");
+      button.type = "button";
+      button.innerHTML = '<strong>' + esc(thread.title || "New chat") + '</strong><small>' +
+        esc(thread.updated_at ? new Date(thread.updated_at).toLocaleString() : "Saved thread") + '</small>';
+      button.addEventListener("click", () => {
+        activeThreadId = thread.id;
+        renderThreads();
+        loadMessages(thread.id);
+      });
+      threadList.appendChild(button);
+    });
+    threadFoot.innerHTML = '<span class="dot ok"></span><span>' + threads.length + ' saved thread' + (threads.length === 1 ? "" : "s") + '</span>';
+  }
+
+  async function ensurePamInstance() {
+    if (!session) return "";
+    if (pamInstanceId) return pamInstanceId;
+    const { data: existing, error: readError } = await supabase
+      .from("pam_instances")
+      .select("id")
+      .eq("owner_user_id", session.user.id)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    if (readError) throw readError;
+    if (existing && existing[0]) {
+      pamInstanceId = existing[0].id;
+      return pamInstanceId;
+    }
+    const { data: inserted, error: insertError } = await supabase
+      .from("pam_instances")
+      .insert({ owner_user_id: session.user.id, display_name: "PAM", status: "active" })
+      .select("id")
+      .single();
+    if (insertError) throw insertError;
+    pamInstanceId = inserted.id;
+    return pamInstanceId;
+  }
+
+  async function loadThreads(preferredThreadId) {
+    if (!session) return;
+    await ensurePamInstance();
+    const { data, error } = await supabase
+      .from("pam_threads")
+      .select("id,title,updated_at")
+      .eq("owner_user_id", session.user.id)
+      .order("updated_at", { ascending: false })
+      .limit(40);
+    if (error) throw error;
+    threads = data || [];
+    if (preferredThreadId && threads.some((thread) => thread.id === preferredThreadId)) {
+      activeThreadId = preferredThreadId;
+    } else if (!activeThreadId && threads[0]) {
+      activeThreadId = threads[0].id;
+    } else if (activeThreadId && !threads.some((thread) => thread.id === activeThreadId)) {
+      activeThreadId = threads[0] ? threads[0].id : "";
+    }
+    renderThreads();
+    if (activeThreadId) await loadMessages(activeThreadId);
+    else showWelcome("<strong>Ready:</strong> start a new PAM chat. Your messages will be saved to your account partition before any runtime bridge is attempted.");
+  }
+
+  async function loadMessages(threadId) {
+    if (!session || !threadId) return;
+    const { data, error } = await supabase
+      .from("pam_messages")
+      .select("id,sender_type,body,provenance_tag,created_at")
+      .eq("owner_user_id", session.user.id)
+      .eq("thread_id", threadId)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    if (error) throw error;
+    clearMessageRows();
+    if (!data || !data.length) {
+      welcomeCard.style.display = "grid";
+      const note = welcomeCard.querySelector(".honest-empty");
+      note.innerHTML = "<strong>New thread:</strong> send a message. PAM will save it here first, then attempt the runtime bridge.";
+      return;
+    }
+    welcomeCard.style.display = "none";
+    data.forEach((message) => {
+      if (message.sender_type === "user") appendMessage("user", message.body, "You");
+      else if (message.sender_type === "system") appendMessage("assistant", message.body, "System");
+      else appendMessage("assistant", message.body, "PAM");
+    });
+  }
+
+  async function createNewThread() {
+    if (!session) return;
+    sendButton.disabled = true;
+    newChat.disabled = true;
+    try {
+      const instanceId = await ensurePamInstance();
+      const { data, error } = await supabase
+        .from("pam_threads")
+        .insert({
+          pam_instance_id: instanceId,
+          owner_user_id: session.user.id,
+          title: "New chat",
+          status: "active"
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      activeThreadId = data.id;
+      await loadThreads(activeThreadId);
+      messageInput.focus();
+    } catch (error) {
+      composerNote.textContent = "Could not create a PAM thread.";
+    } finally {
+      sendButton.disabled = false;
+      newChat.disabled = false;
+    }
+  }
+
+  async function reflectSession() {
+    try {
+      const { data: { session: nextSession } } = await supabase.auth.getSession();
+      session = nextSession;
+      if (!session) {
+        newChat.disabled = true;
+        sendButton.disabled = false;
+        renderThreads();
+        showWelcome("<strong>Honesty boundary:</strong> sign in through Heartbeat Observatory to attach PAM to a real user partition. Visitors can see the surface, but private conversation memory waits for an account.");
+        return;
+      }
+      authlink.textContent = "Account";
+      const meta = session.user.user_metadata || {};
+      accountName.textContent = meta.display_name || session.user.email || "Signed-in user";
+      accountNote.textContent = "Signed in. PAM threads and messages persist to this account partition.";
+      messageInput.placeholder = "Message PAM...";
+      newChat.disabled = false;
+      await loadThreads();
+    } catch (error) {
+      accountNote.textContent = "Could not read account state.";
+    }
+  }
+  reflectSession();
+  supabase.auth.onAuthStateChange(() => {
+    pamInstanceId = "";
+    activeThreadId = "";
+    threads = [];
+    reflectSession();
+  });
+  newChat.addEventListener("click", createNewThread);
 
   composer.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -317,7 +459,7 @@
     appendMessage("user", text);
     messageInput.value = "";
     sendButton.disabled = true;
-    composerNote.textContent = "Sending through /api/pam-chat...";
+    composerNote.textContent = "Saving to PAM thread, then attempting runtime bridge...";
     try {
       const response = await fetch("/api/pam-chat", {
         method: "POST",
@@ -325,20 +467,14 @@
           "content-type": "application/json",
           authorization: "Bearer " + session.access_token
         },
-        body: JSON.stringify({ message: text, thread_id: threadId })
+        body: JSON.stringify({ message: text, thread_id: activeThreadId })
       });
       const data = await response.json();
-      if (data.thread_id) threadId = data.thread_id;
-      if (data.reply) {
-        appendMessage("assistant", data.reply);
-        composerNote.textContent = "Reply returned from the configured PAM bridge.";
-      } else if (data.note === "bridge_not_configured") {
-        appendMessage("assistant", "Bridge not configured. The public page reached the server-side PAM bridge endpoint, but Vercel does not currently have a usable PAM_BRIDGE_URL and PAM_BRIDGE_TOKEN.");
-        composerNote.textContent = "Observed: /api/pam-chat is live; hosted runtime bridge env is not configured yet.";
-      } else {
-        appendMessage("assistant", "No PAM reply returned. Server note: " + (data.note || "unknown"));
-        composerNote.textContent = "Server note: " + (data.note || "unknown");
-      }
+      if (data.thread_id) activeThreadId = data.thread_id;
+      await loadThreads(activeThreadId);
+      composerNote.textContent = data.persisted
+        ? "Saved to PAM thread. Server note: " + (data.note || "ok")
+        : "Server note: " + (data.note || "unknown");
     } catch (error) {
       appendMessage("assistant", "Could not reach the PAM bridge endpoint.");
       composerNote.textContent = "Bridge request failed in the browser.";
