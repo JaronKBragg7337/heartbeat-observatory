@@ -186,7 +186,6 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         message,
-        thread_id: thread.id,
         heartbeat_user: {
           id: auth.user && auth.user.id,
           email: auth.user && auth.user.email,
