@@ -124,17 +124,6 @@ async function insertMessage(auth, pamInstance, thread, senderType, body, proven
   return inserted && inserted[0];
 }
 
-async function insertSystemReply(auth, pamInstance, thread, text, note) {
-  const message = await insertMessage(auth, pamInstance, thread, "system", text, "Observed");
-  return {
-    reply: text,
-    thread_id: thread.id,
-    note,
-    persisted: true,
-    message_id: message && message.id
-  };
-}
-
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") {
@@ -175,12 +164,16 @@ export default async function handler(req, res) {
     return;
   }
 
-  const bridgeUrl = process.env.PAM_BRIDGE_URL;
-  const bridgeToken = process.env.PAM_BRIDGE_TOKEN;
+  const bridgeUrl = process.env.PAM_RUNTIME_BRIDGE_URL;
+  const bridgeToken = process.env.PAM_RUNTIME_BRIDGE_TOKEN;
   if (!bridgeUrl || !bridgeToken) {
-    const text = "Your message was saved to this PAM thread. The local runtime bridge is not configured right now, so I am holding the conversation state instead of fabricating a reply.";
-    const payload = await insertSystemReply(auth, pamInstance, thread, text, "bridge_not_configured");
-    res.status(200).json({ ...payload, user_message_id: userMessage && userMessage.id });
+    res.status(200).json({
+      reply: "",
+      thread_id: thread.id,
+      note: "runtime_not_connected",
+      persisted: true,
+      user_message_id: userMessage && userMessage.id
+    });
     return;
   }
 
@@ -203,18 +196,27 @@ export default async function handler(req, res) {
     });
 
     if (!upstream.ok) {
-      const text = `Your message was saved to this PAM thread. The local runtime bridge returned ${upstream.status}, so no generated reply was accepted.`;
-      const payload = await insertSystemReply(auth, pamInstance, thread, text, `bridge_${upstream.status}`);
-      res.status(200).json({ ...payload, user_message_id: userMessage && userMessage.id });
+      res.status(200).json({
+        reply: "",
+        thread_id: thread.id,
+        note: "runtime_unavailable",
+        bridge_status: upstream.status,
+        persisted: true,
+        user_message_id: userMessage && userMessage.id
+      });
       return;
     }
 
     const data = await upstream.json();
     const reply = String((data && data.reply) || "").trim();
     if (!reply) {
-      const text = `Your message was saved to this PAM thread. The local runtime bridge returned no reply. Server note: ${String((data && data.note) || "empty_reply")}.`;
-      const payload = await insertSystemReply(auth, pamInstance, thread, text, "empty_reply");
-      res.status(200).json({ ...payload, user_message_id: userMessage && userMessage.id });
+      res.status(200).json({
+        reply: "",
+        thread_id: thread.id,
+        note: "runtime_empty_reply",
+        persisted: true,
+        user_message_id: userMessage && userMessage.id
+      });
       return;
     }
 
@@ -228,8 +230,12 @@ export default async function handler(req, res) {
       pam_message_id: pamMessage && pamMessage.id
     });
   } catch (e) {
-    const text = "Your message was saved to this PAM thread. The local runtime bridge could not be reached from the hosted server.";
-    const payload = await insertSystemReply(auth, pamInstance, thread, text, "bridge_error");
-    res.status(200).json({ ...payload, user_message_id: userMessage && userMessage.id });
+    res.status(200).json({
+      reply: "",
+      thread_id: thread.id,
+      note: "runtime_unreachable",
+      persisted: true,
+      user_message_id: userMessage && userMessage.id
+    });
   }
 }
