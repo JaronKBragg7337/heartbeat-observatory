@@ -147,6 +147,7 @@ window.game = game;
 // Touch controls (phones/tablets): activates only on touch devices and routes
 // through the same Input as the keyboard. See src/ui/touch.js.
 const touchActive = initTouch(input, document.getElementById('ui-root'));
+if (touchActive) ui.hideHelp();
 
 // ---------------------------------------------------------------------------
 // World events → player-facing feedback + faction hooks.

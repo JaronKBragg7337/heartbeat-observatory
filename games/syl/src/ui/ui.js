@@ -33,9 +33,9 @@ export class UI {
       'B ship builder · I inventory · M bodies · F5 save · F9 load · H hide help · click for mouse look';
     root.appendChild(this.help);
 
-    this.invPanel = makePanel(root, 'INVENTORY');
-    this.shipPanel = makePanel(root, 'SHIP BUILDER — FORTIS PATTERN');
-    this.mapPanel = makePanel(root, 'KNOWN BODIES');
+    this.invPanel = makePanel(root, 'INVENTORY', 'inv-panel');
+    this.shipPanel = makePanel(root, 'SHIP BUILDER — FORTIS PATTERN', 'ship-panel');
+    this.mapPanel = makePanel(root, 'KNOWN BODIES', 'map-panel');
     this.openPanel = null;
 
     root.appendChild(el('div', 'syl-vignette'));
@@ -77,6 +77,7 @@ export class UI {
   }
 
   toggleHelp() { this.help.style.display = this.help.style.display === 'none' ? 'block' : 'none'; }
+  hideHelp() { this.help.style.display = 'none'; }
 
   // ------------------------------------------------------------------ panels
   togglePanel(name) {
@@ -184,8 +185,8 @@ function partItemId(partTypeId) {
 
 function el(tag, cls) { const e = document.createElement(tag); e.className = cls; return e; }
 
-function makePanel(root, title) {
-  const p = el('div', 'syl-panel');
+function makePanel(root, title, cls = '') {
+  const p = el('div', `syl-panel ${cls}`.trim());
   p.innerHTML = `<h2>${title}</h2><div class="body"></div>
     <p class="dim" style="margin-bottom:0">Esc / same key closes</p>`;
   root.appendChild(p);

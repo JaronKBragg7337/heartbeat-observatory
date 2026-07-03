@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>SYL — Space You Land (Foundation Build)</title>
 <style>
   /* ============================================================
@@ -43,6 +43,76 @@
   .syl-vignette { position:absolute; inset:0; box-shadow:inset 0 0 180px rgba(0,0,0,0.55); }
   #boot-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
               color:#78909c; font-size:14px; letter-spacing:2px; }
+  @media (max-width: 700px) {
+    .syl-hud {
+      top:calc(8px + env(safe-area-inset-top, 0px));
+      left:8px;
+      min-width:0;
+      max-width:calc(100vw - 18px);
+      box-sizing:border-box;
+      padding:8px 10px;
+      font-size:11px;
+      line-height:1.45;
+      white-space:pre-wrap;
+    }
+    .syl-prompt {
+      bottom:calc(138px + env(safe-area-inset-bottom, 0px));
+      width:max-content;
+      max-width:calc(100vw - 28px);
+      box-sizing:border-box;
+      padding:7px 12px;
+      font-size:13px;
+      text-align:center;
+    }
+    .syl-toast {
+      top:calc(96px + env(safe-area-inset-top, 0px));
+      max-width:calc(100vw - 28px);
+      box-sizing:border-box;
+      padding:8px 12px;
+      font-size:12px;
+      text-align:center;
+    }
+    .syl-panel {
+      top:calc(8px + env(safe-area-inset-top, 0px));
+      left:8px;
+      right:8px;
+      bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+      transform:none;
+      min-width:0;
+      max-width:none;
+      max-height:none;
+      width:auto;
+      box-sizing:border-box;
+      padding:12px;
+      font-size:11px;
+      overflow:auto;
+    }
+    .syl-panel h2 { font-size:13px; letter-spacing:1.4px; }
+    .syl-panel table { min-width:0; }
+    .syl-panel.ship-panel table { min-width:520px; }
+    .syl-panel.map-panel td, .syl-panel.map-panel th {
+      padding:4px 5px;
+      white-space:normal;
+      overflow-wrap:anywhere;
+    }
+    .syl-panel button { padding:4px 8px; font-size:11px; }
+    .syl-help {
+      display:none;
+      left:8px;
+      right:8px;
+      bottom:calc(128px + env(safe-area-inset-bottom, 0px));
+      max-height:88px;
+      overflow:auto;
+      box-sizing:border-box;
+      font-size:10px;
+    }
+    .syl-center-msg {
+      width:calc(100vw - 44px);
+      box-sizing:border-box;
+      padding:14px 18px;
+      font-size:15px;
+    }
+  }
 </style>
 </head>
 <body>

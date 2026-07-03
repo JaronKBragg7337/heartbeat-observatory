@@ -81,7 +81,7 @@ export class Player {
     // Yaw rotates around up; forward = cos(yaw)*north + sin(yaw)*east.
     const fwd = _fwd.copy(north).multiplyScalar(Math.cos(this.yaw))
       .addScaledVector(east, Math.sin(this.yaw)).normalize();
-    const right = _right.crossVectors(up, fwd).normalize();
+    const right = _right.crossVectors(fwd, up).normalize();
     return { up, fwd, right };
   }
 

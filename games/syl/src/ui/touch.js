@@ -49,23 +49,44 @@ export function initTouch(input, root) {
   style.textContent = `
     #touch-root { position:fixed; inset:0; pointer-events:none; z-index:30;
                   font-family:inherit; -webkit-user-select:none; user-select:none; }
-    #joy-base { position:absolute; left:26px; bottom:30px; width:${JOY_R * 2}px; height:${JOY_R * 2}px;
+    #joy-base { position:absolute; left:26px; bottom:calc(30px + env(safe-area-inset-bottom, 0px));
+                width:${JOY_R * 2}px; height:${JOY_R * 2}px;
                 border:2px solid rgba(207,216,220,0.45); border-radius:50%;
                 background:rgba(8,12,16,0.35); pointer-events:auto; touch-action:none; }
     #joy-knob { position:absolute; left:50%; top:50%; width:46px; height:46px; margin:-23px 0 0 -23px;
                 border-radius:50%; background:rgba(183,28,28,0.75); border:1px solid #ef9a9a; }
     #touch-btns { position:absolute; right:16px; bottom:26px; display:grid;
                   grid-template-columns:repeat(4, 54px); gap:8px; pointer-events:auto; }
-    #ship-btns { position:absolute; right:16px; top:32%; display:flex; flex-direction:column;
+    #ship-btns { position:absolute; right:16px; top:32%; display:none; flex-direction:column;
                  gap:8px; pointer-events:auto; }
+    #touch-root.piloting #ship-btns { display:flex; }
+    #touch-root.panel-open #joy-base,
+    #touch-root.panel-open #touch-btns,
+    #touch-root.panel-open #ship-btns { display:none; }
     .tbtn { height:48px; border-radius:10px; border:1px solid #455a64; color:#cfd8dc;
             background:rgba(8,12,16,0.6); font-size:13px; font-weight:600; touch-action:none; }
     .tbtn:active { background:rgba(183,28,28,0.6); border-color:#ef9a9a; }
     .tbtn.wide { grid-column:1 / span 4; }
     #ship-btns .tbtn { width:86px; }
+    @media (max-width: 700px) {
+      #joy-base { left:18px; bottom:calc(22px + env(safe-area-inset-bottom, 0px));
+                  width:112px; height:112px; }
+      #joy-knob { width:40px; height:40px; margin:-20px 0 0 -20px; }
+      #touch-btns { right:12px; bottom:calc(20px + env(safe-area-inset-bottom, 0px));
+                    grid-template-columns:repeat(4, 42px); gap:6px; }
+      #ship-btns { right:12px; top:30%; gap:7px; }
+      #ship-btns .tbtn { width:78px; }
+      .tbtn { height:42px; border-radius:9px; font-size:12px; }
+      .tbtn.wide { height:42px; }
+    }
   `;
   document.head.appendChild(style);
   (root || document.body).appendChild(wrap);
+  setInterval(() => {
+    const mode = window.game?.traversal?.mode;
+    wrap.classList.toggle('piloting', mode === 'PILOTING');
+    wrap.classList.toggle('panel-open', !!document.querySelector('.syl-panel[style*="display: block"]'));
+  }, 250);
 
   // --- Buttons → virtual keys (hold-to-press; taps still register once). ---
   wrap.querySelectorAll('.tbtn').forEach((btn) => {
@@ -81,9 +102,9 @@ export function initTouch(input, root) {
   const base = wrap.querySelector('#joy-base');
   const knob = wrap.querySelector('#joy-knob');
   let joyId = null;
-  function setMove(dx, dy) {
+  function setMove(dx, dy, radius = JOY_R) {
     // dx right+, dy down+ (screen). Map to WASD with deadzone.
-    const mag = Math.hypot(dx, dy) / JOY_R;
+    const mag = Math.hypot(dx, dy) / radius;
     input.setVirtual('KeyD', mag > DEAD && dx > Math.abs(dy) * 0.5);
     input.setVirtual('KeyA', mag > DEAD && -dx > Math.abs(dy) * 0.5);
     input.setVirtual('KeyS', mag > DEAD && dy > Math.abs(dx) * 0.5);
@@ -100,10 +121,11 @@ export function initTouch(input, root) {
     for (const t of e.changedTouches) {
       if (t.identifier !== joyId) continue;
       const r = base.getBoundingClientRect();
-      let dx = t.clientX - (r.left + JOY_R), dy = t.clientY - (r.top + JOY_R);
+      const radius = r.width / 2;
+      let dx = t.clientX - (r.left + radius), dy = t.clientY - (r.top + radius);
       const d = Math.hypot(dx, dy);
-      if (d > JOY_R) { dx *= JOY_R / d; dy *= JOY_R / d; }
-      setMove(dx, dy);
+      if (d > radius) { dx *= radius / d; dy *= radius / d; }
+      setMove(dx, dy, radius);
     }
   }, { passive: false });
   const joyEnd = (e) => {
