@@ -20,7 +20,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
-import { altitudeAt, upAt, gravityAt, dominantBody, terrainRadiusAt } from '../world/planet.js';
+import { altitudeAt, upAt, gravityAt, dominantBody, terrainRadiusAt, resolveStructureCollision } from '../world/planet.js';
 
 const EYE_HEIGHT = 1.65;
 const WALK_SPEED = 7;
@@ -81,7 +81,7 @@ export class Player {
     // Yaw rotates around up; forward = cos(yaw)*north + sin(yaw)*east.
     const fwd = _fwd.copy(north).multiplyScalar(Math.cos(this.yaw))
       .addScaledVector(east, Math.sin(this.yaw)).normalize();
-    const right = _right.crossVectors(fwd, up).normalize();
+    const right = _right.crossVectors(up, fwd).normalize();
     return { up, fwd, right };
   }
 
@@ -95,7 +95,7 @@ export class Player {
     if (active) {
       // Mouse look.
       this.yaw += this.input.mouseDX * 0.0023;
-      this.pitch -= this.input.mouseDY * 0.0023;
+      this.pitch += this.input.mouseDY * 0.0023;
       this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch));
     }
 
@@ -130,6 +130,7 @@ export class Player {
 
     // Integrate (f64) then ground against the ANALYTIC surface — the swept
     // grounding move from Kurearthis proof 2e, done exactly.
+    const beforeMove = _before.copy(this.worldPos);
     this.worldPos.addScaledVector(this.velocity, dt);
     const alt = altitudeAt(body, this.worldPos);
     if (alt <= 0) {
@@ -148,6 +149,15 @@ export class Player {
       this.grounded = false;
     }
 
+    if (resolveStructureCollision(body, this.worldPos, 0.45)) {
+      const push = _push.subVectors(this.worldPos, beforeMove);
+      if (push.lengthSq() > 1e-8) {
+        push.normalize();
+        const intoWall = this.velocity.dot(push);
+        if (intoWall < 0) this.velocity.addScaledVector(push, -intoWall);
+      }
+    }
+
     // Orient the visual body: feet down, facing yaw.
     const frame = this.localFrame(this._upSmooth);
     _m.makeBasis(frame.right, frame.up, _tmpV.copy(frame.fwd).negate());
@@ -160,7 +170,7 @@ export class Player {
     outPos.copy(this.worldPos).addScaledVector(up, EYE_HEIGHT);
     // Apply pitch around the right axis.
     const lookFwd = _tmpV.copy(fwd).applyAxisAngle(right, this.pitch);
-    _m.lookAt(_zero.set(0, 0, 0), _tmpV2.copy(lookFwd).negate(), up);
+    _m.lookAt(_zero.set(0, 0, 0), _tmpV2.copy(lookFwd), up);
     outQuat.setFromRotationMatrix(_m);
   }
 
@@ -186,6 +196,7 @@ export class Player {
 // Module-scope temps.
 const _up = new THREE.Vector3(), _up2 = new THREE.Vector3(), _g = new THREE.Vector3();
 const _move = new THREE.Vector3(), _rel = new THREE.Vector3();
+const _before = new THREE.Vector3(), _push = new THREE.Vector3();
 const _east = new THREE.Vector3(), _north = new THREE.Vector3();
 const _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
 const _refY = new THREE.Vector3(0, 1, 0), _refX = new THREE.Vector3(1, 0, 0);

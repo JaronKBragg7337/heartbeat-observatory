@@ -93,6 +93,114 @@ export function dominantBody(bodies, worldPos) {
 
 const _tmpA = new THREE.Vector3();
 const _tmpB = new THREE.Vector3();
+const _structRel = new THREE.Vector3();
+const _structDir = new THREE.Vector3();
+const _zoneEast = new THREE.Vector3();
+const _zoneNorth = new THREE.Vector3();
+const _worldY = new THREE.Vector3(0, 1, 0);
+
+// ---------------------------------------------------------------------------
+// STRUCTURE COLLISION — analytic footprints for authored zone structures.
+// These are intentionally simple capsule-vs-footprint blockers: visuals can
+// stay handmade Three.js primitives, while movement never depends on mesh
+// collision at true-scale coordinates.
+// ---------------------------------------------------------------------------
+export function structureCollidersForZone(zone) {
+  if (zone.structures === 'outpost') {
+    return [
+      ...[[40, 0], [-42, 10], [10, -46], [-15, 44]].map(([east, north]) => ({
+        kind: 'box', east, north, halfEast: 8, halfNorth: 6, height: 7,
+      })),
+      { kind: 'circle', east: 30, north: 30, radius: 3.2, height: 24 },
+    ];
+  }
+  if (zone.structures === 'relay') {
+    return [
+      { kind: 'circle', east: 18, north: -12, radius: 7.5, height: 10 },
+    ];
+  }
+  if (zone.structures === 'depot') {
+    return [
+      { kind: 'box', east: -18, north: 0, halfEast: 12, halfNorth: 7, height: 8 },
+      { kind: 'box', east: 18, north: 7, halfEast: 9, halfNorth: 6, height: 6 },
+      { kind: 'circle', east: 5, north: -18, radius: 4, height: 15 },
+    ];
+  }
+  if (zone.structures === 'beacon') {
+    return [
+      { kind: 'circle', east: 0, north: 0, radius: 2, height: 13 },
+    ];
+  }
+  return [];
+}
+
+export function structureCollidersForBody(body) {
+  const out = [];
+  for (const zone of body.landingZones) {
+    for (const collider of structureCollidersForZone(zone)) {
+      out.push({ ...collider, zoneId: zone.id, zone });
+    }
+  }
+  return out;
+}
+
+export function resolveStructureCollision(body, worldPos, radius = 0.45) {
+  if (!body?._centerV) return false;
+  const rel = _structRel.subVectors(worldPos, body._centerV);
+  const dist = rel.length();
+  if (dist < 1e-6) return false;
+  const dir = _structDir.copy(rel).multiplyScalar(1 / dist);
+  const altitude = dist - terrainRadiusAt(body, dir);
+  let changed = false;
+
+  for (const zone of body.landingZones) {
+    const ang = Math.acos(Math.min(1, Math.max(-1, dir.dot(zone._dirV))));
+    if (ang > zone.angularRadius * 1.8) continue;
+
+    const frame = zoneFrame(zone._dirV, body);
+    const dEast = dir.dot(frame.east) * body.radius;
+    const dNorth = dir.dot(frame.north) * body.radius;
+
+    for (const c of structureCollidersForZone(zone)) {
+      if (altitude > c.height) continue;
+      let outEast = dEast;
+      let outNorth = dNorth;
+
+      if (c.kind === 'box') {
+        const localE = dEast - c.east;
+        const localN = dNorth - c.north;
+        const overlapE = c.halfEast + radius - Math.abs(localE);
+        const overlapN = c.halfNorth + radius - Math.abs(localN);
+        if (overlapE <= 0 || overlapN <= 0) continue;
+        if (overlapE < overlapN) {
+          outEast = c.east + Math.sign(localE || 1) * (c.halfEast + radius);
+        } else {
+          outNorth = c.north + Math.sign(localN || 1) * (c.halfNorth + radius);
+        }
+      } else if (c.kind === 'circle') {
+        const localE = dEast - c.east;
+        const localN = dNorth - c.north;
+        const len = Math.hypot(localE, localN);
+        const minLen = c.radius + radius;
+        if (len >= minLen) continue;
+        const nx = len > 1e-6 ? localE / len : 1;
+        const ny = len > 1e-6 ? localN / len : 0;
+        outEast = c.east + nx * minLen;
+        outNorth = c.north + ny * minLen;
+      }
+
+      const newDir = zone._dirV.clone()
+        .addScaledVector(frame.east, outEast / body.radius)
+        .addScaledVector(frame.north, outNorth / body.radius)
+        .normalize();
+      const newR = terrainRadiusAt(body, newDir) + Math.max(altitude, 0);
+      worldPos.copy(newDir).multiplyScalar(newR).add(body._centerV);
+      dir.copy(newDir);
+      changed = true;
+    }
+  }
+  return changed;
+}
 
 // ---------------------------------------------------------------------------
 // VISUAL construction — meshes are pictures of the analytic function above.
@@ -241,6 +349,22 @@ function buildZoneStructures(body, zone, factionById) {
     );
     placeOnSurface(body, d, mast, 4.5);
     g.add(mast);
+  } else if (zone.structures === 'depot') {
+    const steel = new THREE.MeshLambertMaterial({ color: 0x455a64 });
+    const dark = new THREE.MeshLambertMaterial({ color: 0x263238 });
+    const red = new THREE.MeshBasicMaterial({ color: fColor });
+    const shedA = new THREE.Mesh(new THREE.BoxGeometry(22, 8, 12), steel);
+    placeOnSurface(body, offsetDir(zone._dirV, -18, 0, body), shedA, 4);
+    g.add(shedA);
+    const shedB = new THREE.Mesh(new THREE.BoxGeometry(16, 6, 10), dark);
+    placeOnSurface(body, offsetDir(zone._dirV, 18, 7, body), shedB, 3);
+    g.add(shedB);
+    const tank = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 12, 12), steel);
+    placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), tank, 6);
+    g.add(tank);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), red);
+    placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), lamp, 13);
+    g.add(lamp);
   } else if (zone.structures === 'beacon') {
     const mast = new THREE.Mesh(
       new THREE.CylinderGeometry(0.6, 1.0, 12, 6),
@@ -260,15 +384,19 @@ function buildZoneStructures(body, zone, factionById) {
 
 // Direction slightly offset from a zone center by (east, north) meters.
 function offsetDir(dirUnit, eastM, northM, body) {
-  const up = dirUnit.clone();
-  const east = new THREE.Vector3(0, 1, 0).cross(up);
+  const frame = zoneFrame(dirUnit);
+  return dirUnit.clone()
+    .addScaledVector(frame.east, eastM / body.radius)
+    .addScaledVector(frame.north, northM / body.radius)
+    .normalize();
+}
+
+function zoneFrame(dirUnit) {
+  const east = _zoneEast.crossVectors(_worldY, dirUnit);
   if (east.lengthSq() < 1e-6) east.set(1, 0, 0);
   east.normalize();
-  const north = up.clone().cross(east).normalize();
-  return up.clone()
-    .addScaledVector(east, eastM / body.radius)
-    .addScaledVector(north, northM / body.radius)
-    .normalize();
+  const north = _zoneNorth.crossVectors(dirUnit, east).normalize();
+  return { east, north };
 }
 
 // World-space position of a zone's center on the surface (for spawning).

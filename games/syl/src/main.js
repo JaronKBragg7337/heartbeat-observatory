@@ -28,6 +28,7 @@ import { getItem } from './items/items.js';
 import { UI } from './ui/ui.js';
 import { initTouch } from './ui/touch.js';
 import * as SaveSystem from './save/save.js';
+import { PICKUPS } from './world/pickups.js';
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -82,33 +83,6 @@ const ship = new Ship(engine, BODIES);
 // crate = adding a line. (Future agents: move to a spawner module when
 // resource nodes/mining arrive.)
 // ---------------------------------------------------------------------------
-const PICKUPS = [
-  // Around the Fortis outpost pad — exactly what the damaged ship needs.
-  { id: 'earth:fortis:0', bodyId: 'earth', zoneId: 'fortis_outpost', east: 26, north: 14, itemId: 'part_power' },
-  { id: 'earth:fortis:1', bodyId: 'earth', zoneId: 'fortis_outpost', east: -30, north: 22, itemId: 'part_gear' },
-  { id: 'earth:fortis:2', bodyId: 'earth', zoneId: 'fortis_outpost', east: -18, north: -34, itemId: 'fuel_hydrazine' },
-  { id: 'earth:fortis:3', bodyId: 'earth', zoneId: 'fortis_outpost', east: 8, north: -42, itemId: 'fuel_hydrazine' },
-  { id: 'earth:fortis:4', bodyId: 'earth', zoneId: 'fortis_outpost', east: 44, north: -12, itemId: 'fuel_hydrazine' },
-  { id: 'earth:fortis:5', bodyId: 'earth', zoneId: 'fortis_outpost', east: 52, north: 26, itemId: 'fuel_hydrazine' },
-  { id: 'earth:fortis:6', bodyId: 'earth', zoneId: 'fortis_outpost', east: -48, north: -8, itemId: 'salvage_alloy' },
-  { id: 'earth:fortis:7', bodyId: 'earth', zoneId: 'fortis_outpost', east: -52, north: 30, itemId: 'salvage_alloy' },
-  { id: 'earth:fortis:8', bodyId: 'earth', zoneId: 'fortis_outpost', east: 20, north: 48, itemId: 'salvage_alloy' },
-  { id: 'earth:fortis:9', bodyId: 'earth', zoneId: 'fortis_outpost', east: 36, north: 40, itemId: 'salvage_alloy' },
-  { id: 'earth:fortis:10', bodyId: 'earth', zoneId: 'fortis_outpost', east: -8, north: 52, itemId: 'wiring_loom' },
-  { id: 'earth:fortis:11', bodyId: 'earth', zoneId: 'fortis_outpost', east: 58, north: 2, itemId: 'wiring_loom' },
-  { id: 'earth:fortis:12', bodyId: 'earth', zoneId: 'fortis_outpost', east: -38, north: -40, itemId: 'wiring_loom' },
-  // Relay site — reward for exploring Earth.
-  { id: 'earth:relay:0', bodyId: 'earth', zoneId: 'earth_relay_south', east: 10, north: 6, itemId: 'salvage_alloy' },
-  { id: 'earth:relay:1', bodyId: 'earth', zoneId: 'earth_relay_south', east: -12, north: 10, itemId: 'part_cargo' },
-  // Moon field — fuel for the trip home + spare engine.
-  { id: 'moon:tranq:0', bodyId: 'moon', zoneId: 'tranquility_pad', east: 14, north: -10, itemId: 'fuel_hydrazine' },
-  { id: 'moon:tranq:1', bodyId: 'moon', zoneId: 'tranquility_pad', east: -16, north: 12, itemId: 'fuel_hydrazine' },
-  { id: 'moon:tranq:2', bodyId: 'moon', zoneId: 'tranquility_pad', east: 22, north: 16, itemId: 'part_engine' },
-  // Rustholm cache.
-  { id: 'rust:claim:0', bodyId: 'rustholm', zoneId: 'freeport_claim', east: 8, north: 8, itemId: 'fuel_hydrazine' },
-  { id: 'rust:claim:1', bodyId: 'rustholm', zoneId: 'freeport_claim', east: -10, north: 6, itemId: 'fuel_hydrazine' },
-];
-
 const pickupEntities = new Map(); // id -> { worldPos, mesh, itemId, trackEntry }
 function spawnPickups(collectedSet) {
   for (const p of PICKUPS) {
@@ -308,8 +282,8 @@ function readShipControls(dt) {
   // Throttle: W up, S down.
   if (input.down('KeyW')) ship.throttle = Math.min(1, ship.throttle + 0.7 * dt);
   if (input.down('KeyS')) ship.throttle = Math.max(0, ship.throttle - 0.9 * dt);
-  controls.pitch = -input.mouseDY * 0.05;
-  controls.yaw = -input.mouseDX * 0.05;
+  controls.pitch = input.mouseDY * 0.05;
+  controls.yaw = input.mouseDX * 0.05;
   controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
   controls.thrustUp = input.down('Space');
   controls.brake = input.down('KeyX');
