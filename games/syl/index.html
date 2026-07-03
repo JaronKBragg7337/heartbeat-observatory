@@ -34,6 +34,8 @@
                       padding:3px 10px; cursor:pointer; font-family:inherit; font-size:12px; }
   .syl-panel button:hover:not(:disabled) { background:#37474f; border-color:#b71c1c; }
   .syl-panel button:disabled { opacity:0.35; cursor:default; }
+  .syl-panel .panel-close { position:sticky; top:0; float:right; z-index:2; margin:0 0 8px 12px;
+                            background:#1f2a30; color:#ffccbc; border-color:#8d3b35; }
   .ok   { color:#a5d6a7; } .bad { color:#ef9a9a; } .dim { color:#607d8b; } .warn { color:#ffcc80; }
   .syl-help { position:absolute; bottom:12px; left:12px; background:rgba(8,12,16,0.6);
               border:1px solid #263238; padding:8px 12px; font-size:11px; line-height:1.6; color:#78909c; }
@@ -96,6 +98,7 @@
       overflow-wrap:anywhere;
     }
     .syl-panel button { padding:4px 8px; font-size:11px; }
+    .syl-panel .panel-close { min-width:62px; height:34px; font-size:12px; }
     .syl-help {
       display:none;
       left:8px;

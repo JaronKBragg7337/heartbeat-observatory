@@ -36,6 +36,9 @@ export class UI {
     this.invPanel = makePanel(root, 'INVENTORY', 'inv-panel');
     this.shipPanel = makePanel(root, 'SHIP BUILDER — FORTIS PATTERN', 'ship-panel');
     this.mapPanel = makePanel(root, 'KNOWN BODIES', 'map-panel');
+    [this.invPanel, this.shipPanel, this.mapPanel].forEach((panel) => {
+      panel.querySelector('.panel-close').addEventListener('click', () => this.closePanels());
+    });
     this.openPanel = null;
 
     root.appendChild(el('div', 'syl-vignette'));
@@ -187,8 +190,9 @@ function el(tag, cls) { const e = document.createElement(tag); e.className = cls
 
 function makePanel(root, title, cls = '') {
   const p = el('div', `syl-panel ${cls}`.trim());
-  p.innerHTML = `<h2>${title}</h2><div class="body"></div>
-    <p class="dim" style="margin-bottom:0">Esc / same key closes</p>`;
+  p.innerHTML = `<button class="panel-close" type="button" aria-label="Close panel">Close</button>
+    <h2>${title}</h2><div class="body"></div>
+    <p class="dim" style="margin-bottom:0">Close / Esc / same key closes</p>`;
   root.appendChild(p);
   return p;
 }
