@@ -254,18 +254,30 @@ let chaseCam = true; // piloting: chase (3rd person) vs cockpit; C toggles
 const camPos = new THREE.Vector3(), camQuat = new THREE.Quaternion();
 const _cv = new THREE.Vector3(), _cq = new THREE.Quaternion(), _cm = new THREE.Matrix4();
 let shipTouchCamYaw = 0, shipTouchCamPitch = 0;
+let shipCamBaseReady = false;
+const shipCamBaseQuat = new THREE.Quaternion();
 
 function updateCamera(dt) {
   if (traversal.mode === MODE.ON_FOOT) {
+    shipCamBaseReady = false;
     player.cameraPose(camPos, camQuat);
   } else {
     // Ship views: offsets in ship space, world math in f64.
     if (chaseCam) {
       _cv.set(0, 4.5, -15);
+      const looking = input.touchMode
+        ? input.touchLookActive
+        : Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0;
+      const steering = Math.abs(controls.yaw) > 0.02 ||
+        Math.abs(controls.assistForward || 0) > 0.02 ||
+        controls.thrustUp || controls.brake;
+      if (!shipCamBaseReady) {
+        shipCamBaseQuat.copy(ship.quaternion);
+        shipCamBaseReady = true;
+      } else if (!steering && !looking) {
+        shipCamBaseQuat.slerp(ship.quaternion, Math.min(1, 5 * dt));
+      }
       if (input.touchMode || input.pointerLocked) {
-        const looking = input.touchMode
-          ? input.touchLookActive
-          : Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0;
         if (looking) {
           shipTouchCamYaw -= input.mouseDX * 0.003;
           shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch - input.mouseDY * 0.003));
@@ -276,9 +288,9 @@ function updateCamera(dt) {
         _cv.applyAxisAngle(_touchCamX, shipTouchCamPitch);
         _cv.applyAxisAngle(_touchCamY, shipTouchCamYaw);
       }
-      _cv.applyQuaternion(ship.quaternion);
+      _cv.applyQuaternion(shipCamBaseQuat);
       camPos.copy(ship.worldPos).add(_cv);
-      _cm.lookAt(camPos, ship.worldPos, _cq2v.set(0, 1, 0).applyQuaternion(ship.quaternion));
+      _cm.lookAt(camPos, ship.worldPos, _cq2v.set(0, 1, 0).applyQuaternion(shipCamBaseQuat));
       camQuat.setFromRotationMatrix(_cm);
     } else {
       _cv.set(0, 1.35, 2.1).applyQuaternion(ship.quaternion);

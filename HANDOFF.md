@@ -7,6 +7,30 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — SYL chase camera steering lock synced
+
+**State:** public `/games/syl/` needs the follow-up for Jaron's report that
+desktop WASD and mobile analog still moved the camera while in ship mode.
+
+**Shipped:** synced the `main.js` chase camera change from SYL. While ship
+steering/throttle/lift/brake is active, the chase camera holds its current base
+orientation instead of treating ship yaw as camera orbit. Explicit mouse/touch
+look still orbits the camera, and the chase camera recenters behind the ship
+after steering/look input stops.
+
+**Verified:** SYL `npm test` 71/71 before sync; Heartbeat `main.js` syntax check
+after sync.
+
+**Next up:** Jaron should phone/desktop retest. A/D and analog left/right should
+turn the ship under the view; camera orbit should require mouse/look drag or a
+touch outside the analog/buttons.
+
+**Gotchas:** chase camera still follows ship position, so flying moves the
+camera through the world. The fix is specifically about steering not orbiting
+the camera.
+
+---
+
 ## 2026-07-04 — Codex — SYL touch joystick/camera split synced
 
 **State:** public `/games/syl/` has the Fortis visual and the next mobile
