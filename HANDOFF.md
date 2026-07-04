@@ -29,9 +29,26 @@ reachable but linked from nowhere. bubble.js missing on /pam and /space despite 
 5. bubble.js added to /pam and /space.
 6. Docs: TODO theater item updated (shipped text moved verbatim to ARCHIVE.md), this file created.
 
+**SECOND PUSH same session — catalog repair (the important find):** live browser testing
+revealed the June 11 catalog partially DIED server-side: the Google sample bucket
+(commondatastorage.googleapis.com) now returns **403 for everyone** — all four Blender reels
+were dead in every theater, including the lab proof. Re-verified every source with curl +
+browser fetch and repaired the catalog everywhere: Blender films now come from **Wikimedia
+Commons 720p transcodes (CORS-verified — required for VideoTexture)** with Internet Archive
+mp4 fallbacks; the flat /video page uses the mp4s as primary (universal codec; its crossorigin
+attribute is removed since a plain page needs no CORS and archive.org sends none); NASA's
+~mobile variant (CORS-verified) is primary with ~medium fallback. worlds-lab got **lib/v2/cinema.js**
+(v1 stays frozen per the freeze law — v2 is v1's code + the repaired catalog, importing v1's
+frozen textures/buildings); cinema-district and cosmodrome now import v2 (BUILD 2026-07-04-films2).
+Paper trail in worlds-lab/CREDITS.md. Final builds: hub theater2, world2 w2l.
+
 **Verified:** node --check on both edited main.js files; anchored count==1 python edits per
-METHOD.md; BUILD+?v bumped same commit (deploy law); live URL + md5 verification after push
-(see below); TDZ law respected (new module lets sit with the other interior lets, far above
+METHOD.md; BUILD+?v bumped same commit (deploy law); live URL + md5 verification after push —
+ALL lanes byte-exact vs pushed; live-browser boot checks: hub logs BUILD 2026-07-04-theater2,
+World 2 logs 2026-07-04-w2l (its theater block runs AT BOOT — clean console = the ported code
+executed end-to-end), Marquee Row logs 2026-07-04-films2 on the v2 import — zero console errors
+anywhere; landing + /video render correctly with the back-lot card and reel picker;
+TDZ law respected (new module lets sit with the other interior lets, far above
 the boot calls).
 
 **Honest limits / what is NOT done:**
@@ -43,6 +60,13 @@ the boot calls).
   touch_world allowlist). Cinema-district's PATTERN is now promoted; the world itself stays lab.
 - Fossil naming ("The Engine" vs "Town Square" in the landing sections list) is a Supabase
   `surfaces` row, deliberately untouched — final name is Jaron's call (TODO NOW item 7).
+
+**Verification honesty note:** actual video FRAMES could not be confirmed from this machine —
+the automated Chrome profile used for testing does not deliver media-element streams at all
+(proved environmental: even known-good hosts and the OLD page stall at readyState 0 while raw
+fetch of the same URL returns 206 bytes in ~400ms). Everything up to the pixels is verified
+(sources reachable + CORS-checked via curl, UI states, credits, error paths, boot logs).
+Jaron's phone walk is the true frame test — per the house law, live tests outrank theory.
 
 **Gotchas for the next agent:**
 - The three recent Codex commits put SYL-test behind an admin gate in the arcade, then the
