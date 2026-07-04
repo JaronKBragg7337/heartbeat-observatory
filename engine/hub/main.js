@@ -70,7 +70,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-06-10d"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-07-04-theater1"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 let settingsOpen = false;
@@ -190,6 +190,7 @@ const noteBars = [];
 const BANDSTAND = { x: -16, z: 22 };
 let inInterior = false, interiorKind = null, interiorReturn = null;
 let interiorHidden = [], savedTownCollidersI = null, activeStation = null;
+let cineOnLeave = null; // theater screening cleanup (pause reel + house lights up) — called by exitInterior()
 const interiorGroups = {};
 const platforms = [];
 const placedProps = [];
@@ -2889,12 +2890,121 @@ function buildInterior(kind) {
     return g;
   }
   if (kind === "theater") {
+    // THE THEATER - real screenings (ported 2026-07-04 from worlds-lab Marquee Row, lib/v1/cinema.js).
+    // Every reel is legally streamable from its ORIGINAL free source: Blender Foundation open
+    // movies (CC BY, credit shown in-room), Internet Archive public domain, NASA public domain.
+    // HONESTY LAW: idle screen says what it is waiting for; if a reel can't load it says so and
+    // moves on; if nothing loads the screen stays honestly empty, never a fake.
+    // Playback is per-visitor for now (same as the lab proof); shared start/next sync over the
+    // state channel is the designed next step (see TODO.md).
     const g = interiorShell(13, 15, 0x17141a, 0x241e2a, 0x0c0a0e);
-    const screen = new THREE.Mesh(new THREE.BoxGeometry(9.5, 3.0, 0.12),
-      new THREE.MeshStandardMaterial({ color: 0xbfd6e4, emissive: 0x9cc2dc, emissiveIntensity: 0.5, roughness: 0.35 }));
-    screen.position.set(0, 1.85, -7.3); g.add(screen);
-    const nl = createLabelSprite("NOW SHOWING \u00b7 FIRST SCREENING COMING SOON", { background: "rgba(8, 10, 14, 0.88)", foreground: "#cfe2ee", fontSize: 22, scale: 0.012 });
-    nl.position.set(0, 2.0, -7.1); g.add(nl);
+    const FILMS = [
+      { title: "Big Buck Bunny", year: 2008, license: "CC BY 3.0", credit: "(c) 2008 Blender Foundation - bigbuckbunny.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
+      { title: "Sintel", year: 2010, license: "CC BY 3.0", credit: "(c) 2010 Blender Foundation - sintel.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4" },
+      { title: "Tears of Steel", year: 2012, license: "CC BY 3.0", credit: "(c) 2012 Blender Foundation - tearsofsteel.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" },
+      { title: "Elephants Dream", year: 2006, license: "CC BY 2.5", credit: "(c) 2006 Blender Foundation / NMAI - orange.blender.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
+      { title: "His Girl Friday", year: 1940, license: "Public Domain", credit: "Public domain - Internet Archive", src: "https://archive.org/download/his_girl_friday/his_girl_friday_512kb.mp4" },
+      { title: "Plan 9 from Outer Space", year: 1959, license: "Public Domain", credit: "Public domain - Internet Archive", src: "https://archive.org/download/plan-9-from-outer-space-1959/Plan%209%20From%20Outer%20Space%20%281959%29.ia.mp4" },
+      { title: "Artemis - Success and Preparation", year: 2025, license: "Public Domain (NASA)", credit: "Video courtesy of NASA - images.nasa.gov", src: "https://images-assets.nasa.gov/video/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615~medium.mp4", srcFallback: "https://images-assets.nasa.gov/video/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615~mobile.mp4" }
+    ];
+    // one <video> element for the whole room (phones decode 1-3 videos max - media-surfaces law)
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous"; video.playsInline = true; video.setAttribute("playsinline", "");
+    video.preload = "none"; video.volume = 0.85;
+    let cIdx = 0, cStarted = false, cVideoTex = null, cFails = 0, cTriedFallback = false;
+    const boardTex = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; return { c: c, tex: tex }; };
+    const drawLines = (bt, lines, opts) => {
+      opts = opts || {};
+      const ctx = bt.c.getContext("2d");
+      ctx.fillStyle = opts.bg || "#0a0d12"; ctx.fillRect(0, 0, bt.c.width, bt.c.height);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      for (let i = 0; i < lines.length; i++) {
+        ctx.font = i === 0 ? (opts.font || "bold 52px system-ui, sans-serif") : (opts.subFont || "30px system-ui, sans-serif");
+        ctx.fillStyle = i === 0 ? (opts.accent || "#ffd166") : "#9fb0bd";
+        ctx.fillText(lines[i], bt.c.width / 2, bt.c.height * (i + 1) / (lines.length + 1));
+      }
+      bt.tex.needsUpdate = true;
+    };
+    // the screen: true 16:9 so real film is never stretched; dark masking panels fill the wall
+    const mask = new THREE.Mesh(new THREE.BoxGeometry(11.6, 3.3, 0.1), new THREE.MeshStandardMaterial({ color: 0x0b0910, roughness: 0.9 }));
+    mask.position.set(0, 1.72, -7.34); g.add(mask);
+    const screenBoard = boardTex(1024, 576);
+    drawLines(screenBoard, ["The screen is waiting", "Step on the glowing green pad to start the screening", "Amber pad changes the reel"], {});
+    const screenMat = new THREE.MeshStandardMaterial({ map: screenBoard.tex, color: 0xffffff, roughness: 0.4, emissive: 0x3a4252, emissiveIntensity: 0.55, emissiveMap: screenBoard.tex });
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 3.04), screenMat);
+    screen.position.set(0, 1.72, -7.26); g.add(screen);
+    // status line under the screen + credit plaque beside it (the CC BY credit lives IN the room)
+    const statusBoard = boardTex(1024, 96);
+    const statusMesh = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 0.48), new THREE.MeshBasicMaterial({ map: statusBoard.tex }));
+    statusMesh.position.set(0, 0.32, -7.26); g.add(statusMesh);
+    const setStatus = (t) => drawLines(statusBoard, [t], { font: "34px system-ui, sans-serif", accent: "#9fb0bd" });
+    const plaqueBoard = boardTex(1024, 400);
+    const plaqueMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 1.2), new THREE.MeshBasicMaterial({ map: plaqueBoard.tex }));
+    plaqueMesh.position.set(4.7, 1.9, -7.26); g.add(plaqueMesh);
+    const nowBoard = boardTex(1024, 300);
+    const nowMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 0.92), new THREE.MeshBasicMaterial({ map: nowBoard.tex }));
+    nowMesh.position.set(-4.7, 2.1, -7.26); g.add(nowMesh);
+    const setNowShowing = () => {
+      const f = FILMS[cIdx];
+      drawLines(nowBoard, ["NOW SHOWING", f.title + " (" + f.year + ")"], { font: "bold 44px system-ui, sans-serif" });
+      drawLines(plaqueBoard, ["About this screening", f.title + " (" + f.year + ") - " + f.license, f.credit, "Played from the original free source."], { accent: "#7bd88f", font: "bold 40px system-ui, sans-serif", subFont: "24px system-ui, sans-serif" });
+    };
+    // house lights: bright while idle so the pads are findable, dim for the show, restored on leave
+    const houseLights = [];
+    [[-3.6, -1.2], [3.6, 1.6]].forEach((pl) => {
+      const l = new THREE.PointLight(0xffe9c4, 1.3, 19, 1.6);
+      l.position.set(pl[0], 3.0, pl[1]); l.userData = { up: 1.3, down: 0.18 };
+      g.add(l); houseLights.push(l);
+    });
+    const padMats = [];
+    const setHouse = (bright) => {
+      houseLights.forEach((l) => { l.intensity = bright ? l.userData.up : l.userData.down; });
+      padMats.forEach((m) => { m.emissiveIntensity = bright ? 1.0 : 0.22; });
+    };
+    const attachTexture = () => {
+      if (cVideoTex) return;
+      cVideoTex = new THREE.VideoTexture(video);
+      cVideoTex.colorSpace = THREE.SRGBColorSpace;
+      screenMat.map = cVideoTex; screenMat.emissiveMap = cVideoTex;
+      screenMat.emissive = new THREE.Color(0xffffff); screenMat.emissiveIntensity = 0.85;
+      screenMat.needsUpdate = true;
+      setHouse(false);
+    };
+    video.addEventListener("playing", () => { attachTexture(); cFails = 0; setStatus(FILMS[cIdx].credit); });
+    video.addEventListener("error", () => {
+      const f = FILMS[cIdx];
+      if (f.srcFallback && !cTriedFallback) { cTriedFallback = true; setStatus("Main reel unreachable - trying the backup print..."); video.src = f.srcFallback; video.play().catch(() => {}); return; }
+      cFails++;
+      if (cFails >= FILMS.length) { setStatus("No reel reachable right now - honest empty screen, never a fake. Try again later."); cStarted = false; return; }
+      setStatus("That reel didn't load - trying the next one...");
+      cIdx = (cIdx + 1) % FILMS.length; cTriedFallback = false; setNowShowing();
+      if (cStarted) startShow();
+    });
+    const startShow = () => {
+      const f = FILMS[cIdx];
+      cTriedFallback = false; cStarted = true;
+      setNowShowing(); setStatus("Projecting - " + f.title);
+      if (video.src !== f.src) video.src = f.src;
+      const p = video.play();
+      if (p && p.catch) p.catch(() => {
+        video.muted = true; // some phones insist on a muted first start - honor it, sound on next use
+        video.play().then(() => setStatus(FILMS[cIdx].credit + "  (use the pad again for sound)")).catch(() => {});
+      });
+    };
+    const toggleSound = () => { if (video.muted) { video.muted = false; setStatus(FILMS[cIdx].credit); return true; } return false; };
+    cineOnLeave = () => { try { video.pause(); } catch (e) {} cStarted = false; setHouse(true); };
+    // glowing station pads with signs (start / next reel)
+    [[-2.0, -5.5, "#7bd88f", "START THE SCREENING"], [2.0, -5.5, "#ffd166", "NEXT REEL"]].forEach((pd) => {
+      const pm = new THREE.MeshStandardMaterial({ color: new THREE.Color(pd[2]), emissive: new THREE.Color(pd[2]), emissiveIntensity: 1.0, roughness: 0.6 });
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.06, 20), pm);
+      pad.position.set(pd[0], 0.03, pd[1]); g.add(pad); padMats.push(pm);
+      const sl = createLabelSprite(pd[3], { background: "rgba(10, 13, 18, 0.88)", foreground: pd[2], fontSize: 22, scale: 0.011 });
+      sl.position.set(pd[0], 1.5, pd[1]); g.add(sl);
+    });
+    g.userData.stations.push({ x: -2.0, z: -5.5, label: "Start the screening", fn: () => { if (!toggleSound() || !cStarted) startShow(); } });
+    g.userData.stations.push({ x: 2.0, z: -5.5, label: "Next reel", fn: () => { cIdx = (cIdx + 1) % FILMS.length; cTriedFallback = false; setNowShowing(); if (cStarted) startShow(); } });
+    setNowShowing();
+    setStatus("House lights up - the pads by the screen run the show.");
     const seatM = new THREE.MeshStandardMaterial({ color: 0x57222a, roughness: 0.75 });
     for (let r = 0; r < 3; r++) {
       for (let c = 0; c < 6; c++) {
@@ -2937,6 +3047,7 @@ function enterInterior(kind) {
 }
 function exitInterior() {
   if (!inInterior) return;
+  try { if (cineOnLeave) cineOnLeave(); } catch (e) {}
   const g = interiorGroups[interiorKind];
   if (g) g.visible = false;
   for (const o of interiorHidden) o.visible = true;
@@ -3039,6 +3150,7 @@ function enterActiveDoor() {
   if (inInterior) {
     if (!activeStation) return;
     if (activeStation.exit) { exitInterior(); return; }
+    if (activeStation.fn) { try { activeStation.fn(); } catch (e) {} return; }
     if (activeStation.url) {
       if (activeStation.external) { try { window.open(activeStation.url, "_blank", "noopener"); } catch (e) {} }
       else { const target = window.top || window; target.location.assign(activeStation.url); }
