@@ -15,9 +15,6 @@
   .frame iframe { width:100%; height:900px; border:0; display:block; }
   .demo-note { margin-top:26px; }
   .demo-note .panel { margin-top:0; }
-  .test-build { border-color:rgba(217,162,58,0.55); background:linear-gradient(180deg, rgba(217,162,58,0.08), rgba(14,19,27,0.92)); }
-  .badge { display:inline-flex; align-items:center; gap:6px; margin-left:8px; padding:3px 8px; border-radius:999px;
-    border:1px solid rgba(217,162,58,0.5); color:#d9a23a; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; }
 </style>
 </head>
 <body>
@@ -45,21 +42,6 @@
       <div class="panel">
         <p><a href="/games/syl/"><strong>&#9658; Play SYL</strong></a> &mdash; a world-scale space game foundation: repair your ship piece by piece, launch, cross real space with no loading screens, and land on another world. Works on phones (touch controls appear automatically).</p>
         <p class="muted">The live blueprint and public playtest for the official SYL game. Built by Jaron with Claude &amp; Codex; open source.</p>
-      </div>
-    </div>
-
-    <div class="embed-wrap" id="sylTestCard" hidden>
-      <div class="embed-bar">
-        <span class="name">SYL — Test Build <span class="badge">Preview · Admin only</span></span>
-        <span>
-          <a href="/games/syl-test/" target="_blank" rel="noopener">Open test build &nearr;</a>
-          &nbsp;&middot;&nbsp;
-          <a href="https://github.com/JaronKBragg7337/SYL-Full-Game" target="_blank" rel="noopener">Source &nearr;</a>
-        </span>
-      </div>
-      <div class="panel test-build">
-        <p><a href="/games/syl-test/"><strong>&#9658; Open SYL Test Build</strong></a> &mdash; internal preview lane for Kimi/Codex/Claude expansion passes before they become stable.</p>
-        <p class="muted">Separate from the public stable game. Uses its own test save key and is shown only to logged-in admin accounts right now.</p>
       </div>
     </div>
 
@@ -91,14 +73,9 @@
   const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
   const authlink=document.getElementById("authlink");
   const dot=document.getElementById("dot"); const statusText=document.getElementById("statusText");
-  const sylTestCard=document.getElementById("sylTestCard");
   (async()=>{ try{
     const { data:{ session } }=await supabase.auth.getSession();
-    if(session) {
-      authlink.textContent="Account";
-      const { data:isAdmin }=await supabase.rpc("is_admin");
-      if(isAdmin===true) sylTestCard.hidden=false;
-    }
+    if(session) authlink.textContent="Account";
   }catch(e){} })();
   (async()=>{ try{
     const { data }=await supabase.from("surfaces").select("status").eq("key","games").maybeSingle();

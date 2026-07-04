@@ -13,19 +13,9 @@
                font-family:'Segoe UI', Consolas, monospace; color:#cfd8dc; }
   #game-canvas { display:block; width:100vw; height:100vh; }
   #ui-root { position:fixed; inset:0; pointer-events:none; }
-  body.locked #game-canvas, body.locked #ui-root { display:none; }
   .test-label { position:fixed; right:12px; top:12px; z-index:20; pointer-events:none;
                 background:rgba(8,12,16,0.78); border:1px solid #8d3b35; color:#ffccbc;
                 padding:7px 10px; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; }
-  .auth-gate { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-               padding:22px; background:radial-gradient(circle at 50% 30%, #141a22 0, #05070a 58%, #000 100%);
-               color:#e6edf3; font-family:'Segoe UI', Consolas, monospace; z-index:40; }
-  .auth-card { width:min(520px, 94vw); border:1px solid #263238; border-top:3px solid #b71c1c;
-               background:rgba(8,12,16,0.94); padding:24px; box-shadow:0 22px 60px rgba(0,0,0,0.55); }
-  .auth-card h1 { margin:0 0 10px; font-size:19px; color:#ffccbc; letter-spacing:0.08em; text-transform:uppercase; }
-  .auth-card p { margin:10px 0; color:#9fb0ba; line-height:1.55; font-size:14px; }
-  .auth-card a { color:#9cc7ff; text-decoration:none; }
-  .auth-card a:hover { text-decoration:underline; }
   .syl-hud { position:absolute; top:12px; left:12px; background:rgba(8,12,16,0.72);
              border:1px solid #2e3b45; border-left:3px solid #b71c1c; padding:10px 14px;
              font-size:13px; line-height:1.55; min-width:230px; white-space:pre; }
@@ -138,43 +128,13 @@
   }
 </style>
 </head>
-<body class="locked">
+<body>
 <canvas id="game-canvas"></canvas>
 <div id="ui-root"><div id="boot-msg">SYL — INITIALIZING WORLD…</div></div>
-<div id="test-label" class="test-label" hidden>SYL TEST BUILD — Kimi expansion pack</div>
-<div id="auth-gate" class="auth-gate">
-  <div class="auth-card">
-    <h1>SYL Test Build</h1>
-    <p id="auth-copy">Checking your Heartbeat account…</p>
-    <p><a href="/admin">Sign in / account</a> · <a href="/games/syl/">Open stable SYL</a></p>
-  </div>
-</div>
+<div id="test-label" class="test-label">SYL TEST BUILD — Kimi expansion pack</div>
 <script type="importmap">
   { "imports": { "three": "./lib/three.module.js" } }
 </script>
-<script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
-  const gate = document.getElementById("auth-gate");
-  const copy = document.getElementById("auth-copy");
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      copy.innerHTML = "This preview is available to logged-in Heartbeat admin accounts right now. Public players should use the stable build.";
-    } else {
-      const { data, error } = await supabase.rpc("is_admin");
-      if (error || data !== true) {
-        copy.innerHTML = "You are signed in, but this preview is admin-only right now. Public players should use the stable build.";
-      } else {
-        gate.remove();
-        document.body.classList.remove("locked");
-        document.getElementById("test-label").hidden = false;
-        await import("./src/main.js");
-      }
-    }
-  } catch (e) {
-    copy.textContent = "Could not verify account access. Try signing in again, then return to this test build.";
-  }
-</script>
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>
