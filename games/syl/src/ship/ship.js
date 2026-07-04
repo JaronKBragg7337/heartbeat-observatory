@@ -74,7 +74,7 @@ export class Ship {
     this.group = new THREE.Group();
     this.group.name = 'ship';
     engine.scene.add(this.group);
-    this._trackEntry = engine.trackWorldObject({ worldPos: this.worldPos, object3d: this.group });
+    this._trackEntry = engine.trackWorldObject({ worldPos: this.worldPos, object3d: this.group, quaternion: this.quaternion });
     this.rebuildVisual();
   }
 

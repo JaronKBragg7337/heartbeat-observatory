@@ -275,10 +275,6 @@ function updateCamera(dt) {
         shipCamBaseQuat.copy(ship.quaternion);
         shipCamBaseReady = true;
       }
-      const shipTurnInput = input.down('KeyQ') || input.down('KeyR');
-      if (shipTurnInput) {
-        shipCamBaseQuat.slerp(ship.quaternion, Math.min(1, 2.2 * dt));
-      }
       const looking = input.touchMode
         ? (input.touchLookActive && !input.touchJoystickActive)
         : (input.pointerLocked && Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0);

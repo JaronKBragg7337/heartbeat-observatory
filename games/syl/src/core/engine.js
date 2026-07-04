@@ -44,7 +44,7 @@ export class Engine {
     this.cameraWorldPos = new THREE.Vector3(0, 0, 0);
 
     // Entities that need world->camera-relative sync each frame.
-    // Each entry: { worldPos: THREE.Vector3, object3d: THREE.Object3D }
+    // Each entry: { worldPos: THREE.Vector3, object3d: THREE.Object3D, quaternion?: THREE.Quaternion }
     this._synced = new Set();
 
     // Update callbacks: fn(dt, timeSec). Order matters; register in main.js.
@@ -88,9 +88,11 @@ export class Engine {
 
       for (const fn of this._updaters) fn(dt, this.timeSec);
 
-      // Floating-origin sync: place every tracked mesh camera-relative.
+      // Floating-origin sync: place every tracked mesh camera-relative and,
+      // when supplied, copy the authoritative simulation rotation into the visual.
       for (const e of this._synced) {
         e.object3d.position.subVectors(e.worldPos, this.cameraWorldPos);
+        if (e.quaternion) e.object3d.quaternion.copy(e.quaternion);
       }
       this.camera.position.set(0, 0, 0);
 
