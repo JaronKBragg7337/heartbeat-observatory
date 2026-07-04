@@ -189,7 +189,7 @@ traversal.on((name, payload) => {
     }
   }
   if (name === 'enteredShip') ui.showToast(input.touchMode
-    ? 'Piloting. Hold stick to lift/drive · BANK turns · NOSE pitches in high flight.'
+    ? 'Piloting. Left stick flies · right stick banks/pitches.'
     : 'Piloting. W/S drives · A/D strafes · Q/R bank · ↑/↓ pitch · chase follows nose.', 4500);
 });
 
@@ -308,8 +308,8 @@ function readShipControls(dt) {
   // Assisted ship piloting:
   // W/S or stick up/down = forward/reverse movement.
   // A/D or stick left/right = lateral movement.
-  // Q/R or BANK buttons = turn-bank.
-  // ArrowUp/ArrowDown or NOSE buttons = pitch in high flight/space.
+  // Q/R or right attitude stick X = turn-bank.
+  // ArrowUp/ArrowDown or right attitude stick Y = pitch in high flight/space.
   // Camera/look input owns camera rotation separately.
   const touchThrottle = input.touchShipThrottle || 0;
   const keyForward = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
@@ -318,14 +318,16 @@ function readShipControls(dt) {
 
   const keyRoll = (input.down('KeyR') ? 1 : 0) - (input.down('KeyQ') ? 1 : 0);
   const keyPitch = (input.down('ArrowDown') ? 1 : 0) - (input.down('ArrowUp') ? 1 : 0);
+  const shipBank = input.touchMode ? (input.touchShipBank || 0) : keyRoll;
+  const shipPitch = input.touchMode ? (input.touchShipPitch || 0) : keyPitch;
   const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
   const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
   const descend = input.down('KeyZ');
   const touchAutoLift = input.touchMode && input.touchJoystickActive && !descend;
 
-  controls.pitch = keyPitch;
-  controls.yaw = keyRoll * 0.65;
-  controls.roll = keyRoll;
+  controls.pitch = shipPitch;
+  controls.yaw = shipBank * 0.65;
+  controls.roll = shipBank;
   controls.thrustUp = input.down('Space') || touchAutoLift;
   controls.descend = descend;
   controls.brake = input.down('KeyX') || input.down('ControlLeft') || input.down('ControlRight');
@@ -441,6 +443,6 @@ ui.showCenter(
   'SYL — FOUNDATION BUILD<br>' +
   '<span class="dim">Your ship is damaged. Gather crates (F), repair and fuel it (B), then fly to another world.<br>' +
   (touchActive
-    ? 'Hold stick to lift/drive · BANK turns · NOSE pitches high flight · DESCEND lands.</span>'
+    ? 'Left stick flies · right stick banks/pitches · DESCEND lands.</span>'
     : 'Click to take mouse control. H toggles help.</span>'), 9000);
 engine.start();

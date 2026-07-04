@@ -9,8 +9,8 @@
 // through Input.setVirtual('KeyW', …) etc., and look drags feed the same
 // mouseDX/mouseDY the mouse uses. If it plays on keyboard, it plays on touch.
 //
-// LAYOUT (thumbs): left = movement joystick; right = drag to look; button
-// clusters bottom-right (actions) and right edge (ship throttle/brake).
+// LAYOUT (thumbs): left = movement/fly joystick; right = ship attitude
+// joystick while piloting; small buttons handle contextual actions.
 //
 // Future agents: tune sizes/deadzones here; add haptics (navigator.vibrate)
 // on pickups/landings; contextual button relabeling reads traversal mode.
@@ -51,6 +51,14 @@ export function joystickShipControls(dx, dy, radius = JOY_R) {
   };
 }
 
+export function joystickShipAttitude(dx, dy, radius = JOY_R) {
+  const axes = joystickAxes(dx, dy, radius);
+  return {
+    bank: axes.x,
+    pitch: axes.y,
+  };
+}
+
 export function isTouchDevice() {
   return ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 }
@@ -63,18 +71,15 @@ export function initTouch(input, root) {
   wrap.id = 'touch-root';
   wrap.innerHTML = `
     <div id="joy-base"><div id="joy-label">MOVE</div><div id="joy-knob"></div></div>
+    <div id="att-base"><div id="att-label">ATTITUDE</div><div id="att-knob"></div></div>
     <div id="touch-btns">
       <button data-code="KeyE"  class="tbtn">E</button>
       <button data-code="KeyF"  class="tbtn">F</button>
       <button data-code="KeyB"  class="tbtn">B</button>
       <button data-code="KeyM"  class="tbtn">M</button>
       <button data-code="Space" class="tbtn wide foot-only">JUMP / THRUST</button>
-      <button data-code="KeyQ" class="tbtn bank ship-only bank-left">BANK L</button>
-      <button data-code="KeyR" class="tbtn bank ship-only bank-right">BANK R</button>
     </div>
     <div id="ship-btns">
-      <button data-code="ArrowUp" class="tbtn hold">NOSE UP</button>
-      <button data-code="ArrowDown" class="tbtn hold">NOSE DOWN</button>
       <button data-code="KeyZ" class="tbtn hold">DESCEND</button>
       <button data-code="KeyG" class="tbtn">GEAR</button>
     </div>`;
@@ -86,21 +91,26 @@ export function initTouch(input, root) {
                 width:${JOY_R * 2}px; height:${JOY_R * 2}px;
                 border:2px solid rgba(207,216,220,0.45); border-radius:50%;
                 background:rgba(8,12,16,0.35); pointer-events:auto; touch-action:none; }
-    #joy-knob { position:absolute; left:50%; top:50%; width:46px; height:46px; margin:-23px 0 0 -23px;
+    #att-base { position:absolute; right:26px; bottom:calc(30px + env(safe-area-inset-bottom, 0px));
+                display:none; width:${JOY_R * 2}px; height:${JOY_R * 2}px;
+                border:2px solid rgba(207,216,220,0.45); border-radius:50%;
+                background:rgba(8,12,16,0.35); pointer-events:auto; touch-action:none; }
+    #joy-knob, #att-knob { position:absolute; left:50%; top:50%; width:46px; height:46px; margin:-23px 0 0 -23px;
                 border-radius:50%; background:rgba(183,28,28,0.75); border:1px solid #ef9a9a; }
-    #joy-label { position:absolute; inset:auto 0 10px 0; text-align:center; color:#cfd8dc;
+    #joy-label, #att-label { position:absolute; inset:auto 0 10px 0; text-align:center; color:#cfd8dc;
                  font-size:11px; font-weight:700; letter-spacing:0; opacity:0.8; }
     #touch-btns { position:absolute; right:16px; bottom:26px; display:grid;
                   grid-template-columns:repeat(4, 54px); gap:8px; pointer-events:auto; }
     #ship-btns { position:absolute; right:16px; top:32%; display:none; flex-direction:column;
                  gap:8px; pointer-events:auto; }
+    #touch-root.piloting #att-base { display:block; }
+    #touch-root.piloting #touch-btns { right:16px; bottom:calc(172px + env(safe-area-inset-bottom, 0px)); }
     #touch-root.piloting #ship-btns { display:flex; }
     #touch-root .ship-only { display:none; }
     #touch-root.piloting .foot-only { display:none; }
     #touch-root.piloting .ship-only { display:block; }
-    .bank-left { grid-column:1 / span 2; }
-    .bank-right { grid-column:3 / span 2; }
     #touch-root.panel-open #joy-base,
+    #touch-root.panel-open #att-base,
     #touch-root.panel-open #touch-btns,
     #touch-root.panel-open #ship-btns { display:none; }
     .tbtn { height:48px; border-radius:10px; border:1px solid #455a64; color:#cfd8dc;
@@ -111,9 +121,12 @@ export function initTouch(input, root) {
     @media (max-width: 700px) {
       #joy-base { left:18px; bottom:calc(22px + env(safe-area-inset-bottom, 0px));
                   width:112px; height:112px; }
-      #joy-knob { width:40px; height:40px; margin:-20px 0 0 -20px; }
+      #att-base { right:18px; bottom:calc(22px + env(safe-area-inset-bottom, 0px));
+                  width:112px; height:112px; }
+      #joy-knob, #att-knob { width:40px; height:40px; margin:-20px 0 0 -20px; }
       #touch-btns { right:12px; bottom:calc(20px + env(safe-area-inset-bottom, 0px));
                     grid-template-columns:repeat(4, 42px); gap:6px; }
+      #touch-root.piloting #touch-btns { right:12px; bottom:calc(142px + env(safe-area-inset-bottom, 0px)); }
       #ship-btns { right:12px; top:30%; gap:7px; }
       #ship-btns .tbtn { width:78px; height:50px; }
       .tbtn { height:42px; border-radius:9px; font-size:12px; }
@@ -127,6 +140,11 @@ export function initTouch(input, root) {
     const piloting = mode === 'PILOTING';
     wrap.classList.toggle('piloting', piloting);
     wrap.classList.toggle('panel-open', !!document.querySelector('.syl-panel[style*="display: block"]'));
+    if (!piloting) {
+      input.touchShipBank = 0;
+      input.touchShipPitch = 0;
+      input.touchAttitudeActive = false;
+    }
     const label = wrap.querySelector('#joy-label');
     if (label) label.textContent = piloting ? 'FLY' : 'MOVE';
   }, 250);
@@ -154,12 +172,10 @@ export function initTouch(input, root) {
     if (piloting) {
       const ship = joystickShipControls(dx, dy, radius);
       input.touchShipYaw = ship.yaw;
-      input.touchShipPitch = ship.pitch;
       input.touchShipThrottle = ship.throttle;
       clearMoveKeys();
     } else {
       input.touchShipYaw = 0;
-      input.touchShipPitch = 0;
       input.touchShipThrottle = 0;
       const keys = joystickMoveKeys(dx, dy, radius);
       input.setVirtual('KeyD', keys.right, 'move');
@@ -202,15 +218,67 @@ export function initTouch(input, root) {
   base.addEventListener('touchend', joyEnd);
   base.addEventListener('touchcancel', joyEnd);
 
+  // --- Right attitude stick: bank left/right + nose up/down while piloting. -
+  const attBase = wrap.querySelector('#att-base');
+  const attKnob = wrap.querySelector('#att-knob');
+  let attId = null;
+  function setAttitude(dx, dy, radius = JOY_R) {
+    const piloting = window.game?.traversal?.mode === 'PILOTING';
+    if (piloting) {
+      const att = joystickShipAttitude(dx, dy, radius);
+      input.touchShipBank = att.bank;
+      input.touchShipPitch = att.pitch;
+    } else {
+      input.touchShipBank = 0;
+      input.touchShipPitch = 0;
+    }
+    attKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
+  attBase.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    attId = e.changedTouches[0].identifier;
+    input.touchAttitudeActive = true;
+  }, { passive: false });
+  attBase.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    for (const t of e.changedTouches) {
+      if (t.identifier !== attId) continue;
+      const r = attBase.getBoundingClientRect();
+      const radius = r.width / 2;
+      let dx = t.clientX - (r.left + radius), dy = t.clientY - (r.top + radius);
+      const d = Math.hypot(dx, dy);
+      if (d > radius) { dx *= radius / d; dy *= radius / d; }
+      setAttitude(dx, dy, radius);
+    }
+  }, { passive: false });
+  const attEnd = (e) => {
+    e.stopPropagation();
+    for (const t of e.changedTouches) {
+      if (t.identifier === attId) {
+        attId = null;
+        input.touchAttitudeActive = false;
+        setAttitude(0, 0);
+      }
+    }
+  };
+  attBase.addEventListener('touchend', attEnd);
+  attBase.addEventListener('touchcancel', attEnd);
+
   // --- Look: drag anywhere else on screen (canvas area). -------------------
   const looks = new Map(); // touchId -> {x,y}
   window.addEventListener('touchstart', (e) => {
     for (const t of e.changedTouches) {
       if (t.identifier === joyId) continue;
-      if (e.target.closest && e.target.closest('#joy-base, .tbtn, .syl-panel')) continue;
+      if (t.identifier === attId) continue;
+      if (e.target.closest && e.target.closest('#joy-base, #att-base, .tbtn, .syl-panel')) continue;
       const joyRect = base.getBoundingClientRect();
       if (t.clientX >= joyRect.left && t.clientX <= joyRect.right &&
           t.clientY >= joyRect.top && t.clientY <= joyRect.bottom) continue;
+      const attRect = attBase.getBoundingClientRect();
+      if (t.clientX >= attRect.left && t.clientX <= attRect.right &&
+          t.clientY >= attRect.top && t.clientY <= attRect.bottom) continue;
       looks.set(t.identifier, { x: t.clientX, y: t.clientY });
     }
     input.touchLookActive = looks.size > 0;
@@ -218,6 +286,7 @@ export function initTouch(input, root) {
   window.addEventListener('touchmove', (e) => {
     for (const t of e.changedTouches) {
       if (t.identifier === joyId) continue;
+      if (t.identifier === attId) continue;
       const prev = looks.get(t.identifier);
       if (!prev) continue;
       input.mouseDX += (t.clientX - prev.x) * LOOK_SENS;
