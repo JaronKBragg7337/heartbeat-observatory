@@ -188,7 +188,9 @@ traversal.on((name, payload) => {
       ui.showCenter('YOU ARE IN SPACE.<br><span class="dim">Open M — pick a body, burn toward it, then brake (X) and descend.</span>', 6000);
     }
   }
-  if (name === 'enteredShip') ui.showToast('Piloting. W/S or stick up/down drives · A/D or stick left/right strafes · mouse/right drag looks · X brake · E exits when landed.', 4500);
+  if (name === 'enteredShip') ui.showToast(input.touchMode
+    ? 'Piloting. Hold stick to lift/drive · BANK sways · DESCEND lands · right drag looks.'
+    : 'Piloting. W/S drives · A/D strafes · mouse/right drag looks · X brake · E exits when landed.', 4500);
 });
 
 ship._onCrash = (impact) => {
@@ -328,14 +330,19 @@ function readShipControls(dt) {
   const assistForward = input.touchMode ? touchThrottle : keyForward;
   ship.throttle = Math.max(0, assistForward);
 
+  const keyRoll = (input.down('KeyR') ? 1 : 0) - (input.down('KeyQ') ? 1 : 0);
   const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
-  const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
+  const assistStrafe = Math.max(-1, Math.min(1,
+    (input.touchMode ? (input.touchShipYaw || 0) : keySide) + (input.touchMode ? keyRoll * 0.55 : 0)));
+  const descend = input.down('KeyZ');
+  const touchAutoLift = input.touchMode && input.touchJoystickActive && !descend;
 
   controls.pitch = 0;
   controls.yaw = 0;
-  controls.roll = 0;
-  controls.thrustUp = input.down('Space');
-  controls.brake = input.down('KeyX') || input.down('ControlLeft') || input.down('ControlRight') || touchThrottle < -0.85;
+  controls.roll = keyRoll;
+  controls.thrustUp = input.down('Space') || touchAutoLift;
+  controls.descend = descend;
+  controls.brake = input.down('KeyX') || input.down('ControlLeft') || input.down('ControlRight');
   controls.assist = true;
   controls.mobileAssist = input.touchMode;
   controls.assistForward = assistForward;
@@ -356,12 +363,12 @@ function readShipControls(dt) {
   // Mobile takeoff assist: if the player is throttling up from the ground, add
   // vertical lift until the hull is safely away from terrain. This prevents the
   // phone controls from scraping the ship into a "hard impact" loop.
-  if (ship.landed && (ship.throttle > 0.12 || controls.brake)) {
+  if (ship.landed && !descend && (ship.throttle > 0.12 || controls.brake || touchAutoLift)) {
     controls.thrustUp = true;
   }
 
   // Takeoff moment: on the ground, ready, thrusting up => leave the surface.
-  if (ship.landed && (controls.thrustUp || Math.abs(assistForward) > 0.12)) {
+  if (ship.landed && !descend && (controls.thrustUp || Math.abs(assistForward) > 0.12)) {
     if (!ship.stats.ready) {
       ui.showToast('<span class="bad">Ship not flight-ready. Open the builder (B).</span>', 2500);
       ship.throttle = 0;
@@ -411,7 +418,7 @@ function updatePrompt() {
     if (player.worldPos.distanceTo(ship.worldPos) < 12) { ui.showPrompt('B — ship builder'); return; }
   } else if (ship.landed) {
     ui.showPrompt(touchActive
-      ? 'E — exit ship   ·   stick up / LIFT — take off'
+      ? 'E — exit ship   ·   hold stick — take off'
       : 'E — exit ship   ·   Space — take off (if ready)');
     return;
   }
@@ -460,6 +467,6 @@ ui.showCenter(
   'SYL — FOUNDATION BUILD<br>' +
   '<span class="dim">Your ship is damaged. Gather crates (F), repair and fuel it (B), then fly to another world.<br>' +
   (touchActive
-    ? 'Left stick moves · drag to look · buttons on the right.</span>'
+    ? 'Hold stick to lift/drive · BANK sways · DESCEND lands · drag to look.</span>'
     : 'Click to take mouse control. H toggles help.</span>'), 9000);
 engine.start();

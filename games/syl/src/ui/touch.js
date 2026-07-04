@@ -68,10 +68,12 @@ export function initTouch(input, root) {
       <button data-code="KeyF"  class="tbtn">F</button>
       <button data-code="KeyB"  class="tbtn">B</button>
       <button data-code="KeyM"  class="tbtn">M</button>
-      <button data-code="Space" class="tbtn wide">JUMP / THRUST</button>
+      <button data-code="Space" class="tbtn wide foot-only">JUMP / THRUST</button>
+      <button data-code="KeyQ" class="tbtn bank ship-only bank-left">BANK L</button>
+      <button data-code="KeyR" class="tbtn bank ship-only bank-right">BANK R</button>
     </div>
     <div id="ship-btns">
-      <button data-code="KeyX" class="tbtn hold">BRAKE</button>
+      <button data-code="KeyZ" class="tbtn hold">DESCEND</button>
       <button data-code="KeyG" class="tbtn">GEAR</button>
     </div>`;
   const style = document.createElement('style');
@@ -91,6 +93,11 @@ export function initTouch(input, root) {
     #ship-btns { position:absolute; right:16px; top:32%; display:none; flex-direction:column;
                  gap:8px; pointer-events:auto; }
     #touch-root.piloting #ship-btns { display:flex; }
+    #touch-root .ship-only { display:none; }
+    #touch-root.piloting .foot-only { display:none; }
+    #touch-root.piloting .ship-only { display:block; }
+    .bank-left { grid-column:1 / span 2; }
+    .bank-right { grid-column:3 / span 2; }
     #touch-root.panel-open #joy-base,
     #touch-root.panel-open #touch-btns,
     #touch-root.panel-open #ship-btns { display:none; }
@@ -120,8 +127,6 @@ export function initTouch(input, root) {
     wrap.classList.toggle('panel-open', !!document.querySelector('.syl-panel[style*="display: block"]'));
     const label = wrap.querySelector('#joy-label');
     if (label) label.textContent = piloting ? 'FLY' : 'MOVE';
-    const lift = wrap.querySelector('[data-code="Space"]');
-    if (lift) lift.textContent = piloting ? 'LIFT' : 'JUMP / THRUST';
   }, 250);
 
   // --- Buttons → virtual keys (hold-to-press; taps still register once). ---
