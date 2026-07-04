@@ -7,9 +7,9 @@ import { createWorld } from "../../lib/v1/kit.js";
 import { craterField, roadStrip } from "../../lib/v1/layouts.js";
 import { place, rock, crateStack, signPost, bigSign, streetLamp, telescope } from "../../lib/v1/props.js";
 import { launchPad, rocket, ufo, shuttleDisplay, satelliteDish, moonBuggy } from "../../lib/v1/space.js";
-import { cinema, FILMS } from "../../lib/v1/cinema.js";
+import { cinema, FILMS } from "../../lib/v2/cinema.js";
 
-const BUILD = "2026-06-11-lab1"; // bumped with ?v= in index.html on every deploy
+const BUILD = "2026-07-04-films2"; // bumped with ?v= in index.html on every deploy
 
 const terrain = craterField({ color: "#8a8d96", craters: 11, seed: 4404 });
 

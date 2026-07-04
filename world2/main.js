@@ -12,7 +12,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const BUILD = "2026-07-04-w2k";
+const BUILD = "2026-07-04-w2l";
 const PREVIEW = new URLSearchParams(location.search).get("preview") === "1"; // gate-page spectate: orbit forever, join nothing // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
@@ -1171,13 +1171,13 @@ function buildInteriors() {
   // Legally-free reels from their ORIGINAL sources (Blender CC BY / Internet Archive PD / NASA PD),
   // credits shown in-room. Honest empty states; per-visitor playback for now (shared sync = next step).
   const FILMS = [
-    { title: "Big Buck Bunny", year: 2008, license: "CC BY 3.0", credit: "(c) 2008 Blender Foundation - bigbuckbunny.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
-    { title: "Sintel", year: 2010, license: "CC BY 3.0", credit: "(c) 2010 Blender Foundation - sintel.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4" },
-    { title: "Tears of Steel", year: 2012, license: "CC BY 3.0", credit: "(c) 2012 Blender Foundation - tearsofsteel.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" },
-    { title: "Elephants Dream", year: 2006, license: "CC BY 2.5", credit: "(c) 2006 Blender Foundation / NMAI - orange.blender.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
+    { title: "Big Buck Bunny", year: 2008, license: "CC BY 3.0", credit: "(c) 2008 Blender Foundation - bigbuckbunny.org", src: "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Big_Buck_Bunny_4K.webm/Big_Buck_Bunny_4K.webm.720p.vp9.webm", srcFallback: "https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4" },
+    { title: "Sintel", year: 2010, license: "CC BY 3.0", credit: "(c) 2010 Blender Foundation - sintel.org", src: "https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f1/Sintel_movie_4K.webm/Sintel_movie_4K.webm.720p.vp9.webm", srcFallback: "https://archive.org/download/Sintel/sintel-2048-stereo_512kb.mp4" },
+    { title: "Tears of Steel", year: 2012, license: "CC BY 3.0", credit: "(c) 2012 Blender Foundation - tearsofsteel.org", src: "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/cb/Tears_of_Steel_1080p.webm/Tears_of_Steel_1080p.webm.720p.vp9.webm", srcFallback: "https://archive.org/download/Tears-of-Steel/tears_of_steel_720p.mp4" },
+    { title: "Elephants Dream", year: 2006, license: "CC BY 2.5", credit: "(c) 2006 Blender Foundation / NMAI - orange.blender.org", src: "https://upload.wikimedia.org/wikipedia/commons/transcoded/2/28/Elephants_Dream_%282006%29_1080p24.webm/Elephants_Dream_%282006%29_1080p24.webm.720p.vp9.webm", srcFallback: "https://archive.org/download/ElephantsDream/ed_1024_512kb.mp4" },
     { title: "His Girl Friday", year: 1940, license: "Public Domain", credit: "Public domain - Internet Archive", src: "https://archive.org/download/his_girl_friday/his_girl_friday_512kb.mp4" },
     { title: "Plan 9 from Outer Space", year: 1959, license: "Public Domain", credit: "Public domain - Internet Archive", src: "https://archive.org/download/plan-9-from-outer-space-1959/Plan%209%20From%20Outer%20Space%20%281959%29.ia.mp4" },
-    { title: "Artemis - Success and Preparation", year: 2025, license: "Public Domain (NASA)", credit: "Video courtesy of NASA - images.nasa.gov", src: "https://images-assets.nasa.gov/video/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615~medium.mp4", srcFallback: "https://images-assets.nasa.gov/video/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615~mobile.mp4" }
+    { title: "Artemis - Success and Preparation", year: 2025, license: "Public Domain (NASA)", credit: "Video courtesy of NASA - images.nasa.gov", src: "https://images-assets.nasa.gov/video/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615~mobile.mp4", srcFallback: "https://images-assets.nasa.gov/video/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615~medium.mp4" },
   ];
   const video = document.createElement("video");
   video.crossOrigin = "anonymous"; video.playsInline = true; video.setAttribute("playsinline", "");

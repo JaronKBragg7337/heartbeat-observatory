@@ -9,12 +9,12 @@
 import { createWorld } from "../../lib/v1/kit.js";
 import { flatland, roadStrip, ringPlaza } from "../../lib/v1/layouts.js";
 import { place, streetLamp, bench, foodCart, trashBin, signPost, bigSign, planter, balloonBunch } from "../../lib/v1/props.js";
-import { cinema, FILMS } from "../../lib/v1/cinema.js";
+import { cinema, FILMS } from "../../lib/v2/cinema.js";
 import { tower } from "../../lib/v1/buildings.js";
 import { taxi, patrol } from "../../lib/v1/vehicles.js";
 import { paverTexture } from "../../lib/v1/textures.js";
 
-const BUILD = "2026-06-11-lab1"; // bumped with ?v= in index.html on every deploy
+const BUILD = "2026-07-04-films2"; // bumped with ?v= in index.html on every deploy
 
 const terrain = flatland({ map: paverTexture({ color: "#5e5a64", repeat: [40, 40] }) });
 

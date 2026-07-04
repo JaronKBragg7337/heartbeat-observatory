@@ -66,3 +66,31 @@ data: **(c) OpenStreetMap contributors, ODbL 1.0** (openstreetmap.org/copyright)
 Attribution is shown in-world (permanent HUD chip + entry overlay). The exact query,
 converter, and per-world details live in `worlds/fort-wayne/CREDITS.md`. No Google or
 Apple imagery was used anywhere in that world.
+
+---
+
+## Source re-verification — 2026-07-04 (Cowork run, Claude Fable 5)
+
+The June 11 catalog partially died server-side. Verified with curl (Range GETs, Origin header)
+and a live browser session on 2026-07-04:
+
+- **Google sample bucket (commondatastorage.googleapis.com/gtv-videos-bucket): HTTP 403 on all
+  four Blender reels — for everyone, not just us.** These URLs are retired from every catalog.
+- **Replacement Blender sources (same films, same licenses, still the original-free-source rule):**
+  - Wikimedia Commons 720p VP9 transcodes — HTTP 206 + `Access-Control-Allow-Origin: *`
+    (CORS-safe, so the 3D theaters' VideoTexture path uses these first):
+    Big Buck Bunny, Sintel (from `Sintel_movie_4K.webm`), Tears of Steel (from
+    `Tears_of_Steel_1080p.webm`), Elephants Dream (from `Elephants_Dream_(2006)_1080p24.webm`).
+  - Internet Archive mp4s — HTTP 206, stream fine, but the download nodes send **no CORS
+    headers**, so they are primary on the FLAT theater page (no crossorigin needed there) and
+    fallback in the 3D worlds (the honest error path skips them if CORS blocks the texture):
+    `BigBuckBunny_328`, `Sintel` (2048 stereo 512kb), `Tears-of-Steel` (720p),
+    `ElephantsDream` (ed_1024_512kb).
+- **Internet Archive classics (His Girl Friday, Plan 9):** unchanged, verified 206.
+- **NASA (images-assets.nasa.gov):** verified 206 + CORS on the `~mobile` variant — now primary;
+  `~medium` kept as fallback.
+
+lib/v1 stays frozen per the freeze law; the repaired catalog lives in **lib/v2/cinema.js**
+(v1's exact code + new sources; v2 imports v1's frozen textures/buildings). cinema-district
+and cosmodrome now import v2. The live theaters (Town Square, World 2, /video) carry the same
+re-verified catalog.
