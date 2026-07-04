@@ -34,10 +34,10 @@ const PITCH_RATE = 2.4;   // was 2.2
 const YAW_RATE   = 2.7;   // was 1.8 — the main 'I can't turn' fix
 const ROLL_RATE  = 2.4;
 const ROT_DAMP   = 2.2;   // was 3.0 — eased so a turn builds and holds
-const MOBILE_YAW_RATE = 2.9; // direct heading steering for touch flight assist
-const MOBILE_FORWARD_SPEED = 62; // m/s direct assisted phone flight
-const MOBILE_LIFT_SPEED = 30;
-const MOBILE_RESPONSE = 5.5;
+const ASSIST_YAW_RATE = 2.9; // direct heading steering for assisted piloting
+const ASSIST_FORWARD_SPEED = 62; // m/s direct dev-fly-like ship flight
+const ASSIST_LIFT_SPEED = 30;
+const ASSIST_RESPONSE = 5.5;
 
 export class Ship {
   constructor(engine, bodies) {
@@ -153,7 +153,7 @@ export class Ship {
   }
 
   // ------------------------------------------------------------------ flight
-  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; brake: bool; mobileAssist?: bool }
+  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; brake: bool; assist?: bool; assistForward?: -1..1 }
   tick(dt, piloted, controls) {
     const body = dominantBody(this.bodies, this.worldPos);
     this._domBody = body;
@@ -170,15 +170,14 @@ export class Ship {
     }
 
     const accel = _accel.set(0, 0, 0);
-    const mobileAssist = !!(piloted && controls && controls.mobileAssist);
+    const assisted = !!(piloted && controls && (controls.assist || controls.mobileAssist));
 
-    if (mobileAssist) {
-      // Phone flight is an assisted piloting mode: yaw changes the travel
+    if (assisted) {
+      // Assisted piloting uses the dev-fly feel: yaw changes the real travel
       // heading directly and the hull stays upright relative to the nearest
-      // body. This avoids the "elevator on a rail" feel caused by tiny-screen
-      // pitch/roll/inertia fighting the player's intent.
+      // body. This avoids the "camera turned but ship stayed on a rail" feel.
       if (controls.yaw) {
-        _q.setFromAxisAngle(up, controls.yaw * MOBILE_YAW_RATE * dt);
+        _q.setFromAxisAngle(up, controls.yaw * ASSIST_YAW_RATE * dt);
         this.quaternion.premultiply(_q).normalize();
       }
       const fwdFlat = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
@@ -193,13 +192,14 @@ export class Ship {
       this.angVel.set(0, 0, 0);
 
       if (this.stats.ready && this.fuel > 0) {
-        const target = _mobileVel.copy(fwdFlat).multiplyScalar(this.throttle * MOBILE_FORWARD_SPEED);
-        if (controls.thrustUp) target.addScaledVector(up, MOBILE_LIFT_SPEED);
+        const forward = Math.max(-1, Math.min(1, controls.assistForward ?? this.throttle));
+        const target = _mobileVel.copy(fwdFlat).multiplyScalar(forward * ASSIST_FORWARD_SPEED);
+        if (controls.thrustUp) target.addScaledVector(up, ASSIST_LIFT_SPEED);
         if (controls.brake) target.multiplyScalar(0.15);
-        this.velocity.lerp(target, Math.min(1, MOBILE_RESPONSE * dt));
-        const burn = (this.throttle * 0.45 + (controls.thrustUp ? 0.35 : 0)) * dt;
+        this.velocity.lerp(target, Math.min(1, ASSIST_RESPONSE * dt));
+        const burn = (Math.abs(forward) * 0.45 + (controls.thrustUp ? 0.35 : 0)) * dt;
         this.fuel = Math.max(0, this.fuel - burn);
-        if (this._glow) this._glow.intensity = this.throttle > 0 || controls.thrustUp ? 3.5 : 0;
+        if (this._glow) this._glow.intensity = Math.abs(forward) > 0.01 || controls.thrustUp ? 3.5 : 0;
         this.worldPos.addScaledVector(this.velocity, dt);
         this.landed = false;
         this._altitude = altitudeAt(body, this.worldPos) - HULL_CLEARANCE;
@@ -211,7 +211,7 @@ export class Ship {
     let burning = 0;
     if (piloted && this.stats.ready && this.fuel > 0) {
       const fwd = _fwd.set(0, 0, 1).applyQuaternion(this.quaternion);
-      if (mobileAssist) {
+      if (assisted) {
         fwd.addScaledVector(up, -fwd.dot(up));
         if (fwd.lengthSq() < 1e-6) fwd.set(1, 0, 0).addScaledVector(up, -fwd.dot(up));
         fwd.normalize();
@@ -221,7 +221,7 @@ export class Ship {
         burning += this.throttle;
       }
       if (controls && controls.thrustUp) {
-        const shipUp = mobileAssist ? up : _shipUp.set(0, 1, 0).applyQuaternion(this.quaternion);
+        const shipUp = assisted ? up : _shipUp.set(0, 1, 0).applyQuaternion(this.quaternion);
         accel.addScaledVector(shipUp, (this.stats.thrust * 0.75) / this.stats.mass);
         burning += 0.75;
       }
@@ -250,7 +250,7 @@ export class Ship {
     this.worldPos.addScaledVector(this.velocity, dt);
 
     // 4. Rotation: rates from controls, damped.
-    if (piloted && controls && !mobileAssist) {
+    if (piloted && controls && !assisted) {
       this.angVel.x += controls.pitch * PITCH_RATE * dt;
       this.angVel.y += controls.yaw * YAW_RATE * dt;
       this.angVel.z += controls.roll * ROLL_RATE * dt;

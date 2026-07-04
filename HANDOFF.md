@@ -7,6 +7,26 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — Assisted ship piloting default synced
+
+**State:** public `/games/syl/` has the fix after Jaron reported desktop WASD
+was also weird and dev fly mode was the correct feel.
+
+**Shipped:** synced dev-fly-style assisted ship piloting as the default:
+W/S or mobile stick up/down moves forward/reverse, A/D or stick left/right turns
+ship heading, Space/LIFT climbs, and X/Ctrl/BRAKE slows. Mouse/touch look is
+camera orbit only and camera recenters behind the ship when look input stops.
+
+**Verified:** SYL `npm test` 69/69 before sync; syntax and browser source smoke
+before push.
+
+**Next up:** Jaron retests: desktop W forward, S reverse, A/D turn ship, mouse
+camera only; phone FLY stick should not orbit camera.
+
+**Gotchas:** old 6DOF/inertial ship flight is no longer the default feel.
+
+---
+
 ## 2026-07-04 — Codex — SYL dev-fly mobile ship feel synced
 
 **State:** public `/games/syl/` has the follow-up requested after Jaron said

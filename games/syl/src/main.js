@@ -262,8 +262,11 @@ function updateCamera(dt) {
     // Ship views: offsets in ship space, world math in f64.
     if (chaseCam) {
       _cv.set(0, 4.5, -15);
-      if (input.touchMode) {
-        if (input.touchLookActive) {
+      if (input.touchMode || input.pointerLocked) {
+        const looking = input.touchMode
+          ? input.touchLookActive
+          : Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0;
+        if (looking) {
           shipTouchCamYaw -= input.mouseDX * 0.003;
           shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch - input.mouseDY * 0.003));
         } else {
@@ -299,37 +302,32 @@ const _flipY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0
 const controls = { pitch: 0, yaw: 0, roll: 0, thrustUp: false, brake: false };
 
 function readShipControls(dt) {
-  // Throttle: W/S on desktop; mobile piloting uses the left stick up/down.
+  // Assisted ship piloting uses the same direct feel as dev fly:
+  // W/S or stick up/down = forward/reverse, A/D or stick left/right = turn.
   const touchThrottle = input.touchShipThrottle || 0;
-  if (input.down('KeyW')) ship.throttle = Math.min(1, ship.throttle + 0.7 * dt);
-  if (input.down('KeyS')) ship.throttle = Math.max(0, ship.throttle - 0.9 * dt);
-  if (touchThrottle > 0) ship.throttle = Math.min(1, ship.throttle + 0.8 * touchThrottle * dt);
-  if (touchThrottle < 0) ship.throttle = Math.max(0, ship.throttle + 1.0 * touchThrottle * dt);
-  // Yaw = mouse X + A/D keys + touch analog stick so you can HOLD a turn without
-  // dragging the camera. Roll moved to Q/E to free A/D. (Touch: stick or buttons.)
+  const keyForward = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
+  const assistForward = input.touchMode ? touchThrottle : keyForward;
+  ship.throttle = Math.max(0, assistForward);
+
   const keyYaw = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
-  if (input.touchMode) {
-    controls.pitch = 0;
-    controls.yaw = input.touchShipYaw || 0;
-    controls.roll = 0;
-  } else {
-    controls.pitch = input.mouseDY * 0.05;
-    controls.yaw = input.mouseDX * 0.05 + keyYaw;
-    controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyE') ? 1 : 0);
-  }
+  controls.pitch = 0;
+  controls.yaw = input.touchMode ? (input.touchShipYaw || 0) : keyYaw;
+  controls.roll = 0;
   controls.thrustUp = input.down('Space');
-  controls.brake = input.down('KeyX') || touchThrottle < -0.85;
+  controls.brake = input.down('KeyX') || input.down('ControlLeft') || input.down('ControlRight') || touchThrottle < -0.85;
+  controls.assist = true;
   controls.mobileAssist = input.touchMode;
+  controls.assistForward = assistForward;
 
   // Mobile takeoff assist: if the player is throttling up from the ground, add
   // vertical lift until the hull is safely away from terrain. This prevents the
   // phone controls from scraping the ship into a "hard impact" loop.
-  if (input.touchMode && ship.landed && ship.throttle > 0.12) {
+  if (ship.landed && (ship.throttle > 0.12 || controls.brake)) {
     controls.thrustUp = true;
   }
 
   // Takeoff moment: on the ground, ready, thrusting up => leave the surface.
-  if (ship.landed && (controls.thrustUp || ship.throttle > 0.4)) {
+  if (ship.landed && (controls.thrustUp || Math.abs(assistForward) > 0.12)) {
     if (!ship.stats.ready) {
       ui.showToast('<span class="bad">Ship not flight-ready. Open the builder (B).</span>', 2500);
       ship.throttle = 0;
