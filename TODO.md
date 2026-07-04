@@ -39,17 +39,14 @@ unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/metho
 
 ## SOON
 - Theater seat assignment (booth picks seat → binds to character; seats table + sit mechanic).
-- Video playback on theater hall screens (legally-free reels). DIAGNOSED June 11: the only
-  implementation is worlds-lab Marquee Row (cinema.js) - well-built (real <video> -> VideoTexture,
-  legal sources w/ credits, fallbacks, muted-first phone handling) and NOT broken as far as code
-  reads: the screen idles PURE BLACK by design until the "Start the screening" floor station is
-  used, with no hint on the screen itself (honest-empty-state gap - the idle screen should say
-  it's waiting). Jaron's black-screen visit predates the movement fix, so the start station was
-  effectively unreachable; playback is now CONFIRMED WORKING (June 11: Jaron retested
-  post-movement-fix - NASA Artemis reel playing on the screen wall with audio and credit).
-  SHIPPED June 11 (commit ee73867): house lights bright while
-  idle / dim to 15% on play / restored on leave, glowing labeled START + NEXT REEL floor pads,
-  idle screen now says what it's waiting for. Remaining: port the whole pattern to the live theaters.
+- Theater screenings SHIPPED July 4, 2026 (Cowork run): the Marquee Row playback pattern is
+  now in ALL the live theaters - /video flat page (reel picker + real <video> player),
+  Town Square theater interior, and World 2 theater interior (glowing START/NEXT REEL pads,
+  house lights dim on play, idle screen says what it is waiting for, credits shown in-room,
+  16:9 screens so film is never stretched). Full shipped text in ARCHIVE.md.
+  Remaining (honest): playback is PER-VISITOR - two people in the same hall each run their
+  own projector. Next step: sync start/next over the world state channel (broadcast event
+  "cine" + late-join reconcile) so everyone watches the same reel together.
 - **MEDIA SURFACES (unlocked by the Marquee Row proof - Jaron's vision):** any flat surface can
   wear moving images - billboards, jumbotrons, tickers, marquees (downtown-New-York look).
   Engineering law: phones decode 1-3 <video> elements, never dozens - share ONE video texture

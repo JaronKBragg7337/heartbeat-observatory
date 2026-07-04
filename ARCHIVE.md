@@ -6,6 +6,24 @@ Convention: newest sections at the top. Text is moved verbatim from TODO.md — 
 
 ---
 
+## Archived July 4, 2026 (Theater promotion — Cowork run, Fable 5)
+
+Moved verbatim from TODO.md SOON (the diagnosis + first ship that led to today's port):
+> - Video playback on theater hall screens (legally-free reels). DIAGNOSED June 11: the only
+>   implementation is worlds-lab Marquee Row (cinema.js) - well-built (real <video> -> VideoTexture,
+>   legal sources w/ credits, fallbacks, muted-first phone handling) and NOT broken as far as code
+>   reads: the screen idles PURE BLACK by design until the "Start the screening" floor station is
+>   used, with no hint on the screen itself (honest-empty-state gap - the idle screen should say
+>   it's waiting). Jaron's black-screen visit predates the movement fix, so the start station was
+>   effectively unreachable; playback is now CONFIRMED WORKING (June 11: Jaron retested
+>   post-movement-fix - NASA Artemis reel playing on the screen wall with audio and credit).
+>   SHIPPED June 11 (commit ee73867): house lights bright while
+>   idle / dim to 15% on play / restored on leave, glowing labeled START + NEXT REEL floor pads,
+>   idle screen now says what it's waiting for. Remaining: port the whole pattern to the live theaters.
+
+**THEATER PROMOTION SHIPPED July 4, 2026:** the proven Marquee Row pattern (worlds-lab lib/v1/cinema.js) ported to every live theater, per Jaron's whole-site-upgrade mandate ("START with the THEATER"). What shipped: (1) `/video` flat page is now a working screening room — same verified legal catalog (4 Blender CC BY open movies, 2 Internet Archive public-domain classics, 1 NASA reel with mobile fallback), reel picker, real `<video>` player, credit line during playback, honest failed-reel state, muted-first phone handling; (2) Town Square theater interior (engine/hub/main.js, BUILD 2026-07-04-theater1) — glowing START THE SCREENING / NEXT REEL station pads, 16:9 VideoTexture screen with dark masking panels (film never stretched), house lights bright while idle / dim to ~15% on play / restored on leave, NOW SHOWING board + about-this-screening credit plaque drawn on redrawable CanvasTextures, one `<video>` element per room (media-surfaces law), reel pauses on exit via a `cineOnLeave` hook in exitInterior; stations gained an additive `fn` action type; (3) World 2 theater interior (world2/main.js, BUILD 2026-07-04-w2k) — same system, same honesty. Also healed in the same commits: the hub's BUILD/?v drift (Codex's July 3 commits bumped ?v without BUILD; boot log was lying about which build was running). HONEST LIMIT recorded in TODO: playback is per-visitor; shared start/next sync over the state channel is the designed next step.
+---
+
 ## Archived June 12, 2026 (Fort Wayne Phase 1 — Cowork run)
 
 Moved verbatim from TODO.md NOW queue item 2:
