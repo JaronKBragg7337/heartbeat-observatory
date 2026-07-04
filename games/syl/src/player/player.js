@@ -149,6 +149,11 @@ export class Player {
       this.grounded = false;
     }
 
+    // Ship hull is SOLID to the player (2026-07-04): oriented-box blocker
+    // matching the gunship silhouette. You can also land on and walk on the
+    // roof. main.js sets shipRef after both entities exist.
+    if (this.shipRef) this._collideWithShip(this.shipRef, up);
+
     if (resolveStructureCollision(body, this.worldPos, 0.45)) {
       const push = _push.subVectors(this.worldPos, beforeMove);
       if (push.lengthSq() > 1e-8) {
@@ -162,6 +167,41 @@ export class Player {
     const frame = this.localFrame(this._upSmooth);
     _m.makeBasis(frame.right, frame.up, _tmpV.copy(frame.fwd).negate());
     this.bodyMesh.quaternion.setFromRotationMatrix(_m);
+  }
+
+  // Push the player capsule out of the ship's oriented hull box.
+  // Half-extents cover the code-built Fortis gunship silhouette (ship.js
+  // rebuildVisual): width ~4.4, roof at +2.3, deck/keel at -0.9, length ~12.5.
+  _collideWithShip(ship, up) {
+    const R = 0.45;                       // player capsule radius
+    const HX = 2.35, HZ = 6.4;            // hull half width / length
+    const TOP = 2.3, BOTTOM = -0.95;      // hull vertical span (ship-local)
+    _sq.copy(ship.quaternion).invert();
+    _lp.subVectors(this.worldPos, ship.worldPos).applyQuaternion(_sq);
+    const inX = Math.abs(_lp.x) < HX + R;
+    const inZ = Math.abs(_lp.z) < HZ + R;
+    const inY = _lp.y > BOTTOM - 1.8 && _lp.y < TOP; // capsule feet..head overlap
+    if (!inX || !inZ || !inY) return;
+    const px = HX + R - Math.abs(_lp.x);
+    const pz = HZ + R - Math.abs(_lp.z);
+    const pTop = TOP - _lp.y;
+    _before2.copy(this.worldPos);
+    if (pTop <= px && pTop <= pz) {
+      _lp.y = TOP;                        // stand on the hull
+      this.grounded = true;
+    } else if (px <= pz) {
+      _lp.x = Math.sign(_lp.x || 1) * (HX + R);
+    } else {
+      _lp.z = Math.sign(_lp.z || 1) * (HZ + R);
+    }
+    this.worldPos.copy(_lp).applyQuaternion(ship.quaternion).add(ship.worldPos);
+    // Kill velocity INTO the hull along the push direction.
+    _push2.subVectors(this.worldPos, _before2);
+    if (_push2.lengthSq() > 1e-10) {
+      _push2.normalize();
+      const vInto = this.velocity.dot(_push2);
+      if (vInto < 0) this.velocity.addScaledVector(_push2, -vInto);
+    }
   }
 
   // First-person camera pose for the engine (worldPos + quaternion).
@@ -201,4 +241,6 @@ const _east = new THREE.Vector3(), _north = new THREE.Vector3();
 const _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
 const _refY = new THREE.Vector3(0, 1, 0), _refX = new THREE.Vector3(1, 0, 0);
 const _m = new THREE.Matrix4(), _tmpV = new THREE.Vector3(), _tmpV2 = new THREE.Vector3();
+const _sq = new THREE.Quaternion(), _lp = new THREE.Vector3();
+const _before2 = new THREE.Vector3(), _push2 = new THREE.Vector3();
 const _zero = new THREE.Vector3();

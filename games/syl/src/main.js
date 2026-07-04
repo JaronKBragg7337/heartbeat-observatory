@@ -70,6 +70,7 @@ player.yaw = Math.PI / 2;
 player.pitch = -0.12;
 
 const ship = new Ship(engine, BODIES);
+player.shipRef = ship; // solid hull: the player collides with (and can stand on) the ship
 {
   const padDir = spawnZone._dirV.clone();
   const shipPos = zoneWorldPos(homeBody, spawnZone, 1.95);
@@ -264,30 +265,32 @@ function updateCamera(dt) {
   } else {
     // Ship views: offsets in ship space, world math in f64.
     if (chaseCam) {
+      // FLYING-GAME STANDARD (2026-07-04 fix): the chase camera FOLLOWS the
+      // ship's real orientation, always — steering visibly turns the world
+      // around you, so the ship reads as having a front. (The old code froze
+      // the camera while steering, which made turns look like the travel
+      // direction changed under a fixed view — the "ship has no front" bug.)
+      // Mouse / outside-the-stick drag adds a TEMPORARY orbit offset that
+      // eases back to dead-behind when released. Never re-add a steering hold.
       _cv.set(0, 4.5, -15);
-      const looking = input.touchMode
-        ? input.touchLookActive
-        : Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0;
-      const steering = Math.abs(controls.yaw) > 0.02 ||
-        Math.abs(controls.assistForward || 0) > 0.02 ||
-        controls.thrustUp || controls.brake;
       if (!shipCamBaseReady) {
         shipCamBaseQuat.copy(ship.quaternion);
         shipCamBaseReady = true;
-      } else if (!steering && !looking) {
-        shipCamBaseQuat.slerp(ship.quaternion, Math.min(1, 5 * dt));
+      } else {
+        shipCamBaseQuat.slerp(ship.quaternion, Math.min(1, 10 * dt));
       }
-      if (input.touchMode || input.pointerLocked) {
-        if (looking) {
-          shipTouchCamYaw -= input.mouseDX * 0.003;
-          shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch - input.mouseDY * 0.003));
-        } else {
-          shipTouchCamYaw += (0 - shipTouchCamYaw) * Math.min(1, 5 * dt);
-          shipTouchCamPitch += (0 - shipTouchCamPitch) * Math.min(1, 5 * dt);
-        }
-        _cv.applyAxisAngle(_touchCamX, shipTouchCamPitch);
-        _cv.applyAxisAngle(_touchCamY, shipTouchCamYaw);
+      const looking = input.touchMode
+        ? input.touchLookActive
+        : (input.pointerLocked && Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0);
+      if (looking) {
+        shipTouchCamYaw -= input.mouseDX * 0.003;
+        shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch - input.mouseDY * 0.003));
+      } else {
+        shipTouchCamYaw += (0 - shipTouchCamYaw) * Math.min(1, 4 * dt);
+        shipTouchCamPitch += (0 - shipTouchCamPitch) * Math.min(1, 4 * dt);
       }
+      _cv.applyAxisAngle(_touchCamX, shipTouchCamPitch);
+      _cv.applyAxisAngle(_touchCamY, shipTouchCamYaw);
       _cv.applyQuaternion(shipCamBaseQuat);
       camPos.copy(ship.worldPos).add(_cv);
       _cm.lookAt(camPos, ship.worldPos, _cq2v.set(0, 1, 0).applyQuaternion(shipCamBaseQuat));

@@ -32,7 +32,10 @@ import { fbm, smoothstep } from '../core/math3d.js';
 // dir must be normalized (direction from body center). Returns meters from
 // body center to the ground surface along dir.
 // ---------------------------------------------------------------------------
-export function terrainRadiusAt(body, dir) {
+// Raw analytic terrain (fbm + zone flattening). Used to BUILD each body's
+// radius grid; runtime queries go through terrainRadiusAt below, which
+// interpolates that grid exactly like the GPU rasterizes the mesh.
+export function analyticTerrainRadiusAt(body, dir) {
   const t = body.terrain;
   let h = fbm(dir.x, dir.y, dir.z, t.seed, t.octaves, t.freq) * t.amplitude;
 
@@ -50,6 +53,73 @@ export function terrainRadiusAt(body, dir) {
   }
   return body.radius + h;
 }
+
+// ---------------------------------------------------------------------------
+// MESH-TRUE COLLISION (2026-07-04 root-cause fix).
+// The old runtime collision sampled the raw fbm function, but the rendered
+// mesh is a LINEAR interpolation of that function across ~150 m triangles —
+// on rugged terrain the two disagreed by many meters. Players stood on air,
+// sank under the grass, and the camera clipped inside the planet ("see
+// through the ground"). The fix makes the LAW true by construction:
+// buildBodyVisual stores each body's exact vertex-radius grid, and
+// terrainRadiusAt intersects the query ray with the SAME triangle the GPU
+// draws. Collision now equals the picture to float precision, everywhere.
+// Future agents: if you add terrain LOD, keep this rule — collision must
+// sample whatever the player currently SEES.
+// ---------------------------------------------------------------------------
+export function terrainRadiusAt(body, dir) {
+  const g = body._terrainGrid;
+  if (!g) return analyticTerrainRadiusAt(body, dir); // pre-build fallback
+  // Map dir -> SphereGeometry (u,v). three.js param: x=-cosφ·sinθ, y=cosθ, z=sinφ·sinθ.
+  const vy = Math.min(1, Math.max(-1, dir.y));
+  const theta = Math.acos(vy);
+  let phi = Math.atan2(dir.z, -dir.x);
+  if (phi < 0) phi += Math.PI * 2;
+  const fx = (phi / (Math.PI * 2)) * g.W;
+  const fy = (theta / Math.PI) * g.H;
+  let ix = Math.min(Math.floor(fx), g.W - 1);
+  let iy = Math.min(Math.floor(fy), g.H - 1);
+  if (ix < 0) ix = 0;
+  if (iy < 0) iy = 0;
+  const sN = fx - ix, tN = fy - iy;
+  // Quad corners (matching the geometry): b=(ix,iy) a=(ix+1,iy) c=(ix,iy+1) d=(ix+1,iy+1)
+  _gp(g, body, ix + 1, iy, _pa);
+  _gp(g, body, ix, iy, _pb);
+  _gp(g, body, ix, iy + 1, _pc);
+  _gp(g, body, ix + 1, iy + 1, _pd);
+  // three.js splits the quad along the b–d diagonal: (a,b,d) upper, (b,c,d) lower.
+  let r = sN > tN ? _rayTri(dir, _pa, _pb, _pd) : _rayTri(dir, _pb, _pc, _pd);
+  if (!(r > 0)) r = sN > tN ? _rayTri(dir, _pb, _pc, _pd) : _rayTri(dir, _pa, _pb, _pd);
+  if (!(r > 0)) {
+    // Degenerate (pole seam): bilinear on radius is exact enough there.
+    const rb = g.radii[iy * (g.W + 1) + ix], ra = g.radii[iy * (g.W + 1) + ix + 1];
+    const rc = g.radii[(iy + 1) * (g.W + 1) + ix], rd = g.radii[(iy + 1) * (g.W + 1) + ix + 1];
+    r = (rb + (ra - rb) * sN) * (1 - tN) + (rc + (rd - rc) * sN) * tN;
+  }
+  return r;
+}
+
+// Vertex position of grid point (ix,iy) into `out` (body-local, meters).
+function _gp(g, body, ix, iy, out) {
+  const phi = (ix / g.W) * Math.PI * 2;
+  const theta = (iy / g.H) * Math.PI;
+  const st = Math.sin(theta);
+  const r = g.radii[iy * (g.W + 1) + ix];
+  return out.set(-Math.cos(phi) * st * r, Math.cos(theta) * r, Math.sin(phi) * st * r);
+}
+
+// Distance from body center along `dir` to the triangle (p0,p1,p2); 0 if miss.
+function _rayTri(dir, p0, p1, p2) {
+  _e1.subVectors(p1, p0);
+  _e2.subVectors(p2, p0);
+  _n.crossVectors(_e1, _e2);
+  const denom = _n.dot(dir);
+  if (Math.abs(denom) < 1e-9) return 0;
+  const r = _n.dot(p0) / denom;
+  return r > 0 && Number.isFinite(r) ? r : 0;
+}
+const _pa = new THREE.Vector3(), _pb = new THREE.Vector3(), _pc = new THREE.Vector3(), _pd = new THREE.Vector3();
+const _e1 = new THREE.Vector3(), _e2 = new THREE.Vector3(), _n = new THREE.Vector3();
 
 // Altitude of a world-space point above the ground of `body` (negative = below).
 export function altitudeAt(body, worldPos) {
@@ -220,8 +290,29 @@ export function buildBodyVisual(body, factionById) {
   const group = new THREE.Group();
   group.name = `body:${body.id}`;
 
-  // --- Terrain mesh: icosphere displaced by terrainRadiusAt (SAME function).
-  const detail = body.radius > 2000 ? 64 : (body.radius > 600 ? 48 : 32);
+  // --- Terrain mesh + collision grid (one surface by construction).
+  // The grid stores the exact analytic radius at every mesh vertex; the mesh
+  // displaces from the grid, and runtime collision interpolates the grid the
+  // same way the GPU does. Bumped detail (2026-07-04): finer triangles both
+  // look better and shrink each triangle's deviation from the raw function.
+  const detail = body.radius > 2000 ? 96 : (body.radius > 600 ? 64 : 48);
+  {
+    const W = detail * 2, H = detail;
+    const radii = new Float64Array((W + 1) * (H + 1));
+    const gd = new THREE.Vector3();
+    for (let iy = 0; iy <= H; iy++) {
+      const theta = (iy / H) * Math.PI;
+      for (let ix = 0; ix <= W; ix++) {
+        const phi = (ix / W) * Math.PI * 2;
+        const st = Math.sin(theta);
+        gd.set(-Math.cos(phi) * st, Math.cos(theta), Math.sin(phi) * st);
+        if (gd.lengthSq() < 1e-12) gd.set(0, theta < 1 ? 1 : -1, 0);
+        gd.normalize();
+        radii[iy * (W + 1) + ix] = analyticTerrainRadiusAt(body, gd);
+      }
+    }
+    body._terrainGrid = { W, H, radii };
+  }
   const geo = new THREE.SphereGeometry(1, detail * 2, detail);
   const pos = geo.attributes.position;
   const colors = new Float32Array(pos.count * 3);

@@ -39,7 +39,9 @@ const ASSIST_YAW_RATE = 2.9; // direct heading steering for assisted piloting
 const ASSIST_FORWARD_ACCEL = 48; // m/s^2 through the ship nose
 const ASSIST_MAX_SPEED = 70;
 const ASSIST_LIFT_SPEED = 30;
-const ASSIST_IDLE_DAMP = 5.5;
+const ASSIST_IDLE_TAN_DAMP = 3.2; // idle: sideways/forward motion eases to a stop in ~1.5 s
+const ASSIST_IDLE_VERT_DAMP = 1.25; // idle: vertical stays under REAL gravity (terminal ~8 m/s => safe auto-landing)
+const ASSIST_GRIP = 2.6;        // how fast existing velocity swings to follow the nose (flying-game feel)
 const ASSIST_ACTIVE_DAMP = 0.55;
 const ASSIST_BRAKE_DAMP = 6.5;
 
@@ -228,12 +230,19 @@ export class Ship {
     const accel = _accel.set(0, 0, 0);
     const assisted = !!(piloted && controls && (controls.assist || controls.mobileAssist));
 
+    // ------------------------------------------------------------------
+    // 2026-07-04 ROOT-CAUSE FIX: assisted flight used to `return` before
+    // gravity and ground collision ever ran — the ship could fly through
+    // terrain and never fell. Assisted piloting now only decides ORIENTATION
+    // and THRUST; gravity, integration, structure collision, and ground
+    // collision below run for EVERY flight mode, always. Never re-split this.
+    // ------------------------------------------------------------------
+    let burning = 0;
     if (assisted) {
-      // Assisted piloting follows vehicle-game rules: yaw turns the hull/front,
-      // then throttle applies acceleration through that front. The stick no
-      // longer edits the travel vector directly.
+      // Vehicle-game rules: yaw turns the hull's actual front; thrust pushes
+      // through that front. The stick never edits the travel vector directly.
       if (controls.yaw) {
-        _q.setFromAxisAngle(up, controls.yaw * ASSIST_YAW_RATE * dt);
+        _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * dt);
         this.quaternion.premultiply(_q).normalize();
       }
       const fwdFlat = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
@@ -250,45 +259,24 @@ export class Ship {
       if (this.stats.ready && this.fuel > 0) {
         const forward = Math.max(-1, Math.min(1, controls.assistForward ?? this.throttle));
         if (Math.abs(forward) > 0.01) {
-          this.velocity.addScaledVector(fwdFlat, forward * ASSIST_FORWARD_ACCEL * dt);
+          accel.addScaledVector(fwdFlat, forward * ASSIST_FORWARD_ACCEL);
+          burning += Math.abs(forward) * 0.45;
         }
         if (controls.thrustUp) {
-          this.velocity.addScaledVector(up, ASSIST_LIFT_SPEED * dt);
+          accel.addScaledVector(up, ASSIST_LIFT_SPEED);
+          burning += 0.35;
         }
-        const damp = controls.brake
-          ? ASSIST_BRAKE_DAMP
-          : (Math.abs(forward) > 0.01 || controls.thrustUp ? ASSIST_ACTIVE_DAMP : ASSIST_IDLE_DAMP);
-        this.velocity.multiplyScalar(Math.max(0, 1 - damp * dt));
-        const speed = this.velocity.length();
-        if (speed > ASSIST_MAX_SPEED) this.velocity.multiplyScalar(ASSIST_MAX_SPEED / speed);
-        const burn = (Math.abs(forward) * 0.45 + (controls.thrustUp ? 0.35 : 0)) * dt;
-        this.fuel = Math.max(0, this.fuel - burn);
-        if (this._glow) this._glow.intensity = Math.abs(forward) > 0.01 || controls.thrustUp ? 3.5 : 0;
-        this.worldPos.addScaledVector(this.velocity, dt);
-        if (resolveStructureCollision(body, this.worldPos, HULL_RADIUS)) {
-          this.velocity.multiplyScalar(0.25);
-        }
-        this.landed = false;
-        this._altitude = altitudeAt(body, this.worldPos) - HULL_CLEARANCE;
-        return;
+        this.fuel = Math.max(0, this.fuel - burning * dt);
       }
-    }
-
-    // 1. Thrust — only if piloted, ready, powered, fueled.
-    let burning = 0;
-    if (piloted && this.stats.ready && this.fuel > 0) {
+    } else if (piloted && this.stats.ready && this.fuel > 0) {
+      // Raw 6-DOF thrust (non-assisted): throttle through the nose + RCS up.
       const fwd = _fwd.set(0, 0, 1).applyQuaternion(this.quaternion);
-      if (assisted) {
-        fwd.addScaledVector(up, -fwd.dot(up));
-        if (fwd.lengthSq() < 1e-6) fwd.set(1, 0, 0).addScaledVector(up, -fwd.dot(up));
-        fwd.normalize();
-      }
       if (this.throttle > 0) {
         accel.addScaledVector(fwd, (this.stats.thrust * this.throttle) / this.stats.mass);
         burning += this.throttle;
       }
       if (controls && controls.thrustUp) {
-        const shipUp = assisted ? up : _shipUp.set(0, 1, 0).applyQuaternion(this.quaternion);
+        const shipUp = _shipUp.set(0, 1, 0).applyQuaternion(this.quaternion);
         accel.addScaledVector(shipUp, (this.stats.thrust * 0.75) / this.stats.mass);
         burning += 0.75;
       }
@@ -304,8 +292,32 @@ export class Ship {
     // 3. Integrate.
     this.velocity.addScaledVector(accel, dt);
 
-    // Braking/damping: space brake kills velocity gradually (honest RCS-style).
-    if (piloted && controls && controls.brake) {
+    // Assisted flight feel: damping + "grip" (velocity swings to follow the
+    // nose, so turning turns your PATH — the standard flying-game behavior).
+    if (assisted && this.stats.ready && this.fuel > 0) {
+      const forward = Math.abs(controls.assistForward ?? 0);
+      const active = forward > 0.01 || controls.thrustUp;
+      let vUp = this.velocity.dot(up);
+      _vTan.copy(this.velocity).addScaledVector(up, -vUp);
+      const tanDamp = controls.brake ? ASSIST_BRAKE_DAMP : (active ? ASSIST_ACTIVE_DAMP : ASSIST_IDLE_TAN_DAMP);
+      const vertDamp = controls.brake ? ASSIST_BRAKE_DAMP : (active ? ASSIST_ACTIVE_DAMP : ASSIST_IDLE_VERT_DAMP);
+      _vTan.multiplyScalar(Math.max(0, 1 - tanDamp * dt));
+      vUp *= Math.max(0, 1 - vertDamp * dt);
+      this.velocity.copy(_vTan).addScaledVector(up, vUp);
+      // Grip: rotate the tangential velocity toward the ship's front.
+      _vTan.copy(this.velocity).addScaledVector(up, -this.velocity.dot(up));
+      const tanSpeed = _vTan.length();
+      if (tanSpeed > 0.5) {
+        const nose = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
+          .addScaledVector(up, -_mobileFwd.dot(up)).normalize();
+        const sign = _vTan.dot(nose) >= 0 ? 1 : -1;
+        _vTan.lerp(_gripTarget.copy(nose).multiplyScalar(sign * tanSpeed), Math.min(1, ASSIST_GRIP * dt));
+        this.velocity.copy(_vTan).addScaledVector(up, vUp);
+      }
+      const speed = this.velocity.length();
+      if (speed > ASSIST_MAX_SPEED) this.velocity.multiplyScalar(ASSIST_MAX_SPEED / speed);
+    } else if (piloted && controls && controls.brake) {
+      // Raw-mode space brake kills velocity gradually (honest RCS-style).
       this.velocity.multiplyScalar(Math.max(0, 1 - 1.6 * dt));
     }
     // Mild atmospheric drag inside an atmosphere (also aids stable landings).
@@ -417,6 +429,7 @@ const _fwd = new THREE.Vector3(), _accel = new THREE.Vector3(), _g = new THREE.V
 const _rel = new THREE.Vector3(), _dq = new THREE.Quaternion(), _q = new THREE.Quaternion();
 const _eul = new THREE.Euler();
 const _mobileFwd = new THREE.Vector3(), _mobileRight = new THREE.Vector3();
+const _vTan = new THREE.Vector3(), _gripTarget = new THREE.Vector3();
 const _mobileMatrix = new THREE.Matrix4();
 
 function shipMat(color, health = 1) {
