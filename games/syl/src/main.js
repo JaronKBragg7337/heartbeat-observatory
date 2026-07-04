@@ -257,6 +257,9 @@ const _cv = new THREE.Vector3(), _cq = new THREE.Quaternion(), _cm = new THREE.M
 let shipTouchCamYaw = 0, shipTouchCamPitch = 0;
 let shipCamBaseReady = false;
 const shipCamBaseQuat = new THREE.Quaternion();
+const SHIP_CAM_MIN_TRAVEL_SPEED = 1.5;
+const _shipCamUp = new THREE.Vector3(), _shipCamTravel = new THREE.Vector3(), _shipCamRight = new THREE.Vector3();
+const _shipCamMatrix = new THREE.Matrix4();
 
 function updateCamera(dt) {
   if (traversal.mode === MODE.ON_FOOT) {
@@ -272,20 +275,46 @@ function updateCamera(dt) {
       // direction changed under a fixed view — the "ship has no front" bug.)
       // Mouse / outside-the-stick drag adds a TEMPORARY orbit offset that
       // eases back to dead-behind when released. Never re-add a steering hold.
+      // Velocity-follow chase camera test:
+      // Movement input changes the ship/velocity; the camera follows the
+      // resulting travel direction instead of raw yaw input. When nearly
+      // stationary, keep the previous camera base so A/D or stick-side does
+      // not directly orbit the camera in place.
       _cv.set(0, 4.5, -15);
+      const camUp = upAt(dominantBody(BODIES, ship.worldPos), ship.worldPos, _shipCamUp);
+      const travel = _shipCamTravel.copy(ship.velocity).addScaledVector(camUp, -ship.velocity.dot(camUp));
       if (!shipCamBaseReady) {
         shipCamBaseQuat.copy(ship.quaternion);
         shipCamBaseReady = true;
-      } else {
-        shipCamBaseQuat.slerp(ship.quaternion, Math.min(1, 10 * dt));
+      }
+      if (travel.lengthSq() > SHIP_CAM_MIN_TRAVEL_SPEED * SHIP_CAM_MIN_TRAVEL_SPEED) {
+        travel.normalize();
+        _shipCamRight.crossVectors(camUp, travel);
+        if (_shipCamRight.lengthSq() > 1e-6) {
+          _shipCamRight.normalize();
+          _shipCamMatrix.makeBasis(_shipCamRight, camUp, travel);
+          _cq.setFromRotationMatrix(_shipCamMatrix);
+          shipCamBaseQuat.slerp(_cq, Math.min(1, 5 * dt));
+        }
       }
       const looking = input.touchMode
-        ? input.touchLookActive
+        ? (input.touchLookActive && !input.touchJoystickActive)
         : (input.pointerLocked && Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0);
+      const arrowYaw = (input.down('ArrowRight') ? 1 : 0) - (input.down('ArrowLeft') ? 1 : 0);
+      const arrowPitch = (input.down('ArrowDown') ? 1 : 0) - (input.down('ArrowUp') ? 1 : 0);
+      const arrowLooking = arrowYaw !== 0 || arrowPitch !== 0;
+
       if (looking) {
         shipTouchCamYaw -= input.mouseDX * 0.003;
         shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch - input.mouseDY * 0.003));
-      } else {
+      }
+
+      if (arrowLooking) {
+        shipTouchCamYaw += arrowYaw * 1.8 * dt;
+        shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch + arrowPitch * 1.2 * dt));
+      }
+
+      if (!looking && !arrowLooking) {
         shipTouchCamYaw += (0 - shipTouchCamYaw) * Math.min(1, 4 * dt);
         shipTouchCamPitch += (0 - shipTouchCamPitch) * Math.min(1, 4 * dt);
       }
@@ -317,22 +346,27 @@ const _flipY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0
 const controls = { pitch: 0, yaw: 0, roll: 0, thrustUp: false, brake: false };
 
 function readShipControls(dt) {
-  // Assisted ship piloting uses the same direct feel as dev fly:
-  // W/S or stick up/down = forward/reverse, A/D or stick left/right = turn.
+  // Assisted ship piloting strafe test:
+  // W/S or stick up/down = forward/reverse movement.
+  // A/D or stick left/right = lateral movement, NOT yaw.
+  // Camera/look input owns camera rotation separately.
   const touchThrottle = input.touchShipThrottle || 0;
   const keyForward = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
   const assistForward = input.touchMode ? touchThrottle : keyForward;
   ship.throttle = Math.max(0, assistForward);
 
-  const keyYaw = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
+  const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
+  const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
+
   controls.pitch = 0;
-  controls.yaw = input.touchMode ? (input.touchShipYaw || 0) : keyYaw;
+  controls.yaw = 0;
   controls.roll = 0;
   controls.thrustUp = input.down('Space');
   controls.brake = input.down('KeyX') || input.down('ControlLeft') || input.down('ControlRight') || touchThrottle < -0.85;
   controls.assist = true;
   controls.mobileAssist = input.touchMode;
   controls.assistForward = assistForward;
+  controls.assistStrafe = assistStrafe;
 
   // Mobile takeoff assist: if the player is throttling up from the ground, add
   // vertical lift until the hull is safely away from terrain. This prevents the

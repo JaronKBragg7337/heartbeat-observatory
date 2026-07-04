@@ -37,6 +37,7 @@ const ROLL_RATE  = 2.4;
 const ROT_DAMP   = 2.2;   // was 3.0 — eased so a turn builds and holds
 const ASSIST_YAW_RATE = 2.9; // direct heading steering for assisted piloting
 const ASSIST_FORWARD_ACCEL = 48; // m/s^2 through the ship nose
+const ASSIST_STRAFE_ACCEL = 38;  // m/s^2 lateral test: A/D or stick-side slides instead of yawing
 const ASSIST_MAX_SPEED = 70;
 const ASSIST_LIFT_SPEED = 30;
 const ASSIST_IDLE_TAN_DAMP = 3.2; // idle: sideways/forward motion eases to a stop in ~1.5 s
@@ -211,7 +212,7 @@ export class Ship {
   }
 
   // ------------------------------------------------------------------ flight
-  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; brake: bool; assist?: bool; assistForward?: -1..1 }
+  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; brake: bool; assist?: bool; assistForward?: -1..1; assistStrafe?: -1..1 }
   tick(dt, piloted, controls) {
     const body = dominantBody(this.bodies, this.worldPos);
     this._domBody = body;
@@ -239,8 +240,8 @@ export class Ship {
     // ------------------------------------------------------------------
     let burning = 0;
     if (assisted) {
-      // Vehicle-game rules: yaw turns the hull's actual front; thrust pushes
-      // through that front. The stick never edits the travel vector directly.
+      // Strafe-flight test: sideways input is lateral movement, not yaw.
+      // Raw yaw is disabled by main.js during assisted mode for this test.
       if (controls.yaw) {
         _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * dt);
         this.quaternion.premultiply(_q).normalize();
@@ -258,9 +259,14 @@ export class Ship {
 
       if (this.stats.ready && this.fuel > 0) {
         const forward = Math.max(-1, Math.min(1, controls.assistForward ?? this.throttle));
+        const strafe = Math.max(-1, Math.min(1, controls.assistStrafe ?? 0));
         if (Math.abs(forward) > 0.01) {
           accel.addScaledVector(fwdFlat, forward * ASSIST_FORWARD_ACCEL);
           burning += Math.abs(forward) * 0.45;
+        }
+        if (Math.abs(strafe) > 0.01) {
+          accel.addScaledVector(_mobileRight, strafe * ASSIST_STRAFE_ACCEL);
+          burning += Math.abs(strafe) * 0.30;
         }
         if (controls.thrustUp) {
           accel.addScaledVector(up, ASSIST_LIFT_SPEED);
@@ -296,7 +302,8 @@ export class Ship {
     // nose, so turning turns your PATH — the standard flying-game behavior).
     if (assisted && this.stats.ready && this.fuel > 0) {
       const forward = Math.abs(controls.assistForward ?? 0);
-      const active = forward > 0.01 || controls.thrustUp;
+      const strafe = Math.abs(controls.assistStrafe ?? 0);
+      const active = forward > 0.01 || strafe > 0.01 || controls.thrustUp;
       let vUp = this.velocity.dot(up);
       _vTan.copy(this.velocity).addScaledVector(up, -vUp);
       const tanDamp = controls.brake ? ASSIST_BRAKE_DAMP : (active ? ASSIST_ACTIVE_DAMP : ASSIST_IDLE_TAN_DAMP);
@@ -304,16 +311,10 @@ export class Ship {
       _vTan.multiplyScalar(Math.max(0, 1 - tanDamp * dt));
       vUp *= Math.max(0, 1 - vertDamp * dt);
       this.velocity.copy(_vTan).addScaledVector(up, vUp);
-      // Grip: rotate the tangential velocity toward the ship's front.
+      // Strafe-flight test: do NOT rotate lateral velocity back toward the nose.
+      // Let A/D or stick-side remain lateral movement so it does not become camera/yaw motion.
       _vTan.copy(this.velocity).addScaledVector(up, -this.velocity.dot(up));
       const tanSpeed = _vTan.length();
-      if (tanSpeed > 0.5) {
-        const nose = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
-          .addScaledVector(up, -_mobileFwd.dot(up)).normalize();
-        const sign = _vTan.dot(nose) >= 0 ? 1 : -1;
-        _vTan.lerp(_gripTarget.copy(nose).multiplyScalar(sign * tanSpeed), Math.min(1, ASSIST_GRIP * dt));
-        this.velocity.copy(_vTan).addScaledVector(up, vUp);
-      }
       const speed = this.velocity.length();
       if (speed > ASSIST_MAX_SPEED) this.velocity.multiplyScalar(ASSIST_MAX_SPEED / speed);
     } else if (piloted && controls && controls.brake) {
