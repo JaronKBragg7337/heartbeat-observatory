@@ -189,8 +189,8 @@ traversal.on((name, payload) => {
     }
   }
   if (name === 'enteredShip') ui.showToast(input.touchMode
-    ? 'Piloting. Hold stick to lift/drive · BANK turns · camera stays forward.'
-    : 'Piloting. W/S drives · A/D strafes · Q/R turn-bank · Z descend · chase stays forward.', 4500);
+    ? 'Piloting. Hold stick to lift/drive · BANK turns · NOSE pitches in high flight.'
+    : 'Piloting. W/S drives · A/D strafes · Q/R bank · ↑/↓ pitch · chase follows nose.', 4500);
 });
 
 ship._onCrash = (impact) => {
@@ -256,7 +256,7 @@ input.onPress('F9', () => {
 let chaseCam = true; // piloting: chase (3rd person) vs cockpit; C toggles
 const camPos = new THREE.Vector3(), camQuat = new THREE.Quaternion();
 const _cv = new THREE.Vector3(), _cq = new THREE.Quaternion(), _cm = new THREE.Matrix4();
-const _shipCamUp = new THREE.Vector3(), _shipCamFwd = new THREE.Vector3(), _shipCamTarget = new THREE.Vector3();
+const _shipCamUp = new THREE.Vector3(), _shipCamFwd = new THREE.Vector3(), _shipCamViewUp = new THREE.Vector3(), _shipCamTarget = new THREE.Vector3();
 
 function updateCamera(dt) {
   if (traversal.mode === MODE.ON_FOOT) {
@@ -264,21 +264,27 @@ function updateCamera(dt) {
   } else {
     // Ship views: offsets in ship space, world math in f64.
     if (chaseCam) {
-      // Locked chase rig: follow the ship's nose, but keep the camera upright
-      // to the current planet so banking rotates the ship, not the horizon.
+      // Locked chase rig: follow the ship's real 3D nose, but keep the camera
+      // upright to the planet unless the nose is nearly vertical.
       const body = dominantBody(BODIES, ship.worldPos);
       const up = upAt(body, ship.worldPos, _shipCamUp);
-      _shipCamFwd.set(0, 0, 1).applyQuaternion(ship.quaternion)
-        .addScaledVector(up, -_shipCamFwd.dot(up));
+      _shipCamFwd.set(0, 0, 1).applyQuaternion(ship.quaternion);
       if (_shipCamFwd.lengthSq() < 1e-6) _shipCamFwd.set(0, 0, 1);
       _shipCamFwd.normalize();
+      _shipCamViewUp.copy(up).addScaledVector(_shipCamFwd, -up.dot(_shipCamFwd));
+      if (_shipCamViewUp.lengthSq() < 1e-6) {
+        _shipCamViewUp.set(0, 1, 0).applyQuaternion(ship.quaternion)
+          .addScaledVector(_shipCamFwd, -_shipCamViewUp.dot(_shipCamFwd));
+      }
+      if (_shipCamViewUp.lengthSq() < 1e-6) _shipCamViewUp.copy(up);
+      _shipCamViewUp.normalize();
       camPos.copy(ship.worldPos)
         .addScaledVector(_shipCamFwd, -24)
         .addScaledVector(up, 10);
       _shipCamTarget.copy(ship.worldPos)
         .addScaledVector(_shipCamFwd, 24)
         .addScaledVector(up, 1.4);
-      _cm.lookAt(camPos, _shipCamTarget, up);
+      _cm.lookAt(camPos, _shipCamTarget, _shipCamViewUp);
       camQuat.setFromRotationMatrix(_cm);
     } else {
       _cv.set(0, 1.35, 2.1).applyQuaternion(ship.quaternion);
@@ -303,6 +309,7 @@ function readShipControls(dt) {
   // W/S or stick up/down = forward/reverse movement.
   // A/D or stick left/right = lateral movement.
   // Q/R or BANK buttons = turn-bank.
+  // ArrowUp/ArrowDown or NOSE buttons = pitch in high flight/space.
   // Camera/look input owns camera rotation separately.
   const touchThrottle = input.touchShipThrottle || 0;
   const keyForward = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
@@ -310,12 +317,13 @@ function readShipControls(dt) {
   ship.throttle = Math.max(0, assistForward);
 
   const keyRoll = (input.down('KeyR') ? 1 : 0) - (input.down('KeyQ') ? 1 : 0);
+  const keyPitch = (input.down('ArrowDown') ? 1 : 0) - (input.down('ArrowUp') ? 1 : 0);
   const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
   const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
   const descend = input.down('KeyZ');
   const touchAutoLift = input.touchMode && input.touchJoystickActive && !descend;
 
-  controls.pitch = 0;
+  controls.pitch = keyPitch;
   controls.yaw = keyRoll * 0.65;
   controls.roll = keyRoll;
   controls.thrustUp = input.down('Space') || touchAutoLift;
@@ -433,6 +441,6 @@ ui.showCenter(
   'SYL — FOUNDATION BUILD<br>' +
   '<span class="dim">Your ship is damaged. Gather crates (F), repair and fuel it (B), then fly to another world.<br>' +
   (touchActive
-    ? 'Hold stick to lift/drive · BANK turns · DESCEND lands · chase stays forward.</span>'
+    ? 'Hold stick to lift/drive · BANK turns · NOSE pitches high flight · DESCEND lands.</span>'
     : 'Click to take mouse control. H toggles help.</span>'), 9000);
 engine.start();

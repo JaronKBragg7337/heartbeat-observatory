@@ -73,6 +73,8 @@ export function initTouch(input, root) {
       <button data-code="KeyR" class="tbtn bank ship-only bank-right">BANK R</button>
     </div>
     <div id="ship-btns">
+      <button data-code="ArrowUp" class="tbtn hold">NOSE UP</button>
+      <button data-code="ArrowDown" class="tbtn hold">NOSE DOWN</button>
       <button data-code="KeyZ" class="tbtn hold">DESCEND</button>
       <button data-code="KeyG" class="tbtn">GEAR</button>
     </div>`;

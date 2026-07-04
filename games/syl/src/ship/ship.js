@@ -36,6 +36,7 @@ const YAW_RATE   = 2.7;   // was 1.8 — the main 'I can't turn' fix
 const ROLL_RATE  = 2.4;
 const ROT_DAMP   = 2.2;   // was 3.0 — eased so a turn builds and holds
 const ASSIST_YAW_RATE = 3.2; // direct heading steering for assisted piloting
+const ASSIST_PITCH_RATE = 2.4; // nose-up/down attitude steering once safely airborne
 const ASSIST_FORWARD_ACCEL = 48; // m/s^2 through the ship nose
 const ASSIST_STRAFE_ACCEL = 38;  // m/s^2 lateral test: A/D or stick-side slides instead of yawing
 const ASSIST_MAX_SPEED = 70;
@@ -67,6 +68,7 @@ export class Ship {
     this.gearDown = true;
     this.throttle = 0;      // 0..1 main thrust setting
     this.assistRoll = 0;    // assisted-mode bank angle; upright rebuild would otherwise erase Q/R roll
+    this.assistPitch = 0;   // assisted-mode nose attitude for high-flight/free-flight control
 
     this.stats = this.computeStats();
 
@@ -81,7 +83,10 @@ export class Ship {
   // ------------------------------------------------------------------ stats
   computeStats() {
     const s = { mass: 80, thrust: 0, fuelCap: 0, powerDraw: 0, powerSupply: 0,
-                cargoCap: 0, armor: 0, gearCount: 0, missing: [], degraded: [] };
+                cargoCap: 0, armor: 0, gearCount: 0, torqueBoost: 0,
+                shieldCap: 0, shieldRecharge: 0, scanRange: 0,
+                heatDissipation: 0, weaponDamage: 0, weaponCount: 0,
+                missing: [], degraded: [] };
     const present = new Set();
     for (const [slotId, mod] of Object.entries(this.modules)) {
       if (!mod) continue;
@@ -96,6 +101,12 @@ export class Ship {
         if (t.powerSupply) s.powerSupply += t.powerSupply;
         if (t.cargoCap) s.cargoCap += t.cargoCap;
         if (t.armor) s.armor += t.armor;
+        if (t.torqueBoost) s.torqueBoost += t.torqueBoost;
+        if (t.shieldCap) s.shieldCap += t.shieldCap;
+        if (t.shieldRecharge) s.shieldRecharge += t.shieldRecharge;
+        if (t.scanRange) s.scanRange = Math.max(s.scanRange, t.scanRange);
+        if (t.heatDissipation) s.heatDissipation += t.heatDissipation;
+        if (t.weaponDamage) { s.weaponDamage += t.weaponDamage; s.weaponCount++; }
         if (t.id === 'gear') s.gearCount++;
       } else {
         s.degraded.push({ slotId, typeId: mod.typeId });
@@ -232,6 +243,7 @@ export class Ship {
 
     const accel = _accel.set(0, 0, 0);
     const assisted = !!(piloted && controls && (controls.assist || controls.mobileAssist));
+    const torqueMul = Math.min(2.6, 1 + (this.stats.torqueBoost || 0));
 
     // ------------------------------------------------------------------
     // 2026-07-04 ROOT-CAUSE FIX: assisted flight used to `return` before
@@ -241,7 +253,9 @@ export class Ship {
     // collision below run for EVERY flight mode, always. Never re-split this.
     // ------------------------------------------------------------------
     let burning = 0;
+    let freeAttitude = false;
     if (assisted) {
+      freeAttitude = !this.landed && alt > 60;
       const fwdFlat = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
         .addScaledVector(up, -_mobileFwd.dot(up));
       if (fwdFlat.lengthSq() < 1e-6) {
@@ -249,7 +263,7 @@ export class Ship {
       }
       fwdFlat.normalize();
       if (controls.yaw) {
-        _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * dt);
+        _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * torqueMul * dt);
         fwdFlat.applyQuaternion(_q).addScaledVector(up, -fwdFlat.dot(up)).normalize();
       }
       _mobileRight.crossVectors(up, fwdFlat).normalize();
@@ -257,8 +271,18 @@ export class Ship {
       this.quaternion.setFromRotationMatrix(_mobileMatrix);
 
       // Assisted mode keeps the ship planet-upright for phone-friendly flying,
-      // so Q/R roll needs a stored bank angle applied after the upright basis rebuild.
-      this.assistRoll = (this.assistRoll || 0) + (controls.roll || 0) * ROLL_RATE * dt;
+      // so Q/R roll and nose pitch need stored angles applied after the rebuild.
+      if (freeAttitude) {
+        this.assistPitch = (this.assistPitch || 0) + (controls.pitch || 0) * ASSIST_PITCH_RATE * torqueMul * dt;
+      } else {
+        this.assistPitch = (this.assistPitch || 0) * Math.max(0, 1 - 2.8 * dt);
+      }
+      if (Math.abs(this.assistPitch) > 0.001) {
+        _q.setFromAxisAngle(_mobileRight, this.assistPitch);
+        this.quaternion.premultiply(_q).normalize();
+      }
+
+      this.assistRoll = (this.assistRoll || 0) + (controls.roll || 0) * ROLL_RATE * torqueMul * dt;
       this.assistRoll *= Math.max(0, 1 - 1.5 * dt);
       if (Math.abs(this.assistRoll) > 0.001) {
         _q.setFromAxisAngle(fwdFlat, this.assistRoll);
@@ -270,12 +294,18 @@ export class Ship {
       if (this.stats.ready && this.fuel > 0) {
         const forward = Math.max(-1, Math.min(1, controls.assistForward ?? this.throttle));
         const strafe = Math.max(-1, Math.min(1, controls.assistStrafe ?? 0));
+        const assistFwd = freeAttitude
+          ? _assistFwd3.set(0, 0, 1).applyQuaternion(this.quaternion).normalize()
+          : fwdFlat;
+        const assistRight = freeAttitude
+          ? _assistRight3.set(1, 0, 0).applyQuaternion(this.quaternion).normalize()
+          : _mobileRight;
         if (Math.abs(forward) > 0.01) {
-          accel.addScaledVector(fwdFlat, forward * ASSIST_FORWARD_ACCEL);
+          accel.addScaledVector(assistFwd, forward * ASSIST_FORWARD_ACCEL);
           burning += Math.abs(forward) * 0.45;
         }
         if (Math.abs(strafe) > 0.01) {
-          accel.addScaledVector(_mobileRight, strafe * ASSIST_STRAFE_ACCEL);
+          accel.addScaledVector(assistRight, strafe * ASSIST_STRAFE_ACCEL);
           burning += Math.abs(strafe) * 0.30;
         }
         if (controls.descend) {
@@ -313,7 +343,25 @@ export class Ship {
 
     // Assisted flight feel: damping + "grip" (velocity swings to follow the
     // nose, so turning turns your PATH — the standard flying-game behavior).
-    if (assisted && this.stats.ready && this.fuel > 0) {
+    if (assisted && this.stats.ready && this.fuel > 0 && freeAttitude) {
+      const forward = Math.abs(controls.assistForward ?? 0);
+      const strafe = Math.abs(controls.assistStrafe ?? 0);
+      const active = forward > 0.01 || strafe > 0.01 || controls.thrustUp || controls.descend;
+      const damp = controls.brake ? ASSIST_BRAKE_DAMP : (active ? ASSIST_ACTIVE_DAMP : ASSIST_IDLE_TAN_DAMP);
+      this.velocity.multiplyScalar(Math.max(0, 1 - damp * dt));
+      const speed = this.velocity.length();
+      const desired = _desiredTan.set(0, 0, 0);
+      _gripFwd.set(0, 0, 1).applyQuaternion(this.quaternion).normalize();
+      _gripRight.set(1, 0, 0).applyQuaternion(this.quaternion).normalize();
+      desired.copy(_gripFwd).multiplyScalar(controls.assistForward ?? 0)
+        .addScaledVector(_gripRight, controls.assistStrafe ?? 0);
+      if (speed > 0.5 && desired.lengthSq() > 1e-5) {
+        desired.normalize().multiplyScalar(speed);
+        this.velocity.lerp(desired, Math.min(1, ASSIST_GRIP * dt));
+      }
+      const capped = this.velocity.length();
+      if (capped > ASSIST_MAX_SPEED) this.velocity.multiplyScalar(ASSIST_MAX_SPEED / capped);
+    } else if (assisted && this.stats.ready && this.fuel > 0) {
       const forward = Math.abs(controls.assistForward ?? 0);
       const strafe = Math.abs(controls.assistStrafe ?? 0);
       const active = forward > 0.01 || strafe > 0.01 || controls.thrustUp || controls.descend;
@@ -358,9 +406,9 @@ export class Ship {
 
     // 4. Rotation: rates from controls, damped.
     if (piloted && controls && !assisted) {
-      this.angVel.x += controls.pitch * PITCH_RATE * dt;
-      this.angVel.y += controls.yaw * YAW_RATE * dt;
-      this.angVel.z += controls.roll * ROLL_RATE * dt;
+      this.angVel.x += controls.pitch * PITCH_RATE * torqueMul * dt;
+      this.angVel.y += controls.yaw * YAW_RATE * torqueMul * dt;
+      this.angVel.z += controls.roll * ROLL_RATE * torqueMul * dt;
     }
     this.angVel.multiplyScalar(Math.max(0, 1 - ROT_DAMP * dt)); // rotational damping
     _dq.setFromEuler(_eul.set(this.angVel.x * dt, this.angVel.y * dt, this.angVel.z * dt, 'XYZ'));
@@ -454,6 +502,7 @@ const _fwd = new THREE.Vector3(), _accel = new THREE.Vector3(), _g = new THREE.V
 const _rel = new THREE.Vector3(), _dq = new THREE.Quaternion(), _q = new THREE.Quaternion();
 const _eul = new THREE.Euler();
 const _mobileFwd = new THREE.Vector3(), _mobileRight = new THREE.Vector3();
+const _assistFwd3 = new THREE.Vector3(), _assistRight3 = new THREE.Vector3();
 const _gripFwd = new THREE.Vector3(), _gripRight = new THREE.Vector3();
 const _vTan = new THREE.Vector3(), _desiredTan = new THREE.Vector3();
 const _mobileMatrix = new THREE.Matrix4();

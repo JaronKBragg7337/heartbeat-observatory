@@ -30,8 +30,8 @@ export class UI {
     this.help = el('div', 'syl-help');
     this.help.innerHTML =
       'ON FOOT: WASD move · Shift run · Space jump · E enter ship · F gather<br>' +
-      'SHIP: W/S forward/reverse · A/D strafe · Q/R turn-bank · Z descend · locked chase · Space vertical thrust · X brake · E exit (landed)<br>' +
-      'TOUCH SHIP: hold left stick to lift/drive · BANK buttons turn · DESCEND lands · camera stays forward<br>' +
+      'SHIP: W/S forward/reverse · A/D strafe · Q/R turn-bank · ↑/↓ nose pitch · Z descend · locked chase · Space vertical thrust · X brake · E exit (landed)<br>' +
+      'TOUCH SHIP: hold left stick to lift/drive · BANK turns · NOSE pitches high flight · DESCEND lands<br>' +
       'B ship builder · I inventory/crafting · M bodies · F5 save · F9 load · H hide help · click for mouse look';
     root.appendChild(this.help);
 
@@ -138,8 +138,22 @@ export class UI {
     const g = this.game;
     const ship = g.ship, inv = g.inventory;
     const rep = readinessReport(ship);
+    const activeStats = [
+      `mass ${Math.round(ship.stats.mass)}kg`,
+      `thrust ${Math.round(ship.stats.thrust)}N`,
+      `TWR@earth ${(ship.stats.thrust / Math.max(1, ship.stats.mass * 9.81)).toFixed(2)}`,
+      `fuel ${ship.stats.fuelCap}`,
+      `power ${ship.stats.powerSupply}/${ship.stats.powerDraw}`,
+      `cargo ${ship.stats.cargoCap}`,
+      `armor ${ship.stats.armor}`,
+      `turn x${(1 + (ship.stats.torqueBoost || 0)).toFixed(2)}`,
+      ship.stats.shieldCap ? `shield ${ship.stats.shieldCap}` : null,
+      ship.stats.scanRange ? `scan ${ship.stats.scanRange}m` : null,
+      ship.stats.weaponCount ? `weapons ${ship.stats.weaponCount}` : null,
+    ].filter(Boolean).join(' · ');
     const header = `<p class="${rep.ready ? 'ok' : 'bad'}">${rep.lines[0]}</p>
-                    <p class="dim">${rep.lines.slice(1).join('<br>')}</p>`;
+                    <p class="dim">${rep.lines.slice(1).join('<br>')}</p>
+                    <p class="dim">${activeStats}</p>`;
 
     const rows = SLOTS.map((slot) => {
       const mod = ship.modules[slot.slotId];
