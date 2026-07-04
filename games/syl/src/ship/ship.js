@@ -22,9 +22,10 @@
 
 import * as THREE from 'three';
 import { PART_TYPES, SLOTS, READINESS_RULES, getPartType } from './shipParts.js';
-import { gravityAt, altitudeAt, upAt, dominantBody, terrainRadiusAt } from '../world/planet.js';
+import { gravityAt, altitudeAt, upAt, dominantBody, terrainRadiusAt, resolveStructureCollision } from '../world/planet.js';
 
 const HULL_CLEARANCE = 1.9;   // meters from ship origin to landing-gear feet
+const HULL_RADIUS = 4.8;      // simple analytic footprint for structures
 const CRASH_SPEED = 16;       // m/s vertical impact that damages modules
 const SAFE_LAND_SPEED = 8;    // m/s comfortable touchdown
 // Rotation feel (tunable). YAW was the weak axis: turning felt sluggish and,
@@ -201,6 +202,9 @@ export class Ship {
         this.fuel = Math.max(0, this.fuel - burn);
         if (this._glow) this._glow.intensity = Math.abs(forward) > 0.01 || controls.thrustUp ? 3.5 : 0;
         this.worldPos.addScaledVector(this.velocity, dt);
+        if (resolveStructureCollision(body, this.worldPos, HULL_RADIUS)) {
+          this.velocity.multiplyScalar(0.25);
+        }
         this.landed = false;
         this._altitude = altitudeAt(body, this.worldPos) - HULL_CLEARANCE;
         return;
@@ -248,6 +252,9 @@ export class Ship {
     }
 
     this.worldPos.addScaledVector(this.velocity, dt);
+    if (resolveStructureCollision(body, this.worldPos, HULL_RADIUS)) {
+      this.velocity.multiplyScalar(0.25);
+    }
 
     // 4. Rotation: rates from controls, damped.
     if (piloted && controls && !assisted) {

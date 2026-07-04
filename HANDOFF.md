@@ -7,6 +7,26 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — SYL ship structure collision synced
+
+**State:** public `/games/syl/` has the follow-up for Jaron's report that the
+ship could fly through anything.
+
+**Shipped:** synced ship hull collision against authored analytic structure
+footprints. The ship now uses the same structure collision resolver as the
+player, but with a larger hull radius, and dampens velocity when pushed out.
+
+**Verified:** SYL `npm test` 70/70 before sync, including ship hull structure
+collision.
+
+**Next up:** port the Fortis walkable gunship visual/interior from the Unreal
+authoring script as lightweight Three.js geometry.
+
+**Gotchas:** collision is analytic footprint collision, not mesh-perfect. This
+is the right mobile-safe step before richer ship geometry.
+
+---
+
 ## 2026-07-04 — Codex — Assisted ship piloting default synced
 
 **State:** public `/games/syl/` has the fix after Jaron reported desktop WASD
