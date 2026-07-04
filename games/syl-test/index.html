@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SYL TEST BUILD — Kimi expansion pack</title>
+<style>
+  /* ============================================================
+     SYL UI stylesheet. Owned by: src/ui/ui.js (structure) + here (look).
+     Future agents: add new panels as .syl-panel; keep HUD minimal.
+     ============================================================ */
+  html, body { margin:0; padding:0; overflow:hidden; background:#000; height:100%;
+               font-family:'Segoe UI', Consolas, monospace; color:#cfd8dc; }
+  #game-canvas { display:block; width:100vw; height:100vh; }
+  #ui-root { position:fixed; inset:0; pointer-events:none; }
+  body.locked #game-canvas, body.locked #ui-root { display:none; }
+  .test-label { position:fixed; right:12px; top:12px; z-index:20; pointer-events:none;
+                background:rgba(8,12,16,0.78); border:1px solid #8d3b35; color:#ffccbc;
+                padding:7px 10px; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; }
+  .auth-gate { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+               padding:22px; background:radial-gradient(circle at 50% 30%, #141a22 0, #05070a 58%, #000 100%);
+               color:#e6edf3; font-family:'Segoe UI', Consolas, monospace; z-index:40; }
+  .auth-card { width:min(520px, 94vw); border:1px solid #263238; border-top:3px solid #b71c1c;
+               background:rgba(8,12,16,0.94); padding:24px; box-shadow:0 22px 60px rgba(0,0,0,0.55); }
+  .auth-card h1 { margin:0 0 10px; font-size:19px; color:#ffccbc; letter-spacing:0.08em; text-transform:uppercase; }
+  .auth-card p { margin:10px 0; color:#9fb0ba; line-height:1.55; font-size:14px; }
+  .auth-card a { color:#9cc7ff; text-decoration:none; }
+  .auth-card a:hover { text-decoration:underline; }
+  .syl-hud { position:absolute; top:12px; left:12px; background:rgba(8,12,16,0.72);
+             border:1px solid #2e3b45; border-left:3px solid #b71c1c; padding:10px 14px;
+             font-size:13px; line-height:1.55; min-width:230px; white-space:pre; }
+  .syl-hud .state { color:#ef9a9a; font-weight:bold; letter-spacing:1px; }
+  .syl-prompt { position:absolute; bottom:18%; left:50%; transform:translateX(-50%);
+                background:rgba(8,12,16,0.8); border:1px solid #4e342e; padding:8px 18px;
+                font-size:15px; color:#ffcc80; display:none; }
+  .syl-toast { position:absolute; top:12px; left:50%; transform:translateX(-50%);
+               background:rgba(20,8,8,0.85); border:1px solid #b71c1c; padding:10px 20px;
+               font-size:14px; color:#ffebee; display:none; }
+  .syl-panel { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+               background:rgba(8,12,16,0.985); border:1px solid #37474f; border-top:3px solid #b71c1c;
+               padding:18px 22px; min-width:520px; max-width:760px; max-height:80vh; overflow-y:auto;
+               font-size:13px; display:none; pointer-events:auto; }
+  .syl-panel h2 { margin:0 0 10px 0; font-size:16px; color:#ef9a9a; letter-spacing:2px; }
+  .syl-panel table { width:100%; border-collapse:collapse; }
+  .syl-panel td, .syl-panel th { padding:4px 8px; border-bottom:1px solid #263238; text-align:left; }
+  .syl-panel button { background:#263238; color:#cfd8dc; border:1px solid #455a64;
+                      padding:3px 10px; cursor:pointer; font-family:inherit; font-size:12px; }
+  .syl-panel button:hover:not(:disabled) { background:#37474f; border-color:#b71c1c; }
+  .syl-panel button:disabled { opacity:0.35; cursor:default; }
+  .syl-panel .panel-close { position:sticky; top:0; float:right; z-index:2; margin:0 0 8px 12px;
+                            background:#1f2a30; color:#ffccbc; border-color:#8d3b35; }
+  .ok   { color:#a5d6a7; } .bad { color:#ef9a9a; } .dim { color:#607d8b; } .warn { color:#ffcc80; }
+  .syl-help { position:absolute; bottom:12px; left:12px; background:rgba(8,12,16,0.6);
+              border:1px solid #263238; padding:8px 12px; font-size:11px; line-height:1.6; color:#78909c; }
+  .syl-center-msg { position:absolute; top:40%; left:50%; transform:translate(-50%,-50%);
+                    text-align:center; font-size:18px; color:#eceff1; display:none;
+                    background:rgba(8,12,16,0.85); border:1px solid #b71c1c; padding:20px 40px; }
+  .syl-vignette { position:absolute; inset:0; box-shadow:inset 0 0 180px rgba(0,0,0,0.55); }
+  #boot-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+              color:#78909c; font-size:14px; letter-spacing:2px; }
+  @media (max-width: 700px) {
+    .syl-hud {
+      top:calc(8px + env(safe-area-inset-top, 0px));
+      left:8px;
+      min-width:0;
+      max-width:calc(100vw - 18px);
+      box-sizing:border-box;
+      padding:8px 10px;
+      font-size:11px;
+      line-height:1.45;
+      white-space:pre-wrap;
+    }
+    .syl-prompt {
+      bottom:calc(138px + env(safe-area-inset-bottom, 0px));
+      width:max-content;
+      max-width:calc(100vw - 28px);
+      box-sizing:border-box;
+      padding:7px 12px;
+      font-size:13px;
+      text-align:center;
+    }
+    .syl-toast {
+      top:calc(96px + env(safe-area-inset-top, 0px));
+      max-width:calc(100vw - 28px);
+      box-sizing:border-box;
+      padding:8px 12px;
+      font-size:12px;
+      text-align:center;
+    }
+    .syl-panel {
+      top:calc(8px + env(safe-area-inset-top, 0px));
+      left:8px;
+      right:8px;
+      bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+      transform:none;
+      min-width:0;
+      max-width:none;
+      max-height:none;
+      width:auto;
+      box-sizing:border-box;
+      padding:12px;
+      font-size:11px;
+      overflow:auto;
+    }
+    .syl-panel h2 { font-size:13px; letter-spacing:1.4px; }
+    .syl-panel table { min-width:0; }
+    .syl-panel.ship-panel table { min-width:520px; }
+    .syl-panel.map-panel td, .syl-panel.map-panel th {
+      padding:4px 5px;
+      white-space:normal;
+      overflow-wrap:anywhere;
+    }
+    .syl-panel button { padding:4px 8px; font-size:11px; }
+    .syl-panel .panel-close { min-width:62px; height:34px; font-size:12px; }
+    .test-label {
+      top:calc(8px + env(safe-area-inset-top, 0px));
+      right:8px;
+      max-width:calc(100vw - 210px);
+      font-size:9px;
+      padding:5px 7px;
+    }
+    .syl-help {
+      display:none;
+      left:8px;
+      right:8px;
+      bottom:calc(128px + env(safe-area-inset-bottom, 0px));
+      max-height:88px;
+      overflow:auto;
+      box-sizing:border-box;
+      font-size:10px;
+    }
+    .syl-center-msg {
+      width:calc(100vw - 44px);
+      box-sizing:border-box;
+      padding:14px 18px;
+      font-size:15px;
+    }
+  }
+</style>
+</head>
+<body class="locked">
+<canvas id="game-canvas"></canvas>
+<div id="ui-root"><div id="boot-msg">SYL — INITIALIZING WORLD…</div></div>
+<div id="test-label" class="test-label" hidden>SYL TEST BUILD — Kimi expansion pack</div>
+<div id="auth-gate" class="auth-gate">
+  <div class="auth-card">
+    <h1>SYL Test Build</h1>
+    <p id="auth-copy">Checking your Heartbeat account…</p>
+    <p><a href="/admin">Sign in / account</a> · <a href="/games/syl/">Open stable SYL</a></p>
+  </div>
+</div>
+<script type="importmap">
+  { "imports": { "three": "./lib/three.module.js" } }
+</script>
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+  const gate = document.getElementById("auth-gate");
+  const copy = document.getElementById("auth-copy");
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      copy.innerHTML = "This preview is available to logged-in Heartbeat admin accounts right now. Public players should use the stable build.";
+    } else {
+      const { data, error } = await supabase.rpc("is_admin");
+      if (error || data !== true) {
+        copy.innerHTML = "You are signed in, but this preview is admin-only right now. Public players should use the stable build.";
+      } else {
+        gate.remove();
+        document.body.classList.remove("locked");
+        document.getElementById("test-label").hidden = false;
+        await import("./src/main.js");
+      }
+    }
+  } catch (e) {
+    copy.textContent = "Could not verify account access. Try signing in again, then return to this test build.";
+  }
+</script>
+</body>
+</html>

@@ -2839,8 +2839,14 @@ function buildInterior(kind) {
     const g = interiorShell(11, 11, 0x14161a, 0x1f242c, 0x0d1014);
     addArcadeCabinet(g, -3.4, -4.6, "PRESIDENT SIM", 0x57d98a, true);
     g.userData.stations.push({ x: -3.4, z: -4.0, label: "Play President Sim", url: "https://jaronkbragg7337.github.io/President-Sim/", external: true });
-    addArcadeCabinet(g, 0, -4.6, "COMING SOON", 0x000000, false);
-    addArcadeCabinet(g, 3.4, -4.6, "COMING SOON", 0x000000, false);
+    addArcadeCabinet(g, 0, -4.6, "SYL STABLE", 0x64b5f6, true);
+    g.userData.stations.push({ x: 0, z: -4.0, label: "SYL — Stable", url: "/games/syl/" });
+    if (isAdmin) {
+      addArcadeCabinet(g, 3.4, -4.6, "SYL TEST", 0xd9a23a, true);
+      g.userData.stations.push({ x: 3.4, z: -4.0, label: "SYL — Test Build", url: "/games/syl-test/" });
+    } else {
+      addArcadeCabinet(g, 3.4, -4.6, "COMING SOON", 0x000000, false);
+    }
     const term = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.5), new THREE.MeshStandardMaterial({ color: 0x24303a, roughness: 0.5, emissive: 0x183040, emissiveIntensity: 0.4 }));
     term.position.set(4.6, 0.55, 0); g.add(term);
     const tl = createLabelSprite("All games (page)", { background: "rgba(10, 14, 18, 0.85)", foreground: "#cfe2ee", fontSize: 24, scale: 0.011 });
