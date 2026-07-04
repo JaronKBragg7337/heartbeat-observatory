@@ -36,9 +36,12 @@ const YAW_RATE   = 2.7;   // was 1.8 — the main 'I can't turn' fix
 const ROLL_RATE  = 2.4;
 const ROT_DAMP   = 2.2;   // was 3.0 — eased so a turn builds and holds
 const ASSIST_YAW_RATE = 2.9; // direct heading steering for assisted piloting
-const ASSIST_FORWARD_SPEED = 62; // m/s direct dev-fly-like ship flight
+const ASSIST_FORWARD_ACCEL = 48; // m/s^2 through the ship nose
+const ASSIST_MAX_SPEED = 70;
 const ASSIST_LIFT_SPEED = 30;
-const ASSIST_RESPONSE = 5.5;
+const ASSIST_IDLE_DAMP = 5.5;
+const ASSIST_ACTIVE_DAMP = 0.55;
+const ASSIST_BRAKE_DAMP = 6.5;
 
 export class Ship {
   constructor(engine, bodies) {
@@ -226,9 +229,9 @@ export class Ship {
     const assisted = !!(piloted && controls && (controls.assist || controls.mobileAssist));
 
     if (assisted) {
-      // Assisted piloting uses the dev-fly feel: yaw changes the real travel
-      // heading directly and the hull stays upright relative to the nearest
-      // body. This avoids the "camera turned but ship stayed on a rail" feel.
+      // Assisted piloting follows vehicle-game rules: yaw turns the hull/front,
+      // then throttle applies acceleration through that front. The stick no
+      // longer edits the travel vector directly.
       if (controls.yaw) {
         _q.setFromAxisAngle(up, controls.yaw * ASSIST_YAW_RATE * dt);
         this.quaternion.premultiply(_q).normalize();
@@ -246,10 +249,18 @@ export class Ship {
 
       if (this.stats.ready && this.fuel > 0) {
         const forward = Math.max(-1, Math.min(1, controls.assistForward ?? this.throttle));
-        const target = _mobileVel.copy(fwdFlat).multiplyScalar(forward * ASSIST_FORWARD_SPEED);
-        if (controls.thrustUp) target.addScaledVector(up, ASSIST_LIFT_SPEED);
-        if (controls.brake) target.multiplyScalar(0.15);
-        this.velocity.lerp(target, Math.min(1, ASSIST_RESPONSE * dt));
+        if (Math.abs(forward) > 0.01) {
+          this.velocity.addScaledVector(fwdFlat, forward * ASSIST_FORWARD_ACCEL * dt);
+        }
+        if (controls.thrustUp) {
+          this.velocity.addScaledVector(up, ASSIST_LIFT_SPEED * dt);
+        }
+        const damp = controls.brake
+          ? ASSIST_BRAKE_DAMP
+          : (Math.abs(forward) > 0.01 || controls.thrustUp ? ASSIST_ACTIVE_DAMP : ASSIST_IDLE_DAMP);
+        this.velocity.multiplyScalar(Math.max(0, 1 - damp * dt));
+        const speed = this.velocity.length();
+        if (speed > ASSIST_MAX_SPEED) this.velocity.multiplyScalar(ASSIST_MAX_SPEED / speed);
         const burn = (Math.abs(forward) * 0.45 + (controls.thrustUp ? 0.35 : 0)) * dt;
         this.fuel = Math.max(0, this.fuel - burn);
         if (this._glow) this._glow.intensity = Math.abs(forward) > 0.01 || controls.thrustUp ? 3.5 : 0;
@@ -406,7 +417,6 @@ const _fwd = new THREE.Vector3(), _accel = new THREE.Vector3(), _g = new THREE.V
 const _rel = new THREE.Vector3(), _dq = new THREE.Quaternion(), _q = new THREE.Quaternion();
 const _eul = new THREE.Euler();
 const _mobileFwd = new THREE.Vector3(), _mobileRight = new THREE.Vector3();
-const _mobileVel = new THREE.Vector3();
 const _mobileMatrix = new THREE.Matrix4();
 
 function shipMat(color, health = 1) {

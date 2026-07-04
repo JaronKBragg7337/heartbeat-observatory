@@ -7,6 +7,28 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — SYL nose-first ship thrust synced
+
+**State:** public `/games/syl/` needs the follow-up for Jaron's report that
+the ship still felt like it had no front: left/right changed travel direction
+instead of turning the glass/front of the hull.
+
+**Shipped:** synced the `ship.js` assisted-flight change from SYL. Assisted
+ship piloting now yaws the hull/front first, then applies throttle/reverse/lift
+through that front/up axis. Left/right input alone rotates the ship nose without
+inventing sideways velocity.
+
+**Verified:** SYL `npm test` 72/72 before sync; Heartbeat `ship.js` syntax
+check after sync.
+
+**Next up:** Jaron retests desktop and mobile: A/D or analog left/right should
+turn the hull/front; W/stick up should push through the direction the glass is
+pointing.
+
+**Gotchas:** still arcade-assisted and phone-friendly, not full Newtonian 6DOF.
+
+---
+
 ## 2026-07-04 — Codex — SYL chase camera steering lock synced
 
 **State:** public `/games/syl/` needs the follow-up for Jaron's report that
