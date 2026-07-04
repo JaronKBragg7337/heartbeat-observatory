@@ -189,8 +189,8 @@ traversal.on((name, payload) => {
     }
   }
   if (name === 'enteredShip') ui.showToast(input.touchMode
-    ? 'Piloting. Hold stick to lift/drive · BANK turns · DESCEND lands · right drag looks.'
-    : 'Piloting. W/S drives · A/D strafes · Q/R turn-bank · Z descend · mouse looks.', 4500);
+    ? 'Piloting. Hold stick to lift/drive · BANK turns · camera stays forward.'
+    : 'Piloting. W/S drives · A/D strafes · Q/R turn-bank · Z descend · chase stays forward.', 4500);
 });
 
 ship._onCrash = (impact) => {
@@ -256,47 +256,29 @@ input.onPress('F9', () => {
 let chaseCam = true; // piloting: chase (3rd person) vs cockpit; C toggles
 const camPos = new THREE.Vector3(), camQuat = new THREE.Quaternion();
 const _cv = new THREE.Vector3(), _cq = new THREE.Quaternion(), _cm = new THREE.Matrix4();
-let shipTouchCamYaw = 0, shipTouchCamPitch = 0;
-let shipCamBaseReady = false;
-const shipCamBaseQuat = new THREE.Quaternion();
+const _shipCamUp = new THREE.Vector3(), _shipCamFwd = new THREE.Vector3(), _shipCamTarget = new THREE.Vector3();
 
 function updateCamera(dt) {
   if (traversal.mode === MODE.ON_FOOT) {
-    shipCamBaseReady = false;
     player.cameraPose(camPos, camQuat);
   } else {
     // Ship views: offsets in ship space, world math in f64.
     if (chaseCam) {
-      // Control-isolated chase camera: movement/drive input must never rotate
-      // the camera. The camera base is captured when entering the ship; only
-      // explicit look input (mouse/right-side touch/arrows) changes the orbit.
-      _cv.set(0, 4.5, -15);
-      if (!shipCamBaseReady) {
-        shipCamBaseQuat.copy(ship.quaternion);
-        shipCamBaseReady = true;
-      }
-      const looking = input.touchMode
-        ? (input.touchLookActive && !input.touchJoystickActive)
-        : (input.pointerLocked && Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0);
-      const arrowYaw = (input.down('ArrowRight') ? 1 : 0) - (input.down('ArrowLeft') ? 1 : 0);
-      const arrowPitch = (input.down('ArrowDown') ? 1 : 0) - (input.down('ArrowUp') ? 1 : 0);
-      const arrowLooking = arrowYaw !== 0 || arrowPitch !== 0;
-
-      if (looking) {
-        shipTouchCamYaw -= input.mouseDX * 0.003;
-        shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch - input.mouseDY * 0.003));
-      }
-
-      if (arrowLooking) {
-        shipTouchCamYaw += arrowYaw * 1.8 * dt;
-        shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch + arrowPitch * 1.2 * dt));
-      }
-
-      _cv.applyAxisAngle(_touchCamX, shipTouchCamPitch);
-      _cv.applyAxisAngle(_touchCamY, shipTouchCamYaw);
-      _cv.applyQuaternion(shipCamBaseQuat);
-      camPos.copy(ship.worldPos).add(_cv);
-      _cm.lookAt(camPos, ship.worldPos, _cq2v.set(0, 1, 0).applyQuaternion(shipCamBaseQuat));
+      // Locked chase rig: follow the ship's nose, but keep the camera upright
+      // to the current planet so banking rotates the ship, not the horizon.
+      const body = dominantBody(BODIES, ship.worldPos);
+      const up = upAt(body, ship.worldPos, _shipCamUp);
+      _shipCamFwd.set(0, 0, 1).applyQuaternion(ship.quaternion)
+        .addScaledVector(up, -_shipCamFwd.dot(up));
+      if (_shipCamFwd.lengthSq() < 1e-6) _shipCamFwd.set(0, 0, 1);
+      _shipCamFwd.normalize();
+      camPos.copy(ship.worldPos)
+        .addScaledVector(_shipCamFwd, -24)
+        .addScaledVector(up, 10);
+      _shipCamTarget.copy(ship.worldPos)
+        .addScaledVector(_shipCamFwd, 24)
+        .addScaledVector(up, 1.4);
+      _cm.lookAt(camPos, _shipCamTarget, up);
       camQuat.setFromRotationMatrix(_cm);
     } else {
       _cv.set(0, 1.35, 2.1).applyQuaternion(ship.quaternion);
@@ -309,9 +291,6 @@ function updateCamera(dt) {
   engine.cameraWorldPos.lerp(camPos, Math.min(1, 14 * dt));
   engine.camera.quaternion.slerp(camQuat, Math.min(1, 14 * dt));
 }
-const _cq2v = new THREE.Vector3();
-const _touchCamX = new THREE.Vector3(1, 0, 0);
-const _touchCamY = new THREE.Vector3(0, 1, 0);
 const _flipY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
 
 // ---------------------------------------------------------------------------
@@ -454,6 +433,6 @@ ui.showCenter(
   'SYL — FOUNDATION BUILD<br>' +
   '<span class="dim">Your ship is damaged. Gather crates (F), repair and fuel it (B), then fly to another world.<br>' +
   (touchActive
-    ? 'Hold stick to lift/drive · BANK turns · DESCEND lands · drag to look.</span>'
+    ? 'Hold stick to lift/drive · BANK turns · DESCEND lands · chase stays forward.</span>'
     : 'Click to take mouse control. H toggles help.</span>'), 9000);
 engine.start();
