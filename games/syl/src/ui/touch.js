@@ -128,8 +128,8 @@ export function initTouch(input, root) {
   wrap.querySelectorAll('.tbtn').forEach((btn) => {
     const code = btn.dataset.code;
     const source = `button:${code}`;
-    const on = (e) => { e.preventDefault(); input.setVirtual(code, true, source); };
-    const off = (e) => { e.preventDefault(); input.setVirtual(code, false, source); };
+    const on = (e) => { e.preventDefault(); e.stopPropagation(); input.setVirtual(code, true, source); };
+    const off = (e) => { e.preventDefault(); e.stopPropagation(); input.setVirtual(code, false, source); };
     btn.addEventListener('touchstart', on, { passive: false });
     btn.addEventListener('touchend', off, { passive: false });
     btn.addEventListener('touchcancel', off, { passive: false });
@@ -165,10 +165,13 @@ export function initTouch(input, root) {
   }
   base.addEventListener('touchstart', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     joyId = e.changedTouches[0].identifier;
+    input.touchJoystickActive = true;
   }, { passive: false });
   base.addEventListener('touchmove', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     for (const t of e.changedTouches) {
       if (t.identifier !== joyId) continue;
       const r = base.getBoundingClientRect();
@@ -180,8 +183,13 @@ export function initTouch(input, root) {
     }
   }, { passive: false });
   const joyEnd = (e) => {
+    e.stopPropagation();
     for (const t of e.changedTouches) {
-      if (t.identifier === joyId) { joyId = null; setMove(0, 0); }
+      if (t.identifier === joyId) {
+        joyId = null;
+        input.touchJoystickActive = false;
+        setMove(0, 0);
+      }
     }
   };
   base.addEventListener('touchend', joyEnd);

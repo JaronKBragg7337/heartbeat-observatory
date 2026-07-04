@@ -114,6 +114,7 @@ export class Input {
     this.touchShipYaw = 0;        // analog ship steering from touch joystick
     this.touchShipPitch = 0;
     this.touchShipThrottle = 0;
+    this.touchJoystickActive = false;
     this.touchLookActive = false;
     this.mouseDX = 0; this.mouseDY = 0;
     this.pointerLocked = false;
@@ -135,6 +136,7 @@ export class Input {
       this.touchShipYaw = 0;
       this.touchShipPitch = 0;
       this.touchShipThrottle = 0;
+      this.touchJoystickActive = false;
       this.touchLookActive = false;
     });
 

@@ -7,6 +7,28 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — SYL touch joystick/camera split synced
+
+**State:** public `/games/syl/` has the Fortis visual and the next mobile
+mechanics hardening for Jaron's report that the analog stick still felt like it
+was orbiting the camera.
+
+**Shipped:** synced `engine.js` and `touch.js` so joystick/button touch events
+stop at the control layer and cannot bubble into global touch-look. This keeps
+vehicle-control touches steering the ship and reserves camera orbit for touches
+outside the analog/buttons, matching the Unreal pilot-input rule.
+
+**Verified:** SYL `npm test` 71/71 before sync; Heartbeat syntax/source smoke
+after sync.
+
+**Next up:** if phone testing still shows camera drift, add dev logging for
+active touch ids and a visible camera-lock state while piloting.
+
+**Gotchas:** this is a mobile event-routing hardening pass; it keeps the
+existing dev-fly-style assisted ship movement.
+
+---
+
 ## 2026-07-04 — Codex — Fortis gunship visual synced
 
 **State:** public `/games/syl/` is ready to receive the mobile-safe Fortis
