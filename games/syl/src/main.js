@@ -189,8 +189,8 @@ traversal.on((name, payload) => {
     }
   }
   if (name === 'enteredShip') ui.showToast(input.touchMode
-    ? 'Piloting. Hold stick to lift/drive · BANK sways · DESCEND lands · right drag looks.'
-    : 'Piloting. W/S drives · A/D strafes · mouse/right drag looks · X brake · E exits when landed.', 4500);
+    ? 'Piloting. Hold stick to lift/drive · BANK turns · DESCEND lands · right drag looks.'
+    : 'Piloting. W/S drives · A/D strafes · Q/R turn-bank · Z descend · mouse looks.', 4500);
 });
 
 ship._onCrash = (impact) => {
@@ -276,6 +276,10 @@ function updateCamera(dt) {
         shipCamBaseQuat.copy(ship.quaternion);
         shipCamBaseReady = true;
       }
+      const shipTurnInput = input.down('KeyQ') || input.down('KeyR');
+      if (shipTurnInput) {
+        shipCamBaseQuat.slerp(ship.quaternion, Math.min(1, 8 * dt));
+      }
       const looking = input.touchMode
         ? (input.touchLookActive && !input.touchJoystickActive)
         : (input.pointerLocked && Math.abs(input.mouseDX) + Math.abs(input.mouseDY) > 0);
@@ -321,9 +325,10 @@ const _flipY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0
 const controls = { pitch: 0, yaw: 0, roll: 0, thrustUp: false, brake: false };
 
 function readShipControls(dt) {
-  // Assisted ship piloting strafe test:
+  // Assisted ship piloting:
   // W/S or stick up/down = forward/reverse movement.
-  // A/D or stick left/right = lateral movement, NOT yaw.
+  // A/D or stick left/right = lateral movement.
+  // Q/R or BANK buttons = turn-bank.
   // Camera/look input owns camera rotation separately.
   const touchThrottle = input.touchShipThrottle || 0;
   const keyForward = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
@@ -332,13 +337,12 @@ function readShipControls(dt) {
 
   const keyRoll = (input.down('KeyR') ? 1 : 0) - (input.down('KeyQ') ? 1 : 0);
   const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
-  const assistStrafe = Math.max(-1, Math.min(1,
-    (input.touchMode ? (input.touchShipYaw || 0) : keySide) + (input.touchMode ? keyRoll * 0.55 : 0)));
+  const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
   const descend = input.down('KeyZ');
   const touchAutoLift = input.touchMode && input.touchJoystickActive && !descend;
 
   controls.pitch = 0;
-  controls.yaw = 0;
+  controls.yaw = keyRoll * 0.35;
   controls.roll = keyRoll;
   controls.thrustUp = input.down('Space') || touchAutoLift;
   controls.descend = descend;
@@ -467,6 +471,6 @@ ui.showCenter(
   'SYL — FOUNDATION BUILD<br>' +
   '<span class="dim">Your ship is damaged. Gather crates (F), repair and fuel it (B), then fly to another world.<br>' +
   (touchActive
-    ? 'Hold stick to lift/drive · BANK sways · DESCEND lands · drag to look.</span>'
+    ? 'Hold stick to lift/drive · BANK turns · DESCEND lands · drag to look.</span>'
     : 'Click to take mouse control. H toggles help.</span>'), 9000);
 engine.start();

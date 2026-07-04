@@ -242,22 +242,24 @@ export class Ship {
     // ------------------------------------------------------------------
     let burning = 0;
     if (assisted) {
-      // Strafe-flight test: sideways input is lateral movement, not yaw.
-      // Raw yaw is disabled by main.js during assisted mode for this test.
-      if (controls.yaw) {
-        _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * dt);
-        this.quaternion.premultiply(_q).normalize();
-      }
-      const fwdFlat = controls.assistForwardDir
-        ? _mobileFwd.copy(controls.assistForwardDir)
-        : _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
-          .addScaledVector(up, -_mobileFwd.dot(up));
+      const fwdFlat = controls.yaw
+        ? _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
+          .addScaledVector(up, -_mobileFwd.dot(up))
+        : controls.assistForwardDir
+          ? _mobileFwd.copy(controls.assistForwardDir)
+          : _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
+            .addScaledVector(up, -_mobileFwd.dot(up));
       if (fwdFlat.lengthSq() < 1e-6) {
         fwdFlat.set(1, 0, 0).addScaledVector(up, -fwdFlat.dot(up));
       }
       fwdFlat.normalize();
+      if (controls.yaw) {
+        _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * dt);
+        fwdFlat.applyQuaternion(_q).addScaledVector(up, -fwdFlat.dot(up)).normalize();
+      }
       if (controls.assistRightDir) _mobileRight.copy(controls.assistRightDir).normalize();
       else _mobileRight.crossVectors(up, fwdFlat).normalize();
+      if (controls.yaw) _mobileRight.crossVectors(up, fwdFlat).normalize();
       _mobileMatrix.makeBasis(_mobileRight, up, fwdFlat);
       this.quaternion.setFromRotationMatrix(_mobileMatrix);
 
@@ -329,8 +331,7 @@ export class Ship {
       _vTan.multiplyScalar(Math.max(0, 1 - tanDamp * dt));
       vUp *= Math.max(0, 1 - vertDamp * dt);
       this.velocity.copy(_vTan).addScaledVector(up, vUp);
-      // Strafe-flight test: do NOT rotate lateral velocity back toward the nose.
-      // Let A/D or stick-side remain lateral movement so it does not become camera/yaw motion.
+      // Keep A/D or stick-side as lateral movement so it does not become camera/yaw motion.
       _vTan.copy(this.velocity).addScaledVector(up, -this.velocity.dot(up));
       const tanSpeed = _vTan.length();
       const speed = this.velocity.length();
