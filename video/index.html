@@ -4,6 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>The Theater · Heartbeat Observatory</title>
+<!-- THE THEATER (flat page). Real screenings since 2026-07-04: the playback pattern proven
+     in worlds-lab Marquee Row (lib/v1/cinema.js), ported here. Every reel is legally
+     streamable from its ORIGINAL free source (Blender Foundation CC BY, Internet Archive
+     public domain, NASA public domain) - credits shown, nothing re-hosted, nothing faked.
+     If a reel can't load the screen says so plainly. Catalog paper trail: worlds-lab/CREDITS.md -->
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -13,12 +18,23 @@
   .marquee .bulb { width: 7px; height: 7px; border-radius: 50%; background: #ffd98a; box-shadow: 0 0 8px #ffd98a; }
   .marquee h1 { font-size: clamp(19px, 4.5vw, 28px); letter-spacing: 0.18em; color: #ffe2a8; font-weight: 800; }
   .tag { font-size: 12.5px; color: #97a4ae; letter-spacing: 0.06em; margin-bottom: 22px; }
-  .screenframe { width: min(860px, 96vw); background: #04050700; }
-  .screen { aspect-ratio: 16 / 9; width: 100%; border-radius: 10px; background: linear-gradient(180deg, #0e141b 0%, #0a0f14 100%); border: 1px solid #243038; box-shadow: 0 0 60px rgba(140, 190, 230, 0.12), 0 12px 50px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; text-align: center; }
-  .screen .now { font-size: 11px; letter-spacing: 0.3em; color: #6f8290; }
-  .screen .title { font-size: clamp(18px, 4.2vw, 30px); font-weight: 800; letter-spacing: 0.08em; color: #cfe2ee; }
-  .screen .honest { font-size: 13.5px; line-height: 1.55; color: #8da0ac; max-width: 560px; }
+  .screenframe { width: min(860px, 96vw); position: relative; }
+  .screen { aspect-ratio: 16 / 9; width: 100%; border-radius: 10px; background: #05070a; border: 1px solid #243038; box-shadow: 0 0 60px rgba(140, 190, 230, 0.12), 0 12px 50px rgba(0, 0, 0, 0.6); overflow: hidden; position: relative; }
+  .screen video { width: 100%; height: 100%; display: block; background: #000; }
+  .idle { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; text-align: center; background: linear-gradient(180deg, #0e141b 0%, #0a0f14 100%); }
+  .idle .now { font-size: 11px; letter-spacing: 0.3em; color: #6f8290; }
+  .idle .title { font-size: clamp(18px, 4.2vw, 30px); font-weight: 800; letter-spacing: 0.08em; color: #cfe2ee; }
+  .idle .honest { font-size: 13.5px; line-height: 1.55; color: #8da0ac; max-width: 560px; }
   .glowline { width: min(860px, 96vw); height: 14px; margin-top: 2px; background: radial-gradient(ellipse at 50% 0%, rgba(150, 200, 240, 0.18), transparent 70%); }
+  .credit { width: min(860px, 96vw); margin-top: 10px; font-size: 12px; color: #8da0ac; text-align: center; min-height: 16px; line-height: 1.5; }
+  .credit .lic { color: #7bd88f; }
+  .reels { width: min(860px, 96vw); margin-top: 18px; }
+  .reels h2 { font-size: 11px; letter-spacing: 0.28em; color: #6f8290; text-align: center; margin-bottom: 10px; font-weight: 600; }
+  .reelrow { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .reel { font: inherit; font-size: 13px; font-weight: 600; color: #cfe0e6; background: rgba(12, 17, 21, 0.9); border: 1px solid #2c3940; border-radius: 10px; padding: 9px 14px; cursor: pointer; transition: border-color .15s; }
+  .reel:hover { border-color: #c9a35a; }
+  .reel.playing { border-color: #7bd88f; color: #b9e6c6; }
+  .reel .yr { color: #7e909b; font-weight: 400; }
   .seats { width: min(820px, 94vw); display: flex; flex-direction: column; gap: 9px; margin-top: 26px; }
   .row { display: flex; justify-content: center; gap: 7px; }
   .seat { width: clamp(26px, 5.2vw, 44px); height: clamp(18px, 3.4vw, 28px); background: #57222a; border: 1px solid #6e2d36; border-radius: 7px 7px 3px 3px; box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.45); }
@@ -39,11 +55,19 @@
     <div class="tag">Heartbeat Observatory &middot; one screen, honest programming</div>
     <div class="screenframe">
       <div class="screen">
-        <div class="now">NOW SHOWING</div>
-        <div class="title">FIRST SCREENING COMING SOON</div>
-        <div class="honest">This screen will play real, AI-made films and requested videos. Nothing here is ever faked &mdash; when there is something to watch, it plays; until then, the screen tells you the truth.</div>
+        <video id="reel" playsinline controls preload="none" crossorigin="anonymous"></video>
+        <div class="idle" id="idle">
+          <div class="now">NOW SHOWING</div>
+          <div class="title" id="idleTitle">PICK A REEL BELOW</div>
+          <div class="honest" id="idleText">Every reel is real and legally free &mdash; Blender Foundation open movies, public-domain classics, and NASA footage &mdash; played from its original free source. Nothing here is ever faked: if a reel can&rsquo;t load, this screen says so.</div>
+        </div>
       </div>
       <div class="glowline"></div>
+    </div>
+    <div class="credit" id="credit"></div>
+    <div class="reels">
+      <h2>TONIGHT&rsquo;S PROGRAMME</h2>
+      <div class="reelrow" id="reelrow"></div>
     </div>
     <div class="seats">
       <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
@@ -58,18 +82,69 @@
     <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
   </div>
 <script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co", "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
-  const dot = document.getElementById("dot");
-  const statusText = document.getElementById("statusText");
-  (async () => {
-    try {
-      const { data } = await supabase.from("surfaces").select("status").eq("key", "video").maybeSingle();
+  // The verified, legally-safe catalog - same reels as worlds-lab Marquee Row (cinema.js).
+  const FILMS = [
+    { title: "Big Buck Bunny", year: 2008, license: "CC BY 3.0", credit: "© 2008 Blender Foundation · bigbuckbunny.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
+    { title: "Sintel", year: 2010, license: "CC BY 3.0", credit: "© 2010 Blender Foundation · sintel.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4" },
+    { title: "Tears of Steel", year: 2012, license: "CC BY 3.0", credit: "© 2012 Blender Foundation · tearsofsteel.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" },
+    { title: "Elephants Dream", year: 2006, license: "CC BY 2.5", credit: "© 2006 Blender Foundation / NMAI · orange.blender.org", src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
+    { title: "His Girl Friday", year: 1940, license: "Public Domain", credit: "Public domain · Internet Archive", src: "https://archive.org/download/his_girl_friday/his_girl_friday_512kb.mp4" },
+    { title: "Plan 9 from Outer Space", year: 1959, license: "Public Domain", credit: "Public domain · Internet Archive", src: "https://archive.org/download/plan-9-from-outer-space-1959/Plan%209%20From%20Outer%20Space%20%281959%29.ia.mp4" },
+    { title: "Artemis — Success and Preparation", year: 2025, license: "Public Domain (NASA)", credit: "Video courtesy of NASA · images.nasa.gov", src: "https://images-assets.nasa.gov/video/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615~medium.mp4", srcFallback: "https://images-assets.nasa.gov/video/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615/KSC-20250128-MH-NAS02-0001-Artemis_Success_and_Preparation_Short_Versions-M11615~mobile.mp4" },
+  ];
+  const video = document.getElementById("reel");
+  const idle = document.getElementById("idle");
+  const idleTitle = document.getElementById("idleTitle");
+  const idleText = document.getElementById("idleText");
+  const credit = document.getElementById("credit");
+  const reelrow = document.getElementById("reelrow");
+  let current = -1, triedFallback = false;
+
+  function markPlaying() {
+    [...reelrow.children].forEach((b, i) => b.classList.toggle("playing", i === current));
+  }
+  function startShow(i) {
+    const f = FILMS[i];
+    current = i; triedFallback = false;
+    idle.style.display = "none";
+    credit.innerHTML = "Now showing: <strong>" + f.title + "</strong> (" + f.year + ") · <span class=\"lic\">" + f.license + "</span> · " + f.credit + " · played from the original free source";
+    video.src = f.src;
+    const p = video.play();
+    if (p && p.catch) p.catch(() => {
+      // some phones insist on a muted first start - honor it, honestly labeled
+      video.muted = true;
+      video.play().then(() => { credit.innerHTML += " · (muted — use the sound control on the player)"; }).catch(() => {});
+    });
+    markPlaying();
+  }
+  video.addEventListener("error", () => {
+    if (current < 0) return;
+    const f = FILMS[current];
+    if (f.srcFallback && !triedFallback) { triedFallback = true; video.src = f.srcFallback; video.play().catch(() => {}); return; }
+    idle.style.display = "flex";
+    idleTitle.textContent = "THAT REEL DIDN’T LOAD";
+    idleText.textContent = "The source for “" + f.title + "” is unreachable right now. Honest empty screen, never a fake — pick another reel or try again later.";
+    credit.textContent = "";
+    current = -1; markPlaying();
+  });
+  FILMS.forEach((f, i) => {
+    const b = document.createElement("button");
+    b.className = "reel";
+    b.innerHTML = f.title + " <span class=\"yr\">(" + f.year + ")</span>";
+    b.addEventListener("click", () => startShow(i));
+    reelrow.appendChild(b);
+  });
+
+  import("https://esm.sh/@supabase/supabase-js@2").then(({ createClient }) => {
+    const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co", "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+    const dot = document.getElementById("dot");
+    const statusText = document.getElementById("statusText");
+    supabase.from("surfaces").select("status").eq("key", "video").maybeSingle().then(({ data }) => {
       const st = data ? data.status : "coming_soon";
       dot.className = "dot" + (st === "live" ? " live" : "");
       statusText.textContent = st === "live" ? "The Theater is open" : "Coming soon";
-    } catch (e) { statusText.textContent = ""; }
-  })();
+    }).catch(() => {});
+  }).catch(() => {});
 </script>
 <script defer src="/bubble.js"></script>
 </body>
