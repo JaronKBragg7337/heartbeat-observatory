@@ -127,7 +127,7 @@ function removePickup(id) {
 // The `game` composition object — what save.js and ui.js see.
 // ---------------------------------------------------------------------------
 const game = {
-  engine, player, ship, inventory, worldState, factionState, traversal,
+  engine, input, player, ship, inventory, worldState, factionState, traversal,
   pickupsCollected: new Set(),
   applyLoadedMode(mode) {
     traversal.mode = mode === 'PILOTING' ? MODE.PILOTING : MODE.ON_FOOT;
@@ -188,7 +188,7 @@ traversal.on((name, payload) => {
       ui.showCenter('YOU ARE IN SPACE.<br><span class="dim">Open M — pick a body, burn toward it, then brake (X) and descend.</span>', 6000);
     }
   }
-  if (name === 'enteredShip') ui.showToast('Piloting. W/S or THR buttons throttle · stick/mouse steers · X brake · E exit when landed.', 4500);
+  if (name === 'enteredShip') ui.showToast('Piloting. W/S or stick up/down drives · A/D or stick left/right strafes · mouse/right drag looks · X brake · E exits when landed.', 4500);
 });
 
 ship._onCrash = (impact) => {
@@ -257,9 +257,7 @@ const _cv = new THREE.Vector3(), _cq = new THREE.Quaternion(), _cm = new THREE.M
 let shipTouchCamYaw = 0, shipTouchCamPitch = 0;
 let shipCamBaseReady = false;
 const shipCamBaseQuat = new THREE.Quaternion();
-const SHIP_CAM_MIN_TRAVEL_SPEED = 1.5;
-const _shipCamUp = new THREE.Vector3(), _shipCamTravel = new THREE.Vector3(), _shipCamRight = new THREE.Vector3();
-const _shipCamMatrix = new THREE.Matrix4();
+const _shipAssistUp = new THREE.Vector3(), _shipAssistForward = new THREE.Vector3(), _shipAssistRight = new THREE.Vector3();
 
 function updateCamera(dt) {
   if (traversal.mode === MODE.ON_FOOT) {
@@ -268,34 +266,13 @@ function updateCamera(dt) {
   } else {
     // Ship views: offsets in ship space, world math in f64.
     if (chaseCam) {
-      // FLYING-GAME STANDARD (2026-07-04 fix): the chase camera FOLLOWS the
-      // ship's real orientation, always — steering visibly turns the world
-      // around you, so the ship reads as having a front. (The old code froze
-      // the camera while steering, which made turns look like the travel
-      // direction changed under a fixed view — the "ship has no front" bug.)
-      // Mouse / outside-the-stick drag adds a TEMPORARY orbit offset that
-      // eases back to dead-behind when released. Never re-add a steering hold.
-      // Velocity-follow chase camera test:
-      // Movement input changes the ship/velocity; the camera follows the
-      // resulting travel direction instead of raw yaw input. When nearly
-      // stationary, keep the previous camera base so A/D or stick-side does
-      // not directly orbit the camera in place.
+      // Control-isolated chase camera: movement/drive input must never rotate
+      // the camera. The camera base is captured when entering the ship; only
+      // explicit look input (mouse/right-side touch/arrows) changes the orbit.
       _cv.set(0, 4.5, -15);
-      const camUp = upAt(dominantBody(BODIES, ship.worldPos), ship.worldPos, _shipCamUp);
-      const travel = _shipCamTravel.copy(ship.velocity).addScaledVector(camUp, -ship.velocity.dot(camUp));
       if (!shipCamBaseReady) {
         shipCamBaseQuat.copy(ship.quaternion);
         shipCamBaseReady = true;
-      }
-      if (travel.lengthSq() > SHIP_CAM_MIN_TRAVEL_SPEED * SHIP_CAM_MIN_TRAVEL_SPEED) {
-        travel.normalize();
-        _shipCamRight.crossVectors(camUp, travel);
-        if (_shipCamRight.lengthSq() > 1e-6) {
-          _shipCamRight.normalize();
-          _shipCamMatrix.makeBasis(_shipCamRight, camUp, travel);
-          _cq.setFromRotationMatrix(_shipCamMatrix);
-          shipCamBaseQuat.slerp(_cq, Math.min(1, 5 * dt));
-        }
       }
       const looking = input.touchMode
         ? (input.touchLookActive && !input.touchJoystickActive)
@@ -358,18 +335,27 @@ function readShipControls(dt) {
   const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
   const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
 
-  // RESTORED 2026-07-04: mouse controls ship yaw/pitch in assisted mode.
-  // W/S/A/D handle forward/strafe movement; mouse X/Y steers the ship.
-  const mouseActive = input.pointerLocked || input.touchLookActive;
-  controls.pitch = mouseActive ? input.mouseDY * 0.05 : 0;
-  controls.yaw   = mouseActive ? input.mouseDX * 0.05 : 0;
-  controls.roll  = 0;  // roll not used in assisted mode (auto-levelled)
+  controls.pitch = 0;
+  controls.yaw = 0;
+  controls.roll = 0;
   controls.thrustUp = input.down('Space');
   controls.brake = input.down('KeyX') || input.down('ControlLeft') || input.down('ControlRight') || touchThrottle < -0.85;
   controls.assist = true;
   controls.mobileAssist = input.touchMode;
   controls.assistForward = assistForward;
   controls.assistStrafe = assistStrafe;
+
+  const up = upAt(dominantBody(BODIES, ship.worldPos), ship.worldPos, _shipAssistUp);
+  _shipAssistForward.set(0, 0, -1).applyQuaternion(engine.camera.quaternion);
+  _shipAssistForward.addScaledVector(up, -_shipAssistForward.dot(up));
+  if (_shipAssistForward.lengthSq() < 1e-6) {
+    _shipAssistForward.set(0, 0, 1).applyQuaternion(ship.quaternion);
+    _shipAssistForward.addScaledVector(up, -_shipAssistForward.dot(up));
+  }
+  _shipAssistForward.normalize();
+  _shipAssistRight.crossVectors(up, _shipAssistForward).normalize();
+  controls.assistForwardDir = _shipAssistForward;
+  controls.assistRightDir = _shipAssistRight;
 
   // Mobile takeoff assist: if the player is throttling up from the ground, add
   // vertical lift until the hull is safely away from terrain. This prevents the
@@ -430,7 +416,7 @@ function updatePrompt() {
   } else if (ship.landed) {
     ui.showPrompt(touchActive
       ? 'E — exit ship   ·   stick up / LIFT — take off'
-      : 'E — exit ship   ·   W/Space — take off (if ready)');
+      : 'E — exit ship   ·   Space — take off (if ready)');
     return;
   }
   ui.hidePrompt();

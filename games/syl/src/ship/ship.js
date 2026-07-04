@@ -212,7 +212,7 @@ export class Ship {
   }
 
   // ------------------------------------------------------------------ flight
-  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; brake: bool; assist?: bool; assistForward?: -1..1; assistStrafe?: -1..1 }
+  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; brake: bool; assist?: bool; assistForward?: -1..1; assistStrafe?: -1..1; assistForwardDir?: Vector3; assistRightDir?: Vector3 }
   tick(dt, piloted, controls) {
     const body = dominantBody(this.bodies, this.worldPos);
     this._domBody = body;
@@ -257,13 +257,16 @@ export class Ship {
         }
       }
 
-      const fwdFlat = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
-        .addScaledVector(up, -_mobileFwd.dot(up));
+      const fwdFlat = controls.assistForwardDir
+        ? _mobileFwd.copy(controls.assistForwardDir)
+        : _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
+          .addScaledVector(up, -_mobileFwd.dot(up));
       if (fwdFlat.lengthSq() < 1e-6) {
         fwdFlat.set(1, 0, 0).addScaledVector(up, -fwdFlat.dot(up));
       }
       fwdFlat.normalize();
-      _mobileRight.crossVectors(up, fwdFlat).normalize();
+      if (controls.assistRightDir) _mobileRight.copy(controls.assistRightDir).normalize();
+      else _mobileRight.crossVectors(up, fwdFlat).normalize();
 
       // Auto-level: snap back to level flight when not pitching (gradual, not instant).
       const pitching = controls.pitch && Math.abs(controls.pitch) > 0.01;
