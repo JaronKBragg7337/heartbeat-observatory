@@ -27,6 +27,13 @@ import { gravityAt, altitudeAt, upAt, dominantBody, terrainRadiusAt } from '../w
 const HULL_CLEARANCE = 1.9;   // meters from ship origin to landing-gear feet
 const CRASH_SPEED = 16;       // m/s vertical impact that damages modules
 const SAFE_LAND_SPEED = 8;    // m/s comfortable touchdown
+// Rotation feel (tunable). YAW was the weak axis: turning felt sluggish and,
+// on phone, a look-drag can't HOLD a turn. Raised yaw authority + eased damping,
+// and main.js now also feeds A/D (+ touch Turn buttons) into yaw.
+const PITCH_RATE = 2.4;   // was 2.2
+const YAW_RATE   = 2.7;   // was 1.8 — the main 'I can't turn' fix
+const ROLL_RATE  = 2.4;
+const ROT_DAMP   = 2.2;   // was 3.0 — eased so a turn builds and holds
 
 export class Ship {
   constructor(engine, bodies) {
@@ -199,11 +206,11 @@ export class Ship {
 
     // 4. Rotation: rates from controls, damped.
     if (piloted && controls) {
-      this.angVel.x += controls.pitch * 2.2 * dt;
-      this.angVel.y += controls.yaw * 1.8 * dt;
-      this.angVel.z += controls.roll * 2.4 * dt;
+      this.angVel.x += controls.pitch * PITCH_RATE * dt;
+      this.angVel.y += controls.yaw * YAW_RATE * dt;
+      this.angVel.z += controls.roll * ROLL_RATE * dt;
     }
-    this.angVel.multiplyScalar(Math.max(0, 1 - 3.0 * dt)); // rotational damping
+    this.angVel.multiplyScalar(Math.max(0, 1 - ROT_DAMP * dt)); // rotational damping
     _dq.setFromEuler(_eul.set(this.angVel.x * dt, this.angVel.y * dt, this.angVel.z * dt, 'XYZ'));
     this.quaternion.multiply(_dq).normalize();
 

@@ -285,9 +285,12 @@ function readShipControls(dt) {
   // Throttle: W up, S down.
   if (input.down('KeyW')) ship.throttle = Math.min(1, ship.throttle + 0.7 * dt);
   if (input.down('KeyS')) ship.throttle = Math.max(0, ship.throttle - 0.9 * dt);
+  // Yaw = mouse X + A/D keys (A left, D right) so you can HOLD a turn without
+  // dragging the mouse. Roll moved to Q/E to free A/D. (Touch: Turn buttons.)
+  const keyYaw = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
   controls.pitch = input.mouseDY * 0.05;
-  controls.yaw = input.mouseDX * 0.05;
-  controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
+  controls.yaw = input.mouseDX * 0.05 + keyYaw;
+  controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyE') ? 1 : 0);
   controls.thrustUp = input.down('Space');
   controls.brake = input.down('KeyX');
 
