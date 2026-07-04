@@ -35,7 +35,7 @@ const PITCH_RATE = 2.4;   // was 2.2
 const YAW_RATE   = 2.7;   // was 1.8 — the main 'I can't turn' fix
 const ROLL_RATE  = 2.4;
 const ROT_DAMP   = 2.2;   // was 3.0 — eased so a turn builds and holds
-const ASSIST_YAW_RATE = 2.9; // direct heading steering for assisted piloting
+const ASSIST_YAW_RATE = 3.2; // direct heading steering for assisted piloting
 const ASSIST_FORWARD_ACCEL = 48; // m/s^2 through the ship nose
 const ASSIST_STRAFE_ACCEL = 38;  // m/s^2 lateral test: A/D or stick-side slides instead of yawing
 const ASSIST_MAX_SPEED = 70;
@@ -214,7 +214,7 @@ export class Ship {
   }
 
   // ------------------------------------------------------------------ flight
-  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; descend: bool; brake: bool; assist?: bool; assistForward?: -1..1; assistStrafe?: -1..1; assistForwardDir?: Vector3; assistRightDir?: Vector3 }
+  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; descend: bool; brake: bool; assist?: bool; assistForward?: -1..1; assistStrafe?: -1..1 }
   tick(dt, piloted, controls) {
     const body = dominantBody(this.bodies, this.worldPos);
     this._domBody = body;
@@ -242,13 +242,8 @@ export class Ship {
     // ------------------------------------------------------------------
     let burning = 0;
     if (assisted) {
-      const fwdFlat = controls.yaw
-        ? _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
-          .addScaledVector(up, -_mobileFwd.dot(up))
-        : controls.assistForwardDir
-          ? _mobileFwd.copy(controls.assistForwardDir)
-          : _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
-            .addScaledVector(up, -_mobileFwd.dot(up));
+      const fwdFlat = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
+        .addScaledVector(up, -_mobileFwd.dot(up));
       if (fwdFlat.lengthSq() < 1e-6) {
         fwdFlat.set(1, 0, 0).addScaledVector(up, -fwdFlat.dot(up));
       }
@@ -257,9 +252,7 @@ export class Ship {
         _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * dt);
         fwdFlat.applyQuaternion(_q).addScaledVector(up, -fwdFlat.dot(up)).normalize();
       }
-      if (controls.assistRightDir) _mobileRight.copy(controls.assistRightDir).normalize();
-      else _mobileRight.crossVectors(up, fwdFlat).normalize();
-      if (controls.yaw) _mobileRight.crossVectors(up, fwdFlat).normalize();
+      _mobileRight.crossVectors(up, fwdFlat).normalize();
       _mobileMatrix.makeBasis(_mobileRight, up, fwdFlat);
       this.quaternion.setFromRotationMatrix(_mobileMatrix);
 
@@ -330,10 +323,22 @@ export class Ship {
       const vertDamp = controls.brake ? ASSIST_BRAKE_DAMP : (active ? ASSIST_ACTIVE_DAMP : ASSIST_IDLE_VERT_DAMP);
       _vTan.multiplyScalar(Math.max(0, 1 - tanDamp * dt));
       vUp *= Math.max(0, 1 - vertDamp * dt);
+      const tanSpeed = _vTan.length();
+      _gripFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
+        .addScaledVector(up, -_gripFwd.dot(up));
+      if (_gripFwd.lengthSq() < 1e-6) _gripFwd.copy(_mobileFwd);
+      _gripFwd.normalize();
+      _gripRight.crossVectors(up, _gripFwd).normalize();
+      const desired = _desiredTan
+        .copy(_gripFwd).multiplyScalar(controls.assistForward ?? 0)
+        .addScaledVector(_gripRight, controls.assistStrafe ?? 0);
+      if (tanSpeed > 0.5 && desired.lengthSq() > 1e-5) {
+        desired.normalize().multiplyScalar(tanSpeed);
+        _vTan.lerp(desired, Math.min(1, ASSIST_GRIP * dt));
+      }
       this.velocity.copy(_vTan).addScaledVector(up, vUp);
       // Keep A/D or stick-side as lateral movement so it does not become camera/yaw motion.
       _vTan.copy(this.velocity).addScaledVector(up, -this.velocity.dot(up));
-      const tanSpeed = _vTan.length();
       const speed = this.velocity.length();
       if (speed > ASSIST_MAX_SPEED) this.velocity.multiplyScalar(ASSIST_MAX_SPEED / speed);
     } else if (piloted && controls && controls.brake) {
@@ -449,7 +454,8 @@ const _fwd = new THREE.Vector3(), _accel = new THREE.Vector3(), _g = new THREE.V
 const _rel = new THREE.Vector3(), _dq = new THREE.Quaternion(), _q = new THREE.Quaternion();
 const _eul = new THREE.Euler();
 const _mobileFwd = new THREE.Vector3(), _mobileRight = new THREE.Vector3();
-const _vTan = new THREE.Vector3(), _gripTarget = new THREE.Vector3();
+const _gripFwd = new THREE.Vector3(), _gripRight = new THREE.Vector3();
+const _vTan = new THREE.Vector3(), _desiredTan = new THREE.Vector3();
 const _mobileMatrix = new THREE.Matrix4();
 
 function shipMat(color, health = 1) {

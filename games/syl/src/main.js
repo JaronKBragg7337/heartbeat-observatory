@@ -259,7 +259,6 @@ const _cv = new THREE.Vector3(), _cq = new THREE.Quaternion(), _cm = new THREE.M
 let shipTouchCamYaw = 0, shipTouchCamPitch = 0;
 let shipCamBaseReady = false;
 const shipCamBaseQuat = new THREE.Quaternion();
-const _shipAssistUp = new THREE.Vector3(), _shipAssistForward = new THREE.Vector3(), _shipAssistRight = new THREE.Vector3();
 
 function updateCamera(dt) {
   if (traversal.mode === MODE.ON_FOOT) {
@@ -278,7 +277,7 @@ function updateCamera(dt) {
       }
       const shipTurnInput = input.down('KeyQ') || input.down('KeyR');
       if (shipTurnInput) {
-        shipCamBaseQuat.slerp(ship.quaternion, Math.min(1, 8 * dt));
+        shipCamBaseQuat.slerp(ship.quaternion, Math.min(1, 2.2 * dt));
       }
       const looking = input.touchMode
         ? (input.touchLookActive && !input.touchJoystickActive)
@@ -342,7 +341,7 @@ function readShipControls(dt) {
   const touchAutoLift = input.touchMode && input.touchJoystickActive && !descend;
 
   controls.pitch = 0;
-  controls.yaw = keyRoll * 0.35;
+  controls.yaw = keyRoll * 0.65;
   controls.roll = keyRoll;
   controls.thrustUp = input.down('Space') || touchAutoLift;
   controls.descend = descend;
@@ -351,18 +350,6 @@ function readShipControls(dt) {
   controls.mobileAssist = input.touchMode;
   controls.assistForward = assistForward;
   controls.assistStrafe = assistStrafe;
-
-  const up = upAt(dominantBody(BODIES, ship.worldPos), ship.worldPos, _shipAssistUp);
-  _shipAssistForward.set(0, 0, -1).applyQuaternion(engine.camera.quaternion);
-  _shipAssistForward.addScaledVector(up, -_shipAssistForward.dot(up));
-  if (_shipAssistForward.lengthSq() < 1e-6) {
-    _shipAssistForward.set(0, 0, 1).applyQuaternion(ship.quaternion);
-    _shipAssistForward.addScaledVector(up, -_shipAssistForward.dot(up));
-  }
-  _shipAssistForward.normalize();
-  _shipAssistRight.crossVectors(up, _shipAssistForward).normalize();
-  controls.assistForwardDir = _shipAssistForward;
-  controls.assistRightDir = _shipAssistRight;
 
   // Mobile takeoff assist: if the player is throttling up from the ground, add
   // vertical lift until the hull is safely away from terrain. This prevents the
