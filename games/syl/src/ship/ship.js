@@ -110,31 +110,83 @@ export class Ship {
   // remove/repair — the ship LOOKS like what it IS.
   rebuildVisual() {
     this.group.clear();
+
+    const has = (slotId) => !!this.modules[slotId];
+    const hp = (slotId) => {
+      const mod = this.modules[slotId];
+      if (!mod) return 0;
+      return mod.hp / getPartType(mod.typeId).maxHp;
+    };
+    const visible = new THREE.Group();
+    visible.name = 'Fortis_Gunship_CodeBuilt';
+    this.group.add(visible);
+
+    const frameHealth = hp('frame_core') || 0.25;
+    const hullHealth = Math.max(hp('hull_top'), hp('hull_heavy_top'), frameHealth);
+    const armorMat = shipMat(0x3f5350, hullHealth);
+    const darkMat = shipMat(0x1f2828, frameHealth);
+    const trimMat = shipMat(0x7b1e1e, hullHealth);
+    const interiorMat = shipMat(0x263238, frameHealth);
+    const glassMat = new THREE.MeshLambertMaterial({ color: 0x8fd7ff, transparent: true, opacity: has('cockpit_fwd') ? 0.42 : 0.12 });
+
+    // Walkable-gunship silhouette, adapted from SpaceYouLand's
+    // _authoring/make_walkable_gunship.py into cheap browser primitives.
+    addBox(visible, 'gunship:physics_deck', [0, -0.42, -0.35], [3.65, 0.28, 10.9], darkMat);
+    addBox(visible, 'gunship:keel', [0, -0.72, -0.8], [0.55, 0.32, 8.6], darkMat);
+    addBox(visible, 'gunship:port_shell', [-2.02, 0.82, -0.55], [0.28, 2.7, 10.7], armorMat);
+    addBox(visible, 'gunship:starboard_shell', [2.02, 0.82, -0.55], [0.28, 2.7, 10.7], armorMat);
+    addBox(visible, 'gunship:roof', [0, 2.18, -0.8], [3.9, 0.26, 8.7], armorMat);
+    addBox(visible, 'gunship:belly_port', [-1.88, -0.48, -0.8], [0.35, 0.42, 9.0], armorMat);
+    addBox(visible, 'gunship:belly_starboard', [1.88, -0.48, -0.8], [0.35, 0.42, 9.0], armorMat);
+    addBox(visible, 'gunship:nose_cap', [0, 0.1, 5.78], [2.9, 0.66, 0.35], armorMat, { y: -0.14 });
+    addBox(visible, 'gunship:cockpit_glass_left', [-0.62, 1.32, 4.92], [1.18, 0.07, 1.9], glassMat, { x: -0.35 });
+    addBox(visible, 'gunship:cockpit_glass_right', [0.62, 1.32, 4.92], [1.18, 0.07, 1.9], glassMat, { x: 0.35 });
+    addBox(visible, 'gunship:rear_pressure_frame', [0, 1.35, -5.78], [3.9, 0.42, 0.4], armorMat);
+    addBox(visible, 'gunship:rear_ramp', [0, -0.36, -6.25], [3.35, 0.2, 2.9], shipMat(0x455a64, frameHealth), { x: -0.28 });
+    addBox(visible, 'gunship:pressure_door', [0, 0.82, -5.82], [3.28, 2.3, 0.18], shipMat(0x263238, has('cockpit_fwd') ? 1 : 0.35));
+    addBox(visible, 'gunship:pilot_seat', [0, 0.35, 3.25], [0.72, 0.32, 0.75], interiorMat);
+    addBox(visible, 'gunship:console', [0, 0.65, 4.25], [1.65, 0.38, 0.9], shipMat(0x102027, hp('cockpit_fwd') || 0.3));
+    addBox(visible, 'gunship:trim_port', [-2.18, 0.25, -0.55], [0.06, 0.14, 10.25], trimMat);
+    addBox(visible, 'gunship:trim_starboard', [2.18, 0.25, -0.55], [0.06, 0.14, 10.25], trimMat);
+
+    // Wings and engines: visible only when the supporting modules exist.
+    if (has('hull_top') || has('hull_heavy_top') || has('frame_core')) {
+      addBox(visible, 'gunship:port_wing', [-3.45, 0.46, -1.1], [3.0, 0.24, 3.4], armorMat);
+      addBox(visible, 'gunship:starboard_wing', [3.45, 0.46, -1.1], [3.0, 0.24, 3.4], armorMat);
+    }
+    if (has('engine_main') || has('engine_aux') || has('engine_adv')) {
+      const engineHealth = Math.max(hp('engine_main'), hp('engine_aux'), hp('engine_adv'));
+      const engineMat = shipMat(0x263238, engineHealth || 0.35);
+      addCyl(visible, 'gunship:port_engine', [-3.7, 0.9, -2.75], 0.68, 2.9, engineMat, 'Z');
+      addCyl(visible, 'gunship:starboard_engine', [3.7, 0.9, -2.75], 0.68, 2.9, engineMat, 'Z');
+      addCyl(visible, 'gunship:main_nozzle', [0, 0.35, -5.18], 0.58, 0.55, engineMat, 'Z');
+    }
+    if (has('tank_left')) addCyl(visible, 'gunship:port_tank', [-1.6, 0.08, -1.0], 0.42, 2.35, shipMat(0x607d8b, hp('tank_left')), 'Z');
+    if (has('tank_right')) addCyl(visible, 'gunship:starboard_tank', [1.6, 0.08, -1.0], 0.42, 2.35, shipMat(0x607d8b, hp('tank_right')), 'Z');
+    if (has('power_bay')) addBox(visible, 'gunship:power_cell', [0, 0.72, -0.55], [0.9, 0.55, 1.1], shipMat(0xffb300, hp('power_bay')));
+    if (has('cargo_belly') || has('cargo_adv_belly')) addBox(visible, 'gunship:cargo_bay', [0, -1.05, 0.3], [1.5, 0.55, 2.4], shipMat(0x455a64, Math.max(hp('cargo_belly'), hp('cargo_adv_belly'))));
+
+    for (const slotId of ['gear_fl', 'gear_fr', 'gear_rl', 'gear_rr']) {
+      const slot = SLOTS.find(s => s.slotId === slotId);
+      if (!slot || !has(slotId)) continue;
+      const gearHealth = hp(slotId);
+      const [x, , z] = slot.offset;
+      const gearMat = shipMat(0x20282c, gearHealth);
+      addCyl(visible, `gunship:${slotId}:strut`, [x, -1.05, z], 0.11, 0.95, gearMat, 'Y');
+      addBox(visible, `gunship:${slotId}:foot`, [x, -1.58, z], [1.15, 0.18, 0.42], gearMat);
+    }
+
+    // Small optional hardpoint markers keep installed expanded modules visible.
     for (const slot of SLOTS) {
       const mod = this.modules[slot.slotId];
-      if (!mod) continue;
+      if (!mod || ['frame', 'cockpit', 'engine', 'fueltank', 'power', 'cargo', 'hull', 'gear'].includes(mod.typeId)) continue;
       const t = getPartType(mod.typeId);
-      let mesh;
-      if (t.visual.kind === 'cyl') {
-        mesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(t.visual.size[0], t.visual.size[0] * 1.15, t.visual.size[1], 10),
-          new THREE.MeshLambertMaterial({ color: t.visual.color })
-        );
-        if (slot.rotate === 'back') mesh.rotateX(Math.PI / 2);
-      } else {
-        mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(...t.visual.size),
-          new THREE.MeshLambertMaterial({ color: t.visual.color })
-        );
-      }
-      // Damaged modules render darker — visible truth, not a hidden stat.
-      const frac = mod.hp / t.maxHp;
-      if (frac < READINESS_RULES.degradedBelowFrac) mesh.material.color.multiplyScalar(0.35);
-      else if (frac < 0.8) mesh.material.color.multiplyScalar(0.7);
-      mesh.position.fromArray(slot.offset);
-      mesh.name = `mod:${slot.slotId}`;
-      this.group.add(mesh);
+      const mat = shipMat(t.visual.color, mod.hp / t.maxHp);
+      const marker = addModuleMarker(visible, `mod:${slot.slotId}`, t, mat);
+      marker.position.fromArray(slot.offset);
+      if (slot.rotate === 'back') marker.rotateX(Math.PI / 2);
     }
+
     // Engine glow when thrusting (updated in tick).
     this._glow = new THREE.PointLight(0xff6d3f, 0, 30);
     this._glow.position.set(0, 0, -4.2);
@@ -356,3 +408,41 @@ const _eul = new THREE.Euler();
 const _mobileFwd = new THREE.Vector3(), _mobileRight = new THREE.Vector3();
 const _mobileVel = new THREE.Vector3();
 const _mobileMatrix = new THREE.Matrix4();
+
+function shipMat(color, health = 1) {
+  const mat = new THREE.MeshLambertMaterial({ color });
+  if (health < READINESS_RULES.degradedBelowFrac) mat.color.multiplyScalar(0.35);
+  else if (health < 0.8) mat.color.multiplyScalar(0.7);
+  return mat;
+}
+
+function addBox(parent, name, center, size, mat, rot = null) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), mat);
+  mesh.name = name;
+  mesh.position.fromArray(center);
+  if (rot) {
+    if (rot.x) mesh.rotateX(rot.x);
+    if (rot.y) mesh.rotateY(rot.y);
+    if (rot.z) mesh.rotateZ(rot.z);
+  }
+  parent.add(mesh);
+  return mesh;
+}
+
+function addCyl(parent, name, center, radius, depth, mat, axis = 'Y') {
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 1.12, depth, 12), mat);
+  mesh.name = name;
+  mesh.position.fromArray(center);
+  if (axis === 'Z') mesh.rotateX(Math.PI / 2);
+  else if (axis === 'X') mesh.rotateZ(Math.PI / 2);
+  parent.add(mesh);
+  return mesh;
+}
+
+function addModuleMarker(parent, name, type, mat) {
+  if (type.visual.kind === 'cyl') {
+    return addCyl(parent, name, [0, 0, 0], type.visual.size[0], type.visual.size[1], mat, 'Z');
+  }
+  const scale = 0.55;
+  return addBox(parent, name, [0, 0, 0], type.visual.size.map(v => v * scale), mat);
+}

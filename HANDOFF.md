@@ -7,6 +7,29 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — Fortis gunship visual synced
+
+**State:** public `/games/syl/` is ready to receive the mobile-safe Fortis
+gunship visual from the SYL game repo.
+
+**Shipped:** synced the code-built `Fortis_Gunship_CodeBuilt` hierarchy into
+the public SYL bundle: deck, shells, wings, engines, cockpit glass, pilot seat,
+console, ramp, pressure door, trim, landing gear, cargo bay, tanks, and module
+damage tinting. This ports the shape language from
+`SpaceYouLand/_authoring/make_walkable_gunship.py` without adding raw FBX/GLB
+payloads to the mobile web build.
+
+**Verified:** SYL `npm test` 71/71 before sync, including the Fortis visual
+hierarchy test; Heartbeat syntax/source smoke after sync.
+
+**Next up:** wire the ramp, hatch, pilot seat, and camera anchors as real
+interactions so the visual stops being only a flyable exterior shell.
+
+**Gotchas:** this is still primitive Three.js geometry, not mesh-perfect
+collision or a full walkable interior. That is deliberate for phone safety.
+
+---
+
 ## 2026-07-04 — Codex — SYL ship structure collision synced
 
 **State:** public `/games/syl/` has the follow-up for Jaron's report that the
