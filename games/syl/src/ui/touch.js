@@ -135,7 +135,7 @@ export function initTouch(input, root) {
     btn.addEventListener('touchcancel', off, { passive: false });
   });
 
-  // --- Joystick → WASD on foot, analog yaw/pitch while piloting. ------------
+  // --- Joystick → WASD on foot, throttle + heading while piloting. ----------
   const base = wrap.querySelector('#joy-base');
   const knob = wrap.querySelector('#joy-knob');
   let joyId = null;

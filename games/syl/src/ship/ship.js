@@ -34,6 +34,7 @@ const PITCH_RATE = 2.4;   // was 2.2
 const YAW_RATE   = 2.7;   // was 1.8 — the main 'I can't turn' fix
 const ROLL_RATE  = 2.4;
 const ROT_DAMP   = 2.2;   // was 3.0 — eased so a turn builds and holds
+const MOBILE_YAW_RATE = 2.9; // direct heading steering for touch flight assist
 
 export class Ship {
   constructor(engine, bodies) {
@@ -149,7 +150,7 @@ export class Ship {
   }
 
   // ------------------------------------------------------------------ flight
-  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; brake: bool }
+  // controls: { pitch, yaw, roll: -1..1; thrustUp: bool; brake: bool; mobileAssist?: bool }
   tick(dt, piloted, controls) {
     const body = dominantBody(this.bodies, this.worldPos);
     this._domBody = body;
@@ -166,17 +167,44 @@ export class Ship {
     }
 
     const accel = _accel.set(0, 0, 0);
+    const mobileAssist = !!(piloted && controls && controls.mobileAssist);
+
+    if (mobileAssist) {
+      // Phone flight is an assisted piloting mode: yaw changes the travel
+      // heading directly and the hull stays upright relative to the nearest
+      // body. This avoids the "elevator on a rail" feel caused by tiny-screen
+      // pitch/roll/inertia fighting the player's intent.
+      if (controls.yaw) {
+        _q.setFromAxisAngle(up, controls.yaw * MOBILE_YAW_RATE * dt);
+        this.quaternion.premultiply(_q).normalize();
+      }
+      const fwdFlat = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
+        .addScaledVector(up, -_mobileFwd.dot(up));
+      if (fwdFlat.lengthSq() < 1e-6) {
+        fwdFlat.set(1, 0, 0).addScaledVector(up, -fwdFlat.dot(up));
+      }
+      fwdFlat.normalize();
+      _mobileRight.crossVectors(up, fwdFlat).normalize();
+      _mobileMatrix.makeBasis(_mobileRight, up, fwdFlat);
+      this.quaternion.setFromRotationMatrix(_mobileMatrix);
+      this.angVel.set(0, 0, 0);
+    }
 
     // 1. Thrust — only if piloted, ready, powered, fueled.
     let burning = 0;
     if (piloted && this.stats.ready && this.fuel > 0) {
       const fwd = _fwd.set(0, 0, 1).applyQuaternion(this.quaternion);
+      if (mobileAssist) {
+        fwd.addScaledVector(up, -fwd.dot(up));
+        if (fwd.lengthSq() < 1e-6) fwd.set(1, 0, 0).addScaledVector(up, -fwd.dot(up));
+        fwd.normalize();
+      }
       if (this.throttle > 0) {
         accel.addScaledVector(fwd, (this.stats.thrust * this.throttle) / this.stats.mass);
         burning += this.throttle;
       }
       if (controls && controls.thrustUp) {
-        const shipUp = _shipUp.set(0, 1, 0).applyQuaternion(this.quaternion);
+        const shipUp = mobileAssist ? up : _shipUp.set(0, 1, 0).applyQuaternion(this.quaternion);
         accel.addScaledVector(shipUp, (this.stats.thrust * 0.75) / this.stats.mass);
         burning += 0.75;
       }
@@ -205,7 +233,7 @@ export class Ship {
     this.worldPos.addScaledVector(this.velocity, dt);
 
     // 4. Rotation: rates from controls, damped.
-    if (piloted && controls) {
+    if (piloted && controls && !mobileAssist) {
       this.angVel.x += controls.pitch * PITCH_RATE * dt;
       this.angVel.y += controls.yaw * YAW_RATE * dt;
       this.angVel.z += controls.roll * ROLL_RATE * dt;
@@ -301,3 +329,5 @@ const _up = new THREE.Vector3(), _up2 = new THREE.Vector3(), _shipUp = new THREE
 const _fwd = new THREE.Vector3(), _accel = new THREE.Vector3(), _g = new THREE.Vector3();
 const _rel = new THREE.Vector3(), _dq = new THREE.Quaternion(), _q = new THREE.Quaternion();
 const _eul = new THREE.Euler();
+const _mobileFwd = new THREE.Vector3(), _mobileRight = new THREE.Vector3();
+const _mobileMatrix = new THREE.Matrix4();

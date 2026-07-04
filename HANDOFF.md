@@ -7,6 +7,28 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — SYL mobile heading assist synced
+
+**State:** public `/games/syl/` has the fix for Jaron's "ship feels like it is
+on a line" phone report.
+
+**Shipped:** synced touch-only mobile flight assist. In `games/syl/src/ship/ship.js`,
+mobile piloting now yaws the real travel heading directly, keeps the hull level
+to the current body's up vector, and applies main thrust along that heading.
+`main.js` passes `controls.mobileAssist` only from touch mode. Desktop remains
+the existing 6DOF/inertial flight path.
+
+**Verified:** SYL `npm test` 67/67 before sync, including mobile-heading tests;
+run syntax checks and touch smoke before push.
+
+**Next up:** Jaron phone retest: hold stick up to build throttle, then move
+stick left/right and confirm the path curves instead of only the camera moving.
+
+**Gotchas:** this is intentionally assisted phone free-roam, not advanced
+aircraft mode. Keep it mobile-first unless adding an explicit advanced toggle.
+
+---
+
 ## 2026-07-04 — Codex — Calmer SYL mobile piloting synced
 
 **State:** public `/games/syl/` has the follow-up phone-control fix after

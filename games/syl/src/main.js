@@ -299,6 +299,7 @@ function readShipControls(dt) {
   controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyE') ? 1 : 0);
   controls.thrustUp = input.down('Space');
   controls.brake = input.down('KeyX') || touchThrottle < -0.85;
+  controls.mobileAssist = input.touchMode;
 
   // Mobile takeoff assist: if the player is throttling up from the ground, add
   // vertical lift until the hull is safely away from terrain. This prevents the
