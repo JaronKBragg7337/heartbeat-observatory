@@ -29,6 +29,7 @@ import { UI } from './ui/ui.js';
 import { initTouch } from './ui/touch.js';
 import * as SaveSystem from './save/save.js';
 import { PICKUPS } from './world/pickups.js';
+import { Multiplayer } from './multiplayer/multiplayer.js';
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -138,6 +139,7 @@ const game = {
 };
 
 spawnPickups(game.pickupsCollected);
+const multiplayer = new Multiplayer({ engine, player, ship, traversal });
 const ui = new UI(document.getElementById('ui-root'), game);
 
 // Debug handle for agents/console: inspect any system live (window.game.ship
@@ -366,6 +368,7 @@ engine.addUpdater((dt) => {
   checkZoneDiscovery();
   updatePrompt();
   ui.refreshHUD();
+  multiplayer.update(dt);
 
   // Autosave every 60 s of play.
   saveTimer += dt;

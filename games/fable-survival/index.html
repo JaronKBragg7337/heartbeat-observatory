@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Fable Survival</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232c5a34'/%3E%3Cpath d='M31 7 13 34h11l-8 15h32l-8-15h11L33 7z' fill='%236fbf58'/%3E%3Crect x='28' y='45' width='8' height='13' fill='%23623b1c'/%3E%3C/svg%3E" />
+  <style>
+    /* All UI styling lives here so the game is a single deployable page.
+       UI elements are created/managed by src/ui.js. */
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; touch-action: none;
+      font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
+    #app { position: fixed; inset: 0; }
+    canvas { display: block; }
+
+    /* ---------- HUD (stats bars) ---------- */
+    #hud { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 10px; z-index: 10; pointer-events: none; }
+    .statbar { width: 130px; height: 10px; background: rgba(0,0,0,.5); border-radius: 5px; margin-bottom: 5px; overflow: hidden; border: 1px solid rgba(255,255,255,.25); }
+    .statbar > div { height: 100%; border-radius: 5px; transition: width .25s; }
+    #hp-fill { background: #e0453a; } #st-fill { background: #4caf50; }
+    #hu-fill { background: #e8a33d; } #th-fill { background: #3da9e8; }
+    .statlabel { color: #fff; font-size: 9px; text-shadow: 0 1px 2px #000; letter-spacing: 1px; }
+
+    #coins { position: fixed; top: max(8px, env(safe-area-inset-top)); right: 10px; color: #ffd75e; font-size: 14px;
+      text-shadow: 0 1px 3px #000; z-index: 10; pointer-events: none; }
+    #clock { position: fixed; top: calc(max(8px, env(safe-area-inset-top)) + 22px); right: 10px; color: #fff; font-size: 12px;
+      text-shadow: 0 1px 3px #000; z-index: 10; pointer-events: none; opacity:.85; }
+    #mp-chip { position: fixed; top: calc(max(8px, env(safe-area-inset-top)) + 44px); right: 10px; z-index: 10; pointer-events: none;
+      color: #d8f7d0; background: rgba(7,18,10,.58); border: 1px solid rgba(139,213,124,.35); border-right: 3px solid #6fbf58;
+      border-radius: 7px; padding: 5px 8px; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; max-width: min(220px, 48vw);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px #000; }
+
+    /* ---------- Toast / interact prompt ---------- */
+    #toast { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,.65);
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; z-index: 30; opacity: 0; transition: opacity .3s; pointer-events: none; max-width: 86vw; text-align: center; }
+    #prompt { position: fixed; bottom: 34%; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(20,40,20,.7);
+      padding: 6px 14px; border-radius: 8px; font-size: 12px; z-index: 10; display: none; pointer-events: none; }
+
+    /* ---------- Mobile controls ---------- */
+    #joystick { position: fixed; bottom: max(24px, env(safe-area-inset-bottom)); left: 24px; width: 120px; height: 120px;
+      border-radius: 50%; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.25); z-index: 20; display: none; }
+    #joyknob { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; border-radius: 50%;
+      background: rgba(255,255,255,.35); transform: translate(-50%,-50%); }
+    .abtn { position: fixed; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.3);
+      color: #fff; font-size: 11px; z-index: 20; display: none; align-items: center; justify-content: center; text-align: center; }
+    .abtn:active { background: rgba(255,255,255,.3); }
+    #btn-act  { width: 64px; height: 64px; right: 26px;  bottom: calc(max(24px, env(safe-area-inset-bottom)) + 30px); }
+    #btn-atk  { width: 56px; height: 56px; right: 100px; bottom: max(20px, env(safe-area-inset-bottom)); }
+    #btn-jump { width: 46px; height: 46px; right: 30px;  bottom: calc(max(24px, env(safe-area-inset-bottom)) + 108px); font-size: 9px; }
+
+    /* ---------- Top menu buttons ---------- */
+    #menubar { position: fixed; top: calc(max(8px, env(safe-area-inset-top)) + 50px); right: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 20; }
+    .mbtn { background: rgba(0,0,0,.55); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 8px;
+      padding: 7px 10px; font-size: 11px; cursor: pointer; min-width: 44px; text-align: center; }
+    .mbtn:active { background: rgba(255,255,255,.25); }
+
+    /* ---------- Panels (inventory / build / trader / vehicle) ---------- */
+    .panel { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(15,18,22,.94);
+      border: 1px solid rgba(255,255,255,.2); border-radius: 12px; padding: 14px; z-index: 40; color: #fff;
+      width: min(92vw, 420px); max-height: 80vh; overflow-y: auto; display: none; }
+    .panel h3 { font-size: 14px; margin-bottom: 10px; color: #ffd75e; }
+    .panel .close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+    .slotgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+    .slot { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; padding: 6px 4px;
+      font-size: 10px; text-align: center; cursor: pointer; min-height: 58px; position: relative; }
+    .slot:active { background: rgba(255,255,255,.2); }
+    .slot .icon { font-size: 20px; display: block; }
+    .slot .cnt { position: absolute; bottom: 2px; right: 5px; color: #ffd75e; font-size: 10px; }
+    .rowbtns { display: flex; gap: 6px; margin-top: 4px; justify-content: center; flex-wrap: wrap; }
+    .rowbtns button { background: #2c3e50; color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 10px; cursor: pointer; }
+    .traderow { display: flex; justify-content: space-between; align-items: center; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 12px; }
+    .traderow button { background: #34623f; color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; }
+    .traderow button.sellb { background: #6b4b2a; }
+    .traderow button:disabled { opacity: .35; }
+    .panel input[type="text"], .panel textarea { width: 100%; background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.2); border-radius: 8px; color: #fff; padding: 8px;
+      font-size: 13px; margin-bottom: 8px; font-family: inherit; resize: none; }
+    .panel input::placeholder, .panel textarea::placeholder { color: rgba(255,255,255,.4); }
+
+    /* ---------- Death / start screens ---------- */
+    .fullscreen-msg { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 100; display: none;
+      flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 20px; }
+    .fullscreen-msg h1 { color: #e0453a; margin-bottom: 12px; }
+    .fullscreen-msg button { margin-top: 18px; background: #4caf50; color: #fff; border: none; border-radius: 10px; padding: 12px 28px; font-size: 15px; cursor: pointer; }
+    #start-screen { display: flex; background: linear-gradient(#0a1520, #1a2f22); }
+    #start-screen h1 { color: #ffd75e; }
+    #start-screen p { font-size: 12px; opacity: .8; max-width: 320px; line-height: 1.6; margin-top: 8px; }
+    #start-tip { color: #ff9a6b; opacity: .95; font-size: 12px; max-width: 320px; line-height: 1.5; margin-top: 10px; }
+    #death-tip { font-size: 12px; opacity: .82; max-width: 320px; line-height: 1.5; margin-top: 12px; }
+  </style>
+  <script type="module" crossorigin src="./assets/index-BAA3Ydkv.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="statlabel">HP</div><div class="statbar"><div id="hp-fill" style="width:100%"></div></div>
+    <div class="statlabel">STAMINA</div><div class="statbar"><div id="st-fill" style="width:100%"></div></div>
+    <div class="statlabel">HUNGER</div><div class="statbar"><div id="hu-fill" style="width:100%"></div></div>
+    <div class="statlabel">THIRST</div><div class="statbar"><div id="th-fill" style="width:100%"></div></div>
+  </div>
+  <div id="coins">🪙 0</div>
+  <div id="clock">Day 1 08:00</div>
+  <div id="mp-chip">solo</div>
+  <div id="toast"></div>
+  <div id="prompt"></div>
+
+  <!-- Mobile controls -->
+  <div id="joystick"><div id="joyknob"></div></div>
+  <div class="abtn" id="btn-act">USE</div>
+  <div class="abtn" id="btn-atk">HIT</div>
+  <div class="abtn" id="btn-jump">JMP</div>
+
+  <!-- Menu -->
+  <div id="menubar">
+    <button class="mbtn" id="mb-inv">🎒</button>
+    <button class="mbtn" id="mb-build">🔨</button>
+    <button class="mbtn" id="mb-cam">👁</button>
+    <button class="mbtn" id="mb-save">💾</button>
+    <button class="mbtn" id="mb-fb">💬</button>
+  </div>
+
+  <!-- Panels: filled in by src/ui.js -->
+  <div class="panel" id="inv-panel"></div>
+  <div class="panel" id="build-panel"></div>
+  <div class="panel" id="trader-panel"></div>
+  <div class="panel" id="vehicle-panel"></div>
+  <div class="panel" id="fb-panel"></div>
+
+  <!-- Screens -->
+  <div class="fullscreen-msg" id="death-screen">
+    <h1>YOU DIED</h1><div id="death-reason"></div>
+    <div id="death-tip"></div>
+    <button id="respawn-btn">Respawn at Safe Zone</button>
+  </div>
+  <div class="fullscreen-msg" id="start-screen">
+    <h1>FABLE SURVIVAL</h1>
+    <div style="font-size:13px; opacity:.9">A tiny survival world in your browser</div>
+    <p id="start-help"></p>
+    <p id="start-tip"></p>
+    <button id="start-btn">Enter World</button>
+  </div>
+
+</body>
+</html>

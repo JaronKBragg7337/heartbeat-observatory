@@ -2841,7 +2841,8 @@ function buildInterior(kind) {
     g.userData.stations.push({ x: -3.4, z: -4.0, label: "Play President Sim", url: "https://jaronkbragg7337.github.io/President-Sim/", external: true });
     addArcadeCabinet(g, 0, -4.6, "SYL STABLE", 0x64b5f6, true);
     g.userData.stations.push({ x: 0, z: -4.0, label: "SYL — Stable", url: "/games/syl/" });
-    addArcadeCabinet(g, 3.4, -4.6, "COMING SOON", 0x000000, false);
+    addArcadeCabinet(g, 3.4, -4.6, "FABLE SURVIVAL", 0x6fbf58, true);
+    g.userData.stations.push({ x: 3.4, z: -4.0, label: "Fable Survival", url: "/games/fable-survival/" });
     const term = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.5), new THREE.MeshStandardMaterial({ color: 0x24303a, roughness: 0.5, emissive: 0x183040, emissiveIntensity: 0.4 }));
     term.position.set(4.6, 0.55, 0); g.add(term);
     const tl = createLabelSprite("All games (page)", { background: "rgba(10, 14, 18, 0.85)", foreground: "#cfe2ee", fontSize: 24, scale: 0.011 });
