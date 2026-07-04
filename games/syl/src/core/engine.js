@@ -113,6 +113,7 @@ export class Input {
     this.touchMode = false;       // true once touch controls are active
     this.touchShipYaw = 0;        // analog ship steering from touch joystick
     this.touchShipPitch = 0;
+    this.touchShipThrottle = 0;
     this.mouseDX = 0; this.mouseDY = 0;
     this.pointerLocked = false;
     this._pressListeners = new Map(); // code -> [fns] fired once on keydown
@@ -126,7 +127,14 @@ export class Input {
       if (fns) for (const f of fns) f(e);
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
-    window.addEventListener('blur', () => this.keys.clear());
+    window.addEventListener('blur', () => {
+      this.keys.clear();
+      this.virtualKeys.clear();
+      this.virtualKeySources.clear();
+      this.touchShipYaw = 0;
+      this.touchShipPitch = 0;
+      this.touchShipThrottle = 0;
+    });
 
     canvas.addEventListener('click', () => {
       if (!this.pointerLocked) canvas.requestPointerLock();

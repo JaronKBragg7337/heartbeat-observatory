@@ -45,10 +45,9 @@ export function joystickMoveKeys(dx, dy, radius = JOY_R) {
 export function joystickShipControls(dx, dy, radius = JOY_R) {
   const axes = joystickAxes(dx, dy, radius);
   return {
-    yaw: axes.x,
-    // Screen dy is down-positive. Existing ship pitch is down-positive too:
-    // drag up = negative pitch = nose up.
-    pitch: axes.y,
+    yaw: axes.x * 0.65,
+    pitch: 0,
+    throttle: -axes.y,
   };
 }
 
@@ -72,10 +71,6 @@ export function initTouch(input, root) {
       <button data-code="Space" class="tbtn wide">JUMP / THRUST</button>
     </div>
     <div id="ship-btns">
-      <button data-code="KeyW" class="tbtn hold">THR +</button>
-      <button data-code="KeyS" class="tbtn hold">THR −</button>
-      <button data-code="KeyA" class="tbtn hold">&#9664; TURN</button>
-      <button data-code="KeyD" class="tbtn hold">TURN &#9654;</button>
       <button data-code="KeyX" class="tbtn hold">BRAKE</button>
       <button data-code="KeyG" class="tbtn">GEAR</button>
     </div>`;
@@ -103,7 +98,7 @@ export function initTouch(input, root) {
             background:rgba(8,12,16,0.6); font-size:13px; font-weight:600; touch-action:none; }
     .tbtn:active { background:rgba(183,28,28,0.6); border-color:#ef9a9a; }
     .tbtn.wide { grid-column:1 / span 4; }
-    #ship-btns .tbtn { width:86px; }
+    #ship-btns .tbtn { width:86px; height:54px; }
     @media (max-width: 700px) {
       #joy-base { left:18px; bottom:calc(22px + env(safe-area-inset-bottom, 0px));
                   width:112px; height:112px; }
@@ -111,7 +106,7 @@ export function initTouch(input, root) {
       #touch-btns { right:12px; bottom:calc(20px + env(safe-area-inset-bottom, 0px));
                     grid-template-columns:repeat(4, 42px); gap:6px; }
       #ship-btns { right:12px; top:30%; gap:7px; }
-      #ship-btns .tbtn { width:78px; }
+      #ship-btns .tbtn { width:78px; height:50px; }
       .tbtn { height:42px; border-radius:9px; font-size:12px; }
       .tbtn.wide { height:42px; }
     }
@@ -124,7 +119,9 @@ export function initTouch(input, root) {
     wrap.classList.toggle('piloting', piloting);
     wrap.classList.toggle('panel-open', !!document.querySelector('.syl-panel[style*="display: block"]'));
     const label = wrap.querySelector('#joy-label');
-    if (label) label.textContent = piloting ? 'STEER' : 'MOVE';
+    if (label) label.textContent = piloting ? 'FLY' : 'MOVE';
+    const lift = wrap.querySelector('[data-code="Space"]');
+    if (lift) lift.textContent = piloting ? 'LIFT' : 'JUMP / THRUST';
   }, 250);
 
   // --- Buttons → virtual keys (hold-to-press; taps still register once). ---
@@ -151,10 +148,12 @@ export function initTouch(input, root) {
       const ship = joystickShipControls(dx, dy, radius);
       input.touchShipYaw = ship.yaw;
       input.touchShipPitch = ship.pitch;
+      input.touchShipThrottle = ship.throttle;
       clearMoveKeys();
     } else {
       input.touchShipYaw = 0;
       input.touchShipPitch = 0;
+      input.touchShipThrottle = 0;
       const keys = joystickMoveKeys(dx, dy, radius);
       input.setVirtual('KeyD', keys.right, 'move');
       input.setVirtual('KeyA', keys.left, 'move');

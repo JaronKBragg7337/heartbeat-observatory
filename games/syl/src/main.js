@@ -284,17 +284,28 @@ const _flipY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0
 const controls = { pitch: 0, yaw: 0, roll: 0, thrustUp: false, brake: false };
 
 function readShipControls(dt) {
-  // Throttle: W up, S down.
+  // Throttle: W/S on desktop; mobile piloting uses the left stick up/down.
+  const touchThrottle = input.touchShipThrottle || 0;
   if (input.down('KeyW')) ship.throttle = Math.min(1, ship.throttle + 0.7 * dt);
   if (input.down('KeyS')) ship.throttle = Math.max(0, ship.throttle - 0.9 * dt);
+  if (touchThrottle > 0) ship.throttle = Math.min(1, ship.throttle + 0.8 * touchThrottle * dt);
+  if (touchThrottle < 0) ship.throttle = Math.max(0, ship.throttle + 1.0 * touchThrottle * dt);
   // Yaw = mouse X + A/D keys + touch analog stick so you can HOLD a turn without
   // dragging the camera. Roll moved to Q/E to free A/D. (Touch: stick or buttons.)
   const keyYaw = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
-  controls.pitch = input.mouseDY * 0.05 + (input.touchShipPitch || 0);
-  controls.yaw = input.mouseDX * 0.05 + keyYaw + (input.touchShipYaw || 0);
+  const lookScale = input.touchMode ? 0.016 : 0.05;
+  controls.pitch = input.mouseDY * lookScale + (input.touchShipPitch || 0);
+  controls.yaw = input.mouseDX * lookScale + keyYaw + (input.touchShipYaw || 0);
   controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyE') ? 1 : 0);
   controls.thrustUp = input.down('Space');
-  controls.brake = input.down('KeyX');
+  controls.brake = input.down('KeyX') || touchThrottle < -0.85;
+
+  // Mobile takeoff assist: if the player is throttling up from the ground, add
+  // vertical lift until the hull is safely away from terrain. This prevents the
+  // phone controls from scraping the ship into a "hard impact" loop.
+  if (input.touchMode && ship.landed && ship.throttle > 0.12) {
+    controls.thrustUp = true;
+  }
 
   // Takeoff moment: on the ground, ready, thrusting up => leave the surface.
   if (ship.landed && (controls.thrustUp || ship.throttle > 0.4)) {
@@ -346,7 +357,9 @@ function updatePrompt() {
     if (traversal.canEnterShip(player, ship)) { ui.showPrompt('E — board ship   ·   B — ship builder'); return; }
     if (player.worldPos.distanceTo(ship.worldPos) < 12) { ui.showPrompt('B — ship builder'); return; }
   } else if (ship.landed) {
-    ui.showPrompt('E — exit ship   ·   W/Space — take off (if ready)');
+    ui.showPrompt(touchActive
+      ? 'E — exit ship   ·   stick up / LIFT — take off'
+      : 'E — exit ship   ·   W/Space — take off (if ready)');
     return;
   }
   ui.hidePrompt();

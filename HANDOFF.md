@@ -7,6 +7,30 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — Calmer SYL mobile piloting synced
+
+**State:** public `/games/syl/` has the follow-up phone-control fix after
+Jaron's screenshots showed the first touch steering pass was still too wild.
+
+**Shipped:** synced calmer mobile piloting: left stick is FLY
+(throttle + yaw), the bottom button becomes LIFT while piloting, right-side
+ship buttons are reduced to BRAKE + GEAR, touch-look is less sensitive while
+piloting, and throttling up on touch applies takeoff lift to prevent hard-impact
+scrape loops.
+
+**Verified:** SYL `npm test` 65/65 before sync; node syntax checks and browser
+touch smoke before push.
+
+**Next up:** Jaron should retest on phone. If the feel is accepted, port the
+Fortis walkable gunship from `SpaceYouLand/_authoring/make_walkable_gunship.py`
+as simplified Three.js geometry rather than raw FBX for mobile.
+
+**Gotchas:** the Unreal gunship script is the richer ship Jaron asked about:
+interior, cockpit, ramp, pressure door, glass, engines, gear. Web/mobile should
+get a lightweight code-built version first.
+
+---
+
 ## 2026-07-04 — Codex — SYL touch ship steering synced to Heartbeat
 
 **State:** public `/games/syl/` now has the same touch ship steering fix as
