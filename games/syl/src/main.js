@@ -30,6 +30,7 @@ import { initTouch } from './ui/touch.js';
 import * as SaveSystem from './save/save.js';
 import { PICKUPS } from './world/pickups.js';
 import { Multiplayer } from './multiplayer/multiplayer.js';
+import { DevTools } from './dev/devTools.js';
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -141,6 +142,7 @@ const game = {
 spawnPickups(game.pickupsCollected);
 const multiplayer = new Multiplayer({ engine, player, ship, traversal });
 const ui = new UI(document.getElementById('ui-root'), game);
+const devTools = new DevTools(game, ui, input, BODIES);
 
 // Debug handle for agents/console: inspect any system live (window.game.ship
 // etc.). Read-only by convention — mutate through system APIs only.
@@ -355,14 +357,15 @@ function updatePrompt() {
 // ---------------------------------------------------------------------------
 let saveTimer = 0;
 engine.addUpdater((dt) => {
-  const panelsOpen = ui.anyPanelOpen();
+  const panelsOpen = ui.anyPanelOpen() || devTools.anyPanelOpen();
   if (traversal.mode === MODE.PILOTING) {
     if (!panelsOpen) readShipControls(dt);
     ship.tick(dt, !panelsOpen, controls);
     player.worldPos.copy(ship.worldPos); // pilot rides inside
     player.tickPassive?.();
   } else {
-    player.tick(dt, !panelsOpen && input.lookActive);
+    const devFlying = devTools.tick(dt, !panelsOpen && input.lookActive);
+    if (!devFlying) player.tick(dt, !panelsOpen && input.lookActive);
     ship.tick(dt, false, null);
   }
 

@@ -7,6 +7,26 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — SYL dev editor first slice synced to Heartbeat
+
+**State:** public `/games/syl/` had the promoted Kimi/multiplayer/yaw work.
+
+**Shipped:** synced SYL's first opt-in dev editor to Heartbeat. Open
+`/games/syl/?dev=1` to reveal the DEV button. Current tools: ready a mobile-safe
+test ship, give supply kit, fill fuel, move ship to player, player to ship, save
+now, and fly-person mode. This is deliberately code-built and phone-safe; no
+Blender/GLB asset payload was added.
+
+**Verified:** run SYL tests and browser smoke before push.
+
+**Next up:** prefab placement + snap-compatible building/ship parts, then
+walk-in ship interiors/hatches/seats.
+
+**Gotchas:** `?dev=1` persists in localStorage on that browser. It is a playtest
+convenience, not a security boundary.
+
+---
+
 ## 2026-07-04 — Codex — Theater rear controls + SYL promoted to public main
 
 **State:** working locally after Claude's theater promotion. `SYL-Full-Game`
