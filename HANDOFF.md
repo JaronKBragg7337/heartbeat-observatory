@@ -7,6 +7,30 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — Theater rear controls + SYL promoted to public main
+
+**State:** working locally after Claude's theater promotion. `SYL-Full-Game`
+had the approved work on `test/kimi-expansion-pack`; Heartbeat `/games/syl-test/`
+had the same test-lane copy while `/games/syl/` was still the conservative build.
+
+**Shipped:** moved Town Square and World 2 theater START/NEXT controls from the
+screen/front floor to the rear aisle so the pads and station labels no longer
+cover the movie view. Promoted SYL test content into public `/games/syl/`:
+Kimi expansion registries/crafting, Heartbeat Realtime visibility, and the
+A/D yaw + touch-turn flight fix. Kept `/games/syl/` on stable save key
+`syl_save`; left `/games/syl-test/` path-scoped for future preview saves.
+
+**Verified:** run node checks, SYL tests, and browser smoke before final push.
+
+**Next up:** phone feel-test public `/games/syl/` and walk into the Town Square
+theater to confirm the screen stays clear from the viewing seats.
+
+**Gotchas:** the in-world arcade still links only to public SYL and Fable
+Survival; `/games/syl-test/` remains direct-URL only unless a future admin/test
+door is added back.
+
+---
+
 ## 2026-07-04 — Whole-site audit + THE THEATER promoted (Cowork, Claude Fable 5)
 
 **State when I arrived:** site live and healthy. Working video playback existed ONLY in the

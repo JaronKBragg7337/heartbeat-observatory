@@ -12,7 +12,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const BUILD = "2026-07-04-w2l";
+const BUILD = "2026-07-04-w2m";
 const PREVIEW = new URLSearchParams(location.search).get("preview") === "1"; // gate-page spectate: orbit forever, join nothing // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
@@ -1201,7 +1201,7 @@ function buildInteriors() {
   mask.position.set(tr.x, 3.1, tr.z - 8.78);
   scene.add(mask);
   const screenBoard = boardTex(1024, 576);
-  drawLines(screenBoard, ["The screen is waiting", "Step on the glowing green pad to start the screening", "Amber pad changes the reel"], {});
+  drawLines(screenBoard, ["The screen is waiting", "Step on the rear green pad to start the screening", "Rear amber pad changes the reel"], {});
   const screenMat = new THREE.MeshStandardMaterial({ map: screenBoard.tex, color: 0xffffff, roughness: 0.4, emissive: 0x3a4252, emissiveIntensity: 0.55, emissiveMap: screenBoard.tex });
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(9.6, 5.4), screenMat);
   screen.position.set(tr.x, 3.1, tr.z - 8.68);
@@ -1267,19 +1267,19 @@ function buildInteriors() {
   };
   const toggleSound = () => { if (video.muted) { video.muted = false; setStatus(FILMS[cIdx].credit); return true; } return false; };
   cineOnLeave = () => { try { video.pause(); } catch (e) {} cStarted = false; setHouse(true); };
-  [[tr.x - 2.4, tr.z - 6.6, "#7bd88f", "START THE SCREENING"], [tr.x + 2.4, tr.z - 6.6, "#ffd166", "NEXT REEL"]].forEach((pd) => {
+  [[tr.x - 5.0, tr.z + 6.4, "#7bd88f", "START"], [tr.x + 5.0, tr.z + 6.4, "#ffd166", "NEXT"]].forEach((pd) => {
     const pm = new THREE.MeshStandardMaterial({ color: new THREE.Color(pd[2]), emissive: new THREE.Color(pd[2]), emissiveIntensity: 1.0, roughness: 0.6 });
-    const pad = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.06, 20), pm);
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.05, 20), pm);
     pad.position.set(pd[0], 0.03, pd[1]);
     scene.add(pad); padMats.push(pm);
-    const sl = makeNameSprite(pd[3], 1.6);
-    sl.position.set(pd[0], 1.7, pd[1]);
+    const sl = makeNameSprite(pd[3], 1.2);
+    sl.position.set(pd[0], 1.25, pd[1]);
     scene.add(sl);
   });
-  interiorStations.theater.push({ label: "Start the screening", x: tr.x - 2.4, z: tr.z - 6.6, hw: 1.7, hd: 1.5, act: { type: "fn", fn: () => { if (!toggleSound() || !cStarted) startShow(); } } });
-  interiorStations.theater.push({ label: "Next reel", x: tr.x + 2.4, z: tr.z - 6.6, hw: 1.7, hd: 1.5, act: { type: "fn", fn: () => { cIdx = (cIdx + 1) % FILMS.length; cTriedFallback = false; setNowShowing(); if (cStarted) startShow(); } } });
+  interiorStations.theater.push({ label: "Start the screening", x: tr.x - 5.0, z: tr.z + 6.4, hw: 1.5, hd: 1.5, act: { type: "fn", fn: () => { if (!toggleSound() || !cStarted) startShow(); } } });
+  interiorStations.theater.push({ label: "Next reel", x: tr.x + 5.0, z: tr.z + 6.4, hw: 1.5, hd: 1.5, act: { type: "fn", fn: () => { cIdx = (cIdx + 1) % FILMS.length; cTriedFallback = false; setNowShowing(); if (cStarted) startShow(); } } });
   setNowShowing();
-  setStatus("House lights up - the pads by the screen run the show.");
+  setStatus("House lights up - rear pads run the show.");
   // Real theater chairs (June 10): cushion + backrest sharing one matrix set - two draw
   // calls for 24 seats, all facing the screen. The old cubes read as boxes, not chairs.
   const seatMat = new THREE.MeshStandardMaterial({ color: 0x7a3640, roughness: 0.85 });

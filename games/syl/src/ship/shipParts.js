@@ -26,6 +26,8 @@
 // SLOTS with a graph of attachment nodes — keep ids stable for saves.
 // ============================================================================
 
+import { PART_TYPES_EXPANDED, SLOTS_EXPANDED } from './shipParts_expanded.js';
+
 export const PART_TYPES = {
   frame:    { id: 'frame',    name: 'Frame Core',    mass: 60, required: true,  maxHp: 100,
               visual: { kind: 'box', size: [2.2, 1.4, 6.0], color: 0x546e7a } },
@@ -66,6 +68,9 @@ export const SLOTS = [
 
 // Minimum operational set for flight readiness (checked by ship.computeStats):
 // frame, cockpit, >=1 engine, >=1 fuel tank, power supply >= draw, >=3 gear.
+Object.assign(PART_TYPES, PART_TYPES_EXPANDED);
+SLOTS.push(...SLOTS_EXPANDED);
+
 export const READINESS_RULES = {
   requiredTypes: ['frame', 'cockpit', 'engine', 'fueltank', 'power'],
   minGear: 3,

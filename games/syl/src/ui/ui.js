@@ -14,6 +14,7 @@
 import { SLOTS, PART_TYPES } from '../ship/shipParts.js';
 import { installPart, removePart, repairPart, loadFuel, readinessReport } from '../ship/shipBuilder.js';
 import { getItem, ITEMS } from '../items/items.js';
+import { RECIPES, craft } from '../crafting/recipes.js';
 
 export class UI {
   constructor(root, game) {
@@ -29,8 +30,8 @@ export class UI {
     this.help = el('div', 'syl-help');
     this.help.innerHTML =
       'ON FOOT: WASD move · Shift run · Space jump · E enter ship · F gather<br>' +
-      'SHIP: W/S throttle · mouse pitch/yaw · Q/A roll · Space vertical thrust · X brake · E exit (landed)<br>' +
-      'B ship builder · I inventory · M bodies · F5 save · F9 load · H hide help · click for mouse look';
+      'SHIP: W/S throttle · A/D turn · mouse pitch/yaw · Q/E roll · Space vertical thrust · X brake · E exit (landed)<br>' +
+      'B ship builder · I inventory/crafting · M bodies · F5 save · F9 load · H hide help · click for mouse look';
     root.appendChild(this.help);
 
     this.invPanel = makePanel(root, 'INVENTORY', 'inv-panel');
@@ -107,10 +108,29 @@ export class UI {
     const inv = this.game.inventory;
     const rows = inv.entries().map(({ item, count }) =>
       `<tr><td>${item.name}</td><td>x${count}</td><td class="dim">${item.description}</td></tr>`).join('');
+    const recipeRows = RECIPES.map((recipe) => {
+      const canCraft = Object.entries(recipe.inputs).every(([itemId, count]) => inv.has(itemId, count));
+      const inputText = Object.entries(recipe.inputs)
+        .map(([itemId, count]) => `${count}x ${getItem(itemId).name}`)
+        .join(', ');
+      const output = getItem(recipe.output.itemId);
+      return `<tr><td>${recipe.name}</td><td class="dim">${inputText}</td>
+        <td>${recipe.output.count}x ${output.name}</td>
+        <td><button data-craft="${recipe.id}" ${canCraft ? '' : 'disabled'}>Craft</button></td></tr>`;
+    }).join('');
     this.invPanel.querySelector('.body').innerHTML =
       `<table><tr><th>Item</th><th>Qty</th><th></th></tr>${rows ||
       '<tr><td class="dim" colspan="3">Empty. Gather salvage crates with F.</td></tr>'}</table>
-       <p class="dim">carried mass: ${inv.totalMass()} kg</p>`;
+       <p class="dim">carried mass: ${inv.totalMass()} kg</p>
+       <h3>CRAFTING</h3>
+       <table><tr><th>Recipe</th><th>Needs</th><th>Makes</th><th></th></tr>${recipeRows}</table>`;
+    this.invPanel.querySelectorAll('button[data-craft]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const res = craft(inv, btn.dataset.craft);
+        this.showToast(res.msg, 2600);
+        this.renderInventory();
+      });
+    });
   }
 
   renderShipBuilder() {

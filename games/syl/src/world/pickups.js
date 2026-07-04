@@ -51,5 +51,20 @@ export const PICKUPS = [
   // Rustholm cache.
   { id: 'rust:claim:0', bodyId: 'rustholm', zoneId: 'freeport_claim', east: 8, north: 8, itemId: 'fuel_hydrazine' },
   { id: 'rust:claim:1', bodyId: 'rustholm', zoneId: 'freeport_claim', east: -10, north: 6, itemId: 'fuel_hydrazine' },
-];
 
+  // Kimi expansion test crates — stable ids, placed at the new landing zones.
+  { id: 'aethelgard:ruins:0', bodyId: 'aethelgard', zoneId: 'aethelgard_ruins', east: 12, north: -8, itemId: 'crystal_matrix' },
+  { id: 'aethelgard:ruins:1', bodyId: 'aethelgard', zoneId: 'aethelgard_ruins', east: -18, north: 10, itemId: 'scrap_electronics' },
+  { id: 'cryos:ice:0', bodyId: 'cryos', zoneId: 'meridian_ice_station', east: 16, north: -12, itemId: 'water_ice' },
+  { id: 'cryos:ice:1', bodyId: 'cryos', zoneId: 'meridian_ice_station', east: -14, north: 14, itemId: 'water_ice' },
+  { id: 'pyrrhus:bastion:0', bodyId: 'pyrrhus', zoneId: 'fortis_bastion', east: 18, north: 6, itemId: 'titanium_ore' },
+  { id: 'pyrrhus:bastion:1', bodyId: 'pyrrhus', zoneId: 'fortis_bastion', east: -20, north: -8, itemId: 'titanium_ore' },
+  { id: 'pyrrhus:caldera:0', bodyId: 'pyrrhus', zoneId: 'pyrrhus_caldera', east: 8, north: 18, itemId: 'exotic_matter' },
+  { id: 'veldora:ring:0', bodyId: 'veldora', zoneId: 'veldora_ring_mine', east: 14, north: 12, itemId: 'nickel_iron' },
+  { id: 'veldora:ring:1', bodyId: 'veldora', zoneId: 'veldora_ring_mine', east: -16, north: -10, itemId: 'nickel_iron' },
+  { id: 'ironcore:foundry:0', bodyId: 'ironcore', zoneId: 'registry_foundry', east: 10, north: -14, itemId: 'titanium_ingot' },
+  { id: 'ironcore:foundry:1', bodyId: 'ironcore', zoneId: 'registry_foundry', east: -12, north: 16, itemId: 'alloy_composite' },
+  { id: 'ironcore:foundry:2', bodyId: 'ironcore', zoneId: 'registry_foundry', east: 20, north: 10, itemId: 'reactor_core' },
+  { id: 'dunewind:wreck:0', bodyId: 'dunewind', zoneId: 'dunewind_wreck', east: 12, north: 12, itemId: 'scrap_electronics' },
+  { id: 'dunewind:wreck:1', bodyId: 'dunewind', zoneId: 'dunewind_wreck', east: -16, north: -12, itemId: 'circuit_board' },
+];

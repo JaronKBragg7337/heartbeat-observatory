@@ -32,6 +32,8 @@ export class Inventory {
 
   count(itemId) { return this.counts[itemId] || 0; }
 
+  has(itemId, n = 1) { return this.count(itemId) >= n; }
+
   totalMass() {
     let m = 0;
     for (const [id, n] of Object.entries(this.counts)) m += getItem(id).mass * n;

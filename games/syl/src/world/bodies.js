@@ -35,7 +35,9 @@
 //   realRadiusKm, realGravity, lore — design-intent record + flavor
 // ============================================================================
 
-export const BODIES = [
+import { BODIES_EXPANDED } from './bodies_expanded.js';
+
+const BASE_BODIES = [
   {
     id: 'earth',
     name: 'Earth',
@@ -138,6 +140,8 @@ export const BODIES = [
     lore: 'A captured rock the Freeport Syndicate runs fuel through. Third body proving the registry scales.',
   },
 ];
+
+export const BODIES = [...BASE_BODIES, ...BODIES_EXPANDED];
 
 export function getBody(id) {
   const b = BODIES.find((x) => x.id === id);

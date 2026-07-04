@@ -12,7 +12,9 @@
 // do not embed recipe logic in this file.
 // ============================================================================
 
-export const ITEMS = [
+import { ITEMS_EXPANDED } from './items_expanded.js';
+
+const BASE_ITEMS = [
   { id: 'salvage_alloy',  name: 'Salvaged Alloy',    kind: 'resource', mass: 4,  description: 'Structural scrap. Repairs hull and frame modules.' },
   { id: 'ore_regolith',   name: 'Regolith Ore',      kind: 'resource', mass: 6,  description: 'Lunar oxide-rich ore. Future refining input.' },
   { id: 'wiring_loom',    name: 'Wiring Loom',       kind: 'resource', mass: 1,  description: 'Salvaged conductors. Repairs cockpit and power modules.' },
@@ -26,6 +28,8 @@ export const ITEMS = [
   { id: 'part_cockpit',   name: 'Cockpit Module',    kind: 'part', partId: 'cockpit', mass: 18, description: 'A sealed one-seat cockpit.' },
   { id: 'part_frame',     name: 'Frame Segment',     kind: 'part', partId: 'frame',   mass: 25, description: 'Core structural frame.' },
 ];
+
+export const ITEMS = [...BASE_ITEMS, ...ITEMS_EXPANDED];
 
 const _byId = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
 export function getItem(id) {

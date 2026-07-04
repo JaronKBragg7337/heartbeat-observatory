@@ -70,7 +70,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-07-04-theater2"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-07-04-theater3"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 let settingsOpen = false;
@@ -2929,7 +2929,7 @@ function buildInterior(kind) {
     const mask = new THREE.Mesh(new THREE.BoxGeometry(11.6, 3.3, 0.1), new THREE.MeshStandardMaterial({ color: 0x0b0910, roughness: 0.9 }));
     mask.position.set(0, 1.72, -7.34); g.add(mask);
     const screenBoard = boardTex(1024, 576);
-    drawLines(screenBoard, ["The screen is waiting", "Step on the glowing green pad to start the screening", "Amber pad changes the reel"], {});
+    drawLines(screenBoard, ["The screen is waiting", "Step on the rear green pad to start the screening", "Rear amber pad changes the reel"], {});
     const screenMat = new THREE.MeshStandardMaterial({ map: screenBoard.tex, color: 0xffffff, roughness: 0.4, emissive: 0x3a4252, emissiveIntensity: 0.55, emissiveMap: screenBoard.tex });
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 3.04), screenMat);
     screen.position.set(0, 1.72, -7.26); g.add(screen);
@@ -2993,18 +2993,19 @@ function buildInterior(kind) {
     };
     const toggleSound = () => { if (video.muted) { video.muted = false; setStatus(FILMS[cIdx].credit); return true; } return false; };
     cineOnLeave = () => { try { video.pause(); } catch (e) {} cStarted = false; setHouse(true); };
-    // glowing station pads with signs (start / next reel)
-    [[-2.0, -5.5, "#7bd88f", "START THE SCREENING"], [2.0, -5.5, "#ffd166", "NEXT REEL"]].forEach((pd) => {
+    // glowing station pads with signs (start / next reel). Keep them in the rear aisle
+    // so seated viewers and stream watchers have an unobstructed screen.
+    [[-4.7, 4.7, "#7bd88f", "START"], [4.7, 4.7, "#ffd166", "NEXT"]].forEach((pd) => {
       const pm = new THREE.MeshStandardMaterial({ color: new THREE.Color(pd[2]), emissive: new THREE.Color(pd[2]), emissiveIntensity: 1.0, roughness: 0.6 });
-      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.06, 20), pm);
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.05, 20), pm);
       pad.position.set(pd[0], 0.03, pd[1]); g.add(pad); padMats.push(pm);
-      const sl = createLabelSprite(pd[3], { background: "rgba(10, 13, 18, 0.88)", foreground: pd[2], fontSize: 22, scale: 0.011 });
-      sl.position.set(pd[0], 1.5, pd[1]); g.add(sl);
+      const sl = createLabelSprite(pd[3], { background: "rgba(10, 13, 18, 0.88)", foreground: pd[2], fontSize: 20, scale: 0.009 });
+      sl.position.set(pd[0], 1.15, pd[1]); g.add(sl);
     });
-    g.userData.stations.push({ x: -2.0, z: -5.5, label: "Start the screening", fn: () => { if (!toggleSound() || !cStarted) startShow(); } });
-    g.userData.stations.push({ x: 2.0, z: -5.5, label: "Next reel", fn: () => { cIdx = (cIdx + 1) % FILMS.length; cTriedFallback = false; setNowShowing(); if (cStarted) startShow(); } });
+    g.userData.stations.push({ x: -4.7, z: 4.7, label: "Start the screening", fn: () => { if (!toggleSound() || !cStarted) startShow(); } });
+    g.userData.stations.push({ x: 4.7, z: 4.7, label: "Next reel", fn: () => { cIdx = (cIdx + 1) % FILMS.length; cTriedFallback = false; setNowShowing(); if (cStarted) startShow(); } });
     setNowShowing();
-    setStatus("House lights up - the pads by the screen run the show.");
+    setStatus("House lights up - rear pads run the show.");
     const seatM = new THREE.MeshStandardMaterial({ color: 0x57222a, roughness: 0.75 });
     for (let r = 0; r < 3; r++) {
       for (let c = 0; c < 6; c++) {

@@ -41,7 +41,7 @@ unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/metho
 - Theater seat assignment (booth picks seat → binds to character; seats table + sit mechanic).
 - Theater screenings SHIPPED July 4, 2026 (Cowork run): the Marquee Row playback pattern is
   now in ALL the live theaters - /video flat page (reel picker + real <video> player),
-  Town Square theater interior, and World 2 theater interior (glowing START/NEXT REEL pads,
+  Town Square theater interior, and World 2 theater interior (rear START/NEXT REEL pads,
   house lights dim on play, idle screen says what it is waiting for, credits shown in-room,
   16:9 screens so film is never stretched). Full shipped text in ARCHIVE.md.
   Remaining (honest): playback is PER-VISITOR - two people in the same hall each run their
