@@ -291,10 +291,6 @@ function updateCamera(dt) {
         shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch + arrowPitch * 1.2 * dt));
       }
 
-      if (!looking && !arrowLooking) {
-        shipTouchCamYaw += (0 - shipTouchCamYaw) * Math.min(1, 4 * dt);
-        shipTouchCamPitch += (0 - shipTouchCamPitch) * Math.min(1, 4 * dt);
-      }
       _cv.applyAxisAngle(_touchCamX, shipTouchCamPitch);
       _cv.applyAxisAngle(_touchCamY, shipTouchCamYaw);
       _cv.applyQuaternion(shipCamBaseQuat);
