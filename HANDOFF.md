@@ -7,6 +7,30 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — SYL dev-fly mobile ship feel synced
+
+**State:** public `/games/syl/` has the follow-up requested after Jaron said
+dev fly mode feels perfect and the ship should behave like that with ship
+buttons added.
+
+**Shipped:** synced mobile ship control split: the FLY joystick touch id is
+excluded from camera-look, ship steering no longer consumes touch-look deltas,
+and outside touches only orbit the chase camera. When outside look is released,
+camera recenters behind the ship. Mobile ship movement now uses direct assisted
+hover/free-roam velocity: stick forward/reverse moves the ship, LIFT climbs,
+BRAKE slows, and release steadies.
+
+**Verified:** SYL `npm test` 68/68 before sync; run syntax/touch smoke before
+push.
+
+**Next up:** Jaron phone retest: stick-only flight should keep camera locked
+behind; touching outside the FLY circle should free-look camera only.
+
+**Gotchas:** mobile ship flight is now intentionally dev-fly-like. Desktop 6DOF
+is still separate.
+
+---
+
 ## 2026-07-04 — Codex — SYL mobile heading assist synced
 
 **State:** public `/games/syl/` has the fix for Jaron's "ship feels like it is

@@ -35,6 +35,9 @@ const YAW_RATE   = 2.7;   // was 1.8 — the main 'I can't turn' fix
 const ROLL_RATE  = 2.4;
 const ROT_DAMP   = 2.2;   // was 3.0 — eased so a turn builds and holds
 const MOBILE_YAW_RATE = 2.9; // direct heading steering for touch flight assist
+const MOBILE_FORWARD_SPEED = 62; // m/s direct assisted phone flight
+const MOBILE_LIFT_SPEED = 30;
+const MOBILE_RESPONSE = 5.5;
 
 export class Ship {
   constructor(engine, bodies) {
@@ -188,6 +191,20 @@ export class Ship {
       _mobileMatrix.makeBasis(_mobileRight, up, fwdFlat);
       this.quaternion.setFromRotationMatrix(_mobileMatrix);
       this.angVel.set(0, 0, 0);
+
+      if (this.stats.ready && this.fuel > 0) {
+        const target = _mobileVel.copy(fwdFlat).multiplyScalar(this.throttle * MOBILE_FORWARD_SPEED);
+        if (controls.thrustUp) target.addScaledVector(up, MOBILE_LIFT_SPEED);
+        if (controls.brake) target.multiplyScalar(0.15);
+        this.velocity.lerp(target, Math.min(1, MOBILE_RESPONSE * dt));
+        const burn = (this.throttle * 0.45 + (controls.thrustUp ? 0.35 : 0)) * dt;
+        this.fuel = Math.max(0, this.fuel - burn);
+        if (this._glow) this._glow.intensity = this.throttle > 0 || controls.thrustUp ? 3.5 : 0;
+        this.worldPos.addScaledVector(this.velocity, dt);
+        this.landed = false;
+        this._altitude = altitudeAt(body, this.worldPos) - HULL_CLEARANCE;
+        return;
+      }
     }
 
     // 1. Thrust — only if piloted, ready, powered, fueled.
@@ -330,4 +347,5 @@ const _fwd = new THREE.Vector3(), _accel = new THREE.Vector3(), _g = new THREE.V
 const _rel = new THREE.Vector3(), _dq = new THREE.Quaternion(), _q = new THREE.Quaternion();
 const _eul = new THREE.Euler();
 const _mobileFwd = new THREE.Vector3(), _mobileRight = new THREE.Vector3();
+const _mobileVel = new THREE.Vector3();
 const _mobileMatrix = new THREE.Matrix4();

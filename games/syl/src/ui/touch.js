@@ -191,12 +191,18 @@ export function initTouch(input, root) {
   const looks = new Map(); // touchId -> {x,y}
   window.addEventListener('touchstart', (e) => {
     for (const t of e.changedTouches) {
+      if (t.identifier === joyId) continue;
       if (e.target.closest && e.target.closest('#joy-base, .tbtn, .syl-panel')) continue;
+      const joyRect = base.getBoundingClientRect();
+      if (t.clientX >= joyRect.left && t.clientX <= joyRect.right &&
+          t.clientY >= joyRect.top && t.clientY <= joyRect.bottom) continue;
       looks.set(t.identifier, { x: t.clientX, y: t.clientY });
     }
+    input.touchLookActive = looks.size > 0;
   }, { passive: true });
   window.addEventListener('touchmove', (e) => {
     for (const t of e.changedTouches) {
+      if (t.identifier === joyId) continue;
       const prev = looks.get(t.identifier);
       if (!prev) continue;
       input.mouseDX += (t.clientX - prev.x) * LOOK_SENS;
@@ -204,7 +210,10 @@ export function initTouch(input, root) {
       prev.x = t.clientX; prev.y = t.clientY;
     }
   }, { passive: true });
-  const lookEnd = (e) => { for (const t of e.changedTouches) looks.delete(t.identifier); };
+  const lookEnd = (e) => {
+    for (const t of e.changedTouches) looks.delete(t.identifier);
+    input.touchLookActive = looks.size > 0;
+  };
   window.addEventListener('touchend', lookEnd);
   window.addEventListener('touchcancel', lookEnd);
 

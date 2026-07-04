@@ -253,6 +253,7 @@ input.onPress('F9', () => {
 let chaseCam = true; // piloting: chase (3rd person) vs cockpit; C toggles
 const camPos = new THREE.Vector3(), camQuat = new THREE.Quaternion();
 const _cv = new THREE.Vector3(), _cq = new THREE.Quaternion(), _cm = new THREE.Matrix4();
+let shipTouchCamYaw = 0, shipTouchCamPitch = 0;
 
 function updateCamera(dt) {
   if (traversal.mode === MODE.ON_FOOT) {
@@ -260,7 +261,19 @@ function updateCamera(dt) {
   } else {
     // Ship views: offsets in ship space, world math in f64.
     if (chaseCam) {
-      _cv.set(0, 4.5, -15).applyQuaternion(ship.quaternion);
+      _cv.set(0, 4.5, -15);
+      if (input.touchMode) {
+        if (input.touchLookActive) {
+          shipTouchCamYaw -= input.mouseDX * 0.003;
+          shipTouchCamPitch = Math.max(-0.75, Math.min(0.55, shipTouchCamPitch - input.mouseDY * 0.003));
+        } else {
+          shipTouchCamYaw += (0 - shipTouchCamYaw) * Math.min(1, 5 * dt);
+          shipTouchCamPitch += (0 - shipTouchCamPitch) * Math.min(1, 5 * dt);
+        }
+        _cv.applyAxisAngle(_touchCamX, shipTouchCamPitch);
+        _cv.applyAxisAngle(_touchCamY, shipTouchCamYaw);
+      }
+      _cv.applyQuaternion(ship.quaternion);
       camPos.copy(ship.worldPos).add(_cv);
       _cm.lookAt(camPos, ship.worldPos, _cq2v.set(0, 1, 0).applyQuaternion(ship.quaternion));
       camQuat.setFromRotationMatrix(_cm);
@@ -276,6 +289,8 @@ function updateCamera(dt) {
   engine.camera.quaternion.slerp(camQuat, Math.min(1, 14 * dt));
 }
 const _cq2v = new THREE.Vector3();
+const _touchCamX = new THREE.Vector3(1, 0, 0);
+const _touchCamY = new THREE.Vector3(0, 1, 0);
 const _flipY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
 
 // ---------------------------------------------------------------------------
@@ -293,10 +308,15 @@ function readShipControls(dt) {
   // Yaw = mouse X + A/D keys + touch analog stick so you can HOLD a turn without
   // dragging the camera. Roll moved to Q/E to free A/D. (Touch: stick or buttons.)
   const keyYaw = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
-  const lookScale = input.touchMode ? 0.016 : 0.05;
-  controls.pitch = input.mouseDY * lookScale + (input.touchShipPitch || 0);
-  controls.yaw = input.mouseDX * lookScale + keyYaw + (input.touchShipYaw || 0);
-  controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyE') ? 1 : 0);
+  if (input.touchMode) {
+    controls.pitch = 0;
+    controls.yaw = input.touchShipYaw || 0;
+    controls.roll = 0;
+  } else {
+    controls.pitch = input.mouseDY * 0.05;
+    controls.yaw = input.mouseDX * 0.05 + keyYaw;
+    controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyE') ? 1 : 0);
+  }
   controls.thrustUp = input.down('Space');
   controls.brake = input.down('KeyX') || touchThrottle < -0.85;
   controls.mobileAssist = input.touchMode;
