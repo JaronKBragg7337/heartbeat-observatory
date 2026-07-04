@@ -240,12 +240,23 @@ export class Ship {
     // ------------------------------------------------------------------
     let burning = 0;
     if (assisted) {
-      // Strafe-flight test: sideways input is lateral movement, not yaw.
-      // Raw yaw is disabled by main.js during assisted mode for this test.
+      // Yaw: turn ship heading (mouse X or A/D in raw mode).
       if (controls.yaw) {
         _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * dt);
         this.quaternion.premultiply(_q).normalize();
       }
+
+      // Pitch: tilt nose up/down with mouse Y (NEW — restores ship pitch control).
+      if (controls.pitch) {
+        const rightDir = _mobileRight.set(1, 0, 0).applyQuaternion(this.quaternion)
+          .addScaledVector(up, -_mobileRight.dot(up));
+        if (rightDir.lengthSq() > 1e-6) {
+          rightDir.normalize();
+          _q.setFromAxisAngle(rightDir, controls.pitch * PITCH_RATE * dt);
+          this.quaternion.premultiply(_q).normalize();
+        }
+      }
+
       const fwdFlat = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
         .addScaledVector(up, -_mobileFwd.dot(up));
       if (fwdFlat.lengthSq() < 1e-6) {
@@ -253,8 +264,15 @@ export class Ship {
       }
       fwdFlat.normalize();
       _mobileRight.crossVectors(up, fwdFlat).normalize();
-      _mobileMatrix.makeBasis(_mobileRight, up, fwdFlat);
-      this.quaternion.setFromRotationMatrix(_mobileMatrix);
+
+      // Auto-level: snap back to level flight when not pitching (gradual, not instant).
+      const pitching = controls.pitch && Math.abs(controls.pitch) > 0.01;
+      if (!pitching) {
+        _mobileMatrix.makeBasis(_mobileRight, up, fwdFlat);
+        const levelQ = _q.setFromRotationMatrix(_mobileMatrix);
+        this.quaternion.slerp(levelQ, Math.min(1, 4 * dt));
+      }
+
       this.angVel.set(0, 0, 0);
 
       if (this.stats.ready && this.fuel > 0) {

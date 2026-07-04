@@ -358,9 +358,12 @@ function readShipControls(dt) {
   const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
   const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
 
-  controls.pitch = 0;
-  controls.yaw = 0;
-  controls.roll = 0;
+  // RESTORED 2026-07-04: mouse controls ship yaw/pitch in assisted mode.
+  // W/S/A/D handle forward/strafe movement; mouse X/Y steers the ship.
+  const mouseActive = input.pointerLocked || input.touchLookActive;
+  controls.pitch = mouseActive ? input.mouseDY * 0.05 : 0;
+  controls.yaw   = mouseActive ? input.mouseDX * 0.05 : 0;
+  controls.roll  = 0;  // roll not used in assisted mode (auto-levelled)
   controls.thrustUp = input.down('Space');
   controls.brake = input.down('KeyX') || input.down('ControlLeft') || input.down('ControlRight') || touchThrottle < -0.85;
   controls.assist = true;
