@@ -187,7 +187,7 @@ traversal.on((name, payload) => {
       ui.showCenter('YOU ARE IN SPACE.<br><span class="dim">Open M — pick a body, burn toward it, then brake (X) and descend.</span>', 6000);
     }
   }
-  if (name === 'enteredShip') ui.showToast('Piloting. W/S throttle · Space vertical thrust · X brake · G gear · E exit when landed.', 4500);
+  if (name === 'enteredShip') ui.showToast('Piloting. W/S or THR buttons throttle · stick/mouse steers · X brake · E exit when landed.', 4500);
 });
 
 ship._onCrash = (impact) => {
@@ -287,11 +287,11 @@ function readShipControls(dt) {
   // Throttle: W up, S down.
   if (input.down('KeyW')) ship.throttle = Math.min(1, ship.throttle + 0.7 * dt);
   if (input.down('KeyS')) ship.throttle = Math.max(0, ship.throttle - 0.9 * dt);
-  // Yaw = mouse X + A/D keys (A left, D right) so you can HOLD a turn without
-  // dragging the mouse. Roll moved to Q/E to free A/D. (Touch: Turn buttons.)
+  // Yaw = mouse X + A/D keys + touch analog stick so you can HOLD a turn without
+  // dragging the camera. Roll moved to Q/E to free A/D. (Touch: stick or buttons.)
   const keyYaw = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
-  controls.pitch = input.mouseDY * 0.05;
-  controls.yaw = input.mouseDX * 0.05 + keyYaw;
+  controls.pitch = input.mouseDY * 0.05 + (input.touchShipPitch || 0);
+  controls.yaw = input.mouseDX * 0.05 + keyYaw + (input.touchShipYaw || 0);
   controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyE') ? 1 : 0);
   controls.thrustUp = input.down('Space');
   controls.brake = input.down('KeyX');

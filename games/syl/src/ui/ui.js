@@ -30,7 +30,7 @@ export class UI {
     this.help = el('div', 'syl-help');
     this.help.innerHTML =
       'ON FOOT: WASD move · Shift run · Space jump · E enter ship · F gather<br>' +
-      'SHIP: W/S throttle · A/D turn · mouse pitch/yaw · Q/E roll · Space vertical thrust · X brake · E exit (landed)<br>' +
+      'SHIP: W/S throttle · A/D or touch stick turn · mouse/stick pitch/yaw · Q/E roll · Space vertical thrust · X brake · E exit (landed)<br>' +
       'B ship builder · I inventory/crafting · M bodies · F5 save · F9 load · H hide help · click for mouse look';
     root.appendChild(this.help);
 

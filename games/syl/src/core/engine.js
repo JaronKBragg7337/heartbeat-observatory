@@ -109,7 +109,10 @@ export class Input {
   constructor(canvas) {
     this.keys = new Set();
     this.virtualKeys = new Set(); // touch-driven "keys" (src/ui/touch.js)
+    this.virtualKeySources = new Map(); // code -> Set(source), so buttons and sticks don't fight
     this.touchMode = false;       // true once touch controls are active
+    this.touchShipYaw = 0;        // analog ship steering from touch joystick
+    this.touchShipPitch = 0;
     this.mouseDX = 0; this.mouseDY = 0;
     this.pointerLocked = false;
     this._pressListeners = new Map(); // code -> [fns] fired once on keydown
@@ -139,15 +142,23 @@ export class Input {
 
   // Touch layer: press/release a virtual key. Press fires onPress listeners
   // exactly like a physical keydown, so all bindings work untouched.
-  setVirtual(code, on) {
+  setVirtual(code, on, source = 'default') {
+    if (!this.virtualKeySources.has(code)) this.virtualKeySources.set(code, new Set());
+    const sources = this.virtualKeySources.get(code);
     if (on) {
-      if (!this.virtualKeys.has(code)) {
+      const wasDown = this.virtualKeys.has(code);
+      sources.add(source);
+      if (!wasDown) {
         this.virtualKeys.add(code);
         const fns = this._pressListeners.get(code);
         if (fns) for (const f of fns) f({ code, virtual: true });
       }
     } else {
-      this.virtualKeys.delete(code);
+      sources.delete(source);
+      if (sources.size === 0) {
+        this.virtualKeySources.delete(code);
+        this.virtualKeys.delete(code);
+      }
     }
   }
 

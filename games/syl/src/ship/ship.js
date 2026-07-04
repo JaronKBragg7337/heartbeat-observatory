@@ -29,7 +29,7 @@ const CRASH_SPEED = 16;       // m/s vertical impact that damages modules
 const SAFE_LAND_SPEED = 8;    // m/s comfortable touchdown
 // Rotation feel (tunable). YAW was the weak axis: turning felt sluggish and,
 // on phone, a look-drag can't HOLD a turn. Raised yaw authority + eased damping,
-// and main.js now also feeds A/D (+ touch Turn buttons) into yaw.
+// and main.js now also feeds A/D plus touch analog steering into yaw.
 const PITCH_RATE = 2.4;   // was 2.2
 const YAW_RATE   = 2.7;   // was 1.8 — the main 'I can't turn' fix
 const ROLL_RATE  = 2.4;

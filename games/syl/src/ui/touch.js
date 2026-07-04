@@ -20,6 +20,38 @@ const JOY_R = 64;        // joystick base radius (px)
 const DEAD = 0.25;       // joystick deadzone fraction
 const LOOK_SENS = 2.4;   // touch-look multiplier vs mouse pixels
 
+export function joystickAxes(dx, dy, radius = JOY_R) {
+  const safeRadius = Math.max(1, radius);
+  let x = dx, y = dy;
+  const d = Math.hypot(x, y);
+  if (d > safeRadius) { x *= safeRadius / d; y *= safeRadius / d; }
+  const mag = Math.hypot(x, y) / safeRadius;
+  if (mag <= DEAD) return { x: 0, y: 0, mag };
+  return { x: x / safeRadius, y: y / safeRadius, mag };
+}
+
+export function joystickMoveKeys(dx, dy, radius = JOY_R) {
+  const axes = joystickAxes(dx, dy, radius);
+  const absX = Math.abs(axes.x), absY = Math.abs(axes.y);
+  return {
+    right: axes.x > absY * 0.5,
+    left: -axes.x > absY * 0.5,
+    back: axes.y > absX * 0.5,
+    forward: -axes.y > absX * 0.5,
+    run: axes.mag > 0.92,
+  };
+}
+
+export function joystickShipControls(dx, dy, radius = JOY_R) {
+  const axes = joystickAxes(dx, dy, radius);
+  return {
+    yaw: axes.x,
+    // Screen dy is down-positive. Existing ship pitch is down-positive too:
+    // drag up = negative pitch = nose up.
+    pitch: axes.y,
+  };
+}
+
 export function isTouchDevice() {
   return ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 }
@@ -31,7 +63,7 @@ export function initTouch(input, root) {
   const wrap = document.createElement('div');
   wrap.id = 'touch-root';
   wrap.innerHTML = `
-    <div id="joy-base"><div id="joy-knob"></div></div>
+    <div id="joy-base"><div id="joy-label">MOVE</div><div id="joy-knob"></div></div>
     <div id="touch-btns">
       <button data-code="KeyE"  class="tbtn">E</button>
       <button data-code="KeyF"  class="tbtn">F</button>
@@ -57,6 +89,8 @@ export function initTouch(input, root) {
                 background:rgba(8,12,16,0.35); pointer-events:auto; touch-action:none; }
     #joy-knob { position:absolute; left:50%; top:50%; width:46px; height:46px; margin:-23px 0 0 -23px;
                 border-radius:50%; background:rgba(183,28,28,0.75); border:1px solid #ef9a9a; }
+    #joy-label { position:absolute; inset:auto 0 10px 0; text-align:center; color:#cfd8dc;
+                 font-size:11px; font-weight:700; letter-spacing:0; opacity:0.8; }
     #touch-btns { position:absolute; right:16px; bottom:26px; display:grid;
                   grid-template-columns:repeat(4, 54px); gap:8px; pointer-events:auto; }
     #ship-btns { position:absolute; right:16px; top:32%; display:none; flex-direction:column;
@@ -86,32 +120,48 @@ export function initTouch(input, root) {
   (root || document.body).appendChild(wrap);
   setInterval(() => {
     const mode = window.game?.traversal?.mode;
-    wrap.classList.toggle('piloting', mode === 'PILOTING');
+    const piloting = mode === 'PILOTING';
+    wrap.classList.toggle('piloting', piloting);
     wrap.classList.toggle('panel-open', !!document.querySelector('.syl-panel[style*="display: block"]'));
+    const label = wrap.querySelector('#joy-label');
+    if (label) label.textContent = piloting ? 'STEER' : 'MOVE';
   }, 250);
 
   // --- Buttons → virtual keys (hold-to-press; taps still register once). ---
   wrap.querySelectorAll('.tbtn').forEach((btn) => {
     const code = btn.dataset.code;
-    const on = (e) => { e.preventDefault(); input.setVirtual(code, true); };
-    const off = (e) => { e.preventDefault(); input.setVirtual(code, false); };
+    const source = `button:${code}`;
+    const on = (e) => { e.preventDefault(); input.setVirtual(code, true, source); };
+    const off = (e) => { e.preventDefault(); input.setVirtual(code, false, source); };
     btn.addEventListener('touchstart', on, { passive: false });
     btn.addEventListener('touchend', off, { passive: false });
     btn.addEventListener('touchcancel', off, { passive: false });
   });
 
-  // --- Joystick → WASD virtual keys. ---------------------------------------
+  // --- Joystick → WASD on foot, analog yaw/pitch while piloting. ------------
   const base = wrap.querySelector('#joy-base');
   const knob = wrap.querySelector('#joy-knob');
   let joyId = null;
+  function clearMoveKeys() {
+    for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft']) input.setVirtual(code, false, 'move');
+  }
   function setMove(dx, dy, radius = JOY_R) {
-    // dx right+, dy down+ (screen). Map to WASD with deadzone.
-    const mag = Math.hypot(dx, dy) / radius;
-    input.setVirtual('KeyD', mag > DEAD && dx > Math.abs(dy) * 0.5);
-    input.setVirtual('KeyA', mag > DEAD && -dx > Math.abs(dy) * 0.5);
-    input.setVirtual('KeyS', mag > DEAD && dy > Math.abs(dx) * 0.5);
-    input.setVirtual('KeyW', mag > DEAD && -dy > Math.abs(dx) * 0.5);
-    input.setVirtual('ShiftLeft', mag > 0.92); // slam the stick = run
+    const piloting = window.game?.traversal?.mode === 'PILOTING';
+    if (piloting) {
+      const ship = joystickShipControls(dx, dy, radius);
+      input.touchShipYaw = ship.yaw;
+      input.touchShipPitch = ship.pitch;
+      clearMoveKeys();
+    } else {
+      input.touchShipYaw = 0;
+      input.touchShipPitch = 0;
+      const keys = joystickMoveKeys(dx, dy, radius);
+      input.setVirtual('KeyD', keys.right, 'move');
+      input.setVirtual('KeyA', keys.left, 'move');
+      input.setVirtual('KeyS', keys.back, 'move');
+      input.setVirtual('KeyW', keys.forward, 'move');
+      input.setVirtual('ShiftLeft', keys.run, 'move'); // slam the stick = run
+    }
     knob.style.transform = `translate(${dx}px, ${dy}px)`;
   }
   base.addEventListener('touchstart', (e) => {

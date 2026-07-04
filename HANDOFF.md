@@ -7,6 +7,29 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-04 — Codex — SYL touch ship steering synced to Heartbeat
+
+**State:** public `/games/syl/` now has the same touch ship steering fix as
+`SYL-Full-Game` main.
+
+**Shipped:** synced `games/syl/src` from SYL after adding piloting-mode analog
+stick steering: left stick steers ship pitch/yaw, THR buttons control throttle,
+and touch virtual-key sources are separated so steering cannot cancel throttle
+buttons. This came from checking `SpaceYouLand` and carrying over the seated
+pilot control separation in a mobile-safe web form.
+
+**Verified:** SYL `npm test` 65/65 before syncing; node syntax checks on edited
+Heartbeat game files after syncing.
+
+**Next up:** Jaron's actual phone/tablet feel test on
+`https://www.heartbeatobservatory.com/games/syl/?dev=1`, then prefab placement
+and persistent building/ship-room editing.
+
+**Gotchas:** desktop browser mobile viewport is not a true touch API test here;
+real touch feel still needs device confirmation.
+
+---
+
 ## 2026-07-04 — Codex — SYL dev editor first slice synced to Heartbeat
 
 **State:** public `/games/syl/` had the promoted Kimi/multiplayer/yaw work.
