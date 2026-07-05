@@ -7,6 +7,35 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-05 — Codex — Synced Fable build snapshot sync
+
+**State:** local Heartbeat smoke passed; ready for push/live verification.
+
+**Shipped:** synced `games/fable-survival/` from canonical `fable-survival`
+commit `2170f48` (`Share build snapshots with late peers`). The hosted bundle
+now includes Fable v0.6.5: online clients share a bounded `build-snapshot`
+payload with late-joining peers so already-placed base pieces become visible
+without waiting for the next placement. The Heartbeat wrapper still loads
+`/hb-device-tier.js` and displays the quality chip.
+
+**Verified:** canonical Fable passed syntax checks, `git diff --check`, a
+module smoke for addressed snapshot send/apply/duplicate/wrong-target behavior,
+clean temp build, and production-dist browser smoke before sync. Synced bundle
+is `assets/index-BV92Sd35.js`. Local Heartbeat Chrome smoke on
+`http://127.0.0.1:4174/games/fable-survival/` served `hb-device-tier.js` plus
+`assets/index-BV92Sd35.js`, rendered one canvas, showed `data-hb-tier="desktop"`
+and `desktop graphics`, entered the world, displayed the HUD, initialized the
+Realtime chip, and logged zero warnings/errors.
+
+**Next:** push Heartbeat, then verify live.
+
+**Gotchas:** this is live online snapshot sync, not durable persistence. A
+schema-backed object store still needs a namespaced table/RPC; Town Square's
+current `world_props` path is not safe to reuse directly because it has no
+game/world namespace in the client query.
+
+---
+
 ## 2026-07-05 — Codex — Synced Fable remote vehicle visibility
 
 **State:** live verified at `/games/fable-survival/`.
