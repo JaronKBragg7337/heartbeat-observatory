@@ -9,7 +9,7 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ## 2026-07-05 — Codex — Promoted SYL civil transport line
 
-**State:** local verified; pending commit/push/live verification.
+**State:** live verified at `/games/syl/` and `/games/syl/desktop.html`.
 
 **Shipped:** synced `games/syl/` from `SYL-Full-Game` commit `9c8c29c`
 (`Add civil transport line`). The static copy now includes `index.html`,
@@ -22,10 +22,13 @@ Heartbeat static smoke on `http://127.0.0.1:4174/games/syl/` and
 `/games/syl/desktop.html`: both booted `window.game`, exposed
 `civilTransport`, route count was 7, current stop was Earth, next stop was Moon,
 canvas sized correctly, and the `M` map panel showed the CIVIL TRANSPORT LINE
-with Tranquility Civil Hub.
+with Tranquility Civil Hub. Live smoke on
+`https://www.heartbeatobservatory.com/games/syl/` and `/games/syl/desktop.html`
+passed the same checks; `src/world/civilTransport.js` and desktop GLB assets
+return 200.
 
-**Next:** commit/push Heartbeat, then live smoke
-`https://heartbeatobservatory.com/games/syl/` plus `/desktop.html`.
+**Next:** Jaron phone-tests boarding from the Earth terminal. Next useful
+systems work: timetable/ETA polish, landing aids, or fare/faction hooks.
 
 ---
 
