@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PC Games · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style>
+  .game-list { margin-top:28px; display:grid; gap:16px; }
+  .game-card { display:grid; grid-template-columns:1fr auto; gap:18px; align-items:center;
+    border:1px solid var(--line); background:var(--panel); border-radius:14px; padding:22px;
+    text-decoration:none; color:var(--text); transition:border-color .15s, transform .08s; }
+  .game-card:hover { border-color:#33414f; }
+  .game-card:active { transform:translateY(1px); }
+  .game-card h2 { font-size:19px; font-weight:600; margin:0 0 8px; }
+  .game-card p { color:var(--muted); font-size:14px; line-height:1.6; margin:0; }
+  .tag-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .tag { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; border:1px solid var(--line);
+    color:var(--muted); border-radius:999px; padding:4px 9px; }
+  .open { color:#7aa2d6; font-size:13px; white-space:nowrap; }
+  .note { margin-top:18px; color:var(--muted); font-size:13px; line-height:1.7; text-align:center; }
+  @media (max-width:620px) {
+    .game-card { grid-template-columns:1fr; }
+    .open { white-space:normal; }
+  }
+</style>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/">&larr; All sections</a>
+    <header class="hero">
+      <h1>PC Games</h1>
+      <p class="sub">Bigger desktop builds for real GPUs. These are the high-fidelity versions; the phone-first games stay in <a href="/games" style="color:#7aa2d6;">/games</a>.</p>
+      <div class="status"><span class="dot live"></span><span>Desktop lane live</span></div>
+    </header>
+
+    <main class="game-list">
+      <a class="game-card" href="/PCGames/syl/">
+        <div>
+          <h2>SYL - Space You Land (Desktop Fidelity Build)</h2>
+          <p>A separate RTX-class browser build with scaled worlds, PBR terrain, imported GLB ship/building/prop assets, shadows, bloom, and the same seamless surface-to-space traversal core.</p>
+          <div class="tag-row">
+            <span class="tag">WebGL2</span>
+            <span class="tag">Three.js</span>
+            <span class="tag">Desktop GPU</span>
+            <span class="tag">Large world</span>
+          </div>
+        </div>
+        <span class="open">Open PC build &rarr;</span>
+      </a>
+    </main>
+
+    <p class="note">This page is intentionally separate from the mobile games list so heavy builds can grow without weighing down phone playtests.</p>
+    <footer><a href="/">heartbeatobservatory.com</a></footer>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co","sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+  const authlink=document.getElementById("authlink");
+  (async()=>{ try{
+    const { data:{ session } }=await supabase.auth.getSession();
+    if(session) authlink.textContent="Account";
+  }catch(e){} })();
+</script>
+<script defer src="/bubble.js"></script>
+</body>
+</html>
