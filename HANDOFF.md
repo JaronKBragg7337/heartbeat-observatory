@@ -7,6 +7,39 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-05 — Codex — Synced Fable remote vehicle visibility
+
+**State:** local Heartbeat smoke passed; ready for push/live verification.
+
+**Shipped:** synced `games/fable-survival/` from canonical `fable-survival`
+commit `f5f0a98` (`Use Heartbeat device tier for hosted Fable`). The hosted
+bundle now includes Fable v0.6.4: drivers broadcast vehicle
+mode/id/position/yaw over the existing Heartbeat Realtime state channel, remote
+peers render a moving car instead of a walking survivor while that peer is
+driving, and the Heartbeat-hosted build uses `/hb-device-tier.js` for renderer
+pixel ratio caps.
+
+**Verified:** canonical Fable passed `node --check`, `git diff --check`, clean
+temp `npm install && npm run build`, production-dist Chrome smoke, and a module
+smoke confirming `mode: "vehicle"` payloads before sync. The synced Heartbeat
+bundle was checked for `mode`, `vehicleId`, and remote vehicle mesh code. Local
+Heartbeat Chrome smoke on `http://127.0.0.1:4174/games/fable-survival/` served
+`assets/index-BF118Vgp.js`, rendered one canvas, entered the world, displayed
+the HUD, initialized the Realtime chip, and logged zero warnings/errors. Final
+resync serves `assets/index-Bx8fCYaW.js`, includes `HBDevice` renderer pixel
+ratio code in the bundle, keeps the Heartbeat quality-chip shell hook, and
+local Chrome showed `data-hb-tier="desktop"`, `data-hb-webgl="webgl2"`, and
+`desktop graphics` on the start screen.
+
+**Next:** push Heartbeat, then verify
+`https://www.heartbeatobservatory.com/games/fable-survival/`.
+
+**Gotchas:** this is live visibility only. Durable shared bases and parked
+vehicles still need a schema-backed pass using the Town Square `world_props` +
+broadcast + reconcile pattern.
+
+---
+
 ## 2026-07-05 — Codex — Synced SYL planet detail layer
 
 **State:** live verified at `/games/syl/`.

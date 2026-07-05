@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<script src="/hb-device-tier.js"></script>
+  <script src="/hb-device-tier.js"></script>
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -77,19 +77,21 @@
     .traderow button { background: #34623f; color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; }
     .traderow button.sellb { background: #6b4b2a; }
     .traderow button:disabled { opacity: .35; }
-    .panel input[type="text"], .panel textarea { width: 100%; background: rgba(255,255,255,.08);
+    .panel input[type="text"], .panel input[type="password"], .panel textarea { width: 100%; background: rgba(255,255,255,.08);
       border: 1px solid rgba(255,255,255,.2); border-radius: 8px; color: #fff; padding: 8px;
       font-size: 13px; margin-bottom: 8px; font-family: inherit; resize: none; }
     .panel input::placeholder, .panel textarea::placeholder { color: rgba(255,255,255,.4); }
+    .cloud-status { border-radius: 8px; padding: 7px 9px; margin-bottom: 6px; font-size: 12px; border: 1px solid rgba(255,255,255,.18); }
+    .cloud-status.on { color: #d8f7d0; background: rgba(55,110,59,.22); border-color: rgba(111,191,88,.45); }
+    .cloud-status.off { color: #f6d8bd; background: rgba(120,70,35,.18); border-color: rgba(255,180,120,.28); }
+    .cloud-code { margin-top: 10px; padding: 8px; border-radius: 8px; background: rgba(255,215,94,.08); border: 1px solid rgba(255,215,94,.2); color: #ffe69a; font-size: 11px; text-align: center; overflow-wrap: anywhere; }
 
     /* ---------- Death / start screens ---------- */
     .fullscreen-msg { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 100; display: none;
       flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 20px; }
     .fullscreen-msg h1 { color: #e0453a; margin-bottom: 12px; }
     .fullscreen-msg button { margin-top: 18px; background: #4caf50; color: #fff; border: none; border-radius: 10px; padding: 12px 28px; font-size: 15px; cursor: pointer; }
-    #start-screen { display: flex; background:
-      radial-gradient(circle at 50% 28%, rgba(102,161,95,.22), transparent 34%),
-      linear-gradient(#0a1520, #1a2f22); }
+    #start-screen { display: flex; background: linear-gradient(#0a1520, #1a2f22); }
     #start-screen h1 { color: #ffd75e; }
     #start-screen p { font-size: 12px; opacity: .8; max-width: 320px; line-height: 1.6; margin-top: 8px; }
     #start-tip { color: #ff9a6b; opacity: .95; font-size: 12px; max-width: 320px; line-height: 1.5; margin-top: 10px; }
@@ -98,7 +100,7 @@
       border-radius: 999px; padding: 6px 10px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
       background: rgba(0,0,0,.22); }
   </style>
-  <script type="module" crossorigin src="./assets/index-Cl5DvXF_.js"></script>
+  <script type="module" crossorigin src="./assets/index-Bx8fCYaW.js"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -128,6 +130,7 @@
     <button class="mbtn" id="mb-build">🔨</button>
     <button class="mbtn" id="mb-cam">👁</button>
     <button class="mbtn" id="mb-save">💾</button>
+    <button class="mbtn" id="mb-cloud">☁</button>
     <button class="mbtn" id="mb-fb">💬</button>
   </div>
 
@@ -136,6 +139,7 @@
   <div class="panel" id="build-panel"></div>
   <div class="panel" id="trader-panel"></div>
   <div class="panel" id="vehicle-panel"></div>
+  <div class="panel" id="cloud-panel"></div>
   <div class="panel" id="fb-panel"></div>
 
   <!-- Screens -->
