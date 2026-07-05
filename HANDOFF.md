@@ -9,8 +9,7 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ## 2026-07-05 — Codex — Synced SYL planet detail layer
 
-**State:** local website sync verified; live verification comes after the
-Heartbeat commit/push deploys.
+**State:** live verified at `/games/syl/`.
 
 **Shipped:** synced the SYL static copy from canonical `SYL-Full-Game` commit
 `43259e6` (`Add planet settlement detail layer`). The website copy now includes
@@ -23,12 +22,17 @@ public route on `http://127.0.0.1:8377/` rendered canvas, opened `M`, showed
 `surface: 36 buildings, 104 wild details`, preserved the CIVIL TRANSPORT LINE,
 and logged zero warnings/errors. Local Heartbeat route
 `http://127.0.0.1:4174/games/syl/` passed the same public-route checks and
-served `./src/main.js`. Desktop browser automation timed out in the canonical
-repo; static HTTP returned 200 for `/desktop.html`, so a normal desktop visual
-pass remains a known follow-up.
+served `./src/main.js`. Live deploy poll first returned 404 for
+`/games/syl/src/world/worldDetails.js`, then returned 200 with
+`buildWorldDetailLayer`. Live Chrome smoke on
+`https://www.heartbeatobservatory.com/games/syl/` rendered canvas, opened `M`,
+showed `surface: 36 buildings, 104 wild details`, preserved the CIVIL TRANSPORT
+LINE, and logged zero warnings/errors. Desktop browser automation timed out in
+the canonical repo; static HTTP returned 200 for `/desktop.html`, so a normal
+desktop visual pass remains a known follow-up.
 
-**Next:** commit/push, then live verify `/games/syl/` and
-`src/world/worldDetails.js`.
+**Next:** inspect Heartbeat engine realtime patterns for shared build/vehicle
+persistence in SYL and Fable.
 
 **Gotchas:** `worldDetails.js` is visual-only. Persistent placed objects,
 player-owned ships/vehicles, and shared builds should use a realtime/persistent
