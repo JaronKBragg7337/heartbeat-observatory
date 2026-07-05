@@ -41,14 +41,17 @@ const ASSIST_FORWARD_ACCEL = 48; // m/s^2 through the ship nose
 const ASSIST_STRAFE_ACCEL = 38;  // m/s^2 lateral test: A/D or stick-side slides instead of yawing
 const ASSIST_MAX_SPEED = 70;
 // --- Space regime (freeAttitude): a vacuum has almost no drag, so cruise is
-// much faster and coasts. Attitude is CLAMPED so the nose can point up/down for
-// interplanetary hops but can never loop/tumble (the old 'spins crazy in space'
-// bug was assistPitch integrating with no bound). Tune these for space feel.
+// much faster and coasts. True space attitude must NOT rebuild itself from the
+// currently dominant body's up vector; otherwise crossing between Earth,
+// Aethelgard, moons, etc. snaps the craft toward the new planet.
 const ASSIST_SPACE_MAX_SPEED = 400;   // interplanetary hop in ~1 min, not 6
 const ASSIST_SPACE_ACTIVE_DAMP = 0.05; // thrusting in space (near-frictionless)
 const ASSIST_SPACE_IDLE_DAMP = 0.02;   // released throttle => you COAST
-const ASSIST_MAX_PITCH = 1.35;         // ~77deg nose authority; prevents looping
-const ASSIST_MAX_ROLL  = 0.7;          // ~40deg visual bank; prevents roll-tumble
+const ASSIST_SPACE_ATTITUDE_RATE = 1.15; // slower than low-alt assisted bank
+const ASSIST_SPACE_ROLL_RATE = 0.45;     // subtle roll; yaw/pitch do the aiming
+const ASSIST_SPACE_ALT_MIN = 160;        // airless-body free attitude threshold
+const ASSIST_MAX_PITCH = 1.35;           // low-alt clamp only (~77deg)
+const ASSIST_MAX_ROLL  = 0.7;            // low-alt visual bank clamp (~40deg)
 const ASSIST_LIFT_SPEED = 30;
 const ASSIST_DESCEND_SPEED = 24;
 const ASSIST_IDLE_TAN_DAMP = 3.2; // idle: sideways/forward motion eases to a stop in ~1.5 s
@@ -264,42 +267,62 @@ export class Ship {
     let burning = 0;
     let freeAttitude = false;
     if (assisted) {
-      freeAttitude = !this.landed && alt > 60;
+      const freeAlt = body.atmosphere ? body.atmosphere.height * 1.1 : ASSIST_SPACE_ALT_MIN;
+      freeAttitude = !this.landed && alt > freeAlt;
       const fwdFlat = _mobileFwd.set(0, 0, 1).applyQuaternion(this.quaternion)
         .addScaledVector(up, -_mobileFwd.dot(up));
       if (fwdFlat.lengthSq() < 1e-6) {
         fwdFlat.set(1, 0, 0).addScaledVector(up, -fwdFlat.dot(up));
       }
       fwdFlat.normalize();
-      if (controls.yaw) {
-        _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * torqueMul * dt);
-        fwdFlat.applyQuaternion(_q).addScaledVector(up, -fwdFlat.dot(up)).normalize();
-      }
-      _mobileRight.crossVectors(up, fwdFlat).normalize();
-      _mobileMatrix.makeBasis(_mobileRight, up, fwdFlat);
-      this.quaternion.setFromRotationMatrix(_mobileMatrix);
 
-      // Assisted mode keeps the ship planet-upright for phone-friendly flying,
-      // so Q/R roll and nose pitch need stored angles applied after the rebuild.
       if (freeAttitude) {
-        this.assistPitch = (this.assistPitch || 0) + (controls.pitch || 0) * ASSIST_PITCH_RATE * torqueMul * dt;
-        // CLAMP so the nose holds a climb/dive but never loops over into a tumble.
-        this.assistPitch = Math.max(-ASSIST_MAX_PITCH, Math.min(ASSIST_MAX_PITCH, this.assistPitch));
+        // True space: keep the current quaternion and rotate around ship-local
+        // axes. Do not re-level to whatever body currently dominates gravity.
+        const spaceTorqueMul = Math.min(1.45, 1 + (this.stats.torqueBoost || 0) * 0.35);
+        _freeRight.set(1, 0, 0).applyQuaternion(this.quaternion).normalize();
+        _freeUp.set(0, 1, 0).applyQuaternion(this.quaternion).normalize();
+        _freeFwd.set(0, 0, 1).applyQuaternion(this.quaternion).normalize();
+        if (controls.pitch) {
+          _q.setFromAxisAngle(_freeRight, controls.pitch * ASSIST_SPACE_ATTITUDE_RATE * spaceTorqueMul * dt);
+          this.quaternion.premultiply(_q).normalize();
+        }
+        if (controls.yaw) {
+          _q.setFromAxisAngle(_freeUp, -controls.yaw * ASSIST_SPACE_ATTITUDE_RATE * spaceTorqueMul * dt);
+          this.quaternion.premultiply(_q).normalize();
+        }
+        if (controls.roll) {
+          _q.setFromAxisAngle(_freeFwd, controls.roll * ASSIST_SPACE_ROLL_RATE * spaceTorqueMul * dt);
+          this.quaternion.premultiply(_q).normalize();
+        }
+        this.assistPitch = 0;
+        this.assistRoll *= Math.max(0, 1 - 4 * dt);
       } else {
-        this.assistPitch = (this.assistPitch || 0) * Math.max(0, 1 - 2.8 * dt);
-      }
-      if (Math.abs(this.assistPitch) > 0.001) {
-        _q.setFromAxisAngle(_mobileRight, this.assistPitch);
-        this.quaternion.premultiply(_q).normalize();
-      }
+        if (controls.yaw) {
+          _q.setFromAxisAngle(up, -controls.yaw * ASSIST_YAW_RATE * torqueMul * dt);
+          fwdFlat.applyQuaternion(_q).addScaledVector(up, -fwdFlat.dot(up)).normalize();
+        }
+        _mobileRight.crossVectors(up, fwdFlat).normalize();
+        _mobileMatrix.makeBasis(_mobileRight, up, fwdFlat);
+        this.quaternion.setFromRotationMatrix(_mobileMatrix);
 
-      this.assistRoll = (this.assistRoll || 0) + (controls.roll || 0) * ROLL_RATE * torqueMul * dt;
-      this.assistRoll *= Math.max(0, 1 - 1.5 * dt);
-      // CLAMP visual bank so it can't roll past ~40deg and start tumbling in space.
-      this.assistRoll = Math.max(-ASSIST_MAX_ROLL, Math.min(ASSIST_MAX_ROLL, this.assistRoll));
-      if (Math.abs(this.assistRoll) > 0.001) {
-        _q.setFromAxisAngle(fwdFlat, this.assistRoll);
-        this.quaternion.premultiply(_q).normalize();
+        // Low-alt assisted mode keeps the ship planet-upright for phone-friendly
+        // landing, so Q/R roll and nose pitch are stored/clamped visual angles.
+        this.assistPitch = (this.assistPitch || 0) + (controls.pitch || 0) * ASSIST_PITCH_RATE * torqueMul * dt;
+        this.assistPitch = Math.max(-ASSIST_MAX_PITCH, Math.min(ASSIST_MAX_PITCH, this.assistPitch));
+        if (!controls.pitch) this.assistPitch *= Math.max(0, 1 - 2.8 * dt);
+        if (Math.abs(this.assistPitch) > 0.001) {
+          _q.setFromAxisAngle(_mobileRight, this.assistPitch);
+          this.quaternion.premultiply(_q).normalize();
+        }
+
+        this.assistRoll = (this.assistRoll || 0) + (controls.roll || 0) * ROLL_RATE * torqueMul * dt;
+        this.assistRoll *= Math.max(0, 1 - 1.5 * dt);
+        this.assistRoll = Math.max(-ASSIST_MAX_ROLL, Math.min(ASSIST_MAX_ROLL, this.assistRoll));
+        if (Math.abs(this.assistRoll) > 0.001) {
+          _q.setFromAxisAngle(fwdFlat, this.assistRoll);
+          this.quaternion.premultiply(_q).normalize();
+        }
       }
 
       this.angVel.set(0, 0, 0);
@@ -524,6 +547,7 @@ const _rel = new THREE.Vector3(), _dq = new THREE.Quaternion(), _q = new THREE.Q
 const _eul = new THREE.Euler();
 const _mobileFwd = new THREE.Vector3(), _mobileRight = new THREE.Vector3();
 const _assistFwd3 = new THREE.Vector3(), _assistRight3 = new THREE.Vector3();
+const _freeRight = new THREE.Vector3(), _freeUp = new THREE.Vector3(), _freeFwd = new THREE.Vector3();
 const _gripFwd = new THREE.Vector3(), _gripRight = new THREE.Vector3();
 const _vTan = new THREE.Vector3(), _desiredTan = new THREE.Vector3();
 const _mobileMatrix = new THREE.Matrix4();
