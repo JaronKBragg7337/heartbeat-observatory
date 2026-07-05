@@ -26,6 +26,7 @@
 
 import * as THREE from 'three';
 import { fbm, smoothstep } from '../core/math3d.js';
+import { buildWorldDetailLayer } from './worldDetails.js';
 
 // ---------------------------------------------------------------------------
 // ANALYTIC TERRAIN — single source of truth.
@@ -416,6 +417,7 @@ export function buildBodyVisual(body, factionById) {
     const zGroup = buildZoneStructures(body, zone, factionById);
     group.add(zGroup);
   }
+  group.add(buildWorldDetailLayer(body, factionById, terrainRadiusAt, { quality: 'mobile' }));
 
   body._group = group;
   return { group, bodyMesh };

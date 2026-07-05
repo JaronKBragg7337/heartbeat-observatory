@@ -7,6 +7,35 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-05 — Codex — Synced SYL planet detail layer
+
+**State:** local website sync verified; live verification comes after the
+Heartbeat commit/push deploys.
+
+**Shipped:** synced the SYL static copy from canonical `SYL-Full-Game` commit
+`43259e6` (`Add planet settlement detail layer`). The website copy now includes
+`games/syl/src/world/worldDetails.js` plus the runtime imports in
+`planet.js`, `desktopPlanet.js`, and the body-map surface-detail line in
+`ui.js`.
+
+**Verified:** canonical SYL passed `npm test` 105/105 before sync. Local SYL
+public route on `http://127.0.0.1:8377/` rendered canvas, opened `M`, showed
+`surface: 36 buildings, 104 wild details`, preserved the CIVIL TRANSPORT LINE,
+and logged zero warnings/errors. Local Heartbeat route
+`http://127.0.0.1:4174/games/syl/` passed the same public-route checks and
+served `./src/main.js`. Desktop browser automation timed out in the canonical
+repo; static HTTP returned 200 for `/desktop.html`, so a normal desktop visual
+pass remains a known follow-up.
+
+**Next:** commit/push, then live verify `/games/syl/` and
+`src/world/worldDetails.js`.
+
+**Gotchas:** `worldDetails.js` is visual-only. Persistent placed objects,
+player-owned ships/vehicles, and shared builds should use a realtime/persistent
+object system, not this scenery layer.
+
+---
+
 ## 2026-07-05 — Codex — Promoted SYL civil transport line
 
 **State:** live verified at `/games/syl/` and `/games/syl/desktop.html`.

@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { fbm } from '../core/math3d.js';
 import { analyticTerrainRadiusAt, terrainRadiusAt } from '../world/planet.js';
+import { buildWorldDetailLayer } from '../world/worldDetails.js';
 import { createTerrainTextureSet } from './desktopTextures.js';
 
 const BODY_DETAIL = {
@@ -111,6 +112,7 @@ export function buildDesktopBodyVisual(body, factionById, assets) {
   for (const zone of body.landingZones) {
     addDesktopLandingZone(group, body, zone, factionById, assets);
   }
+  group.add(buildWorldDetailLayer(body, factionById, terrainRadiusAt, { quality: 'desktop' }));
 
   body._group = group;
   return { group, bodyMesh: mesh };

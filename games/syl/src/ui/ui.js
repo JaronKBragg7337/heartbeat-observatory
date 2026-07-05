@@ -205,10 +205,13 @@ export class UI {
         Math.hypot(...b.position.map((v, i) => v - g.ship.worldPos.getComponent(i))) / 1000);
       const zones = b.landingZones.map((z) =>
         `${g.worldState.discoveredZones.has(z.id) ? '●' : '○'} ${known ? z.name : '???'}`).join('<br>');
+      const detail = b._detailStats && known
+        ? `<br><span class="dim">surface: ${b._detailStats.settlementBuildings} buildings, ${b._detailStats.naturalProps} wild details</span>`
+        : '';
       return `<tr><td>${known ? b.name : '??? (undiscovered)'}</td>
         <td>${known ? `${dist} km` : '—'}</td>
         <td>${owner ? `<span style="color:#${owner.color.toString(16).padStart(6, '0')}">${owner.name}</span>` : '<span class="dim">unclaimed</span>'}</td>
-        <td class="dim">${zones}</td></tr>`;
+        <td class="dim">${zones}${detail}</td></tr>`;
     }).join('');
     const route = g.civilTransport?.routeSummary?.() || [];
     const routeRows = route.map((stop) =>
