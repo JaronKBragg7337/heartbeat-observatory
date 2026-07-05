@@ -9,8 +9,8 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ## 2026-07-05 — Codex — Starter World direct lab route
 
-**State:** working locally; direct route is `/worlds-lab/starter/`. The route is
-not linked from the lab gallery or live town.
+**State:** live verified at `/worlds-lab/starter/`. The route is not linked
+from the lab gallery or live town.
 
 **Shipped:** added `worlds-lab/starter/` as a new-folder-only starter template
 copied from the current Town Square shell. The starter has its own
@@ -20,10 +20,12 @@ paths, a small sign, benches/trees for scale, and no destination buildings,
 claim plots, arena, or production containers.
 
 **Verified:** `node --check worlds-lab/starter/main.js`; local static server
-at `http://127.0.0.1:4173/worlds-lab/starter/`; Chrome/Playwright desktop and
-mobile smoke. Checks passed: page 200, module/CSS 200, canvas sized to viewport,
-overlay enters, status online, place chip says Starter Biome, Build mode hidden,
-Ask Claude button appears, and no requests fired to guarded production paths
+at `http://127.0.0.1:4173/worlds-lab/starter/`; live Vercel route, module, and
+CSS returned 200; live Chrome/Playwright desktop and mobile smoke. Checks
+passed: page 200, module path includes `?v=2026-07-05-starter1`, canvas sized
+to viewport, overlay enters, status online, place chip says Starter Biome,
+Build mode hidden, Ask Claude button appears, inline favicon prevents the
+default `/favicon.ico` 404, and no requests fired to guarded production paths
 `world_spaces`, `world_props`, `world_presence`, `touch_world`, or
 `agent_state`. Mobile screenshot was checked after moving/shrinking the sign so
 it no longer overlaps the fixed Ask Claude button.
