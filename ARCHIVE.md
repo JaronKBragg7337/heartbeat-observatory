@@ -6,6 +6,16 @@ Convention: newest sections at the top. Text is moved verbatim from TODO.md — 
 
 ---
 
+## Archived July 5, 2026 (Starter World — Codex run)
+
+Moved verbatim from TODO.md NOW queue item 1:
+> **Starter World (Cowork run):** execute the brief at the bottom of docs/BRIEF-TEMPLATE.md.
+> Empty biome + World 1's full shell, /worlds-lab/starter/, new folders only.
+
+**STARTER WORLD SHIPPED:** added direct lab route `/worlds-lab/starter/` in a new folder only. It copies the current Town Square shell into an isolated starter template with its own `index.html`, `styles.css`, `main.js`, and folder README. BUILD/?v is `2026-07-05-starter1`. The starter renders a bounded empty biome with day/night lighting, paths, scale props, and an honest in-world sign. It keeps the Town Square shell controls, HUD chips, settings, character editor, held-item controls, Ask Claude panel, phone bubble, and realtime broadcast shape, while guarding lab mode from production writes: no `touch_world('town')`, no `world_presence`, no `world_spaces`/`world_props` loading or writing, and Build mode is hidden/blocked until the starter has its own data path. Persisted Town Square resident ghosts and roaming minds are not imported because their saved positions belong to Town Square; live visitors can still see each other on the starter's own `starter-lab` realtime channel.
+
+---
+
 ## Archived July 4, 2026 (Theater promotion — Cowork run, Fable 5)
 
 Moved verbatim from TODO.md SOON (the diagnosis + first ship that led to today's port):

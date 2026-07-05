@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<script src="/hb-device-tier.js"></script>
+    <title>Starter World · Worlds Lab · Heartbeat Observatory</title>
+    <link rel="stylesheet" href="/worlds-lab/starter/styles.css">
+    <style>
+      /* onboarding: device-adaptive controls in the welcome overlay */
+      .controls { display:grid; gap:8px; width:min(440px,92vw); margin-top:2px; }
+      .controls .ctl { display:grid; gap:6px; padding:12px 14px; text-align:left; border:1px solid var(--panel-border); border-radius:8px; background:var(--panel-bg); }
+      .controls .ctl span { color:var(--muted); font-size:13px; line-height:1.45; }
+      .controls .ctl b { color:var(--text); font-weight:700; margin-right:6px; }
+      .controls .ctl-touch { display:none; }
+      @media (pointer: coarse) { .controls .ctl-desktop { display:none; } .controls .ctl-touch { display:grid; } }
+      html.preview body > *:not(#game):not(script) { display:none !important; }
+      html.preview, html.preview body { overflow:hidden; background:#04060b; }
+      /* game UI: no iOS copy/select callout on button taps; inputs stay typeable */
+      body { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+      input, textarea { -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }
+      #settingsPanel .settings-shell { max-height:86vh; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+      #buildPanel { position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:60; background:rgba(12,16,19,.93); border:1px solid #2c3940; border-radius:13px; padding:10px 11px; display:flex; flex-direction:column; gap:8px; max-width:94vw; box-shadow:0 8px 28px rgba(0,0,0,.4); }
+      #buildPanel.hidden { display:none; }
+      #buildPanel .build-row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+      #buildPanel button { padding:8px 11px; border-radius:8px; border:1px solid #2c3940; background:#0a0f12; color:#dfe6ec; font-size:13px; cursor:pointer; }
+      #buildPanel .buildPropBtn.active { background:#cda16a; color:#1a1208; border-color:#cda16a; }
+      #buildPanel #buildPlace { background:#7bd88f; color:#0c1a0f; border:0; font-weight:600; }
+      #buildPanel .build-hint { font-size:12px; opacity:.85; text-align:center; max-width:340px; }
+    </style>
+    <script>try{if(window.top!==window.self||new URLSearchParams(location.search).get("preview")==="1")document.documentElement.classList.add("preview");}catch(e){document.documentElement.classList.add("preview");}</script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="hud" aria-live="polite">
+      <div class="meter">
+        <span id="status">connecting</span>
+        <span id="playerCount">0 players</span>
+        <span id="rtt">-- ms</span>
+      </div>
+      <div class="meter">
+        <span id="identity">Guest</span>
+        <span id="place">Starter Biome</span>
+      </div>
+    </div>
+
+    <button id="menuButton" class="icon-button" type="button" aria-label="Menu">☰</button>
+    <aside id="roster" aria-label="People here"></aside>
+
+    <div id="doorPrompt" class="hidden">
+      <span id="doorPromptText">Press E</span>
+      <button id="doorPromptButton" type="button">Enter</button>
+    </div>
+
+    <div id="feed"></div>
+
+    <section id="settingsPanel" class="hidden" aria-label="Settings">
+      <div class="settings-shell">
+        <div class="settings-head">
+          <h2>Settings</h2>
+          <button id="closeSettingsButton" class="icon-button" type="button" aria-label="Close">×</button>
+        </div>
+        <label>
+          <span>Sensitivity</span>
+          <input id="sensitivitySlider" type="range" min="0.5" max="3" step="0.1" value="1">
+        </label>
+        <label>
+          <span>FOV</span>
+          <input id="fovSlider" type="range" min="62" max="92" step="1" value="74">
+        </label>
+        <label class="toggle-row">
+          <span>Invert Y</span>
+          <input id="invertYToggle" type="checkbox">
+        </label>
+        <label class="toggle-row">
+          <span>Roster</span>
+          <input id="rosterToggle" type="checkbox" checked>
+        </label>
+        <div class="settings-group" aria-label="Character">
+          <div class="settings-label">Character</div>
+          <div id="bodyButtons" class="segmented" aria-label="Body type">
+            <button type="button" data-body="person">Person</button>
+            <button type="button" data-body="classic">Classic</button>
+          </div>
+          <div id="bodyTypeButtons" class="segmented" aria-label="Build">
+            <button type="button" data-build="slim">Slim</button>
+            <button type="button" data-build="regular">Regular</button>
+            <button type="button" data-build="broad">Broad</button>
+          </div>
+          <div style="font-size:11px;opacity:.6;margin:9px 0 1px;letter-spacing:.03em;">Shirt</div>
+          <div id="colorSwatches" class="swatches" aria-label="Shirt color">
+            <button type="button" class="swatch" data-color="#4fa3ff" style="--swatch:#4fa3ff" aria-label="Blue"></button>
+            <button type="button" class="swatch" data-color="#5fd38d" style="--swatch:#5fd38d" aria-label="Green"></button>
+            <button type="button" class="swatch" data-color="#f6b45b" style="--swatch:#f6b45b" aria-label="Gold"></button>
+            <button type="button" class="swatch" data-color="#e36d7c" style="--swatch:#e36d7c" aria-label="Rose"></button>
+            <button type="button" class="swatch" data-color="#a67cff" style="--swatch:#a67cff" aria-label="Violet"></button>
+            <button type="button" class="swatch" data-color="#47c7b8" style="--swatch:#47c7b8" aria-label="Teal"></button>
+          </div>
+          <div style="font-size:11px;opacity:.6;margin:9px 0 1px;letter-spacing:.03em;">Skin</div>
+          <div id="skinSwatches" class="swatches" aria-label="Skin tone">
+            <button type="button" class="swatch" data-skin="#f4d4b8" style="--swatch:#f4d4b8" aria-label="Light"></button>
+            <button type="button" class="swatch" data-skin="#e0b48c" style="--swatch:#e0b48c" aria-label="Fair"></button>
+            <button type="button" class="swatch" data-skin="#c8a07a" style="--swatch:#c8a07a" aria-label="Tan"></button>
+            <button type="button" class="swatch" data-skin="#a9794f" style="--swatch:#a9794f" aria-label="Olive"></button>
+            <button type="button" class="swatch" data-skin="#7a5230" style="--swatch:#7a5230" aria-label="Brown"></button>
+            <button type="button" class="swatch" data-skin="#4a3322" style="--swatch:#4a3322" aria-label="Deep"></button>
+          </div>
+          <div style="font-size:11px;opacity:.6;margin:9px 0 1px;letter-spacing:.03em;">Hair</div>
+          <div id="hairSwatches" class="swatches" aria-label="Hair color">
+            <button type="button" class="swatch" data-hair="#2c2420" style="--swatch:#2c2420" aria-label="Black"></button>
+            <button type="button" class="swatch" data-hair="#5a3a22" style="--swatch:#5a3a22" aria-label="Brown"></button>
+            <button type="button" class="swatch" data-hair="#8a6a3a" style="--swatch:#8a6a3a" aria-label="Light brown"></button>
+            <button type="button" class="swatch" data-hair="#d3a84a" style="--swatch:#d3a84a" aria-label="Blonde"></button>
+            <button type="button" class="swatch" data-hair="#a23a26" style="--swatch:#a23a26" aria-label="Auburn"></button>
+            <button type="button" class="swatch" data-hair="#cfd6db" style="--swatch:#cfd6db" aria-label="Silver"></button>
+          </div>
+          <div style="font-size:11px;opacity:.6;margin:9px 0 1px;letter-spacing:.03em;">Pants</div>
+          <div id="pantsSwatches" class="swatches" aria-label="Pants color">
+            <button type="button" class="swatch" data-pants="#3a4654" style="--swatch:#3a4654" aria-label="Navy"></button>
+            <button type="button" class="swatch" data-pants="#23262b" style="--swatch:#23262b" aria-label="Black"></button>
+            <button type="button" class="swatch" data-pants="#6b4f3a" style="--swatch:#6b4f3a" aria-label="Khaki"></button>
+            <button type="button" class="swatch" data-pants="#46563a" style="--swatch:#46563a" aria-label="Olive"></button>
+            <button type="button" class="swatch" data-pants="#6a6f78" style="--swatch:#6a6f78" aria-label="Gray"></button>
+            <button type="button" class="swatch" data-pants="#7a3a4a" style="--swatch:#7a3a4a" aria-label="Maroon"></button>
+          </div>
+          <div id="patternButtons" class="segmented" aria-label="Character pattern">
+            <button type="button" data-pattern="plain">Plain</button>
+            <button type="button" data-pattern="stripe">Stripe</button>
+            <button type="button" data-pattern="band">Band</button>
+            <button type="button" data-pattern="glow">Glow</button>
+          </div>
+          <div id="appearanceStatus" class="settings-note" aria-live="polite"></div>
+        </div>
+        <button id="leaveTownButton" class="secondary-button" type="button">Leave Lab</button>
+        <button id="removeHomeButton" class="secondary-button" type="button" style="display:none;">Remove my home</button>
+        <button id="buildModeButton" class="secondary-button" type="button" style="display:none;">Build mode</button>
+        <div class="settings-group" aria-label="In your hands">
+          <div class="settings-label">In your hands</div>
+          <button class="secondary-button" data-hold="coffee" type="button">Hold coffee</button>
+          <button class="secondary-button" data-hold="ball" type="button">Hold ball</button>
+          <button class="secondary-button" data-hold="balloon" type="button">Hold balloon</button>
+          <button class="secondary-button" data-hold="" type="button">Empty hands</button>
+          <div class="settings-note">On a keyboard, press H to cycle what you're holding.</div>
+        </div>
+      </div>
+    </section>
+
+    <div id="overlay">
+      <div class="panel">
+        <h1>Starter World</h1>
+        <p id="welcomeName">Guest</p>
+        <p class="intro">An empty starter biome carrying the Town Square shell. Controls, settings, character editing, held items, realtime presence, and the phone bubble are here; buildings and onward doors are intentionally absent until a future world grows from this template.</p>
+        <div class="controls" aria-label="How to get around">
+          <div class="ctl ctl-desktop">
+            <span><b>Move</b> WASD or arrow keys</span>
+            <span><b>Look</b> move your mouse</span>
+            <span><b>Jump</b> Space</span>
+            <span><b>Duck</b> C or Ctrl</span>
+            <span><b>Throw</b> F — snowballs in town, paint in the arena</span>
+            <span><b>Hold something</b> press H to cycle coffee, ball, balloon</span>
+            <span><b>Enter a building</b> walk up to it and press E</span>
+          </div>
+          <div class="ctl ctl-touch">
+            <span><b>Move</b> the pad at the bottom-left</span>
+            <span><b>Look</b> drag the right side of the screen</span>
+            <span><b>Jump</b> the Jump button</span>
+            <span><b>Duck</b> the Duck button</span>
+            <span><b>Throw</b> the Throw button — snow in town, paint in the arena</span>
+            <span><b>Hold something</b> open the menu (&#9776;) and tap In your hands</span>
+            <span><b>Enter a building</b> walk up to it and tap Enter</span>
+          </div>
+        </div>
+        <button id="enterButton" type="button">Enter</button>
+      </div>
+    </div>
+
+    <div id="touchControls" aria-hidden="true">
+      <div id="movePad"><div id="moveKnob"></div></div>
+      <button id="jumpButton" type="button">Jump</button>
+      <button id="crouchButton" type="button">Duck</button>
+      <button id="actionButton" type="button">Enter</button>
+      <button id="throwButton" type="button">Throw</button>
+    </div>
+
+    <script type="module" src="/worlds-lab/starter/main.js?v=2026-07-05-starter1"></script>
+  <script defer src="/bubble.js"></script>
+  <div id="buildPanel" class="hidden" aria-label="Build mode">
+    <div class="build-row" id="buildPalette">
+      <button class="buildPropBtn" data-prop="table" type="button">Table</button>
+      <button class="buildPropBtn" data-prop="chair" type="button">Chair</button>
+      <button class="buildPropBtn" data-prop="streetlight" type="button">Light</button>
+      <button class="buildPropBtn" data-prop="planter" type="button">Planter</button>
+      <button class="buildPropBtn" data-prop="tree" type="button">Tree</button>
+      <button class="buildPropBtn" data-prop="bench" type="button">Bench</button>
+      <button class="buildPropBtn" data-prop="cafe" type="button">Caf&eacute;</button>
+      <button class="buildPropBtn" data-prop="fence" type="button">Fence</button>
+    </div>
+    <div id="buildHint" class="build-hint">Pick a prop, walk where you want it, tap Place here.</div>
+    <div class="build-row">
+      <button id="buildRotate" type="button">Rotate &#x27F3;</button>
+      <button id="buildPlace" type="button">Place here</button>
+      <button id="buildRemove" type="button">Remove nearest</button>
+      <button id="buildDone" type="button">Done</button>
+    </div>
+  </div>
+</body>
+</html>

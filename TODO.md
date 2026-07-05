@@ -12,9 +12,7 @@ social, library, games. Staged: /worlds-lab/ (9 solo lab worlds incl. Fort Wayne
 unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/method).
 
 ## NOW — Jaron's current queue
-1. **Starter World (Cowork run):** execute the brief at the bottom of docs/BRIEF-TEMPLATE.md.
-   Empty biome + World 1's full shell, /worlds-lab/starter/, new folders only.
-2. **Fort Wayne Phase 2+ (P1 SHIPPED June 12 — archived):** P1 recognition lab is live at
+1. **Fort Wayne Phase 2+ (P1 SHIPPED June 12 — archived):** P1 recognition lab is live at
    /worlds-lab/worlds/fort-wayne/ (BUILD 2026-06-12-fw3; details in ARCHIVE.md + the folder README).
    fw3 (June 12, same day): 146 OSM-named buildings + tap-to-identify — tap any building, the
    HUD chip says what it is (Taco Bell, Subway, the YMCA...); POI storefronts matched into
@@ -24,16 +22,16 @@ unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/metho
    P3 promotion (shell, gate, multiplayer channel, touch_world allowlist); P4 living layer
    (Embassy events via the media-surfaces pattern, riverfront walks). Jaron's phone walk =
    the recognition test.
-3. **World 2 Phase 6b–6e** (WORLD2-PLAN.md): avatar look parity → items/Throw →
+2. **World 2 Phase 6b–6e** (WORLD2-PLAN.md): avatar look parity → items/Throw →
    apartments + three-floor suite homes at city scale → remaining shell chips per SHELL.md.
-4. **Shared spawn plaza + "walk to" pointer:** Jaron & Lillith were both in W2 and never
+3. **Shared spawn plaza + "walk to" pointer:** Jaron & Lillith were both in W2 and never
    found each other; spawn arrivals together, consider a pointer toward players.
-5. **World 2's real name:** landing/gate say "the city" provisionally; one-word edit when chosen.
-6. **OPEN CHECK — home colliders:** buildHomeMesh registers only one collider mention;
+4. **World 2's real name:** landing/gate say "the city" provisionally; one-word edit when chosen.
+5. **OPEN CHECK — home colliders:** buildHomeMesh registers only one collider mention;
    walk-test the sample home on plot 1 (repo buildings had this exact bug).
-7. **Fossil rename:** landing sections list still calls World 1 "The Engine" while the
+6. **Fossil rename:** landing sections list still calls World 1 "The Engine" while the
    planet says Town Square; merge/rename — final name is Jaron's call.
-8. **Supabase Pro upgrade (Jaron, dashboard):** free-plan realtime quota is the wall;
+7. **Supabase Pro upgrade (Jaron, dashboard):** free-plan realtime quota is the wall;
    upgrade may also unwedge broken postgres_changes (if not: pause/restore or ticket;
    broadcast+30s-reconcile remains the law meanwhile).
 
