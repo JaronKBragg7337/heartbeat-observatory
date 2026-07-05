@@ -323,7 +323,7 @@ function readShipControls(dt) {
   // touch attitude inputs ONLY — PC keys (keyRoll/keyPitch) go through the else
   // branch untouched, and the shared rate constants in ship.js are unchanged.
   // Tune these two numbers for phone feel; do not touch ASSIST_*_RATE for PC.
-  const MOBILE_BANK_AUTHORITY = 0.5;   // bank/turn swing on phone (was effectively 1.0)
+  const MOBILE_BANK_AUTHORITY = 0.35;  // bank/turn swing on phone (lowered from 0.5 — still felt too hard)
   const MOBILE_PITCH_AUTHORITY = 0.55; // nose up/down on phone (was effectively 1.0)
   const shipBank = input.touchMode ? (input.touchShipBank || 0) * MOBILE_BANK_AUTHORITY : keyRoll;
   const shipPitch = input.touchMode ? (input.touchShipPitch || 0) * MOBILE_PITCH_AUTHORITY : keyPitch;

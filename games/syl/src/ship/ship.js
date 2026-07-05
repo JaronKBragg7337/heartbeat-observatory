@@ -40,6 +40,15 @@ const ASSIST_PITCH_RATE = 2.4; // nose-up/down attitude steering once safely air
 const ASSIST_FORWARD_ACCEL = 48; // m/s^2 through the ship nose
 const ASSIST_STRAFE_ACCEL = 38;  // m/s^2 lateral test: A/D or stick-side slides instead of yawing
 const ASSIST_MAX_SPEED = 70;
+// --- Space regime (freeAttitude): a vacuum has almost no drag, so cruise is
+// much faster and coasts. Attitude is CLAMPED so the nose can point up/down for
+// interplanetary hops but can never loop/tumble (the old 'spins crazy in space'
+// bug was assistPitch integrating with no bound). Tune these for space feel.
+const ASSIST_SPACE_MAX_SPEED = 400;   // interplanetary hop in ~1 min, not 6
+const ASSIST_SPACE_ACTIVE_DAMP = 0.05; // thrusting in space (near-frictionless)
+const ASSIST_SPACE_IDLE_DAMP = 0.02;   // released throttle => you COAST
+const ASSIST_MAX_PITCH = 1.35;         // ~77deg nose authority; prevents looping
+const ASSIST_MAX_ROLL  = 0.7;          // ~40deg visual bank; prevents roll-tumble
 const ASSIST_LIFT_SPEED = 30;
 const ASSIST_DESCEND_SPEED = 24;
 const ASSIST_IDLE_TAN_DAMP = 3.2; // idle: sideways/forward motion eases to a stop in ~1.5 s
@@ -274,6 +283,8 @@ export class Ship {
       // so Q/R roll and nose pitch need stored angles applied after the rebuild.
       if (freeAttitude) {
         this.assistPitch = (this.assistPitch || 0) + (controls.pitch || 0) * ASSIST_PITCH_RATE * torqueMul * dt;
+        // CLAMP so the nose holds a climb/dive but never loops over into a tumble.
+        this.assistPitch = Math.max(-ASSIST_MAX_PITCH, Math.min(ASSIST_MAX_PITCH, this.assistPitch));
       } else {
         this.assistPitch = (this.assistPitch || 0) * Math.max(0, 1 - 2.8 * dt);
       }
@@ -284,6 +295,8 @@ export class Ship {
 
       this.assistRoll = (this.assistRoll || 0) + (controls.roll || 0) * ROLL_RATE * torqueMul * dt;
       this.assistRoll *= Math.max(0, 1 - 1.5 * dt);
+      // CLAMP visual bank so it can't roll past ~40deg and start tumbling in space.
+      this.assistRoll = Math.max(-ASSIST_MAX_ROLL, Math.min(ASSIST_MAX_ROLL, this.assistRoll));
       if (Math.abs(this.assistRoll) > 0.001) {
         _q.setFromAxisAngle(fwdFlat, this.assistRoll);
         this.quaternion.premultiply(_q).normalize();
@@ -347,7 +360,15 @@ export class Ship {
       const forward = Math.abs(controls.assistForward ?? 0);
       const strafe = Math.abs(controls.assistStrafe ?? 0);
       const active = forward > 0.01 || strafe > 0.01 || controls.thrustUp || controls.descend;
-      const damp = controls.brake ? ASSIST_BRAKE_DAMP : (active ? ASSIST_ACTIVE_DAMP : ASSIST_IDLE_TAN_DAMP);
+      // TRUE space (above the atmosphere, or any altitude on an airless body)
+      // is near-frictionless: the ship reaches cruise speed and coasts when you
+      // let off. Below that (still in air) keep the steadier low-alt damping so
+      // near-ground flight hovers instead of sliding. Brake stays strong.
+      const spaceRegime = alt > (body.atmosphere ? body.atmosphere.height : 60);
+      const maxSpd = spaceRegime ? ASSIST_SPACE_MAX_SPEED : ASSIST_MAX_SPEED;
+      const damp = controls.brake ? ASSIST_BRAKE_DAMP
+        : (active ? (spaceRegime ? ASSIST_SPACE_ACTIVE_DAMP : ASSIST_ACTIVE_DAMP)
+                  : (spaceRegime ? ASSIST_SPACE_IDLE_DAMP : ASSIST_IDLE_TAN_DAMP));
       this.velocity.multiplyScalar(Math.max(0, 1 - damp * dt));
       const speed = this.velocity.length();
       const desired = _desiredTan.set(0, 0, 0);
@@ -360,7 +381,7 @@ export class Ship {
         this.velocity.lerp(desired, Math.min(1, ASSIST_GRIP * dt));
       }
       const capped = this.velocity.length();
-      if (capped > ASSIST_MAX_SPEED) this.velocity.multiplyScalar(ASSIST_MAX_SPEED / capped);
+      if (capped > maxSpd) this.velocity.multiplyScalar(maxSpd / capped);
     } else if (assisted && this.stats.ready && this.fuel > 0) {
       const forward = Math.abs(controls.assistForward ?? 0);
       const strafe = Math.abs(controls.assistStrafe ?? 0);
