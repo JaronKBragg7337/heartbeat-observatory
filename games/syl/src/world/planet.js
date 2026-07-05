@@ -38,6 +38,7 @@ import { fbm, smoothstep } from '../core/math3d.js';
 export function analyticTerrainRadiusAt(body, dir) {
   const t = body.terrain;
   let h = fbm(dir.x, dir.y, dir.z, t.seed, t.octaves, t.freq) * t.amplitude;
+  h = shapeTerrainProfile(t, dir, h);
 
   // Landing-zone flattening — blended into the SAME function.
   for (const zone of body.landingZones) {
@@ -52,6 +53,43 @@ export function analyticTerrainRadiusAt(body, dir) {
     }
   }
   return body.radius + h;
+}
+
+function shapeTerrainProfile(t, dir, baseHeight) {
+  const profile = t.profile || 'continental';
+  const amp = t.amplitude || 1;
+  const seed = t.seed || 1;
+  if (profile === 'ridged') {
+    const r = 1 - Math.abs(fbm(dir.x, dir.y, dir.z, seed + 17, t.octaves + 1, t.freq * 1.7));
+    return baseHeight * 0.45 + Math.pow(r, 2.6) * amp * 1.35 - amp * 0.18;
+  }
+  if (profile === 'cratered') {
+    const basins = 1 - Math.abs(fbm(dir.x, dir.y, dir.z, seed + 31, 4, t.freq * 1.15));
+    const rims = Math.sin(Math.max(0, basins) * Math.PI * 7.0);
+    return baseHeight * 0.55 - Math.pow(basins, 4.0) * amp * 1.2 + Math.max(0, rims) * amp * 0.22;
+  }
+  if (profile === 'volcanic') {
+    const cones = Math.pow(Math.max(0, fbm(dir.x, dir.y, dir.z, seed + 53, 5, t.freq * 2.2)), 3.2);
+    const trenches = Math.pow(1 - Math.abs(fbm(dir.z, dir.x, dir.y, seed + 57, 4, t.freq * 3.0)), 5.0);
+    return baseHeight * 0.75 + cones * amp * 1.7 - trenches * amp * 0.65;
+  }
+  if (profile === 'ice') {
+    const cracks = Math.pow(1 - Math.abs(fbm(dir.x, dir.y, dir.z, seed + 71, 4, t.freq * 8.0)), 9.0);
+    return baseHeight * 0.32 + cracks * amp * 0.95;
+  }
+  if (profile === 'dune') {
+    const bands = Math.sin((dir.x * 7.0 + dir.z * 5.0 + fbm(dir.x, dir.y, dir.z, seed + 83, 3, t.freq)) * Math.PI);
+    return baseHeight * 0.22 + bands * amp * 0.38;
+  }
+  if (profile === 'oceanic') {
+    const islands = Math.max(0, fbm(dir.x, dir.y, dir.z, seed + 97, t.octaves, t.freq * 1.4));
+    return baseHeight * 0.24 + Math.pow(islands, 2.2) * amp * 1.25 - amp * 0.28;
+  }
+  if (profile === 'gas') {
+    const bands = Math.sin((dir.y * 18.0 + fbm(dir.x, dir.y, dir.z, seed + 101, 3, 2.0) * 2.5) * Math.PI);
+    return bands * amp * 0.18 + baseHeight * 0.05;
+  }
+  return baseHeight;
 }
 
 // ---------------------------------------------------------------------------
@@ -199,6 +237,14 @@ export function structureCollidersForZone(zone) {
   if (zone.structures === 'beacon') {
     return [
       { kind: 'circle', east: 0, north: 0, radius: 2, height: 13 },
+    ];
+  }
+  if (zone.structures === 'transit') {
+    return [
+      { kind: 'box', east: -20, north: 4, halfEast: 15, halfNorth: 7, height: 8 },
+      { kind: 'box', east: 20, north: -5, halfEast: 11, halfNorth: 6, height: 7 },
+      { kind: 'circle', east: 0, north: 24, radius: 3.5, height: 18 },
+      { kind: 'circle', east: 0, north: -24, radius: 3.5, height: 18 },
     ];
   }
   return [];
@@ -469,6 +515,33 @@ function buildZoneStructures(body, zone, factionById) {
     );
     placeOnSurface(body, zone._dirV, light, 12.6);
     g.add(light);
+  } else if (zone.structures === 'transit') {
+    const steel = new THREE.MeshLambertMaterial({ color: 0x546e7a });
+    const dark = new THREE.MeshLambertMaterial({ color: 0x1f2a30 });
+    const glass = new THREE.MeshLambertMaterial({ color: 0x8fd7ff, transparent: true, opacity: 0.42 });
+    const signal = new THREE.MeshBasicMaterial({ color: fColor });
+    const terminal = new THREE.Mesh(new THREE.BoxGeometry(28, 8, 12), steel);
+    placeOnSurface(body, offsetDir(zone._dirV, -20, 4, body), terminal, 4);
+    g.add(terminal);
+    const concourse = new THREE.Mesh(new THREE.BoxGeometry(18, 6, 10), dark);
+    placeOnSurface(body, offsetDir(zone._dirV, 20, -5, body), concourse, 3);
+    g.add(concourse);
+    const windows = new THREE.Mesh(new THREE.BoxGeometry(24, 2, 0.4), glass);
+    placeOnSurface(body, offsetDir(zone._dirV, -20, 10.3, body), windows, 7);
+    g.add(windows);
+    for (const north of [24, -24]) {
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.8, 16, 8), steel);
+      const d = offsetDir(zone._dirV, 0, north, body);
+      placeOnSurface(body, d, mast, 8);
+      g.add(mast);
+      const light = new THREE.Mesh(new THREE.SphereGeometry(1.2, 10, 8), signal);
+      placeOnSurface(body, d, light, 17);
+      g.add(light);
+    }
+    const gate = new THREE.Mesh(new THREE.TorusGeometry(8, 0.28, 8, 32), signal);
+    placeOnSurface(body, offsetDir(zone._dirV, 0, 0, body), gate, 2.6);
+    gate.rotateX(Math.PI / 2);
+    g.add(gate);
   }
   return g;
 }

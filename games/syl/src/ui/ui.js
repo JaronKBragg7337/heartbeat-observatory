@@ -210,9 +210,16 @@ export class UI {
         <td>${owner ? `<span style="color:#${owner.color.toString(16).padStart(6, '0')}">${owner.name}</span>` : '<span class="dim">unclaimed</span>'}</td>
         <td class="dim">${zones}</td></tr>`;
     }).join('');
+    const route = g.civilTransport?.routeSummary?.() || [];
+    const routeRows = route.map((stop) =>
+      `<tr><td>${stop.active ? '▶' : stop.next ? '→' : ''}</td><td>${stop.label}</td><td class="dim">${stop.bodyId}</td></tr>`
+    ).join('');
     this.mapPanel.querySelector('.body').innerHTML =
       `<table><tr><th>Body</th><th>Dist</th><th>Held by</th><th>Zones</th></tr>${rows}</table>
-       <p class="dim">● discovered zone · ○ known but unvisited. Fly toward a body and descend to land.</p>`;
+       <p class="dim">● discovered zone · ○ known but unvisited. Fly toward a body and descend to land.</p>
+       ${routeRows ? `<h3>CIVIL TRANSPORT LINE</h3>
+       <table><tr><th></th><th>Stop</th><th>Body</th></tr>${routeRows}</table>
+       <p class="dim">Board the public transport at a civil terminal if you want to visit planets without piloting.</p>` : ''}`;
   }
 }
 

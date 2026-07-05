@@ -29,11 +29,25 @@
 import * as THREE from 'three';
 
 export class Engine {
-  constructor(canvas) {
+  constructor(canvas, options = {}) {
     this.canvas = canvas;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
-    this.renderer.setPixelRatio(window.HBDevice?.rendererPixelRatio(2, 1.5, 1.15) || Math.min(window.devicePixelRatio || 1, 2));
+    this.options = options;
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: options.antialias !== false,
+      logarithmicDepthBuffer: options.logarithmicDepthBuffer !== false,
+      powerPreference: options.powerPreference || 'default',
+    });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, options.pixelRatioCap || 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (options.highFidelity) {
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = options.exposure || 1.05;
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.physicallyCorrectLights = true;
+    }
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000005);
@@ -49,6 +63,8 @@ export class Engine {
 
     // Update callbacks: fn(dt, timeSec). Order matters; register in main.js.
     this._updaters = [];
+    this._resizeListeners = [];
+    this._renderPipeline = null;
 
     this._last = performance.now();
     this.timeSec = 0;
@@ -58,11 +74,18 @@ export class Engine {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+      for (const fn of this._resizeListeners) fn(window.innerWidth, window.innerHeight);
+    });
+    this.renderer.domElement.addEventListener('webglcontextlost', (event) => {
+      event.preventDefault();
+      this.running = false;
     });
   }
 
   // Register a system update callback, called every frame with (dt, time).
   addUpdater(fn) { this._updaters.push(fn); }
+  onResize(fn) { this._resizeListeners.push(fn); }
+  setRenderPipeline(pipeline) { this._renderPipeline = pipeline; }
 
   // Register an object for floating-origin sync. worldPos is a live reference:
   // move the entity by mutating worldPos; the engine re-places the mesh.
@@ -96,7 +119,8 @@ export class Engine {
       }
       this.camera.position.set(0, 0, 0);
 
-      this.renderer.render(this.scene, this.camera);
+      if (this._renderPipeline) this._renderPipeline.render(dt, this.timeSec);
+      else this.renderer.render(this.scene, this.camera);
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);

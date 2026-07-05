@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYL - Desktop Fidelity Build</title>
+<style>
+  html, body { margin:0; padding:0; overflow:hidden; background:#020309; height:100%;
+               font-family:'Segoe UI', Consolas, monospace; color:#d9e2e8;
+               -webkit-user-select:none; user-select:none; }
+  #game-canvas { display:block; width:100vw; height:100vh; }
+  #ui-root { position:fixed; inset:0; pointer-events:none; }
+  .syl-hud { position:absolute; top:14px; left:14px; background:rgba(4,8,12,0.62);
+             border:1px solid rgba(132,161,174,0.34); border-left:3px solid #d32f2f;
+             padding:10px 14px; font-size:13px; line-height:1.55; min-width:250px;
+             white-space:pre; backdrop-filter:blur(10px); box-shadow:0 10px 36px rgba(0,0,0,0.32); }
+  .syl-hud .state { color:#ffb0a8; font-weight:700; letter-spacing:1px; }
+  .syl-prompt { position:absolute; bottom:18%; left:50%; transform:translateX(-50%);
+                background:rgba(5,8,12,0.78); border:1px solid rgba(255,183,77,0.55);
+                padding:8px 18px; font-size:15px; color:#ffe1a3; display:none;
+                backdrop-filter:blur(10px); }
+  .syl-toast { position:absolute; top:14px; left:50%; transform:translateX(-50%);
+               background:rgba(12,5,5,0.78); border:1px solid rgba(255,138,128,0.55);
+               padding:10px 20px; font-size:14px; color:#fff0ee; display:none;
+               backdrop-filter:blur(10px); }
+  .syl-panel { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+               background:rgba(5,8,12,0.96); border:1px solid rgba(132,161,174,0.34);
+               border-top:3px solid #d32f2f; padding:18px 22px; min-width:560px;
+               max-width:850px; max-height:82vh; overflow-y:auto; font-size:13px;
+               display:none; pointer-events:auto; box-shadow:0 24px 80px rgba(0,0,0,0.56);
+               backdrop-filter:blur(14px); }
+  .syl-panel h2 { margin:0 0 10px 0; font-size:16px; color:#ffb0a8; letter-spacing:2px; }
+  .syl-panel h3 { margin:16px 0 8px; font-size:13px; color:#d9e2e8; }
+  .syl-panel table { width:100%; border-collapse:collapse; }
+  .syl-panel td, .syl-panel th { padding:5px 8px; border-bottom:1px solid rgba(132,161,174,0.16); text-align:left; }
+  .syl-panel button { background:#263238; color:#d9e2e8; border:1px solid #536d78;
+                      padding:4px 10px; cursor:pointer; font-family:inherit; font-size:12px; }
+  .syl-panel button:hover:not(:disabled) { background:#37474f; border-color:#ff8a80; }
+  .syl-panel button:disabled { opacity:0.35; cursor:default; }
+  .syl-panel .panel-close { position:sticky; top:0; float:right; z-index:2; margin:0 0 8px 12px;
+                            background:#1d282e; color:#ffd3cd; border-color:#8d3b35; }
+  .ok { color:#a5d6a7; } .bad { color:#ef9a9a; } .dim { color:#8ca2ad; } .warn { color:#ffcc80; }
+  .syl-help { position:absolute; bottom:14px; left:14px; background:rgba(4,8,12,0.5);
+              border:1px solid rgba(132,161,174,0.22); padding:8px 12px;
+              font-size:11px; line-height:1.6; color:#9bb1bc; backdrop-filter:blur(10px); }
+  .syl-center-msg { position:absolute; top:40%; left:50%; transform:translate(-50%,-50%);
+                    text-align:center; font-size:18px; color:#f2f7fa; display:none;
+                    background:rgba(5,8,12,0.78); border:1px solid rgba(255,138,128,0.52);
+                    padding:20px 40px; backdrop-filter:blur(14px); }
+  .syl-vignette { position:absolute; inset:0; pointer-events:none;
+                  box-shadow:inset 0 0 220px rgba(0,0,0,0.58); }
+  .dev-toggle { position:fixed; right:14px; top:14px; z-index:18; pointer-events:auto;
+                background:rgba(5,8,12,0.72); border:1px solid #ffb74d; color:#ffe0b2;
+                padding:7px 10px; font-size:11px; letter-spacing:0.12em; font-weight:700; cursor:pointer; }
+  .dev-panel { width:min(620px,92vw); }
+  .dev-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .dev-grid button { min-height:38px; }
+  #boot-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+              color:#9bb1bc; font-size:14px; letter-spacing:2px; }
+</style>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+<div id="ui-root"><div id="boot-msg">SYL DESKTOP - INITIALIZING HIGH-FIDELITY WORLD</div></div>
+<script type="importmap">
+  { "imports": { "three": "./lib/three.module.js" } }
+</script>
+<script type="module" src="./src/desktopMain.js"></script>
+</body>
+</html>

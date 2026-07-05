@@ -7,6 +7,28 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-05 — Codex — Promoted SYL civil transport line
+
+**State:** local verified; pending commit/push/live verification.
+
+**Shipped:** synced `games/syl/` from `SYL-Full-Game` commit `9c8c29c`
+(`Add civil transport line`). The static copy now includes `index.html`,
+`desktop.html`, `lib/`, `src/`, and `assets/`, including the new
+`src/world/civilTransport.js` passenger route system, seven transit-base stops,
+desktop fidelity route files, and GLB assets.
+
+**Verified:** canonical SYL repo passed `npm test` 102/102 before sync. Local
+Heartbeat static smoke on `http://127.0.0.1:4174/games/syl/` and
+`/games/syl/desktop.html`: both booted `window.game`, exposed
+`civilTransport`, route count was 7, current stop was Earth, next stop was Moon,
+canvas sized correctly, and the `M` map panel showed the CIVIL TRANSPORT LINE
+with Tranquility Civil Hub.
+
+**Next:** commit/push Heartbeat, then live smoke
+`https://heartbeatobservatory.com/games/syl/` plus `/desktop.html`.
+
+---
+
 ## 2026-07-05 — Codex — Starter World direct lab route
 
 **State:** live verified at `/worlds-lab/starter/`. The route is not linked
