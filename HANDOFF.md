@@ -9,7 +9,7 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ## 2026-07-05 — Codex — Synced Fable remote vehicle visibility
 
-**State:** local Heartbeat smoke passed; ready for push/live verification.
+**State:** live verified at `/games/fable-survival/`.
 
 **Shipped:** synced `games/fable-survival/` from canonical `fable-survival`
 commit `f5f0a98` (`Use Heartbeat device tier for hosted Fable`). The hosted
@@ -29,10 +29,17 @@ the HUD, initialized the Realtime chip, and logged zero warnings/errors. Final
 resync serves `assets/index-Bx8fCYaW.js`, includes `HBDevice` renderer pixel
 ratio code in the bundle, keeps the Heartbeat quality-chip shell hook, and
 local Chrome showed `data-hb-tier="desktop"`, `data-hb-webgl="webgl2"`, and
-`desktop graphics` on the start screen.
+`desktop graphics` on the start screen. Live deploy poll returned 200 for
+`/games/fable-survival/assets/index-Bx8fCYaW.js` with `vehicleId` and
+`rendererPixelRatio`. Live Chrome smoke at
+`https://www.heartbeatobservatory.com/games/fable-survival/` served
+`hb-device-tier.js` plus `assets/index-Bx8fCYaW.js`, rendered one canvas,
+showed `data-hb-tier="desktop"` / `data-hb-webgl="webgl2"` and `desktop
+graphics`, entered the world, displayed the HUD, initialized the Realtime chip,
+and logged zero warnings/errors.
 
-**Next:** push Heartbeat, then verify
-`https://www.heartbeatobservatory.com/games/fable-survival/`.
+**Next:** implement durable shared bases/parked vehicles when ready for a
+schema-backed pass.
 
 **Gotchas:** this is live visibility only. Durable shared bases and parked
 vehicles still need a schema-backed pass using the Town Square `world_props` +
