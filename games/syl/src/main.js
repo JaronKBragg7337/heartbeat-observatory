@@ -318,8 +318,15 @@ function readShipControls(dt) {
 
   const keyRoll = (input.down('KeyR') ? 1 : 0) - (input.down('KeyQ') ? 1 : 0);
   const keyPitch = (input.down('ArrowDown') ? 1 : 0) - (input.down('ArrowUp') ? 1 : 0);
-  const shipBank = input.touchMode ? (input.touchShipBank || 0) : keyRoll;
-  const shipPitch = input.touchMode ? (input.touchShipPitch || 0) : keyPitch;
+  // Mobile-only attitude authority: the right ATTITUDE stick was too swingy on
+  // phone (bank whipped around, nose pitch felt twitchy). These scalars tame the
+  // touch attitude inputs ONLY — PC keys (keyRoll/keyPitch) go through the else
+  // branch untouched, and the shared rate constants in ship.js are unchanged.
+  // Tune these two numbers for phone feel; do not touch ASSIST_*_RATE for PC.
+  const MOBILE_BANK_AUTHORITY = 0.5;   // bank/turn swing on phone (was effectively 1.0)
+  const MOBILE_PITCH_AUTHORITY = 0.55; // nose up/down on phone (was effectively 1.0)
+  const shipBank = input.touchMode ? (input.touchShipBank || 0) * MOBILE_BANK_AUTHORITY : keyRoll;
+  const shipPitch = input.touchMode ? (input.touchShipPitch || 0) * MOBILE_PITCH_AUTHORITY : keyPitch;
   const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
   const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
   const descend = input.down('KeyZ');
