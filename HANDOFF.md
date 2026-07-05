@@ -9,7 +9,7 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ## 2026-07-05 — Codex — Synced Fable build snapshot sync
 
-**State:** local Heartbeat smoke passed; ready for push/live verification.
+**State:** live verified at `/games/fable-survival/`.
 
 **Shipped:** synced `games/fable-survival/` from canonical `fable-survival`
 commit `2170f48` (`Share build snapshots with late peers`). The hosted bundle
@@ -26,8 +26,17 @@ is `assets/index-BV92Sd35.js`. Local Heartbeat Chrome smoke on
 `assets/index-BV92Sd35.js`, rendered one canvas, showed `data-hb-tier="desktop"`
 and `desktop graphics`, entered the world, displayed the HUD, initialized the
 Realtime chip, and logged zero warnings/errors.
+Live deploy poll returned 200 for
+`/games/fable-survival/assets/index-BV92Sd35.js` with `build-snapshot` and
+`vehicleId`. Live Chrome smoke at
+`https://www.heartbeatobservatory.com/games/fable-survival/` served
+`hb-device-tier.js` plus `assets/index-BV92Sd35.js`, rendered one canvas, showed
+`data-hb-tier="desktop"` / `data-hb-webgl="webgl2"` and `desktop graphics`,
+entered the world, displayed the HUD, initialized the Realtime chip, and logged
+zero warnings/errors.
 
-**Next:** push Heartbeat, then verify live.
+**Next:** verify standalone Fable deployment, then continue SYL/Fable durable
+persistence planning.
 
 **Gotchas:** this is live online snapshot sync, not durable persistence. A
 schema-backed object store still needs a namespaced table/RPC; Town Square's
