@@ -19,6 +19,11 @@
 const JOY_R = 64;        // joystick base radius (px)
 const DEAD = 0.25;       // joystick deadzone fraction
 const LOOK_SENS = 2.4;   // touch-look multiplier vs mouse pixels
+const ATT_BANK_SCALE = 0.32;    // right-stick full left/right -> gentle bank
+const ATT_PITCH_SCALE = 0.42;   // right-stick full up/down -> steady nose pitch
+const ATT_AXIS_LOCK = 1.25;     // favor the dominant axis to avoid thumb drift
+const ATT_DIAGONAL_SOFTEN = 0.55;
+const ATT_CURVE = 1.35;         // small motions stay precise
 
 export function joystickAxes(dx, dy, radius = JOY_R) {
   const safeRadius = Math.max(1, radius);
@@ -53,9 +58,19 @@ export function joystickShipControls(dx, dy, radius = JOY_R) {
 
 export function joystickShipAttitude(dx, dy, radius = JOY_R) {
   const axes = joystickAxes(dx, dy, radius);
+  const absX = Math.abs(axes.x), absY = Math.abs(axes.y);
+  const shape = (v) => Math.sign(v) * Math.pow(Math.abs(v), ATT_CURVE);
+  let bank = shape(axes.x) * ATT_BANK_SCALE;
+  let pitch = shape(axes.y) * ATT_PITCH_SCALE;
+  if (absX > absY * ATT_AXIS_LOCK) pitch = 0;
+  else if (absY > absX * ATT_AXIS_LOCK) bank = 0;
+  else {
+    bank *= ATT_DIAGONAL_SOFTEN;
+    pitch *= ATT_DIAGONAL_SOFTEN;
+  }
   return {
-    bank: axes.x,
-    pitch: axes.y,
+    bank,
+    pitch,
   };
 }
 

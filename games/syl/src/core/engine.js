@@ -114,6 +114,7 @@ export class Input {
     this.virtualKeySources = new Map(); // code -> Set(source), so buttons and sticks don't fight
     this.touchMode = false;       // true once touch controls are active
     this.touchShipYaw = 0;        // analog ship steering from touch joystick
+    this.touchShipBank = 0;
     this.touchShipPitch = 0;
     this.touchShipThrottle = 0;
     this.touchJoystickActive = false;
@@ -136,6 +137,7 @@ export class Input {
       this.virtualKeys.clear();
       this.virtualKeySources.clear();
       this.touchShipYaw = 0;
+      this.touchShipBank = 0;
       this.touchShipPitch = 0;
       this.touchShipThrottle = 0;
       this.touchJoystickActive = false;
