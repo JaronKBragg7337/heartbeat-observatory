@@ -77,12 +77,12 @@ export function createWorld(opts) {
 
   // ---- renderer / scene / camera ----
   const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // phone GPU guard
+  renderer.setPixelRatio(window.HBDevice?.rendererPixelRatio(2, 1.5, 1.15) || Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  if (o.shadows) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; }
+  if (o.shadows && window.HBDevice?.quality?.allowShadows !== false) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; }
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(palette.night);

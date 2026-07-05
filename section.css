@@ -39,3 +39,19 @@ p.muted { color:var(--muted); font-size:14px; margin-top:10px; }
 .skeleton { color:var(--muted); text-align:center; padding:30px 0; }
 footer { margin-top:42px; text-align:center; color:var(--muted); font-size:12px; line-height:1.7; }
 footer a { color:var(--muted); }
+
+html.hb-tier-mobile-high {
+  --panel:#101720;
+  --line:#263342;
+}
+
+html.hb-tier-mobile-lite .pulse,
+html.hb-tier-mobile-lite .dot.live {
+  box-shadow:none !important;
+  animation:none !important;
+}
+
+html.hb-tier-no-webgl .status::after {
+  content:" · 3D limited";
+  color:var(--amber);
+}

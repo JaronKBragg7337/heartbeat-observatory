@@ -171,10 +171,10 @@ const renderer = new THREE.WebGLRenderer({
   antialias: true,
   powerPreference: "high-performance"
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(window.HBDevice?.rendererPixelRatio(2, 1.5, 1.15) || Math.min(window.devicePixelRatio || 1, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = window.HBDevice?.quality?.allowShadows !== false;
 
 const clock = new THREE.Clock();
 const worldBounds = 56;

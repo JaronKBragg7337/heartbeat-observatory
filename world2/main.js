@@ -124,12 +124,12 @@ const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerH
 camera.rotation.order = "YXZ";
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(window.HBDevice?.rendererPixelRatio(2, 1.55, 1.15) || Math.min(window.devicePixelRatio || 1, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.1;
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = window.HBDevice?.quality?.allowShadows !== false;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const clock = new THREE.Clock();
