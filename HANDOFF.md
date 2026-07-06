@@ -7,6 +7,53 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-05 — Kimi (Moonshot AI) — Synced SYL: settings, space props, transport fleet, interiors, back buttons
+
+**State:** live verified at `/games/syl/` and `/games/fable-survival/` and
+`jaronkbragg7337.github.io/President-Sim/`.
+
+**Shipped:** synced `games/syl/` from canonical `SYL-Full-Game` commit `ad0c435`
+(`Add settings screen, space props, transport fleet, ship interiors, and back
+button`). The hosted bundle now includes:
+- Settings screen (`src/ui/settings.js`): `O` key opens mouse/touch sensitivity,
+  graphics, and sound toggles. Persisted in localStorage (`syl_settings_*`).
+- Space props (`src/world/spaceProps.js`): 40-60 decorative asteroids/clusters/
+  debris/satellites in a 500k–2M unit radius field. Visual-only, no collision.
+- Transport fleet (`src/world/civilTransport.js`): 3 staggered transports on the
+  same 7-stop route with oriented-box collision, door toggle (`T`), and interior
+  view (`V`).
+- Ship interiors (`src/ship/ship.js`): interior bounds, door state, window
+  meshes. Interior view toggle while piloting. `traversal.js` has
+  `MODE.INSIDE_SHIP` architecture for future full walk-around.
+- Multiplayer transport sync: remote players see all 3 transports via fleet
+  state broadcast.
+- Back buttons (`← Games` → `/games/`) on SYL mobile, SYL desktop, and Fable
+  Survival. President-Sim back button synced via GitHub MCP.
+
+**Verified:** canonical SYL passed `npm test` 124/124 before sync. Syntax checks
+passed for all new files. Live deploy poll returned 200 for
+`/games/syl/src/ui/settings.js`, `/games/syl/src/world/spaceProps.js`, and
+`/games/syl/src/world/civilTransport.js`. Live Chrome smoke at
+`https://www.heartbeatobservatory.com/games/syl/` rendered canvas, showed HUD,
+zero warnings/errors. Fable Survival back button verified at
+`https://www.heartbeatobservatory.com/games/fable-survival/`.
+
+**Next:** Jaron phone-tests settings (`O`), interior view (`V`), door (`T`),
+transport boarding, and space prop visibility. If good, next useful chunk is
+full WASD walk-around inside ships (traversal.js architecture is ready).
+
+**Gotchas:**
+- Interior view is MVP camera toggle, not full ship-local physics. Future full
+  walk-around should use the existing `MODE.INSIDE_SHIP` / `PHASE.INSIDE` hooks.
+- Space props are visual-only; adding collision would need spatial indexing.
+- Transport fleet uses staggered starts; adding more ships requires distinct
+  `phaseOffset` values.
+- Sync to heartbeat-observatory hit a rebase conflict with `fable-survival`
+  assets; resolved by `git reset --hard origin/main` and re-syncing only SYL
+  files. Do not touch `fable-survival/` when syncing SYL changes.
+
+---
+
 ## 2026-07-05 — Codex — Synced Fable build snapshot sync
 
 **State:** live verified at `/games/fable-survival/`.
