@@ -35,10 +35,16 @@ export class CivilTransport {
     this.bodies = bodies;
     this.legSeconds = options.legSeconds || DEFAULT_LEG_SECONDS;
     this.dwellSeconds = options.dwellSeconds || DEFAULT_DWELL_SECONDS;
-    this.routeIndex = 0;
+    this.routeIndex = options.startStopIndex || 0;
+    this.phaseOffset = options.phaseOffset || 0;
     this.legT = 0;
-    this.dwellT = this.dwellSeconds;
     this.state = 'docked';
+    this.dwellT = this.dwellSeconds + this.phaseOffset;
+    if (this.phaseOffset < 0) {
+      this.state = 'travel';
+      this.legT = Math.min(1, -this.phaseOffset / this.legSeconds);
+      this.dwellT = this.dwellSeconds;
+    }
     this.passenger = false;
     this.worldPos = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
@@ -49,7 +55,19 @@ export class CivilTransport {
       object3d: this.group,
       quaternion: this.quaternion,
     });
-    this.placeAtStop(0);
+    this.placeAtStop(this.routeIndex);
+
+    // Door + interior
+    this.doorOpen = false;
+    this.doorAngle = 0;
+    this.interior = {
+      floorY: -0.3,
+      ceilingY: 2.0,
+      portX: -2.0,
+      starboardX: 2.0,
+      rearZ: -5.5,
+      frontZ: 4.0,
+    };
   }
 
   currentStop() { return this._resolveStop(this.routeIndex); }
@@ -153,6 +171,69 @@ export class CivilTransport {
     player.velocity.set(0, 0, 0);
   }
 
+  // ------------------------------------------------------------------
+  // Collision: oriented-box against the transport hull (cabin footprint).
+  // Returns a push vector (THREE.Vector3) or null if no overlap.
+  // ------------------------------------------------------------------
+  collide(playerWorldPos, radius = 0.45) {
+    const invQ = _tcQ.copy(this.quaternion).invert();
+    const lp = _tcP.subVectors(playerWorldPos, this.worldPos).applyQuaternion(invQ);
+    const HX = 3.75 + radius; // half-width 7.5/2
+    const HY = 1.6 + radius;  // half-height 3.2/2
+    const HZ = 10.0 + radius; // half-length 20/2
+    if (Math.abs(lp.x) >= HX || Math.abs(lp.y) >= HY || Math.abs(lp.z) >= HZ) return null;
+    const px = HX - Math.abs(lp.x);
+    const py = HY - Math.abs(lp.y);
+    const pz = HZ - Math.abs(lp.z);
+    if (py <= px && py <= pz) {
+      lp.y = Math.sign(lp.y || 1) * HY;
+    } else if (px <= py && px <= pz) {
+      lp.x = Math.sign(lp.x || 1) * HX;
+    } else {
+      lp.z = Math.sign(lp.z || 1) * HZ;
+    }
+    const newPos = _tcNew.copy(lp).applyQuaternion(this.quaternion).add(this.worldPos);
+    return _tcPush.subVectors(newPos, playerWorldPos);
+  }
+
+  nudgeIfOverlappingPlayer(player) {
+    if (!player) return;
+    const push = this.collide(player.worldPos, 0.45);
+    if (push) {
+      this.worldPos.sub(push);
+      this.group.position.copy(this.worldPos);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Interior camera (fixed seat inside the cabin, looking forward).
+  // ------------------------------------------------------------------
+  interiorCameraPose(outPos, outQuat) {
+    const up = upAt(dominantBody(this.bodies, this.worldPos), this.worldPos, _camUp);
+    const fwd = _camFwd.set(0, 0, 1).applyQuaternion(this.quaternion).normalize();
+    outPos.copy(this.worldPos)
+      .addScaledVector(up, 0.5)
+      .addScaledVector(fwd, -2);
+    _camTarget.copy(this.worldPos).addScaledVector(fwd, 10).addScaledVector(up, 0.5);
+    _look.lookAt(outPos, _camTarget, up);
+    outQuat.setFromRotationMatrix(_look);
+  }
+
+  // ------------------------------------------------------------------
+  // Door toggle (simple ramp animation).
+  // ------------------------------------------------------------------
+  toggleDoor() {
+    this.doorOpen = !this.doorOpen;
+    this._updateRampVisual();
+  }
+
+  _updateRampVisual() {
+    const ramp = this.group.getObjectByName('transport:boarding-ramp');
+    if (ramp) {
+      ramp.rotation.x = this.doorOpen ? -1.0 : -0.25;
+    }
+  }
+
   _orientToward(target) {
     const body = dominantBody(this.bodies, this.worldPos);
     const up = upAt(body, this.worldPos, _up);
@@ -228,3 +309,4 @@ const _correctedUp = new THREE.Vector3(), _basis = new THREE.Matrix4();
 const _direct = new THREE.Vector3(), _arcUp = new THREE.Vector3(), _future = new THREE.Vector3();
 const _camUp = new THREE.Vector3(), _camFwd = new THREE.Vector3(), _camTarget = new THREE.Vector3();
 const _look = new THREE.Matrix4();
+const _tcQ = new THREE.Quaternion(), _tcP = new THREE.Vector3(), _tcNew = new THREE.Vector3(), _tcPush = new THREE.Vector3();

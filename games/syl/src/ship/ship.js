@@ -81,6 +81,19 @@ export class Ship {
     this.throttle = 0;      // 0..1 main thrust setting
     this.assistRoll = 0;    // assisted-mode bank angle; upright rebuild would otherwise erase Q/R roll
     this.assistPitch = 0;   // assisted-mode nose attitude for high-flight/free-flight control
+    this.doorOpen = false;
+    this.interior = {
+      floorY: -0.3,
+      ceilingY: 2.0,
+      portX: -2.0,
+      starboardX: 2.0,
+      rearZ: -5.5,
+      frontZ: 4.0,
+    };
+    this.windows = [
+      { x: -3.82, z: 1.6 },
+      { x: 3.82, z: 1.6 },
+    ];
 
     this.stats = this.computeStats();
 
@@ -173,7 +186,7 @@ export class Ship {
     addBox(visible, 'gunship:cockpit_glass_left', [-0.62, 1.32, 4.92], [1.18, 0.07, 1.9], glassMat, { x: -0.35 });
     addBox(visible, 'gunship:cockpit_glass_right', [0.62, 1.32, 4.92], [1.18, 0.07, 1.9], glassMat, { x: 0.35 });
     addBox(visible, 'gunship:rear_pressure_frame', [0, 1.35, -5.78], [3.9, 0.42, 0.4], armorMat);
-    addBox(visible, 'gunship:rear_ramp', [0, -0.36, -6.25], [3.35, 0.2, 2.9], shipMat(0x455a64, frameHealth), { x: -0.28 });
+    this._rampMesh = addBox(visible, 'gunship:rear_ramp', [0, -0.36, -6.25], [3.35, 0.2, 2.9], shipMat(0x455a64, frameHealth), { x: -0.28 });
     addBox(visible, 'gunship:pressure_door', [0, 0.82, -5.82], [3.28, 2.3, 0.18], shipMat(0x263238, has('cockpit_fwd') ? 1 : 0.35));
     addBox(visible, 'gunship:pilot_seat', [0, 0.35, 3.25], [0.72, 0.32, 0.75], interiorMat);
     addBox(visible, 'gunship:console', [0, 0.65, 4.25], [1.65, 0.38, 0.9], shipMat(0x102027, hp('cockpit_fwd') || 0.3));
@@ -234,6 +247,13 @@ export class Ship {
     this.landed = true;
     this.gearDown = true;
     this.throttle = 0;
+  }
+
+  toggleDoor() {
+    this.doorOpen = !this.doorOpen;
+    if (this._rampMesh) {
+      this._rampMesh.rotation.x = this.doorOpen ? -1.0 : -0.28;
+    }
   }
 
   // ------------------------------------------------------------------ flight

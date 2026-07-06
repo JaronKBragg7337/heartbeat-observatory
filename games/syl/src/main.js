@@ -27,11 +27,13 @@ import { Inventory } from './inventory/inventory.js';
 import { getItem } from './items/items.js';
 import { UI } from './ui/ui.js';
 import { initTouch } from './ui/touch.js';
+import { Settings } from './ui/settings.js';
 import * as SaveSystem from './save/save.js';
 import { PICKUPS } from './world/pickups.js';
 import { Multiplayer } from './multiplayer/multiplayer.js';
 import { DevTools } from './dev/devTools.js';
 import { CivilTransport } from './world/civilTransport.js';
+import { SpaceProps } from './world/spaceProps.js';
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -44,6 +46,8 @@ const factionState = new FactionState();
 const worldState = new WorldState();
 const inventory = new Inventory();
 const traversal = new Traversal(BODIES, worldState);
+
+const settings = new Settings();
 
 // World visuals: every body always exists and renders (second-body
 // coexistence). Floating origin keeps the numbers safe, not scene swaps.
@@ -59,6 +63,9 @@ engine.scene.add(stars); // camera-anchored (position 0), rotates with nothing
 const sun = new THREE.DirectionalLight(0xffffff, 2.2);
 sun.position.set(1, 0.6, 0.3);
 engine.scene.add(sun, new THREE.AmbientLight(0x445566, 0.5));
+
+// Space debris / props (visual only, no collision).
+const spaceProps = new SpaceProps(engine);
 
 // Player + ship at the Fortis outpost spawn.
 const homeBody = getBody('earth');
@@ -125,16 +132,21 @@ function removePickup(id) {
 }
 
 // ---------------------------------------------------------------------------
-// Civil transport — a public passenger line for players who want to travel
-// between planets without repairing/piloting their own ship.
+// Civil transport fleet — 3 public passenger transports staggered on the route.
 // ---------------------------------------------------------------------------
-const civilTransport = new CivilTransport(engine, BODIES);
+const civilTransportFleet = [
+  new CivilTransport(engine, BODIES, { startStopIndex: 0, phaseOffset: 0 }),
+  new CivilTransport(engine, BODIES, { startStopIndex: 2, phaseOffset: 10 }),
+  new CivilTransport(engine, BODIES, { startStopIndex: 4, phaseOffset: 20 }),
+];
+for (const t of civilTransportFleet) t.nudgeIfOverlappingPlayer(player);
 
 // ---------------------------------------------------------------------------
 // The `game` composition object — what save.js and ui.js see.
 // ---------------------------------------------------------------------------
 const game = {
-  engine, input, player, ship, civilTransport, inventory, worldState, factionState, traversal,
+  engine, input, player, ship, civilTransportFleet, inventory, worldState, factionState, traversal,
+  settings, spaceProps,
   pickupsCollected: new Set(),
   applyLoadedMode(mode) {
     traversal.mode = mode === 'PILOTING' ? MODE.PILOTING : MODE.ON_FOOT;
@@ -148,7 +160,8 @@ const game = {
 };
 
 spawnPickups(game.pickupsCollected);
-const multiplayer = new Multiplayer({ engine, player, ship, traversal });
+player.civilTransportFleet = civilTransportFleet;
+const multiplayer = new Multiplayer({ engine, player, ship, traversal, civilTransportFleet });
 const ui = new UI(document.getElementById('ui-root'), game);
 const devTools = new DevTools(game, ui, input, BODIES);
 
@@ -209,21 +222,23 @@ ship._onCrash = (impact) => {
 // ---------------------------------------------------------------------------
 input.onPress('KeyE', () => {
   if (ui.anyPanelOpen()) return;
-  if (civilTransport.passenger) {
-    if (civilTransport.disembark(player)) {
-      const stop = civilTransport.currentStop();
+  const carrying = getCarryingTransport();
+  if (carrying) {
+    if (carrying.disembark(player)) {
+      const stop = carrying.currentStop();
       worldState.discoverBody(stop.bodyId);
       worldState.discoverZone(stop.zoneId);
       ui.showToast(`Disembarked at ${stop.label}.`, 2600);
     } else {
-      ui.showToast(`In transit to ${civilTransport.destinationLabel()}. Wait for docking.`, 2400);
+      ui.showToast(`In transit to ${carrying.destinationLabel()}. Wait for docking.`, 2400);
     }
     return;
   }
   if (traversal.mode === MODE.ON_FOOT) {
-    if (civilTransport.canBoard(player)) {
-      civilTransport.board(player);
-      ui.showCenter(`BOARDED CIVIL TRANSPORT<br><span class="dim">Next stop: ${civilTransport.destinationLabel()}. Press E to disembark after docking.</span>`, 4800);
+    const boardable = civilTransportFleet.find((t) => t.canBoard(player));
+    if (boardable) {
+      boardable.board(player);
+      ui.showCenter(`BOARDED CIVIL TRANSPORT<br><span class="dim">Next stop: ${boardable.destinationLabel()}. Press E to disembark after docking.</span>`, 4800);
       return;
     }
     if (traversal.canEnterShip(player, ship)) traversal.enterShip(player, ship);
@@ -263,12 +278,42 @@ input.onPress('KeyB', () => {
 });
 input.onPress('KeyI', () => ui.togglePanel('inv'));
 input.onPress('KeyM', () => ui.togglePanel('map'));
+input.onPress('KeyO', () => ui.togglePanel('settings'));
 input.onPress('KeyH', () => ui.toggleHelp());
 input.onPress('Escape', () => ui.closePanels());
 input.onPress('KeyC', () => { chaseCam = !chaseCam; });
 
+let shipInteriorView = false;
+let transportInteriorView = false;
+
+input.onPress('KeyV', () => {
+  if (traversal.mode === MODE.PILOTING) {
+    shipInteriorView = !shipInteriorView;
+    ui.showToast(shipInteriorView ? 'Interior view' : 'Cockpit view', 1500);
+  } else if (getCarryingTransport()) {
+    transportInteriorView = !transportInteriorView;
+    ui.showToast(transportInteriorView ? 'Transport interior view' : 'Passenger camera view', 1500);
+  }
+});
+
+input.onPress('KeyT', () => {
+  if (traversal.mode === MODE.PILOTING) {
+    ship.toggleDoor();
+    ui.showToast(`Ship door ${ship.doorOpen ? 'OPEN' : 'CLOSED'}`, 1500);
+  } else if (getCarryingTransport()) {
+    const t = getCarryingTransport();
+    t.toggleDoor();
+    ui.showToast(`Transport door ${t.doorOpen ? 'OPEN' : 'CLOSED'}`, 1500);
+  }
+});
+
+function getCarryingTransport() {
+  for (const t of civilTransportFleet) if (t.passenger) return t;
+  return null;
+}
+
 input.onPress('F5', () => {
-  if (civilTransport.passenger) {
+  if (getCarryingTransport()) {
     ui.showToast('Wait until the civil transport docks before saving.', 2500);
     return;
   }
@@ -286,12 +331,36 @@ let chaseCam = true; // piloting: chase (3rd person) vs cockpit; C toggles
 const camPos = new THREE.Vector3(), camQuat = new THREE.Quaternion();
 const _cv = new THREE.Vector3(), _cq = new THREE.Quaternion(), _cm = new THREE.Matrix4();
 const _shipCamUp = new THREE.Vector3(), _shipCamFwd = new THREE.Vector3(), _shipCamViewUp = new THREE.Vector3(), _shipCamTarget = new THREE.Vector3();
+const _refY = new THREE.Vector3(0, 1, 0), _refX = new THREE.Vector3(1, 0, 0);
+const _east = new THREE.Vector3(), _north = new THREE.Vector3(), _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
+const _tmpV = new THREE.Vector3(), _tmpV2 = new THREE.Vector3(), _zero = new THREE.Vector3();
 
 function updateCamera(dt) {
-  if (civilTransport.passenger) {
-    civilTransport.passengerCameraPose(camPos, camQuat);
+  const carrying = getCarryingTransport();
+  if (carrying) {
+    if (transportInteriorView) {
+      carrying.interiorCameraPose(camPos, camQuat);
+    } else {
+      carrying.passengerCameraPose(camPos, camQuat);
+    }
   } else if (traversal.mode === MODE.ON_FOOT) {
     player.cameraPose(camPos, camQuat);
+  } else if (traversal.mode === MODE.PILOTING && shipInteriorView) {
+    // Interior walk view: fixed position inside ship, can look around with mouse.
+    _cv.set(0, 0.5, -2).applyQuaternion(ship.quaternion);
+    camPos.copy(ship.worldPos).add(_cv);
+    // Build look direction from player yaw/pitch in world space.
+    const body = dominantBody(BODIES, ship.worldPos);
+    const up = upAt(body, ship.worldPos, _shipCamUp);
+    const ref = Math.abs(up.y) < 0.95 ? _refY : _refX;
+    const east = _east.crossVectors(ref, up).normalize();
+    const north = _north.crossVectors(up, east).normalize();
+    const fwd = _fwd.copy(north).multiplyScalar(Math.cos(player.yaw))
+      .addScaledVector(east, Math.sin(player.yaw)).normalize();
+    const right = _right.crossVectors(fwd, up).normalize();
+    const lookFwd = _tmpV.copy(fwd).applyAxisAngle(right, player.pitch);
+    _cm.lookAt(_zero.set(0, 0, 0), _tmpV2.copy(lookFwd), up);
+    camQuat.setFromRotationMatrix(_cm);
   } else {
     // Ship views: offsets in ship space, world math in f64.
     if (chaseCam) {
@@ -333,7 +402,7 @@ const _flipY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0
 // ---------------------------------------------------------------------------
 // Ship pilot controls (read per frame).
 // ---------------------------------------------------------------------------
-const controls = { pitch: 0, yaw: 0, roll: 0, thrustUp: false, brake: false };
+const controls = { pitch: 0, yaw: 0, roll: 0, thrustUp: false, brake: false, mouseSensitivity: settings.get('mouseSens'), touchSensitivity: settings.get('touchSens') };
 
 function readShipControls(dt) {
   // Assisted ship piloting:
@@ -356,8 +425,8 @@ function readShipControls(dt) {
   // Tune these two numbers for phone feel; do not touch ASSIST_*_RATE for PC.
   const MOBILE_BANK_AUTHORITY = 0.35;  // bank/turn swing on phone (lowered from 0.5 — still felt too hard)
   const MOBILE_PITCH_AUTHORITY = 0.55; // nose up/down on phone (was effectively 1.0)
-  const shipBank = input.touchMode ? (input.touchShipBank || 0) * MOBILE_BANK_AUTHORITY : keyRoll;
-  const shipPitch = input.touchMode ? (input.touchShipPitch || 0) * MOBILE_PITCH_AUTHORITY : keyPitch;
+  const shipBank = input.touchMode ? (input.touchShipBank || 0) * MOBILE_BANK_AUTHORITY * controls.touchSensitivity : keyRoll;
+  const shipPitch = input.touchMode ? (input.touchShipPitch || 0) * MOBILE_PITCH_AUTHORITY * controls.touchSensitivity : keyPitch;
   const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
   const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
   const descend = input.down('KeyZ');
@@ -421,15 +490,17 @@ function checkZoneDiscovery() {
 // ---------------------------------------------------------------------------
 function updatePrompt() {
   if (ui.anyPanelOpen()) { ui.hidePrompt(); return; }
-  if (civilTransport.passenger) {
-    ui.showPrompt(civilTransport.isDocked()
-      ? `E — disembark at ${civilTransport.currentStop().label}`
-      : `Riding civil transport → ${civilTransport.destinationLabel()}`);
+  const carrying = getCarryingTransport();
+  if (carrying) {
+    ui.showPrompt(carrying.isDocked()
+      ? `E — disembark at ${carrying.currentStop().label}   ·   V — toggle view   ·   T — toggle door`
+      : `Riding civil transport → ${carrying.destinationLabel()}   ·   V — toggle view`);
     return;
   }
   if (traversal.mode === MODE.ON_FOOT) {
-    if (civilTransport.canBoard(player)) {
-      ui.showPrompt(`E — board civil transport → ${civilTransport.destinationLabel()}`);
+    const boardable = civilTransportFleet.find((t) => t.canBoard(player));
+    if (boardable) {
+      ui.showPrompt(`E — board civil transport → ${boardable.destinationLabel()}`);
       return;
     }
     for (const [, e] of pickupEntities) {
@@ -443,18 +514,24 @@ function updatePrompt() {
   } else if (ship.landed) {
     ui.showPrompt(touchActive
       ? 'E — exit ship   ·   hold stick — take off'
-      : 'E — exit ship   ·   Space — take off (if ready)');
+      : 'E — exit ship   ·   Space — take off (if ready)   ·   V — interior view   ·   T — toggle door');
+    return;
+  } else if (traversal.mode === MODE.PILOTING) {
+    ui.showPrompt('V — interior view   ·   T — toggle door');
     return;
   }
   ui.hidePrompt();
 }
 
 function discoverCivilStopIfDocked() {
-  if (!civilTransport.passenger || !civilTransport.isDocked()) return;
-  const stop = civilTransport.currentStop();
-  if (stop.bodyId !== 'earth') worldState.setFlag('landedAway');
-  worldState.discoverBody(stop.bodyId);
-  worldState.discoverZone(stop.zoneId);
+  for (const t of civilTransportFleet) {
+    if (t.passenger && t.isDocked()) {
+      const stop = t.currentStop();
+      if (stop.bodyId !== 'earth') worldState.setFlag('landedAway');
+      worldState.discoverBody(stop.bodyId);
+      worldState.discoverZone(stop.zoneId);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -463,20 +540,40 @@ function discoverCivilStopIfDocked() {
 let saveTimer = 0;
 engine.addUpdater((dt) => {
   const panelsOpen = ui.anyPanelOpen() || devTools.anyPanelOpen();
-  civilTransport.tick(dt, player);
-  if (civilTransport.passenger) {
+  controls.mouseSensitivity = settings.get('mouseSens');
+  controls.touchSensitivity = settings.get('touchSens');
+
+  const carrying = getCarryingTransport();
+  for (const t of civilTransportFleet) t.tick(dt, player);
+
+  if (carrying) {
     ship.tick(dt, false, null);
-    player.tickPassive?.();
+    // Allow look-around while passenger (interior or exterior view).
+    if (input.lookActive) {
+      player.yaw += input.mouseDX * 0.0023 * controls.mouseSensitivity;
+      player.pitch += input.mouseDY * 0.0023 * controls.mouseSensitivity;
+      player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
+    }
   } else if (traversal.mode === MODE.PILOTING) {
     if (!panelsOpen) readShipControls(dt);
     ship.tick(dt, !panelsOpen, controls);
     player.worldPos.copy(ship.worldPos); // pilot rides inside
-    player.tickPassive?.();
+    // Look-around while in interior view or normal cockpit.
+    if (input.lookActive) {
+      player.yaw += input.mouseDX * 0.0023 * controls.mouseSensitivity;
+      player.pitch += input.mouseDY * 0.0023 * controls.mouseSensitivity;
+      player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
+    }
   } else {
     const devFlying = devTools.tick(dt, !panelsOpen && input.lookActive);
-    if (!devFlying) player.tick(dt, !panelsOpen && input.lookActive);
+    if (!devFlying) {
+      player.mouseSensitivity = input.touchMode ? controls.touchSensitivity : controls.mouseSensitivity;
+      player.tick(dt, !panelsOpen && input.lookActive);
+    }
     ship.tick(dt, false, null);
   }
+
+  if (traversal.phase === PHASE.SPACE) spaceProps.tick(dt);
 
   traversal.tick(player, ship, { worldPos: engine.cameraWorldPos });
   updateCamera(dt);
@@ -490,7 +587,7 @@ engine.addUpdater((dt) => {
   saveTimer += dt;
   if (saveTimer > 60) {
     saveTimer = 0;
-    if (!civilTransport.passenger) SaveSystem.save(game);
+    if (!getCarryingTransport()) SaveSystem.save(game);
   }
 
   input.endFrame();

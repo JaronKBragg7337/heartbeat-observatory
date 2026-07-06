@@ -40,6 +40,7 @@ export class Player {
     // Orientation state: yaw/pitch relative to the local surface frame.
     this.yaw = 0;
     this.pitch = 0;
+    this.mouseSensitivity = 1.0; // scaled by main.js from settings
     this._upSmooth = new THREE.Vector3(0, 1, 0); // smoothed up (avoids snapping)
 
     // Visual body (visible in ship 3rd-person view / future multiplayer).
@@ -94,8 +95,8 @@ export class Player {
 
     if (active) {
       // Mouse look.
-      this.yaw += this.input.mouseDX * 0.0023;
-      this.pitch += this.input.mouseDY * 0.0023;
+      this.yaw += this.input.mouseDX * 0.0023 * this.mouseSensitivity;
+      this.pitch += this.input.mouseDY * 0.0023 * this.mouseSensitivity;
       this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch));
     }
 
@@ -153,6 +154,21 @@ export class Player {
     // matching the gunship silhouette. You can also land on and walk on the
     // roof. main.js sets shipRef after both entities exist.
     if (this.shipRef) this._collideWithShip(this.shipRef, up);
+
+    // Civil transport fleet collision (2026-07-05).
+    if (this.civilTransportFleet) {
+      for (const transport of this.civilTransportFleet) {
+        const push = transport.collide(this.worldPos, 0.45);
+        if (push) {
+          this.worldPos.add(push);
+          if (push.lengthSq() > 1e-10) {
+            push.normalize();
+            const vInto = this.velocity.dot(push);
+            if (vInto < 0) this.velocity.addScaledVector(push, -vInto);
+          }
+        }
+      }
+    }
 
     if (resolveStructureCollision(body, this.worldPos, 0.45)) {
       const push = _push.subVectors(this.worldPos, beforeMove);

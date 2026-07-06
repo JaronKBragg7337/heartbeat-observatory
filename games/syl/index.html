@@ -58,7 +58,14 @@
   .dev-grid button { min-height:38px; }
   #boot-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
               color:#78909c; font-size:14px; letter-spacing:2px; }
+  .back-btn { position:fixed; top:12px; right:12px; z-index:25; pointer-events:auto;
+              background:rgba(8,12,16,0.78); border:1px solid #455a64; color:#ffcc80;
+              padding:6px 12px; font-size:12px; text-decoration:none; border-radius:4px;
+              font-family:inherit; cursor:pointer; }
+  .back-btn:hover { background:#37474f; border-color:#b71c1c; }
   @media (max-width: 700px) {
+    .back-btn { top:calc(8px + env(safe-area-inset-top, 0px)); right:8px; font-size:11px; padding:5px 10px; }
+  }
     .syl-hud {
       top:calc(8px + env(safe-area-inset-top, 0px));
       left:8px;
@@ -147,11 +154,24 @@
       font-size:15px;
     }
   }
+  .settings-row { display:flex; align-items:center; gap:12px; margin:10px 0; }
+  .settings-row label { min-width:140px; color:#90a4ae; font-size:12px; }
+  .settings-row .slider-value { min-width:28px; color:#ef9a9a; font-size:12px; text-align:right; }
+  .syl-slider { -webkit-appearance:none; appearance:none; width:200px; height:4px; background:#263238; border-radius:2px; outline:none; }
+  .syl-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:14px; height:14px; background:#b71c1c; border-radius:50%; cursor:pointer; border:1px solid #ef9a9a; }
+  .syl-slider::-moz-range-thumb { width:14px; height:14px; background:#b71c1c; border-radius:50%; cursor:pointer; border:1px solid #ef9a9a; }
+  .settings-toggle { background:#263238; color:#cfd8dc; border:1px solid #455a64; padding:4px 14px; cursor:pointer; font-family:inherit; font-size:12px; min-width:80px; }
+  .settings-toggle:hover { background:#37474f; border-color:#b71c1c; }
+  @media (max-width: 700px) {
+    .syl-slider { width:140px; }
+    .settings-row label { min-width:100px; }
+  }
 </style>
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
 <div id="ui-root"><div id="boot-msg">SYL — INITIALIZING WORLD…</div></div>
+<a class="back-btn" href="/games/">← Games</a>
 <script type="importmap">
   { "imports": { "three": "./lib/three.module.js" } }
 </script>

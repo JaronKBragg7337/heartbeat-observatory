@@ -55,13 +55,18 @@
   .dev-panel { width:min(620px,92vw); }
   .dev-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
   .dev-grid button { min-height:38px; }
-  #boot-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  .back-btn { position:fixed; top:14px; right:14px; z-index:25; pointer-events:auto;
+              background:rgba(5,8,12,0.72); border:1px solid rgba(132,161,174,0.34); color:#ffe1a3;
+              padding:6px 12px; font-size:12px; text-decoration:none; border-radius:4px;
+              font-family:inherit; cursor:pointer; }
+  .back-btn:hover { background:rgba(132,161,174,0.22); border-color:#ff8a80; }
               color:#9bb1bc; font-size:14px; letter-spacing:2px; }
 </style>
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
 <div id="ui-root"><div id="boot-msg">SYL DESKTOP - INITIALIZING HIGH-FIDELITY WORLD</div></div>
+<a class="back-btn" href="/games/">← Games</a>
 <script type="importmap">
   { "imports": { "three": "./lib/three.module.js" } }
 </script>
