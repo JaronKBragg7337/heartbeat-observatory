@@ -57,7 +57,10 @@
     #menubar { position: fixed; top: calc(max(8px, env(safe-area-inset-top)) + 50px); right: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 20; }
     .mbtn { background: rgba(0,0,0,.55); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 8px;
       padding: 7px 10px; font-size: 11px; cursor: pointer; min-width: 44px; text-align: center; }
-    .mbtn:active { background: rgba(255,255,255,.25); }
+    .back-btn { background: rgba(0,0,0,.55); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 8px;
+      padding: 7px 10px; font-size: 11px; cursor: pointer; min-width: 44px; text-align: center; text-decoration:none; }
+    .back-btn:hover { background: rgba(255,255,255,.25); }
+    .back-btn:active { background: rgba(255,255,255,.25); }
 
     /* ---------- Panels (inventory / build / trader / vehicle) ---------- */
     .panel { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(15,18,22,.94);
@@ -86,6 +89,16 @@
     .cloud-status.off { color: #f6d8bd; background: rgba(120,70,35,.18); border-color: rgba(255,180,120,.28); }
     .cloud-code { margin-top: 10px; padding: 8px; border-radius: 8px; background: rgba(255,215,94,.08); border: 1px solid rgba(255,215,94,.2); color: #ffe69a; font-size: 11px; text-align: center; overflow-wrap: anywhere; }
 
+    /* ---------- AI chat ---------- */
+    .ai-log { max-height: 40vh; overflow-y: auto; margin-bottom: 8px; padding: 4px; background: rgba(0,0,0,.2); border-radius: 8px; }
+    .ai-msg { font-size: 12px; line-height: 1.4; padding: 6px 9px; border-radius: 8px; margin-bottom: 6px; max-width: 88%; overflow-wrap: anywhere; }
+    .ai-msg.user { background: rgba(111,191,88,.22); margin-left: auto; }
+    .ai-msg.bot { background: rgba(255,255,255,.08); }
+    .ai-msg.sys { background: none; color: #ff9a6b; opacity: .85; text-align: center; max-width: 100%; }
+    .ai-row { display: flex; gap: 6px; }
+    .ai-row textarea { flex: 1; margin-bottom: 0; }
+    .ai-row button { background: #34623f; color: #fff; border: none; border-radius: 6px; padding: 0 14px; font-size: 12px; cursor: pointer; }
+
     /* ---------- Death / start screens ---------- */
     .fullscreen-msg { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 100; display: none;
       flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 20px; }
@@ -94,13 +107,18 @@
     #start-screen { display: flex; background: linear-gradient(#0a1520, #1a2f22); }
     #start-screen h1 { color: #ffd75e; }
     #start-screen p { font-size: 12px; opacity: .8; max-width: 320px; line-height: 1.6; margin-top: 8px; }
-    #start-tip { color: #ff9a6b; opacity: .95; font-size: 12px; max-width: 320px; line-height: 1.5; margin-top: 10px; }
-    #death-tip { font-size: 12px; opacity: .82; max-width: 320px; line-height: 1.5; margin-top: 12px; }
     .quality-chip { margin-top: 12px; color: rgba(255,255,255,.78); border: 1px solid rgba(255,255,255,.18);
       border-radius: 999px; padding: 6px 10px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
       background: rgba(0,0,0,.22); }
+    #start-tip { color: #ff9a6b; opacity: .95; font-size: 12px; max-width: 320px; line-height: 1.5; margin-top: 10px; }
+    #death-tip { font-size: 12px; opacity: .82; max-width: 320px; line-height: 1.5; margin-top: 12px; }
+    /* Feedback must reach players even while a fullscreen screen (start/death)
+       is up, so its panel sits above .fullscreen-msg (z-index 100). */
+    #fb-panel { z-index: 110; }
+    .screen-fb-btn { margin-top: 10px; background: rgba(255,255,255,.12) !important; color: #fff; border: 1px solid rgba(255,255,255,.3) !important;
+      border-radius: 8px; padding: 8px 16px !important; font-size: 12px !important; cursor: pointer; }
   </style>
-  <script type="module" crossorigin src="./assets/index-BV92Sd35.js"></script>
+  <script type="module" crossorigin src="./assets/index-PQL0LRu8.js"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -126,12 +144,14 @@
 
   <!-- Menu -->
   <div id="menubar">
+    <a class="back-btn" href="/games/">← Games</a>
     <button class="mbtn" id="mb-inv">🎒</button>
     <button class="mbtn" id="mb-build">🔨</button>
     <button class="mbtn" id="mb-cam">👁</button>
     <button class="mbtn" id="mb-save">💾</button>
     <button class="mbtn" id="mb-cloud">☁</button>
     <button class="mbtn" id="mb-fb">💬</button>
+    <button class="mbtn" id="mb-ai">🤖</button>
   </div>
 
   <!-- Panels: filled in by src/ui.js -->
@@ -141,12 +161,14 @@
   <div class="panel" id="vehicle-panel"></div>
   <div class="panel" id="cloud-panel"></div>
   <div class="panel" id="fb-panel"></div>
+  <div class="panel" id="ai-panel"></div>
 
   <!-- Screens -->
   <div class="fullscreen-msg" id="death-screen">
     <h1>YOU DIED</h1><div id="death-reason"></div>
     <div id="death-tip"></div>
     <button id="respawn-btn">Respawn at Safe Zone</button>
+    <button class="screen-fb-btn" id="death-fb-btn">💬 Send Feedback</button>
   </div>
   <div class="fullscreen-msg" id="start-screen">
     <h1>FABLE SURVIVAL</h1>
@@ -155,7 +177,33 @@
     <p id="start-tip"></p>
     <div class="quality-chip" id="quality-chip">detecting graphics tier</div>
     <button id="start-btn">Enter World</button>
+    <button class="screen-fb-btn" id="start-fb-btn">💬 Send Feedback</button>
   </div>
+
+  <script>
+    (() => {
+      const rewriteDevChatPanel = () => {
+        const panel = document.getElementById('ai-panel');
+        if (!panel) return;
+        const patch = () => {
+          const heading = panel.querySelector('h3');
+          if (heading) heading.textContent = '🤖 Message the Dev AI';
+          const info = heading?.nextElementSibling;
+          if (info && info.textContent.includes('Chats with Claude')) {
+            info.innerHTML = 'Send a bug, idea, addition, or request to the dev queue. It becomes a GitHub issue for scheduled Cowork/local-agent review. <b>No AI API credits are used here.</b>';
+          }
+          const key = panel.querySelector('#ai-key');
+          if (key) key.style.display = 'none';
+          const msg = panel.querySelector('#ai-msg');
+          if (msg) msg.placeholder = 'Bug, idea, addition, or request…';
+        };
+        new MutationObserver(patch).observe(panel, { childList: true, subtree: true });
+        patch();
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', rewriteDevChatPanel);
+      else rewriteDevChatPanel();
+    })();
+  </script>
 
 <script>
   (() => {
