@@ -25,16 +25,26 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { groundDetailTexture } from '../render/textures.js';
+import {
+  glowMat, makeLandingPad, makeQuonsetHut, makeGabledBuilding, makeBanner,
+  makeStorageTank, makeLatticeMast, makeDish, makeContainer, enableShadows,
+} from '../render/props.js';
 import { fbm, smoothstep } from '../core/math3d.js';
+import { buildWorldDetailLayer } from './worldDetails.js';
 
 // ---------------------------------------------------------------------------
 // ANALYTIC TERRAIN — single source of truth.
 // dir must be normalized (direction from body center). Returns meters from
 // body center to the ground surface along dir.
 // ---------------------------------------------------------------------------
-export function terrainRadiusAt(body, dir) {
+// Raw analytic terrain (fbm + zone flattening). Used to BUILD each body's
+// radius grid; runtime queries go through terrainRadiusAt below, which
+// interpolates that grid exactly like the GPU rasterizes the mesh.
+export function analyticTerrainRadiusAt(body, dir) {
   const t = body.terrain;
   let h = fbm(dir.x, dir.y, dir.z, t.seed, t.octaves, t.freq) * t.amplitude;
+  h = shapeTerrainProfile(t, dir, h);
 
   // Landing-zone flattening — blended into the SAME function.
   for (const zone of body.landingZones) {
@@ -50,6 +60,110 @@ export function terrainRadiusAt(body, dir) {
   }
   return body.radius + h;
 }
+
+function shapeTerrainProfile(t, dir, baseHeight) {
+  const profile = t.profile || 'continental';
+  const amp = t.amplitude || 1;
+  const seed = t.seed || 1;
+  if (profile === 'ridged') {
+    const r = 1 - Math.abs(fbm(dir.x, dir.y, dir.z, seed + 17, t.octaves + 1, t.freq * 1.7));
+    return baseHeight * 0.45 + Math.pow(r, 2.6) * amp * 1.35 - amp * 0.18;
+  }
+  if (profile === 'cratered') {
+    const basins = 1 - Math.abs(fbm(dir.x, dir.y, dir.z, seed + 31, 4, t.freq * 1.15));
+    const rims = Math.sin(Math.max(0, basins) * Math.PI * 7.0);
+    return baseHeight * 0.55 - Math.pow(basins, 4.0) * amp * 1.2 + Math.max(0, rims) * amp * 0.22;
+  }
+  if (profile === 'volcanic') {
+    const cones = Math.pow(Math.max(0, fbm(dir.x, dir.y, dir.z, seed + 53, 5, t.freq * 2.2)), 3.2);
+    const trenches = Math.pow(1 - Math.abs(fbm(dir.z, dir.x, dir.y, seed + 57, 4, t.freq * 3.0)), 5.0);
+    return baseHeight * 0.75 + cones * amp * 1.7 - trenches * amp * 0.65;
+  }
+  if (profile === 'ice') {
+    const cracks = Math.pow(1 - Math.abs(fbm(dir.x, dir.y, dir.z, seed + 71, 4, t.freq * 8.0)), 9.0);
+    return baseHeight * 0.32 + cracks * amp * 0.95;
+  }
+  if (profile === 'dune') {
+    const bands = Math.sin((dir.x * 7.0 + dir.z * 5.0 + fbm(dir.x, dir.y, dir.z, seed + 83, 3, t.freq)) * Math.PI);
+    return baseHeight * 0.22 + bands * amp * 0.38;
+  }
+  if (profile === 'oceanic') {
+    const islands = Math.max(0, fbm(dir.x, dir.y, dir.z, seed + 97, t.octaves, t.freq * 1.4));
+    return baseHeight * 0.24 + Math.pow(islands, 2.2) * amp * 1.25 - amp * 0.28;
+  }
+  if (profile === 'gas') {
+    const bands = Math.sin((dir.y * 18.0 + fbm(dir.x, dir.y, dir.z, seed + 101, 3, 2.0) * 2.5) * Math.PI);
+    return bands * amp * 0.18 + baseHeight * 0.05;
+  }
+  return baseHeight;
+}
+
+// ---------------------------------------------------------------------------
+// MESH-TRUE COLLISION (2026-07-04 root-cause fix).
+// The old runtime collision sampled the raw fbm function, but the rendered
+// mesh is a LINEAR interpolation of that function across ~150 m triangles —
+// on rugged terrain the two disagreed by many meters. Players stood on air,
+// sank under the grass, and the camera clipped inside the planet ("see
+// through the ground"). The fix makes the LAW true by construction:
+// buildBodyVisual stores each body's exact vertex-radius grid, and
+// terrainRadiusAt intersects the query ray with the SAME triangle the GPU
+// draws. Collision now equals the picture to float precision, everywhere.
+// Future agents: if you add terrain LOD, keep this rule — collision must
+// sample whatever the player currently SEES.
+// ---------------------------------------------------------------------------
+export function terrainRadiusAt(body, dir) {
+  const g = body._terrainGrid;
+  if (!g) return analyticTerrainRadiusAt(body, dir); // pre-build fallback
+  // Map dir -> SphereGeometry (u,v). three.js param: x=-cosφ·sinθ, y=cosθ, z=sinφ·sinθ.
+  const vy = Math.min(1, Math.max(-1, dir.y));
+  const theta = Math.acos(vy);
+  let phi = Math.atan2(dir.z, -dir.x);
+  if (phi < 0) phi += Math.PI * 2;
+  const fx = (phi / (Math.PI * 2)) * g.W;
+  const fy = (theta / Math.PI) * g.H;
+  let ix = Math.min(Math.floor(fx), g.W - 1);
+  let iy = Math.min(Math.floor(fy), g.H - 1);
+  if (ix < 0) ix = 0;
+  if (iy < 0) iy = 0;
+  const sN = fx - ix, tN = fy - iy;
+  // Quad corners (matching the geometry): b=(ix,iy) a=(ix+1,iy) c=(ix,iy+1) d=(ix+1,iy+1)
+  _gp(g, body, ix + 1, iy, _pa);
+  _gp(g, body, ix, iy, _pb);
+  _gp(g, body, ix, iy + 1, _pc);
+  _gp(g, body, ix + 1, iy + 1, _pd);
+  // three.js splits the quad along the b–d diagonal: (a,b,d) upper, (b,c,d) lower.
+  let r = sN > tN ? _rayTri(dir, _pa, _pb, _pd) : _rayTri(dir, _pb, _pc, _pd);
+  if (!(r > 0)) r = sN > tN ? _rayTri(dir, _pb, _pc, _pd) : _rayTri(dir, _pa, _pb, _pd);
+  if (!(r > 0)) {
+    // Degenerate (pole seam): bilinear on radius is exact enough there.
+    const rb = g.radii[iy * (g.W + 1) + ix], ra = g.radii[iy * (g.W + 1) + ix + 1];
+    const rc = g.radii[(iy + 1) * (g.W + 1) + ix], rd = g.radii[(iy + 1) * (g.W + 1) + ix + 1];
+    r = (rb + (ra - rb) * sN) * (1 - tN) + (rc + (rd - rc) * sN) * tN;
+  }
+  return r;
+}
+
+// Vertex position of grid point (ix,iy) into `out` (body-local, meters).
+function _gp(g, body, ix, iy, out) {
+  const phi = (ix / g.W) * Math.PI * 2;
+  const theta = (iy / g.H) * Math.PI;
+  const st = Math.sin(theta);
+  const r = g.radii[iy * (g.W + 1) + ix];
+  return out.set(-Math.cos(phi) * st * r, Math.cos(theta) * r, Math.sin(phi) * st * r);
+}
+
+// Distance from body center along `dir` to the triangle (p0,p1,p2); 0 if miss.
+function _rayTri(dir, p0, p1, p2) {
+  _e1.subVectors(p1, p0);
+  _e2.subVectors(p2, p0);
+  _n.crossVectors(_e1, _e2);
+  const denom = _n.dot(dir);
+  if (Math.abs(denom) < 1e-9) return 0;
+  const r = _n.dot(p0) / denom;
+  return r > 0 && Number.isFinite(r) ? r : 0;
+}
+const _pa = new THREE.Vector3(), _pb = new THREE.Vector3(), _pc = new THREE.Vector3(), _pd = new THREE.Vector3();
+const _e1 = new THREE.Vector3(), _e2 = new THREE.Vector3(), _n = new THREE.Vector3();
 
 // Altitude of a world-space point above the ground of `body` (negative = below).
 export function altitudeAt(body, worldPos) {
@@ -131,13 +245,30 @@ export function structureCollidersForZone(zone) {
       { kind: 'circle', east: 0, north: 0, radius: 2, height: 13 },
     ];
   }
+  if (zone.structures === 'transit') {
+    return [
+      { kind: 'box', east: -20, north: 4, halfEast: 15, halfNorth: 7, height: 8 },
+      { kind: 'box', east: 20, north: -5, halfEast: 11, halfNorth: 6, height: 7 },
+      { kind: 'circle', east: 0, north: 24, radius: 3.5, height: 18 },
+      { kind: 'circle', east: 0, north: -24, radius: 3.5, height: 18 },
+    ];
+  }
   return [];
+}
+
+// Detail-layer colliders (settlement buildings etc.) are computed by
+// worldDetails.js from the SAME deterministic layout that builds the visuals,
+// and cached on the zone. Merging them here means the player can no longer
+// walk through settlement buildings — visible walls only, never invisible ones.
+export function allCollidersForZone(zone) {
+  const base = structureCollidersForZone(zone);
+  return zone._extraColliders ? base.concat(zone._extraColliders) : base;
 }
 
 export function structureCollidersForBody(body) {
   const out = [];
   for (const zone of body.landingZones) {
-    for (const collider of structureCollidersForZone(zone)) {
+    for (const collider of allCollidersForZone(zone)) {
       out.push({ ...collider, zoneId: zone.id, zone });
     }
   }
@@ -161,7 +292,7 @@ export function resolveStructureCollision(body, worldPos, radius = 0.45) {
     const dEast = dir.dot(frame.east) * body.radius;
     const dNorth = dir.dot(frame.north) * body.radius;
 
-    for (const c of structureCollidersForZone(zone)) {
+    for (const c of allCollidersForZone(zone)) {
       if (altitude > c.height) continue;
       let outEast = dEast;
       let outNorth = dNorth;
@@ -220,32 +351,93 @@ export function buildBodyVisual(body, factionById) {
   const group = new THREE.Group();
   group.name = `body:${body.id}`;
 
-  // --- Terrain mesh: icosphere displaced by terrainRadiusAt (SAME function).
-  const detail = body.radius > 2000 ? 64 : (body.radius > 600 ? 48 : 32);
+  // --- Terrain mesh + collision grid (one surface by construction).
+  // The grid stores the exact analytic radius at every mesh vertex; the mesh
+  // displaces from the grid, and runtime collision interpolates the grid the
+  // same way the GPU does. Bumped detail (2026-07-04): finer triangles both
+  // look better and shrink each triangle's deviation from the raw function.
+  const detail = body.radius > 2000 ? 96 : (body.radius > 600 ? 64 : 48);
+  {
+    const W = detail * 2, H = detail;
+    const radii = new Float64Array((W + 1) * (H + 1));
+    const gd = new THREE.Vector3();
+    for (let iy = 0; iy <= H; iy++) {
+      const theta = (iy / H) * Math.PI;
+      for (let ix = 0; ix <= W; ix++) {
+        const phi = (ix / W) * Math.PI * 2;
+        const st = Math.sin(theta);
+        gd.set(-Math.cos(phi) * st, Math.cos(theta), Math.sin(phi) * st);
+        if (gd.lengthSq() < 1e-12) gd.set(0, theta < 1 ? 1 : -1, 0);
+        gd.normalize();
+        radii[iy * (W + 1) + ix] = analyticTerrainRadiusAt(body, gd);
+      }
+    }
+    body._terrainGrid = { W, H, radii };
+  }
   const geo = new THREE.SphereGeometry(1, detail * 2, detail);
   const pos = geo.attributes.position;
   const colors = new Float32Array(pos.count * 3);
   const cLow = new THREE.Color(body.colors.low);
   const cMid = new THREE.Color(body.colors.mid);
   const cHigh = new THREE.Color(body.colors.high);
+  const cRock = cHigh.clone().lerp(new THREE.Color(0x6d6a63), 0.45); // steep-slope color
+  const cSand = new THREE.Color(body.colors.beach ?? 0xcbb27a);
   const dir = new THREE.Vector3();
   const cTmp = new THREE.Color();
+  // Vertex layout matches the collision grid: iy rows of (W+1) columns, so
+  // slope can be read straight from grid neighbours (same source of truth).
+  const { W: gW, H: gH, radii: gRadii } = body._terrainGrid;
+  const northSpacing = (Math.PI * body.radius) / gH;
   for (let i = 0; i < pos.count; i++) {
     dir.fromBufferAttribute(pos, i).normalize();
     const r = terrainRadiusAt(body, dir);
     pos.setXYZ(i, dir.x * r, dir.y * r, dir.z * r);
-    // Color by height above base radius.
+    // Base color by height above base radius.
     const hN = (r - body.radius) / Math.max(1, body.terrain.amplitude); // ~[-1,1]
     if (hN < 0) cTmp.lerpColors(cLow, cMid, hN + 1);
     else cTmp.lerpColors(cMid, cHigh, hN);
+    // Slope from grid neighbours -> exposed rock on steep faces.
+    const iy = Math.min(gH, Math.floor(i / (gW + 1)));
+    const ix = i % (gW + 1);
+    const rHere = gRadii[iy * (gW + 1) + ix];
+    let dMax = 0;
+    if (iy > 0) dMax = Math.max(dMax, Math.abs(gRadii[(iy - 1) * (gW + 1) + ix] - rHere));
+    if (iy < gH) dMax = Math.max(dMax, Math.abs(gRadii[(iy + 1) * (gW + 1) + ix] - rHere));
+    if (ix > 0) dMax = Math.max(dMax, Math.abs(gRadii[iy * (gW + 1) + ix - 1] - rHere));
+    if (ix < gW) dMax = Math.max(dMax, Math.abs(gRadii[iy * (gW + 1) + ix + 1] - rHere));
+    const slope = dMax / northSpacing;
+    const rockK = Math.max(0, Math.min(1, (slope - 0.35) / 0.5));
+    if (rockK > 0) cTmp.lerp(cRock, rockK * 0.85);
+    // Beach band just above sea level.
+    if (body.seaLevel !== null && body.seaLevel !== undefined) {
+      const aboveSea = r - (body.radius + body.seaLevel);
+      if (aboveSea > -1.5 && aboveSea < 6) {
+        cTmp.lerp(cSand, (1 - Math.max(0, aboveSea) / 6) * 0.65);
+      }
+    }
+    // Deterministic per-vertex jitter kills the airbrushed-gradient look.
+    const jh = Math.sin(ix * 127.1 + iy * 311.7) * 43758.5453;
+    const j = ((jh - Math.floor(jh)) - 0.5) * 0.14;
+    cTmp.offsetHSL(0, 0, j * 0.35);
     colors[i * 3] = cTmp.r; colors[i * 3 + 1] = cTmp.g; colors[i * 3 + 2] = cTmp.b;
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.computeVertexNormals();
+  // Ground detail texture multiplied over vertex colors (WCC technique):
+  // a 256px painted mottle repeated across the sphere. Null in headless Node.
+  let terrainMap = null;
+  const baseDetailTex = groundDetailTexture();
+  if (baseDetailTex) {
+    terrainMap = baseDetailTex.clone();
+    const rep = Math.max(48, Math.min(260, Math.round(body.radius / 14)));
+    terrainMap.repeat.set(rep, rep / 2);
+    terrainMap.needsUpdate = true;
+  }
   const bodyMesh = new THREE.Mesh(
     geo,
-    new THREE.MeshLambertMaterial({ vertexColors: true })
+    new THREE.MeshLambertMaterial({ vertexColors: true, map: terrainMap })
   );
+  bodyMesh.receiveShadow = true;
   bodyMesh.name = `terrain:${body.id}`;
   group.add(bodyMesh);
 
@@ -253,7 +445,10 @@ export function buildBodyVisual(body, factionById) {
   if (body.seaLevel !== null && body.seaLevel !== undefined && body.colors.water) {
     const water = new THREE.Mesh(
       new THREE.SphereGeometry(body.radius + body.seaLevel, 96, 48),
-      new THREE.MeshLambertMaterial({ color: body.colors.water, transparent: true, opacity: 0.85 })
+      new THREE.MeshPhongMaterial({
+        color: body.colors.water, transparent: true, opacity: 0.86,
+        shininess: 90, specular: 0x556e88,
+      })
     );
     water.name = `water:${body.id}`;
     group.add(water);
@@ -265,7 +460,7 @@ export function buildBodyVisual(body, factionById) {
     const atmoGeo = new THREE.SphereGeometry(body.radius + body.atmosphere.height, 64, 32);
     const atmoMat = new THREE.MeshBasicMaterial({
       color: body.atmosphere.color, transparent: true, opacity: 0.45,
-      side: THREE.BackSide, depthWrite: false,
+      side: THREE.BackSide, depthWrite: false, fog: false,
     });
     const atmo = new THREE.Mesh(atmoGeo, atmoMat);
     atmo.name = `atmo:${body.id}`;
@@ -279,6 +474,7 @@ export function buildBodyVisual(body, factionById) {
     const zGroup = buildZoneStructures(body, zone, factionById);
     group.add(zGroup);
   }
+  group.add(buildWorldDetailLayer(body, factionById, terrainRadiusAt, { quality: 'mobile' }));
 
   body._group = group;
   return { group, bodyMesh };
@@ -293,93 +489,110 @@ function placeOnSurface(body, dirUnit, obj, extraHeight = 0) {
 }
 
 function buildZoneStructures(body, zone, factionById) {
+  // Structures are authored from the props library (render/props.js): shaped
+  // composites with painted textures, foundations, and shadows — never naked
+  // boxes. FOOTPRINTS MUST KEEP MATCHING structureCollidersForZone() above:
+  // if you move or resize a structure here, update its collider there.
   const g = new THREE.Group();
   g.name = `zone:${zone.id}`;
   const faction = zone.factionId && factionById ? factionById[zone.factionId] : null;
   const fColor = faction ? faction.color : 0x546e7a;
+  const rng = zoneRng(`${body.id}:${zone.id}`);
 
-  // Pad ring — every zone gets one (visual marker; the flat ground itself is
-  // already part of the analytic terrain).
-  const pad = new THREE.Mesh(
-    new THREE.CylinderGeometry(26, 26, 0.6, 24),
-    new THREE.MeshLambertMaterial({ color: 0x37474f })
-  );
-  placeOnSurface(body, zone._dirV, pad, 0.3);
+  // Landing pad — textured disc, hazard ring, faction ring, edge lights.
+  const pad = makeLandingPad(fColor);
+  placeOnSurface(body, zone._dirV, pad, 0.05);
+  enableShadows(pad, false, true);
   g.add(pad);
 
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(24, 0.3, 8, 48),
-    new THREE.MeshBasicMaterial({ color: fColor })
-  );
-  placeOnSurface(body, zone._dirV, ring, 0.35);
-  ring.rotateX(Math.PI / 2);
-  g.add(ring);
-
   if (zone.structures === 'outpost') {
-    // Fortis outpost: armored blocks + watchtower + beacon (steel + red canon).
-    const steel = new THREE.MeshLambertMaterial({ color: 0x455a64 });
+    // Fortis outpost: quonset bunkers (collider: box half 8x6 h7) + lattice
+    // watchtower at (30,30) (collider: circle r3.2 h24) + faction banner.
     const offsets = [[40, 0], [-42, 10], [10, -46], [-15, 44]];
     for (const [ox, oz] of offsets) {
-      const bunker = new THREE.Mesh(new THREE.BoxGeometry(14, 7, 10), steel);
+      const hut = makeQuonsetHut(rng, 13, 11, 0x4a5c66, fColor, 0.7);
       const d = offsetDir(zone._dirV, ox, oz, body);
-      placeOnSurface(body, d, bunker, 3.5);
-      g.add(bunker);
+      placeOnSurface(body, d, hut, -0.3);
+      hut.rotateY(rng() * Math.PI);
+      g.add(hut);
     }
-    const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 2.2, 22, 8), steel);
-    const td = offsetDir(zone._dirV, 30, 30, body);
-    placeOnSurface(body, td, tower, 11);
+    const towerDir = offsetDir(zone._dirV, 30, 30, body);
+    const tower = makeLatticeMast(rng, 22, 0x4a5c66, 0xd32f2f);
+    placeOnSurface(body, towerDir, tower, -0.2);
     g.add(tower);
-    const beacon = new THREE.Mesh(
-      new THREE.SphereGeometry(1.6, 12, 8),
-      new THREE.MeshBasicMaterial({ color: 0xd32f2f })
-    );
-    placeOnSurface(body, td, beacon, 23);
-    g.add(beacon);
+    const banner = makeBanner(rng, fColor);
+    placeOnSurface(body, offsetDir(zone._dirV, 33, -14, body), banner, -0.1);
+    g.add(banner);
+    for (const [cx, cz] of [[-30, -26], [-27, -30], [24, 28]]) {
+      const box = makeContainer(rng, 0x51616b);
+      placeOnSurface(body, offsetDir(zone._dirV, cx, cz, body), box, -0.15);
+      box.rotateY(rng() * Math.PI);
+      g.add(box);
+    }
   } else if (zone.structures === 'relay') {
-    const dish = new THREE.Mesh(
-      new THREE.ConeGeometry(6, 3, 16, 1, true),
-      new THREE.MeshLambertMaterial({ color: 0x607d8b, side: THREE.DoubleSide })
-    );
+    // Relay: dish on a yoke (collider: circle r7.5 h10 at (18,-12)).
     const d = offsetDir(zone._dirV, 18, -12, body);
-    placeOnSurface(body, d, dish, 8);
+    const dish = makeDish(rng, 6, 0x78909c);
+    placeOnSurface(body, d, dish, -0.2);
     g.add(dish);
-    const mast = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.5, 0.8, 9, 6),
-      new THREE.MeshLambertMaterial({ color: 0x546e7a })
-    );
-    placeOnSurface(body, d, mast, 4.5);
+    const mast = makeLatticeMast(rng, 9, 0x546e7a, fColor);
+    placeOnSurface(body, offsetDir(zone._dirV, 12, -18, body), mast, -0.2);
     g.add(mast);
   } else if (zone.structures === 'depot') {
-    const steel = new THREE.MeshLambertMaterial({ color: 0x455a64 });
-    const dark = new THREE.MeshLambertMaterial({ color: 0x263238 });
-    const red = new THREE.MeshBasicMaterial({ color: fColor });
-    const shedA = new THREE.Mesh(new THREE.BoxGeometry(22, 8, 12), steel);
-    placeOnSurface(body, offsetDir(zone._dirV, -18, 0, body), shedA, 4);
+    // Depot: gabled shed (box half 12x7 h8 at (-18,0)), quonset (box half 9x6
+    // h6 at (18,7)), domed tank (circle r4 h15 at (5,-18)).
+    const shedA = makeGabledBuilding(rng, 21, 6.5, 11, 0x4a5c66, fColor, 0.8);
+    placeOnSurface(body, offsetDir(zone._dirV, -18, 0, body), shedA, -0.3);
     g.add(shedA);
-    const shedB = new THREE.Mesh(new THREE.BoxGeometry(16, 6, 10), dark);
-    placeOnSurface(body, offsetDir(zone._dirV, 18, 7, body), shedB, 3);
+    const shedB = makeQuonsetHut(rng, 15, 9, 0x37474f, fColor, 0.7);
+    placeOnSurface(body, offsetDir(zone._dirV, 18, 7, body), shedB, -0.3);
     g.add(shedB);
-    const tank = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 12, 12), steel);
-    placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), tank, 6);
+    const tank = makeStorageTank(rng, 3.1, 9, 0x55656f, 0.7);
+    placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), tank, -0.3);
     g.add(tank);
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), red);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), glowMat(fColor));
     placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), lamp, 13);
     g.add(lamp);
   } else if (zone.structures === 'beacon') {
-    const mast = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.6, 1.0, 12, 6),
-      new THREE.MeshLambertMaterial({ color: 0x546e7a })
-    );
-    placeOnSurface(body, zone._dirV, mast, 6);
+    // Beacon: lattice mast (collider: circle r2 h13 at centre).
+    const mast = makeLatticeMast(rng, 12, 0x546e7a, fColor);
+    placeOnSurface(body, zone._dirV, mast, -0.2);
     g.add(mast);
-    const light = new THREE.Mesh(
-      new THREE.SphereGeometry(1.1, 10, 8),
-      new THREE.MeshBasicMaterial({ color: fColor })
-    );
-    placeOnSurface(body, zone._dirV, light, 12.6);
-    g.add(light);
+  } else if (zone.structures === 'transit') {
+    // Transit: terminal building (box half 15x7 h8 at (-20,4)), concourse
+    // quonset (box half 11x6 h7 at (20,-5)), two lattice masts (circles r3.5
+    // h18 at (0,±24)), arrival gate ring.
+    const terminal = makeGabledBuilding(rng, 27, 7, 11, 0x51616b, fColor, 0.8);
+    placeOnSurface(body, offsetDir(zone._dirV, -20, 4, body), terminal, -0.3);
+    g.add(terminal);
+    const concourse = makeQuonsetHut(rng, 18, 9, 0x445059, fColor, 0.7);
+    placeOnSurface(body, offsetDir(zone._dirV, 20, -5, body), concourse, -0.3);
+    g.add(concourse);
+    for (const north of [24, -24]) {
+      const mast = makeLatticeMast(rng, 16, 0x546e7a, fColor);
+      placeOnSurface(body, offsetDir(zone._dirV, 0, north, body), mast, -0.2);
+      g.add(mast);
+    }
+    const gate = new THREE.Mesh(new THREE.TorusGeometry(8, 0.28, 8, 32), glowMat(fColor));
+    placeOnSurface(body, offsetDir(zone._dirV, 0, 0, body), gate, 2.6);
+    gate.rotateX(Math.PI / 2);
+    g.add(gate);
   }
+  enableShadows(g, true, true);
   return g;
+}
+
+// Small deterministic rng for zone structure variation.
+function zoneRng(key) {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+  let t = h >>> 0;
+  return function next() {
+    t += 0x6D2B79F5;
+    let x = Math.imul(t ^ (t >>> 15), t | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 // Direction slightly offset from a zone center by (east, north) meters.

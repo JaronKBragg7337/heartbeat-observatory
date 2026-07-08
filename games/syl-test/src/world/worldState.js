@@ -14,7 +14,8 @@
 import { BODIES } from './bodies.js';
 
 export class WorldState {
-  constructor() {
+  constructor(bodies = BODIES) {
+    this._bodies = bodies;
     this.discoveredBodies = new Set(['earth']);   // ids
     this.discoveredZones = new Set();              // zone ids
     this.currentBodyId = 'earth';                  // dominant-gravity body id
@@ -76,5 +77,5 @@ export class WorldState {
   }
 
   // Convenience: all body records (the registry is static data).
-  get bodies() { return BODIES; }
+  get bodies() { return this._bodies; }
 }

@@ -28,10 +28,10 @@
 import * as THREE from 'three';
 import { altitudeAt, dominantBody, upAt } from './planet.js';
 
-export const MODE = { ON_FOOT: 'ON_FOOT', PILOTING: 'PILOTING' };
+export const MODE = { ON_FOOT: 'ON_FOOT', PILOTING: 'PILOTING', INSIDE_SHIP: 'INSIDE_SHIP' };
 export const PHASE = {
   LANDED: 'LANDED', TAKEOFF: 'TAKEOFF', ATMOSPHERE: 'ATMOSPHERE',
-  SPACE: 'SPACE', APPROACH: 'APPROACH', DESCENT: 'DESCENT',
+  SPACE: 'SPACE', APPROACH: 'APPROACH', DESCENT: 'DESCENT', INSIDE: 'INSIDE',
 };
 
 const ENTER_RANGE = 7; // meters from ship to board
@@ -78,6 +78,37 @@ export class Traversal {
     return true;
   }
 
+  canEnterShipInterior(player, ship) {
+    return this.mode === MODE.ON_FOOT && ship.landed &&
+      player.worldPos.distanceTo(ship.worldPos) < ENTER_RANGE;
+  }
+
+  enterShipInterior(player, ship) {
+    if (!this.canEnterShipInterior(player, ship)) return false;
+    this.mode = MODE.INSIDE_SHIP;
+    player.setVisible(false);
+    this._emit('enteredShipInterior');
+    return true;
+  }
+
+  canExitShipInterior(ship) {
+    return this.mode === MODE.INSIDE_SHIP && ship.landed;
+  }
+
+  exitShipInterior(player, ship) {
+    if (!this.canExitShipInterior(ship)) return false;
+    const body = dominantBody(this.bodies, ship.worldPos);
+    const up = upAt(body, ship.worldPos, _up);
+    const side = _side.set(1, 0, 0).applyQuaternion(ship.quaternion)
+      .addScaledVector(up, -_side.dot(up)).normalize();
+    _pos.copy(ship.worldPos).addScaledVector(side, 5).addScaledVector(up, 1.5);
+    player.placeAt(_pos);
+    player.setVisible(true);
+    this.mode = MODE.ON_FOOT;
+    this._emit('exitedShipInterior');
+    return true;
+  }
+
   // Derive the flight phase + drive atmosphere fade + world discovery.
   tick(player, ship, camera) {
     const focusPos = this.mode === MODE.PILOTING ? ship.worldPos : player.worldPos;
@@ -99,6 +130,8 @@ export class Traversal {
         this._emit('phase', phase);
         if (phase === PHASE.SPACE) this.worldState.setFlag('reachedSpace');
       }
+    } else if (this.mode === MODE.INSIDE_SHIP) {
+      this.phase = PHASE.INSIDE;
     } else {
       this.phase = PHASE.LANDED;
     }

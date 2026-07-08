@@ -30,14 +30,16 @@ export class UI {
     this.help = el('div', 'syl-help');
     this.help.innerHTML =
       'ON FOOT: WASD move · Shift run · Space jump · E enter ship · F gather<br>' +
-      'SHIP: W/S throttle · A/D turn · mouse pitch/yaw · Q/E roll · Space vertical thrust · X brake · E exit (landed)<br>' +
-      'B ship builder · I inventory/crafting · M bodies · F5 save · F9 load · H hide help · click for mouse look';
+      'SHIP: W/S forward/reverse · A/D strafe · Q/R turn-bank · ↑/↓ nose pitch · Z descend · locked chase · Space vertical thrust · X brake · E exit (landed) · V interior view · T toggle door<br>' +
+      'TOUCH SHIP: left stick lift/drive · right stick bank/pitch · DESCEND lands<br>' +
+      'B ship builder · I inventory/crafting · M bodies · O settings · F8 tuner · F5 save · F9 load · H hide help · click for mouse look';
     root.appendChild(this.help);
 
     this.invPanel = makePanel(root, 'INVENTORY', 'inv-panel');
     this.shipPanel = makePanel(root, 'SHIP BUILDER — FORTIS PATTERN', 'ship-panel');
     this.mapPanel = makePanel(root, 'KNOWN BODIES', 'map-panel');
-    [this.invPanel, this.shipPanel, this.mapPanel].forEach((panel) => {
+    this.settingsPanel = makePanel(root, 'SETTINGS', 'settings-panel');
+    [this.invPanel, this.shipPanel, this.mapPanel, this.settingsPanel].forEach((panel) => {
       panel.querySelector('.panel-close').addEventListener('click', () => this.closePanels());
     });
     this.openPanel = null;
@@ -85,7 +87,7 @@ export class UI {
 
   // ------------------------------------------------------------------ panels
   togglePanel(name) {
-    const panel = { inv: this.invPanel, ship: this.shipPanel, map: this.mapPanel }[name];
+    const panel = { inv: this.invPanel, ship: this.shipPanel, map: this.mapPanel, settings: this.settingsPanel }[name];
     if (this.openPanel && this.openPanel !== panel) this.openPanel.style.display = 'none';
     const opening = panel.style.display !== 'block';
     panel.style.display = opening ? 'block' : 'none';
@@ -94,6 +96,7 @@ export class UI {
       if (name === 'inv') this.renderInventory();
       if (name === 'ship') this.renderShipBuilder();
       if (name === 'map') this.renderMap();
+      if (name === 'settings') this.renderSettings();
       if (document.pointerLockElement) document.exitPointerLock();
     }
     return opening;
@@ -137,8 +140,22 @@ export class UI {
     const g = this.game;
     const ship = g.ship, inv = g.inventory;
     const rep = readinessReport(ship);
+    const activeStats = [
+      `mass ${Math.round(ship.stats.mass)}kg`,
+      `thrust ${Math.round(ship.stats.thrust)}N`,
+      `TWR@earth ${(ship.stats.thrust / Math.max(1, ship.stats.mass * 9.81)).toFixed(2)}`,
+      `fuel ${ship.stats.fuelCap}`,
+      `power ${ship.stats.powerSupply}/${ship.stats.powerDraw}`,
+      `cargo ${ship.stats.cargoCap}`,
+      `armor ${ship.stats.armor}`,
+      `turn x${(1 + (ship.stats.torqueBoost || 0)).toFixed(2)}`,
+      ship.stats.shieldCap ? `shield ${ship.stats.shieldCap}` : null,
+      ship.stats.scanRange ? `scan ${ship.stats.scanRange}m` : null,
+      ship.stats.weaponCount ? `weapons ${ship.stats.weaponCount}` : null,
+    ].filter(Boolean).join(' · ');
     const header = `<p class="${rep.ready ? 'ok' : 'bad'}">${rep.lines[0]}</p>
-                    <p class="dim">${rep.lines.slice(1).join('<br>')}</p>`;
+                    <p class="dim">${rep.lines.slice(1).join('<br>')}</p>
+                    <p class="dim">${activeStats}</p>`;
 
     const rows = SLOTS.map((slot) => {
       const mod = ship.modules[slot.slotId];
@@ -190,14 +207,78 @@ export class UI {
         Math.hypot(...b.position.map((v, i) => v - g.ship.worldPos.getComponent(i))) / 1000);
       const zones = b.landingZones.map((z) =>
         `${g.worldState.discoveredZones.has(z.id) ? '●' : '○'} ${known ? z.name : '???'}`).join('<br>');
+      const detail = b._detailStats && known
+        ? `<br><span class="dim">surface: ${b._detailStats.settlementBuildings} buildings, ${b._detailStats.naturalProps} wild details</span>`
+        : '';
       return `<tr><td>${known ? b.name : '??? (undiscovered)'}</td>
         <td>${known ? `${dist} km` : '—'}</td>
         <td>${owner ? `<span style="color:#${owner.color.toString(16).padStart(6, '0')}">${owner.name}</span>` : '<span class="dim">unclaimed</span>'}</td>
-        <td class="dim">${zones}</td></tr>`;
+        <td class="dim">${zones}${detail}</td></tr>`;
     }).join('');
+    const route = g.civilTransportFleet?.[0]?.routeSummary?.() || [];
+    const routeRows = route.map((stop) =>
+      `<tr><td>${stop.active ? '▶' : stop.next ? '→' : ''}</td><td>${stop.label}</td><td class="dim">${stop.bodyId}</td></tr>`
+    ).join('');
     this.mapPanel.querySelector('.body').innerHTML =
       `<table><tr><th>Body</th><th>Dist</th><th>Held by</th><th>Zones</th></tr>${rows}</table>
-       <p class="dim">● discovered zone · ○ known but unvisited. Fly toward a body and descend to land.</p>`;
+       <p class="dim">● discovered zone · ○ known but unvisited. Fly toward a body and descend to land.</p>
+       ${routeRows ? `<h3>CIVIL TRANSPORT LINE</h3>
+       <table><tr><th></th><th>Stop</th><th>Body</th></tr>${routeRows}</table>
+       <p class="dim">Board the public transport at a civil terminal if you want to visit planets without piloting.</p>` : ''}`;
+  }
+
+  renderSettings() {
+    const s = this.game.settings;
+    const mouse = s.get('mouseSens');
+    const touch = s.get('touchSens');
+    const graphics = s.get('graphics');
+    const sound = s.get('sound');
+
+    this.settingsPanel.querySelector('.body').innerHTML = `
+      <div class="settings-row">
+        <label>Mouse sensitivity</label>
+        <input type="range" class="syl-slider" data-setting="mouseSens" min="0.1" max="3.0" step="0.1" value="${mouse}">
+        <span class="slider-value">${mouse.toFixed(1)}</span>
+      </div>
+      <div class="settings-row">
+        <label>Touch sensitivity</label>
+        <input type="range" class="syl-slider" data-setting="touchSens" min="0.1" max="3.0" step="0.1" value="${touch}">
+        <span class="slider-value">${touch.toFixed(1)}</span>
+      </div>
+      <div class="settings-row">
+        <label>Graphics quality</label>
+        <button class="settings-toggle" data-setting="graphics" data-values="low,high">${graphics.toUpperCase()}</button>
+      </div>
+      <div class="settings-row">
+        <label>Sound</label>
+        <button class="settings-toggle" data-setting="sound" data-values="off,on">${sound.toUpperCase()}</button>
+      </div>
+      <div class="settings-row">
+        <button id="settings-reset">Reset to defaults</button>
+      </div>
+      <p class="dim">Changes apply immediately. Close with O or Esc.</p>`;
+
+    this.settingsPanel.querySelectorAll('.syl-slider').forEach((slider) => {
+      slider.addEventListener('input', (e) => {
+        s.set(e.target.dataset.setting, e.target.value);
+        e.target.nextElementSibling.textContent = parseFloat(e.target.value).toFixed(1);
+      });
+    });
+
+    this.settingsPanel.querySelectorAll('.settings-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const values = btn.dataset.values.split(',');
+        const current = s.get(btn.dataset.setting);
+        const next = values[(values.indexOf(current) + 1) % values.length];
+        s.set(btn.dataset.setting, next);
+        btn.textContent = next.toUpperCase();
+      });
+    });
+
+    this.settingsPanel.querySelector('#settings-reset').addEventListener('click', () => {
+      s.reset();
+      this.renderSettings();
+    });
   }
 }
 

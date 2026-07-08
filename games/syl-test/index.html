@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<script src="/hb-device-tier.js"></script>
-<title>SYL TEST BUILD — Kimi expansion pack</title>
+<title>SYL — Space You Land (Foundation Build)</title>
 <style>
   /* ============================================================
      SYL UI stylesheet. Owned by: src/ui/ui.js (structure) + here (look).
      Future agents: add new panels as .syl-panel; keep HUD minimal.
      ============================================================ */
   html, body { margin:0; padding:0; overflow:hidden; background:#000; height:100%;
-               font-family:'Segoe UI', Consolas, monospace; color:#cfd8dc; }
-  #game-canvas { display:block; width:100vw; height:100vh; }
-  #ui-root { position:fixed; inset:0; pointer-events:none; }
-  .test-label { position:fixed; right:12px; top:12px; z-index:20; pointer-events:none;
-                background:rgba(8,12,16,0.78); border:1px solid #8d3b35; color:#ffccbc;
-                padding:7px 10px; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; }
+               font-family:'Segoe UI', Consolas, monospace; color:#cfd8dc;
+               touch-action:none; -webkit-user-select:none; user-select:none;
+               -webkit-touch-callout:none; overscroll-behavior:none; }
+  #game-canvas { display:block; width:100vw; height:100vh; touch-action:none;
+                 -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  #ui-root { position:fixed; inset:0; pointer-events:none; touch-action:none;
+             -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   .syl-hud { position:absolute; top:12px; left:12px; background:rgba(8,12,16,0.72);
              border:1px solid #2e3b45; border-left:3px solid #b71c1c; padding:10px 14px;
              font-size:13px; line-height:1.55; min-width:230px; white-space:pre; }
@@ -47,12 +47,25 @@
                     text-align:center; font-size:18px; color:#eceff1; display:none;
                     background:rgba(8,12,16,0.85); border:1px solid #b71c1c; padding:20px 40px; }
   .syl-vignette { position:absolute; inset:0; box-shadow:inset 0 0 180px rgba(0,0,0,0.55); }
-  .mp-chip { position:fixed; right:12px; top:48px; z-index:19; pointer-events:none;
+  .mp-chip { position:fixed; right:12px; top:12px; z-index:12; pointer-events:none;
              background:rgba(8,12,16,0.72); border:1px solid #2e3b45; border-right:3px solid #64b5f6;
              color:#cfe8ff; padding:7px 10px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; }
+  .dev-toggle { position:fixed; right:12px; top:48px; z-index:18; pointer-events:auto;
+                background:rgba(8,12,16,0.78); border:1px solid #ffb74d; color:#ffe0b2;
+                padding:7px 10px; font-size:11px; letter-spacing:0.12em; font-weight:700; cursor:pointer; }
+  .dev-panel { width:min(560px,92vw); }
+  .dev-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .dev-grid button { min-height:38px; }
   #boot-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
               color:#78909c; font-size:14px; letter-spacing:2px; }
+  .back-btn { position:fixed; top:12px; right:12px; z-index:25; pointer-events:auto;
+              background:rgba(8,12,16,0.78); border:1px solid #455a64; color:#ffcc80;
+              padding:6px 12px; font-size:12px; text-decoration:none; border-radius:4px;
+              font-family:inherit; cursor:pointer; }
+  .back-btn:hover { background:#37474f; border-color:#b71c1c; }
   @media (max-width: 700px) {
+    .back-btn { top:calc(8px + env(safe-area-inset-top, 0px)); right:8px; font-size:11px; padding:5px 10px; }
+  }
     .syl-hud {
       top:calc(8px + env(safe-area-inset-top, 0px));
       left:8px;
@@ -106,15 +119,8 @@
     }
     .syl-panel button { padding:4px 8px; font-size:11px; }
     .syl-panel .panel-close { min-width:62px; height:34px; font-size:12px; }
-    .test-label {
-      top:calc(8px + env(safe-area-inset-top, 0px));
-      right:8px;
-      max-width:calc(100vw - 210px);
-      font-size:9px;
-      padding:5px 7px;
-    }
     .mp-chip {
-      top:calc(34px + env(safe-area-inset-top, 0px));
+      top:calc(8px + env(safe-area-inset-top, 0px));
       right:8px;
       max-width:calc(100vw - 210px);
       box-sizing:border-box;
@@ -124,6 +130,13 @@
       font-size:9px;
       padding:5px 7px;
     }
+    .dev-toggle {
+      top:calc(34px + env(safe-area-inset-top, 0px));
+      right:8px;
+      font-size:9px;
+      padding:5px 7px;
+    }
+    .dev-grid { grid-template-columns:1fr; }
     .syl-help {
       display:none;
       left:8px;
@@ -141,12 +154,24 @@
       font-size:15px;
     }
   }
+  .settings-row { display:flex; align-items:center; gap:12px; margin:10px 0; }
+  .settings-row label { min-width:140px; color:#90a4ae; font-size:12px; }
+  .settings-row .slider-value { min-width:28px; color:#ef9a9a; font-size:12px; text-align:right; }
+  .syl-slider { -webkit-appearance:none; appearance:none; width:200px; height:4px; background:#263238; border-radius:2px; outline:none; }
+  .syl-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:14px; height:14px; background:#b71c1c; border-radius:50%; cursor:pointer; border:1px solid #ef9a9a; }
+  .syl-slider::-moz-range-thumb { width:14px; height:14px; background:#b71c1c; border-radius:50%; cursor:pointer; border:1px solid #ef9a9a; }
+  .settings-toggle { background:#263238; color:#cfd8dc; border:1px solid #455a64; padding:4px 14px; cursor:pointer; font-family:inherit; font-size:12px; min-width:80px; }
+  .settings-toggle:hover { background:#37474f; border-color:#b71c1c; }
+  @media (max-width: 700px) {
+    .syl-slider { width:140px; }
+    .settings-row label { min-width:100px; }
+  }
 </style>
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
 <div id="ui-root"><div id="boot-msg">SYL — INITIALIZING WORLD…</div></div>
-<div id="test-label" class="test-label">SYL TEST BUILD — Kimi expansion pack</div>
+<a class="back-btn" href="/games/">← Games</a>
 <script type="importmap">
   { "imports": { "three": "./lib/three.module.js" } }
 </script>

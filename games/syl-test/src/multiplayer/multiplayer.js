@@ -19,11 +19,12 @@ const LOBBY_CHANNEL = 'observatory-games-public';
 const COLORS = ['#64b5f6', '#81c784', '#ffb74d', '#e57373', '#ba68c8', '#4db6ac', '#fff176', '#f06292'];
 
 export class Multiplayer {
-  constructor({ engine, player, ship, traversal }) {
+  constructor({ engine, player, ship, traversal, civilTransportFleet }) {
     this.engine = engine;
     this.player = player;
     this.ship = ship;
     this.traversal = traversal;
+    this.civilTransportFleet = civilTransportFleet || [];
 
     this.supabase = null;
     this.channel = null;
@@ -34,6 +35,7 @@ export class Multiplayer {
     this.name = defaultGuestName(this.id);
     this.color = COLORS[hash(this.id) % COLORS.length];
     this.remotes = new Map();
+    this.remoteTransports = [];
     this.sendAccumulator = 0;
     this.lastSentSig = '';
     this.lastSentAt = 0;
@@ -184,6 +186,11 @@ export class Multiplayer {
     const source = piloting ? this.ship : this.player;
     const q = piloting ? this.ship.quaternion : this.player.bodyMesh.quaternion;
     const body = piloting ? this.ship._domBody : this.player.dominant?.();
+    const transports = this.civilTransportFleet.map((t) => ({
+      x: t.worldPos.x, y: t.worldPos.y, z: t.worldPos.z,
+      qx: t.quaternion.x, qy: t.quaternion.y, qz: t.quaternion.z, qw: t.quaternion.w,
+      routeIndex: t.routeIndex, state: t.state, passenger: t.passenger,
+    }));
     return {
       id: this.id,
       name: this.name,
@@ -201,7 +208,8 @@ export class Multiplayer {
       yaw: this.player.yaw,
       pitch: this.player.pitch,
       throttle: this.ship.throttle || 0,
-      landed: !!this.ship.landed
+      landed: !!this.ship.landed,
+      transports,
     };
   }
 
@@ -219,7 +227,8 @@ export class Multiplayer {
       state.qy.toFixed(2),
       state.qz.toFixed(2),
       state.throttle.toFixed(2),
-      state.landed ? 1 : 0
+      state.landed ? 1 : 0,
+      state.transports.map((t) => `${t.x.toFixed(0)}|${t.state}|${t.passenger ? 1 : 0}`).join(','),
     ].join('|');
     if (!force && sig === this.lastSentSig && performance.now() - this.lastSentAt < 5000) return;
     this.lastSentSig = sig;
@@ -248,6 +257,36 @@ export class Multiplayer {
     remote.lastUpdate = now;
     remote.buf.push({ t: now, pos, q: remote.targetQuat.clone(), mode: remote.mode });
     if (remote.buf.length > 10) remote.buf.shift();
+
+    // Remote transport markers
+    if (state.transports && state.transports.length > 0) {
+      this.updateRemoteTransports(state.transports);
+    }
+  }
+
+  updateRemoteTransports(transports) {
+    while (this.remoteTransports.length < transports.length) {
+      const group = new THREE.Group();
+      const marker = new THREE.Mesh(
+        new THREE.BoxGeometry(7.5, 3.2, 20),
+        new THREE.MeshLambertMaterial({ color: 0x607d8b, transparent: true, opacity: 0.5 })
+      );
+      group.add(marker);
+      const worldPos = new THREE.Vector3();
+      const trackEntry = this.engine.trackWorldObject({ worldPos, object3d: group });
+      this.engine.scene.add(group);
+      this.remoteTransports.push({ group, worldPos, trackEntry });
+    }
+    for (let i = 0; i < transports.length; i++) {
+      const t = transports[i];
+      const rt = this.remoteTransports[i];
+      rt.worldPos.set(t.x, t.y, t.z);
+      rt.group.quaternion.set(t.qx || 0, t.qy || 0, t.qz || 0, t.qw ?? 1);
+      rt.group.visible = true;
+    }
+    for (let i = transports.length; i < this.remoteTransports.length; i++) {
+      this.remoteTransports[i].group.visible = false;
+    }
   }
 
   syncGamePresence() {

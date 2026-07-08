@@ -27,9 +27,16 @@ import { Inventory } from './inventory/inventory.js';
 import { getItem } from './items/items.js';
 import { UI } from './ui/ui.js';
 import { initTouch } from './ui/touch.js';
+import { Settings } from './ui/settings.js';
 import * as SaveSystem from './save/save.js';
 import { PICKUPS } from './world/pickups.js';
 import { Multiplayer } from './multiplayer/multiplayer.js';
+import { DevTools } from './dev/devTools.js';
+import { Tuner } from './dev/tuner.js';
+import { CivilTransport } from './world/civilTransport.js';
+import { SpaceProps } from './world/spaceProps.js';
+import { initLighting, updateLighting } from './render/lighting.js';
+import { enableShadows } from './render/props.js';
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -43,6 +50,8 @@ const worldState = new WorldState();
 const inventory = new Inventory();
 const traversal = new Traversal(BODIES, worldState);
 
+const settings = new Settings();
+
 // World visuals: every body always exists and renders (second-body
 // coexistence). Floating origin keeps the numbers safe, not scene swaps.
 for (const body of BODIES) {
@@ -51,12 +60,15 @@ for (const body of BODIES) {
   engine.trackWorldObject({ worldPos: body._centerV, object3d: group });
 }
 const stars = buildStarfield();
+stars.material.fog = false; // stars live above any atmosphere
 engine.scene.add(stars); // camera-anchored (position 0), rotates with nothing
 
-// Lighting: one sun + gentle fill.
-const sun = new THREE.DirectionalLight(0xffffff, 2.2);
-sun.position.set(1, 0.6, 0.3);
-engine.scene.add(sun, new THREE.AmbientLight(0x445566, 0.5));
+// Lighting/atmosphere: warm sun + sky bounce + shadows + altitude-reactive
+// fog and sky color (render/lighting.js owns the whole mood system).
+const lighting = initLighting(engine, settings);
+
+// Space debris / props (visual only, no collision).
+const spaceProps = new SpaceProps(engine);
 
 // Player + ship at the Fortis outpost spawn.
 const homeBody = getBody('earth');
@@ -69,6 +81,7 @@ player.yaw = Math.PI / 2;
 player.pitch = -0.12;
 
 const ship = new Ship(engine, BODIES);
+player.shipRef = ship; // solid hull: the player collides with (and can stand on) the ship
 {
   const padDir = spawnZone._dirV.clone();
   const shipPos = zoneWorldPos(homeBody, spawnZone, 1.95);
@@ -122,10 +135,21 @@ function removePickup(id) {
 }
 
 // ---------------------------------------------------------------------------
+// Civil transport fleet — 3 public passenger transports staggered on the route.
+// ---------------------------------------------------------------------------
+const civilTransportFleet = [
+  new CivilTransport(engine, BODIES, { startStopIndex: 0, phaseOffset: 0 }),
+  new CivilTransport(engine, BODIES, { startStopIndex: 2, phaseOffset: 10 }),
+  new CivilTransport(engine, BODIES, { startStopIndex: 4, phaseOffset: 20 }),
+];
+for (const t of civilTransportFleet) t.nudgeIfOverlappingPlayer(player);
+
+// ---------------------------------------------------------------------------
 // The `game` composition object — what save.js and ui.js see.
 // ---------------------------------------------------------------------------
 const game = {
-  engine, player, ship, inventory, worldState, factionState, traversal,
+  engine, input, player, ship, civilTransportFleet, inventory, worldState, factionState, traversal,
+  settings, spaceProps,
   pickupsCollected: new Set(),
   applyLoadedMode(mode) {
     traversal.mode = mode === 'PILOTING' ? MODE.PILOTING : MODE.ON_FOOT;
@@ -139,8 +163,11 @@ const game = {
 };
 
 spawnPickups(game.pickupsCollected);
-const multiplayer = new Multiplayer({ engine, player, ship, traversal });
+player.civilTransportFleet = civilTransportFleet;
+const multiplayer = new Multiplayer({ engine, player, ship, traversal, civilTransportFleet });
 const ui = new UI(document.getElementById('ui-root'), game);
+const devTools = new DevTools(game, ui, input, BODIES);
+const tuner = new Tuner(input, engine); // F8 — Jaron's no-AI-usage tuning panel
 
 // Debug handle for agents/console: inspect any system live (window.game.ship
 // etc.). Read-only by convention — mutate through system APIs only.
@@ -185,7 +212,9 @@ traversal.on((name, payload) => {
       ui.showCenter('YOU ARE IN SPACE.<br><span class="dim">Open M — pick a body, burn toward it, then brake (X) and descend.</span>', 6000);
     }
   }
-  if (name === 'enteredShip') ui.showToast('Piloting. W/S throttle · Space vertical thrust · X brake · G gear · E exit when landed.', 4500);
+  if (name === 'enteredShip') ui.showToast(input.touchMode
+    ? 'Piloting. Left stick flies · right stick banks/pitches.'
+    : 'Piloting. W/S drives · A/D strafes · Q/R bank · ↑/↓ pitch · chase follows nose.', 4500);
 });
 
 ship._onCrash = (impact) => {
@@ -197,7 +226,25 @@ ship._onCrash = (impact) => {
 // ---------------------------------------------------------------------------
 input.onPress('KeyE', () => {
   if (ui.anyPanelOpen()) return;
+  const carrying = getCarryingTransport();
+  if (carrying) {
+    if (carrying.disembark(player)) {
+      const stop = carrying.currentStop();
+      worldState.discoverBody(stop.bodyId);
+      worldState.discoverZone(stop.zoneId);
+      ui.showToast(`Disembarked at ${stop.label}.`, 2600);
+    } else {
+      ui.showToast(`In transit to ${carrying.destinationLabel()}. Wait for docking.`, 2400);
+    }
+    return;
+  }
   if (traversal.mode === MODE.ON_FOOT) {
+    const boardable = civilTransportFleet.find((t) => t.canBoard(player));
+    if (boardable) {
+      boardable.board(player);
+      ui.showCenter(`BOARDED CIVIL TRANSPORT<br><span class="dim">Next stop: ${boardable.destinationLabel()}. Press E to disembark after docking.</span>`, 4800);
+      return;
+    }
     if (traversal.canEnterShip(player, ship)) traversal.enterShip(player, ship);
   } else if (traversal.canExitShip(ship)) {
     traversal.exitShip(player, ship);
@@ -235,11 +282,47 @@ input.onPress('KeyB', () => {
 });
 input.onPress('KeyI', () => ui.togglePanel('inv'));
 input.onPress('KeyM', () => ui.togglePanel('map'));
+input.onPress('KeyO', () => ui.togglePanel('settings'));
 input.onPress('KeyH', () => ui.toggleHelp());
 input.onPress('Escape', () => ui.closePanels());
 input.onPress('KeyC', () => { chaseCam = !chaseCam; });
 
-input.onPress('F5', () => ui.showToast(SaveSystem.save(game).msg, 2000));
+let shipInteriorView = false;
+let transportInteriorView = false;
+
+input.onPress('KeyV', () => {
+  if (traversal.mode === MODE.PILOTING) {
+    shipInteriorView = !shipInteriorView;
+    ui.showToast(shipInteriorView ? 'Interior view' : 'Cockpit view', 1500);
+  } else if (getCarryingTransport()) {
+    transportInteriorView = !transportInteriorView;
+    ui.showToast(transportInteriorView ? 'Transport interior view' : 'Passenger camera view', 1500);
+  }
+});
+
+input.onPress('KeyT', () => {
+  if (traversal.mode === MODE.PILOTING) {
+    ship.toggleDoor();
+    ui.showToast(`Ship door ${ship.doorOpen ? 'OPEN' : 'CLOSED'}`, 1500);
+  } else if (getCarryingTransport()) {
+    const t = getCarryingTransport();
+    t.toggleDoor();
+    ui.showToast(`Transport door ${t.doorOpen ? 'OPEN' : 'CLOSED'}`, 1500);
+  }
+});
+
+function getCarryingTransport() {
+  for (const t of civilTransportFleet) if (t.passenger) return t;
+  return null;
+}
+
+input.onPress('F5', () => {
+  if (getCarryingTransport()) {
+    ui.showToast('Wait until the civil transport docks before saving.', 2500);
+    return;
+  }
+  ui.showToast(SaveSystem.save(game).msg, 2000);
+});
 input.onPress('F9', () => {
   const res = SaveSystem.load(game);
   ui.showToast(res.msg, 2500);
@@ -251,16 +334,61 @@ input.onPress('F9', () => {
 let chaseCam = true; // piloting: chase (3rd person) vs cockpit; C toggles
 const camPos = new THREE.Vector3(), camQuat = new THREE.Quaternion();
 const _cv = new THREE.Vector3(), _cq = new THREE.Quaternion(), _cm = new THREE.Matrix4();
+const _shipCamUp = new THREE.Vector3(), _shipCamFwd = new THREE.Vector3(), _shipCamViewUp = new THREE.Vector3(), _shipCamTarget = new THREE.Vector3();
+const _refY = new THREE.Vector3(0, 1, 0), _refX = new THREE.Vector3(1, 0, 0);
+const _east = new THREE.Vector3(), _north = new THREE.Vector3(), _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
+const _tmpV = new THREE.Vector3(), _tmpV2 = new THREE.Vector3(), _zero = new THREE.Vector3();
 
 function updateCamera(dt) {
-  if (traversal.mode === MODE.ON_FOOT) {
+  const carrying = getCarryingTransport();
+  if (carrying) {
+    if (transportInteriorView) {
+      carrying.interiorCameraPose(camPos, camQuat);
+    } else {
+      carrying.passengerCameraPose(camPos, camQuat);
+    }
+  } else if (traversal.mode === MODE.ON_FOOT) {
     player.cameraPose(camPos, camQuat);
+  } else if (traversal.mode === MODE.PILOTING && shipInteriorView) {
+    // Interior walk view: fixed position inside ship, can look around with mouse.
+    _cv.set(0, 0.5, -2).applyQuaternion(ship.quaternion);
+    camPos.copy(ship.worldPos).add(_cv);
+    // Build look direction from player yaw/pitch in world space.
+    const body = dominantBody(BODIES, ship.worldPos);
+    const up = upAt(body, ship.worldPos, _shipCamUp);
+    const ref = Math.abs(up.y) < 0.95 ? _refY : _refX;
+    const east = _east.crossVectors(ref, up).normalize();
+    const north = _north.crossVectors(up, east).normalize();
+    const fwd = _fwd.copy(north).multiplyScalar(Math.cos(player.yaw))
+      .addScaledVector(east, Math.sin(player.yaw)).normalize();
+    const right = _right.crossVectors(fwd, up).normalize();
+    const lookFwd = _tmpV.copy(fwd).applyAxisAngle(right, player.pitch);
+    _cm.lookAt(_zero.set(0, 0, 0), _tmpV2.copy(lookFwd), up);
+    camQuat.setFromRotationMatrix(_cm);
   } else {
     // Ship views: offsets in ship space, world math in f64.
     if (chaseCam) {
-      _cv.set(0, 4.5, -15).applyQuaternion(ship.quaternion);
-      camPos.copy(ship.worldPos).add(_cv);
-      _cm.lookAt(camPos, ship.worldPos, _cq2v.set(0, 1, 0).applyQuaternion(ship.quaternion));
+      // Locked chase rig: follow the ship's real 3D nose, but keep the camera
+      // upright to the planet unless the nose is nearly vertical.
+      const body = dominantBody(BODIES, ship.worldPos);
+      const up = upAt(body, ship.worldPos, _shipCamUp);
+      _shipCamFwd.set(0, 0, 1).applyQuaternion(ship.quaternion);
+      if (_shipCamFwd.lengthSq() < 1e-6) _shipCamFwd.set(0, 0, 1);
+      _shipCamFwd.normalize();
+      _shipCamViewUp.copy(up).addScaledVector(_shipCamFwd, -up.dot(_shipCamFwd));
+      if (_shipCamViewUp.lengthSq() < 1e-6) {
+        _shipCamViewUp.set(0, 1, 0).applyQuaternion(ship.quaternion)
+          .addScaledVector(_shipCamFwd, -_shipCamViewUp.dot(_shipCamFwd));
+      }
+      if (_shipCamViewUp.lengthSq() < 1e-6) _shipCamViewUp.copy(up);
+      _shipCamViewUp.normalize();
+      camPos.copy(ship.worldPos)
+        .addScaledVector(_shipCamFwd, -24)
+        .addScaledVector(up, 10);
+      _shipCamTarget.copy(ship.worldPos)
+        .addScaledVector(_shipCamFwd, 24)
+        .addScaledVector(up, 1.4);
+      _cm.lookAt(camPos, _shipCamTarget, _shipCamViewUp);
       camQuat.setFromRotationMatrix(_cm);
     } else {
       _cv.set(0, 1.35, 2.1).applyQuaternion(ship.quaternion);
@@ -273,29 +401,61 @@ function updateCamera(dt) {
   engine.cameraWorldPos.lerp(camPos, Math.min(1, 14 * dt));
   engine.camera.quaternion.slerp(camQuat, Math.min(1, 14 * dt));
 }
-const _cq2v = new THREE.Vector3();
 const _flipY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
 
 // ---------------------------------------------------------------------------
 // Ship pilot controls (read per frame).
 // ---------------------------------------------------------------------------
-const controls = { pitch: 0, yaw: 0, roll: 0, thrustUp: false, brake: false };
+const controls = { pitch: 0, yaw: 0, roll: 0, thrustUp: false, brake: false, mouseSensitivity: settings.get('mouseSens'), touchSensitivity: settings.get('touchSens') };
 
 function readShipControls(dt) {
-  // Throttle: W up, S down.
-  if (input.down('KeyW')) ship.throttle = Math.min(1, ship.throttle + 0.7 * dt);
-  if (input.down('KeyS')) ship.throttle = Math.max(0, ship.throttle - 0.9 * dt);
-  // Yaw = mouse X + A/D keys (A left, D right) so you can HOLD a turn without
-  // dragging the mouse. Roll moved to Q/E to free A/D. (Touch: Turn buttons.)
-  const keyYaw = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
-  controls.pitch = input.mouseDY * 0.05;
-  controls.yaw = input.mouseDX * 0.05 + keyYaw;
-  controls.roll = (input.down('KeyQ') ? 1 : 0) - (input.down('KeyE') ? 1 : 0);
-  controls.thrustUp = input.down('Space');
-  controls.brake = input.down('KeyX');
+  // Assisted ship piloting:
+  // W/S or stick up/down = forward/reverse movement.
+  // A/D or stick left/right = lateral movement.
+  // Q/R or right attitude stick X = turn-bank.
+  // ArrowUp/ArrowDown or right attitude stick Y = pitch in high flight/space.
+  // Camera/look input owns camera rotation separately.
+  const touchThrottle = input.touchShipThrottle || 0;
+  const keyForward = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
+  const assistForward = input.touchMode ? touchThrottle : keyForward;
+  ship.throttle = Math.max(0, assistForward);
+
+  const keyRoll = (input.down('KeyR') ? 1 : 0) - (input.down('KeyQ') ? 1 : 0);
+  const keyPitch = (input.down('ArrowDown') ? 1 : 0) - (input.down('ArrowUp') ? 1 : 0);
+  // Mobile-only attitude authority: the right ATTITUDE stick was too swingy on
+  // phone (bank whipped around, nose pitch felt twitchy). These scalars tame the
+  // touch attitude inputs ONLY — PC keys (keyRoll/keyPitch) go through the else
+  // branch untouched, and the shared rate constants in ship.js are unchanged.
+  // Tune these two numbers for phone feel; do not touch ASSIST_*_RATE for PC.
+  const MOBILE_BANK_AUTHORITY = 0.35;  // bank/turn swing on phone (lowered from 0.5 — still felt too hard)
+  const MOBILE_PITCH_AUTHORITY = 0.55; // nose up/down on phone (was effectively 1.0)
+  const shipBank = input.touchMode ? (input.touchShipBank || 0) * MOBILE_BANK_AUTHORITY * controls.touchSensitivity : keyRoll;
+  const shipPitch = input.touchMode ? (input.touchShipPitch || 0) * MOBILE_PITCH_AUTHORITY * controls.touchSensitivity : keyPitch;
+  const keySide = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
+  const assistStrafe = input.touchMode ? (input.touchShipYaw || 0) : keySide;
+  const descend = input.down('KeyZ');
+  const touchAutoLift = input.touchMode && input.touchJoystickActive && !descend;
+
+  controls.pitch = shipPitch;
+  controls.yaw = shipBank * 0.65;
+  controls.roll = shipBank;
+  controls.thrustUp = input.down('Space') || touchAutoLift;
+  controls.descend = descend;
+  controls.brake = input.down('KeyX') || input.down('ControlLeft') || input.down('ControlRight');
+  controls.assist = true;
+  controls.mobileAssist = input.touchMode;
+  controls.assistForward = assistForward;
+  controls.assistStrafe = assistStrafe;
+
+  // Mobile takeoff assist: if the player is throttling up from the ground, add
+  // vertical lift until the hull is safely away from terrain. This prevents the
+  // phone controls from scraping the ship into a "hard impact" loop.
+  if (ship.landed && !descend && (ship.throttle > 0.12 || controls.brake || touchAutoLift)) {
+    controls.thrustUp = true;
+  }
 
   // Takeoff moment: on the ground, ready, thrusting up => leave the surface.
-  if (ship.landed && (controls.thrustUp || ship.throttle > 0.4)) {
+  if (ship.landed && !descend && (controls.thrustUp || Math.abs(assistForward) > 0.12)) {
     if (!ship.stats.ready) {
       ui.showToast('<span class="bad">Ship not flight-ready. Open the builder (B).</span>', 2500);
       ship.throttle = 0;
@@ -334,7 +494,19 @@ function checkZoneDiscovery() {
 // ---------------------------------------------------------------------------
 function updatePrompt() {
   if (ui.anyPanelOpen()) { ui.hidePrompt(); return; }
+  const carrying = getCarryingTransport();
+  if (carrying) {
+    ui.showPrompt(carrying.isDocked()
+      ? `E — disembark at ${carrying.currentStop().label}   ·   V — toggle view   ·   T — toggle door`
+      : `Riding civil transport → ${carrying.destinationLabel()}   ·   V — toggle view`);
+    return;
+  }
   if (traversal.mode === MODE.ON_FOOT) {
+    const boardable = civilTransportFleet.find((t) => t.canBoard(player));
+    if (boardable) {
+      ui.showPrompt(`E — board civil transport → ${boardable.destinationLabel()}`);
+      return;
+    }
     for (const [, e] of pickupEntities) {
       if (player.worldPos.distanceTo(e.worldPos) < 4.5) {
         ui.showPrompt(`F — gather ${getItem(e.itemId).name}`);
@@ -344,10 +516,26 @@ function updatePrompt() {
     if (traversal.canEnterShip(player, ship)) { ui.showPrompt('E — board ship   ·   B — ship builder'); return; }
     if (player.worldPos.distanceTo(ship.worldPos) < 12) { ui.showPrompt('B — ship builder'); return; }
   } else if (ship.landed) {
-    ui.showPrompt('E — exit ship   ·   W/Space — take off (if ready)');
+    ui.showPrompt(touchActive
+      ? 'E — exit ship   ·   hold stick — take off'
+      : 'E — exit ship   ·   Space — take off (if ready)   ·   V — interior view   ·   T — toggle door');
+    return;
+  } else if (traversal.mode === MODE.PILOTING) {
+    ui.showPrompt('V — interior view   ·   T — toggle door');
     return;
   }
   ui.hidePrompt();
+}
+
+function discoverCivilStopIfDocked() {
+  for (const t of civilTransportFleet) {
+    if (t.passenger && t.isDocked()) {
+      const stop = t.currentStop();
+      if (stop.bodyId !== 'earth') worldState.setFlag('landedAway');
+      worldState.discoverBody(stop.bodyId);
+      worldState.discoverZone(stop.zoneId);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -355,27 +543,57 @@ function updatePrompt() {
 // ---------------------------------------------------------------------------
 let saveTimer = 0;
 engine.addUpdater((dt) => {
-  const panelsOpen = ui.anyPanelOpen();
-  if (traversal.mode === MODE.PILOTING) {
+  updateLighting(lighting, engine, BODIES);
+  const panelsOpen = ui.anyPanelOpen() || devTools.anyPanelOpen() || tuner.anyPanelOpen();
+  controls.mouseSensitivity = settings.get('mouseSens');
+  controls.touchSensitivity = settings.get('touchSens');
+
+  const carrying = getCarryingTransport();
+  for (const t of civilTransportFleet) t.tick(dt, player);
+
+  if (carrying) {
+    ship.tick(dt, false, null);
+    // Allow look-around while passenger (interior or exterior view).
+    if (input.lookActive) {
+      player.yaw += input.mouseDX * 0.0023 * controls.mouseSensitivity;
+      player.pitch += input.mouseDY * 0.0023 * controls.mouseSensitivity;
+      player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
+    }
+  } else if (traversal.mode === MODE.PILOTING) {
     if (!panelsOpen) readShipControls(dt);
     ship.tick(dt, !panelsOpen, controls);
     player.worldPos.copy(ship.worldPos); // pilot rides inside
-    player.tickPassive?.();
+    // Look-around while in interior view or normal cockpit.
+    if (input.lookActive) {
+      player.yaw += input.mouseDX * 0.0023 * controls.mouseSensitivity;
+      player.pitch += input.mouseDY * 0.0023 * controls.mouseSensitivity;
+      player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
+    }
   } else {
-    player.tick(dt, !panelsOpen && input.lookActive);
+    const devFlying = devTools.tick(dt, !panelsOpen && input.lookActive);
+    if (!devFlying) {
+      player.mouseSensitivity = input.touchMode ? controls.touchSensitivity : controls.mouseSensitivity;
+      player.tick(dt, !panelsOpen && input.lookActive);
+    }
     ship.tick(dt, false, null);
   }
+
+  if (traversal.phase === PHASE.SPACE) spaceProps.tick(dt);
 
   traversal.tick(player, ship, { worldPos: engine.cameraWorldPos });
   updateCamera(dt);
   checkZoneDiscovery();
+  discoverCivilStopIfDocked();
   updatePrompt();
   ui.refreshHUD();
   multiplayer.update(dt);
 
   // Autosave every 60 s of play.
   saveTimer += dt;
-  if (saveTimer > 60) { saveTimer = 0; SaveSystem.save(game); }
+  if (saveTimer > 60) {
+    saveTimer = 0;
+    if (!getCarryingTransport()) SaveSystem.save(game);
+  }
 
   input.endFrame();
 });
@@ -391,6 +609,6 @@ ui.showCenter(
   'SYL — FOUNDATION BUILD<br>' +
   '<span class="dim">Your ship is damaged. Gather crates (F), repair and fuel it (B), then fly to another world.<br>' +
   (touchActive
-    ? 'Left stick moves · drag to look · buttons on the right.</span>'
-    : 'Click to take mouse control. H toggles help.</span>'), 9000);
+    ? 'Left stick flies · right stick banks/pitches · DESCEND lands. Or board the civil transport at a terminal.</span>'
+    : 'Click to take mouse control. H toggles help. Or board the civil transport at a terminal.</span>'), 9000);
 engine.start();

@@ -16,8 +16,12 @@
 // SAVE_VERSION and write a migration in load() instead.
 // ============================================================================
 
-const SAVE_KEY = 'syl_save:/games/syl-test/';
+const SAVE_KEY = 'syl_save';
 export const SAVE_VERSION = 1;
+
+function keyFor(game) {
+  return game?.saveKey || SAVE_KEY;
+}
 
 export function buildPayload(game) {
   return {
@@ -48,7 +52,7 @@ export function applyPayload(game, data) {
 
 export function save(game) {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(buildPayload(game)));
+    localStorage.setItem(keyFor(game), JSON.stringify(buildPayload(game)));
     return { ok: true, msg: 'Progress saved.' };
   } catch (e) {
     return { ok: false, msg: `Save failed: ${e.message}` };
@@ -57,7 +61,7 @@ export function save(game) {
 
 export function load(game) {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(keyFor(game));
     if (!raw) return { ok: false, msg: 'No save found.' };
     const data = JSON.parse(raw);
     if (!applyPayload(game, data)) return { ok: false, msg: 'Save unreadable.' };
@@ -67,5 +71,5 @@ export function load(game) {
   }
 }
 
-export function hasSave() { return !!localStorage.getItem(SAVE_KEY); }
-export function clearSave() { localStorage.removeItem(SAVE_KEY); }
+export function hasSave(game = null) { return !!localStorage.getItem(keyFor(game)); }
+export function clearSave(game = null) { localStorage.removeItem(keyFor(game)); }

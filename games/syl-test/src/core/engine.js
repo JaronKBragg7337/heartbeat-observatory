@@ -29,11 +29,25 @@
 import * as THREE from 'three';
 
 export class Engine {
-  constructor(canvas) {
+  constructor(canvas, options = {}) {
     this.canvas = canvas;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
-    this.renderer.setPixelRatio(window.HBDevice?.rendererPixelRatio(2, 1.5, 1.15) || Math.min(window.devicePixelRatio || 1, 2));
+    this.options = options;
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: options.antialias !== false,
+      logarithmicDepthBuffer: options.logarithmicDepthBuffer !== false,
+      powerPreference: options.powerPreference || 'default',
+    });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, options.pixelRatioCap || 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (options.highFidelity) {
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = options.exposure || 1.05;
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.physicallyCorrectLights = true;
+    }
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000005);
@@ -44,11 +58,13 @@ export class Engine {
     this.cameraWorldPos = new THREE.Vector3(0, 0, 0);
 
     // Entities that need world->camera-relative sync each frame.
-    // Each entry: { worldPos: THREE.Vector3, object3d: THREE.Object3D }
+    // Each entry: { worldPos: THREE.Vector3, object3d: THREE.Object3D, quaternion?: THREE.Quaternion }
     this._synced = new Set();
 
     // Update callbacks: fn(dt, timeSec). Order matters; register in main.js.
     this._updaters = [];
+    this._resizeListeners = [];
+    this._renderPipeline = null;
 
     this._last = performance.now();
     this.timeSec = 0;
@@ -58,11 +74,18 @@ export class Engine {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+      for (const fn of this._resizeListeners) fn(window.innerWidth, window.innerHeight);
+    });
+    this.renderer.domElement.addEventListener('webglcontextlost', (event) => {
+      event.preventDefault();
+      this.running = false;
     });
   }
 
   // Register a system update callback, called every frame with (dt, time).
   addUpdater(fn) { this._updaters.push(fn); }
+  onResize(fn) { this._resizeListeners.push(fn); }
+  setRenderPipeline(pipeline) { this._renderPipeline = pipeline; }
 
   // Register an object for floating-origin sync. worldPos is a live reference:
   // move the entity by mutating worldPos; the engine re-places the mesh.
@@ -88,13 +111,16 @@ export class Engine {
 
       for (const fn of this._updaters) fn(dt, this.timeSec);
 
-      // Floating-origin sync: place every tracked mesh camera-relative.
+      // Floating-origin sync: place every tracked mesh camera-relative and,
+      // when supplied, copy the authoritative simulation rotation into the visual.
       for (const e of this._synced) {
         e.object3d.position.subVectors(e.worldPos, this.cameraWorldPos);
+        if (e.quaternion) e.object3d.quaternion.copy(e.quaternion);
       }
       this.camera.position.set(0, 0, 0);
 
-      this.renderer.render(this.scene, this.camera);
+      if (this._renderPipeline) this._renderPipeline.render(dt, this.timeSec);
+      else this.renderer.render(this.scene, this.camera);
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
@@ -109,7 +135,14 @@ export class Input {
   constructor(canvas) {
     this.keys = new Set();
     this.virtualKeys = new Set(); // touch-driven "keys" (src/ui/touch.js)
+    this.virtualKeySources = new Map(); // code -> Set(source), so buttons and sticks don't fight
     this.touchMode = false;       // true once touch controls are active
+    this.touchShipYaw = 0;        // analog ship steering from touch joystick
+    this.touchShipBank = 0;
+    this.touchShipPitch = 0;
+    this.touchShipThrottle = 0;
+    this.touchJoystickActive = false;
+    this.touchLookActive = false;
     this.mouseDX = 0; this.mouseDY = 0;
     this.pointerLocked = false;
     this._pressListeners = new Map(); // code -> [fns] fired once on keydown
@@ -123,7 +156,17 @@ export class Input {
       if (fns) for (const f of fns) f(e);
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
-    window.addEventListener('blur', () => this.keys.clear());
+    window.addEventListener('blur', () => {
+      this.keys.clear();
+      this.virtualKeys.clear();
+      this.virtualKeySources.clear();
+      this.touchShipYaw = 0;
+      this.touchShipBank = 0;
+      this.touchShipPitch = 0;
+      this.touchShipThrottle = 0;
+      this.touchJoystickActive = false;
+      this.touchLookActive = false;
+    });
 
     canvas.addEventListener('click', () => {
       if (!this.pointerLocked) canvas.requestPointerLock();
@@ -139,15 +182,23 @@ export class Input {
 
   // Touch layer: press/release a virtual key. Press fires onPress listeners
   // exactly like a physical keydown, so all bindings work untouched.
-  setVirtual(code, on) {
+  setVirtual(code, on, source = 'default') {
+    if (!this.virtualKeySources.has(code)) this.virtualKeySources.set(code, new Set());
+    const sources = this.virtualKeySources.get(code);
     if (on) {
-      if (!this.virtualKeys.has(code)) {
+      const wasDown = this.virtualKeys.has(code);
+      sources.add(source);
+      if (!wasDown) {
         this.virtualKeys.add(code);
         const fns = this._pressListeners.get(code);
         if (fns) for (const f of fns) f({ code, virtual: true });
       }
     } else {
-      this.virtualKeys.delete(code);
+      sources.delete(source);
+      if (sources.size === 0) {
+        this.virtualKeySources.delete(code);
+        this.virtualKeys.delete(code);
+      }
     }
   }
 
