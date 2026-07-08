@@ -32,8 +32,11 @@ import * as SaveSystem from './save/save.js';
 import { PICKUPS } from './world/pickups.js';
 import { Multiplayer } from './multiplayer/multiplayer.js';
 import { DevTools } from './dev/devTools.js';
+import { Tuner } from './dev/tuner.js';
 import { CivilTransport } from './world/civilTransport.js';
 import { SpaceProps } from './world/spaceProps.js';
+import { initLighting, updateLighting } from './render/lighting.js';
+import { enableShadows } from './render/props.js';
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -57,12 +60,12 @@ for (const body of BODIES) {
   engine.trackWorldObject({ worldPos: body._centerV, object3d: group });
 }
 const stars = buildStarfield();
+stars.material.fog = false; // stars live above any atmosphere
 engine.scene.add(stars); // camera-anchored (position 0), rotates with nothing
 
-// Lighting: one sun + gentle fill.
-const sun = new THREE.DirectionalLight(0xffffff, 2.2);
-sun.position.set(1, 0.6, 0.3);
-engine.scene.add(sun, new THREE.AmbientLight(0x445566, 0.5));
+// Lighting/atmosphere: warm sun + sky bounce + shadows + altitude-reactive
+// fog and sky color (render/lighting.js owns the whole mood system).
+const lighting = initLighting(engine, settings);
 
 // Space debris / props (visual only, no collision).
 const spaceProps = new SpaceProps(engine);
@@ -164,6 +167,7 @@ player.civilTransportFleet = civilTransportFleet;
 const multiplayer = new Multiplayer({ engine, player, ship, traversal, civilTransportFleet });
 const ui = new UI(document.getElementById('ui-root'), game);
 const devTools = new DevTools(game, ui, input, BODIES);
+const tuner = new Tuner(input, engine); // F8 — Jaron's no-AI-usage tuning panel
 
 // Debug handle for agents/console: inspect any system live (window.game.ship
 // etc.). Read-only by convention — mutate through system APIs only.
@@ -539,7 +543,8 @@ function discoverCivilStopIfDocked() {
 // ---------------------------------------------------------------------------
 let saveTimer = 0;
 engine.addUpdater((dt) => {
-  const panelsOpen = ui.anyPanelOpen() || devTools.anyPanelOpen();
+  updateLighting(lighting, engine, BODIES);
+  const panelsOpen = ui.anyPanelOpen() || devTools.anyPanelOpen() || tuner.anyPanelOpen();
   controls.mouseSensitivity = settings.get('mouseSens');
   controls.touchSensitivity = settings.get('touchSens');
 

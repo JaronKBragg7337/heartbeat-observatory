@@ -7,6 +7,41 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-08 — Claude (Fable 5, Cowork) — SYL v0.3.0 visual overhaul promoted + Fable mirror synced to v0.6.6 + /api inbox routes
+
+**State:** live. `/games/syl/` serves SYL v0.3.0 (visual overhaul: procedural
+textures, shaped structures, lighting/fog/shadows, grounding+collision for
+settlements, F8 tuner). `/games/fable-survival/` serves Fable v0.6.6 (was a
+stale 2026-07-05 bundle missing feedback-on-all-screens and the 🤖 dev-chat
+inbox).
+
+**Shipped here:**
+- `games/syl/` + `games/syl-test/`: synced from SYL-Full-Game v0.3.0. The
+  syl-test route was used as the STAGING lane: two verification rounds ran
+  there (screenshots via Chrome) before promotion — that loop caught a
+  black-wall palette problem, a too-low sun, and near-black damaged engines.
+- `games/fable-survival/`: fresh vite build of fable-survival@c7a21f8 with the
+  Heartbeat wrapper re-applied (hb-device-tier.js script, quality chip CSS/div/
+  script) per fable's HEARTBEAT_SYNC_PROMPT.md.
+- `api/feedback.js`, `api/aichat.js` (new): no-credit inbox routes so the
+  HOSTED Fable can submit player feedback / dev-chat as GitHub issues on
+  fable-survival (labeled player-feedback). They return 503 not-configured
+  until `GITHUB_TOKEN` (fine-grained, fable-survival only, Issues R/W) is set
+  in this repo's Vercel project — that env var is the one manual step left.
+
+**Verified:** live 200s on /games/syl-test/src/render/lighting.js and
+/games/fable-survival/assets/index-PQL0LRu8.js; Chrome screenshots of the
+staged SYL build; fable page shows quality chip + new UI buttons.
+
+**Gotchas:**
+- A HIDDEN Chrome tab never runs requestAnimationFrame — a screenshot of a
+  freshly opened background tab shows frame zero (camera at planet centre,
+  all sky). Drive frames manually via console or focus the window before
+  judging visuals.
+- games/syl-test is the SYL staging lane. Stage → screenshot-verify → promote.
+
+---
+
 ## 2026-07-05 — Kimi (Moonshot AI) — Synced SYL: settings, space props, transport fleet, interiors, back buttons
 
 **State:** live verified at `/games/syl/` and `/games/fable-survival/` and

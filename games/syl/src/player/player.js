@@ -56,6 +56,7 @@ export class Player {
     );
     visor.position.set(0, 1.45, 0.28);
     this.bodyMesh.add(suit, visor);
+    this.bodyMesh.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
     // First-person build: the LOCAL player's body is never rendered (it would
     // float in front of the camera). The mesh exists for third-person view and
     // multiplayer (ROADMAP M1/M5) — flip this then via setVisible.

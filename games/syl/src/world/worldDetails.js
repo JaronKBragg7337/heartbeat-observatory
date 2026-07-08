@@ -1,12 +1,33 @@
 // ============================================================================
-// worldDetails.js - lightweight surface dressing for SYL worlds.
+// worldDetails.js - surface dressing for SYL worlds: settlements + nature.
 //
-// OWNS: visual-only settlement, town, forest, rock, ice, and hazard dressing.
-// DOES NOT OWN: terrain truth, collision, saves, loot, or discovery state.
-// The layer is deterministic from body/zone ids and rides on terrainRadiusAt().
+// OWNS: the deterministic settlement/nature LAYOUT per landing zone, the
+//       visual construction of that layout (via render/props.js), and the
+//       collider specs for it (consumed by planet.js allCollidersForZone —
+//       you cannot walk through a settlement building).
+// DOES NOT OWN: terrain truth (planet.js terrainRadiusAt is the only height
+//       source), collision RESOLUTION (planet.js), saves, loot, discovery.
+//
+// GROUNDING LAW (this file's reason to exist in its current form): every
+// placed object samples the terrain under its whole footprint
+// (props.sampleFootprint) and bases itself on the LOWEST corner; buildings
+// fill the slope gap with a foundation plinth, rocks/trees sink and tilt to
+// the terrain normal. Nothing floats, nothing hovers on a slope edge.
+//
+// DETERMINISM LAW: layout comes from computeSettlementLayout()/
+// computeNatureLayout() — pure functions of (body, zone). Visuals AND
+// colliders both derive from the same layout, so what you see is what blocks
+// you. If you change a layout rule, visuals and collision stay in lockstep.
 // ============================================================================
 
 import * as THREE from 'three';
+import {
+  surfaceMat, glowMat, sampleFootprint, enableShadows,
+  makeRock, makeBoulderCluster, makeTree, makePine, makeIceSpire,
+  makeCrystalCluster, makeVent, makeGabledBuilding, makeQuonsetHut,
+  makeBlockTower, makeContainer, makeSolarArray, makeCanopy, makeBanner,
+} from '../render/props.js';
+import { roadTexture } from '../render/textures.js';
 
 const BODY_DETAIL = {
   earth: { nature: 'forest', settlement: 'city', tint: 0x7ba35f },
@@ -29,6 +50,92 @@ const _tmpQ = new THREE.Quaternion();
 const _east = new THREE.Vector3();
 const _north = new THREE.Vector3();
 
+// ---------------------------------------------------------------------------
+// LAYOUT (pure, deterministic — shared by visuals and colliders)
+// ---------------------------------------------------------------------------
+export function computeSettlementLayout(body, zone, quality = 'mobile') {
+  const rng = mulberry32(hashString(`${body.id}:${zone.id}:settlement`));
+  const plan = BODY_DETAIL[body.id] || fallbackPlan(body);
+  let baseCount = zone.structures === 'transit' ? 12
+    : zone.structures === 'outpost' ? 10
+      : zone.structures === 'depot' ? 7
+        : zone.structures === 'relay' ? 5 : 4;
+  if (quality === 'desktop') baseCount = Math.min(baseCount, 5);
+  const count = baseCount + (quality === 'desktop' ? 1 : 0);
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const ring = 42 + rng() * 82 + (i % 3) * 10;
+    const a = i * 2.399963 + rng() * 0.55;
+    const east = Math.cos(a) * ring;
+    const north = Math.sin(a) * ring;
+    if (Math.hypot(east, north) < 34) continue;
+    const w = 6 + rng() * (zone.structures === 'transit' ? 8 : 5);
+    const d = 6 + rng() * 8;
+    const h = 4 + rng() * (plan.settlement === 'city' ? 9 : 6);
+    const roll = rng();
+    const type = h > 9 ? 'tower' : (roll < 0.42 ? 'gabled' : roll < 0.75 ? 'quonset' : 'gabled');
+    out.push({ type, east, north, w, h, d, yaw: a + Math.PI / 2, i });
+    if (i % 3 === 0) out.push({ type: 'solar', east: east + 9 + rng() * 4, north: north - 4, yaw: rng() * Math.PI, i: `s${i}` });
+    if (i % 4 === 1) out.push({ type: 'container', east: east - 8, north: north + 6, yaw: rng() * Math.PI, i: `c${i}` });
+  }
+  if (zone.structures === 'transit') {
+    for (const side of [-1, 1]) {
+      out.push({ type: 'canopy', east: side * 36, north: 18, w: 26, d: 9, yaw: side * 0.18, i: `k${side}` });
+    }
+  }
+  if (zone.factionId) out.push({ type: 'banner', east: 30, north: -8, yaw: 0, i: 'b' });
+  return out;
+}
+
+// Collider specs for a layout (merged by planet.js allCollidersForZone).
+export function detailCollidersForLayout(layout) {
+  const out = [];
+  for (const spec of layout) {
+    if (spec.type === 'gabled' || spec.type === 'quonset' || spec.type === 'tower') {
+      out.push({
+        kind: 'box', east: spec.east, north: spec.north,
+        halfEast: spec.w / 2 + 0.4, halfNorth: spec.d / 2 + 0.4,
+        height: spec.h + 4,
+      });
+    } else if (spec.type === 'container') {
+      out.push({ kind: 'box', east: spec.east, north: spec.north, halfEast: 2.3, halfNorth: 1.3, height: 2.8 });
+    }
+  }
+  return out;
+}
+
+export function computeNatureLayout(body, zone, quality = 'mobile') {
+  const rng = mulberry32(hashString(`${body.id}:${zone.id}:nature`));
+  const plan = BODY_DETAIL[body.id] || fallbackPlan(body);
+  const count = quality === 'desktop' ? 8 : 18 + (plan.nature === 'forest' ? 8 : 0);
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const ring = 88 + rng() * 210;
+    const a = i * 2.199115 + rng() * 0.9;
+    const east = Math.cos(a) * ring;
+    const north = Math.sin(a) * ring;
+    if (Math.hypot(east, north) < 70) continue;
+    out.push({ kind: plan.nature, east, north, seed: Math.floor(rng() * 1e9), i });
+  }
+  return out;
+}
+
+// Tree/large-prop colliders: thin circles so you brush past, not through.
+export function natureCollidersForLayout(layout) {
+  const out = [];
+  for (const spec of layout) {
+    if (spec.kind === 'forest') {
+      out.push({ kind: 'circle', east: spec.east, north: spec.north, radius: 0.55, height: 7 });
+    } else if (spec.kind === 'ice' || spec.kind === 'volcanic') {
+      out.push({ kind: 'circle', east: spec.east, north: spec.north, radius: 1.6, height: 6 });
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// VISUAL construction
+// ---------------------------------------------------------------------------
 export function buildWorldDetailLayer(body, factionById, terrainRadiusAtFn, options = {}) {
   const quality = options.quality || 'mobile';
   const group = new THREE.Group();
@@ -36,23 +143,51 @@ export function buildWorldDetailLayer(body, factionById, terrainRadiusAtFn, opti
 
   const plan = BODY_DETAIL[body.id] || fallbackPlan(body);
   const stats = {
-    zonesDetailed: 0,
-    settlementBuildings: 0,
-    roadSegments: 0,
-    naturalProps: 0,
-    lightMasts: 0,
-    profile: plan.nature,
+    zonesDetailed: 0, settlementBuildings: 0, roadSegments: 0,
+    naturalProps: 0, lightMasts: 0, profile: plan.nature,
   };
   if (!body.landingZones?.length || body.terrain?.profile === 'gas') {
     body._detailStats = stats;
     return group;
   }
 
-  const mats = makeMaterials(plan, body, factionById);
+  const roadMat = makeRoadMaterial();
   for (const zone of body.landingZones) {
     const faction = zone.factionId && factionById ? factionById[zone.factionId] : null;
-    addSettlementCluster(group, body, zone, faction, plan, mats, terrainRadiusAtFn, quality, stats);
-    addNatureCluster(group, body, zone, plan, mats, terrainRadiusAtFn, quality, stats);
+    const accent = faction ? faction.color : plan.tint;
+
+    // Deterministic layout shared with collision.
+    const layout = computeSettlementLayout(body, zone, quality);
+    const natureLayout = computeNatureLayout(body, zone, quality);
+    zone._extraColliders = detailCollidersForLayout(layout)
+      .concat(natureCollidersForLayout(natureLayout));
+
+    const town = new THREE.Group();
+    town.name = `settlement:${body.id}:${zone.id}`;
+    addRoads(town, body, zone, roadMat, terrainRadiusAtFn, stats);
+    const rng = mulberry32(hashString(`${body.id}:${zone.id}:vis`));
+    for (const spec of layout) {
+      const obj = buildSettlementProp(spec, plan, accent, rng);
+      if (!obj) continue;
+      groundObject(body, zone, spec, obj, terrainRadiusAtFn, spec.type !== 'banner');
+      town.add(obj);
+      if (spec.type === 'gabled' || spec.type === 'quonset' || spec.type === 'tower') stats.settlementBuildings += 1;
+      if (spec.type === 'banner' || spec.type === 'tower') stats.lightMasts += 1;
+    }
+    enableShadows(town, true, true);
+    group.add(town);
+
+    const nature = new THREE.Group();
+    nature.name = `terrain-detail:${body.id}:${zone.id}:${plan.nature}`;
+    for (const spec of natureLayout) {
+      const obj = buildNatureProp(spec, plan, rng);
+      if (!obj) continue;
+      groundNatureProp(body, zone, spec, obj, terrainRadiusAtFn);
+      nature.add(obj);
+      stats.naturalProps += 1;
+    }
+    enableShadows(nature, true, true);
+    group.add(nature);
     stats.zonesDetailed += 1;
   }
 
@@ -60,183 +195,106 @@ export function buildWorldDetailLayer(body, factionById, terrainRadiusAtFn, opti
   return group;
 }
 
-function addSettlementCluster(group, body, zone, faction, plan, mats, terrainRadiusAtFn, quality, stats) {
-  const rng = mulberry32(hashString(`${body.id}:${zone.id}:settlement`));
-  const town = new THREE.Group();
-  town.name = `settlement:${body.id}:${zone.id}`;
-  let baseCount = zone.structures === 'transit' ? 12
-    : zone.structures === 'outpost' ? 10
-      : zone.structures === 'depot' ? 7
-        : zone.structures === 'relay' ? 5 : 4;
-  if (quality === 'desktop') baseCount = Math.min(baseCount, 5);
-  const count = baseCount + (quality === 'desktop' ? 1 : 0);
-  const accent = faction ? faction.color : plan.tint;
-  const accentMat = new THREE.MeshBasicMaterial({ color: accent });
-
-  addRoad(town, body, zone, 0, 0, 76, 5.2, 0, mats.road, terrainRadiusAtFn, stats);
-  addRoad(town, body, zone, 0, 0, 62, 4.4, Math.PI / 2, mats.road, terrainRadiusAtFn, stats);
-  if (zone.structures === 'transit' || plan.settlement === 'city') {
-    addRoad(town, body, zone, 0, 0, 118, 3.4, Math.PI / 4, mats.road, terrainRadiusAtFn, stats);
+function buildSettlementProp(spec, plan, accent, rng) {
+  const base = 0x95a4ae;
+  switch (spec.type) {
+    case 'gabled': return makeGabledBuilding(rng, spec.w, spec.h, spec.d, base, accent, 1.2);
+    case 'quonset': return makeQuonsetHut(rng, spec.w, spec.d, base, accent, 1.2);
+    case 'tower': return makeBlockTower(rng, Math.min(spec.w, spec.d), spec.h + 3, base, accent, 1.2);
+    case 'container': return makeContainer(rng, 0x7d8c96);
+    case 'solar': return makeSolarArray(rng);
+    case 'canopy': return makeCanopy(rng, spec.w, spec.d, 0x4f7482);
+    case 'banner': return makeBanner(rng, accent);
+    default: return null;
   }
-
-  for (let i = 0; i < count; i++) {
-    const ring = 42 + rng() * 82 + (i % 3) * 10;
-    const a = i * 2.399963 + rng() * 0.55;
-    const east = Math.cos(a) * ring;
-    const north = Math.sin(a) * ring;
-    if (Math.hypot(east, north) < 34) continue;
-    const w = 5 + rng() * (zone.structures === 'transit' ? 8 : 5);
-    const d = 5 + rng() * 8;
-    const h = 4 + rng() * (plan.settlement === 'city' ? 9 : 6);
-    const block = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mats.building);
-    block.name = `detail-building:${zone.id}:${i}`;
-    placeOffset(body, zone, east, north, block, h / 2, a + Math.PI / 2, terrainRadiusAtFn);
-    town.add(block);
-    stats.settlementBuildings += 1;
-
-    if (i % 3 === 0) {
-      const roof = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.58, 2.2, 4), mats.roof);
-      roof.name = `detail-roof:${zone.id}:${i}`;
-      placeOffset(body, zone, east, north, roof, h + 1.1, a + Math.PI / 4, terrainRadiusAtFn);
-      town.add(roof);
-    }
-    if (i % 4 === 0) {
-      const light = new THREE.Mesh(new THREE.SphereGeometry(0.8, 8, 6), accentMat);
-      light.name = `detail-light:${zone.id}:${i}`;
-      placeOffset(body, zone, east * 0.92, north * 0.92, light, h + 2.6, 0, terrainRadiusAtFn);
-      town.add(light);
-      stats.lightMasts += 1;
-    }
-  }
-
-  if (zone.structures === 'transit') {
-    for (const side of [-1, 1]) {
-      const canopy = new THREE.Mesh(new THREE.BoxGeometry(32, 2.2, 8), mats.canopy);
-      canopy.name = `detail-passenger-canopy:${zone.id}:${side}`;
-      placeOffset(body, zone, side * 36, 18, canopy, 4.6, side * 0.18, terrainRadiusAtFn);
-      town.add(canopy);
-      stats.settlementBuildings += 1;
-    }
-  }
-
-  group.add(town);
 }
 
-function addNatureCluster(group, body, zone, plan, mats, terrainRadiusAtFn, quality, stats) {
-  const rng = mulberry32(hashString(`${body.id}:${zone.id}:nature`));
-  const nature = new THREE.Group();
-  nature.name = `terrain-detail:${body.id}:${zone.id}:${plan.nature}`;
-  const count = quality === 'desktop' ? 8 : 18 + (plan.nature === 'forest' ? 8 : 0);
-
-  for (let i = 0; i < count; i++) {
-    const ring = 88 + rng() * 210;
-    const a = i * 2.199115 + rng() * 0.9;
-    const east = Math.cos(a) * ring;
-    const north = Math.sin(a) * ring;
-    if (Math.hypot(east, north) < 70) continue;
-    addNatureProp(nature, body, zone, plan.nature, mats, east, north, i, rng, terrainRadiusAtFn);
-    stats.naturalProps += 1;
+function buildNatureProp(spec, plan, rngShared) {
+  const rng = mulberry32(spec.seed >>> 0);
+  switch (spec.kind) {
+    case 'forest': return rng() < 0.55 ? makeTree(rng, 0x4b3621, plan.tint || 0x6fa35f) : makePine(rng, 0x4b3621, plan.tint || 0x5d8f4e);
+    case 'ice': return rng() < 0.7 ? makeIceSpire(rng, 0xb9f2ff) : makeCrystalCluster(rng, 0x9fe8ff);
+    case 'volcanic': return makeVent(rng, 0x25201e);
+    case 'desert': return rng() < 0.6 ? makeRock(rng, 0xc49a62) : makeBoulderCluster(rng, 0xb08850);
+    case 'scrap': return rng() < 0.5 ? makeContainer(rng, 0xa06a3c) : makeBoulderCluster(rng, 0x7d6753);
+    case 'archipelago': return rng() < 0.5 ? makeTree(rng, 0x54422c, 0x5e9e6a) : makeRock(rng, 0x76858f);
+    case 'ore': return makeCrystalCluster(rng, 0xd8dde2);
+    default: return rng() < 0.4 ? makeBoulderCluster(rng, 0x8a8f95) : makeRock(rng, 0x8a8f95);
   }
-  group.add(nature);
 }
 
-function addNatureProp(group, body, zone, kind, mats, east, north, i, rng, terrainRadiusAtFn) {
-  if (kind === 'forest') {
-    const trunkH = 3.2 + rng() * 3.2;
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, trunkH, 6), mats.trunk);
-    trunk.name = `detail-tree-trunk:${zone.id}:${i}`;
-    placeOffset(body, zone, east, north, trunk, trunkH / 2, rng() * Math.PI, terrainRadiusAtFn);
-    group.add(trunk);
-    const crown = new THREE.Mesh(new THREE.ConeGeometry(2.1 + rng() * 1.1, 4.6 + rng() * 2.4, 7), mats.leaf);
-    crown.name = `detail-tree-crown:${zone.id}:${i}`;
-    placeOffset(body, zone, east, north, crown, trunkH + 2.1, rng() * Math.PI, terrainRadiusAtFn);
-    group.add(crown);
-    return;
-  }
-
-  if (kind === 'ice') {
-    const h = 4 + rng() * 9;
-    const spire = new THREE.Mesh(new THREE.ConeGeometry(1.2 + rng() * 1.2, h, 6), mats.ice);
-    spire.name = `detail-ice-spire:${zone.id}:${i}`;
-    placeOffset(body, zone, east, north, spire, h / 2, rng() * Math.PI, terrainRadiusAtFn);
-    group.add(spire);
-    return;
-  }
-
-  if (kind === 'volcanic') {
-    const h = 2.2 + rng() * 4.5;
-    const vent = new THREE.Mesh(new THREE.ConeGeometry(2.8 + rng() * 2.6, h, 9), mats.basalt);
-    vent.name = `detail-volcanic-vent:${zone.id}:${i}`;
-    placeOffset(body, zone, east, north, vent, h / 2, rng() * Math.PI, terrainRadiusAtFn);
-    group.add(vent);
-    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.8 + rng() * 0.6, 8, 6), mats.lava);
-    glow.name = `detail-vent-glow:${zone.id}:${i}`;
-    placeOffset(body, zone, east, north, glow, h + 0.35, 0, terrainRadiusAtFn);
-    group.add(glow);
-    return;
-  }
-
-  if (kind === 'desert') {
-    const sail = new THREE.Mesh(new THREE.BoxGeometry(0.7, 5 + rng() * 4, 9 + rng() * 8), mats.windbreak);
-    sail.name = `detail-windbreak:${zone.id}:${i}`;
-    placeOffset(body, zone, east, north, sail, 2.8, rng() * Math.PI, terrainRadiusAtFn);
-    group.add(sail);
-    return;
-  }
-
-  if (kind === 'archipelago') {
-    const pylonH = 5 + rng() * 7;
-    const pylon = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.9, pylonH, 7), mats.pylon);
-    pylon.name = `detail-harbor-pylon:${zone.id}:${i}`;
-    placeOffset(body, zone, east, north, pylon, pylonH / 2, 0, terrainRadiusAtFn);
-    group.add(pylon);
-    return;
-  }
-
-  const rockH = 1.4 + rng() * 3.8;
-  const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(rockH, 0), mats.rock);
-  rock.name = `detail-rock:${zone.id}:${i}`;
-  rock.scale.set(1 + rng() * 1.4, 0.6 + rng() * 0.9, 0.9 + rng() * 1.3);
-  placeOffset(body, zone, east, north, rock, rockH * 0.55, rng() * Math.PI, terrainRadiusAtFn);
-  group.add(rock);
-}
-
-function addRoad(group, body, zone, east, north, length, width, yaw, mat, terrainRadiusAtFn, stats) {
-  const road = new THREE.Mesh(new THREE.BoxGeometry(width, 0.18, length), mat);
-  road.name = `detail-road:${zone.id}:${stats.roadSegments}`;
-  placeOffset(body, zone, east, north, road, 0.09, yaw, terrainRadiusAtFn);
-  group.add(road);
-  stats.roadSegments += 1;
-}
-
-function makeMaterials(plan, body) {
-  const base = new THREE.Color(body.colors.mid || 0x607d8b);
-  const high = new THREE.Color(body.colors.high || plan.tint);
-  return {
-    building: new THREE.MeshLambertMaterial({ color: base.clone().lerp(high, 0.28) }),
-    roof: new THREE.MeshLambertMaterial({ color: 0x2c3438 }),
-    road: new THREE.MeshLambertMaterial({ color: 0x20282d }),
-    canopy: new THREE.MeshLambertMaterial({ color: 0x334148 }),
-    trunk: new THREE.MeshLambertMaterial({ color: 0x4b3621 }),
-    leaf: new THREE.MeshLambertMaterial({ color: plan.tint || 0x6fa35f }),
-    ice: new THREE.MeshLambertMaterial({ color: 0xb9f2ff, transparent: true, opacity: 0.82 }),
-    basalt: new THREE.MeshLambertMaterial({ color: 0x25201e }),
-    lava: new THREE.MeshBasicMaterial({ color: 0xff6d00 }),
-    windbreak: new THREE.MeshLambertMaterial({ color: 0x8f6a3a }),
-    pylon: new THREE.MeshLambertMaterial({ color: 0x546e7a }),
-    rock: new THREE.MeshLambertMaterial({ color: base.clone().lerp(new THREE.Color(0x999999), 0.25) }),
-  };
-}
-
-function placeOffset(body, zone, eastM, northM, obj, extraHeight, yaw, terrainRadiusAtFn) {
+// --- Grounding ---------------------------------------------------------------
+// Buildings: base at the LOWEST footprint corner; their built-in foundation
+// plinth (height slopeGap+0.4) fills the gap, so walls never hang in the air.
+// Buildings stay plumb (radial up) like real construction.
+function groundObject(body, zone, spec, obj, terrainRadiusAtFn, plumb = true) {
   const frame = zoneFrame(zone._dirV);
   const dir = zone._dirV.clone()
-    .addScaledVector(frame.east, eastM / body.radius)
-    .addScaledVector(frame.north, northM / body.radius)
+    .addScaledVector(frame.east, spec.east / body.radius)
+    .addScaledVector(frame.north, spec.north / body.radius)
     .normalize();
-  const r = terrainRadiusAtFn(body, dir) + extraHeight;
-  obj.position.copy(dir).multiplyScalar(r);
-  orientObject(obj, dir, yaw);
+  const halfE = (spec.w || 4) / 2 + 0.5;
+  const halfN = (spec.d || 4) / 2 + 0.5;
+  const fp = sampleFootprint(body, dir, halfE, halfN, terrainRadiusAtFn);
+  obj.position.copy(dir).multiplyScalar(fp.minR - 0.06);
+  orientObject(obj, plumb ? dir : fp.normal, spec.yaw || 0);
+}
+
+// Nature: sink into the slope and tilt most of the way toward the terrain
+// normal (rocks fully, trees a little — trees grow toward the light).
+function groundNatureProp(body, zone, spec, obj, terrainRadiusAtFn) {
+  const frame = zoneFrame(zone._dirV);
+  const dir = zone._dirV.clone()
+    .addScaledVector(frame.east, spec.east / body.radius)
+    .addScaledVector(frame.north, spec.north / body.radius)
+    .normalize();
+  const fp = sampleFootprint(body, dir, 1.6, 1.6, terrainRadiusAtFn);
+  const isRock = spec.kind !== 'forest';
+  obj.position.copy(dir).multiplyScalar(fp.minR - (isRock ? 0.35 : 0.12));
+  const up = isRock ? fp.normal : dir.clone().lerp(fp.normal, 0.25).normalize();
+  orientObject(obj, up, (spec.seed % 628) / 100);
+}
+
+function addRoads(town, body, zone, roadMat, terrainRadiusAtFn, stats) {
+  const specs = [
+    { len: 76, w: 5.2, yaw: 0 },
+    { len: 62, w: 4.4, yaw: Math.PI / 2 },
+  ];
+  if (zone.structures === 'transit') specs.push({ len: 118, w: 3.4, yaw: Math.PI / 4 });
+  const frame = zoneFrame(zone._dirV);
+  for (const rs of specs) {
+    // Split into segments, each grounded at its own centre => roads follow
+    // the ground instead of bridging over dips.
+    const segs = 4;
+    const segLen = rs.len / segs;
+    for (let i = 0; i < segs; i++) {
+      const along = -rs.len / 2 + segLen * (i + 0.5);
+      const east = Math.sin(rs.yaw) * along;
+      const north = Math.cos(rs.yaw) * along;
+      const dir = zone._dirV.clone()
+        .addScaledVector(frame.east, east / body.radius)
+        .addScaledVector(frame.north, north / body.radius)
+        .normalize();
+      const fp = sampleFootprint(body, dir, rs.w / 2, segLen / 2, terrainRadiusAtFn);
+      const seg = new THREE.Mesh(new THREE.BoxGeometry(rs.w, 0.22, segLen + 0.6), roadMat);
+      seg.position.copy(dir).multiplyScalar(fp.avgR + 0.02);
+      orientObject(seg, fp.normal, rs.yaw);
+      seg.receiveShadow = true;
+      town.add(seg);
+      stats.roadSegments += 1;
+    }
+  }
+}
+
+function makeRoadMaterial() {
+  const tex = roadTexture();
+  let map = null;
+  if (tex) {
+    map = tex.clone();
+    map.repeat.set(1, 4);
+    map.needsUpdate = true;
+  }
+  return surfaceMat({ color: 0xffffff, map, mapKey: 'road' });
 }
 
 function orientObject(obj, up, yaw = 0) {

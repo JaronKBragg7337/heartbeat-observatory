@@ -6,6 +6,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { displace } from '../render/props.js';
 
 const COUNT_MIN = 40;
 const COUNT_MAX = 60;
@@ -65,8 +66,9 @@ export class SpaceProps {
     const dist = randRange(MIN_DIST, MAX_DIST);
     const pos = randVec3(dist);
     const radius = randRange(120, 900);
-    const geometry = new THREE.DodecahedronGeometry(radius, 0);
+    const geometry = displace(new THREE.IcosahedronGeometry(radius, 1), radius * 0.32, Math.floor(randRange(0, 1e4)));
     const material = new THREE.MeshLambertMaterial({
+      flatShading: true,
       color: randElem(ASTEROID_COLORS),
       flatShading: true,
     });
@@ -82,8 +84,9 @@ export class SpaceProps {
       const offset = randVec3(randRange(200, 1200));
       const pos = center.clone().add(offset);
       const radius = randRange(80, 500);
-      const geometry = new THREE.IcosahedronGeometry(radius, 0);
+      const geometry = displace(new THREE.IcosahedronGeometry(radius, 1), radius * 0.3, Math.floor(randRange(0, 1e4)));
       const material = new THREE.MeshLambertMaterial({
+        flatShading: true,
         color: randElem(ASTEROID_COLORS),
         flatShading: true,
       });
@@ -99,8 +102,9 @@ export class SpaceProps {
     const w = randRange(30, 180);
     const h = randRange(10, 60);
     const d = randRange(30, 180);
-    const geometry = new THREE.BoxGeometry(w, h, d);
+    const geometry = new THREE.TetrahedronGeometry(Math.max(w, h, d) * 0.6, 0);
     const material = new THREE.MeshLambertMaterial({
+      flatShading: true,
       color: randElem(DEBRIS_COLORS),
       flatShading: true,
     });

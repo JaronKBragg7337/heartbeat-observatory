@@ -49,6 +49,7 @@ export class CivilTransport {
     this.worldPos = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.group = buildTransportVisual();
+    this.group.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     engine.scene.add(this.group);
     this._trackEntry = engine.trackWorldObject({
       worldPos: this.worldPos,

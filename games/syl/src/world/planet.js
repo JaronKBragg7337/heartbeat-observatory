@@ -25,6 +25,11 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { groundDetailTexture } from '../render/textures.js';
+import {
+  glowMat, makeLandingPad, makeQuonsetHut, makeGabledBuilding, makeBanner,
+  makeStorageTank, makeLatticeMast, makeDish, makeContainer, enableShadows,
+} from '../render/props.js';
 import { fbm, smoothstep } from '../core/math3d.js';
 import { buildWorldDetailLayer } from './worldDetails.js';
 
@@ -251,10 +256,19 @@ export function structureCollidersForZone(zone) {
   return [];
 }
 
+// Detail-layer colliders (settlement buildings etc.) are computed by
+// worldDetails.js from the SAME deterministic layout that builds the visuals,
+// and cached on the zone. Merging them here means the player can no longer
+// walk through settlement buildings — visible walls only, never invisible ones.
+export function allCollidersForZone(zone) {
+  const base = structureCollidersForZone(zone);
+  return zone._extraColliders ? base.concat(zone._extraColliders) : base;
+}
+
 export function structureCollidersForBody(body) {
   const out = [];
   for (const zone of body.landingZones) {
-    for (const collider of structureCollidersForZone(zone)) {
+    for (const collider of allCollidersForZone(zone)) {
       out.push({ ...collider, zoneId: zone.id, zone });
     }
   }
@@ -278,7 +292,7 @@ export function resolveStructureCollision(body, worldPos, radius = 0.45) {
     const dEast = dir.dot(frame.east) * body.radius;
     const dNorth = dir.dot(frame.north) * body.radius;
 
-    for (const c of structureCollidersForZone(zone)) {
+    for (const c of allCollidersForZone(zone)) {
       if (altitude > c.height) continue;
       let outEast = dEast;
       let outNorth = dNorth;
@@ -366,24 +380,64 @@ export function buildBodyVisual(body, factionById) {
   const cLow = new THREE.Color(body.colors.low);
   const cMid = new THREE.Color(body.colors.mid);
   const cHigh = new THREE.Color(body.colors.high);
+  const cRock = cHigh.clone().lerp(new THREE.Color(0x6d6a63), 0.45); // steep-slope color
+  const cSand = new THREE.Color(body.colors.beach ?? 0xcbb27a);
   const dir = new THREE.Vector3();
   const cTmp = new THREE.Color();
+  // Vertex layout matches the collision grid: iy rows of (W+1) columns, so
+  // slope can be read straight from grid neighbours (same source of truth).
+  const { W: gW, H: gH, radii: gRadii } = body._terrainGrid;
+  const northSpacing = (Math.PI * body.radius) / gH;
   for (let i = 0; i < pos.count; i++) {
     dir.fromBufferAttribute(pos, i).normalize();
     const r = terrainRadiusAt(body, dir);
     pos.setXYZ(i, dir.x * r, dir.y * r, dir.z * r);
-    // Color by height above base radius.
+    // Base color by height above base radius.
     const hN = (r - body.radius) / Math.max(1, body.terrain.amplitude); // ~[-1,1]
     if (hN < 0) cTmp.lerpColors(cLow, cMid, hN + 1);
     else cTmp.lerpColors(cMid, cHigh, hN);
+    // Slope from grid neighbours -> exposed rock on steep faces.
+    const iy = Math.min(gH, Math.floor(i / (gW + 1)));
+    const ix = i % (gW + 1);
+    const rHere = gRadii[iy * (gW + 1) + ix];
+    let dMax = 0;
+    if (iy > 0) dMax = Math.max(dMax, Math.abs(gRadii[(iy - 1) * (gW + 1) + ix] - rHere));
+    if (iy < gH) dMax = Math.max(dMax, Math.abs(gRadii[(iy + 1) * (gW + 1) + ix] - rHere));
+    if (ix > 0) dMax = Math.max(dMax, Math.abs(gRadii[iy * (gW + 1) + ix - 1] - rHere));
+    if (ix < gW) dMax = Math.max(dMax, Math.abs(gRadii[iy * (gW + 1) + ix + 1] - rHere));
+    const slope = dMax / northSpacing;
+    const rockK = Math.max(0, Math.min(1, (slope - 0.35) / 0.5));
+    if (rockK > 0) cTmp.lerp(cRock, rockK * 0.85);
+    // Beach band just above sea level.
+    if (body.seaLevel !== null && body.seaLevel !== undefined) {
+      const aboveSea = r - (body.radius + body.seaLevel);
+      if (aboveSea > -1.5 && aboveSea < 6) {
+        cTmp.lerp(cSand, (1 - Math.max(0, aboveSea) / 6) * 0.65);
+      }
+    }
+    // Deterministic per-vertex jitter kills the airbrushed-gradient look.
+    const jh = Math.sin(ix * 127.1 + iy * 311.7) * 43758.5453;
+    const j = ((jh - Math.floor(jh)) - 0.5) * 0.14;
+    cTmp.offsetHSL(0, 0, j * 0.35);
     colors[i * 3] = cTmp.r; colors[i * 3 + 1] = cTmp.g; colors[i * 3 + 2] = cTmp.b;
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.computeVertexNormals();
+  // Ground detail texture multiplied over vertex colors (WCC technique):
+  // a 256px painted mottle repeated across the sphere. Null in headless Node.
+  let terrainMap = null;
+  const baseDetailTex = groundDetailTexture();
+  if (baseDetailTex) {
+    terrainMap = baseDetailTex.clone();
+    const rep = Math.max(48, Math.min(260, Math.round(body.radius / 14)));
+    terrainMap.repeat.set(rep, rep / 2);
+    terrainMap.needsUpdate = true;
+  }
   const bodyMesh = new THREE.Mesh(
     geo,
-    new THREE.MeshLambertMaterial({ vertexColors: true })
+    new THREE.MeshLambertMaterial({ vertexColors: true, map: terrainMap })
   );
+  bodyMesh.receiveShadow = true;
   bodyMesh.name = `terrain:${body.id}`;
   group.add(bodyMesh);
 
@@ -391,7 +445,10 @@ export function buildBodyVisual(body, factionById) {
   if (body.seaLevel !== null && body.seaLevel !== undefined && body.colors.water) {
     const water = new THREE.Mesh(
       new THREE.SphereGeometry(body.radius + body.seaLevel, 96, 48),
-      new THREE.MeshLambertMaterial({ color: body.colors.water, transparent: true, opacity: 0.85 })
+      new THREE.MeshPhongMaterial({
+        color: body.colors.water, transparent: true, opacity: 0.86,
+        shininess: 90, specular: 0x556e88,
+      })
     );
     water.name = `water:${body.id}`;
     group.add(water);
@@ -403,7 +460,7 @@ export function buildBodyVisual(body, factionById) {
     const atmoGeo = new THREE.SphereGeometry(body.radius + body.atmosphere.height, 64, 32);
     const atmoMat = new THREE.MeshBasicMaterial({
       color: body.atmosphere.color, transparent: true, opacity: 0.45,
-      side: THREE.BackSide, depthWrite: false,
+      side: THREE.BackSide, depthWrite: false, fog: false,
     });
     const atmo = new THREE.Mesh(atmoGeo, atmoMat);
     atmo.name = `atmo:${body.id}`;
@@ -432,120 +489,110 @@ function placeOnSurface(body, dirUnit, obj, extraHeight = 0) {
 }
 
 function buildZoneStructures(body, zone, factionById) {
+  // Structures are authored from the props library (render/props.js): shaped
+  // composites with painted textures, foundations, and shadows — never naked
+  // boxes. FOOTPRINTS MUST KEEP MATCHING structureCollidersForZone() above:
+  // if you move or resize a structure here, update its collider there.
   const g = new THREE.Group();
   g.name = `zone:${zone.id}`;
   const faction = zone.factionId && factionById ? factionById[zone.factionId] : null;
   const fColor = faction ? faction.color : 0x546e7a;
+  const rng = zoneRng(`${body.id}:${zone.id}`);
 
-  // Pad ring — every zone gets one (visual marker; the flat ground itself is
-  // already part of the analytic terrain).
-  const pad = new THREE.Mesh(
-    new THREE.CylinderGeometry(26, 26, 0.6, 24),
-    new THREE.MeshLambertMaterial({ color: 0x37474f })
-  );
-  placeOnSurface(body, zone._dirV, pad, 0.3);
+  // Landing pad — textured disc, hazard ring, faction ring, edge lights.
+  const pad = makeLandingPad(fColor);
+  placeOnSurface(body, zone._dirV, pad, 0.05);
+  enableShadows(pad, false, true);
   g.add(pad);
 
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(24, 0.3, 8, 48),
-    new THREE.MeshBasicMaterial({ color: fColor })
-  );
-  placeOnSurface(body, zone._dirV, ring, 0.35);
-  ring.rotateX(Math.PI / 2);
-  g.add(ring);
-
   if (zone.structures === 'outpost') {
-    // Fortis outpost: armored blocks + watchtower + beacon (steel + red canon).
-    const steel = new THREE.MeshLambertMaterial({ color: 0x455a64 });
+    // Fortis outpost: quonset bunkers (collider: box half 8x6 h7) + lattice
+    // watchtower at (30,30) (collider: circle r3.2 h24) + faction banner.
     const offsets = [[40, 0], [-42, 10], [10, -46], [-15, 44]];
     for (const [ox, oz] of offsets) {
-      const bunker = new THREE.Mesh(new THREE.BoxGeometry(14, 7, 10), steel);
+      const hut = makeQuonsetHut(rng, 13, 11, 0x8d9ca6, fColor, 0.7);
       const d = offsetDir(zone._dirV, ox, oz, body);
-      placeOnSurface(body, d, bunker, 3.5);
-      g.add(bunker);
+      placeOnSurface(body, d, hut, -0.3);
+      hut.rotateY(rng() * Math.PI);
+      g.add(hut);
     }
-    const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 2.2, 22, 8), steel);
-    const td = offsetDir(zone._dirV, 30, 30, body);
-    placeOnSurface(body, td, tower, 11);
+    const towerDir = offsetDir(zone._dirV, 30, 30, body);
+    const tower = makeLatticeMast(rng, 22, 0x8d9ca6, 0xd32f2f);
+    placeOnSurface(body, towerDir, tower, -0.2);
     g.add(tower);
-    const beacon = new THREE.Mesh(
-      new THREE.SphereGeometry(1.6, 12, 8),
-      new THREE.MeshBasicMaterial({ color: 0xd32f2f })
-    );
-    placeOnSurface(body, td, beacon, 23);
-    g.add(beacon);
+    const banner = makeBanner(rng, fColor);
+    placeOnSurface(body, offsetDir(zone._dirV, 33, -14, body), banner, -0.1);
+    g.add(banner);
+    for (const [cx, cz] of [[-30, -26], [-27, -30], [24, 28]]) {
+      const box = makeContainer(rng, 0x8a99a3);
+      placeOnSurface(body, offsetDir(zone._dirV, cx, cz, body), box, -0.15);
+      box.rotateY(rng() * Math.PI);
+      g.add(box);
+    }
   } else if (zone.structures === 'relay') {
-    const dish = new THREE.Mesh(
-      new THREE.ConeGeometry(6, 3, 16, 1, true),
-      new THREE.MeshLambertMaterial({ color: 0x607d8b, side: THREE.DoubleSide })
-    );
+    // Relay: dish on a yoke (collider: circle r7.5 h10 at (18,-12)).
     const d = offsetDir(zone._dirV, 18, -12, body);
-    placeOnSurface(body, d, dish, 8);
+    const dish = makeDish(rng, 6, 0x9fb2bd);
+    placeOnSurface(body, d, dish, -0.2);
     g.add(dish);
-    const mast = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.5, 0.8, 9, 6),
-      new THREE.MeshLambertMaterial({ color: 0x546e7a })
-    );
-    placeOnSurface(body, d, mast, 4.5);
+    const mast = makeLatticeMast(rng, 9, 0x546e7a, fColor);
+    placeOnSurface(body, offsetDir(zone._dirV, 12, -18, body), mast, -0.2);
     g.add(mast);
   } else if (zone.structures === 'depot') {
-    const steel = new THREE.MeshLambertMaterial({ color: 0x455a64 });
-    const dark = new THREE.MeshLambertMaterial({ color: 0x263238 });
-    const red = new THREE.MeshBasicMaterial({ color: fColor });
-    const shedA = new THREE.Mesh(new THREE.BoxGeometry(22, 8, 12), steel);
-    placeOnSurface(body, offsetDir(zone._dirV, -18, 0, body), shedA, 4);
+    // Depot: gabled shed (box half 12x7 h8 at (-18,0)), quonset (box half 9x6
+    // h6 at (18,7)), domed tank (circle r4 h15 at (5,-18)).
+    const shedA = makeGabledBuilding(rng, 21, 6.5, 11, 0x8d9ca6, fColor, 0.8);
+    placeOnSurface(body, offsetDir(zone._dirV, -18, 0, body), shedA, -0.3);
     g.add(shedA);
-    const shedB = new THREE.Mesh(new THREE.BoxGeometry(16, 6, 10), dark);
-    placeOnSurface(body, offsetDir(zone._dirV, 18, 7, body), shedB, 3);
+    const shedB = makeQuonsetHut(rng, 15, 9, 0x7e8f99, fColor, 0.7);
+    placeOnSurface(body, offsetDir(zone._dirV, 18, 7, body), shedB, -0.3);
     g.add(shedB);
-    const tank = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 12, 12), steel);
-    placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), tank, 6);
+    const tank = makeStorageTank(rng, 3.1, 9, 0x8e9da7, 0.7);
+    placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), tank, -0.3);
     g.add(tank);
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), red);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), glowMat(fColor));
     placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), lamp, 13);
     g.add(lamp);
   } else if (zone.structures === 'beacon') {
-    const mast = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.6, 1.0, 12, 6),
-      new THREE.MeshLambertMaterial({ color: 0x546e7a })
-    );
-    placeOnSurface(body, zone._dirV, mast, 6);
+    // Beacon: lattice mast (collider: circle r2 h13 at centre).
+    const mast = makeLatticeMast(rng, 12, 0x546e7a, fColor);
+    placeOnSurface(body, zone._dirV, mast, -0.2);
     g.add(mast);
-    const light = new THREE.Mesh(
-      new THREE.SphereGeometry(1.1, 10, 8),
-      new THREE.MeshBasicMaterial({ color: fColor })
-    );
-    placeOnSurface(body, zone._dirV, light, 12.6);
-    g.add(light);
   } else if (zone.structures === 'transit') {
-    const steel = new THREE.MeshLambertMaterial({ color: 0x546e7a });
-    const dark = new THREE.MeshLambertMaterial({ color: 0x1f2a30 });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x8fd7ff, transparent: true, opacity: 0.42 });
-    const signal = new THREE.MeshBasicMaterial({ color: fColor });
-    const terminal = new THREE.Mesh(new THREE.BoxGeometry(28, 8, 12), steel);
-    placeOnSurface(body, offsetDir(zone._dirV, -20, 4, body), terminal, 4);
+    // Transit: terminal building (box half 15x7 h8 at (-20,4)), concourse
+    // quonset (box half 11x6 h7 at (20,-5)), two lattice masts (circles r3.5
+    // h18 at (0,±24)), arrival gate ring.
+    const terminal = makeGabledBuilding(rng, 27, 7, 11, 0x8a99a3, fColor, 0.8);
+    placeOnSurface(body, offsetDir(zone._dirV, -20, 4, body), terminal, -0.3);
     g.add(terminal);
-    const concourse = new THREE.Mesh(new THREE.BoxGeometry(18, 6, 10), dark);
-    placeOnSurface(body, offsetDir(zone._dirV, 20, -5, body), concourse, 3);
+    const concourse = makeQuonsetHut(rng, 18, 9, 0x7a8a94, fColor, 0.7);
+    placeOnSurface(body, offsetDir(zone._dirV, 20, -5, body), concourse, -0.3);
     g.add(concourse);
-    const windows = new THREE.Mesh(new THREE.BoxGeometry(24, 2, 0.4), glass);
-    placeOnSurface(body, offsetDir(zone._dirV, -20, 10.3, body), windows, 7);
-    g.add(windows);
     for (const north of [24, -24]) {
-      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.8, 16, 8), steel);
-      const d = offsetDir(zone._dirV, 0, north, body);
-      placeOnSurface(body, d, mast, 8);
+      const mast = makeLatticeMast(rng, 16, 0x546e7a, fColor);
+      placeOnSurface(body, offsetDir(zone._dirV, 0, north, body), mast, -0.2);
       g.add(mast);
-      const light = new THREE.Mesh(new THREE.SphereGeometry(1.2, 10, 8), signal);
-      placeOnSurface(body, d, light, 17);
-      g.add(light);
     }
-    const gate = new THREE.Mesh(new THREE.TorusGeometry(8, 0.28, 8, 32), signal);
+    const gate = new THREE.Mesh(new THREE.TorusGeometry(8, 0.28, 8, 32), glowMat(fColor));
     placeOnSurface(body, offsetDir(zone._dirV, 0, 0, body), gate, 2.6);
     gate.rotateX(Math.PI / 2);
     g.add(gate);
   }
+  enableShadows(g, true, true);
   return g;
+}
+
+// Small deterministic rng for zone structure variation.
+function zoneRng(key) {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+  let t = h >>> 0;
+  return function next() {
+    t += 0x6D2B79F5;
+    let x = Math.imul(t ^ (t >>> 15), t | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 // Direction slightly offset from a zone center by (east, north) meters.

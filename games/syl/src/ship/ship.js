@@ -23,6 +23,8 @@
 import * as THREE from 'three';
 import { PART_TYPES, SLOTS, READINESS_RULES, getPartType } from './shipParts.js';
 import { gravityAt, altitudeAt, upAt, dominantBody, terrainRadiusAt, resolveStructureCollision } from '../world/planet.js';
+import { enableShadows } from '../render/props.js';
+import { TUNE } from '../dev/tuner.js';
 
 const HULL_CLEARANCE = 1.9;   // meters from ship origin to landing-gear feet
 const HULL_RADIUS = 4.8;      // simple analytic footprint for structures
@@ -167,8 +169,8 @@ export class Ship {
 
     const frameHealth = hp('frame_core') || 0.25;
     const hullHealth = Math.max(hp('hull_top'), hp('hull_heavy_top'), frameHealth);
-    const armorMat = shipMat(0x3f5350, hullHealth);
-    const darkMat = shipMat(0x1f2828, frameHealth);
+    const armorMat = shipMat(0x62787a, hullHealth);
+    const darkMat = shipMat(0x37464a, frameHealth);
     const trimMat = shipMat(0x7b1e1e, hullHealth);
     const interiorMat = shipMat(0x263238, frameHealth);
     const glassMat = new THREE.MeshLambertMaterial({ color: 0x8fd7ff, transparent: true, opacity: has('cockpit_fwd') ? 0.42 : 0.12 });
@@ -200,7 +202,7 @@ export class Ship {
     }
     if (has('engine_main') || has('engine_aux') || has('engine_adv')) {
       const engineHealth = Math.max(hp('engine_main'), hp('engine_aux'), hp('engine_adv'));
-      const engineMat = shipMat(0x263238, engineHealth || 0.35);
+      const engineMat = shipMat(0x51636c, engineHealth || 0.35);
       addCyl(visible, 'gunship:port_engine', [-3.7, 0.9, -2.75], 0.68, 2.9, engineMat, 'Z');
       addCyl(visible, 'gunship:starboard_engine', [3.7, 0.9, -2.75], 0.68, 2.9, engineMat, 'Z');
       addCyl(visible, 'gunship:main_nozzle', [0, 0.35, -5.18], 0.58, 0.55, engineMat, 'Z');
@@ -231,10 +233,28 @@ export class Ship {
       if (slot.rotate === 'back') marker.rotateX(Math.PI / 2);
     }
 
-    // Engine glow when thrusting (updated in tick).
+    // Engine glow when thrusting (updated in tick): point light + visible
+    // additive flame cones at the nozzles (length scales with burn).
     this._glow = new THREE.PointLight(0xff6d3f, 0, 30);
     this._glow.position.set(0, 0, -4.2);
     this.group.add(this._glow);
+    this._flames = [];
+    const flameMat = new THREE.MeshBasicMaterial({
+      color: 0xff8a50, transparent: true, opacity: 0.85,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
+    });
+    for (const [fx, fy, fz] of [[-3.7, 0.9, -4.3], [3.7, 0.9, -4.3], [0, 0.35, -5.6]]) {
+      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.42, 2.4, 8, 1, true), flameMat);
+      flame.rotation.x = Math.PI / 2; // point backwards (-Z)
+      flame.position.set(fx, fy, fz);
+      flame.visible = false;
+      visible.add(flame);
+      this._flames.push(flame);
+    }
+    // Ship casts and receives shadows (gated globally by the graphics setting
+    // in render/lighting.js; flags are free when shadows are off).
+    enableShadows(visible, true, true);
+    for (const f of this._flames) { f.castShadow = false; f.receiveShadow = false; }
   }
 
   // ------------------------------------------------------------------ placing
@@ -270,12 +290,13 @@ export class Ship {
       // Resting on ground: stay put (terrain is static; no drift).
       this.velocity.set(0, 0, 0);
       if (this._glow) this._glow.intensity = 0;
+      if (this._flames) for (const f of this._flames) f.visible = false;
       return;
     }
 
     const accel = _accel.set(0, 0, 0);
     const assisted = !!(piloted && controls && (controls.assist || controls.mobileAssist));
-    const torqueMul = Math.min(2.6, 1 + (this.stats.torqueBoost || 0));
+    const torqueMul = Math.min(2.6, 1 + (this.stats.torqueBoost || 0)) * (TUNE.turn || 1);
 
     // ------------------------------------------------------------------
     // 2026-07-04 ROOT-CAUSE FIX: assisted flight used to `return` before
@@ -357,18 +378,18 @@ export class Ship {
           ? _assistRight3.set(1, 0, 0).applyQuaternion(this.quaternion).normalize()
           : _mobileRight;
         if (Math.abs(forward) > 0.01) {
-          accel.addScaledVector(assistFwd, forward * ASSIST_FORWARD_ACCEL);
+          accel.addScaledVector(assistFwd, forward * ASSIST_FORWARD_ACCEL * (TUNE.thrust || 1));
           burning += Math.abs(forward) * 0.45;
         }
         if (Math.abs(strafe) > 0.01) {
-          accel.addScaledVector(assistRight, strafe * ASSIST_STRAFE_ACCEL);
+          accel.addScaledVector(assistRight, strafe * ASSIST_STRAFE_ACCEL * (TUNE.thrust || 1));
           burning += Math.abs(strafe) * 0.30;
         }
         if (controls.descend) {
           accel.addScaledVector(up, -ASSIST_DESCEND_SPEED);
           burning += 0.28;
         } else if (controls.thrustUp) {
-          accel.addScaledVector(up, ASSIST_LIFT_SPEED);
+          accel.addScaledVector(up, ASSIST_LIFT_SPEED * (TUNE.thrust || 1));
           burning += 0.35;
         }
         this.fuel = Math.max(0, this.fuel - burning * dt);
@@ -377,17 +398,25 @@ export class Ship {
       // Raw 6-DOF thrust (non-assisted): throttle through the nose + RCS up.
       const fwd = _fwd.set(0, 0, 1).applyQuaternion(this.quaternion);
       if (this.throttle > 0) {
-        accel.addScaledVector(fwd, (this.stats.thrust * this.throttle) / this.stats.mass);
+        accel.addScaledVector(fwd, (this.stats.thrust * (TUNE.thrust || 1) * this.throttle) / this.stats.mass);
         burning += this.throttle;
       }
       if (controls && controls.thrustUp) {
         const shipUp = _shipUp.set(0, 1, 0).applyQuaternion(this.quaternion);
-        accel.addScaledVector(shipUp, (this.stats.thrust * 0.75) / this.stats.mass);
+        accel.addScaledVector(shipUp, (this.stats.thrust * (TUNE.thrust || 1) * 0.75) / this.stats.mass);
         burning += 0.75;
       }
       this.fuel = Math.max(0, this.fuel - burning * dt * 0.55);
     }
     if (this._glow) this._glow.intensity = burning > 0 ? 3.5 : 0;
+    if (this._flames) {
+      const on = burning > 0;
+      const k = Math.min(1, burning);
+      for (const f of this._flames) {
+        f.visible = on;
+        if (on) f.scale.set(0.7 + k * 0.5, 0.6 + k * 1.6 + Math.random() * 0.25, 0.7 + k * 0.5);
+      }
+    }
 
     // 2. Gravity from ALL bodies (second-body coexistence is real).
     for (const b of this.bodies) {
@@ -574,8 +603,10 @@ const _mobileMatrix = new THREE.Matrix4();
 
 function shipMat(color, health = 1) {
   const mat = new THREE.MeshLambertMaterial({ color });
-  if (health < READINESS_RULES.degradedBelowFrac) mat.color.multiplyScalar(0.35);
-  else if (health < 0.8) mat.color.multiplyScalar(0.7);
+  // Damage dims toward a rusty dark steel, never to near-black (a dead
+  // engine must still read as an OBJECT — verified on the live staging route).
+  if (health < READINESS_RULES.degradedBelowFrac) { mat.color.multiplyScalar(0.6); mat.color.lerp(new THREE.Color(0x5a4636), 0.35); }
+  else if (health < 0.8) mat.color.multiplyScalar(0.82);
   return mat;
 }
 
