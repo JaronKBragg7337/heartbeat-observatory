@@ -168,11 +168,11 @@ export function padTexture(accentHex) {
     ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(c, c, s * 0.30, 0, Math.PI * 2); ctx.stroke();
     // Centre circle + cross
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.beginPath(); ctx.arc(c, c, s * 0.10, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(c - s * 0.06, c); ctx.lineTo(c + s * 0.06, c); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(c, c - s * 0.06); ctx.lineTo(c, c + s * 0.06); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(c - s * 0.05, c); ctx.lineTo(c + s * 0.05, c); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(c, c - s * 0.05); ctx.lineTo(c, c + s * 0.05); ctx.stroke();
     // Skid scuffs
     for (let i = 0; i < 40; i++) {
       ctx.strokeStyle = `rgba(10,12,14,${0.2 + rng() * 0.3})`;

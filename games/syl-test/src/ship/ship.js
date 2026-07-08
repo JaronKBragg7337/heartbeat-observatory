@@ -202,7 +202,7 @@ export class Ship {
     }
     if (has('engine_main') || has('engine_aux') || has('engine_adv')) {
       const engineHealth = Math.max(hp('engine_main'), hp('engine_aux'), hp('engine_adv'));
-      const engineMat = shipMat(0x263238, engineHealth || 0.35);
+      const engineMat = shipMat(0x51636c, engineHealth || 0.35);
       addCyl(visible, 'gunship:port_engine', [-3.7, 0.9, -2.75], 0.68, 2.9, engineMat, 'Z');
       addCyl(visible, 'gunship:starboard_engine', [3.7, 0.9, -2.75], 0.68, 2.9, engineMat, 'Z');
       addCyl(visible, 'gunship:main_nozzle', [0, 0.35, -5.18], 0.58, 0.55, engineMat, 'Z');
@@ -290,6 +290,7 @@ export class Ship {
       // Resting on ground: stay put (terrain is static; no drift).
       this.velocity.set(0, 0, 0);
       if (this._glow) this._glow.intensity = 0;
+      if (this._flames) for (const f of this._flames) f.visible = false;
       return;
     }
 
@@ -602,8 +603,10 @@ const _mobileMatrix = new THREE.Matrix4();
 
 function shipMat(color, health = 1) {
   const mat = new THREE.MeshLambertMaterial({ color });
-  if (health < READINESS_RULES.degradedBelowFrac) mat.color.multiplyScalar(0.35);
-  else if (health < 0.8) mat.color.multiplyScalar(0.7);
+  // Damage dims toward a rusty dark steel, never to near-black (a dead
+  // engine must still read as an OBJECT — verified on the live staging route).
+  if (health < READINESS_RULES.degradedBelowFrac) { mat.color.multiplyScalar(0.6); mat.color.lerp(new THREE.Color(0x5a4636), 0.35); }
+  else if (health < 0.8) mat.color.multiplyScalar(0.82);
   return mat;
 }
 
