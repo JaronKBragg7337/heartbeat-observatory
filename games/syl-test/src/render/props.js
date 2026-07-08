@@ -229,7 +229,7 @@ export function makeVent(rng, rockHex, lavaHex = 0xff6d00) {
 // fills any slope gap. All exteriors get painted textures, roofs, and trim so
 // nothing reads as a naked box.
 
-function foundation(w, d, gap, hex = 0x353c41) {
+function foundation(w, d, gap, hex = 0x5a656c) {
   // Plinth from local y=0 up to y=gap+0.4 — covers the slope gap under the
   // lowest corner so no wall edge ever hangs in the air.
   const h = gap + 0.4;
@@ -263,7 +263,7 @@ export function makeGabledBuilding(rng, w, h, d, baseHex, accentHex, slopeGap = 
   ]);
   roofGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
   roofGeo.computeVertexNormals();
-  const roof = new THREE.Mesh(roofGeo, surfaceMat({ color: 0x37464f, flat: true, mapKey: 'roof' }));
+  const roof = new THREE.Mesh(roofGeo, surfaceMat({ color: 0x4d5c65, flat: true, mapKey: 'roof' }));
   g.add(roof);
   // Door
   const door = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.2, 0.15), surfaceMat({ color: accentHex, mapKey: 'door' }));
@@ -310,7 +310,7 @@ export function makeBlockTower(rng, w, totalH, baseHex, accentHex, slopeGap = 0.
     tier.position.y = y + th / 2;
     g.add(tier);
     // Tier trim
-    const trim = new THREE.Mesh(new THREE.BoxGeometry(cw + 0.3, 0.35, cw + 0.3), surfaceMat({ color: 0x2c353b, mapKey: 'trim' }));
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(cw + 0.3, 0.35, cw + 0.3), surfaceMat({ color: 0x46525a, mapKey: 'trim' }));
     trim.position.y = y + th;
     g.add(trim);
     y += th;
@@ -341,7 +341,7 @@ export function makeStorageTank(rng, r, h, hex, slopeGap = 0.4) {
   const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, h * 0.9, 6), surfaceMat({ color: 0x6b7d86, mapKey: 'pipe' }));
   pipe.position.set(r + 0.25, f.top + h * 0.45, 0);
   g.add(pipe);
-  const ladder = new THREE.Mesh(new THREE.BoxGeometry(0.5, h, 0.1), surfaceMat({ color: 0x39444b, mapKey: 'ladder' }));
+  const ladder = new THREE.Mesh(new THREE.BoxGeometry(0.5, h, 0.1), surfaceMat({ color: 0x4d5a61, mapKey: 'ladder' }));
   ladder.position.set(0, f.top + h / 2, r + 0.06);
   g.add(ladder);
   return g;
@@ -359,7 +359,7 @@ export function makeLatticeMast(rng, h, hex, lightHex) {
     arm.rotation.y = i * 0.7;
     g.add(arm);
   }
-  const wireMat = surfaceMat({ color: 0x222a2f, mapKey: 'wire' });
+  const wireMat = surfaceMat({ color: 0x39444b, mapKey: 'wire' });
   for (let i = 0; i < 3; i++) {
     const a = (i / 3) * Math.PI * 2;
     const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, h * 1.02, 3), wireMat);
@@ -406,7 +406,7 @@ export function makeLandingPad(accentHex) {
     [
       surfaceMat({ color: 0x37474f, mapKey: 'padside' }),                            // side
       surfaceMat({ color: 0xffffff, map: padTexture(accentHex), mapKey: `pad${accentHex}` }), // top
-      surfaceMat({ color: 0x2b3339, mapKey: 'padbottom' }),                          // bottom
+      surfaceMat({ color: 0x3a444c, mapKey: 'padbottom' }),                          // bottom
     ]
   );
   top.position.y = 0.55;
@@ -430,7 +430,7 @@ export function makeContainer(rng, hex) {
   box.position.y = 1.35;
   g.add(box);
   for (const s of [-1.6, 1.6]) {
-    const skid = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 2.2), surfaceMat({ color: 0x2c353b, mapKey: 'trim' }));
+    const skid = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 2.2), surfaceMat({ color: 0x46525a, mapKey: 'trim' }));
     skid.position.set(s, 0.15, 0);
     g.add(skid);
   }

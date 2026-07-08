@@ -96,7 +96,7 @@ export function buildingWallTexture(baseHex, accentHex, key = '') {
     ctx.fillStyle = css(baseHex);
     ctx.fillRect(0, 0, s, s);
     // Panel seams
-    ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.20)';
     ctx.lineWidth = 1;
     for (let y = 0; y <= s; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(s, y); ctx.stroke(); }
     for (let x = 0; x <= s; x += 43) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, s); ctx.stroke(); }
@@ -128,7 +128,7 @@ export function metalPlateTexture(baseHex) {
   return makeTex(`metal:${baseHex}`, 128, (ctx, s) => {
     ctx.fillStyle = css(baseHex);
     ctx.fillRect(0, 0, s, s);
-    ctx.strokeStyle = 'rgba(0,0,0,0.30)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
     for (let y = 0; y <= s; y += 26) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(s, y); ctx.stroke(); }
     for (let x = 0; x <= s; x += 34) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, s); ctx.stroke(); }
     // Rivets

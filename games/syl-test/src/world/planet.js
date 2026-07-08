@@ -510,21 +510,21 @@ function buildZoneStructures(body, zone, factionById) {
     // watchtower at (30,30) (collider: circle r3.2 h24) + faction banner.
     const offsets = [[40, 0], [-42, 10], [10, -46], [-15, 44]];
     for (const [ox, oz] of offsets) {
-      const hut = makeQuonsetHut(rng, 13, 11, 0x4a5c66, fColor, 0.7);
+      const hut = makeQuonsetHut(rng, 13, 11, 0x8d9ca6, fColor, 0.7);
       const d = offsetDir(zone._dirV, ox, oz, body);
       placeOnSurface(body, d, hut, -0.3);
       hut.rotateY(rng() * Math.PI);
       g.add(hut);
     }
     const towerDir = offsetDir(zone._dirV, 30, 30, body);
-    const tower = makeLatticeMast(rng, 22, 0x4a5c66, 0xd32f2f);
+    const tower = makeLatticeMast(rng, 22, 0x8d9ca6, 0xd32f2f);
     placeOnSurface(body, towerDir, tower, -0.2);
     g.add(tower);
     const banner = makeBanner(rng, fColor);
     placeOnSurface(body, offsetDir(zone._dirV, 33, -14, body), banner, -0.1);
     g.add(banner);
     for (const [cx, cz] of [[-30, -26], [-27, -30], [24, 28]]) {
-      const box = makeContainer(rng, 0x51616b);
+      const box = makeContainer(rng, 0x8a99a3);
       placeOnSurface(body, offsetDir(zone._dirV, cx, cz, body), box, -0.15);
       box.rotateY(rng() * Math.PI);
       g.add(box);
@@ -532,7 +532,7 @@ function buildZoneStructures(body, zone, factionById) {
   } else if (zone.structures === 'relay') {
     // Relay: dish on a yoke (collider: circle r7.5 h10 at (18,-12)).
     const d = offsetDir(zone._dirV, 18, -12, body);
-    const dish = makeDish(rng, 6, 0x78909c);
+    const dish = makeDish(rng, 6, 0x9fb2bd);
     placeOnSurface(body, d, dish, -0.2);
     g.add(dish);
     const mast = makeLatticeMast(rng, 9, 0x546e7a, fColor);
@@ -541,13 +541,13 @@ function buildZoneStructures(body, zone, factionById) {
   } else if (zone.structures === 'depot') {
     // Depot: gabled shed (box half 12x7 h8 at (-18,0)), quonset (box half 9x6
     // h6 at (18,7)), domed tank (circle r4 h15 at (5,-18)).
-    const shedA = makeGabledBuilding(rng, 21, 6.5, 11, 0x4a5c66, fColor, 0.8);
+    const shedA = makeGabledBuilding(rng, 21, 6.5, 11, 0x8d9ca6, fColor, 0.8);
     placeOnSurface(body, offsetDir(zone._dirV, -18, 0, body), shedA, -0.3);
     g.add(shedA);
-    const shedB = makeQuonsetHut(rng, 15, 9, 0x37474f, fColor, 0.7);
+    const shedB = makeQuonsetHut(rng, 15, 9, 0x7e8f99, fColor, 0.7);
     placeOnSurface(body, offsetDir(zone._dirV, 18, 7, body), shedB, -0.3);
     g.add(shedB);
-    const tank = makeStorageTank(rng, 3.1, 9, 0x55656f, 0.7);
+    const tank = makeStorageTank(rng, 3.1, 9, 0x8e9da7, 0.7);
     placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), tank, -0.3);
     g.add(tank);
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), glowMat(fColor));
@@ -562,10 +562,10 @@ function buildZoneStructures(body, zone, factionById) {
     // Transit: terminal building (box half 15x7 h8 at (-20,4)), concourse
     // quonset (box half 11x6 h7 at (20,-5)), two lattice masts (circles r3.5
     // h18 at (0,±24)), arrival gate ring.
-    const terminal = makeGabledBuilding(rng, 27, 7, 11, 0x51616b, fColor, 0.8);
+    const terminal = makeGabledBuilding(rng, 27, 7, 11, 0x8a99a3, fColor, 0.8);
     placeOnSurface(body, offsetDir(zone._dirV, -20, 4, body), terminal, -0.3);
     g.add(terminal);
-    const concourse = makeQuonsetHut(rng, 18, 9, 0x445059, fColor, 0.7);
+    const concourse = makeQuonsetHut(rng, 18, 9, 0x7a8a94, fColor, 0.7);
     placeOnSurface(body, offsetDir(zone._dirV, 20, -5, body), concourse, -0.3);
     g.add(concourse);
     for (const north of [24, -24]) {

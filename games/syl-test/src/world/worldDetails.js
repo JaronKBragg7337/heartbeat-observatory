@@ -196,14 +196,14 @@ export function buildWorldDetailLayer(body, factionById, terrainRadiusAtFn, opti
 }
 
 function buildSettlementProp(spec, plan, accent, rng) {
-  const base = 0x4d5c66;
+  const base = 0x95a4ae;
   switch (spec.type) {
     case 'gabled': return makeGabledBuilding(rng, spec.w, spec.h, spec.d, base, accent, 1.2);
     case 'quonset': return makeQuonsetHut(rng, spec.w, spec.d, base, accent, 1.2);
     case 'tower': return makeBlockTower(rng, Math.min(spec.w, spec.d), spec.h + 3, base, accent, 1.2);
-    case 'container': return makeContainer(rng, 0x5b6a74);
+    case 'container': return makeContainer(rng, 0x7d8c96);
     case 'solar': return makeSolarArray(rng);
-    case 'canopy': return makeCanopy(rng, spec.w, spec.d, 0x33535e);
+    case 'canopy': return makeCanopy(rng, spec.w, spec.d, 0x4f7482);
     case 'banner': return makeBanner(rng, accent);
     default: return null;
   }
@@ -216,7 +216,7 @@ function buildNatureProp(spec, plan, rngShared) {
     case 'ice': return rng() < 0.7 ? makeIceSpire(rng, 0xb9f2ff) : makeCrystalCluster(rng, 0x9fe8ff);
     case 'volcanic': return makeVent(rng, 0x25201e);
     case 'desert': return rng() < 0.6 ? makeRock(rng, 0xc49a62) : makeBoulderCluster(rng, 0xb08850);
-    case 'scrap': return rng() < 0.5 ? makeContainer(rng, 0x8a5a34) : makeBoulderCluster(rng, 0x7d6753);
+    case 'scrap': return rng() < 0.5 ? makeContainer(rng, 0xa06a3c) : makeBoulderCluster(rng, 0x7d6753);
     case 'archipelago': return rng() < 0.5 ? makeTree(rng, 0x54422c, 0x5e9e6a) : makeRock(rng, 0x76858f);
     case 'ore': return makeCrystalCluster(rng, 0xd8dde2);
     default: return rng() < 0.4 ? makeBoulderCluster(rng, 0x8a8f95) : makeRock(rng, 0x8a8f95);

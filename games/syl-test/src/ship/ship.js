@@ -169,8 +169,8 @@ export class Ship {
 
     const frameHealth = hp('frame_core') || 0.25;
     const hullHealth = Math.max(hp('hull_top'), hp('hull_heavy_top'), frameHealth);
-    const armorMat = shipMat(0x3f5350, hullHealth);
-    const darkMat = shipMat(0x1f2828, frameHealth);
+    const armorMat = shipMat(0x62787a, hullHealth);
+    const darkMat = shipMat(0x37464a, frameHealth);
     const trimMat = shipMat(0x7b1e1e, hullHealth);
     const interiorMat = shipMat(0x263238, frameHealth);
     const glassMat = new THREE.MeshLambertMaterial({ color: 0x8fd7ff, transparent: true, opacity: has('cockpit_fwd') ? 0.42 : 0.12 });

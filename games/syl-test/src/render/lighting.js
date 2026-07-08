@@ -27,7 +27,7 @@ import * as THREE from 'three';
 import { dominantBody, altitudeAt } from '../world/planet.js';
 import { TUNE } from '../dev/tuner.js';
 
-export const SUN_DIR = new THREE.Vector3(1, 0.42, 0.31).normalize();
+export const SUN_DIR = new THREE.Vector3(0.32, 0.9, 0.18).normalize(); // high sun over the Fortis outpost spawn — verified against the live staging route
 
 const _skyCol = new THREE.Color();
 const _fogCol = new THREE.Color();
@@ -43,7 +43,7 @@ export function initLighting(engine, settings) {
   // look was largely linear-space output with no tone curve).
   engine.renderer.outputColorSpace = THREE.SRGBColorSpace;
   engine.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  engine.renderer.toneMappingExposure = 1.12 * (TUNE.exposure || 1);
+  engine.renderer.toneMappingExposure = 1.18 * (TUNE.exposure || 1);
 
   const sun = new THREE.DirectionalLight(SUN_WARM, 2.6);
   sun.position.copy(SUN_DIR).multiplyScalar(260);
@@ -104,9 +104,9 @@ export function updateLighting(L, engine, bodies) {
     L.hemi.color.copy(t > 0.001 && body.atmosphere ? _skyCol : new THREE.Color(0x8899bb));
     L.hemi.groundColor.copy(_groundCol).multiplyScalar(0.8);
   }
-  L.hemi.intensity = (0.22 + 0.58 * t) * (TUNE.hemi || 1);
+  L.hemi.intensity = (0.3 + 0.75 * t) * (TUNE.hemi || 1);
 
   // Sun: slightly softer inside atmosphere (scatter), harsher in vacuum.
   L.sun.intensity = (2.9 - 0.5 * t) * (TUNE.sun || 1);
-  engine.renderer.toneMappingExposure = 1.12 * (TUNE.exposure || 1);
+  engine.renderer.toneMappingExposure = 1.18 * (TUNE.exposure || 1);
 }
