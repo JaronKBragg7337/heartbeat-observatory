@@ -7,6 +7,21 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Real-time multiplayer + move persistence
+
+**State:** live. Placements now sync live across all players; moves/rotations persist too.
+
+**Shipped:**
+- **Supabase Realtime** on the `placements` table: printer lab subscribes and applies INSERT/UPDATE/DELETE from any builder live — place/move/delete broadcasts to all connected players (multiplayer) with no reload and no custom netcode. Client-generated row ids so a player's own change isn't echoed as a duplicate.
+- **Move/rotate persistence**: moving or rotating a placed object now UPDATEs its row (added an UPDATE RLS policy scoped to `world='printer-lab'`; set replica identity full for realtime).
+- Independent of the engine's netcode (Kyler's concern was future conflict when the printer is embedded in `/engine` — the table can coexist or the engine can read it).
+
+**Verified:** local Chrome — inserted a row via SQL (simulated another player) → boat appeared live ("Another builder placed a Boat"); deleted the row → boat vanished live; saved cottage still loads; zero console errors.
+
+**Next:** printer sizes (large/medium/small + selector), then individual-piece printing + edge-snapping.
+
+---
+
 ## 2026-07-09 — Claude (Opus 4.8, Claude Code) — World-state persistence (Supabase `placements`)
 
 **State:** live. Placed objects in the printer lab now persist across reloads via Supabase — the foundation for "players build → AIs know the world → cleanup is a query."
