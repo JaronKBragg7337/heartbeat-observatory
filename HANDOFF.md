@@ -7,6 +7,25 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Opus 4.8, Claude Code) — World Printer Lab live at /3DPrinterAsset/ + homepage tab
+
+**State:** live. https://www.heartbeatobservatory.com/3DPrinterAsset/ serves World Printer Lab v2d, and a "3D Printer" card now sits in the homepage grid (after Games, before The Engine). Kyler can test from any phone over public HTTPS — no LAN/localhost/same-Wi-Fi.
+
+**Shipped:**
+- **New isolated static route `3DPrinterAsset/` — build-free.** Raw v2d source + vendored Three.js (`vendor/three.module.min.js` + `three.core.min.js` + `OrbitControls.js`) resolved via an import map in `index.html`. No Vite build, no Vercel build config — heartbeat serves it as plain static files. All paths relative, so the folder is path-portable and fully isolated (breaking it can't break the rest of the site). Sourced from the MIT World-Printer-Lab-For-3D-Worlds repo (v2d = `src/main-v2d.js`, with its `import './style.css'` line dropped in favor of a `<link>`).
+- **Homepage tab.** Added `printer:"/3DPrinterAsset/"` to the SLUGS map in `index.html`, and inserted a `surfaces` row (key=`printer`, name=`3D Printer`, status=`live`, position=6; bumped `engine` to 7).
+
+**Verified:** loaded the live route and the homepage card click-through in a real browser — full v2d scene renders, **zero console errors**; every asset returns 200 with the correct MIME type (JS as `application/javascript`, critical for the import map). surfaces order confirmed via SQL.
+
+**Next:** ChatGPT/Grok keep iterating v2 in the World-Printer-Lab repo. When a change is ready for the live site, re-vendor the new `src/main-v2dX.js` into `3DPrinterAsset/main.js` here and open a PR (owner merges).
+
+**Gotchas:**
+- **The live printer is a VENDORED COPY.** Pushing to the World-Printer-Lab repo does NOT update the live site by itself — the copy in `heartbeat-observatory/3DPrinterAsset/main.js` must be updated too.
+- New homepage grid cards need BOTH a `surfaces` row AND a `SLUGS` entry — without the slug the card href falls back to `#`. So insert the DB row only after the SLUGS change is deployed.
+- If the lab is ever built with Vite instead, set `--base=/3DPrinterAsset/` in **PowerShell**, not Git Bash — Git Bash mangles the leading-slash base into `/Program Files/Git/3DPrinterAsset/`.
+
+---
+
 ## 2026-07-09 — Claude (Fable 5, Cowork) — Site-wide form-language pass (visual-direction brief)
 
 **State:** live. All three worlds moved off blockout geometry in one run.
