@@ -24,6 +24,8 @@ app.innerHTML = `
         <button id="runCommand">Print</button>
         <button id="voiceButton" class="secondary">🎙</button>
       </div>
+      <div class="section-title">Printer Size</div>
+      <div class="row" id="sizeButtons"></div>
       <div class="section-title">Object Recipes</div>
       <div class="row" id="recipeButtons"></div>
       <div class="section-title">Printer Bed Flow</div>
@@ -159,9 +161,9 @@ const mat = {
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x071012);
-scene.fog = new THREE.Fog(0x071012, 30, 96);
+scene.fog = new THREE.Fog(0x071012, 45, 170);
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth/window.innerHeight, .1, 1000);
-camera.position.set(11.4,7.4,12.6);
+camera.position.set(14,9.2,15.6);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -175,21 +177,21 @@ controls.target.set(0,2.1,-1.2);
 controls.enableDamping = true;
 controls.dampingFactor = .08;
 controls.minDistance = 5;
-controls.maxDistance = 60;
+controls.maxDistance = 120;
 controls.maxPolarAngle = Math.PI*.49;
 controls.update();
 
 scene.add(new THREE.AmbientLight(0x5e6b66,.48));
 const key = new THREE.DirectionalLight(0xffffff,1.65);
 key.position.set(17,25,12); key.castShadow=true; key.shadow.mapSize.set(2048,2048);
-key.shadow.camera.left=-34; key.shadow.camera.right=34; key.shadow.camera.top=34; key.shadow.camera.bottom=-34; scene.add(key);
+key.shadow.camera.left=-50; key.shadow.camera.right=50; key.shadow.camera.top=50; key.shadow.camera.bottom=-50; scene.add(key);
 const rim = new THREE.DirectionalLight(0x8ffff0,.48); rim.position.set(-12,9,-8); scene.add(rim);
 scene.add(new THREE.HemisphereLight(0x9fc9ff,0x302310,.42));
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(90,90), mat.ground);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(150,150), mat.ground);
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-const grid = new THREE.GridHelper(90,90,0x00ff9d,0x33453f);
-grid.material.transparent=true; grid.material.opacity=.24; grid.position.y=.012; scene.add(grid);
-const water = new THREE.Mesh(new THREE.RingGeometry(20,24,128), new THREE.MeshPhysicalMaterial({ color:0x49c4dc, transparent:true, opacity:.34, roughness:.08, clearcoat:1 }));
+const grid = new THREE.GridHelper(150,150,0x00ff9d,0x33453f);
+grid.material.transparent=true; grid.material.opacity=.2; grid.position.y=.012; scene.add(grid);
+const water = new THREE.Mesh(new THREE.RingGeometry(34,40,128), new THREE.MeshPhysicalMaterial({ color:0x49c4dc, transparent:true, opacity:.34, roughness:.08, clearcoat:1 }));
 water.rotation.x=-Math.PI/2; water.position.y=.018; scene.add(water);
 
 function shadow(root){ root.traverse(c=>{ if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } }); return root; }
@@ -355,15 +357,14 @@ const player=createPlayer(); player.position.set(0,0,5.25); scene.add(player);
 const handWorld=()=>player.localToWorld(new THREE.Vector3(0,1.55,0));
 
 function createStall(){ const g=new THREE.Group(); g.name='Market Stall'; const counter=new THREE.Mesh(new THREE.BoxGeometry(2.45,.58,1.08),mat.wood); counter.position.y=.38; g.add(counter); for(const x of [-1.05,1.05]) for(const z of [-.42,.42]){ const p=cyl(.06,2.1,mat.darkWood,14); p.position.set(x,1.35,z); g.add(p); } const canopy=new THREE.Mesh(new THREE.CylinderGeometry(.82,.82,2.65,34,1,false,0,Math.PI),mat.roof); canopy.rotation.z=Math.PI/2; canopy.rotation.y=Math.PI/2; canopy.position.y=2.35; g.add(canopy); return shadow(g); }
-function createCottage(){
+function createCottage(s=1){
   const g=new THREE.Group(); g.name='Cottage';
-  // Walls: sliced brick shell (footprint 2.8 x 2.25, height 1.85, sits from y=0).
-  for(const b of brickShell(2.8,1.85,2.25,{unit:.44,courseH:.3,material:mat.wall,material2:mat.cream})){ b.position.y+=.925; g.add(b); }
-  // Roof: solid deck + overlapping shingles, seated so the eaves meet the walls.
-  for(const t of barrelShingles(1.42,2.65,{tile:.4})){ t.position.y+=1.75; g.add(t); }
-  // Detail pieces (already small/readable, printed as-is).
-  const door=extrude(archShape(.62,1.05,.38),.08,mat.darkWood); door.position.set(0,.5,1.17); g.add(door);
-  for(const x of [-.78,.78]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.08,32),mat.glass); w.rotation.x=Math.PI/2; w.position.set(x,1.15,1.18); g.add(w); }
+  // Dimensions scale with s, but the brick/tile size stays CONSTANT — a bigger
+  // cottage is made of MORE small pieces, not bigger ones.
+  for(const b of brickShell(2.8*s,1.85*s,2.25*s,{unit:.44,courseH:.3,material:mat.wall,material2:mat.cream})){ b.position.y+=.925*s; g.add(b); }
+  for(const t of barrelShingles(1.42*s,2.65*s,{tile:.4})){ t.position.y+=1.75*s; g.add(t); }
+  const door=extrude(archShape(.62*s,1.05*s,.38*s),.08*s,mat.darkWood); door.position.set(0,.5*s,1.17*s); g.add(door);
+  for(const x of [-.78*s,.78*s]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.22*s,.22*s,.08*s,32),mat.glass); w.rotation.x=Math.PI/2; w.position.set(x,1.15*s,1.18*s); g.add(w); }
   return g;
 }
 function createBoat(){ const g=new THREE.Group(); g.name='Boat'; const s=new THREE.Shape(); s.moveTo(-1.55,0); s.quadraticCurveTo(-1.05,-.55,0,-.6); s.quadraticCurveTo(1.05,-.55,1.55,0); s.quadraticCurveTo(.75,.38,0,.42); s.quadraticCurveTo(-.75,.38,-1.55,0); const hull=extrude(s,1.2,mat.wood,.045); hull.rotation.x=Math.PI/2; hull.position.y=.54; g.add(hull); const mast=cyl(.045,1.85,mat.darkWood,12); mast.position.set(.12,1.5,0); g.add(mast); const ss=new THREE.Shape(); ss.moveTo(0,0); ss.lineTo(.75,.32); ss.lineTo(.04,1.2); ss.lineTo(0,0); const sail=extrude(ss,.035,mat.cream); sail.position.set(.38,1.45,.02); sail.rotation.y=Math.PI/2; g.add(sail); return shadow(g); }
@@ -383,6 +384,17 @@ const recipes=[
   {id:'creature',label:'Creature',aliases:['creature','robot','monster','eyeball','character'],dims:[1.9,1.9,1.5],complexity:1.4,create:createCreature},
   {id:'campfire',label:'Campfire',aliases:['campfire','fire','firepit'],dims:[1.1,1.1,1.0],complexity:.55,create:createCampfire}
 ];
+
+// Printer sizes: small (tiny props) / medium (current) / large (buildings).
+const SIZES={ small:0.55, medium:1, large:1.8 };
+const SIZE_LABELS={ small:'Small', medium:'Medium', large:'Large' };
+let printSize='medium';
+// Bake a uniform scale into an object's geometry (not group scale, which the print
+// reveal resets). Used for non-parametrised recipes so they can be sized too.
+function bakeScale(root,s){ if(s===1) return root; root.traverse(m=>{ if(m.isMesh){ m.geometry.scale(s,s,s); m.position.multiplyScalar(s); } }); return root; }
+// Build a recipe at a given size. The cottage builds bigger with the SAME small
+// pieces; other recipes bake the scale into their geometry.
+function buildAtSize(recipe,s){ return recipe.id==='cottage' ? recipe.create(s) : bakeScale(recipe.create(), s); }
 
 let phase='ready', printedOnBed=null, carriedPreview=null, selected=null, selectionBox=null, pathGroup=null, liveBead=null, liveThread=null, idCounter=0, slotIndex=0;
 const placed=[]; const slots=[[0,2.7],[-4,2.4],[4,2.4],[-4,6],[4,6],[0,7.2],[-7,0],[7,0]];
@@ -475,7 +487,7 @@ async function startPrint(recipe){
   clearSelection(); setPhase('printing');
   // Auto-hide the menu when a build starts so the print is visible right away.
   hud.classList.add('collapsed'); hud.classList.remove('mobile-start'); toggleHud.textContent='Open';
-  const obj=recipe.create(); obj.userData={label:recipe.label,recipeId:recipe.id,state:'printing'};
+  const obj=buildAtSize(recipe, SIZES[printSize]); obj.userData={label:recipe.label,recipeId:recipe.id,state:'printing',sizeScale:SIZES[printSize]};
   const parts=collectPartsLocal(obj);
   obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
   const duration=printDuration(recipe,parts);
@@ -536,18 +548,18 @@ const newId=()=> (crypto&&crypto.randomUUID ? crypto.randomUUID() : String(Date.
 function findPlaced(dbId){ return placed.find(o=>o.userData.dbId===dbId); }
 function spawnPlacementRow(row){
   const recipe=recipes.find(r=>r.id===row.type); if(!recipe) return null;
-  const obj=recipe.create();
-  obj.userData={label:row.label||recipe.label, recipeId:recipe.id, id:++idCounter, state:'placed', dbId:row.id};
-  obj.position.set(row.x,row.y,row.z); obj.rotation.y=row.rot_y||0; if(row.scale) obj.scale.setScalar(row.scale);
+  const obj=buildAtSize(recipe, row.scale||1); // rebuild at the saved size (baked into geometry)
+  obj.userData={label:row.label||recipe.label, recipeId:recipe.id, id:++idCounter, state:'placed', dbId:row.id, sizeScale:row.scale||1};
+  obj.position.set(row.x,row.y,row.z); obj.rotation.y=row.rot_y||0;
   placed.push(obj); scene.add(obj); return obj;
 }
 async function savePlacement(obj){
   obj.userData.dbId=newId(); // client id so our own realtime echo is recognised, not duplicated
-  try{ await supabase.from('placements').insert({ id:obj.userData.dbId, world:WORLD, type:obj.userData.recipeId, label:obj.userData.label, x:obj.position.x, y:obj.position.y, z:obj.position.z, rot_y:obj.rotation.y, scale:obj.scale.x||1 }); }catch(e){}
+  try{ await supabase.from('placements').insert({ id:obj.userData.dbId, world:WORLD, type:obj.userData.recipeId, label:obj.userData.label, x:obj.position.x, y:obj.position.y, z:obj.position.z, rot_y:obj.rotation.y, scale:obj.userData.sizeScale||1 }); }catch(e){}
 }
 async function updatePlacement(obj){
   if(!obj.userData.dbId) return;
-  try{ await supabase.from('placements').update({ x:obj.position.x, y:obj.position.y, z:obj.position.z, rot_y:obj.rotation.y, scale:obj.scale.x||1 }).eq('id',obj.userData.dbId); }catch(e){}
+  try{ await supabase.from('placements').update({ x:obj.position.x, y:obj.position.y, z:obj.position.z, rot_y:obj.rotation.y, scale:obj.userData.sizeScale||1 }).eq('id',obj.userData.dbId); }catch(e){}
 }
 async function deletePlacement(obj){
   if(!obj.userData.dbId) return;
@@ -571,6 +583,9 @@ function subscribeWorld(){
   }catch(e){}
 }
 
+const sizeButtonsEl=$('#sizeButtons');
+function renderSizeButtons(){ sizeButtonsEl.innerHTML=''; for(const key of ['small','medium','large']){ const b=document.createElement('button'); b.className='secondary'; b.textContent=SIZE_LABELS[key]; if(printSize===key){ b.style.borderColor='#00ff9d'; b.style.color='#00ff9d'; b.style.fontWeight='800'; } b.addEventListener('click',()=>{ printSize=key; setStatus(`Printer size set to ${SIZE_LABELS[key]}. The next print will be ${key}.`); renderSizeButtons(); }); sizeButtonsEl.appendChild(b); } }
+renderSizeButtons();
 for(const recipe of recipes){ const b=document.createElement('button'); b.className='secondary'; b.textContent=recipe.label; b.addEventListener('click',()=>startPrint(recipe)); recipeButtons.appendChild(b); }
 runButton.addEventListener('click',()=>{ const r=parseCommand(commandInput.value); if(!r){setStatus('No recipe matched. Try stall, cottage, boat, tree, cart, spiral, creature, or campfire.');return;} startPrint(r); });
 pickupButton.addEventListener('click',pickupPrint); placeButton.addEventListener('click',placePreview); cancelButton.addEventListener('click',cancelOrDelete);
@@ -602,4 +617,6 @@ setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Objects are sliced in
 // (handy for testing and for linking straight to a specific print).
 const autoParam=new URLSearchParams(location.search).get('auto');
 const autoPlace=new URLSearchParams(location.search).get('place');
+const autoSize=new URLSearchParams(location.search).get('size');
+if(autoSize && SIZES[autoSize]){ printSize=autoSize; renderSizeButtons(); }
 if(autoParam){ const r=recipes.find(x=>x.id===autoParam)||parseCommand(autoParam); if(r) setTimeout(async()=>{ await startPrint(r); if(autoPlace){ await pickupPrint(); placePreview(); } },500); }

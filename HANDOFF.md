@@ -7,6 +7,21 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Printer sizes + bigger world
+
+**State:** live. A Printer Size selector (Small/Medium/Large) is in the menu; the world is larger and less crammed.
+
+**Shipped:**
+- **Printer sizes** `SIZES={small:0.55, medium:1, large:1.8}`, picked in a new "Printer Size" menu row. The **cottage** is parametrised so a bigger size = MORE small pieces (constant brick/tile size) — honors "keep pieces small on big builds." Other recipes bake the scale into their geometry (`bakeScale`). `buildAtSize(recipe,s)` is the single builder used by printing AND rebuild-from-DB, so size **persists and syncs** (stored in the `scale` column; a large cottage reloads/other players see it large).
+- **Bigger world:** ground/grid 90→150, water ring pushed out, fog 45→170, camera maxDistance 60→120 + pulled back, shadow bounds widened.
+- Auto-test hook extended: `?auto=<recipe>&size=<small|medium|large>&place=1`.
+
+**Verified:** local Chrome — placed a large cottage (clearly ~1.8× the medium one, same small bricks), saved at scale 1.8, reloaded → both medium + large rebuilt at correct sizes; zero console errors.
+
+**Note / next:** Large=1.8× fits the current bed. True ~5× "giant" builds need a physically bigger printer rig (the bed-local print math has fixed offsets), which is a follow-up. Next: individual-piece printing + edge-snapping on the small printer.
+
+---
+
 ## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Real-time multiplayer + move persistence
 
 **State:** live. Placements now sync live across all players; moves/rotations persist too.
