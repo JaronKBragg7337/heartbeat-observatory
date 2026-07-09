@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const BUILD = 'v2d — corrected bed-local component printing';
+const BUILD = 'v2e — sliced, granular piece-by-piece printing';
 const app = document.querySelector('#app');
 
 app.innerHTML = `
   <canvas id="world"></canvas>
   <section id="hud">
     <div class="topline">
-      <h1>World Printer Lab <span style="color:#00ff9d">v2d</span></h1>
+      <h1>World Printer Lab <span style="color:#00ff9d">v2e</span></h1>
       <button id="toggleHud" class="secondary">Hide</button>
     </div>
     <div class="hud-body">
@@ -51,7 +51,7 @@ app.innerHTML = `
       <div id="selected">Target: none</div>
     </div>
   </section>
-  <aside id="help">v2d: print stays on the bed. The nozzle follows the currently revealing object part.</aside>
+  <aside id="help">v2e: objects are sliced into many small pieces and printed piece by piece — the nozzle follows each fresh piece.</aside>
 `;
 
 const $ = (q) => document.querySelector(q);
@@ -204,6 +204,87 @@ function label(text,color='#00ff9d'){
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; const s=new THREE.Sprite(new THREE.SpriteMaterial({ map:t, transparent:true })); s.scale.set(3.8,.9,1); return s;
 }
 
+// ---------------------------------------------------------------------------
+// SLICER — reusable "cut a shape into many small printable pieces" system.
+// Granularity is what makes a print read as real (see the campfire's small
+// stones). Big primitives get sliced down so the nozzle works through many
+// small pieces bottom-up. Foundation for piece-built world objects.
+// ---------------------------------------------------------------------------
+function markPiece(m){ m.castShadow=false; m.receiveShadow=false; m.userData.piece=true; return m; }
+// Fill a 1D span [-len/2, len/2] with brick segments of ~bw, optional half-brick
+// stagger so seams alternate course to course (running bond). Returns [center,width].
+function fillCourse(len, bw, stagger){
+  const segs=[]; let x = stagger ? -len/2 - bw*0.5 : -len/2;
+  while(x < len/2 - 1e-3){
+    const x0=Math.max(-len/2, x), x1=Math.min(len/2, x+bw);
+    if(x1-x0 > bw*0.28) segs.push([(x0+x1)/2, x1-x0]);
+    x += bw;
+  }
+  return segs;
+}
+// Hollow brick shell for a box (w,h,d) centered at origin. Four walls of small
+// bricks in running bond, slight jitter. Returns an array of meshes.
+function brickShell(w,h,d,opts={}){
+  const { unit=0.42, courseH=0.3, gap=0.035, thickness=0.15, material=mat.wall, material2=mat.cream, jitter=0.02 } = opts;
+  const out=[];
+  const nCourses=Math.max(2, Math.round(h/courseH)), ch=h/nCourses;
+  const walls=[
+    {along:'x', len:w, fixed:d/2},
+    {along:'x', len:w, fixed:-d/2},
+    {along:'z', len:d, fixed:w/2},
+    {along:'z', len:d, fixed:-w/2},
+  ];
+  for(let c=0;c<nCourses;c++){
+    const y=-h/2 + ch*(c+0.5), stagger=c%2===1;
+    for(const wl of walls){
+      const nB=Math.max(1, Math.round(wl.len/unit)), bw=wl.len/nB;
+      for(const [pos,width] of fillCourse(wl.len, bw, stagger)){
+        const jx=(Math.random()-.5)*jitter, jy=(Math.random()-.5)*jitter;
+        const mtl=((c+Math.round(pos*3))%2)?material:material2;
+        let geo, px, pz;
+        if(wl.along==='x'){ geo=new THREE.BoxGeometry(width-gap, ch-gap, thickness); px=pos; pz=wl.fixed; }
+        else { geo=new THREE.BoxGeometry(thickness, ch-gap, width-gap); px=wl.fixed; pz=pos; }
+        const b=markPiece(new THREE.Mesh(geo, mtl));
+        b.position.set(px+ (wl.along==='z'? jx*0.0:0), y+jy, pz);
+        out.push(b);
+      }
+    }
+  }
+  return out;
+}
+// Curved barrel roof made of small shingle tiles, arc along X-Y, length along Z.
+// Radius R, length L. Returns an array of meshes (centered so eave line = y 0).
+function barrelShingles(R,L,opts={}){
+  const { tile=0.42, thickness=0.09, material=mat.roof, material2=mat.darkWood } = opts;
+  const out=[];
+  const nA=Math.max(5, Math.round(Math.PI*R/tile)), da=Math.PI/nA, tw=Math.PI*R/nA;
+  const nL=Math.max(2, Math.round(L/tile)), tl=L/nL;
+  for(let j=0;j<nL;j++){
+    const z=-L/2 + tl*(j+0.5);
+    for(let i=0;i<nA;i++){
+      const a=da*(i+0.5);
+      const nrm=new THREE.Vector3(Math.cos(a),Math.sin(a),0);
+      const tan=new THREE.Vector3(-Math.sin(a),Math.cos(a),0);
+      const len=new THREE.Vector3(0,0,1);
+      const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(tw*0.94, thickness, tl*0.94), (i+j)%2?material:material2));
+      b.position.set(Math.cos(a)*R, Math.sin(a)*R, z);
+      b.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(tan,nrm,len));
+      out.push(b);
+    }
+  }
+  // gable end fills so the barrel isn't hollow at the front/back
+  for(const ez of [-L/2, L/2]){
+    for(let i=0;i<nA;i++){
+      const a=da*(i+0.5), r=R*0.72;
+      const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(tw*0.9,0.08,0.12), mat.darkWood));
+      b.position.set(Math.cos(a)*r, Math.sin(a)*r, ez);
+      b.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(-Math.sin(a),Math.cos(a),0),new THREE.Vector3(Math.cos(a),Math.sin(a),0),new THREE.Vector3(0,0,1)));
+      out.push(b);
+    }
+  }
+  return out;
+}
+
 function createPrinter(){
   const g=new THREE.Group();
   const base=new THREE.Mesh(new THREE.BoxGeometry(6.6,.36,5.9),mat.dark); base.position.y=.18; g.add(base);
@@ -238,7 +319,17 @@ const player=createPlayer(); player.position.set(0,0,5.25); scene.add(player);
 const handWorld=()=>player.localToWorld(new THREE.Vector3(0,1.55,0));
 
 function createStall(){ const g=new THREE.Group(); g.name='Market Stall'; const counter=new THREE.Mesh(new THREE.BoxGeometry(2.45,.58,1.08),mat.wood); counter.position.y=.38; g.add(counter); for(const x of [-1.05,1.05]) for(const z of [-.42,.42]){ const p=cyl(.06,2.1,mat.darkWood,14); p.position.set(x,1.35,z); g.add(p); } const canopy=new THREE.Mesh(new THREE.CylinderGeometry(.82,.82,2.65,34,1,false,0,Math.PI),mat.roof); canopy.rotation.z=Math.PI/2; canopy.rotation.y=Math.PI/2; canopy.position.y=2.35; g.add(canopy); return shadow(g); }
-function createCottage(){ const g=new THREE.Group(); g.name='Cottage'; const body=new THREE.Mesh(new THREE.BoxGeometry(2.8,1.85,2.25),mat.wall); body.position.y=.93; g.add(body); const roof=new THREE.Mesh(new THREE.CylinderGeometry(1.42,1.42,2.65,36,1,false,0,Math.PI),mat.roof); roof.rotation.z=Math.PI/2; roof.rotation.y=Math.PI/2; roof.position.y=1.95; g.add(roof); const door=extrude(archShape(.62,1.05,.38),.08,mat.darkWood); door.position.set(0,.5,1.17); g.add(door); for(const x of [-.78,.78]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.08,32),mat.glass); w.rotation.x=Math.PI/2; w.position.set(x,1.15,1.18); g.add(w); } return shadow(g); }
+function createCottage(){
+  const g=new THREE.Group(); g.name='Cottage';
+  // Walls: sliced brick shell (footprint 2.8 x 2.25, height 1.85, sits from y=0).
+  for(const b of brickShell(2.8,1.85,2.25,{unit:.44,courseH:.3,material:mat.wall,material2:mat.cream})){ b.position.y+=.925; g.add(b); }
+  // Roof: sliced barrel of shingle tiles over the body.
+  for(const t of barrelShingles(1.42,2.65,{tile:.42})){ t.position.y+=1.82; g.add(t); }
+  // Detail pieces (already small/readable, printed as-is).
+  const door=extrude(archShape(.62,1.05,.38),.08,mat.darkWood); door.position.set(0,.5,1.17); g.add(door);
+  for(const x of [-.78,.78]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.08,32),mat.glass); w.rotation.x=Math.PI/2; w.position.set(x,1.15,1.18); g.add(w); }
+  return g;
+}
 function createBoat(){ const g=new THREE.Group(); g.name='Boat'; const s=new THREE.Shape(); s.moveTo(-1.55,0); s.quadraticCurveTo(-1.05,-.55,0,-.6); s.quadraticCurveTo(1.05,-.55,1.55,0); s.quadraticCurveTo(.75,.38,0,.42); s.quadraticCurveTo(-.75,.38,-1.55,0); const hull=extrude(s,1.2,mat.wood,.045); hull.rotation.x=Math.PI/2; hull.position.y=.54; g.add(hull); const mast=cyl(.045,1.85,mat.darkWood,12); mast.position.set(.12,1.5,0); g.add(mast); const ss=new THREE.Shape(); ss.moveTo(0,0); ss.lineTo(.75,.32); ss.lineTo(.04,1.2); ss.lineTo(0,0); const sail=extrude(ss,.035,mat.cream); sail.position.set(.38,1.45,.02); sail.rotation.y=Math.PI/2; g.add(sail); return shadow(g); }
 function createTree(){ const g=new THREE.Group(); g.name='Tree'; g.add(tube([new THREE.Vector3(0,0,0),new THREE.Vector3(.1,.8,.07),new THREE.Vector3(-.14,1.55,-.04),new THREE.Vector3(.08,2.15,.05)],.14,mat.wood,36)); for(const [x,y,z,s,m] of [[0,1.95,0,.9,mat.leafDark],[-.45,2.25,.08,.68,mat.leaf],[.45,2.3,-.1,.68,mat.leaf],[.04,2.65,.02,.58,mat.leaf]]){ const b=new THREE.Mesh(new THREE.DodecahedronGeometry(s,1),m); b.position.set(x,y,z); b.scale.y=.82; g.add(b); } return shadow(g); }
 function createCart(){ const g=new THREE.Group(); g.name='Cart'; const base=new THREE.Mesh(new THREE.BoxGeometry(2.2,.38,1.05),mat.wood); base.position.y=.7; g.add(base); for(const z of [-.6,.6]){ const side=new THREE.Mesh(new THREE.BoxGeometry(2.35,.62,.1),mat.darkWood); side.position.set(0,1,z); g.add(side); } for(const x of [-.78,.78]) for(const z of [-.72,.72]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.16,32),mat.darkWood); w.rotation.x=Math.PI/2; w.position.set(x,.32,z); g.add(w); } return shadow(g); }
@@ -260,7 +351,7 @@ const recipes=[
 let phase='ready', printedOnBed=null, carriedPreview=null, selected=null, selectionBox=null, pathGroup=null, liveBead=null, liveThread=null, idCounter=0, slotIndex=0;
 const placed=[]; const slots=[[0,2.7],[-4,2.4],[4,2.4],[-4,6],[4,6],[0,7.2],[-7,0],[7,0]];
 function parseCommand(text){ const t=text.toLowerCase().replace(/[^a-z0-9\s-]/g,' '); return recipes.find(r=>r.aliases.some(a=>t.includes(a))) || null; }
-function printDuration(recipe,parts){ const [w,d,h]=recipe.dims; return Math.round((3600+w*d*h*170+parts.length*360)*recipe.complexity); }
+function printDuration(recipe,parts){ const [w,d,h]=recipe.dims; const base=2600+w*d*h*90, per=parts.length*42; return Math.round(Math.min(11000, base+per)*(0.9+recipe.complexity*0.1)); }
 function setButtons(){ const busy=phase==='printing'||phase==='pickup-moving'; runButton.disabled=busy||phase==='printed-on-bed'; pickupButton.disabled=phase!=='printed-on-bed'; placeButton.disabled=phase!=='carried-preview'; recipeButtons.querySelectorAll('button').forEach(b=>{b.disabled=busy||phase==='printed-on-bed'}); }
 function setPhase(next){ phase=next; setState(next); setButtons(); }
 
@@ -283,14 +374,23 @@ function collectPartsLocal(root){
   return parts;
 }
 function revealPart(part,fraction){
-  const m=part.mesh; fraction=clamp01(fraction); m.visible=fraction>.015;
-  m.material=m.userData.baseMaterial; m.scale.copy(m.userData.baseScale); m.position.copy(m.userData.basePosition);
-  if(fraction<.98){
-    m.material=fadeMat(m.userData.baseMaterial,.12+fraction*.78);
-    if(Math.abs(m.rotation.x)<.2 && Math.abs(m.rotation.z)<.2){
-      m.scale.y=m.userData.baseScale.y*Math.max(.035,fraction);
-      m.position.y=m.userData.basePosition.y-part.size.y*(1-fraction)*.5;
-    }
+  const m=part.mesh; fraction=clamp01(fraction);
+  m.visible=fraction>.02;
+  if(!m.visible) return;
+  // Solid material immediately — no opacity fade (that was the "illusion" look).
+  m.material=m.userData.baseMaterial;
+  m.position.copy(m.userData.basePosition);
+  if(fraction>=1){ m.scale.copy(m.userData.baseScale); return; }
+  const bs=m.userData.baseScale;
+  const big = part.size.y>0.5 && Math.abs(m.rotation.x)<.2 && Math.abs(m.rotation.z)<.2;
+  if(big){
+    // Large un-sliced piece: build up from the bed (grow height + rise into place).
+    m.scale.set(bs.x, bs.y*Math.max(.06,fraction), bs.z);
+    m.position.y = m.userData.basePosition.y - part.size.y*(1-fraction)*.5;
+  } else {
+    // Small piece (sliced brick/tile/stone): quick solid deposit pop.
+    const grow=0.5+0.5*Math.min(1,fraction/0.7);
+    m.scale.set(bs.x*grow, bs.y*grow, bs.z*grow);
   }
 }
 function revealParts(parts,activeIndex,localT){ parts.forEach((p,i)=>{ if(i<activeIndex) revealPart(p,1); else if(i===activeIndex) revealPart(p,localT); else p.mesh.visible=false; }); }
@@ -335,7 +435,7 @@ async function startPrint(recipe){
   const parts=collectPartsLocal(obj);
   obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
   const duration=printDuration(recipe,parts);
-  setStatus(`v2d printing ${recipe.label}: ${parts.length} local parts, ${(duration/1000).toFixed(1)}s. Nozzle and object now share bed-local coordinates.`);
+  setStatus(`v2e printing ${recipe.label}: sliced into ${parts.length} small pieces, ${(duration/1000).toFixed(1)}s. Printing piece by piece, bottom-up.`);
   pathGroup=new THREE.Group(); scene.add(pathGroup);
   liveBead=new THREE.Mesh(new THREE.SphereGeometry(.075,16,10),mat.freshGreen); scene.add(liveBead);
   const carriage=printer.userData.carriage, gantry=printer.userData.gantry, spool=printer.userData.spool;
@@ -377,7 +477,7 @@ async function startPrint(recipe){
   setStatus(`${recipe.label} finished on the actual bed. Pick it up to place it.`);
 }
 async function pickupPrint(){ if(phase!=='printed-on-bed'||!printedOnBed){setStatus('Nothing finished on the printer bed yet.');return;} const obj=printedOnBed; printedOnBed=null; if(pathGroup){scene.remove(pathGroup);pathGroup=null;} setPhase('pickup-moving'); obj.userData.state='pickup-moving'; setStatus(`Picking up ${obj.userData.label}.`); await animateTransform(obj,handWorld(),.42,850); await sleep(140); obj.userData.state='carried-preview'; obj.scale.setScalar(1); const [x,z]=slots[slotIndex++%slots.length]; obj.position.set(x,0,z); setGhost(obj,true); carriedPreview=obj; setPhase('carried-preview'); setTarget(`preview ${obj.userData.label}`); setStatus(`${obj.userData.label} picked up. Move/rotate it or tap ground, then Place.`); }
-function placePreview(){ if(!carriedPreview){setStatus('No carried preview. Print something, then Pick Up Print first.');return;} const obj=carriedPreview; carriedPreview=null; setGhost(obj,false); restoreFinal(obj); obj.userData.id=++idCounter; obj.userData.state='placed'; placed.push(obj); setPhase('ready'); selectPlaced(obj); setStatus(`${obj.userData.label} placed as a solid v2d printed world object.`); }
+function placePreview(){ if(!carriedPreview){setStatus('No carried preview. Print something, then Pick Up Print first.');return;} const obj=carriedPreview; carriedPreview=null; setGhost(obj,false); restoreFinal(obj); obj.userData.id=++idCounter; obj.userData.state='placed'; placed.push(obj); setPhase('ready'); selectPlaced(obj); setStatus(`${obj.userData.label} placed as a solid, piece-printed world object.`); }
 function cancelOrDelete(){ if(phase==='printing'){setStatus('Print is mid-fabrication. Let it finish, then cancel/pick up.');return;} if(carriedPreview){scene.remove(carriedPreview);carriedPreview=null;setPhase('ready');setTarget('none');setStatus('Carried preview cancelled.');return;} if(printedOnBed){scene.remove(printedOnBed);printedOnBed=null;if(pathGroup){scene.remove(pathGroup);pathGroup=null;}setPhase('ready');setTarget('none');setStatus('Finished print removed from the bed.');return;} if(selected){const doomed=selected;clearSelection();scene.remove(doomed);const i=placed.indexOf(doomed);if(i>=0)placed.splice(i,1);setStatus('Selected placed object deleted.');return;} setStatus('Nothing to cancel or delete.'); }
 
 for(const recipe of recipes){ const b=document.createElement('button'); b.className='secondary'; b.textContent=recipe.label; b.addEventListener('click',()=>startPrint(recipe)); recipeButtons.appendChild(b); }
@@ -400,4 +500,4 @@ const starter3=createBoat(); starter3.position.set(6.4,.04,-.5); starter3.rotati
 function resize(){ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); renderer.setSize(window.innerWidth,window.innerHeight); }
 window.addEventListener('resize',resize);
 function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const c=printer.userData.carriage,g=printer.userData.gantry; c.position.x=Math.sin(now*.0011)*.55; c.position.y=5.1; c.position.z=.25+Math.cos(now*.0009)*.18; g.position.y=5.55; printer.userData.spool.rotation.x+=.008; } player.rotation.y=Math.sin(now*.001)*.08; updateSelectionBox(); controls.update(); renderer.render(scene,camera); }
-setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. This version fixes the off-bed path bug by collecting part bounds before bed placement.`); animate(performance.now());
+setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Objects are sliced into small pieces so the printer builds them piece by piece.`); animate(performance.now());
