@@ -252,34 +252,44 @@ function brickShell(w,h,d,opts={}){
   }
   return out;
 }
-// Curved barrel roof: a SOLID deck (guarantees no see-through, reaches the eaves)
-// + overlapping shingle tiles on top for detail + solid gable end caps. Arc in
-// X-Y, length along Z; centered so the eave line sits at y 0.
+// Curved barrel roof made ENTIRELY of small pieces (no giant deck — that read as
+// the old "grow" illusion). Overlapping shingle tiles wrap all the way around the
+// arc so there's no see-through, laid course-by-course from the eaves up like the
+// bricks. Gable ends are filled with small pieces too. Arc in X-Y, length along Z;
+// centered so the eave line sits at y 0. Reuses fillCourse() (the brick helper).
 function barrelShingles(R,L,opts={}){
-  const { tile=0.4, thickness=0.09, material=mat.roof, material2=mat.darkWood } = opts;
+  const { tile=0.4, thickness=0.11, material=mat.roof, material2=mat.darkWood } = opts;
   const out=[];
-  // 1. Solid deck (thin half-cylinder). Full coverage down to the eaves — nothing
-  //    behind the shingles is ever visible through gaps.
-  const deck=markPiece(new THREE.Mesh(new THREE.CylinderGeometry(R-0.03,R-0.03,L,Math.max(20,Math.round(R*22)),1,true,0,Math.PI), material));
-  deck.rotation.z=Math.PI/2; deck.rotation.y=Math.PI/2;
-  out.push(deck);
-  // 2. Overlapping shingle tiles (oversized so neighbours overlap → opaque, no gaps).
-  const nA=Math.max(7, Math.round(Math.PI*R/tile)), da=Math.PI/nA, arcW=Math.PI*R/nA;
-  const nL=Math.max(3, Math.round(L/tile)), tl=L/nL;
+  const nA=Math.max(9, Math.round(Math.PI*R/tile)), da=Math.PI/nA, arcW=Math.PI*R/nA;
+  const tl=Math.max(0.3, L/Math.max(4, Math.round(L/tile)));
   for(let i=0;i<nA;i++){
     const a=da*(i+0.5);
     const basis=new THREE.Matrix4().makeBasis(new THREE.Vector3(-Math.sin(a),Math.cos(a),0),new THREE.Vector3(Math.cos(a),Math.sin(a),0),new THREE.Vector3(0,0,1));
-    for(let j=0;j<nL;j++){
-      const z=-L/2 + tl*(j+0.5);
-      const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(arcW*1.5, thickness, tl*1.25), (i%2===j%2)?material:material2));
-      b.position.set(Math.cos(a)*(R+0.03), Math.sin(a)*(R+0.03), z);
+    const rr=R+(i%2)*0.02; // alternate rows sit slightly proud, like lapped shingles
+    // Fill the length with overlapping tiles; stagger alternate courses (running bond)
+    // so seams never line up into a see-through line. arcW*1.6 => heavy tangential
+    // overlap with neighbouring courses => the arc is fully covered with no deck.
+    for(const [zc,zw] of fillCourse(L, tl, i%2===1)){
+      const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(arcW*1.6, thickness, zw+0.06), (i+Math.round(zc*4))%2?material:material2));
+      b.position.set(Math.cos(a)*rr, Math.sin(a)*rr, zc);
       b.quaternion.setFromRotationMatrix(basis);
       out.push(b);
     }
   }
-  // 3. Solid gable end caps (semicircle) close the barrel ends.
-  const gable=()=>{ const s=new THREE.Shape(); s.moveTo(R,0); s.absarc(0,0,R,0,Math.PI,false); s.lineTo(R,0); return new THREE.ExtrudeGeometry(s,{depth:0.06,bevelEnabled:false}); };
-  for(const ez of [-L/2-0.03, L/2-0.03]){ const c=markPiece(new THREE.Mesh(gable(), material2)); c.position.set(0,0,ez); out.push(c); }
+  // Gable ends: fill each semicircle with small pieces (radial rings) so you can't
+  // see into the barrel — no giant end-cap disc.
+  for(const ez of [-L/2-0.02, L/2+0.02]){
+    const nr=Math.max(2, Math.round(R/tile));
+    for(let ri=0; ri<nr; ri++){
+      const rr=R*(ri+0.5)/nr, nc=Math.max(3, Math.round(Math.PI*rr/tile));
+      for(let ci=0; ci<nc; ci++){
+        const a=Math.PI*(ci+0.5)/nc;
+        const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(tile*1.05, tile*1.05, 0.08), material2));
+        b.position.set(Math.cos(a)*rr, Math.sin(a)*rr, ez);
+        out.push(b);
+      }
+    }
+  }
   return out;
 }
 

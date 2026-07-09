@@ -7,6 +7,18 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Roof redone as all-small-pieces (killed the deck illusion)
+
+**State:** live. Cottage roof no longer uses a solid deck.
+
+**Shipped:** Kyler/Lillith flagged that the roof still "grew as one shape while the nozzle spun" (the solid half-cylinder deck did the old fade-illusion, then tiles came after). Removed the deck AND the big gable-cap discs. Roof is now **entirely small overlapping shingle tiles** that wrap the whole arc (heavy tangential overlap + running-bond stagger via the shared `fillCourse` brick helper → no see-through) + small radial pieces filling the gable ends. Lays course-by-course eave→ridge, in order like the bricks. Cottage ~277 pieces.
+
+**Verified:** local Chrome, top-down zoom — roof fully covered, built piece-by-piece with no giant growing object; zero console errors.
+
+**Next:** slice market stall / cart / tree; then the bigger phase — print each piece alone + edge-snapping assembly.
+
+---
+
 ## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Printer v2e shipped (sliced) + roof/order/speed fixes
 
 **State:** live. /3DPrinterAsset/ now runs **v2e** (sliced, piece-by-piece printing). Cottage prints as ~227 small pieces: brick-course walls + a solid-deck shingle roof.
