@@ -257,27 +257,27 @@ function brickShell(w,h,d,opts={}){
 // arc so there's no see-through, laid course-by-course from the eaves up like the
 // bricks. Gable ends are filled with small pieces too. Arc in X-Y, length along Z;
 // centered so the eave line sits at y 0. Reuses fillCourse() (the brick helper).
+// Curved barrel roof made of small CURVED tile pieces (each a slice of the
+// cylinder wall) so they wrap flush — no steps, no gaps, all pieces. Angular
+// slices span a=0..PI (both eaves covered) with a small overlap so seams never
+// open; length sliced along Z. Centered so the eave line sits at y 0.
 function barrelShingles(R,L,opts={}){
-  const { tile=0.4, thickness=0.11, material=mat.roof, material2=mat.darkWood } = opts;
+  const { tile=0.4, material=mat.roof, material2=mat.darkWood } = opts;
   const out=[];
-  const nA=Math.max(9, Math.round(Math.PI*R/tile)), da=Math.PI/nA, arcW=Math.PI*R/nA;
-  const tl=Math.max(0.3, L/Math.max(4, Math.round(L/tile)));
+  const nA=Math.max(9, Math.round(Math.PI*R/tile)), da=Math.PI/nA;
+  const nL=Math.max(4, Math.round(L/tile)), tl=L/nL, ov=da*0.15;
   for(let i=0;i<nA;i++){
-    const a=da*(i+0.5);
-    const basis=new THREE.Matrix4().makeBasis(new THREE.Vector3(-Math.sin(a),Math.cos(a),0),new THREE.Vector3(Math.cos(a),Math.sin(a),0),new THREE.Vector3(0,0,1));
-    const rr=R+(i%2)*0.02; // alternate rows sit slightly proud, like lapped shingles
-    // Fill the length with overlapping tiles; stagger alternate courses (running bond)
-    // so seams never line up into a see-through line. arcW*1.6 => heavy tangential
-    // overlap with neighbouring courses => the arc is fully covered with no deck.
-    for(const [zc,zw] of fillCourse(L, tl, i%2===1)){
-      const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(arcW*1.6, thickness, zw+0.06), (i+Math.round(zc*4))%2?material:material2));
-      b.position.set(Math.cos(a)*rr, Math.sin(a)*rr, zc);
-      b.quaternion.setFromRotationMatrix(basis);
-      out.push(b);
+    const rr=R+(i%2)*0.02; // alternate courses sit slightly proud, like lapped shingles
+    for(let j=0;j<nL;j++){
+      const zc=-L/2 + tl*(j+0.5);
+      const g=new THREE.CylinderGeometry(rr, rr, tl*1.08, 5, 1, true, i*da-ov, da+ov*2);
+      const t=markPiece(new THREE.Mesh(g, (i+j)%2?material:material2));
+      t.rotation.z=Math.PI/2; t.rotation.y=Math.PI/2; // barrel axis along Z, dome up
+      t.position.z=zc;
+      out.push(t);
     }
   }
-  // Gable ends: fill each semicircle with small pieces (radial rings) so you can't
-  // see into the barrel — no giant end-cap disc.
+  // Gable ends filled with small pieces (radial rings) so you can't see inside.
   for(const ez of [-L/2-0.02, L/2+0.02]){
     const nr=Math.max(2, Math.round(R/tile));
     for(let ri=0; ri<nr; ri++){
@@ -288,6 +288,33 @@ function barrelShingles(R,L,opts={}){
         b.position.set(Math.cos(a)*rr, Math.sin(a)*rr, ez);
         out.push(b);
       }
+    }
+  }
+  return out;
+}
+
+// Stepped block pyramid (hip roof) built from small blocks — same block language
+// as the walls, so it prints clean and ordered with no curves or gaps. Footprint
+// w x d shrinks toward a peak over `height`. Lower layers are hollow rings (just
+// the visible perimeter) to keep the piece count low; the top layer is solid so
+// the peak is capped. Centered on x/z; base at y 0. (Kept as the "castle-type"
+// roof style for blocky buildings.)
+function pyramidRoof(w,d,height,opts={}){
+  const { block=0.4, material=mat.roof, material2=mat.darkWood } = opts;
+  const out=[];
+  const layers=Math.max(3, Math.round(height/(block*0.85))), lh=height/layers;
+  for(let l=0; l<layers; l++){
+    const t=l/layers;
+    const lw=Math.max(block, w*(1-t*0.92)), ld=Math.max(block, d*(1-t*0.92));
+    const y=lh*(l+0.5);
+    const nx=Math.max(1, Math.round(lw/block)), nz=Math.max(1, Math.round(ld/block));
+    const bw=lw/nx, bd=ld/nz, top=(l===layers-1);
+    for(let ix=0; ix<nx; ix++) for(let iz=0; iz<nz; iz++){
+      const edge = ix===0||ix===nx-1||iz===0||iz===nz-1;
+      if(!top && !edge) continue; // hollow interior except the capping top layer
+      const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(bw*0.94, lh*0.98, bd*0.94), ((ix+iz+l)%2)?material:material2));
+      b.position.set(-lw/2+bw*(ix+0.5), y, -ld/2+bd*(iz+0.5));
+      out.push(b);
     }
   }
   return out;
@@ -515,3 +542,8 @@ function resize(){ camera.aspect=window.innerWidth/window.innerHeight; camera.up
 window.addEventListener('resize',resize);
 function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const c=printer.userData.carriage,g=printer.userData.gantry; c.position.x=Math.sin(now*.0011)*.55; c.position.y=5.1; c.position.z=.25+Math.cos(now*.0009)*.18; g.position.y=5.55; printer.userData.spool.rotation.x+=.008; } player.rotation.y=Math.sin(now*.001)*.08; updateSelectionBox(); controls.update(); renderer.render(scene,camera); }
 setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Objects are sliced into small pieces so the printer builds them piece by piece.`); animate(performance.now());
+
+// Optional deep-link: /?auto=<recipe id or alias> auto-starts that print on load
+// (handy for testing and for linking straight to a specific print).
+const autoParam=new URLSearchParams(location.search).get('auto');
+if(autoParam){ const r=recipes.find(x=>x.id===autoParam)||parseCommand(autoParam); if(r) setTimeout(()=>startPrint(r),500); }

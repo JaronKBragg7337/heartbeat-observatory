@@ -7,6 +7,23 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Curved-tile roof (Kyler-approved) + auto-print test hook
+
+**State:** live. Cottage roof is a smooth curved tiled dome that Kyler approved on sight.
+
+**Shipped:**
+- **Roof = small CURVED tile pieces** — each tile is a slice of the cylinder wall (not a flat box), so they wrap flush with no steps and no side gaps; angular slices cover a=0..PI (both eaves) with slight overlap; gable ends filled with small radial pieces. Prints piece-by-piece, ordered eave→ridge.
+- **`pyramidRoof()` kept** as a "castle-type" stepped-block roof style for future blocky buildings (Kyler's fallback idea).
+- **Auto-print deep-link:** `/3DPrinterAsset/?auto=cottage` (or any recipe id/alias) auto-starts that print on load — handy for testing and direct links. Solved a flaky reload-then-click issue in my own browser testing.
+
+**Verified:** local Chrome via `?auto=cottage` — smooth dome, gable filled, sits flush on walls, zero console errors.
+
+**Gotchas:** flat oversized tiles on a curve read as stepped/spiky with gaps — curved cylinder-slice tiles are the right primitive for curved roofs. For blocky buildings use `pyramidRoof` instead.
+
+**Next:** slice market stall / cart / tree; then print-a-single-piece + edge-snapping.
+
+---
+
 ## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Roof redone as all-small-pieces (killed the deck illusion)
 
 **State:** live. Cottage roof no longer uses a solid deck.
