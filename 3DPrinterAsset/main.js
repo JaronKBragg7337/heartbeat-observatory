@@ -472,6 +472,8 @@ async function startPrint(recipe){
   if(carriedPreview){setStatus('Place or cancel the carried preview before printing another object.');return;}
   commandInput.value=`make a ${recipe.label.toLowerCase()}`;
   clearSelection(); setPhase('printing');
+  // Auto-hide the menu when a build starts so the print is visible right away.
+  hud.classList.add('collapsed'); hud.classList.remove('mobile-start'); toggleHud.textContent='Open';
   const obj=recipe.create(); obj.userData={label:recipe.label,recipeId:recipe.id,state:'printing'};
   const parts=collectPartsLocal(obj);
   obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
@@ -513,6 +515,7 @@ async function startPrint(recipe){
     requestAnimationFrame(step);
   });
   if(liveBead){scene.remove(liveBead);liveBead=null;} if(liveThread){scene.remove(liveThread);liveThread=null;}
+  if(pathGroup){scene.remove(pathGroup);pathGroup=null;} // clear the nozzle-path trail so the finished piece is clean
   restoreFinal(obj); obj.position.copy(bedWorld()); obj.userData.state='printed-on-bed';
   setPhase('printed-on-bed'); setTarget(`${recipe.label} finished on printer bed`);
   setStatus(`${recipe.label} finished on the actual bed. Pick it up to place it.`);
