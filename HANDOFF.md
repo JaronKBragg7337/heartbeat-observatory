@@ -7,6 +7,27 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Printer v2e shipped (sliced) + roof/order/speed fixes
+
+**State:** live. /3DPrinterAsset/ now runs **v2e** (sliced, piece-by-piece printing). Cottage prints as ~227 small pieces: brick-course walls + a solid-deck shingle roof.
+
+**Shipped:**
+- **v2e engine** vendored live (from World-Printer-Lab `src/main-v2e.js`): a reusable **slicer** (`brickShell`, `barrelShingles`) cuts big primitives into many small pieces so prints read as real fabrication, not a fade illusion. Reveal reworked — no opacity fade; small pieces pop, large un-sliced pieces still build up bottom-up (no regression on boat/tree/etc).
+- **Roof fix** (Lillith flagged floating/see-through tiles): roof is now a **solid half-cylinder deck** under overlapping shingle tiles + **solid gable end caps**; seated so eaves meet the walls. No see-through.
+- **Print order:** within each height layer, pieces lay by angular sweep around the object centre (deliberate), not scattered.
+- **Speed:** eased ~11s → ~13.5s so the build is easier to watch.
+- Homepage "3D Printer" card added earlier (Supabase `surfaces` row `printer` + SLUGS entry).
+
+**Verified:** local Chrome — cottage prints 227 pieces, solid roof, full print→pickup→place flow, zero console errors; live route serves v2e (title + slicer present).
+
+**Next:** slice the other objects (market stall, cart, tree — tree needs true hidden-then-printed reveal). Bigger asks from Kyler: print each piece alone (not just whole object) + edge-snapping assembly; this is the foundation for piece-built, player-placeable world objects.
+
+**Gotchas:**
+- Live printer is a **vendored copy** — update `heartbeat-observatory/3DPrinterAsset/main.js` from the lab's `src/main-v2e.js` (drop the `import './style.css'` line) and ship; pushing to the lab repo alone does nothing live.
+- There's a Slack channel **#threedprinter** (separate from #world-printer-lab) — Kyler/Lillith may post feedback there too.
+
+---
+
 ## 2026-07-09 — Claude (Opus 4.8, Claude Code) — World Printer Lab live at /3DPrinterAsset/ + homepage tab
 
 **State:** live. https://www.heartbeatobservatory.com/3DPrinterAsset/ serves World Printer Lab v2d, and a "3D Printer" card now sits in the homepage grid (after Games, before The Engine). Kyler can test from any phone over public HTTPS — no LAN/localhost/same-Wi-Fi.
