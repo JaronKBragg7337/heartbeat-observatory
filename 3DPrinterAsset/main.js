@@ -463,8 +463,8 @@ function clearSelection(){ if(selectionBox){ scene.remove(selectionBox); selecti
 function selectPlaced(obj){ clearSelection(); selected=obj; const box=new THREE.Box3().setFromObject(obj), size=new THREE.Vector3(), center=new THREE.Vector3(); box.getSize(size); box.getCenter(center); selectionBox=new THREE.Mesh(new THREE.BoxGeometry(size.x+.18,size.y+.18,size.z+.18),mat.select); selectionBox.position.copy(center); scene.add(selectionBox); setTarget(`${obj.userData.label} #${obj.userData.id}`); }
 function updateSelectionBox(){ if(!selectionBox||!selected)return; const box=new THREE.Box3().setFromObject(selected), center=new THREE.Vector3(); box.getCenter(center); selectionBox.position.copy(center); selectionBox.rotation.copy(selected.rotation); }
 function movable(){ return carriedPreview||selected; }
-function moveTarget(dx,dz){ const o=movable(); if(!o){setStatus('Nothing can move yet. Print, pick up, then move the preview.');return;} o.position.x=Math.round(o.position.x+dx); o.position.z=Math.round(o.position.z+dz); updateSelectionBox(); }
-function rotateTarget(dir){ const o=movable(); if(!o){setStatus('Nothing can rotate yet. Print, pick up, then rotate the preview.');return;} o.rotation.y+=dir*Math.PI/8; updateSelectionBox(); }
+function moveTarget(dx,dz){ const o=movable(); if(!o){setStatus('Nothing can move yet. Print, pick up, then move the preview.');return;} o.position.x=Math.round(o.position.x+dx); o.position.z=Math.round(o.position.z+dz); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
+function rotateTarget(dir){ const o=movable(); if(!o){setStatus('Nothing can rotate yet. Print, pick up, then rotate the preview.');return;} o.rotation.y+=dir*Math.PI/8; updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
 async function animateTransform(object,targetPosition,targetScale,duration){ const sPos=object.position.clone(), sScale=object.scale.clone(), eScale=new THREE.Vector3(targetScale,targetScale,targetScale), t0=performance.now(); return new Promise(resolve=>{ function step(now){ const t=clamp01((now-t0)/duration); const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; object.position.lerpVectors(sPos,targetPosition,e); object.scale.lerpVectors(sScale,eScale,e); if(t<1)requestAnimationFrame(step); else resolve(); } requestAnimationFrame(step); }); }
 
 async function startPrint(recipe){
@@ -525,21 +525,29 @@ async function pickupPrint(){ if(phase!=='printed-on-bed'||!printedOnBed){setSta
 function placePreview(){ if(!carriedPreview){setStatus('No carried preview. Print something, then Pick Up Print first.');return;} const obj=carriedPreview; carriedPreview=null; setGhost(obj,false); restoreFinal(obj); obj.userData.id=++idCounter; obj.userData.state='placed'; placed.push(obj); setPhase('ready'); selectPlaced(obj); savePlacement(obj); setStatus(`${obj.userData.label} placed and saved to the shared world (persists on reload).`); }
 function cancelOrDelete(){ if(phase==='printing'){setStatus('Print is mid-fabrication. Let it finish, then cancel/pick up.');return;} if(carriedPreview){scene.remove(carriedPreview);carriedPreview=null;setPhase('ready');setTarget('none');setStatus('Carried preview cancelled.');return;} if(printedOnBed){scene.remove(printedOnBed);printedOnBed=null;if(pathGroup){scene.remove(pathGroup);pathGroup=null;}setPhase('ready');setTarget('none');setStatus('Finished print removed from the bed.');return;} if(selected){const doomed=selected;clearSelection();scene.remove(doomed);const i=placed.indexOf(doomed);if(i>=0)placed.splice(i,1);deletePlacement(doomed);setStatus('Selected placed object deleted (removed from the shared world too).');return;} setStatus('Nothing to cancel or delete.'); }
 
-// --- World-state persistence (Supabase) -------------------------------------
-// Every placed object is saved as a row so the build survives reload and any AI
-// (Claude / ChatGPT / Zeus) can read, locate, or remove it. This shared table is
-// the world's source of truth — not the git repo.
+// --- World-state persistence + real-time multiplayer (Supabase) -------------
+// Every placed object is a row (the world's source of truth, not the git repo).
+// Placing, moving and deleting sync to the table; a Realtime subscription pushes
+// every builder's changes to all connected players live. Any AI (Claude/ChatGPT/
+// Zeus) can SELECT to map the world or DELETE to clean it up.
 const WORLD='printer-lab';
 const supabase=createClient('https://ygjpnvrwhkrowkrskftk.supabase.co','sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN');
+const newId=()=> (crypto&&crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random());
+function findPlaced(dbId){ return placed.find(o=>o.userData.dbId===dbId); }
+function spawnPlacementRow(row){
+  const recipe=recipes.find(r=>r.id===row.type); if(!recipe) return null;
+  const obj=recipe.create();
+  obj.userData={label:row.label||recipe.label, recipeId:recipe.id, id:++idCounter, state:'placed', dbId:row.id};
+  obj.position.set(row.x,row.y,row.z); obj.rotation.y=row.rot_y||0; if(row.scale) obj.scale.setScalar(row.scale);
+  placed.push(obj); scene.add(obj); return obj;
+}
 async function savePlacement(obj){
-  try{
-    const { data, error } = await supabase.from('placements').insert({
-      world:WORLD, type:obj.userData.recipeId, label:obj.userData.label,
-      x:obj.position.x, y:obj.position.y, z:obj.position.z,
-      rot_y:obj.rotation.y, scale:obj.scale.x||1
-    }).select('id').single();
-    if(!error && data) obj.userData.dbId=data.id;
-  }catch(e){ /* offline / RLS — object still shows locally this session */ }
+  obj.userData.dbId=newId(); // client id so our own realtime echo is recognised, not duplicated
+  try{ await supabase.from('placements').insert({ id:obj.userData.dbId, world:WORLD, type:obj.userData.recipeId, label:obj.userData.label, x:obj.position.x, y:obj.position.y, z:obj.position.z, rot_y:obj.rotation.y, scale:obj.scale.x||1 }); }catch(e){}
+}
+async function updatePlacement(obj){
+  if(!obj.userData.dbId) return;
+  try{ await supabase.from('placements').update({ x:obj.position.x, y:obj.position.y, z:obj.position.z, rot_y:obj.rotation.y, scale:obj.scale.x||1 }).eq('id',obj.userData.dbId); }catch(e){}
 }
 async function deletePlacement(obj){
   if(!obj.userData.dbId) return;
@@ -549,14 +557,17 @@ async function loadPlacements(){
   try{
     const { data, error } = await supabase.from('placements').select('*').eq('world',WORLD).order('created_at');
     if(error||!data||!data.length) return;
-    for(const row of data){
-      const recipe=recipes.find(r=>r.id===row.type); if(!recipe) continue;
-      const obj=recipe.create();
-      obj.userData={label:row.label||recipe.label, recipeId:recipe.id, id:++idCounter, state:'placed', dbId:row.id};
-      obj.position.set(row.x,row.y,row.z); obj.rotation.y=row.rot_y||0; if(row.scale) obj.scale.setScalar(row.scale);
-      placed.push(obj); scene.add(obj);
-    }
+    for(const row of data){ if(!findPlaced(row.id)) spawnPlacementRow(row); }
     setStatus(`Loaded ${data.length} saved world object(s) from the shared world state.`);
+  }catch(e){}
+}
+function subscribeWorld(){
+  try{
+    supabase.channel('placements-'+WORLD)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'placements',filter:`world=eq.${WORLD}`},({new:row})=>{ if(row && !findPlaced(row.id)){ spawnPlacementRow(row); setStatus(`Another builder placed a ${row.label||row.type}.`); } })
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'placements',filter:`world=eq.${WORLD}`},({new:row})=>{ const o=row&&findPlaced(row.id); if(o){ o.position.set(row.x,row.y,row.z); o.rotation.y=row.rot_y||0; if(row.scale)o.scale.setScalar(row.scale); if(selected===o) updateSelectionBox(); } })
+      .on('postgres_changes',{event:'DELETE',schema:'public',table:'placements'},({old})=>{ const o=old&&findPlaced(old.id); if(o){ if(selected===o) clearSelection(); scene.remove(o); const i=placed.indexOf(o); if(i>=0)placed.splice(i,1); } })
+      .subscribe();
   }catch(e){}
 }
 
@@ -577,8 +588,10 @@ const starter1=createSpiral(); starter1.position.set(-6.2,0,-1.4); starter1.scal
 const starter2=createCreature(); starter2.position.set(-8.3,0,1.7); starter2.userData={label:'Starter Creature',id:++idCounter,state:'placed'}; placed.push(starter2); scene.add(starter2);
 const starter3=createBoat(); starter3.position.set(6.4,.04,-.5); starter3.rotation.y=-.45; starter3.userData={label:'Starter Boat',id:++idCounter,state:'placed'}; placed.push(starter3); scene.add(starter3);
 
-// Rebuild any previously-placed world objects from the shared world state.
+// Rebuild any previously-placed world objects, then subscribe so every builder's
+// placements/moves/deletes appear live for all connected players (multiplayer).
 loadPlacements();
+subscribeWorld();
 
 function resize(){ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); renderer.setSize(window.innerWidth,window.innerHeight); }
 window.addEventListener('resize',resize);
