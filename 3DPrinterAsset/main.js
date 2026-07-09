@@ -252,36 +252,34 @@ function brickShell(w,h,d,opts={}){
   }
   return out;
 }
-// Curved barrel roof made of small shingle tiles, arc along X-Y, length along Z.
-// Radius R, length L. Returns an array of meshes (centered so eave line = y 0).
+// Curved barrel roof: a SOLID deck (guarantees no see-through, reaches the eaves)
+// + overlapping shingle tiles on top for detail + solid gable end caps. Arc in
+// X-Y, length along Z; centered so the eave line sits at y 0.
 function barrelShingles(R,L,opts={}){
-  const { tile=0.42, thickness=0.09, material=mat.roof, material2=mat.darkWood } = opts;
+  const { tile=0.4, thickness=0.09, material=mat.roof, material2=mat.darkWood } = opts;
   const out=[];
-  const nA=Math.max(5, Math.round(Math.PI*R/tile)), da=Math.PI/nA, tw=Math.PI*R/nA;
-  const nL=Math.max(2, Math.round(L/tile)), tl=L/nL;
-  for(let j=0;j<nL;j++){
-    const z=-L/2 + tl*(j+0.5);
-    for(let i=0;i<nA;i++){
-      const a=da*(i+0.5);
-      const nrm=new THREE.Vector3(Math.cos(a),Math.sin(a),0);
-      const tan=new THREE.Vector3(-Math.sin(a),Math.cos(a),0);
-      const len=new THREE.Vector3(0,0,1);
-      const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(tw*0.94, thickness, tl*0.94), (i+j)%2?material:material2));
-      b.position.set(Math.cos(a)*R, Math.sin(a)*R, z);
-      b.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(tan,nrm,len));
+  // 1. Solid deck (thin half-cylinder). Full coverage down to the eaves — nothing
+  //    behind the shingles is ever visible through gaps.
+  const deck=markPiece(new THREE.Mesh(new THREE.CylinderGeometry(R-0.03,R-0.03,L,Math.max(20,Math.round(R*22)),1,true,0,Math.PI), material));
+  deck.rotation.z=Math.PI/2; deck.rotation.y=Math.PI/2;
+  out.push(deck);
+  // 2. Overlapping shingle tiles (oversized so neighbours overlap → opaque, no gaps).
+  const nA=Math.max(7, Math.round(Math.PI*R/tile)), da=Math.PI/nA, arcW=Math.PI*R/nA;
+  const nL=Math.max(3, Math.round(L/tile)), tl=L/nL;
+  for(let i=0;i<nA;i++){
+    const a=da*(i+0.5);
+    const basis=new THREE.Matrix4().makeBasis(new THREE.Vector3(-Math.sin(a),Math.cos(a),0),new THREE.Vector3(Math.cos(a),Math.sin(a),0),new THREE.Vector3(0,0,1));
+    for(let j=0;j<nL;j++){
+      const z=-L/2 + tl*(j+0.5);
+      const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(arcW*1.5, thickness, tl*1.25), (i%2===j%2)?material:material2));
+      b.position.set(Math.cos(a)*(R+0.03), Math.sin(a)*(R+0.03), z);
+      b.quaternion.setFromRotationMatrix(basis);
       out.push(b);
     }
   }
-  // gable end fills so the barrel isn't hollow at the front/back
-  for(const ez of [-L/2, L/2]){
-    for(let i=0;i<nA;i++){
-      const a=da*(i+0.5), r=R*0.72;
-      const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(tw*0.9,0.08,0.12), mat.darkWood));
-      b.position.set(Math.cos(a)*r, Math.sin(a)*r, ez);
-      b.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(-Math.sin(a),Math.cos(a),0),new THREE.Vector3(Math.cos(a),Math.sin(a),0),new THREE.Vector3(0,0,1)));
-      out.push(b);
-    }
-  }
+  // 3. Solid gable end caps (semicircle) close the barrel ends.
+  const gable=()=>{ const s=new THREE.Shape(); s.moveTo(R,0); s.absarc(0,0,R,0,Math.PI,false); s.lineTo(R,0); return new THREE.ExtrudeGeometry(s,{depth:0.06,bevelEnabled:false}); };
+  for(const ez of [-L/2-0.03, L/2-0.03]){ const c=markPiece(new THREE.Mesh(gable(), material2)); c.position.set(0,0,ez); out.push(c); }
   return out;
 }
 
@@ -323,8 +321,8 @@ function createCottage(){
   const g=new THREE.Group(); g.name='Cottage';
   // Walls: sliced brick shell (footprint 2.8 x 2.25, height 1.85, sits from y=0).
   for(const b of brickShell(2.8,1.85,2.25,{unit:.44,courseH:.3,material:mat.wall,material2:mat.cream})){ b.position.y+=.925; g.add(b); }
-  // Roof: sliced barrel of shingle tiles over the body.
-  for(const t of barrelShingles(1.42,2.65,{tile:.42})){ t.position.y+=1.82; g.add(t); }
+  // Roof: solid deck + overlapping shingles, seated so the eaves meet the walls.
+  for(const t of barrelShingles(1.42,2.65,{tile:.4})){ t.position.y+=1.75; g.add(t); }
   // Detail pieces (already small/readable, printed as-is).
   const door=extrude(archShape(.62,1.05,.38),.08,mat.darkWood); door.position.set(0,.5,1.17); g.add(door);
   for(const x of [-.78,.78]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.08,32),mat.glass); w.rotation.x=Math.PI/2; w.position.set(x,1.15,1.18); g.add(w); }
@@ -351,7 +349,7 @@ const recipes=[
 let phase='ready', printedOnBed=null, carriedPreview=null, selected=null, selectionBox=null, pathGroup=null, liveBead=null, liveThread=null, idCounter=0, slotIndex=0;
 const placed=[]; const slots=[[0,2.7],[-4,2.4],[4,2.4],[-4,6],[4,6],[0,7.2],[-7,0],[7,0]];
 function parseCommand(text){ const t=text.toLowerCase().replace(/[^a-z0-9\s-]/g,' '); return recipes.find(r=>r.aliases.some(a=>t.includes(a))) || null; }
-function printDuration(recipe,parts){ const [w,d,h]=recipe.dims; const base=2600+w*d*h*90, per=parts.length*42; return Math.round(Math.min(11000, base+per)*(0.9+recipe.complexity*0.1)); }
+function printDuration(recipe,parts){ const [w,d,h]=recipe.dims; const base=3000+w*d*h*90, per=parts.length*48; return Math.round(Math.min(13500, base+per)*(0.9+recipe.complexity*0.1)); }
 function setButtons(){ const busy=phase==='printing'||phase==='pickup-moving'; runButton.disabled=busy||phase==='printed-on-bed'; pickupButton.disabled=phase!=='printed-on-bed'; placeButton.disabled=phase!=='carried-preview'; recipeButtons.querySelectorAll('button').forEach(b=>{b.disabled=busy||phase==='printed-on-bed'}); }
 function setPhase(next){ phase=next; setState(next); setButtons(); }
 
@@ -370,7 +368,13 @@ function collectPartsLocal(root){
     parts.push({mesh:m,box,size,minY:box.min.y,weight:Math.max(.12,size.x*size.y*size.z)});
     m.visible=false;
   });
-  parts.sort((a,b)=>a.minY-b.minY||b.weight-a.weight);
+  // Print order: bottom-up in layers, and WITHIN each layer sweep around the
+  // object's centre (not scattered) so bricks lay in a deliberate sequence.
+  let cx=0,cz=0; for(const p of parts){ cx+=(p.box.min.x+p.box.max.x)/2; cz+=(p.box.min.z+p.box.max.z)/2; }
+  const n=parts.length||1; cx/=n; cz/=n;
+  const band=0.16;
+  for(const p of parts){ p.layer=Math.round(p.minY/band); const mx=(p.box.min.x+p.box.max.x)/2, mz=(p.box.min.z+p.box.max.z)/2; p.ang=Math.atan2(mz-cz,mx-cx); }
+  parts.sort((a,b)=> (a.layer-b.layer) || (a.ang-b.ang) || (a.minY-b.minY));
   return parts;
 }
 function revealPart(part,fraction){
