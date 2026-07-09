@@ -63,6 +63,7 @@ export function computeSettlementLayout(body, zone, quality = 'mobile') {
   if (quality === 'desktop') baseCount = Math.min(baseCount, 5);
   const count = baseCount + (quality === 'desktop' ? 1 : 0);
   const out = [];
+  const placed = [];
   for (let i = 0; i < count; i++) {
     const ring = 42 + rng() * 82 + (i % 3) * 10;
     const a = i * 2.399963 + rng() * 0.55;
@@ -72,6 +73,11 @@ export function computeSettlementLayout(body, zone, quality = 'mobile') {
     const w = 6 + rng() * (zone.structures === 'transit' ? 8 : 5);
     const d = 6 + rng() * 8;
     const h = 4 + rng() * (plan.settlement === 'city' ? 9 : 6);
+    // Scene-validation law: buildings never overlap. A spot that clashes with
+    // an already-placed building is skipped (deterministically).
+    if (placed.some((pb) => Math.abs(pb.east - east) < (pb.w + w) / 2 + 1 &&
+                            Math.abs(pb.north - north) < (pb.d + d) / 2 + 1)) continue;
+    placed.push({ east, north, w, d });
     const roll = rng();
     const type = h > 9 ? 'tower' : (roll < 0.42 ? 'gabled' : roll < 0.75 ? 'quonset' : 'gabled');
     out.push({ type, east, north, w, h, d, yaw: a + Math.PI / 2, i });

@@ -21,6 +21,7 @@
 
 import * as THREE from 'three';
 import { altitudeAt, upAt, gravityAt, dominantBody, terrainRadiusAt, resolveStructureCollision } from '../world/planet.js';
+import { makeAstronaut } from '../render/props.js';
 
 const EYE_HEIGHT = 1.65;
 const WALK_SPEED = 7;
@@ -44,19 +45,8 @@ export class Player {
     this._upSmooth = new THREE.Vector3(0, 1, 0); // smoothed up (avoids snapping)
 
     // Visual body (visible in ship 3rd-person view / future multiplayer).
-    this.bodyMesh = new THREE.Group();
-    const suit = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.35, 0.9, 4, 8),
-      new THREE.MeshLambertMaterial({ color: 0x78909c })
-    );
-    suit.position.y = 0.85;
-    const visor = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 0.15, 0.1),
-      new THREE.MeshBasicMaterial({ color: 0xd32f2f })
-    );
-    visor.position.set(0, 1.45, 0.28);
-    this.bodyMesh.add(suit, visor);
-    this.bodyMesh.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+    // Shaped astronaut (render/props.js) — helmet, visor, backpack, limbs.
+    this.bodyMesh = makeAstronaut(0x8fa2ad, 0xd32f2f);
     // First-person build: the LOCAL player's body is never rendered (it would
     // float in front of the camera). The mesh exists for third-person view and
     // multiplayer (ROADMAP M1/M5) — flip this then via setVisible.

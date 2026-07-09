@@ -32,7 +32,7 @@ export class UI {
       'ON FOOT: WASD move · Shift run · Space jump · E enter ship · F gather<br>' +
       'SHIP: W/S forward/reverse · A/D strafe · Q/R turn-bank · ↑/↓ nose pitch · Z descend · locked chase · Space vertical thrust · X brake · E exit (landed) · V interior view · T toggle door<br>' +
       'TOUCH SHIP: left stick lift/drive · right stick bank/pitch · DESCEND lands<br>' +
-      'B ship builder · I inventory/crafting · M bodies · O settings · F8 tuner · F5 save · F9 load · H hide help · click for mouse look';
+      'B ship builder · I inventory/crafting · M bodies · O settings · F8 tuner · F7 colliders · F5 save · F9 load · H hide help · click for mouse look';
     root.appendChild(this.help);
 
     this.invPanel = makePanel(root, 'INVENTORY', 'inv-panel');

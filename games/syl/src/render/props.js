@@ -496,6 +496,45 @@ export function makeBanner(rng, accentHex) {
   return g;
 }
 
+
+// Shaped astronaut (SYL player + multiplayer remotes). Capsule limbs, suit
+// torso, helmet with visor band, backpack — reads as a person in a suit,
+// not a pill. ~500 tris. suitHex tints the suit (remote players get colors).
+export function makeAstronaut(suitHex = 0x8fa2ad, accentHex = 0xd32f2f) {
+  const g = new THREE.Group();
+  const suitM = surfaceMat({ color: suitHex, mapKey: 'suit' });
+  const darkM = surfaceMat({ color: 0x2b3238, mapKey: 'suitdark' });
+  const visorM = surfaceMat({ color: 0x18242e, mapKey: 'visor' });
+  const accentM = glowMat(accentHex);
+  const legGeo = new THREE.CapsuleGeometry(0.1, 0.42, 3, 8);
+  for (const sx of [-0.14, 0.14]) {
+    const leg = new THREE.Mesh(legGeo, suitM); leg.position.set(sx, 0.36, 0); g.add(leg);
+    const boot = new THREE.Mesh(new THREE.SphereGeometry(0.115, 8, 6), darkM);
+    boot.scale.set(1, 0.6, 1.5); boot.position.set(sx, 0.07, 0.04); g.add(boot);
+  }
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.21, 0.42, 4, 10), suitM);
+  torso.scale.z = 0.8; torso.position.y = 0.95; g.add(torso);
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.44, 0.18), darkM);
+  pack.position.set(0, 1.02, -0.24); g.add(pack);
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.04), accentM);
+  chest.position.set(0, 1.12, 0.2); g.add(chest);
+  const armGeo = new THREE.CapsuleGeometry(0.07, 0.34, 3, 8);
+  for (const sx of [-1, 1]) {
+    const sh = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), suitM);
+    sh.position.set(sx * 0.27, 1.2, 0); g.add(sh);
+    const arm = new THREE.Mesh(armGeo, suitM);
+    arm.position.set(sx * 0.3, 0.94, 0); arm.rotation.z = sx * -0.08; g.add(arm);
+    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), darkM);
+    glove.position.set(sx * 0.32, 0.7, 0); g.add(glove);
+  }
+  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.19, 14, 10), suitM);
+  helmet.position.y = 1.5; g.add(helmet);
+  const visor = new THREE.Mesh(new THREE.SphereGeometry(0.165, 12, 8, -Math.PI * 0.42, Math.PI * 0.84, Math.PI * 0.28, Math.PI * 0.4), visorM);
+  visor.position.y = 1.5; visor.position.z = 0.045; g.add(visor);
+  enableShadows(g, true, false);
+  return g;
+}
+
 // Enable shadows on every mesh in a prop (called by layout code, gated by
 // the graphics setting — see render/lighting.js).
 export function enableShadows(obj, cast = true, receive = true) {

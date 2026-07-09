@@ -10,6 +10,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { makeAstronaut } from '../render/props.js';
 import { MODE } from '../world/traversal.js';
 
 const SUPA_URL = 'https://ygjpnvrwhkrowkrskftk.supabase.co';
@@ -381,18 +382,8 @@ function createRemote(engine, state) {
   group.name = `remote:${state.id}`;
   const color = new THREE.Color(state.color || COLORS[hash(state.id) % COLORS.length]);
 
-  const avatar = new THREE.Group();
-  const suit = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.35, 0.9, 4, 8),
-    new THREE.MeshLambertMaterial({ color })
-  );
-  suit.position.y = 0.85;
-  const visor = new THREE.Mesh(
-    new THREE.BoxGeometry(0.3, 0.15, 0.1),
-    new THREE.MeshBasicMaterial({ color: 0xffcc80 })
-  );
-  visor.position.set(0, 1.45, 0.28);
-  avatar.add(suit, visor);
+  // Shaped remote astronaut, suit tinted with the player's realtime color.
+  const avatar = makeAstronaut(color.getHex(), 0xffcc80);
   group.add(avatar);
 
   const ship = new THREE.Group();

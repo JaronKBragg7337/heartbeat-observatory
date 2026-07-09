@@ -7,6 +7,37 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Fable 5, Cowork) — Site-wide form-language pass (visual-direction brief)
+
+**State:** live. All three worlds moved off blockout geometry in one run.
+
+**Shipped:**
+- **Engine/Home world** (engine/hub/main.js): person avatars rebuilt shaped
+  (capsule limbs, tapered torso, sphere joints, neck, hair cap — box limbs
+  gone); every hub building now gets addArchitecture(): base plinth, corner
+  pillars, per-floor glass window bands with mullions, parapet + setback roof
+  cap (the floating oversized slab is gone), entry awning + lamps + facade
+  sign panel so labels aren't doing the identity work. Collision footprints
+  unchanged.
+- **Fable mirror** synced to fable-survival@HEAD: shaped characters (shared
+  humanoid rig: survivor/infected/trader), real car model (one extruded hull,
+  wheel wells, lights) for wrecks AND remote cars, barn gable roof that meets
+  at the ridge with gable ends + ridge beam, shed roof on posts for the
+  abandoned house. Wrapper (hb-device-tier + quality chip) preserved.
+- **SYL v0.4.0** staged on syl-test, screenshot-verified, promoted to
+  games/syl: one-piece extruded ship hull + fin + canopy + tapered wings +
+  engine pylons, shaped astronauts (player + remotes), F7 collider debug view,
+  scene-validation tests (caught a real building overlap).
+
+**Verified:** SYL 143/143 headless + live syl-test screenshots (ship rear
+reads as a vehicle: rounded hull, fin, nacelles; outpost daylight shot reads
+as a planned settlement). Fable vite build clean. Engine hub node --check.
+
+**Next:** in-world placement editor (brief Phase 4) — asset browse/drag/move/
+save; F8 tuner + F7 colliders are the first two pieces of that tool chain.
+
+---
+
 ## 2026-07-08 — Claude (Fable 5, Cowork) — SYL v0.3.0 visual overhaul promoted + Fable mirror synced to v0.6.6 + /api inbox routes
 
 **State:** live. `/games/syl/` serves SYL v0.3.0 (visual overhaul: procedural

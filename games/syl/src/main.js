@@ -33,6 +33,7 @@ import { PICKUPS } from './world/pickups.js';
 import { Multiplayer } from './multiplayer/multiplayer.js';
 import { DevTools } from './dev/devTools.js';
 import { Tuner } from './dev/tuner.js';
+import { ColliderDebug } from './dev/colliderDebug.js';
 import { CivilTransport } from './world/civilTransport.js';
 import { SpaceProps } from './world/spaceProps.js';
 import { initLighting, updateLighting } from './render/lighting.js';
@@ -168,6 +169,7 @@ const multiplayer = new Multiplayer({ engine, player, ship, traversal, civilTran
 const ui = new UI(document.getElementById('ui-root'), game);
 const devTools = new DevTools(game, ui, input, BODIES);
 const tuner = new Tuner(input, engine); // F8 — Jaron's no-AI-usage tuning panel
+const colliderDebug = new ColliderDebug(engine, input, BODIES, ship); // F7 — see the physics
 
 // Debug handle for agents/console: inspect any system live (window.game.ship
 // etc.). Read-only by convention — mutate through system APIs only.
