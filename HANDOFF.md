@@ -7,6 +7,21 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Opus 4.8, Claude Code) — World-state persistence (Supabase `placements`)
+
+**State:** live. Placed objects in the printer lab now persist across reloads via Supabase — the foundation for "players build → AIs know the world → cleanup is a query."
+
+**Shipped:**
+- New Supabase table **`placements`** (project ygjpnvrwhkrowkrskftk): `id, world, type, label, x,y,z, rot_y, scale, placed_by, created_at`. RLS: read-all; insert/delete scoped to `world='printer-lab'` (blast radius limited to the demo world; AI/service role can touch any world for cleanup).
+- Printer lab (`src/main-v2e.js`) wired to it: **Place** → INSERT row; **on load** → SELECT the world's rows and rebuild the objects; **Delete** a placed object → DELETE its row. Supabase JS imported from esm.sh (works in both Vite dev and the build-free vendored route).
+- Auto-test hook extended: `?auto=<recipe>&place=1` auto-prints AND auto-places (used to verify the persist loop without the click-race).
+
+**Verified:** local Chrome — placed a cottage, reloaded, it rebuilt from the DB (confirmed the row via SQL + the object reappearing after reload); anon insert + select both pass RLS; zero console errors. Test data cleared.
+
+**Next / notes:** moving a placed object doesn't yet UPDATE its row (persists initial placement only) — add an UPDATE on move next. This is the DB-as-source-of-truth model (repo stays code-only; export curated snapshots later). Any AI (Claude/ChatGPT/Zeus) can now `SELECT`/`DELETE` from `placements` to map or clean up worlds. See memory `project-world-state-architecture`.
+
+---
+
 ## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Curved-tile roof (Kyler-approved) + auto-print test hook
 
 **State:** live. Cottage roof is a smooth curved tiled dome that Kyler approved on sight.
