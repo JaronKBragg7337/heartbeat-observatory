@@ -175,37 +175,90 @@ export class Ship {
     const interiorMat = shipMat(0x263238, frameHealth);
     const glassMat = new THREE.MeshLambertMaterial({ color: 0x8fd7ff, transparent: true, opacity: has('cockpit_fwd') ? 0.42 : 0.12 });
 
-    // Walkable-gunship silhouette, adapted from SpaceYouLand's
-    // _authoring/make_walkable_gunship.py into cheap browser primitives.
+    // ONE CONNECTED HULL (visual-direction brief: the ship must read as a
+    // single designed vehicle, not slabs pushed together). Side profile drawn
+    // once — tail, roofline, cockpit hump, windshield rake, nose drop, belly —
+    // then extruded across the beam with a bevel that rounds the hull sides.
+    // Interior deck/door/ramp keep their exact old positions; the pilot still
+    // walks the same floor. Colliders unchanged (same overall footprint).
     addBox(visible, 'gunship:physics_deck', [0, -0.42, -0.35], [3.65, 0.28, 10.9], darkMat);
     addBox(visible, 'gunship:keel', [0, -0.72, -0.8], [0.55, 0.32, 8.6], darkMat);
-    addBox(visible, 'gunship:port_shell', [-2.02, 0.82, -0.55], [0.28, 2.7, 10.7], armorMat);
-    addBox(visible, 'gunship:starboard_shell', [2.02, 0.82, -0.55], [0.28, 2.7, 10.7], armorMat);
-    addBox(visible, 'gunship:roof', [0, 2.18, -0.8], [3.9, 0.26, 8.7], armorMat);
-    addBox(visible, 'gunship:belly_port', [-1.88, -0.48, -0.8], [0.35, 0.42, 9.0], armorMat);
-    addBox(visible, 'gunship:belly_starboard', [1.88, -0.48, -0.8], [0.35, 0.42, 9.0], armorMat);
-    addBox(visible, 'gunship:nose_cap', [0, 0.1, 5.78], [2.9, 0.66, 0.35], armorMat, { y: -0.14 });
-    addBox(visible, 'gunship:cockpit_glass_left', [-0.62, 1.32, 4.92], [1.18, 0.07, 1.9], glassMat, { x: -0.35 });
-    addBox(visible, 'gunship:cockpit_glass_right', [0.62, 1.32, 4.92], [1.18, 0.07, 1.9], glassMat, { x: 0.35 });
+    {
+      const pr = new THREE.Shape(); // x = length (maps to +Z), y = height
+      pr.moveTo(-6.3, -0.35);   // tail bottom
+      pr.lineTo(-6.3, 1.85);    // tail top
+      pr.lineTo(-4.6, 2.28);    // spine rise
+      pr.lineTo(1.9, 2.3);      // roofline / cockpit hump
+      pr.lineTo(3.9, 1.5);      // windshield rake
+      pr.lineTo(5.7, 0.86);     // nose taper
+      pr.lineTo(5.95, 0.3);     // nose tip drop
+      pr.lineTo(5.5, -0.42);    // chin
+      pr.lineTo(-3.9, -0.68);   // belly line
+      pr.lineTo(-5.7, -0.66);   // rear belly
+      pr.closePath();
+      const hullGeo = new THREE.ExtrudeGeometry(pr, {
+        depth: 3.6, bevelEnabled: true, bevelThickness: 0.32, bevelSize: 0.3, bevelSegments: 2,
+      });
+      hullGeo.translate(0, 0, -1.8);
+      const hull = new THREE.Mesh(hullGeo, armorMat);
+      hull.name = 'gunship:hull';
+      hull.rotation.y = -Math.PI / 2; // shape x -> ship +Z (nose forward)
+      visible.add(hull);
+      // Spine fin for silhouette identity.
+      const fin = new THREE.Shape();
+      fin.moveTo(-6.1, 2.0); fin.lineTo(-6.1, 3.35); fin.lineTo(-4.7, 2.35); fin.closePath();
+      const finGeo = new THREE.ExtrudeGeometry(fin, { depth: 0.18, bevelEnabled: false });
+      finGeo.translate(0, 0, -0.09);
+      const finMesh = new THREE.Mesh(finGeo, trimMat);
+      finMesh.name = 'gunship:tail_fin';
+      finMesh.rotation.y = -Math.PI / 2;
+      visible.add(finMesh);
+    }
+    // Canopy: one piece of glass following the windshield rake + side strips.
+    const canopy = addBox(visible, 'gunship:canopy', [0, 1.95, 2.95], [2.15, 0.1, 2.1], glassMat, { x: -0.42 });
+    addBox(visible, 'gunship:window_port', [-2.11, 1.35, -0.6], [0.06, 0.42, 6.4], glassMat);
+    addBox(visible, 'gunship:window_starboard', [2.11, 1.35, -0.6], [0.06, 0.42, 6.4], glassMat);
     addBox(visible, 'gunship:rear_pressure_frame', [0, 1.35, -5.78], [3.9, 0.42, 0.4], armorMat);
     this._rampMesh = addBox(visible, 'gunship:rear_ramp', [0, -0.36, -6.25], [3.35, 0.2, 2.9], shipMat(0x455a64, frameHealth), { x: -0.28 });
     addBox(visible, 'gunship:pressure_door', [0, 0.82, -5.82], [3.28, 2.3, 0.18], shipMat(0x263238, has('cockpit_fwd') ? 1 : 0.35));
     addBox(visible, 'gunship:pilot_seat', [0, 0.35, 3.25], [0.72, 0.32, 0.75], interiorMat);
     addBox(visible, 'gunship:console', [0, 0.65, 4.25], [1.65, 0.38, 0.9], shipMat(0x102027, hp('cockpit_fwd') || 0.3));
-    addBox(visible, 'gunship:trim_port', [-2.18, 0.25, -0.55], [0.06, 0.14, 10.25], trimMat);
-    addBox(visible, 'gunship:trim_starboard', [2.18, 0.25, -0.55], [0.06, 0.14, 10.25], trimMat);
+    addBox(visible, 'gunship:trim_port', [-2.13, 0.35, -0.35], [0.06, 0.14, 10.6], trimMat);
+    addBox(visible, 'gunship:trim_starboard', [2.13, 0.35, -0.35], [0.06, 0.14, 10.6], trimMat);
 
     // Wings and engines: visible only when the supporting modules exist.
     if (has('hull_top') || has('hull_heavy_top') || has('frame_core')) {
-      addBox(visible, 'gunship:port_wing', [-3.45, 0.46, -1.1], [3.0, 0.24, 3.4], armorMat);
-      addBox(visible, 'gunship:starboard_wing', [3.45, 0.46, -1.1], [3.0, 0.24, 3.4], armorMat);
+      // Tapered, swept wings (one shape per side — connected to the hull).
+      for (const side of [-1, 1]) {
+        const wing = new THREE.Shape(); // x = span outward, y = chord (ship Z)
+        wing.moveTo(0.0, 1.4);          // root leading edge
+        wing.lineTo(3.35, 0.15);        // tip leading edge (swept back)
+        wing.lineTo(3.35, -1.15);       // tip trailing edge
+        wing.lineTo(0.0, -2.0);         // root trailing edge
+        wing.closePath();
+        const wingGeo = new THREE.ExtrudeGeometry(wing, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 1 });
+        const wm = new THREE.Mesh(wingGeo, armorMat);
+        wm.name = side < 0 ? 'gunship:port_wing' : 'gunship:starboard_wing';
+        wm.rotation.x = Math.PI / 2;    // shape y -> ship Z, depth -> down
+        wm.position.set(side * 1.9, 0.62, -1.1);
+        if (side > 0) wm.scale.x = 1; else wm.scale.x = -1;
+        visible.add(wm);
+      }
     }
     if (has('engine_main') || has('engine_aux') || has('engine_adv')) {
       const engineHealth = Math.max(hp('engine_main'), hp('engine_aux'), hp('engine_adv'));
       const engineMat = shipMat(0x51636c, engineHealth || 0.35);
-      addCyl(visible, 'gunship:port_engine', [-3.7, 0.9, -2.75], 0.68, 2.9, engineMat, 'Z');
-      addCyl(visible, 'gunship:starboard_engine', [3.7, 0.9, -2.75], 0.68, 2.9, engineMat, 'Z');
-      addCyl(visible, 'gunship:main_nozzle', [0, 0.35, -5.18], 0.58, 0.55, engineMat, 'Z');
+      const intakeMat = shipMat(0x2e3a40, engineHealth || 0.35);
+      for (const side of [-1, 1]) {
+        const nx = side * 3.7;
+        const nm = side < 0 ? 'port' : 'starboard';
+        // Pylon connects wing to nacelle — nothing floats.
+        addBox(visible, `gunship:${nm}_pylon`, [side * 2.9, 0.78, -2.3], [1.7, 0.16, 0.9], armorMat);
+        addCyl(visible, `gunship:${nm}_engine`, [nx, 0.9, -2.75], 0.68, 2.9, engineMat, 'Z');
+        addCyl(visible, `gunship:${nm}_intake`, [nx, 0.9, -1.28], 0.74, 0.22, intakeMat, 'Z');
+        addCyl(visible, `gunship:${nm}_nozzle_ring`, [nx, 0.9, -4.22], 0.56, 0.35, intakeMat, 'Z');
+      }
+      addCyl(visible, 'gunship:main_nozzle', [0, 0.35, -5.85], 0.58, 0.55, engineMat, 'Z');
     }
     if (has('tank_left')) addCyl(visible, 'gunship:port_tank', [-1.6, 0.08, -1.0], 0.42, 2.35, shipMat(0x607d8b, hp('tank_left')), 'Z');
     if (has('tank_right')) addCyl(visible, 'gunship:starboard_tank', [1.6, 0.08, -1.0], 0.42, 2.35, shipMat(0x607d8b, hp('tank_right')), 'Z');

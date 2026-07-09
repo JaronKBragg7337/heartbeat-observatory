@@ -3881,6 +3881,50 @@ function buildArena() {
   buildArenaTargets();
 }
 
+
+// Architectural block: turns a plain box building into designed architecture
+// while keeping the exact same collision footprint. Adds corner pillars,
+// glass window bands with mullions, a parapet + setback roof cap, an entry
+// awning, and a facade sign panel so the label sprite isn't doing all the
+// identity work (visual-direction brief: buildings must read without labels).
+function addArchitecture(x, z, w, h, d, bodyMaterial, roofColor, signColor, frontSign) {
+  const trimM = new THREE.MeshStandardMaterial({ color: 0x222c31, roughness: 0.7 });
+  const glassM = new THREE.MeshStandardMaterial({ color: 0x0e1a22, roughness: 0.25, metalness: 0.1, emissive: 0x2a4b5e, emissiveIntensity: 0.35 });
+  const roofM = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.66 });
+  // Base plinth
+  addBox(x, 0.14, z, w + 0.36, 0.28, d + 0.36, trimM);
+  // Corner pillars, slightly proud of the walls
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    addBox(x + sx * (w / 2), h / 2, z + sz * (d / 2), 0.34, h, 0.34, trimM);
+  }
+  // Window bands per floor on front + back faces, with a centre mullion strip
+  const floors = Math.max(1, Math.round(h / 1.7));
+  for (let f = 0; f < floors; f++) {
+    const wy = (h / floors) * (f + 0.55);
+    addBox(x, wy, z + (d / 2 + 0.03), w * 0.78, 0.52, 0.06, glassM);
+    addBox(x, wy, z - (d / 2 + 0.03), w * 0.78, 0.52, 0.06, glassM);
+    addBox(x + (w / 2 + 0.03), wy, z, 0.06, 0.52, d * 0.7, glassM);
+    addBox(x - (w / 2 + 0.03), wy, z, 0.06, 0.52, d * 0.7, glassM);
+    addBox(x, wy, z + (d / 2 + 0.05), 0.1, 0.56, 0.05, trimM);
+  }
+  // Parapet + setback roof cap (replaces the floating oversized slab look)
+  addBox(x, h + 0.14, z, w + 0.5, 0.28, d + 0.5, roofM);
+  addBox(x, h + 0.55, z, w * 0.62, 0.62, d * 0.62, roofM);
+  addBox(x, h + 1.0, z, w * 0.2, 0.34, d * 0.2, trimM); // roof vent/machine
+  // Entry awning + lamps on the labelled front
+  if (frontSign !== undefined) {
+    const fz = z + frontSign * (d / 2 + 0.42);
+    addBox(x, 2.0, fz, 1.9, 0.1, 0.9, trimM);
+    for (const lx of [-1.05, 1.05]) {
+      const lampM = new THREE.MeshStandardMaterial({ color: 0xffe9bd, emissive: 0xffd98a, emissiveIntensity: 0.8, roughness: 0.4 });
+      addBox(x + lx, 1.62, z + frontSign * (d / 2 + 0.09), 0.12, 0.24, 0.12, lampM);
+    }
+    // Facade sign panel above the door (identity without the floating label)
+    const signM = new THREE.MeshStandardMaterial({ color: signColor, roughness: 0.45, emissive: signColor, emissiveIntensity: 0.35 });
+    addBox(x, 2.45, z + frontSign * (d / 2 + 0.06), 2.3, 0.5, 0.08, signM);
+  }
+}
+
 function buildDoorBuilding(door) {
   const bodyMaterial = new THREE.MeshStandardMaterial({
     color: door.body,
@@ -3902,9 +3946,10 @@ function buildDoorBuilding(door) {
   });
 
   addBox(door.x, door.height / 2, door.z, door.width, door.height, door.depth, bodyMaterial);
-  addBox(door.x, door.height + 0.28, door.z, door.width + 0.55, 0.56, door.depth + 0.55, roofMaterial);
+  const frontSignDir = door.front === "south" ? 1 : -1;
+  addArchitecture(door.x, door.z, door.width, door.height, door.depth, bodyMaterial, door.roof, door.sign, frontSignDir);
 
-  const frontSign = door.front === "south" ? 1 : -1;
+  const frontSign = frontSignDir;
   const faceZ = door.z + frontSign * (door.depth / 2 + 0.035);
   const triggerZ = door.z + frontSign * (door.depth / 2 + 0.95);
   const entranceZ = door.z + frontSign * (door.depth / 2 + 0.52);
@@ -3938,9 +3983,9 @@ function buildDoorBuilding(door) {
 
 function buildStructure(b) {
   const bodyMaterial = new THREE.MeshStandardMaterial({ color: b.body, roughness: 0.78 });
-  const roofMaterial = new THREE.MeshStandardMaterial({ color: b.roof, roughness: 0.66 });
   addBox(b.x, b.height / 2, b.z, b.width, b.height, b.depth, bodyMaterial);
-  addBox(b.x, b.height + 0.28, b.z, b.width + 0.55, 0.56, b.depth + 0.55, roofMaterial);
+  const structFront = b.face === "south" ? 1 : b.face === "north" ? -1 : undefined;
+  addArchitecture(b.x, b.z, b.width, b.height, b.depth, bodyMaterial, b.roof, b.roof, structFront);
 
   const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x2f302a, roughness: 0.64 });
   const dw = 1.05, dh = 1.7, dt = 0.08;
@@ -4291,31 +4336,40 @@ function buildAvatarBody(look, name, ghost) {
     const face = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.045), darkM);
     face.position.set(0, 1.48, -0.245); group.add(face);
   } else {
+    // Shaped person: capsule limbs, tapered torso, sphere joints — reads as
+    // a stylized human, not a stack of rectangles (visual-direction brief).
     const bw = look.build === "slim" ? 0.84 : look.build === "broad" ? 1.22 : 1;
     const skinM = M(look.skin), shirtM = M(look.shirt, { roughness: 0.7 }), pantsM = M(look.pants, { roughness: 0.72 }), hairM = M(look.hair, { roughness: 0.85 });
-    const legX = 0.12 * bw, armX = 0.305 * bw;
-    const legGeo = new THREE.BoxGeometry(0.16, 0.62, 0.18);
-    const lL = new THREE.Mesh(legGeo, pantsM); lL.position.set(-legX, 0.31, 0); lL.castShadow = !ghost; group.add(lL);
-    const rL = new THREE.Mesh(legGeo, pantsM); rL.position.set(legX, 0.31, 0); rL.castShadow = !ghost; group.add(rL);
-    const footGeo = new THREE.BoxGeometry(0.18, 0.1, 0.3);
-    const lF = new THREE.Mesh(footGeo, darkM); lF.position.set(-legX, 0.05, -0.05); group.add(lF);
-    const rF = new THREE.Mesh(footGeo, darkM); rF.position.set(legX, 0.05, -0.05); group.add(rF);
+    const legX = 0.125 * bw, armX = 0.27 * bw;
+    const legGeo = new THREE.CapsuleGeometry(0.078, 0.4, 3, 10);
+    const lL = new THREE.Mesh(legGeo, pantsM); lL.position.set(-legX, 0.34, 0); lL.castShadow = !ghost; group.add(lL);
+    const rL = new THREE.Mesh(legGeo, pantsM); rL.position.set(legX, 0.34, 0); rL.castShadow = !ghost; group.add(rL);
+    const footGeo = new THREE.SphereGeometry(0.095, 10, 7);
+    const lF = new THREE.Mesh(footGeo, darkM); lF.scale.set(1, 0.6, 1.55); lF.position.set(-legX, 0.06, 0.03); group.add(lF);
+    const rF = new THREE.Mesh(footGeo, darkM); rF.scale.set(1, 0.6, 1.55); rF.position.set(legX, 0.06, 0.03); group.add(rF);
+    const hips = new THREE.Mesh(new THREE.SphereGeometry(0.16 * bw, 12, 8), pantsM);
+    hips.scale.set(1.1, 0.6, 0.78); hips.position.y = 0.62; hips.castShadow = !ghost; group.add(hips);
     const torsoDepth = 0.27 * (0.92 + 0.08 * bw);
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44 * bw, 0.66, torsoDepth), shirtM);
-    torso.position.y = 0.97; torso.castShadow = !ghost; group.add(torso);
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.2 * bw, 0.155 * bw, 0.58, 12), shirtM);
+    torso.scale.z = 0.74; torso.position.y = 0.95; torso.castShadow = !ghost; group.add(torso);
     addPersonPattern(group, look, ghost, bw, torsoDepth);
-    const armGeo = new THREE.BoxGeometry(0.13, 0.5, 0.15);
-    const lA = new THREE.Mesh(armGeo, shirtM); lA.position.set(-armX, 1.0, 0); lA.castShadow = !ghost; group.add(lA);
-    const rA = new THREE.Mesh(armGeo, shirtM); rA.position.set(armX, 1.0, 0); rA.castShadow = !ghost; group.add(rA);
-    const handGeo = new THREE.BoxGeometry(0.12, 0.13, 0.15);
-    const lH = new THREE.Mesh(handGeo, skinM); lH.position.set(-armX, 0.7, 0); group.add(lH);
-    const rH = new THREE.Mesh(handGeo, skinM); rH.position.set(armX, 0.7, 0); group.add(rH);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 14), skinM);
-    head.position.y = 1.45; head.castShadow = !ghost; group.add(head);
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.215, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62), hairM);
-    hair.position.y = 1.47; group.add(hair);
-    const eyes = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.05, 0.04), darkM);
-    eyes.position.set(0, 1.46, -0.18); group.add(eyes);
+    const shGeo = new THREE.SphereGeometry(0.085 * bw, 10, 7);
+    const lS = new THREE.Mesh(shGeo, shirtM); lS.position.set(-armX * 0.93, 1.19, 0); group.add(lS);
+    const rS = new THREE.Mesh(shGeo, shirtM); rS.position.set(armX * 0.93, 1.19, 0); group.add(rS);
+    const armGeo = new THREE.CapsuleGeometry(0.058, 0.32, 3, 10);
+    const lA = new THREE.Mesh(armGeo, shirtM); lA.position.set(-armX, 0.96, 0); lA.rotation.z = 0.07; lA.castShadow = !ghost; group.add(lA);
+    const rA = new THREE.Mesh(armGeo, shirtM); rA.position.set(armX, 0.96, 0); rA.rotation.z = -0.07; rA.castShadow = !ghost; group.add(rA);
+    const handGeo = new THREE.SphereGeometry(0.065, 10, 7);
+    const lH = new THREE.Mesh(handGeo, skinM); lH.position.set(-armX - 0.025, 0.72, 0); group.add(lH);
+    const rH = new THREE.Mesh(handGeo, skinM); rH.position.set(armX + 0.025, 0.72, 0); group.add(rH);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.09, 10), skinM);
+    neck.position.y = 1.28; group.add(neck);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.185, 18, 14), skinM);
+    head.scale.set(0.95, 1.1, 0.95); head.position.y = 1.47; head.castShadow = !ghost; group.add(head);
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.198, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.58), hairM);
+    hair.scale.copy(head.scale); hair.position.y = 1.485; group.add(hair);
+    const eyes = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.036, 0.04), darkM);
+    eyes.position.set(0, 1.49, -0.168); group.add(eyes);
   }
   const label = createLabelSprite(name || "Guest", {
     background: ghost ? "rgba(11, 16, 18, 0.62)" : "rgba(11, 16, 18, 0.72)",
