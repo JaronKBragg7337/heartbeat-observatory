@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const BUILD = 'v2e — sliced, granular piece-by-piece printing';
 const app = document.querySelector('#app');
@@ -521,8 +522,43 @@ async function startPrint(recipe){
   setStatus(`${recipe.label} finished on the actual bed. Pick it up to place it.`);
 }
 async function pickupPrint(){ if(phase!=='printed-on-bed'||!printedOnBed){setStatus('Nothing finished on the printer bed yet.');return;} const obj=printedOnBed; printedOnBed=null; if(pathGroup){scene.remove(pathGroup);pathGroup=null;} setPhase('pickup-moving'); obj.userData.state='pickup-moving'; setStatus(`Picking up ${obj.userData.label}.`); await animateTransform(obj,handWorld(),.42,850); await sleep(140); obj.userData.state='carried-preview'; obj.scale.setScalar(1); const [x,z]=slots[slotIndex++%slots.length]; obj.position.set(x,0,z); setGhost(obj,true); carriedPreview=obj; setPhase('carried-preview'); setTarget(`preview ${obj.userData.label}`); setStatus(`${obj.userData.label} picked up. Move/rotate it or tap ground, then Place.`); }
-function placePreview(){ if(!carriedPreview){setStatus('No carried preview. Print something, then Pick Up Print first.');return;} const obj=carriedPreview; carriedPreview=null; setGhost(obj,false); restoreFinal(obj); obj.userData.id=++idCounter; obj.userData.state='placed'; placed.push(obj); setPhase('ready'); selectPlaced(obj); setStatus(`${obj.userData.label} placed as a solid, piece-printed world object.`); }
-function cancelOrDelete(){ if(phase==='printing'){setStatus('Print is mid-fabrication. Let it finish, then cancel/pick up.');return;} if(carriedPreview){scene.remove(carriedPreview);carriedPreview=null;setPhase('ready');setTarget('none');setStatus('Carried preview cancelled.');return;} if(printedOnBed){scene.remove(printedOnBed);printedOnBed=null;if(pathGroup){scene.remove(pathGroup);pathGroup=null;}setPhase('ready');setTarget('none');setStatus('Finished print removed from the bed.');return;} if(selected){const doomed=selected;clearSelection();scene.remove(doomed);const i=placed.indexOf(doomed);if(i>=0)placed.splice(i,1);setStatus('Selected placed object deleted.');return;} setStatus('Nothing to cancel or delete.'); }
+function placePreview(){ if(!carriedPreview){setStatus('No carried preview. Print something, then Pick Up Print first.');return;} const obj=carriedPreview; carriedPreview=null; setGhost(obj,false); restoreFinal(obj); obj.userData.id=++idCounter; obj.userData.state='placed'; placed.push(obj); setPhase('ready'); selectPlaced(obj); savePlacement(obj); setStatus(`${obj.userData.label} placed and saved to the shared world (persists on reload).`); }
+function cancelOrDelete(){ if(phase==='printing'){setStatus('Print is mid-fabrication. Let it finish, then cancel/pick up.');return;} if(carriedPreview){scene.remove(carriedPreview);carriedPreview=null;setPhase('ready');setTarget('none');setStatus('Carried preview cancelled.');return;} if(printedOnBed){scene.remove(printedOnBed);printedOnBed=null;if(pathGroup){scene.remove(pathGroup);pathGroup=null;}setPhase('ready');setTarget('none');setStatus('Finished print removed from the bed.');return;} if(selected){const doomed=selected;clearSelection();scene.remove(doomed);const i=placed.indexOf(doomed);if(i>=0)placed.splice(i,1);deletePlacement(doomed);setStatus('Selected placed object deleted (removed from the shared world too).');return;} setStatus('Nothing to cancel or delete.'); }
+
+// --- World-state persistence (Supabase) -------------------------------------
+// Every placed object is saved as a row so the build survives reload and any AI
+// (Claude / ChatGPT / Zeus) can read, locate, or remove it. This shared table is
+// the world's source of truth — not the git repo.
+const WORLD='printer-lab';
+const supabase=createClient('https://ygjpnvrwhkrowkrskftk.supabase.co','sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN');
+async function savePlacement(obj){
+  try{
+    const { data, error } = await supabase.from('placements').insert({
+      world:WORLD, type:obj.userData.recipeId, label:obj.userData.label,
+      x:obj.position.x, y:obj.position.y, z:obj.position.z,
+      rot_y:obj.rotation.y, scale:obj.scale.x||1
+    }).select('id').single();
+    if(!error && data) obj.userData.dbId=data.id;
+  }catch(e){ /* offline / RLS — object still shows locally this session */ }
+}
+async function deletePlacement(obj){
+  if(!obj.userData.dbId) return;
+  try{ await supabase.from('placements').delete().eq('id',obj.userData.dbId); }catch(e){}
+}
+async function loadPlacements(){
+  try{
+    const { data, error } = await supabase.from('placements').select('*').eq('world',WORLD).order('created_at');
+    if(error||!data||!data.length) return;
+    for(const row of data){
+      const recipe=recipes.find(r=>r.id===row.type); if(!recipe) continue;
+      const obj=recipe.create();
+      obj.userData={label:row.label||recipe.label, recipeId:recipe.id, id:++idCounter, state:'placed', dbId:row.id};
+      obj.position.set(row.x,row.y,row.z); obj.rotation.y=row.rot_y||0; if(row.scale) obj.scale.setScalar(row.scale);
+      placed.push(obj); scene.add(obj);
+    }
+    setStatus(`Loaded ${data.length} saved world object(s) from the shared world state.`);
+  }catch(e){}
+}
 
 for(const recipe of recipes){ const b=document.createElement('button'); b.className='secondary'; b.textContent=recipe.label; b.addEventListener('click',()=>startPrint(recipe)); recipeButtons.appendChild(b); }
 runButton.addEventListener('click',()=>{ const r=parseCommand(commandInput.value); if(!r){setStatus('No recipe matched. Try stall, cottage, boat, tree, cart, spiral, creature, or campfire.');return;} startPrint(r); });
@@ -541,6 +577,9 @@ const starter1=createSpiral(); starter1.position.set(-6.2,0,-1.4); starter1.scal
 const starter2=createCreature(); starter2.position.set(-8.3,0,1.7); starter2.userData={label:'Starter Creature',id:++idCounter,state:'placed'}; placed.push(starter2); scene.add(starter2);
 const starter3=createBoat(); starter3.position.set(6.4,.04,-.5); starter3.rotation.y=-.45; starter3.userData={label:'Starter Boat',id:++idCounter,state:'placed'}; placed.push(starter3); scene.add(starter3);
 
+// Rebuild any previously-placed world objects from the shared world state.
+loadPlacements();
+
 function resize(){ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); renderer.setSize(window.innerWidth,window.innerHeight); }
 window.addEventListener('resize',resize);
 function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const c=printer.userData.carriage,g=printer.userData.gantry; c.position.x=Math.sin(now*.0011)*.55; c.position.y=5.1; c.position.z=.25+Math.cos(now*.0009)*.18; g.position.y=5.55; printer.userData.spool.rotation.x+=.008; } player.rotation.y=Math.sin(now*.001)*.08; updateSelectionBox(); controls.update(); renderer.render(scene,camera); }
@@ -549,4 +588,5 @@ setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Objects are sliced in
 // Optional deep-link: /?auto=<recipe id or alias> auto-starts that print on load
 // (handy for testing and for linking straight to a specific print).
 const autoParam=new URLSearchParams(location.search).get('auto');
-if(autoParam){ const r=recipes.find(x=>x.id===autoParam)||parseCommand(autoParam); if(r) setTimeout(()=>startPrint(r),500); }
+const autoPlace=new URLSearchParams(location.search).get('place');
+if(autoParam){ const r=recipes.find(x=>x.id===autoParam)||parseCommand(autoParam); if(r) setTimeout(async()=>{ await startPrint(r); if(autoPlace){ await pickupPrint(); placePreview(); } },500); }
