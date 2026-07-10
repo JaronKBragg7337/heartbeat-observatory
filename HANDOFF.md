@@ -7,6 +7,20 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Sliced Tree (bottom-up trunk + leaf clusters)
+
+**State:** live. Tree is now piece-built with the "hidden-then-printed" reveal.
+
+**Shipped:** `createTree(s)` rebuilt — trunk = short bark segments stacked up (builds bottom-up), canopy = ~26 small leaf clusters on a deterministic fibonacci dome (reveal after the trunk). Deterministic (no Math.random) so trees rebuild identically from the DB / for other players. Size-aware (`sized:true`).
+
+**Verified:** local Chrome — segmented trunk + leafy canopy, builds trunk-first; zero console errors.
+
+**Object library now fully piece-built + size-aware:** Cottage, Market Stall, Cart, Tree + Block/Wall/Floor/Pillar. Remaining primitives (boat/spiral/creature/campfire) still use the adaptive reveal.
+
+**Next:** cross-cutting **hot-glow deposit** look — fresh pieces glow hot then cool to solid + a brighter molten strand from the nozzle (applies to every object at once). Then port v3 extras (arched bridge, cottage chimney, boat benches).
+
+---
+
 ## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Sliced Market Stall + Cart (piece-built)
 
 **State:** live. Stall and Cart now print piece-by-piece like the cottage.
