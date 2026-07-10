@@ -849,3 +849,16 @@ Jaron's phone walk is the true frame test — per the house law, live tests outr
 - engine/hub/main.js stations: `fn` acts run callbacks; world2 acts: `{ type: "fn", fn }`.
 - Keep ONE <video> per room (media-surfaces law). Do not add per-surface videos.
 - Deploy law: bump BUILD const AND ?v= in the same commit, every main.js push, both worlds.
+## 2026-07-10 — Codex — World Printer v2f continuous Hero Knot
+
+**State:** World Printer Lab v2e was functionally broad, but its spiral was a chain of separate spheres and the generic nozzle path came from per-piece bounding boxes. It read as chunks appearing near a nozzle rather than a machine printing a curved form.
+
+**Shipped:** added the v2f Hero Knot pipeline and synchronized it to `/3DPrinterAsset/`. The `spiral` recipe id now builds a smooth closed trefoil from 176 overlapping extrusion strokes. Its dedicated sequence performs a dry travel move, follows the exact curve centreline, keeps heat localized at the deposition front, cools the trailing strokes from hot to warm to solid polymer, and finishes with visible path-aligned ridges. The hero camera moves to a centered machine view. The piece-built sandbox, Supabase persistence, Realtime scaling guard, snapping, print sizes, placement, and walk modes remain intact.
+
+**Verified:** lab Vite production build passes; desktop print and finish inspected in-browser; 390×844 mobile finish inspected in-browser; zero JavaScript errors. The only console warning is Three.js's deprecated `PCFSoftShadowMap` fallback. Full technical handoff is in the lab repository at `docs/HANDOFF_2026-07-10_HERO_KNOT.md`.
+
+**Rollback:** lab parent `dd47bcc`; Heartbeat parent `8ffa7bc`.
+
+**Next up:** rebuild the machine as a mechanically coherent Cartesian assembly, then add a true per-layer contour vase proof.
+
+---

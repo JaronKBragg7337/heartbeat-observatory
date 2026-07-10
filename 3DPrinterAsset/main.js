@@ -2,25 +2,25 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const BUILD = 'v2e — sliced, granular piece-by-piece printing';
+const BUILD = 'v2f — continuous hero extrusion + piece-built world objects';
 const app = document.querySelector('#app');
 
 app.innerHTML = `
   <canvas id="world"></canvas>
   <section id="hud">
     <div class="topline">
-      <h1>World Printer Lab <span style="color:#00ff9d">v2e</span></h1>
+      <h1>World Printer Lab <span style="color:#00ff9d">v2f</span></h1>
       <button id="toggleHud" class="secondary">Hide</button>
     </div>
     <div class="hud-body">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
         <a href="/" style="color:#00ff9d;text-decoration:none;font-weight:800">← Back to stable v1</a>
-        <span class="pill">experimental</span>
+        <span class="pill">hero toolpath lab</span>
       </div>
       <p class="note"><b>${BUILD}</b>. Parts are measured before the object is moved to the bed, so nozzle paths and visible parts use the same coordinate space.</p>
       <div class="section-title">Speak / Type Object</div>
       <div class="row">
-        <input id="commandInput" value="make a market stall" aria-label="Object command" />
+        <input id="commandInput" value="make a hero knot" aria-label="Object command" />
         <button id="runCommand">Print</button>
         <button id="voiceButton" class="secondary">🎙</button>
       </div>
@@ -52,14 +52,14 @@ app.innerHTML = `
       <div class="row">
         <span class="pill" id="statePill">ready</span>
         <span class="pill">bed-local paths</span>
-        <span class="pill">part-by-part reveal</span>
+        <span class="pill">continuous extrusion</span>
         <span class="pill">variable print time</span>
       </div>
       <div id="status">Ready. Try Stall, Cottage, Boat, Tree, Cart, Spiral, Creature, or Campfire.</div>
       <div id="selected">Target: none</div>
     </div>
   </section>
-  <aside id="help">v2e: objects are sliced into many small pieces and printed piece by piece — the nozzle follows each fresh piece.</aside>
+  <aside id="help">v2f: print the Hero Knot to watch one deliberate curved toolpath cool from molten amber into solid layered polymer.</aside>
   <div id="joystick" style="position:fixed;left:22px;bottom:26px;width:118px;height:118px;border-radius:50%;background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.35);touch-action:none;z-index:20;display:flex;align-items:center;justify-content:center;user-select:none">
     <div id="joyknob" style="width:50px;height:50px;border-radius:50%;background:rgba(0,255,157,0.5);pointer-events:none;transition:transform .05s"></div>
   </div>
@@ -164,6 +164,9 @@ const mat = {
   freshOrange: new THREE.MeshBasicMaterial({ color:0xffb14d, transparent:true, opacity:.92, depthWrite:false }),
   hot: new THREE.MeshStandardMaterial({ color:0xffd39a, emissive:0xff5a12, emissiveIntensity:1.9, roughness:.5, metalness:0 }),
   warm: new THREE.MeshStandardMaterial({ color:0xffcaa0, emissive:0xd23c06, emissiveIntensity:0.85, roughness:.6, metalness:0 }),
+  knot: new THREE.MeshPhysicalMaterial({ color:0x13d99a, map:tex.green, roughness:.3, metalness:.03, clearcoat:.38, clearcoatRoughness:.34, emissive:0x002e20, emissiveIntensity:.28 }),
+  knotWarm: new THREE.MeshStandardMaterial({ color:0xff9b50, emissive:0xff4b12, emissiveIntensity:1.15, roughness:.42, metalness:0 }),
+  knotHot: new THREE.MeshStandardMaterial({ color:0xffe0a8, emissive:0xff641c, emissiveIntensity:2.35, roughness:.34, metalness:0 }),
   ghost: new THREE.MeshBasicMaterial({ color:0x00ff9d, transparent:true, opacity:.34, wireframe:true, depthWrite:false }),
   select: new THREE.MeshBasicMaterial({ color:0xffd479, transparent:true, opacity:.86, wireframe:true, depthWrite:false }),
   player: new THREE.MeshStandardMaterial({ color:0x65a8ff, roughness:.38, metalness:.05 })
@@ -376,7 +379,7 @@ function createPrinter(){
   for(const x of [-.2,.2]){ const r=new THREE.Mesh(new THREE.TorusGeometry(.5,.035,10,40),mat.dark); r.rotation.y=Math.PI/2; r.position.x=x; spool.add(r); }
   spool.position.set(2.95,5.95,-1.72); g.add(spool);
   g.add(tube([new THREE.Vector3(2.9,5.95,-1.72),new THREE.Vector3(1.4,6.45,-1.2),new THREE.Vector3(.1,5.65,-.35)],.026,mat.freshGreen,44));
-  const sign=label('WORLD PRINTER v2d'); sign.position.set(0,6.52,-2.22); g.add(sign);
+  const sign=label('WORLD PRINTER v2f'); sign.position.set(0,6.52,-2.22); g.add(sign);
   g.userData={ carriage, gantry, spool, nozzleTipLocal:new THREE.Vector3(0,-1.13,0), idle:carriage.position.clone(), idleGantry:gantry.position.clone() };
   return shadow(g);
 }
@@ -463,16 +466,26 @@ function createCart(s=1){ const g=new THREE.Group(); g.name='Cart';
   return g;
 }
 function createCampfire(){ const g=new THREE.Group(); g.name='Campfire'; for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const s=new THREE.Mesh(new THREE.DodecahedronGeometry(.16,0),mat.stone); s.position.set(Math.cos(a)*.5,.14,Math.sin(a)*.5); g.add(s); } for(const a of [0,Math.PI/2]){ const log=cyl(.08,1,mat.wood,12); log.rotation.z=Math.PI/2; log.rotation.y=a; log.position.y=.22; g.add(log); } const f=new THREE.Mesh(new THREE.ConeGeometry(.3,.75,12),mat.flame); f.position.y=.6; g.add(f); const light=new THREE.PointLight(0xff8a20,1.4,6); light.position.y=1.1; g.add(light); return shadow(g); }
-function createSpiral(s=1){ const g=new THREE.Group(); g.name='Spiral';
-  // A rising spiral of small beads — prints bead-by-bead bottom-up (and the
-  // tube-of-drops shape suits the molten-glow look).
-  const N=Math.max(48,Math.round(66*s));
-  for(let i=0;i<N;i++){ const t=i/(N-1), a=t*Math.PI*7, r=(.5+Math.sin(t*Math.PI*4)*.14)*s;
-    const bead=markPiece(new THREE.Mesh(new THREE.SphereGeometry(.1*s,8,6), i%2?mat.green:mat.leaf));
-    bead.position.set(Math.cos(a)*r, t*1.9*s, Math.sin(a)*r); g.add(bead);
+function knotPoint(t,s=1){
+  // Trefoil centreline. Its lowest sweep kisses the bed while the broad X/Z
+  // footprint and over-under crossings make the finished silhouette read clearly.
+  const a=t*Math.PI*2, radial=1.38+.46*Math.cos(3*a);
+  return new THREE.Vector3(Math.cos(2*a)*radial*.78*s, (.63+.55*Math.sin(3*a))*s, Math.sin(2*a)*radial*.62*s);
+}
+function createHeroKnot(s=1){
+  const g=new THREE.Group(); g.name='Hero Knot';
+  const count=Math.max(132,Math.round(176*s)), radius=.092*Math.max(.72,s);
+  const points=[];
+  for(let i=0;i<=count;i++) points.push(knotPoint(i/count,s));
+  for(let i=0;i<count;i++){
+    const curve=new THREE.LineCurve3(points[i],points[i+1]);
+    const stroke=markPiece(new THREE.Mesh(new THREE.TubeGeometry(curve,2,radius,10,false),mat.knot));
+    stroke.userData.pathIndex=i; stroke.userData.pathPoint=points[i].clone(); g.add(stroke);
   }
+  g.userData.heroPath=points;
   return g;
 }
+function createSpiral(s=1){ return createHeroKnot(s); }
 function createCreature(s=1){ const g=new THREE.Group(); g.name='Creature';
   // Body: cluster of small blobs (fibonacci dome) that build up piece by piece.
   const nB=Math.max(22,Math.round(30*s)), R=.6*s;
@@ -496,7 +509,7 @@ const recipes=[
   {id:'boat',label:'Boat',aliases:['boat','ship','sailboat'],dims:[3.1,1.3,2.0],complexity:1.05,create:createBoat,sized:true},
   {id:'tree',label:'Tree',aliases:['tree','forest','oak'],dims:[2.0,2.0,2.9],complexity:1.12,create:createTree,sized:true},
   {id:'cart',label:'Cart',aliases:['cart','wagon','carriage'],dims:[2.4,1.5,1.5],complexity:.9,create:createCart,sized:true},
-  {id:'spiral',label:'Spiral',aliases:['spiral','twist','knot'],dims:[1.8,1.8,2.1],complexity:1.35,create:createSpiral,sized:true},
+  {id:'spiral',label:'Hero Knot',aliases:['spiral','twist','knot','hero'],dims:[2.9,2.3,1.2],complexity:1.35,create:createSpiral,sized:true,hero:true},
   {id:'creature',label:'Creature',aliases:['creature','robot','monster','eyeball','character'],dims:[1.9,1.9,1.5],complexity:1.4,create:createCreature,sized:true},
   {id:'campfire',label:'Campfire',aliases:['campfire','fire','firepit'],dims:[1.1,1.1,1.0],complexity:.55,create:createCampfire}
 ];
@@ -616,6 +629,49 @@ function rotateTarget(dir){ const o=movable(); if(!o){setStatus('Nothing can rot
 function raiseTarget(dy){ const o=movable(); if(!o){setStatus('Nothing to raise yet. Print, pick up, then raise/lower to stack.');return;} o.position.y=Math.max(0, Math.round((o.position.y+dy)/0.5)*0.5); magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
 async function animateTransform(object,targetPosition,targetScale,duration){ const sPos=object.position.clone(), sScale=object.scale.clone(), eScale=new THREE.Vector3(targetScale,targetScale,targetScale), t0=performance.now(); return new Promise(resolve=>{ function step(now){ const t=clamp01((now-t0)/duration); const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; object.position.lerpVectors(sPos,targetPosition,e); object.scale.lerpVectors(sScale,eScale,e); if(t<1)requestAnimationFrame(step); else resolve(); } requestAnimationFrame(step); }); }
 
+function moveMachineTo(localPoint,duration=700){
+  const carriage=printer.userData.carriage, gantry=printer.userData.gantry;
+  const fromC=carriage.position.clone(), toC=carriageFromLocal(localPoint);
+  const fromG=gantry.position.y, toG=5.15+localPoint.y*.2, t0=performance.now();
+  return new Promise(resolve=>{ function step(now){ const t=clamp01((now-t0)/duration), e=t*t*(3-2*t); carriage.position.lerpVectors(fromC,toC,e); gantry.position.y=THREE.MathUtils.lerp(fromG,toG,e); if(t<1)requestAnimationFrame(step); else resolve(); } requestAnimationFrame(step); });
+}
+
+async function startHeroPrint(recipe){
+  const obj=buildAtSize(recipe,SIZES[printSize]);
+  const path=obj.userData.heroPath;
+  obj.userData={label:recipe.label,recipeId:recipe.id,state:'printing',sizeScale:SIZES[printSize]};
+  obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
+  const strokes=[...obj.children];
+  for(const stroke of strokes){ stroke.visible=false; stroke.userData.baseMaterial=mat.knot; }
+  if(viewMode==='orbit'){
+    camera.position.set(0,4.45,2.3); controls.target.set(0,1.55,-5.25); controls.update();
+  }
+  setStatus('Travel move to the Hero Knot start point — extrusion is off.');
+  await moveMachineTo(path[0],760);
+  setStatus(`Extruding one continuous ${strokes.length}-stroke curved toolpath. The amber front cools into layered green polymer.`);
+  const carriage=printer.userData.carriage, gantry=printer.userData.gantry, spool=printer.userData.spool;
+  const bead=new THREE.Mesh(new THREE.SphereGeometry(.115,18,12),mat.knotHot); scene.add(bead); liveBead=bead;
+  const heat=new THREE.PointLight(0xff6a1a,3.2,5.5); scene.add(heat);
+  const duration=Math.round(8800+strokes.length*9), t0=performance.now(); let shown=-1;
+  await new Promise(resolve=>{ function step(now){
+    const raw=clamp01((now-t0)/duration), eased=raw<.08 ? raw*raw/0.08 : raw;
+    const cursor=Math.min(strokes.length-1,Math.floor(eased*strokes.length));
+    if(cursor!==shown){ for(let i=shown+1;i<=cursor;i++) strokes[i].visible=true; shown=cursor; }
+    for(let i=Math.max(0,cursor-18);i<=cursor;i++){
+      const age=cursor-i; strokes[i].material=age<4?mat.knotHot:age<11?mat.knotWarm:mat.knot;
+    }
+    const p=path[Math.min(path.length-1,cursor+1)];
+    carriage.position.copy(carriageFromLocal(p)); gantry.position.y=5.15+p.y*.2; spool.rotation.x+=.055;
+    const world=bedWorld(p); bead.position.copy(world); heat.position.set(world.x,world.y+.2,world.z); heat.intensity=2.8+Math.sin(now*.035)*.35;
+    if(raw<1) requestAnimationFrame(step); else resolve();
+  } requestAnimationFrame(step); });
+  for(const stroke of strokes){ stroke.visible=true; stroke.material=mat.knot; }
+  scene.remove(bead); scene.remove(heat); liveBead=null;
+  await moveMachineTo(new THREE.Vector3(0,3.93,-.03),620);
+  obj.userData.state='printed-on-bed'; setPhase('printed-on-bed'); setTarget(`${recipe.label} finished on printer bed`);
+  setStatus('Hero Knot complete: a coherent curved extrusion with a localized hot front and progressive cooling. Pick it up to place it.');
+}
+
 async function startPrint(recipe){
   if(phase==='printing'){setStatus('Printer is already working.');return;}
   if(phase==='printed-on-bed'){setStatus('Finished print is still on the bed. Pick it up or cancel it first.');return;}
@@ -624,6 +680,7 @@ async function startPrint(recipe){
   clearSelection(); setPhase('printing');
   // Auto-hide the menu when a build starts so the print is visible right away.
   hud.classList.add('collapsed'); hud.classList.remove('mobile-start'); toggleHud.textContent='Open';
+  if(recipe.hero){ await startHeroPrint(recipe); return; }
   const obj=buildAtSize(recipe, SIZES[printSize]); obj.userData={label:recipe.label,recipeId:recipe.id,state:'printing',sizeScale:SIZES[printSize]};
   const parts=collectPartsLocal(obj);
   obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
@@ -805,7 +862,7 @@ function updatePlayerAndCamera(){
 }
 
 function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const c=printer.userData.carriage,g=printer.userData.gantry; c.position.x=Math.sin(now*.0011)*.55; c.position.y=5.1; c.position.z=.25+Math.cos(now*.0009)*.18; g.position.y=5.55; printer.userData.spool.rotation.x+=.008; } updatePlayerAndCamera(); updateSelectionBox(); if(viewMode==='orbit') controls.update(); renderer.render(scene,camera); }
-setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Objects are sliced into small pieces so the printer builds them piece by piece.`); animate(performance.now());
+setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Start with Hero Knot for the continuous curved-extrusion proof.`); animate(performance.now());
 
 // Optional deep-link: /?auto=<recipe id or alias> auto-starts that print on load
 // (handy for testing and for linking straight to a specific print).
