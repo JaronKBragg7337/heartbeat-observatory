@@ -7,6 +7,22 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Camera modes + character controls
+
+**State:** live. Players can walk a character and view the world in Orbit / 3rd-person / 1st-person.
+
+**Shipped:**
+- **View & Walk selector**: Orbit (free overview, pan enabled) / 3rd Person (follow cam) / 1st Person (eye-level).
+- **Character movement**: on-screen **joystick** (bottom-left, touch — mobile-first) + WASD/arrows. Movement is camera-relative; the player capsule turns to face travel.
+- **Drag-to-look** in the walking modes (camYaw/camPitch); OrbitControls handles orbit mode.
+- Kept object nudging on the on-screen buttons (arrows/Up/Down/Rot) so character-walk (joystick/WASD) and object-move never clash.
+
+**Verified:** local Chrome — all three view buttons switch correctly (3rd-person frames the build, 1st-person is ground-level), drag-to-look rotates the first-person view; zero console errors. 6 saved objects (incl. Kyler's chimney build) loaded fine.
+
+**Next:** true edge-magnet snapping, slice remaining objects (stall/cart/tree), realistic layer-line/glow look. Giant rig last (owner-gated).
+
+---
+
 ## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Building pieces + snapping (piece-by-piece building)
 
 **State:** live. Players can print individual building pieces and snap them together into structures.

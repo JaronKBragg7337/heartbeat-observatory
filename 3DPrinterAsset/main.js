@@ -45,6 +45,8 @@ app.innerHTML = `
         <button class="secondary" id="raiseUp">Up ⤒</button>
         <button class="secondary" id="lowerDown">Down ⤓</button>
       </div>
+      <div class="section-title">View &amp; Walk</div>
+      <div class="row" id="viewButtons"></div>
       <div class="section-title">State</div>
       <div class="row">
         <span class="pill" id="statePill">ready</span>
@@ -57,6 +59,9 @@ app.innerHTML = `
     </div>
   </section>
   <aside id="help">v2e: objects are sliced into many small pieces and printed piece by piece — the nozzle follows each fresh piece.</aside>
+  <div id="joystick" style="position:fixed;left:22px;bottom:26px;width:118px;height:118px;border-radius:50%;background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.35);touch-action:none;z-index:20;display:flex;align-items:center;justify-content:center;user-select:none">
+    <div id="joyknob" style="width:50px;height:50px;border-radius:50%;background:rgba(0,255,157,0.5);pointer-events:none;transition:transform .05s"></div>
+  </div>
 `;
 
 const $ = (q) => document.querySelector(q);
@@ -631,7 +636,11 @@ commandInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') runButton.cli
 const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2(); let down=null;
 renderer.domElement.addEventListener('pointerdown',(e)=>{down={x:e.clientX,y:e.clientY};});
 renderer.domElement.addEventListener('click',(e)=>{ if(e.target.closest?.('#hud'))return; if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>6)return; pointer.x=e.clientX/window.innerWidth*2-1; pointer.y=-(e.clientY/window.innerHeight)*2+1; raycaster.setFromCamera(pointer,camera); if(carriedPreview){ const hits=raycaster.intersectObject(ground); if(hits.length){ carriedPreview.position.x=Math.round(hits[0].point.x); carriedPreview.position.z=Math.round(hits[0].point.z); setStatus(`Moved carried preview to ${carriedPreview.position.x}, ${carriedPreview.position.z}.`); } return; } const hits=raycaster.intersectObjects(placed,true); if(hits.length){ let root=hits[0].object; while(root.parent&&!root.userData.id) root=root.parent; if(root.userData.id) selectPlaced(root); } });
-window.addEventListener('keydown',(e)=>{ if(document.activeElement===commandInput&&e.key!=='Enter')return; const k=e.key.toLowerCase(); if(k==='w'||e.key==='ArrowUp')moveTarget(0,-1); if(k==='s'||e.key==='ArrowDown')moveTarget(0,1); if(k==='a'||e.key==='ArrowLeft')moveTarget(-1,0); if(k==='d'||e.key==='ArrowRight')moveTarget(1,0); if(k==='q')rotateTarget(-1); if(k==='e')rotateTarget(1); if(k==='r')raiseTarget(0.5); if(k==='f')raiseTarget(-0.5); if(e.key==='Enter'&&carriedPreview)placePreview(); if(e.key==='Delete'||e.key==='Backspace')cancelOrDelete(); });
+window.addEventListener('keydown',(e)=>{ if(document.activeElement===commandInput&&e.key!=='Enter')return; const k=e.key.toLowerCase();
+  if(k==='w'||e.key==='ArrowUp')move.f=1; else if(k==='s'||e.key==='ArrowDown')move.f=-1; if(k==='a'||e.key==='ArrowLeft')move.s=-1; else if(k==='d'||e.key==='ArrowRight')move.s=1;
+  if(k==='q')rotateTarget(-1); if(k==='e')rotateTarget(1); if(k==='r')raiseTarget(0.5); if(k==='f')raiseTarget(-0.5);
+  if(e.key==='Enter'&&carriedPreview)placePreview(); if(e.key==='Delete'||e.key==='Backspace')cancelOrDelete(); });
+window.addEventListener('keyup',(e)=>{ const k=e.key.toLowerCase(); if(k==='w'||e.key==='ArrowUp'||k==='s'||e.key==='ArrowDown')move.f=0; if(k==='a'||e.key==='ArrowLeft'||k==='d'||e.key==='ArrowRight')move.s=0; });
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 if(!SpeechRecognition){ voiceButton.disabled=true; voiceButton.title='Speech recognition not available in this browser.'; } else { const rec=new SpeechRecognition(); rec.lang='en-US'; rec.interimResults=false; rec.continuous=false; voiceButton.addEventListener('click',()=>{ setStatus('Listening. Say make a stall, cottage, boat, tree...'); rec.start(); }); rec.onresult=(e)=>{ const text=e.results[0][0].transcript; commandInput.value=text; const r=parseCommand(text); if(r)startPrint(r); else setStatus(`Heard “${text}”, but no recipe matched yet.`); }; rec.onerror=(e)=>setStatus(`Voice error: ${e.error}. Type the command instead.`); }
 
@@ -646,7 +655,56 @@ subscribeWorld();
 
 function resize(){ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); renderer.setSize(window.innerWidth,window.innerHeight); }
 window.addEventListener('resize',resize);
-function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const c=printer.userData.carriage,g=printer.userData.gantry; c.position.x=Math.sin(now*.0011)*.55; c.position.y=5.1; c.position.z=.25+Math.cos(now*.0009)*.18; g.position.y=5.55; printer.userData.spool.rotation.x+=.008; } player.rotation.y=Math.sin(now*.001)*.08; updateSelectionBox(); controls.update(); renderer.render(scene,camera); }
+// --- Camera modes + character controls --------------------------------------
+// Walk the player with the on-screen joystick (or WASD/arrows); switch between
+// Orbit (free overview), 3rd-person (follow) and 1st-person. Drag to look in the
+// walking modes. Object nudging stays on the on-screen buttons, so there's no clash.
+let viewMode='orbit', camYaw=0, camPitch=0.32;
+const move={f:0,s:0}, joy={x:0,y:0};
+const PLAYER_SPEED=0.11, PLAYER_EYE=1.55;
+controls.enablePan=true;
+const VIEW_LABELS={orbit:'Orbit',follow:'3rd Person',first:'1st Person'};
+const viewButtonsEl=$('#viewButtons');
+function renderViewButtons(){ viewButtonsEl.innerHTML=''; for(const key of ['orbit','follow','first']){ const b=document.createElement('button'); b.className='secondary'; b.textContent=VIEW_LABELS[key]; if(viewMode===key){ b.style.borderColor='#00ff9d'; b.style.color='#00ff9d'; b.style.fontWeight='800'; } b.addEventListener('click',()=>setViewMode(key)); viewButtonsEl.appendChild(b); } }
+function setViewMode(key){ viewMode=key; controls.enabled=(key==='orbit'); if(key==='orbit'){ camera.position.set(14,9.2,15.6); controls.target.set(0,2.1,-1.2); controls.update(); setStatus('View: Orbit — drag to orbit, pinch/two-finger to pan. Joystick still walks your character.'); } else { camYaw=player.rotation.y; setStatus(`View: ${VIEW_LABELS[key]} — joystick (or WASD) walks, drag to look.`); } renderViewButtons(); }
+renderViewButtons();
+
+// On-screen joystick (touch + mouse) → character movement.
+const joyEl=$('#joystick'), joyKnob=$('#joyknob'); let joyId=null, joyCX=0, joyCY=0;
+function updateJoy(e){ const dx=e.clientX-joyCX, dy=e.clientY-joyCY, max=44, d=Math.min(1,Math.hypot(dx,dy)/max), a=Math.atan2(dy,dx); joy.x=Math.cos(a)*d; joy.y=Math.sin(a)*d; joyKnob.style.transform=`translate(${Math.cos(a)*d*max}px,${Math.sin(a)*d*max}px)`; }
+joyEl.addEventListener('pointerdown',(e)=>{ joyId=e.pointerId; const r=joyEl.getBoundingClientRect(); joyCX=r.left+r.width/2; joyCY=r.top+r.height/2; try{joyEl.setPointerCapture(e.pointerId);}catch(_){} updateJoy(e); });
+joyEl.addEventListener('pointermove',(e)=>{ if(e.pointerId===joyId) updateJoy(e); });
+function endJoy(e){ if(e.pointerId===joyId){ joyId=null; joy.x=0; joy.y=0; joyKnob.style.transform='translate(0,0)'; } }
+joyEl.addEventListener('pointerup',endJoy); joyEl.addEventListener('pointercancel',endJoy);
+
+// Drag-to-look in the walking modes (coexists with tap-to-select/place).
+let lookLast=null;
+renderer.domElement.addEventListener('pointerdown',(e)=>{ if(viewMode!=='orbit') lookLast={x:e.clientX,y:e.clientY}; });
+renderer.domElement.addEventListener('pointermove',(e)=>{ if(viewMode!=='orbit'&&lookLast){ camYaw-=(e.clientX-lookLast.x)*0.005; camPitch=Math.max(-0.9,Math.min(1.0,camPitch+(e.clientY-lookLast.y)*0.004)); lookLast={x:e.clientX,y:e.clientY}; } });
+window.addEventListener('pointerup',()=>{ lookLast=null; });
+
+const _eye=new THREE.Vector3();
+function updatePlayerAndCamera(){
+  let ix=joy.x+move.s, iz=joy.y-move.f; const len=Math.hypot(ix,iz);
+  if(len>0.03){
+    if(len>1){ ix/=len; iz/=len; }
+    const yaw=(viewMode==='orbit') ? Math.atan2(camera.position.x-controls.target.x, camera.position.z-controls.target.z) : camYaw;
+    const mx=Math.sin(yaw)*(-iz)+Math.cos(yaw)*ix, mz=Math.cos(yaw)*(-iz)-Math.sin(yaw)*ix;
+    player.position.x=Math.max(-72,Math.min(72,player.position.x+mx*PLAYER_SPEED));
+    player.position.z=Math.max(-72,Math.min(72,player.position.z+mz*PLAYER_SPEED));
+    player.rotation.y=Math.atan2(mx,mz);
+  }
+  if(viewMode==='follow'){
+    const dist=7.5, cp=Math.cos(camPitch);
+    camera.position.set(player.position.x-Math.sin(camYaw)*dist*cp, player.position.y+2.4+Math.sin(camPitch)*dist, player.position.z-Math.cos(camYaw)*dist*cp);
+    camera.lookAt(player.position.x, player.position.y+1.4, player.position.z);
+  } else if(viewMode==='first'){
+    _eye.set(player.position.x, player.position.y+PLAYER_EYE, player.position.z); camera.position.copy(_eye); const cp=Math.cos(camPitch);
+    camera.lookAt(_eye.x+Math.sin(camYaw)*cp, _eye.y-Math.sin(camPitch), _eye.z+Math.cos(camYaw)*cp);
+  }
+}
+
+function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const c=printer.userData.carriage,g=printer.userData.gantry; c.position.x=Math.sin(now*.0011)*.55; c.position.y=5.1; c.position.z=.25+Math.cos(now*.0009)*.18; g.position.y=5.55; printer.userData.spool.rotation.x+=.008; } updatePlayerAndCamera(); updateSelectionBox(); if(viewMode==='orbit') controls.update(); renderer.render(scene,camera); }
 setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Objects are sliced into small pieces so the printer builds them piece by piece.`); animate(performance.now());
 
 // Optional deep-link: /?auto=<recipe id or alias> auto-starts that print on load
