@@ -2,7 +2,7 @@ import { installWorldPrinterRuntimeGuards } from './runtime-guards.js';
 
 installWorldPrinterRuntimeGuards();
 
-import('./main.js').catch((error) => {
+import('./main.js?v=2g').catch((error) => {
   console.error('[World Printer] Failed to start the live printer build.', error);
   const app = document.querySelector('#app');
   if (app) {

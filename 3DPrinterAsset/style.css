@@ -129,6 +129,13 @@ button:disabled { opacity: .48; cursor: not-allowed; }
   line-height: 1.35;
 }
 
+.hero-mode #joystick,
+.hero-mode #help {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+
 kbd {
   display: inline-block;
   padding: 1px 5px;

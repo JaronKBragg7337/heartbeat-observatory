@@ -862,3 +862,16 @@ Jaron's phone walk is the true frame test — per the house law, live tests outr
 **Next up:** rebuild the machine as a mechanically coherent Cartesian assembly, then add a true per-layer contour vase proof.
 
 ---
+## 2026-07-10 — Codex — World Printer v2g nozzle truth + grounded contours
+
+**Trigger:** Jaron's phone screenshots showed the visible cone entering the bed, extrusion appearing beside the heater block, an airborne trefoil, a rubble-ring Boat, and a disconnected blob Creature. The original nozzle apex was exactly `0.765` world units below the deposition coordinate.
+
+**Shipped:** rebuilt the machine as four Z uprights → depth stage → X rail → compact orange carriage → brass hotend, with the visible brass apex as the single nozzle coordinate. Replaced the trefoil with a strictly bed-up `Hero Layered Form` of closed horizontal contours, dry approach, localized pale molten front, progressive cooling, lift, and park. Added neutral studio lighting, mobile full-machine framing, cinematic overlay suppression, automatic recipe grounding, a longitudinal-strake Boat, and a coherent smooth Creature. Removed the three unsaved starter props; persisted multiplayer placements still load normally.
+
+**Verified:** lab production build passes; desktop and 390×844 hero mid/final states inspected; exact tip contact and full mobile framing confirmed; rebuilt Boat and Creature inspected; no JavaScript errors. Detailed implementation handoff: lab `docs/HANDOFF_2026-07-10_V2G_NOZZLE_CONTOURS.md`.
+
+**Rollback:** lab parent `ee76d0d`; Heartbeat parent `6a2feaa`.
+
+**Next up:** explicit paths/contours for remaining promoted recipes, then belts/pulleys and a carriage-following filament guide.
+
+---

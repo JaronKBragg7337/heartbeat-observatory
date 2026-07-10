@@ -2,25 +2,25 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const BUILD = 'v2f — continuous hero extrusion + piece-built world objects';
+const BUILD = 'v2g — grounded contour printing + exact nozzle mechanics';
 const app = document.querySelector('#app');
 
 app.innerHTML = `
   <canvas id="world"></canvas>
   <section id="hud">
     <div class="topline">
-      <h1>World Printer Lab <span style="color:#00ff9d">v2f</span></h1>
+      <h1>World Printer Lab <span style="color:#00ff9d">v2g</span></h1>
       <button id="toggleHud" class="secondary">Hide</button>
     </div>
     <div class="hud-body">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
         <a href="/" style="color:#00ff9d;text-decoration:none;font-weight:800">← Back to stable v1</a>
-        <span class="pill">hero toolpath lab</span>
+        <span class="pill">layer-contour lab</span>
       </div>
       <p class="note"><b>${BUILD}</b>. Parts are measured before the object is moved to the bed, so nozzle paths and visible parts use the same coordinate space.</p>
       <div class="section-title">Speak / Type Object</div>
       <div class="row">
-        <input id="commandInput" value="make a hero knot" aria-label="Object command" />
+        <input id="commandInput" value="make a hero layered form" aria-label="Object command" />
         <button id="runCommand">Print</button>
         <button id="voiceButton" class="secondary">🎙</button>
       </div>
@@ -59,7 +59,7 @@ app.innerHTML = `
       <div id="selected">Target: none</div>
     </div>
   </section>
-  <aside id="help">v2f: print the Hero Knot to watch one deliberate curved toolpath cool from molten amber into solid layered polymer.</aside>
+  <aside id="help">v2g: the compact hero form grows from grounded horizontal contours deposited at the exact brass nozzle tip.</aside>
   <div id="joystick" style="position:fixed;left:22px;bottom:26px;width:118px;height:118px;border-radius:50%;background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.35);touch-action:none;z-index:20;display:flex;align-items:center;justify-content:center;user-select:none">
     <div id="joyknob" style="width:50px;height:50px;border-radius:50%;background:rgba(0,255,157,0.5);pointer-events:none;transition:transform .05s"></div>
   </div>
@@ -142,11 +142,13 @@ const tex = {
   wood: grainTexture('#8b5a32','#5b331f')
 };
 const mat = {
-  ground: new THREE.MeshStandardMaterial({ color: 0x12221e, roughness:.92, metalness:.02 }),
-  bed: new THREE.MeshPhysicalMaterial({ color:0x003f32, roughness:.18, metalness:.12, clearcoat:.9, clearcoatRoughness:.16 }),
-  bedGlass: new THREE.MeshPhysicalMaterial({ color:0x00ff9d, transparent:true, opacity:.28, roughness:.08, clearcoat:1 }),
+  ground: new THREE.MeshStandardMaterial({ color: 0x242725, roughness:.94, metalness:.02 }),
+  bed: new THREE.MeshPhysicalMaterial({ color:0x1b2320, roughness:.34, metalness:.18, clearcoat:.72, clearcoatRoughness:.22 }),
+  bedGlass: new THREE.MeshPhysicalMaterial({ color:0x719985, transparent:true, opacity:.17, roughness:.16, clearcoat:.72 }),
   dark: new THREE.MeshStandardMaterial({ color:0x151c1a, roughness:.42, metalness:.8 }),
   metal: new THREE.MeshStandardMaterial({ color:0x9da8a3, roughness:.28, metalness:.82 }),
+  carriage: new THREE.MeshStandardMaterial({ color:0xf27a28, roughness:.34, metalness:.16, emissive:0x271000, emissiveIntensity:.22 }),
+  brass: new THREE.MeshStandardMaterial({ color:0xd99a3e, roughness:.28, metalness:.72 }),
   rubber: new THREE.MeshStandardMaterial({ color:0x050706, roughness:.8, metalness:.01 }),
   green: new THREE.MeshStandardMaterial({ color:0x00e996, map:tex.green, roughness:.34, metalness:.02, emissive:0x003020 }),
   orange: new THREE.MeshStandardMaterial({ color:0xff8730, map:tex.orange, roughness:.36, metalness:.02, emissive:0x2a1000 }),
@@ -164,17 +166,17 @@ const mat = {
   freshOrange: new THREE.MeshBasicMaterial({ color:0xffb14d, transparent:true, opacity:.92, depthWrite:false }),
   hot: new THREE.MeshStandardMaterial({ color:0xffd39a, emissive:0xff5a12, emissiveIntensity:1.9, roughness:.5, metalness:0 }),
   warm: new THREE.MeshStandardMaterial({ color:0xffcaa0, emissive:0xd23c06, emissiveIntensity:0.85, roughness:.6, metalness:0 }),
-  knot: new THREE.MeshPhysicalMaterial({ color:0x13d99a, map:tex.green, roughness:.3, metalness:.03, clearcoat:.38, clearcoatRoughness:.34, emissive:0x002e20, emissiveIntensity:.28 }),
-  knotWarm: new THREE.MeshStandardMaterial({ color:0xff9b50, emissive:0xff4b12, emissiveIntensity:1.15, roughness:.42, metalness:0 }),
-  knotHot: new THREE.MeshStandardMaterial({ color:0xffe0a8, emissive:0xff641c, emissiveIntensity:2.35, roughness:.34, metalness:0 }),
+  knot: new THREE.MeshPhysicalMaterial({ color:0x73df7c, roughness:.44, metalness:.01, clearcoat:.24, clearcoatRoughness:.46, emissive:0x062c13, emissiveIntensity:.16 }),
+  knotWarm: new THREE.MeshStandardMaterial({ color:0xb9f17e, emissive:0x5c8e22, emissiveIntensity:.52, roughness:.4, metalness:0 }),
+  knotHot: new THREE.MeshStandardMaterial({ color:0xfff1a8, emissive:0xffbe42, emissiveIntensity:1.15, roughness:.32, metalness:0 }),
   ghost: new THREE.MeshBasicMaterial({ color:0x00ff9d, transparent:true, opacity:.34, wireframe:true, depthWrite:false }),
   select: new THREE.MeshBasicMaterial({ color:0xffd479, transparent:true, opacity:.86, wireframe:true, depthWrite:false }),
   player: new THREE.MeshStandardMaterial({ color:0x65a8ff, roughness:.38, metalness:.05 })
 };
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x071012);
-scene.fog = new THREE.Fog(0x071012, 45, 170);
+scene.background = new THREE.Color(0x0d1011);
+scene.fog = new THREE.Fog(0x0d1011, 45, 170);
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth/window.innerHeight, .1, 1000);
 camera.position.set(14,9.2,15.6);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
@@ -194,16 +196,16 @@ controls.maxDistance = 120;
 controls.maxPolarAngle = Math.PI*.49;
 controls.update();
 
-scene.add(new THREE.AmbientLight(0x5e6b66,.48));
-const key = new THREE.DirectionalLight(0xffffff,1.65);
+scene.add(new THREE.AmbientLight(0x8e9691,.58));
+const key = new THREE.DirectionalLight(0xffe3c4,1.48);
 key.position.set(17,25,12); key.castShadow=true; key.shadow.mapSize.set(2048,2048);
 key.shadow.camera.left=-50; key.shadow.camera.right=50; key.shadow.camera.top=50; key.shadow.camera.bottom=-50; scene.add(key);
-const rim = new THREE.DirectionalLight(0x8ffff0,.48); rim.position.set(-12,9,-8); scene.add(rim);
-scene.add(new THREE.HemisphereLight(0x9fc9ff,0x302310,.42));
+const rim = new THREE.DirectionalLight(0x9fc7d8,.32); rim.position.set(-12,9,-8); scene.add(rim);
+scene.add(new THREE.HemisphereLight(0xb8cad8,0x35281d,.38));
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(150,150), mat.ground);
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 const grid = new THREE.GridHelper(150,150,0x00ff9d,0x33453f);
-grid.material.transparent=true; grid.material.opacity=.2; grid.position.y=.012; scene.add(grid);
+grid.material.transparent=true; grid.material.opacity=.09; grid.position.y=.012; scene.add(grid);
 const water = new THREE.Mesh(new THREE.RingGeometry(34,40,128), new THREE.MeshPhysicalMaterial({ color:0x49c4dc, transparent:true, opacity:.34, roughness:.08, clearcoat:1 }));
 water.rotation.x=-Math.PI/2; water.position.y=.018; scene.add(water);
 
@@ -360,27 +362,36 @@ function pyramidRoof(w,d,height,opts={}){
 
 function createPrinter(){
   const g=new THREE.Group();
-  const base=new THREE.Mesh(new THREE.BoxGeometry(6.6,.36,5.9),mat.dark); base.position.y=.18; g.add(base);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(6.25,.28,5.45),mat.dark); base.position.y=.14; g.add(base);
+  for(const x of [-2.72,2.72]) for(const z of [-2.28,2.28]){ const foot=new THREE.Mesh(new THREE.BoxGeometry(.7,.16,.9),mat.rubber); foot.position.set(x,.08,z); g.add(foot); }
   const bed=new THREE.Mesh(new THREE.BoxGeometry(5.12,.12,4.5),mat.bed); bed.position.set(0,.44,.28); g.add(bed);
   const glass=new THREE.Mesh(new THREE.BoxGeometry(4.82,.045,4.18),mat.bedGlass); glass.position.set(0,.535,.28); g.add(glass);
-  for(const x of [-2.6,2.6]) for(const z of [-2.1,2.1]){ const p=cyl(.11,6.35,mat.metal,24); p.position.set(x,3.28,z); g.add(p); const cap=new THREE.Mesh(new THREE.SphereGeometry(.16,18,12),mat.green); cap.position.set(x,6.48,z); g.add(cap); }
-  const gantry=new THREE.Group(); gantry.position.set(0,5.55,.25); gantry.add(new THREE.Mesh(new THREE.BoxGeometry(5.85,.3,.45),mat.dark));
-  for(const z of [-.23,.23]){ const r=cyl(.055,5.7,mat.metal,20); r.rotation.z=Math.PI/2; r.position.set(0,-.22,z); gantry.add(r); }
-  g.add(gantry);
-  const carriage=new THREE.Group(); carriage.position.set(0,5.1,.25); carriage.add(new THREE.Mesh(new THREE.BoxGeometry(.95,.72,.86),mat.green));
-  const fan=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.09,32),mat.dark); fan.rotation.x=Math.PI/2; fan.position.set(0,.05,.49); carriage.add(fan);
-  for(let i=0;i<6;i++){ const fin=new THREE.Mesh(new THREE.BoxGeometry(.5,.033,.35),mat.metal); fin.position.set(0,-.25-i*.07,0); carriage.add(fin); }
-  const block=new THREE.Mesh(new THREE.BoxGeometry(.38,.22,.38),mat.metal); block.position.y=-.72; carriage.add(block);
-  const nozzle=new THREE.Mesh(new THREE.ConeGeometry(.18,.55,30),mat.dark); nozzle.position.y=-1.1; nozzle.rotation.x=Math.PI; carriage.add(nozzle);
-  const led=new THREE.PointLight(0x00ff9d,1.8,5); led.position.set(0,-.92,.1); carriage.add(led);
-  carriage.add(tube([new THREE.Vector3(-.28,.36,-.3),new THREE.Vector3(-1.1,1,-.65),new THREE.Vector3(-1.8,.25,-1.45)],.035,mat.metal,40));
-  g.add(carriage);
-  const spool=new THREE.Group(); const spoolBody=cyl(.44,.34,mat.green,40); spoolBody.rotation.z=Math.PI/2; spool.add(spoolBody);
-  for(const x of [-.2,.2]){ const r=new THREE.Mesh(new THREE.TorusGeometry(.5,.035,10,40),mat.dark); r.rotation.y=Math.PI/2; r.position.x=x; spool.add(r); }
-  spool.position.set(2.95,5.95,-1.72); g.add(spool);
-  g.add(tube([new THREE.Vector3(2.9,5.95,-1.72),new THREE.Vector3(1.4,6.45,-1.2),new THREE.Vector3(.1,5.65,-.35)],.026,mat.freshGreen,44));
-  const sign=label('WORLD PRINTER v2f'); sign.position.set(0,6.52,-2.22); g.add(sign);
-  g.userData={ carriage, gantry, spool, nozzleTipLocal:new THREE.Vector3(0,-1.13,0), idle:carriage.position.clone(), idleGantry:gantry.position.clone() };
+  // Four Z uprights carry a rectangular gantry. A depth stage then carries the
+  // X rail, and the orange carriage rides that rail: Z -> Y -> X -> hotend.
+  for(const x of [-2.62,2.62]) for(const z of [-1.72,2.12]){
+    const post=cyl(.105,5.65,mat.metal,24); post.position.set(x,3.05,z); g.add(post);
+  }
+  const gantry=new THREE.Group(); gantry.position.set(0,3.7,0);
+  for(const x of [-2.62,2.62]){
+    const side=cyl(.07,4.2,mat.metal,18); side.rotation.x=Math.PI/2; side.position.set(x,0,.2); gantry.add(side);
+    const collar=new THREE.Mesh(new THREE.BoxGeometry(.38,.34,.42),mat.dark); collar.position.set(x,0,-1.72); gantry.add(collar);
+  }
+  const xAxis=new THREE.Group(); xAxis.position.z=.28;
+  const beam=new THREE.Mesh(new THREE.BoxGeometry(5.65,.26,.42),mat.dark); xAxis.add(beam);
+  for(const z of [-.15,.15]){ const rail=cyl(.045,5.45,mat.metal,18); rail.rotation.z=Math.PI/2; rail.position.set(0,-.2,z); xAxis.add(rail); }
+  const carriage=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.66,.52,.62),mat.carriage); carriage.add(body);
+  const fan=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.065,28),mat.dark); fan.rotation.x=Math.PI/2; fan.position.set(0,.02,.345); carriage.add(fan);
+  for(let i=0;i<4;i++){ const fin=new THREE.Mesh(new THREE.BoxGeometry(.34,.025,.28),mat.metal); fin.position.set(0,-.28-i*.04,0); carriage.add(fin); }
+  const block=new THREE.Mesh(new THREE.BoxGeometry(.25,.14,.25),mat.brass); block.position.y=-.49; carriage.add(block);
+  const nozzle=new THREE.Mesh(new THREE.ConeGeometry(.065,.18,24),mat.brass); nozzle.position.y=-.65; nozzle.rotation.x=Math.PI; carriage.add(nozzle);
+  const led=new THREE.PointLight(0xffb24b,.55,2.2); led.position.set(0,-.52,.08); carriage.add(led);
+  xAxis.add(carriage); gantry.add(xAxis); g.add(gantry);
+  const spool=new THREE.Group(); const spoolBody=cyl(.38,.3,mat.green,36); spoolBody.rotation.z=Math.PI/2; spool.add(spoolBody);
+  for(const x of [-.18,.18]){ const r=new THREE.Mesh(new THREE.TorusGeometry(.44,.03,10,36),mat.dark); r.rotation.y=Math.PI/2; r.position.x=x; spool.add(r); }
+  spool.position.set(2.85,5.55,-1.72); g.add(spool);
+  const sign=label('WORLD PRINTER v2g'); sign.position.set(0,6.08,-1.78); g.add(sign);
+  g.userData={ carriage, gantry, xAxis, spool, nozzleTipLocal:new THREE.Vector3(0,-.74,0), idleCarriage:new THREE.Vector3(0,0,0), idleGantry:new THREE.Vector3(0,3.7,0), idleXAxis:new THREE.Vector3(0,0,.28) };
   return shadow(g);
 }
 const printer=createPrinter(); printer.position.set(0,0,-5.5); scene.add(printer);
@@ -418,14 +429,19 @@ function createFloor(s=1){ return pieceGroup('Floor', 2*s,0.35*s,2*s); }
 function createPillar(s=1){ return pieceGroup('Pillar', 0.6*s,2*s,0.6*s,{unit:0.3}); }
 
 function createBoat(s=1){ const g=new THREE.Group(); g.name='Boat';
-  // Planked hull: stacked elliptical rings of small planks (narrow at the keel).
-  const rows=5;
-  for(let r=0;r<rows;r++){ const ry=r/(rows-1), y=(.2+ry*.55)*s, sc=.5+ry*.5, hl=1.5*sc*s, hw=.62*sc*s, nP=Math.max(8,Math.round(20*sc));
-    for(let i=0;i<nP;i++){ const a=i/nP*Math.PI*2, x=Math.cos(a)*hl, z=Math.sin(a)*hw;
-      const plank=markPiece(new THREE.Mesh(new THREE.BoxGeometry(.3*s,.16*s,.13*s), (r+i)%2?mat.wood:mat.darkWood));
-      plank.position.set(x,y,z); plank.rotation.y=-a; g.add(plank);
+  // Overlapping longitudinal strakes form two coherent hull sides. They meet at
+  // bow/stern and widen upward, leaving a readable open interior instead of a
+  // ring of radial blocks.
+  const rows=6, halfLen=1.52*s;
+  for(let r=0;r<rows;r++) for(const side of [-1,1]){
+    const t=r/(rows-1), y=(.08+t*.58)*s, width=(.08+t*.58)*s, points=[];
+    for(let i=0;i<=24;i++){
+      const q=-1+i/12, x=q*halfLen, fullness=Math.pow(Math.max(0,1-q*q),.58);
+      points.push(new THREE.Vector3(x,y+.2*s*Math.pow(Math.abs(q),2.7),side*width*fullness));
     }
+    const plank=markPiece(tube(points,.069*s,(r+side+2)%2?mat.wood:mat.darkWood,48)); g.add(plank);
   }
+  const keel=markPiece(tube([new THREE.Vector3(-halfLen,.27*s,0),new THREE.Vector3(0,.055*s,0),new THREE.Vector3(halfLen,.27*s,0)],.075*s,mat.darkWood,48)); g.add(keel);
   // Bench seats (from the v3 boat).
   for(const bx of [-.55*s,.5*s]){ for(const b of brickPanel(.28*s,.12*s,1.0*s,{unit:.3,courseH:.12,material:mat.wood,material2:mat.darkWood})){ b.position.x+=bx; b.position.y+=.72*s; g.add(b);} }
   // Mast: stacked segments.
@@ -466,36 +482,48 @@ function createCart(s=1){ const g=new THREE.Group(); g.name='Cart';
   return g;
 }
 function createCampfire(){ const g=new THREE.Group(); g.name='Campfire'; for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const s=new THREE.Mesh(new THREE.DodecahedronGeometry(.16,0),mat.stone); s.position.set(Math.cos(a)*.5,.14,Math.sin(a)*.5); g.add(s); } for(const a of [0,Math.PI/2]){ const log=cyl(.08,1,mat.wood,12); log.rotation.z=Math.PI/2; log.rotation.y=a; log.position.y=.22; g.add(log); } const f=new THREE.Mesh(new THREE.ConeGeometry(.3,.75,12),mat.flame); f.position.y=.6; g.add(f); const light=new THREE.PointLight(0xff8a20,1.4,6); light.position.y=1.1; g.add(light); return shadow(g); }
-function knotPoint(t,s=1){
-  // Trefoil centreline. Its lowest sweep kisses the bed while the broad X/Z
-  // footprint and over-under crossings make the finished silhouette read clearly.
-  const a=t*Math.PI*2, radial=1.38+.46*Math.cos(3*a);
-  return new THREE.Vector3(Math.cos(2*a)*radial*.78*s, (.63+.55*Math.sin(3*a))*s, Math.sin(2*a)*radial*.62*s);
+function heroLayerPoints(layer,layers,segments,s){
+  const t=layer/(layers-1), y=.055+t*1.34*s;
+  // A printable, squat sculpt: a generous belly, grounded foot, soft neck and
+  // twisting three-lobe modulation. Every contour stays above the last.
+  const belly=Math.pow(Math.sin(Math.PI*t),.7);
+  const profile=(.18+.88*belly+.06*Math.sin(t*Math.PI*3.2))*s;
+  const twist=t*Math.PI*2.35, points=[], start=-Math.PI/2;
+  for(let i=0;i<segments;i++){
+    const a=start+i/segments*Math.PI*2;
+    const ripple=1+.13*Math.cos(3*a+twist)+.045*Math.cos(2*a-twist*.55);
+    const x=Math.cos(a)*profile*ripple + Math.sin(t*Math.PI*2)*.1*s;
+    const z=Math.sin(a)*profile*ripple*.76;
+    points.push(new THREE.Vector3(x,y,z));
+  }
+  return points;
+}
+function closedLayerMesh(points,radius,material){
+  const curve=new THREE.CatmullRomCurve3(points,true,'catmullrom',.48);
+  return new THREE.Mesh(new THREE.TubeGeometry(curve,points.length*2,radius,8,true),material);
 }
 function createHeroKnot(s=1){
-  const g=new THREE.Group(); g.name='Hero Knot';
-  const count=Math.max(132,Math.round(176*s)), radius=.092*Math.max(.72,s);
-  const points=[];
-  for(let i=0;i<=count;i++) points.push(knotPoint(i/count,s));
-  for(let i=0;i<count;i++){
-    const curve=new THREE.LineCurve3(points[i],points[i+1]);
-    const stroke=markPiece(new THREE.Mesh(new THREE.TubeGeometry(curve,2,radius,10,false),mat.knot));
-    stroke.userData.pathIndex=i; stroke.userData.pathPoint=points[i].clone(); g.add(stroke);
+  const g=new THREE.Group(); g.name='Hero Layered Form';
+  const layerCount=Math.max(20,Math.min(48,Math.round(30*s))), segments=40, beadRadius=.043;
+  const layers=[];
+  for(let i=0;i<layerCount;i++){
+    const points=heroLayerPoints(i,layerCount,segments,s); layers.push(points);
+    const layer=closedLayerMesh(points,beadRadius,mat.knot); layer.castShadow=true; layer.receiveShadow=true; layer.userData.piece=true; layer.userData.layerIndex=i; g.add(layer);
   }
-  g.userData.heroPath=points;
+  g.userData.heroLayers=layers; g.userData.heroBeadRadius=beadRadius; g.userData.heroSegments=segments;
   return g;
 }
 function createSpiral(s=1){ return createHeroKnot(s); }
 function createCreature(s=1){ const g=new THREE.Group(); g.name='Creature';
-  // Body: cluster of small blobs (fibonacci dome) that build up piece by piece.
-  const nB=Math.max(22,Math.round(30*s)), R=.6*s;
-  for(let i=0;i<nB;i++){ const t=(i+.5)/nB, phi=Math.acos(1-2*t), theta=i*2.39996, rr=R*(.72+.28*(((i*5)%4)/4));
-    const b=markPiece(new THREE.Mesh(new THREE.DodecahedronGeometry(.17*s,0), i%3?mat.orange:mat.roof));
-    b.position.set(Math.cos(theta)*Math.sin(phi)*rr, .82*s+Math.cos(phi)*rr*.85, Math.sin(theta)*Math.sin(phi)*rr); g.add(b);
-  }
+  // One readable body with six deliberate curved limbs replaces the former
+  // rubble cluster and bead legs. Individual anatomy remains printable.
+  const body=markPiece(new THREE.Mesh(new THREE.SphereGeometry(.62*s,28,18),mat.orange)); body.position.y=.78*s; body.scale.set(1.05,.9,.86); g.add(body);
   for(const x of [-.28*s,.28*s]){ const eye=markPiece(new THREE.Mesh(new THREE.SphereGeometry(.14*s,16,10),mat.glass)); eye.position.set(x,.98*s,.57*s); g.add(eye); }
-  // Legs: bead segments.
-  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; for(let k=0;k<3;k++){ const kt=k/3; const leg=markPiece(new THREE.Mesh(new THREE.SphereGeometry(.06*s,6,5),mat.green)); leg.position.set(Math.cos(a)*(.4+kt*.55)*s,(.5-kt*.34)*s,Math.sin(a)*(.4+kt*.55)*s); g.add(leg);} }
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; const leg=markPiece(tube([
+    new THREE.Vector3(Math.cos(a)*.34*s,.48*s,Math.sin(a)*.34*s),
+    new THREE.Vector3(Math.cos(a)*.72*s,.25*s,Math.sin(a)*.72*s),
+    new THREE.Vector3(Math.cos(a)*.96*s,.08*s,Math.sin(a)*.96*s)
+  ],.055*s,mat.green,28)); g.add(leg); }
   return g;
 }
 
@@ -509,7 +537,7 @@ const recipes=[
   {id:'boat',label:'Boat',aliases:['boat','ship','sailboat'],dims:[3.1,1.3,2.0],complexity:1.05,create:createBoat,sized:true},
   {id:'tree',label:'Tree',aliases:['tree','forest','oak'],dims:[2.0,2.0,2.9],complexity:1.12,create:createTree,sized:true},
   {id:'cart',label:'Cart',aliases:['cart','wagon','carriage'],dims:[2.4,1.5,1.5],complexity:.9,create:createCart,sized:true},
-  {id:'spiral',label:'Hero Knot',aliases:['spiral','twist','knot','hero'],dims:[2.9,2.3,1.2],complexity:1.35,create:createSpiral,sized:true,hero:true},
+  {id:'spiral',label:'Hero Layered Form',aliases:['spiral','twist','knot','hero','layered','vessel'],dims:[2.4,2.0,1.4],complexity:1.35,create:createSpiral,sized:true,hero:true},
   {id:'creature',label:'Creature',aliases:['creature','robot','monster','eyeball','character'],dims:[1.9,1.9,1.5],complexity:1.4,create:createCreature,sized:true},
   {id:'campfire',label:'Campfire',aliases:['campfire','fire','firepit'],dims:[1.1,1.1,1.0],complexity:.55,create:createCampfire}
 ];
@@ -523,7 +551,13 @@ let printSize='medium';
 function bakeScale(root,s){ if(s===1) return root; root.traverse(m=>{ if(m.isMesh){ m.geometry.scale(s,s,s); m.position.multiplyScalar(s); } }); return root; }
 // Build a recipe at a given size. The cottage builds bigger with the SAME small
 // pieces; other recipes bake the scale into their geometry.
-function buildAtSize(recipe,s){ return recipe.sized ? recipe.create(s) : bakeScale(recipe.create(), s); }
+function groundBuild(root){
+  root.position.set(0,0,0); root.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(root); if(!Number.isFinite(box.min.y)) return root;
+  const lift=-box.min.y+.006; for(const child of root.children) child.position.y+=lift;
+  return root;
+}
+function buildAtSize(recipe,s){ const root=recipe.sized ? recipe.create(s) : bakeScale(recipe.create(), s); return recipe.hero?root:groundBuild(root); }
 
 let phase='ready', printedOnBed=null, carriedPreview=null, selected=null, selectionBox=null, pathGroup=null, liveBead=null, liveThread=null, idCounter=0, slotIndex=0;
 const placed=[]; const slots=[[0,2.7],[-4,2.4],[4,2.4],[-4,6],[4,6],[0,7.2],[-7,0],[7,0]];
@@ -596,7 +630,15 @@ function partPath(part,localT){
   if(loop<4)return new THREE.Vector3(cx-w,y,cz+d-(loop-3)*2*d);
   return new THREE.Vector3(cx-w+(loop-4)*2*w,y,cz+Math.sin(localT*Math.PI*48)*d*.45);
 }
-function carriageFromLocal(p){ return new THREE.Vector3(p.x,1.17+p.y,.28+p.z); }
+const BED_SURFACE=.56, BED_CENTER_Z=.28;
+function machinePoseFor(p,clearance=0){
+  const tipY=printer.userData.nozzleTipLocal.y;
+  return { x:p.x, y:BED_SURFACE+p.y+clearance-tipY, z:BED_CENTER_Z+p.z };
+}
+function positionMachine(p,clearance=0){
+  const pose=machinePoseFor(p,clearance), {carriage,gantry,xAxis}=printer.userData;
+  carriage.position.x=pose.x; gantry.position.y=pose.y; xAxis.position.z=pose.z;
+}
 function segment(a,b,material,r=.024){ if(a.distanceTo(b)<.012)return null; return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([a,b]),5,r,8),material); }
 function drip(a,b){ const mid=a.clone().lerp(b,.5), len=a.distanceTo(b); const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,Math.max(.05,len),8),mat.freshGreen); mesh.position.copy(mid); mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize()); return mesh; }
 
@@ -629,47 +671,61 @@ function rotateTarget(dir){ const o=movable(); if(!o){setStatus('Nothing can rot
 function raiseTarget(dy){ const o=movable(); if(!o){setStatus('Nothing to raise yet. Print, pick up, then raise/lower to stack.');return;} o.position.y=Math.max(0, Math.round((o.position.y+dy)/0.5)*0.5); magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
 async function animateTransform(object,targetPosition,targetScale,duration){ const sPos=object.position.clone(), sScale=object.scale.clone(), eScale=new THREE.Vector3(targetScale,targetScale,targetScale), t0=performance.now(); return new Promise(resolve=>{ function step(now){ const t=clamp01((now-t0)/duration); const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; object.position.lerpVectors(sPos,targetPosition,e); object.scale.lerpVectors(sScale,eScale,e); if(t<1)requestAnimationFrame(step); else resolve(); } requestAnimationFrame(step); }); }
 
-function moveMachineTo(localPoint,duration=700){
-  const carriage=printer.userData.carriage, gantry=printer.userData.gantry;
-  const fromC=carriage.position.clone(), toC=carriageFromLocal(localPoint);
-  const fromG=gantry.position.y, toG=5.15+localPoint.y*.2, t0=performance.now();
-  return new Promise(resolve=>{ function step(now){ const t=clamp01((now-t0)/duration), e=t*t*(3-2*t); carriage.position.lerpVectors(fromC,toC,e); gantry.position.y=THREE.MathUtils.lerp(fromG,toG,e); if(t<1)requestAnimationFrame(step); else resolve(); } requestAnimationFrame(step); });
+function moveMachineTo(localPoint,duration=700,clearance=.18){
+  const {carriage,gantry,xAxis}=printer.userData, pose=machinePoseFor(localPoint,clearance);
+  const fromX=carriage.position.x, fromY=gantry.position.y, fromZ=xAxis.position.z, t0=performance.now();
+  return new Promise(resolve=>{ function step(now){
+    const t=clamp01((now-t0)/duration), e=t*t*(3-2*t);
+    carriage.position.x=THREE.MathUtils.lerp(fromX,pose.x,e); gantry.position.y=THREE.MathUtils.lerp(fromY,pose.y,e); xAxis.position.z=THREE.MathUtils.lerp(fromZ,pose.z,e);
+    if(t<1)requestAnimationFrame(step); else resolve();
+  } requestAnimationFrame(step); });
 }
 
 async function startHeroPrint(recipe){
   const obj=buildAtSize(recipe,SIZES[printSize]);
-  const path=obj.userData.heroPath;
+  const layers=obj.userData.heroLayers, beadRadius=obj.userData.heroBeadRadius, segments=obj.userData.heroSegments;
   obj.userData={label:recipe.label,recipeId:recipe.id,state:'printing',sizeScale:SIZES[printSize]};
   obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
-  const strokes=[...obj.children];
-  for(const stroke of strokes){ stroke.visible=false; stroke.userData.baseMaterial=mat.knot; }
+  const layerMeshes=[...obj.children];
+  for(const layer of layerMeshes){ layer.visible=false; layer.userData.baseMaterial=mat.knot; }
   if(viewMode==='orbit'){
-    camera.position.set(0,4.45,2.3); controls.target.set(0,1.55,-5.25); controls.update();
+    const mobile=window.innerWidth<=720;
+    camera.fov=mobile?55:50; camera.updateProjectionMatrix();
+    camera.position.set(mobile?10.2:7.8,mobile?5.7:4.8,mobile?5.2:3.25); controls.target.set(0,mobile?2.15:1.65,-5.3); controls.update();
   }
-  setStatus('Travel move to the Hero Knot start point — extrusion is off.');
-  await moveMachineTo(path[0],760);
-  setStatus(`Extruding one continuous ${strokes.length}-stroke curved toolpath. The amber front cools into layered green polymer.`);
-  const carriage=printer.userData.carriage, gantry=printer.userData.gantry, spool=printer.userData.spool;
-  const bead=new THREE.Mesh(new THREE.SphereGeometry(.115,18,12),mat.knotHot); scene.add(bead); liveBead=bead;
-  const heat=new THREE.PointLight(0xff6a1a,3.2,5.5); scene.add(heat);
-  const duration=Math.round(8800+strokes.length*9), t0=performance.now(); let shown=-1;
+  const first=layers[0][0];
+  setStatus('Dry travel above the first layer — no material is deposited during positioning.');
+  await moveMachineTo(first,650,.22); await moveMachineTo(first,280,beadRadius*.9);
+  setStatus(`Printing ${layers.length} closed contours from the bed upward. Each new layer cools from amber into lime polymer.`);
+  const {spool}=printer.userData;
+  const bead=new THREE.Mesh(new THREE.SphereGeometry(beadRadius*1.08,14,10),mat.knotHot); scene.add(bead); liveBead=bead;
+  const heat=new THREE.PointLight(0xff8a32,1.35,3.2); scene.add(heat);
+  const liveLayer=new THREE.Mesh(new THREE.BufferGeometry(),mat.knotHot); obj.add(liveLayer);
+  const total=layers.length*segments, duration=11800, t0=performance.now(); let lastLayer=-1,lastSegment=-1;
   await new Promise(resolve=>{ function step(now){
-    const raw=clamp01((now-t0)/duration), eased=raw<.08 ? raw*raw/0.08 : raw;
-    const cursor=Math.min(strokes.length-1,Math.floor(eased*strokes.length));
-    if(cursor!==shown){ for(let i=shown+1;i<=cursor;i++) strokes[i].visible=true; shown=cursor; }
-    for(let i=Math.max(0,cursor-18);i<=cursor;i++){
-      const age=cursor-i; strokes[i].material=age<4?mat.knotHot:age<11?mat.knotWarm:mat.knot;
+    const raw=clamp01((now-t0)/duration), cursor=Math.min(total-1,raw*total);
+    const layerIndex=Math.min(layers.length-1,Math.floor(cursor/segments)), segmentIndex=Math.floor(cursor%segments), segmentT=cursor%1;
+    if(layerIndex!==lastLayer){
+      if(lastLayer>=0) layerMeshes[lastLayer].visible=true;
+      liveLayer.visible=false; lastLayer=layerIndex; lastSegment=-1;
     }
-    const p=path[Math.min(path.length-1,cursor+1)];
-    carriage.position.copy(carriageFromLocal(p)); gantry.position.y=5.15+p.y*.2; spool.rotation.x+=.055;
-    const world=bedWorld(p); bead.position.copy(world); heat.position.set(world.x,world.y+.2,world.z); heat.intensity=2.8+Math.sin(now*.035)*.35;
+    if(segmentIndex!==lastSegment && segmentIndex>=1){
+      liveLayer.geometry.dispose();
+      const partial=layers[layerIndex].slice(0,Math.min(segments,segmentIndex+2));
+      liveLayer.geometry=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(partial,false,'catmullrom',.48),Math.max(4,partial.length*2),beadRadius,8,false);
+      liveLayer.visible=true; lastSegment=segmentIndex;
+    }
+    for(let i=Math.max(0,layerIndex-3);i<layerIndex;i++){ const age=layerIndex-i; layerMeshes[i].material=age===1?mat.knotWarm:mat.knot; }
+    const points=layers[layerIndex], p=points[segmentIndex].clone().lerp(points[(segmentIndex+1)%segments],segmentT);
+    positionMachine(p,beadRadius*.9); spool.rotation.x+=.032;
+    const world=bedWorld(p); bead.position.copy(world); heat.position.set(world.x,world.y+.09,world.z); heat.intensity=1.1+Math.sin(now*.035)*.18;
     if(raw<1) requestAnimationFrame(step); else resolve();
   } requestAnimationFrame(step); });
-  for(const stroke of strokes){ stroke.visible=true; stroke.material=mat.knot; }
-  scene.remove(bead); scene.remove(heat); liveBead=null;
-  await moveMachineTo(new THREE.Vector3(0,3.93,-.03),620);
+  for(const layer of layerMeshes){ layer.visible=true; layer.material=mat.knot; }
+  liveLayer.geometry.dispose(); obj.remove(liveLayer); scene.remove(bead); scene.remove(heat); liveBead=null;
+  await moveMachineTo(new THREE.Vector3(0,2.25,0),650,.22);
   obj.userData.state='printed-on-bed'; setPhase('printed-on-bed'); setTarget(`${recipe.label} finished on printer bed`);
-  setStatus('Hero Knot complete: a coherent curved extrusion with a localized hot front and progressive cooling. Pick it up to place it.');
+  setStatus('Hero layered form complete: grounded contours, visible ridges, exact nozzle-tip deposition, and progressive cooling. Pick it up to place it.');
 }
 
 async function startPrint(recipe){
@@ -680,7 +736,12 @@ async function startPrint(recipe){
   clearSelection(); setPhase('printing');
   // Auto-hide the menu when a build starts so the print is visible right away.
   hud.classList.add('collapsed'); hud.classList.remove('mobile-start'); toggleHud.textContent='Open';
+  document.body.classList.toggle('hero-mode',!!recipe.hero);
   if(recipe.hero){ await startHeroPrint(recipe); return; }
+  if(viewMode==='orbit'){
+    const mobile=window.innerWidth<=720; camera.fov=mobile?55:50; camera.updateProjectionMatrix();
+    camera.position.set(mobile?10.2:7.8,mobile?5.7:4.8,mobile?5.2:3.25); controls.target.set(0,mobile?2.15:1.65,-5.3); controls.update();
+  }
   const obj=buildAtSize(recipe, SIZES[printSize]); obj.userData={label:recipe.label,recipeId:recipe.id,state:'printing',sizeScale:SIZES[printSize]};
   const parts=collectPartsLocal(obj);
   obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
@@ -688,9 +749,9 @@ async function startPrint(recipe){
   setStatus(`v2e printing ${recipe.label}: sliced into ${parts.length} small pieces, ${(duration/1000).toFixed(1)}s. Printing piece by piece, bottom-up.`);
   pathGroup=new THREE.Group(); scene.add(pathGroup);
   liveBead=new THREE.Mesh(new THREE.SphereGeometry(.11,16,10),mat.freshOrange); scene.add(liveBead);
-  const depositLight=new THREE.PointLight(0xff6a1a, 2.8, 6); scene.add(depositLight); // molten heat glow at the print front
-  const carriage=printer.userData.carriage, gantry=printer.userData.gantry, spool=printer.userData.spool;
-  const startC=carriage.position.clone(), startG=gantry.position.clone();
+  const depositLight=new THREE.PointLight(0xff6a1a, 1.25, 3.2); scene.add(depositLight); // molten heat glow at the print front
+  const {carriage,gantry,xAxis,spool}=printer.userData;
+  const startC=carriage.position.clone(), startG=gantry.position.clone(), startX=xAxis.position.clone();
   const total=parts.reduce((sum,p)=>sum+p.weight,0);
   const checkpoints=[]; let acc=0;
   for(const p of parts){ checkpoints.push({start:acc/total,end:(acc+p.weight)/total,part:p}); acc+=p.weight; }
@@ -703,12 +764,11 @@ async function startPrint(recipe){
       if(active!==lastActive){ prev=null; lastActive=active; }
       revealParts(parts,active,localT);
       const p=partPath(c.part,localT);
-      carriage.position.copy(carriageFromLocal(p));
-      gantry.position.y=5.15+p.y*.2;
+      positionMachine(p,.035);
       spool.rotation.x+=.045;
       const bedP=bedWorld(p), noz=nozzleWorld();
       liveBead.position.copy(bedP);
-      depositLight.position.set(bedP.x, bedP.y+0.25, bedP.z); depositLight.intensity=2.4+Math.sin(now*0.03)*0.6;
+      depositLight.position.set(bedP.x, bedP.y+0.1, bedP.z); depositLight.intensity=1.05+Math.sin(now*0.03)*0.16;
       if(liveThread) scene.remove(liveThread);
       liveThread=drip(noz,bedP); liveThread.material=mat.freshOrange; scene.add(liveThread);
       if(prev && now-lastEmit>38 && segCount<900){
@@ -719,7 +779,7 @@ async function startPrint(recipe){
         lastEmit=now;
       }
       prev=p.clone();
-      if(raw<1) requestAnimationFrame(step); else { carriage.position.copy(startC); gantry.position.copy(startG); resolve(); }
+      if(raw<1) requestAnimationFrame(step); else { carriage.position.copy(startC); gantry.position.copy(startG); xAxis.position.copy(startX); resolve(); }
     }
     requestAnimationFrame(step);
   });
@@ -730,9 +790,9 @@ async function startPrint(recipe){
   setPhase('printed-on-bed'); setTarget(`${recipe.label} finished on printer bed`);
   setStatus(`${recipe.label} finished on the actual bed. Pick it up to place it.`);
 }
-async function pickupPrint(){ if(phase!=='printed-on-bed'||!printedOnBed){setStatus('Nothing finished on the printer bed yet.');return;} const obj=printedOnBed; printedOnBed=null; if(pathGroup){scene.remove(pathGroup);pathGroup=null;} setPhase('pickup-moving'); obj.userData.state='pickup-moving'; setStatus(`Picking up ${obj.userData.label}.`); await animateTransform(obj,handWorld(),.42,850); await sleep(140); obj.userData.state='carried-preview'; obj.scale.setScalar(1); const [x,z]=slots[slotIndex++%slots.length]; obj.position.set(x,0,z); setGhost(obj,true); carriedPreview=obj; setPhase('carried-preview'); setTarget(`preview ${obj.userData.label}`); setStatus(`${obj.userData.label} picked up. Move/rotate it or tap ground, then Place.`); }
+async function pickupPrint(){ if(phase!=='printed-on-bed'||!printedOnBed){setStatus('Nothing finished on the printer bed yet.');return;} document.body.classList.remove('hero-mode'); const obj=printedOnBed; printedOnBed=null; if(pathGroup){scene.remove(pathGroup);pathGroup=null;} setPhase('pickup-moving'); obj.userData.state='pickup-moving'; setStatus(`Picking up ${obj.userData.label}.`); await animateTransform(obj,handWorld(),.42,850); await sleep(140); obj.userData.state='carried-preview'; obj.scale.setScalar(1); const [x,z]=slots[slotIndex++%slots.length]; obj.position.set(x,0,z); setGhost(obj,true); carriedPreview=obj; setPhase('carried-preview'); setTarget(`preview ${obj.userData.label}`); setStatus(`${obj.userData.label} picked up. Move/rotate it or tap ground, then Place.`); }
 function placePreview(){ if(!carriedPreview){setStatus('No carried preview. Print something, then Pick Up Print first.');return;} const obj=carriedPreview; carriedPreview=null; setGhost(obj,false); restoreFinal(obj); obj.userData.id=++idCounter; obj.userData.state='placed'; placed.push(obj); magnetSnap(obj); setPhase('ready'); selectPlaced(obj); savePlacement(obj); setStatus(`${obj.userData.label} placed and saved to the shared world (persists on reload).`); }
-function cancelOrDelete(){ if(phase==='printing'){setStatus('Print is mid-fabrication. Let it finish, then cancel/pick up.');return;} if(carriedPreview){scene.remove(carriedPreview);carriedPreview=null;setPhase('ready');setTarget('none');setStatus('Carried preview cancelled.');return;} if(printedOnBed){scene.remove(printedOnBed);printedOnBed=null;if(pathGroup){scene.remove(pathGroup);pathGroup=null;}setPhase('ready');setTarget('none');setStatus('Finished print removed from the bed.');return;} if(selected){const doomed=selected;clearSelection();scene.remove(doomed);const i=placed.indexOf(doomed);if(i>=0)placed.splice(i,1);deletePlacement(doomed);setStatus('Selected placed object deleted (removed from the shared world too).');return;} setStatus('Nothing to cancel or delete.'); }
+function cancelOrDelete(){ if(phase==='printing'){setStatus('Print is mid-fabrication. Let it finish, then cancel/pick up.');return;} if(carriedPreview){scene.remove(carriedPreview);carriedPreview=null;setPhase('ready');setTarget('none');setStatus('Carried preview cancelled.');return;} if(printedOnBed){scene.remove(printedOnBed);printedOnBed=null;document.body.classList.remove('hero-mode');if(pathGroup){scene.remove(pathGroup);pathGroup=null;}setPhase('ready');setTarget('none');setStatus('Finished print removed from the bed.');return;} if(selected){const doomed=selected;clearSelection();scene.remove(doomed);const i=placed.indexOf(doomed);if(i>=0)placed.splice(i,1);deletePlacement(doomed);setStatus('Selected placed object deleted (removed from the shared world too).');return;} setStatus('Nothing to cancel or delete.'); }
 
 // --- World-state persistence + real-time multiplayer (Supabase) -------------
 // Every placed object is a row (the world's source of truth, not the git repo).
@@ -801,9 +861,9 @@ window.addEventListener('keyup',(e)=>{ const k=e.key.toLowerCase(); if(k==='w'||
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 if(!SpeechRecognition){ voiceButton.disabled=true; voiceButton.title='Speech recognition not available in this browser.'; } else { const rec=new SpeechRecognition(); rec.lang='en-US'; rec.interimResults=false; rec.continuous=false; voiceButton.addEventListener('click',()=>{ setStatus('Listening. Say make a stall, cottage, boat, tree...'); rec.start(); }); rec.onresult=(e)=>{ const text=e.results[0][0].transcript; commandInput.value=text; const r=parseCommand(text); if(r)startPrint(r); else setStatus(`Heard “${text}”, but no recipe matched yet.`); }; rec.onerror=(e)=>setStatus(`Voice error: ${e.error}. Type the command instead.`); }
 
-const starter1=createSpiral(); starter1.position.set(-6.2,0,-1.4); starter1.scale.setScalar(.8); starter1.userData={label:'Starter Spiral',id:++idCounter,state:'placed'}; placed.push(starter1); scene.add(starter1);
-const starter2=createCreature(); starter2.position.set(-8.3,0,1.7); starter2.userData={label:'Starter Creature',id:++idCounter,state:'placed'}; placed.push(starter2); scene.add(starter2);
-const starter3=createBoat(); starter3.position.set(6.4,.04,-.5); starter3.rotation.y=-.45; starter3.userData={label:'Starter Boat',id:++idCounter,state:'placed'}; placed.push(starter3); scene.add(starter3);
+// Keep the showcase visually honest. Older builds spawned three unsaved demo
+// props around the machine; they read as debris and obscured the active print.
+// Persisted multiplayer placements still load normally below.
 
 // Rebuild any previously-placed world objects, then subscribe so every builder's
 // placements/moves/deletes appear live for all connected players (multiplayer).
@@ -861,8 +921,8 @@ function updatePlayerAndCamera(){
   }
 }
 
-function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const c=printer.userData.carriage,g=printer.userData.gantry; c.position.x=Math.sin(now*.0011)*.55; c.position.y=5.1; c.position.z=.25+Math.cos(now*.0009)*.18; g.position.y=5.55; printer.userData.spool.rotation.x+=.008; } updatePlayerAndCamera(); updateSelectionBox(); if(viewMode==='orbit') controls.update(); renderer.render(scene,camera); }
-setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Start with Hero Knot for the continuous curved-extrusion proof.`); animate(performance.now());
+function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const {carriage,gantry,xAxis,spool}=printer.userData; carriage.position.set(Math.sin(now*.0011)*.45,0,0); gantry.position.y=3.7; xAxis.position.z=.28+Math.cos(now*.0009)*.14; spool.rotation.x+=.008; } updatePlayerAndCamera(); updateSelectionBox(); if(viewMode==='orbit') controls.update(); renderer.render(scene,camera); }
+setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Start with Hero Layered Form for the grounded contour-printing proof.`); animate(performance.now());
 
 // Optional deep-link: /?auto=<recipe id or alias> auto-starts that print on load
 // (handy for testing and for linking straight to a specific print).
