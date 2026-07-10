@@ -7,6 +7,22 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Building pieces + snapping (piece-by-piece building)
+
+**State:** live. Players can print individual building pieces and snap them together into structures.
+
+**Shipped:**
+- **Building pieces** — Block, Wall, Floor, Pillar (front of the recipe menu), built from small bricks via a reusable `brickPanel()` grid, size-parametrised (`sized:true`, so bigger = more small bricks, not bigger ones).
+- **Stacking** — new **Up ⤒ / Down ⤓** controls (buttons + `r`/`f` keys) raise/lower the held/selected object; Y snaps to 0.5. Combined with the existing integer X/Z grid snapping, pieces tile flush and stack.
+- Pieces persist + sync via the existing `placements` system (they're just recipes), so structures are shared/multiplayer for free.
+- Decided build order: pieces + snapping now; giant printer rig LAST (and gate it to owner/admin accounts — Kyler + Lillith). Snapping many pieces is the general way to build big, likely reducing the need for a giant rig.
+
+**Verified:** local Chrome — Block/Wall/Floor/Pillar in the menu, Up/Down controls present; printed a Wall (brick panel) and auto-placed it; zero console errors.
+
+**Next:** true edge-magnet snapping (auto-align to neighbours), slice the remaining objects (stall/cart/tree), and the realistic layer-line/glow look.
+
+---
+
 ## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Printer sizes + bigger world
 
 **State:** live. A Printer Size selector (Small/Medium/Large) is in the menu; the world is larger and less crammed.

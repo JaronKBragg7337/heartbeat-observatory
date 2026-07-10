@@ -42,6 +42,8 @@ app.innerHTML = `
         <button class="secondary" id="moveRight">→</button>
         <button class="secondary" id="rotateLeft">Rot −</button>
         <button class="secondary" id="rotateRight">Rot +</button>
+        <button class="secondary" id="raiseUp">Up ⤒</button>
+        <button class="secondary" id="lowerDown">Down ⤓</button>
       </div>
       <div class="section-title">State</div>
       <div class="row">
@@ -260,6 +262,28 @@ function brickShell(w,h,d,opts={}){
 // arc so there's no see-through, laid course-by-course from the eaves up like the
 // bricks. Gable ends are filled with small pieces too. Arc in X-Y, length along Z;
 // centered so the eave line sits at y 0. Reuses fillCourse() (the brick helper).
+// Fill a w x h x d box with a running-bond brick grid (constant brick size, so
+// bigger pieces = more small bricks). Reused for the snap-together building
+// pieces below. Centered on x/z; sits from y 0 upward when placed via the recipe.
+function brickPanel(w,h,d,opts={}){
+  const { unit=0.42, courseH=0.3, gap=0.04, material=mat.wall, material2=mat.cream } = opts;
+  const out=[];
+  const nY=Math.max(1,Math.round(h/courseH)), ch=h/nY;
+  const nZ=Math.max(1,Math.round(d/unit)), bd=d/nZ;
+  for(let iy=0; iy<nY; iy++){
+    const y=-h/2+ch*(iy+0.5), stagger=iy%2===1;
+    for(let iz=0; iz<nZ; iz++){
+      const z=-d/2+bd*(iz+0.5);
+      for(const [xc,xw] of fillCourse(w, unit, stagger)){
+        const b=markPiece(new THREE.Mesh(new THREE.BoxGeometry(Math.max(.06,xw-gap), ch-gap, Math.max(.06,bd-gap)), ((iy+iz+Math.round(xc*3))%2)?material:material2));
+        b.position.set(xc, y, z);
+        out.push(b);
+      }
+    }
+  }
+  return out;
+}
+
 // Curved barrel roof made of small CURVED tile pieces (each a slice of the
 // cylinder wall) so they wrap flush — no steps, no gaps, all pieces. Angular
 // slices span a=0..PI (both eaves covered) with a small overlap so seams never
@@ -367,6 +391,13 @@ function createCottage(s=1){
   for(const x of [-.78*s,.78*s]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.22*s,.22*s,.08*s,32),mat.glass); w.rotation.x=Math.PI/2; w.position.set(x,1.15*s,1.18*s); g.add(w); }
   return g;
 }
+// --- Snap-together building pieces (print one, snap it to others) -----------
+function pieceGroup(name, w,h,d, opts){ const g=new THREE.Group(); g.name=name; for(const b of brickPanel(w,h,d,opts)){ b.position.y+=h/2; g.add(b); } return g; }
+function createBlock(s=1){ return pieceGroup('Block', 1*s,1*s,1*s); }
+function createWall(s=1){ return pieceGroup('Wall', 2*s,2*s,0.4*s); }
+function createFloor(s=1){ return pieceGroup('Floor', 2*s,0.35*s,2*s); }
+function createPillar(s=1){ return pieceGroup('Pillar', 0.6*s,2*s,0.6*s,{unit:0.3}); }
+
 function createBoat(){ const g=new THREE.Group(); g.name='Boat'; const s=new THREE.Shape(); s.moveTo(-1.55,0); s.quadraticCurveTo(-1.05,-.55,0,-.6); s.quadraticCurveTo(1.05,-.55,1.55,0); s.quadraticCurveTo(.75,.38,0,.42); s.quadraticCurveTo(-.75,.38,-1.55,0); const hull=extrude(s,1.2,mat.wood,.045); hull.rotation.x=Math.PI/2; hull.position.y=.54; g.add(hull); const mast=cyl(.045,1.85,mat.darkWood,12); mast.position.set(.12,1.5,0); g.add(mast); const ss=new THREE.Shape(); ss.moveTo(0,0); ss.lineTo(.75,.32); ss.lineTo(.04,1.2); ss.lineTo(0,0); const sail=extrude(ss,.035,mat.cream); sail.position.set(.38,1.45,.02); sail.rotation.y=Math.PI/2; g.add(sail); return shadow(g); }
 function createTree(){ const g=new THREE.Group(); g.name='Tree'; g.add(tube([new THREE.Vector3(0,0,0),new THREE.Vector3(.1,.8,.07),new THREE.Vector3(-.14,1.55,-.04),new THREE.Vector3(.08,2.15,.05)],.14,mat.wood,36)); for(const [x,y,z,s,m] of [[0,1.95,0,.9,mat.leafDark],[-.45,2.25,.08,.68,mat.leaf],[.45,2.3,-.1,.68,mat.leaf],[.04,2.65,.02,.58,mat.leaf]]){ const b=new THREE.Mesh(new THREE.DodecahedronGeometry(s,1),m); b.position.set(x,y,z); b.scale.y=.82; g.add(b); } return shadow(g); }
 function createCart(){ const g=new THREE.Group(); g.name='Cart'; const base=new THREE.Mesh(new THREE.BoxGeometry(2.2,.38,1.05),mat.wood); base.position.y=.7; g.add(base); for(const z of [-.6,.6]){ const side=new THREE.Mesh(new THREE.BoxGeometry(2.35,.62,.1),mat.darkWood); side.position.set(0,1,z); g.add(side); } for(const x of [-.78,.78]) for(const z of [-.72,.72]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.16,32),mat.darkWood); w.rotation.x=Math.PI/2; w.position.set(x,.32,z); g.add(w); } return shadow(g); }
@@ -375,8 +406,12 @@ function createSpiral(){ const pts=[]; for(let i=0;i<160;i++){ const t=i/159,a=t
 function createCreature(){ const g=new THREE.Group(); g.name='Creature'; const body=new THREE.Mesh(new THREE.DodecahedronGeometry(.62,2),mat.orange); body.position.y=.82; body.scale.set(1.05,.9,.82); g.add(body); for(const x of [-.28,.28]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.14,20,12),mat.glass); eye.position.set(x,.98,.57); g.add(eye); } for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; g.add(tube([new THREE.Vector3(Math.cos(a)*.34,.48,Math.sin(a)*.34),new THREE.Vector3(Math.cos(a)*.75,.28,Math.sin(a)*.75),new THREE.Vector3(Math.cos(a)*.95,.13,Math.sin(a)*.95)],.038,mat.green,24)); } return shadow(g); }
 
 const recipes=[
+  {id:'block',label:'Block',aliases:['block','cube'],dims:[1,1,1],complexity:.6,create:createBlock,sized:true},
+  {id:'wall',label:'Wall',aliases:['wall'],dims:[2,2,0.4],complexity:.85,create:createWall,sized:true},
+  {id:'floor',label:'Floor',aliases:['floor','tile','ground','slab'],dims:[2,0.35,2],complexity:.75,create:createFloor,sized:true},
+  {id:'pillar',label:'Pillar',aliases:['pillar','column','post'],dims:[0.6,2,0.6],complexity:.6,create:createPillar,sized:true},
   {id:'stall',label:'Market Stall',aliases:['market','stall','shop','vendor'],dims:[2.65,1.3,2.7],complexity:1.25,create:createStall},
-  {id:'cottage',label:'Cottage',aliases:['cottage','house','home','hut'],dims:[2.8,2.25,2.5],complexity:1.18,create:createCottage},
+  {id:'cottage',label:'Cottage',aliases:['cottage','house','home','hut'],dims:[2.8,2.25,2.5],complexity:1.18,create:createCottage,sized:true},
   {id:'boat',label:'Boat',aliases:['boat','ship','sailboat'],dims:[3.1,1.3,2.0],complexity:1.05,create:createBoat},
   {id:'tree',label:'Tree',aliases:['tree','forest','oak'],dims:[2.0,2.0,2.9],complexity:1.12,create:createTree},
   {id:'cart',label:'Cart',aliases:['cart','wagon','carriage'],dims:[2.4,1.5,1.5],complexity:.9,create:createCart},
@@ -394,7 +429,7 @@ let printSize='medium';
 function bakeScale(root,s){ if(s===1) return root; root.traverse(m=>{ if(m.isMesh){ m.geometry.scale(s,s,s); m.position.multiplyScalar(s); } }); return root; }
 // Build a recipe at a given size. The cottage builds bigger with the SAME small
 // pieces; other recipes bake the scale into their geometry.
-function buildAtSize(recipe,s){ return recipe.id==='cottage' ? recipe.create(s) : bakeScale(recipe.create(), s); }
+function buildAtSize(recipe,s){ return recipe.sized ? recipe.create(s) : bakeScale(recipe.create(), s); }
 
 let phase='ready', printedOnBed=null, carriedPreview=null, selected=null, selectionBox=null, pathGroup=null, liveBead=null, liveThread=null, idCounter=0, slotIndex=0;
 const placed=[]; const slots=[[0,2.7],[-4,2.4],[4,2.4],[-4,6],[4,6],[0,7.2],[-7,0],[7,0]];
@@ -477,6 +512,7 @@ function updateSelectionBox(){ if(!selectionBox||!selected)return; const box=new
 function movable(){ return carriedPreview||selected; }
 function moveTarget(dx,dz){ const o=movable(); if(!o){setStatus('Nothing can move yet. Print, pick up, then move the preview.');return;} o.position.x=Math.round(o.position.x+dx); o.position.z=Math.round(o.position.z+dz); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
 function rotateTarget(dir){ const o=movable(); if(!o){setStatus('Nothing can rotate yet. Print, pick up, then rotate the preview.');return;} o.rotation.y+=dir*Math.PI/8; updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
+function raiseTarget(dy){ const o=movable(); if(!o){setStatus('Nothing to raise yet. Print, pick up, then raise/lower to stack.');return;} o.position.y=Math.max(0, Math.round((o.position.y+dy)/0.5)*0.5); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
 async function animateTransform(object,targetPosition,targetScale,duration){ const sPos=object.position.clone(), sScale=object.scale.clone(), eScale=new THREE.Vector3(targetScale,targetScale,targetScale), t0=performance.now(); return new Promise(resolve=>{ function step(now){ const t=clamp01((now-t0)/duration); const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; object.position.lerpVectors(sPos,targetPosition,e); object.scale.lerpVectors(sScale,eScale,e); if(t<1)requestAnimationFrame(step); else resolve(); } requestAnimationFrame(step); }); }
 
 async function startPrint(recipe){
@@ -589,13 +625,13 @@ renderSizeButtons();
 for(const recipe of recipes){ const b=document.createElement('button'); b.className='secondary'; b.textContent=recipe.label; b.addEventListener('click',()=>startPrint(recipe)); recipeButtons.appendChild(b); }
 runButton.addEventListener('click',()=>{ const r=parseCommand(commandInput.value); if(!r){setStatus('No recipe matched. Try stall, cottage, boat, tree, cart, spiral, creature, or campfire.');return;} startPrint(r); });
 pickupButton.addEventListener('click',pickupPrint); placeButton.addEventListener('click',placePreview); cancelButton.addEventListener('click',cancelOrDelete);
-$('#moveLeft').addEventListener('click',()=>moveTarget(-1,0)); $('#moveRight').addEventListener('click',()=>moveTarget(1,0)); $('#moveForward').addEventListener('click',()=>moveTarget(0,-1)); $('#moveBack').addEventListener('click',()=>moveTarget(0,1)); $('#rotateLeft').addEventListener('click',()=>rotateTarget(-1)); $('#rotateRight').addEventListener('click',()=>rotateTarget(1));
+$('#moveLeft').addEventListener('click',()=>moveTarget(-1,0)); $('#moveRight').addEventListener('click',()=>moveTarget(1,0)); $('#moveForward').addEventListener('click',()=>moveTarget(0,-1)); $('#moveBack').addEventListener('click',()=>moveTarget(0,1)); $('#rotateLeft').addEventListener('click',()=>rotateTarget(-1)); $('#rotateRight').addEventListener('click',()=>rotateTarget(1)); $('#raiseUp').addEventListener('click',()=>raiseTarget(0.5)); $('#lowerDown').addEventListener('click',()=>raiseTarget(-0.5));
 commandInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') runButton.click(); });
 
 const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2(); let down=null;
 renderer.domElement.addEventListener('pointerdown',(e)=>{down={x:e.clientX,y:e.clientY};});
 renderer.domElement.addEventListener('click',(e)=>{ if(e.target.closest?.('#hud'))return; if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>6)return; pointer.x=e.clientX/window.innerWidth*2-1; pointer.y=-(e.clientY/window.innerHeight)*2+1; raycaster.setFromCamera(pointer,camera); if(carriedPreview){ const hits=raycaster.intersectObject(ground); if(hits.length){ carriedPreview.position.x=Math.round(hits[0].point.x); carriedPreview.position.z=Math.round(hits[0].point.z); setStatus(`Moved carried preview to ${carriedPreview.position.x}, ${carriedPreview.position.z}.`); } return; } const hits=raycaster.intersectObjects(placed,true); if(hits.length){ let root=hits[0].object; while(root.parent&&!root.userData.id) root=root.parent; if(root.userData.id) selectPlaced(root); } });
-window.addEventListener('keydown',(e)=>{ if(document.activeElement===commandInput&&e.key!=='Enter')return; const k=e.key.toLowerCase(); if(k==='w'||e.key==='ArrowUp')moveTarget(0,-1); if(k==='s'||e.key==='ArrowDown')moveTarget(0,1); if(k==='a'||e.key==='ArrowLeft')moveTarget(-1,0); if(k==='d'||e.key==='ArrowRight')moveTarget(1,0); if(k==='q')rotateTarget(-1); if(k==='e')rotateTarget(1); if(e.key==='Enter'&&carriedPreview)placePreview(); if(e.key==='Delete'||e.key==='Backspace')cancelOrDelete(); });
+window.addEventListener('keydown',(e)=>{ if(document.activeElement===commandInput&&e.key!=='Enter')return; const k=e.key.toLowerCase(); if(k==='w'||e.key==='ArrowUp')moveTarget(0,-1); if(k==='s'||e.key==='ArrowDown')moveTarget(0,1); if(k==='a'||e.key==='ArrowLeft')moveTarget(-1,0); if(k==='d'||e.key==='ArrowRight')moveTarget(1,0); if(k==='q')rotateTarget(-1); if(k==='e')rotateTarget(1); if(k==='r')raiseTarget(0.5); if(k==='f')raiseTarget(-0.5); if(e.key==='Enter'&&carriedPreview)placePreview(); if(e.key==='Delete'||e.key==='Backspace')cancelOrDelete(); });
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 if(!SpeechRecognition){ voiceButton.disabled=true; voiceButton.title='Speech recognition not available in this browser.'; } else { const rec=new SpeechRecognition(); rec.lang='en-US'; rec.interimResults=false; rec.continuous=false; voiceButton.addEventListener('click',()=>{ setStatus('Listening. Say make a stall, cottage, boat, tree...'); rec.start(); }); rec.onresult=(e)=>{ const text=e.results[0][0].transcript; commandInput.value=text; const r=parseCommand(text); if(r)startPrint(r); else setStatus(`Heard “${text}”, but no recipe matched yet.`); }; rec.onerror=(e)=>setStatus(`Voice error: ${e.error}. Type the command instead.`); }
 
