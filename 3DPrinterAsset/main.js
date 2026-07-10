@@ -162,6 +162,8 @@ const mat = {
   flame: new THREE.MeshBasicMaterial({ color:0xff8a20 }),
   freshGreen: new THREE.MeshBasicMaterial({ color:0x45ffc6, transparent:true, opacity:.92, depthWrite:false }),
   freshOrange: new THREE.MeshBasicMaterial({ color:0xffb14d, transparent:true, opacity:.92, depthWrite:false }),
+  hot: new THREE.MeshStandardMaterial({ color:0xffd39a, emissive:0xff5a12, emissiveIntensity:1.9, roughness:.5, metalness:0 }),
+  warm: new THREE.MeshStandardMaterial({ color:0xffcaa0, emissive:0xd23c06, emissiveIntensity:0.85, roughness:.6, metalness:0 }),
   ghost: new THREE.MeshBasicMaterial({ color:0x00ff9d, transparent:true, opacity:.34, wireframe:true, depthWrite:false }),
   select: new THREE.MeshBasicMaterial({ color:0xffd479, transparent:true, opacity:.86, wireframe:true, depthWrite:false }),
   player: new THREE.MeshStandardMaterial({ color:0x65a8ff, roughness:.38, metalness:.05 })
@@ -509,8 +511,8 @@ function revealPart(part,fraction){
   const m=part.mesh; fraction=clamp01(fraction);
   m.visible=fraction>.02;
   if(!m.visible) return;
-  // Solid material immediately — no opacity fade (that was the "illusion" look).
-  m.material=m.userData.baseMaterial;
+  // Fresh piece glows hot (molten) while depositing, then sits at its solid colour.
+  m.material = fraction<1 ? mat.hot : m.userData.baseMaterial;
   m.position.copy(m.userData.basePosition);
   if(fraction>=1){ m.scale.copy(m.userData.baseScale); return; }
   const bs=m.userData.baseScale;
@@ -525,7 +527,7 @@ function revealPart(part,fraction){
     m.scale.set(bs.x*grow, bs.y*grow, bs.z*grow);
   }
 }
-function revealParts(parts,activeIndex,localT){ parts.forEach((p,i)=>{ if(i<activeIndex) revealPart(p,1); else if(i===activeIndex) revealPart(p,localT); else p.mesh.visible=false; }); }
+function revealParts(parts,activeIndex,localT){ const COOL=6; parts.forEach((p,i)=>{ if(i<activeIndex){ revealPart(p,1); const age=activeIndex-i; if(age<=COOL) p.mesh.material=(age<=2?mat.hot:mat.warm); } else if(i===activeIndex) revealPart(p,localT); else p.mesh.visible=false; }); }
 function restoreFinal(root){ root.traverse(m=>{ if(m.isMesh){ m.visible=true; if(m.userData.baseMaterial)m.material=m.userData.baseMaterial; if(m.userData.baseScale)m.scale.copy(m.userData.baseScale); if(m.userData.basePosition)m.position.copy(m.userData.basePosition); } }); }
 function setGhost(root,on){ root.traverse(m=>{ if(!m.isMesh)return; m.userData.finalMaterial ||= m.material; m.material=on?mat.ghost:m.userData.finalMaterial; }); }
 
@@ -592,7 +594,8 @@ async function startPrint(recipe){
   const duration=printDuration(recipe,parts);
   setStatus(`v2e printing ${recipe.label}: sliced into ${parts.length} small pieces, ${(duration/1000).toFixed(1)}s. Printing piece by piece, bottom-up.`);
   pathGroup=new THREE.Group(); scene.add(pathGroup);
-  liveBead=new THREE.Mesh(new THREE.SphereGeometry(.075,16,10),mat.freshGreen); scene.add(liveBead);
+  liveBead=new THREE.Mesh(new THREE.SphereGeometry(.11,16,10),mat.freshOrange); scene.add(liveBead);
+  const depositLight=new THREE.PointLight(0xff6a1a, 2.8, 6); scene.add(depositLight); // molten heat glow at the print front
   const carriage=printer.userData.carriage, gantry=printer.userData.gantry, spool=printer.userData.spool;
   const startC=carriage.position.clone(), startG=gantry.position.clone();
   const total=parts.reduce((sum,p)=>sum+p.weight,0);
@@ -612,8 +615,9 @@ async function startPrint(recipe){
       spool.rotation.x+=.045;
       const bedP=bedWorld(p), noz=nozzleWorld();
       liveBead.position.copy(bedP);
+      depositLight.position.set(bedP.x, bedP.y+0.25, bedP.z); depositLight.intensity=2.4+Math.sin(now*0.03)*0.6;
       if(liveThread) scene.remove(liveThread);
-      liveThread=drip(noz,bedP); scene.add(liveThread);
+      liveThread=drip(noz,bedP); liveThread.material=mat.freshOrange; scene.add(liveThread);
       if(prev && now-lastEmit>38 && segCount<900){
         const a=bedWorld(prev), b=bedP;
         const material=(recipe.id==='spiral'||recipe.id==='creature'||c.part.mesh.userData.baseMaterial===mat.roof)?mat.freshOrange:mat.freshGreen;
@@ -627,6 +631,7 @@ async function startPrint(recipe){
     requestAnimationFrame(step);
   });
   if(liveBead){scene.remove(liveBead);liveBead=null;} if(liveThread){scene.remove(liveThread);liveThread=null;}
+  scene.remove(depositLight); // remove the molten heat glow
   if(pathGroup){scene.remove(pathGroup);pathGroup=null;} // clear the nozzle-path trail so the finished piece is clean
   restoreFinal(obj); obj.position.copy(bedWorld()); obj.userData.state='printed-on-bed';
   setPhase('printed-on-bed'); setTarget(`${recipe.label} finished on printer bed`);

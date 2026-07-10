@@ -7,6 +7,21 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Hot-glow molten deposit look (cross-cutting)
+
+**State:** live. Every object now prints with a molten hot-glow that cools to solid.
+
+**Shipped:**
+- Fresh piece being deposited uses an emissive `mat.hot`; a short **cooling tail** (last ~6 pieces) fades hot→`mat.warm`→base behind the print front (in `revealParts`). `restoreFinal` resets all to base so the finished piece is fully cooled/clean.
+- A **`depositLight`** (orange PointLight) follows the print front for heat spread; bigger orange molten **bead** + hot-orange **strand** from the nozzle. Light removed on finish.
+- No per-piece material cloning (shared `hot`/`warm` mats), so it stays performant.
+
+**Verified:** local Chrome — cottage prints with glowing front + cooling tail + heat light; finished piece fully cooled, no stuck glow; zero console errors.
+
+**Next:** slice the **Boat** and **Creature** (still old primitives). Keep the **Spiral** smooth (it's a molten-tube shape — suits the glow). Then port v3 extras (arched bridge, chimney, boat benches).
+
+---
+
 ## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Sliced Tree (bottom-up trunk + leaf clusters)
 
 **State:** live. Tree is now piece-built with the "hidden-then-printed" reveal.
