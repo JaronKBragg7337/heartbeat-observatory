@@ -7,6 +7,22 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Sliced Boat + Creature + Spiral (piece-built)
+
+**State:** live. The last old-style objects now build piece-by-piece (Kyler: they had the glow but weren't layered).
+
+**Shipped:**
+- **Boat**: planked hull (stacked elliptical plank rings) + bench seats (v3) + segmented mast + cloth sail pieces.
+- **Creature**: body = cluster of small blobs (fibonacci dome), eyes, leg bead-segments.
+- **Spiral**: rising bead chain (small spheres along the spiral path) — prints bead-by-bead; kept the tube-of-drops character since it suits the molten glow.
+- All three now `sized:true`.
+
+**Verified:** local Chrome — boat builds plank-by-plank, creature builds as blobs; zero console errors. (Accidentally renamed createCampfire mid-edit and immediately reverted — campfire unchanged.)
+
+**Object library is now fully piece-built.** Next: port remaining v3 extras (Arched Bridge recipe, cottage chimney), optional finer snapping polish.
+
+---
+
 ## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Hot-glow molten deposit look (cross-cutting)
 
 **State:** live. Every object now prints with a molten hot-glow that cools to solid.

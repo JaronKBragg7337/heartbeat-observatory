@@ -414,7 +414,23 @@ function createWall(s=1){ return pieceGroup('Wall', 2*s,2*s,0.4*s); }
 function createFloor(s=1){ return pieceGroup('Floor', 2*s,0.35*s,2*s); }
 function createPillar(s=1){ return pieceGroup('Pillar', 0.6*s,2*s,0.6*s,{unit:0.3}); }
 
-function createBoat(){ const g=new THREE.Group(); g.name='Boat'; const s=new THREE.Shape(); s.moveTo(-1.55,0); s.quadraticCurveTo(-1.05,-.55,0,-.6); s.quadraticCurveTo(1.05,-.55,1.55,0); s.quadraticCurveTo(.75,.38,0,.42); s.quadraticCurveTo(-.75,.38,-1.55,0); const hull=extrude(s,1.2,mat.wood,.045); hull.rotation.x=Math.PI/2; hull.position.y=.54; g.add(hull); const mast=cyl(.045,1.85,mat.darkWood,12); mast.position.set(.12,1.5,0); g.add(mast); const ss=new THREE.Shape(); ss.moveTo(0,0); ss.lineTo(.75,.32); ss.lineTo(.04,1.2); ss.lineTo(0,0); const sail=extrude(ss,.035,mat.cream); sail.position.set(.38,1.45,.02); sail.rotation.y=Math.PI/2; g.add(sail); return shadow(g); }
+function createBoat(s=1){ const g=new THREE.Group(); g.name='Boat';
+  // Planked hull: stacked elliptical rings of small planks (narrow at the keel).
+  const rows=5;
+  for(let r=0;r<rows;r++){ const ry=r/(rows-1), y=(.2+ry*.55)*s, sc=.5+ry*.5, hl=1.5*sc*s, hw=.62*sc*s, nP=Math.max(8,Math.round(20*sc));
+    for(let i=0;i<nP;i++){ const a=i/nP*Math.PI*2, x=Math.cos(a)*hl, z=Math.sin(a)*hw;
+      const plank=markPiece(new THREE.Mesh(new THREE.BoxGeometry(.3*s,.16*s,.13*s), (r+i)%2?mat.wood:mat.darkWood));
+      plank.position.set(x,y,z); plank.rotation.y=-a; g.add(plank);
+    }
+  }
+  // Bench seats (from the v3 boat).
+  for(const bx of [-.55*s,.5*s]){ for(const b of brickPanel(.28*s,.12*s,1.0*s,{unit:.3,courseH:.12,material:mat.wood,material2:mat.darkWood})){ b.position.x+=bx; b.position.y+=.72*s; g.add(b);} }
+  // Mast: stacked segments.
+  for(let i=0;i<7;i++){ const seg=markPiece(new THREE.Mesh(new THREE.CylinderGeometry(.04*s,.045*s,.26*s,8),mat.darkWood)); seg.position.set(.12*s,(.9+i*.26)*s,0); g.add(seg); }
+  // Sail: small cloth pieces.
+  for(let iy=0;iy<4;iy++) for(let ix=0;ix<3;ix++){ const sp=markPiece(new THREE.Mesh(new THREE.BoxGeometry(.03*s,.28*s,.24*s),mat.cream)); sp.position.set(.14*s,(1.15+iy*.28)*s,(.18+ix*.22)*s); g.add(sp); }
+  return g;
+}
 function createTree(s=1){ const g=new THREE.Group(); g.name='Tree';
   // Trunk: short bark segments stacked up (builds bottom-up — the trunk grows first).
   const H=2.2*s, seg=0.26*s, n=Math.max(5,Math.round(H/seg));
@@ -447,8 +463,28 @@ function createCart(s=1){ const g=new THREE.Group(); g.name='Cart';
   return g;
 }
 function createCampfire(){ const g=new THREE.Group(); g.name='Campfire'; for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const s=new THREE.Mesh(new THREE.DodecahedronGeometry(.16,0),mat.stone); s.position.set(Math.cos(a)*.5,.14,Math.sin(a)*.5); g.add(s); } for(const a of [0,Math.PI/2]){ const log=cyl(.08,1,mat.wood,12); log.rotation.z=Math.PI/2; log.rotation.y=a; log.position.y=.22; g.add(log); } const f=new THREE.Mesh(new THREE.ConeGeometry(.3,.75,12),mat.flame); f.position.y=.6; g.add(f); const light=new THREE.PointLight(0xff8a20,1.4,6); light.position.y=1.1; g.add(light); return shadow(g); }
-function createSpiral(){ const pts=[]; for(let i=0;i<160;i++){ const t=i/159,a=t*Math.PI*7,r=.5+Math.sin(t*Math.PI*4)*.14; pts.push(new THREE.Vector3(Math.cos(a)*r,t*1.9,Math.sin(a)*r)); } const g=new THREE.Group(); g.name='Spiral'; g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),160,.14,18),mat.green)); const k=new THREE.Mesh(new THREE.TorusKnotGeometry(.5,.05,80,12,2,3),mat.orange); k.position.y=.95; k.rotation.x=Math.PI/2; g.add(k); return shadow(g); }
-function createCreature(){ const g=new THREE.Group(); g.name='Creature'; const body=new THREE.Mesh(new THREE.DodecahedronGeometry(.62,2),mat.orange); body.position.y=.82; body.scale.set(1.05,.9,.82); g.add(body); for(const x of [-.28,.28]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.14,20,12),mat.glass); eye.position.set(x,.98,.57); g.add(eye); } for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; g.add(tube([new THREE.Vector3(Math.cos(a)*.34,.48,Math.sin(a)*.34),new THREE.Vector3(Math.cos(a)*.75,.28,Math.sin(a)*.75),new THREE.Vector3(Math.cos(a)*.95,.13,Math.sin(a)*.95)],.038,mat.green,24)); } return shadow(g); }
+function createSpiral(s=1){ const g=new THREE.Group(); g.name='Spiral';
+  // A rising spiral of small beads — prints bead-by-bead bottom-up (and the
+  // tube-of-drops shape suits the molten-glow look).
+  const N=Math.max(48,Math.round(66*s));
+  for(let i=0;i<N;i++){ const t=i/(N-1), a=t*Math.PI*7, r=(.5+Math.sin(t*Math.PI*4)*.14)*s;
+    const bead=markPiece(new THREE.Mesh(new THREE.SphereGeometry(.1*s,8,6), i%2?mat.green:mat.leaf));
+    bead.position.set(Math.cos(a)*r, t*1.9*s, Math.sin(a)*r); g.add(bead);
+  }
+  return g;
+}
+function createCreature(s=1){ const g=new THREE.Group(); g.name='Creature';
+  // Body: cluster of small blobs (fibonacci dome) that build up piece by piece.
+  const nB=Math.max(22,Math.round(30*s)), R=.6*s;
+  for(let i=0;i<nB;i++){ const t=(i+.5)/nB, phi=Math.acos(1-2*t), theta=i*2.39996, rr=R*(.72+.28*(((i*5)%4)/4));
+    const b=markPiece(new THREE.Mesh(new THREE.DodecahedronGeometry(.17*s,0), i%3?mat.orange:mat.roof));
+    b.position.set(Math.cos(theta)*Math.sin(phi)*rr, .82*s+Math.cos(phi)*rr*.85, Math.sin(theta)*Math.sin(phi)*rr); g.add(b);
+  }
+  for(const x of [-.28*s,.28*s]){ const eye=markPiece(new THREE.Mesh(new THREE.SphereGeometry(.14*s,16,10),mat.glass)); eye.position.set(x,.98*s,.57*s); g.add(eye); }
+  // Legs: bead segments.
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; for(let k=0;k<3;k++){ const kt=k/3; const leg=markPiece(new THREE.Mesh(new THREE.SphereGeometry(.06*s,6,5),mat.green)); leg.position.set(Math.cos(a)*(.4+kt*.55)*s,(.5-kt*.34)*s,Math.sin(a)*(.4+kt*.55)*s); g.add(leg);} }
+  return g;
+}
 
 const recipes=[
   {id:'block',label:'Block',aliases:['block','cube'],dims:[1,1,1],complexity:.6,create:createBlock,sized:true},
@@ -457,11 +493,11 @@ const recipes=[
   {id:'pillar',label:'Pillar',aliases:['pillar','column','post'],dims:[0.6,2,0.6],complexity:.6,create:createPillar,sized:true},
   {id:'stall',label:'Market Stall',aliases:['market','stall','shop','vendor'],dims:[2.65,1.3,2.7],complexity:1.25,create:createStall,sized:true},
   {id:'cottage',label:'Cottage',aliases:['cottage','house','home','hut'],dims:[2.8,2.25,2.5],complexity:1.18,create:createCottage,sized:true},
-  {id:'boat',label:'Boat',aliases:['boat','ship','sailboat'],dims:[3.1,1.3,2.0],complexity:1.05,create:createBoat},
+  {id:'boat',label:'Boat',aliases:['boat','ship','sailboat'],dims:[3.1,1.3,2.0],complexity:1.05,create:createBoat,sized:true},
   {id:'tree',label:'Tree',aliases:['tree','forest','oak'],dims:[2.0,2.0,2.9],complexity:1.12,create:createTree,sized:true},
   {id:'cart',label:'Cart',aliases:['cart','wagon','carriage'],dims:[2.4,1.5,1.5],complexity:.9,create:createCart,sized:true},
-  {id:'spiral',label:'Spiral',aliases:['spiral','twist','knot'],dims:[1.8,1.8,2.1],complexity:1.35,create:createSpiral},
-  {id:'creature',label:'Creature',aliases:['creature','robot','monster','eyeball','character'],dims:[1.9,1.9,1.5],complexity:1.4,create:createCreature},
+  {id:'spiral',label:'Spiral',aliases:['spiral','twist','knot'],dims:[1.8,1.8,2.1],complexity:1.35,create:createSpiral,sized:true},
+  {id:'creature',label:'Creature',aliases:['creature','robot','monster','eyeball','character'],dims:[1.9,1.9,1.5],complexity:1.4,create:createCreature,sized:true},
   {id:'campfire',label:'Campfire',aliases:['campfire','fire','firepit'],dims:[1.1,1.1,1.0],complexity:.55,create:createCampfire}
 ];
 
