@@ -44,6 +44,7 @@ app.innerHTML = `
         <button class="secondary" id="rotateRight">Rot +</button>
         <button class="secondary" id="raiseUp">Up ⤒</button>
         <button class="secondary" id="lowerDown">Down ⤓</button>
+        <button class="secondary" id="magnetToggle">🧲 On</button>
       </div>
       <div class="section-title">View &amp; Walk</div>
       <div class="row" id="viewButtons"></div>
@@ -515,9 +516,29 @@ function clearSelection(){ if(selectionBox){ scene.remove(selectionBox); selecti
 function selectPlaced(obj){ clearSelection(); selected=obj; const box=new THREE.Box3().setFromObject(obj), size=new THREE.Vector3(), center=new THREE.Vector3(); box.getSize(size); box.getCenter(center); selectionBox=new THREE.Mesh(new THREE.BoxGeometry(size.x+.18,size.y+.18,size.z+.18),mat.select); selectionBox.position.copy(center); scene.add(selectionBox); setTarget(`${obj.userData.label} #${obj.userData.id}`); }
 function updateSelectionBox(){ if(!selectionBox||!selected)return; const box=new THREE.Box3().setFromObject(selected), center=new THREE.Vector3(); box.getCenter(center); selectionBox.position.copy(center); selectionBox.rotation.copy(selected.rotation); }
 function movable(){ return carriedPreview||selected; }
-function moveTarget(dx,dz){ const o=movable(); if(!o){setStatus('Nothing can move yet. Print, pick up, then move the preview.');return;} o.position.x=Math.round(o.position.x+dx); o.position.z=Math.round(o.position.z+dz); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
-function rotateTarget(dir){ const o=movable(); if(!o){setStatus('Nothing can rotate yet. Print, pick up, then rotate the preview.');return;} o.rotation.y+=dir*Math.PI/8; updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
-function raiseTarget(dy){ const o=movable(); if(!o){setStatus('Nothing to raise yet. Print, pick up, then raise/lower to stack.');return;} o.position.y=Math.max(0, Math.round((o.position.y+dy)/0.5)*0.5); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
+// Edge-magnet snapping: when the moving object is within MAG of a placed object,
+// snap its nearest face flush against that neighbour (butt-join or stack on top),
+// so pieces align edge-to-edge without overlapping. Falls back to the grid when
+// nothing is close. Works with rotation/size (uses world-space bounding boxes).
+let magnetOn=true;
+function magnetSnap(obj){
+  if(!obj||!magnetOn) return;
+  const box=new THREE.Box3().setFromObject(obj), size=new THREE.Vector3(), c=new THREE.Vector3();
+  box.getSize(size); box.getCenter(c);
+  const hx=size.x/2, hy=size.y/2, hz=size.z/2, MAG=0.85; let best=null;
+  for(const p of placed){ if(p===obj) continue; const pb=new THREE.Box3().setFromObject(p);
+    const ox=Math.min(box.max.x,pb.max.x)-Math.max(box.min.x,pb.min.x);
+    const oy=Math.min(box.max.y,pb.max.y)-Math.max(box.min.y,pb.min.y);
+    const oz=Math.min(box.max.z,pb.max.z)-Math.max(box.min.z,pb.min.z);
+    if(oy>-0.1&&oz>-0.1) for(const t of [pb.max.x+hx,pb.min.x-hx]){ const d=Math.abs(t-c.x); if(d<MAG&&(!best||d<best.d)) best={ax:'x',val:t,d}; }
+    if(ox>-0.1&&oz>-0.1) for(const t of [pb.max.y+hy,pb.min.y-hy]){ const d=Math.abs(t-c.y); if(d<MAG&&(!best||d<best.d)) best={ax:'y',val:t,d}; }
+    if(ox>-0.1&&oy>-0.1) for(const t of [pb.max.z+hz,pb.min.z-hz]){ const d=Math.abs(t-c.z); if(d<MAG&&(!best||d<best.d)) best={ax:'z',val:t,d}; }
+  }
+  if(best){ if(best.ax==='x') obj.position.x+=best.val-c.x; else if(best.ax==='y') obj.position.y=Math.max(0,obj.position.y+(best.val-c.y)); else obj.position.z+=best.val-c.z; }
+}
+function moveTarget(dx,dz){ const o=movable(); if(!o){setStatus('Nothing can move yet. Print, pick up, then move the preview.');return;} o.position.x=Math.round(o.position.x+dx); o.position.z=Math.round(o.position.z+dz); magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
+function rotateTarget(dir){ const o=movable(); if(!o){setStatus('Nothing can rotate yet. Print, pick up, then rotate the preview.');return;} o.rotation.y+=dir*Math.PI/8; magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
+function raiseTarget(dy){ const o=movable(); if(!o){setStatus('Nothing to raise yet. Print, pick up, then raise/lower to stack.');return;} o.position.y=Math.max(0, Math.round((o.position.y+dy)/0.5)*0.5); magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
 async function animateTransform(object,targetPosition,targetScale,duration){ const sPos=object.position.clone(), sScale=object.scale.clone(), eScale=new THREE.Vector3(targetScale,targetScale,targetScale), t0=performance.now(); return new Promise(resolve=>{ function step(now){ const t=clamp01((now-t0)/duration); const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; object.position.lerpVectors(sPos,targetPosition,e); object.scale.lerpVectors(sScale,eScale,e); if(t<1)requestAnimationFrame(step); else resolve(); } requestAnimationFrame(step); }); }
 
 async function startPrint(recipe){
@@ -575,7 +596,7 @@ async function startPrint(recipe){
   setStatus(`${recipe.label} finished on the actual bed. Pick it up to place it.`);
 }
 async function pickupPrint(){ if(phase!=='printed-on-bed'||!printedOnBed){setStatus('Nothing finished on the printer bed yet.');return;} const obj=printedOnBed; printedOnBed=null; if(pathGroup){scene.remove(pathGroup);pathGroup=null;} setPhase('pickup-moving'); obj.userData.state='pickup-moving'; setStatus(`Picking up ${obj.userData.label}.`); await animateTransform(obj,handWorld(),.42,850); await sleep(140); obj.userData.state='carried-preview'; obj.scale.setScalar(1); const [x,z]=slots[slotIndex++%slots.length]; obj.position.set(x,0,z); setGhost(obj,true); carriedPreview=obj; setPhase('carried-preview'); setTarget(`preview ${obj.userData.label}`); setStatus(`${obj.userData.label} picked up. Move/rotate it or tap ground, then Place.`); }
-function placePreview(){ if(!carriedPreview){setStatus('No carried preview. Print something, then Pick Up Print first.');return;} const obj=carriedPreview; carriedPreview=null; setGhost(obj,false); restoreFinal(obj); obj.userData.id=++idCounter; obj.userData.state='placed'; placed.push(obj); setPhase('ready'); selectPlaced(obj); savePlacement(obj); setStatus(`${obj.userData.label} placed and saved to the shared world (persists on reload).`); }
+function placePreview(){ if(!carriedPreview){setStatus('No carried preview. Print something, then Pick Up Print first.');return;} const obj=carriedPreview; carriedPreview=null; setGhost(obj,false); restoreFinal(obj); obj.userData.id=++idCounter; obj.userData.state='placed'; placed.push(obj); magnetSnap(obj); setPhase('ready'); selectPlaced(obj); savePlacement(obj); setStatus(`${obj.userData.label} placed and saved to the shared world (persists on reload).`); }
 function cancelOrDelete(){ if(phase==='printing'){setStatus('Print is mid-fabrication. Let it finish, then cancel/pick up.');return;} if(carriedPreview){scene.remove(carriedPreview);carriedPreview=null;setPhase('ready');setTarget('none');setStatus('Carried preview cancelled.');return;} if(printedOnBed){scene.remove(printedOnBed);printedOnBed=null;if(pathGroup){scene.remove(pathGroup);pathGroup=null;}setPhase('ready');setTarget('none');setStatus('Finished print removed from the bed.');return;} if(selected){const doomed=selected;clearSelection();scene.remove(doomed);const i=placed.indexOf(doomed);if(i>=0)placed.splice(i,1);deletePlacement(doomed);setStatus('Selected placed object deleted (removed from the shared world too).');return;} setStatus('Nothing to cancel or delete.'); }
 
 // --- World-state persistence + real-time multiplayer (Supabase) -------------
@@ -618,7 +639,7 @@ function subscribeWorld(){
   try{
     supabase.channel('placements-'+WORLD)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'placements',filter:`world=eq.${WORLD}`},({new:row})=>{ if(row && !findPlaced(row.id)){ spawnPlacementRow(row); setStatus(`Another builder placed a ${row.label||row.type}.`); } })
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'placements',filter:`world=eq.${WORLD}`},({new:row})=>{ const o=row&&findPlaced(row.id); if(o){ o.position.set(row.x,row.y,row.z); o.rotation.y=row.rot_y||0; if(row.scale)o.scale.setScalar(row.scale); if(selected===o) updateSelectionBox(); } })
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'placements',filter:`world=eq.${WORLD}`},({new:row})=>{ const o=row&&findPlaced(row.id); if(o){ o.position.set(row.x,row.y,row.z); o.rotation.y=row.rot_y||0; /* size is baked into geometry (group scale stays 1); do NOT re-apply row.scale or Large objects double-scale */ if(selected===o) updateSelectionBox(); } })
       .on('postgres_changes',{event:'DELETE',schema:'public',table:'placements'},({old})=>{ const o=old&&findPlaced(old.id); if(o){ if(selected===o) clearSelection(); scene.remove(o); const i=placed.indexOf(o); if(i>=0)placed.splice(i,1); } })
       .subscribe();
   }catch(e){}
@@ -631,11 +652,12 @@ for(const recipe of recipes){ const b=document.createElement('button'); b.classN
 runButton.addEventListener('click',()=>{ const r=parseCommand(commandInput.value); if(!r){setStatus('No recipe matched. Try stall, cottage, boat, tree, cart, spiral, creature, or campfire.');return;} startPrint(r); });
 pickupButton.addEventListener('click',pickupPrint); placeButton.addEventListener('click',placePreview); cancelButton.addEventListener('click',cancelOrDelete);
 $('#moveLeft').addEventListener('click',()=>moveTarget(-1,0)); $('#moveRight').addEventListener('click',()=>moveTarget(1,0)); $('#moveForward').addEventListener('click',()=>moveTarget(0,-1)); $('#moveBack').addEventListener('click',()=>moveTarget(0,1)); $('#rotateLeft').addEventListener('click',()=>rotateTarget(-1)); $('#rotateRight').addEventListener('click',()=>rotateTarget(1)); $('#raiseUp').addEventListener('click',()=>raiseTarget(0.5)); $('#lowerDown').addEventListener('click',()=>raiseTarget(-0.5));
+$('#magnetToggle').addEventListener('click',()=>{ magnetOn=!magnetOn; $('#magnetToggle').textContent=magnetOn?'🧲 On':'🧲 Off'; if(magnetOn&&magnetOn){$('#magnetToggle').style.borderColor='#00ff9d';$('#magnetToggle').style.color='#00ff9d';}else{$('#magnetToggle').style.borderColor='';$('#magnetToggle').style.color='';} setStatus(magnetOn?'Edge-magnet snapping ON — pieces auto-align to neighbours.':'Magnet OFF — free grid placement.'); });
 commandInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') runButton.click(); });
 
 const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2(); let down=null;
 renderer.domElement.addEventListener('pointerdown',(e)=>{down={x:e.clientX,y:e.clientY};});
-renderer.domElement.addEventListener('click',(e)=>{ if(e.target.closest?.('#hud'))return; if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>6)return; pointer.x=e.clientX/window.innerWidth*2-1; pointer.y=-(e.clientY/window.innerHeight)*2+1; raycaster.setFromCamera(pointer,camera); if(carriedPreview){ const hits=raycaster.intersectObject(ground); if(hits.length){ carriedPreview.position.x=Math.round(hits[0].point.x); carriedPreview.position.z=Math.round(hits[0].point.z); setStatus(`Moved carried preview to ${carriedPreview.position.x}, ${carriedPreview.position.z}.`); } return; } const hits=raycaster.intersectObjects(placed,true); if(hits.length){ let root=hits[0].object; while(root.parent&&!root.userData.id) root=root.parent; if(root.userData.id) selectPlaced(root); } });
+renderer.domElement.addEventListener('click',(e)=>{ if(e.target.closest?.('#hud'))return; if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>6)return; pointer.x=e.clientX/window.innerWidth*2-1; pointer.y=-(e.clientY/window.innerHeight)*2+1; raycaster.setFromCamera(pointer,camera); if(carriedPreview){ const hits=raycaster.intersectObject(ground); if(hits.length){ carriedPreview.position.x=Math.round(hits[0].point.x); carriedPreview.position.z=Math.round(hits[0].point.z); magnetSnap(carriedPreview); updateSelectionBox(); setStatus(`Moved carried preview to ${carriedPreview.position.x.toFixed(1)}, ${carriedPreview.position.z.toFixed(1)}.`); } return; } const hits=raycaster.intersectObjects(placed,true); if(hits.length){ let root=hits[0].object; while(root.parent&&!root.userData.id) root=root.parent; if(root.userData.id) selectPlaced(root); } });
 window.addEventListener('keydown',(e)=>{ if(document.activeElement===commandInput&&e.key!=='Enter')return; const k=e.key.toLowerCase();
   if(k==='w'||e.key==='ArrowUp')move.f=1; else if(k==='s'||e.key==='ArrowDown')move.f=-1; if(k==='a'||e.key==='ArrowLeft')move.s=-1; else if(k==='d'||e.key==='ArrowRight')move.s=1;
   if(k==='q')rotateTarget(-1); if(k==='e')rotateTarget(1); if(k==='r')raiseTarget(0.5); if(k==='f')raiseTarget(-0.5);

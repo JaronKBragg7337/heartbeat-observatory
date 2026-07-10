@@ -7,6 +7,22 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Edge-magnet snapping + folded GPT-5.6's scale fix
+
+**State:** live. Pieces edge-magnet snap to neighbours; the Large-object double-scale bug GPT-5.6 flagged is fixed at source.
+
+**Shipped:**
+- **Edge-magnet snapping** (`magnetSnap`): when a moving object is within ~0.85 of a placed object, its nearest face snaps flush against that neighbour (butt-join or stack on top) using world-space AABBs — no overlap, works with rotation/size. Falls back to the integer grid when nothing's close. Wired into move/rotate/raise/place and tap-to-move. New **🧲 On/Off** toggle (manual-grid fallback per GPT-5.6's spec).
+- **Folded GPT-5.6's fix** into `main-v2e.js`: the Realtime UPDATE handler no longer re-applies `row.scale` (size is baked into geometry, so re-scaling double-scaled Large objects 1.8×1.8). The runtime-guard wrapper is now redundant for this and can be removed later.
+
+**Sync note:** GPT-5.6 (paused) merged a canonical+runtime-safety pass (lab PR #11 / heartbeat PR #15) that wraps `main.js` via `bootstrap.js`+`runtime-guards.js` without changing it; legacy routes preserved. Its draft SYL-ship PRs #12/#13 are isolated experiments. Old `v3` still has an Arched Bridge, cottage chimney, fuller cart, boat benches worth porting.
+
+**Verified:** local Chrome — clean load, magnet toggle present, two blocks snap flush on nudge with no overlap/errors; workspace cleared.
+
+**Next:** slice remaining objects (stall/cart/tree) + port v3 extras; realistic layer-line/glow look.
+
+---
+
 ## 2026-07-09 — Claude (Opus 4.8, Claude Code) — Camera modes + character controls
 
 **State:** live. Players can walk a character and view the world in Orbit / 3rd-person / 1st-person.
