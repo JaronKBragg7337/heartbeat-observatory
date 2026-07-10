@@ -413,7 +413,26 @@ function createFloor(s=1){ return pieceGroup('Floor', 2*s,0.35*s,2*s); }
 function createPillar(s=1){ return pieceGroup('Pillar', 0.6*s,2*s,0.6*s,{unit:0.3}); }
 
 function createBoat(){ const g=new THREE.Group(); g.name='Boat'; const s=new THREE.Shape(); s.moveTo(-1.55,0); s.quadraticCurveTo(-1.05,-.55,0,-.6); s.quadraticCurveTo(1.05,-.55,1.55,0); s.quadraticCurveTo(.75,.38,0,.42); s.quadraticCurveTo(-.75,.38,-1.55,0); const hull=extrude(s,1.2,mat.wood,.045); hull.rotation.x=Math.PI/2; hull.position.y=.54; g.add(hull); const mast=cyl(.045,1.85,mat.darkWood,12); mast.position.set(.12,1.5,0); g.add(mast); const ss=new THREE.Shape(); ss.moveTo(0,0); ss.lineTo(.75,.32); ss.lineTo(.04,1.2); ss.lineTo(0,0); const sail=extrude(ss,.035,mat.cream); sail.position.set(.38,1.45,.02); sail.rotation.y=Math.PI/2; g.add(sail); return shadow(g); }
-function createTree(){ const g=new THREE.Group(); g.name='Tree'; g.add(tube([new THREE.Vector3(0,0,0),new THREE.Vector3(.1,.8,.07),new THREE.Vector3(-.14,1.55,-.04),new THREE.Vector3(.08,2.15,.05)],.14,mat.wood,36)); for(const [x,y,z,s,m] of [[0,1.95,0,.9,mat.leafDark],[-.45,2.25,.08,.68,mat.leaf],[.45,2.3,-.1,.68,mat.leaf],[.04,2.65,.02,.58,mat.leaf]]){ const b=new THREE.Mesh(new THREE.DodecahedronGeometry(s,1),m); b.position.set(x,y,z); b.scale.y=.82; g.add(b); } return shadow(g); }
+function createTree(s=1){ const g=new THREE.Group(); g.name='Tree';
+  // Trunk: short bark segments stacked up (builds bottom-up — the trunk grows first).
+  const H=2.2*s, seg=0.26*s, n=Math.max(5,Math.round(H/seg));
+  for(let i=0;i<n;i++){ const t=i/n, y=seg*(i+0.5), r=(0.17-0.06*t)*s;
+    const bx=Math.sin(t*2.0)*0.16*s, bz=Math.cos(t*1.4)*0.05*s;
+    const b=markPiece(new THREE.Mesh(new THREE.CylinderGeometry(r,r*1.1,seg*0.98,8), i%2?mat.wood:mat.darkWood));
+    b.position.set(bx,y,bz); g.add(b);
+  }
+  // Canopy: many small leaf clusters on a deterministic (fibonacci) dome — they
+  // reveal after the trunk (higher up), so leaves appear once the trunk is there.
+  const topY=H*0.9, R=1.0*s, leaves=Math.max(18,Math.round(26*s));
+  for(let i=0;i<leaves;i++){ const t=(i+0.5)/leaves, phi=Math.acos(1-1.7*t), theta=i*2.39996;
+    const rr=R*(0.62+0.32*(((i*7)%5)/5));
+    const lx=Math.cos(theta)*Math.sin(phi)*rr, ly=Math.cos(phi)*rr*0.8, lz=Math.sin(theta)*Math.sin(phi)*rr;
+    const size=(0.22+0.13*(((i*3)%4)/4))*s;
+    const leaf=markPiece(new THREE.Mesh(new THREE.DodecahedronGeometry(size,0), (i%3)?mat.leaf:mat.leafDark));
+    leaf.position.set(lx, topY+ly, lz); leaf.scale.y=0.85; g.add(leaf);
+  }
+  return g;
+}
 function createCart(s=1){ const g=new THREE.Group(); g.name='Cart';
   // Bed: sliced wood planks.
   for(const b of brickPanel(2.2*s,.38*s,1.05*s,{unit:.4,courseH:.19,material:mat.wood,material2:mat.darkWood})){ b.position.y+=.7*s; g.add(b); }
@@ -437,7 +456,7 @@ const recipes=[
   {id:'stall',label:'Market Stall',aliases:['market','stall','shop','vendor'],dims:[2.65,1.3,2.7],complexity:1.25,create:createStall,sized:true},
   {id:'cottage',label:'Cottage',aliases:['cottage','house','home','hut'],dims:[2.8,2.25,2.5],complexity:1.18,create:createCottage,sized:true},
   {id:'boat',label:'Boat',aliases:['boat','ship','sailboat'],dims:[3.1,1.3,2.0],complexity:1.05,create:createBoat},
-  {id:'tree',label:'Tree',aliases:['tree','forest','oak'],dims:[2.0,2.0,2.9],complexity:1.12,create:createTree},
+  {id:'tree',label:'Tree',aliases:['tree','forest','oak'],dims:[2.0,2.0,2.9],complexity:1.12,create:createTree,sized:true},
   {id:'cart',label:'Cart',aliases:['cart','wagon','carriage'],dims:[2.4,1.5,1.5],complexity:.9,create:createCart,sized:true},
   {id:'spiral',label:'Spiral',aliases:['spiral','twist','knot'],dims:[1.8,1.8,2.1],complexity:1.35,create:createSpiral},
   {id:'creature',label:'Creature',aliases:['creature','robot','monster','eyeball','character'],dims:[1.9,1.9,1.5],complexity:1.4,create:createCreature},
