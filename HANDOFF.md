@@ -7,6 +7,21 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Sliced Market Stall + Cart (piece-built)
+
+**State:** live. Stall and Cart now print piece-by-piece like the cottage.
+
+**Shipped:**
+- **Market Stall**: counter → sliced wood planks (`brickPanel`), canopy → sliced curved tiles (`barrelShingles`), posts kept whole. Now `sized:true`.
+- **Cart**: bed + side rails → sliced planks, wheels kept whole, added the **handle** from the v3 cart. Now `sized:true`.
+- Reused existing slicer helpers (`brickPanel`, `barrelShingles`) — no new machinery.
+
+**Verified:** local Chrome — stall prints planked counter + tiled canopy; cart prints planked bed + wheels + handle; zero console errors.
+
+**Next:** slice the **Tree** (needs organic treatment: trunk segments bottom-up + leaf clusters, the "true hidden-then-printed reveal"), port remaining v3 extras (Arched Bridge, cottage chimney, boat benches), then the realistic layer-line/glow look.
+
+---
+
 ## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Edge-magnet snapping + folded GPT-5.6's scale fix
 
 **State:** live. Pieces edge-magnet snap to neighbours; the Large-object double-scale bug GPT-5.6 flagged is fixed at source.

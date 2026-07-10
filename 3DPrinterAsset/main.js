@@ -386,7 +386,15 @@ function createPlayer(){ const g=new THREE.Group(); const body=new THREE.Mesh(ne
 const player=createPlayer(); player.position.set(0,0,5.25); scene.add(player);
 const handWorld=()=>player.localToWorld(new THREE.Vector3(0,1.55,0));
 
-function createStall(){ const g=new THREE.Group(); g.name='Market Stall'; const counter=new THREE.Mesh(new THREE.BoxGeometry(2.45,.58,1.08),mat.wood); counter.position.y=.38; g.add(counter); for(const x of [-1.05,1.05]) for(const z of [-.42,.42]){ const p=cyl(.06,2.1,mat.darkWood,14); p.position.set(x,1.35,z); g.add(p); } const canopy=new THREE.Mesh(new THREE.CylinderGeometry(.82,.82,2.65,34,1,false,0,Math.PI),mat.roof); canopy.rotation.z=Math.PI/2; canopy.rotation.y=Math.PI/2; canopy.position.y=2.35; g.add(canopy); return shadow(g); }
+function createStall(s=1){ const g=new THREE.Group(); g.name='Market Stall';
+  // Counter: sliced wood planks.
+  for(const b of brickPanel(2.45*s,.58*s,1.08*s,{unit:.4,courseH:.2,material:mat.wood,material2:mat.darkWood})){ b.position.y+=.38*s; g.add(b); }
+  // Corner posts (thin — kept whole).
+  for(const x of [-1.05*s,1.05*s]) for(const z of [-.42*s,.42*s]){ const p=markPiece(cyl(.06*s,2.1*s,mat.darkWood,14)); p.position.set(x,1.35*s,z); g.add(p); }
+  // Canopy: sliced curved tiles (same idea as the cottage roof).
+  for(const t of barrelShingles(.82*s,2.65*s,{tile:.34,material:mat.roof,material2:mat.darkWood})){ t.position.y+=2.3*s; g.add(t); }
+  return g;
+}
 function createCottage(s=1){
   const g=new THREE.Group(); g.name='Cottage';
   // Dimensions scale with s, but the brick/tile size stays CONSTANT — a bigger
@@ -406,7 +414,17 @@ function createPillar(s=1){ return pieceGroup('Pillar', 0.6*s,2*s,0.6*s,{unit:0.
 
 function createBoat(){ const g=new THREE.Group(); g.name='Boat'; const s=new THREE.Shape(); s.moveTo(-1.55,0); s.quadraticCurveTo(-1.05,-.55,0,-.6); s.quadraticCurveTo(1.05,-.55,1.55,0); s.quadraticCurveTo(.75,.38,0,.42); s.quadraticCurveTo(-.75,.38,-1.55,0); const hull=extrude(s,1.2,mat.wood,.045); hull.rotation.x=Math.PI/2; hull.position.y=.54; g.add(hull); const mast=cyl(.045,1.85,mat.darkWood,12); mast.position.set(.12,1.5,0); g.add(mast); const ss=new THREE.Shape(); ss.moveTo(0,0); ss.lineTo(.75,.32); ss.lineTo(.04,1.2); ss.lineTo(0,0); const sail=extrude(ss,.035,mat.cream); sail.position.set(.38,1.45,.02); sail.rotation.y=Math.PI/2; g.add(sail); return shadow(g); }
 function createTree(){ const g=new THREE.Group(); g.name='Tree'; g.add(tube([new THREE.Vector3(0,0,0),new THREE.Vector3(.1,.8,.07),new THREE.Vector3(-.14,1.55,-.04),new THREE.Vector3(.08,2.15,.05)],.14,mat.wood,36)); for(const [x,y,z,s,m] of [[0,1.95,0,.9,mat.leafDark],[-.45,2.25,.08,.68,mat.leaf],[.45,2.3,-.1,.68,mat.leaf],[.04,2.65,.02,.58,mat.leaf]]){ const b=new THREE.Mesh(new THREE.DodecahedronGeometry(s,1),m); b.position.set(x,y,z); b.scale.y=.82; g.add(b); } return shadow(g); }
-function createCart(){ const g=new THREE.Group(); g.name='Cart'; const base=new THREE.Mesh(new THREE.BoxGeometry(2.2,.38,1.05),mat.wood); base.position.y=.7; g.add(base); for(const z of [-.6,.6]){ const side=new THREE.Mesh(new THREE.BoxGeometry(2.35,.62,.1),mat.darkWood); side.position.set(0,1,z); g.add(side); } for(const x of [-.78,.78]) for(const z of [-.72,.72]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.16,32),mat.darkWood); w.rotation.x=Math.PI/2; w.position.set(x,.32,z); g.add(w); } return shadow(g); }
+function createCart(s=1){ const g=new THREE.Group(); g.name='Cart';
+  // Bed: sliced wood planks.
+  for(const b of brickPanel(2.2*s,.38*s,1.05*s,{unit:.4,courseH:.19,material:mat.wood,material2:mat.darkWood})){ b.position.y+=.7*s; g.add(b); }
+  // Sides: sliced plank rails.
+  for(const zc of [-.6*s,.6*s]){ for(const b of brickPanel(2.35*s,.62*s,.1*s,{unit:.4,courseH:.2,material:mat.darkWood,material2:mat.wood})){ b.position.y+=1*s; b.position.z+=zc; g.add(b); } }
+  // Wheels (round — kept whole).
+  for(const x of [-.78*s,.78*s]) for(const z of [-.72*s,.72*s]){ const w=markPiece(new THREE.Mesh(new THREE.CylinderGeometry(.3*s,.3*s,.16*s,32),mat.darkWood)); w.rotation.x=Math.PI/2; w.position.set(x,.32*s,z); g.add(w); }
+  // Handle (from the v3 cart).
+  const handle=markPiece(cyl(.05*s,1.35*s,mat.darkWood,12)); handle.position.set(1.55*s,1.05*s,0); handle.rotation.z=Math.PI*0.33; g.add(handle);
+  return g;
+}
 function createCampfire(){ const g=new THREE.Group(); g.name='Campfire'; for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const s=new THREE.Mesh(new THREE.DodecahedronGeometry(.16,0),mat.stone); s.position.set(Math.cos(a)*.5,.14,Math.sin(a)*.5); g.add(s); } for(const a of [0,Math.PI/2]){ const log=cyl(.08,1,mat.wood,12); log.rotation.z=Math.PI/2; log.rotation.y=a; log.position.y=.22; g.add(log); } const f=new THREE.Mesh(new THREE.ConeGeometry(.3,.75,12),mat.flame); f.position.y=.6; g.add(f); const light=new THREE.PointLight(0xff8a20,1.4,6); light.position.y=1.1; g.add(light); return shadow(g); }
 function createSpiral(){ const pts=[]; for(let i=0;i<160;i++){ const t=i/159,a=t*Math.PI*7,r=.5+Math.sin(t*Math.PI*4)*.14; pts.push(new THREE.Vector3(Math.cos(a)*r,t*1.9,Math.sin(a)*r)); } const g=new THREE.Group(); g.name='Spiral'; g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),160,.14,18),mat.green)); const k=new THREE.Mesh(new THREE.TorusKnotGeometry(.5,.05,80,12,2,3),mat.orange); k.position.y=.95; k.rotation.x=Math.PI/2; g.add(k); return shadow(g); }
 function createCreature(){ const g=new THREE.Group(); g.name='Creature'; const body=new THREE.Mesh(new THREE.DodecahedronGeometry(.62,2),mat.orange); body.position.y=.82; body.scale.set(1.05,.9,.82); g.add(body); for(const x of [-.28,.28]){ const eye=new THREE.Mesh(new THREE.SphereGeometry(.14,20,12),mat.glass); eye.position.set(x,.98,.57); g.add(eye); } for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; g.add(tube([new THREE.Vector3(Math.cos(a)*.34,.48,Math.sin(a)*.34),new THREE.Vector3(Math.cos(a)*.75,.28,Math.sin(a)*.75),new THREE.Vector3(Math.cos(a)*.95,.13,Math.sin(a)*.95)],.038,mat.green,24)); } return shadow(g); }
@@ -416,11 +434,11 @@ const recipes=[
   {id:'wall',label:'Wall',aliases:['wall'],dims:[2,2,0.4],complexity:.85,create:createWall,sized:true},
   {id:'floor',label:'Floor',aliases:['floor','tile','ground','slab'],dims:[2,0.35,2],complexity:.75,create:createFloor,sized:true},
   {id:'pillar',label:'Pillar',aliases:['pillar','column','post'],dims:[0.6,2,0.6],complexity:.6,create:createPillar,sized:true},
-  {id:'stall',label:'Market Stall',aliases:['market','stall','shop','vendor'],dims:[2.65,1.3,2.7],complexity:1.25,create:createStall},
+  {id:'stall',label:'Market Stall',aliases:['market','stall','shop','vendor'],dims:[2.65,1.3,2.7],complexity:1.25,create:createStall,sized:true},
   {id:'cottage',label:'Cottage',aliases:['cottage','house','home','hut'],dims:[2.8,2.25,2.5],complexity:1.18,create:createCottage,sized:true},
   {id:'boat',label:'Boat',aliases:['boat','ship','sailboat'],dims:[3.1,1.3,2.0],complexity:1.05,create:createBoat},
   {id:'tree',label:'Tree',aliases:['tree','forest','oak'],dims:[2.0,2.0,2.9],complexity:1.12,create:createTree},
-  {id:'cart',label:'Cart',aliases:['cart','wagon','carriage'],dims:[2.4,1.5,1.5],complexity:.9,create:createCart},
+  {id:'cart',label:'Cart',aliases:['cart','wagon','carriage'],dims:[2.4,1.5,1.5],complexity:.9,create:createCart,sized:true},
   {id:'spiral',label:'Spiral',aliases:['spiral','twist','knot'],dims:[1.8,1.8,2.1],complexity:1.35,create:createSpiral},
   {id:'creature',label:'Creature',aliases:['creature','robot','monster','eyeball','character'],dims:[1.9,1.9,1.5],complexity:1.4,create:createCreature},
   {id:'campfire',label:'Campfire',aliases:['campfire','fire','firepit'],dims:[1.1,1.1,1.0],complexity:.55,create:createCampfire}
