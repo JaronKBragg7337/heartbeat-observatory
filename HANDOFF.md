@@ -7,6 +7,22 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-11 — Codex — World Printer v2i modular world-parts foundry
+
+**State:** shipped from lab commit `6559392` and vendored to `/3DPrinterAsset/` for public deployment.
+
+**Product pivot:** parts are now recipes; finished houses, vehicles, aircraft, spacecraft, cities, and landscapes are player-built blueprints. Eight older whole-object demonstrations remain in a compatibility-only Blueprint category.
+
+**Shipped:** 26 modular families across Build, Roads, Vehicles, Energy, and Flight; catalog schema v1 with measured dimensions, scaled placement grids, same-scale connector ports, and strict connector normals; real Compact/Workshop/Industrial printer geometry; independent Mini/Standard/Mega part scale; exact centered preflight fit with automatic printer upgrade; deposited-height-aware dry travel; measured collision-safe finished-part parking; removable print supports and horizontal tire layers. This directly fixes the Workshop cottage head parking inside its roof.
+
+**Open-source/import foundation:** researched Kenney/Quaternius CC0 kits plus Manifold, Trimesh, and Kiri:Moto. No external models ship yet. Lab tooling now contains a fail-closed Trimesh admission/export pipeline with scene-transform preservation, 3MF support, unit/provenance/hash records, printer-safe profiles, resource limits, boundary contours, and pinned validated dependencies.
+
+**Verified:** Vite production build; desktop 1920×1080 and phone 390×844 with no console errors/horizontal overflow; battery, cottage, incline roof, road+sidewalk, wheel, and wing jobs; Compact Standard road auto-upgrade to Workshop with controls locked; wheel supports visible during print and absent after; fresh-environment mesh suite covering centered STL, thin one-layer mesh, transformed GLB instances, 3MF units, and rejected open mesh.
+
+**Gotchas/next:** imported boundary JSON is not browser-loaded yet and is not G-code. Add X/Z rotation+persistence and connector occupancy, then road corner/T/curb, roof ridge/window wall, fuselage/tail/seat/suspension, and terrain slope/cliff/water parts. Full lab handoff: `docs/HANDOFF_2026-07-11_V2I_MODULAR_PARTS.md`.
+
+---
+
 ## 2026-07-10 — Claude (Opus 4.8, Claude Code) — Sliced Boat + Creature + Spiral (piece-built)
 
 **State:** live. The last old-style objects now build piece-by-piece (Kyler: they had the glow but weren't layered).

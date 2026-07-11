@@ -2,32 +2,37 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const BUILD = 'v2h — geometry-following recipes + driven printer mechanics';
+const BUILD = 'v2i — modular world parts + real printer classes';
 const app = document.querySelector('#app');
 
 app.innerHTML = `
   <canvas id="world"></canvas>
   <section id="hud">
     <div class="topline">
-      <h1>World Printer Lab <span style="color:#00ff9d">v2h</span></h1>
+      <h1>World Printer Lab <span style="color:#00ff9d">v2i</span></h1>
       <button id="toggleHud" class="secondary">Hide</button>
     </div>
     <div class="hud-body">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
         <a href="/" style="color:#00ff9d;text-decoration:none;font-weight:800">← Back to stable v1</a>
-        <span class="pill">layer-contour lab</span>
+        <span class="pill">world-parts foundry</span>
       </div>
-      <p class="note"><b>${BUILD}</b>. Parts are measured before the object is moved to the bed, so nozzle paths and visible parts use the same coordinate space.</p>
-      <div class="section-title">Speak / Type Object</div>
+      <p class="note"><b>${BUILD}</b>. Print interoperable parts, snap them together, and build the house, vehicle, city, or spacecraft you want.</p>
+      <div class="section-title">Speak / Type Part</div>
       <div class="row">
-        <input id="commandInput" value="make a hero layered form" aria-label="Object command" />
+        <input id="commandInput" value="make a wall panel" aria-label="Part command" />
         <button id="runCommand">Print</button>
         <button id="voiceButton" class="secondary">🎙</button>
       </div>
-      <div class="section-title">Printer Size</div>
+      <div class="section-title">Printer Class</div>
       <div class="row" id="sizeButtons"></div>
-      <div class="section-title">Object Recipes</div>
+      <div class="printer-envelope" id="printerEnvelope"></div>
+      <div class="section-title">Part Scale</div>
+      <div class="row" id="partScaleButtons"></div>
+      <div class="section-title">Part Library</div>
+      <div class="row category-row" id="categoryButtons"></div>
       <div class="row" id="recipeButtons"></div>
+      <div class="part-readout" id="partReadout">Structure parts use a 0.5-unit grid and compatible snap faces.</div>
       <div class="section-title">Printer Bed Flow</div>
       <div class="row">
         <button id="pickupPrint" disabled>Pick Up Print</button>
@@ -51,15 +56,16 @@ app.innerHTML = `
       <div class="section-title">State</div>
       <div class="row">
         <span class="pill" id="statePill">ready</span>
-        <span class="pill">geometry-following paths</span>
+        <span class="pill">catalog schema v1</span>
+        <span class="pill">connector snapping</span>
         <span class="pill">continuous extrusion</span>
-        <span class="pill">variable print time</span>
+        <span class="pill">collision-safe parking</span>
       </div>
-      <div id="status">Ready. Try Stall, Cottage, Boat, Tree, Cart, Spiral, Creature, or Campfire.</div>
+      <div id="status">Ready. Start with Wall, Floor, Roof Slope, Stairs, Road + Sidewalk, Wheel, Battery, Tank, Thruster, or Wing.</div>
       <div id="selected">Target: none</div>
     </div>
   </section>
-  <aside id="help">v2h: real mesh paths, dry travel moves, driven belts, moving pulleys, and a carriage-following filament guide.</aside>
+  <aside id="help">v2i: parts are recipes; finished houses, cars, aircraft, and cities are player-built blueprints.</aside>
   <div id="joystick" style="position:fixed;left:22px;bottom:26px;width:118px;height:118px;border-radius:50%;background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.35);touch-action:none;z-index:20;display:flex;align-items:center;justify-content:center;user-select:none">
     <div id="joyknob" style="width:50px;height:50px;border-radius:50%;background:rgba(0,255,157,0.5);pointer-events:none;transition:transform .05s"></div>
   </div>
@@ -74,6 +80,10 @@ const selectedEl = $('#selected');
 const statePill = $('#statePill');
 const commandInput = $('#commandInput');
 const recipeButtons = $('#recipeButtons');
+const categoryButtons = $('#categoryButtons');
+const partReadout = $('#partReadout');
+const printerEnvelope = $('#printerEnvelope');
+const partScaleButtons = $('#partScaleButtons');
 const runButton = $('#runCommand');
 const pickupButton = $('#pickupPrint');
 const placeButton = $('#placeObject');
@@ -158,6 +168,15 @@ const mat = {
   darkWood: new THREE.MeshStandardMaterial({ color:0x4b2d1e, map:tex.wood, roughness:.68, metalness:.01 }),
   wall: new THREE.MeshStandardMaterial({ color:0xcab17b, map:tex.cream, roughness:.72, metalness:.01 }),
   roof: new THREE.MeshStandardMaterial({ color:0x943848, map:tex.orange, roughness:.48, metalness:.04 }),
+  asphalt: new THREE.MeshStandardMaterial({ color:0x252a2d, roughness:.92, metalness:.02 }),
+  roadLine: new THREE.MeshStandardMaterial({ color:0xf4d85f, roughness:.7, metalness:.01, emissive:0x2b2200, emissiveIntensity:.16 }),
+  concrete: new THREE.MeshStandardMaterial({ color:0x878e8c, roughness:.88, metalness:.03 }),
+  battery: new THREE.MeshStandardMaterial({ color:0x3154a6, roughness:.38, metalness:.18 }),
+  hydrogen: new THREE.MeshStandardMaterial({ color:0x9de9ff, roughness:.22, metalness:.35, emissive:0x07334c, emissiveIntensity:.25 }),
+  gas: new THREE.MeshStandardMaterial({ color:0xe7b83f, roughness:.36, metalness:.45 }),
+  wing: new THREE.MeshStandardMaterial({ color:0xb7c5c9, roughness:.32, metalness:.5 }),
+  terrain: new THREE.MeshStandardMaterial({ color:0x536c3a, roughness:.94, metalness:0 }),
+  support: new THREE.MeshStandardMaterial({ color:0x9ccfc2, transparent:true, opacity:.42, roughness:.74, metalness:.01 }),
   leaf: new THREE.MeshStandardMaterial({ color:0x43bf67, roughness:.72, metalness:0 }),
   leafDark: new THREE.MeshStandardMaterial({ color:0x236f46, roughness:.74, metalness:0 }),
   stone: new THREE.MeshStandardMaterial({ color:0x7c817b, roughness:.9, metalness:.04 }),
@@ -184,7 +203,7 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreferen
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.1;
@@ -361,31 +380,45 @@ function pyramidRoof(w,d,height,opts={}){
   return out;
 }
 
-function createPrinter(){
+const PRINTER_PROFILES={
+  compact:{ label:'Compact', envelope:{x:4.5,y:3.6,z:3.82}, clearance:{xy:.18,travel:.34} },
+  workshop:{ label:'Workshop', envelope:{x:8.4,y:6.2,z:6.8}, clearance:{xy:.25,travel:.46} },
+  industrial:{ label:'Industrial', envelope:{x:15.4,y:11,z:13.4}, clearance:{xy:.4,travel:.7} }
+};
+const PROFILE_ORDER=['compact','workshop','industrial'];
+const PART_SCALES={mini:{label:'Mini',value:.55},standard:{label:'Standard',value:1},mega:{label:'Mega',value:1.8}};
+const PART_SCALE_ORDER=['mini','standard','mega'];
+let printerClass='workshop';
+let partScaleKey='standard';
+
+function createPrinter(profile){
+  const {envelope}=profile, bedX=envelope.x, bedZ=envelope.z, buildY=envelope.y;
+  const frameX=bedX/2+.4, frameZ=bedZ/2+.28, centerZ=.28;
+  const idleGantryY=.56+buildY+.82, postH=idleGantryY+1.35;
   const g=new THREE.Group();
-  const base=new THREE.Mesh(new THREE.BoxGeometry(6.25,.28,5.45),mat.dark); base.position.y=.14; g.add(base);
-  for(const x of [-2.72,2.72]) for(const z of [-2.28,2.28]){ const foot=new THREE.Mesh(new THREE.BoxGeometry(.7,.16,.9),mat.rubber); foot.position.set(x,.08,z); g.add(foot); }
-  const bed=new THREE.Mesh(new THREE.BoxGeometry(5.12,.12,4.5),mat.bed); bed.position.set(0,.44,.28); g.add(bed);
-  const glass=new THREE.Mesh(new THREE.BoxGeometry(4.82,.045,4.18),mat.bedGlass); glass.position.set(0,.535,.28); g.add(glass);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(bedX+1.55,.28,bedZ+1.35),mat.dark); base.position.set(0,.14,centerZ); g.add(base);
+  for(const x of [-(bedX/2+.48),bedX/2+.48]) for(const z of [centerZ-(bedZ/2+.38),centerZ+(bedZ/2+.38)]){ const foot=new THREE.Mesh(new THREE.BoxGeometry(.7,.16,.9),mat.rubber); foot.position.set(x,.08,z); g.add(foot); }
+  const bed=new THREE.Mesh(new THREE.BoxGeometry(bedX+.3,.12,bedZ+.3),mat.bed); bed.position.set(0,.44,centerZ); g.add(bed);
+  const glass=new THREE.Mesh(new THREE.BoxGeometry(bedX,.045,bedZ),mat.bedGlass); glass.position.set(0,.535,centerZ); g.add(glass);
   // Four Z uprights carry a rectangular gantry. A depth stage then carries the
   // X rail, and the orange carriage rides that rail: Z -> Y -> X -> hotend.
-  for(const x of [-2.62,2.62]) for(const z of [-1.72,2.12]){
-    const post=cyl(.105,5.65,mat.metal,24); post.position.set(x,3.05,z); g.add(post);
+  for(const x of [-frameX,frameX]) for(const z of [centerZ-frameZ,centerZ+frameZ]){
+    const post=cyl(.105,postH,mat.metal,24); post.position.set(x,.2+postH/2,z); g.add(post);
   }
-  const gantry=new THREE.Group(); gantry.position.set(0,3.7,0);
-  for(const x of [-2.62,2.62]){
-    const side=cyl(.07,4.2,mat.metal,18); side.rotation.x=Math.PI/2; side.position.set(x,0,.2); gantry.add(side);
-    for(const z of [-1.72,2.12]){ const collar=new THREE.Mesh(new THREE.BoxGeometry(.38,.34,.42),mat.dark); collar.position.set(x,0,z); gantry.add(collar); }
-    const depthBelt=new THREE.Mesh(new THREE.BoxGeometry(.035,.035,3.72),mat.rubber); depthBelt.position.set(x,-.13,.2); gantry.add(depthBelt);
-    for(const z of [-1.58,1.98]){ const pulley=new THREE.Mesh(new THREE.TorusGeometry(.12,.025,8,24),mat.rubber); pulley.rotation.y=Math.PI/2; pulley.position.set(x,-.13,z); gantry.add(pulley); }
+  const gantry=new THREE.Group(); gantry.position.set(0,idleGantryY,0);
+  for(const x of [-frameX,frameX]){
+    const side=cyl(.07,bedZ+.55,mat.metal,18); side.rotation.x=Math.PI/2; side.position.set(x,0,centerZ); gantry.add(side);
+    for(const z of [centerZ-frameZ,centerZ+frameZ]){ const collar=new THREE.Mesh(new THREE.BoxGeometry(.38,.34,.42),mat.dark); collar.position.set(x,0,z); gantry.add(collar); }
+    const depthBelt=new THREE.Mesh(new THREE.BoxGeometry(.035,.035,bedZ+.12),mat.rubber); depthBelt.position.set(x,-.13,centerZ); gantry.add(depthBelt);
+    for(const z of [centerZ-bedZ/2+.14,centerZ+bedZ/2-.14]){ const pulley=new THREE.Mesh(new THREE.TorusGeometry(.12,.025,8,24),mat.rubber); pulley.rotation.y=Math.PI/2; pulley.position.set(x,-.13,z); gantry.add(pulley); }
   }
-  const xAxis=new THREE.Group(); xAxis.position.z=.28;
-  for(const x of [-2.62,2.62]){ const saddle=new THREE.Mesh(new THREE.BoxGeometry(.38,.34,.48),mat.dark); saddle.position.x=x; xAxis.add(saddle); const bearing=cyl(.09,.5,mat.metal,16); bearing.rotation.x=Math.PI/2; bearing.position.set(x,-.18,0); xAxis.add(bearing); }
-  const beam=new THREE.Mesh(new THREE.BoxGeometry(5.65,.26,.42),mat.dark); xAxis.add(beam);
-  for(const z of [-.15,.15]){ const rail=cyl(.045,5.45,mat.metal,18); rail.rotation.z=Math.PI/2; rail.position.set(0,-.2,z); xAxis.add(rail); }
-  for(const y of [-.105,.105]){ const belt=new THREE.Mesh(new THREE.BoxGeometry(4.86,.025,.045),mat.rubber); belt.position.set(0,y,.255); xAxis.add(belt); }
+  const xAxis=new THREE.Group(); xAxis.position.z=centerZ;
+  for(const x of [-frameX,frameX]){ const saddle=new THREE.Mesh(new THREE.BoxGeometry(.38,.34,.48),mat.dark); saddle.position.x=x; xAxis.add(saddle); const bearing=cyl(.09,.5,mat.metal,16); bearing.rotation.x=Math.PI/2; bearing.position.set(x,-.18,0); xAxis.add(bearing); }
+  const beam=new THREE.Mesh(new THREE.BoxGeometry(bedX+.95,.26,.42),mat.dark); xAxis.add(beam);
+  for(const z of [-.15,.15]){ const rail=cyl(.045,bedX+.72,mat.metal,18); rail.rotation.z=Math.PI/2; rail.position.set(0,-.2,z); xAxis.add(rail); }
+  for(const y of [-.105,.105]){ const belt=new THREE.Mesh(new THREE.BoxGeometry(bedX+.12,.025,.045),mat.rubber); belt.position.set(0,y,.255); xAxis.add(belt); }
   const drivePulleys=[];
-  for(const x of [-2.43,2.43]){
+  for(const x of [-(bedX/2-.12),bedX/2-.12]){
     const pulleyGroup=new THREE.Group(); pulleyGroup.position.set(x,0,.255);
     pulleyGroup.add(new THREE.Mesh(new THREE.TorusGeometry(.145,.032,8,28),mat.rubber));
     const hub=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.06,18),mat.metal); hub.rotation.x=Math.PI/2; pulleyGroup.add(hub);
@@ -404,17 +437,30 @@ function createPrinter(){
   xAxis.add(carriage); gantry.add(xAxis); g.add(gantry);
   const spool=new THREE.Group(); const spoolBody=cyl(.38,.3,mat.green,36); spoolBody.rotation.z=Math.PI/2; spool.add(spoolBody);
   for(const x of [-.18,.18]){ const r=new THREE.Mesh(new THREE.TorusGeometry(.44,.03,10,36),mat.dark); r.rotation.y=Math.PI/2; r.position.x=x; spool.add(r); }
-  spool.position.set(2.85,5.55,-1.72); g.add(spool);
+  spool.position.set(frameX+.35,postH+.45,centerZ-frameZ); g.add(spool);
   const filamentGuide=new THREE.Group(), filamentSegments=[], filamentGeometry=new THREE.CylinderGeometry(.024,.024,1,8);
   for(let i=0;i<11;i++){ const segment=new THREE.Mesh(filamentGeometry,mat.guide); filamentGuide.add(segment); filamentSegments.push(segment); }
   g.add(filamentGuide);
-  const sign=label('WORLD PRINTER v2h'); sign.position.set(0,6.08,-1.78); g.add(sign);
-  g.userData={ carriage, gantry, xAxis, spool, drivePulleys, beltMarker, filamentSocket, filamentSegments, nozzleTipLocal:new THREE.Vector3(0,-.74,0), idleCarriage:new THREE.Vector3(0,0,0), idleGantry:new THREE.Vector3(0,3.7,0), idleXAxis:new THREE.Vector3(0,0,.28) };
+  const sign=label(`WORLD PRINTER — ${profile.label.toUpperCase()}`); sign.position.set(0,postH+.9,centerZ-frameZ); g.add(sign);
+  g.userData={ carriage, gantry, xAxis, spool, drivePulleys, beltMarker, filamentSocket, filamentSegments, nozzleTipLocal:new THREE.Vector3(0,-.74,0), idleCarriage:new THREE.Vector3(0,0,0), idleGantry:new THREE.Vector3(0,idleGantryY,0), idleXAxis:new THREE.Vector3(0,0,centerZ), profile };
   shadow(g); for(const segment of filamentSegments){ segment.castShadow=false; segment.receiveShadow=false; } return g;
 }
-const printer=createPrinter(); printer.position.set(0,0,-5.5); scene.add(printer);
+let printer=createPrinter(PRINTER_PROFILES[printerClass]); printer.position.set(0,0,-5.5); scene.add(printer);
 function bedWorld(local=new THREE.Vector3(0,0,0)){ return printer.localToWorld(new THREE.Vector3(local.x,.56+local.y,.28+local.z)); }
 function nozzleWorld(){ return printer.userData.carriage.localToWorld(printer.userData.nozzleTipLocal.clone()); }
+function focusPrinter(close=false){
+  const e=PRINTER_PROFILES[printerClass].envelope, mobile=window.innerWidth<=720;
+  const distance=Math.max(e.x,e.z)*(close?1.02:1.22)+(mobile?4.8:3.6);
+  camera.fov=mobile?58:52; camera.updateProjectionMatrix();
+  camera.position.set(distance*(mobile ? .72 : .62),Math.max(4.6,e.y*.66+1.8),printer.position.z+distance*(mobile ? .8 : .72));
+  controls.target.set(0,.56+e.y*.38,printer.position.z+.28); controls.update();
+}
+function replacePrinter(nextClass,{focus=true}={}){
+  if(!PRINTER_PROFILES[nextClass]||nextClass===printerClass) return;
+  const old=printer; printerClass=nextClass; printer=createPrinter(PRINTER_PROFILES[printerClass]); printer.position.copy(old.position); scene.add(printer); scene.remove(old);
+  old.traverse(o=>{ if(o.geometry)o.geometry.dispose(); if(o.isSprite){o.material.map?.dispose();o.material.dispose();} });
+  if(focus) focusPrinter(false);
+}
 const _guideStart=new THREE.Vector3(), _guideEnd=new THREE.Vector3(), _guideA=new THREE.Vector3(), _guideB=new THREE.Vector3(), _guideMid=new THREE.Vector3(), _guideDir=new THREE.Vector3(), _guideUp=new THREE.Vector3(0,1,0);
 const _guideCurve=new THREE.CubicBezierCurve3(new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3());
 function updatePrinterMechanics(){
@@ -422,8 +468,10 @@ function updatePrinterMechanics(){
   beltMarker.position.x=carriage.position.x; for(const pulley of drivePulleys) pulley.rotation.z=-carriage.position.x*1.45;
   printer.updateMatrixWorld(true); filamentSocket.getWorldPosition(_guideEnd); printer.worldToLocal(_guideEnd);
   _guideStart.set(spool.position.x-.2,spool.position.y+.08,spool.position.z);
-  _guideCurve.v0.copy(_guideStart); _guideCurve.v1.set(2.15,5.95,-1.35);
-  _guideCurve.v2.set(THREE.MathUtils.lerp(1.25,_guideEnd.x,.55),Math.max(4.35,_guideEnd.y+1.15),(_guideStart.z+_guideEnd.z)*.5-.22); _guideCurve.v3.copy(_guideEnd);
+  _guideCurve.v0.copy(_guideStart);
+  _guideCurve.v1.copy(_guideStart).add(new THREE.Vector3(-.7,.42,.32));
+  _guideCurve.v2.set(THREE.MathUtils.lerp(_guideStart.x,_guideEnd.x,.72),Math.max(_guideEnd.y+1.15,(_guideStart.y+_guideEnd.y)*.5),THREE.MathUtils.lerp(_guideStart.z,_guideEnd.z,.7)-.22);
+  _guideCurve.v3.copy(_guideEnd);
   const count=filamentSegments.length;
   for(let i=0;i<count;i++){
     _guideCurve.getPoint(i/count,_guideA); _guideCurve.getPoint((i+1)/count,_guideB);
@@ -461,6 +509,134 @@ function createBlock(s=1){ return pieceGroup('Block', 1*s,1*s,1*s); }
 function createWall(s=1){ return pieceGroup('Wall', 2*s,2*s,0.4*s); }
 function createFloor(s=1){ return pieceGroup('Floor', 2*s,0.35*s,2*s); }
 function createPillar(s=1){ return pieceGroup('Pillar', 0.6*s,2*s,0.6*s,{unit:0.3}); }
+
+// --- Modular world-parts catalog -------------------------------------------
+// These are deliberately authored as simple, watertight printable pieces. The
+// finished house/car/aircraft is a player blueprint assembled from these parts.
+function addMarked(g,mesh,x=0,y=0,z=0){ markPiece(mesh); mesh.position.set(x,y,z); g.add(mesh); return mesh; }
+function addPrintSupport(g,x,y,z,w,h,d){ const support=addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat.support),x,y,z); support.userData.printSupport=true; return support; }
+function createBeam(s=1){ return pieceGroup('Beam',2.6*s,.38*s,.38*s,{unit:.38,courseH:.19,material:mat.wood,material2:mat.darkWood}); }
+function createWallOpening(s=1){
+  const g=new THREE.Group(); g.name='Door Wall';
+  for(const b of brickPanel(.64*s,2*s,.4*s)){ b.position.set(-.68*s,b.position.y+1*s,b.position.z); g.add(b); }
+  for(const b of brickPanel(.64*s,2*s,.4*s)){ b.position.set(.68*s,b.position.y+1*s,b.position.z); g.add(b); }
+  for(const b of brickPanel(.72*s,.42*s,.4*s)){ b.position.y+=1.79*s; g.add(b); }
+  return g;
+}
+function triangleContourPath(w,h,d,layers=8){
+  const path=[];
+  for(let i=0;i<layers;i++){
+    const t=(i+.55)/layers, y=-h/2+h*t, half=Math.max(.025,w*(1-t)/2), z=d/2*.88;
+    path.push(new THREE.Vector3(-half,y,-z),new THREE.Vector3(half,y,-z),new THREE.Vector3(half,y,z),new THREE.Vector3(-half,y,z),new THREE.Vector3(-half,y,-z));
+  }
+  return path;
+}
+function createGable(s=1){
+  const w=2*s,h=1.25*s,d=.34*s,shape=new THREE.Shape();
+  shape.moveTo(-w/2,0); shape.lineTo(w/2,0); shape.lineTo(0,h); shape.closePath();
+  const g=new THREE.Group(); g.name='Triangle Gable'; const panel=extrude(shape,d,mat.wall,.02*s);
+  panel.userData.printPath=triangleContourPath(w,h,d); markPiece(panel); g.add(panel); return g;
+}
+function createFlatRoof(s=1){ return pieceGroup('Flat Roof',2.4*s,.22*s,2.4*s,{unit:.4,courseH:.11,material:mat.roof,material2:mat.darkWood}); }
+function createSlopeRoof(s=1){
+  const g=new THREE.Group(); g.name='Incline Roof'; const angle=THREE.MathUtils.degToRad(27);
+  const slab=addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(2.5*s,.18*s,2.2*s),mat.roof)); slab.rotation.z=-angle;
+  for(const z of [-.72*s,0,.72*s]){ const rib=addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(2.35*s,.12*s,.12*s),mat.darkWood),0,-.08*s,z); rib.rotation.z=-angle; }
+  return g;
+}
+function createStairs(s=1){
+  const g=new THREE.Group(); g.name='Stair Flight'; const count=6,stepD=.36*s,stepH=.25*s;
+  for(let i=0;i<count;i++) addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(1.45*s,stepH*(i+1),stepD*.98),i%2?mat.concrete:mat.stone),0,stepH*(i+1)/2,-.9*s+stepD*(i+.5));
+  return g;
+}
+function createFence(s=1){
+  const g=new THREE.Group(); g.name='Fence Panel';
+  for(let i=0;i<7;i++) addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(.12*s,1.25*s,.12*s),i%2?mat.wood:mat.darkWood),(-1.2+i*.4)*s,.625*s,0);
+  for(const y of [.34*s,.92*s]) addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(2.7*s,.13*s,.13*s),mat.darkWood),0,y,-.04*s);
+  return g;
+}
+function createBrace(s=1){ const g=new THREE.Group(); g.name='Diagonal Brace'; const b=addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(2.4*s,.2*s,.2*s),mat.metal),0,.58*s,0); b.rotation.z=Math.PI/6; return g; }
+
+function roadSlab(name,w,l,s=1){ const g=new THREE.Group(); g.name=name; addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(w*s,.18*s,l*s),mat.asphalt),0,.09*s,0); return g; }
+function addRoadDashes(g,axis,length,s=1){
+  for(let i=-2;i<=2;i++){
+    const dash=new THREE.Mesh(new THREE.BoxGeometry(axis==='z'?.08*s:.48*s,.025*s,axis==='z'?.48*s:.08*s),mat.roadLine);
+    addMarked(g,dash,axis==='z'?0:i*length*.18*s,.195*s,axis==='z'?i*length*.18*s:0);
+  }
+}
+function createRoadStraight(s=1){ const g=roadSlab('Straight Road',2.5,3.6,s); addRoadDashes(g,'z',3.6,s); return g; }
+function createRoadSidewalk(s=1){
+  const g=roadSlab('Road + Sidewalk',2.5,3.6,s); addRoadDashes(g,'z',3.6,s);
+  for(const x of [-1.55*s,1.55*s]) addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(.6*s,.28*s,3.6*s),mat.concrete),x,.14*s,0);
+  return g;
+}
+function createRoadCross(s=1){
+  const g=roadSlab('Four-way Road',3.8,3.8,s); addRoadDashes(g,'z',3.8,s); addRoadDashes(g,'x',3.8,s);
+  for(const x of [-1.62*s,1.62*s]) for(const z of [-1.62*s,1.62*s]) addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(.5*s,.25*s,.5*s),mat.concrete),x,.125*s,z);
+  return g;
+}
+function createTerrainTile(s=1){
+  const g=new THREE.Group(); g.name='Terrain Tile'; const n=6,cell=.5*s;
+  for(let x=0;x<n;x++) for(let z=0;z<n;z++){
+    const wave=.12*Math.sin(x*.9)+.1*Math.cos(z*1.1)+.045*x, h=(.22+wave)*s;
+    addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(cell*.98,Math.max(.12*s,h),cell*.98),(x+z)%4===0?mat.stone:mat.terrain),(-1.25+x*.5)*s,Math.max(.12*s,h)/2,(-1.25+z*.5)*s);
+  }
+  return g;
+}
+
+function createChassis(s=1){
+  const g=new THREE.Group(); g.name='Vehicle Chassis';
+  addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(3*s,.28*s,1.4*s),mat.metal),0,.3*s,0);
+  for(const z of [-.58*s,.58*s]) addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(2.55*s,.25*s,.2*s),mat.dark),0,.13*s,z);
+  return g;
+}
+function createAxle(s=1){ const g=new THREE.Group(); g.name='Axle'; const a=addMarked(g,cyl(.11*s,2.5*s,mat.metal,20),0,.12*s,0); a.rotation.x=Math.PI/2; for(const z of [-.9,-.45,0,.45,.9])addPrintSupport(g,0,.055*s,z*s,.16*s,.11*s,.28*s); return g; }
+function torusLayerPath(R,r,centerY,layers=16){
+  const points=[],outer=R+r,inner=Math.max(.01,R-r);
+  for(let layer=0;layer<layers;layer++){
+    const y=-outer+(layer+.5)/layers*outer*2,outerX=Math.sqrt(Math.max(0,outer*outer-y*y)),innerX=Math.sqrt(Math.max(0,inner*inner-y*y));
+    const mid=(outerX+innerX)/2,rx=Math.max(.025,(outerX-innerX)/2),rz=Math.max(.025,r*Math.sqrt(Math.max(.04,1-Math.pow((Math.hypot(mid,y)-R)/r,2))));
+    for(const side of [-1,1]) for(let i=0;i<=14;i++){ const a=i/14*Math.PI*2; points.push(new THREE.Vector3(side*mid+Math.cos(a)*rx,centerY+y,Math.sin(a)*rz)); }
+  }
+  return points;
+}
+function createTire(s=1){ const g=new THREE.Group(); g.name='Tire'; const R=.62*s,r=.18*s,center=.8*s,t=addMarked(g,new THREE.Mesh(new THREE.TorusGeometry(R,r,14,40),mat.rubber),0,center,0); t.userData.printPath=torusLayerPath(R,r,0); for(const x of [-.34,0,.34])addPrintSupport(g,x*s,.52*s,0,.08*s,1.04*s,.22*s); return g; }
+function createWheel(s=1){
+  const g=createTire(s); g.name='Wheel Assembly';
+  const hub=addMarked(g,new THREE.Mesh(new THREE.CylinderGeometry(.2*s,.2*s,.34*s,24),mat.metal),0,.8*s,0); hub.rotation.x=Math.PI/2;
+  for(let i=0;i<6;i++){ const spoke=addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(.52*s,.07*s,.07*s),mat.metal),0,.8*s,0); spoke.rotation.z=i*Math.PI/3; }
+  return g;
+}
+function createBattery(s=1){
+  const g=new THREE.Group(); g.name='Battery Module'; addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(1.5*s,.8*s,.9*s),mat.battery),0,.4*s,0);
+  for(const x of [-.42*s,.42*s]) addMarked(g,new THREE.Mesh(new THREE.CylinderGeometry(.11*s,.11*s,.16*s,18),x<0?mat.dark:mat.brass),x,.88*s,0);
+  return g;
+}
+function createWire(s=1){
+  const g=new THREE.Group(); g.name='Wire / Conduit'; const wire=markPiece(tube([new THREE.Vector3(-1.25*s,.12*s,0),new THREE.Vector3(-.55*s,.3*s,.25*s),new THREE.Vector3(.25*s,.15*s,-.2*s),new THREE.Vector3(1.25*s,.22*s,0)],.09*s,mat.battery,52)); g.add(wire);
+  for(const x of [-1.34*s,1.34*s]){ const plug=addMarked(g,new THREE.Mesh(new THREE.CylinderGeometry(.14*s,.14*s,.28*s,18),mat.brass),x,.16*s,0); plug.rotation.z=Math.PI/2; }
+  return g;
+}
+function createTank(s=1,material=mat.gas,name='Gas Tank'){
+  const g=new THREE.Group(); g.name=name; const body=addMarked(g,new THREE.Mesh(new THREE.CylinderGeometry(.52*s,.52*s,1.75*s,32),material),0,.66*s,0); body.rotation.z=Math.PI/2;
+  for(const x of [-.68*s,.68*s]){ const ring=addMarked(g,new THREE.Mesh(new THREE.TorusGeometry(.53*s,.055*s,10,28),mat.metal),x,.66*s,0); ring.rotation.y=Math.PI/2; }
+  for(const x of [-.56,.56])addPrintSupport(g,x*s,.075*s,0,.18*s,.15*s,.62*s); addMarked(g,new THREE.Mesh(new THREE.CylinderGeometry(.1*s,.1*s,.28*s,16),mat.brass),0,1.22*s,0); return g;
+}
+function createGasTank(s=1){ return createTank(s,mat.gas,'Gas Tank'); }
+function createHydrogenTank(s=1){ return createTank(s,mat.hydrogen,'Hydrogen Tank'); }
+function createThruster(s=1){
+  const g=new THREE.Group(); g.name='Thruster'; const chamber=addMarked(g,new THREE.Mesh(new THREE.CylinderGeometry(.36*s,.36*s,1.15*s,28),mat.metal),0,.48*s,0); chamber.rotation.x=Math.PI/2;
+  const nozzle=addMarked(g,new THREE.Mesh(new THREE.ConeGeometry(.58*s,.8*s,32,1,true),mat.dark),0,.48*s,.94*s); nozzle.rotation.x=-Math.PI/2;
+  const mount=addMarked(g,new THREE.Mesh(new THREE.CylinderGeometry(.48*s,.48*s,.18*s,28),mat.brass),0,.48*s,-.65*s); mount.rotation.x=Math.PI/2; for(const z of [-.55,.1,.72])addPrintSupport(g,0,.06*s,z*s,.3*s,.12*s,.18*s); return g;
+}
+function createWing(s=1){
+  const g=new THREE.Group(); g.name='Wing Panel'; const segments=7,span=3.6*s;
+  for(let i=0;i<segments;i++){
+    const t=i/(segments-1), chord=THREE.MathUtils.lerp(1.35,.42,t)*s, width=span/segments*.98;
+    addMarked(g,new THREE.Mesh(new THREE.BoxGeometry(width,.13*s,chord),i%2?mat.wing:mat.metal),-span/2+width*(i+.55),.07*s,t*.42*s);
+  }
+  return g;
+}
 
 function createBoat(s=1){ const g=new THREE.Group(); g.name='Boat';
   // Overlapping longitudinal strakes form two coherent hull sides. They meet at
@@ -570,25 +746,59 @@ function createCreature(s=1){ const g=new THREE.Group(); g.name='Creature';
   return g;
 }
 
+const CATALOG_VERSION=1;
+const PART_CATEGORIES=[
+  {id:'structure',label:'Build',description:'Grid parts for houses, bridges, towers, and interiors.'},
+  {id:'roads',label:'Roads',description:'Road, sidewalk, intersection, and terrain tiles.'},
+  {id:'mobility',label:'Vehicles',description:'Chassis, wheel, tire, and axle modules.'},
+  {id:'energy',label:'Energy',description:'Battery, wire, gas, and hydrogen modules.'},
+  {id:'flight',label:'Flight',description:'Wing and thruster modules for aircraft and spacecraft.'},
+  {id:'showcase',label:'Blueprints',description:'Older whole-object demonstrations kept for compatibility.'}
+];
+const part=(definition)=>({schemaVersion:CATALOG_VERSION,modular:true,sized:true,source:'native-parametric',...definition});
+const blueprint=(definition)=>({schemaVersion:CATALOG_VERSION,category:'showcase',blueprint:true,...definition});
 const recipes=[
-  {id:'block',label:'Block',aliases:['block','cube'],dims:[1,1,1],complexity:.6,create:createBlock,sized:true},
-  {id:'wall',label:'Wall',aliases:['wall'],dims:[2,2,0.4],complexity:.85,create:createWall,sized:true},
-  {id:'floor',label:'Floor',aliases:['floor','tile','ground','slab'],dims:[2,0.35,2],complexity:.75,create:createFloor,sized:true},
-  {id:'pillar',label:'Pillar',aliases:['pillar','column','post'],dims:[0.6,2,0.6],complexity:.6,create:createPillar,sized:true},
-  {id:'stall',label:'Market Stall',aliases:['market','stall','shop','vendor'],dims:[2.65,1.3,2.7],complexity:1.25,create:createStall,sized:true},
-  {id:'cottage',label:'Cottage',aliases:['cottage','house','home','hut'],dims:[2.8,2.25,2.5],complexity:1.18,create:createCottage,sized:true},
-  {id:'boat',label:'Boat',aliases:['boat','ship','sailboat'],dims:[3.1,1.3,2.0],complexity:1.05,create:createBoat,sized:true},
-  {id:'tree',label:'Tree',aliases:['tree','forest','oak'],dims:[2.0,2.0,2.9],complexity:1.12,create:createTree,sized:true},
-  {id:'cart',label:'Cart',aliases:['cart','wagon','carriage'],dims:[2.4,1.5,1.5],complexity:.9,create:createCart,sized:true},
-  {id:'spiral',label:'Hero Layered Form',aliases:['spiral','twist','knot','hero','layered','vessel'],dims:[2.4,2.0,1.4],complexity:1.35,create:createSpiral,sized:true,hero:true},
-  {id:'creature',label:'Creature',aliases:['creature','robot','monster','eyeball','character'],dims:[1.9,1.9,1.5],complexity:1.4,create:createCreature,sized:true},
-  {id:'campfire',label:'Campfire',aliases:['campfire','fire','firepit'],dims:[1.1,1.1,1.0],complexity:.55,create:createCampfire}
+  part({id:'block',category:'structure',label:'Block',aliases:['block','cube','brick'],dims:[1,1,1],complexity:.6,create:createBlock,connectorKind:'structure'}),
+  part({id:'wall',category:'structure',label:'Wall Panel',aliases:['wall','wall panel'],dims:[2,.4,2],complexity:.85,create:createWall,connectorKind:'structure'}),
+  part({id:'wall-opening',category:'structure',label:'Door Wall',aliases:['door wall','wall opening','doorway'],dims:[2,.4,2],complexity:.9,create:createWallOpening,connectorKind:'structure'}),
+  part({id:'floor',category:'structure',label:'Floor / Slab',aliases:['floor','tile','ground','slab'],dims:[2,2,.35],complexity:.75,create:createFloor,connectorKind:'structure'}),
+  part({id:'pillar',category:'structure',label:'Post / Pillar',aliases:['pillar','column','post'],dims:[.6,.6,2],complexity:.6,create:createPillar,connectorKind:'structure'}),
+  part({id:'beam',category:'structure',label:'Beam',aliases:['beam','lintel','joist'],dims:[2.6,.38,.38],complexity:.65,create:createBeam,connectorKind:'structure'}),
+  part({id:'gable',category:'structure',label:'Triangle / Gable',aliases:['triangle','gable','triangle wall'],dims:[2,.34,1.25],complexity:.75,create:createGable,connectorKind:'roof'}),
+  part({id:'roof-flat',category:'structure',label:'Flat Roof',aliases:['flat roof','roof slab'],dims:[2.4,2.4,.22],complexity:.72,create:createFlatRoof,connectorKind:'roof'}),
+  part({id:'roof-slope',category:'structure',label:'Incline Roof',aliases:['incline roof','sloped roof','slope roof','ramp roof'],dims:[2.5,2.2,1.25],complexity:.82,create:createSlopeRoof,connectorKind:'roof'}),
+  part({id:'stairs',category:'structure',label:'Stairs',aliases:['stairs','stair','steps','staircase'],dims:[1.45,2.16,1.5],complexity:.88,create:createStairs,connectorKind:'structure'}),
+  part({id:'fence',category:'structure',label:'Fence Panel',aliases:['fence','fence panel','railing'],dims:[2.7,.14,1.25],complexity:.8,create:createFence,connectorKind:'structure'}),
+  part({id:'brace',category:'structure',label:'Diagonal Brace',aliases:['brace','truss','diagonal'],dims:[2.4,.2,1.36],complexity:.55,create:createBrace,connectorKind:'structure'}),
+
+  part({id:'road-straight',category:'roads',label:'Straight Road',aliases:['road','straight road','road straight'],dims:[2.5,3.6,.21],complexity:.72,create:createRoadStraight,connectorKind:'road'}),
+  part({id:'road-sidewalk',category:'roads',label:'Road + Sidewalk',aliases:['road sidewalk','road with sidewalk','sidewalk road'],dims:[3.7,3.6,.3],complexity:.84,create:createRoadSidewalk,connectorKind:'road'}),
+  part({id:'road-cross',category:'roads',label:'Four-way Road',aliases:['road cross','cross road','intersection','four way road'],dims:[3.8,3.8,.28],complexity:.9,create:createRoadCross,connectorKind:'road'}),
+  part({id:'terrain-tile',category:'roads',label:'Terrain Tile',aliases:['terrain','landscape','landscape tile','ground tile'],dims:[3,3,.65],complexity:1.0,create:createTerrainTile,connectorKind:'terrain'}),
+
+  part({id:'chassis',category:'mobility',label:'Vehicle Chassis',aliases:['chassis','car frame','vehicle frame'],dims:[3,1.4,.44],complexity:.74,create:createChassis,connectorKind:'vehicle'}),
+  part({id:'wheel',category:'mobility',label:'Wheel Assembly',aliases:['wheel','rim'],dims:[1.6,.36,1.6],complexity:.82,create:createWheel,connectorKind:'axle'}),
+  part({id:'tire',category:'mobility',label:'Tire',aliases:['tire','tyre'],dims:[1.6,.36,1.6],complexity:.7,create:createTire,connectorKind:'axle'}),
+  part({id:'axle',category:'mobility',label:'Axle',aliases:['axle','shaft'],dims:[.22,2.5,.24],complexity:.5,create:createAxle,connectorKind:'axle'}),
+
+  part({id:'battery',category:'energy',label:'Battery Module',aliases:['battery','power cell','energy cell'],dims:[1.5,.9,.96],complexity:.72,create:createBattery,connectorKind:'power'}),
+  part({id:'wire',category:'energy',label:'Wire / Conduit',aliases:['wire','cable','conduit','electric wire'],dims:[2.8,.55,.5],complexity:.68,create:createWire,connectorKind:'power'}),
+  part({id:'gas-tank',category:'energy',label:'Gas Tank',aliases:['gas','gas tank','fuel tank'],dims:[1.75,1.1,1.32],complexity:.78,create:createGasTank,connectorKind:'fluid'}),
+  part({id:'hydrogen-tank',category:'energy',label:'Hydrogen Tank',aliases:['hydrogen','hydrogen tank','h2 tank'],dims:[1.75,1.1,1.32],complexity:.78,create:createHydrogenTank,connectorKind:'fluid'}),
+
+  part({id:'wing',category:'flight',label:'Wing Panel',aliases:['wing','aircraft wing','plane wing'],dims:[3.6,1.8,.2],complexity:.82,create:createWing,connectorKind:'airframe'}),
+  part({id:'thruster',category:'flight',label:'Thruster',aliases:['thruster','rocket engine','engine nozzle'],dims:[1.2,2,1.16],complexity:.88,create:createThruster,connectorKind:'airframe'}),
+
+  blueprint({id:'stall',label:'Market Stall',aliases:['market','stall','shop','vendor'],dims:[2.65,1.3,2.7],complexity:1.25,create:createStall,sized:true}),
+  blueprint({id:'cottage',label:'Cottage Demo',aliases:['cottage','house','home','hut'],dims:[2.8,2.25,3.2],complexity:1.18,create:createCottage,sized:true}),
+  blueprint({id:'boat',label:'Boat Demo',aliases:['boat','ship','sailboat'],dims:[3.1,1.3,2.0],complexity:1.05,create:createBoat,sized:true}),
+  blueprint({id:'tree',label:'Tree Demo',aliases:['tree','forest','oak'],dims:[2.0,2.0,2.9],complexity:1.12,create:createTree,sized:true}),
+  blueprint({id:'cart',label:'Cart Demo',aliases:['cart','wagon','carriage'],dims:[2.4,1.5,1.5],complexity:.9,create:createCart,sized:true}),
+  blueprint({id:'spiral',label:'Hero Layered Form',aliases:['spiral','twist','knot','hero','layered','vessel'],dims:[2.4,2.0,1.4],complexity:1.35,create:createSpiral,sized:true,hero:true}),
+  blueprint({id:'creature',label:'Creature Demo',aliases:['creature','robot','monster','eyeball','character'],dims:[1.9,1.9,1.5],complexity:1.4,create:createCreature,sized:true}),
+  blueprint({id:'campfire',label:'Campfire Demo',aliases:['campfire','fire','firepit'],dims:[1.1,1.1,1.0],complexity:.55,create:createCampfire})
 ];
 
-// Printer sizes: small (tiny props) / medium (current) / large (buildings).
-const SIZES={ small:0.55, medium:1, large:1.8 };
-const SIZE_LABELS={ small:'Small', medium:'Medium', large:'Large' };
-let printSize='medium';
 // Bake a uniform scale into an object's geometry (not group scale, which the print
 // reveal resets). Used for non-parametrised recipes so they can be sized too.
 function bakeScale(root,s){ if(s===1) return root; root.traverse(m=>{ if(m.isMesh){ m.geometry.scale(s,s,s); m.position.multiplyScalar(s); } }); return root; }
@@ -597,22 +807,58 @@ function bakeScale(root,s){ if(s===1) return root; root.traverse(m=>{ if(m.isMes
 function groundBuild(root){
   root.position.set(0,0,0); root.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(root); if(!Number.isFinite(box.min.y)) return root;
-  const lift=-box.min.y+.006; for(const child of root.children) child.position.y+=lift;
+  const centerX=(box.min.x+box.max.x)/2,centerZ=(box.min.z+box.max.z)/2,lift=-box.min.y+.006;
+  for(const child of root.children){ child.position.x-=centerX; child.position.y+=lift; child.position.z-=centerZ; }
   return root;
 }
-function fitBuildToBed(root){
-  root.updateMatrixWorld(true); const box=new THREE.Box3().setFromObject(root), size=new THREE.Vector3(); box.getSize(size);
-  const fit=Math.min(1,4.5/Math.max(.001,size.x),3.82/Math.max(.001,size.z));
-  if(fit<.999){ bakeScale(root,fit); root.userData.bedFit=fit; }
+function connectorsFor(root,recipe){
+  if(!recipe.modular) return [];
+  const {box,size}=measureBuild(root),cx=(box.min.x+box.max.x)/2,cy=(box.min.y+box.max.y)/2,cz=(box.min.z+box.max.z)/2,kind=recipe.connectorKind||'universal';
+  if(recipe.id==='axle') return [
+    {id:'wheel-front',kind:'wheel-axle',position:[cx,cy,box.max.z],normal:[0,0,1]}, {id:'wheel-back',kind:'wheel-axle',position:[cx,cy,box.min.z],normal:[0,0,-1]},
+    {id:'chassis-mount',kind:'axle-mount',position:[cx,box.max.y,cz],normal:[0,1,0]}
+  ];
+  if(recipe.id==='wheel'||recipe.id==='tire') return [{id:'hub-front',kind:'wheel-axle',position:[cx,cy,box.max.z],normal:[0,0,1]},{id:'hub-back',kind:'wheel-axle',position:[cx,cy,box.min.z],normal:[0,0,-1]}];
+  if(kind==='vehicle') return [
+    {id:'axle-front',kind:'axle-mount',position:[cx+size.x*.34,box.min.y,cz],normal:[0,-1,0]},{id:'axle-rear',kind:'axle-mount',position:[cx-size.x*.34,box.min.y,cz],normal:[0,-1,0]},
+    {id:'front',kind,position:[box.max.x,cy,cz],normal:[1,0,0]},{id:'back',kind,position:[box.min.x,cy,cz],normal:[-1,0,0]}
+  ];
+  if(kind==='power'||kind==='fluid') return [{id:'left',kind,position:[box.min.x,cy,cz],normal:[-1,0,0]},{id:'right',kind,position:[box.max.x,cy,cz],normal:[1,0,0]}];
+  if(recipe.id==='thruster') return [{id:'mount',kind,position:[cx,cy,box.min.z],normal:[0,0,-1]},{id:'nozzle',kind,position:[cx,cy,box.max.z],normal:[0,0,1]}];
+  if(kind==='airframe') return [{id:'root',kind,position:[box.min.x,cy,cz],normal:[-1,0,0]},{id:'tip',kind,position:[box.max.x,cy,cz],normal:[1,0,0]}];
+  return [
+    {id:'left',kind,position:[box.min.x,cy,cz],normal:[-1,0,0]}, {id:'right',kind,position:[box.max.x,cy,cz],normal:[1,0,0]},
+    {id:'front',kind,position:[cx,cy,box.max.z],normal:[0,0,1]}, {id:'back',kind,position:[cx,cy,box.min.z],normal:[0,0,-1]},
+    {id:'top',kind,position:[cx,box.max.y,cz],normal:[0,1,0]}, {id:'bottom',kind,position:[cx,box.min.y,cz],normal:[0,-1,0]}
+  ];
+}
+function attachPartSpec(root,recipe,s){
+  const {size}=measureBuild(root);
+  root.userData.partSpec={catalogVersion:CATALOG_VERSION,family:recipe.id,category:recipe.category,modular:!!recipe.modular,source:recipe.source||'legacy-blueprint',nominalScale:s,nominalDims:recipe.dims.map(v=>v*s),measuredDims:[size.x,size.z,size.y],grid:recipe.modular ? .5*s : null,connectors:connectorsFor(root,recipe)};
   return root;
 }
-function buildAtSize(recipe,s){ const root=recipe.sized ? recipe.create(s) : bakeScale(recipe.create(), s); return recipe.hero?root:groundBuild(fitBuildToBed(groundBuild(root))); }
+function buildAtSize(recipe,s){
+  const root=recipe.sized ? recipe.create(s) : bakeScale(recipe.create(),s);
+  const grounded=recipe.hero?root:groundBuild(groundBuild(root));
+  return attachPartSpec(grounded,recipe,s);
+}
+function measureBuild(root){ root.updateMatrixWorld(true); const box=new THREE.Box3().setFromObject(root),size=new THREE.Vector3(); box.getSize(size); return {box,size}; }
+function profileFits(root,profile){
+  const {box}=measureBuild(root),e=profile.envelope,c=profile.clearance,hx=e.x/2-c.xy,hz=e.z/2-c.xy;
+  return box.min.x>=-hx&&box.max.x<=hx&&box.min.z>=-hz&&box.max.z<=hz&&box.min.y>=-.01&&box.max.y<=e.y-c.travel;
+}
+function smallestProfileFor(root){ return PROFILE_ORDER.find(key=>profileFits(root,PRINTER_PROFILES[key]))||null; }
 
 let phase='ready', printedOnBed=null, carriedPreview=null, selected=null, selectionBox=null, pathGroup=null, liveBead=null, liveThread=null, idCounter=0, slotIndex=0;
 const placed=[]; const slots=[[0,2.7],[-4,2.4],[4,2.4],[-4,6],[4,6],[0,7.2],[-7,0],[7,0]];
-function parseCommand(text){ const t=text.toLowerCase().replace(/[^a-z0-9\s-]/g,' '); return recipes.find(r=>r.aliases.some(a=>t.includes(a))) || null; }
-function printDuration(recipe,parts){ const [w,d,h]=recipe.dims; const base=3000+w*d*h*90, per=parts.length*48; return Math.round(Math.min(13500, base+per)*(0.9+recipe.complexity*0.1)); }
-function setButtons(){ const busy=phase==='printing'||phase==='pickup-moving'; runButton.disabled=busy||phase==='printed-on-bed'; pickupButton.disabled=phase!=='printed-on-bed'; placeButton.disabled=phase!=='carried-preview'; recipeButtons.querySelectorAll('button').forEach(b=>{b.disabled=busy||phase==='printed-on-bed'}); }
+function parseCommand(text){
+  const t=text.toLowerCase().replace(/[^a-z0-9\s-]/g,' ').replace(/\s+/g,' ').trim();
+  const exact=recipes.find(r=>t===r.id||t===r.label.toLowerCase()); if(exact) return exact;
+  const aliases=recipes.flatMap(recipe=>recipe.aliases.map(alias=>({recipe,alias}))).sort((a,b)=>b.alias.length-a.alias.length);
+  return aliases.find(entry=>t.includes(entry.alias))?.recipe||null;
+}
+function printDuration(recipe,parts){ const [w,d,h]=recipe.dims, scale=PART_SCALES[partScaleKey].value; const base=3000+w*d*h*90*scale, per=parts.length*48; return Math.round(Math.min(14500,base+per)*(0.9+recipe.complexity*0.1)); }
+function setButtons(){ const busy=phase==='printing'||phase==='pickup-moving'; runButton.disabled=busy||phase==='printed-on-bed'; voiceButton.disabled=!(window.SpeechRecognition||window.webkitSpeechRecognition)||busy||phase==='printed-on-bed'; pickupButton.disabled=phase!=='printed-on-bed'; placeButton.disabled=phase!=='carried-preview'; recipeButtons.querySelectorAll('button').forEach(b=>{b.disabled=busy||phase==='printed-on-bed'}); categoryButtons.querySelectorAll('button').forEach(b=>{b.disabled=busy}); $('#sizeButtons').querySelectorAll('button').forEach(b=>{b.disabled=phase!=='ready'}); partScaleButtons.querySelectorAll('button').forEach(b=>{b.disabled=phase!=='ready'}); }
 function setPhase(next){ phase=next; setState(next); setButtons(); }
 
 function geometryPrintPath(mesh){
@@ -662,10 +908,11 @@ function collectPartsLocal(root){
     const box=m.geometry.boundingBox.clone().applyMatrix4(m.matrixWorld);
     const size=new THREE.Vector3(); box.getSize(size);
     if(size.x<.001||size.y<.001||size.z<.001) return;
-    const relative=rootInverse.clone().multiply(m.matrixWorld), path=geometryPrintPath(m).map(point=>point.applyMatrix4(relative));
+    const sourcePath=m.userData.printPath?.length ? m.userData.printPath.map(point=>point.clone()) : geometryPrintPath(m);
+    const relative=rootInverse.clone().multiply(m.matrixWorld), path=sourcePath.map(point=>point.applyMatrix4(relative));
     let pathLength=0; for(let i=1;i<path.length;i++) pathLength+=path[i-1].distanceTo(path[i]);
     const drawCount=m.geometry.index?.count||m.geometry.attributes.position?.count||0;
-    parts.push({mesh:m,box,size,path,drawCount,pathReveal:m.geometry.type==='TubeGeometry',minY:box.min.y,weight:Math.max(.12,size.x*size.y*size.z,pathLength*.018)});
+    parts.push({mesh:m,box,size,path,drawCount,pathReveal:m.geometry.type==='TubeGeometry',printSupport:!!m.userData.printSupport,minY:box.min.y,weight:Math.max(.12,size.x*size.y*size.z,pathLength*.018)});
     m.visible=false;
   });
   // Print order: bottom-up in layers, and WITHIN each layer sweep around the
@@ -674,7 +921,7 @@ function collectPartsLocal(root){
   const n=parts.length||1; cx/=n; cz/=n;
   const band=0.16;
   for(const p of parts){ p.layer=Math.round(p.minY/band); const mx=(p.box.min.x+p.box.max.x)/2, mz=(p.box.min.z+p.box.max.z)/2; p.ang=Math.atan2(mz-cz,mx-cx); }
-  parts.sort((a,b)=> (a.layer-b.layer) || (a.ang-b.ang) || (a.minY-b.minY));
+  parts.sort((a,b)=> (a.printSupport===b.printSupport?0:(a.printSupport?-1:1)) || (a.layer-b.layer) || (a.ang-b.ang) || (a.minY-b.minY));
   return parts;
 }
 function revealPart(part,fraction){
@@ -701,8 +948,9 @@ function revealPart(part,fraction){
   }
 }
 function revealParts(parts,activeIndex,localT){ const COOL=6; parts.forEach((p,i)=>{ if(i<activeIndex){ revealPart(p,1); const age=activeIndex-i; if(age<=COOL) p.mesh.material=(age<=2?mat.hot:mat.warm); } else if(i===activeIndex) revealPart(p,localT); else p.mesh.visible=false; }); }
-function restoreFinal(root){ root.traverse(m=>{ if(m.userData.printEffect)m.visible=true; if(m.isMesh){ m.visible=true; m.geometry.setDrawRange(0,Infinity); if(m.userData.baseMaterial)m.material=m.userData.baseMaterial; if(m.userData.baseScale)m.scale.copy(m.userData.baseScale); if(m.userData.basePosition)m.position.copy(m.userData.basePosition); } }); }
-function setGhost(root,on){ root.traverse(m=>{ if(!m.isMesh)return; m.userData.finalMaterial ||= m.material; m.material=on?mat.ghost:m.userData.finalMaterial; }); }
+function hidePrintSupports(root){ root.traverse(m=>{if(m.userData.printSupport)m.visible=false;}); return root; }
+function restoreFinal(root){ root.traverse(m=>{ if(m.userData.printSupport){m.visible=false;return;} if(m.userData.printEffect)m.visible=true; if(m.isMesh){ m.visible=true; m.geometry.setDrawRange(0,Infinity); if(m.userData.baseMaterial)m.material=m.userData.baseMaterial; if(m.userData.baseScale)m.scale.copy(m.userData.baseScale); if(m.userData.basePosition)m.position.copy(m.userData.basePosition); } }); }
+function setGhost(root,on){ root.traverse(m=>{ if(!m.isMesh||m.userData.printSupport)return; m.userData.finalMaterial ||= m.material; m.material=on?mat.ghost:m.userData.finalMaterial; }); }
 
 function partPath(part,localT){
   if(part.path?.length>1){ const cursor=clamp01(localT)*(part.path.length-1), index=Math.min(part.path.length-2,Math.floor(cursor)); return part.path[index].clone().lerp(part.path[index+1],cursor-index); }
@@ -732,8 +980,8 @@ function positionMachine(p,clearance=0){
 }
 function segment(a,b,material,r=.024){ if(a.distanceTo(b)<.012)return null; return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([a,b]),5,r,8),material); }
 function drip(a,b){ const mid=a.clone().lerp(b,.5), len=a.distanceTo(b); const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,Math.max(.05,len),8),mat.freshGreen); mesh.position.copy(mid); mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize()); return mesh; }
-function travelPoint(from,to,t,hop=.24){
-  t=clamp01(t); const a=from.clone(), b=to.clone(), raisedA=from.clone().add(new THREE.Vector3(0,hop,0)), raisedB=to.clone().add(new THREE.Vector3(0,hop,0));
+function travelPoint(from,to,t,safeY=null){
+  t=clamp01(t); const a=from.clone(), b=to.clone(), raisedY=Math.max(from.y,to.y,safeY??Math.max(from.y,to.y)+.24), raisedA=from.clone(), raisedB=to.clone(); raisedA.y=raisedY; raisedB.y=raisedY;
   if(t<.22) return a.lerp(raisedA,t/.22);
   if(t<.78) return raisedA.lerp(raisedB,(t-.22)/.56);
   return raisedB.lerp(b,(t-.78)/.22);
@@ -748,11 +996,33 @@ function movable(){ return carriedPreview||selected; }
 // so pieces align edge-to-edge without overlapping. Falls back to the grid when
 // nothing is close. Works with rotation/size (uses world-space bounding boxes).
 let magnetOn=true;
+function connectorsCompatible(a,b){ if(a===b)return true; return (a==='structure'&&b==='roof')||(a==='roof'&&b==='structure'); }
+function worldConnector(root,connector){
+  root.updateMatrixWorld(true);
+  return { point:new THREE.Vector3().fromArray(connector.position).applyMatrix4(root.matrixWorld), normal:new THREE.Vector3().fromArray(connector.normal).transformDirection(root.matrixWorld), connector };
+}
+function connectorSnap(obj){
+  const moving=obj.userData.partSpec?.connectors; if(!moving?.length) return false;
+  const snapRadius=Math.max(.22,(obj.userData.partSpec.grid||.5)*1.35); let best=null;
+  for(const sourceDef of moving){
+    const source=worldConnector(obj,sourceDef);
+    for(const neighbour of placed){ if(neighbour===obj)continue; const neighbourSpec=neighbour.userData.partSpec,targets=neighbourSpec?.connectors; if(!targets?.length||Math.abs((obj.userData.partSpec.nominalScale||1)-(neighbourSpec.nominalScale||1))>.001)continue;
+      for(const targetDef of targets){ if(!connectorsCompatible(sourceDef.kind,targetDef.kind))continue; const target=worldConnector(neighbour,targetDef),d=source.point.distanceTo(target.point),opposition=source.normal.dot(target.normal);
+        if(d<snapRadius&&opposition<-.965&&(!best||d<best.d)) best={d,source:source.point,target:target.point,sourceId:sourceDef.id,targetId:targetDef.id,neighbour};
+      }
+    }
+  }
+  if(!best)return false;
+  obj.position.add(best.target.clone().sub(best.source)); obj.updateMatrixWorld(true);
+  obj.userData.lastSnap={to:best.neighbour.userData.id||best.neighbour.userData.dbId||null,source:best.sourceId,target:best.targetId};
+  return true;
+}
 function magnetSnap(obj){
   if(!obj||!magnetOn) return;
+  if(connectorSnap(obj)) return;
   const box=new THREE.Box3().setFromObject(obj), size=new THREE.Vector3(), c=new THREE.Vector3();
   box.getSize(size); box.getCenter(c);
-  const hx=size.x/2, hy=size.y/2, hz=size.z/2, MAG=0.85; let best=null;
+  const hx=size.x/2, hy=size.y/2, hz=size.z/2, MAG=Math.max(.22,(obj.userData.partSpec?.grid||.5)*1.7); let best=null;
   for(const p of placed){ if(p===obj) continue; const pb=new THREE.Box3().setFromObject(p);
     const ox=Math.min(box.max.x,pb.max.x)-Math.max(box.min.x,pb.min.x);
     const oy=Math.min(box.max.y,pb.max.y)-Math.max(box.min.y,pb.min.y);
@@ -763,9 +1033,10 @@ function magnetSnap(obj){
   }
   if(best){ if(best.ax==='x') obj.position.x+=best.val-c.x; else if(best.ax==='y') obj.position.y=Math.max(0,obj.position.y+(best.val-c.y)); else obj.position.z+=best.val-c.z; }
 }
-function moveTarget(dx,dz){ const o=movable(); if(!o){setStatus('Nothing can move yet. Print, pick up, then move the preview.');return;} o.position.x=Math.round(o.position.x+dx); o.position.z=Math.round(o.position.z+dz); magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
+function placementGrid(o){ return o?.userData.partSpec?.grid||.5; }
+function moveTarget(dx,dz){ const o=movable(); if(!o){setStatus('Nothing can move yet. Print, pick up, then move the preview.');return;} const step=placementGrid(o); o.position.x=Math.round((o.position.x+dx*step)/step)*step; o.position.z=Math.round((o.position.z+dz*step)/step)*step; magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
 function rotateTarget(dir){ const o=movable(); if(!o){setStatus('Nothing can rotate yet. Print, pick up, then rotate the preview.');return;} o.rotation.y+=dir*Math.PI/8; magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
-function raiseTarget(dy){ const o=movable(); if(!o){setStatus('Nothing to raise yet. Print, pick up, then raise/lower to stack.');return;} o.position.y=Math.max(0, Math.round((o.position.y+dy)/0.5)*0.5); magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
+function raiseTarget(direction){ const o=movable(); if(!o){setStatus('Nothing to raise yet. Print, pick up, then raise/lower to stack.');return;} const step=placementGrid(o); o.position.y=Math.max(0,Math.round((o.position.y+direction*step)/step)*step); magnetSnap(o); updateSelectionBox(); if(o.userData.dbId) updatePlacement(o); }
 async function animateTransform(object,targetPosition,targetScale,duration){ const sPos=object.position.clone(), sScale=object.scale.clone(), eScale=new THREE.Vector3(targetScale,targetScale,targetScale), t0=performance.now(); return new Promise(resolve=>{ function step(now){ const t=clamp01((now-t0)/duration); const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; object.position.lerpVectors(sPos,targetPosition,e); object.scale.lerpVectors(sScale,eScale,e); if(t<1)requestAnimationFrame(step); else resolve(); } requestAnimationFrame(step); }); }
 
 function moveMachineTo(localPoint,duration=700,clearance=.18){
@@ -778,18 +1049,32 @@ function moveMachineTo(localPoint,duration=700,clearance=.18){
   } requestAnimationFrame(step); });
 }
 
+async function parkMachineClearOf(object){
+  const profile=PRINTER_PROFILES[printerClass], {size}=measureBuild(object), e=profile.envelope, c=profile.clearance;
+  const park=new THREE.Vector3(e.x/2-c.xy*1.5,Math.min(e.y-c.travel*.55,size.y+c.travel),-e.z/2+c.xy*1.5);
+  setStatus(`Cooling complete. Parking the toolhead above and outside the ${object.userData.label||'part'} envelope.`);
+  await moveMachineTo(park,720,Math.min(.22,c.travel*.35));
+}
+
+function preparePrintObject(recipe){
+  const requestedScale=PART_SCALES[partScaleKey].value, obj=buildAtSize(recipe,requestedScale);
+  if(profileFits(obj,PRINTER_PROFILES[printerClass])) return {obj,scale:requestedScale};
+  const required=smallestProfileFor(obj);
+  if(!required) throw new Error(`${recipe.label} exceeds the industrial build envelope at this scale.`);
+  replacePrinter(required,{focus:false});
+  renderSizeButtons();
+  setButtons();
+  return {obj,scale:requestedScale,upgradedTo:required};
+}
+
 async function startHeroPrint(recipe){
-  const obj=buildAtSize(recipe,SIZES[printSize]);
+  const {obj,scale,upgradedTo}=preparePrintObject(recipe);
   const layers=obj.userData.heroLayers, beadRadius=obj.userData.heroBeadRadius, segments=obj.userData.heroSegments;
-  obj.userData={label:recipe.label,recipeId:recipe.id,state:'printing',sizeScale:SIZES[printSize]};
+  Object.assign(obj.userData,{label:recipe.label,recipeId:recipe.id,state:'printing',sizeScale:scale});
   obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
   const layerMeshes=[...obj.children];
   for(const layer of layerMeshes){ layer.visible=false; layer.userData.baseMaterial=mat.knot; }
-  if(viewMode==='orbit'){
-    const mobile=window.innerWidth<=720;
-    camera.fov=mobile?55:50; camera.updateProjectionMatrix();
-    camera.position.set(mobile?10.2:7.8,mobile?5.7:4.8,mobile?5.2:3.25); controls.target.set(0,mobile?2.15:1.65,-5.3); controls.update();
-  }
+  if(viewMode==='orbit') focusPrinter(true);
   const first=layers[0][0];
   setStatus('Dry travel above the first layer — no material is deposited during positioning.');
   await moveMachineTo(first,650,.22); await moveMachineTo(first,280,beadRadius*.9);
@@ -820,9 +1105,9 @@ async function startHeroPrint(recipe){
   } requestAnimationFrame(step); });
   for(const layer of layerMeshes){ layer.visible=true; layer.material=mat.knot; }
   liveLayer.geometry.dispose(); obj.remove(liveLayer); scene.remove(bead); scene.remove(heat); liveBead=null;
-  await moveMachineTo(new THREE.Vector3(0,2.25,0),650,.22);
+  await parkMachineClearOf(obj);
   obj.userData.state='printed-on-bed'; setPhase('printed-on-bed'); setTarget(`${recipe.label} finished on printer bed`);
-  setStatus('Hero layered form complete: grounded contours, visible ridges, exact nozzle-tip deposition, and progressive cooling. Pick it up to place it.');
+  setStatus(`${recipe.label} complete${upgradedTo?` on the ${PRINTER_PROFILES[upgradedTo].label} printer`:''}: grounded contours, exact nozzle-tip deposition, progressive cooling, and collision-safe parking. Pick it up to place it.`);
 }
 
 async function startPrint(recipe){
@@ -834,24 +1119,27 @@ async function startPrint(recipe){
   // Auto-hide the menu when a build starts so the print is visible right away.
   hud.classList.add('collapsed'); hud.classList.remove('mobile-start'); toggleHud.textContent='Open';
   document.body.classList.toggle('hero-mode',!!recipe.hero);
-  if(recipe.hero){ await startHeroPrint(recipe); return; }
-  if(viewMode==='orbit'){
-    const mobile=window.innerWidth<=720; camera.fov=mobile?55:50; camera.updateProjectionMatrix();
-    camera.position.set(mobile?10.2:7.8,mobile?5.7:4.8,mobile?5.2:3.25); controls.target.set(0,mobile?2.15:1.65,-5.3); controls.update();
-  }
-  const obj=buildAtSize(recipe, SIZES[printSize]); obj.userData={label:recipe.label,recipeId:recipe.id,state:'printing',sizeScale:SIZES[printSize]};
+  if(recipe.hero){ try{await startHeroPrint(recipe);}catch(error){setPhase('ready');setStatus(error.message);} return; }
+  let prepared;
+  try{ prepared=preparePrintObject(recipe); }catch(error){ setPhase('ready'); setStatus(error.message); return; }
+  if(viewMode==='orbit') focusPrinter(true);
+  const {obj,scale,upgradedTo}=prepared; Object.assign(obj.userData,{label:recipe.label,recipeId:recipe.id,state:'printing',sizeScale:scale});
   const parts=collectPartsLocal(obj);
+  if(!parts.length){ setPhase('ready'); setStatus(`${recipe.label} has no printable geometry.`); return; }
   obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
   const duration=printDuration(recipe,parts);
-  setStatus(`v2h printing ${recipe.label}: ${parts.length} geometry-following paths with dry travel between pieces, ${(duration/1000).toFixed(1)}s.`);
+  setStatus(`v2i printing ${recipe.label}${upgradedTo?` after auto-selecting ${PRINTER_PROFILES[upgradedTo].label}`:''}: ${parts.length} geometry-following paths with clearance-planned dry travel, ${(duration/1000).toFixed(1)}s.`);
   pathGroup=new THREE.Group(); scene.add(pathGroup);
   liveBead=new THREE.Mesh(new THREE.SphereGeometry(.11,16,10),mat.freshOrange); scene.add(liveBead);
   const depositLight=new THREE.PointLight(0xff6a1a, 1.25, 3.2); scene.add(depositLight); // molten heat glow at the print front
-  const {carriage,gantry,xAxis,spool}=printer.userData;
-  const startC=carriage.position.clone(), startG=gantry.position.clone(), startX=xAxis.position.clone();
+  const {spool}=printer.userData;
   const total=parts.reduce((sum,p)=>sum+p.weight,0);
-  const checkpoints=[]; let acc=0;
-  for(let i=0;i<parts.length;i++){ const p=parts[i], previous=i?parts[i-1]:null; checkpoints.push({start:acc/total,end:(acc+p.weight)/total,part:p,travelFrom:previous?.path?.at(-1)||new THREE.Vector3(0,2.25,0),travelTo:p.path?.[0]||new THREE.Vector3()}); acc+=p.weight; }
+  const checkpoints=[]; let acc=0,depositedMaxY=0;
+  for(let i=0;i<parts.length;i++){
+    const p=parts[i], previous=i?parts[i-1]:null, travelFrom=previous?.path?.at(-1)||new THREE.Vector3(0,PRINTER_PROFILES[printerClass].envelope.y*.72,0), travelTo=p.path?.[0]||new THREE.Vector3();
+    const safeY=Math.min(PRINTER_PROFILES[printerClass].envelope.y-.18,Math.max(travelFrom.y,travelTo.y,depositedMaxY+PRINTER_PROFILES[printerClass].clearance.travel));
+    checkpoints.push({start:acc/total,end:(acc+p.weight)/total,part:p,travelFrom,travelTo,safeY}); acc+=p.weight; depositedMaxY=Math.max(depositedMaxY,p.box.max.y);
+  }
   const t0=performance.now(); let prev=null,lastEmit=0,segCount=0,lastActive=-1;
   await new Promise(resolve=>{
     function step(now){
@@ -860,7 +1148,7 @@ async function startPrint(recipe){
       const c=checkpoints[active]; const localT=clamp01((raw-c.start)/Math.max(.0001,c.end-c.start)), TRAVEL=.16;
       if(active!==lastActive){ prev=null; lastActive=active; }
       if(localT<TRAVEL){
-        revealParts(parts,active,0); const p=travelPoint(c.travelFrom,c.travelTo,localT/TRAVEL);
+        revealParts(parts,active,0); const p=travelPoint(c.travelFrom,c.travelTo,localT/TRAVEL,c.safeY);
         positionMachine(p,.04); liveBead.visible=false; depositLight.intensity=0;
         if(liveThread){scene.remove(liveThread);liveThread=null;}
         if(raw<1) requestAnimationFrame(step); else resolve(); return;
@@ -882,16 +1170,17 @@ async function startPrint(recipe){
         lastEmit=now;
       }
       prev=p.clone();
-      if(raw<1) requestAnimationFrame(step); else { carriage.position.copy(startC); gantry.position.copy(startG); xAxis.position.copy(startX); resolve(); }
+      if(raw<1) requestAnimationFrame(step); else resolve();
     }
     requestAnimationFrame(step);
   });
   if(liveBead){scene.remove(liveBead);liveBead=null;} if(liveThread){scene.remove(liveThread);liveThread=null;}
   scene.remove(depositLight); // remove the molten heat glow
   if(pathGroup){scene.remove(pathGroup);pathGroup=null;} // clear the nozzle-path trail so the finished piece is clean
+  await parkMachineClearOf(obj);
   restoreFinal(obj); obj.position.copy(bedWorld()); obj.userData.state='printed-on-bed';
   setPhase('printed-on-bed'); setTarget(`${recipe.label} finished on printer bed`);
-  setStatus(`${recipe.label} finished on the actual bed. Pick it up to place it.`);
+  setStatus(`${recipe.label} finished on the ${PRINTER_PROFILES[printerClass].label} bed. The toolhead is parked clear; pick it up to place and snap it.`);
 }
 async function pickupPrint(){ if(phase!=='printed-on-bed'||!printedOnBed){setStatus('Nothing finished on the printer bed yet.');return;} document.body.classList.remove('hero-mode'); const obj=printedOnBed; printedOnBed=null; if(pathGroup){scene.remove(pathGroup);pathGroup=null;} setPhase('pickup-moving'); obj.userData.state='pickup-moving'; setStatus(`Picking up ${obj.userData.label}.`); await animateTransform(obj,handWorld(),.42,850); await sleep(140); obj.userData.state='carried-preview'; obj.scale.setScalar(1); const [x,z]=slots[slotIndex++%slots.length]; obj.position.set(x,0,z); setGhost(obj,true); carriedPreview=obj; setPhase('carried-preview'); setTarget(`preview ${obj.userData.label}`); setStatus(`${obj.userData.label} picked up. Move/rotate it or tap ground, then Place.`); }
 function placePreview(){ if(!carriedPreview){setStatus('No carried preview. Print something, then Pick Up Print first.');return;} const obj=carriedPreview; carriedPreview=null; setGhost(obj,false); restoreFinal(obj); obj.userData.id=++idCounter; obj.userData.state='placed'; placed.push(obj); magnetSnap(obj); setPhase('ready'); selectPlaced(obj); savePlacement(obj); setStatus(`${obj.userData.label} placed and saved to the shared world (persists on reload).`); }
@@ -908,8 +1197,8 @@ const newId=()=> (crypto&&crypto.randomUUID ? crypto.randomUUID() : String(Date.
 function findPlaced(dbId){ return placed.find(o=>o.userData.dbId===dbId); }
 function spawnPlacementRow(row){
   const recipe=recipes.find(r=>r.id===row.type); if(!recipe) return null;
-  const obj=buildAtSize(recipe, row.scale||1); // rebuild at the saved size (baked into geometry)
-  obj.userData={label:row.label||recipe.label, recipeId:recipe.id, id:++idCounter, state:'placed', dbId:row.id, sizeScale:row.scale||1};
+  const obj=hidePrintSupports(buildAtSize(recipe,row.scale||1)); // rebuild at the saved size (baked into geometry)
+  Object.assign(obj.userData,{label:row.label||recipe.label, recipeId:recipe.id, id:++idCounter, state:'placed', dbId:row.id, sizeScale:row.scale||1});
   obj.position.set(row.x,row.y,row.z); obj.rotation.y=row.rot_y||0;
   placed.push(obj); scene.add(obj); return obj;
 }
@@ -944,25 +1233,42 @@ function subscribeWorld(){
 }
 
 const sizeButtonsEl=$('#sizeButtons');
-function renderSizeButtons(){ sizeButtonsEl.innerHTML=''; for(const key of ['small','medium','large']){ const b=document.createElement('button'); b.className='secondary'; b.textContent=SIZE_LABELS[key]; if(printSize===key){ b.style.borderColor='#00ff9d'; b.style.color='#00ff9d'; b.style.fontWeight='800'; } b.addEventListener('click',()=>{ printSize=key; setStatus(`Printer size set to ${SIZE_LABELS[key]}. The next print will be ${key}.`); renderSizeButtons(); }); sizeButtonsEl.appendChild(b); } }
+function renderSizeButtons(){
+  sizeButtonsEl.innerHTML='';
+  for(const key of PROFILE_ORDER){ const profile=PRINTER_PROFILES[key],b=document.createElement('button'); b.className=`secondary${printerClass===key?' active':''}`; b.textContent=profile.label; b.addEventListener('click',()=>{ replacePrinter(key); renderSizeButtons(); setStatus(`${profile.label} printer active. Build envelope: ${profile.envelope.x} × ${profile.envelope.z} bed, ${profile.envelope.y} high.`); }); sizeButtonsEl.appendChild(b); }
+  const p=PRINTER_PROFILES[printerClass]; printerEnvelope.textContent=`${p.label}: ${p.envelope.x} W × ${p.envelope.z} D × ${p.envelope.y} H · hardware only; part dimensions stay unchanged`;
+}
 renderSizeButtons();
-for(const recipe of recipes){ const b=document.createElement('button'); b.className='secondary'; b.textContent=recipe.label; b.addEventListener('click',()=>startPrint(recipe)); recipeButtons.appendChild(b); }
-runButton.addEventListener('click',()=>{ const r=parseCommand(commandInput.value); if(!r){setStatus('No recipe matched. Try stall, cottage, boat, tree, cart, spiral, creature, or campfire.');return;} startPrint(r); });
+function renderPartScaleButtons(){
+  partScaleButtons.innerHTML='';
+  for(const key of PART_SCALE_ORDER){ const scale=PART_SCALES[key],b=document.createElement('button'); b.className=`secondary${partScaleKey===key?' active':''}`; b.textContent=`${scale.label} ${scale.value}×`; b.addEventListener('click',()=>{partScaleKey=key;renderPartScaleButtons();setStatus(`Part scale set to ${scale.label} ${scale.value}×. Printer hardware stays ${PRINTER_PROFILES[printerClass].label}.`);}); partScaleButtons.appendChild(b); }
+}
+renderPartScaleButtons();
+let activeCategory='structure';
+function describeRecipe(recipe){ const scale=PART_SCALES[partScaleKey].value,[x,z,y]=recipe.dims.map(v=>Number((v*scale).toFixed(2))),prefix=recipe.modular?'Part':'Blueprint'; partReadout.textContent=`${prefix} · ${x} W × ${z} D × ${y} H at ${scale}× · ${recipe.modular?`${recipe.connectorKind} connectors · ${Number((.5*scale).toFixed(2))}-unit grid`:'whole-object compatibility demo'}`; }
+function renderPartLibrary(){
+  categoryButtons.innerHTML=''; recipeButtons.innerHTML='';
+  for(const category of PART_CATEGORIES){ const count=recipes.filter(r=>r.category===category.id).length,b=document.createElement('button'); b.className=`secondary category-button${activeCategory===category.id?' active':''}`; b.textContent=`${category.label} ${count}`; b.addEventListener('click',()=>{ activeCategory=category.id; renderPartLibrary(); partReadout.textContent=category.description; }); categoryButtons.appendChild(b); }
+  for(const recipe of recipes.filter(r=>r.category===activeCategory)){ const b=document.createElement('button'); b.className='secondary recipe-button'; b.textContent=recipe.label; b.title=recipe.aliases.join(', '); b.addEventListener('pointerenter',()=>describeRecipe(recipe)); b.addEventListener('focus',()=>describeRecipe(recipe)); b.addEventListener('click',()=>startPrint(recipe)); recipeButtons.appendChild(b); }
+  setButtons();
+}
+renderPartLibrary();
+runButton.addEventListener('click',()=>{ const r=parseCommand(commandInput.value); if(!r){setStatus('No part matched. Try wall, stairs, road with sidewalk, wheel, battery, hydrogen tank, thruster, or wing.');return;} activeCategory=r.category; renderPartLibrary(); startPrint(r); });
 pickupButton.addEventListener('click',pickupPrint); placeButton.addEventListener('click',placePreview); cancelButton.addEventListener('click',cancelOrDelete);
-$('#moveLeft').addEventListener('click',()=>moveTarget(-1,0)); $('#moveRight').addEventListener('click',()=>moveTarget(1,0)); $('#moveForward').addEventListener('click',()=>moveTarget(0,-1)); $('#moveBack').addEventListener('click',()=>moveTarget(0,1)); $('#rotateLeft').addEventListener('click',()=>rotateTarget(-1)); $('#rotateRight').addEventListener('click',()=>rotateTarget(1)); $('#raiseUp').addEventListener('click',()=>raiseTarget(0.5)); $('#lowerDown').addEventListener('click',()=>raiseTarget(-0.5));
+$('#moveLeft').addEventListener('click',()=>moveTarget(-1,0)); $('#moveRight').addEventListener('click',()=>moveTarget(1,0)); $('#moveForward').addEventListener('click',()=>moveTarget(0,-1)); $('#moveBack').addEventListener('click',()=>moveTarget(0,1)); $('#rotateLeft').addEventListener('click',()=>rotateTarget(-1)); $('#rotateRight').addEventListener('click',()=>rotateTarget(1)); $('#raiseUp').addEventListener('click',()=>raiseTarget(1)); $('#lowerDown').addEventListener('click',()=>raiseTarget(-1));
 $('#magnetToggle').addEventListener('click',()=>{ magnetOn=!magnetOn; $('#magnetToggle').textContent=magnetOn?'🧲 On':'🧲 Off'; if(magnetOn&&magnetOn){$('#magnetToggle').style.borderColor='#00ff9d';$('#magnetToggle').style.color='#00ff9d';}else{$('#magnetToggle').style.borderColor='';$('#magnetToggle').style.color='';} setStatus(magnetOn?'Edge-magnet snapping ON — pieces auto-align to neighbours.':'Magnet OFF — free grid placement.'); });
 commandInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') runButton.click(); });
 
 const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2(); let down=null;
 renderer.domElement.addEventListener('pointerdown',(e)=>{down={x:e.clientX,y:e.clientY};});
-renderer.domElement.addEventListener('click',(e)=>{ if(e.target.closest?.('#hud'))return; if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>6)return; pointer.x=e.clientX/window.innerWidth*2-1; pointer.y=-(e.clientY/window.innerHeight)*2+1; raycaster.setFromCamera(pointer,camera); if(carriedPreview){ const hits=raycaster.intersectObject(ground); if(hits.length){ carriedPreview.position.x=Math.round(hits[0].point.x); carriedPreview.position.z=Math.round(hits[0].point.z); magnetSnap(carriedPreview); updateSelectionBox(); setStatus(`Moved carried preview to ${carriedPreview.position.x.toFixed(1)}, ${carriedPreview.position.z.toFixed(1)}.`); } return; } const hits=raycaster.intersectObjects(placed,true); if(hits.length){ let root=hits[0].object; while(root.parent&&!root.userData.id) root=root.parent; if(root.userData.id) selectPlaced(root); } });
+renderer.domElement.addEventListener('click',(e)=>{ if(e.target.closest?.('#hud'))return; if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>6)return; pointer.x=e.clientX/window.innerWidth*2-1; pointer.y=-(e.clientY/window.innerHeight)*2+1; raycaster.setFromCamera(pointer,camera); if(carriedPreview){ const hits=raycaster.intersectObject(ground); if(hits.length){ const step=placementGrid(carriedPreview); carriedPreview.position.x=Math.round(hits[0].point.x/step)*step; carriedPreview.position.z=Math.round(hits[0].point.z/step)*step; magnetSnap(carriedPreview); updateSelectionBox(); setStatus(`Moved carried preview to ${carriedPreview.position.x.toFixed(2)}, ${carriedPreview.position.z.toFixed(2)} on its ${step}-unit grid.`); } return; } const hits=raycaster.intersectObjects(placed,true); if(hits.length){ let root=hits[0].object; while(root.parent&&!root.userData.id) root=root.parent; if(root.userData.id) selectPlaced(root); } });
 window.addEventListener('keydown',(e)=>{ if(document.activeElement===commandInput&&e.key!=='Enter')return; const k=e.key.toLowerCase();
   if(k==='w'||e.key==='ArrowUp')move.f=1; else if(k==='s'||e.key==='ArrowDown')move.f=-1; if(k==='a'||e.key==='ArrowLeft')move.s=-1; else if(k==='d'||e.key==='ArrowRight')move.s=1;
-  if(k==='q')rotateTarget(-1); if(k==='e')rotateTarget(1); if(k==='r')raiseTarget(0.5); if(k==='f')raiseTarget(-0.5);
+  if(k==='q')rotateTarget(-1); if(k==='e')rotateTarget(1); if(k==='r')raiseTarget(1); if(k==='f')raiseTarget(-1);
   if(e.key==='Enter'&&carriedPreview)placePreview(); if(e.key==='Delete'||e.key==='Backspace')cancelOrDelete(); });
 window.addEventListener('keyup',(e)=>{ const k=e.key.toLowerCase(); if(k==='w'||e.key==='ArrowUp'||k==='s'||e.key==='ArrowDown')move.f=0; if(k==='a'||e.key==='ArrowLeft'||k==='d'||e.key==='ArrowRight')move.s=0; });
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-if(!SpeechRecognition){ voiceButton.disabled=true; voiceButton.title='Speech recognition not available in this browser.'; } else { const rec=new SpeechRecognition(); rec.lang='en-US'; rec.interimResults=false; rec.continuous=false; voiceButton.addEventListener('click',()=>{ setStatus('Listening. Say make a stall, cottage, boat, tree...'); rec.start(); }); rec.onresult=(e)=>{ const text=e.results[0][0].transcript; commandInput.value=text; const r=parseCommand(text); if(r)startPrint(r); else setStatus(`Heard “${text}”, but no recipe matched yet.`); }; rec.onerror=(e)=>setStatus(`Voice error: ${e.error}. Type the command instead.`); }
+if(!SpeechRecognition){ voiceButton.disabled=true; voiceButton.title='Speech recognition not available in this browser.'; } else { const rec=new SpeechRecognition(); rec.lang='en-US'; rec.interimResults=false; rec.continuous=false; voiceButton.addEventListener('click',()=>{ setStatus('Listening. Say make a wall, road with sidewalk, wheel, battery, tank, thruster, or wing.'); rec.start(); }); rec.onresult=(e)=>{ const text=e.results[0][0].transcript; commandInput.value=text; const r=parseCommand(text); if(r){activeCategory=r.category;renderPartLibrary();startPrint(r);} else setStatus(`Heard “${text}”, but no part matched yet.`); }; rec.onerror=(e)=>setStatus(`Voice error: ${e.error}. Type the command instead.`); }
 
 // Keep the showcase visually honest. Older builds spawned three unsaved demo
 // props around the machine; they read as debris and obscured the active print.
@@ -986,7 +1292,7 @@ controls.enablePan=true;
 const VIEW_LABELS={orbit:'Orbit',follow:'3rd Person',first:'1st Person'};
 const viewButtonsEl=$('#viewButtons');
 function renderViewButtons(){ viewButtonsEl.innerHTML=''; for(const key of ['orbit','follow','first']){ const b=document.createElement('button'); b.className='secondary'; b.textContent=VIEW_LABELS[key]; if(viewMode===key){ b.style.borderColor='#00ff9d'; b.style.color='#00ff9d'; b.style.fontWeight='800'; } b.addEventListener('click',()=>setViewMode(key)); viewButtonsEl.appendChild(b); } }
-function setViewMode(key){ viewMode=key; controls.enabled=(key==='orbit'); if(key==='orbit'){ camera.position.set(14,9.2,15.6); controls.target.set(0,2.1,-1.2); controls.update(); setStatus('View: Orbit — drag to orbit, pinch/two-finger to pan. Joystick still walks your character.'); } else { camYaw=player.rotation.y; setStatus(`View: ${VIEW_LABELS[key]} — joystick (or WASD) walks, drag to look.`); } renderViewButtons(); }
+function setViewMode(key){ viewMode=key; controls.enabled=(key==='orbit'); if(key==='orbit'){ focusPrinter(false); setStatus('View: Orbit — drag to orbit, pinch/two-finger to pan. Joystick still walks your character.'); } else { camYaw=player.rotation.y; setStatus(`View: ${VIEW_LABELS[key]} — joystick (or WASD) walks, drag to look.`); } renderViewButtons(); }
 renderViewButtons();
 
 // On-screen joystick (touch + mouse) → character movement.
@@ -1024,13 +1330,21 @@ function updatePlayerAndCamera(){
   }
 }
 
-function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const {carriage,gantry,xAxis,spool}=printer.userData; carriage.position.set(Math.sin(now*.0011)*.45,0,0); gantry.position.y=3.7; xAxis.position.z=.28+Math.cos(now*.0009)*.14; spool.rotation.x+=.008; } updatePrinterMechanics(); updatePlayerAndCamera(); updateSelectionBox(); if(viewMode==='orbit') controls.update(); renderer.render(scene,camera); }
-setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Start with Hero Layered Form for the grounded contour-printing proof.`); animate(performance.now());
+function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const {carriage,gantry,xAxis,spool,idleGantry,idleXAxis}=printer.userData; carriage.position.set(Math.sin(now*.0011)*.45,0,0); gantry.position.y=idleGantry.y; xAxis.position.z=idleXAxis.z+Math.cos(now*.0009)*.14; spool.rotation.x+=.008; } updatePrinterMechanics(); updatePlayerAndCamera(); updateSelectionBox(); if(viewMode==='orbit') controls.update(); renderer.render(scene,camera); }
+focusPrinter(false); setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Start with a Wall Panel, Road + Sidewalk, Wheel Assembly, Battery Module, or Wing Panel.`); animate(performance.now());
 
 // Optional deep-link: /?auto=<recipe id or alias> auto-starts that print on load
 // (handy for testing and for linking straight to a specific print).
 const autoParam=new URLSearchParams(location.search).get('auto');
 const autoPlace=new URLSearchParams(location.search).get('place');
 const autoSize=new URLSearchParams(location.search).get('size');
-if(autoSize && SIZES[autoSize]){ printSize=autoSize; renderSizeButtons(); }
+const autoPrinter=new URLSearchParams(location.search).get('printer');
+const autoScale=new URLSearchParams(location.search).get('scale');
+const LEGACY_PROFILE_KEYS={small:'compact',medium:'workshop',large:'industrial'};
+const LEGACY_SCALE_KEYS={small:'mini',medium:'standard',large:'mega'};
+if(autoSize&&LEGACY_PROFILE_KEYS[autoSize]){ replacePrinter(LEGACY_PROFILE_KEYS[autoSize],{focus:false}); partScaleKey=LEGACY_SCALE_KEYS[autoSize]; }
+else if(autoSize&&PRINTER_PROFILES[autoSize]) replacePrinter(autoSize,{focus:false});
+if(autoPrinter&&PRINTER_PROFILES[autoPrinter]) replacePrinter(autoPrinter,{focus:false});
+if(autoScale&&PART_SCALES[autoScale]) partScaleKey=autoScale;
+renderSizeButtons(); renderPartScaleButtons(); focusPrinter(false);
 if(autoParam){ const r=recipes.find(x=>x.id===autoParam)||parseCommand(autoParam); if(r) setTimeout(async()=>{ await startPrint(r); if(autoPlace){ await pickupPrint(); placePreview(); } },500); }
