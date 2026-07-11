@@ -2,14 +2,14 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const BUILD = 'v2g — grounded contour printing + exact nozzle mechanics';
+const BUILD = 'v2h — geometry-following recipes + driven printer mechanics';
 const app = document.querySelector('#app');
 
 app.innerHTML = `
   <canvas id="world"></canvas>
   <section id="hud">
     <div class="topline">
-      <h1>World Printer Lab <span style="color:#00ff9d">v2g</span></h1>
+      <h1>World Printer Lab <span style="color:#00ff9d">v2h</span></h1>
       <button id="toggleHud" class="secondary">Hide</button>
     </div>
     <div class="hud-body">
@@ -51,7 +51,7 @@ app.innerHTML = `
       <div class="section-title">State</div>
       <div class="row">
         <span class="pill" id="statePill">ready</span>
-        <span class="pill">bed-local paths</span>
+        <span class="pill">geometry-following paths</span>
         <span class="pill">continuous extrusion</span>
         <span class="pill">variable print time</span>
       </div>
@@ -59,7 +59,7 @@ app.innerHTML = `
       <div id="selected">Target: none</div>
     </div>
   </section>
-  <aside id="help">v2g: the compact hero form grows from grounded horizontal contours deposited at the exact brass nozzle tip.</aside>
+  <aside id="help">v2h: real mesh paths, dry travel moves, driven belts, moving pulleys, and a carriage-following filament guide.</aside>
   <div id="joystick" style="position:fixed;left:22px;bottom:26px;width:118px;height:118px;border-radius:50%;background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.35);touch-action:none;z-index:20;display:flex;align-items:center;justify-content:center;user-select:none">
     <div id="joyknob" style="width:50px;height:50px;border-radius:50%;background:rgba(0,255,157,0.5);pointer-events:none;transition:transform .05s"></div>
   </div>
@@ -149,6 +149,7 @@ const mat = {
   metal: new THREE.MeshStandardMaterial({ color:0x9da8a3, roughness:.28, metalness:.82 }),
   carriage: new THREE.MeshStandardMaterial({ color:0xf27a28, roughness:.34, metalness:.16, emissive:0x271000, emissiveIntensity:.22 }),
   brass: new THREE.MeshStandardMaterial({ color:0xd99a3e, roughness:.28, metalness:.72 }),
+  guide: new THREE.MeshStandardMaterial({ color:0xa9bbb5, roughness:.46, metalness:.03, emissive:0x07110e, emissiveIntensity:.18 }),
   rubber: new THREE.MeshStandardMaterial({ color:0x050706, roughness:.8, metalness:.01 }),
   green: new THREE.MeshStandardMaterial({ color:0x00e996, map:tex.green, roughness:.34, metalness:.02, emissive:0x003020 }),
   orange: new THREE.MeshStandardMaterial({ color:0xff8730, map:tex.orange, roughness:.36, metalness:.02, emissive:0x2a1000 }),
@@ -374,11 +375,24 @@ function createPrinter(){
   const gantry=new THREE.Group(); gantry.position.set(0,3.7,0);
   for(const x of [-2.62,2.62]){
     const side=cyl(.07,4.2,mat.metal,18); side.rotation.x=Math.PI/2; side.position.set(x,0,.2); gantry.add(side);
-    const collar=new THREE.Mesh(new THREE.BoxGeometry(.38,.34,.42),mat.dark); collar.position.set(x,0,-1.72); gantry.add(collar);
+    for(const z of [-1.72,2.12]){ const collar=new THREE.Mesh(new THREE.BoxGeometry(.38,.34,.42),mat.dark); collar.position.set(x,0,z); gantry.add(collar); }
+    const depthBelt=new THREE.Mesh(new THREE.BoxGeometry(.035,.035,3.72),mat.rubber); depthBelt.position.set(x,-.13,.2); gantry.add(depthBelt);
+    for(const z of [-1.58,1.98]){ const pulley=new THREE.Mesh(new THREE.TorusGeometry(.12,.025,8,24),mat.rubber); pulley.rotation.y=Math.PI/2; pulley.position.set(x,-.13,z); gantry.add(pulley); }
   }
   const xAxis=new THREE.Group(); xAxis.position.z=.28;
+  for(const x of [-2.62,2.62]){ const saddle=new THREE.Mesh(new THREE.BoxGeometry(.38,.34,.48),mat.dark); saddle.position.x=x; xAxis.add(saddle); const bearing=cyl(.09,.5,mat.metal,16); bearing.rotation.x=Math.PI/2; bearing.position.set(x,-.18,0); xAxis.add(bearing); }
   const beam=new THREE.Mesh(new THREE.BoxGeometry(5.65,.26,.42),mat.dark); xAxis.add(beam);
   for(const z of [-.15,.15]){ const rail=cyl(.045,5.45,mat.metal,18); rail.rotation.z=Math.PI/2; rail.position.set(0,-.2,z); xAxis.add(rail); }
+  for(const y of [-.105,.105]){ const belt=new THREE.Mesh(new THREE.BoxGeometry(4.86,.025,.045),mat.rubber); belt.position.set(0,y,.255); xAxis.add(belt); }
+  const drivePulleys=[];
+  for(const x of [-2.43,2.43]){
+    const pulleyGroup=new THREE.Group(); pulleyGroup.position.set(x,0,.255);
+    pulleyGroup.add(new THREE.Mesh(new THREE.TorusGeometry(.145,.032,8,28),mat.rubber));
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.06,18),mat.metal); hub.rotation.x=Math.PI/2; pulleyGroup.add(hub);
+    const tick=new THREE.Mesh(new THREE.BoxGeometry(.035,.11,.035),mat.carriage); tick.position.y=.075; pulleyGroup.add(tick);
+    xAxis.add(pulleyGroup); drivePulleys.push(pulleyGroup);
+  }
+  const beltMarker=new THREE.Mesh(new THREE.BoxGeometry(.15,.065,.065),mat.carriage); beltMarker.position.set(0,.105,.285); xAxis.add(beltMarker);
   const carriage=new THREE.Group();
   const body=new THREE.Mesh(new THREE.BoxGeometry(.66,.52,.62),mat.carriage); carriage.add(body);
   const fan=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.065,28),mat.dark); fan.rotation.x=Math.PI/2; fan.position.set(0,.02,.345); carriage.add(fan);
@@ -386,17 +400,37 @@ function createPrinter(){
   const block=new THREE.Mesh(new THREE.BoxGeometry(.25,.14,.25),mat.brass); block.position.y=-.49; carriage.add(block);
   const nozzle=new THREE.Mesh(new THREE.ConeGeometry(.065,.18,24),mat.brass); nozzle.position.y=-.65; nozzle.rotation.x=Math.PI; carriage.add(nozzle);
   const led=new THREE.PointLight(0xffb24b,.55,2.2); led.position.set(0,-.52,.08); carriage.add(led);
+  const filamentSocket=new THREE.Object3D(); filamentSocket.position.set(0,.3,-.12); carriage.add(filamentSocket);
   xAxis.add(carriage); gantry.add(xAxis); g.add(gantry);
   const spool=new THREE.Group(); const spoolBody=cyl(.38,.3,mat.green,36); spoolBody.rotation.z=Math.PI/2; spool.add(spoolBody);
   for(const x of [-.18,.18]){ const r=new THREE.Mesh(new THREE.TorusGeometry(.44,.03,10,36),mat.dark); r.rotation.y=Math.PI/2; r.position.x=x; spool.add(r); }
   spool.position.set(2.85,5.55,-1.72); g.add(spool);
-  const sign=label('WORLD PRINTER v2g'); sign.position.set(0,6.08,-1.78); g.add(sign);
-  g.userData={ carriage, gantry, xAxis, spool, nozzleTipLocal:new THREE.Vector3(0,-.74,0), idleCarriage:new THREE.Vector3(0,0,0), idleGantry:new THREE.Vector3(0,3.7,0), idleXAxis:new THREE.Vector3(0,0,.28) };
-  return shadow(g);
+  const filamentGuide=new THREE.Group(), filamentSegments=[], filamentGeometry=new THREE.CylinderGeometry(.024,.024,1,8);
+  for(let i=0;i<11;i++){ const segment=new THREE.Mesh(filamentGeometry,mat.guide); filamentGuide.add(segment); filamentSegments.push(segment); }
+  g.add(filamentGuide);
+  const sign=label('WORLD PRINTER v2h'); sign.position.set(0,6.08,-1.78); g.add(sign);
+  g.userData={ carriage, gantry, xAxis, spool, drivePulleys, beltMarker, filamentSocket, filamentSegments, nozzleTipLocal:new THREE.Vector3(0,-.74,0), idleCarriage:new THREE.Vector3(0,0,0), idleGantry:new THREE.Vector3(0,3.7,0), idleXAxis:new THREE.Vector3(0,0,.28) };
+  shadow(g); for(const segment of filamentSegments){ segment.castShadow=false; segment.receiveShadow=false; } return g;
 }
 const printer=createPrinter(); printer.position.set(0,0,-5.5); scene.add(printer);
 function bedWorld(local=new THREE.Vector3(0,0,0)){ return printer.localToWorld(new THREE.Vector3(local.x,.56+local.y,.28+local.z)); }
 function nozzleWorld(){ return printer.userData.carriage.localToWorld(printer.userData.nozzleTipLocal.clone()); }
+const _guideStart=new THREE.Vector3(), _guideEnd=new THREE.Vector3(), _guideA=new THREE.Vector3(), _guideB=new THREE.Vector3(), _guideMid=new THREE.Vector3(), _guideDir=new THREE.Vector3(), _guideUp=new THREE.Vector3(0,1,0);
+const _guideCurve=new THREE.CubicBezierCurve3(new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3());
+function updatePrinterMechanics(){
+  const {carriage,drivePulleys,beltMarker,filamentSocket,filamentSegments,spool}=printer.userData;
+  beltMarker.position.x=carriage.position.x; for(const pulley of drivePulleys) pulley.rotation.z=-carriage.position.x*1.45;
+  printer.updateMatrixWorld(true); filamentSocket.getWorldPosition(_guideEnd); printer.worldToLocal(_guideEnd);
+  _guideStart.set(spool.position.x-.2,spool.position.y+.08,spool.position.z);
+  _guideCurve.v0.copy(_guideStart); _guideCurve.v1.set(2.15,5.95,-1.35);
+  _guideCurve.v2.set(THREE.MathUtils.lerp(1.25,_guideEnd.x,.55),Math.max(4.35,_guideEnd.y+1.15),(_guideStart.z+_guideEnd.z)*.5-.22); _guideCurve.v3.copy(_guideEnd);
+  const count=filamentSegments.length;
+  for(let i=0;i<count;i++){
+    _guideCurve.getPoint(i/count,_guideA); _guideCurve.getPoint((i+1)/count,_guideB);
+    const length=_guideA.distanceTo(_guideB); _guideMid.copy(_guideA).lerp(_guideB,.5); _guideDir.copy(_guideB).sub(_guideA).normalize();
+    const segment=filamentSegments[i]; segment.position.copy(_guideMid); segment.quaternion.setFromUnitVectors(_guideUp,_guideDir); segment.scale.set(1,length,1);
+  }
+}
 
 function createPlayer(){ const g=new THREE.Group(); const body=new THREE.Mesh(new THREE.CapsuleGeometry(.32,.78,8,16),mat.player); body.position.y=.82; g.add(body); const ring=new THREE.Mesh(new THREE.TorusGeometry(.68,.025,8,44),fadeMat(mat.green,.58)); ring.rotation.x=Math.PI/2; ring.position.y=.08; g.add(ring); const l=label('PLAYER'); l.scale.set(1.7,.42,1); l.position.y=1.85; g.add(l); return shadow(g); }
 const player=createPlayer(); player.position.set(0,0,5.25); scene.add(player);
@@ -406,7 +440,7 @@ function createStall(s=1){ const g=new THREE.Group(); g.name='Market Stall';
   // Counter: sliced wood planks.
   for(const b of brickPanel(2.45*s,.58*s,1.08*s,{unit:.4,courseH:.2,material:mat.wood,material2:mat.darkWood})){ b.position.y+=.38*s; g.add(b); }
   // Corner posts (thin — kept whole).
-  for(const x of [-1.05*s,1.05*s]) for(const z of [-.42*s,.42*s]){ const p=markPiece(cyl(.06*s,2.1*s,mat.darkWood,14)); p.position.set(x,1.35*s,z); g.add(p); }
+  for(const x of [-.76*s,.76*s]) for(const z of [-.42*s,.42*s]){ const p=markPiece(cyl(.06*s,2.1*s,mat.darkWood,14)); p.position.set(x,1.35*s,z); g.add(p); }
   // Canopy: sliced curved tiles (same idea as the cottage roof).
   for(const t of barrelShingles(.82*s,2.65*s,{tile:.34,material:mat.roof,material2:mat.darkWood})){ t.position.y+=2.3*s; g.add(t); }
   return g;
@@ -458,6 +492,15 @@ function createTree(s=1){ const g=new THREE.Group(); g.name='Tree';
     const b=markPiece(new THREE.Mesh(new THREE.CylinderGeometry(r,r*1.1,seg*0.98,8), i%2?mat.wood:mat.darkWood));
     b.position.set(bx,y,bz); g.add(b);
   }
+  // Six real branches connect the trunk to the canopy so leaf clusters do not
+  // hover as an unrelated cloud. TubeGeometry gives each branch an exact path.
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2, reach=(.62+(i%2)*.12)*s;
+    const branch=markPiece(tube([
+      new THREE.Vector3(.08*Math.sin(i),1.35*s,.04*Math.cos(i)),
+      new THREE.Vector3(Math.cos(a)*reach*.45,1.72*s+(i%3)*.08*s,Math.sin(a)*reach*.45),
+      new THREE.Vector3(Math.cos(a)*reach,1.92*s+(i%3)*.11*s,Math.sin(a)*reach)
+    ],.052*s,mat.darkWood,28)); g.add(branch);
+  }
   // Canopy: many small leaf clusters on a deterministic (fibonacci) dome — they
   // reveal after the trunk (higher up), so leaves appear once the trunk is there.
   const topY=H*0.9, R=1.0*s, leaves=Math.max(18,Math.round(26*s));
@@ -481,7 +524,7 @@ function createCart(s=1){ const g=new THREE.Group(); g.name='Cart';
   const handle=markPiece(cyl(.05*s,1.35*s,mat.darkWood,12)); handle.position.set(1.55*s,1.05*s,0); handle.rotation.z=Math.PI*0.33; g.add(handle);
   return g;
 }
-function createCampfire(){ const g=new THREE.Group(); g.name='Campfire'; for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const s=new THREE.Mesh(new THREE.DodecahedronGeometry(.16,0),mat.stone); s.position.set(Math.cos(a)*.5,.14,Math.sin(a)*.5); g.add(s); } for(const a of [0,Math.PI/2]){ const log=cyl(.08,1,mat.wood,12); log.rotation.z=Math.PI/2; log.rotation.y=a; log.position.y=.22; g.add(log); } const f=new THREE.Mesh(new THREE.ConeGeometry(.3,.75,12),mat.flame); f.position.y=.6; g.add(f); const light=new THREE.PointLight(0xff8a20,1.4,6); light.position.y=1.1; g.add(light); return shadow(g); }
+function createCampfire(){ const g=new THREE.Group(); g.name='Campfire'; for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const s=new THREE.Mesh(new THREE.DodecahedronGeometry(.16,0),mat.stone); s.position.set(Math.cos(a)*.5,.14,Math.sin(a)*.5); g.add(s); } for(const a of [0,Math.PI/2]){ const log=cyl(.08,1,mat.wood,12); log.rotation.z=Math.PI/2; log.rotation.y=a; log.position.y=.22; g.add(log); } const f=new THREE.Mesh(new THREE.ConeGeometry(.3,.75,12),mat.flame); f.position.y=.6; f.userData.printEffect=true; g.add(f); const light=new THREE.PointLight(0xff8a20,1.4,6); light.position.y=1.1; light.userData.printEffect=true; g.add(light); return shadow(g); }
 function heroLayerPoints(layer,layers,segments,s){
   const t=layer/(layers-1), y=.055+t*1.34*s;
   // A printable, squat sculpt: a generous belly, grounded foot, soft neck and
@@ -557,7 +600,13 @@ function groundBuild(root){
   const lift=-box.min.y+.006; for(const child of root.children) child.position.y+=lift;
   return root;
 }
-function buildAtSize(recipe,s){ const root=recipe.sized ? recipe.create(s) : bakeScale(recipe.create(), s); return recipe.hero?root:groundBuild(root); }
+function fitBuildToBed(root){
+  root.updateMatrixWorld(true); const box=new THREE.Box3().setFromObject(root), size=new THREE.Vector3(); box.getSize(size);
+  const fit=Math.min(1,4.5/Math.max(.001,size.x),3.82/Math.max(.001,size.z));
+  if(fit<.999){ bakeScale(root,fit); root.userData.bedFit=fit; }
+  return root;
+}
+function buildAtSize(recipe,s){ const root=recipe.sized ? recipe.create(s) : bakeScale(recipe.create(), s); return recipe.hero?root:groundBuild(fitBuildToBed(groundBuild(root))); }
 
 let phase='ready', printedOnBed=null, carriedPreview=null, selected=null, selectionBox=null, pathGroup=null, liveBead=null, liveThread=null, idCounter=0, slotIndex=0;
 const placed=[]; const slots=[[0,2.7],[-4,2.4],[4,2.4],[-4,6],[4,6],[0,7.2],[-7,0],[7,0]];
@@ -566,10 +615,45 @@ function printDuration(recipe,parts){ const [w,d,h]=recipe.dims; const base=3000
 function setButtons(){ const busy=phase==='printing'||phase==='pickup-moving'; runButton.disabled=busy||phase==='printed-on-bed'; pickupButton.disabled=phase!=='printed-on-bed'; placeButton.disabled=phase!=='carried-preview'; recipeButtons.querySelectorAll('button').forEach(b=>{b.disabled=busy||phase==='printed-on-bed'}); }
 function setPhase(next){ phase=next; setState(next); setButtons(); }
 
+function geometryPrintPath(mesh){
+  const geometry=mesh.geometry, p=geometry.parameters||{};
+  geometry.computeBoundingBox(); const box=geometry.boundingBox, size=new THREE.Vector3(); box.getSize(size);
+  const points=[];
+  if(geometry.type==='TubeGeometry' && p.path?.getPoint){
+    const samples=Math.max(12,Math.min(72,p.tubularSegments||36));
+    for(let i=0;i<=samples;i++) points.push((p.path.getPointAt||p.path.getPoint).call(p.path,i/samples,new THREE.Vector3()));
+    return points;
+  }
+  if(geometry.type==='CylinderGeometry' || geometry.type==='ConeGeometry'){
+    const height=p.height||size.y, top=p.radiusTop??0, bottom=p.radiusBottom??p.radius??Math.max(size.x,size.z)/2;
+    const radius=Math.max(top,bottom,.025), turns=Math.max(2,Math.min(12,Math.round(height/Math.max(.08,radius*.42))));
+    const thetaStart=p.thetaStart||0, thetaLength=p.thetaLength||Math.PI*2, samples=turns*12;
+    for(let i=0;i<=samples;i++){ const t=i/samples, y=-height/2+height*t, r=THREE.MathUtils.lerp(bottom,top,t), a=thetaStart+thetaLength*turns*t; points.push(new THREE.Vector3(Math.sin(a)*r,y,Math.cos(a)*r)); }
+    return points;
+  }
+  if(geometry.type==='SphereGeometry' || geometry.type==='DodecahedronGeometry' || geometry.type==='IcosahedronGeometry'){
+    const cx=(box.min.x+box.max.x)/2, cy=(box.min.y+box.max.y)/2, cz=(box.min.z+box.max.z)/2;
+    const rx=size.x/2, ry=size.y/2, rz=size.z/2, turns=9, samples=72;
+    for(let i=0;i<=samples;i++){ const t=i/samples, ring=Math.sin(Math.PI*t), a=t*turns*Math.PI*2; points.push(new THREE.Vector3(cx+Math.cos(a)*rx*ring,cy-ry+size.y*t,cz+Math.sin(a)*rz*ring)); }
+    return points;
+  }
+  // Boxes, extrusions and irregular pieces use stacked perimeter contours in
+  // their own geometry space. Rotation/scale are applied after path creation.
+  const layers=Math.max(2,Math.min(9,Math.round(size.y/Math.max(.09,Math.min(size.x,size.z)*.45))));
+  const inset=Math.min(size.x,size.z)*.06, x0=box.min.x+inset, x1=box.max.x-inset, z0=box.min.z+inset, z1=box.max.z-inset;
+  for(let layer=0;layer<layers;layer++){
+    const y=box.min.y+size.y*(layer+.65)/layers, reverse=layer%2===1;
+    const loop=reverse?[new THREE.Vector3(x0,y,z0),new THREE.Vector3(x0,y,z1),new THREE.Vector3(x1,y,z1),new THREE.Vector3(x1,y,z0),new THREE.Vector3(x0,y,z0)]:[new THREE.Vector3(x0,y,z0),new THREE.Vector3(x1,y,z0),new THREE.Vector3(x1,y,z1),new THREE.Vector3(x0,y,z1),new THREE.Vector3(x0,y,z0)];
+    points.push(...loop);
+  }
+  return points;
+}
+
 function collectPartsLocal(root){
   root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1); root.updateMatrixWorld(true);
-  const parts=[];
+  const parts=[], rootInverse=root.matrixWorld.clone().invert();
   root.traverse((m)=>{
+    if(m.userData.printEffect){ m.visible=false; return; }
     if(!m.isMesh) return;
     m.userData.baseMaterial=m.material;
     m.userData.baseScale=m.scale.clone();
@@ -578,7 +662,10 @@ function collectPartsLocal(root){
     const box=m.geometry.boundingBox.clone().applyMatrix4(m.matrixWorld);
     const size=new THREE.Vector3(); box.getSize(size);
     if(size.x<.001||size.y<.001||size.z<.001) return;
-    parts.push({mesh:m,box,size,minY:box.min.y,weight:Math.max(.12,size.x*size.y*size.z)});
+    const relative=rootInverse.clone().multiply(m.matrixWorld), path=geometryPrintPath(m).map(point=>point.applyMatrix4(relative));
+    let pathLength=0; for(let i=1;i<path.length;i++) pathLength+=path[i-1].distanceTo(path[i]);
+    const drawCount=m.geometry.index?.count||m.geometry.attributes.position?.count||0;
+    parts.push({mesh:m,box,size,path,drawCount,pathReveal:m.geometry.type==='TubeGeometry',minY:box.min.y,weight:Math.max(.12,size.x*size.y*size.z,pathLength*.018)});
     m.visible=false;
   });
   // Print order: bottom-up in layers, and WITHIN each layer sweep around the
@@ -597,6 +684,9 @@ function revealPart(part,fraction){
   // Fresh piece glows hot (molten) while depositing, then sits at its solid colour.
   m.material = fraction<1 ? mat.hot : m.userData.baseMaterial;
   m.position.copy(m.userData.basePosition);
+  if(part.pathReveal){
+    m.scale.copy(m.userData.baseScale); const count=fraction>=1?part.drawCount:Math.max(6,Math.floor(part.drawCount*fraction/6)*6); m.geometry.setDrawRange(0,count); return;
+  }
   if(fraction>=1){ m.scale.copy(m.userData.baseScale); return; }
   const bs=m.userData.baseScale;
   const big = part.size.y>0.5 && Math.abs(m.rotation.x)<.2 && Math.abs(m.rotation.z)<.2;
@@ -611,10 +701,11 @@ function revealPart(part,fraction){
   }
 }
 function revealParts(parts,activeIndex,localT){ const COOL=6; parts.forEach((p,i)=>{ if(i<activeIndex){ revealPart(p,1); const age=activeIndex-i; if(age<=COOL) p.mesh.material=(age<=2?mat.hot:mat.warm); } else if(i===activeIndex) revealPart(p,localT); else p.mesh.visible=false; }); }
-function restoreFinal(root){ root.traverse(m=>{ if(m.isMesh){ m.visible=true; if(m.userData.baseMaterial)m.material=m.userData.baseMaterial; if(m.userData.baseScale)m.scale.copy(m.userData.baseScale); if(m.userData.basePosition)m.position.copy(m.userData.basePosition); } }); }
+function restoreFinal(root){ root.traverse(m=>{ if(m.userData.printEffect)m.visible=true; if(m.isMesh){ m.visible=true; m.geometry.setDrawRange(0,Infinity); if(m.userData.baseMaterial)m.material=m.userData.baseMaterial; if(m.userData.baseScale)m.scale.copy(m.userData.baseScale); if(m.userData.basePosition)m.position.copy(m.userData.basePosition); } }); }
 function setGhost(root,on){ root.traverse(m=>{ if(!m.isMesh)return; m.userData.finalMaterial ||= m.material; m.material=on?mat.ghost:m.userData.finalMaterial; }); }
 
 function partPath(part,localT){
+  if(part.path?.length>1){ const cursor=clamp01(localT)*(part.path.length-1), index=Math.min(part.path.length-2,Math.floor(cursor)); return part.path[index].clone().lerp(part.path[index+1],cursor-index); }
   const b=part.box, s=part.size;
   const cx=(b.min.x+b.max.x)/2, cz=(b.min.z+b.max.z)/2;
   const w=Math.max(s.x*.55,.08), d=Math.max(s.z*.55,.08);
@@ -641,6 +732,12 @@ function positionMachine(p,clearance=0){
 }
 function segment(a,b,material,r=.024){ if(a.distanceTo(b)<.012)return null; return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([a,b]),5,r,8),material); }
 function drip(a,b){ const mid=a.clone().lerp(b,.5), len=a.distanceTo(b); const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,Math.max(.05,len),8),mat.freshGreen); mesh.position.copy(mid); mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize()); return mesh; }
+function travelPoint(from,to,t,hop=.24){
+  t=clamp01(t); const a=from.clone(), b=to.clone(), raisedA=from.clone().add(new THREE.Vector3(0,hop,0)), raisedB=to.clone().add(new THREE.Vector3(0,hop,0));
+  if(t<.22) return a.lerp(raisedA,t/.22);
+  if(t<.78) return raisedA.lerp(raisedB,(t-.22)/.56);
+  return raisedB.lerp(b,(t-.78)/.22);
+}
 
 function clearSelection(){ if(selectionBox){ scene.remove(selectionBox); selectionBox.geometry.dispose(); selectionBox.material.dispose(); selectionBox=null; } selected=null; setTarget(carriedPreview?`preview ${carriedPreview.userData.label}`:printedOnBed?`${printedOnBed.userData.label} on printer bed`:'none'); }
 function selectPlaced(obj){ clearSelection(); selected=obj; const box=new THREE.Box3().setFromObject(obj), size=new THREE.Vector3(), center=new THREE.Vector3(); box.getSize(size); box.getCenter(center); selectionBox=new THREE.Mesh(new THREE.BoxGeometry(size.x+.18,size.y+.18,size.z+.18),mat.select); selectionBox.position.copy(center); scene.add(selectionBox); setTarget(`${obj.userData.label} #${obj.userData.id}`); }
@@ -746,7 +843,7 @@ async function startPrint(recipe){
   const parts=collectPartsLocal(obj);
   obj.position.copy(bedWorld()); scene.add(obj); printedOnBed=obj;
   const duration=printDuration(recipe,parts);
-  setStatus(`v2e printing ${recipe.label}: sliced into ${parts.length} small pieces, ${(duration/1000).toFixed(1)}s. Printing piece by piece, bottom-up.`);
+  setStatus(`v2h printing ${recipe.label}: ${parts.length} geometry-following paths with dry travel between pieces, ${(duration/1000).toFixed(1)}s.`);
   pathGroup=new THREE.Group(); scene.add(pathGroup);
   liveBead=new THREE.Mesh(new THREE.SphereGeometry(.11,16,10),mat.freshOrange); scene.add(liveBead);
   const depositLight=new THREE.PointLight(0xff6a1a, 1.25, 3.2); scene.add(depositLight); // molten heat glow at the print front
@@ -754,16 +851,22 @@ async function startPrint(recipe){
   const startC=carriage.position.clone(), startG=gantry.position.clone(), startX=xAxis.position.clone();
   const total=parts.reduce((sum,p)=>sum+p.weight,0);
   const checkpoints=[]; let acc=0;
-  for(const p of parts){ checkpoints.push({start:acc/total,end:(acc+p.weight)/total,part:p}); acc+=p.weight; }
+  for(let i=0;i<parts.length;i++){ const p=parts[i], previous=i?parts[i-1]:null; checkpoints.push({start:acc/total,end:(acc+p.weight)/total,part:p,travelFrom:previous?.path?.at(-1)||new THREE.Vector3(0,2.25,0),travelTo:p.path?.[0]||new THREE.Vector3()}); acc+=p.weight; }
   const t0=performance.now(); let prev=null,lastEmit=0,segCount=0,lastActive=-1;
   await new Promise(resolve=>{
     function step(now){
       const raw=clamp01((now-t0)/duration);
       let active=checkpoints.findIndex(c=>raw>=c.start&&raw<=c.end); if(active<0)active=checkpoints.length-1;
-      const c=checkpoints[active]; const localT=clamp01((raw-c.start)/Math.max(.0001,c.end-c.start));
+      const c=checkpoints[active]; const localT=clamp01((raw-c.start)/Math.max(.0001,c.end-c.start)), TRAVEL=.16;
       if(active!==lastActive){ prev=null; lastActive=active; }
-      revealParts(parts,active,localT);
-      const p=partPath(c.part,localT);
+      if(localT<TRAVEL){
+        revealParts(parts,active,0); const p=travelPoint(c.travelFrom,c.travelTo,localT/TRAVEL);
+        positionMachine(p,.04); liveBead.visible=false; depositLight.intensity=0;
+        if(liveThread){scene.remove(liveThread);liveThread=null;}
+        if(raw<1) requestAnimationFrame(step); else resolve(); return;
+      }
+      const extrusionT=clamp01((localT-TRAVEL)/(1-TRAVEL)); revealParts(parts,active,extrusionT);
+      const p=partPath(c.part,extrusionT); liveBead.visible=true;
       positionMachine(p,.035);
       spool.rotation.x+=.045;
       const bedP=bedWorld(p), noz=nozzleWorld();
@@ -921,7 +1024,7 @@ function updatePlayerAndCamera(){
   }
 }
 
-function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const {carriage,gantry,xAxis,spool}=printer.userData; carriage.position.set(Math.sin(now*.0011)*.45,0,0); gantry.position.y=3.7; xAxis.position.z=.28+Math.cos(now*.0009)*.14; spool.rotation.x+=.008; } updatePlayerAndCamera(); updateSelectionBox(); if(viewMode==='orbit') controls.update(); renderer.render(scene,camera); }
+function animate(now){ requestAnimationFrame(animate); if(phase==='ready'){ const {carriage,gantry,xAxis,spool}=printer.userData; carriage.position.set(Math.sin(now*.0011)*.45,0,0); gantry.position.y=3.7; xAxis.position.z=.28+Math.cos(now*.0009)*.14; spool.rotation.x+=.008; } updatePrinterMechanics(); updatePlayerAndCamera(); updateSelectionBox(); if(viewMode==='orbit') controls.update(); renderer.render(scene,camera); }
 setPhase('ready'); setTarget('none'); setStatus(`${BUILD}. Start with Hero Layered Form for the grounded contour-printing proof.`); animate(performance.now());
 
 // Optional deep-link: /?auto=<recipe id or alias> auto-starts that print on load

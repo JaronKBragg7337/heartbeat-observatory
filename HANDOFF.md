@@ -875,3 +875,16 @@ Jaron's phone walk is the true frame test — per the house law, live tests outr
 **Next up:** explicit paths/contours for remaining promoted recipes, then belts/pulleys and a carriage-following filament guide.
 
 ---
+## 2026-07-10 — Codex — World Printer v2h geometry paths + driven mechanics
+
+**State:** v2g fixed nozzle truth and the hero, but non-hero pieces still used axis-aligned bounding-box scribbles and the machine lacked visible drive relationships.
+
+**Shipped:** geometry-local toolpaths transformed through each mesh's real hierarchy: TubeGeometry centreline paths with draw-range reveal, cylinder/cone helices, sphere/polyhedron latitude spirals, and stacked perimeter fallback paths. Every disconnected piece now gets an extrusion-off lift/cross/descent. Added four moving Z collars, depth saddles/belts/pulleys, an X belt with visible witness motion, and a reusable carriage-following PTFE filament guide. Added deterministic glass-bed fitting for oversized non-hero recipes, connected Stall posts and Tree branches, and made Campfire flame/light completion-only effects.
+
+**Verified:** build pass; Boat mid/final exact-curve reveal and restoration; Creature final; connected Tree final; Large Cottage bed fit; Campfire effect lifecycle; 390×844 Boat/Hero motion; build-free Heartbeat syntax/boot; zero JavaScript errors. Detailed lab handoff: `docs/HANDOFF_2026-07-10_V2H_PATHS_MECHANICS.md`.
+
+**Rollback:** lab parent `99e51a6`; Heartbeat parent `d999039`.
+
+**Next up:** native contour stacks for Creature body/eyes and complex roofs, then older-iPhone profiling.
+
+---
