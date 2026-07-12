@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Data Center — Repo Memory Linker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#05070c;font-family:'Segoe UI',system-ui,sans-serif;color:#cfe3ff}
+  #app{position:fixed;inset:0}
+  #hud{position:fixed;top:0;left:0;right:0;padding:10px 16px;display:flex;gap:14px;align-items:center;
+       background:linear-gradient(180deg,rgba(4,8,16,.92),rgba(4,8,16,0));pointer-events:none;z-index:5}
+  #hud h1{font-size:15px;margin:0;letter-spacing:2px;color:#7fd4ff;text-transform:uppercase}
+  #hud .sub{font-size:11px;color:#6d86a8}
+  #tip{position:fixed;pointer-events:none;z-index:9;display:none;max-width:340px;background:rgba(6,12,24,.95);
+       border:1px solid #1e4a6e;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.45;box-shadow:0 6px 24px rgba(0,0,0,.6)}
+  #tip .t{color:#8fe0ff;font-weight:700;font-size:13px;margin-bottom:2px}
+  #tip .s{color:#9fb4d0}
+  #tip .st{display:inline-block;margin:3px 0 6px;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700}
+  #tip .hint{color:#5f7d9e;font-size:10px;margin-top:6px}
+  #panel{position:fixed;top:52px;right:10px;bottom:10px;width:270px;z-index:6;background:rgba(5,10,20,.88);
+         border:1px solid #14324e;border-radius:10px;display:flex;flex-direction:column;backdrop-filter:blur(4px)}
+  #panel header{padding:9px 12px;border-bottom:1px solid #14324e;font-size:12px;color:#7fd4ff;letter-spacing:1px}
+  #panel input{margin:8px 10px 4px;padding:6px 9px;background:#0a1626;border:1px solid #1a3a5c;border-radius:6px;color:#cfe3ff;font-size:12px;outline:none}
+  #list{flex:1;overflow-y:auto;padding:6px 8px}
+  #list .cat{font-size:10px;color:#4f7196;letter-spacing:1.5px;text-transform:uppercase;margin:9px 4px 3px}
+  #list a{display:flex;align-items:center;gap:7px;padding:4px 6px;border-radius:6px;color:#b9d2ef;font-size:12px;text-decoration:none;cursor:pointer}
+  #list a:hover{background:#0e2138;color:#e6f3ff}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  #foot{position:fixed;left:12px;bottom:10px;z-index:6;font-size:11px;color:#5f7d9e;background:rgba(5,10,20,.7);padding:6px 10px;border-radius:8px}
+  #toggle{position:fixed;top:56px;right:12px;z-index:7;display:none;background:#0a1626;border:1px solid #1a3a5c;color:#7fd4ff;border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer}
+  @media (max-width:760px){#panel{display:none}#toggle{display:block}#panel.open{display:flex;left:10px;width:auto}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="hud">
+  <h1>⚡ The Data Center</h1>
+  <div class="sub">every machine is a repository — click one to open it · verified live map for Zeus AI &amp; friends</div>
+</div>
+<button id="toggle">☰ repos</button>
+<div id="panel">
+  <header>REPOSITORY DIRECTORY</header>
+  <input id="q" placeholder="search repos…">
+  <div id="list"></div>
+</div>
+<div id="tip"></div>
+<div id="foot">drag = orbit · scroll = zoom · WASD = walk · click machine = open repo</div>
+
+<script type="importmap">
+{"imports":{"three":"/3DPrinterAsset/vendor/three.module.min.js",
+"three/addons/controls/OrbitControls.js":"/3DPrinterAsset/vendor/OrbitControls.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+async function loadManifest(){
+  const urls=['https://raw.githubusercontent.com/JaronKBragg7337/Summary-Of-repos-Memory-linker/main/repos.json',
+              'https://raw.githubusercontent.com/JaronKBragg7337/Summary-Of-repos-Memory-linker/claude/repo-summary-3d-hub-jafi60/repos.json'];
+  for(const u of urls){try{const r=await fetch(u);if(r.ok)return await r.json();}catch(e){}}
+  return (window.REPO_DATA)||{repos:[]};
+}
+window.REPO_DATA = await loadManifest();
+const DATA = window.REPO_DATA.repos || [];
+const STATUS_COLOR = {LIVE:0x2bff88,'LIVE-DEGRADED':0xffa22b,ACTIVE:0x3fa9ff,DESIGN:0xb28cff,ARCHIVE:0x8a97a8,EMPTY:0x39424e};
+const STATUS_TXT = {LIVE:'LIVE','LIVE-DEGRADED':'LIVE — DEGRADED',ACTIVE:'ACTIVE',DESIGN:'DESIGN / SPEC',ARCHIVE:'ARCHIVE',EMPTY:'EMPTY'};
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05070c);
+scene.fog = new THREE.Fog(0x05070c, 40, 120);
+
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 300);
+camera.position.set(0, 5.5, 14);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+document.getElementById('app').appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0,3.2,-14);
+controls.maxPolarAngle = Math.PI/2 - .02;
+controls.maxDistance = 55; controls.enableDamping = true;
+
+// ---------- room ----------
+const ROOM_W = 64, ROOM_D = 74, ROOM_H = 10;
+const floorTex = (()=>{ // procedural raised-floor tiles
+  const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
+  g.fillStyle='#0b1119';g.fillRect(0,0,256,256);
+  g.strokeStyle='#182636';g.lineWidth=3;g.strokeRect(2,2,252,252);
+  g.fillStyle='#0e1520';g.fillRect(8,8,240,240);
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(ROOM_W/4,ROOM_D/4);return t;})();
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W,ROOM_D),
+  new THREE.MeshStandardMaterial({map:floorTex,roughness:.85,metalness:.25}));
+floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+
+const wallMat = new THREE.MeshStandardMaterial({color:0x0a111c,roughness:.9,metalness:.1,side:THREE.BackSide});
+const room = new THREE.Mesh(new THREE.BoxGeometry(ROOM_W,ROOM_H,ROOM_D), wallMat);
+room.position.y=ROOM_H/2-0.01; scene.add(room);
+
+// ceiling light strips
+const stripMat = new THREE.MeshBasicMaterial({color:0xbfe6ff});
+for(let z=-30; z<=30; z+=10){
+  const strip=new THREE.Mesh(new THREE.BoxGeometry(ROOM_W*.7,.1,.5),stripMat);
+  strip.position.set(0,ROOM_H-.3,z); scene.add(strip);
+  const pl=new THREE.PointLight(0x9fd0ff,60,34,1.6); pl.position.set(0,ROOM_H-1,z); scene.add(pl);
+}
+scene.add(new THREE.AmbientLight(0x4a608a,1.6));
+scene.add(new THREE.HemisphereLight(0x9fc8ff,0x1a2433,1.1));
+const key=new THREE.DirectionalLight(0x8fb8ff,1.1); key.position.set(12,18,8); key.castShadow=true; scene.add(key);
+
+// ---------- machine builders ----------
+const clickable=[]; const ledStates=[];
+function labelSprite(text,color='#bfe6ff'){
+  const c=document.createElement('canvas');c.width=512;c.height=128;const g=c.getContext('2d');
+  g.font='700 44px Segoe UI, sans-serif';g.textAlign='center';
+  g.shadowColor='rgba(0,180,255,.8)';g.shadowBlur=18;g.fillStyle=color;
+  let t=text.length>22?text.slice(0,21)+'…':text;
+  g.fillText(t,256,80);
+  const tex=new THREE.CanvasTexture(c);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));
+  s.scale.set(6,1.5,1); return s;
+}
+function ledPanel(w,h,statusColor){
+  // canvas of blinking leds
+  const c=document.createElement('canvas');c.width=128;c.height=256;const g=c.getContext('2d');
+  const tex=new THREE.CanvasTexture(c);
+  const draw=(t)=>{g.fillStyle='#050a10';g.fillRect(0,0,128,256);
+    for(let i=0;i<10;i++)for(let j=0;j<5;j++){
+      const on=Math.sin(t*.002+i*1.7+j*2.9)>((i+j)%3)*.3-.2;
+      g.fillStyle=on?(Math.random()<.06?'#ff9d2b':'#37f27f'):'#0d2233';
+      g.fillRect(14+j*20,14+i*23,10,6);}
+    // status bar
+    g.fillStyle='#'+statusColor.toString(16).padStart(6,'0');g.fillRect(8,238,112,10);
+    tex.needsUpdate=true;};
+  ledStates.push(draw);
+  return new THREE.MeshBasicMaterial({map:tex});
+}
+function baseBox(w,h,d,color){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({color,roughness:.55,metalness:.6}));
+  m.castShadow=true;m.receiveShadow=true;return m;}
+
+function makeRack(r){ // server rack (games)
+  const g=new THREE.Group();
+  const body=baseBox(2.2,5,2.2,0x10202f); body.position.y=2.5; g.add(body);
+  const front=new THREE.Mesh(new THREE.PlaneGeometry(1.8,4.4),ledPanel(1.8,4.4,STATUS_COLOR[r.status]));
+  front.position.set(0,2.5,1.12); g.add(front);
+  const trim=new THREE.Mesh(new THREE.BoxGeometry(2.3,.12,2.3),new THREE.MeshBasicMaterial({color:STATUS_COLOR[r.status]}));
+  trim.position.y=5.05; g.add(trim);
+  const lab=labelSprite(r.name); lab.position.y=6.1; g.add(lab);
+  return g;}
+function makeStorage(r){ // storage array (memory)
+  const g=new THREE.Group();
+  const body=baseBox(3.2,3.4,1.8,0x152a24); body.position.y=1.7; g.add(body);
+  for(let i=0;i<4;i++){const tray=new THREE.Mesh(new THREE.BoxGeometry(2.9,.5,.1),
+      new THREE.MeshStandardMaterial({color:0x0c1a16,emissive:STATUS_COLOR[r.status],emissiveIntensity:.28}));
+    tray.position.set(0,.7+i*.75,.95); g.add(tray);}
+  const lab=labelSprite(r.name,'#9fffce'); lab.position.y=4.4; g.add(lab);
+  return g;}
+function makeSwitch(r){ // network switch (bridges)
+  const g=new THREE.Group();
+  const pole=baseBox(.4,4.6,.4,0x1a2432); pole.position.y=2.3; g.add(pole);
+  const box=baseBox(2.8,1.4,1,0x14273c); box.position.y=3.4; g.add(box);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(2.5,1.1),ledPanel(2.5,1.1,STATUS_COLOR[r.status]));
+  face.position.set(0,3.4,.52); g.add(face);
+  const lab=labelSprite(r.name,'#c9b8ff'); lab.position.y=5.2; g.add(lab);
+  return g;}
+function makeTape(r){ // tape library (writings)
+  const g=new THREE.Group();
+  const body=baseBox(2.6,4.2,1.6,0x241f2e); body.position.y=2.1; g.add(body);
+  const win=new THREE.Mesh(new THREE.PlaneGeometry(1.9,3.2),
+    new THREE.MeshStandardMaterial({color:0x0b0912,emissive:0x6a4de0,emissiveIntensity:.35,roughness:.2,metalness:.4}));
+  win.position.set(0,2.2,.82); g.add(win);
+  for(let i=0;i<5;i++){const reel=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.06,20),
+      new THREE.MeshStandardMaterial({color:0x2c2440,emissive:STATUS_COLOR[r.status],emissiveIntensity:.35}));
+    reel.rotation.x=Math.PI/2;reel.position.set(-.6+(i%3)*.6,1.2+Math.floor(i/3)*1.4,.86);g.add(reel);}
+  const lab=labelSprite(r.name,'#d8c6ff'); lab.position.y=5.1; g.add(lab);
+  return g;}
+function makeCrac(r){ // cooling unit (agent/heartbeat systems)
+  const g=new THREE.Group();
+  const body=baseBox(2.8,4.6,2.4,0x0f2733); body.position.y=2.3; g.add(body);
+  const grill=new THREE.Mesh(new THREE.CircleGeometry(.95,24),
+    new THREE.MeshStandardMaterial({color:0x081820,emissive:STATUS_COLOR[r.status],emissiveIntensity:.25}));
+  grill.position.set(0,3.1,1.22); g.add(grill);
+  const fan=new THREE.Group();
+  for(let i=0;i<4;i++){const blade=new THREE.Mesh(new THREE.BoxGeometry(.14,.8,.03),
+      new THREE.MeshStandardMaterial({color:0x9fd8e8,metalness:.7,roughness:.3}));
+    blade.position.y=.4;const holder=new THREE.Group();holder.rotation.z=i*Math.PI/2;holder.add(blade);fan.add(holder);}
+  fan.position.set(0,3.1,1.24); fan.userData.spin=true; g.add(fan);
+  const lab=labelSprite(r.name,'#8fe9ff'); lab.position.y=5.4; g.add(lab);
+  return g;}
+function makeMainframe(r){ // ZEUS
+  const g=new THREE.Group();
+  const body=baseBox(4.4,7.5,4.4,0x101826); body.position.y=3.75; g.add(body);
+  for(const s of [-1,1]){const face=new THREE.Mesh(new THREE.PlaneGeometry(3.6,6.4),ledPanel(3.6,6.4,STATUS_COLOR[r.status]));
+    face.position.set(0,3.75,s*2.22); face.rotation.y=s<0?Math.PI:0; g.add(face);}
+  const crown=new THREE.Mesh(new THREE.BoxGeometry(4.7,.25,4.7),new THREE.MeshBasicMaterial({color:0xffd94a}));
+  crown.position.y=7.7; g.add(crown);
+  const bolt=labelSprite('⚡ ZEUS-AI ⚡','#ffe27a'); bolt.scale.set(9,2.2,1); bolt.position.y=9.2; g.add(bolt);
+  const halo=new THREE.PointLight(0xffd94a,30,18,1.6); halo.position.y=8.4; g.add(halo);
+  return g;}
+function makeConsole(r){ // control console (this repo)
+  const g=new THREE.Group();
+  const desk=baseBox(3.4,1.1,1.4,0x18202e); desk.position.y=.55; g.add(desk);
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(3,1.5),
+    new THREE.MeshStandardMaterial({color:0x061422,emissive:0x2bffd0,emissiveIntensity:.5}));
+  scr.position.set(0,2,-.2); scr.rotation.x=-.28; g.add(scr);
+  const lab=labelSprite('MEMORY LINKER','#7dffd9'); lab.position.y=3.2; g.add(lab);
+  return g;}
+function makeSpare(r){ // empty repo — dark rack
+  const g=new THREE.Group();
+  const body=baseBox(2.2,5,2.2,0x0a0f16); body.position.y=2.5; g.add(body);
+  const lab=labelSprite(r.name,'#5a6b80'); lab.position.y=6.1; g.add(lab);
+  return g;}
+const BUILDERS={rack:makeRack,storage:makeStorage,switch:makeSwitch,tape:makeTape,crac:makeCrac,mainframe:makeMainframe,console:makeConsole,spare:makeSpare};
+
+// ---------- layout ----------
+function place(r, x, z, ry=0){
+  const g=BUILDERS[r.machine](r);
+  g.position.set(x,0,z); g.rotation.y=ry;
+  g.traverse(o=>{o.userData.repo=r;});
+  scene.add(g); clickable.push(g);
+}
+const byM=(m)=>DATA.filter(r=>r.machine===m);
+// rows of game racks — two aisles down the middle
+const racks=byM('rack');
+racks.forEach((r,i)=>{const col=i%2, row=Math.floor(i/2);
+  place(r, col? 5.5 : -5.5, -26+row*7, col?-Math.PI/2:Math.PI/2);});
+// spare (empty) racks at the far ends of the aisles
+byM('spare').forEach((r,i)=>place(r, i%2? 5.5:-5.5, 14+Math.floor(i/2)*7, i%2?-Math.PI/2:Math.PI/2));
+// mainframe: center back
+byM('mainframe').forEach(r=>place(r,0,-33));
+// cooling units along left wall
+byM('crac').forEach((r,i)=>place(r,-28,-27+i*7.5,Math.PI/2));
+// storage arrays along right wall
+byM('storage').forEach((r,i)=>place(r,28,-28+i*6.5,-Math.PI/2));
+// network switches: front-left cluster
+byM('switch').forEach((r,i)=>place(r,-24+(i%3)*6,24+Math.floor(i/3)*7));
+// tape libraries: front-right arc
+byM('tape').forEach((r,i)=>{const n=byM('tape').length;const a=Math.PI*.2+ (i/(n-1))*Math.PI*.6;
+  place(r, 12+Math.cos(a)*13.5, 22+Math.sin(a)*11, -a+Math.PI/2);});
+// console near entrance center
+byM('console').forEach(r=>place(r,0,30,Math.PI));
+
+// ---------- interaction ----------
+const ray=new THREE.Raycaster(), mouse=new THREE.Vector2();
+const tip=document.getElementById('tip');
+let hovered=null, downAt=null;
+function pick(ev){
+  const x=ev.clientX??(ev.touches&&ev.touches[0].clientX), y=ev.clientY??(ev.touches&&ev.touches[0].clientY);
+  if(x==null)return null;
+  mouse.set(x/innerWidth*2-1, -(y/innerHeight)*2+1);
+  ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObjects(clickable,true);
+  for(const h of hits){let o=h.object;while(o&&!o.userData.repo)o=o.parent;if(o&&o.userData.repo)return {repo:o.userData.repo,x,y};}
+  return null;}
+addEventListener('pointermove',ev=>{
+  const p=pick(ev);
+  if(p){document.body.style.cursor='pointer';
+    const r=p.repo,c='#'+STATUS_COLOR[r.status].toString(16).padStart(6,'0');
+    tip.style.display='block';
+    tip.style.left=Math.min(p.x+16,innerWidth-360)+'px'; tip.style.top=Math.min(p.y+14,innerHeight-180)+'px';
+    tip.innerHTML=`<div class="t">${r.name}</div>
+      <span class="st" style="background:${c}22;color:${c};border:1px solid ${c}55">● ${STATUS_TXT[r.status]}</span>
+      <div class="s">${r.summary.split('. ').slice(0,2).join('. ')}.</div>
+      <div class="hint">click → open ${r.url.replace('https://','')}</div>`;
+    hovered=r;
+  } else {document.body.style.cursor='';tip.style.display='none';hovered=null;}
+});
+addEventListener('pointerdown',ev=>{downAt=[ev.clientX,ev.clientY];});
+addEventListener('pointerup',ev=>{
+  if(!downAt)return;
+  const moved=Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1]); downAt=null;
+  if(moved>6)return; // was a drag
+  const p=pick(ev); if(p) open(p.repo.url,'_blank');
+});
+
+// WASD walk
+const keys={};
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function walk(dt){
+  const sp=(keys.shift?22:11)*dt;
+  const fwd=new THREE.Vector3();camera.getWorldDirection(fwd);fwd.y=0;fwd.normalize();
+  const rt=new THREE.Vector3().crossVectors(fwd,new THREE.Vector3(0,1,0));
+  const mv=new THREE.Vector3();
+  if(keys.w)mv.add(fwd); if(keys.s)mv.sub(fwd); if(keys.d)mv.add(rt); if(keys.a)mv.sub(rt);
+  if(mv.lengthSq()){mv.normalize().multiplyScalar(sp);camera.position.add(mv);controls.target.add(mv);}
+}
+
+// ---------- directory panel ----------
+const list=document.getElementById('list'), q=document.getElementById('q');
+function renderList(filter=''){
+  const f=filter.toLowerCase(); list.innerHTML='';
+  const cats={}; DATA.forEach(r=>{(cats[r.category]??=[]).push(r);});
+  for(const [cat,rs] of Object.entries(cats)){
+    const vis=rs.filter(r=>r.name.toLowerCase().includes(f)||r.summary.toLowerCase().includes(f));
+    if(!vis.length)continue;
+    const h=document.createElement('div');h.className='cat';h.textContent=cat;list.appendChild(h);
+    for(const r of vis){
+      const a=document.createElement('a');a.href=r.url;a.target='_blank';
+      const c='#'+STATUS_COLOR[r.status].toString(16).padStart(6,'0');
+      a.innerHTML=`<span class="dot" style="background:${c};box-shadow:0 0 6px ${c}"></span>${r.name}`;
+      list.appendChild(a);}}}
+renderList(); q.addEventListener('input',()=>renderList(q.value));
+document.getElementById('toggle').onclick=()=>document.getElementById('panel').classList.toggle('open');
+
+// ---------- animate ----------
+const spinners=[]; scene.traverse(o=>{if(o.userData.spin)spinners.push(o);});
+const clock=new THREE.Clock();
+function loop(){
+  requestAnimationFrame(loop);
+  const dt=Math.min(clock.getDelta(),.05), t=performance.now();
+  if((loop.f=(loop.f||0)+1)%3===0) ledStates.forEach(d=>d(t));
+  spinners.forEach(f=>f.rotation.z+=dt*4);
+  walk(dt); controls.update();
+  renderer.render(scene,camera);
+}
+loop();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>
