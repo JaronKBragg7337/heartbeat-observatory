@@ -3,7 +3,20 @@
 Consult this whenever Jaron asks for "realistic," "like downtown New York," "better
 textures," "make it look alive," or any aesthetic upgrade.
 
-## The principle (proven June 11, Marquee Row)
+## Owner direction — July 13, 2026: adult, grounded near-realism
+The Observatory town should read as an inhabited civic place made for adults, not a
+toy set. Use believable proportions, material separation, restrained color, mature
+landscaping, layered facades, and recognizable human silhouettes. The Blender-authored
+static town kit is the visual source of truth; live doors, collisions, project plots,
+people, feeds, and interaction remain truthful runtime systems in `engine/hub/main.js`.
+
+Near-realism here means coherent art direction and convincing detail at walking distance,
+not an unbounded photoreal asset dump. Static architecture and repeated street furniture
+should be merged and Draco-compressed. Hero details can be higher fidelity when their
+silhouette or use earns the cost. Phone readability and the existing 300-draw-call ceiling
+remain hard constraints.
+
+## The original principle (proven June 11, Marquee Row)
 **Chase ALIVE, not realistic.** A photoreal texture is still frozen; a low-poly city
 whose signs scroll real news and whose theater plays a real rocket launch feels more
 alive than photorealism, because the motion is TRUE. Realism is expensive on phones;

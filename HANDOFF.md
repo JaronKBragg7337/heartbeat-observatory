@@ -7,6 +7,20 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-07-13 — Codex — Blender-authored adult-realism town pass
+
+**State:** implemented and verified locally; intentionally not committed, pushed, or deployed without owner approval. Build/cache id is `2026-07-13-realism2` in both the hub module and HTML.
+
+**Shipped locally:** replaced the overlapping prototype town visuals with a coherent Blender-authored civic kit while preserving runtime doors, collision footprints, project plots, Supabase presence, rooms, feeds, and interactions. The kit contains differentiated brick/limestone/industrial/art-deco buildings, modeled facade lettering, mature multi-crown trees, lamps, benches, bins, planters, cafe furniture, fountain, bandstand, and an adult-proportioned reusable resident with gait pivots. Runtime materials add restrained brick, stone, asphalt, concrete, wood, bark, and roof detail with ACES lighting and a readable day/night cycle. Repo pavilions and all three live home styles were upgraded so Supabase-loaded spaces no longer reintroduce plain toy boxes. Close actor labels now clamp down near the camera, and new visitors enter from a clear south approach.
+
+**Blender/source:** `engine/hub/assets/source/heartbeat-town-realism-v1.blend` is the editable source; `tools/blender/generate_heartbeat_town_realism.py` regenerates the source, review render, and a 1.18 MB Draco GLB. The source is open in a separate Blender 5.1 window for inspection. Full provenance/regeneration notes are in `engine/hub/assets/README.md`; all shipped geometry/textures are repository-authored. Poly Haven's CC0 library was reviewed for later hero materials, but no third-party asset binary was mixed into v1.
+
+**Verified:** Blender 5.1 background generation and Draco export succeeded; `node --check engine/hub/main.js` passed; a fresh desktop session loaded the 30-mesh kit with no current warnings/errors; true phone emulation at 390×844 had content, no error overlay, no horizontal overflow (`scrollWidth: 390`), clean runtime errors, working Enter flow, and a visually clear first-person arrival. Supabase schema, RLS, and durable table data were not changed.
+
+**Next:** owner visual review, then intentionally commit/push to let Vercel deploy. A later v2 can selectively add CC0 hero materials or higher-detail signature props after phone-budget measurement; keep the authored kit coherent rather than mixing styles.
+
+---
+
 ## 2026-07-11 — Codex — World Printer v2i modular world-parts foundry
 
 **State:** shipped from lab commit `6559392` and vendored to `/3DPrinterAsset/` for public deployment.
