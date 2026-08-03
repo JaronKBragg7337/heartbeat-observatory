@@ -12,9 +12,9 @@ import {
   loadSurfaces as loadSurfaceTextures,
   surfaceReport as hbSurfaceReport,
   CARDS as HB_CARDS,
-} from "./surface.js?v=2026-08-03-surface4";
-import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface4";
-import { buildCanopy, canopyGeometry, leafMaterial } from "./foliage.js?v=2026-08-03-surface4";
+} from "./surface.js?v=2026-08-03-surface5";
+import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface5";
+import { buildCanopy, canopyGeometry, leafMaterial } from "./foliage.js?v=2026-08-03-surface5";
 
 const canvas = document.querySelector("#game");
 const overlay = document.querySelector("#overlay");
@@ -85,7 +85,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-08-03-surface4"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-08-03-surface5"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 // Declared up here, not beside installWindowAssemblies(): updateDayNight() runs
@@ -4833,18 +4833,25 @@ function addTree(x, z) {
     const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.07, 0.95, 8), trunkM);
     branch.position.set(bx * 0.55, by, bx * 0.24); branch.rotation.z = rz; branch.rotation.x = bx * 0.5; branch.castShadow = true; g.add(branch);
   }
+  // Unlike the town trees these crowns are ours to resize. With cards carrying
+  // the silhouette the spheres shrink to an interior shade core — left at full
+  // size they reach ±1.48 and swallow the cards, which is what made the tree
+  // read as two separate objects.
+  const crownShrink = useCards ? 0.62 : 1;
   const crowns = [[-0.55, 2.45, 0.05, 0.86], [0.53, 2.48, -0.06, 0.9], [-0.12, 2.62, -0.48, 0.84], [0.05, 2.7, 0.48, 0.8], [0, 3.05, 0, 1.06]];
   crowns.forEach(([cx, cy, cz, s], i) => {
-    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 1), leafMats[i % leafMats.length]);
-    crown.position.set(cx, cy, cz); crown.scale.set(1.08, 0.88, 0.96); crown.castShadow = true; g.add(crown);
+    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(s * crownShrink, 1), leafMats[i % leafMats.length]);
+    crown.position.set(cx * crownShrink, useCards ? 2.72 + (cy - 2.72) * crownShrink : cy, cz * crownShrink);
+    crown.scale.set(1.08, 0.88, 0.96); crown.castShadow = true; g.add(crown);
   });
   if (useCards) {
     try {
       // One merged mesh per placed tree — a placed prop can be removed at any
       // time, so it cannot join the static town canopy batch.
+      // Shell sits inside the shrunken crown mass (±0.92) and overhangs it.
       const geo = canopyGeometry({
-        cx: 0, cy: 2.72, cz: 0, rx: 1.05, ry: 0.72, rz: 1.0,
-        cards: canopyCardCount(), size: 1.05,
+        cx: 0, cy: 2.76, cz: 0, rx: 0.82, ry: 0.55, rz: 0.78,
+        cards: canopyCardCount(), size: 1.5,
         // Position-derived seed: the same spot always grows the same tree, on
         // every client, without needing to sync anything.
         seed: (Math.round(x * 73.3) * 2654435761 + Math.round(z * 91.7) * 40503) >>> 0,
@@ -4903,13 +4910,14 @@ function addPlanter(x, z) {
   const g = new THREE.Group(); g.position.set(x, 0, z);
   const tub = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.42, 0.7), boxM);
   tub.position.y = 0.21; tub.castShadow = true; tub.receiveShadow = true; g.add(tub);
-  const bush = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 9), greenM);
+  const bush = new THREE.Mesh(new THREE.SphereGeometry(useCards ? 0.30 : 0.42, 12, 9), greenM);
   bush.position.y = 0.68; bush.castShadow = true; g.add(bush);
   if (useCards) {
     try {
+      // Shell inside the 0.30 core, overhanging it by ~0.3 m.
       const geo = canopyGeometry({
-        cx: 0, cy: 0.70, cz: 0, rx: 0.34, ry: 0.24, rz: 0.34,
-        cards: 7, size: 0.44,
+        cx: 0, cy: 0.70, cz: 0, rx: 0.24, ry: 0.17, rz: 0.24,
+        cards: 8, size: 0.62,
         seed: (Math.round(x * 53.1) * 2246822519 + Math.round(z * 17.3) * 3266489917) >>> 0,
       });
       const cards = new THREE.Mesh(geo, leafMaterial(THREE, renderer));

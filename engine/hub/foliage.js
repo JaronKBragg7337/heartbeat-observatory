@@ -111,12 +111,22 @@ export function buildCanopy(material, cardsPerTree = CARDS_PER_TREE) {
   for (let t = 0; t < TREE_SPOTS.length; t++) {
     const [x, z] = TREE_SPOTS[t];
     const height = 4.6 + (t % 5) * 0.26;
-    const trunkH = height * 0.42;
-    // Crown centre and envelope, matching mature_tree()'s ico() placement.
+    // Card shell derived from the ACTUAL crown envelope in mature_tree(), not
+    // guessed. Solving that generator's ico() placement:
+    //   offsets  ox * h * 0.24 (|ox| <= 0.34), oy * h * 0.22 (|oy| <= 0.38)
+    //   radii    X = h*0.17*sz, Y = h*0.15*sy, Z = h*0.15*sz  (sz <= 0.96)
+    //   centres  trunk_h + h*(0.16 .. 0.24), trunk_h = 0.42h
+    // giving a crown mass of X radius 0.245h, Z 0.228h, spanning y 0.43h..0.81h.
+    //
+    // The first version put cards at 0.30h — OUTSIDE that 0.245h surface — so
+    // the smooth ball stayed visible with a leafy shell hovering off it. Cards
+    // must sit INSIDE the crown and overhang it: at 0.20h with a 0.36h card the
+    // outer reach is 0.38h, which clears the 0.245h crown by a good margin and
+    // makes the leaves, not the sphere, the silhouette.
     parts.push(canopyGeometry({
-      cx: x, cy: trunkH + height * 0.20, cz: z,
-      rx: height * 0.30, ry: height * 0.21, rz: height * 0.30,
-      cards: cardsPerTree, size: height * 0.30, seed: 20260803 + t * 7919,
+      cx: x, cy: height * 0.62, cz: z,
+      rx: height * 0.20, ry: height * 0.13, rz: height * 0.19,
+      cards: cardsPerTree, size: height * 0.36, seed: 20260803 + t * 7919,
     }));
   }
   const merged = mergeGeometries(parts, false);
