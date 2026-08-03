@@ -2,6 +2,17 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/DRACOLoader.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+// Aliased: main.js already has its own loadSurfaces(), which queries the
+// Supabase "surfaces" table for door status and is unrelated to materials.
+// NOTE: this ?v= must be bumped together with BUILD and the ?v= on main.js in
+// index.html. main.js being cache-busted does NOT bust its own imports — they
+// resolve to their own URLs and would otherwise be served stale.
+import {
+  surface as hbSurface,
+  loadSurfaces as loadSurfaceTextures,
+  surfaceReport as hbSurfaceReport,
+  CARDS as HB_CARDS,
+} from "./surface.js?v=2026-08-03-surface1";
 
 const canvas = document.querySelector("#game");
 const overlay = document.querySelector("#overlay");
@@ -72,7 +83,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-07-13-realism2"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-08-03-surface1"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 let settingsOpen = false;
@@ -187,6 +198,51 @@ renderer.shadowMap.enabled = window.HBDevice?.quality?.allowShadows !== false;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
+
+// Start pulling the surface atlas immediately — before any geometry is built —
+// so materials are populated by the time the first frames matter.
+loadSurfaceTextures(renderer);
+
+// Deterministic time-of-day for screenshots and regression diffing.
+// The day/night cycle is 300 s wall-clock, so two captures taken minutes apart
+// land at different sun elevations and cannot be compared. ?tod=0..1 pins it.
+// Dev-gated: players always get the live cycle.
+const HB_TOD = (() => {
+  try {
+    const host = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    const p = new URLSearchParams(location.search);
+    if (!host && p.get("dev") !== "1") return null;
+    const v = p.get("tod");
+    if (v === null) return null;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? ((n % 1) + 1) % 1 : null;
+  } catch (e) { return null; }
+})();
+
+// ?legacy=1 restores the pre-material-system look (hand-drawn canvas textures).
+// Kept so before/after can be captured from ONE build at ONE pinned sun angle,
+// differing only in the thing under test. Dev-gated.
+const HB_LEGACY = (() => {
+  try {
+    const host = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    const p = new URLSearchParams(location.search);
+    if (!host && p.get("dev") !== "1") return false;
+    return p.get("legacy") === "1";
+  } catch (e) { return false; }
+})();
+
+// ?cam=x,y,z,yaw,pitch — pin the camera for repeatable hero shots. Dev-gated.
+const HB_CAM = (() => {
+  try {
+    const host = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    const p = new URLSearchParams(location.search);
+    if (!host && p.get("dev") !== "1") return null;
+    const v = p.get("cam");
+    if (!v) return null;
+    const a = v.split(",").map(parseFloat);
+    return a.length >= 3 && a.every(Number.isFinite) ? a : null;
+  } catch (e) { return null; }
+})();
 
 const clock = new THREE.Clock();
 const worldBounds = 56;
@@ -319,6 +375,49 @@ renderAppearanceControls();
 buildTown();
 loadTownArtKit();
 initWorld();
+
+// ---- dev handle (doctrine Part 9.4) --------------------------------------
+// Read-only inspection surface so "I think the material is wrong" becomes a
+// measurement in one call. Enabled on localhost, or with ?dev=1 anywhere.
+try {
+  const devOn = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ||
+                new URLSearchParams(location.search).get("dev") === "1";
+  if (devOn) {
+    window.HB = {
+      THREE, scene, camera, renderer,
+      get player() { return state; },
+      surfaceReport: hbSurfaceReport,
+      cards: HB_CARDS,
+      /** Renderer counters — the honest draw-call and triangle numbers. */
+      renderStats() {
+        const i = renderer.info;
+        return { calls: i.render.calls, triangles: i.render.triangles,
+                 lines: i.render.lines, points: i.render.points,
+                 geometries: i.memory.geometries, textures: i.memory.textures,
+                 programs: i.programs ? i.programs.length : null };
+      },
+      /** Every distinct material in the scene, with its map and tile size. */
+      materials() {
+        const out = new Map();
+        scene.traverse((o) => {
+          if (!o.isMesh || !o.material) return;
+          for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
+            if (out.has(m.uuid)) { out.get(m.uuid).meshes++; continue; }
+            out.set(m.uuid, {
+              name: m.name || "(unnamed)", type: m.type, meshes: 1,
+              map: m.map && m.map.image ? `${m.map.image.width}x${m.map.image.height}` : (m.map ? "pending" : null),
+              normalMap: !!m.normalMap, roughnessMap: !!m.roughnessMap, aoMap: !!m.aoMap,
+              roughness: m.roughness, metalness: m.metalness,
+              color: m.color ? "#" + m.color.getHexString() : null,
+            });
+          }
+        });
+        return [...out.values()].sort((a, b) => b.meshes - a.meshes);
+      },
+    };
+    console.log("[HB] dev handle ready — window.HB");
+  }
+} catch (e) {}
 // ---- room + nudge state (must exist before animate() starts the render loop) ----
 const nudgeShown = { ghost: false, plot: false };
 try {
@@ -1917,7 +2016,7 @@ function pickSky(e) {
 function updateDayNight(dt) {
   if (!sunLight) return;
   const CYCLE = 300;
-  const t = ((Date.now() / 1000) % CYCLE) / CYCLE;
+  const t = HB_TOD !== null ? HB_TOD : ((Date.now() / 1000) % CYCLE) / CYCLE;
   const a = t * Math.PI * 2;
   const e = Math.sin(a);
   const horiz = Math.cos(a);
@@ -2156,6 +2255,14 @@ function updateLocal(dt) {
 }
 
 function updateCamera(dt) {
+  // Dev camera pin: ?cam=x,y,z,yaw,pitch (radians). The preview orbit is
+  // time-driven, so without this no two captures frame the same thing and a
+  // material change cannot be compared against itself.
+  if (HB_CAM) {
+    camera.position.set(HB_CAM[0], HB_CAM[1], HB_CAM[2]);
+    camera.rotation.set(HB_CAM[4] || 0, HB_CAM[3] || 0, 0);
+    return;
+  }
   if (!hasEntered) {
     previewAngle += dt * 0.085;
     const radius = 24;
@@ -3855,6 +3962,30 @@ function townTextureCanvas(kind) {
   return texture;
 }
 
+// Map a Blender material name to a projected photographic surface.
+// Returning null means "leave this material alone" — glass, signs, letters,
+// water, foliage and painted metal are deliberately not photographic.
+//
+// Grime heights are set from what the surface actually is: a wall collects dirt
+// over its bottom ~1.4 m, a kerb over 0.3 m, a roof not at all.
+function townArtSurfaceFor(name) {
+  if (!name || HB_LEGACY) return null;
+  if (name.includes("brick_red")) return hbSurface("brickRed", { grimeHeight: 1.4, grime: 0.5 });
+  // Dark engineering brick and buff brick are the same bond at different colour;
+  // tinting the red card handles dark, while buff is closer to the stone card.
+  if (name.includes("brick_dark")) return hbSurface("brickRed", { color: 0x6f6a66, grime: 0.6, grimeHeight: 1.6, gamma: 1.15 });
+  if (name.includes("brick_buff")) return hbSurface("stone", { grimeHeight: 1.4, grime: 0.45 });
+  if (name.includes("stone_limestone")) return hbSurface("limestone", { grime: 0.4, grimeHeight: 1.3, tile: [1.6, 1.6] });
+  if (name.includes("concrete_dark")) return hbSurface("concrete", { color: 0x8f9498, grime: 0.5, grimeHeight: 0.8 });
+  if (name.includes("concrete")) return hbSurface("concrete", { grime: 0.4, grimeHeight: 0.8, tile: [2.2, 2.2] });
+  if (name.includes("paving")) return hbSurface("paving", { grime: 0.3, grimeHeight: 0.4, dust: 0.2 });
+  if (name.includes("asphalt")) return hbSurface("asphalt", { grime: 0.25, grimeHeight: 0.3, dust: 0.35 });
+  if (name.includes("roof_slate")) return hbSurface("roof", { grime: 0, dust: 0.55, macro: 0.6 });
+  if (name.includes("wood_oak") || name.includes("door_wood")) return hbSurface("wood", { grime: 0.35, grimeHeight: 0.9 });
+  if (name.includes("tree_bark")) return hbSurface("bark", { local: true, grime: 0.3, grimeHeight: 1.0, tile: [0.9, 0.9] });
+  return null;
+}
+
 function styleTownArtMaterial(material) {
   if (!material || material.userData?.hbStyled) return;
   material.userData = material.userData || {};
@@ -3912,7 +4043,12 @@ function loadTownArtKit() {
       town.traverse((child) => {
         if (!child.isMesh) return;
         const materialName = String(child.material?.name || "").toLowerCase();
-        styleTownArtMaterial(child.material);
+        // Surfaces that carry a photographic card are REPLACED (surface() returns
+        // a new material); everything else keeps the original and is tweaked in
+        // place, so signs, glass, water and foliage behave exactly as before.
+        const projected = townArtSurfaceFor(materialName);
+        if (projected) child.material = projected;
+        else styleTownArtMaterial(child.material);
         child.castShadow = renderer.shadowMap.enabled && !materialName.includes("glass") && !materialName.includes("water");
         child.receiveShadow = !materialName.includes("sign_letters");
       });
@@ -4031,6 +4167,11 @@ function buildTown() {
   sun.shadow.camera.right = 32;
   sun.shadow.camera.top = 32;
   sun.shadow.camera.bottom = -32;
+  // Neither bias was set. Without them a 1024 map over a 64 m frustum
+  // (62.5 mm/texel) produces acne on every large flat surface — which the new
+  // photographic materials make far more visible than flat colour did.
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.035;
   scene.add(sun);
   sunLight = sun;
   sunDisc = new THREE.Mesh(new THREE.SphereGeometry(2.6, 18, 12), new THREE.MeshBasicMaterial({ color: 0xfff1c0, fog: false }));
@@ -4433,6 +4574,15 @@ function addGroundRect(x, z, width, depth, color) {
 }
 
 function makeGroundMaterial() {
+  // Photographic lawn projected at a measured 2 m tile. The previous version was
+  // a 256 px hand-drawn speckle stretched over 6.67 m per tile (~38 px/m), which
+  // is why the ground read as a flat green plane from any distance.
+  // Grime is off: a lawn does not accumulate dirt toward y=0, it IS y=0.
+  if (HB_LEGACY) return makeGroundMaterialLegacy();
+  return hbSurface("grass", { grime: 0, dust: 0.12, macro: 0.6 });
+}
+
+function makeGroundMaterialLegacy() {
   const canvasTexture = document.createElement("canvas");
   canvasTexture.width = 256;
   canvasTexture.height = 256;
@@ -4465,6 +4615,17 @@ function makeGroundMaterial() {
 }
 
 function makePavingMaterial(color) {
+  // The plaza reads at walking distance, so it gets the granite setts; the wider
+  // radial paths get broomed concrete. Both are projected at their real tile size
+  // instead of a 96 px grid drawn at repeat 3.
+  if (HB_LEGACY) return makePavingMaterialLegacy(color);
+  const plaza = color === 0xc7bc9b;
+  return plaza
+    ? hbSurface("paving", { grime: 0.3, grimeHeight: 0.4, dust: 0.2 })
+    : hbSurface("concrete", { grime: 0.34, grimeHeight: 0.5, dust: 0.25, tile: [2.2, 2.2] });
+}
+
+function makePavingMaterialLegacy(color) {
   const canvasTexture = document.createElement("canvas");
   canvasTexture.width = 96;
   canvasTexture.height = 96;

@@ -1,0 +1,91 @@
+[
+  {
+    "id": "Asphalt033",
+    "maps": {
+      "color": "Asphalt033_color.webp",
+      "normal": "Asphalt033_normal.webp",
+      "rough": "Asphalt033_rough.webp",
+      "ao": "Asphalt033_ao.webp"
+    }
+  },
+  {
+    "id": "Bark014",
+    "maps": {
+      "color": "Bark014_color.webp",
+      "normal": "Bark014_normal.webp",
+      "rough": "Bark014_rough.webp",
+      "ao": "Bark014_ao.webp"
+    }
+  },
+  {
+    "id": "Bricks075A",
+    "maps": {
+      "color": "Bricks075A_color.webp",
+      "normal": "Bricks075A_normal.webp",
+      "rough": "Bricks075A_rough.webp",
+      "ao": "Bricks075A_ao.webp"
+    }
+  },
+  {
+    "id": "Bricks097",
+    "maps": {
+      "color": "Bricks097_color.webp",
+      "normal": "Bricks097_normal.webp",
+      "rough": "Bricks097_rough.webp",
+      "ao": "Bricks097_ao.webp"
+    }
+  },
+  {
+    "id": "Concrete034",
+    "maps": {
+      "color": "Concrete034_color.webp",
+      "normal": "Concrete034_normal.webp",
+      "rough": "Concrete034_rough.webp"
+    }
+  },
+  {
+    "id": "Grass005",
+    "maps": {
+      "color": "Grass005_color.webp",
+      "normal": "Grass005_normal.webp",
+      "rough": "Grass005_rough.webp",
+      "ao": "Grass005_ao.webp"
+    }
+  },
+  {
+    "id": "PavingStones138",
+    "maps": {
+      "color": "PavingStones138_color.webp",
+      "normal": "PavingStones138_normal.webp",
+      "rough": "PavingStones138_rough.webp",
+      "ao": "PavingStones138_ao.webp"
+    }
+  },
+  {
+    "id": "Planks037A",
+    "maps": {
+      "color": "Planks037A_color.webp",
+      "normal": "Planks037A_normal.webp",
+      "rough": "Planks037A_rough.webp",
+      "ao": "Planks037A_ao.webp"
+    }
+  },
+  {
+    "id": "RoofingTiles013A",
+    "maps": {
+      "color": "RoofingTiles013A_color.webp",
+      "normal": "RoofingTiles013A_normal.webp",
+      "rough": "RoofingTiles013A_rough.webp",
+      "ao": "RoofingTiles013A_ao.webp"
+    }
+  },
+  {
+    "id": "Travertine009",
+    "maps": {
+      "color": "Travertine009_color.webp",
+      "normal": "Travertine009_normal.webp",
+      "rough": "Travertine009_rough.webp",
+      "ao": "Travertine009_ao.webp"
+    }
+  }
+]
