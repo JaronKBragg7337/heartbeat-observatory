@@ -12,9 +12,9 @@ import {
   loadSurfaces as loadSurfaceTextures,
   surfaceReport as hbSurfaceReport,
   CARDS as HB_CARDS,
-} from "./surface.js?v=2026-08-03-surface3";
-import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface3";
-import { buildCanopy } from "./foliage.js?v=2026-08-03-surface3";
+} from "./surface.js?v=2026-08-03-surface4";
+import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface4";
+import { buildCanopy, canopyGeometry, leafMaterial } from "./foliage.js?v=2026-08-03-surface4";
 
 const canvas = document.querySelector("#game");
 const overlay = document.querySelector("#overlay");
@@ -85,7 +85,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-08-03-surface3"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-08-03-surface4"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 // Declared up here, not beside installWindowAssemblies(): updateDayNight() runs
@@ -3993,7 +3993,11 @@ function townArtSurfaceFor(name) {
   if (name.includes("brick_red")) return hbSurface("brickRed", { grimeHeight: 1.4, grime: 0.5 });
   // Dark engineering brick and buff brick are the same bond at different colour;
   // tinting the red card handles dark, while buff is closer to the stone card.
-  if (name.includes("brick_dark")) return hbSurface("brickRed", { color: 0x6f6a66, grime: 0.6, grimeHeight: 1.6, gamma: 1.15 });
+  // Dark engineering brick. The first pass multiplied by 0x6f6a66 AND raised
+  // gamma, which stacked two darkenings and crushed the Games and Workshop
+  // facades to near-black. Part 4B: lift with gamma below 1, and let the tint
+  // only shift hue — a multiply can never brighten.
+  if (name.includes("brick_dark")) return hbSurface("brickRed", { color: 0x9c968f, grime: 0.5, grimeHeight: 1.5, gamma: 0.86, gain: 1.05 });
   if (name.includes("brick_buff")) return hbSurface("stone", { grimeHeight: 1.4, grime: 0.45 });
   if (name.includes("stone_limestone")) return hbSurface("limestone", { grime: 0.4, grimeHeight: 1.3, tile: [1.6, 1.6] });
   if (name.includes("concrete_dark")) return hbSurface("concrete", { color: 0x8f9498, grime: 0.5, grimeHeight: 0.8 });
@@ -4154,25 +4158,23 @@ function installWindowAssemblies() {
 // and are darkened by townArtSurfaceFor(); they are the shade mass the cards sit
 // on. Mobile-lite skips this entirely — it is pure silhouette polish and the
 // alpha-test overdraw is exactly what a weak phone cannot afford.
+// Canopy runs on every tier that has WebGL at all. It was originally skipped on
+// mobile-lite, which is the tier most real iPhones land in — Safari reports
+// hardwareConcurrency 4, and hb-device-tier treats cores <= 4 as a weak phone.
+// The result was the trees looking untouched on exactly the devices most of the
+// traffic uses. 768 triangles is not what makes a phone struggle; card count is
+// reduced there instead of dropping the feature.
+function canopyEnabled() {
+  return (window.HBDevice?.tier || "desktop") !== "no-webgl";
+}
+function canopyCardCount() {
+  return window.HBDevice?.tier === "mobile-lite" ? 10 : 16;
+}
+
 function installCanopy() {
-  if (HB_LEGACY || canopyMesh) return;
-  const tier = window.HBDevice?.tier;
-  if (tier === "mobile-lite") return;
+  if (HB_LEGACY || canopyMesh || !canopyEnabled()) return;
   try {
-    const map = new THREE.TextureLoader().load("/engine/hub/assets/textures/canopy_leaf.webp");
-    map.colorSpace = THREE.SRGBColorSpace;
-    map.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-    const material = new THREE.MeshStandardMaterial({
-      map,
-      // alphaTest, NOT transparent: cards must write depth so they sort against
-      // each other and cast cut-out shadows rather than solid squares.
-      alphaTest: 0.5,
-      transparent: false,
-      side: THREE.DoubleSide,
-      roughness: 0.88,
-      metalness: 0,
-    });
-    const built = buildCanopy(material);
+    const built = buildCanopy(leafMaterial(THREE, renderer), canopyCardCount());
     scene.add(built.mesh);
     canopyMesh = built.mesh;
     canopyStats = built.stats;
@@ -4779,7 +4781,7 @@ function benchRotationToward(x, z, targetX = 0, targetZ = 0) {
 }
 
 function addBench(x, z, rotationY) {
-  const seatMaterial = new THREE.MeshStandardMaterial({ color: 0x6f3e24, roughness: 0.82 });
+  const seatMaterial = propMaterial("wood") || new THREE.MeshStandardMaterial({ color: 0x6f3e24, roughness: 0.82 });
   const legMaterial = new THREE.MeshStandardMaterial({ color: 0x242b2d, roughness: 0.48, metalness: 0.55 });
   const group = new THREE.Group();
   group.position.set(x, 0, z);
@@ -4801,10 +4803,29 @@ function addBench(x, z, rotationY) {
   scene.add(group);
 }
 
+// Placed props are built here, NOT from the town GLB, so they were still wearing
+// the original flat materials after the surface work landed — a row of placed
+// trees next to a town tree made the difference obvious. propMaterial() routes
+// them through the same cards as everything else.
+function propMaterial(kind) {
+  if (HB_LEGACY) return null;
+  try {
+    if (kind === "bark") return hbSurface("bark", { local: true, tile: [0.9, 0.9], grime: 0.3, grimeHeight: 1.0 });
+    if (kind === "wood") return hbSurface("wood", { local: true, tile: [1.4, 1.4], grime: 0.35, grimeHeight: 0.7 });
+    if (kind === "stone") return hbSurface("limestone", { local: true, tile: [1.0, 1.0], grime: 0.5, grimeHeight: 0.5 });
+    if (kind === "concrete") return hbSurface("concrete", { local: true, tile: [1.2, 1.2], grime: 0.45, grimeHeight: 0.5 });
+  } catch (e) {}
+  return null;
+}
+
 function addTree(x, z) {
   const g = new THREE.Group(); g.position.set(x, 0, z);
-  const trunkM = new THREE.MeshStandardMaterial({ color: 0x4b2d1d, roughness: 0.96 });
-  const leafMats = [0x234f36, 0x356842, 0x4f7448].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.94 }));
+  const trunkM = propMaterial("bark") || new THREE.MeshStandardMaterial({ color: 0x4b2d1d, roughness: 0.96 });
+  const useCards = !HB_LEGACY && canopyEnabled();
+  // With leaf cards carrying the silhouette the crown spheres become interior
+  // shade, exactly as for the town trees. Without cards they stay as they were.
+  const crownColors = useCards ? [0x183324, 0x22432b, 0x2f4a2e] : [0x234f36, 0x356842, 0x4f7448];
+  const leafMats = crownColors.map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.94 }));
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.23, 2.05, 10), trunkM);
   trunk.position.y = 1.02; trunk.castShadow = true; g.add(trunk);
   const branches = [[-0.34, 1.62, 0.72], [0.34, 1.72, -0.72], [-0.16, 1.82, -0.48]];
@@ -4817,12 +4838,28 @@ function addTree(x, z) {
     const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 1), leafMats[i % leafMats.length]);
     crown.position.set(cx, cy, cz); crown.scale.set(1.08, 0.88, 0.96); crown.castShadow = true; g.add(crown);
   });
+  if (useCards) {
+    try {
+      // One merged mesh per placed tree — a placed prop can be removed at any
+      // time, so it cannot join the static town canopy batch.
+      const geo = canopyGeometry({
+        cx: 0, cy: 2.72, cz: 0, rx: 1.05, ry: 0.72, rz: 1.0,
+        cards: canopyCardCount(), size: 1.05,
+        // Position-derived seed: the same spot always grows the same tree, on
+        // every client, without needing to sync anything.
+        seed: (Math.round(x * 73.3) * 2654435761 + Math.round(z * 91.7) * 40503) >>> 0,
+      });
+      const cards = new THREE.Mesh(geo, leafMaterial(THREE, renderer));
+      cards.castShadow = true; cards.receiveShadow = true;
+      g.add(cards);
+    } catch (e) {}
+  }
   scene.add(g);
 }
 
 // ---- starter prop catalog (code-built; used by Build Mode + zones) ----
 function addTable(x, z) {
-  const wood = new THREE.MeshStandardMaterial({ color: 0x8a6240, roughness: 0.74 });
+  const wood = propMaterial("wood") || new THREE.MeshStandardMaterial({ color: 0x8a6240, roughness: 0.74 });
   const metal = new THREE.MeshStandardMaterial({ color: 0x3d433d, roughness: 0.6 });
   const g = new THREE.Group(); g.position.set(x, 0, z);
   const top = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.08, 16), wood);
@@ -4834,7 +4871,7 @@ function addTable(x, z) {
   scene.add(g);
 }
 function addChair(x, z, rotationY) {
-  const wood = new THREE.MeshStandardMaterial({ color: 0x9a6b45, roughness: 0.76 });
+  const wood = propMaterial("wood") || new THREE.MeshStandardMaterial({ color: 0x9a6b45, roughness: 0.76 });
   const leg = new THREE.MeshStandardMaterial({ color: 0x3d433d, roughness: 0.66 });
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotationY || 0;
   const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.5), wood);
@@ -4860,17 +4897,29 @@ function addStreetlight(x, z) {
   scene.add(g);
 }
 function addPlanter(x, z) {
-  const boxM = new THREE.MeshStandardMaterial({ color: 0x6f5a44, roughness: 0.82 });
-  const greenM = new THREE.MeshStandardMaterial({ color: 0x4c8a55, roughness: 0.8 });
+  const useCards = !HB_LEGACY && canopyEnabled();
+  const boxM = propMaterial("stone") || new THREE.MeshStandardMaterial({ color: 0x6f5a44, roughness: 0.82 });
+  const greenM = new THREE.MeshStandardMaterial({ color: useCards ? 0x1d3a26 : 0x4c8a55, roughness: 0.8 });
   const g = new THREE.Group(); g.position.set(x, 0, z);
   const tub = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.42, 0.7), boxM);
   tub.position.y = 0.21; tub.castShadow = true; tub.receiveShadow = true; g.add(tub);
   const bush = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 9), greenM);
   bush.position.y = 0.68; bush.castShadow = true; g.add(bush);
+  if (useCards) {
+    try {
+      const geo = canopyGeometry({
+        cx: 0, cy: 0.70, cz: 0, rx: 0.34, ry: 0.24, rz: 0.34,
+        cards: 7, size: 0.44,
+        seed: (Math.round(x * 53.1) * 2246822519 + Math.round(z * 17.3) * 3266489917) >>> 0,
+      });
+      const cards = new THREE.Mesh(geo, leafMaterial(THREE, renderer));
+      cards.castShadow = true; g.add(cards);
+    } catch (e) {}
+  }
   scene.add(g);
 }
 function addFence(x1, z1, x2, z2) {
-  const woodM = new THREE.MeshStandardMaterial({ color: 0x7c6047, roughness: 0.82 });
+  const woodM = propMaterial("wood") || new THREE.MeshStandardMaterial({ color: 0x7c6047, roughness: 0.82 });
   const dx = x2 - x1, dz = z2 - z1, len = Math.hypot(dx, dz);
   if (len < 0.001) return;
   const g = new THREE.Group();
@@ -4898,7 +4947,7 @@ function addPath(x1, z1, x2, z2, width) {
   rect.receiveShadow = true; scene.add(rect);
 }
 function addFenceSegment(x, z, rotationY) {
-  const woodM = new THREE.MeshStandardMaterial({ color: 0x7c6047, roughness: 0.82 });
+  const woodM = propMaterial("wood") || new THREE.MeshStandardMaterial({ color: 0x7c6047, roughness: 0.82 });
   const ry = rotationY || 0, len = 3;
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
   for (const railY of [0.85, 0.5]) {
@@ -4915,8 +4964,8 @@ function addFenceSegment(x, z, rotationY) {
   else if (sn > 0.92) buildingColliders.push({ x: x, z: z, width: len, depth: 0.25 });
 }
 function addCafeCounter(x, z, rotationY) {
-  const woodM = new THREE.MeshStandardMaterial({ color: 0x6b4a30, roughness: 0.76 });
-  const topM = new THREE.MeshStandardMaterial({ color: 0xc9b48c, roughness: 0.6 });
+  const woodM = propMaterial("wood") || new THREE.MeshStandardMaterial({ color: 0x6b4a30, roughness: 0.76 });
+  const topM = propMaterial("stone") || new THREE.MeshStandardMaterial({ color: 0xc9b48c, roughness: 0.6 });
   const signM = new THREE.MeshStandardMaterial({ color: 0xb6483b, roughness: 0.66 });
   const ry = rotationY || 0;
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry;

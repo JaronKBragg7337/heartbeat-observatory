@@ -34,64 +34,93 @@ function makeRng(seed) {
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 }
 
+// The baked card keeps its leaves inside a border margin, so the visible cluster
+// is about 0.9 of the quad. Scale up to compensate or the canopy reads small.
+const CLUSTER_FILL = 1.15;
+
+let sharedLeafMaterial = null;
+
+/**
+ * One shared alpha-tested leaf material for every canopy in the world — town
+ * trees and player-placed trees alike — so they batch identically and only one
+ * texture is ever uploaded.
+ */
+export function leafMaterial(THREE_NS, renderer) {
+  if (sharedLeafMaterial) return sharedLeafMaterial;
+  const map = new THREE_NS.TextureLoader().load("/engine/hub/assets/textures/canopy_leaf.webp");
+  map.colorSpace = THREE_NS.SRGBColorSpace;
+  map.anisotropy = renderer ? Math.min(4, renderer.capabilities.getMaxAnisotropy()) : 4;
+  sharedLeafMaterial = new THREE_NS.MeshStandardMaterial({
+    map,
+    // alphaTest, NOT transparent: cards must write depth so they sort against
+    // each other and cast cut-out shadows rather than solid squares.
+    alphaTest: 0.5,
+    transparent: false,
+    side: THREE_NS.DoubleSide,
+    roughness: 0.88,
+    metalness: 0,
+  });
+  return sharedLeafMaterial;
+}
+
+/**
+ * Merged leaf-card geometry for a single crown, in the caller's local space.
+ * Used both by the static town canopy and by each placed tree prop.
+ */
+export function canopyGeometry({ cx = 0, cy = 0, cz = 0, rx, ry, rz, cards = CARDS_PER_TREE, size, seed = 1 }) {
+  const rng = makeRng(seed);
+  const geos = [];
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+  const normal = new THREE.Vector3();
+  const zAxis = new THREE.Vector3(0, 0, 1);
+
+  for (let i = 0; i < cards; i++) {
+    const u = (i + rng() * 0.85) / cards;
+    const phi = Math.acos(1 - 2 * u);
+    const theta = i * 2.399963 + rng() * 0.6;   // golden angle + jitter
+    const sx = Math.sin(phi) * Math.cos(theta);
+    const sy = Math.cos(phi) * 0.85 + 0.12;     // bias up: canopies are domed
+    const sz = Math.sin(phi) * Math.sin(theta);
+
+    normal.set(sx, sy * 0.7, sz).normalize();
+    q.setFromUnitVectors(zAxis, normal);
+    q.premultiply(new THREE.Quaternion().setFromAxisAngle(normal, rng() * Math.PI * 2));
+
+    const s = size * CLUSTER_FILL * (0.82 + rng() * 0.42);
+    scale.set(s, s, s);
+    m.compose(new THREE.Vector3(cx + sx * rx, cy + sy * ry, cz + sz * rz), q, scale);
+
+    const g = new THREE.PlaneGeometry(1, 1);
+    g.applyMatrix4(m);
+    geos.push(g);
+  }
+  const merged = mergeGeometries(geos, false);
+  for (const g of geos) g.dispose();
+  return merged;
+}
+
 /**
  * Build one merged mesh of leaf cards covering every tree crown.
  * @param {THREE.Material} material alpha-tested leaf material
  * @returns {{mesh: THREE.Mesh, stats: object}}
  */
-export function buildCanopy(material) {
-  const rng = makeRng(20260803);
-  const geos = [];
-  const m = new THREE.Matrix4();
-  const q = new THREE.Quaternion();
-  const up = new THREE.Vector3(0, 1, 0);
-  const normal = new THREE.Vector3();
-  const scale = new THREE.Vector3();
-
+export function buildCanopy(material, cardsPerTree = CARDS_PER_TREE) {
+  const parts = [];
   for (let t = 0; t < TREE_SPOTS.length; t++) {
     const [x, z] = TREE_SPOTS[t];
     const height = 4.6 + (t % 5) * 0.26;
     const trunkH = height * 0.42;
     // Crown centre and envelope, matching mature_tree()'s ico() placement.
-    const cy = trunkH + height * 0.20;
-    const rx = height * 0.30;
-    const ry = height * 0.21;
-    const rz = height * 0.30;
-    const cardSize = height * 0.30;
-
-    for (let i = 0; i < CARDS_PER_TREE; i++) {
-      // Even-ish distribution over the ellipsoid, jittered so it never reads
-      // as a lattice.
-      const u = (i + rng() * 0.85) / CARDS_PER_TREE;
-      const phi = Math.acos(1 - 2 * u);
-      const theta = i * 2.399963 + rng() * 0.6;   // golden angle + jitter
-      const sx = Math.sin(phi) * Math.cos(theta);
-      const sy = Math.cos(phi) * 0.85 + 0.12;     // bias up: canopies are domed
-      const sz = Math.sin(phi) * Math.sin(theta);
-
-      const px = x + sx * rx;
-      const py = cy + sy * ry;
-      const pz = z + sz * rz;
-
-      // Face outward from the crown centre, with a random roll so identical
-      // cards never line up.
-      normal.set(sx, sy * 0.7, sz).normalize();
-      q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
-      const roll = new THREE.Quaternion().setFromAxisAngle(normal, rng() * Math.PI * 2);
-      q.premultiply(roll);
-
-      const s = cardSize * (0.82 + rng() * 0.42);
-      scale.set(s, s, s);
-      m.compose(new THREE.Vector3(px, py, pz), q, scale);
-
-      const g = new THREE.PlaneGeometry(1, 1);
-      g.applyMatrix4(m);
-      geos.push(g);
-    }
+    parts.push(canopyGeometry({
+      cx: x, cy: trunkH + height * 0.20, cz: z,
+      rx: height * 0.30, ry: height * 0.21, rz: height * 0.30,
+      cards: cardsPerTree, size: height * 0.30, seed: 20260803 + t * 7919,
+    }));
   }
-
-  const merged = mergeGeometries(geos, false);
-  for (const g of geos) g.dispose();
+  const merged = mergeGeometries(parts, false);
+  for (const g of parts) g.dispose();
   const mesh = new THREE.Mesh(merged, material);
   mesh.name = "CanopyCards";
   mesh.castShadow = true;
@@ -104,7 +133,8 @@ export function buildCanopy(material) {
     mesh,
     stats: {
       trees: TREE_SPOTS.length,
-      cards: geos.length,
+      cardsPerTree,
+      cards: TREE_SPOTS.length * cardsPerTree,
       triangles: merged.index ? merged.index.count / 3 : merged.attributes.position.count / 3,
       drawCalls: 1,
     },

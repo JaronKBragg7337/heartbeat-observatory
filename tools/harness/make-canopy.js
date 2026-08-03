@@ -14,7 +14,10 @@ const OUT = process.argv[2] || path.resolve(__dirname, "..", "..", "engine", "hu
 const SET = "LeafSet030";
 const SIZE = 1024;
 const GRID = 4;            // LeafSet030 is a 4x4 sheet
-const LEAVES = 150;
+// Raised from 150 once leaves were confined inside a border margin: the cluster
+// occupies a 0.9x circle rather than the whole card, so it needs more leaves to
+// reach the same density inside that circle.
+const LEAVES = 260;
 
 (async () => {
   const dir = path.join(SRC, SET);
@@ -59,14 +62,18 @@ const LEAVES = 150;
 
     const cw = sheet.width / grid, ch = sheet.height / grid;
     let drawn = 0;
+    // Leaves must never reach the card border. If they do, the quad's straight
+    // edge shows as a hard cut through the foliage whenever a card is seen
+    // near edge-on — which was visible on the first bake.
+    const MAX_R = 0.30, MAX_LEAF = 0.30;   // 0.30 + 0.30/2 = 0.45 < 0.5
     for (let i = 0; i < count; i++) {
-      // Radial falloff: dense core, ragged edge. sqrt keeps area density even.
-      const r = Math.pow(rng(), 0.62) * 0.47 * size;
+      // Radial falloff: dense core, ragged edge.
+      const r = Math.pow(rng(), 0.62) * MAX_R * size;
       const th = rng() * Math.PI * 2;
       const x = size / 2 + Math.cos(th) * r;
       const y = size / 2 + Math.sin(th) * r;
       const col = Math.floor(rng() * grid), row = Math.floor(rng() * grid);
-      const s = (0.20 + rng() * 0.16) * size / Math.max(cw, ch);
+      const s = (0.18 + rng() * (MAX_LEAF - 0.18)) * size / Math.max(cw, ch);
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(rng() * Math.PI * 2);
@@ -77,11 +84,25 @@ const LEAVES = 150;
       drawn++;
     }
 
-    // Report alpha coverage so density is a number, not a guess.
-    const px = ctx.getImageData(0, 0, size, size).data;
-    let opaque = 0;
-    for (let i = 3; i < px.length; i += 4) if (px[i] > 128) opaque++;
-    return { url: cv.toDataURL("image/webp", 0.86), coverage: opaque / (size * size), drawn };
+    // Belt and braces: force alpha to zero in the outer ring, and verify no
+    // opaque pixel survives near the border.
+    const img = ctx.getImageData(0, 0, size, size);
+    const px = img.data;
+    const cxp = size / 2, cyp = size / 2, edge = size * 0.47;
+    let opaque = 0, edgeHits = 0;
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const i = (y * size + x) * 4;
+        const d = Math.hypot(x - cxp, y - cyp);
+        if (d > edge) {
+          if (px[i + 3] > 8) edgeHits++;
+          px[i + 3] = 0;
+        }
+        if (px[i + 3] > 128) opaque++;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return { url: cv.toDataURL("image/webp", 0.86), coverage: opaque / (size * size), drawn, edgeHits };
   }, { c: b64(colorF), o: b64(opacF), size: SIZE, grid: GRID, count: LEAVES });
 
   await browser.close();
@@ -89,5 +110,5 @@ const LEAVES = 150;
   const buf = Buffer.from(result.url.split(",")[1], "base64");
   const name = "canopy_leaf.webp";
   fs.writeFileSync(path.join(OUT, name), buf);
-  console.log(`${name}  ${(buf.length / 1024).toFixed(0)} KB   leaves drawn ${result.drawn}   alpha coverage ${(result.coverage * 100).toFixed(1)}%`);
+  console.log(`${name}  ${(buf.length / 1024).toFixed(0)} KB   leaves drawn ${result.drawn}   alpha coverage ${(result.coverage * 100).toFixed(1)}%   pixels clipped at border ${result.edgeHits}`);
 })();
