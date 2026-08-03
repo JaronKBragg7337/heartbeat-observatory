@@ -12,7 +12,8 @@ import {
   loadSurfaces as loadSurfaceTextures,
   surfaceReport as hbSurfaceReport,
   CARDS as HB_CARDS,
-} from "./surface.js?v=2026-08-03-surface1";
+} from "./surface.js?v=2026-08-03-surface2";
+import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface2";
 
 const canvas = document.querySelector("#game");
 const overlay = document.querySelector("#overlay");
@@ -83,9 +84,17 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-08-03-surface1"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-08-03-surface2"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
+// Declared up here, not beside installWindowAssemblies(): updateDayNight() runs
+// during initial setup, and reading a `let` declared further down the module is
+// a temporal-dead-zone ReferenceError that aborts module evaluation. The visible
+// symptom was an unrelated "Cannot access 'propsSubscribed' before
+// initialization" further along — a cascade, not the actual fault.
+let windowGroup = null;
+let windowStats = null;
+let windowGlassMaterial = null;
 let settingsOpen = false;
 let buildMode = false;
 let selectedBuildProp = null;
@@ -388,6 +397,7 @@ try {
       get player() { return state; },
       surfaceReport: hbSurfaceReport,
       cards: HB_CARDS,
+      get windowStats() { return windowStats; },
       /** Renderer counters — the honest draw-call and triangle numbers. */
       renderStats() {
         const i = renderer.info;
@@ -2028,6 +2038,12 @@ function updateDayNight(dt) {
   if (arenaLight) arenaLight.intensity = (1 - day) * 1.55;
   const nightF = Math.max(0, Math.min(1, -e * 1.5 + 0.1));
   if (stars) stars.material.opacity = nightF * 0.95;
+  if (windowGlassMaterial) {
+    // Lights come on through dusk rather than at true dark, so the town is
+    // never a row of black holes in the half hour either side of sunset.
+    const lit = Math.max(0, Math.min(1, -e * 1.9 + 0.55));
+    windowGlassMaterial.emissiveIntensity = 0.04 + 1.35 * lit;
+  }
   if (moonDisc) {
     const md = sunLight.position.clone().multiplyScalar(-1);
     const ml = md.length() || 1; md.multiplyScalar(80 / ml);
@@ -4059,6 +4075,7 @@ function loadTownArtKit() {
       townArtReady = true;
       refreshActorsForTownArt();
       draco.dispose();
+      installWindowAssemblies();
       try { console.log("Heartbeat Town realism kit loaded", { build: BUILD, meshes: town.children.length }); } catch (e) {}
     },
     undefined,
@@ -4068,6 +4085,51 @@ function loadTownArtKit() {
       buildFallbackStreetFurniture();
     }
   );
+}
+
+
+// Replace the flat glass slabs with real window assemblies: frame, mullion,
+// transom, glazing, projecting sill and lintel. Runs after the town art loads,
+// because the old slabs have to be stripped out of the merged meshes first.
+function installWindowAssemblies() {
+  if (HB_LEGACY || !townArtRoot || windowGroup) return;
+  try {
+    const buildings = doors.concat(structures);
+    const materials = {
+      // Painted joinery — dark enough to read as a frame against brick without
+      // becoming a black hole. Not photographic: at 55 mm section a texture is
+      // below one texel at any sane walking distance.
+      frame: new THREE.MeshStandardMaterial({ color: 0x2f2b28, roughness: 0.62, metalness: 0.12 }),
+      stone: hbSurface("limestone", { tile: [1.2, 1.2], grime: 0.5, grimeHeight: 0.5, dust: 0.5 }),
+      // Daylight glass is dark and specular — it reflects sky, it does not glow.
+      // The warm interior light is ramped in by updateDayNight() as the sun
+      // drops, which is both correct and the thing that makes a town read as
+      // inhabited after dark.
+      glass: new THREE.MeshStandardMaterial({
+        color: 0x141b21, roughness: 0.08, metalness: 0.16,
+        emissive: new THREE.Color(0xb76422), emissiveIntensity: 0.05,
+      }),
+    };
+    const built = buildOpenings(buildings, materials);
+    const strip = stripGlassQuads(townArtRoot, built.boxes);
+    scene.add(built.group);
+    windowGroup = built.group;
+    windowGlassMaterial = materials.glass;
+    windowStats = { ...built.stats, stripped: strip };
+    try {
+      console.log("[HB] window assemblies", {
+        windows: built.stats.windows,
+        drawCalls: built.stats.drawCalls,
+        triangles: built.stats.triangles,
+        oldQuadsRemoved: strip.removed,
+        quadsScanned: strip.scanned,
+      });
+    } catch (e) {}
+  } catch (e) {
+    // A failure here must not take the world down — worst case the old flat
+    // windows stay exactly as they were.
+    try { console.warn("[HB] window assemblies failed", e); } catch (e2) {}
+  }
 }
 
 function cloneTownAvatar(look, name, ghost) {
