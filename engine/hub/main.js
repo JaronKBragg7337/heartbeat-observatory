@@ -12,8 +12,9 @@ import {
   loadSurfaces as loadSurfaceTextures,
   surfaceReport as hbSurfaceReport,
   CARDS as HB_CARDS,
-} from "./surface.js?v=2026-08-03-surface2";
-import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface2";
+} from "./surface.js?v=2026-08-03-surface3";
+import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface3";
+import { buildCanopy } from "./foliage.js?v=2026-08-03-surface3";
 
 const canvas = document.querySelector("#game");
 const overlay = document.querySelector("#overlay");
@@ -84,7 +85,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-08-03-surface2"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-08-03-surface3"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 // Declared up here, not beside installWindowAssemblies(): updateDayNight() runs
@@ -95,6 +96,8 @@ let hasEntered = false;
 let windowGroup = null;
 let windowStats = null;
 let windowGlassMaterial = null;
+let canopyMesh = null;
+let canopyStats = null;
 let settingsOpen = false;
 let buildMode = false;
 let selectedBuildProp = null;
@@ -398,6 +401,7 @@ try {
       surfaceReport: hbSurfaceReport,
       cards: HB_CARDS,
       get windowStats() { return windowStats; },
+      get canopyStats() { return canopyStats; },
       /** Renderer counters — the honest draw-call and triangle numbers. */
       renderStats() {
         const i = renderer.info;
@@ -4002,6 +4006,18 @@ function townArtSurfaceFor(name) {
   return null;
 }
 
+// The crown spheres become the shaded interior of the canopy rather than the
+// canopy itself — the leaf cards in foliage.js carry the silhouette. Left bright
+// they show through the cards as flat green balls.
+function shadeCrownMaterial(material, name) {
+  if (!material || !name.includes("leaves")) return false;
+  material.color.multiplyScalar(0.52);
+  material.roughness = 0.95;
+  material.metalness = 0;
+  material.needsUpdate = true;
+  return true;
+}
+
 function styleTownArtMaterial(material) {
   if (!material || material.userData?.hbStyled) return;
   material.userData = material.userData || {};
@@ -4064,6 +4080,7 @@ function loadTownArtKit() {
         // place, so signs, glass, water and foliage behave exactly as before.
         const projected = townArtSurfaceFor(materialName);
         if (projected) child.material = projected;
+        else if (!HB_LEGACY && shadeCrownMaterial(child.material, materialName)) { /* crowns handled */ }
         else styleTownArtMaterial(child.material);
         child.castShadow = renderer.shadowMap.enabled && !materialName.includes("glass") && !materialName.includes("water");
         child.receiveShadow = !materialName.includes("sign_letters");
@@ -4116,6 +4133,7 @@ function installWindowAssemblies() {
     windowGroup = built.group;
     windowGlassMaterial = materials.glass;
     windowStats = { ...built.stats, stripped: strip };
+    installCanopy();
     try {
       console.log("[HB] window assemblies", {
         windows: built.stats.windows,
@@ -4129,6 +4147,38 @@ function installWindowAssemblies() {
     // A failure here must not take the world down — worst case the old flat
     // windows stay exactly as they were.
     try { console.warn("[HB] window assemblies failed", e); } catch (e2) {}
+  }
+}
+
+// Scatter alpha-cutout leaf cards over the tree crowns. The crown spheres stay
+// and are darkened by townArtSurfaceFor(); they are the shade mass the cards sit
+// on. Mobile-lite skips this entirely — it is pure silhouette polish and the
+// alpha-test overdraw is exactly what a weak phone cannot afford.
+function installCanopy() {
+  if (HB_LEGACY || canopyMesh) return;
+  const tier = window.HBDevice?.tier;
+  if (tier === "mobile-lite") return;
+  try {
+    const map = new THREE.TextureLoader().load("/engine/hub/assets/textures/canopy_leaf.webp");
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    const material = new THREE.MeshStandardMaterial({
+      map,
+      // alphaTest, NOT transparent: cards must write depth so they sort against
+      // each other and cast cut-out shadows rather than solid squares.
+      alphaTest: 0.5,
+      transparent: false,
+      side: THREE.DoubleSide,
+      roughness: 0.88,
+      metalness: 0,
+    });
+    const built = buildCanopy(material);
+    scene.add(built.mesh);
+    canopyMesh = built.mesh;
+    canopyStats = built.stats;
+    try { console.log("[HB] canopy", built.stats); } catch (e) {}
+  } catch (e) {
+    try { console.warn("[HB] canopy failed", e); } catch (e2) {}
   }
 }
 

@@ -63,6 +63,19 @@ resolution is not resolvable on a phone at 1–4 m tiling.
 Estimates are labelled as such in `engine/hub/surface.js` (`sizeSource` on each card) and
 are the ones to re-measure first if a surface reads at the wrong scale.
 
+### Foliage cutout (added 2026-08-03)
+
+`canopy_leaf.webp` (305 KB, RGBA) — **derived from ambientCG `LeafSet030`, CC0 1.0.**
+ambientCG ships leaf *sets* (individual leaves on white), not canopy cards, so the cluster
+is composited by `tools/harness/make-canopy.js`: 150 leaves drawn at random rotation and
+scale with a radial density falloff, then hue-rotated 72° from autumn brown to summer
+green. Measured alpha coverage 70.1%. The RNG is seeded (LCG, seed 9137), so re-running the
+bake reproduces the same card.
+
+```powershell
+node tools/harness/make-canopy.js
+```
+
 Re-download and re-convert:
 
 ```powershell
