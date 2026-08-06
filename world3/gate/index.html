@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ashgrove — Heartbeat Observatory</title>
+<meta name="theme-color" content="#0a0d12">
+<style>
+  :root{ --bg:#0a0d12; --panel:#111823; --line:#1e2a36; --text:#e6edf1; --muted:#93a4b3; --go:#7fdc9a; --acc:#8fd0ff; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+  header{ display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:16px calc(18px + env(safe-area-inset-right)) 16px calc(18px + env(safe-area-inset-left));
+    border-bottom:1px solid var(--line); }
+  .brand{ display:flex; align-items:center; gap:10px; font-size:13px; letter-spacing:.22em; color:var(--muted); }
+  .dot{ width:9px; height:9px; border-radius:50%; background:#e0575f; }
+  .acct{ border:1px solid var(--line); border-radius:999px; padding:9px 17px; color:var(--text); text-decoration:none; font-size:14px; }
+  main{ max-width:640px; margin:0 auto; padding:26px 18px calc(46px + env(safe-area-inset-bottom)); }
+  .back{ color:var(--muted); text-decoration:none; font-size:14px; }
+  h1{ font-size:37px; line-height:1.15; margin:22px 0 14px; text-align:center; letter-spacing:-.01em; }
+  .lede{ color:#c6d3dd; text-align:center; margin:0 auto 20px; max-width:33em; }
+  .live{ display:block; width:max-content; margin:0 auto 22px; border:1px solid var(--line);
+    border-radius:999px; padding:7px 17px; font-size:14px; color:var(--go); }
+  .live b{ display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--go); margin-right:7px; }
+  .card{ border:1px solid var(--line); border-radius:15px; background:var(--panel); padding:17px 18px; margin:0 0 20px; }
+  .card h2{ margin:0 0 9px; font-size:12px; letter-spacing:.16em; color:var(--acc); text-transform:uppercase; }
+  .card p{ margin:0 0 10px; color:#c6d3dd; }
+  .card p:last-child{ margin-bottom:0; }
+  .chips{ display:flex; flex-wrap:wrap; gap:7px; margin:0 0 16px; justify-content:center; }
+  .chip{ border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; color:var(--muted); }
+  .enter{ display:block; width:100%; text-align:center; background:var(--go); color:#062012;
+    border:0; border-radius:13px; padding:19px; font:700 17px system-ui,sans-serif; text-decoration:none;
+    box-shadow:0 8px 30px rgba(127,220,154,.16); }
+  .enter:active{ transform:scale(.99); }
+  .under{ text-align:center; color:var(--muted); font-size:13.5px; margin:12px 0 0; }
+  ul{ margin:0; padding-left:19px; color:#c6d3dd; }
+  li{ margin:5px 0; }
+  .flat{ text-align:center; margin-top:26px; font-size:13.5px; }
+  a{ color:var(--acc); }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand"><span class="dot"></span>HEARTBEAT OBSERVATORY</span>
+  <a class="acct" href="/admin">Account</a>
+</header>
+
+<main>
+  <a class="back" href="/">&larr; All worlds</a>
+
+  <h1>Ashgrove</h1>
+  <p class="lede">A town that runs whether or not you are watching. Forty-nine buildings,
+    every one with a solved interior you can walk room to room, and the people who live
+    in them keep their own day.</p>
+
+  <span class="live"><b></b>Live &middot; World 3</span>
+
+  <div class="chips">
+    <span class="chip">49 buildings</span>
+    <span class="chip">walkable interiors</span>
+    <span class="chip">residents with routines</span>
+    <span class="chip">grows on its own</span>
+  </div>
+
+  <a class="enter" href="/world3/">Enter Ashgrove &rarr;</a>
+  <p class="under">Full screen, on phone or computer. Your character and your messages
+    come with you from the other worlds.</p>
+
+  <div class="card" style="margin-top:26px">
+    <h2>What is actually here</h2>
+    <ul>
+      <li>Every house is solved at runtime against a real dimension code book, then
+        validated &mdash; room area, hall width, stair fit, reachability from the front door.</li>
+      <li>The residents wake, walk to work or school, run errands and go home. Dogs come
+        along on errands; cats hold the yard.</li>
+      <li>The town grows itself. Demand for housing raises a new house on a real lot,
+        built by residents whose labour is actually counted.</li>
+      <li>You can take a job seat from the resident who holds it &mdash; and lose it back
+        to them if you stop showing up.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Being honest about the seams</h2>
+    <p>The town itself is identical for everyone: it is grown from one fixed seed, so the
+      buildings, the residents and their routines are the same place for every visitor.
+      Live players appear and move in real time.</p>
+    <p>Buildings raised <em>after</em> founding are still saved per browser while the shared
+      record is being wired, so someone who has been away longer may see a slightly smaller
+      town than you do. That is the next piece, not a mystery.</p>
+  </div>
+
+  <p class="flat">Prefer not to walk around? <a href="/">The worlds page</a> lists everything flat.</p>
+</main>
+</body>
+</html>
