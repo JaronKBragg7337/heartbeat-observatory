@@ -387,6 +387,15 @@
         "local town discarded: it was founded on a private clock, refounding on the shared one");
     }
   } catch (e) { try { localStorage.removeItem(KEY); } catch (_) {} }
+
+  /* The town opens its own help panel on a first visit (render/main.js: if
+     !localStorage["ashgrove-seen"]). That panel is written for the standalone
+     build and is mostly developer keys — G inspect, M edit, O orbit, F tour —
+     which World 3 keeps switched off. Seeing it full-screen is the first
+     thing a new player meets, and it describes controls they do not have.
+     Mark it seen so it never auto-opens here; H still summons it, and the
+     shell menu is where a player is meant to look. */
+  try { localStorage.setItem("ashgrove-seen", "1"); } catch (_) {}
 })();
 </script>
 <script src="town/render/core.js?v=8"></script>
