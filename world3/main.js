@@ -272,6 +272,153 @@ shell.on("door-sync", (msg) => {
 })(20);
 
 /* ------------------------------------------------------------------------ *
+   3c. Editing is a PLAYER feature, and it is shared.
+   Jaron's reason, which is the right one: rather than someone hunting down
+   every prop that blocks a doorway, whoever finds one moves it and it stays
+   moved for everybody. Later the same mechanism lets people furnish their own
+   houses.
+
+   The town already has all of this (town/render/edit.js): point at a piece of
+   furniture, drag it, spin it, hide it. What it lacked was an audience — edits
+   went to this browser's localStorage and nobody else ever saw them.
+
+   Edits travel as DELTAS FROM THE ITEM'S HOME POSITION keyed by its permanent
+   asset id (B22-L0-R03-F02), which is why they survive the town being
+   regenerated, regrown, or reseeded. Nothing here stores coordinates.
+ * ------------------------------------------------------------------------ */
+const editApplying = { on: false };     // guard so applying a peer's edit does not echo
+let lastSentEdits = {};
+
+function currentEdits() {
+  const out = {};
+  for (const it of W.items) {
+    const dx = it.x - it.home.x, dz = it.z - it.home.z, dr = it.yaw - it.home.yaw;
+    if (Math.abs(dx) < 1e-4 && Math.abs(dz) < 1e-4 && Math.abs(dr) < 1e-4 && !it.deleted) continue;
+    out[it.id] = { dx: +dx.toFixed(4), dz: +dz.toFixed(4), dr: +dr.toFixed(4), del: !!it.deleted };
+  }
+  return out;
+}
+
+function applyEdit(id, d) {
+  const it = W.items.find((x) => x.id === id);
+  if (!it) return false;
+  it.x = it.home.x + (d.dx || 0);
+  it.z = it.home.z + (d.dz || 0);
+  it.yaw = it.home.yaw + (d.dr || 0);
+  it.deleted = !!d.del;
+  W.syncItem(it);                        // moves the collider and the mesh together
+  return true;
+}
+
+/* Our own edits go out. E.save() is the town's own "something changed" moment,
+   so wrapping it catches every path — drag, rotate, nudge, hide, reset — with
+   no changes inside town/. Only the entries that actually differ are sent. */
+const originalEditSave = T.Edit && T.Edit.save;
+if (T.Edit && originalEditSave) {
+  T.Edit.save = function () {
+    originalEditSave.call(T.Edit);
+    if (editApplying.on) return;
+    const now = currentEdits();
+    const changed = {};
+    for (const id in now) {
+      const a = now[id], b = lastSentEdits[id];
+      if (!b || a.dx !== b.dx || a.dz !== b.dz || a.dr !== b.dr || a.del !== b.del) changed[id] = a;
+    }
+    for (const id in lastSentEdits) if (!(id in now)) changed[id] = { dx: 0, dz: 0, dr: 0, del: false };
+    lastSentEdits = now;
+    if (!Object.keys(changed).length) return;
+    shell.send("edit", { edits: changed });                 // everyone here, now
+    for (const id in changed) void persistEdit(id, changed[id]);   // and everyone later
+  };
+}
+
+shell.on("edit", (msg) => {
+  if (!msg.edits) return;
+  editApplying.on = true;
+  try { for (const id in msg.edits) applyEdit(id, msg.edits[id]); }
+  finally { editApplying.on = false; }
+});
+
+/* Late arrivals ask the room what has been moved, exactly as they do for
+   doors. Once world3_edits is applied this becomes a read from the table and
+   the peer answer becomes the fallback rather than the source. */
+shell.on("edit-sync-request", () => {
+  const now = currentEdits();
+  if (Object.keys(now).length) shell.send("edit-sync", { edits: now });
+});
+
+let editSyncApplied = false;
+shell.on("edit-sync", (msg) => {
+  if (editSyncApplied || !msg.edits) return;
+  editApplying.on = true;
+  let applied = 0;
+  try { for (const id in msg.edits) if (applyEdit(id, msg.edits[id])) applied++; }
+  finally { editApplying.on = false; }
+  if (applied > 0) { editSyncApplied = true; lastSentEdits = currentEdits(); }
+});
+
+(function askForEdits(tries) {
+  if (tries <= 0 || editSyncApplied) return;
+  const ready = W.items.length > 0 && shell.send("edit-sync-request", {});
+  setTimeout(() => askForEdits(tries - 1), ready ? 1500 : 700);
+})(20);
+
+/* Persistence. Peer sync makes an edit outlive the moment; the table makes it
+   outlive everyone leaving. Both paths are guarded so the world plays exactly
+   the same before supabase/world3-edits-APPLY-ME.sql has been applied — the
+   reads simply come back empty and the writes quietly fail. */
+async function loadEditsFromServer() {
+  if (!shell.supa) return;
+  try {
+    const { data, error } = await shell.supa
+      .from("world3_edits").select("asset_id,dx,dz,dr,hidden");
+    if (error || !data || !data.length) return;
+    editApplying.on = true;
+    let n = 0;
+    try {
+      for (const row of data) {
+        if (applyEdit(row.asset_id, { dx: row.dx, dz: row.dz, dr: row.dr, del: row.hidden })) n++;
+      }
+    } finally { editApplying.on = false; }
+    if (n) {
+      editSyncApplied = true;            // the table beats a peer's answer
+      lastSentEdits = currentEdits();
+      console.log("%cWORLD3", "color:#8fd0ff;font-weight:bold", `${n} saved edit(s) restored`);
+    }
+  } catch (_) { /* table not applied yet */ }
+}
+
+async function persistEdit(id, d) {
+  if (!shell.supa || !shell.session) return;   // guests may move things live, not save them
+  try {
+    await shell.supa.rpc("world3_move_asset", {
+      p_asset_id: id, p_dx: d.dx || 0, p_dz: d.dz || 0, p_dr: d.dr || 0, p_hidden: !!d.del,
+    });
+  } catch (_) { /* not applied yet */ }
+}
+
+/* wait for the town to exist, then for the socket, then read the table */
+(function tryLoadEdits(tries) {
+  if (tries <= 0) return;
+  if (W.items.length > 0 && shell.supa) { void loadEditsFromServer(); return; }
+  setTimeout(() => tryLoadEdits(tries - 1), 700);
+})(20);
+
+/* The phone is where a player looks for tools — not the HUD, and not behind
+   the developer flag, which is for inspect/orbit/tour. */
+if (T.Edit) {
+  shell.addApp({
+    id: "edit", glyph: "✥", label: "Edit",
+    onOpen() {
+      T.Edit.toggle(!T.Edit.on);
+      shell.setPrompt(T.Edit.on
+        ? "Edit mode — point at furniture, drag to move. Open the phone again to stop."
+        : null);
+    },
+  });
+}
+
+/* ------------------------------------------------------------------------ *
    4. The shell's chips and prompt, fed from the town every frame.
  * ------------------------------------------------------------------------ */
 function placeName() {

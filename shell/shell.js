@@ -320,6 +320,12 @@ HBShell.mount = function mount(options) {
       if (a === "close") return closePhone();
       if (a === "back") { phoneView = phoneView === "thread" ? "messages" : "home"; return renderPhone(); }
       if (a === "app") { phoneView = n.dataset.app; return renderPhone(); }
+      if (a === "worldapp") {
+        const found = extraApps.find((x) => x.id === n.dataset.id);
+        closePhone();                     // put the phone away so you can see the world
+        if (found && found.onOpen) found.onOpen();
+        return;
+      }
       if (a === "thread") { phoneThread = n.dataset.id; phoneView = "thread"; return renderPhone(); }
       if (a === "send") return void sendMessage();
     }));
@@ -332,6 +338,7 @@ HBShell.mount = function mount(options) {
         ${app("messages", "✉", "Messages", unread)}
         ${app("people", "☻", "People")}
         ${app("worlds", "◍", "Worlds")}
+        ${extraApps.map((a) => appCustom(a)).join("")}
       </div>
       <div class="hbs-note">Signed in as ${esc(shell.displayName || "a guest")}. Your character and your messages follow you into every world.</div>`;
     }
@@ -373,6 +380,21 @@ HBShell.mount = function mount(options) {
       <span class="g">${glyph}</span>${badge ? `<span class="badge">${badge}</span>` : ""}
       <span>${label}</span></button>`;
   }
+  function appCustom(a) {
+    return `<button class="hbs-app" data-a="worldapp" data-id="${esc(a.id)}">
+      <span class="g">${a.glyph}</span><span>${esc(a.label)}</span></button>`;
+  }
+
+  /* A world can put its own app on the phone. This is where a world-specific
+     tool belongs — not on the HUD, and not behind the developer flag. Ashgrove
+     uses it for Edit, which is a player feature: people fixing a chair that
+     blocks a doorway, and later choosing their own furniture. */
+  const extraApps = [];
+  shell.addApp = function (a) {
+    extraApps.push(a);
+    if (phone.classList.contains("open") && phoneView === "home") renderPhone();
+    return shell;
+  };
 
   function composer() {
     if (!shell.session) return "";
