@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#8fb4d8">
+<title>Ashgrove — Heartbeat Observatory</title>
+<style>
+  :root{ --ui:#e8edf2; --panel:rgba(12,16,22,.82); --line:rgba(255,255,255,.14); --acc:#7fd1ff; --warn:#ffb648; --bad:#ff5c5c; --ok:#7ce38b; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; background:#0b0e13; color:var(--ui);
+    font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; overscroll-behavior:none; touch-action:none; }
+  #gl{ position:fixed; inset:0; width:100%; height:100%; display:block; }
+  .hud{ position:fixed; z-index:5; pointer-events:none; }
+
+  /* ---------- loading ---------- */
+  #load{ position:fixed; inset:0; z-index:50; background:#0b0e13; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px; transition:opacity .5s; }
+  #load h1{ font:600 15px/1.4 ui-monospace,monospace; letter-spacing:.28em; margin:0; color:var(--acc); }
+  #load .bar{ width:min(300px,70vw); height:3px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; }
+  #load .bar i{ display:block; height:100%; width:0%; background:var(--acc); transition:width .18s; }
+  #load p{ margin:0; opacity:.55; font-size:11px; letter-spacing:.06em; }
+
+  /* ---------- readout ---------- */
+  #readout{ top:calc(8px + env(safe-area-inset-top)); left:8px; background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; padding:7px 10px; font-size:11px; letter-spacing:.02em; white-space:pre; backdrop-filter:blur(8px); }
+  #readout b{ color:var(--acc); font-weight:600; }
+  #where{ top:calc(8px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:var(--panel);
+    border:1px solid var(--line); border-radius:8px; padding:6px 12px; font-size:12px; opacity:0; transition:opacity .25s; }
+  #crosshair{ left:50%; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; opacity:.5; }
+  #crosshair:before,#crosshair:after{ content:''; position:absolute; background:#fff; }
+  #crosshair:before{ left:6px; top:0; width:2px; height:14px; }
+  #crosshair:after{ top:6px; left:0; height:2px; width:14px; }
+  #prompt{ left:50%; top:58%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--line);
+    border-radius:6px; padding:5px 11px; font-size:12px; display:none; }
+  #prompt b{ color:var(--acc); }
+
+  /* ---------- 3d labels ---------- */
+  #labels{ position:fixed; inset:0; z-index:4; pointer-events:none; overflow:hidden; display:none; }
+  #labels .lb{ position:absolute; transform:translate(-50%,-50%); font-size:10px; line-height:1; padding:2px 5px;
+    border-radius:3px; background:rgba(8,10,14,.78); border:1px solid rgba(127,209,255,.4); color:#cfe9ff; white-space:nowrap; }
+  #labels .lb.bad{ border-color:var(--bad); color:#ffd9d9; background:rgba(40,6,6,.85); }
+  #labels .lb.room{ border-color:rgba(124,227,139,.45); color:#d6ffdd; }
+
+  /* ---------- buttons ---------- */
+  .btn{ pointer-events:auto; background:var(--panel); border:1px solid var(--line); color:var(--ui); border-radius:9px;
+    padding:9px 11px; font:600 11px/1 ui-monospace,monospace; letter-spacing:.08em; cursor:pointer; user-select:none;
+    backdrop-filter:blur(8px); }
+  .btn:active{ background:rgba(127,209,255,.22); }
+  .btn.on{ border-color:var(--acc); color:var(--acc); }
+  #topright{ top:calc(8px + env(safe-area-inset-top)); right:8px; display:flex; gap:6px; flex-direction:column; align-items:flex-end; }
+  /* touch/coarse-pointer menu: no Esc key exists to leave pointer lock or
+     reach the panels, so a floating button does it (render/main.js sets
+     body.coarse from T.mobile or matchMedia('(pointer: coarse)')) */
+  #bMenu{ display:none; left:calc(18px + env(safe-area-inset-left));
+    bottom:calc(172px + env(safe-area-inset-bottom)); }
+  body.coarse #bMenu{ display:block; }
+
+  /* ---------- edit mode ---------- */
+  #editbar{ display:none; position:fixed; z-index:6; left:50%; transform:translateX(-50%);
+    bottom:calc(14px + env(safe-area-inset-bottom)); flex-direction:column; align-items:center; gap:7px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:9px 12px;
+    backdrop-filter:blur(10px); max-width:calc(100vw - 20px); pointer-events:none; }
+  #editbar .row{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  #editinfo{ font-size:11px; text-align:center; line-height:1.5; opacity:.9; }
+  #editinfo b{ color:var(--acc); }
+  body.touch #editbar{ bottom:calc(180px + env(safe-area-inset-bottom)); }
+
+  /* ---------- camera rig ---------- */
+  #orbitbar, #tourbar{ display:none; position:fixed; z-index:6; left:50%; transform:translateX(-50%);
+    bottom:calc(14px + env(safe-area-inset-bottom)); flex-direction:column; align-items:center; gap:7px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:9px 12px;
+    backdrop-filter:blur(10px); max-width:calc(100vw - 20px); pointer-events:none; }
+  #orbitbar .row, #tourbar .row{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  #orbitinfo, #tourcap{ font-size:11px; text-align:center; line-height:1.5; opacity:.9; }
+  #orbitinfo b, #tourcap b{ color:var(--acc); }
+  #tourcap{ font-size:13px; letter-spacing:.03em; min-height:1.2em; }
+  #tourbar .track{ width:min(360px,70vw); height:2px; background:rgba(255,255,255,.15); border-radius:2px; }
+  #tourbar .track i{ display:block; height:100%; width:0%; background:var(--acc); }
+  /* the joystick is meaningless while the camera is on a rig */
+  body.orbiting #touch, body.orbiting #crosshair, body.orbiting #prompt{ display:none !important; }
+
+  /* ---------- touch ---------- */
+  /* the overlay itself must not eat touches — only its controls do */
+  #touch{ position:fixed; inset:0; z-index:3; display:none; pointer-events:none; }
+  #stick, #tbtns{ pointer-events:none; }
+  #stick{ position:absolute; left:calc(18px + env(safe-area-inset-left)); bottom:calc(24px + env(safe-area-inset-bottom));
+    width:132px; height:132px; border-radius:50%; border:1px solid var(--line); background:rgba(12,16,22,.4); }
+  #stick i{ position:absolute; left:50%; top:50%; width:54px; height:54px; margin:-27px 0 0 -27px; border-radius:50%;
+    background:rgba(232,237,242,.28); border:1px solid rgba(255,255,255,.3); }
+  #tbtns{ position:absolute; right:calc(16px + env(safe-area-inset-right)); bottom:calc(28px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; gap:10px; align-items:center; }
+  #tbtns .rb{ pointer-events:auto; width:64px; height:64px; border-radius:50%; border:1px solid var(--line);
+    background:rgba(12,16,22,.62); color:var(--ui); font:600 10px/1 ui-monospace,monospace; letter-spacing:.06em;
+    display:flex; align-items:center; justify-content:center; user-select:none; }
+  #tbtns .rb:active{ background:rgba(127,209,255,.25); }
+  #tbtns .rb.wide{ width:64px; height:44px; border-radius:22px; }
+
+  /* ---------- panels ---------- */
+  .panel{ position:fixed; z-index:8; background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    backdrop-filter:blur(10px); display:none; }
+  #dbg{ right:8px; top:calc(52px + env(safe-area-inset-top)); width:min(330px,calc(100vw - 16px));
+    max-height:min(64vh,560px); overflow:auto; padding:10px 11px; font-size:11px; }
+  #dbg h3{ margin:0 0 6px; font-size:10px; letter-spacing:.2em; color:var(--acc); font-weight:600; }
+  #dbg .row{ display:flex; justify-content:space-between; gap:8px; padding:1px 0; opacity:.85; }
+  #dbg .sec{ margin-top:9px; border-top:1px solid var(--line); padding-top:8px; }
+  #dbg .iss{ padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.08); }
+  #dbg .iss.bad{ color:var(--bad); } #dbg .iss.warn{ color:var(--warn); } #dbg .iss.ok{ color:var(--ok); }
+  #dbg input{ width:100%; background:rgba(0,0,0,.45); border:1px solid var(--line); color:var(--ui);
+    border-radius:6px; padding:6px 8px; font:12px ui-monospace,monospace; margin:4px 0; }
+  #dbg .mini{ display:flex; gap:5px; flex-wrap:wrap; margin-top:5px; }
+  #dbg .mini .btn{ padding:5px 7px; font-size:10px; }
+
+  #help{ left:50%; top:50%; transform:translate(-50%,-50%); width:min(560px,calc(100vw - 24px));
+    max-height:82vh; overflow:auto; padding:16px 18px; font-size:12px; line-height:1.6; }
+  #help h2{ margin:0 0 4px; font-size:13px; letter-spacing:.18em; color:var(--acc); }
+  #help h4{ margin:14px 0 4px; font-size:11px; letter-spacing:.14em; color:var(--warn); }
+  #help kbd{ display:inline-block; min-width:17px; text-align:center; padding:1px 5px; border:1px solid var(--line);
+    border-bottom-width:2px; border-radius:4px; background:rgba(255,255,255,.06); font-size:11px; }
+  #help table{ width:100%; border-collapse:collapse; } #help td{ padding:2px 6px 2px 0; vertical-align:top; }
+  #help .close{ position:absolute; top:10px; right:12px; }
+  a{ color:var(--acc); }
+
+  /* ---------- settings panel ---------- */
+  #settings{ left:50%; top:50%; transform:translate(-50%,-50%); width:min(460px,calc(100vw - 24px));
+    max-height:82vh; overflow:auto; padding:16px 18px; font-size:12px; line-height:1.6; }
+  #settings h2{ margin:0 0 4px; font-size:13px; letter-spacing:.18em; color:var(--acc); }
+  #settings h4{ margin:14px 0 4px; font-size:11px; letter-spacing:.14em; color:var(--warn); }
+  #settings .close{ position:absolute; top:10px; right:12px; }
+  #settings .srow{ display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:7px 0; border-bottom:1px dashed rgba(255,255,255,.08); }
+  #settings .srow .lab{ opacity:.9; }
+  #settings .srow .hint{ display:block; font-size:10px; opacity:.5; }
+  #settings input[type=range]{ width:min(150px,34vw); accent-color:var(--acc); }
+  #settings input[type=checkbox]{ width:16px; height:16px; accent-color:var(--acc); }
+  #settings select{ background:rgba(0,0,0,.45); border:1px solid var(--line); color:var(--ui);
+    border-radius:6px; padding:5px 8px; font:12px ui-monospace,monospace; }
+  #settings .val{ color:var(--acc); min-width:30px; text-align:right; display:inline-block; }
+  #settings .danger{ border-color:var(--bad); color:var(--bad); }
+
+  /* ---------- town status panel ---------- */
+  #town{ right:8px; top:calc(52px + env(safe-area-inset-top)); width:min(330px,calc(100vw - 16px));
+    max-height:min(64vh,560px); overflow:auto; padding:10px 11px; font-size:11px; }
+  #town h3{ margin:0 0 6px; font-size:10px; letter-spacing:.2em; color:var(--acc); font-weight:600; }
+  #town .row{ display:flex; justify-content:space-between; gap:8px; padding:1px 0; opacity:.85; }
+  #town .row.bad{ color:var(--bad); opacity:1; }
+  #town .row b{ color:var(--acc); font-weight:600; }
+  #town .sec{ margin-top:9px; border-top:1px solid var(--line); padding-top:8px; }
+  #town .ev{ padding:2px 0; border-bottom:1px dashed rgba(255,255,255,.08); opacity:.85; }
+  #town .ev b{ color:var(--acc); font-weight:600; }
+  #town .close{ position:absolute; top:8px; right:10px; }
+
+  /* ---------- World 3: the shell owns the screen ----------
+     Ashgrove's own HUD is a developer HUD — seven permanent buttons, a
+     readout and an inspection layer. It all stays in the DOM (its scripts
+     query these ids at boot), but a player never sees it until they turn
+     Developer tools on in the shell menu, which sets body.dev. */
+  #topright, #readout, #crosshair, #bMenu { display:none !important; }
+  body.dev #topright { display:flex !important; }
+  body.dev #readout  { display:block !important; }
+  body.dev #crosshair{ display:block !important; }
+  /* the shell draws movement and actions; Ashgrove's fixed pad never shows */
+  #touch { display:none !important; }
+  /* Ashgrove's own centre prompt would collide with the shell's */
+  #prompt { display:none !important; }
+  #load { background:#080b10; }
+  #load h1 { letter-spacing:.3em; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<div id="labels"></div>
+
+<div class="hud" id="readout">booting…</div>
+<div class="hud" id="where"></div>
+<div class="hud" id="crosshair"></div>
+<div class="hud" id="prompt"></div>
+
+<div class="hud btn" id="bMenu">✕ MENU</div>
+
+<div class="hud" id="topright">
+  <div class="btn" id="bHelp">? HELP</div>
+  <div class="btn" id="bTown">≡ TOWN</div>
+  <div class="btn" id="bSettings">⚙ SETTINGS</div>
+  <div class="btn" id="bDbg">G INSPECT</div>
+  <div class="btn" id="bEdit">M EDIT</div>
+  <div class="btn" id="bOrbit">O INSPECT BLDG</div>
+  <div class="btn" id="bTour">F TOUR</div>
+</div>
+
+<div class="hud" id="orbitbar">
+  <div id="orbitinfo">orbit</div>
+  <div class="row">
+    <div class="btn" id="cpFRONT">FRONT</div>
+    <div class="btn" id="cpSIDE">SIDE</div>
+    <div class="btn" id="cpAERIAL">AERIAL</div>
+    <div class="btn" id="cpROOF">ROOF</div>
+    <div class="btn" id="cpEAVE">EAVE</div>
+  </div>
+  <div class="row">
+    <div class="btn" id="cpPrev">‹ PREV</div>
+    <div class="btn" id="cpSpin">SPIN</div>
+    <div class="btn" id="cpXray">X-RAY</div>
+    <div class="btn" id="cpNext">NEXT ›</div>
+    <div class="btn" id="cpExit">EXIT</div>
+  </div>
+</div>
+
+<div class="hud" id="tourbar">
+  <div id="tourcap"></div>
+  <div class="track"><i id="tourprog"></i></div>
+  <div class="row">
+    <div class="btn" id="tourPrev">‹</div>
+    <div class="btn" id="tourStop">STOP</div>
+    <div class="btn" id="tourNext">›</div>
+  </div>
+</div>
+
+<div class="hud" id="editbar">
+  <div id="editinfo">point at a piece of furniture</div>
+  <div class="row">
+    <div class="btn" id="eRotL">⟲ Q</div>
+    <div class="btn" id="eRotR">⟳ E</div>
+    <div class="btn" id="eDel">X HIDE</div>
+    <div class="btn" id="eReset">Z RESET</div>
+    <div class="btn" id="eResetAll">RESET ALL</div>
+  </div>
+</div>
+
+<div id="touch">
+  <div id="stick"><i></i></div>
+  <div id="tbtns">
+    <div class="rb wide" id="tRun">RUN</div>
+    <div class="rb" id="tUse">USE</div>
+  </div>
+</div>
+
+<div class="panel" id="dbg">
+  <h3>INSPECTION LAYER</h3>
+  <div id="dbgStats"></div>
+  <div class="sec">
+    <h3>TELEPORT</h3>
+    <input id="tpIn" placeholder="B07-L1-R03  ·  G14-09  ·  120,64" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <div class="mini">
+      <div class="btn" id="tpGo">GO</div>
+      <div class="btn" id="tpCopy">COPY REPORT</div>
+      <div class="btn" id="tpHere">COPY MY COORD</div>
+    </div>
+  </div>
+  <div class="sec"><h3>VALIDATION</h3><div id="dbgIssues"></div></div>
+</div>
+
+<div class="panel" id="town">
+  <div class="btn close" id="bTownClose">CLOSE</div>
+  <h3>TOWN STATUS</h3>
+  <div id="townBody">…</div>
+</div>
+
+<div class="panel" id="settings">
+  <div class="btn close" id="bSettingsClose">CLOSE</div>
+  <h2>SETTINGS</h2>
+  <div class="srow">
+    <span class="lab">look sensitivity</span>
+    <span><input type="range" id="setSens" min="0.4" max="2" step="0.05" value="1"><span class="val" id="setSensVal">1.00</span></span>
+  </div>
+  <div class="srow">
+    <span class="lab">invert Y</span>
+    <input type="checkbox" id="setInvertY">
+  </div>
+  <div class="srow">
+    <span class="lab">quality<span class="hint">auto = device default · applies on reload</span></span>
+    <select id="setQuality">
+      <option value="auto">auto</option>
+      <option value="high">high</option>
+      <option value="low">low</option>
+    </select>
+  </div>
+  <div class="srow">
+    <span class="lab">town clock</span>
+    <input type="checkbox" id="setClock" checked>
+  </div>
+  <div class="srow">
+    <span class="lab">night</span>
+    <input type="checkbox" id="setNight">
+  </div>
+  <div class="srow">
+    <span class="lab">NPC layer<span class="hint">display only — the sim runs regardless</span></span>
+    <input type="checkbox" id="setNpcs" checked>
+  </div>
+  <h4>DANGER ZONE</h4>
+  <div class="srow">
+    <span class="lab">reset the world<span class="hint">delete the saved town and refound</span></span>
+    <div class="btn danger" id="setReset">RESET</div>
+  </div>
+</div>
+
+<div class="panel" id="help">
+  <div class="btn close" id="bClose">CLOSE</div>
+  <h2>ASHGROVE</h2>
+  <div style="opacity:.65">A walkable town. 13 house types, three of each, plus 10 civic buildings — 49 in all, and every one has a solved interior you can walk room to room — and the town's people and their pets walk it alongside you.</div>
+
+  <h4>LIVING TOWN</h4>
+  <div>Ashgrove keeps a 24-minute town day that begins at breakfast when you arrive: people walk to work, school, the shops and the park, dogs tag along on errands, cats hold the yard. Face someone and <kbd>E</kbd> talks to them. At the builders' yard you can take the builder seat (<kbd>E</kbd>), work a shift each day (<kbd>E</kbd>), or hand it back (<kbd>Q</kbd>) — skip about four days and the builder you displaced reclaims it.</div>
+
+  <h4>CONTROLS</h4>
+  <table>
+    <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>walk &nbsp;·&nbsp; <kbd>Shift</kbd> run &nbsp;·&nbsp; <kbd>Space</kbd> jump</td></tr>
+    <tr><td>mouse</td><td>look (click canvas to capture)</td></tr>
+    <tr><td><kbd>E</kbd></td><td>open / close the door you're facing</td></tr>
+    <tr><td><kbd>G</kbd></td><td><b>inspection layer</b> — grid, IDs, collision boxes, float/bury report</td></tr>
+    <tr><td><kbd>M</kbd></td><td><b>edit mode</b> — see below</td></tr>
+    <tr><td><kbd>O</kbd></td><td><b>inspect building</b> — orbit the one you're facing</td></tr>
+    <tr><td><kbd>F</kbd></td><td><b>tour</b> — a scripted flythrough of the whole town</td></tr>
+    <tr><td><kbd>T</kbd></td><td>teleport box &nbsp;·&nbsp; <kbd>C</kbd> copy your coordinate</td></tr>
+    <tr><td><kbd>J</kbd></td><td><b>town status</b> — stocks, jobs, recent events</td></tr>
+    <tr><td><kbd>N</kbd></td><td>toggle night &nbsp;·&nbsp; <kbd>H</kbd> this help &nbsp;·&nbsp; <kbd>P</kbd> hide HUD (screenshots)</td></tr>
+    <tr><td>touch</td><td>left stick walks, right half of screen looks, USE = doors</td></tr>
+  </table>
+  <div style="margin-top:6px">The <b>≡ TOWN</b> button (<kbd>J</kbd>) opens the town status panel — pantry stocks, job seats and recent events, read live from the sim. <b>⚙ SETTINGS</b> holds look sensitivity, invert-Y, quality, the clock, night, the NPC layer, and a world reset.</div>
+
+  <h4>EDIT MODE — <kbd>M</kbd></h4>
+  <div>Every piece of furniture is its own object with its own ID. Point at one and it highlights; click to select.</div>
+  <table>
+    <tr><td>drag</td><td>slide it around the floor (5&nbsp;cm snap)</td></tr>
+    <tr><td><kbd>Q</kbd><kbd>E</kbd></td><td>rotate 15° &nbsp;·&nbsp; mouse wheel does the same</td></tr>
+    <tr><td><kbd>[</kbd><kbd>]</kbd></td><td>raise / lower 5&nbsp;cm</td></tr>
+    <tr><td><kbd>X</kbd></td><td>hide it &nbsp;·&nbsp; <kbd>Z</kbd> put it back &nbsp;·&nbsp; <kbd>Shift</kbd>+<kbd>Z</kbd> reset everything</td></tr>
+    <tr><td>touch</td><td>tap to select, drag to move, buttons for the rest</td></tr>
+  </table>
+  <div style="margin-top:6px">Edits save to this browser and survive a reload. Collision and the inspection box follow the object, so a chair you drag into a doorway really will block you.</div>
+
+  <h4>INSPECT A BUILDING — <kbd>O</kbd></h4>
+  <div>Puts the building you're facing on a turntable. Drag to orbit, wheel or pinch to zoom, right-drag to pan.</div>
+  <table>
+    <tr><td><kbd>1</kbd>–<kbd>5</kbd></td><td>front · side · aerial · <b>roof plan</b> · eave detail</td></tr>
+    <tr><td><kbd>R</kbd></td><td><b>x-ray</b> — lifts every roof and ceiling off so you can see straight down into the rooms</td></tr>
+    <tr><td><kbd>,</kbd> <kbd>.</kbd></td><td>previous / next building — walk the whole town without walking</td></tr>
+    <tr><td>SPIN</td><td>slow auto-rotate, for looking at roof planes and eave details</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>back to walking</td></tr>
+  </table>
+
+  <h4>TOUR — <kbd>F</kbd></h4>
+  <div>A ~2 minute scripted flythrough: 27 shots over the town and 12 buildings, alternating between the normal view and the inspection layer so you see the thing and then the data about it. <kbd>,</kbd> <kbd>.</kbd> skip shots, <kbd>Esc</kbd> stops.</div>
+
+  <h4>ADDRESSING — say these to an agent</h4>
+  <div>Every asset carries a permanent ID and the world sits on a 4&nbsp;m grid.</div>
+  <table>
+    <tr><td><b>G14-09</b></td><td>grid cell, column 14 row 9 (4&nbsp;m cells, origin SW)</td></tr>
+    <tr><td><b>B07</b></td><td>building 7 &nbsp;(<b>H07</b> and <b>L0-H07-R3</b> also parse)</td></tr>
+    <tr><td><b>B07-L1-R03</b></td><td>building 7, level 1, room 3</td></tr>
+    <tr><td><b>B07-L0-D02</b></td><td>door 2 &nbsp;·&nbsp; <b>-N</b> window, <b>-W</b> wall, <b>-F</b> furniture, <b>-K</b> roof</td></tr>
+    <tr><td><b>TREE0042</b></td><td>props: TREE, LAMP, CAR, HYD, BENCH, SIGN, FENCE, MAIL</td></tr>
+  </table>
+  <div style="margin-top:6px">So <i>"I'm at G14-09. Door B07-L0-D02 isn't aligned with wall B07-L0-W12"</i> is a fully resolvable bug report — hit <b>COPY REPORT</b> in the inspect panel and paste it.</div>
+
+  <h4>WHY THE HOUSES DON'T BREAK</h4>
+  <div>No blueprints were scraped. Each floorplan is solved at runtime against a real dimension code book (door 813×2032, ceiling 2440, hall ≥1067, bedroom ≥7.0&nbsp;m² + egress window, stair 190.5/254) and then validated: room area, hall width, reachability from the front door, and float/bury against the slab. Failures are printed in the inspection panel instead of silently shipping.</div>
+</div>
+
+<div id="load">
+  <h1>ASHGROVE</h1>
+  <div class="bar"><i id="loadBar"></i></div>
+  <p id="loadMsg">initialising</p>
+</div>
+
+<script src="town/render/core.js?v=8"></script>
+<script src="town/render/textures.js?v=8"></script>
+<script src="town/render/geom.js?v=8"></script>
+<script src="town/render/plan.js?v=8"></script>
+<script src="town/render/furniture.js?v=8"></script>
+<script src="town/render/buildings.js?v=8"></script>
+<script src="town/render/props.js?v=8"></script>
+<script src="town/render/town.js?v=8"></script>
+<script src="town/render/settings.js?v=1"></script>
+<script src="town/render/player.js?v=8"></script>
+<script src="town/render/debug.js?v=8"></script>
+<script src="town/render/camera.js?v=8"></script>
+<script src="town/render/edit.js?v=8"></script>
+<script src="town/render/npcs.js?v=2"></script>
+<script src="town/sim/rng.js?v=1"></script>
+<script src="town/sim/canonical.js?v=1"></script>
+<script src="town/sim/clock.js?v=1"></script>
+<script src="town/sim/ids.js?v=1"></script>
+<script src="town/sim/organisms.js?v=1"></script>
+<script src="town/sim/people.js?v=1"></script>
+<script src="town/sim/jobs.js?v=1"></script>
+<script src="town/sim/demand.js?v=1"></script>
+<script src="town/sim/resources.js?v=1"></script>
+<script src="town/sim/engine.js?v=1"></script>
+<script src="town/sim/pets.js?v=1"></script>
+<script src="town/sim/ambient.js?v=1"></script>
+<script src="town/world/registry.js?v=1"></script>
+<script src="town/world/growth.js?v=1"></script>
+<script src="town/world/streets.js?v=1"></script>
+<script src="town/world/bootstrap.js?v=1"></script>
+<script src="town/render/main.js?v=9"></script>
+<script src="/shell/shell.js?v=1"></script>
+<script src="main.js?v=1"></script>
+</body>
+</html>
