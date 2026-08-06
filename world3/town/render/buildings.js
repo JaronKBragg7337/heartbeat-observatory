@@ -252,38 +252,25 @@ Building.prototype.register = function () {
       this.asset(`${lid}-ST`, "stair", s.x0, s.z0, x1, z1, yLo, yHi + 1.0, yLo);
       s.world = { x0: b[0], x1: b[3], z0: b[2], z1: b[5], yLo, yHi, wAxis, asc };
 
-      /* A staircase is solid mass, not a hologram. Until now it had a ramp
-         surface and no collider at all, so you walked straight through the
-         side of it (found by Jaron and Lillith, 2026-08-06).
-         ONE COLLIDER PER STEP, each only as tall as the tread it supports.
-         A single box spanning yLo..yHi would be correct-looking and unusable:
-         the collision test blocks when a box overlaps feet+step..feet+1.75, so
-         a full-height box would block the climber standing ON the run.
-         Rising boxes let you walk up while still refusing anyone trying to
-         cross the run from the side or stand inside it.
-         The RAILING is deliberately left non-colliding. The run is fenced on
-         one long side and walled on the other, so a solid railing would seal
-         the upper floor off entirely — Jaron spotted that before it shipped.
-         Opening a gap in the railing is the prerequisite for colliding it. */
-      /* Each box tops out at the tread BELOW its span, not the one above.
-         The player has a 0.30 m collision radius and a 0.32 m auto-step, so
-         their cylinder reaches about one step ahead of their feet; a box as
-         tall as the tread it supports stands ~0.40 m above those feet and
-         blocks the climb everywhere. tools/baseline.js caught exactly this —
-         twoStoreyWalkable fell to 0 of 22 — which is why the number is in the
-         contract. Topping out one tread lower keeps every box under the
-         climber's step height while still standing shoulder-high to anyone
-         crossing the run from the side. */
-      const along = s.axis === "x" ? "x" : "z";
-      for (let i = 1; i < s.steps; i++) {
-        const t0 = i * s.run, t1 = t0 + s.run;
-        const top = yLo + i * s.rise;
-        const cx0 = along === "x" ? s.x0 + t0 : s.x0;
-        const cx1 = along === "x" ? s.x0 + t1 : s.x0 + s.w;
-        const cz0 = along === "z" ? s.z0 + t0 : s.z0;
-        const cz1 = along === "z" ? s.z0 + t1 : s.z0 + s.w;
-        this.solid(cx0, cz0, cx1, cz1, yLo, top, `${lid}-ST-S${String(i + 1).padStart(2, "0")}`, "stair");
-      }
+      /* NO COLLIDER ON THE STAIR RUN — and that is a known, measured
+         compromise rather than an oversight.
+         You can currently walk through the side of a staircase. Solidifying it
+         is the obvious fix and was tried on 2026-08-06: one box per step, each
+         topping out at the tread below its span. It stopped the walk-through
+         and it also sealed the upper floor. tools/walkable.js measured the
+         damage — buildings whose upstairs a player can actually reach fell
+         from 21 of 22 to 3 — because a run is typically flush against the
+         building wall on one side and fenced by its own full-length railing on
+         the other, so its only legitimate approach is sideways across the
+         treads, which is exactly what the boxes blocked. Opening the low
+         treads (LATERAL_OPEN) recovered only 1 building of the 18 lost.
+         Being unable to get upstairs at all is worse than being able to clip
+         through a bannister, so the colliders come back out.
+         THE REAL FIX is upstream in the stair geometry: give the run a landing
+         at its foot instead of starting it against a wall, and put a gap in
+         the railing where a player is meant to step on. Then the run can be
+         solid without walling itself off. walkable.js is the check that will
+         prove it, and baseline.js's twoStoreyWalkable proves the climb. */
     }
   }
   return this;

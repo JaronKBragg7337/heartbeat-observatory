@@ -44,13 +44,12 @@ const EXPECTED = {
   twoStoreyWalkable: 22,
   assets: 4284,
   items: 1414,
-  /* 3110 -> 3421 on 2026-08-06: staircases became solid. Every stair run now
-     carries one collider per step (steps-1 boxes, each topping out at the
-     tread below its span) so you can no longer walk through the side of a
-     staircase. Deliberate, re-recorded here rather than widened by tolerance.
-     twoStoreyWalkable above is the guard that keeps this honest — the first
-     attempt at these colliders took it from 22 to 0. */
-  colliders: 3421,
+  /* Went 3110 -> 3421 on 2026-08-06 when stair runs were given per-step
+     colliders, and back to 3110 the same day when tools/walkable.js showed
+     those colliders sealed the upper floor in 18 of 22 houses. See the note in
+     render/buildings.js: making a staircase solid needs the run to have a
+     landing at its foot and a gap in its railing first. */
+  colliders: 3110,
   degenerate: 0,
   staticTris: 863160,
   houseTypes: 13,
