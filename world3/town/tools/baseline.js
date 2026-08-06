@@ -44,7 +44,13 @@ const EXPECTED = {
   twoStoreyWalkable: 22,
   assets: 4284,
   items: 1414,
-  colliders: 3110,
+  /* 3110 -> 3421 on 2026-08-06: staircases became solid. Every stair run now
+     carries one collider per step (steps-1 boxes, each topping out at the
+     tread below its span) so you can no longer walk through the side of a
+     staircase. Deliberate, re-recorded here rather than widened by tolerance.
+     twoStoreyWalkable above is the guard that keeps this honest — the first
+     attempt at these colliders took it from 22 to 0. */
+  colliders: 3421,
   degenerate: 0,
   staticTris: 863160,
   houseTypes: 13,
