@@ -170,8 +170,12 @@ const shell = window.HBShell.mount({
     const P = T.Player;
     if (!P) return;
     if (name === "use") {
-      /* the town offers one thing at a time: a door, or the NPC you face */
-      if (T.Npcs && T.Npcs.promptAction) T.Npcs.interact();
+      /* One offer at a time, in this order: the door under your hand, then
+         whatever the building you are standing in leads to, then the person
+         you are facing. */
+      if (P.nearDoor) P.useDoor();
+      else if (T.Destinations && T.Destinations.use(shell)) { /* handled */ }
+      else if (T.Npcs && T.Npcs.promptAction) T.Npcs.interact();
       else P.useDoor();
     } else if (name === "jump") {
       P.keys.Space = true;
@@ -211,11 +215,15 @@ function pump(now) {
   shell.frame(dt);
   shell.setPlace(placeName());
 
-  /* one offer at a time, matching the town's own precedence: door first */
+  /* one offer at a time, same precedence the action key uses */
   const P = T.Player;
   let text = null;
   if (P && P.nearDoor) text = "Open the door";
-  else if (T.Npcs && T.Npcs.prompt) text = String(T.Npcs.prompt).replace(/<[^>]*>/g, "");
+  else {
+    const dest = T.Destinations && T.Destinations.here();
+    if (dest) text = dest.verb;
+    else if (T.Npcs && T.Npcs.prompt) text = String(T.Npcs.prompt).replace(/<[^>]*>/g, "");
+  }
   shell.setPrompt(text);
 }
 requestAnimationFrame(pump);
@@ -242,6 +250,21 @@ async function announceTown() {
   }
 }
 setTimeout(() => void announceTown(), 4000);
+
+/* Diagnostics. Peers live in a closure so nothing can accidentally mutate
+   them; this is a read-only window for the console and for tests. */
+window.__world3 = {
+  get peers() {
+    return [...peers.entries()].map(([id, e]) => ({
+      id, name: e.name,
+      at: e.x === undefined ? null : [+e.x.toFixed(1), +e.z.toFixed(1)],
+      floor: e.x === undefined ? null : +T.Player.floorAt(e.x, e.z, 1e5).toFixed(2),
+      hasMesh: !!(e.body && e.legL && e.legR),
+      striding: +e.amp.toFixed(2),
+    }));
+  },
+  get incoming() { return latestPeers.length; },
+};
 
 console.log("%cWORLD3", "color:#8fd0ff;font-weight:bold",
   "Ashgrove mounted on the Observatory shell — town/ is an unmodified copy");

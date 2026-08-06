@@ -291,7 +291,16 @@ HBShell.mount = function mount(options) {
 
   function togglePhone() { phone.classList.contains("open") ? closePhone() : openPhone(); }
   function closePhone() { phone.classList.remove("open"); }
-  function openPhone() { phone.classList.add("open"); phoneView = "home"; renderPhone(); void loadMessages(); }
+  function openPhone(view) {
+    phone.classList.add("open");
+    phoneView = view || "home";
+    renderPhone();
+    void loadMessages();
+  }
+  /* A world can open the phone straight to an app — the post office counter
+     opens Messages, the diner booth opens People. */
+  shell.openPhone = openPhone;
+  shell.closePhone = closePhone;
 
   function renderPhone() {
     const title = phoneView === "home" ? "Phone"
@@ -667,6 +676,9 @@ HBShell.mount = function mount(options) {
 
   void connect().catch(() => { cStatus.textContent = "offline"; });
   opts.onSettings(shell.settings);
+  /* One mounted shell per page. Exposed so a world, a console or a test can
+     read who is connected and where they are without reaching into a closure. */
+  HBShell.current = shell;
   return shell;
 };
 
