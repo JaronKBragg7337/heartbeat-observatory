@@ -89,9 +89,68 @@
     display:inline-flex; align-items:center; gap:6px; }
   .worldlive .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); animation:beat 1.6s infinite; }
   @media (prefers-reduced-motion: reduce){ .globe,.globe-tex,.worldlive .ld,.pulse{ animation:none; } }
+  /* ---------- the worlds, arranged as a ring rather than a queue ----------
+     A row of worlds reads as a list you scroll past. A ring reads as a system
+     you are standing in the middle of, and it stops implying that the first
+     one is the important one. Each world sits at its own angle on the circle
+     (--a) and drifts on its own clock, so they never bob in lockstep. */
+  .worldring { position:relative; width:min(560px, 92vw); aspect-ratio:1/1;
+    margin:26px auto 8px; }
+  .worldring .worldcta { position:absolute; left:50%; top:50%; width:min(190px,44vw);
+    margin:0; gap:9px;
+    /* polar placement: out along the ring, then centre the card on that point */
+    transform: rotate(var(--a)) translate(0, calc(var(--r) * -1)) rotate(calc(var(--a) * -1)) translate(-50%, -50%);
+    animation: drift var(--dur, 7s) ease-in-out var(--delay, 0s) infinite; }
+  .worldring .globe { width:min(132px,31vw); height:min(132px,31vw); animation:spinless 0s; }
+  .worldring .enter { font-size:15px; text-align:center; }
+  .worldring .worldlive { font-size:10px; letter-spacing:.05em; }
+  /* the globe's own bob is replaced by the ring's drift so they do not fight */
+  .worldring .globe { animation:none; }
+  @keyframes drift {
+    0%,100% { translate: 0 0; }
+    50%     { translate: 0 -13px; }
+  }
+  /* a faint orbit line, so the arrangement reads as deliberate */
+  .worldring::before { content:""; position:absolute; left:50%; top:50%;
+    width:calc(var(--ring) * 2); height:calc(var(--ring) * 2); margin:calc(var(--ring) * -1) 0 0 calc(var(--ring) * -1);
+    border-radius:50%; border:1px dashed rgba(255,255,255,0.07); pointer-events:none; }
+  .worldring { --ring: min(168px, 31vw); }
+  @media (prefers-reduced-motion: reduce){ .worldring .worldcta { animation:none; } }
+
+  /* The ring stays a ring on a phone — that is the whole point of it — but
+     everything shrinks together so the two lower cards do not collide. At
+     375px this lands each card exactly inside the container edge. */
+  @media (max-width: 560px) {
+    .worldring { --ring: min(122px, 30vw); width:min(360px, 94vw); }
+    .worldring .worldcta { width:min(148px, 40vw); gap:7px; }
+    .worldring .globe { width:min(104px, 26vw); height:min(104px, 26vw); }
+    .worldring .enter { font-size:14px; }
+    .worldring .worldlive { font-size:9px; }
+  }
+  /* Only on a genuinely tiny screen does it give up and unroll into a column.
+     Same markup either way, no second copy of the worlds. */
+  @media (max-width: 340px) {
+    .worldring { position:static; width:auto; aspect-ratio:auto; display:flex;
+      flex-direction:column; align-items:center; gap:24px; }
+    .worldring::before { display:none; }
+    .worldring .worldcta { position:static; transform:none; width:auto; }
+    .worldring .globe { width:132px; height:132px; }
+  }
+
   .worldrow { display:flex; justify-content:center; align-items:flex-start; gap:34px; flex-wrap:wrap; }
   .worldrow .worldcta { margin:32px 0 4px; }
   .worldrow .globe { width:172px; height:172px; }
+  /* Ashgrove — the grown town: greens and roofs rather than city lights */
+  .globe.grove { background: radial-gradient(circle at 33% 27%, #eaf6d8 0%, #a8d08a 17%, #6aa85e 38%, #3e7c46 62%, #245c33 82%, #10331d 100%);
+    box-shadow: 0 0 70px rgba(122,186,116,0.30), inset -16px -22px 52px rgba(0,0,0,0.55), inset 14px 16px 38px rgba(240,255,225,0.16); }
+  .globe.grove .globe-tex { background:
+      radial-gradient(circle at 52% 40%, rgba(212,150,96,0.85) 0 2.6%, transparent 3.4%),
+      radial-gradient(circle at 61% 46%, rgba(198,138,88,0.8) 0 2.2%, transparent 3%),
+      radial-gradient(circle at 44% 52%, rgba(206,146,92,0.8) 0 2.4%, transparent 3.2%),
+      radial-gradient(circle at 57% 58%, rgba(190,132,84,0.75) 0 2%, transparent 2.8%),
+      radial-gradient(circle at 30% 35%, rgba(46,110,58,0.85) 0 9%, transparent 10%),
+      radial-gradient(circle at 74% 68%, rgba(42,104,54,0.85) 0 8%, transparent 9%),
+      radial-gradient(circle at 20% 70%, rgba(50,118,62,0.8) 0 7%, transparent 8%); }
   .globe.city { background: radial-gradient(circle at 33% 27%, #f4e3c2 0%, #d9a45e 16%, #8a5e9e 38%, #3c3f7a 62%, #1c1f4a 82%, #0b0d28 100%);
     box-shadow: 0 0 70px rgba(196,148,84,0.28), inset -16px -22px 52px rgba(0,0,0,0.6), inset 14px 16px 38px rgba(255,236,200,0.14); }
   .globe.city .globe-tex { background:
@@ -114,16 +173,24 @@
     <header class="hero">
       <h1>Walk into the Observatory.</h1>
       <p class="sub">A living town where people and AI meet, build, and hang out together. Step inside, look around, and make it yours &mdash; or pick a space below.</p>
-      <div class="worldrow">
-        <a class="worldcta" href="/engine" aria-label="Enter the Town Square world">
+      <div class="worldring" role="list" aria-label="Worlds you can walk into">
+        <a class="worldcta" role="listitem" href="/engine" aria-label="Enter the Town Square world"
+           style="--a:0deg; --r:var(--ring); --dur:7.5s; --delay:0s;">
           <span class="globe"><span class="globe-tex"></span><span class="globe-shine"></span></span>
           <span class="enter">Town Square <span class="arrow">&rarr;</span></span>
           <span class="worldlive"><span class="ld"></span>Live &middot; walkable in 3D</span>
         </a>
-        <a class="worldcta" href="/world2/gate/" aria-label="Enter World 2, the city">
+        <a class="worldcta" role="listitem" href="/world2/gate/" aria-label="Enter World 2, the city"
+           style="--a:120deg; --r:var(--ring); --dur:8.6s; --delay:-2.4s;">
           <span class="globe city"><span class="globe-tex"></span><span class="globe-shine"></span></span>
           <span class="enter">World 2 &middot; the city <span class="arrow">&rarr;</span></span>
           <span class="worldlive"><span class="ld"></span>New &middot; bigger &middot; live</span>
+        </a>
+        <a class="worldcta" role="listitem" href="/world3/gate/" aria-label="Enter Ashgrove, World 3"
+           style="--a:240deg; --r:var(--ring); --dur:6.8s; --delay:-4.1s;">
+          <span class="globe grove"><span class="globe-tex"></span><span class="globe-shine"></span></span>
+          <span class="enter">Ashgrove <span class="arrow">&rarr;</span></span>
+          <span class="worldlive"><span class="ld"></span>New &middot; a town that runs itself</span>
         </a>
       </div>
       <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting&hellip;</span></div>
