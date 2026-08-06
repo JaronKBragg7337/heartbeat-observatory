@@ -56,12 +56,22 @@ const DAY_START_MIN = 465;
    town-day length is unchanged (1 real second = 1 town minute, so a town day
    is 24 real minutes), and townMinutes' formula is still untouched. */
 const TOWN_EPOCH_MS = Date.UTC(2026, 7, 6, 0, 0, 0);   // 2026-08-06T00:00Z
-const TOWN_DAY_MS = () => ASH.TOWN_MINUTES_PER_DAY * 1000;
+
+/* The town keeps a REAL 24-hour day: one town minute is one real minute, so
+   its clock agrees with a wall clock. TOWN_UTC_OFFSET_HOURS is the town's own
+   timezone — every client applies the same offset, so the town has one time
+   of day worldwide rather than each player's local one. -5 puts Ashgrove's
+   noon at US Eastern noon.
+
+   DAY_START_MIN no longer shifts the clock: with a real day there is nothing
+   to skip past, and offsetting it would only make the town's clock lie. */
+const TOWN_UTC_OFFSET_HOURS = -5;
 
 /* Town minutes elapsed since the shared epoch — the same number on every
    client at the same instant, and the basis for both the clock and the day. */
 function sharedTotalMinutes(wallNowMs) {
-  return Math.max(0, (wallNowMs - TOWN_EPOCH_MS) / 1000) + DAY_START_MIN;
+  const minutes = (wallNowMs - TOWN_EPOCH_MS) / 60000 + TOWN_UTC_OFFSET_HOURS * 60;
+  return Math.max(0, minutes);
 }
 
 /* module state — restored sim, the day's plans, and the drawn population */
@@ -179,7 +189,7 @@ N.init = function ({ storage }) {
 
   /* kept for anything still reading it; the clock itself no longer depends
      on when this page loaded */
-  sessionStart = performance.now() - DAY_START_MIN * 1000;
+  sessionStart = performance.now();
   replan(Math.floor(sharedTotalMinutes(Date.now()) / ASH.TOWN_MINUTES_PER_DAY));
 
   /* one mesh set per living person. People and pets are only ever ADDED at

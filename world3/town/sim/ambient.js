@@ -22,7 +22,13 @@
 "use strict";
 const ASH = (globalThis.ASH = globalThis.ASH || {});
 
-ASH.TOWN_MINUTES_PER_DAY = 1440;           // 1 real second = 1 town minute
+/* A town day is a REAL day: 1 town minute = 1 real minute, so the town's
+   clock reads the same as a wall clock and the residents keep a genuine
+   24-hour routine. (It was 1 real second = 1 town minute — a 24-real-minute
+   day — which made the whole cycle observable in one sitting but meant the
+   town's morning had nothing to do with your morning.) Anything computing a
+   duration in town minutes must convert from seconds; see legDepart below. */
+ASH.TOWN_MINUTES_PER_DAY = 1440;           // 1 town minute = 1 real minute
 
 const SPEED_ADULT = 1.4, SPEED_CHILD = 1.1;   // m/s
 
@@ -60,22 +66,26 @@ ASH.pathPointAt = function (path, d) {
 };
 
 /* ------------------------------------------------------------- leg making */
-/* Travel time is measured in TOWN minutes. On the visible clock 1 real second
-   = 1 town minute (D11), and speed is metres per real second — so seconds and
-   town-minutes are the same number and NO unit conversion applies. The old
-   `/ 60` treated the day as real-time minutes: every walk was compressed to
-   ~2 real seconds, NPCs flashed door-to-door invisibly, and spent the other
-   99 % of the day indoors. That was the "empty town" bug. */
+/* Travel time is measured in TOWN minutes, and a town minute is now a REAL
+   minute (see TOWN_MINUTES_PER_DAY above). `speed` is metres per real second,
+   so a path length in metres divided by speed gives SECONDS — hence `/ 60` to
+   land in minutes. A 140 m walk is 100 s, which is 1.67 town minutes.
+
+   History, because this line has been wrong in both directions: the `/ 60`
+   was once removed to suit a 24-real-minute day, where a town minute equalled
+   a real second and the conversion was genuinely wrong. Under a 24-real-hour
+   day it is required again. Remove it and every walk takes sixty times too
+   long — people would still be crossing the street at bedtime. */
 function legDepart(kind, to, fromA, toA, graph, speed, departMin) {
   const path = ASH.tripPath(graph, fromA, toA);
-  const travel = ASH.pathLength(path) / speed;
+  const travel = ASH.pathLength(path) / speed / 60;
   return { kind, to, path, departMin, arriveMin: departMin + travel, dwellMin: 0 };
 }
 
 /* arrive-anchored: departure is clamped EARLIER so the trip lands on time */
 function legArrive(kind, to, fromA, toA, graph, speed, arriveMin) {
   const path = ASH.tripPath(graph, fromA, toA);
-  const travel = ASH.pathLength(path) / speed;
+  const travel = ASH.pathLength(path) / speed / 60;
   return { kind, to, path, departMin: arriveMin - travel, arriveMin, dwellMin: 0 };
 }
 
