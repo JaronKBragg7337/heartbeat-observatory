@@ -5,7 +5,16 @@
 "use strict";
 const T = window.TOWN, C = T.CODE, W = T.World;
 
-const EYE = 1.660, RAD = 0.300, STEP = C.stepUp;
+/* RAD was 0.300 — a 600 mm-wide cylinder. Interior doors are CODE.doorIntW,
+   762 mm, a real 30" door, which left a 162 mm band you had to thread within
+   ±8 cm of dead centre. tools/walkable.js measured the consequence: 38 rooms
+   across 19 houses that a player could not get into, and they were almost all
+   BEDROOMS and BATHROOMS — precisely the rooms that get the narrow door, while
+   kitchens and dining rooms get the 1.20 m one and were fine.
+   A real adult is about 450 mm across the shoulders and walks through a 30"
+   door without thinking. 0.24 restores that: a 282 mm band instead of 162. The
+   architecture was never wrong; the player was too wide for it. */
+const EYE = 1.660, RAD = 0.240, STEP = C.stepUp;
 const WALK = 3.1, RUN = 5.6, ACC = 26, AIR = 3;
 
 const Pl = (T.Player = {
