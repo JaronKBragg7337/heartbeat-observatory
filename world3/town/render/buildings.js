@@ -158,6 +158,25 @@ Building.prototype.register = function () {
                      r: 6.5, indoor: true });
     }
 
+    /* A stairwell is a vertical shaft, and every room light sits flat against
+       its own ceiling, so nothing ever reached into the well. Both the floor
+       below and the ceiling above are correctly cut — the openings are real —
+       but with no light in the shaft they read as one solid slab, in a colour
+       that changes house to house because it is whatever floor material lies
+       at the bottom. Jaron reported it twice as "an object blocking the view
+       up and down the stairs"; the object was the dark.
+       This hangs one lamp in the well itself, high enough to spill onto both
+       storeys and reach the treads between them. */
+    if (lv.stairs) {
+      const st = lv.stairs, h = st.hole;
+      W.lamps.push({
+        x: this.tx((h.x0 + h.x1) / 2, (h.z0 + h.z1) / 2),
+        y: lv.y + lv.ceilH + 0.55,
+        z: this.tz((h.x0 + h.x1) / 2, (h.z0 + h.z1) / 2),
+        r: 8.5, indoor: true,
+      });
+    }
+
     /* ---- furniture as individually addressable items ------------------- */
     for (const rm of lv.rooms) {
       if (rm.def.open) continue;
