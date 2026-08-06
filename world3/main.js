@@ -197,6 +197,81 @@ const shell = window.HBShell.mount({
 });
 
 /* ------------------------------------------------------------------------ *
+   3b. Doors are shared.
+   Jaron and Lillith found this together: she opened a door and he did not see
+   it move. Door state lived entirely in each browser, so two people standing
+   in one hallway saw different houses. Every door already carries a stable
+   unique id (B01-L0-D02 and friends, 325 of them), so the id is all that has
+   to travel.
+
+   Deliberately NOT persisted. A door is the most ephemeral thing in the town
+   and writing 325 rows to keep it would buy nothing; a late arrival instead
+   asks whoever is already here what is currently open. If nobody is here,
+   there is nobody to disagree with.
+ * ------------------------------------------------------------------------ */
+const W = T.World;
+
+/* The town boots asynchronously, so W.doors is still empty when this file
+   runs — an index built here would be permanently blank. It is also rebuilt
+   whenever the town regrows. So the index is lazy and re-derived whenever the
+   door count changes. */
+let doorsById = null, doorIndexSize = -1;
+function doorIndex() {
+  if (doorIndexSize !== W.doors.length) {
+    doorsById = new Map();
+    for (const d of W.doors) doorsById.set(d.id, d);
+    doorIndexSize = W.doors.length;
+  }
+  return doorsById;
+}
+
+function setDoor(id, open) {
+  const d = doorIndex().get(id);
+  if (!d) return false;
+  d.target = open ? 1 : 0;      // animateDoors eases it and flips the collider
+  return true;
+}
+
+/* our own toggles go out */
+const originalUseDoor = T.Player.useDoor;
+T.Player.useDoor = function () {
+  const d = T.Player.nearDoor;
+  const handled = originalUseDoor.call(T.Player);
+  if (handled && d) shell.send("door", { door: d.id, open: d.target > 0.5 });
+  return handled;
+};
+
+shell.on("door", (msg) => setDoor(msg.door, msg.open));
+
+/* a late arrival asks the room what is already open */
+shell.on("door-sync-request", () => {
+  const open = [];
+  for (const d of W.doors) if (d.target > 0.5) open.push(d.id);
+  shell.send("door-sync", { open });
+});
+
+let doorSyncApplied = false;
+shell.on("door-sync", (msg) => {
+  if (doorSyncApplied || !Array.isArray(msg.open)) return;
+  /* Only count it as applied once a door actually moved. The answer can beat
+     the town: the socket is up in a second or two while Town.build takes two
+     to four, so an early reply would otherwise be marked handled and thrown
+     away against an empty world — the late arrival would stand in a hallway
+     seeing closed doors everyone else sees open. */
+  let applied = 0;
+  for (const id of msg.open) if (setDoor(id, true)) applied++;
+  if (applied > 0 || msg.open.length === 0) doorSyncApplied = true;
+});
+
+/* Ask only when we can both send AND receive usefully — socket up and the
+   town actually built. */
+(function askForDoors(tries) {
+  if (tries <= 0 || doorSyncApplied) return;
+  const ready = W.doors.length > 0 && shell.send("door-sync-request", {});
+  setTimeout(() => askForDoors(tries - 1), ready ? 1500 : 700);
+})(20);
+
+/* ------------------------------------------------------------------------ *
    4. The shell's chips and prompt, fed from the town every frame.
  * ------------------------------------------------------------------------ */
 function placeName() {

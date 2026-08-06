@@ -571,6 +571,18 @@ HBShell.mount = function mount(options) {
       p.last = now;
     });
 
+    /* A general world-event lane, separate from the movement lane.
+       Movement is high-frequency, lossy and fine to drop; a door opening is
+       rare and must not be. Worlds publish through shell.send(kind, data) and
+       subscribe with shell.on(kind, fn). Doors use it now; trash, vehicles
+       and the bus are the same shape. Own messages are filtered out here so a
+       world never has to check. */
+    ch.on("broadcast", { event: "world" }, ({ payload }) => {
+      if (!payload || payload.from === shell.selfKey) return;
+      const list = worldHandlers[payload.kind];
+      if (list) for (const fn of list) { try { fn(payload, payload.from); } catch (_) {} }
+    });
+
     /* presence carries IDENTITY ONLY — never movement. See law 1 at the top. */
     ch.on("presence", { event: "sync" }, syncPresence);
     ch.on("presence", { event: "join" }, syncPresence);
@@ -628,6 +640,29 @@ HBShell.mount = function mount(options) {
   }
 
   function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h | 0; }
+
+  /* ------------------------------------------------------ world events - */
+  const worldHandlers = Object.create(null);
+
+  /* Publish something every other client in this world should know about.
+     Unlike movement this is not rate-capped or idle-suppressed: these are
+     discrete facts, and dropping one leaves two players disagreeing. */
+  shell.send = function (kind, data) {
+    if (!shell.connected || !shell.channel) return false;
+    shell.channel.send({
+      type: "broadcast", event: "world",
+      payload: Object.assign({ kind, from: shell.selfKey }, data || {}),
+    });
+    return true;
+  };
+
+  shell.on = function (kind, fn) {
+    (worldHandlers[kind] || (worldHandlers[kind] = [])).push(fn);
+    return () => {
+      const l = worldHandlers[kind];
+      if (l) worldHandlers[kind] = l.filter((f) => f !== fn);
+    };
+  };
 
   /* Peers, sampled INTERP_DELAY_MS in the past and interpolated. */
   function sample() {
