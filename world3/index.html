@@ -365,6 +365,30 @@
   <p id="loadMsg">initialising</p>
 </div>
 
+<script>
+/* World 3 shared-world migration. Runs BEFORE the town boots.
+   Until 2026-08-06 each browser founded Ashgrove with its own genesis
+   timestamp, so every player had a town with a different birthday, a
+   different day count and therefore a different population -- Jaron and
+   Lillith saw different residents. Genesis is now a fixed shared instant.
+   A save carrying the old per-browser genesis is discarded once so the
+   world refounds onto the shared clock; growth committed before this is
+   lost, which at one day old is a few buildings at most. */
+(function () {
+  var KEY = "ashgrove-world-v1";
+  var SHARED_GENESIS = Date.UTC(2026, 7, 6, 0, 0, 0);
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (!raw) return;
+    var doc = JSON.parse(raw);
+    if (doc && doc.genesisMs !== SHARED_GENESIS) {
+      localStorage.removeItem(KEY);
+      console.log("%cWORLD3", "color:#8fd0ff;font-weight:bold",
+        "local town discarded: it was founded on a private clock, refounding on the shared one");
+    }
+  } catch (e) { try { localStorage.removeItem(KEY); } catch (_) {} }
+})();
+</script>
 <script src="town/render/core.js?v=8"></script>
 <script src="town/render/textures.js?v=8"></script>
 <script src="town/render/geom.js?v=8"></script>
@@ -378,7 +402,7 @@
 <script src="town/render/debug.js?v=8"></script>
 <script src="town/render/camera.js?v=8"></script>
 <script src="town/render/edit.js?v=8"></script>
-<script src="town/render/npcs.js?v=2"></script>
+<script src="town/render/npcs.js?v=4"></script>
 <script src="town/sim/rng.js?v=1"></script>
 <script src="town/sim/canonical.js?v=1"></script>
 <script src="town/sim/clock.js?v=1"></script>
@@ -394,8 +418,8 @@
 <script src="town/world/registry.js?v=1"></script>
 <script src="town/world/growth.js?v=1"></script>
 <script src="town/world/streets.js?v=1"></script>
-<script src="town/world/bootstrap.js?v=1"></script>
-<script src="town/render/main.js?v=9"></script>
+<script src="town/world/bootstrap.js?v=2"></script>
+<script src="town/render/main.js?v=10"></script>
 <script src="/shell/shell.js?v=3"></script>
 <script src="destinations.js?v=1"></script>
 <script src="main.js?v=4"></script>

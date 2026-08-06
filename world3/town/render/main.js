@@ -571,8 +571,17 @@ async function boot() {
           T.flash(`${record.id} raised at lot ${record.lot.block}:${record.lot.index} — the town grew while you watched`);
         },
       };
+      /* MULTIPLAYER FIX (2026-08-06). nowMs was Date.now(), which becomes the
+         world's genesis the first time a browser founds it — so every player
+         had a town with a different birthday, a different day number, and
+         therefore a different population: Jaron and Lillith saw DIFFERENT
+         PEOPLE, not just the same people in different places. Genesis is now
+         a fixed instant every client shares, so the day count is a pure
+         function of the wall clock and the town has one population. */
+      const WORLD_GENESIS_MS = Date.UTC(2026, 7, 6, 0, 0, 0);   // 2026-08-06T00:00Z
       const outcome = ASH.bootWorld({
-        storage: localStorage, seed: "ashgrove-001", townSeed: 20260804, nowMs: Date.now(),
+        storage: localStorage, seed: "ashgrove-001", townSeed: 20260804,
+        nowMs: Date.now(), genesisMs: WORLD_GENESIS_MS,
         adapter,
         tryBuild: (records) => {
           /* a rebuild replaces every chunk mesh and drops every cached

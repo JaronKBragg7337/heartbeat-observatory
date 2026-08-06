@@ -39,15 +39,21 @@ const ASH = (globalThis.ASH = globalThis.ASH || {});
 /* Load or found the world doc, capture the founding plat (D15), restore or
    found the sim. Shared by bootWorld (load + catch-up) and worldSession
    (one live day at a time). nowMs is only needed when founding. */
-function openState({ storage, seed, townSeed, nowMs, adapter }, out) {
+function openState({ storage, seed, townSeed, nowMs, genesisMs, adapter }, out) {
   let doc = ASH.worldLoad(storage);
   if (!doc) {
-    if (!Number.isFinite(nowMs))
-      throw new Error("founding a new world requires nowMs (genesis timestamp)");
+    /* genesisMs is optional and defaults to nowMs, which is what a single
+       player wants: the world is born the moment they first open it. A SHARED
+       world must pass an explicit genesisMs, because a genesis derived from
+       first-load gives every player a different world birthday, a different
+       day count and therefore a different population. */
+    const born = Number.isFinite(genesisMs) ? genesisMs : nowMs;
+    if (!Number.isFinite(born))
+      throw new Error("founding a new world requires nowMs or genesisMs (genesis timestamp)");
     doc = ASH.worldCreate({
       seed, townSeed,
       foundingCount: adapter.foundingCount(),
-      genesisMs: nowMs,
+      genesisMs: born,
     });
     out.dirty = true;
   }
@@ -192,9 +198,9 @@ function makeSession({ storage, doc, sim, adapter, tryBuild }) {
    its digest-verified snapshot (or found both when storage is empty — nowMs
    required then), and hand back the live day-stepper. No catch-up is owed or
    run here; bootWorld owns the unobserved days (O3, D7). */
-ASH.worldSession = function ({ storage, seed, townSeed, nowMs, adapter, tryBuild }) {
+ASH.worldSession = function ({ storage, seed, townSeed, nowMs, genesisMs, adapter, tryBuild }) {
   const out = { events: [], errors: [], dirty: false, grew: false };
-  const { doc, sim } = openState({ storage, seed, townSeed, nowMs, adapter }, out);
+  const { doc, sim } = openState({ storage, seed, townSeed, nowMs, genesisMs, adapter }, out);
   /* persist immediately: a founding (or a D15 founding capture) must survive
      even if the host never steps a day this session */
   doc.simSnapshot = sim.snapshot();
@@ -204,10 +210,10 @@ ASH.worldSession = function ({ storage, seed, townSeed, nowMs, adapter, tryBuild
   return session;
 };
 
-ASH.bootWorld = function ({ storage, seed, townSeed, nowMs, adapter, tryBuild }) {
+ASH.bootWorld = function ({ storage, seed, townSeed, nowMs, genesisMs, adapter, tryBuild }) {
   const out = { records: [], grew: false, dirty: false, days: 0, events: [], errors: [] };
 
-  const { doc, sim } = openState({ storage, seed, townSeed, nowMs, adapter }, out);
+  const { doc, sim } = openState({ storage, seed, townSeed, nowMs, genesisMs, adapter }, out);
 
   /* catch up the days the world lived while unwatched (sim/clock.js) */
   const days = ASH.catchupDays(doc.genesisMs, sim.state.day, nowMs);

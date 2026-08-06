@@ -43,6 +43,27 @@ const WORK_DIST = 4.5;       // how close to the yard door the job prompt lives
    Offsetting sessionStart keeps townMinutes' formula untouched. */
 const DAY_START_MIN = 465;
 
+/* MULTIPLAYER FIX (2026-08-06). sessionStart used to be
+   `performance.now() - DAY_START_MIN * 1000`, which anchors the visible town
+   day to THIS BROWSER'S page load. Two players who loaded ten real minutes
+   apart were ten town-hours apart: they saw the same residents standing in
+   different places, and each thought the other's town was wrong. Found by
+   Jaron and Lillith walking the world together.
+
+   The visible clock is now anchored to an absolute instant every client
+   shares, so the town has ONE time of day. A player joining at any moment
+   drops into the day already in progress rather than restarting it. The
+   town-day length is unchanged (1 real second = 1 town minute, so a town day
+   is 24 real minutes), and townMinutes' formula is still untouched. */
+const TOWN_EPOCH_MS = Date.UTC(2026, 7, 6, 0, 0, 0);   // 2026-08-06T00:00Z
+const TOWN_DAY_MS = () => ASH.TOWN_MINUTES_PER_DAY * 1000;
+
+/* Town minutes elapsed since the shared epoch — the same number on every
+   client at the same instant, and the basis for both the clock and the day. */
+function sharedTotalMinutes(wallNowMs) {
+  return Math.max(0, (wallNowMs - TOWN_EPOCH_MS) / 1000) + DAY_START_MIN;
+}
+
 /* module state — restored sim, the day's plans, and the drawn population */
 let sim = null, doc = null, store = null, worldView = null;
 let sessionStart = 0, curDay = -1, plans = null;
@@ -156,8 +177,10 @@ N.init = function ({ storage }) {
      tools/ambient.js asserts against) */
   measureWorldView();
 
+  /* kept for anything still reading it; the clock itself no longer depends
+     on when this page loaded */
   sessionStart = performance.now() - DAY_START_MIN * 1000;
-  replan(sim.state.day);                          // caches plans + pet plans
+  replan(Math.floor(sharedTotalMinutes(Date.now()) / ASH.TOWN_MINUTES_PER_DAY));
 
   /* one mesh set per living person. People and pets are only ever ADDED at
      world-day boundaries; live day steps call N.refresh(), which extends
@@ -282,13 +305,15 @@ function stitchedPose(plan, townMin) {
 /* ----------------------------------------------------------------- update  */
 N.update = function (dt, nowMs) {
   if (!N.on) return;
-  /* ASH.townMinutes returns elapsed-minutes % 1440 — the in-day clock. The
-     day ROLLOVER needs the un-modded total, so it is recomputed here with
-     townMinutes' own formula (1 real second = 1 town minute); nothing in
-     sim/ is touched for it. */
-  const totalMin = Math.max(0, (nowMs - sessionStart) / 1000);
-  const townMin = ASH.townMinutes(nowMs, sessionStart);
-  const day = sim.state.day + Math.floor(totalMin / ASH.TOWN_MINUTES_PER_DAY);
+  /* The in-day clock and the plan day both come from the SHARED epoch, not
+     from this page load, so every client agrees on what time it is in town
+     and therefore on where everyone is standing. The day ROLLOVER needs the
+     un-modded total; nothing in sim/ is touched for it. */
+  /* N.wallNowOverride lets a test look at a chosen hour of the town day
+     without waiting for it. Unset in normal play. */
+  const totalMin = sharedTotalMinutes(N.wallNowOverride || Date.now());
+  const townMin = totalMin % ASH.TOWN_MINUTES_PER_DAY;
+  const day = Math.floor(totalMin / ASH.TOWN_MINUTES_PER_DAY);
   if (day !== curDay) replan(day);
   N.townMin = townMin;
 
