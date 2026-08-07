@@ -507,17 +507,43 @@ function yardFor(B, lot, ch, rnd) {
   b.plane(x0, z0, x1 - x0, z1 - z0, LAWN_Y + 0.012, conc, { uvOff: [rnd(), rnd()], grime: .3, tint: [.95, .95, .93] });
   b.endId();
 
-  /* driveway + parked car for houses */
+  /* Driveway + parked car for houses.
+     It used to be a fixed 14 m slab centred 6.5 m in front of the house, which
+     took no notice of where the lot actually ended — so on any shallower lot it
+     ran straight out over the kerb and lay across the road. Jaron spotted it
+     from the street.
+     It now runs from beside the house to the kerb and stops, which is what the
+     front path two blocks up has always done (lot.z0 - 0.1 and friends). The
+     length therefore comes from the lot rather than from a constant, and a deep
+     lot gets a long drive while a shallow one gets a short one. */
   if (!def.com && rnd() < 0.75) {
     const side = rnd() < 0.5 ? -1 : 1;
-    const dl = [def.w / 2 + side * (def.w / 2 + 1.6), -6.5];
-    const dx = B.tx(dl[0], dl[1]), dz = B.tz(dl[0], dl[1]);
-    b.id(`${B.id}-DRV`, "driveway");
     const horiz = face === "-x" || face === "+x";
-    const w2 = horiz ? 14 : 3.2, d2 = horiz ? 3.2 : 14;
-    b.plane(dx - w2 / 2, dz - d2 / 2, w2, d2, LAWN_Y + 0.010, conc, { uvOff: [rnd(), rnd()], grime: .35, tint: [.9, .9, .88] });
+    const HALF = 1.6;                       // 3.2 m wide, as before
+
+    /* a point beside the house, level with its front */
+    const nearL = [def.w / 2 + side * (def.w / 2 + 1.6), -1.0];
+    const nx = B.tx(nearL[0], nearL[1]), nz = B.tz(nearL[0], nearL[1]);
+
+    /* the kerb on whichever edge of the lot this house faces */
+    let kx = nx, kz = nz;
+    if (face === "-z") kz = lot.z0 - 0.1; else if (face === "+z") kz = lot.z1 + 0.1;
+    else if (face === "-x") kx = lot.x0 - 0.1; else kx = lot.x1 + 0.1;
+
+    const x0 = horiz ? Math.min(nx, kx) : nx - HALF;
+    const x1 = horiz ? Math.max(nx, kx) : nx + HALF;
+    const z0 = horiz ? nz - HALF : Math.min(nz, kz);
+    const z1 = horiz ? nz + HALF : Math.max(nz, kz);
+
+    b.id(`${B.id}-DRV`, "driveway");
+    b.plane(x0, z0, x1 - x0, z1 - z0, LAWN_Y + 0.010, conc, { uvOff: [rnd(), rnd()], grime: .35, tint: [.9, .9, .88] });
     b.endId();
-    if (rnd() < 0.6) P.car(b, ch.detail, dx, dz, horiz ? Math.PI / 2 : 0, rnd);
+    /* park the car on the drive, a little in from the kerb rather than on it */
+    if (rnd() < 0.6) {
+      const t = 0.34;
+      P.car(b, ch.detail, nx + (kx - nx) * t, nz + (kz - nz) * t,
+            horiz ? Math.PI / 2 : 0, rnd);
+    }
   }
   /* planting, fence and mailbox */
   const fx = B.tx(def.w * 0.2, -0.6), fz2 = B.tz(def.w * 0.2, -0.6);
