@@ -104,9 +104,19 @@ async function sbFetch(pathname, init = {}) {
   return text ? JSON.parse(text) : null;
 }
 
-const loadRow = async () =>
-  DRY || !URL_ ? FALLBACK_ROW
-              : (await sbFetch("/rest/v1/world3_world?id=eq.main&select=*"))[0];
+/* --row <file>: use a world3_world row exported by any other means. Lets the
+   day be computed without a service key, and keeps --dry-run honest: dry means
+   "write nothing", never "read something else". */
+async function loadRow() {
+  const at = process.argv.indexOf("--row");
+  if (at !== -1 && process.argv[at + 1])
+    return JSON.parse(fs.readFileSync(process.argv[at + 1], "utf8"));
+  if (URL_ && KEY)
+    return (await sbFetch("/rest/v1/world3_world?id=eq.main&select=*"))[0];
+  console.warn("  ! no --row and no SUPABASE_URL/KEY: falling back to the row " +
+               "recorded in this file, which may be out of date");
+  return FALLBACK_ROW;
+}
 
 const commit = (fromDigest, doc, day, digest) =>
   sbFetch("/rest/v1/rpc/world3_advance_day", {
