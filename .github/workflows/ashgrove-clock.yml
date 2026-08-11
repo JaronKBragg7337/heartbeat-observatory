@@ -1,0 +1,52 @@
+name: Ashgrove clock
+
+# The town lives one day per real day from its genesis. Nothing in the browser
+# advances it, so this does — whether or not anybody visits.
+#
+# This runs on GitHub rather than as a Supabase edge function because the town
+# generator builds 49 buildings and ~863k triangles to validate a placement,
+# which exceeds an edge worker's memory. Public-repo Actions minutes are free
+# and unmetered, so the heavy path lives here.
+#
+# Requires one repository secret: SUPABASE_SERVICE_KEY
+
+on:
+  schedule:
+    - cron: "23 5 * * *"   # daily, 05:23 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Compute the day but write nothing"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ashgrove-clock
+  cancel-in-progress: false
+
+jobs:
+  advance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Advance the town
+        working-directory: world3/town
+        env:
+          SUPABASE_URL: https://ygjpnvrwhkrowkrskftk.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::error::SUPABASE_SERVICE_KEY is not set. Add it under"
+            echo "::error::Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            node tools/advance.js --dry-run
+          else
+            node tools/advance.js
+          fi
