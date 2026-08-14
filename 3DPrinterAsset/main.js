@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getSupabase } from '/hb-supabase.js';
 
 const BUILD = 'v2i — modular world parts + real printer classes';
 const app = document.querySelector('#app');
@@ -1190,9 +1190,33 @@ function cancelOrDelete(){ if(phase==='printing'){setStatus('Print is mid-fabric
 // Every placed object is a row (the world's source of truth, not the git repo).
 // Placing, moving and deleting sync to the table; a Realtime subscription pushes
 // every builder's changes to all connected players live. Any AI (Claude/ChatGPT/
-// Zeus) can SELECT to map the world or DELETE to clean it up.
+// Zeus) can SELECT to map the world with the public key; clearing up after other
+// builders now needs the service key, since the public one can only delete what
+// it placed itself.
 const WORLD='printer-lab';
-const supabase=createClient('https://ygjpnvrwhkrowkrskftk.supabase.co','sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN');
+
+// The client and the key come from /hb-supabase.js now, so this page is not one
+// more file with the project key pasted into it.
+//
+// Every visitor gets an anonymous session on load. Nobody signs up for anything
+// and nothing is asked of them — but it gives each builder a real identity, so
+// the objects they place carry an owner. Placing stays open to everyone; only
+// moving and deleting are restricted to whoever placed the thing, which is what
+// stops one request from emptying the lab.
+let supabase=null, builderId=null;
+const ready=(async()=>{
+  supabase=await getSupabase();
+  try{
+    const { data:{ session } } = await supabase.auth.getSession();
+    // A signed-in Heartbeat member keeps their own identity here rather than
+    // being handed a throwaway one.
+    const existing = session?.user?.id;
+    if(existing){ builderId=existing; return; }
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if(!error) builderId=data?.user?.id ?? null;
+  }catch(e){ /* No session: you can still build and see the world, just not edit later. */ }
+})();
+
 const newId=()=> (crypto&&crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random());
 function findPlaced(dbId){ return placed.find(o=>o.userData.dbId===dbId); }
 function spawnPlacementRow(row){
@@ -1204,17 +1228,21 @@ function spawnPlacementRow(row){
 }
 async function savePlacement(obj){
   obj.userData.dbId=newId(); // client id so our own realtime echo is recognised, not duplicated
-  try{ await supabase.from('placements').insert({ id:obj.userData.dbId, world:WORLD, type:obj.userData.recipeId, label:obj.userData.label, x:obj.position.x, y:obj.position.y, z:obj.position.z, rot_y:obj.rotation.y, scale:obj.userData.sizeScale||1 }); }catch(e){}
+  await ready;
+  try{ await supabase.from('placements').insert({ id:obj.userData.dbId, world:WORLD, type:obj.userData.recipeId, label:obj.userData.label, x:obj.position.x, y:obj.position.y, z:obj.position.z, rot_y:obj.rotation.y, scale:obj.userData.sizeScale||1, placed_by:builderId }); }catch(e){}
 }
 async function updatePlacement(obj){
   if(!obj.userData.dbId) return;
+  await ready;
   try{ await supabase.from('placements').update({ x:obj.position.x, y:obj.position.y, z:obj.position.z, rot_y:obj.rotation.y, scale:obj.userData.sizeScale||1 }).eq('id',obj.userData.dbId); }catch(e){}
 }
 async function deletePlacement(obj){
   if(!obj.userData.dbId) return;
+  await ready;
   try{ await supabase.from('placements').delete().eq('id',obj.userData.dbId); }catch(e){}
 }
 async function loadPlacements(){
+  await ready;
   try{
     const { data, error } = await supabase.from('placements').select('*').eq('world',WORLD).order('created_at');
     if(error||!data||!data.length) return;
@@ -1222,7 +1250,8 @@ async function loadPlacements(){
     setStatus(`Loaded ${data.length} saved world object(s) from the shared world state.`);
   }catch(e){}
 }
-function subscribeWorld(){
+async function subscribeWorld(){
+  await ready;
   try{
     supabase.channel('placements-'+WORLD)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'placements',filter:`world=eq.${WORLD}`},({new:row})=>{ if(row && !findPlaced(row.id)){ spawnPlacementRow(row); setStatus(`Another builder placed a ${row.label||row.type}.`); } })
