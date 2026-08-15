@@ -5,14 +5,12 @@
 // DOES NOT OWN: politics simulation, economy, governance (future systems that
 //               will PLUG IN here — this file is the system boundary for them).
 //
-// CANON STATUS (be honest): SpaceYouLand repo canon names ONE faction —
-// **Fortis, the Militaristic Empire**, first playable slice: armored,
-// practical, militarized, steel + red. The docs say "7 playable factions"
-// but do not name the other six (full bible is in Jaron's Google Drive,
-// folder "Space-You-Land (2026-2027)", not in the repo).
-// The six below marked placeholder:true are INVENTED ARCHETYPES to make the
-// system real. Future agents: when Jaron supplies canon names, replace the
-// placeholder entries — every reference is by id, so renames are data edits.
+// CANON STATUS (corrected 2026-08-15): the locked Bible in docs/canon defines
+// seven playable factions plus Custodian Sovereigns and YOM. This V1 registry
+// predates that document and contains six invented placeholders; even the
+// `fortis` entry conflates the Militaristic Empire with its home. The data is
+// obsolete migration input, not canon. Replace it through an explicit ID/save/
+// body-ownership migration rather than casually renaming live identifiers.
 //
 // FIELDS: id, name, color (identity), archetype, homeBodyId (territory hook),
 //         description, placeholder, economyHooks / governanceHooks (reserved
@@ -60,7 +58,7 @@ export const FACTIONS = [
     archetype: 'Diplomatic Federation',
     color: 0x42a5f5,
     homeBodyId: null,
-    description: 'PLACEHOLDER. Governance/diplomacy archetype. No territory in the foundation build.',
+    description: 'LEGACY V1 PLACEHOLDER. Governance/diplomacy archetype with no territory.',
     placeholder: true,
     economyHooks: {}, governanceHooks: { governmentType: 'federation', canTax: true },
   },

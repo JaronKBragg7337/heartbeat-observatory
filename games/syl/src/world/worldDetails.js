@@ -5,8 +5,9 @@
 //       visual construction of that layout (via render/props.js), and the
 //       collider specs for it (consumed by planet.js allCollidersForZone —
 //       you cannot walk through a settlement building).
-// DOES NOT OWN: terrain truth (planet.js terrainRadiusAt is the only height
-//       source), collision RESOLUTION (planet.js), saves, loot, discovery.
+// DOES NOT OWN: the legacy V1 shell terrain (planet.js terrainRadiusAt),
+//       collision resolution, saves, loot, or discovery. This dressing layer
+//       is disposable V1 presentation under CANON.md.
 //
 // GROUNDING LAW (this file's reason to exist in its current form): every
 // placed object samples the terrain under its whole footprint

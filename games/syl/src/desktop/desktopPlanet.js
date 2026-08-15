@@ -1,9 +1,8 @@
 // ============================================================================
-// desktopPlanet.js - high-fidelity desktop planet embodiment.
+// desktopPlanet.js - on-hold legacy desktop planet experiment.
 //
-// OWNS: desktop-only PBR body meshes, atmosphere shells, rings, and GLB zone
-//       dressing. DOES NOT OWN: terrain truth. It builds body._terrainGrid and
-//       samples terrainRadiusAt(), preserving mesh-true collision.
+// OWNS: legacy PBR body meshes, atmosphere shells, rings, and GLB dressing.
+//       It builds body._terrainGrid and samples the V1 terrainRadiusAt() shell.
 // ============================================================================
 
 import * as THREE from 'three';

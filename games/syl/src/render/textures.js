@@ -1,15 +1,14 @@
 // ============================================================================
-// textures.js — procedural canvas textures. NO image files, ever.
+// textures.js — legacy V1 procedural canvas textures.
 //
-// OWNS: every runtime-painted texture in the game (terrain detail, building
-//       walls, landing pads, roads, metal plates, fabric).
+// OWNS: the runtime-painted textures used by the current V1 presentation
+//       (terrain detail, building walls, pads, roads, metal, and fabric).
 // DOES NOT OWN: materials (render/props.js + callers), geometry, lighting.
 //
-// TECHNIQUE (learned from World of ClaudeCraft, levy-street/world-of-claudecraft,
-// src/render/textures.ts): paint small canvases at runtime with a SEEDED rng,
-// wrap them in THREE.CanvasTexture, and multiply them over vertex colors /
-// material colors. A 256px mottle repeated 200x across a planet is what turns
-// "flat plastic Roblox" into surface that reads as real ground.
+// This deterministic technique remains useful for generated masks, debug
+// surfaces, and fallbacks. It is not the V2 material-quality ceiling. Approved
+// V2 assets use calibrated PBR material sets and provenance-recorded CC0
+// sources under docs/assets/ASSET_PROVENANCE.md.
 //
 // RULES FOR FUTURE AGENTS:
 // 1. Deterministic: use the module rng(), NEVER Math.random — same look every
@@ -17,7 +16,8 @@
 // 2. Node-safe: every export returns null when `document` is missing so the
 //    headless test suite can import any module that imports this one.
 // 3. Cache by key: textures are shared, tiny, and built once.
-// 4. Keep canvases <= 256px. This must stay phone-first.
+// 4. Keep V1 canvases <= 256px. Measure V2 budgets on real target phones;
+//    do not lower fidelity merely because touch/phone is supported.
 // ============================================================================
 
 import * as THREE from 'three';

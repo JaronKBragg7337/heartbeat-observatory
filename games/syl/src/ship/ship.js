@@ -7,17 +7,17 @@
 //               (shipBuilder.js), pilot state machine (traversal.js),
 //               camera (main.js decides views).
 //
-// PHYSICS (Kurearthis truth — custom double-precision integrator, NO physics
-// engine): worldPos/velocity are f64 THREE.Vector3. Each tick:
+// V1 GLOBAL FLIGHT: custom double-precision integrator. worldPos/velocity are
+// f64 THREE.Vector3. Each tick:
 //   1. thrust (ship-local, rotated to world) if powered+fueled,
 //   2. gravity from ALL bodies (inverse-square; second-body coexistence),
 //   3. integrate velocity -> position,
-//   4. analytic ground collision vs dominant body: if the hull would pass
-//      below terrain, clamp to surface; soft touchdown vs crash by speed.
+//   4. legacy radial ground collision vs dominant body: if the hull would pass
+//      below terrain, clamp to the outer surface.
 // Rotation: pitch/yaw/roll rates with damping — arcade-stable, honest forces.
 //
-// Future agents: orbital mechanics = remove linear damping in space + add
-// velocity readouts; the integrator already supports it (see ROADMAP).
+// V2 keeps f64 global flight but replaces outer-shell contact and random scalar
+// damage with volumetric collision and component/connector-aware damage.
 // ============================================================================
 
 import * as THREE from 'three';
@@ -67,7 +67,7 @@ export class Ship {
     this.engine = engine;
     this.bodies = bodies;
 
-    // --- Authoritative f64 state (floating-origin rule: never in mesh). ----
+    // --- Local client-simulation f64 state (never stored only in a mesh). ---
     this.worldPos = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion(); // ship orientation (world)
@@ -560,7 +560,8 @@ export class Ship {
     _dq.setFromEuler(_eul.set(this.angVel.x * dt, this.angVel.y * dt, this.angVel.z * dt, 'XYZ'));
     this.quaternion.multiply(_dq).normalize();
 
-    // 5. Analytic ground collision vs dominant body (never a giant mesh).
+    // 5. LEGACY V1 radial ground collision. V2 replaces this outer-surface
+    // clamp with authoritative volumetric contact supporting underground space.
     const newAlt = altitudeAt(body, this.worldPos) - HULL_CLEARANCE;
     if (newAlt <= 0) {
       const upNow = upAt(body, this.worldPos, _up2);
@@ -594,7 +595,8 @@ export class Ship {
 
   applyCrashDamage(impactSpeed) {
     const dmg = (impactSpeed - CRASH_SPEED) * 2.5;
-    // Gear takes it first, then random modules — armor reduces it.
+    // LEGACY V1 approximation: random module HP. V2 resolves impact location,
+    // material layers, support/connector failure, detachment, and system paths.
     const armorScale = 1 - Math.min(0.6, this.stats.armor / 120);
     const slots = Object.entries(this.modules).filter(([, m]) => m);
     for (const [slotId, mod] of slots) {

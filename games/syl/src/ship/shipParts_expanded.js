@@ -1,16 +1,13 @@
 // ============================================================================
-// shipParts_expanded.js — ADDITIONAL ship module types and slot layouts.
+// shipParts_expanded.js — live legacy V1 ship-module expansion data.
 //
 // OWNS: new part type definitions (shield, scanner, radiator, reactor, weapon,
 //       advanced engine, maneuvering thruster) and extended slot layouts.
 // DOES NOT OWN: ship live state, install logic, or UI.
 //
-// INTEGRATION: Import alongside PART_TYPES in shipParts.js, or merge into it.
-//   import { PART_TYPES_EXPANDED } from './shipParts_expanded.js';
-//   Object.assign(PART_TYPES, PART_TYPES_EXPANDED);
-//
-// CANON: These are new modules for the Fortis Gunship pattern and future variants.
-// No existing part IDs changed.
+// CANON STATUS: merged into the public V1 registry but not canonical. Preserve
+// IDs as migration evidence; V2 parts require measured assemblies,
+// connectors, materials, authority, and physical damage behavior.
 // ============================================================================
 
 export const PART_TYPES_EXPANDED = {

@@ -1,7 +1,7 @@
 // ============================================================================
 // player.js — the on-foot player: radial-gravity movement + camera control.
 //
-// OWNS: the player's authoritative position/velocity, spherical-surface
+// OWNS: the V1 client's local player position/velocity, spherical-surface
 //       walking (Kurearthis RadialGravityPawn logic ported to JS), the
 //       first-person look camera while on foot, and the player's visual body.
 // DOES NOT OWN: ship flight (ship.js), state switching (traversal.js),
@@ -10,13 +10,15 @@
 // MOVEMENT MODEL (Kurearthis proof 2f, exactly):
 //   - local up = radial direction from the dominant body's center (f64),
 //   - input moves the capsule in the local TANGENT plane,
-//   - gravity integrates downward along -up; a ground query against the
-//     ANALYTIC terrain (planet.js) grounds the capsule,
+//   - gravity integrates downward along -up; the legacy radial ground query
+//     in planet.js grounds the capsule,
 //   - the body/camera re-orients so its up tracks the radial direction as
 //     the player walks around the sphere's curvature.
 // No CharacterMovementComponent equivalent, no flat +Z assumption anywhere.
 //
-// Future agents: swimming, sprint stamina, suits/oxygen extend here.
+// V2 REPLACEMENT: server-owned movement and volumetric contact queries must
+// allow floors, walls, ceilings, caves, tunnels, and underground rooms without
+// snapping the player to the outer shell.
 // ============================================================================
 
 import * as THREE from 'three';
@@ -34,7 +36,7 @@ export class Player {
     this.input = input;
     this.bodies = bodies;
 
-    this.worldPos = new THREE.Vector3();   // authoritative f64 (feet position)
+    this.worldPos = new THREE.Vector3();   // local client-simulation f64 feet position
     this.velocity = new THREE.Vector3();
     this.grounded = false;
 

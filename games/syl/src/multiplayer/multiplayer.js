@@ -4,9 +4,10 @@
 // OWNS: remote-player rendering, realtime identity, low-rate state broadcast.
 // DOES NOT OWN: physics, traversal, save data, ship modules, inventory, combat.
 //
-// Heartbeat law: presence.track() is join/leave identity only. Movement rides
-// broadcast state at <=10Hz with idle suppression and a 250ms interpolation
-// buffer. If realtime fails, the game remains a normal singleplayer build.
+// V1 transport contract: presence.track() is join/leave identity only. Clients
+// broadcast display state at <=10Hz with idle suppression and interpolation.
+// This is not authoritative multiplayer; V2 sends player intent to validated
+// server simulation as specified in docs/architecture/SERVER_AUTHORITY.md.
 // ============================================================================
 
 import * as THREE from 'three';

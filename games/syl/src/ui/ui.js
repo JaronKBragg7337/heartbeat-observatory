@@ -2,10 +2,10 @@
 // ui.js — HUD, prompts, toasts, inventory panel, ship-builder panel.
 //
 // OWNS: all DOM overlay elements and their refresh logic.
-// DOES NOT OWN: any game state — it READS state and CALLS actions
-//               (shipBuilder.js, save.js). "Menus observe reality; they do
-//               not replace it" (SYL law): every panel displays what is
-//               physically true and every button performs a physical action.
+// DOES NOT OWN: game state — it reads V1 client state and calls actions
+//               (shipBuilder.js, save.js). Canon requires important systems to
+//               become physically observable; current abstract panels remain
+//               migration debt until their server/physical actions exist.
 //
 // Future agents: add panels with makePanel(); keep the HUD terse. Styles
 // live in index.html <style>.

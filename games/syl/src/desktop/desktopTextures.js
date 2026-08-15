@@ -1,5 +1,5 @@
 // ============================================================================
-// desktopTextures.js - procedural PBR texture generation for desktop terrain.
+// desktopTextures.js - legacy on-hold desktop experiment textures.
 //
 // OWNS: browser-side CanvasTexture creation for desktop.html only.
 // DOES NOT OWN: terrain height/collision. Textures decorate the same mesh-true

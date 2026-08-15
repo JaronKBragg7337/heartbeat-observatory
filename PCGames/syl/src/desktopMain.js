@@ -1,5 +1,5 @@
 // ============================================================================
-// desktopMain.js - DESKTOP-tier SYL entry.
+// desktopMain.js - preserved legacy desktop experiment entry (ON HOLD).
 //
 // OWNS: desktop bootstrap/wiring only. This deliberately coexists with
 // src/main.js: the phone-safe public build stays untouched, while desktop.html
@@ -344,8 +344,8 @@ engine.addUpdater((dt) => {
 document.getElementById('boot-msg')?.remove();
 if (SaveSystem.hasSave(game)) ui.showToast('Desktop save found - press F9 to continue, or play fresh.', 6000);
 ui.showCenter(
-  'SYL - DESKTOP FIDELITY BUILD<br>' +
-  '<span class="dim">Separate RTX-class route: scaled worlds, PBR terrain, GLB models, shadows, bloom, and the same seamless traversal core.</span>',
+  'SYL — LEGACY DESKTOP EXPERIMENT<br>' +
+  '<span class="dim">On hold. The canonical product is the responsive Three.js game at /games/syl/.</span>',
   9000
 );
 engine.start();

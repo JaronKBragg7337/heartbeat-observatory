@@ -6,10 +6,11 @@
 // DOES NOT OWN: player ship physics, traversal phases, save payloads, or body
 //               registries. Stops reference normal landing-zone data.
 //
-// SYL law: this is not a teleport. The carrier has one authoritative f64
+// V1 behavior: this is not a teleport. The client-simulated carrier has one f64
 // worldPos, a visible tracked mesh, and moves continuously from base to base.
 // Players who do not want to fly can board it like a train/bus and physically
-// ride across the solar-system scale to the next stop.
+// ride across the solar-system scale to the next stop. V2 transport position,
+// schedule, cargo, damage, and passenger custody become server-owned.
 // ============================================================================
 
 import * as THREE from 'three';

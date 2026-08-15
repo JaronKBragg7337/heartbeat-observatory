@@ -5,8 +5,8 @@
 //       input->action routing, pickup spawning, and gameplay-loop events
 //       (discovery, first launch, landings). NOTHING ELSE.
 // DOES NOT OWN: any system's internals. If you are adding logic here that
-//       belongs to a system, put it in that system's file instead
-//       (fable-survival law: main.js never grows beyond bootstrap + loop).
+//       belongs to a system, put it in that system's file instead. SYL keeps
+//       bootstrap wiring separate from owned system logic.
 //
 // PER-FRAME ORDER (deliberate):
 //   input → player/ship physics → traversal state → camera → interactions →
@@ -424,11 +424,11 @@ function readShipControls(dt) {
 
   const keyRoll = (input.down('KeyR') ? 1 : 0) - (input.down('KeyQ') ? 1 : 0);
   const keyPitch = (input.down('ArrowDown') ? 1 : 0) - (input.down('ArrowUp') ? 1 : 0);
-  // Mobile-only attitude authority: the right ATTITUDE stick was too swingy on
+  // Touch attitude tuning: the right ATTITUDE stick was too swingy on
   // phone (bank whipped around, nose pitch felt twitchy). These scalars tame the
-  // touch attitude inputs ONLY — PC keys (keyRoll/keyPitch) go through the else
+  // touch attitude inputs ONLY — keyboard inputs go through the else
   // branch untouched, and the shared rate constants in ship.js are unchanged.
-  // Tune these two numbers for phone feel; do not touch ASSIST_*_RATE for PC.
+  // Tune these two numbers for touch feel; keyboard/mouse uses the same client.
   const MOBILE_BANK_AUTHORITY = 0.35;  // bank/turn swing on phone (lowered from 0.5 — still felt too hard)
   const MOBILE_PITCH_AUTHORITY = 0.55; // nose up/down on phone (was effectively 1.0)
   const shipBank = input.touchMode ? (input.touchShipBank || 0) * MOBILE_BANK_AUTHORITY * controls.touchSensitivity : keyRoll;
@@ -608,7 +608,7 @@ if (SaveSystem.hasSave()) {
   ui.showToast('Save found — press F9 to continue, or play fresh.', 6000);
 }
 ui.showCenter(
-  'SYL — FOUNDATION BUILD<br>' +
+  'SYL — SPACE YOU LAND<br>' +
   '<span class="dim">Your ship is damaged. Gather crates (F), repair and fuel it (B), then fly to another world.<br>' +
   (touchActive
     ? 'Left stick flies · right stick banks/pitches · DESCEND lands. Or board the civil transport at a terminal.</span>'

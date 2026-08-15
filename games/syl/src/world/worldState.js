@@ -1,14 +1,14 @@
 // ============================================================================
-// worldState.js — the authoritative WORLD DATA layer.
+// worldState.js — legacy V1 client-local progress data.
 //
 // OWNS: which bodies/zones are discovered, current reference body, mission
 //       flags, and the clean serialize/deserialize of world progress.
 // DOES NOT OWN: rendering (planet.js), physics (player/ship), faction values
 //               (factions.js has its own state; save.js composes both).
 //
-// Future agents: put new world-level progression state HERE (settlement
-// growth, orbital stations, AI-Director flags), and extend serialize()/
-// deserialize() in matching pairs. Keep it plain-JSON-safe.
+// Do not add authoritative settlement, economy, governance, territory,
+// enforcement, terrain, or AI Director state here. V2 stores those in
+// validated server aggregates and treats client state as a cache/projection.
 // ============================================================================
 
 import { BODIES } from './bodies.js';

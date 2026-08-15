@@ -7,6 +7,35 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-08-15 — Codex — SYL permanent Three.js canon and mirror truth pass
+
+**State:** implemented and locally verified on branch
+`agent/sync-syl-canon-labels`; not yet merged or deployed. Canonical source
+change is SYL-Full-Game commit `dfd3360` / draft PR #2.
+
+**Shipped:** mirrored the 32 changed SYL client files byte-for-byte at the git
+blob level, including the provenance manifest and corrected page/runtime labels.
+Updated Heartbeat's Games page and README so SYL is the permanent responsive
+Three.js product rather than an Unreal/Unity foundation or separate-PC plan.
+Marked the preserved PCGames SYL route as a legacy experiment on hold. Recorded
+that `/games/syl-test/` is not isolated because it shares the production origin
+and legacy save key. Fable Survival and every other game bundle were untouched.
+
+**Verified:** canonical SYL `npm test` passed 150/150; all 32 staged mirror
+blobs equal source commit `dfd3360`; JavaScript syntax and staged-diff checks
+pass; local public-route smoke and exact live 200 checks are required again
+after review/merge.
+
+**Next:** review and merge both draft PRs, wait for Vercel, then verify
+`https://www.heartbeatobservatory.com/games/syl/` from a phone-sized browser
+and Jaron's physical phone before beginning V2 terrain work.
+
+**Gotchas:** the source PR should merge before or with this mirror PR. Do not
+promote `games/syl-test/` as staging, do not revive the separate desktop lane,
+and do not touch `games/fable-survival/` during SYL syncs.
+
+---
+
 ## 2026-07-13 — Codex — Blender-authored adult-realism town pass
 
 **State:** implemented and verified locally; intentionally not committed, pushed, or deployed without owner approval. Build/cache id is `2026-07-13-realism2` in both the hub module and HTML.

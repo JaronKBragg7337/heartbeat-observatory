@@ -1,5 +1,5 @@
 // ============================================================================
-// desktopPost.js - optional desktop post-processing pipeline.
+// desktopPost.js - legacy on-hold desktop experiment post-processing.
 // ============================================================================
 
 import * as THREE from 'three';

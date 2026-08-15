@@ -1,9 +1,9 @@
 // ============================================================================
-// desktopAssets.js - GLB loading and model instancing for desktop.html.
+// desktopAssets.js - legacy on-hold desktop experiment GLB loader.
 //
-// OWNS: imported GLB runtime assets. The desktop build intentionally loads
-//       models for ship/building/prop presentation instead of constructing the
-//       major silhouettes from primitives at runtime.
+// OWNS: three generated placeholder GLBs used by desktop.html. Their provenance
+//       and legacy status are recorded in assets/manifest.json. This tiny loader
+//       is not the production V2 asset pipeline.
 // ============================================================================
 
 import * as THREE from 'three';

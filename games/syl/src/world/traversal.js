@@ -6,7 +6,7 @@
 //       enter/exit-ship rules, and the continuous sky→space visual transition.
 // DOES NOT OWN: physics (player.js / ship.js), UI text (ui.js reads state).
 //
-// THE CHAIN THIS FILE GUARANTEES (SYL canon, no loading screens):
+// THE V1 TRAVERSAL CHAIN THIS FILE GUARANTEES (no loading screens):
 //   surface → ascent → space → approach (another body) → descent → landing.
 // There are NO teleports, NO scene swaps, NO fake cuts anywhere in it. The
 // state is DERIVED each frame from real altitude/velocity/dominant-body — the

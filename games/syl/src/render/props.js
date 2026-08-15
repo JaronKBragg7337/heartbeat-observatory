@@ -1,5 +1,5 @@
 // ============================================================================
-// props.js — procedural prop + structure builders. The end of the box era.
+// props.js — legacy V1 procedural prop and structure builders.
 //
 // OWNS: reusable mesh builders (rocks, trees, spires, crystals, huts, gabled
 //       buildings, towers, tanks, masts, dishes, pads, containers) and the
@@ -7,16 +7,17 @@
 //       sloped terrain (no floating corners, no buried doors).
 // DOES NOT OWN: where props go (worldDetails.js / planet.js decide layout),
 //       collision (planet.js resolves; worldDetails.js emits collider specs),
-//       terrain truth (terrainRadiusAt in planet.js is the ONLY height source).
+//       V1 shell terrain (terrainRadiusAt is the current client's height source).
 //
-// TECHNIQUE (World of ClaudeCraft): no model files. Displaced low-poly
-// primitives + flatShading for rocks/trees; composite primitives + painted
-// canvas textures (render/textures.js) for structures. Materials are deduped
-// through surfaceMat() so hundreds of props share a handful of GPU programs.
+// CURRENT V1 TECHNIQUE: displaced primitives for nature and composite
+// primitives plus painted canvas textures for structures. Materials are
+// deduped through surfaceMat() so the placeholder scene stays inexpensive.
+// This is migration evidence, not the V2 asset pipeline or quality target.
 //
-// EXTENDING (future agents): add a make*() builder here, give it a header
-// comment, keep it deterministic (callers pass a seeded rng), keep triangle
-// counts phone-first (rocks ~80 tris, trees ~150, buildings ~200).
+// Do not expand this placeholder catalogue for production settlements. New V2
+// assets follow docs/assets/ASSET_PROVENANCE.md and the component/connector,
+// measurement, material, collider, and LOD contracts in
+// docs/architecture/PHYSICAL_WORLD_CONTRACT.md. Validate budgets on phones.
 // ============================================================================
 
 import * as THREE from 'three';

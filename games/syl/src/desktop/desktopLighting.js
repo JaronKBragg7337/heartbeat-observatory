@@ -1,5 +1,5 @@
 // ============================================================================
-// desktopLighting.js - desktop-only HDR lighting setup.
+// desktopLighting.js - legacy on-hold desktop experiment lighting.
 // ============================================================================
 
 import * as THREE from 'three';

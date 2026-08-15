@@ -4,8 +4,9 @@
 // OWNS: deliberate test/editor actions that bypass the survival grind.
 // DOES NOT OWN: normal ship-builder rules, save format, or renderer assets.
 //
-// Mobile law: this starts with code-built state changes and DOM controls. No
-// heavy GLB/Blender assets are required for this first slice.
+// V1 note: these controls are DOM and code-built. That implementation detail
+// does not limit V2 asset fidelity. The canonical client is one responsive
+// Three.js game whose budgets are measured on real phones and desktop browsers.
 // ============================================================================
 
 import * as THREE from 'three';
@@ -61,7 +62,7 @@ export function giveInventoryKit(inventory, count = 8) {
     const n = item.kind === 'part' ? 1 : count;
     inventory.add(item.id, n);
   }
-  return { ok: true, msg: 'Added a mobile-safe test kit to inventory.' };
+  return { ok: true, msg: 'Added a test kit to inventory.' };
 }
 
 export function placeShipNearPlayer(ship, player, bodies, distance = 14) {
