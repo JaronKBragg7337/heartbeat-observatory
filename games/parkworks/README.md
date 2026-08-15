@@ -13,22 +13,30 @@ To change the game, change it there, then rebuild and re-copy.
 
 ## Refreshing this copy
 
-From a checkout of `parkworks-tycoon` sitting beside this repo:
+One command, from a checkout of `parkworks-tycoon` sitting beside this repo:
 
 ```sh
 cd ../parkworks-tycoon
-npm install          # first time only
-npm run build        # writes dist/
-cp -r dist/. ../heartbeat-observatory/games/parkworks/
+node tools/vendor-to-heartbeat.mjs --build
 ```
 
-PowerShell equivalent for the copy step:
+That builds, clears the old hashed `assets/`, copies `dist/` in, and — the part
+that matters — puts back the two script tags `vite build` regenerates
+`index.html` without.
 
-```powershell
-Copy-Item -Recurse -Force ..\parkworks-tycoon\dist\* .\games\parkworks\
+**Do not do this by hand.** The instructions here used to say "re-apply the two
+script tags after every rebuild", which works until the once somebody forgets.
+Miss `hb-save-backend.js` and there is no error anywhere: the game simply does
+not find the cloud store, falls back to browser storage, and quietly stops
+saving a signed-in player's park to their account. The script re-checks its own
+output afterwards and refuses to report success if either tag is missing or if
+the backend tag has ended up after the module tag.
+
+Point it at a Heartbeat checkout somewhere else by passing the path:
+
+```sh
+node tools/vendor-to-heartbeat.mjs --build /path/to/heartbeat-observatory
 ```
-
-The copy is additive, so `hb-save-backend.js` and this README survive it.
 
 ## The two edits the build does not make
 
