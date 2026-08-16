@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0705">
+<title>The Cosmos</title>
+<style>
+  /* ==========================================================================
+     The Cosmos — UI shell.
+     Mobile first, and mobile-first here means the screen belongs to the world.
+     No permanent joystick, no button grid. Controls appear under the thumb
+     that summons them and disappear when it lifts.
+     ========================================================================== */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: #0a0705; color: #f0e6dc;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    overscroll-behavior: none;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  #game-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  /* --- Boot ---------------------------------------------------------------- */
+  #boot {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    background: #0a0705; z-index: 500; text-align: center; padding: 24px;
+  }
+  #boot h1 { margin: 0; font-size: 22px; letter-spacing: 5px; font-weight: 500; color: #e8c9a8; }
+  #boot p { margin: 0; font-size: 12px; color: #8a7566; line-height: 1.7; max-width: 340px; }
+
+  /* --- HUD ----------------------------------------------------------------- */
+  #hud {
+    position: fixed;
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    left: calc(10px + env(safe-area-inset-left, 0px));
+    z-index: 60; pointer-events: none;
+    font-size: 11px; line-height: 1.6;
+    background: rgba(10, 7, 5, .58); backdrop-filter: blur(7px);
+    border: 1px solid rgba(232, 201, 168, .16); border-radius: 8px;
+    padding: 8px 11px; max-width: 74vw;
+  }
+  #hud b { color: #f0b978; font-weight: 600; letter-spacing: .5px; }
+  #hud .dim { color: #9c8878; font-size: 10px; }
+
+  /* --- Buttons ------------------------------------------------------------- */
+  .btn {
+    position: fixed; z-index: 70;
+    background: rgba(10, 7, 5, .66); backdrop-filter: blur(7px);
+    border: 1px solid rgba(232, 201, 168, .22); color: #e8d5c2;
+    border-radius: 9px; font: inherit; font-size: 11px;
+    padding: 9px 13px; cursor: pointer; min-height: 40px;
+  }
+  .btn:active { background: rgba(232, 201, 168, .18); }
+  #btn-settings {
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    right: calc(10px + env(safe-area-inset-right, 0px));
+  }
+  #back-link {
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    left: calc(10px + env(safe-area-inset-left, 0px));
+    text-decoration: none;
+  }
+
+  /* --- Settings ------------------------------------------------------------ */
+  #settings-panel {
+    position: fixed; z-index: 80; display: none;
+    top: calc(58px + env(safe-area-inset-top, 0px));
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    width: min(300px, calc(100vw - 20px));
+    background: rgba(12, 9, 7, .93); backdrop-filter: blur(14px);
+    border: 1px solid rgba(232, 201, 168, .22); border-radius: 12px;
+    padding: 14px; font-size: 12px;
+  }
+  #settings-panel.open { display: block; }
+  #settings-panel h2 {
+    margin: 0 0 12px; font-size: 11px; letter-spacing: 2.5px;
+    color: #f0b978; font-weight: 600; text-transform: uppercase;
+  }
+  .set-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 9px 0; border-top: 1px solid rgba(232, 201, 168, .12);
+  }
+  .set-row:first-of-type { border-top: 0; }
+  .set-row label { color: #cbb8a6; flex: 1; }
+  .set-row .hint { display: block; color: #7d6b5d; font-size: 10px; margin-top: 3px; line-height: 1.5; }
+  .set-row select {
+    background: #17110d; color: #e8d5c2; border: 1px solid rgba(232, 201, 168, .25);
+    border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 11px;
+  }
+  .set-row input[type=checkbox] { width: 20px; height: 20px; accent-color: #f0b978; }
+  #btn-copy-coord {
+    position: static; width: 100%; margin-top: 10px; text-align: center;
+  }
+
+  /* --- The invisible stick. Opacity 0 until a thumb lands on the left. ------ */
+  #stick-layer {
+    position: fixed; inset: 0; z-index: 50; pointer-events: none;
+    opacity: 0; transition: opacity .12s ease;
+  }
+  #stick-base, #stick-nub {
+    position: absolute; top: 0; left: 0; border-radius: 50%;
+    will-change: transform;
+  }
+  #stick-base {
+    width: 124px; height: 124px; margin: -62px 0 0 -62px;
+    border: 1.5px solid rgba(240, 185, 120, .38);
+    background: radial-gradient(circle, rgba(240,185,120,.09) 0%, rgba(240,185,120,0) 72%);
+  }
+  #stick-nub {
+    width: 52px; height: 52px; margin: -26px 0 0 -26px;
+    background: rgba(240, 185, 120, .30);
+    border: 1.5px solid rgba(240, 185, 120, .62);
+  }
+
+  /* --- Debug layer --------------------------------------------------------- */
+  #debug-dom { position: fixed; inset: 0; z-index: 55; pointer-events: none; }
+  #dbg-readout {
+    position: absolute;
+    left: calc(10px + env(safe-area-inset-left, 0px));
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    background: rgba(4, 12, 14, .84); backdrop-filter: blur(8px);
+    border: 1px solid rgba(57, 208, 255, .35); border-radius: 8px;
+    padding: 9px 11px; font-size: 10px; line-height: 1.7; min-width: 250px;
+  }
+  .dbg-title { color: #39d0ff; letter-spacing: 2px; margin-bottom: 6px; font-size: 9px; }
+  .dbg-row { display: flex; justify-content: space-between; gap: 14px; }
+  .dbg-row span { color: #6d8f9c; }
+  .dbg-row b { color: #cfeeff; font-weight: 500; }
+  .dbg-slug { font-size: 9px; color: #ffd257 !important; }
+
+  .dbg-bubble {
+    position: absolute; top: 0; left: 0;
+    background: rgba(4, 12, 14, .88); border: 1px solid rgba(57, 208, 255, .5);
+    border-radius: 7px; padding: 5px 8px; font-size: 9px; line-height: 1.55;
+    white-space: nowrap; will-change: transform;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, .5);
+  }
+  .dbg-bubble b { display: block; color: #ffd257; font-weight: 600; letter-spacing: .4px; }
+  .dbg-bubble i { display: block; color: #cfeeff; font-style: normal; }
+  .dbg-bubble span { display: block; color: #7fa6b4; }
+  /* The stalk that ties the bubble to the thing it names. */
+  .dbg-bubble::after {
+    content: ''; position: absolute; left: 50%; bottom: -9px;
+    width: 1px; height: 9px; background: rgba(57, 208, 255, .5);
+  }
+
+  @media (max-width: 520px) {
+    #dbg-readout { font-size: 9px; min-width: 210px; }
+    #hud { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+
+<div id="boot">
+  <h1>THE COSMOS</h1>
+  <p>Building Mars from NASA measurements — 3,389.5 km radius, 3.72 m/s² gravity, 25.19° tilt.</p>
+</div>
+
+<div id="hud"></div>
+
+<button class="btn" id="btn-settings">Settings</button>
+<a class="btn" id="back-link" href="/games/">← Games</a>
+
+<div id="settings-panel">
+  <h2>Settings</h2>
+
+  <div class="set-row">
+    <label for="set-view">View
+      <span class="hint">Third person to inspect the body and its scale.</span>
+    </label>
+    <select id="set-view">
+      <option value="first">First</option>
+      <option value="third">Third</option>
+    </select>
+  </div>
+
+  <div class="set-row">
+    <label for="set-dev">Dev / debug layer
+      <span class="hint">Lat–long grid on the ground and an ID bubble over every registered asset. Read the numbers back to me in a bug report.</span>
+    </label>
+    <input type="checkbox" id="set-dev">
+  </div>
+
+  <button class="btn" id="btn-copy-coord">Copy my position</button>
+</div>
+
+<script type="importmap">
+  { "imports": { "three": "./lib/three.module.js" } }
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
