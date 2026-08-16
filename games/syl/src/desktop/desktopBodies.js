@@ -1,11 +1,11 @@
 // ============================================================================
-// desktopBodies.js - desktop-only high-fidelity solar-system data.
+// desktopBodies.js - legacy on-hold desktop experiment body data.
 //
 // OWNS: a cloned, scaled presentation/simulation registry for desktop.html.
-// DOES NOT OWN: the mobile/public BODIES registry. This file must never mutate
+// DOES NOT OWN: the canonical responsive BODIES registry. This file must never mutate
 //               src/world/bodies.js records in place.
 //
-// The core engine is scale-independent, so the desktop tier makes one coherent
+// The core engine is scale-independent, so this experiment makes one coherent
 // decision: bigger bodies, wider interplanetary distances, richer terrain
 // profiles, and the same custom f64/floating-origin physics.
 // ============================================================================

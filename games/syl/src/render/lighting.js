@@ -6,15 +6,13 @@
 // DOES NOT OWN: the atmosphere SHELL mesh fade (traversal.js owns that),
 //       body colors (bodies.js data), or the renderer flags (engine.js).
 //
-// TECHNIQUE (World of ClaudeCraft renderer.ts): ACES tone mapping + a warm
-// DirectionalLight sun + a HemisphereLight (cool sky bounce over warm ground
-// bounce) + PCFSoft shadows + per-biome fog is most of what makes a Three.js
-// scene stop looking like plastic. SYL addition: all of it has to react to
-// WHERE you are — fog and sky only exist inside an atmosphere, so everything
-// lerps with altitude and hands over to black space above the atmo ceiling.
+// V1 TECHNIQUE: ACES tone mapping, directional and hemisphere light, soft
+// shadows, and per-biome fog. All react to location and altitude. This rig is
+// useful migration code, not a substitute for the V2 physically calibrated
+// material, lighting, atmosphere, and exposure pipeline.
 //
 // SUN DIRECTION: SYL's playable system has no sun *body* yet (bodies.js Earth
-// sits at the origin). Canon here: SUN_DIR is a fixed world-space direction.
+// sits at the origin). V1 uses a fixed world-space SUN_DIR.
 // When a real star body lands in bodies.js, replace SUN_DIR with
 // (starPos - cameraWorldPos).normalize() and nothing else changes.
 //
@@ -39,8 +37,7 @@ export function initLighting(engine, settings) {
   const scene = engine.scene;
   const graphics = settings?.get ? settings.get('graphics') : 'high';
 
-  // Renderer flags (mobile lane historically skipped these — that flat gray
-  // look was largely linear-space output with no tone curve).
+  // Renderer flags used by the current responsive V1 client.
   engine.renderer.outputColorSpace = THREE.SRGBColorSpace;
   engine.renderer.toneMapping = THREE.ACESFilmicToneMapping;
   engine.renderer.toneMappingExposure = 1.18 * (TUNE.exposure || 1);
@@ -53,9 +50,8 @@ export function initLighting(engine, settings) {
   const hemi = new THREE.HemisphereLight(0xbfd8ff, 0x4a4438, 0.75);
   scene.add(hemi);
 
-  // Shadows: phone-first. 'high' = 1024 PCF-soft map over a 95 m box around
-  // the camera. 'low' = off. Toggling graphics applies on next boot (the
-  // settings panel already says so for other options).
+  // V1 shadow presets: 'high' = 1024 PCF-soft map over a 95 m box around the
+  // camera; 'low' = off. Future budgets must be measured on target devices.
   const shadows = graphics !== 'low';
   engine.renderer.shadowMap.enabled = shadows;
   engine.renderer.shadowMap.type = THREE.PCFSoftShadowMap;

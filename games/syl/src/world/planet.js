@@ -1,27 +1,25 @@
 // ============================================================================
-// planet.js — planet embodiment: terrain math, meshes, gravity, atmosphere.
+// planet.js — LEGACY V1 planet shell, gravity, atmosphere, and map dressing.
 //
-// OWNS: - the ANALYTIC terrain function (single source of truth for ground
-//         height, used by BOTH the visual mesh and all collision queries),
+// OWNS: - the V1 radial terrain function (one outer height used by the visual
+//         mesh and current collision queries),
 //       - planet/water/atmosphere mesh construction,
 //       - gravity field math,
 //       - landing-zone structures (simple built-from-scratch geometry).
 // DOES NOT OWN: body DATA (bodies.js), who is where (worldState.js),
 //               movement (player.js / ship.js).
 //
-// KUREARTHIS TRUTH APPLIED: a planet is NEVER one giant collision mesh.
-// Collision here is ANALYTIC: terrainRadiusAt(body, dirUnit) returns the exact
-// ground distance-from-center along any direction, in f64, valid everywhere,
-// at any distance from origin. The rendered mesh is just a picture of that
-// same function. This is the browser equivalent of "local collision patch":
-// infinitely local, always exact, and it can never disagree with itself.
+// V1 TRUTH: terrainRadiusAt(body, dirUnit) returns one outer radius per
+// direction. This keeps the current picture and collision aligned, but it is a
+// shell—not material volume. It cannot represent overhangs, caves, tunnels,
+// underground rooms, excavation, deposits, or two surfaces on one radial line.
 //
-// LANDING ZONES are flattened INSIDE the analytic function (not by moving
-// meshes), so visuals and collision agree by construction — the repo's
-// "one surface, not stacked shells" law.
+// Landing zones are currently flattened inside the radial function. That is
+// retained only until V2 grading and construction modify one authoritative
+// volumetric terrain revision.
 //
-// Future agents: for close-up ground detail, add a quadtree LOD patch that
-// samples the SAME terrainRadiusAt() — never a second height source.
+// V2 REPLACEMENT: see docs/architecture/PHYSICAL_WORLD_CONTRACT.md. Preserve
+// one physical/render/nav truth, but do not extend this height shell as geology.
 // ============================================================================
 
 import * as THREE from 'three';
@@ -34,7 +32,7 @@ import { fbm, smoothstep } from '../core/math3d.js';
 import { buildWorldDetailLayer } from './worldDetails.js';
 
 // ---------------------------------------------------------------------------
-// ANALYTIC TERRAIN — single source of truth.
+// LEGACY V1 ANALYTIC OUTER SURFACE — single source for the current client.
 // dir must be normalized (direction from body center). Returns meters from
 // body center to the ground surface along dir.
 // ---------------------------------------------------------------------------
@@ -99,17 +97,16 @@ function shapeTerrainProfile(t, dir, baseHeight) {
 }
 
 // ---------------------------------------------------------------------------
-// MESH-TRUE COLLISION (2026-07-04 root-cause fix).
+// LEGACY V1 MESH-TRUE OUTER-SHELL COLLISION (2026-07-04 fix).
 // The old runtime collision sampled the raw fbm function, but the rendered
 // mesh is a LINEAR interpolation of that function across ~150 m triangles —
 // on rugged terrain the two disagreed by many meters. Players stood on air,
 // sank under the grass, and the camera clipped inside the planet ("see
-// through the ground"). The fix makes the LAW true by construction:
+// through the ground"). The V1 fix made its shell internally consistent:
 // buildBodyVisual stores each body's exact vertex-radius grid, and
 // terrainRadiusAt intersects the query ray with the SAME triangle the GPU
-// draws. Collision now equals the picture to float precision, everywhere.
-// Future agents: if you add terrain LOD, keep this rule — collision must
-// sample whatever the player currently SEES.
+// draws. V2 must preserve revision agreement while replacing this interface
+// with a 3D material/contact query; do not build caves as a second hidden mesh.
 // ---------------------------------------------------------------------------
 export function terrainRadiusAt(body, dir) {
   const g = body._terrainGrid;
@@ -351,7 +348,7 @@ export function buildBodyVisual(body, factionById) {
   const group = new THREE.Group();
   group.name = `body:${body.id}`;
 
-  // --- Terrain mesh + collision grid (one surface by construction).
+  // --- Legacy V1 terrain mesh + collision grid (one outer surface).
   // The grid stores the exact analytic radius at every mesh vertex; the mesh
   // displaces from the grid, and runtime collision interpolates the grid the
   // same way the GPU does. Bumped detail (2026-07-04): finer triangles both
@@ -468,8 +465,8 @@ export function buildBodyVisual(body, factionById) {
     group.add(atmo);
   }
 
-  // --- Landing-zone structures: authored from scratch (SYL law: no premade
-  // assets; the world is built, not spawned). Simple but physical-looking.
+  // --- Legacy V1 landing-zone presentation. These generated structures are
+  // placeholders to remove during the authored V2 spatial rebuild.
   for (const zone of body.landingZones) {
     const zGroup = buildZoneStructures(body, zone, factionById);
     group.add(zGroup);
@@ -489,9 +486,8 @@ function placeOnSurface(body, dirUnit, obj, extraHeight = 0) {
 }
 
 function buildZoneStructures(body, zone, factionById) {
-  // Structures are authored from the props library (render/props.js): shaped
-  // composites with painted textures, foundations, and shadows — never naked
-  // boxes. FOOTPRINTS MUST KEEP MATCHING structureCollidersForZone() above:
+  // V1 structures come from the procedural props library. FOOTPRINTS MUST KEEP
+  // MATCHING structureCollidersForZone() above until this layer is replaced:
   // if you move or resize a structure here, update its collider there.
   const g = new THREE.Group();
   g.name = `zone:${zone.id}`;

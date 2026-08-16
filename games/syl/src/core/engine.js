@@ -6,9 +6,9 @@
 // DOES NOT OWN: game logic, physics, world data, UI. Systems register update
 //       callbacks; the engine only calls them and draws.
 //
-// FLOATING ORIGIN — THE MOST IMPORTANT IDEA IN THIS FILE (Kurearthis truth):
+// FLOATING ORIGIN — proven V1 technique retained for V2:
 //   GPU vertex math is float32. At planetary distances (hundreds of km) f32
-//   jitters and physics engines break. Proven fix: keep ALL authoritative
+//   jitters and global physics solvers break. Keep client simulation/prediction
 //   positions in float64 "world space" (plain JS numbers ARE f64), and every
 //   frame place rendered meshes at (worldPos - cameraWorldPos), with the
 //   render camera pinned at (0,0,0). The active region around the player is
@@ -16,14 +16,12 @@
 //
 //   RULES FOR FUTURE AGENTS:
 //   1. NEVER store gameplay positions in mesh.position. Meshes are visuals.
-//      Authoritative positions live on entities as THREE.Vector3 (f64 numbers)
-//      in world space, and are copied in via syncToCamera() each frame.
+//      Client simulation positions live on entities as THREE.Vector3 (f64
+//      numbers) in world space, and are copied via syncToCamera() each frame.
 //   2. NEVER hand a giant world-space coordinate to the renderer.
-//   3. All physics is our own double-precision integration (see player/ship).
-//      There is deliberately NO physics engine (Kurearthis proof 2b/2d: stock
-//      engine forces are unusable at planetary coordinates).
-//
-// If Unreal agents port this: this file == FloatingOriginManager + game loop.
+//   3. Global motion uses double-precision integration (see player/ship).
+//      Bounded local rigid-body islands may be added after measurement, but
+//      never hand planetary coordinates to a float32 solver.
 // ============================================================================
 
 import * as THREE from 'three';
@@ -53,7 +51,7 @@ export class Engine {
     this.scene.background = new THREE.Color(0x000005);
 
     // Render camera is PINNED at the origin. It only rotates.
-    // cameraWorldPos is the authoritative f64 position of the viewpoint.
+    // cameraWorldPos is the local client-simulation f64 viewpoint position.
     this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 500000);
     this.cameraWorldPos = new THREE.Vector3(0, 0, 0);
 
@@ -112,7 +110,7 @@ export class Engine {
       for (const fn of this._updaters) fn(dt, this.timeSec);
 
       // Floating-origin sync: place every tracked mesh camera-relative and,
-      // when supplied, copy the authoritative simulation rotation into the visual.
+      // when supplied, copy the client-simulation rotation into the visual.
       for (const e of this._synced) {
         e.object3d.position.subVectors(e.worldPos, this.cameraWorldPos);
         if (e.quaternion) e.object3d.quaternion.copy(e.quaternion);

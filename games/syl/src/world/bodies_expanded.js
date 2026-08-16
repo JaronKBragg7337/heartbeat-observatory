@@ -1,17 +1,13 @@
 // ============================================================================
-// bodies_expanded.js — ADDITIONAL celestial bodies for the SYL solar system.
+// bodies_expanded.js — live legacy V1 celestial-body expansion data.
 //
 // OWNS: new planet/moon/asteroid definitions following the exact bodies.js schema.
 // DOES NOT OWN: meshes, gravity, or game state.
 //
-// CANON: These are new bodies in the SYL solar system. All existing IDs preserved.
-// Faction hooks use existing faction IDs or null for unclaimed/contested.
-// Placeholder factions are clearly marked.
-//
-// INTEGRATION: Import alongside BODIES in main.js:
-//   import { BODIES } from './world/bodies.js';
-//   import { BODIES_EXPANDED } from './world/bodies_expanded.js';
-//   const ALL_BODIES = [...BODIES, ...BODIES_EXPANDED];
+// CANON STATUS: live in the public V1 client but not canonical. Several
+// ownership fields reference obsolete V1 placeholder factions. Treat these
+// records as migration evidence until the body/region registry is rebuilt from
+// the locked Bible and accepted amendments.
 // ============================================================================
 
 export const BODIES_EXPANDED = [

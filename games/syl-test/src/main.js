@@ -608,8 +608,8 @@ if (SaveSystem.hasSave()) {
   ui.showToast('Save found — press F9 to continue, or play fresh.', 6000);
 }
 ui.showCenter(
-  'SYL — FOUNDATION BUILD<br>' +
-  '<span class="dim">Your ship is damaged. Gather crates (F), repair and fuel it (B), then fly to another world.<br>' +
+  'SYL — UNSAFE LEGACY PREVIEW<br>' +
+  '<span class="dim">This route is not isolated and shares legacy browser storage with production. Use /games/syl/ instead.<br>' +
   (touchActive
     ? 'Left stick flies · right stick banks/pitches · DESCEND lands. Or board the civil transport at a terminal.</span>'
     : 'Click to take mouse control. H toggles help. Or board the civil transport at a terminal.</span>'), 9000);

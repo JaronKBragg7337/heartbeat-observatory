@@ -4,13 +4,13 @@
 // OWNS: the F8 tuning panel (sliders for light/sky/fog/exposure and ship
 //       feel), persistence of those overrides (localStorage), and the
 //       "Copy JSON" export so a tuned look can be pasted to an agent to make
-//       canon in one cheap step.
+//       permanent/default implementation settings in one cheap step.
 // DOES NOT OWN: the systems it tunes. It only writes the shared TUNE object
 //       (below) that render/lighting.js and ship.js multiply into their math.
 //
 // WHY THIS EXISTS: every "make the sun warmer / ship turn faster" round-trip
 // through an AI costs usage. With this panel Jaron drags sliders in the live
-// game, taps Copy JSON, and pastes ONE message ("make these canon") when he
+// game, taps Copy JSON, and pastes one message ("make these the defaults") when he
 // is happy. One agent edit instead of twenty.
 //
 // EXTENDING (future agents): add a row to FIELDS with {key, label, min, max,
@@ -90,7 +90,7 @@ export class Tuner {
         <button type="button" data-act="copy" style="flex:1;background:#34623f;border:none;color:#fff;border-radius:6px;padding:7px;cursor:pointer;">Copy JSON</button>
         <button type="button" data-act="reset" style="background:#5a3434;border:none;color:#fff;border-radius:6px;padding:7px 10px;cursor:pointer;">Reset</button>
       </div>
-      <p data-copied style="margin:6px 0 0;opacity:0;transition:opacity .3s;color:#9fe8a9;">Copied — paste it to Claude/Codex to make canon.</p>`;
+      <p data-copied style="margin:6px 0 0;opacity:0;transition:opacity .3s;color:#9fe8a9;">Copied — paste it to Claude/Codex to make these the defaults.</p>`;
     root.appendChild(this.panel);
 
     this.panel.querySelector('.panel-close').addEventListener('click', () => this.toggle());

@@ -5,18 +5,17 @@
 // DOES NOT OWN: meshes (planet.js), gravity math (planet.js), game state
 //               (worldState.js), or faction data (factions.js — referenced by id).
 //
-// SYL CANON (from SpaceYouLand repo): SYL is a REAL SOLAR SYSTEM. There is
+// V1 registry contract: the universe contains many data-driven bodies. There is
 // never just "the planet" — every body is data, and the way one body is built
 // is the reusable pattern for all of them. ADD A BODY = ADD AN ENTRY HERE.
 // Nothing else in the codebase needs to change.
 //
-// SCALE — REAL vs APPROXIMATED (be honest, it's documented in DECISIONS.md):
+// LEGACY V1 SCALE — reopened for V2 in DECISIONS.md:
 //   realRadiusKm / realGravity record the true design-intent values (NASA-ish).
 //   radius / surfaceGravity are the PLAYABLE game-unit values (meters, m/s²),
-//   scaled down so a browser session crosses planet→planet in minutes.
-//   The architecture (floating origin + analytic collision + f64 positions)
-//   does NOT depend on this scale: raising radius toward real scale is a data
-//   change plus terrain LOD work (see ROADMAP). Do not add flat-world hacks.
+//   scaled down for the old session loop. Do not author permanent geology
+//   against these values until radius, mass/gravity, crust, atmosphere,
+//   terrain relief, and travel pacing are made physically coherent together.
 //
 // FIELDS:
 //   id, name          — stable id (save files use it) and display name

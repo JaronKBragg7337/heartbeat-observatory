@@ -1,19 +1,19 @@
 // ============================================================================
-// save.js — persistence layer. localStorage now, backend-ready by design.
+// save.js — legacy V1 local save/cache and migration source.
 //
 // OWNS: composing/parsing the save payload, versioning, storage I/O.
 // DOES NOT OWN: the state itself — every system exposes serialize()/
 //               deserialize() and THIS file only composes them. Keep it so:
-//               that is exactly what makes a cloud backend a drop-in later
-//               (fable-survival proved the pattern: same payload, PUT /api/save).
+//               composition remains useful for migration, but authoritative
+//               V2 state is not a drop-in PUT of this client-authored payload.
 //
 // SAVE CONTENT: player state, ship state (modules included), inventory,
 // world discovery/flags, faction relationships, mode. Versioned; loaders must
-// tolerate missing fields (old saves keep working — fable-survival law).
+// tolerate missing fields so legacy saves can be migrated deliberately.
 //
-// Future agents: cloud persistence = add a transport beside localStorage that
-// PUTs/GETs the same payload. Do NOT change the payload shape casually; bump
-// SAVE_VERSION and write a migration in load() instead.
+// Future agents: do not promote this payload to universe truth. V2 services
+// own validated state and expose migration/import paths. Bump SAVE_VERSION and
+// write explicit migrations when this legacy cache changes.
 // ============================================================================
 
 const SAVE_KEY = 'syl_save';

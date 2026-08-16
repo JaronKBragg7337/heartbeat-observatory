@@ -5,13 +5,12 @@
 //       terrain generation (visual mesh) AND terrain collision (analytic).
 // DOES NOT OWN: any game state, rendering, or physics stepping.
 //
-// CRITICAL INVARIANT (from Kurearthis findings): the SAME noise functions here
-// are used both to displace planet mesh vertices and to answer collision
-// queries analytically. If you change any function here, visuals and collision
-// change together and stay in agreement. NEVER give collision its own copy.
+// V1 INVARIANT: the same noise functions displace the radial planet mesh and
+// feed its collision query. Preserve visual/physical agreement while V2
+// replaces the shell with versioned procedural solid geology plus sparse edits.
 //
-// Future agents: add new noise types (ridged, crater) here; keep everything
-// pure/deterministic (same inputs -> same outputs, no Math.random()).
+// Do not add V2 caves, mining, or craters as height noise. They belong to the
+// volumetric material field. Keep reusable generation pure and versioned.
 // ============================================================================
 
 // --- Seeded PRNG (mulberry32) — deterministic streams per seed. -------------
