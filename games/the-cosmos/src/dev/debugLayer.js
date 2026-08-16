@@ -35,8 +35,8 @@
 import * as THREE from 'three';
 import {
   cartesianToGeodetic, geodeticToCartesian, formatCoord, coordSlug,
-  cellIndex, cellLabel, cellId, cellCentre, layerIndex, degreesPerCell,
-  DEFAULT_CELL_M,
+  cellIndex, cellLabel, cellLabelShort, cellId, cellCentre, layerIndex,
+  degreesPerCell, cellSpanM, isMinuteLine, isDegreeLine, ARCSEC,
 } from '../world/geodesy.js';
 import { surfaceRadiusAlong, surfaceRadiusFast, density } from '../world/field.js';
 
@@ -51,7 +51,7 @@ export class DebugLayer {
     this.registry = registry;
     this.enabled = false;
 
-    this.cellM = opts.cellM || DEFAULT_CELL_M;
+    this.cellDeg = opts.cellDeg || ARCSEC;      // one arcsecond per cell
     this.radiusCells = opts.radiusCells || 7;      // how far the grid extends
     this.labelRangeM = opts.labelRangeM || 95;     // how far cell names show
     this.maxCellLabels = opts.maxCellLabels || 70;
@@ -112,8 +112,8 @@ export class DebugLayer {
     }
 
     const body = this.body;
-    const d = degreesPerCell(body, this.cellM);
-    const c = cellIndex(body, centreLat, centreLon, this.cellM);
+    const d = degreesPerCell(body, this.cellDeg);
+    const c = cellIndex(body, centreLat, centreLon, this.cellDeg);
     const N = this.radiusCells;
 
     // Local origin for this build: the ground under the centre cell.
@@ -124,7 +124,7 @@ export class DebugLayer {
     this.gridWorldPos.x = ox; this.gridWorldPos.y = oy; this.gridWorldPos.z = oz;
 
     const normal = [];
-    const origin = [];
+    const minute = [];
     this._cells = [];
 
     // A point on the cell boundary, lifted a little so the line reads as
@@ -141,8 +141,7 @@ export class DebugLayer {
     const SUB = 4;
     for (let i = -N; i <= N + 1; i++) {
       const lat = (c.h + i) * d;
-      const isOrigin = (c.h + i) === 0;
-      const out = isOrigin ? origin : normal;
+      const out = isMinuteLine(c.h + i) ? minute : normal;
       for (let j = -N; j <= N; j++) {
         for (let s = 0; s < SUB; s++) {
           const lonA = (c.r + j + s / SUB) * d;
@@ -154,8 +153,7 @@ export class DebugLayer {
     // Lines of constant longitude.
     for (let j = -N; j <= N + 1; j++) {
       const lon = (c.r + j) * d;
-      const isOrigin = (c.r + j) === 0;
-      const out = isOrigin ? origin : normal;
+      const out = isMinuteLine(c.r + j) ? minute : normal;
       for (let i = -N; i <= N; i++) {
         for (let s = 0; s < SUB; s++) {
           const latA = (c.h + i + s / SUB) * d;
@@ -169,7 +167,7 @@ export class DebugLayer {
     for (let i = -N; i <= N; i++) {
       for (let j = -N; j <= N; j++) {
         const h = c.h + i, r = c.r + j;
-        const cc = cellCentre(body, h, r, this.cellM);
+        const cc = cellCentre(body, h, r, this.cellDeg);
         const p = geodeticToCartesian(body, cc.lat, cc.lon, 0);
         const l = Math.hypot(p.x, p.y, p.z);
         const R = surfaceRadiusFast(body, p.x / l, p.y / l, p.z / l);
@@ -183,8 +181,9 @@ export class DebugLayer {
     for (const [arr, color, opacity, width] of [
       // Cyan at 0.42 over bright orange regolith washed out to nothing.
       // The grid has to be legible against the ground it is drawn on.
-      [normal, GRID_COLOR, 0.85, 1],
-      [origin, ORIGIN_COLOR, 1.0, 2],
+      [normal, GRID_COLOR, 0.8, 1],
+      // Arcminute lines brighter, like the heavier rules on a real map.
+      [minute, ORIGIN_COLOR, 1.0, 2],
     ]) {
       if (!arr.length) continue;
       const g = new THREE.BufferGeometry();
@@ -241,7 +240,7 @@ export class DebugLayer {
   update(walker, camera) {
     if (!this.enabled) return;
     const g = walker.geodetic;
-    const c = cellIndex(this.body, g.lat, g.lon, this.cellM);
+    const c = cellIndex(this.body, g.lat, g.lon, this.cellDeg);
 
     // Rebuild only when the player crosses into a new cell — not every frame.
     if (!this._lastCell || this._lastCell.h !== c.h || this._lastCell.r !== c.r) {
@@ -270,11 +269,11 @@ export class DebugLayer {
 
     this.readout.innerHTML = `
       <div class="dbg-title">DEBUG · ${body.name.toUpperCase()}</div>
-      <div class="dbg-row"><span>CELL</span><b class="dbg-cellid">${cellId(body.id, layer, c.h, c.r)}</b></div>
+      <div class="dbg-row"><span>SQUARE</span><b class="dbg-cellid">${cellId(body.id, layer, c.h, c.r)}</b></div>
       <div class="dbg-row"><span>POS</span><b>${formatCoord(g.lat, g.lon, g.alt)}</b></div>
       <div class="dbg-row"><span>SLUG</span><b class="dbg-slug">${coordSlug(body.id, g.lat, g.lon, g.alt)}</b></div>
       <div class="dbg-row"><span>GROUND</span><b>${clearance === Infinity ? '—' : clearance.toFixed(2) + ' m'} · ${walker.groundMaterialName()}</b></div>
-      <div class="dbg-row"><span>CELL SIZE</span><b>${this.cellM} m</b></div>
+      <div class="dbg-row"><span>CELL</span><b>1&Prime; &asymp; ${cellSpanM(body).toFixed(1)} m</b></div>
       <div class="dbg-row"><span>GRAV</span><b>${body.surfaceGravity.toFixed(3)} m/s²</b></div>
       <div class="dbg-row"><span>ASSETS</span><b>${this.registry.all().length} registered</b></div>
       <div class="dbg-row"><span>FPS</span><b>${this.engine.fps.toFixed(0)}</b></div>`;
@@ -304,10 +303,10 @@ export class DebugLayer {
       const sx = (v.x * 0.5 + 0.5) * window.innerWidth;
       const sy = (-v.y * 0.5 + 0.5) * window.innerHeight;
       const isHereCell = cell.h === current.h && cell.r === current.r;
-      const isOriginCell = cell.h === 0 && cell.r === 0;
-      // The cell you occupy and the origin always win their space.
+      const isOriginCell = isMinuteLine(cell.h) && isMinuteLine(cell.r);
+      // The cell you occupy and each arcminute corner always win their space.
       if (!isHereCell && !isOriginCell &&
-          taken.some((t) => Math.abs(t.x - sx) < 116 && Math.abs(t.y - sy) < 20)) continue;
+          taken.some((t) => Math.abs(t.x - sx) < 92 && Math.abs(t.y - sy) < 20)) continue;
       taken.push({ x: sx, y: sy });
 
       let el = this._cellLabels[used];
@@ -318,7 +317,11 @@ export class DebugLayer {
         this._cellLabels[used] = el;
       }
 
-      el.textContent = isOriginCell ? `ORIGIN · ${cellLabel(cell.h, cell.r)}` : cellLabel(cell.h, cell.r);
+      // Full coordinate where it matters; seconds-only on the rest, since the
+      // degrees and minutes are already on screen in the readout.
+      el.textContent = (isHereCell || isOriginCell)
+        ? cellLabel(cell.h, cell.r)
+        : cellLabelShort(cell.h, cell.r);
       el.className = 'dbg-cell' + (isHereCell ? ' here' : '') + (isOriginCell ? ' origin' : '');
       el.style.transform = `translate(-50%,-50%) translate(${sx}px, ${sy}px)`;
       el.style.opacity = String(Math.max(0.25, 1 - d / this.labelRangeM));
@@ -336,7 +339,7 @@ export class DebugLayer {
       .map((r) => {
         const d = Math.hypot(r.position.x - p.x, r.position.y - p.y, r.position.z - p.z);
         const g = cartesianToGeodetic(this.body, r.position.x, r.position.y, r.position.z);
-        const c = cellIndex(this.body, g.lat, g.lon, this.cellM);
+        const c = cellIndex(this.body, g.lat, g.lon, this.cellDeg);
         return { id: r.id, name: r.name, d, cell: cellLabel(c.h, c.r) };
       })
       .sort((a, b) => a.d - b.d)
@@ -388,7 +391,7 @@ export class DebugLayer {
 
       const s = this.registry.summary(rec.id, this.body);
       const g = cartesianToGeodetic(this.body, rec.position.x, rec.position.y, rec.position.z);
-      const c = cellIndex(this.body, g.lat, g.lon, this.cellM);
+      const c = cellIndex(this.body, g.lat, g.lon, this.cellDeg);
       el.innerHTML =
         `<b>${s.id}</b><i>${s.name} · ${cellLabel(c.h, c.r)}</i>` +
         `<span>${s.size} · ${s.mass}</span>`;
@@ -417,7 +420,7 @@ export class DebugLayer {
   reportAt(walker) {
     const g = walker.geodetic;
     const layer = this._currentLayer(walker);
-    const c = cellIndex(this.body, g.lat, g.lon, this.cellM);
+    const c = cellIndex(this.body, g.lat, g.lon, this.cellDeg);
     return {
       cell: cellId(this.body.id, layer, c.h, c.r),
       slug: coordSlug(this.body.id, g.lat, g.lon, g.alt),

@@ -172,36 +172,49 @@ export function coordSlug(bodyId, latDeg, lonDeg, altM) {
 }
 
 // ---------------------------------------------------------------------------
-// THE CELL GRID — a named square on the ground, not just a decimal.
+// THE CELL GRID — arcseconds, because this is a planet.
 //
-// Reading "-13.9986, -59.1983" off a screen and typing it into a message is
-// work, and it is easy to get a digit wrong. Naming the square you are standing
-// in is not: "H-8271 R-34952" is one glance, and it round-trips exactly.
+// The first version borrowed a flat-map convention (H/R indices counted from an
+// origin), which produced addresses like "H-82821 R-350215". Those are correct
+// but they read like a tile index on a flat mat, and this is a round world.
+// A round world already has a coordinate system that everyone knows.
 //
-// Layout:
-//   H  index north from the equator      (H0 starts at latitude 0)
-//   R  index east from the prime meridian (R0 starts at longitude 0)
-//   L  layer: 0 at the surface, 1 for the first 10 m of depth, and so on
+// So a cell is ONE ARCSECOND square, and its name is just its coordinate:
 //
-// L exists because this world has an inside. Standing in a tunnel and saying
-// "L3 H-8271 R-34952" states the depth band as part of the address, which a
+//     14°00'02"S  59°12'01"W
+//
+// The arcsecond turns out to be almost exactly the right size. On Mars:
+//     1 degree    = 59.2 km
+//     1 arcminute = 986 m
+//     1 arcsecond = 16.43 m      <- one cell, a walkable square
+//
+// (On Earth an arcsecond is 30.9 m, so the same scheme carries to any body —
+// the cell is simply whatever an arcsecond is there. It is a real angular unit,
+// not a number invented for this game.)
+//
+// L is the depth band: 0 at the surface, then one per 10 m down. It exists
+// because this world has an inside. Standing in a tunnel and reporting
+// "L3 14°00'02"S 59°12'01"W" states the depth as part of the address, which a
 // latitude and longitude alone cannot do.
 //
-// Cells are sized in METRES and converted to degrees, so a cell is a real
-// square on the ground rather than a shape that changes meaning with latitude.
-// They do narrow toward the poles, which is inherent to any lat/lon grid and is
-// stated rather than hidden.
+// Cells narrow toward the poles, as every lat/lon grid does. Stated, not hidden.
 // ---------------------------------------------------------------------------
-export const DEFAULT_CELL_M = 10;
+export const ARCSEC = 1 / 3600;          // degrees per cell
 export const LAYER_HEIGHT_M = 10;
 
-export function degreesPerCell(body, cellM = DEFAULT_CELL_M) {
-  return (cellM / body.radiusMean) * RAD;
+/** How many metres one cell spans on this body, north-south. */
+export function cellSpanM(body, cellDeg = ARCSEC) {
+  return cellDeg * (Math.PI / 180) * body.radiusMean;
 }
 
-export function cellIndex(body, latDeg, lonDeg, cellM = DEFAULT_CELL_M) {
-  const d = degreesPerCell(body, cellM);
-  return { h: Math.floor(latDeg / d), r: Math.floor(lonDeg / d), degPerCell: d };
+export function degreesPerCell(body, cellDeg = ARCSEC) { return cellDeg; }
+
+export function cellIndex(body, latDeg, lonDeg, cellDeg = ARCSEC) {
+  return {
+    h: Math.floor(latDeg / cellDeg),
+    r: Math.floor(lonDeg / cellDeg),
+    degPerCell: cellDeg,
+  };
 }
 
 /** Depth band. 0 at or above the surface, then one per LAYER_HEIGHT_M down. */
@@ -209,16 +222,42 @@ export function layerIndex(depthBelowSurfaceM) {
   return depthBelowSurfaceM <= 0 ? 0 : Math.floor(depthBelowSurfaceM / LAYER_HEIGHT_M) + 1;
 }
 
-/** Short form for painting on the ground: "H-8271·R-34952" */
-export function cellLabel(h, r) { return `H${h}·R${r}`; }
+/** Degrees -> whole degrees, minutes, seconds for a cell index. */
+function dms(indexOfArcsec) {
+  const total = Math.abs(indexOfArcsec);
+  return {
+    neg: indexOfArcsec < 0,
+    d: Math.floor(total / 3600),
+    m: Math.floor((total % 3600) / 60),
+    s: total % 60,
+  };
+}
 
-/** Full form for a bug report: "MARS-L0-H-8271-R-34952" */
+/** Compact name painted on a cell: `14°00'02"S 59°12'01"W` */
+export function cellLabel(h, r) {
+  const a = dms(h), b = dms(r);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${a.d}°${pad(a.m)}'${pad(a.s)}"${a.neg ? 'S' : 'N'} ` +
+         `${b.d}°${pad(b.m)}'${pad(b.s)}"${b.neg ? 'W' : 'E'}`;
+}
+
+/** Just the seconds, for dense labelling inside one arcminute block. */
+export function cellLabelShort(h, r) {
+  const a = dms(h), b = dms(r);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(a.s)}"${a.neg ? 'S' : 'N'} ${pad(b.s)}"${b.neg ? 'W' : 'E'}`;
+}
+
+/** Full form for a bug report: `MARS-L0-14°00'02"S-59°12'01"W` */
 export function cellId(bodyId, layer, h, r) {
-  return `${bodyId.toUpperCase()}-L${layer}-H${h}-R${r}`;
+  return `${bodyId.toUpperCase()}-L${layer}-${cellLabel(h, r).replace(' ', '-')}`;
 }
 
 /** The centre of a cell, as a geodetic coordinate. */
-export function cellCentre(body, h, r, cellM = DEFAULT_CELL_M) {
-  const d = degreesPerCell(body, cellM);
-  return { lat: (h + 0.5) * d, lon: (r + 0.5) * d };
+export function cellCentre(body, h, r, cellDeg = ARCSEC) {
+  return { lat: (h + 0.5) * cellDeg, lon: (r + 0.5) * cellDeg };
 }
+
+/** Is this cell boundary also an arcminute line? Those get drawn brighter. */
+export const isMinuteLine = (index) => index % 60 === 0;
+export const isDegreeLine = (index) => index % 3600 === 0;

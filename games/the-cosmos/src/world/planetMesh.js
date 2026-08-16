@@ -161,6 +161,26 @@ export class LocalPatch {
     this._radii = new Float64Array(n * n);
     this._frame = null;      // east/north basis this patch was built in
     this._originR = 0;
+
+    // Regions the heightfield must NOT draw, because a volumetric mesh is
+    // drawing them instead. Without this the patch happily covers a hole with
+    // solid ground — it has no way to represent the hole, so it just paints
+    // over it and the excavation is invisible behind it.
+    this.excluded = [];      // [{ centre:{x,y,z}, radius }]
+  }
+
+  /** Hand over regions to the excavation mesh. Triggers a rebuild. */
+  setExcluded(regions) {
+    this.excluded = regions || [];
+    this.builtAt = null;     // force the next rebuild
+  }
+
+  _isExcluded(x, y, z) {
+    for (let i = 0; i < this.excluded.length; i++) {
+      const e = this.excluded[i];
+      if (Math.hypot(x - e.centre.x, y - e.centre.y, z - e.centre.z) < e.radius) return true;
+    }
+    return false;
   }
 
   /**
@@ -286,6 +306,30 @@ export class LocalPatch {
         shadeVertex(body, sx, sy, sz, gg.alt, c);
         col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b;
       }
+    }
+
+    // Drop quads that fall inside an excavated region, leaving a gap for the
+    // volumetric mesh to fill.
+    if (this.excluded.length) {
+      const keep = [];
+      for (let j = 0; j < n - 1; j++) {
+        for (let i = 0; i < n - 1; i++) {
+          const k = (j * n + i) * 3;
+          if (this._isExcluded(pos[k] + ox, pos[k + 1] + oy, pos[k + 2] + oz)) continue;
+          const a = j * n + i, b = a + 1, c2 = a + n, dd = c2 + 1;
+          keep.push(a, b, c2, b, dd, c2);
+        }
+      }
+      this.geo.setIndex(keep);
+    } else if (this.geo.getIndex() === null || this.geo.getIndex().count !== (n - 1) * (n - 1) * 6) {
+      const full = [];
+      for (let j = 0; j < n - 1; j++) {
+        for (let i = 0; i < n - 1; i++) {
+          const a = j * n + i, b = a + 1, c2 = a + n, dd = c2 + 1;
+          full.push(a, b, c2, b, dd, c2);
+        }
+      }
+      this.geo.setIndex(full);
     }
 
     this.geo.attributes.position.needsUpdate = true;

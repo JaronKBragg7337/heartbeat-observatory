@@ -21,6 +21,7 @@ import { buildGlobalShell, LocalPatch } from './world/planetMesh.js';
 import { geodeticToCartesian, cartesianToGeodetic, formatCoord, coordSlug } from './world/geodesy.js';
 import { surfaceRadiusAlong, materialAt, MATERIALS, attachEdits, density } from './world/field.js';
 import { EditStore } from './world/edits.js';
+import { ExcavationMesh } from './world/excavation.js';
 import { Walker } from './player/walker.js';
 import { TouchControls, DesktopControls } from './ui/touch.js';
 import { DebugLayer } from './dev/debugLayer.js';
@@ -56,6 +57,37 @@ const patchEntry = engine.track({ worldPos: patch.worldPos, object3d: patch.mesh
 // ---------------------------------------------------------------------------
 const edits = new EditStore(body);
 attachEdits(edits);
+
+// Geometry for anything dug. The heightfield cannot draw a hole at any
+// resolution, so excavated ground is meshed cell by cell from the field and
+// the heightfield yields that region to it.
+// minRadiusM is derived from the heightfield's own cell size: the excavated
+// region has to be bigger than one terrain quad or the heightfield cannot be
+// made to yield, and the hole stays buried underneath it.
+// minRadiusM is deliberately NOT set. Growing the excavated region past one
+// heightfield quad (6.72 m) is what it would take to make the heightfield yield
+// and reveal the hole — but that measured at ~400 ms per dig and froze the
+// renderer after twenty of them. The mesh below is correct and cheap over the
+// tight region; making it VISIBLE needs the near-field terrain to be volumetric
+// too, which is the next piece of work rather than a constant to tune.
+const excavation = new ExcavationMesh(body, { cellM: 0.22, maxCells: 64 });
+engine.scene.add(excavation.mesh);
+const excavationEntry = engine.track({ worldPos: excavation.worldPos, object3d: excavation.mesh });
+
+let excavationDue = 0;
+/** Called after any change to the ground. Coalesced: a burst of digs costs
+ *  one rebuild, not one per bite. */
+function requestExcavationRefresh() { excavationDue = 0.12; }
+
+function refreshExcavation() {
+  excavation.rebuild(edits.edits);
+  excavationEntry.worldPos = excavation.worldPos;
+  const fp = excavation.footprint();
+  // The heightfield stops drawing where the volumetric mesh takes over.
+    patch.setExcluded(fp ? [{ centre: fp.centre, radius: fp.radius * 0.9 }] : []);
+  patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
+  patchEntry.worldPos = patch.worldPos;
+}
 
 // A real shovel blade. r = 0.09 m sphere is ~3 litres, which is what a spade
 // actually lifts, and ~4.6 kg of regolith at its real density.
@@ -121,8 +153,7 @@ function doDig() {
     MATERIALS, t.x, t.y, t.z, SHOVEL.radius);
   if (!lot) return { ok: false, msg: 'Cannot cut this' };
   carried.push(lot);
-  patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
-  patchEntry.worldPos = patch.worldPos;
+  requestExcavationRefresh();
   return { ok: true, msg: `+${lot.massKg.toFixed(1)} kg ${lot.materialName}` };
 }
 
@@ -131,8 +162,7 @@ function doDump() {
   const t = digTarget() || walker.worldPos;
   const lot = carried.pop();
   edits.deposit(lot, t.x, t.y, t.z);
-  patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
-  patchEntry.worldPos = patch.worldPos;
+  requestExcavationRefresh();
   return { ok: true, msg: `dropped ${lot.massKg.toFixed(1)} kg` };
 }
 
@@ -509,6 +539,7 @@ engine.addUpdater((dt) => {
   updateCamera();
   debugLayer.update(walker, engine.camera);
 
+  if (excavationDue > 0) { excavationDue -= dt; if (excavationDue <= 0) refreshExcavation(); }
   if (actionFlash > 0) { actionFlash -= dt; if (actionFlash <= 0) refreshAction(); }
 
   hudAccum += dt;
@@ -540,7 +571,7 @@ engine.start();
 window.cosmos = {
   engine, body, walker, patch, registry, debugLayer, view,
   report: () => debugLayer.reportAt(walker),
-  edits, carried, doDig, doDump, digTarget,
+  edits, carried, doDig, doDump, digTarget, excavation, refreshExcavation,
   ledger: () => edits.ledger(carried),
   step: (dt = 1 / 60) => engine.step(dt),
   goto: (lat, lon) => {
