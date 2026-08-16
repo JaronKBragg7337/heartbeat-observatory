@@ -217,9 +217,20 @@ export function cellIndex(body, latDeg, lonDeg, cellDeg = ARCSEC) {
   };
 }
 
-/** Depth band. 0 at or above the surface, then one per LAYER_HEIGHT_M down. */
+/**
+ * Depth band. 0 at or near the surface, then one per LAYER_HEIGHT_M down.
+ *
+ * The tolerance is not cosmetic. A body standing on the ground rests a couple
+ * of centimetres INSIDE the analytic field — that is deliberate, and it is what
+ * stops the solid-push backstop firing on every step. Without a tolerance here,
+ * simply standing outdoors reported "L1", i.e. underground, which is wrong and
+ * would send someone hunting for a tunnel that is not there.
+ */
+export const SURFACE_TOLERANCE_M = 0.75;
+
 export function layerIndex(depthBelowSurfaceM) {
-  return depthBelowSurfaceM <= 0 ? 0 : Math.floor(depthBelowSurfaceM / LAYER_HEIGHT_M) + 1;
+  if (depthBelowSurfaceM <= SURFACE_TOLERANCE_M) return 0;
+  return Math.floor(depthBelowSurfaceM / LAYER_HEIGHT_M) + 1;
 }
 
 /** Degrees -> whole degrees, minutes, seconds for a cell index. */

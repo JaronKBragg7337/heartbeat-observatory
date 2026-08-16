@@ -77,13 +77,20 @@ export class DebugLayer {
     root.id = 'debug-dom';
     root.innerHTML =
       `<div id="dbg-readout"></div>` +
-      `<div id="dbg-nearest"></div>` +
+      `<div id="dbg-nearest"><div id="dbg-near-head"><span>NEAREST ASSETS</span>` +
+      `<span class="chev">▾</span></div><div id="dbg-near-body"></div></div>` +
       `<div id="dbg-cells"></div>` +
       `<div id="dbg-bubbles"></div>`;
     document.body.appendChild(root);
     this.dom = root;
     this.readout = root.querySelector('#dbg-readout');
     this.nearestPanel = root.querySelector('#dbg-nearest');
+    this.nearestBody = root.querySelector('#dbg-near-body');
+    // Collapsed by default. It is a reference you open when you need it, not a
+    // permanent overlay — on a phone the open panel covered half the world.
+    root.querySelector('#dbg-near-head').addEventListener('click', () => {
+      this.nearestPanel.classList.toggle('open');
+    });
     this.cellHost = root.querySelector('#dbg-cells');
     this.bubbleHost = root.querySelector('#dbg-bubbles');
     this._bubbles = new Map();
@@ -345,12 +352,18 @@ export class DebugLayer {
       .sort((a, b) => a.d - b.d)
       .slice(0, 7);
 
-    this.nearestPanel.innerHTML =
-      `<div class="dbg-title">NEAREST ASSETS</div>` +
-      rows.map((r) =>
-        `<div class="dbg-near"><b>${r.id}</b><i>${r.name}</i>` +
-        `<span>${r.cell} · ${r.d < 1000 ? r.d.toFixed(1) + 'm' : (r.d / 1000).toFixed(1) + 'km'}</span></div>`
-      ).join('');
+    // Only rebuild the list while it is open — a closed panel costs nothing.
+    if (!this.nearestPanel.classList.contains('open')) {
+      this.nearestPanel.querySelector('#dbg-near-head span').textContent =
+        `NEAREST ASSETS (${rows.length})`;
+      return;
+    }
+    this.nearestPanel.querySelector('#dbg-near-head span').textContent =
+      `NEAREST ASSETS (${rows.length})`;
+    this.nearestBody.innerHTML = rows.map((r) =>
+      `<div class="dbg-near"><b>${r.id}</b>` +
+      `<i>${r.name}<s>${r.d < 1000 ? r.d.toFixed(1) + ' m' : (r.d / 1000).toFixed(1) + ' km'}</s></i></div>`
+    ).join('');
   }
 
   _updateBubbles(camera) {

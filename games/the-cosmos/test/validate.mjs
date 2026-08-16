@@ -98,6 +98,12 @@ section('2. Addressing: every point has one, and it round-trips');
 check('poles convert without a singularity',
   Number.isFinite(GEO.cartesianToGeodetic(mars, 0, mars.radiusPolar, 0).lat));
 
+check('standing on the surface reports layer 0, not underground',
+  // The body rests a few cm inside the field by design. Without a tolerance
+  // this reported L1 while stood outdoors in daylight.
+  GEO.layerIndex(0) === 0 && GEO.layerIndex(0.02) === 0 && GEO.layerIndex(0.4) === 0 &&
+  GEO.layerIndex(3) === 1 && GEO.layerIndex(12) === 2 && GEO.layerIndex(55) === 6);
+
 check('local frame is RIGHT-handed everywhere (east × north = +up)',
   (() => {
     // Orthonormality does not catch a handedness flip — a left-handed frame is
