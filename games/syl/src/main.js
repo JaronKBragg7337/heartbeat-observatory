@@ -35,7 +35,6 @@ import { DevTools } from './dev/devTools.js';
 import { Tuner } from './dev/tuner.js';
 import { ColliderDebug } from './dev/colliderDebug.js';
 import { CivilTransport } from './world/civilTransport.js';
-import { SpaceProps } from './world/spaceProps.js';
 import { initLighting, updateLighting } from './render/lighting.js';
 import { enableShadows } from './render/props.js';
 
@@ -68,8 +67,10 @@ engine.scene.add(stars); // camera-anchored (position 0), rotates with nothing
 // fog and sky color (render/lighting.js owns the whole mood system).
 const lighting = initLighting(engine, settings);
 
-// Space debris / props (visual only, no collision).
-const spaceProps = new SpaceProps(engine);
+// Decorative deep-space clutter was removed for the V2 substrate: 40-60
+// Math.random() rocks, tetrahedra, and satellites with no ID, no seed, no
+// collision, and no reason to be where they were. Real asteroids are celestial
+// BODIES (rustholm, ironcore) and are untouched. See src/world/spaceProps.js.
 
 // Player + ship at the Fortis outpost spawn.
 const homeBody = getBody('earth');
@@ -93,11 +94,26 @@ player.shipRef = ship; // solid hull: the player collides with (and can stand on
 }
 
 // ---------------------------------------------------------------------------
-// Pickups — salvage crates the player gathers (F). Deterministic ids so the
-// collected-set in the save stays valid. Placement is data below; adding a
-// crate = adding a line. (Future agents: move to a spawner module when
-// resource nodes/mining arrive.)
+// Pickups — salvage crates the player gathers (F).
+//
+// These SURVIVED the V2 substrate cleanup while the settlements, roads, and
+// space clutter did not, and the difference is the whole point: a pickup
+// carries state. It has a stable id, a fixed placement, an item, and a
+// collected-flag that the save round-trips. The town did not carry anything.
+//
+// What was retired is the obsolete PRESENTATION — an emissive glowing cube
+// floating half a metre off the ground, which read as arcade dressing and
+// claimed a material identity it did not have. The marker below is deliberately
+// plain and provisional: a measured 0.8 m box, no emissive, named with its own
+// entity id so the scene graph carries identity (ROADMAP Phase 1: "define
+// stable entity/template/material IDs").
+//
+// It is NOT the target asset. Under PHYSICAL_WORLD_CONTRACT.md a crate becomes
+// a real component assembly with mass, volume, composition, custody, and
+// conserved contents. Until that exists, this stays a marker and is labelled
+// as one rather than being dressed up.
 // ---------------------------------------------------------------------------
+const PICKUP_SIZE_M = 0.8;        // measured marker edge length, metres
 const pickupEntities = new Map(); // id -> { worldPos, mesh, itemId, trackEntry }
 function spawnPickups(collectedSet) {
   for (const p of PICKUPS) {
@@ -116,11 +132,16 @@ function spawnPickups(collectedSet) {
     const worldPos = zoneWorldPos(body, { _dirV: dir }, 0.5);
 
     const item = getItem(p.itemId);
-    const color = item.kind === 'fuel' ? 0xff8f00 : item.kind === 'part' ? 0x64b5f6 : 0xa1887f;
+    const color = item.kind === 'fuel' ? 0xb26a00 : item.kind === 'part' ? 0x4a7fa8 : 0x8a7364;
     const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(0.8, 0.8, 0.8),
-      new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.25 })
+      new THREE.BoxGeometry(PICKUP_SIZE_M, PICKUP_SIZE_M, PICKUP_SIZE_M),
+      new THREE.MeshLambertMaterial({ color })
     );
+    // Stable entity identity on the scene node, not just in the Map.
+    mesh.name = `pickup:${p.id}`;
+    mesh.userData.entityId = p.id;
+    mesh.userData.itemId = p.itemId;
+    mesh.userData.presentation = 'substrate-marker';
     engine.scene.add(mesh);
     const trackEntry = engine.trackWorldObject({ worldPos, object3d: mesh });
     pickupEntities.set(p.id, { worldPos, mesh, itemId: p.itemId, trackEntry });
@@ -150,7 +171,7 @@ for (const t of civilTransportFleet) t.nudgeIfOverlappingPlayer(player);
 // ---------------------------------------------------------------------------
 const game = {
   engine, input, player, ship, civilTransportFleet, inventory, worldState, factionState, traversal,
-  settings, spaceProps,
+  settings,
   pickupsCollected: new Set(),
   applyLoadedMode(mode) {
     traversal.mode = mode === 'PILOTING' ? MODE.PILOTING : MODE.ON_FOOT;
@@ -579,8 +600,6 @@ engine.addUpdater((dt) => {
     }
     ship.tick(dt, false, null);
   }
-
-  if (traversal.phase === PHASE.SPACE) spaceProps.tick(dt);
 
   traversal.tick(player, ship, { worldPos: engine.cameraWorldPos });
   updateCamera(dt);

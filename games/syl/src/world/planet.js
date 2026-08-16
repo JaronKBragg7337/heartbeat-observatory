@@ -5,9 +5,17 @@
 //         mesh and current collision queries),
 //       - planet/water/atmosphere mesh construction,
 //       - gravity field math,
-//       - landing-zone structures (simple built-from-scratch geometry).
+//       - the (now empty) landing-zone collider registry.
 // DOES NOT OWN: body DATA (bodies.js), who is where (worldState.js),
 //               movement (player.js / ship.js).
+//
+// V2 SUBSTRATE (2026-08-15): buildZoneStructures() and its hand-maintained
+// collider table were removed together with the worldDetails dressing layer.
+// Landing zones survive as DATA — id, direction, angular radius, flatten flag,
+// faction, discovery — and the analytic flattening still carves each pad into
+// the terrain, so the site is geometrically real without a generated prop on
+// it. Nothing may re-add a structure here without also declaring its parcel,
+// collision, and navigation effect under PHYSICAL_WORLD_CONTRACT.md.
 //
 // V1 TRUTH: terrainRadiusAt(body, dirUnit) returns one outer radius per
 // direction. This keeps the current picture and collision aligned, but it is a
@@ -24,12 +32,7 @@
 
 import * as THREE from 'three';
 import { groundDetailTexture } from '../render/textures.js';
-import {
-  glowMat, makeLandingPad, makeQuonsetHut, makeGabledBuilding, makeBanner,
-  makeStorageTank, makeLatticeMast, makeDish, makeContainer, enableShadows,
-} from '../render/props.js';
 import { fbm, smoothstep } from '../core/math3d.js';
-import { buildWorldDetailLayer } from './worldDetails.js';
 
 // ---------------------------------------------------------------------------
 // LEGACY V1 ANALYTIC OUTER SURFACE — single source for the current client.
@@ -211,52 +214,25 @@ const _zoneNorth = new THREE.Vector3();
 const _worldY = new THREE.Vector3(0, 1, 0);
 
 // ---------------------------------------------------------------------------
-// STRUCTURE COLLISION — analytic footprints for authored zone structures.
-// These are intentionally simple capsule-vs-footprint blockers: visuals can
-// stay handmade Three.js primitives, while movement never depends on mesh
-// collision at true-scale coordinates.
+// STRUCTURE COLLISION — the V2 substrate ships with NO world structures, so
+// this registry is deliberately empty.
+//
+// It used to hand-mirror the footprints drawn by buildZoneStructures(). That
+// duplication is exactly the invisible-wall risk CANON.md calls out: the mesh
+// and its blocker were maintained separately and could disagree. Both sides
+// were removed in the same change, so there is nothing left to disagree about.
+//
+// A V2 structure earns a collider only by deriving it from the same measured
+// blueprint that produces its mesh and navigation effect — never by adding a
+// literal back into this table.
 // ---------------------------------------------------------------------------
 export function structureCollidersForZone(zone) {
-  if (zone.structures === 'outpost') {
-    return [
-      ...[[40, 0], [-42, 10], [10, -46], [-15, 44]].map(([east, north]) => ({
-        kind: 'box', east, north, halfEast: 8, halfNorth: 6, height: 7,
-      })),
-      { kind: 'circle', east: 30, north: 30, radius: 3.2, height: 24 },
-    ];
-  }
-  if (zone.structures === 'relay') {
-    return [
-      { kind: 'circle', east: 18, north: -12, radius: 7.5, height: 10 },
-    ];
-  }
-  if (zone.structures === 'depot') {
-    return [
-      { kind: 'box', east: -18, north: 0, halfEast: 12, halfNorth: 7, height: 8 },
-      { kind: 'box', east: 18, north: 7, halfEast: 9, halfNorth: 6, height: 6 },
-      { kind: 'circle', east: 5, north: -18, radius: 4, height: 15 },
-    ];
-  }
-  if (zone.structures === 'beacon') {
-    return [
-      { kind: 'circle', east: 0, north: 0, radius: 2, height: 13 },
-    ];
-  }
-  if (zone.structures === 'transit') {
-    return [
-      { kind: 'box', east: -20, north: 4, halfEast: 15, halfNorth: 7, height: 8 },
-      { kind: 'box', east: 20, north: -5, halfEast: 11, halfNorth: 6, height: 7 },
-      { kind: 'circle', east: 0, north: 24, radius: 3.5, height: 18 },
-      { kind: 'circle', east: 0, north: -24, radius: 3.5, height: 18 },
-    ];
-  }
-  return [];
+  return zone && zone._v2Colliders ? zone._v2Colliders : [];
 }
 
-// Detail-layer colliders (settlement buildings etc.) are computed by
-// worldDetails.js from the SAME deterministic layout that builds the visuals,
-// and cached on the zone. Merging them here means the player can no longer
-// walk through settlement buildings — visible walls only, never invisible ones.
+// The one query every mover uses. `zone._extraColliders` was the retired
+// dressing layer's channel; it is never populated now, but the merge stays so
+// a V2 site can attach blueprint-derived colliders through one known seam.
 export function allCollidersForZone(zone) {
   const base = structureCollidersForZone(zone);
   return zone._extraColliders ? base.concat(zone._extraColliders) : base;
@@ -465,139 +441,16 @@ export function buildBodyVisual(body, factionById) {
     group.add(atmo);
   }
 
-  // --- Legacy V1 landing-zone presentation. These generated structures are
-  // placeholders to remove during the authored V2 spatial rebuild.
-  for (const zone of body.landingZones) {
-    const zGroup = buildZoneStructures(body, zone, factionById);
-    group.add(zGroup);
-  }
-  group.add(buildWorldDetailLayer(body, factionById, terrainRadiusAt, { quality: 'mobile' }));
+  // --- No surface presentation is added here.
+  // The retired V1 layers (buildZoneStructures + buildWorldDetailLayer) placed
+  // pads, huts, masts, towns, roads, and scatter with no parcel, no blueprint,
+  // and no navigation meaning. They were removed together with their colliders,
+  // so a body renders exactly what it physically is: terrain, water, and sky.
+  // Landing zones remain real as flattened terrain plus their data record.
+  body._surfacePresentation = 'none:v2-substrate';
 
   body._group = group;
   return { group, bodyMesh };
-}
-
-// Position an object on the surface at `dir` with local up = radial.
-function placeOnSurface(body, dirUnit, obj, extraHeight = 0) {
-  const r = terrainRadiusAt(body, dirUnit) + extraHeight;
-  obj.position.copy(dirUnit).multiplyScalar(r); // group-local (group sits at body center)
-  // Orient: local +Y -> radial up.
-  obj.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dirUnit);
-}
-
-function buildZoneStructures(body, zone, factionById) {
-  // V1 structures come from the procedural props library. FOOTPRINTS MUST KEEP
-  // MATCHING structureCollidersForZone() above until this layer is replaced:
-  // if you move or resize a structure here, update its collider there.
-  const g = new THREE.Group();
-  g.name = `zone:${zone.id}`;
-  const faction = zone.factionId && factionById ? factionById[zone.factionId] : null;
-  const fColor = faction ? faction.color : 0x546e7a;
-  const rng = zoneRng(`${body.id}:${zone.id}`);
-
-  // Landing pad — textured disc, hazard ring, faction ring, edge lights.
-  const pad = makeLandingPad(fColor);
-  placeOnSurface(body, zone._dirV, pad, 0.05);
-  enableShadows(pad, false, true);
-  g.add(pad);
-
-  if (zone.structures === 'outpost') {
-    // Fortis outpost: quonset bunkers (collider: box half 8x6 h7) + lattice
-    // watchtower at (30,30) (collider: circle r3.2 h24) + faction banner.
-    const offsets = [[40, 0], [-42, 10], [10, -46], [-15, 44]];
-    for (const [ox, oz] of offsets) {
-      const hut = makeQuonsetHut(rng, 13, 11, 0x8d9ca6, fColor, 0.7);
-      const d = offsetDir(zone._dirV, ox, oz, body);
-      placeOnSurface(body, d, hut, -0.3);
-      hut.rotateY(rng() * Math.PI);
-      g.add(hut);
-    }
-    const towerDir = offsetDir(zone._dirV, 30, 30, body);
-    const tower = makeLatticeMast(rng, 22, 0x8d9ca6, 0xd32f2f);
-    placeOnSurface(body, towerDir, tower, -0.2);
-    g.add(tower);
-    const banner = makeBanner(rng, fColor);
-    placeOnSurface(body, offsetDir(zone._dirV, 33, -14, body), banner, -0.1);
-    g.add(banner);
-    for (const [cx, cz] of [[-30, -26], [-27, -30], [24, 28]]) {
-      const box = makeContainer(rng, 0x8a99a3);
-      placeOnSurface(body, offsetDir(zone._dirV, cx, cz, body), box, -0.15);
-      box.rotateY(rng() * Math.PI);
-      g.add(box);
-    }
-  } else if (zone.structures === 'relay') {
-    // Relay: dish on a yoke (collider: circle r7.5 h10 at (18,-12)).
-    const d = offsetDir(zone._dirV, 18, -12, body);
-    const dish = makeDish(rng, 6, 0x9fb2bd);
-    placeOnSurface(body, d, dish, -0.2);
-    g.add(dish);
-    const mast = makeLatticeMast(rng, 9, 0x546e7a, fColor);
-    placeOnSurface(body, offsetDir(zone._dirV, 12, -18, body), mast, -0.2);
-    g.add(mast);
-  } else if (zone.structures === 'depot') {
-    // Depot: gabled shed (box half 12x7 h8 at (-18,0)), quonset (box half 9x6
-    // h6 at (18,7)), domed tank (circle r4 h15 at (5,-18)).
-    const shedA = makeGabledBuilding(rng, 21, 6.5, 11, 0x8d9ca6, fColor, 0.8);
-    placeOnSurface(body, offsetDir(zone._dirV, -18, 0, body), shedA, -0.3);
-    g.add(shedA);
-    const shedB = makeQuonsetHut(rng, 15, 9, 0x7e8f99, fColor, 0.7);
-    placeOnSurface(body, offsetDir(zone._dirV, 18, 7, body), shedB, -0.3);
-    g.add(shedB);
-    const tank = makeStorageTank(rng, 3.1, 9, 0x8e9da7, 0.7);
-    placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), tank, -0.3);
-    g.add(tank);
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), glowMat(fColor));
-    placeOnSurface(body, offsetDir(zone._dirV, 5, -18, body), lamp, 13);
-    g.add(lamp);
-  } else if (zone.structures === 'beacon') {
-    // Beacon: lattice mast (collider: circle r2 h13 at centre).
-    const mast = makeLatticeMast(rng, 12, 0x546e7a, fColor);
-    placeOnSurface(body, zone._dirV, mast, -0.2);
-    g.add(mast);
-  } else if (zone.structures === 'transit') {
-    // Transit: terminal building (box half 15x7 h8 at (-20,4)), concourse
-    // quonset (box half 11x6 h7 at (20,-5)), two lattice masts (circles r3.5
-    // h18 at (0,±24)), arrival gate ring.
-    const terminal = makeGabledBuilding(rng, 27, 7, 11, 0x8a99a3, fColor, 0.8);
-    placeOnSurface(body, offsetDir(zone._dirV, -20, 4, body), terminal, -0.3);
-    g.add(terminal);
-    const concourse = makeQuonsetHut(rng, 18, 9, 0x7a8a94, fColor, 0.7);
-    placeOnSurface(body, offsetDir(zone._dirV, 20, -5, body), concourse, -0.3);
-    g.add(concourse);
-    for (const north of [24, -24]) {
-      const mast = makeLatticeMast(rng, 16, 0x546e7a, fColor);
-      placeOnSurface(body, offsetDir(zone._dirV, 0, north, body), mast, -0.2);
-      g.add(mast);
-    }
-    const gate = new THREE.Mesh(new THREE.TorusGeometry(8, 0.28, 8, 32), glowMat(fColor));
-    placeOnSurface(body, offsetDir(zone._dirV, 0, 0, body), gate, 2.6);
-    gate.rotateX(Math.PI / 2);
-    g.add(gate);
-  }
-  enableShadows(g, true, true);
-  return g;
-}
-
-// Small deterministic rng for zone structure variation.
-function zoneRng(key) {
-  let h = 2166136261;
-  for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
-  let t = h >>> 0;
-  return function next() {
-    t += 0x6D2B79F5;
-    let x = Math.imul(t ^ (t >>> 15), t | 1);
-    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
-    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// Direction slightly offset from a zone center by (east, north) meters.
-function offsetDir(dirUnit, eastM, northM, body) {
-  const frame = zoneFrame(dirUnit);
-  return dirUnit.clone()
-    .addScaledVector(frame.east, eastM / body.radius)
-    .addScaledVector(frame.north, northM / body.radius)
-    .normalize();
 }
 
 function zoneFrame(dirUnit) {

@@ -1,8 +1,18 @@
 // ============================================================================
-// spaceProps.js — visual debris/asteroids/satellites in deep space.
+// spaceProps.js — RETIRED decorative deep-space clutter. NOT WIRED INTO THE
+// CLIENT. Do not re-import it into src/main.js.
 //
-// OWNS: decorative space objects that populate the solar system. DOES NOT OWN:
-// collision, physics, or gameplay logic (visual dressing only).
+// It spawned 40-60 asteroids, tetrahedra, and satellites from bare
+// Math.random(): no stable ID, no seed, no persistence, no collision, no mass,
+// and a different sky on every page load. Under CANON.md that is the exact
+// opposite of a physical universe — objects that look like matter but are not.
+//
+// Real asteroids in SYL are celestial BODIES with IDs, seeds, positions,
+// gravity, and terrain (rustholm, ironcore in src/world/bodies*.js). Those are
+// untouched. If deep space should later hold small objects, they arrive as
+// server-owned entities with identity, mass, and momentum — not as this.
+//
+// Kept as migration evidence only; test/run_tests.mjs asserts it stays unwired.
 // ============================================================================
 
 import * as THREE from 'three';

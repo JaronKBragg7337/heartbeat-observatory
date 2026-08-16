@@ -25,10 +25,10 @@ const OutputShader = {
 			vUv = uv;
 			gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 
-	}`,
+		}`,
 
 	fragmentShader: /* glsl */`
-
+	
 		precision highp float;
 
 		uniform sampler2D tDiffuse;
