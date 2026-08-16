@@ -127,7 +127,15 @@ export class LocalPatch {
     for (let j = 0; j < n - 1; j++) {
       for (let i = 0; i < n - 1; i++) {
         const a = j * n + i, b = a + 1, c2 = a + n, d = c2 + 1;
-        indices.push(a, c2, b, b, c2, d);
+        // WINDING MATTERS, AND IT CHANGED UNDER US.
+        // Triangle winding decides which way a face points. When the body
+        // frame was corrected from left- to right-handed, the local east axis
+        // flipped, which silently reversed the winding of every triangle in
+        // this grid — all 229 sampled normals ended up pointing INTO the
+        // planet. An inside-out surface is lit from beneath and culled from
+        // outside, which is the "everything looks backwards" family of bug.
+        // validate.mjs now asserts outward normals so this cannot recur.
+        indices.push(a, b, c2, b, d, c2);
       }
     }
     this.geo = new THREE.BufferGeometry();

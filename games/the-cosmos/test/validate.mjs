@@ -396,6 +396,84 @@ section('5b. The player stands on the ground they can SEE');
 }
 
 // ---------------------------------------------------------------------------
+section('5c. Nothing is inside-out');
+// ---------------------------------------------------------------------------
+{
+  // A whole family of bugs in this project has been "something faces the wrong
+  // way": a left-handed frame that mirrored the controls, and triangle winding
+  // that survived the fix and left the ground lit from underneath. Both are
+  // invisible to every other test — an inside-out surface has perfectly valid
+  // geometry — so orientation gets asserted directly.
+  const { LocalPatch, buildGlobalShell } = await import(`file://${join(ROOT, 'src/world/planetMesh.js')}`);
+
+  const patch = new LocalPatch(mars, { sizeM: 880, res: 40 });
+  const p = GEO.geodeticToCartesian(mars, -14, -59.2, 0);
+  patch.rebuild(p.x, p.y, p.z);
+
+  let inward = 0, worst = 1;
+  const nrm = patch.geo.attributes.normal, pos = patch.geo.attributes.position;
+  for (let i = 0; i < nrm.count; i++) {
+    const wx = patch.worldPos.x + pos.getX(i);
+    const wy = patch.worldPos.y + pos.getY(i);
+    const wz = patch.worldPos.z + pos.getZ(i);
+    const L = Math.hypot(wx, wy, wz) || 1;
+    const d = nrm.getX(i) * wx / L + nrm.getY(i) * wy / L + nrm.getZ(i) * wz / L;
+    if (d <= 0) inward++;
+    worst = Math.min(worst, d);
+  }
+  check('local ground patch faces OUT of the planet, not into it',
+    inward === 0, `${inward}/${nrm.count} normals point inward, worst dot ${worst.toFixed(3)}`);
+
+  const shell = buildGlobalShell(mars, { segments: 32 });
+  const sn = shell.geometry.attributes.normal, sp = shell.geometry.attributes.position;
+  let sInward = 0, degenerate = 0, degenerateOffPole = 0;
+  for (let i = 0; i < sn.count; i++) {
+    const nl = Math.hypot(sn.getX(i), sn.getY(i), sn.getZ(i));
+    if (nl < 1e-6) {
+      // SphereGeometry's two pole vertices sit on zero-area triangles, so
+      // there is genuinely no normal to compute. That is degenerate, not
+      // inside-out, and the two cases are counted separately rather than
+      // folded together — a loosened test that hid a real flip would be worse
+      // than no test.
+      degenerate++;
+      const g = GEO.cartesianToGeodetic(mars, sp.getX(i), sp.getY(i), sp.getZ(i));
+      if (Math.abs(Math.abs(g.lat) - 90) > 0.001) degenerateOffPole++;
+      continue;
+    }
+    const L = Math.hypot(sp.getX(i), sp.getY(i), sp.getZ(i)) || 1;
+    if (sn.getX(i) * sp.getX(i) / L + sn.getY(i) * sp.getY(i) / L + sn.getZ(i) * sp.getZ(i) / L <= 0) sInward++;
+  }
+  check('global shell faces out too', sInward === 0, `${sInward}/${sn.count} inward`);
+  check('the only normal-less vertices are the two geometric poles',
+    degenerateOffPole === 0 && degenerate <= 2,
+    `${degenerate} degenerate, ${degenerateOffPole} of them away from a pole`);
+
+  // A body oriented from an explicit basis must actually face where it walks.
+  check('an explicit orientation basis faces the heading it was given',
+    (() => {
+      for (const [lat, lon, hdg] of [[0, 0, 0.3], [-14, -59.2, 2.1], [62, 145, -1.4], [-80, 12, 3.0]]) {
+        const f = GEO.localFrame(lat, lon);
+        const up = new THREE.Vector3(f.up.x, f.up.y, f.up.z);
+        const north = new THREE.Vector3(f.north.x, f.north.y, f.north.z);
+        const east = new THREE.Vector3(f.east.x, f.east.y, f.east.z);
+        const flat = north.clone().multiplyScalar(Math.cos(hdg))
+          .addScaledVector(east, Math.sin(hdg)).normalize();
+
+        const xAxis = new THREE.Vector3().crossVectors(up, flat).normalize();
+        const q = new THREE.Quaternion().setFromRotationMatrix(
+          new THREE.Matrix4().makeBasis(xAxis, up, flat));
+
+        // The model's front is +Z and its up is +Y. Both must land correctly.
+        const front = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+        const modelUp = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+        if (front.dot(flat) < 0.9999) return false;
+        if (modelUp.dot(up) < 0.9999) return false;
+      }
+      return true;
+    })());
+}
+
+// ---------------------------------------------------------------------------
 section('6. Walking anywhere on the planet, not just at spawn');
 // ---------------------------------------------------------------------------
 {

@@ -350,12 +350,23 @@ function updateCamera() {
     engine.cameraWorldPos.z = eye.z - fwd.z * d + up.z * 0.35;
     suitGroup.visible = true;
 
-    // Orient the visible body to stand plumb and face the look direction.
-    const bq = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+    // Orient the visible body to stand plumb and face where it is looking.
+    //
+    // This was built by composing two rotations: one taking the model's +Y to
+    // local up, then a yaw about up. That is wrong, because the first rotation
+    // sends the model's +Z somewhere arbitrary — setFromUnitVectors picks the
+    // shortest arc, not a heading — so the yaw was applied to an unknown
+    // starting direction and the body ended up facing a direction unrelated to
+    // its travel. It is the same family as the inverted stick and the
+    // inside-out ground: an orientation assumed rather than constructed.
+    //
+    // Built explicitly instead. The model's front is +Z (the backpack sits at
+    // -Z), so: model +Y -> local up, model +Z -> heading, and model +X is
+    // whatever keeps the basis right-handed (X = Y x Z).
     const flat = fwd.clone().projectOnPlane(up).normalize();
-    const yawQ = new THREE.Quaternion().setFromAxisAngle(up,
-      Math.atan2(flat.dot(east), flat.dot(north)));
-    suitEntry.quaternion = yawQ.multiply(bq);
+    const xAxis = new THREE.Vector3().crossVectors(up, flat).normalize();
+    const basis = new THREE.Matrix4().makeBasis(xAxis, up, flat);
+    suitEntry.quaternion = new THREE.Quaternion().setFromRotationMatrix(basis);
   }
 
   const target = new THREE.Vector3(
