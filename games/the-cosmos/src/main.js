@@ -19,7 +19,8 @@ import { registry } from './core/registry.js';
 import { BODIES, getBody } from './world/bodies.js';
 import { buildGlobalShell, LocalPatch } from './world/planetMesh.js';
 import { geodeticToCartesian, cartesianToGeodetic, formatCoord, coordSlug } from './world/geodesy.js';
-import { surfaceRadiusAlong, materialAt, MATERIALS } from './world/field.js';
+import { surfaceRadiusAlong, materialAt, MATERIALS, attachEdits, density } from './world/field.js';
+import { EditStore } from './world/edits.js';
 import { Walker } from './player/walker.js';
 import { TouchControls, DesktopControls } from './ui/touch.js';
 import { DebugLayer } from './dev/debugLayer.js';
@@ -46,14 +47,100 @@ registry.register({
   note: 'Coarse whole-planet render surface. Not the collision authority.',
 });
 
-const patch = new LocalPatch(body, { sizeM: 900, res: 110 });
+const patch = new LocalPatch(body, { sizeM: 880, res: 132 });
 engine.scene.add(patch.mesh);
 const patchEntry = engine.track({ worldPos: patch.worldPos, object3d: patch.mesh });
+
+// ---------------------------------------------------------------------------
+// Excavation. The ground is a solid object; this is what takes pieces out.
+// ---------------------------------------------------------------------------
+const edits = new EditStore(body);
+attachEdits(edits);
+
+// A real shovel blade. r = 0.09 m sphere is ~3 litres, which is what a spade
+// actually lifts, and ~4.6 kg of regolith at its real density.
+const SHOVEL = { radius: 0.09, reachM: 2.6, name: 'Hand shovel' };
+const carried = [];                      // lots in hand, each a real object
+const carryCapacityKg = 40;
+
+const carriedMass = () => carried.reduce((a, l) => a + l.massKg, 0);
+const carriedVolume = () => carried.reduce((a, l) => a + l.looseVolumeM3, 0);
+
+/** Where the player is looking, on the ground, within reach. */
+function digTarget() {
+  const f = walker.updateFrame();
+  const cy = Math.cos(walker.yaw), sy = Math.sin(walker.yaw);
+  const cp = Math.cos(walker.pitch), sp = Math.sin(walker.pitch);
+  const dir = {
+    x: f.north.x * cy * cp + f.east.x * sy * cp + f.up.x * sp,
+    y: f.north.y * cy * cp + f.east.y * sy * cp + f.up.y * sp,
+    z: f.north.z * cy * cp + f.east.z * sy * cp + f.up.z * sp,
+  };
+  const eyeP = walker.eyeWorldPos({});
+
+  // Step along the look ray until it passes below the surface the player can
+  // SEE. Testing the analytic field here instead would be wrong for the same
+  // reason it was wrong for the feet: the drawn ground sits up to ~0.7 m above
+  // the field between vertices, so a player standing on visible ground would
+  // aim at it and be told there is nothing in reach.
+  for (let t = 0.25; t <= SHOVEL.reachM; t += 0.06) {
+    const p = { x: eyeP.x + dir.x * t, y: eyeP.y + dir.y * t, z: eyeP.z + dir.z * t };
+    const l = Math.hypot(p.x, p.y, p.z);
+    const drawn = patch.surfaceRadiusAt(p.x / l, p.y / l, p.z / l);
+    if (drawn !== null) { if (l <= drawn) return p; }
+    else if (density(body, p.x, p.y, p.z) < 0) return p;
+  }
+  return null;
+}
+
+function doDig() {
+  if (carriedMass() >= carryCapacityKg) return { ok: false, msg: 'Hands full' };
+  let t = digTarget();
+  if (!t) return { ok: false, msg: 'Nothing in reach' };
+
+  // You AIM at the ground you can see, but you CUT real material. Those are up
+  // to ~0.7 m apart, because the drawn mesh interpolates flat triangles across
+  // a curved field. So the aim point is snapped down the radial to where the
+  // material actually starts — otherwise every swing lands in the gap between
+  // the picture and the substance and comes back empty.
+  {
+    const l = Math.hypot(t.x, t.y, t.z);
+    const u = { x: t.x / l, y: t.y / l, z: t.z / l };
+    const surf = surfaceRadiusAlong(body, u.x, u.y, u.z,
+      { minStep: 0.08, startRadius: l + 3, range: 12 });
+    const cut = surf - SHOVEL.radius * 0.55;    // bite in, not skim the top
+    t = { x: u.x * cut, y: u.y * cut, z: u.z * cut };
+  }
+
+  const lot = edits.dig(
+    (x, y, z) => density(body, x, y, z),
+    (x, y, z) => materialAt(body, x, y, z),
+    MATERIALS, t.x, t.y, t.z, SHOVEL.radius);
+  if (!lot) return { ok: false, msg: 'Cannot cut this' };
+  carried.push(lot);
+  patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
+  patchEntry.worldPos = patch.worldPos;
+  return { ok: true, msg: `+${lot.massKg.toFixed(1)} kg ${lot.materialName}` };
+}
+
+function doDump() {
+  if (!carried.length) return { ok: false, msg: 'Carrying nothing' };
+  const t = digTarget() || walker.worldPos;
+  const lot = carried.pop();
+  edits.deposit(lot, t.x, t.y, t.z);
+  patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
+  patchEntry.worldPos = patch.worldPos;
+  return { ok: true, msg: `dropped ${lot.massKg.toFixed(1)} kg` };
+}
 
 // ---------------------------------------------------------------------------
 // Player
 // ---------------------------------------------------------------------------
 const walker = new Walker(body);
+// Contact reads the DRAWN ground wherever the patch covers, and the field
+// beyond it. This is what stops the player floating above or sinking into the
+// surface they can see — one surface at two resolutions, never two surfaces.
+walker.groundSampler = (dx, dy, dz) => patch.surfaceRadiusAt(dx, dy, dz);
 walker.placeAtGeodetic(SPAWN.lat, SPAWN.lon, 1.5);
 patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
 patchEntry.worldPos = patch.worldPos;
@@ -310,12 +397,52 @@ const settingsPanel = document.getElementById('settings-panel');
 
 function refreshHud() {
   const g = walker.geodetic;
+  const load = carriedMass();
   hud.innerHTML =
     `<b>${body.name}</b> · ${SPAWN.name}<br>` +
     `${formatCoord(g.lat, g.lon, g.alt)}<br>` +
     `<span class="dim">${walker.groundMaterialName()} · ${body.surfaceGravity.toFixed(2)} m/s²` +
-    `${walker.grounded ? '' : ' · airborne'}</span>`;
+    `${walker.grounded ? '' : ' · airborne'}</span>` +
+    (load > 0
+      ? `<br><span class="load">carrying ${load.toFixed(1)} kg · ` +
+        `${(carriedVolume() * 1000).toFixed(0)} L · ${carried.length} load${carried.length > 1 ? 's' : ''}</span>`
+      : '');
 }
+
+// The action button exists only when there is something to do with it — the
+// same rule as the movement stick. No permanent controls waiting on screen.
+const actionBtn = document.getElementById('btn-action');
+let actionFlash = 0;
+function refreshAction() {
+  if (actionFlash > 0) return;
+  const inReach = !!digTarget();
+  const load = carriedMass();
+  if (inReach && load < carryCapacityKg) {
+    actionBtn.style.display = 'block';
+    actionBtn.textContent = load > 0 ? 'Dig  ·  hold to drop' : 'Dig';
+  } else if (load > 0) {
+    actionBtn.style.display = 'block';
+    actionBtn.textContent = 'Drop';
+  } else {
+    actionBtn.style.display = 'none';
+  }
+}
+function flash(msg) {
+  actionBtn.style.display = 'block';
+  actionBtn.textContent = msg;
+  actionFlash = 0.9;
+}
+
+// Tap digs; press and hold drops. One button, two verbs, no clutter.
+let holdTimer = null;
+actionBtn.addEventListener('pointerdown', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  holdTimer = setTimeout(() => { holdTimer = null; flash(doDump().msg); }, 420);
+});
+actionBtn.addEventListener('pointerup', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; flash(doDig().msg); }
+});
 
 // Settings, including the DEV toggle that turns on the measurement layer.
 document.getElementById('btn-settings').addEventListener('click', () => {
@@ -368,8 +495,10 @@ engine.addUpdater((dt) => {
   updateCamera();
   debugLayer.update(walker, engine.camera);
 
+  if (actionFlash > 0) { actionFlash -= dt; if (actionFlash <= 0) refreshAction(); }
+
   hudAccum += dt;
-  if (hudAccum > 0.2) { refreshHud(); hudAccum = 0; }
+  if (hudAccum > 0.2) { refreshHud(); refreshAction(); hudAccum = 0; }
 });
 
 // Keyboard shortcuts for desktop: V toggles view, G toggles the debug layer.
@@ -378,6 +507,8 @@ window.addEventListener('keydown', (e) => {
     view.mode = view.mode === 'first' ? 'third' : 'first';
     document.getElementById('set-view').value = view.mode;
   }
+  if (e.code === 'KeyE') flash(doDig().msg);
+  if (e.code === 'KeyQ') flash(doDump().msg);
   if (e.code === 'KeyG') {
     const box = document.getElementById('set-dev');
     box.checked = !box.checked;
@@ -395,6 +526,8 @@ engine.start();
 window.cosmos = {
   engine, body, walker, patch, registry, debugLayer, view,
   report: () => debugLayer.reportAt(walker),
+  edits, carried, doDig, doDump, digTarget,
+  ledger: () => edits.ledger(carried),
   step: (dt = 1 / 60) => engine.step(dt),
   goto: (lat, lon) => {
     walker.placeAtGeodetic(lat, lon, 1.5);

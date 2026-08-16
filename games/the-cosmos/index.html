@@ -58,6 +58,17 @@
     padding: 9px 13px; cursor: pointer; min-height: 40px;
   }
   .btn:active { background: rgba(232, 201, 168, .18); }
+  /* Contextual action. Hidden unless there is something to act on. */
+  #btn-action {
+    display: none;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    min-width: 116px; min-height: 52px; font-size: 12px;
+    background: rgba(240, 185, 120, .20);
+    border-color: rgba(240, 185, 120, .55); color: #ffd9ac;
+  }
+  #btn-action:active { background: rgba(240, 185, 120, .38); }
+  #hud .load { color: #f0b978; }
   #btn-settings {
     top: calc(10px + env(safe-area-inset-top, 0px));
     right: calc(10px + env(safe-area-inset-right, 0px));
@@ -145,10 +156,21 @@
   .dbg-bubble b { display: block; color: #ffd257; font-weight: 600; letter-spacing: .4px; }
   .dbg-bubble i { display: block; color: #cfeeff; font-style: normal; }
   .dbg-bubble span { display: block; color: #7fa6b4; }
-  /* The stalk that ties the bubble to the thing it names. */
+  /* The stalk that ties the bubble to the thing it names. It stretches when
+     the bubble has been lifted clear of another one, so the link is never
+     ambiguous even in a crowd. */
   .dbg-bubble::after {
-    content: ''; position: absolute; left: 50%; bottom: -9px;
-    width: 1px; height: 9px; background: rgba(57, 208, 255, .5);
+    content: ''; position: absolute; left: 50%;
+    bottom: calc(-1 * var(--stalk, 9px));
+    width: 1px; height: var(--stalk, 9px);
+    background: linear-gradient(to bottom, rgba(57,208,255,.65), rgba(57,208,255,.15));
+  }
+  /* Degree labels along the graticule. */
+  .dbg-gridlabel {
+    position: absolute; top: 0; left: 0;
+    color: #ffd257; font-size: 9px; letter-spacing: .3px;
+    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px rgba(0,0,0,.9);
+    white-space: nowrap; will-change: transform;
   }
 
   @media (max-width: 520px) {
@@ -169,6 +191,7 @@
 
 <button class="btn" id="btn-settings">Settings</button>
 <a class="btn" id="back-link" href="/games/">← Games</a>
+<button class="btn" id="btn-action">Dig</button>
 
 <div id="settings-panel">
   <h2>Settings</h2>

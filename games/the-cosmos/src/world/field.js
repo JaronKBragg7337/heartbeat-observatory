@@ -256,7 +256,25 @@ export function caveOpenness(body, px, py, pz, depthM) {
 // Negative inside solid material, positive in open space, and approximately
 // metric near the surface so it can be sphere-traced.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// PERSISTENT EDITS
+// The base geology above is procedural and immutable. Anything a player digs
+// or dumps lives in an EditStore attached here. Because it is applied inside
+// density(), a hole is real to EVERYTHING at once — the renderer, the
+// collider, the material query, the ground the feet stand on. There is no
+// separate "hole mesh" that could disagree with where you can walk.
+// ---------------------------------------------------------------------------
+let _edits = null;
+export function attachEdits(store) { _edits = store; }
+export function getEdits() { return _edits; }
+
 export function density(body, px, py, pz, scratch = {}) {
+  const base = baseDensity(body, px, py, pz, scratch);
+  if (_edits && !_edits.isEmpty) return _edits.apply(base, px, py, pz);
+  return base;
+}
+
+function baseDensity(body, px, py, pz, scratch = {}) {
   const r = Math.hypot(px, py, pz);
   if (r < 1e-6) return -body.radiusMean;              // dead centre: solid
 
@@ -437,10 +455,22 @@ export function surfaceRadiusFast(body, dx, dy, dz, iterations = 3) {
   const scratch = {};
   let r = body.radiusMean;
   for (let i = 0; i < iterations; i++) {
-    const d = density(body, dx * r, dy * r, dz * r, scratch);
+    const d = baseDensity(body, dx * r, dy * r, dz * r, scratch);
     r -= d;
     // Guard against a pathological step leaving the body entirely.
     if (!(r > 0) || r > body.radiusEquatorial * 2) return body.radiusMean;
+  }
+
+  // Newton assumes the field increases smoothly with radius. A dug hole breaks
+  // that — it puts open space inside solid rock, so there are now several
+  // crossings along this ray and the solved one may be the wrong one, or may
+  // sit inside a void. Where anyone has actually edited the ground, pay for
+  // the real ray march. Everywhere else (which is almost everywhere) keep the
+  // cheap path.
+  if (_edits && !_edits.isEmpty && _edits.near(dx * r, dy * r, dz * r)) {
+    return surfaceRadiusAlong(body, dx, dy, dz, {
+      minStep: 0.12, startRadius: r + 60, range: 200,
+    });
   }
   return r;
 }

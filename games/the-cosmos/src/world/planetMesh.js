@@ -147,6 +147,70 @@ export class LocalPatch {
     // vertices are stored relative to the patch centre, and the centre is an
     // f64 world position.
     this.worldPos = { x: 0, y: 0, z: 0 };
+
+    // The exact radius at every vertex, in f64, kept so COLLISION CAN READ THE
+    // DRAWN SURFACE. See surfaceRadiusAt() below for why this matters.
+    this._radii = new Float64Array(n * n);
+    this._frame = null;      // east/north basis this patch was built in
+    this._originR = 0;
+  }
+
+  /**
+   * The radius of the DRAWN ground at a world direction, or null outside the
+   * patch.
+   *
+   * WHY THIS EXISTS
+   * ---------------
+   * The field is the world's truth, but the mesh is a sampled picture of it:
+   * vertices every ~8 m with flat triangles between them. Over rough ground
+   * those two disagree by metres. A player standing on the field therefore
+   * floats above, or sinks into, the ground they can actually see — which is
+   * exactly the "sometimes I sit above it, sometimes my legs go through it"
+   * report, and exactly the "one layer that looks like the ground and another
+   * that decides where you stand" diagnosis of it.
+   *
+   * The rule that fixes it: COLLISION MUST SAMPLE WHATEVER THE PLAYER SEES.
+   * So the drawn surface is interpolated the same way the GPU interpolates it,
+   * from the same numbers, and the player stands on that. The field remains
+   * authoritative everywhere the patch does not cover, and remains the source
+   * these vertices were built from — this is one surface at two resolutions,
+   * not two surfaces.
+   */
+  surfaceRadiusAt(dx, dy, dz) {
+    if (!this._frame || !this.builtAt) return null;
+    const f = this._frame;
+    const n = this.res;
+    const half = this.sizeM / 2;
+    const step = this.sizeM / (n - 1);
+
+    // Project the direction onto the patch's tangent plane. Small-angle at
+    // patch scale: 900 m on a 3,389 km body is 0.015 degrees of arc.
+    const R0 = this._originR;
+    const px = dx * R0, py = dy * R0, pz = dz * R0;
+    const ox = this.worldPos.x, oy = this.worldPos.y, oz = this.worldPos.z;
+    const vx = px - ox, vy = py - oy, vz = pz - oz;
+
+    const east = vx * f.east.x + vy * f.east.y + vz * f.east.z;
+    const north = vx * f.north.x + vy * f.north.y + vz * f.north.z;
+
+    const fi = (east + half) / step;
+    const fj = (north + half) / step;
+    if (fi < 0 || fj < 0 || fi > n - 1.001 || fj > n - 1.001) return null;
+
+    const i0 = Math.floor(fi), j0 = Math.floor(fj);
+    const tx = fi - i0, ty = fj - j0;
+    const r = this._radii;
+    const r00 = r[j0 * n + i0], r10 = r[j0 * n + i0 + 1];
+    const r01 = r[(j0 + 1) * n + i0], r11 = r[(j0 + 1) * n + i0 + 1];
+
+    // Match the triangulation used for the index buffer (a,c,b / b,c,d) so the
+    // interpolated height is the plane of the triangle actually rasterised,
+    // not a bilinear patch that cuts across both of them.
+    if (tx + ty <= 1) {
+      return r00 + (r10 - r00) * tx + (r01 - r00) * ty;
+    }
+    const sx = 1 - tx, sy = 1 - ty;
+    return r11 + (r01 - r11) * sx + (r10 - r11) * sy;
   }
 
   /** Does the player need a fresh patch? */
@@ -183,6 +247,8 @@ export class LocalPatch {
     const ox = (cd.x / clen) * originR, oy = (cd.y / clen) * originR, oz = (cd.z / clen) * originR;
     this.worldPos = { x: ox, y: oy, z: oz };
     this.builtAt = { x: px, y: py, z: pz };
+    this._frame = f;
+    this._originR = originR;
 
     for (let j = 0; j < n; j++) {
       const north = -half + j * stepM;
@@ -205,6 +271,8 @@ export class LocalPatch {
         const k = (j * n + i) * 3;
         // Stored relative to the patch centre so the buffer stays float32-safe.
         pos[k] = sx - ox; pos[k + 1] = sy - oy; pos[k + 2] = sz - oz;
+        // f64 copy for collision, so the collider reads the drawn surface.
+        this._radii[j * n + i] = R;
 
         const gg = cartesianToGeodetic(body, sx, sy, sz);
         shadeVertex(body, sx, sy, sz, gg.alt, c);

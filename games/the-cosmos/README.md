@@ -76,7 +76,7 @@ That turns "there's a rock stuck in a hill somewhere" into
 and a reproduction step.
 
 **The goal is to never need it.** `test/validate.mjs` is the first line of
-defence and runs without anyone looking: 36 checks covering placement,
+defence and runs without anyone looking: 54 checks covering placement,
 collision, dimension drift, physics correctness, and determinism.
 
 ---
@@ -97,10 +97,33 @@ test/validate.mjs        the checks that mean nobody has to go looking
 
 ---
 
+## Digging
+
+The ground is a solid object you take pieces out of. A scoop has a measured
+volume, that volume has a mass from the real density of the rock it came from,
+and that mass has to be somewhere — in your hands or in a pile on the ground.
+
+Tap the action button (or `E`) to dig, hold it (or `Q`) to drop. A spade bite
+is ~3 litres and ~4.4 kg of regolith, which is what a real spade lifts.
+
+Matter is conserved to floating-point zero: `edits.ledger()` reports
+removed − deposited − carried and the validator asserts it is 0.
+
+**The one thing that does not work yet: you cannot SEE the hole.** The ground
+mesh samples every 6.72 m and a spade bite is 0.18 m across — 37 bites fit
+inside a single mesh cell, so the hole is far below what the surface can draw.
+Everything else about it is real: the field knows, collision knows, the mass is
+in your hands, and the validator proves the rendered surface drops when the cut
+is big enough to reach a vertex.
+
+The fix is a third LOD level — a fine detail mesh, sub-metre, around edited
+ground — not a change to how excavation works.
+
 ## What is not done yet
 
 Stated plainly, because a known gap is cheaper than a surprise:
 
+- **Dug holes are invisible** until a fine detail mesh exists. See above.
 - **Caves have no geometry.** The field knows they are there and collision
   respects them, but the renderer only draws the outermost surface. Closing
   this is a marching-cubes pass over the local patch, not a redesign.

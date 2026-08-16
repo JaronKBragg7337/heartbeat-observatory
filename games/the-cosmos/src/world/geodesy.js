@@ -24,8 +24,21 @@
 // - Longitude: -180..+180, EAST positive. Mars' origin is the crater Airy-0.
 // - Altitude:  metres above the body's datum (Mars: the areoid), NOT above
 //              local ground. Ground clearance is a separate query.
-// - Cartesian: body-fixed, metres, +Y through the north pole, +X through
-//              (lat 0, lon 0). Right-handed.
+// - Cartesian: body-fixed, metres. +Y through the north pole, +X through
+//              (lat 0, lon 0), and -Z through (lat 0, lon 90°E).
+//
+//              That -Z looks odd written down and it is load-bearing. Three.js
+//              renders right-handed. Mapping longitude onto +Z instead gives a
+//              LEFT-handed frame: east x north comes out as -up, and everything
+//              derived from it lands mirrored on screen. The first build had
+//              exactly that bug — the movement stick and the camera both moved
+//              left when you pushed right, because both read the same east
+//              vector, and that vector was geodetically correct but rendered on
+//              the wrong side.
+//
+//              `validate.mjs` now asserts east x north = +up at many points, so
+//              a handedness flip cannot come back quietly. Orthonormality alone
+//              does not catch it: a left-handed frame is perfectly orthonormal.
 // ============================================================================
 
 const DEG = Math.PI / 180;
@@ -57,7 +70,7 @@ export function geodeticToCartesian(body, latDeg, lonDeg, altM = 0, out = {}) {
   const N = a / Math.sqrt(1 - e2 * sinLat * sinLat);
   const r = (N + altM) * cosLat;
   out.x = r * Math.cos(lon);
-  out.z = r * Math.sin(lon);
+  out.z = -r * Math.sin(lon);      // -Z east: keeps the frame right-handed
   out.y = (N * (1 - e2) + altM) * sinLat;
   return out;
 }
@@ -85,7 +98,7 @@ export function cartesianToGeodetic(body, x, y, z, out = {}) {
   const N = a / Math.sqrt(1 - e2 * sinLat * sinLat);
 
   out.lat = lat * RAD;
-  out.lon = Math.atan2(z, x) * RAD;
+  out.lon = Math.atan2(-z, x) * RAD;    // mirrors the -Z east convention
   out.alt = p / Math.cos(lat) - N;
   return out;
 }
@@ -100,9 +113,11 @@ export function localFrame(latDeg, lonDeg, out = {}) {
   const sinLat = Math.sin(lat), cosLat = Math.cos(lat);
   const sinLon = Math.sin(lon), cosLon = Math.cos(lon);
 
-  out.east  = { x: -sinLon,          y: 0,      z: cosLon };
-  out.north = { x: -sinLat * cosLon, y: cosLat, z: -sinLat * sinLon };
-  out.up    = { x:  cosLat * cosLon, y: sinLat, z:  cosLat * sinLon };
+  // Derivatives of the position (cosLat·cosLon, sinLat, −cosLat·sinLon).
+  // east × north = +up at every point on the body; the validator proves it.
+  out.east  = { x: -sinLon,          y: 0,      z: -cosLon };
+  out.north = { x: -sinLat * cosLon, y: cosLat, z:  sinLat * sinLon };
+  out.up    = { x:  cosLat * cosLon, y: sinLat, z: -cosLat * sinLon };
   return out;
 }
 

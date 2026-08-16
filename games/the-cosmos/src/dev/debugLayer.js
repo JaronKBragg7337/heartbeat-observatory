@@ -66,12 +66,15 @@ export class DebugLayer {
   _buildDom() {
     const root = document.createElement('div');
     root.id = 'debug-dom';
-    root.innerHTML = `<div id="dbg-readout"></div><div id="dbg-bubbles"></div>`;
+    root.innerHTML = `<div id="dbg-readout"></div><div id="dbg-labels"></div><div id="dbg-bubbles"></div>`;
     document.body.appendChild(root);
     this.dom = root;
     this.readout = root.querySelector('#dbg-readout');
+    this.labelHost = root.querySelector('#dbg-labels');
     this.bubbleHost = root.querySelector('#dbg-bubbles');
     this._bubbles = new Map();          // assetId -> element
+    this._labels = [];                  // pooled degree labels
+    this._gridNodes = [];               // { lat, lon, world } for labelling
     root.style.display = 'none';
   }
 
@@ -172,6 +175,25 @@ export class DebugLayer {
       this._lines.add(seg);
     }
     this.group.add(this._lines);
+
+    // Label the major intersections: where a major latitude line crosses a
+    // major longitude line is the natural place to print the coordinate.
+    this._gridNodes = [];
+    for (let i = -nSteps; i <= nSteps; i++) {
+      const lat = lat0 + i * step;
+      if (Math.abs(Math.round(lat / step)) % this.majorEvery !== 0) continue;
+      if (lat > 89.9 || lat < -89.9) continue;
+      for (let j = -nSteps; j <= nSteps; j++) {
+        const lon = lon0 + j * step;
+        if (Math.abs(Math.round(lon / step)) % this.majorEvery !== 0) continue;
+        const p = geodeticToCartesian(body, lat, lon, 0);
+        const l = Math.hypot(p.x, p.y, p.z);
+        const R = surfaceRadiusAlong(body, p.x / l, p.y / l, p.z / l, { minStep: 2 });
+        const k = (R + 1.4) / l;    // float the label just above the ground
+        this._gridNodes.push({ lat, lon, world: { x: p.x * k, y: p.y * k, z: p.z * k } });
+      }
+    }
+
     this._lastBuildCentre = { lat: centreLat, lon: centreLon };
   }
 
@@ -189,7 +211,47 @@ export class DebugLayer {
     }
 
     this._updateReadout(walker);
+    this._updateGridLabels(camera);
     this._updateBubbles(camera);
+  }
+
+  /**
+   * Degree labels on the graticule. A grid of unlabelled lines shows you that
+   * there IS a coordinate system; it does not tell you where you are on it.
+   * These print the actual latitude and longitude of each major line, so the
+   * grid can be read rather than just seen.
+   */
+  _updateGridLabels(camera) {
+    const cam = this.engine.cameraWorldPos;
+    const v = new THREE.Vector3();
+    let used = 0;
+
+    for (const node of this._gridNodes) {
+      const dx = node.world.x - cam.x, dy = node.world.y - cam.y, dz = node.world.z - cam.z;
+      const dist = Math.hypot(dx, dy, dz);
+      if (dist > 900) continue;
+
+      v.set(dx, dy, dz).project(camera);
+      if (v.z > 1 || v.x < -1 || v.x > 1 || v.y < -1 || v.y > 1) continue;
+
+      let el = this._labels[used];
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'dbg-gridlabel';
+        this.labelHost.appendChild(el);
+        this._labels[used] = el;
+      }
+      const ns = node.lat >= 0 ? 'N' : 'S';
+      const ew = node.lon >= 0 ? 'E' : 'W';
+      el.textContent = `${Math.abs(node.lat).toFixed(2)}°${ns} ${Math.abs(node.lon).toFixed(2)}°${ew}`;
+      el.style.transform =
+        `translate(-50%,-50%) translate(${(v.x * 0.5 + 0.5) * window.innerWidth}px, ` +
+        `${(-v.y * 0.5 + 0.5) * window.innerHeight}px)`;
+      el.style.opacity = String(Math.max(0.2, 1 - dist / 900));
+      el.style.display = 'block';
+      used++;
+    }
+    for (let i = used; i < this._labels.length; i++) this._labels[i].style.display = 'none';
   }
 
   _updateReadout(walker) {
@@ -220,20 +282,35 @@ export class DebugLayer {
     const v = new THREE.Vector3();
     const maxDist = 260;
 
+    // Collect first, lay out second. A bubble is only useful if you can read
+    // it, and two bubbles on top of each other are worth less than one — so
+    // nothing is positioned until every candidate is known.
+    const candidates = [];
     for (const rec of this.registry.all()) {
       if (!rec.position) continue;
       const dx = rec.position.x - cam.x, dy = rec.position.y - cam.y, dz = rec.position.z - cam.z;
       const dist = Math.hypot(dx, dy, dz);
       if (dist > maxDist) continue;
 
-      // Project to screen. Behind the camera means no bubble.
       v.set(dx, dy + (rec.authored?.height || 1) * 0.6 + 0.8, dz);
       v.project(camera);
       if (v.z > 1) continue;
 
-      const sx = (v.x * 0.5 + 0.5) * window.innerWidth;
-      const sy = (-v.y * 0.5 + 0.5) * window.innerHeight;
+      candidates.push({
+        rec, dist,
+        anchorX: (v.x * 0.5 + 0.5) * window.innerWidth,
+        anchorY: (-v.y * 0.5 + 0.5) * window.innerHeight,
+      });
+    }
 
+    // Nearest gets the best position; further ones move out of its way.
+    candidates.sort((a, b) => a.dist - b.dist);
+
+    const placed = [];
+    const H = 64, W = 172, PAD = 6;
+
+    for (const c of candidates) {
+      const rec = c.rec;
       let el = this._bubbles.get(rec.id);
       if (!el) {
         el = document.createElement('div');
@@ -249,9 +326,28 @@ export class DebugLayer {
         `<span>${s.coord}</span>` +
         `<span>${s.size} · ${s.mass}</span>` +
         `<span>col:${s.collision} · ${s.material}</span>`;
-      el.style.transform = `translate(-50%,-100%) translate(${sx}px, ${sy}px)`;
-      // Fade with distance so a cluster stays readable.
-      el.style.opacity = String(Math.max(0.25, 1 - dist / maxDist));
+
+      // Lift the label until it clears everything already placed, then draw a
+      // leader line back down to the thing it names so the link stays obvious.
+      let y = c.anchorY;
+      let guard = 0;
+      let moved = true;
+      while (moved && guard++ < 40) {
+        moved = false;
+        for (const p of placed) {
+          if (Math.abs(p.x - c.anchorX) < W && Math.abs(p.y - y) < H) {
+            y = p.y - H - PAD;
+            moved = true;
+          }
+        }
+      }
+      placed.push({ x: c.anchorX, y });
+
+      const lift = c.anchorY - y;
+      el.style.transform = `translate(-50%,-100%) translate(${c.anchorX}px, ${y}px)`;
+      el.style.opacity = String(Math.max(0.35, 1 - c.dist / maxDist));
+      // The stalk grows to span whatever distance the bubble was pushed.
+      el.style.setProperty('--stalk', `${Math.max(9, lift + 9)}px`);
       seen.add(rec.id);
     }
 

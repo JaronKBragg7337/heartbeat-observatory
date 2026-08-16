@@ -59,6 +59,38 @@ export class Walker {
 
     this._frame = { east: null, north: null, up: null };
     this._geo = { lat: 0, lon: 0, alt: 0 };
+
+    /**
+     * Optional sampler of the DRAWN ground: (dx,dy,dz) -> radius | null.
+     * When set (main.js wires the local patch in), the feet stand on exactly
+     * the surface being rendered. Without it, contact falls back to the field.
+     * See LocalPatch.surfaceRadiusAt for why this is required rather than nice.
+     */
+    this.groundSampler = null;
+  }
+
+  /**
+   * Ground under a world position, preferring the drawn surface.
+   * Returns the same shape as field.groundBelow so callers do not branch.
+   */
+  _groundAt(px, py, pz) {
+    const r = Math.hypot(px, py, pz) || 1;
+    const dx = px / r, dy = py / r, dz = pz / r;
+
+    if (this.groundSampler) {
+      const gr = this.groundSampler(dx, dy, dz);
+      if (gr !== null && gr !== undefined) {
+        return {
+          point: { x: dx * gr, y: dy * gr, z: dz * gr },
+          distance: r - gr,                 // negative when below the surface
+          material: materialAt(this.body, dx * gr, dy * gr, dz * gr),
+          fromMesh: true,
+        };
+      }
+    }
+    const g = groundBelow(this.body, px, py, pz, 4000);
+    if (g) g.fromMesh = false;
+    return g;
   }
 
   /** Place the body at a geodetic coordinate, snapped onto the ground. */
@@ -158,14 +190,22 @@ export class Walker {
     // --- Integrate. ---------------------------------------------------------
     let nx = p.x + v.x * dt, ny = p.y + v.y * dt, nz = p.z + v.z * dt;
 
-    // --- Ground contact, straight from the field. ---------------------------
-    // Query from slightly above the feet so a body resting exactly on the
-    // surface measures its real clearance instead of reporting a hard zero.
-    const nr = Math.hypot(nx, ny, nz) || 1;
-    const probe = 0.30;
-    const ground = groundBelow(body,
-      nx * (1 + probe / nr), ny * (1 + probe / nr), nz * (1 + probe / nr), 4000);
-    if (ground && ground.distance - probe <= 0.04) {
+    // --- Ground contact, from the surface the player can actually see. ------
+    const ground = this._groundAt(nx, ny, nz);
+
+    // GROUND SNAPPING. Without this, walking over any convex bump throws the
+    // body into the air for a few frames — measured at 215 of 600 frames
+    // airborne while running across real terrain, which reads as skipping
+    // rather than walking. Real feet stay on a surface they are walking down;
+    // they do not launch off every rise. So if we were grounded and the ground
+    // is still within reach below, stay on it.
+    //
+    // The reach is speed-dependent: fast enough and you genuinely should leave
+    // the ground. It is not a blanket magnet.
+    const tangentSpeed = Math.hypot(vTanX, vTanY, vTanZ);
+    const snapReach = this.grounded ? Math.max(0.35, tangentSpeed * dt * 2.2) : 0.04;
+
+    if (ground && ground.distance <= snapReach) {
       // Land: rest a hair ABOVE the surface, not exactly on it. Sitting on the
       // zero crossing puts density at ~0, where float noise can read negative
       // and trip the solid-push backstop below — which is what made the body
@@ -177,8 +217,10 @@ export class Walker {
       if (vd < 0) { v.x -= (nx / gl) * vd; v.y -= (ny / gl) * vd; v.z -= (nz / gl) * vd; }
       this.grounded = true;
       this.groundMaterial = ground.material;
+      this.groundFromMesh = !!ground.fromMesh;
       normalAt(body, nx, ny, nz, 0.5, this.groundNormal);
     } else {
+      this.groundFromMesh = false;
       this.grounded = false;
       if (ground) this.groundMaterial = ground.material;
     }
@@ -189,7 +231,13 @@ export class Walker {
     // Threshold is -0.08 m, not 0: resting contact sits at density ~0 and must
     // not be treated as a burial. Steps are small so a genuine intersection is
     // resolved smoothly rather than with a visible jolt.
-    if (density(body, nx, ny, nz) < -0.08) {
+    //
+    // Skipped when standing on the drawn mesh. Flat triangles between vertices
+    // cut across concave ground, so a body correctly stood on the surface it
+    // can SEE is legitimately a few centimetres inside the analytic field.
+    // Pushing it out there would re-create the exact floating the mesh-true
+    // contact was added to remove — the two rules would fight every frame.
+    if (!this.groundFromMesh && density(body, nx, ny, nz) < -0.08) {
       const n = normalAt(body, nx, ny, nz, 0.5);
       let push = 0;
       for (let i = 0; i < 24 && density(body, nx, ny, nz) < -0.02; i++) {

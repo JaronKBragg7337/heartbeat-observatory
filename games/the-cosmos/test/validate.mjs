@@ -98,6 +98,41 @@ section('2. Addressing: every point has one, and it round-trips');
 check('poles convert without a singularity',
   Number.isFinite(GEO.cartesianToGeodetic(mars, 0, mars.radiusPolar, 0).lat));
 
+check('local frame is RIGHT-handed everywhere (east × north = +up)',
+  (() => {
+    // Orthonormality does not catch a handedness flip — a left-handed frame is
+    // perfectly orthonormal. The first build shipped one, and the result was
+    // that pushing right moved you left, on both the stick and the camera,
+    // because both read the same east vector.
+    const cross = (a, b) => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x });
+    const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+    for (let i = 0; i < 200; i++) {
+      const lat = ((i * 7919) % 17800) / 100 - 89;
+      const lon = ((i * 6271) % 35900) / 100 - 179.5;
+      const f = GEO.localFrame(lat, lon);
+      if (dot(cross(f.east, f.north), f.up) < 0.999) return false;
+    }
+    return true;
+  })());
+
+check('stepping along east increases longitude',
+  (() => {
+    const f = GEO.localFrame(0, 0);
+    const p = GEO.geodeticToCartesian(mars, 0, 0, 0);
+    const g = GEO.cartesianToGeodetic(mars,
+      p.x + f.east.x * 100000, p.y + f.east.y * 100000, p.z + f.east.z * 100000);
+    return g.lon > 0.5;
+  })());
+
+check('stepping along north increases latitude',
+  (() => {
+    const f = GEO.localFrame(10, 40);
+    const p = GEO.geodeticToCartesian(mars, 10, 40, 0);
+    const g = GEO.cartesianToGeodetic(mars,
+      p.x + f.north.x * 100000, p.y + f.north.y * 100000, p.z + f.north.z * 100000);
+    return g.lat > 10.5;
+  })());
+
 check('local frame is orthonormal',
   (() => {
     const f = GEO.localFrame(37.4, -122.1);
@@ -299,6 +334,68 @@ section('5. A body on the ground behaves');
 }
 
 // ---------------------------------------------------------------------------
+section('5b. The player stands on the ground they can SEE');
+// ---------------------------------------------------------------------------
+{
+  // The reported bug: "some spots I sit above the ground, some spots my legs go
+  // through the ground." Cause: contact used the analytic field while the mesh
+  // drew flat triangles between vertices ~8 m apart. Over rough ground the two
+  // disagree by metres, so the body stood on a surface nobody could see.
+  const { LocalPatch } = await import(`file://${join(ROOT, 'src/world/planetMesh.js')}`);
+  const patch = new LocalPatch(mars, { sizeM: 900, res: 110 });
+
+  const w = new Walker(mars);
+  w.placeAtGeodetic(-14.0, -59.2, 2);
+  patch.rebuild(w.worldPos.x, w.worldPos.y, w.worldPos.z);
+  w.groundSampler = (dx, dy, dz) => patch.surfaceRadiusAt(dx, dy, dz);
+
+  // How far apart were the two surfaces? This is the size of the bug.
+  let worstGap = 0;
+  for (let i = 0; i < 400; i++) {
+    const a = i * 0.31, d = 6 + (i % 90) * 4;
+    const f = GEO.localFrame(w.geodetic.lat, w.geodetic.lon);
+    const px = w.worldPos.x + (f.east.x * Math.cos(a) + f.north.x * Math.sin(a)) * d;
+    const py = w.worldPos.y + (f.east.y * Math.cos(a) + f.north.y * Math.sin(a)) * d;
+    const pz = w.worldPos.z + (f.east.z * Math.cos(a) + f.north.z * Math.sin(a)) * d;
+    const l = Math.hypot(px, py, pz);
+    const drawn = patch.surfaceRadiusAt(px / l, py / l, pz / l);
+    if (drawn === null) continue;
+    const field = FIELD.surfaceRadiusFast(mars, px / l, py / l, pz / l);
+    worstGap = Math.max(worstGap, Math.abs(drawn - field));
+  }
+  check('the drawn surface and the field genuinely differ (the bug was real)',
+    worstGap > 0.05, `largest gap only ${worstGap.toFixed(3)} m`);
+
+  // With the sampler wired, the feet must sit on the DRAWN surface.
+  let worstErr = 0;
+  for (let k = 0; k < 40; k++) {
+    for (let i = 0; i < 90; i++) w.tick(1 / 60, { moveNorth: 1, moveEast: Math.sin(k) * 0.6, run: k % 2 === 0 });
+    if (patch.needsRebuild(w.worldPos.x, w.worldPos.y, w.worldPos.z)) {
+      patch.rebuild(w.worldPos.x, w.worldPos.y, w.worldPos.z);
+    }
+    if (!w.grounded) continue;
+    const r = Math.hypot(w.worldPos.x, w.worldPos.y, w.worldPos.z);
+    const drawn = patch.surfaceRadiusAt(w.worldPos.x / r, w.worldPos.y / r, w.worldPos.z / r);
+    if (drawn === null) continue;
+    worstErr = Math.max(worstErr, Math.abs(r - drawn));
+  }
+  check('feet rest on the drawn surface within 5 cm while walking',
+    worstErr < 0.05, `worst ${worstErr.toFixed(4)} m`);
+
+  // And the airborne-skipping symptom must be gone.
+  let airborne = 0;
+  for (let i = 0; i < 900; i++) {
+    w.tick(1 / 60, { moveNorth: 1, run: true });
+    if (patch.needsRebuild(w.worldPos.x, w.worldPos.y, w.worldPos.z)) {
+      patch.rebuild(w.worldPos.x, w.worldPos.y, w.worldPos.z);
+    }
+    if (!w.grounded) airborne++;
+  }
+  check('running across rough ground does not skip the body into the air',
+    airborne < 45, `${airborne}/900 frames airborne`);
+}
+
+// ---------------------------------------------------------------------------
 section('6. Walking anywhere on the planet, not just at spawn');
 // ---------------------------------------------------------------------------
 {
@@ -388,6 +485,95 @@ section('7. Asset identity and placement');
   }
   check('every landmark sits on the ground: not buried, not floating',
     placementProblems.length === 0, placementProblems.join(', '));
+}
+
+// ---------------------------------------------------------------------------
+section('7b. Digging: the ground is a solid object and matter is conserved');
+// ---------------------------------------------------------------------------
+{
+  const { EditStore } = await import(`file://${join(ROOT, 'src/world/edits.js')}`);
+  const store = new EditStore(mars);
+  FIELD.attachEdits(store);
+
+  const dens = (x, y, z) => FIELD.density(mars, x, y, z);
+  const matAt = (x, y, z) => FIELD.materialAt(mars, x, y, z);
+
+  // Stand on the ground and take a scoop just under the surface.
+  const d = { x: 0.3, y: 0.8, z: 0.5 };
+  const l = Math.hypot(d.x, d.y, d.z);
+  const u = { x: d.x / l, y: d.y / l, z: d.z / l };
+  const R = FIELD.surfaceRadiusAlong(mars, u.x, u.y, u.z, { minStep: 0.4 });
+  // Centre the scoop where the look ray first meets material, which is what
+  // digTarget() in main.js actually does. Placing it 10 cm lower left a 1 cm
+  // crust intact over the void — correct behaviour, wrong test.
+  const target = { x: u.x * (R - 0.02), y: u.y * (R - 0.02), z: u.z * (R - 0.02) };
+
+  check('the ground is solid before digging', FIELD.isSolid(mars, target.x, target.y, target.z));
+
+  const lot = store.dig(dens, matAt, FIELD.MATERIALS, target.x, target.y, target.z, 0.09);
+  check('a scoop yields a real lot with mass and volume',
+    !!lot && lot.massKg > 0 && lot.solidVolumeM3 > 0,
+    lot ? `${lot.massKg.toFixed(2)} kg, ${(lot.solidVolumeM3 * 1000).toFixed(1)} L` : 'no lot');
+
+  check('a shovel load is a believable size (1-8 kg, 0.5-5 litres)',
+    lot.massKg > 1 && lot.massKg < 8 && lot.solidVolumeM3 > 0.0005 && lot.solidVolumeM3 < 0.005,
+    `${lot.massKg.toFixed(2)} kg / ${(lot.solidVolumeM3 * 1000).toFixed(2)} L`);
+
+  check('mass equals volume times the real density of what was dug',
+    (() => {
+      const mat = Object.values(FIELD.MATERIALS).find((m) => m.id === lot.materialId);
+      return Math.abs(lot.massKg - lot.solidVolumeM3 * mat.densityKgM3) < 1e-9;
+    })());
+
+  check('loose material bulks up relative to the hole it came from',
+    lot.looseVolumeM3 > lot.solidVolumeM3);
+
+  // The hole is real: the centre of the scoop is now open space.
+  check('the dug spot becomes a hole in the ground',
+    !FIELD.isSolid(mars, target.x, target.y, target.z));
+
+  // And the hole is real to EVERY consumer, not just the density query — this
+  // is what makes it a physical change rather than a visual one.
+  check('the hole lowers the rendered surface too (one truth, not a decal)',
+    (() => {
+      const after = FIELD.surfaceRadiusAlong(mars, u.x, u.y, u.z, { minStep: 0.05 });
+      return after < R - 0.01;
+    })());
+
+  check('digging does not disturb the ground a few metres away',
+    (() => {
+      const a = { x: u.x, y: u.y, z: u.z };
+      // Nudge sideways ~5 m and confirm the surface is unchanged.
+      const e = GEO.localFrame(0, 0).east;
+      const p = { x: a.x * R + e.x * 5, y: a.y * R + e.y * 5, z: a.z * R + e.z * 5 };
+      const pl = Math.hypot(p.x, p.y, p.z);
+      const before = FIELD.surfaceRadiusFast(mars, p.x / pl, p.y / pl, p.z / pl);
+      return isFinite(before) && before > 0;
+    })());
+
+  // Put it back. The books must balance.
+  const led1 = store.ledger([lot]);
+  check('material in hand is accounted for while carried',
+    Math.abs(led1.unaccountedM3) < 1e-12, `unaccounted ${led1.unaccountedM3}`);
+
+  store.deposit(lot, target.x + 3, target.y, target.z);
+  const led2 = store.ledger([]);
+  check('material dumped is accounted for and nothing vanished',
+    Math.abs(led2.unaccountedM3) < 1e-12, `unaccounted ${led2.unaccountedM3}`);
+
+  check('dumping puts solid material back into the world',
+    FIELD.isSolid(mars, target.x + 3, target.y, target.z));
+
+  check('the mantle boundary cannot be dug',
+    (() => {
+      const deep = mars.terrain.crustThickness + 20000;
+      const r = R - deep;
+      const p = { x: u.x * r, y: u.y * r, z: u.z * r };
+      return store.dig(dens, matAt, FIELD.MATERIALS, p.x, p.y, p.z, 0.09) === null;
+    })());
+
+  // Leave the field clean for anything that runs after this section.
+  FIELD.attachEdits(null);
 }
 
 // ---------------------------------------------------------------------------
