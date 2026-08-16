@@ -165,13 +165,42 @@
     width: 1px; height: var(--stalk, 9px);
     background: linear-gradient(to bottom, rgba(57,208,255,.65), rgba(57,208,255,.15));
   }
-  /* Degree labels along the graticule. */
-  .dbg-gridlabel {
+  /* --- Cell names, painted over the grid squares they belong to. --------- */
+  .dbg-cell {
     position: absolute; top: 0; left: 0;
-    color: #ffd257; font-size: 9px; letter-spacing: .3px;
-    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px rgba(0,0,0,.9);
+    color: #b8ecff; font-size: 10px; letter-spacing: .4px; font-weight: 600;
+    background: rgba(4, 14, 20, .74);
+    border: 1px solid rgba(57, 208, 255, .55);
+    border-radius: 4px; padding: 2px 6px;
     white-space: nowrap; will-change: transform;
   }
+  /* The square you are standing in, called out. */
+  .dbg-cell.here {
+    color: #06121a; background: #57dcff; border-color: #9beeff;
+    font-size: 13px; padding: 4px 10px;
+    box-shadow: 0 0 16px rgba(87, 220, 255, .55);
+  }
+  .dbg-cell.origin {
+    color: #1c1403; background: rgba(255, 210, 87, .92);
+    border-color: #ffe9a8; font-size: 11px;
+  }
+
+  /* --- Nearest assets, so an off-screen culprit is still reportable. ------ */
+  #dbg-nearest {
+    position: absolute;
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+    background: rgba(4, 12, 14, .84); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 169, 61, .38); border-radius: 8px;
+    padding: 8px 10px; font-size: 9px; line-height: 1.5;
+    max-width: min(300px, 62vw);
+  }
+  #dbg-nearest .dbg-title { color: #ffa93d; }
+  .dbg-near { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 2px 0; }
+  .dbg-near b { color: #ffd257; font-weight: 600; }
+  .dbg-near i { grid-column: 1; color: #9fb0bb; font-style: normal; font-size: 8px; }
+  .dbg-near span { grid-row: 1 / span 2; align-self: center; color: #7fa6b4; white-space: nowrap; }
+  .dbg-cellid { color: #57dcff !important; font-size: 10px; }
 
   @media (max-width: 520px) {
     #dbg-readout { font-size: 9px; min-width: 210px; }
