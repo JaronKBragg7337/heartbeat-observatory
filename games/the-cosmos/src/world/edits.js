@@ -39,7 +39,9 @@
 // deterministic, so the same dig always yields the same mass.
 // ============================================================================
 
-const CELL_M = 64;               // spatial hash cell size
+const CELL_M = 8;               // spatial hash cell size, metres. Tight on purpose:
+                                // a coarse bucket makes far too many points look
+                                // "near an edit" and take the slow path.
 
 export class EditStore {
   constructor(body) {
@@ -49,6 +51,31 @@ export class EditStore {
     this._seq = 0;
     this.totalRemovedM3 = 0;
     this.totalDepositedM3 = 0;
+
+    // One bounding box over every edit ever made. This is the cheap gate that
+    // protects the hot path: three compares reject a point, with no division,
+    // no string key and no Map lookup. Building a hash key per query cost
+    // ~300 ms per terrain rebuild once digging had started, because the key is
+    // a string and there are twenty thousand vertices.
+    this._min = { x: Infinity, y: Infinity, z: Infinity };
+    this._max = { x: -Infinity, y: -Infinity, z: -Infinity };
+  }
+
+  _grow(edit) {
+    const r = edit.radius;
+    if (edit.x - r < this._min.x) this._min.x = edit.x - r;
+    if (edit.y - r < this._min.y) this._min.y = edit.y - r;
+    if (edit.z - r < this._min.z) this._min.z = edit.z - r;
+    if (edit.x + r > this._max.x) this._max.x = edit.x + r;
+    if (edit.y + r > this._max.y) this._max.y = edit.y + r;
+    if (edit.z + r > this._max.z) this._max.z = edit.z + r;
+  }
+
+  /** Cheapest possible rejection. False means "definitely untouched ground". */
+  inBounds(x, y, z, margin = 0) {
+    return x >= this._min.x - margin && x <= this._max.x + margin &&
+           y >= this._min.y - margin && y <= this._max.y + margin &&
+           z >= this._min.z - margin && z <= this._max.z + margin;
   }
 
   _key(x, y, z) {
@@ -82,11 +109,39 @@ export class EditStore {
   }
 
   /**
+   * Does a real edit sphere actually reach this point?
+   *
+   * `near()` alone is far too blunt to gate expensive work on. The spatial hash
+   * buckets by CELL_M, so a single 0.09 m spade bite makes every point in its
+   * whole bucket "near an edit". With the near-field terrain that meant ~20,000
+   * vertices each took the slow ray-marched surface solve instead of the fast
+   * Newton one, and a patch rebuild went from 72 ms to 2,575 ms.
+   *
+   * This is the precise test: a handful of distance checks against the few
+   * candidates in the bucket, which is cheap and answers false almost always.
+   */
+  affects(x, y, z, marginM = 0) {
+    // Reject against the overall bounds first — no string, no Map, no divide.
+    if (!this.inBounds(x, y, z, marginM)) return false;
+    const arr = this._cells.get(this._key(x, y, z));
+    if (!arr) return false;
+    for (let i = 0; i < arr.length; i++) {
+      const e = this.edits[arr[i]];
+      const reach = e.radius + marginM;
+      const dx = x - e.x, dy = y - e.y, dz = z - e.z;
+      if (dx * dx + dy * dy + dz * dz < reach * reach) return true;
+    }
+    return false;
+  }
+
+  /**
    * Combine edits into a base field value.
    * Removal opens up material; deposit fills it in. Both use the signed
    * distance to the sphere so the result stays smooth and traceable.
    */
   apply(baseDensity, x, y, z) {
+    // Same cheap gate. density() runs this on every field sample in the world.
+    if (!this.inBounds(x, y, z)) return baseDensity;
     const idx = this.near(x, y, z);
     if (!idx) return baseDensity;
     let d = baseDensity;
@@ -157,6 +212,7 @@ export class EditStore {
     };
     this.edits.push(edit);
     this._index(edit, this.edits.length - 1);
+    this._grow(edit);
     this.totalRemovedM3 += m.volumeM3;
 
     return {
@@ -188,6 +244,7 @@ export class EditStore {
     };
     this.edits.push(edit);
     this._index(edit, this.edits.length - 1);
+    this._grow(edit);
     this.totalDepositedM3 += lot.solidVolumeM3;
     return edit;
   }

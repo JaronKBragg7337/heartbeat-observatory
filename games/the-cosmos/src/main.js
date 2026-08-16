@@ -48,9 +48,31 @@ registry.register({
   note: 'Coarse whole-planet render surface. Not the collision authority.',
 });
 
+// --- Terrain, three resolutions of one field. -------------------------------
+// shell   whole planet, ~83 km between vertices  (horizon, orbit)
+// mid     880 m across,  6.72 m between vertices (the middle distance)
+// near     48 m across,  0.60 m between vertices (the ground at your feet)
+//
+// 0.60 m is a deliberate compromise, and the number came from measurement, not
+// taste. It is fine enough to cut a precise gap around a pit, and 6.5k vertices
+// keeps the rebuild affordable. Sizing was done conservatively because the only
+// timings available were from a throttled background browser tab, which ran
+// ~7x slower per vertex than the same code in Node — a real phone is the only
+// instrument that settles this, so the budget was set low and handed over.
+//
+// The near patch is the piece that makes excavation visible. A heightfield can
+// only stop drawing in whole quads, so the smallest hole it can make room for
+// is one quad. At 6.72 m that was a 6.72 m square — vastly bigger than any pit,
+// which is why a dug hole stayed buried under solid ground. At 0.40 m the
+// terrain can step aside for something spade-sized.
 const patch = new LocalPatch(body, { sizeM: 880, res: 132 });
 engine.scene.add(patch.mesh);
 const patchEntry = engine.track({ worldPos: patch.worldPos, object3d: patch.mesh });
+
+const nearPatch = new LocalPatch(body, { sizeM: 48, res: 81 });
+nearPatch.mesh.name = `patch-near:${body.id}`;
+engine.scene.add(nearPatch.mesh);
+const nearEntry = engine.track({ worldPos: nearPatch.worldPos, object3d: nearPatch.mesh });
 
 // ---------------------------------------------------------------------------
 // Excavation. The ground is a solid object; this is what takes pieces out.
@@ -70,6 +92,9 @@ attachEdits(edits);
 // renderer after twenty of them. The mesh below is correct and cheap over the
 // tight region; making it VISIBLE needs the near-field terrain to be volumetric
 // too, which is the next piece of work rather than a constant to tune.
+// No minimum radius is needed now. The tight region around the edits is already
+// far larger than a 0.40 m near-patch quad, so the terrain can yield to it
+// exactly — which is what the earlier ~400 ms attempt was trying to force.
 const excavation = new ExcavationMesh(body, { cellM: 0.22, maxCells: 64 });
 engine.scene.add(excavation.mesh);
 const excavationEntry = engine.track({ worldPos: excavation.worldPos, object3d: excavation.mesh });
@@ -83,8 +108,25 @@ function refreshExcavation() {
   excavation.rebuild(edits.edits);
   excavationEntry.worldPos = excavation.worldPos;
   const fp = excavation.footprint();
-  // The heightfield stops drawing where the volumetric mesh takes over.
-    patch.setExcluded(fp ? [{ centre: fp.centre, radius: fp.radius * 0.9 }] : []);
+
+  // The NEAR patch yields to the excavation, not the mid patch. Its 0.40 m
+  // quads mean the gap it leaves is the size of the hole rather than the size
+  // of a terrain cell — which is the whole reason a dug pit stayed buried
+  // under solid ground before.
+  nearPatch.setExcluded(fp ? [{ centre: fp.centre, radius: fp.radius * 0.78 }] : []);
+  rebuildNear(true);
+}
+
+/** Rebuild the near patch, and keep the mid patch out from under it. */
+function rebuildNear(force = false) {
+  if (!force && !nearPatch.needsRebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z)) return;
+  nearPatch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
+  nearEntry.worldPos = nearPatch.worldPos;
+
+  // The mid patch stops drawing under the near patch, or the two z-fight: they
+  // agree at shared vertices but the coarse one runs straight lines between
+  // them across ground the fine one curves over.
+  patch.setExcluded([{ centre: nearPatch.worldPos, radius: nearPatch.sizeM * 0.40 }]);
   patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
   patchEntry.worldPos = patch.worldPos;
 }
@@ -173,10 +215,25 @@ const walker = new Walker(body);
 // Contact reads the DRAWN ground wherever the patch covers, and the field
 // beyond it. This is what stops the player floating above or sinking into the
 // surface they can see — one surface at two resolutions, never two surfaces.
-walker.groundSampler = (dx, dy, dz) => patch.surfaceRadiusAt(dx, dy, dz);
+walker.groundSampler = (dx, dy, dz) => {
+  // Inside an excavated region, return null so contact falls through to the
+  // field itself — the drawn patches have a GAP there, and only the field
+  // knows the shape of the hole that fills it.
+  const fp = excavation.footprint();
+  if (fp) {
+    const r = fp.radius * 0.78;
+    // Compare at roughly surface radius; the region is metres across on a
+    // body millions of metres wide, so this is exact enough to classify.
+    const R = nearPatch._originR || body.radiusMean;
+    const px = dx * R, py = dy * R, pz = dz * R;
+    if (Math.hypot(px - fp.centre.x, py - fp.centre.y, pz - fp.centre.z) < r) return null;
+  }
+  const near = nearPatch.surfaceRadiusAt(dx, dy, dz);
+  if (near !== null) return near;
+  return patch.surfaceRadiusAt(dx, dy, dz);
+};
 walker.placeAtGeodetic(SPAWN.lat, SPAWN.lon, 1.5);
-patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
-patchEntry.worldPos = patch.worldPos;
+rebuildNear(true);
 
 registry.register({
   id: 'COS-MARS-CHR-0001', bodyId: 'mars', type: 'CHR',
@@ -531,10 +588,7 @@ engine.addUpdater((dt) => {
 
   walker.tick(dt, input);
 
-  if (patch.needsRebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z)) {
-    patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
-    patchEntry.worldPos = patch.worldPos;
-  }
+  rebuildNear();
 
   updateCamera();
   debugLayer.update(walker, engine.camera);
@@ -572,6 +626,7 @@ window.cosmos = {
   engine, body, walker, patch, registry, debugLayer, view,
   report: () => debugLayer.reportAt(walker),
   edits, carried, doDig, doDump, digTarget, excavation, refreshExcavation,
+  nearPatch, rebuildNear,
   ledger: () => edits.ledger(carried),
   step: (dt = 1 / 60) => engine.step(dt),
   goto: (lat, lon) => {

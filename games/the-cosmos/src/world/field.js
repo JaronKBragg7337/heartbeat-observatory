@@ -467,7 +467,9 @@ export function surfaceRadiusFast(body, dx, dy, dz, iterations = 3) {
   // sit inside a void. Where anyone has actually edited the ground, pay for
   // the real ray march. Everywhere else (which is almost everywhere) keep the
   // cheap path.
-  if (_edits && !_edits.isEmpty && _edits.near(dx * r, dy * r, dz * r)) {
+  // Precise proximity, not bucket occupancy. Gating on the bucket made every
+  // vertex within CELL_M of any edit pay for a full ray march.
+  if (_edits && !_edits.isEmpty && _edits.affects(dx * r, dy * r, dz * r, 2.5)) {
     return surfaceRadiusAlong(body, dx, dy, dz, {
       minStep: 0.12, startRadius: r + 60, range: 200,
     });
