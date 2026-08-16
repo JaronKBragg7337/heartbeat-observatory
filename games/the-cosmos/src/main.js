@@ -59,7 +59,10 @@ attachEdits(edits);
 
 // A real shovel blade. r = 0.09 m sphere is ~3 litres, which is what a spade
 // actually lifts, and ~4.6 kg of regolith at its real density.
-const SHOVEL = { radius: 0.09, reachM: 2.6, name: 'Hand shovel' };
+// reachM measured against real use: from a 1.66 m eye height, a 2.6 m reach
+// forced a ~60 degree look-down before the ray met the ground, and missed
+// entirely on a downslope. 3.6 m lets you dig at a natural working angle.
+const SHOVEL = { radius: 0.09, reachM: 3.6, name: 'Hand shovel' };
 const carried = [];                      // lots in hand, each a real object
 const carryCapacityKg = 40;
 
