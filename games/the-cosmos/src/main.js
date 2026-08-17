@@ -83,19 +83,35 @@ attachEdits(edits);
 // Geometry for anything dug. The heightfield cannot draw a hole at any
 // resolution, so excavated ground is meshed cell by cell from the field and
 // the heightfield yields that region to it.
-// minRadiusM is derived from the heightfield's own cell size: the excavated
-// region has to be bigger than one terrain quad or the heightfield cannot be
-// made to yield, and the hole stays buried underneath it.
-// minRadiusM is deliberately NOT set. Growing the excavated region past one
-// heightfield quad (6.72 m) is what it would take to make the heightfield yield
-// and reveal the hole — but that measured at ~400 ms per dig and froze the
-// renderer after twenty of them. The mesh below is correct and cheap over the
-// tight region; making it VISIBLE needs the near-field terrain to be volumetric
-// too, which is the next piece of work rather than a constant to tune.
-// No minimum radius is needed now. The tight region around the edits is already
-// far larger than a 0.40 m near-patch quad, so the terrain can yield to it
-// exactly — which is what the earlier ~400 ms attempt was trying to force.
-const excavation = new ExcavationMesh(body, { cellM: 0.22, maxCells: 64 });
+// EVERY NUMBER HERE IS SET BY A MEASUREMENT, NOT BY TASTE.
+//
+// cellM 0.06 — the shovel takes a 0.09 m radius bite, so the bite is 0.18 m
+//   across. At the old 0.22 m cell that is 0.8 CELLS: the mesh could not hold
+//   the pit at all, and drew a 4 cm dimple where a 14 cm hole belonged. This is
+//   Nyquist, not polish. 0.06 m puts 3 cells across the bite and measured a
+//   12.5 cm pit against a true depth of 14 cm — the same pit 0.045 m draws, for
+//   half the samples, because the cost of a cell size is cubic.
+// minRadiusM 1.1 — the heightfield yields in whole 0.60 m quads, so the region
+//   handed to it must be MORE than 2 quads across or there is no whole quad to
+//   yield and the pit stays buried. The handover square is 0.60 of this
+//   half-width, so 1.1 gives a 0.66 m half-side: 1.32 m across against a 1.20 m
+//   pair of quads, a 10% margin.
+//   Exactly 2 quads is not enough, and the way it fails is instructive. At
+//   minRadiusM 1.0 the square is 1.20 m across and the quad pair is 1.20 m, so
+//   with the dig directly underfoot the quad corners land at 0.6000 against a
+//   0.6000 bound and floating point decides it — 0 quads yielded, pit buried.
+//   A guarantee that holds only as an exact tie is not a guarantee.
+//   It was 0.9 with a CIRCLE, where the best-placed quad's far corner sat
+//   0.91 m out against a 0.907 m radius: same symptom, and no amount of tuning
+//   fixes the shape, because a circle's overlap with a square grid depends on
+//   where it lands. That is why this is a square.
+// padM 0.35 — margin past the edits. Was 1.2, which made a 2.58 m box around a
+//   0.18 m bite: 28x wider than the thing being drawn.
+// maxCells 48 — the cap that bounds the worst case. A region that grows past
+//   ~2.9 m coarsens rather than costing more.
+const excavation = new ExcavationMesh(body, {
+  cellM: 0.06, minRadiusM: 1.1, padM: 0.35, maxCells: 48,
+});
 engine.scene.add(excavation.mesh);
 const excavationEntry = engine.track({ worldPos: excavation.worldPos, object3d: excavation.mesh });
 
@@ -104,29 +120,71 @@ let excavationDue = 0;
  *  one rebuild, not one per bite. */
 function requestExcavationRefresh() { excavationDue = 0.12; }
 
+/** The excavated region the near patch's hole was last cut for. */
+let holeCutFor = null;
+
 function refreshExcavation() {
   excavation.rebuild(edits.edits);
   excavationEntry.worldPos = excavation.worldPos;
   const fp = excavation.footprint();
 
-  // The NEAR patch yields to the excavation, not the mid patch. Its 0.40 m
+  // The NEAR patch yields to the excavation, not the mid patch. Its 0.60 m
   // quads mean the gap it leaves is the size of the hole rather than the size
   // of a terrain cell — which is the whole reason a dug pit stayed buried
   // under solid ground before.
-  nearPatch.setExcluded(fp ? [{ centre: fp.centre, radius: fp.radius * 0.78 }] : []);
+  //
+  // A SQUARE, not a radius. `radius` is the half-diagonal of the excavated box
+  // and is 73% larger than the box itself, so handing over that much told the
+  // heightfield to stop drawing 0.45 m further out than the volumetric mesh
+  // reaches — a ring you could see straight through the planet in, with a
+  // 0.60 m staircase edge. That ring was the hard rectangular seam.
+  //
+  // Handing over a circle instead is phase-fragile: the heightfield yields in
+  // whole quads, and measured, the best-placed quad's far corner sat 0.91 m
+  // out against a 0.907 m radius, so nothing was yielded at all and the pit
+  // went back under the ground. A square runs along the same grid the quads do
+  // and always contains whole ones.
+  //
+  // And re-cut it only when the excavated REGION moves or grows. What the mesh
+  // looks like inside the hole changes with every bite; the hole it needs does
+  // not. Without this the whole near patch — 6,561 ray-marched vertices — was
+  // rebuilt per spade bite to arrive at the same hole it already had.
+  const moved = !holeCutFor || !fp ||
+    Math.abs(fp.handoverM - holeCutFor.halfSideM) > 0.01 ||
+    Math.hypot(fp.centre.x - holeCutFor.x, fp.centre.y - holeCutFor.y,
+               fp.centre.z - holeCutFor.z) > 0.01;
+  if (!moved) return;
+
+  holeCutFor = fp ? { x: fp.centre.x, y: fp.centre.y, z: fp.centre.z, halfSideM: fp.handoverM } : null;
+  nearPatch.setExcluded(fp ? [{ centre: { ...fp.centre }, halfSideM: fp.handoverM }] : []);
   rebuildNear(true);
 }
 
+/** Where the mid patch's hole was last cut, so it is not re-cut for nothing. */
+let midHoleAt = null;
+
 /** Rebuild the near patch, and keep the mid patch out from under it. */
 function rebuildNear(force = false) {
-  if (!force && !nearPatch.needsRebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z)) return;
+  const moved = nearPatch.needsRebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
+  if (!force && !moved) return;
   nearPatch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
   nearEntry.worldPos = nearPatch.worldPos;
 
   // The mid patch stops drawing under the near patch, or the two z-fight: they
   // agree at shared vertices but the coarse one runs straight lines between
   // them across ground the fine one curves over.
-  patch.setExcluded([{ centre: nearPatch.worldPos, radius: nearPatch.sizeM * 0.40 }]);
+  //
+  // But it only cares WHERE the near patch is, not what has been dug inside
+  // it. Rebuilding all 17,424 of its vertices on every spade bite cost 415 ms
+  // of an 865 ms freeze to arrive at the identical mesh already on screen.
+  // Cut the hole again only when the hole actually has to move.
+  const np = nearPatch.worldPos;
+  const holeMoved = !midHoleAt ||
+    Math.hypot(np.x - midHoleAt.x, np.y - midHoleAt.y, np.z - midHoleAt.z) > 0.01;
+  if (!holeMoved) return;
+
+  midHoleAt = { x: np.x, y: np.y, z: np.z };
+  patch.setExcluded([{ centre: midHoleAt, radius: nearPatch.sizeM * 0.40 }]);
   patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
   patchEntry.worldPos = patch.worldPos;
 }
@@ -219,15 +277,15 @@ walker.groundSampler = (dx, dy, dz) => {
   // Inside an excavated region, return null so contact falls through to the
   // field itself — the drawn patches have a GAP there, and only the field
   // knows the shape of the hole that fills it.
-  const fp = excavation.footprint();
-  if (fp) {
-    const r = fp.radius * 0.78;
-    // Compare at roughly surface radius; the region is metres across on a
-    // body millions of metres wide, so this is exact enough to classify.
-    const R = nearPatch._originR || body.radiusMean;
-    const px = dx * R, py = dy * R, pz = dz * R;
-    if (Math.hypot(px - fp.centre.x, py - fp.centre.y, pz - fp.centre.z) < r) return null;
-  }
+  // Ask the patch itself where it stopped drawing, rather than re-deriving the
+  // shape here. Two copies of that rule is two chances for the ground you
+  // stand on to disagree with the ground you can see, which is exactly the
+  // floating-and-sinking bug this sampler exists to prevent.
+  // Compare at roughly surface radius; the region is metres across on a body
+  // millions of metres wide, so this is exact enough to classify.
+  const R = nearPatch._originR || body.radiusMean;
+  if (nearPatch.handedOver(dx * R, dy * R, dz * R)) return null;
+
   const near = nearPatch.surfaceRadiusAt(dx, dy, dz);
   if (near !== null) return near;
   return patch.surfaceRadiusAt(dx, dy, dz);
@@ -356,6 +414,23 @@ sun.shadow.camera.near = 0.5;
 sun.shadow.camera.far = 220;
 sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
 sun.shadow.camera.top = 60; sun.shadow.camera.bottom = -60;
+
+// SHADOW BIAS. This is what made dug ground look corrugated.
+//
+// The shadow map is 1024 texels over 120 m, so one texel is 0.117 m of ground.
+// The excavated mesh has cells a third of that, and it casts. With no bias, a
+// surface samples its own depth from a texel that covers several of its own
+// cells, so alternate rows decide they are in their own shadow — striping that
+// follows the cell grid and reads exactly like corrugation. It looked like a
+// meshing bug and was a lighting one.
+//
+// Measured on the frame buffer, luminance direction changes per row over the
+// dug area: 12.2 as shipped, 1.7 with the excavation not casting at all, 2.5 at
+// normalBias 0.03, 1.7 at 0.08. So 0.08 costs nothing and removes it entirely.
+// normalBias rather than bias because it scales with the angle to the light,
+// which is where the acne actually lives — on ground the sun rakes across.
+sun.shadow.normalBias = 0.08;
+sun.shadow.bias = -0.0006;
 engine.scene.add(sun, sun.target);
 
 // Mars' sky is dust-scattered butterstotch, and the ground bounce is strong

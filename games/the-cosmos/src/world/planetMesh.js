@@ -175,12 +175,63 @@ export class LocalPatch {
     this.builtAt = null;     // force the next rebuild
   }
 
+  /**
+   * True where this patch has handed the ground to another mesh and is drawing
+   * nothing. Collision asks THIS rather than re-deriving the shape, because a
+   * second copy of the rule is a second chance for the ground you stand on to
+   * disagree with the ground you can see.
+   */
+  handedOver(x, y, z) { return this._isExcluded(x, y, z); }
+
+  /**
+   * Two shapes of handed-over region, and the difference matters.
+   *
+   * `radius`   — a sphere. Fine for handing the mid patch's ground to the near
+   *              patch, where the region is far larger than either grid.
+   * `halfSideM`— a SQUARE laid flat on the ground, in this patch's own tangent
+   *              frame, so its edges run along the quad grid. A region only a
+   *              few quads across has to be this shape: a circle's overlap with
+   *              the grid depends on where it falls, and a 3 mm difference in
+   *              phase decided between yielding a quad and yielding nothing.
+   *              Height is deliberately ignored — a heightfield column either
+   *              yields or it does not.
+   */
   _isExcluded(x, y, z) {
     for (let i = 0; i < this.excluded.length; i++) {
       const e = this.excluded[i];
-      if (Math.hypot(x - e.centre.x, y - e.centre.y, z - e.centre.z) < e.radius) return true;
+      const dx = x - e.centre.x, dy = y - e.centre.y, dz = z - e.centre.z;
+      if (e.halfSideM !== undefined) {
+        const f = this._frame;
+        if (!f) continue;
+        const east = dx * f.east.x + dy * f.east.y + dz * f.east.z;
+        const north = dx * f.north.x + dy * f.north.y + dz * f.north.z;
+        if (Math.abs(east) <= e.halfSideM && Math.abs(north) <= e.halfSideM) return true;
+      } else if (Math.hypot(dx, dy, dz) < e.radius) return true;
     }
     return false;
+  }
+
+  /**
+   * Drop a quad only when ALL FOUR of its corners are inside the handed-over
+   * region.
+   *
+   * WHICH WAY TO BE WRONG. A quad is 0.6 m across and the region is a smooth
+   * shape, so they never line up; the rule has to choose which error to make.
+   * Testing one corner (or any corner) stops drawing MORE ground than the other
+   * mesh covers, and the difference is a strip where nothing is drawn at all —
+   * you look through the planet. Testing all four stops drawing LESS, and the
+   * difference is a strip drawn twice, which is a depth-test question the
+   * excavation material settles with a polygon offset. A seam you can see
+   * through is a hole; a seam drawn twice is a bias. Take the bias.
+   */
+  _quadExcluded(pos, ox, oy, oz, n, i, j) {
+    for (let dj = 0; dj <= 1; dj++) {
+      for (let di = 0; di <= 1; di++) {
+        const k = ((j + dj) * n + (i + di)) * 3;
+        if (!this._isExcluded(pos[k] + ox, pos[k + 1] + oy, pos[k + 2] + oz)) return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -314,8 +365,7 @@ export class LocalPatch {
       const keep = [];
       for (let j = 0; j < n - 1; j++) {
         for (let i = 0; i < n - 1; i++) {
-          const k = (j * n + i) * 3;
-          if (this._isExcluded(pos[k] + ox, pos[k + 1] + oy, pos[k + 2] + oz)) continue;
+          if (this._quadExcluded(pos, ox, oy, oz, n, i, j)) continue;
           const a = j * n + i, b = a + 1, c2 = a + n, dd = c2 + 1;
           keep.push(a, b, c2, b, dd, c2);
         }

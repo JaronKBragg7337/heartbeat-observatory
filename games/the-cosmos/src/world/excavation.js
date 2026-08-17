@@ -70,6 +70,16 @@ export class ExcavationMesh {
       new THREE.MeshStandardMaterial({
         vertexColors: true, roughness: 0.95, metalness: 0.0,
         side: THREE.DoubleSide,          // you can be inside a hole you dug
+        // The heightfield can only stop drawing in whole quads, so it always
+        // hands over slightly LESS ground than this mesh covers — deliberately,
+        // because the alternative is handing over more and leaving a strip
+        // where nothing is drawn at all and you see through the planet. In that
+        // overlap the two surfaces are 0.1-0.4 cm apart (measured), which is
+        // pure z-fighting: the winner alternates per pixel and reads as stripes.
+        // This mesh is the accurate one, so it wins the depth test outright.
+        polygonOffset: true,
+        polygonOffsetFactor: -2.0,
+        polygonOffsetUnits: -2.0,
       })
     );
     this.mesh.name = 'excavation';
@@ -201,25 +211,38 @@ export class ExcavationMesh {
       else indices.push(a, b, c, a, c, dd);
     };
 
+    // Each of the three edge directions needs its OWN guard. The four cells
+    // around a +X edge span j-1..j and k-1..k but sit at a single i, so that
+    // quad needs j>0 and k>0 and nothing else. Guarding all three directions on
+    // i>0 && j>0 && k>0 threw away the i=0 layer of X-facing quads, which is a
+    // missing strip down one wall of every hole.
+    //
+    // WINDING. Listed in cycle order around the edge, the four cells wind
+    // counter-clockwise seen from +X and from +Z, but CLOCKWISE seen from +Y —
+    // because X x Z = -Y, not +Y. So the +Y case needs the opposite flip from
+    // the other two, and `solid` (rock on the low side, air on the high side)
+    // means the face has to look towards the high side. Every one of these was
+    // inverted before: all 518 triangles of a test dig faced into the rock.
+    // validate.mjs now measures this against the field itself.
     for (let k = 0; k < nz - 1; k++) {
       for (let j = 0; j < ny - 1; j++) {
         for (let i = 0; i < nx - 1; i++) {
           const solid = field[idx(i, j, k)] < 0;
 
-          // +X edge -> quad in the YZ plane
-          if (i > 0 && j > 0 && k > 0) {
-            if ((field[idx(i + 1, j, k)] < 0) !== solid) {
-              quad(cellVert[cIdx(i, j - 1, k - 1)], cellVert[cIdx(i, j, k - 1)],
-                   cellVert[cIdx(i, j, k)], cellVert[cIdx(i, j - 1, k)], solid);
-            }
-            if ((field[idx(i, j + 1, k)] < 0) !== solid) {
-              quad(cellVert[cIdx(i - 1, j, k - 1)], cellVert[cIdx(i, j, k - 1)],
-                   cellVert[cIdx(i, j, k)], cellVert[cIdx(i - 1, j, k)], !solid);
-            }
-            if ((field[idx(i, j, k + 1)] < 0) !== solid) {
-              quad(cellVert[cIdx(i - 1, j - 1, k)], cellVert[cIdx(i, j - 1, k)],
-                   cellVert[cIdx(i, j, k)], cellVert[cIdx(i - 1, j, k)], solid);
-            }
+          // +X edge -> quad in the YZ plane, wound CCW from +X.
+          if (j > 0 && k > 0 && (field[idx(i + 1, j, k)] < 0) !== solid) {
+            quad(cellVert[cIdx(i, j - 1, k - 1)], cellVert[cIdx(i, j, k - 1)],
+                 cellVert[cIdx(i, j, k)], cellVert[cIdx(i, j - 1, k)], !solid);
+          }
+          // +Y edge -> quad in the XZ plane, wound CW from +Y.
+          if (i > 0 && k > 0 && (field[idx(i, j + 1, k)] < 0) !== solid) {
+            quad(cellVert[cIdx(i - 1, j, k - 1)], cellVert[cIdx(i, j, k - 1)],
+                 cellVert[cIdx(i, j, k)], cellVert[cIdx(i - 1, j, k)], solid);
+          }
+          // +Z edge -> quad in the XY plane, wound CCW from +Z.
+          if (i > 0 && j > 0 && (field[idx(i, j, k + 1)] < 0) !== solid) {
+            quad(cellVert[cIdx(i - 1, j - 1, k)], cellVert[cIdx(i, j - 1, k)],
+                 cellVert[cIdx(i, j, k)], cellVert[cIdx(i - 1, j, k)], !solid);
           }
         }
       }
@@ -248,6 +271,27 @@ export class ExcavationMesh {
       max: { x: maxX, y: maxY, z: maxZ },
       centre: { x: cx, y: cy, z: cz },
       radius: Math.hypot(maxX - minX, maxY - minY, maxZ - minZ) / 2,
+      // The largest sphere that fits INSIDE the box. `radius` above is the
+      // half-DIAGONAL and is 73% larger — handing over that much told the
+      // heightfield to stop drawing beyond where this mesh reaches, leaving a
+      // 0.45 m ring drawn by nothing at all.
+      halfM: Math.min(maxX - minX, maxY - minY, maxZ - minZ) / 2,
+      // How much ground to hand to the heightfield, as the half-side of a
+      // SQUARE laid flat on the ground rather than a sphere.
+      //
+      // WHY A SQUARE. The heightfield yields in whole quads, and its quads are
+      // axis-aligned in its own tangent frame. Asking it to yield a circle
+      // makes the answer depend on where the circle happens to fall against
+      // that grid: measured, the best-placed quad had its far corner 0.91 m
+      // from the centre against a 0.907 m radius, so NOTHING was handed over
+      // and the pit stayed buried — a 3 mm miss with a completely binary
+      // result. A square aligned to the same grid has no such phase: a span of
+      // 2 quads always contains a whole quad, wherever it starts.
+      //
+      // 0.60 of the half-width keeps the square's corners (0.60 x sqrt2 = 0.85
+      // of the half-width) inside the box with room left for the ground to
+      // slope across it.
+      handoverM: 0.60 * Math.min(maxX - minX, maxY - minY, maxZ - minZ) / 2,
       cellM: cell,
     };
 

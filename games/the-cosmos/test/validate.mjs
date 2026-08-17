@@ -661,6 +661,171 @@ section('7b. Digging: the ground is a solid object and matter is conserved');
 }
 
 // ---------------------------------------------------------------------------
+section('7c. The dug ground is DRAWN correctly, not just modelled correctly');
+// ---------------------------------------------------------------------------
+// Everything here is measured against the field, never against a screenshot.
+// All three of these shipped broken at once and none of them was visible to a
+// test that only asked whether the matter arithmetic balanced.
+{
+  const { EditStore } = await import(`file://${join(ROOT, 'src/world/edits.js')}`);
+  const { ExcavationMesh } = await import(`file://${join(ROOT, 'src/world/excavation.js')}`);
+  const { LocalPatch } = await import(`file://${join(ROOT, 'src/world/planetMesh.js')}`);
+
+  const store = new EditStore(mars);
+  FIELD.attachEdits(store);
+  const dens = (x, y, z) => FIELD.density(mars, x, y, z);
+  const matAt = (x, y, z) => FIELD.materialAt(mars, x, y, z);
+
+  const spawn = GEO.geodeticToCartesian(mars, -14.0, -59.2, 0);
+  const sl = Math.hypot(spawn.x, spawn.y, spawn.z);
+  const u = { x: spawn.x / sl, y: spawn.y / sl, z: spawn.z / sl };
+  const R = FIELD.surfaceRadiusAlong(mars, u.x, u.y, u.z, { minStep: 0.08, startRadius: sl + 3, range: 12 });
+  const SHOVEL_R = 0.09;
+  const cutR = R - SHOVEL_R * 0.55;
+  store.dig(dens, matAt, FIELD.MATERIALS, u.x * cutR, u.y * cutR, u.z * cutR, SHOVEL_R);
+
+  // Same settings main.js uses.
+  const exc = new ExcavationMesh(mars, { cellM: 0.06, minRadiusM: 1.1, padM: 0.35, maxCells: 48 });
+  exc.rebuild(store.edits);
+  const fp = exc.footprint();
+  const geo = exc.mesh.geometry;
+  const pos = geo.attributes.position.array;
+  const ind = geo.getIndex().array;
+  const O = exc.worldPos;
+
+  // --- (1) Which way do the faces point? ------------------------------------
+  // A surface-nets quad has to be wound differently for the +Y edge than for
+  // +X and +Z, because X x Z = -Y. Getting that wrong turns the ground
+  // inside-out. It was wrong for all three directions at once, which no
+  // symmetry check would have caught — only the field can say which side is
+  // rock. Probe just off each face: outside must be air, inside must be rock.
+  const eps = fp.cellM * 0.4;
+  let outward = 0, inverted = 0, ambiguous = 0;
+  for (let t = 0; t < ind.length; t += 3) {
+    const a = ind[t] * 3, b = ind[t + 1] * 3, c = ind[t + 2] * 3;
+    const ax = pos[a] + O.x, ay = pos[a + 1] + O.y, az = pos[a + 2] + O.z;
+    const bx = pos[b] + O.x, by = pos[b + 1] + O.y, bz = pos[b + 2] + O.z;
+    const cx = pos[c] + O.x, cy = pos[c + 1] + O.y, cz = pos[c + 2] + O.z;
+    let nx = (by - ay) * (cz - az) - (bz - az) * (cy - ay);
+    let ny = (bz - az) * (cx - ax) - (bx - ax) * (cz - az);
+    let nz = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+    const L = Math.hypot(nx, ny, nz);
+    if (L < 1e-12) { ambiguous++; continue; }
+    nx /= L; ny /= L; nz /= L;
+    const mx = (ax + bx + cx) / 3, my = (ay + by + cy) / 3, mz = (az + bz + cz) / 3;
+    const out = FIELD.density(mars, mx + nx * eps, my + ny * eps, mz + nz * eps);
+    const inn = FIELD.density(mars, mx - nx * eps, my - ny * eps, mz - nz * eps);
+    if (out > 0 && inn < 0) outward++;
+    else if (out < 0 && inn > 0) inverted++;
+    else ambiguous++;
+  }
+  check('every excavated face points out of the rock, not into it',
+    inverted === 0 && outward > ind.length / 3 * 0.9,
+    `outward ${outward}, inverted ${inverted}, ambiguous ${ambiguous} of ${ind.length / 3}`);
+
+  // --- (2) Is the pit big enough to exist in the mesh? ----------------------
+  // The cell has to resolve the bite or there is nothing to see, however
+  // correct the geometry is. At a 0.22 m cell a 0.18 m bite was 0.8 cells
+  // across and drew a 4 cm dimple in place of a 14 cm hole.
+  const cellsAcross = (SHOVEL_R * 2) / fp.cellM;
+  check('the excavation cell resolves a shovel bite (>= 3 cells across)',
+    cellsAcross >= 3, `${cellsAcross.toFixed(1)} cells across a ${(SHOVEL_R * 2).toFixed(2)} m bite`);
+
+  let deepest = 0;
+  for (let v = 0; v < pos.length; v += 3) {
+    const x = pos[v] + O.x, y = pos[v + 1] + O.y, z = pos[v + 2] + O.z;
+    const dd = x * u.x + y * u.y + z * u.z;
+    const hx = x - u.x * dd, hy = y - u.y * dd, hz = z - u.z * dd;
+    const tx = u.x * cutR - u.x * (u.x * cutR * u.x + u.y * cutR * u.y + u.z * cutR * u.z);
+    if (Math.hypot(hx - tx, hy, hz) > 0.2) continue;
+    deepest = Math.min(deepest, Math.hypot(x, y, z) - R);
+  }
+  check('the drawn pit is as deep as the bite really was (> 8 cm)',
+    deepest < -0.08, `deepest drawn vertex ${(deepest * 100).toFixed(1)} cm below the surface`);
+
+  // --- (3) Do the two surfaces tile, or is there a hole between them? ------
+  // The heightfield stops drawing in whole quads and the volumetric mesh
+  // covers a box, so they can never agree exactly. Everything the heightfield
+  // hands over MUST be inside what the volumetric mesh covers, or the gap is a
+  // strip you see through the planet in. Handing over the half-DIAGONAL rather
+  // than the half-width left 5.6% of the ground around a dig drawn by nothing.
+  // The handover square's corners must stay inside the box the mesh redraws.
+  check('the heightfield hands over less ground than the mesh covers',
+    fp.handoverM * Math.SQRT2 <= fp.halfM + 1e-9,
+    `square half-side ${fp.handoverM.toFixed(3)} m -> corner ${(fp.handoverM * Math.SQRT2).toFixed(3)} m, `
+    + `box inscribed radius ${fp.halfM.toFixed(3)} m`);
+
+  // THE PHASE SWEEP. This is the check that would have caught the bug the
+  // sphere had: a hole is either yielded or it is not, and with a circular
+  // region the answer depended on where the dig happened to land against the
+  // quad grid. One dig at one spot passed while a dig 20 cm away yielded
+  // nothing and buried the pit. So dig across a whole quad's worth of offsets
+  // and require every one of them to work.
+  let worstDropped = Infinity, worstAt = null, escaped = 0;
+  const nearProbe = new LocalPatch(mars, { sizeM: 48, res: 81 });
+  const frame = GEO.localFrame(-14.0, -59.2);
+  for (let a = 0; a < 5; a++) {
+    for (let b = 0; b < 5; b++) {
+      const e = (a / 5) * 0.6, nth = (b / 5) * 0.6;      // sweep one 0.60 m quad
+      const store2 = new EditStore(mars);
+      FIELD.attachEdits(store2);
+      const wx = u.x * R + frame.east.x * e + frame.north.x * nth;
+      const wy = u.y * R + frame.east.y * e + frame.north.y * nth;
+      const wz = u.z * R + frame.east.z * e + frame.north.z * nth;
+      const wl = Math.hypot(wx, wy, wz);
+      const d2 = { x: wx / wl, y: wy / wl, z: wz / wl };
+      const R2 = FIELD.surfaceRadiusAlong(mars, d2.x, d2.y, d2.z, { minStep: 0.08, startRadius: wl + 3, range: 12 });
+      const c2 = R2 - SHOVEL_R * 0.55;
+      store2.dig(dens, matAt, FIELD.MATERIALS, d2.x * c2, d2.y * c2, d2.z * c2, SHOVEL_R);
+
+      const exc2 = new ExcavationMesh(mars, { cellM: 0.06, minRadiusM: 1.1, padM: 0.35, maxCells: 48 });
+      exc2.rebuild(store2.edits);
+      const fp2 = exc2.footprint();
+      nearProbe.setExcluded([{ centre: { ...fp2.centre }, halfSideM: fp2.handoverM }]);
+      nearProbe.rebuild(u.x * R, u.y * R, u.z * R);
+
+      const dropped2 = (nearProbe.res - 1) ** 2 - nearProbe.geo.getIndex().count / 6;
+      if (dropped2 < worstDropped) { worstDropped = dropped2; worstAt = `${e.toFixed(2)},${nth.toFixed(2)}`; }
+
+      // And everything yielded must sit inside the box the mesh redraws.
+      const nPos = nearProbe.geo.attributes.position.array, NO = nearProbe.worldPos, nn = nearProbe.res;
+      const kept = new Set(), nIdx = nearProbe.geo.getIndex().array;
+      for (let q = 0; q < nIdx.length; q += 6) kept.add(nIdx[q]);
+      for (let j = 0; j < nn - 1; j++) {
+        for (let i = 0; i < nn - 1; i++) {
+          if (kept.has(j * nn + i)) continue;
+          for (let dj = 0; dj <= 1; dj++) {
+            for (let di = 0; di <= 1; di++) {
+              const k = ((j + dj) * nn + (i + di)) * 3;
+              const x = nPos[k] + NO.x, y = nPos[k + 1] + NO.y, z = nPos[k + 2] + NO.z;
+              if (x < fp2.min.x || x > fp2.max.x || y < fp2.min.y ||
+                  y > fp2.max.y || z < fp2.min.z || z > fp2.max.z) escaped++;
+            }
+          }
+        }
+      }
+    }
+  }
+  check('the heightfield yields a hole at EVERY grid phase, not just a lucky one',
+    worstDropped >= 1, `worst case ${worstDropped} quads dropped, at offset ${worstAt} m`);
+
+  // The sweep above is 25 samples and could get lucky. This is the reason the
+  // square works, stated as arithmetic rather than as a sample: a span of two
+  // quads crosses at least two grid lines whatever its phase, so it always
+  // contains a whole quad. A circle has no equivalent guarantee — its overlap
+  // with the grid depends on where it lands, which is exactly how a 3 mm miss
+  // ended up yielding nothing at all.
+  check('the handover square clears two quads with margin, not on a tie',
+    fp.handoverM >= nearProbe.spacingM * 1.05,
+    `half-side ${fp.handoverM.toFixed(3)} m vs quad ${nearProbe.spacingM.toFixed(3)} m `
+    + `(needs half-side >= 1.05 quads; an exact tie is decided by floating point)`);
+  check('nothing the heightfield stopped drawing falls outside the mesh',
+    escaped === 0, `${escaped} corners of yielded quads land outside the excavated box`);
+
+  FIELD.attachEdits(null);
+}
+
+// ---------------------------------------------------------------------------
 section('8. Determinism across runs');
 // ---------------------------------------------------------------------------
 {
