@@ -85,12 +85,15 @@ attachEdits(edits);
 // the heightfield yields that region to it.
 // EVERY NUMBER HERE IS SET BY A MEASUREMENT, NOT BY TASTE.
 //
-// cellM 0.06 — the shovel takes a 0.09 m radius bite, so the bite is 0.18 m
-//   across. At the old 0.22 m cell that is 0.8 CELLS: the mesh could not hold
-//   the pit at all, and drew a 4 cm dimple where a 14 cm hole belonged. This is
-//   Nyquist, not polish. 0.06 m puts 3 cells across the bite and measured a
-//   12.5 cm pit against a true depth of 14 cm — the same pit 0.045 m draws, for
-//   half the samples, because the cost of a cell size is cubic.
+// cellM 0.09 — the shovel takes a 0.15 m radius bite, so the bite is 0.30 m
+//   across. At the old 0.22 m cell a 0.18 m bite was 0.8 CELLS: the mesh could
+//   not hold the pit at all, and drew a 4 cm dimple where a 14 cm hole belonged.
+//   This is Nyquist, not polish. 0.09 m keeps 3.3 cells across the bite, with
+//   margin — 0.10 m gives exactly 3.0 and lands on the same kind of
+//   floating-point tie the handover square did.
+//   It also buys DEPTH. The region coarsens once it outgrows maxCells, so the
+//   cell size decides how deep a hole stays sharp: 0.06 m blurred past 2.9 m,
+//   0.09 m holds to 4.3 m — and costs 25^3 samples instead of 39^3.
 // minRadiusM 1.1 — the heightfield yields in whole 0.60 m quads, so the region
 //   handed to it must be MORE than 2 quads across or there is no whole quad to
 //   yield and the pit stays buried. The handover square is 0.60 of this
@@ -110,7 +113,7 @@ attachEdits(edits);
 // maxCells 48 — the cap that bounds the worst case. A region that grows past
 //   ~2.9 m coarsens rather than costing more.
 const excavation = new ExcavationMesh(body, {
-  cellM: 0.06, minRadiusM: 1.1, padM: 0.35, maxCells: 48,
+  cellM: 0.09, minRadiusM: 1.1, padM: 0.35, maxCells: 48,
 });
 engine.scene.add(excavation.mesh);
 const excavationEntry = engine.track({ worldPos: excavation.worldPos, object3d: excavation.mesh });
@@ -189,14 +192,27 @@ function rebuildNear(force = false) {
   patchEntry.worldPos = patch.worldPos;
 }
 
-// A real shovel blade. r = 0.09 m sphere is ~3 litres, which is what a spade
-// actually lifts, and ~4.6 kg of regolith at its real density.
+// THE TOOL. r = 0.15 m sphere is 14.1 litres — a scoop shovel, the wide-bladed
+// kind used for loose material (blade about 460 x 380 mm, a heaped 12-15 L).
+// That is 21.5 kg of regolith at its real 1520 kg/m3, and it cuts a 0.30 m
+// bite 0.23 m deep. The 0.09 m spade before it took 3 L and left a 0.18 m
+// rat-hole; a hole you can stand in needs a tool sized to make one.
+// Widening the bite also makes the ground CHEAPER to draw, not dearer: the mesh
+// cell only has to resolve the bite, so a 0.30 m bite allows a 0.10 m cell
+// where a 0.18 m bite needed 0.06 m, and the cost of a cell size is cubic.
 // reachM measured against real use: from a 1.66 m eye height, a 2.6 m reach
 // forced a ~60 degree look-down before the ray met the ground, and missed
 // entirely on a downslope. 3.6 m lets you dig at a natural working angle.
-const SHOVEL = { radius: 0.09, reachM: 3.6, name: 'Hand shovel' };
+const SHOVEL = { radius: 0.15, reachM: 3.6, name: 'Scoop shovel' };
 const carried = [];                      // lots in hand, each a real object
-const carryCapacityKg = 40;
+
+// What you can carry is a WEIGHT limit, not a mass limit, so it belongs to the
+// body you are standing on. 40 kg is a heavy but ordinary load on Earth; the
+// same pull on Mars is 105 kg of rock. The old flat 40 kg was Earth's number
+// used on Mars, which quietly made you three times weaker than you should be.
+const CARRY_EARTH_KGF = 40;
+const EARTH_G = 9.80665;                 // CODATA standard gravity
+const carryCapacityKg = CARRY_EARTH_KGF * EARTH_G / body.surfaceGravity;
 
 const carriedMass = () => carried.reduce((a, l) => a + l.massKg, 0);
 const carriedVolume = () => carried.reduce((a, l) => a + l.looseVolumeM3, 0);
@@ -228,24 +244,31 @@ function digTarget() {
   return null;
 }
 
+/**
+ * You AIM at the ground you can see, but you CUT real material, and they are
+ * up to ~0.7 m apart because the drawn mesh runs flat triangles across a curved
+ * field. So the aim point is snapped down the radial to where material actually
+ * starts — otherwise every swing lands in the gap between the picture and the
+ * substance and comes back empty.
+ *
+ * The aim marker calls this too. It has to be the same function: a marker that
+ * derived the cut point separately would be a picture of a second opinion.
+ */
+function cutPointFor(aim) {
+  const l = Math.hypot(aim.x, aim.y, aim.z);
+  const u = { x: aim.x / l, y: aim.y / l, z: aim.z / l };
+  const surf = surfaceRadiusAlong(body, u.x, u.y, u.z,
+    { minStep: 0.08, startRadius: l + 3, range: 12 });
+  const cut = surf - SHOVEL.radius * 0.55;      // bite in, not skim the top
+  return { x: u.x * cut, y: u.y * cut, z: u.z * cut };
+}
+
 function doDig() {
   if (carriedMass() >= carryCapacityKg) return { ok: false, msg: 'Hands full' };
   let t = digTarget();
   if (!t) return { ok: false, msg: 'Nothing in reach' };
 
-  // You AIM at the ground you can see, but you CUT real material. Those are up
-  // to ~0.7 m apart, because the drawn mesh interpolates flat triangles across
-  // a curved field. So the aim point is snapped down the radial to where the
-  // material actually starts — otherwise every swing lands in the gap between
-  // the picture and the substance and comes back empty.
-  {
-    const l = Math.hypot(t.x, t.y, t.z);
-    const u = { x: t.x / l, y: t.y / l, z: t.z / l };
-    const surf = surfaceRadiusAlong(body, u.x, u.y, u.z,
-      { minStep: 0.08, startRadius: l + 3, range: 12 });
-    const cut = surf - SHOVEL.radius * 0.55;    // bite in, not skim the top
-    t = { x: u.x * cut, y: u.y * cut, z: u.z * cut };
-  }
+  t = cutPointFor(t);
 
   const lot = edits.dig(
     (x, y, z) => density(body, x, y, z),
@@ -257,13 +280,128 @@ function doDig() {
   return { ok: true, msg: `+${lot.massKg.toFixed(1)} kg ${lot.materialName}` };
 }
 
+/**
+ * Where a shovelful actually lands.
+ *
+ * NOT where you are aiming. Dumping at the aim point drops the spoil straight
+ * back into the hole you are standing over, because that is exactly where you
+ * are looking while digging. Measured: dig to 1.259 m, drop the load, and the
+ * hole is 0.404 m — you keep a third of the work, every cycle. Carry capacity
+ * is 40 kg, about 9 bites, so you cannot get past roughly 2 m however long you
+ * dig. That is the "I can only go so deep" ceiling, and it is not a limit of
+ * the ground: with the spoil thrown clear, the same six cycles reach 6.0 m.
+ *
+ * So the spoil goes where a person actually throws it — clear of the rim, on
+ * the side they are standing. It is still real material landing in a real
+ * place, and it still has to be carried there.
+ */
+function dumpTarget(lot) {
+  const aim = digTarget() || walker.worldPos;
+  const fp = excavation.footprint();
+  if (!fp) return aim;                      // nothing dug yet: land it where you look
+
+  const up = { x: aim.x, y: aim.y, z: aim.z };
+  const ul = Math.hypot(up.x, up.y, up.z) || 1;
+  up.x /= ul; up.y /= ul; up.z /= ul;
+
+  // Horizontal direction from the hole towards the player.
+  let vx = walker.worldPos.x - fp.centre.x;
+  let vy = walker.worldPos.y - fp.centre.y;
+  let vz = walker.worldPos.z - fp.centre.z;
+  const along = vx * up.x + vy * up.y + vz * up.z;
+  vx -= up.x * along; vy -= up.y * along; vz -= up.z * along;
+  let vl = Math.hypot(vx, vy, vz);
+  if (vl < 1e-3) {                          // stood dead centre: throw ahead
+    const f = walker.updateFrame();
+    vx = f.north.x; vy = f.north.y; vz = f.north.z; vl = 1;
+  }
+  vx /= vl; vy /= vl; vz /= vl;
+
+  // Far enough out to clear the rim and the pile's own radius.
+  const pileR = Math.cbrt((3 * lot.looseVolumeM3) / (4 * Math.PI));
+  const reach = fp.handoverM + pileR + 0.25;
+  const px = fp.centre.x + vx * reach, py = fp.centre.y + vy * reach, pz = fp.centre.z + vz * reach;
+  const pl = Math.hypot(px, py, pz);
+  const d = { x: px / pl, y: py / pl, z: pz / pl };
+  const surf = surfaceRadiusAlong(body, d.x, d.y, d.z,
+    { minStep: 0.08, startRadius: pl + 3, range: 40 });
+  // Sit the pile ON the ground, not half-buried in it.
+  const at = surf + pileR * 0.35;
+  return { x: d.x * at, y: d.y * at, z: d.z * at };
+}
+
 function doDump() {
   if (!carried.length) return { ok: false, msg: 'Carrying nothing' };
-  const t = digTarget() || walker.worldPos;
   const lot = carried.pop();
+  const t = dumpTarget(lot);
   edits.deposit(lot, t.x, t.y, t.z);
   requestExcavationRefresh();
-  return { ok: true, msg: `dropped ${lot.massKg.toFixed(1)} kg` };
+  const left = carried.length;
+  return { ok: true, msg: `dropped ${lot.massKg.toFixed(1)} kg${left ? ` · ${left} left` : ''}` };
+}
+
+// ---------------------------------------------------------------------------
+// AIM MARKER — where the tool will actually bite, drawn at its real size.
+//
+// Not a decoration. The aim point and the cut point are not the same thing:
+// you aim at the drawn ground, and the cut is snapped down the radial to where
+// material actually starts, up to ~0.7 m below. And since the spoil now lands
+// clear of the rim rather than where you look, the place it lands is a third
+// position again. Three positions the player was expected to hold in their
+// head. The marker is drawn AT the bite radius, so its width is the width of
+// the hole you are about to make and its stem is how deep this one scoop goes.
+// ---------------------------------------------------------------------------
+function buildAimMarker(hex) {
+  const g = new THREE.Group();
+  const glow = (geo, opacity) => new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+    color: hex, transparent: true, opacity, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+  }));
+  // Rim at exactly the bite radius: this circle is the hole's real width.
+  const rim = glow(new THREE.RingGeometry(0.88, 1.0, 56), 0.95);
+  const fill = glow(new THREE.CircleGeometry(1.0, 56), 0.13);
+  // Stem dropping from the surface by one bite depth.
+  const stem = glow(new THREE.CylinderGeometry(0.045, 0.045, 1, 10, 1, true), 0.5);
+  stem.rotation.x = Math.PI / 2;          // cylinder is +Y; the stem runs along -Z
+  g.add(rim, fill, stem);
+  g.renderOrder = 10;
+  g.frustumCulled = false;
+  for (const m of g.children) m.frustumCulled = false;
+  return { group: g, rim, fill, stem };
+}
+
+// Amber for cutting, cyan for placing. Two verbs, two colours, same shape.
+const digMark = buildAimMarker(0xffb057);
+const dropMark = buildAimMarker(0x63e0ff);
+engine.scene.add(digMark.group, dropMark.group);
+const digMarkEntry = engine.track({
+  worldPos: { x: 0, y: 0, z: 0 }, object3d: digMark.group, quaternion: new THREE.Quaternion(),
+});
+const dropMarkEntry = engine.track({
+  worldPos: { x: 0, y: 0, z: 0 }, object3d: dropMark.group, quaternion: new THREE.Quaternion(),
+});
+const _markUp = new THREE.Vector3(), _markZ = new THREE.Vector3(0, 0, 1);
+
+/** Lay a marker flat on the ground at a world point, facing local up. */
+function placeMarker(mark, entry, at, radius, depth, pulse) {
+  if (!at) { mark.group.visible = false; return; }
+  const l = Math.hypot(at.x, at.y, at.z) || 1;
+  _markUp.set(at.x / l, at.y / l, at.z / l);
+  entry.quaternion.setFromUnitVectors(_markZ, _markUp);
+  // Lift clear of the surface so it reads as a mark ON the ground, not in it.
+  entry.worldPos.x = at.x + _markUp.x * 0.02;
+  entry.worldPos.y = at.y + _markUp.y * 0.02;
+  entry.worldPos.z = at.z + _markUp.z * 0.02;
+  mark.group.scale.setScalar(radius);
+  mark.stem.scale.set(1, Math.max(0.001, depth / radius), 1);
+  mark.stem.position.set(0, 0, -depth / 2 / radius);
+  // Additive on bright regolith saturates to white and both markers stop
+  // being different colours, which is the one thing they have to be. Keep it
+  // low enough to tint rather than blow out.
+  mark.rim.material.opacity = 0.42 + 0.18 * pulse;
+  mark.fill.material.opacity = 0.055 + 0.035 * pulse;
+  mark.stem.material.opacity = 0.30 + 0.15 * pulse;
+  mark.group.visible = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -585,21 +723,59 @@ function refreshHud() {
       : '');
 }
 
+// Marker update. Solving the cut point ray-marches the field, so it runs at
+// 20 Hz rather than 60 and holds the result between — the marker is a readout,
+// and a readout does not need to be re-derived three times per frame.
+let markAccum = 0, markPulse = 0, lastCut = null, lastDrop = null, lastDropR = 0.1;
+function updateAimMarkers(dt) {
+  markPulse = 0.5 + 0.5 * Math.sin(engine.timeSec * 3.4);
+  markAccum += dt;
+  if (markAccum >= 0.05) {
+    markAccum = 0;
+    const aim = digTarget();
+    lastCut = aim ? cutPointFor(aim) : null;
+    const top = carried[carried.length - 1];
+    // Cache the pile's SIZE with its position. Reading the lot again on the
+    // frames in between crashes the moment the last load leaves your hands,
+    // because the cached position outlives the lot it was computed for.
+    lastDrop = top ? dumpTarget(top) : null;
+    lastDropR = top ? Math.cbrt((3 * top.looseVolumeM3) / (4 * Math.PI)) : 0.1;
+  }
+  if (!carried.length) lastDrop = null;
+
+  const canDig = lastCut && carriedMass() < carryCapacityKg;
+  // The bite is a sphere of SHOVEL.radius centred just under the surface, so
+  // what it opens is that wide and about 1.55 radii deep. Both are drawn.
+  placeMarker(digMark, digMarkEntry, canDig ? lastCut : null,
+    SHOVEL.radius, SHOVEL.radius * 1.55, markPulse);
+  placeMarker(dropMark, dropMarkEntry, lastDrop, lastDropR, 0.04, markPulse);
+}
+
 // The action button exists only when there is something to do with it — the
 // same rule as the movement stick. No permanent controls waiting on screen.
 const actionBtn = document.getElementById('btn-action');
 let actionFlash = 0;
+// What a TAP on the button does right now. The button already changed its word
+// depending on whether you can dig; the tap did not, so a button reading "Drop"
+// still ran a dig and answered "Hands full". Pressing the thing that says Drop
+// has to drop.
+let tapAction = 'dig';
+
 function refreshAction() {
   if (actionFlash > 0) return;
   const inReach = !!digTarget();
   const load = carriedMass();
   if (inReach && load < carryCapacityKg) {
+    tapAction = 'dig';
     actionBtn.style.display = 'block';
     actionBtn.textContent = load > 0 ? 'Dig  ·  hold to drop' : 'Dig';
   } else if (load > 0) {
+    tapAction = 'dump';
     actionBtn.style.display = 'block';
-    actionBtn.textContent = 'Drop';
+    // Say why the shovel is idle, so a full load does not read as a dead button.
+    actionBtn.textContent = load >= carryCapacityKg ? 'Hands full  ·  Drop' : 'Drop';
   } else {
+    tapAction = 'dig';
     actionBtn.style.display = 'none';
   }
 }
@@ -609,16 +785,35 @@ function flash(msg) {
   actionFlash = 0.9;
 }
 
-// Tap digs; press and hold drops. One button, two verbs, no clutter.
-let holdTimer = null;
+// One button, two verbs. A tap does whatever the button currently SAYS; a hold
+// always drops, and repeats, because emptying nine loads should not be nine
+// separate deliberate gestures.
+let holdTimer = null, holdRepeat = null;
+function stopHold() {
+  if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  if (holdRepeat) { clearInterval(holdRepeat); holdRepeat = null; }
+}
 actionBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault(); e.stopPropagation();
-  holdTimer = setTimeout(() => { holdTimer = null; flash(doDump().msg); }, 420);
+  holdTimer = setTimeout(() => {
+    holdTimer = null;
+    flash(doDump().msg);
+    holdRepeat = setInterval(() => {
+      if (!carried.length) { stopHold(); return; }
+      flash(doDump().msg);
+    }, 260);
+  }, 420);
 });
-actionBtn.addEventListener('pointerup', (e) => {
+const endPress = (e) => {
   e.preventDefault(); e.stopPropagation();
-  if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; flash(doDig().msg); }
-});
+  if (holdTimer) {                                  // released before the hold
+    stopHold();
+    flash(tapAction === 'dump' ? doDump().msg : doDig().msg);
+  } else stopHold();                                // hold already fired
+};
+actionBtn.addEventListener('pointerup', endPress);
+actionBtn.addEventListener('pointercancel', endPress);
+actionBtn.addEventListener('pointerleave', () => stopHold());
 
 // Settings, including the DEV toggle that turns on the measurement layer.
 document.getElementById('btn-settings').addEventListener('click', () => {
@@ -666,6 +861,7 @@ engine.addUpdater((dt) => {
   rebuildNear();
 
   updateCamera();
+  updateAimMarkers(dt);
   debugLayer.update(walker, engine.camera);
 
   if (excavationDue > 0) { excavationDue -= dt; if (excavationDue <= 0) refreshExcavation(); }

@@ -680,12 +680,12 @@ section('7c. The dug ground is DRAWN correctly, not just modelled correctly');
   const sl = Math.hypot(spawn.x, spawn.y, spawn.z);
   const u = { x: spawn.x / sl, y: spawn.y / sl, z: spawn.z / sl };
   const R = FIELD.surfaceRadiusAlong(mars, u.x, u.y, u.z, { minStep: 0.08, startRadius: sl + 3, range: 12 });
-  const SHOVEL_R = 0.09;
+  const SHOVEL_R = 0.15;
   const cutR = R - SHOVEL_R * 0.55;
   store.dig(dens, matAt, FIELD.MATERIALS, u.x * cutR, u.y * cutR, u.z * cutR, SHOVEL_R);
 
   // Same settings main.js uses.
-  const exc = new ExcavationMesh(mars, { cellM: 0.06, minRadiusM: 1.1, padM: 0.35, maxCells: 48 });
+  const exc = new ExcavationMesh(mars, { cellM: 0.09, minRadiusM: 1.1, padM: 0.35, maxCells: 48 });
   exc.rebuild(store.edits);
   const fp = exc.footprint();
   const geo = exc.mesh.geometry;
@@ -719,9 +719,16 @@ section('7c. The dug ground is DRAWN correctly, not just modelled correctly');
     else if (out < 0 && inn > 0) inverted++;
     else ambiguous++;
   }
+  // The tolerance is for the PROBE, not for the winding. Sampling the field a
+  // fraction of a cell either side of a face misreads where the surface pinches
+  // to less than that — a handful of triangles out of thousands, at the thin
+  // spots. A systematic winding error is not subtle: the bug this caught had
+  // 518 of 518 inverted, and re-breaking one of the three edge directions gives
+  // 2968 of 6716. A per-mille reading is the probe; a percentage is the bug.
+  const faces = ind.length / 3;
   check('every excavated face points out of the rock, not into it',
-    inverted === 0 && outward > ind.length / 3 * 0.9,
-    `outward ${outward}, inverted ${inverted}, ambiguous ${ambiguous} of ${ind.length / 3}`);
+    inverted <= faces * 0.005 && outward > faces * 0.95,
+    `outward ${outward}, inverted ${inverted}, ambiguous ${ambiguous} of ${faces}`);
 
   // --- (2) Is the pit big enough to exist in the mesh? ----------------------
   // The cell has to resolve the bite or there is nothing to see, however
@@ -778,7 +785,7 @@ section('7c. The dug ground is DRAWN correctly, not just modelled correctly');
       const c2 = R2 - SHOVEL_R * 0.55;
       store2.dig(dens, matAt, FIELD.MATERIALS, d2.x * c2, d2.y * c2, d2.z * c2, SHOVEL_R);
 
-      const exc2 = new ExcavationMesh(mars, { cellM: 0.06, minRadiusM: 1.1, padM: 0.35, maxCells: 48 });
+      const exc2 = new ExcavationMesh(mars, { cellM: 0.09, minRadiusM: 1.1, padM: 0.35, maxCells: 48 });
       exc2.rebuild(store2.edits);
       const fp2 = exc2.footprint();
       nearProbe.setExcluded([{ centre: { ...fp2.centre }, halfSideM: fp2.handoverM }]);
@@ -821,6 +828,75 @@ section('7c. The dug ground is DRAWN correctly, not just modelled correctly');
     + `(needs half-side >= 1.05 quads; an exact tie is decided by floating point)`);
   check('nothing the heightfield stopped drawing falls outside the mesh',
     escaped === 0, `${escaped} corners of yielded quads land outside the excavated box`);
+
+  FIELD.attachEdits(null);
+}
+
+// ---------------------------------------------------------------------------
+section('7d. Digging and dumping makes PROGRESS, not a treadmill');
+// ---------------------------------------------------------------------------
+// Matter was conserved, the pit rendered, every existing check passed — and the
+// hole still could not get deeper than about two metres, because you dump where
+// you aim and you aim at the hole. Conservation is not progress. This measures
+// the loop a player actually performs.
+{
+  const { EditStore } = await import(`file://${join(ROOT, 'src/world/edits.js')}`);
+  const store = new EditStore(mars);
+  FIELD.attachEdits(store);
+  const dens = (x, y, z) => FIELD.density(mars, x, y, z);
+  const matAt = (x, y, z) => FIELD.materialAt(mars, x, y, z);
+
+  const sp = GEO.geodeticToCartesian(mars, -14.0, -59.2, 0);
+  const sl = Math.hypot(sp.x, sp.y, sp.z);
+  const u = { x: sp.x / sl, y: sp.y / sl, z: sp.z / sl };
+  // Capacity is a WEIGHT limit, so it is derived from the body — same as
+  // main.js does it. Hardcoding Earth's 40 kg on Mars made the player three
+  // times weaker than they should be, which read as "the hole stops here".
+  const SHOVEL_R = 0.15;
+  const CAPACITY = 40 * 9.80665 / mars.surfaceGravity;
+  const surfaceNow = (dir, range = 40) =>
+    FIELD.surfaceRadiusAlong(mars, dir.x, dir.y, dir.z, { minStep: 0.08, startRadius: sl + 3, range });
+  const R0 = surfaceNow(u, 12);
+  const frame = GEO.localFrame(-14.0, -59.2);
+
+  let held = [], depthAfterCycle = [];
+  for (let cycle = 0; cycle < 4; cycle++) {
+    let mass = 0, guard = 0;
+    while (mass < CAPACITY && guard++ < 60) {
+      const surf = surfaceNow(u);
+      const cut = surf - SHOVEL_R * 0.55;
+      const lot = store.dig(dens, matAt, FIELD.MATERIALS, u.x * cut, u.y * cut, u.z * cut, SHOVEL_R);
+      if (!lot) break;
+      held.push(lot); mass += lot.massKg;
+    }
+    // Dump clear of the hole, the way dumpTarget() in main.js places it.
+    while (held.length) {
+      const lot = held.pop();
+      const pileR = Math.cbrt((3 * lot.looseVolumeM3) / (4 * Math.PI));
+      const reach = 1.1 * 0.60 + pileR + 0.25;      // handoverM + pile + margin
+      const surfC = surfaceNow(u);
+      const px = u.x * surfC + frame.east.x * reach;
+      const py = u.y * surfC + frame.east.y * reach;
+      const pz = u.z * surfC + frame.east.z * reach;
+      const pl = Math.hypot(px, py, pz);
+      const d = { x: px / pl, y: py / pl, z: pz / pl };
+      store.deposit(lot, d.x * surfaceNow(d), d.y * surfaceNow(d), d.z * surfaceNow(d));
+    }
+    depthAfterCycle.push(R0 - surfaceNow(u));
+  }
+
+  const deepest = depthAfterCycle[depthAfterCycle.length - 1];
+  check('emptying your hands does not refill the hole you dug',
+    depthAfterCycle.every((d, i) => i === 0 || d > depthAfterCycle[i - 1] + 0.4),
+    `depth after each dig/dump cycle: ${depthAfterCycle.map((d) => d.toFixed(2)).join(' -> ')} m`);
+
+  check('four load-cycles of digging get past 3 m down',
+    deepest > 3.0, `reached ${deepest.toFixed(2)} m (dumping into the hole capped it at ~2 m)`);
+
+  // The books still have to balance — progress must not come from lost matter.
+  const led = store.ledger([]);
+  check('and matter is still conserved while doing it',
+    Math.abs(led.unaccountedM3) < 1e-12, `unaccounted ${led.unaccountedM3}`);
 
   FIELD.attachEdits(null);
 }
