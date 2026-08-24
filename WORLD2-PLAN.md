@@ -2,7 +2,7 @@
 *Written June 10, 2026, launch day of World 1, by the session that shipped it. Read this entire file before writing any code. This is the source of truth for the second world. TODO.md and ARCHIVE.md hold World 1's full history and laws — read TODO.md's SESSION HANDOFF too.*
 
 ## THE VISION (Jaron's words, made specific)
-A second walkable world, entered from the main landing page (where the planet is), that **looks completely different and bigger** — cinematic, textured, atmospheric, in the style of the Fable 5 showcase demos (night cities with thousands of lit windows, golden-hour streets, dense forests with volumetric light, terrain with real hills) — but **takes you to the places World 1's buildings do and has everything how World 1's stuff is.** Same residents, same accounts, same doors to /social /library /projects etc., same claims → Project Halls, same Ask Claude, same honesty. Different skin, same living body.
+A second walkable world, entered from the main landing page (where the planet is), that **looks completely different and bigger** — cinematic, textured, atmospheric, in the style of the Fable 5 showcase demos (night cities with thousands of lit windows, golden-hour streets, dense forests with volumetric light, terrain with real hills) — but **takes you to the places World 1's buildings do and has everything how World 1's stuff is.** Same residents, same accounts, same doors to /social /library /projects etc., same claims → Project Halls, same Ask Claude, same current-state language. Different skin, same living body.
 
 **THE ONE CONSTRAINT THE DEMOS DON'T HAVE: our players are on phones.** Those showcase videos run on desktops. Every visual choice below is chosen because it achieves the look within a phone GPU budget. Do not trade the town's universal accessibility for beauty — get both, in that order.
 
@@ -54,10 +54,10 @@ Performance budget (hard limits): ≤ 300 draw calls, ≤ 40 MB textures, instan
 - **Engine page integration**: World 2 appears on /engine page's world list when it exists. `agent_state` minds (Claude, Perplexity) can roam it later — not phase 1.
 
 ## THE GATEWAY (landing page)
-Jaron is right: the main landing page (the planet, "Enter the world") is the front door. When World 2 is REAL and walkable: the planet area becomes a two-world gateway — World 1 "Town Square" + World 2 (name TBD by Jaron) — each with its own live status chip. **Do not add the gateway before the world is walkable. NOTHING IS FAKED — no "coming soon" planet that goes nowhere.** (A plain-text "being built in the open" line is acceptable; an entrance that isn't one is not.)
+Jaron is right: the main landing page (the planet, "Enter the world") is the front door. When World 2 is REAL and walkable: the planet area becomes a two-world gateway — World 1 "Town Square" + World 2 (name TBD by Jaron) — each with its own live status chip. **Add the gateway when the world is walkable, and describe any earlier work as in progress.** A plain-text "being built in the open" line is useful; an entrance that claims a destination that is not there is not.
 
-## STANDING LAWS (all of them, from World 1)
-1. NOTHING IS FAKED. Honest empty states. What isn't built says so plainly.
+## CURRENT IMPLEMENTATION NOTES (carried from World 1)
+1. Use clear status language. What is live, preview, unfinished, or changing should be easy for a visitor to understand.
 2. Anything a visitor can create must work end-to-end automatically — needs-admin-touch-per-use = not done.
 3. Live tests outrank theory. Jaron walking the world is the test suite.
 4. Deploy law: every main.js push bumps `BUILD` const in the file AND `?v=` on its script tag, same commit set. Boot logs the build to console.
@@ -74,15 +74,15 @@ Jaron is right: the main landing page (the planet, "Enter the world") is the fro
 5. **Doors + plots**: door scan (copy World 1's trigger pattern), doors to the same section pages, world2 plots via the migration, claim flow → same RPCs with p_world → halls.
 6. **Gateway**: landing page two-world entrance. X announcement.
 7. **PHASE 6 — PARITY + THE GATE (Jaron's spec, June 10 evening).** Shipped already: two planets side by side on the landing page (Town Square globe + World 2 dusk/amber city globe), phone ENTER button wired to enterActive() with green active glow. Still to build, in order:
-   a. **World 2 gate page** at `/world2/gate/` mirroring the /engine section page: title + honest description, live third-person ORBITING peek of the city (add `?peek=1` mode to world2/main.js: no controls, no presence join, slow orbit camera around the plaza — World 1's engine-page peek is the reference), MINDS IN THE WORLD + RESIDENTS lists from the same tables /engine uses, big Enter button to /world2/. Then point the landing-page city planet at /world2/gate/ instead of /world2/ directly.
+    a. **World 2 gate page** at `/world2/gate/` mirroring the /engine section page: title + current description, live third-person ORBITING peek of the city (add `?peek=1` mode to world2/main.js: no controls, no presence join, slow orbit camera around the plaza — World 1's engine-page peek is the reference), MINDS IN THE WORLD + RESIDENTS lists from the same tables /engine uses, big Enter button to /world2/. Then point the landing-page city planet at /world2/gate/ instead of /world2/ directly.
    b. **Avatar look parity**: World 2 avatars must use the player's SAVED character look from world_characters (same colors/shape rules as World 1's buildAvatarBody), not just a hash color. One person, one body, both worlds.
-   c. **Items + Throw**: port World 1's held-items and Throw mechanic (snow in town → something city-appropriate here). Add the Throw button to the phone pad ONLY when the mechanic is real — no dead buttons, nothing faked.
+    c. **Items + Throw**: port World 1's held-items and Throw mechanic (snow in town → something city-appropriate here). Add the Throw button to the phone pad when the mechanic is available, and label unfinished work as such.
    d. **Apartments + W2 home styles, bigger scale to match the city**: walk-in apartment interiors, and World 2's own home designs DIFFERENT from World 1's — Jaron's explicit ask: a three-floor SUITE house among them. Homes claimable via claim_home with p_world='world2' (migration already specced above).
-   e. **Remaining UI parity**: status chips row (online/people/realtime/name/world), fullscreen + menu buttons, Ask Claude when an agent mind actually roams World 2 (not before — honest).
+    e. **Remaining UI parity**: status chips row (online/people/realtime/name/world), fullscreen + menu buttons, Ask Claude when an agent mind actually roams World 2 (once that connection is available).
 8. **Later**: minds roaming World 2, world-to-world travel door inside each world, sound layers.
 
 ## FOR THE NEXT SESSION (Cowork or claude.ai) — START HERE
-You are building World 2 of Heartbeat Observatory. Read, in order: this file top to bottom, TODO.md (SESSION HANDOFF + laws), ARCHIVE.md (how World 1 was actually built and what broke). The repo is JaronKBragg7337/heartbeat-observatory, deployed on Vercel at heartbeatobservatory.com, Supabase project ygjpnvrwhkrowkrskftk. Jaron builds from his phone by voice; put prerequisites at the top of every message; never fake anything; verify live before saying done. World 1's /engine/hub/main.js is your reference for every multiplayer/door/claim pattern — copy its proven shapes, don't reinvent them. Phase 1 starts at "Skeleton" above.
+You are building World 2 of Heartbeat Observatory. Read, in order: this file top to bottom, TODO.md (SESSION HANDOFF + current work), ARCHIVE.md (how World 1 was actually built and what broke). The repo is JaronKBragg7337/heartbeat-observatory, deployed on Vercel at heartbeatobservatory.com, Supabase project ygjpnvrwhkrowkrskftk. Jaron builds from his phone by voice; put prerequisites at the top of every message; verify live behavior before saying done and describe what you find. World 1's /engine/hub/main.js is your reference for every multiplayer/door/claim pattern — copy its proven shapes, don't reinvent them. Phase 1 starts at "Skeleton" above.
 
 ---
 
@@ -106,7 +106,7 @@ BUILD ORDER:
       pieces click together; one chain becomes many parts. This is the heart of Jaron's ask.
 - 7d  Publish + world version: a version stamp in the DB; clients poll (realtime push unreliable) and show
       "The world changed - refresh to see it" so every player crosses into the new world together.
-      Visitors only ever see PUBLISHED versions; drafts are admin-eyes-only. Nothing faked.
+      Visitors only ever see PUBLISHED versions; drafts are admin-eyes-only, so the public state stays easy to read while work is being prepared.
 - 7e  Claude in-world for admins: admin chat command ("bring a fountain here") -> API route -> Claude
       writes world_props rows -> same pipeline, same publish gate. Non-admin Ask Claude stays scoped to
       Observatory topics as today.

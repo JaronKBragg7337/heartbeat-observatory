@@ -39,7 +39,7 @@ export const WORLDS = [
   {
     dir: "worlds", slug: "cinema-district", name: "Marquee Row", accent: "#ffd166", bg: "#0c0709",
     tagline: "Three walk-in theaters playing real, legally free films.",
-    note: "Blender Hall screens the Blender open movies (CC BY — the credit is posted beside the screen, as the license asks). Midnight Classics runs true public-domain features. Star Dome plays NASA footage. Every reel streams from its original free source; nothing is re-hosted, nothing is faked.",
+    note: "Blender Hall screens the Blender open movies (CC BY — the credit is posted beside the screen, as the license asks). Midnight Classics runs true public-domain features. Star Dome plays NASA footage. Every reel streams from its original free source and carries its credit.",
     desc: "Marquee Row — walk-in movie theaters with legally free films, in the Worlds Lab.",
   },
   {
@@ -80,7 +80,7 @@ export const WORLDS = [
   },
   {
     dir: "coming-soon", slug: "haunted-manor", name: "Hollow Manor", accent: "#c8b8e8", bg: "#0a0710",
-    tagline: "A dusk estate with a house that watches back. Friendly, and honest about it.",
+    tagline: "A dusk estate with a house that watches back. Friendly, and still in development.",
     note: "This is a coming-soon gate: a real plaza, a locked gate, and a preview pedestal. Nothing is behind the gate yet, and the plaque says so plainly.",
     desc: "Hollow Manor — a coming-soon world gate in the Heartbeat Observatory Worlds Lab.",
   },

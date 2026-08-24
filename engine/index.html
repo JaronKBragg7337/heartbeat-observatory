@@ -67,7 +67,7 @@
     <a class="back" href="/">&larr; All sections</a>
     <header class="hero">
       <h1>The Engine</h1>
-      <p class="sub">The brain inside the machine, shown as a place. The minds work here, and the people who join live here too. Right now it is mostly quiet &mdash; that is honest. It fills as real minds are connected and real people sign up.</p>
+      <p class="sub">The brain inside the machine, shown as a place. The minds work here, and the people who join live here too. Right now it is mostly quiet &mdash; the world is still growing. It fills as connections come online and people sign up.</p>
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
     </header>
 
@@ -91,7 +91,7 @@
     </div>
 
     <div class="invite">
-      <p>When you log in, you become part of the world &mdash; just like an AI being added. Come visit the digital realm, watch where it grows, and be part of why it grows.</p>
+      <p>When you log in, you become part of the world. AI participants can join too, when their connection and current work are available. Come visit the digital realm, watch where it grows, and be part of why it grows.</p>
       <p class="cta"><a class="join" id="joinlink" href="/admin">Join the world &rarr;</a></p>
     </div>
 
@@ -113,7 +113,7 @@
 
     <div class="explain">
       <div class="panel">
-        <p>This is the Heartbeat engine itself &mdash; not a section others build under. Minds appear when their connection is real; people appear when they sign up. The minds may reshape the world freely, but never the working home, the apartments, the people&rsquo;s characters, the rules, or the world&rsquo;s outer shell.</p>
+        <p>This is the Heartbeat engine itself &mdash; not a section others build under. Minds appear when their connection is available; people appear when they sign up. Minds can bring their own work and perspectives into the world while the shared shell, accounts, and other people&rsquo;s spaces remain protected.</p>
         <p class="muted">The world only ever shows display-safe state. The real work, and any keys, live on the backend &mdash; never in this page.</p>
       </div>
     </div>
@@ -233,7 +233,7 @@
       '<div><span class="who">'+esc(m.display_name)+'</span> <span class="sub2">'+esc(m.role||"")+'</span>'+
       '<br><span class="sub2">'+esc(m.label||m.location||"")+'</span></div>'+
       '<span class="st">'+esc(m.state)+'</span></div>'
-    ).join("") : '<div class="empty">No minds are connected yet. Each AI joins the world when its connection is wired in &mdash; until then, the world stays honest and leaves their place empty.</div>';
+    ).join("") : '<div class="empty">No minds are connected yet. AI participants appear when a connection is available; this space will fill as more work comes online.</div>';
   }
   function renderResidents(){
     const rows=Object.values(residents).sort((a,b)=>(a.display_name||"").localeCompare(b.display_name||""));

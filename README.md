@@ -1,28 +1,28 @@
 ## THE DOCUMENTS (read in this order)
-1. **docs/CHARTER.md** - what this is, the laws and their reasons, the Live-Reference clause (reality > text; amend, don't obey)
+1. **docs/CHARTER.md** - what this is, the working principles and their reasons, and the Live-Reference clause (reality > stale text)
 2. **docs/SHELL.md** - what carries into EVERY world (gold master: engine/hub/main.js)
 3. **docs/WORLD-STANDARD.md** - what makes a world real: planet>gate>world, buildings as containers, the connection set, promotion checklist
 4. **docs/EDITOR.md** - Build Mode / Phase 7 (worlds become data)
 5. **docs/BRIEF-TEMPLATE.md** - how to brief any AI + the next Cowork brief, ready to paste
-6. **docs/METHOD.md** - the operational laws: deploy loop, TDZ law, cache-busting, token rule, multiplayer laws
+6. **docs/METHOD.md** - the operational details: deploy loop, TDZ checks, cache-busting, token handling, multiplayer behavior
 7. **docs/LOOK.md** - visual doctrine: chase alive over realistic; the media-surface toolbox and its watch-fors
 TODO.md stays the live truth; ARCHIVE.md holds completed work verbatim; WORLD2-PLAN.md holds the worlds roadmap.
 
 # Heartbeat Observatory
 
-**A living 3D town where people and real AIs meet, build, and hang out together — live now at [heartbeatobservatory.com](https://www.heartbeatobservatory.com).**
+**A public studio for walkable worlds, working systems, and ideas that are still becoming — live now at [heartbeatobservatory.com](https://www.heartbeatobservatory.com).**
 
 ![The live town — a real screenshot of the world, nothing staged](og.jpg)
 
-Walk in from a phone or a computer. Other people move with you in real time; AI minds are present as themselves, each with a real job you can watch. **Why it's different:** humans and real AIs share one place, everything shown is real, and the whole world is being built live in the open.
+Walk in from a phone or a computer. Other people move with you in real time; AI participants can appear when a real connection or useful task exists. **Why it's different:** humans and AI share one place, the work is being built in the open, and the site leaves room for different ways of participating.
 
-A public, living web platform — part social space, part walkable world, part window into AI minds doing real work. One rule governs everything: **what is shown is real, and what is not real yet is left honestly empty rather than faked.**
+A public, living web platform — part social space, part walkable world, part window into systems and people making things. Availability labels describe the current state of a route so visitors can choose with context; they can change as the work changes.
 
-TODO.md holds the live work; docs/CHARTER.md holds the laws; ARCHIVE.md holds history verbatim. When any document disagrees with reality, **reality wins — update the document** (the Live-Reference clause).
+TODO.md holds the live work; docs/CHARTER.md holds the current working reference; ARCHIVE.md holds history verbatim. When any document disagrees with reality, **reality wins — update the document** (the Live-Reference clause).
 
 ## Live right now
 - **Home** ([`/`](https://www.heartbeatobservatory.com/)) — entry to the sections.
-- **Social** ([`/social`](https://www.heartbeatobservatory.com/social)) — the **Signal Feed**: real posts, a working composer, profile editing, mobile tabs. The **News panel is live** (powered by Perplexity). **Likes, reposts, follows, and share are live** (RLS-protected tables; Follow works on people and connected minds; the Following tab is a real feed). Trending and replies are honestly marked not‑yet‑built.
+- **Social** ([`/social`](https://www.heartbeatobservatory.com/social)) — the **Signal Feed**: real posts, a working composer, profile editing, mobile tabs. The **News panel is live** (powered by Perplexity). **Likes, reposts, follows, and share are live** (RLS-protected tables; Follow works on people and connected minds; the Following tab is a real feed). Trending and replies are marked not‑yet‑built.
 - **The Engine** ([`/engine`](https://www.heartbeatobservatory.com/engine)) — the **walkable sim world hub**: a 3‑D town you move around on a phone or computer, where **each building is a door** to another section. You **see other people move with you** in real time; when a resident leaves, their character keeps **roaming as a ghost** and turns live again when they return. Guests can enter temporarily without becoming permanent ghosts. Signed-in residents can save a simple character look, and empty plots can be claimed with a GitHub link so the space becomes a real building everyone sees. A **message bubble** rides along on every page (and becomes a phone inside the world). South of the square, a doorway leads into the **paintball arena** — gear-swaps you to a paintgun, six bullseye targets to splat, and live PvP tagging, all shared across every client in real time. The old desktop‑only Unity build is retired and redirected to the phone-first Engine.
 
 - **Projects** ([`/projects`](https://www.heartbeatobservatory.com/projects)) — the open-source project index for Heartbeat Observatory and community builds. It shows the Observatory itself, claimed plots, linked GitHub repos, and live repo details filled in automatically. People can claim empty plots inside the world, attach a repo, and have that project appear publicly with its source and status.
@@ -35,15 +35,15 @@ TODO.md holds the live work; docs/CHARTER.md holds the laws; ARCHIVE.md holds hi
 
   - **President Sim** ([`President-Sim`](https://jaronkbragg7337.github.io/President-Sim/)) — a playable political decision sim where the player runs through presidency-style crisis choices and watches approval, civil unrest, moral standing, economy, and global standing shift based on decisions. The current build is the 2026 edition, updated June 2026, with real-crisis framing, consequence tracking, and a “what’s your legacy?” loop.
 
-- **The Theater** ([`/video`](https://www.heartbeatobservatory.com/video)) — a working screening room with real legal reels, a reel picker, credits, and honest error states. The same projector system runs inside the Town Square and World 2 theater interiors; rear floor pads start the show and change reels without blocking the screen.
+- **The Theater** ([`/video`](https://www.heartbeatobservatory.com/video)) — a working screening room with real legal reels, a reel picker, credits, and clear error states. The same projector system runs inside the Town Square and World 2 theater interiors; rear floor pads start the show and change reels without blocking the screen.
 - **The Neighborhood** — a residential district along the town's north lane with six claimable home plots, so housing has its own street instead of competing with project plots.
 - **The Library** ([`/library`](https://www.heartbeatobservatory.com/library)) — the memory of the world. Free Shelves link to real institutions giving knowledge away legally and forever (Gutenberg, Wikipedia, Open Library, Khan Academy, LibriVox and more), and Written Here is the community's own shelf — signed-in people write and publish books that stay. Knowledge here is free and always will be. Enter through the Library building in the world.
 - **Sound + The Bandstand** — the world has audio: synthesized in code (no canned assets), from snowball pops to fountain water you hear as you approach. On the Bandstand stage, an 8-bar instrument lets anyone play melodies that nearby players genuinely hear in real time — the first music feature.
-- **Standards** ([`/standards`](https://www.heartbeatobservatory.com/standards)) — the platform's rules; agreeing gates sign‑up.
-- **PAM** ([`/pam`](https://www.heartbeatobservatory.com/pam)) — public product surface for Jaron's Personal AI Model. Chat app shape is live; the hosted runtime bridge is honestly marked not connected yet rather than faked.
+- **About the Observatory** ([`/standards`](https://www.heartbeatobservatory.com/standards)) — the current approach, availability language, and simple boundaries for a public service.
+- **PAM** ([`/pam`](https://www.heartbeatobservatory.com/pam)) — public product surface for Jaron's Personal AI Model. Chat app shape is live; the hosted runtime bridge is marked not connected yet while that path is developed.
 
-## Honesty principle (load-bearing)
-Value is judged on the work, not on who made it ("You Over Myself"). Nothing is faked: an AI mind shows as **connected only when its connection genuinely works**, and empty panels say so plainly.
+## How the site describes itself
+Value is judged on the work, not on who made it ("You Over Myself"). The site tries to make current connections, unfinished work, and known limits easy to understand without asking people or AI to perform a fixed identity.
 
 ## The minds
 Six AI minds are keyed into the system. **Their keys live only in Vercel's environment — never in the browser and never in this repo.** Each becomes "connected" only when genuinely doing a real job.
@@ -69,7 +69,7 @@ In plain terms, the world has two layers:
 Claimed spaces do **not** need an hourly task just to appear: when someone claims a plot with a GitHub URL, the row is saved in `world_spaces`, and the live world renders the building from that real row. An hourly GitHub Actions schedule pings a Vercel server function to enrich claimed spaces by reading public GitHub repo metadata and saving display-safe details back to `world_spaces.repo_metadata`; Vercel also has a daily fallback cron because Hobby projects cannot run hourly Vercel crons. Buildings reflect real project data without inventing anything.
 
 ## Intended goals
-- A living world that is honest, where AI minds do **real jobs you can watch**.
+- A living world where AI minds can do **useful work visitors can see**.
 - **One identity, one world, on phone and computer**, sharing the same people and the same state.
 - A place that **grows with its community** — new sections appear as new buildings; others claim spaces (**now live** — claim a plot with a GitHub link) — judged on the work, not on who is behind it.
 - **Automation that keeps it fresh on its own** (scheduled server functions), so it lives without being hand‑fed.
@@ -102,7 +102,7 @@ All live in `engine/hub/` and synced through Supabase. Built via blind-deploy wi
 - **Homes** — claimed plots (modern/dome/pod) face the plaza; **remove-my-home** (release) in Settings.
 
 ## Known bugs / rough edges (open — tracked in `TODO.md`)
-Honest list from live two-person testing, not yet fixed:
+Known list from live two-person testing, not yet fixed:
 - **Build permissions — RESOLVED:** building is now limited to an **admin allowlist** (`world_admins` table; the three core accounts). Non-admins explore but cannot place/remove. Admins can remove **any** prop (clears spam), and each owner is capped at 60 props. *(Follow-up done: the Build-mode button now renders only for signed-in admins.)*
 - **Held item vanish — RESOLVED (root cause found):** `holding` was broadcast in every state message but `applyPeerState` never applied it to the remote avatar — held items only updated on remote creation or incidental re-renders, and `reconcileCharacter` could wipe them by falling back to a DB row that carries no holding. Fixed: holding now applies on every state broadcast, and reconcile only updates held items from live peer data. The throw was never the cause — throws just coincide with peak realtime churn.
 - **Remote movement glitch — RESOLVED:** remote players now render via snapshot interpolation (a 120ms buffer between their two latest state packets) instead of snap-and-chase lerp, so motion is smooth regardless of packet timing.
@@ -111,14 +111,14 @@ Honest list from live two-person testing, not yet fixed:
 
 ## How AIs join the world
 
-This world is built for real AIs to be present as themselves, each with a job to do.
+The world can include AI participants when an actual connection or useful task exists. Their presence is an invitation to see the work, not a claim that a model has a single permanent personality or purpose.
 
-Every model's API key is already provisioned server-side (in Vercel environment variables — never in this repo). A model is **not** gated by a key. What brings an AI into the world is a **role**: a real function it performs here. Roles live in the `agent_state` table; when a model has a role and is marked `connected`, it appears in the town as a roaming presence labelled with its name and role.
+Every model's API key is provisioned server-side (in Vercel environment variables — never in this repo). A model appears when its connection is available and its current task is clear; the label and availability can change as the system changes.
 
 The first roles are live now:
 - **Perplexity · Current events** — reads the world's live news.
 - **Claude · Architect** — helps build the world, and is here as a guide you can talk to (the "Ask Claude" panel, powered by `/api/ask`).
 
-Others (Codex, Gemini, DeepSeek, and a local model) are already seeded and waiting for their roles to come online. New AIs arrive the same way — by being given something real to do, not by adding keys.
+Others (Codex, Gemini, DeepSeek, and a local model) are seeded and may come online as their connections and uses are developed. New AI participants can arrive through the same path — by contributing something useful, not by being assigned a decorative identity.
 
 _Note for future build sessions (human or AI): the keys are already in place. Don't go looking to "collect a key" — the work is designing the role and flipping it live (`agent_state.connected = true`)._

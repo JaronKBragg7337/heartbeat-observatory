@@ -16,13 +16,13 @@ should be merged and Draco-compressed. Hero details can be higher fidelity when 
 silhouette or use earns the cost. Phone readability and the existing 300-draw-call ceiling
 remain hard constraints.
 
-## The original principle (proven June 11, Marquee Row)
-**Chase ALIVE, not realistic.** A photoreal texture is still frozen; a low-poly city
-whose signs scroll real news and whose theater plays a real rocket launch feels more
-alive than photorealism, because the motion is TRUE. Realism is expensive on phones;
-aliveness is nearly free here, because the Observatory already runs the live systems
-other worlds would have to fake. When "realistic" is requested, first ask: is the
-real want MOTION + TRUTH on surfaces? It usually is.
+## Current-state visual language (proven June 11, Marquee Row)
+**Chase ALIVE, not merely realistic.** A photoreal texture is still frozen; a low-poly
+city whose signs carry current information and whose theater plays a real rocket launch
+feels more alive than photorealism because something is actually happening. Realism is
+expensive on phones; aliveness is nearly free here because the Observatory already runs
+live systems. When "realistic" is requested, first ask: is the real want motion,
+context, and a surface that feels connected to the project?
 
 ## The toolbox (cheapest first)
 1. **Procedural CanvasTextures** — facades, brick, posters, window grids (the kit's
@@ -30,7 +30,7 @@ real want MOTION + TRUTH on surfaces? It usually is.
 2. **Canvas TICKERS — the workhorse of "alive":** a canvas redrawn with scrolling
    text costs almost nothing and can show REAL Observatory data: the Perplexity news
    feed on a tower ticker, the social feed on a jumbotron, residents' names on a
-   marquee. Real data, nothing faked, alive by definition.
+   marquee. Current data gives the surface a reason to be there.
 3. **Shared video textures** — one <video> element projected onto one or MANY
    surfaces (same texture, offset UVs). For hero screens: theaters, one jumbotron.
    The proven pattern lives in worlds-lab/lib/v1/cinema.js.
@@ -48,15 +48,17 @@ real want MOTION + TRUTH on surfaces? It usually is.
 - **CORS + autoplay:** sources need open CORS (Blender bucket, archive.org, NASA
   qualify); start playback from a user action; muted-first retry for phones —
   cinema.js handles all three, copy it rather than re-learn it.
-- **Idle screens must SAY they're idle** ("walk to the projector to start") — an
-  unlabeled black screen reads as broken. Honest empty states apply to pixels too.
+- **Idle screens should SAY they're idle** ("walk to the projector to start") — an
+  unlabeled black screen reads as broken. A quiet or unfinished surface can still feel
+  intentional when its current state is clear.
 - **Draw calls:** instancing + merged geometry; World 2's whole city is ~23 calls
   against a 300 budget. Every new surface idea answers "how many draw calls?"
-- **Licensing:** media on surfaces is published content. Allowed: own data, NASA /
-  public domain, CC with credit shown in-world (CREDITS.md trail). Never: ripped TV,
+- **Licensing:** media on surfaces is published content. Use own data, NASA / public
+  domain, CC with credit shown in-world (CREDITS.md trail). Never: ripped TV,
   logos, copyrighted footage. "TV news" = OUR news feed, not someone's broadcast.
-- **Nothing faked:** a "live" sign renders live data or says it's a demo. A looping
-  fake newscast would break the world's word.
+- **State language:** a "live" sign should correspond to a live surface; a demo or
+  looping visual should be labeled as such. The goal is useful context, not a forced
+  performance of certainty.
 
 ## When realism IS the brief
 Hero landmarks (recognition), materials on close-up interiors, character readability.

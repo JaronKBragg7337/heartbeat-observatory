@@ -1,6 +1,6 @@
 // WORLDS LAB · Hollow Manor — COMING SOON gate.
-// HONESTY LAW: a real plaza, a locked gate, a rotating preview — and a plaque
-// that says plainly nothing is behind the gate yet. Friendly-spooky, kept honest.
+// Current-state note: a real plaza, a locked gate, a rotating preview — and a plaque
+// that describes the current state. Friendly-spooky, still in development.
 // Laws: BUILD below matches ?v= in this folder's index.html, same commit.
 // Boot call sits at the very END of the file (TDZ law). Lib v1 is frozen.
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
@@ -46,7 +46,7 @@ function build() {
   comingSoonWorld(kit, {
     name: "HOLLOW MANOR",
     accent: "#c8b8e8",
-    blurb: "A dusk estate with a house that watches back. Friendly, and honest about it.",
+    blurb: "A dusk estate with a house that watches back. Friendly, and still in development.",
     hero: manorHero,
     heroScale: 0.95,
   });

@@ -51,7 +51,7 @@ density.
   edge clipped Parkview Field — a named hero. Final: (41.0690, −85.1480) to
   (41.0870, −85.1260).
 
-## Honest empty states
+## Current limits
 - No doors lead anywhere — so there are no doors (and no dead ENTER button either).
 - No shared presence; the HUD chip says `lab · solo preview`.
 - District interiors, container buildings, the shell, multiplayer, and the gate are

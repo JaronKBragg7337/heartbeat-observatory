@@ -15,10 +15,11 @@ Fill in the TASK line and the two keys (keys live with Jaron, never in this file
 >
 > YOUR TASK: [Build Phase 1 of the Fort Wayne world per the FUTURE WORLD: FORT WAYNE section of WORLD2-PLAN.md — lab world, new folder, recognition is the win condition.]
 >
-> Rules that never bend: new folders only unless the task says otherwise - not one line
-> of live code touched without being told. Nothing faked, honest empty states. Verify on
-> the live site before calling it done, and report concretely: what changed, where, and
-> how I can test it from my phone.
+> Working context: new folders only unless the task says otherwise - not one line of
+> live code touched without being told. Use current-state language for unfinished or
+> unwired work so a visitor can tell what they are looking at. Verify on the live site
+> before calling it done, and report concretely: what changed, where, and how I can test
+> it from my phone.
 
 Why each part exists: keys first (nothing works without access); forced reading WITH a
 comprehension check (the paragraph it reports back is the insurance - stop it if the
@@ -41,7 +42,7 @@ GOAL: Build a reusable STARTER WORLD at /worlds-lab/starter/ — an empty biome
 carrying World 1's complete shell. This becomes the template every future world is
 born from: clone it, design the environment, done.
 
-CARRY (the law — read docs/SHELL.md and docs/CHARTER.md first):
+CARRY (the shared implementation context — read docs/SHELL.md and docs/CHARTER.md first):
 - Port the shell EXACTLY from engine/hub/main.js (World 1). Do not redesign or
   approximate: controls and movement feel, top chips, PHONE with real messages,
   Ask Claude tab, Settings (sensitivity/FOV/invert Y/roster), Character editor
@@ -51,7 +52,8 @@ CARRY (the law — read docs/SHELL.md and docs/CHARTER.md first):
 - Presence laws: track() join/leave only; sends ≤10Hz + idle suppression;
   interp ≥2× send interval. Deploy law: BUILD const + ?v= bump, same commit.
 - New folder only. Not one line of live code touched. Unlinked from the landing.
-- Honest empty states: the world says plainly it is an empty starter biome.
+- State language: the world identifies itself as an empty starter biome while it is in
+  that state.
 
 FREE: terrain rendering approach, file organization inside the folder, and a tiny
 sample environment toggle (flat / hills) to prove environment varies while shell

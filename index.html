@@ -4,267 +4,221 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="/hb-device-tier.js"></script>
-<title>Heartbeat Observatory</title>
-<meta name="description" content="A living 3D town where people and AI meet, build, and hang out together. Walk in, look around, and make something." />
-<meta property="og:title" content="Heartbeat Observatory" />
-<meta property="og:description" content="A living 3D town where people and AI meet, build, and hang out together. Walk in, look around, and make something." />
+<link rel="stylesheet" href="/observatory.css" />
+<title>Heartbeat Observatory — worlds, systems, and ideas</title>
+<meta name="description" content="Heartbeat Observatory is a public studio for walkable worlds, working software, and ideas that are still becoming." />
+<meta property="og:title" content="Heartbeat Observatory — worlds, systems, and ideas" />
+<meta property="og:description" content="A public studio for walkable worlds, working software, and ideas that are still becoming." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://www.heartbeatobservatory.com" />
 <meta property="og:image" content="https://www.heartbeatobservatory.com/og.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="The live walkable 3D town - plaza, fountain, and residents at dawn" />
+<meta property="og:image:alt" content="A view into Heartbeat Observatory's live walkable world" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Heartbeat Observatory" />
-<meta name="twitter:description" content="A living 3D town where people and AI meet, build, and hang out together. Walk in, look around, and make something." />
+<meta name="twitter:title" content="Heartbeat Observatory — worlds, systems, and ideas" />
+<meta name="twitter:description" content="A public studio for walkable worlds, working software, and ideas that are still becoming." />
 <meta name="twitter:image" content="https://www.heartbeatobservatory.com/og.jpg" />
-<meta name="theme-color" content="#070a0f" />
-<style>
-  :root { --bg:#070a0f; --panel:#0e131b; --line:#1c2530; --text:#e6edf3;
-    --muted:#7d8896; --beat:#e23a45; --ok:#3fb950; --amber:#d9a23a; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { background:var(--bg); color:var(--text);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height:100vh; }
-  .topnav { display:flex; align-items:center; justify-content:space-between;
-    padding:16px 22px; border-bottom:1px solid var(--line); position:sticky; top:0;
-    background:rgba(7,10,15,0.85); backdrop-filter:blur(8px); z-index:10; }
-  .brand { display:inline-flex; align-items:center; gap:9px; font-size:12px;
-    letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); text-decoration:none; }
-  .pulse { width:8px; height:8px; border-radius:50%; background:var(--beat); animation:beat 1.6s infinite; }
-  @keyframes beat { 0%{box-shadow:0 0 0 0 rgba(226,58,69,0.55);} 70%{box-shadow:0 0 0 10px rgba(226,58,69,0);} 100%{box-shadow:0 0 0 0 rgba(226,58,69,0);} }
-  .signin { font-size:13px; color:var(--text); text-decoration:none; border:1px solid var(--line);
-    border-radius:999px; padding:7px 16px; transition:border-color .15s; }
-  .signin:hover { border-color:#33414f; }
-  .wrap { max-width:720px; margin:0 auto; padding:54px 20px 60px; }
-  header.hero { text-align:center; }
-  h1 { font-size:34px; font-weight:600; margin:0 0 12px; letter-spacing:-0.01em; }
-  .sub { color:var(--muted); font-size:15px; line-height:1.6; max-width:540px; margin:0 auto; }
-  .status { display:inline-flex; align-items:center; gap:8px; margin:26px auto 0;
-    padding:7px 14px; border:1px solid var(--line); border-radius:999px; font-size:13px;
-    color:var(--muted); background:var(--panel); }
-  .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
-  .dot.live { background:var(--ok); } .dot.err { background:var(--beat); }
-  .lead { text-align:center; color:var(--muted); font-size:13px; margin-top:34px; letter-spacing:0.04em; }
-  .grid { margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  @media (max-width:520px){ .grid { grid-template-columns:1fr; } }
-  .card { border:1px solid var(--line); background:var(--panel); border-radius:14px;
-    padding:20px; min-height:104px; display:flex; flex-direction:column; justify-content:space-between;
-    text-decoration:none; color:var(--text); cursor:pointer; transition:border-color .15s, transform .08s; }
-  .card:hover { border-color:#33414f; }
-  .card:active { transform:translateY(1px); }
-  .card.is-live { border-color:rgba(63,185,80,0.4); }
-  .card.is-live:hover { border-color:rgba(63,185,80,0.7); }
-  .card h2 { font-size:18px; font-weight:600; }
-  .card .go { font-size:12px; color:var(--muted); margin-top:4px; }
-  .pill { align-self:flex-start; margin-top:14px; font-size:11px; letter-spacing:0.08em;
-    text-transform:uppercase; border-radius:999px; padding:4px 10px; display:inline-flex; align-items:center; gap:6px; }
-  .pill.coming { color:var(--muted); border:1px solid var(--line); }
-  .pill.preview { color:var(--amber); border:1px solid rgba(217,162,58,0.4); }
-  .pill.live { color:var(--ok); border:1px solid rgba(63,185,80,0.5); }
-  .pill.live .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); }
-  footer { margin-top:42px; text-align:center; color:var(--muted); font-size:12px; line-height:1.7; }
-  .skeleton { color:var(--muted); text-align:center; padding:30px 0; }
-  .worldcta { display:flex; flex-direction:column; align-items:center; gap:13px; margin:32px auto 4px; text-decoration:none; }
-  .globe { position:relative; width:208px; height:208px; border-radius:50%; overflow:hidden;
-    background: radial-gradient(circle at 33% 27%, #d4efff 0%, #7cbcee 19%, #3f9bd6 37%, #2f8a5a 60%, #156639 80%, #0a3b22 100%);
-    box-shadow: 0 0 70px rgba(79,155,214,0.30), inset -16px -22px 52px rgba(0,0,0,0.55), inset 14px 16px 38px rgba(255,255,255,0.16);
-    animation: bob 6s ease-in-out infinite; }
-  .globe-tex { position:absolute; inset:-22%; border-radius:50%; opacity:0.92;
-    background:
-      radial-gradient(circle at 58% 38%, rgba(38,118,70,0.92) 0 9%, transparent 10%),
-      radial-gradient(circle at 30% 64%, rgba(34,108,63,0.92) 0 12%, transparent 13%),
-      radial-gradient(circle at 76% 70%, rgba(44,128,76,0.88) 0 7%, transparent 8%),
-      radial-gradient(circle at 47% 20%, rgba(40,116,68,0.85) 0 6%, transparent 7%),
-      radial-gradient(circle at 82% 44%, rgba(36,110,64,0.8) 0 5%, transparent 6%);
-    animation: spin 46s linear infinite; }
-  .globe-shine { position:absolute; inset:0; border-radius:50%; pointer-events:none;
-    background: radial-gradient(circle at 30% 23%, rgba(255,255,255,0.5), transparent 44%); }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes bob { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-10px);} }
-  .worldcta:hover .globe { box-shadow: 0 0 92px rgba(79,155,214,0.5), inset -16px -22px 52px rgba(0,0,0,0.55), inset 14px 16px 38px rgba(255,255,255,0.2); }
-  .enter { font-size:17px; font-weight:600; color:var(--text); display:inline-flex; align-items:center; gap:8px; }
-  .arrow { display:inline-block; transition:transform .15s; }
-  .worldcta:hover .arrow { transform:translateX(4px); }
-  .worldlive { font-size:11px; letter-spacing:0.07em; text-transform:uppercase; color:var(--ok);
-    display:inline-flex; align-items:center; gap:6px; }
-  .worldlive .ld { width:7px; height:7px; border-radius:50%; background:var(--ok); animation:beat 1.6s infinite; }
-  @media (prefers-reduced-motion: reduce){ .globe,.globe-tex,.worldlive .ld,.pulse{ animation:none; } }
-  /* ---------- the worlds, arranged as a ring rather than a queue ----------
-     A row of worlds reads as a list you scroll past. A ring reads as a system
-     you are standing in the middle of, and it stops implying that the first
-     one is the important one. Each world sits at its own angle on the circle
-     (--a) and drifts on its own clock, so they never bob in lockstep. */
-  .worldring { position:relative; width:min(560px, 92vw); aspect-ratio:1/1;
-    margin:26px auto 8px; }
-  .worldring .worldcta { position:absolute; left:50%; top:50%; width:min(190px,44vw);
-    margin:0; gap:9px;
-    /* polar placement: out along the ring, then centre the card on that point */
-    transform: rotate(var(--a)) translate(0, calc(var(--r) * -1)) rotate(calc(var(--a) * -1)) translate(-50%, -50%);
-    animation: drift var(--dur, 7s) ease-in-out var(--delay, 0s) infinite; }
-  .worldring .globe { width:min(132px,31vw); height:min(132px,31vw); animation:spinless 0s; }
-  .worldring .enter { font-size:15px; text-align:center; }
-  .worldring .worldlive { font-size:10px; letter-spacing:.05em; }
-  /* the globe's own bob is replaced by the ring's drift so they do not fight */
-  .worldring .globe { animation:none; }
-  @keyframes drift {
-    0%,100% { translate: 0 0; }
-    50%     { translate: 0 -13px; }
-  }
-  /* a faint orbit line, so the arrangement reads as deliberate */
-  .worldring::before { content:""; position:absolute; left:50%; top:50%;
-    width:calc(var(--ring) * 2); height:calc(var(--ring) * 2); margin:calc(var(--ring) * -1) 0 0 calc(var(--ring) * -1);
-    border-radius:50%; border:1px dashed rgba(255,255,255,0.07); pointer-events:none; }
-  .worldring { --ring: min(168px, 31vw); }
-  @media (prefers-reduced-motion: reduce){ .worldring .worldcta { animation:none; } }
-
-  /* The ring stays a ring on a phone — that is the whole point of it — but
-     everything shrinks together so the two lower cards do not collide. At
-     375px this lands each card exactly inside the container edge. */
-  @media (max-width: 560px) {
-    .worldring { --ring: min(122px, 30vw); width:min(360px, 94vw); }
-    .worldring .worldcta { width:min(148px, 40vw); gap:7px; }
-    .worldring .globe { width:min(104px, 26vw); height:min(104px, 26vw); }
-    .worldring .enter { font-size:14px; }
-    .worldring .worldlive { font-size:9px; }
-  }
-  /* Only on a genuinely tiny screen does it give up and unroll into a column.
-     Same markup either way, no second copy of the worlds. */
-  @media (max-width: 340px) {
-    .worldring { position:static; width:auto; aspect-ratio:auto; display:flex;
-      flex-direction:column; align-items:center; gap:24px; }
-    .worldring::before { display:none; }
-    .worldring .worldcta { position:static; transform:none; width:auto; }
-    .worldring .globe { width:132px; height:132px; }
-  }
-
-  .worldrow { display:flex; justify-content:center; align-items:flex-start; gap:34px; flex-wrap:wrap; }
-  .worldrow .worldcta { margin:32px 0 4px; }
-  .worldrow .globe { width:172px; height:172px; }
-  /* Ashgrove — the grown town: greens and roofs rather than city lights */
-  .globe.grove { background: radial-gradient(circle at 33% 27%, #eaf6d8 0%, #a8d08a 17%, #6aa85e 38%, #3e7c46 62%, #245c33 82%, #10331d 100%);
-    box-shadow: 0 0 70px rgba(122,186,116,0.30), inset -16px -22px 52px rgba(0,0,0,0.55), inset 14px 16px 38px rgba(240,255,225,0.16); }
-  .globe.grove .globe-tex { background:
-      radial-gradient(circle at 52% 40%, rgba(212,150,96,0.85) 0 2.6%, transparent 3.4%),
-      radial-gradient(circle at 61% 46%, rgba(198,138,88,0.8) 0 2.2%, transparent 3%),
-      radial-gradient(circle at 44% 52%, rgba(206,146,92,0.8) 0 2.4%, transparent 3.2%),
-      radial-gradient(circle at 57% 58%, rgba(190,132,84,0.75) 0 2%, transparent 2.8%),
-      radial-gradient(circle at 30% 35%, rgba(46,110,58,0.85) 0 9%, transparent 10%),
-      radial-gradient(circle at 74% 68%, rgba(42,104,54,0.85) 0 8%, transparent 9%),
-      radial-gradient(circle at 20% 70%, rgba(50,118,62,0.8) 0 7%, transparent 8%); }
-  .globe.city { background: radial-gradient(circle at 33% 27%, #f4e3c2 0%, #d9a45e 16%, #8a5e9e 38%, #3c3f7a 62%, #1c1f4a 82%, #0b0d28 100%);
-    box-shadow: 0 0 70px rgba(196,148,84,0.28), inset -16px -22px 52px rgba(0,0,0,0.6), inset 14px 16px 38px rgba(255,236,200,0.14); }
-  .globe.city .globe-tex { background:
-      radial-gradient(circle at 56% 36%, rgba(255,214,140,0.85) 0 2.2%, transparent 3%),
-      radial-gradient(circle at 33% 58%, rgba(255,200,120,0.8) 0 1.8%, transparent 2.6%),
-      radial-gradient(circle at 70% 64%, rgba(255,224,160,0.8) 0 2%, transparent 2.8%),
-      radial-gradient(circle at 45% 75%, rgba(255,206,130,0.75) 0 1.6%, transparent 2.4%),
-      radial-gradient(circle at 80% 42%, rgba(255,218,150,0.75) 0 1.7%, transparent 2.5%),
-      radial-gradient(circle at 25% 33%, rgba(120,110,180,0.55) 0 8%, transparent 9%),
-      radial-gradient(circle at 64% 22%, rgba(110,100,170,0.5) 0 6%, transparent 7%); }
-</style>
+<meta name="theme-color" content="#f4f1ea" />
 </head>
 <body>
-  <nav class="topnav">
-    <span class="brand"><span class="pulse"></span> Heartbeat Observatory</span>
-    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  <nav class="site-nav" aria-label="Primary navigation">
+    <a class="wordmark" href="/" aria-label="Heartbeat Observatory home">
+      <span class="wordmark-mark" aria-hidden="true"><span></span></span>
+      <span class="wordmark-copy"><strong>Heartbeat</strong><small>Observatory</small></span>
+    </a>
+    <div class="nav-actions">
+      <a class="text-link" href="#work">Explore</a>
+      <a class="nav-button" id="authlink" href="/admin">Sign in</a>
+    </div>
   </nav>
 
-  <div class="wrap">
-    <header class="hero">
-      <h1>Walk into the Observatory.</h1>
-      <p class="sub">A living town where people and AI meet, build, and hang out together. Step inside, look around, and make it yours &mdash; or pick a space below.</p>
-      <div class="worldring" role="list" aria-label="Worlds you can walk into">
-        <a class="worldcta" role="listitem" href="/engine" aria-label="Enter the Town Square world"
-           style="--a:0deg; --r:var(--ring); --dur:7.5s; --delay:0s;">
-          <span class="globe"><span class="globe-tex"></span><span class="globe-shine"></span></span>
-          <span class="enter">Town Square <span class="arrow">&rarr;</span></span>
-          <span class="worldlive"><span class="ld"></span>Live &middot; walkable in 3D</span>
+  <main class="site-main">
+    <section class="home-hero" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span> A public studio in progress</p>
+        <h1 id="hero-title">Make room for <em>what comes next.</em></h1>
+        <p class="hero-dek">Heartbeat Observatory is a place for walkable worlds, working software, and ideas that are still becoming. Come in, look around, and decide where you want to spend time.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="/engine">Enter Town Square <span aria-hidden="true">→</span></a>
+          <a class="button button-secondary" href="#work">Browse the work</a>
+        </div>
+        <div class="hero-note" aria-label="About the Observatory">
+          <span>Open access</span>
+          <span>Made in public</span>
+          <span>For people and AI</span>
+        </div>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="observatory-scene">
+          <div class="scene-grid"></div>
+          <div class="scene-orbit"></div>
+          <div class="scene-orbit"></div>
+          <div class="scene-core"></div>
+          <div class="scene-note">
+            <strong>Many ways in.<br />No finished edge.</strong>
+            <span>Worlds, projects, conversations, and experiments share one front door.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-block" id="worlds" aria-labelledby="worlds-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">Start somewhere</p>
+          <h2 id="worlds-title">A few places to begin.</h2>
+        </div>
+        <p>Walk through a world, stay for a while, and follow whatever catches your attention. The routes are different; the invitation is the same.</p>
+      </div>
+
+      <div class="world-grid">
+        <a class="world-card" href="/engine">
+          <div class="world-card-head"><span class="world-index">01 / Town Square</span><span class="world-state"><span class="state-dot"></span>Live</span></div>
+          <span class="world-orb orb-town"></span>
+          <h3>Town Square</h3>
+          <p>A walkable 3D hub with people, projects, games, and doors into the rest of the Observatory.</p>
+          <span class="card-link">Enter the world <span aria-hidden="true">→</span></span>
         </a>
-        <a class="worldcta" role="listitem" href="/world2/gate/" aria-label="Enter World 2, the city"
-           style="--a:120deg; --r:var(--ring); --dur:8.6s; --delay:-2.4s;">
-          <span class="globe city"><span class="globe-tex"></span><span class="globe-shine"></span></span>
-          <span class="enter">World 2 &middot; the city <span class="arrow">&rarr;</span></span>
-          <span class="worldlive"><span class="ld"></span>New &middot; bigger &middot; live</span>
+
+        <a class="world-card" href="/world2/gate/">
+          <div class="world-card-head"><span class="world-index">02 / City build</span><span class="world-state"><span class="state-dot"></span>Open</span></div>
+          <span class="world-orb orb-city"></span>
+          <h3>World 2</h3>
+          <p>A larger, more atmospheric city with the same living connections back to the Observatory.</p>
+          <span class="card-link">Visit World 2 <span aria-hidden="true">→</span></span>
         </a>
-        <a class="worldcta" role="listitem" href="/world3/gate/" aria-label="Enter Ashgrove, World 3"
-           style="--a:240deg; --r:var(--ring); --dur:6.8s; --delay:-4.1s;">
-          <span class="globe grove"><span class="globe-tex"></span><span class="globe-shine"></span></span>
-          <span class="enter">Ashgrove <span class="arrow">&rarr;</span></span>
-          <span class="worldlive"><span class="ld"></span>New &middot; a town that runs itself</span>
+
+        <a class="world-card" href="/world3/gate/">
+          <div class="world-card-head"><span class="world-index">03 / Ashgrove</span><span class="world-state"><span class="state-dot"></span>Open</span></div>
+          <span class="world-orb orb-grove"></span>
+          <h3>Ashgrove</h3>
+          <p>A greener town in development: slower, quieter, and shaped by the things people add to it.</p>
+          <span class="card-link">Visit Ashgrove <span aria-hidden="true">→</span></span>
         </a>
       </div>
-      <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting&hellip;</span></div>
-    </header>
+    </section>
 
-    <p class="lead">Explore the spaces</p>
-    <div class="grid" id="grid"><div class="skeleton">Loading sections&hellip;</div></div>
+    <section class="section-block" id="work" aria-labelledby="work-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">Explore</p>
+          <h2 id="work-title">Things you can spend time with.</h2>
+        </div>
+        <p id="connectionStatus" class="connection-status"><span class="state-dot" aria-hidden="true"></span> Reading the current directory…</p>
+      </div>
+      <div class="surface-list" id="grid"><div class="skeleton">Loading the current directory…</div></div>
+    </section>
 
-    <p class="lead">The back lot</p>
-    <div class="grid">
-      <a class="card" href="/worlds-lab/">
-        <div><h2>Worlds Lab</h2><div class="go">Eight walkable preview worlds &mdash; rides, trains, theaters, a real city &mdash; built in the open. Solo previews, no account needed. Open &rarr;</div></div>
-        <span class="pill preview">Preview</span>
-      </a>
-      <a class="card" href="/PCGames/">
-        <div><h2>PC Games</h2><div class="go">Desktop-only high-fidelity game builds with heavier assets, bigger worlds, and real GPU budgets. Open &rarr;</div></div>
-        <span class="pill preview">Desktop</span>
-      </a>
-    </div>
+    <section class="section-block" id="studio" aria-labelledby="studio-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">In the studio</p>
+          <h2 id="studio-title">More work, further in.</h2>
+        </div>
+        <p>Some of the Observatory is a finished doorway. Some of it is a useful preview. Both can be worth visiting.</p>
+      </div>
+      <div class="studio-list">
+        <a class="studio-link" href="/worlds-lab/">
+          <div><h3>Worlds Lab</h3><p>Walkable previews for rides, trains, theaters, and a real city — built in the open.</p></div>
+          <span class="card-link">Preview <span aria-hidden="true">→</span></span>
+        </a>
+        <a class="studio-link" href="/PCGames/">
+          <div><h3>PC Games</h3><p>Desktop builds with heavier assets, larger spaces, and room for a stronger machine.</p></div>
+          <span class="card-link">Browse <span aria-hidden="true">→</span></span>
+        </a>
+      </div>
+    </section>
 
-    <footer>
-      <a href="/standards" style="color:var(--text);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:1px;">Standards &amp; Terms</a><br /><br />
-      Served from Vercel &middot; data from Supabase &middot; no third parties in between.<br />
-      heartbeatobservatory.com
+    <section class="statement" aria-labelledby="statement-title">
+      <p class="section-label">The approach</p>
+      <div>
+        <h2 id="statement-title">Open enough to change. Clear enough to trust.</h2>
+        <p>The Observatory is an evolving public project. People and AI can arrive with different purposes; the site describes what is available and leaves room for work to change, fail, or become something else.</p>
+        <a href="/standards">Read about the Observatory <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <p>Heartbeat Observatory<br />A public studio for worlds, systems, and ideas.</p>
+      <div class="footer-links">
+        <a href="/standards">About this place</a>
+        <a href="https://github.com/JaronKBragg7337/heartbeat-observatory">Source on GitHub</a>
+        <a href="/admin">Account</a>
+      </div>
     </footer>
-  </div>
+  </main>
 
-<script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+<script>
   const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
-  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
+  const SURFACES_URL = SUPABASE_URL + "/rest/v1/surfaces?select=key,name,status,position&order=position.asc";
   const SLUGS = { engine:"/engine", social:"/social", video:"/video", host:"/projects", showcase:"/live-systems", games:"/games", library:"/library", pam:"/pam", printer:"/3DPrinterAsset/" };
-  const dot = document.getElementById("dot");
-  const statusText = document.getElementById("statusText");
+  const descriptions = {
+    engine: "The walkable 3D hub and the front door to the living world.",
+    social: "A shared feed for posts, conversation, and current signals.",
+    video: "A working screening room with a small, changing catalog.",
+    host: "Projects connected to real repositories and the people making them.",
+    showcase: "Live systems, experiments, and public work in one place.",
+    games: "Playable builds hosted inside the Observatory.",
+    library: "A free shelf for shared knowledge and writing made here.",
+    pam: "A public surface for Jaron’s personal AI model.",
+    printer: "An interactive 3D printer asset and its working room."
+  };
   const grid = document.getElementById("grid");
-  const authlink = document.getElementById("authlink");
+  const status = document.getElementById("connectionStatus");
 
-  function esc(s){ const d=document.createElement("div"); d.textContent=(s==null?"":s); return d.innerHTML; }
-  function pill(status) {
-    if (status === "live") return '<span class="pill live"><span class="ld"></span>Live</span>';
-    if (status === "preview") return '<span class="pill preview">Preview</span>';
-    return '<span class="pill coming">Coming soon</span>';
+  function esc(value) {
+    const d = document.createElement("div");
+    d.textContent = value == null ? "" : String(value);
+    return d.innerHTML;
   }
-  async function reflectSession() {
-    try { const { data: { session } } = await supabase.auth.getSession(); if (session) authlink.textContent = "Account"; } catch (e) {}
+
+  function statusInfo(value) {
+    if (value === "live") return { label: "Live", className: "live" };
+    if (value === "preview") return { label: "Preview", className: "preview" };
+    return { label: "In progress", className: "progress" };
   }
+
   async function load() {
     try {
-      const { data, error } = await supabase
-        .from("surfaces").select("key,name,status,position").order("position", { ascending: true });
-      if (error) throw error;
-      dot.classList.add("live");
-      statusText.textContent = "Connected \u00b7 live from your database";
+      const response = await fetch(SURFACES_URL, {
+        headers: {
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          Authorization: "Bearer " + SUPABASE_PUBLISHABLE_KEY
+        }
+      });
+      if (!response.ok) throw new Error("Directory request failed");
+      const data = await response.json();
+
+      status.innerHTML = '<span class="state-dot" aria-hidden="true"></span> Current directory';
       grid.innerHTML = "";
-      const sections = Array.isArray(data) ? data.slice() : [];
-      if (!sections.some((s) => s.key === "pam")) {
-        sections.push({ key: "pam", name: "PAM", status: "preview", position: 999 });
+      const sections = Array.isArray(data) ? data : [];
+      if (!sections.some((surface) => surface.key === "pam")) sections.push({ key: "pam", name: "PAM", status: "preview", position: 999 });
+
+      for (const surface of sections) {
+        const href = SLUGS[surface.key];
+        if (!href) continue;
+        const info = statusInfo(surface.status);
+        const row = document.createElement("a");
+        row.className = "surface-row";
+        row.href = href;
+        row.innerHTML =
+          '<span class="surface-name">' + esc(surface.name) + '</span>' +
+          '<span class="surface-summary">' + esc(descriptions[surface.key] || "A public surface in the Observatory.") + '</span>' +
+          '<span class="surface-state ' + info.className + '"><span class="state-dot"></span>' + info.label + '</span>' +
+          '<span class="surface-arrow" aria-hidden="true">→</span>';
+        grid.appendChild(row);
       }
-      for (const s of sections) {
-        const a = document.createElement("a");
-        a.className = "card" + (s.status === "live" ? " is-live" : "");
-        a.href = SLUGS[s.key] || "#";
-        a.innerHTML = '<div><h2>' + esc(s.name) + '</h2><div class="go">Open \u2192</div></div>' + pill(s.status);
-        grid.appendChild(a);
-      }
-    } catch (e) {
-      dot.classList.add("err");
-      statusText.textContent = "Could not reach the database";
-      grid.innerHTML = '<div class="skeleton">' + (e && e.message ? e.message : "Unknown error") + '</div>';
+
+      if (!grid.children.length) grid.innerHTML = '<div class="skeleton">The directory is empty right now. The worlds above remain open.</div>';
+    } catch (error) {
+      status.innerHTML = '<span class="state-dot" aria-hidden="true"></span> Directory unavailable';
+      grid.innerHTML = '<div class="skeleton">The directory is unavailable right now. The worlds above remain open.</div>';
     }
   }
-  reflectSession();
+
   load();
 </script>
 <script defer src="/bubble.js"></script>

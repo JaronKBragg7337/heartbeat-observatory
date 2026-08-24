@@ -306,8 +306,13 @@
   async function init() {
     render();
     try {
-      var mod = await import("https://esm.sh/@supabase/supabase-js@2");
-      state.supabase = mod.createClient(SUPABASE_URL, SUPABASE_KEY);
+      try {
+        var shared = await import("/hb-supabase.js");
+        state.supabase = await shared.getSupabase();
+      } catch (sharedError) {
+        var mod = await import("https://esm.sh/@supabase/supabase-js@2");
+        state.supabase = mod.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
       var result = await state.supabase.auth.getSession();
       state.session = result.data && result.data.session;
       state.me = state.session && state.session.user && state.session.user.id;

@@ -4,7 +4,7 @@
 
 Gallery: **[/worlds-lab/](https://www.heartbeatobservatory.com/worlds-lab/)** (unlinked from the live town until Jaron wires it in).
 
-Built 2026-06-11 in a Cowork session. House laws honored throughout: BUILD stamps + `?v=` cache busting on every page, boot calls at end-of-file (TDZ law), phone + computer parity on every feature, honesty principle (lab worlds say plainly they're solo previews; coming-soon gates say plainly nothing is behind them), and **not one line of `/engine/`, `/world2/`, or any other live file was touched.**
+Built 2026-06-11 in a Cowork session. Shared implementation context: BUILD stamps + `?v=` cache busting on every page, boot calls at end-of-file (TDZ check), phone + computer parity on every feature, and clear status language (lab worlds identify themselves as solo previews while they are in development). **Not one line of `/engine/`, `/world2/`, or any other live file was touched.**
 
 ## The map
 

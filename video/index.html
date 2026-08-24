@@ -8,7 +8,7 @@
 <!-- THE THEATER (flat page). Real screenings since 2026-07-04: the playback pattern proven
      in worlds-lab Marquee Row (lib/v1/cinema.js), ported here. Every reel is legally
      streamable from its ORIGINAL free source (Blender Foundation CC BY, Internet Archive
-     public domain, NASA public domain) - credits shown, nothing re-hosted, nothing faked.
+     public domain, NASA public domain) - credits shown, nothing re-hosted.
      If a reel can't load the screen says so plainly. Catalog re-verified 2026-07-04: the old Google sample bucket now returns 403 for everyone,
      so Blender reels come from Internet Archive (mp4, primary) with Wikimedia Commons 720p
      transcodes as fallback. Paper trail: worlds-lab/CREDITS.md -->
@@ -55,14 +55,14 @@
 <body>
   <div class="room">
     <div class="marquee"><span class="bulb"></span><h1>THE THEATER</h1><span class="bulb"></span></div>
-    <div class="tag">Heartbeat Observatory &middot; one screen, honest programming</div>
+    <div class="tag">Heartbeat Observatory &middot; one screen, open programming</div>
     <div class="screenframe">
       <div class="screen">
         <video id="reel" playsinline controls preload="none"></video>
         <div class="idle" id="idle">
           <div class="now">NOW SHOWING</div>
           <div class="title" id="idleTitle">PICK A REEL BELOW</div>
-          <div class="honest" id="idleText">Every reel is real and legally free &mdash; Blender Foundation open movies, public-domain classics, and NASA footage &mdash; played from its original free source. Nothing here is ever faked: if a reel can&rsquo;t load, this screen says so.</div>
+          <div class="honest" id="idleText">Every reel comes from a credited, legally free source &mdash; Blender Foundation open movies, public-domain classics, and NASA footage. If a source can&rsquo;t load, this screen will tell you.</div>
         </div>
       </div>
       <div class="glowline"></div>
@@ -126,7 +126,7 @@
     if (f.srcFallback && !triedFallback) { triedFallback = true; video.src = f.srcFallback; video.play().catch(() => {}); return; }
     idle.style.display = "flex";
     idleTitle.textContent = "THAT REEL DIDN’T LOAD";
-    idleText.textContent = "The source for “" + f.title + "” is unreachable right now. Honest empty screen, never a fake — pick another reel or try again later.";
+    idleText.textContent = "The source for “" + f.title + "” is unreachable right now. Pick another reel or try again later.";
     credit.textContent = "";
     current = -1; markPlaying();
   });

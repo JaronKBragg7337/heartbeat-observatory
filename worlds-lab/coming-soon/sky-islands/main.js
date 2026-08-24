@@ -1,5 +1,5 @@
 // WORLDS LAB · Sky Islands — COMING SOON gate.
-// HONESTY LAW: a real plaza, a locked gate, a rotating preview — and a plaque
+// Current-state note: a real plaza, a locked gate, a rotating preview — and a plaque
 // that says plainly nothing is behind the gate yet. Plug-in ready.
 // Laws: BUILD below matches ?v= in this folder's index.html, same commit.
 // Boot call sits at the very END of the file (TDZ law). Lib v1 is frozen.

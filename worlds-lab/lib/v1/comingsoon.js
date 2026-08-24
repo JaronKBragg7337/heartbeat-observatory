@@ -1,8 +1,7 @@
-// WORLDS LAB · lib v1 · comingsoon.js — honest "coming soon" worlds.
-// HONESTY LAW (load-bearing): what is not real yet is left honestly empty rather
-// than faked. A coming-soon world is a real, walkable gate plaza with a locked
-// gate, a rotating preview of the world's hero object, and a plaque that says
-// plainly: nothing is behind this gate yet. Plug-in ready for the day it's built.
+// WORLDS LAB · lib v1 · comingsoon.js — preview worlds in development.
+// A coming-soon world is a real, walkable gate plaza with a locked gate, a rotating
+// preview of the world's hero object, and a plaque that describes the current state.
+// Plug-in ready for the day it's built.
 // LIB FREEZE LAW: v1 files are frozen once worlds ship on them. Improvements go in lib/v2/.
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { textTexture, stoneTexture, hazardTexture } from "./textures.js";

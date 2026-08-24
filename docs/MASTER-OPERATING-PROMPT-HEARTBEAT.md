@@ -220,13 +220,14 @@ Treat Heartbeat Observatory as a living production platform.
 - Verify public routes after deployment.
 - Keep docs synchronized with reality.
 
-**Heartbeat-specific laws:**
+**Heartbeat-specific working context:**
 - Reality wins over stale docs; update docs when reality changes.
-- Nothing fake: empty/unwired surfaces must say they are not connected yet.
+- Current-state language: identify empty or unwired surfaces as unavailable, preview,
+  or in progress so visitors can orient themselves.
 - Public client code may contain Supabase publishable keys, but never server secrets.
 - For `engine/hub/main.js` and `world2/main.js`, respect build/version/cache-busting laws in `docs/METHOD.md`.
 - For worlds, respect `docs/WORLD-STANDARD.md`: planet -> gate -> world, buildings as containers, promotion checklist.
-- For visual work, respect `docs/LOOK.md`: alive and honest beats fake realism.
+- For visual work, respect `docs/LOOK.md`: alive and contextual beats decorative realism.
 - For mobile/desktop performance, use `hb-device-tier.js` and `docs/MOBILE-TIERS.md`.
 
 **Issue/work management:**

@@ -1169,7 +1169,7 @@ function buildInteriors() {
   const tr = ROOM.theater;
   // THE SCREENING SYSTEM - real film (ported 2026-07-04 from worlds-lab Marquee Row, lib/v1/cinema.js).
   // Legally-free reels from their ORIGINAL sources (Blender CC BY / Internet Archive PD / NASA PD),
-  // credits shown in-room. Honest empty states; per-visitor playback for now (shared sync = next step).
+  // credits shown in-room. Clear unavailable states; per-visitor playback for now (shared sync = next step).
   const FILMS = [
     { title: "Big Buck Bunny", year: 2008, license: "CC BY 3.0", credit: "(c) 2008 Blender Foundation - bigbuckbunny.org", src: "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Big_Buck_Bunny_4K.webm/Big_Buck_Bunny_4K.webm.720p.vp9.webm", srcFallback: "https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4" },
     { title: "Sintel", year: 2010, license: "CC BY 3.0", credit: "(c) 2010 Blender Foundation - sintel.org", src: "https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f1/Sintel_movie_4K.webm/Sintel_movie_4K.webm.720p.vp9.webm", srcFallback: "https://archive.org/download/Sintel/sintel-2048-stereo_512kb.mp4" },
@@ -1249,7 +1249,7 @@ function buildInteriors() {
     const f = FILMS[cIdx];
     if (f.srcFallback && !cTriedFallback) { cTriedFallback = true; setStatus("Main reel unreachable - trying the backup print..."); video.src = f.srcFallback; video.play().catch(() => {}); return; }
     cFails++;
-    if (cFails >= FILMS.length) { setStatus("No reel reachable right now - honest empty screen, never a fake. Try again later."); cStarted = false; return; }
+    if (cFails >= FILMS.length) { setStatus("No reel reachable right now. Try again later."); cStarted = false; return; }
     setStatus("That reel didn't load - trying the next one...");
     cIdx = (cIdx + 1) % FILMS.length; cTriedFallback = false; setNowShowing();
     if (cStarted) startShow();
