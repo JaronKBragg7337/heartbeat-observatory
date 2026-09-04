@@ -89,6 +89,17 @@
       letter-spacing: 1px;
     }
 
+    .disclosure {
+      max-width: 720px;
+      margin: -10px 0 16px;
+      color: rgba(255,255,255,0.42);
+      font-size: clamp(0.7em, 1.7vw, 0.82em);
+      letter-spacing: 0.35px;
+      line-height: 1.4;
+      text-align: center;
+      z-index: 1;
+    }
+
     /* Top bar */
     #topBar {
       display: flex;
@@ -112,6 +123,27 @@
       border: 1.5px solid rgba(255,215,0,0.4);
       backdrop-filter: blur(10px);
       letter-spacing: 1px;
+    }
+
+    /* Back button */
+    .back-btn {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(0.75em, 1.8vw, 0.9em);
+      color: #fff;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(0,119,255,0.45);
+      backdrop-filter: blur(10px);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s;
+      z-index: 1;
+    }
+    .back-btn:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 4px 20px rgba(0,119,255,0.35);
+      transform: translateX(-2px);
     }
 
     /* Approval rating */
@@ -286,6 +318,94 @@
 
     .btn span { position: relative; z-index: 1; }
 
+    .btn:disabled,
+    .btn[aria-disabled="true"] {
+      cursor: default;
+      opacity: 0.68;
+    }
+
+    .btn:disabled:hover,
+    .btn[aria-disabled="true"]:hover {
+      border-color: rgba(0,119,255,0.45);
+      box-shadow: none;
+      transform: none;
+      color: #e8e8f0;
+    }
+
+    /* Consequence report */
+    .decision-result {
+      text-align: center;
+      animation: endingReveal 0.45s ease-out;
+    }
+
+    .decision-result h2 {
+      color: var(--green);
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.05em, 2.4vw, 1.35em);
+      margin-bottom: 12px;
+    }
+
+    .decision-selection {
+      color: rgba(255,255,255,0.78);
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .decision-selection strong { color: #fff; }
+
+    .impact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0 auto 18px;
+    }
+
+    .impact-chip {
+      border: 1px solid rgba(0,170,255,0.28);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.28);
+      padding: 9px 8px;
+      color: rgba(255,255,255,0.62);
+      font-size: 0.82em;
+    }
+
+    .impact-chip strong {
+      display: block;
+      color: var(--gold);
+      font-family: 'Orbitron', monospace;
+      font-size: 1.05em;
+      margin-top: 3px;
+    }
+
+    .next-briefing {
+      color: rgba(255,255,255,0.42);
+      font-size: 0.82em;
+      letter-spacing: 0.5px;
+    }
+
+    .legacy-log {
+      margin-top: 20px;
+      border-top: 1px solid rgba(0,119,255,0.25);
+      padding-top: 12px;
+      text-align: left;
+      font-size: 0.86em;
+      line-height: 1.55;
+    }
+
+    .legacy-log summary {
+      cursor: pointer;
+      color: rgba(255,255,255,0.72);
+      font-family: 'Orbitron', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .legacy-log ol {
+      margin: 10px 0 0 20px;
+      color: rgba(255,255,255,0.72);
+    }
+
+    .legacy-log li { padding: 2px 0; }
+
     /* Impact toast */
     .event-impact {
       position: fixed;
@@ -373,6 +493,7 @@
       #gameBox { padding: 22px 18px; }
       .approval-label { min-width: 90px; font-size: 0.85em; }
       #topBar { justify-content: center; }
+      .impact-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -381,13 +502,15 @@
   <div class="edition-tag">2026 EDITION · UPDATED JUNE 2026</div>
   <h1>🇺🇸 IF YOU WERE PRESIDENT 🇺🇸</h1>
   <p class="subtitle">Real crises. Real consequences. What's your legacy?</p>
+  <p class="disclosure">Independent simulation · fictional decisions inspired by public headlines · not affiliated with the White House</p>
 
   <div id="topBar">
     <div class="top-badge" id="yearDisplay">📅 Year: 2025</div>
     <div class="top-badge" id="highscoreDisplay">🏆 Best: 0%</div>
+    <a class="back-btn" href="https://www.heartbeatobservatory.com/games/">← Games</a>
   </div>
 
-  <div class="progress-strip">
+  <div class="progress-strip" role="progressbar" aria-label="Presidential term progress" aria-valuemin="0" aria-valuemax="16" aria-valuenow="0" aria-valuetext="0 of 16 decisions complete">
     <div class="progress-fill" id="progressFill" style="width:0%"></div>
   </div>
 
@@ -419,16 +542,26 @@
     </div>
   </div>
 
-  <div id="gameBox"></div>
+  <div id="gameBox" role="region" aria-live="polite" aria-label="Presidential briefing"></div>
 
   <script>
     // --- State ---
     let approval = 50, rebellion = 50, morality = 50, economy = 50, global = 50;
     let round = 1;
     const MAX_ROUNDS = 16;
-    let currentYear = 2025;
-    let highScore = parseInt(localStorage.getItem('presidentHighScore2026')) || 0;
+    const START_YEAR = 2025;
+    const YEARS_IN_TERM = 4;
+    const DECISIONS_PER_YEAR = MAX_ROUNDS / YEARS_IN_TERM;
+    let currentYear = START_YEAR;
+    let highScore = 0;
+    try {
+      highScore = parseInt(localStorage.getItem('presidentHighScore2026'), 10) || 0;
+    } catch (_) {
+      // The game still works when storage is unavailable (for example in a locked-down browser).
+    }
     let usedIndices = [];
+    let decisionHistory = [];
+    let isResolving = false;
 
     // --- Scenarios (all grounded in 2025-2026 real events) ---
     const scenarios = [
@@ -623,7 +756,11 @@
         document.getElementById(`${id}-fill`).style.width = vals[i] + '%';
         document.getElementById(`${id}-val`).textContent = vals[i] + '%';
       });
-      document.getElementById('progressFill').style.width = ((round - 1) / MAX_ROUNDS * 100) + '%';
+      const completed = Math.min(Math.max(round - 1, 0), MAX_ROUNDS);
+      document.getElementById('progressFill').style.width = (completed / MAX_ROUNDS * 100) + '%';
+      const progressStrip = document.querySelector('.progress-strip');
+      progressStrip.setAttribute('aria-valuenow', completed);
+      progressStrip.setAttribute('aria-valuetext', `${completed} of ${MAX_ROUNDS} decisions complete`);
     }
 
     function showImpact(text, color) {
@@ -645,30 +782,66 @@
 
     function showQuestion() {
       if (round > MAX_ROUNDS) return endGame();
+      currentYear = START_YEAR + Math.floor((round - 1) / DECISIONS_PER_YEAR);
       document.getElementById('yearDisplay').textContent = `📅 Year: ${currentYear}`;
 
       const q = getQuestion();
+      window._currentScenario = q;
       document.getElementById('gameBox').innerHTML = `
         <div class="scenario-tag">⚡ ${q.tag}</div>
         <h2>Decision ${round} / ${MAX_ROUNDS}</h2>
         <div class="context-blurb">${q.context}</div>
         <p class="question-text">${q.text}</p>
         <div class="btn-container">
-          ${q.choices.map((c, i) => `<button class="btn" onclick="choose(${i}, event)"><span>${c.t}</span></button>`).join('')}
+          ${q.choices.map((c, i) => `<button type="button" class="btn" onclick="choose(${i}, event)"><span>${c.t}</span></button>`).join('')}
         </div>
       `;
-
-      // Store current choices for choose()
-      window._currentChoices = q.choices;
+      isResolving = false;
     }
 
-    function choose(index, event) {
-      const c = window._currentChoices[index];
-      approval  = clamp(approval  + c.a);
-      rebellion = clamp(rebellion + c.r);
-      morality  = clamp(morality  + c.m);
-      economy   = clamp(economy   + c.e);
-      global    = clamp(global    + c.g);
+    function showDecisionFeedback(q, c, impacts) {
+      const impactMarkup = impacts.map((impact) => {
+        const delta = impact.after - impact.before;
+        const sign = delta > 0 ? '+' : '';
+        return `<div class="impact-chip"><span>${impact.label}</span><strong>${sign}${delta}%</strong></div>`;
+      }).join('');
+
+      document.getElementById('gameBox').innerHTML = `
+        <div class="decision-result">
+          <div class="scenario-tag">📡 DECISION RECORDED · ${q.tag}</div>
+          <h2>Consequences are moving</h2>
+          <p class="decision-selection">You chose: <strong>${c.t}</strong></p>
+          <div class="impact-grid">${impactMarkup}</div>
+          <p class="next-briefing">Your next briefing is arriving…</p>
+        </div>
+      `;
+    }
+
+    function choose(index) {
+      const q = window._currentScenario;
+      if (isResolving || !q || !q.choices[index]) return;
+      isResolving = true;
+
+      const c = q.choices[index];
+      document.querySelectorAll('#gameBox .btn').forEach((button) => {
+        button.disabled = true;
+        button.setAttribute('aria-disabled', 'true');
+      });
+
+      const impacts = [
+        { label: 'Approval', before: approval, after: clamp(approval + c.a) },
+        { label: 'Civil Unrest', before: rebellion, after: clamp(rebellion + c.r) },
+        { label: 'Moral Standing', before: morality, after: clamp(morality + c.m) },
+        { label: 'Economy', before: economy, after: clamp(economy + c.e) },
+        { label: 'Global Standing', before: global, after: clamp(global + c.g) }
+      ];
+
+      approval = impacts[0].after;
+      rebellion = impacts[1].after;
+      morality = impacts[2].after;
+      economy = impacts[3].after;
+      global = impacts[4].after;
+      decisionHistory.push({ tag: q.tag, choice: c.t });
 
       // Impact flash
       const net = c.a + c.m + c.g;
@@ -680,8 +853,8 @@
       else if (c.r > 15)   showImpact('🔥 UNREST', '#ff6600');
       else                 showImpact('📋 NOTED', '#00aaff');
 
+      showDecisionFeedback(q, c, impacts);
       round++;
-      currentYear += Math.random() < 0.5 ? 1 : 0; // not every decision is a year
       updateStats();
       setTimeout(showQuestion, 1300);
     }
@@ -738,7 +911,11 @@
 
       if (e.score > highScore) {
         highScore = e.score;
-        localStorage.setItem('presidentHighScore2026', highScore);
+        try {
+          localStorage.setItem('presidentHighScore2026', highScore);
+        } catch (_) {
+          // High-score persistence is optional; never block the ending screen.
+        }
         document.getElementById('highscoreDisplay').textContent = `🏆 Best: ${highScore}%`;
         newHigh = `<div class="new-high">🎉 NEW HIGH SCORE!</div>`;
       }
@@ -756,9 +933,13 @@
             Moral Standing: ${morality}% &nbsp;|&nbsp; Economy: ${economy}% &nbsp;|&nbsp; Global: ${global}%
           </div>
         </div>
+        <details class="legacy-log">
+          <summary>Review your ${decisionHistory.length} decisions</summary>
+          <ol>${decisionHistory.map((item) => `<li><strong>${item.tag}</strong> — ${item.choice}</li>`).join('')}</ol>
+        </details>
         <div class="action-row">
-          <button class="btn btn-restart" onclick="restart()"><span>🔄 Play Again</span></button>
-          <button class="btn" onclick="toggleFS()"><span>📱 Fullscreen</span></button>
+          <button type="button" class="btn btn-restart" onclick="restart()"><span>🔄 Play Again</span></button>
+          <button type="button" class="btn" onclick="toggleFS()"><span>📱 Fullscreen</span></button>
         </div>
       `;
     }
@@ -766,16 +947,21 @@
     function restart() {
       approval = rebellion = morality = economy = global = 50;
       round = 1;
-      currentYear = 2025;
+      currentYear = START_YEAR;
       usedIndices = [];
+      decisionHistory = [];
+      window._currentScenario = null;
+      isResolving = false;
       updateStats();
       showQuestion();
     }
 
     function toggleFS() {
       if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } else if (document.exitFullscreen) {
         document.exitFullscreen();
       }
     }
