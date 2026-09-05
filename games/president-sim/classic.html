@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🇺🇸 If You Were President — 2026 Edition 🇺🇸</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #0077ff;
+      --cyan: #00aaff;
+      --gold: #ffd700;
+      --red: #ff4400;
+      --green: #00ff88;
+      --glow-blue: rgba(0,119,255,0.5);
+    }
+
+    body {
+      background: radial-gradient(ellipse at top, #0a0e1a 0%, #000 100%);
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
+      padding: 20px 20px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated star background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(2px 2px at 45% 85%, rgba(0,170,255,0.3) 0%, transparent 100%),
+        radial-gradient(circle at 50% 50%, rgba(0,119,255,0.07) 0%, transparent 60%);
+      pointer-events: none;
+      animation: starPulse 6s ease-in-out infinite;
+    }
+
+    @keyframes starPulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* Header */
+    h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.6em, 5vw, 2.6em);
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-shadow: 0 0 20px var(--blue), 0 0 50px var(--blue);
+      margin-bottom: 4px;
+      z-index: 1;
+      text-align: center;
+      animation: titlePulse 4s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% { text-shadow: 0 0 20px var(--blue), 0 0 40px var(--blue); }
+      50% { text-shadow: 0 0 30px var(--cyan), 0 0 70px var(--cyan), 0 0 100px var(--blue); }
+    }
+
+    .edition-tag {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(0.65em, 2vw, 0.9em);
+      color: var(--gold);
+      letter-spacing: 4px;
+      margin-bottom: 6px;
+      text-shadow: 0 0 10px var(--gold);
+      z-index: 1;
+    }
+
+    .subtitle {
+      font-size: clamp(0.95em, 2.5vw, 1.15em);
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 20px;
+      z-index: 1;
+      letter-spacing: 1px;
+    }
+
+    .disclosure {
+      max-width: 720px;
+      margin: -10px 0 16px;
+      color: rgba(255,255,255,0.42);
+      font-size: clamp(0.7em, 1.7vw, 0.82em);
+      letter-spacing: 0.35px;
+      line-height: 1.4;
+      text-align: center;
+      z-index: 1;
+    }
+
+    /* Top bar */
+    #topBar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 90%;
+      max-width: 720px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 12px;
+      z-index: 1;
+    }
+
+    .top-badge {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(0.85em, 2vw, 1.05em);
+      color: var(--gold);
+      background: rgba(0,0,0,0.6);
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(255,215,0,0.4);
+      backdrop-filter: blur(10px);
+      letter-spacing: 1px;
+    }
+
+    /* Back button */
+    .back-btn {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(0.75em, 1.8vw, 0.9em);
+      color: #fff;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(0,119,255,0.45);
+      backdrop-filter: blur(10px);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s;
+      z-index: 1;
+    }
+    .back-btn:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 4px 20px rgba(0,119,255,0.35);
+      transform: translateX(-2px);
+    }
+
+    /* Approval rating */
+    #approvalBar {
+      width: 90%;
+      max-width: 720px;
+      background: rgba(0,0,0,0.55);
+      border-radius: 12px;
+      border: 1.5px solid rgba(0,119,255,0.25);
+      padding: 10px 20px;
+      margin-bottom: 12px;
+      z-index: 1;
+      backdrop-filter: blur(10px);
+    }
+
+    .approval-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: clamp(0.85em, 2vw, 1em);
+    }
+
+    .approval-label {
+      min-width: 130px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.75);
+      letter-spacing: 0.5px;
+    }
+
+    .approval-track {
+      flex: 1;
+      height: 18px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 9px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .approval-fill {
+      height: 100%;
+      border-radius: 9px;
+      transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .approval-fill::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%);
+      animation: shimmer 2.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(200%); }
+    }
+
+    .approval-pct {
+      min-width: 42px;
+      text-align: right;
+      font-weight: 700;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.9em;
+    }
+
+    #approval-fill   { background: linear-gradient(to right, #00ff88, #0077ff); }
+    #rebellion-fill  { background: linear-gradient(to right, #ffaa00, #ff4400); }
+    #morality-fill   { background: linear-gradient(to right, #88ff00, #00ff88); }
+    #economy-fill    { background: linear-gradient(to right, #ffd700, #ffaa00); }
+    #global-fill     { background: linear-gradient(to right, #cc44ff, #0077ff); }
+
+    /* Game box */
+    #gameBox {
+      width: 90%;
+      max-width: 720px;
+      background: rgba(10,14,30,0.95);
+      padding: 32px 30px;
+      border-radius: 18px;
+      border: 2px solid rgba(0,119,255,0.45);
+      box-shadow: 0 0 60px rgba(0,119,255,0.3), inset 0 0 40px rgba(0,119,255,0.06);
+      margin: 16px 0;
+      backdrop-filter: blur(12px);
+      z-index: 1;
+      transition: box-shadow 0.4s;
+    }
+
+    #gameBox:hover {
+      box-shadow: 0 0 80px rgba(0,119,255,0.4), inset 0 0 50px rgba(0,119,255,0.08);
+    }
+
+    .scenario-tag {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(0.6em, 1.5vw, 0.75em);
+      color: var(--cyan);
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+      opacity: 0.8;
+      text-transform: uppercase;
+    }
+
+    #gameBox h2 {
+      font-family: 'Orbitron', monospace;
+      color: var(--cyan);
+      margin-bottom: 16px;
+      font-size: clamp(1.1em, 2.5vw, 1.5em);
+      font-weight: 700;
+    }
+
+    .context-blurb {
+      font-size: clamp(0.75em, 1.8vw, 0.88em);
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 14px;
+      line-height: 1.5;
+      font-style: italic;
+      border-left: 2px solid rgba(0,170,255,0.3);
+      padding-left: 12px;
+    }
+
+    #gameBox .question-text {
+      font-size: clamp(1em, 2.2vw, 1.2em);
+      line-height: 1.65;
+      margin-bottom: 26px;
+      color: #e8e8f0;
+      font-weight: 600;
+    }
+
+    .btn-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, rgba(0,119,255,0.15) 0%, rgba(0,170,255,0.08) 100%);
+      border: 1.5px solid rgba(0,119,255,0.45);
+      padding: 16px 22px;
+      color: #e8e8f0;
+      cursor: pointer;
+      border-radius: 10px;
+      font-size: clamp(0.9em, 2vw, 1.05em);
+      font-weight: 700;
+      font-family: 'Rajdhani', sans-serif;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.3px;
+      line-height: 1.4;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,119,255,0.3), rgba(0,170,255,0.15));
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .btn:hover::before { opacity: 1; }
+
+    .btn:hover {
+      border-color: var(--cyan);
+      transform: translateX(4px);
+      box-shadow: 0 4px 20px rgba(0,119,255,0.35), -3px 0 0 var(--cyan);
+      color: #fff;
+    }
+
+    .btn:active { transform: translateX(2px) scale(0.99); }
+
+    .btn span { position: relative; z-index: 1; }
+
+    .btn:disabled,
+    .btn[aria-disabled="true"] {
+      cursor: default;
+      opacity: 0.68;
+    }
+
+    .btn:disabled:hover,
+    .btn[aria-disabled="true"]:hover {
+      border-color: rgba(0,119,255,0.45);
+      box-shadow: none;
+      transform: none;
+      color: #e8e8f0;
+    }
+
+    /* Consequence report */
+    .decision-result {
+      text-align: center;
+      animation: endingReveal 0.45s ease-out;
+    }
+
+    .decision-result h2 {
+      color: var(--green);
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.05em, 2.4vw, 1.35em);
+      margin-bottom: 12px;
+    }
+
+    .decision-selection {
+      color: rgba(255,255,255,0.78);
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .decision-selection strong { color: #fff; }
+
+    .impact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0 auto 18px;
+    }
+
+    .impact-chip {
+      border: 1px solid rgba(0,170,255,0.28);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.28);
+      padding: 9px 8px;
+      color: rgba(255,255,255,0.62);
+      font-size: 0.82em;
+    }
+
+    .impact-chip strong {
+      display: block;
+      color: var(--gold);
+      font-family: 'Orbitron', monospace;
+      font-size: 1.05em;
+      margin-top: 3px;
+    }
+
+    .next-briefing {
+      color: rgba(255,255,255,0.42);
+      font-size: 0.82em;
+      letter-spacing: 0.5px;
+    }
+
+    .legacy-log {
+      margin-top: 20px;
+      border-top: 1px solid rgba(0,119,255,0.25);
+      padding-top: 12px;
+      text-align: left;
+      font-size: 0.86em;
+      line-height: 1.55;
+    }
+
+    .legacy-log summary {
+      cursor: pointer;
+      color: rgba(255,255,255,0.72);
+      font-family: 'Orbitron', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .legacy-log ol {
+      margin: 10px 0 0 20px;
+      color: rgba(255,255,255,0.72);
+    }
+
+    .legacy-log li { padding: 2px 0; }
+
+    /* Impact toast */
+    .event-impact {
+      position: fixed;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.8em;
+      font-family: 'Orbitron', monospace;
+      animation: impactAnim 1.1s ease-out forwards;
+      pointer-events: none;
+      z-index: 1000;
+      text-shadow: 0 0 20px currentColor;
+      letter-spacing: 2px;
+    }
+
+    @keyframes impactAnim {
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+      40%  { opacity: 1; transform: translate(-50%, -60%) scale(1.15); }
+      100% { opacity: 0; transform: translate(-50%, -85%) scale(0.9); }
+    }
+
+    /* Endings */
+    .ending {
+      font-size: clamp(1.3em, 3.5vw, 1.9em);
+      padding: 30px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      animation: endingReveal 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes endingReveal {
+      0%  { opacity: 0; transform: scale(0.85) translateY(10px); }
+      100%{ opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .win  { background: linear-gradient(135deg, #00ff88, #00ccaa); color: #001a0d; box-shadow: 0 0 60px rgba(0,255,136,0.6); }
+    .lose { background: linear-gradient(135deg, #ff4400, #cc0000); box-shadow: 0 0 60px rgba(255,68,0,0.7); }
+    .neutral { background: linear-gradient(135deg, #ffaa00, #ffd700); color: #1a0d00; box-shadow: 0 0 60px rgba(255,170,0,0.6); }
+
+    .ending h2 { font-family: 'Orbitron', monospace; font-size: 1em; margin-bottom: 8px; }
+    .ending-sub { font-size: 0.55em; margin-top: 6px; font-weight: 600; opacity: 0.9; }
+    .ending-score { margin-top: 16px; font-size: 0.65em; font-weight: 700; }
+    .ending-stats { font-size: 0.42em; margin-top: 12px; opacity: 0.85; line-height: 1.8; font-family: 'Orbitron', monospace; }
+    .new-high { color: var(--gold); font-size: 0.55em; margin-top: 8px; font-family: 'Orbitron', monospace; text-shadow: 0 0 10px var(--gold); }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .btn-restart {
+      background: linear-gradient(135deg, rgba(255,68,0,0.2), rgba(255,68,0,0.1));
+      border-color: rgba(255,68,0,0.6);
+      text-align: center;
+      min-width: 180px;
+      flex: 1;
+    }
+
+    .btn-restart:hover { border-color: var(--red); box-shadow: 0 4px 20px rgba(255,68,0,0.4), -3px 0 0 var(--red); }
+
+    /* Progress bar */
+    .progress-strip {
+      width: 90%;
+      max-width: 720px;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      margin-bottom: 14px;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(to right, var(--blue), var(--cyan));
+      border-radius: 2px;
+      transition: width 0.8s ease;
+      box-shadow: 0 0 8px var(--cyan);
+    }
+
+    @media (max-width: 600px) {
+      #gameBox { padding: 22px 18px; }
+      .approval-label { min-width: 90px; font-size: 0.85em; }
+      #topBar { justify-content: center; }
+      .impact-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="edition-tag">2026 EDITION · UPDATED JUNE 2026</div>
+  <h1>🇺🇸 IF YOU WERE PRESIDENT 🇺🇸</h1>
+  <p class="subtitle">Real crises. Real consequences. What's your legacy?</p>
+  <p class="disclosure">Independent simulation · fictional decisions inspired by public headlines · not affiliated with the White House</p>
+
+  <div id="topBar">
+    <div class="top-badge" id="yearDisplay">📅 Year: 2025</div>
+    <div class="top-badge" id="highscoreDisplay">🏆 Best: 0%</div>
+    <a class="back-btn" href="https://www.heartbeatobservatory.com/games/">← Games</a>
+  </div>
+
+  <div class="progress-strip" role="progressbar" aria-label="Presidential term progress" aria-valuemin="0" aria-valuemax="16" aria-valuenow="0" aria-valuetext="0 of 16 decisions complete">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+
+  <div id="approvalBar">
+    <div class="approval-row">
+      <div class="approval-label">🕊️ Approval</div>
+      <div class="approval-track"><div id="approval-fill" class="approval-fill" style="width:50%"></div></div>
+      <div class="approval-pct" id="approval-val">50%</div>
+    </div>
+    <div class="approval-row" style="margin-top:8px">
+      <div class="approval-label">🔥 Civil Unrest</div>
+      <div class="approval-track"><div id="rebellion-fill" class="approval-fill" style="width:50%"></div></div>
+      <div class="approval-pct" id="rebellion-val">50%</div>
+    </div>
+    <div class="approval-row" style="margin-top:8px">
+      <div class="approval-label">⚖️ Moral Standing</div>
+      <div class="approval-track"><div id="morality-fill" class="approval-fill" style="width:50%"></div></div>
+      <div class="approval-pct" id="morality-val">50%</div>
+    </div>
+    <div class="approval-row" style="margin-top:8px">
+      <div class="approval-label">💰 Economy</div>
+      <div class="approval-track"><div id="economy-fill" class="approval-fill" style="width:50%"></div></div>
+      <div class="approval-pct" id="economy-val">50%</div>
+    </div>
+    <div class="approval-row" style="margin-top:8px">
+      <div class="approval-label">🌐 Global Standing</div>
+      <div class="approval-track"><div id="global-fill" class="approval-fill" style="width:50%"></div></div>
+      <div class="approval-pct" id="global-val">50%</div>
+    </div>
+  </div>
+
+  <div id="gameBox" role="region" aria-live="polite" aria-label="Presidential briefing"></div>
+
+  <script>
+    // --- State ---
+    let approval = 50, rebellion = 50, morality = 50, economy = 50, global = 50;
+    let round = 1;
+    const MAX_ROUNDS = 16;
+    const START_YEAR = 2025;
+    const YEARS_IN_TERM = 4;
+    const DECISIONS_PER_YEAR = MAX_ROUNDS / YEARS_IN_TERM;
+    let currentYear = START_YEAR;
+    let highScore = 0;
+    try {
+      highScore = parseInt(localStorage.getItem('presidentHighScore2026'), 10) || 0;
+    } catch (_) {
+      // The game still works when storage is unavailable (for example in a locked-down browser).
+    }
+    let usedIndices = [];
+    let decisionHistory = [];
+    let isResolving = false;
+
+    // --- Scenarios (all grounded in 2025-2026 real events) ---
+    const scenarios = [
+      {
+        tag: "TRADE WAR · 2025",
+        context: "The US launched sweeping tariffs on 60+ nations in early 2025. Supply chains fracture. Allies are furious. Inflation is climbing again.",
+        text: "Your economic team says the tariff wall is crushing American consumers — prices up 12% on imported goods. Business groups demand relief. But walking it back looks weak.",
+        choices: [
+          { t: "Negotiate a deal — lower tariffs for market access 🤝", a:10, r:-10, m:8, e:5, g:15 },
+          { t: "Double down — tariffs are leverage, we hold the line 🛡️", a:-8, r:12, m:-5, e:-12, g:-15 }
+        ]
+      },
+      {
+        tag: "AI WORKFORCE · 2026",
+        context: "Amazon axed 30,000 jobs citing AI automation. Entry-level software developer employment fell 20% since 2024. The AI skills gap is creating a two-track economy.",
+        text: "150,000 tech workers lost jobs in Q1 2026 alone. Congress demands action. The AI lobby says regulation will kill American competitiveness. Labor unions want a moratorium.",
+        choices: [
+          { t: "Create an AI Transition Fund — reskilling & income support 🏫", a:15, r:-15, m:20, e:-12, g:5 },
+          { t: "Let the market adapt — protect AI investment 🤖", a:-12, r:20, m:-15, e:18, g:2 }
+        ]
+      },
+      {
+        tag: "UKRAINE · JUNE 2026",
+        context: "Zelensky sent a direct letter to Putin proposing a meeting. Putin hasn't rejected it outright. A Russian drone struck a Romanian port — an EU and NATO member — last week.",
+        text: "NATO allies are demanding a formal response to Russia's drone strike on Romanian soil. Article 5 may apply. If you act militarily, you risk WWIII. If you don't, the alliance looks hollow.",
+        choices: [
+          { t: "Invoke Article 5 — convene NATO emergency summit ⚔️", a:5, r:15, m:5, e:-10, g:20 },
+          { t: "Call it 'accidental' — pursue diplomatic channels 🕊️", a:-10, r:-5, m:-10, e:5, g:-15 }
+        ]
+      },
+      {
+        tag: "IRAN CRISIS · 2025",
+        context: "US-Iran nuclear negotiations collapsed in 2025. Iran is now estimated to be weeks from enriching weapons-grade uranium. Israel is demanding action.",
+        text: "Your intelligence chiefs give you two options before Iran crosses the nuclear threshold. A strike would derail talks for a generation. Sanctions alone may be too slow.",
+        choices: [
+          { t: "Authorize targeted strikes on enrichment facilities 💣", a:-5, r:20, m:-15, e:-8, g:-10 },
+          { t: "Maximum sanctions + emergency diplomacy 📜", a:10, r:-5, m:12, e:-5, g:15 }
+        ]
+      },
+      {
+        tag: "HEALTHCARE · 2026",
+        context: "85% of Democrats and 60%+ of Americans now say healthcare affordability is a 'very big problem.' Emergency room closures hit rural areas hardest. Medical debt is the #1 cause of bankruptcy.",
+        text: "Your party is split. The progressive wing wants Medicare for All. Moderates want a public option. The insurance industry threatens to fund opponents in the midterms.",
+        choices: [
+          { t: "Push Medicare for All through reconciliation 🏥", a:15, r:25, m:25, e:-30, g:5 },
+          { t: "Pass a public option as a compromise 📋", a:10, r:5, m:15, e:-15, g:8 },
+        ]
+      },
+      {
+        tag: "AI REGULATION · 2026",
+        context: "Pope Leo XIV issued an encyclical calling AI copyright theft a moral crisis. Bernie Sanders called AI companies 'oligarchs stealing creative work.' Stanford's AI Index warns of labor market disruption.",
+        text: "A landmark AI Copyright and Labor Protection Act is on your desk. Tech giants say it'll hamper US competitiveness vs China. Artists, writers, and musicians demand you sign it.",
+        choices: [
+          { t: "Sign the AI protection bill 🖊️", a:12, r:-10, m:30, e:-15, g:10 },
+          { t: "Veto and propose weaker industry-led standards 🏢", a:-10, r:15, m:-25, e:20, g:-5 }
+        ]
+      },
+      {
+        tag: "RURAL AMERICA · 2026",
+        context: "Trump's net approval in rural America dropped from +27 to -6 in 18 months. Farm bankruptcies are up. Tariffs hurt farmers selling to China. The rural coalition is fracturing.",
+        text: "Farmers are furious — tariffs killed their export markets, and input costs are up 30%. Your ag secretary warns of mass farm failures before the election. The populist base demands loyalty.",
+        choices: [
+          { t: "Exempt agricultural products from tariffs 🌾", a:15, r:-10, m:5, e:-5, g:10 },
+          { t: "Announce $40B farm subsidy package 💵", a:10, r:-5, m:0, e:-20, g:0 }
+        ]
+      },
+      {
+        tag: "NATIONAL DEBT · 2026",
+        context: "The US deficit hit a record in 2025. Interest payments on the national debt now exceed defense spending. Pew Research finds 74% of Americans see the deficit as a 'very big problem.'",
+        text: "Your Treasury Secretary warns the debt ceiling will be breached in 60 days. Congress is gridlocked. The only options are painful cuts or raising the ceiling and angering fiscal hawks.",
+        choices: [
+          { t: "Pass clean debt ceiling raise — deal with cuts later 📈", a:5, r:10, m:-5, e:10, g:5 },
+          { t: "Force across-the-board spending cuts 10% ✂️", a:-15, r:20, m:-10, e:15, g:-5 }
+        ]
+      },
+      {
+        tag: "IMMIGRATION · 2026",
+        context: "Deportation rates hit record highs in 2025. Illegal immigration concern dropped from 48% to 38% nationally. But sanctuary cities are suing the federal government over enforcement.",
+        text: "A federal judge blocked your mass deportation program. ICE agents are in standoff with local police in three major cities. The far-right flank demands defiance of the court.",
+        choices: [
+          { t: "Respect the court ruling — appeal through proper channels ⚖️", a:8, r:-15, m:20, e:0, g:10 },
+          { t: "Order ICE to continue — dare the courts to stop you 🚔", a:-10, r:25, m:-25, e:0, g:-15 }
+        ]
+      },
+      {
+        tag: "CHINA · TECH WAR",
+        context: "China is racing to achieve AI superintelligence. US chip export controls are slowing Beijing but not stopping it. Taiwan's chip fabs are on high alert.",
+        text: "Your Defense and Commerce secretaries propose expanding chip sanctions to cut off China's AI development. China threatens to halt rare earth exports — which could cripple US manufacturing.",
+        choices: [
+          { t: "Expand chip export controls — accept rare earth risk 🛑", a:-5, r:8, m:5, e:-12, g:10 },
+          { t: "Negotiate — trade access for technology freeze 🤝", a:10, r:-5, m:5, e:8, g:5 }
+        ]
+      },
+      {
+        tag: "CLIMATE · ENERGY",
+        context: "2025 saw record global temperatures for the third consecutive year. The US withdrew from the Paris Agreement again. Extreme weather caused $400B in damages domestically.",
+        text: "A catastrophic hurricane season has devastated the Gulf Coast for the second year running. Your climate envoy says the window to avoid 2°C warming is closing. The oil lobby donated $800M in the last cycle.",
+        choices: [
+          { t: "Declare climate emergency — executive order clean energy push 🌱", a:10, r:20, m:20, e:-15, g:18 },
+          { t: "Prioritize fossil fuel production — lower gas prices now ⛽", a:-5, r:-15, m:-20, e:15, g:-18 }
+        ]
+      },
+      {
+        tag: "SOCIAL MEDIA · SPEECH",
+        context: "Social media platforms amplified election misinformation across 30+ countries in 2025. The EU fined Meta $4B. Congress is deadlocked on a US equivalent law.",
+        text: "A Senate hearing reveals that algorithms radicalized perpetrators of three domestic terror attacks in 2025. Platforms claim any restriction is unconstitutional. The violence continues.",
+        choices: [
+          { t: "Pass platform liability legislation 📱", a:12, r:15, m:18, e:-8, g:12 },
+          { t: "First Amendment protection — no government regulation 🗣️", a:-8, r:-12, m:-15, e:10, g:-5 }
+        ]
+      },
+      {
+        tag: "SPACE RACE · 2026",
+        context: "China landed a crewed mission on the Moon in April 2026, planting their flag first. Artemis III is delayed to 2028. National pride is at stake.",
+        text: "NASA says an emergency budget injection could accelerate the Moon landing to late 2027. Critics argue the money is needed for crumbling infrastructure and homelessness. China is already building a lunar base.",
+        choices: [
+          { t: "Emergency NASA funding — win the new Space Race 🚀", a:5, r:-8, m:5, e:-18, g:15 },
+          { t: "Fund domestic priorities — Earth first 🌍", a:10, r:5, m:10, e:5, g:-8 }
+        ]
+      },
+      {
+        tag: "PRISON REFORM · 2026",
+        context: "The US still has more incarcerated people than any nation on Earth. Private prison stocks hit record highs in 2025. Recidivism rates haven't improved in 30 years.",
+        text: "A bipartisan criminal justice bill would end private prisons and mandate rehabilitation programs. The tough-on-crime coalition warns it's 'soft.' Private prison companies threaten to fund a recall campaign.",
+        choices: [
+          { t: "Sign the reform bill — end private prisons ⚖️", a:12, r:18, m:30, e:-15, g:12 },
+          { t: "Reject reform — law and order platform holds 🚔", a:-8, r:-15, m:-25, e:12, g:-8 }
+        ]
+      },
+      {
+        tag: "TECH OLIGARCHY · 2026",
+        context: "Three AI companies now control more compute than the rest of the world combined. The richest 1% gained 40% of all new wealth created since 2020. Antitrust enforcers are outgunned.",
+        text: "Your DOJ filed the largest antitrust case in history against a Big Tech monopoly. The company threatens to move its HQ overseas, taking 80,000 jobs with it. Wall Street is watching.",
+        choices: [
+          { t: "Press the antitrust case — break them up 🔨", a:15, r:10, m:25, e:-15, g:8 },
+          { t: "Settle for behavioral remedies — protect the jobs 🤝", a:-5, r:-5, m:-15, e:12, g:-5 }
+        ]
+      },
+      {
+        tag: "CORRUPTION SCANDAL",
+        context: "Money in politics is the top bipartisan concern — 79% of Democrats and 70% of Republicans call it a 'very big problem.'",
+        text: "Your chief of staff is implicated in a pay-to-play scheme involving defense contracts. The evidence is damning. Covering it up would end your presidency if discovered. Firing them publicly tanks your party.",
+        choices: [
+          { t: "Fire them immediately — full independent investigation 🔍", a:15, r:-10, m:35, e:-5, g:15 },
+          { t: "Stand by your team — spin it as a political hit job 🎭", a:-15, r:15, m:-35, e:5, g:-15 }
+        ]
+      },
+      {
+        tag: "HOUSING CRISIS · 2026",
+        context: "Median home prices are 8x median income in major cities. 650,000 Americans are unhoused on any given night — a record high. Gen Z homeownership is at an all-time low.",
+        text: "A sweeping housing bill proposes federal zoning reform and $200B in affordable housing construction. The real estate lobby calls it socialism. Young voters are watching this one closely.",
+        choices: [
+          { t: "Sign the housing bill — federal zoning reform 🏘️", a:18, r:12, m:20, e:-18, g:8 },
+          { t: "Let the market fix it — block federal overreach 🏠", a:-12, r:-10, m:-18, e:12, g:-5 }
+        ]
+      },
+      {
+        tag: "CRYPTOCURRENCY · 2026",
+        context: "Bitcoin hit $185,000 in early 2026. Multiple states passed laws recognizing crypto as legal tender. The SEC and IRS are at war over jurisdiction. Banks lobby hard against it.",
+        text: "A bill to make Bitcoin a recognized reserve asset alongside gold is on your desk. The Fed warns it threatens monetary stability. Crypto advocates say it's the future of sovereignty.",
+        choices: [
+          { t: "Sign it — digital assets are the future ₿", a:5, r:-5, m:-5, e:20, g:5 },
+          { t: "Veto — maintain dollar supremacy and Fed control 🏦", a:-5, r:5, m:10, e:-10, g:-5 }
+        ]
+      },
+      {
+        tag: "DOMESTIC EXTREMISM",
+        context: "Political violence incidents in the US increased 60% in 2025. Both left and right cite the other side as the threat. The FBI is overwhelmed. Three governors have requested National Guard.",
+        text: "Domestic extremist cells have been caught planning coordinated attacks on election infrastructure ahead of midterms. Your intel suggests both domestic and foreign actors are involved.",
+        choices: [
+          { t: "Declare domestic terrorism emergency — new FBI taskforce 🛡️", a:12, r:20, m:10, e:-5, g:10 },
+          { t: "Handle through existing law enforcement — avoid escalation 🔒", a:5, r:-10, m:5, e:0, g:5 }
+        ]
+      },
+      {
+        tag: "UNIVERSAL BASIC INCOME",
+        context: "With AI automation reshaping the labor market, UBI pilots in 5 states showed 35% reduction in poverty with minimal work disincentive effects. The price tag is massive.",
+        text: "Your economic advisory council proposes a national UBI pilot of $1,200/month for the bottom 40% of earners, funded by a financial transaction tax. Business groups and fiscal hawks are furious.",
+        choices: [
+          { t: "Launch the national UBI pilot 💸", a:18, r:20, m:22, e:-28, g:15 },
+          { t: "Reject UBI — workforce development instead 🔧", a:-10, r:-12, m:-15, e:12, g:-5 }
+        ]
+      }
+    ];
+
+    function clamp(v) { return Math.max(0, Math.min(100, Math.round(v))); }
+
+    function updateStats() {
+      const ids = ['approval','rebellion','morality','economy','global'];
+      const vals = [approval, rebellion, morality, economy, global];
+      ids.forEach((id, i) => {
+        document.getElementById(`${id}-fill`).style.width = vals[i] + '%';
+        document.getElementById(`${id}-val`).textContent = vals[i] + '%';
+      });
+      const completed = Math.min(Math.max(round - 1, 0), MAX_ROUNDS);
+      document.getElementById('progressFill').style.width = (completed / MAX_ROUNDS * 100) + '%';
+      const progressStrip = document.querySelector('.progress-strip');
+      progressStrip.setAttribute('aria-valuenow', completed);
+      progressStrip.setAttribute('aria-valuetext', `${completed} of ${MAX_ROUNDS} decisions complete`);
+    }
+
+    function showImpact(text, color) {
+      const el = document.createElement('div');
+      el.className = 'event-impact';
+      el.textContent = text;
+      el.style.color = color;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1100);
+    }
+
+    function getQuestion() {
+      if (usedIndices.length >= scenarios.length) usedIndices = [];
+      const available = scenarios.map((_, i) => i).filter(i => !usedIndices.includes(i));
+      const pick = available[Math.floor(Math.random() * available.length)];
+      usedIndices.push(pick);
+      return scenarios[pick];
+    }
+
+    function showQuestion() {
+      if (round > MAX_ROUNDS) return endGame();
+      currentYear = START_YEAR + Math.floor((round - 1) / DECISIONS_PER_YEAR);
+      document.getElementById('yearDisplay').textContent = `📅 Year: ${currentYear}`;
+
+      const q = getQuestion();
+      window._currentScenario = q;
+      document.getElementById('gameBox').innerHTML = `
+        <div class="scenario-tag">⚡ ${q.tag}</div>
+        <h2>Decision ${round} / ${MAX_ROUNDS}</h2>
+        <div class="context-blurb">${q.context}</div>
+        <p class="question-text">${q.text}</p>
+        <div class="btn-container">
+          ${q.choices.map((c, i) => `<button type="button" class="btn" onclick="choose(${i}, event)"><span>${c.t}</span></button>`).join('')}
+        </div>
+      `;
+      isResolving = false;
+    }
+
+    function showDecisionFeedback(q, c, impacts) {
+      const impactMarkup = impacts.map((impact) => {
+        const delta = impact.after - impact.before;
+        const sign = delta > 0 ? '+' : '';
+        return `<div class="impact-chip"><span>${impact.label}</span><strong>${sign}${delta}%</strong></div>`;
+      }).join('');
+
+      document.getElementById('gameBox').innerHTML = `
+        <div class="decision-result">
+          <div class="scenario-tag">📡 DECISION RECORDED · ${q.tag}</div>
+          <h2>Consequences are moving</h2>
+          <p class="decision-selection">You chose: <strong>${c.t}</strong></p>
+          <div class="impact-grid">${impactMarkup}</div>
+          <p class="next-briefing">Your next briefing is arriving…</p>
+        </div>
+      `;
+    }
+
+    function choose(index) {
+      const q = window._currentScenario;
+      if (isResolving || !q || !q.choices[index]) return;
+      isResolving = true;
+
+      const c = q.choices[index];
+      document.querySelectorAll('#gameBox .btn').forEach((button) => {
+        button.disabled = true;
+        button.setAttribute('aria-disabled', 'true');
+      });
+
+      const impacts = [
+        { label: 'Approval', before: approval, after: clamp(approval + c.a) },
+        { label: 'Civil Unrest', before: rebellion, after: clamp(rebellion + c.r) },
+        { label: 'Moral Standing', before: morality, after: clamp(morality + c.m) },
+        { label: 'Economy', before: economy, after: clamp(economy + c.e) },
+        { label: 'Global Standing', before: global, after: clamp(global + c.g) }
+      ];
+
+      approval = impacts[0].after;
+      rebellion = impacts[1].after;
+      morality = impacts[2].after;
+      economy = impacts[3].after;
+      global = impacts[4].after;
+      decisionHistory.push({ tag: q.tag, choice: c.t });
+
+      // Impact flash
+      const net = c.a + c.m + c.g;
+      if      (net >= 30)  showImpact('✅ STRONG MOVE', '#00ff88');
+      else if (net >= 10)  showImpact('👍 SOLID', '#88ff00');
+      else if (net <= -30) showImpact('💀 CRISIS', '#ff4400');
+      else if (net <= -10) showImpact('⚠️ RISKY', '#ffaa00');
+      else if (c.e > 15)   showImpact('💰 BOOM', '#ffd700');
+      else if (c.r > 15)   showImpact('🔥 UNREST', '#ff6600');
+      else                 showImpact('📋 NOTED', '#00aaff');
+
+      showDecisionFeedback(q, c, impacts);
+      round++;
+      updateStats();
+      setTimeout(showQuestion, 1300);
+    }
+
+    function getEnding() {
+      const peaceScore   = approval;
+      const stabilityScore = 100 - rebellion;
+      const overallAvg   = (approval + stabilityScore + morality + economy + global) / 5;
+
+      // Critical failures
+      if (rebellion > 88)   return { text: "💥 CIVIL WAR", sub: "The nation tore itself apart under your watch", cls: "lose", score: 5 };
+      if (global < 15)      return { text: "☢️ WORLD AT WAR", sub: "Your decisions triggered a global catastrophe", cls: "lose", score: 8 };
+      if (morality < 12)    return { text: "😈 AUTHORITARIAN REGIME", sub: "History will remember you as a despot", cls: "lose", score: 10 };
+      if (economy < 12)     return { text: "📉 ECONOMIC COLLAPSE", sub: "Bread lines. Tent cities. A nation in ruins.", cls: "lose", score: 12 };
+      if (approval < 15)    return { text: "🏚️ FORCED RESIGNATION", sub: "Impeached and removed. A disgraced legacy.", cls: "lose", score: 15 };
+
+      // Legendary outcomes
+      if (approval > 80 && morality > 80 && global > 80 && rebellion < 20 && economy > 65)
+        return { text: "🌟 GOLDEN AGE", sub: "Your presidency defined a generation. Mount Rushmore material.", cls: "win", score: 100 };
+
+      if (global > 85 && morality > 75 && rebellion < 25 && economy > 55)
+        return { text: "🕊️ WORLD PEACEMAKER", sub: "You brokered the deals that pulled civilization back from the edge.", cls: "win", score: 96 };
+
+      if (economy > 85 && rebellion < 30 && approval > 65)
+        return { text: "💎 UNPRECEDENTED PROSPERITY", sub: "Every American felt it. The numbers don't lie.", cls: "win", score: 93 };
+
+      if (morality > 85 && approval > 70 && rebellion < 35)
+        return { text: "⚖️ JUST PRESIDENCY", sub: "You held the line on integrity when it cost you most.", cls: "win", score: 90 };
+
+      // Good outcomes
+      if (overallAvg > 68 && rebellion < 40)
+        return { text: "🏛️ RESPECTED PRESIDENCY", sub: "Not perfect. But history will be kind.", cls: "neutral", score: 78 };
+
+      if (economy > 72 && approval > 55)
+        return { text: "📈 ECONOMIC PRESIDENCY", sub: "The markets loved you. The people mostly did too.", cls: "neutral", score: 72 };
+
+      if (morality > 72 && global > 65)
+        return { text: "🌍 MORAL LEADER", sub: "You chose principle over politics, more often than not.", cls: "neutral", score: 70 };
+
+      // Moderate failures
+      if (rebellion > 70 || economy < 30)
+        return { text: "🌪️ NATION IN CHAOS", sub: "You inherited a mess and made it worse.", cls: "lose", score: 25 };
+
+      if (approval < 35 && rebellion > 55)
+        return { text: "⚔️ POLITICAL COLLAPSE", sub: "Your party abandoned you. Your legacy is a warning.", cls: "lose", score: 28 };
+
+      // Mediocre
+      return { text: "🤷 A MIXED LEGACY", sub: "Neither triumph nor disaster. History will shrug.", cls: "neutral", score: 50 };
+    }
+
+    function endGame() {
+      const e = getEnding();
+      let newHigh = '';
+
+      if (e.score > highScore) {
+        highScore = e.score;
+        try {
+          localStorage.setItem('presidentHighScore2026', highScore);
+        } catch (_) {
+          // High-score persistence is optional; never block the ending screen.
+        }
+        document.getElementById('highscoreDisplay').textContent = `🏆 Best: ${highScore}%`;
+        newHigh = `<div class="new-high">🎉 NEW HIGH SCORE!</div>`;
+      }
+
+      document.getElementById('progressFill').style.width = '100%';
+
+      document.getElementById('gameBox').innerHTML = `
+        <div class="ending ${e.cls}">
+          <h2>${e.text}</h2>
+          <p class="ending-sub">${e.sub}</p>
+          <p class="ending-score">Final Score: <strong>${e.score}%</strong></p>
+          ${newHigh}
+          <div class="ending-stats">
+            Approval: ${approval}% &nbsp;|&nbsp; Civil Unrest: ${rebellion}%<br>
+            Moral Standing: ${morality}% &nbsp;|&nbsp; Economy: ${economy}% &nbsp;|&nbsp; Global: ${global}%
+          </div>
+        </div>
+        <details class="legacy-log">
+          <summary>Review your ${decisionHistory.length} decisions</summary>
+          <ol>${decisionHistory.map((item) => `<li><strong>${item.tag}</strong> — ${item.choice}</li>`).join('')}</ol>
+        </details>
+        <div class="action-row">
+          <button type="button" class="btn btn-restart" onclick="restart()"><span>🔄 Play Again</span></button>
+          <button type="button" class="btn" onclick="toggleFS()"><span>📱 Fullscreen</span></button>
+        </div>
+      `;
+    }
+
+    function restart() {
+      approval = rebellion = morality = economy = global = 50;
+      round = 1;
+      currentYear = START_YEAR;
+      usedIndices = [];
+      decisionHistory = [];
+      window._currentScenario = null;
+      isResolving = false;
+      updateStats();
+      showQuestion();
+    }
+
+    function toggleFS() {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+
+    // Boot
+    document.getElementById('highscoreDisplay').textContent = `🏆 Best: ${highScore}%`;
+    updateStats();
+    showQuestion();
+  </script>
+</body>
+</html>
