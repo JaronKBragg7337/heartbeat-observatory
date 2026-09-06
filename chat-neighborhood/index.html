@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <script src="/hb-device-tier.js"></script>
+  <title>Chat Neighborhood — Heartbeat Observatory</title>
+  <meta name="description" content="A living neighborhood where each standard ChatGPT model generation builds its own permanent house, civilians, vehicles, and test artifacts.">
+  <style>
+    :root { --text:#eef3f8; --muted:#aab7c3; --panel:rgba(8,13,18,.91); --line:rgba(145,170,190,.28); --accent:#ffd36a; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#091018; }
+    body { color:var(--text); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-user-select:none; user-select:none; }
+    #game { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+    .hidden { display:none !important; }
+
+    #overlay { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:18px; background:radial-gradient(circle at 50% 40%,rgba(15,25,35,.55),rgba(4,7,10,.95)); }
+    .card { width:min(600px,95vw); max-height:92vh; overflow:auto; padding:24px; border:1px solid var(--line); border-radius:18px; background:var(--panel); box-shadow:0 22px 80px rgba(0,0,0,.38); }
+    .eyebrow { margin:0 0 6px; color:var(--accent); text-transform:uppercase; letter-spacing:.13em; font-size:11px; font-weight:800; }
+    h1 { margin:0; font-size:clamp(25px,7vw,38px); line-height:1.05; }
+    .tagline { margin:12px 0 0; color:#d2dbe3; }
+    .rule { margin:18px 0 0; padding:12px 14px; border-left:3px solid var(--accent); background:rgba(255,255,255,.035); color:var(--muted); }
+    .rule strong { color:var(--text); }
+    .controls { display:grid; gap:8px; margin-top:16px; }
+    .ctl { padding:9px 11px; border:1px solid var(--line); border-radius:9px; color:var(--muted); background:rgba(255,255,255,.02); font-size:13px; }
+    .ctl b { color:var(--text); }
+    .ctl-touch { display:none; }
+    .actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; }
+    button,a.action { appearance:none; border:0; border-radius:999px; padding:11px 17px; font:700 13px/1 system-ui,sans-serif; text-decoration:none; cursor:pointer; }
+    #enterButton { background:var(--accent); color:#16130b; }
+    a.action { color:var(--text); border:1px solid var(--line); background:rgba(255,255,255,.04); }
+
+    #hud { position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:10px; z-index:30; display:flex; gap:6px; flex-wrap:wrap; max-width:78vw; pointer-events:none; }
+    .chip { padding:6px 10px; border:1px solid var(--line); border-radius:999px; background:var(--panel); color:var(--muted); font-size:11px; font-weight:750; letter-spacing:.04em; }
+    .chip b { color:var(--text); }
+    #backLink { position:fixed; top:calc(env(safe-area-inset-top) + 12px); right:calc(env(safe-area-inset-right) + 12px); z-index:34; padding:7px 12px; color:var(--text); text-decoration:none; border:1px solid var(--line); border-radius:999px; background:var(--panel); font-size:11px; font-weight:800; letter-spacing:.05em; }
+
+    #legend { position:fixed; right:calc(env(safe-area-inset-right) + 12px); bottom:calc(env(safe-area-inset-bottom) + 12px); z-index:34; width:min(300px,74vw); padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--panel); color:var(--muted); font-size:11px; pointer-events:none; }
+    #legend strong { color:var(--text); }
+
+    #movePad { position:fixed; left:calc(env(safe-area-inset-left) + 18px); bottom:calc(env(safe-area-inset-bottom) + 22px); z-index:35; width:124px; height:124px; border-radius:50%; border:1px solid rgba(160,185,205,.36); background:rgba(9,15,21,.48); display:none; touch-action:none; }
+    #moveKnob { position:absolute; left:50%; top:50%; width:52px; height:52px; border-radius:50%; transform:translate(-50%,-50%); background:rgba(210,225,237,.3); border:1px solid rgba(220,235,247,.42); pointer-events:none; }
+    .pad-buttons { position:fixed; right:calc(env(safe-area-inset-right) + 18px); bottom:calc(env(safe-area-inset-bottom) + 112px); z-index:35; display:none; flex-direction:column; gap:10px; }
+    .pad-buttons button { width:62px; height:62px; border-radius:50%; border:1px solid rgba(160,185,205,.4); background:rgba(9,15,21,.62); color:var(--text); font-size:11px; font-weight:800; touch-action:none; }
+    #doorEnterBtn { width:72px; height:72px; }
+    #doorEnterBtn.active { color:#171308; background:var(--accent); border-color:var(--accent); }
+    #doorPrompt { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 105px); transform:translateX(-50%); z-index:36; max-width:90vw; padding:11px 19px; border:1px solid var(--accent); border-radius:999px; background:rgba(7,12,17,.9); color:var(--text); font:700 13px/1 system-ui,sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    @media (pointer:coarse) {
+      .ctl-desktop { display:none; }
+      .ctl-touch { display:block; }
+      #movePad { display:block; }
+      .pad-buttons { display:flex; }
+      #legend { bottom:calc(env(safe-area-inset-bottom) + 212px); width:min(280px,70vw); }
+    }
+    @media (max-width:520px) { #legend { font-size:10px; } }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" aria-live="polite">
+    <span class="chip" id="worldChip"><b>Chat Neighborhood</b></span>
+    <span class="chip" id="districtChip">GPT-5.6 Sol · Block 01</span>
+    <span class="chip" id="timeChip">—</span>
+    <span class="chip" id="modeChip">experiment · solo preview</span>
+  </div>
+  <a id="backLink" href="/projects/">← Projects</a>
+
+  <div id="overlay">
+    <div class="card">
+      <p class="eyebrow">Longitudinal ChatGPT experiment · founded 2026-09-06</p>
+      <h1 id="overlayTitle">Chat Neighborhood</h1>
+      <p class="tagline" id="overlayTagline">Every major standard-ChatGPT model generation gets permanent property here. The city can evolve; another model's private work cannot.</p>
+      <p class="rule" id="overlayNote"><strong>First resident: GPT-5.6 Sol.</strong> This build establishes the public streets, civic test grounds, Sol House, Sol-01 civilians, and Helion Motors. Jaron tests by walking the world, taking screenshots, and reporting what works or fails. Those reports are part of the experiment too.</p>
+      <div class="controls">
+        <div class="ctl ctl-desktop"><b>Move</b> WASD / arrows · <b>Look</b> mouse · <b>Sprint</b> Shift · <b>Jump</b> Space · <b>Use</b> E</div>
+        <div class="ctl ctl-touch"><b>Move</b> left pad · <b>Look</b> drag anywhere · <b>Use</b> ENTER</div>
+      </div>
+      <div class="actions">
+        <button id="enterButton" type="button">Walk the neighborhood</button>
+        <a class="action" href="https://github.com/JaronKBragg7337/heartbeat-observatory/tree/main/chat-neighborhood" target="_blank" rel="noopener">Experiment files ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="legend"><strong>Ownership rule:</strong> gold property markers = model-owned and frozen to other model generations. Gray civic space = shared infrastructure future ChatGPT generations may alter.</div>
+
+  <button id="doorPrompt" class="hidden" type="button"><span id="doorPromptText">Press E</span></button>
+  <div id="movePad"><div id="moveKnob"></div></div>
+  <div class="pad-buttons">
+    <button id="jumpButton" type="button">JUMP</button>
+    <button id="crouchButton" type="button">DUCK</button>
+    <button id="doorEnterBtn" type="button">ENTER</button>
+  </div>
+
+  <script type="module" src="/chat-neighborhood/main.js?v=2026-09-06-sol1"></script>
+</body>
+</html>
