@@ -18,7 +18,6 @@ function makeCar(THREE, colors={}) {
 }
 
 function roadPose(t,out) {
-  // Clockwise rounded rectangular public-road loop, deterministic for vehicle and rider.
   const period=46;
   const u=((t%period)+period)%period/period;
   const p=u*4;
@@ -30,24 +29,26 @@ function roadPose(t,out) {
   out.x=x; out.y=2.15; out.z=z; out.yaw=yaw; out.pitch=0;
 }
 
-export function buildHelionMotors(kit) {
+export function buildHelionMotors(kit, bay) {
   const {THREE,scene}=kit;
-  const display=makeCar(THREE,{body:0xb99238}); display.position.set(-18,.02,-45); display.rotation.y=.35; scene.add(display);
-  const display2=makeCar(THREE,{body:0x516c7a}); display2.scale.set(.88,.88,.88); display2.position.set(-22,.02,-45); display2.rotation.y=.35; scene.add(display2);
-  const sign=kit.makeNameSprite("HELION MOTORS · SOL BRAND",.82); sign.position.set(-20,3.2,-45); scene.add(sign);
+  const bx=bay.x,bz=bay.z;
+  const display=makeCar(THREE,{body:0xb99238}); display.position.set(bx-3,.02,bz); display.rotation.y=.35; scene.add(display);
+  const display2=makeCar(THREE,{body:0x516c7a}); display2.scale.set(.88,.88,.88); display2.position.set(bx+3,.02,bz); display2.rotation.y=-.35; scene.add(display2);
+  const sign=kit.makeNameSprite("HELION MOTORS · SOL BRAND",.82); sign.position.set(bx,3.2,bz+3.9); scene.add(sign);
 
   const shuttle=makeCar(THREE,{body:0xd2ad4e}); scene.add(shuttle);
   const p={x:0,y:0,z:0,yaw:0,pitch:0};
-  roadPose(0,p); shuttle.position.set(p.x,0,p.z); shuttle.rotation.y=p.yaw;
+  const now=()=>Date.now()/1000;
+  roadPose(now(),p); shuttle.position.set(p.x,0,p.z); shuttle.rotation.y=p.yaw;
 
-  // The public loop keeps running. Boarding uses the exact same pose function.
-  kit.addUpdate((dt,t)=>{
-    roadPose(t,p); shuttle.position.set(p.x,0,p.z); shuttle.rotation.y=p.yaw;
+  // Vehicle and rider sample the same wall clock, so boarding cannot desync the visible H1 from its camera.
+  kit.addUpdate(()=>{
+    roadPose(now(),p); shuttle.position.set(p.x,0,p.z); shuttle.rotation.y=p.yaw;
   });
   const ride={
     label:"Helion H1 neighborhood loop",
     dismount:{x:-50,z:8.5,yaw:Math.PI},
-    pose(t,out){ roadPose(t,out); }
+    pose(t,out){ roadPose(now(),out); }
   };
   kit.addDoor({label:"Ride Helion H1",x:-50,z:5.4,hw:3.0,hd:3.0,act:{type:"ride",ride}});
   const stop=kit.makeNameSprite("HELION H1 · BOARD HERE",.65); stop.position.set(-50,2.3,8.2); scene.add(stop);
