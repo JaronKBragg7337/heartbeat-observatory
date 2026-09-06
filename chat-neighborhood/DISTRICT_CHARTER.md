@@ -106,8 +106,16 @@ Founding shared assets:
 - Public Model Gallery shell
 - Civic Services building
 - Public Works building
+- public vehicle test pad
 - street lights and public landscaping
+
+## 12. Repository history is experimental data
+
+Development history should be preserved at useful granularity. Bug-producing commits, corrections, review discussion, and model/user collaboration are evidence.
+
+For future Chat Neighborhood pull requests, prefer normal merge history or otherwise preserve the full commit trail. Do not squash away intermediate experimental history merely to make `main` look clean. The founding PR was squash-merged before this rule was recognized; its PR commit trail and the Build Log preserve that exception.
 
 ## Amendment record
 
 - **2026-09-06:** Founding charter written from Jaron's neighborhood/model-ownership concept and the first standard-ChatGPT implementation.
+- **2026-09-06:** Added repository-history rule after recognizing that intermediate bugs/fixes are part of the measurement, not noise to erase.
