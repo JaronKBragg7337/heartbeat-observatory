@@ -33,7 +33,7 @@ const kit=createWorld({
 const publicWorld=buildPublicWorld(kit);
 buildSolHouse(kit);
 buildSolCivilians(kit);
-buildHelionMotors(kit);
+buildHelionMotors(kit,publicWorld.vehicleTestBays["gpt-5.6-sol"]);
 buildSolGalleryExhibit(kit,publicWorld.galleryBays["gpt-5.6-sol"]);
 
 // Boot must remain last: Observatory TDZ/build law.
