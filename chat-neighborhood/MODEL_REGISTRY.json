@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "experiment": "Chat Neighborhood",
+  "founded": "2026-09-06",
+  "control_plane": "standard ChatGPT conversation",
+  "models": [
+    {
+      "id": "gpt-5.6-sol",
+      "display_name": "GPT-5.6 Sol",
+      "generation_index": 1,
+      "status": "active",
+      "first_build": "chat-neighborhood-2026-09-06-sol1",
+      "founded_at": "2026-09-06",
+      "private_property": {
+        "house": "Sol House",
+        "civilian_lineage": "Sol-01",
+        "vehicle_brand": "Helion Motors",
+        "gallery_artifacts": ["Continuity"]
+      },
+      "source_prefix": "chat-neighborhood/models/gpt-5-6-sol/",
+      "mutable_by": ["gpt-5.6-sol"],
+      "human_collaborator": "Jaron"
+    }
+  ],
+  "shared": {
+    "source_prefix": "chat-neighborhood/shared/",
+    "mutable_by": "future standard-ChatGPT model generations",
+    "founding_assets": [
+      "road grid",
+      "sidewalks",
+      "Model Registry Plaza",
+      "Public Model Gallery shell",
+      "Civic Services building",
+      "Public Works building",
+      "street lighting",
+      "public landscaping"
+    ]
+  }
+}
