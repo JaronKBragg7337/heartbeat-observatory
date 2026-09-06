@@ -74,12 +74,17 @@ export function buildPublicWorld(kit) {
   kit.addCollider({x:-35,z:31,w:20,d:13});
   label(kit,"PUBLIC WORKS",-35,6.2,31,.92);
 
-  // Small public square / future model registry site.
-  box(THREE,scene,-30,.12,-31,18,.24,18,concrete);
-  const monument = box(THREE,scene,-30,2.0,-31,2.2,4,2.2,civicDark);
+  // Model Registry Plaza is deliberately outside every private model lot.
+  box(THREE,scene,-30,.12,53,18,.24,18,concrete);
+  const monument = box(THREE,scene,-30,2.0,53,2.2,4,2.2,civicDark);
   monument.rotation.y=Math.PI/4;
-  label(kit,"MODEL REGISTRY PLAZA",-30,4.8,-31,.92);
-  label(kit,"Block 01 · GPT-5.6 Sol",-30,3.6,-31,.66);
+  label(kit,"MODEL REGISTRY PLAZA",-30,4.8,53,.92);
+  label(kit,"Block 01 · GPT-5.6 Sol",-30,3.6,53,.66);
+
+  // Public vehicle proving pad. Vehicle objects remain model-owned even though this pad is shared.
+  box(THREE,scene,-31,.13,-57,26,.26,13,concrete);
+  label(kit,"PUBLIC VEHICLE TEST PAD",-31,2.1,-63,.82);
+  label(kit,"hosting ground is shared · vehicles are not",-31,1.25,-63,.5);
 
   // Street lights.
   const lampPoints=[];
@@ -92,7 +97,7 @@ export function buildPublicWorld(kit) {
   });
 
   // Shared trees outside model property.
-  const trees=[[-53,-38],[-54,-18],[-50,49],[-18,52],[18,53],[54,48],[55,-8],[52,-50],[18,-56],[-16,-56]];
+  const trees=[[-53,-38],[-54,-18],[-50,49],[18,53],[54,48],[55,-8],[52,-50],[18,-56],[-16,-56]];
   trees.forEach(([x,z])=>{
     box(THREE,scene,x,1.6,z,.55,3.2,.55,bark);
     const crown=new THREE.Mesh(new THREE.SphereGeometry(2.25,10,8),leaf); crown.position.set(x,4.4,z); crown.castShadow=true; scene.add(crown);
@@ -105,6 +110,9 @@ export function buildPublicWorld(kit) {
   return {
     galleryBays: {
       "gpt-5.6-sol": { x:31, z:-29, y:.6 }
+    },
+    vehicleTestBays: {
+      "gpt-5.6-sol": { x:-31, z:-57, y:.02 }
     },
     districts: {
       "gpt-5.6-sol": { x:-32, z:-30, w:28, d:28 }
