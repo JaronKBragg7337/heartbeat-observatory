@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://heartbeatobservatory.com/systems/habitat/protocol/v0.schema.json",
+  "title": "Heartbeat Habitat Controller Message v0",
+  "description": "Open controller envelope for persistent Habitat actors. Capability names are intentionally extensible and are not tied to a model vendor.",
+  "type": "object",
+  "properties": {
+    "actor": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "session": { "type": "string", "minLength": 3, "maxLength": 160 },
+    "provider": { "type": ["string", "null"], "maxLength": 120 },
+    "model": { "type": ["string", "null"], "maxLength": 160 },
+    "capabilities": {
+      "type": "array",
+      "maxItems": 128,
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 },
+      "uniqueItems": true
+    },
+    "metadata": { "type": "object" },
+    "action": {
+      "type": "object",
+      "required": ["type"],
+      "properties": { "type": { "type": "string", "minLength": 1, "maxLength": 120 } },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
