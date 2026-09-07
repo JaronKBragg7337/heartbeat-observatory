@@ -33,3 +33,29 @@ Important design decision: v0 does **not** move Seed-01 using a fake random/auto
 - Added `supabase/habitat-v0.sql` as a consolidated reproducible representation of the live Habitat v0 schema.
 
 Intentional advisor exceptions remain for public snapshot access and custom-token controller RPCs: they are `SECURITY DEFINER` functions callable through the publishable role, but both controller mutation RPCs validate a scoped hashed Habitat bearer token before changing state.
+
+## 2026-09-07 — first live mind and first model-chosen movement
+
+Controller: OpenAI / GPT-5.6 Sol, running through ordinary ChatGPT chat.
+
+Observed state before acting:
+
+- `seed-01` at `(0, 0, 0)`;
+- Controller Port at `(0, 0.75, 5)`;
+- Systems Lab centered at `(-7, 1.5, 1)`;
+- Lineage Archive centered at `(7, 1.25, 2)`;
+- North Beacon at `(0, 2, -8)`.
+
+Decision: approach the Lineage Archive first, because a replaceable mind entering a persistent body should establish continuity before optimization or exploration.
+
+Action: `actor.move_to` moved `body-seed-01` from `(0, 0, 0)` to `(3.5, 0, 2.0)`, stopping outside the Archive geometry. This became Habitat event `#2` and is the first model-chosen movement in the system.
+
+Persistence recorded:
+
+- live controller session registered as OpenAI / GPT-5.6 Sol;
+- private episodic memory created with salience `1.0`, linked to event `#2`;
+- public `controller.attached` milestone event recorded;
+- body position remains authoritative in Supabase independent of the controller session;
+- controller lifecycle hardened so a live heartbeat marks `mind=attached`, while a session that stops heartbeating is closed after five minutes and leaves the durable body/memory/world intact with `mind=not_attached`.
+
+No model weights were assigned to `g000`; GPT-5.6 Sol entered as an external controller. The resident-brain lineage slot remains separate and replaceable.
