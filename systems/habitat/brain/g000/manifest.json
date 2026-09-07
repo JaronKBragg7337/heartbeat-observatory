@@ -1,0 +1,20 @@
+{
+  "schema": "heartbeat-habitat-brain-manifest/v0",
+  "generation": "g000",
+  "status": "planned",
+  "parent": null,
+  "architecture": null,
+  "parameter_count": null,
+  "runtime": null,
+  "weights": null,
+  "protocol": "habitat/v0",
+  "actor_target": "seed-01",
+  "notes": "This is an intentionally empty first brain slot. The initial resident model can be sub-1M parameters, but the Habitat does not impose a permanent size or architecture ceiling.",
+  "growth": {
+    "replacement_allowed": true,
+    "architecture_change_allowed": true,
+    "parameter_count_may_increase_or_decrease": true,
+    "modular_or_multi_model_allowed": true,
+    "inherit_world_memory": true
+  }
+}
