@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#071019" />
   <meta name="description" content="A live, public-safe observatory for the persistent local Qwen agent and its Polymarket US tools." />
   <title>Qwen / Polymarket US — Heartbeat Observatory</title>
-  <link rel="stylesheet" href="/qwen/qwen.css" />
+  <link rel="stylesheet" href="/qwen/qwen.css?v=owner-chat-2" />
 </head>
 <body>
   <div class="shell">
@@ -25,19 +25,39 @@
     <main>
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow"><span id="heroDot" class="status-dot wait"></span> Live observatory / local agent</p>
+          <p class="eyebrow"><span id="heroDot" class="status-dot wait"></span> Persistent local agent</p>
           <h1>Qwen <span>/</span> <em>Polymarket US</em></h1>
-          <p class="hero-dek">A direct window into the same persistent Qwen session already connected to the MSI runtime, OpenClaw, MCP, and the authenticated Polymarket US account.</p>
           <div class="hero-meta">
             <span id="lastSeen">Waiting for the first live heartbeat…</span>
             <span class="mode-chip"><span class="mini-dot"></span> Read-only execution mode</span>
           </div>
         </div>
-        <div class="hero-orbit" aria-hidden="true">
-          <div class="orbit orbit-one"></div>
-          <div class="orbit orbit-two"></div>
-          <div class="orbit-core"><span></span></div>
-          <div class="orbit-label">QWEN<br /><small>persistent</small></div>
+      </section>
+
+      <section class="panel console-panel" aria-labelledby="console-title">
+        <div class="panel-head console-head">
+          <div>
+            <p class="section-label">Owner channel · same MSI session</p>
+            <h2 id="console-title">Talk to Qwen</h2>
+          </div>
+          <span id="consoleState" class="phase-badge wait" role="status">Checking access</span>
+        </div>
+        <div id="authGate" class="auth-gate">
+          <strong id="gateTitle">Checking your session…</strong>
+          <p id="gateNote">The dashboard is public. Messaging is reserved for the owner.</p>
+          <a id="gateLink" class="button button-primary" href="/admin" hidden>Sign in to message Qwen →</a>
+        </div>
+        <div id="chatArea" class="chat-area" hidden>
+          <p id="chatNotice" class="chat-notice" role="status" hidden></p>
+          <div id="chatLog" class="chat-log" role="log" aria-label="Conversation with Qwen" aria-live="polite"></div>
+          <form id="composer" class="composer">
+            <label class="sr-only" for="messageInput">Message Qwen</label>
+            <textarea id="messageInput" rows="2" maxlength="8000" placeholder="Message Qwen…" disabled></textarea>
+            <div class="composer-foot">
+              <span id="composerNote" role="status">Messages persist in the owner channel.</span>
+              <button id="sendButton" class="send-button" type="submit" disabled>Send <span aria-hidden="true">↗</span></button>
+            </div>
+          </form>
         </div>
       </section>
 
@@ -84,7 +104,7 @@
             <div class="metric-grid">
               <div class="metric-card metric-primary">
                 <span>Available balance</span>
-                <strong id="balance">$0.00</strong>
+                <strong id="balance">—</strong>
                 <small id="balanceNote">Waiting for live account response</small>
               </div>
               <div class="metric-card">
@@ -158,33 +178,6 @@
         </div>
 
         <aside class="side-column">
-          <section class="panel console-panel" aria-labelledby="console-title">
-            <div class="panel-head console-head">
-              <div>
-                <p class="section-label">Owner channel</p>
-                <h2 id="console-title">Talk to Qwen</h2>
-              </div>
-              <span id="consoleState" class="phase-badge wait">Sign-in required</span>
-            </div>
-            <div id="authGate" class="auth-gate">
-              <div class="gate-icon">⌁</div>
-              <strong>Private control channel</strong>
-              <p>Anyone can observe the public-safe dashboard. Only the authenticated owner can enqueue a message for this Qwen session.</p>
-              <a class="button button-primary" href="/admin">Sign in to message Qwen <span aria-hidden="true">→</span></a>
-            </div>
-            <div id="chatArea" class="chat-area" hidden>
-              <div id="chatLog" class="chat-log" aria-live="polite"></div>
-              <form id="composer" class="composer">
-                <label class="sr-only" for="messageInput">Message Qwen</label>
-                <textarea id="messageInput" rows="3" maxlength="8000" placeholder="Message the persistent Qwen agent…"></textarea>
-                <div class="composer-foot">
-                  <span id="composerNote">Messages persist in the owner channel.</span>
-                  <button id="sendButton" class="send-button" type="submit">Send <span aria-hidden="true">↗</span></button>
-                </div>
-              </form>
-            </div>
-          </section>
-
           <section class="panel objective-panel" aria-labelledby="objective-title">
             <div class="panel-head">
               <div>
@@ -224,6 +217,6 @@
     </footer>
   </div>
 
-  <script type="module" src="/qwen/qwen.js"></script>
+  <script type="module" src="/qwen/qwen.js?v=owner-chat-2"></script>
 </body>
 </html>

@@ -37,7 +37,11 @@ const refs = {
   authLink: $("authLink"),
   consoleState: $("consoleState"),
   authGate: $("authGate"),
+  gateTitle: $("gateTitle"),
+  gateNote: $("gateNote"),
+  gateLink: $("gateLink"),
   chatArea: $("chatArea"),
+  chatNotice: $("chatNotice"),
   chatLog: $("chatLog"),
   composer: $("composer"),
   messageInput: $("messageInput"),
@@ -54,6 +58,12 @@ let currentState = null;
 let currentEvents = [];
 let olderEventsLoaded = false;
 let messageChannel = null;
+let canControl = false;
+let accessState = "checking";
+let authEpoch = 0;
+let sending = false;
+let refreshInFlight = false;
+let messageSignature = null;
 
 const sensitiveKey = /(?:secret|password|authorization|private[_-]?key|api[_-]?key|access[_-]?token|refresh[_-]?token|credential[_-]?(?:value|secret|token|key))/i;
 
@@ -83,7 +93,7 @@ function safe(value, fallback = "—") {
 
 function statusClass(status) {
   if (["online", "succeeded", "completed", "ok"].includes(String(status))) return "ok";
-  if (["starting", "running", "queued", "info", "offline", "unknown"].includes(String(status))) return "wait";
+  if (["starting", "running", "working", "processing", "observing", "queued", "info", "offline", "unknown"].includes(String(status))) return "wait";
   if (String(status) === "degraded") return "degraded";
   return "bad";
 }
@@ -360,9 +370,11 @@ async function loadState() {
 }
 
 async function loadEvents(older = false) {
+  const epoch = authEpoch;
   let query = supabase.from("qwen_events").select("id,qwen_id,visibility,event_type,status,summary,payload_json,created_at").eq("qwen_id", QWEN_ID).order("created_at", { ascending: false }).limit(EVENT_LIMIT);
   if (older && currentEvents.length) query = query.lt("created_at", currentEvents[currentEvents.length - 1].created_at);
   const { data, error } = await query;
+  if (epoch !== authEpoch) return;
   if (error) throw error;
   if (older) {
     const combined = [...currentEvents, ...(data || [])];
@@ -382,6 +394,10 @@ function messageStatusLabel(message) {
 }
 
 function renderMessages(messages) {
+  const signature = JSON.stringify(messages);
+  if (signature === messageSignature) return;
+  const followLatest = messageSignature === null || refs.chatLog.scrollHeight - refs.chatLog.scrollTop - refs.chatLog.clientHeight < 60;
+  messageSignature = signature;
   refs.chatLog.replaceChildren();
   if (!messages.length) {
     const empty = document.createElement("div");
@@ -398,7 +414,7 @@ function renderMessages(messages) {
     meta.textContent = `${message.sender_type === "qwen" ? "Qwen" : message.sender_type === "user" ? "You" : "System"} · ${formatTime(message.created_at, true)}`;
     const bubble = document.createElement("div");
     bubble.className = "chat-bubble";
-    bubble.textContent = message.body || "";
+    bubble.textContent = redact(message.body || "");
     row.append(meta, bubble);
     if (message.sender_type === "user" && message.status !== "completed") {
       const status = document.createElement("span");
@@ -408,58 +424,145 @@ function renderMessages(messages) {
     }
     refs.chatLog.appendChild(row);
   });
-  refs.chatLog.scrollTop = refs.chatLog.scrollHeight;
+  if (followLatest) refs.chatLog.scrollTop = refs.chatLog.scrollHeight;
 }
 
 async function loadMessages() {
-  if (!session) return;
-  const { data, error } = await supabase.from("qwen_messages").select("id,sender_type,body,status,provenance_tag,response_to_id,error_text,created_at,started_at,completed_at").eq("qwen_id", QWEN_ID).order("created_at", { ascending: true }).limit(MESSAGE_LIMIT);
+  if (!canControl) return;
+  const epoch = authEpoch;
+  const { data, error } = await supabase.from("qwen_messages").select("id,sender_type,body,status,provenance_tag,response_to_id,error_text,created_at,started_at,completed_at").eq("qwen_id", QWEN_ID).order("created_at", { ascending: false }).limit(MESSAGE_LIMIT);
+  if (epoch !== authEpoch || !canControl) return;
   if (error) throw error;
-  renderMessages(data || []);
+  refs.chatNotice.hidden = true;
+  renderMessages([...(data || [])].reverse());
   const pending = (data || []).some((message) => ["queued", "processing"].includes(message.status));
-  text(refs.composerNote, pending ? "Qwen is working in the persistent session…" : "Messages persist in the owner channel.");
+  if (!sending) text(refs.composerNote, pending ? "Qwen is working in the persistent session…" : "Messages persist in the owner channel.");
   setStatus(refs.consoleState, pending ? "running" : "online", pending ? "Working" : "Connected");
 }
 
 function updateAuthUi() {
   const signedIn = Boolean(session?.user?.id);
-  refs.authGate.hidden = signedIn;
-  refs.chatArea.hidden = !signedIn;
-  refs.messageInput.disabled = !signedIn;
-  refs.sendButton.disabled = !signedIn;
+  refs.authGate.hidden = canControl;
+  refs.chatArea.hidden = !canControl;
+  refs.messageInput.disabled = !canControl;
+  refs.sendButton.disabled = !canControl || sending;
   text(refs.authLink, signedIn ? "Account" : "Sign in to control");
-  refs.authLink.href = signedIn ? "/admin" : "/admin";
-  if (!signedIn) {
-    setStatus(refs.consoleState, "starting", "Sign-in required");
+  refs.gateLink.hidden = accessState === "checking" || accessState === "error";
+  if (canControl) {
+    setStatus(refs.consoleState, "online", "Owner connected");
+  } else {
     refs.chatLog.replaceChildren();
+    messageSignature = null;
+    const copy = accessState === "checking"
+      ? ["Checking access", "Checking your session…", "Confirming access to the owner channel."]
+      : accessState === "error"
+        ? ["Access check failed", "Could not verify owner access", "Your sign-in is still recognized. The access check will retry automatically."]
+        : signedIn
+          ? ["Observer access", "You're signed in as an observer", "This account can view the dashboard. Only the configured owner can message this Qwen agent."]
+          : ["Sign-in required", "Private control channel", "Anyone can view the dashboard. Sign in with the owner account to message Qwen."];
+    setStatus(refs.consoleState, accessState === "error" ? "degraded" : "starting", copy[0]);
+    text(refs.gateTitle, copy[1]);
+    text(refs.gateNote, copy[2]);
+    text(refs.gateLink, signedIn ? "Manage account →" : "Sign in to message Qwen →");
   }
+}
+
+async function resolveAccess() {
+  const epoch = authEpoch;
+  if (!session?.user?.id) {
+    canControl = false;
+    accessState = "guest";
+  } else {
+    // RLS returns only the owner's instance ID. No private configuration is
+    // granted to the browser; enqueue still independently checks ownership.
+    let data = null;
+    let error = null;
+    try {
+      ({ data, error } = await supabase.from("qwen_instances").select("id").eq("id", QWEN_ID).maybeSingle());
+    } catch {
+      error = true;
+    }
+    if (epoch !== authEpoch) return;
+    canControl = !error && data?.id === QWEN_ID;
+    accessState = error ? "error" : canControl ? "owner" : "observer";
+  }
+  updateAuthUi();
+}
+
+function setSession(nextSession) {
+  const changed = session?.user?.id !== nextSession?.user?.id;
+  session = nextSession;
+  if (changed) {
+    authEpoch += 1;
+    canControl = false;
+    accessState = session ? "checking" : "guest";
+    messageSignature = null;
+    refs.chatLog.replaceChildren();
+    refs.messageInput.value = "";
+    refs.chatNotice.hidden = true;
+    // Owner-only events and messages must not survive account switching.
+    currentEvents = [];
+    olderEventsLoaded = false;
+    refs.eventStream.replaceChildren();
+    refs.marketsList.replaceChildren();
+    refs.researchList.replaceChildren();
+  }
+  updateAuthUi();
+}
+
+function showMessageError() {
+  if (!canControl) return;
+  refs.chatNotice.hidden = false;
+  text(refs.chatNotice, "You're signed in. Message history couldn't load; retrying automatically. The public dashboard is separate.");
+  setStatus(refs.consoleState, "degraded", "History unavailable");
 }
 
 async function sendMessage(event) {
   event.preventDefault();
   const body = refs.messageInput.value.trim();
-  if (!body || !session) return;
+  if (!body || !canControl || sending) return;
+  const epoch = authEpoch;
+  sending = true;
   refs.sendButton.disabled = true;
   text(refs.composerNote, "Queueing the owner message…");
-  const { data, error } = await supabase.rpc("qwen_enqueue_message", { p_qwen_id: QWEN_ID, p_body: body });
-  if (error || !data?.ok) {
-    text(refs.composerNote, `Could not queue the message: ${data?.note || error?.message || "unknown error"}`);
-    refs.sendButton.disabled = false;
-    return;
+  try {
+    const { data, error } = await supabase.rpc("qwen_enqueue_message", { p_qwen_id: QWEN_ID, p_body: body });
+    if (epoch !== authEpoch) return;
+    if (error || !data?.ok) {
+      text(refs.composerNote, "Could not confirm delivery. Your draft is kept; check the conversation before trying again.");
+      return;
+    }
+    refs.messageInput.value = "";
+    text(refs.composerNote, "Queued · waiting for the MSI bridge");
+    refs.chatLog.scrollTop = refs.chatLog.scrollHeight;
+    // A history refresh failure must never turn a successful enqueue into a
+    // failed send or leave the Send button permanently disabled.
+    await loadMessages().catch(showMessageError);
+    await loadEvents().catch(() => {});
+  } catch {
+    if (epoch === authEpoch) text(refs.composerNote, "Could not confirm delivery. Your draft is kept; check the conversation before trying again.");
+  } finally {
+    sending = false;
+    refs.sendButton.disabled = !canControl;
   }
-  refs.messageInput.value = "";
-  text(refs.composerNote, "Queued · waiting for the MSI bridge");
-  await Promise.all([loadMessages(), loadEvents()]);
-  refs.sendButton.disabled = false;
 }
 
 async function refreshAll() {
+  if (refreshInFlight) return;
+  refreshInFlight = true;
   try {
-    await Promise.all([loadState(), loadEvents(), session ? loadMessages() : Promise.resolve()]);
-  } catch (error) {
-    text(refs.connectionNote, "The remote state store is temporarily unavailable; retrying.");
-    setStatus(refs.streamDot, "degraded");
-    text(refs.streamStatus, "Retrying");
+    await resolveAccess();
+    await Promise.all([
+      loadState().catch(() => text(refs.connectionNote, "The latest runtime snapshot couldn't load; retrying. Any visible snapshot is the last one received.")),
+      loadEvents().catch(() => {
+        setStatus(refs.streamDot, "degraded");
+        text(refs.streamStatus, "Event feed retrying");
+      }),
+      loadMessages().catch(showMessageError)
+    ]);
+    await subscribeMessages();
+  } finally {
+    refreshInFlight = false;
   }
 }
 
@@ -471,31 +574,33 @@ async function subscribe() {
 }
 
 async function subscribeMessages() {
+  if (messageChannel && canControl && messageChannel.ownerEpoch === authEpoch) return;
   if (messageChannel) {
     await supabase.removeChannel(messageChannel);
     messageChannel = null;
   }
-  if (!session) return;
+  if (!canControl) return;
   messageChannel = supabase.channel("qwen-owner-messages")
-    .on("postgres_changes", { event: "*", schema: "public", table: "qwen_messages", filter: `qwen_id=eq.${QWEN_ID}` }, () => loadMessages().catch(() => {}))
+    .on("postgres_changes", { event: "*", schema: "public", table: "qwen_messages", filter: `qwen_id=eq.${QWEN_ID}` }, () => loadMessages().catch(showMessageError))
     .subscribe();
+  messageChannel.ownerEpoch = authEpoch;
 }
 
 async function boot() {
   try {
     supabase = await getSupabase();
     const auth = await supabase.auth.getSession();
-    session = auth.data?.session || null;
-    updateAuthUi();
+    setSession(auth.data?.session || null);
     await refreshAll();
     await subscribe();
     await subscribeMessages();
     supabase.auth.onAuthStateChange((_event, nextSession) => {
-      session = nextSession;
-      updateAuthUi();
-      setTimeout(() => { refreshAll(); subscribeMessages(); }, 0);
+      setSession(nextSession);
+      // Supabase auth callbacks must return before starting other auth-backed
+      // requests, otherwise the shared client's session lock can deadlock.
+      setTimeout(() => { refreshAll().catch(() => {}); }, 0);
     });
-    setInterval(refreshAll, POLL_MS);
+    setInterval(() => refreshAll().catch(() => {}), POLL_MS);
   } catch (error) {
     text(refs.connectionNote, "Could not load the remote state store. The page will retry when it can.");
     text(refs.streamStatus, "Unavailable");

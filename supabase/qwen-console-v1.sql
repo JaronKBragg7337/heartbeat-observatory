@@ -90,13 +90,14 @@ revoke all privileges on public.qwen_state from anon, authenticated;
 revoke all privileges on public.qwen_messages from anon, authenticated;
 revoke all privileges on public.qwen_events from anon, authenticated;
 
--- Keep the private configuration table explicitly denied to browser roles.
--- RLS with no policy is safe but produces an avoidable security warning.
+-- Only the owner can read their instance ID to check console access. All
+-- configuration columns remain ungranted, including the local session key.
 drop policy if exists "qwen_instances_no_client_access" on public.qwen_instances;
-create policy "qwen_instances_no_client_access" on public.qwen_instances
-  for all to anon, authenticated
-  using (false)
-  with check (false);
+drop policy if exists "qwen_instances_owner_identity_read" on public.qwen_instances;
+create policy "qwen_instances_owner_identity_read" on public.qwen_instances
+  for select to authenticated
+  using (owner_user_id = (select auth.uid()));
+grant select (id) on public.qwen_instances to authenticated;
 
 grant select on public.qwen_state to anon, authenticated;
 grant select on public.qwen_events to anon, authenticated;
@@ -115,19 +116,14 @@ create policy "qwen_events_public_read" on public.qwen_events
 drop policy if exists "qwen_events_owner_read" on public.qwen_events;
 create policy "qwen_events_owner_read" on public.qwen_events
   for select to authenticated
-  using (owner_user_id = (select auth.uid()));
+  using (visibility = 'public' or owner_user_id = (select auth.uid()));
 
 drop policy if exists "qwen_messages_owner_read" on public.qwen_messages;
 create policy "qwen_messages_owner_read" on public.qwen_messages
   for select to authenticated
-  using (
-    owner_user_id = (select auth.uid())
-    and exists (
-      select 1 from public.qwen_instances i
-      where i.id = qwen_messages.qwen_id
-        and i.owner_user_id = (select auth.uid())
-    )
-  );
+  -- Only the trusted enqueue/completion RPCs write this owner ID. The previous
+  -- extra lookup required a private table grant and broke owner history reads.
+  using (owner_user_id = (select auth.uid()));
 
 create or replace function public.qwen_redact_json(p_value jsonb)
 returns jsonb
