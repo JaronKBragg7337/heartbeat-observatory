@@ -154,7 +154,7 @@
   const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
   const SURFACES_URL = SUPABASE_URL + "/rest/v1/surfaces?select=key,name,status,position&order=position.asc";
-  const SLUGS = { engine:"/engine", social:"/social", video:"/video", host:"/projects", showcase:"/live-systems", games:"/games", library:"/library", pam:"/pam", printer:"/3DPrinterAsset/" };
+  const SLUGS = { engine:"/engine", social:"/social", video:"/video", host:"/projects", showcase:"/live-systems", games:"/games", library:"/library", pam:"/pam", qwen:"/qwen", printer:"/3DPrinterAsset/" };
   const descriptions = {
     engine: "The walkable 3D hub and the front door to the living world.",
     social: "A shared feed for posts, conversation, and current signals.",
@@ -164,6 +164,7 @@
     games: "Playable builds hosted inside the Observatory.",
     library: "A free shelf for shared knowledge and writing made here.",
     pam: "A public surface for Jaron’s personal AI model.",
+    qwen: "A live window into the local Qwen agent, its tools, state, and Polymarket US connection.",
     printer: "An interactive 3D printer asset and its working room."
   };
   const grid = document.getElementById("grid");
@@ -196,6 +197,7 @@
       grid.innerHTML = "";
       const sections = Array.isArray(data) ? data : [];
       if (!sections.some((surface) => surface.key === "pam")) sections.push({ key: "pam", name: "PAM", status: "preview", position: 999 });
+      if (!sections.some((surface) => surface.key === "qwen")) sections.push({ key: "qwen", name: "Qwen Observatory", status: "live", position: 7 });
 
       for (const surface of sections) {
         const href = SLUGS[surface.key];
