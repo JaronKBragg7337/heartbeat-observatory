@@ -6,6 +6,14 @@
 <script src="/hb-device-tier.js"></script>
 <title>Live Systems · Heartbeat Observatory</title>
 <link rel="stylesheet" href="/section.css" />
+<style>
+  .systems { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .systems li { border: 1px solid rgba(143,185,205,.18); border-radius: 14px; padding: 18px 20px; }
+  .systems a.name { display: inline-block; font-size: 1.15rem; font-weight: 600; }
+  .systems a.name:hover { text-decoration: underline; }
+  .systems .kind { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; opacity: .62; margin-bottom: 5px; }
+  .systems p { margin: 7px 0 0; opacity: .78; font-size: .95rem; max-width: 64ch; }
+</style>
 </head>
 <body>
   <nav class="topnav">
@@ -20,8 +28,21 @@
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
     </header>
     <div class="panel">
-      <p>This section isn&rsquo;t open yet.</p>
-      <p class="muted">When it opens, your running systems, shown live as they work will live here &mdash; on its own page, kept separate from every other section.</p>
+      <ul class="systems">
+        <li>
+          <span class="kind">Persistent local agent · MSI</span>
+          <a class="name" href="/qwen">Qwen / Polymarket US &rarr;</a>
+          <p>The local model running on the MSI, with its Polymarket US tooling. Public
+             dashboard; the owner channel is reserved for the owner.</p>
+        </li>
+        <li>
+          <span class="kind">Autonomous work scanner</span>
+          <a class="name" href="/live-systems/revenue/">Revenue Desk &rarr;</a>
+          <p>Reads public bounty boards and jam listings daily, scores what it finds
+             against known bounty mills, and holds the survivors for approval. Nothing
+             is submitted without an explicit yes.</p>
+        </li>
+      </ul>
     </div>
     <footer><a href="/">heartbeatobservatory.com</a></footer>
   </div>
