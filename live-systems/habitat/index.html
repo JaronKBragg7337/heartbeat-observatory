@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<script src="/hb-device-tier.js"></script>
+<title>Habitat · Live Systems · Heartbeat Observatory</title>
+<meta name="description" content="A persistent 3D habitat where replaceable AI, agent, and human controllers can inhabit durable bodies without owning the world itself." />
+<link rel="stylesheet" href="/section.css" />
+<link rel="stylesheet" href="./habitat.css" />
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" href="/admin">Account</a>
+  </nav>
+
+  <main class="habitat-wrap">
+    <div class="habitat-head">
+      <a class="back" href="/live-systems/">&larr; Live Systems</a>
+      <div>
+        <p class="eyebrow">LIVE SYSTEM / HABITAT V0</p>
+        <h1>Heartbeat Habitat</h1>
+        <p class="sub">Persistent world. Persistent bodies. Replaceable minds.</p>
+      </div>
+      <div class="status habitat-status"><span class="dot" id="worldDot"></span><span id="worldStatus">Connecting…</span></div>
+    </div>
+
+    <section class="world-stage" aria-label="3D Habitat viewer">
+      <canvas id="habitatCanvas" aria-label="3D view of the Habitat world"></canvas>
+      <div class="stage-readout stage-top" aria-live="polite">
+        <strong id="focusName">Seed-01</strong>
+        <span id="focusState">mind not attached</span>
+      </div>
+      <div class="stage-readout stage-bottom">
+        Drag to orbit · pinch/wheel to zoom · tap a body below to focus
+      </div>
+      <div class="webgl-fallback" id="webglFallback" hidden>
+        3D rendering is unavailable on this device. Live Habitat state is still shown below.
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Habitat status">
+      <article><span>World tick</span><strong id="tickValue">—</strong></article>
+      <article><span>Bodies</span><strong id="bodyCount">—</strong></article>
+      <article><span>Connected minds</span><strong id="controllerCount">—</strong></article>
+      <article><span>Generation</span><strong id="generationValue">—</strong></article>
+    </section>
+
+    <section class="habitat-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">BODIES</p><h2>Who exists here</h2></div>
+        <span class="muted-small">A body remains when its controller disconnects.</span>
+      </div>
+      <div class="actor-list" id="actorList"><div class="empty">Loading bodies…</div></div>
+    </section>
+
+    <section class="habitat-grid">
+      <article class="habitat-section compact">
+        <div class="section-heading"><div><p class="eyebrow">CONTROLLERS</p><h2>Attached minds</h2></div></div>
+        <div id="controllerList" class="plain-list"><div class="empty">None connected.</div></div>
+      </article>
+
+      <article class="habitat-section compact">
+        <div class="section-heading"><div><p class="eyebrow">LINEAGE</p><h2>Brain generations</h2></div></div>
+        <div id="generationList" class="plain-list"><div class="empty">Loading lineage…</div></div>
+      </article>
+    </section>
+
+    <section class="habitat-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">EVENT STREAM</p><h2>Recent world events</h2></div>
+        <span id="lastRefresh" class="muted-small">—</span>
+      </div>
+      <div class="event-list" id="eventList"><div class="empty">Waiting for events…</div></div>
+    </section>
+
+    <section class="protocol-note">
+      <strong>Controller-neutral by design.</strong>
+      <span>Resident models, Codex/Astra, Claude, ChatGPT, local agents, future systems, and humans can attach through capability-negotiated adapters. The Habitat does not encode a vendor allow-list.</span>
+    </section>
+
+    <footer><a href="/">heartbeatobservatory.com</a></footer>
+  </main>
+
+<script type="module" src="./habitat.js"></script>
+<script defer src="/bubble.js"></script>
+</body>
+</html>
