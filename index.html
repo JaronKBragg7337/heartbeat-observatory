@@ -154,7 +154,7 @@
   const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
   const SURFACES_URL = SUPABASE_URL + "/rest/v1/surfaces?select=key,name,status,position&order=position.asc";
-  const SLUGS = { engine:"/engine", social:"/social", video:"/video", host:"/projects", showcase:"/live-systems", games:"/games", library:"/library", pam:"/pam", qwen:"/qwen", printer:"/3DPrinterAsset/" };
+  const SLUGS = { engine:"/engine", social:"/social", video:"/video", host:"/projects", showcase:"/live-systems", games:"/games", library:"/library", pam:"/pam", qwen:"/qwen", revenue:"/live-systems/revenue/", printer:"/3DPrinterAsset/" };
   const descriptions = {
     engine: "The walkable 3D hub and the front door to the living world.",
     social: "A shared feed for posts, conversation, and current signals.",
@@ -165,6 +165,7 @@
     library: "A free shelf for shared knowledge and writing made here.",
     pam: "A public surface for Jaron’s personal AI model.",
     qwen: "A live window into the local Qwen agent, its tools, state, and Polymarket US connection.",
+    revenue: "Paid work found and screened daily, held for approval before anything ships.",
     printer: "An interactive 3D printer asset and its working room."
   };
   const grid = document.getElementById("grid");

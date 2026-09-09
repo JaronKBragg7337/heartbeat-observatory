@@ -143,3 +143,35 @@ footer a:hover { color: var(--muted); }
   .item-top { flex-direction: column; gap: 3px; }
   .topnav { gap: 13px; font-size: 12.5px; }
 }
+
+/* ---- owner decision controls ----
+   Rendered only for a signed-in owner. RLS is the real gate; hiding these for
+   everyone else is presentation, not security. */
+.decide { display: flex; gap: 8px; margin-top: 13px; flex-wrap: wrap; }
+.decide button {
+  font-size: 13.5px; font-weight: 600; padding: 9px 16px; min-height: 40px;
+  border-radius: 9px; border: 1px solid var(--line-strong);
+  background: transparent; color: var(--ink);
+}
+.decide button:hover:not(:disabled) { border-color: var(--cyan); color: var(--cyan-bright); }
+.decide button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.decide button:disabled { opacity: .45; cursor: default; }
+.decide button.yes { border-color: rgba(147, 229, 173, .5); color: var(--green); }
+.decide button.yes:hover:not(:disabled) { background: rgba(147, 229, 173, .1); color: var(--green); }
+
+.verdict {
+  margin-top: 12px; display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 12px; border-radius: 999px; font-size: 12px;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.verdict.yes { color: var(--green); border: 1px solid rgba(147, 229, 173, .4); }
+.verdict.no  { color: var(--faint); border: 1px solid var(--line); }
+.verdict.fail { color: var(--red); border: 1px solid rgba(255, 157, 157, .45); }
+.item.approved { border-left-color: var(--green); }
+.item.passed { opacity: .55; }
+
+.owner-hint {
+  margin: 16px 0 0; padding: 12px 15px; border-radius: 11px;
+  border: 1px dashed var(--line-strong); color: var(--muted); font-size: 13.5px;
+}
+.owner-hint a { color: var(--cyan); border-bottom: 1px solid var(--line-strong); }

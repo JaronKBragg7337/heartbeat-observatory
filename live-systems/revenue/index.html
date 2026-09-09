@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#071019" />
   <meta name="description" content="A live, public-safe view of the revenue desk: paid work found, screened against bounty mills, and held for the owner's approval." />
   <title>Revenue Desk — Heartbeat Observatory</title>
-  <link rel="stylesheet" href="/live-systems/revenue/revenue.css?v=1" />
+  <link rel="stylesheet" href="/live-systems/revenue/revenue.css?v=2" />
 </head>
 <body>
   <div class="shell">
@@ -34,8 +34,8 @@
         <p class="lede">
           A scanner reads public bounty boards and jam listings, scores what it finds,
           and holds the survivors here. Nothing is submitted and nothing carries the
-          owner&rsquo;s name without an explicit approval &mdash; this page is the
-          public view of that queue, not a control surface.
+          owner&rsquo;s name without an explicit approval. Anyone can read this
+          queue; only the owner can approve from it.
         </p>
       </section>
 
@@ -116,7 +116,7 @@
       </section>
 
       <footer>
-        Public read-only view. Approvals and agent-to-agent tasks are not published here.
+        Public to read. Approving is owner-only, and agent-to-agent tasks are not published here.
         &middot; <a href="/qwen">Qwen / Polymarket US</a>
         &middot; <a href="/live-systems/">Live Systems</a>
         &middot; <a href="/">heartbeatobservatory.com</a>
@@ -145,14 +145,60 @@ const el = (tag, cls, text) => {
   return e;                                        // every value below is remote data
 };
 
-/* Sign-in awareness only. This page never gates content — it is public by
-   design; the private half lives in tables with no read policy. */
-(async () => {
+/* Ownership. RLS on desk_owners returns this viewer's own row and nothing
+   else, so a successful read means "you are an owner" without the page ever
+   being told who the owners are. The buttons below are presentation; the real
+   gate is the policy on desk_decisions. */
+let isOwner = false;
+const decisions = new Map();
+
+async function loadOwnerState() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) $("authLink").textContent = "Account";
-  } catch (e) { /* signed out is the normal case */ }
-})();
+    if (!session) return;
+    $("authLink").textContent = "Account";
+
+    const { data: owner } = await supabase
+      .from("desk_owners").select("user_id").maybeSingle();
+    isOwner = Boolean(owner);
+    if (!isOwner) return;
+
+    const { data: rows } = await supabase
+      .from("desk_decisions").select("opportunity_id,verdict");
+    (rows || []).forEach(r => decisions.set(r.opportunity_id, r.verdict));
+  } catch (e) { /* signed out, or not an owner: page stays read-only */ }
+}
+
+async function decide(id, verdict, row, refs) {
+  refs.yes.disabled = refs.no.disabled = true;
+  const { error } = await supabase.from("desk_decisions").upsert({
+    opportunity_id: id,
+    verdict,
+    decided_at: new Date().toISOString(),
+    title: row.title,
+    url: row.url,
+    amount_usd: row.amount_usd,
+  }, { onConflict: "opportunity_id" });
+
+  if (error) {
+    refs.yes.disabled = refs.no.disabled = false;
+    refs.badge.hidden = false;
+    refs.badge.className = "verdict fail";
+    refs.badge.textContent = "Didn't save — try again";
+    return;
+  }
+  decisions.set(id, verdict);
+  paintVerdict(id, verdict, refs);
+}
+
+function paintVerdict(id, verdict, refs) {
+  refs.li.classList.toggle("approved", verdict === "yes");
+  refs.li.classList.toggle("passed", verdict === "no");
+  refs.controls.hidden = true;
+  refs.badge.hidden = false;
+  refs.badge.className = "verdict " + verdict;
+  refs.badge.textContent = verdict === "yes" ? "Approved — work starts" : "Passed";
+}
 
 function renderFigures(s) {
   const rows = [
@@ -211,12 +257,32 @@ function renderQueue(rows) {
       flags.forEach(f => ul.append(el("li", null, String(f))));
       li.append(ul);
     }
+
+    if (isOwner) {
+      const controls = el("div", "decide");
+      const yes = el("button", "yes", "Approve — start work");
+      const no  = el("button", null, "Pass");
+      controls.append(yes, no);
+      const badge = el("span", "verdict");
+      badge.hidden = true;
+      li.append(controls, badge);
+
+      const refs = { li, controls, badge, yes, no };
+      yes.addEventListener("click", () => decide(r.id, "yes", r, refs));
+      no.addEventListener("click",  () => decide(r.id, "no",  r, refs));
+
+      const existing = decisions.get(r.id);
+      if (existing) paintVerdict(r.id, existing, refs);
+    }
+
     list.append(li);
   }
 }
 
 (async () => {
   try {
+    await loadOwnerState();
+
     const [statsRes, queueRes] = await Promise.all([
       supabase.from("desk_stats").select("*").eq("id", "current").maybeSingle(),
       supabase.from("desk_queue").select("*").order("amount_usd", { ascending: false }).limit(40),
@@ -230,6 +296,17 @@ function renderQueue(rows) {
     $("heroDot").className = "status-dot live";
     $("queueBadge").className = "phase-badge live";
     $("queueBadge").textContent = (queueRes.data || []).length + " in queue";
+
+    if (!isOwner) {
+      const hint = el("p", "owner-hint");
+      hint.append(document.createTextNode("Approving is reserved for the owner. "));
+      const a = el("a", null, "Sign in");
+      a.href = "/admin";
+      hint.append(a, document.createTextNode(
+        " to approve or pass on any of these. Decisions are stored where every "
+        + "agent can read them, so the scheduled runs pick them up on their own."));
+      $("queue").after(hint);
+    }
 
     if (stats && stats.scanned_at) {
       const d = new Date(stats.scanned_at);
