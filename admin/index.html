@@ -91,10 +91,8 @@
   </div>
 
 <script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
-  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
-  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  import { getSupabase } from "/hb-supabase.js";
+  const supabase = await getSupabase();
 
   const root = document.getElementById("root");
   const STATES = [["live","Live"],["preview","Preview"],["coming_soon","Coming soon"]];
@@ -184,7 +182,7 @@
         '</div>' +
         '<label for="agree" style="display:flex;align-items:flex-start;gap:9px;margin:18px 0 0;color:var(--muted);cursor:pointer;line-height:1.5;font-size:13px;">' +
           '<input id="agree" type="checkbox" style="width:auto;margin:2px 0 0;flex:none;"' + (prefill && prefill.agree ? ' checked' : '') + ' />' +
-          '<span>I agree to the <a href="/standards" target="_blank" rel="noopener" style="color:var(--text);">Standards &amp; Terms</a> \u2014 no weapons, lawful use, work others can reproduce, and never charging for food, water, or shelter.</span>' +
+          '<span>I\u2019ve read the <a href="/standards" target="_blank" rel="noopener" style="color:var(--text);">About the Observatory</a> page and understand the basic boundaries for participating in a public service.</span>' +
         '</label>' +
         '<button class="primary" id="signup">Create account</button>' +
         '<div class="msg ' + (error ? 'err' : '') + '" id="msg">' + (error ? esc(error) : '') + '</div>' +
@@ -209,7 +207,7 @@
     if (!email) return fail("Please enter your email.");
     if (pw.length < 6) return fail("Use at least 6 characters for your password.");
     if (pw !== pw2) return fail("The two passwords don\u2019t match \u2014 check with Show.");
-    if (!agree) return fail("Please agree to the Standards & Terms to create an account.");
+    if (!agree) return fail("Please review the About the Observatory page before creating an account.");
     const btn = document.getElementById("signup"); btn.disabled = true;
     const msg = document.getElementById("msg"); msg.className = "msg"; msg.textContent = "Creating your account\u2026";
     const { data, error } = await supabase.auth.signUp({ email, password: pw, options: { data: { display_name: name } } });

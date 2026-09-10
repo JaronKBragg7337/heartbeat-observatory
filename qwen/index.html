@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071019" />
+  <meta name="description" content="A live, public-safe observatory for the persistent local Qwen agent and its Polymarket US tools." />
+  <title>Qwen / Polymarket US — Heartbeat Observatory</title>
+  <link rel="stylesheet" href="/qwen/qwen.css?v=owner-chat-2" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Heartbeat Observatory home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>Heartbeat Observatory</span>
+      </a>
+      <nav class="topnav" aria-label="Qwen navigation">
+        <a href="/">Directory</a>
+        <a href="/pam">PAM</a>
+        <a id="authLink" class="auth-link" href="/admin">Sign in to control</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow"><span id="heroDot" class="status-dot wait"></span> Persistent local agent</p>
+          <h1>Qwen <span>/</span> <em>Polymarket US</em></h1>
+          <div class="hero-meta">
+            <span id="lastSeen">Waiting for the first live heartbeat…</span>
+            <span class="mode-chip"><span class="mini-dot"></span> Read-only execution mode</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel console-panel" aria-labelledby="console-title">
+        <div class="panel-head console-head">
+          <div>
+            <p class="section-label">Owner channel · same MSI session</p>
+            <h2 id="console-title">Talk to Qwen</h2>
+          </div>
+          <span id="consoleState" class="phase-badge wait" role="status">Checking access</span>
+        </div>
+        <div id="authGate" class="auth-gate">
+          <strong id="gateTitle">Checking your session…</strong>
+          <p id="gateNote">The dashboard is public. Messaging is reserved for the owner.</p>
+          <a id="gateLink" class="button button-primary" href="/admin" hidden>Sign in to message Qwen →</a>
+        </div>
+        <div id="chatArea" class="chat-area" hidden>
+          <p id="chatNotice" class="chat-notice" role="status" hidden></p>
+          <div id="chatLog" class="chat-log" role="log" aria-label="Conversation with Qwen" aria-live="polite"></div>
+          <form id="composer" class="composer">
+            <label class="sr-only" for="messageInput">Message Qwen</label>
+            <textarea id="messageInput" rows="2" maxlength="8000" placeholder="Message Qwen…" disabled></textarea>
+            <div class="composer-foot">
+              <span id="composerNote" role="status">Messages persist in the owner channel.</span>
+              <button id="sendButton" class="send-button" type="submit" disabled>Send <span aria-hidden="true">↗</span></button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="connections-title">
+        <div class="section-head">
+          <div>
+            <p class="section-label">Runtime</p>
+            <h2 id="connections-title">Connection state</h2>
+          </div>
+          <p id="connectionNote" class="section-note">Reading the remote state store…</p>
+        </div>
+        <div id="componentGrid" class="component-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="dashboard-grid">
+        <div class="main-column">
+          <section class="panel portfolio-panel" aria-labelledby="portfolio-title">
+            <div class="panel-head">
+              <div>
+                <p class="section-label">Observed account</p>
+                <h2 id="portfolio-title">Polymarket US state</h2>
+              </div>
+              <span class="source-tag">MCP / API response</span>
+            </div>
+
+            <div class="account-strip">
+              <div class="account-cell">
+                <span>Account identity</span>
+                <strong id="accountIdentity">••••</strong>
+                <small id="accountSource">Identity safely redacted</small>
+              </div>
+              <div class="account-cell">
+                <span>Authentication</span>
+                <strong id="accountStatus">Waiting</strong>
+                <small id="credentialStatus">Credential presence: not observed yet</small>
+              </div>
+              <div class="account-cell">
+                <span>Observation</span>
+                <strong id="portfolioObserved">—</strong>
+                <small>Last successful account read</small>
+              </div>
+            </div>
+
+            <div class="metric-grid">
+              <div class="metric-card metric-primary">
+                <span>Available balance</span>
+                <strong id="balance">—</strong>
+                <small id="balanceNote">Waiting for live account response</small>
+              </div>
+              <div class="metric-card">
+                <span>Positions</span>
+                <strong id="positionsCount">—</strong>
+                <small>Observed open positions</small>
+              </div>
+              <div class="metric-card">
+                <span>Open orders</span>
+                <strong id="ordersCount">—</strong>
+                <small>Observed working orders</small>
+              </div>
+              <div class="metric-card">
+                <span>Retries</span>
+                <strong id="retryCount">0</strong>
+                <small id="errorCount">No runtime errors reported</small>
+              </div>
+            </div>
+
+            <div class="list-grid">
+              <div class="data-list-block">
+                <div class="subhead"><h3>Positions</h3><span>Actual response rows</span></div>
+                <div id="positionsList" class="data-list"><div class="empty-row">No positions observed.</div></div>
+              </div>
+              <div class="data-list-block">
+                <div class="subhead"><h3>Open orders</h3><span>Actual response rows</span></div>
+                <div id="ordersList" class="data-list"><div class="empty-row">No open orders observed.</div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel activity-panel" aria-labelledby="activity-title">
+            <div class="panel-head">
+              <div>
+                <p class="section-label">What is happening</p>
+                <h2 id="activity-title">Current activity</h2>
+              </div>
+              <span id="activityPhase" class="phase-badge wait">Starting</span>
+            </div>
+            <div class="activity-hero">
+              <span id="activityPulse" class="activity-pulse wait"></span>
+              <div>
+                <strong id="activityLabel">Waiting for the first live state update…</strong>
+                <p id="activityDetail">The MSI bridge publishes activity and observations through the durable message/event layer.</p>
+              </div>
+            </div>
+            <div class="research-grid">
+              <div>
+                <div class="subhead"><h3>Markets inspected</h3><span>Derived from observed tool calls</span></div>
+                <div id="marketsList" class="activity-list"><div class="empty-row">No market inspection recorded yet.</div></div>
+              </div>
+              <div>
+                <div class="subhead"><h3>Research activity</h3><span>Actual tool activity</span></div>
+                <div id="researchList" class="activity-list"><div class="empty-row">No research tool activity recorded yet.</div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel events-panel" aria-labelledby="events-title">
+            <div class="panel-head">
+              <div>
+                <p class="section-label">Durable telemetry</p>
+                <h2 id="events-title">Chronological event stream</h2>
+              </div>
+              <div class="stream-status"><span id="streamDot" class="status-dot wait"></span><span id="streamStatus">Connecting</span></div>
+            </div>
+            <p class="panel-intro">Events are stored in Supabase and rendered from the recorded worker/tool response. Expand an event to inspect its redacted payload.</p>
+            <div id="eventStream" class="event-stream" aria-live="polite"></div>
+            <button id="loadMoreEvents" class="quiet-button" type="button" hidden>Load older events</button>
+          </section>
+        </div>
+
+        <aside class="side-column">
+          <section class="panel objective-panel" aria-labelledby="objective-title">
+            <div class="panel-head">
+              <div>
+                <p class="section-label">Authoritative context</p>
+                <h2 id="objective-title">Objective</h2>
+              </div>
+              <span id="objectiveStatus" class="phase-badge wait">Loading</span>
+            </div>
+            <p id="objectiveLabel" class="objective-label">Local-model Polymarket US experiment</p>
+            <div class="objective-points">
+              <div><span class="point-mark">01</span><p><strong>Qwen is the agent.</strong> The surrounding software supplies tools, state, communication, observability, and persistence.</p></div>
+              <div><span class="point-mark">02</span><p><strong>Tool results are observed.</strong> Account and market facts shown here come from recorded MCP/API responses.</p></div>
+              <div><span class="point-mark">03</span><p><strong>Money movement is disabled.</strong> This console preserves the current read-only execution state.</p></div>
+            </div>
+            <div class="objective-foot"><span>Workspace file</span><code id="objectiveFile">OBJECTIVE.md</code></div>
+          </section>
+
+          <section class="panel provenance-panel" aria-labelledby="provenance-title">
+            <div class="panel-head">
+              <div>
+                <p class="section-label">Architecture</p>
+                <h2 id="provenance-title">Outbound by design</h2>
+              </div>
+            </div>
+            <div class="flow" aria-label="Message flow from phone to local Qwen and back">
+              <span>Phone / site</span><b>→</b><span>Supabase</span><b>→</b><span>MSI bridge</span><b>→</b><span>Qwen</span>
+            </div>
+            <p class="panel-intro">The public page never reaches into the MSI. It writes owner messages to the durable store; the outbound bridge receives them and publishes the response and telemetry back.</p>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Heartbeat Observatory / Qwen console</span>
+      <span>Public observation · authenticated control</span>
+    </footer>
+  </div>
+
+  <script type="module" src="/qwen/qwen.js?v=owner-chat-2"></script>
+</body>
+</html>

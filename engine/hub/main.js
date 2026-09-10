@@ -3065,8 +3065,8 @@ function buildInterior(kind) {
     // THE THEATER - real screenings (ported 2026-07-04 from worlds-lab Marquee Row, lib/v1/cinema.js).
     // Every reel is legally streamable from its ORIGINAL free source: Blender Foundation open
     // movies (CC BY, credit shown in-room), Internet Archive public domain, NASA public domain.
-    // HONESTY LAW: idle screen says what it is waiting for; if a reel can't load it says so and
-    // moves on; if nothing loads the screen stays honestly empty, never a fake.
+    // State language: the idle screen says what it is waiting for; if a reel can't load it says so
+    // and moves on; if nothing loads the screen stays clearly unavailable.
     // Playback is per-visitor for now (same as the lab proof); shared start/next sync over the
     // state channel is the designed next step (see TODO.md).
     const g = interiorShell(13, 15, 0x17141a, 0x241e2a, 0x0c0a0e);
@@ -3147,7 +3147,7 @@ function buildInterior(kind) {
       const f = FILMS[cIdx];
       if (f.srcFallback && !cTriedFallback) { cTriedFallback = true; setStatus("Main reel unreachable - trying the backup print..."); video.src = f.srcFallback; video.play().catch(() => {}); return; }
       cFails++;
-      if (cFails >= FILMS.length) { setStatus("No reel reachable right now - honest empty screen, never a fake. Try again later."); cStarted = false; return; }
+      if (cFails >= FILMS.length) { setStatus("No reel reachable right now. Try again later."); cStarted = false; return; }
       setStatus("That reel didn't load - trying the next one...");
       cIdx = (cIdx + 1) % FILMS.length; cTriedFallback = false; setNowShowing();
       if (cStarted) startShow();

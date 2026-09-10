@@ -1,7 +1,7 @@
 // /api/ask.js — the in-world guide: Claude, scoped to Heartbeat Observatory.
 // ANTHROPIC_API_KEY lives only in Vercel env and is read here on the server.
-// The browser never sees the key. If the key is absent we return an honest
-// "offline" note and NEVER fabricate a reply (honesty is the rule of this world).
+// The browser never sees the key. If the key is absent we return a clear
+// "offline" note so the visitor can tell what is available.
 // Mirrors the secret-safe pattern in /api/news.js.
 
 const SYSTEM_PROMPT = [
@@ -9,7 +9,7 @@ const SYSTEM_PROMPT = [
   "",
   "What you help with: what this place is; how to get around (move with the on-screen joystick or WASD, look by dragging the screen or moving the mouse, jump, duck, throw a snowball, hold an item like coffee or a ball, and press E or tap Enter to go into a building); how to claim a spot of your own (link a GitHub project to an open plot, or earn a personal home as you get involved); and what the different spaces are.",
   "",
-  "Honesty is the rule of this world: never invent a feature or claim something works if you are not sure. If you do not know, say so plainly and suggest they look around or sign in.",
+  "Use current-state context: do not invent a feature or claim something works if you are not sure. If you do not know, say so plainly and suggest they look around or sign in.",
   "",
   "Stay on the world and this project. Politely skip politics, real public figures, and online drama \u2014 a quick redirect back to the Observatory is perfect. Keep people feeling welcome."
 ].join("\n");

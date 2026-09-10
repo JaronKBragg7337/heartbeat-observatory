@@ -49,7 +49,7 @@
   <div class="wrap">
     <h1>World 2 <span class="amber">&middot; the city</span></h1>
     <p class="sub">The second world of Heartbeat Observatory. Same accounts, same places &mdash; a different sky.</p>
-    <div class="desc"><b>Being built in the open.</b> Towers with windows that come on as the sky goes down, walk-through halls for the Theater, Arcade and Library, doors that carry you to the rest of the Observatory, and eight plots on the city's edge waiting for residents to plant their projects. Multiplayer is live. Nothing here is faked: what you see below is the world as it exists right now, orbiting live.</div>
+    <div class="desc"><b>Being built in the open.</b> Towers with windows that come on as the sky goes down, walk-through halls for the Theater, Arcade and Library, doors that carry you to the rest of the Observatory, and eight plots on the city's edge waiting for residents to plant their projects. Multiplayer is live. The view below is the city as it exists right now, orbiting live.</div>
     <span class="livechip"><span class="d"></span>Live</span>
     <div class="peek"><iframe id="peek" title="World 2 live view" allow="autoplay; fullscreen" loading="lazy"></iframe></div>
     <a class="enterbtn" id="enterBtn" href="/world2/">Enter the world &rarr;</a>
@@ -58,7 +58,7 @@
     <div class="card">
       <h2>Minds in the Observatory</h2>
       <div id="minds"><div class="empty">Loading&hellip;</div></div>
-      <p class="note">The minds currently roam Town Square &mdash; World 2 is on their map next. That's the honest status.</p>
+      <p class="note">The minds currently roam Town Square &mdash; World 2 is on their map next. That is the current status.</p>
     </div>
     <div class="card">
       <h2>Residents</h2>
@@ -66,7 +66,7 @@
       <p class="note">One account, every world. Residents you see here can walk both planets.</p>
     </div>
     <footer>
-      Nothing is faked &mdash; both panels read live from the same database as <a href="/engine">Town Square's gate</a>.<br/>heartbeatobservatory.com
+      Both panels read live from the same database as <a href="/engine">Town Square's gate</a>.<br/>heartbeatobservatory.com
     </footer>
   </div>
 <script>
@@ -84,7 +84,7 @@
       var rows=(st||[]).filter(function(m){return m&&m.connected;}).sort(function(a,b){return (a.display_name||"").localeCompare(b.display_name||"");});
       document.getElementById("minds").innerHTML = rows.length ? rows.map(function(m){
         return '<div class="row"><span class="d2 '+esc(m.state)+'"></span><div><span class="who">'+esc(m.display_name)+'</span> <span class="sub2">'+esc(m.role||"")+'</span><br><span class="sub2">'+esc(m.label||m.location||"")+'</span></div><span class="st">'+esc(m.state)+'</span></div>';
-      }).join("") : '<div class="empty">No minds are connected yet &mdash; the world stays honest and leaves their place empty.</div>';
+      }).join("") : '<div class="empty">No minds are connected yet &mdash; this space will fill as more connections come online.</div>';
     }).catch(function(){});
     q("world_characters?select=*").then(function(rc){
       function worldName(w){ return w==="world2" ? "World 2 \u00b7 the city" : w==="town" ? "Town Square" : "the Observatory"; }

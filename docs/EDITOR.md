@@ -39,7 +39,8 @@ rails, coaster, rides, aircraft, space, cinema, layouts.)
 - **7d** Publish + world version: version stamp in DB; clients poll (realtime push is
   unreliable on this project) and show "The world changed — refresh to see it," so
   everyone crosses into the new world together. Visitors only ever see PUBLISHED
-  versions. Drafts are admin-eyes-only. Nothing faked.
+  versions. Drafts are admin-eyes-only, so the public world stays legible while work is
+  being prepared.
 - **7e** Claude for admins, in-world: admin says "bring/place X" → API route → Claude
   writes world_props rows → same publish gate as hands. Everyone else's Ask Claude
   stays a guide. Admin roster may grow beyond Jaron — gating is by world_admins.

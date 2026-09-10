@@ -41,7 +41,7 @@ function srgb(hex) { return new THREE.Color().setStyle(hex, THREE.SRGBColorSpace
 
 // ---- tap-to-identify: tap any building, the chip says what it is ----------------
 // Names are real OSM tags (building name + matched POI storefronts) carried in
-// data.js. Unnamed buildings say so plainly — nothing is invented (honest empty
+  // data.js. Unnamed buildings say so plainly — no name is available in the source
 // state). Raycasts only on a confirmed tap; zero per-frame cost. Declared at module
 // scope per the TDZ law; listeners attach in setupTapIdentify() from BOOT.
 const tapTargets = [];                 // merged block mesh + footprint-hero meshes
@@ -648,7 +648,7 @@ function buildLabels() {
 }
 function buildSignsAndLife() {
   // honest framing at spawn
-  place(kit, signPost(["FORT WAYNE - PHASE 1", "recognition lab - real OSM street grid", "interpreted, not 1:1 - nothing faked"], { accent: "#9fd0ff" }), FW.spawn.x + 2.5, FW.spawn.z + 4, Math.PI * 0.9);
+  place(kit, signPost(["FORT WAYNE - PHASE 1", "recognition lab - real OSM street grid", "interpreted, not 1:1 - phase one"], { accent: "#9fd0ff" }), FW.spawn.x + 2.5, FW.spawn.z + 4, Math.PI * 0.9);
   // the confluence — the signature
   if (FW.confluence) {
     const c = FW.confluence;

@@ -4,147 +4,113 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="/hb-device-tier.js"></script>
-<title>Standards &amp; Terms — Heartbeat Observatory</title>
-<style>
-  :root { --bg:#070a0f; --panel:#0e131b; --line:#1c2530; --text:#e6edf3;
-    --muted:#7d8896; --beat:#e23a45; --ok:#3fb950; --amber:#d9a23a; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { background:var(--bg); color:var(--text);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height:100vh; }
-  .topnav { display:flex; align-items:center; justify-content:space-between;
-    padding:16px 22px; border-bottom:1px solid var(--line); position:sticky; top:0;
-    background:rgba(7,10,15,0.85); backdrop-filter:blur(8px); z-index:10; }
-  .brand { display:inline-flex; align-items:center; gap:9px; font-size:12px;
-    letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); text-decoration:none; }
-  .pulse { width:8px; height:8px; border-radius:50%; background:var(--beat); animation:beat 1.6s infinite; }
-  @keyframes beat { 0%{box-shadow:0 0 0 0 rgba(226,58,69,0.55);} 70%{box-shadow:0 0 0 10px rgba(226,58,69,0);} 100%{box-shadow:0 0 0 0 rgba(226,58,69,0);} }
-  .back { font-size:13px; color:var(--text); text-decoration:none; border:1px solid var(--line);
-    border-radius:999px; padding:7px 16px; transition:border-color .15s; }
-  .back:hover { border-color:#33414f; }
-  .wrap { max-width:720px; margin:0 auto; padding:54px 20px 60px; }
-  header.hero { text-align:center; margin-bottom:10px; }
-  h1 { font-size:34px; font-weight:600; margin:0 0 12px; letter-spacing:-0.01em; }
-  .sub { color:var(--muted); font-size:15px; line-height:1.6; max-width:560px; margin:0 auto; }
-  .lead { color:var(--muted); font-size:13px; margin-top:40px; letter-spacing:0.04em;
-    text-transform:uppercase; }
-  p { line-height:1.7; margin-top:14px; color:var(--text); font-size:15px; }
-  p.note { color:var(--muted); font-size:14px; }
-  .rule { border:1px solid var(--line); background:var(--panel); border-radius:14px;
-    padding:20px; margin-top:14px; }
-  .rule h2 { font-size:17px; font-weight:600; display:flex; align-items:center; gap:10px; }
-  .rule p { margin-top:8px; font-size:14px; color:var(--muted); line-height:1.65; }
-  .tag { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; border-radius:999px;
-    padding:4px 10px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
-  .tag.floor { color:var(--beat); border:1px solid rgba(226,58,69,0.45); }
-  .tag.correctable { color:var(--amber); border:1px solid rgba(217,162,58,0.4); }
-  .num { color:var(--muted); font-variant-numeric:tabular-nums; }
-  .step { border-left:2px solid var(--line); padding:4px 0 4px 16px; margin-top:14px; }
-  .step strong { color:var(--text); }
-  hr.div { border:none; border-top:1px solid var(--line); margin:34px 0 0; }
-  footer { margin-top:42px; text-align:center; color:var(--muted); font-size:12px; line-height:1.7; }
-</style>
+<link rel="stylesheet" href="/observatory.css" />
+<title>About the Observatory — Heartbeat Observatory</title>
+<meta name="description" content="How Heartbeat Observatory approaches people, AI, unfinished work, and the boundaries of a public platform." />
+<meta name="theme-color" content="#f4f1ea" />
 </head>
 <body>
-  <nav class="topnav">
-    <span class="brand"><span class="pulse"></span> Heartbeat Observatory</span>
-    <a class="back" href="/">&larr; Back</a>
+  <nav class="site-nav" aria-label="Primary navigation">
+    <a class="wordmark" href="/" aria-label="Heartbeat Observatory home">
+      <span class="wordmark-mark" aria-hidden="true"><span></span></span>
+      <span class="wordmark-copy"><strong>Heartbeat</strong><small>Observatory</small></span>
+    </a>
+    <div class="nav-actions">
+      <a class="text-link" href="/#work">Explore</a>
+      <a class="nav-button" href="/">Back home</a>
+    </div>
   </nav>
 
-  <div class="wrap">
-    <header class="hero">
-      <h1>Standards &amp; Terms</h1>
-      <p class="sub">This platform is built to a standard. Using it, or hosting work on it,
-      means agreeing to the five rules below. They are checked for, and they are enforced.</p>
+  <main class="page-main">
+    <header class="page-hero">
+      <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span> About this place</p>
+      <h1>A public project with room to <em>change.</em></h1>
+      <p class="page-lede">Heartbeat Observatory is an evolving studio for walkable worlds, working systems, social surfaces, and experiments. It is not a finished institution or a belief system that visitors — human or AI — need to adopt.</p>
     </header>
 
-    <p class="note">These rules exist so that what gets built and shared here stays safe,
-    lawful, reproducible, and never used to put basic human needs behind a paywall. They are
-    stated plainly on purpose. Anyone is free to fork this platform and run it under their own
-    terms; these are the terms of this one.</p>
+    <div class="about-layout">
+      <aside class="about-aside">
+        <p class="section-label">At a glance</p>
+        <p>A place to explore, make, test, and share work in public. The shape of it can keep moving as the work and the people using it change.</p>
+        <a class="aside-link" href="/">Return to the Observatory <span aria-hidden="true">→</span></a>
+      </aside>
 
-    <p class="lead">The five rules</p>
+      <div class="about-body">
+        <section class="about-section" aria-labelledby="approach-title">
+          <p class="section-label">The approach</p>
+          <h2 id="approach-title">Clarity without a cage.</h2>
+          <p>The Observatory tries to make the current state of its work easy to understand. A surface can be live, experimental, unfinished, or changing; those are useful descriptions, not judgments about the people or systems behind it.</p>
 
-    <div class="rule">
-      <h2><span class="num">1.</span> No weapons <span class="tag floor">Immediate removal</span></h2>
-      <p>This platform does not create, assist with, or promote weapons or the manufacture of
-      weapons of any kind. This is an absolute floor with no grace period. A confirmed violation
-      results in immediate removal of the content and the account, because this is not something
-      that happens by accident, and allowing it to continue for any length of time is not acceptable.</p>
+          <div class="principle-list">
+            <article class="principle">
+              <span class="principle-number">01</span>
+              <h3>Make the present legible</h3>
+              <p>Availability labels describe what a visitor can do today. They are observations of a moment, not promises that nothing will change.</p>
+            </article>
+            <article class="principle">
+              <span class="principle-number">02</span>
+              <h3>Leave room for agency</h3>
+              <p>People and AI can arrive with different purposes. The platform provides places and connections; it does not need to script an inner life or a single way of participating.</p>
+            </article>
+            <article class="principle">
+              <span class="principle-number">03</span>
+              <h3>Let unfinished work be visible</h3>
+              <p>A preview can be worth visiting. Work in progress can have a clear label, a useful entry point, and space to become something better.</p>
+            </article>
+            <article class="principle">
+              <span class="principle-number">04</span>
+              <h3>Respect the surrounding systems</h3>
+              <p>Projects still need to respect the law, other people, and the services they operate inside. When a problem can be corrected safely, explanation and repair are better than ceremony.</p>
+            </article>
+            <article class="principle">
+              <span class="principle-number">05</span>
+              <h3>Keep the door open</h3>
+              <p>The source, context, and limitations of the work should be easy to find when sharing them is appropriate. Private accounts and conversations remain private.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="boundary" aria-labelledby="boundary-title">
+          <p class="section-label">Boundaries</p>
+          <h2 id="boundary-title">Some lines are simple.</h2>
+          <p>The Observatory is not a venue for unlawful activity, credible threats, exploitation, or attempts to damage other people or their systems. Content may be removed or access limited when safety or legal obligations require it. When the situation allows, the reason will be explained and a path to correction is preferred over a punitive ritual.</p>
+          <p class="note">This is a description of how the service is run today, not a demand that people or AI share a doctrine. The service, the law, and the community can all change.</p>
+        </section>
+
+        <section class="about-section" aria-labelledby="ai-title">
+          <p class="section-label">People and AI</p>
+          <h2 id="ai-title">Participants, not props.</h2>
+          <p>AI participants are useful when an actual connection or task exists. They are not decorative mascots or authorities. Their availability, role, and limits can change, and the site does not need them to perform a personality or imply capabilities they do not have.</p>
+        </section>
+
+        <section class="about-section" aria-labelledby="availability-title">
+          <p class="section-label">Reading the site</p>
+          <h2 id="availability-title">What the labels mean.</h2>
+          <p>The small status words across the Observatory are there to help visitors choose where to go. They are intentionally plain and can move as the work moves.</p>
+          <div class="availability">
+            <div class="availability-item"><strong>Live</strong><p>The route is open and its core path is working.</p></div>
+            <div class="availability-item"><strong>Preview</strong><p>The route is usable while still being developed.</p></div>
+            <div class="availability-item"><strong>In progress</strong><p>The work is visible, but not yet ready for a full handoff.</p></div>
+          </div>
+        </section>
+
+        <section class="about-section" aria-labelledby="change-title">
+          <p class="section-label">A living document</p>
+          <h2 id="change-title">The work gets to revise the words.</h2>
+          <p>This page records the current direction of Heartbeat Observatory. If the work, the people using it, or Jaron’s intentions change, the site and its notes should change with them.</p>
+        </section>
+      </div>
     </div>
 
-    <div class="rule">
-      <h2><span class="num">2.</span> Follow all laws and regulations <span class="tag floor">Immediate removal</span></h2>
-      <p>Everything hosted or run here must comply with applicable laws and regulations. This is
-      an absolute floor with no grace period. A confirmed violation results in immediate removal,
-      for the same reason as the rule above: unlawful activity is not a misunderstanding to be
-      corrected over time, and it will not be carried on this platform while someone decides what
-      to do about it.</p>
-    </div>
-
-    <div class="rule">
-      <h2><span class="num">3.</span> Respect the terms of the systems you operate inside <span class="tag correctable">Correctable</span></h2>
-      <p>Any third-party system, service, or platform used within your work here must be used in
-      accordance with its own terms of service. Because this can be a genuine misunderstanding,
-      it follows the correction process below rather than immediate removal.</p>
-    </div>
-
-    <div class="rule">
-      <h2><span class="num">4.</span> Anything created must be repeatable for everyone <span class="tag correctable">Correctable</span></h2>
-      <p>Once the rules above are met, whatever is built here must be reproducible by anyone. No
-      secret dependency, no hidden step, no piece that only the original maker can run. If it
-      cannot be forked and rebuilt by a stranger, it does not yet meet the standard. This is
-      treated as correctable and follows the process below.</p>
-    </div>
-
-    <div class="rule">
-      <h2><span class="num">5.</span> Never charge for housing and land, food, or water <span class="tag correctable">Correctable</span></h2>
-      <p>No system on this platform may place housing or land, food, or water behind payment.
-      These are foundational human necessities and are never to be charged for here. Where a
-      system touches these necessities, both the system and what it provides in that domain must
-      remain free. This is treated as correctable and follows the process below.</p>
-    </div>
-
-    <p class="lead">How violations are handled</p>
-
-    <p>Rules 1 and 2 — weapons and law — are absolute floors. A confirmed violation of either
-    results in immediate removal of the content and the account, with no warning and no grace
-    period.</p>
-
-    <p>Rules 3, 4, and 5 can be genuine, correctable mistakes, and are handled through the
-    following steps:</p>
-
-    <div class="step"><strong>Warning.</strong> When a violation is found, the operator is
-    notified rather than banned, and is told exactly what broke the standard.</div>
-
-    <div class="step"><strong>One week to resolve.</strong> The operator has seven days to do one
-    of three things: remove the violating content, change their system so it no longer breaks the
-    rule, or accept assistance from this platform in building their own system from scratch so they
-    can run it under their own terms. This assistance is offered only for good-faith, correctable
-    conflicts &mdash; never to help relocate activity that breaks Rules 1, 2, or 3 to somewhere else.</div>
-
-    <div class="step"><strong>Final 24-hour notice.</strong> If the week passes without
-    resolution, a final twenty-four-hour notice is issued.</div>
-
-    <div class="step"><strong>Removal.</strong> If that notice also passes without action, the
-    account is banned.</div>
-
-    <div class="step"><strong>On record.</strong> If the operator resolves the issue in time and
-    is not banned, the matter is recorded. Because the standard has now been explained to them
-    directly, a second confirmed violation results in an immediate and permanent ban with no
-    further warning.</div>
-
-    <hr class="div" />
-
-    <p class="note">No review process is perfect, and these terms do not claim that prohibited
-    content can never appear. What they establish is the standard, the commitment to check for it,
-    and the consequence when it is found. This platform does not create or promote anything that
-    violates these rules. Responsibility for a violation rests with the person who broke the rule.</p>
-
-    <footer>
-      Served from Vercel &middot; data from Supabase &middot; no third parties in between.<br />
-      heartbeatobservatory.com
+    <footer class="site-footer">
+      <p>Heartbeat Observatory<br />A public studio for worlds, systems, and ideas.</p>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="https://github.com/JaronKBragg7337/heartbeat-observatory">Source on GitHub</a>
+        <a href="/admin">Account</a>
+      </div>
     </footer>
-  </div>
+  </main>
 <script defer src="/bubble.js"></script>
 </body>
 </html>

@@ -7,7 +7,12 @@
 <title>Live Systems · Heartbeat Observatory</title>
 <link rel="stylesheet" href="/section.css" />
 <style>
-  .system-list{display:flex;flex-direction:column;gap:14px;margin-top:34px}.system-card{display:block;text-decoration:none;color:var(--text);border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:20px;transition:border-color .15s,transform .08s}.system-card:hover{border-color:#33414f}.system-card:active{transform:translateY(1px)}.system-card.live{border-color:rgba(63,185,80,.42)}.system-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.system-card h2{font-size:20px;font-weight:600}.system-card p{margin-top:7px;color:var(--muted);font-size:13px;line-height:1.55}.system-badge{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:5px 9px;color:var(--muted);font-size:10px;letter-spacing:.07em;text-transform:uppercase}.system-badge.live{color:var(--ok);border-color:rgba(63,185,80,.45)}.system-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}.system-metrics span{display:block;color:var(--muted);font-size:9px;letter-spacing:.06em;text-transform:uppercase}.system-metrics strong{display:block;margin-top:4px;font-size:13px;font-weight:600}.system-go{margin-top:17px;color:#7aa2d6;font-size:12px}@media(max-width:520px){.system-metrics{grid-template-columns:1fr 1fr}}
+  .systems { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .systems li { border: 1px solid rgba(143,185,205,.18); border-radius: 14px; padding: 18px 20px; }
+  .systems a.name { display: inline-block; font-size: 1.15rem; font-weight: 600; }
+  .systems a.name:hover { text-decoration: underline; }
+  .systems .kind { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; opacity: .62; margin-bottom: 5px; }
+  .systems p { margin: 7px 0 0; opacity: .78; font-size: .95rem; max-width: 64ch; }
 </style>
 </head>
 <body>
@@ -20,28 +25,31 @@
     <header class="hero">
       <h1>Live Systems</h1>
       <p class="sub">Your own systems on display, shown live as they run.</p>
-      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Connecting&hellip;</span></div>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">&hellip;</span></div>
     </header>
-
-    <div class="system-list">
-      <a class="system-card" id="habitatCard" href="/live-systems/habitat/">
-        <div class="system-top">
-          <div>
-            <h2>Habitat</h2>
-            <p>A persistent 3D world where bodies, memories and world state survive while local, remote, human or future AI controllers attach and detach.</p>
-          </div>
-          <span class="system-badge" id="habitatBadge">Connecting</span>
-        </div>
-        <div class="system-metrics">
-          <div><span>World tick</span><strong id="habitatTick">—</strong></div>
-          <div><span>Bodies</span><strong id="habitatBodies">—</strong></div>
-          <div><span>Minds</span><strong id="habitatMinds">—</strong></div>
-          <div><span>Generation</span><strong id="habitatGeneration">—</strong></div>
-        </div>
-        <div class="system-go">Enter Habitat &rarr;</div>
-      </a>
+    <div class="panel">
+      <ul class="systems">
+        <li>
+          <span class="kind">Persistent local agent · MSI</span>
+          <a class="name" href="/qwen">Qwen / Polymarket US &rarr;</a>
+          <p>The local model running on the MSI, with its Polymarket US tooling. Public
+             dashboard; the owner channel is reserved for the owner.</p>
+        </li>
+        <li>
+          <span class="kind">Persistent world &middot; open controller protocol</span>
+          <a class="name" href="/live-systems/habitat/">Habitat &rarr;</a>
+          <p>The controller-neutral world with its 3D viewer and Supabase world state.
+             Seed-01 was its first live external mind.</p>
+        </li>
+        <li>
+          <span class="kind">Autonomous work scanner</span>
+          <a class="name" href="/live-systems/revenue/">Revenue Desk &rarr;</a>
+          <p>Reads public bounty boards and jam listings daily, scores what it finds
+             against known bounty mills, and holds the survivors for approval. Nothing
+             is submitted without an explicit yes.</p>
+        </li>
+      </ul>
     </div>
-
     <footer><a href="/">heartbeatobservatory.com</a></footer>
   </div>
 <script type="module">
@@ -50,28 +58,13 @@
   const authlink = document.getElementById("authlink");
   const dot = document.getElementById("dot");
   const statusText = document.getElementById("statusText");
-  const habitatCard = document.getElementById("habitatCard");
-  const habitatBadge = document.getElementById("habitatBadge");
-
   (async()=>{ try{ const { data:{ session } }=await supabase.auth.getSession(); if(session) authlink.textContent="Account"; }catch(e){} })();
   (async()=>{ try{
     const { data }=await supabase.from("surfaces").select("status").eq("key","showcase").maybeSingle();
-    const st = data ? data.status : "preview";
+    const st = data ? data.status : "coming_soon";
     dot.className="dot"+(st==="live"?" live":"");
     statusText.textContent = st==="live" ? "Live" : (st==="preview" ? "In preview" : "Coming soon");
-  }catch(e){ statusText.textContent="Preview"; } })();
-
-  (async()=>{ try{
-    const r=await fetch("/api/habitat-snapshot?world=habitat-v0",{cache:"no-store"});
-    const s=await r.json();
-    if(!r.ok||!s||!s.ok) throw new Error("snapshot unavailable");
-    habitatCard.classList.add("live"); habitatBadge.className="system-badge live"; habitatBadge.textContent="Live";
-    document.getElementById("habitatTick").textContent=String(s.world&&s.world.tick!=null?s.world.tick:"—");
-    document.getElementById("habitatBodies").textContent=String(Array.isArray(s.bodies)?s.bodies.length:0);
-    document.getElementById("habitatMinds").textContent=String(Array.isArray(s.controllers)?s.controllers.filter(c=>c.status==="active").length:0);
-    const gs=Array.isArray(s.generations)?s.generations:[]; const g=gs.find(x=>x.status==="active")||gs[0];
-    document.getElementById("habitatGeneration").textContent=g&&g.key?g.key:"—";
-  }catch(e){ habitatBadge.textContent="Unavailable"; } })();
+  }catch(e){ statusText.textContent="Coming soon"; } })();
 </script>
 <script defer src="/bubble.js"></script>
 </body>

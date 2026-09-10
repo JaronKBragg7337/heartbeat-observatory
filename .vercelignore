@@ -1,0 +1,3 @@
+# Source-only verification and database setup; not browser-delivered assets.
+tests/
+supabase/

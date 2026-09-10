@@ -25,10 +25,10 @@ no world ever misses one (see EDITOR.md).
 2. Gate page built; landing planet added; preview/spectate mode never counts presence.
 3. Multiplayer on its own channel, following the presence laws.
 4. touch_world allowlist extended in Supabase to include the new world key.
-5. Both gates' residents lists keep telling the truth: one person, one place at a time;
-   non-visitors stay listed at the bottom, honestly marked.
+5. Both gates' residents lists keep the current context clear: one person, one place at a
+   time; non-visitors stay listed at the bottom with a visible state label.
 6. Flat page exists and the landing card links to it (Lillith's law).
-7. Honest empty states everywhere a feature is not yet real.
+7. A clear status label wherever a feature is not ready yet.
 8. TODO.md updated; completed work archived verbatim.
 
 ## Known fossil to clean up (logged, not urgent)

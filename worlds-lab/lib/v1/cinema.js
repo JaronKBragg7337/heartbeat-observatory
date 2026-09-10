@@ -2,8 +2,8 @@
 // Every reel is legally streamable: Blender Foundation open movies (CC BY — credit
 // shown in-world, as the license asks), true public-domain features from the
 // Internet Archive, and NASA footage (public domain, courtesy NASA).
-// HONESTY LAW: if a reel can't load, the screen says so plainly and moves on —
-// and if nothing loads, the theater shows an honest empty screen, never a fake.
+// State language: if a reel can't load, the screen says so plainly and moves on —
+// and if nothing loads, the theater shows a clear unavailable state.
 // Sources verified live on 2026-06-11 (see worlds-lab/CREDITS.md for the paper trail).
 // LIB FREEZE LAW: v1 files are frozen once worlds ship on them. Improvements go in lib/v2/.
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
@@ -117,7 +117,7 @@ export function cinema(kit, o) {
     }
     failures++;
     if (failures >= films.length) {
-      setStatus("No reel reachable right now - honest empty screen, never a fake. Try again later.");
+      setStatus("No reel reachable right now. Try again later.");
       started = false;
       return;
     }
@@ -179,7 +179,7 @@ export function cinema(kit, o) {
     });
 
     // the far wall IS the screen (the house flagship-theater spec)
-    // The idle screen TELLS you it's idle (honest empty states apply to pixels too).
+    // The idle screen TELLS you it's idle; current state applies to pixels too.
     const idleMap = textTexture(["The screen is waiting", "Step on the glowing green pad to start the screening", "Amber pad changes the reel"], { w: 1024, h: 576, bg: "#070a10", accent: "#ffd166", font: "bold 52px system-ui, sans-serif", subFont: "30px system-ui, sans-serif" });
     screenMat = new THREE.MeshStandardMaterial({ map: idleMap, color: 0xffffff, roughness: 0.4, emissive: 0x3a4252, emissiveIntensity: 0.55, emissiveMap: idleMap });
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(half * 1.6, half * 0.9), screenMat);

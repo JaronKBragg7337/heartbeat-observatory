@@ -50,8 +50,9 @@ unlinked). Docs shipped June 11 (charter/shell/world-standard/editor/brief/metho
   Engineering law: phones decode 1-3 <video> elements, never dozens - share ONE video texture
   across many surfaces, and use cheap procedural CanvasTextures for everything ticker-like.
   The killer version: render the Observatory's OWN live data as signage - the Perplexity news
-  feed as a scrolling tower ticker, the social feed on a jumbotron. Real data, nothing faked,
-  alive by definition. Also feeds Fort Wayne (Embassy marquee w/ real reels, stadium screen).
+  feed as a scrolling tower ticker, the social feed on a jumbotron. Current data gives the
+  surfaces context and a reason to be there. Also feeds Fort Wayne (Embassy marquee w/ real
+  reels, stadium screen).
 - Home doors → private rooms (apartment-room system reuse); finish home interiors.
 - Build on upper floors: world_props.y column + place_prop p_y + render/preview honoring y.
 - Guest vs account clarity: what signed-out visitors can do and how to join.
