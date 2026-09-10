@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1410" />
+  <meta name="description" content="A paper-trading rehearsal of the Qwen Polymarket agent: live market prices, simulated money, no real account." />
+  <title>Paper Trading — Heartbeat Observatory</title>
+  <link rel="stylesheet" href="/live-systems/paper/paper.css?v=1" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Heartbeat Observatory home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>Heartbeat Observatory</span>
+      </a>
+      <nav class="topnav" aria-label="Paper trading navigation">
+        <a href="/">Directory</a>
+        <a href="/live-systems/">Live Systems</a>
+        <a href="/qwen">Qwen (live)</a>
+        <a id="authLink" class="auth-link" href="/admin">Sign in</a>
+      </nav>
+    </header>
+
+    <main>
+      <!-- The banner is the most important element on this page. Every number below
+           is simulated, and a reader must never mistake it for the funded account. -->
+      <div class="sim-banner" role="status">
+        <strong>PAPER TRADING &mdash; SIMULATED MONEY.</strong>
+        Real Polymarket prices, fake balance. No real account is reachable from here.
+        The funded agent lives at <a href="/qwen">/qwen</a>.
+      </div>
+
+      <section class="hero">
+        <p class="eyebrow"><span id="heroDot" class="status-dot wait"></span> Rehearsal &middot; no capital at risk</p>
+        <h1>Paper <span>/</span> <em>Trading</em></h1>
+        <div class="hero-meta">
+          <span id="lastSync">Waiting for the first live read&hellip;</span>
+          <span class="mode-chip"><span class="mini-dot"></span> <span id="modeNote">Simulated fills, live order books</span></span>
+        </div>
+        <p class="lede">
+          The same agent, the same markets, the same order books &mdash; settled against a
+          local simulator instead of a funded account. This exists so the system can be
+          watched doing a full cycle before real money is involved. Slippage is simulated,
+          not assumed: a fill that crosses the spread costs what it would really cost.
+        </p>
+      </section>
+
+      <section class="stats" aria-label="Paper account">
+        <div class="stat"><span class="k">Total value</span><span class="v" id="sTotal">&mdash;</span></div>
+        <div class="stat"><span class="k">Profit / loss</span><span class="v" id="sPnl">&mdash;</span></div>
+        <div class="stat"><span class="k">Cash</span><span class="v" id="sCash">&mdash;</span></div>
+        <div class="stat"><span class="k">In positions</span><span class="v" id="sPos">&mdash;</span></div>
+        <div class="stat"><span class="k">Open positions</span><span class="v" id="sOpen">&mdash;</span></div>
+        <div class="stat"><span class="k">Trades placed</span><span class="v" id="sTrades">&mdash;</span></div>
+      </section>
+
+      <section class="panel">
+        <p class="panel-kicker">Held right now</p>
+        <h2>Open positions</h2>
+        <p class="panel-note">
+          Valued at live midpoints. Unrealized profit is what the position would be worth
+          if closed at the current book &mdash; not what it cost.
+        </p>
+        <div id="positions" class="rows"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <section class="panel">
+        <p class="panel-kicker">What the agent actually did</p>
+        <h2>Trade history</h2>
+        <p class="panel-note">
+          Newest first. <strong>Slippage</strong> is what crossing the spread cost on entry;
+          <strong>levels</strong> is how many order-book levels the fill consumed. A fill
+          that eats several levels moved the market against itself.
+        </p>
+        <div id="trades" class="rows"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <footer class="foot">
+        <p>
+          Simulated account mirrored from the local paper trader. Prices are real and public;
+          the balance is not. Nothing here can place an order on Polymarket.
+        </p>
+      </footer>
+    </main>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient(
+    "https://ygjpnvrwhkrowkrskftk.supabase.co",
+    "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN"
+  );
+  const $ = (id) => document.getElementById(id);
+  const usd = (n) => (n === null || n === undefined || isNaN(n))
+    ? "&mdash;"
+    : "$" + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // Match the rest of the site: swap "Sign in" to "Account" when a session exists.
+  (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && $("authLink")) $("authLink").textContent = "Account";
+      supabase.auth.onAuthStateChange((_e, s) => {
+        if ($("authLink")) $("authLink").textContent = s ? "Account" : "Sign in";
+      });
+    } catch (e) {}
+  })();
+
+  function ago(iso) {
+    if (!iso) return "never";
+    const secs = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+    if (secs < 90) return Math.round(secs) + "s ago";
+    if (secs < 5400) return Math.round(secs / 60) + " min ago";
+    return Math.round(secs / 3600) + " hr ago";
+  }
+
+  async function load() {
+    const [{ data: st }, { data: pos }, { data: tr }] = await Promise.all([
+      supabase.from("paper_state").select("*").eq("id", "current").maybeSingle(),
+      supabase.from("paper_positions").select("*"),
+      supabase.from("paper_trades").select("*").order("id", { ascending: false }).limit(40),
+    ]);
+
+    if (st) {
+      $("sTotal").innerHTML = usd(st.total_value);
+      $("sCash").innerHTML = usd(st.cash);
+      $("sPos").innerHTML = usd(st.positions_value);
+      $("sOpen").textContent = st.open_positions ?? 0;
+      $("sTrades").textContent = st.trade_count ?? 0;
+
+      const pnl = Number(st.pnl ?? 0);
+      const el = $("sPnl");
+      el.innerHTML = (pnl >= 0 ? "+" : "−") + usd(Math.abs(pnl)).replace("$", "$");
+      el.className = "v " + (pnl > 0 ? "up" : pnl < 0 ? "down" : "");
+
+      $("lastSync").textContent = "Last sync " + ago(st.synced_at);
+      $("heroDot").className = "status-dot " + (
+        (Date.now() - new Date(st.synced_at).getTime()) < 15 * 60 * 1000 ? "ok" : "wait");
+      // Surface the honest-pricing flag rather than hiding it.
+      if (st.note) $("modeNote").textContent = st.note.replace(/^PAPER TRADING - /, "");
+    }
+
+    $("positions").innerHTML = (pos && pos.length) ? pos.map(p => {
+      const u = Number(p.unrealized_pnl ?? 0);
+      return `<article class="row">
+        <div class="row-main">
+          <p class="row-title">${esc(p.market_question || p.market_slug)}</p>
+          <p class="row-sub">
+            <span class="pill">${esc(p.outcome)}</span>
+            ${Number(p.shares).toFixed(2)} shares &middot;
+            entry ${Number(p.avg_entry_price).toFixed(4)} &middot;
+            now ${Number(p.current_price).toFixed(4)}
+          </p>
+        </div>
+        <div class="row-side">
+          <span class="row-value">${usd(p.current_value)}</span>
+          <span class="row-delta ${u > 0 ? "up" : u < 0 ? "down" : ""}">
+            ${u >= 0 ? "+" : "−"}${usd(Math.abs(u))}
+          </span>
+        </div>
+      </article>`;
+    }).join("") : `<p class="empty">No open positions.</p>`;
+
+    $("trades").innerHTML = (tr && tr.length) ? tr.map(t => `
+      <article class="row">
+        <div class="row-main">
+          <p class="row-title">${esc(t.market_question || t.market_slug)}</p>
+          <p class="row-sub">
+            <span class="pill ${t.side === "buy" ? "buy" : "sell"}">${esc(t.side)} ${esc(t.outcome)}</span>
+            ${usd(t.amount_usd)} at ${Number(t.avg_price ?? 0).toFixed(4)} &middot;
+            ${Number(t.shares ?? 0).toFixed(2)} shares &middot;
+            slippage ${Number(t.slippage ?? 0).toFixed(2)} &middot;
+            ${t.levels_filled ?? 0} level${t.levels_filled === 1 ? "" : "s"}
+            ${t.is_partial ? '&middot; <span class="warn">partial</span>' : ""}
+          </p>
+        </div>
+        <div class="row-side"><span class="row-when">${esc((t.created_at || "").replace("T", " ").slice(0, 16))}</span></div>
+      </article>`).join("") : `<p class="empty">No trades yet. When the agent places one, it appears here.</p>`;
+  }
+
+  load().catch(e => { $("positions").innerHTML = `<p class="empty">Could not load: ${esc(e.message)}</p>`; });
+  setInterval(() => load().catch(() => {}), 30000);
+</script>
+</body>
+</html>
