@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0a0f18" />
   <meta name="description" content="Trade proposals awaiting the owner's decision: what the agent wants to do, why, and whether the numbers were independently verified." />
   <title>Trade Desk — Heartbeat Observatory</title>
-  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=2" />
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=3" />
 </head>
 <body>
   <div class="shell">
@@ -67,7 +67,8 @@
           <strong>Edge</strong> is the independent probability minus what you would pay.
           <strong>Spread</strong> is what entry costs. Edge must beat spread or it should not be here.
           <strong>Open interest</strong> is whether you could get out again &mdash; a tight spread on an
-          empty book is not a real market.
+          empty book is not a real market. <strong>Size</strong> is yours to change before you approve;
+          every share pays $1 if the side you bought is right, nothing if it is wrong.
         </p>
         <div id="pending" class="rows"><p class="empty">Loading&hellip;</p></div>
       </section>
@@ -128,11 +129,11 @@
     } catch (e) { /* signed out or not an owner: page stays read-only */ }
   }
 
-  async function decide(id, verdict, btns) {
+  async function decide(id, verdict, btns, sizeUsd) {
     btns.forEach(b => b.disabled = true);
-    const { error } = await supabase.from("trade_proposals")
-      .update({ verdict, decided_at: new Date().toISOString() })
-      .eq("id", id);
+    const patch = { verdict, decided_at: new Date().toISOString() };
+    if (verdict === "approved" && sizeUsd > 0) patch.size_usd = sizeUsd;
+    const { error } = await supabase.from("trade_proposals").update(patch).eq("id", id);
     if (error) { btns.forEach(b => b.disabled = false); alert("Could not save: " + error.message); return; }
     load();
   }
@@ -153,15 +154,27 @@
 
     const canDecide = isOwner && !decided && verified && edgeOk;
 
+    const entry = Number(p.entry_price), size = Number(p.size_usd) || 1;
+    const shares = entry > 0 ? size / entry : 0;
+    const win = shares - size;   // each share pays $1 if right
+    const buying = p.side === "yes"
+      ? `buy <strong>${esc(p.outcome || "YES")}</strong> at ${cents(p.entry_price)} a share`
+      : `bet <strong>against ${esc(p.outcome || "YES")}</strong> at ${cents(p.entry_price)} a share (Yes is trading ${cents(p.bid)}&ndash;${cents(p.ask)})`;
+    const where = [p.tags || p.category, p.market_type].filter(Boolean).map(esc).join(" &middot; ");
     return `<article class="row">
       <div class="row-main">
-        <p class="row-title">${esc(p.question || p.slug)}</p>
+        <p class="row-title">${esc(p.event_title ? p.event_title + " — " + (p.outcome || "") : (p.question || p.slug))}</p>
+        ${where || p.market_url ? `<p class="row-where">${where}${p.market_url ? ` &middot; <a href="${esc(p.market_url)}" target="_blank" rel="noopener">open in Polymarket &nearr;</a>` : ""}</p>` : ""}
         <p class="row-sub">
           <span class="pill ${p.side === "yes" ? "buy" : "sell"}">${esc(p.side)}</span>
-          entry ${cents(p.entry_price)} &middot; book ${cents(p.bid)}/${cents(p.ask)} &middot;
-          spread ${cents(p.spread)} &middot; independent read ${pct(p.scout_probability)} &middot;
-          <strong class="${edgeOk ? "good" : "bad"}">edge ${cents(p.edge)}</strong> &middot;
-          size ${money(p.size_usd)}
+          ${buying} &middot; spread ${cents(p.spread)} &middot; independent read ${pct(p.scout_probability)} &middot;
+          <strong class="${edgeOk ? "good" : "bad"}">edge ${cents(p.edge)}</strong>
+        </p>
+        <p class="row-sub">
+          ${decided
+            ? `size ${money(p.size_usd)} &middot; ${shares.toFixed(2)} shares &middot; pays ${money(shares)} if right (+${money(win)})`
+            : `<label class="size">$ <input type="number" class="size-in" data-id="${p.id}" value="${size.toFixed(2)}" min="0.50" step="0.50" inputmode="decimal"></label>
+               <span class="size-calc" data-id="${p.id}">${shares.toFixed(2)} shares &middot; pays ${money(shares)} if right (+${money(win)})</span>`}
         </p>
         ${p.rationale ? `<p class="row-why">${esc(p.rationale)}</p>` : ""}
         ${p.proposed_by ? `<p class="row-when">proposed by ${esc(p.proposed_by)} &middot; ${new Date(p.proposed_at).toLocaleString()}</p>` : ""}
@@ -264,7 +277,18 @@
     document.querySelectorAll(".btn").forEach(b => {
       b.onclick = () => {
         const sibs = [...b.parentElement.querySelectorAll(".btn")];
-        decide(Number(b.dataset.id), b.dataset.v, sibs);
+        const inp = document.querySelector(`.size-in[data-id="${b.dataset.id}"]`);
+        decide(Number(b.dataset.id), b.dataset.v, sibs, inp ? Number(inp.value) : 0);
+      };
+    });
+    // live "pays $X if right" as the owner edits the size
+    document.querySelectorAll(".size-in").forEach(inp => {
+      inp.oninput = () => {
+        const p = all.find(r => r.id === Number(inp.dataset.id)); if (!p) return;
+        const entry = Number(p.entry_price), size = Number(inp.value) || 0;
+        const shares = entry > 0 ? size / entry : 0;
+        const calc = document.querySelector(`.size-calc[data-id="${p.id}"]`);
+        if (calc) calc.innerHTML = `${shares.toFixed(2)} shares &middot; pays ${money(shares)} if right (+${money(shares - size)})`;
       };
     });
   }
