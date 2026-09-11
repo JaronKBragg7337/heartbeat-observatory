@@ -51,8 +51,8 @@
         <p class="panel-kicker">The account these decisions spend from</p>
         <h2>Account</h2>
         <div class="stats" aria-label="Account">
-          <div class="stat"><span class="k">Balance</span><span class="v" id="aBal">&mdash;</span></div>
-          <div class="stat"><span class="k">Buying power</span><span class="v" id="aBp">&mdash;</span></div>
+          <div class="stat"><span class="k">Available to trade</span><span class="v" id="aBp">&mdash;</span></div>
+          <div class="stat"><span class="k">In positions</span><span class="v" id="aBal">&mdash;</span></div>
           <div class="stat"><span class="k">Open positions</span><span class="v" id="aPos">&mdash;</span></div>
           <div class="stat"><span class="k">Resting orders</span><span class="v" id="aOrd">&mdash;</span></div>
         </div>
@@ -76,6 +76,19 @@
         <p class="panel-kicker">Already decided</p>
         <h2>History</h2>
         <div id="history" class="rows"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <section class="panel">
+        <p class="panel-kicker">Who did what</p>
+        <h2>Account ledger</h2>
+        <p class="panel-note">
+          Every fill, resolution and deposit on the account, labelled by who made it. <strong>System</strong>
+          means a proposal on this page was approved by the owner and placed by the executor script &mdash;
+          it has a proposal number and an order trail. <strong>Owner, by hand</strong> means the owner traded
+          directly in the Polymarket app; the venue itself marks those orders as manual. Nothing here is
+          inferred from silence: an AI acting through any other route would show up as <em>unknown</em>, not vanish.
+        </p>
+        <div id="ledger" class="rows"><p class="empty">Loading&hellip;</p></div>
       </section>
 
       <footer class="foot">
@@ -183,22 +196,51 @@
     </article>`;
   }
 
+  const ACTOR = { "system": ["System", "ok"], "jaron-manual": ["Owner, by hand", "warn"], "mixed": ["Mixed", "warn"], "unknown": ["Unknown", "bad"] };
+  function ledgerRow(t) {
+    const [label, cls] = ACTOR[t.actor] || ["Unknown", "bad"];
+    const when = new Date(t.at).toLocaleString();
+    let what = "";
+    if (t.kind === "fill") {
+      what = `<span class="pill ${t.side === "yes" ? "buy" : "sell"}">${esc(t.side)}</span> ${esc(t.outcome || "")} &middot; ${Number(t.quantity).toFixed(2)} shares @ ${cents(t.price)} &middot; ${money(t.cost_usd)}`;
+    } else if (t.kind === "resolution") {
+      const pnl = Number(t.pnl_usd);
+      what = `resolved &middot; <strong class="${pnl >= 0 ? "good" : "bad"}">${pnl >= 0 ? "+" : "-"}${money(Math.abs(pnl))}</strong> on ${money(t.cost_usd)} in`;
+    } else {
+      what = `${esc(t.kind)} ${money(t.cost_usd)} &middot; ${esc(t.note || "")}`;
+    }
+    return `<article class="row">
+      <div class="row-main">
+        <p class="row-title">${esc(t.title || (t.kind === "deposit" ? "Deposit" : t.kind))}</p>
+        <p class="row-sub">${what}</p>
+        <p class="flags"><span class="flag ${cls}">${label}</span>${t.proposal_id ? `<span class="flag">proposal #${t.proposal_id}</span>` : ""}<span class="flag">${esc(when)}</span></p>
+      </div>
+    </article>`;
+  }
+
+  async function loadLedger() {
+    const { data: rows } = await supabase.from("desk_trades").select("*").order("at", { ascending: false }).limit(80);
+    $("ledger").innerHTML = (rows && rows.length) ? rows.map(ledgerRow).join("") : `<p class="empty">No account activity yet.</p>`;
+  }
+
   async function loadAccount() {
     const { data: a } = await supabase.from("desk_account").select("*").eq("id", "polymarket-us").maybeSingle();
     if (!a) { $("positions").innerHTML = `<p class="empty">No account snapshot yet.</p>`; return; }
-    $("aBal").innerHTML = money(a.balance_usd);
+    const inPos = (a.positions || []).reduce((t, p) => t + (Number(p.value) || 0), 0);
     $("aBp").innerHTML  = money(a.buying_power);
+    $("aBal").innerHTML = money(inPos);
     $("aPos").textContent = a.positions_count ?? (a.positions || []).length;
     $("aOrd").textContent = a.open_orders_count ?? (a.open_orders || []).length;
     const pos = a.positions || [];
     $("positions").innerHTML = pos.length ? pos.map(positionRow).join("")
       : `<p class="empty">No open positions.</p>`;
     $("aWhen").textContent = "Snapshot " + new Date(a.updated_at).toLocaleString() +
-      " — refreshed every 5 minutes by the verifier script. Balance includes funds still on deposit hold; buying power is what can be spent now.";
+      " — refreshed every 5 minutes by the verifier script. Available = what can be spent now (the app's \"available\"); deposits still on hold are not counted.";
   }
 
   async function load() {
     loadAccount().catch(() => {});
+    loadLedger().catch(() => {});
     const { data: rows } = await supabase.from("trade_proposals")
       .select("*").order("proposed_at", { ascending: false }).limit(60);
     const all = rows || [];
