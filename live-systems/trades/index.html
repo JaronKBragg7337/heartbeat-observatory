@@ -86,8 +86,9 @@
           Every fill, resolution and deposit on the account, labelled by who made it. <strong>System</strong>
           means a proposal on this page was approved by the owner and placed by the executor script &mdash;
           it has a proposal number and an order trail. <strong>Owner, by hand</strong> means the owner traded
-          directly in the Polymarket app; the venue itself marks those orders as manual. Nothing here is
-          inferred from silence: an AI acting through any other route would show up as <em>unknown</em>, not vanish.
+          directly in the Polymarket app; the venue itself marks those orders as manual. <strong>AI, outside the
+          queue</strong> means an API order with no proposal behind it &mdash; an agent traded without approval.
+          Nothing here is inferred from silence; every line comes from the venue&rsquo;s own record.
         </p>
         <div id="ledger" class="rows"><p class="empty">Loading&hellip;</p></div>
       </section>
@@ -209,7 +210,7 @@
     </article>`;
   }
 
-  const ACTOR = { "system": ["System", "ok"], "jaron-manual": ["Owner, by hand", "warn"], "mixed": ["Mixed", "warn"], "unknown": ["Unknown", "bad"] };
+  const ACTOR = { "system": ["System, via this queue", "ok"], "jaron-manual": ["Owner, by hand", "warn"], "ai-outside-queue": ["AI, outside the queue", "bad"], "mixed": ["Mixed", "warn"], "unknown": ["Unknown", "bad"] };
   function ledgerRow(t) {
     const [label, cls] = ACTOR[t.actor] || ["Unknown", "bad"];
     const when = new Date(t.at).toLocaleString();
