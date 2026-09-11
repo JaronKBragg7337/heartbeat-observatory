@@ -198,11 +198,13 @@
       grid.innerHTML = "";
       const sections = Array.isArray(data) ? data : [];
       if (!sections.some((surface) => surface.key === "pam")) sections.push({ key: "pam", name: "PAM", status: "preview", position: 999 });
-      if (!sections.some((surface) => surface.key === "qwen")) sections.push({ key: "qwen", name: "Qwen Observatory", status: "live", position: 7 });
+      // 2026-09-11, Jaron: "one page for it all." Qwen and Revenue Desk live under Live Systems now;
+      // the pages stay, the front-door entries go. Reversible: remove the key from HIDDEN.
+      const HIDDEN = new Set(["qwen", "revenue"]);
 
       for (const surface of sections) {
         const href = SLUGS[surface.key];
-        if (!href) continue;
+        if (!href || HIDDEN.has(surface.key)) continue;
         const info = statusInfo(surface.status);
         const row = document.createElement("a");
         row.className = "surface-row";
