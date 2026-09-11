@@ -87,7 +87,9 @@
           means a proposal on this page was approved by the owner and placed by the executor script &mdash;
           it has a proposal number and an order trail. <strong>Owner, by hand</strong> means the owner traded
           directly in the Polymarket app; the venue itself marks those orders as manual. <strong>AI, outside the
-          queue</strong> means an API order with no proposal behind it &mdash; an agent traded without approval.
+          queue</strong> means an API order with no proposal behind it &mdash; an agent traded without approval
+          and without a trail. <strong>Live agent, no approval</strong> means an agent the owner has told to trade on
+          its own judgement (e.g. Live Wire, mid-game) &mdash; no approval, but its reasoning is on the row.
           Nothing here is inferred from silence; every line comes from the venue&rsquo;s own record.
         </p>
         <div id="ledger" class="rows"><p class="empty">Loading&hellip;</p></div>
@@ -184,7 +186,7 @@
       </div>
       <div class="row-side">
         ${decided
-          ? `<span class="verdict ${esc(p.verdict)}">${esc(p.verdict)}</span>${p.placed ? '<span class="row-when">placed</span>' : ""}`
+          ? `<span class="verdict ${esc(p.verdict)}">${p.verdict === "auto" ? "auto (no approval)" : esc(p.verdict)}</span>${p.placed ? '<span class="row-when">placed</span>' : ""}`
           : canDecide
             ? `<button class="btn yes" data-id="${p.id}" data-v="approved">Approve</button>
                <button class="btn no"  data-id="${p.id}" data-v="rejected">Pass</button>`
@@ -212,7 +214,9 @@
 
   const ACTOR = { "system": ["System, via this queue", "ok"], "jaron-manual": ["Owner, by hand", "warn"], "ai-outside-queue": ["AI, outside the queue", "bad"], "mixed": ["Mixed", "warn"], "unknown": ["Unknown", "bad"] };
   function ledgerRow(t) {
-    const [label, cls] = ACTOR[t.actor] || ["Unknown", "bad"];
+    const [label, cls] = t.actor && t.actor.startsWith("auto:")
+      ? [`Live agent, no approval — ${t.actor.slice(5)}`, "warn"]
+      : (ACTOR[t.actor] || ["Unknown", "bad"]);
     const when = new Date(t.at).toLocaleString();
     let what = "";
     if (t.kind === "fill") {
