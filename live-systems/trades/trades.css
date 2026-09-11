@@ -134,3 +134,6 @@ h1 em{font-style:normal;color:var(--accent)}
 .verdict.approved{color:var(--up);border-color:var(--accent-soft)}
 .verdict.rejected{color:var(--down);border-color:#3a2220}
 .row-side{gap:8px}
+
+#accountPanel .stats{margin-top:14px}
+#accountPanel .rows{margin-top:14px}

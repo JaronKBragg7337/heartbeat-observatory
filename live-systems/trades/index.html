@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0a0f18" />
   <meta name="description" content="Trade proposals awaiting the owner's decision: what the agent wants to do, why, and whether the numbers were independently verified." />
   <title>Trade Desk — Heartbeat Observatory</title>
-  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=1" />
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=2" />
 </head>
 <body>
   <div class="shell">
@@ -45,6 +45,19 @@
         <div class="stat"><span class="k">Verified</span><span class="v" id="sVerified">&mdash;</span></div>
         <div class="stat"><span class="k">Approved</span><span class="v" id="sApproved">&mdash;</span></div>
         <div class="stat"><span class="k">Placed</span><span class="v" id="sPlaced">&mdash;</span></div>
+      </section>
+
+      <section class="panel" id="accountPanel">
+        <p class="panel-kicker">The account these decisions spend from</p>
+        <h2>Account</h2>
+        <div class="stats" aria-label="Account">
+          <div class="stat"><span class="k">Balance</span><span class="v" id="aBal">&mdash;</span></div>
+          <div class="stat"><span class="k">Buying power</span><span class="v" id="aBp">&mdash;</span></div>
+          <div class="stat"><span class="k">Open positions</span><span class="v" id="aPos">&mdash;</span></div>
+          <div class="stat"><span class="k">Resting orders</span><span class="v" id="aOrd">&mdash;</span></div>
+        </div>
+        <div id="positions" class="rows"><p class="empty">Loading&hellip;</p></div>
+        <p class="panel-note" id="aWhen"></p>
       </section>
 
       <section class="panel">
@@ -138,6 +151,7 @@
           size ${money(p.size_usd)}
         </p>
         ${p.rationale ? `<p class="row-why">${esc(p.rationale)}</p>` : ""}
+        ${p.proposed_by ? `<p class="row-when">proposed by ${esc(p.proposed_by)} &middot; ${new Date(p.proposed_at).toLocaleString()}</p>` : ""}
         ${p.kill_criteria ? `<p class="row-kill"><strong>Kill if:</strong> ${esc(p.kill_criteria)}</p>` : ""}
         <p class="flags">${flags.join(" ")}</p>
       </div>
@@ -152,7 +166,39 @@
     </article>`;
   }
 
+  function positionRow(p) {
+    const shares = Number(p.shares), cost = Number(p.cost), value = Number(p.value);
+    const short = shares < 0;
+    const pnl = (isNaN(cost) || isNaN(value)) ? null : value - cost;
+    return `<article class="row">
+      <div class="row-main">
+        <p class="row-title">${esc(p.title || p.slug)}</p>
+        <p class="row-sub">
+          <span class="pill ${short ? "sell" : "buy"}">${short ? "no" : "yes"}</span>
+          ${esc(p.outcome || "")} &middot; ${Math.abs(shares).toFixed(2)} shares @ ${cents(p.avg_px)}
+          &middot; cost ${money(cost)} &middot; now ${money(value)}
+          ${pnl == null ? "" : `&middot; <strong class="${pnl >= 0 ? "good" : "bad"}">${pnl >= 0 ? "+" : ""}${money(pnl).replace("$-","-$")}</strong>`}
+        </p>
+      </div>
+    </article>`;
+  }
+
+  async function loadAccount() {
+    const { data: a } = await supabase.from("desk_account").select("*").eq("id", "polymarket-us").maybeSingle();
+    if (!a) { $("positions").innerHTML = `<p class="empty">No account snapshot yet.</p>`; return; }
+    $("aBal").innerHTML = money(a.balance_usd);
+    $("aBp").innerHTML  = money(a.buying_power);
+    $("aPos").textContent = a.positions_count ?? (a.positions || []).length;
+    $("aOrd").textContent = a.open_orders_count ?? (a.open_orders || []).length;
+    const pos = a.positions || [];
+    $("positions").innerHTML = pos.length ? pos.map(positionRow).join("")
+      : `<p class="empty">No open positions.</p>`;
+    $("aWhen").textContent = "Snapshot " + new Date(a.updated_at).toLocaleString() +
+      " — refreshed every 5 minutes by the verifier script. Balance includes funds still on deposit hold; buying power is what can be spent now.";
+  }
+
   async function load() {
+    loadAccount().catch(() => {});
     const { data: rows } = await supabase.from("trade_proposals")
       .select("*").order("proposed_at", { ascending: false }).limit(60);
     const all = rows || [];
