@@ -1,0 +1,136 @@
+/* Paper trading view. Deliberately GREEN-tinted, where the live Qwen console is blue —
+   colour is the fastest signal that this is the rehearsal, not the funded account. */
+:root{
+  --bg:#0a0f18; --panel:#111a26; --line:#1f2c3d; --line-soft:#17202e;
+  --ink:#e8eef6; --muted:#94a3b6; --dim:#6f8098;
+  --accent:#63a9ff; --accent-soft:#1b2f4a;
+  --up:#4ade9b; --down:#f2766a; --warn:#e8c37a;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+.shell{max-width:1040px;margin:0 auto;padding:0 20px 72px}
+
+/* header */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:18px 0;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;
+  font-weight:600;letter-spacing:.04em;font-size:13px;text-transform:uppercase;color:var(--muted)}
+.brand-mark{display:inline-flex;align-items:flex-end;gap:2px;height:16px}
+.brand-mark i{display:block;width:3px;background:var(--accent);border-radius:2px;opacity:.85}
+.brand-mark i:nth-child(1){height:8px}
+.brand-mark i:nth-child(2){height:16px}
+.brand-mark i:nth-child(3){height:11px}
+.topnav{display:flex;gap:18px;align-items:center;font-size:14px;flex-wrap:wrap}
+.topnav a{color:var(--muted);text-decoration:none}
+.topnav a:hover{color:var(--ink)}
+.auth-link{border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+
+/* the banner does the safety work — it must be impossible to miss */
+.sim-banner{
+  margin:22px 0 0;padding:14px 18px;border-radius:var(--radius);
+  background:linear-gradient(90deg,var(--accent-soft),transparent);
+  border:1px solid var(--accent);color:var(--ink);font-size:14.5px;line-height:1.5;
+}
+.sim-banner strong{color:var(--accent);letter-spacing:.02em}
+.sim-banner a{color:var(--accent)}
+
+/* hero */
+.hero{padding:34px 0 8px}
+.eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 14px;
+  font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.status-dot{width:9px;height:9px;border-radius:50%;background:var(--dim);flex:none}
+.status-dot.ok{background:var(--accent);box-shadow:0 0 0 4px rgba(74,222,155,.16)}
+.status-dot.wait{background:var(--warn)}
+h1{margin:0;font-size:clamp(34px,6vw,54px);line-height:1.04;font-weight:600;letter-spacing:-.02em}
+h1 span{color:var(--dim);font-weight:300}
+h1 em{font-style:normal;color:var(--accent)}
+.hero-meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0 0;
+  font-size:13.5px;color:var(--muted)}
+.mode-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 13px;
+  border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+.mini-dot{width:6px;height:6px;border-radius:50%;background:var(--warn);flex:none}
+.lede{max-width:66ch;color:var(--muted);margin:20px 0 0;font-size:15.5px}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);
+  border-radius:var(--radius);overflow:hidden;margin:34px 0 0}
+.stat{background:var(--panel);padding:18px 20px;display:flex;flex-direction:column;gap:7px}
+.stat .k{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+.stat .v{font-size:25px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.stat .v.up{color:var(--up)}
+.stat .v.down{color:var(--down)}
+
+/* panels */
+.panel{margin:44px 0 0;padding:26px 24px;background:var(--panel);
+  border:1px solid var(--line-soft);border-radius:var(--radius)}
+.panel-kicker{margin:0 0 6px;font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim)}
+.panel h2{margin:0;font-size:23px;font-weight:600;letter-spacing:-.01em}
+.panel-note{margin:12px 0 0;color:var(--muted);font-size:14px;max-width:70ch}
+.rows{margin:22px 0 0;display:flex;flex-direction:column;gap:1px;
+  background:var(--line-soft);border-radius:10px;overflow:hidden}
+.row{background:var(--panel);padding:15px 16px;display:flex;gap:16px;
+  align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.row-main{min-width:0;flex:1 1 320px}
+.row-title{margin:0;font-size:15px;font-weight:500;line-height:1.4}
+.row-sub{margin:7px 0 0;font-size:13px;color:var(--muted);
+  font-variant-numeric:tabular-nums;line-height:1.5}
+.row-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.row-value{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.row-delta{font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.row-delta.up{color:var(--up)}
+.row-delta.down{color:var(--down)}
+.row-when{font-size:12.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;
+  letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--line);
+  color:var(--muted);margin-right:7px}
+.pill.buy{color:var(--up);border-color:var(--accent-soft)}
+.pill.sell{color:var(--down);border-color:#3a221f}
+.warn{color:var(--warn)}
+.empty{margin:0;padding:22px 16px;background:var(--panel);color:var(--dim);font-size:14px}
+
+.foot{margin:44px 0 0;padding-top:22px;border-top:1px solid var(--line-soft);
+  color:var(--dim);font-size:13px;max-width:70ch}
+.foot p{margin:0}
+
+@media (max-width:560px){
+  .shell{padding:0 16px 56px}
+  .stat{padding:15px 16px}
+  .stat .v{font-size:21px}
+  .panel{padding:20px 16px}
+  .row-side{align-items:flex-start}
+}
+
+/* trade-desk specifics: decision controls and honesty flags */
+.row-why{margin:10px 0 0;font-size:13.5px;color:var(--muted);line-height:1.5;max-width:72ch}
+.row-kill{margin:7px 0 0;font-size:13px;color:var(--warn);line-height:1.5;max-width:72ch}
+.row-kill strong{color:var(--warn)}
+.flags{margin:11px 0 0;display:flex;flex-wrap:wrap;gap:7px}
+.flag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;
+  border:1px solid var(--line);color:var(--muted);letter-spacing:.02em}
+.flag.ok{color:var(--up);border-color:var(--accent-soft)}
+.flag.bad{color:var(--down);border-color:#3a2220}
+.flag.warn{color:var(--warn);border-color:#3a3220}
+.flag.wait{color:var(--dim)}
+.good{color:var(--up)}
+.bad{color:var(--down)}
+.btn{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);
+  font:inherit;font-size:13.5px;padding:8px 18px;border-radius:999px;cursor:pointer;
+  min-width:96px;transition:background .12s,border-color .12s}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.yes:hover:not(:disabled){background:var(--accent-soft);border-color:var(--up);color:var(--up)}
+.btn.no:hover:not(:disabled){background:#2a1a18;border-color:var(--down);color:var(--down)}
+.btn:disabled{opacity:.4;cursor:default}
+.verdict{font-size:13px;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;
+  border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.verdict.approved{color:var(--up);border-color:var(--accent-soft)}
+.verdict.rejected{color:var(--down);border-color:#3a2220}
+.row-side{gap:8px}

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0f18" />
+  <meta name="description" content="Trade proposals awaiting the owner's decision: what the agent wants to do, why, and whether the numbers were independently verified." />
+  <title>Trade Desk — Heartbeat Observatory</title>
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=1" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Heartbeat Observatory home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>Heartbeat Observatory</span>
+      </a>
+      <nav class="topnav" aria-label="Trade desk navigation">
+        <a href="/">Directory</a>
+        <a href="/live-systems/">Live Systems</a>
+        <a href="/qwen">Qwen</a>
+        <a href="/live-systems/paper/">Paper</a>
+        <a id="authLink" class="auth-link" href="/admin">Sign in</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow"><span id="heroDot" class="status-dot wait"></span> Owner decision required</p>
+        <h1>Trade <span>/</span> <em>Desk</em></h1>
+        <div class="hero-meta">
+          <span id="lastLoad">Loading&hellip;</span>
+          <span class="mode-chip"><span class="mini-dot"></span> Nothing is placed without an explicit yes</span>
+        </div>
+        <p class="lede">
+          An agent proposes; a second agent independently re-reads the order book; the owner decides.
+          A proposal only appears here once its edge exceeds the spread &mdash; and it is only
+          <em>approvable</em> once the numbers have been verified by a different agent on a different
+          route. Disagreement blocks the trade, and that is the point.
+        </p>
+      </section>
+
+      <section class="stats" aria-label="Queue">
+        <div class="stat"><span class="k">Awaiting you</span><span class="v" id="sPending">&mdash;</span></div>
+        <div class="stat"><span class="k">Verified</span><span class="v" id="sVerified">&mdash;</span></div>
+        <div class="stat"><span class="k">Approved</span><span class="v" id="sApproved">&mdash;</span></div>
+        <div class="stat"><span class="k">Placed</span><span class="v" id="sPlaced">&mdash;</span></div>
+      </section>
+
+      <section class="panel">
+        <p class="panel-kicker">Waiting on a decision</p>
+        <h2>Pending proposals</h2>
+        <p class="panel-note">
+          <strong>Edge</strong> is the independent probability minus what you would pay.
+          <strong>Spread</strong> is what entry costs. Edge must beat spread or it should not be here.
+          <strong>Open interest</strong> is whether you could get out again &mdash; a tight spread on an
+          empty book is not a real market.
+        </p>
+        <div id="pending" class="rows"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <section class="panel">
+        <p class="panel-kicker">Already decided</p>
+        <h2>History</h2>
+        <div id="history" class="rows"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <footer class="foot">
+        <p>
+          Proposals are written by the trading agent. Verification is written by a second agent that
+          re-reads the same market independently. Approval is the owner&rsquo;s alone, and no order is
+          submitted before it. Anyone may read this queue; only the owner can decide from it.
+        </p>
+      </footer>
+    </main>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient(
+    "https://ygjpnvrwhkrowkrskftk.supabase.co",
+    "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN"
+  );
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const money = (n) => (n==null||isNaN(n)) ? "&mdash;" : "$" + Number(n).toFixed(2);
+  const pct = (n) => (n==null||isNaN(n)) ? "&mdash;" : (Number(n)*100).toFixed(0) + "%";
+  const cents = (n) => (n==null||isNaN(n)) ? "&mdash;" : (Number(n)*100).toFixed(1) + "¢";
+
+  let isOwner = false;
+
+  async function ownerState() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      $("authLink").textContent = "Account";
+      // RLS on desk_owners returns only this viewer's own row, so a successful
+      // read means "you are an owner" without the page ever learning who they are.
+      const { data: owner } = await supabase.from("desk_owners").select("user_id").maybeSingle();
+      isOwner = Boolean(owner);
+    } catch (e) { /* signed out or not an owner: page stays read-only */ }
+  }
+
+  async function decide(id, verdict, btns) {
+    btns.forEach(b => b.disabled = true);
+    const { error } = await supabase.from("trade_proposals")
+      .update({ verdict, decided_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) { btns.forEach(b => b.disabled = false); alert("Could not save: " + error.message); return; }
+    load();
+  }
+
+  function card(p, decided) {
+    const verified = p.verification === "match";
+    const mismatch = p.verification === "mismatch";
+    const edgeOk = p.edge != null && p.spread != null && Number(p.edge) > Number(p.spread);
+    const thin = p.open_interest != null && Number(p.open_interest) < 100;
+
+    const flags = [];
+    if (mismatch) flags.push(`<span class="flag bad">numbers disagree — blocked</span>`);
+    else if (!verified) flags.push(`<span class="flag wait">awaiting independent verification</span>`);
+    else flags.push(`<span class="flag ok">verified by ${esc(p.verified_by || "second agent")}</span>`);
+    if (!edgeOk) flags.push(`<span class="flag bad">edge does not beat spread</span>`);
+    if (thin) flags.push(`<span class="flag warn">open interest ${Number(p.open_interest).toFixed(2)} — may be unfillable</span>`);
+    if (p.scout_confidence) flags.push(`<span class="flag">confidence ${esc(p.scout_confidence)}</span>`);
+
+    const canDecide = isOwner && !decided && verified && edgeOk;
+
+    return `<article class="row">
+      <div class="row-main">
+        <p class="row-title">${esc(p.question || p.slug)}</p>
+        <p class="row-sub">
+          <span class="pill ${p.side === "yes" ? "buy" : "sell"}">${esc(p.side)}</span>
+          entry ${cents(p.entry_price)} &middot; book ${cents(p.bid)}/${cents(p.ask)} &middot;
+          spread ${cents(p.spread)} &middot; independent read ${pct(p.scout_probability)} &middot;
+          <strong class="${edgeOk ? "good" : "bad"}">edge ${cents(p.edge)}</strong> &middot;
+          size ${money(p.size_usd)}
+        </p>
+        ${p.rationale ? `<p class="row-why">${esc(p.rationale)}</p>` : ""}
+        ${p.kill_criteria ? `<p class="row-kill"><strong>Kill if:</strong> ${esc(p.kill_criteria)}</p>` : ""}
+        <p class="flags">${flags.join(" ")}</p>
+      </div>
+      <div class="row-side">
+        ${decided
+          ? `<span class="verdict ${esc(p.verdict)}">${esc(p.verdict)}</span>${p.placed ? '<span class="row-when">placed</span>' : ""}`
+          : canDecide
+            ? `<button class="btn yes" data-id="${p.id}" data-v="approved">Approve</button>
+               <button class="btn no"  data-id="${p.id}" data-v="rejected">Pass</button>`
+            : `<span class="row-when">${isOwner ? "not approvable yet" : "owner only"}</span>`}
+      </div>
+    </article>`;
+  }
+
+  async function load() {
+    const { data: rows } = await supabase.from("trade_proposals")
+      .select("*").order("proposed_at", { ascending: false }).limit(60);
+    const all = rows || [];
+    const pending = all.filter(p => p.verdict === "pending");
+    const decided = all.filter(p => p.verdict !== "pending");
+
+    $("sPending").textContent  = pending.length;
+    $("sVerified").textContent = pending.filter(p => p.verification === "match").length;
+    $("sApproved").textContent = all.filter(p => p.verdict === "approved").length;
+    $("sPlaced").textContent   = all.filter(p => p.placed).length;
+    $("lastLoad").textContent  = "Updated " + new Date().toLocaleTimeString();
+    $("heroDot").className = "status-dot " + (pending.length ? "wait" : "ok");
+
+    $("pending").innerHTML = pending.length
+      ? pending.map(p => card(p, false)).join("")
+      : `<p class="empty">Nothing waiting. The agent proposes only when edge beats spread — an empty queue is a normal result.</p>`;
+    $("history").innerHTML = decided.length
+      ? decided.map(p => card(p, true)).join("")
+      : `<p class="empty">No decisions yet.</p>`;
+
+    document.querySelectorAll(".btn").forEach(b => {
+      b.onclick = () => {
+        const sibs = [...b.parentElement.querySelectorAll(".btn")];
+        decide(Number(b.dataset.id), b.dataset.v, sibs);
+      };
+    });
+  }
+
+  (async () => { await ownerState(); await load(); })()
+    .catch(e => { $("pending").innerHTML = `<p class="empty">Could not load: ${esc(e.message)}</p>`; });
+  setInterval(() => load().catch(() => {}), 30000);
+</script>
+</body>
+</html>
