@@ -14,11 +14,16 @@ remain dashes. Point count and region membership come from the atlas, not consta
 
 ## Avatar
 
-No fly.glb was supplied at implementation time. The visible body/two wings are an explicitly
-labelled three-shape placeholder. Place the licensed rigged GLB beside index.html to load it.
-The loader normalizes its bounds. Named idle, wing, groom and press animation clips are used
-when present; named wing/foreleg bones have fallback poses. Different asset rig conventions
-may require an adapter; no real asset animation was verified before the file exists.
+Measured flybody anatomy is shipped as fly.glb (1.97 MB). All 85 mesh parts, 67 body nodes,
+and 102 joint definitions are retained from fruitfly.xml. Joint axes/ranges live in node
+extras.jointsJson. assets.js multiplies rotations about those axes; no body translation
+or whole-avatar bobbing simulates limb motion. Anatomical CGS scale is converted to metres;
+the scene explicitly displays the fly at 160x. See ASSETS.md and tools/build_fly.py.
+
+The table uses the regulation 2.74 x 1.525 x 0.76 m envelope, a 0.1525 m net, assembled
+frame/hardware, and CC0 ambientCG wood/roughness/normal textures. Frame and paddle construction
+are illustrative. Asset IDs toggles overview labels and a selector for every component.
+No grid or player controls. Debug coordinates are world metres; body labels mark joint origins.
 
 Avatar motion is illustrative, not measured limb movement. window.flyScene exposes read-only
 view diagnostics including the sampled DN count for a future locomotion adapter. The scene

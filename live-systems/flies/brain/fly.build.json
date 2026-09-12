@@ -1,0 +1,15 @@
+{
+  "bodies": 67,
+  "meshes": 85,
+  "joints": 102,
+  "sourceFaces": 272550,
+  "exportFaces": 103032,
+  "bytes": 1967404,
+  "sourceCommit": "d015e9bfe441bd90ae431bac24c55cb74bdbce26",
+  "meshScale": [
+    0.1,
+    0.1,
+    0.1
+  ],
+  "metresPerSourceUnit": 0.01
+}
