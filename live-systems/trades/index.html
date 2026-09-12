@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0a0f18" />
   <meta name="description" content="Trade proposals awaiting the owner's decision: what the agent wants to do, why, and whether the numbers were independently verified." />
   <title>Trade Desk — Heartbeat Observatory</title>
-  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=3" />
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=4" />
 </head>
 <body>
   <div class="shell">
@@ -32,22 +32,24 @@
           <span id="lastLoad">Loading&hellip;</span>
           <span class="mode-chip"><span class="mini-dot"></span> Nothing is placed without an explicit yes</span>
         </div>
-        <p class="lede">
-          An agent proposes; a second agent independently re-reads the order book; the owner decides.
-          A proposal only appears here once its edge exceeds the spread &mdash; and it is only
-          <em>approvable</em> once the numbers have been verified by a different agent on a different
-          route. Disagreement blocks the trade, and that is the point.
-        </p>
+        <p class="lede">Agents propose. A script re-checks the numbers. You decide from your phone. A script places.</p>
       </section>
 
-      <section class="stats" aria-label="Queue">
+      <nav class="tabs" aria-label="Sections">
+        <button class="tab" data-tab="decide">Decide <span id="tPending" class="tab-n"></span></button>
+        <button class="tab" data-tab="account">Account</button>
+        <button class="tab" data-tab="ledger">Ledger</button>
+        <button class="tab" data-tab="history">History</button>
+      </nav>
+
+      <section class="stats" data-pane="decide" aria-label="Queue">
         <div class="stat"><span class="k">Awaiting you</span><span class="v" id="sPending">&mdash;</span></div>
         <div class="stat"><span class="k">Verified</span><span class="v" id="sVerified">&mdash;</span></div>
         <div class="stat"><span class="k">Approved</span><span class="v" id="sApproved">&mdash;</span></div>
         <div class="stat"><span class="k">Placed</span><span class="v" id="sPlaced">&mdash;</span></div>
       </section>
 
-      <section class="panel" id="accountPanel">
+      <section class="panel" id="accountPanel" data-pane="account">
         <p class="panel-kicker">The account these decisions spend from</p>
         <h2>Account</h2>
         <div class="stats" aria-label="Account">
@@ -60,7 +62,7 @@
         <p class="panel-note" id="aWhen"></p>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-pane="decide">
         <p class="panel-kicker">Waiting on a decision</p>
         <h2>Pending proposals</h2>
         <p class="panel-note">
@@ -73,13 +75,13 @@
         <div id="pending" class="rows"><p class="empty">Loading&hellip;</p></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-pane="history">
         <p class="panel-kicker">Already decided</p>
         <h2>History</h2>
         <div id="history" class="rows"><p class="empty">Loading&hellip;</p></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-pane="ledger">
         <p class="panel-kicker">Who did what</p>
         <h2>Account ledger</h2>
         <p class="panel-note">
@@ -280,6 +282,7 @@
     const decided = all.filter(p => p.verdict !== "pending");
 
     $("sPending").textContent  = pending.length;
+    $("tPending").textContent  = pending.length ? pending.length : "";
     $("sVerified").textContent = pending.filter(p => p.verification === "match").length;
     $("sApproved").textContent = all.filter(p => p.verdict === "approved").length;
     $("sPlaced").textContent   = all.filter(p => p.placed).length;
@@ -311,6 +314,21 @@
       };
     });
   }
+
+  // ---- tabs: one section at a time; remembered per phone; deep-linkable with #history etc.
+  function showTab(name) {
+    document.querySelectorAll("[data-pane]").forEach(el => el.hidden = el.dataset.pane !== name);
+    document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    try { localStorage.setItem("trades-tab", name); } catch (e) {}
+    if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+  }
+  document.querySelectorAll(".tab").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  (function () {
+    const fromHash = location.hash.replace("#", "");
+    let saved = null; try { saved = localStorage.getItem("trades-tab"); } catch (e) {}
+    const valid = ["decide", "account", "ledger", "history"];
+    showTab(valid.includes(fromHash) ? fromHash : (valid.includes(saved) ? saved : "decide"));
+  })();
 
   (async () => { await ownerState(); await load(); })()
     .catch(e => { $("pending").innerHTML = `<p class="empty">Could not load: ${esc(e.message)}</p>`; });
