@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0f18" />
+  <meta name="description" content="The flies: simulated fruit-fly brains watching live table tennis. What they smelled, what they felt, what they would have pressed, and whether it paid." />
+  <title>The Flies — Heartbeat Observatory</title>
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=4" />
+  <style>
+    :root{--accent:#f2b84b;--accent-soft:#3a2d12}
+    .fly-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+    .val{font-variant-numeric:tabular-nums;font-weight:700}
+    .val.up{color:var(--up)} .val.down{color:var(--down)} .val.flat{color:var(--dim)}
+    .bar{height:6px;border-radius:3px;background:var(--line);position:relative;overflow:hidden;margin-top:6px}
+    .bar i{position:absolute;top:0;bottom:0;background:var(--accent)}
+    .score{font-variant-numeric:tabular-nums;color:var(--muted)}
+    .kind{display:inline-block;padding:2px 8px;border-radius:9px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);color:var(--muted)}
+    .kind.press{border-color:var(--up);color:var(--up)} .kind.letgo{border-color:var(--warn);color:var(--warn)}
+    .kind.refused{border-color:var(--down);color:var(--down)} .kind.reward{border-color:var(--accent);color:var(--accent)}
+    .kind.milestone{background:var(--accent);color:#0a0f18;border-color:var(--accent)}
+    .dry{opacity:.75}
+    .verdict-box{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-top:14px;background:var(--panel)}
+    .verdict-box strong{font-size:18px}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Heartbeat Observatory home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>Heartbeat Observatory</span>
+      </a>
+      <nav class="topnav" aria-label="Flies navigation">
+        <a href="/live-systems/">Live Systems</a>
+        <a href="/live-systems/trades/">Trade Desk</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow"><span id="heroDot" class="status-dot wait"></span> <span id="heroLabel">The colony</span></p>
+        <h1>The <span>/</span> <em>Flies</em></h1>
+        <div class="hero-meta"><span id="lastLoad">Loading&hellip;</span></div>
+        <p class="lede">Real fruit-fly brains &mdash; 165,122 neurons each, the MaleCNS connectome run forward &mdash;
+          smelling live table tennis. The match becomes an odour; the mushroom body says approach or avoid;
+          <strong>fly-1</strong> presses, <strong>watcher-1</strong> only watches and remembers. Nothing here is a language model.</p>
+      </section>
+
+      <nav class="tabs" aria-label="Sections">
+        <button class="tab" data-tab="now">Now</button>
+        <button class="tab" data-tab="actions">Fly-1 <span id="tActs" class="tab-n"></span></button>
+        <button class="tab" data-tab="ground">Ground</button>
+        <button class="tab" data-tab="learn">Is it learning?</button>
+      </nav>
+
+      <section class="stats" data-pane="now">
+        <div class="stat"><span class="k">Mode</span><span class="v" id="sMode">&mdash;</span></div>
+        <div class="stat"><span class="k">Cap / trade</span><span class="v" id="sCap">&mdash;</span></div>
+        <div class="stat"><span class="k">Realized</span><span class="v" id="sReal">&mdash;</span></div>
+        <div class="stat"><span class="k">Smells on the ground</span><span class="v" id="sGround">&mdash;</span></div>
+      </section>
+      <section class="panel" data-pane="now">
+        <p class="panel-kicker">Right now</p>
+        <h2>What the flies are smelling</h2>
+        <p class="panel-note">One row per live table, newest sniff. <strong>Valence</strong> is approach-minus-avoid in Hz from the
+          fly&rsquo;s own mushroom body: above about +20 it wants in, below &minus;15 it wants out. The bar is that feeling.</p>
+        <div id="now" class="rows"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <section class="panel" data-pane="actions">
+        <p class="panel-kicker">Fly-1</p>
+        <h2>Every press and let-go</h2>
+        <p class="panel-note">In <strong>dry run</strong> a press costs nothing and the let-go is scored from the price move. In
+          <strong>live</strong> the press is a real $1 order through the desk and the ledger pays the fly its sugar or shock.</p>
+        <div id="actions" class="rows"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <section class="panel" data-pane="ground">
+        <p class="panel-kicker">The colony&rsquo;s shared ground</p>
+        <h2>What each smell led to</h2>
+        <p class="panel-note">watcher-1 sniffs every live table every 15 seconds and comes back 60 s and 300 s later to write
+          down what the price did. Every fly after it learns from these.</p>
+        <div id="ground" class="rows"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <section class="panel" data-pane="learn">
+        <p class="panel-kicker">The only question that matters</p>
+        <h2>Is it learning?</h2>
+        <p class="panel-note">When the fly <em>wanted in</em> (valence &gt; +20), did the price of that side go up over the next
+          five minutes more often than when it didn&rsquo;t? A coin has no nose. Below 50% and it is worse than a coin.</p>
+        <div id="learn" class="rows"><p class="empty">Loading&hellip;</p></div>
+        <div class="verdict-box" id="verdict">Not enough data yet.</div>
+      </section>
+
+      <footer class="foot">
+        <p>The circuit, the plasticity site and the direction of the learning rule are measured from a real fly. The pairing of
+          profit with dopamine, the mapping of a match onto smells, and every threshold were chosen. Both are labelled that way in the code.</p>
+      </footer>
+    </main>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://ygjpnvrwhkrowkrskftk.supabase.co", "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN");
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const cents = (n) => (n==null||isNaN(n)) ? "&mdash;" : (Number(n)*100).toFixed(0) + "¢";
+  const money = (n) => (n==null||isNaN(n)) ? "&mdash;" : (Number(n) < 0 ? "-" : "") + "$" + Math.abs(Number(n)).toFixed(2);
+  const when = (t) => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  function valBar(v) {
+    const x = Math.max(-80, Math.min(80, Number(v) || 0));
+    const pct = ((x + 80) / 160) * 100;
+    const cls = x > 20 ? "up" : x < -15 ? "down" : "flat";
+    return `<span class="val ${cls}">${x >= 0 ? "+" : ""}${x.toFixed(0)} Hz</span><div class="bar"><i style="left:${Math.min(50, pct)}%;width:${Math.abs(pct - 50)}%"></i></div>`;
+  }
+
+  function showTab(name) {
+    document.querySelectorAll("[data-pane]").forEach(el => el.hidden = el.dataset.pane !== name);
+    document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    try { localStorage.setItem("flies-tab", name); } catch (e) {}
+  }
+  document.querySelectorAll(".tab").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  (function () { let s = null; try { s = localStorage.getItem("flies-tab"); } catch (e) {} showTab(["now","actions","ground","learn"].includes(s) ? s : "now"); })();
+
+  async function load() {
+    const since = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
+    const [{ data: ground }, { data: acts }] = await Promise.all([
+      supabase.from("fly_ground").select("*").gte("at", since).order("at", { ascending: false }).limit(2000),
+      supabase.from("fly_actions").select("*").order("at", { ascending: false }).limit(200),
+    ]);
+    const g = ground || [], a = acts || [];
+
+    // NOW: latest sniff per slug from the last 10 minutes
+    const cutoff = Date.now() - 10 * 60 * 1000;
+    const latest = new Map();
+    for (const r of g) { if (new Date(r.at).getTime() < cutoff) break; if (!latest.has(r.slug)) latest.set(r.slug, r); }
+    $("now").innerHTML = latest.size ? [...latest.values()].map(r => `<article class="row">
+      <div class="row-main fly-row">
+        <div>
+          <p class="row-title">${esc(r.title)}</p>
+          <p class="row-sub">smelling from <strong>${esc(r.player)}</strong> (${esc(r.side)} @ ${cents(r.price)}) &middot;
+            <span class="score">sets ${r.sets_o}&ndash;${r.sets_t}, points ${r.pts_o}&ndash;${r.pts_t}</span> &middot; spread ${cents(r.spread)} &middot; ${when(r.at)}</p>
+        </div>
+        <div style="min-width:110px">${valBar(r.valence)}</div>
+      </div></article>`).join("") : `<p class="empty">No live table tennis in the last 10 minutes. The flies wait; Setka Cup runs overnight US time.</p>`;
+    $("heroDot").className = "status-dot " + (latest.size ? "ok" : "wait");
+    $("heroLabel").textContent = latest.size ? `${latest.size} table${latest.size > 1 ? "s" : ""} being smelled` : "waiting for a match";
+    $("sGround").textContent = g.length.toLocaleString();
+
+    // ACTIONS
+    const last = a.find(x => x.cap_per_trade != null);
+    $("sMode").textContent = a.length ? a[0].mode.toUpperCase() : "DRY";
+    $("sCap").innerHTML = last ? `${money(last.cap_per_trade)} / ${money(last.cap_exposure)}` : "$1 / $5";
+    const realized = a.filter(x => x.action === "reward").reduce((t, x) => t + (Number(x.pnl) || 0), 0);
+    const dryPnl = a.filter(x => x.action === "letgo" && x.mode === "dry" && x.pnl != null).reduce((t, x) => t + Number(x.pnl), 0);
+    $("sReal").innerHTML = a.some(x => x.mode === "live") ? money(realized) : `<span class="dry">${money(dryPnl)} <small>dry</small></span>`;
+    $("tActs").textContent = a.length || "";
+    $("actions").innerHTML = a.length ? a.map(x => `<article class="row ${x.mode === "dry" ? "dry" : ""}">
+      <div class="row-main">
+        <p class="row-title"><span class="kind ${esc(x.action)}">${esc(x.action)}</span> ${esc(x.title || x.slug || "")}</p>
+        <p class="row-sub">${x.player ? `${esc(x.player)} &middot; ` : ""}${x.side ? `${esc(x.side)} @ ${cents(x.price)} &middot; ` : ""}${x.size_usd ? `${money(x.size_usd)} &middot; ` : ""}${x.score ? `<span class="score">${esc(x.score)}</span> &middot; ` : ""}${x.valence != null ? `felt ${Number(x.valence) >= 0 ? "+" : ""}${Number(x.valence).toFixed(0)} Hz &middot; ` : ""}${x.pnl != null ? `<strong class="${Number(x.pnl) >= 0 ? "good" : "bad"}">${money(x.pnl)}</strong> &middot; ` : ""}${when(x.at)} <span class="dry">${x.mode}</span></p>
+        ${x.note ? `<p class="row-why">${esc(x.note)}</p>` : ""}
+      </div></article>`).join("") : `<p class="empty">Fly-1 has not pressed yet.</p>`;
+
+    // GROUND: last 40 with outcomes
+    const withOutcome = g.filter(r => r.price_after_300s != null).slice(0, 40);
+    $("ground").innerHTML = withOutcome.length ? withOutcome.map(r => {
+      const d = Number(r.price_after_300s) - Number(r.price);
+      return `<article class="row"><div class="row-main fly-row"><div>
+        <p class="row-title">${esc(r.title)}</p>
+        <p class="row-sub">${esc(r.player)} ${esc(r.side)} @ ${cents(r.price)} &rarr; 5 min later ${cents(r.price_after_300s)}
+          <strong class="${d > 0.005 ? "good" : d < -0.005 ? "bad" : ""}">${d >= 0 ? "+" : ""}${(d * 100).toFixed(1)}¢</strong>
+          &middot; <span class="score">${r.sets_o}&ndash;${r.sets_t}, ${r.pts_o}&ndash;${r.pts_t}</span> &middot; ${when(r.at)}</p>
+        </div><div style="min-width:110px">${valBar(r.valence)}</div></div></article>`; }).join("")
+      : `<p class="empty">Outcomes appear five minutes after each smell.</p>`;
+
+    // LEARN: hit rate when the fly wanted in vs when it didn't
+    const scored = g.filter(r => r.price_after_300s != null && r.price != null);
+    const wantIn = scored.filter(r => Number(r.valence) > 20);
+    const rest = scored.filter(r => Number(r.valence) <= 20);
+    const up = (rows) => rows.length ? rows.filter(r => Number(r.price_after_300s) > Number(r.price)).length / rows.length : null;
+    const hi = up(wantIn), lo = up(rest);
+    $("learn").innerHTML = `
+      <article class="row"><div class="row-main"><p class="row-title">When the fly wanted in (valence &gt; +20)</p>
+        <p class="row-sub">${wantIn.length} smells &middot; price went up 5 min later <strong>${hi == null ? "&mdash;" : (hi * 100).toFixed(0) + "%"}</strong> of the time</p></div></article>
+      <article class="row"><div class="row-main"><p class="row-title">When it didn&rsquo;t</p>
+        <p class="row-sub">${rest.length} smells &middot; price went up <strong>${lo == null ? "&mdash;" : (lo * 100).toFixed(0) + "%"}</strong> of the time</p></div></article>`;
+    const v = $("verdict");
+    if (wantIn.length < 30 || rest.length < 30) v.innerHTML = `<strong>Not enough data yet.</strong> Need 30+ smells in each bucket; have ${wantIn.length} / ${rest.length}. Setka Cup nights fill this fast.`;
+    else if (hi > lo + 0.05) v.innerHTML = `<strong>Yes &mdash; ${((hi - lo) * 100).toFixed(0)} points better than its own baseline.</strong> Its nose is finding something. A reasonable time to go live small.`;
+    else if (hi < lo - 0.05) v.innerHTML = `<strong>Worse than its baseline.</strong> It wants in on smells that go down. Keep it dry; let watcher data and shocks carve that away.`;
+    else v.innerHTML = `<strong>Coin flip so far.</strong> No edge either way yet. Keep it dry.`;
+
+    $("lastLoad").textContent = "Updated " + new Date().toLocaleTimeString();
+  }
+  load().catch(e => { $("now").innerHTML = `<p class="empty">Could not load: ${esc(e.message)}</p>`; });
+  setInterval(() => load().catch(() => {}), 20000);
+</script>
+</body>
+</html>
