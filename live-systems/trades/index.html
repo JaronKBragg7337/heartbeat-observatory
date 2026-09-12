@@ -90,6 +90,9 @@
           queue</strong> means an API order with no proposal behind it &mdash; an agent traded without approval
           and without a trail. <strong>Live agent, no approval</strong> means an agent the owner has told to trade on
           its own judgement (e.g. Live Wire, mid-game) &mdash; no approval, but its reasoning is on the row.
+          <strong>Fly brain</strong> is a simulated fruit-fly nervous system (165,122 neurons, the MaleCNS connectome)
+          that smells the match state and presses when its mushroom body says approach; it learns only from its own
+          realized P&amp;L, starts at $1 a trade, and grows its cap by earning.
           Nothing here is inferred from silence; every line comes from the venue&rsquo;s own record.
         </p>
         <div id="ledger" class="rows"><p class="empty">Loading&hellip;</p></div>
@@ -214,7 +217,9 @@
 
   const ACTOR = { "system": ["System, via this queue", "ok"], "jaron-manual": ["Owner, by hand", "warn"], "ai-outside-queue": ["AI, outside the queue", "bad"], "mixed": ["Mixed", "warn"], "unknown": ["Unknown", "bad"] };
   function ledgerRow(t) {
-    const [label, cls] = t.actor && t.actor.startsWith("auto:")
+    const [label, cls] = t.actor === "auto:fly-brain"
+      ? ["Fly brain", "ok"]
+      : t.actor && t.actor.startsWith("auto:")
       ? [`Live agent, no approval — ${t.actor.slice(5)}`, "warn"]
       : (ACTOR[t.actor] || ["Unknown", "bad"]);
     const when = new Date(t.at).toLocaleString();
