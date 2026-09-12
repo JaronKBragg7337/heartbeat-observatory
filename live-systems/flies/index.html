@@ -34,6 +34,7 @@
       <nav class="topnav" aria-label="Flies navigation">
         <a href="/live-systems/">Live Systems</a>
         <a href="/live-systems/trades/">Trade Desk</a>
+        <a href="/live-systems/flies/brain/">Inside the fly · 3D</a>
       </nav>
     </header>
 
@@ -122,7 +123,8 @@
     try { localStorage.setItem("flies-tab", name); } catch (e) {}
   }
   document.querySelectorAll(".tab").forEach(b => b.onclick = () => showTab(b.dataset.tab));
-  (function () { let s = null; try { s = localStorage.getItem("flies-tab"); } catch (e) {} showTab(["now","actions","ground","learn"].includes(s) ? s : "now"); })();
+  function openLinkedTab() { let s = location.hash.slice(1); if (!s) { try { s = localStorage.getItem("flies-tab"); } catch (e) {} } showTab(["now","actions","ground","learn"].includes(s) ? s : "now"); }
+  openLinkedTab(); window.addEventListener("hashchange", openLinkedTab);
 
   async function load() {
     const since = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
