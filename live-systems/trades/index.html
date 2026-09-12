@@ -135,10 +135,11 @@
     } catch (e) { /* signed out or not an owner: page stays read-only */ }
   }
 
-  async function decide(id, verdict, btns, sizeUsd) {
+  async function decide(id, verdict, btns, sizeUsd, side, entry) {
     btns.forEach(b => b.disabled = true);
     const patch = { verdict, decided_at: new Date().toISOString() };
     if (verdict === "approved" && sizeUsd > 0) patch.size_usd = sizeUsd;
+    if (verdict === "approved" && side) { patch.side = side; patch.entry_price = entry; }
     const { error } = await supabase.from("trade_proposals").update(patch).eq("id", id);
     if (error) { btns.forEach(b => b.disabled = false); alert("Could not save: " + error.message); return; }
     load();
@@ -158,12 +159,16 @@
     if (thin) flags.push(`<span class="flag warn">open interest ${Number(p.open_interest).toFixed(2)} — may be unfillable</span>`);
     if (p.scout_confidence) flags.push(`<span class="flag">confidence ${esc(p.scout_confidence)}</span>`);
 
-    const canDecide = isOwner && !decided && verified && edgeOk;
+    const canDecide = isOwner && !decided && verified && (edgeOk || Boolean(p.side_open));
 
     const entry = Number(p.entry_price), size = Number(p.size_usd) || 1;
     const shares = entry > 0 ? size / entry : 0;
     const win = shares - size;   // each share pays $1 if right
-    const buying = p.side === "yes"
+    const noPrice = p.no_price != null ? Number(p.no_price) : (p.bid != null ? 1 - Number(p.bid) : null);
+    const open = Boolean(p.side_open) && !decided;
+    const buying = open
+      ? `<strong>you pick the side.</strong> ${esc(p.outcome || "YES")}: yes costs ${cents(p.ask)} &middot; no costs ${cents(noPrice)} &middot; independent read ${pct(p.scout_probability)} for yes`
+      : p.side === "yes"
       ? `buy <strong>${esc(p.outcome || "YES")}</strong> at ${cents(p.entry_price)} a share`
       : `bet <strong>against ${esc(p.outcome || "YES")}</strong> at ${cents(p.entry_price)} a share (Yes is trading ${cents(p.bid)}&ndash;${cents(p.ask)})`;
     const where = [p.tags || p.category, p.market_type].filter(Boolean).map(esc).join(" &middot; ");
@@ -172,10 +177,10 @@
         <p class="row-title">${esc(p.event_title ? p.event_title + " — " + (p.outcome || "") : (p.question || p.slug))}</p>
         ${where || p.market_url ? `<p class="row-where">${where}${p.market_url ? ` &middot; <a href="${esc(p.market_url)}" target="_blank" rel="noopener">open in Polymarket &nearr;</a>` : ""}</p>` : ""}
         <p class="row-sub">
-          <span class="pill ${p.side === "yes" ? "buy" : "sell"}">${esc(p.side)}</span>
-          ${buying} &middot; spread ${cents(p.spread)} &middot; independent read ${pct(p.scout_probability)} &middot;
-          <strong class="${edgeOk ? "good" : "bad"}">edge ${cents(p.edge)}</strong>
+          ${open ? `<span class="pill">open</span>` : `<span class="pill ${p.side === "yes" ? "buy" : "sell"}">${esc(p.side)}</span>`}
+          ${buying} &middot; spread ${cents(p.spread)}${open ? "" : ` &middot; independent read ${pct(p.scout_probability)} &middot; <strong class="${edgeOk ? "good" : "bad"}">edge ${cents(p.edge)}</strong>`}
         </p>
+        ${(p.vantages || p.evidence) ? `<p class="row-where">${p.vantages ? `research: ${esc(p.vantages)}` : ""}${p.vantages && p.evidence ? " &middot; " : ""}${p.evidence ? esc(p.evidence) : ""}</p>` : ""}
         <p class="row-sub">
           ${decided
             ? `size ${money(p.size_usd)} &middot; ${shares.toFixed(2)} shares &middot; pays ${money(shares)} if right (+${money(win)})`
@@ -190,6 +195,10 @@
       <div class="row-side">
         ${decided
           ? `<span class="verdict ${esc(p.verdict)}">${p.verdict === "auto" ? "auto (no approval)" : esc(p.verdict)}</span>${p.placed ? '<span class="row-when">placed</span>' : ""}`
+          : canDecide && open
+            ? `<button class="btn yes" data-id="${p.id}" data-v="approved" data-side="yes" data-entry="${Number(p.ask)}">Bet YES @ ${cents(p.ask)}</button>
+               <button class="btn yes" data-id="${p.id}" data-v="approved" data-side="no"  data-entry="${noPrice}">Bet NO @ ${cents(noPrice)}</button>
+               <button class="btn no"  data-id="${p.id}" data-v="rejected">Pass</button>`
           : canDecide
             ? `<button class="btn yes" data-id="${p.id}" data-v="approved">Approve</button>
                <button class="btn no"  data-id="${p.id}" data-v="rejected">Pass</button>`
@@ -288,7 +297,7 @@
       b.onclick = () => {
         const sibs = [...b.parentElement.querySelectorAll(".btn")];
         const inp = document.querySelector(`.size-in[data-id="${b.dataset.id}"]`);
-        decide(Number(b.dataset.id), b.dataset.v, sibs, inp ? Number(inp.value) : 0);
+        decide(Number(b.dataset.id), b.dataset.v, sibs, inp ? Number(inp.value) : 0, b.dataset.side || null, b.dataset.entry ? Number(b.dataset.entry) : null);
       };
     });
     // live "pays $X if right" as the owner edits the size
