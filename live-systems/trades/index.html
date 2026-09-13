@@ -157,7 +157,8 @@
     if (mismatch) flags.push(`<span class="flag bad">numbers disagree — blocked</span>`);
     else if (!verified) flags.push(`<span class="flag wait">awaiting independent verification</span>`);
     else flags.push(`<span class="flag ok">verified by ${esc(p.verified_by || "second agent")}</span>`);
-    if (!edgeOk) flags.push(`<span class="flag bad">edge does not beat spread</span>`);
+    if (p.edge == null) flags.push(`<span class="flag">live read — no edge number</span>`);
+    else if (!edgeOk) flags.push(`<span class="flag bad">edge does not beat spread</span>`);
     if (thin) flags.push(`<span class="flag warn">open interest ${Number(p.open_interest).toFixed(2)} — may be unfillable</span>`);
     if (p.scout_confidence) flags.push(`<span class="flag">confidence ${esc(p.scout_confidence)}</span>`);
 
