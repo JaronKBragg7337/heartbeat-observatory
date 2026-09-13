@@ -147,6 +147,19 @@
     load();
   }
 
+  // Venue titles say "September 13, 2026 at 9:00 AM UTC". Rewrite that into the viewer's own clock
+  // (each viewer sees their own zone), keeping the UTC in a tooltip so nothing is hidden.
+  const MONTHS = {january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
+  function localTimes(text) {
+    return String(text).replace(/(January|February|March|April|May|June|July|August|September|October|November|December) (\d{1,2}), (\d{4}) at (\d{1,2}):(\d{2}) (AM|PM) UTC/g,
+      (m, mon, d, y, h, mi, ap) => {
+        let hh = Number(h) % 12 + (ap === "PM" ? 12 : 0);
+        const dt = new Date(Date.UTC(Number(y), MONTHS[mon.toLowerCase()], Number(d), hh, Number(mi)));
+        if (isNaN(dt)) return m;
+        const local = dt.toLocaleString(undefined, {month:"long", day:"numeric", year:"numeric", hour:"numeric", minute:"2-digit"});
+        return `<span title="${m}">${local} your time</span>`;
+      });
+  }
   function card(p, decided) {
     const verified = p.verification === "match";
     const mismatch = p.verification === "mismatch";
@@ -177,7 +190,7 @@
     const where = [p.tags || p.category, p.market_type].filter(Boolean).map(esc).join(" &middot; ");
     return `<article class="row">
       <div class="row-main">
-        <p class="row-title">${esc(p.event_title ? p.event_title + " — " + (p.outcome || "") : (p.question || p.slug))}</p>
+        <p class="row-title">${localTimes(esc(p.event_title ? p.event_title + " — " + (p.outcome || "") : (p.question || p.slug)))}</p>
         ${where || p.market_url ? `<p class="row-where">${where}${p.market_url ? ` &middot; <a href="${esc(p.market_url)}" target="_blank" rel="noopener">open in Polymarket &nearr;</a>` : ""}</p>` : ""}
         <p class="row-sub">
           ${open ? `<span class="pill">open</span>` : `<span class="pill ${p.side === "yes" ? "buy" : "sell"}">${esc(p.side)}</span>`}
@@ -216,7 +229,7 @@
     const pnl = (isNaN(cost) || isNaN(value)) ? null : value - cost;
     return `<article class="row">
       <div class="row-main">
-        <p class="row-title">${esc(p.title || p.slug)}</p>
+        <p class="row-title">${localTimes(esc(p.title || p.slug))}</p>
         <p class="row-sub">
           <span class="pill ${short ? "sell" : "buy"}">${short ? "no" : "yes"}</span>
           ${esc(p.outcome || "")} &middot; ${Math.abs(shares).toFixed(2)} shares @ ${cents(p.avg_px)}
