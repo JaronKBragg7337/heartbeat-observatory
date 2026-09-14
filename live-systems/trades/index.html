@@ -218,7 +218,7 @@
           : canDecide
             ? `<button class="btn yes" data-id="${p.id}" data-v="approved">Approve</button>
                <button class="btn no"  data-id="${p.id}" data-v="rejected">Pass</button>`
-            : `<span class="row-when">${isOwner ? "not approvable yet" : "owner only"}</span>`}
+            : `<span class="row-when">${isOwner ? (p.verification == null ? "waiting for a live order book (verifier checks every 5 min)" : "not approvable yet") : "owner only"}</span>`}
       </div>
     </article>`;
   }
