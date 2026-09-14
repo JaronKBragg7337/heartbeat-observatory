@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0a0f18" />
   <meta name="description" content="Trade proposals awaiting the owner's decision: what the agent wants to do, why, and whether the numbers were independently verified." />
   <title>Trade Desk — Heartbeat Observatory</title>
-  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=4" />
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=5" />
 </head>
 <body>
   <div class="shell">
@@ -160,6 +160,23 @@
         return `<span title="${m}">${local} your time</span>`;
       });
   }
+  // The three clocks on a proposal: when it settles, how long an approval stays valid, when it was decided.
+  function clocks(p) {
+    const out = [];
+    const now = Date.now();
+    if (p.settles_at) {
+      const s = new Date(p.settles_at); const h = (s - now) / 36e5;
+      const rel = h < 0 ? "settling / in play" : h < 1 ? `in ${Math.round(h*60)} min` : h < 48 ? `in ${Math.round(h)} h` : `in ${Math.round(h/24)} d`;
+      out.push(`<span class="clock ${h < 6 && h > -8 ? "clock-soon" : ""}" title="${s.toLocaleString()}">settles ${rel} (${s.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})})</span>`);
+    }
+    if (p.verdict === "approved" && p.decided_at && !p.placed) {
+      const d = new Date(p.decided_at); const left = 6 - (now - d) / 36e5;
+      out.push(`<span class="clock ${left < 1 ? "clock-soon" : ""}">approved ${d.toLocaleString(undefined,{hour:"numeric",minute:"2-digit"})} &middot; executor keeps trying ${left > 0 ? Math.round(left*10)/10 + " h more" : "— past 6 h, expires if price moved"}</span>`);
+    } else if (p.decided_at && p.verdict !== "pending") {
+      out.push(`<span class="clock">${esc(p.verdict)} ${new Date(p.decided_at).toLocaleString()}</span>`);
+    }
+    return out.length ? `<p class="row-when">${out.join(" &middot; ")}</p>` : "";
+  }
   function card(p, decided) {
     const verified = p.verification === "match";
     const mismatch = p.verification === "mismatch";
@@ -205,6 +222,7 @@
         </p>
         ${p.rationale ? `<p class="row-why">${esc(p.rationale)}</p>` : ""}
         ${p.proposed_by ? `<p class="row-when">proposed by ${esc(p.proposed_by)} &middot; ${new Date(p.proposed_at).toLocaleString()}</p>` : ""}
+        ${clocks(p)}
         ${p.kill_criteria ? `<p class="row-kill"><strong>Kill if:</strong> ${esc(p.kill_criteria)}</p>` : ""}
         <p class="flags">${flags.join(" ")}</p>
       </div>
