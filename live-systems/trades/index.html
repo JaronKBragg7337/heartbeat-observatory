@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0a0f18" />
   <meta name="description" content="Trade proposals awaiting the owner's decision: what the agent wants to do, why, and whether the numbers were independently verified." />
   <title>Trade Desk — Heartbeat Observatory</title>
-  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=5" />
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=6" />
 </head>
 <body>
   <div class="shell">
@@ -97,6 +97,7 @@
           realized P&amp;L, starts at $1 a trade, and grows its cap by earning.
           Nothing here is inferred from silence; every line comes from the venue&rsquo;s own record.
         </p>
+        <div id="lanes" class="lanes"></div>
         <div id="ledger" class="rows"><p class="empty">Loading&hellip;</p></div>
       </section>
 
@@ -284,8 +285,37 @@
     </article>`;
   }
 
+  // Four lanes, scored on SETTLED resolutions only: who pressed, how many, what it cost, what it returned per dollar.
+  function laneOf(actor) {
+    const a = String(actor || "");
+    if (a.includes("(demo)")) return "demo";
+    if (a.startsWith("auto:")) return "auto";
+    if (a === "system") return "approved";
+    if (a.startsWith("jaron")) return "manual";
+    return "other";
+  }
+  const LANE_LABEL = { auto: "auto (no button)", approved: "approved (your button)", manual: "manual (app)", demo: "demo (friends)", other: "other" };
+  function lanes(all) {
+    const acc = {};
+    for (const r of all) {
+      if (r.kind !== "resolution") continue;
+      const l = laneOf(r.actor); const x = acc[l] || (acc[l] = { n: 0, cost: 0, pnl: 0, wins: 0 });
+      x.n++; x.cost += Number(r.cost_usd) || 0; x.pnl += Number(r.pnl_usd) || 0; if (Number(r.pnl_usd) > 0) x.wins++;
+    }
+    const order = ["auto", "approved", "manual", "demo", "other"].filter(k => acc[k]);
+    if (!order.length) return "";
+    return `<table class="lane-table"><thead><tr><th>lane</th><th>settled</th><th>wins</th><th>cost</th><th>P&amp;L</th><th>per $1</th></tr></thead><tbody>` +
+      order.map(k => { const x = acc[k]; const ret = x.cost ? x.pnl / x.cost : 0;
+        return `<tr><td>${LANE_LABEL[k]}</td><td>${x.n}</td><td>${x.wins}</td><td>${money(x.cost)}</td><td class="${x.pnl >= 0 ? "pos" : "neg"}">${money(x.pnl)}</td><td class="${ret >= 0 ? "pos" : "neg"}">${ret >= 0 ? "+" : ""}${(ret*100).toFixed(0)}%</td></tr>`; }).join("") +
+      `</tbody></table><p class="row-when">Settled trades only, from the venue's own history. Fewer than ~20 in a lane is a coin flip, not a record.</p>`;
+  }
+
   async function loadLedger() {
-    const { data: rows } = await supabase.from("desk_trades").select("*").order("at", { ascending: false }).limit(80);
+    const [{ data: rows }, { data: res }] = await Promise.all([
+      supabase.from("desk_trades").select("*").order("at", { ascending: false }).limit(80),
+      supabase.from("desk_trades").select("kind,actor,cost_usd,pnl_usd").eq("kind", "resolution").limit(2000),
+    ]);
+    $("lanes").innerHTML = lanes(res || []);
     $("ledger").innerHTML = (rows && rows.length) ? rows.map(ledgerRow).join("") : `<p class="empty">No account activity yet.</p>`;
   }
 

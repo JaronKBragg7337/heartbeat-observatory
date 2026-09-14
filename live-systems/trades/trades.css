@@ -150,3 +150,8 @@ h1 em{font-style:normal;color:var(--accent)}
 .tab-n{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--accent);color:#0a0f18;font-size:11px;font-weight:700}
 .tab-n:empty{display:none}
 .clock-soon { color: #f5b942; font-weight: 600; }
+.lanes { margin: 0 0 14px; overflow-x: auto; }
+.lane-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.lane-table th, .lane-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid rgba(255,255,255,.08); white-space: nowrap; }
+.lane-table th:first-child, .lane-table td:first-child { text-align: left; }
+.lane-table .pos { color: #4cd07d; } .lane-table .neg { color: #ff6b6b; }
