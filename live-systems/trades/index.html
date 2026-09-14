@@ -259,13 +259,29 @@
     </article>`;
   }
 
-  const ACTOR = { "system": ["System, via this queue", "ok"], "jaron-manual": ["Owner, by hand", "warn"], "ai-outside-queue": ["AI, outside the queue", "bad"], "mixed": ["Mixed", "warn"], "unknown": ["Unknown", "bad"] };
+  // WHO did it. The actor tag names the deciding agent; this map turns it into "HUMAN — …" or "AI — <which> …".
+  // Vocabulary for new actors (no code change needed): auto:grok-bot/<name>, auto:grok-chat, auto:qwen, auto:script/<name>,
+  // auto:fly-brain/<fly-id>. Anything auto:* not listed still shows as "AI — <tag>".
+  const WHO = [
+    [/^jaron-manual \(demo\)$/, "HUMAN — Jaron, showing friends (demo)", "warn"],
+    [/^jaron-manual$/,           "HUMAN — Jaron, by hand in the app", "warn"],
+    [/^system$/,                 "HUMAN decided (Jaron pressed approve) · SCRIPT placed it", "ok"],
+    [/^auto:grok-bot\/(.+)$/,    (m) => `AI — Grok Bot (${m[1]}), no approval`, "warn"],
+    [/^auto:grok-chat/,          "AI — Grok chat, no approval", "warn"],
+    [/^auto:qwen/,               "AI — Qwen (local), no approval", "warn"],
+    [/^auto:script\/(.+)$/,      (m) => `SCRIPT — ${m[1]}, no approval`, "warn"],
+    [/^auto:fly-brain\/?(.*)$/,  (m) => `FLY BRAIN${m[1] ? " — " + m[1] : ""}, no approval`, "ok"],
+    [/^auto:(.+)$/,              (m) => `AI — ${m[1]}, no approval`, "warn"],
+    [/^ai-outside-queue$/,       "AI — unknown, outside the queue", "bad"],
+    [/^mixed$/,                  "Mixed", "warn"],
+  ];
+  function who(actor) {
+    const a = String(actor || "");
+    for (const [re, lab, cls] of WHO) { const m = a.match(re); if (m) return [typeof lab === "function" ? lab(m) : lab, cls]; }
+    return ["Unknown", "bad"];
+  }
   function ledgerRow(t) {
-    const [label, cls] = t.actor === "auto:fly-brain"
-      ? ["Fly brain", "ok"]
-      : t.actor && t.actor.startsWith("auto:")
-      ? [`Live agent, no approval — ${t.actor.slice(5)}`, "warn"]
-      : (ACTOR[t.actor] || ["Unknown", "bad"]);
+    const [label, cls] = who(t.actor);
     const when = new Date(t.at).toLocaleString();
     let what = "";
     if (t.kind === "fill") {
@@ -286,15 +302,23 @@
   }
 
   // Four lanes, scored on SETTLED resolutions only: who pressed, how many, what it cost, what it returned per dollar.
+  // One lane per deciding agent. Humans say HUMAN; everything else says which AI / script / fly.
   function laneOf(actor) {
     const a = String(actor || "");
-    if (a.includes("(demo)")) return "demo";
-    if (a.startsWith("auto:")) return "auto";
-    if (a === "system") return "approved";
-    if (a.startsWith("jaron")) return "manual";
+    if (a.includes("(demo)")) return "HUMAN — Jaron (demo with friends)";
+    if (a.startsWith("jaron")) return "HUMAN — Jaron (by hand)";
+    if (a === "system") return "HUMAN decided · script placed (approved queue)";
+    let m;
+    if ((m = a.match(/^auto:grok-bot\/(.+)$/))) return `AI — Grok Bot (${m[1]})`;
+    if (a.startsWith("auto:grok-chat")) return "AI — Grok chat";
+    if (a.startsWith("auto:qwen")) return "AI — Qwen (local)";
+    if ((m = a.match(/^auto:script\/(.+)$/))) return `SCRIPT — ${m[1]}`;
+    if ((m = a.match(/^auto:fly-brain\/?(.*)$/))) return `FLY BRAIN${m[1] ? " — " + m[1] : ""}`;
+    if ((m = a.match(/^auto:(.+)$/))) return `AI — ${m[1]}`;
+    if (a === "ai-outside-queue") return "AI — unknown (outside queue)";
     return "other";
   }
-  const LANE_LABEL = { auto: "auto (no button)", approved: "approved (your button)", manual: "manual (app)", demo: "demo (friends)", other: "other" };
+  const LANE_LABEL = new Proxy({}, { get: (_, k) => k });
   function lanes(all) {
     const acc = {};
     for (const r of all) {
@@ -302,7 +326,7 @@
       const l = laneOf(r.actor); const x = acc[l] || (acc[l] = { n: 0, cost: 0, pnl: 0, wins: 0 });
       x.n++; x.cost += Number(r.cost_usd) || 0; x.pnl += Number(r.pnl_usd) || 0; if (Number(r.pnl_usd) > 0) x.wins++;
     }
-    const order = ["auto", "approved", "manual", "demo", "other"].filter(k => acc[k]);
+    const order = Object.keys(acc).sort((x, y) => (x.startsWith("HUMAN") - y.startsWith("HUMAN")) || x.localeCompare(y));
     if (!order.length) return "";
     return `<table class="lane-table"><thead><tr><th>lane</th><th>settled</th><th>wins</th><th>cost</th><th>P&amp;L</th><th>per $1</th></tr></thead><tbody>` +
       order.map(k => { const x = acc[k]; const ret = x.cost ? x.pnl / x.cost : 0;
