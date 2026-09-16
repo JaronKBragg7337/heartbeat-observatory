@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0a0f18" />
   <meta name="description" content="Trade proposals awaiting the owner's decision: what the agent wants to do, why, and whether the numbers were independently verified." />
   <title>Trade Desk — Heartbeat Observatory</title>
-  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=6" />
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=7" />
 </head>
 <body>
   <div class="shell">
@@ -138,10 +138,12 @@
     } catch (e) { /* signed out or not an owner: page stays read-only */ }
   }
 
-  async function decide(id, verdict, btns, sizeUsd, side, entry) {
+  async function decide(id, verdict, btns, sizeUsd, side, entry, tp, lg) {
     btns.forEach(b => b.disabled = true);
     const patch = { verdict, decided_at: new Date().toISOString() };
     if (verdict === "approved" && sizeUsd > 0) patch.size_usd = sizeUsd;
+    if (verdict === "approved" && tp > 0) patch.take_profit_pct = tp;
+    if (verdict === "approved" && lg > 0) patch.let_go_pct = lg;
     if (verdict === "approved" && side) { patch.side = side; patch.entry_price = entry; }
     const { error } = await supabase.from("trade_proposals").update(patch).eq("id", id);
     if (error) { btns.forEach(b => b.disabled = false); alert("Could not save: " + error.message); return; }
@@ -219,11 +221,13 @@
           ${decided
             ? `size ${money(p.size_usd)} &middot; ${shares.toFixed(2)} shares &middot; pays ${money(shares)} if right (+${money(win)})`
             : `<label class="size">$ <input type="number" class="size-in" data-id="${p.id}" value="${size.toFixed(2)}" min="0.50" step="0.50" inputmode="decimal"></label>
-               <span class="size-calc" data-id="${p.id}">${shares.toFixed(2)} shares &middot; pays ${money(shares)} if right (+${money(win)})</span>`}
+               <span class="size-calc" data-id="${p.id}">${shares.toFixed(2)} shares &middot; pays ${money(shares)} if right (+${money(win)})</span>
+               <span class="exit-rule">sell at <input type="number" class="tp-in" data-id="${p.id}" value="${p.take_profit_pct ?? 25}" min="1" max="500" step="5" inputmode="numeric">% up · let go at <input type="number" class="lg-in" data-id="${p.id}" value="${p.let_go_pct ?? 50}" min="1" max="100" step="5" inputmode="numeric">% down <span class="sub">(chosen defaults; the executor sells when either is hit)</span></span>`}
         </p>
         ${p.rationale ? `<p class="row-why">${esc(p.rationale)}</p>` : ""}
         ${p.proposed_by ? `<p class="row-when">proposed by ${esc(p.proposed_by)} &middot; ${new Date(p.proposed_at).toLocaleString()}</p>` : ""}
         ${clocks(p)}
+        ${p.verdict === "approved" && p.placed ? `<p class="row-when">exit rule: sell at +${p.take_profit_pct ?? 25}% · let go at −${p.let_go_pct ?? 50}%${p.exit_placed_at ? ` · <b>EXIT PLACED</b> ${new Date(p.exit_placed_at).toLocaleString()} — ${esc((p.exit_note || "").split(" -> ")[0])}` : ""}</p>` : ""}
         ${p.kill_criteria ? `<p class="row-kill"><strong>Kill if:</strong> ${esc(p.kill_criteria)}</p>` : ""}
         <p class="flags">${flags.join(" ")}</p>
       </div>
@@ -386,7 +390,8 @@
       b.onclick = () => {
         const sibs = [...b.parentElement.querySelectorAll(".btn")];
         const inp = document.querySelector(`.size-in[data-id="${b.dataset.id}"]`);
-        decide(Number(b.dataset.id), b.dataset.v, sibs, inp ? Number(inp.value) : 0, b.dataset.side || null, b.dataset.entry ? Number(b.dataset.entry) : null);
+        const tp = document.querySelector(`.tp-in[data-id="${b.dataset.id}"]`), lg = document.querySelector(`.lg-in[data-id="${b.dataset.id}"]`);
+        decide(Number(b.dataset.id), b.dataset.v, sibs, inp ? Number(inp.value) : 0, b.dataset.side || null, b.dataset.entry ? Number(b.dataset.entry) : null, tp ? Number(tp.value) : null, lg ? Number(lg.value) : null);
       };
     });
     // live "pays $X if right" as the owner edits the size

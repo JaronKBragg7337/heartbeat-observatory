@@ -155,3 +155,5 @@ h1 em{font-style:normal;color:var(--accent)}
 .lane-table th, .lane-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid rgba(255,255,255,.08); white-space: nowrap; }
 .lane-table th:first-child, .lane-table td:first-child { text-align: left; }
 .lane-table .pos { color: #4cd07d; } .lane-table .neg { color: #ff6b6b; }
+.exit-rule { display:block; font-size:12px; opacity:.85; margin-top:4px; }
+.exit-rule input { width:52px; background:rgba(255,255,255,.06); color:inherit; border:1px solid rgba(255,255,255,.15); border-radius:4px; padding:2px 4px; }
