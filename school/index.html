@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0a0f18">
+<meta name="description" content="Fly School: simulated fruit-fly brains (MaleCNS v1.0) taught around the clock on one machine. Every student, live — what it is doing right now, its report card, and what it remembers.">
+<title>Fly School — Heartbeat Observatory</title>
+<link rel="stylesheet" href="/live-systems/trades/trades.css?v=7"><link rel="stylesheet" href="/live-systems/flies/brain/scene.css">
+<style>
+.students{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin:6px 0 28px}
+.student{display:block;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 22px;transition:border-color .15s}.student:hover{border-color:var(--accent)}
+.student .who{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.student h2{margin:0;font:500 22px/1.2 ui-monospace,monospace;color:var(--ink)}.student .ver{font:10px ui-monospace,monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.student .doing{display:flex;align-items:center;gap:8px;margin:14px 0 4px;font:500 18px ui-monospace,monospace;color:var(--accent)}.student .doing i{width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}.student .doing i.fresh{background:var(--accent);box-shadow:0 0 10px #b9db7c66}.student .doing.asleep{color:var(--warn)}.student .doing.rest{color:var(--muted)}
+.student .note{font-size:11px;color:var(--dim);min-height:16px}
+.student dl{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin:14px 0 0}.student dl div{display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid var(--line)}.student dt{color:var(--muted)}.student dd{margin:0;font-family:ui-monospace,monospace;color:var(--ink)}
+.student .go{display:block;margin-top:14px;font-size:12px;color:var(--accent)}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin:14px 0 0}.rules p{margin:0;font-size:12px;line-height:1.75;color:var(--muted)}.rules b{color:var(--ink)}
+.more{display:flex;gap:18px;flex-wrap:wrap;margin:18px 0 0;font-size:12px}.more a{color:var(--accent)}
+.empty{color:var(--dim);font-size:12px;padding:20px;border:1px dashed var(--line);border-radius:10px}
+@media(max-width:700px){.rules{grid-template-columns:1fr}.students{grid-template-columns:1fr}}
+</style></head><body><div class="observatory">
+<header class="scene-header"><a class="brand" href="/">▥ Heartbeat Observatory</a><nav><a href="/live-systems/flies/school/">Grade 1 attempts ↗</a><a href="/live-systems/flies/">The colony ↗</a><a href="/live-systems/">Live systems ↗</a></nav></header>
+<main>
+<section class="heading"><div><p class="eyebrow">MaleCNS v1.0 / a school for simulated fruit-fly brains</p><h1>Fly <em>School.</em></h1><p class="intro">Real fly brains — 165,122 measured neurons each — taught around the clock on one machine in Fort Wayne. No language model in the loop: a sound goes into the ear cells, dopamine goes to the mushroom body, and the answer is read from two motor neurons. Every student below is live. Pick one to sit in its classroom.</p></div>
+<div class="now"><span class="k"><i id="liveDot"></i><b id="connection">Connecting</b></span><strong id="count">—</strong><small id="countNote">students</small></div></section>
+
+<div class="students" id="students"><div class="empty">Reading the register…</div></div>
+
+<section class="action-section explain"><div class="section-title"><h2>How the school works</h2></div>
+<div class="rules">
+<p><b>One student, one memory.</b> Each student is its own copy of the brain with its own memory file, kept across lessons and restarts and never reset. A new version of the fly does not replace a student — it enrols as a new one, takes the same exams, and both stay on this page. The older student keeps running as the control.</p>
+<p><b>A lesson.</b> Teach (dot and dash as sounds, dopamine for the exact answer), exam (two rhythms it was never taught, cold, no dopamine), rest (silence, so what the fly does on its own is measured). About ninety seconds. Then the next lesson, all day and all night.</p>
+<p><b>What the pages show.</b> Each classroom shows what the student is doing this second — teaching, exam, resting, or <em>asleep</em> if the machine's process is down — the sound it heard and the answer it gave, its brain flashing where neurons actually fired, its report card lesson by lesson, and what is chosen versus what is measured.</p>
+<p><b>Why it runs all the time.</b> A fly's lesson fades over hours (the memory here has a 6-hour half-life, from the biology). The first seven attempts at Grade 1 threw the fly away after ten minutes each; there had never been a fly that went to school twice. Now there is.</p>
+</div>
+<div class="more"><a href="/live-systems/flies/school/">The seven Grade 1 attempts that came before (report card) →</a><a href="/live-systems/flies/brain/">The trader fly (paused) →</a><a href="/live-systems/flies/">The colony →</a></div></section>
+
+<footer><p>Brain: MaleCNS v1.0 (Janelia FlyEM, dataset June 2026; paper Sept 2026), run as leaky integrate-and-fire cells. Learning: Kenyon-cell → MBON depression under dopamine, the fly's own rule. Everything else on these pages says whether it was chosen or measured.</p><p>Built by Jaron Bragg with Claude Code, ChatGPT, Codex, Grok and Qwen — every AI credited where it worked. The school runs on a donated MSI laptop.</p></footer>
+</main></div>
+<script>
+const API='https://ygjpnvrwhkrowkrskftk.supabase.co/rest/v1/',KEY='sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN';
+const SYM={'.':'·','-':'–','.-':'·–','-.':'–·'};
+const ago=s=>s<90?`${Math.floor(s)}s`:s<5400?`${Math.floor(s/60)} min`:s<172800?`${(s/3600).toFixed(1)} h`:`${(s/86400).toFixed(1)} d`;
+const num=v=>typeof v==='number'?v.toLocaleString():'—';
+let rows=[],ok=false;
+async function poll(){try{const r=await fetch(API+'fly_live?select=fly,at,mode,state&mode=eq.school&order=fly.asc',{headers:{apikey:KEY},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!r.ok)throw 0;rows=await r.json();ok=true;}catch(e){ok=false;}render();}
+function render(){
+  const el=document.getElementById('students');
+  document.getElementById('connection').textContent=ok?'Register read':'Register unavailable';document.getElementById('liveDot').classList.toggle('fresh',ok);
+  document.getElementById('count').textContent=rows.length||'—';document.getElementById('countNote').textContent=rows.length===1?'student enrolled':'students enrolled';
+  if(!rows.length){el.innerHTML='<div class="empty">No student has written a trial yet.</div>';return;}
+  el.replaceChildren(...rows.map(r=>{const s=r.state||{},age=(Date.now()-Date.parse(r.at))/1000,fresh=age<60,asleep=age>120;
+    const a=document.createElement('a');a.className='student';a.href=`/school/${r.fly}/`;
+    let doing,cls='',note='';
+    if(asleep){doing='Asleep';cls='asleep';note=`process not running · last trial ${ago(age)} ago`;}
+    else if(s.phase==='teach'){doing=`Teaching ${SYM[s.symbol]||s.symbol}`;note=`round ${(s.epoch??0)+1} of ${s.teach_epochs||12} · ${s.correct?'exact, +1':'miss, −1'}`;}
+    else if(s.phase==='exam'){doing=`Exam: ${SYM[s.symbol]||s.symbol}`;note=`cold · rep ${(s.epoch??0)+1} of ${s.exam_reps||6} · ${s.correct?'exact':'miss'}`;}
+    else if(s.phase==='rest'){doing='Resting';cls='rest';note=`silence · ${num(s.fired_total)} neurons fired`;}
+    else{doing=s.phase||'—';}
+    const le=s.last_exam,mb=s.mb||{},born=s.born?(Date.now()-Date.parse(s.born))/1000:null;
+    a.innerHTML=`<div class="who"><h2>${r.fly}</h2><span class="ver">${s.version||''}</span></div>
+      <div class="doing ${cls}"><i class="${fresh?'fresh':''}"></i>${doing}</div><div class="note">${note}</div>
+      <dl><div><dt>Lesson</dt><dd>${num(s.lesson)}</dd></div><div><dt>Age</dt><dd>${born!=null?ago(born):'—'}</dd></div>
+      <div><dt>Last exam ·– / –·</dt><dd>${le?`${le.heldout?.['.-']?.correct??'—'} / ${le.heldout?.['-.']?.correct??'—'} of 6`:'—'}</dd></div><div><dt>Trials</dt><dd>${num(s.trials)}</dd></div>
+      <div><dt>Dopamine +/−</dt><dd>${num(mb.rewards)} / ${num(mb.punishments)}</dd></div><div><dt>Memory (mean gain)</dt><dd>${typeof mb.mean_gain==='number'?mb.mean_gain.toFixed(3):'—'}</dd></div></dl>
+      <span class="go">Sit in this classroom →</span>`;
+    return a;}));
+}
+poll();setInterval(poll,4000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll();});
+</script></body></html>

@@ -2,7 +2,7 @@
 // and fly_school (the log). Reuses the trader page's atlas + flybody loader. Nothing here computes a score.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {loadMeasuredFly} from '../../brain/assets.js';
+import {loadMeasuredFly} from '/live-systems/flies/brain/assets.js';
 
 const $=id=>document.getElementById(id), set=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
 const valid=v=>typeof v==='number'&&Number.isFinite(v);
@@ -10,7 +10,8 @@ const number=(v,d=0)=>valid(v)?v.toLocaleString(undefined,{maximumFractionDigits
 const COLORS=['#74d3d3','#599bc6','#d5dc89','#e6a962','#e8cf66','#e77e8e','#a599df','#466578'];
 const API='https://ygjpnvrwhkrowkrskftk.supabase.co/rest/v1/';
 const KEY='sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN';
-const FLY='school-1', FRESH_S=60, ASLEEP_S=120;
+const FLY=(new URLSearchParams(location.search).get('fly')||(location.pathname.match(/^\/school\/([a-z0-9-]+)\/?$/)||[])[1]||'school-1').replace(/[^a-z0-9-]/g,''), FRESH_S=60, ASLEEP_S=120;
+document.title=`${FLY} — The Classroom`;
 const SYM={'.':'·','-':'–','.-':'·–','-.':'–·','':'silence'};
 const BIN={dot:2,dash:6,gap:4,tail:4};   // 10 ms bins: dot 20 / dash 60 / gap 40 / tail 40 (chosen, same as school.py)
 let row=null, atlas, positions, spikeMesh, brain, renderer, scene, camera, controls, measuredFly, seenTick=null, flashAt=-Infinity;
@@ -112,7 +113,7 @@ async function setup(){try{
   brain=new THREE.Group();brain.position.y=.32;scene.add(brain);
   new ResizeObserver(()=>{const w=viewport.clientWidth,h=viewport.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}).observe(viewport);
   loadMeasuredFly(scene).then(f=>{measuredFly=f;set('assetNote','Measured flybody anatomy (TuragaLab, Apache 2.0) · 160× display size · a posed puppet: wings on reward, grooming on punishment, a tap per DNa01 run. Not measured limb movement.');}).catch(e=>set('assetNote','Measured fly asset unavailable. Anatomy is not being shown.'));
-  const [metaResponse,binaryResponse]=await Promise.all([fetch('../../atlas.json'),fetch('../../atlas.bin')]);if(!metaResponse.ok||!binaryResponse.ok)throw new Error('Measured atlas unavailable');
+  const [metaResponse,binaryResponse]=await Promise.all([fetch('/live-systems/flies/atlas.json'),fetch('/live-systems/flies/atlas.bin')]);if(!metaResponse.ok||!binaryResponse.ok)throw new Error('Measured atlas unavailable');
   atlas=await metaResponse.json();const buffer=await binaryResponse.arrayBuffer();if(buffer.byteLength!==atlas.n*6||atlas.region.length!==atlas.n)throw new Error('Atlas length mismatch');
   positions=new Float32Array(atlas.n*3);const bytes=new DataView(buffer),colors=new Float32Array(atlas.n*3);
   for(let i=0;i<positions.length;i++){const value=float16(bytes.getUint16(i*2,true));if(!Number.isFinite(value))throw new Error('Invalid atlas coordinate');positions[i]=(value-.5)*2.7;}

@@ -22,5 +22,11 @@
       "path": "/api/enrich-world-spaces",
       "schedule": "0 5 * * *"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/school/:fly(school-[a-z0-9-]+)",
+      "destination": "/live-systems/flies/school/live/index.html?fly=:fly"
+    }
   ]
 }
