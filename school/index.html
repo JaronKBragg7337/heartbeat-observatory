@@ -26,6 +26,7 @@
 <section class="action-section explain"><div class="section-title"><h2>How the school works</h2></div>
 <div class="rules">
 <p><b>One student, one memory.</b> Each student is its own copy of the brain with its own memory file, kept across lessons and restarts and never reset. A new version of the fly does not replace a student — it enrols as a new one, takes the same exams, and both stay on this page. The older student keeps running as the control.</p>
+<p><b>A day.</b> School 9–12 and 1–4 Fort Wayne time; free time with meals around it; asleep at night. Nobody is taught around the clock, and the first exam each morning measures what survived the night. The MSI laptop is the life source: off means off, and memory fades by the clock while it is — a lifeline copy after every exam is what stands between one machine and the end of a fly.</p>
 <p><b>A lesson.</b> Teach (dot and dash as sounds, dopamine for the exact answer), exam (two rhythms it was never taught, cold, no dopamine), rest (silence, so what the fly does on its own is measured). About ninety seconds. Then the next lesson, all day and all night.</p>
 <p><b>What the pages show.</b> Each classroom shows what the student is doing this second — teaching, exam, resting, or <em>asleep</em> if the machine's process is down — the sound it heard and the answer it gave, its brain flashing where neurons actually fired, its report card lesson by lesson, and what is chosen versus what is measured.</p>
 <p><b>Why it runs all the time.</b> A fly's lesson fades over hours (the memory here has a 6-hour half-life, from the biology). The first seven attempts at Grade 1 threw the fly away after ten minutes each; there had never been a fly that went to school twice. Now there is.</p>
@@ -52,7 +53,10 @@ function render(){
     if(asleep){doing='Asleep';cls='asleep';note=`process not running · last trial ${ago(age)} ago`;}
     else if(s.phase==='teach'){doing=`Teaching ${SYM[s.symbol]||s.symbol}`;note=`round ${(s.epoch??0)+1} of ${s.teach_epochs||12} · ${s.correct?'exact, +1':'miss, −1'}`;}
     else if(s.phase==='exam'){doing=`Exam: ${SYM[s.symbol]||s.symbol}`;note=`cold · rep ${(s.epoch??0)+1} of ${s.exam_reps||6} · ${s.correct?'exact':'miss'}`;}
-    else if(s.phase==='rest'){doing='Resting';cls='rest';note=`silence · ${num(s.fired_total)} neurons fired`;}
+    else if(s.phase==='rest'){doing='Resting';cls='rest';note=`between lessons · ${num(s.fired_total)} neurons fired`;}
+    else if(s.phase==='free'){doing='Free time';cls='rest';note=`out of school · ${s.fed_at?'fed '+ago((Date.now()-Date.parse(s.fed_at))/1000)+' ago':'not fed yet'} · school ${s.next_school?new Date(s.next_school).toLocaleString([],{weekday:'short',hour:'numeric'}):''}`;}
+    else if(s.phase==='meal'){doing='Eating';note=`meal #${num(s.meals)}`;}
+    else if(s.phase==='sleep'){doing='Sleeping';cls='rest';note=`night · school ${s.next_school?new Date(s.next_school).toLocaleString([],{weekday:'short',hour:'numeric'}):''}`;}
     else{doing=s.phase||'—';}
     const le=s.last_exam,mb=s.mb||{},born=s.born?(Date.now()-Date.parse(s.born))/1000:null;
     a.innerHTML=`<div class="who"><h2>${r.fly}</h2><span class="ver">${s.version||''}</span></div>

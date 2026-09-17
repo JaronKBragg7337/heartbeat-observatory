@@ -21,6 +21,8 @@ const state={fresh:false,asleep:true}; window.classroom=state;
 function float16(h){const s=(h&0x8000)?-1:1,e=(h>>10)&31,m=h&1023;return e===0?s*2**-14*(m/1024):e===31?(m?NaN:s*Infinity):s*2**(e-15)*(1+m/1024);}
 async function readTable(q){const r=await fetch(API+q,{headers:{apikey:KEY},signal:AbortSignal.timeout(10000),cache:'no-store'});if(!r.ok)throw new Error(`Data unavailable (${r.status})`);return r.json();}
 const ago=s=>s<90?`${Math.floor(s)}s`:s<5400?`${Math.floor(s/60)} min`:s<172800?`${(s/3600).toFixed(1)} h`:`${(s/86400).toFixed(1)} d`;
+const when=iso=>iso?new Date(iso).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'}):'—';
+const fedNote=s=>s.fed_at?`fed ${ago((Date.now()-Date.parse(s.fed_at))/1000)} ago`:'not fed yet';
 const clock=iso=>iso?new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
 
 function freshness(){
@@ -38,7 +40,10 @@ function doing(s){
   const d=$('doing');d.className='';
   if(s.phase==='teach'){d.textContent=`Teaching ${SYM[s.symbol]||s.symbol}`;set('doingNote',`round ${(s.epoch??0)+1} of ${s.teach_epochs||12} · lesson ${s.lesson} · dopamine ${s.dopamine>0?'+1 reward':'−1 punishment'}`);}
   else if(s.phase==='exam'){d.textContent=`Exam: ${SYM[s.symbol]||s.symbol}`;set('doingNote',`cold · rep ${(s.epoch??0)+1} of ${s.exam_reps||6} · never taught this pair · no dopamine`);}
-  else if(s.phase==='rest'){d.textContent='Resting';d.className='rest';set('doingNote',`no sound · ${number(s.fired_total)} neurons fired · the fly on its own`);}
+  else if(s.phase==='rest'){d.textContent='Resting';d.className='rest';set('doingNote',`between lessons · no sound · ${number(s.fired_total)} neurons fired`);}
+  else if(s.phase==='free'){d.textContent='Free time';d.className='rest';set('doingNote',`out of school · ${fedNote(s)} · school again ${when(s.next_school)}`);}
+  else if(s.phase==='meal'){d.textContent='Eating';d.className='';set('doingNote',`meal #${number(s.meals)} · a clock event for now, not dopamine · school again ${when(s.next_school)}`);}
+  else if(s.phase==='sleep'){d.textContent='Sleeping';d.className='rest';set('doingNote',`night · forgetting runs on (half-life 6 h) · school again ${when(s.next_school)}`);}
   else{d.textContent=s.phase||'—';set('doingNote','');}
 }
 function strips(s){
@@ -47,9 +52,9 @@ function strips(s){
   for(let i=0;i<sym.length;i++){const len=sym[i]==='.'?BIN.dot:BIN.dash;for(let k=0;k<len&&p+k<n;k++)inb[p+k]=1;p+=len;if(i+1<sym.length)p+=BIN.gap;}
   $('inStrip').replaceChildren(...inb.map(v=>{const i=document.createElement('i');if(v)i.className='on';return i;}));
   $('outStrip').replaceChildren(...active.map(v=>{const i=document.createElement('i');if(v)i.className='on';return i;}));
-  set('trialTitle',s.phase==='rest'?'Nothing played':`${SYM[s.symbol]||s.symbol} played → DNa01 said ${s.decoded?SYM[s.decoded]||s.decoded:'nothing'}`);
+  set('trialTitle',['rest','free','sleep','meal'].includes(s.phase)?'Nothing played':`${SYM[s.symbol]||s.symbol} played → DNa01 said ${s.decoded?SYM[s.decoded]||s.decoded:'nothing'}`);
   const v=$('verdict');
-  if(s.phase==='rest'){v.textContent='rest';v.className='verdict cold';}
+  if(['rest','free','sleep','meal'].includes(s.phase)){v.textContent=s.phase;v.className='verdict cold';}
   else if(s.phase==='exam'){v.textContent=s.correct?'EXACT · cold':'miss · cold';v.className='verdict '+(s.correct?'hit':'cold');}
   else{v.textContent=s.correct?`EXACT · +1 · ${number(s.synapses_hit)} synapses`:`miss · −1 · ${number(s.synapses_hit)} synapses`;v.className='verdict '+(s.correct?'hit':'miss');}
 }
@@ -64,7 +69,7 @@ function render(){
   const mb=s.mb||{};set('dopa',`${number(mb.rewards)} / ${number(mb.punishments)}`);set('memory',valid(mb.depressed)?`${number(mb.depressed)}`:'—');set('memoryNote',`of ${number(mb.synapses)} KC→MBON depressed · mean gain ${valid(mb.mean_gain)?mb.mean_gain.toFixed(3):'—'} · half-life ${mb.half_life_h??'—'} h`);
   set('spikes',number(s.spikes_per_sec));set('kcNote',`sim time · ${number(s.kc)} KC · ${number(s.dn_spikes)} DNa01 spikes`);
   const le=s.last_exam;set('lastExam',le?`${le.heldout?.['.-']?.correct??'—'} / ${le.heldout?.['-.']?.correct??'—'}`:'—');
-  set('phaseTag',s.phase?`${s.phase} · lesson ${s.lesson}`:'—');set('firedTotal',number(s.fired_total));
+  set('phaseTag',s.phase?`${s.phase} · lesson ${s.lesson}`:'—');set('life',s.period==='school'?'In school':s.period==='sleep'?'Night':'Free time');set('lifeNote',`${fedNote(s)} · ${number(s.meals)} meals · lifeline ${s.lifeline_at?ago((Date.now()-Date.parse(s.lifeline_at))/1000)+' ago':'—'}`);set('firedTotal',number(s.fired_total));
   if(!freshness())return; doing(s);
   if(row.at!==seenTick){seenTick=row.at;strips(s);
     if(atlas){const fired=Array.isArray(row.fired)?[...new Set(row.fired.filter(i=>Number.isInteger(i)&&i>=0&&i<atlas.n))]:[];set('firedCount',number(fired.length));updateSpikes(fired);}
@@ -94,7 +99,7 @@ async function pollCard(){try{
 async function pollFeed(){try{
   const data=await readTable(`fly_school?select=at,lesson,phase,epoch,symbol,decoded,correct,dopamine&fly=eq.${FLY}&order=id.desc&limit=12`);
   const items=data.map(a=>{const li=document.createElement('li'),time=document.createElement('time'),kind=document.createElement('b'),detail=document.createElement('span');time.textContent=clock(a.at);kind.textContent=a.phase;kind.className=a.phase;
-    detail.innerHTML=a.phase==='rest'?`L${a.lesson} · silence → <em>${a.decoded?SYM[a.decoded]||a.decoded:'nothing'}</em>`:`L${a.lesson} · <em>${SYM[a.symbol]||a.symbol}</em> → <em>${a.decoded?SYM[a.decoded]||a.decoded:'∅'}</em> ${a.correct?'exact':'miss'}${a.dopamine?` · ${a.dopamine>0?'+1':'−1'}`:' · cold'}`;
+    detail.innerHTML=['rest','free','sleep','meal'].includes(a.phase)?`${a.phase==='meal'?'meal':'silence'} → <em>${a.decoded?SYM[a.decoded]||a.decoded:'nothing'}</em>`:`L${a.lesson} · <em>${SYM[a.symbol]||a.symbol}</em> → <em>${a.decoded?SYM[a.decoded]||a.decoded:'∅'}</em> ${a.correct?'exact':'miss'}${a.dopamine?` · ${a.dopamine>0?'+1':'−1'}`:' · cold'}`;
     li.append(time,kind,detail);return li;});
   if(!items.length){const li=document.createElement('li');li.className='empty';li.textContent='No trials in the log yet.';items.push(li);}
   $('feed').replaceChildren(...items);set('feedStatus','Last 12 · checked '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
