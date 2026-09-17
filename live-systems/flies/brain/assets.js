@@ -6,7 +6,7 @@ export const dimensions={length:2.74,width:1.525,height:.76,netHeight:.1525};
 export function buildTable(scene){
  const root=new THREE.Group();root.position.y=-2;root.name='TABLE';root.userData.assetId='TABLE';scene.add(root);
  const loader=new THREE.TextureLoader();
- const texture=(name,srgb=false)=>{const t=loader.load(`textures/wood-${name}.jpg`);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1.7,1.9);if(srgb)t.colorSpace=THREE.SRGBColorSpace;return t;};
+ const texture=(name,srgb=false)=>{const t=loader.load(new URL(`textures/wood-${name}.jpg`,import.meta.url).href);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1.7,1.9);if(srgb)t.colorSpace=THREE.SRGBColorSpace;return t;};
  const wood=new THREE.MeshStandardMaterial({map:texture('color',true),roughnessMap:texture('roughness'),normalMap:texture('normalgl'),normalScale:new THREE.Vector2(.18,.18),roughness:.8});
  const paint=new THREE.MeshStandardMaterial({color:0x154b60,roughnessMap:texture('roughness'),roughness:.85});
  const steel=new THREE.MeshStandardMaterial({color:0x39434b,metalness:.75,roughness:.4}),white=new THREE.MeshStandardMaterial({color:0xe5e7df,roughness:.8}),rubber=new THREE.MeshStandardMaterial({color:0x151819,roughness:.95});
@@ -48,7 +48,7 @@ export function buildTable(scene){
 }
 
 export async function loadMeasuredFly(scene){
- const gltf=await new GLTFLoader().loadAsync('fly.glb'),model=gltf.scene;
+ const gltf=await new GLTFLoader().loadAsync(new URL('fly.glb',import.meta.url).href),model=gltf.scene;
  const holder=new THREE.Group();holder.name='FLY';holder.userData.assetId='FLY';holder.scale.setScalar(160);holder.rotation.y=-.35;holder.add(model);scene.add(holder);
  // Source already in metres. Explicit 160Ãƒâ€” display magnification, never normalization.
  const bounds=new THREE.Box3().setFromObject(holder);holder.position.set(-.67,-1.237-bounds.min.y,.28);
