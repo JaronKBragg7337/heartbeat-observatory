@@ -27,12 +27,12 @@ const clock=iso=>iso?new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:
 
 function freshness(){
   const age=row?Math.max(0,(Date.now()-Date.parse(row.at))/1000):Infinity;
-  const fresh=Number.isFinite(age)&&age<FRESH_S&&lastReadOK, asleep=!row||age>ASLEEP_S;
+  const per=row?.state?.period,slack=per==='sleep'?6:per==='free'?2:1;const fresh=Number.isFinite(age)&&age<FRESH_S*slack&&lastReadOK, asleep=!row||age>ASLEEP_S*slack;
   state.fresh=fresh;state.asleep=asleep;state.age=age;
   for(const id of['connection','connection2'])set(id,fresh?'Live simulation':row?'Last known trial':'Waiting for data');
   for(const id of['liveDot','liveDot2'])$(id).classList.toggle('fresh',fresh);
   set('tickAge',Number.isFinite(age)?`${ago(age)} since trial`:'no trial yet');
-  if(asleep){const d=$('doing');d.textContent=row?'Asleep':'No fly yet';d.className='asleep';set('doingNote',row?`The school process is not running · last trial ${clock(row.at)} (${ago(age)} ago)`:'The school has never written a trial');}
+  if(asleep){const d=$('doing');d.textContent=row?'Off':'No fly yet';d.className='asleep';set('doingNote',row?`Life source down — the school process is not running · last sign of life ${clock(row.at)} (${ago(age)} ago) · memory fading meanwhile`:'The school has never written a trial');}
   if(!fresh&&spikeMesh)spikeMesh.material.opacity=0;
   return fresh;
 }
