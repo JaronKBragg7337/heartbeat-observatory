@@ -8,3 +8,4 @@
 .explain-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin-top:14px}.explain p{margin:0;font-size:12px;line-height:1.75;color:var(--muted)}.explain b{color:var(--ink)}.explain em{color:var(--accent);font-style:normal}.explain code{font-family:ui-monospace,monospace;color:var(--ink)}
 @media(max-width:1150px){.vitals{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:700px){.heading{display:block}.now{text-align:left;margin-top:16px}.now .k{justify-content:flex-start}.now strong{font-size:24px}.vitals{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:1fr;gap:4px}.strip i{height:16px}.strip-head{display:block}.strip-right{margin-top:8px}#feed{grid-template-columns:1fr}.explain-grid{grid-template-columns:1fr}}
+.heading .eyebrow{display:block}.heading .eyebrow span{display:inline}
