@@ -27,6 +27,10 @@
     {
       "source": "/school/:fly(school-[a-z0-9-]+)",
       "destination": "/live-systems/flies/school/live/index.html?fly=:fly"
+    },
+    {
+      "source": "/school/:fly(school-[a-z0-9-]+)/",
+      "destination": "/live-systems/flies/school/live/index.html?fly=:fly"
     }
   ]
 }

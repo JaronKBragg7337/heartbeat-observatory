@@ -47,7 +47,7 @@ function render(){
   document.getElementById('count').textContent=rows.length||'—';document.getElementById('countNote').textContent=rows.length===1?'student enrolled':'students enrolled';
   if(!rows.length){el.innerHTML='<div class="empty">No student has written a trial yet.</div>';return;}
   el.replaceChildren(...rows.map(r=>{const s=r.state||{},age=(Date.now()-Date.parse(r.at))/1000,fresh=age<60,asleep=age>120;
-    const a=document.createElement('a');a.className='student';a.href=`/school/${r.fly}/`;
+    const a=document.createElement('a');a.className='student';a.href=`/school/${r.fly}`;
     let doing,cls='',note='';
     if(asleep){doing='Asleep';cls='asleep';note=`process not running · last trial ${ago(age)} ago`;}
     else if(s.phase==='teach'){doing=`Teaching ${SYM[s.symbol]||s.symbol}`;note=`round ${(s.epoch??0)+1} of ${s.teach_epochs||12} · ${s.correct?'exact, +1':'miss, −1'}`;}
