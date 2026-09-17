@@ -79,7 +79,7 @@ function render(){
   }
 }
 function updateSpikes(indices){if(!spikeMesh)return;const a=spikeMesh.geometry.attributes.position.array;const limit=Math.min(indices.length,3000);for(let j=0;j<limit;j++)a.set(positions.subarray(indices[j]*3,indices[j]*3+3),j*3);spikeMesh.geometry.attributes.position.needsUpdate=true;spikeMesh.geometry.setDrawRange(0,limit);flashAt=performance.now();}
-let polling=false;async function pollLive(){if(polling||document.hidden)return;polling=true;try{const rows=await readTable(`fly_live?select=fly,at,mode,state,fired&fly=eq.${FLY}`);row=rows[0]||null;lastReadOK=true;render();}catch(e){lastReadOK=false;freshness();}finally{polling=false;}}
+let polling=false;async function pollLive(){if(polling||document.hidden)return;polling=true;try{const rows=await readTable(`fly_live?select=fly,at,mode,state,fired&fly=eq.${FLY}`);if(rows[0])row=rows[0];lastReadOK=true;render();}catch(e){lastReadOK=false;freshness();}finally{polling=false;}}
 
 async function pollCard(){try{
   const ex=await readTable(`fly_school?select=lesson,symbol,correct,at&fly=eq.${FLY}&phase=eq.exam&order=id.desc&limit=3000`);
