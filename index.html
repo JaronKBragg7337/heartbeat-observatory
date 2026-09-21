@@ -172,6 +172,20 @@
     revenue: "Paid work found and screened daily, held for approval before anything ships.",
     printer: "An interactive 3D printer asset and its working room."
   };
+  // 2026-09-21: the directory used to exist only in the database. When Supabase went down the front door went blank
+  // ("Directory unavailable") even though every page was still deployed. This list is the fallback: same keys, same
+  // routes, rendered when the database cannot answer. The database still wins when it is up (it carries live statuses).
+  const FALLBACK = [
+    { key:"engine",   name:"The World",     status:"live",    position:1 },
+    { key:"social",   name:"Social",        status:"live",    position:2 },
+    { key:"video",    name:"Theater",       status:"live",    position:3 },
+    { key:"host",     name:"Projects",      status:"live",    position:4 },
+    { key:"showcase", name:"Live Systems",  status:"live",    position:5 },
+    { key:"games",    name:"Games",         status:"live",    position:6 },
+    { key:"library",  name:"Library",       status:"live",    position:7 },
+    { key:"printer",  name:"3D Printer",    status:"preview", position:8 },
+    { key:"pam",      name:"PAM",           status:"preview", position:9 }
+  ];
   const grid = document.getElementById("grid");
   const status = document.getElementById("connectionStatus");
 
@@ -188,6 +202,7 @@
   }
 
   async function load() {
+    let data = null, fromDatabase = true;
     try {
       const response = await fetch(SURFACES_URL, {
         headers: {
@@ -196,11 +211,15 @@
         }
       });
       if (!response.ok) throw new Error("Directory request failed");
-      const data = await response.json();
-
-      status.innerHTML = '<span class="state-dot" aria-hidden="true"></span> Current directory';
+      data = await response.json();
+      if (!Array.isArray(data) || !data.length) throw new Error("Directory empty");
+    } catch (error) {
+      data = FALLBACK; fromDatabase = false;
+    }
+    try {
+      status.innerHTML = '<span class="state-dot" aria-hidden="true"></span> ' + (fromDatabase ? "Current directory" : "Directory (local list)");
       grid.innerHTML = "";
-      const sections = Array.isArray(data) ? data : [];
+      const sections = Array.isArray(data) ? data.slice() : [];
       if (!sections.some((surface) => surface.key === "pam")) sections.push({ key: "pam", name: "PAM", status: "preview", position: 999 });
       // 2026-09-11, Jaron: "one page for it all." Qwen and Revenue Desk live under Live Systems now;
       // the pages stay, the front-door entries go. Reversible: remove the key from HIDDEN.
