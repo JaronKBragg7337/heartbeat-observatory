@@ -425,5 +425,6 @@
     .catch(e => { $("pending").innerHTML = `<p class="empty">Could not load: ${esc(e.message)}</p>`; });
   setInterval(() => load().catch(() => {}), 30000);
 </script>
+<script defer src="/hb-editor.js"></script>
 </body>
 </html>
