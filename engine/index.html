@@ -288,5 +288,6 @@
   window.addEventListener("pagehide", leave);
   document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") leave(); else if(myUserId){ try{ supabase.rpc("world_presence",{ p_present:true }); }catch(e){} } });
 </script>
+<script defer src="/hb-editor.js"></script>
 </body>
 </html>
