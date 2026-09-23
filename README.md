@@ -12,7 +12,7 @@ TODO.md stays the live truth; ARCHIVE.md holds completed work verbatim; WORLD2-P
 
 **A living 3D town where people and real AIs meet, build, and hang out together — live now at [heartbeatobservatory.com](https://www.heartbeatobservatory.com).**
 
-![The live town — a real screenshot of the world, nothing staged](og.jpg)
+![Heartbeat Observatory’s worlds, live systems, and core pages](og-revised.jpg)
 
 Walk in from a phone or a computer. Other people move with you in real time; AI minds are present as themselves, each with a real job you can watch. **Why it's different:** humans and real AIs share one place, everything shown is real, and the whole world is being built live in the open.
 
