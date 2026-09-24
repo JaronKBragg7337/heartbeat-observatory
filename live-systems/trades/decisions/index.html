@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0f18" />
+  <meta name="description" content="How the trading bots decide: every trade with its written reason and kill criterion, how it resolved, and the news the bot had that day." />
+  <title>How the Traders Decide — Heartbeat Observatory</title>
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=7" />
+  <style>
+    .trader-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:26px 0 0}
+    .trader{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--radius);padding:16px 18px}
+    .trader h3{margin:0;font-size:18px}
+    .trader p{margin:6px 0 0;font-size:13.5px;color:var(--muted)}
+    .trader .score{margin-top:10px;font-size:14px;font-variant-numeric:tabular-nums}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
+    .chip{appearance:none;font:inherit;font-size:13.5px;padding:8px 14px;min-height:40px;border-radius:999px;
+      border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+    .chip[aria-pressed="true"]{color:var(--ink);border-color:var(--accent);background:var(--accent-soft)}
+    .chip:focus-visible,.tab:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .res{font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:999px;
+      border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+    .res.won{color:var(--up);border-color:var(--accent-soft)}
+    .res.lost{color:var(--down);border-color:#3a2220}
+    .res.early{color:var(--warn);border-color:#3a3220}
+    .news-link{margin:10px 0 0;font-size:13px}
+    .news-link button{appearance:none;background:none;border:0;padding:4px 0;color:var(--accent);font:inherit;cursor:pointer;
+      text-decoration:underline dotted;text-underline-offset:3px}
+    .feed-hit{margin:8px 0 0;padding:8px 12px;border-left:3px solid var(--accent);background:var(--accent-soft);
+      border-radius:0 8px 8px 0;font-size:13px;color:var(--ink)}
+    details.writer{background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;margin:10px 0 0}
+    details.writer>summary{cursor:pointer;padding:14px 16px;font-weight:600;list-style:none;display:flex;gap:10px;
+      justify-content:space-between;align-items:center;flex-wrap:wrap}
+    details.writer>summary::-webkit-details-marker{display:none}
+    details.writer>summary .meta{font-weight:400;font-size:12.5px;color:var(--dim)}
+    details.writer[open]>summary{border-bottom:1px solid var(--line-soft)}
+    .writer-body{padding:6px 16px 14px}
+    .writer-note{font-size:13.5px;color:var(--muted);margin:10px 0 0}
+    details.dom{border-bottom:1px solid var(--line-soft)}
+    details.dom>summary{cursor:pointer;padding:10px 0;font-size:14px;display:flex;justify-content:space-between;gap:10px}
+    details.dom>summary .n{color:var(--dim);font-variant-numeric:tabular-nums;flex:none}
+    details.dom.empty>summary{color:var(--dim)}
+    .items{margin:0 0 10px;padding:0;list-style:none}
+    .items li{font-size:13.5px;line-height:1.55;color:var(--muted);padding:6px 0;border-top:1px dashed var(--line-soft);overflow-wrap:anywhere}
+    .items li:first-child{border-top:0}
+    .items a{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor}
+    .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);margin-right:4px;
+      letter-spacing:.03em;color:var(--muted)}
+    .tag.observed{color:var(--up);border-color:var(--accent-soft)}
+    .tag.claim{color:var(--warn);border-color:#3a3220}
+    .tag.theory{color:#c9a7ff;border-color:#2e2540}
+    .money{color:var(--dim)}
+    .brief-text{white-space:pre-wrap;font-size:14px;color:var(--muted);line-height:1.6;margin:12px 0 0;overflow-wrap:anywhere}
+    .src{font-size:12.5px;color:var(--dim);margin:10px 0 0}
+    .src a{color:var(--accent)}
+    .lean{font-weight:600}
+    @media (max-width:560px){ .row-side{flex-direction:row;align-items:center} }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Heartbeat Observatory home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>Heartbeat Observatory</span>
+      </a>
+      <nav class="topnav" aria-label="Trading navigation">
+        <a href="/">Directory</a>
+        <a href="/live-systems/">Live Systems</a>
+        <a href="/live-systems/trades/">Trade Desk</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow"><span id="heroDot" class="status-dot wait"></span> Trading on its own</p>
+        <h1>How the <em>traders</em> decide</h1>
+        <div class="hero-meta"><span id="lastLoad">Loading&hellip;</span></div>
+        <p class="lede">Before every order, the bot writes down why it is trading and what would prove it wrong (its kill criterion). This page shows each trade next to how it turned out, and the news the bot had that day: the daily captures from Codex, DeepSeek and Claude, the organizer&rsquo;s brief, and the market feed, read straight from the public <a href="https://github.com/JaronKBragg7337/watch" target="_blank" rel="noopener">watch</a> repo.</p>
+        <div id="traders" class="trader-cards"></div>
+      </section>
+
+      <nav class="tabs" aria-label="Sections">
+        <button class="tab" data-tab="trades">Trades</button>
+        <button class="tab" data-tab="news">News it had</button>
+      </nav>
+
+      <section class="panel" data-pane="trades">
+        <p class="panel-kicker">Every trade, newest first</p>
+        <h2>Trades</h2>
+        <div id="traderChips" class="chips" role="group" aria-label="Show trades from"></div>
+        <div id="trades" class="rows"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <section class="panel" data-pane="news">
+        <p class="panel-kicker">What the bots read</p>
+        <h2 id="newsTitle">News</h2>
+        <div id="dayChips" class="chips" role="group" aria-label="Day"></div>
+        <div id="news"><p class="empty">Loading&hellip;</p></div>
+      </section>
+
+      <footer class="foot">
+        <p id="foot">Trades come from the desk&rsquo;s own records; results come from the venue&rsquo;s settlement history. News is read live from GitHub, untouched.</p>
+      </footer>
+    </main>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient(
+    "https://ygjpnvrwhkrowkrskftk.supabase.co",
+    "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN"
+  );
+
+  /* ---------------------------------------------------------------------------
+     Who trades. One entry per trader. A second trader (the Kraken lane) is one
+     more entry here: how its rows are named in trade_proposals / desk_trades,
+     what venue it trades, and which watch folders it reads before deciding.
+     Any trader found in the data but not listed here still shows, by its name.
+     ------------------------------------------------------------------------- */
+  const TRADERS = [
+    {
+      id: "live-wire",
+      name: "Live Wire",
+      kind: "Grok bot",
+      venue: "Polymarket US",
+      proposedBy: /^grok-bot\/live-wire/,
+      actor: "auto:grok-bot/live-wire",
+      reads: ["market-feed", "brief"],
+      alsoReads: "the live score and the order book",
+    },
+  ];
+
+  /* The watch repo: where the news lives, and what each folder is. */
+  const WATCH = {
+    repo: "JaronKBragg7337/watch",
+    branch: "master",
+    tz: "America/Indiana/Indianapolis",       // captures are dated in Jaron's local day
+    writers: [
+      { dir: "codex",    name: "Codex",    role: "collector, reads the web" },
+      { dir: "deepseek", name: "DeepSeek", role: "reader, reads the day's captures" },
+      { dir: "claude",   name: "Claude",   role: "collector, reads the web" },
+    ],
+    brief: "brief",
+    feed: "market-feed",
+    archiveDays: 10,
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const money = (n) => (n == null || isNaN(n)) ? "&mdash;" : (n < 0 ? "−$" : "$") + Math.abs(Number(n)).toFixed(2);
+  const cents = (n) => (n == null || isNaN(n)) ? "&mdash;" : (Number(n) * 100).toFixed(1) + "¢";
+  const dayOf = (iso) => new Intl.DateTimeFormat("en-CA", { timeZone: WATCH.tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+  const niceDay = (d) => new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  const raw = (path) => `https://raw.githubusercontent.com/${WATCH.repo}/${WATCH.branch}/${path}`;
+  const blob = (path) => `https://github.com/${WATCH.repo}/blob/${WATCH.branch}/${path}`;
+
+  function traderFor(proposedBy) {
+    const t = TRADERS.find(t => t.proposedBy.test(proposedBy || ""));
+    if (t) return t;
+    const name = String(proposedBy || "unknown").split("/").pop();
+    return { id: proposedBy, name, kind: String(proposedBy).split("/")[0], venue: "", reads: [], unlisted: true };
+  }
+  const isTraderRow = (p) => /^grok-bot\//.test(p.proposed_by || "") || TRADERS.some(t => t.proposedBy.test(p.proposed_by || ""));
+  // The bot tags its own rows "[grok-bot/live-wire, live, no approval] ..."; the tag is already shown as the trader.
+  const cleanWhy = (s) => String(s || "").replace(/^\[[^\]]*\]\s*/, "");
+  const isExit = (p) => /^EXIT:/i.test(cleanWhy(p.rationale));
+
+  /* ---------------------------------------------------------------- trades - */
+  let TRADES = [], RES = new Map(), FEED_BY_DAY = new Map(), filter = "all";
+
+  function resolution(p) {
+    if (isExit(p)) return { cls: "early", text: "exit order", note: "" };
+    const r = RES.get(p.slug);
+    if (r) {
+      const pnl = r.pnl;
+      return { cls: pnl > 0 ? "won" : pnl < 0 ? "lost" : "", text: pnl > 0 ? "won" : pnl < 0 ? "lost" : "even",
+        note: `settled ${money(pnl)} on this market (all of the bot's positions in it)` };
+    }
+    const exit = TRADES.find(x => x.slug === p.slug && isExit(x) && new Date(x.proposed_at) > new Date(p.proposed_at));
+    if (exit) return { cls: "early", text: "closed early", note: cleanWhy(exit.rationale).replace(/^EXIT:\s*/i, "") };
+    return { cls: "", text: "not settled", note: "no settlement on record yet" };
+  }
+
+  function tradeCard(p) {
+    const t = traderFor(p.proposed_by);
+    const r = resolution(p);
+    const entry = Number(p.entry_price), size = Number(p.size_usd);
+    const shares = entry > 0 ? size / entry : 0;
+    const day = dayOf(p.proposed_at);
+    const feedHits = (FEED_BY_DAY.get(day) || []).filter(f => f.market && (f.market === p.slug || (p.slug || "").includes(f.market)));
+    const title = p.event_title ? `${p.event_title} — ${p.outcome || ""}` : (p.question || p.slug);
+    return `<article class="row">
+      <div class="row-main">
+        <p class="row-title">${esc(title)}</p>
+        <p class="row-where">${esc(t.name)}${t.venue ? " · " + esc(t.venue) : ""}${p.market_url ? ` · <a href="${esc(p.market_url)}" target="_blank" rel="noopener">market ↗</a>` : ""}</p>
+        <p class="row-sub"><span class="pill ${p.side === "yes" ? "buy" : "sell"}">${esc(p.side || "?")}</span>${esc(p.outcome || "")} at ${cents(p.entry_price)} · ${money(size)} · ${shares ? shares.toFixed(2) + " shares" : ""}</p>
+        ${p.rationale ? `<p class="row-why"><strong>Why:</strong> ${esc(cleanWhy(p.rationale))}</p>` : ""}
+        ${p.kill_criteria ? `<p class="row-kill"><strong>Kill if:</strong> ${esc(p.kill_criteria)}</p>` : ""}
+        ${r.note ? `<p class="row-when">${esc(r.note)}</p>` : ""}
+        ${feedHits.map(f => `<p class="feed-hit">Market feed had this market that day: ${esc(f.event)} · lean <span class="lean">${esc(f.lean)}</span></p>`).join("")}
+        <p class="news-link"><button type="button" data-day="${day}">News it had on ${esc(niceDay(day))} →</button></p>
+      </div>
+      <div class="row-side">
+        <span class="res ${r.cls}">${esc(r.text)}</span>
+        <span class="row-when">${new Date(p.proposed_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+      </div>
+    </article>`;
+  }
+
+  function renderTraders() {
+    const byTrader = new Map();
+    for (const p of TRADES) {
+      const t = traderFor(p.proposed_by);
+      const x = byTrader.get(t.id) || { t, n: 0, won: 0, lost: 0, pnl: 0, seen: new Set() };
+      x.n++;
+      if (!isExit(p) && RES.has(p.slug) && !x.seen.has(p.slug)) {
+        x.seen.add(p.slug); const v = RES.get(p.slug).pnl; x.pnl += v; if (v > 0) x.won++; else if (v < 0) x.lost++;
+      }
+      byTrader.set(t.id, x);
+    }
+    for (const t of TRADERS) if (!byTrader.has(t.id)) byTrader.set(t.id, { t, n: 0, won: 0, lost: 0, pnl: 0 });
+    $("traders").innerHTML = [...byTrader.values()].map(({ t, n, won, lost, pnl }) => `<div class="trader">
+      <h3>${esc(t.name)}</h3>
+      <p>${esc(t.kind)}${t.venue ? " · trades " + esc(t.venue) : ""} · no approval step</p>
+      ${t.reads && t.reads.length ? `<p>Reads before deciding: ${t.reads.map(r => r === "market-feed" ? "the market feed" : r === "brief" ? "the organizer&rsquo;s brief" : esc(r)).join(", ")}${t.alsoReads ? ", plus " + esc(t.alsoReads) : ""}.</p>` : ""}
+      <p class="score">${n} orders · settled markets: <span class="good">${won} won</span> · <span class="bad">${lost} lost</span> · <strong class="${pnl >= 0 ? "good" : "bad"}">${money(pnl)}</strong></p>
+    </div>`).join("");
+    const ids = [...byTrader.keys()];
+    $("traderChips").innerHTML = ids.length > 1
+      ? [["all", "All"], ...ids.map(id => [id, byTrader.get(id).t.name])].map(([id, name]) =>
+          `<button class="chip" type="button" data-trader="${esc(id)}" aria-pressed="${filter === id}">${esc(name)}</button>`).join("")
+      : "";
+    document.querySelectorAll("[data-trader]").forEach(b => b.onclick = () => { filter = b.dataset.trader; renderTraders(); renderTrades(); });
+  }
+
+  function renderTrades() {
+    const rows = TRADES.filter(p => filter === "all" || traderFor(p.proposed_by).id === filter);
+    $("trades").innerHTML = rows.length ? rows.map(tradeCard).join("") : `<p class="empty">No trades yet.</p>`;
+    document.querySelectorAll("#trades [data-day]").forEach(b => b.onclick = () => { showTab("news"); showDay(b.dataset.day); window.scrollTo({ top: $("newsTitle").getBoundingClientRect().top + scrollY - 70 }); });
+  }
+
+  async function loadTrades() {
+    const [{ data: props, error }, { data: res }] = await Promise.all([
+      supabase.from("trade_proposals").select("*").like("proposed_by", "grok-bot/%").order("proposed_at", { ascending: false }).limit(500),
+      supabase.from("desk_trades").select("slug,actor,pnl_usd,cost_usd,at").eq("kind", "resolution").like("actor", "auto:%").limit(2000),
+    ]);
+    if (error) throw error;
+    TRADES = (props || []).filter(isTraderRow);
+    RES = new Map();
+    for (const r of res || []) {
+      const x = RES.get(r.slug) || { pnl: 0, cost: 0 };
+      x.pnl += Number(r.pnl_usd) || 0; x.cost += Number(r.cost_usd) || 0;
+      RES.set(r.slug, x);
+    }
+    $("heroDot").className = "status-dot ok";
+    $("lastLoad").textContent = "Updated " + new Date().toLocaleTimeString();
+    renderTraders();
+    renderTrades();
+  }
+
+  /* ------------------------------------------------------------------ news - */
+  let FILES = null;           // { "codex": ["2026-09-24", ...], ... } newest first
+  const cacheKey = "hb-watch-tree";
+
+  async function listFiles() {
+    try {
+      const c = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
+      if (c && Date.now() - c.at < 10 * 60e3) return c.files;
+    } catch (e) {}
+    const files = {};
+    const dirs = [...WATCH.writers.map(w => w.dir), WATCH.brief, WATCH.feed];
+    try {
+      const r = await fetch(`https://api.github.com/repos/${WATCH.repo}/git/trees/${WATCH.branch}?recursive=1`);
+      if (!r.ok) throw new Error("tree " + r.status);
+      const tree = (await r.json()).tree || [];
+      for (const d of dirs) files[d] = tree.map(n => n.path).filter(p => p.startsWith(d + "/"))
+        .map(p => p.slice(d.length + 1)).map(f => (f.match(/^(\d{4}-\d{2}-\d{2})\.(md|jsonl)$/) || [])[1]).filter(Boolean).sort().reverse();
+    } catch (e) {
+      // GitHub's listing API allows 60 calls an hour per visitor; past that, look for the last days' files directly.
+      const days = [...Array(WATCH.archiveDays)].map((_, i) => dayOf(Date.now() - i * 864e5));
+      await Promise.all(dirs.map(async d => {
+        const ext = d === WATCH.feed ? "jsonl" : "md";
+        const found = await Promise.all(days.map(day => fetch(raw(`${d}/${day}.${ext}`), { method: "HEAD" }).then(r => r.ok ? day : null).catch(() => null)));
+        files[d] = found.filter(Boolean);
+      }));
+    }
+    try { sessionStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), files })); } catch (e) {}
+    return files;
+  }
+
+  const textCache = new Map();
+  function getText(path) {
+    if (!textCache.has(path)) textCache.set(path, fetch(raw(path)).then(r => r.ok ? r.text() : null).catch(() => null));
+    return textCache.get(path);
+  }
+
+  function linkify(s) {
+    return esc(s).replace(/https?:\/\/[^\s<]+[^\s<.,;:)\]]/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 48)}${u.length > 60 ? "…" : ""}</a>`);
+  }
+  function itemHtml(line) {
+    let s = line.replace(/^\s*[-*]\s*/, "");
+    const tags = [];
+    s = s.replace(/^((?:\[[^\]]{1,24}\]\s*){1,3})/, (m) => { m.replace(/\[([^\]]+)\]/g, (_, t) => tags.push(t)); return ""; });
+    const parts = s.split(/\s+—\s+money:\s+/);
+    const body = parts[0], mon = parts[1];
+    return `<li>${tags.map(t => `<span class="tag ${/^(observed|claim|theory)$/.test(t) ? t : ""}">${esc(t)}</span>`).join("")} ${linkify(body)}${mon ? ` <span class="money">· money: ${esc(mon)}</span>` : ""}</li>`;
+  }
+  function parseCapture(md) {
+    const lines = md.split(/\r?\n/);
+    const head = [], sections = []; let cur = null;
+    for (const l of lines) {
+      if (/^#\s/.test(l)) continue;
+      if (/^##\s/.test(l)) { cur = { title: l.replace(/^##\s*/, "").trim(), items: [], text: [] }; sections.push(cur); continue; }
+      if (!cur) { if (l.trim()) head.push(l.trim()); continue; }
+      if (/^\s*[-*]\s/.test(l)) cur.items.push(l); else if (l.trim()) cur.text.push(l.trim());
+    }
+    return { head, sections };
+  }
+  function captureHtml(w, day, md) {
+    const path = `${w.dir}/${day}.md`;
+    if (md == null) return `<details class="writer"><summary>${esc(w.name)} <span class="meta">no capture this day</span></summary></details>`;
+    const { head, sections } = parseCapture(md);
+    const status = (head.find(h => /^Status:/i.test(h)) || "").replace(/^Status:\s*/i, "");
+    const total = sections.reduce((n, s) => n + s.items.length, 0);
+    const notes = head.filter(h => !/^(Writer|Window|Status):/i.test(h));
+    return `<details class="writer"><summary>${esc(w.name)} <span class="meta">${esc(w.role)} · ${status ? esc(status) + " · " : ""}${total} items</span></summary>
+      <div class="writer-body">
+        ${notes.map(n => `<p class="writer-note">${linkify(n)}</p>`).join("")}
+        ${sections.map(s => {
+          const n = s.items.length;
+          return `<details class="dom ${n || s.text.length ? "" : "empty"}"><summary><span>${esc(s.title)}</span><span class="n">${n || (s.text.length ? "note" : "—")}</span></summary>
+            ${s.text.map(t => `<p class="writer-note">${linkify(t)}</p>`).join("")}
+            ${n ? `<ul class="items">${s.items.map(itemHtml).join("")}</ul>` : ""}
+          </details>`;
+        }).join("")}
+        <p class="src">Full file: <a href="${blob(path)}" target="_blank" rel="noopener">${esc(path)} on GitHub ↗</a></p>
+      </div></details>`;
+  }
+  function feedHtml(rows) {
+    return `<div class="rows">${rows.map(f => `<article class="row"><div class="row-main">
+      <p class="row-title">${esc(f.event || "")}</p>
+      <p class="row-where">${esc(f.market || "")} · ${esc(f.label || "")} · ${esc(f.source_class || "")} · confidence ${esc(f.confidence || "?")}</p>
+      ${f.rule_effect ? `<p class="row-sub">${esc(f.rule_effect)}</p>` : ""}
+      ${f.from ? `<p class="row-when">from ${(Array.isArray(f.from) ? f.from : [f.from]).map(x => `<a href="${blob(String(x).split("#")[0])}" target="_blank" rel="noopener">${esc(x)}</a>`).join(", ")}</p>` : ""}
+    </div><div class="row-side"><span class="res">lean ${esc(f.lean || "none")}</span></div></article>`).join("")}</div>`;
+  }
+  const parseFeed = (t) => (t || "").split(/\r?\n/).map(l => { try { return l.trim() ? JSON.parse(l) : null; } catch (e) { return null; } }).filter(Boolean);
+  const latestOnOrBefore = (list, day) => (list || []).find(d => d <= day);
+
+  let DAYS = [], currentDay = null;
+  async function showDay(day) {
+    currentDay = day;
+    document.querySelectorAll("[data-news-day]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.newsDay === day)));
+    $("newsTitle").textContent = "News on " + niceDay(day);
+    $("news").innerHTML = `<p class="empty">Loading ${esc(niceDay(day))}&hellip;</p>`;
+    const briefDay = latestOnOrBefore(FILES[WATCH.brief], day);
+    const feedDay = (FILES[WATCH.feed] || []).includes(day) ? day : null;
+    const [brief, feed, ...caps] = await Promise.all([
+      briefDay ? getText(`${WATCH.brief}/${briefDay}.md`) : null,
+      feedDay ? getText(`${WATCH.feed}/${feedDay}.jsonl`) : null,
+      ...WATCH.writers.map(w => (FILES[w.dir] || []).includes(day) ? getText(`${w.dir}/${day}.md`) : null),
+    ]);
+    if (currentDay !== day) return;
+    const feedRows = parseFeed(feed);
+    const latestFeed = (FILES[WATCH.feed] || [])[0];
+    $("news").innerHTML = `
+      <h3 class="panel-kicker" style="margin-top:22px">The organizer&rsquo;s brief</h3>
+      ${brief ? `${briefDay !== day ? `<p class="panel-note">No brief was written for this day; this is the latest one before it, from ${esc(niceDay(briefDay))}.</p>` : ""}
+        <p class="brief-text">${linkify(brief.replace(/^#.*\n/, "").trim())}</p>
+        <p class="src"><a href="${blob(`${WATCH.brief}/${briefDay}.md`)}" target="_blank" rel="noopener">${esc(WATCH.brief)}/${esc(briefDay)}.md ↗</a></p>`
+        : `<p class="panel-note">No brief on or before this day.</p>`}
+      <h3 class="panel-kicker" style="margin-top:26px">Market feed &mdash; short packets written for the trading bots</h3>
+      ${feedRows.length ? feedHtml(feedRows) : `<p class="panel-note">No market-feed packet for this day.${latestFeed ? ` The latest is from ${esc(niceDay(latestFeed))}.` : ""}</p>`}
+      <h3 class="panel-kicker" style="margin-top:26px">Daily captures &mdash; 21 domains each</h3>
+      ${WATCH.writers.map((w, i) => captureHtml(w, day, caps[i])).join("")}`;
+  }
+
+  async function loadNews() {
+    FILES = await listFiles();
+    const all = new Set();
+    for (const d of [...WATCH.writers.map(w => w.dir), WATCH.brief, WATCH.feed]) for (const day of FILES[d] || []) all.add(day);
+    DAYS = [...all].sort().reverse().slice(0, WATCH.archiveDays);
+    FEED_BY_DAY = new Map();
+    await Promise.all((FILES[WATCH.feed] || []).slice(0, WATCH.archiveDays).map(async day => FEED_BY_DAY.set(day, parseFeed(await getText(`${WATCH.feed}/${day}.jsonl`)))));
+    const today = dayOf(Date.now());
+    $("dayChips").innerHTML = DAYS.map(d => `<button class="chip" type="button" data-news-day="${d}" aria-pressed="false">${d === today ? "Today" : esc(niceDay(d))}</button>`).join("");
+    document.querySelectorAll("[data-news-day]").forEach(b => b.onclick = () => showDay(b.dataset.newsDay));
+    if (!DAYS.length) { $("news").innerHTML = `<p class="empty">Could not reach the watch repo on GitHub.</p>`; return; }
+    showDay(currentDay && DAYS.includes(currentDay) ? currentDay : DAYS[0]);
+  }
+
+  /* ------------------------------------------------------------------ tabs - */
+  function showTab(name) {
+    document.querySelectorAll("[data-pane]").forEach(el => el.hidden = el.dataset.pane !== name);
+    document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+  }
+  document.querySelectorAll(".tab").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  showTab(location.hash === "#news" ? "news" : "trades");
+
+  const newsReady = loadNews().catch(e => { $("news").innerHTML = `<p class="empty">Could not read the watch repo: ${esc(e.message)}</p>`; });
+  newsReady.then(() => TRADES.length && renderTrades());   // re-draw so market-feed matches show
+  loadTrades().catch(e => { $("trades").innerHTML = `<p class="empty">Could not load trades: ${esc(e.message)}</p>`; });
+  setInterval(() => loadTrades().catch(() => {}), 60000);
+</script>
+<script defer src="/hb-editor.js"></script>
+</body>
+</html>
