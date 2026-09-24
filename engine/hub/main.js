@@ -345,7 +345,7 @@ const doors = [
     // 2026-09-24, Jaron: the door leads to the Grand Palace, the 3D theater with real seats.
     // The small walk-in screening room (interior "theater") stays in the code; add
     // `interior: "theater"` back here to return to it.
-    path: "/video/3d/",
+    path: "/video/3d/?start=seats&from=town",
     x: 9,
     z: -18.6,
     width: 5.0,

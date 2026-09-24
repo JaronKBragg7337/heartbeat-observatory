@@ -33,7 +33,21 @@
       <p>Your browser cannot display the 3D theater. <a href="https://jaronkbragg7337.github.io/Movie-Theater-Three.js-Asset-/">Open it directly</a>.</p>
     </iframe>
   </main>
-  <a class="back" href="/video">&larr; Theater</a>
+  <a class="back" id="back" href="/video">&larr; Theater</a>
+  <script>
+    // Coming through a world's theater door (?start=seats&from=ashgrove|town|world2): pass the start through to
+    // the theater so it seats you, and make the way back lead to the world you came from.
+    (function () {
+      var q = new URLSearchParams(location.search);
+      var worlds = { ashgrove: ["/world3/", "Ashgrove"], town: ["/engine/hub/", "Town Square"], world2: ["/world2/", "World 2"] };
+      var from = worlds[q.get("from")];
+      if (from) { var a = document.getElementById("back"); a.href = from[0]; a.textContent = "\u2190 " + from[1]; }
+      if (q.get("start") === "seats") {
+        var f = document.querySelector("iframe");
+        f.src = f.src.split("?")[0] + "?start=seats";
+      }
+    })();
+  </script>
 <script defer src="/hb-editor.js"></script>
 </body>
 </html>
