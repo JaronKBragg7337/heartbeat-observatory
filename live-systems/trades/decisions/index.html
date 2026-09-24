@@ -289,11 +289,24 @@
     return files;
   }
 
+  // Returns the file's text, null if GitHub says it is not there, or undefined if it could not be reached
+  // (phones drop requests; each file gets three tries, and a failure is not cached so a retry can work).
   const textCache = new Map();
   function getText(path) {
-    if (!textCache.has(path)) textCache.set(path, fetch(raw(path)).then(r => r.ok ? r.text() : null).catch(() => null));
+    if (!textCache.has(path)) {
+      const p = (async () => {
+        for (let i = 0; i < 3; i++) {
+          try { const r = await fetch(raw(path)); if (r.ok) return await r.text(); if (r.status === 404) return null; } catch (e) {}
+          await new Promise(res => setTimeout(res, 600 * (i + 1)));
+        }
+        textCache.delete(path);
+        return undefined;
+      })();
+      textCache.set(path, p);
+    }
     return textCache.get(path);
   }
+  const unreachable = (what) => `<p class="panel-note">Could not load ${what} from GitHub just now. <button class="chip" type="button" data-retry>Try again</button></p>`;
 
   function linkify(s) {
     return esc(s).replace(/https?:\/\/[^\s<]+[^\s<.,;:)\]]/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 48)}${u.length > 60 ? "…" : ""}</a>`);
@@ -319,6 +332,7 @@
   }
   function captureHtml(w, day, md) {
     const path = `${w.dir}/${day}.md`;
+    if (md === undefined) return `<details class="writer" open><summary>${esc(w.name)} <span class="meta">could not load</span></summary><div class="writer-body">${unreachable(esc(w.name) + "&rsquo;s capture")}</div></details>`;
     if (md == null) return `<details class="writer"><summary>${esc(w.name)} <span class="meta">no capture this day</span></summary></details>`;
     const { head, sections } = parseCapture(md);
     const status = (head.find(h => /^Status:/i.test(h)) || "").replace(/^Status:\s*/i, "");
@@ -359,21 +373,22 @@
     const [brief, feed, ...caps] = await Promise.all([
       briefDay ? getText(`${WATCH.brief}/${briefDay}.md`) : null,
       feedDay ? getText(`${WATCH.feed}/${feedDay}.jsonl`) : null,
-      ...WATCH.writers.map(w => (FILES[w.dir] || []).includes(day) ? getText(`${w.dir}/${day}.md`) : null),
+      ...WATCH.writers.map(w => (FILES[w.dir] || []).includes(day) ? getText(`${w.dir}/${day}.md`) : Promise.resolve(null)),
     ]);
     if (currentDay !== day) return;
     const feedRows = parseFeed(feed);
     const latestFeed = (FILES[WATCH.feed] || [])[0];
     $("news").innerHTML = `
       <h3 class="panel-kicker" style="margin-top:22px">The organizer&rsquo;s brief</h3>
-      ${brief ? `${briefDay !== day ? `<p class="panel-note">No brief was written for this day; this is the latest one before it, from ${esc(niceDay(briefDay))}.</p>` : ""}
+      ${brief === undefined && briefDay ? unreachable("the brief") : brief ? `${briefDay !== day ? `<p class="panel-note">No brief was written for this day; this is the latest one before it, from ${esc(niceDay(briefDay))}.</p>` : ""}
         <p class="brief-text">${linkify(brief.replace(/^#.*\n/, "").trim())}</p>
         <p class="src"><a href="${blob(`${WATCH.brief}/${briefDay}.md`)}" target="_blank" rel="noopener">${esc(WATCH.brief)}/${esc(briefDay)}.md ↗</a></p>`
         : `<p class="panel-note">No brief on or before this day.</p>`}
       <h3 class="panel-kicker" style="margin-top:26px">Market feed &mdash; short packets written for the trading bots</h3>
-      ${feedRows.length ? feedHtml(feedRows) : `<p class="panel-note">No market-feed packet for this day.${latestFeed ? ` The latest is from ${esc(niceDay(latestFeed))}.` : ""}</p>`}
+      ${feed === undefined && feedDay ? unreachable("the market feed") : feedRows.length ? feedHtml(feedRows) : `<p class="panel-note">No market-feed packet for this day.${latestFeed ? ` The latest is from ${esc(niceDay(latestFeed))}.` : ""}</p>`}
       <h3 class="panel-kicker" style="margin-top:26px">Daily captures &mdash; 21 domains each</h3>
       ${WATCH.writers.map((w, i) => captureHtml(w, day, caps[i])).join("")}`;
+    document.querySelectorAll("#news [data-retry]").forEach(b => b.onclick = () => showDay(day));
   }
 
   async function loadNews() {
