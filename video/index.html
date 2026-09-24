@@ -91,7 +91,7 @@
         <label class="reel" for="fileIn" tabindex="0" id="fileLabel">Play a video from your device</label>
         <input id="fileIn" type="file" accept="video/*" hidden />
       </div>
-      <div class="bringnote" id="bringNote">A video from your device plays on your screen only. Nothing is uploaded.</div>
+      <div class="bringnote" id="bringNote">A video from your device plays on your screen only here. To share it with everyone in the room, play it in the 3D theater.</div>
     </div>
     <div class="seats">
       <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
@@ -190,7 +190,7 @@
     if (ownUrl) URL.revokeObjectURL(ownUrl);
     ownUrl = URL.createObjectURL(file);
     playOwn(ownUrl, file.name);
-    say("Playing from your device. Only you can see it; nothing is uploaded.");
+    say("Playing from your device. Only you can see it here; the 3D theater shares it with the room.");
   });
 
   function markPlaying() {

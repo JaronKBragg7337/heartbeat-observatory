@@ -304,7 +304,7 @@
 
     <!-- CENTER -->
     <main class="col center-col">
-      <div class="feed-head"><div class="feed-title">Signal Feed</div></div>
+      <div class="feed-head"><div class="feed-title">Social Feed</div></div>
       <div class="tabs">
         <div class="tab active" data-tab="foryou">For You</div>
         <div class="tab" data-tab="following">Following</div>
@@ -732,8 +732,8 @@
   function renderFeed(){
     // preserve an in-progress reply across any re-render
     const af=document.activeElement; const rid=af&&af.getAttribute&&af.getAttribute("data-rinput"); const rval=rid?af.value:null;
-    const titles={feed:"Signal Feed",explore:"Explore",bookmarks:"Bookmarks",notifications:"Notifications"};
-    const ft=document.querySelector(".feed-title"); if(ft) ft.textContent=titles[curView]||"Signal Feed";
+    const titles={feed:"Social Feed",explore:"Explore",bookmarks:"Bookmarks",notifications:"Notifications"};
+    const ft=document.querySelector(".feed-title"); if(ft) ft.textContent=titles[curView]||"Social Feed";
     const tb=document.querySelector(".tabs"); if(tb) tb.style.display=(curView==="feed")?"":"none";
     const cp=$("composer"); if(cp) cp.style.display=(curView==="feed")?"":"none";
     if(curView!=="feed"){ renderAltView(); restoreReply(rid,rval); return; }
