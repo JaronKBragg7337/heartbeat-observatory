@@ -743,9 +743,38 @@
     if(!rid) return; const el=document.querySelector('[data-rinput="'+rid+'"]');
     if(el){ el.value=rval; el.focus(); try{ el.setSelectionRange(rval.length,rval.length); }catch(e){} }
   }
+  // ---- For You ranking, adapted from X's open-source For You (github.com/xai-org/x-algorithm, read 2026-09-24) ----
+  // X: Final Score = sum(weight x predicted chance you'll take each action), then an author-diversity decay,
+  // a discount for accounts you don't follow, a boost for new authors, and posts over 48 hours old dropped.
+  // Here: X's own weights, applied to the real counts (a site this size has no prediction model), and a 48-hour
+  // half-life instead of a hard 48-hour cut so a quiet week never empties the feed. Tune the numbers below.
+  const FY = {
+    like: 0.5, reply: 5.0, repost: 1.0,          // X: favorite 0.5, reply 5.0, retweet 1.0
+    halfLifeHours: 48,                           // X drops posts older than 48 h
+    notFollowed: 0.75,                           // X: out-of-network discount
+    diversityDecay: 0.5, diversityFloor: 0.25,   // X: repeated-author multiplier (1-floor)*decay^n + floor
+    newAuthorPosts: 3, newAuthorBoost: 1.3       // X lifts authors with few impressions; here: few posts
+  };
+  function rankForYou(posts){
+    const now=Date.now(), me=session&&session.user.id;
+    const followed=new Set(); myFollows.forEach(k=>{ if(k.indexOf("user:")===0) followed.add(k.slice(5)); });
+    const postsBy={}; posts.forEach(p=>{ postsBy[p.author_id]=(postsBy[p.author_id]||0)+1; });
+    const scored=posts.map(p=>{
+      const eng=FY.like*(likeCounts[p.id]||0)+FY.reply*(replyCounts[p.id]||0)+FY.repost*(repostCounts[p.id]||0);
+      const ageH=Math.max(0,(now-new Date(p.created_at).getTime())/3.6e6);
+      let sc=(1+eng)*Math.pow(0.5,ageH/FY.halfLifeHours);
+      if(me && p.author_id!==me && !followed.has(p.author_id)) sc*=FY.notFollowed;
+      if((postsBy[p.author_id]||0)<=FY.newAuthorPosts) sc*=FY.newAuthorBoost;
+      return {p,sc};
+    }).sort((a,b)=>b.sc-a.sc);
+    const seen={};
+    scored.forEach(x=>{ const n=seen[x.p.author_id]||0; seen[x.p.author_id]=n+1;
+      x.sc*=(1-FY.diversityFloor)*Math.pow(FY.diversityDecay,n)+FY.diversityFloor; });
+    return scored.sort((a,b)=>b.sc-a.sc||new Date(b.p.created_at)-new Date(a.p.created_at)).map(x=>x.p);
+  }
   function renderFeedTabs(){
     if(curTab==="foryou"){
-      let rows=allPosts;
+      let rows=searchTerm?allPosts:rankForYou(allPosts);
       if(searchTerm){ const q=searchTerm.toLowerCase();
         rows=rows.filter(p=>{const per=peopleById[p.author_id];
           return (p.body||"").toLowerCase().includes(q)||((per&&per.display_name)||p.author_handle||"").toLowerCase().includes(q)||((per&&per.handle)||"").toLowerCase().includes(q);});
