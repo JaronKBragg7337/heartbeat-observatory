@@ -283,7 +283,13 @@ function speakCurrent() {
     const seq = c.seq;
     c.soundStart = now();
     voice.speak(it.who, it.text, { onStart: (d) => { if (cur && cur.seq === seq && d > 0) { cur.dur = d; cur.speechAt = now(); if (cur.est > 10) cur.cutAt = cur.speechAt + d * 0.56; } } })
-      .then(() => { if (cur && cur.seq === seq) { cur.done = true; cur.doneAt = now() + GAP; } });
+      .then(() => {
+        if (!cur || cur.seq !== seq) return;
+        // A device that can't make sound (no audio engine, speech refused) ends lines instantly. Keep the show's pace:
+        // finish this line on the clock, mouths animated, as if muted.
+        if (now() - c.soundStart < c.est * 0.3) { cur.silentFallback = true; return; }
+        cur.done = true; cur.doneAt = now() + GAP;
+      });
   }
 }
 
@@ -309,7 +315,7 @@ function frame() {
     if (c.spoken) {
       const since = t - c.speechAt;
       talker = c.it.who;
-      if (mode === "sound") {
+      if (mode === "sound" && !c.silentFallback) {
         levels[c.it.who] = voice.level(c.it.who);
         if (c.done && t >= c.doneAt) { startItem(c.i + 1); }
         else if (!c.done && t - c.soundStart > c.est * 2.6 + 8) { startItem(c.i + 1); } // an engine that never ended
