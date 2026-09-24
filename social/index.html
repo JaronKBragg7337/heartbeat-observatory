@@ -219,6 +219,15 @@
     .mtabs button{flex:1;background:none;border:0;color:var(--text3);font-size:12px;font-weight:600;padding:13px 0;cursor:pointer;font-family:inherit;letter-spacing:.02em;}
     .mtabs button.active{color:var(--green);}
   }
+  /* 2026-09-24: on a phone the top bar was wider than the screen, so "Sign in" sat off the right edge
+     and the page scrolled sideways. Phones get two rows: logo and buttons, then the full-width search. */
+  @media (max-width:560px){
+    .topnav{height:auto;flex-wrap:wrap;padding:8px 10px;gap:8px;}
+    .nav-search{order:3;flex:1 0 100%;min-width:0;}
+    .nav-btn{padding:5px 10px;}
+    .mtabs button{min-width:0;padding:13px 4px;}
+  }
+  html,body{overflow-x:clip;}
 .bodylink{color:#39e58c;text-decoration:underline;overflow-wrap:anywhere;}
 .bodylink:hover{opacity:.85;}
 </style>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07090c" />
+  <title>Grand Palace Cinema — Heartbeat Observatory</title>
+  <!-- The 3D theater: Grand Palace Cinema, from github.com/JaronKBragg7337/Movie-Theater-Three.js-Asset- (CC0).
+       Walk in, sit in any of its 448 seats, and play the built-in films, a link (mp4 / webm / YouTube / TikTok)
+       or a video from your own device. Shown the same way as the game pages: the asset's own live build in a frame,
+       so fixes made in that repo appear here with no copy to keep in sync. -->
+  <style>
+    :root { color-scheme: dark; background: #07090c; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #07090c; }
+    body { min-height: 100vh; min-height: 100dvh; }
+    main { position: fixed; inset: 0; overflow: hidden; background: #07090c; }
+    iframe { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border: 0; background: #07090c; }
+    .back { position: fixed; z-index: 2; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left));
+      padding: 7px 12px; border-radius: 999px; background: rgba(7, 9, 12, .72); border: 1px solid #2c3940; color: #cfe0e6;
+      font: 600 13px system-ui, -apple-system, sans-serif; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <iframe
+      title="Grand Palace Cinema"
+      src="https://jaronkbragg7337.github.io/Movie-Theater-Three.js-Asset-/"
+      allow="fullscreen; autoplay; pointer-lock; encrypted-media; picture-in-picture; clipboard-write"
+      allowfullscreen
+      loading="eager"
+      referrerpolicy="strict-origin-when-cross-origin">
+      <p>Your browser cannot display the 3D theater. <a href="https://jaronkbragg7337.github.io/Movie-Theater-Three.js-Asset-/">Open it directly</a>.</p>
+    </iframe>
+  </main>
+  <a class="back" href="/video">&larr; Theater</a>
+<script defer src="/hb-editor.js"></script>
+</body>
+</html>

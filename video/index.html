@@ -16,7 +16,7 @@
   :root { color-scheme: dark; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #07090c; color: #e8edf2; font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
-  .room { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 22px 16px 30px; background: radial-gradient(ellipse at 50% 0%, #11161c 0%, #07090c 62%); }
+  .room { overflow-x: clip; flex: 1; display: flex; flex-direction: column; align-items: center; padding: 22px 16px 30px; background: radial-gradient(ellipse at 50% 0%, #11161c 0%, #07090c 62%); }
   .marquee { display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px; border: 2px solid #c9a35a; border-radius: 14px; background: #12100a; box-shadow: 0 0 26px rgba(201, 163, 90, 0.22), inset 0 0 14px rgba(201, 163, 90, 0.1); margin-bottom: 8px; }
   .marquee .bulb { width: 7px; height: 7px; border-radius: 50%; background: #ffd98a; box-shadow: 0 0 8px #ffd98a; }
   .marquee h1 { font-size: clamp(19px, 4.5vw, 28px); letter-spacing: 0.18em; color: #ffe2a8; font-weight: 800; }
@@ -44,6 +44,7 @@
   .row:nth-child(2) { transform: scale(1.04); }
   .row:nth-child(3) { transform: scale(1.08); }
   .row:nth-child(4) { transform: scale(1.12); }
+  @media (max-width: 420px) { .seat { width: 22px; height: 16px; } .row { gap: 6px; } }
   .exits { margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .exit { padding: 10px 18px; border-radius: 10px; border: 1px solid #2c3940; background: rgba(12, 17, 21, 0.9); color: #cfe0e6; text-decoration: none; font-size: 13.5px; font-weight: 600; }
   .exit.green { border-color: #3f6e52; color: #b9e6c6; }
@@ -79,6 +80,7 @@
       <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
     </div>
     <div class="exits">
+      <a class="exit green" href="/video/3d/">Take a seat in 3D &rarr;</a>
       <a class="exit green" href="/engine">&larr; Back to town</a>
       <a class="exit" href="/">All sections</a>
     </div>
