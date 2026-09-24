@@ -174,10 +174,11 @@ addEventListener("message", async (e) => {
     current = { src, owner: me };
     send({ action: "load", src, t: 0, playing: true });
   } else if (m.action === "stop") {
-    if (current && current.owner === me) send({ action: "stop" });
-    else if (admin && adminRoomUp) adminRoom.send({ type: "broadcast", event: "gp", payload: { action: "stop", by: me, at: Date.now() } });
+    // Only the person who started the video, or an admin, stops it for the room. Anyone else's stop
+    // changes nothing here, so this page keeps following the room.
+    if (current && current.owner === me) { send({ action: "stop" }); current = null; }
+    else if (admin && adminRoomUp) { adminRoom.send({ type: "broadcast", event: "gp", payload: { action: "stop", by: me, at: Date.now() } }); current = null; }
     else if (admin) status("Stop for everyone is not switched on yet (the database change for it has not been applied).", true);
-    current = null;
   } else if (m.action === "play" || m.action === "pause" || m.action === "seek") {
     if (current && current.src) send({ action: m.action, t: m.t, playing: m.action === "seek" ? m.playing : m.action === "play" });
   }
