@@ -7,9 +7,11 @@ export default async function handler(request, response) {
     return response.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
+  // 2026-09-24 (Claude Code, from Codex's site audit): the old check let anyone in when CRON_SECRET was unset, and let
+  // anyone in who simply sent an x-vercel-cron-schedule header. Vercel's cron sends "Authorization: Bearer <CRON_SECRET>"
+  // on its own, so that is the only way in now; with no secret configured the route refuses everyone.
   const cronSecret = process.env.CRON_SECRET;
-  const cronHeader = request.headers["x-vercel-cron-schedule"];
-  if (cronSecret && !cronHeader && request.headers.authorization !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || request.headers.authorization !== `Bearer ${cronSecret}`) {
     return response.status(401).json({ ok: false, error: "Not authorized" });
   }
 
