@@ -410,6 +410,8 @@ export function looseTextPatch(index, oldWords, newWords) {
   const styles = index.elements.filter(e => e.tag === "style").map(e => [e.startEnd, e.innerEnd]);
   const comments = [];
   (function walk(n) { for (const c of n.children || []) { if (c.type === "comment") comments.push([c.start, c.end]); else if (c.type === "el") walk(c); } })(index.root);
+  // Data blocks (<script type="application/json">) hold settings, not words on the page.
+  const dataBlocks = index.elements.filter(e => e.tag === "script" && /json/i.test(attr(e, "type") || "")).map(e => [e.startEnd, e.innerEnd]);
   const inside = (ranges, at) => ranges.some(([a, b]) => at >= a && at < b);
   const wordChar = ch => !!ch && /[A-Za-z0-9_$]/.test(ch);
 
@@ -418,7 +420,7 @@ export function looseTextPatch(index, oldWords, newWords) {
     const needle = src.slice(at, at + len);
     if (wordChar(needle[0]) && wordChar(src[at - 1])) return false;
     if (wordChar(needle[needle.length - 1]) && wordChar(src[at + len])) return false;
-    if (inside(styles, at) || inside(comments, at)) return false;
+    if (inside(styles, at) || inside(comments, at) || inside(dataBlocks, at)) return false;
     if (inScript(at)) {
       const lineStart = src.lastIndexOf("\n", at) + 1;
       const before = src.slice(lineStart, at).replace(/\\./g, "");

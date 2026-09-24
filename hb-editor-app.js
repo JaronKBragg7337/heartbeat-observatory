@@ -16,7 +16,7 @@
 import { getSupabase } from "/hb-supabase.js";
 import {
   parseSource, matchElement, pairTextPieces, textPatch, looseTextPatch, stylePatch, removePatch, attrPatch,
-  rootColors, applyPatches, fileForPath, norm, liveText
+  rootColors, applyPatches, fileForPath, norm, liveText, attr
 } from "/hb-editor-source.js";
 
 const API = "/api/site-edit";
@@ -54,7 +54,9 @@ function start() {
   /* ---------- UI shell, in a shadow root so no page's styles reach it ---------- */
   const host = document.createElement("div");
   host.setAttribute("data-hb-editor", "");
-  host.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:2147483646;";
+  // A zero-size host. A full-screen host with pointer-events:none looked harmless, but iPhone Safari then
+  // scrolled the page instead of the panel on every swipe (Jaron, 2026-09-23). Each piece is fixed on its own.
+  host.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:2147483646;";
   document.body.appendChild(host);
   const ui = host.attachShadow({ mode: "open" });
   ui.innerHTML = `
@@ -65,9 +67,10 @@ function start() {
     background: #1f2a2d; color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 999px;
     padding: 10px 16px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,.3); cursor: pointer; }
   .pill .n { background: #e23a45; border-radius: 999px; padding: 1px 7px; margin-left: 6px; font-size: 12px; }
-  .bar { position: fixed; left: 0; right: 0; top: 0; pointer-events: auto; display: none;
-    background: #1f2a2d; color: #fff; padding: calc(8px + env(safe-area-inset-top)) 10px 8px;
-    gap: 6px; align-items: center; box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+  .bar { position: fixed; left: 0; right: 0; top: 0; pointer-events: auto; display: none; z-index: 6;
+    background: #1f2a2d; color: #fff; padding: calc(8px + env(safe-area-inset-top)) 8px 8px;
+    gap: 5px; align-items: center; box-shadow: 0 2px 12px rgba(0,0,0,.3); overflow-x: auto; }
+  @media (max-width: 480px) { .bar .title { display: none; } .bar button { padding: 8px 8px; } }
   .bar.on { display: flex; }
   .bar .title { flex: 1; font-size: 13px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid #c9ccc6; background: #fff; color: #1f2a2d;
@@ -78,10 +81,17 @@ function start() {
   .box { position: fixed; pointer-events: none; border: 2px solid #e23a45; border-radius: 4px; display: none;
     box-shadow: 0 0 0 2000px rgba(0,0,0,.0); transition: all .08s; }
   .hover { position: fixed; pointer-events: none; border: 1px dashed #e23a45; display: none; }
-  .sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 62vh; overflow-y: auto; pointer-events: auto;
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 62vh; max-height: 62dvh; overflow-y: auto; pointer-events: auto;
+    overscroll-behavior: contain; touch-action: pan-y; z-index: 5;
     background: #fbfaf7; color: #1f2a2d; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,.25);
     padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); display: none; -webkit-overflow-scrolling: touch; }
   .sheet.on { display: block; }
+  .sheet.compact { max-height: 34vh; max-height: 34dvh; }
+  .grab { position: fixed; z-index: 3; width: 44px; height: 44px; min-height: 0; padding: 0; border-radius: 12px;
+    background: #1f2a2d; color: #fff; border: 2px solid #fff; font-size: 20px; line-height: 1; touch-action: none;
+    box-shadow: 0 3px 10px rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; }
+  .drop { position: fixed; pointer-events: none; border: 2px dashed #e23a45; border-radius: 14px; background: rgba(226,58,69,.08); display: none; }
+  .cardbox { position: fixed; pointer-events: none; border: 2px solid #e23a45; border-radius: 18px; display: none; }
   @media (min-width: 760px) { .sheet { left: auto; right: 16px; bottom: 16px; width: 420px; border-radius: 16px; max-height: 80vh; } }
   .head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .head .what { flex: 1; font-weight: 700; font-size: 16px; }
@@ -114,6 +124,7 @@ function start() {
 <button class="pill" id="pill">Edit</button>
 <div class="bar" id="bar">
   <div class="title" id="bartitle">Tap anything to change it</div>
+  <button id="bLayout" style="display:none">Layout</button>
   <button id="bPage">Page</button>
   <button id="bChanges">Changes</button>
   <button class="go" id="bPublish" disabled>Publish</button>
@@ -121,11 +132,27 @@ function start() {
 </div>
 <div class="hover" id="hover"></div>
 <div class="box" id="box"></div>
+<div class="cardbox" id="cardbox"></div>
+<div id="handles"></div>
+<div class="drop" id="drop"></div>
 <div class="sheet" id="sheet"></div>
 <div class="toast" id="toast"></div>`;
 
   const $ = id => ui.getElementById(id);
   const sheet = $("sheet"), box = $("box"), toast = $("toast");
+
+  // The panel keeps its own swipes: it scrolls, and at its top or bottom edge the swipe stops there
+  // instead of carrying on into the page behind it.
+  let touchY = 0;
+  sheet.addEventListener("touchstart", e => { touchY = e.touches[0].clientY; }, { passive: true });
+  sheet.addEventListener("touchmove", e => {
+    if (e.target.closest && e.target.closest("input[type=range]")) return;
+    const dy = e.touches[0].clientY - touchY;
+    const atTop = sheet.scrollTop <= 0;
+    const atBottom = sheet.scrollTop + sheet.clientHeight >= sheet.scrollHeight - 1;
+    if (sheet.scrollHeight <= sheet.clientHeight || (atTop && dy > 0) || (atBottom && dy < 0)) e.preventDefault();
+    e.stopPropagation();
+  }, { passive: false });
 
   /* ---------- state ---------- */
   let editing = false;
@@ -139,6 +166,11 @@ function start() {
   /** Stylesheet or page color edits: key -> { file, name, patch, revert } */
   const colorEdits = new Map();
   let titleEdit = null;
+  /** Hidden-cards list and board layouts not yet published; null means "as the file says". */
+  let hiddenDraft = null;
+  let layoutDraft = null;
+  /** "phone" or "desktop" while arranging the board, else null. */
+  let arranging = null;
 
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
 
@@ -215,6 +247,7 @@ function start() {
   }
   function follow() {
     if (editing && selected) place(selected, box);
+    if (arranging) placeHandles();
     requestAnimationFrame(follow);
   }
   requestAnimationFrame(follow);
@@ -229,11 +262,16 @@ function start() {
     e.stopImmediatePropagation();
     if (e.type !== "click") return;
     const target = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    if (arranging) {
+      const card = target && target.closest("[data-hb-card]");
+      if (card && boardEl() && boardEl().contains(card)) renderCardSheet(card);
+      return;
+    }
     if (target && target !== document.documentElement) select(target, true);
   }
   for (const type of ["click", "submit", "dblclick", "auxclick"]) document.addEventListener(type, blockClick, true);
   document.addEventListener("mouseover", e => {
-    if (!editing || isOurs(e) || matchMedia("(pointer: coarse)").matches) return;
+    if (!editing || arranging || isOurs(e) || matchMedia("(pointer: coarse)").matches) return;
     place(e.target, $("hover"));
   }, true);
 
@@ -250,8 +288,11 @@ function start() {
     editing = true;
     tapStyle = document.createElement("style");
     tapStyle.setAttribute("data-hb-editor", "");
-    tapStyle.textContent = "*{-webkit-tap-highlight-color:transparent!important}";
+    // No tap flash, and no iPhone link-preview bubble on a long press while editing.
+    tapStyle.textContent = "*{-webkit-tap-highlight-color:transparent!important;-webkit-touch-callout:none!important}" +
+      "[data-hb-card]{-webkit-user-select:none!important;user-select:none!important}";
     document.head.appendChild(tapStyle);
+    $("bLayout").style.display = window.HBBoard && jsonBlock("hb-layout") ? "" : "none";
     $("pill").style.display = "none";
     $("bar").classList.add("on");
     $("bartitle").textContent = "Tap anything to change it";
@@ -260,6 +301,7 @@ function start() {
 
   $("bDone").onclick = () => {
     if (count() && !confirm("You have changes that aren't published. Leave edit mode anyway? They stay on this screen until you reload, but won't be saved.")) return;
+    if (arranging) stopArranging();
     editing = false;
     if (tapStyle) tapStyle.remove();
     selected = null;
@@ -296,7 +338,7 @@ function start() {
     return !p.remove && !p.words.size && !Object.keys(p.styles).length && p.href === null;
   }
   function count() {
-    let n = colorEdits.size + (titleEdit ? 1 : 0);
+    let n = colorEdits.size + (titleEdit ? 1 : 0) + hiddenChanges().length + layoutChanges().length;
     for (const p of pending.values()) {
       n += p.words.size + Object.keys(p.styles).length + (p.remove ? 1 : 0) + (p.href !== null ? 1 : 0);
     }
@@ -385,6 +427,11 @@ function start() {
       ${childTrail.length ? `<button id="down">Smaller</button>` : ""}
       <button id="close">Close</button></div>`;
 
+    const card = el.closest("[data-hb-card]");
+    if (card && jsonBlock("hb-hidden-cards")) {
+      html += `<h3>Card</h3><div class="row"><label>Part of the card “${esc(cardName(card))}”</label><button class="danger" id="hideCard">Hide this card</button></div>`;
+    }
+
     html += `<h3>Words</h3>`;
     if (pieces.length) {
       pieces.forEach((piece, k) => {
@@ -424,6 +471,11 @@ function start() {
     $("bartitle").textContent = nameOf(el);
 
     ui.getElementById("close").onclick = () => { sheet.className = "sheet"; selected = null; box.style.display = "none"; };
+    const hideBtn = ui.getElementById("hideCard");
+    if (hideBtn) hideBtn.onclick = () => {
+      hideCard(card);
+      sheet.className = "sheet"; selected = null; box.style.display = "none";
+    };
     const up = ui.getElementById("up");
     if (up) up.onclick = () => { childTrail.push(el); select(el.parentElement, false); };
     const down = ui.getElementById("down");
@@ -555,9 +607,19 @@ function start() {
       html += `<div class="row"><label>${esc(friendly(c.name))}${c.file !== source.file ? ` <span class="small">(shared)</span>` : ""}</label>
         <input type="color" data-c="${k}" value="${hex}"></div>`;
     });
+    if (jsonBlock("hb-hidden-cards")) {
+      const hidden = currentHidden();
+      html += `<h3>Hidden cards</h3>` + (hidden.length
+        ? hidden.map(c => `<div class="item"><div class="t">${esc(c.name || c.key)}</div><button data-show="${esc(c.key)}">Show again</button></div>`).join("")
+        : `<div class="small">None. Tap a card and choose Hide this card.</div>`);
+    }
     html += `<h3>History</h3><div class="small">Every save is kept. Put back any earlier version of this page.</div><div id="hist"><div class="small">Loading…</div></div>`;
     sheet.innerHTML = html;
     ui.getElementById("close").onclick = () => { sheet.className = "sheet"; };
+
+    sheet.querySelectorAll("[data-show]").forEach(b => {
+      b.onclick = () => { showCard(b.dataset.show); renderPageSheet(); };
+    });
 
     const pt = ui.getElementById("ptitle");
     if (pt) pt.oninput = () => {
@@ -617,6 +679,16 @@ function start() {
     if (titleEdit) items.push({ text: `Tab name → "${short(titleEdit.now)}"`, undo: () => { titleEdit = null; document.title = norm(source.index.elements.find(e => e.tag === "title").children[0].text); } });
     for (const [key, c] of colorEdits) items.push({ text: `<span class="swatch" style="background:${esc(c.value)}"></span> ${esc(friendly(c.name))}`, html: true,
       undo: () => { colorEdits.delete(key); document.documentElement.style.removeProperty(c.name); } });
+    for (const ch of hiddenChanges()) items.push({ text: ch.hidden ? `Card hidden: ${ch.name}` : `Card shown again: ${ch.name}`, undo: () => {
+      hiddenDraft = ch.hidden ? currentHidden().filter(c => c.key !== ch.key) : currentHidden().concat([{ key: ch.key, name: ch.name }]);
+      if (!hiddenChanges().length) hiddenDraft = null;
+      previewBoard();
+    } });
+    for (const m of layoutChanges()) items.push({ text: `${m === "phone" ? "Phone" : "Computer"} layout ${currentLayouts()[m] ? "arranged" : "cleared"}`, undo: () => {
+      layoutDraft = { ...currentLayouts(), [m]: fileLayouts()[m] };
+      if (!layoutChanges().length) layoutDraft = null;
+      previewBoard();
+    } });
     for (const p of pending.values()) {
       for (const [node, w] of p.words) items.push({ text: `"${short(norm(w.original))}" → "${short(w.now)}"`,
         undo: () => { node.nodeValue = w.original; p.words.delete(node); if (isEmptyEntry(p)) pending.delete(p.el); } });
@@ -641,6 +713,291 @@ function start() {
   }
   $("bChanges").onclick = renderChanges;
 
+  /* ---------- cards and the board ---------- */
+  function jsonBlock(id) {
+    return source && source.index.elements.find(e => e.tag === "script" && attr(e, "id") === id) || null;
+  }
+  function fileJson(id, fallback) {
+    const el = jsonBlock(id);
+    try { return el && el.children[0] ? JSON.parse(el.children[0].raw) : fallback; } catch { return fallback; }
+  }
+  const asCard = c => (typeof c === "string" ? { key: c, name: c } : c);
+  const fileHidden = () => (fileJson("hb-hidden-cards", []) || []).map(asCard);
+  const currentHidden = () => (hiddenDraft || fileHidden()).map(asCard);
+  const fileLayouts = () => ({ desktop: null, phone: null, ...(fileJson("hb-layout", {}) || {}) });
+  const currentLayouts = () => layoutDraft || fileLayouts();
+  const boardEl = () => (window.HBBoard ? HBBoard.board() : null);
+  const cardName = card => norm((card.querySelector("h3, .surface-name") || card).textContent).slice(0, 60) || card.getAttribute("data-hb-card");
+
+  function hiddenChanges() {
+    if (!hiddenDraft) return [];
+    const before = new Map(fileHidden().map(c => [c.key, c]));
+    const after = new Map(currentHidden().map(c => [c.key, c]));
+    const out = [];
+    for (const [key, c] of after) if (!before.has(key)) out.push({ key, name: c.name || key, hidden: true });
+    for (const [key, c] of before) if (!after.has(key)) out.push({ key, name: c.name || key, hidden: false });
+    return out;
+  }
+  function layoutChanges() {
+    if (!layoutDraft) return [];
+    const f = fileLayouts();
+    return ["phone", "desktop"].filter(m => JSON.stringify(layoutDraft[m] ?? null) !== JSON.stringify(f[m] ?? null));
+  }
+
+  function jsonPatch(id, value) {
+    const el = jsonBlock(id);
+    const text = JSON.stringify(value).replace(/</g, "\\u003c");
+    const t = el.children[0];
+    return t ? { start: t.start, end: t.end, expect: t.raw, replace: text } : { start: el.startEnd, end: el.startEnd, expect: "", replace: text };
+  }
+
+  function previewBoard() {
+    if (!window.HBBoard) return;
+    const draft = hiddenDraft || layoutDraft || arranging;
+    HBBoard.apply(draft ? { hidden: currentHidden(), layout: currentLayouts(), mode: arranging || undefined } : null);
+    refreshCount();
+  }
+
+  function hideCard(card) {
+    const key = card.getAttribute("data-hb-card");
+    if (currentHidden().some(c => c.key === key)) return;
+    hiddenDraft = currentHidden().concat([{ key, name: cardName(card) }]);
+    if (!hiddenChanges().length) hiddenDraft = null;
+    previewBoard();
+    say(`“${cardName(card)}” hidden. Publish to save it. Page → Hidden cards brings it back.`);
+  }
+  function showCard(key) {
+    hiddenDraft = currentHidden().filter(c => c.key !== key);
+    if (!hiddenChanges().length) hiddenDraft = null;
+    previewBoard();
+  }
+
+  /* Layout: a grid of square cells. Each card has a spot (x, y) and a shape. */
+  const shapeTable = m => HBBoard.SHAPES[m];
+  const SHAPE_NAMES = { small: "Small", wide: "Wide", tall: "Tall", big: "Big", round: "Round" };
+
+  function defaultShape(key) {
+    if (key.startsWith("world-")) return "round";
+    if (key.startsWith("studio-")) return "wide";
+    return "small";
+  }
+
+  /** A first arrangement: every visible card, in page order, packed row by row. */
+  function startingLayout(m) {
+    const t = shapeTable(m);
+    const items = [];
+    let x = 0, y = 0, rowH = 0;
+    const seen = new Set();
+    document.querySelectorAll("[data-hb-card]:not([data-hb-hidden])").forEach(card => {
+      const key = card.getAttribute("data-hb-card");
+      if (seen.has(key)) return;
+      seen.add(key);
+      const shape = defaultShape(key);
+      const [w, h] = t[shape];
+      if (x + w > t.cols) { x = 0; y += rowH; rowH = 0; }
+      items.push({ card: key, x, y, w, h, shape });
+      x += w;
+      rowH = Math.max(rowH, h);
+    });
+    return { cols: t.cols, items };
+  }
+
+  const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  /** Anything the moved card now covers slides down below it, and so on down the board. */
+  function settle(items, moved) {
+    const queue = [moved];
+    let guard = 0;
+    while (queue.length && guard++ < 2000) {
+      const m = queue.shift();
+      for (const o of items) {
+        if (o === m || !overlaps(o, m)) continue;
+        o.y = m.y + m.h;
+        queue.push(o);
+      }
+    }
+  }
+
+  function draftLayout(m) {
+    if (!layoutDraft) layoutDraft = JSON.parse(JSON.stringify(fileLayouts()));
+    if (!layoutDraft[m]) layoutDraft[m] = startingLayout(m);
+    return layoutDraft[m];
+  }
+
+  function renderLayoutSheet() {
+    selected = null;
+    box.style.display = "none";
+    $("cardbox").style.display = "none";
+    const has = !!currentLayouts()[arranging];
+    sheet.innerHTML = `<div class="head"><div class="what">Arrange the board</div><button id="layDone">Done arranging</button></div>
+      <div class="row"><label>Arranging for</label><div class="seg">
+        <button data-mode="phone" class="${arranging === "phone" ? "on" : ""}">Phone</button>
+        <button data-mode="desktop" class="${arranging === "desktop" ? "on" : ""}">Computer</button></div></div>
+      <div class="small">Drag a card by its ✥ handle. Tap a card to change its shape or hide it.
+        ${arranging === "desktop" && innerWidth <= HBBoard.PHONE_MAX ? "This is the computer board, shrunk to fit your screen." : ""}
+        ${!has ? "No layout saved for this one yet; the page shows its normal list." : ""}</div>
+      <div class="row" style="margin-top:10px">${has ? `<button class="danger" id="layClear">Back to the normal list</button>` : `<button id="layStart">Start a board</button>`}</div>`;
+    sheet.className = "sheet on compact";
+    ui.getElementById("layDone").onclick = stopArranging;
+    sheet.querySelectorAll("[data-mode]").forEach(b => { b.onclick = () => { arranging = b.dataset.mode; previewBoard(); renderLayoutSheet(); }; });
+    const clear = ui.getElementById("layClear");
+    if (clear) clear.onclick = () => {
+      if (!confirm("Clear this board? The page goes back to its normal list for this screen size. Undo is in Changes.")) return;
+      layoutDraft = { ...currentLayouts(), [arranging]: null };
+      if (!layoutChanges().length) layoutDraft = null;
+      previewBoard();
+      renderLayoutSheet();
+    };
+    const startBtn = ui.getElementById("layStart");
+    if (startBtn) startBtn.onclick = () => { draftLayout(arranging); previewBoard(); renderLayoutSheet(); };
+  }
+
+  function renderCardSheet(card) {
+    const key = card.getAttribute("data-hb-card");
+    const layout = currentLayouts()[arranging];
+    const item = layout && layout.items.find(i => i.card === key);
+    const shape = item ? item.shape : "small";
+    place(card, $("cardbox"));
+    sheet.innerHTML = `<div class="head"><div class="what">${esc(cardName(card))}</div><button id="back">Back</button></div>
+      <div class="row"><div class="seg">${Object.keys(SHAPE_NAMES).map(s2 => `<button data-shape="${s2}" class="${s2 === shape ? "on" : ""}">${SHAPE_NAMES[s2]}</button>`).join("")}</div></div>
+      <div class="row"><button class="danger" id="hideCard">Hide this card</button></div>`;
+    sheet.className = "sheet on compact";
+    ui.getElementById("back").onclick = renderLayoutSheet;
+    ui.getElementById("hideCard").onclick = () => { hideCard(card); renderLayoutSheet(); };
+    sheet.querySelectorAll("[data-shape]").forEach(b => {
+      b.onclick = () => {
+        const lay = draftLayout(arranging);
+        let it = lay.items.find(i => i.card === key);
+        if (!it) { it = { card: key, x: 0, y: 0, w: 1, h: 1, shape: "small" }; lay.items.push(it); }
+        const [w, h] = shapeTable(arranging)[b.dataset.shape];
+        Object.assign(it, { shape: b.dataset.shape, w, h, x: Math.min(it.x || 0, shapeTable(arranging).cols - w) });
+        settle(lay.items, it);
+        previewBoard();
+        renderCardSheet(card);
+      };
+    });
+  }
+
+  /* Handles: one per card, drawn by the editor over the page, never inside the page's own markup. */
+  let dragging = null;
+  function placeHandles() {
+    const wrap = $("handles");
+    const b = boardEl();
+    const cards = b && !dragging ? Array.from(b.querySelectorAll(":scope > [data-hb-card]")) : [];
+    if (dragging) return;
+    while (wrap.children.length > cards.length) wrap.lastChild.remove();
+    cards.forEach((card, k) => {
+      let h = wrap.children[k];
+      if (!h) {
+        h = document.createElement("button");
+        h.className = "grab";
+        h.textContent = "✥";
+        h.setAttribute("aria-label", "Drag this card");
+        h.addEventListener("pointerdown", startDrag);
+        wrap.appendChild(h);
+      }
+      h.dataset.card = card.getAttribute("data-hb-card");
+      const r = card.getBoundingClientRect();
+      const round = card.classList.contains("hb-shape-round");
+      h.style.left = r.left + (round ? r.width / 2 - 22 : r.width - 50) + "px";
+      h.style.top = r.top + 6 + "px";
+      h.style.display = r.bottom < 0 || r.top > innerHeight ? "none" : "flex";
+    });
+  }
+
+  function startDrag(e) {
+    e.preventDefault();
+    const key = e.currentTarget.dataset.card;
+    const b = boardEl();
+    const card = b && b.querySelector(`:scope > [data-hb-card="${CSS.escape(key)}"]`);
+    if (!card) return;
+    const lay = draftLayout(arranging);
+    let item = lay.items.find(i => i.card === key);
+    if (!item) {
+      const [w, h] = shapeTable(arranging).small;
+      item = { card: key, x: 0, y: 0, w, h, shape: "small" };
+      lay.items.push(item);
+    }
+    const scale = parseFloat(b.dataset.scale || "1");
+    const cell = parseFloat(getComputedStyle(b).getPropertyValue("--hb-cell")) || 80;
+    const step = cell + shapeTable(arranging).gap;
+    const cr = card.getBoundingClientRect();
+    dragging = { key, card, item, scale, step, offX: (e.clientX - cr.left) / scale, offY: (e.clientY - cr.top) / scale,
+      px: e.clientX, py: e.clientY, col: item.x, row: item.y, pointerId: e.pointerId, handle: e.currentTarget };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.currentTarget.addEventListener("pointermove", moveDrag);
+    e.currentTarget.addEventListener("pointerup", endDrag);
+    e.currentTarget.addEventListener("pointercancel", endDrag);
+    card.style.zIndex = "5";
+    card.style.opacity = ".92";
+    card.style.transition = "none";
+    sheet.className = "sheet";
+    $("cardbox").style.display = "none";
+    requestAnimationFrame(dragFrame);
+  }
+  function moveDrag(e) {
+    if (!dragging) return;
+    dragging.px = e.clientX;
+    dragging.py = e.clientY;
+  }
+  function dragFrame() {
+    if (!dragging) return;
+    const d = dragging;
+    // Near the top or bottom of the screen, the page scrolls so a card can travel the whole board.
+    if (d.py < 90) window.scrollBy(0, -12);
+    else if (d.py > innerHeight - 90) window.scrollBy(0, 12);
+    const b = boardEl();
+    const br = b.getBoundingClientRect();
+    const cols = shapeTable(arranging).cols;
+    const bx = (d.px - br.left) / d.scale - d.offX;
+    const by = (d.py - br.top) / d.scale - d.offY;
+    d.col = Math.max(0, Math.min(cols - d.item.w, Math.round(bx / d.step)));
+    d.row = Math.max(0, Math.round(by / d.step));
+    d.card.style.transform = `translate(${bx - d.item.x * d.step}px, ${by - d.item.y * d.step}px)`;
+    const drop = $("drop");
+    drop.style.display = "block";
+    drop.style.left = br.left + d.col * d.step * d.scale + "px";
+    drop.style.top = br.top + d.row * d.step * d.scale + "px";
+    drop.style.width = (d.item.w * d.step - shapeTable(arranging).gap) * d.scale + "px";
+    drop.style.height = (d.item.h * d.step - shapeTable(arranging).gap) * d.scale + "px";
+    d.handle.style.left = d.px - 22 + "px";
+    d.handle.style.top = d.py - 22 + "px";
+    requestAnimationFrame(dragFrame);
+  }
+  function endDrag() {
+    const d = dragging;
+    if (!d) return;
+    dragging = null;
+    d.handle.removeEventListener("pointermove", moveDrag);
+    d.handle.removeEventListener("pointerup", endDrag);
+    d.handle.removeEventListener("pointercancel", endDrag);
+    $("drop").style.display = "none";
+    d.card.style.transform = "";
+    d.card.style.zIndex = "";
+    d.card.style.opacity = "";
+    d.card.style.transition = "";
+    d.item.x = d.col;
+    d.item.y = d.row;
+    settle(draftLayout(arranging).items, d.item);
+    previewBoard();
+    renderLayoutSheet();
+  }
+
+  function startArranging() {
+    selected = null;
+    box.style.display = "none";
+    arranging = HBBoard.screenMode();
+    previewBoard();
+    renderLayoutSheet();
+  }
+  function stopArranging() {
+    arranging = null;
+    $("handles").innerHTML = "";
+    $("cardbox").style.display = "none";
+    sheet.className = "sheet";
+    previewBoard();
+  }
+  $("bLayout").onclick = () => (arranging ? stopArranging() : startArranging());
+
   /* ---------- publishing ---------- */
   function buildPagePatches() {
     const patches = [];
@@ -658,6 +1015,8 @@ function start() {
     }
     if (titleEdit) patches.push(titleEdit.patch());
     for (const c of colorEdits.values()) if (c.file === source.file) patches.push(c.patch);
+    if (hiddenChanges().length) patches.push(jsonPatch("hb-hidden-cards", currentHidden()));
+    if (layoutChanges().length) patches.push(jsonPatch("hb-layout", currentLayouts()));
     return patches.filter(pt => pt && !insideRemoved(pt));
   }
 
@@ -672,6 +1031,9 @@ function start() {
     if (removed) bits.push(`took off ${removed}`);
     if ([...colorEdits.values()].some(c => c.file === source.file)) bits.push("colors");
     if (titleEdit) bits.push("tab name");
+    const hc = hiddenChanges();
+    if (hc.length) bits.push(hc.map(c => (c.hidden ? "hid " : "showed ") + c.name).join(", "));
+    for (const m of layoutChanges()) bits.push(`${m === "phone" ? "phone" : "computer"} layout`);
     return bits.join("; ");
   }
 
@@ -690,7 +1052,17 @@ function start() {
       pending.clear();
       titleEdit = null;
       for (const [key, c] of colorEdits) if (c.file === source.file) colorEdits.delete(key);
+      if (hiddenDraft || layoutDraft) {
+        // The file now says what the drafts said; make the page's own copy say it too.
+        const liveHidden = document.getElementById("hb-hidden-cards");
+        const liveLayout = document.getElementById("hb-layout");
+        if (liveHidden) liveHidden.textContent = JSON.stringify(currentHidden());
+        if (liveLayout) liveLayout.textContent = JSON.stringify(currentLayouts());
+        hiddenDraft = null;
+        layoutDraft = null;
+      }
       await loadSource();
+      previewBoard();
       const bySheet = new Map();
       for (const c of colorEdits.values()) {
         if (!bySheet.has(c.file)) bySheet.set(c.file, []);

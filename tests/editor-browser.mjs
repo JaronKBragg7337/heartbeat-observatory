@@ -98,6 +98,9 @@ const server = http.createServer(async (req, res) => {
   if (file.endsWith("/")) file += "index.html";
   let p = path.join(ROOT, file);
   if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p = path.join(p, "index.html");
+  // Pages saved through the fake GitHub are served as saved, like a redeploy.
+  const rel = path.relative(ROOT, p).split(path.sep).join("/");
+  if (repo.has(rel)) { res.writeHead(200, { "Content-Type": TYPES[path.extname(p)] || "text/plain" }); return res.end(repo.get(rel)); }
   if (!fs.existsSync(p)) { res.writeHead(404); return res.end("nf"); }
   res.writeHead(200, { "Content-Type": TYPES[path.extname(p)] || "application/octet-stream" });
   fs.createReadStream(p).pipe(res);
@@ -156,7 +159,7 @@ await page.screenshot({ path: path.join(OUT, "3-block-look.png") });
 check("bigger area reaches the hero block", /Section|Block/.test(what), what);
 
 // A line the page builds with its own script (directory descriptions), if present.
-const dirItem = page.locator(".surface-summary").first();
+const dirItem = page.locator(".surface-summary:visible").first();
 let looseOk = null;
 if (await dirItem.count()) {
   await shadow("#close").tap();
@@ -211,6 +214,138 @@ if (looseOk) {
 const css = fs.readFileSync(path.join(ROOT, "observatory.css"), "utf8");
 check("shared color saved to the stylesheet, one spot only", repo.get("observatory.css") === css.replace("--paper: #f4f1ea;", "--paper: #fafafa;"));
 check("commit message names the file", /^Site edit: index\.html - /.test(commits.find(c => c.file === "index.html")?.message || ""), commits.find(c => c.file === "index.html")?.message.split("\n")[0]);
+
+/* ---------- round 2 (2026-09-24): panel scroll, hide a card, the board ---------- */
+const cdp = await ctx.newCDPSession(page);
+const touch = async (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+async function swipe(x, y1, y2, steps = 8) {
+  await touch("touchStart", x, y1);
+  for (let i = 1; i <= steps; i++) await touch("touchMove", x, y1 + ((y2 - y1) * i) / steps);
+  await touch("touchEnd", x, y2);
+}
+
+await page.goto(BASE + "/", { waitUntil: "load" });
+await shadow("#pill").waitFor();
+check("The World card is hidden on the home page", !(await page.locator('[data-hb-card="engine"]:visible').count()));
+await shadow("#pill").tap();
+await shadow("#bar.on").waitFor();
+
+// 1. The panel scrolls itself; the page behind it stays put.
+await page.locator("#hero-title").tap({ position: { x: 20, y: 20 } });
+await shadow("#up").tap();
+await shadow("#up").tap();
+await page.waitForTimeout(600);
+const pageY0 = await page.evaluate(() => scrollY);
+const sheetBox = await shadow(".sheet.on").boundingBox();
+await swipe(sheetBox.x + 200, sheetBox.y + sheetBox.height - 40, sheetBox.y + 60);
+await page.waitForTimeout(400);
+const [sheetTop, sheetMax] = await shadow(".sheet.on").evaluate(el => [el.scrollTop, el.scrollHeight - el.clientHeight]);
+const pageY1 = await page.evaluate(() => scrollY);
+check("swiping the panel scrolls the panel", sheetMax > 0 && sheetTop > Math.min(50, sheetMax - 2), `panel moved ${sheetTop}px of ${sheetMax}px`);
+check("swiping the panel leaves the page still", pageY1 === pageY0, `page ${pageY0} -> ${pageY1}`);
+await page.screenshot({ path: path.join(OUT, "8-panel-scrolled.png") });
+await shadow("#close").tap();
+
+// 2. Hide a whole card.
+const social = page.locator('[data-hb-card="social"] .surface-name');
+await social.scrollIntoViewIfNeeded();
+await social.tap();
+await shadow("#hideCard").waitFor();
+await page.screenshot({ path: path.join(OUT, "9-hide-card.png") });
+await shadow("#hideCard").tap();
+check("hidden card disappears at once", !(await page.locator('[data-hb-card="social"]:visible').count()));
+
+// 3. The board, on a phone.
+await shadow("#bLayout").tap();
+await shadow("#layStart").tap();
+await page.waitForSelector(".hb-board");
+const boardCards = await page.locator(".hb-board > [data-hb-card]").count();
+check("board holds the visible cards", boardCards >= 8, `${boardCards} cards`);
+await page.locator(".hb-board").scrollIntoViewIfNeeded();
+await page.waitForTimeout(300);
+await page.screenshot({ path: path.join(OUT, "10-board-start.png") });
+// Make Social... hidden; make Games wide, then drag World 2 down below it.
+const games = page.locator('.hb-board > [data-hb-card="games"]');
+await games.scrollIntoViewIfNeeded();
+await games.tap();
+await shadow('[data-shape="wide"]').tap();
+check("shape change applies", await games.evaluate(el => el.classList.contains("hb-shape-wide")));
+await shadow("#back").tap();
+await page.locator('.hb-board > [data-hb-card="world-2"]').scrollIntoViewIfNeeded();
+await page.waitForTimeout(300);
+const handle = shadow('.grab[data-card="world-2"]');
+const hb = await handle.boundingBox();
+const before = await page.evaluate(() => document.querySelector('[data-hb-card="world-2"]').style.gridRow);
+await touch("touchStart", hb.x + 22, hb.y + 22);
+for (let i = 1; i <= 12; i++) await touch("touchMove", hb.x + 22, hb.y + 22 + i * 25);
+await page.waitForTimeout(200);
+await page.screenshot({ path: path.join(OUT, "11-dragging.png") });
+await touch("touchEnd", hb.x + 22, hb.y + 22 + 300);
+await page.waitForTimeout(300);
+const after = await page.evaluate(() => document.querySelector('[data-hb-card="world-2"]').style.gridRow);
+check("dragging a handle moves the card", before !== after, `${before} -> ${after}`);
+const overlap = await page.evaluate(() => {
+  const r = Array.from(document.querySelectorAll(".hb-board > [data-hb-card]")).map(e => e.getBoundingClientRect());
+  for (let i = 0; i < r.length; i++) for (let j = i + 1; j < r.length; j++) {
+    const a = r[i], b = r[j];
+    if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) return true;
+  }
+  return false;
+});
+check("no two cards overlap after the drag", !overlap);
+// Chromium has no touch-callout, so check the rule the editor puts on the page (Safari reads it).
+check("iPhone link preview is off while editing", await page.evaluate(() => Array.from(document.querySelectorAll("style[data-hb-editor]")).some(s => s.textContent.includes("-webkit-touch-callout:none"))));
+await page.screenshot({ path: path.join(OUT, "12-board-after-drag.png") });
+
+// Computer board preview on the phone.
+await shadow('[data-mode="desktop"]').tap();
+await shadow("#layStart").tap();
+await page.waitForTimeout(300);
+check("computer board previews shrunk on a phone", await page.evaluate(() => { const b = document.querySelector(".hb-board"); return b && b.dataset.mode === "desktop" && parseFloat(b.dataset.scale) < 1; }));
+await page.locator(".hb-board").scrollIntoViewIfNeeded();
+await page.screenshot({ path: path.join(OUT, "13-computer-board-on-phone.png") });
+await shadow('[data-mode="phone"]').tap();
+await shadow("#layDone").tap();
+
+// Publish, then read the file back.
+const before2 = repo.get("index.html");
+await shadow("#bPublish").tap();
+await shadow(".toast.on").waitFor();
+await page.waitForTimeout(300);
+const saved2 = repo.get("index.html");
+const block = id => JSON.parse(new RegExp(`<script type="application/json" id="${id}">([^<]*)</script>`).exec(saved2)[1]);
+const hid = block("hb-hidden-cards").map(c => c.key);
+const lay = block("hb-layout");
+check("hidden list saved in the file", hid.includes("social") && hid.includes("engine"), hid.join(","));
+check("phone and computer layouts saved separately", lay.phone && lay.desktop && lay.phone.cols === 4 && lay.desktop.cols === 12);
+check("only the two data blocks changed", lineDiff(before2, saved2).length === 2, `lines ${lineDiff(before2, saved2).join(",")}`);
+
+// A visitor sees the saved board, without the hidden cards.
+const visitor2 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+const vp2 = await visitor2.newPage();
+await vp2.route(/esm\.sh\/@supabase|jsdelivr\.net\/npm\/@supabase/, r => r.fulfill({ contentType: "text/javascript", body: SUPABASE_STUB }));
+await vp2.goto(BASE + "/", { waitUntil: "load" });
+await vp2.waitForFunction(() => document.querySelectorAll(".hb-board > [data-hb-card]").length >= 7, null, { timeout: 15000 }).catch(() => {});
+const vinfo = await vp2.evaluate(() => { const b = document.querySelector(".hb-board"); return { n: b.children.length, visible: Array.from(b.children).filter(c => c.getBoundingClientRect().height > 0).length, h: b.getBoundingClientRect().height, cell: getComputedStyle(b).getPropertyValue("--hb-cell"), mode: b.dataset.mode, w: b.getBoundingClientRect().width }; });
+check("visitor sees the phone board", vinfo.visible >= 7, JSON.stringify(vinfo));
+check("visitor never sees hidden cards", !(await vp2.locator('[data-hb-card="social"]:visible, [data-hb-card="engine"]:visible').count()));
+await vp2.locator(".hb-board").screenshot({ path: path.join(OUT, "14-visitor-board.png") });
+await vp2.setViewportSize({ width: 1280, height: 900 });
+await vp2.waitForTimeout(500);
+check("wide screen switches to the computer board", await vp2.evaluate(() => document.querySelector(".hb-board")?.dataset.mode === "desktop"));
+await vp2.locator(".hb-board").screenshot({ path: path.join(OUT, "15-visitor-computer-board.png") });
+await visitor2.close();
+
+// Undo through History: put the file back to before the board and hidden cards.
+await page.goto(BASE + "/", { waitUntil: "load" });
+await shadow("#pill").tap();
+await shadow("#bar.on").waitFor();
+await shadow("#bPage").tap();
+await shadow("[data-restore]").first().waitFor({ timeout: 10000 });
+await shadow("[data-restore]").first().tap();
+await shadow(".toast.on").waitFor();
+await page.waitForTimeout(300);
+check("History puts the earlier version back", repo.get("index.html") === before2);
 
 // Visitors: no session -> nothing loads.
 const visitor = await browser.newContext({ viewport: { width: 390, height: 844 } });

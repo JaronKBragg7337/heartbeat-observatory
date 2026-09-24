@@ -79,7 +79,7 @@
       </div>
     </section>
 
-    <section class="section-block" id="worlds" aria-labelledby="worlds-title">
+    <section class="section-block" id="worlds" aria-labelledby="worlds-title" data-hb-board-section>
       <div class="section-heading">
         <div>
           <p class="section-label">Start somewhere</p>
@@ -88,8 +88,8 @@
         <p>Walk through a world, stay for a while, and follow whatever catches your attention. The routes are different; the builds are live and objects in them take you places.</p>
       </div>
 
-      <div class="world-grid">
-        <a class="world-card" href="/engine">
+      <div class="world-grid" data-hb-board-anchor data-hb-board-list>
+        <a class="world-card" href="/engine" data-hb-card="world-town">
           <div class="world-card-head"><span class="world-index">01 / Town Square</span><span class="world-state"><span class="state-dot"></span>Live</span></div>
           <span class="world-orb orb-town"></span>
           <h3>Town Square</h3>
@@ -97,7 +97,7 @@
           <span class="card-link">Enter the world <span aria-hidden="true">→</span></span>
         </a>
 
-        <a class="world-card" href="/world2/gate/">
+        <a class="world-card" href="/world2/gate/" data-hb-card="world-2">
           <div class="world-card-head"><span class="world-index">02 / City build</span><span class="world-state"><span class="state-dot"></span>Open</span></div>
           <span class="world-orb orb-city"></span>
           <h3>World 2</h3>
@@ -105,7 +105,7 @@
           <span class="card-link">Visit World 2 <span aria-hidden="true">→</span></span>
         </a>
 
-        <a class="world-card" href="/world3/gate/">
+        <a class="world-card" href="/world3/gate/" data-hb-card="world-ashgrove">
           <div class="world-card-head"><span class="world-index">03 / Ashgrove</span><span class="world-state"><span class="state-dot"></span>Open</span></div>
           <span class="world-orb orb-grove"></span>
           <h3>Ashgrove</h3>
@@ -115,7 +115,7 @@
       </div>
     </section>
 
-    <section class="section-block" id="work" aria-labelledby="work-title">
+    <section class="section-block" id="work" aria-labelledby="work-title" data-hb-board-section>
       <div class="section-heading">
         <div>
           <p class="section-label">Explore</p>
@@ -123,10 +123,10 @@
         </div>
         <p id="connectionStatus" class="connection-status"><span class="state-dot" aria-hidden="true"></span> Reading the current directory…</p>
       </div>
-      <div class="surface-list" id="grid"><div class="skeleton">Loading the current directory…</div></div>
+      <div class="surface-list" id="grid" data-hb-board-list><div class="skeleton">Loading the current directory…</div></div>
     </section>
 
-    <section class="section-block" id="studio" aria-labelledby="studio-title">
+    <section class="section-block" id="studio" aria-labelledby="studio-title" data-hb-board-section>
       <div class="section-heading">
         <div>
           <p class="section-label">In the studio</p>
@@ -134,16 +134,16 @@
         </div>
         <p>Some of the Observatory is a finished doorway. Some of it is a useful preview. Both can be worth checking out to give feedback as a private message or on the social page.</p>
       </div>
-      <div class="studio-list">
-        <a class="studio-link" href="/school/">
+      <div class="studio-list" data-hb-board-list>
+        <a class="studio-link" href="/school/" data-hb-card="studio-school">
           <div><h3>Fly School</h3><p>Simulated fruit-fly brains taught around the clock — every student live, its report card lesson by lesson, and what it is doing right now.</p></div>
           <span class="card-link">Sit in <span aria-hidden="true">→</span></span>
         </a>
-        <a class="studio-link" href="/worlds-lab/">
+        <a class="studio-link" href="/worlds-lab/" data-hb-card="studio-worlds-lab">
           <div><h3>Worlds Lab</h3><p>Walkable previews for rides, trains, theaters, and a real city — built in the open for feedback and open discussion ideas.</p></div>
           <span class="card-link">Preview <span aria-hidden="true">→</span></span>
         </a>
-        <a class="studio-link" href="/PCGames/">
+        <a class="studio-link" href="/PCGames/" data-hb-card="studio-pc-games">
           <div><h3>PC Games</h3><p>Desktop builds with heavier assets, larger spaces, and room for a stronger machine.</p></div>
           <span class="card-link">Browse <span aria-hidden="true">→</span></span>
         </a>
@@ -169,6 +169,11 @@
     </footer>
   </main>
 
+<!-- Cards the site editor has hidden, and the board layouts it saved. Written by the editor (hb-editor-app.js),
+     read by hb-board.js and the directory below. Hidden cards stay hidden whether the list comes from the database or FALLBACK. -->
+<script type="application/json" id="hb-hidden-cards">[{"key":"qwen","name":"Qwen"},{"key":"revenue","name":"Revenue Desk"},{"key":"engine","name":"The World"}]</script>
+<script type="application/json" id="hb-layout">{"desktop":null,"phone":null}</script>
+<script src="/hb-board.js"></script>
 <script>
   const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
@@ -219,7 +224,11 @@
   async function load() {
     let data = null, fromDatabase = true;
     try {
+      // A database that never answers must not hold the front door: after 6 seconds, use FALLBACK.
+      const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+      if (controller) setTimeout(() => controller.abort(), 6000);
       const response = await fetch(SURFACES_URL, {
+        signal: controller ? controller.signal : undefined,
         headers: {
           apikey: SUPABASE_PUBLISHABLE_KEY,
           Authorization: "Bearer " + SUPABASE_PUBLISHABLE_KEY
@@ -237,16 +246,20 @@
       const sections = Array.isArray(data) ? data.slice() : [];
       if (!sections.some((surface) => surface.key === "pam")) sections.push({ key: "pam", name: "PAM", status: "preview", position: 999 });
       // 2026-09-11, Jaron: "one page for it all." Qwen and Revenue Desk live under Live Systems now;
-      // the pages stay, the front-door entries go. Reversible: remove the key from HIDDEN.
-      const HIDDEN = new Set(["qwen", "revenue"]);
+      // the pages stay, the front-door entries go. 2026-09-24: the list moved into #hb-hidden-cards so the
+      // site editor can hide or bring back any card. Reversible from the editor's Page panel or History.
+      const HIDDEN = new Set(window.HBBoard ? HBBoard.hiddenList().map((c) => (typeof c === "string" ? c : c.key)) : ["qwen", "revenue"]);
 
       for (const surface of sections) {
         const href = SLUGS[surface.key];
-        if (!href || HIDDEN.has(surface.key)) continue;
+        if (!href) continue;
         const info = statusInfo(surface.status);
         const row = document.createElement("a");
         row.className = "surface-row";
         row.href = href;
+        row.setAttribute("data-hb-card", surface.key);
+        // Hidden cards are built but never shown, so the editor can bring one back before publishing.
+        if (HIDDEN.has(surface.key)) { row.setAttribute("data-hb-hidden", ""); row.style.display = "none"; }
         row.innerHTML =
           '<span class="surface-name">' + esc(surface.name) + '</span>' +
           '<span class="surface-summary">' + esc(descriptions[surface.key] || "A public surface in the Observatory.") + '</span>' +
@@ -255,7 +268,8 @@
         grid.appendChild(row);
       }
 
-      if (!grid.children.length) grid.innerHTML = '<div class="skeleton">The directory is empty right now. The worlds above remain open.</div>';
+      if (!grid.querySelector("[data-hb-card]:not([data-hb-hidden])")) grid.innerHTML = '<div class="skeleton">The directory is empty right now. The worlds above remain open.</div>';
+      if (window.HBBoard) HBBoard.apply();
     } catch (error) {
       status.innerHTML = '<span class="state-dot" aria-hidden="true"></span> Directory unavailable';
       grid.innerHTML = '<div class="skeleton">The directory is unavailable right now. The worlds above remain open.</div>';
