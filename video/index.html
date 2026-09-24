@@ -38,6 +38,14 @@
   .reel:hover { border-color: #c9a35a; }
   .reel.playing { border-color: #7bd88f; color: #b9e6c6; }
   .reel .yr { color: #7e909b; font-weight: 400; }
+  .screen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+  .bring { width: min(860px, 96vw); margin-top: 18px; }
+  .bring h2 { font-size: 11px; letter-spacing: 0.28em; color: #6f8290; text-align: center; margin-bottom: 10px; font-weight: 600; }
+  .bringrow { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+  .bringrow input[type=url] { flex: 1; min-width: 0; max-width: 520px; font: inherit; font-size: 16px; color: #e8edf2; background: rgba(12, 17, 21, 0.9); border: 1px solid #2c3940; border-radius: 10px; padding: 9px 12px; }
+  .bringrow input[type=url]:focus { outline: none; border-color: #c9a35a; }
+  .bringnote { font-size: 12px; color: #7e909b; text-align: center; line-height: 1.5; min-height: 18px; }
+  .bringnote.err { color: #ff9ea8; }
   .seats { width: min(820px, 94vw); display: flex; flex-direction: column; gap: 9px; margin-top: 26px; }
   .row { display: flex; justify-content: center; gap: 7px; }
   .seat { width: clamp(26px, 5.2vw, 44px); height: clamp(18px, 3.4vw, 28px); background: #57222a; border: 1px solid #6e2d36; border-radius: 7px 7px 3px 3px; box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.45); }
@@ -73,6 +81,18 @@
       <h2>TONIGHT&rsquo;S PROGRAMME</h2>
       <div class="reelrow" id="reelrow"></div>
     </div>
+    <div class="bring">
+      <h2>BRING YOUR OWN</h2>
+      <div class="bringrow">
+        <input id="linkIn" type="url" inputmode="url" autocomplete="off" placeholder="Paste a video link (mp4, YouTube, TikTok)" aria-label="Video link" />
+        <button class="reel" id="linkGo" type="button">Play link</button>
+      </div>
+      <div class="bringrow">
+        <label class="reel" for="fileIn" tabindex="0" id="fileLabel">Play a video from your device</label>
+        <input id="fileIn" type="file" accept="video/*" hidden />
+      </div>
+      <div class="bringnote" id="bringNote">A video from your device plays on your screen only. Nothing is uploaded.</div>
+    </div>
     <div class="seats">
       <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
       <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
@@ -103,14 +123,83 @@
   const idleText = document.getElementById("idleText");
   const credit = document.getElementById("credit");
   const reelrow = document.getElementById("reelrow");
-  let current = -1, triedFallback = false;
+  let current = -1, triedFallback = false, own = null, ownUrl = null;
+
+  // Links and your own videos. The link reader is the Grand Palace theater's own (media.js in
+  // Movie-Theater-Three.js-Asset-), loaded from its live build so both theaters read links the same way.
+  const MEDIA_LIB = "https://jaronkbragg7337.github.io/Movie-Theater-Three.js-Asset-/src/media.js";
+  let mediaLib = null;
+  const screen = document.querySelector(".screen");
+  const embed = document.createElement("iframe");
+  embed.hidden = true;
+  embed.title = "Video player";
+  embed.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen");
+  embed.setAttribute("allowfullscreen", "");
+  screen.appendChild(embed);
+  const linkIn = document.getElementById("linkIn");
+  const fileIn = document.getElementById("fileIn");
+  const note = document.getElementById("bringNote");
+  const say = (text, bad) => { note.textContent = text; note.className = "bringnote" + (bad ? " err" : ""); };
+  function showVideoEl() { embed.hidden = true; embed.removeAttribute("src"); video.style.display = ""; }
+  function playOwn(src, label) {
+    current = -1; triedFallback = false; own = label; markPlaying();
+    showVideoEl();
+    idle.style.display = "none";
+    credit.textContent = "Now showing: " + label;
+    video.src = src;
+    const p = video.play();
+    if (p && p.catch) p.catch(() => { video.muted = true; video.play().catch(() => {}); });
+  }
+  function playEmbed(src, label) {
+    current = -1; own = label; markPlaying();
+    video.pause(); video.removeAttribute("src"); video.load(); video.style.display = "none";
+    idle.style.display = "none";
+    embed.src = src; embed.hidden = false;
+    credit.textContent = "Now showing: " + label + " · tap play on the player";
+  }
+  async function playLink() {
+    const text = linkIn.value.trim();
+    if (!text) { say("Paste a link first.", true); linkIn.focus(); return; }
+    say("Loading…");
+    try {
+      if (!mediaLib) mediaLib = await import(MEDIA_LIB);
+      const src = await mediaLib.resolveVideoUrl(text);
+      if (src.kind === "embed") {
+        playEmbed(mediaLib.embedUrlFor(src), src.provider === "youtube" ? "YouTube video" : "TikTok video");
+      } else {
+        const ranked = mediaLib.rankPlayableSources(video, src.sources);
+        playOwn((ranked[0] || src.sources[0]).url, "your link");
+      }
+      say("");
+    } catch (err) {
+      // Links without a file ending (many hosts) can still play; try before giving up.
+      if (/^https?:\/\//i.test(text) && (!mediaLib || /not a direct media file/i.test(err.message))) {
+        playOwn(text, "your link");
+        say("Trying that link directly. If nothing plays, the site it comes from does not allow playing it elsewhere.");
+      } else {
+        say(err.message || "That link could not be played.", true);
+      }
+    }
+  }
+  document.getElementById("linkGo").addEventListener("click", playLink);
+  linkIn.addEventListener("keydown", (e) => { if (e.key === "Enter") playLink(); });
+  document.getElementById("fileLabel").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileIn.click(); } });
+  fileIn.addEventListener("change", () => {
+    const file = fileIn.files && fileIn.files[0];
+    if (!file) return;
+    if (ownUrl) URL.revokeObjectURL(ownUrl);
+    ownUrl = URL.createObjectURL(file);
+    playOwn(ownUrl, file.name);
+    say("Playing from your device. Only you can see it; nothing is uploaded.");
+  });
 
   function markPlaying() {
     [...reelrow.children].forEach((b, i) => b.classList.toggle("playing", i === current));
   }
   function startShow(i) {
     const f = FILMS[i];
-    current = i; triedFallback = false;
+    current = i; triedFallback = false; own = null;
+    showVideoEl();
     idle.style.display = "none";
     credit.innerHTML = "Now showing: <strong>" + f.title + "</strong> (" + f.year + ") · <span class=\"lic\">" + f.license + "</span> · " + f.credit + " · played from the original free source";
     video.src = f.src;
@@ -123,6 +212,13 @@
     markPlaying();
   }
   video.addEventListener("error", () => {
+    if (current < 0 && own) {
+      idle.style.display = "flex";
+      idleTitle.textContent = "THAT VIDEO DIDN’T PLAY";
+      idleText.textContent = "This browser could not play “" + own + "”. Try an mp4 link, a YouTube or TikTok link, or a different file.";
+      credit.textContent = ""; own = null;
+      return;
+    }
     if (current < 0) return;
     const f = FILMS[current];
     if (f.srcFallback && !triedFallback) { triedFallback = true; video.src = f.srcFallback; video.play().catch(() => {}); return; }

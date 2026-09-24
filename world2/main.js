@@ -1305,7 +1305,7 @@ function buildInteriors() {
   backs.castShadow = true;
   scene.add(cushions);
   scene.add(backs);
-  interiorStations.theater.push({ label: "Theater page \u00b7 pick your seat soon", x: tr.x + 9.5, z: tr.z + 5.5, hw: 2, hd: 2, act: { type: "page", path: "/video" } });
+  interiorStations.theater.push({ label: "Grand Palace \u00b7 take your seat", x: tr.x + 9.5, z: tr.z + 5.5, hw: 2, hd: 2, act: { type: "page", path: "/video/3d/" } });
 
   // ARCADE — neon dark, one REAL cabinet (President Sim lives on the Games page), honest shells.
   roomShell("arcade", 11, 8, 0x171c26);
