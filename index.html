@@ -35,6 +35,15 @@
 }
 </script>
 <meta name="theme-color" content="#f4f1ea" />
+<style>
+  /* The News tab: its own tab in the nav (2026-09-24, Jaron). */
+  .news-tab { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
+  .news-dot { width: 8px; height: 8px; border-radius: 50%; background: #e11d2e; box-shadow: 0 0 0 3px rgba(225, 29, 46, 0.18); animation: newsdot 2s ease-in-out infinite; }
+  @keyframes newsdot { 50% { box-shadow: 0 0 0 6px rgba(225, 29, 46, 0.04); } }
+  @media (prefers-reduced-motion: reduce) { .news-dot { animation: none; } }
+  /* Phones hide the other nav text links; the News tab stays. */
+  .nav-actions .text-link.news-tab { display: inline-flex; }
+</style>
 </head>
 <body>
   <nav class="site-nav" aria-label="Primary navigation">
@@ -43,6 +52,7 @@
       <span class="wordmark-copy"><strong>Heartbeat</strong><small>Observatory</small></span>
     </a>
     <div class="nav-actions">
+      <a class="text-link news-tab" href="/news/"><span class="news-dot" aria-hidden="true"></span>News</a>
       <a class="text-link" href="#work">Explore</a>
       <a class="nav-button" id="authlink" href="/admin">Sign in</a>
     </div>
@@ -57,6 +67,7 @@
         <div class="hero-actions">
           <a class="button button-primary" href="/school/">Fly School — live <span aria-hidden="true">→</span></a>
           <a class="button button-secondary" href="/engine">Enter Town Square</a>
+          <a class="button button-secondary" href="/news/">Heartbeat News <span aria-hidden="true">→</span></a>
         </div>
         <div class="hero-note" aria-label="About the Observatory">
           <span>Open access</span>
@@ -178,8 +189,9 @@
   const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
   const SURFACES_URL = SUPABASE_URL + "/rest/v1/surfaces?select=key,name,status,position&order=position.asc";
-  const SLUGS = { engine:"/engine", social:"/social", video:"/video", host:"/projects", showcase:"/live-systems", games:"/games", library:"/library", pam:"/pam", qwen:"/qwen", revenue:"/live-systems/revenue/", printer:"/3DPrinterAsset/" };
+  const SLUGS = { news:"/news/", engine:"/engine", social:"/social", video:"/video", host:"/projects", showcase:"/live-systems", games:"/games", library:"/library", pam:"/pam", qwen:"/qwen", revenue:"/live-systems/revenue/", printer:"/3DPrinterAsset/" };
   const descriptions = {
+    news: "Heartbeat News: AI Robot Vex and Alien Joe read the day's news in a 3D newsroom. New show every morning, looping all day.",
     engine: "The walkable 3D hub and the front door to the living world.",
     social: "A social media page for live feed, posts, conversation, and current world news.",
     video: "A working screening room with a small, changing catalog. Can get to the movie theater in a real seat in the worlds. Also upload your own videos and URL links",
@@ -196,6 +208,7 @@
   // ("Directory unavailable") even though every page was still deployed. This list is the fallback: same keys, same
   // routes, rendered when the database cannot answer. The database still wins when it is up (it carries live statuses).
   const FALLBACK = [
+    { key:"news",     name:"Heartbeat News", status:"live",   position:0 },
     { key:"engine",   name:"The World",     status:"live",    position:1 },
     { key:"social",   name:"Social",        status:"live",    position:2 },
     { key:"video",    name:"Theater",       status:"live",    position:3 },
@@ -245,6 +258,8 @@
       grid.innerHTML = "";
       const sections = Array.isArray(data) ? data.slice() : [];
       if (!sections.some((surface) => surface.key === "pam")) sections.push({ key: "pam", name: "PAM", status: "preview", position: 999 });
+      // Heartbeat News sits at the top whether or not the surfaces table has a row for it yet.
+      if (!sections.some((surface) => surface.key === "news")) sections.unshift({ key: "news", name: "Heartbeat News", status: "live", position: 0 });
       // 2026-09-11, Jaron: "one page for it all." Qwen and Revenue Desk live under Live Systems now;
       // the pages stay, the front-door entries go. 2026-09-24: the list moved into #hb-hidden-cards so the
       // site editor can hide or bring back any card. Reversible from the editor's Page panel or History.

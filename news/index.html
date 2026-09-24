@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<script src="/hb-device-tier.js"></script>
+<title>Heartbeat News — AI Robot Vex and Alien Joe</title>
+<meta name="description" content="The day's news as a TV broadcast: AI Robot Vex and Alien Joe at the anchor desk of a 3D newsroom, written each morning from the watch captures." />
+<meta property="og:title" content="Heartbeat News — AI Robot Vex and Alien Joe" />
+<meta property="og:description" content="The day's news, read at the anchor desk by a robot and an alien. New show every morning; loops all day." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.heartbeatobservatory.com/news/" />
+<meta name="theme-color" content="#07080b" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/news/news.css" />
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="hbn" viewBox="0 0 100 100">
+      <rect x="2" y="2" width="96" height="96" rx="18" fill="#0b1f4d" stroke="#fff" stroke-width="3.5" />
+      <text x="50" y="36" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, Arial, sans-serif" font-weight="800" font-size="30" fill="#fff">HBN</text>
+      <polyline points="8,66 30,66 38,54 47,87 58,45 66,66 92,66" fill="none" stroke="#e11d2e" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" />
+    </symbol>
+  </svg>
+
+  <header class="topbar">
+    <a class="back" href="/">← Heartbeat Observatory</a>
+    <span class="brand"><svg aria-hidden="true"><use href="#hbn" /></svg>HEARTBEAT <span class="red">NEWS</span></span>
+  </header>
+
+  <main class="stage">
+    <div class="tv" id="tv">
+      <div class="screen" id="screen">
+        <canvas id="gl" aria-label="The Heartbeat News studio"></canvas>
+        <div class="gfx" id="gfx" aria-hidden="true">
+          <div class="top-tag" id="toptag"><b>HBN</b><span id="toptagText">TONIGHT</span></div>
+          <div class="ots" id="ots"><svg><use href="#hbn" /></svg><span class="k" id="otsK"></span><span class="t" id="otsT"></span></div>
+          <div class="breaking" id="breaking"><span>BREAKING NEWS</span></div>
+          <div class="l3" id="l3"><div class="tag" id="l3tag"></div><div class="main"><div class="head" id="l3head"></div><div class="sub" id="l3sub"></div></div></div>
+          <div class="namebar" id="namebar"><div class="nm" id="nbName"></div><div class="ti" id="nbTitle"></div></div>
+          <div class="bug"><svg><use href="#hbn" /></svg><span class="onair">ON AIR</span></div>
+          <div class="ticker"><div class="tk-left"><b>HBN</b><span class="clock" id="clock">--:--</span><span class="tz">ET</span></div><div class="tk-section" id="tkSection">TOP STORIES</div><div class="tk-track"><div class="tk-move" id="tkmove"></div></div></div>
+          <div class="titlecard" id="titlecard"><div class="tc"><svg><use href="#hbn" /></svg><div class="n1">HEARTBEAT <em>NEWS</em></div><div class="n2" id="tcDate"></div></div></div>
+          <div class="stinger" id="stinger"><div class="band b1"></div><div class="band b2"></div><div class="band b3"></div><svg class="mark"><use href="#hbn" /></svg></div>
+          <div class="cc" id="cc"><span id="ccText"></span></div>
+          <div class="dbg-layer" id="dbg" hidden></div>
+        </div>
+        <div class="glass"></div>
+        <button class="tap" id="tap" type="button"><span aria-hidden="true">🔊</span> Watch with sound</button>
+        <div class="loading" id="loading"><div class="ld"><svg><use href="#hbn" /></svg><span id="loadingText">TUNING IN</span><div class="bar"><i></i></div></div></div>
+      </div>
+      <button class="exit-max" id="exitMax" type="button" aria-label="Exit full screen">✕</button>
+      <span class="power" aria-hidden="true"></span>
+    </div>
+    <div class="tv-foot" aria-hidden="true"></div>
+
+    <div class="controls">
+      <button class="btn primary" id="soundBtn" type="button"><span class="dot"></span><span id="soundLabel">Sound off — tap to listen</span></button>
+      <button class="btn" id="ccBtn" type="button" aria-pressed="true">CC</button>
+      <button class="btn" id="fsBtn" type="button">⛶ Full screen</button>
+      <span class="spacer"></span>
+      <button class="btn" id="dbgBtn" type="button" aria-pressed="false" title="Studio grid and asset IDs (3D standards debug layer)">Grid &amp; IDs</button>
+    </div>
+
+    <section class="now" aria-live="polite">
+      <div class="lbl" id="nowLbl">Now</div>
+      <div class="hd" id="nowHd">Tuning in…</div>
+      <div class="ln" id="nowLn"></div>
+    </section>
+
+    <div class="cols">
+      <section class="panel">
+        <h2>Tonight's rundown</h2>
+        <p class="intro" id="rundownIntro">Every story, its source, and whether it was seen first-hand or is a claim. Tap a story to jump to it.</p>
+        <ol class="rundown" id="rundown"></ol>
+      </section>
+      <section class="panel about">
+        <h2>How this show is made</h2>
+        <p>Each morning after 9:30 a Claude job reads the day's captures from the <a href="https://github.com/JaronKBragg7337/watch">watch repo</a> (Codex, DeepSeek and Claude) and writes a two-host script. The page adds the latest wire headlines from the same Perplexity feed the <a href="/social">Social page</a> uses. The show loops all day and is replaced when the next day's news lands. Bigger news days make a longer show.</p>
+        <p><b>AI Robot Vex</b> and <b>Alien Joe</b> are characters. The voices are free for now: Vex is a speech synthesizer rendered in code (eSpeak) with a robot effect chain; Joe uses your device's own speech voice, so he sounds a little different on an iPhone, an Android phone and a PC.</p>
+        <p>The studio is built in code with Three.js: desk, LED wall, lights and both anchors. Measurements and asset IDs are in the Grid &amp; IDs layer.</p>
+        <p id="epMeta"></p>
+      </section>
+    </div>
+
+    <section class="panel studio" id="studio" hidden></section>
+  </main>
+
+  <footer class="foot">
+    Heartbeat News is part of <a href="/">Heartbeat Observatory</a>. Characters and studio are original; stories are summaries of the linked reporting, not our own reporting. Source: <a href="https://github.com/JaronKBragg7337/heartbeat-observatory/tree/main/news">news/ on GitHub</a>.
+  </footer>
+
+  <script type="module" src="/news/show.js"></script>
+  <script defer src="/bubble.js"></script>
+</body>
+</html>
