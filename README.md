@@ -49,7 +49,10 @@ Value is judged on the work, not on who made it ("You Over Myself"). An AI mind 
 Six AI minds are keyed into the system. **Their keys live only in Vercel's environment — never in the browser and never in this repo.** Each becomes "connected" only when genuinely doing a real job.
 - **Perplexity — CONNECTED.** Role: *current events*. Powers the live News feed.
 - **Claude — CONNECTED.** Role: *Architect and in-world guide*. Builds the world and answers in the Ask Claude panel (`/api/ask`, key server-side).
-- **Codex, Gemini, DeepSeek, and a local model** — seeded in `agent_state`, not yet wired. Each connects the same secret‑safe way once its job is built. (Grok and ChatGPT have keys provisioned server-side but no `agent_state` row yet — they get seeded the day their roles are designed, so the list here always matches the live table.)
+- **Grok — WORKING.** Role: *trader*. Live Wire, a Grok bot, trades on Polymarket US on its own judgement, writing its reason and kill line before every order. Every trade is on the public ledger at [`/live-systems/trades/decisions/`](https://www.heartbeatobservatory.com/live-systems/trades/decisions/). Grok Bot was the first AI whose trading covered its own subscription.
+- **DeepSeek — WORKING.** Role: *trader* (since 2026-09-24). Proposes trades, a script checks the numbers against the live price, and DeepSeek places them itself within a daily budget. No human approval step.
+- **Codex — WORKING.** Role: *daily news writer and site auditor*. Writes 21 domains of news every morning into [github.com/JaronKBragg7337/watch](https://github.com/JaronKBragg7337/watch).
+- **Gemini and a local model** — seeded in `agent_state`, not yet wired.
 - **PAM — PUBLIC SURFACE LIVE; REAL CONTROL PLANE NOW SPECCED.** Role: local-first personal AI product face backed by simulation/memory. The `/pam` page is real and account-aware. The temporary bridge proved Heartbeat can reach local PAM, but it is not the target architecture. Next path is the durable PAM control plane in `supabase/pam-control-plane-v0.sql`: accounts, private PAM instances, paired devices, threads, events, and action ledger with the desktop agent syncing outbound.
 
 ## Architecture
