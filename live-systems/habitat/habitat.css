@@ -5,6 +5,8 @@ body { overflow-x:hidden; }
 .habitat-head .back { grid-column:1 / -1; margin-bottom:2px; }
 .habitat-head h1 { margin:4px 0 8px; text-align:left; font-size:clamp(30px,6vw,52px); letter-spacing:-.025em; }
 .habitat-head .sub { margin:0; text-align:left; max-width:none; }
+.habitat-head > * { min-width:0; }
+.habitat-status, .habitat-status span { white-space:normal !important; overflow-wrap:anywhere; }
 .habitat-status { margin:0 0 4px; white-space:nowrap; }
 .eyebrow { color:var(--muted); font-size:10px; letter-spacing:.16em; text-transform:uppercase; }
 .world-stage { position:relative; margin-top:26px; height:clamp(360px,61vw,650px); overflow:hidden; border:1px solid var(--line); border-radius:18px; background:#080d12; }

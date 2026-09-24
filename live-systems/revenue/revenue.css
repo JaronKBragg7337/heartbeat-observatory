@@ -141,7 +141,7 @@ footer a:hover { color: var(--muted); }
   .hero { padding: 34px 0 4px; }
   .panel { padding: 20px 17px; border-radius: 15px; }
   .item-top { flex-direction: column; gap: 3px; }
-  .topnav { gap: 13px; font-size: 12.5px; }
+  .topnav { gap: 13px; font-size: 12.5px; flex-wrap: wrap; row-gap: 8px; }
 }
 
 /* ---- owner decision controls ----

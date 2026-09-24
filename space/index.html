@@ -16,6 +16,7 @@
   .top { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; border-bottom:1px solid rgba(255,255,255,.07); position:sticky; top:0; background:rgba(10,13,16,.92); backdrop-filter:blur(8px); }
   .top a.back { text-decoration:none; font-weight:600; color:#cfe3d6; white-space:nowrap; }
   .wordmark { font-size:12px; letter-spacing:.22em; color:#8fa3ad; text-transform:uppercase; white-space:nowrap; }
+  @media (max-width:560px) { .wordmark { white-space:normal; text-align:right; letter-spacing:.12em; min-width:0; } }
   .wrap { max-width:880px; margin:0 auto; padding:26px 18px 80px; }
   .hero { border:1px solid rgba(255,255,255,.08); border-left:6px solid var(--accent); border-radius:14px; padding:22px; background:var(--accent-bg); }
   h1.project { margin:0 0 6px; font-size:clamp(26px,6vw,40px); line-height:1.15; color:var(--accent); overflow-wrap:anywhere; }
