@@ -38,6 +38,10 @@ export const SYNTH_VARIANTS = [
   ["croak", "Croak"], ["klatt", "Klatt (1980s)"], ["klatt2", "Klatt 2"], ["klatt3", "Klatt 3"], ["whisper", "Whisper"]
 ];
 
+// How long after the device voice's last line a synth line waits to start (CHOSEN). The show already leaves a 0.45 s gap
+// between lines, so this adds about a quarter second after Joe's lines and nothing after Vex's own.
+const DEVICE_RELEASE_MS = 700;
+
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
 // Split a line into sentence-sized pieces. Chrome's cloud voices stop after ~15 s, and short pieces keep the
@@ -247,20 +251,41 @@ export class VoiceBox {
   }
 
   // ---- speaking ---------------------------------------------------------------------------------------------------
-  cancel() {
+  // nextEngine = the engine of the line about to start. A synth line only stops the device voice if it is actually
+  // busy: poking an idle speech engine at the top of every Vex line made phones duck the page's audio again.
+  cancel(nextEngine) {
     const c = this.current; this.current = null;
     if (c) { c.cancelled = true; try { c.src && c.src.stop(); } catch (e) {} }
-    try { if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel(); } catch (e) {}
+    try {
+      if (typeof speechSynthesis !== "undefined" && (nextEngine !== "synth" || speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
+    } catch (e) {}
     this.targets.vex = this.targets.joe = 0; this.env.vex = this.env.joe = null;
   }
 
   // Resolves when the line has finished (or was cancelled). Never rejects: a failed engine falls back to the other.
   speak(who, text, hooks = {}) {
-    this.cancel();
-    const job = { who, cancelled: false }; this.current = job;
     const engine = this.settings[who].engine;
-    const run = engine === "synth" && !this.synthFailed ? this.speakSynth(job, text, hooks) : this.speakBrowser(job, text, hooks);
-    return run.catch(() => (job.cancelled ? null : this.speakBrowser(job, text, hooks))).then(() => { if (this.current === job) this.current = null; this.targets[who] = 0; });
+    const synth = engine === "synth" && !this.synthFailed;
+    this.cancel(synth ? "synth" : "browser");
+    const job = { who, cancelled: false, device: !synth }; this.current = job;
+    const run = synth ? this.speakSynth(job, text, hooks) : this.speakBrowser(job, text, hooks);
+    return run.catch(() => (job.cancelled ? null : ((job.device = true), this.speakBrowser(job, text, hooks)))).then(() => {
+      if (job.device) this.deviceEndAt = performance.now();
+      if (this.current === job) this.current = null; this.targets[who] = 0;
+    });
+  }
+
+  // Before a synth line starts: phones turn the page's own audio down while their speech engine (the device voice) has
+  // the output, and fade it back up after it lets go. Starting Vex inside that fade is what made his first words come
+  // out low and quiet. So wait until the device voice is idle and its fade has finished, and make sure the audio
+  // context is running (iOS can leave it suspended/interrupted after the speech engine used the output).
+  async outputReady(job) {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const t0 = performance.now();
+    while (typeof speechSynthesis !== "undefined" && (speechSynthesis.speaking || speechSynthesis.pending) && performance.now() - t0 < 1500 && !job.cancelled) await sleep(40);
+    const wait = (this.deviceEndAt || -1e9) + DEVICE_RELEASE_MS - performance.now();
+    if (wait > 0 && !job.cancelled) await sleep(wait);
+    if (this.ctx.state !== "running") { try { await Promise.race([this.ctx.resume(), sleep(800)]); } catch (e) {} }
   }
 
   async speakSynth(job, text, hooks) {
@@ -271,7 +296,10 @@ export class VoiceBox {
     const buf = this.ctx.createBuffer(1, wav.samples.length, wav.rate);
     buf.copyToChannel ? buf.copyToChannel(wav.samples, 0) : buf.getChannelData(0).set(wav.samples);
     const src = this.ctx.createBufferSource(); src.buffer = buf; src.playbackRate.value = size;
-    src.connect(n.input); job.src = src;
+    src.connect(n.input);
+    await this.outputReady(job);
+    if (job.cancelled) return;
+    job.src = src;
     await new Promise((resolve) => {
       src.onended = resolve;
       hooks.onStart && hooks.onStart(buf.duration / size);
