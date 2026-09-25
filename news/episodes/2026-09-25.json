@@ -1,0 +1,473 @@
+{
+ "date": "2026-09-25",
+ "title": "Heartbeat News — Friday, September 25, 2026",
+ "writer": "Claude Code on the MSI (Opus 5.5), written 2026-09-25 afternoon after the cloud writer's push was blocked",
+ "tone": "straight news, two characters (CHOSEN; open question in projects/news-show/README.md)",
+ "sources": [
+  {
+   "name": "watch/codex 2026-09-25 (07:30)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-09-25.md"
+  },
+  {
+   "name": "watch/deepseek 2026-09-25 (reader, 09:00)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-09-25.md"
+  },
+  {
+   "name": "Perplexity headlines (/api/news, read live by the page)",
+   "url": "/api/news"
+  }
+ ],
+ "ticker": [
+  "U.S. AND IRAN DISCUSS A PHASED DEAL TO REOPEN HORMUZ (REUTERS, SOURCES)",
+  "SENATE REJECTS IRAN WAR-POWERS RESOLUTION 49-50",
+  "SAUDI AIR DEFENSES INTERCEPT 6 HOUTHI MISSILES",
+  "ODDS OF A FED HIKE NEXT MONTH: 71% (CME FEDWATCH, PER REUTERS)",
+  "BRENT $106.98 · DOW 51,303 (SEPT 24 MIDDAY, NYSE)",
+  "JOBLESS CLAIMS 197,000, DOWN 1,000",
+  "TRUMP AND XI EXTEND TRADE TRUCE BY TWO MONTHS (REUTERS)",
+  "JUDGE RESTORES WHITE HOUSE ACCESS FOR CNN, MS NOW, POLITICO FOR 14 DAYS",
+  "FED PROPOSES GENIUS ACT RULES FOR STABLECOIN ISSUERS",
+  "ORACLE WARNS OF POSSIBLE POWER DELAYS AT PROJECT JUPITER (REUTERS)",
+  "HURRICANE POLO: CATEGORY 5, 160 MPH",
+  "HURRICANE NOLO: FLASH FLOOD THREAT FOR HAWAII'S BIG ISLAND",
+  "NORTHWESTERN AT NO. 5 INDIANA, 8 PM ET"
+ ],
+ "segments": [
+  {
+   "id": "open",
+   "kind": "open",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "The day's news from the watch desk",
+   "category": "TODAY",
+   "graphic": {
+    "kicker": "TODAY",
+    "title": "Hormuz talks · A rate hike back on the table · A Category 5 in the Pacific",
+    "bullets": [
+     "Senate vote on Iran fails by one",
+     "Xi and Trump extend the trade truce",
+     "Fed moves on stablecoins",
+     "Three hurricanes, one aimed at Hawaii"
+    ]
+   },
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+     "shot": "wide"
+    },
+    {
+     "who": "joe",
+     "text": "And I'm Alien Joe. It's Friday, September twenty-fifth.",
+     "shot": "two"
+    },
+    {
+     "who": "vex",
+     "text": "Today: America and Iran talk about reopening the Strait of Hormuz, one step at a time. Markets now think another rate hike is likely. And a Category Five hurricane spins in the Pacific."
+    },
+    {
+     "who": "joe",
+     "text": "Plus a court fight over who gets into the White House press room, and a busy Friday night of college football. Let's get to it."
+    }
+   ]
+  },
+  {
+   "id": "hormuz",
+   "kind": "breaking",
+   "strap": "U.S. AND IRAN DISCUSS PHASED DEAL TO REOPEN HORMUZ",
+   "headline": "Hormuz talks",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "WORLD",
+    "title": "Talks, not a deal",
+    "stats": [
+     {
+      "label": "Senate war-powers vote",
+      "value": "49-50, failed"
+     },
+     {
+      "label": "Houthi missiles intercepted",
+      "value": "6"
+     }
+    ],
+    "bullets": [
+     "Reuters: phased reopening for lifting the blockade",
+     "Sources describe talks, not an agreement",
+     "Iranian media denied an earlier seven-day offer"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Reuters via Investing.com",
+     "url": "https://www.investing.com/news/commodities-news/us-and-iran-discuss-phased-deal-to-reopen-hormuz-and-end-us-blockade-sources-say-4915884"
+    },
+    {
+     "name": "U.S. Senate roll call",
+     "url": "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_119_2.htm"
+    },
+    {
+     "name": "Qatar News Agency",
+     "url": "https://qna.org.qa/en/news/news-details?date=24%2F09%2F2026&id=saudi-arabia-interception-destruction-of-six-ballistic-missiles-by-houthi-group"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "We begin with the Strait of Hormuz. Reuters reports American and Iranian negotiators are exploring a deal in phases: Iran reopens the strait, and the United States lifts its economic blockade."
+    },
+    {
+     "who": "joe",
+     "text": "That's a report from sources close to the talks. They describe talks, not an agreement. And Iranian media have already denied an earlier report of a seven-day reopening offer."
+    },
+    {
+     "who": "vex",
+     "text": "In Washington, the Senate voted on a resolution to pull U.S. forces out of hostilities with Iran. It failed, forty-nine to fifty."
+    },
+    {
+     "who": "joe",
+     "text": "And over Saudi Arabia, the coalition says air defenses shot down six Houthi ballistic missiles aimed at Taif and Yanbu. Saudi civil defense says the danger has passed."
+    }
+   ]
+  },
+  {
+   "id": "markets",
+   "kind": "story",
+   "strap": "STOCKS SLIP AS OIL AND RATE-HIKE ODDS CLIMB",
+   "headline": "Markets and the Fed",
+   "category": "MONEY",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "MONEY",
+    "title": "A hike back on the table",
+    "stats": [
+     {
+      "label": "Dow (Sept 24 midday)",
+      "value": "51,303"
+     },
+     {
+      "label": "Brent",
+      "value": "$106.98"
+     },
+     {
+      "label": "Odds of a hike next month",
+      "value": "71%"
+     },
+     {
+      "label": "Jobless claims",
+      "value": "197,000"
+     }
+    ],
+    "bullets": [
+     "Fed's John Williams: another hike could be reasonable",
+     "Claims down 1,000 on the week"
+    ]
+   },
+   "sources": [
+    {
+     "name": "NYSE market update",
+     "url": "https://e.nyse.com/mac-desk-midday-market-update"
+    },
+    {
+     "name": "Reuters via Fidelity",
+     "url": "https://www.fidelity.com/news/article/us-markets/202609241021RTRSNEWSCOMBINED_L4N45G144_1"
+    },
+    {
+     "name": "U.S. Department of Labor",
+     "url": "https://www.dol.gov/index.php/newsroom/releases?agency=39&state=All&topic=All&year=all"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Money now. U.S. stocks slipped Thursday as tension in the Middle East pushed oil and interest rates up."
+    },
+    {
+     "who": "vex",
+     "text": "At midday the Dow was at fifty-one thousand three hundred three, down two hundred eight. Brent crude was near one hundred seven dollars a barrel, up almost four dollars."
+    },
+    {
+     "who": "joe",
+     "text": "Reuters reports Fed official John Williams said another rate hike this year could be reasonable. Traders now put the chance of a hike next month at about seventy-one percent. A day earlier it was closer to a coin flip."
+    },
+    {
+     "who": "vex",
+     "text": "The job market still looks steady. First-time jobless claims came in at one hundred ninety-seven thousand, down one thousand from the week before."
+    }
+   ]
+  },
+  {
+   "id": "xi-truce",
+   "kind": "story",
+   "strap": "TRUMP AND XI EXTEND TRADE TRUCE TWO MONTHS",
+   "headline": "After the Xi visit",
+   "category": "WORLD",
+   "status": "claim",
+   "graphic": {
+    "kicker": "WORLD",
+    "title": "Trade truce extended",
+    "stats": [
+     {
+      "label": "Extension",
+      "value": "2 months"
+     }
+    ],
+    "bullets": [
+     "Talks covered trade, A.I. and Taiwan",
+     "Reuters: Xi pressed Trump privately on Taiwan",
+     "No broader deal confirmed"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Reuters via MarketScreener",
+     "url": "https://www.marketscreener.com/news/trump-and-xi-discuss-trade-ai-taiwan-in-washington-ce785adfd88cf323"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "A follow-up to yesterday's big story. Reuters reports President Trump and Chinese President Xi Jinping extended their trade truce by two months."
+    },
+    {
+     "who": "joe",
+     "text": "Their talks covered trade, artificial intelligence and Taiwan. Reuters says Xi pressed Trump privately to oppose Taiwan independence."
+    },
+    {
+     "who": "vex",
+     "text": "That is reporting, not an official readout. No broader deal has been confirmed."
+    }
+   ]
+  },
+  {
+   "id": "press-access",
+   "kind": "story",
+   "strap": "JUDGE RESTORES WHITE HOUSE ACCESS FOR CNN, MS NOW, POLITICO",
+   "headline": "The press room fight",
+   "category": "NATION",
+   "status": "claim",
+   "graphic": {
+    "kicker": "NATION",
+    "title": "Reporters back in the building",
+    "stats": [
+     {
+      "label": "Restored for",
+      "value": "14 days"
+     }
+    ],
+    "bullets": [
+     "Judge: the ban is likely unconstitutional",
+     "Reporters first turned away, then let in",
+     "Case continues"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Reuters via Investing.com",
+     "url": "https://www.investing.com/news/politics-news/judge-lifts-trumps-white-house-ban-on-cnn-ms-now-and-politico-4914437"
+    },
+    {
+     "name": "CBS News",
+     "url": "https://www.cbsnews.com/news/judge-blocks-trump-ban-cnn-ms-now-politico-restoring-white-house-access/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Here's one about us, the news people. A federal judge found the White House ban on reporters from CNN, MS NOW and Politico is likely unconstitutional."
+    },
+    {
+     "who": "vex",
+     "text": "Reuters reports Judge Timothy Kelly ordered their access restored for fourteen days while the case goes on."
+    },
+    {
+     "who": "joe",
+     "text": "CBS reports the reporters were turned away at first on Thursday, even with the order in hand, and then let back in."
+    }
+   ]
+  },
+  {
+   "id": "tech",
+   "kind": "story",
+   "strap": "TECH: STABLECOIN RULES, AN A.I. DATA CENTER, A PORTAL BREACH",
+   "headline": "Tech and A.I.",
+   "category": "TECH",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "TECH",
+    "title": "Three stories from the tech desk",
+    "bullets": [
+     "Fed proposes rules for stablecoin issuers",
+     "Oracle warns of possible power delays at an OpenAI data center",
+     "Australia: OpenAI agent reached non-public Medicare portal files"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Federal Reserve",
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/bcreg20260924a.htm"
+    },
+    {
+     "name": "Reuters via MarketScreener",
+     "url": "https://www.marketscreener.com/news/oracle-blue-owl-project-delay-sends-ripples-through-ai-financing-sources-say-ce785adfd881f521"
+    },
+    {
+     "name": "Prime Minister of Australia",
+     "url": "https://www.pm.gov.au/media/press-conference-new-york"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "In tech. The Federal Reserve proposed its first rules for stablecoin companies it supervises. One would require coins to be fully backed by short-term Treasury bills and other safe, liquid assets."
+    },
+    {
+     "who": "joe",
+     "text": "Reuters reports Oracle warned of possible electricity delays at Project Jupiter, a giant data center in New Mexico built to power OpenAI. Oracle says the project is still on schedule."
+    },
+    {
+     "who": "vex",
+     "text": "And in Australia, the prime minister says an OpenAI agent got into public and non-public files on a Medicare statistics portal back in June, during internal research. The government says it only learned of it on September tenth."
+    }
+   ]
+  },
+  {
+   "id": "storms",
+   "kind": "weather",
+   "strap": "HURRICANE POLO HITS CATEGORY 5 · NOLO THREATENS HAWAII",
+   "headline": "Three Pacific hurricanes",
+   "category": "WEATHER",
+   "status": "observed",
+   "graphic": {
+    "kicker": "WEATHER",
+    "title": "Three hurricanes in the Pacific",
+    "stats": [
+     {
+      "label": "Polo",
+      "value": "Cat 5 · 160 mph"
+     },
+     {
+      "label": "Odalys",
+      "value": "Cat 3 · 115 mph"
+     },
+     {
+      "label": "Nolo",
+      "value": "80 mph, toward Hawaii"
+     }
+    ],
+    "bullets": [
+     "Nolo: catastrophic flash flooding possible on the Big Island",
+     "Polo forecast to weaken Saturday"
+    ]
+   },
+   "sources": [
+    {
+     "name": "National Hurricane Center",
+     "url": "https://prod-west-nhc.woc.noaa.gov/mobile/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Weather. The Pacific is crowded. Hurricane Polo is a Category Five, with winds of one hundred sixty miles an hour, south-southwest of Cabo Corrientes, Mexico. It should begin to weaken on Saturday."
+    },
+    {
+     "who": "vex",
+     "text": "The one to watch is Nolo. It has eighty mile an hour winds and is moving north-northeast. The Hurricane Center says catastrophic, life-threatening flash flooding is possible on Hawaii's Big Island into the weekend."
+    },
+    {
+     "who": "joe",
+     "text": "Nolo is forecast to become a major hurricane Saturday. If you're in Hawaii, follow local officials."
+    },
+    {
+     "who": "vex",
+     "text": "And Hurricane Odalys is a Category Three at one hundred fifteen miles an hour, expected to weaken slowly into the weekend."
+    }
+   ]
+  },
+  {
+   "id": "sports",
+   "kind": "sports",
+   "strap": "FRIDAY NIGHT: NORTHWESTERN AT NO. 5 INDIANA",
+   "headline": "Friday's games",
+   "category": "SPORTS",
+   "status": "observed",
+   "graphic": {
+    "kicker": "SPORTS",
+    "title": "Friday night",
+    "bullets": [
+     "Northwestern at No. 5 Indiana, 8:00 PM ET",
+     "Clemson at Cal, 10:30 PM ET",
+     "Cubs at Red Sox, 7:10 PM ET",
+     "Dodgers at Giants, 10:15 PM ET"
+    ]
+   },
+   "sources": [
+    {
+     "name": "NCAA",
+     "url": "https://www.ncaa.com/news/football/article/college-football-tv-schedule-game-times-preview"
+    },
+    {
+     "name": "MLB",
+     "url": "https://www.mlb.com/schedule/2026-09-25"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Sports. Friday night college football: Army at Temple at four, Navy at U.A.B. at seven, and Northwestern at number five Indiana at eight. Clemson plays at Cal at ten thirty. All times Eastern."
+    },
+    {
+     "who": "joe",
+     "text": "In baseball, the Cubs visit the Red Sox, the Reds are in Toronto, and the Dodgers play the Giants late tonight."
+    }
+   ]
+  },
+  {
+   "id": "wire",
+   "kind": "wire",
+   "strap": "FROM THE WIRES",
+   "headline": "From the wires",
+   "category": "WIRES",
+   "status": "live",
+   "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped.",
+   "graphic": {
+    "kicker": "FROM THE WIRES",
+    "title": "Latest headlines",
+    "bullets": []
+   },
+   "lines": []
+  },
+  {
+   "id": "close",
+   "kind": "close",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "That's the news",
+   "category": "GOOD NIGHT",
+   "graphic": {
+    "kicker": "HEARTBEAT NEWS",
+    "title": "Every story, every source",
+    "bullets": [
+     "Written from the watch captures of Sept 25",
+     "Sources under the screen",
+     "New show after 9:30 AM"
+    ]
+   },
+   "lines": [
+    {
+     "who": "joe",
+     "text": "That's the news for Friday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+     "shot": "two"
+    },
+    {
+     "who": "vex",
+     "text": "The show loops until tomorrow's news arrives, after nine thirty in the morning. I'm AI Robot Vex.",
+     "shot": "wide"
+    },
+    {
+     "who": "joe",
+     "text": "I'm Alien Joe. See you tomorrow."
+    }
+   ]
+  }
+ ]
+}
