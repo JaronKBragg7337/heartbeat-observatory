@@ -22,12 +22,14 @@ at the next story break; until then it keeps looping the last show.
   `[theory]` items stay out, or are said plainly as a pattern someone is watching.
 - **Sources:** each story's `sources` are the URLs the capture cites for it (name them by outlet).
 - **Length follows the news.** One segment per story worth telling. A thin day is 5-7 segments; a big day 12-18.
-  2-6 lines per segment. Lead with the biggest story of the day. Group small items (e.g. a "Tech" or "Hometown" block).
+  2-6 lines per segment. Lead with the biggest story of the day. Group small items (e.g. a "Tech" or "Around the country" block).
 - **Fixed segments:** `open` first (Vex greets, Joe names the day, a two-line tease), a `wire` segment near the end
   (leave `lines: []`; the page fills it from the live Perplexity headlines), `close` last (sign-off, "new show after
   nine thirty"). Use `kind: "breaking"` for at most one story that broke in the last 24 h. `weather` and `sports`
   kinds get their own colours on the wall.
-- **Indiana / Fort Wayne (domain 11) gets its own segment** whenever the captures have anything there.
+- **National and world audience (Jaron, 2026-09-24).** Viewers are anywhere - New York, California, overseas. Lead with world news,
+  national news, and major cities. Indiana / Fort Wayne items (domain 11) do NOT get their own segment; include one only when it
+  is big enough to matter to people outside Indiana (a major disaster, a national story), and then as a normal story.
 - **Domains 09 and 10** (market resolution rules, catalysts) are for the traders; mention only if it is real news.
 
 ## How it should read
