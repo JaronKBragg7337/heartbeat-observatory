@@ -201,6 +201,7 @@ button { font: inherit; color: inherit; }
 .btn:hover { background: rgba(255,255,255,0.1); }
 .btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
 .btn[aria-pressed="true"] { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); }
+a.btn { text-decoration: none; color: var(--ink); }
 .btn .dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b3b; box-shadow: 0 0 8px #ff3b3b; }
 .controls .spacer { flex: 1; }
 

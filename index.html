@@ -189,9 +189,10 @@
   const SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
   const SURFACES_URL = SUPABASE_URL + "/rest/v1/surfaces?select=key,name,status,position&order=position.asc";
-  const SLUGS = { news:"/news/", engine:"/engine", social:"/social", video:"/video", host:"/projects", showcase:"/live-systems", games:"/games", library:"/library", pam:"/pam", qwen:"/qwen", revenue:"/live-systems/revenue/", printer:"/3DPrinterAsset/" };
+  const SLUGS = { news:"/news/", archive:"/news/archive/", engine:"/engine", social:"/social", video:"/video", host:"/projects", showcase:"/live-systems", games:"/games", library:"/library", pam:"/pam", qwen:"/qwen", revenue:"/live-systems/revenue/", printer:"/3DPrinterAsset/" };
   const descriptions = {
     news: "Heartbeat News: AI Robot Vex and Alien Joe read the day's news in a 3D newsroom. New show every morning, looping all day.",
+    archive: "Every story, every source: each day's news from every AI since Sept 18, by day, topic or AI, and searchable.",
     engine: "The walkable 3D hub and the front door to the living world.",
     social: "A social media page for live feed, posts, conversation, and current world news.",
     video: "A working screening room with a small, changing catalog. Can get to the movie theater in a real seat in the worlds. Also upload your own videos and URL links",
@@ -209,6 +210,7 @@
   // routes, rendered when the database cannot answer. The database still wins when it is up (it carries live statuses).
   const FALLBACK = [
     { key:"news",     name:"Heartbeat News", status:"live",   position:0 },
+    { key:"archive",  name:"News Archive",  status:"live",    position:0 },
     { key:"engine",   name:"The World",     status:"live",    position:1 },
     { key:"social",   name:"Social",        status:"live",    position:2 },
     { key:"video",    name:"Theater",       status:"live",    position:3 },
@@ -259,6 +261,8 @@
       const sections = Array.isArray(data) ? data.slice() : [];
       if (!sections.some((surface) => surface.key === "pam")) sections.push({ key: "pam", name: "PAM", status: "preview", position: 999 });
       // Heartbeat News sits at the top whether or not the surfaces table has a row for it yet.
+      // The News Archive sits right under it, the same way.
+      if (!sections.some((surface) => surface.key === "archive")) sections.splice(sections.findIndex((s) => s.key === "news") + 1, 0, { key: "archive", name: "News Archive", status: "live", position: 0 });
       if (!sections.some((surface) => surface.key === "news")) sections.unshift({ key: "news", name: "Heartbeat News", status: "live", position: 0 });
       // 2026-09-11, Jaron: "one page for it all." Qwen and Revenue Desk live under Live Systems now;
       // the pages stay, the front-door entries go. 2026-09-24: the list moved into #hb-hidden-cards so the

@@ -218,7 +218,7 @@ function renderRundown() {
   const mins = Math.round(totalLength() / 60);
   $("rundownIntro").textContent = `${segs.length} stories, about ${mins} minutes, looping until the next show. Every story, its source, and whether it was seen first-hand or is a claim. Tap a story to jump to it.`;
   const srcs = (ep.sources || []).map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`).join(", ");
-  $("epMeta").innerHTML = `This show: <b>${esc(fmtDate(ep.date))}</b>, written by ${esc(ep.writer || "Claude")}. Read from: ${srcs}.`;
+  $("epMeta").innerHTML = `This show: <b>${esc(fmtDate(ep.date))}</b>, written by ${esc(ep.writer || "Claude")}. Read from: ${srcs}. <a href="/news/archive/#/day/${esc(ep.date)}">Everything the AIs found that day →</a>`;
 }
 function markRundown(segIndex) {
   document.querySelectorAll("#rundown li").forEach((li) => li.classList.toggle("cur", +li.dataset.seg === segIndex));
