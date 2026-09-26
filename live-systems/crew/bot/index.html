@@ -36,7 +36,7 @@
       <div class="board" id="board"></div>
       <div class="card" id="chart" style="margin-top:10px"></div>
       <h2 class="sec">Its trades, newest first</h2>
-      <div class="card scroll"><table id="trades"><thead><tr><th>When</th><th>Market</th><th>Side</th><th>Amount</th></tr></thead><tbody></tbody></table></div>
+      <div class="card scroll"><table id="trades"><thead><tr><th>When</th><th>Trade</th><th>Amount</th></tr></thead><tbody></tbody></table></div>
     </div>
 
     <h2 class="sec">What it did most recently</h2>
@@ -84,8 +84,8 @@
     const when = (iso) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(",", "");
     $("trades").querySelector("tbody").innerHTML = grouped.slice(0, 15).map((t) => {
       const px = t.px.reduce((a, b) => a + b, 0) / t.px.length;
-      return `<tr><td class="small">${esc(when(t.at))}</td><td>${esc(t.title || t.slug)}</td><td>${esc(t.outcome || t.side || "")} @ ${px.toFixed(2)}</td><td>${usd(t.cost)}</td></tr>`;
-    }).join("") || `<tr><td colspan="4" class="muted">No trades yet.</td></tr>`;
+      return `<tr><td class="small">${esc(when(t.at))}</td><td>${esc(t.title || t.slug)}<br><span class="muted small">bought ${esc(t.outcome || t.side || "")} at ${Math.round(px * 100)}¢</span></td><td>${usd(t.cost)}</td></tr>`;
+    }).join("") || `<tr><td colspan="3" class="muted">No trades yet.</td></tr>`;
   }
   const act = b.activity || [];
   $("activity").innerHTML = act.length ? act.slice().reverse().map((l) => `<div>${esc(l)}</div>`).join("") : `<p class="muted small">Nothing logged here yet.</p>`;
