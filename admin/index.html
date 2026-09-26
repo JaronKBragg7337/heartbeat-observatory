@@ -440,6 +440,7 @@
     surfaces = data;
     root.innerHTML =
       topbar("Steering", session.user.email, true) +
+      '<a class="card" href="/admin/control/" style="display:block;text-decoration:none;color:inherit;margin-bottom:14px"><b>Control Room &rarr;</b><br><span style="opacity:.75;font-size:.9rem">Every number the money AIs run under. Tap to change.</span></a>' +
       '<div class="namebar" id="namebar"></div>' +
       '<div class="card">' + composeHtml() + '</div>' +
       '<h2 class="section">Sections</h2>' +

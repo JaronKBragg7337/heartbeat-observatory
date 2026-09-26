@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>Control Room · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style>
+  .wrap { max-width: 760px; }
+  .lede { color: var(--muted); line-height: 1.6; max-width: 60ch; margin: 10px auto 0; }
+  .who { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  h2.sec { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 30px 0 10px; font-weight: 600; }
+  .knob { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 14px 16px; margin-bottom: 10px; }
+  .knob .top { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .knob h3 { font-size: 1rem; }
+  .knob p { font-size: .9rem; line-height: 1.5; color: #c2ccd6; margin-top: 6px; }
+  .knob .meta { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .step { display: flex; align-items: center; gap: 6px; }
+  .step button { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: #141b24; color: var(--text); font-size: 1.3rem; cursor: pointer; }
+  .step button:disabled { opacity: .35; cursor: default; }
+  .step output { min-width: 84px; text-align: center; font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .note-val { font-size: .95rem; font-weight: 600; }
+  .saved { font-size: 12px; color: #7ee08c; min-height: 16px; margin-top: 4px; }
+  .hist div { font-size: .85rem; padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+  .hist button { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: .8rem; }
+  .gate { text-align: center; padding: 40px 10px; }
+  .gate a { color: var(--text); }
+  .readonly { font-size: 12px; color: var(--amber); text-align: center; margin-top: 10px; }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" href="/admin">Admin</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/admin">&larr; Admin</a>
+    <header class="hero">
+      <h1>Control Room</h1>
+      <p class="lede">Every number the money AIs run under, in one place. Tap to change it: the scripts on the machine pick up the
+        new value within a minute. Every change is kept below with an undo.</p>
+      <p class="who" id="who"></p>
+      <p class="readonly" id="ro" hidden>You're viewing. Sign in as an admin to change things.</p>
+    </header>
+    <div id="groups"></div>
+    <h2 class="sec">Changes, newest first</h2>
+    <div class="knob hist" id="hist"></div>
+    <footer><a href="/live-systems/crew/">The Crew</a> · <a href="/live-systems/crew/schedule/">Schedule</a></footer>
+  </div>
+<script type="module">
+  import { getSupabase } from "/hb-supabase.js";
+  const supabase = await getSupabase();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fmt = (v, unit) => unit === "$" ? (Number(v) < 1 ? `${Math.round(v * 100)}¢` : `$${Number(v).toFixed(Number(v) % 1 ? 2 : 0)}`) : `${v}${unit ? " " + unit : ""}`;
+  let rows = [], isAdmin = false, email = "";
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    email = session.user.email || "";
+    try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {}
+  }
+  $("who").textContent = session ? `${email}${isAdmin ? " · admin" : ""}` : "";
+  $("ro").hidden = isAdmin;
+
+  async function load() {
+    const [{ data: s }, { data: h }] = await Promise.all([
+      supabase.from("system_settings").select("*").order("sort"),
+      supabase.from("system_settings_history").select("*").order("changed_at", { ascending: false }).limit(30),
+    ]);
+    rows = s || [];
+    const groups = {};
+    rows.forEach((r) => (groups[r.who] ||= []).push(r));
+    $("groups").innerHTML = Object.entries(groups).map(([who, list]) => `<h2 class="sec">${esc(who)}</h2>` + list.map((r) => {
+      const control = r.kind === "number"
+        ? `<div class="step"><button data-k="${esc(r.key)}" data-d="-1" ${isAdmin ? "" : "disabled"} aria-label="less">−</button>
+             <output id="v-${esc(r.key)}">${esc(fmt(r.value, r.unit))}</output>
+             <button data-k="${esc(r.key)}" data-d="1" ${isAdmin ? "" : "disabled"} aria-label="more">+</button></div>`
+        : `<span class="note-val">${esc(r.value)}</span>`;
+      return `<div class="knob"><div class="top"><h3>${esc(r.label)}</h3>${control}</div>
+        <p>${esc(r.meaning)}</p><div class="meta">Obeyed by ${esc(r.who)} · lives in ${esc(r.lives_in)} · changed ${new Date(r.updated_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} by ${esc(r.updated_by)}</div>
+        <div class="saved" id="s-${esc(r.key)}"></div></div>`;
+    }).join("")).join("");
+    $("hist").innerHTML = (h || []).map((c) => `<div><span><b>${esc((rows.find((r) => r.key === c.key) || {}).label || c.key)}</b>: ${esc(c.old_value)} → ${esc(c.new_value)}<br><small class="muted">${esc(c.changed_by)} · ${new Date(c.changed_at).toLocaleString()}</small></span>${isAdmin ? `<button data-undo="${c.id}">Undo</button>` : ""}</div>`).join("") || `<p class="muted" style="font-size:.9rem">No changes yet.</p>`;
+  }
+
+  async function save(key, value, note) {
+    const { error } = await supabase.from("system_settings").update({ value, updated_by: email || "admin" }).eq("key", key);
+    const s = $("s-" + key);
+    if (s) { s.style.color = error ? "#ff8a92" : "#7ee08c"; s.textContent = error ? "Not saved: " + error.message : (note || "Saved. The machine picks it up within a minute."); }
+    if (!error) setTimeout(load, 700);
+  }
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b || !isAdmin) return;
+    if (b.dataset.k) {
+      const r = rows.find((x) => x.key === b.dataset.k); if (!r) return;
+      const step = Number(r.step) || 1, n = Math.round((Number(r.value) + step * Number(b.dataset.d)) / step) * step;
+      const v = Math.min(Number(r.max ?? Infinity), Math.max(Number(r.min ?? -Infinity), +n.toFixed(4)));
+      r.value = v; $("v-" + r.key).textContent = fmt(v, r.unit);
+      clearTimeout(r._t); r._t = setTimeout(() => save(r.key, v), 900);   // wait for the taps to settle
+    }
+    if (b.dataset.undo) {
+      supabase.from("system_settings_history").select("*").eq("id", b.dataset.undo).maybeSingle().then(({ data: c }) => { if (c) save(c.key, c.old_value, "Undone."); });
+    }
+  });
+  load();
+</script>
+</body>
+</html>
