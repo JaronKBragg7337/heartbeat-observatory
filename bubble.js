@@ -115,6 +115,7 @@
     ".hbp-remote{display:flex;gap:6px;padding:8px 8px calc(var(--w) * .07);overflow-x:auto;background:#0b0f14;border-top:1px solid rgba(255,255,255,.08)}",
     ".hbp-remote button{flex:0 0 auto;background:#1c2229;border:1px solid #2b333c;color:#e2e8f0;border-radius:12px;padding:8px 11px;font-size:13px;cursor:pointer}",
     ".hbp-remote button.on{background:#ff3b4e;border-color:#ff3b4e;color:#fff}",
+    "html.hbp-open [data-hb-editor]{display:none!important}",
     ".hbp-chip{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);padding:4px 9px;border-radius:8px;font-size:12px;font-weight:700;z-index:2;pointer-events:none}"
   ].join("");
   document.head.appendChild(css);
@@ -223,11 +224,11 @@
 
   // ---- open / close ----
   function open(app) {
-    phone.classList.add("open"); scrim.classList.add("open"); renderHome();
+    phone.classList.add("open"); scrim.classList.add("open"); document.documentElement.classList.add("hbp-open"); renderHome();
     if (app) setTimeout(function () { openApp(app); }, 120);
     if (state.session) { state.unread = 0; badge(); }
   }
-  function close() { phone.classList.remove("open"); scrim.classList.remove("open"); setTimeout(goHome, 450); }
+  function close() { phone.classList.remove("open"); scrim.classList.remove("open"); document.documentElement.classList.remove("hbp-open"); setTimeout(goHome, 450); }
   function badge() { var d = launch.querySelector(".dot"); d.textContent = state.unread; d.classList.toggle("on", state.unread > 0); }
 
   phone.addEventListener("click", function (e) {

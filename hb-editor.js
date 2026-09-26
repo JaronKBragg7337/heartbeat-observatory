@@ -49,6 +49,8 @@
   } catch (e) {
     return;
   }
+  // pages shown inside the phone (or any frame) never get their own Edit button (2026-09-26)
+  if (window.top !== window) return;
   if (window.__hbEditorLoader) return;
   window.__hbEditorLoader = true;
   function go() {
