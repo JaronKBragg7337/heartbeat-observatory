@@ -88,7 +88,7 @@
   }
 
   async function save(key, value, note) {
-    const { error } = await supabase.from("system_settings").update({ value, updated_by: email || "admin" }).eq("key", key);
+    const { error } = await supabase.from("system_settings").update({ value, updated_by: (email.split("@")[0]) || "admin" }).eq("key", key);
     const s = $("s-" + key);
     if (s) { s.style.color = error ? "#ff8a92" : "#7ee08c"; s.textContent = error ? "Not saved: " + error.message : (note || "Saved. The machine picks it up within a minute."); }
     if (!error) setTimeout(load, 700);
