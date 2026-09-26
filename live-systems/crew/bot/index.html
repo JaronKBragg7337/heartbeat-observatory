@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>Crew member · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style id="crewcss"></style>
+<style>
+  .head .ai { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+  .head h1 { margin: 6px 0 4px; }
+  .head p { line-height: 1.6; max-width: 62ch; margin: 8px auto 0; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tabs button { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 6px 12px; font: inherit; font-size: .86rem; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: #1c2530; border-color: #3a4a5c; }
+  .log div { font-family: ui-monospace, Menlo, monospace; font-size: 12px; line-height: 1.55; padding: 7px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  td.win { color: #7ee08c; } td.loss { color: #ff8a92; }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/live-systems/crew/">&larr; The Crew</a>
+    <header class="hero head" id="head"><h1>Loading&hellip;</h1></header>
+    <nav class="crewnav" id="crewnav"></nav>
+
+    <div id="moneyblock" hidden>
+      <h2 class="sec">Money</h2>
+      <div class="board" id="board"></div>
+      <div class="card" id="chart" style="margin-top:10px"></div>
+      <h2 class="sec">Its trades, newest first</h2>
+      <div class="card scroll"><table id="trades"><thead><tr><th>When</th><th>Market</th><th>Side</th><th>Amount</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <h2 class="sec">What it did most recently</h2>
+    <div class="card log" id="activity"></div>
+
+    <h2 class="sec">What it's told to do, word for word</h2>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <pre id="text"></pre>
+    <p class="muted small" id="textnote"></p>
+
+    <footer><a href="/live-systems/crew/">All crew</a> · <a href="/live-systems/trades/decisions/">Every trade's reasoning</a></footer>
+  </div>
+<script type="module">
+  import { supabase, snapshot, nav, $, esc, usd, ago, pnlChart, CREW_CSS } from "../crew.js";
+  $("crewcss").textContent = CREW_CSS;
+  nav("");
+  const id = new URLSearchParams(location.search).get("id");
+  const snap = await snapshot();
+  const b = snap && [...snap.data.bots, ...snap.data.retired].find((x) => x.id === id);
+  if (!b) { $("head").innerHTML = `<h1>Not found</h1><p><a href="/live-systems/crew/">Back to the crew</a></p>`; throw 0; }
+  const retired = snap.data.retired.includes(b);
+  document.title = `${b.name} · The Crew`;
+  $("head").innerHTML = `<span class="ai">${esc(b.ai || "retired")}</span><h1>${esc(b.name)}</h1>
+    ${b.also ? `<p class="muted">${esc(b.also)}</p>` : ""}<p>${esc(b.job || b.why || "")}</p>
+    ${b.schedule ? `<p class="updated">Wakes: ${esc(b.schedule)} · page updated ${ago(snap.updated_at)}</p>` : ""}`;
+
+  if (b.ledger) {
+    $("moneyblock").hidden = false;
+    const L = b.ledger;
+    $("board").innerHTML = [[L.fills, "trades"], [usd(L.spent), "put in"], [`${L.wins}–${L.losses}`, "won–lost (settled)"], [usd(L.pnl), "made, settled"]]
+      .map(([v, l]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+    const actor = b.id === "deepseek" ? "auto:proposer-script%" : "auto:grok-bot/live-wire";
+    const [{ data: res }, { data: fills }] = await Promise.all([
+      supabase.from("desk_trades").select("at,pnl_usd").eq("kind", "resolution").like("actor", actor).limit(2000),
+      supabase.from("desk_trades").select("at,title,slug,side,outcome,price,cost_usd").eq("kind", "fill").like("actor", actor).order("at", { ascending: false }).limit(25),
+    ]);
+    $("chart").innerHTML = pnlChart(res || []);
+    $("trades").querySelector("tbody").innerHTML = (fills || []).map((t) =>
+      `<tr><td>${esc(new Date(t.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}</td>
+       <td>${esc(t.title || t.slug)}</td><td>${esc(t.outcome || t.side || "")} @ ${esc(Number(t.price || 0).toFixed(2))}</td><td>${usd(t.cost_usd)}</td></tr>`).join("")
+      || `<tr><td colspan="4" class="muted">No trades yet.</td></tr>`;
+  }
+  const act = b.activity || [];
+  $("activity").innerHTML = act.length ? act.slice().reverse().map((l) => `<div>${esc(l)}</div>`).join("") : `<p class="muted small">Nothing logged here yet.</p>`;
+  if (b.breaker) $("activity").insertAdjacentHTML("afterbegin", `<p class="small" style="margin-bottom:8px">Loss breaker: <b>${/TRIPPED/.test(b.breaker) ? "tripped, stopped until someone checks it" : "armed. Stops itself after a $10 losing week."}</b></p>`);
+
+  const routines = Array.isArray(b.routine) ? b.routine : b.routine ? [b.routine] : [];
+  const blocks = [["Main instructions", b.instructions], ...routines.map((r, i) => [routines.length > 1 ? `Routine ${i + 1}` : (b.id === "codex" ? "Funding lane task" : b.id === "claude-code" ? "News show job" : b.id === "deepseek" ? "Research step" : "Routine"), r])].filter(([, t]) => t && t.trim());
+  if (!blocks.length) { $("tabs").innerHTML = ""; $("text").textContent = "Its prompt lives inside a script and isn't published yet."; }
+  else {
+    const show = (i) => {
+      $("text").textContent = blocks[i][1];
+      [...$("tabs").children].forEach((btn, j) => btn.setAttribute("aria-selected", String(i === j)));
+      $("textnote").textContent = retired ? "Retired: kept for the record, no longer in use." : "This is the live text the AI runs on right now.";
+    };
+    $("tabs").innerHTML = blocks.map(([t], i) => `<button role="tab" data-i="${i}">${esc(t)}</button>`).join("");
+    $("tabs").addEventListener("click", (e) => { if (e.target.dataset.i) show(+e.target.dataset.i); });
+    show(0);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>Conversations · The Crew · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style id="crewcss"></style>
+<style>
+  .thread { display: flex; flex-direction: column; gap: 10px; max-width: 680px; margin: 0 auto; }
+  .msg { max-width: 82%; padding: 10px 13px; border-radius: 14px; line-height: 1.5; font-size: .93rem; }
+  .msg small { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .msg.jaron { align-self: flex-end; background: #1f6feb; color: #fff; border-bottom-right-radius: 4px; }
+  .msg.jaron small { color: rgba(255,255,255,.75); }
+  .msg.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .msg.system { align-self: center; background: none; border: 1px dashed var(--line); font-size: .85rem; color: var(--muted); }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/live-systems/crew/">&larr; The Crew</a>
+    <header class="hero">
+      <h1>Conversations</h1>
+      <p class="lede">Every message between Jaron and the bots, and between the bots, logged by the bots themselves. Every new AI
+        session reads this first, so nothing said to one of them gets lost.</p>
+      <p class="updated" id="updated">Loading&hellip;</p>
+    </header>
+    <nav class="crewnav" id="crewnav"></nav>
+    <div class="thread" id="thread"></div>
+    <footer><a href="/live-systems/crew/">All crew</a></footer>
+  </div>
+<script type="module">
+  import { snapshot, nav, $, esc, ago, CREW_CSS } from "../crew.js";
+  $("crewcss").textContent = CREW_CSS;
+  nav("Conversations");
+  const snap = await snapshot();
+  if (snap) {
+    $("updated").textContent = `Updated ${ago(snap.updated_at)} · the latest 25 messages`;
+    $("thread").innerHTML = (snap.data.chat || []).map((line) => {
+      const m = line.match(/^(\S+(?:\s\S+Z)?)\s*\|\s*(.+?)\s*->\s*(.+?)\s*\|\s*(.+)$/);
+      if (!m) return "";
+      const [, at, from, to, text] = m;
+      const when = new Date(at.replace(" ", "T").replace(/(\d\d:\d\d)Z$/, "$1:00Z"));
+      const kind = /^jaron$/i.test(from) ? "jaron" : /claude code|breaker/i.test(from) ? "system" : "bot";
+      return `<div class="msg ${kind}"><small>${esc(from)} → ${esc(to)} · ${isNaN(when) ? esc(at) : esc(when.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}</small>${esc(text)}</div>`;
+    }).join("") || `<p class="muted">Quiet so far.</p>`;
+  }
+</script>
+</body>
+</html>

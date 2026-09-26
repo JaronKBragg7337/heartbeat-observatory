@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>Schedule · The Crew · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style id="crewcss"></style>
+<style>
+  .day { position: relative; height: 64px; border: 1px solid var(--line); border-radius: 10px; background: #090d13; margin-top: 8px; }
+  .day .hr { position: absolute; top: 0; bottom: 0; border-left: 1px solid #16202b; font-size: 10px; color: var(--muted); padding: 2px 3px; }
+  .day .ev { position: absolute; top: 20px; width: 10px; height: 34px; border-radius: 5px; transform: translateX(-5px); }
+  .day .now { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #e23a45; }
+  .legend { display: grid; gap: 6px; margin-top: 14px; }
+  .legend div { display: flex; gap: 10px; align-items: baseline; font-size: .9rem; line-height: 1.45; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto; transform: translateY(1px); }
+  .legend b { font-variant-numeric: tabular-nums; min-width: 64px; }
+  .repeat { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .repeat .card b { display: block; }
+  td.ok { color: #7ee08c; } tr.off td { color: var(--muted); }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/live-systems/crew/">&larr; The Crew</a>
+    <header class="hero">
+      <h1>A day in the system</h1>
+      <p class="lede">When each AI wakes up and what it does, in Fort Wayne time. The red line is now.</p>
+      <p class="updated" id="updated">Loading&hellip;</p>
+    </header>
+    <nav class="crewnav" id="crewnav"></nav>
+
+    <h2 class="sec">Once a day</h2>
+    <div class="card"><div class="day" id="day"></div><div class="legend" id="legend"></div></div>
+
+    <h2 class="sec">All day long</h2>
+    <div class="repeat" id="repeat"></div>
+
+    <h2 class="sec">Every job on the machine, live</h2>
+    <p class="small muted" id="health"></p>
+    <div class="card scroll"><table id="tasks"><thead><tr><th>Job</th><th>State</th><th>Next</th><th>Last</th></tr></thead><tbody></tbody></table></div>
+    <footer><a href="/live-systems/crew/">All crew</a></footer>
+  </div>
+<script type="module">
+  import { snapshot, nav, $, esc, ago, CREW_CSS } from "../crew.js";
+  $("crewcss").textContent = CREW_CSS;
+  nav("Schedule");
+  // Daily events, in local (Fort Wayne) time. Kept in step with the machine's tasks table below.
+  const DAILY = [
+    ["4:30", "#7d8896", "Backup", "The whole shared workspace is copied to Google Drive."],
+    ["7:30", "#10a37f", "Codex", "Searches the web and writes the morning news capture across 21 subjects."],
+    ["8:24", "#d97757", "Claude Code", "Writes its own news capture, checking what Codex found."],
+    ["9:00", "#4d6bfe", "DeepSeek", "Reads the morning captures and writes its take."],
+    ["9:40", "#d97757", "Claude (cloud)", "Writes today's Heartbeat News show for Vex and Joe, and checks that the machine's Claude is awake."],
+    ["10:20", "#10a37f", "Backup news writer", "Writes the show only if the 9:40 one didn't land (Claude, then Codex)."],
+    ["14:00", "#10a37f", "Codex", "Funding lane: finds grants and funding, drafts and submits applications."],
+    ["21:00", "#e6edf3", "Grok", "Captures Jaron's own posts on X for the record."],
+  ];
+  const REPEAT = [
+    ["Every 5 min", "Live board", "A free script scores every live game on Polymarket with ESPN's scoreboard."],
+    ["Every 5 min", "Verifier + placer", "Re-check DeepSeek's picks against the live price, then place them."],
+    ["Every 30 min", "Darios Twin (Grok)", "Reads the board and trades live games."],
+    ["Every 2 h", "DeepSeek", "Researches markets that settle within 14 days and proposes trades."],
+    ["Every 3 h", "Sams Twin (Grok)", "Reads what X says about the markets being traded."],
+    ["Every hour", "Health check", "Checks every job and connection, runs DeepSeek's loss breaker, updates these pages."],
+    ["Weekly, Mon 8:25", "Elons Twin (Grok)", "The Musk scoreboard: the gap and the one move that closes it most."],
+  ];
+  const toMin = (s) => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
+  const day = $("day");
+  day.innerHTML = [0, 3, 6, 9, 12, 15, 18, 21].map((h) => `<span class="hr" style="left:${(h / 24) * 100}%">${h === 0 ? "12a" : h < 12 ? h + "a" : h === 12 ? "12p" : h - 12 + "p"}</span>`).join("")
+    + DAILY.map(([t, c, who, what]) => `<span class="ev" style="left:${(toMin(t) / 1440) * 100}%;background:${c}" title="${esc(t)} ${esc(who)}: ${esc(what)}"></span>`).join("");
+  const n = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Indiana/Indianapolis" }));
+  day.insertAdjacentHTML("beforeend", `<span class="now" style="left:${((n.getHours() * 60 + n.getMinutes()) / 1440) * 100}%"></span>`);
+  const fmt = (t) => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
+  $("legend").innerHTML = DAILY.map(([t, c, who, what]) => `<div><i style="background:${c}"></i><b>${fmt(t)}</b><span><strong>${esc(who)}</strong>: ${esc(what)}</span></div>`).join("");
+  $("repeat").innerHTML = REPEAT.map(([when, who, what]) => `<div class="card"><span class="muted small">${esc(when)}</span><b>${esc(who)}</b><p class="small" style="margin-top:4px;line-height:1.5">${esc(what)}</p></div>`).join("");
+
+  const snap = await snapshot();
+  if (snap) {
+    $("updated").textContent = `Machine status updated ${ago(snap.updated_at)}`;
+    $("health").textContent = (snap.data.health || "").replace(/^# /, "");
+    $("tasks").querySelector("tbody").innerHTML = (snap.data.tasks || []).sort((a, b) => a.name.localeCompare(b.name)).map((t) => {
+      const off = t.state === "Disabled";
+      return `<tr class="${off ? "off" : ""}"><td>${esc(t.name)}</td><td class="${off ? "" : "ok"}">${off ? "off" : esc(t.state.toLowerCase())}</td>
+        <td>${esc(off ? "–" : (t.next || "always on"))}</td><td>${esc(t.last || "")}</td></tr>`;
+    }).join("");
+  }
+</script>
+</body>
+</html>
