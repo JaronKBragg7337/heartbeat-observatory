@@ -285,6 +285,8 @@
   }
 
   function mount() {
+    // Ashgrove's shell has its own phone button in its HUD; it opens this phone, so no second launcher there.
+    if (document.querySelector('script[src*="shell/shell.js"]')) launch.style.display = "none";
     document.body.appendChild(launch); document.body.appendChild(scrim); document.body.appendChild(stage);
     renderHome(); init();
   }

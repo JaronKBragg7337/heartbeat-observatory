@@ -21,7 +21,7 @@ const PIECES = [
   { id: "analytics", has: /_vercel\/insights\/script\.js/, optOut: "hb:no-analytics", where: "head",
     tag: '<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>\n<script defer src="/_vercel/insights/script.js"></script>\n' },
   { id: "editor", has: /\/hb-editor\.js/, optOut: "hb:no-editor", where: "body", tag: '<script defer src="/hb-editor.js"></script>\n' },
-  { id: "phone", has: /\/bubble\.js|shell\/shell\.js|hb-shell/, optOut: "hb:no-phone", where: "body", tag: '<script defer src="/bubble.js"></script>\n' },
+  { id: "phone", has: /\/bubble\.js/, optOut: "hb:no-phone", where: "body", tag: '<script defer src="/bubble.js"></script>\n' },
 ];
 
 function* pages(dir) {

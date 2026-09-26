@@ -289,9 +289,12 @@ HBShell.mount = function mount(options) {
   const people = new Map();
   let messages = [];
 
-  function togglePhone() { phone.classList.contains("open") ? closePhone() : openPhone(); }
+  // 2026-09-26: the site has one phone now (bubble.js, window.HBPhone). The shell's buttons open that one; this panel
+  // stays only as a fallback if the site phone failed to load.
+  function togglePhone() { if (window.HBPhone) return window.HBPhone.open(); phone.classList.contains("open") ? closePhone() : openPhone(); }
   function closePhone() { phone.classList.remove("open"); }
   function openPhone(view) {
+    if (window.HBPhone) return window.HBPhone.open(view === "messages" || view === "people" ? "messages" : undefined);
     phone.classList.add("open");
     phoneView = view || "home";
     renderPhone();
