@@ -346,10 +346,14 @@ export function createNewsroom(canvasEl, opts = {}) {
     g.fillStyle = th.kicker; g.fillRect(90 * u, 62 * u, kw, 84 * u);
     g.fillStyle = "#fff"; g.textBaseline = "middle"; g.fillText(kicker, 120 * u, 106 * u);
     drawLogo(g, W - 250 * u, 48 * u, 160 * u);
-    g.font = font(800, 118); g.fillStyle = "#fff";
-    const titleLines = wrapText(g, (graphic.title || (seg && seg.headline) || "").toUpperCase(), W - 480 * u).slice(0, 2);
-    titleLines.forEach((l, i) => g.fillText(l, 90 * u, 238 * u + i * 118 * u));
-    g.fillStyle = th.accent; g.fillRect(90 * u, 300 * u + (titleLines.length - 1) * 118 * u, 220 * u, 8 * u);
+    // Shrink the title until it fits in two lines, so a long headline is never cut off mid-phrase.
+    const titleText = (graphic.title || (seg && seg.headline) || "").toUpperCase();
+    let tSize = 118, titleLines = [];
+    for (; tSize >= 64; tSize -= 6) { g.font = font(800, tSize); titleLines = wrapText(g, titleText, W - 480 * u); if (titleLines.length <= 2) break; }
+    titleLines = titleLines.slice(0, 2);
+    g.fillStyle = "#fff";
+    titleLines.forEach((l, i) => g.fillText(l, 90 * u, 238 * u + i * tSize * u));
+    g.fillStyle = th.accent; g.fillRect(90 * u, 300 * u + (titleLines.length - 1) * tSize * u, 220 * u, 8 * u);
     // Stat tiles on the left, bullets on the right: the sides stay visible beside the anchors.
     const stats = (graphic.stats || []).slice(0, 4);
     stats.forEach((s, i) => {
