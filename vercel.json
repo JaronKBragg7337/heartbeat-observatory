@@ -32,5 +32,7 @@
       "source": "/school/:fly(school-[a-z0-9-]+)/",
       "destination": "/live-systems/flies/school/live/index.html?fly=:fly"
     }
-  ]
+  ],
+  "buildCommand": "node tools/stamp-shared.mjs",
+  "outputDirectory": "."
 }
