@@ -47,9 +47,10 @@
     { id: "settings", name: "Settings", bg: "linear-gradient(160deg,#9ca3af,#4b5563)", icon: I.settings }
   ];
   // Heartbeat TV channels - the same list the TV page and the Homes TV will use.
+  // names only - the TV page (/tv/channels.json) decides what each channel plays
   var CHANNELS = [
-    { n: 1, id: "news", name: "Heartbeat News", url: "/news/?embed=1", live: true },
-    { n: 2, id: "shows", name: "Shows", now: "The Necklace Show", url: "/games/the-necklace-show/", live: true },
+    { n: 1, id: "news", name: "Heartbeat News" },
+    { n: 2, id: "shows", name: "Shows" },
     { n: 3, id: "movies", name: "Movies", soon: "AI-made films, coming soon" },
     { n: 4, id: "comedy", name: "Comedy", soon: "Coming soon" },
     { n: 5, id: "music", name: "Music", soon: "Music videos, coming soon" },
@@ -298,12 +299,10 @@
 
   function renderTV() {
     var ch = CHANNELS.find(function (c) { return c.n === state.channel; }) || CHANNELS[0];
-    var scr = ch.live ? '<span class="hbp-chip">CH ' + ch.n + " · " + esc(ch.name) + '</span><iframe src="' + ch.url + '" allow="autoplay; fullscreen"></iframe>'
-      : '<div class="soon"><b>CH ' + ch.n + " · " + esc(ch.name) + "</b>" + esc(ch.soon) + "</div>";
-    view.innerHTML = top("Heartbeat TV", "home") + '<div class="hbp-tv"><div class="scr">' + scr + '</div><div class="hbp-remote">' +
-      CHANNELS.map(function (c) { return '<button data-ch="' + c.n + '" class="' + (c.n === ch.n ? "on" : "") + '">' + c.n + " " + esc(c.name) + "</button>"; }).join("") + "</div></div>";
+    view.innerHTML = top("Heartbeat TV", "home") + '<div class="hbp-tv"><div class="scr"><iframe src="/tv/?embed=1&ch=' + ch.n + '" allow="autoplay; fullscreen"></iframe></div><div class="hbp-remote">' +
+      CHANNELS.map(function (c) { return '<button data-ch="' + c.n + '" class="' + (c.n === ch.n ? "on" : "") + '">' + c.n + " " + esc(c.name) + "</button>"; }).join("") +
+      '<button data-app-link="/tv/">Full TV ↗</button></div></div>';
   }
-
   function renderMessages() {
     if (state.app !== "messages") return;
     var body;
@@ -355,11 +354,12 @@
   function badge() { var d = launch.querySelector(".dot"); d.textContent = state.unread; d.classList.toggle("on", state.unread > 0); }
 
   phone.addEventListener("click", function (e) {
-    var t = e.target.closest("[data-app],[data-act],[data-thread],[data-ch],[data-call],.hbp-bar"); if (!t) return;
+    var t = e.target.closest("[data-app],[data-act],[data-thread],[data-ch],[data-call],[data-app-link],.hbp-bar"); if (!t) return;
     if (t.classList.contains("hbp-bar")) return state.app === "home" ? close() : goHome();
     if (t.dataset.app) return openApp(t.dataset.app);
     if (t.dataset.thread) { state.thread = t.dataset.thread; return renderMessages(); }
     if (t.dataset.ch) { state.channel = +t.dataset.ch; return renderTV(); }
+    if (t.dataset.appLink) { location.href = t.dataset.appLink; return; }
     if (t.dataset.act === "home") return goHome();
     if (t.dataset.act === "list") { state.thread = ""; return renderMessages(); }
     if (t.dataset.act === "send") return send();

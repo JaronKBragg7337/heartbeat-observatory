@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<script src="/hb-device-tier.js"></script>
+<script>if (/[?&]embed=1/.test(location.search)) document.documentElement.classList.add("embed");</script>
+<title>Heartbeat TV</title>
+<meta name="description" content="Heartbeat TV: flip channels with the remote - Heartbeat News, shows, movies, comedy, music and AI Slop. Submit your own; the best air." />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#07090d; --panel:#10151c; --line:#1f2833; --text:#e8eef3; --muted:#8b97a5; --red:#ff3b4e; --green:#34c759; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: radial-gradient(90% 60% at 50% 0%, #1a1030, var(--bg) 70%); color: var(--text); font-family: Barlow, system-ui, sans-serif; min-height: 100vh; }
+  a { color: inherit; }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; }
+  .top .back { font-size: 14px; color: var(--muted); text-decoration: none; }
+  .brand { font: 800 22px/1 "Barlow Condensed", sans-serif; letter-spacing: .04em; }
+  .brand b { color: var(--red); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 14px 40px; }
+  /* the set: a real TV - thin bezel, stand */
+  .tv { background: linear-gradient(160deg, #22262d, #0b0d10); border-radius: 18px; padding: 10px; box-shadow: 0 30px 70px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.08); }
+  .screen { position: relative; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; }
+  .screen iframe, .screen video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+  .bug { position: absolute; top: 10px; left: 10px; z-index: 3; background: rgba(0,0,0,.55); padding: 5px 10px; border-radius: 8px; font: 800 13px/1 "Barlow Condensed", sans-serif; letter-spacing: .06em; pointer-events: none; transition: opacity .6s; }
+  .bug.fade { opacity: 0; }
+  .nosig { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px;
+    background: repeating-linear-gradient(0deg, #0d0d0d 0 2px, #151515 2px 4px); color: #cbd5e1; }
+  .nosig b { font: 800 clamp(22px, 5vw, 40px)/1.1 "Barlow Condensed", sans-serif; color: #fff; margin-bottom: 8px; }
+  .stand { width: 26%; height: 14px; margin: 0 auto; background: linear-gradient(#15171b, #050608); clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%); }
+  .now { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin: 16px 2px 10px; }
+  .now h1 { font: 800 clamp(22px, 5vw, 34px)/1 "Barlow Condensed", sans-serif; }
+  .now span { color: var(--muted); font-size: 14px; }
+  /* the remote */
+  .remote { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .ch { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; text-align: left; color: var(--text); cursor: pointer; font: inherit; }
+  .ch small { display: block; font: 800 12px/1 "Barlow Condensed", sans-serif; color: var(--muted); letter-spacing: .08em; }
+  .ch b { font-size: 16px; } .ch.on { border-color: var(--red); background: #2a0d12; } .ch.on small { color: var(--red); }
+  .updown { display: flex; gap: 8px; margin-top: 8px; }
+  .updown button { flex: 1; background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 14px; padding: 12px; font: 600 15px Barlow, sans-serif; cursor: pointer; }
+  h2 { font: 800 18px/1 "Barlow Condensed", sans-serif; letter-spacing: .1em; color: var(--muted); margin: 30px 2px 12px; text-transform: uppercase; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 5px; }
+  input, select, textarea { width: 100%; background: #0b0f14; border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: 11px 12px; font: 16px Barlow, sans-serif; }
+  .btn { margin-top: 14px; background: var(--red); border: 0; color: #fff; border-radius: 12px; padding: 12px 18px; font: 600 16px Barlow, sans-serif; cursor: pointer; }
+  .btn:disabled { opacity: .5; }
+  .muted { color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .msg { margin-top: 10px; font-size: 14px; } .ok { color: #7ee08c; } .err { color: #ff8a92; }
+  .item { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .item video, .item iframe { width: 100%; aspect-ratio: 16/9; border: 0; border-radius: 10px; background: #000; }
+  .item .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .item .row button { border: 0; border-radius: 10px; padding: 9px 14px; font: 600 14px Barlow, sans-serif; cursor: pointer; color: #fff; }
+  .yes { background: var(--green); } .no { background: #3a4452; }
+  .tag { font: 800 11px/1 "Barlow Condensed", sans-serif; letter-spacing: .08em; padding: 4px 7px; border-radius: 6px; background: #1f2833; color: var(--muted); }
+  /* ?embed=1: only the picture (the phone's HB TV app) */
+  html.embed body { background: #000; }
+  html.embed .top, html.embed .now, html.embed .remote, html.embed .updown, html.embed h2, html.embed .card, html.embed .stand, html.embed footer { display: none !important; }
+  html.embed .wrap { padding: 0; max-width: none; } html.embed .tv { padding: 0; border-radius: 0; background: #000; box-shadow: none; }
+  html.embed .screen { position: fixed; inset: 0; aspect-ratio: auto; border-radius: 0; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 30px; }
+</style>
+</head>
+<body>
+  <div class="top"><a class="back" href="/">← Heartbeat Observatory</a><span class="brand">HEARTBEAT <b>TV</b></span></div>
+  <div class="wrap">
+    <div class="tv"><div class="screen" id="screen"></div></div><div class="stand"></div>
+    <div class="now"><h1 id="nowTitle">…</h1><span id="nowSub"></span></div>
+    <div class="remote" id="remote"></div>
+    <div class="updown"><button id="chDown">◀ CH</button><button id="chUp">CH ▶</button></div>
+
+    <h2>Put your video on Heartbeat TV</h2>
+    <div class="card" id="submitCard">
+      <p class="muted">Movies, comedy, music, shows, and AI-made clips - made with any tool. Everything is watched and approved before it
+        airs, because families and kids use this site. Clips that earn enough love in AI Slop move up to the main channels and the
+        Grand Palace theater.</p>
+      <div id="submitForm"></div>
+    </div>
+
+    <div id="reviewWrap" hidden>
+      <h2>Waiting for your review</h2>
+      <div class="card" id="review"></div>
+    </div>
+    <footer>Heartbeat TV · <a href="/news/">Heartbeat News</a> · <a href="/video/3d/">The Grand Palace</a></footer>
+  </div>
+<script type="module">
+  import { getSupabase } from "/hb-supabase.js";
+  const supabase = await getSupabase();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const qs = new URLSearchParams(location.search);
+  const EMBED = qs.get("embed") === "1";
+  const { channels } = await (await fetch("/tv/channels.json", { cache: "no-cache" })).json();
+  const { data: approved } = await supabase.from("tv_items").select("*").eq("status", "approved").order("sort").order("created_at");
+  const byCh = {}; (approved || []).forEach((i) => (byCh[i.channel] ||= []).push(i));
+  let cur = Math.min(channels.length, Math.max(1, +(qs.get("ch") || localStorage.getItem("hbtv-ch") || 1)));
+  let idx = 0, bugTimer = 0;
+
+  const ytId = (u) => (u.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([\w-]{11})/) || [])[1];
+  function player(item) {
+    if (item.kind === "youtube") { const id = ytId(item.src); return `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&enablejsapi=1" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>`; }
+    if (item.kind === "file" || /\.(mp4|webm|mov)(\?|$)/i.test(item.src)) return `<video src="${esc(item.src)}" autoplay playsinline controls></video>`;
+    return `<iframe src="${esc(item.src)}" allow="autoplay; fullscreen"></iframe>`;
+  }
+  function tune(n) {
+    cur = ((n - 1 + channels.length) % channels.length) + 1; idx = 0;
+    try { localStorage.setItem("hbtv-ch", cur); } catch (e) {}
+    draw();
+  }
+  function draw() {
+    const ch = channels[cur - 1], list = byCh[ch.id] || [];
+    let html = `<span class="bug" id="bug">CH ${ch.n} · ${esc(ch.name.toUpperCase())}</span>`, title = ch.name, sub = "";
+    if (ch.type === "page") { html += `<iframe src="${esc(ch.url)}" allow="autoplay; fullscreen"></iframe>`; sub = "Live"; }
+    else if (list.length) { const item = list[idx % list.length]; html += player(item); title = item.title; sub = `${ch.name} · ${idx % list.length + 1} of ${list.length}`; }
+    else { html += `<div class="nosig"><b>CH ${ch.n} · ${esc(ch.name)}</b>${esc(ch.empty || "Nothing on yet.")}</div>`; sub = "Coming soon"; }
+    $("screen").innerHTML = html;
+    const v = $("screen").querySelector("video");
+    if (v) v.addEventListener("ended", () => { idx++; draw(); });   // playlist: next item, loops
+    $("nowTitle").textContent = title; $("nowSub").textContent = sub;
+    clearTimeout(bugTimer); bugTimer = setTimeout(() => $("bug") && $("bug").classList.add("fade"), 3500);
+    $("remote").innerHTML = channels.map((c) => `<button class="ch${c.n === cur ? " on" : ""}" data-n="${c.n}"><small>CH ${c.n}</small><b>${esc(c.name)}</b></button>`).join("");
+  }
+  $("remote").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (b) tune(+b.dataset.n); });
+  $("chUp").onclick = () => tune(cur + 1); $("chDown").onclick = () => tune(cur - 1);
+  document.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "PageUp") tune(cur + 1); if (e.key === "ArrowLeft" || e.key === "PageDown") tune(cur - 1); if (/^[1-9]$/.test(e.key) && +e.key <= channels.length) tune(+e.key); });
+  draw();
+  if (EMBED) throw 0;   // the phone only needs the picture
+
+  // ---- submit (signed-in members) ----
+  const { data: { session } } = await supabase.auth.getSession();
+  let isAdmin = false;
+  if (session) { try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {} }
+  const pickable = channels.filter((c) => c.type === "playlist");
+  $("submitForm").innerHTML = !session ? `<p class="muted" style="margin-top:10px"><a href="/admin">Sign in</a> to submit a video.</p>` : `
+    <label>Title</label><input id="sTitle" maxlength="120" placeholder="What's it called?">
+    <label>Channel</label><select id="sCh">${pickable.map((c) => `<option value="${c.id}"${c.id === "aislop" ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
+    <label>Video file (mp4 / webm / mov) - or a link below</label><input id="sFile" type="file" accept="video/mp4,video/webm,video/quicktime">
+    <label>Link instead (YouTube, or a direct video link)</label><input id="sLink" placeholder="https://..." autocapitalize="off">
+    <label>Anything we should know? (optional)</label><textarea id="sNote" rows="2" maxlength="500"></textarea>
+    <button class="btn" id="sGo">Send for review</button><div class="msg" id="sMsg"></div>`;
+  if (session) $("sGo").onclick = async () => {
+    const title = $("sTitle").value.trim(), file = $("sFile").files[0], link = $("sLink").value.trim(), msg = $("sMsg");
+    msg.className = "msg"; if (!title) { msg.className = "msg err"; msg.textContent = "Give it a title."; return; }
+    if (!file && !link) { msg.className = "msg err"; msg.textContent = "Add a video file or a link."; return; }
+    $("sGo").disabled = true; msg.textContent = file ? "Uploading… keep this page open." : "Sending…";
+    let kind = "link", src = link;
+    if (file) {
+      const path = `${session.user.id}/${Date.now()}-${file.name.replace(/[^\w.-]+/g, "_")}`;
+      const up = await supabase.storage.from("tv-uploads").upload(path, file, { contentType: file.type });
+      if (up.error) { msg.className = "msg err"; msg.textContent = "Upload failed: " + up.error.message; $("sGo").disabled = false; return; }
+      kind = "file"; src = supabase.storage.from("tv-uploads").getPublicUrl(path).data.publicUrl;
+    } else if (ytId(link)) kind = "youtube";
+    const me = session.user.email ? session.user.email.split("@")[0] : "member";
+    const ins = await supabase.from("tv_items").insert({ channel: $("sCh").value, title, kind, src, note: $("sNote").value.trim(), submitter_name: me });
+    if (ins.error) { msg.className = "msg err"; msg.textContent = "Not sent: " + ins.error.message; $("sGo").disabled = false; return; }
+    msg.className = "msg ok"; msg.textContent = "Sent! It's waiting for review. Once it's approved it airs on the channel you picked.";
+    $("sTitle").value = ""; $("sFile").value = ""; $("sLink").value = ""; $("sNote").value = ""; $("sGo").disabled = false;
+    if (isAdmin) loadReview();
+  };
+
+  // ---- review (admins only) ----
+  async function loadReview() {
+    const { data } = await supabase.from("tv_items").select("*").eq("status", "pending").order("created_at");
+    $("reviewWrap").hidden = false;
+    $("review").innerHTML = (data || []).length ? data.map((i) => `<div class="item"><div class="row"><b>${esc(i.title)}</b><span class="tag">${esc(i.channel.toUpperCase())}</span><span class="muted">from ${esc(i.submitter_name || "member")} · ${new Date(i.created_at).toLocaleString()}</span></div>
+      ${i.kind === "youtube" ? `<iframe src="https://www.youtube-nocookie.com/embed/${ytId(i.src)}?playsinline=1&rel=0" allowfullscreen></iframe>` : i.kind === "file" ? `<video src="${esc(i.src)}" controls playsinline preload="metadata"></video>` : `<a href="${esc(i.src)}" target="_blank" rel="noopener">${esc(i.src)}</a>`}
+      ${i.note ? `<p class="muted">${esc(i.note)}</p>` : ""}
+      <div class="row"><button class="yes" data-ok="${i.id}">Approve - put it on air</button><button class="no" data-no="${i.id}">Reject</button></div></div>`).join("")
+      : `<p class="muted">Nothing waiting. New submissions show up here.</p>`;
+  }
+  if (isAdmin) {
+    loadReview();
+    $("review").addEventListener("click", async (e) => {
+      const ok = e.target.dataset.ok, no = e.target.dataset.no; if (!ok && !no) return;
+      const who = (session.user.email || "admin").split("@")[0];
+      await supabase.from("tv_items").update({ status: ok ? "approved" : "rejected", reviewed_by: who, reviewed_at: new Date().toISOString() }).eq("id", ok || no);
+      loadReview();
+    });
+  }
+</script>
+</body>
+</html>

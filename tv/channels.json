@@ -1,0 +1,11 @@
+{
+ "about": "Heartbeat TV channels - one list for the TV page (/tv/), the phone's HB TV app, and the Homes TV. 'page' channels show a site page; 'playlist' channels play approved items from Supabase tv_items for that channel, in order, looping. Users submit to playlist channels; Jaron approves before anything airs (2026-09-26).",
+ "channels": [
+  { "n": 1, "id": "news", "name": "Heartbeat News", "type": "page", "url": "/news/?embed=1" },
+  { "n": 2, "id": "shows", "name": "Shows", "type": "playlist" },
+  { "n": 3, "id": "movies", "name": "Movies", "type": "playlist", "empty": "AI-made films land here. Be the first - submit one below." },
+  { "n": 4, "id": "comedy", "name": "Comedy", "type": "playlist", "empty": "Make us laugh. Submissions are open." },
+  { "n": 5, "id": "music", "name": "Music", "type": "playlist", "empty": "Music videos. Submissions are open." },
+  { "n": 6, "id": "aislop", "name": "AI Slop", "type": "playlist", "empty": "Your AI-made clips. The best ones move up to the main channels and the Grand Palace." }
+ ]
+}
