@@ -187,8 +187,13 @@ function showOTS(seg) {
   on($("ots"), true);
   if (!ad) later(() => on($("ots"), false), 7000);
 }
+// The wipe must always clear: phones can pause a CSS animation mid-sweep (app switch, screen dim) and leave the bars
+// frozen across the picture (Jaron, 2026-09-25). So switch it off after it should have finished, and on returning.
+let stingerOff = 0;
+document.addEventListener("visibilitychange", () => { if (!document.hidden) $("stinger").classList.remove("go"); });
 function stinger() {
   const s = $("stinger"); s.classList.remove("go"); void s.offsetWidth; s.classList.add("go");
+  clearTimeout(stingerOff); stingerOff = setTimeout(() => s.classList.remove("go"), 1300);
   later(() => s.classList.remove("go"), 1100);
 }
 function breakingSlam() {
