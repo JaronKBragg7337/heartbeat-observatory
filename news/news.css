@@ -141,6 +141,8 @@ button { font: inherit; color: inherit; }
 /* Over-the-shoulder box. */
 .ots { position: absolute; right: calc(var(--u) * 3); top: calc(var(--u) * 4); width: calc(var(--u) * 28); aspect-ratio: 16/9; padding: calc(var(--u) * 1.2); display: flex; flex-direction: column; justify-content: flex-end; gap: calc(var(--u) * 0.4); background: linear-gradient(135deg, #1b4fd0, #061233); border: calc(var(--u) * 0.2) solid rgba(255,255,255,0.85); box-shadow: 0 calc(var(--u) * 0.6) calc(var(--u) * 2) rgba(0,0,0,0.5); opacity: 0; transform: translateX(20%) scale(0.95); transition: opacity .45s, transform .55s cubic-bezier(.2,.8,.2,1); }
 .ots.on { opacity: 1; transform: none; }
+.ots.ad-shot { background-size: cover; background-position: center; width: calc(var(--u) * 34); }
+.ots.ad-shot .k { background: #b8860b; }
 .ots.breaking-t { background: linear-gradient(135deg, #e11d2e, #3d0409); }
 .ots .k { align-self: flex-start; font-weight: 800; font-size: calc(var(--u) * 1.4); letter-spacing: 0.08em; background: var(--red); padding: calc(var(--u) * 0.2) calc(var(--u) * 0.6); }
 .ots .t { font-weight: 800; font-size: calc(var(--u) * 2.3); line-height: 1.05; text-transform: uppercase; }

@@ -165,8 +165,12 @@ function showOTS(seg) {
   $("otsK").textContent = (g.kicker || seg.category || "").toUpperCase();
   $("otsT").textContent = seg.headline || g.title || "";
   $("ots").classList.toggle("breaking-t", seg.kind === "breaking");
+  // commercials: the page's photo fills the box and stays up for the whole spot
+  const ad = seg.kind === "ad" && g.image;
+  $("ots").classList.toggle("ad-shot", !!ad);
+  $("ots").style.backgroundImage = ad ? `linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,.75)), url("${g.image}")` : "";
   on($("ots"), true);
-  later(() => on($("ots"), false), 7000);
+  if (!ad) later(() => on($("ots"), false), 7000);
 }
 function stinger() {
   const s = $("stinger"); s.classList.remove("go"); void s.offsetWidth; s.classList.add("go");
