@@ -280,3 +280,9 @@ footer.foot a { color: #8fb8ff; }
 @media (prefers-reduced-motion: reduce) {
   .tap { animation: none; }
 }
+
+/* ?embed=1 - just the TV picture, for the phone's HB TV app and the Heartbeat TV page (2026-09-26) */
+html.embed, html.embed body { background: #000; overflow: hidden; }
+html.embed body * { visibility: hidden; }
+html.embed #screen, html.embed #screen * { visibility: visible; }
+html.embed #screen { position: fixed; left: 0; top: 50%; transform: translateY(-50%); width: 100vw; max-height: 100vh; border-radius: 0; z-index: 10; }
