@@ -148,7 +148,7 @@ async function setupTV() {
   try { ch = +localStorage.getItem("hbhome-ch") || 1; } catch (e) {}
 }
 function tvSrc() { return `/tv/?embed=1&ch=${ch}`; }
-function toggleTV(force) {
+function toggleTV(force, remote) {
   tvOn = typeof force === "boolean" ? force : !tvOn;
   $("tvBtn").classList.toggle("on", tvOn); $("tvbar").classList.toggle("show", tvOn);
   if (tvOn && !tvObj && screenInfo) {
@@ -167,13 +167,33 @@ function toggleTV(force) {
   if (tvOn && iframe && iframe.src.indexOf(tvSrc()) < 0) iframe.src = tvSrc();
   if (!tvOn && iframe) { iframe.src = "about:blank"; }
   showCh();
+  if (!remote) shareTV();
 }
 function tune(d) {
   if (!channels.length) return;
   ch = ((ch - 1 + d + channels.length) % channels.length) + 1;
   try { localStorage.setItem("hbhome-ch", ch); } catch (e) {}
-  if (!tvOn) toggleTV(true); else if (iframe) iframe.src = tvSrc();
-  showCh();
+  if (!tvOn) toggleTV(true, true); else if (iframe) iframe.src = tvSrc();
+  showCh(); shareTV();
+}
+// One TV per loft (Jaron 9/26): whoever presses the remote changes it for everyone in the room - on purpose, like a real couch.
+let tvStamp = 0;
+function shareTV(resendAt) {
+  if (!resendAt) tvStamp = Date.now();
+  if (chan && me) chan.send({ type: "broadcast", event: "tv", payload: { on: tvOn, ch, by: me.name, at: resendAt || tvStamp } });
+}
+function onRemoteTV(p) {
+  if (!p || !(p.at > tvStamp)) return;
+  const changed = p.on !== tvOn || p.ch !== ch;
+  tvStamp = p.at; ch = p.ch || ch;
+  toggleTV(!!p.on, true);
+  if (changed && p.by) { const c = channels[ch - 1]; toast(p.on ? `${p.by} put on ${c ? "CH " + c.n + " · " + c.name : "CH " + ch}` : `${p.by} turned the TV off`); }
+}
+let toastT = 0;
+function toast(msg) {
+  let t = $("hbToast");
+  if (!t) { t = document.createElement("div"); t.id = "hbToast"; t.style.cssText = "position:fixed;left:50%;top:calc(110px + env(safe-area-inset-top));transform:translateX(-50%);z-index:6;background:rgba(12,16,22,.78);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:8px 14px;font:600 14px Barlow,sans-serif;color:#fff;transition:opacity .5s;pointer-events:none;white-space:nowrap"; document.body.appendChild(t); }
+  t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => (t.style.opacity = 0), 3500);
 }
 function showCh() { const c = channels[ch - 1]; $("chName").textContent = c ? `CH ${c.n} · ${c.name}` : `CH ${ch}`; }
 $("tvBtn").onclick = () => toggleTV(); $("chUp").onclick = () => tune(1); $("chDown").onclick = () => tune(-1);
@@ -236,6 +256,9 @@ async function joinHome(supabase, code, myName) {
   chan = supabase.channel("home:" + code, { config: { broadcast: { self: false }, presence: { key } } });
   chan.on("broadcast", { event: "pos" }, ({ payload }) => { if (payload && payload.k !== key) upsertOther(payload.k, payload); });
   chan.on("presence", { event: "leave" }, ({ key: k }) => dropOther(k));
+  chan.on("broadcast", { event: "tv" }, ({ payload }) => onRemoteTV(payload));
+  // someone new walked in: tell them what's on (a little jitter so a full room doesn't all answer at once)
+  chan.on("presence", { event: "join" }, ({ key: k }) => { if (k !== key && tvStamp) setTimeout(() => shareTV(tvStamp), 200 + Math.random() * 700); });
   chan.on("presence", { event: "sync" }, () => {
     const st = chan.presenceState();
     for (const k of Object.keys(st)) if (k !== key && !others.has(k)) { const s0 = st[k][0] || {}; upsertOther(k, { name: s0.name, x: s0.x ?? 7, y: s0.y ?? 0, z: s0.z ?? -2, yaw: 0 }); }
@@ -292,7 +315,7 @@ try {
 spawn(); showCh(); bar(1, "Welcome home.");
 setTimeout(() => $("load").classList.add("done"), 250);
 setupPeople().catch((e) => console.warn("homes people", e));
-if (qs.get("tv") === "1") toggleTV(true);
+if (qs.get("tv") === "1") toggleTV(true, true);   // local only: a link shouldn't flip the room's TV
 
 const clock = new THREE.Clock(); let visT = 0;
 renderer.setAnimationLoop(() => {

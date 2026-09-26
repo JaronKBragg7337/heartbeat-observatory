@@ -243,10 +243,20 @@
     var pc = new RTCPeerConnection(ICE);
     pc.onicecandidate = function (e) { if (e.candidate && call) signal(call.peer, { kind: "ice", id: call.id, c: e.candidate }); };
     pc.ontrack = function (e) { var a = document.getElementById("hbp-remote") || document.body.appendChild(Object.assign(document.createElement("audio"), { id: "hbp-remote", autoplay: true })); a.srcObject = e.streams[0]; a.play && a.play().catch(function () {}); };
+    // A call survives a network switch (Wi-Fi -> cell dropped Jaron + Lillith's call, 9/26): on a drop the caller restarts ICE
+    // and renegotiates over the same signal channel; give up only after ~25 s of trying.
     pc.onconnectionstatechange = function () {
-      if (!call) return;
-      if (pc.connectionState === "connected") { call.status = "live"; call.t0 = Date.now(); clearInterval(callTick); callTick = setInterval(renderCall, 1000); renderCall(); }
-      if (pc.connectionState === "failed") { endCall("Couldn't connect - the network blocked a direct call.", true); }
+      if (!call || call.pc !== pc) return;
+      var st = pc.connectionState;
+      if (st === "connected") {
+        clearTimeout(call.dropT); call.dropT = null; call.restarts = 0;
+        call.status = "live"; if (!call.t0) call.t0 = Date.now(); call.wasLive = true;
+        clearInterval(callTick); callTick = setInterval(renderCall, 1000); renderCall();
+      } else if ((st === "disconnected" || st === "failed") && call.wasLive) {
+        call.status = "Reconnecting…"; clearInterval(callTick); renderCall();
+        if (call.dir === "out") setTimeout(function () { if (call && call.pc === pc && pc.connectionState !== "connected") restartIce(); }, st === "failed" ? 0 : 1500);
+        if (!call.dropT) call.dropT = setTimeout(function () { if (call && call.pc === pc && pc.connectionState !== "connected") { signal(call.peer, { kind: "end", id: call.id }); endCall("Call dropped - the connection was lost", true); } }, 25000);
+      } else if (st === "failed") { endCall("Couldn't connect - the network blocked a direct call.", true); }
     };
     return pc;
   }
@@ -292,6 +302,16 @@
       call.status = "connecting"; renderCall();
     } catch (e) { signal(call.peer, { kind: "end", id: call.id }); endCall("Microphone blocked" + (e && e.message ? " - " + e.message : ""), true); }
   }
+  async function restartIce() {
+    if (!call || !call.pc || call.dir !== "out") return;
+    call.restarts = (call.restarts || 0) + 1; if (call.restarts > 5) return;
+    try {
+      var offer = await call.pc.createOffer({ iceRestart: true }); await call.pc.setLocalDescription(offer);
+      signal(call.peer, { kind: "reoffer", id: call.id, sdp: offer });
+    } catch (e) {}
+    setTimeout(function () { if (call && call.pc && call.pc.connectionState !== "connected" && call.status === "Reconnecting…") restartIce(); }, 5000);
+  }
+  addEventListener("online", function () { if (call && call.wasLive && call.pc && call.pc.connectionState !== "connected") restartIce(); });
   function cleanup() {
     ring(false); clearInterval(callTick); clearTimeout(call && call.timeout);
     if (call) { try { call.pc && call.pc.close(); } catch (e) {} if (call.stream) call.stream.getTracks().forEach(function (t) { t.stop(); }); }
@@ -313,6 +333,10 @@
     if (!call || p.id !== call.id) return;
     if (p.kind === "answer") { clearTimeout(call.timeout); call.status = "connecting"; await call.pc.setRemoteDescription(p.sdp); call.pending.forEach(function (c) { call.pc.addIceCandidate(c).catch(function () {}); }); call.pending = []; renderCall(); }
     else if (p.kind === "ice") { if (call.pc && call.pc.remoteDescription) call.pc.addIceCandidate(p.c).catch(function () {}); else call.pending.push(p.c); }
+    else if (p.kind === "reoffer" && call.pc) {
+      try { await call.pc.setRemoteDescription(p.sdp); var a2 = await call.pc.createAnswer(); await call.pc.setLocalDescription(a2); signal(call.peer, { kind: "reanswer", id: call.id, sdp: a2 }); } catch (e) {}
+    }
+    else if (p.kind === "reanswer" && call.pc) { try { await call.pc.setRemoteDescription(p.sdp); } catch (e) {} }
     else if (p.kind === "decline") endCall("Declined", true);
     else if (p.kind === "busy") endCall("Busy", true);
     else if (p.kind === "end") endCall("Call ended", true);
