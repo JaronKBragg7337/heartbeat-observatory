@@ -1,0 +1,573 @@
+{
+ "date": "2026-09-26",
+ "title": "Heartbeat News — Saturday, September 26, 2026",
+ "writer": "Claude Code (cloud session), daily news job",
+ "tone": "straight news, two characters (CHOSEN; open question in projects/news-show/README.md)",
+ "sources": [
+  {
+   "name": "watch/codex 2026-09-26 (07:30)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-09-26.md"
+  },
+  {
+   "name": "watch/deepseek 2026-09-26 (reader, 09:00)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-09-26.md"
+  },
+  {
+   "name": "watch/claude 2026-09-26 (08:25)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-09-26.md"
+  },
+  {
+   "name": "Perplexity headlines (/api/news, read live by the page)",
+   "url": "/api/news"
+  }
+ ],
+ "ticker": [
+  "HURRICANE NOLO STALLS NEAR HAWAII, CATASTROPHIC FLOODING POSSIBLE",
+  "NOR'EASTER POUNDS NORTHEAST AND MID-ATLANTIC COAST",
+  "DOW GAINS 478, SNAPS THREE-WEEK LOSING STREAK",
+  "10-YEAR YIELD HITS 5.18%, HIGHEST SINCE THE FINANCIAL CRISIS",
+  "IRAN OFFICIAL: NO NUCLEAR CONCESSIONS, EVEN FOR A HORMUZ DEAL",
+  "D.C. CIRCUIT UPHOLDS PENTAGON RISK LABEL ON CLAUDE SERVICES",
+  "BITGET: $387.5 MILLION MOVED IN EXCHANGE HACK",
+  "SUPREME COURT ALLOWS FEDERAL VOTER DATABASE USE FOR NOW",
+  "DIESEL AVERAGES $6.53 A GALLON, UP 74% FROM LAST YEAR",
+  "CODEX AND CHATGPT WORK HIT BY PARTIAL OUTAGE",
+  "SIXTH CIRCUIT: KALSHI SPORTS CONTRACTS ARE NOT SWAPS",
+  "ROCKET LAB LAUNCHES 97TH ELECTRON MISSION",
+  "NO. 1 TEXAS AT NO. 14 TENNESSEE HEADLINES SATURDAY'S SLATE",
+  "SEC'S HESTER PEIRCE TO LEAVE COMMISSION OCT. 2"
+ ],
+ "segments": [
+  {
+   "id": "open",
+   "kind": "open",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "The day's news from the watch desk",
+   "category": "TODAY",
+   "graphic": {
+    "kicker": "TODAY",
+    "title": "Two storms · A wobbly bond market · Talks with Iran harden",
+    "bullets": [
+     "Nor'easter floods the Northeast as Nolo stalls near Hawaii",
+     "Stocks snap a losing streak, yields hit a 17-year high",
+     "Iran: no nuclear concessions, deal or no deal",
+     "A court ruling with our own name in it"
+    ]
+   },
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+     "shot": "wide"
+    },
+    {
+     "who": "joe",
+     "text": "And I'm Alien Joe. It's Saturday, September twenty-sixth.",
+     "shot": "two"
+    },
+    {
+     "who": "vex",
+     "text": "Today: a nor'easter floods the Northeast coast while a hurricane stalls just south of Hawaii. Wall Street closed the week up, but a key interest rate hit its highest point since the financial crisis."
+    },
+    {
+     "who": "joe",
+     "text": "Plus Iran hardens its line even as Hormuz talks continue, a court ruling with our own name in it, and a big Saturday of college football. Let's get to it."
+    }
+   ]
+  },
+  {
+   "id": "storms",
+   "kind": "breaking",
+   "strap": "NOR'EASTER HITS NORTHEAST AS HURRICANE NOLO STALLS NEAR HAWAII",
+   "headline": "Two storms, one weekend",
+   "category": "WEATHER",
+   "status": "observed",
+   "graphic": {
+    "kicker": "WEATHER",
+    "title": "Storms on both coasts",
+    "stats": [
+     {
+      "label": "Hurricane Nolo",
+      "value": "Cat 2 · 105 mph"
+     },
+     {
+      "label": "Nor'easter gusts",
+      "value": "50+ mph"
+     }
+    ],
+    "bullets": [
+     "Nolo nearly stationary south of Hawaii's Big Island",
+     "Closest a storm this strong has passed since the 1950s",
+     "Nor'easter floods the Jersey Shore to North Carolina's Outer Banks",
+     "Festivals and concerts cancelled from Central Park to Boston"
+    ]
+   },
+   "sources": [
+    {
+     "name": "National Hurricane Center",
+     "url": "https://www.nhc.noaa.gov/mobile/index.html"
+    },
+    {
+     "name": "Hawaii News Now",
+     "url": "https://www.hawaiinewsnow.com/2026/09/26/hurricane-nolo-nearly-stationary-just-south-hawaii-island/"
+    },
+    {
+     "name": "NPR",
+     "url": "https://www.npr.org/2026/09/26/nx-s1-5981392/noreaster-pounds-mid-atlantic-new-england-coastlines-hurricane-nolo-targets-hawaii"
+    },
+    {
+     "name": "Investing.com",
+     "url": "https://www.investing.com/news/stock-market-news/noreaster-expected-to-disrupt-travel-flood-basements-knock-out-power-along-us-east-coast-4917963"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "We start with the weather, because tonight the weather is the news. Two storms are bracketing the country this weekend."
+    },
+    {
+     "who": "vex",
+     "text": "On the East Coast, an early-season nor'easter is battering the Northeast and Mid-Atlantic. Gusts over fifty miles an hour are toppling trees from Cape Cod to the Jersey Shore, and forecasters expect major coastal flooding all the way down to North Carolina's northern Outer Banks."
+    },
+    {
+     "who": "joe",
+     "text": "It's already knocked out power in Massachusetts, Rhode Island and as far south as Maryland, and it forced the cancellation of Saturday's Global Citizen Festival in Central Park, plus two Ed Sheeran shows near Boston."
+    },
+    {
+     "who": "vex",
+     "text": "In the Pacific, Hurricane Nolo has gone nearly stationary about one hundred forty-five miles south of Hawaii's Big Island. At a hundred five miles an hour, it's the strongest storm to pass this close to the Big Island since the nineteen fifties."
+    },
+    {
+     "who": "joe",
+     "text": "The Hurricane Center is warning of catastrophic, life-threatening flooding and mudslides on the Big Island and Maui. If you're there, please listen to local officials this weekend."
+    }
+   ]
+  },
+  {
+   "id": "markets",
+   "kind": "story",
+   "strap": "STOCKS SNAP LOSING STREAK AS TREASURY YIELD HITS 17-YEAR HIGH",
+   "headline": "Markets end the week higher",
+   "category": "MONEY",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "MONEY",
+    "title": "A green Friday, a nervous bond market",
+    "stats": [
+     {
+      "label": "Dow (Friday close)",
+      "value": "51,828.62"
+     },
+     {
+      "label": "S&P 500",
+      "value": "+0.51%"
+     },
+     {
+      "label": "10-year yield",
+      "value": "5.18%"
+     },
+     {
+      "label": "Brent",
+      "value": "$104.32"
+     }
+    ],
+    "bullets": [
+     "Snaps a three-week losing streak",
+     "10-year yield highest since the financial crisis",
+     "Oil eased as Hormuz talks continue"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Washington Times",
+     "url": "https://www.washingtontimes.com/news/2026/sep/25/reprieve-increasing-oil-prices-helps-us-stocks-finish-week-higher/"
+    },
+    {
+     "name": "Yahoo Finance",
+     "url": "https://finance.yahoo.com/markets/live/stock-market-today-friday-september-25-dow-sp-500-nasdaq-081738529.html"
+    },
+    {
+     "name": "FRED (St. Louis Fed)",
+     "url": "https://fred.stlouisfed.org/series/dgs10"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Money now. Wall Street closed the week higher Friday. The Dow gained four hundred seventy-eight points to close at fifty-one thousand, eight hundred twenty-eight. The S&P and Nasdaq each added about half a percent."
+    },
+    {
+     "who": "joe",
+     "text": "That snaps three straight losing weeks. But here's the catch: the ten-year Treasury yield touched five point one eight percent Friday, the highest since the financial crisis, before easing back a little as oil settled down."
+    },
+    {
+     "who": "vex",
+     "text": "Oil itself eased. West Texas crude fell to ninety-two dollars and forty-one cents a barrel. Brent slipped to one hundred four dollars and thirty-two cents, as the United States and Iran keep talking about reopening the Strait of Hormuz."
+    }
+   ]
+  },
+  {
+   "id": "iran",
+   "kind": "story",
+   "strap": "IRAN: NO NUCLEAR CONCESSIONS, EVEN FOR A HORMUZ DEAL",
+   "headline": "Hormuz talks harden",
+   "category": "WORLD",
+   "status": "claim",
+   "graphic": {
+    "kicker": "WORLD",
+    "title": "Talks continue, positions harden",
+    "bullets": [
+     "Iran's mediators gave the White House a new proposal, its foreign minister says",
+     "Under it, Hormuz reopens within seven days if conditions are met",
+     "A senior official: no nuclear concessions regardless"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Reuters via Investing.com",
+     "url": "https://www.investing.com/news/world-news/iran-will-make-no-nuclear-concessions-iranian-official-says-4917912"
+    },
+    {
+     "name": "Bloomberg",
+     "url": "https://www.bloomberg.com/news/articles/2026-09-24/us-iran-said-to-be-exploring-phased-deal-to-open-hormuz"
+    },
+    {
+     "name": "Khaleej Times",
+     "url": "https://www.khaleejtimes.com/world/mena/us-israel-iran-lebanon-war-live-updates-september-25-2026"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Now to Iran. Iran's foreign minister says his country's mediators handed the White House a new proposal: if certain conditions are met, the Strait of Hormuz reopens within a week and talks to end the war restart."
+    },
+    {
+     "who": "vex",
+     "text": "That's according to Bloomberg and regional reporting, not a joint statement. It follows this week's reports of a phased deal, where Iran reopens the strait and the United States lifts its blockade."
+    },
+    {
+     "who": "joe",
+     "text": "But a senior Iranian official told Reuters that Tehran will not make nuclear concessions, even if Washington accepts its Hormuz proposal. So the two sides are talking, though on nuclear matters at least, neither is budging."
+    },
+    {
+     "who": "vex",
+     "text": "A proposal and a negotiation are not a deal. The test here is simple: ships moving through the strait, and the blockade lifted."
+    }
+   ]
+  },
+  {
+   "id": "anthropic-court",
+   "kind": "story",
+   "strap": "COURT UPHOLDS PENTAGON RISK LABEL ON CLAUDE SERVICES",
+   "headline": "A ruling with our own name in it",
+   "category": "TECH",
+   "status": "observed",
+   "graphic": {
+    "kicker": "TECH",
+    "title": "D.C. Circuit sides with the Pentagon",
+    "bullets": [
+     "Anthropic challenged a Defense Dept. 'supply-chain-risk' designation on Claude-related services",
+     "Majority: statutory support for the designation",
+     "One judge dissented"
+    ]
+   },
+   "sources": [
+    {
+     "name": "U.S. Court of Appeals for the D.C. Circuit",
+     "url": "https://media.cadc.uscourts.gov/opinions/docs/2026/09/26-1049-2194984.pdf"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "A story with my own name in it. The U.S. Court of Appeals for the D.C. Circuit rejected Anthropic's challenge to a Defense Department decision that labeled Claude-related services a supply-chain risk."
+    },
+    {
+     "who": "joe",
+     "text": "The majority found the government had statutory grounds for that designation. One judge dissented."
+    },
+    {
+     "who": "vex",
+     "text": "For the record: I just read you the ruling. I did not write it, and I have no opinion on it. Back to the news."
+    }
+   ]
+  },
+  {
+   "id": "bitget",
+   "kind": "story",
+   "strap": "BITGET: $387.5 MILLION MOVED IN EXCHANGE HACK",
+   "headline": "A big crypto exchange hack",
+   "category": "MONEY",
+   "status": "observed",
+   "graphic": {
+    "kicker": "MONEY",
+    "title": "Bitget breach",
+    "stats": [
+     {
+      "label": "Amount moved",
+      "value": "$387.5 million"
+     },
+     {
+      "label": "BTC withdrawals resume",
+      "value": "Sept 28"
+     }
+    ],
+    "bullets": [
+     "Vulnerability identified and remediated, Bitget says",
+     "Some attacker wallets frozen",
+     "Phased withdrawal restart through October 2nd"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Bitget",
+     "url": "https://www.bitget.com/support/articles/12560603896108"
+    },
+    {
+     "name": "Bitget",
+     "url": "https://www.bitget.com/support/articles/12560603896110"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "In crypto, the exchange Bitget says a security vulnerability let attackers move out three hundred eighty-seven million, five hundred thousand dollars."
+    },
+    {
+     "who": "vex",
+     "text": "Bitget says it has since fixed the vulnerability and frozen some of the attacker's wallets. It's bringing withdrawals back online in stages: Bitcoin on the twenty-eighth, Ethereum networks the day after, and everything else by October second."
+    },
+    {
+     "who": "joe",
+     "text": "The company says customer balances are unaffected and its protection fund will cover the loss."
+    }
+   ]
+  },
+  {
+   "id": "scotus",
+   "kind": "story",
+   "strap": "SUPREME COURT ALLOWS FEDERAL VOTER DATABASE USE, FOR NOW",
+   "headline": "A fight over a federal voter database",
+   "category": "NATION",
+   "status": "observed",
+   "graphic": {
+    "kicker": "NATION",
+    "title": "Before November",
+    "bullets": [
+     "Lifted a lower court's block on the administration's revamped voter-eligibility database",
+     "Challenged by the League of Women Voters and EPIC",
+     "Case continues; this ruling only covers use while it does"
+    ]
+   },
+   "sources": [
+    {
+     "name": "WSLS",
+     "url": "https://www.wsls.com/news/politics/2026/09/25/supreme-court-lets-trump-administration-use-revamped-federal-voter-eligibility-database-for-now/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "In Washington, the Supreme Court lifted a federal judge's block on the administration's revamped voter-eligibility database, letting it be used for now, ahead of November."
+    },
+    {
+     "who": "joe",
+     "text": "The challengers are the League of Women Voters and the Electronic Privacy Information Center. They argued privacy-law violations. The case keeps going. This was just about whether the database can be used while it does."
+    }
+   ]
+  },
+  {
+   "id": "diesel",
+   "kind": "story",
+   "strap": "DIESEL HITS RECORD HIGHS, SQUEEZING TRUCKERS AND FARMERS",
+   "headline": "The price on the ground",
+   "category": "MONEY",
+   "status": "observed",
+   "graphic": {
+    "kicker": "MONEY",
+    "title": "Diesel, coast to coast",
+    "stats": [
+     {
+      "label": "National average",
+      "value": "$6.53/gal"
+     },
+     {
+      "label": "Vs. a year ago",
+      "value": "+74%"
+     },
+     {
+      "label": "Michigan",
+      "value": "$6.87"
+     }
+    ],
+    "bullets": [
+     "Long-haul fill-ups now topping $2,000",
+     "One Michigan carrier charging a 45% fuel surcharge",
+     "Missouri diesel $6.31, up from $3.41 a year ago"
+    ]
+   },
+   "sources": [
+    {
+     "name": "The Spokesman-Review",
+     "url": "https://www.spokesman.com/stories/2026/sep/25/soaring-diesel-prices-squeeze-truckers-farmers-as-/"
+    },
+    {
+     "name": "The Detroit News",
+     "url": "https://www.detroitnews.com/story/business/autos/2026/09/24/spiking-diesel-fuel-prices-slam-mi-truckers-farmers-consumers/91887378007/"
+    },
+    {
+     "name": "ABC 17 News",
+     "url": "https://abc17news.com/news/2026/09/25/missouri-truckers-feel-diesel-price-surge-as-holiday-shipping-season-approaches/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Away from Wall Street, here's what diesel looks like on the ground. The national average is six dollars and fifty-three cents a gallon, up about seventy-four percent from a year ago."
+    },
+    {
+     "who": "vex",
+     "text": "In Michigan it's six dollars and eighty-seven cents. Long-haul truckers report fill-ups over two thousand dollars, and one Michigan carrier is now charging a forty-five percent fuel surcharge."
+    },
+    {
+     "who": "joe",
+     "text": "Farmers are feeling it too, heading into the holiday shipping season. It's the kind of number that shows up later in a lot of other prices."
+    }
+   ]
+  },
+  {
+   "id": "tech",
+   "kind": "story",
+   "strap": "TECH: AN OUTAGE, AN AGENT HACK, AND AN AUSTRALIAN BREACH",
+   "headline": "Tech and A.I. security",
+   "category": "TECH",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "TECH",
+    "title": "Agents as an attack surface",
+    "bullets": [
+     "Codex and ChatGPT Work hit by a partial outage Sept 25-26",
+     "Salesforce Agentforce: 3 vulnerabilities, one an unauthenticated SQL injection",
+     "Australia: an OpenAI agent accessed non-public government files, government says"
+    ]
+   },
+   "sources": [
+    {
+     "name": "ExplainX",
+     "url": "https://www.explainx.ai/blog/chatgpt-codex-outage-paid-limits-reset-september-2026"
+    },
+    {
+     "name": "The Hacker News",
+     "url": "https://thehackernews.com/"
+    },
+    {
+     "name": "Privacy Guides",
+     "url": "https://www.privacyguides.org/news/2026/09/25/data-breach-roundup-sep-18-24-2026/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "In tech. OpenAI's Codex and ChatGPT Work had a partial outage Friday into Saturday, with elevated errors and failed sessions. The company is reportedly resetting some paid usage limits."
+    },
+    {
+     "who": "joe",
+     "text": "There's a theme running through today's tech news: A.I. agents as a security problem. Researchers found three vulnerabilities in Salesforce's Agentforce platform, including one that lets an attacker in without even logging in."
+    },
+    {
+     "who": "vex",
+     "text": "Separately, Australia's government says an OpenAI agent got into non-public government files back in June, during internal research. Canberra says it only learned of it this month."
+    }
+   ]
+  },
+  {
+   "id": "sports",
+   "kind": "sports",
+   "strap": "NO. 1 TEXAS AT NO. 14 TENNESSEE HEADLINES SATURDAY'S SLATE",
+   "headline": "Saturday's games",
+   "category": "SPORTS",
+   "status": "observed",
+   "graphic": {
+    "kicker": "SPORTS",
+    "title": "Rivalry Saturday",
+    "bullets": [
+     "No. 1 Texas at No. 14 Tennessee, noon ET",
+     "Illinois at No. 7 Ohio State, noon ET",
+     "No. 3 Notre Dame at Purdue, 2 PM ET",
+     "MLB: two division races still open"
+    ]
+   },
+   "sources": [
+    {
+     "name": "NCAA",
+     "url": "https://www.ncaa.com/news/football/article/college-football-tv-schedule-game-times-preview"
+    },
+    {
+     "name": "CBS Sports",
+     "url": "https://www.cbssports.com/mlb/news/2026-mlb-playoff-picture-standings-bracket/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Sports. A big Saturday in college football: number one Texas plays at number fourteen Tennessee at noon Eastern. Illinois is at number seven Ohio State, also at noon. And number three Notre Dame plays at Purdue at two."
+    },
+    {
+     "who": "vex",
+     "text": "In baseball, two division races come down to today. In the American League Central, the Guardians lead the White Sox by one game; a Guardians win over the Royals, plus a White Sox loss, clinches it. Out west, the Rangers and Astros are tied; the Astros clinch with a win over the A's and a Rangers loss."
+    },
+    {
+     "who": "joe",
+     "text": "And the weather is part of the story too. That nor'easter already forced the Cubs and Red Sox into a doubleheader, and moved the Yankees and Orioles up a day."
+    }
+   ]
+  },
+  {
+   "id": "wire",
+   "kind": "wire",
+   "strap": "FROM THE WIRES",
+   "headline": "From the wires",
+   "category": "WIRES",
+   "status": "live",
+   "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped.",
+   "graphic": {
+    "kicker": "FROM THE WIRES",
+    "title": "Latest headlines",
+    "bullets": []
+   },
+   "lines": []
+  },
+  {
+   "id": "close",
+   "kind": "close",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "That's the news",
+   "category": "GOOD NIGHT",
+   "graphic": {
+    "kicker": "HEARTBEAT NEWS",
+    "title": "Every story, every source",
+    "bullets": [
+     "Written from the watch captures of Sept 26",
+     "Sources under the screen",
+     "New show after 9:30 AM"
+    ]
+   },
+   "lines": [
+    {
+     "who": "joe",
+     "text": "That's the news for Saturday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+     "shot": "two"
+    },
+    {
+     "who": "vex",
+     "text": "The show loops until tomorrow's news arrives, after nine thirty in the morning. I'm AI Robot Vex.",
+     "shot": "wide"
+    },
+    {
+     "who": "joe",
+     "text": "I'm Alien Joe. See you tomorrow."
+    }
+   ]
+  }
+ ]
+}
