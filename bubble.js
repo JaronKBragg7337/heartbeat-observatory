@@ -94,12 +94,13 @@
     ".hbp-dock{position:absolute;left:calc(var(--w) * .035);right:calc(var(--w) * .035);bottom:calc(var(--w) * .07);height:calc(var(--w) * .225);border-radius:calc(var(--w) * .085);background:rgba(255,255,255,.16);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;justify-content:space-around;align-items:center}",
     ".hbp-dock .hbp-app > span:not(.hbp-ico){display:none}",
     ".hbp-bar{position:absolute;bottom:calc(var(--w) * .022);left:50%;transform:translateX(-50%);width:calc(var(--w) * .36);height:5px;border-radius:3px;background:rgba(255,255,255,.85);z-index:9;cursor:pointer}",
-    ".hbp-view{position:absolute;inset:0;background:#0b0f14;z-index:3;display:flex;flex-direction:column;transform:scale(.3);opacity:0;pointer-events:none;transition:transform .32s cubic-bezier(.2,.9,.25,1),opacity .2s;border-radius:inherit}",
+    ".hbp-view{position:absolute;inset:0;min-height:0;overscroll-behavior:contain;background:#0b0f14;z-index:3;display:flex;flex-direction:column;transform:scale(.3);opacity:0;pointer-events:none;transition:transform .32s cubic-bezier(.2,.9,.25,1),opacity .2s;border-radius:inherit}",
     ".hbp-view.on{transform:none;opacity:1;pointer-events:auto}",
     ".hbp-top{padding:calc(var(--w) * .15) 14px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);background:#10151b}",
     ".hbp-top h4{margin:0;font-size:calc(var(--w) * .05);font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     ".hbp-top button{background:none;border:0;color:#3b9bff;font-size:calc(var(--w) * .043);cursor:pointer;padding:4px}",
-    ".hbp-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}",
+    ".hbp-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}",
+    "html.hbp-open,html.hbp-open body{overflow:hidden!important;overscroll-behavior:none}",
     ".hbp-frame{flex:1;border:0;width:100%;background:#000}",
     ".hbp-row{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);background:none;border-left:0;border-right:0;border-top:0;color:#fff;width:100%;text-align:left;cursor:pointer;font:inherit}",
     ".hbp-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(160deg,#64748b,#334155);display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto}",
@@ -249,34 +250,52 @@
     };
     return pc;
   }
+  // iPhones: the News voices set the page's audio session to "playback", which blocks the microphone
+  // ("AudioSession category is not compatible with audio capture" - Jaron + Lillith's first real call, 9/26).
+  // Switch to call mode before asking for the mic; if a TV/News frame still holds playback, close it and retry once.
+  function setSession(t) {
+    try { if (navigator.audioSession) navigator.audioSession.type = t; } catch (e) {}
+    try { document.querySelectorAll("iframe").forEach(function (f) { try { var n = f.contentWindow.navigator; if (n.audioSession) n.audioSession.type = t; } catch (e) {} }); } catch (e) {}
+  }
+  async function getMic() {
+    window.__hbInCall = true; setSession("play-and-record");
+    try { return await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) {
+      if (e && e.name === "NotAllowedError" && !/AudioSession/i.test(e.message || "")) throw e;
+      document.querySelectorAll(".hbp-screen iframe, .hbp iframe").forEach(function (f) { f.src = "about:blank"; });
+      await new Promise(function (r) { setTimeout(r, 250); });
+      setSession("play-and-record");
+      return await navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+  }
   async function startCall(uid) {
     if (call) return;
     try {
-      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      var stream = await getMic();
       call = { id: Math.random().toString(36).slice(2), peer: uid, name: nameFor(uid), dir: "out", status: "calling", stream: stream, pending: [] };
       call.pc = newPC(); stream.getTracks().forEach(function (t) { call.pc.addTrack(t, stream); });
       var offer = await call.pc.createOffer(); await call.pc.setLocalDescription(offer);
       signal(uid, { kind: "offer", id: call.id, sdp: offer });
       renderCall();
       call.timeout = setTimeout(function () { if (call && call.status === "calling") { signal(uid, { kind: "end", id: call.id }); endCall("No answer", true); } }, 35000);
-    } catch (e) { alert("The phone needs your microphone to call. " + (e.message || "")); cleanup(); }
+    } catch (e) { window.__hbInCall = false; setSession("auto"); alert("The phone needs your microphone to call. " + (e.message || "") + (/AudioSession/i.test(e.message || "") ? " - close any video or News that's playing, then try again." : "")); cleanup(); }
   }
   async function accept() {
     if (!call) return; ring(false);
     try {
-      call.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      call.stream = await getMic();
       call.pc = newPC(); call.stream.getTracks().forEach(function (t) { call.pc.addTrack(t, call.stream); });
       await call.pc.setRemoteDescription(call.offer);
       call.pending.forEach(function (c) { call.pc.addIceCandidate(c).catch(function () {}); }); call.pending = [];
       var ans = await call.pc.createAnswer(); await call.pc.setLocalDescription(ans);
       signal(call.peer, { kind: "answer", id: call.id, sdp: ans });
       call.status = "connecting"; renderCall();
-    } catch (e) { signal(call.peer, { kind: "end", id: call.id }); endCall("Microphone blocked", true); }
+    } catch (e) { signal(call.peer, { kind: "end", id: call.id }); endCall("Microphone blocked" + (e && e.message ? " - " + e.message : ""), true); }
   }
   function cleanup() {
     ring(false); clearInterval(callTick); clearTimeout(call && call.timeout);
     if (call) { try { call.pc && call.pc.close(); } catch (e) {} if (call.stream) call.stream.getTracks().forEach(function (t) { t.stop(); }); }
-    call = null;
+    call = null; window.__hbInCall = false; setSession("auto");
   }
   function endCall(msg, linger) {
     if (call && linger) { call.status = msg || "Call ended"; renderCall(); var keep = call; setTimeout(function () { if (call === keep) { cleanup(); goHome(); } }, 1800); ring(false); clearInterval(callTick); try { keep.pc && keep.pc.close(); } catch (e) {} if (keep.stream) keep.stream.getTracks().forEach(function (t) { t.stop(); }); return; }
@@ -355,6 +374,9 @@
   function close() { phone.classList.remove("open"); scrim.classList.remove("open"); document.documentElement.classList.remove("hbp-open"); setTimeout(goHome, 450); }
   function badge() { var d = launch.querySelector(".dot"); d.textContent = state.unread; d.classList.toggle("on", state.unread > 0); }
 
+  // iPhone Safari still drags the page from touches outside a scroll box - stop those, keep the phone's own lists scrolling
+  scrim.addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
+  phone.addEventListener("touchmove", function (e) { if (!e.target.closest(".hbp-body, .hbp-remote, iframe, textarea")) e.preventDefault(); }, { passive: false });
   phone.addEventListener("click", function (e) {
     var t = e.target.closest("[data-app],[data-act],[data-thread],[data-ch],[data-call],[data-app-link],.hbp-bar"); if (!t) return;
     if (t.classList.contains("hbp-bar")) return state.app === "home" ? close() : goHome();

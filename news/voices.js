@@ -137,7 +137,9 @@ export class VoiceBox {
 
   // Must run inside a tap/click: phones only open audio from a user gesture.
   unlock() {
-    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    // not during a Heartbeat Phone call: "playback" would cut the caller's microphone
+    let inCall = false; try { inCall = !!(window.__hbInCall || (window.top && window.top.__hbInCall)); } catch (e) {}
+    try { if (navigator.audioSession && !inCall) navigator.audioSession.type = "playback"; } catch (e) {}
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (AC) {
