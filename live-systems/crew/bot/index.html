@@ -15,7 +15,8 @@
   .tabs button { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 6px 12px; font: inherit; font-size: .86rem; cursor: pointer; }
   .tabs button[aria-selected="true"] { background: #1c2530; border-color: #3a4a5c; }
   .log div { font-family: ui-monospace, Menlo, monospace; font-size: 12px; line-height: 1.55; padding: 7px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
-  td.win { color: #7ee08c; } td.loss { color: #ff8a92; }
+  td.win { color: #7ee08c; }
+  #trades td:first-child { white-space: nowrap; } td.loss { color: #ff8a92; }
 </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
 <script defer src="/_vercel/insights/script.js"></script>
@@ -70,13 +71,21 @@
     const actor = b.id === "deepseek" ? "auto:proposer-script%" : "auto:grok-bot/live-wire";
     const [{ data: res }, { data: fills }] = await Promise.all([
       supabase.from("desk_trades").select("at,pnl_usd").eq("kind", "resolution").like("actor", actor).limit(2000),
-      supabase.from("desk_trades").select("at,title,slug,side,outcome,price,cost_usd").eq("kind", "fill").like("actor", actor).order("at", { ascending: false }).limit(25),
+      supabase.from("desk_trades").select("at,title,slug,side,outcome,price,cost_usd").eq("kind", "fill").like("actor", actor).order("at", { ascending: false }).limit(120),
     ]);
     $("chart").innerHTML = pnlChart(res || []);
-    $("trades").querySelector("tbody").innerHTML = (fills || []).map((t) =>
-      `<tr><td>${esc(new Date(t.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}</td>
-       <td>${esc(t.title || t.slug)}</td><td>${esc(t.outcome || t.side || "")} @ ${esc(Number(t.price || 0).toFixed(2))}</td><td>${usd(t.cost_usd)}</td></tr>`).join("")
-      || `<tr><td colspan="4" class="muted">No trades yet.</td></tr>`;
+    // group the venue's partial fills into one row per trade (same market + side within the hour)
+    const grouped = [];
+    for (const t of fills || []) {
+      const g = grouped.find((x) => x.slug === t.slug && x.side === t.side && Math.abs(new Date(x.at) - new Date(t.at)) < 3600e3);
+      if (g) { g.cost += Number(t.cost_usd) || 0; g.n += 1; g.px.push(Number(t.price) || 0); }
+      else grouped.push({ ...t, cost: Number(t.cost_usd) || 0, n: 1, px: [Number(t.price) || 0] });
+    }
+    const when = (iso) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(",", "");
+    $("trades").querySelector("tbody").innerHTML = grouped.slice(0, 15).map((t) => {
+      const px = t.px.reduce((a, b) => a + b, 0) / t.px.length;
+      return `<tr><td class="small">${esc(when(t.at))}</td><td>${esc(t.title || t.slug)}</td><td>${esc(t.outcome || t.side || "")} @ ${px.toFixed(2)}</td><td>${usd(t.cost)}</td></tr>`;
+    }).join("") || `<tr><td colspan="4" class="muted">No trades yet.</td></tr>`;
   }
   const act = b.activity || [];
   $("activity").innerHTML = act.length ? act.slice().reverse().map((l) => `<div>${esc(l)}</div>`).join("") : `<p class="muted small">Nothing logged here yet.</p>`;
