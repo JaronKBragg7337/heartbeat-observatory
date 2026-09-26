@@ -116,6 +116,14 @@
     ".hbp-remote button{flex:0 0 auto;background:#1c2229;border:1px solid #2b333c;color:#e2e8f0;border-radius:12px;padding:8px 11px;font-size:13px;cursor:pointer}",
     ".hbp-remote button.on{background:#ff3b4e;border-color:#ff3b4e;color:#fff}",
     "html.hbp-open [data-hb-editor]{display:none!important}",
+    ".hbp-call{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(var(--w) * .2) 20px calc(var(--w) * .12);background:radial-gradient(80% 50% at 50% 20%,#1f3a5a,#07090d)}",
+    ".hbp-call .who{text-align:center}.hbp-call .big{width:calc(var(--w) * .3);height:calc(var(--w) * .3);border-radius:50%;margin:0 auto 14px;background:linear-gradient(160deg,#64748b,#1e293b);display:flex;align-items:center;justify-content:center;font-size:calc(var(--w) * .13);font-weight:700}",
+    ".hbp-call h3{margin:0;font-size:calc(var(--w) * .075);font-weight:600}.hbp-call .st{margin-top:6px;color:#9aa7b3;font-size:15px}",
+    ".hbp-call .keys{display:flex;gap:calc(var(--w) * .1);justify-content:center}",
+    ".hbp-call .k{width:calc(var(--w) * .2);height:calc(var(--w) * .2);border-radius:50%;border:0;color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,.14)}",
+    ".hbp-call .k.end{background:#ff3b30}.hbp-call .k.ok{background:#34c759}.hbp-call .k.on{background:#fff;color:#000}",
+    ".hbp-call .k svg{width:42%;height:42%;fill:currentColor}",
+    ".hbp-row .call{margin-left:auto;background:#34c759;border:0;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto}.hbp-row .call svg{width:18px;height:18px;fill:#fff}",
     ".hbp-chip{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);padding:4px 9px;border-radius:8px;font-size:12px;font-weight:700;z-index:2;pointer-events:none}"
   ].join("");
   document.head.appendChild(css);
@@ -166,12 +174,127 @@
     var a = APPS.concat(DOCK).find(function (x) { return x.id === id; });
     if (id === "messages") { state.thread = ""; renderMessages(); }
     else if (id === "tv") renderTV();
-    else if (id === "phone") view.innerHTML = top("Phone", "home") + '<div class="hbp-body"><div class="hbp-empty"><b style="color:#fff;font-size:17px">Calls are coming next.</b><br>Voice calls between accounts are being built now. Messages work today.</div></div>';
+    else if (id === "phone") renderContacts();
     else if (id === "settings") view.innerHTML = top("Settings", "home") + '<div class="hbp-body"><div class="hbp-empty">' + (state.session ? "Signed in." : '<a href="/admin">Sign in</a> to message and call.') + '<br><br>Heartbeat Phone v2 · ' + APPS.length + " apps</div></div>";
     else if (a && a.url) view.innerHTML = top(a.name, "home") + '<iframe class="hbp-frame" src="' + a.url + '" allow="autoplay; fullscreen" loading="lazy"></iframe>';
     view.classList.add("on");
   }
-  function goHome() { state.app = "home"; view.classList.remove("on"); setTimeout(function () { if (state.app === "home") view.innerHTML = ""; }, 350); renderHome(); }
+  function goHome() { if (call && state.app !== "call") { return renderCall(); } state.app = "home"; view.classList.remove("on"); setTimeout(function () { if (state.app === "home") view.innerHTML = ""; }, 350); renderHome(); }
+
+  function renderContacts() {
+    if (!state.session) { view.innerHTML = top("Phone", "home") + '<div class="hbp-body"><div class="hbp-empty">Sign in to call people.<br><br><a href="/admin">Sign in</a></div></div>'; return; }
+    var people = Array.from(state.people.values()).filter(function (p) { return p.auth_user_id !== state.me; });
+    view.innerHTML = top("Contacts", "home") + '<div class="hbp-body">' + (people.length ? people.map(function (p) {
+      var n = nameFor(p.auth_user_id);
+      return '<div class="hbp-row"><span class="hbp-av">' + esc(n.charAt(0).toUpperCase()) + '</span><span class="t"><div class="n">' + esc(n) + '</div><div class="p">Heartbeat member</div></span>' +
+        '<button class="call" data-call="' + esc(p.auth_user_id) + '" aria-label="Call ' + esc(n) + '">' + svg(I.phone) + "</button></div>";
+    }).join("") : '<div class="hbp-empty">No other members yet.</div>') + '<div class="hbp-empty" style="font-size:12px">Calls ring the other person on any page of the site while they are signed in.</div></div>';
+  }
+
+  // ---- calls: 1:1 voice, straight between the two browsers (WebRTC). Signaling rides Supabase Realtime broadcast on a
+  // channel per account ("hbcall-<user id>"). Public STUN only for now - some cell networks may need a TURN relay later.
+  var call = null; // { id, peer, pc, stream, dir, status, t0, muted, pending: [] }
+  var ICE = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
+  var outbox = {};
+  function chanFor(uid) {
+    if (!outbox[uid]) {
+      var ch = state.supabase.channel("hbcall-" + uid, { config: { broadcast: { self: false } } });
+      outbox[uid] = { ch: ch, ready: new Promise(function (res) { ch.subscribe(function (st) { if (st === "SUBSCRIBED") res(); }); setTimeout(res, 4000); }) };
+    }
+    return outbox[uid];
+  }
+  function signal(uid, payload) {
+    payload.from = state.me; payload.name = nameFor(state.me);
+    var o = chanFor(uid), tries = 0;
+    o.ready.then(function go() { var r = o.ch.send({ type: "broadcast", event: "signal", payload: payload }); if (r && r.then) r.then(function (x) { if (x !== "ok" && tries++ < 8) setTimeout(go, 400); }); });
+  }
+  var ringTimer = null, ringCtx = null;
+  function ring(on) {
+    clearInterval(ringTimer); ringTimer = null;
+    if (!on) return;
+    var beep = function () {
+      try { navigator.vibrate && navigator.vibrate([400, 200, 400]); } catch (e) {}
+      try {
+        ringCtx = ringCtx || new (window.AudioContext || window.webkitAudioContext)();
+        [0, 0.45].forEach(function (d) { var o = ringCtx.createOscillator(), g = ringCtx.createGain(); o.frequency.value = 440; o.connect(g); g.connect(ringCtx.destination);
+          var t = ringCtx.currentTime + d; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.38); o.start(t); o.stop(t + 0.4); });
+      } catch (e) {}
+    };
+    beep(); ringTimer = setInterval(beep, 2400);
+  }
+  function renderCall() {
+    if (!call) return;
+    var n = call.name || nameFor(call.peer);
+    var st = call.status === "incoming" ? "Heartbeat call…" : call.status === "calling" ? "Calling…" : call.status === "connecting" ? "Connecting…"
+      : call.status === "live" ? fmt((Date.now() - call.t0) / 1000) : call.status;
+    var keys = call.status === "incoming"
+      ? '<button class="k end" data-act="decline">' + svg(I.phone) + 'Decline</button><button class="k ok" data-act="accept">' + svg(I.phone) + "Accept</button>"
+      : '<button class="k' + (call.muted ? " on" : "") + '" data-act="mute">' + (call.muted ? "Unmute" : "Mute") + '</button><button class="k end" data-act="hangup">' + svg(I.phone) + "End</button>";
+    view.innerHTML = '<div class="hbp-call"><div class="who"><div class="big">' + esc(n.charAt(0).toUpperCase()) + "</div><h3>" + esc(n) + '</h3><div class="st">' + esc(st) + '</div></div><div class="keys">' + keys + "</div></div>";
+    state.app = "call"; view.classList.add("on");
+  }
+  function fmt(sec) { sec = Math.floor(sec); return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
+  var callTick = null;
+  function newPC() {
+    var pc = new RTCPeerConnection(ICE);
+    pc.onicecandidate = function (e) { if (e.candidate && call) signal(call.peer, { kind: "ice", id: call.id, c: e.candidate }); };
+    pc.ontrack = function (e) { var a = document.getElementById("hbp-remote") || document.body.appendChild(Object.assign(document.createElement("audio"), { id: "hbp-remote", autoplay: true })); a.srcObject = e.streams[0]; a.play && a.play().catch(function () {}); };
+    pc.onconnectionstatechange = function () {
+      if (!call) return;
+      if (pc.connectionState === "connected") { call.status = "live"; call.t0 = Date.now(); clearInterval(callTick); callTick = setInterval(renderCall, 1000); renderCall(); }
+      if (pc.connectionState === "failed") { endCall("Couldn't connect - the network blocked a direct call.", true); }
+    };
+    return pc;
+  }
+  async function startCall(uid) {
+    if (call) return;
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      call = { id: Math.random().toString(36).slice(2), peer: uid, name: nameFor(uid), dir: "out", status: "calling", stream: stream, pending: [] };
+      call.pc = newPC(); stream.getTracks().forEach(function (t) { call.pc.addTrack(t, stream); });
+      var offer = await call.pc.createOffer(); await call.pc.setLocalDescription(offer);
+      signal(uid, { kind: "offer", id: call.id, sdp: offer });
+      renderCall();
+      call.timeout = setTimeout(function () { if (call && call.status === "calling") { signal(uid, { kind: "end", id: call.id }); endCall("No answer", true); } }, 35000);
+    } catch (e) { alert("The phone needs your microphone to call. " + (e.message || "")); cleanup(); }
+  }
+  async function accept() {
+    if (!call) return; ring(false);
+    try {
+      call.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      call.pc = newPC(); call.stream.getTracks().forEach(function (t) { call.pc.addTrack(t, call.stream); });
+      await call.pc.setRemoteDescription(call.offer);
+      call.pending.forEach(function (c) { call.pc.addIceCandidate(c).catch(function () {}); }); call.pending = [];
+      var ans = await call.pc.createAnswer(); await call.pc.setLocalDescription(ans);
+      signal(call.peer, { kind: "answer", id: call.id, sdp: ans });
+      call.status = "connecting"; renderCall();
+    } catch (e) { signal(call.peer, { kind: "end", id: call.id }); endCall("Microphone blocked", true); }
+  }
+  function cleanup() {
+    ring(false); clearInterval(callTick); clearTimeout(call && call.timeout);
+    if (call) { try { call.pc && call.pc.close(); } catch (e) {} if (call.stream) call.stream.getTracks().forEach(function (t) { t.stop(); }); }
+    call = null;
+  }
+  function endCall(msg, linger) {
+    if (call && linger) { call.status = msg || "Call ended"; renderCall(); var keep = call; setTimeout(function () { if (call === keep) { cleanup(); goHome(); } }, 1800); ring(false); clearInterval(callTick); try { keep.pc && keep.pc.close(); } catch (e) {} if (keep.stream) keep.stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+    cleanup(); goHome();
+  }
+  async function onSignal(p) {
+    if (!p || !p.from) return;
+    if (p.kind === "offer") {
+      if (call) { signal(p.from, { kind: "busy", id: p.id }); return; }
+      call = { id: p.id, peer: p.from, name: p.name, dir: "in", status: "incoming", offer: p.sdp, pending: [] };
+      open(); setTimeout(renderCall, 130); ring(true);
+      call.timeout = setTimeout(function () { if (call && call.status === "incoming") endCall("Missed call", true); }, 35000);
+      return;
+    }
+    if (!call || p.id !== call.id) return;
+    if (p.kind === "answer") { clearTimeout(call.timeout); call.status = "connecting"; await call.pc.setRemoteDescription(p.sdp); call.pending.forEach(function (c) { call.pc.addIceCandidate(c).catch(function () {}); }); call.pending = []; renderCall(); }
+    else if (p.kind === "ice") { if (call.pc && call.pc.remoteDescription) call.pc.addIceCandidate(p.c).catch(function () {}); else call.pending.push(p.c); }
+    else if (p.kind === "decline") endCall("Declined", true);
+    else if (p.kind === "busy") endCall("Busy", true);
+    else if (p.kind === "end") endCall("Call ended", true);
+  }
 
   function renderTV() {
     var ch = CHANNELS.find(function (c) { return c.n === state.channel; }) || CHANNELS[0];
@@ -232,7 +355,7 @@
   function badge() { var d = launch.querySelector(".dot"); d.textContent = state.unread; d.classList.toggle("on", state.unread > 0); }
 
   phone.addEventListener("click", function (e) {
-    var t = e.target.closest("[data-app],[data-act],[data-thread],[data-ch],.hbp-bar"); if (!t) return;
+    var t = e.target.closest("[data-app],[data-act],[data-thread],[data-ch],[data-call],.hbp-bar"); if (!t) return;
     if (t.classList.contains("hbp-bar")) return state.app === "home" ? close() : goHome();
     if (t.dataset.app) return openApp(t.dataset.app);
     if (t.dataset.thread) { state.thread = t.dataset.thread; return renderMessages(); }
@@ -240,6 +363,11 @@
     if (t.dataset.act === "home") return goHome();
     if (t.dataset.act === "list") { state.thread = ""; return renderMessages(); }
     if (t.dataset.act === "send") return send();
+    if (t.dataset.call) return startCall(t.dataset.call);
+    if (t.dataset.act === "accept") return accept();
+    if (t.dataset.act === "decline") { if (call) signal(call.peer, { kind: "decline", id: call.id }); return endCall(); }
+    if (t.dataset.act === "hangup") { if (call) signal(call.peer, { kind: "end", id: call.id }); return endCall("Call ended", true); }
+    if (t.dataset.act === "mute" && call && call.stream) { call.muted = !call.muted; call.stream.getAudioTracks().forEach(function (a) { a.enabled = !call.muted; }); return renderCall(); }
   });
   phone.addEventListener("change", function (e) { if (e.target.id === "hbpTo" && e.target.value) { state.thread = e.target.value; renderMessages(); } });
   phone.addEventListener("keydown", function (e) { if (e.target.id === "hbpText" && e.key === "Enter") { e.preventDefault(); send(); } e.stopPropagation(); });
@@ -279,6 +407,8 @@
           if (m.sender_id !== state.me && !(phone.classList.contains("open") && state.app === "messages")) { state.unread++; badge(); renderHome(); }
           renderMessages();
         }).subscribe();
+        state.supabase.channel("hbcall-" + state.me, { config: { broadcast: { self: false } } })
+          .on("broadcast", { event: "signal" }, function (m) { onSignal(m.payload); }).subscribe();
       }
     } catch (e) {}
     state.loading = false; renderMessages();
