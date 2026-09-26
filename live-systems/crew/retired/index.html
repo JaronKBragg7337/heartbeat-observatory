@@ -40,5 +40,6 @@
   if (snap) $("tiles").innerHTML = snap.data.retired.map((b) => `<a class="card tile" href="/live-systems/crew/bot/?id=${encodeURIComponent(b.id)}">
     <h3>${esc(b.name)}</h3><p>${esc(b.why)}</p><span class="muted small">Read its old instructions &rarr;</span></a>`).join("");
 </script>
+<script defer src="/hb-editor.js"></script>
 </body>
 </html>
