@@ -15,7 +15,8 @@ const BREAK_LEAD = 3.0;  // BREAKING NEWS slam
 
 const voice = new VoiceBox();
 let studio = null;
-let ep = null, segs = [], items = [], wire = [];
+let ep = null, segs = [], items = [], wire = [], ads = [];
+const ADS_EVERY = 3;       // a house commercial after every 3 stories (2026-09-25)
 let cur = null;
 let mode = "silent";
 let ccOn = true;
@@ -60,9 +61,29 @@ function wireLines(list) {
   return out;
 }
 
+// House commercials (news/ads/ads.json): spots for the site's own pages, with a camera shot of the page on the wall.
+async function loadAds() {
+  try { const r = await timeout(fetch("/news/ads/ads.json", { cache: "no-cache" }), 5000); return (await r.json()).ads || []; } catch (e) { return []; }
+}
+function withAds(list) {
+  if (!ads.length) return list;
+  const out = []; let stories = 0;
+  let k = Math.floor(Date.now() / 86400000);   // rotate which spots air, day by day
+  list.forEach((seg) => {
+    out.push(seg);
+    if (["open", "close", "wire", "ad"].includes(seg.kind)) return;
+    if (++stories % ADS_EVERY) return;
+    const ad = ads[k++ % ads.length];
+    out.push({ id: "ad-" + ad.id, kind: "ad", strap: ad.strap, headline: ad.title, category: "COMMERCIAL", status: "",
+      graphic: { kicker: ad.kicker, title: ad.title, image: ad.image || "", url: ad.url },
+      sources: [{ name: ad.title + " (tap to visit)", url: ad.url }], lines: ad.lines });
+  });
+  return out;
+}
+
 function build(episode) {
   segs = []; items = [];
-  (episode.segments || []).forEach((seg) => {
+  withAds(episode.segments || []).forEach((seg) => {
     let lines = seg.lines || [];
     let sources = seg.sources || [];
     let graphic = seg.graphic || {};
@@ -94,7 +115,7 @@ function tuneInIndex() {
 function pickShot(it) {
   if (it.line.shot) return it.line.shot;
   const h = hash(it.seg.id + ":" + it.li);
-  if (it.li === 0) return it.seg.kind === "weather" ? "wall" : "two";
+  if (it.li === 0) return it.seg.kind === "weather" || it.seg.kind === "ad" ? "wall" : "two";
   if (h % 7 === 0) return "two";
   if (h % 5 === 0) return it.who === "vex" ? "vexX" : "joeX";
   return it.who;
@@ -206,10 +227,10 @@ function tickClock() {
 function renderRundown() {
   const ol = $("rundown");
   ol.innerHTML = segs.map((s) => {
-    const st = s.status || (s.kind === "open" || s.kind === "close" ? "" : "observed");
+    const st = s.status || (s.kind === "open" || s.kind === "close" || s.kind === "ad" ? "" : "observed");
     const chip = st ? `<span class="chip ${esc(st)}">${esc(st === "mixed" ? "some claims" : st)}</span>` : "";
     const src = (s.sources || []).filter((x) => x.url).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>`).join(" · ");
-    const note = s.kind === "wire" ? "Live from the Perplexity headlines feed." : "";
+    const note = s.kind === "wire" ? "Live from the Perplexity headlines feed." : s.kind === "ad" ? "A house commercial for this site." : "";
     return `<li data-seg="${s.index}"><span class="num">${String(s.index + 1).padStart(2, "0")}</span><div><div class="h">${esc(s.headline || s.strap)}</div>
       <div class="meta"><span class="chip">${esc(s.category || "")}</span>${chip}<span>${s.lines.length} lines</span></div>
       ${src || note ? `<div class="src">${src}${src && note ? " · " : ""}${esc(note)}</div>` : ""}</div></li>`;
@@ -250,7 +271,7 @@ function startItem(i, { jump = false } = {}) {
     on($("ots"), false); on($("namebar"), false); hideL3();
     $("toptagText").textContent = (it.seg.category || "HEARTBEAT NEWS").toUpperCase();
     on($("toptag"), true);
-    $("tkSection").textContent = it.seg.kind === "wire" ? "WIRES" : it.seg.kind === "breaking" ? "BREAKING" : it.seg.kind === "weather" ? "WEATHER" : "TOP STORIES";
+    $("tkSection").textContent = it.seg.kind === "wire" ? "WIRES" : it.seg.kind === "ad" ? "COMMERCIAL" : it.seg.kind === "breaking" ? "BREAKING" : it.seg.kind === "weather" ? "WEATHER" : "TOP STORIES";
     if (i === 0) {
       titleCard();
       if (studio) { studio.setShot("crane", t, OPEN_LEAD + 2); studio.setWall(it.seg); }
@@ -442,8 +463,9 @@ async function boot() {
   try { const idx = await loadIndex(); date = idx.latest; } catch (e) { date = null; }
   const [episode, w] = await Promise.all([
     (date ? loadEpisode(date) : Promise.reject(new Error("no index"))).catch(() => loadEpisode("2026-09-24")),
-    loadWire()
-  ]);
+    loadWire(),
+    loadAds()
+  ]).then(([e, wl, a]) => { ads = a; return [e, wl]; });
   ep = episode; wire = w;
   await fontsReady;
   const quality = Object.assign({}, (window.HBDevice && window.HBDevice.quality) || { tier: "desktop", allowShadows: true, allowBloom: true, maxPixelRatio: 2 });

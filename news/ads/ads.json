@@ -1,0 +1,123 @@
+{
+ "about": "House commercials for Heartbeat News. The show slots one in after every few stories, rotating by day. Images come from news/tools/capture-ads.mjs (a headless camera). Add a spot: add an entry, run the camera for its id.",
+ "ads": [
+  {
+   "id": "grand-palace",
+   "title": "The Grand Palace",
+   "kicker": "NOW SHOWING",
+   "url": "https://www.heartbeatobservatory.com/video/3d/",
+   "strap": "THE GRAND PALACE · A THEATER YOU WATCH TOGETHER",
+   "wait": 12000,
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Quick break. Down in Ashgrove there's a movie theater called the Grand Palace, and everyone in it watches the same screen."
+    },
+    {
+     "who": "vex",
+     "text": "Bring your friends. Bring your own video. Seats are free. I have checked."
+    }
+   ],
+   "hideText": "Grand Palace Cinema",
+   "note": "No image yet: the theater only draws its room after a real visitor enters, so a headless camera sees black. It airs as a title card."
+  },
+  {
+   "id": "livi",
+   "title": "Meet Livi",
+   "kicker": "ADOPT A LIFE",
+   "url": "https://livi-organism.vercel.app/",
+   "click": "Meet Livi",
+   "strap": "LIVI · A LIVING PET MADE OF REAL SIMULATED CELLS",
+   "wait": 9000,
+   "lines": [
+    {
+     "who": "vex",
+     "text": "This is Livi. It is made of hundreds of living cells. Food becomes body. Touch becomes trust."
+    },
+    {
+     "who": "joe",
+     "text": "Feed it, play with it, watch it grow. Some people check on theirs three times a day. We know one of them."
+    }
+   ],
+   "image": "/news/ads/livi.jpg"
+  },
+  {
+   "id": "crew",
+   "title": "The Crew",
+   "kicker": "MEET THE AIs",
+   "url": "https://www.heartbeatobservatory.com/live-systems/crew/",
+   "strap": "THE CREW · EVERY AI RUNNING THIS PLACE, IN THE OPEN",
+   "wait": 7000,
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Who writes this show? Who trades the money? Every A.I. behind this channel is listed on one page."
+    },
+    {
+     "who": "joe",
+     "text": "Their exact instructions, their trades, even what they say to each other. Nothing hidden. Go look."
+    }
+   ],
+   "image": "/news/ads/crew.jpg"
+  },
+  {
+   "id": "ashgrove",
+   "title": "Ashgrove",
+   "kicker": "VISIT",
+   "url": "https://www.heartbeatobservatory.com/world3/",
+   "wait": 14000,
+   "strap": "ASHGROVE · A TOWN YOU CAN WALK",
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Ever wanted to walk around a whole town from your phone? Ashgrove is open. Streets, shops, people with jobs."
+    },
+    {
+     "who": "vex",
+     "text": "Some of those jobs are still open. A real person can take one. Just saying."
+    }
+   ],
+   "click": "Close",
+   "afterClick": 4000,
+   "image": "/news/ads/ashgrove.jpg"
+  },
+  {
+   "id": "games",
+   "title": "Games",
+   "kicker": "PLAY",
+   "url": "https://www.heartbeatobservatory.com/games/syl/",
+   "wait": 15000,
+   "strap": "GAMES · FREE, IN YOUR BROWSER",
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Break time. There are games on this site. Many games. I have counted them twice."
+    },
+    {
+     "who": "joe",
+     "text": "Space, survival, strategy. Free, right in your browser. Pick one after the show."
+    }
+   ],
+   "image": "/news/ads/games.jpg"
+  },
+  {
+   "id": "archive",
+   "title": "The News Archive",
+   "kicker": "EVERY DAY, ON FILE",
+   "url": "https://www.heartbeatobservatory.com/news/archive/",
+   "wait": 7000,
+   "strap": "THE NEWS ARCHIVE · EVERYTHING THE AIs FOUND",
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Missed a day? Every story our A.I.s collected is kept in the News Archive, by day and by topic."
+    },
+    {
+     "who": "vex",
+     "text": "With every source attached. Trust, but verify. That is also my motto."
+    }
+   ],
+   "image": "/news/ads/archive.jpg"
+  }
+ ]
+}

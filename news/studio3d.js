@@ -98,7 +98,8 @@ const THEMES = {
   open: { a: "#0e2a6b", b: "#030a1f", accent: "#ff2e3f", kicker: "#e11d2e" },
   close: { a: "#0e2a6b", b: "#030a1f", accent: "#ff2e3f", kicker: "#e11d2e" },
   story: { a: "#0c2560", b: "#020818", accent: "#47a3ff", kicker: "#1552d6" },
-  wire: { a: "#1b1f2e", b: "#05060b", accent: "#ffb020", kicker: "#c77a00" }
+  wire: { a: "#1b1f2e", b: "#05060b", accent: "#ffb020", kicker: "#c77a00" },
+  ad: { a: "#3a1b5c", b: "#0c0518", accent: "#ffcf4a", kicker: "#b8860b" }
 };
 
 // ---- the newsroom ---------------------------------------------------------------------------------------------------
@@ -286,8 +287,43 @@ export function createNewsroom(canvasEl, opts = {}) {
     wallGraphic = { sweepTex };
   }
 
+  // House commercials: the page's camera shot fills the wall and the view drifts across it (a slow camera move).
+  const adImages = new Map();
+  let wallSeg = null, adPan = null;
+  function adImage(src) {
+    let im = adImages.get(src);
+    if (!im) {
+      im = new Image(); im.decoding = "async";
+      im.onload = () => { if (wallSeg && wallSeg.graphic && wallSeg.graphic.image === src) drawWall(wallSeg); };
+      im.src = src; adImages.set(src, im);
+    }
+    return im.complete && im.naturalWidth ? im : null;
+  }
   function drawWall(seg) {
     const g = wallG, W = wallW, H = wallH, u = W / 2048;
+    wallSeg = seg;
+    const shot = seg && seg.kind === "ad" && seg.graphic && seg.graphic.image ? adImage(seg.graphic.image) : null;
+    if (shot) {
+      const s = Math.max(W / shot.naturalWidth, H / shot.naturalHeight);
+      const dw = shot.naturalWidth * s, dh = shot.naturalHeight * s;
+      g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+      g.drawImage(shot, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      const shade = g.createLinearGradient(0, H * 0.62, 0, H); shade.addColorStop(0, "rgba(0,0,0,0)"); shade.addColorStop(1, "rgba(0,0,0,0.72)");
+      g.fillStyle = shade; g.fillRect(0, 0, W, H);
+      const font = (w, sz) => `${w} ${sz * u}px "Barlow Condensed", "Arial Narrow", Arial, sans-serif`;
+      const kicker = String(seg.graphic.kicker || "COMMERCIAL").toUpperCase();
+      g.font = font(800, 58); const kw = g.measureText(kicker).width + 60 * u;
+      g.fillStyle = THEMES.ad.kicker; g.fillRect(90 * u, H - 250 * u, kw, 84 * u);
+      g.fillStyle = "#fff"; g.textBaseline = "middle"; g.fillText(kicker, 120 * u, H - 208 * u);
+      g.font = font(800, 104); g.fillText(String(seg.graphic.title || "").toUpperCase(), 90 * u, H - 100 * u);
+      drawLogo(g, W - 250 * u, 48 * u, 160 * u);
+      wallTex.repeat.set(0.84, 0.84); adPan = { t0: performance.now() };
+      wallTex.needsUpdate = true;
+      midG.drawImage(wallC, 0, 0, midC.width, midC.height); smallG.drawImage(midC, 0, 0, smallC.width, smallC.height);
+      blurG.drawImage(smallC, 0, 0, wallW, wallH); wallBlurTex.needsUpdate = true;
+      return;
+    }
+    if (adPan) { adPan = null; wallTex.repeat.set(1, 1); wallTex.offset.set(0, 0); }
     const th = THEMES[seg && seg.kind] || THEMES.story;
     const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, th.a); bg.addColorStop(1, th.b);
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
@@ -787,6 +823,11 @@ export function createNewsroom(canvasEl, opts = {}) {
     animateAnchor(joe, st, t, dt, st.levels.joe || 0, talker === "joe");
     globe.rotation.y = t * 0.18;
     wallGraphic.sweepTex.offset.x = -((t * 0.12) % 3) + 1.2;
+    if (adPan) {
+      // slow camera drift over the page: left to right and a little down, easing, over ~14 s
+      const p = Math.min(1, (performance.now() - adPan.t0) / 14000), e = p * p * (3 - 2 * p);
+      wallTex.offset.set(0.16 * e, 0.16 * (1 - e * 0.6));
+    }
     const now = new Date();
     if (now.getMinutes() !== lastClockMin) { lastClockMin = now.getMinutes(); drawClocks(now); }
     applyCamera(t);
