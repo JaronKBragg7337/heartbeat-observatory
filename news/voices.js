@@ -40,7 +40,11 @@ export const SYNTH_VARIANTS = [
 
 // How long after the device voice's last line a synth line waits to start (CHOSEN). The show already leaves a 0.45 s gap
 // between lines, so this adds about a quarter second after Joe's lines and nothing after Vex's own.
-const DEVICE_RELEASE_MS = 700;
+// 2026-09-25: measured - Vex's render and effects chain are full level from the first word (0.13 / 0.12 RMS in the first
+// half second vs ~0.10 average), so the quiet first words happen on the phone, after the device voice (Joe) hands the output
+// back. 700 ms covered one word; the fade back up lasts ~1-1.5 s. Wait longer, keep the output awake, and lead with silence.
+const DEVICE_RELEASE_MS = 1600;
+const SYNTH_LEAD_IN_S = 0.25;
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
@@ -141,6 +145,11 @@ export class VoiceBox {
         this.master = this.ctx.createDynamicsCompressor();
         this.master.threshold.value = -14; this.master.ratio.value = 3; this.master.attack.value = 0.004; this.master.release.value = 0.2;
         this.master.connect(this.ctx.destination);
+        // Keep-alive: an inaudible tone so phones don't power the output down between lines (waking it fades in).
+        try {
+          const ka = this.ctx.createOscillator(), kg = this.ctx.createGain();
+          ka.frequency.value = 30; kg.gain.value = 0.0002; ka.connect(kg); kg.connect(this.ctx.destination); ka.start();
+        } catch (e) {}
         for (const who of ["vex", "joe"]) this.buildChain(who);
       }
     }
@@ -293,8 +302,9 @@ export class VoiceBox {
     const who = job.who, n = this.chains[who];
     const { wav, size } = await this.render(who, text);
     if (job.cancelled) return;
-    const buf = this.ctx.createBuffer(1, wav.samples.length, wav.rate);
-    buf.copyToChannel ? buf.copyToChannel(wav.samples, 0) : buf.getChannelData(0).set(wav.samples);
+    const lead = Math.round(wav.rate * SYNTH_LEAD_IN_S);
+    const buf = this.ctx.createBuffer(1, wav.samples.length + lead, wav.rate);
+    buf.getChannelData(0).set(wav.samples, lead);
     const src = this.ctx.createBufferSource(); src.buffer = buf; src.playbackRate.value = size;
     src.connect(n.input);
     await this.outputReady(job);
