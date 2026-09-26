@@ -15,7 +15,7 @@ const BREAK_LEAD = 3.0;  // BREAKING NEWS slam
 
 const voice = new VoiceBox();
 let studio = null;
-let ep = null, segs = [], items = [], wire = [], ads = [];
+let ep = null, segs = [], items = [], wire = [], adsCat = { ads: [] };
 const ADS_EVERY = 3;       // a house commercial after every 3 stories (2026-09-25)
 let cur = null;
 let mode = "silent";
@@ -63,21 +63,36 @@ function wireLines(list) {
 
 // House commercials (news/ads/ads.json): spots for the site's own pages, with a camera shot of the page on the wall.
 async function loadAds() {
-  try { const r = await timeout(fetch("/news/ads/ads.json", { cache: "no-cache" }), 5000); return (await r.json()).ads || []; } catch (e) { return []; }
+  try { const r = await timeout(fetch("/news/ads/ads.json", { cache: "no-cache" }), 5000); return (await r.json()) || { ads: [] }; } catch (e) { return { ads: [] }; }
+}
+// Each spot has several "takes"; roll a die per visit so the jokes change (Jaron's idea, 2026-09-25).
+const roll = (arr) => arr[Math.floor(Math.random() * arr.length)];
+function adSeg(ad, prefix = "ad-") {
+  const lines = ad.takes && ad.takes.length ? roll(ad.takes) : (ad.lines || []);
+  return { id: prefix + ad.id, kind: "ad", strap: ad.strap || (ad.title || "").toUpperCase(), headline: ad.title, category: "COMMERCIAL", status: "",
+    graphic: { kicker: ad.kicker || "COMMERCIAL", title: ad.title, image: ad.image || "", images: ad.images || null, url: ad.url || "" },
+    sources: ad.url ? [{ name: ad.title + " (tap to visit)", url: ad.url }] : [], lines };
 }
 function withAds(list) {
+  const ads = adsCat.ads || [];
   if (!ads.length) return list;
   const out = []; let stories = 0;
-  let k = Math.floor(Date.now() / 86400000);   // rotate which spots air, day by day
+  let k = Math.floor(Date.now() / 86400000);   // rotate which spots air inside the loop, day by day
   list.forEach((seg) => {
     out.push(seg);
     if (["open", "close", "wire", "ad"].includes(seg.kind)) return;
     if (++stories % ADS_EVERY) return;
-    const ad = ads[k++ % ads.length];
-    out.push({ id: "ad-" + ad.id, kind: "ad", strap: ad.strap, headline: ad.title, category: "COMMERCIAL", status: "",
-      graphic: { kicker: ad.kicker, title: ad.title, image: ad.image || "", url: ad.url },
-      sources: [{ name: ad.title + " (tap to visit)", url: ad.url }], lines: ad.lines });
+    out.push(adSeg(ads[k++ % ads.length]));
   });
+  // The long break after the sign-off, before the loop starts again: everything the in-loop spots didn't cover.
+  const br = adsCat.break;
+  if (br && (br.spots || []).length) {
+    const card = (id, lines, title) => ({ id, kind: "ad", strap: "HEARTBEAT NEWS · COMMERCIAL BREAK", headline: title, category: "COMMERCIAL", status: "",
+      graphic: { kicker: "COMMERCIAL BREAK", title }, sources: [], lines });
+    out.push(card("break-in", roll(br.intro || [[{ who: "joe", text: "We'll be right back." }]]), "More from Heartbeat"));
+    br.spots.forEach((sp) => out.push(adSeg(sp, "break-")));
+    out.push(card("break-out", roll(br.outro || [[{ who: "joe", text: "From the top." }]]), "Back to the news"));
+  }
   return out;
 }
 
@@ -166,9 +181,9 @@ function showOTS(seg) {
   $("otsT").textContent = seg.headline || g.title || "";
   $("ots").classList.toggle("breaking-t", seg.kind === "breaking");
   // commercials: the page's photo fills the box and stays up for the whole spot
-  const ad = seg.kind === "ad" && g.image;
+  const ad = seg.kind === "ad" && (g.image || (g.images && g.images[0]));
   $("ots").classList.toggle("ad-shot", !!ad);
-  $("ots").style.backgroundImage = ad ? `linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,.75)), url("${g.image}")` : "";
+  $("ots").style.backgroundImage = ad ? `linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,.75)), url("${ad}")` : "";
   on($("ots"), true);
   if (!ad) later(() => on($("ots"), false), 7000);
 }
@@ -469,7 +484,7 @@ async function boot() {
     (date ? loadEpisode(date) : Promise.reject(new Error("no index"))).catch(() => loadEpisode("2026-09-24")),
     loadWire(),
     loadAds()
-  ]).then(([e, wl, a]) => { ads = a; return [e, wl]; });
+  ]).then(([e, wl, a]) => { adsCat = a; return [e, wl]; });
   ep = episode; wire = w;
   await fontsReady;
   const quality = Object.assign({}, (window.HBDevice && window.HBDevice.quality) || { tier: "desktop", allowShadows: true, allowBloom: true, maxPixelRatio: 2 });

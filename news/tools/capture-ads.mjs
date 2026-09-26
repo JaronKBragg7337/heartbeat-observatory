@@ -59,5 +59,5 @@ async function shoot(ad) {
 }
 
 mkdirSync(adsDir, { recursive: true });
-for (const ad of catalog.ads) if (!only.length || only.includes(ad.id)) await shoot(ad).catch((e) => console.log("FAILED", ad.id, e.message));
+for (const ad of [...catalog.ads, ...(catalog.shots || [])]) if (!only.length || only.includes(ad.id)) await shoot(ad).catch((e) => console.log("FAILED", ad.id, e.message));
 process.exit(0);

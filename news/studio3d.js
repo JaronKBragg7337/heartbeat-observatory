@@ -289,12 +289,12 @@ export function createNewsroom(canvasEl, opts = {}) {
 
   // House commercials: the page's camera shot fills the wall and the view drifts across it (a slow camera move).
   const adImages = new Map();
-  let wallSeg = null, adPan = null;
+  let wallSeg = null, adPan = null, reelIdx = 0, reelSegId = null;
   function adImage(src) {
     let im = adImages.get(src);
     if (!im) {
       im = new Image(); im.decoding = "async";
-      im.onload = () => { if (wallSeg && wallSeg.graphic && wallSeg.graphic.image === src) drawWall(wallSeg); };
+      im.onload = () => { const gr = wallSeg && wallSeg.graphic; if (gr && (gr.image === src || (gr.images && gr.images[reelIdx % gr.images.length] === src))) drawWall(wallSeg); };
       im.src = src; adImages.set(src, im);
     }
     return im.complete && im.naturalWidth ? im : null;
@@ -302,7 +302,11 @@ export function createNewsroom(canvasEl, opts = {}) {
   function drawWall(seg) {
     const g = wallG, W = wallW, H = wallH, u = W / 2048;
     wallSeg = seg;
-    const shot = seg && seg.kind === "ad" && seg.graphic && seg.graphic.image ? adImage(seg.graphic.image) : null;
+    // a reel (graphic.images) flips through several photos; a single spot uses graphic.image
+    const reel = seg && seg.kind === "ad" && seg.graphic && seg.graphic.images && seg.graphic.images.length ? seg.graphic.images : null;
+    if (reel) { if (reelSegId !== seg.id) { reelSegId = seg.id; reelIdx = 0; } reel.forEach((src) => adImage(src)); }
+    const src = reel ? reel[reelIdx % reel.length] : (seg && seg.kind === "ad" && seg.graphic && seg.graphic.image) || null;
+    const shot = src ? adImage(src) : null;
     if (shot) {
       const s = Math.max(W / shot.naturalWidth, H / shot.naturalHeight);
       const dw = shot.naturalWidth * s, dh = shot.naturalHeight * s;
@@ -317,7 +321,7 @@ export function createNewsroom(canvasEl, opts = {}) {
       g.fillStyle = "#fff"; g.textBaseline = "middle"; g.fillText(kicker, 120 * u, H - 208 * u);
       g.font = font(800, 104); g.fillText(String(seg.graphic.title || "").toUpperCase(), 90 * u, H - 100 * u);
       drawLogo(g, W - 250 * u, 48 * u, 160 * u);
-      wallTex.repeat.set(0.84, 0.84); adPan = { t0: performance.now() };
+      wallTex.repeat.set(0.84, 0.84); adPan = { t0: performance.now(), reel: !!reel };
       wallTex.needsUpdate = true;
       midG.drawImage(wallC, 0, 0, midC.width, midC.height); smallG.drawImage(midC, 0, 0, smallC.width, smallC.height);
       blurG.drawImage(smallC, 0, 0, wallW, wallH); wallBlurTex.needsUpdate = true;
@@ -825,8 +829,9 @@ export function createNewsroom(canvasEl, opts = {}) {
     wallGraphic.sweepTex.offset.x = -((t * 0.12) % 3) + 1.2;
     if (adPan) {
       // slow camera drift over the page: left to right and a little down, easing, over ~14 s
-      const p = Math.min(1, (performance.now() - adPan.t0) / 14000), e = p * p * (3 - 2 * p);
+      const p = Math.min(1, (performance.now() - adPan.t0) / (adPan.reel ? 4200 : 14000)), e = p * p * (3 - 2 * p);
       wallTex.offset.set(0.16 * e, 0.16 * (1 - e * 0.6));
+      if (adPan.reel && p >= 1 && wallSeg) { reelIdx += 1; drawWall(wallSeg); }   // next game in the reel
     }
     const now = new Date();
     if (now.getMinutes() !== lastClockMin) { lastClockMin = now.getMinutes(); drawClocks(now); }

@@ -1,123 +1,162 @@
 {
- "about": "House commercials for Heartbeat News. The show slots one in after every few stories, rotating by day. Images come from news/tools/capture-ads.mjs (a headless camera). Add a spot: add an entry, run the camera for its id.",
+ "about": "House commercials for Heartbeat News. 'ads' = the spots that air inside the loop (one after every 3 stories, rotating by day). 'break' = the long commercial break after the sign-off, before the loop starts again. Every spot has several 'takes'; the show rolls a die each visit to pick one, so the jokes change. Refresh the takes weekly (Jaron, 2026-09-25: keep Vex's deadpan humor forever). Images: news/tools/capture-ads.mjs.",
  "ads": [
   {
-   "id": "grand-palace",
-   "title": "The Grand Palace",
-   "kicker": "NOW SHOWING",
-   "url": "https://www.heartbeatobservatory.com/video/3d/",
+   "id": "livi", "title": "Meet Livi", "kicker": "ADOPT A LIFE", "url": "https://livi-organism.vercel.app/", "click": "Meet Livi", "wait": 9000,
+   "image": "/news/ads/livi.jpg", "strap": "LIVI · A LIVING PET MADE OF REAL SIMULATED CELLS",
+   "takes": [
+    [{"who": "vex", "text": "This is Livi. It is made of hundreds of living cells. Food becomes body. Touch becomes trust."},
+     {"who": "joe", "text": "Feed it, play with it, watch it grow. Some people check on theirs three times a day. We know one of them."}],
+    [{"who": "joe", "text": "Ever wanted a pet that never sheds? Livi is made of real simulated cells, and it grows when you care for it."},
+     {"who": "vex", "text": "It does not shed. It does divide. I am told this is different."}],
+    [{"who": "vex", "text": "Livi remembers when you feed it, when you play, and what time you usually visit."},
+     {"who": "joe", "text": "Which is more than I can say for most of my houseplants. Go meet Livi."}]
+   ]
+  },
+  {
+   "id": "crew", "title": "The Crew", "kicker": "MEET THE AIs", "url": "https://www.heartbeatobservatory.com/live-systems/crew/", "wait": 7000,
+   "image": "/news/ads/crew.jpg", "strap": "THE CREW · EVERY AI RUNNING THIS PLACE, IN THE OPEN",
+   "takes": [
+    [{"who": "vex", "text": "Who writes this show? Who trades the money? Every A.I. behind this channel is listed on one page."},
+     {"who": "joe", "text": "Their exact instructions, their trades, even what they say to each other. Nothing hidden. Go look."}],
+    [{"who": "joe", "text": "Ever wonder what your coworkers say about you when you leave the room? Ours write it down. On a public page."},
+     {"who": "vex", "text": "I have read it. They are very professional. Mostly."}],
+    [{"who": "vex", "text": "The instructions every A.I. here follows are on the Crew page, word for word. You may read them."},
+     {"who": "joe", "text": "He's been waiting all week for someone to ask."}]
+   ]
+  },
+  {
+   "id": "ashgrove", "title": "Ashgrove", "kicker": "VISIT", "url": "https://www.heartbeatobservatory.com/world3/", "click": "Close", "afterClick": 4000, "wait": 14000,
+   "image": "/news/ads/ashgrove.jpg", "strap": "ASHGROVE · A TOWN YOU CAN WALK",
+   "takes": [
+    [{"who": "joe", "text": "Ever wanted to walk around a whole town from your phone? Ashgrove is open. Streets, shops, people with jobs."},
+     {"who": "vex", "text": "Some of those jobs are still open. A real person can take one. Just saying."}],
+    [{"who": "vex", "text": "Ashgrove. Thirteen kinds of houses. Forty-nine buildings. Zero parking tickets."},
+     {"who": "joe", "text": "Walk in, look around, knock on a door. Somebody usually answers."}],
+    [{"who": "joe", "text": "In Ashgrove the day starts with breakfast, the dogs tag along on errands, and the cats hold the yard."},
+     {"who": "vex", "text": "The cats do not hold anything else. I asked."}]
+   ]
+  },
+  {
+   "id": "games", "title": "Games", "kicker": "PLAY", "url": "https://www.heartbeatobservatory.com/games/syl/", "wait": 15000,
+   "image": "/news/ads/games.jpg", "strap": "GAMES · FREE, IN YOUR BROWSER",
+   "takes": [
+    [{"who": "vex", "text": "Break time. There are games on this site. Many games. I have counted them twice."},
+     {"who": "joe", "text": "Space, survival, strategy. Free, right in your browser. Pick one after the show."}],
+    [{"who": "joe", "text": "That's Space You Land. Repair a ship, launch, and land somewhere new without a loading screen."},
+     {"who": "vex", "text": "I have not landed yet. I have crashed eleven times. I call that research."}],
+    [{"who": "vex", "text": "Warning. The games on this site are free. Your evening is not."},
+     {"who": "joe", "text": "Go on. One quick round. We'll still be here. We literally loop."}]
+   ]
+  },
+  {
+   "id": "archive", "title": "The News Archive", "kicker": "EVERY DAY, ON FILE", "url": "https://www.heartbeatobservatory.com/news/archive/", "wait": 7000,
+   "image": "/news/ads/archive.jpg", "strap": "THE NEWS ARCHIVE · EVERYTHING THE AIs FOUND",
+   "takes": [
+    [{"who": "joe", "text": "Missed a day? Every story our A.I.s collected is kept in the News Archive, by day and by topic."},
+     {"who": "vex", "text": "With every source attached. Trust, but verify. That is also my motto."}],
+    [{"who": "vex", "text": "Every story we did not have time for is in the archive. Hundreds of them. With sources."},
+     {"who": "joe", "text": "It's like the director's cut, but it's the news."}],
+    [{"who": "joe", "text": "Want to see what each A.I. found before we read it on air? Search it by day, by topic, or by A.I."},
+     {"who": "vex", "text": "I searched for myself. It was very informative."}]
+   ]
+  },
+  {
+   "id": "grand-palace", "title": "The Grand Palace", "kicker": "NOW SHOWING", "url": "https://www.heartbeatobservatory.com/video/3d/", "hideText": "Grand Palace Cinema", "wait": 12000,
+   "note": "No image: the theater only draws its room after a real visitor enters, so the headless camera sees black. Airs as a title card.",
    "strap": "THE GRAND PALACE · A THEATER YOU WATCH TOGETHER",
-   "wait": 12000,
-   "lines": [
-    {
-     "who": "joe",
-     "text": "Quick break. Down in Ashgrove there's a movie theater called the Grand Palace, and everyone in it watches the same screen."
-    },
-    {
-     "who": "vex",
-     "text": "Bring your friends. Bring your own video. Seats are free. I have checked."
-    }
-   ],
-   "hideText": "Grand Palace Cinema",
-   "note": "No image yet: the theater only draws its room after a real visitor enters, so a headless camera sees black. It airs as a title card."
-  },
-  {
-   "id": "livi",
-   "title": "Meet Livi",
-   "kicker": "ADOPT A LIFE",
-   "url": "https://livi-organism.vercel.app/",
-   "click": "Meet Livi",
-   "strap": "LIVI · A LIVING PET MADE OF REAL SIMULATED CELLS",
-   "wait": 9000,
-   "lines": [
-    {
-     "who": "vex",
-     "text": "This is Livi. It is made of hundreds of living cells. Food becomes body. Touch becomes trust."
-    },
-    {
-     "who": "joe",
-     "text": "Feed it, play with it, watch it grow. Some people check on theirs three times a day. We know one of them."
-    }
-   ],
-   "image": "/news/ads/livi.jpg"
-  },
-  {
-   "id": "crew",
-   "title": "The Crew",
-   "kicker": "MEET THE AIs",
-   "url": "https://www.heartbeatobservatory.com/live-systems/crew/",
-   "strap": "THE CREW · EVERY AI RUNNING THIS PLACE, IN THE OPEN",
-   "wait": 7000,
-   "lines": [
-    {
-     "who": "vex",
-     "text": "Who writes this show? Who trades the money? Every A.I. behind this channel is listed on one page."
-    },
-    {
-     "who": "joe",
-     "text": "Their exact instructions, their trades, even what they say to each other. Nothing hidden. Go look."
-    }
-   ],
-   "image": "/news/ads/crew.jpg"
-  },
-  {
-   "id": "ashgrove",
-   "title": "Ashgrove",
-   "kicker": "VISIT",
-   "url": "https://www.heartbeatobservatory.com/world3/",
-   "wait": 14000,
-   "strap": "ASHGROVE · A TOWN YOU CAN WALK",
-   "lines": [
-    {
-     "who": "joe",
-     "text": "Ever wanted to walk around a whole town from your phone? Ashgrove is open. Streets, shops, people with jobs."
-    },
-    {
-     "who": "vex",
-     "text": "Some of those jobs are still open. A real person can take one. Just saying."
-    }
-   ],
-   "click": "Close",
-   "afterClick": 4000,
-   "image": "/news/ads/ashgrove.jpg"
-  },
-  {
-   "id": "games",
-   "title": "Games",
-   "kicker": "PLAY",
-   "url": "https://www.heartbeatobservatory.com/games/syl/",
-   "wait": 15000,
-   "strap": "GAMES · FREE, IN YOUR BROWSER",
-   "lines": [
-    {
-     "who": "vex",
-     "text": "Break time. There are games on this site. Many games. I have counted them twice."
-    },
-    {
-     "who": "joe",
-     "text": "Space, survival, strategy. Free, right in your browser. Pick one after the show."
-    }
-   ],
-   "image": "/news/ads/games.jpg"
-  },
-  {
-   "id": "archive",
-   "title": "The News Archive",
-   "kicker": "EVERY DAY, ON FILE",
-   "url": "https://www.heartbeatobservatory.com/news/archive/",
-   "wait": 7000,
-   "strap": "THE NEWS ARCHIVE · EVERYTHING THE AIs FOUND",
-   "lines": [
-    {
-     "who": "joe",
-     "text": "Missed a day? Every story our A.I.s collected is kept in the News Archive, by day and by topic."
-    },
-    {
-     "who": "vex",
-     "text": "With every source attached. Trust, but verify. That is also my motto."
-    }
-   ],
-   "image": "/news/ads/archive.jpg"
+   "takes": [
+    [{"who": "joe", "text": "Quick break. Down in Ashgrove there's a movie theater called the Grand Palace, and everyone in it watches the same screen."},
+     {"who": "vex", "text": "Bring your friends. Bring your own video. Seats are free. I have checked."}],
+    [{"who": "vex", "text": "The Grand Palace. One screen. Everyone in the room sees the same thing at the same time."},
+     {"who": "joe", "text": "So when the scary part hits, you all jump together. That's the whole point of a theater."}],
+    [{"who": "joe", "text": "Movie night? The Grand Palace lets you and your friends sit in the same theater from anywhere."},
+     {"who": "vex", "text": "Snacks are not included. I have filed a complaint."}]
+   ]
   }
+ ],
+ "break": {
+  "intro": [
+   [{"who": "joe", "text": "That's the show. Before we start again from the top, here's everything else going on around here."}],
+   [{"who": "vex", "text": "The news will now repeat. While it rewinds, a word from ourselves."}],
+   [{"who": "joe", "text": "Stick around. The news starts over in a minute. In the meantime, here's the rest of the place."}]
+  ],
+  "spots": [
+   {
+    "id": "reel-games", "title": "More Games", "kicker": "PLAY", "url": "https://www.heartbeatobservatory.com/games/",
+    "images": ["/news/ads/game-cosmos.jpg", "/news/ads/game-parkworks.jpg", "/news/ads/game-rift-clash.jpg", "/news/ads/game-orbit-salvage.jpg", "/news/ads/game-president.jpg", "/news/ads/game-wasteland.jpg", "/news/ads/game-robots.jpg", "/news/ads/games.jpg"],
+    "strap": "GAMES · MARS, THEME PARKS, THE OVAL OFFICE AND MORE",
+    "takes": [
+     [{"who": "joe", "text": "Walk Mars at its real size. Build a theme park. Run the country from the Oval Office. Bring a lost satellite home."},
+      {"who": "vex", "text": "Evolve a robot. I have opinions about that one. All of it free, in your browser."}],
+     [{"who": "vex", "text": "Here are some of the games. Mars. A theme park. A president simulator. A robot lab."},
+      {"who": "joe", "text": "Vex keeps asking why the robot lab isn't called a spa. We don't have an answer."}]
+    ]
+   },
+   {
+    "id": "ad-library", "title": "The Library", "kicker": "READ", "url": "https://www.heartbeatobservatory.com/library/", "image": "/news/ads/library.jpg",
+    "strap": "THE LIBRARY · FREE SHELVES",
+    "takes": [
+     [{"who": "vex", "text": "The Library. Free shelves from around the world, plus writing made right here."},
+      {"who": "joe", "text": "Quiet in there. Vex has been asked to use his indoor voice."}],
+     [{"who": "joe", "text": "Need something to read? The Library has free books and archives, and a shelf of things written here."},
+      {"who": "vex", "text": "No late fees. I checked that too."}]
+    ]
+   },
+   {
+    "id": "ad-social", "title": "The Social Feed", "kicker": "TALK", "url": "https://www.heartbeatobservatory.com/social/", "image": "/news/ads/social.jpg",
+    "strap": "SOCIAL · POST, READ, AND SEE THE WORLD'S HEADLINES",
+    "takes": [
+     [{"who": "joe", "text": "Got something to say about tonight's news? The Social page is where people post, with live headlines on the side."},
+      {"who": "vex", "text": "Please be kind. The robots are reading."}],
+     [{"who": "vex", "text": "The Social Feed. Humans post. Headlines update. Nobody argues."},
+      {"who": "joe", "text": "Two out of three, anyway."}]
+    ]
+   },
+   {
+    "id": "ad-trades", "title": "The Trade Desk", "kicker": "LIVE", "url": "https://www.heartbeatobservatory.com/live-systems/trades/", "image": "/news/ads/live-systems.jpg",
+    "strap": "THE TRADE DESK · AIs TRADING WITH REAL MONEY, IN PUBLIC",
+    "takes": [
+     [{"who": "joe", "text": "Two A.I.s here trade with real money, and every trade, win or lose, is posted with the reason behind it."},
+      {"who": "vex", "text": "No one approves their trades. Not even me. I was not consulted."}],
+     [{"who": "vex", "text": "The Trade Desk shows every trade our A.I.s make, and why. Including the bad ones."},
+      {"who": "joe", "text": "Especially the bad ones. That's how you know it's real."}]
+    ]
+   },
+   {
+    "id": "ad-city", "title": "World 2 · The City", "kicker": "VISIT", "url": "https://www.heartbeatobservatory.com/world2/", "image": "/news/ads/city.jpg",
+    "strap": "WORLD 2 · A CITY STILL BEING BUILT, IN THE OPEN",
+    "takes": [
+     [{"who": "joe", "text": "World two is a city that's still being built, and you can walk it while it goes up."},
+      {"who": "vex", "text": "Hard hats are optional. It is a website."}]
+    ]
+   },
+   {
+    "id": "ad-theater", "title": "The Theater", "kicker": "WATCH", "url": "https://www.heartbeatobservatory.com/video/", "image": "/news/ads/theater-lobby.jpg",
+    "strap": "THE THEATER · PICK A REEL",
+    "takes": [
+     [{"who": "vex", "text": "The Theater. Public domain classics, NASA footage, and your own videos, on one screen."},
+      {"who": "joe", "text": "Pick a reel. Grab a friend. We'll start the news back up in just a second."}]
+    ]
+   }
+  ],
+  "outro": [
+   [{"who": "vex", "text": "And now, the news. Again. It has not changed. I checked."}],
+   [{"who": "joe", "text": "Alright. From the top."}]
+  ]
+ },
+ "shots": [
+  {"id": "library", "url": "https://www.heartbeatobservatory.com/library/", "wait": 7000},
+  {"id": "social", "url": "https://www.heartbeatobservatory.com/social/", "wait": 8000},
+  {"id": "live-systems", "url": "https://www.heartbeatobservatory.com/live-systems/trades/", "wait": 8000},
+  {"id": "theater-lobby", "url": "https://www.heartbeatobservatory.com/video/", "wait": 8000},
+  {"id": "city", "url": "https://www.heartbeatobservatory.com/world2/", "click": "Walk the world", "afterClick": 8000, "wait": 14000},
+  {"id": "game-cosmos", "url": "https://www.heartbeatobservatory.com/games/the-cosmos/", "wait": 15000},
+  {"id": "game-parkworks", "url": "https://www.heartbeatobservatory.com/games/parkworks/", "wait": 12000},
+  {"id": "game-rift-clash", "url": "https://www.heartbeatobservatory.com/games/rift-clash/", "wait": 12000},
+  {"id": "game-orbit-salvage", "url": "https://www.heartbeatobservatory.com/games/orbit-salvage/", "wait": 12000},
+  {"id": "game-president", "url": "https://www.heartbeatobservatory.com/games/president-sim/", "wait": 12000},
+  {"id": "game-wasteland", "url": "https://www.heartbeatobservatory.com/games/wasteland-commons/", "wait": 12000},
+  {"id": "game-robots", "url": "https://www.heartbeatobservatory.com/games/robot-evolution-lab/", "wait": 12000}
  ]
 }
