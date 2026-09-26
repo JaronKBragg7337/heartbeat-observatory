@@ -66,6 +66,7 @@ function start() {
   .pill { position: fixed; left: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); pointer-events: auto;
     background: #1f2a2d; color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 999px;
     padding: 10px 16px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,.3); cursor: pointer; }
+  .pill.edge { left: 4px; bottom: auto; top: 56%; transform: translateY(-50%); padding: 10px 8px; font-size: 12px; opacity: .85; }
   .pill .n { background: #e23a45; border-radius: 999px; padding: 1px 7px; margin-left: 6px; font-size: 12px; }
   .bar { position: fixed; left: 0; right: 0; top: 0; pointer-events: auto; display: none; z-index: 6;
     background: #1f2a2d; color: #fff; padding: calc(8px + env(safe-area-inset-top)) 8px 8px;
@@ -275,6 +276,8 @@ function start() {
     place(e.target, $("hover"));
   }, true);
 
+  // games/3D worlds keep their joysticks bottom-left, so there the Edit button sits on the left edge (2026-09-26)
+  if (/^\/(engine|games\/[^/]+\/|PCGames\/[^/]+\/|world2|world3|worlds-lab\/(worlds|coming-soon|starter)|island|space|video\/3d|3DPrinterAsset|HeartbeatCenter|chat-neighborhood|live-systems\/flies\/brain)/.test(location.pathname)) $("pill").classList.add("edge");
   $("pill").onclick = async () => {
     if (editing) return;
     $("pill").textContent = "Opening…";

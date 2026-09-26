@@ -7,7 +7,9 @@
 
   var SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
   var SUPABASE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
-  var inWorld = location.pathname.indexOf("/engine/hub") === 0;
+  // Games and 3D worlds put their controls in the bottom corners, so there the phone is a slim tab on the right edge
+  // (Jaron 2026-09-26: the round button covered FIRE, JUMP and USE).
+  var inWorld = /^\/(engine|games\/[^/]+\/|PCGames\/[^/]+\/|world2|world3|worlds-lab\/(worlds|coming-soon|starter)|island|space|video\/3d|3DPrinterAsset|HeartbeatCenter|chat-neighborhood|live-systems\/flies\/brain)/.test(location.pathname);
   var state = {
     supabase: null,
     session: null,
@@ -25,7 +27,7 @@
     ".hb-bubble-btn{position:fixed;z-index:90000;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 26px rgba(0,0,0,.4);transition:transform .12s ease;font-family:system-ui,-apple-system,sans-serif;letter-spacing:0;}" +
     ".hb-bubble-btn:active{transform:scale(.94);}" +
     ".hb-b-normal{right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;background:#1d6fe0;color:#fff;font-size:17px;font-weight:800;}" +
-    ".hb-b-world{right:calc(12px + env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);width:46px;height:64px;border-radius:12px;background:#10171c;border:1px solid #2c3a42;color:#cfe0ea;font-size:10px;font-weight:800;}" +
+    ".hb-b-world{right:calc(4px + env(safe-area-inset-right,0px));top:56%;transform:translateY(-50%);width:40px;height:58px;opacity:.85;border-radius:12px;background:#10171c;border:1px solid #2c3a42;color:#cfe0ea;font-size:10px;font-weight:800;}" +
     ".hb-b-world:active{transform:translateY(-50%) scale(.95);}" +
     ".hb-panel{position:fixed;z-index:90001;display:none;flex-direction:column;overflow:hidden;background:#0e1417;border:1px solid #243036;color:#e6edf1;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.55);}" +
     ".hb-panel.open{display:flex;}" +
