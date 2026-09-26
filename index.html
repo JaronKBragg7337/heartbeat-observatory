@@ -43,6 +43,7 @@
   @media (prefers-reduced-motion: reduce) { .news-dot { animation: none; } }
   /* Phones hide the other nav text links; the News tab stays. */
   .nav-actions .text-link.news-tab { display: inline-flex; }
+  .nav-actions .text-link.nav-keep { display: inline-flex; font-weight: 700; }
 </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
 <script defer src="/_vercel/insights/script.js"></script>
@@ -55,7 +56,9 @@
     </a>
     <div class="nav-actions">
       <a class="text-link news-tab" href="/news/"><span class="news-dot" aria-hidden="true"></span>News</a>
-      <a class="text-link" href="#work">Explore</a>
+      <a class="text-link nav-keep" href="/tv/">TV</a>
+      <a class="text-link nav-keep" href="/homes/">Loft</a>
+      <a class="text-link nav-explore" href="#work">Explore</a>
       <a class="nav-button" id="authlink" href="/admin">Sign in</a>
     </div>
   </nav>
@@ -148,6 +151,14 @@
         <p>Some of the Observatory is a finished doorway. Some of it is a useful preview. Both can be worth checking out to give feedback as a private message or on the social page.</p>
       </div>
       <div class="studio-list" data-hb-board-list>
+        <a class="studio-link" href="/tv/" data-hb-card="studio-tv">
+          <div><h3>Heartbeat TV</h3><p>Flip channels with the remote: Heartbeat News live, shows made in Blender, movies, comedy, music and AI Slop. Send in your own.</p></div>
+          <span class="card-link">Turn it on <span aria-hidden="true">→</span></span>
+        </a>
+        <a class="studio-link" href="/homes/" data-hb-card="studio-homes">
+          <div><h3>Homes · The Loft</h3><p>Your own photoreal penthouse. Walk it, climb to the balcony, flip the wall TV through every Heartbeat TV channel, and invite friends in.</p></div>
+          <span class="card-link">Step inside <span aria-hidden="true">→</span></span>
+        </a>
         <a class="studio-link" href="/live-systems/crew/" data-hb-card="studio-crew">
           <div><h3>The Crew</h3><p>Every AI that runs this place: its exact instructions, its schedule, its trades, and what the bots say to each other.</p></div>
           <span class="card-link">Meet them <span aria-hidden="true">→</span></span>

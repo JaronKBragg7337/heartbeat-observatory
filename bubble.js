@@ -12,7 +12,7 @@
 
   var SUPABASE_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
   var SUPABASE_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";
-  var inWorld = /^\/(engine|games\/[^/]+\/|PCGames\/[^/]+\/|world2|world3|worlds-lab\/(worlds|coming-soon|starter)|island|space|video\/3d|3DPrinterAsset|HeartbeatCenter|chat-neighborhood|live-systems\/flies\/brain)/.test(location.pathname);
+  var inWorld = /^\/(engine|games\/[^/]+\/|PCGames\/[^/]+\/|world2|world3|worlds-lab\/(worlds|coming-soon|starter)|island|space|video\/3d|3DPrinterAsset|HeartbeatCenter|chat-neighborhood|live-systems\/flies\/brain|homes)/.test(location.pathname);
 
   // ---- the apps (order = home screen order; dock = the bottom row) ----
   var I = {
@@ -27,6 +27,7 @@
     worlds: '<circle cx="12" cy="12" r="8.5"/><path d="M3.8 12h16.4M12 3.5c2.6 2.4 2.6 14.6 0 17M12 3.5c-2.6 2.4-2.6 14.6 0 17" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.4"/>',
     livi: '<circle cx="12" cy="12.5" r="7.5"/><circle cx="9.3" cy="11.5" r="1.4" fill="#0b2a44"/><circle cx="14.7" cy="11.5" r="1.4" fill="#0b2a44"/><path d="M10 15.2c1.2.9 2.8.9 4 0" stroke="#0b2a44" stroke-width="1.3" fill="none" stroke-linecap="round"/>',
     theater: '<path d="M4 6c3 1.2 5 1.2 8 0v9.5C12 18 10 20 8 20s-4-2-4-4.5zM12 6c3 1.2 5 1.2 8 0v9.5C20 18 18 20 16 20s-4-2-4-4.5z"/>',
+    home: '<path d="M3.5 11.2 12 4l8.5 7.2V20a1 1 0 0 1-1 1h-5v-5.5h-5V21h-5a1 1 0 0 1-1-1z"/>',
     settings: '<circle cx="12" cy="12" r="3.2" fill="rgba(0,0,0,.35)"/><path d="M12 2.8l1.6 2.4 2.8-.8.6 2.8 2.8.6-.8 2.8 2.4 1.6-2.4 1.6.8 2.8-2.8.6-.6 2.8-2.8-.8L12 21.2l-1.6-2.4-2.8.8-.6-2.8-2.8-.6.8-2.8L2.8 12l2.4-1.6-.8-2.8 2.8-.6.6-2.8 2.8.8z" fill-rule="evenodd"/>'
   };
   var APPS = [
@@ -38,6 +39,7 @@
     { id: "worlds", name: "Worlds", bg: "linear-gradient(160deg,#14b8a6,#115e59)", icon: I.worlds, url: "/worlds-lab/" },
     { id: "livi", name: "Livi", bg: "linear-gradient(160deg,#7dd3fc,#6366f1)", icon: I.livi, url: "https://livi-organism.vercel.app/" },
     { id: "crew", name: "The Crew", bg: "linear-gradient(160deg,#475569,#0f172a)", icon: I.crew, url: "/live-systems/crew/" },
+    { id: "home", name: "My Loft", bg: "linear-gradient(160deg,#ec4899,#581c87)", icon: I.home, url: "/homes/" },
     { id: "theater", name: "Theater", bg: "linear-gradient(160deg,#f59e0b,#7c2d12)", icon: I.theater, url: "/video/" }
   ];
   var DOCK = [

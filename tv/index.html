@@ -25,6 +25,7 @@
   .screen iframe, .screen video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
   .bug { position: absolute; top: 10px; left: 10px; z-index: 3; background: rgba(0,0,0,.55); padding: 5px 10px; border-radius: 8px; font: 800 13px/1 "Barlow Condensed", sans-serif; letter-spacing: .06em; pointer-events: none; transition: opacity .6s; }
   .bug.fade { opacity: 0; }
+  .unmute { position: absolute; bottom: 58px; right: 12px; z-index: 4; background: rgba(0,0,0,.7); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 9px 14px; font: 700 14px/1 system-ui, sans-serif; cursor: pointer; }
   .nosig { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px;
     background: repeating-linear-gradient(0deg, #0d0d0d 0 2px, #151515 2px 4px); color: #cbd5e1; }
   .nosig b { font: 800 clamp(22px, 5vw, 40px)/1.1 "Barlow Condensed", sans-serif; color: #fff; margin-bottom: 8px; }
@@ -115,11 +116,19 @@
     else { html += `<div class="nosig"><b>CH ${ch.n} · ${esc(ch.name)}</b>${esc(ch.empty || "Nothing on yet.")}</div>`; sub = "Coming soon"; }
     $("screen").innerHTML = html;
     const v = $("screen").querySelector("video");
-    if (v) v.addEventListener("ended", () => { idx++; draw(); });   // playlist: next item, loops
+    if (v) {
+      v.addEventListener("ended", () => { idx++; draw(); });   // playlist: next item, loops
+      // phones refuse autoplay with sound: start muted and offer one tap for sound instead of a black screen
+      const p = v.play(); if (p) p.catch(() => { v.muted = true; v.play().catch(() => {});
+        const b = document.createElement("button"); b.className = "unmute"; b.textContent = "🔊 Tap for sound";
+        b.onclick = () => { v.muted = false; v.play(); b.remove(); }; $("screen").appendChild(b); });
+    }
     $("nowTitle").textContent = title; $("nowSub").textContent = sub;
     clearTimeout(bugTimer); bugTimer = setTimeout(() => $("bug") && $("bug").classList.add("fade"), 3500);
     $("remote").innerHTML = channels.map((c) => `<button class="ch${c.n === cur ? " on" : ""}" data-n="${c.n}"><small>CH ${c.n}</small><b>${esc(c.name)}</b></button>`).join("");
   }
+  // page-type shows (e.g. The Necklace Show in ?tv=1 mode) post this when they finish, so the playlist moves on like a video
+  addEventListener("message", (e) => { if (e.data && e.data.type === "hbtv-ended") { idx++; draw(); } });
   $("remote").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (b) tune(+b.dataset.n); });
   $("chUp").onclick = () => tune(cur + 1); $("chDown").onclick = () => tune(cur - 1);
   document.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "PageUp") tune(cur + 1); if (e.key === "ArrowLeft" || e.key === "PageDown") tune(cur - 1); if (/^[1-9]$/.test(e.key) && +e.key <= channels.length) tune(+e.key); });

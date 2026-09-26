@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<title>Heartbeat Homes</title>
+<meta name="description" content="Your own penthouse loft on Heartbeat Observatory. Walk it, flip the TV, invite friends to hang out." />
+<meta property="og:title" content="Heartbeat Homes - your own loft" />
+<meta property="og:description" content="A photoreal penthouse you can walk around, with a TV that plays every Heartbeat TV channel. Invite friends in." />
+<meta property="og:image" content="https://heartbeatobservatory.com/homes/loft/card.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;600&display=swap" rel="stylesheet" />
+<!-- hb:no-editor -->
+<style>
+  :root { --bg:#05070b; --text:#eef2f6; --muted:#9aa6b2; --glass:rgba(12,16,22,.62); --line:rgba(255,255,255,.14); --pink:#ff4fa3; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: Barlow, system-ui, sans-serif; overscroll-behavior: none; }
+  #view { position: fixed; inset: 0; touch-action: none; }
+  #view canvas { display: block; }
+  #css { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+  #css iframe { pointer-events: auto; border: 0; background: #000; }
+  .hud { position: fixed; left: 0; right: 0; top: 0; z-index: 5; display: flex; gap: 8px; align-items: center; padding: calc(10px + env(safe-area-inset-top)) 12px 10px; pointer-events: none; }
+  .hud > * { pointer-events: auto; }
+  .pill { background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 999px; padding: 8px 13px; font: 600 14px/1 Barlow, sans-serif; color: var(--text); text-decoration: none; white-space: nowrap; cursor: pointer; }
+  .pill.on { border-color: var(--pink); box-shadow: 0 0 0 1px var(--pink) inset; }
+  .title { font: 800 18px/1 "Barlow Condensed", sans-serif; letter-spacing: .04em; margin-right: auto; text-shadow: 0 1px 6px #000; }
+  .title small { display: block; font: 600 11px/1.3 Barlow, sans-serif; color: var(--muted); letter-spacing: 0; }
+  .tvbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 5; display: none; gap: 6px; align-items: center; }
+  .tvbar.show { display: flex; }
+  .tvbar .ch { min-width: 150px; text-align: center; }
+  #stick { position: fixed; z-index: 4; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); display: none; pointer-events: none; }
+  #stick i { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(255,255,255,.35); }
+  .hint { position: fixed; left: 50%; bottom: calc(70px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 14px; text-align: center; transition: opacity .8s; max-width: 92vw; }
+  .hint.gone { opacity: 0; pointer-events: none; }
+  #load { position: fixed; inset: 0; z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: radial-gradient(80% 60% at 50% 40%, #16122a, #05070b); transition: opacity .6s; }
+  #load.done { opacity: 0; pointer-events: none; }
+  #load b { font: 800 30px/1 "Barlow Condensed", sans-serif; letter-spacing: .05em; }
+  #load .bar { width: min(280px, 70vw); height: 4px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+  #load .bar i { display: block; height: 100%; width: 0; background: var(--pink); transition: width .2s; }
+  #load p { color: var(--muted); font-size: 14px; }
+  .sheet { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 8; width: min(420px, 92vw); background: #0e131a; border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: none; }
+  .sheet.show { display: block; }
+  .sheet h3 { font: 800 22px/1.1 "Barlow Condensed", sans-serif; margin-bottom: 8px; }
+  .sheet p { color: var(--muted); font-size: 14px; line-height: 1.45; margin-bottom: 12px; }
+  .sheet input { width: 100%; background: #070a0e; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: 14px ui-monospace, monospace; margin-bottom: 10px; }
+  .sheet .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  @media (max-width: 560px) { .title { position: fixed; left: 12px; top: calc(56px + env(safe-area-inset-top)); font-size: 16px; } .who { top: calc(96px + env(safe-area-inset-top)); } }
+  .who { position: fixed; right: 12px; top: calc(56px + env(safe-area-inset-top)); z-index: 5; font-size: 13px; color: var(--muted); text-align: right; text-shadow: 0 1px 4px #000; pointer-events: none; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="view"></div>
+<div id="css"></div>
+<div class="hud">
+  <a class="pill" href="/">← Home</a>
+  <div class="title" id="title">The Loft<small id="sub">Heartbeat Homes</small></div>
+  <button class="pill" id="tvBtn">📺 TV</button>
+  <button class="pill" id="invBtn" style="display:none">🔗 Invite</button>
+</div>
+<div class="who" id="who"></div>
+<div class="tvbar" id="tvbar">
+  <button class="pill" id="chDown">◀</button>
+  <div class="pill ch" id="chName">CH 1</div>
+  <button class="pill" id="chUp">▶</button>
+</div>
+<div id="stick"><i></i></div>
+<div class="hint" id="hint">Drag to look · WASD / left side of the screen to walk · stairs go up to the balcony</div>
+<div id="load"><b>HEARTBEAT HOMES</b><div class="bar"><i id="loadBar"></i></div><p id="loadMsg">Unlocking the loft…</p></div>
+<div class="sheet" id="invSheet">
+  <h3>Invite friends</h3>
+  <p>Anyone with this link can walk into your loft while you're here and see you move around. Make a new link any time to cut off old ones.</p>
+  <input id="invLink" readonly>
+  <div class="row"><button class="pill" id="invCopy">Copy link</button><button class="pill" id="invShare">Share…</button><button class="pill" id="invRoll">New link</button><button class="pill" id="invClose">Close</button></div>
+</div>
+<script type="module" src="/homes/homes.js?v=1"></script>
+</body>
+</html>
