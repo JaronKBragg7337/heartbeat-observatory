@@ -276,8 +276,8 @@ function start() {
     place(e.target, $("hover"));
   }, true);
 
-  // games/3D worlds keep their joysticks bottom-left, so there the Edit button sits on the left edge (2026-09-26)
-  if (/^\/(engine|games\/[^/]+\/|PCGames\/[^/]+\/|world2|world3|worlds-lab\/(worlds|coming-soon|starter)|island|space|video\/3d|3DPrinterAsset|HeartbeatCenter|chat-neighborhood|live-systems\/flies\/brain)/.test(location.pathname)) $("pill").classList.add("edge");
+  // games/3D worlds: the editor can't change a scene drawn in 3D code, so no Edit button there (Jaron 2026-09-26)
+  if (/^\/(engine|games\/[^/]+\/|PCGames\/[^/]+\/|world2|world3|worlds-lab\/(worlds|coming-soon|starter)|island|space|video\/3d|3DPrinterAsset|HeartbeatCenter|chat-neighborhood|live-systems\/flies\/brain)/.test(location.pathname)) $("pill").style.display = "none";
   $("pill").onclick = async () => {
     if (editing) return;
     $("pill").textContent = "Opening…";
