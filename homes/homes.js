@@ -168,13 +168,16 @@ function move(dt) {
 function spawn() { const s = colliders.spawn; P.pos.set(s[0], s[1], s[2]); P.vy = 0; P.yaw = colliders.spawnYaw || 0; }
 
 // ---------------------------------------------------------------- the TV: a real /tv/ page on the wall
-let channels = [], ch = 1, tvOn = false, tvObj = null, iframe = null;
+let channels = [], ch = 1, item = 0, tvOn = false, tvObj = null, iframe = null;
 const TV_W = 1280, TV_H = 720;
 async function setupTV() {
-  try { channels = (await (await fetch("/tv/channels.json", { cache: "no-cache" })).json()).channels; } catch (e) { channels = [{ n: 1, name: "Heartbeat News" }]; }
-  try { ch = +localStorage.getItem("hbhome-ch") || 1; } catch (e) {}
+  try { const { loadGuide } = await import("/tv/guide.js"); channels = await loadGuide(await getSupabase()); }
+  catch (e) { try { channels = (await (await fetch("/tv/channels.json", { cache: "no-cache" })).json()).channels.map((c) => ({ ...c, items: [] })); } catch (e2) { channels = [{ n: 1, name: "Heartbeat News", items: [] }]; } }
+  try { const t = (localStorage.getItem("hbhome-tune") || localStorage.getItem("hbhome-ch") || "1").split("."); ch = +t[0] || 1; item = Math.max(0, (+t[1] || 1) - 1); } catch (e) {}
 }
-function tvSrc() { return `/tv/?embed=1&ch=${ch}`; }
+// numbered like the TV page: 2.1, 2.2 ... (Jaron 9/27 - pick any show, never forced to sit through the one before it)
+function tvSrc() { return `/tv/?embed=1&ch=${ch}.${item + 1}`; }
+function saveTune() { try { localStorage.setItem("hbhome-tune", `${ch}.${item + 1}`); } catch (e) {} }
 function toggleTV(force, remote) {
   tvOn = typeof force === "boolean" ? force : !tvOn;
   $("tvBtn").classList.toggle("on", tvOn); $("tvbar").classList.toggle("show", tvOn);
@@ -199,23 +202,30 @@ function toggleTV(force, remote) {
 }
 function tune(d) {
   if (!channels.length) return;
-  ch = ((ch - 1 + d + channels.length) % channels.length) + 1;
-  try { localStorage.setItem("hbhome-ch", ch); } catch (e) {}
+  pick(((ch - 1 + d + channels.length) % channels.length) + 1, 0);
+}
+function pick(n, i) {   // put on one numbered item, for everyone in the room
+  ch = n; item = i || 0; saveTune();
   if (!tvOn) toggleTV(true, true); else if (iframe) iframe.src = tvSrc();
   showCh(); shareTV();
 }
+// the TV's own on-screen guide (tapped while the TV is raised) tells us what it switched to; keep the room in step
+addEventListener("message", (e) => {
+  if (e.origin !== location.origin || !e.data || e.data.type !== "hbtv-tuned" || !iframe || e.source !== iframe.contentWindow) return;
+  ch = e.data.ch; item = e.data.i || 0; saveTune(); showCh(); shareTV();
+});
 // One TV per loft (Jaron 9/26): whoever presses the remote changes it for everyone in the room - on purpose, like a real couch.
 let tvStamp = 0;
 function shareTV(resendAt) {
   if (!resendAt) tvStamp = Date.now();
-  if (chan && me) chan.send({ type: "broadcast", event: "tv", payload: { on: tvOn, ch, by: me.name, at: resendAt || tvStamp } });
+  if (chan && me) chan.send({ type: "broadcast", event: "tv", payload: { on: tvOn, ch, item, by: me.name, at: resendAt || tvStamp } });
 }
 function onRemoteTV(p) {
   if (!p || !(p.at > tvStamp)) return;
-  const changed = p.on !== tvOn || p.ch !== ch;
-  tvStamp = p.at; ch = p.ch || ch;
+  const changed = p.on !== tvOn || p.ch !== ch || (p.item || 0) !== item;
+  tvStamp = p.at; ch = p.ch || ch; item = p.item || 0; saveTune();
   toggleTV(!!p.on, true);
-  if (changed && p.by) { const c = channels[ch - 1]; toast(p.on ? `${p.by} put on ${c ? "CH " + c.n + " · " + c.name : "CH " + ch}` : `${p.by} turned the TV off`); }
+  if (changed && p.by) toast(p.on ? `${p.by} put on ${nowLabel()}` : `${p.by} turned the TV off`);
 }
 let toastT = 0;
 function toast(msg) {
@@ -223,7 +233,22 @@ function toast(msg) {
   if (!t) { t = document.createElement("div"); t.id = "hbToast"; t.style.cssText = "position:fixed;left:50%;top:calc(110px + env(safe-area-inset-top));transform:translateX(-50%);z-index:6;background:rgba(12,16,22,.78);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:8px 14px;font:600 14px Barlow,sans-serif;color:#fff;transition:opacity .5s;pointer-events:none;white-space:nowrap"; document.body.appendChild(t); }
   t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => (t.style.opacity = 0), 3500);
 }
-function showCh() { const c = channels[ch - 1]; $("chName").textContent = c ? `CH ${c.n} · ${c.name}` : `CH ${ch}`; }
+function nowLabel() {
+  const c = channels[ch - 1]; if (!c) return `CH ${ch}`;
+  const it = (c.items || [])[item];
+  return it && c.type !== "page" ? `CH ${ch}.${item + 1} · ${it.title}` : `CH ${ch} · ${c.name}`;
+}
+function showCh() { $("chName").textContent = nowLabel(); if (!$("guide").hidden) drawGuide(); }
+// the remote's guide: every channel and every numbered show; tap one and the room's TV switches to it
+const escH = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function drawGuide() {
+  $("guideList").innerHTML = channels.map((c) => `<div class="gcn">CH ${c.n} · ${escH(c.name)}</div>` +
+    ((c.items || []).length ? c.items : [{ title: c.empty ? "Coming soon" : c.name }]).map((it, i) =>
+      `<button class="gi${tvOn && c.n === ch && i === item ? " on" : ""}" data-n="${c.n}" data-i="${i}"><small>${c.n}.${i + 1}</small><span>${escH(it.title)}</span></button>`).join("")).join("");
+}
+$("guideBtn").onclick = () => { drawGuide(); $("guide").hidden = false; };
+$("guideClose").onclick = () => ($("guide").hidden = true);
+$("guideList").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (!b) return; pick(+b.dataset.n, +b.dataset.i); $("guide").hidden = true; });
 $("tvBtn").onclick = () => toggleTV(); $("chUp").onclick = () => tune(1); $("chDown").onclick = () => tune(-1);
 
 // hide the TV layer when a wall or floor is between you and the screen (CSS3D draws on top of the 3D view)

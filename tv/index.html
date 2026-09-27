@@ -59,6 +59,23 @@
   html.embed .top, html.embed .now, html.embed .remote, html.embed .updown, html.embed h2, html.embed .card, html.embed .stand, html.embed footer { display: none !important; }
   html.embed .wrap { padding: 0; max-width: none; } html.embed .tv { padding: 0; border-radius: 0; background: #000; box-shadow: none; }
   html.embed .screen { position: fixed; inset: 0; aspect-ratio: auto; border-radius: 0; }
+  /* numbered items (2.1, 2.2 ...) and the on-screen guide */
+  .list { display: grid; gap: 6px; margin-top: 10px; }
+  .lh { font: 800 13px/1 "Barlow Condensed", sans-serif; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin: 6px 2px 2px; }
+  .gi { display: flex; gap: 12px; align-items: center; width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; color: var(--text); text-align: left; font: 600 15px Barlow, sans-serif; cursor: pointer; }
+  .gi small { font: 800 15px/1 "Barlow Condensed", sans-serif; color: var(--red); min-width: 34px; }
+  .gi span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gi em { font: 800 11px/1 "Barlow Condensed", sans-serif; letter-spacing: .08em; font-style: normal; color: #fff; background: var(--red); border-radius: 6px; padding: 4px 6px; }
+  .gi.on { border-color: var(--red); background: #2a0d12; }
+  .gbtn { position: absolute; left: 10px; bottom: 10px; z-index: 5; background: rgba(0,0,0,.62); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 8px 13px; font: 700 14px/1 Barlow, sans-serif; cursor: pointer; transition: opacity .6s; }
+  .gbtn.fade { opacity: 0; }
+  .gpanel { position: absolute; inset: 0; z-index: 6; overflow-y: auto; overscroll-behavior: contain; background: rgba(6,8,12,.94); padding: 12px 12px 20px; display: grid; gap: 10px; align-content: start; }
+  .gpanel[hidden] { display: none; }
+  .gtop { display: flex; justify-content: space-between; align-items: center; }
+  .gtop b { font: 800 20px/1 "Barlow Condensed", sans-serif; letter-spacing: .05em; }
+  .gx { background: #1c2229; border: 1px solid #2b333c; color: #fff; border-radius: 999px; width: 36px; height: 36px; font-size: 16px; cursor: pointer; }
+  .gc { display: grid; gap: 6px; } .gcn { font: 800 13px/1 "Barlow Condensed", sans-serif; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+  html:not(.embed) .gbtn { display: none; }
   footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 30px; }
 </style>
 </head>
@@ -68,6 +85,7 @@
     <div class="tv"><div class="screen" id="screen"></div></div><div class="stand"></div>
     <div class="now"><h1 id="nowTitle">…</h1><span id="nowSub"></span></div>
     <div class="remote" id="remote"></div>
+    <div class="list" id="list"></div>
     <div class="updown"><button id="chDown">◀ CH</button><button id="chUp">CH ▶</button></div>
 
     <h2>Put your video on Heartbeat TV</h2>
@@ -91,47 +109,80 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const qs = new URLSearchParams(location.search);
   const EMBED = qs.get("embed") === "1";
-  const { channels } = await (await fetch("/tv/channels.json", { cache: "no-cache" })).json();
-  const { data: approved } = await supabase.from("tv_items").select("*").eq("status", "approved").order("sort").order("created_at");
-  const byCh = {}; (approved || []).forEach((i) => (byCh[i.channel] ||= []).push(i));
-  let cur = Math.min(channels.length, Math.max(1, +(qs.get("ch") || localStorage.getItem("hbtv-ch") || 1)));
-  let idx = 0, bugTimer = 0;
+  const { loadGuide, parseTune, num } = await import("/tv/guide.js");
+  const channels = await loadGuide(supabase);
+  const saved = (() => { try { return localStorage.getItem("hbtv-tune") || localStorage.getItem("hbtv-ch"); } catch (e) { return null; } })();
+  const start = parseTune(qs.get("ch") || saved || "1") || { ch: 1, i: 0 };
+  let cur = Math.min(channels.length, Math.max(1, start.ch)), idx = start.i, bugTimer = 0;
+  if (qs.get("i")) idx = Math.max(0, +qs.get("i") - 1);
+  { const n = channels[cur - 1].items.length; idx = n ? Math.min(idx, n - 1) : 0; }
 
   const ytId = (u) => (u.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([\w-]{11})/) || [])[1];
   function player(item) {
+    if (item.kind === "page") return `<iframe src="${esc(item.src)}" allow="autoplay; fullscreen"></iframe>`;
     if (item.kind === "youtube") { const id = ytId(item.src); return `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&enablejsapi=1" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>`; }
     if (item.kind === "file" || /\.(mp4|webm|mov)(\?|$)/i.test(item.src)) return `<video src="${esc(item.src)}" autoplay playsinline controls></video>`;
     return `<iframe src="${esc(item.src)}" allow="autoplay; fullscreen"></iframe>`;
   }
-  function tune(n) {
-    cur = ((n - 1 + channels.length) % channels.length) + 1; idx = 0;
-    try { localStorage.setItem("hbtv-ch", cur); } catch (e) {}
+  // tune(channel, item): any numbered thing plays straight away - no waiting through the one before it (Jaron 9/27)
+  function tune(n, i = 0, byUser = true) {
+    cur = ((n - 1 + channels.length) % channels.length) + 1;
+    const items = channels[cur - 1].items; idx = items.length ? ((i % items.length) + items.length) % items.length : 0;
+    try { localStorage.setItem("hbtv-tune", num(channels[cur - 1], idx)); } catch (e) {}
     draw();
+    // the Loft (and anything else embedding the TV) hears the change so the whole room's TV follows the remote
+    if (byUser && parent !== window) parent.postMessage({ type: "hbtv-tuned", ch: cur, i: idx }, location.origin);
   }
   function draw() {
-    const ch = channels[cur - 1], list = byCh[ch.id] || [];
-    let html = `<span class="bug" id="bug">CH ${ch.n} · ${esc(ch.name.toUpperCase())}</span>`, title = ch.name, sub = "";
-    if (ch.type === "page") { html += `<iframe src="${esc(ch.url)}" allow="autoplay; fullscreen"></iframe>`; sub = "Live"; }
-    else if (list.length) { const item = list[idx % list.length]; html += player(item); title = item.title; sub = `${ch.name} · ${idx % list.length + 1} of ${list.length}`; }
+    const ch = channels[cur - 1], list = ch.items;
+    let html = `<span class="bug" id="bug">CH ${list.length ? num(ch, idx) : ch.n} · ${esc(ch.name.toUpperCase())}</span>`, title = ch.name, sub = "";
+    if (list.length) { const item = list[idx]; html += player(item); title = item.title; sub = ch.type === "page" ? `CH ${num(ch, idx)} · Live` : `CH ${num(ch, idx)} · ${ch.name} · ${list.length} on this channel`; }
     else { html += `<div class="nosig"><b>CH ${ch.n} · ${esc(ch.name)}</b>${esc(ch.empty || "Nothing on yet.")}</div>`; sub = "Coming soon"; }
+    html += `<button class="gbtn" id="gbtn" aria-label="Open the guide">☰ Guide</button><div class="gpanel" id="gpanel" hidden></div>`;
     $("screen").innerHTML = html;
     const v = $("screen").querySelector("video");
     if (v) {
-      v.addEventListener("ended", () => { idx++; draw(); });   // playlist: next item, loops
+      v.addEventListener("ended", () => tune(cur, idx + 1, false));   // when one ends the next number comes on; the guide picks anything
       // phones refuse autoplay with sound: start muted and offer one tap for sound instead of a black screen
       const p = v.play(); if (p) p.catch(() => { v.muted = true; v.play().catch(() => {});
         const b = document.createElement("button"); b.className = "unmute"; b.textContent = "🔊 Tap for sound";
         b.onclick = () => { v.muted = false; v.play(); b.remove(); }; $("screen").appendChild(b); });
     }
     $("nowTitle").textContent = title; $("nowSub").textContent = sub;
-    clearTimeout(bugTimer); bugTimer = setTimeout(() => $("bug") && $("bug").classList.add("fade"), 3500);
-    $("remote").innerHTML = channels.map((c) => `<button class="ch${c.n === cur ? " on" : ""}" data-n="${c.n}"><small>CH ${c.n}</small><b>${esc(c.name)}</b></button>`).join("");
+    wake();
+    $("remote").innerHTML = channels.map((c) => `<button class="ch${c.n === cur ? " on" : ""}" data-n="${c.n}"><small>CH ${c.n}${c.items.length > 1 ? " · " + c.items.length + " on" : ""}</small><b>${esc(c.name)}</b></button>`).join("");
+    $("list").innerHTML = ch.type !== "page" || list.length > 1 ? `<div class="lh">On CH ${ch.n} · ${esc(ch.name)}</div>` + (list.length ? list.map((it, i) => itemBtn(ch, it, i)).join("") : `<p class="muted">Nothing here yet.</p>`) : "";
   }
-  // page-type shows (e.g. The Necklace Show in ?tv=1 mode) post this when they finish, so the playlist moves on like a video
-  addEventListener("message", (e) => { if (e.data && e.data.type === "hbtv-ended") { idx++; draw(); } });
+  const itemBtn = (c, it, i) => `<button class="gi${c.n === cur && i === idx ? " on" : ""}" data-n="${c.n}" data-i="${i}"><small>${num(c, i)}</small><span>${esc(it.title)}</span>${c.n === cur && i === idx ? "<em>ON NOW</em>" : ""}</button>`;
+  // the on-screen guide (phone app, Loft, embeds): every channel and every numbered item, tap to watch
+  function openGuide() {
+    const g = $("gpanel");
+    g.innerHTML = `<div class="gtop"><b>Guide</b><button class="gx" id="gx" aria-label="Close">✕</button></div>` + channels.map((c) =>
+      `<div class="gc"><div class="gcn">CH ${c.n} · ${esc(c.name)}</div>${c.items.length ? c.items.map((it, i) => itemBtn(c, it, i)).join("") : `<button class="gi" data-n="${c.n}" data-i="0"><small>${c.n}</small><span>Coming soon</span></button>`}</div>`).join("");
+    g.hidden = false; clearTimeout(bugTimer);
+  }
+  function wake() {
+    const b = $("bug"), g = $("gbtn"); if (b) b.classList.remove("fade"); if (g) g.classList.remove("fade");
+    clearTimeout(bugTimer); bugTimer = setTimeout(() => { $("bug") && $("bug").classList.add("fade"); $("gbtn") && $("gpanel").hidden && $("gbtn").classList.add("fade"); }, 3500);
+  }
+  $("screen").addEventListener("click", (e) => {
+    if (e.target.closest("#gbtn")) return openGuide();
+    if (e.target.closest("#gx")) { $("gpanel").hidden = true; return wake(); }
+    const b = e.target.closest("[data-n]"); if (b) return tune(+b.dataset.n, +(b.dataset.i || 0));
+  });
+  $("screen").addEventListener("pointermove", wake); $("screen").addEventListener("touchstart", wake, { passive: true });
+  // page-type shows (e.g. The Necklace Show in ?tv=1 mode) post this when they finish, so the next number comes on like a video
+  addEventListener("message", (e) => { if (e.data && e.data.type === "hbtv-ended") tune(cur, idx + 1, false); });
   $("remote").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (b) tune(+b.dataset.n); });
+  $("list").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (b) tune(+b.dataset.n, +b.dataset.i); });
   $("chUp").onclick = () => tune(cur + 1); $("chDown").onclick = () => tune(cur - 1);
-  document.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "PageUp") tune(cur + 1); if (e.key === "ArrowLeft" || e.key === "PageDown") tune(cur - 1); if (/^[1-9]$/.test(e.key) && +e.key <= channels.length) tune(+e.key); });
+  // keyboard remote: arrows flip channels; type 2.2 (or 22) to jump straight to a number
+  let typed = "", typedT = 0;
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest && e.target.closest("input,textarea,select")) return;
+    if (e.key === "ArrowRight" || e.key === "PageUp") tune(cur + 1); if (e.key === "ArrowLeft" || e.key === "PageDown") tune(cur - 1);
+    if (/^[0-9.]$/.test(e.key)) { typed += e.key; clearTimeout(typedT); typedT = setTimeout(() => { const t = parseTune(typed.length === 2 && !typed.includes(".") ? typed[0] + "." + typed[1] : typed); typed = ""; if (t && t.ch <= channels.length) tune(t.ch, t.i); }, 900); }
+  });
   draw();
   if (EMBED) throw 0;   // the phone only needs the picture
 
