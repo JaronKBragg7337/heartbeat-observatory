@@ -33,7 +33,7 @@
   .hbr .rk span{font-size:10px;letter-spacing:.14em;text-align:center;color:#8b96a3;align-self:center}
   .hbr .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
   .hbr .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .hbr b.guide{background:linear-gradient(#264b9e,#1b3572);color:#fff}
+  .hbr b.hbr-guide{background:linear-gradient(#264b9e,#1b3572);color:#fff}
   .hbr b.mute.on{background:linear-gradient(#7a1a24,#4d0f16);color:#fff}
   .hbr .vol{height:5px;border-radius:3px;background:#15181c;margin:0 4px 12px;overflow:hidden}.hbr .vol i{display:block;height:100%;background:#7ff0b4}
   .hbr .brand{margin-top:14px;text-align:center;font:800 11px/1 system-ui;letter-spacing:.3em;color:#6d7784}
@@ -47,7 +47,7 @@
     <div class="top">${k("power", "⏻", "pow")}${k("mute", "MUTE", "mute")}${k("close", "✕")}</div>
     <div class="lcd" id="hbrLcd">HEARTBEAT TV</div><div class="vol"><i id="hbrVol"></i></div>
     <div class="rock"><div class="rk">${k("ch+", "▲")}<span>CH</span>${k("ch-", "▼")}</div><div class="rk">${k("vol+", "+")}<span>VOL</span>${k("vol-", "−")}</div></div>
-    <div class="row2" style="margin-bottom:12px">${k("guide", "☰ GUIDE", "guide")}${k("last", "↺ BACK")}</div>
+    <div class="row2" style="margin-bottom:12px">${k("guide", "☰ GUIDE", "hbr-guide")}${k("last", "↺ BACK")}</div>
     <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => k("n" + n, n)).join("")}${k("dot", "•")}${k("n0", "0")}${k("ok", "OK")}</div>
     <div class="brand">HEARTBEAT <em>TV</em></div></div>`;
   document.addEventListener("DOMContentLoaded", () => { document.body.appendChild(tab); document.body.appendChild(wrap); });

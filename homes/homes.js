@@ -101,7 +101,7 @@ const view = $("view");
 view.addEventListener("pointerdown", (e) => {
   hideHint();
   if (e.pointerType !== "mouse" && e.clientX < innerWidth * 0.45 && stick.id === null) {
-    Object.assign(stick, { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: 0, y: 0 });
+    Object.assign(stick, { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: 0, y: 0, t0: performance.now() });
     const s = $("stick"); s.style.left = e.clientX + "px"; s.style.top = e.clientY + "px"; s.style.display = "block"; s.firstElementChild.style.transform = "";
   } else if (look.id === null) Object.assign(look, { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now() });
   view.setPointerCapture(e.pointerId);
@@ -118,7 +118,11 @@ view.addEventListener("pointermove", (e) => {
   }
 });
 const endPtr = (e) => {
-  if (e.pointerId === stick.id) { stick.id = null; stick.x = stick.y = 0; $("stick").style.display = "none"; }
+  if (e.pointerId === stick.id) {
+    // a quick tap on the walking side still counts as a tap (the TV often fills the left half of a phone screen)
+    if (e.type === "pointerup" && Math.hypot(e.clientX - stick.x0, e.clientY - stick.y0) < 10 && performance.now() - stick.t0 < 350) tapAt(e.clientX, e.clientY);
+    stick.id = null; stick.x = stick.y = 0; $("stick").style.display = "none";
+  }
   if (e.pointerId === look.id) {
     if (e.type === "pointerup" && Math.hypot(e.clientX - look.x0, e.clientY - look.y0) < 8 && performance.now() - look.t0 < 350) tapAt(e.clientX, e.clientY);
     look.id = null;
@@ -127,23 +131,16 @@ const endPtr = (e) => {
 // Tap the TV: turn its sound on, and bring it to the front for a few seconds so its own buttons can be pressed.
 const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2(); let raiseT = 0;
 function tapAt(x, y) {
-  if (!tvOn || !screenInfo) return;
+  if (!tvOn) return;
+  roomSoundOn();   // any tap in the loft is the touch phones need before sound can play (Jaron 9/27: sound from any press)
+  if (!screenInfo) return;
   _ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); _ray.setFromCamera(_ndc, camera);
-  const hit = _ray.intersectObjects(scene.children, true)[0];
+  const hit = _ray.intersectObjects(scene.children, true).find((h) => h.object.visible && !(h.object.material && h.object.material.transparent));
   if (!hit || hit.object !== screenInfo.mesh) return;
-  // a tap on the screen always means "I want to hear it": un-mute the room and start the sound from this tap
-  if (muted || vol < 0.05) { muted = false; if (vol < 0.05) vol = 0.8; shareTV(); }
-  roomSoundOn();
+  // a tap on the screen always means "I want to hear it": un-mute the room too
+  if (muted || vol < 0.05) { muted = false; if (vol < 0.05) vol = 0.8; shareTV(); roomSoundOn(); }
   $("css").classList.add("raised"); clearTimeout(raiseT); raiseT = setTimeout(() => $("css").classList.remove("raised"), 8000);
   toast("TV buttons on for a few seconds");
-}
-function soundOn(f) {   // same-origin pages (TV, News): unmute from this tap; cross-origin shows get their own tap while raised
-  try {
-    const d = f && f.contentDocument; if (!d) return;
-    d.querySelectorAll("video").forEach((v) => { v.muted = false; v.play().catch(() => {}); });
-    d.querySelectorAll("button").forEach((b) => { if (/sound/i.test(b.textContent || "")) b.click(); });
-    d.querySelectorAll("iframe").forEach(soundOn);
-  } catch (e) {}
 }
 view.addEventListener("pointerup", endPtr); view.addEventListener("pointercancel", endPtr);
 let hintT = setTimeout(hideHint, 9000);
@@ -186,7 +183,7 @@ function toggleTV(force, remote) {
   if (tvOn && !tvObj && screenInfo) {
     iframe = document.createElement("iframe");
     iframe.width = TV_W; iframe.height = TV_H; iframe.allow = "autoplay; fullscreen"; iframe.src = tvSrc();
-    iframe.addEventListener("load", () => setTimeout(applySound, 300));
+    iframe.addEventListener("load", () => setTimeout(() => (touched ? roomSoundOn() : applySound()), 300));
     iframe.style.width = TV_W + "px"; iframe.style.height = TV_H + "px"; iframe.style.backfaceVisibility = "hidden";
     tvObj = new CSS3DObject(iframe);
     const b = screenInfo.box, c = b.getCenter(new THREE.Vector3()), sz = b.getSize(new THREE.Vector3());
@@ -257,7 +254,16 @@ $("guideBtn").onclick = () => { drawGuide(); $("guide").hidden = false; };
 // the room's, like a real couch - whoever holds it changes it for everyone here (Jaron 9/27).
 function tvWin() { try { return iframe && iframe.contentWindow; } catch (e) { return null; } }
 function applySound() { const w = tvWin(); try { if (w && w.HBTV) w.HBTV.set({ volume: vol, muted }); } catch (e) {} }
-function roomSoundOn() { const w = tvWin(); try { if (w && w.HBTV) w.HBTV.soundOn(); } catch (e) {} soundOn(iframe); applySound(); }
+// Sound on, from inside a tap. The room's volume/mute goes in FIRST (the TV page may have its own saved mute), then the TV
+// page starts its sound. Never click the page's own sound buttons: one of them is "Sound on - tap to mute", and pressing it
+// right after the sound came on turned it straight back off (the 9/27 "asks to press for sound, then nothing" bug).
+let touched = false;
+function roomSoundOn() {
+  touched = true; applySound();
+  const w = tvWin();
+  try { if (w && w.HBTV) return void w.HBTV.soundOn(); } catch (e) {}
+  try { const d = iframe && iframe.contentDocument; if (d) d.querySelectorAll("video").forEach((v) => { v.muted = muted; v.play().catch(() => {}); }); } catch (e) {}
+}
 if (window.HBRemote) {
   $("tvbar").style.visibility = "hidden";
   window.HBRemote.attach({
@@ -405,4 +411,4 @@ renderer.setAnimationLoop(() => {
   renderer.render(scene, camera);
   if (tvObj && tvOn) css.render(cssScene, camera);
 });
-window.HBHome = { P, camera, toggleTV, tune, others };
+window.HBHome = { P, camera, toggleTV, tune, others, soundOn: roomSoundOn };
