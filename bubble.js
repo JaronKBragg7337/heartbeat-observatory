@@ -143,6 +143,11 @@
   // ---- build the device ----
   var launch = document.createElement("button");
   launch.className = "hbp-launch " + (inWorld ? "edge" : "round");
+  // On the news show the launcher fades out after 4 s without a touch, so screen recordings look like broadcast (Jaron 9/27).
+  if (/^\/news\/?/.test(location.pathname)) {
+    var idleT = 0, wake = function () { launch.style.opacity = ""; clearTimeout(idleT); idleT = setTimeout(function () { launch.style.opacity = "0"; }, 4000); };
+    launch.style.transition = "opacity .6s"; ["pointermove", "pointerdown", "touchstart", "keydown"].forEach(function (ev) { addEventListener(ev, wake, { passive: true }); }); wake();
+  }
   launch.setAttribute("aria-label", "Open phone");
   launch.innerHTML = svg('<rect x="6.5" y="2" width="11" height="20" rx="2.6"/><rect x="8.2" y="4.2" width="7.6" height="14.4" rx="1" fill="#0b0f14"/><rect x="10.3" y="19.5" width="3.4" height="1" rx=".5" fill="#0b0f14"/>') + '<span class="dot"></span>';
   var scrim = document.createElement("div"); scrim.className = "hbp-scrim";
