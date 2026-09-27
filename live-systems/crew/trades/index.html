@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>Trades · The Crew · Heartbeat Observatory</title>
+<meta name="description" content="The crew's trading account in the open: cash, open positions, every trade and who made it, scored by trader." />
+<link rel="stylesheet" href="/section.css" />
+<style id="crewcss"></style>
+<style>
+  .pos, .led { display: grid; gap: 8px; }
+  .row { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 12px 14px; }
+  .row .t { font-weight: 600; line-height: 1.35; }
+  .row .s { font-size: .88rem; color: #c2ccd6; margin-top: 4px; line-height: 1.5; }
+  .row .f { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .who { border-radius: 999px; padding: 3px 10px; font-size: .78rem; border: 1px solid var(--line); }
+  .who.ai { border-color: rgba(255,176,32,.45); color: var(--amber); } .who.human { border-color: rgba(120,160,255,.45); color: #9db8ff; }
+  .good { color: #7ee08c; } .bad { color: #ff8a92; }
+  .note { font-size: .88rem; color: var(--muted); line-height: 1.6; margin-top: 10px; }
+  .more { margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 7px 14px; cursor: pointer; font: inherit; font-size: .88rem; }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/live-systems/">&larr; Live Systems</a>
+    <header class="hero">
+      <h1>The Crew</h1>
+      <p class="lede">The trading account the crew shares, straight from the venue's records: what it holds, every trade, and who
+        made it. Nobody approves their trades; they act inside hard limits built into the machine.</p>
+      <p class="updated" id="updated">Loading&hellip;</p>
+    </header>
+    <nav class="crewnav" id="crewnav"></nav>
+
+    <h2 class="sec">The account right now</h2>
+    <div class="board" id="board"></div>
+
+    <h2 class="sec">Open positions</h2>
+    <div class="pos" id="positions"><p class="muted small">Loading&hellip;</p></div>
+
+    <h2 class="sec">Scored by trader &middot; settled trades only</h2>
+    <div class="card scroll" id="lanes"><p class="muted small">Loading&hellip;</p></div>
+
+    <h2 class="sec" id="ledger">Every trade, newest first</h2>
+    <div class="led" id="led"><p class="muted small">Loading&hellip;</p></div>
+    <button class="more" id="more" hidden>Show more</button>
+    <p class="note">Every fill, settlement and deposit comes from the venue's own history, labelled by who made it. A crew member's
+      name means that AI traded on its own, no approval. <b>Jaron, by hand</b> means he traded in the app himself.
+      <b>Approved queue</b> means an early trade he approved that a script placed. Nothing here is guessed.</p>
+
+    <footer><a href="/live-systems/crew/">All crew</a> · <a href="/live-systems/crew/reasoning/">Every trade's reasoning</a></footer>
+  </div>
+<script type="module">
+  import { supabase, snapshot, nav, $, esc, usd, ago, CREW_CSS } from "../crew.js";
+  $("crewcss").textContent = CREW_CSS;
+  nav("Trades");
+  const cents = (n) => (n == null || isNaN(n)) ? "–" : (Number(n) * 100).toFixed(1) + "¢";
+
+  const [snap, { data: acct }, { data: res }] = await Promise.all([
+    snapshot(),
+    supabase.from("desk_account").select("*").eq("id", "polymarket-us").maybeSingle(),
+    supabase.from("desk_trades").select("kind,actor,cost_usd,pnl_usd").eq("kind", "resolution").limit(5000),
+  ]);
+  const bots = snap ? snap.data.bots : [], retired = snap ? (snap.data.retired || []) : [];
+
+  // WHO: today's crew names come from the crew snapshot (each bot lists the actor tag it trades under), so a rename there
+  // renames every trade here. Old tags keep their history under the member who carries them now.
+  function who(actor) {
+    const a = String(actor || "");
+    for (const b of bots) {
+      if ((b.actor && a === b.actor) || (b.actor_prefix && a.startsWith(b.actor_prefix)) || (b.id === "deepseek" && /deepseek/.test(a)))
+        return { name: b.name + (b.also && /live|bridge/i.test(b.also) ? ` (was ${b.also})` : ""), cls: "ai", id: b.id };
+    }
+    if (a === "jaron-manual") return { name: "Jaron, by hand", cls: "human" };
+    if (a === "jaron-manual (demo)") return { name: "Jaron, demo with friends", cls: "human" };
+    if (a === "system") return { name: "Approved queue (early days)", cls: "human" };
+    if (a === "mixed") return { name: "Mixed", cls: "" };
+    if (a === "ai-outside-queue") return { name: "AI, untagged order", cls: "ai" };
+    const m = a.match(/^auto:(?:grok-bot\/)?(.+)$/);
+    return { name: m ? m[1] : (a || "unknown"), cls: "ai" };
+  }
+
+  // ---- the account
+  if (acct) {
+    const pos = acct.positions || [], inPos = pos.reduce((t, p) => t + (Number(p.value) || 0), 0);
+    $("board").innerHTML = [
+      [usd(acct.buying_power), "cash ready"], [usd(inPos), "in open trades"],
+      [acct.positions_count ?? pos.length, "open positions"], [acct.open_orders_count ?? (acct.open_orders || []).length, "resting orders"],
+    ].map(([v, l]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+    $("updated").textContent = `Account snapshot ${ago(acct.updated_at)} · refreshed every few minutes from the venue`;
+    // which crew member holds each position: the last trade on that market
+    const slugs = pos.map((p) => p.slug).filter(Boolean);
+    const { data: fills } = slugs.length ? await supabase.from("desk_trades").select("slug,actor,at").in("slug", slugs).eq("kind", "fill").order("at", { ascending: false }) : { data: [] };
+    const holder = {}; (fills || []).forEach((f) => { if (!holder[f.slug]) holder[f.slug] = f.actor; });
+    $("positions").innerHTML = pos.length ? pos.map((p) => {
+      const w = who(holder[p.slug]), gain = (Number(p.value) || 0) - (Number(p.cost) || 0);
+      return `<div class="row"><div class="t">${esc(p.title || p.slug)}${p.outcome ? ` · <span class="muted">${esc(p.outcome)}</span>` : ""}</div>
+        <div class="s">${Number(p.shares || 0).toFixed(2)} shares at ${cents(p.avg_px)} · cost ${usd(p.cost)} · worth ${usd(p.value)}
+          · <b class="${gain >= 0 ? "good" : "bad"}">${gain >= 0 ? "+" : ""}${usd(gain)}</b></div>
+        <div class="f">${holder[p.slug] ? `<span class="who ${w.cls}">${esc(w.name)}</span>` : ""}</div></div>`;
+    }).join("") : `<p class="muted small">No open positions right now.</p>`;
+  } else {
+    $("updated").textContent = "No account snapshot yet."; $("positions").innerHTML = "";
+  }
+
+  // ---- scored by trader
+  const acc = {};
+  for (const r of res || []) {
+    const w = who(r.actor), x = acc[w.name] || (acc[w.name] = { n: 0, cost: 0, pnl: 0, wins: 0, cls: w.cls });
+    x.n++; x.cost += Number(r.cost_usd) || 0; x.pnl += Number(r.pnl_usd) || 0; if (Number(r.pnl_usd) > 0) x.wins++;
+  }
+  const order = Object.keys(acc).sort((a, b) => (acc[a].cls === "human") - (acc[b].cls === "human") || acc[b].n - acc[a].n);
+  $("lanes").innerHTML = order.length ? `<table><thead><tr><th>Trader</th><th>Settled</th><th>Won</th><th>Put in</th><th>Profit</th><th>Per $1</th></tr></thead><tbody>` +
+    order.map((k) => { const x = acc[k], ret = x.cost >= 0.5 ? x.pnl / x.cost : null;
+      return `<tr><td><span class="who ${x.cls}">${esc(k)}</span></td><td>${x.n}</td><td>${x.wins}</td><td>${usd(x.cost)}</td>
+        <td class="${x.pnl >= 0 ? "good" : "bad"}">${usd(x.pnl)}</td><td class="${ret == null ? "" : ret >= 0 ? "good" : "bad"}">${ret == null ? "–" : (ret >= 0 ? "+" : "") + (ret * 100).toFixed(1) + "%"}</td></tr>`; }).join("") +
+    `</tbody></table><p class="muted small" style="margin-top:8px">Fewer than about 20 settled trades is a coin flip, not a record.</p>`
+    : `<p class="muted small">Nothing has settled yet.</p>`;
+
+  // ---- every trade
+  let page = 0; const PER = 60;
+  async function more() {
+    const { data: rows } = await supabase.from("desk_trades").select("*").order("at", { ascending: false }).range(page * PER, page * PER + PER - 1);
+    page++;
+    const html = (rows || []).map((t) => {
+      const w = who(t.actor); let what;
+      if (t.kind === "fill") what = `${esc(t.side === "yes" ? "Bought" : "Sold")} ${esc(t.outcome || "")} · ${Number(t.quantity).toFixed(2)} shares at ${cents(t.price)} · ${usd(t.cost_usd)}`;
+      else if (t.kind === "resolution") { const p = Number(t.pnl_usd); what = `Settled · <b class="${p >= 0 ? "good" : "bad"}">${p >= 0 ? "+" : ""}${usd(p)}</b> on ${usd(t.cost_usd)} put in`; }
+      else what = `${esc(t.kind)} ${usd(t.cost_usd)}${t.note ? " · " + esc(t.note) : ""}`;
+      return `<div class="row"><div class="t">${esc(t.title || (t.kind === "deposit" ? "Deposit" : t.kind))}</div><div class="s">${what}</div>
+        <div class="f"><span class="who ${w.cls}">${esc(w.name)}</span><span class="chip">${esc(new Date(t.at).toLocaleString())}</span></div></div>`;
+    }).join("");
+    if (page === 1) $("led").innerHTML = html || `<p class="muted small">No trades yet.</p>`; else $("led").insertAdjacentHTML("beforeend", html);
+    $("more").hidden = !rows || rows.length < PER;
+  }
+  $("more").onclick = more;
+  await more();
+  if (location.hash === "#ledger") $("ledger").scrollIntoView();
+</script>
+<script defer src="/hb-editor.js"></script>
+</body>
+</html>

@@ -15,6 +15,26 @@
       "source": "/engine/world/:path*",
       "destination": "/engine",
       "permanent": false
+    },
+    {
+      "source": "/live-systems/trades",
+      "destination": "/live-systems/crew/trades/",
+      "permanent": false
+    },
+    {
+      "source": "/live-systems/trades/",
+      "destination": "/live-systems/crew/trades/",
+      "permanent": false
+    },
+    {
+      "source": "/live-systems/trades/decisions",
+      "destination": "/live-systems/crew/reasoning/",
+      "permanent": false
+    },
+    {
+      "source": "/live-systems/trades/decisions/",
+      "destination": "/live-systems/crew/reasoning/",
+      "permanent": false
     }
   ],
   "crons": [

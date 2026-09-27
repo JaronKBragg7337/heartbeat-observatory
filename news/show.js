@@ -480,6 +480,33 @@ window.HBNews = {
 };
 
 // ---- boot ---------------------------------------------------------------------------------------------------------
+// ---- rendered episodes (made in Unreal on the MSI each morning, stored in Supabase Storage "news-video") -------------
+// ?rendered=1 forces it on, ?rendered=0 forces the live 3D show. RENDERED_DEFAULT turns it on for everyone once approved.
+const RENDERED_DEFAULT = false;
+const RENDERED_INDEX = SUPABASE_URL + "/storage/v1/object/public/news-video/index.json";
+async function renderedFor(date) {
+  const q = new URLSearchParams(location.search).get("rendered");
+  if (q === "0" || (!RENDERED_DEFAULT && q !== "1")) return null;
+  try {
+    const idx = await (await timeout(fetch(RENDERED_INDEX, { cache: "no-cache" }), 4000)).json();
+    return (idx.episodes || []).find((e) => e.date === date) || null;
+  } catch (e) { return null; }
+}
+function playRendered(r) {
+  const scr = $("screen");
+  $("gl").style.display = "none";
+  ["toptag", "ots", "breaking", "l3", "namebar", "titlecard", "stinger", "cc"].forEach((id) => { const el = $(id); if (el) el.style.display = "none"; });
+  const v = document.createElement("video");
+  v.id = "rv"; v.src = r.video; if (r.poster) v.poster = r.poster;
+  v.playsInline = true; v.autoplay = true; v.muted = true; v.loop = true; v.preload = "auto";
+  v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:0";
+  scr.insertBefore(v, scr.firstChild);
+  v.play().catch(() => {});
+  const tap = $("tap");
+  if (tap) { tap.style.display = ""; tap.onclick = (e) => { e.stopPropagation(); v.muted = false; v.play(); tap.style.display = "none"; }; }
+  $("loading").classList.add("gone");
+}
+
 async function boot() {
   onResize();
   const fontsReady = document.fonts ? timeout(Promise.all([document.fonts.load('800 40px "Barlow Condensed"'), document.fonts.load('600 40px "Barlow Condensed"')]), 2500).catch(() => {}) : Promise.resolve();
@@ -492,6 +519,14 @@ async function boot() {
   ]).then(([e, wl, a]) => { adsCat = a; return [e, wl]; });
   ep = episode; wire = w;
   await fontsReady;
+  // The rendered (Unreal) episode, when the MSI has made today's: play the video instead of drawing the studio live.
+  const rendered = await renderedFor(ep.date);
+  if (rendered) {
+    playRendered(rendered);
+    build(ep); renderRundown(); buildTicker(); tickClock(); setInterval(tickClock, 1000);
+    setTimeout(maybeStudio, 1200);
+    return;
+  }
   const quality = Object.assign({}, (window.HBDevice && window.HBDevice.quality) || { tier: "desktop", allowShadows: true, allowBloom: true, maxPixelRatio: 2 });
   // ?quality=lite|phone|desktop forces a tier (for checking what a phone draws); ?bloom=0 turns the glow pass off.
   const qp = new URLSearchParams(location.search);

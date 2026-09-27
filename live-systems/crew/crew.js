@@ -18,7 +18,7 @@ export async function snapshot() {
 
 // Tabs across the top of every crew page.
 export function nav(active) {
-  const tabs = [["", "Overview"], ["schedule/", "Schedule"], ["chat/", "Conversations"], ["retired/", "Retired"]];
+  const tabs = [["", "Overview"], ["trades/", "Trades"], ["reasoning/", "Reasoning"], ["schedule/", "Schedule"], ["chat/", "Conversations"], ["retired/", "Retired"]];
   const el = document.getElementById("crewnav");
   if (el) el.innerHTML = tabs.map(([href, label]) =>
     `<a href="/live-systems/crew/${href}"${label === active ? ' aria-current="page"' : ""}>${label}</a>`).join("");
