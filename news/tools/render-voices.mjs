@@ -3,6 +3,8 @@
 // OfflineAudioContext, and saves one WAV per line. Used by the rendered (Unreal) show; the browser show is unchanged.
 //   node news/tools/render-voices.mjs --episode 2026-09-27 --who vex --out DIR     (every Vex line of that episode)
 //   node news/tools/render-voices.mjs --text "Hello." --who vex --out DIR           (one line -> line.wav)
+//   node news/tools/render-voices.mjs --episode D --who joe --input DIR --out DIR   (Joe: George WAVs from joe_voice.py -> the chain)
+// Always writes DIR/settings.json = the Voice Studio settings in force (saved for everyone, else the show defaults).
 // Writes DIR/manifest.json: [{ seg, line, who, text, file, seconds }]. Voice Studio settings from news_anchor_settings apply
 // when --settings FILE (JSON {vex:{...}}) is given; otherwise the show's defaults (what viewers hear today).
 import { spawn } from "node:child_process";
@@ -49,14 +51,28 @@ await new Promise((r) => setTimeout(r, 4000));
 const settings = args.settings ? fs.readFileSync(args.settings, "utf8") : "null";
 await evaluate(`(async () => {
   const { VoiceBox } = await import("/news/voices.js");
-  window.__vb = new VoiceBox(); const s = ${settings}; if (s) for (const k of Object.keys(s)) window.__vb.setSettings(k, s[k]);
+  window.__vb = new VoiceBox(); let s = ${settings};
+  if (!s) { try { const { getSupabase } = await import("/hb-supabase.js"); const sb = await getSupabase();
+    const { data } = await sb.from("news_anchor_settings").select("anchor,settings"); s = {}; (data || []).forEach((r) => (s[r.anchor] = r.settings)); } catch (e) { s = {}; } }
+  for (const k of Object.keys(s || {})) window.__vb.setSettings(k, s[k]);
+  window.__settings = window.__vb.settings;
+  window.__processWav = async (who, b64) => {   // an existing recording (Joe's George line) through the anchor's chain
+    const vb = window.__vb, raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)).buffer, rate = 48000;
+    const probe = new OfflineAudioContext(1, 1, rate), buf0 = await probe.decodeAudioData(raw);
+    const ctx = new OfflineAudioContext(1, Math.ceil((buf0.duration + 0.9) * rate), rate);
+    vb.ctx = ctx; vb.master = ctx.destination; vb.chains = {}; vb.buildChain(who);
+    const src = ctx.createBufferSource(); src.buffer = buf0; src.connect(vb.chains[who].input); src.start(0.02);
+    return window.__encode((await ctx.startRendering()).getChannelData(0), rate);
+  };
   window.__renderLine = async (who, text) => {
     const vb = window.__vb, { wav, size } = await vb.render(who, text), rate = 48000;
     const dur = wav.samples.length / wav.rate / size + 0.9, ctx = new OfflineAudioContext(1, Math.ceil(dur * rate), rate);
     vb.ctx = ctx; vb.master = ctx.destination; vb.chains = {}; vb.buildChain(who);
     const buf = ctx.createBuffer(1, wav.samples.length, wav.rate); buf.getChannelData(0).set(wav.samples);
     const src = ctx.createBufferSource(); src.buffer = buf; src.playbackRate.value = size; src.connect(vb.chains[who].input); src.start(0.02);
-    const d = (await ctx.startRendering()).getChannelData(0);
+    return window.__encode((await ctx.startRendering()).getChannelData(0), rate);
+  };
+  window.__encode = (d, rate) => {
     let peak = 0; for (const v of d) peak = Math.max(peak, Math.abs(v)); const g = peak > 0.97 ? 0.97 / peak : 1;
     const b = new DataView(new ArrayBuffer(44 + d.length * 2)), w = (o, t) => [...t].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
     w(0, "RIFF"); b.setUint32(4, 36 + d.length * 2, true); w(8, "WAVE"); w(12, "fmt "); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
@@ -67,10 +83,13 @@ await evaluate(`(async () => {
   };
   return true;
 })()`);
+fs.writeFileSync(path.join(OUT, "settings.json"), JSON.stringify(await evaluate("window.__settings"), null, 1));
 
 const list = await lines(), manifest = [];
 for (const l of list) {
-  const r = await evaluate(`window.__renderLine(${JSON.stringify(l.who)}, ${JSON.stringify(l.text)})`);
+  const r = args.input
+    ? await evaluate(`window.__processWav(${JSON.stringify(l.who)}, ${JSON.stringify(fs.readFileSync(path.join(path.resolve(args.input), l.file)).toString("base64"))})`)
+    : await evaluate(`window.__renderLine(${JSON.stringify(l.who)}, ${JSON.stringify(l.text)})`);
   fs.writeFileSync(path.join(OUT, l.file), Buffer.from(r.b64, "base64"));
   manifest.push({ ...l, seconds: +r.seconds.toFixed(3) }); console.log(l.file, r.seconds.toFixed(2) + "s");
 }
