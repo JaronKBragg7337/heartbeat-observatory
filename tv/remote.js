@@ -9,13 +9,13 @@
   if (window.HBRemote) return;
   let tv = null, open = false, typed = "", typedT = 0;
   const css = `
-  .hbr-tab{position:fixed;z-index:90004;right:calc(4px + env(safe-area-inset-right,0px));top:calc(56% - 74px);width:34px;height:58px;border-radius:10px;
+  .hbr-tab{position:fixed;z-index:90004;right:calc(4px + env(safe-area-inset-right,0px));top:calc(56% - 100px);width:34px;height:58px;border-radius:10px;
     background:rgba(16,23,28,.85);border:1px solid #2a3440;display:none;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .hbr-tab.on{display:flex}.hbr-tab svg{width:18px;height:18px;fill:#e8eef3}.hbr-tab.open{border-color:#ff3b4e}
-  .hbr-wrap{position:fixed;z-index:90005;left:50%;bottom:0;transform:translate(-50%,105%) rotate(-4deg);transition:transform .35s cubic-bezier(.2,.9,.25,1);
+  .hbr-wrap{position:fixed;z-index:90005;left:50%;bottom:0;transform-origin:50% 100%;transform:translate(-50%,105%) rotate(-4deg) scale(var(--sc,1));transition:transform .35s cubic-bezier(.2,.9,.25,1);
     pointer-events:none;filter:drop-shadow(0 18px 30px rgba(0,0,0,.6))}
-  .hbr-wrap.open{transform:translate(-50%,22%) rotate(-4deg);pointer-events:auto}
-  .hbr{width:min(210px,52vw);border-radius:44px 44px 30px 30px;padding:18px 16px 70px;
+  .hbr-wrap.open{transform:translate(-50%,6%) rotate(-4deg) scale(var(--sc,1));pointer-events:auto}
+  .hbr{width:min(210px,52vw,24vh);border-radius:44px 44px 30px 30px;padding:18px 16px 40px;
     background:linear-gradient(90deg,#15181d 0%,#262a31 22%,#2c3038 50%,#23272e 78%,#121418 100%);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -2px 6px rgba(0,0,0,.6),0 0 0 1px #0a0b0e;font-family:system-ui,-apple-system,sans-serif;color:#cfd6de;user-select:none}
   .hbr .ir{width:34px;height:8px;border-radius:5px;margin:0 auto 12px;background:linear-gradient(#3a1016,#12060a);box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
@@ -26,7 +26,7 @@
   .hbr b.k{display:flex;align-items:center;justify-content:center;border-radius:12px;height:34px;cursor:pointer;
     background:linear-gradient(#3b4049,#2a2e35);box-shadow:0 2px 0 #0b0c0f,inset 0 1px 0 rgba(255,255,255,.12);font-size:13px;font-weight:700;color:#dfe5ec}
   .hbr b.k:active{transform:translateY(2px);box-shadow:0 0 0 #0b0c0f,inset 0 1px 0 rgba(255,255,255,.08)}
-  .hbr b.pow{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ff5a67,#b3121f 70%);color:#fff}
+  .hbr b.pow{flex:0 0 40px;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ff5a67,#b3121f 70%);color:#fff}
   .hbr .rock{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
   .hbr .rk{display:grid;grid-template-rows:38px 20px 38px;border-radius:22px;background:linear-gradient(#30353d,#23272d);box-shadow:0 2px 0 #0b0c0f,inset 0 1px 0 rgba(255,255,255,.1)}
   .hbr .rk b.k{background:none;box-shadow:none;height:auto;font-size:18px}
@@ -47,8 +47,8 @@
     <div class="top">${k("power", "⏻", "pow")}${k("mute", "MUTE", "mute")}${k("close", "✕")}</div>
     <div class="lcd" id="hbrLcd">HEARTBEAT TV</div><div class="vol"><i id="hbrVol"></i></div>
     <div class="rock"><div class="rk">${k("ch+", "▲")}<span>CH</span>${k("ch-", "▼")}</div><div class="rk">${k("vol+", "+")}<span>VOL</span>${k("vol-", "−")}</div></div>
+    <div class="row2" style="margin-bottom:12px">${k("guide", "☰ GUIDE", "guide")}${k("last", "↺ BACK")}</div>
     <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => k("n" + n, n)).join("")}${k("dot", "•")}${k("n0", "0")}${k("ok", "OK")}</div>
-    <div class="row2">${k("guide", "☰ GUIDE", "guide")}${k("last", "↺ BACK")}</div>
     <div class="brand">HEARTBEAT <em>TV</em></div></div>`;
   document.addEventListener("DOMContentLoaded", () => { document.body.appendChild(tab); document.body.appendChild(wrap); });
   if (document.body) { document.body.appendChild(tab); document.body.appendChild(wrap); }
@@ -60,7 +60,9 @@
     const vol = wrap.querySelector("#hbrVol"); if (vol) vol.style.width = Math.round((st.muted ? 0 : st.volume ?? 1) * 100) + "%";
     const m = wrap.querySelector('[data-a="mute"]'); if (m) m.classList.toggle("on", !!st.muted);
   }
-  function setOpen(o) { open = o; wrap.classList.toggle("open", o); tab.classList.toggle("open", o); show(); }
+  function fit() { const r = wrap.firstElementChild; if (r) wrap.style.setProperty('--sc', Math.min(1, (window.innerHeight * 0.8) / (r.offsetHeight || 1)).toFixed(3)); }
+  addEventListener('resize', fit);
+  function setOpen(o) { if (o) fit(); open = o; wrap.classList.toggle("open", o); tab.classList.toggle("open", o); show(); }
   tab.onclick = () => { if (tv && tv.soundOn) tv.soundOn(); setOpen(!open); };
   wrap.addEventListener("click", (e) => {
     const b = e.target.closest("[data-a]"); if (!b || !tv) return;
