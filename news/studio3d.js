@@ -437,9 +437,18 @@ export function createNewsroom(canvasEl, opts = {}) {
 
   // ---- back of set: pillars with LED strips, and a night skyline far behind ----
   {
-    [-4.0, 4.0].forEach((x, i) => {
-      const p = new THREE.Mesh(new THREE.BoxGeometry(0.6, 5, 0.6), blackMatte); p.position.set(x, 2.5, WALL_Z - 0.3); scene.add(reg(p, "NR-PIL-0" + (i + 1), "Set pillar, 0.6 m"));
-      const s = new THREE.Mesh(new THREE.BoxGeometry(0.03, 4.6, 0.01), new THREE.MeshBasicMaterial({ color: i ? 0xe11d2e : 0x2f7dff, toneMapped: false })); s.position.set(x + (i ? -0.2 : 0.2), 2.5, WALL_Z + 0.006); scene.add(s);
+    // Slatted panel banks either side of the wall, stepping back, each with a vertical light strip (2026-09-27 new look,
+    // from the Blender concept render - tv/drafts/news-studio-concept.jpg). Replaces the two plain pillars.
+    const slatMat = new THREE.MeshStandardMaterial({ color: 0x0d1016, metalness: 0.35, roughness: 0.55, roughnessMap: brushed });
+    const stripMats = [0x2f7dff, 0xe11d2e].map((c) => new THREE.MeshBasicMaterial({ color: c, toneMapped: false }));
+    const slatGeo = new THREE.BoxGeometry(0.44, 4.6, 0.12), stripGeo = new THREE.BoxGeometry(0.022, 4.2, 0.012);
+    [-1, 1].forEach((sx) => {
+      for (let k = 0; k < 6; k++) {
+        const x = sx * (3.95 + k * 0.5), z = WALL_Z - 0.3 - k * 0.2;
+        const p = new THREE.Mesh(slatGeo, slatMat); p.position.set(x, 2.3, z); p.castShadow = false;
+        scene.add(k === 0 ? reg(p, "NR-PIL-0" + (sx < 0 ? 1 : 2), "Slatted set panel bank, 6 x 0.44 m") : p);
+        const s = new THREE.Mesh(stripGeo, stripMats[(k + (sx > 0 ? 1 : 0)) % 2]); s.position.set(x + sx * 0.232, 2.3, z + 0.03); scene.add(s);
+      }
     });
     const SW = 2048, SH = 512, [c, g] = canvas(SW, SH), r = rng(99);
     const sky = g.createLinearGradient(0, 0, 0, SH); sky.addColorStop(0, "#02040b"); sky.addColorStop(0.6, "#0a1333"); sky.addColorStop(1, "#281a3a");
