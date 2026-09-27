@@ -16,10 +16,11 @@
   :root { --bg:#05070b; --text:#eef2f6; --muted:#9aa6b2; --glass:rgba(12,16,22,.62); --line:rgba(255,255,255,.14); --pink:#ff4fa3; }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: Barlow, system-ui, sans-serif; overscroll-behavior: none; }
-  #view { position: fixed; inset: 0; touch-action: none; }
+  #view { position: fixed; inset: 0; touch-action: none; z-index: 1; }
   #view canvas { display: block; }
-  #css { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
-  #css iframe { pointer-events: auto; border: 0; background: #000; }
+  #css { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  #css iframe { pointer-events: none; border: 0; background: #000; }
+  #css.raised { z-index: 3; } #css.raised iframe { pointer-events: auto; }
   .hud { position: fixed; left: 0; right: 0; top: 0; z-index: 5; display: flex; gap: 8px; align-items: center; padding: calc(10px + env(safe-area-inset-top)) 12px 10px; pointer-events: none; }
   .hud > * { pointer-events: auto; }
   .pill { background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 999px; padding: 8px 13px; font: 600 14px/1 Barlow, sans-serif; color: var(--text); text-decoration: none; white-space: nowrap; cursor: pointer; }
@@ -77,6 +78,6 @@
   <input id="invLink" readonly>
   <div class="row"><button class="pill" id="invCopy">Copy link</button><button class="pill" id="invShare">Share…</button><button class="pill" id="invRoll">New link</button><button class="pill" id="invClose">Close</button></div>
 </div>
-<script type="module" src="/homes/homes.js?v=3"></script>
+<script type="module" src="/homes/homes.js?v=4"></script>
 </body>
 </html>

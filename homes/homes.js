@@ -12,7 +12,8 @@ const TEX = phone ? "2k" : "4k";
 const qs = new URLSearchParams(location.search);
 
 // ---------------------------------------------------------------- renderer + scene
-const renderer = new THREE.WebGLRenderer({ antialias: !phone, powerPreference: "high-performance" });
+const renderer = new THREE.WebGLRenderer({ antialias: !phone, powerPreference: "high-performance", alpha: true });
+renderer.setClearColor(0x000000, 0);
 renderer.setPixelRatio(Math.min(devicePixelRatio, phone ? 2 : 1.75));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -38,6 +39,10 @@ const texLoader = new THREE.TextureLoader();
 const loadTex = (url) => new Promise((ok, no) => texLoader.load(url, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; t.anisotropy = 8; ok(t); }, undefined, no));
 
 let colliders = null, screenInfo = null;
+// The TV page sits BEHIND the 3D view; while it's on, the screen mesh punches a see-through hole (alpha 0) in the view.
+// Anything in front of the screen - the lamp, a friend, the balcony rail - then covers the TV like in real life (Jaron 9/26).
+const SCREEN_OFF = new THREE.MeshBasicMaterial({ color: 0x050608 });
+const SCREEN_HOLE = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0, blending: THREE.NoBlending });
 async function loadLoft() {
   const parts = ["floor", "shell", "living", "upper"];
   let done = 0; const tick = () => bar(0.1 + 0.8 * (++done / (parts.length + 3)));
@@ -61,7 +66,7 @@ async function loadLoft() {
       o.renderOrder = 2; return;
     }
     if (/screen/i.test(name) || /screen/i.test(o.name)) {
-      o.material = new THREE.MeshBasicMaterial({ color: 0x050608 });
+      o.material = SCREEN_OFF;
       o.geometry.computeBoundingBox(); const bb = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
       screenInfo = { box: bb, mesh: o };
     }
@@ -98,7 +103,7 @@ view.addEventListener("pointerdown", (e) => {
   if (e.pointerType !== "mouse" && e.clientX < innerWidth * 0.45 && stick.id === null) {
     Object.assign(stick, { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: 0, y: 0 });
     const s = $("stick"); s.style.left = e.clientX + "px"; s.style.top = e.clientY + "px"; s.style.display = "block"; s.firstElementChild.style.transform = "";
-  } else if (look.id === null) Object.assign(look, { id: e.pointerId, x: e.clientX, y: e.clientY });
+  } else if (look.id === null) Object.assign(look, { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now() });
   view.setPointerCapture(e.pointerId);
 });
 view.addEventListener("pointermove", (e) => {
@@ -114,8 +119,30 @@ view.addEventListener("pointermove", (e) => {
 });
 const endPtr = (e) => {
   if (e.pointerId === stick.id) { stick.id = null; stick.x = stick.y = 0; $("stick").style.display = "none"; }
-  if (e.pointerId === look.id) look.id = null;
+  if (e.pointerId === look.id) {
+    if (e.type === "pointerup" && Math.hypot(e.clientX - look.x0, e.clientY - look.y0) < 8 && performance.now() - look.t0 < 350) tapAt(e.clientX, e.clientY);
+    look.id = null;
+  }
 };
+// Tap the TV: turn its sound on, and bring it to the front for a few seconds so its own buttons can be pressed.
+const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2(); let raiseT = 0;
+function tapAt(x, y) {
+  if (!tvOn || !screenInfo) return;
+  _ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); _ray.setFromCamera(_ndc, camera);
+  const hit = _ray.intersectObjects(scene.children, true)[0];
+  if (!hit || hit.object !== screenInfo.mesh) return;
+  soundOn(iframe);
+  $("css").classList.add("raised"); clearTimeout(raiseT); raiseT = setTimeout(() => $("css").classList.remove("raised"), 8000);
+  toast("TV buttons on for a few seconds");
+}
+function soundOn(f) {   // same-origin pages (TV, News): unmute from this tap; cross-origin shows get their own tap while raised
+  try {
+    const d = f && f.contentDocument; if (!d) return;
+    d.querySelectorAll("video").forEach((v) => { v.muted = false; v.play().catch(() => {}); });
+    d.querySelectorAll("button").forEach((b) => { if (/sound/i.test(b.textContent || "")) b.click(); });
+    d.querySelectorAll("iframe").forEach(soundOn);
+  } catch (e) {}
+}
 view.addEventListener("pointerup", endPtr); view.addEventListener("pointercancel", endPtr);
 let hintT = setTimeout(hideHint, 9000);
 function hideHint() { clearTimeout(hintT); $("hint").classList.add("gone"); }
@@ -164,6 +191,7 @@ function toggleTV(force, remote) {
     cssScene.add(tvObj);
   }
   if (tvObj) tvObj.visible = tvOn;
+  if (screenInfo) screenInfo.mesh.material = tvOn ? SCREEN_HOLE : SCREEN_OFF;
   if (tvOn && iframe && iframe.src.indexOf(tvSrc()) < 0) iframe.src = tvSrc();
   if (!tvOn && iframe) { iframe.src = "about:blank"; }
   showCh();
@@ -323,7 +351,7 @@ renderer.setAnimationLoop(() => {
   const moved = move(dt);
   sendPos(moved, now);
   for (const o of others.values()) { o.g.position.lerp(o.to, Math.min(1, dt * 8)); o.g.rotation.y += ((o.yaw || 0) - o.g.rotation.y) * Math.min(1, dt * 8); }
-  if (tvObj && tvOn && now - visT > 150) { visT = now; tvObj.visible = tvVisible(); }
+
   renderer.render(scene, camera);
   if (tvObj && tvOn) css.render(cssScene, camera);
 });
