@@ -276,9 +276,9 @@ export class VoiceBox {
   // Resolves when the line has finished (or was cancelled). Never rejects: a failed engine falls back to the other.
   speak(who, text, hooks = {}) {
     const engine = this.settings[who].engine;
-    // "george": Joe's fixed voice for the rendered (Unreal) show - Kokoro "George", shaped by every knob in the chain.
-    // Test voice plays a George recording through the chain; the live browser show (until it's retired) uses the device voice.
-    if (engine === "george" && hooks.sample && this.ctx) {
+    // "show": Joe's fixed voice for the rendered (Unreal) show - Kokoro "Onyx" (Jaron 9/27), shaped by every knob in the chain.
+    // Test voice plays an Onyx recording through the chain; the live browser show (until it's retired) uses the device voice.
+    if (engine === "show" && hooks.sample && this.ctx) {
       this.cancel("synth"); const job = { who, cancelled: false, device: false }; this.current = job;
       return this.speakSample(job, hooks).catch(() => {}).then(() => { if (this.current === job) this.current = null; this.targets[who] = 0; });
     }
@@ -327,11 +327,11 @@ export class VoiceBox {
 
   async speakSample(job, hooks) {
     const who = job.who, n = this.chains[who], s = this.settings[who];
-    if (!this.georgeBuf) this.georgeBuf = await this.ctx.decodeAudioData(await (await fetch("/news/voices/joe-george.wav")).arrayBuffer());
-    const src = this.ctx.createBufferSource(); src.buffer = this.georgeBuf;
+    if (!this.showBuf) this.showBuf = await this.ctx.decodeAudioData(await (await fetch("/news/voices/joe-show.wav")).arrayBuffer());
+    const src = this.ctx.createBufferSource(); src.buffer = this.showBuf;
     src.playbackRate.value = clamp(0.5 + 0.5 * (+s.pitch || 1), 0.6, 1.5);   // same pitch mapping the rendered show uses
     src.connect(n.input); job.src = src;
-    await new Promise((resolve) => { src.onended = resolve; hooks.onStart && hooks.onStart(this.georgeBuf.duration / src.playbackRate.value); src.start(); });
+    await new Promise((resolve) => { src.onended = resolve; hooks.onStart && hooks.onStart(this.showBuf.duration / src.playbackRate.value); src.start(); });
   }
 
   speakBrowser(job, text, hooks) {

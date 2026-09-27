@@ -64,7 +64,7 @@ export function mountStudio(root, { supabase, session, voice, api }) {
     return `<div class="strip" data-strip="${who}">
       <h3>${name} <small id="${who}-engineNote"></small></h3>
       <div class="row"><label for="${who}-engine">Engine</label><select id="${who}-engine" data-who="${who}" data-k="engine">
-        <option value="synth">Code synth (eSpeak) — all effects</option><option value="browser">Device voice — natural, no effects</option>${who === "joe" ? '<option value="george">Show voice — George (rendered show), all effects</option>' : ""}</select></div>
+        <option value="synth">Code synth (eSpeak) — all effects</option><option value="browser">Device voice — natural, no effects</option>${who === "joe" ? '<option value="show">Show voice — Onyx (rendered show), all effects</option>' : ""}</select></div>
       <div class="row" data-browser="1"><label for="${who}-voiceName">Device voice</label><select id="${who}-voiceName" data-who="${who}" data-k="voiceName"></select></div>
       <div class="row" data-synth="1"><label for="${who}-variant">Character</label><select id="${who}-variant" data-who="${who}" data-k="variant">
         ${SYNTH_VARIANTS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</select></div>
@@ -96,10 +96,10 @@ export function mountStudio(root, { supabase, session, voice, api }) {
       root.querySelector(`#${who}-variant`).value = s.variant || "m3";
       SLIDERS.forEach(([k, , , , step]) => { const el = root.querySelector(`#${who}-${k}`); const v = s[k] ?? DEFAULT_SETTINGS[who][k]; el.value = v; root.querySelector(`#${who}-${k}-o`).textContent = fmt(v, step); });
       LOOKS[who].forEach(([k]) => { root.querySelector(`#${who}-look-${k}`).value = (s.look || {})[k] || DEFAULT_SETTINGS[who].look[k]; });
-      const synth = s.engine === "synth" || s.engine === "george";   // George runs through the same chain, so every knob applies
+      const synth = s.engine === "synth" || s.engine === "show";   // the show voice runs through the same chain, so every knob applies
       root.querySelectorAll(`[data-strip="${who}"] [data-synth="1"]`).forEach((r) => r.classList.toggle("dim", !synth));
       root.querySelectorAll(`[data-strip="${who}"] [data-browser="1"]`).forEach((r) => r.classList.toggle("dim", synth));
-      root.querySelector(`#${who}-engineNote`).textContent = s.engine === "george" ? "the rendered show's voice" : synth ? "same on every device" : "varies by device";
+      root.querySelector(`#${who}-engineNote`).textContent = s.engine === "show" ? "the rendered show's voice" : synth ? "same on every device" : "varies by device";
     });
     fillVoices();
   }
