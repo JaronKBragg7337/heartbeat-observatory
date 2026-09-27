@@ -172,6 +172,7 @@
     if (e.target.closest("#gx")) { $("gpanel").hidden = true; return wake(); }
     const b = e.target.closest("[data-n]"); if (b) return tune(+b.dataset.n, +(b.dataset.i || 0));
   });
+  $("screen").addEventListener("pointerup", (e) => { if (e.target.closest(".gpanel,.gbtn")) return; if (muted) { muted = false; saveSound(); } soundOn(); });
   $("screen").addEventListener("pointermove", wake); $("screen").addEventListener("touchstart", wake, { passive: true });
   // ---- sound + volume, driven by the remote (here, in the phone's TV app, or on the Loft wall). Same-origin parents call
   // window.HBTV directly inside their tap, which is what lets the sound start (phones need a touch before sound).

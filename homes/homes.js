@@ -131,7 +131,9 @@ function tapAt(x, y) {
   _ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); _ray.setFromCamera(_ndc, camera);
   const hit = _ray.intersectObjects(scene.children, true)[0];
   if (!hit || hit.object !== screenInfo.mesh) return;
-  soundOn(iframe);
+  // a tap on the screen always means "I want to hear it": un-mute the room and start the sound from this tap
+  if (muted || vol < 0.05) { muted = false; if (vol < 0.05) vol = 0.8; shareTV(); }
+  roomSoundOn();
   $("css").classList.add("raised"); clearTimeout(raiseT); raiseT = setTimeout(() => $("css").classList.remove("raised"), 8000);
   toast("TV buttons on for a few seconds");
 }

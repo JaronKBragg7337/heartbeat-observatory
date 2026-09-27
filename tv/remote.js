@@ -56,7 +56,7 @@
   function show() {
     if (!tv) return;
     const st = tv.state() || {};
-    const lcd = wrap.querySelector("#hbrLcd"); if (lcd) lcd.textContent = typed ? "CH " + typed + "_" : st.on === false ? "OFF" : (st.label || "HEARTBEAT TV");
+    const lcd = wrap.querySelector("#hbrLcd"); if (lcd) lcd.textContent = typed ? "CH " + typed + "_" : st.on === false ? "OFF" : st.muted ? "MUTED · " + (st.label || "") : (st.label || "HEARTBEAT TV");
     const vol = wrap.querySelector("#hbrVol"); if (vol) vol.style.width = Math.round((st.muted ? 0 : st.volume ?? 1) * 100) + "%";
     const m = wrap.querySelector('[data-a="mute"]'); if (m) m.classList.toggle("on", !!st.muted);
   }

@@ -340,6 +340,8 @@ function speakCurrent() {
 
 function jumpToSeg(si) {
   const s = segs[si]; if (!s) return;
+  const rv = document.getElementById("rv");
+  if (rv && renderedTimeline) { const L = renderedTimeline.find((l) => items[l.item] && items[l.item].seg.index === si); if (L) { rv.currentTime = Math.max(0, L.start - 0.5); rv.play().catch(() => {}); } return; }
   startItem(s.first, { jump: true });
 }
 
@@ -397,6 +399,8 @@ function setMode(m) {
   $("tap").classList.toggle("gone", m === "sound");
 }
 function soundOn() {
+  const rv = document.getElementById("rv");
+  if (rv) { rv.muted = false; rv.play().catch(() => {}); $("tap").style.display = "none"; return; }   // rendered episode: its own soundtrack
   voice.unlock();
   setMode("sound");
   // Restart the current line with voice (from the top of the line, not the story).
@@ -497,10 +501,46 @@ async function renderedFor(date) {
     return (idx.episodes || []).find((e) => e.date === date) || null;
   } catch (e) { return null; }
 }
+// The rendered video carries picture and sound; the page still plays the broadcast graphics on top of it - rundown
+// highlight, story tag, stinger, lower thirds, over-the-shoulder box, subtitles - timed from the video's own clock using
+// the timing file published with it (each line's start and length). Tapping a story in the rundown jumps the video there.
+let renderedTimeline = null;
+async function driveRendered(r) {
+  if (!r.timing) return;
+  const tl = await (await fetch(r.timing, { cache: "no-cache" })).json();
+  const v = document.getElementById("rv"); if (!v) return;
+  mode = "silent";
+  renderedTimeline = tl.lines.map((l) => ({ ...l, item: items.findIndex((it) => it.seg.id === l.seg && it.li === l.li) })).filter((l) => l.item >= 0);
+  let at = -1, lastT = performance.now();
+  const tick = () => { requestAnimationFrame(tick); const n = performance.now(); tickTicker(Math.min(0.1, (n - lastT) / 1000)); lastT = n; };
+  requestAnimationFrame(tick);
+  const loop = () => {
+    const t = v.currentTime;
+    let k = -1;
+    for (let i = 0; i < renderedTimeline.length; i++) if (renderedTimeline[i].start - 0.6 <= t) k = i; else break;
+    if (k < 0) { if (at !== -1) { at = -1; lastSegIndex = -1; } return; }
+    const L = renderedTimeline[k];
+    if (k !== at) {
+      if (k < at || k > at + 1) lastSegIndex = -1;   // a jump (seek / loop): redraw the story's graphics from scratch
+      at = k; startItem(L.item, { jump: lastSegIndex === -1 });
+      const it = items[L.item];
+      if ((L.camera === "vex" || L.camera === "joe") && it.li <= 1 && !["open", "close", "wire"].includes(it.seg.kind)) setTimeout(() => showOTS(it.seg), 300);
+    }
+    const since = t - L.start, it = items[L.item];
+    if (!ccOn || since < 0 || since > L.dur + 0.15) { setCaption(""); return; }
+    const parts = it.cc || (it.cc = captionChunks(it.text));
+    if (parts.length === 1) return setCaption(parts[0]);
+    const pos = Math.min(0.999, Math.max(0, since / Math.max(0.1, L.dur))) * it.words; let acc = 0, idx = 0;
+    for (let q = 0; q < parts.length; q++) { acc += words(parts[q]); if (pos < acc) { idx = q; break; } idx = q; }
+    setCaption(parts[idx]);
+  };
+  setInterval(loop, 100);   // a steady clock (animation frames pause in hidden tabs; the graphics must not)
+}
+
 function playRendered(r) {
   const scr = $("screen");
   $("gl").style.display = "none";
-  ["toptag", "ots", "breaking", "l3", "namebar", "titlecard", "stinger", "cc"].forEach((id) => { const el = $(id); if (el) el.style.display = "none"; });
+  // the broadcast graphics stay: driveRendered() plays them in time with the video
   const v = document.createElement("video");
   v.id = "rv"; v.src = r.video; if (r.poster) v.poster = r.poster;
   v.playsInline = true; v.autoplay = true; v.muted = true; v.loop = true; v.preload = "auto";
@@ -530,6 +570,7 @@ async function boot() {
     playRendered(rendered);
     build(ep); renderRundown(); buildTicker(); tickClock(); setInterval(tickClock, 1000);
     setTimeout(maybeStudio, 1200);
+    driveRendered(rendered).catch((e) => console.error(e));
     return;
   }
   const quality = Object.assign({}, (window.HBDevice && window.HBDevice.quality) || { tier: "desktop", allowShadows: true, allowBloom: true, maxPixelRatio: 2 });
