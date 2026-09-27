@@ -404,6 +404,11 @@ function soundOn() {
 }
 function soundOff() { setMode("silent"); voice.cancel(); if (cur) { cur.soundStart = 0; cur.speechAt = now(); cur.spoken = false; } }
 $("tap").addEventListener("click", soundOn);
+// The TV remote (TV page, phone TV app, Loft wall) reaches in here: sound on from its tap, and the room's volume.
+window.HBTVSound = {
+  on() { const rv = document.getElementById("rv"); if (rv) { rv.muted = false; rv.play().catch(() => {}); $("tap").style.display = "none"; return; } if (mode !== "sound") soundOn(); },
+  volume(v) { voice.setVolume(v); const rv = document.getElementById("rv"); if (rv) rv.volume = v; },
+};
 $("soundBtn").addEventListener("click", () => (mode === "sound" ? soundOff() : soundOn()));
 $("ccBtn").addEventListener("click", () => { ccOn = !ccOn; $("ccBtn").setAttribute("aria-pressed", String(ccOn)); $("cc").classList.toggle("off", !ccOn); });
 function isFs() { return document.fullscreenElement || document.webkitFullscreenElement; }

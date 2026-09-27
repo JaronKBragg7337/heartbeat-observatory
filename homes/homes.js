@@ -168,7 +168,7 @@ function move(dt) {
 function spawn() { const s = colliders.spawn; P.pos.set(s[0], s[1], s[2]); P.vy = 0; P.yaw = colliders.spawnYaw || 0; }
 
 // ---------------------------------------------------------------- the TV: a real /tv/ page on the wall
-let channels = [], ch = 1, item = 0, tvOn = false, tvObj = null, iframe = null;
+let channels = [], ch = 1, item = 0, tvOn = false, tvObj = null, iframe = null, vol = 0.8, muted = false;
 const TV_W = 1280, TV_H = 720;
 async function setupTV() {
   try { const { loadGuide } = await import("/tv/guide.js"); channels = await loadGuide(await getSupabase()); }
@@ -184,6 +184,7 @@ function toggleTV(force, remote) {
   if (tvOn && !tvObj && screenInfo) {
     iframe = document.createElement("iframe");
     iframe.width = TV_W; iframe.height = TV_H; iframe.allow = "autoplay; fullscreen"; iframe.src = tvSrc();
+    iframe.addEventListener("load", () => setTimeout(applySound, 300));
     iframe.style.width = TV_W + "px"; iframe.style.height = TV_H + "px"; iframe.style.backfaceVisibility = "hidden";
     tvObj = new CSS3DObject(iframe);
     const b = screenInfo.box, c = b.getCenter(new THREE.Vector3()), sz = b.getSize(new THREE.Vector3());
@@ -218,12 +219,15 @@ addEventListener("message", (e) => {
 let tvStamp = 0;
 function shareTV(resendAt) {
   if (!resendAt) tvStamp = Date.now();
-  if (chan && me) chan.send({ type: "broadcast", event: "tv", payload: { on: tvOn, ch, item, by: me.name, at: resendAt || tvStamp } });
+  if (chan && me) chan.send({ type: "broadcast", event: "tv", payload: { on: tvOn, ch, item, vol, muted, by: me.name, at: resendAt || tvStamp } });
 }
 function onRemoteTV(p) {
   if (!p || !(p.at > tvStamp)) return;
   const changed = p.on !== tvOn || p.ch !== ch || (p.item || 0) !== item;
   tvStamp = p.at; ch = p.ch || ch; item = p.item || 0; saveTune();
+  const loud = p.vol != null && (p.vol !== vol || !!p.muted !== muted);
+  if (p.vol != null) { vol = p.vol; muted = !!p.muted; applySound(); }
+  if (loud && !changed && p.by) toast(`${p.by} set the volume to ${muted ? "mute" : Math.round(vol * 100) + "%"}`);
   toggleTV(!!p.on, true);
   if (changed && p.by) toast(p.on ? `${p.by} put on ${nowLabel()}` : `${p.by} turned the TV off`);
 }
@@ -247,6 +251,25 @@ function drawGuide() {
       `<button class="gi${tvOn && c.n === ch && i === item ? " on" : ""}" data-n="${c.n}" data-i="${i}"><small>${c.n}.${i + 1}</small><span>${escH(it.title)}</span></button>`).join("")).join("");
 }
 $("guideBtn").onclick = () => { drawGuide(); $("guide").hidden = false; };
+// ---- the remote (the button on the right edge, same remote as the TV page and the phone): sound, volume and channel are
+// the room's, like a real couch - whoever holds it changes it for everyone here (Jaron 9/27).
+function tvWin() { try { return iframe && iframe.contentWindow; } catch (e) { return null; } }
+function applySound() { const w = tvWin(); try { if (w && w.HBTV) w.HBTV.set({ volume: vol, muted }); } catch (e) {} }
+function roomSoundOn() { const w = tvWin(); try { if (w && w.HBTV) w.HBTV.soundOn(); } catch (e) {} soundOn(iframe); applySound(); }
+if (window.HBRemote) {
+  $("tvbar").style.visibility = "hidden";
+  window.HBRemote.attach({
+    state: () => ({ on: tvOn, label: tvOn ? nowLabel() : "OFF", volume: vol, muted }),
+    power: () => { toggleTV(); if (tvOn) setTimeout(roomSoundOn, 800); },
+    step: (d) => { tune(d); setTimeout(roomSoundOn, 800); },
+    tune: (n, i) => { pick(n, i); setTimeout(roomSoundOn, 800); },
+    volume: (v) => { vol = v; if (v > 0) muted = false; applySound(); shareTV(); },
+    mute: (m) => { muted = m; applySound(); shareTV(); },
+    guide: () => { drawGuide(); $("guide").hidden = false; },
+    soundOn: () => { if (tvOn) roomSoundOn(); },
+  });
+  setInterval(() => window.HBRemote.refresh(), 1500);
+}
 $("guideClose").onclick = () => ($("guide").hidden = true);
 $("guideList").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (!b) return; pick(+b.dataset.n, +b.dataset.i); $("guide").hidden = true; });
 $("tvBtn").onclick = () => toggleTV(); $("chUp").onclick = () => tune(1); $("chDown").onclick = () => tune(-1);

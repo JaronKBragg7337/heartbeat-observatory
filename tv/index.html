@@ -102,6 +102,7 @@
     </div>
     <footer>Heartbeat TV · <a href="/news/">Heartbeat News</a> · <a href="/video/3d/">The Grand Palace</a></footer>
   </div>
+<script>if (!/[?&]embed=1/.test(location.search)) document.write('<script src="/tv/remote.js"><\/script>');</script>
 <script type="module">
   import { getSupabase } from "/hb-supabase.js";
   const supabase = await getSupabase();
@@ -141,6 +142,7 @@
     html += `<button class="gbtn" id="gbtn" aria-label="Open the guide">☰ Guide</button><div class="gpanel" id="gpanel" hidden></div>`;
     $("screen").innerHTML = html;
     const v = $("screen").querySelector("video");
+    setTimeout(applyVolume, 400);
     if (v) {
       v.addEventListener("ended", () => tune(cur, idx + 1, false));   // when one ends the next number comes on; the guide picks anything
       // phones refuse autoplay with sound: start muted and offer one tap for sound instead of a black screen
@@ -171,6 +173,39 @@
     const b = e.target.closest("[data-n]"); if (b) return tune(+b.dataset.n, +(b.dataset.i || 0));
   });
   $("screen").addEventListener("pointermove", wake); $("screen").addEventListener("touchstart", wake, { passive: true });
+  // ---- sound + volume, driven by the remote (here, in the phone's TV app, or on the Loft wall). Same-origin parents call
+  // window.HBTV directly inside their tap, which is what lets the sound start (phones need a touch before sound).
+  let volume = 1, muted = false, powered = true;
+  try { const sv = JSON.parse(localStorage.getItem("hbtv-sound") || "null"); if (sv) { volume = sv.v; muted = sv.m; } } catch (e) {}
+  function saveSound() { try { localStorage.setItem("hbtv-sound", JSON.stringify({ v: volume, m: muted })); } catch (e) {} }
+  function applyVolume() {
+    const scr = $("screen"), v = scr.querySelector("video"), f = scr.querySelector("iframe");
+    if (v) { v.volume = volume; if (muted) v.muted = true; }
+    if (f) {
+      try { if (f.contentWindow.HBTVSound) f.contentWindow.HBTVSound.volume(muted ? 0 : volume); } catch (e) {}   // our own pages (the news)
+      try { f.contentWindow.postMessage(JSON.stringify({ event: "command", func: "setVolume", args: [Math.round((muted ? 0 : volume) * 100)] }), "*"); } catch (e) {}   // YouTube
+    }
+  }
+  function soundOn() {
+    if (muted) return;
+    const scr = $("screen"), v = scr.querySelector("video"), f = scr.querySelector("iframe");
+    if (v) { v.muted = false; v.volume = volume; v.play().catch(() => {}); const b = scr.querySelector(".unmute"); if (b) b.remove(); }
+    if (f) {
+      try { if (f.contentWindow.HBTVSound) f.contentWindow.HBTVSound.on(); } catch (e) {}
+      try { f.contentWindow.postMessage(JSON.stringify({ event: "command", func: "unMute", args: [] }), "*"); } catch (e) {}
+    }
+    applyVolume();
+  }
+  window.HBTV = {
+    state: () => { const c = channels[cur - 1], it = c.items[idx]; return { on: powered, label: `CH ${c.items.length ? num(c, idx) : c.n} · ${it ? it.title : c.name}`, volume, muted }; },
+    soundOn, tune: (n, i) => tune(n, i), step: (d) => tune(cur + d),
+    volume: (x) => { volume = Math.max(0, Math.min(1, x)); if (volume > 0) muted = false; saveSound(); applyVolume(); soundOn(); },
+    mute: (m) => { muted = m; saveSound(); applyVolume(); if (!m) soundOn(); },
+    power: () => { powered = !powered; if (!powered) $("screen").innerHTML = '<div class="nosig"><b>OFF</b></div>'; else draw(); },
+    guide: () => openGuide(),
+    set: (o) => { if (o.volume != null) volume = o.volume; if (o.muted != null) muted = o.muted; applyVolume(); },
+  };
+  if (!EMBED && window.HBRemote) window.HBRemote.attach(window.HBTV);
   // page-type shows (e.g. The Necklace Show in ?tv=1 mode) post this when they finish, so the next number comes on like a video
   addEventListener("message", (e) => { if (e.data && e.data.type === "hbtv-ended") tune(cur, idx + 1, false); });
   $("remote").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (b) tune(+b.dataset.n); });

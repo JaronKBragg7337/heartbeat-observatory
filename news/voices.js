@@ -116,6 +116,8 @@ export class VoiceBox {
     }
   }
 
+  setVolume(x) { this.userVolume = Math.max(0, Math.min(1, +x)); if (this.out) this.out.gain.value = this.userVolume; }
+
   setSettings(who, s) {
     this.settings[who] = Object.assign({}, DEFAULT_SETTINGS[who], s || {});
     this.settings[who].look = Object.assign({}, DEFAULT_SETTINGS[who].look, (s && s.look) || {});
@@ -146,7 +148,8 @@ export class VoiceBox {
         this.ctx = new AC();
         this.master = this.ctx.createDynamicsCompressor();
         this.master.threshold.value = -14; this.master.ratio.value = 3; this.master.attack.value = 0.004; this.master.release.value = 0.2;
-        this.master.connect(this.ctx.destination);
+        this.out = this.ctx.createGain(); this.out.gain.value = this.userVolume ?? 1;   // the remote's volume, after the compressor
+        this.master.connect(this.out); this.out.connect(this.ctx.destination);
         // Keep-alive: an inaudible tone so phones don't power the output down between lines (waking it fades in).
         try {
           const ka = this.ctx.createOscillator(), kg = this.ctx.createGain();
@@ -347,7 +350,7 @@ export class VoiceBox {
         const part = parts[i++];
         const u = new SpeechSynthesisUtterance(part);
         if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = "en-US";
-        u.pitch = clamp(+s.pitch || 1, 0.1, 2); u.rate = clamp(+s.speed || 1, 0.5, 2); u.volume = clamp(s.volume == null ? 1 : +s.volume, 0, 1);
+        u.pitch = clamp(+s.pitch || 1, 0.1, 2); u.rate = clamp(+s.speed || 1, 0.5, 2); u.volume = clamp((s.volume == null ? 1 : +s.volume) * (this.userVolume ?? 1), 0, 1);
         let gotBoundary = false;
         const t0 = performance.now();
         const estMs = part.split(/\s+/).length / (2.7 * u.rate) * 1000;

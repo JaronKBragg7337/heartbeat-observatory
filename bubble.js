@@ -178,8 +178,22 @@
   function top(title, back) {
     return '<div class="hbp-top">' + (back ? '<button data-act="' + back + '">‹ Back</button>' : "") + "<h4>" + esc(title) + "</h4></div>";
   }
+  // The TV remote (/tv/remote.js, the same one the TV page and the Loft use) drives the TV inside the phone's HB TV app.
+  var phoneTV = {
+    w: function () { var f = view.querySelector(".hbp-tv iframe"); try { return f && f.contentWindow && f.contentWindow.HBTV; } catch (e) { return null; } },
+    state: function () { var t = phoneTV.w(); return t ? t.state() : { label: "HEARTBEAT TV", volume: 1 }; },
+    power: function () { goHome(); }, soundOn: function () { var t = phoneTV.w(); if (t) t.soundOn(); },
+    step: function (d) { var t = phoneTV.w(); if (t) { t.step(d); t.soundOn(); } }, tune: function (n, i) { var t = phoneTV.w(); if (t) { t.tune(n, i); t.soundOn(); } },
+    volume: function (v) { var t = phoneTV.w(); if (t) t.volume(v); }, mute: function (m) { var t = phoneTV.w(); if (t) t.mute(m); },
+    guide: function () { var t = phoneTV.w(); if (t) t.guide(); }
+  };
+  function remoteFor(on) {
+    if (!on) { if (window.HBRemote) window.HBRemote.detach(phoneTV); return; }
+    if (window.HBRemote) return window.HBRemote.attach(phoneTV);
+    var sc = document.createElement("script"); sc.src = "/tv/remote.js"; sc.onload = function () { if (state.app === "tv" && window.HBRemote) window.HBRemote.attach(phoneTV); }; document.head.appendChild(sc);
+  }
   function openApp(id) {
-    state.app = id;
+    state.app = id; remoteFor(id === "tv");
     var a = APPS.concat(DOCK).find(function (x) { return x.id === id; });
     if (id === "messages") { state.thread = ""; renderMessages(); }
     else if (id === "tv") renderTV();
@@ -188,7 +202,7 @@
     else if (a && a.url) view.innerHTML = top(a.name, "home") + '<iframe class="hbp-frame" src="' + a.url + '" allow="autoplay; fullscreen" loading="lazy"></iframe>';
     view.classList.add("on");
   }
-  function goHome() { if (call && state.app !== "call") { return renderCall(); } state.app = "home"; view.classList.remove("on"); setTimeout(function () { if (state.app === "home") view.innerHTML = ""; }, 350); renderHome(); }
+  function goHome() { if (call && state.app !== "call") { return renderCall(); } state.app = "home"; remoteFor(false); view.classList.remove("on"); setTimeout(function () { if (state.app === "home") view.innerHTML = ""; }, 350); renderHome(); }
 
   function renderContacts() {
     if (!state.session) { view.innerHTML = top("Phone", "home") + '<div class="hbp-body"><div class="hbp-empty">Sign in to call people.<br><br><a href="/admin">Sign in</a></div></div>'; return; }
@@ -400,7 +414,7 @@
     if (app) setTimeout(function () { openApp(app); }, 120);
     if (state.session) { state.unread = 0; badge(); }
   }
-  function close() { phone.classList.remove("open"); scrim.classList.remove("open"); document.documentElement.classList.remove("hbp-open"); setTimeout(goHome, 450); }
+  function close() { remoteFor(false); phone.classList.remove("open"); scrim.classList.remove("open"); document.documentElement.classList.remove("hbp-open"); setTimeout(goHome, 450); }
   function badge() { var d = launch.querySelector(".dot"); d.textContent = state.unread; d.classList.toggle("on", state.unread > 0); }
 
   // iPhone Safari still drags the page from touches outside a scroll box - stop those, keep the phone's own lists scrolling
