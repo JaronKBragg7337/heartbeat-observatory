@@ -60,7 +60,7 @@
   const retired = snap.data.retired.includes(b);
   document.title = `${b.name} · The Crew`;
   $("head").innerHTML = `<span class="ai">${esc(b.ai || "retired")}</span><h1>${esc(b.name)}</h1>
-    ${b.also ? `<p class="muted">${esc(b.also)}</p>` : ""}<p>${esc(b.job || b.why || "")}</p>
+    ${b.also ? `<p class="muted">${esc(b.also)}</p>` : ""}<p>${esc(b.job || b.why || "")}</p>${b.note ? `<p class="muted small">${esc(b.note)}</p>` : ""}
     ${b.schedule ? `<p class="updated">Wakes: ${esc(b.schedule)} · page updated ${ago(snap.updated_at)}</p>` : ""}`;
 
   if (b.ledger) {
@@ -69,7 +69,10 @@
     $("board").innerHTML = [[L.fills, "trades"], [usd(L.spent), "put in"], [`${L.wins}–${L.losses}`, "won–lost (settled)"], [usd(L.pnl), "made, settled"]]
       .map(([v, l]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
     // Darios Twin trades under two tags (grok-bot/live-wire until 9/28, grok-bot/darios-twin after); DeepSeek under the proposer's
-    const who = (q) => b.id === "deepseek" ? q.like("actor", "auto:proposer-script%") : q.in("actor", b.actors || [b.actor]);
+    const who = (q) => {   // Darios Twin and the retired Live Wire share a tag; the handover time splits them
+      if (b.id === "deepseek") return q.like("actor", "auto:proposer-script%");
+      q = q.eq("actor", b.actor); if (b.since) q = q.gte("at", b.since); if (b.until) q = q.lt("at", b.until); return q;
+    };
     const [{ data: res }, { data: fills }] = await Promise.all([
       who(supabase.from("desk_trades").select("at,pnl_usd").eq("kind", "resolution")).limit(2000),
       who(supabase.from("desk_trades").select("at,title,slug,side,outcome,price,cost_usd").eq("kind", "fill")).order("at", { ascending: false }).limit(120),

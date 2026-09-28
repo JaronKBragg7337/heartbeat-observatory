@@ -128,13 +128,24 @@
     {
       id: "darios-twin",
       name: "Darios Twin",
-      also: "the live trader",
+      also: "the live trader · replaced Live Wire 9/25 and reuses its tag, so its trades still say live-wire",
+      since: "2026-09-25T22:58:00Z",
       kind: "Grok Bot",
       venue: "Polymarket US",
-      proposedBy: /^grok-bot\/(darios-twin|live-wire)/,   // live-wire = its v1 tag, still on older trades
-      actor: "auto:grok-bot/darios-twin",
+      proposedBy: /^grok-bot\/(live-wire|darios-twin)/,
+      actor: "auto:grok-bot/live-wire",
       reads: ["market-feed", "brief"],
       alsoReads: "the live score and the order book",
+    },
+    {
+      id: "live-wire",
+      name: "Live Wire",
+      also: "retired 9/25 · a different bot, replaced by Darios Twin (same trade tag)",
+      kind: "Grok Bot (retired)",
+      venue: "Polymarket US",
+      proposedBy: /^grok-bot\/live-wire/,
+      until: "2026-09-25T22:58:00Z",
+      reads: [],
     },
     {
       id: "deepseek",
@@ -173,8 +184,10 @@
   const raw = (path) => `https://raw.githubusercontent.com/${WATCH.repo}/${WATCH.branch}/${path}`;
   const blob = (path) => `https://github.com/${WATCH.repo}/blob/${WATCH.branch}/${path}`;
 
-  function traderFor(proposedBy) {
-    const t = TRADERS.find(t => t.proposedBy.test(proposedBy || ""));
+  // Darios Twin reuses the retired Live Wire's tag, so a row's time decides which of the two it was (handover 9/25 6:58 PM ET)
+  function traderFor(proposedBy, at) {
+    const when = at || "";
+    const t = TRADERS.find(t => t.proposedBy.test(proposedBy || "") && (!t.since || !when || when >= t.since) && (!t.until || (when && when < t.until)));
     if (t) return t;
     const name = String(proposedBy || "unknown").split("/").pop();
     return { id: proposedBy, name, kind: String(proposedBy).split("/")[0], venue: "", reads: [], unlisted: true };
@@ -201,7 +214,7 @@
   }
 
   function tradeCard(p) {
-    const t = traderFor(p.proposed_by);
+    const t = traderFor(p.proposed_by, p.proposed_at);
     const r = resolution(p);
     const entry = Number(p.entry_price), size = Number(p.size_usd);
     const shares = entry > 0 ? size / entry : 0;
@@ -229,7 +242,7 @@
   function renderTraders() {
     const byTrader = new Map();
     for (const p of TRADES) {
-      const t = traderFor(p.proposed_by);
+      const t = traderFor(p.proposed_by, p.proposed_at);
       const x = byTrader.get(t.id) || { t, n: 0, won: 0, lost: 0, pnl: 0, seen: new Set() };
       x.n++;
       if (!isExit(p) && RES.has(p.slug) && !x.seen.has(p.slug)) {
@@ -253,7 +266,7 @@
   }
 
   function renderTrades() {
-    const rows = TRADES.filter(p => filter === "all" || traderFor(p.proposed_by).id === filter);
+    const rows = TRADES.filter(p => filter === "all" || traderFor(p.proposed_by, p.proposed_at).id === filter);
     $("trades").innerHTML = rows.length ? rows.map(tradeCard).join("") : `<p class="empty">No trades yet.</p>`;
     document.querySelectorAll("#trades [data-day]").forEach(b => b.onclick = () => { showTab("news"); showDay(b.dataset.day); window.scrollTo({ top: $("newsTitle").getBoundingClientRect().top + scrollY - 70 }); });
   }

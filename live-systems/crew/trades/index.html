@@ -65,16 +65,18 @@
   const [snap, { data: acct }, { data: res }] = await Promise.all([
     snapshot(),
     supabase.from("desk_account").select("*").eq("id", "polymarket-us").maybeSingle(),
-    supabase.from("desk_trades").select("kind,actor,cost_usd,pnl_usd").eq("kind", "resolution").limit(5000),
+    supabase.from("desk_trades").select("kind,actor,cost_usd,pnl_usd,at").eq("kind", "resolution").limit(5000),
   ]);
   const bots = snap ? snap.data.bots : [], retired = snap ? (snap.data.retired || []) : [];
 
   // WHO: today's crew names come from the crew snapshot (each bot lists the actor tag it trades under), so a rename there
   // renames every trade here. Old tags (grok-bot/live-wire = Darios Twin's v1 name) stay with the member who carries them now.
-  function who(actor) {
-    const a = String(actor || "");
+  // Darios Twin reuses the retired Live Wire's tag: trades before the handover (b.since / r.until) are Live Wire's
+  function who(actor, at) {
+    const a = String(actor || ""), when = at || "";
+    for (const r of retired) if (r.actor && a === r.actor && r.until && when && when < r.until) return { name: r.name.replace(/ \(v1\)$/, "") + " (retired)", cls: "ai", id: r.id };
     for (const b of bots) {
-      if ((b.actor && a === b.actor) || (b.actors && b.actors.includes(a)) || (b.actor_prefix && a.startsWith(b.actor_prefix)) || (b.id === "deepseek" && /deepseek/.test(a)))
+      if ((b.actor && a === b.actor) || (b.actor_prefix && a.startsWith(b.actor_prefix)) || (b.id === "deepseek" && /deepseek/.test(a)))
         return { name: b.name, cls: "ai", id: b.id };
     }
     if (a === "jaron-manual") return { name: "Jaron, by hand", cls: "human" };
@@ -97,9 +99,9 @@
     // which crew member holds each position: the last trade on that market
     const slugs = pos.map((p) => p.slug).filter(Boolean);
     const { data: fills } = slugs.length ? await supabase.from("desk_trades").select("slug,actor,at").in("slug", slugs).eq("kind", "fill").order("at", { ascending: false }) : { data: [] };
-    const holder = {}; (fills || []).forEach((f) => { if (!holder[f.slug]) holder[f.slug] = f.actor; });
+    const holder = {}; (fills || []).forEach((f) => { if (!holder[f.slug]) holder[f.slug] = f; });
     $("positions").innerHTML = pos.length ? pos.map((p) => {
-      const w = who(holder[p.slug]), gain = (Number(p.value) || 0) - (Number(p.cost) || 0);
+      const h = holder[p.slug] || {}, w = who(h.actor, h.at), gain = (Number(p.value) || 0) - (Number(p.cost) || 0);
       return `<div class="row"><div class="t">${esc(p.title || p.slug)}${p.outcome ? ` · <span class="muted">${esc(p.outcome)}</span>` : ""}</div>
         <div class="s">${Number(p.shares || 0).toFixed(2)} shares at ${cents(p.avg_px)} · cost ${usd(p.cost)} · worth ${usd(p.value)}
           · <b class="${gain >= 0 ? "good" : "bad"}">${gain >= 0 ? "+" : ""}${usd(gain)}</b></div>
@@ -112,7 +114,7 @@
   // ---- scored by trader
   const acc = {};
   for (const r of res || []) {
-    const w = who(r.actor), x = acc[w.name] || (acc[w.name] = { n: 0, cost: 0, pnl: 0, wins: 0, cls: w.cls });
+    const w = who(r.actor, r.at), x = acc[w.name] || (acc[w.name] = { n: 0, cost: 0, pnl: 0, wins: 0, cls: w.cls });
     x.n++; x.cost += Number(r.cost_usd) || 0; x.pnl += Number(r.pnl_usd) || 0; if (Number(r.pnl_usd) > 0) x.wins++;
   }
   const order = Object.keys(acc).sort((a, b) => (acc[a].cls === "human") - (acc[b].cls === "human") || acc[b].n - acc[a].n);
@@ -129,7 +131,7 @@
     const { data: rows } = await supabase.from("desk_trades").select("*").order("at", { ascending: false }).range(page * PER, page * PER + PER - 1);
     page++;
     const html = (rows || []).map((t) => {
-      const w = who(t.actor); let what;
+      const w = who(t.actor, t.at); let what;
       if (t.kind === "fill") what = `${esc(t.side === "yes" ? "Bought" : "Sold")} ${esc(t.outcome || "")} · ${Number(t.quantity).toFixed(2)} shares at ${cents(t.price)} · ${usd(t.cost_usd)}`;
       else if (t.kind === "resolution") { const p = Number(t.pnl_usd); what = `Settled · <b class="${p >= 0 ? "good" : "bad"}">${p >= 0 ? "+" : ""}${usd(p)}</b> on ${usd(t.cost_usd)} put in`; }
       else what = `${esc(t.kind)} ${usd(t.cost_usd)}${t.note ? " · " + esc(t.note) : ""}`;
