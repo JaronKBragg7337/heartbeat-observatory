@@ -385,26 +385,45 @@ function personGLB(file) {
 }
 function hashName(name) { let h = 0; for (const ch_ of name) h = (h * 31 + ch_.charCodeAt(0)) >>> 0; return h; }
 function avatar(name, o) {
-  const g = new THREE.Group();
+  const g = new THREE.Group(); o.g = g; o.name = name;
   const tag = nameSprite(name); tag.position.y = 2.0; g.add(tag); o.tag = tag;
   // until the person has loaded: a soft placeholder, so a friend never pops in from nowhere
-  const ph = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 1.1, 4, 12), new THREE.MeshLambertMaterial({ color: 0x8c93a0, transparent: true, opacity: 0.35 }));
-  ph.position.y = 0.8; g.add(ph);
-  (async () => {
-    const list = await loadRoster(); if (!list.length) return;
-    const pick = list[hashName(name) % list.length];
-    try {
-      const gl = await personGLB(pick.file);
-      const body = cloneSkinned(gl.scene); body.rotation.y = Math.PI;   // the models face +Z; the room's yaw convention faces -Z
-      body.traverse((m) => { if (m.isMesh) { m.frustumCulled = false; if (m.material) m.material.envMapIntensity = 0.6; } });
-      g.remove(ph); g.add(body);
-      const mixer = new THREE.AnimationMixer(body), acts = {};
-      for (const clip of gl.animations) acts[clip.name] = mixer.clipAction(clip);
-      o.mixer = mixer; o.acts = acts; o.state = null; o.person = pick.id;
-    } catch (e) { console.warn("person", pick, e); }
-  })();
+  o.ph = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 1.1, 4, 12), new THREE.MeshLambertMaterial({ color: 0x8c93a0, transparent: true, opacity: 0.35 }));
+  o.ph.position.y = 0.8; g.add(o.ph);
+  loadPerson(o);
   return g;
 }
+// which person someone is: the one they picked ("You" button), else one picked from their name
+async function loadPerson(o) {
+  const list = await loadRoster(); if (!list.length) return;
+  const pick = list.find((p) => p.id === o.look) || list[hashName(o.name || "Guest") % list.length];
+  if (o.person === pick.id) return;
+  const tok = (o.loadTok = (o.loadTok || 0) + 1);
+  try {
+    const gl = await personGLB(pick.file); if (tok !== o.loadTok) return;
+    const body = cloneSkinned(gl.scene); body.rotation.y = Math.PI;   // the models face +Z; the room's yaw convention faces -Z
+    body.traverse((m) => { if (m.isMesh) m.frustumCulled = false; });
+    if (o.body) o.g.remove(o.body); if (o.ph) { o.g.remove(o.ph); o.ph = null; }
+    o.body = body; o.g.add(body);
+    const mixer = new THREE.AnimationMixer(body), acts = {};
+    for (const clip of gl.animations) acts[clip.name] = mixer.clipAction(clip);
+    o.mixer = mixer; o.acts = acts; o.state = null; o.person = pick.id;
+  } catch (e) { console.warn("person", pick, e); }
+}
+// ---- "You": pick who you are; friends see that person. Saved on this device.
+let myLook = null; try { myLook = localStorage.getItem("hb-look"); } catch (e) {}
+async function drawPeople() {
+  const list = await loadRoster();
+  $("peopleGrid").innerHTML = list.map((p) => `<button class="pp${p.id === myLook ? " on" : ""}" data-id="${p.id}"><img src="/homes/people/${p.id}.jpg" alt=""><span>${p.id[0].toUpperCase() + p.id.slice(1)}</span></button>`).join("");
+}
+$("meBtn").onclick = () => { drawPeople(); $("meSheet").classList.add("show"); };
+$("meClose").onclick = () => $("meSheet").classList.remove("show");
+$("peopleGrid").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-id]"); if (!b) return;
+  myLook = b.dataset.id; try { localStorage.setItem("hb-look", myLook); } catch (e2) {}
+  drawPeople(); lastSend = 0;
+  toast(`You're ${b.textContent.trim()} now - friends see you like this`);
+});
 function playState(o, st) {   // cross-fade between Idle / Walk / Sit
   if (!o.acts || o.state === st) return;
   const next = o.acts[st] || o.acts.Idle; if (!next) return;
@@ -414,7 +433,8 @@ function playState(o, st) {   // cross-fade between Idle / Walk / Sit
 }
 function upsertOther(k, st) {
   let o = others.get(k);
-  if (!o) { o = { to: new THREE.Vector3(st.x, st.y, st.z), yaw: st.yaw || 0 }; o.g = avatar(st.name || "Guest", o); o.g.position.copy(o.to); scene.add(o.g); others.set(k, o); }
+  if (!o) { o = { to: new THREE.Vector3(st.x, st.y, st.z), yaw: st.yaw || 0, look: st.look || null }; avatar(st.name || "Guest", o); o.g.position.copy(o.to); scene.add(o.g); others.set(k, o); }
+  else if (st.look !== undefined && (st.look || null) !== o.look) { o.look = st.look || null; loadPerson(o); }   // they picked someone new
   if (st.x !== undefined) { o.to.set(st.x, st.y, st.z); o.yaw = st.yaw; }
   o.sit = st.sit || null;
   const seat = o.sit && SEATS.find((x) => x.id === o.sit);
@@ -445,7 +465,7 @@ function sendPos(moved, now) {
   if (!chan || !me) return;
   if (now - lastSend < (moved ? 110 : 2000)) return;
   lastSend = now;
-  chan.send({ type: "broadcast", event: "pos", payload: { k: me.key, name: me.name, x: +P.pos.x.toFixed(2), y: +P.pos.y.toFixed(2), z: +P.pos.z.toFixed(2), yaw: +P.yaw.toFixed(2), sit: seated ? seated.id : null } });
+  chan.send({ type: "broadcast", event: "pos", payload: { k: me.key, name: me.name, x: +P.pos.x.toFixed(2), y: +P.pos.y.toFixed(2), z: +P.pos.z.toFixed(2), yaw: +P.yaw.toFixed(2), sit: seated ? seated.id : null, look: myLook } });
 }
 
 async function setupPeople() {
@@ -493,7 +513,7 @@ if (qs.get("guests")) {   // show-off / testing: people on the couch and one wan
   const n = Math.max(1, Math.min(6, +qs.get("guests") || 3)), names = ["Maya", "Dre", "Sam", "Nia", "Leo", "Ivy"];
   for (let i = 0; i < n; i++) {
     const seat = SEATS[i];
-    upsertOther("guest" + i, { name: names[i], x: seat.at.x, y: seat.at.y, z: seat.at.z, yaw: seat.yaw, sit: i < 4 && seat.tv ? seat.id : null });
+    upsertOther("guest" + i, { name: names[i], x: seat.at.x, y: seat.at.y, z: seat.at.z, yaw: seat.yaw, sit: i < 4 && seat.tv ? seat.id : null, look: ["isaiah", "ada", "jorge", "sunita", "zuri", "walter"][i] });
   }
   renderWho();
 }   // local only: a link shouldn't flip the room's TV

@@ -52,12 +52,16 @@
   #load .bar { width: min(280px, 70vw); height: 4px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
   #load .bar i { display: block; height: 100%; width: 0; background: var(--pink); transition: width .2s; }
   #load p { color: var(--muted); font-size: 14px; }
-  .sheet { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 8; width: min(420px, 92vw); background: #0e131a; border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: none; }
+  .sheet { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 90006; width: min(420px, 92vw); background: #0e131a; border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: none; }
   .sheet.show { display: block; }
   .sheet h3 { font: 800 22px/1.1 "Barlow Condensed", sans-serif; margin-bottom: 8px; }
   .sheet p { color: var(--muted); font-size: 14px; line-height: 1.45; margin-bottom: 12px; }
   .sheet input { width: 100%; background: #070a0e; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: 14px ui-monospace, monospace; margin-bottom: 10px; }
   .sheet .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .people { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .pp { background: #070a0e; border: 2px solid var(--line); border-radius: 12px; padding: 4px 4px 6px; color: var(--text); font: 600 13px Barlow, sans-serif; cursor: pointer; }
+  .pp img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 4px; background: #9a9ca0; }
+  .pp.on { border-color: var(--pink); }
   @media (max-width: 560px) { .title { position: fixed; left: 12px; top: calc(56px + env(safe-area-inset-top)); font-size: 16px; } .who { top: calc(96px + env(safe-area-inset-top)); } }
   .who { position: fixed; right: 12px; top: calc(56px + env(safe-area-inset-top)); z-index: 5; font-size: 13px; color: var(--muted); text-align: right; text-shadow: 0 1px 4px #000; pointer-events: none; }
 </style>
@@ -74,6 +78,7 @@
   <div class="title" id="title">The Loft<small id="sub">Heartbeat Homes</small></div>
   <button class="pill" id="tvBtn">📺 TV</button>
   <button class="pill" id="invBtn" style="display:none">🔗 Invite</button>
+  <button class="pill" id="meBtn">👤 You</button>
 </div>
 <div class="who" id="who"></div>
 <div class="tvbar" id="tvbar">
@@ -90,6 +95,12 @@
 <div id="stick"><i></i></div>
 <div class="hint" id="hint">Drag to look · WASD / left side of the screen to walk · stairs go up to the balcony</div>
 <div id="load"><b>HEARTBEAT HOMES</b><div class="bar"><i id="loadBar"></i></div><p id="loadMsg">Unlocking the loft…</p></div>
+<div class="sheet" id="meSheet">
+  <h3>Who are you in the loft?</h3>
+  <p>Pick a person. Friends in your loft see you as them, walking around and sitting on the couch. Saved on this device.</p>
+  <div class="people" id="peopleGrid"></div>
+  <div class="row"><button class="pill" id="meClose">Done</button></div>
+</div>
 <div class="sheet" id="invSheet">
   <h3>Invite friends</h3>
   <p>Anyone with this link can walk into your loft while you're here and see you move around. Make a new link any time to cut off old ones.</p>
@@ -97,6 +108,6 @@
   <div class="row"><button class="pill" id="invCopy">Copy link</button><button class="pill" id="invShare">Share…</button><button class="pill" id="invRoll">New link</button><button class="pill" id="invClose">Close</button></div>
 </div>
 <script src="/tv/remote.js"></script>
-<script type="module" src="/homes/homes.js?v=9"></script>
+<script type="module" src="/homes/homes.js?v=10"></script>
 </body>
 </html>

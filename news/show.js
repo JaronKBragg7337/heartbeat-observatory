@@ -548,6 +548,11 @@ function playRendered(r) {
   v.playsInline = true; v.autoplay = true; v.muted = true; v.loop = true; v.preload = "auto";
   v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:0";
   scr.insertBefore(v, scr.firstChild);
+  // a channel, not a clip: join the loop wherever it is right now, the same moment for everyone (Jaron 9/27 - the live
+  // show always did this). Coming back to the tab (phone locked, app switched) re-joins live too.
+  const live = () => { if (v.duration > 1) { v.currentTime = (Date.now() / 1000) % v.duration; v.play().catch(() => {}); } };
+  v.addEventListener("loadedmetadata", live, { once: true });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) live(); });
   v.play().catch(() => {});
   const tap = $("tap");
   if (tap) { tap.style.display = ""; tap.onclick = (e) => { e.stopPropagation(); v.muted = false; v.play(); tap.style.display = "none"; }; }
