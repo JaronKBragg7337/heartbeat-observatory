@@ -494,7 +494,7 @@ window.HBNews = {
 // ---- boot ---------------------------------------------------------------------------------------------------------
 // ---- rendered episodes (made in Unreal on the MSI each morning, stored in Supabase Storage "news-video") -------------
 // ?rendered=1 forces it on, ?rendered=0 forces the live 3D show. RENDERED_DEFAULT turns it on for everyone once approved.
-const RENDERED_DEFAULT = false;
+const RENDERED_DEFAULT = true;   // Jaron OK 2026-09-27 10:08 PM: the filmed show is the show (news page, TV CH1, Loft). Until the day's video is up, the live 3D show plays.
 const RENDERED_INDEX = SUPABASE_URL + "/storage/v1/object/public/news-video/index.json";
 async function renderedFor(date) {
   const q = new URLSearchParams(location.search).get("rendered");
