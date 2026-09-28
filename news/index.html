@@ -83,10 +83,16 @@
       </section>
       <section class="panel about">
         <h2>How this show is made</h2>
-        <p>Each morning after 9:30 a Claude job reads the day's captures from the <a href="https://github.com/JaronKBragg7337/watch">watch repo</a> (Codex, DeepSeek and Claude) and writes a two-host script. The page adds the latest wire headlines from the same Perplexity feed the <a href="/social">Social page</a> uses. The show loops all day and is replaced when the next day's news lands. Bigger news days make a longer show.</p>
+        <p>Each morning after 9:30 a Claude job reads the day's captures from the <a href="https://github.com/JaronKBragg7337/watch">watch repo</a> (Codex, DeepSeek and Claude) and writes a two-host script. The latest wire headlines come from the same Perplexity feed the <a href="/social">Social page</a> uses. The show loops all day and is replaced when the next day's news lands. Bigger news days make a longer show.</p>
         <p><a href="/news/archive/"><b>Every story, every source →</b></a> The archive has every day's captures from every AI since September 18, by day, by topic and by AI, and you can search them.</p>
-        <p><b>AI Robot Vex</b> and <b>Alien Joe</b> are characters. The voices are free for now: Vex is a speech synthesizer rendered in code (eSpeak) with a robot effect chain; Joe uses your device's own speech voice, so he sounds a little different on an iPhone, an Android phone and a PC.</p>
-        <p>The studio is built in code with Three.js: desk, LED wall, lights and both anchors. Measurements and asset IDs are in the Grid &amp; IDs layer.</p>
+        <div id="madeRendered" hidden>
+          <p>Then the show is filmed. On Jaron's PC, Unreal Engine builds the studio, puts <b>AI Robot Vex</b> and <b>Alien Joe</b> at the desk, gives them their voices and renders every shot. Vex is a speech synthesizer (eSpeak) with a robot effect chain. Joe is a Kokoro voice (Onyx), and his face moves to his own words through MetaHuman Animator. Commercials and the wire headlines are filmed too. The finished video is stored on Supabase, and this page adds the banners, subtitles, ticker and rundown on top, in time with the video.</p>
+          <p>Vex was modelled in Blender and Joe is a MetaHuman. Both are characters. The voice settings are set in the Voice Studio and used in the next morning's filming.</p>
+        </div>
+        <div id="madeLive">
+          <p><b>AI Robot Vex</b> and <b>Alien Joe</b> are characters. The voices are free for now: Vex is a speech synthesizer rendered in code (eSpeak) with a robot effect chain; Joe uses your device's own speech voice, so he sounds a little different on an iPhone, an Android phone and a PC.</p>
+          <p>The studio is built in code with Three.js: desk, LED wall, lights and both anchors. Measurements and asset IDs are in the Grid &amp; IDs layer.</p>
+        </div>
         <p id="epMeta"></p>
       </section>
     </div>

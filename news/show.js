@@ -483,8 +483,10 @@ window.HBNews = {
   get studio() { return studio; },
   applySettings,
   defaults: DEFAULT_SETTINGS,
-  pause() { paused = true; voice.cancel(); setCaption(""); },
-  resume() { paused = false; if (cur) startItem(cur.i); },
+  // rendered show: the video keeps the picture and sound, so a Voice Studio test pauses the video instead
+  pause() { const rv = document.getElementById("rv"); if (rv) { rv.pause(); return; } paused = true; voice.cancel(); setCaption(""); },
+  resume() { const rv = document.getElementById("rv"); if (rv) { rv.play().catch(() => {}); return; } paused = false; if (cur) startItem(cur.i); },
+  get rendered() { return !!document.getElementById("rv"); },
   unlock() { voice.unlock(); },
   get mode() { return mode; }
 };
@@ -568,6 +570,7 @@ async function boot() {
   const rendered = await renderedFor(ep.date);
   if (rendered) {
     playRendered(rendered);
+    $("madeRendered").hidden = false; $("madeLive").hidden = true;
     const tl = rendered.timing ? await fetch(rendered.timing, { cache: "no-cache" }).then((x) => x.json()).catch(() => null) : null;
     if (tl && tl.segments) build({ segments: tl.segments }, { asRendered: true }); else build(ep);
     renderRundown(); buildTicker(); tickClock(); setInterval(tickClock, 1000);

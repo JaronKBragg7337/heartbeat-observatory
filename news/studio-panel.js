@@ -46,6 +46,7 @@ export function mountStudio(root, { supabase, session, voice, api }) {
     <h2>Voice Studio</h2>
     <p class="intro">Admins only. Every change plays here right away. <b>Save for everyone</b> makes it what every viewer hears and sees.
       The <b>code synth</b> takes every knob and effect. A <b>device voice</b> sounds more natural but only takes pitch, speed and volume, and it differs by phone and computer.</p>
+    ${api.rendered ? `<p class="intro"><b>This is the filmed show.</b> Its voices are already in the video, so use <b>Test voice</b> to hear a change (the video pauses while it plays). Saved settings go into the next morning's filming. Joe's filmed voice is <b>Show voice — Onyx</b>.</p>` : ""}
     <div class="strips">${["vex", "joe"].map(strip).join("")}</div>
     <div class="bar">
       <button class="btn primary" type="button" data-act="save">Save for everyone</button>
