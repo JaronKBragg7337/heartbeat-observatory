@@ -1,6 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/DRACOLoader.js";
+import { clone as cloneSkinned } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 // Aliased: main.js already has its own loadSurfaces(), which queries the
 // Supabase "surfaces" table for door status and is unrelated to materials.
@@ -1229,13 +1230,16 @@ function normalizeAppearance(appearance, seed) {
     skin: hex(source.skin, "#c8a07a"),
     pants: hex(source.pants, "#3a4654"),
     hair: hex(source.hair, "#2c2420"),
-    build: ["slim", "regular", "broad"].includes(source.build) ? source.build : "regular"
+    build: ["slim", "regular", "broad"].includes(source.build) ? source.build : "regular",
+    person: typeof source.person === "string" && /^[a-z0-9-]{1,24}$/.test(source.person) ? source.person : ""
   };
 }
+// the person you picked in the Loft ("You" button) is who other people see you as here too
+function withMyPerson(a) { try { const p = localStorage.getItem("hb-look"); if (p) return Object.assign({}, a, { person: p }); } catch (e) {} return a; }
 
 function appearanceSignature(appearance) {
   const clean = normalizeAppearance(appearance, "resident");
-  return `${clean.color}:${clean.pattern}:${clean.body}:${clean.shirt}:${clean.skin}:${clean.pants}:${clean.hair}:${clean.build}`;
+  return `${clean.color}:${clean.pattern}:${clean.body}:${clean.shirt}:${clean.skin}:${clean.pants}:${clean.hair}:${clean.build}:${clean.person}`;
 }
 
 function characterSpawn(id) {
@@ -1305,7 +1309,7 @@ function trackSelf() {
       kind: visitorKind,
       temporary: !myUserId,
       color: myColor,
-      appearance: myAppearance,
+      appearance: withMyPerson(myAppearance),
       x: state.x,
       y: state.y,
       z: state.z,
@@ -1351,7 +1355,7 @@ async function saveMyAppearance() {
   if (!myUserId) return;
   try {
     const { error } = await ensureSupabase().rpc("set_world_appearance", {
-      p_appearance: myAppearance
+      p_appearance: withMyPerson(myAppearance)
     });
     if (error) throw error;
     renderAppearanceControls("Saved.", false, true);
@@ -1685,7 +1689,7 @@ function sendState(force = false) {
       kind: visitorKind,
       temporary: !myUserId,
       color: myColor,
-      appearance: myAppearance,
+      appearance: withMyPerson(myAppearance),
       x: state.x,
       y: state.y,
       z: state.z,
@@ -4235,6 +4239,15 @@ function cloneTownAvatar(look, name, ghost) {
 }
 
 function animateAvatarGait(group, speed, ghost = false) {
+  const P = group?.userData?.person;
+  if (P) {   // a real person: cross-fade Idle / Walk, walk faster when they move faster
+    const now = performance.now(), dt = Math.min(0.1, (now - P.t) / 1000); P.t = now;
+    const st = speed > 0.25 ? "Walk" : "Idle";
+    if (P.state !== st && P.acts[st]) { const prev = P.state && P.acts[P.state]; P.acts[st].reset().play(); if (prev) prev.crossFadeTo(P.acts[st], 0.3, false); P.state = st; }
+    if (P.acts.Walk) P.acts.Walk.timeScale = Math.max(0.6, Math.min(1.8, speed / 1.4));
+    P.mixer.update(dt);
+    return;
+  }
   const rig = group?.userData?.rigParts;
   if (!rig || !rig.armL || !rig.armR || !rig.legL || !rig.legR) return;
   const amount = Math.min(ghost ? 0.34 : 0.58, Math.max(0, speed) * 0.2);
@@ -5003,7 +5016,49 @@ function addBox(x, y, z, width, height, depth, material) {
   return box;
 }
 
+// ---- real people (Jaron 9/27-28: realistic characters everywhere, no Roblox look). The Loft's MetaHumans walk the town:
+// the old figure shows first and the person swaps in when their file arrives (1-3 MB each, cached per person). Shirt and
+// trouser colours come from each player's own look, so their choices still show. ?legacy keeps the old figures.
+let peopleRoster = null; const peopleFiles = new Map();
+function peopleList() {
+  if (!peopleRoster) peopleRoster = fetch("/homes/people/people.json", { cache: "no-cache" }).then((r) => r.json()).then((j) => j.people || []).catch(() => []);
+  return peopleRoster;
+}
+function personFile(file) {
+  if (!peopleFiles.has(file)) peopleFiles.set(file, new GLTFLoader().loadAsync("/homes/people/" + file));
+  return peopleFiles.get(file);
+}
+function personHash(name) { let h = 0; for (const ch of String(name || "Guest")) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }   // same pick as the Loft
+async function swapInPerson(group, look, name, ghost) {
+  if (HB_LEGACY) return;
+  try {
+    const list = await peopleList(); if (!list.length) return;
+    const pick = list.find((p) => p.id === look.person) || list[personHash(name) % list.length];
+    const gl = await personFile(pick.file);
+    const body = cloneSkinned(gl.scene); body.rotation.y = Math.PI;   // the people face +Z; town figures face -Z
+    body.traverse((m) => {
+      if (!m.isMesh) return;
+      m.frustumCulled = false; m.castShadow = !ghost; m.receiveShadow = !ghost;
+      const mt = m.material = m.material.clone(); const n = mt.name || "";
+      if (/^Shirt/.test(n) && look.shirt) mt.color.set(look.shirt);
+      else if (/^(Pants|Shorts)/.test(n) && look.pants) mt.color.set(look.pants);
+      if (/^HairCard/.test(n)) { mt.transparent = false; mt.alphaTest = 0.38; mt.side = THREE.DoubleSide; }
+      if (ghost) { mt.transparent = true; mt.opacity = 0.58; mt.depthWrite = false; mt.alphaTest = 0; }
+    });
+    for (const c of [...group.children]) if (!c.isSprite && !c.userData?.heldTag) group.remove(c);   // keep the name tag and anything held
+    group.add(body);
+    const mixer = new THREE.AnimationMixer(body), acts = {};
+    for (const clip of gl.animations) acts[clip.name] = mixer.clipAction(clip);
+    group.userData.rigParts = null;
+    group.userData.person = { mixer, acts, state: null, t: performance.now(), id: pick.id };
+  } catch (e) { try { console.warn("[HB] person", e); } catch (e2) {} }
+}
 function buildAvatarBody(look, name, ghost) {
+  const g = buildAvatarBodyFigure(look, name, ghost);
+  swapInPerson(g, look, name, ghost);
+  return g;
+}
+function buildAvatarBodyFigure(look, name, ghost) {
   const authored = cloneTownAvatar(look, name, ghost);
   if (authored) return authored;
   const group = new THREE.Group();
