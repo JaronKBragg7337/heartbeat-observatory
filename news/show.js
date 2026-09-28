@@ -501,7 +501,9 @@ async function renderedFor(date) {
   if (q === "0" || (!RENDERED_DEFAULT && q !== "1")) return null;
   try {
     const idx = await (await timeout(fetch(RENDERED_INDEX, { cache: "no-cache" }), 4000)).json();
-    return (idx.episodes || []).find((e) => e.date === date) || null;
+    // today's filmed show, else the newest filmed one: the new episode is written ~9:40 but filmed by noon, and until then
+    // yesterday's filmed show keeps looping rather than the channel dropping back to the drawn 3D version (Jaron 9/28)
+    return (idx.episodes || []).find((e) => e.date === date) || (idx.episodes || []).find((e) => e.date < date) || null;
   } catch (e) { return null; }
 }
 // The rendered video carries picture and sound; the page still plays the broadcast graphics on top of it - rundown
@@ -573,6 +575,7 @@ async function boot() {
   await fontsReady;
   // The rendered (Unreal) episode, when the MSI has made today's: play the video instead of drawing the studio live.
   const rendered = await renderedFor(ep.date);
+  if (rendered && rendered.date !== ep.date) { try { ep = await loadEpisode(rendered.date); } catch (e) {} }   // yesterday's words with yesterday's video
   if (rendered) {
     playRendered(rendered);
     $("madeRendered").hidden = false; $("madeLive").hidden = true;

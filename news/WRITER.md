@@ -24,8 +24,8 @@ at the next story break; until then it keeps looping the last show.
 - **Length follows the news.** One segment per story worth telling. A thin day is 5-7 segments; a big day 12-18.
   2-6 lines per segment. Lead with the biggest story of the day. Group small items (e.g. a "Tech" or "Around the country" block).
 - **Fixed segments:** `open` first (Vex greets, Joe names the day, a two-line tease), a `wire` segment near the end
-  (leave `lines: []`; the page fills it from the live Perplexity headlines), `close` last (sign-off, "new show after
-  nine thirty"). Use `kind: "breaking"` for at most one story that broke in the last 24 h. `weather` and `sports`
+  (leave `lines: []`; the page fills it from the live Perplexity headlines), `close` last (sign-off, "new show every day by
+  noon" - the filmed show is ready by 12 PM; never promise an earlier time). Use `kind: "breaking"` for at most one story that broke in the last 24 h. `weather` and `sports`
   kinds get their own colours on the wall.
 - **National and world audience (Jaron, 2026-09-24).** Viewers are anywhere - New York, California, overseas. Lead with world news,
   national news, and major cities. Indiana / Fort Wayne items (domain 11) do NOT get their own segment; include one only when it
