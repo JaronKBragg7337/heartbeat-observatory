@@ -31,6 +31,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { installRegolith, mod360 } from './regolith.js';
 import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, elevationAt, MATERIALS } from './field.js';
 import { localFrame, geodeticToCartesian, cartesianToGeodetic } from './geodesy.js';
 
@@ -146,6 +147,8 @@ export class LocalPatch {
     this.mesh = new THREE.Mesh(this.geo, new THREE.MeshStandardMaterial({
       vertexColors: true, roughness: 0.93, metalness: 0.0,
     }));
+    // dust, grit, pebbles and bumps at walking scale (regolith.js) - pinned to world position
+    this._regolith = installRegolith(this.mesh.material, THREE);
     this.mesh.name = `patch:${body.id}`;
     this.mesh.receiveShadow = true;
     this.mesh.castShadow = false;
@@ -325,6 +328,7 @@ export class LocalPatch {
     const clen = Math.hypot(cd.x, cd.y, cd.z);
     const ox = (cd.x / clen) * originR, oy = (cd.y / clen) * originR, oz = (cd.z / clen) * originR;
     this.worldPos = { x: ox, y: oy, z: oz };
+    if (this._regolith) this._regolith.uRegOffset.value.set(mod360(ox), mod360(oy), mod360(oz));
     this.builtAt = { x: px, y: py, z: pz };
     this._frame = f;
     this._originR = originR;
