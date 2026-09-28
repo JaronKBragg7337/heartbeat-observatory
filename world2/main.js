@@ -11,8 +11,10 @@
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
+import { clone as cloneSkinned } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 
-const BUILD = "2026-07-04-w2m";
+const BUILD = "2026-09-28-w2real";
 const PREVIEW = new URLSearchParams(location.search).get("preview") === "1"; // gate-page spectate: orbit forever, join nothing // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
@@ -137,6 +139,96 @@ const clock = new THREE.Clock();
 // ---- sky / light handles (filled by buildWorld) ----
 let sunLight = null, hemiLight = null;
 let skyAnchor = null, sunDisc = null, moonDisc = null, stars = null;
+// ---- a real sky (Jaron 9/28: no Roblox look) - same design as World 1's, own copy (World 2 imports nothing from /engine/hub/):
+// blue zenith to pale horizon, drifting clouds, sun glow, warm sunsets, dark night; the same sky lights reflections.
+let skyDome = null, skyEnvScene = null, skyEnvSky = null, skyPmrem = null, skyEnv = null, skyEnvAt = 0, skyEnvElev = 9;
+function makeWorldSky(radius) {
+  const mat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false, toneMapped: false,
+    uniforms: { sunDir: { value: new THREE.Vector3(0, 1, 0) }, zenith: { value: new THREE.Color() }, horizon: { value: new THREE.Color() },
+                glow: { value: new THREE.Color() }, cloudLit: { value: new THREE.Color() }, cloudShade: { value: new THREE.Color() }, time: { value: 0 }, clouds: { value: 1 } },
+    vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `
+      uniform vec3 sunDir, zenith, horizon, glow, cloudLit, cloudShade; uniform float time, clouds; varying vec3 vDir;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+      float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+        return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x), f.y); }
+      float fbm(vec2 p){ float v=0.0, a=0.5; for(int i=0;i<5;i++){ v+=a*n(p); p*=2.03; a*=0.5; } return v; }
+      void main(){
+        vec3 d = normalize(vDir); float up = max(d.y, 0.0);
+        vec3 col = mix(horizon, zenith, pow(up, 0.55));
+        if (d.y < 0.0) col = horizon * (1.0 + d.y * 0.6);
+        float s = max(dot(d, normalize(sunDir)), 0.0);
+        col += glow * (pow(s, 8.0) * 0.35 + pow(s, 64.0) * 0.6) + vec3(1.0, 0.97, 0.9) * smoothstep(0.9993, 0.9998, s) * step(0.0, sunDir.y + 0.05);
+        if (d.y > 0.02 && clouds > 0.0) {
+          vec2 uv = d.xz / (d.y + 0.12) * 0.9 + vec2(time * 0.006, time * 0.002);
+          float c = smoothstep(0.52, 0.78, fbm(uv * 1.6)) * smoothstep(0.02, 0.25, d.y);
+          vec3 cc = mix(cloudShade, cloudLit, clamp(fbm(uv * 1.6 + 0.35) * 1.4, 0.0, 1.0));
+          col = mix(col, cc, c * 0.85 * clouds);
+        }
+        gl_FragColor = vec4(col, 1.0);
+        #include <colorspace_fragment>
+      }`
+  });
+  const m = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16), mat); m.frustumCulled = false; return m;
+}
+const SKY_PAL = {
+  night: { zenith: 0x03060f, horizon: 0x0e1526, glow: 0x101a33, cloudLit: 0x1a2236, cloudShade: 0x0a0f1a },
+  dusk:  { zenith: 0x1f3566, horizon: 0xe98a58, glow: 0xffa860, cloudLit: 0xf2a377, cloudShade: 0x5a4a66 },
+  day:   { zenith: 0x2f6fc6, horizon: 0xb7d2ea, glow: 0xfff0d0, cloudLit: 0xffffff, cloudShade: 0xb9c3cf },
+};
+const _skyTmp = new THREE.Color();
+function skyColorsFor(e, u) {
+  const mixP = (a, b, t) => { for (const k of ["zenith", "horizon", "glow", "cloudLit", "cloudShade"]) u[k].value.setHex(a[k]).lerp(_skyTmp.setHex(b[k]), t); };
+  if (e >= 0.25) mixP(SKY_PAL.day, SKY_PAL.day, 0);
+  else if (e >= 0) mixP(SKY_PAL.dusk, SKY_PAL.day, e / 0.25);
+  else if (e >= -0.2) mixP(SKY_PAL.dusk, SKY_PAL.night, -e / 0.2);
+  else mixP(SKY_PAL.night, SKY_PAL.night, 0);
+}
+// ---- real people (Jaron 9/27-28): the Loft's MetaHumans instead of capsule-and-ball avatars. The capsule shows first; the
+// person swaps in when the file arrives. Their colour picks the shirt; a Loft pick (hb-look) is who they are.
+let peopleRoster = null; const peopleFiles = new Map();
+function peopleList() {
+  if (!peopleRoster) peopleRoster = fetch("/homes/people/people.json", { cache: "no-cache" }).then((r) => r.json()).then((j) => j.people || []).catch(() => []);
+  return peopleRoster;
+}
+function personFile(file) {
+  if (!peopleFiles.has(file)) peopleFiles.set(file, new GLTFLoader().loadAsync("/homes/people/" + file));
+  return peopleFiles.get(file);
+}
+function myPerson() { try { return localStorage.getItem("hb-look") || ""; } catch (e) { return ""; } }   // the Loft's "You" pick
+function personHash(name) { let h = 0; for (const ch of String(name || "Guest")) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
+async function swapInPerson(group, colorHex, name, personId) {
+  try {
+    const list = await peopleList(); if (!list.length) return;
+    const pick = list.find((p) => p.id === personId) || list[personHash(name) % list.length];
+    const gl = await personFile(pick.file);
+    const body = cloneSkinned(gl.scene); body.rotation.y = Math.PI;
+    body.traverse((m) => {
+      if (!m.isMesh) return;
+      m.frustumCulled = false; m.castShadow = true;
+      const mt = m.material = m.material.clone(); const n = mt.name || "";
+      if (/^Shirt/.test(n) && colorHex) mt.color.set(colorHex);
+      if (/^HairCard/.test(n)) { mt.transparent = false; mt.alphaTest = 0.38; mt.side = THREE.DoubleSide; }
+    });
+    for (const c of [...group.children]) if (!c.isSprite) group.remove(c);
+    group.add(body);
+    const mixer = new THREE.AnimationMixer(body), acts = {};
+    for (const clip of gl.animations) acts[clip.name] = mixer.clipAction(clip);
+    group.userData.person = { mixer, acts, state: null, lx: group.position.x, lz: group.position.z };
+  } catch (e) { try { console.warn("[W2] person", e); } catch (e2) {} }
+}
+function animatePeople(dt) {
+  for (const remote of remotes.values()) {
+    const g = remote.group, P = g && g.userData.person; if (!P) continue;
+    const sp = Math.hypot(g.position.x - P.lx, g.position.z - P.lz) / Math.max(dt, 0.001); P.lx = g.position.x; P.lz = g.position.z;
+    const st = sp > 0.25 ? "Walk" : "Idle";
+    if (P.state !== st && P.acts[st]) { const prev = P.state && P.acts[P.state]; P.acts[st].reset().play(); if (prev) prev.crossFadeTo(P.acts[st], 0.3, false); P.state = st; }
+    if (P.acts.Walk) P.acts.Walk.timeScale = Math.max(0.6, Math.min(1.8, sp / 1.4));
+    P.mixer.update(dt);
+  }
+}
+
 
 // ---- grass system (deterministic world-grid: tufts live in fixed world cells, so the set
 // only changes at the far edge as you walk — no pop-in next to the player) ----
@@ -867,7 +959,7 @@ function makeNameSprite(name, scaleMul) {
   return sprite;
 }
 
-function buildAvatarBody(colorHex, name) {
+function buildAvatarBody(colorHex, name, personId) {
   const group = new THREE.Group();
   const col = new THREE.Color(colorHex || "#4fa3ff");
   const body = new THREE.Mesh(
@@ -887,6 +979,7 @@ function buildAvatarBody(colorHex, name) {
   const plate = makeNameSprite(name || "Guest");
   plate.position.y = 1.95;
   group.add(plate);
+  swapInPerson(group, colorHex, name, personId);
   return group;
 }
 
@@ -895,7 +988,7 @@ function remoteFootY(player) {
 }
 
 function createRemote(player) {
-  const group = buildAvatarBody(player.color, player.name);
+  const group = buildAvatarBody(player.color, player.name, player.person);
   group.position.set(player.x, remoteFootY(player), player.z);
   group.rotation.y = player.yaw || 0;
   return {
@@ -990,7 +1083,7 @@ function trackSelf() {
   // NEVER from the movement cycle (per-client presence rate limit throttles the whole socket).
   if (!channel) return;
   try {
-    channel.track({ id: selfId(), name: displayName, color: myColor, x: state.x, y: state.y, z: state.z, yaw: state.yaw, stance: state.stance });
+    channel.track({ id: selfId(), name: displayName, color: myColor, person: myPerson(), x: state.x, y: state.y, z: state.z, yaw: state.yaw, stance: state.stance });
   } catch (e) {}
 }
 
@@ -1006,7 +1099,7 @@ function sendState(force = false) {
   channel.send({
     type: "broadcast",
     event: "state",
-    payload: { id: selfId(), name: displayName, color: myColor, x: state.x, y: state.y, z: state.z, yaw: state.yaw, pitch: state.pitch, stance: state.stance }
+    payload: { id: selfId(), name: displayName, color: myColor, person: myPerson(), x: state.x, y: state.y, z: state.z, yaw: state.yaw, pitch: state.pitch, stance: state.stance }
   });
 }
 
@@ -1666,6 +1759,23 @@ function updateDayNight() {
   renderer.toneMappingExposure = 0.92 + 0.24 * day;
 
   if (skyAnchor) skyAnchor.position.set(state.x, 0, state.z);
+  if (!skyDome) {
+    skyDome = makeWorldSky(420); skyDome.renderOrder = -2; scene.add(skyDome);
+    skyEnvScene = new THREE.Scene(); skyEnvSky = makeWorldSky(60); skyEnvSky.material.uniforms.clouds.value = 0.4; skyEnvScene.add(skyEnvSky);
+    skyPmrem = new THREE.PMREMGenerator(renderer);
+  }
+  {
+    const sunDir = _sunOff.clone().normalize(), su = skyDome.material.uniforms;
+    skyDome.position.copy(camera.position); su.sunDir.value.copy(sunDir); su.time.value = performance.now() / 1000; skyColorsFor(e, su);
+    scene.fog.color.copy(su.horizon.value); if (golden > 0) scene.fog.color.lerp(W2_DUSK, golden * 0.25);
+    const now = performance.now();
+    if (Math.abs(e - skyEnvElev) > 0.04 && now - skyEnvAt > 2500) {
+      skyEnvAt = now; skyEnvElev = e; const eu = skyEnvSky.material.uniforms; eu.sunDir.value.copy(sunDir); skyColorsFor(e, eu);
+      const rt = skyPmrem.fromScene(skyEnvScene, 0, 0.1, 200); if (skyEnv) skyEnv.dispose(); skyEnv = rt; scene.environment = rt.texture;
+    }
+    scene.environmentIntensity = 0.12 + 0.3 * day;
+    if (stars) stars.renderOrder = -1;
+  }
   if (sunDisc) {
     const len = _sunOff.length() || 1;
     sunDisc.position.set(_sunOff.x / len * 215, _sunOff.y / len * 215, _sunOff.z / len * 215);
@@ -1822,6 +1932,7 @@ function animate() {
   sendAccumulator += dt;
   updateLocal(dt);
   updateRemotes(dt);
+  animatePeople(dt);
   updateGrass();
   updateFireflies();
   updateDayNight();
