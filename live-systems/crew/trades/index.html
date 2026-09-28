@@ -70,12 +70,12 @@
   const bots = snap ? snap.data.bots : [], retired = snap ? (snap.data.retired || []) : [];
 
   // WHO: today's crew names come from the crew snapshot (each bot lists the actor tag it trades under), so a rename there
-  // renames every trade here. Old tags keep their history under the member who carries them now.
+  // renames every trade here. Old tags (grok-bot/live-wire = Darios Twin's v1 name) stay with the member who carries them now.
   function who(actor) {
     const a = String(actor || "");
     for (const b of bots) {
-      if ((b.actor && a === b.actor) || (b.actor_prefix && a.startsWith(b.actor_prefix)) || (b.id === "deepseek" && /deepseek/.test(a)))
-        return { name: b.name + (b.also && /live|bridge/i.test(b.also) ? ` (was ${b.also})` : ""), cls: "ai", id: b.id };
+      if ((b.actor && a === b.actor) || (b.actors && b.actors.includes(a)) || (b.actor_prefix && a.startsWith(b.actor_prefix)) || (b.id === "deepseek" && /deepseek/.test(a)))
+        return { name: b.name, cls: "ai", id: b.id };
     }
     if (a === "jaron-manual") return { name: "Jaron, by hand", cls: "human" };
     if (a === "jaron-manual (demo)") return { name: "Jaron, demo with friends", cls: "human" };

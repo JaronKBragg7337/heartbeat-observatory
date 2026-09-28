@@ -126,13 +126,13 @@
      ------------------------------------------------------------------------- */
   const TRADERS = [
     {
-      id: "live-wire",
+      id: "darios-twin",
       name: "Darios Twin",
-      also: "was Live Wire",
+      also: "the live trader",
       kind: "Grok Bot",
       venue: "Polymarket US",
-      proposedBy: /^grok-bot\/live-wire/,
-      actor: "auto:grok-bot/live-wire",
+      proposedBy: /^grok-bot\/(darios-twin|live-wire)/,   // live-wire = its v1 tag, still on older trades
+      actor: "auto:grok-bot/darios-twin",
       reads: ["market-feed", "brief"],
       alsoReads: "the live score and the order book",
     },
@@ -180,7 +180,7 @@
     return { id: proposedBy, name, kind: String(proposedBy).split("/")[0], venue: "", reads: [], unlisted: true };
   }
   const isTraderRow = (p) => /^grok-bot\//.test(p.proposed_by || "") || TRADERS.some(t => t.proposedBy.test(p.proposed_by || ""));
-  // The bot tags its own rows "[grok-bot/live-wire, live, no approval] ..."; the tag is already shown as the trader.
+  // The bot tags its own rows "[grok-bot/darios-twin, live, no approval] ..." (older rows: grok-bot/live-wire); the tag is already shown as the trader.
   const cleanWhy = (s) => String(s || "").replace(/^\[[^\]]*\]\s*/, "");
   const isExit = (p) => /^EXIT:/i.test(cleanWhy(p.rationale));
 

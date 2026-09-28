@@ -68,10 +68,11 @@
     const L = b.ledger;
     $("board").innerHTML = [[L.fills, "trades"], [usd(L.spent), "put in"], [`${L.wins}–${L.losses}`, "won–lost (settled)"], [usd(L.pnl), "made, settled"]]
       .map(([v, l]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
-    const actor = b.id === "deepseek" ? "auto:proposer-script%" : "auto:grok-bot/live-wire";
+    // Darios Twin trades under two tags (grok-bot/live-wire until 9/28, grok-bot/darios-twin after); DeepSeek under the proposer's
+    const who = (q) => b.id === "deepseek" ? q.like("actor", "auto:proposer-script%") : q.in("actor", b.actors || [b.actor]);
     const [{ data: res }, { data: fills }] = await Promise.all([
-      supabase.from("desk_trades").select("at,pnl_usd").eq("kind", "resolution").like("actor", actor).limit(2000),
-      supabase.from("desk_trades").select("at,title,slug,side,outcome,price,cost_usd").eq("kind", "fill").like("actor", actor).order("at", { ascending: false }).limit(120),
+      who(supabase.from("desk_trades").select("at,pnl_usd").eq("kind", "resolution")).limit(2000),
+      who(supabase.from("desk_trades").select("at,title,slug,side,outcome,price,cost_usd").eq("kind", "fill")).order("at", { ascending: false }).limit(120),
     ]);
     $("chart").innerHTML = pnlChart(res || []);
     // group the venue's partial fills into one row per trade (same market + side within the hour)
