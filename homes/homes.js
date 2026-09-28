@@ -23,9 +23,15 @@ const css = new CSS3DRenderer(); css.setSize(innerWidth, innerHeight); $("css").
 const scene = new THREE.Scene(), cssScene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(phone ? 72 : 65, innerWidth / innerHeight, 0.05, 3000);
 scene.add(new THREE.HemisphereLight(0xcfd8ff, 0x3a2a20, 1.4));   // only lights the avatars; baked surfaces are unlit
-function fitFov() {   // keep ~78 degrees across in portrait, 65 tall in landscape
+let fovK = 0;   // 0 = standing, 1 = sitting facing the TV
+function fitFov() {   // standing: ~78 degrees across in portrait, 65 tall in landscape
   camera.aspect = innerWidth / innerHeight;
-  camera.fov = camera.aspect < 1 ? Math.min(105, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(39)) / camera.aspect))) : 65;
+  const across = (d) => THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(d / 2)) / camera.aspect));
+  const stand = camera.aspect < 1 ? Math.min(105, across(78)) : 65;
+  // seated at the TV: ~48 degrees across, the way your eyes settle on a screen from the couch. The TV is 115" at ~14 ft
+  // (home-theatre big); a phone's wide view is what made it look small (Jaron 9/27).
+  const seat = Math.min(stand, across(48));
+  camera.fov = stand + (seat - stand) * fovK;
   camera.updateProjectionMatrix();
 }
 fitFov();
@@ -150,6 +156,11 @@ function move(dt) {
   let f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) - stick.y;
   let s = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + stick.x;
   const m = Math.hypot(f, s); if (m > 1) { f /= m; s /= m; }
+  if (seated) {   // sitting: look around freely; pushing to walk stands you up
+    if (m > 0.6) standUp(); else {
+      camera.position.copy(seated.eye); camera.rotation.set(P.pitch, P.yaw, 0, "YXZ"); return false;
+    }
+  }
   const speed = (keys.ShiftLeft ? 4.2 : 2.6) * dt;
   const sin = Math.sin(P.yaw), cos = Math.cos(P.yaw);
   const dx = (-sin * f + cos * s) * speed, dz = (-cos * f - sin * s) * speed;
@@ -163,6 +174,48 @@ function move(dt) {
   camera.position.set(p.x, p.y + P.eye, p.z);
   camera.rotation.set(P.pitch, P.yaw, 0, "YXZ");
   return m > 0.01;
+}
+// ---------------------------------------------------------------- seats (Jaron 9/27: sit on the couch with friends and watch)
+// From loft.py (Blender x, y, z) -> three (x, z, -y). "at" = where the hips rest, "yaw" = the way the seat faces.
+const B2T = (x, y, z) => new THREE.Vector3(x, z, -y), H2 = 3.4;
+const TV_AT = B2T(0.13, 5.0, 1.88);
+const SEATS = [
+  ...[3.525, 4.625, 5.725].map((y, k) => ({ id: "sofa" + k, name: "the couch", at: B2T(4.45, y, 0.56), yaw: Math.PI / 2, tv: true })),
+  { id: "chaise", name: "the chaise", at: B2T(3.25, 6.75, 0.54), yaw: Math.PI, tv: true },
+  { id: "gaming", name: "the gaming chair", at: B2T(10.55, 7.1, H2 + 0.53), yaw: -Math.PI / 2 },
+  ...[3.45, 4.85].map((y, k) => ({ id: "lounge" + k, name: "the lounge chair", at: B2T(10.0, y, H2 + 0.4), yaw: Math.PI / 2, tv: true })),
+  ...[13.05, 14.65].map((x, k) => ({ id: "balc" + k, name: "the balcony chair", at: B2T(x, 11.85, H2 + 0.36), yaw: Math.PI })),
+];
+SEATS.forEach((st) => { st.eye = st.at.clone().add(new THREE.Vector3(0, 0.74, 0)); });
+let seated = null;
+function lookYaw(from, to) { const d = to.clone().sub(from); return Math.atan2(-d.x, -d.z); }
+function seatTaken(st) { for (const o of others.values()) if (o.sit === st.id) return true; return false; }
+function nearSeat() {
+  let best = null, bd = 1.5;
+  for (const st of SEATS) {
+    if (Math.abs(st.at.y - P.pos.y) > 1.2 || seatTaken(st)) continue;
+    const d = Math.hypot(st.at.x - P.pos.x, st.at.z - P.pos.z); if (d < bd) { bd = d; best = st; }
+  }
+  return best;
+}
+function sitDown(st) {
+  seated = st; hideHint();
+  P.yaw = st.tv ? lookYaw(st.eye, TV_AT) : st.yaw;
+  P.pitch = st.tv ? Math.atan2(TV_AT.y - st.eye.y, Math.hypot(TV_AT.x - st.eye.x, TV_AT.z - st.eye.z)) : -0.08;
+  lastSend = 0; updateSitBtn();
+}
+function standUp() {
+  const st = seated; seated = null; if (!st) return;
+  const fx = -Math.sin(st.yaw), fz = -Math.cos(st.yaw);   // step out in front of the seat
+  P.pos.set(st.at.x + fx * 0.75, st.at.y - 0.5, st.at.z + fz * 0.75); P.pos.y = groundAt(P.pos.x, P.pos.z, P.pos.y + 0.6); P.vy = 0;
+  if (!isFinite(P.pos.y)) spawn();
+  lastSend = 0; updateSitBtn();
+}
+$("sitBtn").onclick = () => { if (seated) standUp(); else { const st = nearSeat(); if (st) sitDown(st); } };
+function updateSitBtn() {
+  const b = $("sitBtn");
+  if (seated) { b.textContent = "Stand up"; b.hidden = false; return; }
+  const st = colliders ? nearSeat() : null; b.hidden = !st; if (st) b.textContent = "🛋 Sit on " + st.name;
 }
 function spawn() { const s = colliders.spawn; P.pos.set(s[0], s[1], s[2]); P.vy = 0; P.yaw = colliders.spawnYaw || 0; }
 
@@ -330,6 +383,9 @@ function upsertOther(k, st) {
   let o = others.get(k);
   if (!o) { o = { g: avatar(st.name || "Guest"), to: new THREE.Vector3(st.x, st.y, st.z), yaw: st.yaw || 0 }; o.g.position.copy(o.to); scene.add(o.g); others.set(k, o); }
   if (st.x !== undefined) { o.to.set(st.x, st.y, st.z); o.yaw = st.yaw; }
+  o.sit = st.sit || null;
+  const seat = o.sit && SEATS.find((x) => x.id === o.sit);
+  if (seat) { o.to.set(seat.at.x, seat.at.y - 0.7, seat.at.z); o.yaw = seat.yaw; }   // seated friends sink into the seat, facing out
   renderWho();
 }
 function dropOther(k) { const o = others.get(k); if (o) { scene.remove(o.g); others.delete(k); } renderWho(); }
@@ -356,7 +412,7 @@ function sendPos(moved, now) {
   if (!chan || !me) return;
   if (now - lastSend < (moved ? 110 : 2000)) return;
   lastSend = now;
-  chan.send({ type: "broadcast", event: "pos", payload: { k: me.key, name: me.name, x: +P.pos.x.toFixed(2), y: +P.pos.y.toFixed(2), z: +P.pos.z.toFixed(2), yaw: +P.yaw.toFixed(2) } });
+  chan.send({ type: "broadcast", event: "pos", payload: { k: me.key, name: me.name, x: +P.pos.x.toFixed(2), y: +P.pos.y.toFixed(2), z: +P.pos.z.toFixed(2), yaw: +P.yaw.toFixed(2), sit: seated ? seated.id : null } });
 }
 
 async function setupPeople() {
@@ -406,9 +462,11 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05), now = performance.now();
   const moved = move(dt);
   sendPos(moved, now);
+  const fk = seated && seated.tv ? 1 : 0; if (Math.abs(fovK - fk) > 0.002) { fovK += (fk - fovK) * Math.min(1, dt * 4); fitFov(); }
+  if (now - (updateSitBtn.t || 0) > 250) { updateSitBtn.t = now; updateSitBtn(); }
   for (const o of others.values()) { o.g.position.lerp(o.to, Math.min(1, dt * 8)); o.g.rotation.y += ((o.yaw || 0) - o.g.rotation.y) * Math.min(1, dt * 8); }
 
   renderer.render(scene, camera);
   if (tvObj && tvOn) css.render(cssScene, camera);
 });
-window.HBHome = { P, camera, toggleTV, tune, others, soundOn: roomSoundOn };
+window.HBHome = { P, camera, toggleTV, tune, others, soundOn: roomSoundOn, SEATS, sitDown, standUp, get seated() { return seated; } };

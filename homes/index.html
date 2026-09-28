@@ -44,6 +44,8 @@
   #stick i { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(255,255,255,.35); }
   .hint { position: fixed; left: 50%; bottom: calc(70px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 14px; text-align: center; transition: opacity .8s; max-width: 92vw; }
   .hint.gone { opacity: 0; pointer-events: none; }
+  .sitbtn { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 6; padding: 12px 20px; font-size: 16px; border-color: var(--pink); }
+  .sitbtn[hidden] { display: none; }
   #load { position: fixed; inset: 0; z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: radial-gradient(80% 60% at 50% 40%, #16122a, #05070b); transition: opacity .6s; }
   #load.done { opacity: 0; pointer-events: none; }
   #load b { font: 800 30px/1 "Barlow Condensed", sans-serif; letter-spacing: .05em; }
@@ -84,6 +86,7 @@
   <div class="gtop"><b>Guide</b><button class="pill" id="guideClose">Close</button></div>
   <div id="guideList"></div>
 </div>
+<button class="pill sitbtn" id="sitBtn" hidden>🛋 Sit</button>
 <div id="stick"><i></i></div>
 <div class="hint" id="hint">Drag to look · WASD / left side of the screen to walk · stairs go up to the balcony</div>
 <div id="load"><b>HEARTBEAT HOMES</b><div class="bar"><i id="loadBar"></i></div><p id="loadMsg">Unlocking the loft…</p></div>
@@ -94,6 +97,6 @@
   <div class="row"><button class="pill" id="invCopy">Copy link</button><button class="pill" id="invShare">Share…</button><button class="pill" id="invRoll">New link</button><button class="pill" id="invClose">Close</button></div>
 </div>
 <script src="/tv/remote.js"></script>
-<script type="module" src="/homes/homes.js?v=7"></script>
+<script type="module" src="/homes/homes.js?v=8"></script>
 </body>
 </html>
