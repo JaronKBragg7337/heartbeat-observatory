@@ -113,6 +113,52 @@ let townArtReady = false;
 let fallbackStreetFurnitureBuilt = false;
 const townArtTextures = new Map();
 let stars = null, moonDisc = null;
+// A real sky (Jaron 9/28: no Roblox look): deep blue overhead fading to a pale horizon, drifting clouds, a sun glow, warm
+// sunsets and a dark night - and the same sky lights the town's reflections (environment map re-made as the sun moves).
+function makeTownSky(radius) {
+  const mat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false, toneMapped: false,
+    uniforms: { sunDir: { value: new THREE.Vector3(0, 1, 0) }, zenith: { value: new THREE.Color() }, horizon: { value: new THREE.Color() },
+                glow: { value: new THREE.Color() }, cloudLit: { value: new THREE.Color() }, cloudShade: { value: new THREE.Color() }, time: { value: 0 }, clouds: { value: 1 } },
+    vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `
+      uniform vec3 sunDir, zenith, horizon, glow, cloudLit, cloudShade; uniform float time, clouds; varying vec3 vDir;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+      float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+        return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x), f.y); }
+      float fbm(vec2 p){ float v=0.0, a=0.5; for(int i=0;i<5;i++){ v+=a*n(p); p*=2.03; a*=0.5; } return v; }
+      void main(){
+        vec3 d = normalize(vDir); float up = max(d.y, 0.0);
+        vec3 col = mix(horizon, zenith, pow(up, 0.55));
+        if (d.y < 0.0) col = horizon * (1.0 + d.y * 0.6);
+        float s = max(dot(d, normalize(sunDir)), 0.0);
+        col += glow * (pow(s, 8.0) * 0.35 + pow(s, 64.0) * 0.6) + vec3(1.0, 0.97, 0.9) * smoothstep(0.9993, 0.9998, s) * step(0.0, sunDir.y + 0.05);
+        if (d.y > 0.02 && clouds > 0.0) {   // a cloud deck: project onto a plane, drift with time
+          vec2 uv = d.xz / (d.y + 0.12) * 0.9 + vec2(time * 0.006, time * 0.002);
+          float c = smoothstep(0.52, 0.78, fbm(uv * 1.6)) * smoothstep(0.02, 0.25, d.y);
+          vec3 cc = mix(cloudShade, cloudLit, clamp(fbm(uv * 1.6 + 0.35) * 1.4, 0.0, 1.0));
+          col = mix(col, cc, c * 0.85 * clouds);
+        }
+        gl_FragColor = vec4(col, 1.0);
+        #include <colorspace_fragment>
+      }`
+  });
+  const m = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16), mat); m.frustumCulled = false; return m;
+}
+// palettes by sun height: night, dusk, day (linear-ish colours, shown untonemapped)
+const SKY_PAL = {
+  night: { zenith: 0x03060f, horizon: 0x0e1526, glow: 0x101a33, cloudLit: 0x1a2236, cloudShade: 0x0a0f1a },
+  dusk:  { zenith: 0x1f3566, horizon: 0xe98a58, glow: 0xffa860, cloudLit: 0xf2a377, cloudShade: 0x5a4a66 },
+  day:   { zenith: 0x2f6fc6, horizon: 0xb7d2ea, glow: 0xfff0d0, cloudLit: 0xffffff, cloudShade: 0xb9c3cf },
+};
+function skyColorsFor(e, u) {
+  const mixP = (a, b, t) => { for (const k of ["zenith", "horizon", "glow", "cloudLit", "cloudShade"]) u[k].value.setHex(a[k]).lerp(new THREE.Color(b[k]), t); };
+  if (e >= 0.25) mixP(SKY_PAL.day, SKY_PAL.day, 0);
+  else if (e >= 0) mixP(SKY_PAL.dusk, SKY_PAL.day, e / 0.25);
+  else if (e >= -0.2) mixP(SKY_PAL.dusk, SKY_PAL.night, -e / 0.2);
+  else mixP(SKY_PAL.night, SKY_PAL.night, 0);
+}
+let skyDome = null, skyEnv = null, skyEnvScene = null, skyEnvSky = null, skyPmrem = null, skyEnvAt = 0, skyEnvElev = 9;
 let dayClock = 120;
 const HB_DAY = new THREE.Color(0xaebfc6);
 const HB_DUSK = new THREE.Color(0xc97854);
@@ -2063,6 +2109,24 @@ function updateDayNight(dt) {
   const sky = pickSky(e);
   if (scene.background && scene.background.copy) scene.background.copy(sky);
   if (scene.fog && scene.fog.color) scene.fog.color.copy(sky);
+  if (skyDome) {
+    const sunDir = sunLight.position.clone().normalize();
+    skyDome.position.copy(camera.position);
+    const su = skyDome.material.uniforms; su.sunDir.value.copy(sunDir); su.time.value = performance.now() / 1000; skyColorsFor(e, su);
+    if (scene.fog && scene.fog.color) scene.fog.color.copy(su.horizon.value);   // far things fade into the real horizon
+    // fog = the sky's own horizon: a touch lighter by day, deep blue at night
+    const now = performance.now();
+    if (Math.abs(e - skyEnvElev) > 0.04 && now - skyEnvAt > 2500) {   // re-light reflections as the sun moves
+      skyEnvAt = now; skyEnvElev = e;
+      const eu = skyEnvSky.material.uniforms; eu.sunDir.value.copy(sunDir); skyColorsFor(e, eu);
+      const rt = skyPmrem.fromScene(skyEnvScene, 0, 0.1, 200);
+      if (skyEnv) skyEnv.dispose();
+      skyEnv = rt; scene.environment = rt.texture;
+    }
+    scene.environmentIntensity = 0.12 + 0.3 * day;   // reflections and a little sky fill; the sun and hemisphere still do the lighting
+    if (stars) stars.renderOrder = -1;
+    return;
+  }
   if (sunDisc) {
     const dir = sunLight.position.clone();
     const len = dir.length() || 1; dir.multiplyScalar(78 / len);
@@ -4321,6 +4385,12 @@ function buildTown() {
   scene.add(moonDisc);
   sunDisc.castShadow = false;
   scene.add(sunDisc);
+  if (!HB_LEGACY) {
+    skyDome = makeTownSky(150); skyDome.renderOrder = -2; scene.add(skyDome);
+    skyEnvScene = new THREE.Scene(); skyEnvSky = makeTownSky(50); skyEnvSky.material.uniforms.clouds.value = 0.4; skyEnvScene.add(skyEnvSky);
+    skyPmrem = new THREE.PMREMGenerator(renderer);
+    sunDisc.visible = false;   // the sky draws its own sun
+  }
 
   const groundMaterial = makeGroundMaterial();
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), groundMaterial);
