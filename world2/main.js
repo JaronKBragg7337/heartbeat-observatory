@@ -14,7 +14,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 
-const BUILD = "2026-09-28-w2real";
+const BUILD = "2026-09-28-w2grass";
 const PREVIEW = new URLSearchParams(location.search).get("preview") === "1"; // gate-page spectate: orbit forever, join nothing // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
@@ -234,7 +234,7 @@ function animatePeople(dt) {
 // only changes at the far edge as you walk — no pop-in next to the player) ----
 const GRASS_CELL = 10;          // world units per cell
 const GRASS_CELL_RADIUS = 3;    // cells each side of the player -> 7x7 grid
-const GRASS_PER_CELL = 18;      // 7*7*18 = 882 tufts, ONE draw call
+const GRASS_PER_CELL = 54;      // 7*7*54 = 2646 finer tufts, still ONE draw call (realism pass 9/28)
 let grass = null;
 let grassCellX = 1e9, grassCellZ = 1e9;
 
@@ -323,6 +323,72 @@ function pavedAt(x, z) {
   return p;
 }
 
+// ---- realism pass (Jaron 9/28: "not look like Roblox texture") - World 2's own copy of World 1's foliage idea:
+// alpha-cutout leaf cards over each broadleaf crown, needle-branch cards in tiers on each conifer, all instanced
+// on the SAME matrices as the canopies (still one draw call per tree type). The old solid crowns stay, darkened, as the
+// shade inside the foliage. Leaf card: /world2/assets/canopy_leaf.webp (copied from World 1's CC0 kit).
+function w2Rng(seed) { let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
+function w2CardShell(opts) {   // leaf cards scattered over an ellipsoid, facing outward (merged into one geometry)
+  const rng = w2Rng(opts.seed || 1), pos = [], uv = [], nor = [], idx = [];
+  const z = new THREE.Vector3(0, 0, 1), n = new THREE.Vector3(), q = new THREE.Quaternion(), q2 = new THREE.Quaternion(), v = new THREE.Vector3();
+  for (let i = 0; i < opts.cards; i++) {
+    const u = (i + rng() * 0.85) / opts.cards, phi = Math.acos(1 - 2 * u), th = i * 2.399963 + rng() * 0.6;
+    const sx = Math.sin(phi) * Math.cos(th), sy = Math.cos(phi) * 0.85 + 0.12, sz = Math.sin(phi) * Math.sin(th);
+    n.set(sx, sy * 0.7, sz).normalize(); q.setFromUnitVectors(z, n); q.premultiply(q2.setFromAxisAngle(n, rng() * Math.PI * 2));
+    const s = opts.size * (0.82 + rng() * 0.42), base = pos.length / 3;
+    for (const [px, py, tu, tv] of [[-0.5, -0.5, 0, 0], [0.5, -0.5, 1, 0], [0.5, 0.5, 1, 1], [-0.5, 0.5, 0, 1]]) {
+      v.set(px * s, py * s, 0).applyQuaternion(q).add(new THREE.Vector3(sx * opts.rx, opts.cy + sy * opts.ry, sz * opts.rz));
+      pos.push(v.x, v.y, v.z); uv.push(tu, tv); nor.push(n.x, n.y, n.z);
+    }
+    idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+  return w2Geo(pos, uv, nor, idx);
+}
+function w2PineTiers(opts) {   // needle branches: rings of drooping cards, wide at the bottom, narrow at the top
+  const rng = w2Rng(opts.seed || 7), pos = [], uv = [], nor = [], idx = [];
+  const tiers = opts.tiers, H = opts.height, R = opts.radius;
+  for (let t = 0; t < tiers; t++) {
+    const f = t / (tiers - 1), y = -H / 2 + 0.35 + f * (H - 0.6), r = R * (1 - f) * 0.95 + 0.22, count = Math.max(4, Math.round(7 - f * 3));
+    for (let k = 0; k < count; k++) {
+      const a = (k / count) * Math.PI * 2 + t * 0.7 + rng() * 0.4, ca = Math.cos(a), sa = Math.sin(a);
+      const len = r * 1.25 + 0.25, wid = 0.55 + r * 0.35, droop = 0.35 + f * 0.1, base = pos.length / 3;
+      // a card from the trunk out to the tip, drooping, turned so its face looks up-and-out
+      const ox = ca * 0.1, oz = sa * 0.1, tx = ca * len, tz = sa * len, px = -sa * wid / 2, pz = ca * wid / 2;
+      const quad = [[ox - px, y + 0.05, oz - pz, 0, 0], [ox + px, y + 0.05, oz + pz, 1, 0], [tx + px, y - droop, tz + pz, 1, 1], [tx - px, y - droop, tz - pz, 0, 1]];
+      for (const [x, yy, zz, tu, tv] of quad) { pos.push(x, yy, zz); uv.push(tu, tv); nor.push(ca * 0.4, 0.9, sa * 0.4); }
+      idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    }
+  }
+  return w2Geo(pos, uv, nor, idx);
+}
+function w2Geo(pos, uv, nor, idx) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3)); g.setIndex(idx); g.computeBoundingSphere(); return g;
+}
+function w2NeedleTexture() {   // a painted needle branch: stem + short needles, cut out by alpha
+  const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d"); const r = w2Rng(99);
+  g.lineCap = "round";
+  for (let b = 0; b < 3; b++) {
+    const x0 = 40 + b * 88; g.strokeStyle = "#3b2c1c"; g.lineWidth = 3; g.beginPath(); g.moveTo(x0, 250); g.lineTo(x0 + (r() - 0.5) * 20, 8); g.stroke();
+    for (let i = 0; i < 70; i++) {
+      const t = r(), y = 250 - t * 240, x = x0 + (r() - 0.5) * 6, side = r() < 0.5 ? -1 : 1, l = 10 + r() * 22 * (1 - t * 0.5);
+      const gr = 70 + r() * 60; g.strokeStyle = `rgb(${24 + r() * 20},${gr},${36 + r() * 24})`; g.lineWidth = 1.6 + r();
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + side * l, y - l * (0.35 + r() * 0.3)); g.stroke();
+    }
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+let w2LeafMat = null, w2NeedleMat = null;
+function w2FoliageMaterials() {
+  if (!w2LeafMat) {
+    const map = new THREE.TextureLoader().load("/world2/assets/canopy_leaf.webp"); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4;
+    w2LeafMat = new THREE.MeshStandardMaterial({ map, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.88, metalness: 0 });
+    w2NeedleMat = new THREE.MeshStandardMaterial({ map: w2NeedleTexture(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.9, metalness: 0 });
+  }
+  return { leaf: w2LeafMat, needle: w2NeedleMat };
+}
+
 // ---- build the world ----
 function buildWorld() {
   // ground: heightfield plane. Displace first, compute normals, THEN color by height AND
@@ -356,7 +422,12 @@ function buildWorld() {
     colors[i * 3 + 2] = _sky.b + jitter;
   }
   groundGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 }));
+  // realism pass: a grass detail map (grey, so the painted zones keep their colour) and its bumps, tiled every ~3 m
+  const texL = new THREE.TextureLoader(), tile = size / 3;
+  const detail = texL.load("/world2/assets/ground_detail.webp"); detail.colorSpace = THREE.SRGBColorSpace;
+  const bumps = texL.load("/world2/assets/ground_normal.webp");
+  for (const t of [detail, bumps]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(tile, tile); t.anisotropy = 8; }
+  const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, normalMap: bumps, normalScale: new THREE.Vector2(0.8, 0.8), roughness: 0.95, metalness: 0 }));
   ground.receiveShadow = true;
   scene.add(ground);
 
@@ -425,10 +496,11 @@ function buildWorld() {
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
   const canopyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
 
-  function plantTrees(spots, trunkGeo, trunkH, canopyGeo, canopyY, canopyColors) {
+  function plantTrees(spots, trunkGeo, trunkH, canopyGeo, canopyY, canopyColors, cardGeo, cardMat) {
     if (!spots.length) return;
     const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, spots.length);
     const canopies = new THREE.InstancedMesh(canopyGeo, canopyMat, spots.length);
+    const cards = cardGeo ? new THREE.InstancedMesh(cardGeo, cardMat, spots.length) : null;
     for (let i = 0; i < spots.length; i++) {
       const t = spots[i];
       const gy = groundHeight(t.x, t.z);
@@ -441,6 +513,7 @@ function buildWorld() {
       _vp.set(t.x, gy + canopyY * t.s, t.z);
       _m4.compose(_vp, _q, _vs);
       canopies.setMatrixAt(i, _m4);
+      if (cards) cards.setMatrixAt(i, _m4);
       const shade = 0.85 + hash2(t.seed, 239) * 0.3;
       _sky.setRGB(0.32 * shade, 0.24 * shade, 0.16 * shade);
       trunks.setColorAt(i, _sky);
@@ -448,6 +521,7 @@ function buildWorld() {
       _sky.set(canopyColors[golden ? 2 : (hash2(t.seed, 251) < 0.5 ? 0 : 1)]);
       const v = 0.86 + hash2(t.seed, 257) * 0.28;
       _sky.multiplyScalar(v);
+      if (cards) { cards.setColorAt(i, _sky.clone().multiplyScalar(1.9)); _sky.multiplyScalar(0.5); }   // leaves carry the colour; the crown becomes inner shade
       canopies.setColorAt(i, _sky);
       // trunks are solid where the player can actually reach (same collider shape as World 1)
       if (Math.hypot(t.x, t.z) <= worldBounds + 5) {
@@ -459,19 +533,23 @@ function buildWorld() {
     canopies.receiveShadow = true;
     scene.add(trunks);
     scene.add(canopies);
+    if (cards) { cards.castShadow = true; cards.receiveShadow = true; scene.add(cards); }
   }
+  const foliage = w2FoliageMaterials();
 
   plantTrees(
     conifers,
     new THREE.CylinderGeometry(0.14, 0.22, 2.4, 6), 2.4,
-    new THREE.ConeGeometry(1.5, 4.4, 7), 2.4 * 0.8 + 2.2,
-    [0x2e4a32, 0x3a5638, 0x8a6b2e]
+    new THREE.ConeGeometry(1.2, 4.2, 7), 2.4 * 0.8 + 2.2,
+    [0x2e4a32, 0x3a5638, 0x8a6b2e],
+    w2PineTiers({ tiers: 7, height: 4.6, radius: 1.55, seed: 11 }), foliage.needle
   );
   plantTrees(
     broadleafs,
     new THREE.CylinderGeometry(0.16, 0.26, 2.0, 6), 2.0,
-    new THREE.IcosahedronGeometry(1.75, 0), 2.0 + 1.1,
-    [0x4a6b35, 0x55763c, 0x8a7a3a]
+    new THREE.IcosahedronGeometry(1.55, 1), 2.0 + 1.1,
+    [0x4a6b35, 0x55763c, 0x8a7a3a],
+    w2CardShell({ cards: 26, rx: 1.75, ry: 1.25, rz: 1.7, cy: 0, size: 1.55, seed: 20260928 }), foliage.leaf
   );
 
   // ---- grass: one instanced mesh of crossed quads wearing a procedural CanvasTexture ----
@@ -831,33 +909,40 @@ function updateFireflies() {
 
 // ---- grass helpers (procedural texture: zero downloads, zero copyright questions) ----
 function makeGrassTexture() {
+  // realism pass (Jaron 9/28): fine, dense blades in natural field greens with straw tips, dark at the root so each tuft
+  // melts into the ground instead of standing on it like a paper cut-out
   const c = document.createElement("canvas");
-  c.width = 64; c.height = 64;
+  c.width = 128; c.height = 128;
   const ctx = c.getContext("2d");
-  ctx.clearRect(0, 0, 64, 64);
-  for (let i = 0; i < 9; i++) {
-    const bx = 5 + hash2(i, 401) * 54;
-    const lean = (hash2(i, 409) - 0.5) * 14;
-    const w = 2.4 + hash2(i, 419) * 2.4;
-    const top = 4 + hash2(i, 421) * 14;
-    const g = 96 + Math.floor(hash2(i, 431) * 70);
-    ctx.fillStyle = `rgb(${Math.floor(g * 0.55)},${g},${Math.floor(g * 0.42)})`;
+  ctx.clearRect(0, 0, 128, 128);
+  for (let i = 0; i < 46; i++) {
+    const bx = 6 + hash2(i, 401) * 116;
+    const lean = (hash2(i, 409) - 0.5) * 26;
+    const w = 0.9 + hash2(i, 419) * 1.5;
+    const top = 6 + hash2(i, 421) * 46;
+    const g = 70 + Math.floor(hash2(i, 431) * 55), straw = hash2(i, 433) < 0.25;
+    const grad = ctx.createLinearGradient(0, 128, 0, top);
+    grad.addColorStop(0, `rgb(${Math.floor(g * 0.3)},${Math.floor(g * 0.45)},${Math.floor(g * 0.2)})`);
+    grad.addColorStop(0.55, `rgb(${Math.floor(g * 0.58)},${g},${Math.floor(g * 0.36)})`);
+    grad.addColorStop(1, straw ? `rgb(${Math.floor(g * 1.25)},${Math.floor(g * 1.12)},${Math.floor(g * 0.55)})` : `rgb(${Math.floor(g * 0.72)},${Math.floor(g * 1.1)},${Math.floor(g * 0.45)})`);
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.moveTo(bx - w, 64);
-    ctx.quadraticCurveTo(bx - w * 0.3 + lean * 0.4, 34, bx + lean, top);
-    ctx.quadraticCurveTo(bx + w * 0.3 + lean * 0.4, 34, bx + w, 64);
+    ctx.moveTo(bx - w, 128);
+    ctx.quadraticCurveTo(bx - w * 0.3 + lean * 0.5, 70, bx + lean, top);
+    ctx.quadraticCurveTo(bx + w * 0.3 + lean * 0.5, 70, bx + w, 128);
     ctx.closePath();
     ctx.fill();
   }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
   return tex;
 }
 
 // two crossed quads, anchored at the bottom, normals up so grass takes light like the ground
 function makeGrassGeometry() {
   const geo = new THREE.BufferGeometry();
-  const w = 0.42, h = 0.6;
+  const w = 0.34, h = 0.46;
   const positions = new Float32Array([
     -w, 0, 0,  w, 0, 0,  w, h, 0,  -w, h, 0,
     0, 0, -w,  0, 0, w,  0, h, w,  0, h, -w
