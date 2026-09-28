@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { CSS3DRenderer, CSS3DObject } from "three/addons/renderers/CSS3DRenderer.js";
+import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 import { getSupabase, getIdentity } from "/hb-supabase.js";
 
 const $ = (id) => document.getElementById(id);
@@ -22,7 +23,8 @@ $("view").appendChild(renderer.domElement);
 const css = new CSS3DRenderer(); css.setSize(innerWidth, innerHeight); $("css").appendChild(css.domElement);
 const scene = new THREE.Scene(), cssScene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(phone ? 72 : 65, innerWidth / innerHeight, 0.05, 3000);
-scene.add(new THREE.HemisphereLight(0xcfd8ff, 0x3a2a20, 1.4));   // only lights the avatars; baked surfaces are unlit
+scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x4a3524, 1.5));   // only lights the people; baked surfaces are unlit
+{ const key = new THREE.DirectionalLight(0xffe2c4, 1.6); key.position.set(9, 6, -3); scene.add(key); }   // warm room light from the kitchen side
 let fovK = 0;   // 0 = standing, 1 = sitting facing the TV
 function fitFov() {   // standing: ~78 degrees across in portrait, 65 tall in landscape
   camera.aspect = innerWidth / innerHeight;
@@ -180,11 +182,11 @@ function move(dt) {
 const B2T = (x, y, z) => new THREE.Vector3(x, z, -y), H2 = 3.4;
 const TV_AT = B2T(0.13, 5.0, 1.88);
 const SEATS = [
-  ...[3.525, 4.625, 5.725].map((y, k) => ({ id: "sofa" + k, name: "the couch", at: B2T(4.45, y, 0.56), yaw: Math.PI / 2, tv: true })),
-  { id: "chaise", name: "the chaise", at: B2T(3.25, 6.75, 0.54), yaw: Math.PI, tv: true },
+  ...[3.525, 4.625, 5.725].map((y, k) => ({ id: "sofa" + k, name: "the couch", at: B2T(4.33, y, 0.56), yaw: Math.PI / 2, tv: true })),
+  { id: "chaise", name: "the chaise", at: B2T(3.25, 6.68, 0.54), yaw: Math.PI, tv: true },
   { id: "gaming", name: "the gaming chair", at: B2T(10.55, 7.1, H2 + 0.53), yaw: -Math.PI / 2 },
-  ...[3.45, 4.85].map((y, k) => ({ id: "lounge" + k, name: "the lounge chair", at: B2T(10.0, y, H2 + 0.4), yaw: Math.PI / 2, tv: true })),
-  ...[13.05, 14.65].map((x, k) => ({ id: "balc" + k, name: "the balcony chair", at: B2T(x, 11.85, H2 + 0.36), yaw: Math.PI })),
+  ...[3.45, 4.85].map((y, k) => ({ id: "lounge" + k, name: "the lounge chair", at: B2T(9.93, y, H2 + 0.4), yaw: Math.PI / 2, tv: true })),
+  ...[13.05, 14.65].map((x, k) => ({ id: "balc" + k, name: "the balcony chair", at: B2T(x, 11.78, H2 + 0.36), yaw: Math.PI })),
 ];
 SEATS.forEach((st) => { st.eye = st.at.clone().add(new THREE.Vector3(0, 0.74, 0)); });
 let seated = null;
@@ -369,23 +371,54 @@ function nameSprite(text) {
   g.fillStyle = "#fff"; g.font = "600 28px Barlow, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text.slice(0, 16), 128, 33);
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false })); s.scale.set(0.8, 0.2, 1); s.renderOrder = 5; return s;
 }
-function avatar(name) {
-  let h = 0; for (const ch_ of name) h = (h * 31 + ch_.charCodeAt(0)) >>> 0;
-  const col = new THREE.Color().setHSL((h % 360) / 360, 0.55, 0.55);
+// ---- people: real-looking MetaHumans (Jaron 9/27: "realistic characters instead of blobs"). Built by
+// necklace-unreal/loft_people.py + AI-Shared/projects/homes/blender/person.py -> homes/people/*.glb (~1.4 MB each, Idle / Walk / Sit).
+// Each visitor gets a person picked from their name, the same one every visit.
+let roster = null; const glbCache = new Map(), gltfLoader = new GLTFLoader();
+async function loadRoster() {
+  if (!roster) roster = fetch("/homes/people/people.json", { cache: "no-cache" }).then((r) => r.json()).then((j) => j.people || []).catch(() => []);
+  return roster;
+}
+function personGLB(file) {
+  if (!glbCache.has(file)) glbCache.set(file, gltfLoader.loadAsync("/homes/people/" + file));
+  return glbCache.get(file);
+}
+function hashName(name) { let h = 0; for (const ch_ of name) h = (h * 31 + ch_.charCodeAt(0)) >>> 0; return h; }
+function avatar(name, o) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.85, 6, 16), new THREE.MeshLambertMaterial({ color: col })); body.position.y = 0.66;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 14), new THREE.MeshLambertMaterial({ color: 0xe8d2c0 })); head.position.y = 1.45;
-  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.05), new THREE.MeshBasicMaterial({ color: 0x111111 })); visor.position.set(0, 1.47, -0.14);
-  const tag = nameSprite(name); tag.position.y = 1.85;
-  g.add(body, head, visor, tag); return g;
+  const tag = nameSprite(name); tag.position.y = 2.0; g.add(tag); o.tag = tag;
+  // until the person has loaded: a soft placeholder, so a friend never pops in from nowhere
+  const ph = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 1.1, 4, 12), new THREE.MeshLambertMaterial({ color: 0x8c93a0, transparent: true, opacity: 0.35 }));
+  ph.position.y = 0.8; g.add(ph);
+  (async () => {
+    const list = await loadRoster(); if (!list.length) return;
+    const pick = list[hashName(name) % list.length];
+    try {
+      const gl = await personGLB(pick.file);
+      const body = cloneSkinned(gl.scene); body.rotation.y = Math.PI;   // the models face +Z; the room's yaw convention faces -Z
+      body.traverse((m) => { if (m.isMesh) { m.frustumCulled = false; if (m.material) m.material.envMapIntensity = 0.6; } });
+      g.remove(ph); g.add(body);
+      const mixer = new THREE.AnimationMixer(body), acts = {};
+      for (const clip of gl.animations) acts[clip.name] = mixer.clipAction(clip);
+      o.mixer = mixer; o.acts = acts; o.state = null; o.person = pick.id;
+    } catch (e) { console.warn("person", pick, e); }
+  })();
+  return g;
+}
+function playState(o, st) {   // cross-fade between Idle / Walk / Sit
+  if (!o.acts || o.state === st) return;
+  const next = o.acts[st] || o.acts.Idle; if (!next) return;
+  const prev = o.state && o.acts[o.state];
+  next.reset().play(); if (prev && prev !== next) prev.crossFadeTo(next, 0.35, false);
+  o.state = st;
 }
 function upsertOther(k, st) {
   let o = others.get(k);
-  if (!o) { o = { g: avatar(st.name || "Guest"), to: new THREE.Vector3(st.x, st.y, st.z), yaw: st.yaw || 0 }; o.g.position.copy(o.to); scene.add(o.g); others.set(k, o); }
+  if (!o) { o = { to: new THREE.Vector3(st.x, st.y, st.z), yaw: st.yaw || 0 }; o.g = avatar(st.name || "Guest", o); o.g.position.copy(o.to); scene.add(o.g); others.set(k, o); }
   if (st.x !== undefined) { o.to.set(st.x, st.y, st.z); o.yaw = st.yaw; }
   o.sit = st.sit || null;
   const seat = o.sit && SEATS.find((x) => x.id === o.sit);
-  if (seat) { o.to.set(seat.at.x, seat.at.y - 0.7, seat.at.z); o.yaw = seat.yaw; }   // seated friends sink into the seat, facing out
+  if (seat) { o.to.set(seat.at.x, seat.at.y, seat.at.z); o.yaw = seat.yaw; }   // seated: hips on the cushion, facing out
   renderWho();
 }
 function dropOther(k) { const o = others.get(k); if (o) { scene.remove(o.g); others.delete(k); } renderWho(); }
@@ -455,7 +488,15 @@ try {
 spawn(); showCh(); bar(1, "Welcome home.");
 setTimeout(() => $("load").classList.add("done"), 250);
 setupPeople().catch((e) => console.warn("homes people", e));
-if (qs.get("tv") === "1") toggleTV(true, true);   // local only: a link shouldn't flip the room's TV
+if (qs.get("tv") === "1") toggleTV(true, true);
+if (qs.get("guests")) {   // show-off / testing: people on the couch and one wandering, only on this screen
+  const n = Math.max(1, Math.min(6, +qs.get("guests") || 3)), names = ["Maya", "Dre", "Sam", "Nia", "Leo", "Ivy"];
+  for (let i = 0; i < n; i++) {
+    const seat = SEATS[i];
+    upsertOther("guest" + i, { name: names[i], x: seat.at.x, y: seat.at.y, z: seat.at.z, yaw: seat.yaw, sit: i < 4 && seat.tv ? seat.id : null });
+  }
+  renderWho();
+}   // local only: a link shouldn't flip the room's TV
 
 const clock = new THREE.Clock(); let visT = 0;
 renderer.setAnimationLoop(() => {
@@ -464,7 +505,17 @@ renderer.setAnimationLoop(() => {
   sendPos(moved, now);
   const fk = seated && seated.tv ? 1 : 0; if (Math.abs(fovK - fk) > 0.002) { fovK += (fk - fovK) * Math.min(1, dt * 4); fitFov(); }
   if (now - (updateSitBtn.t || 0) > 250) { updateSitBtn.t = now; updateSitBtn(); }
-  for (const o of others.values()) { o.g.position.lerp(o.to, Math.min(1, dt * 8)); o.g.rotation.y += ((o.yaw || 0) - o.g.rotation.y) * Math.min(1, dt * 8); }
+  for (const o of others.values()) {
+    const gap = o.g.position.distanceTo(o.to);
+    o.g.position.lerp(o.to, Math.min(1, dt * 8));
+    let dy = (o.yaw || 0) - o.g.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); o.g.rotation.y += dy * Math.min(1, dt * 8);
+    if (o.tag) o.tag.position.y += ((o.sit ? 1.12 : 2.0) - o.tag.position.y) * Math.min(1, dt * 6);   // name above the head, sitting or standing
+    if (o.mixer) {
+      if (gap > 0.02) o.lastMove = now;
+      playState(o, o.sit ? "Sit" : now - (o.lastMove || 0) < 250 ? "Walk" : "Idle");
+      o.mixer.update(dt);
+    }
+  }
 
   renderer.render(scene, camera);
   if (tvObj && tvOn) css.render(cssScene, camera);

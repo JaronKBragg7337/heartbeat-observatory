@@ -1,0 +1,5 @@
+{ "about": "The Loft's people: Epic MetaHuman presets (usable in any engine since the 2025 MetaHuman licence change), built by necklace-unreal/loft_people.py + AI-Shared/projects/homes/blender/person.py. Each visitor gets one, picked from their name.",
+  "people": [
+    { "id": "isaiah", "file": "isaiah.glb" }, { "id": "ada", "file": "ada.glb" }, { "id": "jorge", "file": "jorge.glb" },
+    { "id": "sunita", "file": "sunita.glb" }, { "id": "zuri", "file": "zuri.glb" }, { "id": "walter", "file": "walter.glb" },
+    { "id": "aoi", "file": "aoi.glb" } ] }
