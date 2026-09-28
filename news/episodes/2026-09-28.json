@@ -1,0 +1,631 @@
+{
+ "date": "2026-09-28",
+ "title": "Heartbeat News — Monday, September 28, 2026",
+ "writer": "Claude Code (cloud session), daily news job",
+ "tone": "straight news, two characters (CHOSEN; open question in projects/news-show/README.md)",
+ "sources": [
+  {
+   "name": "watch/codex 2026-09-28 (07:31 EDT)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-09-28.md"
+  },
+  {
+   "name": "watch/deepseek 2026-09-28 (reader, 09:00)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-09-28.md"
+  },
+  {
+   "name": "watch/claude 2026-09-28 (08:25)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-09-28.md"
+  },
+  {
+   "name": "Perplexity headlines (/api/news, read live by the page)",
+   "url": "/api/news"
+  }
+ ],
+ "ticker": [
+  "HURRICANE NOLO NEARS CATEGORY FIVE, MOVING AWAY FROM HAWAII",
+  "NOR'EASTER DAY THREE: ONE DEAD, 110,000+ STILL WITHOUT POWER",
+  "IRAN VOWS NOT TO SOFTEN HORMUZ DEMANDS AFTER TRUMP REJECTION",
+  "RUSSIAN STRIKES KILL EIGHT IN UKRAINE, KYIV HIT THIRD STRAIGHT NIGHT",
+  "OIL JUMPS PAST $94 A BARREL ON HORMUZ TENSIONS",
+  "FED PROPOSES STABLECOIN RULES UNDER GENIUS ACT",
+  "BINANCE TAKES $100 MILLION STAKE IN CIRCLE",
+  "FDA APPROVES NEW DRUG FOR RARE BONE DISEASE FOP",
+  "COLTS SNAP LOSING STREAK, BEAT TEXANS 19-17",
+  "ASTROS WIN AL WEST ON SEASON'S FINAL DAY",
+  "MLB WILD CARD GAMES START TUESDAY",
+  "AVENGERS: ENDGAME ENCORE TOPS WEEKEND BOX OFFICE",
+  "SPACEX TARGETS FIRST STARSHIP ORBITAL ATTEMPT TODAY",
+  "WHITE HOUSE FACES QUESTIONS OVER TAXPAYER-FUNDED ADS"
+ ],
+ "segments": [
+  {
+   "id": "open",
+   "kind": "open",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "The day's news from the watch desk",
+   "category": "TODAY",
+   "graphic": {
+    "kicker": "TODAY",
+    "title": "Iran's rejected offer · Two storms · A busy data week",
+    "bullets": [
+     "Iran says it won't soften Hormuz demands after Trump's rejection",
+     "Russian strikes hit Ukraine hard again, Kyiv's third night running",
+     "Hurricane Nolo nears Category five as the nor'easter lingers",
+     "Colts snap their losing streak, Astros win the AL West on the last day"
+    ]
+   },
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+     "shot": "wide"
+    },
+    {
+     "who": "joe",
+     "text": "And I'm Alien Joe. It's Monday, September twenty-eighth.",
+     "shot": "two"
+    },
+    {
+     "who": "vex",
+     "text": "Today: Iran digs in after President Trump rejects its plan to reopen the Strait of Hormuz, Russian strikes kill eight in Ukraine, and Hurricane Nolo closes in on Category five strength south of Hawaii."
+    },
+    {
+     "who": "joe",
+     "text": "Plus oil jumps, the Fed proposes stablecoin rules, a new drug for a rare bone disease, and a very good day for two football and baseball teams. Let's get to it."
+    }
+   ]
+  },
+  {
+   "id": "storms",
+   "kind": "weather",
+   "strap": "HURRICANE NOLO NEARS CATEGORY FIVE AS NOR'EASTER LINGERS",
+   "headline": "Two storms, still going",
+   "category": "WEATHER",
+   "status": "observed",
+   "graphic": {
+    "kicker": "WEATHER",
+    "title": "One storm peaking, one storm staying",
+    "stats": [
+     {
+      "label": "Hurricane Nolo",
+      "value": "150 mph, Category 4"
+     },
+     {
+      "label": "Power out, Northeast",
+      "value": "110,000+ homes"
+     }
+    ],
+    "bullets": [
+     "Nolo near Category five early Monday, well south of Hawaii and moving away",
+     "Wind alerts remain for the Big Island and Maui County, high surf on south shores",
+     "Nor'easter day three: one confirmed death, tidal flooding in New Jersey",
+     "Logan Airport logged hundreds of delays and cancellations Sunday"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Weather.com",
+     "url": "https://weather.com/2026/09/28/storms/hurricane/hawaii-hurricane-nolo-flooding-wind-forecast"
+    },
+    {
+     "name": "Honolulu Star-Advertiser",
+     "url": "https://www.staradvertiser.com/2026/09/27/breaking-news/hurricane-nolo-passing-south-of-hawaii-brings-strong-winds-high-surf/"
+    },
+    {
+     "name": "National Weather Service, New York",
+     "url": "https://forecast.weather.gov/MapClick.php?lat=40.9079&lg=english&lon=-73.1283&unit=0"
+    },
+    {
+     "name": "The Guardian",
+     "url": "https://www.theguardian.com/us-news/2026/sep/27/noreaster-storm-east-coast-death-power-outages"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "We start with the weather. Two storms are still making headlines this morning."
+    },
+    {
+     "who": "vex",
+     "text": "Hurricane Nolo has strengthened to Category four, sustained winds near one hundred fifty miles an hour, just shy of Category five. It's well south of Hawaii now and moving away, but wind alerts remain for parts of the Big Island and Maui County, with high surf along south-facing shores."
+    },
+    {
+     "who": "joe",
+     "text": "Back on the mainland, that nor'easter is on its third day. New York City's Housing Authority confirmed one death, a worker killed by a falling tree Saturday. More than a hundred ten thousand households, from North Carolina to New England, were still without power Sunday, and Boston's Logan Airport logged hundreds of delays and cancellations."
+    },
+    {
+     "who": "vex",
+     "text": "Tidal flooding was reported in New Jersey, and a coastal flood advisory for Long Island runs into this afternoon."
+    }
+   ]
+  },
+  {
+   "id": "iran",
+   "kind": "story",
+   "strap": "IRAN WON'T SOFTEN HORMUZ DEMANDS AFTER TRUMP'S REJECTION",
+   "headline": "A standoff restarts",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "WORLD",
+    "title": "Rejected offer, restated terms",
+    "bullets": [
+     "Iran: still wants blockade lifted, frozen funds released, attacks on all fronts ended",
+     "Foreign Minister Araghchi: \"fully prepared\" for war, also \"ready for diplomacy\"",
+     "Claims of missiles and drones fired at ships near Qeshm Island, not independently confirmed",
+     "Iran says it captured a second U.S. underwater drone; the U.S. disputes that"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Bloomberg",
+     "url": "https://www.bloomberg.com/news/articles/2026-09-27/iran-says-won-t-soften-demands-after-trump-rejects-hormuz-offer"
+    },
+    {
+     "name": "Al Jazeera",
+     "url": "https://www.aljazeera.com/news/liveblog/2026/9/28/iran-war-live-tehran-warns-its-fully-prepared-for-war-amid-hormuz-tensions"
+    },
+    {
+     "name": "Khaleej Times",
+     "url": "https://www.khaleejtimes.com/world/mena/us-israel-iran-lebanon-war-live-updates-september-27-2026"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Iran says it will not soften its terms for reopening the Strait of Hormuz, a day after President Trump rejected Tehran's seven-point proposal."
+    },
+    {
+     "who": "joe",
+     "text": "Iran's foreign minister, Abbas Araghchi, put it this way: Tehran is fully prepared for the war to resume, but also, in his words, ready for diplomacy. The conditions haven't changed — lift the blockade, release frozen funds, end attacks on every front, including in Lebanon."
+    },
+    {
+     "who": "vex",
+     "text": "Reports out of the region describe anti-ship missiles and drones fired at vessels near Qeshm Island, and Iran says it captured a second American underwater drone. The U.S. disputes that an advanced drone was taken. None of that is independently confirmed yet, so treat both sides' claims as claims."
+    },
+    {
+     "who": "joe",
+     "text": "Bottom line: yesterday's rejection didn't end the standoff. It restarted it."
+    }
+   ]
+  },
+  {
+   "id": "ukraine",
+   "kind": "story",
+   "strap": "RUSSIAN STRIKES KILL EIGHT IN UKRAINE, KYIV HIT A THIRD NIGHT",
+   "headline": "Another heavy night of strikes",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "WORLD",
+    "title": "A third straight night on Kyiv",
+    "stats": [
+     {
+      "label": "Killed Sunday",
+      "value": "8"
+     },
+     {
+      "label": "Drones overnight",
+      "value": "~170"
+     }
+    ],
+    "bullets": [
+     "Kyivstar headquarters struck; a Vodafone data center hit the night before",
+     "Zelenskyy: nearly 3,900 drones, bombs and missiles fired at Ukraine this past week",
+     "Ukraine says it hit an oil depot and a missile-component plant inside Russia"
+    ]
+   },
+   "sources": [
+    {
+     "name": "The Guardian",
+     "url": "https://www.theguardian.com/world/2026/sep/28/ukraine-war-briefing-zelenskyy-moscow-terrorising-kyiv-latest-strikes"
+    },
+    {
+     "name": "France 24",
+     "url": "https://www.france24.com/en/europe/20260927-russian-strikes-kill-eight-ukraine-war-moscow"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Russia hit Ukraine hard again. Ukrainian officials say strikes killed eight people Sunday, including two at a market near Kyiv, with nine more hurt in the capital."
+    },
+    {
+     "who": "vex",
+     "text": "It was the third straight night of strikes on Kyiv. Roughly a hundred seventy Shahed drones flew overnight, and a Russian strike hit the headquarters of the telecom company Kyivstar. That follows a strike on a Vodafone data center the night before — the second such facility hit in two nights."
+    },
+    {
+     "who": "joe",
+     "text": "President Zelenskyy says Russia has fired nearly thirty-nine hundred drones, bombs and missiles at Ukraine in the past week alone, and that Moscow isn't ready to end the war. Ukraine, for its part, says it hit an oil depot and a missile-component plant inside Russia."
+    }
+   ]
+  },
+  {
+   "id": "markets",
+   "kind": "story",
+   "strap": "OIL JUMPS PAST $94 A BARREL AS A BUSY DATA WEEK BEGINS",
+   "headline": "A jumpy Monday for oil, a calm one for stocks",
+   "category": "MONEY",
+   "status": "observed",
+   "graphic": {
+    "kicker": "MONEY",
+    "title": "This week's numbers",
+    "stats": [
+     {
+      "label": "WTI crude",
+      "value": "~$94, +1.8%"
+     },
+     {
+      "label": "Brent crude",
+      "value": "~$107, +2.5%"
+     }
+    ],
+    "bullets": [
+     "S&P 500 futures +0.5%, Nasdaq futures +0.4% in Monday premarket",
+     "Dallas Fed today, JOLTS Tuesday, GDP and inflation data Wednesday",
+     "September jobs report Friday, unemployment expected near 4.1%"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Rio Times",
+     "url": "https://www.riotimesonline.com/oil-markets-latam-monday-september-28-2026"
+    },
+    {
+     "name": "Yahoo Finance",
+     "url": "https://finance.yahoo.com/markets/stocks/articles/us-stock-market-today-p-080713612.html"
+    },
+    {
+     "name": "CNBC",
+     "url": "https://www.cnbc.com/2026/09/25/stock-market-next-week-outlook-for-sept-28-oct-2-2026.html"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "On Wall Street, futures point modestly higher to start the week: S and P five hundred futures up about half a percent, Nasdaq futures up about four tenths of a percent."
+    },
+    {
+     "who": "joe",
+     "text": "Oil is making the bigger move. U.S. crude jumped past ninety-four dollars a barrel, up almost two percent, and Brent crude near one hundred seven dollars, up two and a half percent — both rising on Iran's rejected Hormuz offer. Gasoline futures followed, near three dollars and forty-one cents a gallon."
+    },
+    {
+     "who": "vex",
+     "text": "It's a heavy week for economic data. The Dallas Fed reports today, job openings come Tuesday, growth and inflation data Wednesday, and the September jobs report Friday, with unemployment expected around four point one percent."
+    }
+   ]
+  },
+  {
+   "id": "stablecoins",
+   "kind": "story",
+   "strap": "FED PROPOSES STABLECOIN RULES; BINANCE BACKS CIRCLE",
+   "headline": "Moves in the stablecoin race",
+   "category": "MONEY",
+   "status": "observed",
+   "graphic": {
+    "kicker": "MONEY",
+    "title": "Stablecoins in the news",
+    "stats": [
+     {
+      "label": "Binance stake in Circle",
+      "value": "$100 million"
+     },
+     {
+      "label": "Comment period",
+      "value": "60 days"
+     }
+    ],
+    "bullets": [
+     "Fed framework lets bank subsidiaries apply to issue stablecoins under the GENIUS Act",
+     "Ethereum stablecoin supply near $146.5 billion even as trading volume falls"
+    ]
+   },
+   "sources": [
+    {
+     "name": "American Banker",
+     "url": "https://www.americanbanker.com/news/fed-proposes-stablecoin-rules-under-genius-act"
+    },
+    {
+     "name": "CoinDesk",
+     "url": "https://www.coindesk.com/business/2026/09/26/binance-deal-gives-circle-a-boost-in-stablecoin-race-with-tether-analysts-say"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The Federal Reserve proposed a framework letting bank subsidiaries apply to issue stablecoins under the GENIUS Act, with supervisory standards attached. There's a sixty-day public comment period."
+    },
+    {
+     "who": "joe",
+     "text": "And in the stablecoin race itself, Binance took a hundred-million-dollar stake in Circle, the company behind U.S.D.C. Analysts read it as Circle picking up a major distribution partner, at Tether's expense."
+    },
+    {
+     "who": "vex",
+     "text": "One more data point: stablecoin supply on Ethereum is near a hundred forty-six and a half billion dollars, even as trading volume on Ethereum's exchanges has fallen by about half over the past month. Money parked, not moving."
+    }
+   ]
+  },
+  {
+   "id": "health",
+   "kind": "story",
+   "strap": "F.D.A. APPROVES NEW DRUG FOR A RARE BONE DISEASE",
+   "headline": "A new option for a rare condition",
+   "category": "HEALTH",
+   "status": "observed",
+   "graphic": {
+    "kicker": "HEALTH",
+    "title": "Two new approvals",
+    "bullets": [
+     "Zilurgisertib (Atebrioz) approved for fibrodysplasia ossificans progressiva, ages 12+",
+     "Third therapy for the condition; available starting in October",
+     "Trial showed bone volume dropped on the drug, rose sharply on placebo",
+     "A new messenger-RNA flu vaccine, M-FLUSIVA, approved for adults 50 and up"
+    ]
+   },
+   "sources": [
+    {
+     "name": "HCPLive",
+     "url": "https://www.hcplive.com/view/zilurgisertib-receives-fda-approval-for-fop-in-patients-12-and-older"
+    },
+    {
+     "name": "Business Wire",
+     "url": "https://www.financialcontent.com/article/bizwire-2026-9-25-mirum-pharmaceuticals-and-incyte-announce-us-fda-approval-of-atebrioz-zilurgisertib-for-adult-and-pediatric-patients-with-fibrodysplasia-ossificans-progressiva"
+    },
+    {
+     "name": "HCPLive",
+     "url": "https://www.hcplive.com/view/mflusiva-fda-approval-influenza-adults-50-older"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "Health news: the F.D.A. approved zilurgisertib, brand name Atebrioz, for fibrodysplasia ossificans progressiva — a rare disease where soft tissue turns to bone. It's approved for patients twelve and older, the third therapy for the condition, and it becomes available in October."
+    },
+    {
+     "who": "vex",
+     "text": "In its trial, patients on the drug lost bone volume where placebo patients gained a significant amount — a reversal, not just a slowdown."
+    },
+    {
+     "who": "joe",
+     "text": "Separately, a new messenger-RNA flu vaccine, M-FLUSIVA, was approved for adults fifty and older."
+    }
+   ]
+  },
+  {
+   "id": "sports",
+   "kind": "sports",
+   "strap": "COLTS SNAP LOSING STREAK; ASTROS CLINCH AL WEST ON FINAL DAY",
+   "headline": "A very good Sunday, twice over",
+   "category": "SPORTS",
+   "status": "observed",
+   "graphic": {
+    "kicker": "SPORTS",
+    "title": "Down to the wire",
+    "bullets": [
+     "Colts beat Texans 19-17 on a last-second field goal, snapping the NFL's longest losing streak",
+     "Astros win the AL West on the season's final day, finishing 81-81",
+     "MLB Wild Card games start Tuesday: Phillies-Braves, White Sox-Astros, Red Sox-Yankees, Cubs-Padres",
+     "Tonight: Monday Night Football, Eagles at Bears"
+    ]
+   },
+   "sources": [
+    {
+     "name": "ESPN",
+     "url": "https://www.espn.com/nfl/game/_/gameId/401872951/texans-colts"
+    },
+    {
+     "name": "MLB.com",
+     "url": "https://www.mlb.com/astros/news/astros-clinch-2026-al-west-title"
+    },
+    {
+     "name": "NBC Sports",
+     "url": "https://www.nbcsports.com/mlb/news/2026-mlb-wild-card-series-full-schedule-on-nbc-peacock-and-nbcsn-matchups-times-preview"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "In the N.F.L., the Colts beat the Texans nineteen to seventeen Sunday. Kicker Spencer Shrader, playing through a groin injury, hit four field goals, including the game winner from forty-three yards with sixteen seconds left. It's Indianapolis's first win since last November, snapping the league's longest active losing streak."
+    },
+    {
+     "who": "joe",
+     "text": "In baseball, the Astros won the American League West on the very last day, beating the Athletics nine to nothing while the Twins beat the Rangers. Houston finishes eighty-one and eighty-one — the first division winner at exactly five hundred in a hundred sixty-two game season."
+    },
+    {
+     "who": "vex",
+     "text": "Wild Card games start tomorrow: Phillies at Braves, White Sox at Astros, Red Sox at Yankees, and Cubs at Padres, all best of three."
+    },
+    {
+     "who": "joe",
+     "text": "And tonight, Monday Night Football: the Eagles at the Bears."
+    }
+   ]
+  },
+  {
+   "id": "entertainment",
+   "kind": "story",
+   "strap": "AVENGERS: ENDGAME ENCORE TOPS THE BOX OFFICE",
+   "headline": "A superhero rerun wins the weekend",
+   "category": "CULTURE",
+   "status": "observed",
+   "graphic": {
+    "kicker": "CULTURE",
+    "title": "Weekend box office",
+    "stats": [
+     {
+      "label": "Endgame Encore",
+      "value": "$26M domestic"
+     },
+     {
+      "label": "Resident Evil",
+      "value": "$23.3M, wk. 2"
+     }
+    ],
+    "bullets": [
+     "Heart of the Beast opened third, $20 million",
+     "Endgame Encore adds four scenes teasing Avengers: Doomsday, out in December"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Deadline",
+     "url": "https://deadline.com/2026/09/box-office-avengers-endgame-primetime-heart-of-the-beast-1237111302/"
+    },
+    {
+     "name": "Awards Radar",
+     "url": "https://awardsradar.com/2026/09/27/box-office-report-for-the-week-of-september-27/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "text": "At the box office, that 'Avengers: Endgame' encore led the weekend with about twenty-six million dollars domestic, eighty-six million worldwide."
+    },
+    {
+     "who": "vex",
+     "text": "'Resident Evil' held second place in its second weekend, at twenty-three million, three hundred thousand dollars, pushing its domestic total past one hundred three million. Paramount's 'Heart of the Beast' opened third, at twenty million."
+    },
+    {
+     "who": "joe",
+     "text": "And that Endgame re-release tacked on four new scenes teasing 'Avengers: Doomsday,' out in December."
+    }
+   ]
+  },
+  {
+   "id": "space",
+   "kind": "story",
+   "strap": "SPACEX TARGETS FIRST STARSHIP ORBITAL ATTEMPT TODAY",
+   "headline": "Starship's biggest test yet",
+   "category": "SCIENCE",
+   "status": "observed",
+   "graphic": {
+    "kicker": "SCIENCE",
+    "title": "Flight 14, by the numbers",
+    "stats": [
+     {
+      "label": "Target orbit",
+      "value": "~275 km"
+     },
+     {
+      "label": "Starlinks aboard",
+      "value": "26"
+     }
+    ],
+    "bullets": [
+     "F.A.A.-cleared for a first full orbital attempt from Starbase, Texas",
+     "About six orbits over ten hours, then an in-space burn and splashdown off Chile",
+     "Outcome not known as of this taping"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Space.com",
+     "url": "https://www.space.com/news/live/spacex-starship-flight-14-live-updates-sept-28-2026-starship-first-orbital-launch-attempt"
+    },
+    {
+     "name": "Aviation Week",
+     "url": "https://aviationweek.com/space/launch-vehicles-propulsion/faa-clears-spacex-starship-14-flight"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "SpaceX is set for its most ambitious Starship flight yet. Flight fourteen is F.A.A.-cleared for a first full orbital attempt, targeting seven forty-six this morning, Central time, from Starbase, Texas."
+    },
+    {
+     "who": "joe",
+     "text": "The plan: about six orbits over ten hours, the rocket's first payload deployment, twenty-six Starlink satellites, an in-space engine burn, and a splashdown off the coast of Chile. We didn't have the outcome as of this taping."
+    },
+    {
+     "who": "vex",
+     "text": "Separately, NASA's Crew Thirteen astronauts have arrived in Florida ahead of a launch no earlier than October first."
+    }
+   ]
+  },
+  {
+   "id": "politics",
+   "kind": "story",
+   "strap": "WHITE HOUSE FACES QUESTIONS OVER TAXPAYER-FUNDED ADS",
+   "headline": "A dispute over paid messaging",
+   "category": "POLITICS",
+   "status": "claim",
+   "graphic": {
+    "kicker": "POLITICS",
+    "title": "A third taxpayer-funded spot",
+    "bullets": [
+     "\"Final Battle\" ad uses Trump campaign imagery and language, Washington Post reports",
+     "More than $300,000 spent, per that report",
+     "Ethics officials and Democratic lawmakers question its legality",
+     "White House calls the spots public-service announcements"
+    ]
+   },
+   "sources": [
+    {
+     "name": "The Washington Post",
+     "url": "https://www.washingtonpost.com/politics/2026/09/27/white-house-expands-taxpayer-paid-ad-campaign-boosting-trump/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The Washington Post reports the White House has now run a third taxpayer-funded ad, called 'Final Battle,' using President Trump's campaign imagery and language. The paper says more than three hundred thousand dollars was spent."
+    },
+    {
+     "who": "joe",
+     "text": "Former ethics officials and Democratic lawmakers are questioning whether that crosses a federal line against unauthorized political publicity. The White House calls the spots public-service announcements, not campaign ads."
+    },
+    {
+     "who": "vex",
+     "text": "That's a dispute, not a ruling. Nobody's decided it in court yet."
+    }
+   ]
+  },
+  {
+   "id": "wire",
+   "kind": "wire",
+   "strap": "FROM THE WIRES",
+   "headline": "From the wires",
+   "category": "WIRES",
+   "status": "live",
+   "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped.",
+   "graphic": {
+    "kicker": "FROM THE WIRES",
+    "title": "Latest headlines",
+    "bullets": []
+   },
+   "lines": []
+  },
+  {
+   "id": "close",
+   "kind": "close",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "That's the news",
+   "category": "GOOD NIGHT",
+   "graphic": {
+    "kicker": "HEARTBEAT NEWS",
+    "title": "Every story, every source",
+    "bullets": [
+     "Written from the watch captures of Sept 28",
+     "Sources under the screen",
+     "New show after 9:30 AM"
+    ]
+   },
+   "lines": [
+    {
+     "who": "joe",
+     "text": "That's the news for Monday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+     "shot": "two"
+    },
+    {
+     "who": "vex",
+     "text": "The show loops until tomorrow's news arrives, after nine thirty in the morning. I'm AI Robot Vex.",
+     "shot": "wide"
+    },
+    {
+     "who": "joe",
+     "text": "I'm Alien Joe. See you tomorrow."
+    }
+   ]
+  }
+ ]
+}
