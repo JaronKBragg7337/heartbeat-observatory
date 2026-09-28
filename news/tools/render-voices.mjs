@@ -20,7 +20,9 @@ const CHROME = args.chrome || "C:/Program Files/Google/Chrome/Application/chrome
 
 async function lines() {
   if (args.text) return [{ seg: "one", line: 0, who: WHO, text: args.text, file: "line.wav" }];
-  const ep = await (await fetch(`${ORIGIN}/news/episodes/${args.episode}.json`)).json();
+  // the rendered show's full running order (stories + commercials + wires) when episode_script.py has written it
+  const sf = args.script || path.join(OUT, "script.json");
+  const ep = fs.existsSync(sf) ? JSON.parse(fs.readFileSync(sf, "utf8")) : await (await fetch(`${ORIGIN}/news/episodes/${args.episode}.json`)).json();
   const out = [];
   ep.segments.forEach((s, si) => (s.lines || []).forEach((l, li) => {
     if (l.who === WHO) out.push({ seg: s.id || String(si), line: li, who: l.who, text: l.text, file: `${String(si).padStart(2, "0")}_${String(li).padStart(2, "0")}_${l.who}.wav` });

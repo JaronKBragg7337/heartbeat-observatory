@@ -96,13 +96,14 @@ function withAds(list) {
   return out;
 }
 
-function build(episode) {
+function build(episode, { asRendered = false } = {}) {
   segs = []; items = [];
-  withAds(episode.segments || []).forEach((seg) => {
+  // asRendered: the running order the video was made from (commercials + wires already in it, words fixed)
+  (asRendered ? episode.segments || [] : withAds(episode.segments || [])).forEach((seg) => {
     let lines = seg.lines || [];
     let sources = seg.sources || [];
     let graphic = seg.graphic || {};
-    if (seg.kind === "wire") {
+    if (seg.kind === "wire" && !asRendered) {
       lines = wireLines(wire);
       if (!lines.length) return;
       sources = wire.slice(0, 4).map((x) => ({ name: x.source || "wire", url: x.url || "" }));
@@ -505,9 +506,8 @@ async function renderedFor(date) {
 // highlight, story tag, stinger, lower thirds, over-the-shoulder box, subtitles - timed from the video's own clock using
 // the timing file published with it (each line's start and length). Tapping a story in the rundown jumps the video there.
 let renderedTimeline = null;
-async function driveRendered(r) {
-  if (!r.timing) return;
-  const tl = await (await fetch(r.timing, { cache: "no-cache" })).json();
+async function driveRendered(r, tl) {
+  if (!tl) return;
   const v = document.getElementById("rv"); if (!v) return;
   mode = "silent";
   renderedTimeline = tl.lines.map((l) => ({ ...l, item: items.findIndex((it) => it.seg.id === l.seg && it.li === l.li) })).filter((l) => l.item >= 0);
@@ -568,9 +568,11 @@ async function boot() {
   const rendered = await renderedFor(ep.date);
   if (rendered) {
     playRendered(rendered);
-    build(ep); renderRundown(); buildTicker(); tickClock(); setInterval(tickClock, 1000);
+    const tl = rendered.timing ? await fetch(rendered.timing, { cache: "no-cache" }).then((x) => x.json()).catch(() => null) : null;
+    if (tl && tl.segments) build({ segments: tl.segments }, { asRendered: true }); else build(ep);
+    renderRundown(); buildTicker(); tickClock(); setInterval(tickClock, 1000);
     setTimeout(maybeStudio, 1200);
-    driveRendered(rendered).catch((e) => console.error(e));
+    driveRendered(rendered, tl).catch((e) => console.error(e));
     return;
   }
   const quality = Object.assign({}, (window.HBDevice && window.HBDevice.quality) || { tier: "desktop", allowShadows: true, allowBloom: true, maxPixelRatio: 2 });
