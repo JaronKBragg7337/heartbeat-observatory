@@ -2480,6 +2480,47 @@ function removeMind(id) {
   mindActors.delete(id);
 }
 
+// ---- AI visitors as holograms (Jaron 9/28: no pawns). One of the Loft people, drawn as light: see-through cyan, bright
+// rim, scan lines rising through the body, a faint flicker - clearly an AI, not a person. Halo and name tag stay.
+const holoUniforms = { uHoloTime: { value: 0 } };
+let holoMaterial = null;
+function hologramMaterial() {
+  if (holoMaterial) return holoMaterial;
+  holoMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1, metalness: 0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  holoMaterial.onBeforeCompile = (sh) => {
+    sh.uniforms.uHoloTime = holoUniforms.uHoloTime;
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying float vHoloY;")
+      .replace("#include <project_vertex>", "#include <project_vertex>\nvHoloY = (modelMatrix * vec4(transformed, 1.0)).y;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform float uHoloTime;\nvarying float vHoloY;")
+      .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+      {
+        float rim = pow(1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition))), 2.2);
+        float scan = 0.55 + 0.45 * step(0.5, fract(vHoloY * 22.0 - uHoloTime * 1.6));
+        float sweep = smoothstep(0.0, 0.08, fract(vHoloY * 0.35 - uHoloTime * 0.25)) * (1.0 - smoothstep(0.08, 0.16, fract(vHoloY * 0.35 - uHoloTime * 0.25)));
+        float flick = 0.9 + 0.1 * sin(uHoloTime * 43.0) * sin(uHoloTime * 7.3);
+        totalEmissiveRadiance = vec3(0.35, 0.85, 1.0) * (0.10 + rim * 1.25 + sweep * 0.6) * scan * flick;
+      }`);
+  };
+  holoMaterial.customProgramCacheKey = () => "hb-hologram-v1";
+  return holoMaterial;
+}
+async function holoBody(actor, m) {
+  if (HB_LEGACY) return;
+  try {
+    const list = await peopleList(); if (!list.length) return;
+    const pick = list[personHash(m.mind || m.display_name) % list.length];
+    const gl = await personFile(pick.file);
+    const body = cloneSkinned(gl.scene);   // minds already face +Z (rotation = atan2(dx, dz)), like the people
+    const mat = hologramMaterial();
+    body.traverse((o) => { if (o.isMesh) { o.material = mat; o.castShadow = false; o.receiveShadow = false; o.frustumCulled = false; o.renderOrder = 3; } });
+    for (const c of [...actor.group.children]) if (c.userData.mindBody) actor.group.remove(c);
+    actor.group.add(body);
+    const mixer = new THREE.AnimationMixer(body), acts = {};
+    for (const clip of gl.animations) acts[clip.name] = mixer.clipAction(clip);
+    actor.person = { mixer, acts, state: null, t: performance.now() };
+  } catch (e) { try { console.warn("[HB] hologram", e); } catch (e2) {} }
+}
+
 function createMindActor(m) {
   const group = new THREE.Group();
   const tint = new THREE.Color(0x8ad7ff);
@@ -2487,9 +2528,9 @@ function createMindActor(m) {
     color: tint, roughness: 0.3, metalness: 0.1, emissive: 0x2a6f9e, emissiveIntensity: 0.5, transparent: true, opacity: 0.92
   });
   const body = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.4, 1.1, 16), bodyMaterial);
-  body.position.y = 0.78; group.add(body);
+  body.position.y = 0.78; body.userData.mindBody = true; group.add(body);   // shown until the hologram arrives
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.27, 18, 14), bodyMaterial);
-  head.position.y = 1.5; group.add(head);
+  head.position.y = 1.5; head.userData.mindBody = true; group.add(head);
   const halo = new THREE.Mesh(
     new THREE.TorusGeometry(0.34, 0.04, 8, 24),
     new THREE.MeshStandardMaterial({ color: 0xbfe9ff, emissive: 0x7fd2ff, emissiveIntensity: 0.8 })
@@ -2500,12 +2541,15 @@ function createMindActor(m) {
     depthTest: true
   });
   label.position.set(0, 2.3, 0); group.add(label);
-  return { group, seed: 0 };
+  const actor = { group, seed: 0 };
+  holoBody(actor, m);
+  return actor;
 }
 
 function updateMinds() {
   if (mindActors.size === 0) return;
   const t = Date.now();
+  holoUniforms.uHoloTime.value = (t % 100000) / 1000;
   for (const actor of mindActors.values()) {
     if (actor.mind === "claude" && askOverlay && askOverlay.style.display === "flex") {
       const fdx = state.x - actor.group.position.x, fdz = state.z - actor.group.position.z;
@@ -2521,8 +2565,16 @@ function updateMinds() {
     const dx = cx - g.position.x, dz = cz - g.position.z;
     g.position.x = cx;
     g.position.z = cz;
-    g.position.y = Math.sin(t * 0.004 + actor.seed) * 0.05;
+    g.position.y = actor.person ? 0.02 : Math.sin(t * 0.004 + actor.seed) * 0.05;   // holograms stand; the old pawns bobbed
     if (Math.abs(dx) + Math.abs(dz) > 0.00001) g.rotation.y = Math.atan2(dx, dz);
+    const P = actor.person;
+    if (P) {
+      const now = performance.now(), dts = Math.min(0.1, (now - P.t) / 1000); P.t = now;
+      const sp = Math.hypot(dx, dz) / Math.max(dts, 0.001), st = sp > 0.25 ? "Walk" : "Idle";
+      if (P.state !== st && P.acts[st]) { const prev = P.state && P.acts[P.state]; P.acts[st].reset().play(); if (prev) prev.crossFadeTo(P.acts[st], 0.3, false); P.state = st; }
+      if (P.acts.Walk) P.acts.Walk.timeScale = Math.max(0.5, Math.min(1.6, sp / 1.4));
+      P.mixer.update(dts);
+    }
   }
 }
 
