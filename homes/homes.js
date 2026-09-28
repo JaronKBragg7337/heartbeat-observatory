@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { CSS3DRenderer, CSS3DObject } from "three/addons/renderers/CSS3DRenderer.js";
 import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
+import { Reflector } from "three/addons/objects/Reflector.js";
 import { getSupabase, getIdentity } from "/hb-supabase.js";
 
 const $ = (id) => document.getElementById(id);
@@ -402,7 +403,15 @@ async function loadPerson(o) {
   try {
     const gl = await personGLB(pick.file); if (tok !== o.loadTok) return;
     const body = cloneSkinned(gl.scene); body.rotation.y = Math.PI;   // the models face +Z; the room's yaw convention faces -Z
-    body.traverse((m) => { if (m.isMesh) m.frustumCulled = false; });
+    body.traverse((m) => {
+      if (!m.isMesh) return;
+      m.frustumCulled = false; if (o.self) m.layers.set(1);   // you: only the mirror sees you
+      const mt = m.material;
+      if (mt && /^HairCard/.test(mt.name)) {   // strand cards: cut out by the alpha, both sides, no sorting flicker
+        mt.transparent = false; mt.alphaTest = 0.38; mt.depthWrite = true; mt.side = THREE.DoubleSide;
+        if (!phone) mt.alphaToCoverage = true;
+      }
+    });
     if (o.body) o.g.remove(o.body); if (o.ph) { o.g.remove(o.ph); o.ph = null; }
     o.body = body; o.g.add(body);
     const mixer = new THREE.AnimationMixer(body), acts = {};
@@ -421,9 +430,30 @@ $("meClose").onclick = () => $("meSheet").classList.remove("show");
 $("peopleGrid").addEventListener("click", (e) => {
   const b = e.target.closest("[data-id]"); if (!b) return;
   myLook = b.dataset.id; try { localStorage.setItem("hb-look", myLook); } catch (e2) {}
-  drawPeople(); lastSend = 0;
+  drawPeople(); lastSend = 0; selfO.look = myLook; loadPerson(selfO);
   toast(`You're ${b.textContent.trim()} now - friends see you like this`);
 });
+// ---- the mirror (Jaron 9/27): full length, on the south wall by where you walk in. You are drawn only for the mirror
+// (layer 1), so you see the person you picked - walking, standing, sitting - without your own body blocking your view.
+const selfO = { self: true, look: myLook, to: new THREE.Vector3() };
+function makeSelf() {
+  avatar("You", selfO); selfO.g.remove(selfO.tag); selfO.tag = null;
+  if (selfO.ph) selfO.ph.layers.set(1);
+  scene.add(selfO.g);
+}
+{
+  const W = 0.95, H = 2.05, at = new THREE.Vector3(6.65, 0.06 + H / 2, -0.025);   // Blender (6.65, 0.025) on WallS, facing into the room
+  const mirror = new Reflector(new THREE.PlaneGeometry(W, H), { textureWidth: phone ? 512 : 1024, textureHeight: phone ? 1100 : 2200, color: 0xb9c0c6, multisample: phone ? 0 : 4 });
+  // the room is three -z of the south wall (Blender +y); a plane faces +z, so turn it around to face into the room
+  mirror.position.copy(at); mirror.position.z -= 0.012; mirror.rotation.y = Math.PI;
+  mirror.camera.layers.enable(1);
+  scene.add(mirror);
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x2a2119, metalness: 0.6, roughness: 0.35 });
+  for (const [w, h, x, y] of [[W + 0.08, 0.04, 0, H / 2 + 0.02], [W + 0.08, 0.04, 0, -H / 2 - 0.02], [0.04, H, -W / 2 - 0.02, 0], [0.04, H, W / 2 + 0.02, 0]]) {
+    const f = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.03), frameMat); f.position.set(at.x + x, at.y + y, at.z - 0.004); scene.add(f);
+  }
+  window.HBMirror = mirror;
+}
 function playState(o, st) {   // cross-fade between Idle / Walk / Sit
   if (!o.acts || o.state === st) return;
   const next = o.acts[st] || o.acts.Idle; if (!next) return;
@@ -506,6 +536,7 @@ try {
   $("loadMsg").textContent = "The loft didn't load - check your connection and refresh."; console.error(e); throw e;
 }
 spawn(); showCh(); bar(1, "Welcome home.");
+makeSelf();
 setTimeout(() => $("load").classList.add("done"), 250);
 setupPeople().catch((e) => console.warn("homes people", e));
 if (qs.get("tv") === "1") toggleTV(true, true);
@@ -525,6 +556,12 @@ renderer.setAnimationLoop(() => {
   sendPos(moved, now);
   const fk = seated && seated.tv ? 1 : 0; if (Math.abs(fovK - fk) > 0.002) { fovK += (fk - fovK) * Math.min(1, dt * 4); fitFov(); }
   if (now - (updateSitBtn.t || 0) > 250) { updateSitBtn.t = now; updateSitBtn(); }
+  if (selfO.g) {   // you, for the mirror
+    const st = seated;
+    selfO.g.position.set(st ? st.at.x : P.pos.x, st ? st.at.y : P.pos.y, st ? st.at.z : P.pos.z);
+    selfO.g.rotation.y = st ? st.yaw : P.yaw;
+    if (selfO.mixer) { playState(selfO, st ? "Sit" : moved ? "Walk" : "Idle"); selfO.mixer.update(dt); }
+  }
   for (const o of others.values()) {
     const gap = o.g.position.distanceTo(o.to);
     o.g.position.lerp(o.to, Math.min(1, dt * 8));
