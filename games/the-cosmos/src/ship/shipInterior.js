@@ -455,9 +455,10 @@ function dressBridge(k, r, out) {
   const zf = r.z0 + 0.0, ybase = yF + 1.05, ytop = yC;
   // front sill / console top rail is the consoles; frame: mullions at intervals
   const raked = 0.6;
-  const mull = [-4.0, -2.7, -1.35, 0, 1.35, 2.7, 4.0];
+  // no pillar dead centre: the captain's reticle and the pilot's horizon are straight ahead
+  const mull = [-4.0, -2.6, -1.3, 1.3, 2.6, 4.0];
   for (const x of mull) {
-    k.pipe('gunmetal', [x, ybase, zf + 0.0], [x, ytop, zf + raked], 0.045, 8);
+    k.pipe('gunmetal', [x, ybase, zf + 0.0], [x, ytop, zf + raked], 0.034, 8);
   }
   k.pipe('gunmetal', [-4.0, ytop, zf + raked], [4.0, ytop, zf + raked], 0.05, 8);
   k.pipe('gunmetal', [-4.0, ybase, zf], [4.0, ybase, zf], 0.05, 8);

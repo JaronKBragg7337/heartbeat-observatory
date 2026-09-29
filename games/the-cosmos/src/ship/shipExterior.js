@@ -306,7 +306,7 @@ export function buildExterior(layout, mats, opts = {}) {
     k.cyl('metal', 0, yr + 1.2, -13.4, 0.05, 1.7, 8);
     k.bevelBox('metal', 0, yr + 2.05, -13.4, 0.9, 0.06, 0.06, 0.01);
     k.bevelBox('metal', 0, yr + 1.75, -13.4, 0.5, 0.06, 0.06, 0.01);
-    for (const x of [-4.2, -2.75, -1.4, 0, 1.4, 2.75, 4.2]) k.pipe('metal', [x, yw, -19.6], [x, yr, -19.6 + 0.6], 0.07, 8);
+    for (const x of [-4.2, -2.6, -1.3, 1.3, 2.6, 4.2]) k.pipe('metal', [x, yw, -19.6], [x, yr, -19.6 + 0.6], 0.06, 8);
     for (const s of mirror) {
       k.bevelBox('metal', s * 4.2, yr - 0.05, -16.3, 0.2, 0.2, 6.8, 0.04);
       k.bevelBox('metal', s * 4.2, yw + 0.05, -16.3, 0.18, 0.12, 6.4, 0.03);

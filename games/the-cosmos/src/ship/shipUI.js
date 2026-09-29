@@ -70,8 +70,10 @@ const CSS = `
   opacity: 0; transition: opacity .25s; pointer-events: none; text-align: center; }
 #ship-toast.on { opacity: 1; }
 @media (max-width: 520px) {
-  #ship-panel { width: calc(100vw - 20px); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); left: 10px; max-height: 38vh; }
-  #ship-panel canvas { max-height: 22vh; width: auto; margin: 0 auto; }
+  /* On a phone the thumbs own the bottom of the screen. The station panel sits at the top,
+     under the status box, so it never covers LIFT, SINK, FIRE or Stand. */
+  #ship-panel { width: calc(100vw - 20px); top: calc(88px + env(safe-area-inset-top, 0px)); bottom: auto; left: 10px; max-height: 40vh; }
+  #ship-panel canvas { max-height: 24vh; width: auto; margin: 0 auto; }
   #ship-hint { display: none !important; }
 }
 `;

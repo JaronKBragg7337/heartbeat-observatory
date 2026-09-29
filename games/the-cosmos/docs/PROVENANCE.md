@@ -90,3 +90,18 @@ Every asset carries a stable ID: `COS-<BODY>-<TYPE>-<SEQ>`. Current registry:
 
 Authored dimensions are intent. Measured bounds are evidence. The registry
 stores both and the validator compares them.
+
+## The ship (MSV Meridian), added 2026-09-29
+
+Built by Claude Sonnet 5.5. Nothing here is downloaded.
+
+| Item | Source |
+|---|---|
+| Geometry (hull, rooms, furniture, machinery) | Written in code, `src/ship/`. |
+| Textures (wall panels, deck plate, grating, hull armour, doors, signs, posters, screens) | Painted in code onto canvases at load, in metres. No image files, so nothing to license. |
+| Normal and roughness maps | Derived from the painted height layer (Sobel filter). |
+| Sound (engines, guns, doors) | Synthesised at run time from oscillators and filtered noise (`shipAudio.js`). No samples. |
+| The child's drawing, family photograph and posters on crew walls | Drawn in code (`makePosterAtlas`). |
+| Physical figures (mass 46 t, thrust 300 kN, gravity, deck sizes) | Design numbers chosen for this game; gravity is Mars' from `bodies.js`. Building-code stair riser 0.1875 m and door 2.1 m are ordinary published values. |
+
+Three.js r160 (MIT) remains the only third-party code.
