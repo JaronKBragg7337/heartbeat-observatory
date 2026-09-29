@@ -920,6 +920,14 @@ section('8. Determinism across runs');
 }
 
 // ---------------------------------------------------------------------------
+// 9. The ship. Its checks live in ship-checks.mjs and run against the real code.
+// ---------------------------------------------------------------------------
+{
+  const { runShipChecks } = await import(`file://${join(ROOT, 'test/ship-checks.mjs')}`);
+  await runShipChecks({ ROOT, check, section, THREE, mars, FIELD, GEO, Walker, Registry, gravityAtRadius });
+}
+
+// ---------------------------------------------------------------------------
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));

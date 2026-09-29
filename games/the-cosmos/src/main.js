@@ -19,12 +19,14 @@ import { registry } from './core/registry.js';
 import { BODIES, getBody } from './world/bodies.js';
 import { buildGlobalShell, LocalPatch } from './world/planetMesh.js';
 import { geodeticToCartesian, cartesianToGeodetic, formatCoord, coordSlug } from './world/geodesy.js';
-import { surfaceRadiusAlong, materialAt, MATERIALS, attachEdits, density } from './world/field.js';
+import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, MATERIALS, attachEdits, density } from './world/field.js';
 import { EditStore } from './world/edits.js';
 import { ExcavationMesh } from './world/excavation.js';
 import { Walker } from './player/walker.js';
 import { TouchControls, DesktopControls } from './ui/touch.js';
 import { DebugLayer } from './dev/debugLayer.js';
+import { ShipSystem } from './ship/shipSystem.js';
+import { ShipUI } from './ship/shipUI.js';
 
 const canvas = document.getElementById('game-canvas');
 const engine = new Engine(canvas, { fov: 72 });
@@ -264,6 +266,7 @@ function cutPointFor(aim) {
 }
 
 function doDig() {
+  if (ship.ready && ship.aboard) return { ok: false, msg: 'Not aboard' };
   if (carriedMass() >= carryCapacityKg) return { ok: false, msg: 'Hands full' };
   let t = digTarget();
   if (!t) return { ok: false, msg: 'Nothing in reach' };
@@ -438,6 +441,32 @@ registry.register({
   massKg: walker.massKg, collision: 'capsule', materialId: 'MAT-SUIT',
 });
 
+// ---------------------------------------------------------------------------
+// The ship. A landed 46-tonne gunship a few dozen metres from the spawn point.
+// Its ground contact reads the same drawn surface the walker stands on.
+// ---------------------------------------------------------------------------
+const params = new URLSearchParams(location.search);
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const tier = params.get('tier') === 'low' || params.get('tier') === 'high' ? params.get('tier') : (isTouch ? 'low' : 'high');
+const groundRadius = (dx, dy, dz) => {
+  const n = nearPatch.surfaceRadiusAt(dx, dy, dz);
+  if (n !== null) return n;
+  const m = patch.surfaceRadiusAt(dx, dy, dz);
+  if (m !== null) return m;
+  return surfaceRadiusFast(body, dx, dy, dz);
+};
+const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier });
+let shipUI = null;
+try {
+  ship.build();
+  shipUI = new ShipUI(ship, { isTouch });
+  // Start the player looking at the ship.
+  walker.yaw = ship.site.brg * Math.PI / 180;
+} catch (err) {
+  console.error('Ship failed to build', err);
+  ship.ready = false;
+}
+
 // --- Third-person body. Simple for now, but real dimensions and a real ------
 // --- registry entry, so the fidelity pass has something measured to replace.
 const suitGroup = new THREE.Group();
@@ -603,7 +632,6 @@ engine.scene.fog = new THREE.FogExp2(body.atmosphere.horizonColor, 0.00016);
 // ---------------------------------------------------------------------------
 // Input + camera
 // ---------------------------------------------------------------------------
-const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const touch = new TouchControls(canvas);
 const desktop = new DesktopControls(canvas);
 
@@ -677,6 +705,13 @@ function updateCamera() {
   engine.camera.up.copy(up);
   engine.camera.lookAt(target);
 
+  updateSun(f);
+}
+
+function updateSun(f) {
+  const up = new THREE.Vector3(f.up.x, f.up.y, f.up.z);
+  const north = new THREE.Vector3(f.north.x, f.north.y, f.north.z);
+  const east = new THREE.Vector3(f.east.x, f.east.y, f.east.z);
   // --- Sun -----------------------------------------------------------------
   // The first version of this used a fixed world-space direction, which put
   // the sun 13.3 degrees BELOW the local horizon at the spawn coordinate — the
@@ -712,6 +747,10 @@ const settingsPanel = document.getElementById('settings-panel');
 function refreshHud() {
   const g = walker.geodetic;
   const load = carriedMass();
+  if (ship.ready && ship.aboard) {
+    hud.innerHTML = ship.hudText() + `<br><span class="dim">${formatCoord(g.lat, g.lon, g.alt)}</span>`;
+    return;
+  }
   hud.innerHTML =
     `<b>${body.name}</b> · ${SPAWN.name}<br>` +
     `${formatCoord(g.lat, g.lon, g.alt)}<br>` +
@@ -728,6 +767,7 @@ function refreshHud() {
 // and a readout does not need to be re-derived three times per frame.
 let markAccum = 0, markPulse = 0, lastCut = null, lastDrop = null, lastDropR = 0.1;
 function updateAimMarkers(dt) {
+  if (ship.ready && ship.aboard) { digMark.group.visible = false; dropMark.group.visible = false; return; }
   markPulse = 0.5 + 0.5 * Math.sin(engine.timeSec * 3.4);
   markAccum += dt;
   if (markAccum >= 0.05) {
@@ -761,8 +801,14 @@ let actionFlash = 0;
 // has to drop.
 let tapAction = 'dig';
 
+let shipPress = false;
 function refreshAction() {
   if (actionFlash > 0) return;
+  if (ship.ready) {
+    const a = ship.contextAction();
+    if (a) { tapAction = 'ship'; actionBtn.style.display = 'block'; actionBtn.textContent = a.label; return; }
+    if (ship.aboard) { tapAction = 'none'; actionBtn.style.display = 'none'; return; }
+  }
   const inReach = !!digTarget();
   const load = carriedMass();
   if (inReach && load < carryCapacityKg) {
@@ -795,6 +841,7 @@ function stopHold() {
 }
 actionBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault(); e.stopPropagation();
+  if (tapAction === 'ship') { shipPress = true; return; }
   holdTimer = setTimeout(() => {
     holdTimer = null;
     flash(doDump().msg);
@@ -806,6 +853,13 @@ actionBtn.addEventListener('pointerdown', (e) => {
 });
 const endPress = (e) => {
   e.preventDefault(); e.stopPropagation();
+  if (shipPress) {
+    shipPress = false;
+    const a = ship.contextAction();
+    if (a) a.run();
+    hudAccum = 1;                                  // refresh the label now
+    return;
+  }
   if (holdTimer) {                                  // released before the hold
     stopHold();
     flash(tapAction === 'dump' ? doDump().msg : doDig().msg);
@@ -841,13 +895,9 @@ document.getElementById('btn-copy-coord').addEventListener('click', async () => 
 let hudAccum = 0;
 
 engine.addUpdater((dt) => {
-  const src = (isTouch && touch.active) || (isTouch && !desktop.locked) ? touch : desktop;
-
   // Look. Both input sources contribute so a hybrid device works.
   const l1 = touch.consumeLook(), l2 = desktop.consumeLook();
-  walker.yaw += l1.dx + l2.dx;
-  walker.pitch -= l1.dy + l2.dy;
-  walker.pitch = Math.max(-1.45, Math.min(1.45, walker.pitch));
+  const lookDX = l1.dx + l2.dx, lookDY = l1.dy + l2.dy;
 
   const input = {
     moveEast: touch.moveEast || desktop.moveEast,
@@ -856,11 +906,31 @@ engine.addUpdater((dt) => {
     jump: touch.consumeJump() || desktop.consumeJump(),
   };
 
-  walker.tick(dt, input);
+  // The ship gets first refusal. Aboard, it owns the body and the camera; outside
+  // it still flies itself (hover, ramps) and checks whether you are boarding.
+  let owned = false;
+  if (ship.ready) {
+    owned = ship.frame(dt, {
+      look: { dx: lookDX, dy: lookDY }, ...input, keys: desktop.keys,
+      fire: shipUI ? shipUI.fire : false,
+    });
+  }
 
-  rebuildNear();
+  if (owned) {
+    suitGroup.visible = false;
+    updateSun(walker.updateFrame());
+    followTerrain();
+  } else {
+    walker.yaw += lookDX;
+    walker.pitch -= lookDY;
+    walker.pitch = Math.max(-1.45, Math.min(1.45, walker.pitch));
+    walker.tick(dt, input);
+    rebuildNear();
+    updateCamera();
+  }
+  if (ship.ready) ship.late(dt);
+  if (shipUI) shipUI.update(dt);
 
-  updateCamera();
   updateAimMarkers(dt);
   debugLayer.update(walker, engine.camera);
 
@@ -871,14 +941,30 @@ engine.addUpdater((dt) => {
   if (hudAccum > 0.2) { refreshHud(); refreshAction(); hudAccum = 0; }
 });
 
+/**
+ * Keep the drawn ground under a moving ship. The near patch only matters within
+ * a few dozen metres of it; higher up, only the wide patch needs to follow.
+ */
+function followTerrain() {
+  const p = walker.worldPos;
+  if (ship.flight.agl < 45) { rebuildNear(); return; }
+  if (patch.needsRebuild(p.x, p.y, p.z)) {
+    patch.rebuild(p.x, p.y, p.z);
+    patchEntry.worldPos = patch.worldPos;
+  }
+}
+
 // Keyboard shortcuts for desktop: V toggles view, G toggles the debug layer.
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyV') {
     view.mode = view.mode === 'first' ? 'third' : 'first';
     document.getElementById('set-view').value = view.mode;
   }
-  if (e.code === 'KeyE') flash(doDig().msg);
-  if (e.code === 'KeyQ') flash(doDump().msg);
+  if (e.code === 'KeyE') {
+    if (ship.ready && (ship.aboard || ship.contextAction())) { ship.interact(); hudAccum = 1; }
+    else flash(doDig().msg);
+  }
+  if (e.code === 'KeyQ' && !(ship.ready && ship.aboard)) flash(doDump().msg);
   if (e.code === 'KeyG') {
     const box = document.getElementById('set-dev');
     box.checked = !box.checked;
@@ -894,7 +980,8 @@ engine.start();
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
 window.cosmos = {
-  engine, body, walker, patch, registry, debugLayer, view,
+  at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a),
+  ship, shipUI, engine, body, walker, patch, registry, debugLayer, view,
   report: () => debugLayer.reportAt(walker),
   edits, carried, doDig, doDump, digTarget, excavation, refreshExcavation,
   nearPatch, rebuildNear,

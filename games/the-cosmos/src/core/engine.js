@@ -59,6 +59,12 @@ export class Engine {
     /** Authoritative f64 camera position in body-fixed metres. */
     this.cameraWorldPos = { x: 0, y: 0, z: 0 };
 
+    // Extra scenes drawn after the main one, into the SAME depth buffer, with the
+    // same camera. The ship's interior is one: it needs its own lights (no sun
+    // reaches inside a hull), and this is the only way three.js lets an object
+    // ignore the world's lights. See src/ship/shipSystem.js.
+    this.overlayScenes = [];
+
     this._tracked = new Set();
     this._updaters = [];
     this._resizers = [];
@@ -128,6 +134,12 @@ export class Engine {
     this.camera.position.set(0, 0, 0);
 
     this.renderer.render(this.scene, this.camera);
+    if (this.overlayScenes.length) {
+      const r = this.renderer;
+      r.autoClear = false;
+      for (const sc of this.overlayScenes) r.render(sc, this.camera);
+      r.autoClear = true;
+    }
   }
 
   start() {
