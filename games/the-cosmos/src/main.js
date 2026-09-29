@@ -14,6 +14,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { depthEmulation } from './dev/depthEmu.js';
 import { Engine } from './core/engine.js';
 import { registry } from './core/registry.js';
 import { BODIES, getBody } from './world/bodies.js';

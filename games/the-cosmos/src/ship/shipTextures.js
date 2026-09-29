@@ -648,14 +648,33 @@ export function makeShipMaterials(o = {}) {
   mats.engineGlow = new THREE.MeshBasicMaterial({ color: 0x9fdcff, toneMapped: false, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
   mats.nozzleInner = new THREE.MeshBasicMaterial({ color: 0xffb066, toneMapped: false, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
 
-  for (const key of Object.keys(mats)) {
-    const m = mats[key];
-    if (m.isMeshStandardMaterial && !m.transparent) {
-      // envMap set later once the environment exists
-    }
-  }
+  for (const key of Object.keys(mats)) enableDepthLift(mats[key]);
   mats._textures = tex;
   return mats;
+}
+
+/**
+ * DEPTH LIFT. Faces the kit found sharing a plane with another face carry an `aLift` layer number
+ * (shipKit.js, resolveDepthLayers); this pulls a layer-n face n buffer steps toward the camera so the
+ * two never fight. One shared uniform holds the step in clip-space units; ShipSystem sets it from the
+ * real depth buffer's bit count (a phone may give 16 bits where a laptop gives 24).
+ */
+export const DEPTH_LIFT = { value: 4e-6 };
+export function depthLiftStepFor(bits) {
+  // one layer = 3 buffer steps (clip z spans 2 units over 2^bits steps), never below what float maths can resolve
+  return Math.max(3 * 2 / Math.pow(2, bits || 16), 6e-7);
+}
+export function enableDepthLift(m) {
+  if (!m || !(m.isMeshStandardMaterial || m.isMeshBasicMaterial || m.isMeshPhysicalMaterial)) return m;
+  if (m.transparent) return m;
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uLiftStep = DEPTH_LIFT;
+    sh.vertexShader = sh.vertexShader
+      .replace('void main() {', ['attribute float aLift;', 'uniform float uLiftStep;', 'void main() {'].join('\n'))
+      .replace('#include <project_vertex>', ['#include <project_vertex>', '\tgl_Position.z -= aLift * uLiftStep * gl_Position.w;'].join('\n'));
+  };
+  m.customProgramCacheKey = () => 'shipDepthLift1';
+  return m;
 }
 
 /** Give every lit material a reflection environment. */

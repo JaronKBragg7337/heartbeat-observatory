@@ -56,6 +56,7 @@ export class Kit {
     this.tiles = {};                       // per material tile size, metres
     this.triangles = 0;
     this.defaultTile = 1;
+    this.faces = [];                       // every flat polygon written, for resolveDepthLayers()
   }
 
   // ---- transform -------------------------------------------------------------
@@ -123,6 +124,7 @@ export class Kit {
     }
     for (let i = 1; i < P.length - 1; i++) b.idx.push(base, base + i, base + i + 1);
     this.triangles += P.length - 2;
+    this.faces.push({ b, base, n: P.length, lift: 0 });
   }
 
   /** Vertical wall piece from (ax,az) to (bx,bz), y0..y1. Faces to the LEFT of a->b. */
@@ -483,6 +485,14 @@ export class Kit {
   toGroup(materials, opts = {}) {
     const g = new THREE.Group();
     g.name = opts.name || 'kit';
+    // Per-vertex depth layer (see resolveDepthLayers): only buckets that need one get the attribute.
+    const liftByBucket = new Map();
+    for (const f of this.faces) {
+      if (!f.lift) continue;
+      let arr = liftByBucket.get(f.b);
+      if (!arr) { arr = new Array(f.b.pos.length / 3).fill(0); liftByBucket.set(f.b, arr); }
+      for (let i = 0; i < f.n; i++) arr[f.base + i] = f.lift;
+    }
     for (const [key, b] of this.buckets) {
       if (!b.idx.length) continue;
       const geo = new THREE.BufferGeometry();
@@ -490,6 +500,8 @@ export class Kit {
       geo.setAttribute('normal', new THREE.Float32BufferAttribute(b.nrm, 3));
       geo.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2));
       geo.setAttribute('color', new THREE.Float32BufferAttribute(b.col, 3));
+      const lifts = liftByBucket.get(b);
+      if (lifts) geo.setAttribute('aLift', new THREE.Float32BufferAttribute(lifts, 1));
       const big = b.pos.length / 3 > 65535;
       geo.setIndex(big ? new THREE.Uint32BufferAttribute(b.idx, 1) : new THREE.Uint16BufferAttribute(b.idx, 1));
       geo.computeBoundingSphere(); geo.computeBoundingBox();
@@ -508,4 +520,101 @@ function mapN(axis, nx, ny, nz) {
   if (axis === 'y') return [nx, nz, ny];
   if (axis === 'x') return [nz, nx, ny];
   return [nx, ny, nz];
+}
+
+
+// ===========================================================================
+// DEPTH LAYERS - the fix for "two surfaces in the same place fighting".
+//
+// When two flat faces face the same way and lie within a couple of centimetres
+// of each other (a locker front over a wall panel, a stripe painted on a floor,
+// a tread plate on a step) the depth buffer cannot say which is nearer, and the
+// pixel shows one or the other depending on rounding: on a phone that reads as
+// blocky white patches. Nudging the geometry apart by millimetres does not fix it
+// (a 16-bit buffer has centimetre steps 10 m away), so instead every such face
+// is given a small integer LAYER and the vertex shader pulls layer-n faces n
+// depth-buffer steps toward the camera. The step is measured in buffer units,
+// so it separates the two faces at any distance without moving anything visibly.
+//
+// Which face wins: the one whose plane is further out along the shared normal;
+// if they are level, the one drawn later.
+// ===========================================================================
+export function resolveDepthLayers(kits, opts = {}) {
+  const eps = opts.eps ?? 0.03;              // planes closer than this are "the same place"
+  const tol = 0.0015;                        // and closer than this is "level": the later one wins
+  const F = [];
+  let order = 0;
+  for (const k of kits) for (const f of k.faces) {
+    const { b, base } = f;
+    const nx = b.nrm[base * 3], ny = b.nrm[base * 3 + 1], nz = b.nrm[base * 3 + 2];
+    const px = b.pos[base * 3], py = b.pos[base * 3 + 1], pz = b.pos[base * 3 + 2];
+    const ax = Math.abs(nx), ay = Math.abs(ny), az = Math.abs(nz);
+    const drop = ax >= ay && ax >= az ? 0 : (ay >= az ? 1 : 2);
+    // 2D outline in the plane, dropping the dominant axis
+    const pts = [];
+    let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
+    for (let i = 0; i < f.n; i++) {
+      const q = (base + i) * 3;
+      const u = drop === 0 ? b.pos[q + 1] : b.pos[q], v = drop === 2 ? b.pos[q + 1] : b.pos[q + 2];
+      pts.push(u, v);
+      if (u < u0) u0 = u; if (u > u1) u1 = u; if (v < v0) v0 = v; if (v > v1) v1 = v;
+    }
+    F.push({ f, order: order++, nx, ny, nz, d: nx * px + ny * py + nz * pz, pts, u0, u1, v0, v1, layer: 0,
+      key: `${Math.round(nx * 50)},${Math.round(ny * 50)},${Math.round(nz * 50)}` });
+  }
+  // bucket by facing, then by plane offset
+  const cells = new Map();
+  for (const e of F) {
+    const c = Math.floor(e.d / eps);
+    e.cell = c;
+    const k = e.key + ':' + c;
+    let a = cells.get(k); if (!a) { a = []; cells.set(k, a); } a.push(e);
+  }
+  const edges = [];                          // [above, below]
+  const overlap2D = (A, B) => {
+    if (A.u1 <= B.u0 + 0.001 || B.u1 <= A.u0 + 0.001 || A.v1 <= B.v0 + 0.001 || B.v1 <= A.v0 + 0.001) return false;
+    // separating axis over both polygons' edge normals; convex polygons
+    for (const P of [A.pts, B.pts]) {
+      const n = P.length / 2;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        const ex = P[j * 2] - P[i * 2], ey = P[j * 2 + 1] - P[i * 2 + 1];
+        const l = Math.hypot(ex, ey); if (l < 1e-9) continue;
+        const ax = -ey / l, ay = ex / l;
+        let a0 = 1e9, a1 = -1e9, b0 = 1e9, b1 = -1e9;
+        for (let q = 0; q < A.pts.length; q += 2) { const t = A.pts[q] * ax + A.pts[q + 1] * ay; if (t < a0) a0 = t; if (t > a1) a1 = t; }
+        for (let q = 0; q < B.pts.length; q += 2) { const t = B.pts[q] * ax + B.pts[q + 1] * ay; if (t < b0) b0 = t; if (t > b1) b1 = t; }
+        if (a1 <= b0 + 0.001 || b1 <= a0 + 0.001) return false;
+      }
+    }
+    return true;
+  };
+  for (const [k, arr] of cells) {
+    const [key, cs] = k.split(':'); const c = +cs;
+    const nb = [arr, cells.get(key + ':' + (c + 1))];
+    for (let i = 0; i < arr.length; i++) {
+      const A = arr[i];
+      for (const list of nb) {
+        if (!list) continue;
+        for (let j = list === arr ? i + 1 : 0; j < list.length; j++) {
+          const B = list[j];
+          const dd = A.d - B.d;
+          if (dd > eps || dd < -eps) continue;
+          if (!overlap2D(A, B)) continue;
+          // who is on top?
+          let top, bot;
+          if (dd > tol) { top = A; bot = B; } else if (dd < -tol) { top = B; bot = A; } else if (A.order > B.order) { top = A; bot = B; } else { top = B; bot = A; }
+          edges.push([top, bot]);
+        }
+      }
+    }
+  }
+  let layers = 0;
+  for (let pass = 0; pass < 8; pass++) {
+    let changed = false;
+    for (const [top, bot] of edges) if (top.layer <= bot.layer) { top.layer = bot.layer + 1; changed = true; }
+    if (!changed) break;
+  }
+  for (const e of F) { e.f.lift = e.layer; if (e.layer > layers) layers = e.layer; }
+  return { faces: F.length, pairs: edges.length, maxLayer: layers, lifted: F.filter((e) => e.layer > 0).length };
 }

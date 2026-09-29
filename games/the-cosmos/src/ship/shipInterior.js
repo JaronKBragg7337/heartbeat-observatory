@@ -18,9 +18,9 @@
 // ============================================================================
 
 import * as THREE from 'three';
-import { Kit } from './shipKit.js';
+import { Kit, resolveDepthLayers } from './shipKit.js';
 import { drawProp, SEAT_DRAW } from './shipProps.js';
-import { mulberry } from './shipTextures.js';
+import { mulberry, enableDepthLift } from './shipTextures.js';
 import { DECK, STAIRS, stairFloor, propBox } from './shipSpec.js';
 
 const WALL_U = 1.35, WALL_V = 2.7;
@@ -184,6 +184,12 @@ export function buildInterior(layout, mats, opts = {}) {
   };
   const rooms = layout.rooms;
   const doorsByRoom = new Map();
+  // Every kit is mounted on an empty group now and filled at the end, after resolveDepthLayers has
+  // looked at ALL of them together (a stair tread and the wall beside it live in different kits).
+  const pending = [];
+  const mount = (k, mm, o) => { const g = new THREE.Group(); g.name = o.name; pending.push({ g, k, mm, o }); return g; };
+  if (opts.signs) enableDepthLift(opts.signs.material);
+  if (opts.posters) enableDepthLift(opts.posters.material);
 
   // --- One kit per room. ------------------------------------------------------
   for (const r of rooms) {
@@ -238,7 +244,7 @@ export function buildInterior(layout, mats, opts = {}) {
     // greebles: junction boxes, conduits, vents
     greeble(k, layout, r, rnd, low);
 
-    const g = k.toGroup(mats, { name: 'room:' + r.id, cast: !low, receive: !low });
+    const g = mount(k, mats, { name: 'room:' + r.id, cast: !low, receive: !low });
     g.userData.roomId = r.id;
     out.triangles += k.triangles;
     root.add(g);
@@ -252,30 +258,33 @@ export function buildInterior(layout, mats, opts = {}) {
     const core = new THREE.Mesh(new THREE.CylinderGeometry(c.r, c.r, c.h, low ? 16 : 28, 1, false), mats.reactor);
     core.position.set(c.x, c.y, c.z);
     core.name = 'reactor-core';
-    const inner = new THREE.Mesh(new THREE.CylinderGeometry(c.r * 0.5, c.r * 0.5, c.h + 0.06, 16, 1, false), mats.glowWhite);
+    const inner = new THREE.Mesh(new THREE.CylinderGeometry(c.r * 0.5, c.r * 0.5, c.h - 0.04, 16, 1, false), mats.glowWhite);
     inner.position.copy(core.position);
     out.rooms.get('engineering').add(core, inner);
     out.reactorCore = core; out.reactorInner = inner;
   }
 
-  // --- Stairs, in the corridor's group so they cull with it. -----------------
+  // --- Stairs and ladders. Each is drawn whenever ANY room it touches is drawn: the engineering stair is a big
+  //     block standing in engineering, so it must not disappear just because the corridor above it is culled. ----
+  out.sharedGroups = [];
   {
-    const k = new Kit();
-    k.tiles = { 'floor:deck': 2, ceil: 1.5, steel: 1, steelDark: 1, gunmetal: 1 };
-    buildStairs(k, layout);
-    const g = k.toGroup(mats, { name: 'stairs', cast: !low, receive: !low });
-    out.triangles += k.triangles;
-    out.rooms.get('corridor_main').add(g);
-    out.stairs = g;
-  }
-
-  // --- Ladders. -----------------------------------------------------------------
-  {
-    const k = new Kit();
-    for (const L of layout.ladders) drawLadder(k, L);
-    const g = k.toGroup(mats, { name: 'ladders' });
-    out.triangles += k.triangles;
-    root.add(g);
+    const STAIR_ROOMS = { up: ['corridor_main', 'bridge'], down: ['engineering', 'corridor_main'] };
+    for (const key of ['up', 'down']) {
+      const k = new Kit();
+      k.tiles = { 'floor:deck': 2, ceil: 1.5, steel: 1, steelDark: 1, gunmetal: 1 };
+      buildStairs(k, layout, key);
+      const g = mount(k, mats, { name: 'stairs:' + key, cast: !low, receive: !low });
+      root.add(g);
+      out.sharedGroups.push({ g, rooms: STAIR_ROOMS[key] });
+    }
+    const LADDER_ROOMS = { ladder_dorsal: ['niche', 'nest'], ladder_ventral: ['corridor_low', 'ventral'] };
+    for (const L of layout.ladders) {
+      const k = new Kit();
+      drawLadder(k, L);
+      const g = mount(k, mats, { name: 'ladder:' + L.id });
+      root.add(g);
+      out.sharedGroups.push({ g, rooms: LADDER_ROOMS[L.id] || ['corridor_main'] });
+    }
   }
 
   // --- Doors that slide. ----------------------------------------------------------
@@ -295,9 +304,9 @@ export function buildInterior(layout, mats, opts = {}) {
     }
     dl.group.position.set(d.axis === 'x' ? d.at : d.c, d.y + (d.h - 0.02) / 2 + 0.01, d.axis === 'x' ? d.c : d.at);
     out.doors.push(dl);
-    const roomGroup = out.rooms.get(d.a) || out.rooms.get(d.b) || root;
-    roomGroup.add(dl.group);
-    dl.roomGroup = roomGroup;
+    // On the ship's root, not inside a room's group: a hidden room hides its children, and a door leaf is
+    // seen from BOTH sides (the ship's origin is the interior's origin, so positions are the same).
+    root.add(dl.group);
   }
 
   // --- Signs above the doors, on the wall you approach it from. ----------------------
@@ -326,7 +335,7 @@ export function buildInterior(layout, mats, opts = {}) {
         k._faceQuadUV('sign', pts, [0, 0, n], uv);
       }
     }
-    root.add(k.toGroup({ sign: opts.signs.material }, { name: 'signs' }));
+    root.add(mount(k, { sign: opts.signs.material }, { name: 'signs' }));
   }
 
   // --- Posters and photographs. ---------------------------------------------------------
@@ -355,9 +364,16 @@ export function buildInterior(layout, mats, opts = {}) {
         else { k.bevelBox('steelDark', P.u, y, fz, w + fr * 2, h + fr * 2, 0.012, 0.004); }
       }
       // frames belong to 'metal', posters to 'poster'
-      const g = k.toGroup({ poster: opts.posters.material, metal: mats.metal }, { name: 'posters:' + r.id });
+      const g = mount(k, { poster: opts.posters.material, metal: mats.metal }, { name: 'posters:' + r.id });
       out.rooms.get(r.id).add(g);
     }
+  }
+
+  // --- Look at every flat face together and give the ones that share a plane their own depth layer. ---
+  out.layerStats = resolveDepthLayers(pending.map((q) => q.k));
+  for (const { g, k, mm, o } of pending) {
+    const built = k.toGroup(mm, o);
+    while (built.children.length) g.add(built.children[0]);
   }
 
   return out;
@@ -406,7 +422,7 @@ function dressRoom(k, layout, r, rnd, out, low) {
     // yellow walkway lines
     for (const x of [-2.8, 2.8]) k.box('hazard', x, yF + 0.012, 1.4, 0.06, 0.003, 12.6);
     // The reactor core itself is a separate mesh so it can pulse
-    out.coreSpec = { x: 0, y: yF + 1.4, z: -0.8, r: 0.62, h: 2.28 };
+    out.coreSpec = { x: 0, y: yF + 1.4, z: -0.8, r: 0.62, h: 2.24 };   // ends 3 cm inside the caps, not flush with them
   }
 
   if (r.id === 'cargo') {
@@ -559,24 +575,30 @@ function greeble(k, layout, r, rnd, low) {
 // ---------------------------------------------------------------------------
 // Stairs: closed-riser treads sitting on the same ramp the walker follows.
 // ---------------------------------------------------------------------------
-function buildStairs(k, layout) {
+function buildStairs(k, layout, only) {
   const rise = 3.0 / 16;
-  for (const key of ['up', 'down']) {
+  for (const key of only ? [only] : ['up', 'down']) {
     const st = STAIRS[key];
     const n = st.rise;
     const run = Math.abs(st.zHigh - st.zLow) / n;
     const dir = Math.sign(st.zHigh - st.zLow);              // +1 if ascending toward +z
+    // Each step is a riser and a tread and nothing else: the sides are walled below, the back is the next
+    // step's riser, the underside is never seen. (Every face that used to be written twice on the same plane
+    // was one of the "white blocks" on the stairs.)
+    const backFace = dir > 0 ? '+z' : '-z';
     for (let i = 0; i < n; i++) {
       // step i counted from the LOW end
       const zA = st.zLow + dir * i * run, zB = st.zLow + dir * (i + 1) * run;
       const z0 = Math.min(zA, zB), z1 = Math.max(zA, zB);
       const top = st.yLow + (i + 0.5) * rise;
       const bottom = key === 'down' ? 0.0 : top - 0.45;
-      k.boxMM('steelDark', st.x0, bottom, z0, st.x1, top, z1);
-      // tread plate, a hair proud, and a nosing strip on the leading edge
-      k.poly('floor:deck', [[st.x0 + 0.02, top + 0.004, z1], [st.x1 - 0.02, top + 0.004, z1], [st.x1 - 0.02, top + 0.004, z0], [st.x0 + 0.02, top + 0.004, z0]]);
-      const nose = dir > 0 ? z1 - 0.03 : z0 + 0.03;
-      k.box('hazard', (st.x0 + st.x1) / 2, top + 0.008, nose, st.x1 - st.x0 - 0.06, 0.008, 0.05);
+      k.boxMM('steelDark', st.x0, bottom, z0, st.x1, top, z1, { skip: '+x-x+y-y' + backFace });
+      // the tread plate is the top face; a hazard nosing strip takes the leading 5 cm of it (no overlap)
+      const nz0 = dir > 0 ? z1 - 0.05 : z0, nz1 = dir > 0 ? z1 : z0 + 0.05;
+      const pz0 = dir > 0 ? z0 : nz1, pz1 = dir > 0 ? nz0 : z1;
+      const tread = (key2, za, zb) => k.poly(key2, [[st.x0, top, zb], [st.x1, top, zb], [st.x1, top, za], [st.x0, top, za]]);
+      tread('floor:deck', pz0, pz1);
+      tread('hazard', nz0, nz1);
     }
     // handrails on both sides, following the slope
     for (const sx of [-1, 1]) {
@@ -613,6 +635,15 @@ function buildStairs(k, layout) {
         k._faceQuadUV('wall:engineering', [[x, 0, st.zHigh], [x, 0, st.zLow], [x, 2.7, st.zLow], [x, 2.7, st.zHigh]], [sx, 0, 0],
           [[st.zHigh / 1.35, 0], [st.zLow / 1.35, 0], [st.zLow / 1.35, 1], [st.zHigh / 1.35, 1]]);
       }
+      // the same walls seen from INSIDE the stairwell (they were one-way: standing on the stair you could
+      // look straight out into engineering)
+      for (const sx of [-1, 1]) {
+        const x = sx * 0.8;
+        k._faceQuadUV('wall:corridor', [[x, 0, st.zHigh], [x, 0, st.zLow], [x, DECK.main, st.zLow], [x, DECK.main, st.zHigh]], [-sx, 0, 0],
+          [[st.zHigh / 1.35, 0], [st.zLow / 1.35, 0], [st.zLow / 1.35, 3 / 1.35], [st.zHigh / 1.35, 3 / 1.35]]);
+      }
+      // the slab's cut edge at the low end of the hole, so you do not see into the floor
+      k._faceQuadUV('wall:corridor', [[-0.8, 2.7, st.zLow], [0.8, 2.7, st.zLow], [0.8, DECK.main, st.zLow], [-0.8, DECK.main, st.zLow]], [0, 0, -1], null);
       // the front face of the closed stair, in engineering
       k._faceQuadUV('wall:engineering', [[-0.8, 0, 4.5], [0.8, 0, 4.5], [0.8, 2.7, 4.5], [-0.8, 2.7, 4.5]], [0, 0, -1],
         [[0, 0], [1.6 / 1.35, 0], [1.6 / 1.35, 1], [0, 1]]);

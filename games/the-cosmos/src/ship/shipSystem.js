@@ -25,7 +25,8 @@ import { ShipWalker, shipIndex, defaultState } from './shipWalker.js';
 import { ShipBody } from './shipFlight.js';
 import { Stations } from './shipStations.js';
 import { GunSystem, DroneSystem } from './guns.js';
-import { makeShipMaterials, applyEnvironment, makeSignAtlas, makePosterAtlas } from './shipTextures.js';
+import { makeShipMaterials, applyEnvironment, makeSignAtlas, makePosterAtlas, DEPTH_LIFT, depthLiftStepFor } from './shipTextures.js';
+import { depthEmulation } from '../dev/depthEmu.js';
 import { buildInterior, buildSeats } from './shipInterior.js';
 import { buildExterior, decalCanvasTexture, applyNeutralPose, HULL_STATIONS } from './shipExterior.js';
 import { ShipScreens, TerrainScanner, KIND_FOR } from './shipScreens.js';
@@ -35,9 +36,12 @@ import { geodeticToCartesian, cartesianToGeodetic, localFrame, cellIndex, cellLa
 import { gravityAtRadius } from '../world/bodies.js';
 import { Kit } from './shipKit.js';
 import { findLandingSite, siteOrigin } from './shipSite.js';
+import { buildPortals, reachRooms } from './shipVisibility.js';
 
 const DEG = Math.PI / 180;
 const SCAN_RANGES = [600, 2500, 9000];
+// rooms with real windows in the outer wall (the exterior is drawn for them on the high tier)
+const WINDOW_ROOMS = new Set(['crew_a', 'crew_b', 'medbay', 'galley', 'cabin', 'workshop']);
 
 export class ShipSystem {
   constructor(o) {
@@ -91,6 +95,13 @@ export class ShipSystem {
     const t0 = performance.now();
     const { engine } = this;
     const low = this.tier === 'low';
+
+    // --- how deep is the depth buffer really? Faces that share a plane are pulled apart by a few steps of it.
+    try {
+      const gl = engine.renderer.getContext();
+      this.depthBits = depthEmulation || gl.getParameter(gl.DEPTH_BITS) || 16;
+    } catch (e) { this.depthBits = 16; }
+    DEPTH_LIFT.value = depthLiftStepFor(this.depthBits);
 
     // --- materials: one set of textures, two sets of materials (each needs its own environment)
     this.matsInt = makeShipMaterials({ tier: this.tier });
@@ -931,7 +942,7 @@ export class ShipSystem {
       }
       // the seated crew do not open doors
       if (this.seat) target = def.id === 'd_airlock_in' ? target : 0;
-      if (target !== d.was) { if (!first && this.audio && this.aboard && d.roomGroup.visible) this.audio.door(); d.was = target; }
+      if (target !== d.was) { if (!first && this.audio && this.aboard && (this._roomVisible(def.a) || this._roomVisible(def.b))) this.audio.door(); d.was = target; }
       if (first) d.open = target;
       else d.open += Math.sign(target - d.open) * Math.min(Math.abs(target - d.open), dt * 3.2);
       const n = d.leaves.length;
@@ -944,7 +955,7 @@ export class ShipSystem {
         } else if (def.axis === 'x') leaf.position.set(0, 0, off + dir * travel);
         else leaf.position.set(off + dir * travel, 0, 0);
       });
-      d.group.visible = d.roomGroup.visible;
+      d.group.visible = this._roomVisible(def.a) || this._roomVisible(def.b);
     }
   }
 
@@ -956,52 +967,49 @@ export class ShipSystem {
     // which room is the camera in?
     let cur = null;
     if (this.aboard) cur = this.seat ? this.seat.room : (this.sw.zoneRoom || null);
-    if (cur === 'stair_up' || cur === 'stair_down') cur = 'corridor_main';
+    if (cur === 'stair_up') cur = this.sw.y > 4.6 ? 'bridge' : 'corridor_main';
+    else if (cur === 'stair_down') cur = this.sw.y < 1.4 ? 'engineering' : 'corridor_main';
     if (cur && cur.startsWith('d_')) cur = this._lastRoom || 'corridor_main';
     if (cur && !this.interior.rooms.has(cur)) cur = this._lastRoom || null;
     if (cur) this._lastRoom = cur;
     this.currentRoom = cur;
 
-    // visibility set: BFS over the door graph
-    const set = new Set();
-    const adj = this._adjacency();
+    // --- which rooms can be seen? Follow real sight lines: from the room you are in, through every opening
+    //     (an open door, a doorway, a stairwell, a hatch) that is in front of you or close beside you, into the
+    //     next room, and so on. A closed door is opaque, so what is behind it is not drawn. Nothing is ever
+    //     dropped for being "two doors away" if you can see it, and a room you just walked out of stays drawn
+    //     for as long as its door is anything but shut. ------------------------------------------------------
+    let set;
     if (this.aboard || first) {
-      const start = cur || 'cargo';
-      const depth = low ? 1 : 3;
-      let frontier = [start]; set.add(start);
-      for (let d = 0; d < depth; d++) {
-        const next = [];
-        // a closed door is opaque: what is behind it does not need drawing
-        for (const id of frontier) for (const e of (adj.get(id) || [])) {
-          if (set.has(e.id)) continue;
-          if (e.dl && e.dl.open < 0.02) continue;
-          set.add(e.id); next.push(e.id);
-        }
-        frontier = next;
-      }
-      // the bridge's big windows show the nest and vice versa: nothing to add
+      set = this._reach([cur || 'cargo'], cam, this._lookLocal(), low ? 8 : 14);
       this.interior.root.visible = true;
     } else {
-      // Outside: the interior shows only through openings.
-      const d2 = Math.hypot(cam.x, cam.z);
+      // Outside: the interior shows only through openings and glass.
+      set = new Set();
       const dist = Math.hypot(cam.x, cam.y, cam.z);
-      const near = dist < 90;
-      if (near) {
-        if (dist < 60 && (this.state.ramps.cargo.lowered || this.rampCtl.cargo.progress > 0.02)) { set.add('cargo'); if (dist < 40) set.add('engineering'); }
-        if (dist < 40 && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.05)) { set.add('airlock'); }
-        if (dist < 55) { set.add('bridge'); set.add('nest'); set.add('ventral'); }          // through the glass
+      if (dist < 90) {
+        const starts = [];
+        if (dist < 60 && (this.state.ramps.cargo.lowered || this.rampCtl.cargo.progress > 0.02)) starts.push('cargo');
+        if (dist < 40 && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.05)) starts.push('airlock');
+        if (dist < 55) starts.push('bridge', 'nest', 'ventral');              // through the glass
+        if (starts.length) set = this._reach(starts, cam, this._lookLocal(), low ? 5 : 9, true);
       }
-      this.interior.root.visible = near && set.size > 0;
+      this.interior.root.visible = set.size > 0;
     }
     this._visibleSet = set;
     for (const r of this.interior.roomList) r.group.visible = set.has(r.id);
+    for (const e of this.interior.sharedGroups) e.g.visible = e.rooms.some((id) => set.has(id));
     this.lastFrameStats.visibleRooms = set.size;
 
-    // Inside a windowless room the hull, legs, wings and engines cannot be seen: do not submit them
+    // The hull, legs, wings and engines are only worth drawing when something you can see looks out at them
     // (about 60 draw calls, twice over when the sun's shadow pass counts).
     if (this.aboard) {
-      const looksOut = ['bridge', 'nest', 'ventral', 'cargo'].includes(cur) ||
-        (cur === 'airlock' && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.02)) || !cur;
+      let looksOut = !cur;
+      for (const id of set) {
+        if (id === 'bridge' || id === 'nest' || id === 'ventral' || id === 'cargo') looksOut = true;
+        else if (id === 'airlock' && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.02)) looksOut = true;
+        else if (!low && WINDOW_ROOMS.has(id)) looksOut = true;
+      }
       this.exterior.root.visible = looksOut;
     } else this.exterior.root.visible = true;
 
@@ -1058,21 +1066,26 @@ export class ShipSystem {
     this.hemi.intensity += (amb - this.hemi.intensity) * Math.min(1, dt * 3);
   }
 
-  _adjacency() {
-    if (this._adj) return this._adj;
-    const m = new Map();
-    const doorFor = new Map(this.interior.doors.map((d) => [d.def.id, d]));
-    const link = (a, b, dl) => {
-      if (!m.has(a)) m.set(a, []); if (!m.has(b)) m.set(b, []);
-      m.get(a).push({ id: b, dl }); m.get(b).push({ id: a, dl });
-    };
-    for (const d of this.layout.doors) {
-      if (this.interior.rooms.has(d.a) && this.interior.rooms.has(d.b)) link(d.a, d.b, doorFor.get(d.id) || null);
+  /** Which way the camera looks, in ship-local axes. */
+  _lookLocal() {
+    const out = this._lookV || (this._lookV = new THREE.Vector3());
+    const q = this._lookQ || (this._lookQ = new THREE.Quaternion());
+    q.copy(this.flight.quaternion).invert();
+    return out.set(0, 0, -1).applyQuaternion(this.engine.camera.quaternion).applyQuaternion(q);
+  }
+
+  /** The rooms you can see from `starts` (see shipVisibility.js). */
+  _reach(starts, cam, fwd, maxRooms, outside = false) {
+    if (!this._portals) {
+      this._portals = buildPortals(this.layout, new Set(this.interior.rooms.keys()));
+      this._doorState = new Map(this.interior.doors.map((d) => [d.def.id, d]));
     }
-    link('corridor_main', 'bridge', null); link('corridor_main', 'engineering', null); link('niche', 'nest', null);
-    link('ventral', 'corridor_low', null); link('bridge', 'nest', null);
-    this._adj = m;
-    return m;
+    const cf = this.engine.camera;
+    return reachRooms({
+      portals: this._portals, starts: starts.filter((id) => this.interior.rooms.has(id)), cam, fwd,
+      isOpen: (id) => { const dl = this._doorState.get(id); return !dl || dl.open > 0.001 || !!dl.was; },
+      fovDeg: cf.fov, aspect: cf.aspect, maxRooms, outside,
+    });
   }
 
   // ---- telemetry for screens and panels ---------------------------------------------------
