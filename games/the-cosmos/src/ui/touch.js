@@ -180,16 +180,19 @@ export class DesktopControls {
   constructor(canvas, opts = {}) {
     this.canvas = canvas;
     this.keys = new Set();
+    // Keys physically down right now. `keys` is consumed (a jump is one press);
+    // a throttle or a lift lever needs to know the key is still HELD.
+    this.held = new Set();
     this.lookDX = 0; this.lookDY = 0;
     this.sensitivity = opts.sensitivity || 0.0022;
     this.locked = false;
 
     window.addEventListener('keydown', (e) => {
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
-      this.keys.add(e.code);
+      this.keys.add(e.code); this.held.add(e.code);
     });
-    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
-    window.addEventListener('blur', () => this.keys.clear());
+    window.addEventListener('keyup', (e) => { this.keys.delete(e.code); this.held.delete(e.code); });
+    window.addEventListener('blur', () => { this.keys.clear(); this.held.clear(); });
 
     canvas.addEventListener('click', () => { if (!this.locked) canvas.requestPointerLock?.(); });
     document.addEventListener('pointerlockchange', () => {

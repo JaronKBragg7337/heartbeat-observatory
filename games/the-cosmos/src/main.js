@@ -899,6 +899,8 @@ engine.addUpdater((dt) => {
   const l1 = touch.consumeLook(), l2 = desktop.consumeLook();
   const lookDX = l1.dx + l2.dx, lookDY = l1.dy + l2.dy;
 
+  // Space is a jump key AND the lift key: `keys` is consumed by the jump, `held` is not.
+  const heldKeys = desktop.held;
   const input = {
     moveEast: touch.moveEast || desktop.moveEast,
     moveNorth: touch.moveNorth || desktop.moveNorth,
@@ -911,7 +913,7 @@ engine.addUpdater((dt) => {
   let owned = false;
   if (ship.ready) {
     owned = ship.frame(dt, {
-      look: { dx: lookDX, dy: lookDY }, ...input, keys: desktop.keys,
+      look: { dx: lookDX, dy: lookDY }, ...input, keys: heldKeys,
       fire: shipUI ? shipUI.fire : false,
     });
   }
@@ -980,7 +982,7 @@ engine.start();
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
 window.cosmos = {
-  at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a),
+  at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,
   ship, shipUI, engine, body, walker, patch, registry, debugLayer, view,
   report: () => debugLayer.reportAt(walker),
   edits, carried, doDig, doDump, digTarget, excavation, refreshExcavation,

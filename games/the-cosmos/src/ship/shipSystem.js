@@ -562,10 +562,12 @@ export class ShipSystem {
       // nobody flying: the flight computer hovers
       f.controls.fwd = 0; f.controls.lift = 0; f.controls.yaw = 0;
     }
-    // Ramp down means no lift-off.
-    if ((this.rampCtl.cargo.progress > 0.02 || this.rampCtl.airlock.progress > 0.02) && f.landed && f.controls.lift > 0) {
+    // Ramp down means no lift-off. The flight computer folds it away first.
+    if ((this.rampCtl.cargo.progress > 0.02 || this.rampCtl.airlock.progress > 0.02 || this.air.phase !== 'idle') && f.landed && f.controls.lift > 0) {
       f.controls.lift = 0;
-      if (this.time - (this._warnAt || -9) > 4) { this.note('Ramp or gangway down: raise it before lift-off.', true); this._warnAt = this.time; }
+      if (this.rampCtl.cargo.target > 0.5) this.toggleRamp('cargo');
+      if (this.state.airlock.outerOpen && this.air.phase === 'idle') this.cycleAirlock();
+      if (this.time - (this._warnAt || -9) > 6) { this.note('Securing ramp and hatches for lift-off. Hold LIFT.', true); this._warnAt = this.time; }
     }
     f.step(dt);
     for (const ev of f.events) {
