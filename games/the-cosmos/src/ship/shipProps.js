@@ -58,9 +58,9 @@ export const PROPS = {
     for (const y of [0.34, 1.16]) {
       // frame and base
       k.bevelBox('steelDark', 0, y, 0, w - 0.02, 0.07, d - 0.02, 0.012);
-      k.bevelBox('mattress', 0, y + 0.1, 0.02, w - 0.12, 0.13, d - 0.14, 0.04);
-      k.bevelBox('white', 0, y + 0.19, -d / 2 + 0.28, w - 0.28, 0.07, 0.36, 0.03);            // pillow
-      k.bevelBox('blanket', 0, y + 0.19, 0.28, w - 0.14, 0.05, d * 0.5, 0.02);
+      k.pillow('mattress', 0, y + 0.12, 0.02, w - 0.1, 0.17, d - 0.12, 3.6);
+      k.pillow('white', 0, y + 0.23, -d / 2 + 0.3, w - 0.26, 0.11, 0.4, 2.4);            // pillow
+      k.pillow('blanket', 0, y + 0.22, 0.3, w - 0.12, 0.09, d * 0.52, 3.2);
       // reading lamp
       k.bevelBox('plasticDark', -w / 2 + 0.1, y + 0.55, -d / 2 + 0.07, 0.1, 0.06, 0.05, 0.01);
       k.box('glowAmber', -w / 2 + 0.1, y + 0.55, -d / 2 + 0.096, 0.07, 0.03, 0.004);
@@ -247,9 +247,9 @@ export const PROPS = {
   bed(k, p) {
     // long axis X, head at +X
     k.bevelBox('steelDark', 0, 0.18, 0, p.w, 0.3, p.d, 0.03);
-    k.bevelBox('mattress', -0.02, 0.4, 0, p.w - 0.1, 0.16, p.d - 0.1, 0.05);
-    k.bevelBox('blanket', -0.25, 0.5, 0, p.w * 0.6, 0.06, p.d - 0.08, 0.03);
-    for (const sz of [-1, 1]) k.bevelBox('white', p.w / 2 - 0.3, 0.55, sz * 0.32, 0.4, 0.1, 0.4, 0.04);
+    k.pillow('mattress', -0.02, 0.42, 0, p.w - 0.08, 0.2, p.d - 0.08, 3.4);
+    k.pillow('blanket', -0.25, 0.53, 0, p.w * 0.6, 0.1, p.d - 0.06, 3.2);
+    for (const sz of [-1, 1]) k.pillow('white', p.w / 2 - 0.3, 0.6, sz * 0.32, 0.42, 0.14, 0.42, 2.4);
     k.bevelBox('leather', p.w / 2 - 0.02, 0.62, 0, 0.06, 0.7, p.d, 0.02);
     k.box('glowAmber', p.w / 2 - 0.06, 0.98, 0, 0.02, 0.02, p.d * 0.7);
     k.bevelBox('steelDark', p.w / 2 - 0.25, 0.24, p.d / 2 + 0.22, 0.4, 0.4, 0.35, 0.03);   // night stand
@@ -277,8 +277,8 @@ export const PROPS = {
       k.pipe('steelDark', [0, 0.05, 0], [Math.cos(a) * 0.24, 0.03, Math.sin(a) * 0.24], 0.012, 6);
       k.cyl('rubber', Math.cos(a) * 0.24, 0.02, Math.sin(a) * 0.24, 0.022, 0.04, 8);
     }
-    k.bevelBox(fabric, 0, 0.5, 0, 0.44, 0.08, 0.44, 0.03);
-    k.bevelBox(fabric, 0, 0.82, -0.2, 0.42, 0.55, 0.07, 0.035);
+    k.pillow(fabric, 0, 0.51, 0, 0.46, 0.11, 0.46, 3.0);
+    k.pillow(fabric, 0, 0.84, -0.2, 0.44, 0.58, 0.1, 3.0);
     for (const s of [-1, 1]) { k.box('steelDark', s * 0.24, 0.66, 0, 0.03, 0.03, 0.34); k.box('steelDark', s * 0.24, 0.58, 0.05, 0.03, 0.14, 0.03); }
   },
 
@@ -503,16 +503,16 @@ export const SEAT_DRAW = {
     k.cyl('gunmetal', 0, 0.09, 0, 0.44, 0.18, 20);
     k.cyl('steel', 0, 0.2, 0, 0.14, 0.4, 12);
     k.cyl('gunmetal', 0, 0.4, 0, 0.26, 0.06, 16);
-    k.bevelBox('leather', 0, 0.52, 0.0, 0.68, 0.16, 0.64, 0.075);              // pan
-    k.bevelBox('leather', 0, 0.55, -0.24, 0.5, 0.1, 0.14, 0.04);               // waterfall edge
-    k.bevelBox('leather', 0, 0.98, 0.31, 0.62, 0.88, 0.16, 0.09);              // back
-    for (const s of [-1, 1]) k.bevelBox('leather', s * 0.3, 0.88, 0.22, 0.12, 0.62, 0.22, 0.05);   // side wings
-    k.bevelBox('leather', 0, 1.53, 0.33, 0.38, 0.3, 0.13, 0.07);               // headrest
+    k.pillow('leather', 0, 0.53, 0.0, 0.70, 0.2, 0.66, 3.0);                     // pan
+    k.pillow('leather', 0, 0.56, -0.25, 0.52, 0.12, 0.16, 2.6);                   // waterfall edge
+    k.pillow('leather', 0, 0.99, 0.3, 0.66, 0.92, 0.22, 3.0);                      // back
+    for (const s of [-1, 1]) k.pillow('leather', s * 0.32, 0.9, 0.2, 0.14, 0.66, 0.3, 2.6);   // side wings
+    k.pillow('leather', 0, 1.55, 0.33, 0.4, 0.34, 0.17, 2.6);                     // headrest
     for (const y of [0.8, 1.0, 1.2]) k.box('gunmetal', 0, y, 0.228, 0.5, 0.006, 0.006);   // stitched seams
     k.box('gunmetal', 0, 0.98, 0.228, 0.006, 0.7, 0.006);
     for (const s of [-1, 1]) {
       k.bevelBox('gunmetal', s * 0.4, 0.7, 0.02, 0.11, 0.12, 0.64, 0.03);       // armrest pod
-      k.bevelBox('leather', s * 0.4, 0.78, 0.0, 0.11, 0.05, 0.56, 0.02);
+      k.pillow('leather', s * 0.4, 0.79, 0.0, 0.12, 0.07, 0.58, 3.0);
       k.bevelBox('plasticDark', s * 0.39, 0.815, -0.28, 0.15, 0.045, 0.22, 0.014);
       k.box('glowCyan', s * 0.39, 0.842, -0.28, 0.1, 0.003, 0.15);
       k.bevelBox('gunmetal', s * 0.37, 0.62, 0.12, 0.03, 0.36, 0.32, 0.01);
@@ -528,12 +528,12 @@ export const SEAT_DRAW = {
   pilot(k) {
     // a bucket seat with harness
     k.bevelBox('gunmetal', 0, 0.12, 0.05, 0.6, 0.24, 0.72, 0.05);
-    k.bevelBox('fabricBlue', 0, 0.37, 0.0, 0.58, 0.14, 0.58, 0.075);
-    k.bevelBox('fabricBlue', 0, 0.88, 0.3, 0.54, 0.9, 0.14, 0.085);
-    k.bevelBox('fabricBlue', 0, 1.38, 0.32, 0.32, 0.24, 0.12, 0.06);
+    k.pillow('fabricBlue', 0, 0.38, 0.0, 0.6, 0.18, 0.6, 3.0);
+    k.pillow('fabricBlue', 0, 0.9, 0.3, 0.56, 0.94, 0.2, 3.0);
+    k.pillow('fabricBlue', 0, 1.4, 0.32, 0.34, 0.28, 0.15, 2.6);
     for (const s of [-1, 1]) {
       k.bevelBox('gunmetal', s * 0.33, 0.64, -0.02, 0.09, 0.11, 0.52, 0.03);
-      k.bevelBox('fabricBlue', s * 0.31, 0.74, 0.18, 0.08, 0.5, 0.16, 0.04);       // bolsters
+      k.pillow('fabricBlue', s * 0.31, 0.75, 0.18, 0.1, 0.54, 0.2, 2.6);       // bolsters
       k.bevelBox('red', s * 0.2, 1.0, 0.235, 0.05, 0.92, 0.008, 0.002);            // harness straps
       k.box('steelDark', s * 0.2, 0.62, 0.235, 0.07, 0.04, 0.012);
     }
@@ -545,15 +545,18 @@ export const SEAT_DRAW = {
     for (const y of [0.7, 0.9, 1.1]) k.box('gunmetal', 0, y, 0.376, 0.4, 0.005, 0.005);
   },
   swivel(k) {
+    // _swivel is drawn facing +Z (for a desk); a station seat faces -Z, toward its screens
+    k.push(0, 0, 0, Math.PI);
     PROPS._swivel(k, 'fabricBlue');
     for (const s of [-1, 1]) k.bevelBox('gunmetal', s * 0.26, 0.72, -0.05, 0.08, 0.05, 0.3, 0.02);
+    k.pop();
   },
   gunner(k) {
     // a harness seat in front of a pair of grips
     k.bevelBox('gunmetal', 0, 0.14, 0.1, 0.5, 0.28, 0.62, 0.05);
-    k.bevelBox('leather', 0, 0.35, 0.05, 0.46, 0.12, 0.52, 0.06);
-    k.bevelBox('leather', 0, 0.8, 0.3, 0.46, 0.82, 0.12, 0.07);
-    k.bevelBox('leather', 0, 1.3, 0.32, 0.28, 0.2, 0.1, 0.05);
+    k.pillow('leather', 0, 0.36, 0.05, 0.48, 0.16, 0.54, 3.0);
+    k.pillow('leather', 0, 0.81, 0.3, 0.48, 0.86, 0.16, 3.0);
+    k.pillow('leather', 0, 1.32, 0.32, 0.3, 0.24, 0.13, 2.6);
     for (const s of [-1, 1]) {
       k.pipe('steel', [s * 0.29, 0.5, -0.05], [s * 0.29, 0.85, -0.35], 0.017);
       k.bevelBox('plasticDark', s * 0.29, 0.9, -0.38, 0.055, 0.13, 0.065, 0.02);

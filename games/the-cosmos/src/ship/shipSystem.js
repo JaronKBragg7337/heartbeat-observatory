@@ -258,7 +258,7 @@ export class ShipSystem {
     quad([[n.x1, ny0, n.z0], [n.x1, ny0, n.z1], [n.x1, ny1, n.z1], [n.x1, ny1, n.z0]]);
     quad([[n.x0, ny0, n.z1], [n.x0, ny0, n.z0], [n.x0, ny1, n.z0], [n.x0, ny1, n.z1]]);
     // ventral bubble: a dome under the floor of the pit
-    k.dome('glassTint', 0, -0.4, -15.3, 1.15, 20, 10, { thetaMin: Math.PI * 0.5, thetaMax: Math.PI, scaleY: 0.95, inside: false });
+    k.dome('glassTint', 0, -0.4, -15.3, 1.2, 20, 10, { thetaMin: Math.PI * 0.5, thetaMax: Math.PI, scaleY: 0.95, inside: false });
     const g = k.toGroup(this.matsInt, { name: 'glass' });
     g.traverse((m) => { if (m.isMesh) m.renderOrder = 6; });
     this.glass = g;
@@ -1329,12 +1329,12 @@ function cloneMaterials(m) {
  */
 export const SHIP_ENVELOPE = { width: 24.52, height: 13.45, depth: 48.65 };
 export const SEAT_ENVELOPE = {
-  captain: { width: 0.93, height: 1.68, depth: 0.88 },
-  pilot: { width: 0.75, height: 1.50, depth: 0.78 },
-  nav: { width: 0.60, height: 1.10, depth: 0.50 },
-  comms: { width: 0.60, height: 1.10, depth: 0.50 },
-  engineer: { width: 0.60, height: 1.10, depth: 0.50 },
-  gun_dorsal: { width: 0.64, height: 1.40, depth: 0.83 },
-  gun_ventral: { width: 0.64, height: 1.40, depth: 0.83 },
+  captain: { width: 0.93, height: 1.72, depth: 0.88 },
+  pilot: { width: 0.75, height: 1.54, depth: 0.78 },
+  nav: { width: 0.60, height: 1.13, depth: 0.50 },
+  comms: { width: 0.60, height: 1.13, depth: 0.50 },
+  engineer: { width: 0.60, height: 1.13, depth: 0.50 },
+  gun_dorsal: { width: 0.64, height: 1.44, depth: 0.83 },
+  gun_ventral: { width: 0.64, height: 1.44, depth: 0.83 },
 };
 export const SEAT_MASS = { captain: 46, pilot: 34, nav: 18, comms: 18, engineer: 18, gun_dorsal: 30, gun_ventral: 30 };

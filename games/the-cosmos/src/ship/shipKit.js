@@ -217,6 +217,10 @@ export class Kit {
    * on its edge instead of ending in a razor-flat square.
    */
   prism(key, plan, y0, y1, inset = 0.12, bevel = 0.12, col) {
+    // orient the plan so its shoelace area is positive (outward normals are then right)
+    let area = 0;
+    for (let i = 0; i < plan.length; i++) { const a = plan[i], b = plan[(i + 1) % plan.length]; area += a[0] * b[1] - b[0] * a[1]; }
+    if (area < 0) plan = plan.slice().reverse();
     const n = plan.length;
     const yb = Math.max(y0, y1 - bevel);
     // centroid, for pulling the top face in
@@ -240,6 +244,46 @@ export class Kit {
       if (yb > y0 + 1e-4) this._faceQuadUV(key, [[a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], yb, b[1]], [a[0], yb, a[1]]], [nx, 0, nz], null);
       this._faceQuadUV(key, [[a[0], yb, a[1]], [b[0], yb, b[1]], [tb[0], y1, tb[1]], [ta[0], y1, ta[1]]], [nx, 0.7, nz], null);
     }
+  }
+
+  /**
+   * A soft cushion: a superellipsoid, i.e. a box whose corners have been rounded
+   * smoothly rather than chamfered. n = 2 is an ellipsoid, n = 6 is nearly a box.
+   * Used for seat pans, backs, pillows and mattresses.
+   */
+  pillow(key, cx, cy, cz, w, h, d, n = 3.2, seg = 14, o = {}) {
+    let col;
+    [key, col] = this._al(key, o.col);
+    const b = this._bucket(key);
+    const base = b.pos.length / 3;
+    const e = 2 / n;
+    const sgn = (v) => (v < 0 ? -1 : 1);
+    const C = (u, ex) => sgn(Math.cos(u)) * Math.pow(Math.abs(Math.cos(u)), ex);
+    const S = (u, ex) => sgn(Math.sin(u)) * Math.pow(Math.abs(Math.sin(u)), ex);
+    const a = w / 2, bb = h / 2, c = d / 2;
+    const tile = this.tileOf(key);
+    const nth = Math.max(6, Math.round(seg * 0.7)), nph = seg * 2;
+    for (let j = 0; j <= nth; j++) {
+      const th = -Math.PI / 2 + (j / nth) * Math.PI;
+      for (let i = 0; i <= nph; i++) {
+        const ph = -Math.PI + (i / nph) * Math.PI * 2;
+        const x = a * C(th, e) * C(ph, e), y = bb * S(th, e), z = c * C(th, e) * S(ph, e);
+        const p = this._tp(cx + x, cy + y, cz + z);
+        b.pos.push(p[0], p[1], p[2]);
+        let nx = C(th, 2 - e) * C(ph, 2 - e) / a, ny = S(th, 2 - e) / bb, nz = C(th, 2 - e) * S(ph, 2 - e) / c;
+        const nl = Math.hypot(nx, ny, nz) || 1;
+        const q = this._tn(nx / nl, ny / nl, nz / nl);
+        b.nrm.push(q[0], q[1], q[2]);
+        b.uv.push((cx + x) / tile, (cz + z + y) / tile);
+        if (col) b.col.push(col[0], col[1], col[2]); else b.col.push(1, 1, 1);
+      }
+    }
+    for (let j = 0; j < nth; j++) for (let i = 0; i < nph; i++) {
+      const p0 = base + j * (nph + 1) + i, p1 = p0 + 1, p2 = p0 + nph + 1, p3 = p2 + 1;
+      // winding: theta runs up, phi runs round (x -> z): (p0, p1, p2) faces outward for this parameterisation
+      b.idx.push(p0, p2, p1, p1, p2, p3);
+    }
+    this.triangles += nth * nph * 2;
   }
 
   // ---- round things --------------------------------------------------------------

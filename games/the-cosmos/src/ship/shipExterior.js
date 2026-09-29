@@ -27,9 +27,9 @@ import { SHIP_NAME, SHIP_ID, GEAR, GUNS, RAMPS } from './shipSpec.js';
 export const HULL_STATIONS = [
   [-21.0, 0.90, 1.40, 2.60, 0.35, 0.35],
   [-19.5, 2.60, 0.60, 3.60, 0.70, 0.70],
-  [-17.5, 4.60, -0.20, 5.00, 1.00, 1.00],
-  [-15.0, 6.10, -0.90, 5.90, 1.20, 1.30],
-  [-13.0, 7.00, -1.10, 6.20, 1.30, 1.30],
+  [-17.5, 4.60, -0.20, 4.80, 1.00, 1.00],
+  [-15.0, 6.10, -0.90, 5.45, 1.20, 1.30],
+  [-13.0, 7.00, -1.10, 5.85, 1.30, 1.30],
   [-9.0, 7.40, -1.10, 6.75, 1.20, 1.50],
   [-3.0, 7.50, -1.10, 6.85, 1.10, 1.50],
   [4.0, 7.50, -1.10, 6.85, 1.10, 1.50],
@@ -291,8 +291,13 @@ export function buildExterior(layout, mats, opts = {}) {
   // ============== the bridge tower ====================================================
   {
     const yw = 7.05, yr = 8.72;
-    const plan = [[-4.7, -12.4], [4.7, -12.4], [4.5, -19.0], [3.2, -20.5], [-3.2, -20.5], [-4.5, -19.0]];
-    k.prism('hull', plan.slice().reverse(), 5.0, yw, 0.35, 0.35);
+    // A hollow ring of armour round the bridge, NOT a solid block: the room's floor and the
+    // consoles must stay visible from inside. Two side walls and a raked front wedge.
+    for (const s of mirror) {
+      k.bevelBox('hull', s * 4.42, (5.0 + yw) / 2, -16.2, 0.72, yw - 5.0, 7.5, 0.12);
+      k.bevelBox('hullDark', s * 4.12, yw + 0.03, -16.2, 0.12, 0.08, 6.5, 0.02);
+    }
+    k.prism('hull', [[-4.8, -19.4], [4.8, -19.4], [3.5, -20.6], [-3.5, -20.6]].reverse(), 5.0, yw, 0.3, 0.3);
     k.bevelBox('hullDark', 0, yw - 0.28, -19.75, 6.3, 0.5, 0.5, 0.08);
     const roof = [[-4.7, -12.9], [4.7, -12.9], [4.55, -19.4], [3.4, -20.3], [-3.4, -20.3], [-4.55, -19.4]];
     k.prism('hull', roof.slice().reverse(), yr, yr + 0.34, 0.25, 0.2);
@@ -313,10 +318,12 @@ export function buildExterior(layout, mats, opts = {}) {
 
   // ============== the dorsal nest (turret room) =========================================
   {
-    const yt = 8.42, cx = 0.2, cz = 2.8;
+    const yt = 9.35, cx = 0.2, cz = 2.8, ys = 6.8;       // roof, and the deck it stands on
+    const hgt = yt - ys, yc = (yt + ys) / 2;
     k.bevelBox('hull', -0.45, yt + 0.12, cz, 4.4, 0.24, 2.7, 0.08);
-    for (const [x0, x1] of [[-2.7, -2.5], [1.5, 1.7]]) k.bevelBox('hull', (x0 + x1) / 2, 7.4, cz, 0.22, 2.4, 2.5, 0.05);
-    for (const z of [1.45, 4.15]) k.bevelBox('hull', -0.45, 7.3, z, 4.5, 2.2, 0.18, 0.05);
+    for (const [x0, x1] of [[-2.7, -2.5], [1.5, 1.7]]) k.bevelBox('hull', (x0 + x1) / 2, yc, cz, 0.22, hgt, 2.5, 0.05);
+    // fore and aft skirts stop at the sill of the glass band (6.95 + 1.0), so the gunner can see out
+    for (const z of [1.45, 4.15]) k.bevelBox('hull', -0.45, (ys + 7.9) / 2, z, 4.5, 7.9 - ys, 0.18, 0.05);
     k.cyl('metal', cx, yt + 0.28, cz, 1.2, 0.16, 28);
     k.cyl('engine', cx, yt + 0.2, cz, 1.32, 0.08, 28);
   }
@@ -504,11 +511,12 @@ export function buildExterior(layout, mats, opts = {}) {
       root.add(yaw);
       return { yaw, pitch, muzzles: [new THREE.Vector3(-1.45, 0, -2.95), new THREE.Vector3(1.45, 0, -2.95)] };
     };
-    ext.guns.dorsal = turret('dorsal', { x: 0.2, y: 8.9, z: 2.8 });
-    ext.guns.ventral = turret('ventral', { x: 0.0, y: -0.35, z: -15.3 });
+    ext.guns.dorsal = turret('dorsal', { x: 0.2, y: 9.9, z: 2.8 });
+    ext.guns.ventral = turret('ventral', { x: 0.0, y: -1.75, z: -15.3 });
+    // the ventral mount is a RING under the belly, open in the middle so the gunner can see down
     const vk = new Kit();
-    vk.cyl('engine', 0, -0.4, -15.3, 1.6, 0.25, 26);
-    vk.cyl('metal', 0, -0.55, -15.3, 1.7, 0.08, 26);
+    vk.lathe('engine', 0, -1.2, -15.3, [[1.3, 0.12], [1.95, 0.12], [1.95, -0.08], [1.3, -0.08]], 32);
+    vk.lathe('metal', 0, -1.2, -15.3, [[1.28, 0.14], [1.97, 0.14]], 32);
     root.add(vk.toGroup(mats, { name: 'ventral-mount', cast: true, receive: true }));
   }
 

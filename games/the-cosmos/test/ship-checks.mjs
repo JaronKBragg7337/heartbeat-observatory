@@ -113,8 +113,8 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
       if (w.events.includes('ladder_top')) topped = true;
     }
     check('the dorsal turret ladder is climbed by walking into it: you arrive on the upper deck',
-      topped && Math.abs(w.y - 6.0) < 0.01 && t < 8, `topped ${topped} y ${w.y.toFixed(2)} in ${t.toFixed(1)} s`);
-    flood(dorsal.topExit.x, dorsal.topExit.z, 6.0);
+      topped && Math.abs(w.y - dorsal.y1) < 0.01 && t < 8, `topped ${topped} y ${w.y.toFixed(2)} in ${t.toFixed(1)} s`);
+    flood(dorsal.topExit.x, dorsal.topExit.z, dorsal.y1);
   }
   {
     const w = new ShipWalker(shipIndex, stW);

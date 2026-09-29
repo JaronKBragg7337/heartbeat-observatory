@@ -79,7 +79,7 @@ room('cargo',    'Cargo bay',    'cargo',     'lower', -5.8, 5.8, 9.8, 20.9, { h
 // --- Upper decks -----------------------------------------------------------
 room('bridge',   'Bridge',       'bridge', 'bridge', -4.0, 4.0, -19.4, -13.4);
 room('nest',     'Dorsal turret', 'nest',  'bridge', -2.5, 1.6, 1.6, 4.0, {
-  h: 2.4,
+  y: 6.95, h: 2.4,
   floorHoles: [{ x0: -2.4, x1: -1.2, z0: 2.1, z1: 3.1 }],
 });
 
@@ -149,11 +149,11 @@ export const LADDERS = [
   {
     id: 'ladder_dorsal', name: 'Dorsal turret ladder',
     x: -2.05, z: 2.6, face: { x: -1, z: 0 },        // rungs on the wall at x = -2.35
-    y0: 3.0, y1: 6.0,
+    y0: 3.0, y1: 6.95,
     bottom: { x: -1.45, z: 2.6 },                   // where you stand to start climbing
-    topExit: { x: -0.8, z: 2.6, y: 6.0 },           // where you step off at the top
+    topExit: { x: -0.8, z: 2.6, y: 6.95 },          // where you step off at the top
     bottomExit: { x: -1.45, z: 2.6, y: 3.0 },
-    topEnter: { x: -0.8, z: 2.6, y: 6.0 },
+    topEnter: { x: -0.8, z: 2.6, y: 6.95 },
   },
   {
     id: 'ladder_ventral', name: 'Ventral turret ladder',
@@ -192,7 +192,7 @@ export const SEATS = [
     x: 4.75, y: 0.0, z: -3.2, yaw: 90, lookYaw: 90, lookPitchUp: 50, lookPitchDown: 35,
     role: 'power', hint: 'Route reactor power between engines, guns and shields' },
   { id: 'gun_dorsal', stationId: 'COS-MARS-STR-0015', name: 'Dorsal turret', room: 'nest',
-    x: 0.2, y: 6.0, z: 2.8, yaw: 0, lookYaw: 180, lookPitchUp: 85, lookPitchDown: 8,
+    x: 0.2, y: 6.95, z: 2.8, yaw: 0, lookYaw: 180, lookPitchUp: 85, lookPitchDown: 8,
     role: 'turret', hint: 'Aim and fire the dorsal turret' },
   { id: 'gun_ventral', stationId: 'COS-MARS-STR-0016', name: 'Ventral turret', room: 'ventral',
     x: 0.0, y: -1.0, z: -15.3, yaw: 0, lookYaw: 180, lookPitchUp: 15, lookPitchDown: 80,
@@ -437,13 +437,13 @@ export const GUNS = {
   },
   dorsal: {
     id: 'dorsal', name: 'Dorsal turret', seat: 'gun_dorsal',
-    pivot: { x: 0.2, y: 8.9, z: 2.8 },
+    pivot: { x: 0.2, y: 9.9, z: 2.8 },
     muzzles: [{ x: -1.45, y: 0, z: -2.95 }, { x: 1.45, y: 0, z: -2.95 }],  // turret-local; z is how far out the barrel ends
     rate: 7.0, speed: 300, damage: 25, range: 1800,
   },
   ventral: {
     id: 'ventral', name: 'Ventral turret', seat: 'gun_ventral',
-    pivot: { x: 0.0, y: -0.35, z: -15.3 },
+    pivot: { x: 0.0, y: -1.75, z: -15.3 },
     muzzles: [{ x: -1.45, y: 0, z: -2.95 }, { x: 1.45, y: 0, z: -2.95 }],
     rate: 6.0, speed: 300, damage: 30, range: 1800,
   },

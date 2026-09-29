@@ -409,6 +409,14 @@ function dressRoom(k, layout, r, rnd, out, low) {
   if (r.id === 'bridge') dressBridge(k, r, out);
 
   if (r.id === 'nest') {
+    // the hatch shaft through the roof space, between the turret ladder niche and this floor
+    const hh = r.floorHoles[0];
+    const yLo = 5.7, yHi = r.y;
+    const wq = (pts, n) => k._faceQuadUV('wall:corridor', pts, n, null);
+    wq([[hh.x0, yLo, hh.z0], [hh.x1, yLo, hh.z0], [hh.x1, yHi, hh.z0], [hh.x0, yHi, hh.z0]], [0, 0, 1]);
+    wq([[hh.x0, yLo, hh.z1], [hh.x1, yLo, hh.z1], [hh.x1, yHi, hh.z1], [hh.x0, yHi, hh.z1]], [0, 0, -1]);
+    wq([[hh.x0, yLo, hh.z0], [hh.x0, yLo, hh.z1], [hh.x0, yHi, hh.z1], [hh.x0, yHi, hh.z0]], [1, 0, 0]);
+    wq([[hh.x1, yLo, hh.z0], [hh.x1, yLo, hh.z1], [hh.x1, yHi, hh.z1], [hh.x1, yHi, hh.z0]], [-1, 0, 0]);
     // glass band and sill; the roof is the ceiling
     const y0 = yF + 1.0;
     k.bevelBox('steelDark', (r.x0 + r.x1) / 2, y0 - 0.02, r.z0 + 0.03, r.x1 - r.x0, 0.05, 0.08, 0.01);
