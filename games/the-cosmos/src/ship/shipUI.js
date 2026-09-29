@@ -124,6 +124,15 @@ export class ShipUI {
     });
     window.addEventListener('mouseup', (e) => { if (e.button === 0) ship.fireHeld = false; });
 
+    // a sound switch in the settings panel
+    const sp = document.getElementById('settings-panel');
+    if (sp && ship.audio) {
+      const row = document.createElement('div'); row.className = 'set-row';
+      row.innerHTML = '<label for="set-shipsound">Ship sound<span class="hint">Engines, guns, doors. Starts on your first touch.</span></label><input type="checkbox" id="set-shipsound">';
+      sp.insertBefore(row, sp.querySelector('#btn-copy-coord'));
+      const cb = row.querySelector('input'); cb.checked = ship.audio.on;
+      cb.addEventListener('change', () => ship.audio.setOn(cb.checked));
+    }
     this.panelKind = null;
     this.mapCanvas = null;
     ship.onStationChange = () => { this._rebuildPanel(); };

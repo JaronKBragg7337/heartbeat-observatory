@@ -267,7 +267,7 @@ function paintFloor(kind, pxPerM, seed) {
     L.rect(0.32, 0.05, 0.02, 1.9, { c: '#e0a83c', h: 132, r: 0.55, m: 0.1, a: 0.7 });
     L.streaks(14, 0.06, 0.2, 0.8, { c: '#1a1d20', a: 0.2 });
     L.speckle(400, 0.006, 0.02, { c: '#a7752f', a: 0.2, jitter: 1 });
-    return L.finish(3.0);
+    return L.finish(1.5);
   }
   if (kind === 'carpet') {
     L.fill({ c: '#3a4149', h: 128, r: 0.95, m: 0 });
@@ -321,44 +321,170 @@ function paintCeiling(pxPerM, seed) {
 function paintHull(pxPerM, seed) {
   const L = new Layers(8, 8, pxPerM, seed);
   const rnd = L.rnd;
-  L.fill({ c: '#b7b9b3', h: 130, r: 0.55, m: 0.55 });
-  // panels: staggered rows, each with its own slight tint
-  const tints = ['#b9bbb5', '#b1b4ae', '#bfc0ba', '#aeb1ab', '#b5b8b1'];
+  L.fill({ c: '#cfd2cc', h: 130, r: 0.5, m: 0.5 });
+  // panels: staggered rows, each with its own slight tint; a few are dark slate
+  const tints = ['#d3d6d0', '#cdd0ca', '#d7d9d4', '#cacdc7', '#d0d3cd', '#c8cbc5'];
   const rowH = 1.0;
   for (let j = 0; j < 8; j++) {
     const off = (j % 2) * 1.0;
     for (let i = -1; i < 5; i++) {
       const x = i * 2.0 + off, y = j * rowH;
-      L.rect(x + 0.012, y + 0.012, 1.976, rowH - 0.024, { c: tints[Math.floor(rnd() * tints.length)], h: 138 + rnd() * 10, r: 0.5 + rnd() * 0.15, m: 0.5 });
-      // panel seam grooves
-      L.rect(x, y, 2.0, 0.012, { c: '#2b2e2e', h: 25, r: 0.8, m: 0.2 });
-      L.rect(x, y, 0.012, rowH, { c: '#2b2e2e', h: 25, r: 0.8, m: 0.2 });
+      const slate = rnd() < 0.04;
+      L.rect(x + 0.012, y + 0.012, 1.976, rowH - 0.024,
+        { c: slate ? '#8a9198' : tints[Math.floor(rnd() * tints.length)], h: 138 + rnd() * 10, r: 0.46 + rnd() * 0.15, m: 0.5 });
+      // panel seam grooves, dark and deep
+      L.rect(x, y, 2.0, 0.012, { c: '#454a4e', h: 44, r: 0.8, m: 0.2 });
+      L.rect(x, y, 0.012, rowH, { c: '#454a4e', h: 44, r: 0.8, m: 0.2 });
       // rivets along the edges
       for (let k = 0.15; k < 2.0; k += 0.25) {
         L.dot(x + k, y + 0.05, 0.011, { c: '#8f918c', h: 215, r: 0.35, m: 0.85 });
         L.dot(x + k, y + rowH - 0.05, 0.011, { c: '#8f918c', h: 215, r: 0.35, m: 0.85 });
       }
       // an inspection hatch on a few panels
-      if (rnd() < 0.12) {
-        L.rect(x + 0.5, y + 0.25, 1.0, 0.5, { c: '#a9aca6', h: 175, r: 0.45, m: 0.6 });
-        L.rect(x + 0.5, y + 0.25, 1.0, 0.014, { c: '#2b2e2e', h: 30, r: 0.8, m: 0.2 });
-        L.rect(x + 0.5, y + 0.735, 1.0, 0.014, { c: '#2b2e2e', h: 30, r: 0.8, m: 0.2 });
+      if (rnd() < 0.14) {
+        L.rect(x + 0.5, y + 0.25, 1.0, 0.5, { c: '#b3b6b0', h: 178, r: 0.45, m: 0.6 });
+        L.rect(x + 0.5, y + 0.25, 1.0, 0.016, { c: '#23272a', h: 24, r: 0.8, m: 0.2 });
+        L.rect(x + 0.5, y + 0.735, 1.0, 0.016, { c: '#23272a', h: 24, r: 0.8, m: 0.2 });
         L.dot(x + 1.0, y + 0.5, 0.05, { c: '#7c7f7a', h: 220, r: 0.35, m: 0.85 });
       }
+      // stencilled service marks: a small dark bar and dots
+      if (rnd() < 0.22) {
+        L.rect(x + 0.2 + rnd() * 0.8, y + 0.4, 0.34, 0.05, { c: '#2b3036', h: 140, r: 0.5, m: 0.1, a: 0.8 });
+        L.rect(x + 0.2 + rnd() * 0.8, y + 0.52, 0.2, 0.03, { c: '#2b3036', h: 140, r: 0.5, m: 0.1, a: 0.7 });
+      }
       // paint chip: bare metal showing on an edge
-      if (rnd() < 0.35) {
+      if (rnd() < 0.3) {
         const cx = x + rnd() * 1.8, cy = y + (rnd() < 0.5 ? 0.02 : rowH - 0.05);
         L.rect(cx, cy, 0.05 + rnd() * 0.25, 0.03, { c: '#6f7274', h: 190, r: 0.4, m: 0.9, a: 0.8 });
       }
     }
   }
-  // weathering: long vertical dust runs from the seams, rust stains, scorch
-  L.streaks(90, 0.04, 0.4, 3.2, { c: '#8c5a3a', a: 0.13, r: 0.85 });
-  L.streaks(50, 0.02, 0.3, 1.6, { c: '#3a3733', a: 0.16, r: 0.7 });
-  L.streaks(20, 0.03, 0.2, 1.0, { c: '#7d3d1e', a: 0.18, r: 0.9, m: 0.1 });
-  L.speckle(2600, 0.006, 0.03, { c: '#4d4a44', a: 0.3, jitter: 1 });
-  L.speckle(1400, 0.006, 0.03, { c: '#d9d2c2', a: 0.25, jitter: 1 });
-  return L.finish(2.4);
+  // weathering, restrained: pale dust runs from the seams, a few dark stains, scorch near the engines is painted elsewhere
+  L.streaks(46, 0.04, 0.4, 2.6, { c: '#a58366', a: 0.08, r: 0.85 });
+  L.streaks(30, 0.02, 0.3, 1.4, { c: '#3a3733', a: 0.10, r: 0.7 });
+  L.streaks(8, 0.03, 0.2, 0.9, { c: '#7d3d1e', a: 0.10, r: 0.9, m: 0.1 });
+  L.speckle(1800, 0.006, 0.026, { c: '#4d4a44', a: 0.22, jitter: 1 });
+  L.speckle(1200, 0.006, 0.026, { c: '#f0ece2', a: 0.25, jitter: 1 });
+  return L.finish(2.6);
+}
+
+/** A sliding door leaf: 1.06 x 2.08 m of painted steel with a hazard edge and a window slit. */
+function paintDoor(pxPerM, seed) {
+  const L = new Layers(1.1, 2.1, pxPerM, seed);
+  L.fill({ c: '#aab1b6', h: 128, r: 0.42, m: 0.7 });
+  L.rect(0.06, 0.1, 0.98, 1.9, { c: '#b9c0c5', h: 150, r: 0.4, m: 0.7 });
+  for (const x of [0.0, 1.0]) {
+    L.rect(x, 0, 0.1, 2.1, { c: '#2b3035', h: 120, r: 0.6, m: 0.3 });
+    for (let i = -1; i < 22; i++) L.rect(x + 0.005, i * 0.1, 0.09, 0.05, { c: '#e6b422', h: 130, r: 0.5, m: 0.2 });
+  }
+  L.rect(0.1, 0, 0.9, 0.22, { c: '#3c4248', h: 190, r: 0.4, m: 0.8 });
+  L.rect(0.1, 0.95, 0.9, 0.05, { c: '#3c4248', h: 200, r: 0.4, m: 0.8 });
+  L.rect(0.34, 1.42, 0.42, 0.42, { c: '#12232b', h: 60, r: 0.1, m: 0.1 });
+  L.rect(0.34, 1.42, 0.42, 0.02, { c: '#5fd8ff', h: 128, r: 0.3, m: 0 });
+  L.rect(0.34, 1.82, 0.42, 0.02, { c: '#5fd8ff', h: 128, r: 0.3, m: 0 });
+  L.rect(0.42, 1.12, 0.26, 0.09, { c: '#e8eaea', h: 175, r: 0.4, m: 0.1 });
+  L.rect(0.46, 1.145, 0.18, 0.012, { c: '#2b3035', h: 140, r: 0.5, m: 0 });
+  L.rect(0.46, 1.17, 0.12, 0.012, { c: '#2b3035', h: 140, r: 0.5, m: 0 });
+  L.rect(0.82, 0.55, 0.05, 0.3, { c: '#4a5157', h: 40, r: 0.5, m: 0.6 });
+  L.streaks(8, 0.03, 0.2, 0.7, { c: '#2a2f33', a: 0.14 });
+  L.speckle(200, 0.004, 0.012, { c: '#20262a', a: 0.3, jitter: 1 });
+  return L.finish(1.6, false);
+}
+
+const SIGN_NAMES = ['MEDBAY', 'CREW A', 'CREW B', 'GALLEY', 'WORKSHOP', 'CAPTAIN', 'HEAD', 'ENGINEERING', 'AIRLOCK', 'EVA', 'CARGO', 'BRIDGE'];
+/** One canvas holding every door sign; each sign is a 512 x 64 cell. */
+export function makeSignAtlas() {
+  const n = SIGN_NAMES.length;
+  const uvFor = (name) => {
+    const i = Math.max(0, SIGN_NAMES.indexOf(name));
+    const v0 = 1 - (i + 1) / n, v1 = 1 - i / n;
+    return [[0, v0], [1, v0], [1, v1], [0, v1]];
+  };
+  if (!HAS_DOM) return { material: new THREE.MeshBasicMaterial({ color: 0x3a2a12, vertexColors: true }), uvFor };
+  const c = document.createElement('canvas'); c.width = 512; c.height = 64 * n;
+  const g = c.getContext('2d');
+  SIGN_NAMES.forEach((name, i) => {
+    const y = i * 64;
+    g.fillStyle = '#10130f'; g.fillRect(0, y, 512, 64);
+    g.strokeStyle = '#ffb45a'; g.lineWidth = 4; g.strokeRect(5, y + 5, 502, 54);
+    g.fillStyle = '#ffb45a'; g.font = '700 40px ui-monospace, Consolas, monospace'; g.textBaseline = 'middle'; g.textAlign = 'center';
+    g.fillText(name, 266, y + 34);
+    g.fillRect(16, y + 20, 12, 24);
+    g.beginPath(); g.moveTo(34, y + 20); g.lineTo(50, y + 32); g.lineTo(34, y + 44); g.fill();
+  });
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return { material: new THREE.MeshBasicMaterial({ map: t, toneMapped: false, vertexColors: true }), uvFor };
+}
+
+/** A sheet of posters and photographs, 8 cells of 256 x 256. */
+export const POSTER_COUNT = 8;
+export function makePosterAtlas() {
+  const uvFor = (i) => {
+    const cx = i % 4, cy = Math.floor(i / 4);
+    const u0 = cx / 4, u1 = (cx + 1) / 4, v1 = 1 - cy / 2, v0 = 1 - (cy + 1) / 2;
+    return [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+  };
+  if (!HAS_DOM) return { material: new THREE.MeshStandardMaterial({ color: 0x9a8f7a, vertexColors: true }), uvFor };
+  const S = 256;
+  const c = document.createElement('canvas'); c.width = S * 4; c.height = S * 2;
+  const g = c.getContext('2d');
+  const cell = (i) => [(i % 4) * S, Math.floor(i / 4) * S];
+  const frame = (x, y, col) => { g.fillStyle = col; g.fillRect(x, y, S, S); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 8; g.strokeRect(x + 4, y + 4, S - 8, S - 8); };
+  { // 0: expedition poster
+    const [x, y] = cell(0); frame(x, y, '#20120c');
+    const gr = g.createRadialGradient(x + 128, y + 120, 10, x + 128, y + 120, 92);
+    gr.addColorStop(0, '#f0a070'); gr.addColorStop(0.6, '#c2603a'); gr.addColorStop(1, '#6a2a18');
+    g.fillStyle = gr; g.beginPath(); g.arc(x + 128, y + 120, 90, 0, 6.3); g.fill();
+    g.fillStyle = '#f0e2c8'; g.font = '700 26px Arial'; g.textAlign = 'center'; g.fillText('MARS EXPEDITION', x + 128, y + 236);
+    g.font = '500 14px Arial'; g.fillText('VALLES MARINERIS SURVEY', x + 128, y + 22);
+  }
+  { // 1: family photograph: silhouettes against a sunset
+    const [x, y] = cell(1); frame(x, y, '#e8dcc4');
+    const gr = g.createLinearGradient(0, y, 0, y + S); gr.addColorStop(0, '#5a6a9a'); gr.addColorStop(1, '#f2b27a');
+    g.fillStyle = gr; g.fillRect(x + 16, y + 16, S - 32, S - 32);
+    g.fillStyle = '#1e1a1c';
+    for (const [px, h] of [[70, 84], [104, 100], [142, 62], [176, 76]]) { g.beginPath(); g.arc(x + px, y + 156 - h, 15, 0, 6.3); g.fill(); g.fillRect(x + px - 14, y + 170 - h, 28, h - 10); }
+    g.fillRect(x + 16, y + 200, S - 32, 40);
+  }
+  { // 2: safety
+    const [x, y] = cell(2); frame(x, y, '#e6b422');
+    g.fillStyle = '#20232a'; g.font = '800 30px Arial'; g.textAlign = 'center';
+    g.fillText('CLEAR THE', x + 128, y + 76); g.fillText('RAMP BEFORE', x + 128, y + 116); g.fillText('LIFT-OFF', x + 128, y + 156);
+    for (let i = 0; i < 8; i++) g.fillRect(x + 20 + i * 28, y + 196, 14, 30);
+  }
+  { // 3: canyon map
+    const [x, y] = cell(3); frame(x, y, '#0d2733');
+    g.strokeStyle = '#5fd8ff'; g.lineWidth = 2;
+    for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(x + 20, y + 40 + i * 20); g.bezierCurveTo(x + 90, y + 20 + i * 24, x + 170, y + 90 + i * 8, x + 236, y + 60 + i * 16); g.stroke(); }
+    g.fillStyle = '#ffb45a'; g.fillRect(x + 118, y + 116, 14, 14);
+    g.fillStyle = '#d8f6ff'; g.font = '600 16px monospace'; g.textAlign = 'center'; g.fillText('WE ARE HERE', x + 128, y + 150);
+  }
+  { // 4: a child's crayon drawing of a ship and a red planet
+    const [x, y] = cell(4); frame(x, y, '#f4efe0');
+    g.strokeStyle = '#c23a2a'; g.lineWidth = 6; g.beginPath(); g.arc(x + 178, y + 70, 36, 0, 6.3); g.stroke();
+    g.strokeStyle = '#2f5fbf'; g.beginPath(); g.moveTo(x + 40, y + 170); g.lineTo(x + 120, y + 150); g.lineTo(x + 170, y + 170); g.lineTo(x + 120, y + 190); g.closePath(); g.stroke();
+    g.strokeStyle = '#e6a020'; g.beginPath(); g.moveTo(x + 40, y + 170); g.lineTo(x + 8, y + 160); g.moveTo(x + 40, y + 170); g.lineTo(x + 10, y + 180); g.stroke();
+    g.fillStyle = '#2b2b2b'; g.font = '600 22px cursive'; g.textAlign = 'center'; g.fillText('DAD FLYS HERE', x + 128, y + 230);
+  }
+  { // 5: assay chart
+    const [x, y] = cell(5); frame(x, y, '#dfe6ea');
+    for (let r = 0; r < 5; r++) for (let q = 0; q < 8; q++) { g.fillStyle = ['#8fb8d8', '#d8a86a', '#9ec59a', '#c78f8f'][(r + q) % 4]; g.fillRect(x + 18 + q * 27, y + 30 + r * 34, 24, 30); }
+    g.fillStyle = '#20232a'; g.font = '700 16px Arial'; g.textAlign = 'center'; g.fillText('REGOLITH ASSAY', x + 128, y + 232);
+  }
+  { // 6: airlock procedure
+    const [x, y] = cell(6); frame(x, y, '#20272d');
+    g.fillStyle = '#e85d2a'; g.fillRect(x + 16, y + 16, S - 32, 34);
+    g.fillStyle = '#fff'; g.font = '800 22px Arial'; g.textAlign = 'center'; g.fillText('AIRLOCK CYCLE', x + 128, y + 41);
+    g.fillStyle = '#d8dee2'; g.font = '500 17px monospace'; g.textAlign = 'left';
+    ['1 SEAL INNER', '2 PUMP DOWN', '3 OPEN OUTER', '4 EXIT', '5 REPEAT IN'].forEach((t, i) => g.fillText(t, x + 30, y + 92 + i * 28));
+  }
+  { // 7: hydrate
+    const [x, y] = cell(7); frame(x, y, '#2a6fa8');
+    g.fillStyle = '#e8f6ff'; g.beginPath(); g.moveTo(x + 128, y + 40); g.bezierCurveTo(x + 200, y + 120, x + 190, y + 190, x + 128, y + 190); g.bezierCurveTo(x + 66, y + 190, x + 56, y + 120, x + 128, y + 40); g.fill();
+    g.font = '800 26px Arial'; g.textAlign = 'center'; g.fillText('DRINK WATER', x + 128, y + 232);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return { material: new THREE.MeshStandardMaterial({ map: t, roughness: 0.7, metalness: 0, vertexColors: true }), uvFor };
 }
 
 /** Small tileable scratched-metal detail for props. */
@@ -414,13 +540,14 @@ export function makeShipMaterials(o = {}) {
     for (const style of Object.keys(PALETTE)) {
       tex['wall:' + style] = paintWall(style, px, seed++, style === 'cargo');
     }
-    tex['floor:grate'] = paintFloor('grate', px * 0.6, 31);
-    tex['floor:deck'] = paintFloor('deck', px * 0.6, 32);
+    tex['floor:grate'] = paintFloor('grate', px * 1.0, 31);
+    tex['floor:deck'] = paintFloor('deck', px * 1.0, 32);
     tex['floor:carpet'] = paintFloor('carpet', px * 0.45, 33);
     tex['floor:med'] = paintFloor('med', px * 0.5, 34);
     tex['floor:bridge'] = paintFloor('bridge', px * 0.5, 35);
     tex['ceil'] = paintCeiling(px * 0.6, 41);
     tex['hull'] = paintHull(pxHull, 51);
+    tex['door'] = paintDoor(px * 0.8, 71);
     tex['metalDark'] = paintMetal(px * 0.5, 61, '#454c52');
     tex['metalBright'] = paintMetal(px * 0.5, 62, '#a4acb2');
     tex['fabricBlue'] = paintFabric(px * 0.6, 63, '#39506b');
@@ -478,7 +605,11 @@ export function makeShipMaterials(o = {}) {
   mats.paint = plain(0xffffff, 0.5, 0.06);
   mats.fabric = withNormal(plain(0xffffff, 1, 0), tex.fabricGrey, 0.7, true);
   mats.glow = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, toneMapped: false });
-  mats.door = withNormal(new THREE.MeshStandardMaterial({ color: 0xa6adb2, roughness: 1, metalness: 1 }), tex.metalBright, 0.7);
+  mats.door = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 1 });
+  if (tex.door) {
+    mats.door.map = tex.door.albedo; mats.door.normalMap = tex.door.normal;
+    mats.door.roughnessMap = tex.door.orm; mats.door.metalnessMap = tex.door.orm; mats.door.normalScale = new THREE.Vector2(0.8, 0.8);
+  } else mats.door.color.setHex(0xa6adb2);
   mats.counter = plain(0x2b3237, 0.35, 0.3);
 
   // Emissives (never lit, never tone mapped, so they read as light sources)

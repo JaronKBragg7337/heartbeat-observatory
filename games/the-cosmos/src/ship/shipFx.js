@@ -240,10 +240,10 @@ export class ShipFx {
       this._p.set(b.x - cam.x, b.y - cam.y, b.z - cam.z);
       this._m4.compose(this._p, this._q, this._s);
       this.bolts.setMatrixAt(n, this._m4);
-      const hot = b.gun === 'main' ? this._col.setRGB(3.0, 1.5, 0.5) : this._col.setRGB(0.6, 2.2, 3.0);
+      const hot = b.gun === 'main' ? this._col.setRGB(3.0, 1.5, 0.5) : b.gun === 'enemy' ? this._col.setRGB(3.2, 0.35, 0.3) : this._col.setRGB(0.6, 2.2, 3.0);
       this.bolts.setColorAt(n, hot);
       // glow sprite
-      this.glow.emit({ x: b.x, y: b.y, z: b.z, life: 0.05, size0: 2.6, size1: 2.6, c0: b.gun === 'main' ? [1, 0.6, 0.2] : [0.3, 0.8, 1], alpha: 0.7 });
+      this.glow.emit({ x: b.x, y: b.y, z: b.z, life: 0.05, size0: 2.6, size1: 2.6, c0: b.gun === 'main' ? [1, 0.6, 0.2] : b.gun === 'enemy' ? [1, 0.25, 0.2] : [0.3, 0.8, 1], alpha: 0.7 });
       n++;
     }
     this.bolts.count = n;
@@ -293,4 +293,73 @@ export function buildTargetMesh() {
   g.userData.discMat = discMat;
   g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return g;
+}
+
+
+// ---------------------------------------------------------------------------
+// A hostile drone: a flat armoured disc with a red eye and four rotor pods.
+// ---------------------------------------------------------------------------
+export function buildDroneMesh() {
+  const g = new THREE.Group();
+  const dark = new THREE.MeshStandardMaterial({ color: 0x33383d, roughness: 0.4, metalness: 0.85 });
+  const plate = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.45, metalness: 0.7 });
+  const eye = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.15, 0.1).multiplyScalar(2.2), toneMapped: false });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1.15, 20, 12), plate);
+  body.scale.set(1, 0.5, 1);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.11, 8, 28), dark);
+  ring.rotation.x = Math.PI / 2;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 0.22, 16), dark);
+  cap.position.y = 0.5;
+  const lens = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 10), eye);
+  lens.position.set(0, -0.06, -1.02);
+  const rotors = new THREE.Group();
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.4, 6), dark);
+    arm.rotation.z = Math.PI / 2; arm.rotation.y = -a;
+    arm.position.set(Math.cos(a) * 1.5, 0.05, Math.sin(a) * 1.5);
+    const rotor = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.04, 20), new THREE.MeshBasicMaterial({ color: 0x9aa4ac, transparent: true, opacity: 0.28, depthWrite: false }));
+    rotor.position.set(Math.cos(a) * 2.1, 0.25, Math.sin(a) * 2.1);
+    rotors.add(arm, rotor);
+  }
+  g.add(body, ring, cap, lens, rotors);
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+  g.userData.eye = eye;
+  g.userData.rotors = rotors;
+  return g;
+}
+
+// ---------------------------------------------------------------------------
+// The shield: invisible until something hits it, then a ripple that spreads out
+// from the point of impact across an ellipsoid the size of the hull.
+// ---------------------------------------------------------------------------
+export function buildShieldMesh() {
+  const geo = new THREE.SphereGeometry(1, 40, 24);
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    uniforms: { uFlash: { value: 0 }, uHit: { value: new THREE.Vector3() }, uColor: { value: new THREE.Color(0.25, 0.75, 1.0) }, uStrength: { value: 1 }, uTime: { value: 0 } },
+    vertexShader: `
+      varying vec3 vN; varying vec3 vP; varying vec3 vV;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); vP = position;
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying vec3 vN; varying vec3 vP; varying vec3 vV;
+      uniform float uFlash; uniform vec3 uHit; uniform vec3 uColor; uniform float uStrength; uniform float uTime;
+      void main() {
+        float fres = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.5);
+        float d = distance(normalize(vP), normalize(uHit));
+        float ring = exp(-pow((d - (1.0 - uFlash) * 1.8) * 5.0, 2.0)) * uFlash;
+        float hex = 0.5 + 0.5 * sin(vP.x * 40.0 + uTime) * sin(vP.y * 40.0) * sin(vP.z * 40.0 - uTime);
+        float a = (fres * 0.35 + ring * 1.6) * uStrength * (0.6 + 0.4 * hex) + uFlash * 0.08;
+        gl_FragColor = vec4(uColor * a, a);
+      }`,
+  });
+  const m = new THREE.Mesh(geo, mat);
+  m.scale.set(15.5, 10.5, 28);
+  m.position.set(0, 3.2, 0.5);
+  m.renderOrder = 7; m.visible = false; m.frustumCulled = false;
+  return m;
 }

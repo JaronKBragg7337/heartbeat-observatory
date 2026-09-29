@@ -17,7 +17,7 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
   const { ShipWalker, shipIndex, defaultState } = await imp('src/ship/shipWalker.js');
   const { ShipBody } = await imp('src/ship/shipFlight.js');
   const { Stations } = await imp('src/ship/shipStations.js');
-  const { GunSystem } = await imp('src/ship/guns.js');
+  const { GunSystem, DroneSystem } = await imp('src/ship/guns.js');
   const { findLandingSite, siteOrigin } = await imp('src/ship/shipSite.js');
   const { makeShipMaterials } = await imp('src/ship/shipTextures.js');
   const { buildInterior, buildSeats } = await imp('src/ship/shipInterior.js');
@@ -66,7 +66,7 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     const bad = [];
     for (let i = 0; i < L.props.length; i++) for (let j = i + 1; j < L.props.length; j++) {
       const a = L.props[i], b = L.props[j];
-      if (a.room !== b.room) continue;
+      if (a.room !== b.room || !a.blocks || !b.blocks) continue;
       const A = SPEC.propBox(a), B = SPEC.propBox(b);
       const ov = A.x0 < B.x1 - 0.02 && B.x0 < A.x1 - 0.02 && A.z0 < B.z1 - 0.02 && B.z0 < A.z1 - 0.02 && A.y0 < B.y1 - 0.02 && B.y0 < A.y1 - 0.02;
       if (ov) bad.push(`${a.kind}/${b.kind}@${a.room}`);
@@ -419,13 +419,74 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     check('routing power to the guns raises their rate of fire', hi > lo * 1.5, `${lo} shots in 2 s at 10%, ${hi} at 60%`);
     const st3 = new Stations(s); const g3 = new GunSystem(s, st3, groundF);
     st3.sit({ x: 0.2, y: 6.0, z: 2.8 });
-    const tgt = { x: eye.x + fwd.x * 150, y: eye.y + fwd.y * 150, z: eye.z + fwd.z * 150 };
+    // a target on a level line of sight, well clear of the ground
+    const lvl = s.dirToWorld({ x: 0, y: 0.03, z: -1 }, {});
+    const ll = Math.hypot(lvl.x, lvl.y, lvl.z); lvl.x /= ll; lvl.y /= ll; lvl.z /= ll;
+    const tgt = { x: eye.x + lvl.x * 150, y: eye.y + lvl.y * 150, z: eye.z + lvl.z * 150 };
     g3.addTarget({ id: 'T1', pos: tgt, radius: 3 });
-    const noMain = g3.fire('main', fwd, eye), dors = g3.fire('dorsal', fwd, eye);
+    const noMain = g3.fire('main', lvl, eye), dors = g3.fire('dorsal', lvl, eye);
     check('the dorsal seat fires the dorsal turret and not the main guns', noMain === 0 && dors === 1);
     let targetHit = false;
     for (let i = 0; i < 60 * 3 && !targetHit; i++) { g3.update(1 / 60); if (g3.events.some((e) => e.type === 'target_hit')) targetHit = true; }
     check('a bolt aimed at a practice target hits it and damages it', targetHit && g3.targets[0].hp < 100, `hp ${g3.targets[0].hp}`);
+  }
+
+  // ---- shields, hull and drones ------------------------------------------------------------------
+  section('9e2. Shields take the hit first; drones only fight a ship that is in the air');
+  {
+    const s = makeShip();
+    s.shield = 50;
+    const a = s.takeHit(22);
+    const afterA = { shield: s.shield, hull: s.hull };
+    const b = s.takeHit(60);
+    check('a hit spends the shield first, and only what is left of it reaches the hull',
+      a.absorbed === 22 && afterA.shield === 28 && afterA.hull === 100 && b.absorbed === 28 && s.shield === 0 && Math.abs(s.hull - (100 - 32 * 0.25)) < 1e-9,
+      `after first hit ${JSON.stringify(afterA)}, after second shield ${s.shield} hull ${s.hull}`);
+    const strong = makeShip(); strong.setPowerSplit(20, 20, 60);
+    const weak = makeShip(); weak.setPowerSplit(60, 30, 10);
+    check('routing power to the shields makes them a bigger buffer', strong.shieldMax > 2.5 * weak.shieldMax, `${strong.shieldMax.toFixed(0)} vs ${weak.shieldMax.toFixed(0)}`);
+    const dmg = makeShip(); dmg.hull = 20;
+    check('a battered hull gives up thrust: at 20% integrity the lift thrusters are weaker',
+      dmg.maxLiftN < 0.9 * makeShip().maxLiftN, `${(dmg.maxLiftN / 1000).toFixed(0)} kN`);
+  }
+  {
+    const s = makeShip();
+    const st = new Stations(s);
+    const guns = new GunSystem(s, st, groundF);
+    const drones = new DroneSystem(s, guns, groundF);
+    const up = { x: s.pos.x / Math.hypot(s.pos.x, s.pos.y, s.pos.z), y: s.pos.y / Math.hypot(s.pos.x, s.pos.y, s.pos.z), z: s.pos.z / Math.hypot(s.pos.x, s.pos.y, s.pos.z) };
+    const fwd = s.dirToWorld({ x: 0, y: 0, z: -1 }, {});
+    const anchor = { x: s.pos.x + fwd.x * 300 + up.x * 70, y: s.pos.y + fwd.y * 300 + up.y * 70, z: s.pos.z + fwd.z * 300 + up.z * 70 };
+    const d = drones.add('D1', anchor);
+    let firedGrounded = 0;
+    for (let i = 0; i < 60 * 12; i++) { drones.update(1 / 60); s.step(1 / 60); firedGrounded += drones.drain().filter((e) => e.type === 'drone_fire').length; }
+    check('a drone leaves a parked ship alone', firedGrounded === 0 && d.state === 'idle', `${firedGrounded} shots fired at a landed ship`);
+    s.controls.lift = 1;
+    for (let i = 0; i < 60 * 6; i++) s.step(1 / 60);
+    s.controls.lift = 0;
+    let fired = 0, hits = 0, shieldSeen = s.shield;
+    for (let i = 0; i < 60 * 40; i++) {
+      s.step(1 / 60); drones.update(1 / 60);
+      for (const e of drones.drain()) { if (e.type === 'drone_fire') fired++; if (e.type === 'ship_hit') hits++; }
+      shieldSeen = Math.min(shieldSeen, s.shield);
+    }
+    check('once the ship is airborne the drone attacks: it fires, its bolts hit, and the shield takes the damage',
+      fired >= 3 && hits >= 1 && shieldSeen < s.shieldMax - 15, `${fired} shots, ${hits} hits, shield ${shieldSeen.toFixed(0)}/${s.shieldMax.toFixed(0)}`);
+    // and it can be shot down from the captain's chair
+    st.sit({ x: 0, y: 6.2, z: -14.3 });
+    const eye = s.toWorld({ x: 0, y: 7.3, z: -15.1 }, {});
+    let down = false;
+    for (let i = 0; i < 60 * 20 && !down; i++) {
+      const dx = d.pos.x - eye.x, dy = d.pos.y - eye.y, dz = d.pos.z - eye.z, dl = Math.hypot(dx, dy, dz);
+      const dirW = { x: dx / dl, y: dy / dl, z: dz / dl };
+      const inv = s.quaternion.clone().invert();
+      const local = new THREE.Vector3(dirW.x, dirW.y, dirW.z).applyQuaternion(inv);
+      guns.point('main', { x: local.x, y: local.y, z: local.z });
+      guns.fire('main', dirW, eye);
+      guns.update(1 / 60); drones.update(1 / 60); s.step(1 / 60);
+      for (const e of guns.drain()) if (e.type === 'target_down' && e.id === 'D1') down = true;
+    }
+    check('the main guns can shoot a drone down', down, `drone hp ${d.target.hp}`);
   }
 
   // ---- 9f. Geometry and identity -----------------------------------------------------------------------

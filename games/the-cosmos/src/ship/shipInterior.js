@@ -154,7 +154,7 @@ export function buildInterior(layout, mats, opts = {}) {
   const out = {
     root, rooms: new Map(), roomList: [], doors: [], screens: [], seatGroups: new Map(),
     animated: {}, lights: [], holo: null, reactorCore: null, triangles: 0,
-    signAtlas: opts.signMaterial || null,
+    signAtlas: opts.signMaterial || null, low,
   };
   const rooms = layout.rooms;
   const doorsByRoom = new Map();
@@ -211,7 +211,7 @@ export function buildInterior(layout, mats, opts = {}) {
     // greebles: junction boxes, conduits, vents
     greeble(k, layout, r, rnd, low);
 
-    const g = k.toGroup(mats, { name: 'room:' + r.id });
+    const g = k.toGroup(mats, { name: 'room:' + r.id, cast: !low, receive: !low });
     g.userData.roomId = r.id;
     out.triangles += k.triangles;
     root.add(g);
@@ -236,7 +236,7 @@ export function buildInterior(layout, mats, opts = {}) {
     const k = new Kit();
     k.tiles = { 'floor:deck': 2, ceil: 1.5, steel: 1, steelDark: 1, gunmetal: 1 };
     buildStairs(k, layout);
-    const g = k.toGroup(mats, { name: 'stairs' });
+    const g = k.toGroup(mats, { name: 'stairs', cast: !low, receive: !low });
     out.triangles += k.triangles;
     out.rooms.get('corridor_main').add(g);
     out.stairs = g;
@@ -261,6 +261,7 @@ export function buildInterior(layout, mats, opts = {}) {
       const lw = leaves === 2 ? d.w / 2 + 0.02 : d.w + 0.06;
       const geo = new THREE.BoxGeometry(d.axis === 'x' ? 0.06 : lw, d.h - 0.02, d.axis === 'x' ? lw : 0.06);
       const mesh = new THREE.Mesh(geo, mats.door);
+      mesh.castShadow = !low; mesh.receiveShadow = !low;
       mesh.userData.leafW = lw;
       dl.leaves.push(mesh);
       dl.group.add(mesh);
@@ -272,37 +273,64 @@ export function buildInterior(layout, mats, opts = {}) {
     dl.roomGroup = roomGroup;
   }
 
-  // --- Signs above the doors, on the corridor side. ---------------------------------
-  if (false && opts.signs) {
+  // --- Signs above the doors, on the wall you approach it from. ----------------------
+  if (opts.signs) {
     const k = new Kit();
     k.tiles = { sign: 1 };
-    const list = layout.doors.filter((d) => d.sign);
-    list.forEach((d, i) => {
-      const uv0 = opts.signs.uvFor(d.sign, i);
-      const nx = d.axis === 'x';
-      const side = (d.a === 'corridor_main' || d.a === 'engineering' || d.a === 'corridor_low' || d.a === 'cabin') ? 1 : -1;
-      // the sign hangs on the face of the wall the door is seen from
-      const px = nx ? d.at + (d.a === 'corridor_main' ? (d.at < 0 ? 0.11 : -0.11) : 0) : d.c;
-      const pz = nx ? d.c : d.at + (d.a === 'engineering' ? -0.11 : 0.11);
-      const w = 0.62, h = 0.13, y = d.y + d.h + 0.2;
-      let pts;
-      if (nx) {
-        const face = d.at < 0 ? 1 : -1;               // toward the corridor
-        const x = d.at + face * (d.a === 'corridor_main' || d.b === 'corridor_main' ? 0.105 : 0.105);
-        pts = face > 0
-          ? [[x, y - h / 2, d.c + w / 2], [x, y - h / 2, d.c - w / 2], [x, y + h / 2, d.c - w / 2], [x, y + h / 2, d.c + w / 2]]
-          : [[x, y - h / 2, d.c - w / 2], [x, y - h / 2, d.c + w / 2], [x, y + h / 2, d.c + w / 2], [x, y + h / 2, d.c - w / 2]];
+    for (const d of layout.doors.filter((q) => q.sign)) {
+      const faceRoom = layout.roomById.get(d.signFace === 'b' ? d.b : d.a);
+      if (!faceRoom) continue;
+      const w = 0.72, h = 0.17, y = d.y + d.h + 0.22;
+      const uv = opts.signs.uvFor(d.sign);
+      if (d.axis === 'x') {
+        const cR = (faceRoom.x0 + faceRoom.x1) / 2;
+        const n = cR > d.at ? 1 : -1;
+        const x = d.at + 0.1 * n + 0.012 * n;
+        // right-hand direction for a viewer looking at the wall: up x normal = (0,0,-n)
+        const rz = -n;
+        const pts = [[x, y - h / 2, d.c - rz * w / 2], [x, y - h / 2, d.c + rz * w / 2], [x, y + h / 2, d.c + rz * w / 2], [x, y + h / 2, d.c - rz * w / 2]];
+        k._faceQuadUV('sign', pts, [n, 0, 0], uv);
       } else {
-        const face = (d.a === 'engineering' || d.a === 'cabin') ? 1 : -1;
-        const z = d.at + face * 0.105;
-        pts = face > 0
-          ? [[d.c - w / 2, y - h / 2, z], [d.c + w / 2, y - h / 2, z], [d.c + w / 2, y + h / 2, z], [d.c - w / 2, y + h / 2, z]]
-          : [[d.c + w / 2, y - h / 2, z], [d.c - w / 2, y - h / 2, z], [d.c - w / 2, y + h / 2, z], [d.c + w / 2, y + h / 2, z]];
+        const cR = (faceRoom.z0 + faceRoom.z1) / 2;
+        const n = cR > d.at ? 1 : -1;
+        const z = d.at + 0.1 * n + 0.012 * n;
+        const rx = n;                       // up x (0,0,n) = (n,0,0)
+        const pts = [[d.c - rx * w / 2, y - h / 2, z], [d.c + rx * w / 2, y - h / 2, z], [d.c + rx * w / 2, y + h / 2, z], [d.c - rx * w / 2, y + h / 2, z]];
+        k._faceQuadUV('sign', pts, [0, 0, n], uv);
       }
-      k.poly('sign', pts, uv0);
-    });
-    const g = k.toGroup({ sign: opts.signs.material }, { name: 'signs' });
-    root.add(g);
+    }
+    root.add(k.toGroup({ sign: opts.signs.material }, { name: 'signs' }));
+  }
+
+  // --- Posters and photographs. ---------------------------------------------------------
+  if (opts.posters) {
+    for (const r of rooms) {
+      const list = (layout.posters || []).filter((q) => q.room === r.id);
+      if (!list.length) continue;
+      const k = new Kit();
+      k.tiles = { poster: 1 };
+      for (const P of list) {
+        const uv = opts.posters.uvFor(P.idx);
+        const y = P.y, w = P.w, h = P.h;
+        let pts, nrm;
+        const off = 0.012;
+        if (P.wall === 'x0') { nrm = [1, 0, 0]; const x = r.x0 + off; pts = [[x, y - h / 2, P.u + w / 2], [x, y - h / 2, P.u - w / 2], [x, y + h / 2, P.u - w / 2], [x, y + h / 2, P.u + w / 2]]; }
+        else if (P.wall === 'x1') { nrm = [-1, 0, 0]; const x = r.x1 - off; pts = [[x, y - h / 2, P.u - w / 2], [x, y - h / 2, P.u + w / 2], [x, y + h / 2, P.u + w / 2], [x, y + h / 2, P.u - w / 2]]; }
+        else if (P.wall === 'z0') { nrm = [0, 0, 1]; const z = r.z0 + off; pts = [[P.u - w / 2, y - h / 2, z], [P.u + w / 2, y - h / 2, z], [P.u + w / 2, y + h / 2, z], [P.u - w / 2, y + h / 2, z]]; }
+        else { nrm = [0, 0, -1]; const z = r.z1 - off; pts = [[P.u + w / 2, y - h / 2, z], [P.u - w / 2, y - h / 2, z], [P.u - w / 2, y + h / 2, z], [P.u + w / 2, y + h / 2, z]]; }
+        k._faceQuadUV('poster', pts, nrm, uv);
+        // a slim frame
+        const fr = 0.02;
+        k.tiles.metal = 1;
+        const fx = P.wall === 'x0' ? r.x0 + 0.006 : P.wall === 'x1' ? r.x1 - 0.006 : null;
+        const fz = P.wall === 'z0' ? r.z0 + 0.006 : P.wall === 'z1' ? r.z1 - 0.006 : null;
+        if (fx !== null) { k.bevelBox('steelDark', fx, y, P.u, 0.012, h + fr * 2, w + fr * 2, 0.004); }
+        else { k.bevelBox('steelDark', P.u, y, fz, w + fr * 2, h + fr * 2, 0.012, 0.004); }
+      }
+      // frames belong to 'metal', posters to 'poster'
+      const g = k.toGroup({ poster: opts.posters.material, metal: mats.metal }, { name: 'posters:' + r.id });
+      out.rooms.get(r.id).add(g);
+    }
   }
 
   return out;
@@ -581,11 +609,12 @@ function drawLadder(k, L) {
 
 /** Build the seats. Each is its own Group so it can be measured and hidden. */
 export function buildSeats(layout, mats, interior) {
+  const low = !!interior.low;
   for (const s of layout.seats) {
     const k = new Kit();
     const variant = { captain: 'captain', pilot: 'pilot', nav: 'swivel', comms: 'swivel', engineer: 'swivel', gun_dorsal: 'gunner', gun_ventral: 'gunner' }[s.id];
     SEAT_DRAW[variant](k);
-    const g = k.toGroup(mats, { name: 'seat:' + s.id });
+    const g = k.toGroup(mats, { name: 'seat:' + s.id, cast: !low, receive: !low });
     g.position.set(s.x, s.y, s.z);
     g.rotation.y = -s.yaw * Math.PI / 180;
     g.userData.seatId = s.id;

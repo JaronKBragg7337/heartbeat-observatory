@@ -210,6 +210,38 @@ export class Kit {
     this.poly(key, dot >= 0 ? pts : pts.slice().reverse(), null, col);
   }
 
+  /**
+   * A slab with a bevelled top edge: a polygon in plan (x,z), CCW seen from ABOVE,
+   * standing from y0 to y1. The top polygon is pulled in by `inset` and the last
+   * `bevel` metres of height slope to meet it, so a wing or a plate catches light
+   * on its edge instead of ending in a razor-flat square.
+   */
+  prism(key, plan, y0, y1, inset = 0.12, bevel = 0.12, col) {
+    const n = plan.length;
+    const yb = Math.max(y0, y1 - bevel);
+    // centroid, for pulling the top face in
+    let cx = 0, cz = 0;
+    for (const p of plan) { cx += p[0]; cz += p[1]; }
+    cx /= n; cz /= n;
+    const top = plan.map((p) => {
+      const dx = p[0] - cx, dz = p[1] - cz, l = Math.hypot(dx, dz) || 1;
+      const k = Math.max(0, l - inset) / l;
+      return [cx + dx * k, cz + dz * k];
+    });
+    // bottom cap (faces down) and top cap (faces up)
+    this._faceQuadUV(key, plan.map((p) => [p[0], y0, p[1]]), [0, -1, 0], null);
+    this._faceQuadUV(key, top.map((p) => [p[0], y1, p[1]]), [0, 1, 0], null);
+    for (let i = 0; i < n; i++) {
+      const a = plan[i], b = plan[(i + 1) % n], ta = top[i], tb = top[(i + 1) % n];
+      // outward normal of this edge in plan: for a CCW polygon seen from above it is (dz, -dx)
+      const ex = b[0] - a[0], ez = b[1] - a[1];
+      const nl = Math.hypot(ex, ez) || 1;
+      const nx = ez / nl, nz = -ex / nl;
+      if (yb > y0 + 1e-4) this._faceQuadUV(key, [[a[0], y0, a[1]], [b[0], y0, b[1]], [b[0], yb, b[1]], [a[0], yb, a[1]]], [nx, 0, nz], null);
+      this._faceQuadUV(key, [[a[0], yb, a[1]], [b[0], yb, b[1]], [tb[0], y1, tb[1]], [ta[0], y1, ta[1]]], [nx, 0.7, nz], null);
+    }
+  }
+
   // ---- round things --------------------------------------------------------------
   /**
    * Cylinder or cone frustum along an axis. Smooth normals.

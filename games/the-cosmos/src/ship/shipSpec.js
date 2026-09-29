@@ -99,7 +99,7 @@ function door(id, a, b, axis, at, c, o = {}) {
   doors.push({
     id, a, b, axis, at, c,
     w: o.w ?? 1.0, h: o.h ?? 2.1, y: o.y ?? DECK[o.deck || 'main'],
-    kind: o.kind || 'slide', sign: o.sign || null, noZone: !!o.noZone,
+    kind: o.kind || 'slide', sign: o.sign || null, signFace: o.signFace || 'a', noZone: !!o.noZone,
   });
 }
 // main deck, corridor to rooms
@@ -115,7 +115,7 @@ door('d_head',    'cabin',         'head',     'z',  5.9,  3.3, { sign: 'HEAD', 
 door('d_stair_up_lo', 'corridor_main', 'stair_up', 'z', -8.9, 0, { kind: 'open', w: 1.2, h: 2.7 });
 door('d_stair_up_hi', 'stair_up',      'bridge',   'z', -13.4, 0, { kind: 'open', w: 1.2, h: 2.7, y: 6.0, noZone: true });
 // lower deck
-door('d_eng_fore', 'engineering', 'corridor_low', 'z', -7.1, 0, { deck: 'lower', sign: 'ENGINEERING' });
+door('d_eng_fore', 'engineering', 'corridor_low', 'z', -7.1, 0, { deck: 'lower', sign: 'ENGINEERING', signFace: 'b' });
 door('d_airlock_in',  'corridor_low', 'airlock',   'x', -0.9, -10.8, { deck: 'lower', sign: 'AIRLOCK' });
 door('d_evalocker',   'corridor_low', 'evalocker', 'x',  0.9, -10.8, { deck: 'lower', sign: 'EVA' });
 door('d_ventral',     'corridor_low', 'ventral',   'z', -13.8, 0,   { deck: 'lower', kind: 'open', w: 1.2, h: 2.4 });
@@ -286,6 +286,19 @@ prop('toilet', 'head', 2.2, 8.65, 0.5, 0.7, 0.42, 2);
 prop('sink',   'head', 3.3, 8.75, 0.6, 0.45, 0.95, 2);
 prop('shower', 'head', 5.75, 8.45, 1.0, 1.0, 2.2, 0);
 
+// rugs, extinguishers, first aid: things that make a room look lived in. None of them is in the way.
+prop('rug', 'crew_a', -3.5, -1.0, 2.6, 1.7, 0.02, 0, { blocks: false });
+prop('rug', 'crew_b', 3.7, 0.1, 2.6, 1.7, 0.02, 0, { blocks: false });
+prop('rug', 'cabin', 3.6, 4.2, 2.2, 1.5, 0.02, 0, { blocks: false });
+prop('rug', 'medbay', -3.4, -6.1, 2.2, 1.6, 0.02, 0, { blocks: false, extra: { tone: 'med' } });
+prop('extinguisher', 'corridor_main', -0.72, -4.0, 0.16, 0.16, 0.5, 1, { blocks: false, y: 4.3 });
+prop('extinguisher', 'corridor_main', 0.72, 2.0, 0.16, 0.16, 0.5, 3, { blocks: false, y: 4.3 });
+prop('firstaid', 'corridor_main', 0.74, -2.6, 0.3, 0.12, 0.3, 3, { blocks: false, y: 4.4 });
+prop('firstaid', 'corridor_low', -0.74, -9.5, 0.3, 0.12, 0.3, 1, { blocks: false, y: 1.4 });
+prop('extinguisher', 'corridor_low', 0.72, -12.0, 0.16, 0.16, 0.5, 3, { blocks: false, y: 1.3 });
+prop('extinguisher', 'engineering', 6.3, 6.8, 0.16, 0.16, 0.5, 3, { blocks: false, y: 1.2 });
+prop('extinguisher', 'cargo', 5.7, 19.4, 0.16, 0.16, 0.5, 3, { blocks: false, y: 1.2 });
+
 // engineering
 prop('reactor', 'engineering', 0.0, -0.8, 3.6, 3.6, 2.7, 0, { extra: { radius: 1.25 } });
 prop('console', 'engineering', 6.05, -3.2, 2.4, 0.6, 1.15, 3, { extra: { screens: 2, station: 'engineer' } });
@@ -337,6 +350,24 @@ prop('locker', 'bridge',  3.3, -13.7, 0.6, 0.5, 2.0, 2);
 
 // dorsal turret nest
 prop('console', 'nest', -0.9, 3.6, 0.8, 0.5, 1.0, 2, { extra: { decorative: true } });
+
+// Posters and photographs on the walls. wall: which face of the room; u: position along it.
+export const POSTERS = [
+  { room: 'crew_a', wall: 'z0', u: -3.7, y: 4.8, w: 0.62, h: 0.62, idx: 0 },
+  { room: 'crew_a', wall: 'x1', u: 0.7, y: 4.75, w: 0.5, h: 0.5, idx: 1 },
+  { room: 'crew_b', wall: 'x0', u: 1.5, y: 4.7, w: 0.5, h: 0.5, idx: 4 },
+  { room: 'crew_b', wall: 'z0', u: 3.9, y: 4.8, w: 0.6, h: 0.6, idx: 7 },
+  { room: 'medbay', wall: 'z1', u: -3.4, y: 4.7, w: 0.6, h: 0.6, idx: 7 },
+  { room: 'galley', wall: 'z1', u: 3.4, y: 4.8, w: 0.7, h: 0.7, idx: 0 },
+  { room: 'galley', wall: 'z0', u: 2.6, y: 4.8, w: 0.6, h: 0.6, idx: 3 },
+  { room: 'workshop', wall: 'z1', u: -5.3, y: 4.8, w: 0.6, h: 0.6, idx: 5 },
+  { room: 'workshop', wall: 'z0', u: -4.4, y: 4.7, w: 0.6, h: 0.6, idx: 2 },
+  { room: 'cabin', wall: 'z0', u: 4.1, y: 4.75, w: 0.6, h: 0.6, idx: 1 },
+  { room: 'engineering', wall: 'x0', u: 7.6, y: 1.9, w: 0.7, h: 0.7, idx: 2 },
+  { room: 'airlock', wall: 'z1', u: -3.5, y: 1.7, w: 0.62, h: 0.62, idx: 6 },
+  { room: 'evalocker', wall: 'z1', u: 3.5, y: 1.7, w: 0.62, h: 0.62, idx: 2 },
+  { room: 'cargo', wall: 'x1', u: 15.5, y: 2.0, w: 0.8, h: 0.8, idx: 2 },
+];
 
 // ---------------------------------------------------------------------------
 // Ceiling lights. Real fixtures; the renderer pools a few point lights over
@@ -437,7 +468,7 @@ export const SHIP_PHYS = {
 // ---------------------------------------------------------------------------
 export function buildLayout() {
   const roomById = new Map(rooms.map((r) => [r.id, r]));
-  return { rooms, roomById, doors, props, lights, stairs: STAIRS, ramps: RAMPS, ladders: LADDERS,
+  return { rooms, roomById, doors, props, lights, posters: POSTERS, stairs: STAIRS, ramps: RAMPS, ladders: LADDERS,
            seats: SEATS, panels: PANELS, extraZones: EXTRA_ZONES, gear: GEAR, guns: GUNS };
 }
 

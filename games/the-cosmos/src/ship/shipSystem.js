@@ -24,12 +24,13 @@ import { buildLayout, SHIP_ID, SHIP_NAME, SHIP_PHYS, GEAR, RAMPS, SEATS, PANELS,
 import { ShipWalker, shipIndex, defaultState } from './shipWalker.js';
 import { ShipBody } from './shipFlight.js';
 import { Stations } from './shipStations.js';
-import { GunSystem } from './guns.js';
-import { makeShipMaterials, applyEnvironment } from './shipTextures.js';
+import { GunSystem, DroneSystem } from './guns.js';
+import { makeShipMaterials, applyEnvironment, makeSignAtlas, makePosterAtlas } from './shipTextures.js';
 import { buildInterior, buildSeats } from './shipInterior.js';
 import { buildExterior, decalCanvasTexture, applyNeutralPose, HULL_STATIONS } from './shipExterior.js';
 import { ShipScreens, TerrainScanner, KIND_FOR } from './shipScreens.js';
-import { ShipFx, buildTargetMesh } from './shipFx.js';
+import { ShipFx, buildTargetMesh, buildDroneMesh, buildShieldMesh } from './shipFx.js';
+import { ShipAudio } from './shipAudio.js';
 import { geodeticToCartesian, cartesianToGeodetic, localFrame, cellIndex, cellLabel } from '../world/geodesy.js';
 import { gravityAtRadius } from '../world/bodies.js';
 import { Kit } from './shipKit.js';
@@ -102,7 +103,9 @@ export class ShipSystem {
     this.hemi = new THREE.HemisphereLight(0xb4c4d6, 0x59606a, 1.0);
     this.scene.add(this.hemi);
 
-    this.interior = buildInterior(this.layout, this.matsInt, { tier: this.tier });
+    this.signs = makeSignAtlas();
+    this.posters = makePosterAtlas();
+    this.interior = buildInterior(this.layout, this.matsInt, { tier: this.tier, signs: this.signs, posters: this.posters });
     this.interior.mats = this.matsInt;
     buildSeats(this.layout, this.matsInt, this.interior);
     this.scene.add(this.interior.root);
@@ -134,6 +137,20 @@ export class ShipSystem {
     this.entryExt = engine.track({ worldPos: this.flight.pos, object3d: this.exterior.root, quaternion: this.flight.quaternion });
     this.entryInt = engine.track({ worldPos: this.flight.pos, object3d: this.interior.root, quaternion: this.flight.quaternion });
 
+    // --- one shadow-casting spot, over whichever room you are standing in (desktop tier only)
+    for (const k of Object.keys(this.matsInt)) {
+      if (k.startsWith('wall:') || k.startsWith('floor:') || k === 'ceil') this.matsInt[k].shadowSide = THREE.DoubleSide;
+    }
+    if (!low) {
+      const sp = new THREE.SpotLight(0xfff1dc, 0, 14, 1.2, 0.6, 2);
+      sp.castShadow = true;
+      sp.shadow.mapSize.set(1024, 1024);
+      sp.shadow.bias = -0.0004; sp.shadow.normalBias = 0.05;
+      sp.shadow.camera.near = 0.3; sp.shadow.camera.far = 18;
+      this.interior.root.add(sp, sp.target);
+      this.spot = sp; this.spotK = 0; this.spotRoom = null;
+    }
+
     // --- light pool
     const K = low ? 4 : 6;
     for (let i = 0; i < K; i++) {
@@ -160,6 +177,11 @@ export class ShipSystem {
     this._applyRampPose('airlock');
 
     this._placeTargets();
+    this._placeDrones();
+    this.audio = typeof window !== 'undefined' ? new ShipAudio() : null;
+    this.shield = buildShieldMesh();
+    this.exterior.root.add(this.shield);
+    this.shieldFlash = 0; this.hitShake = 0;
 
     this.note('Systems nominal. Ship down and stable.');
     this.buildMs = performance.now() - t0;
@@ -357,6 +379,34 @@ export class ShipSystem {
     });
   }
 
+  _placeDrones() {
+    this.drones = new DroneSystem(this.flight, this.guns, this.ground);
+    this.droneViews = [];
+    const f = this.flight;
+    const base = f.pos;
+    // three hostile drones at a few hundred metres, 60 m over the ground, in different directions
+    const spots = [[560, 0.6], [820, -1.3], [690, 2.6]];
+    spots.forEach(([d, brg], i) => {
+      const fr = f._frame;
+      const e = Math.sin(brg) * d, n = Math.cos(brg) * d;
+      const x = base.x + fr.east.x * e + fr.north.x * n, y = base.y + fr.east.y * e + fr.north.y * n, z = base.z + fr.east.z * e + fr.north.z * n;
+      const l = Math.hypot(x, y, z);
+      const g = this.ground(x / l, y / l, z / l);
+      const R = g + 60;
+      const id = `COS-MARS-VEH-${String(i + 2).padStart(4, '0')}`;
+      const dr = this.drones.add(id, { x: (x / l) * R, y: (y / l) * R, z: (z / l) * R });
+      const mesh = buildDroneMesh();
+      this.engine.scene.add(mesh);
+      const entry = this.engine.track({ worldPos: dr.pos, object3d: mesh, quaternion: new THREE.Quaternion() });
+      this.droneViews.push({ dr, mesh, entry });
+      this.registry.register({
+        id, bodyId: 'mars', type: 'VEH', name: `Hostile drone ${i + 1}`, position: dr.pos,
+        massKg: 180, collision: 'none', materialId: 'MAT-ALUMINIUM',
+        object3d: mesh, note: 'Armed. Wakes when the ship is airborne within 750 m.',
+      });
+    });
+  }
+
   _registerAssets() {
     registerShipAssets(this.registry, THREE, this.hardware, this.interior.seatGroups, this.flight.pos);
   }
@@ -503,6 +553,11 @@ export class ShipSystem {
     }
   }
 
+  _motorsRunning() {
+    const m = (c) => c.progress > 0.001 && c.progress < 0.999;
+    return m(this.rampCtl.cargo) || m(this.rampCtl.airlock);
+  }
+
   _rampFrame(dt) {
     for (const key of ['cargo', 'airlock']) {
       const c = this.rampCtl[key];
@@ -588,8 +643,23 @@ export class ShipSystem {
       this._outsideFrame(dt, inp);
     }
 
-    // ---- guns -------------------------------------------------------------------------
+    // ---- guns and the things that shoot back ---------------------------------------------
     this._gunFrame(dt, inp);
+    this.drones.update(dt);
+    if (this.audio) this.audio.update(dt, { thrustUp: f.thrustUp, maxLift: f.maxLiftN, thrustFwd: f.thrustFwd, maxDrive: f.maxDriveN, autoHover: f.autoHover, aboard: this.aboard || false, motors: this._motorsRunning() });
+    for (const e of this.drones.drain()) {
+      if (e.type === 'ship_hit') {
+        if (this.audio) this.audio.hit(e.absorbed);
+        this.shieldFlash = 1; this.hitShake = 0.35 + Math.min(0.5, e.hull < 100 ? 0.3 : 0);
+        this.shield.material.uniforms.uHit.value.set(e.local.x / 15.5, (e.local.y - 3.2) / 10.5, (e.local.z - 0.5) / 28);
+        this.shield.material.uniforms.uColor.value.set(e.absorbed > 0 ? 0.25 : 1.0, e.absorbed > 0 ? 0.75 : 0.3, e.absorbed > 0 ? 1.0 : 0.2);
+        this.note(e.absorbed > 0 ? `Hit. Shield absorbed ${e.absorbed.toFixed(0)}.` : `Hull hit. Integrity ${e.hull.toFixed(0)}%.`, e.absorbed <= 0);
+      } else if (e.type === 'drone_fire' && this.aboard && !this._droneWarn) { this._droneWarn = 6; this.note('Contact firing on us.', true); }
+      else if (e.type === 'impact') this.guns.events.push(e);
+    }
+    if (this._droneWarn) this._droneWarn = Math.max(0, this._droneWarn - dt);
+    // crew patch the hull while the ship sits on the ground
+    if (f.landed && f.hull < 100 && this.rampCtl.cargo.progress < 0.02) f.hull = Math.min(100, f.hull + dt * 0.5);
 
     this._updateVisuals(dt, false);
     return owns;
@@ -636,7 +706,8 @@ export class ShipSystem {
     const eye = f.toWorld(this.eyeLocal, this._eye);
     const cam = this.engine.cameraWorldPos;
     cam.x = eye.x; cam.y = eye.y; cam.z = eye.z;
-    this._q.setFromEuler(new THREE.Euler(this.camPitch, -this.camYaw, 0, 'YXZ'));
+    const sh = this.hitShake > 0 ? this.hitShake * 0.03 : 0;
+    this._q.setFromEuler(new THREE.Euler(this.camPitch + (sh ? (Math.random() - 0.5) * sh : 0), -this.camYaw + (sh ? (Math.random() - 0.5) * sh : 0), sh ? (Math.random() - 0.5) * sh * 0.6 : 0, 'YXZ'));
     this.engine.camera.quaternion.copy(f.quaternion).multiply(this._q);
     this.engine.camera.up.set(0, 1, 0).applyQuaternion(f.quaternion);
   }
@@ -779,6 +850,33 @@ export class ShipSystem {
       p.mesh.scale.set(k, 0.4 + 1.3 * tu, k); p.core.scale.set(k, 0.4 + 1.3 * tu, k);
       p.mesh.material.opacity = 0.15 + 0.6 * tu; p.core.material.opacity = 0.2 + 0.7 * tu;
     }
+    // the shield ripple
+    if (this.shield) {
+      this.shieldFlash = Math.max(0, this.shieldFlash - dt * 1.6);
+      const u = this.shield.material.uniforms;
+      u.uFlash.value = this.shieldFlash; u.uTime.value = this.time * 3;
+      u.uStrength.value = f.shieldMax > 0 ? 0.35 + 0.65 * (f.shield / f.shieldMax) : 0.2;
+      this.shield.visible = this.shieldFlash > 0.02;
+      this.hitShake = Math.max(0, this.hitShake - dt * 1.4);
+    }
+    // drones face where they are heading and spin their rotors
+    if (this.droneViews) for (const v of this.droneViews) {
+      const alive = v.dr.target.hp > 0;
+      v.mesh.visible = alive;
+      if (!alive) continue;
+      const sp = Math.hypot(v.dr.vel.x, v.dr.vel.y, v.dr.vel.z);
+      const up = new THREE.Vector3(v.dr.pos.x, v.dr.pos.y, v.dr.pos.z).normalize();
+      // face the ship when attacking, else along the velocity
+      const tx = v.dr.state === 'attack' ? f.pos.x - v.dr.pos.x : v.dr.vel.x, ty = v.dr.state === 'attack' ? f.pos.y - v.dr.pos.y : v.dr.vel.y, tz = v.dr.state === 'attack' ? f.pos.z - v.dr.pos.z : v.dr.vel.z;
+      const fwd = new THREE.Vector3(tx, ty, tz).projectOnPlane(up);
+      if (fwd.lengthSq() < 1e-6) fwd.set(1, 0, 0).projectOnPlane(up);
+      fwd.normalize();
+      const right = new THREE.Vector3().crossVectors(fwd, up).normalize();
+      v.entry.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, up, fwd.clone().negate()));
+      v.mesh.userData.rotors.rotation.y += dt * 30;
+      const pulse = 1.3 + 0.9 * Math.sin(this.time * (v.dr.state === 'attack' ? 12 : 3));
+      v.mesh.userData.eye.color.setRGB(1 * pulse, 0.15 * pulse, 0.1 * pulse);
+    }
     // gun mounts
     const A = this.guns.aim;
     for (const m of ext.guns.main) m.group.rotation.set(A.main.pitch, -A.main.yaw, 0, 'YXZ');
@@ -826,6 +924,7 @@ export class ShipSystem {
       }
       // the seated crew do not open doors
       if (this.seat) target = def.id === 'd_airlock_in' ? target : 0;
+      if (target !== d.was) { if (!first && this.audio && this.aboard && d.roomGroup.visible) this.audio.door(); d.was = target; }
       if (first) d.open = target;
       else d.open += Math.sign(target - d.open) * Math.min(Math.abs(target - d.open), dt * 3.2);
       const n = d.leaves.length;
@@ -923,6 +1022,16 @@ export class ShipSystem {
       } else if (p.fixture >= 0) p.k = Math.min(1, p.k + dt * 5);
       L.intensity = p.fixture >= 0 ? (L.userData.base || 0) * p.k * 1.0 : 0;
     }
+    // the shadow-casting spot follows you from room to room
+    if (this.spot) {
+      const r = this.layout.roomById.get(cur);
+      const sp = this.spot;
+      if (r && this.aboard) {
+        if (this.spotRoom !== cur) { this.spotK = Math.max(0, this.spotK - dt * 6); if (this.spotK <= 0.02 || first) { this.spotRoom = cur; const cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2, hd = Math.hypot(r.x1 - r.x0, r.z1 - r.z0) / 2, h = r.h - 0.45; sp.position.set(cx, r.y + r.h - 0.4, cz); sp.target.position.set(cx, r.y, cz); sp.angle = Math.max(0.5, Math.min(1.42, Math.atan(hd / h) + 0.12)); sp.distance = Math.hypot(hd, h) * 1.5; sp.target.updateMatrixWorld(); } }
+        else this.spotK = Math.min(1, this.spotK + dt * 4);
+      } else this.spotK = Math.max(0, this.spotK - dt * 6);
+      sp.intensity = 9 * this.spotK * (cur === 'cargo' || cur === 'engineering' ? 1.6 : 1);
+    }
     // interior ambient: brighter on the bridge (daylight through glass)
     const amb = cur === 'bridge' ? 1.35 : 1.0;
     this.hemi.intensity += (amb - this.hemi.intensity) * Math.min(1, dt * 3);
@@ -1008,8 +1117,10 @@ export class ShipSystem {
     const f = this.flight;
     const events = this.guns.drain();
     this.fx.handle(events);
+    if (this.audio) this.audio.events(events, this.aboard);
     this.fx.setViewScale(this.engine.renderer.domElement.height, this.engine.camera.fov);
-    this.fx.update(dt, cam, this.guns.bolts);
+    const enemy = this.drones ? this.drones.shots.map((b) => ({ x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, gun: 'enemy', power: 0.9 })) : [];
+    this.fx.update(dt, cam, enemy.length ? this.guns.bolts.concat(enemy) : this.guns.bolts);
     // dust from the thrusters when low
     this._dust(dt);
     // target flash
@@ -1216,14 +1327,14 @@ function cloneMaterials(m) {
  * Design envelopes: the size each registered thing is SUPPOSED to be. The
  * validator compares these to the built geometry and fails on drift.
  */
-export const SHIP_ENVELOPE = { width: 18.0, height: 12.98, depth: 48.55 };
+export const SHIP_ENVELOPE = { width: 24.52, height: 13.45, depth: 48.65 };
 export const SEAT_ENVELOPE = {
-  captain: { width: 0.90, height: 1.64, depth: 0.84 },
-  pilot: { width: 0.74, height: 1.47, depth: 0.77 },
+  captain: { width: 0.93, height: 1.68, depth: 0.88 },
+  pilot: { width: 0.75, height: 1.50, depth: 0.78 },
   nav: { width: 0.60, height: 1.10, depth: 0.50 },
   comms: { width: 0.60, height: 1.10, depth: 0.50 },
   engineer: { width: 0.60, height: 1.10, depth: 0.50 },
-  gun_dorsal: { width: 0.61, height: 1.30, depth: 0.82 },
-  gun_ventral: { width: 0.61, height: 1.30, depth: 0.82 },
+  gun_dorsal: { width: 0.64, height: 1.40, depth: 0.83 },
+  gun_ventral: { width: 0.64, height: 1.40, depth: 0.83 },
 };
 export const SEAT_MASS = { captain: 46, pilot: 34, nav: 18, comms: 18, engineer: 18, gun_dorsal: 30, gun_ventral: 30 };

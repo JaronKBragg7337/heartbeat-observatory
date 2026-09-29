@@ -134,7 +134,9 @@ export class ShipBody {
     return { absorbed, hull: this.hull };
   }
 
-  get maxLiftN() { return SHIP_PHYS.liftThrustN * Math.min(1.8, this.engineFactor); }
+  // A battered hull loses thrust: below 40% integrity the vertical thrusters give up ground.
+  get damageFactor() { return this.hull >= 40 ? 1 : 0.55 + 0.45 * (this.hull / 40); }
+  get maxLiftN() { return SHIP_PHYS.liftThrustN * Math.min(1.8, this.engineFactor) * this.damageFactor; }
   get maxDriveN() { return SHIP_PHYS.driveThrustN * Math.min(1.8, this.engineFactor); }
   get cruiseSpeed() { return SHIP_PHYS.cruiseSpeed * Math.sqrt(Math.min(1.8, this.engineFactor)); }
   weightN() {
@@ -293,7 +295,9 @@ export class ShipBody {
     // thrusters' real spare deceleration (less a margin), plus 1 m/s at the surface.
     // Height is measured from where the FEET are, not the keel: the legs hang 1.6 m below it.
     const spare = Math.max(0.3, (this.maxLiftN / m - g) * 0.5);
-    if (Number.isFinite(aglNow)) climbTarget = Math.max(climbTarget, -(0.7 + Math.sqrt(2 * spare * Math.max(0, aglNow - (GEAR.nominal + GEAR.keelY + 0.5)))));
+    // With the gear down the first foot to touch is what matters (the ground can rise under one leg).
+    const hFoot = this.gearPos > 0.95 && Number.isFinite(worstGap) ? Math.max(0, worstGap - 0.4) : Math.max(0, aglNow - (GEAR.nominal + GEAR.keelY + 0.5));
+    if (Number.isFinite(aglNow)) climbTarget = Math.max(climbTarget, -(0.6 + Math.sqrt(2 * spare * hFoot)));
     // Vertical: gravity compensation plus a proportional term, never pushing down.
     const onGround = contacts > 0 && aglNow < 2.5;
     // Engines run only when somebody asked for them, or once the ship has left the

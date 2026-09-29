@@ -195,3 +195,123 @@ function segSphere(ax, ay, az, bx, by, bz, c, r) {
   const t1 = (-b - disc) / (2 * a), t2 = (-b + disc) / (2 * a);
   return (t1 >= 0 && t1 <= 1) || (t2 >= 0 && t2 <= 1) || (t1 < 0 && t2 > 1);
 }
+
+// ============================================================================
+// Hostile drones. They give the shields something to do and the guns something
+// to shoot at. Pure logic, in f64 world metres, like everything in this file.
+//
+// A drone waits at an anchor point. When the ship is airborne and close enough
+// it closes to strafing range and fires slow bolts at where the ship WILL be. A
+// bolt that reaches the ship is handed to ShipBody.takeHit(), which spends the
+// shield first and the hull second. Land, and they lose interest.
+// ============================================================================
+
+export class DroneSystem {
+  /**
+   * @param ship    ShipBody (hit target)
+   * @param guns    GunSystem (drones are added to its target list, so the player's
+   *                bolts can kill them)
+   * @param ground  surface sampler, so a drone never dips below the terrain
+   */
+  constructor(ship, guns, ground) {
+    this.ship = ship; this.guns = guns; this.ground = ground;
+    this.drones = [];
+    this.shots = [];
+    this.events = [];
+    this.t = 0;
+    this.aggroM = 750;
+    this.strafeM = 230;
+  }
+
+  /** Put a drone at a world point (its anchor). */
+  add(id, anchor) {
+    const d = {
+      id, anchor: { ...anchor }, pos: { ...anchor }, vel: { x: 0, y: 0, z: 0 },
+      state: 'idle', cool: 1.5 + this.drones.length * 0.7, phase: this.drones.length * 2.1, target: null,
+    };
+    d.target = this.guns.addTarget({ id, pos: d.pos, radius: 3.2, hp: 60, maxHp: 60 });
+    d.target.respawn = 0;
+    this.drones.push(d);
+    return d;
+  }
+
+  _up(p) { const r = Math.hypot(p.x, p.y, p.z) || 1; return { x: p.x / r, y: p.y / r, z: p.z / r }; }
+
+  update(dt) {
+    this.t += dt;
+    const S = this.ship;
+    const airborne = !S.landed && S.agl > 6;
+    for (const d of this.drones) {
+      const tg = d.target;
+      if (tg.hp <= 0) { d.state = 'dead'; continue; }
+      if (d.state === 'dead') { d.state = 'idle'; d.pos.x = d.anchor.x; d.pos.y = d.anchor.y; d.pos.z = d.anchor.z; }
+      const dx = S.pos.x - d.pos.x, dy = S.pos.y - d.pos.y, dz = S.pos.z - d.pos.z;
+      const dist = Math.hypot(dx, dy, dz);
+      d.state = airborne && dist < this.aggroM ? 'attack' : 'idle';
+      const up = this._up(d.pos);
+      let tx, ty, tz;
+      if (d.state === 'attack') {
+        // hold a ring around the ship at strafing range, drifting round it
+        const k = (dist - this.strafeM) / (dist || 1);
+        const sw = Math.sin(this.t * 0.4 + d.phase);
+        tx = d.pos.x + dx * k * 0.5 + (dz * sw) * 0.2;
+        ty = d.pos.y + dy * k * 0.5;
+        tz = d.pos.z + dz * k * 0.5 - (dx * sw) * 0.2;
+      } else {
+        tx = d.anchor.x + Math.cos(this.t * 0.3 + d.phase) * 25; ty = d.anchor.y; tz = d.anchor.z + Math.sin(this.t * 0.3 + d.phase) * 25;
+      }
+      const ex = tx - d.pos.x, ey = ty - d.pos.y, ez = tz - d.pos.z;
+      const el = Math.hypot(ex, ey, ez) || 1;
+      const sp = d.state === 'attack' ? 38 : 8;
+      const want = Math.min(sp, el * 0.6);
+      d.vel.x += (ex / el * want - d.vel.x) * Math.min(1, dt * 1.2);
+      d.vel.y += (ey / el * want - d.vel.y) * Math.min(1, dt * 1.2);
+      d.vel.z += (ez / el * want - d.vel.z) * Math.min(1, dt * 1.2);
+      d.pos.x += d.vel.x * dt; d.pos.y += d.vel.y * dt; d.pos.z += d.vel.z * dt;
+      // never below 12 m over the ground
+      const r = Math.hypot(d.pos.x, d.pos.y, d.pos.z);
+      const gr = this.ground(d.pos.x / r, d.pos.y / r, d.pos.z / r);
+      if (gr !== null && gr !== undefined && r < gr + 12) { const k = (gr + 12) / r; d.pos.x *= k; d.pos.y *= k; d.pos.z *= k; }
+      // fire
+      d.cool -= dt;
+      if (d.state === 'attack' && d.cool <= 0 && dist < this.aggroM * 0.8) {
+        d.cool = 2.3 + Math.random() * 1.2;
+        const speed = 120;
+        const tt = dist / speed;
+        const px = S.pos.x + S.vel.x * tt, py = S.pos.y + S.vel.y * tt, pz = S.pos.z + S.vel.z * tt;
+        let ax = px - d.pos.x, ay = py - d.pos.y, az = pz - d.pos.z;
+        const al = Math.hypot(ax, ay, az) || 1;
+        ax /= al; ay /= al; az /= al;
+        // a little inaccuracy
+        ax += (Math.random() - 0.5) * 0.02; ay += (Math.random() - 0.5) * 0.02; az += (Math.random() - 0.5) * 0.02;
+        this.shots.push({ x: d.pos.x, y: d.pos.y, z: d.pos.z, vx: ax * speed, vy: ay * speed, vz: az * speed, life: 9, damage: 22, px: d.pos.x, py: d.pos.y, pz: d.pos.z });
+        this.events.push({ type: 'drone_fire', id: d.id, x: d.pos.x, y: d.pos.y, z: d.pos.z });
+      }
+    }
+    // hostile bolts
+    for (let i = this.shots.length - 1; i >= 0; i--) {
+      const b = this.shots[i];
+      b.px = b.x; b.py = b.y; b.pz = b.z;
+      b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
+      b.life -= dt;
+      let dead = b.life <= 0;
+      // hit the ship: distance from its centre (a 14 m sphere is a fair envelope for a 49 m hull)
+      const c = S.toWorld({ x: 0, y: 3, z: 0 }, {});
+      if (!dead && segSphere(b.px, b.py, b.pz, b.x, b.y, b.z, c, 15)) {
+        const res = S.takeHit(b.damage);
+        // where on the hull, in ship-local metres, for the shield ripple
+        const loc = S.toLocal({ x: b.x, y: b.y, z: b.z }, {});
+        this.events.push({ type: 'ship_hit', absorbed: res.absorbed, hull: res.hull, local: loc, x: b.x, y: b.y, z: b.z });
+        dead = true;
+      }
+      if (!dead) {
+        const r = Math.hypot(b.x, b.y, b.z);
+        const g = this.ground(b.x / r, b.y / r, b.z / r);
+        if (g !== null && g !== undefined && r <= g) { this.events.push({ type: 'impact', gun: 'enemy', x: b.x, y: b.y, z: b.z, ux: b.x / r, uy: b.y / r, uz: b.z / r, power: 0.6 }); dead = true; }
+      }
+      if (dead) this.shots.splice(i, 1);
+    }
+  }
+
+  drain() { const e = this.events; this.events = []; return e; }
+}

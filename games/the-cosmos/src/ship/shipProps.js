@@ -118,7 +118,7 @@ export const PROPS = {
   table(k, p) {
     const long = p.d > p.w;
     const mess = p.style === 'mess';
-    k.bevelBox(mess ? 'plastic' : 'counter', 0, p.h - 0.025, 0, p.w, 0.05, p.d, 0.02);
+    k.bevelBox(mess ? 'wood' : 'counter', 0, p.h - 0.025, 0, p.w, 0.05, p.d, 0.02);
     k.bevelBox('steel', 0, p.h - 0.05, 0, p.w - 0.04, 0.02, p.d - 0.04, 0.008);
     const n = long ? 2 : 1;
     for (let i = 0; i < n; i++) {
@@ -383,6 +383,27 @@ export const PROPS = {
 
   console_decor() {},
 
+  rug(k, p) {
+    const c = p.tone === 'med' ? 'tile' : 'fabricBlue';
+    k.bevelBox(c, 0, 0.012, 0, p.w, 0.024, p.d, 0.008);
+    k.bevelBox(p.tone === 'med' ? 'steel' : 'fabricGrey', 0, 0.026, 0, p.w - 0.18, 0.006, p.d - 0.18, 0.002, { col: p.tone === 'med' ? undefined : [0.55, 0.55, 0.6] });
+  },
+
+  extinguisher(k, p) {
+    k.cyl('red', 0, 0.25, 0.0, 0.08, 0.42, 12);
+    k.dome('red', 0, 0.46, 0.0, 0.08, 12, 4, { thetaMax: Math.PI / 2 });
+    k.cyl('steelDark', 0, 0.5, 0.0, 0.03, 0.06, 8);
+    k.pipe('steelDark', [0.0, 0.5, 0.0], [0.11, 0.42, 0.04], 0.012, 6);
+    k.bevelBox('steelDark', 0, 0.3, -0.09, 0.16, 0.34, 0.03, 0.006);
+    k.box('white', 0, 0.28, 0.081, 0.06, 0.09, 0.004);
+  },
+
+  firstaid(k, p) {
+    k.bevelBox('white', 0, 0.15, 0, p.w, p.h, p.d, 0.02);
+    k.box('red', 0, 0.15, p.d / 2 + 0.002, 0.16, 0.05, 0.004);
+    k.box('red', 0, 0.15, p.d / 2 + 0.002, 0.05, 0.16, 0.004);
+  },
+
   rack(k, p) {
     // server / power rack, front toward +Z
     k.bevelBox('gunmetal', 0, p.h / 2, 0, p.w, p.h, p.d, 0.02);
@@ -478,58 +499,68 @@ export function drawProp(kit, p) {
 // ---------------------------------------------------------------------------
 export const SEAT_DRAW = {
   captain(k) {
-    // dais lip is drawn by the room; this is the chair
-    k.cyl('gunmetal', 0, 0.09, 0, 0.42, 0.18, 16);
-    k.cyl('steel', 0, 0.2, 0, 0.14, 0.4, 10);
-    k.bevelBox('leather', 0, 0.5, 0.0, 0.66, 0.14, 0.62, 0.05);
-    k.bevelBox('leather', 0, 0.97, 0.3, 0.6, 0.85, 0.14, 0.06);                    // back
-    k.bevelBox('leather', 0, 1.5, 0.32, 0.36, 0.28, 0.12, 0.05);                   // headrest
+    // a command chair: winged back, deep pan, armrest control pods
+    k.cyl('gunmetal', 0, 0.09, 0, 0.44, 0.18, 20);
+    k.cyl('steel', 0, 0.2, 0, 0.14, 0.4, 12);
+    k.cyl('gunmetal', 0, 0.4, 0, 0.26, 0.06, 16);
+    k.bevelBox('leather', 0, 0.52, 0.0, 0.68, 0.16, 0.64, 0.075);              // pan
+    k.bevelBox('leather', 0, 0.55, -0.24, 0.5, 0.1, 0.14, 0.04);               // waterfall edge
+    k.bevelBox('leather', 0, 0.98, 0.31, 0.62, 0.88, 0.16, 0.09);              // back
+    for (const s of [-1, 1]) k.bevelBox('leather', s * 0.3, 0.88, 0.22, 0.12, 0.62, 0.22, 0.05);   // side wings
+    k.bevelBox('leather', 0, 1.53, 0.33, 0.38, 0.3, 0.13, 0.07);               // headrest
+    for (const y of [0.8, 1.0, 1.2]) k.box('gunmetal', 0, y, 0.228, 0.5, 0.006, 0.006);   // stitched seams
+    k.box('gunmetal', 0, 0.98, 0.228, 0.006, 0.7, 0.006);
     for (const s of [-1, 1]) {
-      k.bevelBox('gunmetal', s * 0.39, 0.72, 0.0, 0.1, 0.1, 0.62, 0.02);           // armrest
-      k.bevelBox('leather', s * 0.39, 0.78, -0.02, 0.1, 0.05, 0.56, 0.02);
-      k.bevelBox('plasticDark', s * 0.38, 0.8, -0.28, 0.14, 0.04, 0.2, 0.012);     // control pad
-      k.box('glowCyan', s * 0.38, 0.822, -0.28, 0.09, 0.003, 0.14);
-      k.bevelBox('gunmetal', s * 0.36, 0.66, 0.1, 0.03, 0.34, 0.3, 0.008);
+      k.bevelBox('gunmetal', s * 0.4, 0.7, 0.02, 0.11, 0.12, 0.64, 0.03);       // armrest pod
+      k.bevelBox('leather', s * 0.4, 0.78, 0.0, 0.11, 0.05, 0.56, 0.02);
+      k.bevelBox('plasticDark', s * 0.39, 0.815, -0.28, 0.15, 0.045, 0.22, 0.014);
+      k.box('glowCyan', s * 0.39, 0.842, -0.28, 0.1, 0.003, 0.15);
+      k.bevelBox('gunmetal', s * 0.37, 0.62, 0.12, 0.03, 0.36, 0.32, 0.01);
     }
-    k.box('glowCyan', 0.0, 0.5, -0.32, 0.5, 0.012, 0.004);
-    k.box('hullAccent', 0, 0.97, 0.375, 0.04, 0.72, 0.006);
-    // throttle lever on the left arm, trigger grip on the right
-    k.pipe('steel', [-0.42, 0.85, -0.05], [-0.42, 1.0, -0.16], 0.014);
-    k.bevelBox('red', -0.42, 1.03, -0.18, 0.05, 0.06, 0.08, 0.012);
-    k.pipe('steel', [0.42, 0.85, -0.05], [0.42, 1.0, -0.12], 0.014);
-    k.bevelBox('plasticDark', 0.42, 1.03, -0.14, 0.06, 0.1, 0.07, 0.015);
-    k.box('red', 0.42, 1.05, -0.185, 0.02, 0.02, 0.01);
+    k.box('glowCyan', 0.0, 0.5, -0.33, 0.5, 0.012, 0.004);
+    k.box('hullAccent', 0, 0.98, 0.395, 0.04, 0.74, 0.006);
+    k.pipe('steel', [-0.43, 0.85, -0.05], [-0.43, 1.0, -0.16], 0.014);
+    k.bevelBox('red', -0.43, 1.03, -0.18, 0.05, 0.06, 0.08, 0.018);
+    k.pipe('steel', [0.43, 0.85, -0.05], [0.43, 1.0, -0.12], 0.014);
+    k.bevelBox('plasticDark', 0.43, 1.03, -0.14, 0.06, 0.1, 0.07, 0.02);
+    k.box('red', 0.43, 1.05, -0.185, 0.02, 0.02, 0.01);
   },
   pilot(k) {
-    k.bevelBox('gunmetal', 0, 0.12, 0.05, 0.6, 0.24, 0.7, 0.03);
-    k.bevelBox('fabricBlue', 0, 0.36, 0.0, 0.56, 0.12, 0.56, 0.05);
-    k.bevelBox('fabricBlue', 0, 0.86, 0.28, 0.52, 0.85, 0.12, 0.06);
-    k.bevelBox('fabricBlue', 0, 1.36, 0.3, 0.3, 0.22, 0.1, 0.04);
+    // a bucket seat with harness
+    k.bevelBox('gunmetal', 0, 0.12, 0.05, 0.6, 0.24, 0.72, 0.05);
+    k.bevelBox('fabricBlue', 0, 0.37, 0.0, 0.58, 0.14, 0.58, 0.075);
+    k.bevelBox('fabricBlue', 0, 0.88, 0.3, 0.54, 0.9, 0.14, 0.085);
+    k.bevelBox('fabricBlue', 0, 1.38, 0.32, 0.32, 0.24, 0.12, 0.06);
     for (const s of [-1, 1]) {
-      k.bevelBox('gunmetal', s * 0.33, 0.62, -0.02, 0.08, 0.1, 0.5, 0.02);
-      k.bevelBox('fabricBlue', s * 0.31, 0.72, 0.16, 0.06, 0.45, 0.14, 0.03);      // bolster
-      k.box('red', s * 0.2, 1.0, 0.22, 0.04, 0.9, 0.006);                          // harness straps
+      k.bevelBox('gunmetal', s * 0.33, 0.64, -0.02, 0.09, 0.11, 0.52, 0.03);
+      k.bevelBox('fabricBlue', s * 0.31, 0.74, 0.18, 0.08, 0.5, 0.16, 0.04);       // bolsters
+      k.bevelBox('red', s * 0.2, 1.0, 0.235, 0.05, 0.92, 0.008, 0.002);            // harness straps
+      k.box('steelDark', s * 0.2, 0.62, 0.235, 0.07, 0.04, 0.012);
     }
-    // control yoke on the right arm and thrust lever on the left
-    k.pipe('steel', [0.33, 0.7, -0.15], [0.33, 0.9, -0.3], 0.016);
-    k.bevelBox('plasticDark', 0.33, 0.95, -0.32, 0.05, 0.1, 0.06, 0.012);
-    k.pipe('steel', [-0.33, 0.7, -0.15], [-0.33, 0.84, -0.3], 0.016);
-    k.bevelBox('red', -0.33, 0.88, -0.32, 0.05, 0.06, 0.09, 0.012);
-    k.box('glowCyan', 0, 0.36, -0.29, 0.4, 0.008, 0.004);
+    k.pipe('steel', [0.34, 0.7, -0.15], [0.34, 0.9, -0.3], 0.017);
+    k.bevelBox('plasticDark', 0.34, 0.95, -0.32, 0.055, 0.11, 0.065, 0.02);
+    k.pipe('steel', [-0.34, 0.7, -0.15], [-0.34, 0.84, -0.3], 0.017);
+    k.bevelBox('red', -0.34, 0.88, -0.32, 0.055, 0.065, 0.1, 0.02);
+    k.box('glowCyan', 0, 0.37, -0.295, 0.4, 0.008, 0.004);
+    for (const y of [0.7, 0.9, 1.1]) k.box('gunmetal', 0, y, 0.376, 0.4, 0.005, 0.005);
   },
-  swivel(k) { PROPS._swivel(k, 'fabricBlue'); k.bevelBox('gunmetal', 0.26, 0.72, -0.05, 0.08, 0.05, 0.3, 0.012); k.bevelBox('gunmetal', -0.26, 0.72, -0.05, 0.08, 0.05, 0.3, 0.012); },
+  swivel(k) {
+    PROPS._swivel(k, 'fabricBlue');
+    for (const s of [-1, 1]) k.bevelBox('gunmetal', s * 0.26, 0.72, -0.05, 0.08, 0.05, 0.3, 0.02);
+  },
   gunner(k) {
     // a harness seat in front of a pair of grips
-    k.bevelBox('gunmetal', 0, 0.14, 0.1, 0.5, 0.28, 0.6, 0.03);
-    k.bevelBox('leather', 0, 0.34, 0.05, 0.46, 0.1, 0.5, 0.04);
-    k.bevelBox('leather', 0, 0.78, 0.3, 0.46, 0.8, 0.1, 0.05);
+    k.bevelBox('gunmetal', 0, 0.14, 0.1, 0.5, 0.28, 0.62, 0.05);
+    k.bevelBox('leather', 0, 0.35, 0.05, 0.46, 0.12, 0.52, 0.06);
+    k.bevelBox('leather', 0, 0.8, 0.3, 0.46, 0.82, 0.12, 0.07);
+    k.bevelBox('leather', 0, 1.3, 0.32, 0.28, 0.2, 0.1, 0.05);
     for (const s of [-1, 1]) {
-      k.pipe('steel', [s * 0.28, 0.5, -0.05], [s * 0.28, 0.85, -0.35], 0.016);
-      k.bevelBox('plasticDark', s * 0.28, 0.9, -0.38, 0.05, 0.12, 0.06, 0.012);
-      k.box('red', s * 0.28, 0.95, -0.415, 0.02, 0.02, 0.008);
-      k.box('red', s * 0.2, 0.9, 0.27, 0.04, 0.8, 0.006);
+      k.pipe('steel', [s * 0.29, 0.5, -0.05], [s * 0.29, 0.85, -0.35], 0.017);
+      k.bevelBox('plasticDark', s * 0.29, 0.9, -0.38, 0.055, 0.13, 0.065, 0.02);
+      k.box('red', s * 0.29, 0.955, -0.415, 0.02, 0.02, 0.008);
+      k.bevelBox('red', s * 0.2, 0.9, 0.242, 0.05, 0.82, 0.008, 0.002);
     }
-    k.bevelBox('steelDark', 0, 0.16, -0.32, 0.3, 0.22, 0.14, 0.02);
+    k.bevelBox('steelDark', 0, 0.16, -0.32, 0.3, 0.22, 0.14, 0.03);
     k.box('glowAmber', 0, 0.24, -0.395, 0.2, 0.03, 0.004);
   },
 };
