@@ -983,6 +983,7 @@ engine.start();
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
 window.cosmos = {
+  depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
   at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,
   ship, shipUI, engine, body, walker, patch, registry, debugLayer, view,
   report: () => debugLayer.reportAt(walker),

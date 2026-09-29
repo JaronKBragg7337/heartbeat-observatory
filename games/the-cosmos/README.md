@@ -178,6 +178,21 @@ mouse looks and aims, `E` sit / stand / use.
   will be. The shield takes the hit first (a ripple spreads from the impact point); what is left goes to the
   hull, and a battered hull gives up thrust. Land and they lose interest; the crew patch the hull on the ground.
 
+### What the first real phone showed (2026-09-29) and what was done
+
+Jaron played it on an iPhone. Five things, and their causes:
+
+| Seen | Cause | Fix |
+|---|---|---|
+| Walls and stairs breaking into flickering white blocks | Not the depth range: **two faces written on exactly the same plane** (the engineering stair's step boxes and the wall quad beside them; every tread plate over its box top). It reproduces on a desktop; a 16-bit phone buffer only makes the blocks bigger. | The stair is rebuilt with one riser and one tread per step. Then a general fix: `resolveDepthLayers` (shipKit.js) finds every pair of flat faces within 3 cm of the same plane, gives the one that should win a small layer number, and the vertex shader pulls layer-n faces n depth-buffer steps toward the camera. The step is read from the real buffer's bit count. About 2,800 faces carry a layer, maximum 3. |
+| The room you just walked through, or the corridor ahead, replaced by raw Mars | The phone tier drew "your room and its neighbours". A room two open doors away was skipped, the sliding door leaves and the stair block were filed under a room that was skipped, so they vanished with it. | shipVisibility.js: a room is drawn when a chain of open, in-view (or within 3.4 m) openings leads to it. A shut door hides what is behind it. Door leaves, stairs and ladders belong to the ship and are drawn when either room they touch is drawn. At most 8 rooms are ever drawn. |
+| Walking "through" the stairs | The engineering stair is a solid block standing in engineering; its walls were one-way (no inward face, so from the stair you looked straight out into engineering) and the block disappeared with the corridor. The collision itself was already solid: nobody could stand in it. | Inward walls, and the block is drawn with the room. The validator now proves nobody can walk into a stair's side. |
+| Driving covered by things | The flight consoles' screens ended at 7.5 m, across the horizon; the phone's station panel took a quarter of the screen. The dorsal turret was a closed box with glass drawn over solid wall, and the ventral pit was a shaft of panelling. And the top of the bridge stairwell stood out of the hull, so looking down it you saw the hull's own roof plate. | Low consoles (screens end just under the seated eye), a one-line flight strip on a phone, a nest with a waist-high parapet and real glass on four sides, a swivelling gunner's chair, an open glass ventral pod, and an armoured saddle over the stairwell. |
+| "It depends how far you stand" | The same culling and the same coplanar faces. Lights: a phone pools four, so its ambient is a little higher. | As above. |
+
+`?depth=16` (or `?depth=12`) makes every standard material round its depth to that many bits, so this class of
+fault can be reproduced on a desktop. `cosmos.depthBits` reports what the device really gave.
+
 ### How it is built
 
 ```
@@ -187,6 +202,8 @@ src/ship/shipFlight.js    thrust, gravity, landing gear springs, power split, sh
 src/ship/shipStations.js  the one rule: no station unless seated in its seat (pure)
 src/ship/guns.js          bolts, drones (pure)
 src/ship/shipSite.js      picks the flattest ground in sight (pure)
+src/ship/shipVisibility.js which rooms can be seen through which openings (pure)
+src/dev/depthEmu.js       ?depth=16: pretend the depth buffer is 16 bits deep
 src/ship/shipInterior.js  walls, floors, doors, stairs, ladders, signs, posters from the spec
 src/ship/shipProps.js     furniture and machinery
 src/ship/shipExterior.js  the lofted armour hull, wings, gear, guns, engines
@@ -223,8 +240,7 @@ within 5 cm of their design size.
 
 * **Verified in a desktop Chromium emulating 375 px, not on a real phone.** Frame rate, heat and the audio
   autoplay rules on iOS are unmeasured.
-* The interior and exterior were tuned by eye in screenshots; rooms still lack windows (only the bridge, the
-  nest and the ventral pit look out), and some props are simple.
+* The interior and exterior were tuned by eye in screenshots; some props are simple. Six rooms have real windows.
 * The hull is a solid shape: legs and the keel touch the ground, but a wing or the nose can pass through a
   hill you fly into.
 * The airlock's outer hatch is a lit recess on the hull, not a hole cut through the plating.

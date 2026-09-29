@@ -27,7 +27,7 @@ import { Stations } from './shipStations.js';
 import { GunSystem, DroneSystem } from './guns.js';
 import { makeShipMaterials, applyEnvironment, makeSignAtlas, makePosterAtlas, DEPTH_LIFT, depthLiftStepFor } from './shipTextures.js';
 import { depthEmulation } from '../dev/depthEmu.js';
-import { buildInterior, buildSeats } from './shipInterior.js';
+import { buildInterior, buildSeats, NEST_SILL } from './shipInterior.js';
 import { buildExterior, decalCanvasTexture, applyNeutralPose, HULL_STATIONS } from './shipExterior.js';
 import { ShipScreens, TerrainScanner, KIND_FOR } from './shipScreens.js';
 import { ShipFx, buildTargetMesh, buildDroneMesh, buildShieldMesh } from './shipFx.js';
@@ -262,7 +262,7 @@ export class ShipSystem {
     }
     // the nest: a band of glass round the gunner
     const n = L.roomById.get('nest');
-    const ny0 = n.y + 1.0, ny1 = n.y + n.h;
+    const ny0 = n.y + NEST_SILL, ny1 = n.y + n.h;
     const quad = (pts) => k.poly('glassTint', pts);
     quad([[n.x0, ny0, n.z0], [n.x1, ny0, n.z0], [n.x1, ny1, n.z0], [n.x0, ny1, n.z0]]);
     quad([[n.x1, ny0, n.z1], [n.x0, ny0, n.z1], [n.x0, ny1, n.z1], [n.x1, ny1, n.z1]]);
@@ -297,10 +297,10 @@ export class ShipSystem {
       for (let i = 0; i < n; i++) {
         const t = ((i + 0.5) / n - 0.5) * p.w;
         const sw = p.w / n - 0.06 - 0.06;
-        const lx = t, ly = p.h + 0.27, lz = -p.d * 0.05 + 0.032;
+        const lx = t, ly = p.h + (p.lift ?? 0.27), lz = -p.d * 0.05 + 0.032;
         this.screens.create({
           id: `scr_${p.room}_${p.x}_${p.z}_${i}`, kind: kinds[i] || 'idle', room: p.room,
-          w: sw, h: 0.44, x: p.x + c * lx + s * lz, y: p.y + ly, z: p.z - s * lx + c * lz, facing: th,
+          w: sw, h: p.sh ?? 0.44, x: p.x + c * lx + s * lz, y: p.y + ly, z: p.z - s * lx + c * lz, facing: th,
         }, this.interior.rooms.get(p.room));
       }
     }
@@ -429,17 +429,27 @@ export class ShipSystem {
 
   _onSit(seat) {
     this.look.yaw = 0; this.look.pitch = 0;
+    // The dorsal gunner starts looking a little up: straight ahead is the back of the bridge tower.
+    if (seat.id === 'gun_dorsal') this.look.pitch = 0.3;
+    if (seat.id === 'gun_ventral') this.look.pitch = -0.7;                 // the ground is under you
     this.sw.vx = this.sw.vz = 0;
     this.note(`${seat.name}: seated.`);
     if (this.onStationChange) this.onStationChange(seat);
   }
   _onStand(seat) {
+    this._swivelSeat(seat, seat.yaw * DEG);
     // step out in front of the seat
     const yaw = seat.yaw * DEG;
     this.sw.place(seat.x + Math.sin(yaw) * -0.0, seat.y, seat.z, this.sw.yaw);
     this._standClear(seat);
     this.note(`${seat.name}: stood down.`);
     if (this.onStationChange) this.onStationChange(null);
+  }
+
+  /** Turn a seat model about its own post (a turret chair follows where the gunner looks). */
+  _swivelSeat(seat, yaw) {
+    const g = this.interior.seatGroups.get(seat.id);
+    if (g) g.rotation.y = -yaw;
   }
 
   /** Move the standing body somewhere legal beside the seat. */
@@ -690,6 +700,7 @@ export class ShipSystem {
       this.eyeLocal = { x: seat.x, y: eyeY, z: seat.z };
       this.camYaw = seat.yaw * DEG + this.look.yaw;
       this.camPitch = this.look.pitch;
+      if (seat.role === 'turret') this._swivelSeat(seat, this.camYaw);      // a gunner's chair turns with the turret
       sw.x = seat.x; sw.y = seat.y; sw.z = seat.z;
     } else {
       sw.yaw += l.dx;
@@ -1062,7 +1073,8 @@ export class ShipSystem {
       sp.intensity = 9 * this.spotK * (cur === 'cargo' || cur === 'engineering' ? 1.6 : 1);
     }
     // interior ambient: brighter on the bridge (daylight through glass)
-    const amb = cur === 'bridge' ? 1.35 : 1.0;
+    // (a phone has four pooled lights, not six and a shadow-casting spot, so its ambient is a little higher)
+    const amb = (cur === 'bridge' ? 1.35 : 1.0) * (low ? 1.2 : 1.0);
     this.hemi.intensity += (amb - this.hemi.intensity) * Math.min(1, dt * 3);
   }
 

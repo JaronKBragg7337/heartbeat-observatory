@@ -99,9 +99,12 @@ function wallPiece(k, key, r, side, u0, u1, y0, y1) {
   }
 }
 
+/** Height of the turret nest's solid wall: the rest, up to the roof, is glass. */
+export const NEST_SILL = 0.65;
+
 function buildWalls(k, layout, r, wallKey) {
   // The bridge has windows: its forward and side walls stop at the sill.
-  const sillTop = r.id === 'bridge' ? r.y + 1.05 : null;
+  const sillTop = r.id === 'bridge' ? r.y + 1.05 : (r.id === 'nest' ? r.y + NEST_SILL : null);
   const sides = [
     { axis: 'x', plane: r.x0, normal: +1, lo: r.z0, hi: r.z1 },
     { axis: 'x', plane: r.x1, normal: -1, lo: r.z0, hi: r.z1 },
@@ -109,7 +112,7 @@ function buildWalls(k, layout, r, wallKey) {
     { axis: 'z', plane: r.z1, normal: -1, lo: r.x0, hi: r.x1 },
   ];
   for (const side of sides) {
-    const yTop = (sillTop && !(side.axis === 'z' && side.plane === r.z1)) ? sillTop : r.y + r.h;
+    const yTop = (sillTop && !(r.id === 'bridge' && side.axis === 'z' && side.plane === r.z1)) ? sillTop : r.y + r.h;
     const ops = openingsFor(layout, r, side.axis, side.plane);
     let cursor = side.lo;
     for (const o of ops) {
@@ -370,7 +373,8 @@ export function buildInterior(layout, mats, opts = {}) {
   }
 
   // --- Look at every flat face together and give the ones that share a plane their own depth layer. ---
-  out.layerStats = resolveDepthLayers(pending.map((q) => q.k));
+  out.kits = pending.map((q) => q.k);
+  out.layerStats = resolveDepthLayers(out.kits);
   for (const { g, k, mm, o } of pending) {
     const built = k.toGroup(mm, o);
     while (built.children.length) g.add(built.children[0]);
@@ -461,7 +465,7 @@ function dressRoom(k, layout, r, rnd, out, low) {
     wq([[hh.x0, yLo, hh.z0], [hh.x0, yLo, hh.z1], [hh.x0, yHi, hh.z1], [hh.x0, yHi, hh.z0]], [1, 0, 0]);
     wq([[hh.x1, yLo, hh.z0], [hh.x1, yLo, hh.z1], [hh.x1, yHi, hh.z1], [hh.x1, yHi, hh.z0]], [-1, 0, 0]);
     // glass band and sill; the roof is the ceiling
-    const y0 = yF + 1.0;
+    const y0 = yF + NEST_SILL;
     k.bevelBox('steelDark', (r.x0 + r.x1) / 2, y0 - 0.02, r.z0 + 0.03, r.x1 - r.x0, 0.05, 0.08, 0.01);
     k.bevelBox('steelDark', (r.x0 + r.x1) / 2, y0 - 0.02, r.z1 - 0.03, r.x1 - r.x0, 0.05, 0.08, 0.01);
     k.bevelBox('steelDark', r.x1 - 0.03, y0 - 0.02, (r.z0 + r.z1) / 2, 0.08, 0.05, r.z1 - r.z0, 0.01);
@@ -477,13 +481,11 @@ function dressRoom(k, layout, r, rnd, out, low) {
     // the pit: walls, glass floor, seat placed by the seat pass
     const pit = layout.extraZones.find((z) => z.id === 'pit');
     const y1 = 0, y0 = pit.floor;
-    const walls = [
-      { pts: [[pit.x0, y0, pit.z0], [pit.x0, y0, pit.z1], [pit.x0, y1, pit.z1], [pit.x0, y1, pit.z0]], n: [1, 0, 0] },
-      { pts: [[pit.x1, y0, pit.z0], [pit.x1, y0, pit.z1], [pit.x1, y1, pit.z1], [pit.x1, y1, pit.z0]], n: [-1, 0, 0] },
-      { pts: [[pit.x0, y0, pit.z0], [pit.x1, y0, pit.z0], [pit.x1, y1, pit.z0], [pit.x0, y1, pit.z0]], n: [0, 0, 1] },
-      { pts: [[pit.x0, y0, pit.z1], [pit.x1, y0, pit.z1], [pit.x1, y1, pit.z1], [pit.x0, y1, pit.z1]], n: [0, 0, -1] },
-    ];
-    for (const w of walls) k._faceQuad('wall:airlock', w.pts, w.n, null);
+    // No walls: the pit is an open glass pod. (Solid walls left the gunner staring at panelling, with the ground
+    // visible only straight down.) Four corner posts and a rim at floor level carry it.
+    for (const x of [pit.x0, pit.x1]) for (const z of [pit.z0, pit.z1]) k.bevelBox('steelDark', x, (y0 + y1) / 2, z, 0.07, y1 - y0, 0.07, 0.015);
+    for (const x of [pit.x0, pit.x1]) k.bevelBox('steelDark', x, y1 - 0.03, (pit.z0 + pit.z1) / 2, 0.07, 0.06, pit.z1 - pit.z0 + 0.07, 0.012);
+    for (const z of [pit.z0, pit.z1]) k.bevelBox('steelDark', 0, y1 - 0.03, z, pit.x1 - pit.x0 + 0.07, 0.06, 0.07, 0.012);
     // the floor is see-through: a glass plate in a steel frame
     k.poly('glassTint', [[pit.x0, y0 + 0.01, pit.z1], [pit.x1, y0 + 0.01, pit.z1], [pit.x1, y0 + 0.01, pit.z0], [pit.x0, y0 + 0.01, pit.z0]]);
     for (const x of [-0.35, 0, 0.35]) k.box('steelDark', x, y0 + 0.02, (pit.z0 + pit.z1) / 2, 0.05, 0.03, pit.z1 - pit.z0);

@@ -75,6 +75,12 @@ const CSS = `
   #ship-panel { width: calc(100vw - 20px); top: calc(88px + env(safe-area-inset-top, 0px)); bottom: auto; left: 10px; max-height: 40vh; }
   #ship-panel canvas { max-height: 24vh; width: auto; margin: 0 auto; }
   #ship-hint { display: none !important; }
+  /* Flying: the panel shrinks to one thin strip so the windscreen is the picture, not the readout. */
+  #ship-panel.fly { display: flex !important; align-items: center; gap: 8px; padding: 4px 8px; top: calc(70px + env(safe-area-inset-top, 0px)); max-height: none; width: calc(100vw - 20px); }
+  #ship-panel.fly h3, #ship-panel.fly .more { display: none; }
+  #ship-panel.fly #fl-read { flex: 1; font-size: 11px; line-height: 1.3; white-space: nowrap; overflow: hidden; }
+  #ship-panel.fly .chips { margin: 0; flex: none; }
+  #ship-panel.fly .chip { min-height: 30px; padding: 2px 10px; }
 }
 `;
 
@@ -148,6 +154,7 @@ export class ShipUI {
     this.seatId = id;
     const P = this.panel;
     P.innerHTML = '';
+    P.className = '';
     this.mapCanvas = null;
     this.btnLift.style.display = this.btnSink.style.display = 'none';
     this.btnFire.style.display = 'none';
@@ -170,7 +177,7 @@ export class ShipUI {
     this._showHint(hint);
 
     if (flying) {
-      P.style.display = 'block';
+      P.style.display = 'block'; P.className = 'fly';
       P.innerHTML = `<h3>${s.name.toUpperCase()}</h3><div id="fl-read"></div><div class="chips"><button class="chip" id="chip-ramp">Ramp</button></div>`;
       P.querySelector('#chip-ramp').onclick = () => { if (this.ship.stations.mayOperateRamp()) this.ship.toggleRamp('cargo'); };
     } else if (id === 'nav') {
@@ -226,9 +233,10 @@ export class ShipUI {
     if (this.seatId === 'captain' || this.seatId === 'pilot') {
       const el = P.querySelector('#fl-read');
       if (el) el.innerHTML =
-        `SPD <b>${f.groundSpeed.toFixed(0)}</b> m/s &nbsp; ALT <b>${Math.max(0, f.agl).toFixed(0)}</b> m &nbsp; VS <b>${f.verticalSpeed >= 0 ? '+' : ''}${f.verticalSpeed.toFixed(1)}</b><br>` +
-        `<span class="dim">${f.landed ? 'LANDED · ' : ''}gear ${f.gearPos > 0.99 ? 'down' : f.gearPos < 0.01 ? 'up' : 'moving'} · engines ${f.power.engines}%${f.canLiftOff() ? '' : ' · <span style="color:#ff6a55">CANNOT LIFT</span>'}</span>` +
-        (this.seatId === 'captain' ? `<br><span class="dim">guns ${f.power.guns}% · shield ${f.shield.toFixed(0)}/${f.shieldMax.toFixed(0)}</span>` : '');
+        `SPD <b>${f.groundSpeed.toFixed(0)}</b> m/s &nbsp; ALT <b>${Math.max(0, f.agl).toFixed(0)}</b> m &nbsp; VS <b>${f.verticalSpeed >= 0 ? '+' : ''}${f.verticalSpeed.toFixed(1)}</b><br class="more">` +
+        `<span class="dim more">${f.landed ? 'LANDED · ' : ''}gear ${f.gearPos > 0.99 ? 'down' : f.gearPos < 0.01 ? 'up' : 'moving'} · engines ${f.power.engines}%</span>` +
+        (f.canLiftOff() ? '' : ' <span style="color:#ff6a55">CANNOT LIFT</span>') +
+        (this.seatId === 'captain' ? `<br class="more"><span class="dim more">guns ${f.power.guns}% · shield ${f.shield.toFixed(0)}/${f.shieldMax.toFixed(0)}</span>` : '');
     } else if (this.seatId === 'nav' && this.mapCanvas) {
       const c = this.mapCanvas;
       ShipScreens.paint('map', c, tel, ship.time, { scanner: ship.scanner });

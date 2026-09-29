@@ -90,6 +90,9 @@ export function insideHull(x, y, z, margin = 0) {
 }
 
 export const hullTop = (z) => section(z).yt;
+
+/** The armoured saddle over the bridge stairwell (see buildExterior). roof(z) is its top surface. */
+export const STAIR_FAIRING = { z0: -13.4, z1: -9.7, hw: 1.15, floorY: 5.5, roof: (z) => 8.84 - (z + 13.4) * (3.0 / 4.5) };
 export const hullHalfWidth = (z) => section(z).hw;
 
 function buildHullMesh(mats, opts) {
@@ -316,14 +319,35 @@ export function buildExterior(layout, mats, opts = {}) {
     k.box('glowWhite', 1.6, yw - 0.5, -20.05, 0.5, 0.1, 0.08);
   }
 
+  // ============== the bridge-stair fairing: an armoured saddle over the stairwell ==========================
+  // The stair climbs from the corridor (3.0 m) to the bridge (6.0 m) and its headroom runs up to 8.7 m, but the hull
+  // deck there is only 5.9 to 6.6 m: without this, the top of the stairwell stood in the open air and you looked down
+  // through the hull's own roof plate at the steps.
+  {
+    const F = STAIR_FAIRING;
+    const yr = (z) => F.roof(z);
+    for (const s of mirror) {
+      const x = s * F.hw;
+      const pts = [[x, F.floorY, F.z0], [x, F.floorY, F.z1], [x, yr(F.z1), F.z1], [x, yr(F.z0), F.z0]];
+      k._faceQuad('hull', pts, [s, 0, 0], null);
+      k.bevelBox('hullDark', x + s * 0.02, (yr(F.z0) + yr(F.z1)) / 2 - 0.1, (F.z0 + F.z1) / 2, 0.06, 0.1, F.z1 - F.z0 - 0.6, 0.02);
+    }
+    k._faceQuad('hull', [[-F.hw, yr(F.z0), F.z0], [F.hw, yr(F.z0), F.z0], [F.hw, yr(F.z1), F.z1], [-F.hw, yr(F.z1), F.z1]], [0, 1, 0.6], null);
+    for (const z of [F.z0 + 0.5, (F.z0 + F.z1) / 2, F.z1 - 0.5]) k.bevelBox('metal', 0, yr(z) + 0.05, z, 2.3, 0.08, 0.16, 0.03);
+  }
+
   // ============== the dorsal nest (turret room) =========================================
   {
     const yt = 9.35, cx = 0.2, cz = 2.8, ys = 6.8;       // roof, and the deck it stands on
     const hgt = yt - ys, yc = (yt + ys) / 2;
     k.bevelBox('hull', -0.45, yt + 0.12, cz, 4.4, 0.24, 2.7, 0.08);
-    for (const [x0, x1] of [[-2.7, -2.5], [1.5, 1.7]]) k.bevelBox('hull', (x0 + x1) / 2, yc, cz, 0.22, hgt, 2.5, 0.05);
-    // fore and aft skirts stop at the sill of the glass band (6.95 + 1.0), so the gunner can see out
-    for (const z of [1.45, 4.15]) k.bevelBox('hull', -0.45, (ys + 7.9) / 2, z, 4.5, 7.9 - ys, 0.18, 0.05);
+    // A waist-high armoured parapet all round (its top is 0.65 m above the nest floor, below the gunner's eye at 1.12 m)
+    // and four corner posts to carry the roof; everything between is glass. (It used to be full-height slabs on both
+    // sides and a solid interior wall: the gunner sat in a box and saw nothing but plating.)
+    const yp = 7.6;
+    for (const [x0, x1] of [[-2.7, -2.5], [1.5, 1.7]]) k.bevelBox('hull', (x0 + x1) / 2, (ys + yp) / 2, cz, 0.22, yp - ys, 2.5, 0.05);
+    for (const z of [1.45, 4.15]) k.bevelBox('hull', -0.45, (ys + yp) / 2, z, 4.5, yp - ys, 0.18, 0.05);
+    for (const x of [-2.6, 1.6]) for (const z of [1.45, 4.15]) k.bevelBox('hull', x, (yp + yt) / 2, z, 0.2, yt - yp, 0.2, 0.04);
     k.cyl('metal', cx, yt + 0.28, cz, 1.2, 0.16, 28);
     k.cyl('engine', cx, yt + 0.2, cz, 1.32, 0.08, 28);
   }

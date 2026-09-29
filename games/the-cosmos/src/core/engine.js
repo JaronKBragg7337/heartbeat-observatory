@@ -32,6 +32,9 @@ export class Engine {
       canvas,
       antialias: opts.antialias !== false,
       powerPreference: 'high-performance',
+      // Ask for a stencil too: some phones give a bare 16-bit depth buffer when none is requested, and give a
+      // 24-bit depth+stencil one when it is. (Surfaces a centimetre apart fight in 16 bits.)
+      stencil: true,
     });
     // Cap DPR: a modern phone can report 3-4x, which quadruples fragment cost
     // for detail no one can resolve. This is a measured budget, not a

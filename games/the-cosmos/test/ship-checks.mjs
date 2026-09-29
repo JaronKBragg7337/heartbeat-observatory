@@ -20,8 +20,9 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
   const { GunSystem, DroneSystem } = await imp('src/ship/guns.js');
   const { findLandingSite, siteOrigin } = await imp('src/ship/shipSite.js');
   const { makeShipMaterials } = await imp('src/ship/shipTextures.js');
-  const { buildInterior, buildSeats } = await imp('src/ship/shipInterior.js');
+  const { buildInterior, buildSeats, NEST_SILL } = await imp('src/ship/shipInterior.js');
   const EXT = await imp('src/ship/shipExterior.js');
+  const VIS = await imp('src/ship/shipVisibility.js');
   const SYS = await imp('src/ship/shipSystem.js');
   const L = SPEC.buildLayout();
   const { DECK, AVATAR } = SPEC;
@@ -529,4 +530,169 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     check('the interior is light enough for a phone: under 100k triangles and under 220 draw calls with every room drawn',
       tris < 100000 && calls < 220, `${Math.round(tris)} triangles, ${calls} meshes`);
   }
+
+  // ---- 9g. What a phone showed: fighting surfaces, vanishing rooms, blocked views, solid stairs -------------------
+  section('9g. Nothing fights, nothing vanishes, nothing blocks the view');
+  {
+    const mats = makeShipMaterials({ tier: 'low' });
+    const it = buildInterior(L, mats, { tier: 'low' });
+    buildSeats(L, mats, it);
+
+    // -- flat faces that share a plane must not share a depth layer (the blocky white patches on walls and stairs) --
+    const faces = [];
+    for (const k of it.kits) for (const f of k.faces) {
+      if (f.n !== 4) continue;
+      const b = f.b, i0 = f.base * 3;
+      const nx = b.nrm[i0], ny = b.nrm[i0 + 1], nz = b.nrm[i0 + 2];
+      const ax = Math.abs(nx) > 0.999 ? 0 : Math.abs(ny) > 0.999 ? 1 : Math.abs(nz) > 0.999 ? 2 : -1;
+      if (ax < 0) continue;
+      const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+      for (let v = 0; v < 4; v++) for (let c = 0; c < 3; c++) { const t = b.pos[(f.base + v) * 3 + c]; if (t < lo[c]) lo[c] = t; if (t > hi[c]) hi[c] = t; }
+      faces.push({ f, ax, sgn: Math.sign([nx, ny, nz][ax]), d: lo[ax], lo, hi });
+    }
+    const byPlane = new Map();
+    for (const q of faces) { const key = `${q.ax}${q.sgn}:${Math.round(q.d / 0.03)}`; if (!byPlane.has(key)) byPlane.set(key, []); byPlane.get(key).push(q); }
+    let fights = 0, pairs = 0, example = '';
+    for (const [key, list] of byPlane) {
+      const [head, cs] = key.split(':');
+      for (const other of [list, byPlane.get(`${head}:${+cs + 1}`) || []]) {
+        for (let i = 0; i < list.length; i++) for (let j = other === list ? i + 1 : 0; j < other.length; j++) {
+          const A = list[i], B = other[j];
+          if (Math.abs(A.d - B.d) > 0.03) continue;
+          const a = A.ax, u = (a + 1) % 3, v = (a + 2) % 3;
+          const ou = Math.min(A.hi[u], B.hi[u]) - Math.max(A.lo[u], B.lo[u]), ov = Math.min(A.hi[v], B.hi[v]) - Math.max(A.lo[v], B.lo[v]);
+          if (ou < 0.01 || ov < 0.01) continue;
+          pairs++;
+          if (A.f.lift === B.f.lift) { fights++; if (!example) example = `${A.d.toFixed(3)}/${B.d.toFixed(3)} axis ${a}`; }
+        }
+      }
+    }
+    check('no two flat faces on the same plane share a depth layer (they would z-fight: blocky patches on a phone)',
+      fights === 0 && pairs > 500, `${fights} unresolved of ${pairs} coincident pairs ${example}`);
+    check('the depth lift stays small: at most 4 layers', it.layerStats.maxLayer <= 4, `max ${it.layerStats.maxLayer}`);
+
+    // -- the room you can see must be drawn ----------------------------------------------------------------------
+    const ids = new Set(L.rooms.map((r) => r.id));
+    const portals = VIS.buildPortals(L, ids);
+    const door = new Map(L.doors.map((d) => [d.id, d]));
+    const trace = (o, d, room, seen, depth, isOpen) => {
+      seen.add(room);
+      if (depth > 7) return;
+      for (const p of portals.of.get(room) || []) {
+        const other = p.a === room ? p.b : p.a;
+        const dd = p.door ? door.get(p.door) : null;
+        if (dd && dd.kind !== 'open') {
+          const dir = dd.axis === 'x' ? d.x : d.z, org = dd.axis === 'x' ? o.x : o.z;
+          if (Math.abs(dir) < 1e-9) continue;
+          const t = (dd.at - org) / dir; if (t <= 1e-4) continue;
+          const px = o.x + d.x * t, py = o.y + d.y * t, pz = o.z + d.z * t;
+          const uu = dd.axis === 'x' ? pz : px;
+          if (Math.abs(uu - dd.c) <= dd.w / 2 && py >= dd.y && py <= dd.y + dd.h && isOpen(p.door)) trace({ x: px, y: py, z: pz }, d, other, seen, depth + 1, isOpen);
+        } else {
+          const vx = p.x - o.x, vy = p.y - o.y, vz = p.z - o.z; const t = vx * d.x + vy * d.y + vz * d.z; if (t <= 0) continue;
+          if (Math.hypot(o.x + d.x * t - p.x, o.y + d.y * t - p.y, o.z + d.z * t - p.z) <= p.r * 0.8) trace({ x: o.x + d.x * t, y: o.y + d.y * t, z: o.z + d.z * t }, d, other, seen, depth + 1, isOpen);
+        }
+      }
+    };
+    let samples = 0, missed = 0, worstDrawn = 0, missNote = '';
+    for (const aspect of [0.46, 2.0]) for (const r of L.rooms) {
+      for (let x = r.x0 + 0.4; x <= r.x1 - 0.4; x += Math.max(1.2, (r.x1 - r.x0) / 4)) for (let z = r.z0 + 0.4; z <= r.z1 - 0.4; z += Math.max(1.2, (r.z1 - r.z0) / 4)) {
+        const cam = { x, y: r.y + 1.66, z };
+        // the game opens a door when you are within 1.7 m (2.4 m for a wide one)
+        const isOpen = (id) => { const dd = door.get(id); const cx = dd.axis === 'x' ? dd.at : dd.c, cz = dd.axis === 'x' ? dd.c : dd.at; return Math.hypot(cam.x - cx, cam.z - cz) < (dd.w > 1.6 ? 2.4 : 1.7) && Math.abs(cam.y - 1.66 - dd.y) < 2.6; };
+        for (let yaw = 0; yaw < 360; yaw += 30) for (const pitch of [0, -25, 25]) {
+          const cy = Math.cos(pitch * Math.PI / 180), sy = Math.sin(pitch * Math.PI / 180), ya = yaw * Math.PI / 180;
+          const fwd = { x: Math.sin(ya) * cy, y: sy, z: -Math.cos(ya) * cy };
+          const reach = VIS.reachRooms({ portals, isOpen, starts: [r.id], cam, fwd, fovDeg: 72, aspect, maxRooms: 8 });
+          samples++; worstDrawn = Math.max(worstDrawn, reach.size);
+          const th = Math.tan(36 * Math.PI / 180) * aspect, tv = Math.tan(36 * Math.PI / 180);
+          const right = { x: Math.cos(ya), y: 0, z: Math.sin(ya) };
+          const up = { x: right.y * fwd.z - right.z * fwd.y, y: right.z * fwd.x - right.x * fwd.z, z: right.x * fwd.y - right.y * fwd.x };
+          const seen = new Set();
+          for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) {
+            let d = { x: fwd.x + right.x * (i / 3) * th + up.x * (j / 3) * tv, y: fwd.y + right.y * (i / 3) * th + up.y * (j / 3) * tv, z: fwd.z + right.z * (i / 3) * th + up.z * (j / 3) * tv };
+            const l = Math.hypot(d.x, d.y, d.z); d = { x: d.x / l, y: d.y / l, z: d.z / l };
+            trace(cam, d, r.id, seen, 0, isOpen);
+          }
+          for (const id of seen) if (!reach.has(id)) { missed++; if (!missNote) missNote = `${r.id}@${x.toFixed(1)},${z.toFixed(1)} yaw ${yaw} misses ${id}`; }
+        }
+      }
+    }
+    check('every room a ray of sight can reach through an open door or opening is drawn, on a phone budget (never more than 8 rooms)',
+      missed === 0 && worstDrawn <= 8 && samples > 5000, `${missed} misses in ${samples} views; most drawn ${worstDrawn}; ${missNote}`);
+    check('a closed door hides what is behind it (nothing is drawn through a shut door)',
+      VIS.reachRooms({ portals, isOpen: () => false, starts: ['cargo'], cam: { x: 0, y: 1.66, z: 14 }, fwd: { x: 0, y: 0, z: -1 }, fovDeg: 72, aspect: 1, maxRooms: 8 }).size === 1);
+    check('a door leaf belongs to the ship, not to a room, so it is drawn from either side',
+      it.doors.length >= 8 && it.doors.every((dl) => dl.group.parent === it.root));
+    check('each stair and ladder is drawn whenever any room it touches is drawn',
+      it.sharedGroups.length === 4 && it.sharedGroups.every((e) => e.rooms.length === 2 && e.rooms.every((id) => ids.has(id))));
+
+    // -- stairs are solid from the side ---------------------------------------------------------------------------------
+    let inside = 0, tried = 0, where = '';
+    const stairs = [SPEC.STAIRS.down, SPEC.STAIRS.up];
+    for (const st of stairs) {
+      const zA = Math.min(st.zLow, st.zHigh), zB = Math.max(st.zLow, st.zHigh);
+      for (let z = zA + 0.2; z < zB; z += 0.45) for (const side of [-1, 1]) for (let yawq = 0; yawq < 4; yawq++) {
+        const w = new ShipWalker(shipIndex, defaultState());
+        const y0 = st === SPEC.STAIRS.down ? 0 : 3.0;
+        // start beside the stair on the deck that has a floor there (beside the up stair there is none: only a wall)
+        const start = side * 1.25;
+        w.place(start, y0, z, yawq * Math.PI / 2);
+        if (!w.support(start, y0, z)) continue;
+        for (let f = 0; f < 240; f++) {
+          w.tick(1 / 60, { moveZ: 1, moveX: (f % 60) < 30 ? 0.5 : -0.5 });
+          const inWedge = Math.abs(w.x) < 0.75 && w.z > zA + 0.05 && w.z < zB - 0.05;
+          if (inWedge && w.y > y0 - 0.4 && w.y < SPEC.stairFloor(st, w.z) - 0.3) { inside++; where = `${st.id} z=${w.z.toFixed(2)} y=${w.y.toFixed(2)}`; break; }
+        }
+        tried++;
+      }
+    }
+    check('nobody can walk into the side of either stair, or stand inside or beneath its steps', inside === 0 && tried > 20, `${inside}/${tried} ${where}`);
+    let stairEnds = 0;
+    for (const st of stairs) {
+      const w = new ShipWalker(shipIndex, defaultState());
+      const low = st === SPEC.STAIRS.down ? { x: 0, y: 0, z: 9.05, yaw: 0 } : { x: 0, y: 3.0, z: -8.6, yaw: 0 };
+      w.place(low.x, low.y, low.z, low.yaw);
+      for (let f = 0; f < 60 * 8; f++) w.tick(1 / 60, { moveZ: 1 });
+      if (w.y > st.yHigh - 0.4) stairEnds++;
+    }
+    check('both stairs can still be climbed from their foot to their top', stairEnds === 2, `${stairEnds}/2`);
+
+    // -- the flight seats look out ------------------------------------------------------------------------------------
+    const eyeOf = (id) => { const s = SPEC.SEATS.find((q) => q.id === id); return { s, y: s.y + AVATAR.seatedEyeM }; };
+    const blockers = [];
+    for (const id of ['captain', 'pilot']) {
+      const { s, y } = eyeOf(id);
+      for (const p of L.props.filter((q) => q.room === 'bridge' && q.blocks)) {
+        const b = SPEC.propBox(p);
+        if ((b.z1 + b.z0) / 2 > s.z) continue;                                        // behind the seat: not ahead of it
+        const cx = (b.x0 + b.x1) / 2, ang = Math.atan2(Math.abs(cx - s.x), s.z - (b.z0 + b.z1) / 2) * 180 / Math.PI;
+        if (ang > 30) continue;                                                       // outside a forward 60-degree fan
+        const top = b.y1 + (p.screens ? (p.lift ?? 0.27) + (p.fh ?? 0.5) / 2 : 0);
+        if (top > y + 0.02) blockers.push(`${p.kind}@${p.x},${p.z} tops out ${top.toFixed(2)} above eye ${y.toFixed(2)} from ${id}`);
+      }
+    }
+    check('nothing in front of the pilot or captain rises above their eye across a forward 60-degree fan (they can see out)', blockers.length === 0, blockers.join('; '));
+    check('the windscreen sill is no higher than the pilot and captain seated eye',
+      L.roomById.get('bridge').y + 1.05 <= Math.min(eyeOf('pilot').y, eyeOf('captain').y));
+    {
+      const n = L.roomById.get('nest'), eye = eyeOf('gun_dorsal').y;
+      check('the dorsal gunner sits in glass: the nest wall tops out at least 0.3 m below the seated eye',
+        n.y + NEST_SILL + 0.3 < eye, `${(n.y + NEST_SILL).toFixed(2)} vs eye ${eye.toFixed(2)}`);
+    }
+
+    // -- the stairwell is under armour ---------------------------------------------------------------------------------
+    const F = EXT.STAIR_FAIRING;
+    let open = 0, ex = '';
+    const su = SPEC.STAIRS.up;
+    for (let z = su.zHigh; z <= su.zLow; z += 0.15) for (const x of [-0.75, 0, 0.75]) {
+      const fl = SPEC.stairFloor(su, z);
+      for (const y of [fl + 0.1, fl + 1.78, fl + 2.6]) {
+        const covered = EXT.insideHull(x, y, z, 0.03) || (z >= F.z0 - 0.01 && z <= F.z1 + 0.01 && Math.abs(x) < F.hw - 0.05 && y < F.roof(z) - 0.05);
+        if (!covered) { open++; if (!ex) ex = `(${x},${y.toFixed(2)},${z.toFixed(2)})`; }
+      }
+    }
+    check('every point of the bridge stairwell is inside the hull or under its armoured saddle (you cannot look out through the roof plate)', open === 0, `${open} open ${ex}`);
+  }
+
 }

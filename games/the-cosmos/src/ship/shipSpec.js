@@ -336,10 +336,13 @@ prop('suitrack', 'airlock', -6.05, -12.4, 0.8, 0.6, 2.0, 1);
 prop('suitrack', 'airlock', -6.05, -9.2, 0.8, 0.6, 2.0, 1);
 
 // bridge
-prop('console', 'bridge', -1.6, -18.85, 2.2, 1.0, 1.0, 0, { extra: { screens: 3, station: 'pilot' } });
-prop('console', 'bridge',  1.6, -18.85, 2.2, 1.0, 1.0, 0, { extra: { screens: 3, station: 'nav' } });
-prop('console', 'bridge', -3.45, -18.85, 1.1, 1.0, 1.0, 0, { extra: { screens: 1, decorative: true } });
-prop('console', 'bridge',  3.45, -18.85, 1.1, 1.0, 1.0, 0, { extra: { screens: 1, decorative: true } });
+// The flight consoles are LOW: a dashboard, not a wall. Their screens end at 7.09 m, just under the seated eye
+// (pilot 6.0 + 1.12), so the windscreen above them is clear to fly by. (They used to reach 7.5 m, right across the horizon.)
+const LOWCON = { screens: 3, lift: 0.2, fh: 0.36, sh: 0.32 };
+prop('console', 'bridge', -1.6, -18.85, 2.2, 1.0, 0.72, 0, { extra: { ...LOWCON, station: 'pilot' } });
+prop('console', 'bridge',  1.6, -18.85, 2.2, 1.0, 0.72, 0, { extra: { ...LOWCON, station: 'nav' } });
+prop('console', 'bridge', -3.45, -18.85, 1.1, 1.0, 0.72, 0, { extra: { ...LOWCON, screens: 1, decorative: true } });
+prop('console', 'bridge',  3.45, -18.85, 1.1, 1.0, 0.72, 0, { extra: { ...LOWCON, screens: 1, decorative: true } });
 prop('holotable','bridge', -3.3, -15.8, 1.3, 1.5, 1.0, 0);
 prop('console', 'bridge',  3.65, -15.7, 2.6, 0.7, 1.05, 3, { extra: { screens: 2, station: 'comms' } });
 prop('locker', 'bridge', -3.3, -13.7, 0.6, 0.5, 2.0, 2);

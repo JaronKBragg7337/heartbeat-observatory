@@ -309,6 +309,7 @@ export const PROPS = {
   console(k, p) {
     const w = p.w, d = p.d, h = p.h;
     const n = p.screens || 0;
+    const lift = p.lift ?? 0.27, fh = p.fh ?? 0.5;      // how high the screens stand above the desk, and their frame height
     // Wall-side ones (deep, low) get a sloped desk; long/thin ones get a bank of screens
     k.bevelBox('gunmetal', 0, 0.18, 0, w - 0.04, 0.36, d - 0.06, 0.02);         // plinth
     k.bevelBox('plasticDark', 0, h * 0.5 + 0.1, -d * 0.08, w, h - 0.28, d * 0.82, 0.03);
@@ -329,10 +330,10 @@ export const PROPS = {
       for (let i = 0; i < n; i++) {
         const t = ((i + 0.5) / n - 0.5) * (w >= d ? w : d);
         if (w >= d) {
-          k.bevelBox('plasticDark', t, h + 0.27, -d * 0.05, sw, 0.5, 0.06, 0.015);
+          k.bevelBox('plasticDark', t, h + lift, -d * 0.05, sw, fh, 0.06, 0.015);
           k.bevelBox('gunmetal', t, h + 0.03, -d * 0.05, 0.08, 0.1, 0.06, 0.01);
         } else {
-          k.bevelBox('plasticDark', 0, h + 0.27, t, 0.06, 0.5, sw, 0.015);
+          k.bevelBox('plasticDark', 0, h + lift, t, 0.06, fh, sw, 0.015);
         }
       }
     }
