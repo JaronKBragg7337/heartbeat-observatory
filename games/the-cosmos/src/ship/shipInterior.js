@@ -71,6 +71,13 @@ function openingsFor(layout, r, axis, plane) {
     if (d.a !== r.id && d.b !== r.id) continue;
     out.push({ u0: d.c - d.w / 2, u1: d.c + d.w / 2, y0: d.y, y1: d.y + d.h, door: d });
   }
+  // windows on this wall
+  for (const w of layout.windows || []) {
+    if (w.room !== r.id) continue;
+    const onPlane = axis === 'x' && ((w.wall === 'x0' && plane === r.x0) || (w.wall === 'x1' && plane === r.x1));
+    if (!onPlane) continue;
+    out.push({ u0: w.c - w.w / 2, u1: w.c + w.w / 2, y0: r.y + (w.y0 - 3.0) + 0.0, y1: r.y + (w.y1 - 3.0), window: w });
+  }
   out.sort((a, b) => a.u0 - b.u0);
   return out;
 }
@@ -112,6 +119,25 @@ function buildWalls(k, layout, r, wallKey) {
       cursor = o.u1;
     }
     wallPiece(k, wallKey, r, side, cursor, side.hi, r.y, yTop);
+  }
+}
+
+/** Frame and glass for the windows of one room. */
+function buildWindows(k, layout, r) {
+  for (const w of layout.windows || []) {
+    if (w.room !== r.id) continue;
+    const plane = w.wall === 'x0' ? r.x0 : r.x1;
+    const n = w.wall === 'x0' ? 1 : -1;                       // the wall faces into the room
+    const y0 = r.y + (w.y0 - 3.0), y1 = r.y + (w.y1 - 3.0);
+    const cy = (y0 + y1) / 2, h = y1 - y0, t = 0.08;
+    const x = plane + n * 0.07;
+    k.bevelBox('steelDark', x, y1 + t / 2, w.c, 0.16, t, w.w + t * 2, 0.02);
+    k.bevelBox('steelDark', x, y0 - t / 2, w.c, 0.16, t, w.w + t * 2, 0.02);
+    for (const s of [-1, 1]) k.bevelBox('steelDark', x, cy, w.c + s * (w.w / 2 + t / 2), 0.16, h, t, 0.02);
+    k.bevelBox('steel', x, cy, w.c, 0.05, 0.03, w.w, 0.008);                // a mullion across the middle
+    // the pane, in the plane of the wall
+    const px = plane + n * 0.02;
+    k._faceQuadUV('glassTint', [[px, y0, w.c - w.w / 2], [px, y0, w.c + w.w / 2], [px, y1, w.c + w.w / 2], [px, y1, w.c - w.w / 2]], [n, 0, 0], null);
   }
 }
 
@@ -189,6 +215,7 @@ export function buildInterior(layout, mats, opts = {}) {
     }
 
     buildDoorFrames(k, layout, r);
+    buildWindows(k, layout, r);
 
     // lamps in this room
     for (const L of layout.lights.filter((l) => l.room === r.id)) {

@@ -212,7 +212,6 @@ export const WALL_SCREENS = [
   { id: 'scr_med_1', room: 'medbay', kind: 'vitals', x: -6.37, y: 4.55, z: -7.3, w: 0.5, h: 0.32, facing: 'x+' },
   { id: 'scr_med_2', room: 'medbay', kind: 'vitals', x: -6.37, y: 4.55, z: -5.3, w: 0.5, h: 0.32, facing: 'x+' },
   { id: 'scr_galley', room: 'galley', kind: 'menu', x: 6.37, y: 4.9, z: -3.9, w: 0.9, h: 0.55, facing: 'x-' },
-  { id: 'scr_cabin', room: 'cabin', kind: 'vista', x: 6.37, y: 4.75, z: 4.95, w: 1.1, h: 0.7, facing: 'x-' },
   { id: 'scr_work', room: 'workshop', kind: 'schematic', x: -6.37, y: 4.5, z: 5.0, w: 0.9, h: 0.6, facing: 'x+' },
   { id: 'scr_cargo', room: 'cargo', kind: 'manifest', x: -5.77, y: 1.7, z: 14.0, w: 1.0, h: 0.65, facing: 'x+' },
   { id: 'scr_eng_wall', room: 'engineering', kind: 'reactorwall', x: 0.0, y: 2.0, z: -6.97, w: 1.6, h: 0.75, facing: 'z+' },
@@ -351,6 +350,18 @@ prop('locker', 'bridge',  3.3, -13.7, 0.6, 0.5, 2.0, 2);
 // dorsal turret nest
 prop('console', 'nest', -0.9, 3.6, 0.8, 0.5, 1.0, 2, { extra: { decorative: true } });
 
+// Real windows in the outer walls. The interior wall simply has a hole; because nothing is drawn
+// between it and the world (the hull is invisible from inside), you look straight out at Mars.
+// wall: 'x0' (port) or 'x1' (starboard); c is the centre along the wall.
+export const WINDOWS = [
+  { room: 'crew_a', wall: 'x0', c: -1.0, w: 1.8, y0: 4.95, y1: 5.45 },
+  { room: 'crew_b', wall: 'x1', c: 0.1, w: 1.8, y0: 4.95, y1: 5.45 },
+  { room: 'medbay', wall: 'x0', c: -6.3, w: 1.4, y0: 4.6, y1: 5.3 },
+  { room: 'galley', wall: 'x1', c: -7.3, w: 1.3, y0: 4.7, y1: 5.35 },
+  { room: 'cabin', wall: 'x1', c: 4.95, w: 1.2, y0: 4.35, y1: 5.05 },
+  { room: 'workshop', wall: 'x0', c: 7.9, w: 1.2, y0: 4.55, y1: 5.3 },
+];
+
 // Posters and photographs on the walls. wall: which face of the room; u: position along it.
 export const POSTERS = [
   { room: 'crew_a', wall: 'z0', u: -3.7, y: 4.8, w: 0.62, h: 0.62, idx: 0 },
@@ -468,7 +479,7 @@ export const SHIP_PHYS = {
 // ---------------------------------------------------------------------------
 export function buildLayout() {
   const roomById = new Map(rooms.map((r) => [r.id, r]));
-  return { rooms, roomById, doors, props, lights, posters: POSTERS, stairs: STAIRS, ramps: RAMPS, ladders: LADDERS,
+  return { rooms, roomById, doors, props, lights, posters: POSTERS, windows: WINDOWS, stairs: STAIRS, ramps: RAMPS, ladders: LADDERS,
            seats: SEATS, panels: PANELS, extraZones: EXTRA_ZONES, gear: GEAR, guns: GUNS };
 }
 
