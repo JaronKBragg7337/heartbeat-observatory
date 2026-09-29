@@ -418,6 +418,22 @@ export function buildExterior(layout, mats, opts = {}) {
     }
   }
 
+  // the fixed parts of each leg never move relative to the hull: they go in the static kit
+  for (const leg of GEAR.legs) {
+    k.push(leg.x, 0, leg.z, 0);
+    const out = Math.sign(leg.x);
+    k.bevelBox('hullDark', 0, 0.05, 0, 0.95, 0.9, 0.95, 0.14);
+    k.cyl('engine', 0, -0.55, 0, 0.36, 1.5, 16);
+    k.cyl('metal', 0, -1.34, 0, 0.42, 0.14, 16);
+    k.cyl('gunmetal', 0, -0.2, 0, 0.42, 0.1, 16);
+    k.pipe('engine', [0, -0.4, 0.0], [-out * 1.2, 0.5, 0.0], 0.13, 10);
+    k.pipe('engine', [0, -0.45, 0], [0, 0.4, leg.z < 0 ? 1.4 : -1.4], 0.12, 10);
+    k.cyl('metal', -out * 1.2, 0.5, 0, 0.17, 0.18, 10, { axis: 'x' });
+    k.pipe('pipeYellow', [0.34, -0.15, 0.0], [0.34, -1.2, 0.0], 0.03, 6);
+    k.cyl('hazard', 0, -0.95, 0, 0.375, 0.16, 16);
+    k.pop();
+  }
+
   const staticGroup = k.toGroup(mats, { name: 'ext-static', cast: true, receive: true });
   ext.triangles += k.triangles;
   root.add(staticGroup);
@@ -427,18 +443,6 @@ export function buildExterior(layout, mats, opts = {}) {
   for (const leg of GEAR.legs) {
     const g = new THREE.Group(); g.name = 'leg:' + leg.id;
     g.position.set(leg.x, 0, leg.z);
-    const kk = new Kit();
-    const out = Math.sign(leg.x);
-    kk.bevelBox('hullDark', 0, 0.05, 0, 0.95, 0.9, 0.95, 0.14);
-    kk.cyl('engine', 0, -0.55, 0, 0.36, 1.5, 16);
-    kk.cyl('metal', 0, -1.34, 0, 0.42, 0.14, 16);
-    kk.cyl('gunmetal', 0, -0.2, 0, 0.42, 0.1, 16);
-    kk.pipe('engine', [0, -0.4, 0.0], [-out * 1.2, 0.5, 0.0], 0.13, 10);
-    kk.pipe('engine', [0, -0.45, 0], [0, 0.4, leg.z < 0 ? 1.4 : -1.4], 0.12, 10);
-    kk.cyl('metal', -out * 1.2, 0.5, 0, 0.17, 0.18, 10, { axis: 'x' });
-    kk.pipe('pipeYellow', [0.34, -0.15, 0.0], [0.34, -1.2, 0.0], 0.03, 6);
-    kk.cyl('hazard', 0, -0.95, 0, 0.375, 0.16, 16);
-    g.add(kk.toGroup(mats, { name: 'leg-fixed', cast: true, receive: true }));
     const pk = new Kit();
     pk.cyl('steel', 0, -0.5, 0, 0.24, 1.0, 14);       // unit height, centred at -0.5
     const piston = new THREE.Group(); piston.add(pk.toGroup(mats, { name: 'piston', cast: true }));

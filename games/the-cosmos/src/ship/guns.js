@@ -141,7 +141,7 @@ export class GunSystem {
         if (segSphere(b.px, b.py, b.pz, b.x, b.y, b.z, t.pos, t.radius)) {
           t.hp -= b.damage;
           this.events.push({ type: 'target_hit', id: t.id, x: b.x, y: b.y, z: b.z, hp: t.hp, gun: b.gun });
-          if (t.hp <= 0) { t.respawn = 8; this.events.push({ type: 'target_down', id: t.id, x: t.pos.x, y: t.pos.y, z: t.pos.z }); }
+          if (t.hp <= 0) { t.respawn = t.respawnTime ?? 8; this.events.push({ type: 'target_down', id: t.id, x: t.pos.x, y: t.pos.y, z: t.pos.z }); }
           dead = true; break;
         }
       }
@@ -219,8 +219,8 @@ export class DroneSystem {
     this.shots = [];
     this.events = [];
     this.t = 0;
-    this.aggroM = 750;
-    this.strafeM = 230;
+    this.aggroM = 650;
+    this.strafeM = 280;
   }
 
   /** Put a drone at a world point (its anchor). */
@@ -229,7 +229,7 @@ export class DroneSystem {
       id, anchor: { ...anchor }, pos: { ...anchor }, vel: { x: 0, y: 0, z: 0 },
       state: 'idle', cool: 1.5 + this.drones.length * 0.7, phase: this.drones.length * 2.1, target: null,
     };
-    d.target = this.guns.addTarget({ id, pos: d.pos, radius: 3.2, hp: 60, maxHp: 60 });
+    d.target = this.guns.addTarget({ id, pos: d.pos, radius: 3.2, hp: 60, maxHp: 60, respawnTime: 45 });
     d.target.respawn = 0;
     this.drones.push(d);
     return d;
@@ -275,8 +275,8 @@ export class DroneSystem {
       // fire
       d.cool -= dt;
       if (d.state === 'attack' && d.cool <= 0 && dist < this.aggroM * 0.8) {
-        d.cool = 2.3 + Math.random() * 1.2;
-        const speed = 120;
+        d.cool = 3.4 + Math.random() * 1.8;
+        const speed = 100;
         const tt = dist / speed;
         const px = S.pos.x + S.vel.x * tt, py = S.pos.y + S.vel.y * tt, pz = S.pos.z + S.vel.z * tt;
         let ax = px - d.pos.x, ay = py - d.pos.y, az = pz - d.pos.z;
@@ -284,7 +284,7 @@ export class DroneSystem {
         ax /= al; ay /= al; az /= al;
         // a little inaccuracy
         ax += (Math.random() - 0.5) * 0.02; ay += (Math.random() - 0.5) * 0.02; az += (Math.random() - 0.5) * 0.02;
-        this.shots.push({ x: d.pos.x, y: d.pos.y, z: d.pos.z, vx: ax * speed, vy: ay * speed, vz: az * speed, life: 9, damage: 22, px: d.pos.x, py: d.pos.y, pz: d.pos.z });
+        this.shots.push({ x: d.pos.x, y: d.pos.y, z: d.pos.z, vx: ax * speed, vy: ay * speed, vz: az * speed, life: 9, damage: 12, px: d.pos.x, py: d.pos.y, pz: d.pos.z });
         this.events.push({ type: 'drone_fire', id: d.id, x: d.pos.x, y: d.pos.y, z: d.pos.z });
       }
     }

@@ -446,8 +446,10 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     const weak = makeShip(); weak.setPowerSplit(60, 30, 10);
     check('routing power to the shields makes them a bigger buffer', strong.shieldMax > 2.5 * weak.shieldMax, `${strong.shieldMax.toFixed(0)} vs ${weak.shieldMax.toFixed(0)}`);
     const dmg = makeShip(); dmg.hull = 20;
-    check('a battered hull gives up thrust: at 20% integrity the lift thrusters are weaker',
-      dmg.maxLiftN < 0.9 * makeShip().maxLiftN, `${(dmg.maxLiftN / 1000).toFixed(0)} kN`);
+    check('a battered hull gives up thrust but never enough to fall out of the sky',
+      dmg.maxLiftN < 0.9 * makeShip().maxLiftN && dmg.maxLiftN > 1.2 * dmg.weightN(), `${(dmg.maxLiftN / 1000).toFixed(0)} kN vs ${(dmg.weightN() / 1000).toFixed(0)} kN of weight`);
+    const ruin = makeShip(); ruin.hull = 0;
+    check('even at zero integrity the ship can still lift off', ruin.canLiftOff());
   }
   {
     const s = makeShip();
@@ -471,7 +473,7 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
       shieldSeen = Math.min(shieldSeen, s.shield);
     }
     check('once the ship is airborne the drone attacks: it fires, its bolts hit, and the shield takes the damage',
-      fired >= 3 && hits >= 1 && shieldSeen < s.shieldMax - 15, `${fired} shots, ${hits} hits, shield ${shieldSeen.toFixed(0)}/${s.shieldMax.toFixed(0)}`);
+      fired >= 3 && hits >= 1 && shieldSeen < s.shieldMax - 5, `${fired} shots, ${hits} hits, shield ${shieldSeen.toFixed(0)}/${s.shieldMax.toFixed(0)}`);
     // and it can be shot down from the captain's chair
     st.sit({ x: 0, y: 6.2, z: -14.3 });
     const eye = s.toWorld({ x: 0, y: 7.3, z: -15.1 }, {});

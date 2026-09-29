@@ -134,8 +134,9 @@ export class ShipBody {
     return { absorbed, hull: this.hull };
   }
 
-  // A battered hull loses thrust: below 40% integrity the vertical thrusters give up ground.
-  get damageFactor() { return this.hull >= 40 ? 1 : 0.55 + 0.45 * (this.hull / 40); }
+  // A battered hull loses thrust, but never enough to fall out of the sky: at zero integrity the
+  // lift thrusters still make 78% of full power (234 kN against 171 kN of weight at the default split).
+  get damageFactor() { return this.hull >= 50 ? 1 : 0.78 + 0.22 * (this.hull / 50); }
   get maxLiftN() { return SHIP_PHYS.liftThrustN * Math.min(1.8, this.engineFactor) * this.damageFactor; }
   get maxDriveN() { return SHIP_PHYS.driveThrustN * Math.min(1.8, this.engineFactor); }
   get cruiseSpeed() { return SHIP_PHYS.cruiseSpeed * Math.sqrt(Math.min(1.8, this.engineFactor)); }

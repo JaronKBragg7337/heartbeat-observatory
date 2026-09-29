@@ -836,6 +836,7 @@ export class ShipSystem {
     const th = Math.min(1, f.thrustFwd / Math.max(1, f.maxDriveN));
     const tu = Math.min(1, f.thrustUp / Math.max(1, f.maxLiftN));
     for (const e of ext.engines) {
+      e.outer.visible = e.core.visible = th > 0.03 || f.autoHover;
       const k = Math.max(0.06, th);
       e.outer.scale.set(0.8 + 0.5 * k, 0.8 + 0.5 * k, 0.4 + 1.6 * k);
       e.outer.material.opacity = 0.15 + 0.6 * k;
@@ -849,6 +850,12 @@ export class ShipSystem {
       const k = 0.3 + 0.9 * tu;
       p.mesh.scale.set(k, 0.4 + 1.3 * tu, k); p.core.scale.set(k, 0.4 + 1.3 * tu, k);
       p.mesh.material.opacity = 0.15 + 0.6 * tu; p.core.material.opacity = 0.2 + 0.7 * tu;
+    }
+    // On a phone the sun's shadow of the ship is not worth a second pass over 60 meshes while you are inside it.
+    const wantShadow = !(this.tier === 'low' && this.aboard);
+    if (wantShadow !== this._shadowOn) {
+      this._shadowOn = wantShadow;
+      this.exterior.root.traverse((o) => { if (o.isMesh) o.castShadow = wantShadow; });
     }
     // the shield ripple
     if (this.shield) {
@@ -964,7 +971,12 @@ export class ShipSystem {
       let frontier = [start]; set.add(start);
       for (let d = 0; d < depth; d++) {
         const next = [];
-        for (const id of frontier) for (const n of (adj.get(id) || [])) if (!set.has(n)) { set.add(n); next.push(n); }
+        // a closed door is opaque: what is behind it does not need drawing
+        for (const id of frontier) for (const e of (adj.get(id) || [])) {
+          if (set.has(e.id)) continue;
+          if (e.dl && e.dl.open < 0.02) continue;
+          set.add(e.id); next.push(e.id);
+        }
         frontier = next;
       }
       // the bridge's big windows show the nest and vice versa: nothing to add
@@ -972,17 +984,26 @@ export class ShipSystem {
     } else {
       // Outside: the interior shows only through openings.
       const d2 = Math.hypot(cam.x, cam.z);
-      const near = Math.hypot(cam.x, cam.y, cam.z) < 90;
+      const dist = Math.hypot(cam.x, cam.y, cam.z);
+      const near = dist < 90;
       if (near) {
-        if (this.state.ramps.cargo.lowered || this.rampCtl.cargo.progress > 0.02) { set.add('cargo'); set.add('engineering'); }
-        if (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.05) { set.add('airlock'); }
-        set.add('bridge'); set.add('nest'); set.add('ventral');          // through the glass
+        if (dist < 60 && (this.state.ramps.cargo.lowered || this.rampCtl.cargo.progress > 0.02)) { set.add('cargo'); if (dist < 40) set.add('engineering'); }
+        if (dist < 40 && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.05)) { set.add('airlock'); }
+        if (dist < 55) { set.add('bridge'); set.add('nest'); set.add('ventral'); }          // through the glass
       }
-      this.interior.root.visible = near;
+      this.interior.root.visible = near && set.size > 0;
     }
     this._visibleSet = set;
     for (const r of this.interior.roomList) r.group.visible = set.has(r.id);
     this.lastFrameStats.visibleRooms = set.size;
+
+    // Inside a windowless room the hull, legs, wings and engines cannot be seen: do not submit them
+    // (about 60 draw calls, twice over when the sun's shadow pass counts).
+    if (this.aboard) {
+      const looksOut = ['bridge', 'nest', 'ventral', 'cargo'].includes(cur) ||
+        (cur === 'airlock' && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.02)) || !cur;
+      this.exterior.root.visible = looksOut;
+    } else this.exterior.root.visible = true;
 
     // light pool: nearest fixtures among visible rooms
     const fixtures = this.interior.lights;
@@ -1040,10 +1061,16 @@ export class ShipSystem {
   _adjacency() {
     if (this._adj) return this._adj;
     const m = new Map();
-    const link = (a, b) => { if (!m.has(a)) m.set(a, new Set()); if (!m.has(b)) m.set(b, new Set()); m.get(a).add(b); m.get(b).add(a); };
-    for (const d of this.layout.doors) if (this.interior.rooms.has(d.a) && this.interior.rooms.has(d.b)) link(d.a, d.b);
-    link('corridor_main', 'bridge'); link('corridor_main', 'engineering'); link('niche', 'nest');
-    link('ventral', 'corridor_low'); link('bridge', 'nest');
+    const doorFor = new Map(this.interior.doors.map((d) => [d.def.id, d]));
+    const link = (a, b, dl) => {
+      if (!m.has(a)) m.set(a, []); if (!m.has(b)) m.set(b, []);
+      m.get(a).push({ id: b, dl }); m.get(b).push({ id: a, dl });
+    };
+    for (const d of this.layout.doors) {
+      if (this.interior.rooms.has(d.a) && this.interior.rooms.has(d.b)) link(d.a, d.b, doorFor.get(d.id) || null);
+    }
+    link('corridor_main', 'bridge', null); link('corridor_main', 'engineering', null); link('niche', 'nest', null);
+    link('ventral', 'corridor_low', null); link('bridge', 'nest', null);
     this._adj = m;
     return m;
   }

@@ -76,7 +76,7 @@ That turns "there's a rock stuck in a hill somewhere" into
 and a reproduction step.
 
 **The goal is to never need it.** `test/validate.mjs` is the first line of
-defence and runs without anyone looking: 123 checks covering placement,
+defence and runs without anyone looking: 124 checks covering placement,
 collision, dimension drift, physics correctness, determinism, and the ship.
 
 ---
@@ -207,7 +207,7 @@ test/ship-checks.mjs      section 9 of the validator
   adds one shadow-casting spot over whichever room you are in. `?tier=low` forces the phone tier.
 * **No downloads.** All textures, geometry and sound are generated in code. Nothing to license.
 
-### What the validator proves (section 9, 54 checks)
+### What the validator proves (section 9, 55 checks)
 
 Human scale; no overlapping rooms or furniture; every room, seat and ladder reachable **on foot** by the
 real walker (flood fill, plus actual ladder climbs, stair walks and door crossings); 9,000 frames of random
