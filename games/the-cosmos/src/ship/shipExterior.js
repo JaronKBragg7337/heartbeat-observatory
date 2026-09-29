@@ -423,14 +423,14 @@ export function buildExterior(layout, mats, opts = {}) {
     k.push(leg.x, 0, leg.z, 0);
     const out = Math.sign(leg.x);
     k.bevelBox('hullDark', 0, 0.05, 0, 0.95, 0.9, 0.95, 0.14);
-    k.cyl('engine', 0, -0.55, 0, 0.36, 1.5, 16);
-    k.cyl('metal', 0, -1.34, 0, 0.42, 0.14, 16);
-    k.cyl('gunmetal', 0, -0.2, 0, 0.42, 0.1, 16);
-    k.pipe('engine', [0, -0.4, 0.0], [-out * 1.2, 0.5, 0.0], 0.13, 10);
-    k.pipe('engine', [0, -0.45, 0], [0, 0.4, leg.z < 0 ? 1.4 : -1.4], 0.12, 10);
+    k.cyl('engine', 0, -0.55, 0, 0.46, 1.5, 18);
+    k.cyl('metal', 0, -1.34, 0, 0.52, 0.16, 18);
+    k.cyl('gunmetal', 0, -0.2, 0, 0.52, 0.12, 18);
+    k.pipe('engine', [0, -0.4, 0.0], [-out * 1.2, 0.5, 0.0], 0.17, 10);
+    k.pipe('engine', [0, -0.45, 0], [0, 0.4, leg.z < 0 ? 1.4 : -1.4], 0.16, 10);
     k.cyl('metal', -out * 1.2, 0.5, 0, 0.17, 0.18, 10, { axis: 'x' });
     k.pipe('pipeYellow', [0.34, -0.15, 0.0], [0.34, -1.2, 0.0], 0.03, 6);
-    k.cyl('hazard', 0, -0.95, 0, 0.375, 0.16, 16);
+    k.cyl('hazard', 0, -0.95, 0, 0.475, 0.16, 18);
     k.pop();
   }
 
@@ -444,7 +444,7 @@ export function buildExterior(layout, mats, opts = {}) {
     const g = new THREE.Group(); g.name = 'leg:' + leg.id;
     g.position.set(leg.x, 0, leg.z);
     const pk = new Kit();
-    pk.cyl('steel', 0, -0.5, 0, 0.24, 1.0, 14);       // unit height, centred at -0.5
+    pk.cyl('steel', 0, -0.5, 0, 0.31, 1.0, 16);       // unit height, centred at -0.5
     const piston = new THREE.Group(); piston.add(pk.toGroup(mats, { name: 'piston', cast: true }));
     g.add(piston);
     const fk = new Kit();

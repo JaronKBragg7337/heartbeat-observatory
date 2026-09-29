@@ -429,7 +429,7 @@ export const GEAR = {
     { id: 'fl', x: -5.6, z: -14.6 }, { id: 'fr', x: 5.6, z: -14.6 },
     { id: 'al', x: -6.6, z: 13.5 },  { id: 'ar', x: 6.6, z: 13.5 },
   ],
-  padRadius: 0.75,
+  padRadius: 0.95,
   // hull points that must never go below the ground
   keel: [{ x: 0, z: -13 }, { x: 0, z: -4 }, { x: 0, z: 6 }, { x: -3, z: 12 }, { x: 3, z: 12 }, { x: 0, z: 19 }],
   keelY: -1.1,
