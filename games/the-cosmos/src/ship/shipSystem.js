@@ -90,6 +90,7 @@ export class ShipSystem {
     this.hudExtra = '';
     this.zoomOn = false; this.zoomFov = 24; this.baseFov = null;     // binoculars at an observation spot
     this.crew = null;                       // the hired crew (src/crew/crewSystem.js), set by main once it is built
+    this.space = null;                      // space travel (src/space/spaceSystem.js), set by main: the nav computer's course, the moons' frames
   }
 
   // =========================================================================
@@ -536,7 +537,7 @@ export class ShipSystem {
     // The last supported centre is just beyond the physical ramp tip; retain
     // its horizontal position and resolve only the centimetres of foot clearance.
     const r = Math.hypot(wp.x,wp.y,wp.z), gr=this.ground(wp.x/r,wp.y/r,wp.z/r);
-    if(gr!=null && r<gr+.02) Object.assign(w.worldPos,{x:wp.x*(gr+.02)/r,y:wp.y*(gr+.02)/r,z:wp.z*(gr+.02)/r});
+    if(gr!=null && r<gr+1.0) Object.assign(w.worldPos,{x:wp.x*(gr+.02)/r,y:wp.y*(gr+.02)/r,z:wp.z*(gr+.02)/r});
     this.aboard = false;
     this.boardCooldown = 0;
     this.note('Stepped off the ship.');
@@ -687,15 +688,27 @@ export class ShipSystem {
     // A person in the pilot's or captain's chair flies by hand. Otherwise, if the crew have an order and an NPC pilot at the
     // controls, THEY fly it. The player's hands always win: touch the stick and the order is cancelled ("You have the controls").
     const seat = this.seat;
-    const crewCtl = this.crew ? this.crew.pilotControls(dt) : null;
+    // The nav computer's course (src/space/): lifts off, climbs out, flies the drive, comes down. It writes the same three numbers a
+    // stick would; in transit it moves the ship itself (flight.override) and the stick does nothing.
+    const tripCtl = this.space ? this.space.tripControls(dt) : null;
+    const crewCtl = tripCtl || (this.crew ? this.crew.pilotControls(dt) : null);
     if (seat && (seat.id === 'captain' || seat.id === 'pilot')) {
       const k = inp.keys;
       const lift = clamp((k && k.has('Space') ? 1 : 0) - (k && (k.has('KeyC') || k.has('ControlLeft')) ? 1 : 0) + this.uiLift, -1, 1);
       const stick = Math.abs(inp.moveNorth || 0) > 0.05 || Math.abs(inp.moveEast || 0) > 0.05 || lift !== 0;
-      if (crewCtl && !stick) { f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw; }
+      if (this.space && this.space.driving) {
+        // the drive has the ship: the stick is locked (Cancel course on the nav sheet)
+        if (stick && this.time - (this._driveWarn || -9) > 6) { this._driveWarn = this.time; this.note('The drive has the ship. Cancel the course on the nav sheet to take the controls.', true); }
+      }
+      else if (crewCtl && !stick) { f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw; }
       else {
-        if (crewCtl && stick) this.crew.cancelOrder('You have the controls.');
-        this.stations.fly({ fwd: inp.moveNorth, yaw: inp.moveEast, lift });
+        let refused = false;
+        if (crewCtl && stick) {
+          if (tripCtl) { const r = this.space.cancel('You have the controls.'); if (!r.ok) { refused = true; if (this.time - (this._cancelWarn || -9) > 5) { this._cancelWarn = this.time; this.note(r.msg, true); } } }
+          else this.crew.cancelOrder('You have the controls.');
+        }
+        if (refused) { f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw; }
+        else this.stations.fly({ fwd: inp.moveNorth, yaw: inp.moveEast, lift });
       }
     } else if (crewCtl) {
       f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw;
@@ -1191,6 +1204,7 @@ export class ShipSystem {
     const f = this.flight, tel = this.tel;
     const g = f.geodetic;
     tel.lat = g.lat; tel.lon = g.lon; tel.alt = g.alt;
+    if (this.body.bodyLatLon) { const q = this.body.bodyLatLon(f.pos.x, f.pos.y, f.pos.z); tel.lat = q.lat; tel.lon = q.lon; }      // a moon: its own grid, from its own sub-Mars meridian
     tel.agl = f.agl; tel.vs = f.verticalSpeed; tel.groundSpeed = f.groundSpeed; tel.speed = f.speed;
     tel.heading = (f.heading / DEG + 360) % 360; tel.pitch = f.pitch; tel.roll = f.roll;
     tel.power = f.power; tel.hull = f.hull; tel.shield = f.shield; tel.shieldMax = f.shieldMax;
@@ -1234,6 +1248,7 @@ export class ShipSystem {
   _scannerFrame() {
     const sc = this.scanner;
     if (!sc) return;
+    if (this.space && this.space.driving) { sc._pending = false; return; }       // at km/s the map would be rebuilt every frame for nothing
     const range = SCAN_RANGES[this.stations.scanRangeIdx];
     const f = this.flight;
     const watching = this.seat && this.seat.id === 'nav';
@@ -1440,11 +1455,15 @@ export class ShipSystem {
     const seat = this.seat;
     const where = seat ? seat.name : `${deckName(this.sw.y)} · ${this._roomName()}`;
     const neutral = !this.drones || this.drones.neutral;
-    const air = f.landed ? '' : neutral
+    const cruising = this.drones && this.drones.suspended;
+    const air = f.landed ? '' : cruising ? `<br><span class="dim">Cruise: raiders cannot follow a ship at this speed</span>` : neutral
       ? `<br><span class="dim">Mars neutral airspace · hostile beyond ${NEUTRAL_AIRSPACE_M} m</span>`
-      : `<br><span class="load">HOSTILE SPACE · outside Mars neutral airspace</span>`;
+      : `<br><span class="load">HOSTILE SPACE · outside ${this.space && this.space.onMoon ? '' : 'Mars '}neutral airspace</span>`;
+    const sp = this.space ? this.space.hudLines() : '';
+    const high = f.agl > 20000, fmt = (m) => (m >= 1e5 ? `${(m / 1000).toFixed(0)} km` : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m.toFixed(0)} m`);
+    const alt = f.landed ? 'landed' : `${fmt(f.agl)} up · ${high ? `${(f.speed / 1000).toFixed(2)} km/s` : `${f.groundSpeed.toFixed(0)} m/s`}`;
     return `<b>${SHIP_NAME}</b> · ${where}<br>` +
-      `<span class="dim">${f.landed ? 'landed' : `${f.agl.toFixed(0)} m up · ${f.groundSpeed.toFixed(0)} m/s`} · deck plating 1.00 g</span>${air}`;
+      `<span class="dim">${alt} · deck plating 1.00 g</span>${air}${sp ? '<br>' + sp : ''}`;
   }
 
   _roomName() {

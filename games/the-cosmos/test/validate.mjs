@@ -616,6 +616,10 @@ await runLeftoversChecks({ check, section });
 const { runEconomyChecks } = await import('./economy-checks.mjs');
 await runEconomyChecks({ ROOT, check, section, mars, FIELD });
 
+// 12-17. Space travel: the moons, walking and digging on one, the ship's leaving and landing, the drive, frames, jobs.
+const { runSpaceChecks } = await import('./space-checks.mjs');
+await runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, Walker, gravityAtRadius });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));

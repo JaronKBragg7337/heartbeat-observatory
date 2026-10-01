@@ -168,22 +168,25 @@ export class ShipUI {
     if (gun) { this.btnFire.style.display = 'block'; this.reticle.style.display = 'block'; }
 
     let hint = 'E stand';
-    if (id === 'captain') hint = 'W/S thrust · A/D turn · Space up · C down · click or F fire · mouse aims · E stand';
-    else if (id === 'pilot') hint = 'W/S thrust · A/D turn · Space up · C down · E stand';
+    if (id === 'captain') hint = 'W/S thrust · A/D turn · Space up · C down · click or F fire · mouse aims · N course · E stand';
+    else if (id === 'pilot') hint = 'W/S thrust · A/D turn · Space up · C down · N course · E stand';
     else if (id === 'gun_dorsal' || id === 'gun_ventral') hint = 'mouse aims · click or F fire · E stand';
     else if (id === 'engineer') hint = 'route power with the panel · E stand';
-    else if (id === 'nav') hint = 'range button cycles the map · E stand';
+    else if (id === 'nav') hint = 'range button cycles the map · N course · E stand';
     else if (id === 'comms') hint = 'E stand';
     this._showHint(hint);
 
     if (flying) {
       P.style.display = 'block'; P.className = 'fly';
-      P.innerHTML = `<h3>${s.name.toUpperCase()}</h3><div id="fl-read"></div><div class="chips"><button class="chip" id="chip-ramp">Ramp</button></div>`;
+      P.innerHTML = `<h3>${s.name.toUpperCase()}</h3><div id="fl-read"></div><div class="chips"><button class="chip" id="chip-ramp">Ramp</button><button class="chip" id="chip-course">Course</button></div>`;
       P.querySelector('#chip-ramp').onclick = () => { if (this.ship.stations.mayOperateRamp()) this.ship.toggleRamp('cargo'); };
+      P.querySelector('#chip-course').onclick = () => { if (this.ship.space && this.ship.space.ui) this.ship.space.ui.toggle('course'); };
     } else if (id === 'nav') {
       P.style.display = 'block';
-      P.innerHTML = `<h3>NAVIGATION</h3><canvas id="nav-map" width="240" height="180"></canvas><div id="nav-read" class="dim"></div><div class="chips"><button class="chip" id="chip-range">Range</button></div>`;
+      P.innerHTML = `<h3>NAVIGATION</h3><canvas id="nav-map" width="240" height="180"></canvas><div id="nav-read" class="dim"></div><div class="chips"><button class="chip" id="chip-range">Range</button><button class="chip" id="chip-course">Course</button><button class="chip" id="chip-jobs">Jobs</button></div>`;
       this.mapCanvas = P.querySelector('#nav-map');
+      P.querySelector('#chip-course').onclick = () => { if (this.ship.space && this.ship.space.ui) this.ship.space.ui.toggle('course'); };
+      P.querySelector('#chip-jobs').onclick = () => { if (this.ship.space && this.ship.space.ui) this.ship.space.ui.toggle('jobs'); };
       P.querySelector('#chip-range').onclick = () => { this.ship.stations.scanRange(this.ship.stations.scanRangeIdx + 1); this.ship.scanner.builtAt = null; };
     } else if (id === 'engineer') {
       P.style.display = 'block';
@@ -200,8 +203,9 @@ export class ShipUI {
       });
     } else if (id === 'comms') {
       P.style.display = 'block';
-      P.innerHTML = `<h3>COMMUNICATIONS</h3><div class="log" id="comm-log"></div><div class="dim" id="comm-sig"></div><div class="chips"><button class="chip" id="chip-beacon">Beacon</button></div>`;
+      P.innerHTML = `<h3>COMMUNICATIONS</h3><div class="log" id="comm-log"></div><div class="dim" id="comm-sig"></div><div class="chips"><button class="chip" id="chip-beacon">Beacon</button><button class="chip" id="chip-jobs">Jobs</button></div>`;
       P.querySelector('#chip-beacon').onclick = () => { this.ship.stations.transmitBeacon(!this.ship.stations.beacon); };
+      P.querySelector('#chip-jobs').onclick = () => { if (this.ship.space && this.ship.space.ui) this.ship.space.ui.toggle('jobs'); };
     } else {
       P.style.display = 'none';
     }
@@ -233,7 +237,8 @@ export class ShipUI {
     if (this.seatId === 'captain' || this.seatId === 'pilot') {
       const el = P.querySelector('#fl-read');
       if (el) el.innerHTML =
-        `SPD <b>${f.groundSpeed.toFixed(0)}</b> m/s &nbsp; ALT <b>${Math.max(0, f.agl).toFixed(0)}</b> m &nbsp; VS <b>${f.verticalSpeed >= 0 ? '+' : ''}${f.verticalSpeed.toFixed(1)}</b><br class="more">` +
+        (f.agl > 20000 ? `SPD <b>${(f.speed / 1000).toFixed(2)}</b> km/s &nbsp; ALT <b>${(f.agl / 1000).toFixed(f.agl > 1e5 ? 0 : 1)}</b> km<br class="more">` :
+        `SPD <b>${f.groundSpeed.toFixed(0)}</b> m/s &nbsp; ALT <b>${Math.max(0, f.agl).toFixed(0)}</b> m &nbsp; VS <b>${f.verticalSpeed >= 0 ? '+' : ''}${f.verticalSpeed.toFixed(1)}</b><br class="more">`) +
         `<span class="dim more">${f.landed ? 'LANDED · ' : ''}gear ${f.gearPos > 0.99 ? 'down' : f.gearPos < 0.01 ? 'up' : 'moving'} · engines ${f.power.engines}%</span>` +
         (f.canLiftOff() ? '' : ' <span style="color:#ff6a55">CANNOT LIFT</span>') +
         (this.seatId === 'captain' ? `<br class="more"><span class="dim more">guns ${f.power.guns}% · shield ${f.shield.toFixed(0)}/${f.shieldMax.toFixed(0)}</span>` : '');

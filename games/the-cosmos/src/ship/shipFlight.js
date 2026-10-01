@@ -80,6 +80,15 @@ export class ShipBody {
     this._geo = { lat: 0, lon: 0, alt: 0 };
     this._fwdAccLP = 0;
     this.time = 0;
+    // --- space travel (src/space/). `climbCap` is the fastest the lift pods are asked to climb (the ascent raises it above the
+    // --- 12 m/s of flying low). `override(dt)` lets the drive move the ship itself during a transit (returns true if it did: the
+    // --- ordinary flight step is then skipped). `attitude`, while set, is the hull's quaternion (a transit points the nose where
+    // --- the thrust goes); the legacy level-on-the-horizon attitude is still computed into `levelQ` so it can be eased back.
+    this.climbCap = SHIP_PHYS.climbSpeed;
+    this.override = null;
+    this.thrustDown = false;          // vacuum descent: the pods are ducted both ways, so a ship can push itself down (a moon's pull is a few mm/s2)
+    this.attitude = null;
+    this.levelQ = new THREE.Quaternion();
     this.updateShields(0, true);
   }
 
@@ -185,6 +194,16 @@ export class ShipBody {
     const qp = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
     const qr = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), this.roll);
     this.quaternion.copy(qb).multiply(qp).multiply(qr);
+    this.levelQ.copy(this.quaternion);
+    if (this.attitude) {
+      // a transit: the hull points where the drive pushes. up / fwdH / rightH follow the hull so everything that reads them agrees.
+      this.quaternion.copy(this.attitude);
+      const u = new THREE.Vector3(0, 1, 0).applyQuaternion(this.attitude), fw = new THREE.Vector3(0, 0, -1).applyQuaternion(this.attitude), rt = new THREE.Vector3(1, 0, 0).applyQuaternion(this.attitude);
+      this.up = { x: u.x, y: u.y, z: u.z };
+      this.fwdH = { x: fw.x, y: fw.y, z: fw.z };
+      this.rightH = { x: rt.x, y: rt.y, z: rt.z };
+      return;
+    }
     this.up = { x: f.up.x, y: f.up.y, z: f.up.z };
     this.fwdH = { x: fwd.x, y: fwd.y, z: fwd.z };
     this.rightH = { x: right.x, y: right.y, z: right.z };
@@ -231,6 +250,7 @@ export class ShipBody {
     const n = Math.max(1, Math.ceil(dt / (1 / 120)));
     const h = dt / n;
     this.events.length = 0;
+    if (this.override && this.override(dt)) { this.updateShields(dt); return; }
     for (let i = 0; i < n; i++) this._step(h);
     this.updateShields(dt);
   }
@@ -293,7 +313,7 @@ export class ShipBody {
     const c = this.controls;
     const eng = Math.min(1.8, this.engineFactor);
     // Landing flare: the closer to the ground, the slower the ship is allowed to sink.
-    let climbTarget = c.lift * SHIP_PHYS.climbSpeed;
+    let climbTarget = c.lift * this.climbCap;
     // Allowed sink rate comes from stopping distance: v = sqrt(2 * a * height), with the
     // thrusters' real spare deceleration (less a margin), plus 1 m/s at the surface.
     // Height is measured from where the FEET are, not the keel: the legs hang 1.6 m below it.
@@ -309,10 +329,10 @@ export class ShipBody {
     let aCmd;
     if (!engaged) aCmd = 0;
     else if (onGround && c.lift <= 0.01 && vUp <= 0.3) aCmd = 0;              // parked: engines idle
-    else aCmd = g + 2.0 * (climbTarget - vUp);
-    let fUp = Math.max(0, Math.min(this.maxLiftN, m * aCmd));
+    else aCmd = g + (this.thrustDown ? 4.5 : 2.0) * (climbTarget - vUp);
+    let fUp = Math.max(this.thrustDown ? -this.maxLiftN * 0.6 : 0, Math.min(this.maxLiftN, m * aCmd));
     // A ship on its gear with the engines off must not have thrust fight the springs.
-    this.thrustUp = fUp;
+    this.thrustUp = Math.max(0, fUp);
 
     // Horizontal.
     const speedMax = this.cruiseSpeed;

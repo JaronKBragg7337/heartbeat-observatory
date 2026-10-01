@@ -59,11 +59,23 @@ export class Engine {
       opts.fov || 70,
       window.innerWidth / window.innerHeight,
       0.1,
-      2.0e7
+      // Far enough for the Sun and Deimos (23,463 km out) as well as Mars's own limb. Logarithmic depth makes the
+      // ratio free: precision is relative, so 0.1 m up close and 1e9 m away both resolve.
+      1.0e9
     );
 
-    /** Authoritative f64 camera position in body-fixed metres. */
+    /** Authoritative f64 camera position in the ACTIVE FRAME's metres (see "frames" below). */
     this.cameraWorldPos = { x: 0, y: 0, z: 0 };
+
+    // FRAMES. Everything has always lived in Mars's body-fixed frame. A moon you can land on has its own
+    // body-fixed frame (its field, its walker, its digging all take coordinates with the moon's centre at the origin), and
+    // frames are translated copies of each other (no rotation: their axes are parallel). One frame is ACTIVE: the camera,
+    // the ship, the walker and everything that rides with them (`followActive`) are expressed in it. Anything else
+    // (Mars's ground, the port) belongs to the root frame, or to the frame it names with `frame`, and is drawn at
+    // worldPos + frame.origin - activeFrame.origin - cameraWorldPos. With the root frame active that is the formula it
+    // always was.
+    this.rootFrame = { id: 'mars', origin: { x: 0, y: 0, z: 0 } };
+    this.activeFrame = this.rootFrame;
 
     // Extra scenes drawn after the main one, into the SAME depth buffer, with the
     // same camera. The ship's interior is one: it needs its own lights (no sun
@@ -106,7 +118,7 @@ export class Engine {
   track(entry) { this._tracked.add(entry); return entry; }
   untrack(entry) { this._tracked.delete(entry); }
 
-  /** Convert an f64 world position into current render space. */
+  /** Convert an f64 world position (in the active frame) into current render space. */
   toRender(worldPos, out) {
     out = out || new THREE.Vector3();
     return out.set(
@@ -114,6 +126,31 @@ export class Engine {
       worldPos.y - this.cameraWorldPos.y,
       worldPos.z - this.cameraWorldPos.z
     );
+  }
+
+  /**
+   * Make `frame` the active one. The camera keeps its place in space: its coordinates are re-expressed. Callers that hold
+   * positions in the active frame (the ship, the walker) translate them with `frameShift`.
+   */
+  setActiveFrame(frame) {
+    if (frame === this.activeFrame) return;
+    const d = this.frameShift(this.activeFrame, frame);
+    const c = this.cameraWorldPos;
+    c.x += d.x; c.y += d.y; c.z += d.z;
+    this.activeFrame = frame;
+  }
+
+  /** What to ADD to a position in frame `from` to express it in frame `to`. */
+  frameShift(from, to, out = {}) {
+    out.x = from.origin.x - to.origin.x; out.y = from.origin.y - to.origin.y; out.z = from.origin.z - to.origin.z;
+    return out;
+  }
+
+  /** The camera in another frame's coordinates (f64). */
+  cameraIn(frame, out = {}) {
+    const d = this.frameShift(this.activeFrame, frame);
+    out.x = this.cameraWorldPos.x + d.x; out.y = this.cameraWorldPos.y + d.y; out.z = this.cameraWorldPos.z + d.z;
+    return out;
   }
 
   /**
@@ -127,13 +164,16 @@ export class Engine {
 
     for (const fn of this._updaters) fn(dt, this.timeSec);
 
-    // Rebase everything against the camera's f64 position.
+    // Rebase everything against the camera's f64 position. An entry that rides with the player (`followActive`)
+    // is in the active frame; one that names a `frame` is in that; the rest are in the root (Mars) frame.
+    const A = this.activeFrame.origin, cam = this.cameraWorldPos;
     for (const e of this._tracked) {
       if (!e.object3d) continue;
+      const o = e.followActive ? A : (e.frame ? e.frame.origin : this.rootFrame.origin);
       e.object3d.position.set(
-        e.worldPos.x - this.cameraWorldPos.x,
-        e.worldPos.y - this.cameraWorldPos.y,
-        e.worldPos.z - this.cameraWorldPos.z
+        e.worldPos.x + o.x - A.x - cam.x,
+        e.worldPos.y + o.y - A.y - cam.y,
+        e.worldPos.z + o.z - A.z - cam.z
       );
       if (e.quaternion) e.object3d.quaternion.copy(e.quaternion);
     }

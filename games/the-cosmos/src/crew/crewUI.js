@@ -92,7 +92,8 @@ export class CrewUI {
   // ---- the panel ---------------------------------------------------------------------------------------------
   _signature(m) {
     const f = this.crew.ship.flight, o = this.crew.activeOrder();
-    return [m.id, m.status, m.mode, m.seated, m.displaced, this.view, this.reply, this.crew.world?.state.economy.marks, o ? o.type : '-', this.crew.flyer() ? 1 : 0, f.landed ? 1 : 0, this.ship.aboard ? 1 : 0, this.ship.seat ? this.ship.seat.id : '-'].join('|');
+    const tr = this.ship.space && this.ship.space.trip;
+    return [m.id, m.status, m.mode, m.seated, m.displaced, this.view, this.reply, this.crew.world?.state.economy.marks, o ? o.type : '-', this.crew.flyer() ? 1 : 0, f.landed ? 1 : 0, this.ship.aboard ? 1 : 0, this.ship.seat ? this.ship.seat.id : '-', tr && tr.active ? tr.phase : '-'].join('|');
   }
 
   _draw() {
@@ -149,17 +150,24 @@ export class CrewUI {
     if (m.mode === 'leaving') return 'Stepping off.';
     if (m.displaced) return 'Standing by: you have their seat.';
     const o = this.crew.activeOrder(), isFlyer = this.crew.flyer() === m;
+    const trip = this.ship.space && this.ship.space.trip;
+    if (isFlyer && trip && trip.active) return `Flying the course to ${trip.dest.name} (${trip.phase}).`;
     if (isFlyer && o) return { goto: `Flying to ${o.name || 'a place'}.`, return: 'Flying home.', hunt: 'Hunting raiders beyond neutral airspace.', roam: 'Roaming.', supply: 'On a supply run.', land: 'Landing.' }[o.type] || 'Holding.';
     return m.seated ? 'At their station.' : 'Aboard.';
   }
 
   _placesHTML() {
     let h = `<div class="col"><button class="cbtn" data-a="back">‹ Back</button>`;
-    for (const p of this.crew.places()) {
-      const d = p.distM >= 1000 ? `${(p.distM / 1000).toFixed(p.distM > 10000 ? 0 : 1)} km` : `${Math.round(p.distM)} m`;
-      h += `<button class="cbtn" data-a="goto" data-p="${p.id}" ${p.ok ? '' : 'disabled'}>${esc(p.name)}<small>${d}${p.ok ? '' : ': too far for now (cruise is 40 m/s)'}</small></button>`;
+    const fmtD = (m) => (m >= 1000 ? `${(m / 1000).toFixed(m > 10000 ? 0 : 1)} km` : `${Math.round(m)} m`);
+    const fmtT = (s) => (s >= 5400 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min` : s >= 120 ? `${Math.round(s / 60)} min` : `${Math.round(s)} s`);
+    const all = this.crew.places(), worlds = all.filter((p) => p.space), here = all.filter((p) => !p.space);
+    if (worlds.length) {
+      h += `<p class="stat" style="margin:6px 0 2px">Other worlds (the main drive)</p>`;
+      for (const p of worlds) h += `<button class="cbtn" data-a="goto" data-p="${p.id}" ${p.ok ? '' : 'disabled'}>${esc(p.name)}<small>${p.ok ? `${fmtD(p.distM)} · about ${fmtT(p.etaS)}` : esc(p.reason || 'not available')}</small></button>`;
+      h += `<p class="stat" style="margin:8px 0 2px">Here on Mars</p>`;
     }
-    h += `<button class="cbtn" disabled>Other worlds<small>No travel between worlds yet</small></button></div>`;
+    for (const p of here) h += `<button class="cbtn" data-a="goto" data-p="${p.id}" ${p.ok ? '' : 'disabled'}>${esc(p.name)}<small>${fmtD(p.distM)}${p.ok ? '' : ': too far for now (cruise is 40 m/s)'}</small></button>`;
+    h += `</div>`;
     return h;
   }
 

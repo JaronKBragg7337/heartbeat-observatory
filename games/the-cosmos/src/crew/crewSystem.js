@@ -231,6 +231,9 @@ export class CrewSystem {
       if (d < 500) continue;                                // it is where we already are
       out.push({ id: lm.id, name: lm.name, distM: d, etaS: d / 36, ok: d <= MAX_TRIP_M, world: null, land: false });
     }
+    // Other worlds (src/space): the nav computer's own list, with its honest distances and flight times
+    const sp = this.ship.space;
+    if (sp) for (const d of sp.destinations()) out.push({ id: `sp:${d.id}`, name: d.name, distM: d.distM, etaS: d.etaS, ok: d.ok, world: null, land: false, space: true, reason: d.reason, blurb: d.blurb });
     return out;
   }
 
@@ -250,6 +253,11 @@ export class CrewSystem {
       case 'hunt': o = { type: 'hunt' }; accept = 'Hunting raiders. Mars is neutral, so we have to climb out of its airspace for that.'; break;
       case 'supply': o = { type: 'supply', depot: this._local(PLACES.find((p) => p.id === 'depot').x, PLACES.find((p) => p.id === 'depot').z) }; accept = 'Supply run to the depot and back.'; break;
       case 'goto': {
+        if (String(args.id).startsWith('sp:') && this.ship.space) {
+          // a course to another world: the nav computer plots it, the pilot says it and flies it (src/space/spaceTrip.js)
+          const r = this.ship.space.engage(args.id.slice(3), { by: m.name });
+          return r.ok ? { ok: true, msg: r.msg } : { ok: false, msg: `${m.name}: ${r.msg}` };
+        }
         const pl = this.places().find((p) => p.id === args.id);
         if (!pl) return { ok: false, msg: 'Unknown place.' };
         if (!pl.ok || !pl.world) return { ok: false, msg: `${m.name}: ${pl.name} is ${this._fmtDist(pl.distM)} away. At cruise that is ${this._fmtEta(pl.etaS)}. We cannot make that trip yet.` };

@@ -242,6 +242,8 @@ export class DroneSystem {
     this.aggroM = 650;
     this.strafeM = 280;
     this.neutral = true;                 // true while the ship is inside Mars's neutral airspace
+    this.suspended = false;              // a transit: the raiders cannot keep up with km/s, so they are not there (src/space/)
+    this.onDown = null;                  // (drone) => void, once for each raider the player's guns bring down (the bounty hook)
   }
 
   /** Register a drone. It does not exist (state 'away') until the ship leaves neutral airspace. */
@@ -293,6 +295,12 @@ export class DroneSystem {
     this.t += dt;
     const S = this.ship;
 
+    // ---- a transit: nobody follows. The raiders are gone and come again (as on leaving neutral airspace) when it ends.
+    if (this.suspended) {
+      if (!this.neutral) { this.neutral = true; for (const d of this.drones) if (!d.held) { d.state = 'away'; d.target.inactive = true; } this.shots.length = 0; }
+      return;
+    }
+
     // ---- which airspace are we in? -----------------------------------------------------
     const alt = this.shipAltitude();
     const now = DroneSystem.airspaceFor(alt, this.neutral);
@@ -313,6 +321,10 @@ export class DroneSystem {
       if (tg.hp <= 0) {
         // shot down. In neutral airspace it is simply gone; in hostile space it is replaced out at the
         // arrival ring once the guns' respawn timer has run.
+        if (d.state !== 'dead' && d.state !== 'away') {
+          if (this.onDown && !this.neutral) this.onDown(d);
+          this.events.push({ type: 'drone_down', id: d.id });
+        }
         d.state = this.neutral ? 'away' : 'dead';
         if (this.neutral) tg.inactive = true;
         continue;

@@ -17,6 +17,7 @@ export function installRegolith(material, THREE, opts = {}) {
   const uniforms = {
     uRegOffset: { value: new THREE.Vector3() },
     uRegBump: { value: opts.bump ?? 0.9 },
+    uRegPebble: { value: opts.pebble ?? 1.0 },     // how dark the scattered pebbles are (a dark moon wants fewer black flecks)
   };
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
@@ -28,6 +29,7 @@ export function installRegolith(material, THREE, opts = {}) {
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
 uniform float uRegBump;
+uniform float uRegPebble;
 varying vec3 vRegPos;
 float regH(vec3 i, float P) { i = mod(i, P); return fract(sin(dot(i, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 float regN(vec3 p, float P) {   // value noise, periodic every P cells
@@ -41,7 +43,7 @@ float regField(vec3 p, float near, out float pebble) {
   float broad = regN(p * 0.05, 18.0) * 0.6 + regN(p * 0.2, 72.0) * 0.4;       // 20 m / 5 m dusty vs darker patches
   float grit  = regN(p * 2.0, 720.0) * 0.6 + regN(p * 6.0, 2160.0) * 0.4;     // 50 cm / 17 cm grit
   float peb   = regN(p * 3.0, 1080.0);                                          // pebbles: the peaks of a 33 cm field
-  pebble = smoothstep(0.78, 0.86, peb) * near;                                  // fine detail fades with distance (no far speckle)
+  pebble = smoothstep(0.78, 0.86, peb) * near * uRegPebble;                                  // fine detail fades with distance (no far speckle)
   return broad * 0.55 + mix(0.5, grit, near) * 0.35 + pebble * 0.6;
 }
 float regHeight = 0.0;

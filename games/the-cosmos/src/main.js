@@ -45,6 +45,7 @@ import { GameBridge } from './world-state/gameBridge.js';
 import { EconomyUI } from './economy/economyUI.js';
 import { buildKeyControls } from './ui/keyActions.js';
 import { DamageView } from './world-state/damageView.js';
+import { SpaceSystem } from './space/spaceSystem.js';
 
 const canvas = document.getElementById('game-canvas');
 const engine = new Engine(canvas, { fov: 72 });
@@ -65,7 +66,7 @@ catch(e) { world.error=e.message;console.error('World save unavailable',e); }
 // ---------------------------------------------------------------------------
 // World
 // ---------------------------------------------------------------------------
-const shell = buildGlobalShell(body, { segments: 128 });
+const shell = buildGlobalShell(body, { segments: (new URLSearchParams(location.search).get('tier') === 'low' || (('ontouchstart' in window) && new URLSearchParams(location.search).get('tier') !== 'high')) ? 192 : 288 });   // finer than the old 128: from orbit the limb is the shell's silhouette
 const shellEntry = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: shell });
 engine.scene.add(shell);
 registry.register({
@@ -309,9 +310,12 @@ registry.register({
 // The ship. A landed 46-tonne gunship a few dozen metres from the spawn point.
 // Its landing contact always reads the field, independent of moving mesh LODs.
 // ---------------------------------------------------------------------------
-const groundRadius = (dx, dy, dz) => {
+const marsGround = (dx, dy, dz) => {
   return surfaceRadiusFast(body, dx, dy, dz);
 };
+// On a moon the ship, its guns and the crew's pilot ask the moon's ground instead (src/space sets this).
+let activeGround = null;
+const groundRadius = (dx, dy, dz) => (activeGround ? activeGround(dx, dy, dz) : marsGround(dx, dy, dz));
 const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier, landingSite: portSite });
 let shipUI = null;
 try {
@@ -680,6 +684,20 @@ function refreshHud() {
     document.documentElement.style.setProperty('--hud-bottom', `${hud.offsetTop + hud.offsetHeight}px`);
     return;
   }
+  const moon = space.activeMoon;
+  if (moon) {
+    const ll = moon.body.bodyLatLon(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z), j = space.jobs, nr = j.nearest;
+    hud.innerHTML =
+      `<b>${moon.body.name}</b> · ${moon.body.padInfo.name}<br>` +
+      `${Math.abs(ll.lat).toFixed(3)}° ${ll.lat >= 0 ? 'N' : 'S'}  ${Math.abs(ll.lon).toFixed(3)}° ${ll.lon >= 0 ? 'E' : 'W'}<br>` +
+      `<span class="dim">${walker.groundMaterialName()} · ${(moon.body.surfaceGravity * 1000).toFixed(2)} mm/s²${walker.grounded ? '' : ' · airborne (hop)'}</span>` +
+      (nr ? `<br><span class="dim">next sample site: ${nr.d >= 1000 ? (nr.d / 1000).toFixed(2) + ' km' : Math.round(nr.d) + ' m'}</span>` : '') +
+      `<br><span class="load">${tool().carrier}: ${load.toFixed(1)} / ${tool().capacityKg.toFixed(0)} kg</span>` +
+      `<div class="load-bar" role="progressbar" aria-label="Carried soil" aria-valuemin="0" aria-valuemax="${tool().capacityKg}" aria-valuenow="${load}"><i style="width:${Math.min(100, load / tool().capacityKg * 100)}%"></i></div>` +
+      `<span class="dim">tool: ${tool().name}</span>`;
+    document.documentElement.style.setProperty('--hud-bottom', `${hud.offsetTop + hud.offsetHeight}px`);
+    return;
+  }
   hud.innerHTML =
     `<b>${body.name}</b> · ${SPAWN.name}<br>` +
     `${formatCoord(g.lat, g.lon, g.alt)}<br>` +
@@ -747,13 +765,17 @@ let actionFlash = 0;
 // has to drop.
 let tapAction = 'dig';
 
-let shipPress = false;
+let shipPress = false, spacePress = false;
+/** On a moon: take a core sample, stow the hopper. */
+function spaceAction() { return space.onMoon && !ship.aboard ? space.jobs.contextAction(!!(ship.ready && ship.contextAction())) : null; }
 function refreshAction() {
   const climbing=!!walker._climb;
   climbBtn.style.display=!ship.aboard&&(climbing||walker.climbTarget())?'block':'none';
   climbBtn.textContent=climbing?'Climbing…':'Climb (C)';climbBtn.disabled=climbing;
   dropAllBtn.style.display = carried.length && !(ship.ready && ship.aboard) ? 'block' : 'none';
   if (actionFlash > 0) return;
+  const sa = spaceAction();
+  if (sa) { tapAction = 'space'; actionBtn.style.display = 'block'; actionBtn.textContent = sa.label; toolBtn.style.display = 'none'; return; }
   if (ship.ready) {
     const a = ship.contextAction();
     if (a) { tapAction = 'ship'; actionBtn.style.display = 'block'; actionBtn.textContent = a.label; return; }
@@ -798,6 +820,7 @@ function stopHold() {
 actionBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault(); e.stopPropagation();
   if (tapAction === 'ship') { shipPress = true; return; }
+  if (tapAction === 'space') { spacePress = true; return; }
   if (tapAction === 'lift') { liftPress = true; return; }
   holdTimer = setTimeout(() => {
     holdTimer = null;
@@ -811,6 +834,7 @@ actionBtn.addEventListener('pointerdown', (e) => {
 const endPress = (e) => {
   e.preventDefault(); e.stopPropagation();
   if(liftPress) {liftPress=false;port.elevatorAction(walker)?.run();hudAccum=1;return;}
+  if (spacePress) { spacePress = false; const sa = spaceAction(); if (sa) { const r = sa.run(); flash(r && r.msg ? r.msg : sa.label); } hudAccum = 1; return; }
   if (shipPress) {
     shipPress = false;
     const a = ship.contextAction();
@@ -824,8 +848,8 @@ const endPress = (e) => {
   } else stopHold();                                // hold already fired
 };
 actionBtn.addEventListener('pointerup', endPress);
-actionBtn.addEventListener('pointercancel', () => {stopHold();shipPress=false;liftPress=false;});
-actionBtn.addEventListener('pointerleave', () => {stopHold();shipPress=false;liftPress=false;});
+actionBtn.addEventListener('pointercancel', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;});
+actionBtn.addEventListener('pointerleave', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;});
 
 // Settings, including the DEV toggle that turns on the measurement layer.
 document.getElementById('btn-settings').addEventListener('click', () => {
@@ -852,6 +876,7 @@ document.getElementById('btn-copy-coord').addEventListener('click', async () => 
 // Frame
 // ---------------------------------------------------------------------------
 let hudAccum = 0;
+let wasOnMars = true;
 
 // A camera placed by hand for review shots (cosmos.freeCam.set(eye, target); .off() to play again).
 // Physics and input pause while it is on; the ground meshes keep building around the eye.
@@ -872,6 +897,7 @@ engine.addUpdater((dt) => {
     updateFarTerrain(freeCam.eye);
     stepPatches(tier === 'low' ? 2.5 : 4);
     if (ship.ready) ship._updateVisuals(dt, false);        // drones, ramps and lights still follow their state in a review shot
+    space.late(dt);
     if (!edits.isEmpty || terrain.meshes.size) {
       terrain.update(dt, freeCam.eye);
       terrain.coverOffsetFor(patch.worldPos, midCover);
@@ -907,24 +933,28 @@ engine.addUpdater((dt) => {
     });
   }
 
+  // Space (src/space/): Mars's ground meshes and the port are only kept up while Mars's ground is near; on a moon the moon's own
+  // tiers are kept by space.late(). Coming back to Mars rebuilds the tiers under the player once.
+  const onMars = space.marsTerrain, inMarsFrame = space.frameId === 'mars';
+  if (onMars && !wasOnMars) { if (inMarsFrame) rebuildNear(true); }
+  wasOnMars = onMars;
   if (owned) {
     suitGroup.visible = false;
     updateSun(walker.updateFrame());
-    followTerrain();
+    if (onMars) followTerrain();
   } else {
     walker.yaw += lookDX;
     walker.pitch -= lookDY;
     walker.pitch = Math.max(-1.45, Math.min(1.45, walker.pitch));
     walker.tick(dt, input);
-    port.tick(dt, walker);
-    rebuildNear();
+    if (inMarsFrame) { port.tick(dt, walker); rebuildNear(); }
     updateCamera();
   }
   if (ship.ready) ship.late(dt);
-  if (owned) port.tick(dt, walker, false);
+  if (owned && inMarsFrame) port.tick(dt, walker, false);
   if (shipUI) shipUI.update(dt);
   if (crewUI) crewUI.update(dt);
-  portPeople.tick(dt,walker.worldPos);
+  if (inMarsFrame) portPeople.tick(dt,walker.worldPos);
   worldBridge.tick(dt);
   economyUI.tick(dt);
   damageView.tick(dt,walker.worldPos);
@@ -935,20 +965,20 @@ engine.addUpdater((dt) => {
     playerPerson.update(dt, sp);
   }
 
-  stepPatches(tier === 'low' ? 2.5 : 4);
-  updateFarTerrain(engine.cameraWorldPos);
+  if (onMars) { stepPatches(tier === 'low' ? 2.5 : 4); updateFarTerrain(engine.cameraWorldPos); }
   updateAimMarkers(dt);
-  debugLayer.update(walker, engine.camera);
+  if (inMarsFrame) debugLayer.update(walker, engine.camera);
 
   // Bricks of dug ground: a few ms of meshing per frame at most, nearest first; and tell each
   // heightfield tier where the occupancy window is so it can discard under built bricks.
-  if (!edits.isEmpty || terrain.meshes.size) {
+  if (onMars && (!edits.isEmpty || terrain.meshes.size)) {
     terrain.update(dt, walker.worldPos);
     terrain.coverOffsetFor(patch.worldPos, midCover);
     terrain.coverOffsetFor(nearPatch.worldPos, nearCover);
   }
   if (actionFlash > 0) { actionFlash -= dt; if (actionFlash <= 0) refreshAction(); }
 
+  space.late(dt);
   hudAccum += dt;
   if (hudAccum > 0.2) { refreshHud(); refreshAction(); hudAccum = 0; }
 });
@@ -970,7 +1000,10 @@ window.addEventListener('keydown', (e) => {
     document.getElementById('set-view').value = view.mode;
   }
   if (e.code === 'KeyE') {
-    if (ship.ready && (ship.aboard || ship.contextAction())) { ship.interact(); hudAccum = 1; }
+    const sa = spaceAction();
+    if (sa && !e.repeat) { const r = sa.run(); flash(r && r.msg ? r.msg : sa.label); hudAccum = 1; }
+    else if (sa) { /* held: one action per press */ }
+    else if (ship.ready && (ship.aboard || ship.contextAction())) { ship.interact(); hudAccum = 1; }
     else if(port.elevatorAction(walker)) {if(!e.repeat)port.elevatorAction(walker).run();hudAccum=1;}
     else flash(doDig().msg);
   }
@@ -978,12 +1011,19 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyQ' && !(ship.ready && ship.aboard)) flash(doDump().msg);
   if (e.code === 'KeyR' && !e.repeat && !(ship.ready && ship.aboard)) { flash(doDumpAll().msg); hudAccum = 1; }
   if (!(ship.ready && ship.aboard) && /^Digit[123]$/.test(e.code)) { setTool(Number(e.code.slice(5)) - 1); document.getElementById('set-tool').value = String(digger.toolIdx); flash(tool().name); }
+  if (e.code === 'KeyN' && !e.repeat && ship.ready && ship.seat && space.ui && ['nav', 'pilot', 'captain', 'comms'].includes(ship.seat.id)) space.ui.toggle('course');
   if (e.code === 'KeyG') {
     const box = document.getElementById('set-dev');
     box.checked = !box.checked;
     debugLayer.setEnabled(box.checked);
   }
 });
+
+// ---------------------------------------------------------------------------
+// Space (src/space/): the sky that follows the height, the moons, the drive. Built last: it scales the lights above.
+// ---------------------------------------------------------------------------
+const space = new SpaceSystem({ engine, body, tier, sun, hemi: sky, ship, walker, digger, portSite, fogDensity: TERRAIN_FOG_DENSITY,
+  setGround: (fn) => { activeGround = fn; }, marsGround, followEntries: [suitEntry] });
 
 document.getElementById('boot')?.remove();
 refreshHud();
@@ -994,7 +1034,7 @@ engine.start();
 // without guessing from pixels.
 window.cosmos = {
   world, worldBridge, economyUI,
-  port, portTour, portPeople,
+  port, portTour, portPeople, space,
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   drones: () => ship.drones,

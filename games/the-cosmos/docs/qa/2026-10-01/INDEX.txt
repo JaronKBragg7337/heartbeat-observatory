@@ -48,3 +48,6 @@ Results of the audits are in the README ("Digging", "The control tower can be cl
 Gap audit result: 480 downward views over a scene with a pit, widened walls, a 5 m tunnel, a ramp, a second pit and heaps: 0 magenta pixels (no hole through the world).
 Phone (q_ = ?tier=low&depth=16, 375x812) repeats of the tower tour views and p_ pit set are in this folder; the validator was 228 passed, 0 failed.
 Not done: phone repeats of the deep shaft (e_) and the port-edge set (f_) were not re-shot after the final lighting change (suit lamp), and the f_ pad-edge dig script is in the folder but was not run; see the report.
+
+SPACE TRAVEL (space/): leaving Mars, Phobos and Deimos, the jobs. See space/REVIEW.md (scripts s01 .. s08, what each shows, numbers, what was found, what is unverified).
+  Images are kept in the worktree only: games/the-cosmos/docs/qa/2026-10-01/space/*.jpg.   Harness: space/_sp.mjs (boot, fast-forward, outside camera, stand on a moon).

@@ -431,16 +431,19 @@ export class DebugLayer {
 
   /** Copyable one-line bug report for wherever the player is. */
   reportAt(walker) {
-    const g = walker.geodetic;
+    // (on a moon the walker's body is the moon, and its longitude is read from its own sub-Mars meridian)
+    const body = walker.body || this.body;
+    let g = walker.geodetic;
+    if (body.bodyLatLon) { const q = body.bodyLatLon(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z); g = { lat: q.lat, lon: q.lon, alt: g.alt }; }
     const layer = this._currentLayer(walker);
-    const c = cellIndex(this.body, g.lat, g.lon, this.cellDeg);
+    const c = cellIndex(body, g.lat, g.lon, this.cellDeg);
     return {
-      cell: cellId(this.body.id, layer, c.h, c.r),
-      slug: coordSlug(this.body.id, g.lat, g.lon, g.alt),
+      cell: cellId(body.id, layer, c.h, c.r),
+      slug: coordSlug(body.id, g.lat, g.lon, g.alt),
       coord: formatCoord(g.lat, g.lon, g.alt),
       groundMaterial: walker.groundMaterialName(),
       clearanceM: walker.altitudeAboveGround(),
-      solidHere: density(this.body, walker.worldPos.x, walker.worldPos.y, walker.worldPos.z) < 0,
+      solidHere: density(body, walker.worldPos.x, walker.worldPos.y, walker.worldPos.z) < 0,
       nearby: this.registry.all()
         .filter((r) => r.position)
         .map((r) => ({ id: r.id, d: Math.hypot(

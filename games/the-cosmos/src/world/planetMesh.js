@@ -88,11 +88,32 @@ if (abs(te) < uTierHalf && abs(tn) < uTierHalf) discard;`);
 // asks the field what it is made of and takes that material's colour, so the
 // ground is coloured by its geology.
 // ---------------------------------------------------------------------------
+const _basalt = new THREE.Color(0x4a3029), _dustBright = new THREE.Color(0xd7a06c), _ice = new THREE.Color(0xe6e2dc);
 const _scoured = new THREE.Color(0x8a6048), _dusty = new THREE.Color(0xc27a4a);   // allocated once: this runs per vertex
 export function shadeVertex(body, px, py, pz, elevation, color, matKnown) {
   const mat = matKnown || materialAt(body, px, py, pz);
   color.setHex(mat.color);
+  if (body.kind === 'moon') {
+    // A moon's ground is its own material's colour with broad patches of lighter and darker dust. (The planet's rust and
+    // dust tints below are Mars's.)
+    const k = 0.84 + 0.30 * (0.5 + 0.5 * Math.sin(px * 0.0023 + py * 0.0017) * Math.sin(pz * 0.0021 + px * 0.0009 + 1.3));
+    const f = 0.9 + 0.2 * (0.5 + 0.5 * Math.sin(px * 0.071 + pz * 0.053) * Math.sin(py * 0.067 + px * 0.041));
+    return color.multiplyScalar(k * f);
+  }
 
+  // Planet-scale albedo, seen from orbit: dark basaltic provinces, bright dust, and the polar caps. The waves are thousands
+  // of kilometres long, so walking-scale ground barely changes; Mars from 400 km stops being one flat orange.
+  if (body.id === 'mars') {
+    const r = Math.hypot(px, py, pz) || 1, x = px / r, y = py / r, z = pz / r;
+    const n1 = Math.sin(x * 3.1 + 1.2) * Math.sin(y * 2.6 + 0.4) * Math.sin(z * 3.7 + 2.0);
+    const n2 = Math.sin(x * 7.3 + y * 5.1 + 0.7) * Math.sin(z * 6.1 - x * 4.4 + 1.9);
+    const n3 = Math.sin(x * 15.0 + z * 11.0 + 0.3) * Math.sin(y * 13.0 - z * 9.0 + 2.2);
+    const dark = Math.max(0, Math.min(1, (n1 * 0.9 + n2 * 0.45 + n3 * 0.25 - 0.05) * 1.6));
+    const bright = Math.max(0, Math.min(1, (-n1 * 0.7 - n2 * 0.3 + 0.1) * 1.4));
+    color.lerp(_basalt, dark * 0.58).lerp(_dustBright, bright * 0.34);
+    const cap = Math.max(0, Math.min(1, (Math.abs(y) + 0.012 * n2 + 0.008 * n3 - 0.962) / 0.02));
+    if (cap > 0) color.lerp(_ice, cap * 0.92);
+  }
   // Elevation banding: dust settles in the lows, wind strips the highs.
   const t = body.terrain;
   const n = Math.max(-1, Math.min(1, elevation / (t.localRelief * 2.2)));

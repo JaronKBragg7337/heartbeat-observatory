@@ -1,0 +1,58 @@
+{
+ "midTransit": {
+  "label": "in transit, about 4 minutes of ship time out",
+  "frame": "mars",
+  "cameraFromMarsCentre_km": 5179,
+  "shipRenderPos_m": 18.684068,
+  "shipRenderPosError_m": 0,
+  "bodiesDrawn": [
+   [
+    "mars shell",
+    "5179 km from the camera"
+   ]
+  ],
+  "nearTileFromCamera_m": null,
+  "depthBits": 24,
+  "far": 1000000000
+ },
+ "landedDeimos": {
+  "label": "landed on Deimos",
+  "frame": "deimos",
+  "cameraFromMarsCentre_km": 23455,
+  "shipRenderPos_m": 18.684068,
+  "shipRenderPosError_m": 3.77e-10,
+  "bodiesDrawn": [
+   [
+    "mars shell",
+    "23455 km from the camera"
+   ],
+   [
+    "deimos shell",
+    "6 km from the camera"
+   ]
+  ],
+  "nearTileFromCamera_m": 14.15,
+  "depthBits": 24,
+  "far": 1000000000
+ },
+ "aboardDeimos": {
+  "label": "aboard, on Deimos",
+  "frame": "deimos",
+  "cameraFromMarsCentre_km": 23455,
+  "shipRenderPos_m": 24.057152,
+  "shipRenderPosError_m": 4.98e-11,
+  "bodiesDrawn": [
+   [
+    "mars shell",
+    "23455 km from the camera"
+   ],
+   [
+    "deimos shell",
+    "6 km from the camera"
+   ]
+  ],
+  "nearTileFromCamera_m": 33.18,
+  "depthBits": 24,
+  "far": 1000000000
+ }
+}

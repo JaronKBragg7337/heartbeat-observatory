@@ -60,6 +60,9 @@ waiting to be used. Drag the right half to look; tap it to jump.
 **Desktop.** WASD, shift to run, space to jump, mouse to look. `V` toggles
 first/third person, `G` toggles the debug layer.
 
+**Space.** Seated at navigation, pilot, captain or comms: tap **Course** (desktop `N`) to plot a course to Mars orbit, Phobos or Deimos; on a moon
+the action button offers **Take core sample**, **Salvage** and **Stow** where they apply. See "Space travel".
+
 **Digging.** Look where you want to cut and tap the action button (`E`) to dig; hold it to put loads down (`Q` drops one).
 **Drop all** (`R`) pours everything you carry as one heap on clear ground. Underground it tries your current floor, then clear ground by the connected hole mouth. The small
 chip above the button (or `1` `2` `3`, or Settings) changes tool: hand spade, shovel, excavator bucket. The amber ring is
@@ -84,7 +87,7 @@ That turns "there's a rock stuck in a hill somewhere" into
 and a reproduction step.
 
 **The goal is to never need it.** `test/validate.mjs` is the first line of
-defence and runs without anyone looking: 331 checks (2026-10-01) covering placement,
+defence and runs without anyone looking: 390 checks (2026-10-01) covering placement,
 collision, dimension drift, physics correctness, determinism, the ship, digging and spoil, the port and its tower.
 
 ---
@@ -104,6 +107,7 @@ src/player/walker.js     a body standing on a planet
 src/ui/touch.js          the stick that isn't there until your thumb is
 src/dev/debugLayer.js    graticule, ID bubbles, coordinate readout
 src/ship/                the MSV Meridian: see "The ship" below
+src/space/               leaving Mars: the sky, the drive, Phobos and Deimos, the jobs: see "Space travel" below
 test/validate.mjs        the checks that mean nobody has to go looking
 test/ship-checks.mjs     the ship's share of them
 test/dig-checks.mjs      digging, spoil, the drawn ground, walking in it, the tiers that tile the rest
@@ -406,11 +410,169 @@ within 5 cm of their design size.
 * The hull is a solid shape: legs and the keel touch the ground, but a wing or the nose can pass through a
   hill you fly into.
 * The airlock's outer hatch is a lit recess on the hull, not a hole cut through the plating.
-* You cannot leave the ship while it is off the ground (no EVA); there is no orbital flight, only atmosphere
-  scale (cruise 40 m/s, climb 12 m/s).
+* You cannot leave the ship while it is off the ground (no EVA). Low flight is still atmosphere scale (cruise 40 m/s,
+  climb 12 m/s); leaving Mars is the nav computer's job (see "Space travel").
 * Terrain around a fast-moving ship is rebuilt by the patch system in 2.5-4 ms slices (it no longer freezes a frame),
   but a ship at 40 m/s outruns the near tier's 13 m margin on a slow device.
 * One ship, one player, no persistence or multiplayer.
+
+## Space travel
+
+*Built by Claude Sonnet 5.5 on 2026-10-01 (branch `cosmos-space`). Review pictures and the walk-through notes:
+[docs/qa/2026-10-01/space/REVIEW.md](docs/qa/2026-10-01/space/REVIEW.md).*
+
+The Meridian leaves Mars. Climb out of the air under the lift pods, light the main drive above it, cross to Phobos or
+Deimos at their real distances, set down on a surveyed pad, walk, hop, dig, take samples, fly home and be paid.
+There is no loading screen anywhere: the same frame loop runs the whole way.
+
+### How you do it
+
+| You do | What happens |
+|---|---|
+| Sit at **Navigation**, **Pilot**, **Captain** or **Comms**, tap **Course** (or press **N**) | The nav computer's sheet: Mars orbit, Phobos, Deimos, the port, each with its distance and flight time from where you are *now* at the present engine share. The home worlds of the bibles are listed greyed out ("needs a jump drive"). |
+| Tap a destination | The ship lifts (the ramp folds first, as always), climbs, burns, turns over, brakes and lands. Any seat, or none: the computer flies it; you can walk the ship the whole time. |
+| Talk (**T**) to the hired pilot -> **Fly to...** | The same list, under "Other worlds". The pilot says what he or she is doing. |
+| Tap **x5 / x20 / x60** during the burn | Time compression for the burn only (below). The cabin, the crew and the doors keep real time. |
+| **Cancel course** | In transit the computer brakes to a halt and the ship holds where it stopped. In the climb below the air it is refused above 60 m/s: the lift pods only push up. |
+| Touch the stick in the pilot's or captain's chair during the climb or the descent | "You have the controls": the course ends and you fly. |
+
+### The flight, in numbers (all in `src/space/spaceSpec.js`)
+
+* **Lift pods to the gate.** Straight up on the flight assist (climb cap raised to 1.5 km/s above 200 m). 120 km takes
+  4.8 minutes and ends at about 840 m/s. Weight falls with the real inverse square all the way (it is 93% at 120 km).
+* **The main drive** (twin engines, 600 kN at full share) is vacuum-only and lights at the gate, 120 km up. Acceleration
+  is `600 kN x engine share / 46 t` = **13 m/s2** at the default 40% share, and **engine share is the drive**: route power in
+  Engineering and the trip changes (20% share: 41 min for Phobos; 80%: 25 min). Thrust acts **only along the nose**, the hull
+  turns at 0.12 rad/s (a turn-over takes 26 s), and thrust is scaled by how well the nose is lined up, so a ship that has not
+  finished turning is not pushing hard.
+* **Flip and burn** (`src/space/transit.js`, pure, flown whole in Node by the validator): burn toward the point, follow the
+  braking envelope (the fastest speed from which the ship can still stop, after the turn-over it will have to make), turn over
+  once and commit, brake, and finish on the manoeuvring jets within 2 m of the standoff point at rest. If the line would pass
+  through Mars (a 60 km safety shell) the course is two legs, each a full stop. Mars's pull is ignored in transit (stated, not hidden).
+* **Real distances.** Phobos 9,376 km from Mars's centre, Deimos 23,459 km (NSSDC). From the gate: Phobos 7,667 km,
+  **about 30 minutes** at x1 (peak 9.3 km/s) plus 5 for the climb and 1 for the landing; Deimos 20,583 km, **about 53 minutes**
+  (peak 15.6 km/s). x60 makes Phobos a 90-second skip. Nothing is cut: the cabin is an ordinary walkable ship all the way.
+* **Time compression is not a different flight.** The trip is integrated in sub-steps of at most 0.25 s of ship time, so x60 and
+  x1 arrive within 2% of each other (a check).
+* **Raiders** (the drones) keep Mars neutral below 1.5 km. Beyond it they attack, in the climb, in Mars orbit and over the moons
+  (not while landed). They cannot keep up with a ship doing km/s: during a transit they are not there, and they come again when it slows.
+  Each one brought down outside neutral space pays a bounty through a hook (below), including the crew gunners' kills.
+
+### Frames: how the ship leaves one world and stands on another
+
+A moon's field, walker and digger all take coordinates with the moon's centre at the origin (`digging.js` and `edits.js` are
+unchanged). So the engine has **frames**: translated copies of Mars's body-fixed frame (axes parallel). One is *active*; the camera,
+the ship, the walker and the drones live in it. Anything else is drawn at `worldPos + its frame's origin - the active origin -
+the camera`, all in f64 before the GPU ever sees a number, which is why 23,459 km from Mars is as precise as the pad
+(a check proves a 0.1 m offset survives where float32 subtraction would lose it). The camera far plane is 1e9 m on the same
+logarithmic depth buffer; the Sun disc sits at 3e8 m. A frame switch happens only when the ship is hovering or just stopped
+(transit is always in Mars's frame), so no velocity is ever touched. `cosmos.space.frameId` says which one you are in.
+
+### Phobos and Deimos (`src/space/moonField.js`, `moonWorld.js`)
+
+* **A volume, like the planet.** `density = |p| - R(direction)`: a real triaxial ellipsoid (Phobos 13.03 x 11.40 x 9.14 km semi-axes,
+  NSSDC; NASA says 27 x 22 x 18 km across, fetched 2026-10-01) with a lumpy departure from it, craters at nine scales from 4 km to
+  16 m (deterministic hashing, no `Math.random`), 16 broken grooves parallel to the long axis, regolith roughness, and **Stickney** (9 km
+  across, 1.7 km deep, with a rim and an ejecta blanket). Deimos has the same machinery with half the craters, smaller cells and
+  a third of the roughness: NASA's 100 m of regolith is why it looks smooth, and the validator measures that it is.
+* **Real gravity from real mass.** 0.0056 m/s2 on Phobos (G M / R2 of the NSSDC mass, a check), 0.0026 on Deimos; escape
+  velocity 11.2 and 5.6 m/s. A jump at 3 m/s would be a 15-minute flight, so a push-off on a moon is 0.6 m/s (a 32 m, 3.5-minute
+  hop, measured within 12% of the formula). The walker was changed in one place for this: rising at more than 2 cm/s is a jump, not
+  a bump to stay glued to (on a moon a jump leaves the ground at less than the 4 cm a frame the snap reaches).
+* **Digging works because it is the same ground.** Phobos regolith 1150 kg/m3 over rubble at 1860, deeper; the bucket, the
+  hopper, the heap at the angle of repose and the books balancing to the last bit are the planet's own classes (checked on Phobos).
+  A hauling cart is rated 400 kgf by inertia, so its capacity is held at the Mars figure, 1,054 kg.
+* **Drawn the way Mars is:** a whole-moon shell (184 m between vertices; phone 270 m) and three tiers under the camera (8 km,
+  880 m, 48 m; 62 m / 6.7 m / 0.6 m between vertices) with the same per-pixel handover, plus the dug-ground brick meshes. A moon has
+  no air, so Mars's dusty fog is switched off on it (otherwise Phobos from the port is a washed-out disc).
+* **The pad.** `Stickney East survey pad` is a real plane in the field (flat to 5 cm within 55 m, perpendicular to local up, in
+  regolith) with a painted disc and four lamps. Both pads are in sunlight (a check).
+* **Parked, not orbiting.** Mars does not spin in this build, so each moon is parked over a fixed spot of the sky at its real
+  distance: Phobos 19 degrees above the port's horizon, Deimos higher. Phobos is tidally locked, so the face you see is the real face
+  toward Mars; the missing part is its 2.1 km/s orbital motion. The Sun is the one world direction the spawn's mid-morning sun
+  always was (a check); it blends from the ground game's local sun to that world direction between 20 and 80 km up.
+
+### The sky (`src/space/spaceSky.js`)
+
+Nothing changes on the ground: below 6 km the blend is exactly 1. Above it the dusty daylight sky thins with a 14 km scale and is
+gone by 100 km: background, fog, ambient and the Sun's strength follow. The star dome is procedural (three star layers, one hash
+per layer per pixel, and a mottled Milky Way with dust lanes; no texture download). Mars's limb is an atmosphere shell integrated
+along the view ray (dust warm and low, gas faintly blue and higher). The Sun is a hot disc and a wide glow. Mars gets polar caps and
+planet-scale dark and bright provinces (waves thousands of kilometres long, so walking-scale ground barely changes) and its whole-planet shell is
+now 288 x 144 (phone 192 x 96) so the limb from orbit is not faceted. The ship's reflections of a dusty sky are turned down with the sky.
+
+### Reasons to go (`src/space/jobs.js`)
+
+1. **Survey (played end to end).** The Marineris Survey Office pays a standing 300 credits for each Phobos core sample, up to three. Fly to
+   Phobos, walk to the cyan beacons (184 m, 680 m, 1.29 km from the pad), tap **Take core sample** at each (a real spade bite, sealed as
+   cargo), fly home, land at the port: **paid 900 credits**, automatically (no accept button, no hand-in button).
+2. **Resources found only off Mars.** Dig Phobos regolith, or the hydrated-clay pockets under the Stickney ejecta (**game fiction**,
+   marked as such in the material record: water-bearing clay is a hypothesis for Phobos, not an established fact). Walk within 38 m of the
+   ship and tap **Stow**: the hopper's lots move into the hold as matter (the ground's books still balance) and the cargo hook is told the kilograms by material.
+3. **A distress call.** Landing on Phobos, Comms reports a beacon about 800 m south-west of the pad: a drifting cargo module
+   (a battered box with a blinking lamp). Walk up and **Salvage**: 1.8 t of alloy plate comes aboard and a 150 credit claim is paid, once.
+4. **Raiders.** 25 credits each outside neutral space (above), in orbit and over the moons.
+
+### The hooks for money (the economy / port builder wires these)
+
+`cosmos.space.hooks` (defaults keep a tiny local ledger, shown on the Jobs tab, so the loop works before the economy is wired):
+
+```js
+space.hooks.award(credits, reason)          // survey payout, salvage claim, raider bounty
+space.hooks.addCargo(item, kg, meta)        // sample canisters, phobos-regolith, phobos-hydrated-clay, salvage-alloy, deimos-regolith...
+space.hooks.removeCargo(item, kg)           // samples delivered
+space.hooks.onArrive(destId)                // a trip ended (a quest event)
+space.hooks.cargoKg(item)                   // what the hold has
+```
+
+Pass your own in the `SpaceSystem` options (`hooks: {...}` in `main.js`), or assign over them at runtime. Item names are plain strings; prices are not set here.
+
+### Files
+
+```
+src/space/spaceSpec.js    the numbers: drive, moons (NSSDC / NASA), destinations, the Sun, bounty (pure)
+src/space/moonField.js    a moon as a field.js body: ellipsoid, craters, grooves, strata, the pad, sample sites (pure)
+src/space/transit.js      the drive: flip and burn, braking envelope, legs round Mars (pure)
+src/space/spaceTrip.js    one journey: lift, ascent, transit, settle, descent; what the ship says
+src/space/spaceSystem.js  frames and the switch, destinations, hooks, the per-frame sky/moon update
+src/space/moonWorld.js    a moon's shell, tiers, dug-ground meshes, ground samplers
+src/space/spaceSky.js     the sky, stars, Sun, Mars's limb
+src/space/jobs.js         samples, stow, salvage, bounty, the markers on Phobos
+src/space/spaceUI.js      the nav computer's sheet (Course / Jobs)
+test/space-checks.mjs     sections 12-17 of the validator; test/_space-only.mjs runs just those (7 s)
+```
+
+Small edits elsewhere, each marked in place: `core/engine.js` (frames, far plane), `world/field.js` (one edit store per body, a
+body may supply its own field, the moon materials), `world/planetMesh.js` (moon colours, Mars's albedo), `world/regolith.js` (a pebble
+strength), `player/walker.js` (the jump rule), `ship/shipFlight.js` (climb cap, override, attitude, vacuum descent), `ship/shipSystem.js`
+(the trip's controls, HUD, telemetry), `ship/guns.js` (raiders suspend, the bounty event), `ship/shipUI.js`, `crew/crewSystem.js`,
+`crew/crewUI.js`, `dev/debugLayer.js`, `main.js` (wiring blocks, Mars's ground only updated while Mars's ground is near).
+
+### What the validator proves (sections 12-17, 59 checks)
+
+The moons' numbers against the published ones (gravity from mass, escape velocity, orbit period from Mars's pull); the field's sign
+rule, its exact surface solve against ray marching, its determinism; Stickney's depth; strata and clay; the pad flat to 5 cm; Deimos
+smoother than Phobos; a person running 90 s on Phobos stays on the ground and out of the rock; the hop against its formula; digging on
+Phobos and the books; the ship resting on four legs on 0.0056 m/s2, lifting off, and landing softly on the vacuum descent; the climb from
+Mars's pad to the gate under the lift pods alone; whole trips to Phobos and Deimos arriving within 2 m at rest, in the right order of phases,
+thrust only along the nose, the turn rate respected, never near Mars, the far side of Mars routed round, engine share changing the trip,
+cancelling brakes to a stop; frame shifts and f64 round trips; the sky blend; raiders suspended for a transit and returning; the bounty
+paid once; samples as real lots; stowing; the survey payout once; the salvage once.
+
+### What this does not do (and what could not be verified)
+
+* **Verified in a desktop Chromium on software rendering (SwiftShader), at 1280x720, 750x470 and 390x844, on the phone tier
+  (`?tier=low`) and the high tier, not on a phone.** Frame rate, heat, memory and GPU cost of the star dome (about 4 hash evaluations a
+  pixel plus noise in the Milky Way band) and of the atmosphere shell are unmeasured on a real device.
+* **No orbital mechanics.** The ship hovers at any height under its own thrust (the flight assist always did); transit is a commanded
+  flip and burn, not a Kepler orbit. The moons do not move. Mars does not rotate.
+* **Mars's pull is ignored in transit; the drive's thrust is the Meridian's own number** (fictional). Distances, sizes, masses and gravity are real.
+* **Cosmetic:** a faint dotted outline can show where the 8 km tier meets the whole-moon shell when you look down from a few km; there
+  are no boulders; no shadows from craters onto craters (the sun's shadow map covers 120 m round the camera).
+* **No persistence and no server:** a refresh puts you back at the port, the moons forget the holes (as Mars does).
+* The jobs' prices are mine and small; the economy owns the real ones. No second planet and no jump drive: Fortis, Greenhaven and Ironclad are listed and refused.
+* The cargo module of the distress call is a plain box with a stripe (a placeholder prop); the sample beacons are poles with a lamp.
+* Ground view of Phobos at the pad is lit by one Sun at about 30 degrees: shadows are long; the Mars-lit side has only a faint ambient (no real Marsshine).
 
 ## Marineris Port (local review build, 2026-09-30)
 
@@ -450,7 +612,7 @@ are in [the leftovers review](docs/qa/2026-10-01/leftovers/REVIEW.md).
 `cosmos.portTour('list')` still lists **45** cameras. The five stair views are replaced by
 `tower-elevator-call`, `tower-elevator-car`, `tower-elevator-shaft`, `tower-elevator-cab-door` and `tower-elevator-exit`.
 Tours pause physics, show a review pose of the lift, and restore the original player/lift state on `portTour('off')`.
-`node test/validate.mjs` now includes the leftovers regressions: **331 checks** in total. The **49** focused
+`node test/validate.mjs` now includes the leftovers regressions (and, since the space work, 59 more: **390 checks** in total). The **49** focused
 worker, Climb and protected/tunnel-pour checks can also run with `node test/leftovers-checks.mjs`. All changes remain local and uncommitted for Claude/Jaron review.
 
 ## What is not done yet
@@ -462,7 +624,8 @@ Stated plainly, because a known gap is cheaper than a surprise:
   this is a marching-cubes pass over the local patch, not a redesign.
 - **No textures.** Surfaces are shaded from material records. CC0 sources are
   approved and recorded; nothing has been downloaded yet.
-- **One planet.** The second one gets added only after the transition between
-  them is provably clean — that failure is the reason this project exists.
+- **One planet, two moons.** Phobos and Deimos are walkable bodies on the same density-field model, reached by a
+  continuous flight with no loading screen (see "Space travel"). A second *planet* is still not here: the SYL home
+  worlds are listed in the nav computer and refused (they need a jump drive the Meridian does not have).
 - **No server.** Everything is local. There is no authority, no persistence,
   and no multiplayer yet.

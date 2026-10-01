@@ -1,0 +1,46 @@
+{
+ "ground": {
+  "label": "Mars ground at the port (low tier)",
+  "calls": 316,
+  "triangles": 441259,
+  "geometries": 242,
+  "textures": 197
+ },
+ "build": {
+  "phobosBuildMs": 237,
+  "shellVertices": 33153,
+  "shellTriangles": 65024
+ },
+ "orbit": {
+  "calls": 182,
+  "triangles": 364193
+ },
+ "landMs": {
+  "debugLandMs": 1434,
+  "r": {
+   "landed": true,
+   "agl": 1.0600075716647552
+  }
+ },
+ "pad": {
+  "label": "on the Phobos pad, ship landed (the interior culled as usual)",
+  "calls": 131,
+  "triangles": 367443,
+  "geometries": 249,
+  "textures": 198
+ },
+ "onFoot": {
+  "label": "on foot 60 m from the ship",
+  "calls": 190,
+  "triangles": 431687,
+  "geometries": 256,
+  "textures": 200
+ },
+ "lateMsOnPhobos": 0.017,
+ "dest": {
+  "destinationsMsEach": 3.3
+ },
+ "tiersRebuild": {
+  "forceAllTiersMs": 155
+ }
+}

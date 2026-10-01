@@ -145,6 +145,33 @@ export const MATERIALS = {
     densityKgM3: 3400, strength: 1.0, color: 0x3b302c, roughness: 0.8,
     note: 'Below the crust. Immutable boundary — cannot be excavated.',
   },
+  // --- The moons (src/space/). Appended after everything above: edits.js stores a lattice point's material as its index in this
+  // --- list, so the older materials must keep their numbers.
+  phobosRegolith: {
+    id: 'MAT-PHOBOS-REGOLITH', name: 'Phobos regolith',
+    densityKgM3: 1150, strength: 0.10, color: 0x5a4d45, roughness: 0.97,
+    note: 'Fine, dark, fluffy dust and gravel; one of the least reflective surfaces in the solar system. Loose; a blanket tens of metres thick.',
+  },
+  phobosRubble: {
+    id: 'MAT-PHOBOS-RUBBLE', name: 'Phobos rubble',
+    densityKgM3: 1860, strength: 0.35, color: 0x433a35, roughness: 0.93,
+    note: 'Fractured, porous carbonaceous-looking rock below the regolith. Bulk density of the whole moon is about 1.86 t/m3.',
+  },
+  deimosRegolith: {
+    id: 'MAT-DEIMOS-REGOLITH', name: 'Deimos regolith',
+    densityKgM3: 1050, strength: 0.08, color: 0x6e6256, roughness: 0.97,
+    note: 'A deep, fine blanket (about 100 m) that has filled most of the craters of Deimos: smooth, a little brighter than Phobos.',
+  },
+  deimosRubble: {
+    id: 'MAT-DEIMOS-RUBBLE', name: 'Deimos rubble',
+    densityKgM3: 1470, strength: 0.30, color: 0x4d443c, roughness: 0.93,
+    note: 'Porous rubble under the dust. Deimos is about 1.5 t/m3 on the whole.',
+  },
+  phobosClay: {
+    id: 'MAT-PHOBOS-CLAY', name: 'Hydrated clay pocket',
+    densityKgM3: 1500, strength: 0.18, color: 0x8a7a66, roughness: 0.88,
+    note: 'GAME FICTION (not established for Phobos): soft water-bearing clay in pockets under the Stickney ejecta. A resource found only off Mars.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -270,14 +297,20 @@ export function caveOpenness(body, px, py, pz, depthM) {
 // collider, the material query, the ground the feet stand on. There is no
 // separate "hole mesh" that could disagree with where you can walk.
 // ---------------------------------------------------------------------------
-let _edits = null;
+let _edits = null;                 // the first store attached (Mars): what getEdits() returns
+const _editsByBody = new Map();    // body id -> its EditStore (a moon has its own dug ground)
 // Engineered earthworks live in the volume, before caves and player edits.
 // A grade supplies a bounded horizontal blend into a plane, not a thin shell.
 let _grades = [];
 export function attachGrades(grades = []) { _grades = grades; }
 export function getGrades() { return _grades; }
-export function attachEdits(store) { _edits = store; }
+export function attachEdits(store) {
+  if (!store) { _edits = null; _editsByBody.delete('mars'); return; }      // detach (tests)
+  if (store.body) _editsByBody.set(store.body.id, store);
+  if (!_edits || !store.body || store.body.id === 'mars') _edits = store;
+}
 export function getEdits() { return _edits; }
+const editsOf = (body) => _editsByBody.get(body.id) || (body.id === 'mars' ? _edits : null);
 
 /**
  * The field as everything else sees it: undisturbed geology, except inside a
@@ -286,8 +319,9 @@ export function getEdits() { return _edits; }
  * is the same hole to all of them.
  */
 export function density(body, px, py, pz, scratch = {}) {
-  if (_edits && !_edits.isEmpty) {
-    const v = _edits.sample(px, py, pz);
+  const E = editsOf(body);
+  if (E && !E.isEmpty) {
+    const v = E.sample(px, py, pz);
     if (v !== null) return v;
   }
   return baseDensity(body, px, py, pz, scratch);
@@ -299,6 +333,9 @@ export function baseDensityAt(body, px, py, pz, scratch = {}) {
 }
 
 function baseDensity(body, px, py, pz, scratch = {}) {
+  // A body whose shape is not a spheroid under noise (the moons: triaxial, cratered) supplies its own base field. The sign
+  // rule, the edits, the ray caster and everything built on this are unchanged.
+  if (body.baseField) return body.baseField(px, py, pz);
   // Surveyed apron: its exact plane is cheap to query, including all collision
   // substeps on a phone. Below the rock roof keep the full 3D cave evaluation.
   for (const grade of _grades) {
@@ -338,8 +375,9 @@ function baseDensity(body, px, py, pz, scratch = {}) {
 /** Material at a point. Only meaningful where density < 0. Spoil that has been dumped
  *  reports what it is made of; everything else reports the natural strata. */
 export function materialAt(body, px, py, pz) {
-  if (_edits && !_edits.isEmpty) {
-    const m = _edits.materialOverride(px, py, pz);
+  const E = editsOf(body);
+  if (E && !E.isEmpty) {
+    const m = E.materialOverride(px, py, pz);
     if (m) return m;
   }
   return naturalMaterialAt(body, px, py, pz);
@@ -347,6 +385,7 @@ export function materialAt(body, px, py, pz) {
 
 /** Strata only, ignoring anything dumped on top. */
 export function naturalMaterialAt(body, px, py, pz) {
+  if (body.materialField) return body.materialField(px, py, pz);
   for (const grade of _grades) {
     const mat = grade.bodyId === body.id && grade.materialAt?.(px, py, pz);
     if (mat) return mat;
@@ -372,6 +411,7 @@ export function raycast(body, ox, oy, oz, dx, dy, dz, maxDist, opts = {}) {
   const hits = [];
   const scratch = {};
 
+  const E = editsOf(body);
   let t = 0;
   let prev = density(body, ox, oy, oz, scratch);
   let wasSolid = prev < 0;
@@ -381,8 +421,8 @@ export function raycast(body, ox, oy, oz, dx, dy, dz, maxDist, opts = {}) {
     let step = Math.max(minStep, Math.min(maxStep, Math.abs(prev) * 0.85));
     // Inside an edited neighbourhood the stored distances are not a safe stride
     // (dumped spoil stands above ground the stride knows nothing about).
-    if (_edits && !_edits.isEmpty && step > 0.2 &&
-        _edits.inBounds(ox + dx * t, oy + dy * t, oz + dz * t, 6)) step = Math.max(0.12, Math.min(step, 0.2));
+    if (E && !E.isEmpty && step > 0.2 &&
+        E.inBounds(ox + dx * t, oy + dy * t, oz + dz * t, 6)) step = Math.max(0.12, Math.min(step, 0.2));
     const nt = Math.min(t + step, maxDist);
     const nx = ox + dx * nt, ny = oy + dy * nt, nz = oz + dz * nt;
     const cur = density(body, nx, ny, nz, scratch);
@@ -506,11 +546,16 @@ export function surfaceRadiusAlong(body, dx, dy, dz, opts = {}) {
 export function surfaceRadiusFast(body, dx, dy, dz, iterations = 3, opts = null) {
   const scratch = {};
   let r = body.radiusMean;
-  for (let i = 0; i < iterations; i++) {
-    const d = baseDensity(body, dx * r, dy * r, dz * r, scratch);
-    r -= d;
-    // Guard against a pathological step leaving the body entirely.
-    if (!(r > 0) || r > body.radiusEquatorial * 2) return body.radiusMean;
+  if (body.baseField) {
+    // A moon's field is a radial heightfield: density = r - R(direction), so one Newton step is exact.
+    r = body.surfaceRadius ? body.surfaceRadius(dx, dy, dz) : r - baseDensity(body, dx * r, dy * r, dz * r, scratch);
+  } else {
+    for (let i = 0; i < iterations; i++) {
+      const d = baseDensity(body, dx * r, dy * r, dz * r, scratch);
+      r -= d;
+      // Guard against a pathological step leaving the body entirely.
+      if (!(r > 0) || r > body.radiusEquatorial * 2) return body.radiusMean;
+    }
   }
 
   // Newton assumes the field increases smoothly with radius. A dug hole breaks
@@ -521,7 +566,8 @@ export function surfaceRadiusFast(body, dx, dy, dz, iterations = 3, opts = null)
   // cheap path.
   // Precise proximity, not bucket occupancy. Gating on the bucket made every
   // vertex within CELL_M of any edit pay for a full ray march.
-  if (!(opts && opts.ignoreEdits) && _edits && !_edits.isEmpty && _edits.affects(dx * r, dy * r, dz * r, 2.5)) {
+  const E = editsOf(body);
+  if (!(opts && opts.ignoreEdits) && E && !E.isEmpty && E.affects(dx * r, dy * r, dz * r, 2.5)) {
     return surfaceRadiusAlong(body, dx, dy, dz, {
       minStep: 0.12, startRadius: r + 60, range: 200,
     });

@@ -1,0 +1,50 @@
+// Review 4: the hired pilot flies it, Mars orbit and the raiders beyond neutral space, Deimos. Desktop (high tier). Writes s04_*.jpg.
+import { boot, S, FF, stand } from './_sp.mjs';
+const h = await boot({ w: 1280, h: 720, query: '?tier=high', wait: 5000 });
+await h.page.waitForFunction(() => window.cosmos.crew, null, { timeout: 90000 });
+await h.page.waitForTimeout(3000);
+const log = (...a) => console.log(...a);
+const sh = (n) => h.shot('s04_' + n);
+await h.page.evaluate(() => { const c = window.cosmos; c.ship.boardAt(0, 0, 14, 0); c.crew.debugCrewUp(); });
+await FF(h, 90, 0.05);
+await h.page.evaluate(() => { const c = window.cosmos; c.ship.takeSeat('nav'); });
+await FF(h, 3, 0.05);
+// the order list the player sees when talking to the pilot: stand beside Ada on the bridge, press Talk, open "Fly to..."
+await h.page.evaluate(() => { const c = window.cosmos; c.ship.stations.stand(); c.ship.teleport('bridge'); });
+await FF(h, 2, 0.05);
+await h.page.evaluate(() => { const c = window.cosmos, ui = c.crewUI; const m = c.crew.members.get('pilot'); const near = c.crew.nearest(c.walker.worldPos); ui.openFor(near || m); ui.view = 'places'; ui._sig = ''; ui._draw(); });
+await FF(h, 0.3, 0.05);
+await sh('a_talk_to_the_pilot_other_worlds_list');
+await h.page.evaluate(() => { const c = window.cosmos; c.crewUI.close(); c.ship.takeSeat('nav'); });
+const r = await h.page.evaluate(() => window.cosmos.crew.order('goto', { id: 'sp:orbit' }));
+log('order', JSON.stringify(r));
+for (let i = 0; i < 300; i++) { await FF(h, 6, 0.1, '() => !window.cosmos.space.trip'); const s = await S(h); if (!s.phase) break; }
+log('orbit', JSON.stringify(await S(h)));
+await FF(h, 30, 0.1);
+log('raiders', JSON.stringify(await h.page.evaluate(() => { const D = window.cosmos.ship.drones; return { neutral: D.neutral, states: D.drones.map(d => d.state), shield: Math.round(window.cosmos.ship.flight.shield), hull: window.cosmos.ship.flight.hull }; })));
+await h.page.evaluate(() => window.ext([-34, 12, 20], [0, 2, -6])); await sh('b_holding_over_mars_400km');
+await h.page.evaluate(() => window.extOff());
+await h.page.evaluate(() => { const D = window.cosmos.ship.drones, f = window.cosmos.ship.flight; const d = D.drones[0]; D.debugPose(0, { x: f.pos.x + f.rightH.x * 70 + f.up.x * 12, y: f.pos.y + f.rightH.y * 70 + f.up.y * 12, z: f.pos.z + f.rightH.z * 70 + f.up.z * 12 }); window.ext([30, 8, 20], [70, 6, 0]); });
+await sh('c_a_raider_outside_neutral_space_70m_off_the_starboard_side');
+await h.page.evaluate(() => window.extOff());
+await h.page.evaluate(() => { const c = window.cosmos; c.ship.drones.debugRelease(0); c.ship.drones.drones[0].target.hp = 0; c.ship.drones.drones[0].target.respawn = 45; });
+await FF(h, 1, 0.05);
+log('bounty', JSON.stringify(await h.page.evaluate(() => ({ credits: window.cosmos.space.ledger.credits, log: window.cosmos.space.log.slice(-2).map((l) => l.text) }))));
+// Deimos
+const t0 = Date.now();
+const d = await h.page.evaluate(() => { const c = window.cosmos; const t = performance.now(); const r = c.space.engage('deimos'); return { r, ms: Math.round(performance.now() - t) }; });
+log('engage deimos', JSON.stringify(d));
+await h.page.evaluate(() => { const c = window.cosmos; c.ship.stations.stand(); });
+await FF(h, 900, 0.1, '() => window.cosmos.space.trip && window.cosmos.space.trip.phase === "transit"');
+await h.page.evaluate(() => window.cosmos.space.setWarp(60));
+await FF(h, 900, 0.1, '() => !window.cosmos.space.trip || window.cosmos.space.trip.phase === "descent" || window.cosmos.space.trip.phase === "settle"');
+log('deimos', JSON.stringify(await S(h)));
+await FF(h, 20, 0.1);
+await h.page.evaluate(() => window.ext([42, 10, 55], [0, 0, -4])); await sh('d_over_deimos_standoff'); await h.page.evaluate(() => window.extOff());
+await FF(h, 900, 0.1, '() => !window.cosmos.space.trip');
+await FF(h, 5, 0.1);
+log('deimos landed', JSON.stringify(await S(h)));
+await h.page.evaluate(() => window.ext([36, 8, 44], [0, 2, -3])); await sh('e_down_on_deimos'); await h.page.evaluate(() => window.extOff());
+await stand(h, 70, 30, 4.5, 0.0, 'deimos'); await sh('f_deimos_smooth_dust');
+await stand(h, 70, 30, 0.0, 0.7, 'deimos'); await sh('g_mars_from_deimos');
+await h.browser.close();
