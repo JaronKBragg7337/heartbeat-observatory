@@ -58,6 +58,12 @@ waiting to be used. Drag the right half to look; tap it to jump.
 **Desktop.** WASD, shift to run, space to jump, mouse to look. `V` toggles
 first/third person, `G` toggles the debug layer.
 
+**Digging.** Look where you want to cut and tap the action button (`E`) to dig; hold it (`Q`) to put a load down. The small
+chip above the button (or `1` `2` `3`, or Settings) changes tool: hand spade, shovel, excavator bucket. The amber ring is
+where the next bite goes (it lies on the surface you are aiming at and is as wide as the bite); the cyan ring is where the
+next load will land. Look down for a pit, level for a tunnel, up for a ceiling. Walk into a wall about shoulder high to
+scramble over it.
+
 ---
 
 ## The debug layer
@@ -76,8 +82,8 @@ That turns "there's a rock stuck in a hill somewhere" into
 and a reproduction step.
 
 **The goal is to never need it.** `test/validate.mjs` is the first line of
-defence and runs without anyone looking: 165 checks covering placement,
-collision, dimension drift, physics correctness, determinism, and the ship.
+defence and runs without anyone looking: 228 checks (2026-10-01, about 80 s) covering placement,
+collision, dimension drift, physics correctness, determinism, the ship, digging and spoil, the port and its tower.
 
 ---
 
@@ -87,7 +93,10 @@ collision, dimension drift, physics correctness, determinism, and the ship.
 src/world/bodies.js      real measured worlds, every number sourced
 src/world/geodesy.js     lat/long/alt on a real spheroid; the address book
 src/world/field.js       the 3D material field — the world's actual truth
-src/world/planetMesh.js  pictures of the field; never a second source of truth
+src/world/edits.js       the dug-and-dumped ground: a 0.1 m lattice in 3.2 m bricks, exact matter, spoil that settles
+src/world/excavation.js  draws the lattice (brick meshes) and tells the heightfield tiers where to stand aside
+src/world/planetMesh.js  pictures of the ORIGINAL geology: shell, mid and near heightfield tiers
+src/player/digging.js    the tools, where a bite lands, what you carry, where a load is put down
 src/core/registry.js     stable asset IDs and measured records
 src/player/walker.js     a body standing on a planet
 src/ui/touch.js          the stick that isn't there until your thumb is
@@ -95,31 +104,100 @@ src/dev/debugLayer.js    graticule, ID bubbles, coordinate readout
 src/ship/                the MSV Meridian: see "The ship" below
 test/validate.mjs        the checks that mean nobody has to go looking
 test/ship-checks.mjs     the ship's share of them
+test/dig-checks.mjs      digging, spoil, the drawn ground, walking in it, the tiers that tile the rest
+test/port-checks.mjs     the port's share, including the control tower stair and cab
 ```
 
 ---
 
 ## Digging
 
-The ground is a solid object you take pieces out of. A scoop has a measured
-volume, that volume has a mass from the real density of the rock it came from,
-and that mass has to be somewhere — in your hands or in a pile on the ground.
+*Rebuilt 2026-10-01 by Claude Sonnet 5.5 after Jaron played it: "Digging is still broken. I was able to actually get deep but
+the holes aren't wide enough plus just the placing and everything... it's just weird."*
 
-Tap the action button (or `E`) to dig, hold it (or `Q`) to drop. A spade bite
-is ~3 litres and ~4.4 kg of regolith, which is what a real spade lifts.
+The ground is a solid object you take pieces out of and put pieces back on, any direction you point. A bite has a measured
+volume, that volume has a mass from the real density of what it cut, and that mass is in your hands or in a heap on the ground.
 
-Matter is conserved to floating-point zero: `edits.ledger()` reports
-removed − deposited − carried and the validator asserts it is 0.
+### How the ground works now
 
-**The one thing that does not work yet: you cannot SEE the hole.** The ground
-mesh samples every 6.72 m and a spade bite is 0.18 m across — 37 bites fit
-inside a single mesh cell, so the hole is far below what the surface can draw.
-Everything else about it is real: the field knows, collision knows, the mass is
-in your hands, and the validator proves the rendered surface drops when the cut
-is big enough to reach a vertex.
+```
+phi(p) < 0   solid       phi(p) > 0   open air        (field.js's sign rule, everywhere)
+```
 
-The fix is a third LOD level — a fine detail mesh, sub-metre, around edited
-ground — not a change to how excavation works.
+* **The changed ground is a lattice** (`edits.js`): signed distances 0.1 m apart in 3.2 m bricks, created only where somebody
+  touched the planet. `density()` reads it; so do the collider, the ray caster and the mesher. A hole is the same hole to all of
+  them and costs the same however many bites made it. (It used to be a list of spheres asked at every sample.)
+* **Matter is exact.** A lattice point holds a fraction of solid, `content(phi) = clamp(0.5 - phi/0.1, 0, 1)`. A dig or a drop is
+  a measured change in the sum of those, the lot is that change to the last bit, and `edits.fieldDeltaM3()` re-adds the whole
+  lattice and must equal the ledger. Litres and kilograms both balance to zero.
+* **Spoil settles.** A load is poured as a cone at the angle of repose (33 degrees, no free side steeper than 36) with a rounded
+  tip, onto whatever surface is there: lawn, the lip of a hole, an earlier heap. The apex height is found by bisection until the
+  heap holds exactly the lot. The next load pours onto the SAME heap, so it grows outward at the same slope; it is never
+  stacked into a pillar. `dumpPlan()` puts it beside the hole on the side you stand, clear by the heap's own radius (wider if the
+  hole is downhill of it), and starts a new heap round the hole when the old one would reach the rim.
+* **Spoil is not bulked.** The old model made a dumped pile 25% bigger than the hole it came from. A lattice cannot hold a pile
+  whose solid fraction differs from the ground's without a second field, and a second field is how mass goes missing when the heap
+  is dug again. Spoil keeps the density it came out at; every lattice point carries its own density and material.
+
+### Tools, aim, and getting out
+
+| Tool (keys 1 2 3, or the chip above the button) | Bite | Lifts |
+|---|---|---|
+| Hand spade | r 0.09 m | ~3 L, ~5 kg: detail, corners, steps |
+| Shovel | r 0.17 m | ~21 L, ~31 kg: the everyday bite |
+| Excavator bucket (a machine, 12 t bed) | r 0.70 m | 1.44 m3, 2-4 t: a hole you can stand and turn in, a tunnel you can walk upright |
+
+The bite is a sphere centred half a radius INTO the material along the way you are looking (`digTarget` steps the look ray through
+the field itself, not the drawn mesh). Look down: a pit. Level: a tunnel. Up: a ceiling. A walkable tunnel is two rows of
+bucket bites; a person fits through a 1.4 m hole.
+
+Hands carry 105 kg on Mars (40 kgf is 105 kg of rock at 3.72 m/s2); the bucket has a machine's bed.
+
+The body is more than the feet now (`walker.js`): four rings of probes (shin, hip, chest, head) and one over the crown keep you
+out of rock, so tunnel walls are walls and a roof is a roof; the feet step up a ledge of 0.5 m; and walking into a wall whose top
+is within 2.2 m scrambles you over it (for about 1.3 s of effort). A shaft deeper than about 3 m is a shaft: dig a ramp or pile
+spoil to climb out.
+
+### How a hole is drawn (and what was wrong)
+
+Found by walking it, 2026-10-01:
+
+| Seen | Cause | Now |
+|---|---|---|
+| A big flat lighter "layer" over the hole, ringed by a seam; "paper-thin" ground | One mesh covered a box around EVERY edit ever made, so two digs 40 m apart made a 40 m box at 0.8 m cells; its sides were open; the heightfields could yield only in whole 0.6 m / 6.7 m quads, so a narrower hole was covered by the quad or left a ring of nothing | One watertight mesh per touched 3.2 m brick, built from the lattice (`meshBrick`). The heightfield tiers draw only the original geology and DISCARD per pixel under every built brick (a 3-D occupancy texture), stopping 0.15 m short of an open face so the two overlap and no crack can open |
+| A hole "covered over again by this layer" after walking away and back | The mid-distance patch yielded round the NEAR patch, not round the dig | The discard follows the bricks, wherever they are within 90 m (56 m on the phone tier); beyond that the original ground shows and the bricks return when you do |
+| A heap that was a "giant pillar" | One more sphere stacked on the last | Cone at the angle of repose, grown outward (above) |
+| Heaps and walls in two chessboard colours | Material of the nearest lattice point | Decided over the eight points round the vertex, weighted by how much solid each holds |
+| A pit that was black at 5 m | Ambient sky light came from the planet's +Y (nearly horizontal at the spawn latitude) | Sky light comes from local up, and rises with the depth below the original ground |
+| Digging at spawn cut basalt (2900 kg/m3) | The graded apron exposed the bedrock the cut found | The apron is engineered fill: 1.2 m of regolith over duricrust |
+
+The patch tiers were also re-sampled in one go (about 100 ms on a desktop for the wide one, every 13 m of walking): now only when
+you have walked 250 m, and in 2.5 to 4 ms slices a frame.
+
+### What the validator proves (sections 7b-7f, `test/dig-checks.mjs`)
+
+A scoop's volume and mass are real and balance in litres and kilograms; the lattice re-added from scratch lost exactly what the lot
+carries; a buried sphere of 0.5 m comes out at its true volume within 3%; the same dig is the same lattice bit for bit; every face
+of the dug ground points out of the rock; every vertex lies on the field's zero surface; no crack between bricks (open edges: 0)
+and shading agrees across seams; looking at the hole from above and from inside, the drawn surface is where the field says (8 cm,
+312 rays); a hole shows its strata; every changed lattice point is under a brick the heightfields discard beneath, and ground
+nobody touched is never discarded; a poured heap is low (height under 0.8 of radius), grows outward as ONE heap, stands no
+steeper than 39 degrees, sits on the ground with no air under it, and the books balance; a dig-and-dump shift with the bucket gets
+past 3 m and the spoil never refills the hole; you can stand in a pit and turn through a full circle without any part of you in
+rock; the wall of a 1.8 m pit can be scrambled over and a 3 m shaft cannot; a bite aimed level goes into the wall; a tunnel can
+be walked; aiming up finds the ceiling; the near and mid tiers together draw every point within 80 m; nothing within 60 m is
+paper-thin.
+
+### Known weak points
+
+* Spoil over a hole is a cone about a vertical axis, so on a steep slope it runs further downhill than up; the heap planner
+  accounts for slope but only roughly.
+* Digging is spheres: no square-cut trench or flat floor, no digging while the machine moves, no ladder. A very deep shaft
+  traps you (by design, until there is a ladder).
+* Materials mix only by lattice point; a heap of mixed lots takes the lot's mean density, not a layered fill.
+* The first dig into untouched ground creates a brick (about 12 ms on a desktop) and meshes it (about 11 ms); on a phone that
+  is a visible frame. Not measured on a real phone.
+* The regolith shader's normal-mapped streaks can read as stripes on a steep heap seen at a grazing angle.
 
 ## The ship
 
@@ -174,9 +252,15 @@ mouse looks and aims, `E` sit / stand / use.
   always down while the hull leans, banks and lifts. The planet walker (`walker.js`) is untouched.
 * **Guns**: bolts inherit the ship's velocity and stop at the drawn surface (impact dust, sparks, scorch
   marks). Three practice targets stand ahead of the bow.
-* **Three hostile drones** wake when the ship is airborne within 750 m and fire slow bolts at where the ship
-  will be. The shield takes the hit first (a ripple spreads from the impact point); what is left goes to the
-  hull, and a battered hull gives up thrust. Land and they lose interest; the crew patch the hull on the ground.
+* **Mars is neutral, so there are no drones in its airspace** (Jaron, 2026-10-01: they should STAY, but Mars is the game's
+  neutral planet). Three hostile drones exist only beyond `NEUTRAL_AIRSPACE_M` (1500 m above the ground, one named constant
+  in `guns.js`, with a 100 m margin so riding the line does not flicker). Climb through it and the HUD says
+  "Leaving Mars neutral airspace. Hostile contacts inbound.", the raiders arrive at the edge of sight and fire slow bolts at where
+  the ship will be; the shield takes the hit first (a ripple spreads from the impact point), what is left goes to the hull, and a
+  battered hull gives up thrust. Come back under it ("Entering Mars neutral airspace") and they break off and are gone, and not
+  one more bolt flies. Below the line nothing fires at the ship however low and however long it flies. (The "two things flying
+  around" Jaron saw from the ground were the old patrolling drones; they no longer exist down here. The drone is now a ducted
+  quad-rotor with a twin cannon; `cosmos.drones().debugPose(i, worldPoint)` places one for review shots.)
 
 ### What the first real phone showed (2026-09-29) and what was done
 
@@ -269,8 +353,8 @@ within 5 cm of their design size.
 * The airlock's outer hatch is a lit recess on the hull, not a hole cut through the plating.
 * You cannot leave the ship while it is off the ground (no EVA); there is no orbital flight, only atmosphere
   scale (cruise 40 m/s, climb 12 m/s).
-* Terrain around a fast-moving ship is rebuilt by the existing patch system, which hitches every few hundred
-  metres (a known limit of the ground, not of the ship).
+* Terrain around a fast-moving ship is rebuilt by the patch system in 2.5-4 ms slices (it no longer freezes a frame),
+  but a ship at 40 m/s outruns the near tier's 13 m margin on a slow device.
 * One ship, one player, no persistence or multiplayer.
 
 ## Marineris Port (local review build, 2026-09-30)
@@ -282,30 +366,47 @@ in the planet's density field. Landing samples the field and accounts for the
 actual rubber soles; boarding and stepping off a ramp share a supported,
 directional handoff. Cargo crates leave both control panels and screens clear.
 
-The validator now runs **172 checks**. The second visual pass shares Meridian's
-PBR maps and prop kit, adds ribbed architecture, roof equipment, a 28 m tower,
-furnished interiors, four distinct traders, pavement wear and retaining works.
-Low tier adds 12 primary draw calls, 32,282 triangles and 2.93 MB of geometry;
-the existing sun shadow pass can add 6 calls / 28,788 triangles. Port-only
-RGBA textures are estimated at 3.84 MB including mipmaps; ship maps are shared.
-Phone FPS and the final interior visual grade still await Claude's review.
-Use `cosmos.portTour()` to cycle 35 fixed review cameras, `cosmos.portTour('list')`
-to list them and `cosmos.portTour('off')` to return to play. Full causes, limits,
-registry IDs and viewpoints: [Mars Port review](docs/MARS-PORT-REVIEW.md).
+The second visual pass shares Meridian's PBR maps and prop kit, adds ribbed architecture, roof equipment,
+furnished interiors, four distinct traders, pavement wear and retaining works. Phone FPS and the final interior visual grade
+still await Claude's review. Use `cosmos.portTour()` to cycle 45 fixed review cameras, `cosmos.portTour('list')` to list them and
+`cosmos.portTour('off')` to return to play. Full causes, limits, registry IDs and viewpoints:
+[Mars Port review](docs/MARS-PORT-REVIEW.md).
+
+### The control tower can be climbed (2026-10-01)
+
+Jaron: "The tall tower you can go in the bottom but I can't actually go up the tower and look around... eventually certain
+people or NPCs will be at the top 'working'." Now you can, on foot, and the top is a real room.
+
+* **The way up.** From the lobby the stair core stands straight ahead of the entrance (a 1.2 x 2.3 m door). Inside it: five levels
+  of two switchback flights, 120 risers of 0.1875 m (the Meridian's riser) over 0.27 m treads (34.8 degrees; 2R+T = 0.645), a 0.3 m
+  spine between the flights, a landing at every turn, closed risers with a painted nosing, a handrail each side, a lamp over
+  every landing, 2.2 m of headroom or more everywhere. The core goes up through the lobby roof (the roof is cut round it) as a
+  slim white mast with three aviation bands and lit windows. About 25 s at a run.
+* **The cab** at 22.5 m: 12.8 m square, glazed all round (24 panes) above a 0.9 m console ledge, an eave over it, standing
+  on struts down the mast. The stair core stands in the middle of the room with its door facing the room and status screens on
+  its sides. Seven consoles along the glass (three facing the pads, two a side for approach and weather) with a swivel chair
+  behind each, a deck floor with a hazard edge, ceiling lamps, roof gear (radar housing, mast with beacon, dish).
+* **People who will work here.** `TOWER_SPOTS` (portSpec.js) lists eight places, port-local with the way they face: five seats at
+  the consoles, a supervisor and a runner and a lookout standing. The validator proves each is reachable on foot with a body-sized
+  clearance, that the standing ones are clear of every solid within 45 cm, that each seat is a real chair with a console in front
+  and a way to its back, and that from every seat the way out through the glass is open at a seated eye.
+* **One truth for the floor.** `TOWER` and `towerFloorAt()` in `portSpec.js` say where every step and landing is; the drawing,
+  the collision boxes and the walker's ground sampler (`PortSystem.towerFloorRadius`, called first by main.js's ground
+  sampler) all read it. The validator walks it with the real planet walker: lobby door, ten flights, the cab, in under 80 s.
+* **Budget.** The tower went from 5.5k to 9.6k triangles on the phone tier (the cab furniture is box-built there and uses the
+  ship's chair at eight cushion segments on desktop). Port totals: phone 36.4k triangles / 13 calls / 3.3 MB (cap raised
+  from 35k / 12 / 4 MB to 40k / 13 / 4 MB: one call is the cab glass), desktop 61.5k / 13 / 5.6 MB (cap 65k / 13 / 6 MB).
+  The old tower's tapered instrument shaft, braces, gallery rails and opaque window band were replaced, not kept.
 
 ## What is not done yet
 
 Stated plainly, because a known gap is cheaper than a surprise:
 
-- **Dug holes are invisible** until a fine detail mesh exists. See above.
 - **Caves have no geometry.** The field knows they are there and collision
   respects them, but the renderer only draws the outermost surface. Closing
   this is a marching-cubes pass over the local patch, not a redesign.
 - **No textures.** Surfaces are shaded from material records. CC0 sources are
   approved and recorded; nothing has been downloaded yet.
-- **Patch rebuild costs ~230 ms** and happens every ~250 m of walking. It is a
-  visible hitch. The fix is to spread the rebuild across frames or move it to a
-  worker.
 - **One planet.** The second one gets added only after the transition between
   them is provably clean — that failure is the reason this project exists.
 - **No server.** Everything is local. There is no authority, no persistence,

@@ -297,35 +297,98 @@ export function buildTargetMesh() {
 
 
 // ---------------------------------------------------------------------------
-// A hostile drone: a flat armoured disc with a red eye and four rotor pods.
+// A hostile drone: a flat armoured disc with a red eye, four ducted rotors on arms, a twin cannon under the
+// nose, a sensor mast and three landing skids. About 5.7 m across the rotor ducts: a tenth of the Meridian's length.
 // ---------------------------------------------------------------------------
 export function buildDroneMesh() {
   const g = new THREE.Group();
-  const dark = new THREE.MeshStandardMaterial({ color: 0x33383d, roughness: 0.4, metalness: 0.85 });
-  const plate = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.45, metalness: 0.7 });
-  const eye = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.15, 0.1).multiplyScalar(2.2), toneMapped: false });
-  const body = new THREE.Mesh(new THREE.SphereGeometry(1.15, 20, 12), plate);
+  // (no environment map out here, so a high metalness reads black; these are painted armour with a metal feel)
+  const dark = new THREE.MeshStandardMaterial({ color: 0x3b434a, roughness: 0.5, metalness: 0.35 });
+  const plate = new THREE.MeshStandardMaterial({ color: 0xaeb4ba, roughness: 0.45, metalness: 0.3 });
+  const worn = new THREE.MeshStandardMaterial({ color: 0x7d858c, roughness: 0.55, metalness: 0.3 });
+  const warn = new THREE.MeshStandardMaterial({ color: 0xb8402e, roughness: 0.5, metalness: 0.3 });
+  const eye = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.01, 0.006), toneMapped: false });
+  const lamp = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.05, 0.01), toneMapped: false });
+  // hull: a lens of plate, a raised crown, a rim ring, and a lower belly pod
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1.15, 28, 14), plate);
   body.scale.set(1, 0.5, 1);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.11, 8, 28), dark);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.11, 10, 36), dark);
   ring.rotation.x = Math.PI / 2;
-  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 0.22, 16), dark);
-  cap.position.y = 0.5;
-  const lens = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 10), eye);
-  lens.position.set(0, -0.06, -1.02);
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.72, 0.24, 18), dark);
+  crown.position.y = 0.5;
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.62, 18, 10), worn);
+  belly.scale.set(1, 0.55, 1); belly.position.y = -0.34;
+  // an armour band round the equator with red hazard lamps
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.1, 36, 1, true), warn);
+  band.position.y = 0.02; band.scale.set(1.0, 1, 1);
+  const lamps = new THREE.Group();
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const l = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), lamp);
+    l.position.set(Math.cos(a) * 1.4, 0.0, Math.sin(a) * 1.4);
+    lamps.add(l);
+  }
+  // sensor eye in a recessed housing at the front (-Z), with a hood
+  const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.5, 0.32, 18), dark);
+  housing.rotation.x = Math.PI / 2; housing.position.set(0, -0.04, -1.04);
+  const lens = new THREE.Mesh(new THREE.SphereGeometry(0.33, 16, 10), eye);
+  lens.position.set(0, -0.04, -1.14);
+  const hood = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 0.1, 18, 1, true), dark);
+  hood.rotation.x = Math.PI / 2; hood.position.set(0, 0.2, -1.16); hood.scale.set(1, 1, 0.6);
+  // twin cannon under the nose, with muzzle brakes
+  for (const sx of [-1, 1]) {
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 1.25, 8), dark);
+    barrel.rotation.x = Math.PI / 2; barrel.position.set(sx * 0.3, -0.5, -1.15);
+    const brake = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.16, 8), worn);
+    brake.rotation.x = Math.PI / 2; brake.position.set(sx * 0.3, -0.5, -1.82);
+    const mount = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.5), worn);
+    mount.position.set(sx * 0.3, -0.44, -0.62);
+    g.add(barrel, brake, mount);
+  }
+  // sensor mast with a small dish, and a whip aerial
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.8, 6), dark);
+  mast.position.set(0.35, 0.95, 0.35);
+  const dish = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), plate);
+  dish.rotation.x = -0.9; dish.position.set(0.35, 1.38, 0.3);
+  const whip = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 1.1, 4), dark);
+  whip.position.set(-0.4, 1.0, 0.45); whip.rotation.z = 0.08;
+  // three skids
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2 + 0.5;
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.7, 6), dark);
+    leg.position.set(Math.cos(a) * 0.65, -0.62, Math.sin(a) * 0.65); leg.rotation.z = Math.cos(a) * 0.3; leg.rotation.x = -Math.sin(a) * 0.3;
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.04, 0.12), dark);
+    foot.position.set(Math.cos(a) * 0.82, -0.97, Math.sin(a) * 0.82); foot.rotation.y = -a;
+    g.add(leg, foot);
+  }
+  // four ducted rotors on arms (the discs spin; the ducts do not)
   const rotors = new THREE.Group();
   for (let i = 0; i < 4; i++) {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.4, 6), dark);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.3, 8), dark);
     arm.rotation.z = Math.PI / 2; arm.rotation.y = -a;
-    arm.position.set(Math.cos(a) * 1.5, 0.05, Math.sin(a) * 1.5);
-    const rotor = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.04, 20), new THREE.MeshBasicMaterial({ color: 0x9aa4ac, transparent: true, opacity: 0.28, depthWrite: false }));
-    rotor.position.set(Math.cos(a) * 2.1, 0.25, Math.sin(a) * 2.1);
-    rotors.add(arm, rotor);
+    arm.position.set(Math.cos(a) * 1.65, 0.04, Math.sin(a) * 1.65);
+    const duct = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.07, 8, 28), worn);
+    duct.rotation.x = Math.PI / 2; duct.position.set(Math.cos(a) * 2.15, 0.22, Math.sin(a) * 2.15);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.16, 10), dark);
+    hub.position.copy(duct.position);
+    const blades = new THREE.Group();
+    blades.add(new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.02, 24), new THREE.MeshBasicMaterial({ color: 0x9aa4ac, transparent: true, opacity: 0.2, depthWrite: false })));
+    for (const r of [0, Math.PI / 2]) {
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(1.46, 0.015, 0.1), new THREE.MeshStandardMaterial({ color: 0x20262b, roughness: 0.5, metalness: 0.6, transparent: true, opacity: 0.55 }));
+      blade.rotation.y = r; blades.add(blade);
+    }
+    blades.position.copy(duct.position);
+    const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.3, 10), plate);
+    motor.position.set(duct.position.x, 0.08, duct.position.z);
+    g.add(arm, duct, hub, motor);
+    rotors.add(blades);
   }
-  g.add(body, ring, cap, lens, rotors);
+  g.add(body, ring, crown, belly, band, lamps, housing, lens, hood, mast, dish, whip, rotors);
   g.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
   g.userData.eye = eye;
   g.userData.rotors = rotors;
+  g.userData.spin = (dt) => { for (const b of rotors.children) b.rotation.y += dt * 30; };
   return g;
 }
 

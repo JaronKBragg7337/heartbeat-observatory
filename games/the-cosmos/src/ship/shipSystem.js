@@ -909,9 +909,9 @@ export class ShipSystem {
       fwd.normalize();
       const right = new THREE.Vector3().crossVectors(fwd, up).normalize();
       v.entry.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, up, fwd.clone().negate()));
-      v.mesh.userData.rotors.rotation.y += dt * 30;
+      v.mesh.userData.spin(dt);
       const pulse = 1.3 + 0.9 * Math.sin(this.time * (v.dr.state === 'attack' ? 12 : 3));
-      v.mesh.userData.eye.color.setRGB(1 * pulse, 0.15 * pulse, 0.1 * pulse);
+      v.mesh.userData.eye.color.setRGB(pulse, 0.012 * pulse, 0.008 * pulse);
     }
     // gun mounts
     const A = this.guns.aim;

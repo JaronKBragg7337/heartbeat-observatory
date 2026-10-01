@@ -23,10 +23,12 @@ The headless/standalone path can still generate its own material set.
   and shelf labels. A reception counter has a framed terminal, keyboard and
   parcels; a manual pallet lift has forks, rollers, hydraulic pump and handle.
   Deck plate floors, aisle markings and suspended light housings complete it.
-- **Tower:** a 28 m instrument tower with tapered shaft, diagonal bracing,
-  a framed illuminated cab, external gallery rails, HVAC, antenna and shallow
-  dish. Its lobby has reception, padded seats, live pad occupancy displays,
-  a surface-operations/weather display and a framed lift entrance.
+- **Tower (rebuilt 2026-10-01, Claude Sonnet 5.5):** a 31 m control tower you can climb. Lobby with reception, padded seats and
+  live pad displays; a stair core straight ahead of the entrance (door 1.2 x 2.3 m) with five levels of two switchback flights
+  (120 risers of 0.1875 m), landing lamps and a handrail each side; the core rises through the lobby roof as a white mast with
+  aviation bands and lit windows; at 22.5 m a 12.8 m glass cab on struts, 24 panes, consoles with chairs along the glass, deck
+  floor, ceiling lamps, roof radar, beacon mast and dish. Eight worker places (`TOWER_SPOTS`). See the README section "The
+  control tower can be climbed".
 - **Market:** four coloured fabric awnings with lower faces, scalloped
   valances, support tubes, signs, practical lamps and price displays.
   Ares Provisions has ration trays, tins, coffee dispenser and cups; Second
@@ -127,8 +129,12 @@ entrances now remain open even during distant aerial views**.
 | `depot-lift-cart` | Manual pallet lift and strapped load |
 | `depot-roof` | Curved shell, pressure hoops, rooftop plant and solar cells |
 | `tower-reception` | Desk, seating and pad/weather displays |
-| `tower-lift` | Lift doors, controls and lobby furnishing |
-| `tower-cab` | Illuminated glazing, gallery, bracing, antenna and dish |
+| `tower-stair-door` | The stair core's door, straight ahead of the entrance |
+| `tower-stair-foot`, `tower-stair-landing`, `tower-stair-back-landing` | Inside the stair: a flight, a landing, the turn |
+| `tower-stair-top` | Arriving in the cab: the stair door looking out over the consoles |
+| `tower-cab-south`, `tower-cab-west`, `tower-cab-east`, `tower-cab-north-walk`, `tower-cab-looking-in` | The cab from the floor and from a corner |
+| `tower-mast-from-the-apron` | The mast, its bands and the cab on its struts |
+| `tower-cab` | The cab and roof gear from outside |
 | `market-trader-1` through `market-trader-4` | Each trader's goods, signs and awning |
 | `port-from-ship` | Exterior silhouette above the ship |
 | `port-one-km` | Readability at approximately one kilometre |
@@ -146,8 +152,9 @@ restore `true`. A render budget alone cannot establish a small FPS cost.
 
 These are known modelling shortcuts, not a claim that the unseen interior
 screenshots passed a visual review. Windows are framed, illuminated **opaque
-panes**, not transparent openings with visible occupied rooms. The cab and
-lift are scenery; the lobby is enterable but there is no working cab lift.
+panes**, not transparent openings with visible occupied rooms (the tower cab is
+the exception: real glass). There is no cab lift; the tower is climbed by stair
+(about 25 s at a run). No NPCs yet: the cab has marked places for them.
 Crate/label patterns and engine wear stamps repeat. The depot ribs are a broad
 curved prefab roof rather than fully rounded pressure-vessel end caps. Some
 small trader goods and hanging field kit remain simple bevelled forms. Practical

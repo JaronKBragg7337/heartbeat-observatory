@@ -129,6 +129,9 @@ export class Digger {
     const tanT = Math.tan(edits.repose);
     const rNew = Math.cbrt((3 * V) / (Math.PI * tanT)) + 0.14 + 0.1;   // a poured heap, rounded tip included
     const growth = (pile) => pile.radiusM * Math.cbrt(1 + V / Math.max(pile.volumeM3, 1e-4));
+    // A heap that has grown to this radius is full: the next load starts another one beside it. (A heap is a pile of
+    // many loads for a reason of cost as well as of look: pouring onto a big one touches every lattice point of it.)
+    const FULL_HEAP_M = 2.1;
     const site = edits.siteNear(wp.x, wp.y, wp.z, 9);
     const f = w.updateFrame();
 
@@ -144,7 +147,7 @@ export class Digger {
       }
       if (!gp) return null;
       const pile = edits.pileNear(gp.x, gp.y, gp.z, 0.5);
-      if (pile) return { x: pile.x, y: pile.y, z: pile.z, up: pile.up, pile, r: growth(pile) };
+      if (pile && growth(pile) <= FULL_HEAP_M) return { x: pile.x, y: pile.y, z: pile.z, up: pile.up, pile, r: growth(pile) };
       return { x: gp.x, y: gp.y, z: gp.z, up, pile: null, r: rNew };
     }
 
@@ -165,7 +168,8 @@ export class Digger {
       const dist = site.radiusM + 0.4 + rNew;
       const gp = this.groundBelowPoint({ x: site.x + d.x * dist, y: site.y + d.y * dist, z: site.z + d.z * dist }, up);
       if (!gp) continue;
-      const pile = edits.pileNear(gp.x, gp.y, gp.z, 0.6);
+      let pile = edits.pileNear(gp.x, gp.y, gp.z, 0.6);
+      if (pile && growth(pile) > FULL_HEAP_M) continue;          // that heap is full: try round the hole
       const centre = pile ? { x: pile.x, y: pile.y, z: pile.z } : gp;
       const r = pile ? growth(pile) : rNew;
       const plan = { x: centre.x, y: centre.y, z: centre.z, up, pile, r };

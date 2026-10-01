@@ -219,7 +219,9 @@ const TOOLS = digger.tools;
 // is the field itself (the heightfield tiers are not drawing it, and only the field knows the
 // shape of a hole). Elsewhere, outside the earthworks, the drawn surface is what you stand on:
 // collision must sample whatever the player sees.
+let portRef = null;                      // the port, once it is built (the stair and the cab are floors above the ground)
 walker.groundSampler = (dx, dy, dz, r) => {
+  if (portRef) { const tf = portRef.towerFloorRadius(dx * r, dy * r, dz * r); if (tf !== null) return tf; }
   if (!edits.isEmpty && terrain.touchedAt(dx * r, dy * r, dz * r)) return null;
   const sr = surfaceRadiusFast(body, dx, dy, dz, 3, { ignoreEdits: true });
   if (portSite.weight(dx * sr, dy * sr, dz * sr) > 0) return sr;
@@ -265,6 +267,7 @@ try {
 // Reuse the actual Meridian texture objects and sky environment: no second
 // ship-sized texture set for the port. Fallback still allows independent builds.
 const port = new PortSystem(engine, registry, portSite, tier, ship.matsExt).build();
+portRef = port;
 port.padOccupancy = () => {
   if (!ship.flight.landed) return [];
   const p = portSite.toLocal(ship.flight.pos);
@@ -408,6 +411,10 @@ engine.scene.add(sun, sun.target);
 
 // Mars' sky is dust-scattered butterstotch, and the ground bounce is strong
 // because the regolith is bright. Both colours come from the body record.
+// The suit lamp: it comes on in a hole (below), a warm pool of light that falls off with distance so the walls
+// have depth and the strata read. It rides at the eye, which is the origin of render space.
+const suitLamp = new THREE.PointLight(0xffe6c8, 0, 24, 1.5);
+engine.scene.add(suitLamp);
 const sky = new THREE.HemisphereLight(
   body.atmosphere.skyColor, MATERIALS.regolith.color, 0.85);
 engine.scene.add(sky);
@@ -548,11 +555,14 @@ function updateSun(f) {
   sky.position.copy(up);
   // And in a hole the sky is a smaller part of what the walls see but the walls are bright rust that
   // bounces it back: lift the ambient with the depth below the original ground so a deep pit is dim,
-  // not black. (Measured, not styled: the pit floor at 5 m read as 3% of the surface brightness.)
+  // not black. (Measured, not styled: with the ambient at 1.6 the pit floor at 6 m was still under 5% of the surface
+  // brightness, because a hemisphere light reaches the surface divided by pi.)
   const cw = engine.cameraWorldPos;
   const below = Math.max(0, -baseDensityAt(body, cw.x, cw.y, cw.z));
-  ambientDepth += (Math.min(1, below / 3) - ambientDepth) * 0.15;
-  sky.intensity = 0.85 + 0.75 * ambientDepth;
+  ambientDepth += (Math.min(1, below / 2.5) - ambientDepth) * 0.15;
+  sky.intensity = 0.85 + 1.3 * ambientDepth;
+  suitLamp.position.set(0, 0.15, 0);
+  suitLamp.intensity = 5 * Math.min(1, Math.max(0, (below - 0.8) / 1.2));
 }
 let ambientDepth = 0;
 
@@ -738,6 +748,7 @@ engine.addUpdater((dt) => {
     engine.camera.up.set(freeCam.eye.x / l, freeCam.eye.y / l, freeCam.eye.z / l);
     engine.camera.lookAt(new THREE.Vector3(freeCam.target.x - freeCam.eye.x, freeCam.target.y - freeCam.eye.y, freeCam.target.z - freeCam.eye.z));
     updateSun(walker.updateFrame());
+    if (ship.ready) ship._updateVisuals(dt, false);        // drones, ramps and lights still follow their state in a review shot
     if (!edits.isEmpty || terrain.meshes.size) {
       terrain.update(dt, freeCam.eye);
       terrain.coverOffsetFor(patch.worldPos, midCover);
@@ -843,6 +854,7 @@ window.cosmos = {
   port, portTour,
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
+  drones: () => ship.drones,
   at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,
   ship, shipUI, engine, body, walker, patch, registry, debugLayer, view,
   report: () => debugLayer.reportAt(walker),

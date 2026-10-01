@@ -1,7 +1,8 @@
 // Architecture and fittings use the same bevels, PBR surfaces and prop kit as
 // Meridian. All static details are written into material buckets, never meshes.
-import { drawProp } from '../ship/shipProps.js';
+import { drawProp, PROPS } from '../ship/shipProps.js';
 import { CELLS, plaque, atlasUV } from './portArt.js';
+import { TOWER } from './portSpec.js';
 
 const B=(k,m,x,y,z,w,h,d,c=.035)=>k.bevelBox(m,x,y,z,w,h,d,c);
 const prop=(k,kind,x,y,z,w,h,d,rot=0)=>drawProp(k,{kind,x,y,z,w,h,d,rot});
@@ -40,7 +41,7 @@ function dustSkirt(k,a) {
   }
 }
 
-export function moduleShell(k,a,low,block) {
+export function moduleShell(k,a,low,block,hole=null) {
   const h=4.2, depot=a.kind==='depot', rise=depot?1.3:.45;
   B(k,'concrete',0,-.2,0,a.w,.4,a.d,.055);
   k.box('floor',0,.012,0,a.w-.3,.012,a.d-.3);
@@ -54,18 +55,31 @@ export function moduleShell(k,a,low,block) {
     B(k,'wall',x,h/2,a.d/2-.12,side,h,.24);block(x,a.d/2-.12,side,.24,h);
   }
   B(k,'wall',0,3.5,a.d/2-.12,a.doorW,1.4,.24);
-  // Curved sandwich roof: two skins and solid end caps.
+  // Curved sandwich roof: two skins and solid end caps. `hole` ({x0,x1,z0,z1}) is cut out where a stair core
+  // passes up through it.
   const n=low?12:20, profile=[];
   for(let i=0;i<=n;i++){const x=-a.w/2+a.w*i/n;profile.push([x,h+rise*Math.sin(i/n*Math.PI)]);}
+  const roofPiece=(x0,y0,x1,y1,z0,z1)=>{
+    k._faceQuad('plastic',[[x0,y0,z0],[x1,y1,z0],[x1,y1,z1],[x0,y0,z1]],[0,1,0]);
+    k._faceQuad('wall',[[x0,y0-.12,z0],[x1,y1-.12,z0],[x1,y1-.12,z1],[x0,y0-.12,z1]],[0,-1,0]);
+  };
   for(let i=0;i<n;i++) {
     const [x0,y0]=profile[i],[x1,y1]=profile[i+1];
-    k._faceQuad('plastic',[[x0,y0,-a.d/2],[x1,y1,-a.d/2],[x1,y1,a.d/2],[x0,y0,a.d/2]],[0,1,0]);
-    k._faceQuad('wall',[[x0,y0-.12,-a.d/2],[x1,y1-.12,-a.d/2],[x1,y1-.12,a.d/2],[x0,y0-.12,a.d/2]],[0,-1,0]);
+    if(!hole||x1<=hole.x0||x0>=hole.x1) roofPiece(x0,y0,x1,y1,-a.d/2,a.d/2);
+    else {
+      const yAt=x=>y0+(y1-y0)*(x-x0)/(x1-x0);
+      if(x0<hole.x0) roofPiece(x0,y0,hole.x0,yAt(hole.x0),-a.d/2,a.d/2);
+      const xa=Math.max(x0,hole.x0), xb=Math.min(x1,hole.x1);
+      roofPiece(xa,yAt(xa),xb,yAt(xb),-a.d/2,hole.z0);
+      roofPiece(xa,yAt(xa),xb,yAt(xb),hole.z1,a.d/2);
+      if(x1>hole.x1) roofPiece(hole.x1,yAt(hole.x1),x1,y1,-a.d/2,a.d/2);
+    }
     for(const s of [-1,1])k._faceQuad('plastic',[[x0,h,s*a.d/2],[x1,h,s*a.d/2],[x1,y1,s*a.d/2],[x0,y0,s*a.d/2]],[0,0,s]);
   }
   // Pressure hoops follow the shell. They also read as structure inside.
   for(let z=-a.d/2+.25;z<=a.d/2;z+=depot?3:2.3) {
     for(let i=0;i<n;i++){const p=profile[i],q=profile[i+1];
+      if(hole&&z>hole.z0-.15&&z<hole.z1+.15&&q[0]>hole.x0&&p[0]<hole.x1)continue;
       k.pipe('steelDark',[p[0],p[1]+.015,z],[q[0],q[1]+.015,z],.065,low?6:8);}
     for(const s of [-1,1]){B(k,'steelDark',s*(a.w/2-.13),2.1,z,.15,4.2,.18);
       B(k,'steel',s*(a.w/2-.25),.4,z,.22,.6,.26);}
@@ -164,61 +178,283 @@ export function depotInterior(k,a,low,block) {
   screen(k,CELLS.service,0,2.3,-a.d/2+.3,3.2,1.45);
 }
 
-export function towerInterior(k,a,low,block) {
-  // Reception with a curved nose, separate worktop, displays and task light.
-  B(k,'counter',-2.5,.52,-1.8,3.3,1.04,1.25,.18);block(-2.5,-1.8,3.3,1.25,1.1);
-  B(k,'steel',-2.5,1.09,-1.8,3.45,.1,1.4,.08);
-  k.box('glowCyan',-2.5,.8,-1.158,2.8,.04,.016);
-  screen(k,CELLS.pads,-2.5,1.5,-2.1,1.35,.6);
-  screen(k,CELLS.pads,-2.5,2.65,-a.d/2+.31,3.4,1.45);
-  screen(k,CELLS.weather,1.9,2.65,-a.d/2+.31,3.4,1.45);
-  for(const z of [1.5,3]) {
-    k.push(-4.7,0,z,Math.PI/2);
-    k.box('steelDark',0,.4,0,.7,.12,.65);
-    k.pillow('fabricBlue',0,.52,0,.65,.16,.62,3.2,low?6:10);
-    k.pillow('fabricBlue',0,.93,-.27,.64,.75,.16,3.2,low?6:10);
-    for(const s of [-1,1])k.box('steel',s*.27,.22,0,.05,.44,.5);k.pop();
-    block(-4.7,z,.85,.8,1.35);
+// ===========================================================================================================
+// THE CONTROL TOWER (lobby, stair core and cab). Every measurement is in TOWER (portSpec.js), which is also
+// what `towerFloorAt` and the validator read, so what is drawn, what blocks you and where the floor is cannot
+// drift apart.
+//
+//   lobby   reception on the left; the stair core stands at the back with its door straight ahead of the entrance
+//   core    2.9 x 5.7 m. Inside: five switchback levels (two flights each, 12 risers of 0.1875 m, a 0.3 m spine
+//           between the flights, a landing front and back), lit at every landing. It passes through the lobby roof
+//           (the roof is cut round it) and stands out of it as a slim white mast with aviation bands.
+//   cab     at 22.5 m, 12.8 m square, glazed all round above a 0.9 m console ledge, an eave over it. Consoles along
+//           the glass with real chairs behind them, the core standing in the middle of the room with the stair door
+//           facing the room, and standing room kept clear for the people who will work here (TOWER_SPOTS).
+// ===========================================================================================================
+
+/** A flat polygon given in any order, wound so that it faces `want` (a vector). */
+function facing(k, key, pts, want, uvs) {
+  const [a, b, c] = pts;
+  const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+  const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+  const ok = nx * want[0] + ny * want[1] + nz * want[2] >= 0;
+  k.poly(key, ok ? pts : pts.slice().reverse(), uvs);
+}
+
+/** An axis-aligned plank: top/bottom/sides, all six faces. */
+const slab = (k, key, x0, y0, z0, x1, y1, z1, o) => k.boxMM(key, x0, y0, z0, x1, y1, z1, o);
+
+function drawStairCore(k, a, low, block) {
+  const T = TOWER, c = T.core, i = T.inner, F = T.flight;
+  const top = T.cab.roofY;                                  // the core runs right up to the cab ceiling
+  // ---- walls (they block you as well as being drawn) ---------------------------------------------
+  const wall = (x0, x1, z0, z1, y0, y1, key = 'wall') => {
+    slab(k, key, x0, y0, z0, x1, y1, z1);
+    block((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0, y1 - y0, y0);
+  };
+  wall(c.x0, c.x1, c.z0, c.z0 + c.t, 0, top);                         // back
+  wall(c.x0, c.x0 + c.t, c.z0, c.z1, 0, top);                         // left
+  wall(c.x1 - c.t, c.x1, c.z0, c.z1, 0, top);                         // right
+  wall(c.x0, T.door.x0, c.z1 - c.t, c.z1, 0, top);                    // front, either side of the door
+  wall(T.door.x1, c.x1, c.z1 - c.t, c.z1, 0, top);
+  wall(T.door.x0, T.door.x1, c.z1 - c.t, c.z1, T.door.h, T.cab.floorY);                      // over the lobby door
+  wall(T.door.x0, T.door.x1, c.z1 - c.t, c.z1, T.cab.floorY + T.door.h, top);                // over the cab door
+  // exterior skin above the lobby roof: white paint, and aviation bands up the mast
+  const skin = (x0, x1, z0, z1, y0, y1, m = 'plastic') => slab(k, m, x0, y0, z0, x1, y1, z1, { skip: '-y+y' });
+  const yS = 4.6, yE = T.cab.floorY - 0.7;
+  skin(c.x0 - 0.04, c.x1 + 0.04, c.z0 - 0.04, c.z0, yS, yE);
+  skin(c.x0 - 0.04, c.x0, c.z0, c.z1 + 0.04, yS, yE);
+  skin(c.x1, c.x1 + 0.04, c.z0, c.z1 + 0.04, yS, yE);
+  skin(c.x0, c.x1, c.z1, c.z1 + 0.04, yS, yE);
+  for (const [y0, y1] of [[7.6, 9.6], [13.0, 15.0], [18.4, 20.4]]) {
+    skin(c.x0 - 0.07, c.x1 + 0.07, c.z0 - 0.07, c.z0 - 0.04, y0, y1, 'red');
+    skin(c.x0 - 0.07, c.x0 - 0.04, c.z0 - 0.04, c.z1 + 0.07, y0, y1, 'red');
+    skin(c.x1 + 0.04, c.x1 + 0.07, c.z0 - 0.04, c.z1 + 0.07, y0, y1, 'red');
+    skin(c.x0 - 0.04, c.x1 + 0.04, c.z1 + 0.04, c.z1 + 0.07, y0, y1, 'red');
   }
-  // A real framed lift entrance in the lobby; the cab remains scenery.
-  B(k,'gunmetal',3.7,1.6,-2.4,2.8,3.2,1.6,.1);block(3.7,-2.4,2.8,1.6,3.2);
-  for(const s of [-1,1]){B(k,'steel',3.7+s*.55,1.45,-1.56,1.05,2.75,.045,.025);
-    k.box('steelDark',3.7+s*.075,1.45,-1.53,.026,2.5,.02);}
-  plaque(k,CELLS.tower,3.7,2.98,-1.54,2.2,.3);
-  k.box('glowAmber',5.12,1.4,-1.54,.06,.1,.025);
-  for(let z=-4;z<5;z+=1.5)k.box('mark',1.7,.028,z,.08,.005,.65);
-  const ceiling=x=>4.2+.45*Math.sin((x+a.w/2)/a.w*Math.PI)-.08;
-  lamp(k,-2,3.75,0,2.4,ceiling);lamp(k,2.5,3.75,2,2.4,ceiling);
-  // Tapered instrument shaft, braced service gallery and a glazed control cab.
-  k.prism('plasticDark',[[-3,-3],[3,-3],[2.3,3],[-2.3,3]],4.4,21,.2,.2);
-  for(const s of [-1,1]) {
-    k.pipe('steel',[s*2.7,4.5,3],[s*1.6,20.6,2.3],.1,8);
-    for(let y=6;y<21;y+=2){k.box('steel',0,y,2.85,5,.1,.14);
-      k.pipe('gunmetal',[s*2.5,y,2.8],[-s*2.2,y+1.8,2.65],.035,6);}
+  // lit windows on the outside of the shaft, a few to a side, so the mast has life at dusk
+  for (const wy of [5.7, 10.9, 16.1]) for (const s of [-1, 1]) {
+    slab(k, 'glowCool', s > 0 ? c.x1 + 0.04 : c.x0 - 0.075, wy, -3.5, s > 0 ? c.x1 + 0.075 : c.x0 - 0.04, wy + 1.0, -2.1, { col: [0.5, 0.78, 0.9] });
   }
-  B(k,'plastic',0,21.6,0,12,1.2,12,.26);
-  B(k,'gunmetal',0,23,0,10.4,1.6,10.4,.2);
-  for(const s of [-1,1]) {
-    window(k,0,23,s*5.23,9.2,1.15,s===1?0:Math.PI);
-    window(k,s*5.23,23,0,9.2,1.15,s*Math.PI/2);
-    // Gallery handrails, with diagonal braces visible from the ship.
-    k.pipe('steel',[-5.8,23.2,s*5.85],[5.8,23.2,s*5.85],.04,8);
-    k.pipe('steel',[s*5.85,23.2,-5.8],[s*5.85,23.2,5.8],.04,8);
-    for(let x=-5.7;x<6;x+=1.9){
-      k.pipe('steel',[x,22.2,s*5.85],[x,23.2,s*5.85],.035,6);
-      k.pipe('steel',[s*5.85,22.2,x],[s*5.85,23.2,x],.035,6);
+
+  // ---- the spine between the two flights, and the guard across the stairwell at the top ------------------------
+  // At the cab floor flight B arrives at the landing (its lane stays open) and flight A's lane is a well: guarded.
+  wall(T.spine.x0, T.spine.x1, T.spine.z0, T.spine.z1, 0, T.cab.floorY + 1.1, 'steelDark');
+  block((F.a.x0 + F.a.x1) / 2, F.zLow - 0.05, F.a.x1 - F.a.x0, 0.1, 1.1, T.cab.floorY);
+  for (let x = F.a.x0 + 0.05; x <= F.a.x1; x += 0.37) k.pipe('steel', [x, T.cab.floorY, F.zLow - 0.05], [x, T.cab.floorY + 1.05, F.zLow - 0.05], 0.018, 6);
+  k.pipe('steel', [F.a.x0, T.cab.floorY + 1.05, F.zLow - 0.05], [F.a.x1, T.cab.floorY + 1.05, F.zLow - 0.05], 0.03, 8);
+
+  // ---- the flights ---------------------------------------------------------------------------------------------
+  // A flight climbs 12 risers from (yStart, zFrom) in direction dir along z (-1: toward the back wall, +1: toward the
+  // lobby side). Treads are steel plate with a painted nosing; risers are closed; the sides are plates; the underside
+  // is a soffit; a handrail runs on each side.
+  const flight = (x0, x1, yStart, zFrom, dir) => {
+    for (let s = 0; s < F.risers; s++) {
+      const front = zFrom + dir * s * F.tread, back = zFrom + dir * (s + 1) * F.tread;
+      const y = yStart + (s + 1) * F.rise;
+      facing(k, 'steel', [[x0, y, front], [x1, y, front], [x1, y, back], [x0, y, back]], [0, 1, 0]);
+      facing(k, 'steelDark', [[x0, y - F.rise, front], [x1, y - F.rise, front], [x1, y, front], [x0, y, front]], [0, 0, -dir]);
+      const nose = front + dir * 0.06;
+      facing(k, 'hazard', [[x0, y + 0.003, front], [x1, y + 0.003, front], [x1, y + 0.003, nose], [x0, y + 0.003, nose]], [0, 1, 0]);
+    }
+    const yEnd = yStart + F.risers * F.rise, zEnd = zFrom + dir * F.run;
+    // side plates facing into the lane, from the soffit up to the tread line
+    facing(k, 'steelDark', [[x0, yStart - 0.18, zFrom], [x0, yStart - 0.18, zEnd], [x0, yEnd, zEnd], [x0, yStart + F.rise, zFrom]], [1, 0, 0]);
+    facing(k, 'steelDark', [[x1, yStart - 0.18, zFrom], [x1, yStart - 0.18, zEnd], [x1, yEnd, zEnd], [x1, yStart + F.rise, zFrom]], [-1, 0, 0]);
+    facing(k, 'gunmetal', [[x0, yStart - 0.18, zFrom], [x1, yStart - 0.18, zFrom], [x1, yStart - 0.18, zEnd], [x0, yStart - 0.18, zEnd]], [0, -1, 0]);
+    for (const x of [x0 + 0.04, x1 - 0.04]) {
+      k.pipe('steel', [x, yStart + F.rise + 0.9, zFrom], [x, yEnd + 0.9, zEnd], 0.025, 8);
+      for (let s = 0; s <= F.risers; s += 4) {
+        const zz = zFrom + dir * s * F.tread, yy = yStart + (s + 1) * F.rise;
+        k.pipe('steel', [x, yy, zz], [x, yy + 0.9, zz], 0.016, 6);
+      }
+    }
+  };
+  for (let n = 0; n < T.levels; n++) {
+    const y0 = n * T.pitch, mid = y0 + F.risers * F.rise, topY = y0 + T.pitch;
+    flight(F.a.x0, F.a.x1, y0, F.zLow, -1);                   // A: up toward the back wall
+    flight(F.b.x0, F.b.x1, mid, F.zHigh, +1);                 // B: back toward the lobby side
+    slab(k, 'floor', i.x0, mid - 0.14, T.back.z0, i.x1, mid, T.back.z1);                            // the back landing
+    if (n < T.levels - 1) slab(k, 'floor', i.x0, topY - 0.14, F.zLow, i.x1, topY, i.z1);            // the front landing
+    // a lamp over each landing, a painted line at the landing's edge
+    for (const [yy, zz] of [[mid + 2.05, (T.back.z0 + T.back.z1) / 2], [topY + 2.05, (F.zLow + i.z1) / 2]]) {
+      slab(k, 'plasticDark', -0.55, yy, zz - 0.14, 0.55, yy + 0.05, zz + 0.14);
+      slab(k, 'glowWhite', -0.5, yy - 0.012, zz - 0.09, 0.5, yy, zz + 0.09);
+    }
+    if (n < T.levels - 1) {
+      facing(k, 'hazard', [[i.x0, topY + 0.004, F.zLow], [i.x1, topY + 0.004, F.zLow], [i.x1, topY + 0.004, F.zLow - 0.1], [i.x0, topY + 0.004, F.zLow - 0.1]], [0, 1, 0]);
     }
   }
-  B(k,'plastic',0,24.1,0,12,.6,12,.2);
-  B(k,'steelDark',-2,24.85,-1,2,.9,2,.12);
-  k.cyl('steel',1.8,26.1,-1.8,.055,3.7,8);
-  for(const y of [25.3,26.2,27])k.pipe('steel',[.9,y,-1.8],[2.7,y,-1.8],.025,6);
-  k.box('glowRed',1.8,27.98,-1.8,.13,.04,.13);
-  k.cyl('steel',-3.7,25.2,2,.065,1.6,8);
-  // Shallow parabolic radio dish with an offset feed horn.
-  k.dome('plastic',-3.7,26.05,2,.85,low?10:16,4,{thetaMin:Math.PI/2,thetaMax:Math.PI,scaleY:.28,inside:true});
-  k.pipe('steel',[-3.7,26.05,2],[-3.7,26.6,2],.035,6);
-  k.box('glowWhite',0,21.08,5.6,9,.04,.08);
+  // the lobby door: a frame, an exit light and a plaque over it, both ends of the climb
+  for (const base of [0, T.cab.floorY]) {
+    plaque(k, CELLS.tower, 0, base + 2.62, c.z1 + 0.025, 1.7, 0.26);
+    for (const s of [-1, 1]) slab(k, 'steelDark', s * (T.door.x1 + 0.12) - 0.06, base, c.z1, s * (T.door.x1 + 0.12) + 0.06, base + T.door.h, c.z1 + 0.1);
+    slab(k, 'steelDark', T.door.x0 - 0.06, base + T.door.h, c.z1, T.door.x1 + 0.06, base + T.door.h + 0.1, c.z1 + 0.1);
+    slab(k, 'glowGreen', -0.25, base + T.door.h + 0.16, c.z1 + 0.03, 0.25, base + T.door.h + 0.23, c.z1 + 0.05);
+  }
+}
+
+/** Props placed in the cab, written once so the drawing and the blockers cannot disagree. */
+export const CAB_FURNITURE = (() => {
+  const items = [];
+  for (const x of [-3.3, 0, 3.3]) items.push({ desk: [x, 5.3, 2], chair: [x, 4.3, 0] });          // south glass: operators face the pads
+  for (const z of [-2.0, 1.4]) items.push({ desk: [-5.4, z, 1], chair: [-4.45, z, 3] });         // west glass: approach
+  for (const z of [-2.0, 1.4]) items.push({ desk: [5.4, z, 3], chair: [4.45, z, 1] });           // east glass: weather and systems
+  return items;
+})();
+
+function drawCab(k, a, low, block) {
+  const T = TOWER, C = T.cab, c = T.core, y = C.floorY, h = C.half, fh = C.floorHalf;
+  const slabY0 = y - 0.7;
+  // ---- the structure under the floor: a slab with a hole for the core, and struts down to the mast ---------------
+  const floorSlab = (x0, x1, z0, z1) => slab(k, 'plastic', x0, slabY0, z0, x1, y, z1, { skip: '+y' });
+  floorSlab(-fh - 0.1, c.x0, -fh - 0.1, fh + 0.1);
+  floorSlab(c.x1, fh + 0.1, -fh - 0.1, fh + 0.1);
+  floorSlab(c.x0, c.x1, c.z1, fh + 0.1);
+  floorSlab(c.x0, c.x1, -fh - 0.1, c.z0);
+  // the deck finish over it, the landing inside the core and the threshold of the cab door
+  const deck = (x0, x1, z0, z1) => facing(k, 'floor', [[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]], [0, 1, 0]);
+  deck(-fh - 0.1, c.x0, -fh - 0.1, fh + 0.1); deck(c.x1, fh + 0.1, -fh - 0.1, fh + 0.1);
+  deck(c.x0, c.x1, c.z1, fh + 0.1); deck(c.x0, c.x1, -fh - 0.1, c.z0);
+  slab(k, 'floor', T.inner.x0, y - 0.14, T.front.z0, T.inner.x1, y, T.inner.z1);                    // the top landing, with its underside
+  slab(k, 'floor', T.door.x0, y - 0.14, T.inner.z1, T.door.x1, y, c.z1);                              // and the sill of the cab door
+  for (const s of [-1, 1]) {
+    facing(k, 'hazard', [[-fh, y + 0.004, s * (fh - 0.04)], [fh, y + 0.004, s * (fh - 0.04)], [fh, y + 0.004, s * (fh - 0.14)], [-fh, y + 0.004, s * (fh - 0.14)]], [0, 1, 0]);
+    facing(k, 'hazard', [[s * (fh - 0.04), y + 0.004, -fh], [s * (fh - 0.04), y + 0.004, fh], [s * (fh - 0.14), y + 0.004, fh], [s * (fh - 0.14), y + 0.004, -fh]], [0, 1, 0]);
+  }
+  // struts: the cab is a wide hat on a thin mast, and it has to look held up
+  for (const sx of [-1, 1]) for (const z of [-3.0, 0.0, 3.4]) {
+    k.pipe('steel', [sx * (c.x1 + 0.02), y - 3.4, Math.max(c.z0 + 0.4, Math.min(c.z1 - 0.4, z))], [sx * (fh + 0.08), slabY0 + 0.05, z], 0.1, 8);
+  }
+  for (const sx of [-0.8, 0.8]) {
+    k.pipe('steel', [sx, y - 3.4, c.z1 + 0.05], [sx * 3.6, slabY0 + 0.05, fh + 0.08], 0.1, 8);
+    k.pipe('steel', [sx, y - 3.4, c.z0 - 0.05], [sx * 3.6, slabY0 + 0.05, -fh - 0.08], 0.1, 8);
+  }
+  slab(k, 'steelDark', -fh - 0.2, slabY0 - 0.12, -fh - 0.2, fh + 0.2, slabY0, fh + 0.2);        // underside cladding
+  // ---- the glazing: a 0.9 m ledge, six panes a side between mullions, a header beam ----------------------------------
+  const g0 = C.glassY0, g1 = C.glassY1;
+  for (const side of ['n', 's', 'e', 'w']) {
+    const horiz = side === 'n' || side === 's';
+    const sign = side === 'n' || side === 'w' ? -1 : 1;
+    const along = (t) => (horiz ? [t, sign * h] : [sign * h, t]);       // (x,z) at position t along that face
+    if (horiz) { B(k, 'gunmetal', 0, y + 0.45, sign * (h + 0.04), 2 * h + 0.2, 0.9, 0.16, 0.03); slab(k, 'steel', -h, g0, sign * (h - 0.05) - 0.1, h, g0 + 0.03, sign * (h - 0.05) + 0.1); }
+    else { B(k, 'gunmetal', sign * (h + 0.04), y + 0.45, 0, 0.16, 0.9, 2 * h + 0.2, 0.03); slab(k, 'steel', sign * (h - 0.05) - 0.1, g0, -h, sign * (h - 0.05) + 0.1, g0 + 0.03, h); }
+    const n = 6, w = (2 * h) / n;
+    for (let p = 0; p < n; p++) {
+      const [ax, az] = along(-h + p * w + 0.05), [bx, bz] = along(-h + (p + 1) * w - 0.05);
+      k.poly('glassTint', [[ax, g0 + 0.03, az], [bx, g0 + 0.03, bz], [bx, g1 - 0.03, bz], [ax, g1 - 0.03, az]]);
+    }
+    for (let p = 0; p <= n; p++) {
+      const [mx, mz] = along(-h + p * w);
+      if (horiz) slab(k, 'steelDark', mx - 0.045, g0, mz - 0.06, mx + 0.045, g1, mz + 0.06); else slab(k, 'steelDark', mx - 0.06, g0, mz - 0.045, mx + 0.06, g1, mz + 0.045);
+    }
+    if (horiz) B(k, 'steelDark', 0, g1 + 0.15, sign * (h + 0.02), 2 * h + 0.3, 0.3, 0.2, 0.04);
+    else B(k, 'steelDark', sign * (h + 0.02), g1 + 0.15, 0, 0.2, 0.3, 2 * h + 0.3, 0.04);
+  }
+  // the glass line holds you in: a box on each side, floor to roof
+  block(0, -h - 0.06, 2 * h + 0.4, 0.2, C.roofY - y, y); block(0, h + 0.06, 2 * h + 0.4, 0.2, C.roofY - y, y);
+  block(-h - 0.06, 0, 0.2, 2 * h + 0.4, C.roofY - y, y); block(h + 0.06, 0, 0.2, 2 * h + 0.4, C.roofY - y, y);
+  // ---- the roof: an eave, a ceiling, lamps over the work positions ------------------------------------------------------
+  const e = C.eave, ry = C.roofY;
+  B(k, 'plastic', 0, ry + 0.25, 0, 2 * e, 0.5, 2 * e, 0.1);
+  facing(k, 'plasticDark', [[-h - 0.1, ry - 0.01, -h - 0.1], [h + 0.1, ry - 0.01, -h - 0.1], [h + 0.1, ry - 0.01, h + 0.1], [-h - 0.1, ry - 0.01, h + 0.1]], [0, -1, 0]);
+  for (const [lx, lz] of [[-3.3, 4.2], [0, 4.2], [3.3, 4.2], [-4.5, 0.2], [4.5, 0.2], [-4.5, -3.2], [4.5, -3.2], [0, 2.4]]) {
+    slab(k, 'plasticDark', lx - 0.6, ry - 0.06, lz - 0.15, lx + 0.6, ry - 0.01, lz + 0.15);
+    slab(k, 'glowWhite', lx - 0.5, ry - 0.075, lz - 0.09, lx + 0.5, ry - 0.06, lz + 0.09);
+  }
+  // the core's own faces in the room: status screens and the fittings a stair door wants
+  screen(k, CELLS.pads, c.x0 - 0.01, y + 1.9, -2.2, 3.0, 1.3, -Math.PI / 2);
+  screen(k, CELLS.weather, c.x1 + 0.01, y + 1.9, -2.2, 3.0, 1.3, Math.PI / 2);
+  prop(k, 'extinguisher', 1.0, y, 0.63, 0.2, 0.55, 0.2, 0);
+  prop(k, 'firstaid', -1.0, y + 1.2, 0.58, 0.3, 0.3, 0.12, 0);
+  // ---- roof gear: a radar housing, a lattice mast with a beacon, a dish, a wind mast ---------------------------------------
+  const top = ry + 0.5;
+  B(k, 'plasticDark', -2.2, top + 0.45, -1.2, 2.0, 0.9, 2.0, 0.12);
+  k.cyl('steel', -2.2, top + 1.12, -1.2, 0.5, 0.45, low ? 10 : 16);
+  k.cyl('steel', 1.8, top + 2.2, -1.8, 0.055, 4.4, 8);
+  for (const yy of [top + 1.6, top + 2.6, top + 3.6]) k.pipe('steel', [0.9, yy, -1.8], [2.7, yy, -1.8], 0.025, 6);
+  k.box('glowRed', 1.8, T.topY - 0.02, -1.8, 0.13, 0.04, 0.13);
+  k.cyl('steel', -4.4, top + 0.75, 3.0, 0.065, 1.5, 8);
+  k.dome('plastic', -4.4, top + 1.55, 3.0, 0.85, low ? 10 : 16, 4, { thetaMin: Math.PI / 2, thetaMax: Math.PI, scaleY: 0.28, inside: true });
+  k.pipe('steel', [-4.4, top + 1.55, 3.0], [-4.4, top + 2.1, 3.0], 0.035, 6);
+  k.cyl('steelDark', 4.6, top + 1.0, 2.8, 0.04, 2.0, 6);
+  // ---- the work: consoles along the glass, a chair behind each. A console's control surface is its +z; an operator
+  // faces its -z. Quarter turns: 0 faces south (+z), 1 east, 2 north, 3 west.
+  for (const f of CAB_FURNITURE) {
+    const [dx, dz, drot] = f.desk, [cx, cz, crot] = f.chair, along = drot % 2 === 0;
+    k.push(dx, y, dz, drot * Math.PI / 2); towerDesk(k, 2.4, 0.95, 0.95, low); k.pop();
+    block(dx, dz, along ? 2.4 : 0.95, along ? 0.95 : 2.4, 0.95, y);
+    k.push(cx, y, cz, crot * Math.PI / 2); towerChair(k, low); k.pop();
+    block(cx, cz, 0.5, 0.5, 0.95, y);
+  }
+}
+
+/** A watch-floor console: plinth, sloped control surface with lit button strips, keyboards, three screens. Front is +z. */
+function towerDesk(k, w, d, h, low) {
+  k.box('gunmetal', 0, 0.18, 0, w - 0.06, 0.36, d - 0.1);
+  k.box('plasticDark', 0, h / 2 + 0.1, -d * 0.08, w, h - 0.28, d * 0.82);
+  k.poly('plasticDark', [[-w / 2, h - 0.18, d * 0.12], [w / 2, h - 0.18, d * 0.12], [w / 2, h - 0.05, d * 0.5 - 0.02], [-w / 2, h - 0.05, d * 0.5 - 0.02]].reverse());
+  k.poly('gunmetal', [[-w / 2, h - 0.05, d * 0.5 - 0.02], [w / 2, h - 0.05, d * 0.5 - 0.02], [w / 2, h - 0.3, d * 0.5], [-w / 2, h - 0.3, d * 0.5]]);
+  const strips = low ? 3 : 6;
+  for (let i = 0; i < strips; i++) {
+    const key = ['glowCyan', 'glowAmber', 'glowGreen', 'glowBlue', 'glowWhite', 'glowCyan'][i];
+    const x0 = -w / 2 + 0.12 + i * ((w - 0.24) / strips);
+    k.box(key, x0 + (w - 0.24) / strips / 2, h - 0.1, d * 0.32, (w - 0.24) / strips - 0.1, 0.006, 0.07);
+  }
+  for (const x of [-w * 0.28, w * 0.28]) k.box('steelDark', x, h - 0.085, d * 0.36 + 0.14, 0.5, 0.02, 0.18);
+  for (let i = 0; i < 3; i++) {
+    const x = (i - 1) * (w / 3);
+    // low flat panels: a seated operator (eye about 1.2 m) looks over them, out through the glass
+    k.box('plasticDark', x, h + 0.15, -d * 0.18, w / 3 - 0.08, 0.32, 0.05);
+    k.box(['glowCyan', 'glowGreen', 'glowCool'][i], x, h + 0.15, -d * 0.18 + 0.028, w / 3 - 0.2, 0.24, 0.004);
+    k.box('gunmetal', x, h + 0.015, -d * 0.18, 0.1, 0.03, 0.06);
+  }
+}
+
+/** An office chair on a column and a five-star base. The phone tier gets blocks; the desktop tier the ship's own chair. */
+function towerChair(k, low) {
+  if (!low) {
+    // the ship's own chair, built the same way but with the cushions at eight segments
+    k.cyl('steelDark', 0, 0.24, 0, 0.03, 0.4, 8);
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      k.pipe('steelDark', [0, 0.05, 0], [Math.cos(a) * 0.24, 0.03, Math.sin(a) * 0.24], 0.012, 6);
+      k.cyl('rubber', Math.cos(a) * 0.24, 0.02, Math.sin(a) * 0.24, 0.022, 0.04, 6);
+    }
+    k.pillow('fabricBlue', 0, 0.51, 0, 0.46, 0.11, 0.46, 3.0, 8);
+    k.pillow('fabricBlue', 0, 0.84, -0.2, 0.44, 0.58, 0.1, 3.0, 8);
+    for (const s of [-1, 1]) { k.box('steelDark', s * 0.24, 0.66, 0, 0.03, 0.03, 0.34); k.box('steelDark', s * 0.24, 0.58, 0.05, 0.03, 0.14, 0.03); }
+    return;
+  }
+  k.cyl('steelDark', 0, 0.24, 0, 0.03, 0.4, 4);
+  k.box('steelDark', 0, 0.035, 0, 0.5, 0.03, 0.06); k.box('steelDark', 0, 0.035, 0, 0.06, 0.03, 0.5);
+  k.box('fabricBlue', 0, 0.5, 0, 0.46, 0.1, 0.46);
+  k.box('fabricBlue', 0, 0.84, -0.2, 0.44, 0.58, 0.1);
+  for (const s of [-1, 1]) k.box('steelDark', s * 0.24, 0.64, 0, 0.03, 0.03, 0.34);
+}
+
+export function towerInterior(k, a, low, block) {
+  // Reception with a curved nose, separate worktop, displays and task light (moved left to make room for the core).
+  B(k, 'counter', -3.9, .52, -1.8, 3.3, 1.04, 1.25, .18); block(-3.9, -1.8, 3.3, 1.25, 1.1);
+  B(k, 'steel', -3.9, 1.09, -1.8, 3.45, .1, 1.4, .08);
+  k.box('glowCyan', -3.9, .8, -1.158, 2.8, .04, .016);
+  screen(k, CELLS.pads, -3.9, 1.5, -2.1, 1.35, .6);
+  screen(k, CELLS.pads, -3.7, 2.65, -a.d / 2 + .31, 3.4, 1.45);
+  screen(k, CELLS.weather, 3.7, 2.65, -a.d / 2 + .31, 3.4, 1.45);
+  for (const z of [1.5, 3]) {
+    k.push(-4.7, 0, z, Math.PI / 2);
+    k.box('steelDark', 0, .4, 0, .7, .12, .65);
+    k.pillow('fabricBlue', 0, .52, 0, .65, .16, .62, 3.2, low ? 6 : 10);
+    k.pillow('fabricBlue', 0, .93, -.27, .64, .75, .16, 3.2, low ? 6 : 10);
+    for (const s of [-1, 1]) k.box('steel', s * .27, .22, 0, .05, .44, .5); k.pop();
+    block(-4.7, z, .85, .8, 1.35);
+  }
+  // floor line from the entrance to the stair door, and the lamps over it
+  for (let z = 5; z > 1; z -= 1.5) k.box('mark', 0, .028, z, .08, .005, .65);
+  const ceiling = x => 4.2 + .45 * Math.sin((x + a.w / 2) / a.w * Math.PI) - .08;
+  lamp(k, -3, 3.75, 0, 2.4, ceiling); lamp(k, 3, 3.75, 2, 2.4, ceiling); lamp(k, 0, 3.8, 2.2, 1.6, ceiling);
+  drawStairCore(k, a, low, block);
+  drawCab(k, a, low, block);
 }
 
 export function market(k,a,low,block) {

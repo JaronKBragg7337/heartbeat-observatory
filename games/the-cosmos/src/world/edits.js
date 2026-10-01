@@ -433,7 +433,10 @@ export class EditStore {
     };
     const headroom = onto ? onto.apexM + 0.8 : 0;
 
-    let R = Math.min(9, Math.max(0.6, rFlat * 2.4 + 0.5, onto ? onto.radiusM * 1.5 + 0.6 : 0));
+    // The grid has to hold the finished heap. Sized from what a heap of this volume is (a bigger one only when the
+    // solution says it was cut off, below): a roomier grid costs more than the arithmetic does.
+    const grownR = onto ? onto.radiusM * Math.cbrt(1 + V / Math.max(onto.volumeM3, 1e-4)) + 0.5 : 0;
+    let R = Math.min(9, Math.max(0.6, rFlat * 1.7 + 0.6, grownR));
     for (let attempt = 0; attempt < 4; attempt++) {
       const g = Math.max(H, R / 24);                          // column size: 0.1 m for ordinary heaps
       const half = Math.ceil(R / g), n = 2 * half + 1;
@@ -491,7 +494,16 @@ export class EditStore {
         const i0 = Math.floor((ax - hx) * INV), i1 = Math.ceil((ax + hx) * INV);
         const j0 = Math.floor((ay - hy) * INV), j1 = Math.ceil((ay + hy) * INV);
         const k0 = Math.floor((az - hz) * INV), k1 = Math.ceil((az + hz) * INV);
-        const I = [], J = [], K = [], S = [], Aa = [], Bb = [], G = [], O = [];
+        // growable typed arrays: a big heap can touch a million lattice points
+        let cap = 16384, count = 0;
+        let I = new Int32Array(cap), J = new Int32Array(cap), K = new Int32Array(cap);
+        let S = new Float32Array(cap), Aa = new Float32Array(cap), Bb = new Float32Array(cap), G = new Float32Array(cap), O = new Float32Array(cap);
+        const grow = () => {
+          cap *= 2;
+          const gi = (arr) => { const n2 = new Int32Array(cap); n2.set(arr); return n2; };
+          const gf = (arr) => { const n2 = new Float32Array(cap); n2.set(arr); return n2; };
+          I = gi(I); J = gi(J); K = gi(K); S = gf(S); Aa = gf(Aa); Bb = gf(Bb); G = gf(G); O = gf(O);
+        };
         for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
           const dx = i * H - ax, dy = j * H - ay, dz = k * H - az;
           const s = dx * up.x + dy * up.y + dz * up.z;
@@ -504,9 +516,12 @@ export class EditStore {
           if (ground !== ground) continue;                    // no ground under this column
           const bk = this.brickAt(i >> 5, j >> 5, k >> 5);
           const old = bk ? bk.phi[(((k & 31) * BRICK_N) + (j & 31)) * BRICK_N + (i & 31)] : Math.fround(this.baseLattice(i, j, k));
-          I.push(i); J.push(j); K.push(k); S.push(s); Aa.push(a); Bb.push(b); G.push(ground); O.push(old);
+          if (old < -0.5) continue;                           // solid all through: it can gain nothing (the inside of an earlier heap, the ground)
+          if (count === cap) grow();
+          I[count] = i; J[count] = j; K[count] = k; S[count] = s; Aa[count] = a; Bb[count] = b; G[count] = ground; O[count] = old;
+          count++;
         }
-        return { I, J, K, S, Aa, Bb, G, O, count: I.length };
+        return { I, J, K, S, Aa, Bb, G, O, count };
       };
       const volumeAt = (c, A) => {
         let vol = 0;
@@ -537,16 +552,17 @@ export class EditStore {
 
       // Bracket and bisect the apex height.
       let aLo = loMin - 0.2;
-      let aHi = Math.max(loMin, centreS) + Math.max(0.25, rFlat * tanT * 1.7);
+      let aHi = (onto ? Math.max(onto.apexM, centreS) + V / (Math.PI * Math.max(onto.radiusM, 0.3) ** 2) * 1.5 + 0.2
+                      : Math.max(loMin, centreS) + Math.max(0.25, rFlat * tanT * 1.7));
       let cand = collect(aHi);
       for (let guard = 0; volumeAt(cand, aHi) < V && guard < 30; guard++) { aHi = aLo + (aHi - aLo) * 1.5 + 0.1; cand = collect(aHi); }
-      if (extent(aHi) >= R - 0.2 && attempt < 3) { R = Math.min(12, R * 1.7); continue; }   // would be cut off by the grid: widen and redo
-      for (let it = 0; it < 60; it++) {
+      for (let it = 0; it < 48; it++) {
         const mid = (aLo + aHi) / 2;
         if (volumeAt(cand, mid) < V) aLo = mid; else aHi = mid;
-        if (aHi - aLo < 1e-13) break;
+        if (aHi - aLo < 1e-12) break;
       }
       const A = (aLo + aHi) / 2;
+      if (extent(A) >= R - 0.2 && attempt < 3) { R = Math.min(12, R * 1.5); continue; }       // the finished heap would be cut off by the grid: widen and redo
       const { vol, out } = emitAt(cand, A);
 
       // Write the new lattice values and the material they are made of.

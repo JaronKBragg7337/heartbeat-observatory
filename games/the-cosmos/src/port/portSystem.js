@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Kit, resolveDepthLayers } from '../ship/shipKit.js';
 import { makePortMaterials, CELLS, plaque, groundDecal, textureBytes } from './portArt.js';
 import { moduleShell, depotInterior, towerInterior, market, detailFuel } from './portBuildings.js';
-import { PORT_ID, PORT_NAME, PADS, BUILDINGS, NPC_SPOTS } from './portSpec.js';
+import { PORT_ID, PORT_NAME, PADS, BUILDINGS, NPC_SPOTS, TOWER, TOWER_SPOTS, towerFloorAt } from './portSpec.js';
 
 const segments=['abcdef','bc','abdeg','abcdg'];
 // Phone fittings retain bevelled silhouettes; sub-centimetre chamfers on thin
@@ -35,6 +35,10 @@ class PortKit extends Kit {
     }
     return super.bevelBox(key,x,y,z,w,h,d,c,o);
   }
+  pillow(key,cx,cy,cz,w,h,d,n=3.2,seg=14,o={}) {
+    // Cushions are lathe-smooth by nature; on a phone six segments read as soft and cost a fifth.
+    return super.pillow(key,cx,cy,cz,w,h,d,n,this.low?Math.min(seg,6):seg,o);
+  }
   cyl(key,x,y,z,r,h,seg=12,o={}) {
     return super.cyl(key,x,y,z,r,h,this.low?Math.min(seg,r<.1?4:r<1?8:seg):seg,o);
   }
@@ -63,7 +67,7 @@ function mergeKit(dst,src) {
 export class PortSystem {
   constructor(engine,registry,site,tier='low',sharedMaterials=null) {
     this.sharedMaterials=sharedMaterials; this.time=0; this.engine=engine; this.registry=registry; this.site=site; this.tier=tier;
-    this.boxes=[]; this.doors=[]; this.assets=[]; this.npcSpots=NPC_SPOTS;
+    this.boxes=[]; this.doors=[]; this.assets=[]; this.npcSpots=NPC_SPOTS; this.towerSpots=TOWER_SPOTS;
   }
   build() {
     const low=this.tier==='low', art=makePortMaterials(this.tier,this.sharedMaterials);
@@ -83,7 +87,7 @@ export class PortSystem {
         foundationDepth:a.number?.494:(a.kind==='depot'||a.kind==='tower'?.4:0)};
       mergeKit(master,k); obj.traverse(m=>{if(m.isMesh)m.geometry.dispose();}); rec.object3d=null;
     };
-    const box=(a,x,z,w,d,h)=>this.boxes.push({id:a.id,x0:a.x+x-w/2,x1:a.x+x+w/2,z0:a.z+z-d/2,z1:a.z+z+d/2,y0:0,y1:h});
+    const box=(a,x,z,w,d,h,y0=0)=>this.boxes.push({id:a.id,x0:a.x+x-w/2,x1:a.x+x+w/2,z0:a.z+z-d/2,z1:a.z+z+d/2,y0,y1:y0+h});
     for(const a of PADS) {
       const k=new PortKit(low); k.defaultTile=4; k.push(a.x,0,a.z);
       // The concrete is a material volume in the field. Only its finish is drawn here.
@@ -133,8 +137,9 @@ export class PortSystem {
       const k=new PortKit(low); k.defaultTile=3; k.tiles={...master.tiles};k.push(a.x,0,a.z);
       const bevel=(mat,x,y,z,w,h,d,c=.055)=>k.bevelBox(mat,x,y,z,w,h,d,c);
       if(a.kind==='depot'||a.kind==='tower') {
-        const block=(x,z,w,d,h)=>box(a,x,z,w,d,h);
-        moduleShell(k,a,low,block);
+        const block=(x,z,w,d,h,y0=0)=>box(a,x,z,w,d,h,y0);
+        const c=TOWER.core, hole=a.kind==='tower'?{x0:c.x0-.02,x1:c.x1+.02,z0:c.z0-.02,z1:c.z1+.02}:null;
+        moduleShell(k,a,low,block,hole);
         const dk=new PortKit(low);dk.tiles={paint:8,metal:1};
         // Door hardware stays in one moving bucket; lamps are on the static frame.
         dk.bevelBox('plastic',0,1.4,0,a.doorW,2.8,.12,.045);
@@ -177,7 +182,7 @@ export class PortSystem {
       const rec=this.registry.get(a.id);
       const envelope={
         depot:{width:24,height:7.84,depth:19},
-        tower:{width:12,height:28.4,depth:13},
+        tower:{width:15,height:31.4,depth:15},
         market:{width:32,height:3.46,depth:8},
         fuel:{width:24,height:6,depth:12},
         containers:{width:26,height:2.9,depth:6.08},
@@ -213,7 +218,14 @@ export class PortSystem {
     for(const door of this.doors) this.root.add(door.mesh);
     // Fixed-size light pool, sorted by proximity. No per-fixture shadow maps.
     this.fixtures=[[-62,4.35,14],[-62,4.35,21],[-69,4.15,21],[-55,4.15,14],
-      [-62,3.5,-39],[-57.5,3.5,-37],...[-70,-62,-54,-46].map(x=>[x,2.75,53])];
+      [-63,3.6,-39],[-57,3.6,-37],[-60,3.7,-37],...[-70,-62,-54,-46].map(x=>[x,2.75,53]),
+      // inside the tower: a lamp at every landing of the stair, and six over the cab (port-local x, y, z)
+      ...Array.from({length:TOWER.levels*2},(_,i)=>{
+        const n=Math.floor(i/2),back=i%2===0,F=TOWER.flight;
+        const y=back?n*TOWER.pitch+F.risers*F.rise+2.05:(n+1)*TOWER.pitch+2.05;
+        const z=back?(TOWER.back.z0+TOWER.back.z1)/2:(F.zLow+TOWER.inner.z1)/2;
+        return [TOWER.x,y,TOWER.z+z,12];}),      // a stairwell is 1-2 m across: a small lamp, or the walls burn out
+      ...[[-3.3,4.2],[3.3,4.2],[-4.5,0.2],[4.5,0.2],[0,-3],[0,2.4]].map(([x,z])=>[TOWER.x+x,TOWER.cab.roofY-.4,TOWER.z+z,30])];
     this.lights=Array.from({length:low?2:3},()=>{
       const l=new THREE.PointLight(0xffd9ac,75,13,2);l.name='port practical light pool';this.root.add(l);return l;
     });
@@ -234,6 +246,20 @@ export class PortSystem {
     this.stats.pointLights=this.lights.length;
     this.stats.shadowLights=0;
     return this;
+  }
+  /**
+   * The tower's floor under a world position, as the radius of that floor from the planet's centre, or null
+   * when the ground is the floor (everywhere but the stair and the cab). The walker's ground sampler asks this
+   * first, so you can climb the stair on the same contact rules as the hillside.
+   */
+  towerFloorRadius(wx,wy,wz) {
+    const p=this.site.toLocal({x:wx,y:wy,z:wz});
+    const lx=p.x-TOWER.x, lz=p.z-TOWER.z;
+    if(Math.abs(lx)>7||Math.abs(lz)>7||p.y<-.3||p.y>TOWER.cab.roofY)return null;
+    const y=towerFloorAt(lx,lz,p.y);
+    if(y===null)return null;
+    const q=this.site.toWorld(p.x,y,p.z);
+    return Math.hypot(q.x,q.y,q.z);
   }
   updateDisplays() {
     const occupied=this.padOccupancy?.()||[];
@@ -269,8 +295,8 @@ export class PortSystem {
   tick(dt,walker,collide=true,holdDoors=false) {
     const p=this.site.toLocal(walker.worldPos), r=walker.radiusM;
     this.time+=dt;
-    const nearby=this.fixtures.map(f=>({f,d:Math.hypot(p.x-f[0],p.z-f[2])})).sort((a,b)=>a.d-b.d);
-    this.lights.forEach((l,i)=>{const {f,d}=nearby[i];l.position.set(...f);l.intensity=d<19?75:0;});
+    const nearby=this.fixtures.map(f=>({f,d:Math.hypot(p.x-f[0],p.y+1.2-f[1],p.z-f[2])})).sort((a,b)=>a.d-b.d);
+    this.lights.forEach((l,i)=>{const {f,d}=nearby[i];l.position.set(...f);l.intensity=d<19?(f[3]??75):0;});
     if(this.time>1){this.updateDisplays();this.time=0;}
     for(const d of this.doors) {
       const a=d.asset, near=holdDoors||Math.hypot(p.x-a.x,p.z-d.baseZ)<6;

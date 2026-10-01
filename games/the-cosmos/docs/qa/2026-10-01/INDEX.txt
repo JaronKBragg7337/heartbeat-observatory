@@ -1,0 +1,50 @@
+QA for the digging rebuild, the climbable control tower and the neutral-airspace drones, 2026-10-01 (Claude Sonnet 5.5)
+Images are kept in the worktree only (not committed): games/the-cosmos/docs/qa/2026-10-01/*.jpg
+Everything was taken in headless Chromium (software GL), through the real game code and, where marked WALKED, the real input pipeline.
+
+Harness (committed):
+  shot.mjs        launches the game and runs a script:  node shot.mjs <script>.mjs      (needs node server.js running; PORT=8391 here)
+  _lib.mjs        page-side helpers (stand somewhere on the apron, aim at a point, dig N bites, free camera)
+  _a_hole.mjs     digging scenario: one bite, then a pit with the bucket, heaps round it, standing in it looking up and round
+  _e_deep.mjs     a deep shaft (bucket from the rim, then from inside), heaps, looking up from the bottom, a tunnel walked end to end
+  _c_tower.mjs    the portTour views of the tower (outside, stair, cab)
+  _c_walk.mjs     WALKED: lobby door, ten flights, into the cab, with the real keys held, and looks round
+  _d_drone.mjs    a drone close up on the sun side, beside the Meridian for scale, three together
+  _g_gaps.mjs     the gap audit: a dug scene (pit, widened walls, tunnel, ramp, second pit, heaps) drawn on magenta from ~1,650 views;
+                  a pure-magenta pixel in a downward view is a hole through everything (sky, clouds, the shell)
+
+Prefixes:   a_ desktop 750x470 ?tier=high      p_ phone 375x812 ?tier=low&depth=16 (16-bit depth emulation)
+            e_ deep shaft and tunnel, desktop   f_ port ground edges    c_ tower tour views    w_ tower WALKED
+            drone_ drones       q_ phone repeats of e_/c_/w_
+
+DIGGING (a_ and p_):
+  01 one bite from where the player stands            02 the same, close
+  03 the pit from the rim at eye height               04 looking straight down into it from above
+  05 side view with the heaps round it                06 the same, low and wide, with the Meridian behind
+  07 standing in it looking north and up              08 east, level                 09 south and down
+  What to look for: sky or clouds through the ground; a flat sheet over the hole; a spike (every heap is a mound at the angle of
+  repose); anything floating or sunk; two-colour chessboards on a heap; a crack between bricks. None in this set.
+
+DEEP SHAFT AND TUNNEL (e_):
+  01 from the rim at eye height              02 straight down the shaft              03 side view, heaps
+  04 at the bottom looking up at the sky      05 at the bottom: the wall and its layers (the suit lamp comes on below ~0.8 m)
+  06 at the bottom looking at the floor       07 the tunnel mouth from the shaft foot (level bites, two rows)
+  08 inside the tunnel looking on (WALKED 4+ m in)        09 looking back at the light        10 the tunnel roof
+
+PORT GROUND EDGES (f_): portTour 'port-edge-flat', 'port-edge-grade', 'earthworks-detail', 'pad-02-wear' (desktop and phone).
+
+TOWER (c_ tour views, w_ walked):
+  c_stair-door  the core's door straight ahead of the lobby entrance      c_stair-foot / -landing / -back-landing  inside the stair
+  c_stair-top   arriving in the cab                                        c_cab-south/-west/-east/-north-walk/-looking-in  the cab
+  c_mast-from-the-apron, c_cab  the mast and the glass cab on its struts from outside
+  w01 lobby toward the stair door   w02 foot of flight A looking up   w03 midway   w04 landing, level 2   w05 landing, level 3
+  w06 stepping into the cab         w07-w10 the cab from the floor: south, west, east, the core
+
+DRONES (drone_): 01-03 one drone lit by the sun, three-quarter / face on / from above; 04 beside the Meridian's bow, 05 beside a wing
+  (the drone is about 5.7 m across the rotor ducts; the Meridian is 49 m long); 06 three drones and the Meridian.
+
+Results of the audits are in the README ("Digging", "The control tower can be climbed") and in the final commit message.
+
+Gap audit result: 480 downward views over a scene with a pit, widened walls, a 5 m tunnel, a ramp, a second pit and heaps: 0 magenta pixels (no hole through the world).
+Phone (q_ = ?tier=low&depth=16, 375x812) repeats of the tower tour views and p_ pit set are in this folder; the validator was 228 passed, 0 failed.
+Not done: phone repeats of the deep shaft (e_) and the port-edge set (f_) were not re-shot after the final lighting change (suit lamp), and the f_ pad-edge dig script is in the folder but was not run; see the report.

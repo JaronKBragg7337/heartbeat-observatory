@@ -1,6 +1,6 @@
 // Fixed named review cameras. Physics pauses during a tour; off restores play.
 import * as THREE from 'three';
-import { PADS, BUILDINGS } from './portSpec.js';
+import { PADS, BUILDINGS, TOWER } from './portSpec.js';
 export function makePortTour({engine,walker,ship,port,rebuild}) {
   const views=[];
   const add=(name,eye,target,inside=false)=>views.push({name,eye,target,inside});
@@ -23,8 +23,20 @@ export function makePortTour({engine,walker,ship,port,rebuild}) {
   add('depot-lift-cart',[-59,1.66,24],[-57,1,21]);
   add('depot-roof',[-81,14,40],[-62,5.5,17]);
   add('tower-reception',[-60,1.66,-35],[-62.5,1.8,-41]);
-  add('tower-lift',[-60,1.66,-39],[-56.3,1.6,-41.4]);
-  add('tower-cab',[-80,27,-18],[-60,23,-39]);
+  // the stair and the cab, in tower-local metres turned into port metres
+  const tw=(lx,y,lz)=>[TOWER.x+lx,y,TOWER.z+lz], F=TOWER.flight, cy=TOWER.cab.floorY;
+  add('tower-stair-door',tw(0,1.66,3.2),tw(0,1.5,.5));
+  add('tower-stair-foot',tw(-.7,1.66,-.15),tw(-.7,3.2,-3.6));
+  add('tower-stair-landing',tw(0,2*TOWER.pitch+1.66,-.2),tw(0,2*TOWER.pitch+1.4,-4.6));
+  add('tower-stair-back-landing',tw(0,2*TOWER.pitch+F.risers*F.rise+1.66,-4.7),tw(.6,2*TOWER.pitch+F.risers*F.rise+2.6,-1.2));
+  add('tower-stair-top',tw(0,cy+1.66,-.1),tw(0,cy+1.5,1.8));
+  add('tower-cab-south',tw(0,cy+1.66,2.4),tw(0,cy+1.5,7));
+  add('tower-cab-west',tw(-1.6,cy+1.66,.6),tw(-7,cy+1.5,.6));
+  add('tower-cab-east',tw(1.6,cy+1.66,.6),tw(7,cy+1.5,.6));
+  add('tower-cab-looking-in',tw(5.5,cy+1.66,5.5),tw(-2,cy+1.0,-1));
+  add('tower-cab-north-walk',tw(-5.2,cy+1.66,-5.9),tw(5,cy+1.5,-5.9));
+  add('tower-mast-from-the-apron',tw(-18,1.66,18),tw(0,17,-1));
+  add('tower-cab',[-84,23,-12],[-60,24,-39]);
   for(const [i,x] of [-70,-62,-54,-46].entries())add(`market-trader-${i+1}`,[x,1.66,55.4],[x,1.5,51.4]);
   add('port-from-ship',[0,14,12],[-60,7,8]);
   add('port-one-km',[550,70,840],[-25,11,0]);

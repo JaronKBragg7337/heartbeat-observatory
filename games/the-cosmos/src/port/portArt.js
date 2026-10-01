@@ -12,7 +12,7 @@ export const CELLS = {
 const LABELS = [
   ['MARINERIS PORT', 'MARS / ARRIVALS + FREIGHT', '01 MERIDIAN   02 SHUTTLE   03 COURIER'],
   ['SUPPLY / ARRIVALS', 'DEPOT 110 / LOCAL LOGISTICS', 'RECEIVING  >     MANIFEST  >'],
-  ['PORT CONTROL', 'DISPATCH / FLIGHT OPERATIONS', 'LOBBY  >    CAB LIFT  >'],
+  ['PORT CONTROL', 'DISPATCH / FLIGHT OPERATIONS', 'LOBBY  >    CAB STAIR  >'],
   ['MARINERIS EXCHANGE', 'INDEPENDENT FRONTIER TRADERS', 'FOOD / REPAIR / WATER / FIELD KIT'],
   ['PAD STATUS', '', ''],
   ['WEATHER / SURFACE OPS', 'CO2 ATMOSPHERE / SUIT REQUIRED', 'DUST + WIND: SENSOR OFFLINE'],
@@ -109,7 +109,7 @@ export function makePortMaterials(tier,shared) {
   if(!pavement)concrete.color.setHex(0x77766d);
   const paint=ship.hull.clone();
   const metal=ship.metal.clone(); // Keep the ship's environment without mutating its materials.
-  const mats={concrete,paint,metal,glow:ship.glow,wall:ship['wall:cargo'],floor:ship['floor:deck'],fabric:ship.fabric,
+  const mats={concrete,paint,metal,glow:ship.glow,wall:ship['wall:cargo'],floor:ship['floor:deck'],fabric:ship.fabric,glassTint:ship.glassTint,
     signs:new THREE.MeshBasicMaterial({map:atlas.texture,color:0xffffff,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}),
     mark:new THREE.MeshStandardMaterial({color:0xd3ad63,roughness:1,...(pavement?{normalMap:pavement.normal,roughnessMap:pavement.orm}:{}),polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}),
     soot:new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,map:atlas.texture,alphaTest:.06,roughness:1,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1})};

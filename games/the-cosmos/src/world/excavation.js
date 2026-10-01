@@ -306,7 +306,7 @@ export class EditedTerrain {
     const depth = Math.max(0, -baseDensityAt(body, wx, wy, wz));
     const ux = wx, uy = wy, uz = wz, ul = Math.hypot(ux, uy, uz) || 1;
     const wall = 1 - Math.abs((nx * ux + ny * uy + nz * uz) / ul);          // 0 on flat ground, 1 on a vertical face
-    const dark = Math.max(0.6, 1 - 0.1 * Math.min(depth, 3.5)) * (1 - 0.08 * wall);
+    const dark = Math.max(0.7, 1 - 0.08 * Math.min(depth, 3.5)) * (1 - 0.06 * wall);
     out.r = c.r * dark; out.g = c.g * dark; out.b = c.b * dark;
   }
 

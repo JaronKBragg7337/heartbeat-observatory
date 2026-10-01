@@ -40,6 +40,7 @@ import { localFrame, geodeticToCartesian, cartesianToGeodetic } from './geodesy.
 // asks the field what it is made of and takes that material's colour, so the
 // ground is coloured by its geology.
 // ---------------------------------------------------------------------------
+const _scoured = new THREE.Color(0x8a6048), _dusty = new THREE.Color(0xc27a4a);   // allocated once: this runs per vertex
 export function shadeVertex(body, px, py, pz, elevation, color, matKnown) {
   const mat = matKnown || materialAt(body, px, py, pz);
   color.setHex(mat.color);
@@ -47,8 +48,8 @@ export function shadeVertex(body, px, py, pz, elevation, color, matKnown) {
   // Elevation banding: dust settles in the lows, wind strips the highs.
   const t = body.terrain;
   const n = Math.max(-1, Math.min(1, elevation / (t.localRelief * 2.2)));
-  if (n > 0) color.lerp(new THREE.Color(0x8a6048), n * 0.35);   // scoured highland
-  else color.lerp(new THREE.Color(0xc27a4a), -n * 0.30);        // dust-filled basin
+  if (n > 0) color.lerp(_scoured, n * 0.35);   // scoured highland
+  else color.lerp(_dusty, -n * 0.30);          // dust-filled basin
   return color;
 }
 
