@@ -28,7 +28,9 @@ export class SupabaseAdapter {
     });
     // Deliberately omit server response bodies/URLs: credentials must never enter logs.
     if (!r.ok) throw Error(`Postgres ${name} failed (HTTP ${r.status}).`);
-    return parse(await r.text());
+    const text = await r.text();
+    // A void RPC (cosmos_save) answers 204 with an empty body.
+    return text ? parse(text) : null;
   }
   async load() {
     const s = await this.rpc('cosmos_load', { wid: this.worldId });
