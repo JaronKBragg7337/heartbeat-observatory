@@ -622,7 +622,7 @@ export async function runDigChecks({ ROOT, check, section, THREE, mars, FIELD, G
     for (let a = 0; a < 24; a++) { w.yaw = a * Math.PI / 12; for (let i = 0; i < 4; i++) w.tick(1 / 60, {}); if (probeBody() < -0.03) inRock++; }
     check('you can stand in the pit and turn through a full circle without any part of you in rock', inRock === 0, `${inRock} of 24 headings`);
 
-    // Climb out: walk into the wall; a wall within reach is scrambled over.
+    // Walking is not a climb command, including while pressing into a pit wall.
     let out = false;
     w.yaw = Math.PI;                                  // facing south, toward the rim edge nearest the player's original spot
     const rimR = len(S);
@@ -630,7 +630,7 @@ export async function runDigChecks({ ROOT, check, section, THREE, mars, FIELD, G
       w.tick(1 / 60, { moveNorth: 1 });
       if (len(w.worldPos) > rimR - 0.2) out = true;
     }
-    check('walking into the wall of a 1.8 m pit gets you out of it (a person can scramble over a lip about head height)', out,
+    check('walking into the wall of a 1.8 m pit does not scramble the body out automatically', !out,
       `${(len(S) - len(w.worldPos)).toFixed(2)} m below the rim after 6 s`);
     check('and nothing about it ends with the body inside rock', probeBody() > -0.05, `${probeBody().toFixed(3)}`);
 

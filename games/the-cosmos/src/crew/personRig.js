@@ -43,6 +43,7 @@ export class PeopleLibrary {
     if (!this._glb.has(file)) this._glb.set(file, this.loader.loadAsync(this.base + file));
     return this._glb.get(file);
   }
+  cachedFiles() { return [...this._glb.keys()]; }
 
   /** A person standing at the origin. Resolves once the model is in; the Person object is usable immediately. */
   spawn(id, file) {

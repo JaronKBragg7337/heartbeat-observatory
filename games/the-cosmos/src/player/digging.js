@@ -42,6 +42,7 @@ export class Digger {
     this.body = body; this.edits = edits; this.walker = walker;
     this.tools = makeTools(body);
     this.toolIdx = 1;
+    this.canPlaceSpoil = null;          // world-point exclusion supplied by port/ship
     this.carried = [];                   // lots in hand, each a real object
   }
   get tool() { return this.tools[this.toolIdx]; }
@@ -105,11 +106,11 @@ export class Digger {
   }
 
   /** The ground point under p (looking down the local up axis), or null. */
-  groundBelowPoint(p, up, from = 4, drop = 12) {
+  groundBelowPoint(p, up, from = 4, drop = 12, local = false) {
     // A player with a large hopper can be well below the rim before pouring.
     // Start ABOVE the original ground beside the shaft, rather than inside solid rock.
     const l = len3(p), r = surfaceRadiusFast(this.body, p.x / l, p.y / l, p.z / l, 3, { ignoreEdits: true });
-    from = Math.max(from, r - l + 4);
+    if (!local) from = Math.max(from, r - l + 4);
     const hits = raycast(this.body, p.x + up.x * from, p.y + up.y * from, p.z + up.z * from,
       -up.x, -up.y, -up.z, from + drop, { firstOnly: true, minStep: 0.05 });
     const h = hits.find((q) => q.kind === 'enter');
@@ -127,9 +128,9 @@ export class Digger {
    * hole, and nothing is stacked into a pillar: edits.deposit() pours it at the angle of repose onto
    * whatever is there.
    */
-  dumpPlan(lot) {
+  _surfaceDumpPlan(lot, anchor = this.walker.worldPos) {
     const w = this.walker, edits = this.edits;
-    const wp = w.worldPos, up = unit(wp);
+    const wp = anchor, up = unit(wp);
     const V = lot.solidVolumeM3;
     const tanT = Math.tan(edits.repose);
     const rNew = Math.cbrt((3 * V) / (Math.PI * tanT)) + 0.14 + 0.1;   // a poured heap, rounded tip included
@@ -152,8 +153,9 @@ export class Digger {
       }
       if (!gp) return null;
       const pile = edits.pileNear(gp.x, gp.y, gp.z, 0.5);
-      if (pile && growth(pile) <= FULL_HEAP_M) return { x: pile.x, y: pile.y, z: pile.z, up: pile.up, pile, r: growth(pile) };
-      return { x: gp.x, y: gp.y, z: gp.z, up, pile: null, r: rNew };
+      if (pile && growth(pile) <= FULL_HEAP_M && this._planClear({x:pile.x,y:pile.y,z:pile.z,up:pile.up,r:growth(pile)})) return { x: pile.x, y: pile.y, z: pile.z, up: pile.up, pile, r: growth(pile) };
+      const plan={ x: gp.x, y: gp.y, z: gp.z, up, pile: null, r: rNew };
+      return this._planClear(plan)?plan:null;
     }
 
     // Horizontal direction from the hole toward the player.
@@ -165,7 +167,6 @@ export class Digger {
     hx /= hl; hy /= hl; hz /= hl;
     const cross = { x: up.y * hz - up.z * hy, y: up.z * hx - up.x * hz, z: up.x * hy - up.y * hx };
 
-    let first = null;
     for (let k = 0; k < 12; k++) {
       const ang = k === 0 ? 0 : (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.6;       // 0, +34, -34, +69 ... degrees
       const c = Math.cos(ang), s = Math.sin(ang);
@@ -178,7 +179,7 @@ export class Digger {
       const centre = pile ? { x: pile.x, y: pile.y, z: pile.z } : gp;
       const r = pile ? growth(pile) : rNew;
       const plan = { x: centre.x, y: centre.y, z: centre.z, up, pile, r };
-      if (!first) first = plan;
+      if (!this._planClear(plan)) continue;
       // Clear of the hole by the heap's own radius? A heap poured on a slope runs further downhill than
       // up, so measure it toward the hole: wider if the hole is downhill of it.
       let ox = centre.x - site.x, oy = centre.y - site.y, oz = centre.z - site.z;
@@ -191,7 +192,92 @@ export class Digger {
       const spread = 1 / Math.max(0.3, 1 - tanBeta / tanT);
       if (oh - r * spread >= site.radiusM + 0.2) return plan;
     }
-    return first;
+    return null;
+  }
+
+  _pointClear(p) {
+    return !this.canPlaceSpoil || this.canPlaceSpoil(p.x,p.y,p.z);
+  }
+  _planClear(plan) {
+    // Conservative footprint, including slope runout. Actual lattice writes are checked too.
+    if(!this._pointClear(plan))return false;
+    const f=this.walker.updateFrame(),r=plan.r*1.7+.3;
+    for(let d=Math.max(.15,r/8);d<=r+.001;d+=Math.max(.15,r/8))for(let k=0;k<32;k++) {
+      const a=k*Math.PI/16, ca=Math.cos(a)*d,sa=Math.sin(a)*d;
+      const p={x:plan.x+f.east.x*ca+f.north.x*sa,y:plan.y+f.east.y*ca+f.north.y*sa,z:plan.z+f.east.z*ca+f.north.z*sa};
+      if(!this._pointClear(p))return false;
+    }
+    return true;
+  }
+  dumpPlan(lot, skipLocal = false) {
+    const w=this.walker,wp=w.worldPos,up=unit(wp),f=w.updateFrame();
+    const original=surfaceRadiusFast(this.body,up.x,up.y,up.z,3,{ignoreEdits:true});
+    const underground=original-len3(wp)>.6;
+    if(!underground)return this._surfaceDumpPlan(lot);
+    const r=Math.cbrt(3*lot.solidVolumeM3/(Math.PI*Math.tan(this.edits.repose)))+.24;
+    // Keep the drop at this floor, beside the boots. Never start above the tunnel roof.
+    if(!skipLocal)for(let k=0;k<8;k++) {
+      const a=w.yaw+k*Math.PI/4,d=Math.max(.9,Math.min(2,r+.5));
+      const p={x:wp.x+(f.north.x*Math.cos(a)+f.east.x*Math.sin(a))*d,
+        y:wp.y+(f.north.y*Math.cos(a)+f.east.y*Math.sin(a))*d,
+        z:wp.z+(f.north.z*Math.cos(a)+f.east.z*Math.sin(a))*d};
+      const gp=this.groundBelowPoint(p,up,.25,1.2,true);
+      if(!gp)continue;
+      const pile=this.edits.pileNear(gp.x,gp.y,gp.z,.2);
+      const centre=pile||gp;
+      const radius=pile?pile.radiusM*Math.cbrt(1+lot.solidVolumeM3/Math.max(pile.volumeM3,1e-4)):r;
+      const plan={x:centre.x,y:centre.y,z:centre.z,up,pile,r:radius,local:true};
+      if(!this._planClear(plan))continue;
+      // A floor whose centre is on this level, with enough clear cone room above it.
+      // Refuse a huge load here rather than letting the pour find disconnected roof surfaces.
+      const h=radius*Math.tan(this.edits.repose)+.3;
+      let room=true;
+      for(let j=0;j<24&&room;j++)for(let t=.15;t<=h;t+=.15) {
+        const a=j*Math.PI/12,rad=Math.max(0,radius*(1-t/h));
+        const q={x:plan.x+up.x*t+f.east.x*Math.cos(a)*rad+f.north.x*Math.sin(a)*rad,
+          y:plan.y+up.y*t+f.east.y*Math.cos(a)*rad+f.north.y*Math.sin(a)*rad,
+          z:plan.z+up.z*t+f.east.z*Math.cos(a)*rad+f.north.z*Math.sin(a)*rad};
+        if(density(this.body,q.x,q.y,q.z)<.02){room=false;break;}
+      }
+      if(room)return plan;
+    }
+    // Find a real opening cut through the original surface, nearest to the player.
+    const mouths=[],digs=this.edits.edits.filter(e=>e.type==='dig');
+    // Trace the joined cuts back to this excavation, so an unrelated old pit is not a mouth.
+    const nearest=digs.reduce((a,e)=>{
+      const d=q=>Math.hypot(q.x-wp.x,q.y-wp.y,q.z-wp.z)-q.radius;
+      return !a||d(e)<d(a)?e:a;
+    },null);
+    if(!nearest||Math.hypot(nearest.x-wp.x,nearest.y-wp.y,nearest.z-wp.z)-nearest.radius>9)return null;
+    const connected=nearest?[nearest]:[],seen=new Set(connected);
+    for(let i=0;i<connected.length;i++)for(const e of digs) {
+      const q=connected[i];
+      if(!seen.has(e)&&Math.hypot(e.x-q.x,e.y-q.y,e.z-q.z)<=e.radius+q.radius+.1) {
+        seen.add(e);connected.push(e);
+      }
+    }
+    for(const e of connected) {
+      const u=unit(e),sr=surfaceRadiusFast(this.body,u.x,u.y,u.z,3,{ignoreEdits:true});
+      if(Math.abs(sr-len3(e))>e.radius+.15)continue;
+      const p={x:u.x*sr,y:u.y*sr,z:u.z*sr};
+      if(density(this.body,p.x-u.x*.12,p.y-u.y*.12,p.z-u.z*.12)<=0)continue;
+      mouths.push({p,radius:e.radius,d:Math.hypot(p.x-wp.x,p.y-wp.y,p.z-wp.z)});
+    }
+    mouths.sort((a,b)=>a.d-b.d);
+    for(const m of mouths) {
+      // Search outward from this opening itself, not a bounding sphere round the whole tunnel.
+      for(let ring=0;ring<5;ring++)for(let k=0;k<24;k++) {
+        const a=k*Math.PI/12,dist=m.radius+r+.5+ring*.5;
+        const p={x:m.p.x+(f.east.x*Math.cos(a)+f.north.x*Math.sin(a))*dist,
+          y:m.p.y+(f.east.y*Math.cos(a)+f.north.y*Math.sin(a))*dist,
+          z:m.p.z+(f.east.z*Math.cos(a)+f.north.z*Math.sin(a))*dist};
+        const gp=this.groundBelowPoint(p,up);
+        if(!gp||len3(gp)<len3(m.p)-.4)continue;
+        const plan={...gp,up,pile:null,r,mouth:m.p};
+        if(this._planClear(plan))return plan;
+      }
+    }
+    return null;
   }
 
   /** Combine the inventory without changing its composition, mass or volume. */
@@ -213,10 +299,12 @@ export class Digger {
   dump(all = false) {
     if (!this.carried.length) return { ok: false, msg: 'Carrying nothing' };
     const lot = all ? this.combinedLoad() : this.carried[this.carried.length - 1];
-    const plan = this.dumpPlan(lot);
-    if (!plan) return { ok: false, msg: 'No ground to put it on' };
-    const res = this.edits.deposit(lot, plan.x, plan.y, plan.z, { up: plan.up, pile: plan.pile });
-    if (!res) return { ok: false, msg: 'No ground to put it on' };
+    let plan = this.dumpPlan(lot);
+    if (!plan) return { ok: false, msg: 'No clear room here or by the mouth; keep the load' };
+    const pour=p=>this.edits.deposit(lot,p.x,p.y,p.z,{up:p.up,pile:p.pile,local:p.local,canPlace:this.canPlaceSpoil});
+    let res=pour(plan);
+    if(!res&&plan.local) {plan=this.dumpPlan(lot,true);if(plan)res=pour(plan);}
+    if (!res) return { ok: false, msg: 'No clear room here or by the mouth; keep the load' };
     if (all) this.carried.length = 0; else this.carried.pop();
     const left = this.carried.length;
     return { ok: true, msg: `dropped ${lot.massKg.toFixed(1)} kg${left ? ` · ${left} left` : ''}`, pile: res.pile, plan };

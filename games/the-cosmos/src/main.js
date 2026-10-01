@@ -36,6 +36,8 @@ import { makePortTour } from './port/portTour.js';
 import { PeopleLibrary } from './crew/personRig.js';
 import { CrewSystem } from './crew/crewSystem.js';
 import { CrewUI } from './crew/crewUI.js';
+import { PortPeople } from './port/portPeople.js';
+import { makeSpoilGuard } from './player/spoilProtection.js';
 
 const canvas = document.getElementById('game-canvas');
 const engine = new Engine(canvas, { fov: 72 });
@@ -263,7 +265,7 @@ const TOOLS = digger.tools;
 // is the field itself (the heightfield tiers are not drawing it, and only the field knows the
 // shape of a hole). Elsewhere, outside the earthworks, the drawn surface is what you stand on:
 // collision must sample whatever the player sees.
-let portRef = null;                      // the port, once it is built (the stair and the cab are floors above the ground)
+let portRef = null;                      // the port, once it is built (the moving elevator car and the cab are floors above the ground)
 walker.groundSampler = (dx, dy, dz, r) => {
   if (portRef) { const tf = portRef.towerFloorRadius(dx * r, dy * r, dz * r); if (tf !== null) return tf; }
   if (!edits.isEmpty && terrain.touchedAt(dx * r, dy * r, dz * r)) return null;
@@ -374,10 +376,15 @@ playerPerson.ready.then((p) => {
 
 // --- The crew: five people waiting at the port to be hired (src/crew). Built once the ship and the port are.
 let crew = null, crewUI = null;
+const portPeople=new PortPeople(port,people);
 if (ship.ready) {
   const c = new CrewSystem({ engine, ship, site: portSite, people, ground: groundRadius, walker, tier, playerLook });
-  c.build().then(() => { crew = c; ship.crew = c; crewUI = new CrewUI(c, { ship, walker, isTouch }); }).catch((e) => console.error('Crew failed to build', e));
+  c.build().then(async () => { crew = c; ship.crew = c;
+    await portPeople.build();
+    crewUI = new CrewUI(c, { ship, walker, isTouch, portPeople });
+  }).catch((e) => console.error('Crew failed to build', e));
 }
+digger.canPlaceSpoil = makeSpoilGuard({ port, portPeople, ship, getCrew: () => crew });
 
 // --- Landmark markers, so the debug layer has real registered assets --------
 // --- to label from the first frame.
@@ -703,6 +710,9 @@ function updateAimMarkers(dt) {
 const actionBtn = document.getElementById('btn-action');
 const toolBtn = document.getElementById('btn-tool');
 const dropAllBtn = document.getElementById('btn-drop-all');
+const climbBtn=document.getElementById('btn-climb');
+climbBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();});
+climbBtn.addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();if(!ship.aboard)flash(walker.requestClimb().msg);});
 dropAllBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); });
 dropAllBtn.addEventListener('pointerup', e => {
   e.preventDefault(); e.stopPropagation(); stopHold();
@@ -719,6 +729,9 @@ let tapAction = 'dig';
 
 let shipPress = false;
 function refreshAction() {
+  const climbing=!!walker._climb;
+  climbBtn.style.display=!ship.aboard&&(climbing||walker.climbTarget())?'block':'none';
+  climbBtn.textContent=climbing?'Climbing…':'Climb (C)';climbBtn.disabled=climbing;
   dropAllBtn.style.display = carried.length && !(ship.ready && ship.aboard) ? 'block' : 'none';
   if (actionFlash > 0) return;
   if (ship.ready) {
@@ -726,6 +739,8 @@ function refreshAction() {
     if (a) { tapAction = 'ship'; actionBtn.style.display = 'block'; actionBtn.textContent = a.label; return; }
     if (ship.aboard) { tapAction = 'none'; actionBtn.style.display = 'none'; return; }
   }
+  const lift=port.elevatorAction(walker);
+  if(lift) {tapAction='lift';actionBtn.style.display='block';actionBtn.textContent=lift.label;toolBtn.style.display='none';return;}
   const inReach = !!digTarget();
   const load = carriedMass();
   const cap = tool().capacityKg;
@@ -755,6 +770,7 @@ function flash(msg) {
 // always drops, and repeats, because emptying nine loads should not be nine
 // separate deliberate gestures.
 let holdTimer = null, holdRepeat = null;
+let liftPress=false;
 function stopHold() {
   if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
   if (holdRepeat) { clearInterval(holdRepeat); holdRepeat = null; }
@@ -762,6 +778,7 @@ function stopHold() {
 actionBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault(); e.stopPropagation();
   if (tapAction === 'ship') { shipPress = true; return; }
+  if (tapAction === 'lift') { liftPress = true; return; }
   holdTimer = setTimeout(() => {
     holdTimer = null;
     flash(doDump().msg);
@@ -773,6 +790,7 @@ actionBtn.addEventListener('pointerdown', (e) => {
 });
 const endPress = (e) => {
   e.preventDefault(); e.stopPropagation();
+  if(liftPress) {liftPress=false;port.elevatorAction(walker)?.run();hudAccum=1;return;}
   if (shipPress) {
     shipPress = false;
     const a = ship.contextAction();
@@ -786,8 +804,8 @@ const endPress = (e) => {
   } else stopHold();                                // hold already fired
 };
 actionBtn.addEventListener('pointerup', endPress);
-actionBtn.addEventListener('pointercancel', endPress);
-actionBtn.addEventListener('pointerleave', () => stopHold());
+actionBtn.addEventListener('pointercancel', () => {stopHold();shipPress=false;liftPress=false;});
+actionBtn.addEventListener('pointerleave', () => {stopHold();shipPress=false;liftPress=false;});
 
 // Settings, including the DEV toggle that turns on the measurement layer.
 document.getElementById('btn-settings').addEventListener('click', () => {
@@ -841,7 +859,11 @@ engine.addUpdater((dt) => {
     }
     return;
   }
-  if (portTour.active) { suitGroup.visible=false; port.tick(dt, walker, false, true); portTour.update(); return; }
+  if (portTour.active) {
+    suitGroup.visible=false;portPeople.tick(dt,walker.worldPos);port.tick(dt, walker, false, true);portTour.update();
+    if(crewUI){crewUI.close();crewUI.btn.style.display='none';}
+    return;
+  }
   // Look. Both input sources contribute so a hybrid device works.
   const l1 = touch.consumeLook(), l2 = desktop.consumeLook();
   const lookDX = l1.dx + l2.dx, lookDY = l1.dy + l2.dy;
@@ -882,6 +904,7 @@ engine.addUpdater((dt) => {
   if (owned) port.tick(dt, walker, false);
   if (shipUI) shipUI.update(dt);
   if (crewUI) crewUI.update(dt);
+  portPeople.tick(dt,walker.worldPos);
   if (suitGroup.visible && playerPerson.loaded) {
     // the body stands or walks with what the legs are doing
     const v = walker.velocity, sp = Math.hypot(v.x, v.y, v.z);
@@ -925,8 +948,10 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyE') {
     if (ship.ready && (ship.aboard || ship.contextAction())) { ship.interact(); hudAccum = 1; }
+    else if(port.elevatorAction(walker)) {if(!e.repeat)port.elevatorAction(walker).run();hudAccum=1;}
     else flash(doDig().msg);
   }
+  if(e.code==='KeyC'&&!e.repeat&&!ship.aboard)flash(walker.requestClimb().msg);
   if (e.code === 'KeyQ' && !(ship.ready && ship.aboard)) flash(doDump().msg);
   if (e.code === 'KeyR' && !e.repeat && !(ship.ready && ship.aboard)) { flash(doDumpAll().msg); hudAccum = 1; }
   if (!(ship.ready && ship.aboard) && /^Digit[123]$/.test(e.code)) { setTool(Number(e.code.slice(5)) - 1); document.getElementById('set-tool').value = String(digger.toolIdx); flash(tool().name); }
@@ -945,7 +970,7 @@ engine.start();
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
 window.cosmos = {
-  port, portTour,
+  port, portTour, portPeople,
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   drones: () => ship.drones,

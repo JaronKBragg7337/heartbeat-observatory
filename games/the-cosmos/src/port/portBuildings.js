@@ -55,7 +55,7 @@ export function moduleShell(k,a,low,block,hole=null) {
     B(k,'wall',x,h/2,a.d/2-.12,side,h,.24);block(x,a.d/2-.12,side,.24,h);
   }
   B(k,'wall',0,3.5,a.d/2-.12,a.doorW,1.4,.24);
-  // Curved sandwich roof: two skins and solid end caps. `hole` ({x0,x1,z0,z1}) is cut out where a stair core
+  // Curved sandwich roof: two skins and solid end caps. `hole` ({x0,x1,z0,z1}) is cut out where a elevator shaft
   // passes up through it.
   const n=low?12:20, profile=[];
   for(let i=0;i<=n;i++){const x=-a.w/2+a.w*i/n;profile.push([x,h+rise*Math.sin(i/n*Math.PI)]);}
@@ -179,17 +179,16 @@ export function depotInterior(k,a,low,block) {
 }
 
 // ===========================================================================================================
-// THE CONTROL TOWER (lobby, stair core and cab). Every measurement is in TOWER (portSpec.js), which is also
+// THE CONTROL TOWER (lobby, elevator shaft and cab). Every measurement is in TOWER (portSpec.js), which is also
 // what `towerFloorAt` and the validator read, so what is drawn, what blocks you and where the floor is cannot
 // drift apart.
 //
-//   lobby   reception on the left; the stair core stands at the back with its door straight ahead of the entrance
-//   core    2.9 x 5.7 m. Inside: five switchback levels (two flights each, 12 risers of 0.1875 m, a 0.3 m spine
-//           between the flights, a landing front and back), lit at every landing. It passes through the lobby roof
-//           (the roof is cut round it) and stands out of it as a slim white mast with aviation bands.
+//   lobby   reception on the left; the elevator shaft stands at the back with its door straight ahead of the entrance
+//   core    2.9 x 5.7 m shaft, a two-stop guided car and no intermediate floors. The roof is cut round it.
+//           Its outer mast retains aviation bands and lit windows; rails and markings pass the car as it travels.
 //   cab     at 22.5 m, 12.8 m square, glazed all round above a 0.9 m console ledge, an eave over it. Consoles along
-//           the glass with real chairs behind them, the core standing in the middle of the room with the stair door
-//           facing the room, and standing room kept clear for the people who will work here (TOWER_SPOTS).
+//           the glass with real chairs behind them, the core standing in the middle of the room with the elevator door
+//           facing the room, and standing room kept clear for the people who work here (TOWER_SPOTS).
 // ===========================================================================================================
 
 /** A flat polygon given in any order, wound so that it faces `want` (a vector). */
@@ -204,8 +203,8 @@ function facing(k, key, pts, want, uvs) {
 /** An axis-aligned plank: top/bottom/sides, all six faces. */
 const slab = (k, key, x0, y0, z0, x1, y1, z1, o) => k.boxMM(key, x0, y0, z0, x1, y1, z1, o);
 
-function drawStairCore(k, a, low, block) {
-  const T = TOWER, c = T.core, i = T.inner, F = T.flight;
+function drawElevatorCore(k, a, low, block) {
+  const T = TOWER, c = T.core;
   const top = T.cab.roofY;                                  // the core runs right up to the cab ceiling
   // ---- walls (they block you as well as being drawn) ---------------------------------------------
   const wall = (x0, x1, z0, z1, y0, y1, key = 'wall') => {
@@ -237,53 +236,19 @@ function drawStairCore(k, a, low, block) {
     slab(k, 'glowCool', s > 0 ? c.x1 + 0.04 : c.x0 - 0.075, wy, -3.5, s > 0 ? c.x1 + 0.075 : c.x0 - 0.04, wy + 1.0, -2.1, { col: [0.5, 0.78, 0.9] });
   }
 
-  // ---- the spine between the two flights, and the guard across the stairwell at the top ------------------------
-  // At the cab floor flight B arrives at the landing (its lane stays open) and flight A's lane is a well: guarded.
-  wall(T.spine.x0, T.spine.x1, T.spine.z0, T.spine.z1, 0, T.cab.floorY + 1.1, 'steelDark');
-  block((F.a.x0 + F.a.x1) / 2, F.zLow - 0.05, F.a.x1 - F.a.x0, 0.1, 1.1, T.cab.floorY);
-  for (let x = F.a.x0 + 0.05; x <= F.a.x1; x += 0.37) k.pipe('steel', [x, T.cab.floorY, F.zLow - 0.05], [x, T.cab.floorY + 1.05, F.zLow - 0.05], 0.018, 6);
-  k.pipe('steel', [F.a.x0, T.cab.floorY + 1.05, F.zLow - 0.05], [F.a.x1, T.cab.floorY + 1.05, F.zLow - 0.05], 0.03, 8);
-
-  // ---- the flights ---------------------------------------------------------------------------------------------
-  // A flight climbs 12 risers from (yStart, zFrom) in direction dir along z (-1: toward the back wall, +1: toward the
-  // lobby side). Treads are steel plate with a painted nosing; risers are closed; the sides are plates; the underside
-  // is a soffit; a handrail runs on each side.
-  const flight = (x0, x1, yStart, zFrom, dir) => {
-    for (let s = 0; s < F.risers; s++) {
-      const front = zFrom + dir * s * F.tread, back = zFrom + dir * (s + 1) * F.tread;
-      const y = yStart + (s + 1) * F.rise;
-      facing(k, 'steel', [[x0, y, front], [x1, y, front], [x1, y, back], [x0, y, back]], [0, 1, 0]);
-      facing(k, 'steelDark', [[x0, y - F.rise, front], [x1, y - F.rise, front], [x1, y, front], [x0, y, front]], [0, 0, -dir]);
-      const nose = front + dir * 0.06;
-      facing(k, 'hazard', [[x0, y + 0.003, front], [x1, y + 0.003, front], [x1, y + 0.003, nose], [x0, y + 0.003, nose]], [0, 1, 0]);
-    }
-    const yEnd = yStart + F.risers * F.rise, zEnd = zFrom + dir * F.run;
-    // side plates facing into the lane, from the soffit up to the tread line
-    facing(k, 'steelDark', [[x0, yStart - 0.18, zFrom], [x0, yStart - 0.18, zEnd], [x0, yEnd, zEnd], [x0, yStart + F.rise, zFrom]], [1, 0, 0]);
-    facing(k, 'steelDark', [[x1, yStart - 0.18, zFrom], [x1, yStart - 0.18, zEnd], [x1, yEnd, zEnd], [x1, yStart + F.rise, zFrom]], [-1, 0, 0]);
-    facing(k, 'gunmetal', [[x0, yStart - 0.18, zFrom], [x1, yStart - 0.18, zFrom], [x1, yStart - 0.18, zEnd], [x0, yStart - 0.18, zEnd]], [0, -1, 0]);
-    for (const x of [x0 + 0.04, x1 - 0.04]) {
-      k.pipe('steel', [x, yStart + F.rise + 0.9, zFrom], [x, yEnd + 0.9, zEnd], 0.025, 8);
-      for (let s = 0; s <= F.risers; s += 4) {
-        const zz = zFrom + dir * s * F.tread, yy = yStart + (s + 1) * F.rise;
-        k.pipe('steel', [x, yy, zz], [x, yy + 0.9, zz], 0.016, 6);
-      }
-    }
-  };
-  for (let n = 0; n < T.levels; n++) {
-    const y0 = n * T.pitch, mid = y0 + F.risers * F.rise, topY = y0 + T.pitch;
-    flight(F.a.x0, F.a.x1, y0, F.zLow, -1);                   // A: up toward the back wall
-    flight(F.b.x0, F.b.x1, mid, F.zHigh, +1);                 // B: back toward the lobby side
-    slab(k, 'floor', i.x0, mid - 0.14, T.back.z0, i.x1, mid, T.back.z1);                            // the back landing
-    if (n < T.levels - 1) slab(k, 'floor', i.x0, topY - 0.14, F.zLow, i.x1, topY, i.z1);            // the front landing
-    // a lamp over each landing, a painted line at the landing's edge
-    for (const [yy, zz] of [[mid + 2.05, (T.back.z0 + T.back.z1) / 2], [topY + 2.05, (F.zLow + i.z1) / 2]]) {
-      slab(k, 'plasticDark', -0.55, yy, zz - 0.14, 0.55, yy + 0.05, zz + 0.14);
-      slab(k, 'glowWhite', -0.5, yy - 0.012, zz - 0.09, 0.5, yy, zz + 0.09);
-    }
-    if (n < T.levels - 1) {
-      facing(k, 'hazard', [[i.x0, topY + 0.004, F.zLow], [i.x1, topY + 0.004, F.zLow], [i.x1, topY + 0.004, F.zLow - 0.1], [i.x0, topY + 0.004, F.zLow - 0.1]], [0, 1, 0]);
-    }
+  // No stair soffits, flight plates, central spine or stacked landings remain.
+  // Guide rails, cable chase and spaced brackets are visible from the moving car.
+  for(const x of [-1.17,1.17]) {
+    slab(k,'steel',x-.035,0,-1.65,x+.035,T.cab.floorY+2.5,-1.55);
+    for(let y=1;y<T.cab.floorY;y+=3) slab(k,'steelDark',x-.06,y,-1.8,x+.06,y+.12,-1.5);
+  }
+  for(let y=1;y<T.cab.floorY;y+=3) {
+    slab(k,'hazard',-.4,y,-4.97,.4,y+.09,-4.95);
+    slab(k,'glowWhite',-.25,y+1,-4.96,.25,y+1.06,-4.93);
+  }
+  for(const base of [0,T.cab.floorY]) {
+    B(k,'plasticDark',.89,base+1.1,c.z1+.05,.22,.4,.1);
+    k.box('glowCyan',.89,base+1.1,c.z1+.106,.12,.12,.012);
   }
   // the lobby door: a frame, an exit light and a plaque over it, both ends of the climb
   for (const base of [0, T.cab.floorY]) {
@@ -316,7 +281,7 @@ function drawCab(k, a, low, block) {
   const deck = (x0, x1, z0, z1) => facing(k, 'floor', [[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]], [0, 1, 0]);
   deck(-fh - 0.1, c.x0, -fh - 0.1, fh + 0.1); deck(c.x1, fh + 0.1, -fh - 0.1, fh + 0.1);
   deck(c.x0, c.x1, c.z1, fh + 0.1); deck(c.x0, c.x1, -fh - 0.1, c.z0);
-  slab(k, 'floor', T.inner.x0, y - 0.14, T.front.z0, T.inner.x1, y, T.inner.z1);                    // the top landing, with its underside
+  // The shaft opening contains only the moving car floor.
   slab(k, 'floor', T.door.x0, y - 0.14, T.inner.z1, T.door.x1, y, c.z1);                              // and the sill of the cab door
   for (const s of [-1, 1]) {
     facing(k, 'hazard', [[-fh, y + 0.004, s * (fh - 0.04)], [fh, y + 0.004, s * (fh - 0.04)], [fh, y + 0.004, s * (fh - 0.14)], [-fh, y + 0.004, s * (fh - 0.14)]], [0, 1, 0]);
@@ -330,7 +295,7 @@ function drawCab(k, a, low, block) {
     k.pipe('steel', [sx, y - 3.4, c.z1 + 0.05], [sx * 3.6, slabY0 + 0.05, fh + 0.08], 0.1, 8);
     k.pipe('steel', [sx, y - 3.4, c.z0 - 0.05], [sx * 3.6, slabY0 + 0.05, -fh - 0.08], 0.1, 8);
   }
-  slab(k, 'steelDark', -fh - 0.2, slabY0 - 0.12, -fh - 0.2, fh + 0.2, slabY0, fh + 0.2);        // underside cladding
+  for(const [x0,x1,z0,z1] of [[-fh-.2,c.x0,-fh-.2,fh+.2],[c.x1,fh+.2,-fh-.2,fh+.2],[c.x0,c.x1,c.z1,fh+.2],[c.x0,c.x1,-fh-.2,c.z0]]) slab(k,'steelDark',x0,slabY0-.12,z0,x1,slabY0,z1);        // underside cladding
   // ---- the glazing: a 0.9 m ledge, six panes a side between mullions, a header beam ----------------------------------
   const g0 = C.glassY0, g1 = C.glassY1;
   for (const side of ['n', 's', 'e', 'w']) {
@@ -362,7 +327,7 @@ function drawCab(k, a, low, block) {
     slab(k, 'plasticDark', lx - 0.6, ry - 0.06, lz - 0.15, lx + 0.6, ry - 0.01, lz + 0.15);
     slab(k, 'glowWhite', lx - 0.5, ry - 0.075, lz - 0.09, lx + 0.5, ry - 0.06, lz + 0.09);
   }
-  // the core's own faces in the room: status screens and the fittings a stair door wants
+  // the core's own faces in the room: status screens and the fittings a elevator door wants
   screen(k, CELLS.pads, c.x0 - 0.01, y + 1.9, -2.2, 3.0, 1.3, -Math.PI / 2);
   screen(k, CELLS.weather, c.x1 + 0.01, y + 1.9, -2.2, 3.0, 1.3, Math.PI / 2);
   prop(k, 'extinguisher', 1.0, y, 0.63, 0.2, 0.55, 0.2, 0);
@@ -449,11 +414,11 @@ export function towerInterior(k, a, low, block) {
     for (const s of [-1, 1]) k.box('steel', s * .27, .22, 0, .05, .44, .5); k.pop();
     block(-4.7, z, .85, .8, 1.35);
   }
-  // floor line from the entrance to the stair door, and the lamps over it
+  // floor line from the entrance to the elevator door, and the lamps over it
   for (let z = 5; z > 1; z -= 1.5) k.box('mark', 0, .028, z, .08, .005, .65);
   const ceiling = x => 4.2 + .45 * Math.sin((x + a.w / 2) / a.w * Math.PI) - .08;
   lamp(k, -3, 3.75, 0, 2.4, ceiling); lamp(k, 3, 3.75, 2, 2.4, ceiling); lamp(k, 0, 3.8, 2.2, 1.6, ceiling);
-  drawStairCore(k, a, low, block);
+  drawElevatorCore(k, a, low, block);
   drawCab(k, a, low, block);
 }
 

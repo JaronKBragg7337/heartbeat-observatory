@@ -19,67 +19,36 @@ export const BUILDINGS = [
   { id: 'COS-MARS-STR-0115', kind: 'sign', name: 'Port beacon sign', x: -28, z: 65, w: 16, d: 1, h: 5 },
 ];
 export const NPC_SPOTS = [
-  { name: 'Supply clerk', x: -65, z: 15.5 }, { name: 'Arrival guide', x: -12, z: 39 },
+  { name: 'Supply clerk', x: -65, z: 16.9 }, { name: 'Arrival guide', x: -12, z: 39 },
   { name: 'Market traders', x: -58, z: 53 }, { name: 'Reception clerk', x: -63.9, z: -42.1 },
 ];
 
-// ---------------------------------------------------------------------------------------------
-// THE CONTROL TOWER. A person can walk up it: from the lobby, through the door in the stair core,
-// up five switchback levels (120 risers of 0.1875 m, the same riser as the Meridian's stairs), and
-// out into the glass cab at 22.5 m. Everything is in TOWER-LOCAL metres (x right, z toward the lobby
-// door, y up from the apron) around the tower's centre; `towerFloorAt` is the one place that says where
-// the floor is, and the renderer, the collision and the validator all read it.
-// ---------------------------------------------------------------------------------------------
+// Tower dimensions in tower-local metres; the cab furniture and spots stay as built.
 export const TOWER = (() => {
   const t = BUILDINGS.find(b => b.kind === 'tower');
-  const risers = 12, rise = 0.1875, tread = 0.27, run = risers * tread;      // one flight: 2.25 m up over 3.24 m
-  const levels = 5, pitch = 2 * risers * rise;                                // 4.5 m between landings, two flights
-  const core = { x0: -1.45, x1: 1.45, z0: -5.2, z1: 0.5, t: 0.2 };            // the stair core: 2.9 x 5.7 m outside
-  const inner = { x0: core.x0 + core.t, x1: core.x1 - core.t, z0: core.z0 + core.t, z1: core.z1 - core.t };
-  const zLow = -0.7, zHigh = zLow - run;                                      // foot of each flight, and its head
-  const door = { x0: -0.6, x1: 0.6, h: 2.3 };                                 // 1.2 x 2.3 m, front of the core (z = core.z1)
-  const cabY = levels * pitch;                                                // 22.5 m: the cab floor
-  const cab = { floorY: cabY, half: 6.4, floorHalf: 6.3, glassY0: cabY + 0.9, glassY1: cabY + 3.2, roofY: cabY + 3.5, eave: 7.5 };
-  return {
-    id: t.id, x: t.x, z: t.z, core, inner, door, cab,
-    spine: { x0: -0.15, x1: 0.15, z0: zHigh, z1: zLow },
-    flight: { risers, rise, tread, run, zLow, zHigh, a: { x0: -1.25, x1: -0.15 }, b: { x0: 0.15, x1: 1.25 } },
-    back: { z0: -5.0, z1: zHigh }, front: { z0: zLow, z1: 0.5 },
-    levels, pitch, headroom: 2.2, topY: 31.0,
-  };
+  const core = { x0: -1.45, x1: 1.45, z0: -5.2, z1: .5, t: .2 };
+  const inner = { x0: -1.25, x1: 1.25, z0: -5, z1: .3 };
+  return { id:t.id, x:t.x, z:t.z, core, inner,
+    door:{x0:-.6,x1:.6,h:2.3}, car:{x0:-1.1,x1:1.1,z0:-2.3,z1:.3,height:2.6},
+    cab:{floorY:22.5,half:6.4,floorHalf:6.3,glassY0:23.4,glassY1:25.7,roofY:26,eave:7.5},
+    topY:31 };
 })();
-
-/** Every floor surface of the tower as {x0,x1,z0,z1, yAt(x,z)}. Built once. */
 export const TOWER_SURFACES = (() => {
-  const T = TOWER, F = T.flight, out = [];
-  for (let n = 0; n < T.levels; n++) {
-    const y0 = n * T.pitch, mid = y0 + F.risers * F.rise, top = y0 + T.pitch;
-    out.push({ x0: F.a.x0, x1: F.a.x1, z0: F.zHigh, z1: F.zLow, yAt: (x, z) => y0 + (F.zLow - z) / F.run * (mid - y0), name: `flight A ${n}` });
-    out.push({ x0: T.inner.x0, x1: T.inner.x1, z0: T.back.z0, z1: T.back.z1, yAt: () => mid, name: `back landing ${n}` });
-    out.push({ x0: F.b.x0, x1: F.b.x1, z0: F.zHigh, z1: F.zLow, yAt: (x, z) => mid + (z - F.zHigh) / F.run * (top - mid), name: `flight B ${n}` });
-    if (n < T.levels - 1) out.push({ x0: T.inner.x0, x1: T.inner.x1, z0: T.front.z0, z1: T.inner.z1, yAt: () => top, name: `landing ${n + 1}` });
-  }
-  // the top landing and its threshold into the cab, and the cab floor round the core
-  out.push({ x0: T.inner.x0, x1: T.inner.x1, z0: T.front.z0, z1: T.inner.z1, yAt: () => T.cab.floorY, name: 'top landing' });
-  out.push({ x0: T.door.x0, x1: T.door.x1, z0: T.inner.z1, z1: T.core.z1, yAt: () => T.cab.floorY, name: 'cab threshold' });
-  const h = T.cab.floorHalf, c = T.core;
-  out.push({ x0: -h, x1: c.x0, z0: -h, z1: h, yAt: () => T.cab.floorY, name: 'cab floor W' });
-  out.push({ x0: c.x1, x1: h, z0: -h, z1: h, yAt: () => T.cab.floorY, name: 'cab floor E' });
-  out.push({ x0: c.x0, x1: c.x1, z0: c.z1, z1: h, yAt: () => T.cab.floorY, name: 'cab floor S' });
-  out.push({ x0: c.x0, x1: c.x1, z0: -h, z1: c.z0, yAt: () => T.cab.floorY, name: 'cab floor N' });
-  return out;
+  const T=TOWER, h=T.cab.floorHalf, c=T.core, yAt=()=>T.cab.floorY;
+  return [
+    {x0:-h,x1:c.x0,z0:-h,z1:h,yAt,name:'cab floor W'},
+    {x0:c.x1,x1:h,z0:-h,z1:h,yAt,name:'cab floor E'},
+    {x0:c.x0,x1:c.x1,z0:c.z1,z1:h,yAt,name:'cab floor S'},
+    {x0:c.x0,x1:c.x1,z0:-h,z1:c.z0,yAt,name:'cab floor N'},
+    {x0:T.door.x0,x1:T.door.x1,z0:T.inner.z1,z1:c.z1,yAt,name:'cab sill'},
+  ];
 })();
-
-/**
- * The tower's floor under tower-local (lx,lz) for feet at height feetY: the highest surface not more than a
- * step above the feet, or null where the ground itself is the floor (the lobby, outside).
- */
-export function towerFloorAt(lx, lz, feetY, stepM = 0.55) {
-  let best = null;
-  for (const s of TOWER_SURFACES) {
-    if (lx < s.x0 || lx > s.x1 || lz < s.z0 || lz > s.z1) continue;
-    const y = s.yAt(lx, lz);
-    if (y <= feetY + stepM && (best === null || y > best)) best = y;
+export function towerFloorAt(lx,lz,feetY,stepM=.35) {
+  let best=null;
+  for(const s of TOWER_SURFACES) {
+    if(lx<s.x0||lx>s.x1||lz<s.z0||lz>s.z1)continue;
+    const y=s.yAt(lx,lz);
+    if(y<=feetY+stepM&&(best===null||y>best))best=y;
   }
   return best;
 }
@@ -96,6 +65,21 @@ export const TOWER_SPOTS = [
   { id: 'cab-binoculars', name: 'Lookout at the glass', pose: 'standing', x: TOWER.x + 4.2, y: TOWER.cab.floorY, z: TOWER.z - 4.3, face: 'east' },
 ];
 export const CONCRETE = MATERIALS.concrete;
+
+/** Protected pavement/structure columns, including airlock hoods and pad service rails. */
+export function clearSpoilGround(site, x, y, z, margin=.3) {
+  const p=site.toLocal({x,y,z});
+  if([...PADS,...BUILDINGS].some(a=>Math.abs(p.x-a.x)<=a.w/2+margin+1.5&&Math.abs(p.z-a.z)<=a.d/2+margin+1.5))return false;
+  if(p.x>=21-margin&&p.x<=39+margin&&Math.abs(p.z)<=55+margin)return false;
+  if(p.x>=38-margin&&p.x<=60+margin&&[-28,30].some(v=>Math.abs(p.z-v)<=5+margin))return false;
+  if(Math.abs(p.x-86)<1+margin&&p.z>=-70-margin&&p.z<=30+margin)return false;
+  if(p.x>=58-margin&&p.x<=86+margin&&Math.abs(p.z+70)<1+margin)return false;
+  if(PADS.slice(1).some(a=>p.x>=a.x+a.w/2-margin&&p.x<=86+margin&&Math.abs(p.z-a.z)<1+margin))return false;
+  if(Math.abs(p.x+27)<1+margin&&p.z>=-60-margin&&p.z<=65+margin)return false;
+  if([[-32,-64],[91,-48],[90,54],[-32,44]].some(([x,z])=>Math.hypot(p.x-x,p.z-z)<1+margin))return false;
+  if(Math.abs(p.x)>=102-margin&&Math.abs(p.x)<=104+margin&&Math.abs(p.z)<=88+margin)return false;
+  return true;
+}
 
 export function createPortSite(body, spawn = { lat: -14, lon: -59.2 }) {
   const datum = geodeticToCartesian(body, spawn.lat, spawn.lon, 0);

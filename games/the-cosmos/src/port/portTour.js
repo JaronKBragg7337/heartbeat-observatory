@@ -19,17 +19,17 @@ export function makePortTour({engine,walker,ship,port,rebuild}) {
   add('port-edge-flat',[103,1.66,45],[116,0,45]);
   add('port-edge-grade',[185,4,45],[103,0,45]);
   add('depot-stock',[-56,1.66,23],[-51.5,1.5,18]);
-  add('depot-service',[-62,1.66,23],[-65,1.45,18]);
+  add('depot-service',[-65,1.66,20.5],[-65,1.4,15.5]);
   add('depot-lift-cart',[-59,1.66,24],[-57,1,21]);
   add('depot-roof',[-81,14,40],[-62,5.5,17]);
   add('tower-reception',[-60,1.66,-35],[-62.5,1.8,-41]);
-  // the stair and the cab, in tower-local metres turned into port metres
-  const tw=(lx,y,lz)=>[TOWER.x+lx,y,TOWER.z+lz], F=TOWER.flight, cy=TOWER.cab.floorY;
-  add('tower-stair-door',tw(0,1.66,3.2),tw(0,1.5,.5));
-  add('tower-stair-foot',tw(-.7,1.66,-.15),tw(-.7,3.2,-3.6));
-  add('tower-stair-landing',tw(0,2*TOWER.pitch+1.66,-.2),tw(0,2*TOWER.pitch+1.4,-4.6));
-  add('tower-stair-back-landing',tw(0,2*TOWER.pitch+F.risers*F.rise+1.66,-4.7),tw(.6,2*TOWER.pitch+F.risers*F.rise+2.6,-1.2));
-  add('tower-stair-top',tw(0,cy+1.66,-.1),tw(0,cy+1.5,1.8));
+  // Lift views use the actual moving car; cab views remain at their original spots.
+  const tw=(lx,y,lz)=>[TOWER.x+lx,y,TOWER.z+lz], cy=TOWER.cab.floorY;
+  add('tower-elevator-call',tw(.5,1.66,2),tw(.3,1.2,.5));
+  add('tower-elevator-car',tw(0,1.66,-.7),tw(0,1.3,-2.3));
+  add('tower-elevator-shaft',tw(0,12+1.66,-.7),tw(1.17,13,-1.6));
+  add('tower-elevator-cab-door',tw(0,cy+1.66,2),tw(0,cy+1.3,.1));
+  add('tower-elevator-exit',tw(0,cy+1.66,-.1),tw(0,cy+1.5,1.8));
   add('tower-cab-south',tw(0,cy+1.66,2.4),tw(0,cy+1.5,7));
   add('tower-cab-west',tw(-1.6,cy+1.66,.6),tw(-7,cy+1.5,.6));
   add('tower-cab-east',tw(1.6,cy+1.66,.6),tw(7,cy+1.5,.6));
@@ -49,6 +49,7 @@ export function makePortTour({engine,walker,ship,port,rebuild}) {
     if(which==='off') {
       tour.active=false;
       if(saved) { Object.assign(walker.worldPos,saved.pos); walker.yaw=saved.yaw;walker.pitch=saved.pitch;
+        Object.assign(port.elevator,saved.lift);port.updateElevatorVisuals();
         const s=ship(); s.aboard=saved.aboard; if(saved.aboard)s.sw.place(...saved.local); walker.velocity={x:0,y:0,z:0}; rebuild(); }
       saved=null; return 'Port tour off; play restored.';
     }
@@ -56,9 +57,15 @@ export function makePortTour({engine,walker,ship,port,rebuild}) {
     else if(typeof which==='string') { const found=views.findIndex(v=>v.name===which); if(found<0)throw new Error('Unknown port viewpoint: '+which); index=found; }
     else index=(index+1)%views.length;
     const s=ship(),v=views[index];
-    if(!saved)saved={pos:{...walker.worldPos},yaw:walker.yaw,pitch:walker.pitch,aboard:s.aboard,local:[s.sw.x,s.sw.y,s.sw.z,s.sw.yaw]};
+    if(!saved)saved={pos:{...walker.worldPos},yaw:walker.yaw,pitch:walker.pitch,aboard:s.aboard,local:[s.sw.x,s.sw.y,s.sw.z,s.sw.yaw],lift:{...port.elevator}};
     if(s.seat)s.stations.stand();
     tour.active=true; tour.current=v;
+    // Review poses only; off restores the lift as well as the player.
+    if(v.name.startsWith('tower-elevator-')) {
+      const y=v.name==='tower-elevator-shaft'?12:v.name.includes('cab')||v.name.includes('exit')?TOWER.cab.floorY:0;
+      Object.assign(port.elevator,{y,target:y,speed:0,phase:'open',open:v.name==='tower-elevator-shaft'?0:1});
+      port.updateElevatorVisuals();
+    }
     const pos=v.inside?s.flight.toWorld({x:v.eye[0],y:v.eye[1]-1.66,z:v.eye[2]}):port.site.toWorld(v.eye[0],v.eye[1]-1.66,v.eye[2]);
     Object.assign(walker.worldPos,pos); s.aboard=v.inside;
     if(v.inside)s.sw.place(v.eye[0],0,v.eye[2],Math.PI);

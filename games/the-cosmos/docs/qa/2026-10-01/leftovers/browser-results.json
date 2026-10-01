@@ -1,0 +1,378 @@
+{
+  "workers": [
+    {
+      "id": "cab-pad-1",
+      "pose": "Sit",
+      "model": "isaiah",
+      "position": [
+        -63.3,
+        23.01,
+        -34.7
+      ]
+    },
+    {
+      "id": "cab-pad-2",
+      "pose": "Sit",
+      "model": "ada",
+      "position": [
+        -60,
+        23.01,
+        -34.7
+      ]
+    },
+    {
+      "id": "cab-ground",
+      "pose": "Sit",
+      "model": "jorge",
+      "position": [
+        -56.7,
+        23.01,
+        -34.7
+      ]
+    },
+    {
+      "id": "cab-approach",
+      "pose": "Sit",
+      "model": "sunita",
+      "position": [
+        -64.45,
+        23.01,
+        -37.6
+      ]
+    },
+    {
+      "id": "cab-weather",
+      "pose": "Sit",
+      "model": "zuri",
+      "position": [
+        -55.55,
+        23.01,
+        -37.6
+      ]
+    },
+    {
+      "id": "cab-supervisor",
+      "pose": "Idle",
+      "model": "walter",
+      "position": [
+        -60,
+        22.52,
+        -36.8
+      ]
+    },
+    {
+      "id": "cab-runner",
+      "pose": "Idle",
+      "model": "isaiah",
+      "position": [
+        -64,
+        22.52,
+        -42.8
+      ]
+    },
+    {
+      "id": "cab-binoculars",
+      "pose": "Idle",
+      "model": "ada",
+      "position": [
+        -55.8,
+        22.52,
+        -43.3
+      ]
+    },
+    {
+      "id": "depot-clerk",
+      "pose": "Idle",
+      "model": "jorge",
+      "position": [
+        -65,
+        0.02,
+        16.9
+      ]
+    },
+    {
+      "id": "arrival-guide",
+      "pose": "Idle",
+      "model": "sunita",
+      "position": [
+        -12,
+        0.02,
+        39
+      ]
+    },
+    {
+      "id": "reception-clerk",
+      "pose": "Idle",
+      "model": "zuri",
+      "position": [
+        -63.9,
+        0.02,
+        -42.1
+      ]
+    },
+    {
+      "id": "trader-1",
+      "pose": "Idle",
+      "model": "walter",
+      "position": [
+        -70,
+        0.02,
+        50.25
+      ]
+    },
+    {
+      "id": "trader-2",
+      "pose": "Idle",
+      "model": "isaiah",
+      "position": [
+        -62,
+        0.02,
+        50.25
+      ]
+    },
+    {
+      "id": "trader-3",
+      "pose": "Idle",
+      "model": "ada",
+      "position": [
+        -54,
+        0.02,
+        50.25
+      ]
+    },
+    {
+      "id": "trader-4",
+      "pose": "Idle",
+      "model": "jorge",
+      "position": [
+        -46,
+        0.02,
+        50.25
+      ]
+    }
+  ],
+  "files": [
+    "isaiah.glb",
+    "ada.glb",
+    "zuri.glb",
+    "jorge.glb",
+    "sunita.glb",
+    "walter.glb"
+  ],
+  "port": {
+    "drawCalls": 19,
+    "triangles": 35426,
+    "geometryBytes": 3254988,
+    "sunShadowDrawCalls": 6,
+    "sunShadowTriangles": 30394,
+    "textureBytes": 3844776,
+    "sharedShipTextures": true,
+    "pointLights": 2,
+    "shadowLights": 0
+  },
+  "depth": 24,
+  "views": [
+    {
+      "view": "tower-elevator-call",
+      "workerVisible": 10,
+      "renderer": {
+        "frame": 96,
+        "calls": 237,
+        "triangles": 479933,
+        "points": 3360,
+        "lines": 0
+      }
+    },
+    {
+      "view": "tower-elevator-car",
+      "workerVisible": 9,
+      "renderer": {
+        "frame": 112,
+        "calls": 227,
+        "triangles": 458002,
+        "points": 3360,
+        "lines": 0
+      }
+    },
+    {
+      "view": "tower-elevator-shaft",
+      "workerVisible": 9,
+      "renderer": {
+        "frame": 128,
+        "calls": 227,
+        "triangles": 458002,
+        "points": 3360,
+        "lines": 0
+      }
+    },
+    {
+      "view": "tower-elevator-cab-door",
+      "workerVisible": 9,
+      "renderer": {
+        "frame": 144,
+        "calls": 219,
+        "triangles": 456948,
+        "points": 3360,
+        "lines": 0
+      }
+    },
+    {
+      "view": "tower-elevator-exit",
+      "workerVisible": 9,
+      "renderer": {
+        "frame": 160,
+        "calls": 236,
+        "triangles": 472824,
+        "points": 3360,
+        "lines": 0
+      }
+    },
+    {
+      "view": "tower-cab-looking-in",
+      "workerVisible": 9,
+      "renderer": {
+        "frame": 176,
+        "calls": 220,
+        "triangles": 457222,
+        "points": 3360,
+        "lines": 0
+      }
+    },
+    {
+      "view": "tower-cab-south",
+      "workerVisible": 9,
+      "renderer": {
+        "frame": 192,
+        "calls": 235,
+        "triangles": 472390,
+        "points": 3360,
+        "lines": 0
+      }
+    },
+    {
+      "view": "depot-service",
+      "workerVisible": 5,
+      "renderer": {
+        "frame": 208,
+        "calls": 187,
+        "triangles": 390850,
+        "points": 3360,
+        "lines": 0
+      }
+    },
+    {
+      "view": "market-trader-1",
+      "workerVisible": 5,
+      "renderer": {
+        "frame": 224,
+        "calls": 190,
+        "triangles": 405446,
+        "points": 3360,
+        "lines": 0
+      }
+    },
+    {
+      "view": "market-trader-4",
+      "workerVisible": 6,
+      "renderer": {
+        "frame": 240,
+        "calls": 216,
+        "triangles": 430437,
+        "points": 3360,
+        "lines": 0
+      }
+    }
+  ],
+  "ride": {
+    "carY": 9.729722222222284,
+    "feetY": 9.749722291001305,
+    "doors": 0,
+    "phase": "moving"
+  },
+  "talk": {
+    "target": "cab-supervisor",
+    "label": "Talk · Watch supervisor (T)\nWatch supervisor",
+    "panel": "Watch supervisor\nWatch supervisor\n✕\n\nThis watch keeps the apron clear for arrivals.\n\nClose"
+  },
+  "climb": {
+    "before": {
+      "x": -90.3482747644147,
+      "y": -1.2199823963883816,
+      "z": -13.989157337992468
+    },
+    "offered": "block",
+    "after": {
+      "x": -89.7983077732188,
+      "y": 0.019928109735573685,
+      "z": -13.988059643933001
+    }
+  },
+  "tunnel": {
+    "plan": {
+      "local": true,
+      "y": -5.000444930129802
+    },
+    "drop": true,
+    "mass": 1842.4148718999445
+  },
+  "glbRequests": [
+    {
+      "name": "isaiah.glb",
+      "bytes": 2049104
+    },
+    {
+      "name": "ada.glb",
+      "bytes": 2548132
+    },
+    {
+      "name": "zuri.glb",
+      "bytes": 1182704
+    },
+    {
+      "name": "jorge.glb",
+      "bytes": 2407672
+    },
+    {
+      "name": "walter.glb",
+      "bytes": 2633044
+    },
+    {
+      "name": "sunita.glb",
+      "bytes": 2360488
+    }
+  ],
+  "errors": [],
+  "failedResources": [
+    {
+      "status": 404,
+      "url": "http://localhost:8392/_vercel/insights/script.js"
+    },
+    {
+      "status": 404,
+      "url": "http://localhost:8392/hb-editor.js"
+    },
+    {
+      "status": 404,
+      "url": "http://localhost:8392/_vercel/insights/script.js"
+    },
+    {
+      "status": 404,
+      "url": "http://localhost:8392/hb-editor.js"
+    }
+  ],
+  "phone": {
+    "touch": 1,
+    "viewport": 375,
+    "call": {
+      "target": 22.5,
+      "phase": "closing"
+    }
+  },
+  "peopleBudget": {
+    "meshes": 153,
+    "triangles": 313819,
+    "uniqueGeometry": 61,
+    "geometryBytes": 7527882,
+    "skeletons": 153
+  }
+}

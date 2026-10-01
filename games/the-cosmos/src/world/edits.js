@@ -381,7 +381,7 @@ export class EditStore {
     const id = `COS-EDIT-${String(++this._seq).padStart(5, '0')}`;
     this.edits.push({
       id, type: 'dig', x: shape.x ?? (box.x0 + box.x1) / 2, y: shape.y ?? (box.y0 + box.y1) / 2,
-      z: shape.z ?? (box.z0 + box.z1) / 2, radius: shape.r ?? 0, volumeM3: V, massKg: M,
+      z: shape.z ?? (box.z0 + box.z1) / 2, radius: shape.r ?? Math.hypot(box.x1-box.x0,box.y1-box.y0,box.z1-box.z0)/2, volumeM3: V, massKg: M,
       materialId: dominant.id, at: Date.now(),
     });
     this._removedV += account(V); this._removedM += account(M);
@@ -458,11 +458,13 @@ export class EditStore {
       const sTop = Math.min(9, Math.max(rFlat * tanT * 2 + 1.4, headroom)), sBot = -(Math.min(6, rFlat * 2 + 1.5));
       // Ground height under every column: the first solid found looking down from sTop.
       const lo = new Float32Array(n * n);
+      const ceilings = opts.local ? new Float32Array(n * n).fill(Infinity) : null;
       let loMin = Infinity, loCentre = NaN;
       for (let cb = 0; cb < n; cb++) for (let ca = 0; ca < n; ca++) {
         const a = (ca - half) * g, b = (cb - half) * g;
         const px = ax + e1.x * a + e2.x * b, py = ay + e1.y * a + e2.y * b, pz = az + e1.z * a + e2.z * b;
-        let s = sTop, prevS = sTop, prevPhi = this.phiAt(px + up.x * s, py + up.y * s, pz + up.z * s), found = NaN;
+        const start = opts.local ? (onto ? onto.apexM + .15 : .15) : sTop;
+        let s = start, prevS = start, prevPhi = this.phiAt(px + up.x * s, py + up.y * s, pz + up.z * s), found = NaN;
         if (prevPhi >= 0) {
           while (s > sBot) {
             s -= Math.max(0.03, Math.min(0.25, prevPhi * 0.8));
@@ -479,6 +481,15 @@ export class EditStore {
           }
         }
         lo[cb * n + ca] = found;
+        if(ceilings && found===found) {
+          // The first roof above THIS floor bounds the connected air column.
+          // Include no lattice point at the roof, through it, or above it.
+          for(let t=found+.12;t<=sTop+.2;t+=.08) {
+            if(this.phiAt(px+up.x*t,py+up.y*t,pz+up.z*t)<.04) {
+              ceilings[cb*n+ca]=t-.12;break;
+            }
+          }
+        }
         if (found === found) { if (found < loMin) loMin = found; }
         if (ca === half && cb === half) loCentre = found;
       }
@@ -529,6 +540,7 @@ export class EditStore {
           if (ca < 0 || cb < 0 || ca >= n || cb >= n) continue;
           const ground = lo[cb * n + ca];
           if (ground !== ground) continue;                    // no ground under this column
+          if(ceilings && s>ceilings[cb*n+ca])continue;
           const bk = this.brickAt(i >> 5, j >> 5, k >> 5);
           const old = bk ? bk.phi[(((k & 31) * BRICK_N) + (j & 31)) * BRICK_N + (i & 31)] : Math.fround(this.baseLattice(i, j, k));
           if (old < -0.5) continue;                           // solid all through: it can gain nothing (the inside of an earlier heap, the ground)
@@ -570,7 +582,12 @@ export class EditStore {
       let aHi = (onto ? Math.max(onto.apexM, centreS) + V / (Math.PI * Math.max(onto.radiusM, 0.3) ** 2) * 1.5 + 0.2
                       : Math.max(loMin, centreS) + Math.max(0.25, rFlat * tanT * 1.7));
       let cand = collect(aHi);
-      for (let guard = 0; volumeAt(cand, aHi) < V && guard < 30; guard++) { aHi = aLo + (aHi - aLo) * 1.5 + 0.1; cand = collect(aHi); }
+      for (let guard = 0; volumeAt(cand, aHi) < V && guard < 30; guard++) {
+        aHi = aLo + (aHi - aLo) * 1.5 + 0.1;
+        if(aHi>sTop)break;
+        cand = collect(aHi);
+      }
+      if(volumeAt(cand,aHi)<V)return null;
       for (let it = 0; it < 48; it++) {
         const mid = (aLo + aHi) / 2;
         if (volumeAt(cand, mid) < V) aLo = mid; else aHi = mid;
@@ -579,6 +596,11 @@ export class EditStore {
       const A = (aLo + aHi) / 2;
       if (extent(A) >= R - 0.2 && attempt < 3) { R = Math.min(12, R * 1.5); continue; }       // the finished heap would be cut off by the grid: widen and redo
       const { vol, out } = emitAt(cand, A);
+      if(Math.abs(vol-V)>1e-7)return null;
+      // Atomic refusal: never clip a heap against a ship or structure and quietly lose mass.
+      if(opts.canPlace)for(let q=0;q<out.length;q+=6) {
+        if(!opts.canPlace(out[q]*H,out[q+1]*H,out[q+2]*H))return null;
+      }
 
       // Write the new lattice values and the material they are made of.
       const rhoLot = lot.massKg / V;

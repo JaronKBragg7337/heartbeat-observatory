@@ -1,0 +1,50 @@
+PASS all 15 marked port jobs spawn, including four traders and five seated controllers
+PASS port workers only reuse cached models; no additional GLB is requested
+PASS workers occupy their marked posts and face their work with Sit or Idle
+PASS Talk finds a loaded worker within reach
+PASS phone workers beyond 56 m stop drawing and animating
+PASS Talk never offers an unloaded worker
+PASS missing cached people do not trigger fallback downloads
+PASS spoil guard protects the ship hull and ramp runout
+PASS ship exclusion follows a moved ship and releases its former ground
+PASS port equipment outside building footprints rejects spoil
+PASS worker posts reject spoil
+PASS late-built ground crew rejects spoil
+PASS live practice equipment rejects spoil
+PASS removed targets release otherwise clear ground
+PASS 0.3 m walking step passes
+PASS 0.5 m walking step blocks
+PASS walking stays below a vertical 1.24 m ledge
+PASS facing a reachable ledge offers Climb
+PASS facing away from the ledge refuses Climb
+PASS deliberate action starts a climb
+PASS first 0.3 seconds brace without movement
+PASS one pull-up ends on the top in 1.2 seconds
+PASS normal walking step is 0.35 m
+PASS a reachable ledge under a low roof refuses Climb
+PASS a 1.85 m vertical ledge refuses Climb
+PASS airborne feet cannot start another pull-up
+PASS tunnel drop plans on its own floor, below the roof
+PASS Drop one pours on the tunnel floor in connected air
+PASS tunnel pour never changes the roof or surface
+PASS single tunnel lot is deposited with its exact original mass
+PASS tunnel lot balances exact kg and m3 ledgers
+PASS tunnel lattice independently matches its volume ledger
+PASS pour changes the lattice
+PASS no clear ground refuses atomically and retains the exact inventory
+PASS Pad 01 / Meridian rejects spoil
+PASS Pad 02 / shuttle rejects spoil
+PASS Pad 03 / courier rejects spoil
+PASS Supply depot rejects spoil
+PASS Open market rejects spoil
+PASS Port control rejects spoil
+PASS Fuel farm rejects spoil
+PASS Cargo staging rejects spoil
+PASS Port beacon sign rejects spoil
+PASS exact pour footprint guard refuses before any lattice write
+PASS a partly clear footprint still refuses the entire pour without changing mass or terrain
+PASS nearly full tunnel hopper selects clear ground by an actual mouth
+PASS whole hopper pour at the mouth succeeds
+PASS whole hopper mouth pour balances exactly
+PASS whole hopper mouth pour matches the independent lattice
+RESULT: 49 focused checks passed

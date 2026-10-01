@@ -4,6 +4,7 @@ import { Kit, resolveDepthLayers } from '../ship/shipKit.js';
 import { makePortMaterials, CELLS, plaque, groundDecal, textureBytes } from './portArt.js';
 import { moduleShell, depotInterior, towerInterior, market, detailFuel } from './portBuildings.js';
 import { PORT_ID, PORT_NAME, PADS, BUILDINGS, NPC_SPOTS, TOWER, TOWER_SPOTS, towerFloorAt } from './portSpec.js';
+import { TowerElevator } from './towerElevator.js';
 
 const segments=['abcdef','bc','abdeg','abcdg'];
 // Phone fittings retain bevelled silhouettes; sub-centimetre chamfers on thin
@@ -68,6 +69,7 @@ export class PortSystem {
   constructor(engine,registry,site,tier='low',sharedMaterials=null) {
     this.sharedMaterials=sharedMaterials; this.time=0; this.engine=engine; this.registry=registry; this.site=site; this.tier=tier;
     this.boxes=[]; this.doors=[]; this.assets=[]; this.npcSpots=NPC_SPOTS; this.towerSpots=TOWER_SPOTS;
+    this.elevator=new TowerElevator();
   }
   build() {
     const low=this.tier==='low', art=makePortMaterials(this.tier,this.sharedMaterials);
@@ -216,15 +218,12 @@ export class PortSystem {
     // and floor-only geometry. Architecture and steel fittings cast shadows.
     for(const m of this.root.children)m.castShadow=['metal','paint','wall','concrete'].some(key=>m.name.endsWith(':'+key));
     for(const door of this.doors) this.root.add(door.mesh);
+    this.buildElevator(low);
     // Fixed-size light pool, sorted by proximity. No per-fixture shadow maps.
     this.fixtures=[[-62,4.35,14],[-62,4.35,21],[-69,4.15,21],[-55,4.15,14],
       [-63,3.6,-39],[-57,3.6,-37],[-60,3.7,-37],...[-70,-62,-54,-46].map(x=>[x,2.75,53]),
-      // inside the tower: a lamp at every landing of the stair, and six over the cab (port-local x, y, z)
-      ...Array.from({length:TOWER.levels*2},(_,i)=>{
-        const n=Math.floor(i/2),back=i%2===0,F=TOWER.flight;
-        const y=back?n*TOWER.pitch+F.risers*F.rise+2.05:(n+1)*TOWER.pitch+2.05;
-        const z=back?(TOWER.back.z0+TOWER.back.z1)/2:(F.zLow+TOWER.inner.z1)/2;
-        return [TOWER.x,y,TOWER.z+z,12];}),      // a stairwell is 1-2 m across: a small lamp, or the walls burn out
+      // inside the tower: shaft lamps, and six over the cab (port-local x, y, z)
+      ...[1,7,13,19,24].map(y=>[TOWER.x,y,TOWER.z-2,12]),
       ...[[-3.3,4.2],[3.3,4.2],[-4.5,0.2],[4.5,0.2],[0,-3],[0,2.4]].map(([x,z])=>[TOWER.x+x,TOWER.cab.roofY-.4,TOWER.z+z,30])];
     this.lights=Array.from({length:low?2:3},()=>{
       const l=new THREE.PointLight(0xffd9ac,75,13,2);l.name='port practical light pool';this.root.add(l);return l;
@@ -249,17 +248,111 @@ export class PortSystem {
   }
   /**
    * The tower's floor under a world position, as the radius of that floor from the planet's centre, or null
-   * when the ground is the floor (everywhere but the stair and the cab). The walker's ground sampler asks this
-   * first, so you can climb the stair on the same contact rules as the hillside.
+   * when the ground is the floor (everywhere but the car and the cab). The walker's ground sampler asks this
+   * first, so the moving car and fixed cab use the same contact rules as the hillside.
    */
   towerFloorRadius(wx,wy,wz) {
     const p=this.site.toLocal({x:wx,y:wy,z:wz});
     const lx=p.x-TOWER.x, lz=p.z-TOWER.z;
     if(Math.abs(lx)>7||Math.abs(lz)>7||p.y<-.3||p.y>TOWER.cab.roofY)return null;
-    const y=towerFloorAt(lx,lz,p.y);
+    const fixed=towerFloorAt(lx,lz,p.y), car=this.elevator.floorAt(lx,lz,p.y);
+    const y=car===null?fixed:fixed===null?car:Math.max(car,fixed);
     if(y===null)return null;
     const q=this.site.toWorld(p.x,y,p.z);
     return Math.hypot(q.x,q.y,q.z);
+  }
+  buildElevator(low) {
+    const T=TOWER,C=T.car,k=new PortKit(low);
+    k.box('floor',0,-.07,-1,2.2,.14,2.6);
+    k.box('steelDark',0,C.height,-1,2.2,.08,2.6);
+    for(const x of [-1.06,1.06]) {
+      k.box('steelDark',x,.48,-1,.08,.96,2.6);
+      for(let z=-2.2;z<.3;z+=.25) k.box('steel',x,1.74,z,.035,1.5,.035);
+      k.box('steel',x,1,-1,.075,.065,2.6);
+    }
+    k.box('steelDark',0,.48,-2.26,2.2,.96,.08);
+    for(let x=-1;x<=1;x+=.25)k.box('steel',x,1.74,-2.26,.035,1.5,.035);
+    k.box('steel',0,1,-2.26,2.2,.065,.075);
+    for(const x of [-.86,.86])k.box('steelDark',x,1.15,.26,.48,2.3,.08);
+    k.box('glowWhite',0,2.54,-1,.8,.02,.2);
+    k.box('glowCyan',.8,1.1,.315,.12,.12,.02);
+    this.carRoot=k.toGroup(this.materials,{name:'tower elevator car',cast:!low,receive:true});
+    this.root.add(this.carRoot);
+    this.liftDoors=[];
+    for(const y of [0,T.cab.floorY,null]) {
+      const dk=new PortKit(low);
+      dk.box('steel',0,1.15,0,.6,2.3,.08);
+      // Brushed plate ribs give the door a clear, solid surface without coplanar skins.
+      dk.box('steel',.22,1.1,.052,.035,.25,.025);
+      const leaf=dk.toGroup(this.materials).children[0];
+      const mesh=new THREE.InstancedMesh(leaf.geometry,leaf.material,2);
+      mesh.name=y===null?'car pocket doors':'landing pocket doors '+y;
+      mesh.frustumCulled=false;
+      (y===null?this.carRoot:this.root).add(mesh);
+      this.liftDoors.push({y,mesh});
+    }
+    this.updateElevatorVisuals();
+  }
+  updateElevatorVisuals() {
+    const T=TOWER,e=this.elevator;
+    this.carRoot.position.set(T.x,e.y,T.z);
+    for(const d of this.liftDoors) {
+      const open=d.y===null?e.open:e.landingOpen(d.y);
+      d.mesh.position.set(d.y===null?0:T.x,d.y??0,(d.y===null?0:T.z)+(d.y===null?.22:.45));
+      for(let i=0;i<2;i++) {
+        // Instances keep a right-handed basis so both leaves retain outward faces.
+        const sign=i?1:-1,m=new THREE.Matrix4();
+        m.setPosition(sign*(.3+open*.62),0,0);d.mesh.setMatrixAt(i,m);
+      }
+      d.mesh.instanceMatrix.needsUpdate=true;
+    }
+  }
+  elevatorAction(walker) {
+    const p=this.site.toLocal(walker.worldPos),T=TOWER,e=this.elevator;
+    const x=p.x-T.x,z=p.z-T.z;
+    if(e.contains(x,z,.05)&&Math.abs(p.y-e.y)<.25) {
+      if(e.phase==='moving'||e.phase==='closing') return {label:'Lift in motion',run:()=>{}};
+      const destination=e.y<1?T.cab.floorY:0;
+      return {label:destination?'Lift to control cab (E)':'Lift to lobby (E)',run:()=>e.request(destination)};
+    }
+    for(const y of [0,T.cab.floorY]) if(Math.abs(p.y-y)<.4&&Math.abs(x)<1.5&&z>.4&&z<2.1) {
+      return {label:e.landingOpen(y)>.95?'Lift open · step inside':'Call lift (E)',run:()=>e.request(y)};
+    }
+    return null;
+  }
+  tickElevator(dt,walker,collide) {
+    const T=TOWER,e=this.elevator,p=this.site.toLocal(walker.worldPos),oldY=e.y;
+    const x=p.x-T.x,z=p.z-T.z;
+    if(collide&&e.contains(x,z)&&p.y>=oldY&&p.y+walker.heightM>oldY+T.car.height-.04) {
+      p.y=oldY+T.car.height-walker.heightM-.04;
+      Object.assign(walker.worldPos,this.site.toWorld(p.x,p.y,p.z));
+      const up=this.site.up,v=walker.velocity,d=v.x*up.x+v.y*up.y+v.z*up.z;
+      if(d>0){v.x-=up.x*d;v.y-=up.y*d;v.z-=up.z*d;}
+    }
+    const rider=collide&&e.contains(x,z)&&Math.abs(p.y-oldY)<.3;
+    const sill=collide&&Math.abs(x)<.6+walker.radiusM&&Math.abs(z-.35)<walker.radiusM+.1&&Math.abs(p.y-oldY)<.3;
+    const dy=e.tick(dt,sill);
+    if(rider&&dy) {
+      Object.assign(walker.worldPos,this.site.toWorld(p.x,p.y+dy,p.z));
+      walker.velocity={x:0,y:0,z:0};walker.grounded=true;
+    }
+    this.updateElevatorVisuals();
+  }
+  elevatorBoxes() {
+    const T=TOWER,e=this.elevator,C=T.car;
+    const b=(x0,x1,z0,z1,y0,y1)=>({x0:T.x+x0,x1:T.x+x1,z0:T.z+z0,z1:T.z+z1,y0,y1});
+    const boxes=[b(C.x0,C.x0+.08,C.z0,C.z1,e.y,e.y+C.height),b(C.x1-.08,C.x1,C.z0,C.z1,e.y,e.y+C.height),
+      b(C.x0,C.x1,C.z0,C.z0+.08,e.y,e.y+C.height),
+      b(C.x0,-.6,.22,.38,e.y,e.y+2.3),b(.6,C.x1,.22,.38,e.y,e.y+2.3)];
+    const leaves=(open,y,z0,z1)=> {
+      if(open>=.96)return;
+      for(const sign of [-1,1]) {
+        const centre=sign*(.3+open*.62);boxes.push(b(centre-.3,centre+.3,z0,z1,y,y+2.3));
+      }
+    };
+    for(const y of [0,T.cab.floorY])leaves(e.landingOpen(y),y,.41,.49);
+    leaves(e.open,e.y,.18,.26);
+    return boxes;
   }
   updateDisplays() {
     const occupied=this.padOccupancy?.()||[];
@@ -293,6 +386,7 @@ export class PortSystem {
     }
   }
   tick(dt,walker,collide=true,holdDoors=false) {
+    if(holdDoors)this.updateElevatorVisuals();else this.tickElevator(dt,walker,collide);
     const p=this.site.toLocal(walker.worldPos), r=walker.radiusM;
     this.time+=dt;
     const nearby=this.fixtures.map(f=>({f,d:Math.hypot(p.x-f[0],p.y+1.2-f[1],p.z-f[2])})).sort((a,b)=>a.d-b.d);
@@ -304,7 +398,7 @@ export class PortSystem {
       d.mesh.position.set(a.x+d.progress*(a.doorW+.2),0,d.baseZ);
     }
     if(!collide)return;
-    const boxes=this.boxes.concat(this.doors.filter(d=>d.progress<.96).map(d=>({x0:d.asset.x-d.asset.doorW/2+d.progress*(d.asset.doorW+.2),x1:d.asset.x+d.asset.doorW/2+d.progress*(d.asset.doorW+.2),z0:d.baseZ-.06,z1:d.baseZ+.06,y0:0,y1:2.8})));
+    const boxes=this.boxes.concat(this.elevatorBoxes(),this.doors.filter(d=>d.progress<.96).map(d=>({x0:d.asset.x-d.asset.doorW/2+d.progress*(d.asset.doorW+.2),x1:d.asset.x+d.asset.doorW/2+d.progress*(d.asset.doorW+.2),z0:d.baseZ-.06,z1:d.baseZ+.06,y0:0,y1:2.8})));
     let pushed=false;
     for(const b of boxes) {
       if(p.y>=b.y1 || p.y+walker.heightM<=b.y0)continue;

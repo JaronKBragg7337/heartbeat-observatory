@@ -16,7 +16,7 @@ const CSS = `
   border: 1px solid rgba(240,185,120,.6); border-radius: 12px; font: inherit; font-size: 12px; letter-spacing: .4px; min-height: 46px; padding: 8px 12px; text-align: left; line-height: 1.25; }
 #crew-ui .cbtn:active, #crew-ui .cbtn.on { background: rgba(240,185,120,.3); }
 #crew-ui .cbtn[disabled] { opacity: .45; }
-#crew-talk { position: fixed; display: none; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(118px + env(safe-area-inset-bottom, 0px)); min-width: 116px; text-align: center !important; }
+#crew-talk { position: fixed; display: none; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(174px + env(safe-area-inset-bottom, 0px)); min-width: 116px; text-align: center !important; }
 #crew-panel { position: fixed; display: none; pointer-events: auto; left: 50%; transform: translateX(-50%);
   bottom: calc(66px + env(safe-area-inset-bottom, 0px)); width: min(380px, calc(100vw - 24px)); max-height: min(calc(100vh - 150px), 560px); overflow-y: auto;
   background: rgba(14,10,7,.9); backdrop-filter: blur(10px); border: 1px solid rgba(240,185,120,.45); border-radius: 14px; padding: 10px 11px 11px; color: #ead9c6; font-size: 12px; line-height: 1.45; }
@@ -37,6 +37,7 @@ export class CrewUI {
   /** @param crew CrewSystem, @param o { ship, walker, isTouch } */
   constructor(crew, o) {
     this.crew = crew; this.ship = o.ship; this.walker = o.walker; this.isTouch = !!o.isTouch;
+    this.portPeople = o.portPeople || null;
     this.target = null; this.open = false; this.view = 'main'; this._sig = ''; this._accum = 0; this.reply = '';
     this._build();
     crew.onSay = (name, text) => this.say(name, text);
@@ -74,7 +75,7 @@ export class CrewUI {
     this._accum += dt;
     if (this._accum < 0.2) return;
     this._accum = 0;
-    const near = this.crew.nearest(this.walker.worldPos);
+    const near = this.crew.nearest(this.walker.worldPos) || (!this.ship.aboard && this.portPeople?.nearest(this.walker.worldPos));
     if (this.open) {
       if (!near || near !== this.target) { this.close(); this.target = near; }
       else this._draw();
@@ -99,9 +100,12 @@ export class CrewUI {
     if (sig === this._sig && this.panel.style.display === 'block') return;
     this._sig = sig;
     const def = m.def, c = this.crew, ship = this.ship;
-    let h = `<div class="hd"><img src="/homes/people/${m.personId}.jpg" alt=""><div><b>${esc(m.name)}</b><span>${esc(def.title)} · skill ${Math.round(def.skill * 100)}%</span></div><button class="cbtn x" data-a="close">✕</button></div>`;
+    const skill=m.status==='worker'?'':` · skill ${Math.round(def.skill*100)}%`;
+    let h = `<div class="hd"><img src="/homes/people/${m.personId}.jpg" alt=""><div><b>${esc(m.name)}</b><span>${esc(def.title)}${skill}</span></div><button class="cbtn x" data-a="close">✕</button></div>`;
     if (this.reply) h += `<div class="say">${esc(this.reply)}</div>`;
-    if (m.status === 'candidate') {
+    if (m.status === 'worker') {
+      h += `<p>${esc(m.line)}</p><button class="cbtn" data-a="close">Close</button>`;
+    } else if (m.status === 'candidate') {
       h += `<p>${esc(def.pitch)}</p><p class="stat">Works at ${Math.round(def.skill * 100)}% of a good hand: about ${thinkDelay(def.skill).toFixed(1)} s to react, and a little off in the aim. Stays aboard until you say otherwise.</p>`;
       h += `<div class="col"><button class="cbtn" data-a="hire">Hire ${esc(m.name)}</button><button class="cbtn" data-a="close">Not now</button></div>`;
     } else {

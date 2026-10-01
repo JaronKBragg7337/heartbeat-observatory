@@ -84,6 +84,11 @@
     bottom: calc(120px + env(safe-area-inset-bottom, 0px));
     min-width: 116px; min-height: 44px; color: #9ce6ef; border-color: #63e0ff88;
   }
+  #btn-climb {
+    display:none; right:calc(146px + env(safe-area-inset-right,0px));
+    bottom:calc(14px + env(safe-area-inset-bottom,0px));
+    min-width:96px;min-height:52px;color:#9ce6ef;border-color:#63e0ff88;
+  }
   #btn-settings {
     top: calc(10px + env(safe-area-inset-top, 0px));
     right: calc(10px + env(safe-area-inset-right, 0px));
@@ -260,6 +265,7 @@
 <button class="btn" id="btn-action">Dig</button>
 <button class="btn" id="btn-tool">Shovel</button>
 <button class="btn" id="btn-drop-all" title="Pour all carried soil as one heap (R)">Drop all · R</button>
+<button class="btn" id="btn-climb" title="Pull onto a reachable ledge (C)">Climb (C)</button>
 
 <div id="settings-panel">
   <h2>Settings</h2>

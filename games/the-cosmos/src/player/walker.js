@@ -69,16 +69,16 @@ export class Walker {
     this.groundSampler = null;
 
     /** Highest ledge the legs will step onto without a jump, metres. */
-    this.stepM = opts.stepM || 0.5;
-    /** Highest wall a person can scramble over by walking into it (hands and knees), metres. */
-    this.mantleM = opts.mantleM || 2.2;
+    this.stepM = opts.stepM ?? 0.35;
+    /** Deliberate pull-up limit, measured from the starting feet, metres. */
+    this.mantleM = opts.mantleM ?? 1.5;
     /**
      * Optional (x,y,z) -> bool. When it says the ground here has been dug or dumped on, the
      * whole body (shins, hips, shoulders, head) is kept out of rock, not just the feet.
      */
     this.collisionActive = null;
     this.lastMantle = 0;
-    this._climbT = 0;                   // seconds spent scrambling since last on the ground
+    this._climb = null;
   }
 
   /**
@@ -169,6 +169,9 @@ export class Walker {
     const v = this.velocity;
 
     const f = this.updateFrame();
+    if(input.climb&&!this._climbHeld&&!this._climb)this.requestClimb();
+    this._climbHeld=!!input.climb;
+    if(this._climb) { this._tickClimb(dt);this.updateFrame();return; }
     const r = Math.hypot(p.x, p.y, p.z) || 1;
     // Gravity points at the centre of mass, which is the centre of the body.
     const gMag = gravityAtRadius(body, r);
@@ -233,7 +236,7 @@ export class Walker {
     const tangentSpeed = Math.hypot(vTanX, vTanY, vTanZ);
     const snapReach = this.grounded ? Math.max(0.35, tangentSpeed * dt * 2.2) : 0.04;
 
-    if (ground && ground.distance <= snapReach) {
+    if (ground && ground.distance >= -this.stepM && ground.distance <= snapReach) {
       // Land: rest a hair ABOVE the surface, not exactly on it. Sitting on the
       // zero crossing puts density at ~0, where float noise can read negative
       // and trip the solid-push backstop below — which is what made the body
@@ -244,7 +247,7 @@ export class Walker {
       const vd = v.x * (nx / gl) + v.y * (ny / gl) + v.z * (nz / gl);
       if (vd < 0) { v.x -= (nx / gl) * vd; v.y -= (ny / gl) * vd; v.z -= (nz / gl) * vd; }
       this.grounded = true;
-      this._climbT = 0;
+
       this.groundMaterial = ground.material;
       this.groundFromMesh = !!ground.fromMesh;
       normalAt(body, nx, ny, nz, 0.5, this.groundNormal);
@@ -288,8 +291,7 @@ export class Walker {
         const n = out.normal;
         const vd = v.x * n.x + v.y * n.y + v.z * n.z;
         if (vd < 0) { v.x -= n.x * vd; v.y -= n.y * vd; v.z -= n.z * vd; }
-        // Walking into a wall whose top is within reach: get over it (shoulder-height, hands and knees).
-        if (mag > 0.1 && out.wall) this._mantle(nx, ny, nz, out.wall, wishX, wishY, wishZ, dt, v, gx, gy, gz);
+
       }
     }
 
@@ -307,7 +309,7 @@ export class Walker {
     const body = this.body, ux = f.up.x, uy = f.up.y, uz = f.up.z;
     const ex = f.east.x, ey = f.east.y, ez = f.east.z, nx_ = f.north.x, ny_ = f.north.y, nz_ = f.north.z;
     let pushed = false, wall = null, last = { x: 0, y: 1, z: 0 };
-    const levels = [[0.38, 0.30], [0.90, 0.30], [1.38, 0.29], [1.64, 0.20]];
+    const levels = [[0.38, this.radiusM], [0.90, this.radiusM], [1.38, this.radiusM], [1.64, 0.20]];
     for (let iter = 0; iter < 3; iter++) {
       let hit = false;
       for (let li = 0; li < levels.length; li++) {
@@ -319,7 +321,11 @@ export class Walker {
           if (d >= -0.004) continue;
           const n = normalAt(body, qx, qy, qz, 0.07);
           const push = Math.min(0.28, -d + 0.01);
-          x += n.x * push; y += n.y * push; z += n.z * push;
+          const nuPush=n.x*ux+n.y*uy+n.z*uz;
+          const wallPush=nuPush>0&&nuPush<.87;
+          x += (n.x-(wallPush?ux*nuPush:0))*push;
+          y += (n.y-(wallPush?uy*nuPush:0))*push;
+          z += (n.z-(wallPush?uz*nuPush:0))*push;
           hit = true; pushed = true; last = n;
           // Anything whose normal leans well away from vertical is a wall for the purpose of getting over it
           // (a bucket's spherical floor is a 55-degree wall, and no one walks up one of those).
@@ -341,39 +347,67 @@ export class Walker {
     return { x, y, z, pushed, normal: last, wall };
   }
 
-  /**
-   * Over a wall by walking into it. Finds the lowest height above the feet at which there is a
-   * body's worth of free space just beyond the wall; if that is within reach, rise to it.
-   */
-  _mantle(x, y, z, n, wishX, wishY, wishZ, dt, v, gx, gy, gz) {
-    // A scramble lasts a second or so of effort, not forever: blocked, you slide back down.
-    if (this._climbT > 1.3) return;
-    const body = this.body, ux = -gx, uy = -gy, uz = -gz;
-    // The wall's horizontal direction, pointing out of the rock.
-    const nu = n.x * ux + n.y * uy + n.z * uz;
-    let hx = n.x - ux * nu, hy = n.y - uy * nu, hz = n.z - uz * nu;
-    const hl = Math.hypot(hx, hy, hz); if (hl < 1e-6) return;
-    hx /= hl; hy /= hl; hz /= hl;
-    // Only when the wish points INTO the wall.
-    const into = -(wishX * hx + wishY * hy + wishZ * hz);
-    if (into <= 0.15 * this.walkSpeed) return;
-    const ox = x - hx * 0.62, oy = y - hy * 0.62, oz = z - hz * 0.62;     // just beyond the wall face
-    for (let h = 0.3; h <= this.mantleM + 1e-9; h += 0.1) {
-      const free = (hh) => density(body, ox + ux * hh, oy + uy * hh, oz + uz * hh) > 0.02;
-      if (free(h) && free(h + 0.6) && free(h + 1.2) && free(h + 1.6)) {
-        // Rise, and lean onto the ledge.
-        const climb = 2.7;
-        const vRad = v.x * gx + v.y * gy + v.z * gz;
-        v.x = v.x - gx * vRad - gx * climb;
-        v.y = v.y - gy * vRad - gy * climb;
-        v.z = v.z - gz * vRad - gz * climb;
-        v.x -= hx * 0.9; v.y -= hy * 0.9; v.z -= hz * 0.9;
-        this.grounded = false;
-        this.lastMantle = h;
-        this._climbT += dt;
-        return;
+  /** Capsule clearance at a potential landing or along the pull-up path. */
+  _bodyFree(p,f) {
+    for(const h of [.12,.4,.9,1.38,1.7,this.heightM]) {
+      for(let a=0;a<8;a++) {
+        const rad=h<.2?.18:h>1.6?.2:this.radiusM;
+        const ca=Math.cos(a*Math.PI/4)*rad,sa=Math.sin(a*Math.PI/4)*rad;
+        if(density(this.body,p.x+f.up.x*h+f.east.x*ca+f.north.x*sa,
+          p.y+f.up.y*h+f.east.y*ca+f.north.y*sa,
+          p.z+f.up.z*h+f.east.z*ca+f.north.z*sa)<-.004)return false;
       }
     }
+    return true;
+  }
+  climbTarget() {
+    if(!this.grounded||this._climb)return null;
+    const p=this.worldPos,f=this.updateFrame(),up=f.up;
+    const dir={x:f.north.x*Math.cos(this.yaw)+f.east.x*Math.sin(this.yaw),
+      y:f.north.y*Math.cos(this.yaw)+f.east.y*Math.sin(this.yaw),
+      z:f.north.z*Math.cos(this.yaw)+f.east.z*Math.sin(this.yaw)};
+    // There must be a ledge in front of the boots, not just empty air to jump into.
+    const at=(d,h)=>({x:p.x+dir.x*d+up.x*h,y:p.y+dir.y*d+up.y*h,z:p.z+dir.z*d+up.z*h});
+    if(![.45,.65,.85].some(d=>{const q=at(d,.4);return density(this.body,q.x,q.y,q.z)<-.02;}))return null;
+    for(const d of [.55,.75,.95,1.15,1.35]) {
+      const high=at(d,this.mantleM+.12);
+      if(density(this.body,high.x,high.y,high.z)<=0)continue;
+      const g=groundBelow(this.body,high.x,high.y,high.z,this.mantleM+.3);
+      if(!g)continue;
+      const h=(g.point.x-p.x)*up.x+(g.point.y-p.y)*up.y+(g.point.z-p.z)*up.z;
+      if(h<=this.stepM+.03||h>this.mantleM)continue;
+      const target={x:g.point.x+up.x*.02,y:g.point.y+up.y*.02,z:g.point.z+up.z*.02};
+      if(!this._bodyFree(target,f))continue;
+      // Rise vertically first, then pull onto the ledge. The entire route must clear a roof.
+      let clear=true;
+      for(let k=1;k<=12;k++) {
+        const t=k/12, lift=Math.min(1,t/.65),lean=Math.max(0,(t-.65)/.35);
+        const q=at(d*lean,(h+.04)*lift);
+        if(!this._bodyFree(q,f)){clear=false;break;}
+      }
+      if(clear)return {target,height:h,dir,up,distance:d};
+    }
+    return null;
+  }
+  requestClimb() {
+    const target=this.climbTarget();
+    if(!target)return {ok:false,msg:'No reachable ledge; dig a ramp'};
+    this._climb={...target,start:{...this.worldPos},elapsed:0};
+    this.lastMantle=target.height;
+    this.velocity={x:0,y:0,z:0};
+    return {ok:true,msg:'Climbing...'};
+  }
+  _tickClimb(dt) {
+    const c=this._climb;c.elapsed+=dt;
+    // 0.35 s to brace, then 0.85 s to lift and pull. Holding the key cannot chain climbs.
+    const t=clamp((c.elapsed-.35)/.85,0,1);
+    const lift=Math.min(1,t/.65),lean=Math.max(0,(t-.65)/.35);
+    const smooth=u=>u*u*(3-2*u);
+    const p={};
+    for(const k of ['x','y','z'])p[k]=c.start[k]+c.up[k]*(c.height+.04)*smooth(lift)+c.dir[k]*c.distance*smooth(lean);
+    if(t>0&&!this._bodyFree(p,this._frame)){this._climb=null;return;}
+    Object.assign(this.worldPos,p);this.velocity={x:0,y:0,z:0};this.grounded=false;
+    if(t===1){Object.assign(this.worldPos,c.target);this._climb=null;this.grounded=true;}
   }
 
   /** Eye position in f64 world metres — what the camera is anchored to. */

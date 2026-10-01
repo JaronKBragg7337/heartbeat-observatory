@@ -59,11 +59,10 @@ waiting to be used. Drag the right half to look; tap it to jump.
 first/third person, `G` toggles the debug layer.
 
 **Digging.** Look where you want to cut and tap the action button (`E`) to dig; hold it to put loads down (`Q` drops one).
-**Drop all** (`R`) pours everything you carry as one heap beside the hole. The small
+**Drop all** (`R`) pours everything you carry as one heap on clear ground. Underground it tries your current floor, then clear ground by the connected hole mouth. The small
 chip above the button (or `1` `2` `3`, or Settings) changes tool: hand spade, shovel, excavator bucket. The amber ring is
 where the next bite goes (it lies on the surface you are aiming at and is as wide as the bite); the cyan ring is where the
-next load will land. Look down for a pit, level for a tunnel, up for a ceiling. Walk into a wall about shoulder high to
-scramble over it.
+next load will land. Look down for a pit, level for a tunnel, up for a ceiling. Normal walking steps up to 0.35 m. Face a reachable ledge and use **Climb** (`C` outside the ship): 0.35 s to brace, 0.85 s to pull up, maximum 1.5 m from the starting feet. Higher walls need a ramp you dig.
 
 ---
 
@@ -83,7 +82,7 @@ That turns "there's a rock stuck in a hill somewhere" into
 and a reproduction step.
 
 **The goal is to never need it.** `test/validate.mjs` is the first line of
-defence and runs without anyone looking: 281 checks (2026-10-01) covering placement,
+defence and runs without anyone looking: 331 checks (2026-10-01) covering placement,
 collision, dimension drift, physics correctness, determinism, the ship, digging and spoil, the port and its tower.
 
 ---
@@ -106,7 +105,8 @@ src/ship/                the MSV Meridian: see "The ship" below
 test/validate.mjs        the checks that mean nobody has to go looking
 test/ship-checks.mjs     the ship's share of them
 test/dig-checks.mjs      digging, spoil, the drawn ground, walking in it, the tiers that tile the rest
-test/port-checks.mjs     the port's share, including the control tower stair and cab
+test/port-checks.mjs     the port's share, including the control tower elevator and cab
+test/leftovers-checks.mjs deliberate Climb, cached port workers and protected tunnel/mouth pours
 ```
 
 ---
@@ -158,7 +158,7 @@ not human lifting strength; there is no cart vehicle model yet. The HUD always s
 A bite that would exceed capacity is refused before changing any ground, with a message offering Drop all or a single drop.
 
 Drop all combines the lots (including their material composition) and calls the existing cone pour once. The heap planner
-sizes its clearance from the entire load, including when standing deep below the rim. Failed pours retain the inventory.
+sizes its clearance from the entire load. It checks port pavement, structures, equipment and the moving ship, and the deposit solver checks every proposed lattice write before applying any of them. Underground pours start at the local floor and stop beneath its roof. If the load will not fit, the search follows connected cuts to a surface opening. Failed pours retain the inventory.
 The ledger sums binary lot quantities as integers, so mixed single drops and whole-hopper pours balance to **exactly zero**
 in both kilograms and cubic metres; the lattice itself is still independently audited at its existing floating-point precision.
 
@@ -180,10 +180,11 @@ The field at Valles is **procedural geology, not a surveyed canyon model**. This
 it does not supply mapped canyon walls. Faint LOD transition bands remain. Phone GPU performance has not been measured
 on physical hardware, and a large one-pour heap can pause the main thread (23 tonnes took ~0.8 s in Node).
 
-The body is more than the feet now (`walker.js`): four rings of probes (shin, hip, chest, head) and one over the crown keep you
-out of rock, so tunnel walls are walls and a roof is a roof; the feet step up a ledge of 0.5 m; and walking into a wall whose top
-is within 2.2 m scrambles you over it (for about 1.3 s of effort). A shaft deeper than about 3 m is a shaft: dig a ramp or pile
-spoil to climb out.
+The body is more than the feet (`walker.js`): four rings of probes and one over the crown keep it out of rock.
+Normal walking has a **0.35 m** step limit; steep wall contacts cannot push it upward like a ladder. **Climb** (`C`,
+or its separate phone button) requires grounded feet, a ledge in front, a clear body-sized landing and a clear route.
+It braces for **0.35 s**, pulls up over **0.85 s**, and reaches at most **1.5 m from the starting feet**. Jumping is still
+Mars gravity. A higher wall needs a ramp you dig; no ladder/tool system was added.
 
 ### How a hole is drawn (and what was wrong)
 
@@ -211,7 +212,7 @@ and shading agrees across seams; looking at the hole from above and from inside,
 nobody touched is never discarded; a poured heap is low (height under 0.8 of radius), grows outward as ONE heap, stands no
 steeper than 39 degrees, sits on the ground with no air under it, and the books balance; a dig-and-dump shift with the bucket gets
 past 3 m and the spoil never refills the hole; you can stand in a pit and turn through a full circle without any part of you in
-rock; the wall of a 1.8 m pit can be scrambled over and a 3 m shaft cannot; a bite aimed level goes into the wall; a tunnel can
+rock; walking cannot scramble out of a 1.8 m pit and a 3 m shaft remains a shaft; a bite aimed level goes into the wall; a tunnel can
 be walked; aiming up finds the ceiling; the near and mid tiers together draw every point within 80 m; nothing within 60 m is
 paper-thin.
 
@@ -424,31 +425,31 @@ still await Claude's review. Use `cosmos.portTour()` to cycle 45 fixed review ca
 `cosmos.portTour('off')` to return to play. Full causes, limits, registry IDs and viewpoints:
 [Mars Port review](docs/MARS-PORT-REVIEW.md).
 
-### The control tower can be climbed (2026-10-01)
+### The tower elevator and port workers (uncommitted review, 2026-10-01)
 
-Jaron: "The tall tower you can go in the bottom but I can't actually go up the tower and look around... eventually certain
-people or NPCs will be at the top 'working'." Now you can, on foot, and the top is a real room.
+The tower now has a two-stop elevator. Call it at the lobby or glass cab with the contextual button / **E**,
+step inside, then press **Lift to control cab** or **Lift to lobby**. Landing doors and the car door close before
+travel; the sill light curtain holds them open if a body is in the doorway. A **2.2 x 2.6 m** car carries the real
+walker to the unchanged **22.5 m** cab floor. Rails, brackets and shaft markings remain visible through its grille.
+Travel peaks at **2.2 m/s**, accelerates at **1.4 m/s?**, and doors take **0.8 s** to open or close.
 
-* **The way up.** From the lobby the stair core stands straight ahead of the entrance (a 1.2 x 2.3 m door). Inside it: five levels
-  of two switchback flights, 120 risers of 0.1875 m (the Meridian's riser) over 0.27 m treads (34.8 degrees; 2R+T = 0.645), a 0.3 m
-  spine between the flights, a landing at every turn, closed risers with a painted nosing, a handrail each side, a lamp over
-  every landing, 2.2 m of headroom or more everywhere. The core goes up through the lobby roof (the roof is cut round it) as a
-  slim white mast with three aviation bands and lit windows. About 25 s at a run.
-* **The cab** at 22.5 m: 12.8 m square, glazed all round (24 panes) above a 0.9 m console ledge, an eave over it, standing
-  on struts down the mast. The stair core stands in the middle of the room with its door facing the room and status screens on
-  its sides. Seven consoles along the glass (three facing the pads, two a side for approach and weather) with a swivel chair
-  behind each, a deck floor with a hazard edge, ceiling lamps, roof gear (radar housing, mast with beacon, dish).
-* **People who will work here.** `TOWER_SPOTS` (portSpec.js) lists eight places, port-local with the way they face: five seats at
-  the consoles, a supervisor and a runner and a lookout standing. The validator proves each is reachable on foot with a body-sized
-  clearance, that the standing ones are clear of every solid within 45 cm, that each seat is a real chair with a console in front
-  and a way to its back, and that from every seat the way out through the glass is open at a seated eye.
-* **One truth for the floor.** `TOWER` and `towerFloorAt()` in `portSpec.js` say where every step and landing is; the drawing,
-  the collision boxes and the walker's ground sampler (`PortSystem.towerFloorRadius`, called first by main.js's ground
-  sampler) all read it. The validator walks it with the real planet walker: lobby door, ten flights, the cab, in under 80 s.
-* **Budget.** The tower went from 5.5k to 9.6k triangles on the phone tier (the cab furniture is box-built there and uses the
-  ship's chair at eight cushion segments on desktop). Port totals: phone 36.4k triangles / 13 calls / 3.3 MB (cap raised
-  from 35k / 12 / 4 MB to 40k / 13 / 4 MB: one call is the cab glass), desktop 61.5k / 13 / 5.6 MB (cap 65k / 13 / 6 MB).
-  The old tower's tapered instrument shaft, braces, gallery rails and opaque window band were replaced, not kept.
+All ten stair flights, their soffits, the central spine and intermediate landings are removed. The solid underside
+of the cab deck is cut round the shaft too. The cab retains its glazing, consoles, chairs and eight worker spots.
+Five controllers sit facing their consoles; three cab staff stand, with a depot clerk, reception clerk, arrival guide
+and four market traders elsewhere. They use the Loft's existing **Sit / Idle** clips and the crew's **Talk / T** panel,
+with short role-specific lines. The depot clerk's marked spot moved 1.4 m toward the worktop so it is usable from the counter.
+
+**Download reuse:** all 15 workers clone models already requested by the player/crew `PeopleLibrary`. No extra GLBs
+or textures are requested for them. Phone workers stop animating/drawing beyond 56 m and cast no sun shadows.
+This adds people rendering and animation work; it does not make those costs zero. The architecture alone measures
+**35,426 triangles / 19 calls / 3.25 MB geometry** on the low tier. The separate people costs and browser evidence
+are in [the leftovers review](docs/qa/2026-10-01/leftovers/REVIEW.md).
+
+`cosmos.portTour('list')` still lists **45** cameras. The five stair views are replaced by
+`tower-elevator-call`, `tower-elevator-car`, `tower-elevator-shaft`, `tower-elevator-cab-door` and `tower-elevator-exit`.
+Tours pause physics, show a review pose of the lift, and restore the original player/lift state on `portTour('off')`.
+`node test/validate.mjs` now includes the leftovers regressions: **331 checks** in total. The **49** focused
+worker, Climb and protected/tunnel-pour checks can also run with `node test/leftovers-checks.mjs`. All changes remain local and uncommitted for Claude/Jaron review.
 
 ## What is not done yet
 

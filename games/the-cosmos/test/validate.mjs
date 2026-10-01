@@ -611,6 +611,9 @@ if (!process.env.SKIP_PORT) await runPortChecks({ check, section, THREE, mars, F
 const { runCrewChecks } = await import('./crew-checks.mjs');
 if (!process.env.SKIP_CREW) await runCrewChecks({ check, section, THREE, mars, FIELD });
 
+const { runLeftoversChecks } = await import('./leftovers-checks.mjs');
+await runLeftoversChecks({ check, section });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));

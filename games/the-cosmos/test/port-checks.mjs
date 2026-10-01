@@ -55,8 +55,8 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     check('port, every pad and all six structures have stable registered IDs and measured sizes',registry.all().length===10&&registry.all().every(a=>a.measured&&a.id.startsWith('COS-MARS-')));
     const drift=port.assets.filter(a=>a.authored&&!registry.dimensionDrift(a.id).withinTolerance);
     check('port assets measure within 5 cm of their authored sizes',drift.length===0,JSON.stringify(drift.map(a=>[a.name,a.authored,a.measured])));
-    // 2026-10-01: 13 calls (the tower cab's glass is one more material), 40k triangles (a walkable 22 m stair and a furnished cab are about 4k of them)
-    check('phone port costs at most 13 draw calls, 40k triangles and 4 MB of geometry',port.stats.drawCalls<=13&&port.stats.triangles<40000&&port.stats.geometryBytes<4e6,JSON.stringify(port.stats));
+    // 2026-10-01: 19 calls including the moving car and three door leaves; geometry still stays under 40k triangles.
+    check('phone port costs at most 19 draw calls, 40k triangles and 4 MB of geometry',port.stats.drawCalls<=19&&port.stats.triangles<40000&&port.stats.geometryBytes<4e6,JSON.stringify(port.stats));
     // The production path receives the ship's already-uploaded textures. Test
     // identity with a real texture object even in this headless Node build.
     const {makePortMaterials,textureBytes}=await import('../src/port/portArt.js');
@@ -72,8 +72,8 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     check('control tower and depot roof equipment have silhouettes above the old bare shells',
       port.assets.find(a=>a.name==='Port control').measured.height>31&&port.assets.find(a=>a.name==='Supply depot').measured.height>7.5);
     const highPort=new PortSystem({scene:new THREE.Scene(),track:()=>{}},new Registry(),site,'high',shared).build();
-    check('high tier remains merged within 13 main calls, 65k triangles and 6 MB of geometry',
-      highPort.stats.drawCalls<=13&&highPort.stats.triangles<65000&&highPort.stats.geometryBytes<6e6,JSON.stringify(highPort.stats));
+    check('high tier remains merged within 19 main calls, 65k triangles and 6 MB of geometry',
+      highPort.stats.drawCalls<=19&&highPort.stats.triangles<65000&&highPort.stats.geometryBytes<6e6,JSON.stringify(highPort.stats));
     let footings=true;
     for(const a of BUILDINGS) for(const dx of [-a.w/2+.2,a.w/2-.2]) for(const dz of [-a.d/2+.2,a.d/2-.2]) footings&&=Math.abs(dens(a.x+dx,0,a.z+dz))<.01&&dens(a.x+dx,-.15,a.z+dz)<0;
     check('every structure and prop stands on surveyed solid ground, including every foundation corner',footings&&port.boxes.every(b=>b.y0===0||(b.id===BUILDINGS.find(a=>a.kind==='tower').id&&b.y0>=0)));
@@ -176,73 +176,47 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     check('tour holds both entrances open even from distant aerial review cameras',port.doors.every(d=>d.progress>.99));
     check('future NPC spaces stay clear of solid props',NPC_SPOTS.every(p=>!port.boxes.some(b=>p.x>b.x0-.4&&p.x<b.x1+.4&&p.z>b.z0-.4&&p.z<b.z1+.4)));
     const tour=makePortTour({engine,walker:w,ship:()=>sys,port,rebuild:()=>{}});
-    check('review tour retains original views and covers new interiors, traders, roofs and kilometre silhouette',tour('list').length===45&&['ship-ramp-ground','ship-ramp-looking-out','depot-door-inside','tower-door-outside','port-edge-grade','depot-stock','depot-service','depot-lift-cart','tower-reception','tower-stair-door','tower-stair-top','tower-cab-south','tower-cab','market-trader-4','port-one-km','earthworks-detail'].every(n=>tour('list').includes(n)),tour('list').join());
+    check('review tour retains original views and covers new interiors, traders, roofs and kilometre silhouette',tour('list').length===45&&['ship-ramp-ground','ship-ramp-looking-out','depot-door-inside','tower-door-outside','port-edge-grade','depot-stock','depot-service','depot-lift-cart','tower-reception','tower-elevator-call','tower-elevator-exit','tower-cab-south','tower-cab','market-trader-4','port-one-km','earthworks-detail'].every(n=>tour('list').includes(n)),tour('list').join());
     // ------------------------------------------------------------------------------------------------------
-    section('10b. The control tower: a real stair up to a real cab, walked on foot');
+    section('10b. The control tower: call, board, ride and leave the elevator');
     // ------------------------------------------------------------------------------------------------------
     {
       const {TOWER,TOWER_SPOTS,TOWER_SURFACES,towerFloorAt}=await import('../src/port/portSpec.js');
       const {CAB_FURNITURE}=await import('../src/port/portBuildings.js');
-      const F=TOWER.flight;
-      check('the stair is built to code: 0.1875 m risers (the Meridian\'s), 0.27 m treads, 2R+T between 0.57 and 0.65, under 38 degrees',
-        Math.abs(F.rise-.1875)<1e-9&&F.tread>=.25&&2*F.rise+F.tread>=.57&&2*F.rise+F.tread<=.65&&Math.atan(F.rise/F.tread)*180/Math.PI<38,
-        `slope ${(Math.atan(F.rise/F.tread)*180/Math.PI).toFixed(1)} deg`);
-      check('120 risers climb 22.5 m: five levels of two flights, landing to landing, and the cab floor is where the last landing is',
-        TOWER.levels*2*F.risers===120&&Math.abs(TOWER.levels*2*F.risers*F.rise-TOWER.cab.floorY)<1e-9&&TOWER.cab.floorY===22.5);
-      // the floor is one continuous surface: every flight ends exactly at the landing it meets
-      let joints=0,gap=0;
-      for(let n=0;n<TOWER.levels;n++){
-        const y0=n*TOWER.pitch,mid=y0+F.risers*F.rise,top=y0+TOWER.pitch;
-        const at=(x,z,y)=>towerFloorAt(x,z,y+.01,.05);
-        for(const [x,z,want] of [[-.7,F.zHigh+.001,mid],[.7,F.zHigh+.001,mid],[.7,F.zLow-.001,top],[-.7,F.zLow-.001,y0],[0,-4.5,mid]]){
-          const got=at(x,z,want); joints++; if(got===null||Math.abs(got-want)>.01)gap++;
-        }
-      }
-      check('every flight meets its landing to within 1 cm: no step, no gap in the climb',gap===0&&joints===25,`${gap} bad of ${joints}`);
-      // headroom: the next surface above any floor point is at least 2.1 m up, and the cab is 3.5 m under its roof
-      let tight=Infinity;
-      for(const s of TOWER_SURFACES){
-        for(let i=0;i<=4;i++)for(let j=0;j<=4;j++){
-          const x=s.x0+(s.x1-s.x0)*i/4,z=s.z0+(s.z1-s.z0)*j/4,y=s.yAt(x,z);
-          for(const o of TOWER_SURFACES){ if(o===s||x<o.x0||x>o.x1||z<o.z0||z>o.z1)continue;
-            const oy=o.yAt(x,z); if(oy>y+.3)tight=Math.min(tight,oy-y); }
-        }
-      }
-      check('2.1 m of headroom or more above every step and landing, and 3.5 m of cab under the roof',tight>=2.1&&TOWER.cab.roofY-TOWER.cab.floorY>=3.5,`tightest ${tight.toFixed(2)} m`);
-
-      // WALK IT. The real planet walker, the real contact rules, the real collision against the real boxes.
+      const e=port.elevator,C=TOWER.car;
+      check('both elevator door leaves preserve outward face winding',port.liftDoors.every(d=>{
+        const m=new THREE.Matrix4();
+        for(let i=0;i<2;i++){d.mesh.getMatrixAt(i,m);if(m.determinant()<=0)return false;}
+        return true;
+      }));
+      check('the 2.2 by 2.6 m car has 2.6 m headroom and a body-wide 1.2 m opening',Math.abs(C.x1-C.x0-2.2)<1e-9&&Math.abs(C.z1-C.z0-2.6)<1e-9&&C.height>=2.5&&TOWER.door.x1-TOWER.door.x0===1.2);
+      check('cab remains at 22.5 m; no switchback flights, spine or stacked landing floors remain',TOWER.cab.floorY===22.5&&!TOWER.flight&&TOWER_SURFACES.every(s=>!s.name.includes('flight')&&!s.name.includes('landing')));
+      check('an empty shaft is not a floor: no fixed support between lobby and cab',towerFloorAt(0,-1,12)===null&&e.floorAt(0,-1,12)===0);
+      e.request(TOWER.cab.floorY);const initial=e.y;e.tick(.2,true);
+      check('a body on the sill prevents closing and motion; a request cannot move through open doors',e.open===1&&e.y===initial&&e.phase==='closing');
       const wt=new Walker(mars);
-      const sampler=(dx,dy,dz,r)=>{const t=port.towerFloorRadius(dx*r,dy*r,dz*r);return t!==null?t:FIELD.surfaceRadiusFast(mars,dx,dy,dz);};
-      wt.groundSampler=sampler;
-      Object.assign(wt.worldPos,site.toWorld(TOWER.x,.02,TOWER.z+9)); wt.velocity={x:0,y:0,z:0}; wt.grounded=true; wt.yaw=site.heading; wt.updateFrame();
-      const to=(lx,lz)=>{ // steer toward tower-local (lx,lz); returns when within 0.3 m or out of frames
-        for(let f=0;f<700;f++){
-          const p=site.toLocal(wt.worldPos),dxl=TOWER.x+lx-p.x,dzl=TOWER.z+lz-p.z,dist=Math.hypot(dxl,dzl);
-          if(dist<.3)return true;
-          const fr=wt.updateFrame(),wx=site.right.x*dxl+site.back.x*dzl,wy=site.right.y*dxl+site.back.y*dzl,wz=site.right.z*dxl+site.back.z*dzl;
-          wt.yaw=Math.atan2(wx*fr.east.x+wy*fr.east.y+wz*fr.east.z,wx*fr.north.x+wy*fr.north.y+wz*fr.north.z);
-          wt.tick(1/60,{moveNorth:1}); port.tick(1/60,wt); frames++;
-          const q=site.toLocal(wt.worldPos); lowest=Math.min(lowest,q.y); if(!wt.grounded)airborne++;
-        }
-        return false;
-      };
-      let frames=0,lowest=1e9,airborne=0,ok=true,stuckAt='';
-      const way=(lx,lz,label)=>{ if(ok&&!to(lx,lz)){ok=false;const q=site.toLocal(wt.worldPos);stuckAt=`${label}: at ${(q.x-TOWER.x).toFixed(2)},${(q.z-TOWER.z).toFixed(2)} y ${q.y.toFixed(2)}`;} };
-      way(0,6.6,'lobby door'); way(0,1.6,'in front of the stair door'); way(0,-.1,'front landing');
-      for(let n=0;n<TOWER.levels&&ok;n++){
-        way(-.7,F.zLow-.1,`level ${n} flight A foot`); way(-.7,F.zHigh-.1,`level ${n} flight A head`);
-        way(0,-4.5,`level ${n} back landing`); way(.7,F.zHigh+.1,`level ${n} flight B foot`);
-        way(.7,F.zLow+.1,`level ${n} flight B head`); way(0,-.1,`level ${n} front landing`);
+      wt.groundSampler=(dx,dy,dz,r)=>port.towerFloorRadius(dx*r,dy*r,dz*r)??FIELD.surfaceRadiusFast(mars,dx,dy,dz);
+      Object.assign(wt.worldPos,site.toWorld(TOWER.x,.02,TOWER.z-1));wt.grounded=true;
+      let frames=0,error=0,interlocked=true;
+      for(;frames<1800;frames++) {
+        wt.tick(1/60,{});port.tick(1/60,wt);
+        const p=site.toLocal(wt.worldPos);error=Math.max(error,Math.abs(p.y-e.y-.02));
+        if(e.phase==='moving')interlocked&&=e.open===0&&e.landingOpen(0)===0&&e.landingOpen(TOWER.cab.floorY)===0;
+        if(e.phase==='open'&&e.y===TOWER.cab.floorY)break;
       }
-      const top=site.toLocal(wt.worldPos);
-      check('a person walks from the lobby door up all ten flights to the top landing, on foot, without being stopped or dropped',
-        ok&&Math.abs(top.y-TOWER.cab.floorY)<.2, ok?`ended at y ${top.y.toFixed(2)}`:`stuck - ${stuckAt}`);
-      check('and it takes under 80 seconds at a walk, never airborne for long and never below the floor it should be on',
-        frames/60<80&&lowest>-.3&&airborne<frames*.1, `${(frames/60).toFixed(0)} s, ${airborne} airborne frames, lowest ${lowest.toFixed(2)}`);
-      way(0,1.2,'out of the stair door'); way(0,3.0,'in the cab');
-      const inCab=site.toLocal(wt.worldPos);
-      check('through the stair door into the cab: standing on the 22.5 m floor, in the room',
-        ok&&Math.abs(inCab.y-TOWER.cab.floorY)<.1&&inCab.z-TOWER.z>2.5, `y ${inCab.y.toFixed(2)}, z ${(inCab.z-TOWER.z).toFixed(2)}`);
+      check('the real walker rides the moving floor to 22.5 m without teleporting or losing its feet',frames<1800&&error<.03&&interlocked,`${(frames/60).toFixed(2)} s, support error ${error}`);
+      const drive=(sign,n)=>{wt.yaw=site.heading;for(let i=0;i<n;i++){wt.tick(1/60,{moveNorth:sign});port.tick(1/60,wt);}};
+      drive(-1,130);const inCab=site.toLocal(wt.worldPos);
+      check('open landing and car doors let the walker leave into the furnished cab',Math.abs(inCab.y-TOWER.cab.floorY)<.1&&inCab.z-TOWER.z>2.5,JSON.stringify(inCab));
+      // Recall an empty car, then ride it back. Checks both stops and both door sets.
+      e.request(0);for(let i=0;i<1000;i++)port.tick(1/60,wt);
+      const closedTop=e.landingOpen(TOWER.cab.floorY)===0;
+      const before={...wt.worldPos};port.elevatorAction(wt);e.request(TOWER.cab.floorY);
+      for(let i=0;i<1000;i++)port.tick(1/60,wt);
+      const stayed=Math.hypot(wt.worldPos.x-before.x,wt.worldPos.y-before.y,wt.worldPos.z-before.z)<.001;
+      Object.assign(wt.worldPos,site.toWorld(TOWER.x,TOWER.cab.floorY+.02,TOWER.z-1));wt.velocity={x:0,y:0,z:0};
+      e.request(0);for(let i=0;i<1000;i++){wt.tick(1/60,{});port.tick(1/60,wt);}
+      check('empty recall leaves the waiting player at the cab, and a return rider reaches the lobby with doors open',closedTop&&stayed&&e.y===0&&e.open===1&&Math.abs(site.toLocal(wt.worldPos).y-.02)<.03);
 
       // CAB: who can stand where. Flood fill the cab floor at 10 cm with a 34 cm-radius body against the real boxes.
       const cabBoxes=port.boxes.filter(b=>b.y1>TOWER.cab.floorY+.2&&b.y0<TOWER.cab.floorY+1.7&&b.x1>TOWER.x-8&&b.x0<TOWER.x+8&&b.z1>TOWER.z-8&&b.z0<TOWER.z+8);
@@ -282,11 +256,11 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
         if(Math.abs(x-TOWER.x)>6.3||Math.abs(z-TOWER.z)>6.3)break;
         if(cabBoxes.some(b=>x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1&&y>b.y0&&y<b.y1&&!(Math.abs(x-s.x)<.3&&Math.abs(z-s.z)<.3)))return false;}return true;});
       check('from every seat the way out through the glass is open at eye height (consoles stay under a seated eye)',sights);
-      // the way in is not blocked: nothing solid stands in front of the stair door in the lobby
+      // the way in is not blocked: nothing solid stands in front of the elevator door in the lobby
       const front=port.boxes.filter(b=>b.y0<2.2&&b.x1>TOWER.x-.9&&b.x0<TOWER.x+.9&&b.z1>TOWER.z+TOWER.core.z1+.0&&b.z0<TOWER.z+TOWER.core.z1+1.6&&!(b.z0<=TOWER.z+TOWER.core.z1+.001&&b.y1>20));
-      check('nothing solid stands in front of the stair door in the lobby (a metre and a half clear, wall to wall)',front.length===0,front.map(b=>b.id).join());
+      check('nothing solid stands in front of the elevator door in the lobby (a metre and a half clear, wall to wall)',front.length===0,front.map(b=>b.id).join());
       // the lobby still works: a person from the entrance reaches the reception clerk's place and the door in the core is straight ahead
-      check('the clerk\'s place behind reception is clear and the stair door is straight ahead of the entrance',
+      check('the clerk\'s place behind reception is clear and the elevator door is straight ahead of the entrance',
         !port.boxes.some(b=>b.y0<1&&-63.9>b.x0-.4&&-63.9<b.x1+.4&&-42.1>b.z0-.4&&-42.1<b.z1+.4)&&TOWER.door.x0<0&&TOWER.door.x1>0);
     }
     console.log('  PORT BUDGET',JSON.stringify(port.stats));
