@@ -36,7 +36,7 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
   server.on('upgrade',(req,socket,head)=>{
     // Browser origins are checked; protocol-only headless clients have no Origin.
     const origin=req.headers.origin;const extras=(process.env.COSMOS_ALLOWED_ORIGINS||'').split(',').filter(Boolean);
-    if(origin&&!/^https:\/\/(cosmos\.)?heartbeatobservatory\.com$/.test(origin)&&!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)&&!extras.includes(origin)){socket.destroy();return;}
+    if(origin&&!/^https:\/\/(www\.|cosmos\.)?heartbeatobservatory\.com$/.test(origin)&&!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)&&!extras.includes(origin)){socket.destroy();return;}
     let peer;peer=upgrade(req,socket,head,text=>{
       world.enqueue(async()=>{if(closing)return;let m;try{m=parse(text);}catch{peer.close();return;}
         try{
