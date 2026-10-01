@@ -19,7 +19,7 @@ import { auditGaps } from './dev/gapAudit.js';
 import { Engine } from './core/engine.js';
 import { registry } from './core/registry.js';
 import { BODIES, getBody } from './world/bodies.js';
-import { buildGlobalShell, LocalPatch } from './world/planetMesh.js';
+import { buildGlobalShell, LocalPatch, DISTANT_TIERS, installTierDiscard, TERRAIN_FOG_DENSITY } from './world/planetMesh.js';
 import { geodeticToCartesian, cartesianToGeodetic, formatCoord, coordSlug } from './world/geodesy.js';
 import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, MATERIALS, attachEdits, attachGrades, density, normalAt, raycast, baseDensityAt } from './world/field.js';
 import { EditStore } from './world/edits.js';
@@ -61,13 +61,14 @@ registry.register({
   note: 'Coarse whole-planet render surface. Not the collision authority.',
 });
 
-// --- Terrain: the original geology at three resolutions, and the dug ground on top. ----
-// shell   whole planet, ~83 km between vertices  (horizon, orbit)
+// --- Terrain: the original geology at six resolutions, and the dug ground on top. ----
+// shell   whole planet, ~166 km between vertices (orbit)
+// far     8 / 64 / 320 km across (ridges through the horizon; phone: 125 / 1000 / 6667 m spacing)
 // mid     880 m across,  6.72 m between vertices (the middle distance)
 // near     48 m across,  0.60 m between vertices (the ground at your feet)
 // bricks  3.2 m cubes of 0.1 m lattice wherever the ground has been changed (excavation.js)
 //
-// The three heightfield tiers draw the ORIGINAL geology and never look at edits. The brick
+// The heightfield tiers draw the ORIGINAL geology and never look at edits. The brick
 // meshes draw the truth wherever somebody has dug or dumped, and the tiers are told (a
 // per-pixel discard under every built brick) to leave that ground alone. Before this, the
 // heightfields tried to carve holes for the edits in whole quads, which is why a hole
@@ -77,7 +78,7 @@ const params = new URLSearchParams(location.search);
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const tier = params.get('tier') === 'low' || params.get('tier') === 'high' ? params.get('tier') : (isTouch ? 'low' : 'high');
 
-const patch = new LocalPatch(body, { sizeM: 880, res: 132 });
+const patch = new LocalPatch(body, { sizeM: 880, res: 132, skirtM: 15 });
 engine.scene.add(patch.mesh);
 const patchEntry = engine.track({ worldPos: patch.worldPos, object3d: patch.mesh });
 
@@ -85,6 +86,44 @@ const nearPatch = new LocalPatch(body, { sizeM: 48, res: 81 });
 nearPatch.mesh.name = `patch-near:${body.id}`;
 engine.scene.add(nearPatch.mesh);
 const nearEntry = engine.track({ worldPos: nearPatch.worldPos, object3d: nearPatch.mesh });
+
+const farPatches = DISTANT_TIERS[tier].map((opts, i) => {
+  const p = new LocalPatch(body, opts);
+  p.mesh.name = `patch-far-${i}:${body.id}`;
+  // Grain is invisible at these distances; don't spend fragment work on it.
+  p.mesh.material.dispose();
+  p.mesh.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95,
+    polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2 });
+  p.mesh.receiveShadow = false;
+  engine.scene.add(p.mesh);
+  p.entry = engine.track({ worldPos: p.worldPos, object3d: p.mesh });
+  p.handover = installTierDiscard(p.mesh.material);
+  return p;
+});
+const shellHandover = installTierDiscard(shell.material);
+let terrainComparisonBefore = false;
+function updateFarTerrain(focus, force = false, budgetMs = tier === 'low' ? 2 : 3) {
+  const started = performance.now();
+  for (const p of farPatches) {
+    if (force) { p.rebuild(focus.x, focus.y, focus.z); p.entry.worldPos = p.worldPos; }
+    else {
+      if (!p.rebuilding && p.needsRebuild(focus.x, focus.y, focus.z)) p.beginRebuild(focus.x, focus.y, focus.z);
+      const left = budgetMs - (performance.now() - started);
+      if (p.rebuilding && left > 0 && p.stepRebuild(left)) p.entry.worldPos = p.worldPos;
+    }
+  }
+  // Work outside-in so each join samples the coarser tier's final drawn surface.
+  for (let i = farPatches.length - 2; i >= 0; i--) farPatches[i].blendEdgeTo(farPatches[i + 1]);
+  patch.blendEdgeTo(farPatches[0]);
+  let fine = patch;
+  for (const p of farPatches) {
+    p.handover.update(p.worldPos, fine);
+    p.mesh.visible = !terrainComparisonBefore;
+    fine = p;
+  }
+  shellHandover.update({ x: 0, y: 0, z: 0 }, fine);
+  if (terrainComparisonBefore) shellHandover.uniforms.uTierHalf.value = 0;
+}
 
 // ---------------------------------------------------------------------------
 // Excavation. The ground is a solid object; this is what takes pieces out.
@@ -115,6 +154,7 @@ function rebuildNear(force = false) {
     patch.setExcluded([{ centre: { x: np.x, y: np.y, z: np.z }, radius: nearPatch.sizeM * 0.40 }]);
     patch.rebuild(wp.x, wp.y, wp.z);
     patchEntry.worldPos = patch.worldPos;
+    updateFarTerrain(wp, true);
     return;
   }
   if (!nearPatch.rebuilding && nearPatch.needsRebuild(wp.x, wp.y, wp.z)) nearPatch.beginRebuild(wp.x, wp.y, wp.z);
@@ -153,6 +193,7 @@ function doDig() {
   return digger.dig();
 }
 function doDump() { return digger.dump(); }
+function doDumpAll() { return digger.dumpAll(); }
 
 // ---------------------------------------------------------------------------
 // AIM MARKER — where the tool will actually bite, drawn at its real size.
@@ -449,7 +490,8 @@ const sky = new THREE.HemisphereLight(
   body.atmosphere.skyColor, MATERIALS.regolith.color, 0.85);
 engine.scene.add(sky);
 engine.scene.background = new THREE.Color(body.atmosphere.skyColor);
-engine.scene.fog = new THREE.FogExp2(body.atmosphere.horizonColor, 0.00016);
+// The old density erased 92% of contrast at 10 km, before a flying player's horizon.
+engine.scene.fog = new THREE.FogExp2(body.atmosphere.horizonColor, TERRAIN_FOG_DENSITY);
 
 // Stars, visible because the atmosphere is thin.
 {
@@ -608,6 +650,7 @@ function refreshHud() {
   const load = carriedMass();
   if (ship.ready && ship.aboard) {
     hud.innerHTML = ship.hudText() + `<br><span class="dim">${formatCoord(g.lat, g.lon, g.alt)}</span>`;
+    document.documentElement.style.setProperty('--hud-bottom', `${hud.offsetTop + hud.offsetHeight}px`);
     return;
   }
   hud.innerHTML =
@@ -615,11 +658,14 @@ function refreshHud() {
     `${formatCoord(g.lat, g.lon, g.alt)}<br>` +
     `<span class="dim">${walker.groundMaterialName()} · ${body.surfaceGravity.toFixed(2)} m/s²` +
     `${walker.grounded ? '' : ' · airborne'}</span>` +
-    (load > 0
-      ? `<br><span class="load">carrying ${load.toFixed(1)} kg · ` +
-        `${(carriedVolume() * 1000).toFixed(0)} L · ${carried.length} load${carried.length > 1 ? 's' : ''}</span>`
-      : '') + `<br><span class="dim">tool: ${tool().name}</span>`;
+    `<br><span class="load">${tool().carrier}: ${load.toFixed(1)} / ${tool().capacityKg.toFixed(0)} kg</span>` +
+    `<div class="load-bar" role="progressbar" aria-label="Carried soil" aria-valuemin="0" aria-valuemax="${tool().capacityKg}" aria-valuenow="${load}">` +
+    `<i style="width:${Math.min(100, load / tool().capacityKg * 100)}%"></i></div>` +
+    (load ? `<span class="dim">${(carriedVolume() * 1000).toFixed(0)} L · ${carried.length} loads</span><br>` : '<br>') +
+    `<span class="dim">tool: ${tool().name}</span>`;
+  document.documentElement.style.setProperty('--hud-bottom', `${hud.offsetTop + hud.offsetHeight}px`);
 }
+engine.onResize(refreshHud);
 
 // Marker update. Finding the aim point steps through the field, so it runs at 20 Hz rather than 60
 // and holds the result between: the marker is a readout, and a readout does not need to be
@@ -656,6 +702,12 @@ function updateAimMarkers(dt) {
 // same rule as the movement stick. No permanent controls waiting on screen.
 const actionBtn = document.getElementById('btn-action');
 const toolBtn = document.getElementById('btn-tool');
+const dropAllBtn = document.getElementById('btn-drop-all');
+dropAllBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); });
+dropAllBtn.addEventListener('pointerup', e => {
+  e.preventDefault(); e.stopPropagation(); stopHold();
+  flash(doDumpAll().msg); hudAccum = 1;
+});
 toolBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); });
 toolBtn.addEventListener('pointerup', (e) => { e.preventDefault(); e.stopPropagation(); setTool(digger.toolIdx + 1); flash(tool().name); });
 let actionFlash = 0;
@@ -667,6 +719,7 @@ let tapAction = 'dig';
 
 let shipPress = false;
 function refreshAction() {
+  dropAllBtn.style.display = carried.length && !(ship.ready && ship.aboard) ? 'block' : 'none';
   if (actionFlash > 0) return;
   if (ship.ready) {
     const a = ship.contextAction();
@@ -684,7 +737,7 @@ function refreshAction() {
     tapAction = 'dump';
     actionBtn.style.display = 'block';
     // Say why the shovel is idle, so a full load does not read as a dead button.
-    actionBtn.textContent = load >= cap ? 'Hands full  ·  Drop' : 'Drop';
+    actionBtn.textContent = load >= cap ? `${tool().carrier} full · Drop` : 'Drop';
   } else {
     tapAction = 'dig';
     actionBtn.style.display = 'none';
@@ -778,6 +831,8 @@ engine.addUpdater((dt) => {
     engine.camera.up.set(freeCam.eye.x / l, freeCam.eye.y / l, freeCam.eye.z / l);
     engine.camera.lookAt(new THREE.Vector3(freeCam.target.x - freeCam.eye.x, freeCam.target.y - freeCam.eye.y, freeCam.target.z - freeCam.eye.z));
     updateSun(walker.updateFrame());
+    updateFarTerrain(freeCam.eye);
+    stepPatches(tier === 'low' ? 2.5 : 4);
     if (ship.ready) ship._updateVisuals(dt, false);        // drones, ramps and lights still follow their state in a review shot
     if (!edits.isEmpty || terrain.meshes.size) {
       terrain.update(dt, freeCam.eye);
@@ -835,6 +890,7 @@ engine.addUpdater((dt) => {
   }
 
   stepPatches(tier === 'low' ? 2.5 : 4);
+  updateFarTerrain(engine.cameraWorldPos);
   updateAimMarkers(dt);
   debugLayer.update(walker, engine.camera);
 
@@ -872,6 +928,7 @@ window.addEventListener('keydown', (e) => {
     else flash(doDig().msg);
   }
   if (e.code === 'KeyQ' && !(ship.ready && ship.aboard)) flash(doDump().msg);
+  if (e.code === 'KeyR' && !e.repeat && !(ship.ready && ship.aboard)) { flash(doDumpAll().msg); hudAccum = 1; }
   if (!(ship.ready && ship.aboard) && /^Digit[123]$/.test(e.code)) { setTool(Number(e.code.slice(5)) - 1); document.getElementById('set-tool').value = String(digger.toolIdx); flash(tool().name); }
   if (e.code === 'KeyG') {
     const box = document.getElementById('set-dev');
@@ -896,14 +953,29 @@ window.cosmos = {
   ship, shipUI, engine, body, walker, patch, registry, debugLayer, view, people,
   get crew() { return crew; }, get crewUI() { return crewUI; }, playerPerson, suitGroup,
   report: () => debugLayer.reportAt(walker),
-  edits, carried, doDig, doDump, digTarget, dumpPlan, terrain, TOOLS, setTool, tool,
-  nearPatch, rebuildNear, freeCam,
+  edits, carried, doDig, doDump, doDumpAll, digger, digTarget, dumpPlan, terrain, TOOLS, setTool, tool,
+  nearPatch, farPatches, rebuildNear, freeCam, horizonView,
   flushTerrain: () => terrain.flush(walker.worldPos),
   ledger: () => edits.ledger(carried),
   step: (dt = 1 / 60) => engine.step(dt),
   goto: (lat, lon) => {
     walker.placeAtGeodetic(lat, lon, 1.5);
-    patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
-    patchEntry.worldPos = patch.worldPos;
+    rebuildNear(true);
   },
 };
+
+/** Reproducible horizon review, metres above the ORIGINAL ground; simulation pauses. */
+function horizonView(height = 120, { before = false, yaw = 0 } = {}) {
+  const p = patch.worldPos, f = walker.updateFrame();
+  const eye = { x: p.x + f.up.x * height, y: p.y + f.up.y * height, z: p.z + f.up.z * height };
+  const direction = new THREE.Vector3().copy(f.north).multiplyScalar(Math.cos(yaw)).addScaledVector(f.east, Math.sin(yaw));
+  const target = { x: eye.x + direction.x * 20000 - f.up.x * 1400,
+    y: eye.y + direction.y * 20000 - f.up.y * 1400, z: eye.z + direction.z * 20000 - f.up.z * 1400 };
+  terrainComparisonBefore = before;
+  engine.scene.fog.density = before ? 0.00016 : TERRAIN_FOG_DENSITY;
+  updateFarTerrain(p, true);
+  freeCam.set(eye, target);
+  return { heightM: height, before, tier, direction: yaw };
+}
+const reviewHeight = Number(params.get('terrainView'));
+if (reviewHeight === 120 || reviewHeight === 1000) horizonView(reviewHeight, { before: params.get('terrainBefore') === '1' });

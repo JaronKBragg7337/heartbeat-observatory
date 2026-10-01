@@ -1,0 +1,51 @@
+{
+  "stage": "before",
+  "renderer": "headless Chromium / SwiftShader, 750x470, DPR 1, low tier; step CPU time, not phone GPU time",
+  "results": [
+    {
+      "height": 120,
+      "content": "Mars · Valles Marineris\n13°59'58.1\"S 59°11'57.3\"W +2213.1 m\n— · 3.72 m/s²\ntool: Shovel\nSettings\n← Games\nSystems nominal. Ship down and stable.",
+      "depthBits": 24,
+      "triangles": 129634,
+      "calls": 24,
+      "medianStepMs": 0.3999999761581421,
+      "p95StepMs": 1.100000023841858,
+      "terrainTriangles": 63224,
+      "farBuildMs": [],
+      "ledger": {
+        "removedM3": 0,
+        "depositedM3": 0,
+        "carriedM3": 0,
+        "unaccountedM3": 0,
+        "removedKg": 0,
+        "depositedKg": 0,
+        "carriedKg": 0,
+        "unaccountedKg": 0,
+        "edits": 0
+      }
+    },
+    {
+      "height": 1000,
+      "content": "Mars · Valles Marineris\n13°59'58.1\"S 59°11'57.3\"W +2213.1 m\n— · 3.72 m/s²\ntool: Shovel\nSettings\n← Games\nSystems nominal. Ship down and stable.",
+      "depthBits": 24,
+      "triangles": 170341,
+      "calls": 57,
+      "medianStepMs": 0.9000000953674316,
+      "p95StepMs": 2,
+      "terrainTriangles": 63224,
+      "farBuildMs": [],
+      "ledger": {
+        "removedM3": 0,
+        "depositedM3": 0,
+        "carriedM3": 0,
+        "unaccountedM3": 0,
+        "removedKg": 0,
+        "depositedKg": 0,
+        "carriedKg": 0,
+        "unaccountedKg": 0,
+        "edits": 0
+      }
+    }
+  ],
+  "errors": []
+}

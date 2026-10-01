@@ -60,6 +60,12 @@ const H = CELL_M, H3 = H * H * H;
 const INV = 1 / CELL_M;
 const FLOOR_EMBED_M = 0.25;                // a pile sinks this far into what it sits on, so nothing floats
 
+// Exact binary accounting at lot boundaries. Every accepted lot is >1e-9 m3, so its
+// double's fraction fits in 96 bits. Summing those integers keeps addition order (single
+// drops, mixed materials, one combined pour) from producing phantom residual mass.
+const ACCOUNT_SCALE = 2 ** 96;
+const account = (v) => BigInt(v * ACCOUNT_SCALE);
+
 const MATERIAL_LIST = Object.values(MATERIALS);
 const matIndexOf = (id) => { const i = MATERIAL_LIST.findIndex((m) => m.id === id); return i < 0 ? 0 : i + 1; };
 const matFromIndex = (i) => (i > 0 ? MATERIAL_LIST[i - 1] : null);
@@ -84,6 +90,7 @@ export class EditStore {
     this._lastBrick = null;
     this.totalRemovedM3 = 0; this.totalDepositedM3 = 0;
     this.totalRemovedKg = 0; this.totalDepositedKg = 0;
+    this._removedV = 0n; this._removedM = 0n; this._depositedV = 0n; this._depositedM = 0n;
     this.lastRefusal = '';
     this.version = 0;
     this._min = { x: Infinity, y: Infinity, z: Infinity };
@@ -342,6 +349,12 @@ export class EditStore {
       return null;
     }
 
+    // Refuse BEFORE any writes, so a final bite cannot overfill the carrier or lose matter.
+    if (M > (shape.maxMassKg ?? Infinity)) {
+      this.lastRefusal = 'Carrier full for this bite · Drop all (R) or one load (Q)';
+      return null;
+    }
+
     // Pass 2: write. Bricks come into being here, and only here.
     let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity, c0 = Infinity, c1 = -Infinity;
     for (let n = 0; n < plan.length; n += 4) {
@@ -371,7 +384,9 @@ export class EditStore {
       z: shape.z ?? (box.z0 + box.z1) / 2, radius: shape.r ?? 0, volumeM3: V, massKg: M,
       materialId: dominant.id, at: Date.now(),
     });
-    this.totalRemovedM3 += V; this.totalRemovedKg += M;
+    this._removedV += account(V); this._removedM += account(M);
+    this.totalRemovedM3 = Number(this._removedV) / ACCOUNT_SCALE;
+    this.totalRemovedKg = Number(this._removedM) / ACCOUNT_SCALE;
     return {
       lotId: `COS-LOT-${String(this._seq).padStart(5, '0')}`,
       materialId: dominant.id, materialName: dominant.name,
@@ -607,7 +622,11 @@ export class EditStore {
         this.piles.push(pile);
       }
       this.edits.push({ id, type: 'pile', x: ax, y: ay, z: az, radius: pile.radiusM, volumeM3: V, massKg: lot.massKg, materialId: lot.materialId, at: Date.now() });
-      this.totalDepositedM3 += V; this.totalDepositedKg += lot.massKg;
+      for (const source of lot.sourceLots || [lot]) {
+        this._depositedV += account(source.solidVolumeM3); this._depositedM += account(source.massKg);
+      }
+      this.totalDepositedM3 = Number(this._depositedV) / ACCOUNT_SCALE;
+      this.totalDepositedKg = Number(this._depositedM) / ACCOUNT_SCALE;
       return { pile, volumeM3: vol, apexHeightM: A - centreS };
     }
     return null;
@@ -630,13 +649,15 @@ export class EditStore {
   ledger(carriedLots = []) {
     const carried = carriedLots.reduce((a, l) => a + l.solidVolumeM3, 0);
     const carriedKg = carriedLots.reduce((a, l) => a + l.massKg, 0);
+    const carriedVExact = carriedLots.reduce((a, l) => a + account(l.solidVolumeM3), 0n);
+    const carriedMExact = carriedLots.reduce((a, l) => a + account(l.massKg), 0n);
     return {
       removedM3: this.totalRemovedM3,
       depositedM3: this.totalDepositedM3,
       carriedM3: carried,
-      unaccountedM3: this.totalRemovedM3 - this.totalDepositedM3 - carried,
+      unaccountedM3: Number(this._removedV - this._depositedV - carriedVExact) / ACCOUNT_SCALE,
       removedKg: this.totalRemovedKg, depositedKg: this.totalDepositedKg, carriedKg,
-      unaccountedKg: this.totalRemovedKg - this.totalDepositedKg - carriedKg,
+      unaccountedKg: Number(this._removedM - this._depositedM - carriedMExact) / ACCOUNT_SCALE,
       edits: this.edits.length,
     };
   }

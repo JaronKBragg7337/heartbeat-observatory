@@ -10,7 +10,7 @@ export async function runDigChecks({ ROOT, check, section, THREE, mars, FIELD, G
   const url = (p) => `file://${ROOT}/${p}`;
   const { EditStore, CELL_M, BRICK_N, BRICK_M, SLOPE_MAX_DEG, REPOSE_DEG } = await import(url('src/world/edits.js'));
   const { meshBrick, CoverGrid, COVER_SHRINK_M } = await import(url('src/world/excavation.js'));
-  const { LocalPatch } = await import(url('src/world/planetMesh.js'));
+  const { LocalPatch, DISTANT_TIERS, TERRAIN_FOG_DENSITY } = await import(url('src/world/planetMesh.js'));
   const { Digger, makeTools } = await import(url('src/player/digging.js'));
 
   // ---- the place: natural ground at the spawn coordinate, no earthworks ------------------
@@ -36,6 +36,99 @@ export async function runDigChecks({ ROOT, check, section, THREE, mars, FIELD, G
   const fresh = () => { const s = new EditStore(mars); FIELD.attachEdits(s); return s; };
   const colourOf = (wx, wy, wz, nx, ny, nz, o) => { const m = FIELD.materialAt(mars, wx, wy, wz); o.r = (m.color >> 16 & 255) / 255; o.g = (m.color >> 8 & 255) / 255; o.b = (m.color & 255) / 255; };
   const tools = makeTools(mars);
+
+  section('7a. Assisted carry and one-pour emptying');
+  check('Mars hauling cart carries at least a tonne; bucket hopper at least 48 tonnes',
+    tools[0].capacityKg >= 1000 && tools[1].capacityKg >= 1000 && tools[2].capacityKg >= 48000);
+  {
+    const store = fresh(), w = new Walker(mars);
+    const S = surfacePoint(0, 0), u = unit(S);
+    Object.assign(w.worldPos, add(add(S, frame0.north, -4), u, 1));
+    const dg = new Digger(mars, store, w); dg.setTool(2);
+    const hits = [];
+    for (let n = 0; n < 3; n++) for (let e = -2; e <= 2; e++) hits.push(surfacePoint(e, n));
+    for (const p of hits) {
+      dg.digTarget = () => ({ point: p, dir: { x: -u.x, y: -u.y, z: -u.z }, normal: u });
+      dg.dig();
+    }
+    const M = dg.carriedMass(), V = dg.carriedVolume();
+    check('bucket can make fifteen connected bites and a real hole before emptying', dg.carried.length === 15 && M > 12000 && V > 8,
+      `${dg.carried.length} bites, ${M.toFixed(0)} kg, ${V.toFixed(2)} m3`);
+    const before = store.fieldDeltaM3(), version = store.version;
+    const p = surfacePoint(5, 0);
+    const blocked = store.carve({ x: p.x, y: p.y, z: p.z, r: 0.7, maxMassKg: 1 });
+    check('over-capacity bite refuses before changing the lattice or inventory', !blocked && store.version === version && store.fieldDeltaM3() === before && dg.carriedMass() === M);
+    const deposit = store.deposit.bind(store);
+    store.deposit = () => null;
+    const refused = dg.dumpAll();
+    check('failed Drop all retains every carried lot and its exact mass', !refused.ok && dg.carried.length === 15 && dg.carriedMass() === M);
+    let pours = 0;
+    store.deposit = (...args) => { pours++; return deposit(...args); };
+    const t = performance.now(), out = dg.dumpAll();
+    const books = store.ledger(dg.carried);
+    console.log(`  Drop all: ${M.toFixed(0)} kg, ${V.toFixed(3)} m3, ${(performance.now() - t).toFixed(1)} ms, heap r=${out.pile?.radiusM.toFixed(2)} m`);
+    check('Drop all performs one cone pour, makes one heap and empties all fifteen lots', out.ok && pours === 1 && store.piles.length === 1 && dg.carried.length === 0);
+    check('Drop all conserves kilograms and cubic metres exactly: ledger = 0', books.unaccountedKg === 0 && books.unaccountedM3 === 0,
+      JSON.stringify(books));
+    check('Drop all adds the actual carried volume to the lattice, with no fake accounting', Math.abs(store.fieldDeltaM3()) < 1e-8,
+      `${store.fieldDeltaM3()} m3`);
+    check('the entire heap is beside the hole, and still a low cone', out.ok && out.pile.apexM - out.pile.centreGroundM < out.pile.radiusM * 0.8 &&
+      (() => { const site = store.siteNear(w.worldPos.x, w.worldPos.y, w.worldPos.z, 9), d = sub(out.pile, site), along = dot(d, u);
+        return Math.sqrt(dot(d, d) - along * along) - out.pile.radiusM > site.radiusM; })());
+    // The original single-load command must still empty only the newest lot.
+    const p2 = surfacePoint(-5, 0), p3 = surfacePoint(-5, 1);
+    for (const p of [p2, p3]) { const l = store.dig(p.x - u.x * 0.2, p.y - u.y * 0.2, p.z - u.z * 0.2, 0.17); dg.carried.push(l); }
+    const first = dg.carried[0], one = dg.dump();
+    check('single drop still removes exactly one load', one.ok && dg.carried.length === 1 && dg.carried[0] === first);
+    const empty = dg.dumpAll();
+    check('single drop then Drop all leaves both ledgers exactly zero', empty.ok && store.ledger(dg.carried).unaccountedKg === 0 && store.ledger(dg.carried).unaccountedM3 === 0 && Math.abs(store.fieldDeltaM3()) < 1e-8);
+    FIELD.attachEdits(null);
+  }
+
+  section('7a2. Distant Mars: sampled relief, curvature and a phone triangle budget');
+  {
+    const S = surfacePoint(0, 0), f = frame0, l = len(S);
+    const low = DISTANT_TIERS.low.map(o => { const p = new LocalPatch(mars, o); p.rebuild(S.x, S.y, S.z); return p; });
+    for (let i = low.length - 2; i >= 0; i--) low[i].blendEdgeTo(low[i + 1]);
+    let seamError = 0;
+    for (let i = 0; i < low.length - 1; i++) {
+      const p = low[i], pos = p.geo.attributes.position.array;
+      for (const v of p._edge) {
+        const k = v * 3, q = { x: pos[k] + p.worldPos.x, y: pos[k + 1] + p.worldPos.y, z: pos[k + 2] + p.worldPos.z }, u = unit(q);
+        seamError = Math.max(seamError, Math.abs(len(q) - low[i + 1].surfaceRadiusExact(u.x, u.y, u.z)));
+      }
+    }
+    check('far tier edges meet the actual coarser triangles within 2 cm (no sky seams or cliff skirts)', seamError < 0.02, `${seamError} m`);
+    for (const [i, radius] of [2000, 20000, 100000].entries()) {
+      const p = low[i], heights = [];
+      let missing = 0;
+      for (let k = 0; k < 96; k++) {
+        const a = k / 96 * Math.PI * 2, q = add(add(S, f.east, Math.cos(a) * radius), f.north, Math.sin(a) * radius), d = unit(q);
+        const r = p.surfaceRadiusAt(d.x, d.y, d.z);
+        if (r === null) { missing++; continue; }
+        heights.push(GEO.cartesianToGeodetic(mars, d.x * r, d.y * r, d.z * r).alt);
+      }
+      const mean = heights.reduce((a, b) => a + b, 0) / heights.length;
+      const sd = Math.sqrt(heights.reduce((s, h) => s + (h - mean) ** 2, 0) / heights.length);
+      console.log(`  far ring ${radius} m: height SD ${sd.toFixed(1)} m; build ${p.lastBuildMs.toFixed(1)} ms`);
+      check(`drawn far ring at ${radius / 1000} km carries relief (height SD > 25 m), with no missing samples`, missing === 0 && sd > 25);
+      const pos = p.geo.attributes.position, normals = p.geo.attributes.normal;
+      let bad = 0;
+      for (let v = 0; v < p.res * p.res; v++) {
+        const x = pos.getX(v) + p.worldPos.x, y = pos.getY(v) + p.worldPos.y, z = pos.getZ(v) + p.worldPos.z;
+        if (x * normals.getX(v) + y * normals.getY(v) + z * normals.getZ(v) <= 0) bad++;
+      }
+      check(`far tier ${i} normals light the outward surface, with continuous edge skirts`, bad === 0 && p._edge.length === 4 * (p.res - 1));
+    }
+    const tris = low.reduce((s, p) => s + p.geo.index.count / 3, 0);
+    const above = add(S, unit(S), 10000);
+    check('climbing 10 km above the same ground does not trigger distant terrain rebuilds',
+      low.every(p => !p.needsRebuild(above.x, above.y, above.z)));
+    check('three phone far tiers add fewer than 25000 triangles', tris < 25000, `${tris} triangles`);
+    check('fog preserves over 90% of contrast at 20 km and over 35% at the 1000 m horizon (~82 km)',
+      Math.exp(-((20000 * TERRAIN_FOG_DENSITY) ** 2)) > 0.9 && Math.exp(-((82000 * TERRAIN_FOG_DENSITY) ** 2)) > 0.35);
+    for (const p of low) { p.geo.dispose(); p.mesh.material.dispose(); }
+  }
 
   // =========================================================================================
   section('7b. Digging: the ground is a solid object and matter is conserved');

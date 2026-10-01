@@ -1,0 +1,93 @@
+{
+  "stage": "after",
+  "renderer": "headless Edge Chromium / SwiftShader, 750x470, DPR 1, low tier; step CPU time and completed software frame with synchronous pixel readback; not phone hardware",
+  "results": [
+    {
+      "height": 120,
+      "content": "Mars · Valles Marineris\n13°59'58.1\"S 59°11'57.3\"W +2213.1 m\nMartian regolith · 3.72 m/s²\nHauling cart: 0.0 / 1054 kg\n\ntool: Shovel\nSettings\n← Games\nSystems nominal. Ship down and stable.",
+      "depthBits": 24,
+      "triangles": 260199,
+      "calls": 77,
+      "medianStepMs": 1.7000000476837158,
+      "p95StepMs": 2.399999976158142,
+      "terrainTriangles": 86672,
+      "completedMedianMs": 69.30000007152557,
+      "completedP95Ms": 73,
+      "farBuildMs": [
+        17.299999952316284,
+        16.5,
+        7.900000095367432
+      ],
+      "ledger": {
+        "removedM3": 0,
+        "depositedM3": 0,
+        "carriedM3": 0,
+        "unaccountedM3": 0,
+        "removedKg": 0,
+        "depositedKg": 0,
+        "carriedKg": 0,
+        "unaccountedKg": 0,
+        "edits": 0
+      },
+      "paired": {
+        "before": {
+          "triangles": 236751,
+          "calls": 74,
+          "completedMedianMs": 50.39999997615814,
+          "completedP95Ms": 54.199999928474426
+        },
+        "after": {
+          "triangles": 260199,
+          "calls": 77,
+          "completedMedianMs": 69.60000002384186,
+          "completedP95Ms": 76.10000002384186
+        },
+        "note": "Matched assets and logarithmic depth in both states. Before omits new terrain tiers/skirts, restores original mid positions and original fog. Timed step + synchronous pixel readback on SwiftShader; not phone hardware."
+      }
+    },
+    {
+      "height": 1000,
+      "content": "Mars · Valles Marineris\n13°59'58.1\"S 59°11'57.3\"W +2213.1 m\nMartian regolith · 3.72 m/s²\nHauling cart: 0.0 / 1054 kg\n\ntool: Shovel\nSettings\n← Games\nSystems nominal. Ship down and stable.",
+      "depthBits": 24,
+      "triangles": 193789,
+      "calls": 60,
+      "medianStepMs": 1.5,
+      "p95StepMs": 2,
+      "terrainTriangles": 86672,
+      "completedMedianMs": 50,
+      "completedP95Ms": 53,
+      "farBuildMs": [
+        15.899999976158142,
+        15.200000047683716,
+        8.400000095367432
+      ],
+      "ledger": {
+        "removedM3": 0,
+        "depositedM3": 0,
+        "carriedM3": 0,
+        "unaccountedM3": 0,
+        "removedKg": 0,
+        "depositedKg": 0,
+        "carriedKg": 0,
+        "unaccountedKg": 0,
+        "edits": 0
+      },
+      "paired": {
+        "before": {
+          "triangles": 170341,
+          "calls": 57,
+          "completedMedianMs": 29.5,
+          "completedP95Ms": 32.10000002384186
+        },
+        "after": {
+          "triangles": 193789,
+          "calls": 60,
+          "completedMedianMs": 49.39999997615814,
+          "completedP95Ms": 52.60000002384186
+        },
+        "note": "Matched assets and logarithmic depth in both states. Before omits new terrain tiers/skirts, restores original mid positions and original fog. Timed step + synchronous pixel readback on SwiftShader; not phone hardware."
+      }
+    }
+  ],
+  "errors": []
+}

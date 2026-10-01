@@ -35,6 +35,54 @@ import { installRegolith, mod360 } from './regolith.js';
 import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, elevationAt, MATERIALS } from './field.js';
 import { localFrame, geodeticToCartesian, cartesianToGeodetic } from './geodesy.js';
 
+// Fill the 440 m -> 166 km gap without spending phone triangles on the whole planet.
+// All tiers sample the same original field, including planetary curvature; no relief exaggeration.
+export const DISTANT_TIERS = {
+  low: [{ sizeM: 8000, res: 65, skirtM: 80 }, { sizeM: 64000, res: 65, skirtM: 300 }, { sizeM: 320000, res: 49, skirtM: 1400 }],
+  high: [{ sizeM: 8000, res: 97, skirtM: 80 }, { sizeM: 64000, res: 97, skirtM: 300 }, { sizeM: 320000, res: 65, skirtM: 1400 }],
+};
+export const TERRAIN_FOG_DENSITY = 0.000012;
+
+/** Per-pixel handover: a coarse triangle must never cover finer relief inside its square. */
+export function installTierDiscard(material) {
+  const uniforms = {
+    uTierOffset: { value: new THREE.Vector3() }, uTierEast: { value: new THREE.Vector3() },
+    uTierNorth: { value: new THREE.Vector3() }, uTierHalf: { value: 0 },
+    uTierUp: { value: new THREE.Vector3() }, uTierPlane: { value: new THREE.Vector3() },
+  };
+  const prior = material.onBeforeCompile, priorKey = material.customProgramCacheKey();
+  material.onBeforeCompile = function(shader, renderer) {
+    prior.call(this, shader, renderer);
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vTierPos;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTierPos = position;');
+    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
+varying vec3 vTierPos;
+uniform vec3 uTierOffset, uTierEast, uTierNorth;
+uniform vec3 uTierUp, uTierPlane;
+uniform float uTierHalf;`)
+      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+vec3 tp = vTierPos + uTierOffset;
+float ts = uTierPlane.z / (uTierPlane.z + dot(tp, uTierUp));
+float te = (dot(tp, uTierEast) + uTierPlane.x) * ts - uTierPlane.x;
+float tn = (dot(tp, uTierNorth) + uTierPlane.y) * ts - uTierPlane.y;
+if (abs(te) < uTierHalf && abs(tn) < uTierHalf) discard;`);
+  };
+  material.customProgramCacheKey = () => `${priorKey}:tier-square-v1`;
+  material.needsUpdate = true;
+  return { uniforms, update(coarseOrigin, fine) {
+    if (!fine.builtAt) { uniforms.uTierHalf.value = 0; return; }
+    uniforms.uTierOffset.value.set(coarseOrigin.x - fine.worldPos.x, coarseOrigin.y - fine.worldPos.y, coarseOrigin.z - fine.worldPos.z);
+    uniforms.uTierEast.value.copy(fine._frame.east);
+    uniforms.uTierNorth.value.copy(fine._frame.north);
+    uniforms.uTierUp.value.copy(fine._frame.up);
+    const o = new THREE.Vector3().copy(fine.worldPos);
+    uniforms.uTierPlane.value.set(o.dot(uniforms.uTierEast.value), o.dot(uniforms.uTierNorth.value), o.dot(uniforms.uTierUp.value));
+    // A narrow overlap covered by the finer tier's skirt seals interpolation differences at the seam.
+    uniforms.uTierHalf.value = fine.sizeM / 2 - Math.min(2, fine.spacingM * 0.1);
+  } };
+}
+
 // ---------------------------------------------------------------------------
 // Colour ramp from real material, not from an arbitrary palette. Each vertex
 // asks the field what it is made of and takes that material's colour, so the
@@ -116,6 +164,7 @@ export class LocalPatch {
     this.body = body;
     this.sizeM = opts.sizeM || 768;
     this.res = opts.res || 96;                 // 96x96 -> ~8 m spacing at 768 m
+    this.skirtM = opts.skirtM || 0;
     this.rebuildThreshold = this.sizeM * 0.28; // rebuild before the edge shows
     this.centre = null;                        // {lat, lon}
     this.builtAt = null;                       // cartesian centre of last build
@@ -123,8 +172,15 @@ export class LocalPatch {
     this.lastBuildMs = 0;
 
     const n = this.res;
-    const verts = new Float32Array(n * n * 3);
-    const colors = new Float32Array(n * n * 3);
+    this._edge = [];
+    if (this.skirtM) {
+      for (let i = 0; i < n - 1; i++) this._edge.push(i);
+      for (let j = 0; j < n - 1; j++) this._edge.push(j * n + n - 1);
+      for (let i = n - 1; i > 0; i--) this._edge.push((n - 1) * n + i);
+      for (let j = n - 1; j > 0; j--) this._edge.push(j * n);
+    }
+    const verts = new Float32Array((n * n + this._edge.length) * 3);
+    const colors = new Float32Array(verts.length);
     const indices = [];
     for (let j = 0; j < n - 1; j++) {
       for (let i = 0; i < n - 1; i++) {
@@ -297,10 +353,69 @@ export class LocalPatch {
     return r11 + (r01 - r11) * sx + (r10 - r11) * sy;
   }
 
+  /** Radial ray / drawn-triangle intersection, including curvature. Used to join distant tiers. */
+  surfaceRadiusExact(dx, dy, dz) {
+    if (!this.builtAt) return null;
+    const f = this._frame, o = this.worldPos, n = this.res, step = this.spacingM;
+    // Intersect the ORIGINAL tangent plane to recover the grid coordinates exactly.
+    const q = (o.x * f.up.x + o.y * f.up.y + o.z * f.up.z) / (dx * f.up.x + dy * f.up.y + dz * f.up.z);
+    const x = dx * q - o.x, y = dy * q - o.y, z = dz * q - o.z;
+    const fi = (x * f.east.x + y * f.east.y + z * f.east.z + this.sizeM / 2) / step;
+    const fj = (x * f.north.x + y * f.north.y + z * f.north.z + this.sizeM / 2) / step;
+    if (fi < 0 || fj < 0 || fi >= n - 1 || fj >= n - 1) return null;
+    const i = Math.floor(fi), j = Math.floor(fj), a = j * n + i, pos = this.geo.attributes.position.array;
+    const ids = fi - i + fj - j <= 1 ? [a, a + 1, a + n] : [a + 1, a + n + 1, a + n];
+    const [A, B, C] = ids.map(v => v * 3);
+    const ux = pos[B] - pos[A], uy = pos[B + 1] - pos[A + 1], uz = pos[B + 2] - pos[A + 2];
+    const vx = pos[C] - pos[A], vy = pos[C + 1] - pos[A + 1], vz = pos[C + 2] - pos[A + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    return (nx * (pos[A] + o.x) + ny * (pos[A + 1] + o.y) + nz * (pos[A + 2] + o.z)) / (nx * dx + ny * dy + nz * dz);
+  }
+
+  /** Morph the outer two rows into the actual coarser triangles, sealing LOD height discontinuities. */
+  blendEdgeTo(coarse) {
+    if (!this.builtAt || !coarse.builtAt) return;
+    const signature = `${this.buildCount}/${coarse.buildCount}/${coarse._blendSignature || ''}`;
+    if (this._blendSignature === signature) return;
+    if (this._baseBuild !== this.buildCount) {
+      this._baseBuild = this.buildCount;
+      this._basePos = this.geo.attributes.position.array.slice();
+      this._baseRadii = this._radii.slice();
+    }
+    const pos = this.geo.attributes.position.array, base = this._basePos, n = this.res, o = this.worldPos;
+    pos.set(base); this._radii.set(this._baseRadii);
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const edge = Math.min(i, j, n - 1 - i, n - 1 - j);
+      if (edge >= 2) continue;
+      const v = j * n + i, k = v * 3;
+      const x = base[k] + o.x, y = base[k + 1] + o.y, z = base[k + 2] + o.z, l = Math.hypot(x, y, z);
+      const r = coarse.surfaceRadiusExact(x / l, y / l, z / l);
+      if (r === null) continue;
+      const t = 1 - edge / 2, weight = t * t * (3 - 2 * t), nr = l + (r - l) * weight;
+      pos[k] = x / l * nr - o.x; pos[k + 1] = y / l * nr - o.y; pos[k + 2] = z / l * nr - o.z;
+      this._radii[v] = nr;
+    }
+    for (let e = 0; e < this._edge.length; e++) {
+      const k = this._edge[e] * 3, q = (n * n + e) * 3;
+      const x = pos[k] + o.x, y = pos[k + 1] + o.y, z = pos[k + 2] + o.z, l = Math.hypot(x, y, z);
+      pos[q] = pos[k] - x / l * this.skirtM; pos[q + 1] = pos[k + 1] - y / l * this.skirtM; pos[q + 2] = pos[k + 2] - z / l * this.skirtM;
+    }
+    this.geo.attributes.position.needsUpdate = true;
+    this._computeNormals(); this.geo.computeBoundingSphere();
+    this._blendSignature = signature;
+  }
+
   /** Does the player need a fresh patch? */
   needsRebuild(px, py, pz) {
     if (!this.builtAt) return true;
     const dx = px - this.builtAt.x, dy = py - this.builtAt.y, dz = pz - this.builtAt.z;
+    // Climbing above the same ground does not change its samples. Only travel along
+    // the surface should spend the phone's rebuild budget.
+    if (this._frame) {
+      const f = this._frame;
+      return Math.hypot(dx * f.east.x + dy * f.east.y + dz * f.east.z,
+        dx * f.north.x + dy * f.north.y + dz * f.north.z) > this.rebuildThreshold;
+    }
     return Math.hypot(dx, dy, dz) > this.rebuildThreshold;
   }
 
@@ -330,7 +445,7 @@ export class LocalPatch {
     this._job = {
       px, py, pz, g, f, originR, row: 0,
       ox: (px / l) * originR, oy: (py / l) * originR, oz: (pz / l) * originR,
-      pos: new Float32Array(n * n * 3), col: new Float32Array(n * n * 3), radii: new Float64Array(n * n),
+      pos: new Float32Array(this.geo.attributes.position.array.length), col: new Float32Array(this.geo.attributes.color.array.length), radii: new Float64Array(n * n),
       t0: (typeof performance !== 'undefined' ? performance.now() : Date.now()), spent: 0,
       color: new THREE.Color(),
     };
@@ -384,6 +499,15 @@ export class LocalPatch {
     job.spent += now() - t0;
     if (job.row < n) return false;
 
+    for (let e = 0; e < this._edge.length; e++) {
+      const k = this._edge[e] * 3, q = (n * n + e) * 3;
+      const x = pos[k] + ox, y = pos[k + 1] + oy, z = pos[k + 2] + oz, l = Math.hypot(x, y, z);
+      pos[q] = pos[k] - x / l * this.skirtM;
+      pos[q + 1] = pos[k + 1] - y / l * this.skirtM;
+      pos[q + 2] = pos[k + 2] - z / l * this.skirtM;
+      col[q] = col[k]; col[q + 1] = col[k + 1]; col[q + 2] = col[k + 2];
+    }
+
     // Done: swap the new surface in, all at once.
     this.centre = { lat: job.g.lat, lon: job.g.lon };
     this.worldPos = { x: ox, y: oy, z: oz };
@@ -397,12 +521,29 @@ export class LocalPatch {
     this._reindexFrom(this.geo.attributes.position.array, ox, oy, oz);
     this.geo.attributes.position.needsUpdate = true;
     this.geo.attributes.color.needsUpdate = true;
-    this.geo.computeVertexNormals();
+    this._computeNormals();
     this.geo.computeBoundingSphere();
     this.buildCount++;
     this.lastBuildMs = job.spent;
     this._job = null;
     return true;
+  }
+
+  _computeNormals() {
+    const n = this.res;
+    this.geo.computeVertexNormals();
+    // Skirts seal the edge but must not bend the terrain's lighting toward a vertical wall.
+    if (this._edge.length) {
+      const all = this.geo.index.array.slice(), coreCount = all.length - this._edge.length * 6;
+      this.geo.setIndex(Array.from(all.subarray(0, coreCount)));
+      this.geo.computeVertexNormals();
+      const normals = this.geo.attributes.normal.array;
+      for (let e = 0; e < this._edge.length; e++) {
+        const k = this._edge[e] * 3, q = (n * n + e) * 3;
+        normals[q] = normals[k]; normals[q + 1] = normals[k + 1]; normals[q + 2] = normals[k + 2];
+      }
+      this.geo.setIndex(Array.from(all));
+    }
   }
 
   /**
@@ -430,6 +571,14 @@ export class LocalPatch {
         }
       }
       this.geo.setIndex(full);
+    }
+    if (this._edge.length) {
+      const idx = Array.from(this.geo.index.array), m = this._edge.length;
+      for (let e = 0; e < m; e++) {
+        const next = (e + 1) % m, a = this._edge[e], b = this._edge[next], c = n * n + e, d = n * n + next;
+        idx.push(a, c, b, b, c, d);
+      }
+      this.geo.setIndex(idx);
     }
   }
 

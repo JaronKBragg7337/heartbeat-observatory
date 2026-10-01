@@ -1,0 +1,55 @@
+{
+  "results": [
+    {
+      "name": "phone: three real bucket bites are carried and the kg/capacity bar shows them",
+      "pass": true
+    },
+    {
+      "name": "phone: ship messages clear the load bar and its capacity label",
+      "pass": true
+    },
+    {
+      "name": "phone: one tap on Drop all empties the carrier into one heap with exact zero ledgers",
+      "pass": true
+    },
+    {
+      "name": "keyboard Q still drops exactly one of two loads",
+      "pass": true
+    },
+    {
+      "name": "keyboard R drops every remaining load and conserves mass exactly",
+      "pass": true
+    },
+    {
+      "name": "full carrier says why digging stopped and offers Drop all",
+      "pass": true
+    },
+    {
+      "name": "16-bit emulation keeps the logarithmic depth shader valid",
+      "pass": true
+    },
+    {
+      "name": "browser reports no JS or shader errors",
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "resourceWarnings": [
+    {
+      "url": "http://localhost:8393/_vercel/insights/script.js",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:8393/hb-editor.js",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:8393/_vercel/insights/script.js",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:8393/hb-editor.js",
+      "status": 404
+    }
+  ]
+}

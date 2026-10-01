@@ -77,6 +77,13 @@
     color: #cbb8a6;
   }
   #hud .load { color: #f0b978; }
+  #hud .load-bar { height: 6px; margin-top: 4px; border-radius: 3px; background: #5d4938; overflow: hidden; }
+  #hud .load-bar i { display: block; height: 100%; background: #f0b978; }
+  #btn-drop-all {
+    display: none; right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+    min-width: 116px; min-height: 44px; color: #9ce6ef; border-color: #63e0ff88;
+  }
   #btn-settings {
     top: calc(10px + env(safe-area-inset-top, 0px));
     right: calc(10px + env(safe-area-inset-right, 0px));
@@ -252,6 +259,7 @@
 <a class="btn" id="back-link" href="/games/">← Games</a>
 <button class="btn" id="btn-action">Dig</button>
 <button class="btn" id="btn-tool">Shovel</button>
+<button class="btn" id="btn-drop-all" title="Pour all carried soil as one heap (R)">Drop all · R</button>
 
 <div id="settings-panel">
   <h2>Settings</h2>

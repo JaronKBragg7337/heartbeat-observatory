@@ -58,7 +58,8 @@ waiting to be used. Drag the right half to look; tap it to jump.
 **Desktop.** WASD, shift to run, space to jump, mouse to look. `V` toggles
 first/third person, `G` toggles the debug layer.
 
-**Digging.** Look where you want to cut and tap the action button (`E`) to dig; hold it (`Q`) to put a load down. The small
+**Digging.** Look where you want to cut and tap the action button (`E`) to dig; hold it to put loads down (`Q` drops one).
+**Drop all** (`R`) pours everything you carry as one heap beside the hole. The small
 chip above the button (or `1` `2` `3`, or Settings) changes tool: hand spade, shovel, excavator bucket. The amber ring is
 where the next bite goes (it lies on the surface you are aiming at and is as wide as the bite); the cyan ring is where the
 next load will land. Look down for a pit, level for a tunnel, up for a ceiling. Walk into a wall about shoulder high to
@@ -82,7 +83,7 @@ That turns "there's a rock stuck in a hill somewhere" into
 and a reproduction step.
 
 **The goal is to never need it.** `test/validate.mjs` is the first line of
-defence and runs without anyone looking: 228 checks (2026-10-01, about 80 s) covering placement,
+defence and runs without anyone looking: 281 checks (2026-10-01) covering placement,
 collision, dimension drift, physics correctness, determinism, the ship, digging and spoil, the port and its tower.
 
 ---
@@ -95,7 +96,7 @@ src/world/geodesy.js     lat/long/alt on a real spheroid; the address book
 src/world/field.js       the 3D material field — the world's actual truth
 src/world/edits.js       the dug-and-dumped ground: a 0.1 m lattice in 3.2 m bricks, exact matter, spoil that settles
 src/world/excavation.js  draws the lattice (brick meshes) and tells the heightfield tiers where to stand aside
-src/world/planetMesh.js  pictures of the ORIGINAL geology: shell, mid and near heightfield tiers
+src/world/planetMesh.js  pictures of the ORIGINAL geology: shell, three far tiers, mid and near
 src/player/digging.js    the tools, where a bite lands, what you carry, where a load is put down
 src/core/registry.js     stable asset IDs and measured records
 src/player/walker.js     a body standing on a planet
@@ -145,13 +146,39 @@ phi(p) < 0   solid       phi(p) > 0   open air        (field.js's sign rule, eve
 |---|---|---|
 | Hand spade | r 0.09 m | ~3 L, ~5 kg: detail, corners, steps |
 | Shovel | r 0.17 m | ~21 L, ~31 kg: the everyday bite |
-| Excavator bucket (a machine, 12 t bed) | r 0.70 m | 1.44 m3, 2-4 t: a hole you can stand and turn in, a tunnel you can walk upright |
+| Excavator bucket (a machine, 48 t hopper) | r 0.70 m | 1.44 m3, 2-4 t: a hole you can stand and turn in, a tunnel you can walk upright |
 
 The bite is a sphere centred half a radius INTO the material along the way you are looking (`digTarget` steps the look ray through
 the field itself, not the drawn mesh). Look down: a pit. Level: a tunnel. Up: a ceiling. A walkable tunnel is two rows of
 bucket bites; a person fits through a 1.4 m hole.
 
-Hands carry 105 kg on Mars (40 kgf is 105 kg of rock at 3.72 m/s2); the bucket has a machine's bed.
+The hand tools load a **powered hauling cart**, rated at 400 kgf: **1054 kg on Mars**, ten times the old limit.
+The bucket loads a **48,000 kg hopper**, four times its old bed capacity. These are fictional assisted transport ratings,
+not human lifting strength; there is no cart vehicle model yet. The HUD always shows kilograms / capacity and a load bar.
+A bite that would exceed capacity is refused before changing any ground, with a message offering Drop all or a single drop.
+
+Drop all combines the lots (including their material composition) and calls the existing cone pour once. The heap planner
+sizes its clearance from the entire load, including when standing deep below the rim. Failed pours retain the inventory.
+The ledger sums binary lot quantities as integers, so mixed single drops and whole-hopper pours balance to **exactly zero**
+in both kilograms and cubic metres; the lattice itself is still independently audited at its existing floating-point precision.
+
+### Distant terrain and browser review
+
+The old 880 m patch ended about 440 m away, then jumped to a 128-segment planet shell with vertices about **166 km apart**.
+There was no mesh capable of showing kilometre-scale hills in between. Fog at density 0.00016 also erased 92% of contrast
+at 10 km. Three new field-sampled patches span **8, 64 and 320 km**; phone spacing is **125 m, 1 km and 6.67 km**.
+Their outer edges blend into the actual coarser triangles, skirts close residual seams, and each coarse tier discards under
+its finer neighbour. Fog density is now 0.000012 (94% contrast at 20 km, 38% at 82 km). Logarithmic depth supports the
+distance range, including the 16-bit emulation. Climbing alone no longer rebuilds the heightfields.
+
+Review locally with `?tier=low&terrainView=120` or `?tier=low&terrainView=1000`; add `&terrainBefore=1` for a shell/fog
+comparison. These pause the player. Console: `cosmos.horizonView(1000, { before: false, yaw: 0 })`; yaw is radians,
+zero faces north. `cosmos.freeCam.off()` returns to play. Original before screenshots, after screenshots, validator
+output, browser checks and measured budgets are in [the carry/terrain review](docs/qa/2026-10-01/carry-terrain/REVIEW.md).
+
+The field at Valles is **procedural geology, not a surveyed canyon model**. This change reveals the existing ridges;
+it does not supply mapped canyon walls. Faint LOD transition bands remain. Phone GPU performance has not been measured
+on physical hardware, and a large one-pour heap can pause the main thread (23 tonnes took ~0.8 s in Node).
 
 The body is more than the feet now (`walker.js`): four rings of probes (shin, hip, chest, head) and one over the crown keep you
 out of rock, so tunnel walls are walls and a roof is a roof; the feet step up a ledge of 0.5 m; and walking into a wall whose top

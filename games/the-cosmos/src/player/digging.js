@@ -11,9 +11,9 @@
 // in Node against the real field.
 // ============================================================================
 
-import { density, normalAt, raycast } from '../world/field.js';
+import { density, normalAt, raycast, surfaceRadiusFast } from '../world/field.js';
 
-const CARRY_EARTH_KGF = 40;
+const CARRY_EARTH_KGF = 400;            // powered hauling cart, not an unassisted backpack
 const EARTH_G = 9.80665;                 // CODATA standard gravity
 
 /**
@@ -22,16 +22,15 @@ const EARTH_G = 9.80665;                 // CODATA standard gravity
  *   Shovel       r 0.17 m  ->  21 L   (about 31 kg)                the everyday bite
  *   Bucket       r 0.70 m  -> 1.44 m3 (about 2-4 t)                 an excavator's bite: 1.4 m across, a hole
  *                                                                  you can stand and turn in, a tunnel you can walk
- * What you can carry is a WEIGHT limit, so it belongs to the body you are standing on: 40 kg is
- * a heavy ordinary load on Earth, the same pull on Mars is 105 kg of rock. The bucket belongs to
- * a machine and has a machine's bed.
+ * The hand tools load a powered hauling cart: 400 kgf rated weight, ~1054 kg on Mars.
+ * The excavator loads a 48 t hopper. These are assisted transport capacities, not human lifting strength.
  */
 export function makeTools(body) {
   const hands = CARRY_EARTH_KGF * EARTH_G / body.surfaceGravity;
   return [
-    { id: 'spade',  name: 'Hand spade', radius: 0.09, reachM: 3.2, capacityKg: hands },
-    { id: 'shovel', name: 'Shovel',     radius: 0.17, reachM: 3.6, capacityKg: hands },
-    { id: 'bucket', name: 'Excavator bucket', radius: 0.70, reachM: 6.5, capacityKg: 12000, machine: true },
+    { id: 'spade',  name: 'Hand spade', radius: 0.09, reachM: 3.2, capacityKg: hands, carrier: 'Hauling cart' },
+    { id: 'shovel', name: 'Shovel',     radius: 0.17, reachM: 3.6, capacityKg: hands, carrier: 'Hauling cart' },
+    { id: 'bucket', name: 'Excavator bucket', radius: 0.70, reachM: 6.5, capacityKg: 48000, carrier: 'Hopper', machine: true },
   ];
 }
 
@@ -93,11 +92,13 @@ export class Digger {
 
   dig() {
     const tl = this.tool;
-    if (this.carriedMass() >= tl.capacityKg) return { ok: false, msg: tl.machine ? 'Bucket bed full' : 'Hands full' };
+    const remaining = tl.capacityKg - this.carriedMass();
+    const full = `${tl.carrier} full · Drop all (R) or one load (Q)`;
+    if (remaining <= 0) return { ok: false, msg: full };
     const hit = this.digTarget();
     if (!hit) return { ok: false, msg: 'Nothing in reach' };
     const c = this.biteCentre(hit, tl.radius);
-    const lot = this.edits.dig(c.x, c.y, c.z, tl.radius);
+    const lot = this.edits.carve({ x: c.x, y: c.y, z: c.z, r: tl.radius, maxMassKg: remaining });
     if (!lot) return { ok: false, msg: this.edits.lastRefusal || 'Cannot cut this' };
     this.carried.push(lot);
     return { ok: true, msg: `+${lot.massKg.toFixed(1)} kg ${lot.materialName}`, lot, centre: c };
@@ -105,6 +106,10 @@ export class Digger {
 
   /** The ground point under p (looking down the local up axis), or null. */
   groundBelowPoint(p, up, from = 4, drop = 12) {
+    // A player with a large hopper can be well below the rim before pouring.
+    // Start ABOVE the original ground beside the shaft, rather than inside solid rock.
+    const l = len3(p), r = surfaceRadiusFast(this.body, p.x / l, p.y / l, p.z / l, 3, { ignoreEdits: true });
+    from = Math.max(from, r - l + 4);
     const hits = raycast(this.body, p.x + up.x * from, p.y + up.y * from, p.z + up.z * from,
       -up.x, -up.y, -up.z, from + drop, { firstOnly: true, minStep: 0.05 });
     const h = hits.find((q) => q.kind === 'enter');
@@ -189,14 +194,30 @@ export class Digger {
     return first;
   }
 
-  dump() {
+  /** Combine the inventory without changing its composition, mass or volume. */
+  combinedLoad() {
+    if (!this.carried.length) return null;
+    const parts = new Map();
+    for (const lot of this.carried) for (const p of lot.parts) {
+      const q = parts.get(p.materialId) || { materialId: p.materialId, volumeM3: 0, massKg: 0 };
+      q.volumeM3 += p.volumeM3; q.massKg += p.massKg; parts.set(p.materialId, q);
+    }
+    const dominant = this.carried.reduce((a, b) => a.massKg > b.massKg ? a : b);
+    return { ...dominant, lotId: this.carried.map(l => l.lotId).join('+'),
+      massKg: this.carriedMass(), solidVolumeM3: this.carriedVolume(),
+      looseVolumeM3: this.carried.reduce((s, l) => s + l.looseVolumeM3, 0), parts: [...parts.values()], sourceLots: this.carried.slice() };
+  }
+
+  dumpAll() { return this.dump(true); }
+
+  dump(all = false) {
     if (!this.carried.length) return { ok: false, msg: 'Carrying nothing' };
-    const lot = this.carried[this.carried.length - 1];
+    const lot = all ? this.combinedLoad() : this.carried[this.carried.length - 1];
     const plan = this.dumpPlan(lot);
     if (!plan) return { ok: false, msg: 'No ground to put it on' };
     const res = this.edits.deposit(lot, plan.x, plan.y, plan.z, { up: plan.up, pile: plan.pile });
     if (!res) return { ok: false, msg: 'No ground to put it on' };
-    this.carried.pop();
+    if (all) this.carried.length = 0; else this.carried.pop();
     const left = this.carried.length;
     return { ok: true, msg: `dropped ${lot.massKg.toFixed(1)} kg${left ? ` · ${left} left` : ''}`, pile: res.pile, plan };
   }

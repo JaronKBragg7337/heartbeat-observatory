@@ -19,6 +19,10 @@ export const depthEmulation = (() => {
 
 if (depthEmulation) {
   const steps = (Math.pow(2, depthEmulation) - 1).toFixed(1);
-  THREE.ShaderChunk.logdepthbuf_fragment =
-    `gl_FragDepth = floor(gl_FragCoord.z * ${steps} + 0.5) / ${steps};`;
+  THREE.ShaderChunk.logdepthbuf_fragment += `
+#if defined(USE_LOGDEPTHBUF) && defined(USE_LOGDEPTHBUF_EXT)
+  gl_FragDepth = floor(gl_FragDepthEXT * ${steps} + 0.5) / ${steps};
+#else
+  gl_FragDepth = floor(gl_FragCoord.z * ${steps} + 0.5) / ${steps};
+#endif`;
 }

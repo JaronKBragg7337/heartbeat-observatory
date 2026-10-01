@@ -65,7 +65,7 @@ const CSS = `
 #ship-panel .dim { color: #6fa3b3; }
 #ship-hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); font-size: 10px; color: #a9d8e6;
   background: rgba(4,20,27,.6); border-radius: 8px; padding: 5px 10px; display: none; pointer-events: none; white-space: nowrap; }
-#ship-toast { position: fixed; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); max-width: 84vw;
+#ship-toast { position: fixed; left: 50%; top: calc(var(--hud-bottom, 64px) + 8px); transform: translateX(-50%); max-width: 84vw;
   font-size: 11px; color: #ffe9c9; background: rgba(10,7,5,.7); border: 1px solid rgba(240,185,120,.35); border-radius: 8px; padding: 6px 10px;
   opacity: 0; transition: opacity .25s; pointer-events: none; text-align: center; }
 #ship-toast.on { opacity: 1; }
