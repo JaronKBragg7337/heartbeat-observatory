@@ -16,6 +16,8 @@ export const CREW_POSTS = [
     pitch: 'Takes the chair, flies if there is no pilot, and works the main guns. You do not have to be the captain.' },
   { id: 'nav',            name: 'Jorge',  personId: 'jorge',  title: 'Navigator',      seat: 'nav',        skill: 0.78,
     pitch: 'Reads the scanner and the ground ahead and calls out what he sees.' },
+  { id: 'comms',          name: 'Aoi',    personId: 'aoi',    title: 'Communications officer', seat: 'comms', skill: 0.80,
+    pitch: 'Keeps the port channel and the ship log open. Tracks the crew account and your accepted jobs.' },
   { id: 'gunner_dorsal',  name: 'Sunita', personId: 'sunita', title: 'Gunner (dorsal)', seat: 'gun_dorsal', skill: 0.75,
     pitch: 'Takes the turret on top. Fires only at raiders, and only outside Mars airspace.' },
   { id: 'gunner_ventral', name: 'Walter', personId: 'walter', title: 'Gunner (ventral)', seat: 'gun_ventral', skill: 0.72,
@@ -28,6 +30,7 @@ export const HIRE_SPOTS = {
   pilot:          { x: -17.0, z: 44.0 },
   captain:        { x: -20.4, z: 46.2 },
   nav:            { x: -23.8, z: 44.6 },
+  comms:          { x: -33.6, z: 46.2 },
   gunner_dorsal:  { x: -27.0, z: 46.4 },
   gunner_ventral: { x: -30.2, z: 44.4 },
 };

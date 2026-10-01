@@ -152,7 +152,7 @@ export async function runCrewChecks({ check, section, THREE, mars, FIELD }) {
     const crew = new CrewSystem({ engine, ship, site, people, ground, walker: { worldPos: { x: 0, y: 0, z: 0 } }, playerLook: 'isaiah', onSay: (n, t) => said.push(n + ': ' + t) });
     ship.crew = crew;
     await crew.build();
-    check('five candidates wait at Marineris Port, each at their own spot on the apron, on the ground', crew.members.size === 5 &&
+    check('six candidates wait at Marineris Port, each at their own spot on the apron, on the ground', crew.members.size === CREW_POSTS.length &&
       [...crew.members.values()].every((m) => { const l = site.toLocal(m.gpos); const s = HIRE_SPOTS[m.id]; return Math.abs(l.x - s.x) < 0.5 && Math.abs(l.z - s.z) < 0.5 && Math.abs(l.y) < 0.2; }));
     ship.aboard = true; ship.sw.place(0, 3, 4, 0);
     const tick = (secs) => { for (let i = 0; i < secs * 30; i++) { const c = crew.pilotControls(1 / 30); if (c) Object.assign(ship.flight.controls, c); ship.flight.step(1 / 30); crew.update(1 / 30); } };
@@ -164,8 +164,8 @@ export async function runCrewChecks({ check, section, THREE, mars, FIELD }) {
     check('with the ramp raised the crew wait outside it and say so, rather than walking through the hull', [...crew.members.values()].every((m) => m.place === 'ground' && m.mode === 'boarding') && said.some((s) => /ramp is up/i.test(s)));
     ship.state.ramps.cargo.lowered = true; tick(110);
     const seated = [...crew.members.values()].filter((m) => m.seated);
-    check('lower the ramp and all five walk aboard, climb to their stations and sit (pilot, captain, navigator, both turrets) within two minutes', seated.length === 5 &&
-      seated.every((m) => m.place === 'ship' && Math.hypot(m.sw.x - SEATS.find((s) => s.id === m.def.seat).x, m.sw.z - SEATS.find((s) => s.id === m.def.seat).z) < 0.2), `${seated.length}/5 seated`);
+    check('lower the ramp and all six walk aboard, climb to their stations and sit (pilot, captain, navigator, comms, both turrets) within two minutes', seated.length === CREW_POSTS.length &&
+      seated.every((m) => m.place === 'ship' && Math.hypot(m.sw.x - SEATS.find((s) => s.id === m.def.seat).x, m.sw.z - SEATS.find((s) => s.id === m.def.seat).z) < 0.2), `${seated.length}/${CREW_POSTS.length} seated`);
     check('the pilot is the one flying, and the captain works the main guns', crew.flyer() && crew.flyer().id === 'pilot' && crew.mainGunner().id === 'captain');
     // orders
     ship.aboard = false; const refuse = crew.order('roam'); ship.aboard = true;

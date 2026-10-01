@@ -38,6 +38,13 @@ import { CrewSystem } from './crew/crewSystem.js';
 import { CrewUI } from './crew/crewUI.js';
 import { PortPeople } from './port/portPeople.js';
 import { makeSpoilGuard } from './player/spoilProtection.js';
+import { WorldState } from './world-state/worldState.js';
+import { IndexedDBAdapter } from './world-state/storage.js';
+import { restoreTerrain } from './world-state/terrainCodec.js';
+import { GameBridge } from './world-state/gameBridge.js';
+import { EconomyUI } from './economy/economyUI.js';
+import { buildKeyControls } from './ui/keyActions.js';
+import { DamageView } from './world-state/damageView.js';
 
 const canvas = document.getElementById('game-canvas');
 const engine = new Engine(canvas, { fov: 72 });
@@ -49,6 +56,11 @@ const body = getBody('mars');
 const SPAWN = { lat: -14.0, lon: -59.2, name: 'Valles Marineris' };
 const portSite = createPortSite(body, SPAWN);
 attachGrades([portSite]);
+// Local authority today. Load before any terrain/player/ship presentation is built.
+const world = new WorldState(new IndexedDBAdapter());
+let savedWorld = {record:null,bricks:[]};
+try { savedWorld = await world.load(); }
+catch(e) { world.error=e.message;console.error('World save unavailable',e); }
 
 // ---------------------------------------------------------------------------
 // World
@@ -132,6 +144,7 @@ function updateFarTerrain(focus, force = false, budgetMs = tier === 'low' ? 2 : 
 // ---------------------------------------------------------------------------
 const edits = new EditStore(body);
 attachEdits(edits);
+restoreTerrain(edits,savedWorld.record?.terrain,savedWorld.bricks);
 // Phone tier meshes a little closer and spends less of each frame doing it.
 const terrain = new EditedTerrain(engine, body, edits, {
   rangeM: tier === 'low' ? 56 : 90, budgetMs: tier === 'low' ? 3 : 6,
@@ -186,16 +199,16 @@ const tool = () => digger.tool;
 const carried = [];
 const carriedMass = () => digger.carriedMass();
 const carriedVolume = () => digger.carriedVolume();
-const setTool = (i) => digger.setTool(i);
+const setTool = (i) => world.dispatch({type:'tool-change',index:i});
 const digTarget = (r) => digger.digTarget(r);
 const dumpPlan = (lot) => digger.dumpPlan(lot);
 const groundBelowPoint = (...a) => digger.groundBelowPoint(...a);
 function doDig() {
   if (ship.ready && ship.aboard) return { ok: false, msg: 'Not aboard' };
-  return digger.dig();
+  return world.dispatch({type:'dig-edit'});
 }
-function doDump() { return digger.dump(); }
-function doDumpAll() { return digger.dumpAll(); }
+function doDump() { return world.dispatch({type:'spoil-pour',all:false}); }
+function doDumpAll() { return world.dispatch({type:'spoil-pour',all:true}); }
 
 // ---------------------------------------------------------------------------
 // AIM MARKER — where the tool will actually bite, drawn at its real size.
@@ -314,6 +327,12 @@ try {
 // ship-sized texture set for the port. Fallback still allows independent builds.
 const port = new PortSystem(engine, registry, portSite, tier, ship.matsExt).build();
 portRef = port;
+// Persistence and economy use the existing ship pose through this small bridge.
+const worldBridge = new GameBridge(world,{edits,digger,walker,ship,site:portSite});
+rebuildNear(true);
+const economyUI = new EconomyUI(world,{port,walker,ship,bridge:worldBridge});
+const damageView = new DamageView(world,engine);
+buildKeyControls();
 port.padOccupancy = () => {
   if (!ship.flight.landed) return [];
   const p = portSite.toLocal(ship.flight.pos);
@@ -374,13 +393,14 @@ playerPerson.ready.then((p) => {
   rec.authored = { width: Math.round(m.width * 100) / 100, height: Math.round(m.height * 100) / 100, depth: Math.round(m.depth * 100) / 100 };
 });
 
-// --- The crew: five people waiting at the port to be hired (src/crew). Built once the ship and the port are.
+// --- The crew: six people waiting at the port to be hired (src/crew).
 let crew = null, crewUI = null;
 const portPeople=new PortPeople(port,people);
 if (ship.ready) {
   const c = new CrewSystem({ engine, ship, site: portSite, people, ground: groundRadius, walker, tier, playerLook });
   c.build().then(async () => { crew = c; ship.crew = c;
     await portPeople.build();
+    worldBridge.attachCrew(c,portPeople);
     crewUI = new CrewUI(c, { ship, walker, isTouch, portPeople });
   }).catch((e) => console.error('Crew failed to build', e));
 }
@@ -905,6 +925,9 @@ engine.addUpdater((dt) => {
   if (shipUI) shipUI.update(dt);
   if (crewUI) crewUI.update(dt);
   portPeople.tick(dt,walker.worldPos);
+  worldBridge.tick(dt);
+  economyUI.tick(dt);
+  damageView.tick(dt,walker.worldPos);
   if (suitGroup.visible && playerPerson.loaded) {
     // the body stands or walks with what the legs are doing
     const v = walker.velocity, sp = Math.hypot(v.x, v.y, v.z);
@@ -970,6 +993,7 @@ engine.start();
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
 window.cosmos = {
+  world, worldBridge, economyUI,
   port, portTour, portPeople,
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
@@ -981,7 +1005,7 @@ window.cosmos = {
   edits, carried, doDig, doDump, doDumpAll, digger, digTarget, dumpPlan, terrain, TOOLS, setTool, tool,
   nearPatch, farPatches, rebuildNear, freeCam, horizonView,
   flushTerrain: () => terrain.flush(walker.worldPos),
-  ledger: () => edits.ledger(carried),
+  ledger: () => worldBridge.ledger(),
   step: (dt = 1 / 60) => engine.step(dt),
   goto: (lat, lon) => {
     walker.placeAtGeodetic(lat, lon, 1.5);

@@ -1,0 +1,536 @@
+{
+  "boot": {
+    "purse": 10000,
+    "crew": 6,
+    "depth": 24,
+    "emulated": 16
+  },
+  "hire": {
+    "purse": 9600,
+    "status": "hired"
+  },
+  "boarding": {
+    "seated": true,
+    "place": "ship",
+    "seat": "comms",
+    "position": {
+      "x": 2.5,
+      "y": 6,
+      "z": -15.7
+    },
+    "log": [
+      {
+        "t": 65.95296666661754,
+        "msg": "Aoi: Channel watch: port frequency clear. Account 9600 marks. 0 open jobs.",
+        "warn": false
+      },
+      {
+        "t": 95.98629999997478,
+        "msg": "Aoi: Channel watch: port frequency clear. Account 9600 marks. 0 open jobs.",
+        "warn": false
+      },
+      {
+        "t": 126.01963333333201,
+        "msg": "Aoi: Channel watch: port frequency clear. Account 9600 marks. 0 open jobs.",
+        "warn": false
+      }
+    ]
+  },
+  "buy": {
+    "purse": 9588,
+    "food": 1
+  },
+  "dig": {
+    "edits": 1,
+    "mass": 1773.5771633021932,
+    "ledger": {
+      "removedM3": 1.1668270811198647,
+      "depositedM3": 0,
+      "carriedM3": 1.1668270811198647,
+      "unaccountedM3": 0,
+      "removedKg": 1773.5771633021932,
+      "depositedKg": 0,
+      "carriedKg": 1773.5771633021932,
+      "unaccountedKg": 0,
+      "edits": 1,
+      "exportedKg": 0,
+      "exportedM3": 0
+    }
+  },
+  "secondDig": {
+    "ok": true,
+    "mass": 3547.175438760726
+  },
+  "regolith": {
+    "purse": 9606,
+    "cargo": 2547.175438760726,
+    "ledger": {
+      "removedM3": 2.3336680518162662,
+      "depositedM3": 0,
+      "carriedM3": 1.675773314974161,
+      "unaccountedM3": 0,
+      "removedKg": 3547.175438760726,
+      "depositedKg": 0,
+      "carriedKg": 2547.175438760726,
+      "unaccountedKg": 0,
+      "edits": 2,
+      "exportedKg": 1000,
+      "exportedM3": 0.6578947368421056
+    }
+  },
+  "elevator": {
+    "car": 22.5,
+    "feet": 22.520000068850116
+  },
+  "quest": {
+    "quest": {
+      "depot-foundation": {
+        "status": "complete"
+      }
+    },
+    "purse": 10006,
+    "ledger": {
+      "removedM3": 2.3336680518162662,
+      "depositedM3": 0,
+      "carriedM3": 1.0178785781320554,
+      "unaccountedM3": 0,
+      "removedKg": 3547.175438760726,
+      "depositedKg": 0,
+      "carriedKg": 1547.1754387607264,
+      "unaccountedKg": 0,
+      "edits": 2,
+      "exportedKg": 2000,
+      "exportedM3": 1.315789473684211
+    }
+  },
+  "spoil": {
+    "cut": true,
+    "pour": true,
+    "piles": 1,
+    "cargo": 1547.1754387607264,
+    "ledger": {
+      "removedM3": 3.5001861068810998,
+      "depositedM3": 1.1665180550648333,
+      "carriedM3": 1.0178785781320554,
+      "unaccountedM3": 0,
+      "removedKg": 5320.282882459275,
+      "depositedKg": 1773.107443698549,
+      "carriedKg": 1547.1754387607264,
+      "unaccountedKg": 0,
+      "edits": 4,
+      "exportedKg": 2000,
+      "exportedM3": 1.315789473684211
+    }
+  },
+  "firing": {
+    "groundScars": 2
+  },
+  "beforeRefresh": {
+    "ship": {
+      "x": 1689198.8115097752,
+      "y": -812714.9915429065,
+      "z": 2833353.128659757
+    },
+    "player": {
+      "x": -1.6,
+      "y": 6,
+      "z": -17.2
+    },
+    "seat": "pilot",
+    "hull": 83,
+    "marks": 10006,
+    "edits": 4,
+    "cargo": 1547.1754387607264,
+    "crew": [
+      {
+        "id": "pilot",
+        "status": "candidate",
+        "place": "ground",
+        "mode": "idle",
+        "gpos": {
+          "x": 1689057.6819249345,
+          "y": -812757.1432588273,
+          "z": 2833350.8841938237
+        },
+        "face": {
+          "x": 0.55912909527106,
+          "y": 0.8233715041509236,
+          "z": -0.09712888846070235
+        },
+        "seated": false,
+        "sitT": 0,
+        "displaced": false,
+        "dismissing": false,
+        "sw": {
+          "x": 0,
+          "y": 3,
+          "z": 0,
+          "yaw": 0
+        }
+      },
+      {
+        "id": "captain",
+        "status": "candidate",
+        "place": "ground",
+        "mode": "idle",
+        "gpos": {
+          "x": 1689054.4889805694,
+          "y": -812759.2779203352,
+          "z": 2833352.168065518
+        },
+        "face": {
+          "x": 0.6406095773661094,
+          "y": 0.7495117320756686,
+          "z": -0.16688778525627954
+        },
+        "seated": false,
+        "sitT": 0,
+        "displaced": false,
+        "dismissing": false,
+        "sw": {
+          "x": 0,
+          "y": 3,
+          "z": 0,
+          "yaw": 0
+        }
+      },
+      {
+        "id": "nav",
+        "status": "candidate",
+        "place": "ground",
+        "mode": "idle",
+        "gpos": {
+          "x": 1689051.7667327637,
+          "y": -812757.7254392385,
+          "z": 2833354.2415093514
+        },
+        "face": {
+          "x": 0.7663128168668797,
+          "y": 0.5718793009441351,
+          "z": -0.29277761502067695
+        },
+        "seated": false,
+        "sitT": 0,
+        "displaced": false,
+        "dismissing": false,
+        "sw": {
+          "x": 0,
+          "y": 3,
+          "z": 0,
+          "yaw": 0
+        }
+      },
+      {
+        "id": "comms",
+        "status": "hired",
+        "place": "ship",
+        "mode": "sit",
+        "gpos": {
+          "x": 1689074.2793558633,
+          "y": -812740.098862599,
+          "z": 2833345.936826389
+        },
+        "face": {
+          "x": 0.8016076631126295,
+          "y": 0.4944775710717898,
+          "z": -0.33603137672850175
+        },
+        "seated": true,
+        "sitT": 1,
+        "sitFrom": {
+          "x": 1.416904333633995,
+          "y": 6,
+          "z": -15.618689392396488,
+          "yaw": 0.576661655486998
+        },
+        "displaced": false,
+        "dismissing": false,
+        "sw": {
+          "x": 2.5,
+          "y": 6,
+          "z": -15.7,
+          "yaw": 0.576661655486998
+        }
+      },
+      {
+        "id": "gunner_dorsal",
+        "status": "candidate",
+        "place": "ground",
+        "mode": "idle",
+        "gpos": {
+          "x": 1689048.795125748,
+          "y": -812759.4719804723,
+          "z": 2833355.506082585
+        },
+        "face": {
+          "x": 0.7755953766756353,
+          "y": 0.5534222283602033,
+          "z": -0.3036044282223277
+        },
+        "seated": false,
+        "sitT": 0,
+        "displaced": false,
+        "dismissing": false,
+        "sw": {
+          "x": 0,
+          "y": 3,
+          "z": 0,
+          "yaw": 0
+        }
+      },
+      {
+        "id": "gunner_ventral",
+        "status": "candidate",
+        "place": "ground",
+        "mode": "idle",
+        "gpos": {
+          "x": 1689046.2942152915,
+          "y": -812757.5313791014,
+          "z": 2833357.5602279566
+        },
+        "face": {
+          "x": 0.83129252995533,
+          "y": 0.4066780802485063,
+          "z": -0.37890060528568215
+        },
+        "seated": false,
+        "sitT": 0,
+        "displaced": false,
+        "dismissing": false,
+        "sw": {
+          "x": 0,
+          "y": 3,
+          "z": 0,
+          "yaw": 0
+        }
+      }
+    ],
+    "damage": {
+      "ground:16890778,-8126972,28333542": {
+        "amount": 1,
+        "position": {
+          "x": 1689077.789717143,
+          "y": -812697.1997216219,
+          "z": 2833354.246192021
+        },
+        "up": {
+          "x": 0.497188663351545,
+          "y": -0.23922156628843147,
+          "z": 0.8340122752437242
+        }
+      },
+      "ground:16890803,-8126972,28333528": {
+        "amount": 1,
+        "position": {
+          "x": 1689080.2805211772,
+          "y": -812697.1997368018,
+          "z": 2833352.761316691
+        },
+        "up": {
+          "x": 0.49718939653239674,
+          "y": -0.23922156629288951,
+          "z": 0.8340118381630609
+        }
+      },
+      "qa-scar": {
+        "amount": 1,
+        "position": {
+          "x": 1689001.6672955917,
+          "y": -812704.7470218134,
+          "z": 2833399.4845605544
+        },
+        "up": {
+          "x": 0.49684886039493226,
+          "y": -0.24190200460468458,
+          "z": 0.8334414377102283
+        }
+      }
+    },
+    "quest": {
+      "depot-foundation": {
+        "status": "complete"
+      }
+    },
+    "terrain": {
+      "hash": 676974108,
+      "bricks": 8,
+      "piles": 1
+    }
+  },
+  "afterRefresh": {
+    "ship": {
+      "x": 1689198.8114972382,
+      "y": -812714.9916416609,
+      "z": 2833353.128638727
+    },
+    "seat": "pilot",
+    "hull": 83,
+    "marks": 10006,
+    "edits": 4,
+    "cargo": 1547.1754387607264,
+    "comms": "hired",
+    "quest": {
+      "depot-foundation": {
+        "status": "complete"
+      }
+    },
+    "damage": {
+      "ground:16890778,-8126972,28333542": {
+        "amount": 1,
+        "position": {
+          "x": 1689077.789717143,
+          "y": -812697.1997216219,
+          "z": 2833354.246192021
+        },
+        "up": {
+          "x": 0.497188663351545,
+          "y": -0.23922156628843147,
+          "z": 0.8340122752437242
+        }
+      },
+      "ground:16890803,-8126972,28333528": {
+        "amount": 1,
+        "position": {
+          "x": 1689080.2805211772,
+          "y": -812697.1997368018,
+          "z": 2833352.761316691
+        },
+        "up": {
+          "x": 0.49718939653239674,
+          "y": -0.23922156629288951,
+          "z": 0.8340118381630609
+        }
+      },
+      "qa-scar": {
+        "amount": 1,
+        "position": {
+          "x": 1689001.6672955917,
+          "y": -812704.7470218134,
+          "z": 2833399.4845605544
+        },
+        "up": {
+          "x": 0.49684886039493226,
+          "y": -0.24190200460468458,
+          "z": 0.8334414377102283
+        }
+      }
+    },
+    "ledger": {
+      "removedM3": 3.5001861068810998,
+      "depositedM3": 1.1665180550648333,
+      "carriedM3": 1.0178785781320554,
+      "unaccountedM3": 0,
+      "removedKg": 5320.282882459275,
+      "depositedKg": 1773.107443698549,
+      "carriedKg": 1547.1754387607264,
+      "unaccountedKg": 0,
+      "edits": 4,
+      "exportedKg": 2000,
+      "exportedM3": 1.315789473684211
+    },
+    "terrain": {
+      "hash": 676974108,
+      "bricks": 8,
+      "piles": 1
+    }
+  },
+  "phone": {
+    "debug": true,
+    "depth": 16,
+    "buttons": [
+      {
+        "id": "touch-key-KeyG",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyV",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyE",
+        "width": 107.34375,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyQ",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyR",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyC",
+        "width": 107.34375,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyT",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyF",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-Digit1",
+        "width": 107.34375,
+        "height": 46
+      },
+      {
+        "id": "touch-key-Digit2",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-Digit3",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-Space",
+        "width": 107.34375,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyW",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyS",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyA",
+        "width": 107.34375,
+        "height": 46
+      },
+      {
+        "id": "touch-key-KeyD",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-ShiftLeft",
+        "width": 107.328125,
+        "height": 46
+      },
+      {
+        "id": "touch-key-Escape",
+        "width": 107.34375,
+        "height": 46
+      }
+    ],
+    "overflow": false,
+    "water": 1
+  },
+  "errors": []
+}

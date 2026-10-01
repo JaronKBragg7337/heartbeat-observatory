@@ -6,6 +6,8 @@ Live: https://www.heartbeatobservatory.com/games/the-cosmos/
 Local: `node server.js` → http://localhost:8378/
 Validate: `node test/validate.mjs`
 
+October 1 economy/save build (uncommitted): paid crew including comms, trader dialogue and inventory, a tower delivery quest, touch paths for keyboard prompts, and a local persistent world. See [world ownership and server plan](docs/WORLD-STATE.md) and [desktop/phone QA](docs/qa/2026-10-01/economy/REVIEW.md). Shared multiplayer authority is the next step; current saves live in this browser.
+
 ---
 
 ## The one rule this project is built around

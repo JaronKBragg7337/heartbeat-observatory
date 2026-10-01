@@ -9,6 +9,7 @@
 // ============================================================================
 
 import { CREW_POSTS, ORDERS, thinkDelay } from './crewSpec.js';
+import { workerHTML, WAGES } from '../economy/dialogue.js';
 
 const CSS = `
 #crew-ui { position: fixed; inset: 0; pointer-events: none; z-index: 68; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
@@ -24,7 +25,7 @@ const CSS = `
 #crew-panel .hd img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: #2a211a; flex: none; }
 #crew-panel .hd b { display: block; color: #ffd9ac; font-size: 14px; letter-spacing: .3px; }
 #crew-panel .hd span { color: #a8917b; font-size: 11px; }
-#crew-panel .x { margin-left: auto; align-self: flex-start; min-height: 36px; min-width: 36px; text-align: center; padding: 4px; }
+#crew-panel .x { margin-left: auto; align-self: flex-start; min-height: 44px; min-width: 44px; text-align: center; padding: 4px; }
 #crew-panel p { margin: 0 0 8px; }
 #crew-panel .say { color: #ffe9cf; background: rgba(240,185,120,.1); border-radius: 8px; padding: 6px 8px; margin: 0 0 8px; }
 #crew-panel .col { display: flex; flex-direction: column; gap: 6px; }
@@ -91,7 +92,7 @@ export class CrewUI {
   // ---- the panel ---------------------------------------------------------------------------------------------
   _signature(m) {
     const f = this.crew.ship.flight, o = this.crew.activeOrder();
-    return [m.id, m.status, m.mode, m.seated, m.displaced, this.view, this.reply, o ? o.type : '-', this.crew.flyer() ? 1 : 0, f.landed ? 1 : 0, this.ship.aboard ? 1 : 0, this.ship.seat ? this.ship.seat.id : '-'].join('|');
+    return [m.id, m.status, m.mode, m.seated, m.displaced, this.view, this.reply, this.crew.world?.state.economy.marks, o ? o.type : '-', this.crew.flyer() ? 1 : 0, f.landed ? 1 : 0, this.ship.aboard ? 1 : 0, this.ship.seat ? this.ship.seat.id : '-'].join('|');
   }
 
   _draw() {
@@ -104,10 +105,12 @@ export class CrewUI {
     let h = `<div class="hd"><img src="/homes/people/${m.personId}.jpg" alt=""><div><b>${esc(m.name)}</b><span>${esc(def.title)}${skill}</span></div><button class="cbtn x" data-a="close">✕</button></div>`;
     if (this.reply) h += `<div class="say">${esc(this.reply)}</div>`;
     if (m.status === 'worker') {
-      h += `<p>${esc(m.line)}</p><button class="cbtn" data-a="close">Close</button>`;
+      h += workerHTML(m,this.view,c.world?.state.economy||c.account);
     } else if (m.status === 'candidate') {
       h += `<p>${esc(def.pitch)}</p><p class="stat">Works at ${Math.round(def.skill * 100)}% of a good hand: about ${thinkDelay(def.skill).toFixed(1)} s to react, and a little off in the aim. Stays aboard until you say otherwise.</p>`;
-      h += `<div class="col"><button class="cbtn" data-a="hire">Hire ${esc(m.name)}</button><button class="cbtn" data-a="close">Not now</button></div>`;
+      const fee=WAGES[m.id]*4,balance=(c.world?.state.economy||c.account).marks;
+      h += `<p class="stat">Signing fee ${fee} marks (${WAGES[m.id]} credits). Wage ${fee} marks per Mars sol. Purse ${balance} marks. Unpaid crew leave at the next port.</p>`;
+      h += `<div class="col"><button class="cbtn" data-a="hire" ${balance<fee?'disabled':''}>Hire ${esc(m.name)} · ${fee} marks</button><button class="cbtn" data-a="close">Not now</button></div>`;
     } else {
       const isFlyer = c.flyer() === m;
       const atSeat = m.seated && !m.displaced;
@@ -123,6 +126,8 @@ export class CrewUI {
           }
           h += `</div>`;
         }
+      } else if (def.seat === 'comms') {
+        h += `<div class="col"><button class="cbtn" data-a="comms-report">Channel and account report</button></div>`;
       } else if (def.seat === 'nav') {
         h += `<div class="col"><button class="cbtn" data-a="report">Report: where are we, what is around us<small>The navigator reads the scanner</small></button></div>`;
       }
@@ -136,7 +141,7 @@ export class CrewUI {
     this.panel.style.display = 'block';
   }
 
-  _seatName(id) { return { pilot: 'pilot seat', captain: "captain's chair", nav: 'navigation seat', gun_dorsal: 'dorsal turret', gun_ventral: 'ventral turret' }[id] || 'seat'; }
+  _seatName(id) { return { pilot: 'pilot seat', captain: "captain's chair", nav: 'navigation seat', comms:'comms seat', gun_dorsal: 'dorsal turret', gun_ventral: 'ventral turret' }[id] || 'seat'; }
 
   _whatDoing(m) {
     if (m.mode === 'boarding') return 'Coming aboard.';
@@ -165,6 +170,18 @@ export class CrewUI {
     let r = null;
     switch (a) {
       case 'close': this.close(); return;
+      case 'worker-question': this.view='answer';break;
+      case 'worker-reply': this.view=m.id.startsWith('trader')||m.id==='depot-clerk'?'trade':'main';break;
+      case 'worker-trade': this.view='trade';break;
+      case 'worker-back': this.view='main';break;
+      case 'purchase': case 'sale': case 'regolith-sale': case 'quest-accept':
+        r=c.world?.dispatch({type:a,trader:m.id,good:b.dataset.good,id:b.dataset.quest});
+        if(r)this.reply=r.msg;break;
+      case 'comms-report': {
+        const e=c.world?.state.economy||c.account;
+        this.reply=`Port channel clear. Account ${e.marks} marks. ${Object.values(e.quests).filter(q=>q.status==='active').length} accepted jobs. Wages are paid each Mars sol.`;
+        c.say(m,this.reply);break;
+      }
       case 'back': this.view = 'main'; break;
       case 'hire': r = c.hire(m.id); if (r.ok) { this.close(); return; } break;
       case 'dismiss': r = c.dismiss(m.id); if (r.ok) { this.close(); return; } break;

@@ -613,6 +613,8 @@ if (!process.env.SKIP_CREW) await runCrewChecks({ check, section, THREE, mars, F
 
 const { runLeftoversChecks } = await import('./leftovers-checks.mjs');
 await runLeftoversChecks({ check, section });
+const { runEconomyChecks } = await import('./economy-checks.mjs');
+await runEconomyChecks({ ROOT, check, section, mars, FIELD });
 
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);

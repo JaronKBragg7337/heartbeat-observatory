@@ -20,6 +20,7 @@ import { routeToSeat, RouteWalker } from './shipPath.js';
 import { Autopilot, rng } from './autopilot.js';
 import { GunnerAI } from './gunnerAI.js';
 import { geodeticToCartesian } from '../world/geodesy.js';
+import { initialEconomy, reduceEconomy } from '../economy/economy.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrapPI = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
@@ -41,6 +42,8 @@ export class CrewSystem {
     this.hiredAt = -1e9;
     this.kills = 0;
     this.board = null;
+    this.world = o.world || null;
+    this.account = initialEconomy();
   }
 
   // =========================================================================
@@ -115,7 +118,7 @@ export class CrewSystem {
     x.fillText('CREW FOR HIRE', 256, 96);
     x.fillStyle = '#e8d5c2'; x.font = '30px sans-serif';
     x.fillText('Pilot · Captain · Navigator', 256, 150);
-    x.fillText('Gunners · walk up and talk', 256, 196);
+    x.fillText('Comms · Gunners · talk to hire', 256, 196);
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
     const grp = new THREE.Group(); grp.name = 'crew-board';
     const post = new THREE.MeshStandardMaterial({ color: 0x59606a, roughness: 0.6, metalness: 0.7 });
@@ -165,12 +168,17 @@ export class CrewSystem {
   say(m, text) { this.onSay(m.name, text); this.ship.note(`${m.name}: ${text}`); }
 
   /** Hire a candidate. Returns { ok, msg }. */
-  hire(id) {
+  hire(id, local = false) {
+    if (this.world && !local) return this.world.dispatch({type:'hire',id});
     const m = this.members.get(id);
     if (!m || m.status !== 'candidate') return { ok: false, msg: 'Not available.' };
     const f = this.ship.flight;
     const near = Math.hypot(f.pos.x - m.gpos.x, f.pos.y - m.gpos.y, f.pos.z - m.gpos.z);
     if (!f.landed || near > 140) return { ok: false, msg: `${m.name}: Bring the Meridian down at the port first, and I will come aboard.` };
+    let next;
+    try { next = reduceEconomy(this.world ? this.world.state.economy : this.account, {type:'hire',id}); }
+    catch(e) { return {ok:false,msg:e.message}; }
+    if(this.world) this.world.state.economy=next; else this.account=next;
     m.status = 'hired'; m.mode = 'boarding'; m.route = null; m.seated = false; m.displaced = false;
     this.hiredAt = this.time;
     this.say(m, LINES.hired(m.name).replace(`${m.name}: `, ''));
@@ -178,11 +186,14 @@ export class CrewSystem {
   }
 
   /** Dismiss: they walk back off and wait at the port. Only while we are down at the port. */
-  dismiss(id) {
+  dismiss(id, local = false) {
+    if(this.world && !local) return this.world.dispatch({type:'fire',id});
     const m = this.members.get(id);
     if (!m || m.status !== 'hired') return { ok: false, msg: 'Not aboard.' };
     const f = this.ship.flight, lp = this.site.toLocal(f.pos);
     if (!f.landed || Math.hypot(lp.x, lp.z) > 140) return { ok: false, msg: `${m.name}: I'll step off when we are down at the port.` };
+    const next=reduceEconomy(this.world ? this.world.state.economy : this.account,{type:'fire',id});
+    if(this.world)this.world.state.economy=next;else this.account=next;
     if (m.def.seat === 'pilot' || m.def.seat === 'captain') if (this.ap && this.flyer() === m) this.cancelOrder();
     if (this.ship.seat && this.ship.seat.id === m.def.seat) { /* the player is in it: nothing to do */ }
     m.dismissing = true; m.mode = 'leaving'; m.route = null; m.seated = false;
@@ -294,6 +305,12 @@ export class CrewSystem {
       this._place(m, dt);
     }
     this._guns(dt);
+    const comms=this.seatedMember('comms');
+    if(comms && this.time-(comms.channelAt||0)>30) {
+      comms.channelAt=this.time;
+      const e=this.world?.state.economy || this.account;
+      this.say(comms,`Channel watch: ${this.ship.drones?.neutral===false?'outside neutral airspace':'port frequency clear'}. Account ${e.marks} marks. ${Object.values(e.quests).filter(q=>q.status==='active').length} open jobs.`);
+    }
   }
 
   _tickMember(m, dt) {
@@ -560,6 +577,29 @@ export class CrewSystem {
   }
 
   // ---- dev / validator ------------------------------------------------------------------------------------------------
+  snapshot() {
+    return [...this.members.values()].map(m=>({id:m.id,status:m.status,place:m.place,mode:m.mode,
+      gpos:{...m.gpos},face:{...m.face},seated:m.seated,sitT:m.sitT,sitFrom:m.sitFrom,
+      displaced:m.displaced,dismissing:!!m.dismissing,sw:{x:m.sw.x,y:m.sw.y,z:m.sw.z,yaw:m.sw.yaw}}));
+  }
+  restore(records) {
+    for(const r of records || []) {
+      const m=this.members.get(r.id);if(!m)continue;
+      for(const k of ['status','place','mode','gpos','face','seated','sitT','sitFrom','displaced','dismissing'])m[k]=r[k];
+      m.sw.place(r.sw.x,r.sw.y,r.sw.z,r.sw.yaw);
+      if(m.mode==='walk')m.route=routeToSeat(m.sw,r.sw,this._seat(m)) || [];
+      if(m.mode==='sit' && !m.sitFrom)m.sitFrom={...r.sw};
+      this._attachVisual(m);
+    }
+  }
+  leaveIfUnpaid() {
+    const e=this.world?.state.economy || this.account, f=this.ship.flight,p=this.site.toLocal(f.pos);
+    if(!f.landed||Math.hypot(p.x,p.z)>140)return;
+    for(const [id,c] of Object.entries(e.crew))if(c.unpaid&&!this.members.get(id)?.dismissing) {
+      const m=this.members.get(id);const r=this.dismiss(id);
+      if(r.ok)this.say(m,'My wage was unpaid. I am leaving at this port; a new contract needs a new signing fee.');
+    }
+  }
   /** Hire everybody and finish boarding at once (screenshots and tests). */
   debugCrewUp(ids) {
     for (const id of ids || CREW_POSTS.map((p) => p.id)) this.hire(id);
