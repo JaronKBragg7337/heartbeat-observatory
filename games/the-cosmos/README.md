@@ -241,6 +241,31 @@ LIFT / SINK / FIRE buttons appear only when you are in a seat that uses them, th
 so thumbs keep the bottom. Desktop: `W/S` thrust, `A/D` turn, hold `Space` up, `C` down, click or `F` fire,
 mouse looks and aims, `E` sit / stand / use.
 
+### Real people, and hiring a crew (src/crew/)
+
+Every person is a real person: the Loft's MetaHuman people (`homes/people/*.glb`, Idle / Walk / Sit) are loaded through
+`personRig.js` and are your third-person body (the one you picked in the Loft, `hb-look`; Isaiah by default) and the crew.
+On the live site they are read from `/homes/people/`; `server.js` serves the same path locally.
+
+**Marineris Port.** Five people wait by the hiring board near the Meridian's ramp: a **pilot** (Ada), **captain** (Zuri),
+**navigator** (Jorge) and a **dorsal** (Sunita) and **ventral** (Walter) gunner. Walk up (the **Talk** button, or `T`), read what
+they are, **Hire**. They work at 70-85% of a good hand (reaction delay and aim error come from that, `crewSpec.js`). A hired
+person walks up the ramp, the cargo-bay stair, the gantry, the corridor, and up the bridge stair or a ladder, sits at their
+station (the route is planned over the same walkable zones your own body uses, `shipPath.js`) and works while you walk about.
+The ramp has to be down for them to board. Where you sit, they give up the seat; stand and they sit back down. **Dismiss** at the port.
+
+**Orders.** Talk to whoever is flying (the pilot, or the captain if there is none): **Fly to** (the three pads, the depot
+apron, over the tower; places too far to reach at 40 m/s are listed with honest distances and refused), **Hunt hostile drones**
+(Mars is neutral: the pilot climbs out of its airspace first, closes on raiders, the gunners shoot only raiders, and the pilot breaks
+off and comes back under the line if the hull falls below 35%), **Get supplies** (depot apron, load, back to pad 01), **Roam and explore**
+(low flying; the navigator calls out ridges, drops and cuts), **Land here**, **Hold position**, **Return to port**. Touch the stick in
+the pilot's or captain's chair and the order is cancelled ("You have the controls"). The crew will not lift off unless you are aboard.
+
+**Looking out.** Crew quarters B is now the **observation lounge**: a 4.4 m panoramic window, two seats facing it, and binoculars on a
+stand at the glass (the action button: 3x zoom, look slows to match; walk away and they come down). Every window now cuts the hull
+skin away in its opening, so a window shows Mars and not grey plating. The ventral gunner no longer sees their own chair when
+looking down through the glass.
+
 ### Flight, guns, shields
 
 * **Real gravity**: 171 kN of weight on Mars against 300 kN of vertical thrust at the default split. The

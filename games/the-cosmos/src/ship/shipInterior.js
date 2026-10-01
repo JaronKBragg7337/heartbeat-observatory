@@ -137,7 +137,11 @@ function buildWindows(k, layout, r) {
     k.bevelBox('steelDark', x, y1 + t / 2, w.c, 0.16, t, w.w + t * 2, 0.02);
     k.bevelBox('steelDark', x, y0 - t / 2, w.c, 0.16, t, w.w + t * 2, 0.02);
     for (const s of [-1, 1]) k.bevelBox('steelDark', x, cy, w.c + s * (w.w / 2 + t / 2), 0.16, h, t, 0.02);
-    k.bevelBox('steel', x, cy, w.c, 0.05, 0.03, w.w, 0.008);                // a mullion across the middle
+    if (h > 1.2) {
+      // a tall panoramic window has no bar across the middle (that is where your eyes are): slim posts instead
+      const n = Math.max(1, Math.round(w.w / 1.4));
+      for (let i = 1; i < n; i++) k.bevelBox('steel', x, cy, w.c - w.w / 2 + (w.w * i) / n, 0.05, h, 0.04, 0.008);
+    } else k.bevelBox('steel', x, cy, w.c, 0.05, 0.03, w.w, 0.008);          // a mullion across the middle
     // the pane, in the plane of the wall
     const px = plane + n * 0.02;
     k._faceQuadUV('glassTint', [[px, y0, w.c - w.w / 2], [px, y0, w.c + w.w / 2], [px, y1, w.c + w.w / 2], [px, y1, w.c - w.w / 2]], [n, 0, 0], null);

@@ -196,5 +196,31 @@ export async function runCrewChecks({ check, section, THREE, mars, FIELD }) {
       d1.ok && wal.status === 'candidate' && wal.place === 'ground' && !wal.seated && crew.hire('gunner_ventral').ok, `${wal.status}/${wal.place}/${wal.mode}`);
     check('the order list the crew understand is exactly: fly to, hunt, supplies, roam, land, hold, return', ORDERS.map((o) => o.id).join() === 'goto,hunt,supply,roam,land,hold,return');
   }
+
+    // ---- places to look out ---------------------------------------------------------------------------------------------------
+    {
+      const { OBSERVATION, WINDOWS } = await import('../src/ship/shipSpec.js');
+      const L = buildLayout(), lounge = L.roomById.get('crew_b'), win = WINDOWS.find((w) => w.room === 'crew_b');
+      check('the Meridian has an observation lounge: a panoramic window at least 4 m wide, sill within 0.6 m of the deck, top above standing eye height',
+        lounge.name === 'Observation lounge' && win.w >= 4 && win.y0 - lounge.y <= 0.6 && win.y1 - lounge.y > 1.66 + 0.2, `${win.w} m wide, sill ${(win.y0 - lounge.y).toFixed(2)} m`);
+      const swL = new ShipWalker(shipIndex, defaultState());
+      const spot = OBSERVATION[0];
+      const path = (await import('../src/crew/shipPath.js')).planPath(swL, { x: 0, y: 3, z: 0.1 }, { x: spot.x - 0.7, z: spot.z, y: 3 }, { reach: 0.4 });
+      check('you can walk from the corridor, through the lounge door and past the seats, to the binoculars at the glass', !!path && swL.canStand(spot.x - 0.7, 3, spot.z) !== null, path ? path.length + ' legs' : 'no path');
+      check('there are two lounge seats facing the window and nothing stands between the binoculars and the glass',
+        L.props.filter((p) => p.room === 'crew_b' && p.kind === 'sofa').length === 2 && !L.props.some((p) => p.room === 'crew_b' && p.blocks && p.kind !== 'telescope' && p.kind !== 'sofa' && p.kind !== 'locker' && p.x > 5.2));
+      const cam = { fov: 72, updateProjectionMatrix() {} };
+      const ship2 = new ShipSystem({ engine: { camera: cam, scene: new THREE.Scene(), overlayScenes: [] }, registry: new Registry(), body: mars, ground, walker: { worldPos: { x: 0, y: 0, z: 0 } }, landingSite: site });
+      ship2.matsExt = {}; ship2._initWindowClip();
+      ship2.ready = true; ship2.aboard = true; ship2.sw.place(spot.x - 0.8, 3, spot.z, Math.PI / 2);
+      const a1 = ship2.contextAction();
+      check('standing at the binoculars the action button offers them, and pressing it closes the view to a 3x zoom and slows the look to match',
+        a1 && a1.label === 'Binoculars' && (a1.run(), ship2.zoomOn) && (() => { for (let i = 0; i < 90; i++) ship2._zoomFrame(1 / 30); return Math.abs(cam.fov - 24) < 0.5 && ship2.baseFov === 72; })(), `fov ${cam.fov.toFixed(1)}`);
+      ship2.sw.place(1.3, 3, 0.1, 0);
+      for (let i = 0; i < 90; i++) ship2._zoomFrame(1 / 30);
+      check('walk away (or sit, or leave the ship) and the binoculars come down by themselves and the field of view returns', !ship2.zoomOn && Math.abs(cam.fov - 72) < 0.5, `fov ${cam.fov.toFixed(1)}`);
+      check('every window has a clearing box for the hull skin (so a window shows Mars, not plating), sized well beyond its opening',
+        ship2.windowClip && WINDOWS.every((w) => { const b = ship2.windowClip.boxes.get(w.room); return b && b.z1 - b.z0 > w.w + 2 && b.y1 - b.y0 > (w.y1 - w.y0) + 2; }));
+    }
   } finally { FIELD.attachGrades([]); }
 }

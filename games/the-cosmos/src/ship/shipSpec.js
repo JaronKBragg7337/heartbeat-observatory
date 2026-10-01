@@ -60,7 +60,7 @@ room('niche',    'Turret ladder',    'niche',    'main', -2.4, -1.0, 1.6, 3.6, {
 });
 room('workshop', 'Workshop',         'workshop', 'main', -6.4, -1.0, 3.8, 9.0);
 room('galley',   'Galley and mess',  'galley',   'main',  1.0, 6.4, -8.6, -2.6);
-room('crew_b',   'Crew quarters B',  'crew',     'main',  1.0, 6.4, -2.4, 2.6);
+room('crew_b',   'Observation lounge', 'crew',     'main',  1.0, 6.4, -2.4, 2.6);
 room('cabin',    "Captain's cabin",  'cabin',    'main',  1.0, 6.4, 2.8, 5.8);
 room('head',     'Head',             'head',     'main',  1.0, 6.4, 6.0, 9.0);
 
@@ -111,7 +111,7 @@ door('d_crew_a',  'corridor_main', 'crew_a',   'x', -0.9, -1.0, { sign: 'CREW A'
 door('d_niche',   'corridor_main', 'niche',    'x', -0.9,  2.6, { kind: 'open', w: 1.4, h: 2.4 });
 door('d_workshop','corridor_main', 'workshop', 'x', -0.9,  4.05,{ sign: 'WORKSHOP', w: 0.9 });
 door('d_galley',  'corridor_main', 'galley',   'x',  0.9, -5.6, { sign: 'GALLEY' });
-door('d_crew_b',  'corridor_main', 'crew_b',   'x',  0.9,  0.1, { sign: 'CREW B' });
+door('d_crew_b',  'corridor_main', 'crew_b',   'x',  0.9,  0.1, { sign: 'LOUNGE' });
 door('d_cabin',   'corridor_main', 'cabin',    'x',  0.9,  3.3, { sign: 'CAPTAIN', w: 0.9 });
 door('d_head',    'cabin',         'head',     'z',  5.9,  3.3, { sign: 'HEAD', w: 0.9 });
 // bridge stair joins
@@ -271,13 +271,14 @@ prop('table',  'galley', 3.75, -5.6, 0.9, 2.4, 0.76, 0, { style: 'mess' });
 prop('bench',  'galley', 2.95, -5.6, 0.36, 2.3, 0.46, 0);
 prop('bench',  'galley', 4.55, -5.6, 0.36, 2.3, 0.46, 0);
 
-// crew B
-prop('bunk', 'crew_b', 5.925, -1.25, 0.95, 2.1, 1.9, 2);
-prop('bunk', 'crew_b', 5.925,  1.05, 0.95, 2.1, 1.9, 2);
+// The observation lounge (it was crew quarters B): the starboard wall is one long window, two lounge seats face it, and
+// there is room to stand at the glass and use the binoculars. (Jaron, 10/1: "there isn't any spots to observe places".)
+prop('sofa', 'crew_b', 4.5, -1.05, 0.8, 1.5, 0.85, 0);
+prop('sofa', 'crew_b', 4.5,  1.25, 0.8, 1.5, 0.85, 0);
+prop('rail', 'crew_b', 6.18, 0.1, 0.05, 4.3, 1.04, 0, { blocks: false });
+prop('telescope', 'crew_b', 5.7, 0.1, 0.5, 0.5, 1.5, 0);
 prop('locker','crew_b', 3.2, 2.3, 0.6, 0.55, 2.0, 2);
 prop('locker','crew_b', 3.85, 2.3, 0.6, 0.55, 2.0, 2);
-prop('locker','crew_b', 4.5, 2.3, 0.6, 0.55, 2.0, 2);
-prop('table', 'crew_b', 3.9, -1.5, 0.9, 0.9, 0.75, 0);
 
 // captain's cabin
 prop('bed',   'cabin', 5.3, 4.95, 2.0, 1.5, 0.55, 0);
@@ -369,11 +370,19 @@ prop('console', 'nest', -0.9, 3.6, 0.8, 0.5, 1.0, 2, { extra: { decorative: true
 // wall: 'x0' (port) or 'x1' (starboard); c is the centre along the wall.
 export const WINDOWS = [
   { room: 'crew_a', wall: 'x0', c: -1.0, w: 1.8, y0: 4.95, y1: 5.45 },
-  { room: 'crew_b', wall: 'x1', c: 0.1, w: 1.8, y0: 4.95, y1: 5.45 },
+  { room: 'crew_b', wall: 'x1', c: 0.1, w: 4.4, y0: 3.5, y1: 5.45 },     // the observation lounge: a panoramic window, sill 0.5 m off the deck
   { room: 'medbay', wall: 'x0', c: -6.3, w: 1.4, y0: 4.6, y1: 5.3 },
   { room: 'galley', wall: 'x1', c: -7.3, w: 1.3, y0: 4.7, y1: 5.35 },
   { room: 'cabin', wall: 'x1', c: 4.95, w: 1.2, y0: 4.35, y1: 5.05 },
   { room: 'workshop', wall: 'x0', c: 7.9, w: 1.2, y0: 4.55, y1: 5.3 },
+];
+
+/**
+ * Places to stand and look out. `scope` is a pair of binoculars on a stand: press the action button there and the view
+ * closes to a 3x zoom (and slows your look to match) until you press it again or walk away.
+ */
+export const OBSERVATION = [
+  { id: 'lounge_scope', name: 'Lounge binoculars', room: 'crew_b', x: 5.7, y: 3, z: 0.1, radius: 1.5, fov: 24 },
 ];
 
 // Posters and photographs on the walls. wall: which face of the room; u: position along it.

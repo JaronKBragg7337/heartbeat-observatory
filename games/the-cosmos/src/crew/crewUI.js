@@ -18,7 +18,7 @@ const CSS = `
 #crew-ui .cbtn[disabled] { opacity: .45; }
 #crew-talk { position: fixed; display: none; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(118px + env(safe-area-inset-bottom, 0px)); min-width: 116px; text-align: center !important; }
 #crew-panel { position: fixed; display: none; pointer-events: auto; left: 50%; transform: translateX(-50%);
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(380px, calc(100vw - 24px)); max-height: min(62vh, 520px); overflow-y: auto;
+  bottom: calc(66px + env(safe-area-inset-bottom, 0px)); width: min(380px, calc(100vw - 24px)); max-height: min(calc(100vh - 150px), 560px); overflow-y: auto;
   background: rgba(14,10,7,.9); backdrop-filter: blur(10px); border: 1px solid rgba(240,185,120,.45); border-radius: 14px; padding: 10px 11px 11px; color: #ead9c6; font-size: 12px; line-height: 1.45; }
 #crew-panel .hd { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
 #crew-panel .hd img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: #2a211a; flex: none; }
@@ -31,10 +31,6 @@ const CSS = `
 #crew-panel .cbtn small { display: block; color: #a8917b; font-size: 10.5px; margin-top: 1px; }
 #crew-panel .row2 { display: flex; gap: 6px; } #crew-panel .row2 .cbtn { flex: 1; text-align: center; }
 #crew-panel .stat { color: #a8917b; font-size: 11px; margin: 0 0 8px; }
-#crew-say { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom, 0px)); max-width: min(520px, calc(100vw - 150px));
-  background: rgba(10,7,5,.78); border: 1px solid rgba(232,201,168,.25); border-radius: 10px; padding: 7px 11px; color: #ffe9cf; font-size: 12px; line-height: 1.4; opacity: 0; transition: opacity .35s; text-align: center; }
-#crew-say.on { opacity: 1; }
-#crew-say b { color: #f0b978; }
 `;
 
 export class CrewUI {
@@ -42,7 +38,6 @@ export class CrewUI {
   constructor(crew, o) {
     this.crew = crew; this.ship = o.ship; this.walker = o.walker; this.isTouch = !!o.isTouch;
     this.target = null; this.open = false; this.view = 'main'; this._sig = ''; this._accum = 0; this.reply = '';
-    this._sayT = 0;
     this._build();
     crew.onSay = (name, text) => this.say(name, text);
   }
@@ -50,9 +45,9 @@ export class CrewUI {
   _build() {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     const root = document.createElement('div'); root.id = 'crew-ui';
-    root.innerHTML = `<button class="cbtn" id="crew-talk"></button><div id="crew-panel"></div><div id="crew-say"></div>`;
+    root.innerHTML = `<button class="cbtn" id="crew-talk"></button><div id="crew-panel"></div>`;
     document.body.appendChild(root);
-    this.btn = root.querySelector('#crew-talk'); this.panel = root.querySelector('#crew-panel'); this.sayEl = root.querySelector('#crew-say');
+    this.btn = root.querySelector('#crew-talk'); this.panel = root.querySelector('#crew-panel');
     const press = (e) => { e.preventDefault(); e.stopPropagation(); };
     this.btn.addEventListener('pointerdown', press);
     this.btn.addEventListener('pointerup', (e) => { press(e); this.toggle(); });
@@ -64,10 +59,9 @@ export class CrewUI {
     });
   }
 
-  /** A line a crew member says: on screen for a few seconds. */
+  /** A line a crew member says. The ship's own message line shows it on screen (crewSystem.say sends it there); here it is
+   *  kept as the reply in the open conversation. */
   say(name, text) {
-    this.sayEl.innerHTML = `<b>${esc(name)}</b>  ${esc(text)}`;
-    this.sayEl.classList.add('on'); this._sayT = Math.min(9, 3.2 + text.length * 0.045);
     this.reply = text; if (this.open) this._sig = '';
   }
 
@@ -77,7 +71,6 @@ export class CrewUI {
 
   /** Per frame: find who is within reach, show or hide the button, keep the panel honest. */
   update(dt) {
-    if (this._sayT > 0) { this._sayT -= dt; if (this._sayT <= 0) this.sayEl.classList.remove('on'); }
     this._accum += dt;
     if (this._accum < 0.2) return;
     this._accum = 0;

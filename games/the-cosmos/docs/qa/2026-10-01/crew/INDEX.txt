@@ -1,0 +1,28 @@
+QA for real people, the hireable crew, the observation lounge and the window / ventral-view fixes, 2026-10-01 (Claude Sonnet 5.5)
+Images are kept in the worktree only (not committed): games/the-cosmos/docs/qa/2026-10-01/crew/*.jpg (111 of them).
+Everything was taken in headless Chromium (software GL) through the real game code. Prefixes:
+   a_  desktop 750x470 ?tier=high      b_  desktop, after the suit-lamp change      p_  phone 375x812 ?tier=low&depth=16
+   w_  WALKED: the real keyboard (W held) and the dialog's own buttons, no crew API calls     t_  early checks
+
+Harness (committed): shot.mjs (node crew/shot.mjs <script>, needs `PORT=8392 node server.js` running), _lib2.mjs (simulate N seconds of game time
+without drawing, free camera, ship-local / port-local points). The crew's walking, flying and gunnery are simulated in game time (30 Hz) because
+software GL runs at a few frames a second; every shot is the real renderer at that moment. Scripts:
+   _t3_hire        the candidates by the board, the Talk button, the hire panel            _t4_board     five hired people walk to the ramp and up into the ship
+   _t5_seated      all five at their stations, seen from the bridge, the nest and the ventral pit   _t8_orderui   talk to the captain, the order list, "fly to" list, lift-off
+   _t13_swap_hunt  the player takes the pilot seat (Ada stands aside, sits back when the player stands); a hunt seen from outside, bolts in flight
+   _t10_lounge     the observation lounge on the ground and in flight, binoculars            _t11_win      a window before/after (cabin, galley)
+   _t12_ventral    the ventral gunner's view down                                           _t14_canopy   the crew seen from outside through the bridge glass
+   _w_walked       WALKED: walk up to Ada with W, T, click Hire, watch her go                _dug_retake   the two unverified views: bottom of a deep shaft, inside a tunnel
+
+REAL PEOPLE: a_hire01-03 candidates and the CREW FOR HIRE board; w_01/w_02 the player's own body, third person (white tee, walking); a_hire02 close.
+HIRING (w_ and a_hire/ui): w_02 the Talk button after walking up; w_03 T pressed; a_hire05 / p_hire05 the hire panel (desktop and phone); w_04 hired, she says "Aye"; w_05/06 she walks to the ramp.
+BOARDING AND SEATS: a_board01/02 on the apron and on the ramp; a_seat_01-05 the bridge (captain's chair from behind hides its sitter: it has a 1.7 m back), a_seat_06 dorsal nest, a_seat_07 ventral pit; a_canopy01/02 from outside.
+ORDERS: a_ui02 / p_ui02 the order list; a_ui03 the places (honest distances, far landmarks greyed); a_ui05 lifting off (HUD shows the neutral line); a_hunt01-03 a hunt at 1.8 km, bolts and the NPC gunner at work.
+SEAT SWAP: a_swap01 the player in the pilot seat with Ada standing beside; a_swap02 the captain.
+OBSERVATION: a_lounge_01-05 the lounge, glass, seats, binoculars (05 zoomed); a_lounge_06-08 the same window in flight (the starboard wing and nacelle, Mars rolling by); p_lounge_ the phone tier.
+WINDOWS: t11_cabin_window the captain's cabin window now shows Mars (it showed a black plate before); t11_outside_at_lounge the hull from outside.
+VENTRAL VIEW: a_ventral_01-04 (the chair is no longer drawn when you look down), 05 the dorsal seat looking up.
+DUG GROUND, the two unverified views (a_/p_/b_ dug_01-08): 01 bottom of an 8 m shaft looking up at the sky disc; 02-04 its walls and floor; 05-08 a 12 m tunnel off its foot, looking along it, back, and at the roof.
+   Mean luminance of the middle half of each frame (0-255): before the lamp change 27-60 (tunnel looking on 27 desktop / 19 phone); after (suit lamp 5 -> 9) 38-89 (tunnel looking on 38).
+   The earlier _e_deep.mjs tunnel dug ONE bite, not twenty: its helper V.add ignores a scale argument, so every bite landed in the same place. _dug_retake.mjs scales properly.
+Not done / weak: see the report (people at the port other than the crew are not placed, the order list is a dialog not speech, the far end of a long tunnel is still dim, NPC climbing a ladder uses the Walk clip).

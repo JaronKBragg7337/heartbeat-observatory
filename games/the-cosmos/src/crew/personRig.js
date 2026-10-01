@@ -73,7 +73,7 @@ export class Person {
     body.traverse((m) => {
       if (!m.isMesh) return;
       m.frustumCulled = false;          // skinned bounds are the rest pose; a seated or walking body leaves them
-      m.castShadow = true; m.receiveShadow = true;
+      m.castShadow = !phone; m.receiveShadow = !phone;     // a phone draws no sun shadow for a person (the shadow pass is the expensive one)
       const mt = m.material;
       if (mt && /^HairCard/.test(mt.name)) {   // strand cards: cut out by the alpha, both sides, no sorting flicker
         mt.transparent = false; mt.alphaTest = 0.38; mt.depthWrite = true; mt.side = THREE.DoubleSide;

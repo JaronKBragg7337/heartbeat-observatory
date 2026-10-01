@@ -1,0 +1,26 @@
+import { SIM } from './_lib2.mjs';
+const W = Number(process.env.W || 750), H = Number(process.env.H || 470), pre = process.env.PRE || 'a';
+export default async ({ launch }) => {
+  const h = await launch({ w: W, h: H, query: process.env.QUERY || '' });
+  const { page, shot, browser } = h;
+  await page.waitForFunction(() => window.cosmos.crew, null, { timeout: 60000 });
+  await page.waitForTimeout(2500);
+  await page.evaluate(SIM);
+  await page.evaluate(() => { ['pilot', 'captain', 'nav', 'gunner_dorsal', 'gunner_ventral'].forEach(id => window.cosmos.crew.hire(id)); window.__sim(75);
+    const c = window.cosmos, s = c.ship; s.aboard = true; s.sw.place(-0.9, 6, -15.0, -1.2); s.sw.pitch = -0.1; window.__sim(0.3); c.step(1/60); c.step(1/60); });
+  await page.waitForTimeout(300);
+  await shot(pre + '_ui01_talk_button_on_bridge');
+  await page.click('#crew-talk');
+  await page.waitForTimeout(300);
+  await shot(pre + '_ui02_orders');
+  await page.click('[data-o="goto"]');
+  await page.waitForTimeout(300);
+  await shot(pre + '_ui03_places');
+  await page.click('[data-p="pad02"]');
+  await page.waitForTimeout(300);
+  await shot(pre + '_ui04_after_goto_reply');
+  await page.evaluate(() => window.__sim(12));
+  await page.evaluate(() => { window.cosmos.step(1 / 60); });
+  await shot(pre + '_ui05_lifting_off');
+  await browser.close();
+};

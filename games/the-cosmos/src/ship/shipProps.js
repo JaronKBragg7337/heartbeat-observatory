@@ -414,6 +414,37 @@ export const PROPS = {
     k.bevelBox(p.tone === 'med' ? 'steel' : 'fabricGrey', 0, 0.026, 0, p.w - 0.18, 0.006, p.d - 0.18, 0.002, { col: p.tone === 'med' ? undefined : [0.55, 0.55, 0.6] });
   },
 
+  // ------------------------------------------------------- lounge seat
+  // A long upholstered seat facing local +X (toward the window), back at -X. w = depth, d = length.
+  sofa(k, p) {
+    const w = p.w, d = p.d;
+    k.bevelBox('gunmetal', 0, 0.16, 0, w - 0.06, 0.32, d - 0.04, 0.03);               // plinth
+    k.pillow('fabricBlue', 0.07, 0.4, 0, w - 0.22, 0.16, d - 0.14, 3.0);               // seat cushion
+    k.pillow('fabricBlue', -w / 2 + 0.14, 0.7, 0, 0.2, 0.56, d - 0.14, 3.0);           // back
+    for (const s of [-1, 1]) {
+      k.bevelBox('gunmetal', 0, 0.55, s * (d / 2 - 0.05), w - 0.06, 0.44, 0.1, 0.03);  // arms
+      k.pillow('fabricBlue', 0, 0.8, s * (d / 2 - 0.05), w - 0.1, 0.07, 0.11, 2.6);
+    }
+    k.box('glowCyan', w / 2 - 0.035, 0.1, 0, 0.004, 0.012, d - 0.4);                    // a strip under the front edge
+    for (let i = 0; i < 3; i++) k.box('gunmetal', -w / 2 + 0.245, 0.7, (i - 1) * 0.5, 0.004, 0.4, 0.008);   // seams
+  },
+
+  // ------------------------------------------------------ binoculars on a stand
+  telescope(k, p) {
+    k.cyl('gunmetal', 0, 0.05, 0, 0.22, 0.1, 18);
+    k.cyl('steelDark', 0, 0.5, 0, 0.035, 0.9, 10);
+    k.bevelBox('gunmetal', 0, 1.0, 0, 0.14, 0.12, 0.14, 0.03);
+    k.bevelBox('steel', 0, 1.11, 0, 0.18, 0.05, 0.12, 0.012);
+    // two barrels pointing out at the glass (+X), eyepieces toward the room
+    for (const s of [-1, 1]) {
+      k.pipe('plasticDark', [-0.2, 1.17, s * 0.06], [0.3, 1.17, s * 0.06], 0.055, 14);
+      k.pipe('steelDark', [0.3, 1.17, s * 0.06], [0.36, 1.17, s * 0.06], 0.062, 14);
+      k.pipe('rubber', [-0.2, 1.17, s * 0.06], [-0.26, 1.17, s * 0.06], 0.04, 12);
+    }
+    k.bevelBox('gunmetal', 0.05, 1.17, 0, 0.22, 0.05, 0.1, 0.012);
+    k.cyl('glowCyan', 0, 0.102, 0, 0.19, 0.006, 18);
+  },
+
   extinguisher(k, p) {
     k.cyl('red', 0, 0.25, 0.0, 0.08, 0.42, 12);
     k.dome('red', 0, 0.46, 0.0, 0.08, 12, 4, { thetaMax: Math.PI / 2 });

@@ -20,7 +20,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
-import { buildLayout, SHIP_ID, SHIP_NAME, SHIP_PHYS, GEAR, RAMPS, SEATS, PANELS, WALL_SCREENS, AVATAR, deckName, DECK } from './shipSpec.js';
+import { buildLayout, SHIP_ID, SHIP_NAME, SHIP_PHYS, GEAR, RAMPS, SEATS, PANELS, WALL_SCREENS, AVATAR, deckName, DECK, OBSERVATION } from './shipSpec.js';
 import { ShipWalker, shipIndex, defaultState } from './shipWalker.js';
 import { ShipBody } from './shipFlight.js';
 import { Stations } from './shipStations.js';
@@ -88,6 +88,7 @@ export class ShipSystem {
     this.uiLift = 0;
     this.lastFrameStats = { visibleRooms: 0 };
     this.hudExtra = '';
+    this.zoomOn = false; this.zoomFov = 24; this.baseFov = null;     // binoculars at an observation spot
     this.crew = null;                       // the hired crew (src/crew/crewSystem.js), set by main once it is built
   }
 
@@ -110,6 +111,7 @@ export class ShipSystem {
     this.matsInt = makeShipMaterials({ tier: this.tier });
     this.matsExt = cloneMaterials(this.matsInt);
     this._makeEnvironments();
+    this._initWindowClip();
 
     // --- interior scene
     this.scene = new THREE.Scene();
@@ -202,6 +204,47 @@ export class ShipSystem {
     this.ready = true;
     this._updateVisuals(0, true);
     return this.buildMs;
+  }
+
+  // -------------------------------------------------------------------------
+  // WINDOWS THAT LOOK OUT. The hull's skin is drawn (from the inside too) just beyond every window, so a window showed grey plating
+  // instead of Mars. In the room you are standing in, the skin is cut away inside the window's opening: a box of clipping planes
+  // (clipIntersection: only what is inside ALL six is discarded) on the ship's exterior materials. The planes are re-aimed each
+  // frame in render space; when you are not in a window room the box is parked a million metres away (no shader change, no hitch).
+  // -------------------------------------------------------------------------
+  _initWindowClip() {
+    this.windowClip = { planes: Array.from({ length: 6 }, () => new THREE.Plane(new THREE.Vector3(1, 0, 0), 1e9)), room: null, boxes: new Map() };
+    for (const w of this.layout.windows || []) {
+      const r = this.layout.roomById.get(w.room);
+      const x0 = w.wall === 'x0' ? r.x0 - 1.8 : r.x1 - 0.12, x1 = w.wall === 'x0' ? r.x0 + 0.12 : r.x1 + 1.8;
+      // padded well beyond the opening: rays through a window fan out with distance, and everything outside the opening is
+      // hidden from inside by the room's own wall anyway
+      const pad = 2.2;
+      this.windowClip.boxes.set(w.room, { x0, x1, y0: r.y + (w.y0 - 3.0) - pad, y1: r.y + (w.y1 - 3.0) + pad, z0: w.c - w.w / 2 - pad, z1: w.c + w.w / 2 + pad });
+    }
+    for (const k of Object.keys(this.matsExt)) {
+      const m = this.matsExt[k];
+      if (!m || !m.isMaterial) continue;
+      m.clippingPlanes = this.windowClip.planes; m.clipIntersection = true;
+    }
+    if (this.engine.renderer) this.engine.renderer.localClippingEnabled = true;
+  }
+
+  /** Aim the box at the window of the room the camera is in (or park it). Ship-local box -> render space. */
+  _windowClipFrame() {
+    const wc = this.windowClip; if (!wc) return;
+    const room = this.aboard ? this.currentRoom : null;
+    const b = room ? wc.boxes.get(room) : null;
+    const P = wc.planes;
+    if (!b) { for (const p of P) { p.normal.set(1, 0, 0); p.constant = 1e9; } return; }
+    const q = this.flight.quaternion, cam = this.engine.cameraWorldPos, f = this.flight.pos;
+    const t = this._v.set(f.x - cam.x, f.y - cam.y, f.z - cam.z);
+    // inside the box: x < x1, x > x0, y < y1, y > y0, z < z1, z > z0   (negative signed distance = clipped)
+    const defs = [[1, 0, 0, -b.x1], [-1, 0, 0, b.x0], [0, 1, 0, -b.y1], [0, -1, 0, b.y0], [0, 0, 1, -b.z1], [0, 0, -1, b.z0]];
+    defs.forEach(([nx, ny, nz, c], i) => {
+      const n = this._v2.set(nx, ny, nz).applyQuaternion(q);
+      P[i].normal.copy(n); P[i].constant = c - n.dot(t);
+    });
   }
 
   _makeEnvironments() {
@@ -444,6 +487,7 @@ export class ShipSystem {
   }
   _onStand(seat) {
     this._swivelSeat(seat, seat.yaw * DEG);
+    const sg = this.interior && this.interior.seatGroups && this.interior.seatGroups.get(seat.id); if (sg) sg.visible = true;
     // step out in front of the seat
     const yaw = seat.yaw * DEG;
     this.sw.place(seat.x + Math.sin(yaw) * -0.0, seat.y, seat.z, this.sw.yaw);
@@ -714,7 +758,9 @@ export class ShipSystem {
     // crew patch the hull while the ship sits on the ground
     if (f.landed && f.hull < 100 && this.rampCtl.cargo.progress < 0.02) f.hull = Math.min(100, f.hull + dt * 0.5);
 
+    this._zoomFrame(dt);
     this._updateVisuals(dt, false);
+    this._windowClipFrame();
     return owns;
   }
 
@@ -733,10 +779,14 @@ export class ShipSystem {
       this.camYaw = seat.yaw * DEG + this.look.yaw;
       this.camPitch = this.look.pitch;
       if (seat.role === 'turret') this._swivelSeat(seat, this.camYaw);      // a gunner's chair turns with the turret
+      // The ventral gunner looks DOWN through the glass under the ship. The chair is under and behind the eye, so looking down
+      // showed its cushion and back instead of the ground: it is not drawn while you look down from it (you are sitting on it).
+      if (seat.id === 'gun_ventral') { const sg = this.interior.seatGroups.get(seat.id); if (sg) sg.visible = this.look.pitch > -0.35; }
       sw.x = seat.x; sw.y = seat.y; sw.z = seat.z;
     } else {
-      sw.yaw += l.dx;
-      sw.pitch = clamp(sw.pitch - l.dy, -1.45, 1.45);
+      const zk = this.baseFov ? this.engine.camera.fov / this.baseFov : 1;     // through binoculars the look slows to match
+      sw.yaw += l.dx * zk;
+      sw.pitch = clamp(sw.pitch - l.dy * zk, -1.45, 1.45);
       sw.tick(dt, { moveX: inp.moveEast, moveZ: inp.moveNorth, run: inp.run, jump: inp.jump });
       for (const e of sw.events) {
         if (e.startsWith('exit:')) { this.disembark(e.slice(5)); return; }
@@ -1265,6 +1315,8 @@ export class ShipSystem {
       const loc = { x: this.sw.x, y: this.sw.y, z: this.sw.z };
       const s = this.stations.seatNear(loc);
       if (s && this.sw.grounded) return { label: `Sit  ·  ${s.name}`, run: () => this._sit(loc) };
+      const ob = this._observationNear(loc);
+      if (ob) return { label: this.zoomOn ? 'Lower binoculars' : 'Binoculars', run: () => this.toggleBinoculars(ob) };
       for (const p of PANELS) {
         if (Math.abs(loc.y - p.y) < 1.5 && Math.hypot(loc.x - p.x, loc.z - p.z) < p.radius) {
           if (p.action === 'ramp_cargo') return { label: this.rampCtl.cargo.target > 0.5 ? 'Raise ramp' : 'Lower ramp', run: () => this.toggleRamp('cargo') };
@@ -1282,6 +1334,27 @@ export class ShipSystem {
       return { label: this.rampCtl.cargo.target > 0.5 ? 'Raise ramp' : 'Lower ramp', run: () => this.toggleRamp('cargo') };
     }
     return null;
+  }
+
+  /** The observation spot the player stands at, if any. */
+  _observationNear(loc) {
+    for (const o of OBSERVATION) if (Math.abs(loc.y - o.y) < 1.5 && Math.hypot(loc.x - o.x, loc.z - o.z) < o.radius) return o;
+    return null;
+  }
+
+  toggleBinoculars(ob) {
+    this.zoomOn = !this.zoomOn; this.zoomFov = ob.fov;
+    this.note(this.zoomOn ? `${ob.name}: 3x. Look about; press again to lower them.` : 'Binoculars lowered.');
+  }
+
+  /** Per frame: ease the field of view toward the binoculars or back, and drop them if you step away, sit down or leave. */
+  _zoomFrame(dt) {
+    const cam = this.engine.camera;
+    if (this.baseFov == null) this.baseFov = cam.fov;
+    if (this.zoomOn && (!this.aboard || this.seat || !this._observationNear({ x: this.sw.x, y: this.sw.y, z: this.sw.z }))) this.zoomOn = false;
+    const want = this.zoomOn ? this.zoomFov : this.baseFov;
+    if (Math.abs(cam.fov - want) > 0.05) { cam.fov += (want - cam.fov) * Math.min(1, dt * 9); cam.updateProjectionMatrix(); }
+    else if (cam.fov !== want) { cam.fov = want; cam.updateProjectionMatrix(); }
   }
 
   /** Walk the player to a seat and sit them in it (the talk dialog's "take the seat"). */

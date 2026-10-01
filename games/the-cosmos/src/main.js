@@ -592,7 +592,7 @@ function updateSun(f) {
   ambientDepth += (Math.min(1, below / 2.5) - ambientDepth) * 0.15;
   sky.intensity = 0.85 + 1.3 * ambientDepth;
   suitLamp.position.set(0, 0.15, 0);
-  suitLamp.intensity = 5 * Math.min(1, Math.max(0, (below - 0.8) / 1.2));
+  suitLamp.intensity = 9 * Math.min(1, Math.max(0, (below - 0.8) / 1.2));
 }
 let ambientDepth = 0;
 
