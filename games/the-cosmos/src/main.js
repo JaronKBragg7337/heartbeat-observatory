@@ -29,7 +29,7 @@ import { TouchControls, DesktopControls } from './ui/touch.js';
 import { DebugLayer } from './dev/debugLayer.js';
 import { ShipSystem } from './ship/shipSystem.js';
 import { ShipUI } from './ship/shipUI.js';
-import { createPortSite } from './port/portSpec.js';
+import { createPortSite, PADS } from './port/portSpec.js';
 import { PortSystem } from './port/portSystem.js';
 import { makePortTour } from './port/portTour.js';
 
@@ -462,8 +462,6 @@ const tier = params.get('tier') === 'low' || params.get('tier') === 'high' ? par
 const groundRadius = (dx, dy, dz) => {
   return surfaceRadiusFast(body, dx, dy, dz);
 };
-const port = new PortSystem(engine, registry, portSite, tier).build();
-const portTour = makePortTour({ engine, walker, ship: () => ship, port, rebuild: () => rebuildNear(true) });
 const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier, landingSite: portSite });
 let shipUI = null;
 try {
@@ -475,6 +473,16 @@ try {
   console.error('Ship failed to build', err);
   ship.ready = false;
 }
+// Reuse the actual Meridian texture objects and sky environment: no second
+// ship-sized texture set for the port. Fallback still allows independent builds.
+const port = new PortSystem(engine, registry, portSite, tier, ship.matsExt).build();
+port.padOccupancy = () => {
+  if (!ship.flight.landed) return [];
+  const p = portSite.toLocal(ship.flight.pos);
+  return PADS.filter(a => Math.abs(p.x-a.x)<a.w/2 && Math.abs(p.z-a.z)<a.d/2).map(a=>a.number);
+};
+port.updateDisplays();
+const portTour = makePortTour({ engine, walker, ship: () => ship, port, rebuild: () => rebuildNear(true) });
 
 // --- Third-person body. Simple for now, but real dimensions and a real ------
 // --- registry entry, so the fidelity pass has something measured to replace.
@@ -904,7 +912,7 @@ document.getElementById('btn-copy-coord').addEventListener('click', async () => 
 let hudAccum = 0;
 
 engine.addUpdater((dt) => {
-  if (portTour.active) { suitGroup.visible=false; port.tick(dt, walker, false); portTour.update(); return; }
+  if (portTour.active) { suitGroup.visible=false; port.tick(dt, walker, false, true); portTour.update(); return; }
   // Look. Both input sources contribute so a hybrid device works.
   const l1 = touch.consumeLook(), l2 = desktop.consumeLook();
   const lookDX = l1.dx + l2.dx, lookDY = l1.dy + l2.dy;

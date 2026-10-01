@@ -1,61 +1,76 @@
 // Few merged meshes, measured assets, real door openings and ground-level collision.
 import * as THREE from 'three';
-import { Kit } from '../ship/shipKit.js';
+import { Kit, resolveDepthLayers } from '../ship/shipKit.js';
+import { makePortMaterials, CELLS, plaque, groundDecal, textureBytes } from './portArt.js';
+import { moduleShell, depotInterior, towerInterior, market, detailFuel } from './portBuildings.js';
 import { PORT_ID, PORT_NAME, PADS, BUILDINGS, NPC_SPOTS } from './portSpec.js';
 
-function paintTexture(low) {
-  if (typeof document === 'undefined') return null;
-  const c=document.createElement('canvas'); c.width=c.height=low?128:256;
-  const g=c.getContext('2d'); g.fillStyle='#ccc8bc'; g.fillRect(0,0,c.width,c.height);
-  let seed=814;
-  for(let i=0;i<3500;i++) { seed=(Math.imul(seed,1664525)+1013904223)>>>0;
-    g.fillStyle=i%3?'#aaa79d':'#ded6c5'; g.globalAlpha=.25;
-    g.fillRect(seed%c.width,(seed>>>8)%c.height,1+(seed%3),1); }
-  g.globalAlpha=.32; g.strokeStyle='#6c6258'; g.lineWidth=1;
-  g.strokeRect(1,1,c.width-2,c.height-2);
-  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
-  t.colorSpace=THREE.SRGBColorSpace; return t;
-}
-function signTexture(low) {
-  if(typeof document==='undefined') return null;
-  const c=document.createElement('canvas'); c.width=low?512:1024; c.height=low?256:512;
-  const g=c.getContext('2d'); if(low)g.scale(.5,.5);
-  g.fillStyle='#111e26'; g.fillRect(0,0,1024,512);
-  g.fillStyle='#acecf4'; g.font='bold 82px sans-serif'; g.textAlign='center';
-  g.fillText(PORT_NAME,512,103); g.fillStyle='#e9be73'; g.font='32px sans-serif';
-  g.fillText('MARS  /  ARRIVALS · SUPPLY · FLIGHT CONTROL',512,174);
-  g.font='22px sans-serif'; g.fillText('01 MERIDIAN     02 SHUTTLES     03 COURIERS',512,225);
-  g.font='bold 36px sans-serif'; g.fillStyle='#bce3df';
-  ['SUPPLY DEPOT / ARRIVALS','PORT CONTROL','MARINERIS EXCHANGE','FUEL / KEEP CLEAR','CARGO / MANIFEST'].forEach((s,i)=>g.fillText(s,512,293+i*48));
-  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
-}
 const segments=['abcdef','bc','abdeg','abcdg'];
+// Phone fittings retain bevelled silhouettes; sub-centimetre chamfers on thin
+// plates/brackets are supplied by Meridian's normal maps rather than 26 faces.
+class PortKit extends Kit {
+  constructor(low) {super();this.low=low;}
+  poly(key,pts,uvs,col) {
+    if(key==='soot'&&!uvs) {
+      const t=this.low?1024:2048, h=t/2;
+      const tint=[.285,.282,.239];
+      return super.poly(key,pts,pts.map(()=>[1-1/t,1/h]),tint.map((v,i)=>v*(col?.[i]??1)));
+    }
+    return super.poly(key,pts,uvs,col);
+  }
+  box(key,x,y,z,w,h,d,o={}) {
+    if((key==='mark'||key==='soot')&&h<.04) {
+      const top=y+h/2;
+      return this.poly(key,[[x-w/2,top,z+d/2],[x+w/2,top,z+d/2],[x+w/2,top,z-d/2],[x-w/2,top,z-d/2]],null,o.col);
+    }
+    // Only omit buried/ground-facing undersides; racks and practical lights
+    // keep their lower faces when the player looks up from the aisle.
+    return super.box(key,x,y,z,w,h,d,this.low&&y-h/2<.15&&!key.startsWith('glow')?{...o,skip:(o.skip||'')+'-y'}:o);
+  }
+  bevelBox(key,x,y,z,w,h,d,c=.03,o={}) {
+    if(this.low && Math.min(w,h,d)<.105)return this.box(key,x,y,z,w,h,d,o);
+    if(this.low && Math.max(w,h,d)<1.6) {
+      const bevel=Math.min(c,w*.2,h*.2,d*.2);
+      return super.prism(key,[[x-w/2,z-d/2],[x+w/2,z-d/2],[x+w/2,z+d/2],[x-w/2,z+d/2]],y-h/2,y+h/2,bevel,bevel,o.col);
+    }
+    return super.bevelBox(key,x,y,z,w,h,d,c,o);
+  }
+  cyl(key,x,y,z,r,h,seg=12,o={}) {
+    return super.cyl(key,x,y,z,r,h,this.low?Math.min(seg,r<.1?4:r<1?8:seg):seg,o);
+  }
+  pipe(key,a,b,r,seg=8,o={}) {
+    return super.pipe(key,a,b,r,this.low?Math.min(seg,4):seg,{open:true,...o});
+  }
+}
 function digit(k,n,x,z,s=1) {
   const bars={a:[0,-1,1,.12],b:[.5,-.5,.12,.9],c:[.5,.5,.12,.9],d:[0,1,1,.12],e:[-.5,.5,.12,.9],f:[-.5,-.5,.12,.9],g:[0,0,1,.12]};
-  for(const b of segments[+n]) { const [dx,dz,w,d]=bars[b]; k.box('mark',x+dx*s,.025,z+dz*s,w*s,.006,d*s); }
+  for(const b of segments[+n]) { const [dx,dz,w,d]=bars[b]; k.box('mark',x+dx*s,.025,z+dz*s,w*s,.006,d*s);
+    // Missing flakes expose the concrete rather than changing the whole number's colour.
+    for(let i=0;i<3;i++)chip(k,x+dx*s+(w>d?(i-1)*.22*s:0),z+dz*s+(d>w?(i-1)*.22*s:0),.04*s,.025*s,.029);
+  }
+}
+function chip(k,x,z,w,d,y=.032) {
+  k.poly('concrete',[[x-w/2,y,z+d/2],[x+w/2,y,z+d/2],[x+w/2,y,z-d/2],[x-w/2,y,z-d/2]]);
 }
 function mergeKit(dst,src) {
   for(const [key,b] of src.buckets) {
     const a=dst._bucket(key), offset=a.pos.length/3;
-    a.pos.push(...b.pos); a.nrm.push(...b.nrm); a.uv.push(...b.uv); a.col.push(...b.col);
+    for(const key of ['pos','nrm','uv','col'])for(const v of b[key])a[key].push(v);
     for(const i of b.idx) a.idx.push(i+offset);
+    for(const f of src.faces)if(f.b===b)dst.faces.push({...f,b:a,base:f.base+offset});
   }
 }
 export class PortSystem {
-  constructor(engine,registry,site,tier='low') {
-    this.engine=engine; this.registry=registry; this.site=site; this.tier=tier;
+  constructor(engine,registry,site,tier='low',sharedMaterials=null) {
+    this.sharedMaterials=sharedMaterials; this.time=0; this.engine=engine; this.registry=registry; this.site=site; this.tier=tier;
     this.boxes=[]; this.doors=[]; this.assets=[]; this.npcSpots=NPC_SPOTS;
   }
   build() {
-    const low=this.tier==='low', texture=paintTexture(low);
-    const standard=(color,metalness=0)=>new THREE.MeshStandardMaterial({color,vertexColors:true,roughness:.86,metalness,map:texture});
-    this.materials={concrete:standard(0xb2b2a9), metal:standard(0xc4c9cb,.65), paint:standard(0xa7aba3),
-      glow:new THREE.MeshBasicMaterial({vertexColors:true}),
-      mark:new THREE.MeshStandardMaterial({color:0xe8bd60,roughness:.94,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}),
-      soot:new THREE.MeshStandardMaterial({color:0x454039,roughness:1,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1})};
-    this.materials.signs=new THREE.MeshBasicMaterial({map:signTexture(low),color:0xffffff,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
-    const master=new Kit(); master.defaultTile=4;
-    const label=(x,y,z,w,h,top,bottom)=>master.poly('signs',[[x-w/2,y-h/2,z],[x+w/2,y-h/2,z],[x+w/2,y+h/2,z],[x-w/2,y+h/2,z]],[[0,bottom],[1,bottom],[1,top],[0,top]]);
+    const low=this.tier==='low', art=makePortMaterials(this.tier,this.sharedMaterials);
+    this.art=art;this.materials=art.mats;
+    const master=new PortKit(low); master.defaultTile=4;
+    master.tiles={paint:8,metal:1,wall:2.7,floor:2,fabric:1};
+    const label=(...args)=>plaque(master,...args);
     const add=(a,k,authored)=>{
       const obj=k.toGroup(this.materials), type=a.id.split('-')[2];
       const rec=this.registry.register({id:a.id,bodyId:'mars',type,name:a.name,
@@ -63,13 +78,14 @@ export class PortSystem {
         collision:type==='STR'?'box':'box',materialId:a.number?'MAT-PORT-CONCRETE':'MAT-PORT-ALLOY',
         note:'Procedural; static geometry merged into the port render root. Ground contacts at port y=0.'});
       this.registry.measure(rec.id,THREE); this.assets.push(rec);
+      rec.renderTriangles=[...k.buckets.values()].reduce((n,b)=>n+b.idx.length/3,0);
       rec.grounding={measuredBase:new THREE.Box3().setFromObject(obj).min.y,
         foundationDepth:a.number?.494:(a.kind==='depot'||a.kind==='tower'?.4:0)};
       mergeKit(master,k); obj.traverse(m=>{if(m.isMesh)m.geometry.dispose();}); rec.object3d=null;
     };
     const box=(a,x,z,w,d,h)=>this.boxes.push({id:a.id,x0:a.x+x-w/2,x1:a.x+x+w/2,z0:a.z+z-d/2,z1:a.z+z+d/2,y0:0,y1:h});
     for(const a of PADS) {
-      const k=new Kit(); k.defaultTile=4; k.push(a.x,0,a.z);
+      const k=new PortKit(low); k.defaultTile=4; k.push(a.x,0,a.z);
       // The concrete is a material volume in the field. Only its finish is drawn here.
       k.box('concrete',0,-.244,0,a.w,.5,a.d);
       for(let x=-a.w/2+6;x<a.w/2;x+=6) k.box('soot',x,.01,0,.035,.005,a.d-.3);
@@ -77,6 +93,7 @@ export class PortSystem {
       for(const s of [-1,1]) {
         k.box('mark',s*(a.w/2-1),.026,0,.18,.006,a.d-2);
         k.box('mark',0,.026,s*(a.d/2-1),a.w-2,.006,.18);
+        for(let z=-a.d/2+3;z<a.d/2;z+=2.9)chip(k,s*(a.w/2-1),z,.1,.06);
         // Recessed drainage rails and steel tie-down sockets.
         k.box('gunmetal',s*(a.w/2-.32),.012,0,.12,.02,a.d-1);
         for(let z=-a.d/2+3;z<a.d/2;z+=5) {
@@ -85,9 +102,10 @@ export class PortSystem {
         }
       }
       for(let z=-a.d/2+4;z<a.d/2-3;z+=3) k.box('mark',0,.026,z,.12,.006,1.1);
-      // Segmented rings read as blast wear without transparent overdraw.
-      for(let i=0;i<24;i++) { const t=i*Math.PI/12; k.push(Math.sin(t)*7,0,Math.cos(t)*7,t);
-        k.box('soot',0,.018,0,.55,.006,1.55); k.pop(); }
+      // Four feathered engine footprints, tyre tracks and service-fluid stains.
+      for(const x of [-5.3,5.3])for(const z of [-8,8])groundDecal(k,CELLS.scorch,x,z,5.5,7,0,.017);
+      groundDecal(k,CELLS.tyres,a.w/2-5,4,3,18,0,.017);
+      groundDecal(k,CELLS.oil,-a.w/2+5,-a.d/2+7,1.5,2,0,.017);
       digit(k,a.number[0],-1.4,a.d/2-5,1.7); digit(k,a.number[1],1.4,a.d/2-5,1.7);
       k.pop(); add(a,k,{width:a.w,height:.5385,depth:a.d});
     }
@@ -112,66 +130,25 @@ export class PortSystem {
     for(let z=-60;z<65;z+=4) master.box('mark',-27,.026,z,.9,.006,1.4);
 
     for(const a of BUILDINGS) {
-      const k=new Kit(); k.defaultTile=3; k.push(a.x,0,a.z);
+      const k=new PortKit(low); k.defaultTile=3; k.tiles={...master.tiles};k.push(a.x,0,a.z);
       const bevel=(mat,x,y,z,w,h,d,c=.055)=>k.bevelBox(mat,x,y,z,w,h,d,c);
       if(a.kind==='depot'||a.kind==='tower') {
-        const h=a.kind==='tower'?4.2:a.h;
-        // Wall panels, double-sided solids with an actual front opening. No floor lip.
-        bevel('concrete',0,-.2,0,a.w,.4,a.d);
-        bevel('plastic',0,h/2,-a.d/2+.12,a.w,h,.24);
-        for(const s of [-1,1]) { bevel('plastic',s*(a.w/2-.12),h/2,0,.24,h,a.d);
-          box(a,s*(a.w/2-.12),0,.24,a.d,h); }
-        box(a,0,-a.d/2+.12,a.w,.24,h);
-        const side=(a.w-a.doorW)/2;
-        for(const s of [-1,1]) { const x=s*(a.doorW/2+side/2); bevel('plastic',x,h/2,a.d/2-.12,side,h,.24); box(a,x,a.d/2-.12,side,.24,h); }
-        bevel('steelDark',0,(h+2.8)/2,a.d/2-.12,a.doorW,h-2.8,.24);
-        bevel('steelDark',0,h-.12,0,a.w,.24,a.d);
-        // A roof overhang, flashings, vertical seams, dust skirt and practical lamps.
-        for(let x=-a.w/2+.7;x<a.w/2;x+=2) k.box('steelDark',x,h/2,a.d/2+.003,.028,h-.3,.022);
-        for(const s of [-1,1]) { k.box('crateB',s*(a.w/2-.16),.17,0,.05,.3,a.d-.5);
-          k.box('glowAmber',s*(a.doorW/2+.4),2.55,a.d/2+.025,.4,.12,.06); }
-        k.box('hazard',0,.015,a.d/2-1.2,a.doorW,.016,.15);
-        const dk=new Kit(); dk.bevelBox('steelDark',0,1.4,0,a.doorW,2.8,.12,.04);
-        dk.box('glowCyan',0,1.8,.065,a.doorW*.6,.08,.012);
-        const mesh=dk.toGroup(this.materials,{name:a.name+' sliding door'});
-        const baseZ=a.z+a.d/2-.16; mesh.position.set(a.x,0,baseZ);
+        const block=(x,z,w,d,h)=>box(a,x,z,w,d,h);
+        moduleShell(k,a,low,block);
+        const dk=new PortKit(low);dk.tiles={paint:8,metal:1};
+        // Door hardware stays in one moving bucket; lamps are on the static frame.
+        dk.bevelBox('plastic',0,1.4,0,a.doorW,2.8,.12,.045);
+        for(const x of [-a.doorW*.34,a.doorW*.34]) {
+          dk.box('rubber',x,1.4,.071,.04,2.5,.015);
+          dk.bevelBox('counter',x,1.4,.09,.08,.4,.06,.015);
+        }
+        const mesh=dk.toGroup(this.materials,{name:a.name+' sliding door',cast:true,receive:true});
+        const baseZ=a.z+a.d/2-.16;mesh.position.set(a.x,0,baseZ);
         this.doors.push({asset:a,mesh,progress:0,baseZ});
-        if(a.kind==='depot') {
-          // Shelves, bundled supplies and braced counter, leaving a 3 m central aisle.
-          for(const s of [-1,1]) {
-            const x=s*(a.w/2-1.3);
-            for(const z of [-5,0,5]) {
-              for(const dx of [-.85,.85]) { k.box('steelDark',x+dx,1.3,z-.9,.08,2.6,.08); k.box('steelDark',x+dx,1.3,z+.9,.08,2.6,.08); }
-              for(const y of [.15,1.05,1.95]) { bevel('steel',x,y,z,2,.08,2,.025);
-                for(const dz of [-.5,.5]) bevel('crateA',x,y+.31,z+dz,1.5,.55,.75); }
-              box(a,x,z,2,2,2.6);
-            }
-          }
-          bevel('counter',-3,.6,-1,5,1.2,1.1); box(a,-3,-1,5,1.1,1.2);
-          k.box('glowCyan',-2,1.26,-1,.7,.06,.4);
-          for(let x=-7;x<8;x+=3) { bevel('crateB',x,.6,-7,1.5,1.2,1.5); box(a,x,-7,1.5,1.5,1.2); }
-          k.box('glowWhite',0,h-.3,0,12,.05,.22);
-        } else {
-          // Enterable lobby beneath an instrument tower; the upper cab is currently scenery.
-          bevel('counter',-2,.55,-2,2,1.1,1.2); box(a,-2,-2,2,1.2,1.1);
-          k.box('glowCyan',-2,1.15,-2,1.3,.08,.6);
-          bevel('steelDark',0,9,0,6,9.6,6,.15);
-          for(let y=5;y<14;y+=2) k.box('steel',0,y,3.04,5.5,.06,.08);
-          bevel('plastic',0,14.7,0,10,1.4,10,.16);
-          bevel('gunmetal',0,16.2,0,9.7,1.5,9.7,.14);
-          for(const s of [-1,1]) { k.box('glowCyan',0,16.2,s*4.86,8,.8,.025); k.box('glowCyan',s*4.86,16.2,0,.025,.8,8); }
-          bevel('steel',0,17.2,0,10,.5,10,.15);
-          k.cyl('steel',0,17.6,0,.05,.8,8); k.box('glowRed',0,17.98,0,.12,.04,.12);
-        }
+        if(a.kind==='depot')depotInterior(k,a,low,block);
+        else towerInterior(k,a,low,block);
       } else if(a.kind==='market') {
-        for(let i=0;i<4;i++) {
-          const x=-12+i*8;
-          for(const dx of [-3.5,3.5]) for(const z of [-3.5,3.5]) { k.box('steelDark',x+dx,1.65,z,.1,3.3,.1); box(a,x+dx,z,.1,.1,3.3); }
-          bevel('crateB',x,3.4,0,8,.2,8,.075);
-          bevel('counter',x,.55,-1.6,6,1.1,1.2); box(a,x,-1.6,6,1.2,1.1);
-          k.box('glowAmber',x,3.2,1,3,.07,.09);
-          for(const dx of [-2,0,2]) bevel('crateA',x+dx,1.28,-1.6,1.2,.35,.85);
-        }
+        market(k,a,low,(x,z,w,d,h)=>box(a,x,z,w,d,h));
       } else if(a.kind==='fuel') {
         for(const x of [-8,0,8]) {
           bevel('concrete',x,.3,0,6,.6,12,.08);
@@ -181,6 +158,7 @@ export class PortSystem {
           box(a,x,0,6,10,6);
         }
         k.box('pipeRed',0,.22,5.5,24,.2,.2);
+        detailFuel(k,low);
       } else if(a.kind==='containers') {
         for(const x of [-9,0,9]) {
           bevel('crateC',x,1.45,0,8,2.9,6,.06); box(a,x,0,8,6,2.9);
@@ -194,39 +172,108 @@ export class PortSystem {
         k.box('glowCyan',0,4.95,.51,15,.05,.025);
       }
       k.pop(); add(a,k,null);
-      // Explicit design envelope, compared to measured geometry in the validator.
+      // Authoring envelopes include airlock hoods and roof plant, rather than
+      // silently declaring the original bare wall dimensions.
       const rec=this.registry.get(a.id);
-      rec.authored={width:a.w,height:a.h+(a.kind==='depot'||a.kind==='tower'?.4:0),depth:a.d+(a.kind==='containers'?.08:a.kind==='sign'?.05:a.kind==='depot'||a.kind==='tower'?.08:0)};
-      const row={depot:0,tower:1,market:2,fuel:3,containers:4}[a.kind];
-      if(a.kind==='depot'||a.kind==='tower'||a.kind==='market'||a.kind==='containers') {
-        label(a.x,a.kind==='market'?3.35:a.kind==='containers'?2.25:3.6,a.z+a.d/2+.065,a.kind==='market'?7:Math.min(a.w-1,9),a.kind==='market'?.25:.6,1-(256+row*48)/512,1-(304+row*48)/512);
-      }
+      const envelope={
+        depot:{width:24,height:7.84,depth:19},
+        tower:{width:12,height:28.4,depth:13},
+        market:{width:32,height:3.46,depth:8},
+        fuel:{width:24,height:6,depth:12},
+        containers:{width:26,height:2.9,depth:6.08},
+        sign:{width:16,height:5,depth:1.05},
+      };
+      rec.authored=envelope[a.kind];
+      if(a.kind==='containers')label(CELLS.stock,a.x,2.25,a.z+3.065,9,.6);
     }
-    label(-28,4,65.511,15.6,1.75,1,.5);
-    this.root=master.toGroup(this.materials,{name:PORT_NAME,receive:true});
+    label(CELLS.port,-28,4,65.511,15.6,1.75);
+    this.buildEarthworks(master,low);
+    this.depthLayers=resolveDepthLayers([master],{eps:.035});
+    // Whole-apron stripes intersect at identical yellow corners. A generic
+    // overlap graph otherwise lifts each long strip again and again. Assign
+    // their known pavement stack explicitly so 16-bit depth never needs seven
+    // layers (which could pull a distant stripe in front of ship hardware).
+    const keys=new Map([...master.buckets].map(([key,b])=>[b,key]));
+    for(const f of master.faces) {
+      const key=keys.get(f.b), off=f.base*3;
+      if(f.b.nrm[off+1]<.999)continue;
+      const ys=Array.from({length:f.n},(_,i)=>f.b.pos[(f.base+i)*3+1]);
+      if(Math.min(...ys)<0||Math.max(...ys)>.07)continue;
+      if(key==='concrete')f.lift=Math.max(...ys)>.02?4:0;
+      else if(key==='soot')f.lift=1;
+      else if(key==='mark'||key==='glow')f.lift=3;
+      else if(key==='metal')f.lift=4;
+    }
+    this.depthLayers.maxLayer=Math.max(...master.faces.map(f=>f.lift));
+    this.depthLayers.lifted=master.faces.filter(f=>f.lift>0).length;
+    this.root=master.toGroup(this.materials,{name:PORT_NAME,receive:true,cast:true});
+    // Existing sun shadow pass: skip paint marks, screens, fabric, emissives
+    // and floor-only geometry. Architecture and steel fittings cast shadows.
+    for(const m of this.root.children)m.castShadow=['metal','paint','wall','concrete'].some(key=>m.name.endsWith(':'+key));
     for(const door of this.doors) this.root.add(door.mesh);
-    // One nearby practical light, with no shadow map or per-fixture draw call.
-    this.practical=new THREE.PointLight(0xffd9ac,22,17,2);
-    this.practical.name='port practical light pool'; this.root.add(this.practical);
-    this.fixtures=[[-62,4.7,18],[-60,3.7,-39],[-58,3.15,53]];
+    // Fixed-size light pool, sorted by proximity. No per-fixture shadow maps.
+    this.fixtures=[[-62,4.35,14],[-62,4.35,21],[-69,4.15,21],[-55,4.15,14],
+      [-62,3.5,-39],[-57.5,3.5,-37],...[-70,-62,-54,-46].map(x=>[x,2.75,53])];
+    this.lights=Array.from({length:low?2:3},()=>{
+      const l=new THREE.PointLight(0xffd9ac,75,13,2);l.name='port practical light pool';this.root.add(l);return l;
+    });
+    this.practical=this.lights[0];
+    this.updateDisplays();
     const basis=new THREE.Matrix4().makeBasis(new THREE.Vector3(...Object.values(this.site.right)),new THREE.Vector3(...Object.values(this.site.up)),new THREE.Vector3(...Object.values(this.site.back)));
     this.quaternion=new THREE.Quaternion().setFromRotationMatrix(basis);
     this.engine.scene.add(this.root); this.engine.track({worldPos:this.site.center,quaternion:this.quaternion,object3d:this.root});
     const rec=this.registry.register({id:PORT_ID,bodyId:'mars',type:'STR',name:PORT_NAME,position:this.site.center,object3d:this.root,collision:'field',materialId:'MAT-PORT-CONCRETE',note:'210 x 176 m surveyed apron; 160 m continuous earthwork blend. Includes named pad/building records.'});
     this.registry.measure(rec.id,THREE);
-    this.stats={drawCalls:0,triangles:0,geometryBytes:0};
+    this.stats={drawCalls:0,triangles:0,geometryBytes:0,sunShadowDrawCalls:0,sunShadowTriangles:0};
     this.root.traverse(m=>{if(!m.isMesh)return; this.stats.drawCalls++; this.stats.triangles+=m.geometry.index?m.geometry.index.count/3:m.geometry.attributes.position.count/3;
+      if(m.castShadow){this.stats.sunShadowDrawCalls++;this.stats.sunShadowTriangles+=m.geometry.index.count/3;}
       for(const a of Object.values(m.geometry.attributes))this.stats.geometryBytes+=a.array.byteLength;
       if(m.geometry.index)this.stats.geometryBytes+=m.geometry.index.array.byteLength;});
+    this.stats.textureBytes=textureBytes(art.ownedTextures);
+    this.stats.sharedShipTextures=art.sharedTextures;
+    this.stats.pointLights=this.lights.length;
+    this.stats.shadowLights=0;
     return this;
   }
-  tick(dt,walker,collide=true) {
+  updateDisplays() {
+    const occupied=this.padOccupancy?.()||[];
+    this.art.atlas.update(['01 '+(occupied.includes('01')?'MERIDIAN / OCCUPIED':'CLEAR'),
+      '02 '+(occupied.includes('02')?'OCCUPIED':'CLEAR')+'   03 '+(occupied.includes('03')?'OCCUPIED':'CLEAR')]);
+  }
+  buildEarthworks(k,low) {
+    // Segmental retaining kerbs and wind berms sit INSIDE the flat footprint.
+    // The 160 m graded density blend outside it remains untouched.
+    for(const s of [-1,1])for(let z=-80;z<84;z+=8) {
+      k.bevelBox('concrete',s*103,.28,z,1.1,.56,7.85,.06);
+      k.box('steelDark',s*103,.59,z,1.16,.06,7.85);
+      for(const dz of [-2.5,2.5])k.cyl('gunmetal',s*102.43,.28,z+dz,.055,.035,6,{axis:'x'});
+      const x=s*104;
+      k._faceQuad('soot',[[x-.48*s,0,z-3.9],[x,.52,z-3.9],[x,.52,z+3.9],[x-.48*s,0,z+3.9]],[0,1,0],[1.7,1.17,.8]);
+      k.box('glowAmber',s*102.38,.52,z,.08,.055,.23);
+      this.boxes.push({id:PORT_ID,x0:s*103-.56,x1:s*103+.56,z0:z-3.925,z1:z+3.925,y0:0,y1:.62});
+    }
+    // Tall apron floodlight masts create a recognisable distant silhouette.
+    for(const [x,z] of [[-32,-64],[91,-48],[90,54],[-32,44]]) {
+      k.bevelBox('concrete',x,.14,z,1.2,.28,1.2,.06);
+      k.cyl('steelDark',x,6,z,.16,12,low?8:12,{r2:.09});
+      k.box('steel',x,11.7,z,3,.13,.2);
+      for(const dx of [-1,0,1]){
+        k.bevelBox('gunmetal',x+dx,11.55,z,.65,.35,.4,.055);
+        k.box('glowWhite',x+dx,11.45,z+.21,.55,.18,.02);
+      }
+      for(let y=.4;y<9;y+=.5)k.box('steel',x,y,z+.18,.32,.035,.05);
+      k.box('glowRed',x,12.02,z,.12,.04,.12);
+      this.boxes.push({id:PORT_ID,x0:x-.6,x1:x+.6,z0:z-.6,z1:z+.6,y0:0,y1:12});
+    }
+  }
+  tick(dt,walker,collide=true,holdDoors=false) {
     const p=this.site.toLocal(walker.worldPos), r=walker.radiusM;
-    const fixture=this.fixtures.reduce((a,b)=>Math.hypot(p.x-a[0],p.z-a[2])<Math.hypot(p.x-b[0],p.z-b[2])?a:b);
-    this.practical.position.set(...fixture);
-    this.practical.intensity=Math.hypot(p.x-fixture[0],p.z-fixture[2])<22?22:0;
+    this.time+=dt;
+    const nearby=this.fixtures.map(f=>({f,d:Math.hypot(p.x-f[0],p.z-f[2])})).sort((a,b)=>a.d-b.d);
+    this.lights.forEach((l,i)=>{const {f,d}=nearby[i];l.position.set(...f);l.intensity=d<19?75:0;});
+    if(this.time>1){this.updateDisplays();this.time=0;}
     for(const d of this.doors) {
-      const a=d.asset, near=Math.hypot(p.x-a.x,p.z-d.baseZ)<6;
+      const a=d.asset, near=holdDoors||Math.hypot(p.x-a.x,p.z-d.baseZ)<6;
       d.progress+=Math.max(-dt*1.6,Math.min(dt*1.6,(near?1:0)-d.progress));
       d.mesh.position.set(a.x+d.progress*(a.doorW+.2),0,d.baseZ);
     }

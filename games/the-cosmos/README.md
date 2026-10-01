@@ -282,9 +282,14 @@ in the planet's density field. Landing samples the field and accounts for the
 actual rubber soles; boarding and stepping off a ramp share a supported,
 directional handoff. Cargo crates leave both control panels and screens clear.
 
-The validator now runs **165 checks**. Low-tier port geometry adds 11 draw calls,
-13,086 triangles and 1.19 MB. Phone FPS and visual quality await Claude's review.
-Use `cosmos.portTour()` to cycle 20 fixed review cameras, `cosmos.portTour('list')`
+The validator now runs **172 checks**. The second visual pass shares Meridian's
+PBR maps and prop kit, adds ribbed architecture, roof equipment, a 28 m tower,
+furnished interiors, four distinct traders, pavement wear and retaining works.
+Low tier adds 12 primary draw calls, 32,282 triangles and 2.93 MB of geometry;
+the existing sun shadow pass can add 6 calls / 28,788 triangles. Port-only
+RGBA textures are estimated at 3.84 MB including mipmaps; ship maps are shared.
+Phone FPS and the final interior visual grade still await Claude's review.
+Use `cosmos.portTour()` to cycle 35 fixed review cameras, `cosmos.portTour('list')`
 to list them and `cosmos.portTour('off')` to return to play. Full causes, limits,
 registry IDs and viewpoints: [Mars Port review](docs/MARS-PORT-REVIEW.md).
 

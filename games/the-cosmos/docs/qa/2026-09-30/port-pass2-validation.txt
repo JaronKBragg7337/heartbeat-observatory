@@ -1,0 +1,223 @@
+
+== 1. Measured bodies are self-consistent ==
+  PASS  mars: every physical field is a finite number
+  PASS  mars: polar radius < mean < equatorial (real oblateness)
+  PASS  mars: stated gravity agrees with G·M/r² within 1%
+  PASS  mars: gravity falls off as inverse square above the surface
+  PASS  mars: gravity goes to zero at the centre, not infinity
+  PASS  mars: every source record names a field and a URL
+
+== 2. Addressing: every point has one, and it round-trips ==
+  PASS  geodetic round-trip is accurate to under 1 mm over 4000 samples
+  PASS  poles convert without a singularity
+  PASS  standing on the surface reports layer 0, not underground
+  PASS  local frame is RIGHT-handed everywhere (east × north = +up)
+  PASS  stepping along east increases longitude
+  PASS  stepping along north increases latitude
+  PASS  local frame is orthonormal
+  PASS  surface distance between the landmarks is physically sane
+
+== 3. The planet is a volume, not a shell ==
+  PASS  rays find enclosed voids underground (caves are representable)
+  PASS  cave voids are lava-tube scale, not cathedral scale
+  PASS  the deep interior is solid everywhere (no hollow planet)
+  PASS  space above the highest terrain is empty everywhere
+  PASS  field is deterministic: identical inputs give identical output
+  PASS  render surface and collision surface are the same function
+  PASS  the solved surface equals the marched surface (renderer optimisation is not a second truth)
+
+== 4. Materials and strata ==
+  PASS  every material declares a real density and a strength
+  PASS  material densities are physically ordered (ice < regolith < basalt < ore)
+  PASS  the surface layer is regolith, not bedrock
+  PASS  below the crust nothing can be excavated (mantle boundary is a rule)
+
+== 5. A body on the ground behaves ==
+  PASS  a standing body comes to rest and stays grounded
+  PASS  a standing body does not sink or drift over 15 s
+  PASS  running 10 s covers the distance the speed implies
+  PASS  running over real terrain does not launch the body into the air
+  PASS  jump apex matches v²/2g for this planet within 10%
+  PASS  a body is never left inside solid rock
+
+== 5b. The player stands on the ground they can SEE ==
+  PASS  the drawn surface and the field genuinely differ (the bug was real)
+  PASS  feet rest on the drawn surface within 5 cm while walking
+  PASS  running across rough ground does not skip the body into the air
+
+== 5c. Nothing is inside-out ==
+  PASS  local ground patch faces OUT of the planet, not into it
+  PASS  global shell faces out too
+  PASS  the only normal-less vertices are the two geometric poles
+  PASS  an explicit orientation basis faces the heading it was given
+
+== 6. Walking anywhere on the planet, not just at spawn ==
+  PASS  a body settles correctly at 10 sites worldwide including both poles
+
+== 7. Asset identity and placement ==
+  PASS  ids follow the COS-<BODY>-<TYPE>-<SEQ> format
+  PASS  ids are unique and sequential
+  PASS  an unknown asset type is rejected
+  PASS  a duplicate explicit id is rejected
+  PASS  measured size is unaffected by rotation and position
+  PASS  a correctly built asset reports no dimension drift
+  PASS  every landmark sits on the ground: not buried, not floating
+
+== 7b. Digging: the ground is a solid object and matter is conserved ==
+  PASS  the ground is solid before digging
+  PASS  a scoop yields a real lot with mass and volume
+  PASS  a shovel load is a believable size (1-8 kg, 0.5-5 litres)
+  PASS  mass equals volume times the real density of what was dug
+  PASS  loose material bulks up relative to the hole it came from
+  PASS  the dug spot becomes a hole in the ground
+  PASS  the hole lowers the rendered surface too (one truth, not a decal)
+  PASS  digging does not disturb the ground a few metres away
+  PASS  material in hand is accounted for while carried
+  PASS  material dumped is accounted for and nothing vanished
+  PASS  dumping puts solid material back into the world
+  PASS  the mantle boundary cannot be dug
+
+== 7c. The dug ground is DRAWN correctly, not just modelled correctly ==
+  PASS  every excavated face points out of the rock, not into it
+  PASS  the excavation cell resolves a shovel bite (>= 3 cells across)
+  PASS  the drawn pit is as deep as the bite really was (> 8 cm)
+  PASS  the heightfield hands over less ground than the mesh covers
+  PASS  the heightfield yields a hole at EVERY grid phase, not just a lucky one
+  PASS  the handover square clears two quads with margin, not on a tie
+  PASS  nothing the heightfield stopped drawing falls outside the mesh
+
+== 7d. Digging and dumping makes PROGRESS, not a treadmill ==
+  PASS  emptying your hands does not refill the hole you dug
+  PASS  four load-cycles of digging get past 3 m down
+  PASS  and matter is still conserved while doing it
+
+== 8. Determinism across runs ==
+  PASS  identical inputs from an identical start end in an identical place
+
+== 9. The ship: a real place you walk through, sit in and fly ==
+
+== 9a. Real human scale ==
+  PASS  decks are 3.0 m apart: 2.7 m clear plus a 0.3 m slab
+  PASS  the avatar is 1.78 m tall with a 1.66 m eye, and fits a 2.7 m deck with room to jump
+  PASS  every door is at least 2.0 m tall and 0.9 m wide
+  PASS  corridors are 1.3 to 1.7 m wide
+  PASS  stairs rise 0.1875 m a step, the same as a building-code riser
+  PASS  no two rooms occupy the same space
+  PASS  every piece of furniture stands inside its own room
+  PASS  no two pieces of furniture pass through each other
+  PASS  every door joins two rooms that exist (or the outside)
+
+== 9b. Decks are walkable: stairs, ladders, ramps, doors ==
+  PASS  the dorsal turret ladder is climbed by walking into it: you arrive on the upper deck
+  PASS  the ventral turret hatch: walk to the edge and you climb down into the pit
+  PASS  every room on every deck is reachable on foot from the boarding ramp
+  PASS  every seat can be reached and sat in from a floor you can stand on
+  PASS  the bridge stair is climbed to the upper deck: one smooth ramp with no popping
+  PASS  the cargo-bay stair climbs smoothly to the gantry at main-deck height
+  PASS  from the gantry the corridor door opens onto the main deck: you walk straight in
+  PASS  the gantry has rails: walking at its open edge stops you on it
+  PASS  the boarding ramp is walked up into the cargo bay
+  PASS  walking down the ramp to its end steps you off the ship onto the ground
+  PASS  you can walk through every doorway
+  PASS  walls and furniture stop you: 9000 frames of random walking, none inside a wall or a bunk
+
+== 9c. Seats: you cannot use a station unless you are sitting in it ==
+  PASS  the ship is set down on ground level enough for four legs (spread under 1.4 m) within sight of the spawn
+  PASS  after settling it is landed and at rest
+  PASS  standing in a corridor, every station command is refused
+  PASS  you cannot sit in a seat you are nowhere near
+  PASS  each seat unlocks exactly its own station and nothing else
+  PASS  you cannot sit in two seats at once
+  PASS  standing up lets go of the stick: the controls return to zero
+
+== 9d. Flight: lift off, thrust, turn, land, in real Martian gravity ==
+  PASS  with the engines idle the ship falls at the planet's gravity (3.72 m/s^2), not Earth's
+  PASS  the ship lifts off the real planet at the default power split: 300 kN against 171 kN of weight
+  PASS  routed away from the engines the same ship cannot leave the ground (thrust below weight)
+  PASS  a person standing on a deck stays standing on it while the ship lifts, accelerates, banks and turns
+  PASS  the hull leans no more than 25 degrees off the local vertical, so the deck stays a floor
+  PASS  and the ship really went somewhere: it climbed over 25 m and is now over 60 m from where it started
+  PASS  it comes down under control: touchdown under 3 m/s, landed, at rest, no hull damage
+  PASS  landed, all four legs carry the ship and none has sunk below the ground it stands on
+  PASS  the keel is in open air and every foot stands on solid ground in the 3D field: not sunk, not floating
+  PASS  power routing always adds up to the reactor output, however it is shifted
+  PASS  engineering changes real performance: engine share sets lift, shield share sets the shield cap
+
+== 9e. Guns fire visible bolts that hit the real ground ==
+  PASS  standing on the bridge, the main guns will not fire
+  PASS  seated in the captain's chair the same command fires a bolt, with its muzzle flash
+  PASS  the bolt strikes the surface: the impact lies on the ground to within 5 cm, well down range
+  PASS  routing power to the guns raises their rate of fire
+  PASS  the dorsal seat fires the dorsal turret and not the main guns
+  PASS  a bolt aimed at a practice target hits it and damages it
+
+== 9e2. Shields take the hit first; drones only fight a ship that is in the air ==
+  PASS  a hit spends the shield first, and only what is left of it reaches the hull
+  PASS  routing power to the shields makes them a bigger buffer
+  PASS  a battered hull gives up thrust but never enough to fall out of the sky
+  PASS  even at zero integrity the ship can still lift off
+  PASS  a drone leaves a parked ship alone
+  PASS  once the ship is airborne the drone attacks: it fires, its bolts hit, and the shield takes the damage
+  PASS  the main guns can shoot a drone down
+
+== 9f. The ship is built, measured and registered ==
+  PASS  the ship has a stable registry ID, a measured size and a real mass
+  PASS  the ship and all seven stations measure within 5 cm of their design size
+  PASS  every station has its own registry ID and a real mass
+  PASS  every main-body room fits inside the lofted hull with at least 8 cm to spare
+  PASS  the interior is light enough for a phone: under 100k triangles and under 220 draw calls with every room drawn
+
+== 9g. Nothing fights, nothing vanishes, nothing blocks the view ==
+  PASS  no two flat faces on the same plane share a depth layer (they would z-fight: blocky patches on a phone)
+  PASS  the depth lift stays small: at most 4 layers
+  PASS  every room a ray of sight can reach through an open door or opening is drawn, on a phone budget (never more than 8 rooms)
+  PASS  a closed door hides what is behind it (nothing is drawn through a shut door)
+  PASS  a door leaf belongs to the ship, not to a room, so it is drawn from either side
+  PASS  door frames and thresholds are one set on the root of the ship, so a frame is never lost with a hidden room (a slot in the wall showed the sky)
+  PASS  each stair and ladder is drawn whenever any room it touches is drawn
+  PASS  nobody can walk into the side of either stair, or stand inside or beneath its steps
+  PASS  both stairs can still be climbed from their foot to their top
+  PASS  no stair stands in a doorway, in front of one, or across a room entrance (every door keeps 0.6 m beside it and 1.0 m in front)
+  PASS  no furniture stands in a doorway or within 0.9 m in front of one
+  PASS  every stair has 1.2 m of clear, level floor at its foot and at its top (no chair, dais or crate to walk into)
+  PASS  no outside armour plate, mast or fitting stands inside a room or the stairwell
+  PASS  nothing in front of the pilot or captain rises above their eye across a forward 60-degree fan (they can see out)
+  PASS  the windscreen sill is no higher than the pilot and captain seated eye
+  PASS  the dorsal gunner sits in glass: the nest wall tops out at least 0.3 m below the seated eye
+  PASS  every point of the bridge stairwell is inside the hull or under its armoured saddle (you cannot look out through the roof plate)
+
+== 10. Marineris Port: earthworks, landing and continuous ramp handoffs ==
+  PASS  all three pads are flat in the density field to within 2 cm
+  PASS  pads are a solid volume with at least 10 m of engineered ground beneath them
+  PASS  concrete belongs to the field, including its full half-metre thickness
+  PASS  a scoop shovel cannot cut structural pavement or lose concrete mass
+  PASS  graded edge meets natural terrain continuously and has solid ground beneath it
+  PASS  port, every pad and all six structures have stable registered IDs and measured sizes
+  PASS  port assets measure within 5 cm of their authored sizes
+  PASS  phone port costs at most 12 draw calls, 35k triangles and 4 MB of geometry
+  PASS  port shares Meridian texture objects and room finishes without duplicating the ship maps
+  PASS  texture budget includes RGBA mipmaps and counts shared references once
+  PASS  port uses a fixed phone light pool and adds no fixture shadow maps
+  PASS  port pavement and hardware stay within four depth-buffer lift layers
+  PASS  control tower and depot roof equipment have silhouettes above the old bare shells
+  PASS  high tier remains merged within 12 main calls, 60k triangles and 5 MB of geometry
+  PASS  every structure and prop stands on surveyed solid ground, including every foundation corner
+  PASS  built geometry bases meet the ground, with only declared foundations below it
+  PASS  Meridian settles level on pad 01 with four soles on the field
+  PASS  a banked approach lands on every pad with all four feet touching and no damage
+  PASS  every keel support remains in open air after every landing
+  PASS  every built exterior vertex, including rubber soles and ventral guns, clears the field after landing
+  PASS  cargo and airlock ramps support three boarding/walking/unboarding round trips each
+  PASS  ramp handoffs shift the feet by under 5 cm and never reboard while walking away
+  PASS  the ship owns the boarding frame and releases the exit frame, so planet physics never runs on aboard feet
+  PASS  a shoulder beyond ramp support cannot enter the boarding trigger
+  PASS  no prop blocks a control panel service space or wall screen sight line
+  PASS  the real planet walker opens and walks through depot and tower doors
+  PASS  tour holds both entrances open even from distant aerial review cameras
+  PASS  future NPC spaces stay clear of solid props
+  PASS  review tour retains original views and covers new interiors, traders, roofs and kilometre silhouette
+  PORT BUDGET {"drawCalls":12,"triangles":32282,"geometryBytes":2930748,"sunShadowDrawCalls":6,"sunShadowTriangles":28788,"textureBytes":0,"sharedShipTextures":false,"pointLights":2,"shadowLights":0}
+  PORT SITE {"x":1689077.7342747748,"y":-812714.4500286678,"z":2833351.3216460254} heading 0
+
+========================================
+RESULT: 172 passed, 0 failed

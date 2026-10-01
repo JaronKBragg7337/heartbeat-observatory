@@ -1,130 +1,179 @@
-# Marineris Port — local review handoff
+# Marineris Port - pass 2 review handoff
 
-Built by Codex, 2026-09-30. Local work only; Claude must walk and inspect it before release.
+Built by Codex, 2026-09-30. **Uncommitted, only `games/the-cosmos/`.**
+The dedicated local server for this worktree runs at `http://localhost:8380/?tier=low`.
+Claude should review the named cameras and walk the port before committing.
+This is a visual rebuild on top of the landing/boarding pass at `7218d05`.
+It does not claim that Jaron's Meridian-level visual bar has been approved.
 
-The port is a 210 × 176 m surveyed apron centred on the Meridian's original
-field-selected landing site near Valles Marineris. A 160 m quintic blend grades
-its perimeter into natural terrain. This changes the planet's density volume,
-with caves still evaluated beneath the new rock roof. The render patches solve
-that same field. The flat apron has solid ground underneath, rather than a
-floating slab. Concrete pavement occupies the upper 0.5 m and cannot be broken
-with the scoop shovel; loose soil remains diggable.
+## What changed
 
-Pad 01 is 38 × 64 m for the 49 m Meridian. Pads 02 and 03 are 30 × 38 m and
-26 × 32 m. All have numbers, boundary/centre markings, lights, drainage rails,
-tie-down sockets, expansion seams and blast wear. Concrete taxi lanes connect
-them. New players arrive beside the ship's aft ramp.
+The port now shares the Meridian's **actual texture objects** from `matsExt`,
+including hull albedo/normal/roughness/metalness, machined metal normals,
+corrugated cargo walls, deck plates and woven fabric. `PortKit` extends
+`shipKit.js`; stocked crates and drums call `shipProps.js` directly. The repair
+screen uses `shipScreens.js`'s schematic painter. The production path builds
+the ship first so a second set of ship PBR maps is not allocated for the port.
+The headless/standalone path can still generate its own material set.
 
-The supply depot has a clear sliding entrance, shelves, stores and a counter.
-Port control has an enterable lobby under the tower. An open market has four
-canopied stalls. A fuel farm, perimeter fuel header, two delivery pedestals,
-cargo containers and a lit port sign complete the first facilities. Geometry
-has bevels, seams and dust textures. One nearby unshadowed practical light
-serves the depot, tower lobby or market; edge lamps use emissive geometry.
-Four named future NPC spots remain clear, with no placeholder people.
+- **Depot:** a curved sandwich roof with pressure ribs and an interior skin;
+  prefab wall seams, framed glowing windows, an airlock hood, seals, bumpers,
+  utility pipes and rivets; rooftop fan plant, ducts, radio aerial and solar
+  panels. Six rack bays contain strapped cases, drums, varied stock heights
+  and shelf labels. A reception counter has a framed terminal, keyboard and
+  parcels; a manual pallet lift has forks, rollers, hydraulic pump and handle.
+  Deck plate floors, aisle markings and suspended light housings complete it.
+- **Tower:** a 28 m instrument tower with tapered shaft, diagonal bracing,
+  a framed illuminated cab, external gallery rails, HVAC, antenna and shallow
+  dish. Its lobby has reception, padded seats, live pad occupancy displays,
+  a surface-operations/weather display and a framed lift entrance.
+- **Market:** four coloured fabric awnings with lower faces, scalloped
+  valances, support tubes, signs, practical lamps and price displays.
+  Ares Provisions has ration trays, tins, coffee dispenser and cups; Second
+  Orbit Salvage has valves, copper fittings and circuit boards; Blue Well has
+  sealed bottles and drums; Ridgeline has rolled fabric and hanging field kit.
+  Individual cases and work clutter surround the counters.
+- **Apron:** four feathered engine wear stamps per pad, curved tyre tracks,
+  oil stains, chipped numbers/paint, textured aggregate and expansion joints,
+  recessed lights and drainage/tie-down details. Wear uses opaque alpha-tested
+  surfaces, so empty edges are discarded without transparent decal sorting.
+  Four 12 m floodlight masts add a distant silhouette.
+- **Earthworks:** segmented retaining kerbs with caps, fixings, marker lights
+  and triangular banked dust deposits at the flat perimeter. They sit inside
+  the surveyed plane; the original 160 m graded density blend is retained.
 
-Stable IDs: port `COS-MARS-STR-0100`, pads `STR-0101`–`STR-0103`, depot
-`STR-0110`, market `STR-0111`, tower `STR-0112`, fuel `PRP-0113`, cargo
-`PRP-0114`, sign `STR-0115` (all with prefix `COS-MARS-`). Geometry bounds are
-measured before static meshes are merged, and retained in the registry.
+Static geometry remains merged by material, including the small fittings.
+Low tier omits tiny bracket chamfers, uses bevelled-top prisms for small cases,
+uses fewer pipe/rivet segments and lower-resolution cushions. Important shell
+and furniture silhouettes retain bevels. Painted stripes/scuffs are quads,
+rather than six-faced boxes. Near-ground hidden undersides are omitted;
+lights and overhead shelf faces remain visible from below. Geometry depth
+layers use Meridian's depth-buffer separation shader, including merged decals.
 
-## Sink and repeated handoff causes
+Two unshadowed point lights on low tier (three on high) serve the nearest real
+fixtures. Architecture and metal fittings cast into the existing world sun
+shadow map. There are **no new per-fixture shadow maps**. Only pad occupancy
+changes the display atlas, at most once per second; stock and prices are set
+dressing. The weather panel explicitly says its dust/wind sensors are offline.
 
-The old ship sampler preferred moving near/mid render patches. Their triangles
-could disagree with the density field and change when patches rebuilt. Springs
-were evaluated before integration, without a final hull penetration clamp.
-They sampled the foot attachment rather than the rubber sole 25 cm below it.
+## Render costs
 
-The old boarding trigger accepted shoulders within 5 cm of a ramp edge, while
-the ship walker required 25 cm of inset. It could board into unsupported space.
-The end was similarly inset, and boarding forcibly moved the feet up to 32 cm
-inward. Exiting handed the planet walker back a point still inside the entry
-trigger; a timeout temporarily hid the overlap, then standing/walking away
-could board again. Boarding also returned the old frame ownership value, so
-the planet walker could tick during the frame that had just put the person
-aboard. These are code-derived failure mechanisms, not a replay of Jaron's
-specific iPhone session.
+Counts below are the authored port mesh totals, measured in the actual builder.
+They include both moving door leaves and all static details. They are not FPS
+measurements. `cosmos.port.stats` exposes the counts plus actual new texture
+bytes in a browser and whether the ship maps were shared.
 
-Landing now reads the field, checks soles and underside support after motion,
-levels a parked hull and shares its real weight between telescopic legs.
-Boarding requires supported shoulder clearance, step-height proximity and
-inward movement. Ramp support reaches its physical tip; handoff preserves
-horizontal position. Walking away cannot reboard. Ownership changes in the
-same frame. Cargo crates were moved clear of the ramp console and cargo wall
-screen, while preserving the stair landing and rover space.
+| Port contribution | Pass 1 low | Pass 2 low | Pass 2 high |
+|---|---:|---:|---:|
+| Primary mesh draw calls | 11 | **12** | **12** |
+| Primary triangles | 13,086 | **32,282** | **53,298** |
+| Geometry attribute/index bytes | 1,193,828 | **2,930,748** | **4,777,244** |
+| Potential existing sun shadow calls | 0 | **6** | **6** |
+| Potential existing sun shadow triangles | 0 | **28,788** | **49,128** |
+| New unshadowed point lights | 1 | **2** | **3** |
+| Additional fixture shadow maps | 0 | **0** | **0** |
+| Port-only RGBA texture bytes, estimated with mipmaps | ~786,432 | **~3,844,776** | **~15,379,112** |
 
-## Validation and limits
+Low adds one primary call, 19,196 triangles and 1,736,920 geometry bytes over
+pass 1. When the sun shadow pass runs, its port meshes can add another six calls;
+reporting only 12 would hide that cost. Actual frame counts depend on culling,
+shadow enablement and whether the ship interior overlay is also rendering.
 
-`node test/validate.mjs`: **165 passed, 0 failed**, including all original 143.
-New checks cover field flatness, solid depth, both graded seams, material and
-excavation rules, measured geometry/foundations, all three pad landings, every
-built exterior hardware vertex after landing, repeated actual walker round
-trips on both ramps, same-frame ownership, door traversal, panel/screen
-clearance, future NPC spaces and the render budget. Exhaust effects are not
-physical hardware and are excluded from the vertex clearance check, just as
-they are excluded from the ship's runtime hardware bounds.
+New texture allocations are one 1024 x 512 atlas and three 256 x 256 pavement
+maps on low; high uses a 2048 x 1024 atlas and three 512 x 512 maps. The texture
+estimates assume RGBA8 plus a full mip chain. Ship maps and the ship sky
+reflection environment are reused, so their existing memory is not counted
+again. Approximate new GPU geometry plus texture data is **6.78 MB low** /
+**20.16 MB high**. Typed geometry arrays also occupy CPU memory (~2.93 / 4.78 MB),
+and source texture canvases occupy ~2.88 / 11.53 MB before temporary generation
+buffers and driver overhead. These are allocation estimates, not a GPU/heap
+profiler reading. The headless validator has no canvas and correctly reports
+zero generated texture bytes; use the browser's stats for those allocations.
 
-Low tier adds **11 draw calls, 13,086 triangles, 1,193,828 geometry bytes**,
-plus one unshadowed point light and two small procedural texture atlases.
-These are geometry budgets, not measured iPhone frame rates. No browser walk,
-screenshots, real-device thermal test or night review was performed here.
-The house rule therefore still requires Claude's visual review.
+The original phone limit remains **12 primary calls / 35k triangles / 4 MB
+geometry**. Its test was not relaxed. High stays below 12 primary calls / 60k
+triangles / 5 MB geometry. A real iPhone frame-time and thermal comparison is
+still needed, especially with sun shadows enabled.
 
-The upper control cab is scenery; only its lobby is enterable. Fuel, market
-and supply trading are scenery, with no transactions or refuelling yet.
-There is no NPC population or persistence. Hull protection uses an underside
-sampling grid, not a complete continuous collision solver against arbitrary
-cliffs or buildings. All built hardware clears the field on the pads; narrow
-terrain obstacles between probes and flight into structures remain limits.
-Outside the earthworks the planet walker retains the existing render-patch
-contact fallback. Port visuals, decals and door animation still need a human
-look, including `?tier=low&depth=16`. All assets are procedural.
+## Validation
 
-## Camera tour
+`node test/validate.mjs`: **172 passed, 0 failed**. Complete output:
+[`qa/2026-09-30/port-pass2-validation.txt`](qa/2026-09-30/port-pass2-validation.txt).
+All prior field, material, landing, ramp handoff, collision, door walking,
+registry sizing, footing and clear-NPC-space checks remain green. New checks
+verify shared texture identity, texture mip budget accounting, phone depth
+layers capped at four, fixed light
+pool, taller equipment silhouettes, high-tier budget and held-open tour doors.
 
-Open the local build with `?tier=low`. `cosmos.portTour('list')` returns the
-names below. `cosmos.portTour()` advances to the next view;
-`cosmos.portTour('depot-door-inside')` selects one directly. It pauses physics
-and holds the camera, including aerial views. `cosmos.portTour('off')` restores
-play. Run a normal walk after the tour to review movement and automatic doors.
+Browser sanity check on the final low build: it loads, displays the ship,
+pavement and new masts, and captured console warnings/errors are empty.
+**Interior/distant visual approval remains unverified in this session.** Raw
+browser execution to select a `portTour` camera was rejected by automatic
+approval review because permission was declined. It was not retried via an
+indirect route. Normal reload/screenshot checks succeeded; Claude must select
+and inspect the review cameras in their browser session.
 
-| Viewpoints | Purpose |
+## Camera tour: 35 views
+
+All 20 original names remain available. `cosmos.portTour('list')` lists them;
+`cosmos.portTour('depot-service')` selects a view;
+`cosmos.portTour('off')` restores play. Physics pauses, and **both sliding
+entrances now remain open even during distant aerial views**.
+
+| Added view | Purpose |
 |---|---|
-| `pad-01-eye`, `pad-01-above` | Meridian pad and ship from ground/aerial views |
-| `pad-02-eye`, `pad-02-above` | Shuttle pad |
-| `pad-03-eye`, `pad-03-above` | Courier pad |
-| `depot-door-outside`, `depot-door-inside`, `depot-interior` | Door opening, threshold, stores and counter |
-| `tower-door-outside`, `tower-door-inside`, `tower-interior` | Control lobby and tower entrance |
-| `market-eye` | Four open stalls and clear future trader space |
-| `fuel-eye` | Tanks, lines and service bases |
-| `containers-eye` | Cargo staging |
-| `sign-eye` | Marineris Port sign |
-| `ship-ramp-ground` | Approach from the ground |
-| `port-edge-flat`, `port-edge-grade` | Flat apron and natural-terrain blend |
-| `ship-ramp-looking-out` | Cargo bay looking out of the ramp |
+| `depot-stock` | Industrial racks, varied stock, labels and panel texture |
+| `depot-service` | Counter, terminal, deck markings and overhead fixtures |
+| `depot-lift-cart` | Manual pallet lift and strapped load |
+| `depot-roof` | Curved shell, pressure hoops, rooftop plant and solar cells |
+| `tower-reception` | Desk, seating and pad/weather displays |
+| `tower-lift` | Lift doors, controls and lobby furnishing |
+| `tower-cab` | Illuminated glazing, gallery, bracing, antenna and dish |
+| `market-trader-1` through `market-trader-4` | Each trader's goods, signs and awning |
+| `port-from-ship` | Exterior silhouette above the ship |
+| `port-one-km` | Readability at approximately one kilometre |
+| `pad-02-wear` | Tyre/skid wear, scorch, oil and scuffed paint |
+| `earthworks-detail` | Retaining blocks, caps, fixings and banked dust |
 
-There are 20 viewpoints. Also walk to the ramp control console at ship-local
-`(-5.0, 0, 20.1)` and inspect the cargo wall screen at `(-5.77, 1.7, 16.4)`.
-Use both ramps in both directions, land again, and repeat. Compare phone frame
-times with `cosmos.port.root.visible = false` and then restore it to `true`;
-the budget alone cannot establish the requested small FPS cost.
+Prior critique views remain especially important: `market-eye`,
+`tower-door-inside`, `tower-interior`, `depot-interior`, `port-edge-grade`.
+Review both `?tier=low` and `?tier=high`, then `?tier=low&depth=16`.
+Run a normal walk after the tour, use both ship ramps, and land again.
+Compare real-device frame times with `cosmos.port.root.visible=false`, then
+restore `true`. A render budget alone cannot establish a small FPS cost.
 
-Commit attempt blocked: `git add` could not create
-`C:\Users\lilli\Projects\heartbeat-observatory\.git\worktrees\ho-sol\index.lock`
-because that Git metadata directory is outside the writable workspace. **No
-commit was created.** The changes remain in this worktree, entirely inside
-`games/the-cosmos/`. No push or deployment was attempted.
+## Known weaknesses and limits
 
-Intended local commit message for Claude:
+These are known modelling shortcuts, not a claim that the unseen interior
+screenshots passed a visual review. Windows are framed, illuminated **opaque
+panes**, not transparent openings with visible occupied rooms. The cab and
+lift are scenery; the lobby is enterable but there is no working cab lift.
+Crate/label patterns and engine wear stamps repeat. The depot ribs are a broad
+curved prefab roof rather than fully rounded pressure-vessel end caps. Some
+small trader goods and hanging field kit remain simple bevelled forms. Practical
+pools have no fixture shadows, and lights on the far masts/cab are emissive
+geometry rather than extra realtime lights. There is no NPC population,
+transaction/refuelling gameplay or simulated weather. Night lighting and phone
+FPS/thermals were not measured. Jaron's final visual acceptance is pending.
+
+The pass-1 field foundation and landing/boarding fixes are retained. Concrete
+occupies the top half metre of a solid graded volume and cannot be scooped.
+Ship soles and underside support still sample the density field, and both
+ramps keep supported, directional, same-frame handoffs. No new flight or
+boarding model was introduced. Arbitrary flight into buildings/cliffs remains
+outside the ship's complete continuous collision coverage, as in pass 1.
+
+No commit, push or deployment was attempted. Proposed commit text for Claude,
+after their review and any corrections:
 
 ```text
-Build Marineris Port and repair Meridian ground handoffs
+Add Meridian materials and architectural detail to Marineris Port
 
-Add field earthworks, three pads and first port facilities. Align landing
-soles and hull clearance with the field; repair directional ramp handoffs
-and clear cargo controls. Add 20 review cameras and validation checks.
+Rebuild the depot, tower lobby and market with shared ship PBR maps,
+stocked furnishings, practical lights and roof equipment. Add apron wear,
+retaining works, 15 review views and explicit primary/shadow/memory budgets.
 
-Validation: 165 passed, 0 failed. Browser walk and iPhone FPS remain unverified.
+Validation: 172 checks passed. Phone FPS and final visual approval pending.
 
 Co-Authored-By: Codex <noreply@openai.com>
 ```

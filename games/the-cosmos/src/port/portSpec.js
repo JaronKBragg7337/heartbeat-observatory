@@ -11,9 +11,9 @@ export const PADS = [
   { id: 'COS-MARS-STR-0103', name: 'Pad 03 / courier', number: '03', x: 62, z: 30, w: 26, d: 32 },
 ];
 export const BUILDINGS = [
-  { id: 'COS-MARS-STR-0110', kind: 'depot', name: 'Supply depot', x: -62, z: 18, w: 24, d: 18, h: 5.2, doorW: 3.2 },
-  { id: 'COS-MARS-STR-0111', kind: 'market', name: 'Open market', x: -58, z: 53, w: 32, d: 8, h: 3.5 },
-  { id: 'COS-MARS-STR-0112', kind: 'tower', name: 'Port control', x: -60, z: -39, w: 10, d: 10, h: 18, doorW: 2.4 },
+  { id: 'COS-MARS-STR-0110', kind: 'depot', name: 'Supply depot', x: -62, z: 18, w: 24, d: 18, h: 7.44, doorW: 3.2 },
+  { id: 'COS-MARS-STR-0111', kind: 'market', name: 'Open market', x: -58, z: 53, w: 32, d: 8, h: 3.46 },
+  { id: 'COS-MARS-STR-0112', kind: 'tower', name: 'Port control', x: -60, z: -39, w: 12, d: 12, h: 28, doorW: 2.4 },
   { id: 'COS-MARS-PRP-0113', kind: 'fuel', name: 'Fuel farm', x: 57, z: -70, w: 24, d: 12, h: 6 },
   { id: 'COS-MARS-PRP-0114', kind: 'containers', name: 'Cargo staging', x: 51, z: 65, w: 26, d: 6, h: 2.9 },
   { id: 'COS-MARS-STR-0115', kind: 'sign', name: 'Port beacon sign', x: -28, z: 65, w: 16, d: 1, h: 5 },

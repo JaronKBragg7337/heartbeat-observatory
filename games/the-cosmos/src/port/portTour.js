@@ -18,6 +18,18 @@ export function makePortTour({engine,walker,ship,port,rebuild}) {
   add('ship-ramp-ground',[0,1.66,30],[0,3.6,18]);
   add('port-edge-flat',[103,1.66,45],[116,0,45]);
   add('port-edge-grade',[185,4,45],[103,0,45]);
+  add('depot-stock',[-56,1.66,23],[-51.5,1.5,18]);
+  add('depot-service',[-62,1.66,23],[-65,1.45,18]);
+  add('depot-lift-cart',[-59,1.66,24],[-57,1,21]);
+  add('depot-roof',[-81,14,40],[-62,5.5,17]);
+  add('tower-reception',[-60,1.66,-35],[-62.5,1.8,-41]);
+  add('tower-lift',[-60,1.66,-39],[-56.3,1.6,-41.4]);
+  add('tower-cab',[-80,27,-18],[-60,23,-39]);
+  for(const [i,x] of [-70,-62,-54,-46].entries())add(`market-trader-${i+1}`,[x,1.66,55.4],[x,1.5,51.4]);
+  add('port-from-ship',[0,14,12],[-60,7,8]);
+  add('port-one-km',[550,70,840],[-25,11,0]);
+  add('pad-02-wear',[51,3,-8],[62,.03,-28]);
+  add('earthworks-detail',[100,1.66,50],[103,.3,45]);
   add('ship-ramp-looking-out',[0,1.66,18],[0,-2,35],true);
   let index=-1, saved=null;
   const tour=(which)=>{

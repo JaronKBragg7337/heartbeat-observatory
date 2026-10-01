@@ -56,6 +56,23 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     const drift=port.assets.filter(a=>a.authored&&!registry.dimensionDrift(a.id).withinTolerance);
     check('port assets measure within 5 cm of their authored sizes',drift.length===0,JSON.stringify(drift.map(a=>[a.name,a.authored,a.measured])));
     check('phone port costs at most 12 draw calls, 35k triangles and 4 MB of geometry',port.stats.drawCalls<=12&&port.stats.triangles<35000&&port.stats.geometryBytes<4e6,JSON.stringify(port.stats));
+    // The production path receives the ship's already-uploaded textures. Test
+    // identity with a real texture object even in this headless Node build.
+    const {makePortMaterials,textureBytes}=await import('../src/port/portArt.js');
+    const shared=makeShipMaterials({tier:'low'}),hullMap=new THREE.Texture();
+    shared.hull.map=hullMap;
+    const finishes=makePortMaterials('low',shared);
+    check('port shares Meridian texture objects and room finishes without duplicating the ship maps',
+      finishes.sharedTextures&&finishes.mats.paint.map===hullMap&&finishes.mats.wall===shared['wall:cargo']&&finishes.mats.floor===shared['floor:deck']&&finishes.mats.fabric===shared.fabric);
+    const atlasProbe=new THREE.Texture({width:1024,height:512});
+    check('texture budget includes RGBA mipmaps and counts shared references once',textureBytes([atlasProbe,atlasProbe])===2796204);
+    check('port uses a fixed phone light pool and adds no fixture shadow maps',port.lights.length===2&&port.lights.every(l=>!l.castShadow)&&port.stats.sunShadowDrawCalls<=6);
+    check('port pavement and hardware stay within four depth-buffer lift layers',port.depthLayers.maxLayer<=4,JSON.stringify(port.depthLayers));
+    check('control tower and depot roof equipment have silhouettes above the old bare shells',
+      port.assets.find(a=>a.name==='Port control').measured.height>28&&port.assets.find(a=>a.name==='Supply depot').measured.height>7.5);
+    const highPort=new PortSystem({scene:new THREE.Scene(),track:()=>{}},new Registry(),site,'high',shared).build();
+    check('high tier remains merged within 12 main calls, 60k triangles and 5 MB of geometry',
+      highPort.stats.drawCalls<=12&&highPort.stats.triangles<60000&&highPort.stats.geometryBytes<5e6,JSON.stringify(highPort.stats));
     let footings=true;
     for(const a of BUILDINGS) for(const dx of [-a.w/2+.2,a.w/2-.2]) for(const dz of [-a.d/2+.2,a.d/2-.2]) footings&&=Math.abs(dens(a.x+dx,0,a.z+dz))<.01&&dens(a.x+dx,-.15,a.z+dz)<0;
     check('every structure and prop stands on surveyed solid ground, including every foundation corner',footings&&port.boxes.every(b=>b.y0===0));
@@ -153,9 +170,12 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
       doorPass&&=site.toLocal(w.worldPos).z<a.z+a.d/2-2&&d.progress>.96;
     }
     check('the real planet walker opens and walks through depot and tower doors',doorPass);
+    Object.assign(w.worldPos,site.toWorld(30,.02,50));
+    for(let i=0;i<120;i++)port.tick(1/60,w,false,true);
+    check('tour holds both entrances open even from distant aerial review cameras',port.doors.every(d=>d.progress>.99));
     check('future NPC spaces stay clear of solid props',NPC_SPOTS.every(p=>!port.boxes.some(b=>p.x>b.x0-.4&&p.x<b.x1+.4&&p.z>b.z0-.4&&p.z<b.z1+.4)));
     const tour=makePortTour({engine,walker:w,ship:()=>sys,port,rebuild:()=>{}});
-    check('review tour names every pad, both doors on both sides, ramp and graded edge',tour('list').length===20&&['ship-ramp-ground','ship-ramp-looking-out','depot-door-inside','tower-door-outside','port-edge-grade'].every(n=>tour('list').includes(n)),tour('list').join());
+    check('review tour retains original views and covers new interiors, traders, roofs and kilometre silhouette',tour('list').length===35&&['ship-ramp-ground','ship-ramp-looking-out','depot-door-inside','tower-door-outside','port-edge-grade','depot-stock','depot-service','depot-lift-cart','tower-reception','tower-lift','tower-cab','market-trader-4','port-one-km','earthworks-detail'].every(n=>tour('list').includes(n)),tour('list').join());
     console.log('  PORT BUDGET',JSON.stringify(port.stats));
     console.log('  PORT SITE',JSON.stringify(site.center),'heading',site.heading);
   } finally {FIELD.attachGrades([]);}
