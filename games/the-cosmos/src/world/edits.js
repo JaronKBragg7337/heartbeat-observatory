@@ -201,7 +201,7 @@ export class EditStore {
     if (m.volumeM3 <= 0) return null;
 
     const mat = Object.values(materials).find((x) => x.id === m.materialId) || materials.regolith;
-    if (mat.id === 'MAT-MANTLE') return null;      // the immutable boundary
+    if (mat.id === 'MAT-MANTLE' || mat.excavatable === false) return null;
 
     const edit = {
       id: `COS-EDIT-${String(++this._seq).padStart(5, '0')}`,

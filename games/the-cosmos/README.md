@@ -76,7 +76,7 @@ That turns "there's a rock stuck in a hill somewhere" into
 and a reproduction step.
 
 **The goal is to never need it.** `test/validate.mjs` is the first line of
-defence and runs without anyone looking: 124 checks covering placement,
+defence and runs without anyone looking: 165 checks covering placement,
 collision, dimension drift, physics correctness, determinism, and the ship.
 
 ---
@@ -272,6 +272,21 @@ within 5 cm of their design size.
 * Terrain around a fast-moving ship is rebuilt by the existing patch system, which hitches every few hundred
   metres (a known limit of the ground, not of the ship).
 * One ship, one player, no persistence or multiplayer.
+
+## Marineris Port (local review build, 2026-09-30)
+
+New players start beside the Meridian at **Marineris Port**. Three landing pads,
+concrete taxi lanes, a supply depot with sliding doors, an open market, control
+lobby/tower, fuel farm, cargo staging and a lit sign stand on an apron flattened
+in the planet's density field. Landing samples the field and accounts for the
+actual rubber soles; boarding and stepping off a ramp share a supported,
+directional handoff. Cargo crates leave both control panels and screens clear.
+
+The validator now runs **165 checks**. Low-tier port geometry adds 11 draw calls,
+13,086 triangles and 1.19 MB. Phone FPS and visual quality await Claude's review.
+Use `cosmos.portTour()` to cycle 20 fixed review cameras, `cosmos.portTour('list')`
+to list them and `cosmos.portTour('off')` to return to play. Full causes, limits,
+registry IDs and viewpoints: [Mars Port review](docs/MARS-PORT-REVIEW.md).
 
 ## What is not done yet
 

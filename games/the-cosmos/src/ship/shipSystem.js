@@ -37,6 +37,7 @@ import { gravityAtRadius } from '../world/bodies.js';
 import { Kit } from './shipKit.js';
 import { findLandingSite, siteOrigin } from './shipSite.js';
 import { buildPortals, reachRooms } from './shipVisibility.js';
+import { rampEntry } from './rampTransfer.js';
 
 const DEG = Math.PI / 180;
 const SCAN_RANGES = [600, 2500, 9000];
@@ -48,9 +49,10 @@ export class ShipSystem {
     this.engine = o.engine;
     this.body = o.body;
     this.registry = o.registry;
-    this.ground = o.ground;                 // (dx,dy,dz) -> drawn-surface radius (patches, then field)
+    this.ground = o.ground;                 // (dx,dy,dz) -> outer surface solved in the density field
     this.walker = o.walker;                 // the planet walker; the ship never edits its physics
     this.spawn = o.spawn;
+    this.landingSite = o.landingSite;
     this.tier = o.tier || 'high';
     this.ready = false;
     this.aboard = false;
@@ -341,10 +343,12 @@ export class ShipSystem {
   // PLACEMENT
   // =========================================================================
   _place() {
-    const { site, at } = findLandingSite(this.body, this.ground, { ...this.walker.worldPos });
+    const { site, at } = this.landingSite
+      ? { site: this.landingSite.site, at: null }
+      : findLandingSite(this.body, this.ground, { ...this.walker.worldPos });
     this.site = site;
-    this.flight.setDown(siteOrigin(this.ground, at, site), site.hd * DEG);
-    // let it settle on the drawn ground before anyone sees it
+    this.flight.setDown(this.landingSite ? this.landingSite.toWorld(0,3.8,0) : siteOrigin(this.ground, at, site), site.hd * DEG);
+    // Let it settle on the field before anyone sees it.
     for (let i = 0; i < 60 * 9; i++) this.flight.step(1 / 60);
     this.flight.vel = { x: 0, y: 0, z: 0 };
     this.flight.refreshOrientation();
@@ -482,8 +486,12 @@ export class ShipSystem {
     w.velocity = { x: 0, y: 0, z: 0 };
     w.yaw = this.flight.heading + this.sw.yaw; w.pitch = this.sw.pitch;
     w.grounded = false;
+    // The last supported centre is just beyond the physical ramp tip; retain
+    // its horizontal position and resolve only the centimetres of foot clearance.
+    const r = Math.hypot(wp.x,wp.y,wp.z), gr=this.ground(wp.x/r,wp.y/r,wp.z/r);
+    if(gr!=null && r<gr+.02) Object.assign(w.worldPos,{x:wp.x*(gr+.02)/r,y:wp.y*(gr+.02)/r,z:wp.z*(gr+.02)/r});
     this.aboard = false;
-    this.boardCooldown = 1.2;
+    this.boardCooldown = 0;
     this.note('Stepped off the ship.');
   }
 
@@ -662,7 +670,9 @@ export class ShipSystem {
       this._personFrame(dt, inp);
     } else {
       this._outsideFrame(dt, inp);
+      if (this.aboard) { this._personFrame(0, { look: {dx:0,dy:0} }); owns = true; }
     }
+    if (!this.aboard) owns = false;
 
     // ---- guns and the things that shoot back ---------------------------------------------
     this._gunFrame(dt, inp);
@@ -750,21 +760,12 @@ export class ShipSystem {
     for (const key of ['cargo', 'airlock']) {
       const st = this.state.ramps[key];
       if (!st.lowered) continue;
-      const R = RAMPS[key];
-      const run = R.length * Math.cos(st.angle), hw = R.width / 2;
-      let along, across;
-      if (R.dir.z) { along = l2.z - R.hinge.z; across = Math.abs(l2.x - R.hinge.x); }
-      else { along = R.hinge.x - l2.x; across = Math.abs(l2.z - R.hinge.z); }
-      if (across > hw - 0.05 || along < run - 1.3 || along > run + 0.5) continue;
-      const floor = R.hinge.y - Math.max(0, Math.min(run, along)) * Math.tan(st.angle);
-      if (Math.abs(l2.y - floor) > 0.9) continue;
-      // step on
-      const a = Math.min(along, run - 0.32);
-      const x = R.dir.z ? R.hinge.x + (l2.x - R.hinge.x) : R.hinge.x - a;
-      const z = R.dir.z ? R.hinge.z + a : R.hinge.z + (l2.z - R.hinge.z);
-      const y = R.hinge.y - a * Math.tan(st.angle);
-      const yaw = (w.yaw - f.heading);
-      this.boardAt(x, y, z, yaw);
+      const yaw = w.yaw - f.heading;
+      const mx=inp.moveEast||0, mz=inp.moveNorth||0;
+      const motion={x:Math.sin(yaw)*mz+Math.cos(yaw)*mx,z:-Math.cos(yaw)*mz+Math.sin(yaw)*mx};
+      const entry=rampEntry(key,st,l2,motion);
+      if(!entry || !this.sw.canStand(entry.x,entry.y,entry.z)) continue;
+      this.boardAt(entry.x,entry.y,entry.z,yaw);
       this.sw.pitch = w.pitch;
       return;
     }

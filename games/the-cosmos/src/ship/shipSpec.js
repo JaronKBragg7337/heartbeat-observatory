@@ -319,10 +319,10 @@ prop('crate',   'engineering',  5.7, 7.2, 1.0, 1.0, 1.0, 0);
 
 // cargo
 // (the west side belongs to the stair and the gantry now; its crates stand at the aft end of the bay)
-prop('crate', 'cargo', -4.9, 18.6, 1.4, 1.4, 1.4, 0);
-prop('crate', 'cargo', -3.3, 19.8, 1.4, 1.4, 1.4, 0);
-prop('crate', 'cargo', -4.9, 18.6, 1.4, 1.4, 1.4, 0, { y: 1.4 });
-prop('crate', 'cargo', -3.0, 18.2, 1.8, 1.4, 1.2, 0);
+prop('crate', 'cargo', -4.9, 18.1, 1.4, 1.4, 1.4, 0);
+prop('crate', 'cargo', -2.8, 19.7, 1.4, 1.4, 1.4, 0);
+prop('crate', 'cargo', -4.9, 18.1, 1.4, 1.4, 1.4, 0, { y: 1.4 });
+prop('crate', 'cargo', -3.0, 17.8, 1.8, 1.4, 1.2, 0);
 prop('crate', 'cargo',  5.0, 12.7, 1.6, 1.6, 1.6, 0);              // clear of the engineering door: 1 m of floor in front of it
 prop('crate', 'cargo',  5.0, 12.7, 1.6, 1.6, 1.0, 0, { y: 1.6 });
 prop('crate', 'cargo',  5.0, 14.2, 1.0, 1.0, 1.0, 0);
@@ -439,6 +439,7 @@ lamp('nest', -0.4, 2.8, { color: 0xffd7a8, intensity: 5, range: 5, len: 1.4 });
 // Landing gear. Extension is telescopic: nominal 2.4 m, stroke 0.8 either way.
 // ---------------------------------------------------------------------------
 export const GEAR = {
+  soleOffset: 0.25, // rubber foot geometry extends 25 cm below its attachment
   nominal: 2.4, min: 1.4, max: 3.6, stroke: 0.8,
   legs: [
     { id: 'fl', x: -5.6, z: -14.6 }, { id: 'fr', x: 5.6, z: -14.6 },

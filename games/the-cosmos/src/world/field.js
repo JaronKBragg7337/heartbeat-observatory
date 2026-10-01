@@ -109,6 +109,12 @@ function ridged(x, y, z, seed, octaves = 4) {
 // mining-resistance scalar used by excavation later.
 // ---------------------------------------------------------------------------
 export const MATERIALS = {
+  concrete: {
+    id: 'MAT-PORT-CONCRETE', name: 'Dust-worn landing concrete',
+    densityKgM3: 2400, strength: 0.85, color: 0x86857d, roughness: 0.94,
+    excavatable: false,
+    note: 'Engineered pavement; the scoop shovel cannot break structural concrete.',
+  },
   regolith: {
     id: 'MAT-REGOLITH', name: 'Martian regolith',
     densityKgM3: 1520, strength: 0.15, color: 0xb2673f, roughness: 0.96,
@@ -265,6 +271,11 @@ export function caveOpenness(body, px, py, pz, depthM) {
 // separate "hole mesh" that could disagree with where you can walk.
 // ---------------------------------------------------------------------------
 let _edits = null;
+// Engineered earthworks live in the volume, before caves and player edits.
+// A grade supplies a bounded horizontal blend into a plane, not a thin shell.
+let _grades = [];
+export function attachGrades(grades = []) { _grades = grades; }
+export function getGrades() { return _grades; }
 export function attachEdits(store) { _edits = store; }
 export function getEdits() { return _edits; }
 
@@ -275,6 +286,13 @@ export function density(body, px, py, pz, scratch = {}) {
 }
 
 function baseDensity(body, px, py, pz, scratch = {}) {
+  // Surveyed apron: its exact plane is cheap to query, including all collision
+  // substeps on a phone. Below the rock roof keep the full 3D cave evaluation.
+  for (const grade of _grades) {
+    if (grade.bodyId !== body.id || grade.weight(px, py, pz) !== 1) continue;
+    const plane = grade.apply(0, px, py, pz);
+    if (plane > -CAVE_CEILING) return plane;
+  }
   const r = Math.hypot(px, py, pz);
   if (r < 1e-6) return -body.radiusMean;              // dead centre: solid
 
@@ -286,6 +304,9 @@ function baseDensity(body, px, py, pz, scratch = {}) {
 
   // Positive above ground, negative below. This is the base solid/void split.
   let d = g.alt - groundElev;
+  for (const grade of _grades) {
+    if (grade.bodyId === body.id) d = grade.apply(d, px, py, pz);
+  }
 
   const depth = -d;
   if (depth > 0) {
@@ -303,6 +324,10 @@ function baseDensity(body, px, py, pz, scratch = {}) {
 
 /** Material at a point. Only meaningful where density < 0. */
 export function materialAt(body, px, py, pz) {
+  for (const grade of _grades) {
+    const mat = grade.bodyId === body.id && grade.materialAt?.(px, py, pz);
+    if (mat) return mat;
+  }
   const r = Math.hypot(px, py, pz) || 1;
   const g = cartesianToGeodetic(body, px, py, pz);
   const groundElev = elevationAt(body, px / r, py / r, pz / r);

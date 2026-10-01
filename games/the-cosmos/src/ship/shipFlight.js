@@ -30,13 +30,15 @@
 // Four telescopic legs on springs (stroke 0.8 m). After touchdown each leg
 // extends or retracts on its own until the load is shared evenly, so the hull
 // ends level on ground that is not. Nothing is ever placed inside the field:
-// contact is a spring on the ground sampler, not a clamp.
+// Springs carry the load; a field-based constraint after integration protects
+// the keel and underside and accounts for the rubber soles' actual geometry.
 // ============================================================================
 
 import * as THREE from 'three';
 import { gravityAtRadius } from '../world/bodies.js';
 import { cartesianToGeodetic, localFrame } from '../world/geodesy.js';
 import { GEAR, SHIP_PHYS } from './shipSpec.js';
+import { hullUnderside } from './shipExterior.js';
 
 const V = { east: new THREE.Vector3(), north: new THREE.Vector3(), up: new THREE.Vector3() };
 
@@ -261,7 +263,7 @@ export class ShipBody {
       // The foot at its UNCOMPRESSED extension. Whatever ground is above that
       // is how far the spring is squeezed (a raycast suspension).
       const nomLen = l.ext * this.gearPos + 0.35 * (1 - this.gearPos);
-      const foot = this.toWorld({ x: l.x, y: -nomLen, z: l.z });
+      const foot = this.toWorld({ x: l.x, y: -nomLen - GEAR.soleOffset, z: l.z });
       const sn = this._groundAtWorld(foot);
       const overlap = Math.max(0, -sn.gap);
       l.world = foot;
@@ -383,6 +385,52 @@ export class ShipBody {
 
     // --- Move. ---------------------------------------------------------------------------
     p.x += v.x * dt; p.y += v.y * dt; p.z += v.z * dt;
+    // Springs supply the forces; this unilateral constraint supplies the guarantee.
+    // Re-evaluate AFTER motion and attitude, rather than trusting last frame's feet.
+    this.refreshOrientation();
+    if (this.gearPos > .95 && (worstGap < .5 || aglNow < 5)) this.constrainLanding();
+  }
+
+  constrainLanding() {
+    if(this.landed && this.controls.lift<=.01) { this.pitch=this.roll=0; this.refreshOrientation(); }
+    let lift = 0;
+    const clearance = (point) => this._groundAtWorld(this.toWorld(point)).gap;
+    // A conservative underside grid covers keel, flanks, wings, nose and aft hull.
+    // The ventral turret needs its own lower support point.
+    for (let z=-21; z<=21; z+=3) {
+      const s=hullUnderside(z);
+      for (const x of [-(s.hw-s.cb),0,s.hw-s.cb]) lift=Math.max(lift,.04-clearance({x,y:s.yb,z}));
+      for (const x of [-s.hw,s.hw]) lift=Math.max(lift,.04-clearance({x,y:s.yb+s.cb,z}));
+    }
+    for (const x of [-12,12]) for (const z of [-3,6,12]) lift=Math.max(lift,.04-clearance({x,y:1.25,z}));
+    lift=Math.max(lift,.04-clearance({x:0,y:-2.12,z:-15.3}));
+    for(const l of this.legs) {
+      lift=Math.max(lift,-clearance({x:l.x,y:-l.ext+GEAR.stroke-GEAR.soleOffset,z:l.z}));
+    }
+    if(lift>0) {
+      this.pos.x+=this.up.x*lift; this.pos.y+=this.up.y*lift; this.pos.z+=this.up.z*lift;
+      const down=this.verticalSpeed;
+      if(down<0) { this.vel.x-=this.up.x*down; this.vel.y-=this.up.y*down; this.vel.z-=this.up.z*down; }
+    }
+    // Contact may be the keel before a foot on rough ground. Extend the legs
+    // within their measured stroke, then share the real weight at equilibrium.
+    const gaps=this.legs.map(l=>clearance({x:l.x,y:0,z:l.z}));
+    const equilibrium=this.weightN()/(4*130000);
+    const canSettle=gaps.every(g=>g-GEAR.soleOffset+equilibrium>=GEAR.min && g-GEAR.soleOffset+equilibrium<=GEAR.max);
+    if(this.controls.lift<=.01 && canSettle && (this.landed || lift>0) && this.verticalSpeed<.6) {
+      this.landed=true; this.airborne=false;
+      this.autoHover=false;
+      this.pitch=this.roll=0; this.refreshOrientation();
+      for(const l of this.legs) {
+        const gap=clearance({x:l.x,y:0,z:l.z});
+        l.ext=clamp(gap-GEAR.soleOffset+equilibrium,GEAR.min,GEAR.max);
+        l.comp=clamp(l.ext+GEAR.soleOffset-gap,0,GEAR.stroke);
+        l.world=this.toWorld({x:l.x,y:-l.ext+l.comp-GEAR.soleOffset,z:l.z});
+        l.gap=this._groundAtWorld(l.world).gap;
+        l.contact=Math.abs(l.gap)<.035;
+      }
+      this.vel.x=this.vel.y=this.vel.z=0;
+    }
   }
 
   // ---- read-outs -------------------------------------------------------------------------

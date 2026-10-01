@@ -105,3 +105,13 @@ Built by Claude Sonnet 5.5. Nothing here is downloaded.
 | Physical figures (mass 46 t, thrust 300 kN, gravity, deck sizes) | Design numbers chosen for this game; gravity is Mars' from `bodies.js`. Building-code stair riser 0.1875 m and door 2.1 m are ordinary published values. |
 
 Three.js r160 (MIT) remains the only third-party code.
+
+## Marineris Port, added 2026-09-30
+
+Built by Codex. Pads, markings, drainage, tie-downs, buildings, fuel equipment,
+containers, furniture, signs and dust textures are generated in `src/port/`.
+No external assets, photos, fonts, audio or models were downloaded. Text uses
+the browser's system sans-serif font. The apron sizes and construction details
+are game design measurements; the planetary frame and gravity still come from
+the sourced Mars record. Field earthworks preserve the volume representation.
+Stable IDs and review instructions: [MARS-PORT-REVIEW.md](MARS-PORT-REVIEW.md).

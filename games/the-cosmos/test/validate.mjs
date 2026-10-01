@@ -928,6 +928,9 @@ section('8. Determinism across runs');
 }
 
 // ---------------------------------------------------------------------------
+const { runPortChecks } = await import('./port-checks.mjs');
+await runPortChecks({ check, section, THREE, mars, FIELD, Walker, Registry });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));

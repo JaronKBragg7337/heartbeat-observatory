@@ -21,7 +21,7 @@ import { registry } from './core/registry.js';
 import { BODIES, getBody } from './world/bodies.js';
 import { buildGlobalShell, LocalPatch } from './world/planetMesh.js';
 import { geodeticToCartesian, cartesianToGeodetic, formatCoord, coordSlug } from './world/geodesy.js';
-import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, MATERIALS, attachEdits, density } from './world/field.js';
+import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, MATERIALS, attachEdits, attachGrades, density } from './world/field.js';
 import { EditStore } from './world/edits.js';
 import { ExcavationMesh } from './world/excavation.js';
 import { Walker } from './player/walker.js';
@@ -29,6 +29,9 @@ import { TouchControls, DesktopControls } from './ui/touch.js';
 import { DebugLayer } from './dev/debugLayer.js';
 import { ShipSystem } from './ship/shipSystem.js';
 import { ShipUI } from './ship/shipUI.js';
+import { createPortSite } from './port/portSpec.js';
+import { PortSystem } from './port/portSystem.js';
+import { makePortTour } from './port/portTour.js';
 
 const canvas = document.getElementById('game-canvas');
 const engine = new Engine(canvas, { fov: 72 });
@@ -38,6 +41,8 @@ const body = getBody('mars');
 // Valles Marineris: the canyon floor gives immediate scale and a horizon with
 // something in it. Chosen from the landmark table, so it has an address.
 const SPAWN = { lat: -14.0, lon: -59.2, name: 'Valles Marineris' };
+const portSite = createPortSite(body, SPAWN);
+attachGrades([portSite]);
 
 // ---------------------------------------------------------------------------
 // World
@@ -413,10 +418,11 @@ function placeMarker(mark, entry, at, radius, depth, pulse) {
 // Player
 // ---------------------------------------------------------------------------
 const walker = new Walker(body);
-// Contact reads the DRAWN ground wherever the patch covers, and the field
-// beyond it. This is what stops the player floating above or sinking into the
-// surface they can see — one surface at two resolutions, never two surfaces.
+// The surveyed port reads the field directly. Outside the earthworks, retain
+// the existing drawn-surface sampler until natural terrain has finer geometry.
 walker.groundSampler = (dx, dy, dz) => {
+  const sr = surfaceRadiusFast(body, dx, dy, dz);
+  if (portSite.weight(dx * sr, dy * sr, dz * sr) > 0) return sr;
   // Inside an excavated region, return null so contact falls through to the
   // field itself — the drawn patches have a GAP there, and only the field
   // knows the shape of the hole that fills it.
@@ -433,7 +439,10 @@ walker.groundSampler = (dx, dy, dz) => {
   if (near !== null) return near;
   return patch.surfaceRadiusAt(dx, dy, dz);
 };
-walker.placeAtGeodetic(SPAWN.lat, SPAWN.lon, 1.5);
+// Every arrival begins beside the Meridian's ramp on surveyed ground.
+Object.assign(walker.worldPos, portSite.toWorld(-10, 0.02, 38));
+walker.grounded = true;
+walker.updateFrame();
 rebuildNear(true);
 
 registry.register({
@@ -445,25 +454,23 @@ registry.register({
 
 // ---------------------------------------------------------------------------
 // The ship. A landed 46-tonne gunship a few dozen metres from the spawn point.
-// Its ground contact reads the same drawn surface the walker stands on.
+// Its landing contact always reads the field, independent of moving mesh LODs.
 // ---------------------------------------------------------------------------
 const params = new URLSearchParams(location.search);
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const tier = params.get('tier') === 'low' || params.get('tier') === 'high' ? params.get('tier') : (isTouch ? 'low' : 'high');
 const groundRadius = (dx, dy, dz) => {
-  const n = nearPatch.surfaceRadiusAt(dx, dy, dz);
-  if (n !== null) return n;
-  const m = patch.surfaceRadiusAt(dx, dy, dz);
-  if (m !== null) return m;
   return surfaceRadiusFast(body, dx, dy, dz);
 };
-const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier });
+const port = new PortSystem(engine, registry, portSite, tier).build();
+const portTour = makePortTour({ engine, walker, ship: () => ship, port, rebuild: () => rebuildNear(true) });
+const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier, landingSite: portSite });
 let shipUI = null;
 try {
   ship.build();
   shipUI = new ShipUI(ship, { isTouch });
   // Start the player looking at the ship.
-  walker.yaw = ship.site.brg * Math.PI / 180;
+  walker.yaw = portSite.heading + Math.atan2(10,38);
 } catch (err) {
   console.error('Ship failed to build', err);
   ship.ready = false;
@@ -897,6 +904,7 @@ document.getElementById('btn-copy-coord').addEventListener('click', async () => 
 let hudAccum = 0;
 
 engine.addUpdater((dt) => {
+  if (portTour.active) { suitGroup.visible=false; port.tick(dt, walker, false); portTour.update(); return; }
   // Look. Both input sources contribute so a hybrid device works.
   const l1 = touch.consumeLook(), l2 = desktop.consumeLook();
   const lookDX = l1.dx + l2.dx, lookDY = l1.dy + l2.dy;
@@ -929,10 +937,12 @@ engine.addUpdater((dt) => {
     walker.pitch -= lookDY;
     walker.pitch = Math.max(-1.45, Math.min(1.45, walker.pitch));
     walker.tick(dt, input);
+    port.tick(dt, walker);
     rebuildNear();
     updateCamera();
   }
   if (ship.ready) ship.late(dt);
+  if (owned) port.tick(dt, walker, false);
   if (shipUI) shipUI.update(dt);
 
   updateAimMarkers(dt);
@@ -984,6 +994,7 @@ engine.start();
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
 window.cosmos = {
+  port, portTour,
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,

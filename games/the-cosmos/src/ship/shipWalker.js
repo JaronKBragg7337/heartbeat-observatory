@@ -163,14 +163,14 @@ export class ShipWalker {
       if (def.dir.z) {           // cargo: along +Z
         // The zone reaches back into the bay so it overlaps the bay floor.
         out.push({ id: def.id, x0: def.hinge.x - hw, x1: def.hinge.x + hw,
-          z0: def.hinge.z - 0.9, z1: def.hinge.z + run,
-          floor: (x, z) => def.hinge.y - Math.max(0, z - def.hinge.z) * t,
+          z0: def.hinge.z - 0.9, z1: def.hinge.z + run + R + .1,
+          floor: (x, z) => def.hinge.y - Math.max(0, Math.min(run, z - def.hinge.z)) * t,
           ceil: (x, z) => def.hinge.y - Math.max(0, z - def.hinge.z) * t + 4,
           holes: [], kind: 'ramp', ramp: key });
       } else {                   // airlock gangway: along -X
-        out.push({ id: def.id, x0: def.hinge.x - run, x1: def.hinge.x + 0.9,
+        out.push({ id: def.id, x0: def.hinge.x - run - R - .1, x1: def.hinge.x + 0.9,
           z0: def.hinge.z - hw, z1: def.hinge.z + hw,
-          floor: (x) => def.hinge.y - Math.max(0, def.hinge.x - x) * t,
+          floor: (x) => def.hinge.y - Math.max(0, Math.min(run, def.hinge.x - x)) * t,
           ceil: (x) => def.hinge.y - Math.max(0, def.hinge.x - x) * t + 4,
           holes: [], kind: 'ramp', ramp: key });
       }

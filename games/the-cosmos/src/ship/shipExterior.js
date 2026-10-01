@@ -96,6 +96,7 @@ export const hullTop = (z) => section(z).yt;
 export const STAIR_HOLE = { z0: -13.5, z1: -9.0, hw: 1.1 };
 export const STAIR_FAIRING = { z0: -13.4, z1: -9.0, hw: 1.15, floorY: 5.5, roof: (z) => Math.max(8.84 - (z + 13.4) * (3.0 / 4.5), section(z).yt + 0.04) };   // follows the stair, then lies flush with the deck
 export const hullHalfWidth = (z) => section(z).hw;
+export const hullUnderside = (z) => section(z);
 
 function buildHullMesh(mats, opts) {
   const dz = opts.low ? 1.5 : 0.75;
