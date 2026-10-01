@@ -88,6 +88,7 @@ export class ShipSystem {
     this.uiLift = 0;
     this.lastFrameStats = { visibleRooms: 0 };
     this.hudExtra = '';
+    this.crew = null;                       // the hired crew (src/crew/crewSystem.js), set by main once it is built
   }
 
   // =========================================================================
@@ -438,6 +439,7 @@ export class ShipSystem {
     if (seat.id === 'gun_ventral') this.look.pitch = -0.7;                 // the ground is under you
     this.sw.vx = this.sw.vz = 0;
     this.note(`${seat.name}: seated.`);
+    if (this.crew) this.crew.onPlayerSit(seat.id);           // whoever was in it gets up
     if (this.onStationChange) this.onStationChange(seat);
   }
   _onStand(seat) {
@@ -447,6 +449,7 @@ export class ShipSystem {
     this.sw.place(seat.x + Math.sin(yaw) * -0.0, seat.y, seat.z, this.sw.yaw);
     this._standClear(seat);
     this.note(`${seat.name}: stood down.`);
+    if (this.crew) this.crew.onPlayerStand(seat.id);         // and they sit back down
     if (this.onStationChange) this.onStationChange(null);
   }
 
@@ -637,11 +640,21 @@ export class ShipSystem {
     const f = this.flight;
 
     // ---- who is flying? ---------------------------------------------------------
+    // A person in the pilot's or captain's chair flies by hand. Otherwise, if the crew have an order and an NPC pilot at the
+    // controls, THEY fly it. The player's hands always win: touch the stick and the order is cancelled ("You have the controls").
     const seat = this.seat;
+    const crewCtl = this.crew ? this.crew.pilotControls(dt) : null;
     if (seat && (seat.id === 'captain' || seat.id === 'pilot')) {
       const k = inp.keys;
       const lift = clamp((k && k.has('Space') ? 1 : 0) - (k && (k.has('KeyC') || k.has('ControlLeft')) ? 1 : 0) + this.uiLift, -1, 1);
-      this.stations.fly({ fwd: inp.moveNorth, yaw: inp.moveEast, lift });
+      const stick = Math.abs(inp.moveNorth || 0) > 0.05 || Math.abs(inp.moveEast || 0) > 0.05 || lift !== 0;
+      if (crewCtl && !stick) { f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw; }
+      else {
+        if (crewCtl && stick) this.crew.cancelOrder('You have the controls.');
+        this.stations.fly({ fwd: inp.moveNorth, yaw: inp.moveEast, lift });
+      }
+    } else if (crewCtl) {
+      f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw;
     } else if (!seat) {
       // nobody flying: the flight computer hovers
       f.controls.fwd = 0; f.controls.lift = 0; f.controls.yaw = 0;
@@ -673,6 +686,9 @@ export class ShipSystem {
       if (this.aboard) { this._personFrame(0, { look: {dx:0,dy:0} }); owns = true; }
     }
     if (!this.aboard) owns = false;
+
+    // ---- the crew: walking, sitting, working their stations -------------------------------
+    if (this.crew) this.crew.update(dt);
 
     // ---- guns and the things that shoot back ---------------------------------------------
     this._gunFrame(dt, inp);
@@ -948,18 +964,18 @@ export class ShipSystem {
   }
 
   _doorsFrame(dt, first) {
-    const pl = this.aboard ? { x: this.sw.x, y: this.sw.y, z: this.sw.z } : null;
+    // Whoever is on their feet opens doors: the player, and any crew member walking through the ship.
+    const actors = this.crew ? this.crew.actors() : [];
+    if (this.aboard && !this.seat) actors.push({ x: this.sw.x, y: this.sw.y, z: this.sw.z });
     for (const d of this.interior.doors) {
       const def = d.def;
       let target = 0;
       if (def.id === 'd_airlock_in') target = this.state.airlock.innerOpen ? 1 : 0;
       else if (def.kind === 'outer') target = this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.4 ? 1 : 0;
-      else if (pl) {
+      else {
         const cx = def.axis === 'x' ? def.at : def.c, cz = def.axis === 'x' ? def.c : def.at;
-        if (Math.abs(pl.y - def.y) < 2.6 && Math.hypot(pl.x - cx, pl.z - cz) < (def.w > 1.6 ? 2.4 : 1.7)) target = 1;
+        for (const pl of actors) if (Math.abs(pl.y - def.y) < 2.6 && Math.hypot(pl.x - cx, pl.z - cz) < (def.w > 1.6 ? 2.4 : 1.7)) { target = 1; break; }
       }
-      // the seated crew do not open doors
-      if (this.seat) target = def.id === 'd_airlock_in' ? target : 0;
       if (target !== d.was) { if (!first && this.audio && this.aboard && (this._roomVisible(def.a) || this._roomVisible(def.b))) this.audio.door(); d.was = target; }
       if (first) d.open = target;
       else d.open += Math.sign(target - d.open) * Math.min(Math.abs(target - d.open), dt * 3.2);
@@ -1027,6 +1043,7 @@ export class ShipSystem {
       this.interior.root.visible = set.size > 0;
     }
     this._visibleSet = set;
+    if (this.crew) this.crew.applyVisibility(set, this.interior.root.visible);
     for (const r of this.interior.roomList) r.group.visible = set.has(r.id);
     for (const e of this.interior.sharedGroups) e.g.visible = e.rooms.some((id) => set.has(id));
     this.lastFrameStats.visibleRooms = set.size;
@@ -1187,6 +1204,7 @@ export class ShipSystem {
     const cam = this.engine.cameraWorldPos;
     const f = this.flight;
     const events = this.guns.drain();
+    if (this.crew) this.crew.onGunEvents(events);
     this.fx.handle(events);
     if (this.audio) this.audio.events(events, this.aboard);
     this.fx.setViewScale(this.engine.renderer.domElement.height, this.engine.camera.fov);
@@ -1264,6 +1282,15 @@ export class ShipSystem {
       return { label: this.rampCtl.cargo.target > 0.5 ? 'Raise ramp' : 'Lower ramp', run: () => this.toggleRamp('cargo') };
     }
     return null;
+  }
+
+  /** Walk the player to a seat and sit them in it (the talk dialog's "take the seat"). */
+  takeSeat(seatId) {
+    const seat = SEATS.find((q) => q.id === seatId);
+    if (!seat || !this.aboard || this.seat) return false;
+    this.sw.place(seat.x, seat.y, seat.z, seat.yaw * DEG);
+    this._standClear(seat);
+    return this._sit({ x: seat.x, y: seat.y, z: seat.z });
   }
 
   _sit(loc) {

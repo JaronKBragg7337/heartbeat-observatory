@@ -98,9 +98,11 @@ export class GunSystem {
    * Try to fire. Refused unless the person is seated at the gun's own seat.
    * @param aimWorldDir  world-space unit vector the shooter is looking along
    * @param eyeWorld     world position of the shooter's eye (for convergence)
+   * @param byCrew       a hired NPC gunner at that gun's own seat (src/crew): the crew system has checked the seat, so
+   *                     the player's seat permission does not apply. Everything after it is the same.
    */
-  fire(gunId, aimWorldDir, eyeWorld) {
-    if (!this.stations.mayFire(gunId)) return 0;
+  fire(gunId, aimWorldDir, eyeWorld, byCrew = false) {
+    if (!byCrew && !this.stations.mayFire(gunId)) return 0;
     if (this.cool[gunId] > 0) return 0;
     const st = this.stats(gunId);
     this.cool[gunId] = 1 / st.rate;

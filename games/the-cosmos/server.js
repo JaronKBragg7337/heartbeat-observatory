@@ -32,9 +32,13 @@ createServer(async (req, res) => {
     let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (rel.endsWith('/')) rel += 'index.html';
 
-    // Never serve outside the project directory.
-    const full = normalize(join(ROOT, rel));
-    if (!full.startsWith(normalize(ROOT))) {
+    // The Loft people live at /homes/people/ on the live site, two folders up in the repo. Dev route for them (read-only).
+    let base = ROOT;
+    if (rel.startsWith('/homes/people/')) base = normalize(join(ROOT, '..', '..'));
+
+    // Never serve outside the project directory (or the people folder above).
+    const full = normalize(join(base, rel));
+    if (!full.startsWith(normalize(base)) || (base !== ROOT && !full.startsWith(normalize(join(base, 'homes', 'people'))))) {
       res.writeHead(403).end('forbidden');
       return;
     }

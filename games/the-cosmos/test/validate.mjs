@@ -608,6 +608,8 @@ section('8. Determinism across runs');
 // ---------------------------------------------------------------------------
 const { runPortChecks } = await import('./port-checks.mjs');
 if (!process.env.SKIP_PORT) await runPortChecks({ check, section, THREE, mars, FIELD, Walker, Registry });
+const { runCrewChecks } = await import('./crew-checks.mjs');
+if (!process.env.SKIP_CREW) await runCrewChecks({ check, section, THREE, mars, FIELD });
 
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);

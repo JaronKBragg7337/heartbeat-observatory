@@ -33,6 +33,9 @@ import { ShipUI } from './ship/shipUI.js';
 import { createPortSite, PADS } from './port/portSpec.js';
 import { PortSystem } from './port/portSystem.js';
 import { makePortTour } from './port/portTour.js';
+import { PeopleLibrary } from './crew/personRig.js';
+import { CrewSystem } from './crew/crewSystem.js';
+import { CrewUI } from './crew/crewUI.js';
 
 const canvas = document.getElementById('game-canvas');
 const engine = new Engine(canvas, { fov: 72 });
@@ -276,10 +279,15 @@ port.padOccupancy = () => {
 port.updateDisplays();
 const portTour = makePortTour({ engine, walker, ship: () => ship, port, rebuild: () => rebuildNear(true) });
 
-// --- Third-person body. Simple for now, but real dimensions and a real ------
-// --- registry entry, so the fidelity pass has something measured to replace.
+// --- Third-person body: a real person. The Loft people (homes/people) are MetaHuman-built, skinned, with Idle and Walk
+// --- clips. Until the model has loaded (a second or two) a plain capsule figure of the same real dimensions stands in, so
+// --- the registry entry and the shadow are never empty. `hb-look` is the person you picked in the Loft (default Isaiah).
 const suitGroup = new THREE.Group();
 suitGroup.name = 'player-body';
+const people = new PeopleLibrary({ phone: tier === 'low' });
+let playerLook = 'isaiah';
+try { playerLook = localStorage.getItem('hb-look') || 'isaiah'; } catch (e) { /* storage may be blocked */ }
+const stand_in = [];
 {
   const torso = new THREE.Mesh(
     new THREE.CapsuleGeometry(0.24, 0.62, 6, 12),
@@ -300,13 +308,35 @@ suitGroup.name = 'player-body';
     new THREE.MeshStandardMaterial({ color: 0xcfcabf, roughness: 0.7 }));
   legL.position.set(-0.13, 0.36, 0);   // soles land at exactly 0.00 m
   const legR = legL.clone(); legR.position.x = 0.13;
-  suitGroup.add(torso, helmet, pack, legL, legR);
+  stand_in.push(torso, helmet, pack, legL, legR);
+  suitGroup.add(...stand_in);
   suitGroup.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
 }
+const playerPerson = people.spawn(playerLook);
+playerPerson.ready.then((p) => {
+  if (!p.loaded) return;                                  // the folder was unreachable: the stand-in stays
+  for (const c of stand_in) suitGroup.remove(c);
+  suitGroup.add(p.group);
+});
 engine.scene.add(suitGroup);
 const suitEntry = engine.track({ worldPos: walker.worldPos, object3d: suitGroup });
 registry.get('COS-MARS-CHR-0001').object3d = suitGroup;
 registry.measure('COS-MARS-CHR-0001', THREE);
+playerPerson.ready.then((p) => {
+  if (!p.loaded) return;
+  // the person's box is the skinned rest pose (arms out): record that as what this model is
+  const m = registry.measure('COS-MARS-CHR-0001', THREE);
+  const rec = registry.get('COS-MARS-CHR-0001');
+  rec.name = `Player (${playerLook})`;
+  rec.authored = { width: Math.round(m.width * 100) / 100, height: Math.round(m.height * 100) / 100, depth: Math.round(m.depth * 100) / 100 };
+});
+
+// --- The crew: five people waiting at the port to be hired (src/crew). Built once the ship and the port are.
+let crew = null, crewUI = null;
+if (ship.ready) {
+  const c = new CrewSystem({ engine, ship, site: portSite, people, ground: groundRadius, walker, tier, playerLook });
+  c.build().then(() => { crew = c; ship.crew = c; crewUI = new CrewUI(c, { ship, walker, isTouch }); }).catch((e) => console.error('Crew failed to build', e));
+}
 
 // --- Landmark markers, so the debug layer has real registered assets --------
 // --- to label from the first frame.
@@ -796,6 +826,13 @@ engine.addUpdater((dt) => {
   if (ship.ready) ship.late(dt);
   if (owned) port.tick(dt, walker, false);
   if (shipUI) shipUI.update(dt);
+  if (crewUI) crewUI.update(dt);
+  if (suitGroup.visible && playerPerson.loaded) {
+    // the body stands or walks with what the legs are doing
+    const v = walker.velocity, sp = Math.hypot(v.x, v.y, v.z);
+    playerPerson.play(walker.grounded && sp > 0.35 ? 'Walk' : 'Idle');
+    playerPerson.update(dt, sp);
+  }
 
   stepPatches(tier === 'low' ? 2.5 : 4);
   updateAimMarkers(dt);
@@ -856,7 +893,8 @@ window.cosmos = {
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   drones: () => ship.drones,
   at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,
-  ship, shipUI, engine, body, walker, patch, registry, debugLayer, view,
+  ship, shipUI, engine, body, walker, patch, registry, debugLayer, view, people,
+  get crew() { return crew; }, get crewUI() { return crewUI; }, playerPerson, suitGroup,
   report: () => debugLayer.reportAt(walker),
   edits, carried, doDig, doDump, digTarget, dumpPlan, terrain, TOOLS, setTool, tool,
   nearPatch, rebuildNear, freeCam,
