@@ -723,15 +723,10 @@ export class ShipSystem {
       if (this.state.airlock.outerOpen && this.air.phase === 'idle') this.cycleAirlock();
       if (this.time - (this._warnAt || -9) > 6) { this.note('Securing ramp and hatches for lift-off. Hold LIFT.', true); this._warnAt = this.time; }
     }
-<<<<<<< HEAD
     // space-fix: a climb or a landing under a course may be run faster than the clock. The flight model still sub-steps whatever it is
     // handed at 1/120 s, so every contact, spring and landing check is run exactly; the cap near the ground lives in spaceSpec.stickWarpCap.
     const flightDt = this.space ? Math.min(dt * this.space.stickWarp(dt), 1.0) : dt;
-    f.step(Math.max(dt, flightDt));
-=======
-    if(!this.remoteAuthority) f.step(dt);
->>>>>>> d6fb7c8 (Add shared Cosmos multiplayer authority)
-    for (const ev of f.events) {
+    if (!this.remoteAuthority) f.step(Math.max(dt, flightDt));    for (const ev of f.events) {
       if (ev.type === 'liftoff') this.note('Lift-off.');
       if (ev.type === 'touchdown') this.note(`Touchdown at ${ev.speed.toFixed(1)} m/s.`);
       if (ev.type === 'hard_landing') this.note('Hard landing: hull damage.', true);
