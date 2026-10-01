@@ -50,9 +50,9 @@ function room(id, name, kind, deck, x0, x1, z0, z1, o = {}) {
 }
 
 // --- Main deck (y = 3.0) ---------------------------------------------------
-room('corridor_main', 'Main corridor', 'corridor', 'main', -0.8, 0.8, -8.9, 9.0, {
-  floorHoles: [{ x0: -0.8, x1: 0.8, z0: 4.5, z1: 9.0 }],          // the stair down fills this
-});
+// The corridor runs straight to the cargo door at its aft end. (It used to end in the engineering stair, whose top
+// step sat beside the workshop and cabin doors and whose foot stood in front of the cargo door.)
+room('corridor_main', 'Main corridor', 'corridor', 'main', -0.8, 0.8, -8.9, 9.6);
 room('medbay',   'Medbay',           'medbay',   'main', -6.4, -1.0, -8.6, -3.6);
 room('crew_a',   'Crew quarters A',  'crew',     'main', -6.4, -1.0, -3.4, 1.4);
 room('niche',    'Turret ladder',    'niche',    'main', -2.4, -1.0, 1.6, 3.6, {
@@ -65,9 +65,7 @@ room('cabin',    "Captain's cabin",  'cabin',    'main',  1.0, 6.4, 2.8, 5.8);
 room('head',     'Head',             'head',     'main',  1.0, 6.4, 6.0, 9.0);
 
 // --- Lower deck (y = 0) ----------------------------------------------------
-room('engineering', 'Engineering', 'engineering', 'lower', -6.4, 6.4, -7.0, 9.2, {
-  ceilHoles: [{ x0: -0.8, x1: 0.8, z0: 4.5, z1: 9.0 }],
-});
+room('engineering', 'Engineering', 'engineering', 'lower', -6.4, 6.4, -7.0, 9.2);
 room('corridor_low', 'Lower corridor', 'corridor', 'lower', -0.8, 0.8, -13.7, -7.2);
 room('airlock',  'Airlock',      'airlock',   'lower', -6.4, -1.0, -12.8, -8.2);
 room('evalocker','EVA locker',   'evalocker', 'lower',  1.0, 6.4, -12.8, -8.2);
@@ -86,8 +84,13 @@ room('nest',     'Dorsal turret', 'nest',  'bridge', -2.5, 1.6, 1.6, 4.0, {
 // Two stairwells are rooms too, with sloped floors and ceilings.
 export const STAIRS = {
   up:   { id: 'stair_up',   name: 'Bridge stair',      x0: -0.8, x1: 0.8, zLow: -8.9, zHigh: -13.4, yLow: 3.0, yHigh: 6.0, rise: 16 },
-  down: { id: 'stair_down', name: 'Engineering stair', x0: -0.8, x1: 0.8, zHigh: 4.5, zLow: 9.0,   yHigh: 3.0, yLow: 0.0, rise: 16 },
+  // The way between the decks: a stair up the west wall of the cargo bay to a gantry along the bay's fore wall,
+  // and from the gantry a door into the main corridor. It stands in the biggest room on the ship, clear of every door.
+  cargo: { id: 'stair_cargo', name: 'Cargo bay stair', x0: -5.6, x1: -4.0, zHigh: 11.4, zLow: 15.6, yHigh: 3.0, yLow: 0.0, rise: 16, solid: true, room: 'cargo' },
 };
+
+/** The gantry: a walkway at main-deck height along the cargo bay's fore wall. The stair comes up at its west end. */
+export const GANTRY = { id: 'gantry', x0: -5.6, x1: 0.8, z0: 9.8, z1: 11.4, y: 3.0, thick: 0.3 };
 
 // ---------------------------------------------------------------------------
 // Doors. axis 'x': the wall is the plane x = at, you pass along X.
@@ -119,7 +122,8 @@ door('d_eng_fore', 'engineering', 'corridor_low', 'z', -7.1, 0, { deck: 'lower',
 door('d_airlock_in',  'corridor_low', 'airlock',   'x', -0.9, -10.8, { deck: 'lower', sign: 'AIRLOCK' });
 door('d_evalocker',   'corridor_low', 'evalocker', 'x',  0.9, -10.8, { deck: 'lower', sign: 'EVA' });
 door('d_ventral',     'corridor_low', 'ventral',   'z', -13.8, 0,   { deck: 'lower', kind: 'open', w: 1.2, h: 2.4 });
-door('d_cargo',       'engineering',  'cargo',     'z',  9.5, 0,    { deck: 'lower', w: 2.4, h: 2.4, sign: 'CARGO' });
+door('d_cargo',       'engineering',  'cargo',     'z',  9.5, 3.4,  { deck: 'lower', w: 2.4, h: 2.4, sign: 'CARGO' });
+door('d_cargo_up',    'corridor_main', 'cargo',    'z',  9.7, 0,    { w: 1.0, h: 2.1, sign: 'CARGO' });
 door('d_ramp',        'cargo',        'outside',   'z', 20.9, 0,    { deck: 'lower', kind: 'portal', w: 3.6, h: 5.2, noZone: true });
 door('d_airlock_out', 'airlock',      'outside',   'x', -6.5, -10.8, { deck: 'lower', kind: 'outer', w: 1.3, h: 2.2 });
 
@@ -168,8 +172,9 @@ export const LADDERS = [
 
 // Extra walkable pieces that are not simply a room floor.
 export const EXTRA_ZONES = [
-  { id: 'dais',  x0: -1.4, x1: 1.4, z0: -15.9, z1: -14.0, floor: 6.2, ceil: 8.7, kind: 'dais', room: 'bridge' },
+  { id: 'dais',  x0: -1.4, x1: 1.4, z0: -16.5, z1: -14.6, floor: 6.2, ceil: 8.7, kind: 'dais', room: 'bridge' },
   { id: 'pit',   x0: -0.7, x1: 0.7, z0: -16.0, z1: -14.6, floor: -1.0, ceil: 2.7, kind: 'pit', room: 'ventral' },
+  { id: 'gantry', x0: GANTRY.x0, x1: GANTRY.x1, z0: GANTRY.z0, z1: GANTRY.z1, floor: GANTRY.y, ceil: 5.5, kind: 'gantry', room: 'cargo' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -177,7 +182,7 @@ export const EXTRA_ZONES = [
 // ---------------------------------------------------------------------------
 export const SEATS = [
   { id: 'captain', stationId: 'COS-MARS-STR-0010', name: "Captain's chair", room: 'bridge',
-    x: 0.0, y: 6.2, z: -15.1, yaw: 0, lookYaw: 115, lookPitchUp: 55, lookPitchDown: 35,
+    x: 0.0, y: 6.2, z: -15.7, yaw: 0, lookYaw: 115, lookPitchUp: 55, lookPitchDown: 35,
     role: 'flight+guns', hint: 'Fly the ship and fire the main guns' },
   { id: 'pilot', stationId: 'COS-MARS-STR-0011', name: 'Pilot seat', room: 'bridge',
     x: -1.6, y: 6.0, z: -17.2, yaw: 0, lookYaw: 90, lookPitchUp: 50, lookPitchDown: 35,
@@ -213,7 +218,7 @@ export const WALL_SCREENS = [
   { id: 'scr_med_2', room: 'medbay', kind: 'vitals', x: -6.37, y: 4.55, z: -5.3, w: 0.5, h: 0.32, facing: 'x+' },
   { id: 'scr_galley', room: 'galley', kind: 'menu', x: 6.37, y: 4.9, z: -3.9, w: 0.9, h: 0.55, facing: 'x-' },
   { id: 'scr_work', room: 'workshop', kind: 'schematic', x: -6.37, y: 4.5, z: 5.0, w: 0.9, h: 0.6, facing: 'x+' },
-  { id: 'scr_cargo', room: 'cargo', kind: 'manifest', x: -5.77, y: 1.7, z: 14.0, w: 1.0, h: 0.65, facing: 'x+' },
+  { id: 'scr_cargo', room: 'cargo', kind: 'manifest', x: -5.77, y: 1.7, z: 16.4, w: 1.0, h: 0.65, facing: 'x+' },
   { id: 'scr_eng_wall', room: 'engineering', kind: 'reactorwall', x: 0.0, y: 2.0, z: -6.97, w: 1.6, h: 0.75, facing: 'z+' },
   { id: 'scr_bridge_big', room: 'bridge', kind: 'ship', x: -3.97, y: 7.45, z: -15.8, w: 1.2, h: 0.7, facing: 'x+' },
 ];
@@ -310,20 +315,26 @@ prop('tank',    'engineering', -5.3, 6.6, 1.4, 1.4, 2.7, 0);
 prop('pump',    'engineering',  5.4, 3.0, 1.2, 1.6, 1.3, 0);
 prop('pump',    'engineering',  5.4, 5.6, 1.2, 1.6, 1.3, 0);
 prop('console', 'engineering', -4.4, -6.55, 2.0, 0.6, 1.15, 0, { extra: { screens: 2, decorative: true, station: 'diag' } });
-prop('crate',   'engineering',  5.5, 8.3, 1.0, 1.0, 1.0, 0);
+prop('crate',   'engineering',  5.7, 7.2, 1.0, 1.0, 1.0, 0);
 
 // cargo
-prop('crate', 'cargo', -4.9, 11.0, 1.4, 1.4, 1.4, 0);
-prop('crate', 'cargo', -4.9, 12.6, 1.4, 1.4, 1.4, 0);
-prop('crate', 'cargo', -4.9, 11.0, 1.4, 1.4, 1.4, 0, { y: 1.4 });
-prop('crate', 'cargo', -4.7, 14.9, 1.8, 1.4, 1.2, 0);
-prop('crate', 'cargo',  4.8, 11.2, 1.6, 1.6, 1.6, 0);
-prop('crate', 'cargo',  4.8, 11.2, 1.6, 1.6, 1.0, 0, { y: 1.6 });
-prop('crate', 'cargo',  4.9, 13.4, 1.2, 1.2, 1.2, 0);
+// (the west side belongs to the stair and the gantry now; its crates stand at the aft end of the bay)
+prop('crate', 'cargo', -4.9, 18.6, 1.4, 1.4, 1.4, 0);
+prop('crate', 'cargo', -3.3, 19.8, 1.4, 1.4, 1.4, 0);
+prop('crate', 'cargo', -4.9, 18.6, 1.4, 1.4, 1.4, 0, { y: 1.4 });
+prop('crate', 'cargo', -3.0, 18.2, 1.8, 1.4, 1.2, 0);
+prop('crate', 'cargo',  5.0, 12.7, 1.6, 1.6, 1.6, 0);              // clear of the engineering door: 1 m of floor in front of it
+prop('crate', 'cargo',  5.0, 12.7, 1.6, 1.6, 1.0, 0, { y: 1.6 });
+prop('crate', 'cargo',  5.0, 14.2, 1.0, 1.0, 1.0, 0);
 prop('drum',  'cargo',  4.8, 15.2, 0.7, 0.7, 1.0, 0);
 prop('drum',  'cargo',  4.8, 16.1, 0.7, 0.7, 1.0, 0);
 prop('drum',  'cargo',  4.0, 15.6, 0.7, 0.7, 1.0, 0);
-prop('rover', 'cargo', -4.2, 17.6, 2.6, 3.6, 1.7, 0);
+prop('rover', 'cargo',  2.5, 18.2, 2.6, 3.6, 1.7, 0);
+// the gantry: columns under it and a rail along every open edge (a rail only stops someone standing ON the gantry)
+prop('column', 'cargo', -3.0, 11.2, 0.3, 0.3, 2.7, 0);
+prop('column', 'cargo', -0.4, 11.2, 0.3, 0.3, 2.7, 0);
+prop('rail', 'cargo', -1.65, 11.34, 4.7, 0.1, 1.05, 0, { y: 3.0 });
+prop('rail', 'cargo',  0.74, 10.54, 0.1, 1.48, 1.05, 0, { y: 3.0 });
 
 // lower fore
 prop('console', 'airlock', -3.5, -12.55, 1.0, 0.5, 1.1, 0, { extra: { screens: 1, decorative: true, station: 'airlock' } });
@@ -399,6 +410,7 @@ function lamp(roomId, x, z, o = {}) {
 lamp('corridor_main', 0, -6.0, { len: 1.6, intensity: 4, range: 7 });
 lamp('corridor_main', 0, -1.5, { len: 1.6, intensity: 4, range: 7 });
 lamp('corridor_main', 0,  3.0, { len: 1.6, intensity: 4, range: 7 });
+lamp('corridor_main', 0,  7.4, { len: 1.6, intensity: 4, range: 7 });
 lamp('medbay', -3.5, -6.1, { color: 0xe8f6ff, intensity: 9, len: 2.6, axis: 'z' });
 lamp('crew_a', -3.6, -1.0, { color: 0xffe9c8, intensity: 6, len: 2.2 });
 lamp('workshop', -3.7, 6.4, { color: 0xf6f2e8, intensity: 8, len: 2.6 });

@@ -138,8 +138,8 @@ corridors, stairs at a 0.1875 m riser.
 | Deck | Rooms |
 |---|---|
 | **Upper (y = +6 m)** | Bridge with raked canopy: captain's chair on a dais, pilot and navigation consoles, comms station, holo table. Dorsal turret nest (above the hull deck, reached by ladder). |
-| **Main (y = +3 m)** | Corridor with handrails, conduits, extinguishers and first aid. Medbay (2 beds, scanner arch, monitors). Crew quarters A and B (4 bunks each). Galley and mess. Captain's cabin with an en-suite head. Workshop. Turret ladder niche. Stairs up to the bridge and down to engineering. |
-| **Lower (y = 0)** | Engineering (reactor core, coolant tanks, pumps, racks, the engineering station). Cargo bay (crates, drums, a six-wheel rover, gantry, the boarding ramp). Airlock with a cycling inner and outer door and a lowering gangway. EVA locker with suits. Ventral turret access, hatch and ladder down into a glass-floored pit. |
+| **Main (y = +3 m)** | Corridor with handrails, conduits, extinguishers and first aid. Medbay (2 beds, scanner arch, monitors). Crew quarters A and B (4 bunks each). Galley and mess. Captain's cabin with an en-suite head. Workshop. Turret ladder niche. The corridor runs straight to the cargo door at its aft end and up a stair to the bridge at its fore end. |
+| **Lower (y = 0)** | Engineering (reactor core, coolant tanks, pumps, racks, the engineering station). Cargo bay (crates, drums, a six-wheel rover, the boarding ramp, and the way up to the main deck: a stair up the west wall to a gantry along the fore wall, with the corridor door at the gantry's end). Airlock with a cycling inner and outer door and a lowering gangway. EVA locker with suits. Ventral turret access, hatch and ladder down into a glass-floored pit. |
 
 Real stairs and ladders: you walk up the stair (a smooth ramp under closed-riser treads); you climb a ladder
 by walking into it. Sliding doors open as you approach; airlock doors only when the airlock says so.
@@ -184,14 +184,37 @@ Jaron played it on an iPhone. Five things, and their causes:
 
 | Seen | Cause | Fix |
 |---|---|---|
-| Walls and stairs breaking into flickering white blocks | Not the depth range: **two faces written on exactly the same plane** (the engineering stair's step boxes and the wall quad beside them; every tread plate over its box top). It reproduces on a desktop; a 16-bit phone buffer only makes the blocks bigger. | The stair is rebuilt with one riser and one tread per step. Then a general fix: `resolveDepthLayers` (shipKit.js) finds every pair of flat faces within 3 cm of the same plane, gives the one that should win a small layer number, and the vertex shader pulls layer-n faces n depth-buffer steps toward the camera. The step is read from the real buffer's bit count. About 2,800 faces carry a layer, maximum 3. |
+| Walls and stairs breaking into flickering white blocks | Not the depth range: **two faces written on exactly the same plane** (the old engineering stair's step boxes and the wall quad beside them; every tread plate over its box top). It reproduces on a desktop; a 16-bit phone buffer only makes the blocks bigger. | The stair is rebuilt with one riser and one tread per step. Then a general fix: `resolveDepthLayers` (shipKit.js) finds every pair of flat faces within 3 cm of the same plane, gives the one that should win a small layer number, and the vertex shader pulls layer-n faces n depth-buffer steps toward the camera. The step is read from the real buffer's bit count. About 2,800 faces carry a layer, maximum 3. |
 | The room you just walked through, or the corridor ahead, replaced by raw Mars | The phone tier drew "your room and its neighbours". A room two open doors away was skipped, the sliding door leaves and the stair block were filed under a room that was skipped, so they vanished with it. | shipVisibility.js: a room is drawn when a chain of open, in-view (or within 3.4 m) openings leads to it. A shut door hides what is behind it. Door leaves, stairs and ladders belong to the ship and are drawn when either room they touch is drawn. At most 8 rooms are ever drawn. |
-| Walking "through" the stairs | The engineering stair is a solid block standing in engineering; its walls were one-way (no inward face, so from the stair you looked straight out into engineering) and the block disappeared with the corridor. The collision itself was already solid: nobody could stand in it. | Inward walls, and the block is drawn with the room. The validator now proves nobody can walk into a stair's side. |
+| Walking "through" the stairs | The old engineering stair was a solid block standing in engineering; its walls were one-way (no inward face, so from the stair you looked straight out into engineering) and the block disappeared with the corridor. The collision itself was already solid: nobody could stand in it. | Inward walls, and the block is drawn with the room. The validator now proves nobody can walk into a stair's side. |
 | Driving covered by things | The flight consoles' screens ended at 7.5 m, across the horizon; the phone's station panel took a quarter of the screen. The dorsal turret was a closed box with glass drawn over solid wall, and the ventral pit was a shaft of panelling. And the top of the bridge stairwell stood out of the hull, so looking down it you saw the hull's own roof plate. | Low consoles (screens end just under the seated eye), a one-line flight strip on a phone, a nest with a waist-high parapet and real glass on four sides, a swivelling gunner's chair, an open glass ventral pod, and an armoured saddle over the stairwell. |
 | "It depends how far you stand" | The same culling and the same coplanar faces. Lights: a phone pools four, so its ambient is a little higher. | As above. |
 
 `?depth=16` (or `?depth=12`) makes every standard material round its depth to that many bits, so this class of
 fault can be reproduced on a desktop. `cosmos.depthBits` reports what the device really gave.
+
+### The stairs (changed 2026-09-30)
+
+The first layout put the way between decks at the aft end of the main corridor: a stair 1.6 m wide and 4.5 m long
+that filled the whole end of the corridor. Its top step sat beside the workshop and cabin doors, its foot stood 0.5 m
+in front of the cargo door in engineering, and the one-way side walls and a 0.3 m gap beside its lowest steps made
+it a block you could only squeeze round. Jaron: "right in the doorway, and also blocks a room".
+
+Now there is exactly one stair between the main and lower decks and it stands in the biggest room on the ship: the
+**cargo-bay stair** runs up the west wall (x -5.6 to -4.0, 16 risers of 0.1875 m) to a **gantry** at main-deck height
+along the bay's fore wall. A door at the gantry's end opens into the main corridor, which now simply runs to that
+door. The engineering door to the cargo bay moved to x = +3.4, so the way into engineering is beside the gantry,
+not under it. The bridge stair is unchanged (its two ends are its own doors). The validator checks that no stair
+stands within 0.6 m beside or 1.0 m in front of any door but its own, that nothing solid stands in front of any
+door, that the foot of the cargo stair has a clear landing, and that nobody can walk off the gantry's open edge.
+
+Also found by walking it (2026-09-30): every door frame was filed under one of its two rooms, so when that room was
+not drawn the frame vanished and the wall opening showed the sky; there was a 0.2 m slot in the floor at every
+doorway; each door leaf left a 1 cm slit above and below; the airlock hatch had no frame; the bridge stair arrived 0.6 m
+from the captain's dais; and a roof plate and the hull's own deck plate cut across the bridge stairwell. All fixed
+(door frames are one set on the ship's root with threshold plates, leaves overlap floor and lintel, the dais moved
+0.6 m fore, the hull plate is cut away over the stairwell). `cosmos.auditGaps([...rooms])` (src/dev/gapAudit.js) draws
+the interior alone on magenta from many viewpoints and counts holes; it now reports none in any enclosed room.
 
 ### How it is built
 

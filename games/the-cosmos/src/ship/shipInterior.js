@@ -21,7 +21,7 @@ import * as THREE from 'three';
 import { Kit, resolveDepthLayers } from './shipKit.js';
 import { drawProp, SEAT_DRAW } from './shipProps.js';
 import { mulberry, enableDepthLift } from './shipTextures.js';
-import { DECK, STAIRS, stairFloor, propBox } from './shipSpec.js';
+import { DECK, STAIRS, GANTRY, stairFloor, propBox } from './shipSpec.js';
 
 const WALL_U = 1.35, WALL_V = 2.7;
 
@@ -147,19 +147,31 @@ function buildWindows(k, layout, r) {
 function buildDoorFrames(k, layout, r) {
   for (const d of layout.doors) {
     if (d.a !== r.id) continue;                             // each door framed once
-    if (d.kind === 'outer' || d.kind === 'portal') continue;
-    const depth = 0.36, t = 0.07;
+    if (d.kind === 'portal') continue;                      // (the airlock's outer door is framed too: its leaf stands 0.1 m outside the wall)
+    // The frame has to fill the whole thickness of the wall: from one room's wall plane to the other's. (Doors
+    // between rooms that stand further apart used to show a gap beside the frame, and through it the world.)
+    const ra = layout.roomById.get(d.a), rb = layout.roomById.get(d.b);
+    const near = (rm) => (d.axis === 'x' ? (Math.abs(rm.x0 - d.at) < Math.abs(rm.x1 - d.at) ? rm.x0 : rm.x1) : (Math.abs(rm.z0 - d.at) < Math.abs(rm.z1 - d.at) ? rm.z0 : rm.z1));
+    const pa = ra ? near(ra) : d.at, pb = rb ? near(rb) : d.at;
+    const gap = Math.abs(pa - pb), mid = (pa + pb) / 2;
+    const depth = Math.max(0.36, gap + 0.04), t = 0.07;
     const cy = d.y + d.h / 2;
-    const accent = d.kind === 'open' ? 'steelDark' : 'steelDark';
+    const accent = 'steelDark';
+    // a threshold plate across the gap between the two floors (there was a slot here, and Mars showed through it)
+    if (gap > 0.01) {
+      const lo = Math.min(pa, pb), hi = Math.max(pa, pb);
+      if (d.axis === 'x') k.poly('steelDark', [[lo, d.y, d.c + d.w / 2], [hi, d.y, d.c + d.w / 2], [hi, d.y, d.c - d.w / 2], [lo, d.y, d.c - d.w / 2]]);
+      else k.poly('steelDark', [[d.c - d.w / 2, d.y, hi], [d.c + d.w / 2, d.y, hi], [d.c + d.w / 2, d.y, lo], [d.c - d.w / 2, d.y, lo]]);
+    }
     if (d.axis === 'x') {
-      for (const s of [-1, 1]) k.bevelBox(accent, d.at, d.y + d.h / 2 + 0.035, d.c + s * (d.w / 2 + t / 2), depth, d.h + 0.07, t, 0.012);
-      k.bevelBox(accent, d.at, d.y + d.h + t / 2, d.c, depth, t, d.w + t * 2, 0.012);
+      for (const s of [-1, 1]) k.bevelBox(accent, mid, d.y + d.h / 2 + 0.035, d.c + s * (d.w / 2 + t / 2), depth, d.h + 0.07, t, 0.012);
+      k.bevelBox(accent, mid, d.y + d.h + t / 2, d.c, depth, t, d.w + t * 2, 0.012);
       // a status strip in the header, on both faces
-      for (const s of [-1, 1]) k.box(d.kind === 'open' ? 'glowCyan' : 'glowCyan', d.at + s * (depth / 2 + 0.002), d.y + d.h + t / 2, d.c, 0.004, 0.02, d.w * 0.6);
+      for (const s of [-1, 1]) k.box('glowCyan', mid + s * (depth / 2 + 0.002), d.y + d.h + t / 2, d.c, 0.004, 0.02, d.w * 0.6);
     } else {
-      for (const s of [-1, 1]) k.bevelBox(accent, d.c + s * (d.w / 2 + t / 2), d.y + d.h / 2 + 0.035, d.at, t, d.h + 0.07, depth, 0.012);
-      k.bevelBox(accent, d.c, d.y + d.h + t / 2, d.at, d.w + t * 2, t, depth, 0.012);
-      for (const s of [-1, 1]) k.box('glowCyan', d.c, d.y + d.h + t / 2, d.at + s * (depth / 2 + 0.002), d.w * 0.6, 0.02, 0.004);
+      for (const s of [-1, 1]) k.bevelBox(accent, d.c + s * (d.w / 2 + t / 2), d.y + d.h / 2 + 0.035, mid, t, d.h + 0.07, depth, 0.012);
+      k.bevelBox(accent, d.c, d.y + d.h + t / 2, mid, d.w + t * 2, t, depth, 0.012);
+      for (const s of [-1, 1]) k.box('glowCyan', d.c, d.y + d.h + t / 2, mid + s * (depth / 2 + 0.002), d.w * 0.6, 0.02, 0.004);
     }
   }
 }
@@ -223,7 +235,6 @@ export function buildInterior(layout, mats, opts = {}) {
       k.box('hazard', (h.x0 + h.x1) / 2, yF + 0.062, h.z0 - t / 2, h.x1 - h.x0 + t * 2, 0.004, 0.02);
     }
 
-    buildDoorFrames(k, layout, r);
     buildWindows(k, layout, r);
 
     // lamps in this room
@@ -255,6 +266,15 @@ export function buildInterior(layout, mats, opts = {}) {
     out.roomList.push({ id: r.id, group: g, def: r });
   }
 
+  // --- Door frames and thresholds: one kit for the whole ship, on the ship's root. A frame filed under one of the
+  //     two rooms vanished with it, leaving a slot in the wall that showed the sky and the ground. (Two meshes in
+  //     all, whichever rooms are drawn.) -----------------------------------------------------------------------
+  {
+    const fk = new Kit();
+    for (const r of rooms) buildDoorFrames(fk, layout, r);
+    root.add(mount(fk, mats, { name: 'door-frames' }));
+  }
+
   // --- The reactor core: a separate mesh so it can pulse. -----------------------
   if (out.coreSpec) {
     const c = out.coreSpec;
@@ -271,8 +291,8 @@ export function buildInterior(layout, mats, opts = {}) {
   //     block standing in engineering, so it must not disappear just because the corridor above it is culled. ----
   out.sharedGroups = [];
   {
-    const STAIR_ROOMS = { up: ['corridor_main', 'bridge'], down: ['engineering', 'corridor_main'] };
-    for (const key of ['up', 'down']) {
+    const STAIR_ROOMS = { up: ['corridor_main', 'bridge'] };
+    for (const key of ['up']) {
       const k = new Kit();
       k.tiles = { 'floor:deck': 2, ceil: 1.5, steel: 1, steelDark: 1, gunmetal: 1 };
       buildStairs(k, layout, key);
@@ -298,14 +318,14 @@ export function buildInterior(layout, mats, opts = {}) {
     dl.group.name = 'door:' + d.id;
     for (let i = 0; i < leaves; i++) {
       const lw = leaves === 2 ? d.w / 2 + 0.02 : d.w + 0.06;
-      const geo = new THREE.BoxGeometry(d.axis === 'x' ? 0.06 : lw, d.h - 0.02, d.axis === 'x' ? lw : 0.06);
+      const geo = new THREE.BoxGeometry(d.axis === 'x' ? 0.06 : lw, d.h + 0.04, d.axis === 'x' ? lw : 0.06);       // 2 cm into the floor and the lintel: no slit
       const mesh = new THREE.Mesh(geo, mats.door);
       mesh.castShadow = !low; mesh.receiveShadow = !low;
       mesh.userData.leafW = lw;
       dl.leaves.push(mesh);
       dl.group.add(mesh);
     }
-    dl.group.position.set(d.axis === 'x' ? d.at : d.c, d.y + (d.h - 0.02) / 2 + 0.01, d.axis === 'x' ? d.c : d.at);
+    dl.group.position.set(d.axis === 'x' ? d.at : d.c, d.y + d.h / 2, d.axis === 'x' ? d.c : d.at);
     out.doors.push(dl);
     // On the ship's root, not inside a room's group: a hidden room hides its children, and a door leaf is
     // seen from BOTH sides (the ship's origin is the interior's origin, so positions are the same).
@@ -398,7 +418,7 @@ function dressRoom(k, layout, r, rnd, out, low) {
       const ops = openingsFor(layout, r, 'x', sx * 0.8);
       const gaps = ops.map((o) => [o.u0 - 0.1, o.u1 + 0.1]);
       let z = r.z0 + 0.2;
-      const zEnd = r.id === 'corridor_main' ? 4.0 : r.z1 - 0.2;
+      const zEnd = r.z1 - 0.2;
       const segs = [];
       for (const gp of gaps) { if (gp[0] > z) segs.push([z, Math.min(gp[0], zEnd)]); z = Math.max(z, gp[1]); }
       if (z < zEnd) segs.push([z, zEnd]);
@@ -445,6 +465,7 @@ function dressRoom(k, layout, r, rnd, out, low) {
     for (let z = 10.6; z < 20.3; z += 1.6) for (const sx of [-1, 1]) {
       k.cyl('steel', sx * 2.9, yF + 0.02, z, 0.06, 0.02, 10);
     }
+    buildGantryAndStair(k, layout, r);
     // the aft door: a frame for the ramp opening, stern wall pieces are the walls; add frame
     const w = 3.8, h = 5.2;
     k.bevelBox('steelDark', -w / 2 - 0.1, h / 2, r.z1 - 0.06, 0.2, h + 0.2, 0.3, 0.02);
@@ -579,7 +600,7 @@ function greeble(k, layout, r, rnd, low) {
 // ---------------------------------------------------------------------------
 function buildStairs(k, layout, only) {
   const rise = 3.0 / 16;
-  for (const key of only ? [only] : ['up', 'down']) {
+  for (const key of only ? [only] : ['up', 'cargo']) {
     const st = STAIRS[key];
     const n = st.rise;
     const run = Math.abs(st.zHigh - st.zLow) / n;
@@ -593,8 +614,11 @@ function buildStairs(k, layout, only) {
       const zA = st.zLow + dir * i * run, zB = st.zLow + dir * (i + 1) * run;
       const z0 = Math.min(zA, zB), z1 = Math.max(zA, zB);
       const top = st.yLow + (i + 0.5) * rise;
-      const bottom = key === 'down' ? 0.0 : top - 0.45;
-      k.boxMM('steelDark', st.x0, bottom, z0, st.x1, top, z1, { skip: '+x-x+y-y' + backFace });
+      const bottom = st.solid ? 0.0 : top - 0.45;
+      // a solid stair keeps its open (east) side as a stepped stringer; a shaft stair has walls instead
+      // the top step also keeps its back face, which is seen from under the gantry
+      const skip = (st.solid ? '-x+y-y' : '+x-x+y-y') + (st.solid && i === n - 1 ? '' : backFace);
+      k.boxMM('steelDark', st.x0, bottom, z0, st.x1, top, z1, { skip });
       // the tread plate is the top face; a hazard nosing strip takes the leading 5 cm of it (no overlap)
       const nz0 = dir > 0 ? z1 - 0.05 : z0, nz1 = dir > 0 ? z1 : z0 + 0.05;
       const pz0 = dir > 0 ? z0 : nz1, pz1 = dir > 0 ? nz0 : z1;
@@ -602,9 +626,9 @@ function buildStairs(k, layout, only) {
       tread('floor:deck', pz0, pz1);
       tread('hazard', nz0, nz1);
     }
-    // handrails on both sides, following the slope
-    for (const sx of [-1, 1]) {
-      const x = sx * 0.72;
+    // handrails, following the slope; a solid stair against a wall has one, on its open side
+    const rails = st.solid ? [st.x1 - 0.08] : [st.x0 + 0.08, st.x1 - 0.08];
+    for (const x of rails) {
       const yl = st.yLow + 0.95, yh = st.yHigh + 0.95;
       handrail(k, x, yl, st.zLow, x, yh, st.zHigh);
       // returns to the newel at each end
@@ -627,33 +651,29 @@ function buildStairs(k, layout, only) {
         [st.x1, st.yHigh + DECK.clear, st.zHigh], [st.x0, st.yHigh + DECK.clear, st.zHigh],
       ], [0, -1, 0], null);
     }
-    if (key === 'down') {
-      // the hole in the main floor is walled by the stair itself; the side walls
-      // below the slab are the corridor walls carried down
-      for (const sx of [-1, 1]) {
-        const x = sx * 0.8;
-        // outward face, seen from engineering
-        const pts = [[x, 0, st.zHigh], [x, 0, st.zLow], [x, DECK.main, st.zLow], [x, DECK.main, st.zHigh]];
-        k._faceQuadUV('wall:engineering', [[x, 0, st.zHigh], [x, 0, st.zLow], [x, 2.7, st.zLow], [x, 2.7, st.zHigh]], [sx, 0, 0],
-          [[st.zHigh / 1.35, 0], [st.zLow / 1.35, 0], [st.zLow / 1.35, 1], [st.zHigh / 1.35, 1]]);
-      }
-      // the same walls seen from INSIDE the stairwell (they were one-way: standing on the stair you could
-      // look straight out into engineering)
-      for (const sx of [-1, 1]) {
-        const x = sx * 0.8;
-        k._faceQuadUV('wall:corridor', [[x, 0, st.zHigh], [x, 0, st.zLow], [x, DECK.main, st.zLow], [x, DECK.main, st.zHigh]], [-sx, 0, 0],
-          [[st.zHigh / 1.35, 0], [st.zLow / 1.35, 0], [st.zLow / 1.35, 3 / 1.35], [st.zHigh / 1.35, 3 / 1.35]]);
-      }
-      // the slab's cut edge at the low end of the hole, so you do not see into the floor
-      k._faceQuadUV('wall:corridor', [[-0.8, 2.7, st.zLow], [0.8, 2.7, st.zLow], [0.8, DECK.main, st.zLow], [-0.8, DECK.main, st.zLow]], [0, 0, -1], null);
-      // the front face of the closed stair, in engineering
-      k._faceQuadUV('wall:engineering', [[-0.8, 0, 4.5], [0.8, 0, 4.5], [0.8, 2.7, 4.5], [-0.8, 2.7, 4.5]], [0, 0, -1],
-        [[0, 0], [1.6 / 1.35, 0], [1.6 / 1.35, 1], [0, 1]]);
-      // a light and a warning stripe on the front face
-      k.box('hazard', 0, 0.9, 4.49, 1.5, 0.12, 0.006);
-      k.box('glowAmber', 0, 2.3, 4.485, 0.8, 0.04, 0.006);
+    if (st.solid) {
+      // a hazard stripe along the foot of the open side, and a lamp on the stringer
+      k.box('hazard', st.x1 + 0.004, 0.05, (st.zHigh + st.zLow) / 2 + 0.1, 0.008, 0.1, st.zLow - st.zHigh - 0.2);
     }
   }
+}
+
+/**
+ * The cargo bay's way up: a gantry along the fore wall at main-deck height (the corridor door opens onto it)
+ * with the stair coming up at its west end, and the columns and rails that hold it up and keep you on it.
+ */
+function buildGantryAndStair(k, layout, r) {
+  const G = GANTRY;
+  const w = G.x1 - G.x0, d = G.z1 - G.z0, cx = (G.x0 + G.x1) / 2, cz = (G.z0 + G.z1) / 2;
+  // the slab: its top face is the walking surface (drawn as one grate plate, so nothing shares its plane)
+  k.boxMM('steelDark', G.x0, G.y - G.thick, G.z0, G.x1, G.y, G.z1, { skip: '+y-z' });
+  k.poly('floor:grate', [[G.x0, G.y, G.z1], [G.x1, G.y, G.z1], [G.x1, G.y, G.z0], [G.x0, G.y, G.z0]]);
+  // a hazard stripe along the open edge and a kick plate
+  k.box('hazard', cx, G.y - G.thick / 2, G.z1 + 0.004, w, 0.1, 0.008);
+  k.box('hazard', G.x1 + 0.004, G.y - G.thick / 2, cz, 0.008, 0.1, d);
+  // a light under the gantry, over the engineering door's approach
+  k.box('glowWhite', -1.7, G.y - G.thick - 0.004, 10.6, 3.0, 0.006, 0.2);
+  buildStairs(k, layout, 'cargo');
 }
 
 function drawLadder(k, L) {
@@ -695,10 +715,10 @@ export function buildSeats(layout, mats, interior) {
   // The captain's dais: a low step with light strips.
   {
     const k = new Kit();
-    k.bevelBox('gunmetal', 0, 6.1, -14.95, 2.8, 0.2, 1.9, 0.03);
-    k.box('glowBlue', 0, 6.205, -13.98, 2.7, 0.006, 0.03);
-    k.box('glowBlue', -1.39, 6.205, -14.95, 0.03, 0.006, 1.8);
-    k.box('glowBlue', 1.39, 6.205, -14.95, 0.03, 0.006, 1.8);
+    k.bevelBox('gunmetal', 0, 6.1, -15.55, 2.8, 0.2, 1.9, 0.03);          // moved 0.6 m fore: the stair now lands on a clear 1.2 m of deck
+    k.box('glowBlue', 0, 6.205, -14.58, 2.7, 0.006, 0.03);
+    k.box('glowBlue', -1.39, 6.205, -15.55, 0.03, 0.006, 1.8);
+    k.box('glowBlue', 1.39, 6.205, -15.55, 0.03, 0.006, 1.8);
     interior.rooms.get('bridge').add(k.toGroup(mats, { name: 'dais' }));
   }
 }

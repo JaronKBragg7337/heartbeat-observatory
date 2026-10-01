@@ -970,6 +970,19 @@ export class ShipSystem {
     }
   }
 
+  /** In a doorway: which of the two rooms is the player on the near side of? (Not whichever they were last in.) */
+  _doorSideRoom(doorId) {
+    const d = this.layout.doors.find((q) => q.id === doorId);
+    if (!d) return null;
+    const A = this.layout.roomById.get(d.a), B = this.layout.roomById.get(d.b);
+    if (!A || !B) return A ? d.a : (B ? d.b : null);
+    const p = d.axis === 'x' ? this.sw.x : this.sw.z;
+    const ca = d.axis === 'x' ? (A.x0 + A.x1) / 2 : (A.z0 + A.z1) / 2;
+    const cb = d.axis === 'x' ? (B.x0 + B.x1) / 2 : (B.z0 + B.z1) / 2;
+    if (Math.abs(p - d.at) < 0.02) return this._lastRoom === d.b ? d.b : d.a;
+    return Math.sign(ca - d.at) === Math.sign(p - d.at) ? d.a : (Math.sign(cb - d.at) === Math.sign(p - d.at) ? d.b : null);
+  }
+
   _roomVisible(id) { return this._visibleSet ? this._visibleSet.has(id) : true; }
 
   _roomsAndLights(dt, first) {
@@ -979,8 +992,7 @@ export class ShipSystem {
     let cur = null;
     if (this.aboard) cur = this.seat ? this.seat.room : (this.sw.zoneRoom || null);
     if (cur === 'stair_up') cur = this.sw.y > 4.6 ? 'bridge' : 'corridor_main';
-    else if (cur === 'stair_down') cur = this.sw.y < 1.4 ? 'engineering' : 'corridor_main';
-    if (cur && cur.startsWith('d_')) cur = this._lastRoom || 'corridor_main';
+    if (cur && cur.startsWith('d_')) cur = this._doorSideRoom(cur) || this._lastRoom || 'corridor_main';
     if (cur && !this.interior.rooms.has(cur)) cur = this._lastRoom || null;
     if (cur) this._lastRoom = cur;
     this.currentRoom = cur;
@@ -1327,7 +1339,7 @@ export class ShipSystem {
   _roomName() {
     const r = this.layout.roomById.get(this.currentRoom);
     if (r) return r.name;
-    return { stair_up: 'Bridge stair', stair_down: 'Engineering stair' }[this.sw.zoneRoom] || '';
+    return { stair_up: 'Bridge stair' }[this.sw.zoneRoom] || '';
   }
 }
 

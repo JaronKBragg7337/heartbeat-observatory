@@ -57,20 +57,21 @@ export class ShipGeometryIndex {
       Z.push({ id: r.id, x0: r.x0, x1: r.x1, z0: r.z0, z1: r.z1,
         floor: r.y, ceil: r.y + r.h, holes, kind: 'room', room: r.id });
     }
-    // The wedge under the stair down is solid: nothing walkable there at floor level.
-    const eng = Z.find((z) => z.id === 'engineering');
-    eng.holes.push({ x0: -0.8, x1: 0.8, z0: 4.5, z1: 8.4 });
+    // The stair up the cargo bay's west wall is a solid wedge: nothing walkable under it at floor level
+    // (its last three steps are left out of the hole so you can step on and off at the bottom).
+    const cargoZone = Z.find((z) => z.id === 'cargo');
+    cargoZone.holes.push({ x0: STAIRS.cargo.x0, x1: STAIRS.cargo.x1, z0: STAIRS.cargo.zHigh, z1: STAIRS.cargo.zLow - 0.6 });
 
     // Stairs: sloped floors, and a ceiling that follows them up.
-    const su = STAIRS.up, sd = STAIRS.down;
+    const su = STAIRS.up, sc = STAIRS.cargo;
     Z.push({ id: su.id, x0: su.x0, x1: su.x1, z0: su.zHigh - 0.7, z1: su.zLow + 0.35,
       floor: (x, z) => stairFloor(su, z), ceil: (x, z) => stairFloor(su, z) + DECK.clear,
       holes: [], kind: 'stair', room: su.id });
     // (The top reaches 0.7 m back into the corridor so the two floors overlap
     //  once each is pulled in by the shoulder radius; the floor there is flat.)
-    Z.push({ id: sd.id, x0: sd.x0, x1: sd.x1, z0: sd.zHigh - 0.7, z1: sd.zLow + 0.2,
-      floor: (x, z) => stairFloor(sd, z), ceil: DECK.main + DECK.clear,
-      holes: [], kind: 'stair', room: sd.id });
+    Z.push({ id: sc.id, x0: sc.x0, x1: sc.x1, z0: sc.zHigh - 0.7, z1: sc.zLow + 0.2,
+      floor: (x, z) => stairFloor(sc, z), ceil: (x, z) => Math.min(5.5, stairFloor(sc, z) + DECK.clear),
+      holes: [], kind: 'stair', room: sc.room });
 
     // Doorways: a thin connector across the wall so two rooms join.
     for (const d of L.doors) {

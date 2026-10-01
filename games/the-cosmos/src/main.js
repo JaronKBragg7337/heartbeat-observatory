@@ -15,6 +15,7 @@
 
 import * as THREE from 'three';
 import { depthEmulation } from './dev/depthEmu.js';
+import { auditGaps } from './dev/gapAudit.js';
 import { Engine } from './core/engine.js';
 import { registry } from './core/registry.js';
 import { BODIES, getBody } from './world/bodies.js';
@@ -984,6 +985,7 @@ engine.start();
 // without guessing from pixels.
 window.cosmos = {
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
+  auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,
   ship, shipUI, engine, body, walker, patch, registry, debugLayer, view,
   report: () => debugLayer.reportAt(walker),

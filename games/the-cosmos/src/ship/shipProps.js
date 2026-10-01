@@ -384,6 +384,30 @@ export const PROPS = {
 
   console_decor() {},
 
+  // a handrail along a gantry edge: it runs along the longer side of its box
+  rail(k, p) {
+    const alongX = p.w >= p.d;
+    const L = alongX ? p.w : p.d;
+    const n = Math.max(1, Math.round(L / 1.2));
+    const at = (t) => (t - 0.5) * L;
+    for (let i = 0; i <= n; i++) {
+      const t = at(i / n);
+      if (alongX) k.bevelBox('steelDark', t, 0.52, 0, 0.05, 1.04, 0.05, 0.01); else k.bevelBox('steelDark', 0, 0.52, t, 0.05, 1.04, 0.05, 0.01);
+    }
+    for (const y of [1.0, 0.55]) {
+      if (alongX) k.pipe('steel', [-L / 2, y, 0], [L / 2, y, 0], 0.02, 8); else k.pipe('steel', [0, y, -L / 2], [0, y, L / 2], 0.02, 8);
+    }
+    if (alongX) k.box('plasticDark', 0, 0.08, 0, L, 0.16, 0.02); else k.box('plasticDark', 0, 0.08, 0, 0.02, 0.16, L);
+  },
+
+  // a round steel column holding something up
+  column(k, p) {
+    k.cyl('steelDark', 0, p.h / 2, 0, 0.14, p.h, 12);
+    k.cyl('gunmetal', 0, 0.06, 0, 0.3, 0.12, 12);
+    k.cyl('gunmetal', 0, p.h - 0.06, 0, 0.3, 0.12, 12);
+    k.box('hazard', 0, 0.9, 0.145, 0.16, 0.12, 0.006);
+  },
+
   rug(k, p) {
     const c = p.tone === 'med' ? 'tile' : 'fabricBlue';
     k.bevelBox(c, 0, 0.012, 0, p.w, 0.024, p.d, 0.008);

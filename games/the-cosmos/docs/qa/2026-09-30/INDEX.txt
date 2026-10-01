@@ -1,0 +1,19 @@
+QA for the stair relayout and the door/gap fixes, 2026-09-30 (Claude Sonnet 5.5)
+Images are kept in the worktree only (6 MB; not committed): games/the-cosmos/docs/qa/2026-09-30/*.jpg
+
+d_NN_*  desktop, ?tier=high, 750x470, camera placed with cosmos.at / viewFrom
+p_NN_*  phone, ?tier=low&depth=16 (16-bit depth emulation), 375x812
+w_NN_*  phone, same URL, WALKED with the real input pipeline (W key held, doors open by themselves, culling live):
+        cargo bay -> up the cargo stair -> gantry -> corridor door -> corridor -> workshop and back -> cabin ->
+        along the corridor -> up the bridge stair -> bridge -> back down -> corridor -> gantry -> down the cargo
+        stair -> cargo bay -> engineering door -> engineering.  Every leg arrived where it was aimed; none blocked.
+
+Doorway shots stand IN the doorway (x = +-0.9 for corridor doors) and look through it, and across the corridor.
+Stair shots: foot, middle, top looking down, top landing, from inside the neighbouring rooms.
+
+Gap audit (cosmos.auditGaps, src/dev/gapAudit.js): the interior is drawn alone on magenta from 9 spots x 12 headings x 3 pitches
+per room; a pure-magenta pixel is a hole in the ship.   Result after the fixes, on both tiers:
+  0 views with gaps: corridor_main airlock evalocker crew_a crew_b niche galley cabin head medbay workshop engineering
+  expected, not gaps: cargo (the open stern/ramp), ventral and corridor_low (the glass pod under the ship shows the ground),
+  bridge and nest (glass).
+Before the fixes the same audit found 49 gap views in engineering and 57 in the airlock.

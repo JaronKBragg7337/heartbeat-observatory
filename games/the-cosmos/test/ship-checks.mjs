@@ -42,7 +42,7 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     L.rooms.filter((r) => r.kind === 'corridor').every((r) => (r.x1 - r.x0) >= 1.3 && (r.x1 - r.x0) <= 1.7),
     L.rooms.filter((r) => r.kind === 'corridor').map((r) => (r.x1 - r.x0).toFixed(2)).join());
   check('stairs rise 0.1875 m a step, the same as a building-code riser',
-    Math.abs(3.0 / SPEC.STAIRS.up.rise - 0.1875) < 1e-9 && Math.abs(3.0 / SPEC.STAIRS.down.rise - 0.1875) < 1e-9);
+    Math.abs(3.0 / SPEC.STAIRS.up.rise - 0.1875) < 1e-9 && Math.abs(3.0 / SPEC.STAIRS.cargo.rise - 0.1875) < 1e-9);
   {
     const overlaps = [];
     for (let i = 0; i < L.rooms.length; i++) for (let j = i + 1; j < L.rooms.length; j++) {
@@ -75,8 +75,8 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     check('no two pieces of furniture pass through each other', bad.length === 0, bad.slice(0, 6).join());
   }
   check('every door joins two rooms that exist (or the outside)',
-    L.doors.every((d) => (L.roomById.has(d.a) || ['stair_up', 'stair_down'].includes(d.a)) &&
-      (L.roomById.has(d.b) || d.b === 'outside' || ['stair_up', 'stair_down'].includes(d.b))));
+    L.doors.every((d) => (L.roomById.has(d.a) || ['stair_up'].includes(d.a)) &&
+      (L.roomById.has(d.b) || d.b === 'outside' || ['stair_up'].includes(d.b))));
 
   // ---- 9b. Everything is walkable, by the real walker -----------------------------------------
   section('9b. Decks are walkable: stairs, ladders, ramps, doors');
@@ -148,12 +148,27 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     for (let i = 0; i < 60 * 14 && w.y < 5.99; i++) { w.tick(1 / 60, { moveZ: 1 }); maxStep = Math.max(maxStep, Math.abs(w.y - last)); last = w.y; }
     check('the bridge stair is climbed to the upper deck: one smooth ramp with no popping',
       w.y >= 5.99 && w.z < -13.3 && maxStep < 0.12, `y ${w.y.toFixed(2)} z ${w.z.toFixed(2)} biggest per-frame change ${maxStep.toFixed(3)} m`);
-    const d = new ShipWalker(shipIndex, stW);
-    d.place(0, 3.0, 3.7, Math.PI);                     // top of the engineering stair, facing the stern
-    let mx = 0, lst = d.y;
-    for (let i = 0; i < 60 * 14 && d.y > 0.02; i++) { d.tick(1 / 60, { moveZ: 1 }); mx = Math.max(mx, Math.abs(d.y - lst)); lst = d.y; }
-    check('the engineering stair walks down to the lower deck',
-      d.y <= 0.02 && d.z > 8.3 && mx < 0.14, `y ${d.y.toFixed(2)} z ${d.z.toFixed(2)} step ${mx.toFixed(3)}`);
+    const c = new ShipWalker(shipIndex, stW);
+    const SC = SPEC.STAIRS.cargo, ccx = (SC.x0 + SC.x1) / 2;
+    c.place(ccx, 0, SC.zLow + 0.7, 0);                 // foot of the cargo-bay stair, facing the fore wall
+    let mx = 0, lst = c.y;
+    for (let i = 0; i < 60 * 14 && c.y < 2.99; i++) { c.tick(1 / 60, { moveZ: 1 }); mx = Math.max(mx, Math.abs(c.y - lst)); lst = c.y; }
+    check('the cargo-bay stair climbs smoothly to the gantry at main-deck height',
+      c.y >= 2.99 && c.z < SC.zHigh + 0.3 && mx < 0.14, `y ${c.y.toFixed(2)} z ${c.z.toFixed(2)} step ${mx.toFixed(3)}`);
+    // along the gantry and through the door into the main corridor
+    c.yaw = 0;
+    for (let i = 0; i < 60 * 3 && c.z > 10.7; i++) c.tick(1 / 60, { moveZ: 1 });      // off the top step, onto the gantry
+    c.yaw = Math.PI / 2;
+    for (let i = 0; i < 60 * 8 && c.x < -0.05; i++) c.tick(1 / 60, { moveZ: 1 });
+    const atX = c.x;
+    c.yaw = 0;
+    for (let i = 0; i < 60 * 6 && c.z > 7.0; i++) c.tick(1 / 60, { moveZ: 1 });
+    check('from the gantry the corridor door opens onto the main deck: you walk straight in', atX > -0.3 && c.z <= 7.1 && Math.abs(c.y - 3.0) < 0.02, `x ${atX.toFixed(2)} z ${c.z.toFixed(2)} y ${c.y.toFixed(2)}`);
+    // and nobody walks off the gantry's open edge
+    const g = new ShipWalker(shipIndex, stW);
+    g.place(-2.0, 3.0, 10.7, Math.PI);                 // on the gantry, facing aft into the rail
+    for (let i = 0; i < 60 * 3; i++) g.tick(1 / 60, { moveZ: 1 });
+    check('the gantry has rails: walking at its open edge stops you on it', Math.abs(g.y - 3.0) < 0.02 && g.z < SPEC.GANTRY.z1, `y ${g.y.toFixed(2)} z ${g.z.toFixed(2)}`);
   }
   {
     // the boarding ramp, walked up from the ground
@@ -389,7 +404,7 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     const s = makeShip();
     const st = new Stations(s);
     const guns = new GunSystem(s, st, groundF);
-    const eye = s.toWorld({ x: 0, y: 7.3, z: -15.1 }, {});
+    const eye = s.toWorld({ x: 0, y: 7.3, z: -15.7 }, {});
     const fwd = s.dirToWorld({ x: 0, y: -0.09, z: -1 }, {});
     const fl = Math.hypot(fwd.x, fwd.y, fwd.z); fwd.x /= fl; fwd.y /= fl; fwd.z /= fl;
     const fired = guns.fire('main', fwd, eye);
@@ -477,7 +492,7 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
       fired >= 3 && hits >= 1 && shieldSeen < s.shieldMax - 5, `${fired} shots, ${hits} hits, shield ${shieldSeen.toFixed(0)}/${s.shieldMax.toFixed(0)}`);
     // and it can be shot down from the captain's chair
     st.sit({ x: 0, y: 6.2, z: -14.3 });
-    const eye = s.toWorld({ x: 0, y: 7.3, z: -15.1 }, {});
+    const eye = s.toWorld({ x: 0, y: 7.3, z: -15.7 }, {});
     let down = false;
     for (let i = 0; i < 60 * 20 && !down; i++) {
       const dx = d.pos.x - eye.x, dy = d.pos.y - eye.y, dz = d.pos.z - eye.z, dl = Math.hypot(dx, dy, dz);
@@ -624,24 +639,28 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
       VIS.reachRooms({ portals, isOpen: () => false, starts: ['cargo'], cam: { x: 0, y: 1.66, z: 14 }, fwd: { x: 0, y: 0, z: -1 }, fovDeg: 72, aspect: 1, maxRooms: 8 }).size === 1);
     check('a door leaf belongs to the ship, not to a room, so it is drawn from either side',
       it.doors.length >= 8 && it.doors.every((dl) => dl.group.parent === it.root));
+    check('door frames and thresholds are one set on the root of the ship, so a frame is never lost with a hidden room (a slot in the wall showed the sky)',
+      it.root.children.some((c) => c.name === 'door-frames' && c.children.length >= 1));
     check('each stair and ladder is drawn whenever any room it touches is drawn',
-      it.sharedGroups.length === 4 && it.sharedGroups.every((e) => e.rooms.length === 2 && e.rooms.every((id) => ids.has(id))));
+      it.sharedGroups.length === 3 && it.sharedGroups.every((e) => e.rooms.length === 2 && e.rooms.every((id) => ids.has(id))));
 
     // -- stairs are solid from the side ---------------------------------------------------------------------------------
     let inside = 0, tried = 0, where = '';
-    const stairs = [SPEC.STAIRS.down, SPEC.STAIRS.up];
+    const stairs = [SPEC.STAIRS.cargo, SPEC.STAIRS.up];
+    const yBelow = (st) => (st.solid ? 0 : 3.0);
     for (const st of stairs) {
       const zA = Math.min(st.zLow, st.zHigh), zB = Math.max(st.zLow, st.zHigh);
+      const cx = (st.x0 + st.x1) / 2, half = (st.x1 - st.x0) / 2;
       for (let z = zA + 0.2; z < zB; z += 0.45) for (const side of [-1, 1]) for (let yawq = 0; yawq < 4; yawq++) {
         const w = new ShipWalker(shipIndex, defaultState());
-        const y0 = st === SPEC.STAIRS.down ? 0 : 3.0;
+        const y0 = yBelow(st);
         // start beside the stair on the deck that has a floor there (beside the up stair there is none: only a wall)
-        const start = side * 1.25;
+        const start = cx + side * (half + 0.45);
         w.place(start, y0, z, yawq * Math.PI / 2);
         if (!w.support(start, y0, z)) continue;
         for (let f = 0; f < 240; f++) {
           w.tick(1 / 60, { moveZ: 1, moveX: (f % 60) < 30 ? 0.5 : -0.5 });
-          const inWedge = Math.abs(w.x) < 0.75 && w.z > zA + 0.05 && w.z < zB - 0.05;
+          const inWedge = Math.abs(w.x - cx) < half - 0.05 && w.z > zA + 0.05 && w.z < zB - 0.05;
           if (inWedge && w.y > y0 - 0.4 && w.y < SPEC.stairFloor(st, w.z) - 0.3) { inside++; where = `${st.id} z=${w.z.toFixed(2)} y=${w.y.toFixed(2)}`; break; }
         }
         tried++;
@@ -651,12 +670,108 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     let stairEnds = 0;
     for (const st of stairs) {
       const w = new ShipWalker(shipIndex, defaultState());
-      const low = st === SPEC.STAIRS.down ? { x: 0, y: 0, z: 9.05, yaw: 0 } : { x: 0, y: 3.0, z: -8.6, yaw: 0 };
-      w.place(low.x, low.y, low.z, low.yaw);
+      const cx = (st.x0 + st.x1) / 2;
+      w.place(cx, yBelow(st), st.zLow + (st.solid ? 0.5 : 0.3), 0);
       for (let f = 0; f < 60 * 8; f++) w.tick(1 / 60, { moveZ: 1 });
       if (w.y > st.yHigh - 0.4) stairEnds++;
     }
     check('both stairs can still be climbed from their foot to their top', stairEnds === 2, `${stairEnds}/2`);
+
+    // -- no stair stands in a doorway, in front of one, or across a room's entrance ------------------------------------
+    {
+      const own = new Set(['d_stair_up_lo', 'd_stair_up_hi']);                  // a stair's own entrances are where it starts and ends
+      const bad = [];
+      for (const key of Object.keys(SPEC.STAIRS)) {
+        const st = SPEC.STAIRS[key];
+        const zA = Math.min(st.zLow, st.zHigh), zB = Math.max(st.zLow, st.zHigh);
+        for (const d of L.doors) {
+          if (own.has(d.id) || d.kind === 'outer' || d.kind === 'portal') continue;
+          // clearance: the opening plus 0.6 m each side along the wall, and 1.0 m out from the wall on both faces
+          const along = d.w / 2 + 0.6, out = 1.0;
+          const cx0 = d.axis === 'x' ? d.at - out : d.c - along, cx1 = d.axis === 'x' ? d.at + out : d.c + along;
+          const cz0 = d.axis === 'x' ? d.c - along : d.at - out, cz1 = d.axis === 'x' ? d.c + along : d.at + out;
+          if (cx1 < st.x0 || cx0 > st.x1 || cz1 < zA || cz0 > zB) continue;
+          // where they overlap in plan, is the stair at the height of the door?
+          const oz0 = Math.max(cz0, zA), oz1 = Math.min(cz1, zB);
+          for (let z = oz0; z <= oz1 + 1e-9; z += 0.1) {
+            const fl = SPEC.stairFloor(st, z);
+            const top = st.solid ? fl : fl + 2.7, bottom = st.solid ? 0 : fl;
+            if (top > d.y - 0.2 && bottom < d.y + d.h) { bad.push(`${st.id} in front of ${d.id} at z ${z.toFixed(1)}`); break; }
+          }
+        }
+      }
+      check('no stair stands in a doorway, in front of one, or across a room entrance (every door keeps 0.6 m beside it and 1.0 m in front)', bad.length === 0, bad.join('; '));
+      // furniture too: nothing solid within 0.9 m in front of any door (or 0.1 m beside it)
+      const crowded = [];
+      for (const d of L.doors) {
+        if (d.kind === 'outer' || d.kind === 'portal') continue;
+        const al = d.w / 2 + 0.1, ou = 0.9;
+        const c = { x0: d.axis === 'x' ? d.at - ou : d.c - al, x1: d.axis === 'x' ? d.at + ou : d.c + al, z0: d.axis === 'x' ? d.c - al : d.at - ou, z1: d.axis === 'x' ? d.c + al : d.at + ou };
+        for (const p of L.props) {
+          if (!p.blocks) continue;
+          const b = SPEC.propBox(p);
+          if (b.y1 < d.y + 0.1 || b.y0 > d.y + d.h) continue;
+          if (b.x1 > c.x0 && b.x0 < c.x1 && b.z1 > c.z0 && b.z0 < c.z1) crowded.push(`${d.id} <- ${p.kind}`);
+        }
+      }
+      check('no furniture stands in a doorway or within 0.9 m in front of one', crowded.length === 0, crowded.join('; '));
+      // and the walkways that lead to the stairs have room to arrive: a flat landing at least 1.2 m before the first step
+      const blockedLandings = [];
+      for (const key of Object.keys(SPEC.STAIRS)) {
+        const st = SPEC.STAIRS[key];
+        const ends = [{ name: 'top', z0: st.zHigh - 1.2, z1: st.zHigh, y: st.yHigh }, { name: 'foot', z0: st.zLow, z1: st.zLow + 1.2, y: st.yLow }];
+        for (const e of ends) {
+          const hit = (x0, x1, z0, z1) => x1 > st.x0 + 0.05 && x0 < st.x1 - 0.05 && z1 > e.z0 + 0.02 && z0 < e.z1 - 0.02;
+          for (const p of L.props) {
+            if (!p.blocks) continue;
+            const b = SPEC.propBox(p);
+            if (b.y1 < e.y + 0.1 || b.y0 > e.y + 1.8) continue;
+            if (hit(b.x0, b.x1, b.z0, b.z1)) blockedLandings.push(`${st.id} ${e.name}: ${p.kind}`);
+          }
+          for (const z of L.extraZones) if (z.floor > e.y + 0.1 && z.kind !== 'gantry' && hit(z.x0, z.x1, z.z0, z.z1)) blockedLandings.push(`${st.id} ${e.name}: ${z.id}`);
+          for (const q of SPEC.SEATS) if (Math.abs(q.y - e.y) < 0.8 && hit(q.x - 0.45, q.x + 0.45, q.z - 0.45, q.z + 0.45)) blockedLandings.push(`${st.id} ${e.name}: seat ${q.id}`);
+        }
+      }
+      check('every stair has 1.2 m of clear, level floor at its foot and at its top (no chair, dais or crate to walk into)', blockedLandings.length === 0, blockedLandings.join('; '));
+    }
+
+    // -- nothing on the outside of the hull pokes into a room or the stairwell (a roof plate seen inside the stair) ------
+    {
+      const ex2 = EXT.buildExterior(L, mats, { tier: 'low' });
+      ex2.root.updateMatrixWorld(true);
+      const su2 = SPEC.STAIRS.up;
+      const pokes = new Map();
+      const v = new THREE.Vector3();
+      ex2.root.traverse((o) => {
+        if (!o.isMesh || o.name.startsWith('ramp-mesh') || o.name.startsWith('foot') || o.name.startsWith('piston')) return;
+        const pos = o.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+          for (const r of L.rooms) {
+            if (['bridge', 'nest', 'ventral'].includes(r.id)) continue;
+            if (v.x > r.x0 + 0.12 && v.x < r.x1 - 0.12 && v.y > r.y + 0.12 && v.y < r.y + r.h - 0.12 && v.z > r.z0 + 0.12 && v.z < r.z1 - 0.12) pokes.set(`${o.name} in ${r.id}`, 1);
+          }
+          if (Math.abs(v.x) < 0.75 && v.z > su2.zHigh && v.z < su2.zLow && v.y > SPEC.stairFloor(su2, v.z) + 0.05 && v.y < SPEC.stairFloor(su2, v.z) + 2.65) pokes.set(`${o.name} in the bridge stairwell`, 1);
+        }
+      });
+      // and no piece of the hull's own skin cuts across the stairwell
+      {
+        const su3 = SPEC.STAIRS.up; const hullMesh = ex2.root.children.find((c) => c.name === 'hull');
+        const pos = hullMesh.geometry.attributes.position; let skin = 0;
+        const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3();
+        for (let t = 0; t < pos.count; t += 3) {
+          A.fromBufferAttribute(pos, t); B.fromBufferAttribute(pos, t + 1); C.fromBufferAttribute(pos, t + 2);
+          if (Math.min(A.z, B.z, C.z) > su3.zLow || Math.max(A.z, B.z, C.z) < su3.zHigh || Math.min(A.x, B.x, C.x) > 0.75 || Math.max(A.x, B.x, C.x) < -0.75) continue;
+          for (let a = 0; a <= 16 && !skin; a++) for (let b = 0; a + b <= 16; b++) {
+            const wa = a / 16, wb = b / 16, wc = 1 - wa - wb;
+            const x = A.x * wa + B.x * wb + C.x * wc, y = A.y * wa + B.y * wb + C.y * wc, z = A.z * wa + B.z * wb + C.z * wc;
+            if (Math.abs(x) < 0.75 && z > su3.zHigh && z < su3.zLow && y > SPEC.stairFloor(su3, z) + 0.05 && y < SPEC.stairFloor(su3, z) + 2.3) { skin++; break; }
+          }
+        }
+        pokes.size === 0 && skin && pokes.set('the hull skin cuts across the bridge stairwell', 1);
+      }
+      check('no outside armour plate, mast or fitting stands inside a room or the stairwell', pokes.size === 0, [...pokes.keys()].join('; '));
+    }
 
     // -- the flight seats look out ------------------------------------------------------------------------------------
     const eyeOf = (id) => { const s = SPEC.SEATS.find((q) => q.id === id); return { s, y: s.y + AVATAR.seatedEyeM }; };

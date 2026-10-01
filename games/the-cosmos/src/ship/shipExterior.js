@@ -92,7 +92,9 @@ export function insideHull(x, y, z, margin = 0) {
 export const hullTop = (z) => section(z).yt;
 
 /** The armoured saddle over the bridge stairwell (see buildExterior). roof(z) is its top surface. */
-export const STAIR_FAIRING = { z0: -13.4, z1: -9.7, hw: 1.15, floorY: 5.5, roof: (z) => 8.84 - (z + 13.4) * (3.0 / 4.5) };
+/** Where the hull's deck plate is cut away for the stairwell (aligned to the loft's ring spacing). */
+export const STAIR_HOLE = { z0: -13.5, z1: -9.0, hw: 1.1 };
+export const STAIR_FAIRING = { z0: -13.4, z1: -9.0, hw: 1.15, floorY: 5.5, roof: (z) => Math.max(8.84 - (z + 13.4) * (3.0 / 4.5), section(z).yt + 0.04) };   // follows the stair, then lies flush with the deck
 export const hullHalfWidth = (z) => section(z).hw;
 
 function buildHullMesh(mats, opts) {
@@ -117,9 +119,21 @@ function buildHullMesh(mats, opts) {
       const a0 = A[f], a1 = A[(f + 1) % 8], b0 = B[f], b1 = B[(f + 1) % 8];
       const ua0 = cum[i][f], ua1 = cum[i][f + 1], ub0 = cum[i + 1][f], ub1 = cum[i + 1][f + 1];
       // (a0, a1, b1) and (a0, b1, b0): outward for a counter-clockwise ring swept toward +Z
-      push(a0[0], a0[1], zs[i], ua0, zs[i]); push(a1[0], a1[1], zs[i], ua1, zs[i]); push(b1[0], b1[1], zs[i + 1], ub1, zs[i + 1]);
-      push(a0[0], a0[1], zs[i], ua0, zs[i]); push(b1[0], b1[1], zs[i + 1], ub1, zs[i + 1]); push(b0[0], b0[1], zs[i + 1], ub0, zs[i + 1]);
+      const quad = (p0, p1, q1, q0, u0, u1, v1, v0) => {
+        push(p0[0], p0[1], zs[i], u0, zs[i]); push(p1[0], p1[1], zs[i], u1, zs[i]); push(q1[0], q1[1], zs[i + 1], v1, zs[i + 1]);
+        push(p0[0], p0[1], zs[i], u0, zs[i]); push(q1[0], q1[1], zs[i + 1], v1, zs[i + 1]); push(q0[0], q0[1], zs[i + 1], v0, zs[i + 1]);
+      };
       const tint = 0.95 + 0.09 * faceHash(f, zs[i]);
+      // Over the bridge stairwell the deck plate is left out (x +-1.1): the stair, its saddle and the people on it
+      // stand where a roof plate would otherwise cut across the stairwell at head height.
+      if (f === 2 && zs[i] >= STAIR_HOLE.z0 - 1e-6 && zs[i + 1] <= STAIR_HOLE.z1 + 1e-6) {
+        const H = STAIR_HOLE.hw, WA = a0[0], WB = b0[0];
+        quad([WA, a0[1]], [H, a0[1]], [H, b0[1]], [WB, b0[1]], ua0, ua0 + (WA - H), ub0 + (WB - H), ub0);
+        quad([-H, a0[1]], [-WA, a0[1]], [-WB, b0[1]], [-H, b0[1]], ua0 + WA + H, ua1, ub1, ub0 + WB + H);
+        for (let k = 0; k < 12; k++) tints.push(tint);
+        continue;
+      }
+      quad(a0, a1, b1, b0, ua0, ua1, ub1, ub0);
       for (let k = 0; k < 6; k++) tints.push(tint);
     }
   }
@@ -210,7 +224,7 @@ export function buildExterior(layout, mats, opts = {}) {
 
   // ============== dorsal armour: a spine, plates, hatches, vents ==================
   {
-    for (const [z0, z1] of [[-12.0, -6.0], [-5.6, 1.0], [5.2, 12.5], [12.9, 20.0]]) {
+    for (const [z0, z1] of [[-9.4, -6.0], [-5.6, 1.0], [5.2, 12.5], [12.9, 20.0]]) {     // the first plate starts aft of the stairwell
       const zc = (z0 + z1) / 2;
       const yt = hullTop(zc);
       k.bevelBox('hull', 0, yt + 0.16, zc, 2.2, 0.32, z1 - z0, 0.08);
@@ -326,13 +340,15 @@ export function buildExterior(layout, mats, opts = {}) {
   {
     const F = STAIR_FAIRING;
     const yr = (z) => F.roof(z);
-    for (const s of mirror) {
-      const x = s * F.hw;
-      const pts = [[x, F.floorY, F.z0], [x, F.floorY, F.z1], [x, yr(F.z1), F.z1], [x, yr(F.z0), F.z0]];
-      k._faceQuad('hull', pts, [s, 0, 0], null);
-      k.bevelBox('hullDark', x + s * 0.02, (yr(F.z0) + yr(F.z1)) / 2 - 0.1, (F.z0 + F.z1) / 2, 0.06, 0.1, F.z1 - F.z0 - 0.6, 0.02);
+    const N = 9, zz = Array.from({ length: N + 1 }, (_, i) => F.z0 + (F.z1 - F.z0) * i / N);
+    for (let i = 0; i < N; i++) {
+      const za = zz[i], zb = zz[i + 1];
+      for (const s of mirror) {
+        const x = s * F.hw;
+        k._faceQuad('hull', [[x, F.floorY, za], [x, F.floorY, zb], [x, yr(zb), zb], [x, yr(za), za]], [s, 0, 0], null);
+      }
+      k._faceQuad('hull', [[-F.hw, yr(za), za], [F.hw, yr(za), za], [F.hw, yr(zb), zb], [-F.hw, yr(zb), zb]], [0, 1, 0.3], null);
     }
-    k._faceQuad('hull', [[-F.hw, yr(F.z0), F.z0], [F.hw, yr(F.z0), F.z0], [F.hw, yr(F.z1), F.z1], [-F.hw, yr(F.z1), F.z1]], [0, 1, 0.6], null);
     for (const z of [F.z0 + 0.5, (F.z0 + F.z1) / 2, F.z1 - 0.5]) k.bevelBox('metal', 0, yr(z) + 0.05, z, 2.3, 0.08, 0.16, 0.03);
   }
 
@@ -450,9 +466,10 @@ export function buildExterior(layout, mats, opts = {}) {
     k.cyl('engine', 0, -0.55, 0, 0.46, 1.5, 18);
     k.cyl('metal', 0, -1.34, 0, 0.52, 0.16, 18);
     k.cyl('gunmetal', 0, -0.2, 0, 0.52, 0.12, 18);
-    k.pipe('engine', [0, -0.4, 0.0], [-out * 1.2, 0.5, 0.0], 0.17, 10);
+    const braceX = Math.abs(leg.x) > 6 ? 0.7 : 1.2;          // the aft legs' braces end at the cargo bay wall, not inside the bay
+    k.pipe('engine', [0, -0.4, 0.0], [-out * braceX, 0.5, 0.0], 0.17, 10);
     k.pipe('engine', [0, -0.45, 0], [0, 0.4, leg.z < 0 ? 1.4 : -1.4], 0.16, 10);
-    k.cyl('metal', -out * 1.2, 0.5, 0, 0.17, 0.18, 10, { axis: 'x' });
+    k.cyl('metal', -out * braceX, 0.5, 0, 0.17, 0.18, 10, { axis: 'x' });
     k.pipe('pipeYellow', [0.34, -0.15, 0.0], [0.34, -1.2, 0.0], 0.03, 6);
     k.cyl('hazard', 0, -0.95, 0, 0.475, 0.16, 18);
     k.pop();
