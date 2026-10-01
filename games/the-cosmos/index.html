@@ -68,6 +68,14 @@
     border-color: rgba(240, 185, 120, .55); color: #ffd9ac;
   }
   #btn-action:active { background: rgba(240, 185, 120, .38); }
+  /* The tool chip rides above the action button and appears with it. Tap to change tool (1 2 3 on a keyboard). */
+  #btn-tool {
+    display: none;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    min-width: 116px; min-height: 34px; font-size: 11px; padding: 6px 10px;
+    color: #cbb8a6;
+  }
   #hud .load { color: #f0b978; }
   #btn-settings {
     top: calc(10px + env(safe-area-inset-top, 0px));
@@ -243,6 +251,7 @@
 <button class="btn" id="btn-settings">Settings</button>
 <a class="btn" id="back-link" href="/games/">← Games</a>
 <button class="btn" id="btn-action">Dig</button>
+<button class="btn" id="btn-tool">Shovel</button>
 
 <div id="settings-panel">
   <h2>Settings</h2>
@@ -254,6 +263,17 @@
     <select id="set-view">
       <option value="first">First</option>
       <option value="third">Third</option>
+    </select>
+  </div>
+
+  <div class="set-row">
+    <label for="set-tool">Digging tool
+      <span class="hint">Spade for detail, shovel for the everyday bite, bucket for a hole you can stand in. Keys 1 2 3.</span>
+    </label>
+    <select id="set-tool">
+      <option value="0">Hand spade</option>
+      <option value="1" selected>Shovel</option>
+      <option value="2">Excavator bucket</option>
     </select>
   </div>
 

@@ -40,8 +40,8 @@ import { localFrame, geodeticToCartesian, cartesianToGeodetic } from './geodesy.
 // asks the field what it is made of and takes that material's colour, so the
 // ground is coloured by its geology.
 // ---------------------------------------------------------------------------
-function shadeVertex(body, px, py, pz, elevation, color) {
-  const mat = materialAt(body, px, py, pz);
+export function shadeVertex(body, px, py, pz, elevation, color, matKnown) {
+  const mat = matKnown || materialAt(body, px, py, pz);
   color.setHex(mat.color);
 
   // Elevation banding: dust settles in the lows, wind strips the highs.
@@ -173,9 +173,10 @@ export class LocalPatch {
   }
 
   /** Hand over regions to the excavation mesh. Triggers a rebuild. */
-  setExcluded(regions) {
+  setExcluded(regions, rebuildNow = false) {
     this.excluded = regions || [];
-    this.builtAt = null;     // force the next rebuild
+    if (rebuildNow) this.builtAt = null;     // legacy: force the next full rebuild
+    else this.reindex();
   }
 
   /**
@@ -307,33 +308,46 @@ export class LocalPatch {
    * the patch is the field's own opinion of the ground at metre resolution.
    */
   rebuild(px, py, pz) {
-    const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-    const body = this.body;
+    this.beginRebuild(px, py, pz);
+    this.stepRebuild(Infinity);
+    return this.lastBuildMs;
+  }
+
+  /**
+   * Rebuild in slices. Sampling the field under every vertex is the cost (about 100 ms for the wide
+   * tier on a desktop, several times that on a phone). A walker would feel that as a freeze every time
+   * he crossed half a kilometre, so the work is spread over frames: begin, then step a couple of
+   * milliseconds per frame until it says done. The old surface stays drawn, and stays the one the feet
+   * stand on, until the new one is complete; then the two are swapped in one move.
+   */
+  beginRebuild(px, py, pz) {
+    const body = this.body, n = this.res;
     const g = cartesianToGeodetic(body, px, py, pz);
-    this.centre = { lat: g.lat, lon: g.lon };
-
     const f = localFrame(g.lat, g.lon);
-    const n = this.res;
-    const half = this.sizeM / 2;
-    const stepM = this.sizeM / (n - 1);
+    const l = Math.hypot(px, py, pz);
+    const originR = surfaceRadiusFast(body, px / l, py / l, pz / l, 4, { ignoreEdits: true });
+    this._job = {
+      px, py, pz, g, f, originR, row: 0,
+      ox: (px / l) * originR, oy: (py / l) * originR, oz: (pz / l) * originR,
+      pos: new Float32Array(n * n * 3), col: new Float32Array(n * n * 3), radii: new Float64Array(n * n),
+      t0: (typeof performance !== 'undefined' ? performance.now() : Date.now()), spent: 0,
+      color: new THREE.Color(),
+    };
+    return this._job;
+  }
 
-    const pos = this.geo.attributes.position.array;
-    const col = this.geo.attributes.color.array;
-    const c = new THREE.Color();
+  get rebuilding() { return !!this._job; }
 
-    // Patch origin: the field surface directly under the requested centre.
-    const originR = surfaceRadiusAlong(body,
-      px / Math.hypot(px, py, pz), py / Math.hypot(px, py, pz), pz / Math.hypot(px, py, pz));
-    const cd = { x: px, y: py, z: pz };
-    const clen = Math.hypot(cd.x, cd.y, cd.z);
-    const ox = (cd.x / clen) * originR, oy = (cd.y / clen) * originR, oz = (cd.z / clen) * originR;
-    this.worldPos = { x: ox, y: oy, z: oz };
-    if (this._regolith) this._regolith.uRegOffset.value.set(mod360(ox), mod360(oy), mod360(oz));
-    this.builtAt = { x: px, y: py, z: pz };
-    this._frame = f;
-    this._originR = originR;
-
-    for (let j = 0; j < n; j++) {
+  /** Sample rows for up to `budgetMs`. Returns true when the whole patch is built and swapped in. */
+  stepRebuild(budgetMs) {
+    const job = this._job;
+    if (!job) return true;
+    const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const t0 = now();
+    const body = this.body, n = this.res, half = this.sizeM / 2, stepM = this.sizeM / (n - 1);
+    const { f, ox, oy, oz, pos, col, radii, color } = job;
+    while (job.row < n) {
+      const j = job.row++;
       const north = -half + j * stepM;
       for (let i = 0; i < n; i++) {
         const east = -half + i * stepM;
@@ -348,23 +362,54 @@ export class LocalPatch {
         const dx = wx / wl, dy = wy / wl, dz = wz / wl;
 
         // Solved, not marched — same equation, ~10x cheaper per vertex.
-        const R = surfaceRadiusFast(body, dx, dy, dz);
+        // The heightfield draws the ORIGINAL geology. Whatever has been dug or dumped is drawn
+        // by the brick meshes (excavation.js), which this tier is told to discard under; letting
+        // the heightfield also "see" an edit just puts a coarse lid over the hole.
+        const R = surfaceRadiusFast(body, dx, dy, dz, 3, { ignoreEdits: true });
         const sx = dx * R, sy = dy * R, sz = dz * R;
 
         const k = (j * n + i) * 3;
         // Stored relative to the patch centre so the buffer stays float32-safe.
         pos[k] = sx - ox; pos[k + 1] = sy - oy; pos[k + 2] = sz - oz;
         // f64 copy for collision, so the collider reads the drawn surface.
-        this._radii[j * n + i] = R;
+        radii[j * n + i] = R;
 
         const gg = cartesianToGeodetic(body, sx, sy, sz);
-        shadeVertex(body, sx, sy, sz, gg.alt, c);
-        col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b;
+        shadeVertex(body, sx, sy, sz, gg.alt, color);
+        col[k] = color.r; col[k + 1] = color.g; col[k + 2] = color.b;
       }
+      if (now() - t0 >= budgetMs) break;
     }
+    job.spent += now() - t0;
+    if (job.row < n) return false;
 
-    // Drop quads that fall inside an excavated region, leaving a gap for the
-    // volumetric mesh to fill.
+    // Done: swap the new surface in, all at once.
+    this.centre = { lat: job.g.lat, lon: job.g.lon };
+    this.worldPos = { x: ox, y: oy, z: oz };
+    if (this._regolith) this._regolith.uRegOffset.value.set(mod360(ox), mod360(oy), mod360(oz));
+    this.builtAt = { x: job.px, y: job.py, z: job.pz };
+    this._frame = f;
+    this._originR = job.originR;
+    this.geo.attributes.position.array.set(pos);
+    this.geo.attributes.color.array.set(col);
+    this._radii.set(radii);
+    this._reindexFrom(this.geo.attributes.position.array, ox, oy, oz);
+    this.geo.attributes.position.needsUpdate = true;
+    this.geo.attributes.color.needsUpdate = true;
+    this.geo.computeVertexNormals();
+    this.geo.computeBoundingSphere();
+    this.buildCount++;
+    this.lastBuildMs = job.spent;
+    this._job = null;
+    return true;
+  }
+
+  /**
+   * Which quads to draw. A quad is dropped only when all four corners are inside a
+   * region handed to a finer tier. Cheap (no field sampling): the vertices are kept.
+   */
+  _reindexFrom(pos, ox, oy, oz) {
+    const n = this.res;
     if (this.excluded.length) {
       const keep = [];
       for (let j = 0; j < n - 1; j++) {
@@ -385,15 +430,12 @@ export class LocalPatch {
       }
       this.geo.setIndex(full);
     }
+  }
 
-    this.geo.attributes.position.needsUpdate = true;
-    this.geo.attributes.color.needsUpdate = true;
-    this.geo.computeVertexNormals();
-    this.geo.computeBoundingSphere();
-
-    this.buildCount++;
-    this.lastBuildMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0;
-    return this.lastBuildMs;
+  /** Re-cut the excluded regions without re-sampling the ground. */
+  reindex() {
+    if (!this.builtAt) return;
+    this._reindexFrom(this.geo.attributes.position.array, this.worldPos.x, this.worldPos.y, this.worldPos.z);
   }
 
   /** Metres between adjacent vertices — the patch's real resolution. */

@@ -123,7 +123,9 @@ export class GunSystem {
     return 1;
   }
 
-  addTarget(t) { this.targets.push({ hp: 100, maxHp: 100, radius: 1.6, respawn: 0, ...t }); return t; }
+  /** Returns the target as stored, so a caller that keeps it sees the damage the bolts do to it. (It used to
+   *  return the caller's own object while the list held a copy, and nothing the guns did ever reached it.) */
+  addTarget(t) { const stored = { hp: 100, maxHp: 100, radius: 1.6, respawn: 0, ...t }; this.targets.push(stored); return stored; }
 
   update(dt) {
     for (const k of Object.keys(this.cool)) this.cool[k] = Math.max(0, this.cool[k] - dt);
@@ -137,7 +139,7 @@ export class GunSystem {
 
       // targets first: segment vs sphere
       for (const t of this.targets) {
-        if (t.hp <= 0) continue;
+        if (t.hp <= 0 || t.inactive) continue;
         if (segSphere(b.px, b.py, b.pz, b.x, b.y, b.z, t.pos, t.radius)) {
           t.hp -= b.damage;
           this.events.push({ type: 'target_hit', id: t.id, x: b.x, y: b.y, z: b.z, hp: t.hp, gun: b.gun });
@@ -174,6 +176,7 @@ export class GunSystem {
       if (dead) B.splice(i, 1);
     }
     for (const t of this.targets) {
+      if (t.inactive) continue;
       if (t.hp <= 0) { t.respawn -= dt; if (t.respawn <= 0) { t.hp = t.maxHp; this.events.push({ type: 'target_up', id: t.id }); } }
     }
   }
@@ -200,11 +203,26 @@ function segSphere(ax, ay, az, bx, by, bz, c, r) {
 // Hostile drones. They give the shields something to do and the guns something
 // to shoot at. Pure logic, in f64 world metres, like everything in this file.
 //
-// A drone waits at an anchor point. When the ship is airborne and close enough
-// it closes to strafing range and fires slow bolts at where the ship WILL be. A
-// bolt that reaches the ship is handed to ShipBody.takeHit(), which spends the
-// shield first and the hull second. Land, and they lose interest.
+// MARS IS NEUTRAL (Jaron, 2026-10-01). Inside the planet's airspace there are no
+// drones: they do not patrol, they do not wait at anchors, nothing fires at the
+// ship however low and however long it flies. They exist only beyond
+// NEUTRAL_AIRSPACE_M of height above the ground. Climb through that line and
+// raiders arrive from the horizon (the ship is told: "Leaving Mars neutral
+// airspace"); come back under it and they break off and are gone ("Entering").
+// The line has a margin (NEUTRAL_REENTRY_M) so riding it is not a flicker.
+//
+// Out there, a drone closes to strafing range and fires slow bolts at where the
+// ship WILL be. A bolt that reaches the ship is handed to ShipBody.takeHit(), which
+// spends the shield first and the hull second. Land, and the airspace is neutral
+// again.
 // ============================================================================
+
+/** Height above the ground at which a ship leaves Mars's neutral airspace, metres. The one number. */
+export const NEUTRAL_AIRSPACE_M = 1500;
+/** To re-enter neutral airspace the ship must come back under this (a margin so the line does not flicker). */
+export const NEUTRAL_REENTRY_M = 1400;
+/** How far off the raiders appear, and how far they fly before they are gone when they break off. */
+export const DRONE_ARRIVAL_M = 1400;
 
 export class DroneSystem {
   /**
@@ -221,15 +239,16 @@ export class DroneSystem {
     this.t = 0;
     this.aggroM = 650;
     this.strafeM = 280;
+    this.neutral = true;                 // true while the ship is inside Mars's neutral airspace
   }
 
-  /** Put a drone at a world point (its anchor). */
+  /** Register a drone. It does not exist (state 'away') until the ship leaves neutral airspace. */
   add(id, anchor) {
     const d = {
       id, anchor: { ...anchor }, pos: { ...anchor }, vel: { x: 0, y: 0, z: 0 },
-      state: 'idle', cool: 1.5 + this.drones.length * 0.7, phase: this.drones.length * 2.1, target: null,
+      state: 'away', cool: 1.5 + this.drones.length * 0.7, phase: this.drones.length * 2.1, target: null, held: false,
     };
-    d.target = this.guns.addTarget({ id, pos: d.pos, radius: 3.2, hp: 60, maxHp: 60, respawnTime: 45 });
+    d.target = this.guns.addTarget({ id, pos: d.pos, radius: 3.2, hp: 60, maxHp: 60, respawnTime: 45, inactive: true });
     d.target.respawn = 0;
     this.drones.push(d);
     return d;
@@ -237,32 +256,89 @@ export class DroneSystem {
 
   _up(p) { const r = Math.hypot(p.x, p.y, p.z) || 1; return { x: p.x / r, y: p.y / r, z: p.z / r }; }
 
+  /** Height of the ship above the ground, metres (Infinity-safe). */
+  shipAltitude() {
+    const S = this.ship;
+    if (S.landed) return 0;
+    return Number.isFinite(S.agl) ? S.agl : 0;
+  }
+
+  /** Which airspace the ship is in, with the margin. Pure: no state change. */
+  static airspaceFor(altitudeM, wasNeutral) {
+    if (wasNeutral) return altitudeM > NEUTRAL_AIRSPACE_M ? 'hostile' : 'neutral';
+    return altitudeM < NEUTRAL_REENTRY_M ? 'neutral' : 'hostile';
+  }
+
+  /** Put a drone out at the edge of what the ship can see, on a bearing of its own, at about the ship's height. */
+  _arrive(d, i) {
+    const S = this.ship, up = this._up(S.pos);
+    const ref = Math.abs(up.y) < 0.9 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 };
+    let ex = up.y * ref.z - up.z * ref.y, ey = up.z * ref.x - up.x * ref.z, ez = up.x * ref.y - up.y * ref.x;
+    const el = Math.hypot(ex, ey, ez) || 1; ex /= el; ey /= el; ez /= el;
+    const nx = up.y * ez - up.z * ey, ny = up.z * ex - up.x * ez, nz = up.x * ey - up.y * ex;
+    const brg = d.phase + i * 2.094;                                   // three drones, spread round the compass
+    const off = (i - 1) * 45;                                          // and at different heights
+    const c = Math.cos(brg) * DRONE_ARRIVAL_M, sn = Math.sin(brg) * DRONE_ARRIVAL_M;
+    d.pos.x = S.pos.x + ex * c + nx * sn + up.x * off;
+    d.pos.y = S.pos.y + ey * c + ny * sn + up.y * off;
+    d.pos.z = S.pos.z + ez * c + nz * sn + up.z * off;
+    d.vel.x = d.vel.y = d.vel.z = 0;
+    d.cool = 4 + i * 1.3;
+    d.target.hp = d.target.maxHp; d.target.respawn = 0;
+  }
+
   update(dt) {
     this.t += dt;
     const S = this.ship;
-    const airborne = !S.landed && S.agl > 6;
+
+    // ---- which airspace are we in? -----------------------------------------------------
+    const alt = this.shipAltitude();
+    const now = DroneSystem.airspaceFor(alt, this.neutral);
+    if (now === 'hostile' && this.neutral) {
+      this.neutral = false;
+      this.events.push({ type: 'airspace', neutral: false, altitude: alt });
+      this.drones.forEach((d, i) => { if (!d.held) { this._arrive(d, i); d.state = 'inbound'; d.target.inactive = false; } });
+    } else if (now === 'neutral' && !this.neutral) {
+      this.neutral = true;
+      this.events.push({ type: 'airspace', neutral: true, altitude: alt });
+      for (const d of this.drones) if (d.state !== 'away' && !d.held) d.state = 'leaving';
+    }
+
     for (const d of this.drones) {
       const tg = d.target;
-      if (tg.hp <= 0) { d.state = 'dead'; continue; }
-      if (d.state === 'dead') { d.state = 'idle'; d.pos.x = d.anchor.x; d.pos.y = d.anchor.y; d.pos.z = d.anchor.z; }
+      if (d.held) continue;                                            // posed by hand (review shots)
+      if (d.state === 'away') { tg.inactive = true; continue; }
+      if (tg.hp <= 0) {
+        // shot down. In neutral airspace it is simply gone; in hostile space it is replaced out at the
+        // arrival ring once the guns' respawn timer has run.
+        d.state = this.neutral ? 'away' : 'dead';
+        if (this.neutral) tg.inactive = true;
+        continue;
+      }
+      if (d.state === 'dead') { this._arrive(d, this.drones.indexOf(d)); d.state = 'inbound'; tg.inactive = false; }
       const dx = S.pos.x - d.pos.x, dy = S.pos.y - d.pos.y, dz = S.pos.z - d.pos.z;
       const dist = Math.hypot(dx, dy, dz);
-      d.state = airborne && dist < this.aggroM ? 'attack' : 'idle';
-      const up = this._up(d.pos);
-      let tx, ty, tz;
-      if (d.state === 'attack') {
-        // hold a ring around the ship at strafing range, drifting round it
-        const k = (dist - this.strafeM) / (dist || 1);
-        const sw = Math.sin(this.t * 0.4 + d.phase);
-        tx = d.pos.x + dx * k * 0.5 + (dz * sw) * 0.2;
-        ty = d.pos.y + dy * k * 0.5;
-        tz = d.pos.z + dz * k * 0.5 - (dx * sw) * 0.2;
-      } else {
-        tx = d.anchor.x + Math.cos(this.t * 0.3 + d.phase) * 25; ty = d.anchor.y; tz = d.anchor.z + Math.sin(this.t * 0.3 + d.phase) * 25;
+      if (d.state === 'leaving') {
+        // break off: away from the ship at speed, then gone
+        const k = 90 / (dist || 1);
+        d.vel.x += (-dx * k - d.vel.x) * Math.min(1, dt * 1.5);
+        d.vel.y += (-dy * k - d.vel.y) * Math.min(1, dt * 1.5);
+        d.vel.z += (-dz * k - d.vel.z) * Math.min(1, dt * 1.5);
+        d.pos.x += d.vel.x * dt; d.pos.y += d.vel.y * dt; d.pos.z += d.vel.z * dt;
+        if (dist > DRONE_ARRIVAL_M * 1.4) { d.state = 'away'; tg.inactive = true; }
+        continue;
       }
+      d.state = dist < this.aggroM ? 'attack' : 'inbound';
+      // close to a ring round the ship at strafing range, drifting round it
+      const k = (dist - this.strafeM) / (dist || 1);
+      const sw = Math.sin(this.t * 0.4 + d.phase);
+      const kk0 = d.state === 'attack' ? 0.5 : 1;
+      const tx = d.pos.x + dx * k * kk0 + (dz * sw) * 0.2;
+      const ty = d.pos.y + dy * k * kk0;
+      const tz = d.pos.z + dz * k * kk0 - (dx * sw) * 0.2;
       const ex = tx - d.pos.x, ey = ty - d.pos.y, ez = tz - d.pos.z;
       const el = Math.hypot(ex, ey, ez) || 1;
-      const sp = d.state === 'attack' ? 38 : 8;
+      const sp = d.state === 'attack' ? 38 : 75;
       const want = Math.min(sp, el * 0.6);
       d.vel.x += (ex / el * want - d.vel.x) * Math.min(1, dt * 1.2);
       d.vel.y += (ey / el * want - d.vel.y) * Math.min(1, dt * 1.2);
@@ -271,10 +347,10 @@ export class DroneSystem {
       // never below 12 m over the ground
       const r = Math.hypot(d.pos.x, d.pos.y, d.pos.z);
       const gr = this.ground(d.pos.x / r, d.pos.y / r, d.pos.z / r);
-      if (gr !== null && gr !== undefined && r < gr + 12) { const k = (gr + 12) / r; d.pos.x *= k; d.pos.y *= k; d.pos.z *= k; }
-      // fire
+      if (gr !== null && gr !== undefined && r < gr + 12) { const kk = (gr + 12) / r; d.pos.x *= kk; d.pos.y *= kk; d.pos.z *= kk; }
+      // fire: only at a ship that is outside neutral airspace
       d.cool -= dt;
-      if (d.state === 'attack' && d.cool <= 0 && dist < this.aggroM * 0.8) {
+      if (d.state === 'attack' && !this.neutral && d.cool <= 0 && dist < this.aggroM * 0.8) {
         d.cool = 3.4 + Math.random() * 1.8;
         const speed = 100;
         const tt = dist / speed;
@@ -288,7 +364,8 @@ export class DroneSystem {
         this.events.push({ type: 'drone_fire', id: d.id, x: d.pos.x, y: d.pos.y, z: d.pos.z });
       }
     }
-    // hostile bolts
+    // hostile bolts: none can be in flight in neutral airspace
+    if (this.neutral && this.shots.length) this.shots.length = 0;
     for (let i = this.shots.length - 1; i >= 0; i--) {
       const b = this.shots[i];
       b.px = b.x; b.py = b.y; b.pz = b.z;
@@ -312,6 +389,15 @@ export class DroneSystem {
       if (dead) this.shots.splice(i, 1);
     }
   }
+
+  /** Pose a drone by hand for a review shot. It stays where it is put until released. */
+  debugPose(i, pos, state = 'attack') {
+    const d = this.drones[i];
+    d.held = true; d.state = state; d.target.inactive = false; d.target.hp = d.target.maxHp;
+    d.pos.x = pos.x; d.pos.y = pos.y; d.pos.z = pos.z; d.vel.x = d.vel.y = d.vel.z = 0;
+    return d;
+  }
+  debugRelease(i) { const d = this.drones[i]; d.held = false; if (this.neutral) { d.state = 'away'; d.target.inactive = true; } }
 
   drain() { const e = this.events; this.events = []; return e; }
 }

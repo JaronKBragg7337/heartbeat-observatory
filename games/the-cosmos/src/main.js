@@ -21,9 +21,10 @@ import { registry } from './core/registry.js';
 import { BODIES, getBody } from './world/bodies.js';
 import { buildGlobalShell, LocalPatch } from './world/planetMesh.js';
 import { geodeticToCartesian, cartesianToGeodetic, formatCoord, coordSlug } from './world/geodesy.js';
-import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, MATERIALS, attachEdits, attachGrades, density } from './world/field.js';
+import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, MATERIALS, attachEdits, attachGrades, density, normalAt, raycast, baseDensityAt } from './world/field.js';
 import { EditStore } from './world/edits.js';
-import { ExcavationMesh } from './world/excavation.js';
+import { Digger } from './player/digging.js';
+import { EditedTerrain, installCoverDiscard } from './world/excavation.js';
 import { Walker } from './player/walker.js';
 import { TouchControls, DesktopControls } from './ui/touch.js';
 import { DebugLayer } from './dev/debugLayer.js';
@@ -57,23 +58,22 @@ registry.register({
   note: 'Coarse whole-planet render surface. Not the collision authority.',
 });
 
-// --- Terrain, three resolutions of one field. -------------------------------
+// --- Terrain: the original geology at three resolutions, and the dug ground on top. ----
 // shell   whole planet, ~83 km between vertices  (horizon, orbit)
 // mid     880 m across,  6.72 m between vertices (the middle distance)
 // near     48 m across,  0.60 m between vertices (the ground at your feet)
+// bricks  3.2 m cubes of 0.1 m lattice wherever the ground has been changed (excavation.js)
 //
-// 0.60 m is a deliberate compromise, and the number came from measurement, not
-// taste. It is fine enough to cut a precise gap around a pit, and 6.5k vertices
-// keeps the rebuild affordable. Sizing was done conservatively because the only
-// timings available were from a throttled background browser tab, which ran
-// ~7x slower per vertex than the same code in Node — a real phone is the only
-// instrument that settles this, so the budget was set low and handed over.
-//
-// The near patch is the piece that makes excavation visible. A heightfield can
-// only stop drawing in whole quads, so the smallest hole it can make room for
-// is one quad. At 6.72 m that was a 6.72 m square — vastly bigger than any pit,
-// which is why a dug hole stayed buried under solid ground. At 0.40 m the
-// terrain can step aside for something spade-sized.
+// The three heightfield tiers draw the ORIGINAL geology and never look at edits. The brick
+// meshes draw the truth wherever somebody has dug or dumped, and the tiers are told (a
+// per-pixel discard under every built brick) to leave that ground alone. Before this, the
+// heightfields tried to carve holes for the edits in whole quads, which is why a hole
+// narrower than a quad was covered over by the quad, and why the mid-distance tier put a
+// lid back on a hole as soon as you walked off and returned.
+const params = new URLSearchParams(location.search);
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const tier = params.get('tier') === 'low' || params.get('tier') === 'high' ? params.get('tier') : (isTouch ? 'low' : 'high');
+
 const patch = new LocalPatch(body, { sizeM: 880, res: 132 });
 engine.scene.add(patch.mesh);
 const patchEntry = engine.track({ worldPos: patch.worldPos, object3d: patch.mesh });
@@ -88,278 +88,76 @@ const nearEntry = engine.track({ worldPos: nearPatch.worldPos, object3d: nearPat
 // ---------------------------------------------------------------------------
 const edits = new EditStore(body);
 attachEdits(edits);
-
-// Geometry for anything dug. The heightfield cannot draw a hole at any
-// resolution, so excavated ground is meshed cell by cell from the field and
-// the heightfield yields that region to it.
-// EVERY NUMBER HERE IS SET BY A MEASUREMENT, NOT BY TASTE.
-//
-// cellM 0.09 — the shovel takes a 0.15 m radius bite, so the bite is 0.30 m
-//   across. At the old 0.22 m cell a 0.18 m bite was 0.8 CELLS: the mesh could
-//   not hold the pit at all, and drew a 4 cm dimple where a 14 cm hole belonged.
-//   This is Nyquist, not polish. 0.09 m keeps 3.3 cells across the bite, with
-//   margin — 0.10 m gives exactly 3.0 and lands on the same kind of
-//   floating-point tie the handover square did.
-//   It also buys DEPTH. The region coarsens once it outgrows maxCells, so the
-//   cell size decides how deep a hole stays sharp: 0.06 m blurred past 2.9 m,
-//   0.09 m holds to 4.3 m — and costs 25^3 samples instead of 39^3.
-// minRadiusM 1.1 — the heightfield yields in whole 0.60 m quads, so the region
-//   handed to it must be MORE than 2 quads across or there is no whole quad to
-//   yield and the pit stays buried. The handover square is 0.60 of this
-//   half-width, so 1.1 gives a 0.66 m half-side: 1.32 m across against a 1.20 m
-//   pair of quads, a 10% margin.
-//   Exactly 2 quads is not enough, and the way it fails is instructive. At
-//   minRadiusM 1.0 the square is 1.20 m across and the quad pair is 1.20 m, so
-//   with the dig directly underfoot the quad corners land at 0.6000 against a
-//   0.6000 bound and floating point decides it — 0 quads yielded, pit buried.
-//   A guarantee that holds only as an exact tie is not a guarantee.
-//   It was 0.9 with a CIRCLE, where the best-placed quad's far corner sat
-//   0.91 m out against a 0.907 m radius: same symptom, and no amount of tuning
-//   fixes the shape, because a circle's overlap with a square grid depends on
-//   where it lands. That is why this is a square.
-// padM 0.35 — margin past the edits. Was 1.2, which made a 2.58 m box around a
-//   0.18 m bite: 28x wider than the thing being drawn.
-// maxCells 48 — the cap that bounds the worst case. A region that grows past
-//   ~2.9 m coarsens rather than costing more.
-const excavation = new ExcavationMesh(body, {
-  cellM: 0.09, minRadiusM: 1.1, padM: 0.35, maxCells: 48,
+// Phone tier meshes a little closer and spends less of each frame doing it.
+const terrain = new EditedTerrain(engine, body, edits, {
+  rangeM: tier === 'low' ? 56 : 90, budgetMs: tier === 'low' ? 3 : 6,
 });
-engine.scene.add(excavation.mesh);
-const excavationEntry = engine.track({ worldPos: excavation.worldPos, object3d: excavation.mesh });
+const midCover = { value: new THREE.Vector3() }, nearCover = { value: new THREE.Vector3() };
+installCoverDiscard(patch.mesh.material, terrain.cover, midCover, THREE);
+installCoverDiscard(nearPatch.mesh.material, terrain.cover, nearCover, THREE);
 
-let excavationDue = 0;
-/** Called after any change to the ground. Coalesced: a burst of digs costs
- *  one rebuild, not one per bite. */
-function requestExcavationRefresh() { excavationDue = 0.12; }
-
-/** The excavated region the near patch's hole was last cut for. */
-let holeCutFor = null;
-
-function refreshExcavation() {
-  excavation.rebuild(edits.edits);
-  excavationEntry.worldPos = excavation.worldPos;
-  const fp = excavation.footprint();
-
-  // The NEAR patch yields to the excavation, not the mid patch. Its 0.60 m
-  // quads mean the gap it leaves is the size of the hole rather than the size
-  // of a terrain cell — which is the whole reason a dug pit stayed buried
-  // under solid ground before.
-  //
-  // A SQUARE, not a radius. `radius` is the half-diagonal of the excavated box
-  // and is 73% larger than the box itself, so handing over that much told the
-  // heightfield to stop drawing 0.45 m further out than the volumetric mesh
-  // reaches — a ring you could see straight through the planet in, with a
-  // 0.60 m staircase edge. That ring was the hard rectangular seam.
-  //
-  // Handing over a circle instead is phase-fragile: the heightfield yields in
-  // whole quads, and measured, the best-placed quad's far corner sat 0.91 m
-  // out against a 0.907 m radius, so nothing was yielded at all and the pit
-  // went back under the ground. A square runs along the same grid the quads do
-  // and always contains whole ones.
-  //
-  // And re-cut it only when the excavated REGION moves or grows. What the mesh
-  // looks like inside the hole changes with every bite; the hole it needs does
-  // not. Without this the whole near patch — 6,561 ray-marched vertices — was
-  // rebuilt per spade bite to arrive at the same hole it already had.
-  const moved = !holeCutFor || !fp ||
-    Math.abs(fp.handoverM - holeCutFor.halfSideM) > 0.01 ||
-    Math.hypot(fp.centre.x - holeCutFor.x, fp.centre.y - holeCutFor.y,
-               fp.centre.z - holeCutFor.z) > 0.01;
-  if (!moved) return;
-
-  holeCutFor = fp ? { x: fp.centre.x, y: fp.centre.y, z: fp.centre.z, halfSideM: fp.handoverM } : null;
-  nearPatch.setExcluded(fp ? [{ centre: { ...fp.centre }, halfSideM: fp.handoverM }] : []);
-  rebuildNear(true);
-}
-
-/** Where the mid patch's hole was last cut, so it is not re-cut for nothing. */
-let midHoleAt = null;
-
-/** Rebuild the near patch, and keep the mid patch out from under it. */
+/** Keep the near patch under the player, and the mid patch out from under the near patch (the two would
+ *  z-fight: they agree at shared vertices but the coarse one runs straight lines across ground the fine one
+ *  curves over). `force` rebuilds both at once (spawn, teleport, review shots). Otherwise a rebuild is only
+ *  STARTED here and finished a couple of milliseconds a frame by stepPatches(), so crossing 13 m (near) or
+ *  250 m (wide) of ground is not a freeze. The mid patch is not re-sampled just to move its hole: that is an
+ *  index rebuild. */
 function rebuildNear(force = false) {
-  const moved = nearPatch.needsRebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
-  if (!force && !moved) return;
-  nearPatch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
-  nearEntry.worldPos = nearPatch.worldPos;
-
-  // The mid patch stops drawing under the near patch, or the two z-fight: they
-  // agree at shared vertices but the coarse one runs straight lines between
-  // them across ground the fine one curves over.
-  //
-  // But it only cares WHERE the near patch is, not what has been dug inside
-  // it. Rebuilding all 17,424 of its vertices on every spade bite cost 415 ms
-  // of an 865 ms freeze to arrive at the identical mesh already on screen.
-  // Cut the hole again only when the hole actually has to move.
-  const np = nearPatch.worldPos;
-  const holeMoved = !midHoleAt ||
-    Math.hypot(np.x - midHoleAt.x, np.y - midHoleAt.y, np.z - midHoleAt.z) > 0.01;
-  if (!holeMoved) return;
-
-  midHoleAt = { x: np.x, y: np.y, z: np.z };
-  patch.setExcluded([{ centre: midHoleAt, radius: nearPatch.sizeM * 0.40 }]);
-  patch.rebuild(walker.worldPos.x, walker.worldPos.y, walker.worldPos.z);
-  patchEntry.worldPos = patch.worldPos;
-}
-
-// THE TOOL. r = 0.15 m sphere is 14.1 litres — a scoop shovel, the wide-bladed
-// kind used for loose material (blade about 460 x 380 mm, a heaped 12-15 L).
-// That is 21.5 kg of regolith at its real 1520 kg/m3, and it cuts a 0.30 m
-// bite 0.23 m deep. The 0.09 m spade before it took 3 L and left a 0.18 m
-// rat-hole; a hole you can stand in needs a tool sized to make one.
-// Widening the bite also makes the ground CHEAPER to draw, not dearer: the mesh
-// cell only has to resolve the bite, so a 0.30 m bite allows a 0.10 m cell
-// where a 0.18 m bite needed 0.06 m, and the cost of a cell size is cubic.
-// reachM measured against real use: from a 1.66 m eye height, a 2.6 m reach
-// forced a ~60 degree look-down before the ray met the ground, and missed
-// entirely on a downslope. 3.6 m lets you dig at a natural working angle.
-const SHOVEL = { radius: 0.15, reachM: 3.6, name: 'Scoop shovel' };
-const carried = [];                      // lots in hand, each a real object
-
-// What you can carry is a WEIGHT limit, not a mass limit, so it belongs to the
-// body you are standing on. 40 kg is a heavy but ordinary load on Earth; the
-// same pull on Mars is 105 kg of rock. The old flat 40 kg was Earth's number
-// used on Mars, which quietly made you three times weaker than you should be.
-const CARRY_EARTH_KGF = 40;
-const EARTH_G = 9.80665;                 // CODATA standard gravity
-const carryCapacityKg = CARRY_EARTH_KGF * EARTH_G / body.surfaceGravity;
-
-const carriedMass = () => carried.reduce((a, l) => a + l.massKg, 0);
-const carriedVolume = () => carried.reduce((a, l) => a + l.looseVolumeM3, 0);
-
-/** Where the player is looking, on the ground, within reach. */
-function digTarget() {
-  const f = walker.updateFrame();
-  const cy = Math.cos(walker.yaw), sy = Math.sin(walker.yaw);
-  const cp = Math.cos(walker.pitch), sp = Math.sin(walker.pitch);
-  const dir = {
-    x: f.north.x * cy * cp + f.east.x * sy * cp + f.up.x * sp,
-    y: f.north.y * cy * cp + f.east.y * sy * cp + f.up.y * sp,
-    z: f.north.z * cy * cp + f.east.z * sy * cp + f.up.z * sp,
-  };
-  const eyeP = walker.eyeWorldPos({});
-
-  // Step along the look ray until it passes below the surface the player can
-  // SEE. Testing the analytic field here instead would be wrong for the same
-  // reason it was wrong for the feet: the drawn ground sits up to ~0.7 m above
-  // the field between vertices, so a player standing on visible ground would
-  // aim at it and be told there is nothing in reach.
-  for (let t = 0.25; t <= SHOVEL.reachM; t += 0.06) {
-    const p = { x: eyeP.x + dir.x * t, y: eyeP.y + dir.y * t, z: eyeP.z + dir.z * t };
-    const l = Math.hypot(p.x, p.y, p.z);
-    const drawn = patch.surfaceRadiusAt(p.x / l, p.y / l, p.z / l);
-    if (drawn !== null) { if (l <= drawn) return p; }
-    else if (density(body, p.x, p.y, p.z) < 0) return p;
+  const wp = walker.worldPos;
+  if (force) {
+    nearPatch._job = null; patch._job = null;
+    nearPatch.rebuild(wp.x, wp.y, wp.z);
+    nearEntry.worldPos = nearPatch.worldPos;
+    const np = nearPatch.worldPos;
+    patch.setExcluded([{ centre: { x: np.x, y: np.y, z: np.z }, radius: nearPatch.sizeM * 0.40 }]);
+    patch.rebuild(wp.x, wp.y, wp.z);
+    patchEntry.worldPos = patch.worldPos;
+    return;
   }
-  return null;
+  if (!nearPatch.rebuilding && nearPatch.needsRebuild(wp.x, wp.y, wp.z)) nearPatch.beginRebuild(wp.x, wp.y, wp.z);
+  if (!patch.rebuilding && patch.needsRebuild(wp.x, wp.y, wp.z)) patch.beginRebuild(wp.x, wp.y, wp.z);
 }
 
-/**
- * You AIM at the ground you can see, but you CUT real material, and they are
- * up to ~0.7 m apart because the drawn mesh runs flat triangles across a curved
- * field. So the aim point is snapped down the radial to where material actually
- * starts — otherwise every swing lands in the gap between the picture and the
- * substance and comes back empty.
- *
- * The aim marker calls this too. It has to be the same function: a marker that
- * derived the cut point separately would be a picture of a second opinion.
- */
-function cutPointFor(aim) {
-  const l = Math.hypot(aim.x, aim.y, aim.z);
-  const u = { x: aim.x / l, y: aim.y / l, z: aim.z / l };
-  const surf = surfaceRadiusAlong(body, u.x, u.y, u.z,
-    { minStep: 0.08, startRadius: l + 3, range: 12 });
-  const cut = surf - SHOVEL.radius * 0.55;      // bite in, not skim the top
-  return { x: u.x * cut, y: u.y * cut, z: u.z * cut };
+/** Finish any patch rebuild that is under way, within a frame budget. */
+function stepPatches(budgetMs) {
+  if (nearPatch.rebuilding) {
+    if (nearPatch.stepRebuild(budgetMs)) {
+      nearEntry.worldPos = nearPatch.worldPos;
+      const np = nearPatch.worldPos;
+      patch.setExcluded([{ centre: { x: np.x, y: np.y, z: np.z }, radius: nearPatch.sizeM * 0.40 }]);
+    }
+  } else if (patch.rebuilding) {
+    if (patch.stepRebuild(budgetMs)) patchEntry.worldPos = patch.worldPos;
+  }
 }
 
+// ---------------------------------------------------------------------------
+// THE TOOLS and what a person does with them live in player/digging.js (pure, so the
+// validator can play a whole dig-and-dump shift against the real field). Here they are wired
+// to the body and the buttons.
+// ---------------------------------------------------------------------------
+let digger = null;                       // made once the walker exists
+const tool = () => digger.tool;
+const carried = [];
+const carriedMass = () => digger.carriedMass();
+const carriedVolume = () => digger.carriedVolume();
+const setTool = (i) => digger.setTool(i);
+const digTarget = (r) => digger.digTarget(r);
+const dumpPlan = (lot) => digger.dumpPlan(lot);
+const groundBelowPoint = (...a) => digger.groundBelowPoint(...a);
 function doDig() {
   if (ship.ready && ship.aboard) return { ok: false, msg: 'Not aboard' };
-  if (carriedMass() >= carryCapacityKg) return { ok: false, msg: 'Hands full' };
-  let t = digTarget();
-  if (!t) return { ok: false, msg: 'Nothing in reach' };
-
-  t = cutPointFor(t);
-
-  const lot = edits.dig(
-    (x, y, z) => density(body, x, y, z),
-    (x, y, z) => materialAt(body, x, y, z),
-    MATERIALS, t.x, t.y, t.z, SHOVEL.radius);
-  if (!lot) return { ok: false, msg: 'Cannot cut this' };
-  carried.push(lot);
-  requestExcavationRefresh();
-  return { ok: true, msg: `+${lot.massKg.toFixed(1)} kg ${lot.materialName}` };
+  return digger.dig();
 }
-
-/**
- * Where a shovelful actually lands.
- *
- * NOT where you are aiming. Dumping at the aim point drops the spoil straight
- * back into the hole you are standing over, because that is exactly where you
- * are looking while digging. Measured: dig to 1.259 m, drop the load, and the
- * hole is 0.404 m — you keep a third of the work, every cycle. Carry capacity
- * is 40 kg, about 9 bites, so you cannot get past roughly 2 m however long you
- * dig. That is the "I can only go so deep" ceiling, and it is not a limit of
- * the ground: with the spoil thrown clear, the same six cycles reach 6.0 m.
- *
- * So the spoil goes where a person actually throws it — clear of the rim, on
- * the side they are standing. It is still real material landing in a real
- * place, and it still has to be carried there.
- */
-function dumpTarget(lot) {
-  const aim = digTarget() || walker.worldPos;
-  const fp = excavation.footprint();
-  if (!fp) return aim;                      // nothing dug yet: land it where you look
-
-  const up = { x: aim.x, y: aim.y, z: aim.z };
-  const ul = Math.hypot(up.x, up.y, up.z) || 1;
-  up.x /= ul; up.y /= ul; up.z /= ul;
-
-  // Horizontal direction from the hole towards the player.
-  let vx = walker.worldPos.x - fp.centre.x;
-  let vy = walker.worldPos.y - fp.centre.y;
-  let vz = walker.worldPos.z - fp.centre.z;
-  const along = vx * up.x + vy * up.y + vz * up.z;
-  vx -= up.x * along; vy -= up.y * along; vz -= up.z * along;
-  let vl = Math.hypot(vx, vy, vz);
-  if (vl < 1e-3) {                          // stood dead centre: throw ahead
-    const f = walker.updateFrame();
-    vx = f.north.x; vy = f.north.y; vz = f.north.z; vl = 1;
-  }
-  vx /= vl; vy /= vl; vz /= vl;
-
-  // Far enough out to clear the rim and the pile's own radius.
-  const pileR = Math.cbrt((3 * lot.looseVolumeM3) / (4 * Math.PI));
-  const reach = fp.handoverM + pileR + 0.25;
-  const px = fp.centre.x + vx * reach, py = fp.centre.y + vy * reach, pz = fp.centre.z + vz * reach;
-  const pl = Math.hypot(px, py, pz);
-  const d = { x: px / pl, y: py / pl, z: pz / pl };
-  const surf = surfaceRadiusAlong(body, d.x, d.y, d.z,
-    { minStep: 0.08, startRadius: pl + 3, range: 40 });
-  // Sit the pile ON the ground, not half-buried in it.
-  const at = surf + pileR * 0.35;
-  return { x: d.x * at, y: d.y * at, z: d.z * at };
-}
-
-function doDump() {
-  if (!carried.length) return { ok: false, msg: 'Carrying nothing' };
-  const lot = carried.pop();
-  const t = dumpTarget(lot);
-  edits.deposit(lot, t.x, t.y, t.z);
-  requestExcavationRefresh();
-  const left = carried.length;
-  return { ok: true, msg: `dropped ${lot.massKg.toFixed(1)} kg${left ? ` · ${left} left` : ''}` };
-}
+function doDump() { return digger.dump(); }
 
 // ---------------------------------------------------------------------------
 // AIM MARKER — where the tool will actually bite, drawn at its real size.
 //
-// Not a decoration. The aim point and the cut point are not the same thing:
-// you aim at the drawn ground, and the cut is snapped down the radial to where
-// material actually starts, up to ~0.7 m below. And since the spoil now lands
-// clear of the rim rather than where you look, the place it lands is a third
-// position again. Three positions the player was expected to hold in their
-// head. The marker is drawn AT the bite radius, so its width is the width of
-// the hole you are about to make and its stem is how deep this one scoop goes.
+// Not a decoration. The ring lies on the surface you are aiming at (it follows the surface's
+// own slope, so on a pit wall it stands up) at the width of the bite where it enters the
+// ground, and the stem is how far in this scoop goes. The spoil marker is where the load
+// will land and how wide the heap will be.
 // ---------------------------------------------------------------------------
 function buildAimMarker(hex) {
   const g = new THREE.Group();
@@ -367,10 +165,8 @@ function buildAimMarker(hex) {
     color: hex, transparent: true, opacity, side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
   }));
-  // Rim at exactly the bite radius: this circle is the hole's real width.
   const rim = glow(new THREE.RingGeometry(0.88, 1.0, 56), 0.95);
   const fill = glow(new THREE.CircleGeometry(1.0, 56), 0.13);
-  // Stem dropping from the surface by one bite depth.
   const stem = glow(new THREE.CylinderGeometry(0.045, 0.045, 1, 10, 1, true), 0.5);
   stem.rotation.x = Math.PI / 2;          // cylinder is +Y; the stem runs along -Z
   g.add(rim, fill, stem);
@@ -392,22 +188,20 @@ const dropMarkEntry = engine.track({
 });
 const _markUp = new THREE.Vector3(), _markZ = new THREE.Vector3(0, 0, 1);
 
-/** Lay a marker flat on the ground at a world point, facing local up. */
-function placeMarker(mark, entry, at, radius, depth, pulse) {
+/** Lay a marker on a surface at a world point, facing along the surface normal. */
+function placeMarker(mark, entry, at, normal, radius, depth, pulse) {
   if (!at) { mark.group.visible = false; return; }
-  const l = Math.hypot(at.x, at.y, at.z) || 1;
-  _markUp.set(at.x / l, at.y / l, at.z / l);
+  const nl = Math.hypot(normal.x, normal.y, normal.z) || 1;
+  _markUp.set(normal.x / nl, normal.y / nl, normal.z / nl);
   entry.quaternion.setFromUnitVectors(_markZ, _markUp);
-  // Lift clear of the surface so it reads as a mark ON the ground, not in it.
   entry.worldPos.x = at.x + _markUp.x * 0.02;
   entry.worldPos.y = at.y + _markUp.y * 0.02;
   entry.worldPos.z = at.z + _markUp.z * 0.02;
   mark.group.scale.setScalar(radius);
   mark.stem.scale.set(1, Math.max(0.001, depth / radius), 1);
   mark.stem.position.set(0, 0, -depth / 2 / radius);
-  // Additive on bright regolith saturates to white and both markers stop
-  // being different colours, which is the one thing they have to be. Keep it
-  // low enough to tint rather than blow out.
+  // Additive on bright regolith saturates to white and both markers stop being different
+  // colours, which is the one thing they have to be. Keep it low enough to tint.
   mark.rim.material.opacity = 0.42 + 0.18 * pulse;
   mark.fill.material.opacity = 0.055 + 0.035 * pulse;
   mark.stem.material.opacity = 0.30 + 0.15 * pulse;
@@ -418,27 +212,25 @@ function placeMarker(mark, entry, at, radius, depth, pulse) {
 // Player
 // ---------------------------------------------------------------------------
 const walker = new Walker(body);
-// The surveyed port reads the field directly. Outside the earthworks, retain
-// the existing drawn-surface sampler until natural terrain has finer geometry.
-walker.groundSampler = (dx, dy, dz) => {
-  const sr = surfaceRadiusFast(body, dx, dy, dz);
+digger = new Digger(body, edits, walker);
+digger.carried = carried;
+const TOOLS = digger.tools;
+// The surveyed port reads the field directly. Where the ground has been dug or dumped on, contact
+// is the field itself (the heightfield tiers are not drawing it, and only the field knows the
+// shape of a hole). Elsewhere, outside the earthworks, the drawn surface is what you stand on:
+// collision must sample whatever the player sees.
+walker.groundSampler = (dx, dy, dz, r) => {
+  if (!edits.isEmpty && terrain.touchedAt(dx * r, dy * r, dz * r)) return null;
+  const sr = surfaceRadiusFast(body, dx, dy, dz, 3, { ignoreEdits: true });
   if (portSite.weight(dx * sr, dy * sr, dz * sr) > 0) return sr;
-  // Inside an excavated region, return null so contact falls through to the
-  // field itself — the drawn patches have a GAP there, and only the field
-  // knows the shape of the hole that fills it.
-  // Ask the patch itself where it stopped drawing, rather than re-deriving the
-  // shape here. Two copies of that rule is two chances for the ground you
-  // stand on to disagree with the ground you can see, which is exactly the
-  // floating-and-sinking bug this sampler exists to prevent.
-  // Compare at roughly surface radius; the region is metres across on a body
-  // millions of metres wide, so this is exact enough to classify.
-  const R = nearPatch._originR || body.radiusMean;
-  if (nearPatch.handedOver(dx * R, dy * R, dz * R)) return null;
-
   const near = nearPatch.surfaceRadiusAt(dx, dy, dz);
   if (near !== null) return near;
   return patch.surfaceRadiusAt(dx, dy, dz);
 };
+// A body is more than a point at the feet: near dug ground it must also keep its shins, hips
+// and head out of rock, or a tunnel's wall is a suggestion and the camera ends up in the dirt.
+walker.collisionActive = (x, y, z) => !edits.isEmpty && edits.affects(x, y, z, 2.5);
+
 // Every arrival begins beside the Meridian's ramp on surveyed ground.
 Object.assign(walker.worldPos, portSite.toWorld(-10, 0.02, 38));
 walker.grounded = true;
@@ -456,9 +248,6 @@ registry.register({
 // The ship. A landed 46-tonne gunship a few dozen metres from the spawn point.
 // Its landing contact always reads the field, independent of moving mesh LODs.
 // ---------------------------------------------------------------------------
-const params = new URLSearchParams(location.search);
-const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-const tier = params.get('tier') === 'low' || params.get('tier') === 'high' ? params.get('tier') : (isTouch ? 'low' : 'high');
 const groundRadius = (dx, dy, dz) => {
   return surfaceRadiusFast(body, dx, dy, dz);
 };
@@ -752,7 +541,20 @@ function updateSun(f) {
   // nothing.
   sun.position.copy(sunDir).multiplyScalar(140);
   sun.target.position.set(0, 0, 0);
+
+  // The sky's ambient light comes from straight overhead, which is LOCAL up. (It was the scene's +Y,
+  // the planet's polar axis: at the spawn latitude that is nearly horizontal, so the floor of a hole
+  // got a mix of sky and ground and its walls got more of the sky than the floor did.)
+  sky.position.copy(up);
+  // And in a hole the sky is a smaller part of what the walls see but the walls are bright rust that
+  // bounces it back: lift the ambient with the depth below the original ground so a deep pit is dim,
+  // not black. (Measured, not styled: the pit floor at 5 m read as 3% of the surface brightness.)
+  const cw = engine.cameraWorldPos;
+  const below = Math.max(0, -baseDensityAt(body, cw.x, cw.y, cw.z));
+  ambientDepth += (Math.min(1, below / 3) - ambientDepth) * 0.15;
+  sky.intensity = 0.85 + 0.75 * ambientDepth;
 }
+let ambientDepth = 0;
 
 // ---------------------------------------------------------------------------
 // Debug layer + HUD
@@ -776,41 +578,46 @@ function refreshHud() {
     (load > 0
       ? `<br><span class="load">carrying ${load.toFixed(1)} kg · ` +
         `${(carriedVolume() * 1000).toFixed(0)} L · ${carried.length} load${carried.length > 1 ? 's' : ''}</span>`
-      : '');
+      : '') + `<br><span class="dim">tool: ${tool().name}</span>`;
 }
 
-// Marker update. Solving the cut point ray-marches the field, so it runs at
-// 20 Hz rather than 60 and holds the result between — the marker is a readout,
-// and a readout does not need to be re-derived three times per frame.
-let markAccum = 0, markPulse = 0, lastCut = null, lastDrop = null, lastDropR = 0.1;
+// Marker update. Finding the aim point steps through the field, so it runs at 20 Hz rather than 60
+// and holds the result between: the marker is a readout, and a readout does not need to be
+// re-derived three times per frame.
+let markAccum = 0, markPulse = 0, lastCut = null, lastDrop = null;
 function updateAimMarkers(dt) {
   if (ship.ready && ship.aboard) { digMark.group.visible = false; dropMark.group.visible = false; return; }
   markPulse = 0.5 + 0.5 * Math.sin(engine.timeSec * 3.4);
   markAccum += dt;
   if (markAccum >= 0.05) {
     markAccum = 0;
-    const aim = digTarget();
-    lastCut = aim ? cutPointFor(aim) : null;
+    lastCut = digTarget();
     const top = carried[carried.length - 1];
-    // Cache the pile's SIZE with its position. Reading the lot again on the
-    // frames in between crashes the moment the last load leaves your hands,
-    // because the cached position outlives the lot it was computed for.
-    lastDrop = top ? dumpTarget(top) : null;
-    lastDropR = top ? Math.cbrt((3 * top.looseVolumeM3) / (4 * Math.PI)) : 0.1;
+    lastDrop = top ? dumpPlan(top) : null;
   }
   if (!carried.length) lastDrop = null;
 
-  const canDig = lastCut && carriedMass() < carryCapacityKg;
-  // The bite is a sphere of SHOVEL.radius centred just under the surface, so
-  // what it opens is that wide and about 1.55 radii deep. Both are drawn.
-  placeMarker(digMark, digMarkEntry, canDig ? lastCut : null,
-    SHOVEL.radius, SHOVEL.radius * 1.55, markPulse);
-  placeMarker(dropMark, dropMarkEntry, lastDrop, lastDropR, 0.04, markPulse);
+  const tl = tool();
+  const canDig = lastCut && carriedMass() < tl.capacityKg;
+  // The bite is a sphere centred half a radius into the material, so where it meets the surface
+  // it is about 0.87 r wide and it goes 1.5 r deep. Both are drawn.
+  placeMarker(digMark, digMarkEntry, canDig ? lastCut.point : null, canDig ? lastCut.normal : { x: 0, y: 1, z: 0 },
+    tl.radius * 0.9, tl.radius * 1.5, markPulse);
+  // The marker for a load sits on the ground it will land on; its width is the heap's.
+  let dropAt = null, dropN = null;
+  if (lastDrop) {
+    dropAt = groundBelowPoint({ x: lastDrop.x, y: lastDrop.y, z: lastDrop.z }, lastDrop.up, 2.5, 6) || lastDrop;
+    dropN = lastDrop.up;
+  }
+  placeMarker(dropMark, dropMarkEntry, dropAt, dropN || { x: 0, y: 1, z: 0 }, Math.max(0.15, lastDrop ? lastDrop.r : 0.15), 0.04, markPulse);
 }
 
 // The action button exists only when there is something to do with it — the
 // same rule as the movement stick. No permanent controls waiting on screen.
 const actionBtn = document.getElementById('btn-action');
+const toolBtn = document.getElementById('btn-tool');
+toolBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); });
+toolBtn.addEventListener('pointerup', (e) => { e.preventDefault(); e.stopPropagation(); setTool(digger.toolIdx + 1); flash(tool().name); });
 let actionFlash = 0;
 // What a TAP on the button does right now. The button already changed its word
 // depending on whether you can dig; the tap did not, so a button reading "Drop"
@@ -828,7 +635,8 @@ function refreshAction() {
   }
   const inReach = !!digTarget();
   const load = carriedMass();
-  if (inReach && load < carryCapacityKg) {
+  const cap = tool().capacityKg;
+  if (inReach && load < cap) {
     tapAction = 'dig';
     actionBtn.style.display = 'block';
     actionBtn.textContent = load > 0 ? 'Dig  ·  hold to drop' : 'Dig';
@@ -836,11 +644,13 @@ function refreshAction() {
     tapAction = 'dump';
     actionBtn.style.display = 'block';
     // Say why the shovel is idle, so a full load does not read as a dead button.
-    actionBtn.textContent = load >= carryCapacityKg ? 'Hands full  ·  Drop' : 'Drop';
+    actionBtn.textContent = load >= cap ? 'Hands full  ·  Drop' : 'Drop';
   } else {
     tapAction = 'dig';
     actionBtn.style.display = 'none';
   }
+  toolBtn.style.display = actionBtn.style.display;
+  toolBtn.textContent = tool().name;
 }
 function flash(msg) {
   actionBtn.style.display = 'block';
@@ -896,6 +706,7 @@ document.getElementById('set-dev').addEventListener('change', (e) => {
 document.getElementById('set-view').addEventListener('change', (e) => {
   view.mode = e.target.value;
 });
+document.getElementById('set-tool').addEventListener('change', (e) => { setTool(Number(e.target.value)); hudAccum = 1; });
 document.getElementById('btn-copy-coord').addEventListener('click', async () => {
   const r = debugLayer.reportAt(walker);
   const text = `${r.slug}\n${r.coord}\nground: ${r.groundMaterial}, clearance ${r.clearanceM.toFixed(2)} m\n` +
@@ -911,7 +722,29 @@ document.getElementById('btn-copy-coord').addEventListener('click', async () => 
 // ---------------------------------------------------------------------------
 let hudAccum = 0;
 
+// A camera placed by hand for review shots (cosmos.freeCam.set(eye, target); .off() to play again).
+// Physics and input pause while it is on; the ground meshes keep building around the eye.
+const freeCam = {
+  active: false, eye: null, target: null,
+  set(eye, target) { this.active = true; this.eye = { ...eye }; this.target = { ...target }; return this; },
+  off() { this.active = false; return this; },
+};
+
 engine.addUpdater((dt) => {
+  if (freeCam.active) {
+    suitGroup.visible = false;
+    Object.assign(engine.cameraWorldPos, freeCam.eye);
+    const l = Math.hypot(freeCam.eye.x, freeCam.eye.y, freeCam.eye.z) || 1;
+    engine.camera.up.set(freeCam.eye.x / l, freeCam.eye.y / l, freeCam.eye.z / l);
+    engine.camera.lookAt(new THREE.Vector3(freeCam.target.x - freeCam.eye.x, freeCam.target.y - freeCam.eye.y, freeCam.target.z - freeCam.eye.z));
+    updateSun(walker.updateFrame());
+    if (!edits.isEmpty || terrain.meshes.size) {
+      terrain.update(dt, freeCam.eye);
+      terrain.coverOffsetFor(patch.worldPos, midCover);
+      terrain.coverOffsetFor(nearPatch.worldPos, nearCover);
+    }
+    return;
+  }
   if (portTour.active) { suitGroup.visible=false; port.tick(dt, walker, false, true); portTour.update(); return; }
   // Look. Both input sources contribute so a hybrid device works.
   const l1 = touch.consumeLook(), l2 = desktop.consumeLook();
@@ -953,10 +786,17 @@ engine.addUpdater((dt) => {
   if (owned) port.tick(dt, walker, false);
   if (shipUI) shipUI.update(dt);
 
+  stepPatches(tier === 'low' ? 2.5 : 4);
   updateAimMarkers(dt);
   debugLayer.update(walker, engine.camera);
 
-  if (excavationDue > 0) { excavationDue -= dt; if (excavationDue <= 0) refreshExcavation(); }
+  // Bricks of dug ground: a few ms of meshing per frame at most, nearest first; and tell each
+  // heightfield tier where the occupancy window is so it can discard under built bricks.
+  if (!edits.isEmpty || terrain.meshes.size) {
+    terrain.update(dt, walker.worldPos);
+    terrain.coverOffsetFor(patch.worldPos, midCover);
+    terrain.coverOffsetFor(nearPatch.worldPos, nearCover);
+  }
   if (actionFlash > 0) { actionFlash -= dt; if (actionFlash <= 0) refreshAction(); }
 
   hudAccum += dt;
@@ -970,10 +810,7 @@ engine.addUpdater((dt) => {
 function followTerrain() {
   const p = walker.worldPos;
   if (ship.flight.agl < 45) { rebuildNear(); return; }
-  if (patch.needsRebuild(p.x, p.y, p.z)) {
-    patch.rebuild(p.x, p.y, p.z);
-    patchEntry.worldPos = patch.worldPos;
-  }
+  if (!patch.rebuilding && patch.needsRebuild(p.x, p.y, p.z)) patch.beginRebuild(p.x, p.y, p.z);
 }
 
 // Keyboard shortcuts for desktop: V toggles view, G toggles the debug layer.
@@ -987,6 +824,7 @@ window.addEventListener('keydown', (e) => {
     else flash(doDig().msg);
   }
   if (e.code === 'KeyQ' && !(ship.ready && ship.aboard)) flash(doDump().msg);
+  if (!(ship.ready && ship.aboard) && /^Digit[123]$/.test(e.code)) { setTool(Number(e.code.slice(5)) - 1); document.getElementById('set-tool').value = String(digger.toolIdx); flash(tool().name); }
   if (e.code === 'KeyG') {
     const box = document.getElementById('set-dev');
     box.checked = !box.checked;
@@ -1008,8 +846,9 @@ window.cosmos = {
   at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,
   ship, shipUI, engine, body, walker, patch, registry, debugLayer, view,
   report: () => debugLayer.reportAt(walker),
-  edits, carried, doDig, doDump, digTarget, excavation, refreshExcavation,
-  nearPatch, rebuildNear,
+  edits, carried, doDig, doDump, digTarget, dumpPlan, terrain, TOOLS, setTool, tool,
+  nearPatch, rebuildNear, freeCam,
+  flushTerrain: () => terrain.flush(walker.worldPos),
   ledger: () => edits.ledger(carried),
   step: (dt = 1 / 60) => engine.step(dt),
   goto: (lat, lon) => {

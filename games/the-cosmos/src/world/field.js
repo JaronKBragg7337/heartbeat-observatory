@@ -279,10 +279,23 @@ export function getGrades() { return _grades; }
 export function attachEdits(store) { _edits = store; }
 export function getEdits() { return _edits; }
 
+/**
+ * The field as everything else sees it: undisturbed geology, except inside a
+ * brick someone has changed, where the stored lattice is the truth (edits.js).
+ * The lattice is read by the collider, the ray caster AND the mesher, so a hole
+ * is the same hole to all of them.
+ */
 export function density(body, px, py, pz, scratch = {}) {
-  const base = baseDensity(body, px, py, pz, scratch);
-  if (_edits && !_edits.isEmpty) return _edits.apply(base, px, py, pz);
-  return base;
+  if (_edits && !_edits.isEmpty) {
+    const v = _edits.sample(px, py, pz);
+    if (v !== null) return v;
+  }
+  return baseDensity(body, px, py, pz, scratch);
+}
+
+/** The undisturbed geology only: what the ground was before anyone touched it. */
+export function baseDensityAt(body, px, py, pz, scratch = {}) {
+  return baseDensity(body, px, py, pz, scratch);
 }
 
 function baseDensity(body, px, py, pz, scratch = {}) {
@@ -322,8 +335,18 @@ function baseDensity(body, px, py, pz, scratch = {}) {
   return d;
 }
 
-/** Material at a point. Only meaningful where density < 0. */
+/** Material at a point. Only meaningful where density < 0. Spoil that has been dumped
+ *  reports what it is made of; everything else reports the natural strata. */
 export function materialAt(body, px, py, pz) {
+  if (_edits && !_edits.isEmpty) {
+    const m = _edits.materialOverride(px, py, pz);
+    if (m) return m;
+  }
+  return naturalMaterialAt(body, px, py, pz);
+}
+
+/** Strata only, ignoring anything dumped on top. */
+export function naturalMaterialAt(body, px, py, pz) {
   for (const grade of _grades) {
     const mat = grade.bodyId === body.id && grade.materialAt?.(px, py, pz);
     if (mat) return mat;
@@ -355,7 +378,11 @@ export function raycast(body, ox, oy, oz, dx, dy, dz, maxDist, opts = {}) {
 
   for (let i = 0; i < maxSamples && t < maxDist; i++) {
     // Sphere tracing: the field magnitude is a safe distance to jump.
-    const step = Math.max(minStep, Math.min(maxStep, Math.abs(prev) * 0.85));
+    let step = Math.max(minStep, Math.min(maxStep, Math.abs(prev) * 0.85));
+    // Inside an edited neighbourhood the stored distances are not a safe stride
+    // (dumped spoil stands above ground the stride knows nothing about).
+    if (_edits && !_edits.isEmpty && step > 0.2 &&
+        _edits.inBounds(ox + dx * t, oy + dy * t, oz + dz * t, 6)) step = Math.max(0.12, Math.min(step, 0.2));
     const nt = Math.min(t + step, maxDist);
     const nx = ox + dx * nt, ny = oy + dy * nt, nz = oz + dz * nt;
     const cur = density(body, nx, ny, nz, scratch);
@@ -476,7 +503,7 @@ export function surfaceRadiusAlong(body, dx, dy, dz, opts = {}) {
  * to `surfaceRadiusAlong()`; today the field enforces a 45 m minimum rock
  * roof, so no void reaches the sky.
  */
-export function surfaceRadiusFast(body, dx, dy, dz, iterations = 3) {
+export function surfaceRadiusFast(body, dx, dy, dz, iterations = 3, opts = null) {
   const scratch = {};
   let r = body.radiusMean;
   for (let i = 0; i < iterations; i++) {
@@ -494,7 +521,7 @@ export function surfaceRadiusFast(body, dx, dy, dz, iterations = 3) {
   // cheap path.
   // Precise proximity, not bucket occupancy. Gating on the bucket made every
   // vertex within CELL_M of any edit pay for a full ray march.
-  if (_edits && !_edits.isEmpty && _edits.affects(dx * r, dy * r, dz * r, 2.5)) {
+  if (!(opts && opts.ignoreEdits) && _edits && !_edits.isEmpty && _edits.affects(dx * r, dy * r, dz * r, 2.5)) {
     return surfaceRadiusAlong(body, dx, dy, dz, {
       minStep: 0.12, startRadius: r + 60, range: 200,
     });

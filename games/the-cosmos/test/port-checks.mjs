@@ -32,7 +32,7 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     check('concrete belongs to the field, including its full half-metre thickness',PADS.every(a=>{
       const p=site.toWorld(a.x,-.4,a.z);return FIELD.materialAt(mars,p.x,p.y,p.z).id==='MAT-PORT-CONCRETE';}));
     const store=new EditStore(mars),cut=site.toWorld(0,-.1,0);
-    const lot=store.dig((x,y,z)=>FIELD.density(mars,x,y,z),(x,y,z)=>FIELD.materialAt(mars,x,y,z),FIELD.MATERIALS,cut.x,cut.y,cut.z,.15);
+    const lot=store.dig(cut.x,cut.y,cut.z,.15);
     check('a scoop shovel cannot cut structural pavement or lose concrete mass',lot===null&&store.edits.length===0&&store.ledger().unaccountedM3===0);
     let slope=0,maxSlope=0,last=null,depthOK=true,outside=0;
     for(const n of natural) {

@@ -22,7 +22,9 @@ export function installRegolith(material, THREE, opts = {}) {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nuniform vec3 uRegOffset;\nvarying vec3 vRegPos;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRegPos = position + uRegOffset;');
+      .replace('#include <begin_vertex>', opts.world
+        ? '#include <begin_vertex>\nvRegPos = (modelMatrix * vec4(position, 1.0)).xyz + uRegOffset;'
+        : '#include <begin_vertex>\nvRegPos = position + uRegOffset;');
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
 uniform float uRegBump;
@@ -60,7 +62,7 @@ vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) 
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 normal = regPerturb(-vViewPosition, normal, vec2(dFdx(regHeight), dFdy(regHeight)) * uRegBump, faceDirection);`);
   };
-  material.customProgramCacheKey = () => 'regolith-v2';
+  material.customProgramCacheKey = () => (opts.world ? 'regolith-v2-world' : 'regolith-v2');
   material.needsUpdate = true;
   return uniforms;
 }

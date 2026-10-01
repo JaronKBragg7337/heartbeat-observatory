@@ -24,7 +24,7 @@ import { buildLayout, SHIP_ID, SHIP_NAME, SHIP_PHYS, GEAR, RAMPS, SEATS, PANELS,
 import { ShipWalker, shipIndex, defaultState } from './shipWalker.js';
 import { ShipBody } from './shipFlight.js';
 import { Stations } from './shipStations.js';
-import { GunSystem, DroneSystem } from './guns.js';
+import { GunSystem, DroneSystem, NEUTRAL_AIRSPACE_M } from './guns.js';
 import { makeShipMaterials, applyEnvironment, makeSignAtlas, makePosterAtlas, DEPTH_LIFT, depthLiftStepFor } from './shipTextures.js';
 import { depthEmulation } from '../dev/depthEmu.js';
 import { buildInterior, buildSeats, NEST_SILL } from './shipInterior.js';
@@ -417,7 +417,7 @@ export class ShipSystem {
       this.registry.register({
         id, bodyId: 'mars', type: 'VEH', name: `Hostile drone ${i + 1}`, position: dr.pos,
         massKg: 180, collision: 'none', materialId: 'MAT-ALUMINIUM',
-        object3d: mesh, note: 'Armed. Wakes when the ship is airborne within 750 m.',
+        object3d: mesh, note: 'Armed. Mars is neutral: it does not exist inside the airspace of the planet and arrives only once a ship climbs beyond it.',
       });
     });
   }
@@ -685,10 +685,16 @@ export class ShipSystem {
         this.shield.material.uniforms.uHit.value.set(e.local.x / 15.5, (e.local.y - 3.2) / 10.5, (e.local.z - 0.5) / 28);
         this.shield.material.uniforms.uColor.value.set(e.absorbed > 0 ? 0.25 : 1.0, e.absorbed > 0 ? 0.75 : 0.3, e.absorbed > 0 ? 1.0 : 0.2);
         this.note(e.absorbed > 0 ? `Hit. Shield absorbed ${e.absorbed.toFixed(0)}.` : `Hull hit. Integrity ${e.hull.toFixed(0)}%.`, e.absorbed <= 0);
+      } else if (e.type === 'airspace') {
+        // The one cue: the line between Mars's neutral airspace and everything beyond it.
+        if (e.neutral) this.note('Entering Mars neutral airspace. Contacts have broken off.');
+        else this.note('Leaving Mars neutral airspace. Hostile contacts inbound.', true);
+        this.airspaceBanner = { neutral: e.neutral, t: 6 };
       } else if (e.type === 'drone_fire' && this.aboard && !this._droneWarn) { this._droneWarn = 6; this.note('Contact firing on us.', true); }
       else if (e.type === 'impact') this.guns.events.push(e);
     }
     if (this._droneWarn) this._droneWarn = Math.max(0, this._droneWarn - dt);
+    if (this.airspaceBanner) { this.airspaceBanner.t -= dt; if (this.airspaceBanner.t <= 0) this.airspaceBanner = null; }
     // crew patch the hull while the ship sits on the ground
     if (f.landed && f.hull < 100 && this.rampCtl.cargo.progress < 0.02) f.hull = Math.min(100, f.hull + dt * 0.5);
 
@@ -891,7 +897,7 @@ export class ShipSystem {
     }
     // drones face where they are heading and spin their rotors
     if (this.droneViews) for (const v of this.droneViews) {
-      const alive = v.dr.target.hp > 0;
+      const alive = v.dr.target.hp > 0 && v.dr.state !== 'away';
       v.mesh.visible = alive;
       if (!alive) continue;
       const sp = Math.hypot(v.dr.vel.x, v.dr.vel.y, v.dr.vel.z);
@@ -1333,8 +1339,12 @@ export class ShipSystem {
     if (!this.aboard) return '';
     const seat = this.seat;
     const where = seat ? seat.name : `${deckName(this.sw.y)} · ${this._roomName()}`;
+    const neutral = !this.drones || this.drones.neutral;
+    const air = f.landed ? '' : neutral
+      ? `<br><span class="dim">Mars neutral airspace · hostile beyond ${NEUTRAL_AIRSPACE_M} m</span>`
+      : `<br><span class="load">HOSTILE SPACE · outside Mars neutral airspace</span>`;
     return `<b>${SHIP_NAME}</b> · ${where}<br>` +
-      `<span class="dim">${f.landed ? 'landed' : `${f.agl.toFixed(0)} m up · ${f.groundSpeed.toFixed(0)} m/s`} · deck plating 1.00 g</span>`;
+      `<span class="dim">${f.landed ? 'landed' : `${f.agl.toFixed(0)} m up · ${f.groundSpeed.toFixed(0)} m/s`} · deck plating 1.00 g</span>${air}`;
   }
 
   _roomName() {

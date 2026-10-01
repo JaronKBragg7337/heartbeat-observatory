@@ -17,7 +17,7 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
   const { ShipWalker, shipIndex, defaultState } = await imp('src/ship/shipWalker.js');
   const { ShipBody } = await imp('src/ship/shipFlight.js');
   const { Stations } = await imp('src/ship/shipStations.js');
-  const { GunSystem, DroneSystem } = await imp('src/ship/guns.js');
+  const { GunSystem, DroneSystem, NEUTRAL_AIRSPACE_M, NEUTRAL_REENTRY_M, DRONE_ARRIVAL_M } = await imp('src/ship/guns.js');
   const { findLandingSite, siteOrigin } = await imp('src/ship/shipSite.js');
   const { makeShipMaterials } = await imp('src/ship/shipTextures.js');
   const { buildInterior, buildSeats, NEST_SILL } = await imp('src/ship/shipInterior.js');
@@ -448,7 +448,7 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
   }
 
   // ---- shields, hull and drones ------------------------------------------------------------------
-  section('9e2. Shields take the hit first; drones only fight a ship that is in the air');
+  section('9e2. Shields take the hit first; Mars is neutral: drones exist only beyond its airspace');
   {
     const s = makeShip();
     s.shield = 50;
@@ -476,24 +476,80 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
     const fwd = s.dirToWorld({ x: 0, y: 0, z: -1 }, {});
     const anchor = { x: s.pos.x + fwd.x * 300 + up.x * 70, y: s.pos.y + fwd.y * 300 + up.y * 70, z: s.pos.z + fwd.z * 300 + up.z * 70 };
     const d = drones.add('D1', anchor);
-    let firedGrounded = 0;
-    for (let i = 0; i < 60 * 12; i++) { drones.update(1 / 60); s.step(1 / 60); firedGrounded += drones.drain().filter((e) => e.type === 'drone_fire').length; }
-    check('a drone leaves a parked ship alone', firedGrounded === 0 && d.state === 'idle', `${firedGrounded} shots fired at a landed ship`);
+    const d2 = drones.add('D2', { x: anchor.x + 40, y: anchor.y, z: anchor.z });
+    const d3 = drones.add('D3', { x: anchor.x, y: anchor.y + 40, z: anchor.z });
+    const all = [d, d2, d3];
+    const runFor = (secs, count = null) => {
+      let fired = 0, hits = 0, events = [];
+      for (let i = 0; i < Math.round(60 * secs); i++) {
+        s.step(1 / 60); drones.update(1 / 60);
+        for (const e of drones.drain()) { events.push(e); if (e.type === 'drone_fire') fired++; if (e.type === 'ship_hit') hits++; }
+      }
+      return { fired, hits, events };
+    };
+    const liftTo = (altM) => {                         // put the ship altM above the ground, at rest, hovering
+      const l = Math.hypot(s.pos.x, s.pos.y, s.pos.z), u = { x: s.pos.x / l, y: s.pos.y / l, z: s.pos.z / l };
+      const dh = altM - s.agl;
+      s.pos.x += u.x * dh; s.pos.y += u.y * dh; s.pos.z += u.z * dh;
+      s.vel.x = s.vel.y = s.vel.z = 0;
+    };
+
+    check('the neutral line is one named constant with a margin so riding it cannot flicker',
+      NEUTRAL_AIRSPACE_M > 500 && NEUTRAL_REENTRY_M < NEUTRAL_AIRSPACE_M && NEUTRAL_AIRSPACE_M - NEUTRAL_REENTRY_M >= 50 &&
+      DroneSystem.airspaceFor(NEUTRAL_AIRSPACE_M + 1, true) === 'hostile' && DroneSystem.airspaceFor(NEUTRAL_AIRSPACE_M - 1, true) === 'neutral' &&
+      DroneSystem.airspaceFor(NEUTRAL_REENTRY_M + 1, false) === 'hostile' && DroneSystem.airspaceFor(NEUTRAL_REENTRY_M - 1, false) === 'neutral',
+      `${NEUTRAL_AIRSPACE_M} m / re-entry ${NEUTRAL_REENTRY_M} m`);
+
+    const parked = runFor(12);
+    check('a drone leaves a parked ship alone: in Mars neutral airspace they do not exist at all',
+      parked.fired === 0 && all.every((q) => q.state === 'away' && q.target.inactive) && drones.neutral,
+      `${parked.fired} shots; states ${all.map((q) => q.state).join()}`);
+
     s.controls.lift = 1;
     for (let i = 0; i < 60 * 6; i++) s.step(1 / 60);
     s.controls.lift = 0;
+    // Low-level flight for a long time, hovering and then at cruise: nothing fires, nothing is out there, no bolt is in flight.
+    const lowHover = runFor(60);
+    s.controls.fwd = 1;
+    const lowCruise = runFor(40);
+    s.controls.fwd = 0;
+    check('flying around Mars at low level, hovering and at cruise for 100 s: nothing fires at the ship and no drone exists',
+      lowHover.fired === 0 && lowCruise.fired === 0 && lowHover.hits + lowCruise.hits === 0 && s.agl < NEUTRAL_AIRSPACE_M &&
+      all.every((q) => q.state === 'away') && drones.shots.length === 0 && drones.neutral && !s.landed,
+      `${lowHover.fired + lowCruise.fired} shots at ${s.agl.toFixed(0)} m up`);
+
+    // Climb through the line: raiders arrive, the ship is told, they fight.
+    liftTo(NEUTRAL_AIRSPACE_M + 120);
+    const first = runFor(2);
+    const leftNeutral = first.events.find((e) => e.type === 'airspace');
+    check('crossing the line is announced: an airspace event says the ship has left neutral airspace, and the drones arrive',
+      !!leftNeutral && leftNeutral.neutral === false && !drones.neutral && all.every((q) => q.state === 'inbound' || q.state === 'attack'),
+      JSON.stringify(first.events.filter((e) => e.type === 'airspace')));
+    check('the raiders appear at the edge of sight, not on top of the ship',
+      all.every((q) => { const dd = Math.hypot(q.pos.x - s.pos.x, q.pos.y - s.pos.y, q.pos.z - s.pos.z); return dd > DRONE_ARRIVAL_M * 0.5; }),
+      all.map((q) => Math.hypot(q.pos.x - s.pos.x, q.pos.y - s.pos.y, q.pos.z - s.pos.z).toFixed(0)).join());
     let fired = 0, hits = 0, shieldSeen = s.shield;
-    for (let i = 0; i < 60 * 40; i++) {
+    for (let i = 0; i < 60 * 70; i++) {
       s.step(1 / 60); drones.update(1 / 60);
       for (const e of drones.drain()) { if (e.type === 'drone_fire') fired++; if (e.type === 'ship_hit') hits++; }
       shieldSeen = Math.min(shieldSeen, s.shield);
     }
-    check('once the ship is airborne the drone attacks: it fires, its bolts hit, and the shield takes the damage',
+    check('beyond the line the drones attack: they fire, their bolts hit, and the shield takes the damage',
       fired >= 3 && hits >= 1 && shieldSeen < s.shieldMax - 5, `${fired} shots, ${hits} hits, shield ${shieldSeen.toFixed(0)}/${s.shieldMax.toFixed(0)}`);
-    // and it can be shot down from the captain's chair
+    // Riding the margin: just under the line after being over it does not flip back and forth.
+    liftTo(NEUTRAL_AIRSPACE_M - 30);
+    const ride = runFor(5);
+    check('just under the line, having been over it, the ship is still outside neutral airspace (the margin holds)',
+      !drones.neutral && !ride.events.some((e) => e.type === 'airspace'));
+    // and it can be shot down from the captain's chair (a drone posed dead ahead, so the gun arc is not in question)
+    {
+      const l = Math.hypot(s.pos.x, s.pos.y, s.pos.z), uu = { x: s.pos.x / l, y: s.pos.y / l, z: s.pos.z / l };
+      const fw = s.dirToWorld({ x: 0, y: 0, z: -1 }, {});
+      drones.debugPose(0, { x: s.pos.x + fw.x * 300 + uu.x * 20, y: s.pos.y + fw.y * 300 + uu.y * 20, z: s.pos.z + fw.z * 300 + uu.z * 20 });
+    }
     st.sit({ x: 0, y: 6.2, z: -14.3 });
     const eye = s.toWorld({ x: 0, y: 7.3, z: -15.7 }, {});
-    let down = false;
+    let down = false, closest = Infinity;
     for (let i = 0; i < 60 * 20 && !down; i++) {
       const dx = d.pos.x - eye.x, dy = d.pos.y - eye.y, dz = d.pos.z - eye.z, dl = Math.hypot(dx, dy, dz);
       const dirW = { x: dx / dl, y: dy / dl, z: dz / dl };
@@ -502,9 +558,27 @@ export async function runShipChecks({ ROOT, check, section, THREE, mars, FIELD, 
       guns.point('main', { x: local.x, y: local.y, z: local.z });
       guns.fire('main', dirW, eye);
       guns.update(1 / 60); drones.update(1 / 60); s.step(1 / 60);
+      for (const b of guns.bolts) closest = Math.min(closest, Math.hypot(b.x - d.pos.x, b.y - d.pos.y, b.z - d.pos.z));
       for (const e of guns.drain()) if (e.type === 'target_down' && e.id === 'D1') down = true;
     }
-    check('the main guns can shoot a drone down', down, `drone hp ${d.target.hp}`);
+    check('the main guns can shoot a drone down', down, `drone hp ${d.target.hp} state ${d.state} dist ${Math.hypot(d.pos.x - s.pos.x, d.pos.y - s.pos.y, d.pos.z - s.pos.z).toFixed(0)} m, bolts ${guns.bolts.length}, shots ${guns.shots.main}, closest bolt ${closest.toFixed(1)} m, target inactive ${d.target.inactive}, held ${d.held}`);
+
+    drones.debugRelease(0);
+    // Come back under the line: the airspace is neutral again, they break off, they are gone, and nothing more is fired.
+    st.stand();
+    liftTo(NEUTRAL_REENTRY_M - 60);
+    const back = runFor(1);
+    const enteredNeutral = back.events.find((e) => e.type === 'airspace');
+    check('coming back under the line is announced and the airspace is neutral again',
+      !!enteredNeutral && enteredNeutral.neutral === true && drones.neutral && all.every((q) => q.state === 'leaving' || q.state === 'away'),
+      JSON.stringify(back.events.filter((e) => e.type === 'airspace')));
+    const after = runFor(40);
+    check('after re-entering neutral airspace the raiders break off and are gone, and not one more shot is fired or left in flight',
+      after.fired === 0 && after.hits === 0 && all.every((q) => q.state === 'away' && q.target.inactive) && drones.shots.length === 0,
+      `${after.fired} shots; states ${all.map((q) => q.state).join()}`);
+    // A bolt that was in flight when the line was crossed does not follow the ship in.
+    check('and neither the guns nor the drones can score on an away drone: its target is switched off',
+      all.every((q) => q.target.inactive));
   }
 
   // ---- 9f. Geometry and identity -----------------------------------------------------------------------

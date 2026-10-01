@@ -62,6 +62,16 @@ export function createPortSite(body, spawn = { lat: -14, lon: -59.2 }) {
     },
     materialAt(px, py, pz) {
       const p=this.toLocal({x:px,y:py,z:pz});
+      // The graded apron is engineered fill, not whatever the cut happened to expose: a metre of
+      // loose regolith over compacted duricrust, then the natural strata. (Without this, digging
+      // beside the pad at spawn was digging basalt, 2900 kg/m3, three bites to a full load.)
+      if (p.y <= 0.05 && p.y > -3.2 && this.weight(px, py, pz) === 1) {
+        const pad0 = PADS.some(a => Math.abs(p.x-a.x)<=a.w/2 && Math.abs(p.z-a.z)<=a.d/2);
+        const bld0 = BUILDINGS.some(a => Math.abs(p.x-a.x)<=a.w/2 && Math.abs(p.z-a.z)<=a.d/2);
+        const taxi0=(p.x>=21&&p.x<=39&&Math.abs(p.z)<=55)||
+          (p.x>=38&&p.x<=60&&[-28,30].some(z=>Math.abs(p.z-z)<=5));
+        if (!(pad0 || bld0 || taxi0) || p.y < -0.5) return p.y > -1.2 ? MATERIALS.regolith : MATERIALS.duricrust;
+      }
       if (p.y < -0.5 || p.y > 0.05) return null;
       const pad = PADS.some(a => Math.abs(p.x-a.x)<=a.w/2 && Math.abs(p.z-a.z)<=a.d/2);
       const building = BUILDINGS.some(a => Math.abs(p.x-a.x)<=a.w/2 && Math.abs(p.z-a.z)<=a.d/2);

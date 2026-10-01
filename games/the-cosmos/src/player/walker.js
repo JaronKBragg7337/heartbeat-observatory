@@ -67,6 +67,18 @@ export class Walker {
      * See LocalPatch.surfaceRadiusAt for why this is required rather than nice.
      */
     this.groundSampler = null;
+
+    /** Highest ledge the legs will step onto without a jump, metres. */
+    this.stepM = opts.stepM || 0.5;
+    /** Highest wall a person can scramble over by walking into it (hands and knees), metres. */
+    this.mantleM = opts.mantleM || 2.2;
+    /**
+     * Optional (x,y,z) -> bool. When it says the ground here has been dug or dumped on, the
+     * whole body (shins, hips, shoulders, head) is kept out of rock, not just the feet.
+     */
+    this.collisionActive = null;
+    this.lastMantle = 0;
+    this._climbT = 0;                   // seconds spent scrambling since last on the ground
   }
 
   /**
@@ -78,7 +90,7 @@ export class Walker {
     const dx = px / r, dy = py / r, dz = pz / r;
 
     if (this.groundSampler) {
-      const gr = this.groundSampler(dx, dy, dz);
+      const gr = this.groundSampler(dx, dy, dz, r);
       if (gr !== null && gr !== undefined) {
         return {
           point: { x: dx * gr, y: dy * gr, z: dz * gr },
@@ -86,6 +98,22 @@ export class Walker {
           material: materialAt(this.body, dx * gr, dy * gr, dz * gr),
           fromMesh: true,
         };
+      }
+    }
+    // Contact with the field itself (dug ground, caves). If the point is inside rock but the
+    // surface is within step height straight above it, THAT is the ground: you step up onto a
+    // ledge or a heap instead of being shoved sideways out of it.
+    if (density(this.body, px, py, pz) < 0) {
+      for (let h = 0.04; h <= this.stepM + 1e-9; h += 0.04) {
+        if (density(this.body, px + dx * h, py + dy * h, pz + dz * h) >= 0) {
+          let lo = h - 0.04, hi = h;
+          for (let i = 0; i < 6; i++) {
+            const m = (lo + hi) / 2;
+            if (density(this.body, px + dx * m, py + dy * m, pz + dz * m) >= 0) hi = m; else lo = m;
+          }
+          const q = { x: px + dx * hi, y: py + dy * hi, z: pz + dz * hi };
+          return { point: q, distance: -hi, material: materialAt(this.body, q.x, q.y, q.z), fromMesh: false, stepped: true };
+        }
       }
     }
     const g = groundBelow(this.body, px, py, pz, 4000);
@@ -216,6 +244,7 @@ export class Walker {
       const vd = v.x * (nx / gl) + v.y * (ny / gl) + v.z * (nz / gl);
       if (vd < 0) { v.x -= (nx / gl) * vd; v.y -= (ny / gl) * vd; v.z -= (nz / gl) * vd; }
       this.grounded = true;
+      this._climbT = 0;
       this.groundMaterial = ground.material;
       this.groundFromMesh = !!ground.fromMesh;
       normalAt(body, nx, ny, nz, 0.5, this.groundNormal);
@@ -250,8 +279,101 @@ export class Walker {
       this.lastPushOutM = push;
     }
 
+    // --- The rest of the body. ---------------------------------------------
+    if (this.collisionActive && this.collisionActive(nx, ny, nz)) {
+      const out = this._collideBody(nx, ny, nz, f);
+      nx = out.x; ny = out.y; nz = out.z;
+      if (out.pushed) {
+        // Whatever drove us into the rock stops there.
+        const n = out.normal;
+        const vd = v.x * n.x + v.y * n.y + v.z * n.z;
+        if (vd < 0) { v.x -= n.x * vd; v.y -= n.y * vd; v.z -= n.z * vd; }
+        // Walking into a wall whose top is within reach: get over it (shoulder-height, hands and knees).
+        if (mag > 0.1 && out.wall) this._mantle(nx, ny, nz, out.wall, wishX, wishY, wishZ, dt, v, gx, gy, gz);
+      }
+    }
+
     p.x = nx; p.y = ny; p.z = nz;
     this.updateFrame();
+  }
+
+  /**
+   * Keep a body-shaped set of probes out of solid ground. Eight probes round the body at four
+   * heights (shin, hip, chest, head) plus one over the crown. A probe inside rock is pushed
+   * out along the field's own gradient, which for a wall is the wall's normal and for a
+   * ceiling points down. The feet are handled by the ground contact above and are not repeated.
+   */
+  _collideBody(x, y, z, f) {
+    const body = this.body, ux = f.up.x, uy = f.up.y, uz = f.up.z;
+    const ex = f.east.x, ey = f.east.y, ez = f.east.z, nx_ = f.north.x, ny_ = f.north.y, nz_ = f.north.z;
+    let pushed = false, wall = null, last = { x: 0, y: 1, z: 0 };
+    const levels = [[0.38, 0.30], [0.90, 0.30], [1.38, 0.29], [1.64, 0.20]];
+    for (let iter = 0; iter < 3; iter++) {
+      let hit = false;
+      for (let li = 0; li < levels.length; li++) {
+        const hgt = levels[li][0], rad = levels[li][1];
+        for (let a = 0; a < 8; a++) {
+          const ca = Math.cos(a * Math.PI / 4) * rad, sa = Math.sin(a * Math.PI / 4) * rad;
+          const qx = x + ux * hgt + ex * ca + nx_ * sa, qy = y + uy * hgt + ey * ca + ny_ * sa, qz = z + uz * hgt + ez * ca + nz_ * sa;
+          const d = density(body, qx, qy, qz);
+          if (d >= -0.004) continue;
+          const n = normalAt(body, qx, qy, qz, 0.07);
+          const push = Math.min(0.28, -d + 0.01);
+          x += n.x * push; y += n.y * push; z += n.z * push;
+          hit = true; pushed = true; last = n;
+          // Anything whose normal leans well away from vertical is a wall for the purpose of getting over it
+          // (a bucket's spherical floor is a 55-degree wall, and no one walks up one of those).
+          const nu = n.x * ux + n.y * uy + n.z * uz;
+          if (Math.sqrt(Math.max(0, 1 - nu * nu)) > 0.45) wall = n;
+        }
+      }
+      // Over the crown.
+      const cx = x + ux * 1.80, cy = y + uy * 1.80, cz = z + uz * 1.80;
+      const dc = density(body, cx, cy, cz);
+      if (dc < -0.004) {
+        const n = normalAt(body, cx, cy, cz, 0.07);
+        const push = Math.min(0.3, -dc + 0.01);
+        x += n.x * push; y += n.y * push; z += n.z * push;
+        hit = true; pushed = true; last = n;
+      }
+      if (!hit) break;
+    }
+    return { x, y, z, pushed, normal: last, wall };
+  }
+
+  /**
+   * Over a wall by walking into it. Finds the lowest height above the feet at which there is a
+   * body's worth of free space just beyond the wall; if that is within reach, rise to it.
+   */
+  _mantle(x, y, z, n, wishX, wishY, wishZ, dt, v, gx, gy, gz) {
+    // A scramble lasts a second or so of effort, not forever: blocked, you slide back down.
+    if (this._climbT > 1.3) return;
+    const body = this.body, ux = -gx, uy = -gy, uz = -gz;
+    // The wall's horizontal direction, pointing out of the rock.
+    const nu = n.x * ux + n.y * uy + n.z * uz;
+    let hx = n.x - ux * nu, hy = n.y - uy * nu, hz = n.z - uz * nu;
+    const hl = Math.hypot(hx, hy, hz); if (hl < 1e-6) return;
+    hx /= hl; hy /= hl; hz /= hl;
+    // Only when the wish points INTO the wall.
+    const into = -(wishX * hx + wishY * hy + wishZ * hz);
+    if (into <= 0.15 * this.walkSpeed) return;
+    const ox = x - hx * 0.62, oy = y - hy * 0.62, oz = z - hz * 0.62;     // just beyond the wall face
+    for (let h = 0.3; h <= this.mantleM + 1e-9; h += 0.1) {
+      const free = (hh) => density(body, ox + ux * hh, oy + uy * hh, oz + uz * hh) > 0.02;
+      if (free(h) && free(h + 0.6) && free(h + 1.2) && free(h + 1.6)) {
+        // Rise, and lean onto the ledge.
+        const climb = 2.7;
+        const vRad = v.x * gx + v.y * gy + v.z * gz;
+        v.x = v.x - gx * vRad - gx * climb;
+        v.y = v.y - gy * vRad - gy * climb;
+        v.z = v.z - gz * vRad - gz * climb;
+        v.x -= hx * 0.9; v.y -= hy * 0.9; v.z -= hz * 0.9;
+        this.grounded = false;
+        this.lastMantle = h;
+        this._climbT += dt;
+        return;
+      }
+    }
   }
 
   /** Eye position in f64 world metres — what the camera is anchored to. */
