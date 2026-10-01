@@ -46,6 +46,9 @@ import { EconomyUI } from './economy/economyUI.js';
 import { buildKeyControls } from './ui/keyActions.js';
 import { DamageView } from './world-state/damageView.js';
 import { SpaceSystem } from './space/spaceSystem.js';
+import { chooseWorld } from './world-state/remoteWorld.js';
+import { MultiplayerView } from './world-state/multiplayerView.js';
+import { landingField } from './world-state/fleet.js';
 
 const canvas = document.getElementById('game-canvas');
 const engine = new Engine(canvas, { fov: 72 });
@@ -58,10 +61,14 @@ const SPAWN = { lat: -14.0, lon: -59.2, name: 'Valles Marineris' };
 const portSite = createPortSite(body, SPAWN);
 attachGrades([portSite]);
 // Local authority today. Load before any terrain/player/ship presentation is built.
-const world = new WorldState(new IndexedDBAdapter());
+let world = new WorldState(new IndexedDBAdapter());
 let savedWorld = {record:null,bricks:[]};
-try { savedWorld = await world.load(); }
+try { const chosen = await chooseWorld(world); world = chosen.world; savedWorld = chosen.saved; }
+
 catch(e) { world.error=e.message;console.error('World save unavailable',e); }
+
+if(world.remote) attachGrades([portSite,landingField(portSite,()=>world.snapshot.pads)]);
+let multiplayer = null;
 
 // ---------------------------------------------------------------------------
 // World
@@ -145,7 +152,7 @@ function updateFarTerrain(focus, force = false, budgetMs = tier === 'low' ? 2 : 
 // ---------------------------------------------------------------------------
 const edits = new EditStore(body);
 attachEdits(edits);
-restoreTerrain(edits,savedWorld.record?.terrain,savedWorld.bricks);
+restoreTerrain(edits,savedWorld.record?.terrain,savedWorld.bricks.filter(b=>!b.bodyId||b.bodyId==='mars'));
 // Phone tier meshes a little closer and spends less of each frame doing it.
 const terrain = new EditedTerrain(engine, body, edits, {
   rangeM: tier === 'low' ? 56 : 90, budgetMs: tier === 'low' ? 3 : 6,
@@ -400,7 +407,7 @@ playerPerson.ready.then((p) => {
 // --- The crew: six people waiting at the port to be hired (src/crew).
 let crew = null, crewUI = null;
 const portPeople=new PortPeople(port,people);
-if (ship.ready) {
+if (ship.ready && !world.remote) {
   const c = new CrewSystem({ engine, ship, site: portSite, people, ground: groundRadius, walker, tier, playerLook });
   c.build().then(async () => { crew = c; ship.crew = c;
     await portPeople.build();
@@ -408,6 +415,7 @@ if (ship.ready) {
     crewUI = new CrewUI(c, { ship, walker, isTouch, portPeople });
   }).catch((e) => console.error('Crew failed to build', e));
 }
+if(world.remote) portPeople.build().then(()=>{worldBridge.portPeople=portPeople;});
 digger.canPlaceSpoil = makeSpoilGuard({ port, portPeople, ship, getCrew: () => crew });
 
 // --- Landmark markers, so the debug layer has real registered assets --------
@@ -935,6 +943,7 @@ engine.addUpdater((dt) => {
 
   // Space (src/space/): Mars's ground meshes and the port are only kept up while Mars's ground is near; on a moon the moon's own
   // tiers are kept by space.late(). Coming back to Mars rebuilds the tiers under the player once.
+  if(!world.remote){space.ledger.credits=world.state.economy.marks/4;space.ledger.cargo=new Map(Object.entries(world.state.economy.hold||{}));}
   const onMars = space.marsTerrain, inMarsFrame = space.frameId === 'mars';
   if (onMars && !wasOnMars) { if (inMarsFrame) rebuildNear(true); }
   wasOnMars = onMars;
@@ -955,7 +964,7 @@ engine.addUpdater((dt) => {
   if (shipUI) shipUI.update(dt);
   if (crewUI) crewUI.update(dt);
   if (inMarsFrame) portPeople.tick(dt,walker.worldPos);
-  worldBridge.tick(dt);
+  if(multiplayer) multiplayer.tick(dt); else worldBridge.tick(dt);
   economyUI.tick(dt);
   damageView.tick(dt,walker.worldPos);
   if (suitGroup.visible && playerPerson.loaded) {
@@ -1012,7 +1021,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR' && !e.repeat && !(ship.ready && ship.aboard)) { flash(doDumpAll().msg); hudAccum = 1; }
   if (!(ship.ready && ship.aboard) && /^Digit[123]$/.test(e.code)) { setTool(Number(e.code.slice(5)) - 1); document.getElementById('set-tool').value = String(digger.toolIdx); flash(tool().name); }
   if (e.code === 'KeyN' && !e.repeat && ship.ready && ship.seat && space.ui && ['nav', 'pilot', 'captain', 'comms'].includes(ship.seat.id)) space.ui.toggle('course');
-  if (e.code === 'KeyG') {
+  if (params.get('dev') === '1' && e.code === 'KeyG') {
     const box = document.getElementById('set-dev');
     box.checked = !box.checked;
     debugLayer.setEnabled(box.checked);
@@ -1025,6 +1034,23 @@ window.addEventListener('keydown', (e) => {
 const space = new SpaceSystem({ engine, body, tier, sun, hemi: sky, ship, walker, digger, portSite, fogDensity: TERRAIN_FOG_DENSITY,
   setGround: (fn) => { activeGround = fn; }, marsGround, followEntries: [suitEntry] });
 
+worldBridge.space=space;
+if(!world.remote){
+  space.hooks.award=(credits,reason)=>world.dispatch({type:'space-award',credits,reason});
+  space.hooks.addCargo=(item,kg)=>world.dispatch({type:'space-cargo-add',item,kg});
+  space.hooks.removeCargo=(item,kg)=>world.dispatch({type:'space-cargo-remove',item,kg});
+  space.hooks.cargoKg=item=>world.state.economy.hold?.[item]||0;
+  space.hooks.onArrive=()=>world.persist();
+  space.restoreState(world.state.space);
+  for(const [id,meta] of Object.entries(world.state.moonTerrain||{}))restoreTerrain(space.moonWorld(id).edits,meta,savedWorld.bricks.filter(b=>b.bodyId===id));
+  space.ledger.cargo=new Map(Object.entries(world.state.economy.hold||{}));
+  space.ledger.credits=world.state.economy.marks/4;
+}
+if(world.remote) multiplayer = new MultiplayerView(world,{engine,ship,walker,edits,digger,site:portSite,space,people,bridge:worldBridge,rebuild:rebuildNear,port});
+const devMode = params.get('dev') === '1';
+if(!devMode) document.querySelector('label[for="set-dev"]').hidden=true;
+if(!devMode) document.getElementById('set-dev').hidden=true;
+
 document.getElementById('boot')?.remove();
 refreshHud();
 engine.start();
@@ -1032,7 +1058,8 @@ engine.start();
 // Debug handle. This is the hook automated verification uses to drive frames
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
-window.cosmos = {
+if (devMode) window.cosmos = {
+  multiplayer,
   world, worldBridge, economyUI,
   port, portTour, portPeople, space,
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
@@ -1067,4 +1094,4 @@ function horizonView(height = 120, { before = false, yaw = 0 } = {}) {
   return { heightM: height, before, tier, direction: yaw };
 }
 const reviewHeight = Number(params.get('terrainView'));
-if (reviewHeight === 120 || reviewHeight === 1000) horizonView(reviewHeight, { before: params.get('terrainBefore') === '1' });
+if (devMode && (reviewHeight === 120 || reviewHeight === 1000)) horizonView(reviewHeight, { before: params.get('terrainBefore') === '1' });

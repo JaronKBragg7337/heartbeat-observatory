@@ -37,7 +37,7 @@ export class EconomyUI {
   tick(dt) {this.accum+=dt;if(this.accum<.25)return;this.accum=0;this.draw();}
   draw() {
     const e=this.world.state.economy,w=this.world;
-    const save=w.error?'SAVE FAILED':w.saving?'Saving…':'Saved locally';
+    const save=w.error?(w.remote?'Shared world disconnected':'SAVE FAILED'):w.saving?'Saving...':w.remote?'Saved to shared world':w.offline?'Offline solo - saved locally':'Saved locally';
     this.purse.textContent=`${e.marks.toLocaleString()} marks · ${(e.marks/4).toLocaleString()} cr · ${save}`;
     this.purse.style.borderColor=w.error?'#ff6351':'#ae8548';
     const p=this.port.site.toLocal(this.walker.worldPos);

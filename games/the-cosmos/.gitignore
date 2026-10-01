@@ -2,3 +2,6 @@ node_modules/
 *.tmp.mjs
 # QA screenshots stay in the worktree (6 MB); the index text beside them is committed
 docs/qa/**/*.jpg
+
+# Authority storage contains hashed device identities; never serve or commit it.
+server/.data/

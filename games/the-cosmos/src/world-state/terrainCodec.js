@@ -23,6 +23,13 @@ export function restoreTerrain(s, meta, bricks) {
   ['totalRemovedM3','totalRemovedKg','totalDepositedM3','totalDepositedKg'].forEach((k,i)=>s[k]=meta.totals[i]);
   for (const r of bricks) {
     const b=s._ensureBrick(r.bx,r.by,r.bz); b.edited=true;
+    // A sparse patch replaces the prior patch. Cells restored to natural ground
+    // are omitted from the new offsets and must not retain an earlier hole.
+    for(const n of b._restoredOffsets||[]) {
+      const i=b.bx*32+(n&31),j=b.by*32+((n>>5)&31),k=b.bz*32+(n>>10);
+      b.phi[n]=s.baseLattice(i,j,k);
+    }
+    b._restoredOffsets=r.offsets;
     b.rho=new Float32Array(b.phi.length); b.mat=new Uint8Array(b.phi.length);
     for(let n=0;n<r.offsets.length;n++) {const i=r.offsets[n];b.phi[i]=r.phi[n];b.rho[i]=r.rho[n];b.mat[i]=r.mat[n];}
     s._touch(r.bx*32,r.bx*32+31,r.by*32,r.by*32+31,r.bz*32,r.bz*32+31);

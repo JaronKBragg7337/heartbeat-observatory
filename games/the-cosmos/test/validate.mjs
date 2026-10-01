@@ -11,6 +11,7 @@
 
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { pathToFileURL } from 'node:url';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -28,11 +29,11 @@ if (!existsSync(join(shim, 'package.json'))) {
 const THREE = await import('three');
 
 const { BODIES, getBody, impliedSurfaceGravity, gravityAtRadius, G } =
-  await import(`file://${join(ROOT, 'src/world/bodies.js')}`);
-const GEO = await import(`file://${join(ROOT, 'src/world/geodesy.js')}`);
-const FIELD = await import(`file://${join(ROOT, 'src/world/field.js')}`);
-const { Walker } = await import(`file://${join(ROOT, 'src/player/walker.js')}`);
-const { Registry } = await import(`file://${join(ROOT, 'src/core/registry.js')}`);
+  await import(pathToFileURL(join(ROOT, 'src/world/bodies.js')).href);
+const GEO = await import(pathToFileURL(join(ROOT, 'src/world/geodesy.js')).href);
+const FIELD = await import(pathToFileURL(join(ROOT, 'src/world/field.js')).href);
+const { Walker } = await import(pathToFileURL(join(ROOT, 'src/player/walker.js')).href);
+const { Registry } = await import(pathToFileURL(join(ROOT, 'src/core/registry.js')).href);
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -347,7 +348,7 @@ section('5b. The player stands on the ground they can SEE');
   // through the ground." Cause: contact used the analytic field while the mesh
   // drew flat triangles between vertices ~8 m apart. Over rough ground the two
   // disagree by metres, so the body stood on a surface nobody could see.
-  const { LocalPatch } = await import(`file://${join(ROOT, 'src/world/planetMesh.js')}`);
+  const { LocalPatch } = await import(pathToFileURL(join(ROOT, 'src/world/planetMesh.js')).href);
   const patch = new LocalPatch(mars, { sizeM: 900, res: 110 });
 
   const w = new Walker(mars);
@@ -410,7 +411,7 @@ section('5c. Nothing is inside-out');
   // that survived the fix and left the ground lit from underneath. Both are
   // invisible to every other test — an inside-out surface has perfectly valid
   // geometry — so orientation gets asserted directly.
-  const { LocalPatch, buildGlobalShell } = await import(`file://${join(ROOT, 'src/world/planetMesh.js')}`);
+  const { LocalPatch, buildGlobalShell } = await import(pathToFileURL(join(ROOT, 'src/world/planetMesh.js')).href);
 
   const patch = new LocalPatch(mars, { sizeM: 880, res: 40 });
   const p = GEO.geodeticToCartesian(mars, -14, -59.2, 0);
@@ -575,7 +576,7 @@ section('7. Asset identity and placement');
 // 7b-7f. Digging, dumping, drawing the dug ground, walking in it, and the tiers that tile the rest.
 // ---------------------------------------------------------------------------
 {
-  const { runDigChecks } = await import(`file://${join(ROOT, 'test/dig-checks.mjs')}`);
+  const { runDigChecks } = await import(pathToFileURL(join(ROOT, 'test/dig-checks.mjs')).href);
   if (!process.env.SKIP_DIG) await runDigChecks({ ROOT: ROOT.split(String.fromCharCode(92)).join('/'), check, section, THREE, mars, FIELD, GEO, Walker });
 }
 
@@ -601,7 +602,7 @@ section('8. Determinism across runs');
 // 9. The ship. Its checks live in ship-checks.mjs and run against the real code.
 // ---------------------------------------------------------------------------
 {
-  const { runShipChecks } = await import(`file://${join(ROOT, 'test/ship-checks.mjs')}`);
+  const { runShipChecks } = await import(pathToFileURL(join(ROOT, 'test/ship-checks.mjs')).href);
   await runShipChecks({ ROOT, check, section, THREE, mars, FIELD, GEO, Walker, Registry, gravityAtRadius });
 }
 
@@ -619,6 +620,11 @@ await runEconomyChecks({ ROOT, check, section, mars, FIELD });
 // 12-17. Space travel: the moons, walking and digging on one, the ship's leaving and landing, the drive, frames, jobs.
 const { runSpaceChecks } = await import('./space-checks.mjs');
 await runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, Walker, gravityAtRadius });
+
+const { runMultiplayerChecks } = await import('./multiplayer-checks.mjs');
+await runMultiplayerChecks({check,section});
+const { runServerStorageChecks } = await import('./server-storage-checks.mjs');
+await runServerStorageChecks({check,section});
 
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);

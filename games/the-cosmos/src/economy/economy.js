@@ -41,6 +41,17 @@ function exportLoad(s, tonnes, destination) {
 export function reduceEconomy(state, a) {
   const s = clone(state);
   switch (a.type) {
+    case 'space-award': {
+      const marks=a.credits*MARKS_PER_CREDIT;
+      if(!Number.isSafeInteger(marks)||marks<0)throw Error('Invalid space reward.');
+      s.marks+=marks;break;
+    }
+    case 'space-cargo-add':case 'space-cargo-remove': {
+      if(typeof a.item!=='string'||!Number.isFinite(a.kg)||a.kg<0)throw Error('Invalid hold transfer.');
+      s.hold=s.hold||{};const old=s.hold[a.item]||0;
+      if(a.type==='space-cargo-remove'&&old+1e-5<a.kg)throw Error('Insufficient hold cargo.');
+      s.hold[a.item]=a.type==='space-cargo-add'?old+a.kg:Math.max(0,old-a.kg);break;
+    }
     case 'hire': {
       if (!(a.id in WAGES) || s.crew[a.id]) throw Error('Not available.');
       const fee = WAGES[a.id]*MARKS_PER_CREDIT;

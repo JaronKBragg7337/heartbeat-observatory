@@ -29,6 +29,7 @@ import { makeMoon } from './moonField.js';
 import { makeTools } from '../player/digging.js';
 import { SpaceJobs } from './jobs.js';
 import { SpaceUI } from './spaceUI.js';
+import { Transit } from './transit.js';
 
 const DEG = Math.PI / 180;
 
@@ -88,6 +89,28 @@ export class SpaceSystem {
   get frame() { return this.engine.activeFrame; }
   get onMoon() { return this.frameId !== 'mars'; }
   get activeMoon() { return this.onMoon ? this.worlds.get(this.frameId) : null; }
+
+  snapshotState() {
+    const t=this.trip,j=this.jobs;
+    return {frameId:this.frameId,ledger:{credits:this.ledger.credits,cargo:[...this.ledger.cargo]},
+      jobs:{taken:[...j.taken],hold:structuredClone(j.hold),samplesAboard:j.samplesAboard,salvaged:j.salvaged,beaconHeard:j.beaconHeard,paidTotal:j.paidTotal},
+      trip:t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon},phase:t.phase,t:t.t,warp:t.warp,settleT:t.settleT,cancelled:t.cancelled,progress:{...t.progress},
+        said:[...t._said],attFrom:t._attFrom?.toArray()||null,transit:t.transit?structuredClone(t.transit):null}:null};
+  }
+  restoreState(saved) {
+    if(!saved)return;
+    // Saved coordinates already name their frame; switching must not translate them twice.
+    const pos={...this.ship.flight.pos},wp={...this.walker.worldPos};this.setFrame(saved.frameId);
+    Object.assign(this.ship.flight.pos,pos);Object.assign(this.walker.worldPos,wp);
+    this.ship.flight.refreshOrientation();this.walker.updateFrame();this.ship._syncEntries();
+    Object.assign(this.jobs,saved.jobs);this.jobs.taken=new Set(saved.jobs.taken);
+    this.ledger.credits=saved.ledger.credits;this.ledger.cargo=new Map(saved.ledger.cargo);
+    if(saved.trip){const r=saved.trip,dest={...this.resolve(r.destId),...r.dest};if(dest.kind==='hold')dest.goalS=()=>r.transit.finalGoal;if(!dest.kind)return;
+      const t=new SpaceTrip(this,dest);Object.assign(t,r);t.dest=dest;t._said=new Set(r.said);t._attFrom=r.attFrom?new THREE.Quaternion().fromArray(r.attFrom):null;
+      if(r.transit){t.transit=Object.assign(Object.create(Transit.prototype),r.transit);this.ship.flight.override=dt=>t._drive(dt);}
+      this.trip=t;
+    }
+  }
 
   moonWorld(id) {
     let w = this.worlds.get(id);

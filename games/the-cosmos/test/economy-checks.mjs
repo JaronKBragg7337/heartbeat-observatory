@@ -12,6 +12,11 @@ export async function runEconomyChecks({ROOT,check,section,mars,FIELD}) {
   const rejects=(e,a)=>{const before=JSON.stringify(e);let threw=false;try{reduceEconomy(e,a);}catch{threw=true;}return threw&&JSON.stringify(e)===before;};
   let e=initialEconomy(),initial=funds(e);
   check('starting purse is 2,500 credits / 10,000 Mars marks',e.marks===10000);
+  const rewarded=reduceEconomy(e,{type:'space-award',credits:300});
+  const loadedHold=reduceEconomy(rewarded,{type:'space-cargo-add',item:'phobos-core-sample',kg:4.5});
+  const deliveredHold=reduceEconomy(loadedHold,{type:'space-cargo-remove',item:'phobos-core-sample',kg:4.5});
+  check('space rewards use the real marks purse and cargo transfers use the saved hold',rewarded.marks===11200&&loadedHold.hold['phobos-core-sample']===4.5&&deliveredHold.hold['phobos-core-sample']===0);
+  check('invalid space rewards and overselling the hold leave money and cargo untouched',rejects(e,{type:'space-award',credits:NaN})&&rejects(loadedHold,{type:'space-cargo-remove',item:'phobos-core-sample',kg:5}));
   for(const id of Object.keys(WAGES)) {
     const before=e.marks;e=reduceEconomy(e,{type:'hire',id});
     check(`${id}: signing fee equals one sol wage`,before-e.marks===WAGES[id]*4);
@@ -77,6 +82,10 @@ export async function runEconomyChecks({ROOT,check,section,mars,FIELD}) {
     restoreTerrain(restored,meta,data);
     const equal=[...s.bricks.values()].every(b=>{const n=restored.brickAt(b.bx,b.by,b.bz);return n&&b.phi.every((v,i)=>Object.is(v,n.phi[i]))&&(!b.rho||b.rho.every((v,i)=>v===n.rho[i]));});
     check('saved dig AND spoil reproduce every lattice sample bit-for-bit',equal);
+    const changed=data.find(r=>r.offsets.length>0),cleared={...changed,offsets:new Uint16Array(),phi:new Float32Array(),rho:new Float32Array(),mat:new Uint8Array()};
+    const replacement=new EditStore(mars);restoreTerrain(replacement,meta,[changed]);restoreTerrain(replacement,meta,[cleared]);
+    const b=replacement.brickAt(changed.bx,changed.by,changed.bz),n=changed.offsets[0];
+    check('a replacing sparse terrain patch clears cells that returned to natural ground',b.phi[n]===Math.fround(replacement.baseLattice(b.bx*32+(n&31),b.by*32+((n>>5)&31),b.bz*32+(n>>10))));
     check('saved ledger restores all exact BigInt accounts',restored._removedM===s._removedM&&restored._depositedM===s._depositedM&&restored.ledger().unaccountedKg===0);
     const bytes=data.reduce((n,b)=>n+b.offsets.byteLength+b.phi.byteLength+b.rho.byteLength+b.mat.byteLength,0),raw=s.bricks.size*32768*9;
     check('sparse dig save is smaller than full bricks and has no float JSON',bytes<raw&&data.every(b=>b.phi instanceof Float32Array&&b.offsets instanceof Uint16Array),`${bytes} / ${raw} bytes`);

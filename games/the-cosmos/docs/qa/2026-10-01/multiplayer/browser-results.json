@@ -1,0 +1,20 @@
+{
+  "results": {
+    "otherBody": true,
+    "sharedDig": true,
+    "exclusiveHire": true,
+    "sharedElevator": true,
+    "refreshMidTrip": true,
+    "bothLanded": true,
+    "guestCanLeaveOnMoon": true,
+    "phoneLayout": true,
+    "normalPlayHasNoDebugHandle": true,
+    "offlineFallbackAndSpacePurse": true,
+    "pageErrors": [],
+    "ownedShips": {
+      "jaron": "c687f604-c612-4dd0-8fec-6401da28d885",
+      "lilith": "bf810102-1f8f-44b1-97b2-d431a6ae88bc"
+    }
+  },
+  "errors": []
+}

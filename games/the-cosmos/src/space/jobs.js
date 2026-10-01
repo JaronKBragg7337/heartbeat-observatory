@@ -23,7 +23,7 @@ export const SAMPLE_REACH_M = 4.5;
 export const STOW_REACH_M = 38;
 export const SALVAGE_KG = 1800, SALVAGE_CREDITS = 150, SALVAGE_REACH_M = 6;
 
-const MAT_ITEM = { 'MAT-PHOBOS-CLAY': 'phobos-hydrated-clay', 'MAT-PHOBOS-REGOLITH': 'phobos-regolith', 'MAT-PHOBOS-RUBBLE': 'phobos-rubble',
+export const MAT_ITEM = { 'MAT-PHOBOS-CLAY': 'phobos-hydrated-clay', 'MAT-PHOBOS-REGOLITH': 'phobos-regolith', 'MAT-PHOBOS-RUBBLE': 'phobos-rubble',
   'MAT-DEIMOS-REGOLITH': 'deimos-regolith', 'MAT-DEIMOS-RUBBLE': 'deimos-rubble' };
 
 export class SpaceJobs {
@@ -227,7 +227,7 @@ export class SpaceJobs {
     if (cargo.length) L.push(`Hold: ${cargo.map(([k, v]) => `${v >= 1000 ? (v / 1000).toFixed(2) + ' t' : Math.round(v) + ' kg'} ${k}`).join(', ')}`);
     L.push(`<span class="dim">Distress beacon: ${this.salvaged ? 'the cargo module on Phobos is claimed.' : 'a drifting cargo module on Phobos, south-west of the pad. Walk up to it and salvage it.'}</span>`);
     L.push(`<span class="dim">Raiders outside Mars airspace: 25 credits each.</span>`);
-    L.push(`<span class="dim">Credits (local until the economy is wired): ${sp.ledger.credits}</span>`);
+    L.push(`<span class="dim">Ship account (credits): ${sp.ledger.credits}</span>`);
     return L.join('<br>');
   }
 }

@@ -2,10 +2,10 @@ import { encodeBrick, terrainMeta } from './terrainCodec.js';
 import { reduceEconomy } from '../economy/economy.js';
 import { QUESTS } from '../economy/catalog.js';
 const poseKey='cosmos-pose-v1';
-const fields=['heading','pitch','roll','yawRate','hull','shield','gearPos','landed','autoHover','airborne','agl','time'];
+const fields=['heading','pitch','roll','yawRate','hull','shield','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown'];
 export function shipPose(ship) {
   const f=ship.flight;
-  return {pos:{...f.pos},vel:{...f.vel},quaternion:f.quaternion.toArray(),power:{...f.power},
+  return {pos:{...f.pos},vel:{...f.vel},quaternion:f.quaternion.toArray(),attitude:f.attitude?.toArray()||null,power:{...f.power},
     ...Object.fromEntries(fields.map(k=>[k,f[k]])),state:structuredClone(ship.state),rampCtl:structuredClone(ship.rampCtl),air:structuredClone(ship.air)};
 }
 export function playerPose(w,ship) {
@@ -62,10 +62,11 @@ export class GameBridge {
   }
   restore() {
     const s=this.world.state;let ship=s.ship,player=s.player;
-    try {const p=JSON.parse(localStorage.getItem(poseKey));if(p&&p.revision>=s.revision){ship=p.ship;player=p.player;}}catch{}
+    try {const p=this.world.remote?null:JSON.parse(localStorage.getItem(poseKey));if(p&&p.revision>=s.revision){ship=p.ship;player=p.player;}}catch{}
     if(ship) {
       const f=this.ship.flight;Object.assign(f.pos,ship.pos);Object.assign(f.vel,ship.vel);
       f.quaternion.fromArray(ship.quaternion);Object.assign(f.power,ship.power);
+      f.attitude=ship.attitude?f.quaternion.clone().fromArray(ship.attitude):null;
       for(const k of fields)if(ship[k]!==undefined)f[k]=ship[k];
       // Keep nested references held by the existing ship controls/walkers.
       for(const [k,v] of Object.entries(ship.state||{}))Object.assign(this.ship.state[k],v);
@@ -87,15 +88,19 @@ export class GameBridge {
     const s=this.world.state;s.ship=shipPose(this.ship);s.player=playerPose(this.walker,this.ship);
     if(this.crew)s.crew=this.crew.snapshot();
     s.economy.cargo=structuredClone(this.digger.carried);s.toolIdx=this.digger.toolIdx;
+    if(this.space)s.space=this.space.snapshotState();
     const bricks=[];
     if(action.type==='dig-edit'||action.type==='spoil-pour') {
-      s.terrain=structuredClone(terrainMeta(this.edits));
-      for(const key of this.edits._dirty) {const b=this.edits.bricks.get(key);if(b?.edited)bricks.push(encodeBrick(this.edits,b));}
+      const store=this.digger.edits;
+      if(store.body.id==='mars')s.terrain=structuredClone(terrainMeta(store));
+      else{ s.moonTerrain=s.moonTerrain||{};s.moonTerrain[store.body.id]=structuredClone(terrainMeta(store)); }
+      for(const key of store._dirty) {const b=store.bricks.get(key);if(b?.edited){const encoded=encodeBrick(store,b);
+        if(store.body.id!=='mars'){encoded.key=store.body.id+':'+encoded.key;encoded.bodyId=store.body.id;}bricks.push(encoded);}}
     }
     return bricks;
   }
   checkpoint() {
-    if(this.world.error)return;
+    if(this.world.remote||this.world.error)return;
     this.world.dispatch({type:'player-pose',pose:playerPose(this.walker,this.ship)});
     // Synchronous pose breadcrumb for page refresh; cargo/economy/terrain remain in one IDB transaction.
     try {localStorage.setItem(poseKey,JSON.stringify({revision:this.world.state.revision,ship:this.world.state.ship,player:this.world.state.player}));}catch{}
@@ -107,7 +112,19 @@ export class GameBridge {
     this.world.dispatch({type:'wages',seconds});this.crew?.leaveIfUnpaid();
   }
   ledger() {
-    const l=this.edits.ledger(this.digger.carried),e=this.world.state.economy;
+    let lots=this.digger.carried,e=this.world.state.economy;
+    if(this.world.remote){const s=this.world.snapshot;
+      lots=[...Object.values(s.players).flatMap(p=>p.carried),...Object.values(s.ships).flatMap(sh=>[...(sh.holdLots||[]),...sh.jobs.samples])];
+      e={exportedMassExact:String(Object.values(s.ships).reduce((n,sh)=>n+BigInt(sh.economy.exportedMassExact),0n)),
+        exportedVolumeExact:String(Object.values(s.ships).reduce((n,sh)=>n+BigInt(sh.economy.exportedVolumeExact),0n))};
+      // Every body's material account contributes to the same world ledger.
+      const accounts=Object.values(s.terrain);const removedM=accounts.reduce((n,a)=>n+BigInt(a.accounts[1]),0n),depositedM=accounts.reduce((n,a)=>n+BigInt(a.accounts[3]),0n),
+        removedV=accounts.reduce((n,a)=>n+BigInt(a.accounts[0]),0n),depositedV=accounts.reduce((n,a)=>n+BigInt(a.accounts[2]),0n),scale=2**96;
+      const exact=k=>lots.reduce((n,l)=>n+BigInt(l[k]*scale),0n);
+      return {...this.edits.ledger(lots),unaccountedKg:Number(removedM-depositedM-exact('massKg')-BigInt(e.exportedMassExact))/scale,
+        unaccountedM3:Number(removedV-depositedV-exact('solidVolumeM3')-BigInt(e.exportedVolumeExact))/scale};
+    }
+    const l=this.edits.ledger(lots);
     const mass=Number(BigInt(e.exportedMassExact))/(2**96),volume=Number(BigInt(e.exportedVolumeExact))/(2**96);
     // Account exports before converting to double, so cancellation stays exact.
     const scale=2**96,exact=(lots,k)=>lots.reduce((s,l)=>s+BigInt(l[k]*scale),0n);

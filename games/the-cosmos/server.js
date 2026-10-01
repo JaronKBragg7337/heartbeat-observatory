@@ -31,6 +31,10 @@ createServer(async (req, res) => {
   try {
     let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (rel.endsWith('/')) rel += 'index.html';
+    // The authority's private code and local storage must never be downloadable.
+    if (rel.startsWith('/server/') || rel.split('/').some(p=>p.startsWith('.'))) {
+      res.writeHead(404).end('not found'); return;
+    }
 
     // The Loft people live at /homes/people/ on the live site, two folders up in the repo. Dev route for them (read-only).
     let base = ROOT;
