@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 $envFile = 'C:\Users\lilli\.secrets\keys.env'
 foreach ($line in [System.IO.File]::ReadLines($envFile)) {
   if ($line -match '^\s*(SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY)\s*=\s*(.*?)\s*$') {
