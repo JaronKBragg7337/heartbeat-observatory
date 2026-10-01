@@ -65,7 +65,14 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
     async close(){closing=true;clearInterval(timer);await world.queue;await world.commit();for(const p of peers)p.close();await new Promise(r=>server.close(r));}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  const app=await startServer({port:Number(process.env.COSMOS_PORT||8390)});
+  let app;
+  try { app=await startServer({port:Number(process.env.COSMOS_PORT||8390)}); }
+  catch(e) {
+    // Missing migration RPCs return HTTP 400/404. Keep local play available until applied.
+    if(!process.env.SUPABASE_URL||!process.env.SUPABASE_SERVICE_ROLE_KEY||!(/HTTP (400|404)/.test(e.message))) throw e;
+    console.error('Supabase schema unavailable at startup; using local FileAdapter until migration is applied.');
+    app=await startServer({adapter:new FileAdapter(resolve(root,'server/.data/world.json')),port:Number(process.env.COSMOS_PORT||8390)});
+  }
   console.log('The Cosmos authority listening on localhost:'+app.server.address().port+' ('+app.world.adapter.constructor.name+').');
   for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>app.close().then(()=>process.exit(0)).catch(()=>process.exit(1)));
 }
