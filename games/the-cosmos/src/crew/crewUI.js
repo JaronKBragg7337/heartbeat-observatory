@@ -93,7 +93,8 @@ export class CrewUI {
   _signature(m) {
     const f = this.crew.ship.flight, o = this.crew.activeOrder();
     const tr = this.ship.space && this.ship.space.trip;
-    return [m.id, m.status, m.mode, m.seated, m.displaced, this.view, this.reply, this.crew.world?.state.economy.marks, o ? o.type : '-', this.crew.flyer() ? 1 : 0, f.landed ? 1 : 0, this.ship.aboard ? 1 : 0, this.ship.seat ? this.ship.seat.id : '-', tr && tr.active ? tr.phase : '-'].join('|');
+    const trTick = tr && tr.active ? `${tr.phase}|${tr.warp}|${tr.eff}|${Math.round(tr.progress.etaS / 10)}|${Math.round(tr.progress.distM / 2000)}` : '-';   // SPACE-FIX: redraw as the course moves on
+    return [m.id, m.status, m.mode, m.seated, m.displaced, this.view, this.reply, this.crew.world?.state.economy.marks, o ? o.type : '-', this.crew.flyer() ? 1 : 0, f.landed ? 1 : 0, this.ship.aboard ? 1 : 0, this.ship.seat ? this.ship.seat.id : '-', trTick].join('|');
   }
 
   _draw() {
@@ -120,6 +121,7 @@ export class CrewUI {
         if (!atSeat) h += `<p class="stat">${esc(m.name)} is not at the chair right now.</p>`;
         if (this.view === 'places') h += this._placesHTML();
         else {
+          h += this._tripHTML();                                                   // SPACE-FIX: course status, time compression, cancel
           h += `<div class="col">`;
           for (const o of ORDERS) {
             const disabled = !c.flyer() || (o.id !== 'hold' && !ship.aboard);
@@ -154,6 +156,22 @@ export class CrewUI {
     if (isFlyer && trip && trip.active) return `Flying the course to ${trip.dest.name} (${trip.phase}).`;
     if (isFlyer && o) return { goto: `Flying to ${o.name || 'a place'}.`, return: 'Flying home.', hunt: 'Hunting raiders beyond neutral airspace.', roam: 'Roaming.', supply: 'On a supply run.', land: 'Landing.' }[o.type] || 'Holding.';
     return m.seated ? 'At their station.' : 'Aboard.';
+  }
+
+  // SPACE-FIX: while a course is under way, the pilot's panel shows each phase with its time left, the time compression buttons and Cancel course.
+  _tripHTML() {
+    const sp = this.ship.space, t = sp && sp.trip;
+    if (!t || !t.active) return '';
+    const fmtT = (s) => (s >= 5400 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min` : s >= 120 ? `${Math.round(s / 60)} min` : `${Math.round(s)} s`);
+    const ph = t.phases();
+    let h = `<p class="stat">Course to ${esc(t.dest.name)}</p>`;
+    h += ph.map((q) => `<p class="stat" style="margin:1px 0${q.state === 'now' ? ';color:#fff' : ''}">${q.state === 'done' ? '✓' : q.state === 'now' ? '▶' : '·'} ${esc(q.name)}: ${q.state === 'done' ? 'done' : fmtT(t.wallS(q))}</p>`).join('');
+    h += `<p class="stat" style="margin:1px 0 6px">Whole trip: ${fmtT(ph.reduce((a, q) => a + t.wallS(q), 0))}${t.eff < t.warp ? ` · held to ×${t.eff} here (×1 for the last 400 m)` : ''}</p>`;
+    if (t.phase === 'ascent' || t.phase === 'transit' || t.phase === 'descent') {
+      h += `<div class="row2" style="margin-bottom:6px">${[1, 5, 20, 60].map((w) => `<button class="cbtn" data-a="warp" data-w="${w}" ${t.warp === w ? 'style="border-color:#fff"' : ''}>×${w}</button>`).join('')}</div>`;
+    }
+    h += `<div class="col"><button class="cbtn" data-a="cancel-course">Cancel course<small>${t.phase === 'transit' ? 'Brakes to a stop where we are' : 'Holds here'}</small></button></div>`;
+    return h;
   }
 
   _placesHTML() {
@@ -200,6 +218,8 @@ export class CrewUI {
       }
       case 'goto': r = c.order('goto', { id: b.dataset.p }); if (r.ok) { this.view = 'main'; this.close(); return; } break;
       case 'report': this.reply = c.report(m); break;
+      case 'warp': if (this.ship.space) this.ship.space.setWarp(Number(b.dataset.w)); break;                                      // SPACE-FIX
+      case 'cancel-course': if (this.ship.space) { const q = this.ship.space.cancel(); if (!q.ok) this.reply = q.msg; } break;     // SPACE-FIX
     }
     if (r && !r.ok) this.reply = r.msg;
     this._sig = ''; this._draw();

@@ -228,6 +228,8 @@ export class SpaceSystem {
   }
 
   setWarp(w) { this.warp = w; if (this.trip) this.trip.setWarp(w); }
+  /** Seconds of flight per real second for the climb and the landing this frame (1 unless a course is compressing them). */
+  stickWarp(dt) { const t = this.trip; return t && t.active ? t.stickWarp(dt) : 1; }
 
   /** The ship asks, every frame, before it flies: the trip's stick values (or null). */
   tripControls(dt) {
@@ -288,9 +290,10 @@ export class SpaceSystem {
     const f = this.ship.flight, t = this.trip, out = [];
     if (this.onMoon) { const m = this.activeMoon; out.push(`<span class="dim">${m.body.name} · gravity ${(m.body.surfaceGravity * 1000).toFixed(2)} mm/s²</span>`); }
     if (t && t.active) {
-      const p = t.progress;
-      if (t.phase === 'transit') out.push(`<span class="load">DRIVE · ${(p.speed / 1000).toFixed(2)} km/s · ${fmtKmSpace(p.distM)} to go · ${fmtDuration(p.etaS / Math.max(1, t.warp))}${t.warp > 1 ? ` · ×${t.warp}` : ''}</span>`);
-      else out.push(`<span class="dim">${t.phase} · ${t.dest.name}</span>`);
+      const p = t.progress, ph = t.phases(), now = ph.find((q) => q.state === 'now');
+      if (t.phase === 'transit') out.push(`<span class="load">DRIVE · ${(p.speed / 1000).toFixed(2)} km/s · ${fmtKmSpace(p.distM)} to go${t.warp > 1 ? ` · ×${t.warp}` : ''}</span>`);
+      else out.push(`<span class="dim">${t.phase} · ${t.dest.name}${t.eff > 1 ? ` · ×${t.eff}` : ''}</span>`);
+      out.push(`<span class="dim">${now ? `${now.name}: ${fmtDuration(t.wallS(now))} left` : ''} · whole trip ${fmtDuration(ph.reduce((a, q) => a + t.wallS(q), 0))}</span>`);
     }
     return out.join('<br>');
   }

@@ -432,7 +432,7 @@ There is no loading screen anywhere: the same frame loop runs the whole way.
 | Sit at **Navigation**, **Pilot**, **Captain** or **Comms**, tap **Course** (or press **N**) | The nav computer's sheet: Mars orbit, Phobos, Deimos, the port, each with its distance and flight time from where you are *now* at the present engine share. The home worlds of the bibles are listed greyed out ("needs a jump drive"). |
 | Tap a destination | The ship lifts (the ramp folds first, as always), climbs, burns, turns over, brakes and lands. Any seat, or none: the computer flies it; you can walk the ship the whole time. |
 | Talk (**T**) to the hired pilot -> **Fly to...** | The same list, under "Other worlds". The pilot says what he or she is doing. |
-| Tap **x5 / x20 / x60** during the burn | Time compression for the burn only (below). The cabin, the crew and the doors keep real time. |
+| Tap **x5 / x20 / x60** (nav sheet, or the **pilot's Talk panel** while a hired pilot flies) | Time compression for the climb, the burn and the landing. Near the ground it is held down by a cap (x4 under 1.5 km, x1 for the last 400 m); the flight model still sub-steps at 1/120 s, so every contact check is exact. The panels list each phase (climb, drive, descent) with its real time left. The cabin, the crew and the doors keep real time. |
 | **Cancel course** | In transit the computer brakes to a halt and the ship holds where it stopped. In the climb below the air it is refused above 60 m/s: the lift pods only push up. |
 | Touch the stick in the pilot's or captain's chair during the climb or the descent | "You have the controls": the course ends and you fly. |
 

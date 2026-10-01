@@ -72,15 +72,18 @@ export class SpaceUI {
     if (this.tab === 'jobs') {
       h += `<div>${sp.jobs.summary()}</div>`;
     } else if (trip) {
-      const p = trip.progress, d = trip.dest;
+      const p = trip.progress, d = trip.dest, ph = trip.phases();
       h += `<div class="big">${trip.phase === 'transit' ? 'Drive burning' : trip.phase[0].toUpperCase() + trip.phase.slice(1)} to ${d.name}</div>`;
-      if (trip.phase === 'transit') {
-        h += `<div>${(p.speed / 1000).toFixed(2)} km/s · ${fmtKm(p.distM)} to go<br>arrival in ${fmtDuration(p.etaS / Math.max(1, trip.warp))}${trip.warp > 1 ? ` (at ×${trip.warp} compression)` : ''}</div>`;
-        h += `<div class="dim" style="margin-top:6px">Time compression runs the burn faster. The cabin, crew and doors keep real time; you can walk the ship at any setting.</div><div class="row">`;
+      if (trip.phase === 'transit') h += `<div>${(p.speed / 1000).toFixed(2)} km/s · ${fmtKm(p.distM)} to go</div>`;
+      else if (trip.phase === 'ascent') h += `<div>${fmtKm(p.distM)} to the gate · ${Math.round(p.speed)} m/s</div>`;
+      else if (trip.phase === 'descent') h += `<div>${fmtKm(p.distM)} up · ${Math.round(p.speed)} m/s down</div>`;
+      // space-fix: every phase with the time left in it (real time, at the compression it runs at)
+      h += `<div style="margin:6px 0">` + ph.map((q) => `<div style="display:flex;justify-content:space-between;gap:8px;${q.state === 'now' ? 'color:#fff' : q.state === 'done' ? 'color:#6fa3b3' : 'color:#9cd8e8'}"><span>${q.state === 'done' ? '✓' : q.state === 'now' ? '▶' : '·'} ${esc(q.name)}</span><span>${q.state === 'done' ? 'done' : fmtDuration(trip.wallS(q))}</span></div>`).join('') + `<div style="display:flex;justify-content:space-between;border-top:1px solid rgba(95,216,255,.25);margin-top:3px;padding-top:3px"><span>Whole trip</span><span>${fmtDuration(ph.reduce((a, q) => a + trip.wallS(q), 0))}</span></div></div>`;
+      if (trip.phase === 'ascent' || trip.phase === 'transit' || trip.phase === 'descent') {
+        h += `<div class="dim" style="margin-top:6px">Time compression runs the flight faster${trip.eff < trip.warp ? ` (held to ×${trip.eff} here: near the ground it drops, to ×1 for the last 400 m)` : ''}. The cabin, crew and doors keep real time.</div><div class="row">`;
         for (const w of DRIVE.warps) h += `<button class="wp ${trip.warp === w ? 'on' : ''}" data-a="warp" data-w="${w}">×${w}</button>`;
         h += `</div>`;
-      } else if (trip.phase === 'ascent') h += `<div>${fmtKm(p.distM)} to the gate · ${Math.round(p.speed)} m/s</div>`;
-      else h += `<div class="dim">${trip.phase}</div>`;
+      }
       h += `<button class="go stop" data-a="cancel">Cancel course<small>${trip.phase === 'transit' ? 'Brakes to a stop where we are' : 'Holds here'}</small></button>`;
     } else {
       const f = sp.ship.flight;

@@ -149,3 +149,32 @@ export const STANDOFF_M = 1800;
 export const RAIDER_SUSPEND_MS = 300;
 /** Paid for each raider shot down outside neutral space. A hook: the economy builder owns the real number. */
 export const BOUNTY_CREDITS = 25;
+
+// ---------------------------------------------------------------------------
+// TIME COMPRESSION IN THE CLIMB AND THE LANDING (space-fix)
+// ---------------------------------------------------------------------------
+/** Highest compression allowed at a height above the ground: x1 for the last 400 m, x4 under 1.5 km, x10 under 6 km, then anything. */
+export const STICK_WARP_BANDS = [[400, 1], [1500, 4], [6000, 10], [Infinity, 1e9]];
+export const bandCap = (aglM) => { for (const [h, w] of STICK_WARP_BANDS) if (aglM < h) return w; return 1e9; };
+/** The longest slice of ship time one frame may run, seconds. The flight model still sub-steps it at 1/120 s, so every sub-step is
+ *  a full contact / spring / landing check; this only bounds how many sub-steps a frame costs (120). */
+export const STICK_MAX_SIM_S = 1.0;
+
+/**
+ * The compression to run a climb or a descent at right now.
+ * @param requested what the player chose (1, 5, 20, 60)
+ * @param aglM      height above the ground, vsMs vertical speed (negative = sinking), dtReal the frame's real seconds
+ * A compression is allowed only if the ship, moving at this speed for TWO frames of it, would still be in a band that allows it: the
+ * ship can never skip from a fast band into the last 400 m inside one frame.
+ */
+export function stickWarpCap(requested, aglM, vsMs, dtReal) {
+  if (!(requested > 1) || !Number.isFinite(aglM)) return 1;
+  let best = 1;
+  for (const w of [60, 20, 10, 5, 4, 2]) {
+    if (w > requested) continue;
+    const sim = Math.min(dtReal * w, STICK_MAX_SIM_S);
+    const ahead = aglM - Math.max(0, -vsMs) * sim * 2;        // where a sinking ship could be two frames from now (a climbing one only gets higher)
+    if (bandCap(Math.min(aglM, ahead)) >= w) { best = w; break; }
+  }
+  return Math.min(best, requested);
+}

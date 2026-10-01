@@ -13,8 +13,8 @@
 // ============================================================================
 
 import * as THREE from 'three';
-import { Transit, turnToward } from './transit.js';
-import { DRIVE, ATMOSPHERE_TOP_M, STANDOFF_M, RAIDER_SUSPEND_MS } from './spaceSpec.js';
+import { Transit, turnToward, estimateTrip } from './transit.js';
+import { DRIVE, ATMOSPHERE_TOP_M, STANDOFF_M, RAIDER_SUSPEND_MS, stickWarpCap } from './spaceSpec.js';
 
 export const MARS_R = 3_389_500;
 const DEG = Math.PI / 180;
@@ -38,6 +38,77 @@ export class SpaceTrip {
     this._said = new Set();
     this.leaveFrame = null;           // the frame the ship left from
     this.progress = { distM: 0, speed: 0, etaS: 0, phase: 'start' };
+    this.eff = 1;                     // the compression actually in force this frame (the requested one, held down near the ground)
+    this.planS = null;                // planned ship-time seconds for { climb, drive, descent }, made when the trip starts
+  }
+
+  // ---- compression for the climb and the landing (space-fix) ----------------------------------------------------------
+  /** Called by the ship each frame before it steps the flight: how many seconds of flight to run per real second. */
+  stickWarp(dt) {
+    const f = this.f;
+    if (this.warp > 1 && (this.phase === 'ascent' || this.phase === 'descent')) this.eff = stickWarpCap(this.warp, Number.isFinite(f.agl) ? f.agl : 0, f.verticalSpeed, dt);
+    else this.eff = this.phase === 'transit' ? this.warp : 1;
+    return this.phase === 'ascent' || this.phase === 'descent' ? this.eff : 1;
+  }
+
+  /** Ship-time seconds for a sink from `agl` metres under the flare law (sink speed = 0.6 + sqrt(2 * spare * h), capped), plus the settle. */
+  _descentS(agl, cap) {
+    const f = this.f, spare = Math.max(0.3, (f.maxLiftN / f.massKg - 3) * 0.5);
+    let t = 0; const n = 40;
+    for (let i = 0; i < n; i++) { const h = agl * (1 - (i + 0.5) / n), v = Math.min(cap, 0.6 + Math.sqrt(2 * spare * h)); t += (agl / n) / v; }
+    return t + 12 + (cap > 100 ? 18 : 6);                              // the initial pick-up of speed and the last touchdown
+  }
+  /** Ship-time seconds to climb `distM` more metres on the pods from speed `v`. */
+  _climbS(distM, v) {
+    const f = this.f, a = Math.max(0.5, (f.maxLiftN / f.massKg - 3.0) * 0.9);
+    return Math.max(0, (-Math.max(0, v) + Math.sqrt(Math.max(0, v) ** 2 + 2 * a * Math.max(0, distM))) / a);
+  }
+  /** The phases of the whole trip, each with the ship-time seconds left (done: 0). Used by every panel. */
+  phases() {
+    const sp = this.space, f = this.f, out = [], d = this.dest;
+    const order = ['ascent', 'transit', 'descent'];
+    const cur = this.phase === 'lift' || this.phase === 'start' ? 'ascent' : this.phase === 'settle' ? 'descent' : this.phase;
+    const pl = this.planS || (this.planS = this._plan0());
+    const has = { ascent: pl.climb > 0, transit: d.kind !== 'hold', descent: d.kind === 'moon' || d.kind === 'port' };
+    const names = { ascent: 'Climb out', transit: 'Main drive', descent: d.kind === 'port' ? 'Descent to the pad' : 'Descent and landing' };
+    for (const k of order) {
+      if (!has[k]) continue;
+      const i = order.indexOf(k), ci = order.indexOf(cur);
+      let left;
+      if (i < ci) left = 0;
+      else if (k === 'ascent' && i === ci) left = this._climbLeftS();
+      else if (k === 'transit' && i === ci) left = this.progress.etaS || pl.drive;
+      else if (k === 'descent' && i === ci) left = this.phase === 'settle' ? 6 + this._descentS(this._descentStartAgl(), this._descentCap()) : this._descentS(Math.max(0, Number.isFinite(f.agl) ? f.agl : 0), this._descentCap());
+      else left = pl[k === 'ascent' ? 'climb' : k === 'transit' ? 'drive' : 'descent'];
+      out.push({ id: k, name: names[k], state: i < ci ? 'done' : i === ci ? 'now' : 'next', leftS: left, warp: i === ci ? (k === 'transit' ? this.warp : this.eff) : this.warp });
+    }
+    return out;
+  }
+  /** Real seconds a phase has left at the compression it will run at (a phase not yet begun is taken at the chosen compression). */
+  wallS(q) {
+    if (q.state === 'done') return 0;
+    const w = Math.max(1, q.state === 'now' ? (q.warp || 1) : this.warp);
+    if (q.id === 'descent' && w > 1) { const tail = Math.min(q.leftS, 30); return tail + (q.leftS - tail) / w; }     // the last 400 m always run at x1
+    return q.leftS / w;
+  }
+  _descentCap() { return this.space.frameId === 'mars' ? 800 : 60; }
+  _descentStartAgl() { return this.dest.kind === 'port' ? DRIVE.gateAltM : STANDOFF_M; }
+  _climbLeftS() {
+    const f = this.f;
+    if (this.space.frameId === 'mars') return this._climbS(Math.max(0, DRIVE.gateAltM - this._marsAlt()), f.verticalSpeed) + 8;
+    return this._climbS(Math.max(0, 2500 - (Number.isFinite(f.agl) ? f.agl : 0)), f.verticalSpeed) + 4;
+  }
+  /** What the plan was when the trip began, from where the ship is. */
+  _plan0() {
+    const sp = this.space, d = this.dest;
+    const climb = this.phase === 'transit' || this.phase === 'descent' || this.phase === 'settle' ? 0 : this._climbLeftS();
+    let drive = 0;
+    try {
+      const f = this.f, p = sp._shipS(), start = (sp.frameId === 'mars' && this._marsAlt() < DRIVE.gateAltM) ? sp._gatePoint(p) : p;
+      const goal = d.goalS ? d.goalS(this) : start;
+      drive = d.kind === 'hold' ? 0 : estimateTrip({ pos: start, vel: { x: 0, y: 0, z: 0 }, nose: { x: f.fwdH.x, y: f.fwdH.y, z: f.fwdH.z }, up: { x: 0, y: 1, z: 0 }, goal, aMax: this._aMax(), vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate }).seconds;
+    } catch (e) { drive = 0; }
+    return { climb, drive, descent: d.kind === 'moon' || d.kind === 'port' ? this._descentS(this._descentStartAgl(), d.kind === 'port' ? 800 : 60) + 8 : 0 };
   }
 
   say(text, key, warn = false) {
@@ -79,6 +150,7 @@ export class SpaceTrip {
       const pl = this._plan();
       if (!pl.ok) { this.phase = 'done'; this.failed = pl.msg; return null; }
       this.phase = pl.phase;
+      this.planS = this._plan0();
       this.say(`Course set for ${this.dest.name}.`, 'course');
       if (this.phase === 'transit') this._beginTransit();
     }

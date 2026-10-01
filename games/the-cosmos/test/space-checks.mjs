@@ -282,6 +282,63 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
     check('a raider shot down outside neutral space fires the bounty hook exactly once (not once per frame it stays dead)', paid === 1, `${paid}`);
   }
 
+  // ---- compression of the climb and the landing (space-fix) --------------------------------------------------------------------
+  section('15b. Space: time compression in the climb and the landing');
+  {
+    const { stickWarpCap, bandCap, STICK_MAX_SIM_S } = SPEC;
+    check('compression is x1 for the last 400 m whatever was asked, and at most x4 under 1.5 km, x10 under 6 km', stickWarpCap(60, 399, -10, 1 / 60) === 1 && stickWarpCap(60, 0, 0, 1 / 60) === 1 && stickWarpCap(60, 1000, 0, 1 / 60) <= 4 && stickWarpCap(60, 5000, 0, 1 / 60) <= 10 && bandCap(399) === 1);
+    check('never more than asked, x1 stays x1, and it is non-increasing as the ship sinks (500 heights, all speeds)', (() => {
+      for (let h = 20000; h > 0; h -= 40) { for (const v of [-900, -300, -60, 0, 300]) { const a = stickWarpCap(60, h, v, 1 / 60), b = stickWarpCap(60, h - 40, v, 1 / 60); if (b > a || a > 60 || stickWarpCap(1, h, v, 1 / 60) !== 1) return false; } }
+      return true;
+    })());
+    check('a sinking ship can never skip from a fast band into the last 400 m inside two frames of the compression it is run at (all speeds to 900 m/s, heights to 30 km)', (() => {
+      for (let h = 30000; h >= 400; h -= 25) for (const v of [-900, -500, -100, -20]) {
+        const w = stickWarpCap(60, h, v, 1 / 60), sim = Math.min(w / 60, STICK_MAX_SIM_S);
+        if (h - Math.abs(v) * sim * 2 < 400 && w > 1 && bandCap(h - Math.abs(v) * sim * 2) < w) return false;
+      }
+      return true;
+    })());
+    // a whole descent flown with the cap, the way the ship does it: the flight model is handed dt * warp and sub-steps it at 1/120 s
+    const p0 = GEO.geodeticToCartesian(mars, -14, -59.2, 2300), l0 = len(p0), Rg = FIELD.surfaceRadiusFast(mars, p0.x / l0, p0.y / l0, p0.z / l0);
+    const at = (a) => ({ x: p0.x / l0 * (Rg + a), y: p0.y / l0 * (Rg + a), z: p0.z / l0 * (Rg + a) });
+    const groundM = (x, y, z) => FIELD.surfaceRadiusFast(mars, x, y, z);
+    const fly = (warp, from, frameDt = 1 / 60) => {
+      const f = new ShipBody(mars, groundM); f.setDown(at(3), 0); for (let i = 0; i < 540; i++) f.step(1 / 60);
+      f.autoHover = true; f.controls.lift = 1; f.climbCap = 200; let guard = 0; while (f.agl < from && guard++ < 100000) f.step(1 / 30);
+      f.controls.lift = 0; f.climbCap = 12; for (let i = 0; i < 90; i++) f.step(1 / 30);
+      // spy on the sub-steps
+      let maxH = 0, subs = 0; const orig = f._step.bind(f); f._step = (h) => { maxH = Math.max(maxH, h); subs++; orig(h); };
+      f.climbCap = 800; f.autoHover = true; f.controls.lift = -1;
+      let frames = 0, minAglCompressed = 1e9, topWarpNearGround = 0;
+      while (!f.landed && frames++ < 200000) { const w = stickWarpCap(warp, f.agl, f.verticalSpeed, frameDt); if (f.agl < 400) topWarpNearGround = Math.max(topWarpNearGround, w); f.step(Math.min(frameDt * w, STICK_MAX_SIM_S)); }
+      return { f, frames, maxH, subs, v: f.lastTouchdown ? f.lastTouchdown.v : 99, topWarpNearGround };
+    };
+    const slow = fly(1, 6000), fast = fly(60, 6000);
+    check(`a 6 km landing at x60 takes ${fast.frames} frames where x1 takes ${slow.frames} (about ${(slow.frames / fast.frames).toFixed(0)} times fewer), touches down at ${fast.v.toFixed(2)} m/s (x1: ${slow.v.toFixed(2)}), no hull damage, all four legs`, fast.f.landed && fast.frames < slow.frames / 4 && fast.v < 3.0 && Math.abs(fast.v - slow.v) < 1.2 && fast.f.hull === 100);
+    check('every flight sub-step is at most 1/120 s however much is compressed, so contact and landing checks are exact: the biggest sub-step run was ' + (1 / fast.maxH).toFixed(0) + ' per second', fast.maxH <= 1 / 120 + 1e-12 && fast.subs > slow.subs / 80);
+    check('and nothing runs compressed inside the last 400 m: the highest compression used there was x' + fast.topWarpNearGround, fast.topWarpNearGround === 1);
+    // the climb: the same seconds of flight at x60 and x1 reach the same height (the sub-stepping is the same physics)
+    const climb = (warp) => { const f = new ShipBody(mars, groundM); f.setDown(at(3), 0); for (let i = 0; i < 540; i++) f.step(1 / 60); f.autoHover = true; f.controls.lift = 1; f.climbCap = 1500; let sim = 0; while (sim < 120) { const w = stickWarpCap(warp, f.agl, f.verticalSpeed, 1 / 60), d = Math.min(w / 60, STICK_MAX_SIM_S); f.step(d); sim += d; } return f.agl; };
+    const c1 = climb(1), c60 = climb(60);
+    check(`120 s of climb reaches ${c1.toFixed(0)} m at x1 and ${c60.toFixed(0)} m compressed: the same flight (within 3%)`, Math.abs(c1 - c60) / c1 < 0.03);
+    // the phase list the panels show
+    const { SpaceTrip } = await import('../src/space/spaceTrip.js');
+    const fp = new ShipBody(mars, groundM); fp.setDown(at(3), 0); for (let i = 0; i < 540; i++) fp.step(1 / 60);
+    const sp = { frameId: 'mars', ship: { flight: fp }, _shipS: () => ({ ...fp.pos }), _gatePoint: (q) => { const l = len(q), R = 3389500 + SPEC.DRIVE.gateAltM; return { x: q.x / l * R, y: q.y / l * R, z: q.z / l * R }; }, say() {}, moonWorld() { return null; } };
+    const dest = { id: 'phobos', kind: 'moon', moon: 'phobos', name: 'Phobos', goalS: () => goalOf('phobos') };
+    const tp2 = new SpaceTrip(sp, dest); tp2.phase = 'lift'; tp2.planS = tp2._plan0();
+    const names = tp2.phases().map((q) => q.name + ':' + q.state);
+    check('the trip lists every phase with its state and time left: ' + names.join(', '), tp2.phases().length === 3 && tp2.phases()[0].state === 'now' && tp2.phases()[1].state === 'next' && tp2.phases()[2].state === 'next' && tp2.phases().every((q) => q.leftS > 0));
+    const leftAt = (alt, v) => { fp.pos = { ...at(alt) }; fp.vel = { x: 0, y: 0, z: 0 }; tp2.phase = 'ascent'; tp2.f.verticalSpeed; return tp2._climbS(SPEC.DRIVE.gateAltM - alt, v); };
+    check('the climb time left falls as the ship rises and as it gains speed', leftAt(1000, 50) > leftAt(50000, 400) && leftAt(50000, 100) > leftAt(50000, 600));
+    tp2.phase = 'transit'; tp2.progress.etaS = 900; const ph2 = tp2.phases();
+    check('in the drive the first phase is done, the drive shows its own time left (compressed by the chosen x), the descent is still to come', ph2[0].state === 'done' && ph2[1].state === 'now' && ph2[1].leftS === 900 && ph2[2].state === 'next' && (tp2.warp = 20, Math.abs(tp2.wallS(tp2.phases()[1]) - 45) < 1e-9));
+    tp2.warp = 60; tp2.phase = 'transit'; const dq = tp2.phases()[2];
+    check('the descent estimate keeps its last 30 s at x1 even when x60 is chosen (the cap near the ground), so it is never shown as a couple of seconds', tp2.wallS(dq) >= 30 && tp2.wallS(dq) < dq.leftS);
+    tp2.phase = 'descent'; const ph3 = tp2.phases();
+    check('in the descent the first two are done and the descent time left is the flare law: more from 1.8 km than from 100 m', ph3[0].state === 'done' && ph3[1].state === 'done' && ph3[2].state === 'now' && tp2._descentS(1800, 60) > tp2._descentS(100, 60) && tp2._descentS(120000, 800) > tp2._descentS(6000, 800));
+  }
+
   // ---- jobs and hooks --------------------------------------------------------------------------------------------------------
   section('17. Space: reasons to go, and the hooks for money');
   {
