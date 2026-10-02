@@ -40,6 +40,12 @@ import { cartesianToGeodetic, localFrame } from '../world/geodesy.js';
 import { GEAR, SHIP_PHYS } from './shipSpec.js';
 import { hullUnderside } from './shipExterior.js';
 
+// The Meridian's hull envelope for the landing constraint (the lofted octagon, its wing tips and the ventral turret).
+const MERIDIAN_HULL = {
+  z0: -21, z1: 21, underside: hullUnderside,
+  extraPoints: [...[-12, 12].flatMap((x) => [-3, 6, 12].map((z) => ({ x, y: 1.25, z }))), { x: 0, y: -2.12, z: -15.3 }],
+};
+
 const V = { east: new THREE.Vector3(), north: new THREE.Vector3(), up: new THREE.Vector3() };
 
 export class ShipBody {
@@ -47,9 +53,14 @@ export class ShipBody {
    * @param body    planet record
    * @param ground  (dx,dy,dz) -> surface radius under that direction (f64)
    */
-  constructor(body, ground) {
+  constructor(body, ground, def = null) {
     this.body = body;
     this.ground = ground;
+    // FLEET: the ship's own numbers. `def` is a ship definition (src/ships/registry.js); with none given this is the Meridian.
+    this.def = def;
+    this.G = (def && def.gear) || GEAR;
+    this.P = (def && def.phys) || SHIP_PHYS;
+    this.hullDef = (def && def.hull) || null;
 
     this.pos = { x: 0, y: 0, z: 0 };
     this.vel = { x: 0, y: 0, z: 0 };
@@ -59,14 +70,14 @@ export class ShipBody {
     this.quaternion = new THREE.Quaternion();
     this._basis = new THREE.Matrix4();
 
-    this.massKg = SHIP_PHYS.massKg;
-    this.power = { ...SHIP_PHYS.defaultPower };
+    this.massKg = this.P.massKg;
+    this.power = { ...this.P.defaultPower };
     this.controls = { fwd: 0, lift: 0, yaw: 0 };   // set only by a seated pilot
     this.hull = 100;                                 // integrity, percent
     this.shield = 0;                                 // current shield points
     this.shieldMax = 0;
 
-    this.legs = GEAR.legs.map((l) => ({ ...l, ext: GEAR.nominal, comp: 0, gap: 0, contact: false, world: null }));
+    this.legs = this.G.legs.map((l) => ({ ...l, ext: this.G.nominal, comp: 0, gap: 0, contact: false, world: null }));
     this.gearPos = 1;                // 1 = down, 0 = up (visual and contact)
     this.landed = false;
     this.autoHover = false;          // set when the ship lifts off: the flight computer holds a hover until it is down
@@ -84,7 +95,7 @@ export class ShipBody {
     // --- 12 m/s of flying low). `override(dt)` lets the drive move the ship itself during a transit (returns true if it did: the
     // --- ordinary flight step is then skipped). `attitude`, while set, is the hull's quaternion (a transit points the nose where
     // --- the thrust goes); the legacy level-on-the-horizon attitude is still computed into `levelQ` so it can be eased back.
-    this.climbCap = SHIP_PHYS.climbSpeed;
+    this.climbCap = this.P.climbSpeed;
     this.override = null;
     this.thrustDown = false;          // vacuum descent: the pods are ducted both ways, so a ship can push itself down (a moon's pull is a few mm/s2)
     this.attitude = null;
@@ -93,16 +104,16 @@ export class ShipBody {
   }
 
   // ---- power ----------------------------------------------------------------
-  get engineFactor() { return this.power.engines / SHIP_PHYS.defaultPower.engines; }
-  get gunFactor() { return this.power.guns / SHIP_PHYS.defaultPower.guns; }
-  get shieldFactor() { return this.power.shields / SHIP_PHYS.defaultPower.shields; }
+  get engineFactor() { return this.power.engines / this.P.defaultPower.engines; }
+  get gunFactor() { return this.power.guns / this.P.defaultPower.guns; }
+  get shieldFactor() { return this.power.shields / this.P.defaultPower.shields; }
 
   /**
    * Route reactor power. The total is fixed at reactorUnits; raising one share
    * takes from the others in proportion to what they had.
    */
   routePower(key, value) {
-    const total = SHIP_PHYS.reactorUnits;
+    const total = this.P.reactorUnits;
     const v = Math.max(0, Math.min(total, Math.round(value)));
     const others = Object.keys(this.power).filter((k) => k !== key);
     const rest = total - v;
@@ -120,7 +131,7 @@ export class ShipBody {
 
   /** Set all three shares at once. They are normalised so the total is exactly the reactor output. */
   setPowerSplit(e, g, sh) {
-    const total = SHIP_PHYS.reactorUnits;
+    const total = this.P.reactorUnits;
     const sum = Math.max(1, e + g + sh);
     const ne = Math.round((e / sum) * total), ng = Math.round((g / sum) * total);
     this.power.engines = ne; this.power.guns = ng; this.power.shields = total - ne - ng;
@@ -129,7 +140,7 @@ export class ShipBody {
   }
 
   updateShields(dt = 0, reset = false) {
-    this.shieldMax = 200 * this.shieldFactor;
+    this.shieldMax = (this.P.shieldBase ?? 200) * this.shieldFactor;      // FLEET: each class has its own shield and armour (the Meridian's are 200 and 0.25)
     if (reset) this.shield = this.shieldMax;
     else {
       this.shield = Math.min(this.shieldMax, this.shield + 8 * this.shieldFactor * dt);
@@ -141,16 +152,16 @@ export class ShipBody {
   takeHit(points) {
     const absorbed = Math.min(this.shield, points);
     this.shield -= absorbed;
-    this.hull = Math.max(0, this.hull - (points - absorbed) * 0.25);
+    this.hull = Math.max(0, this.hull - (points - absorbed) * (this.P.hullFactor ?? 0.25));
     return { absorbed, hull: this.hull };
   }
 
   // A battered hull loses thrust, but never enough to fall out of the sky: at zero integrity the
   // lift thrusters still make 78% of full power (234 kN against 171 kN of weight at the default split).
   get damageFactor() { return this.hull >= 50 ? 1 : 0.78 + 0.22 * (this.hull / 50); }
-  get maxLiftN() { return SHIP_PHYS.liftThrustN * Math.min(1.8, this.engineFactor) * this.damageFactor; }
-  get maxDriveN() { return SHIP_PHYS.driveThrustN * Math.min(1.8, this.engineFactor); }
-  get cruiseSpeed() { return SHIP_PHYS.cruiseSpeed * Math.sqrt(Math.min(1.8, this.engineFactor)); }
+  get maxLiftN() { return this.P.liftThrustN * Math.min(1.8, this.engineFactor) * this.damageFactor; }
+  get maxDriveN() { return this.P.driveThrustN * Math.min(1.8, this.engineFactor); }
+  get cruiseSpeed() { return this.P.cruiseSpeed * Math.sqrt(Math.min(1.8, this.engineFactor)); }
   weightN() {
     const r = Math.hypot(this.pos.x, this.pos.y, this.pos.z);
     return this.massKg * gravityAtRadius(this.body, r);
@@ -169,7 +180,7 @@ export class ShipBody {
     this.heading = headingRad;
     this.pitch = this.roll = 0;
     this.gearPos = 1;
-    for (const l of this.legs) { l.ext = GEAR.nominal; l.comp = 0; }
+    for (const l of this.legs) { l.ext = this.G.nominal; l.comp = 0; }
     this.refreshOrientation();
     this.landed = true;
   }
@@ -240,7 +251,7 @@ export class ShipBody {
   /** Height of the keel above the ground beneath it, metres. */
   radarAltitude() {
     const p = this.pos;
-    const s = this._groundAtWorld({ x: p.x + this.up.x * GEAR.keelY, y: p.y + this.up.y * GEAR.keelY, z: p.z + this.up.z * GEAR.keelY });
+    const s = this._groundAtWorld({ x: p.x + this.up.x * this.G.keelY, y: p.y + this.up.y * this.G.keelY, z: p.z + this.up.z * this.G.keelY });
     return s.gap;
   }
 
@@ -283,27 +294,27 @@ export class ShipBody {
       // The foot at its UNCOMPRESSED extension. Whatever ground is above that
       // is how far the spring is squeezed (a raycast suspension).
       const nomLen = l.ext * this.gearPos + 0.35 * (1 - this.gearPos);
-      const foot = this.toWorld({ x: l.x, y: -nomLen - GEAR.soleOffset, z: l.z });
+      const foot = this.toWorld({ x: l.x, y: -nomLen - this.G.soleOffset, z: l.z });
       const sn = this._groundAtWorld(foot);
       const overlap = Math.max(0, -sn.gap);
       l.world = foot;
       l.gap = sn.gap;
       worstGap = Math.min(worstGap, sn.gap);
       l.contact = overlap > 0;
-      const c = Math.min(overlap, GEAR.stroke * 1.6);
-      l.comp = Math.min(c, GEAR.stroke);
+      const c = Math.min(overlap, this.G.stroke * 1.6);
+      l.comp = Math.min(c, this.G.stroke);
       if (l.contact) {
         contacts++;
         const k = 130000;                                    // N/m per leg
         const dampC = 60000;                                 // N s/m
         let f = k * c - dampC * Math.min(0, vUp);            // damp only while moving into it
-        if (c > GEAR.stroke) f += 900000 * (c - GEAR.stroke); // bottomed out
+        if (c > this.G.stroke) f += 900000 * (c - this.G.stroke); // bottomed out
         fSpring += Math.max(0, f);
       }
     }
     // Belly points: stiff, never allowed below the ground.
-    for (const kp of GEAR.keel) {
-      const w = this.toWorld({ x: kp.x, y: GEAR.keelY, z: kp.z });
+    for (const kp of this.G.keel) {
+      const w = this.toWorld({ x: kp.x, y: this.G.keelY, z: kp.z });
       const s = this._groundAtWorld(w);
       if (s.gap < 0) { fSpring += 400000 * (-s.gap) - 60000 * Math.min(0, vUp); contacts++; }
     }
@@ -319,7 +330,7 @@ export class ShipBody {
     // Height is measured from where the FEET are, not the keel: the legs hang 1.6 m below it.
     const spare = Math.max(0.3, (this.maxLiftN / m - g) * 0.5);
     // With the gear down the first foot to touch is what matters (the ground can rise under one leg).
-    const hFoot = this.gearPos > 0.95 && Number.isFinite(worstGap) ? Math.max(0, worstGap - 0.4) : Math.max(0, aglNow - (GEAR.nominal + GEAR.keelY + 0.5));
+    const hFoot = this.gearPos > 0.95 && Number.isFinite(worstGap) ? Math.max(0, worstGap - 0.4) : Math.max(0, aglNow - (this.G.nominal + this.G.keelY + 0.5));
     if (Number.isFinite(aglNow)) climbTarget = Math.max(climbTarget, -(0.6 + Math.sqrt(2 * spare * hFoot)));
     // Vertical: gravity compensation plus a proportional term, never pushing down.
     const onGround = contacts > 0 && aglNow < 2.5;
@@ -380,19 +391,19 @@ export class ShipBody {
     // --- Landing gear self-levelling once we are down. --------------------------------
     if (this.landed && c.lift <= 0.01) {
       for (const l of this.legs) {
-        const target = GEAR.stroke * 0.45;
-        if (!l.contact && l.gap > 0.02) l.ext = Math.min(GEAR.max, l.ext + 0.45 * dt);
-        else if (l.comp > target + 0.12) l.ext = Math.max(GEAR.min + 0.2, l.ext - 0.45 * dt);
-        else if (l.comp < target - 0.12 && l.contact) l.ext = Math.min(GEAR.max, l.ext + 0.35 * dt);
+        const target = this.G.stroke * 0.45;
+        if (!l.contact && l.gap > 0.02) l.ext = Math.min(this.G.max, l.ext + 0.45 * dt);
+        else if (l.comp > target + 0.12) l.ext = Math.max(this.G.min + 0.2, l.ext - 0.45 * dt);
+        else if (l.comp < target - 0.12 && l.contact) l.ext = Math.min(this.G.max, l.ext + 0.35 * dt);
       }
     } else if (!this.landed && this.gearPos >= 0.99) {
       // In the air the legs return to nominal.
-      for (const l of this.legs) l.ext += Math.max(-0.6 * dt, Math.min(0.6 * dt, GEAR.nominal - l.ext));
+      for (const l of this.legs) l.ext += Math.max(-0.6 * dt, Math.min(0.6 * dt, this.G.nominal - l.ext));
     }
 
     // --- Attitude. ----------------------------------------------------------------------
     const flying = !onGround;
-    const yawCmd = flying ? c.yaw * SHIP_PHYS.turnRate * Math.min(1.4, 0.7 + eng * 0.3) : 0;
+    const yawCmd = flying ? c.yaw * this.P.turnRate * Math.min(1.4, 0.7 + eng * 0.3) : 0;
     this.yawRate += (yawCmd - this.yawRate) * Math.min(1, 2.5 * dt);
     this.heading += this.yawRate * dt;
     this.heading = ((this.heading % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
@@ -417,15 +428,16 @@ export class ShipBody {
     const clearance = (point) => this._groundAtWorld(this.toWorld(point)).gap;
     // A conservative underside grid covers keel, flanks, wings, nose and aft hull.
     // The ventral turret needs its own lower support point.
-    for (let z=-21; z<=21; z+=3) {
-      const s=hullUnderside(z);
+    // FLEET: the hull's underside comes from the ship definition (the Meridian's is the lofted octagon in shipExterior.js).
+    const H = this.hullDef || MERIDIAN_HULL;
+    for (let z=H.z0; z<=H.z1; z+=3) {
+      const s=H.underside(z);
       for (const x of [-(s.hw-s.cb),0,s.hw-s.cb]) lift=Math.max(lift,.04-clearance({x,y:s.yb,z}));
       for (const x of [-s.hw,s.hw]) lift=Math.max(lift,.04-clearance({x,y:s.yb+s.cb,z}));
     }
-    for (const x of [-12,12]) for (const z of [-3,6,12]) lift=Math.max(lift,.04-clearance({x,y:1.25,z}));
-    lift=Math.max(lift,.04-clearance({x:0,y:-2.12,z:-15.3}));
+    for (const q of H.extraPoints) lift=Math.max(lift,.04-clearance(q));
     for(const l of this.legs) {
-      lift=Math.max(lift,-clearance({x:l.x,y:-l.ext+GEAR.stroke-GEAR.soleOffset,z:l.z}));
+      lift=Math.max(lift,-clearance({x:l.x,y:-l.ext+this.G.stroke-this.G.soleOffset,z:l.z}));
     }
     if(lift>0) {
       this.pos.x+=this.up.x*lift; this.pos.y+=this.up.y*lift; this.pos.z+=this.up.z*lift;
@@ -436,16 +448,16 @@ export class ShipBody {
     // within their measured stroke, then share the real weight at equilibrium.
     const gaps=this.legs.map(l=>clearance({x:l.x,y:0,z:l.z}));
     const equilibrium=this.weightN()/(4*130000);
-    const canSettle=gaps.every(g=>g-GEAR.soleOffset+equilibrium>=GEAR.min && g-GEAR.soleOffset+equilibrium<=GEAR.max);
+    const canSettle=gaps.every(g=>g-this.G.soleOffset+equilibrium>=this.G.min && g-this.G.soleOffset+equilibrium<=this.G.max);
     if(this.controls.lift<=.01 && canSettle && (this.landed || lift>0) && this.verticalSpeed<.6) {
       this.landed=true; this.airborne=false;
       this.autoHover=false;
       this.pitch=this.roll=0; this.refreshOrientation();
       for(const l of this.legs) {
         const gap=clearance({x:l.x,y:0,z:l.z});
-        l.ext=clamp(gap-GEAR.soleOffset+equilibrium,GEAR.min,GEAR.max);
-        l.comp=clamp(l.ext+GEAR.soleOffset-gap,0,GEAR.stroke);
-        l.world=this.toWorld({x:l.x,y:-l.ext+l.comp-GEAR.soleOffset,z:l.z});
+        l.ext=clamp(gap-this.G.soleOffset+equilibrium,this.G.min,this.G.max);
+        l.comp=clamp(l.ext+this.G.soleOffset-gap,0,this.G.stroke);
+        l.world=this.toWorld({x:l.x,y:-l.ext+l.comp-this.G.soleOffset,z:l.z});
         l.gap=this._groundAtWorld(l.world).gap;
         l.contact=Math.abs(l.gap)<.035;
       }

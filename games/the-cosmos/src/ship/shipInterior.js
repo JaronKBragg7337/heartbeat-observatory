@@ -104,7 +104,8 @@ export const NEST_SILL = 0.65;
 
 function buildWalls(k, layout, r, wallKey) {
   // The bridge has windows: its forward and side walls stop at the sill.
-  const sillTop = r.id === 'bridge' ? r.y + 1.05 : (r.id === 'nest' ? r.y + NEST_SILL : null);
+  // FLEET: a flight deck (kind 'bridge') and a turret nest (kind 'nest') are known by what they are, not by one ship's room names.
+  const sillTop = r.kind === 'bridge' ? r.y + 1.05 : (r.kind === 'nest' ? r.y + NEST_SILL : null);
   const sides = [
     { axis: 'x', plane: r.x0, normal: +1, lo: r.z0, hi: r.z1 },
     { axis: 'x', plane: r.x1, normal: -1, lo: r.z0, hi: r.z1 },
@@ -112,7 +113,7 @@ function buildWalls(k, layout, r, wallKey) {
     { axis: 'z', plane: r.z1, normal: -1, lo: r.x0, hi: r.x1 },
   ];
   for (const side of sides) {
-    const yTop = (sillTop && !(r.id === 'bridge' && side.axis === 'z' && side.plane === r.z1)) ? sillTop : r.y + r.h;
+    const yTop = (sillTop && !(r.kind === 'bridge' && side.axis === 'z' && side.plane === r.z1)) ? sillTop : r.y + r.h;
     const ops = openingsFor(layout, r, side.axis, side.plane);
     let cursor = side.lo;
     for (const o of ops) {
@@ -287,7 +288,7 @@ export function buildInterior(layout, mats, opts = {}) {
     core.name = 'reactor-core';
     const inner = new THREE.Mesh(new THREE.CylinderGeometry(c.r * 0.5, c.r * 0.5, c.h - 0.04, 16, 1, false), mats.glowWhite);
     inner.position.copy(core.position);
-    out.rooms.get('engineering').add(core, inner);
+    out.rooms.get(c.room || 'engineering').add(core, inner);
     out.reactorCore = core; out.reactorInner = inner;
   }
 
@@ -296,7 +297,7 @@ export function buildInterior(layout, mats, opts = {}) {
   out.sharedGroups = [];
   {
     const STAIR_ROOMS = { up: ['corridor_main', 'bridge'] };
-    for (const key of ['up']) {
+    for (const key of (layout.stairs && layout.stairs.up ? ['up'] : [])) {
       const k = new Kit();
       k.tiles = { 'floor:deck': 2, ceil: 1.5, steel: 1, steelDark: 1, gunmetal: 1 };
       buildStairs(k, layout, key);
@@ -310,7 +311,7 @@ export function buildInterior(layout, mats, opts = {}) {
       drawLadder(k, L);
       const g = mount(k, mats, { name: 'ladder:' + L.id });
       root.add(g);
-      out.sharedGroups.push({ g, rooms: LADDER_ROOMS[L.id] || ['corridor_main'] });
+      out.sharedGroups.push({ g, rooms: L.rooms || LADDER_ROOMS[L.id] || ['corridor_main'] });
     }
   }
 
@@ -436,6 +437,25 @@ function dressRoom(k, layout, r, rnd, out, low) {
     for (const sx of [-1, 1]) k.box(accent, sx * 0.62, yF + 0.006, (r.z0 + r.z1) / 2, 0.012, 0.004, r.z1 - r.z0 - 0.4);
   }
 
+  // FLEET: the turret nest's hatch shaft is generic (it starts where the room below ends); everything after this point that is
+  // named for a room is the Meridian's own dressing, and a ship with its own `custom` dressing does that itself.
+  if (r.kind === 'nest') {
+    // the hatch shaft through the roof space, between the turret ladder niche and this floor
+    const hh = r.floorHoles[0];
+    const yLo = r.shaftFrom ?? 5.7, yHi = r.y;
+    const wq = (pts, n) => k._faceQuadUV('wall:corridor', pts, n, null);
+    wq([[hh.x0, yLo, hh.z0], [hh.x1, yLo, hh.z0], [hh.x1, yHi, hh.z0], [hh.x0, yHi, hh.z0]], [0, 0, 1]);
+    wq([[hh.x0, yLo, hh.z1], [hh.x1, yLo, hh.z1], [hh.x1, yHi, hh.z1], [hh.x0, yHi, hh.z1]], [0, 0, -1]);
+    wq([[hh.x0, yLo, hh.z0], [hh.x0, yLo, hh.z1], [hh.x0, yHi, hh.z1], [hh.x0, yHi, hh.z0]], [1, 0, 0]);
+    wq([[hh.x1, yLo, hh.z0], [hh.x1, yLo, hh.z1], [hh.x1, yHi, hh.z1], [hh.x1, yHi, hh.z0]], [-1, 0, 0]);
+    // glass band and sill; the roof is the ceiling
+    const y0 = yF + NEST_SILL;
+    k.bevelBox('steelDark', (r.x0 + r.x1) / 2, y0 - 0.02, r.z0 + 0.03, r.x1 - r.x0, 0.05, 0.08, 0.01);
+    k.bevelBox('steelDark', (r.x0 + r.x1) / 2, y0 - 0.02, r.z1 - 0.03, r.x1 - r.x0, 0.05, 0.08, 0.01);
+    k.bevelBox('steelDark', r.x1 - 0.03, y0 - 0.02, (r.z0 + r.z1) / 2, 0.08, 0.05, r.z1 - r.z0, 0.01);
+  }
+  if (layout.custom) { if (layout.custom.dress) layout.custom.dress(k, layout, r, rnd, out, low); return; }
+
   if (r.id === 'engineering') {
     // overhead pipe racks, running fore-aft
     for (const [x, key] of [[-4.2, 'pipeBlue'], [-3.85, 'pipeRed'], [4.0, 'pipeYellow'], [4.35, 'pipeSteel']]) {
@@ -479,22 +499,6 @@ function dressRoom(k, layout, r, rnd, out, low) {
   }
 
   if (r.id === 'bridge') dressBridge(k, r, out);
-
-  if (r.id === 'nest') {
-    // the hatch shaft through the roof space, between the turret ladder niche and this floor
-    const hh = r.floorHoles[0];
-    const yLo = 5.7, yHi = r.y;
-    const wq = (pts, n) => k._faceQuadUV('wall:corridor', pts, n, null);
-    wq([[hh.x0, yLo, hh.z0], [hh.x1, yLo, hh.z0], [hh.x1, yHi, hh.z0], [hh.x0, yHi, hh.z0]], [0, 0, 1]);
-    wq([[hh.x0, yLo, hh.z1], [hh.x1, yLo, hh.z1], [hh.x1, yHi, hh.z1], [hh.x0, yHi, hh.z1]], [0, 0, -1]);
-    wq([[hh.x0, yLo, hh.z0], [hh.x0, yLo, hh.z1], [hh.x0, yHi, hh.z1], [hh.x0, yHi, hh.z0]], [1, 0, 0]);
-    wq([[hh.x1, yLo, hh.z0], [hh.x1, yLo, hh.z1], [hh.x1, yHi, hh.z1], [hh.x1, yHi, hh.z0]], [-1, 0, 0]);
-    // glass band and sill; the roof is the ceiling
-    const y0 = yF + NEST_SILL;
-    k.bevelBox('steelDark', (r.x0 + r.x1) / 2, y0 - 0.02, r.z0 + 0.03, r.x1 - r.x0, 0.05, 0.08, 0.01);
-    k.bevelBox('steelDark', (r.x0 + r.x1) / 2, y0 - 0.02, r.z1 - 0.03, r.x1 - r.x0, 0.05, 0.08, 0.01);
-    k.bevelBox('steelDark', r.x1 - 0.03, y0 - 0.02, (r.z0 + r.z1) / 2, 0.08, 0.05, r.z1 - r.z0, 0.01);
-  }
 
   if (r.id === 'airlock') {
     // hazard frame on the outer wall, warning lamps
@@ -705,7 +709,7 @@ export function buildSeats(layout, mats, interior) {
   const low = !!interior.low;
   for (const s of layout.seats) {
     const k = new Kit();
-    const variant = { captain: 'captain', pilot: 'pilot', nav: 'swivel', comms: 'swivel', engineer: 'swivel', gun_dorsal: 'gunner', gun_ventral: 'gunner' }[s.id];
+    const variant = s.variant || { captain: 'captain', pilot: 'pilot', nav: 'swivel', comms: 'swivel', engineer: 'swivel', gun_dorsal: 'gunner', gun_ventral: 'gunner' }[s.id];
     SEAT_DRAW[variant](k);
     const g = k.toGroup(mats, { name: 'seat:' + s.id, cast: !low, receive: !low });
     g.position.set(s.x, s.y, s.z);
@@ -716,8 +720,8 @@ export function buildSeats(layout, mats, interior) {
     interior.seatGroups.set(s.id, g);
     interior.triangles += k.triangles;
   }
-  // The captain's dais: a low step with light strips.
-  {
+  // The captain's dais: a low step with light strips. (The Meridian's bridge; another ship's flight deck has none.)
+  if (interior.rooms.get('bridge') && !layout.custom) {
     const k = new Kit();
     k.bevelBox('gunmetal', 0, 6.1, -15.55, 2.8, 0.2, 1.9, 0.03);          // moved 0.6 m fore: the stair now lands on a clear 1.2 m of deck
     k.box('glowBlue', 0, 6.205, -14.58, 2.7, 0.006, 0.03);

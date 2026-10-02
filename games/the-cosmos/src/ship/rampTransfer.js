@@ -1,8 +1,8 @@
 // One geometric contract for both sides of the ship/planet handoff.
 import { RAMPS, AVATAR } from './shipSpec.js';
-export function rampEntry(key, state, local, motion) {
+export function rampEntry(key, state, local, motion, ramps = RAMPS) {   // FLEET: `ramps` is the ship definition's
   if(!state.lowered) return null;
-  const r=RAMPS[key], run=r.length*Math.cos(state.angle);
+  const r=ramps[key], run=r.length*Math.cos(state.angle);
   const along=(local.x-r.hinge.x)*r.dir.x+(local.z-r.hinge.z)*r.dir.z;
   const across=r.dir.z?Math.abs(local.x-r.hinge.x):Math.abs(local.z-r.hinge.z);
   // A trigger must never accept a shoulder outside the walker's supported zone.

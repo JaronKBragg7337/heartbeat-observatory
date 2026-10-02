@@ -24,23 +24,26 @@ export class GunSystem {
    * @param stations Stations
    * @param ground   (dx,dy,dz) -> surface radius
    */
-  constructor(ship, stations, ground) {
+  constructor(ship, stations, ground, def = null) {
     this.ship = ship;
     this.stations = stations;
     this.ground = ground;
     this.bolts = [];
     this.events = [];
-    this.cool = { main: 0, dorsal: 0, ventral: 0 };
-    this.alt = { main: 0, dorsal: 0, ventral: 0 };
-    this.shots = { main: 0, dorsal: 0, ventral: 0 };
+    // FLEET: the guns come from the ship definition (the Meridian has main, dorsal and ventral; a raider has main and dorsal).
+    this.GUNS = (def && def.guns) || GUNS;
+    const ids = Object.keys(this.GUNS);
+    this.cool = Object.fromEntries(ids.map((k) => [k, 0]));
+    this.alt = Object.fromEntries(ids.map((k) => [k, 0]));
+    this.shots = Object.fromEntries(ids.map((k) => [k, 0]));
     this.targets = [];
     // where each turret currently points, ship-local (yaw clockwise from the bow)
-    this.aim = { main: { yaw: 0, pitch: 0 }, dorsal: { yaw: 0, pitch: 0 }, ventral: { yaw: 0, pitch: 0 } };
+    this.aim = Object.fromEntries(ids.map((k) => [k, { yaw: 0, pitch: 0 }]));
   }
 
   /** Effective rate and damage at the current power split. */
   stats(gunId) {
-    const g = GUNS[gunId];
+    const g = this.GUNS[gunId];
     const f = this.ship.gunFactor;
     return {
       rate: g.rate * (0.35 + 0.65 * Math.min(1.9, f)),
@@ -54,13 +57,12 @@ export class GunSystem {
     let yaw = Math.atan2(dirLocal.x, -dirLocal.z);
     let pitch = Math.asin(Math.max(-1, Math.min(1, dirLocal.y / (Math.hypot(dirLocal.x, dirLocal.y, dirLocal.z) || 1))));
     if (gunId === 'main') {
-      const g = GUNS.main, d = Math.PI / 180;
+      const g = this.GUNS.main, d = Math.PI / 180;
       yaw = Math.max(-g.arcYawDeg * d, Math.min(g.arcYawDeg * d, yaw));
       pitch = Math.max(-g.arcPitchDownDeg * d, Math.min(g.arcPitchUpDeg * d, pitch));
-    } else if (gunId === 'dorsal') {
-      pitch = Math.max(-8 * Math.PI / 180, Math.min(85 * Math.PI / 180, pitch));
     } else {
-      pitch = Math.max(-80 * Math.PI / 180, Math.min(15 * Math.PI / 180, pitch));
+      const [lo, hi] = this.GUNS[gunId].pitchLimitsDeg || (gunId === 'dorsal' ? [-8, 85] : [-80, 15]);
+      pitch = Math.max(lo * Math.PI / 180, Math.min(hi * Math.PI / 180, pitch));
     }
     return { yaw, pitch };
   }
@@ -80,7 +82,7 @@ export class GunSystem {
 
   /** World position of a gun's muzzle n. */
   muzzleWorld(gunId, n) {
-    const G = GUNS[gunId];
+    const G = this.GUNS[gunId];
     const m = G.muzzles[n % G.muzzles.length];
     if (gunId === 'main') return this.ship.toWorld(m);
     // turret muzzles are in the turret's frame: rotate by the aim, then place at the pivot
@@ -106,7 +108,7 @@ export class GunSystem {
     if (this.cool[gunId] > 0) return 0;
     const st = this.stats(gunId);
     this.cool[gunId] = 1 / st.rate;
-    const G = GUNS[gunId];
+    const G = this.GUNS[gunId];
     const n = this.alt[gunId]++ % G.muzzles.length;
     const mz = this.muzzleWorld(gunId, n);
     // converge on a point far along the line of sight
@@ -387,8 +389,9 @@ export class DroneSystem {
       b.life -= dt;
       let dead = b.life <= 0;
       // hit the ship: distance from its centre (a 14 m sphere is a fair envelope for a 49 m hull)
-      const c = S.toWorld({ x: 0, y: 3, z: 0 }, {});
-      if (!dead && segSphere(b.px, b.py, b.pz, b.x, b.y, b.z, c, 15)) {
+      const env = (S.def && S.def.hull && S.def.hull.combat) || { centre: { x: 0, y: 3, z: 0 }, radius: 15 };   // FLEET: the hull's own hit sphere
+      const c = S.toWorld(env.centre, {});
+      if (!dead && segSphere(b.px, b.py, b.pz, b.x, b.y, b.z, c, env.radius)) {
         const res = S.takeHit(b.damage);
         // where on the hull, in ship-local metres, for the shield ripple
         const loc = S.toLocal({ x: b.x, y: b.y, z: b.z }, {});

@@ -629,6 +629,9 @@ const {runParityChecks}=await import('./parity-checks.mjs');
 await runParityChecks({check,section});
 const {runParityUIChecks}=await import('./parity-ui-checks.mjs');
 await runParityUIChecks({check,section});
+// 20-26. The fleet: ships by type, the first raider class, the raiders of the shared world, two clients seeing the same one.
+const { runFleetChecks } = await import('./fleet-checks.mjs');
+await runFleetChecks({check,section,THREE,mars,FIELD});
 
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);

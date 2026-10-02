@@ -391,7 +391,8 @@ function paintDoor(pxPerM, seed) {
   return L.finish(1.6, false);
 }
 
-const SIGN_NAMES = ['MEDBAY', 'CREW A', 'LOUNGE', 'GALLEY', 'WORKSHOP', 'CAPTAIN', 'HEAD', 'ENGINEERING', 'AIRLOCK', 'EVA', 'CARGO', 'BRIDGE'];
+// (the last six are the raider's doors: src/ships/raider/spec.js)
+const SIGN_NAMES = ['MEDBAY', 'CREW A', 'LOUNGE', 'GALLEY', 'WORKSHOP', 'CAPTAIN', 'HEAD', 'ENGINEERING', 'AIRLOCK', 'EVA', 'CARGO', 'BRIDGE', 'COCKPIT', 'CREW', 'MESS', 'ARMOURY', 'ENGINE', 'HOLD'];
 /** One canvas holding every door sign; each sign is a 512 x 64 cell. */
 export function makeSignAtlas() {
   const n = SIGN_NAMES.length;

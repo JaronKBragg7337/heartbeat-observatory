@@ -47,8 +47,10 @@ export class RemoteWorld {
   async flush(){if(!this.connected)throw Error('Disconnected.');this.socket.send(stringify({type:'checkpoint'}));
     while(this.pendingActions.size)await new Promise(r=>setTimeout(r,20));}
 }
-export async function chooseWorld(local){const url=['localhost','127.0.0.1'].includes(location.hostname)?'ws://localhost:8390':'wss://cosmos.heartbeatobservatory.com';
+export async function chooseWorld(local){const dev=['localhost','127.0.0.1'].includes(location.hostname);
   const params=new URLSearchParams(location.search);
+  // (a local review can run its own authority on another port: ?ws=ws://localhost:PORT, honoured on localhost pages only)
+  const asked=params.get('ws'),url=dev?(asked&&/^ws:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/.test(asked)?asked:'ws://localhost:8390'):'wss://cosmos.heartbeatobservatory.com';
   if(params.get('solo')==='1'){local.offline=true;return {world:local,saved:await local.load()};}
   const remote=new RemoteWorld(deviceIdentity(localStorage,params.get('test')==='1'?'cosmos-test-device-v2':identityKey),url);
   try{const saved=await remote.load();return {world:remote,saved};}catch{remote.socket?.close();local.offline=true;

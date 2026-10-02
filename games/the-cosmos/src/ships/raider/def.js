@@ -1,0 +1,34 @@
+// ============================================================================
+// ships/raider/def.js - the Shrike-class raider as one entry in the fleet (see src/ships/registry.js for what a definition is).
+// ============================================================================
+
+import { RAIDER_TYPE, RAIDER_CLASS, LAYOUT, GEAR, GUNS, PHYS, RAMPS, SEATS, PANELS, AVATAR, HULL_FLIGHT, deckName } from './spec.js';
+import { RAIDER_CREW_POSTS } from './crew.js';
+import { ESCORTS_PER_RAIDER, RAIDER_PRICE_CREDITS } from './stats.js';
+
+export const RAIDER = {
+  type: RAIDER_TYPE,
+  class: RAIDER_CLASS,
+  name: 'Shrike raider',
+  registryId: 'COS-MARS-VEH-0020',
+  layout: LAYOUT, gear: GEAR, guns: GUNS, phys: PHYS, ramps: RAMPS, seats: SEATS, panels: PANELS, avatar: AVATAR,
+  gunSeats: { dorsal: 'gun_dorsal' },
+  seatGun: { captain: 'main', gun_dorsal: 'dorsal' },
+  crewPosts: RAIDER_CREW_POSTS,
+  hull: HULL_FLIGHT,
+  roles: { bridge: 'cockpit', nest: 'turret', cargo: 'hold', engineering: 'engine', airlock: 'airlock', corridor: 'corridor_main' },
+  dock: {
+    rampFoot: { x: 0, y: 0, z: 21 },
+    boardSw: { x: 0, y: 0, z: 11.5, yaw: 0 },
+    leaveLocal: { x: -8, y: -1.2, z: 22 },
+    clearRampZ: 16.3,
+    bounds: { x: 8, z: 20, y0: -3, y1: 8 },
+    remote: { x: 0, z: 18.5, r: 14 },
+    spawnY: 3.0,
+  },
+  features: { holo: false, practiceTargets: false, personalDrones: false, ventralGlass: false },
+  hudName: 'Shrike raider',
+  deckName,
+  envelope: { width: 18.28, height: 9.38, depth: 36.55 },     // wing tip to wing tip, gear to tail fin, nose to engine nozzle: the validator measures the built geometry against it
+  stats: { crewMax: 4, cargoKg: 7000, escorts: ESCORTS_PER_RAIDER, priceCredits: RAIDER_PRICE_CREDITS },
+};

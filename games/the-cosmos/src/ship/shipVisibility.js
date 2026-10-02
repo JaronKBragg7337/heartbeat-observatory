@@ -25,8 +25,12 @@ export function buildPortals(layout, roomIds) {
     list.push({ id: d.id, a: d.a, b: d.b, x: cx, y: d.y + d.h / 2, z: cz, r: Math.max(d.w, d.h) / 2 + 0.25, door: d.kind === 'open' || d.kind === 'hatch' || d.kind === 'portal' ? null : d.id });
   }
   // openings that are not doors: the bridge stairwell (a stair is a room you climb through) and the turret hatch
-  list.push({ id: 'stair_up', a: 'corridor_main', b: 'bridge', x: 0, y: 4.6, z: -11.2, r: 3.0, door: null });
-  list.push({ id: 'hatch_dorsal', a: 'niche', b: 'nest', x: -1.8, y: 6.9, z: 2.6, r: 1.4, door: null });
+  // FLEET: a ship that lists its own openings (layout.portals) is believed; the Meridian's are the two below.
+  if (layout.portals) { for (const p of layout.portals) if (has(p.a) && has(p.b)) list.push(p); }
+  else {
+    list.push({ id: 'stair_up', a: 'corridor_main', b: 'bridge', x: 0, y: 4.6, z: -11.2, r: 3.0, door: null });
+    list.push({ id: 'hatch_dorsal', a: 'niche', b: 'nest', x: -1.8, y: 6.9, z: 2.6, r: 1.4, door: null });
+  }
   const of = new Map();
   for (const p of list) for (const id of [p.a, p.b]) { if (!of.has(id)) of.set(id, []); of.get(id).push(p); }
   return { list, of };
@@ -77,4 +81,4 @@ export function reachRooms({ portals, isOpen, starts, cam, fwd, fovDeg, aspect, 
   return set;
 }
 
-export const OUT_EXPAND = new Set(['cargo', 'engineering', 'airlock', 'corridor_low']);
+export const OUT_EXPAND = new Set(['cargo', 'engineering', 'airlock', 'corridor_low', 'hold', 'engine']);       // FLEET: the raider's hold and engine room are the same kind of place

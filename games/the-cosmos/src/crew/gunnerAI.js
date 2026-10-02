@@ -26,7 +26,7 @@ export class GunnerAI {
   /** @param D DroneSystem (or null) */
   update(dt, D) {
     this.t += dt; this.look -= dt;
-    const G = this.guns, f = this.f, gid = this.gunId, spec = GUNS[gid];
+    const G = this.guns, f = this.f, gid = this.gunId, spec = (G.GUNS || GUNS)[gid];
     const pivotW = f.toWorld(spec.pivot, {});
     // (re)acquire: the nearest live raider within range, as it was `think` seconds ago
     if (this.look <= 0) {

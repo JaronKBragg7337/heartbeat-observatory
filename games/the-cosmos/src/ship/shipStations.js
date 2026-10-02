@@ -34,9 +34,12 @@ export class Stations {
    * @param ship  the ShipBody (flight) - controls are written to it only while seated
    * @param host  optional callbacks { onSit(seat), onStand(seat) }
    */
-  constructor(ship, host = {}) {
+  constructor(ship, host = {}, def = null) {
     this.ship = ship;
     this.host = host;
+    // FLEET: seats and which gun belongs to which seat come from the ship definition.
+    this.SEATS = (def && def.seats) || SEATS;
+    this.gunSeats = (def && def.gunSeats) || { dorsal: 'gun_dorsal', ventral: 'gun_ventral' };
     this.seated = null;               // seat id
     this.log = [];
     this.scanRangeIdx = 1;
@@ -44,12 +47,12 @@ export class Stations {
     this.refused = 0;                 // how many commands were turned away, for the validator
   }
 
-  seatDef(id) { return SEATS.find((s) => s.id === id) || null; }
+  seatDef(id) { return this.SEATS.find((s) => s.id === id) || null; }
 
   /** Nearest seat within reach of a ship-local position, or null. Standing only. */
   seatNear(local) {
     let best = null, bd = SIT_REACH_M;
-    for (const s of SEATS) {
+    for (const s of this.SEATS) {
       // horizontal distance to the seat, and at about the same level
       const d = Math.hypot(local.x - s.x, local.z - s.z);
       if (d < bd && Math.abs(local.y - s.y) < 1.0) { best = s; bd = d; }
@@ -130,7 +133,7 @@ export class Stations {
     if (this.seated === null) return this._refuse();
     if (gunId === 'main') return this.allowed('fire_main') ? true : this._refuse();
     const seat = this.seatDef(this.seated);
-    const gunSeat = { dorsal: 'gun_dorsal', ventral: 'gun_ventral' }[gunId];
+    const gunSeat = this.gunSeats[gunId];
     return (seat.id === gunSeat && this.allowed('fire_turret')) ? true : this._refuse();
   }
 

@@ -10,7 +10,7 @@
 // from the top (see routeToSeat).
 // ============================================================================
 
-import { LADDERS_BY_ID } from './shipLadders.js';
+import { LADDERS_BY_ID } from './shipLadders.js';   // the Meridian's; any other ship's come from its layout (sw.index.layout)
 
 const CELL = 0.3;
 const STEP_MAX = 0.42;      // the most the floor may change between two grid neighbours (stairs rise 0.25 per cell)
@@ -125,7 +125,8 @@ export function routeToSeat(sw, from, seat) {
   };
   const ladderSeat = { gun_dorsal: 'ladder_dorsal', gun_ventral: 'ladder_ventral' }[seat.id];
   if (ladderSeat) {
-    const L = LADDERS_BY_ID[ladderSeat];
+    // FLEET: the ladders of whichever ship this walker is on
+    const L = (sw.index && sw.index.layout && sw.index.layout.ladders ? sw.index.layout.ladders.find((q) => q.id === ladderSeat) : null) || LADDERS_BY_ID[ladderSeat];
     if (ladderSeat === 'ladder_dorsal') {
       if (!walkTo({ x: L.bottomExit.x, z: L.bottomExit.z, y: L.y0 }, 0.32)) return null;
       steps[steps.length - 1].pts.push({ x: L.bottomExit.x, y: L.bottomExit.y, z: L.bottomExit.z });

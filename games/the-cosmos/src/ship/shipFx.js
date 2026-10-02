@@ -396,7 +396,7 @@ export function buildDroneMesh() {
 // The shield: invisible until something hits it, then a ripple that spreads out
 // from the point of impact across an ellipsoid the size of the hull.
 // ---------------------------------------------------------------------------
-export function buildShieldMesh() {
+export function buildShieldMesh(env = { scale: [15.5, 10.5, 28], pos: [0, 3.2, 0.5] }) {   // FLEET: the envelope is the ship's own
   const geo = new THREE.SphereGeometry(1, 40, 24);
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
@@ -421,8 +421,8 @@ export function buildShieldMesh() {
       }`,
   });
   const m = new THREE.Mesh(geo, mat);
-  m.scale.set(15.5, 10.5, 28);
-  m.position.set(0, 3.2, 0.5);
+  m.scale.set(...env.scale);
+  m.position.set(...env.pos);
   m.renderOrder = 7; m.visible = false; m.frustumCulled = false;
   return m;
 }

@@ -1,0 +1,53 @@
+{
+  "results": {
+    "raiderBuilt_a": {
+      "built": true,
+      "type": "raider",
+      "buildMs": 16,
+      "visible": true,
+      "escorts": 3,
+      "label": "Dust Wolf - RAIDER - ATTACKING - hull 100%"
+    },
+    "raiderBuilt_b": {
+      "built": true,
+      "type": "raider",
+      "buildMs": 20,
+      "visible": true,
+      "escorts": 3,
+      "label": "Dust Wolf - RAIDER - ATTACKING - hull 100%"
+    },
+    "distances": {
+      "a": 1082,
+      "b": 1008
+    },
+    "damage": [
+      {
+        "hull": 53.428000000000054,
+        "shield": 1.0666666666666667,
+        "state": "patrol",
+        "esc": "form,form,form"
+      },
+      {
+        "hull": 53.428000000000054,
+        "shield": 1.0666666666666667,
+        "state": "patrol",
+        "esc": "form,form,form"
+      }
+    ],
+    "disabledLabel": "Dust Wolf - DISABLED - crew surrendered",
+    "panelClaimButtons": [
+      "Capture Dust Wolf (crew sign on)"
+    ],
+    "claim": "Captured the Shrike-class raider with 4 crew who sign on. A prize crew brought it to pad 05; 520 credits were in its hold.",
+    "reloadedIntoRaider": {
+      "type": "raider",
+      "ready": true,
+      "rooms": 10,
+      "active": "fleet-raider-1"
+    },
+    "crewBodies": 5,
+    "phonePanelText": "Shared world · 3 here. Your meridian: pad 06.\n\nSave nameAllow crew to boardBoard Phone's MSV Meridian\n\nYour fleet (1): MSV Meridian [flagship] pad 06\n\nMarineris Shipyard: walk to the kiosk by the hiring board, south-west of the Meridian's pad.\n\nBuy a Shrike-class raider: 2400 cr\n\nHiring: walk to the crew hall door, north of the main pad. Candidates come outside when called.\n\nAda · pilot · 75% · 14",
+    "pageErrors": []
+  },
+  "errors": []
+}

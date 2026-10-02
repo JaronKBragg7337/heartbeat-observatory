@@ -29,6 +29,7 @@ import { Walker } from './player/walker.js';
 import { TouchControls, DesktopControls } from './ui/touch.js';
 import { DebugLayer } from './dev/debugLayer.js';
 import { ShipSystem } from './ship/shipSystem.js';
+import { hasShipType, DEFAULT_SHIP_TYPE } from './ships/registry.js';
 import { ShipUI } from './ship/shipUI.js';
 import { createPortSite, PADS } from './port/portSpec.js';
 import { PortSystem } from './port/portSystem.js';
@@ -324,7 +325,17 @@ const marsGround = (dx, dy, dz) => {
 // On a moon the ship, its guns and the crew's pilot ask the moon's ground instead (src/space sets this).
 let activeGround = null;
 const groundRadius = (dx, dy, dz) => (activeGround ? activeGround(dx, dy, dz) : marsGround(dx, dy, dz));
-const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier, landingSite: portSite });
+// FLEET: which ship the player flies is a field, not a constant. In the shared world it is the `type` of the ship the server says is theirs;
+// offline it is ?ship=<type> (or the last one chosen), and the Meridian by default. (src/ships/registry.js has the classes.)
+const shipType = (() => {
+  try {
+    if (world.remote && world.snapshot) { const p = world.snapshot.players[world.playerId], sh = world.snapshot.ships[p.aboardShipId || p.currentShipId || p.shipId]; if (sh && hasShipType(sh.type)) return sh.type; }
+    const q = new URLSearchParams(location.search).get('ship');
+    if (q && hasShipType(q)) return q;
+  } catch (e) { /* the default below */ }
+  return DEFAULT_SHIP_TYPE;
+})();
+const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier, landingSite: portSite, shipType });
 let shipUI = null;
 try {
   ship.build();

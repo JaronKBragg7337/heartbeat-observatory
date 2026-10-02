@@ -12,6 +12,7 @@ import { BOUNTY_CREDITS } from '../src/space/spaceSpec.js';
 import { CrewSystem } from '../src/crew/crewSystem.js';
 import { CREW_POSTS } from '../src/crew/crewSpec.js';
 import { ShipSystem } from '../src/ship/shipSystem.js';
+import { shipDef } from '../src/ships/registry.js';
 
 export const flightFields = ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd'];
 export function flightRecord(f) {
@@ -28,14 +29,16 @@ export class ShipSimulation {
   constructor(record,mars,site,onArrive) {
     this.record=record;this.mars=mars;this.site=site;
     this.frameId=record.frameId||'mars';
-    this.flight=new ShipBody(this.body(),(x,y,z)=>surfaceRadiusFast(this.body(),x,y,z));
-    this.ship={flight:this.flight,state:record.state||defaultState(),aboard:true};
+    // FLEET: a ship is whatever its `type` says (src/ships/registry.js): its gear, guns, seats and hull numbers come from there.
+    this.def=shipDef(record.type);
+    this.flight=new ShipBody(this.body(),(x,y,z)=>surfaceRadiusFast(this.body(),x,y,z),this.def);
+    this.ship={flight:this.flight,state:record.state||defaultState(),aboard:true,def:this.def};
     this.ship.body=mars;this.ship.ground=(x,y,z)=>surfaceRadiusFast(this.body(),x,y,z);
     this.ship.note=(msg,warn=false)=>{record.messages=record.messages||[];record.messageSeq=(record.messageSeq||0)+1;
       record.messages.push({seq:record.messageSeq,msg,warn});record.messages=record.messages.slice(-20);};
     this.ship.air=record.air||{phase:'idle',t:0};
-    this.stations=new Stations(this.flight);
-    this.guns=new GunSystem(this.flight,this.stations,(x,y,z)=>surfaceRadiusFast(this.body(),x,y,z));
+    this.stations=new Stations(this.flight,{},this.def);
+    this.guns=new GunSystem(this.flight,this.stations,(x,y,z)=>surfaceRadiusFast(this.body(),x,y,z),this.def);
     this.drones=new DroneSystem(this.flight,this.guns,(x,y,z)=>surfaceRadiusFast(this.body(),x,y,z));
     this.drones.onDown=()=>{record.economy.marks+=BOUNTY_CREDITS*4;};
     this.ship.drones=this.drones;
@@ -51,28 +54,30 @@ export class ShipSimulation {
     this.portHeading=()=>site.heading;
     this.resolve=id=>SpaceSystem.prototype.resolve.call(this,id);
     if(record.pose)applyFlight(this.flight,record.pose);
-    else {
+    else if(record.pad) {
       const p=site.toWorld(record.pad.x,2,record.pad.z);this.flight.setDown(p,site.heading);
       for(let i=0;i<540;i++)this.flight.step(1/60);
     }
-    if(!record.state){const hinge=this.flight.toWorld({x:0,y:0,z:20.9},{}),r=Math.hypot(hinge.x,hinge.y,hinge.z),ground=surfaceRadiusFast(this.body(),hinge.x/r,hinge.y/r,hinge.z/r);
-      Object.assign(this.ship.state.ramps.cargo,{lowered:true,progress:1,angle:Math.asin(Math.max(.05,Math.min(.9,(r-ground)/5)))});}
+    // (a raider that has no pose yet is placed at its station by the fleet director, server/fleet.mjs)
+    const ramp=this.def.ramps.cargo;
+    if(!record.state&&record.pad){const hinge=this.flight.toWorld(ramp.hinge,{}),r=Math.hypot(hinge.x,hinge.y,hinge.z),ground=surfaceRadiusFast(this.body(),hinge.x/r,hinge.y/r,hinge.z/r);
+      Object.assign(this.ship.state.ramps.cargo,{lowered:true,progress:1,angle:Math.asin(Math.max(.05,Math.min(.9,(r-ground)/ramp.length)))});}
     this.trip=null;
     if(!record.state){Object.assign(this.ship.rampCtl.cargo,{progress:1,target:1,angle:this.ship.state.ramps.cargo.angle});}
-    // Use the solo drone spawn geometry, rather than spawning at the ship centre.
-    for(const [i,[d,brg]] of [[560,.6],[820,-1.3],[690,2.6]].entries()){
-      const fr=this.flight._frame,e=Math.sin(brg)*d,n=Math.cos(brg)*d,b=this.flight.pos;
-      const p={x:b.x+fr.east.x*e+fr.north.x*n,y:b.y+fr.east.y*e+fr.north.y*n,z:b.z+fr.east.z*e+fr.north.z*n},r=Math.hypot(p.x,p.y,p.z),R=this.ship.ground(p.x/r,p.y/r,p.z/r)+60;
-      this.drones.add(record.id+':raider-'+i,{x:p.x/r*R,y:p.y/r*R,z:p.z/r*R});
-    }
-    for(const [i,[d,side]] of [[120,-25],[190,30],[260,-5]].entries()){
-      const f=this.flight,b=f.pos,p={x:b.x+f.fwdH.x*d+f.rightH.x*side,y:b.y+f.fwdH.y*d+f.rightH.y*side,z:b.z+f.fwdH.z*d+f.rightH.z*side},r=Math.hypot(p.x,p.y,p.z),R=this.ship.ground(p.x/r,p.y/r,p.z/r)+3.2;
-      this.guns.addTarget({id:record.id+':practice-'+i,pos:{x:p.x/r*R,y:p.y/r*R,z:p.z/r*R},radius:1.5});
+    // FLEET: the three drones that used to arrive around a ship are a raider's escorts now (src/ships/raider/escorts.js).
+    // The authority does not spawn them on a player's ship. Solo still does, from def.features.personalDrones (shipSystem.js).
+    // Practice discs stay, at the solo places, so an online Meridian you can shoot at matches a solo one. A raider has none.
+    // A save from before the fleet that still lists the old drones is restored only as far as this ship actually has drones.
+    if(this.def.features.practiceTargets){
+      for(const [i,[d,side]] of [[120,-25],[190,30],[260,-5]].entries()){
+        const f=this.flight,b=f.pos,p={x:b.x+f.fwdH.x*d+f.rightH.x*side,y:b.y+f.fwdH.y*d+f.rightH.y*side,z:b.z+f.fwdH.z*d+f.rightH.z*side},r=Math.hypot(p.x,p.y,p.z),R=this.ship.ground(p.x/r,p.y/r,p.z/r)+3.2;
+        this.guns.addTarget({id:record.id+':practice-'+i,pos:{x:p.x/r*R,y:p.y/r*R,z:p.z/r*R},radius:1.5});
+      }
     }
     if(record.combat){const c=record.combat;Object.assign(this.guns,{bolts:c.bolts,cool:c.cool,alt:c.alt,shots:c.shots,aim:c.aim});
       Object.assign(this.drones,{t:c.t,shots:c.enemyShots,neutral:c.neutral,suspended:c.suspended});
-      c.drones.forEach((r,i)=>{const d=this.drones.drones[i];Object.assign(d,{...r,target:d.target});Object.assign(d.target,r.target,{pos:d.pos});});}
-    record.combat?.practice?.forEach((r,i)=>Object.assign(this.guns.targets.filter(t=>t.id.includes(':practice-'))[i],r));
+      (c.drones||[]).forEach((r,i)=>{const d=this.drones.drones[i];if(!d)return;Object.assign(d,{...r,target:d.target});Object.assign(d.target,r.target,{pos:d.pos});});}
+    record.combat?.practice?.forEach((r,i)=>{const t=this.guns.targets.filter(q=>q.id.includes(':practice-'))[i];if(t)Object.assign(t,r);});
     if(record.autopilot){this.crew._ensureAP();Object.assign(this.crew.ap,structuredClone(record.autopilot));}
     if(record.pendingOrder)this.crew.pending=structuredClone(record.pendingOrder);
     if(record.trip) {
@@ -90,7 +95,7 @@ export class ShipSimulation {
   _gatePoint(p){return SpaceSystem.prototype._gatePoint.call(this,p);}
   destinations(){return [];}
   syncCrew(){this.crew.time=this.record.economy.elapsedSeconds;this.crew.members.clear();
-    for(const c of this.record.crew){const def={...CREW_POSTS.find(r=>r.id===c.role),skill:c.skill};
+    for(const c of this.record.crew){const post=this.def.crewPosts.find(r=>r.id===c.role)||CREW_POSTS.find(r=>r.id===c.role);if(!post)continue;const def={...post,skill:c.skill};
       this.crew.members.set(c.id,{...c,def,status:'hired',seated:c.status==='aboard'&&!c.displaced,mode:c.status==='aboard'?'sit':c.status==='boarding'?'boarding':c.status.startsWith('leaving')?'leaving':'walk'});}
   }
   crewOrder(p,a,authority){if(p.aboardShipId!==this.record.id)throw Error('Come aboard first.');
@@ -117,6 +122,8 @@ export class ShipSimulation {
     return {ok:true,msg:'Course set for '+dest.name+'.'};
   }
   step(dt,controls={}) {
+    // FLEET: a raider is flown by the fleet director. One with no hull left still steps, so it hangs where it is instead of falling.
+    if(this.record.npc){this.flight.controls=controls;this.flight.step(dt);this.guns.update(dt);this.drones.update(dt);return;}
     if(this.flight.hull<=0){this.flight.controls={fwd:0,lift:0,yaw:0};this.flight.power.engines=0;this.flight.autoHover=false;this.trip=null;this.flight.override=null;}
     else {this.syncCrew();
       const manual=Object.values(controls).some(v=>Math.abs(v)>.05);

@@ -1,0 +1,60 @@
+// ============================================================================
+// ships/meridian/def.js - the MSV Meridian as one entry in the fleet: a ship definition built from the numbers in
+// src/ship/shipSpec.js (which stays the one place they are written). Nothing here is a number of its own.
+//
+// A ship definition is what the rest of the game asks "which ship is this?" of: the walker (layout), the flight model (gear, phys,
+// hull), the guns (guns), the stations (seats), the server (dock, bounds, crew posts), the renderer (visuals, in ../visuals.js).
+// ============================================================================
+
+import { buildLayout, SHIP_ID, SHIP_NAME, SHIP_PHYS, GEAR, GUNS, RAMPS, SEATS, PANELS, WALL_SCREENS, OBSERVATION, deckName, AVATAR } from '../../ship/shipSpec.js';
+import { hullUnderside, HULL_STATIONS } from '../../ship/shipExterior.js';
+import { CREW_POSTS } from '../../crew/crewSpec.js';
+
+const layout = { ...buildLayout(), wallScreens: WALL_SCREENS, observation: OBSERVATION };
+
+export const MERIDIAN = {
+  type: 'meridian',
+  class: 'MSV Meridian',
+  name: SHIP_NAME,
+  registryId: SHIP_ID,
+  layout, gear: GEAR, guns: GUNS, phys: SHIP_PHYS, ramps: RAMPS, seats: SEATS, panels: PANELS, avatar: AVATAR,
+  gunSeats: { dorsal: 'gun_dorsal', ventral: 'gun_ventral' },       // which seat fires which turret (main is the captain's)
+  seatGun: { captain: 'main', gun_dorsal: 'dorsal', gun_ventral: 'ventral' },
+  crewPosts: CREW_POSTS,
+  hull: {
+    z0: -21, z1: 21, underside: hullUnderside,
+    extraPoints: [...[-12, 12].flatMap((x) => [-3, 6, 12].map((z) => ({ x, y: 1.25, z }))), { x: 0, y: -2.12, z: -15.3 }],
+    combat: { centre: { x: 0, y: 3, z: 0 }, radius: 15 },
+    // the solid hull a person on the ground cannot walk through (ShipSystem._hullPush): the lofted half-width, the nose, the tail, the
+    // open stern ramp corridor and the airlock hatch
+    push: {
+      topY: 10.5, zNose: -21.4, zTail: 21.2,
+      hwAt: (zz) => {
+        for (let i = 0; i < HULL_STATIONS.length - 1; i++) {
+          const a = HULL_STATIONS[i], b = HULL_STATIONS[i + 1];
+          if (zz >= a[0] && zz <= b[0]) return a[1] + (b[1] - a[1]) * ((zz - a[0]) / (b[0] - a[0]));
+        }
+        return 0;
+      },
+      rampGap: { z: 19, hw: 2.0 }, hatch: { x: -5, z: -10.8, r: 1.2 },
+    },
+  },
+  // the rooms the code that is not about any one ship has to name
+  roles: { bridge: 'bridge', nest: 'nest', cargo: 'cargo', engineering: 'engineering', airlock: 'airlock', corridor: 'corridor_main' },
+  // where the boarding hardware is, for the server's walking-aboard, board and leave actions
+  dock: {
+    rampFoot: { x: 0, y: 0, z: 26 },          // a point on the ground beyond the stern ramp: how near a walker must be to board
+    boardSw: { x: 0, y: 0, z: 12, yaw: 0 },   // where a boarding player first stands
+    leaveLocal: { x: -10, y: -1, z: 38 },     // where a leaving player is put (ship-local, beside the ramp)
+    clearRampZ: 21,                           // nobody may stand aft of this when the ship departs
+    bounds: { x: 22, z: 35, y0: -4, y1: 13 }, // cabin plus the port gangway (the walk reaches about x = -14)
+    remote: { x: 0, z: 22, r: 16 },           // the wrist remote's reach for the ramp, outside
+    spawnY: 3.8,                              // the height above a pad the ship is put at before it settles
+  },
+  crewSeatsOnly: false,
+  features: { holo: true, practiceTargets: true, personalDrones: true, ventralGlass: true },
+  hudName: SHIP_NAME,
+  deckName,
+  envelope: { width: 24.52, height: 13.45, depth: 48.65 },
+  stats: { crewMax: 6, cargoKg: 24000, escorts: 0 },
+};

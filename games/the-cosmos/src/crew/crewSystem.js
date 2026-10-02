@@ -13,9 +13,9 @@
 // ============================================================================
 
 import * as THREE from 'three';
-import { ShipWalker, shipIndex } from '../ship/shipWalker.js';
-import { RAMPS, SEATS } from '../ship/shipSpec.js';
-import { CREW_POSTS, HIRE_SPOTS, HIRE_FACE, HIRE_BOARD, PLACES, MAX_TRIP_M, LINES, thinkDelay, aimErrorRad } from './crewSpec.js';
+import { ShipWalker, shipIndexFor } from '../ship/shipWalker.js';
+
+import { CREW_POSTS as ALL_POSTS, HIRE_SPOTS, HIRE_FACE, HIRE_BOARD, PLACES, MAX_TRIP_M, LINES, thinkDelay, aimErrorRad } from './crewSpec.js';
 import { routeToSeat, RouteWalker } from './shipPath.js';
 import { Autopilot, rng } from './autopilot.js';
 import { GunnerAI } from './gunnerAI.js';
@@ -53,8 +53,9 @@ export class CrewSystem {
     const roster = await this.people.roster();
     const have = new Set(roster.map((r) => r.id));
     // the player's own look is not a candidate: the pool shifts to the people who are left
-    const spare = roster.map((r) => r.id).filter((id) => !CREW_POSTS.some((p) => p.personId === id) && id !== this.playerLook);
-    for (const def of CREW_POSTS) {
+    const posts = this.posts;
+    const spare = roster.map((r) => r.id).filter((id) => !ALL_POSTS.some((p) => p.personId === id) && id !== this.playerLook);
+    for (const def of posts) {
       let pid = def.personId;
       if (!have.has(pid) || pid === this.playerLook) pid = spare.shift() || pid;
       const file = (roster.find((r) => r.id === pid) || {}).file || pid + '.glb';
@@ -62,7 +63,7 @@ export class CrewSystem {
       const m = {
         def, id: def.id, name: def.name, personId: pid, person, status: 'candidate', place: 'ground', mode: 'idle',
         gpos: { x: 0, y: 0, z: 0 }, face: { x: 0, y: 0, z: 1 }, entry: null,
-        sw: new ShipWalker(shipIndex, this.ship.state), route: null, rw: null, seated: false, sitT: 0, displaced: false,
+        sw: new ShipWalker(shipIndexFor(this.ship.def), this.ship.state), route: null, rw: null, seated: false, sitT: 0, displaced: false,
         walkSpeed: 1.55, waitNote: 0,
       };
       this.members.set(def.id, m);
@@ -145,7 +146,9 @@ export class CrewSystem {
     return this.ship.flight.toWorld(loc, {});
   }
   _seatPos(m) { const s = this._seat(m); return { x: s.x, y: s.y + 0.8, z: s.z }; }
-  _seat(m) { return SEATS.find((s) => s.id === m.def.seat); }
+  _seat(m) { return this.ship.def.seats.find((s) => s.id === m.def.seat); }
+  /** FLEET: the posts this ship has a seat for (a raider has no navigator, communications officer or ventral gunner to hire). */
+  get posts() { return ALL_POSTS.filter((p) => this.ship.def.seats.some((s) => s.id === p.seat)); }
 
   /** The nearest member the player could talk to from where they stand (or sit). */
   nearest(playerWorld) {
@@ -346,7 +349,7 @@ export class CrewSystem {
   }
 
   _rampTip() {
-    const st = this.ship.state.ramps.cargo, r = RAMPS.cargo, run = r.length * Math.cos(st.angle), along = run - 0.35;
+    const st = this.ship.state.ramps.cargo, r = this.ship.def.ramps.cargo, run = r.length * Math.cos(st.angle), along = run - 0.35;
     return { x: r.hinge.x, y: r.hinge.y - along * Math.tan(st.angle), z: r.hinge.z + along, foot: r.hinge.z + run + 0.9 };
   }
 
@@ -424,7 +427,7 @@ export class CrewSystem {
         const from = m.seated ? this._standOff(m, seat) : { x: m.sw.x, y: m.sw.y, z: m.sw.z };
         m.sw.place(from.x, from.y, from.z, m.sw.yaw);
         m.seated = false; m.displaced = false;
-        const back = routeToSeat(m.sw, from, { id: 'tip', x: tip.x, y: tip.y, z: tip.z + 0.5, yaw: 180, room: 'cargo' });
+        const back = routeToSeat(m.sw, from, { id: 'tip', x: tip.x, y: tip.y, z: tip.z + 0.5, yaw: 180, room: this.ship.roles.cargo });
         m.route = back || [{ type: 'walk', pts: [{ x: tip.x, y: tip.y, z: tip.z }] }];
         m.rw = null;
       }
@@ -519,7 +522,7 @@ export class CrewSystem {
       if (m.place !== 'ship') continue;
       const seat = this._seat(m);
       let room = (m.mode === 'sit') ? seat.room : m.sw.zoneRoom;
-      if (room === 'stair_cargo' || room === 'ramp_cargo') room = 'cargo';
+      if (room === 'stair_cargo' || room === 'ramp_cargo') room = this.ship.roles.cargo;
       const known = room && this.ship.interior.rooms.has(room);
       m.person.group.visible = interiorVisible && (!known || set.has(room));
     }
@@ -610,6 +613,6 @@ export class CrewSystem {
   }
   /** Hire everybody and finish boarding at once (screenshots and tests). */
   debugCrewUp(ids) {
-    for (const id of ids || CREW_POSTS.map((p) => p.id)) this.hire(id);
+    for (const id of ids || this.posts.map((p) => p.id)) this.hire(id);
   }
 }

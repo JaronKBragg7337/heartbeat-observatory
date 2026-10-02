@@ -20,15 +20,17 @@
 // ============================================================================
 
 import * as THREE from 'three';
-import { buildLayout, SHIP_ID, SHIP_NAME, SHIP_PHYS, GEAR, RAMPS, SEATS, PANELS, WALL_SCREENS, AVATAR, deckName, DECK, OBSERVATION } from './shipSpec.js';
-import { ShipWalker, shipIndex, defaultState } from './shipWalker.js';
+import { AVATAR, RAMPS } from './shipSpec.js';
+import { ShipWalker, shipIndexFor, defaultState } from './shipWalker.js';
+// FLEET: which ship this is. Every number that used to be the Meridian's comes from `this.def` (src/ships/registry.js).
+import { shipDef } from '../ships/registry.js';
+import { visualsFor } from '../ships/visuals.js';
 import { ShipBody } from './shipFlight.js';
 import { Stations } from './shipStations.js';
 import { GunSystem, DroneSystem, NEUTRAL_AIRSPACE_M } from './guns.js';
 import { makeShipMaterials, applyEnvironment, makeSignAtlas, makePosterAtlas, DEPTH_LIFT, depthLiftStepFor } from './shipTextures.js';
 import { depthEmulation } from '../dev/depthEmu.js';
 import { buildInterior, buildSeats, NEST_SILL } from './shipInterior.js';
-import { buildExterior, decalCanvasTexture, applyNeutralPose, HULL_STATIONS } from './shipExterior.js';
 import { ShipScreens, TerrainScanner, KIND_FOR } from './shipScreens.js';
 import { ShipFx, buildTargetMesh, buildDroneMesh, buildShieldMesh } from './shipFx.js';
 import { ShipAudio } from './shipAudio.js';
@@ -41,8 +43,6 @@ import { rampEntry } from './rampTransfer.js';
 
 const DEG = Math.PI / 180;
 const SCAN_RANGES = [600, 2500, 9000];
-// rooms with real windows in the outer wall (the exterior is drawn for them on the high tier)
-const WINDOW_ROOMS = new Set(['crew_a', 'crew_b', 'medbay', 'galley', 'cabin', 'workshop']);
 
 export class ShipSystem {
   constructor(o) {
@@ -56,16 +56,22 @@ export class ShipSystem {
     this.tier = o.tier || 'high';
     this.ready = false;
     this.aboard = false;
-    this.layout = buildLayout();
+    // FLEET: the ship's definition. `o.def` is one; `o.shipType` names one; with neither this is the Meridian.
+    this.def = o.def || shipDef(o.shipType);
+    this.visuals = visualsFor(this.def.type);
+    this.roles = this.def.roles;
+    this.layout = { ...this.def.layout, custom: this.visuals.custom || null };
+    // rooms with real windows in the outer wall (the exterior is drawn for them on the high tier)
+    this.windowRooms = new Set((this.layout.windows || []).map((w) => w.room));
     this.state = defaultState();
     this.state.airlock.innerOpen = true;
     this.state.airlock.outerOpen = false;
-    this.sw = new ShipWalker(shipIndex, this.state);
-    this.flight = new ShipBody(this.body, this.ground);
+    this.sw = new ShipWalker(shipIndexFor(this.def), this.state);
+    this.flight = new ShipBody(this.body, this.ground, this.def);
     this.stations = new Stations(this.flight, {
       onSit: (s) => this._onSit(s), onStand: (s) => this._onStand(s),
-    });
-    this.guns = new GunSystem(this.flight, this.stations, this.ground);
+    }, this.def);
+    this.guns = new GunSystem(this.flight, this.stations, this.ground, this.def);
     this.look = { yaw: 0, pitch: 0 };       // relative to the seat
     this.time = 0;
     this.boardCooldown = 0;
@@ -137,9 +143,9 @@ export class ShipSystem {
 
     // --- exterior, in the world scene
     this.decal = null;
-    const dtex = decalCanvasTexture(THREE);
+    const dtex = this.visuals.decalTexture(THREE, this.def);
     if (dtex) this.decal = new THREE.MeshBasicMaterial({ map: dtex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
-    this.exterior = buildExterior(this.layout, this.matsExt, { tier: this.tier, decal: this.decal });
+    this.exterior = this.visuals.buildExterior(this.layout, this.matsExt, { tier: this.tier, decal: this.decal, def: this.def });
     engine.scene.add(this.exterior.root);
     // Flames are effects, not hardware. Keep them out of the measured envelope.
     this.hardware = new THREE.Group(); this.hardware.name = 'ship-hardware';
@@ -180,7 +186,7 @@ export class ShipSystem {
     this.fx = new ShipFx(engine.scene, { tier: this.tier });
 
     // --- size is measured in the neutral pose, before anything moves
-    applyNeutralPose(this.exterior);
+    this.visuals.applyNeutralPose(this.exterior);
     this._registerAssets();
 
     // --- put it on the ground
@@ -193,10 +199,10 @@ export class ShipSystem {
     this._applyRampPose('cargo');
     this._applyRampPose('airlock');
 
-    this._placeTargets();
+    if (this.def.features.practiceTargets) this._placeTargets();
     this._placeDrones();
     this.audio = typeof window !== 'undefined' ? new ShipAudio() : null;
-    this.shield = buildShieldMesh();
+    this.shield = buildShieldMesh(this.visuals.shield);
     this.exterior.root.add(this.shield);
     this.shieldFlash = 0; this.hitShake = 0;
 
@@ -295,39 +301,45 @@ export class ShipSystem {
   _buildGlass() {
     const L = this.layout;
     const k = new (this._KitClass())();
-    const b = L.roomById.get('bridge');
-    const yb = b.y + 1.05, yt = b.y + b.h;
-    const raked = 0.6;
-    // windscreen (raked back at the top) and side windows
-    k.poly('glassTint', [[-4.0, yb, b.z0], [4.0, yb, b.z0], [4.0, yt, b.z0 + raked], [-4.0, yt, b.z0 + raked]]);
-    for (const s of [-1, 1]) {
-      const x = s * 4.0;
-      const z0 = b.z0 - 0.0, z1 = b.z1 - 0.4;
-      k.poly('glassTint', s > 0
-        ? [[x, yb, z0], [x, yb, z1], [x, yt, z1], [x, yt, z0]]
-        : [[x, yb, z1], [x, yb, z0], [x, yt, z0], [x, yt, z1]]);
+    // FLEET: glass goes where a room says it has it: a flight deck (kind 'bridge' with a canopy) gets a raked windscreen and side
+    // windows, a turret nest (kind 'nest') a band round the gunner, and a ship may add a dome of its own (the Meridian's ventral bubble).
+    for (const b of L.rooms.filter((q) => q.kind === 'bridge')) {
+      const yb = b.y + 1.05, yt = b.y + b.h;
+      const raked = this.def.type === 'meridian' ? 0.6 : 0.5;
+      k.poly('glassTint', [[b.x0, yb, b.z0], [b.x1, yb, b.z0], [b.x1, yt, b.z0 + raked], [b.x0, yt, b.z0 + raked]]);
+      for (const s of [-1, 1]) {
+        const x = s > 0 ? b.x1 : b.x0;
+        const z0 = b.z0 - 0.0, z1 = b.z1 - 0.4;
+        k.poly('glassTint', s > 0
+          ? [[x, yb, z0], [x, yb, z1], [x, yt, z1], [x, yt, z0]]
+          : [[x, yb, z1], [x, yb, z0], [x, yt, z0], [x, yt, z1]]);
+      }
     }
-    // the nest: a band of glass round the gunner
-    const n = L.roomById.get('nest');
-    const ny0 = n.y + NEST_SILL, ny1 = n.y + n.h;
-    const quad = (pts) => k.poly('glassTint', pts);
-    quad([[n.x0, ny0, n.z0], [n.x1, ny0, n.z0], [n.x1, ny1, n.z0], [n.x0, ny1, n.z0]]);
-    quad([[n.x1, ny0, n.z1], [n.x0, ny0, n.z1], [n.x0, ny1, n.z1], [n.x1, ny1, n.z1]]);
-    quad([[n.x1, ny0, n.z0], [n.x1, ny0, n.z1], [n.x1, ny1, n.z1], [n.x1, ny1, n.z0]]);
-    quad([[n.x0, ny0, n.z1], [n.x0, ny0, n.z0], [n.x0, ny1, n.z0], [n.x0, ny1, n.z1]]);
-    // ventral bubble: a dome under the floor of the pit
-    k.dome('glassTint', 0, -0.4, -15.3, 1.2, 20, 10, { thetaMin: Math.PI * 0.5, thetaMax: Math.PI, scaleY: 0.95, inside: false });
+    for (const n of L.rooms.filter((q) => q.kind === 'nest')) {
+      const ny0 = n.y + NEST_SILL, ny1 = n.y + n.h;
+      const quad = (pts) => k.poly('glassTint', pts);
+      quad([[n.x0, ny0, n.z0], [n.x1, ny0, n.z0], [n.x1, ny1, n.z0], [n.x0, ny1, n.z0]]);
+      quad([[n.x1, ny0, n.z1], [n.x0, ny0, n.z1], [n.x0, ny1, n.z1], [n.x1, ny1, n.z1]]);
+      quad([[n.x1, ny0, n.z0], [n.x1, ny0, n.z1], [n.x1, ny1, n.z1], [n.x1, ny1, n.z0]]);
+      quad([[n.x0, ny0, n.z1], [n.x0, ny0, n.z0], [n.x0, ny1, n.z0], [n.x0, ny1, n.z1]]);
+    }
+    if (this.def.features.ventralGlass) {
+      // ventral bubble: a dome under the floor of the pit
+      k.dome('glassTint', 0, -0.4, -15.3, 1.2, 20, 10, { thetaMin: Math.PI * 0.5, thetaMax: Math.PI, scaleY: 0.95, inside: false });
+    }
     const g = k.toGroup(this.matsInt, { name: 'glass' });
     g.traverse((m) => { if (m.isMesh) m.renderOrder = 6; });
     this.glass = g;
     this.interior.root.add(g);
-    // frame struts for the ventral bubble
-    const fk = new (this._KitClass())();
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2;
-      fk.pipe('steelDark', [Math.cos(a) * 1.15, -0.4, -15.3 + Math.sin(a) * 1.15], [0, -1.35, -15.3], 0.03, 6);
+    if (this.def.features.ventralGlass) {
+      // frame struts for the ventral bubble
+      const fk = new (this._KitClass())();
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        fk.pipe('steelDark', [Math.cos(a) * 1.15, -0.4, -15.3 + Math.sin(a) * 1.15], [0, -1.35, -15.3], 0.03, 6);
+      }
+      this.interior.root.add(fk.toGroup(this.matsInt, { name: 'ventral-frame' }));
     }
-    this.interior.root.add(fk.toGroup(this.matsInt, { name: 'ventral-frame' }));
   }
 
   _KitClass() { return Kit; }
@@ -352,7 +364,7 @@ export class ShipSystem {
       }
     }
     // wall screens
-    for (const w of WALL_SCREENS) {
+    for (const w of (L.wallScreens || [])) {
       this.screens.create({ ...w }, this.interior.rooms.get(w.room));
     }
     // monitor stands in the medbay
@@ -362,7 +374,7 @@ export class ShipSystem {
         x: p.x + s * 0.052, y: p.y + 1.42, z: p.z + c * 0.052, facing: th }, this.interior.rooms.get(p.room));
     }
     // captain's armrest pads and the holo table are handled in _updateVisuals
-    this._buildHolo();
+    if (this.def.features.holo) this._buildHolo();
   }
 
   _buildHolo() {
@@ -392,7 +404,7 @@ export class ShipSystem {
       ? { site: this.landingSite.site, at: null }
       : findLandingSite(this.body, this.ground, { ...this.walker.worldPos });
     this.site = site;
-    this.flight.setDown(this.landingSite ? this.landingSite.toWorld(0,3.8,0) : siteOrigin(this.ground, at, site), site.hd * DEG);
+    this.flight.setDown(this.landingSite ? this.landingSite.toWorld(0, this.def.dock.spawnY, 0) : siteOrigin(this.ground, at, site), site.hd * DEG);
     // Let it settle on the field before anyone sees it.
     for (let i = 0; i < 60 * 9; i++) this.flight.step(1 / 60);
     this.flight.vel = { x: 0, y: 0, z: 0 };
@@ -445,7 +457,8 @@ export class ShipSystem {
     const f = this.flight;
     const base = f.pos;
     // three hostile drones at a few hundred metres, 60 m over the ground, in different directions
-    const spots = [[560, 0.6], [820, -1.3], [690, 2.6]];
+    // FLEET: a ship class without personal drones (a raider) still has a DroneSystem (the airspace line is the same), just no drones.
+    const spots = this.def.features.personalDrones ? [[560, 0.6], [820, -1.3], [690, 2.6]] : [];
     spots.forEach(([d, brg], i) => {
       const fr = f._frame;
       const e = Math.sin(brg) * d, n = Math.cos(brg) * d;
@@ -468,7 +481,7 @@ export class ShipSystem {
   }
 
   _registerAssets() {
-    registerShipAssets(this.registry, THREE, this.hardware, this.interior.seatGroups, this.flight.pos);
+    registerShipAssets(this.registry, THREE, this.hardware, this.interior.seatGroups, this.flight.pos, this.def);
   }
 
   // =========================================================================
@@ -548,7 +561,9 @@ export class ShipSystem {
   // =========================================================================
   /** Solve the angle at which the ramp's end just touches the ground. */
   _solveRamp(key) {
-    const R = RAMPS[key];
+    // A caller that binds this method onto a plain object (the solo parity stub) has no definition.
+    // That geometry is the Meridian table. A built ship uses its own ramps.
+    const R = (this.def?.ramps || RAMPS)[key];
     const f = this.flight;
     let ang = 0.5;
     for (let it = 0; it < 5; it++) {
@@ -577,7 +592,7 @@ export class ShipSystem {
   /** Is anybody standing on this ramp (so it must not fold)? */
   _rampOccupied(key) {
     if (!this.aboard) return false;
-    const R = RAMPS[key];
+    const R = (this.def?.ramps || RAMPS)[key];
     const w = this.sw;
     const run = R.length * Math.cos(this.rampCtl[key].angle);
     if (R.dir.z) return w.z > R.hinge.z + 0.2 && w.z < R.hinge.z + run + 1 && Math.abs(w.x - R.hinge.x) < R.width / 2 + 0.3 && w.y < 0.6;
@@ -589,13 +604,13 @@ export class ShipSystem {
     if (c.target > 0.5) {
       if (this._rampOccupied(key)) { this.note('Clear the ramp first.', true); return false; }
       c.target = 0; this.state.ramps[key].lowered = false;
-      this.note(`${RAMPS[key].name} raising.`);
+      this.note(`${(this.def?.ramps || RAMPS)[key].name} raising.`);
       return true;
     }
     if (!this.flight.landed) { this.note('Cannot open the ramp in flight.', true); return false; }
     this._solveRamp(key);
     c.target = 1;
-    this.note(`${RAMPS[key].name} lowering.`);
+    this.note(`${(this.def?.ramps || RAMPS)[key].name} lowering.`);
     return true;
   }
 
@@ -649,25 +664,7 @@ export class ShipSystem {
 
   _applyRampPose(key) {
     const c = this.rampCtl[key];
-    const r = this.exterior.ramps[key];
-    const R = RAMPS[key];
-    const p = c.progress;
-    const ease = p * p * (3 - 2 * p);
-    if (key === 'cargo') {
-      r.hinge.rotation.set(-Math.PI / 2 + (c.angle + Math.PI / 2) * ease, 0, 0);
-      r.hinge.scale.set(1, 1, 1);
-    } else {
-      // the gangway swings out from a vertical flap and extends: 2.5 m flap, 5 m deployed
-      const len = 2.5 + 2.5 * Math.max(0, (p - 0.45) / 0.55);
-      r.hinge.scale.set(1, 1, len / R.length);
-      // built along +Z: rotate so +Z points to port (-X) and tilts down
-      const tilt = -Math.PI / 2 + (c.angle + Math.PI / 2) * ease;
-      r.hinge.rotation.set(0, 0, 0);
-      r.hinge.quaternion.setFromEuler(new THREE.Euler(tilt, 0, 0, 'XYZ'));
-      const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);   // +Z -> -X? see below
-      // rotation about Y by +90 deg sends +Z to +X; we need -X, so -90 deg
-      r.hinge.quaternion.premultiply(yaw);
-    }
+    poseRamp(this.exterior.ramps[key], this.def.ramps[key], key, c.progress, c.angle);
   }
 
   // =========================================================================
@@ -758,7 +755,8 @@ export class ShipSystem {
       if (e.type === 'ship_hit') {
         if (this.audio) this.audio.hit(e.absorbed);
         this.shieldFlash = 1; this.hitShake = 0.35 + Math.min(0.5, e.hull < 100 ? 0.3 : 0);
-        this.shield.material.uniforms.uHit.value.set(e.local.x / 15.5, (e.local.y - 3.2) / 10.5, (e.local.z - 0.5) / 28);
+        const sh = this.visuals.shield;
+        this.shield.material.uniforms.uHit.value.set((e.local.x - sh.pos[0]) / sh.scale[0], (e.local.y - sh.pos[1]) / sh.scale[1], (e.local.z - sh.pos[2]) / sh.scale[2]);
         this.shield.material.uniforms.uColor.value.set(e.absorbed > 0 ? 0.25 : 1.0, e.absorbed > 0 ? 0.75 : 0.3, e.absorbed > 0 ? 1.0 : 0.2);
         this.note(e.absorbed > 0 ? `Hit. Shield absorbed ${e.absorbed.toFixed(0)}.` : `Hull hit. Integrity ${e.hull.toFixed(0)}%.`, e.absorbed <= 0);
       } else if (e.type === 'airspace') {
@@ -851,7 +849,7 @@ export class ShipSystem {
       const yaw = w.yaw - f.heading;
       const mx=inp.moveEast||0, mz=inp.moveNorth||0;
       const motion={x:Math.sin(yaw)*mz+Math.cos(yaw)*mx,z:-Math.cos(yaw)*mz+Math.sin(yaw)*mx};
-      const entry=rampEntry(key,st,l2,motion);
+      const entry=rampEntry(key,st,l2,motion,this.def.ramps);
       if(!entry || !this.sw.canStand(entry.x,entry.y,entry.z)) continue;
       this.boardAt(entry.x,entry.y,entry.z,yaw);
       this.sw.pitch = w.pitch;
@@ -863,31 +861,25 @@ export class ShipSystem {
   _hullPush(loc) {
     const H = AVATAR.heightM;
     const feet = loc.y;
-    if (feet > 10.5 || feet + H < GEAR.keelY - 0.05) return null;
+    const P = this.def.hull.push, keelY = this.def.gear.keelY;
+    if (feet > P.topY || feet + H < keelY - 0.05) return null;
     const z = loc.z;
-    if (z < -21.4 || z > 21.2) {
+    if (z < P.zNose || z > P.zTail) {
       // engines and the ramp gap: only the engine housings are solid, and only up high
       return null;
     }
     // ramp corridors are open when lowered
     const rc = this.state.ramps;
-    if (rc.cargo.lowered && z > 19 && Math.abs(loc.x) < 2.0) return null;
-    const hwAt = (zz) => {
-      for (let i = 0; i < HULL_STATIONS.length - 1; i++) {
-        const a = HULL_STATIONS[i], b = HULL_STATIONS[i + 1];
-        if (zz >= a[0] && zz <= b[0]) return a[1] + (b[1] - a[1]) * ((zz - a[0]) / (b[0] - a[0]));
-      }
-      return 0;
-    };
-    const hw = hwAt(z) + 0.3;
+    if (rc.cargo.lowered && z > P.rampGap.z && Math.abs(loc.x) < P.rampGap.hw) return null;
+    const hw = P.hwAt(z) + 0.3;
     // the belly is solid down to the keel
-    if (feet + H < GEAR.keelY - 0.05) return null;
+    if (feet + H < keelY - 0.05) return null;
     if (Math.abs(loc.x) >= hw) return null;
     // where would the shortest way out be?
     const outX = (hw - Math.abs(loc.x)) * Math.sign(loc.x || 1);
-    const outZ = loc.z < 0 ? (-21.4 - z) : (21.2 - z);
+    const outZ = loc.z < 0 ? (P.zNose - z) : (P.zTail - z);
     // the gangway hatch on the port side lets you in only when it is open
-    if (rc.airlock.lowered && loc.x < -5 && Math.abs(z + 10.8) < 1.2) return null;
+    if (rc.airlock.lowered && loc.x < P.hatch.x && Math.abs(z - P.hatch.z) < P.hatch.r) return null;
     if (Math.abs(outX) < Math.abs(outZ)) return { x: outX, z: 0, blockedVel: true };
     return { x: 0, z: outZ, blockedVel: true };
   }
@@ -896,12 +888,12 @@ export class ShipSystem {
   _gunFrame(dt, inp) {
     const g = this.guns;
     const seat = this.seat;
-    if (seat && (seat.id === 'captain' || seat.id === 'gun_dorsal' || seat.id === 'gun_ventral')) {
+    if (seat && this.def.seatGun[seat.id]) {
       // where the camera looks, in ship-local
       const dirWorld = this._v2.set(0, 0, -1).applyQuaternion(this.engine.camera.quaternion);
       const inv = this.flight.quaternion.clone().invert();
       const dl = dirWorld.clone().applyQuaternion(inv);
-      const gunId = seat.id === 'captain' ? 'main' : (seat.id === 'gun_dorsal' ? 'dorsal' : 'ventral');
+      const gunId = this.def.seatGun[seat.id];
       g.point(gunId, dl);
       this._aimWorld = { x: dirWorld.x, y: dirWorld.y, z: dirWorld.z };
       const want = inp.fire || this.fireHeld || (inp.keys && inp.keys.has('KeyF'));
@@ -998,8 +990,7 @@ export class ShipSystem {
     // gun mounts
     const A = this.guns.aim;
     for (const m of ext.guns.main) m.group.rotation.set(A.main.pitch, -A.main.yaw, 0, 'YXZ');
-    ext.guns.dorsal.yaw.rotation.y = -A.dorsal.yaw; ext.guns.dorsal.pitch.rotation.x = A.dorsal.pitch;
-    ext.guns.ventral.yaw.rotation.y = -A.ventral.yaw; ext.guns.ventral.pitch.rotation.x = A.ventral.pitch;
+    for (const id of ['dorsal', 'ventral']) if (ext.guns[id] && A[id]) { ext.guns[id].yaw.rotation.y = -A[id].yaw; ext.guns[id].pitch.rotation.x = A[id].pitch; }
 
     // reactor glow follows the power draw
     if (this.interior.reactorCore) {
@@ -1080,8 +1071,8 @@ export class ShipSystem {
     // which room is the camera in?
     let cur = null;
     if (this.aboard) cur = this.seat ? this.seat.room : (this.sw.zoneRoom || null);
-    if (cur === 'stair_up') cur = this.sw.y > 4.6 ? 'bridge' : 'corridor_main';
-    if (cur && cur.startsWith('d_')) cur = this._doorSideRoom(cur) || this._lastRoom || 'corridor_main';
+    if (cur === 'stair_up') cur = this.sw.y > 4.6 ? this.roles.bridge : this.roles.corridor;
+    if (cur && cur.startsWith('d_')) cur = this._doorSideRoom(cur) || this._lastRoom || this.roles.corridor;
     if (cur && !this.interior.rooms.has(cur)) cur = this._lastRoom || null;
     if (cur) this._lastRoom = cur;
     this.currentRoom = cur;
@@ -1093,7 +1084,7 @@ export class ShipSystem {
     //     for as long as its door is anything but shut. ------------------------------------------------------
     let set;
     if (this.aboard || first) {
-      set = this._reach([cur || 'cargo'], cam, this._lookLocal(), low ? 8 : 14);
+      set = this._reach([cur || this.roles.cargo], cam, this._lookLocal(), low ? 8 : 14);
       this.interior.root.visible = true;
     } else {
       // Outside: the interior shows only through openings and glass.
@@ -1101,9 +1092,9 @@ export class ShipSystem {
       const dist = Math.hypot(cam.x, cam.y, cam.z);
       if (dist < 90) {
         const starts = [];
-        if (dist < 60 && (this.state.ramps.cargo.lowered || this.rampCtl.cargo.progress > 0.02)) starts.push('cargo');
-        if (dist < 40 && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.05)) starts.push('airlock');
-        if (dist < 55) starts.push('bridge', 'nest', 'ventral');              // through the glass
+        if (dist < 60 && (this.state.ramps.cargo.lowered || this.rampCtl.cargo.progress > 0.02)) starts.push(this.roles.cargo);
+        if (dist < 40 && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.05)) starts.push(this.roles.airlock);
+        if (dist < 55) starts.push(this.roles.bridge, this.roles.nest, ...(this.def.features.ventralGlass ? ['ventral'] : []));              // through the glass
         if (starts.length) set = this._reach(starts, cam, this._lookLocal(), low ? 5 : 9, true);
       }
       this.interior.root.visible = set.size > 0;
@@ -1119,9 +1110,9 @@ export class ShipSystem {
     if (this.aboard) {
       let looksOut = !cur;
       for (const id of set) {
-        if (id === 'bridge' || id === 'nest' || id === 'ventral' || id === 'cargo') looksOut = true;
-        else if (id === 'airlock' && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.02)) looksOut = true;
-        else if (!low && WINDOW_ROOMS.has(id)) looksOut = true;
+        if (id === this.roles.bridge || id === this.roles.nest || id === 'ventral' || id === this.roles.cargo) looksOut = true;
+        else if (id === this.roles.airlock && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.02)) looksOut = true;
+        else if (!low && this.windowRooms.has(id)) looksOut = true;
       }
       this.exterior.root.visible = looksOut;
     } else this.exterior.root.visible = true;
@@ -1172,11 +1163,11 @@ export class ShipSystem {
         if (this.spotRoom !== cur) { this.spotK = Math.max(0, this.spotK - dt * 6); if (this.spotK <= 0.02 || first) { this.spotRoom = cur; const cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2, hd = Math.hypot(r.x1 - r.x0, r.z1 - r.z0) / 2, h = r.h - 0.45; sp.position.set(cx, r.y + r.h - 0.4, cz); sp.target.position.set(cx, r.y, cz); sp.angle = Math.max(0.5, Math.min(1.42, Math.atan(hd / h) + 0.12)); sp.distance = Math.hypot(hd, h) * 1.5; sp.target.updateMatrixWorld(); } }
         else this.spotK = Math.min(1, this.spotK + dt * 4);
       } else this.spotK = Math.max(0, this.spotK - dt * 6);
-      sp.intensity = 9 * this.spotK * (cur === 'cargo' || cur === 'engineering' ? 1.6 : 1);
+      sp.intensity = 9 * this.spotK * (cur === this.roles.cargo || cur === this.roles.engineering ? 1.6 : 1);
     }
     // interior ambient: brighter on the bridge (daylight through glass)
     // (a phone has four pooled lights, not six and a shadow-casting spot, so its ambient is a little higher)
-    const amb = (cur === 'bridge' ? 1.35 : 1.0) * (low ? 1.2 : 1.0);
+    const amb = (cur === this.roles.bridge ? 1.35 : 1.0) * (low ? 1.2 : 1.0);
     this.hemi.intensity += (amb - this.hemi.intensity) * Math.min(1, dt * 3);
   }
 
@@ -1237,7 +1228,7 @@ export class ShipSystem {
       const fr = f._frame;
       const blips = [];
       for (const r of this.registry.all()) {
-        if (!r.position || r.type === 'LMK' || r.type === 'TER' || r.id === SHIP_ID) continue;
+        if (!r.position || r.type === 'LMK' || r.type === 'TER' || r.id === this.def.registryId) continue;
         if (r.type === 'STR' && r.shipLocal) continue;
         const dx = r.position.x - f.pos.x, dy = r.position.y - f.pos.y, dz = r.position.z - f.pos.z;
         const e = dx * fr.east.x + dy * fr.east.y + dz * fr.east.z, n = dx * fr.north.x + dy * fr.north.y + dz * fr.north.z;
@@ -1255,7 +1246,7 @@ export class ShipSystem {
     const range = SCAN_RANGES[this.stations.scanRangeIdx];
     const f = this.flight;
     const watching = this.seat && this.seat.id === 'nav';
-    const near = this.aboard && (this.currentRoom === 'bridge');
+    const near = this.aboard && (this.currentRoom === this.roles.bridge);
     if (!(watching || near)) { sc._pending = false; return; }
     const moved = !sc.builtAt ? Infinity : Math.hypot(f.pos.x - sc.builtAt.x, f.pos.y - sc.builtAt.y, f.pos.z - sc.builtAt.z);
     if (!sc._pending && (moved > range * 0.18 || Math.abs(sc.rangeM - range) > 1 || !sc.builtAt)) {
@@ -1277,6 +1268,8 @@ export class ShipSystem {
     if (this.audio) this.audio.events(events, this.aboard);
     this.fx.setViewScale(this.engine.renderer.domElement.height, this.engine.camera.fov);
     const enemy = this.drones ? this.drones.shots.map((b) => ({ x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, gun: 'enemy', power: 0.9 })) : [];
+    // FLEET: the raiders' bolts and their escorts' (set each frame by src/world-state/multiplayerView.js) are drawn like any other enemy fire
+    if (this.extraBolts && this.extraBolts.length) for (const b of this.extraBolts) enemy.push(b);
     this.fx.update(dt, cam, enemy.length ? this.guns.bolts.concat(enemy) : this.guns.bolts);
     // dust from the thrusters when low
     this._dust(dt);
@@ -1288,9 +1281,9 @@ export class ShipSystem {
       t.mesh.userData.discMat.emissive.setRGB(t.flash * 1.2, t.flash * 0.9, t.flash * 0.4);
     }
     // registry position follows the ship
-    if (!this.shipRec) this.shipRec = this.registry.get(SHIP_ID);
+    if (!this.shipRec) this.shipRec = this.registry.get(this.def.registryId);
     this.shipRec.position.x = f.pos.x; this.shipRec.position.y = f.pos.y; this.shipRec.position.z = f.pos.z;
-    for (const s of SEATS) {
+    for (const s of this.def.seats) {
       const rec = this.registry.get(s.stationId);
       const w = f.toWorld(rec.shipLocal, {});
       rec.position.x = w.x; rec.position.y = w.y; rec.position.z = w.z;
@@ -1305,7 +1298,7 @@ export class ShipSystem {
     const intensity = Math.min(1, f.thrustUp / f.weightN()) * Math.max(0, 1 - f.agl / 28);
     const n = Math.floor(intensity * (this.tier === 'low' ? 2 : 4) + rnd());
     for (let i = 0; i < n; i++) {
-      const pod = this.exterior.liftPods[Math.floor(rnd() * 4)];
+      const pod = this.exterior.liftPods[Math.floor(rnd() * this.exterior.liftPods.length)];
       const wp = f.toWorld({ x: pod.x, y: pod.y, z: pod.z }, {});
       const l = Math.hypot(wp.x, wp.y, wp.z);
       const gr = this.ground(wp.x / l, wp.y / l, wp.z / l);
@@ -1335,7 +1328,7 @@ export class ShipSystem {
       if (s && this.sw.grounded) return { label: `Sit  ·  ${s.name}`, run: () => this._sit(loc) };
       const ob = this._observationNear(loc);
       if (ob) return { label: this.zoomOn ? 'Lower binoculars' : 'Binoculars', run: () => this.toggleBinoculars(ob) };
-      for (const p of PANELS) {
+      for (const p of this.def.panels) {
         if (Math.abs(loc.y - p.y) < 1.5 && Math.hypot(loc.x - p.x, loc.z - p.z) < p.radius) {
           if (p.action === 'ramp_cargo') return { label: this.rampCtl.cargo.target > 0.5 ? 'Raise ramp' : 'Lower ramp', run: () => this.toggleRamp('cargo') };
           if (p.action === 'airlock') {
@@ -1348,7 +1341,8 @@ export class ShipSystem {
     }
     // outside: a wrist remote for the ramp
     const loc = this.flight.toLocal(this.walker.worldPos, {});
-    if (Math.hypot(loc.x, loc.z - 22) < 16 && loc.y < 4) {
+    const rm = this.def.dock.remote;
+    if (Math.hypot(loc.x - rm.x, loc.z - rm.z) < rm.r && loc.y < 4) {
       return { label: this.rampCtl.cargo.target > 0.5 ? 'Raise ramp' : 'Lower ramp', run: () => this.toggleRamp('cargo') };
     }
     return null;
@@ -1356,7 +1350,7 @@ export class ShipSystem {
 
   /** The observation spot the player stands at, if any. */
   _observationNear(loc) {
-    for (const o of OBSERVATION) if (Math.abs(loc.y - o.y) < 1.5 && Math.hypot(loc.x - o.x, loc.z - o.z) < o.radius) return o;
+    for (const o of (this.layout.observation || [])) if (Math.abs(loc.y - o.y) < 1.5 && Math.hypot(loc.x - o.x, loc.z - o.z) < o.radius) return o;
     return null;
   }
 
@@ -1377,7 +1371,7 @@ export class ShipSystem {
 
   /** Walk the player to a seat and sit them in it (the talk dialog's "take the seat"). */
   takeSeat(seatId) {
-    const seat = SEATS.find((q) => q.id === seatId);
+    const seat = this.def.seats.find((q) => q.id === seatId);
     if (!seat || !this.aboard || this.seat) return false;
     this.sw.place(seat.x, seat.y, seat.z, seat.yaw * DEG);
     this._standClear(seat);
@@ -1404,7 +1398,7 @@ export class ShipSystem {
   /** Put the player aboard at a named place. For screenshots and the validator. */
   teleport(name, yaw = 0) {
     const L = this.layout;
-    const seat = SEATS.find((s) => s.id === name);
+    const seat = this.def.seats.find((s) => s.id === name);
     this.aboard = true;
     if (this.seat) this.stations.stand();
     if (seat) {
@@ -1456,7 +1450,7 @@ export class ShipSystem {
     const g = f.geodetic;
     if (!this.aboard) return '';
     const seat = this.seat;
-    const where = seat ? seat.name : `${deckName(this.sw.y)} · ${this._roomName()}`;
+    const where = seat ? seat.name : `${this.def.deckName(this.sw.y)} · ${this._roomName()}`;
     const neutral = !this.drones || this.drones.neutral;
     const cruising = this.drones && this.drones.suspended;
     const air = f.landed ? '' : cruising ? `<br><span class="dim">Cruise: raiders cannot follow a ship at this speed</span>` : neutral
@@ -1465,7 +1459,7 @@ export class ShipSystem {
     const sp = this.space ? this.space.hudLines() : '';
     const high = f.agl > 20000, fmt = (m) => (m >= 1e5 ? `${(m / 1000).toFixed(0)} km` : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m.toFixed(0)} m`);
     const alt = f.landed ? 'landed' : `${fmt(f.agl)} up · ${high ? `${(f.speed / 1000).toFixed(2)} km/s` : `${f.groundSpeed.toFixed(0)} m/s`}`;
-    return `<b>${SHIP_NAME}</b> · ${where}<br>` +
+    return `<b>${this.def.hudName}</b> · ${where}<br>` +
       `<span class="dim">${alt} · deck plating 1.00 g</span>${air}${sp ? '<br>' + sp : ''}`;
   }
 
@@ -1483,15 +1477,16 @@ export class ShipSystem {
  * Register the ship and every seat with measured sizes. Shared by the game and
  * the validator, so the check tests the code that ships.
  */
-export function registerShipAssets(reg, THREE_, hardware, seatGroups, shipPos) {
+export function registerShipAssets(reg, THREE_, hardware, seatGroups, shipPos, def = shipDef('meridian')) {
   reg.register({
-    id: SHIP_ID, bodyId: 'mars', type: 'VEH', name: SHIP_NAME, position: shipPos,
-    authored: SHIP_ENVELOPE, massKg: SHIP_PHYS.massKg, collision: 'mesh', materialId: 'MAT-ALUMINIUM',
+    id: def.registryId, bodyId: 'mars', type: 'VEH', name: def.name, position: shipPos,
+    authored: def.envelope, massKg: def.phys.massKg, collision: 'mesh', materialId: 'MAT-ALUMINIUM',
     object3d: hardware,
-    note: 'Landed. Walk up the boarding ramp at the stern. Seats: bridge, engineering, two turrets.',
+    note: def.type === 'meridian' ? 'Landed. Walk up the boarding ramp at the stern. Seats: bridge, engineering, two turrets.'
+      : `${def.class}. Landed. Walk up the boarding ramp at the stern. Seats: cockpit, engine room, dorsal turret.`,
   });
-  reg.measure(SHIP_ID, THREE_);
-  for (const s of SEATS) {
+  reg.measure(def.registryId, THREE_);
+  for (const s of def.seats) {
     const rec = reg.register({
       id: s.stationId, bodyId: 'mars', type: 'STR', name: `${s.name} (${s.role})`,
       position: { x: shipPos.x, y: shipPos.y, z: shipPos.z },
@@ -1500,6 +1495,29 @@ export function registerShipAssets(reg, THREE_, hardware, seatGroups, shipPos) {
     });
     reg.measure(s.stationId, THREE_);
     rec.shipLocal = { x: s.x, y: s.y, z: s.z };
+  }
+}
+
+/**
+ * Put a ramp's hinge group at `progress` (0 raised, 1 lowered) with the angle that touches the ground. Shared by the ship you fly and
+ * the ones you only see (src/world-state/multiplayerView.js), so a ramp is posed by one rule.
+ */
+export function poseRamp(r, R, key, progress, angle) {
+  const p = progress;
+  const ease = p * p * (3 - 2 * p);
+  if (key === 'cargo') {
+    r.hinge.rotation.set(-Math.PI / 2 + (angle + Math.PI / 2) * ease, 0, 0);
+    r.hinge.scale.set(1, 1, 1);
+  } else {
+    // the gangway swings out from a vertical flap and extends: 2.5 m flap, 5 m deployed
+    const len = 2.5 + (R.length - 2.5) * Math.max(0, (p - 0.45) / 0.55);
+    r.hinge.scale.set(1, 1, len / R.length);
+    // built along +Z: rotate so +Z points to port (-X) and tilts down
+    const tilt = -Math.PI / 2 + (angle + Math.PI / 2) * ease;
+    r.hinge.rotation.set(0, 0, 0);
+    r.hinge.quaternion.setFromEuler(new THREE.Euler(tilt, 0, 0, 'XYZ'));
+    const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
+    r.hinge.quaternion.premultiply(yaw);
   }
 }
 

@@ -57,7 +57,7 @@ try{
   await shot(a,'04-flight-together');
   const localBefore=structuredClone(w.state.players[bid].pose.sw);await b.reload();await b.waitForFunction(()=>window.cosmos?.multiplayer,null,{timeout:90000});await b.evaluate(()=>{cosmos.engine.stop();cosmos.step(1/60);});
   assert.equal(await b.evaluate(()=>cosmos.world.playerId),bid);assert.equal(await b.evaluate(()=>cosmos.world.snapshot.players[cosmos.world.playerId].aboardShipId),sid);
-  const after=await b.evaluate(()=>cosmos.world.snapshot.players[cosmos.world.playerId].pose.sw);assert.deepEqual(after,localBefore);assert.equal(Object.keys(w.state.ships).length,2);results.refreshMidTrip=true;
+  const after=await b.evaluate(()=>cosmos.world.snapshot.players[cosmos.world.playerId].pose.sw);assert.deepEqual(after,localBefore);assert.equal(Object.values(w.state.ships).filter(s=>!s.npc).length,2);results.refreshMidTrip=true;     // (the world's raiders are ships too)
   await shot(b,'05-passenger-rejoined');
   let elapsed=0;while(w.state.ships[sid].trip&&elapsed<15000){await w.enqueue(()=>w.advance(30));elapsed+=30;}await sync();
   assert.equal(await b.evaluate(()=>cosmos.space.frameId),'phobos');assert.equal(await b.evaluate(()=>cosmos.ship.flight.landed),true);results.bothLanded=true;

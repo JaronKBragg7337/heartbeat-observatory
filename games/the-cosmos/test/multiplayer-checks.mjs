@@ -83,7 +83,7 @@ export async function runMultiplayerChecks({check,section}) {
     assert.ok(world.state.ships[sa.id].trip);const mid=structuredClone(world.state.players[b.id].pose.sw);
     b.close();await new Promise(r=>setTimeout(r,30));rejoined=new TestClient(app.url,b.key,b.name);await rejoined.connect();
     assert.equal(rejoined.id,b.id);assert.equal(rejoined.state.players[b.id].shipId,sb.id);assert.equal(rejoined.state.players[b.id].aboardShipId,sa.id);
-    assert.deepEqual(rejoined.state.players[b.id].pose.sw,mid);assert.equal(Object.keys(world.state.ships).length,2);
+    assert.deepEqual(rejoined.state.players[b.id].pose.sw,mid);assert.equal(Object.values(world.state.ships).filter(s=>!s.npc).length,2);          // (the world's raiders are ships too: count the players')
     check('refresh mid-trip restores the same identity, owned ship and passenger-local pose',true);
     const savedMid={record:structuredClone(world.state),bricks:structuredClone([...world.bricks.values()])};
     const restored=await new world.constructor({load:async()=>structuredClone(savedMid),save:async()=>{}},{now:()=>clock+2000}).load();

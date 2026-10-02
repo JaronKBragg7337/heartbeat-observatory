@@ -6,8 +6,9 @@ import { landingField } from './fleet.js';
 import { cartesianToGeodetic, localFrame } from '../world/geodesy.js';
 import { SpaceTrip } from '../space/spaceTrip.js';
 import { rampEntry } from '../ship/rampTransfer.js';
-import { RAMPS } from '../ship/shipSpec.js';
-import { ShipWalker, shipIndex } from '../ship/shipWalker.js';
+import { ShipWalker, shipIndexFor } from '../ship/shipWalker.js';
+import { FleetView } from './fleetView.js';      // FLEET: the other ships, the raiders, the shipyard
+import { shipDef } from '../ships/registry.js';
 const hall={x:-28,z:-68,w:24,d:14,h:5};
 function label(text){const c=document.createElement('canvas');c.width=512;c.height=64;const x=c.getContext('2d');
   x.fillStyle='#17120cdd';x.fillRect(0,0,512,64);x.fillStyle='#ffe0ab';x.font='28px sans-serif';x.textAlign='center';x.fillText(text,256,44,500);
@@ -18,7 +19,7 @@ export class MultiplayerView {
     attachGrades([site,landingField(site,()=>world.snapshot.pads)]);
     space.portSite={...site,toWorld:(x,y,z)=>{const pad=world.snapshot.ships[this.activeId()].pad;return site.toWorld(pad.x+x,y,pad.z+z);}};
     ship.remoteAuthority=true;ship.flight.remoteAuthority=true;
-    this.installControls();this.buildHall();this.buildPanel();
+    this.installControls();this.buildHall();this.buildPanel();this.fleetView=new FleetView(this);
     world.beforeAction=()=>this.sendPose();world.onReceipt=r=>{if(!r.ok)ship.note(r.msg,true);if(this.crew?.onSay)this.crew.onSay('',r.msg==='Saved to the shared world.'?'Done.':r.msg);if(!r.ok)this.forcePlayer=true;};
     world.onConnection=()=>this.forcePlayer=true;
     world.listeners.add(m=>this.apply(m));this.apply({state:world.snapshot,bricks:[...world.bricks.values()]});
@@ -35,8 +36,9 @@ export class MultiplayerView {
       for(const s of Object.values(this.world.snapshot.ships))if(s.id!==this.activeId()&&(s.owner===this.world.playerId||s.crewMayBoard)&&s.frameId===space.frameId&&s.pose.landed&&Math.hypot(s.pose.pos.x-this.walker.worldPos.x,s.pose.pos.y-this.walker.worldPos.y,s.pose.pos.z-this.walker.worldPos.z)<45){
         const q=new THREE.Quaternion().fromArray(s.pose.quaternion).invert(),loc=new THREE.Vector3().copy(this.walker.worldPos).sub(new THREE.Vector3().copy(s.pose.pos)).applyQuaternion(q),yaw=this.walker.yaw-s.pose.heading;
         const motion={x:Math.sin(yaw)*(inp.moveNorth||0)+Math.cos(yaw)*(inp.moveEast||0),z:-Math.cos(yaw)*(inp.moveNorth||0)+Math.sin(yaw)*(inp.moveEast||0)};
-        const entry=Object.keys(RAMPS).map(k=>rampEntry(k,s.state.ramps[k],loc,motion)).find(Boolean);
-        if(entry&&new ShipWalker(shipIndex,s.state).canStand(entry.x,entry.y,entry.z)){
+        const ramps=shipDef(s.type).ramps;
+        const entry=Object.keys(ramps).map(k=>rampEntry(k,s.state.ramps[k],loc,motion,ramps)).find(Boolean);
+        if(entry&&new ShipWalker(shipIndexFor(shipDef(s.type)),s.state).canStand(entry.x,entry.y,entry.z)){
           this.boardPending=true;this.request({type:'board',shipId:s.id,walkPose:{sw:{...entry,yaw,pitch:this.walker.pitch},yaw:this.walker.yaw,pitch:this.walker.pitch}}).finally(()=>{this.boardPending=false;this.forcePlayer=true;});break;
         }
       }
@@ -73,6 +75,9 @@ export class MultiplayerView {
     space.hooks.cargoKg=item=>this.world.snapshot.ships[this.activeId()].hold[item]||0;
   }
   apply(m){const snapshot=this.world.snapshot,p=snapshot.players[this.world.playerId],s=snapshot.ships[this.activeId()],f=this.ship.flight;
+    // FLEET: the flagship changed to another class (bought, captured, switched): this cockpit is built for the old one, so come back in.
+    if(s.type!==this.ship.def.type){this.reloadForShip(s);return;}
+    this.fleetView?.onSnapshot();
     const changed=this.lastShipId!==s.id||this.lastFrame!==p.frameId||this.lastAboard!==p.aboardShipId||this.lastSeat!==p.pose.seat;
     if(this.lastShipId!==s.id){this.messageSeq=0;this.eventSeq=s.eventSeq||0;}
     if(snapshot.elevator){const loc=this.site.toLocal(this.walker.worldPos),oldY=this.port.elevator.y;
@@ -117,6 +122,10 @@ export class MultiplayerView {
     for(const pad of snapshot.pads)this.addPad(pad);
     this.updateBodies(0);this.draw();
   }
+  reloadForShip(s){if(this._reloading)return;let n=0;try{n=+sessionStorage.getItem('cosmos-ship-reloads')||0;}catch{}
+    if(n>=3){this.ship.note('Your ship changed class; reload the page to board it.',true);this._reloading=true;return;}
+    this._reloading=true;try{sessionStorage.setItem('cosmos-ship-reloads',String(n+1));setTimeout(()=>sessionStorage.removeItem('cosmos-ship-reloads'),20000);}catch{}
+    this.ship.note(`Boarding your ${shipDef(s.type).class}...`);setTimeout(()=>location.reload(),1200);}
   addPad(a){if(this.pads.has(a.id)||a.x===0&&a.z===0)return;this.pads.add(a.id);
     const g=new THREE.Group();g.name='allocated-'+a.id;g.position.set(a.x,0,a.z);
     const slab=new THREE.Mesh(new THREE.BoxGeometry(a.w,.5,a.d),this.ship.matsExt.concrete||new THREE.MeshStandardMaterial({color:0x77736b,roughness:.9}));slab.position.y=-.24;g.add(slab);
@@ -140,7 +149,7 @@ export class MultiplayerView {
     const tag=label(name);tag.position.y=2.15;group.add(tag);this.engine.scene.add(group);
     const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.22,1.2,4,8),new THREE.MeshStandardMaterial({color:0xcbbba7}));fallback.position.y=.9;group.add(fallback);person.ready.then(p=>{if(p.loaded)group.remove(fallback);});
     const entry=this.engine.track({worldPos:{x:0,y:0,z:0},object3d:group,quaternion:new THREE.Quaternion()});
-    v={person,group,entry,last:null,name};this.bodies.set(id,v);return v;
+    v={person,group,entry,last:null,name,tag};this.bodies.set(id,v);return v;
   }
   updateBodies(dt){const s=this.world.snapshot,current=this.activeId(),seen=new Set();
     for(const p of Object.values(s.players)){if(p.id===this.world.playerId||!p.online)continue;seen.add(p.id);const b=this.body(p.id,p.personId,p.name);
@@ -163,14 +172,13 @@ export class MultiplayerView {
         if(seat){b.group.position.set(seat.x,seat.y+(contract.status==='aboard'&&!contract.displaced?({pilot:.47,captain:.63,nav:.57,comms:.57,gun_dorsal:.44,gun_ventral:.44}[seat.id]||0):0),seat.z);b.group.rotation.set(0,Math.PI-(Number.isFinite(seat.yaw)?seat.yaw*(seat.id?Math.PI/180:1):0),0);}
       }else if(b.local){b.group.removeFromParent();this.engine.scene.add(b.group);b.entry=this.engine.track(b.entry);b.local=false;}
     }
+    this.fleetView.crew(dt,s,seen);          // FLEET: the people at a raider's stations
     for(const [id,b] of this.bodies)if(!b.local||!seen.has(id))b.group.visible=seen.has(id)&&b.frameId===this.space.frameId;
     this.crew?.sync();
-    for(const ship of Object.values(s.ships)){if(ship.id===current){const v=this.fleet.get(ship.id);if(v)v.root.visible=false;continue;}
-      let v=this.fleet.get(ship.id);if(!v){const root=this.ship.exterior.root.clone(true);root.name='owned-ship:'+ship.id;this.engine.scene.add(root);v={root,entry:this.engine.track({worldPos:{...ship.pose.pos},object3d:root,quaternion:new THREE.Quaternion()})};this.fleet.set(ship.id,v);}
-      Object.assign(v.entry.worldPos,ship.pose.pos);v.entry.quaternion.fromArray(ship.pose.quaternion);v.root.visible=ship.frameId===this.space.frameId;
-      v.entry.frame=ship.frameId==='mars'?this.engine.rootFrame:this.space.moonWorld(ship.frameId).frame;}
+    this.fleetView.update(dt,s,current);     // FLEET: every other ship, raiders and escorts, built from its own definition
   }
-  placeBody(b,pos,q,frame,pose,dt){const speed=b.last?Math.min(4,Math.hypot(pos.x-b.last.x,pos.y-b.last.y,pos.z-b.last.z)/Math.max(.1,dt)):0;
+  placeBody(b,pos,q,frame,pose,dt){const cam=this.engine.cameraWorldPos;if(b.tag)b.tag.visible=Math.hypot(pos.x-cam.x,pos.y-cam.y,pos.z-cam.z)>3.5;     // FLEET: a name over someone you are sitting beside is in the way
+    const speed=b.last?Math.min(4,Math.hypot(pos.x-b.last.x,pos.y-b.last.y,pos.z-b.last.z)/Math.max(.1,dt)):0;
     if(pose==='Idle'&&speed>.3)pose='Walk';b.person.play(pose);b.person.update(dt,speed);Object.assign(b.entry.worldPos,pos);b.entry.quaternion.copy(q);b.last={...pos};b.frameId=frame;
     b.entry.frame=frame==='mars'?this.engine.rootFrame:this.space.moonWorld(frame).frame;
   }
@@ -193,6 +201,7 @@ export class MultiplayerView {
     if(!this.world.connected){text('The shared world keeps running while you are away.');const solo=document.createElement('button');solo.textContent='Play my saved solo world';solo.onclick=()=>{const u=new URL(location.href);u.searchParams.set('solo','1');location.href=u.href;};this.panel.append(solo);}
     btn(owned.crewMayBoard?'Close guest boarding':'Allow crew to board',{type:'boarding-permission',allowed:!owned.crewMayBoard});
     text('Walk onto a lowered ramp to board. Walk back down it to leave. Guest ramps work when their owner allows boarding.');
+    this.fleetView.panel(s,p,text,btn);
     text('Hiring: walk to the crew hall door, north of the main pad. Candidates come outside when called.');
     for(const c of Object.values(s.pool).filter(c=>!c.shipId&&!c.retired)){text(`${c.name} · ${c.role} · ${Math.round(c.skill*100)}% · ${c.wageCredits} cr/sol`);
       if(c.status==='inside')btn('Meet '+c.name,{type:'meet',id:c.id});else if(c.status==='waiting'){btn('Hire '+c.name,{type:'hire',id:c.id});btn('Decline',{type:'decline',id:c.id});}}
@@ -200,6 +209,6 @@ export class MultiplayerView {
     this.panel.scrollTop=scroll;
   }
   tick(dt){this.accum+=dt;this.updateBodies(dt);this.button.style.bottom=this.ship.aboard?'190px':'120px';if(this.accum>=.1){this.accum=0;this.sendPose();
-    if(this.ship.remoteFireWanted&&['captain','gun_dorsal','gun_ventral'].includes(this.ship.seat?.id)){const direction=new THREE.Vector3(0,0,-1).applyQuaternion(this.engine.camera.quaternion);
+    if(this.ship.remoteFireWanted&&this.ship.def.seatGun[this.ship.seat?.id]){const direction=new THREE.Vector3(0,0,-1).applyQuaternion(this.engine.camera.quaternion);
       this.world.request({type:'fire-gun',direction:{x:direction.x,y:direction.y,z:direction.z}});}}}
 }

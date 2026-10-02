@@ -57,19 +57,22 @@ export class ShipGeometryIndex {
       Z.push({ id: r.id, x0: r.x0, x1: r.x1, z0: r.z0, z1: r.z1,
         floor: r.y, ceil: r.y + r.h, holes, kind: 'room', room: r.id });
     }
-    // The stair up the cargo bay's west wall is a solid wedge: nothing walkable under it at floor level
-    // (its last three steps are left out of the hole so you can step on and off at the bottom).
-    const cargoZone = Z.find((z) => z.id === 'cargo');
-    cargoZone.holes.push({ x0: STAIRS.cargo.x0, x1: STAIRS.cargo.x1, z0: STAIRS.cargo.zHigh, z1: STAIRS.cargo.zLow - 0.6 });
+    // FLEET: stairs come from the layout (a raider has none). The Meridian's cargo stair is a solid wedge: nothing walkable
+    // under it at floor level (its last three steps are left out of the hole so you can step on and off at the bottom).
+    const ST = L.stairs || {};
+    const sc = ST.cargo, su = ST.up;
+    if (sc) {
+      const cargoZone = Z.find((z) => z.id === sc.room);
+      cargoZone.holes.push({ x0: sc.x0, x1: sc.x1, z0: sc.zHigh, z1: sc.zLow - 0.6 });
+    }
 
     // Stairs: sloped floors, and a ceiling that follows them up.
-    const su = STAIRS.up, sc = STAIRS.cargo;
-    Z.push({ id: su.id, x0: su.x0, x1: su.x1, z0: su.zHigh - 0.7, z1: su.zLow + 0.35,
-      floor: (x, z) => stairFloor(su, z), ceil: (x, z) => stairFloor(su, z) + DECK.clear,
-      holes: [], kind: 'stair', room: su.id });
     // (The top reaches 0.7 m back into the corridor so the two floors overlap
     //  once each is pulled in by the shoulder radius; the floor there is flat.)
-    Z.push({ id: sc.id, x0: sc.x0, x1: sc.x1, z0: sc.zHigh - 0.7, z1: sc.zLow + 0.2,
+    if (su) Z.push({ id: su.id, x0: su.x0, x1: su.x1, z0: su.zHigh - 0.7, z1: su.zLow + 0.35,
+      floor: (x, z) => stairFloor(su, z), ceil: (x, z) => stairFloor(su, z) + DECK.clear,
+      holes: [], kind: 'stair', room: su.id });
+    if (sc) Z.push({ id: sc.id, x0: sc.x0, x1: sc.x1, z0: sc.zHigh - 0.7, z1: sc.zLow + 0.2,
       floor: (x, z) => stairFloor(sc, z), ceil: (x, z) => Math.min(5.5, stairFloor(sc, z) + DECK.clear),
       holes: [], kind: 'stair', room: sc.room });
 
@@ -81,7 +84,7 @@ export class ShipGeometryIndex {
         ? { x0: d.at - ext, x1: d.at + ext, z0: d.c - half, z1: d.c + half }
         : { x0: d.c - half, x1: d.c + half, z0: d.at - ext, z1: d.at + ext };
       Z.push({ id: d.id, ...z, floor: d.y, ceil: d.y + d.h + 0.2, holes: [], kind: 'door', door: d.id,
-        gate: d.id === 'd_airlock_in' ? 'airlock_inner' : null });
+        gate: d.gate || (d.id === 'd_airlock_in' ? 'airlock_inner' : null) });
     }
     // Airlock outer doorway, only walkable while the outer door is open.
     const od = L.doors.find((d) => d.kind === 'outer');
@@ -107,6 +110,13 @@ export class ShipGeometryIndex {
 
 const _index = new ShipGeometryIndex();
 export const shipIndex = _index;
+/** FLEET: the walkable geometry of any ship definition, built once and kept. */
+const _byType = new Map([['meridian', _index]]);
+export function shipIndexFor(def) {
+  if (!def) return _index;
+  if (!_byType.has(def.type)) _byType.set(def.type, new ShipGeometryIndex(def.layout));
+  return _byType.get(def.type);
+}
 
 const floorOf = (z, x, zz) => (typeof z.floor === 'function' ? z.floor(x, zz) : z.floor);
 const ceilOf = (z, x, zz) => (typeof z.ceil === 'function' ? z.ceil(x, zz) : z.ceil);
@@ -156,7 +166,7 @@ export class ShipWalker {
     for (const key of ['cargo', 'airlock']) {
       const rp = st.ramps[key];
       if (!rp || !rp.lowered) continue;
-      const def = RAMPS[key];
+      const def = this.index.layout.ramps[key];
       const t = Math.tan(rp.angle), c = Math.cos(rp.angle);
       const run = def.length * c;
       const hw = def.width / 2;
@@ -355,7 +365,7 @@ export class ShipWalker {
     for (const key of ['cargo', 'airlock']) {
       const rp = this.state.ramps[key];
       if (!rp || !rp.lowered) continue;
-      const def = RAMPS[key];
+      const def = this.index.layout.ramps[key];
       const run = def.length * Math.cos(rp.angle);
       let atEnd = false;
       if (def.dir.z) atEnd = this.z > def.hinge.z + run - 0.9 && wz > 0.2 && Math.abs(this.x - def.hinge.x) < def.width / 2;

@@ -108,6 +108,7 @@ src/ui/touch.js          the stick that isn't there until your thumb is
 src/dev/debugLayer.js    graticule, ID bubbles, coordinate readout
 src/ship/                the MSV Meridian: see "The ship" below
 src/space/               leaving Mars: the sky, the drive, Phobos and Deimos, the jobs: see "Space travel" below
+src/ships/               the fleet: ship definitions by type, the first raider class (src/ships/raider/): see "The fleet" below
 test/validate.mjs        the checks that mean nobody has to go looking
 test/ship-checks.mjs     the ship's share of them
 test/dig-checks.mjs      digging, spoil, the drawn ground, walking in it, the tiers that tile the rest
@@ -573,6 +574,46 @@ paid once; samples as real lots; stowing; the survey payout once; the salvage on
 * The jobs' prices are mine and small; the economy owns the real ones. No second planet and no jump drive: Fortis, Greenhaven and Ironclad are listed and refused.
 * The cargo module of the distress call is a plain box with a stripe (a placeholder prop); the sample beacons are poles with a lamp.
 * Ground view of Phobos at the pad is lit by one Sun at about 30 degrees: shadows are long; the Mars-lit side has only a faint ambient (no real Marsshine).
+
+## The fleet (2026-10-01)
+
+*Jaron: "the Meridian was the proof; now a fleet."* A ship is a **type**, a string on its record that the server holds and saves. The type
+selects a **ship definition** (`src/ships/registry.js`): layout, seats, gear, guns, ramps, flight numbers, hull table, crew posts, dock
+points. The walker, the flight model, the guns, the stations, the interior builder, the crew's routes and the server's board, leave, seat,
+hire and fire rules all take the definition; none of them names a ship. The Meridian is one entry (built from `src/ship/shipSpec.js`, which
+stays the one place its numbers are written); the first raider class is another, written the same way in its own folder.
+
+```
+src/ships/registry.js        shipDef(type): the fleet
+src/ships/layoutKit.js       the room/door/prop/lamp vocabulary a layout is written in (pure)
+src/ships/hullLoft.js        a hull as a table of cross sections (pure)
+src/ships/visuals.js         how each type is drawn, apart from its data so the server never loads a renderer
+src/ships/shipyard.js        where a ship can be bought
+src/ships/meridian/def.js    the Meridian, as an entry
+src/ships/raider/            spec.js (rooms, hull, gear, guns, flight), exterior.js, interior.js, props.js,
+                             crew.js, brain.js (how it flies and fights), escorts.js (its three drones), stats.js, def.js
+server/fleet.mjs             the raiders of the shared world: spawning, the tick, damage both ways, claim and capture
+```
+
+**The Shrike** (`src/ships/raider/`): 36 m long, 18 m across the wings; a fast, hard-hitting boat for four. Walk-through rooms fore to aft:
+cockpit (captain and pilot seats under the canopy), main corridor, crew quarters and mess, the airlock (with a gangway) and the armoury, the
+ladder niche up to the dorsal turret, the engine room (reactor, engineer's station), the cargo hold with the stern boarding ramp. Same Kit,
+same textures, same depth-layer solver as the Meridian, so the same level of detail. Four people from the Loft's seven sit at the four stations.
+It lifts 16 m/s, cruises 52, turns 1.05 rad/s; shield 240, hull armour 0.22.
+
+**Raiders in the shared world**: one high over the port, one over Phobos, one abandoned hull adrift near Deimos (`server/fleet.mjs`). They
+fly outside Mars neutral airspace only and fight only a crewed ship that is in hostile air: strafing runs with the nose guns and the turret,
+three escort drones on their quarters, a break away after each pass. A raider at 35% hull is **disabled** (the crew surrender); at none it is
+**abandoned**. **Players can take one**: capture a disabled one (its crew sign on) or claim an abandoned one, from your own ship within 160 m
+(World / crew panel); buy one at the shipyard kiosk at the port (2,400 credits); make any ship you own your flagship. See
+[docs/WORLD-STATE.md](docs/WORLD-STATE.md) for the rules and what the server keeps, and
+[docs/qa/2026-10-01/fleet/REVIEW.md](docs/qa/2026-10-01/fleet/REVIEW.md) for what was verified and what was not.
+
+Offline solo keeps the old three drones and has no raiders (`?ship=raider` lets solo fly a Shrike, but nothing attacks it).
+
+**Adding a class**: write `src/ships/<type>/` (spec and def), add it to the registry and its visuals to `visuals.js`; nothing else changes.
+Validator sections 20-26 (`test/fleet-checks.mjs`) prove the registry, the raider's rooms, hull, flight, guns, brain and escorts, the world's
+fight, capture, claim, buy and flagship rules, persistence, and two clients seeing the same raider and the same damage.
 
 ## Marineris Port (local review build, 2026-09-30)
 

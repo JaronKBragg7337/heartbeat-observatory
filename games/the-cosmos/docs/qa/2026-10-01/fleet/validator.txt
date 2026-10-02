@@ -1,0 +1,684 @@
+
+== 1. Measured bodies are self-consistent ==
+  PASS  mars: every physical field is a finite number
+  PASS  mars: polar radius < mean < equatorial (real oblateness)
+  PASS  mars: stated gravity agrees with G·M/r² within 1%
+  PASS  mars: gravity falls off as inverse square above the surface
+  PASS  mars: gravity goes to zero at the centre, not infinity
+  PASS  mars: every source record names a field and a URL
+
+== 2. Addressing: every point has one, and it round-trips ==
+  PASS  geodetic round-trip is accurate to under 1 mm over 4000 samples
+  PASS  poles convert without a singularity
+  PASS  standing on the surface reports layer 0, not underground
+  PASS  local frame is RIGHT-handed everywhere (east × north = +up)
+  PASS  stepping along east increases longitude
+  PASS  stepping along north increases latitude
+  PASS  local frame is orthonormal
+  PASS  surface distance between the landmarks is physically sane
+
+== 3. The planet is a volume, not a shell ==
+  PASS  rays find enclosed voids underground (caves are representable)
+  PASS  cave voids are lava-tube scale, not cathedral scale
+  PASS  the deep interior is solid everywhere (no hollow planet)
+  PASS  space above the highest terrain is empty everywhere
+  PASS  field is deterministic: identical inputs give identical output
+  PASS  render surface and collision surface are the same function
+  PASS  the solved surface equals the marched surface (renderer optimisation is not a second truth)
+
+== 4. Materials and strata ==
+  PASS  every material declares a real density and a strength
+  PASS  material densities are physically ordered (ice < regolith < basalt < ore)
+  PASS  the surface layer is regolith, not bedrock
+  PASS  below the crust nothing can be excavated (mantle boundary is a rule)
+
+== 5. A body on the ground behaves ==
+  PASS  a standing body comes to rest and stays grounded
+  PASS  a standing body does not sink or drift over 15 s
+  PASS  running 10 s covers the distance the speed implies
+  PASS  running over real terrain does not launch the body into the air
+  PASS  jump apex matches v²/2g for this planet within 10%
+  PASS  a body is never left inside solid rock
+
+== 5b. The player stands on the ground they can SEE ==
+  PASS  the drawn surface and the field genuinely differ (the bug was real)
+  PASS  feet rest on the drawn surface within 5 cm while walking
+  PASS  running across rough ground does not skip the body into the air
+
+== 5c. Nothing is inside-out ==
+  PASS  local ground patch faces OUT of the planet, not into it
+  PASS  global shell faces out too
+  PASS  the only normal-less vertices are the two geometric poles
+  PASS  an explicit orientation basis faces the heading it was given
+
+== 6. Walking anywhere on the planet, not just at spawn ==
+  PASS  a body settles correctly at 10 sites worldwide including both poles
+
+== 7. Asset identity and placement ==
+  PASS  ids follow the COS-<BODY>-<TYPE>-<SEQ> format
+  PASS  ids are unique and sequential
+  PASS  an unknown asset type is rejected
+  PASS  a duplicate explicit id is rejected
+  PASS  measured size is unaffected by rotation and position
+  PASS  a correctly built asset reports no dimension drift
+  PASS  every landmark sits on the ground: not buried, not floating
+
+== 7a. Assisted carry and one-pour emptying ==
+  PASS  Mars hauling cart carries at least a tonne; bucket hopper at least 48 tonnes
+  PASS  bucket can make fifteen connected bites and a real hole before emptying
+  PASS  over-capacity bite refuses before changing the lattice or inventory
+  PASS  failed Drop all retains every carried lot and its exact mass
+  Drop all: 22981 kg, 14.907 m3, 939.9 ms, heap r=3.09 m
+  PASS  Drop all performs one cone pour, makes one heap and empties all fifteen lots
+  PASS  Drop all conserves kilograms and cubic metres exactly: ledger = 0
+  PASS  Drop all adds the actual carried volume to the lattice, with no fake accounting
+  PASS  the entire heap is beside the hole, and still a low cone
+  PASS  single drop still removes exactly one load
+  PASS  single drop then Drop all leaves both ledgers exactly zero
+
+== 7a2. Distant Mars: sampled relief, curvature and a phone triangle budget ==
+  PASS  far tier edges meet the actual coarser triangles within 2 cm (no sky seams or cliff skirts)
+  far ring 2000 m: height SD 94.3 m; build 21.5 ms
+  PASS  drawn far ring at 2 km carries relief (height SD > 25 m), with no missing samples
+  PASS  far tier 0 normals light the outward surface, with continuous edge skirts
+  far ring 20000 m: height SD 205.7 m; build 20.5 ms
+  PASS  drawn far ring at 20 km carries relief (height SD > 25 m), with no missing samples
+  PASS  far tier 1 normals light the outward surface, with continuous edge skirts
+  far ring 100000 m: height SD 616.2 m; build 11.4 ms
+  PASS  drawn far ring at 100 km carries relief (height SD > 25 m), with no missing samples
+  PASS  far tier 2 normals light the outward surface, with continuous edge skirts
+  PASS  climbing 10 km above the same ground does not trigger distant terrain rebuilds
+  PASS  three phone far tiers add fewer than 25000 triangles
+  PASS  fog preserves over 90% of contrast at 20 km and over 35% at the 1000 m horizon (~82 km)
+
+== 7b. Digging: the ground is a solid object and matter is conserved ==
+  PASS  the ground is solid just under the surface before digging
+  PASS  before any dig the field is exactly the geology (no edit store cost, no bricks)
+  PASS  a scoop yields a real lot with mass and volume
+  PASS  a shovel load is a believable size (10-25 L, 15-60 kg)
+  PASS  a hand spade lifts a few litres (1.5-5 L)
+  PASS  mass is the sum of what each material in the lot weighs (real densities)
+  PASS  the dug spot becomes a hole in the ground
+  PASS  the hole lowers the surface every consumer sees (one truth, not a decal)
+  PASS  a buried sphere of radius 0.5 m comes out at its true volume to within 3%
+  PASS  digging does not disturb the ground a few metres away
+  PASS  material in hand is accounted for while carried (litres and kilograms)
+  PASS  the lattice, re-added from scratch, lost exactly the volume the lot carries
+  PASS  material dumped is accounted for and nothing vanished
+  PASS  the lattice agrees with the books after the drop: net change is zero to 1e-8 m3
+  PASS  dumping puts solid material back into the world, above where the ground was
+  PASS  the mantle boundary cannot be dug, and refusing leaves no trace
+  PASS  empty air cannot be dug and leaves no trace
+  PASS  the same dig at the same place gives the same lot and the same lattice, bit for bit
+
+== 7c. The dug ground is DRAWN exactly: from above, from inside, and across seams ==
+  PASS  the test hole spans more than one brick (the seam is on trial)
+  PASS  every face of the dug ground points out of the rock, not into it
+  PASS  every vertex lies on the field's zero surface (to 2 cm): the picture is the truth
+  PASS  no crack between bricks: every interior edge of the dug surface is shared by two triangles (open edges 0; pinch points under 0.1%)
+  PASS  normals agree where two bricks share a vertex (no visible seam in the shading)
+  PASS  looking at the hole from above and from standing inside it, the drawn surface is where the field says (8 cm)
+  PASS  a hole through the regolith shows its layers on the wall (at least two materials exposed)
+  PASS  a brick meshes in a few milliseconds and the whole hole stays under 40k triangles
+  PASS  the lattice cell resolves a shovel bite to at least 3 cells across
+  PASS  every lattice point near the surface that digging changed is under a brick the heightfields discard beneath
+  PASS  ground nobody touched is never discarded: no hole can open where there is no brick to draw it
+  PASS  the discard keeps a hand-width overlap with the heightfield at an open face (no crack to the sky)
+
+== 7d. Spoil: heaps stand at the angle of repose, grow outward, and never spike ==
+  PASS  a shovelful poured on the ground makes a low heap, not a spike (height under 0.8 of its radius)
+  PASS  repeated loads build ONE heap that spreads outward (radius grows with every load)
+  PASS  no free side of the heap stands steeper than 39 degrees (angle of repose 33)
+  PASS  after eight loads the heap is a broad mound: height under 0.75 of radius, and over half a metre tall
+  PASS  the heap stands on the ground: solid from the crown down into the earth, no air under it
+  PASS  every load poured is a load dug: litres and kilograms balance, and the lattice re-added agrees
+  PASS  emptying the bucket does not refill the hole: each cycle goes deeper than the last (until it is past 5 m)
+  PASS  four load-cycles get past 3 m down (dumping into the hole used to cap it near 2 m)
+  PASS  the spoil stayed clear of the hole: its floor is still open air and the shaft above it is empty
+  PASS  and matter is conserved through the whole shift
+  PASS  every heap the shift made stands low (height under 0.8 of its radius), however many loads it took
+
+== 7e. Standing, turning, tunnelling and climbing out of dug ground ==
+  PASS  a person dropped into the pit stands on its floor, grounded, about where the field says
+  PASS  you can stand in the pit and turn through a full circle without any part of you in rock
+  PASS  walking into the wall of a 1.8 m pit does not scramble the body out automatically
+  PASS  and nothing about it ends with the body inside rock
+  PASS  a bite aimed level at the wall goes into the wall, sideways: its centre lies along the look direction, not below
+  PASS  a tunnel cut sideways into the wall can be walked: more than 4 m in, on its floor
+  PASS  inside the tunnel the body stays out of the rock (head, shoulders, shins)
+  PASS  aiming up finds the ceiling and a bite opens it (down, sideways and up all dig)
+  PASS  the ceiling holds the player in: no walking through a roof that is there (head probe never in rock after 3 s of jumping)
+  PASS  a shaft deeper than a person can scramble (about 3 m) really is a shaft: six seconds of jumping and pushing does not get out
+
+== 7f. The ground tiers tile the ground: no sky, no paper, no lid on a hole ==
+  PASS  the drawn ground is the fields ground: near tier within 20 cm, mid tier within 2.5 m, nowhere floating or sunk by more
+  PASS  the heightfield tiers draw the original geology and never see an edit (no coarse lid on a hole)
+  PASS  every point of the ground within 80 m is drawn by the near tier or the mid tier (nothing falls between them)
+  PASS  under every spot of visible ground within 60 m there is solid rock for at least 2 m (nothing paper-thin)
+
+== 8. Determinism across runs ==
+  PASS  identical inputs from an identical start end in an identical place
+
+== 9. The ship: a real place you walk through, sit in and fly ==
+
+== 9a. Real human scale ==
+  PASS  decks are 3.0 m apart: 2.7 m clear plus a 0.3 m slab
+  PASS  the avatar is 1.78 m tall with a 1.66 m eye, and fits a 2.7 m deck with room to jump
+  PASS  every door is at least 2.0 m tall and 0.9 m wide
+  PASS  corridors are 1.3 to 1.7 m wide
+  PASS  stairs rise 0.1875 m a step, the same as a building-code riser
+  PASS  no two rooms occupy the same space
+  PASS  every piece of furniture stands inside its own room
+  PASS  no two pieces of furniture pass through each other
+  PASS  every door joins two rooms that exist (or the outside)
+
+== 9b. Decks are walkable: stairs, ladders, ramps, doors ==
+  PASS  the dorsal turret ladder is climbed by walking into it: you arrive on the upper deck
+  PASS  the ventral turret hatch: walk to the edge and you climb down into the pit
+  PASS  every room on every deck is reachable on foot from the boarding ramp
+  PASS  every seat can be reached and sat in from a floor you can stand on
+  PASS  the bridge stair is climbed to the upper deck: one smooth ramp with no popping
+  PASS  the cargo-bay stair climbs smoothly to the gantry at main-deck height
+  PASS  from the gantry the corridor door opens onto the main deck: you walk straight in
+  PASS  the gantry has rails: walking at its open edge stops you on it
+  PASS  the boarding ramp is walked up into the cargo bay
+  PASS  walking down the ramp to its end steps you off the ship onto the ground
+  PASS  you can walk through every doorway
+  PASS  walls and furniture stop you: 9000 frames of random walking, none inside a wall or a bunk
+
+== 9c. Seats: you cannot use a station unless you are sitting in it ==
+  PASS  the ship is set down on ground level enough for four legs (spread under 1.4 m) within sight of the spawn
+  PASS  after settling it is landed and at rest
+  PASS  standing in a corridor, every station command is refused
+  PASS  you cannot sit in a seat you are nowhere near
+  PASS  each seat unlocks exactly its own station and nothing else
+  PASS  you cannot sit in two seats at once
+  PASS  standing up lets go of the stick: the controls return to zero
+
+== 9d. Flight: lift off, thrust, turn, land, in real Martian gravity ==
+  PASS  with the engines idle the ship falls at the planet's gravity (3.72 m/s^2), not Earth's
+  PASS  the ship lifts off the real planet at the default power split: 300 kN against 171 kN of weight
+  PASS  routed away from the engines the same ship cannot leave the ground (thrust below weight)
+  PASS  a person standing on a deck stays standing on it while the ship lifts, accelerates, banks and turns
+  PASS  the hull leans no more than 25 degrees off the local vertical, so the deck stays a floor
+  PASS  and the ship really went somewhere: it climbed over 25 m and is now over 60 m from where it started
+  PASS  it comes down under control: touchdown under 3 m/s, landed, at rest, no hull damage
+  PASS  landed, all four legs carry the ship and none has sunk below the ground it stands on
+  PASS  the keel is in open air and every foot stands on solid ground in the 3D field: not sunk, not floating
+  PASS  power routing always adds up to the reactor output, however it is shifted
+  PASS  engineering changes real performance: engine share sets lift, shield share sets the shield cap
+
+== 9e. Guns fire visible bolts that hit the real ground ==
+  PASS  standing on the bridge, the main guns will not fire
+  PASS  seated in the captain's chair the same command fires a bolt, with its muzzle flash
+  PASS  the bolt strikes the surface: the impact lies on the ground to within 5 cm, well down range
+  PASS  routing power to the guns raises their rate of fire
+  PASS  the dorsal seat fires the dorsal turret and not the main guns
+  PASS  a bolt aimed at a practice target hits it and damages it
+
+== 9e2. Shields take the hit first; Mars is neutral: drones exist only beyond its airspace ==
+  PASS  a hit spends the shield first, and only what is left of it reaches the hull
+  PASS  routing power to the shields makes them a bigger buffer
+  PASS  a battered hull gives up thrust but never enough to fall out of the sky
+  PASS  even at zero integrity the ship can still lift off
+  PASS  the neutral line is one named constant with a margin so riding it cannot flicker
+  PASS  a drone leaves a parked ship alone: in Mars neutral airspace they do not exist at all
+  PASS  flying around Mars at low level, hovering and at cruise for 100 s: nothing fires at the ship and no drone exists
+  PASS  crossing the line is announced: an airspace event says the ship has left neutral airspace, and the drones arrive
+  PASS  the raiders appear at the edge of sight, not on top of the ship
+  PASS  beyond the line the drones attack: they fire, their bolts hit, and the shield takes the damage
+  PASS  just under the line, having been over it, the ship is still outside neutral airspace (the margin holds)
+  PASS  the main guns can shoot a drone down
+  PASS  coming back under the line is announced and the airspace is neutral again
+  PASS  after re-entering neutral airspace the raiders break off and are gone, and not one more shot is fired or left in flight
+  PASS  and neither the guns nor the drones can score on an away drone: its target is switched off
+
+== 9f. The ship is built, measured and registered ==
+  PASS  the ship has a stable registry ID, a measured size and a real mass
+  PASS  the ship and all seven stations measure within 5 cm of their design size
+  PASS  every station has its own registry ID and a real mass
+  PASS  every main-body room fits inside the lofted hull with at least 8 cm to spare
+  PASS  the interior is light enough for a phone: under 100k triangles and under 220 draw calls with every room drawn
+
+== 9g. Nothing fights, nothing vanishes, nothing blocks the view ==
+  PASS  no two flat faces on the same plane share a depth layer (they would z-fight: blocky patches on a phone)
+  PASS  the depth lift stays small: at most 4 layers
+  PASS  every room a ray of sight can reach through an open door or opening is drawn, on a phone budget (never more than 8 rooms)
+  PASS  a closed door hides what is behind it (nothing is drawn through a shut door)
+  PASS  a door leaf belongs to the ship, not to a room, so it is drawn from either side
+  PASS  door frames and thresholds are one set on the root of the ship, so a frame is never lost with a hidden room (a slot in the wall showed the sky)
+  PASS  each stair and ladder is drawn whenever any room it touches is drawn
+  PASS  nobody can walk into the side of either stair, or stand inside or beneath its steps
+  PASS  both stairs can still be climbed from their foot to their top
+  PASS  no stair stands in a doorway, in front of one, or across a room entrance (every door keeps 0.6 m beside it and 1.0 m in front)
+  PASS  no furniture stands in a doorway or within 0.9 m in front of one
+  PASS  every stair has 1.2 m of clear, level floor at its foot and at its top (no chair, dais or crate to walk into)
+  PASS  no outside armour plate, mast or fitting stands inside a room or the stairwell
+  PASS  nothing in front of the pilot or captain rises above their eye across a forward 60-degree fan (they can see out)
+  PASS  the windscreen sill is no higher than the pilot and captain seated eye
+  PASS  the dorsal gunner sits in glass: the nest wall tops out at least 0.3 m below the seated eye
+  PASS  every point of the bridge stairwell is inside the hull or under its armoured saddle (you cannot look out through the roof plate)
+
+== 10. Marineris Port: earthworks, landing and continuous ramp handoffs ==
+  PASS  all three pads are flat in the density field to within 2 cm
+  PASS  pads are a solid volume with at least 10 m of engineered ground beneath them
+  PASS  concrete belongs to the field, including its full half-metre thickness
+  PASS  a scoop shovel cannot cut structural pavement or lose concrete mass
+  PASS  graded edge meets natural terrain continuously and has solid ground beneath it
+  PASS  port, every pad and all six structures have stable registered IDs and measured sizes
+  PASS  port assets measure within 5 cm of their authored sizes
+  PASS  phone port costs at most 19 draw calls, 40k triangles and 4 MB of geometry
+  PASS  port shares Meridian texture objects and room finishes without duplicating the ship maps
+  PASS  texture budget includes RGBA mipmaps and counts shared references once
+  PASS  port uses a fixed phone light pool and adds no fixture shadow maps
+  PASS  port pavement and hardware stay within four depth-buffer lift layers
+  PASS  control tower and depot roof equipment have silhouettes above the old bare shells
+  PASS  high tier remains merged within 19 main calls, 65k triangles and 6 MB of geometry
+  PASS  every structure and prop stands on surveyed solid ground, including every foundation corner
+  PASS  built geometry bases meet the ground, with only declared foundations below it
+  PASS  Meridian settles level on pad 01 with four soles on the field
+  PASS  a banked approach lands on every pad with all four feet touching and no damage
+  PASS  every keel support remains in open air after every landing
+  PASS  every built exterior vertex, including rubber soles and ventral guns, clears the field after landing
+  PASS  cargo and airlock ramps support three boarding/walking/unboarding round trips each
+  PASS  ramp handoffs shift the feet by under 5 cm and never reboard while walking away
+  PASS  the ship owns the boarding frame and releases the exit frame, so planet physics never runs on aboard feet
+  PASS  a shoulder beyond ramp support cannot enter the boarding trigger
+  PASS  no prop blocks a control panel service space or wall screen sight line
+  PASS  the real planet walker opens and walks through depot and tower doors
+  PASS  tour holds both entrances open even from distant aerial review cameras
+  PASS  future NPC spaces stay clear of solid props
+  PASS  review tour retains original views and covers new interiors, traders, roofs and kilometre silhouette
+
+== 10b. The control tower: call, board, ride and leave the elevator ==
+  PASS  both elevator door leaves preserve outward face winding
+  PASS  the 2.2 by 2.6 m car has 2.6 m headroom and a body-wide 1.2 m opening
+  PASS  cab remains at 22.5 m; no switchback flights, spine or stacked landing floors remain
+  PASS  an empty shaft is not a floor: no fixed support between lobby and cab
+  PASS  a body on the sill prevents closing and motion; a request cannot move through open doors
+  PASS  the real walker rides the moving floor to 22.5 m without teleporting or losing its feet
+  PASS  open landing and car doors let the walker leave into the furnished cab
+  PASS  empty recall leaves the waiting player at the cab, and a return rider reaches the lobby with doors open
+  PASS  the cab floor is one room: the door cell reaches most of the floor with a body-sized clearance
+  PASS  every standing place for a worker is reachable on foot and clear of every solid within 45 cm
+  PASS  every seat is a real chair with a console in front of it, and the way to its back is open
+  PASS  the cab holds at least five seated and two standing workers
+  PASS  the cab is glazed on all four sides (24 panes), from the console ledge up, and a seated eye and a standing eye are both behind glass
+  PASS  from every seat the way out through the glass is open at eye height (consoles stay under a seated eye)
+  PASS  nothing solid stands in front of the elevator door in the lobby (a metre and a half clear, wall to wall)
+  PASS  the clerk's place behind reception is clear and the elevator door is straight ahead of the entrance
+  PORT BUDGET {"drawCalls":19,"triangles":35426,"geometryBytes":3254988,"sunShadowDrawCalls":6,"sunShadowTriangles":30394,"textureBytes":0,"sharedShipTextures":false,"pointLights":2,"shadowLights":0}
+  PORT SITE {"x":1689077.7342747748,"y":-812714.4500286678,"z":2833351.3216460254} heading 0
+
+== 11. Crew: routes, the NPC pilot, NPC gunners, hiring ==
+  PASS  every crew seat can be walked to from the foot of the ramp with the real ShipWalker (stairs, gantry, both ladders), ending within reach of the seat
+  PASS  on the way no crew member is ever inside a wall or a bunk, and none had to be pushed past a point they were stuck at
+  PASS  with the ramp raised there is no route aboard (a crew member waits at the foot instead of walking through the hull)
+  PASS  an NPC pilot flies to pad 02 and sets down on it, level and at rest, undamaged
+  PASS  ...and that pad is a real pad (inside its marked rectangle)
+  PASS  "return to port" brings the ship back to pad 01
+  PASS  a supply run lands at the depot apron, loads, comes back and lands on pad 01 again
+  PASS  roaming for seven minutes keeps the ship clear of the ground (over 20 m at the lowest), takes it well away from the port, and the hull is untouched
+  PASS  and the crew call out what is on the ground as they go
+  PASS  under Mars's neutral airspace the crew guns never fire (a minute with all three drones "anchored" nearby)
+  PASS  beyond the neutral line the raiders arrive and the crew guns shoot them down (three drones, in under four minutes), with small delays and misses
+  PASS  NPC gunners never fire at the practice target, and their reaction delay and aim error follow the 70-85% bible rule
+  PASS  a hunt order climbs to the hostile band (above the neutral line), and when the hull falls under 35% the pilot breaks off and comes back down under it
+  PASS  six candidates wait at Marineris Port, each at their own spot on the apron, on the ground
+  PASS  a candidate will not be hired while the ship is not on the ground beside them
+  PASS  with the ramp raised the crew wait outside it and say so, rather than walking through the hull
+  PASS  lower the ramp and all six walk aboard, climb to their stations and sit (pilot, captain, navigator, comms, both turrets) within two minutes
+  PASS  the pilot is the one flying, and the captain works the main guns
+  PASS  the crew will not take an order that lifts the ship unless the player is aboard
+  PASS  places too far to reach (the real landmarks, thousands of km away) are listed with honest distances and refused, not flown
+  PASS  a legal "fly to" is accepted and the pilot lifts off
+  PASS  and puts the ship down on pad 03
+  PASS  the player sits in the pilot seat and the pilot gives it up, standing clear of it
+  PASS  the captain flies when the pilot is out of the chair
+  PASS  the player stands and the pilot walks back and sits
+  PASS  a dismissed crew member walks off the ship and back to the hiring board, and can be hired again
+  PASS  the order list the crew understand is exactly: fly to, hunt, supplies, roam, land, hold, return
+  PASS  the Meridian has an observation lounge: a panoramic window at least 4 m wide, sill within 0.6 m of the deck, top above standing eye height
+  PASS  you can walk from the corridor, through the lounge door and past the seats, to the binoculars at the glass
+  PASS  there are two lounge seats facing the window and nothing stands between the binoculars and the glass
+  PASS  standing at the binoculars the action button offers them, and pressing it closes the view to a 3x zoom and slows the look to match
+  PASS  walk away (or sit, or leave the ship) and the binoculars come down by themselves and the field of view returns
+  PASS  every window has a clearing box for the hull skin (so a window shows Mars, not plating), sized well beyond its opening
+
+== 12. Mars leftovers: deliberate climbing, workers and safe spoil ==
+  PASS  all 15 marked port jobs spawn, including four traders and five seated controllers
+  PASS  port workers only reuse cached models; no additional GLB is requested
+  PASS  workers occupy their marked posts and face their work with Sit or Idle
+  PASS  Talk finds a loaded worker within reach
+  PASS  phone workers beyond 56 m stop drawing and animating
+  PASS  Talk never offers an unloaded worker
+  PASS  missing cached people do not trigger fallback downloads
+  PASS  spoil guard protects the ship hull and ramp runout
+  PASS  ship exclusion follows a moved ship and releases its former ground
+  PASS  port equipment outside building footprints rejects spoil
+  PASS  worker posts reject spoil
+  PASS  late-built ground crew rejects spoil
+  PASS  live practice equipment rejects spoil
+  PASS  removed targets release otherwise clear ground
+  PASS  0.3 m walking step passes
+  PASS  0.5 m walking step blocks
+  PASS  walking stays below a vertical 1.24 m ledge
+  PASS  facing a reachable ledge offers Climb
+  PASS  facing away from the ledge refuses Climb
+  PASS  deliberate action starts a climb
+  PASS  first 0.3 seconds brace without movement
+  PASS  one pull-up ends on the top in 1.2 seconds
+  PASS  normal walking step is 0.35 m
+  PASS  a reachable ledge under a low roof refuses Climb
+  PASS  a 1.85 m vertical ledge refuses Climb
+  PASS  airborne feet cannot start another pull-up
+  PASS  tunnel drop plans on its own floor, below the roof
+  PASS  Drop one pours on the tunnel floor in connected air
+  PASS  tunnel pour never changes the roof or surface
+  PASS  single tunnel lot is deposited with its exact original mass
+  PASS  tunnel lot balances exact kg and m3 ledgers
+  PASS  tunnel lattice independently matches its volume ledger
+  PASS  pour changes the lattice
+  PASS  no clear ground refuses atomically and retains the exact inventory
+  PASS  Pad 01 / Meridian rejects spoil
+  PASS  Pad 02 / shuttle rejects spoil
+  PASS  Pad 03 / courier rejects spoil
+  PASS  Supply depot rejects spoil
+  PASS  Open market rejects spoil
+  PASS  Port control rejects spoil
+  PASS  Fuel farm rejects spoil
+  PASS  Cargo staging rejects spoil
+  PASS  Port beacon sign rejects spoil
+  PASS  exact pour footprint guard refuses before any lattice write
+  PASS  a partly clear footprint still refuses the entire pour without changing mass or terrain
+  PASS  nearly full tunnel hopper selects clear ground by an actual mouth
+  PASS  whole hopper pour at the mouth succeeds
+  PASS  whole hopper mouth pour balances exactly
+  PASS  whole hopper mouth pour matches the independent lattice
+
+== 13. Money, mass, wages, dialogue and a saved world ==
+  PASS  starting purse is 2,500 credits / 10,000 Mars marks
+  PASS  space rewards use the real marks purse and cargo transfers use the saved hold
+  PASS  invalid space rewards and overselling the hold leave money and cargo untouched
+  PASS  pilot: signing fee equals one sol wage
+  PASS  captain: signing fee equals one sol wage
+  PASS  nav: signing fee equals one sol wage
+  PASS  gunner_dorsal: signing fee equals one sol wage
+  PASS  gunner_ventral: signing fee equals one sol wage
+  PASS  comms: signing fee equals one sol wage
+  PASS  all six crew can be hired when the purse covers them
+  PASS  duplicate hire cannot double-charge
+  PASS  insufficient funds cannot hire or mutate state
+  PASS  no wage taken before a full Mars sol
+  PASS  all due wages transfer once and exactly
+  PASS  retrying a sol does not charge wages twice
+  PASS  unpaid crew flagged for departure
+  PASS  unpaid contract can be terminated
+  PASS  replacement still costs a new signing fee
+  PASS  trader-1/food: buying moves exact stock, mass and marks
+  PASS  trader-1/food: selling returns goods and mass; spread stays with dealer
+  PASS  trader-2/parts: buying moves exact stock, mass and marks
+  PASS  trader-2/parts: selling returns goods and mass; spread stays with dealer
+  PASS  trader-2/ammo: buying moves exact stock, mass and marks
+  PASS  trader-2/ammo: selling returns goods and mass; spread stays with dealer
+  PASS  trader-3/water: buying moves exact stock, mass and marks
+  PASS  trader-3/water: selling returns goods and mass; spread stays with dealer
+  PASS  trader-4/oxygen: buying moves exact stock, mass and marks
+  PASS  trader-4/oxygen: selling returns goods and mass; spread stays with dealer
+  PASS  trader-4/parts: buying moves exact stock, mass and marks
+  PASS  trader-4/parts: selling returns goods and mass; spread stays with dealer
+  PASS  depot-clerk/water: buying moves exact stock, mass and marks
+  PASS  depot-clerk/water: selling returns goods and mass; spread stays with dealer
+  PASS  depot-clerk/food: buying moves exact stock, mass and marks
+  PASS  depot-clerk/food: selling returns goods and mass; spread stays with dealer
+  PASS  depot-clerk/ammo: buying moves exact stock, mass and marks
+  PASS  depot-clerk/ammo: selling returns goods and mass; spread stays with dealer
+  PASS  depot-clerk/parts: buying moves exact stock, mass and marks
+  PASS  depot-clerk/parts: selling returns goods and mass; spread stays with dealer
+  PASS  depot-clerk/oxygen: buying moves exact stock, mass and marks
+  PASS  depot-clerk/oxygen: selling returns goods and mass; spread stays with dealer
+  PASS  invalid/unowned/out-of-stock trade rejected atomically {"type":"purchase","trader":"trader-1","good":"ammo"}
+  PASS  invalid/unowned/out-of-stock trade rejected atomically {"type":"sale","trader":"trader-1","good":"food"}
+  PASS  invalid/unowned/out-of-stock trade rejected atomically {"type":"purchase","trader":"trader-1","good":"food","quantity":-1}
+  PASS  invalid/unowned/out-of-stock trade rejected atomically {"type":"purchase","trader":"trader-1","good":"food","quantity":0.5}
+  PASS  invalid/unowned/out-of-stock trade rejected atomically {"type":"purchase","trader":"trader-1","good":"food","quantity":1000}
+  PASS  traders have distinct dialogue trees
+  PASS  depot buys precisely one tonne for 12 marks / 3 credits
+  PASS  sale accounts every binary mass and volume bit including retained load
+  PASS  mixed rock rejected as raw regolith
+  PASS  quest acceptance persisted as data
+  PASS  delivery away from marked bay rejected
+  PASS  delivery completes and transfers 400 marks exactly once
+  PASS  completed quest cannot pay twice
+  PASS  quest and depot exports close the same exact mass ledger
+  PASS  adding a quest record reuses acceptance, tonnes, reward and giver dialogue
+  PASS  saved dig AND spoil reproduce every lattice sample bit-for-bit
+  PASS  a replacing sparse terrain patch clears cells that returned to natural ground
+  PASS  saved ledger restores all exact BigInt accounts
+  PASS  sparse dig save is smaller than full bricks and has no float JSON
+  PASS  fresh authority restores one ship, player, hired comms, purse, quest and damage
+  PASS  rejected world action does not change revision or saved state
+  PASS  storage failure visible and blocks further mutations
+  PASS  every key prompt in source has a registered touch path
+  PASS  touch key paths create real buttons and dispatch both press and release
+
+== 12. Space: the moons are real volumes ==
+  PASS  Phobos: surface gravity is G M / R^2 of the stated mass and mean radius (0.00560 m/s2)
+  PASS  Phobos: the stated mean radius agrees with the volume-equivalent radius of its three semi-axes within 4%
+  PASS  Phobos: escape velocity 11.2 m/s agrees with the published figure within 10% (Phobos 11.4, Deimos 5.6)
+  PASS  Deimos: surface gravity is G M / R^2 of the stated mass and mean radius (0.00256 m/s2)
+  PASS  Deimos: the stated mean radius agrees with the volume-equivalent radius of its three semi-axes within 4%
+  PASS  Deimos: escape velocity 5.6 m/s agrees with the published figure within 10% (Phobos 11.4, Deimos 5.6)
+  PASS  Phobos is 9,376 km from Mars's centre and Deimos 23,459 km (NSSDC), both outside Mars and the Mars frame's sky, on the equator plane
+  PASS  Mars's pull at Phobos's distance from the body record gives its real orbital period within 1% (7.65 h)
+  PASS  the Sun direction is a unit vector and is the ground game's mid-morning sun at the spawn (38 degrees up, from 118 degrees)
+  PASS  both moons are above the spawn's horizon (Phobos 19 degrees up, Deimos higher) so they can be seen from the port
+  PASS  both pads are in daylight: the Sun is more than 15 degrees above each pad's horizon (a pad in the dark is not a landing site)
+  PASS  Phobos is a triaxial body: its radius toward Mars is longer than along the orbit, which is longer than toward the pole (13.0 > 11.4 > 9.1 km, within the relief)
+  PASS  the mean of 4000 random radii is within 5% of the real mean radius (the potato is the right size)
+  PASS  the field obeys the sign rule: the centre is solid, one metre above the surface is open, one metre below is rock (300 directions)
+  PASS  the exact surface solve (one Newton step) agrees with ray marching the field to under 5 cm, and a ray from space meets rock where it says (60 directions)
+  PASS  same coordinate, same answer: two samples of the field at 500 points are bit-identical (no Math.random in the world)
+  PASS  Stickney is a real crater: its floor is at least 1.2 km below its own rim and the rim stands above the ground outside it
+  PASS  the strata: regolith on top, rubble below it, and hydrated clay pockets exist under the Stickney ejecta (a resource found only off Mars)
+  PASS  the landing pad is a plane: within 55 m of its centre the ground is flat to 5 cm, perpendicular to local up, and in regolith
+  PASS  Deimos is smoother than Phobos: the ground roughness (second difference of its relief over 40 m) within 3 km of the pad is less than half (the 100 m regolith has filled its craters)
+
+== 13. Space: walking, hopping and digging on Phobos ==
+  PASS  a person standing on the pad stays on it: grounded, density at the feet about zero, 2 s of ticks
+  PASS  running for 90 s across craters, grooves and rises on 0.0056 m/s2: on the ground at least 90% of the time and never sunk into rock
+  PASS  a hop with a 0.6 m/s push-off rises 32 m and hangs 214 s on Phobos (measured 36 m, 238 s): real gravity, within 12%
+  PASS  a bucket on Phobos cuts real Phobos regolith: each lot weighs its volume times 1150 kg/m3, and the ledger balances to the last bit
+  PASS  the hole is real to everything: the drawn field is open where the bucket went and the lattice re-added from scratch equals what was removed
+  PASS  the spoil is poured back as a heap on the same moon and the books still balance to zero in kilograms and litres
+
+== 14. Space: the ship lands on, and leaves, a moon ==
+  PASS  set down on the pad, the Meridian rests on all four legs on 0.0056 m/s2 and is landed (weight 258 N is carried by the springs)
+  PASS  lifting off a moon: the lift pods carry her to 600 m in 14 s (escape speed from Phobos is only 11 m/s)
+  PASS  and back down: the descent from 600 m under thrust touches down at 1.45 m/s, no hull damage
+  PASS  without the vacuum thrusters a moon pulls a ship down at 0.0056 m/s2 only (the old rule is untouched on Mars: pods push up, never down)
+  PASS  from the pad to the gate (120 km) on the lift pods alone takes 4.8 minutes and ends at 841 m/s: the ship can leave Mars's air under its own power
+  PASS  gravity falls off with the real inverse square all the way up: at 120 km the ship weighs 93% of what it does on the ground
+
+== 15. Space: the drive (transit.js), flown whole in Node ==
+  PASS  Phobos from the gate: 30.0 min of ship time, peak 9.4 km/s over 7667 km, arriving within 2 m of the standoff point at rest
+  PASS  the burn goes in the right order: burn > flip > brake > creep > arrived
+  PASS  thrust is only ever along the nose (every main-drive step), and the hull never turns faster than its 0.12 rad/s
+  PASS  the ship never goes near Mars on the way: closest approach to the planet's centre stays outside the safety sphere (60 km above the ground)
+  PASS  the same flight run in 0.25 s sub-steps (time compression) and in 1 s steps arrive within 2% of each other
+  PASS  engine share is the drive: doubling it shortens the trip (30 min -> 25 min), halving it lengthens it (41 min); the cruise time goes as 1/sqrt(a), the turn-overs and the creep do not
+  PASS  Deimos is farther and takes longer (47 min) and the drive reaches it exactly too
+  PASS  a course to the far side of Mars goes round it: two legs, closest approach 120 km up, arrives exactly
+  PASS  segment-to-planet geometry: a line through the centre passes at distance zero; Transit plans a detour for it
+  PASS  turning a vector is a rotation: 0.1 rad off a reversal gives a unit vector 0.1 rad from the start
+  PASS  Cancel course in transit: the computer brakes to a halt at the stopping point and arrives at rest, never past it by more than 2 m
+
+== 16. Space: frames, the sky, the raiders ==
+  PASS  a frame shift is a pure translation: Mars-frame point + shift = the same point in Phobos's frame, and back
+  PASS  switching the active frame keeps the camera where it is in space (f64: it round-trips to the nanometre at 9,400 km)
+  PASS  a Mars-frame object is still drawn where it really is while a moon's frame is active (relative to the camera, f64 to the millimetre)
+  PASS  float32 draw positions stay precise at Deimos's distance because everything is camera-relative in f64 first: a 0.1 m offset 23,459 km from Mars survives the trip to the GPU (subtracting float32 positions instead would lose it)
+  PASS  the sky blend is exactly 1 below 6 km (nothing changes on the ground), falls smoothly, and is under 0.2% at 100 km
+  PASS  raiders: hostile beyond neutral airspace, gone for the length of a transit (nothing keeps up with km/s), and they return when the ship slows
+  PASS  a raider shot down outside neutral space fires the bounty hook exactly once (not once per frame it stays dead)
+
+== 15b. Space: time compression in the climb and the landing ==
+  PASS  compression is x1 for the last 400 m whatever was asked, and at most x4 under 1.5 km, x10 under 6 km
+  PASS  never more than asked, x1 stays x1, and it is non-increasing as the ship sinks (500 heights, all speeds)
+  PASS  a sinking ship can never skip from a fast band into the last 400 m inside two frames of the compression it is run at (all speeds to 900 m/s, heights to 30 km)
+  PASS  a 6 km landing at x60 takes 1938 frames where x1 takes 11193 (about 6 times fewer), touches down at 2.10 m/s (x1: 2.10), no hull damage, all four legs
+  PASS  every flight sub-step is at most 1/120 s however much is compressed, so contact and landing checks are exact: the biggest sub-step run was 120 per second
+  PASS  and nothing runs compressed inside the last 400 m: the highest compression used there was x1
+  PASS  120 s of climb reaches 20428 m at x1 and 20445 m compressed: the same flight (within 3%)
+  PASS  the trip lists every phase with its state and time left: Climb out:now, Main drive:next, Descent and landing:next
+  PASS  the climb time left falls as the ship rises and as it gains speed
+  PASS  in the drive the first phase is done, the drive shows its own time left (compressed by the chosen x), the descent is still to come
+  PASS  the descent estimate keeps its last 30 s at x1 even when x60 is chosen (the cap near the ground), so it is never shown as a couple of seconds
+  PASS  in the descent the first two are done and the descent time left is the flare law: more from 1.8 km than from 100 m
+
+== 17. Space: reasons to go, and the hooks for money ==
+  PASS  there are three sample sites near the pad, each within 1.4 km of the pad, and the contextual action appears only within 4.5 m of one
+  PASS  three core samples are real lots cut from the real ground (a spade bite each), kept in the hold as matter, announced through addCargo, and counted
+  PASS  a site cannot be sampled twice
+  PASS  the ground's books balance with the hold counted as carried (nothing vanished into a sample canister)
+  PASS  stowing moves what the hopper holds (4.4 t) into the hold in one go, the hopper is empty and addCargo is told the kilograms by material
+  PASS  the distress beacon cargo module sits on the ground about 780 m from the pad, and salvaging it pays through the award hook exactly once
+  PASS  landing at the port with three samples aboard pays 900 credits through the award hook and takes them out of the cargo, once
+  PASS  landing again pays nothing more
+  PASS  landing on a moon, or anywhere that is not the port, pays nothing
+
+== 18. One authority, many owned ships, two WebSocket clients ==
+  PASS  joining allocates independent owned ships, typed hulls and unique pads
+  PASS  public snapshots omit device credentials and private receipts
+  PASS  the second client receives the first player moving
+  PASS  last-item purchases serialize, and retrying a paid action cannot charge twice
+  PASS  authority carves a hole and broadcasts exact typed terrain and retained matter
+  PASS  two simultaneous hires can only contract a candidate to one ship
+  PASS  the shared hiring pool replenishes with new generated people
+  PASS  hired crew walk to their assigned pad and use the shared cabin route to their station
+  PASS  one tower lift carries both players on the same authority clock
+  PASS  device authority cannot toggle another owner’s boarding permission
+  PASS  players board together and seats are exclusive
+  PASS  crew yield to player seats and standing restores a nearby walking pose
+  PASS  refresh mid-trip restores the same identity, owned ship and passenger-local pose
+  PASS  loading a mid-flight checkpoint reconstructs the drive and advances downtime
+  PASS  restart expires abandoned seats while retaining passengers aboard
+  PASS  both passengers reach Phobos through the shared flight rules
+  PASS  server restart preserves ship, passenger, contracts, purse and excavated bricks
+  PASS  failed durable writes roll back state and never acknowledge success
+  PASS  HTTP cannot serve private server code or saved device identities
+
+== 19. Privileged Postgres adapter contract (mock HTTP, no real database) ==
+  PASS  load/save RPC preserves typed terrain and uses the expected durable revision
+  PASS  an RPC failure keeps the commit revision and reports no key or response body
+
+== 20. The fleet: a ship is a type, and the Meridian is one entry ==
+  PASS  the registry knows the Meridian and the raider by a type string, the default is the Meridian, and an unknown type is an error, not a Meridian
+  PASS  the Meridian entry is built from the numbers in shipSpec.js, not copies of them: same gear, guns, seats, ramps and physics objects
+  PASS  meridian: every seat is in a real room, every gun belongs to a real seat, every role names a real room, and the station ids are unique
+  PASS  meridian: its thrusters can lift it on Mars (thrust 300000 N over a weight of 170660 N) and every crew post has a seat
+  PASS  raider: every seat is in a real room, every gun belongs to a real seat, every role names a real room, and the station ids are unique
+  PASS  raider: its thrusters can lift it on Mars (thrust 135000 N over a weight of 57505 N) and every crew post has a seat
+  PASS  the raider is a smaller ship than the Meridian in every way a player can feel: lighter, shorter, narrower, fewer crew, and quicker
+  PASS  the raider has the rooms the brief asked for: a cockpit, crew quarters, a cargo hold, an engine room, and an airlock and a ramp to get in by
+  PASS  raider crews are four named Loft people who sit at four stations; every name is unique to its boat and every person is one of the seven Loft models
+
+== 21. The raider is a place: rooms, doors, stairs-free routes, the ladder, the ramp ==
+  PASS  shipIndexFor builds one walkable geometry per type and keeps it; the Meridian's is the same object the game always used
+  PASS  the main corridor is standable and the cockpit door opens onto the cockpit
+  PASS  a person can walk from the corridor into every room of the raider (cockpit, quarters, mess, airlock, armoury, engine room, hold, ladder niche)
+  PASS  and to every one of its four seats, the dorsal turret by way of the ladder
+  PASS  every door has clear floor on both sides and in the opening (no furniture across a threshold)
+  PASS  every door stands in the 0.2 m wall between the two rooms it joins (a picture and a collider cannot disagree about where the door is)
+  PASS  every piece of furniture stands inside the room it is listed in
+  PASS  with the stern ramp down, a person at its foot can walk up it, through the hold and engine room and the corridor, to the cockpit
+  PASS  and walking aft down the ramp the walker asks to leave the ship at its end (the same rule the Meridian ramp uses)
+  PASS  through the airlock the same: with the outer door open and the gangway out, walking to port leaves the ship
+  PASS  the ladder from the niche carries a walker up to the dorsal turret deck and lets go at the top
+
+== 22. The raider is built and measured: interior, exterior, seats, the hull ==
+  PASS  the raider has its own stable registry id, a measured size and a real mass
+  PASS  the raider and all four stations measure within 5 cm of their design size
+  PASS  the raider's four stations have their own registry ids, none of them the Meridian's
+  PASS  every main-body room fits inside the lofted hull with at least 8 cm to spare (the cockpit canopy and the turret nest stand above it, like the Meridian's bridge)
+  PASS  below the canopy sill the cockpit floor is inside the hull at all four corners
+  PASS  the raider interior is light enough for a phone: under 100k triangles and under 220 draw calls with every room drawn (51722 triangles, 94 meshes)
+  PASS  the interior builder resolved every coplanar pair into its own depth layer (no surfaces fighting) and drew every room, door, seat and the ladder
+  PASS  the raider has everything the game animates: four legs, both ramps, the nose guns, the dorsal turret, two engines with flames and four lift pods, and the interior has the reactor core to pulse
+  PASS  a remote view of a raider adds a canopy and turret glass so the people at its stations can be seen, and the local one does not (its glass is in the interior scene)
+  PASS  every gun muzzle is outside the hull (the nose guns ahead of the bow, the turret barrels clear of the roof)
+  PASS  the Meridian still builds through the same code with all seven stations (the shared builders are data-driven, not forked)
+
+== 23. The raider flies, shoots and answers to the same stations as any ship ==
+  PASS  set on the pad, the raider rests on all four legs, landed, undamaged, and its hull and shield are its own (shield 240, the Meridian's is 200)
+  PASS  a ShipBody with no definition is still the Meridian (every existing caller is unchanged)
+  PASS  it lifts off and climbs to 100 m in 7.7 s at 16 m/s (the Meridian takes 10 s at 12)
+  PASS  it cruises at 52.0 m/s (design 52) and turns at more than the Meridian's 0.75 rad/s
+  PASS  its turn rate is 0.91 rad/s
+  PASS  and comes down on its gear over the pad at 3.30 m/s with no hull damage
+  PASS  its armour is its own: 100 points through a spent shield costs the raider 22 hull and the Meridian 25
+  PASS  its gun table is the raider's: a nose pair and a dorsal turret, no ventral turret, and nothing keyed to the Meridian's
+  PASS  the nose guns are fixed in a narrow arc: asked to point abeam they stay inside 22 degrees
+  PASS  the dorsal turret cannot depress below its limit (8 degrees)
+  PASS  no one can fire while standing; sitting in the captain's seat lets the nose guns fire and not the turret; the turret seat fires the turret and not the nose
+  PASS  a bolt leaves the nose barrel where the spec says (ahead of the bow, 85 cm off the centreline)
+
+== 24. Raiders: how one flies and fights, and what its escorts do ==
+  PASS  alone, a raider patrols its station: it stays up around 2579-2614 m (station 2600), keeps moving, fires nothing, and mends
+  PASS  a ship in neutral airspace is not a target: a raider 1.5 km from one for 40 s stays on patrol and never fires (Mars is neutral)
+  PASS  a hostile ship inside sensor range draws it: it engages, closes to 611 m and fires (61 shots in 60 s: nose guns and turret)
+  PASS  when the target lands or drops under the line the raider breaks off, fires no more, and returns
+  PASS  at 35 percent hull or less the drive is dead and the crew surrender: it holds its station, controls zero, nobody fires
+  PASS  at no hull the boat is abandoned: no state of mind left to speak of
+  PASS  a hurt raider (under 55 percent) does not start a fight: it keeps to its station and mends
+  PASS  a raider has three escort drones, held in formation on its quarters when it is not fighting
+  PASS  they stay with it as it moves: after 30 s of flight every escort is still within 150 m of the raider
+  PASS  given a target they break formation, strafe it and score hits through its shield (90 hits in two minutes)
+  PASS  an escort is shot down like any drone (60 hit points); a dead one stays dead until the wing is gathered again
+  PASS  when the raider is disabled its escorts break off and are gone
+  PASS  an escort wing saves and loads exactly (the server saves it with the world)
+
+== 25. The shared world: raiders spawn, fight, and can be taken ==
+  PASS  a new world has raiders: one high over the port, one over Phobos, one abandoned hull adrift near Deimos, all typed `raider` with their own ids
+  PASS  they fly outside Mars neutral airspace: the port raider is 2645 m up (the line is 1500 m), in the air, and the moon raiders hold over their own moons
+  PASS  every live raider has its four-person crew seated at its four stations with Loft people, and a wing of three escorts; the abandoned hull has nobody
+  PASS  a raider is in the public snapshot like any ship: type, pose, hull, crew, mind and escorts all sync (a client needs nothing else to draw it)
+  PASS  a joining player still gets a Meridian: the ship type is a field set from the default, and the new world does not hand out raiders
+  PASS  the whole world, with three raiders in it, serialises to 17 kB (it must stay small enough to broadcast ten times a second)
+  PASS  a player in the air above 1500 m is in hostile airspace and the raider knows it; a player who is landed is not
+  PASS  Mars is neutral: a ship the airspace rule calls neutral, or on a drive transit, or with nobody aboard, is never a target, however near the raider
+  PASS  the raider comes for a ship in hostile air: it engages within 16 s, its escorts break formation and strafe, and the player's shield and hull take the damage (shield 188 of 200)
+  PASS  the player's guns hit the raider through the same bolts: its shield and hull fall under fire and it is disabled after 7 s, the drive dead and the crew surrendered
+  PASS  the guns that disabled it are paid the bounty, 150 credits, into that ship's account
+  PASS  capturing needs your ship within 160 m of the prize: from 1.4 km it is refused, and nothing changed
+  PASS  a raider still fighting cannot be claimed: it must be disabled or abandoned first
+  PASS  you cannot claim from the ground: fly up to it in your own ship first
+  PASS  capture works: Captured the Shrike-class raider with 4 crew who sign on. A prize crew brought it to pad 04; 520 credits were in its hold.
+  PASS  the surrendered crew sign on: four hired people on wages, in the shared pool, aboard at their stations, paid from this ship's own account; and its hold money came with it
+  PASS  a prize crew sets it on its own pad, on the ground, at the port, with the ramp down, and it is no longer a raider: no brain, no wing, and no longer in any gunner's sights
+  PASS  the station it came from gets a new raider after a few minutes, so the sky is not emptied by one capture
+  PASS  you can make a ship you own your flagship, but not while aboard another, and not a ship you do not own (a raider still flying belongs to nobody)
+  PASS  and back to the Meridian: both hulls stay owned, each on its own pad, each with its own treasury
+  PASS  you board your raider at its own stern ramp, put on its own boarding spot inside the hold (the Meridian's dock is not used)
+  PASS  seats are the raider's: the captain's seat works and the Meridian's ventral turret seat does not exist on it
+  PASS  hiring checks the ship: a navigator cannot be hired onto a raider, which has no navigator's station
+  PASS  buying at the shipyard: away from the kiosk it is refused, without 2400 credits it is refused, the Meridian is not for sale, and with the money it takes exactly 2400 credits and delivers a raider to a new pad
+  PASS  a bought raider is a plain owned ship: no loot, no crew, an empty account; its own pad is a pad nobody else has
+  PASS  an abandoned hull can be claimed the same way: no crew come with it, it becomes yours on a pad, and is no longer one of the world's hulls
+  PASS  a hired dorsal gunner on the Meridian fires at the raider and its escorts when the ship is in hostile air (79 shots, the raider's shield and hull 340 to 112)
+  PASS  but not at a raider that has surrendered: the crew do not finish what the player may want to capture
+  PASS  a saved world loads with the same raiders: same ids, names, states, crews and escort wings, and the sims are rebuilt from the records
+  PASS  loading a world that sat idle for five minutes does not simulate five minutes of raiders: it loads in 1774 ms and the raiders wait where they were
+  PASS  a world saved before the fleet (no raiders, the old per-ship drones in the combat record) loads without error, keeps its ships, and gets its raiders
+
+== 26. Two players, one raider: both see it, and both see the damage ==
+  PASS  both clients receive the same raiders: same ids, type, name, crew and pose in both snapshots
+  PASS  the raider's damage is the same in both clients' snapshots: shield 98, hull 100, mind "engage", escorts 3 alive
+  PASS  and the damage the raider did to the player's ship is in both snapshots too, so the second player sees the first one's hull and shield fall
+  PASS  when it is disabled, both clients see a disabled raider with surrendered crew and no escorts left in the fight
+  PASS  the second player captures it over the socket: both clients then see it owned by them, on a pad, crewed, and no longer a raider
+  PASS  and the same raider cannot be claimed twice: the first player's late claim is refused
+  PASS  a client cannot make a ship its flagship while aboard another (the rule holds over the wire)
+
+========================================
+RESULT: 581 passed, 0 failed

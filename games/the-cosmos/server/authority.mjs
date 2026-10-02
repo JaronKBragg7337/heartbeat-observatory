@@ -4,17 +4,20 @@ import { attachGrades, attachEdits } from '../src/world/field.js';
 import { createPortSite, TOWER_SPOTS, TOWER, clearSpoilGround } from '../src/port/portSpec.js';
 import { PORT_WORKERS } from '../src/port/portPeople.js';
 import { rampEntry } from '../src/ship/rampTransfer.js';
-import { RAMPS } from '../src/ship/shipSpec.js';
 import { TowerElevator } from '../src/port/towerElevator.js';
 import { allocatedPad, landingField } from '../src/world-state/fleet.js';
 import { initialEconomy, reduceEconomy, sumExact } from '../src/economy/economy.js';
 import { WAGES, SOL_SECONDS, QUESTS } from '../src/economy/catalog.js';
-import { CREW_POSTS } from '../src/crew/crewSpec.js';
+import { CREW_POSTS } from '../src/crew/crewSpec.js';           // the Meridian's posts, and the pool of candidates the hall holds
 import { EditStore } from '../src/world/edits.js';
 import { Walker } from '../src/player/walker.js';
 import { Digger } from '../src/player/digging.js';
-import { ShipWalker, shipIndex } from '../src/ship/shipWalker.js';
-import { SEATS } from '../src/ship/shipSpec.js';
+import { ShipWalker, shipIndexFor } from '../src/ship/shipWalker.js';
+// FLEET: a ship is whatever its `type` field says. Seats, ramps, docks, guns and posts come from its definition (src/ships/).
+import { shipDef, hasShipType, DEFAULT_SHIP_TYPE } from '../src/ships/registry.js';
+import { SHIPYARD, forSale } from '../src/ships/shipyard.js';
+import { FleetDirector } from './fleet.mjs';
+import { RAIDER_CREW_POSTS } from '../src/ships/raider/crew.js';
 import { encodeBrick, terrainMeta, restoreTerrain } from '../src/world-state/terrainCodec.js';
 import { makeMoon } from '../src/space/moonField.js';
 import { GunnerAI } from '../src/crew/gunnerAI.js';
@@ -35,6 +38,7 @@ export class Authority {
     this.sessions=new Map();this.inputs=new Map();this.queue=Promise.resolve();this.error='';this.bricks=new Map();
     this.state={schema:2,revision:0,clock:0,savedAt:now(),players:{},ships:{},pads:[],pool:{},poolSeq:0,
       market:initialEconomy(),terrain:{},damage:{},receipts:{}};
+    this.fleet=new FleetDirector(this);
   }
   async load(){const s=await this.adapter.load();if(s.record){if(s.record.schema!==2)throw Error('Unsupported authority schema.');this.state=s.record;}
     for(const c of Object.values(this.state.pool))if(!c.shipId&&c.status==='inside'&&c.position.x===CREW_HALL.x&&c.position.z===CREW_HALL.z)c.position.x+=(CREW_POSTS.findIndex(r=>r.id===c.role)-2.5)*2.4;
@@ -42,21 +46,24 @@ export class Authority {
     this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.rebuild();this.refill();
     // Restart catch-up uses real elapsed time. It continues trips/wages, never a browser clock.
     const elapsed=Math.max(0,(this.now()-this.state.savedAt)/1000);
-    if(elapsed){this.advance(elapsed);await this.commit();}return this;
+    if(elapsed){this.advance(elapsed,{catchUp:true});}
+    this.fleet.ensure();await this.commit();return this;
   }
   rebuild(){attachGrades([this.site,landingField(this.site,()=>this.state.pads)]);this.stores=new Map();
     this.elevator=Object.assign(new TowerElevator(),this.state.elevator||{});this.crewRoutes=new Map();
     for(const id of ['mars','phobos','deimos']){const e=new EditStore(id==='mars'?this.mars:makeMoon(id));attachEdits(e);
       restoreTerrain(e,this.state.terrain[id],[...this.bricks.values()].filter(b=>b.bodyId===id));this.stores.set(id,e);}
-    this.sims=new Map(Object.values(this.state.ships).map(s=>[s.id,new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d))]));
+    this.sims=new Map(Object.values(this.state.ships).map(s=>[s.id,this.makeSim(s)]));
   }
+  /** One ship's simulation, whatever its type; a raider also gets its brain and its escort wing. */
+  makeSim(s){const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));if(s.npc)this.fleet.attach(sim);return sim;}
   enqueue(fn){const p=this.queue.then(fn);this.queue=p.catch(()=>{});return p;}
   publicState(){const s=structuredClone(this.state);delete s.receipts;
     for(const p of Object.values(s.players)){delete p.deviceHash;p.online=this.sessions.has(p.id);}
     s.storageError=this.error;
     return s;
   }
-  async commit(){for(const sim of this.sims.values())sim.capture();const changed=[];
+  async commit(){for(const sim of this.sims.values()){sim.capture();this.fleet.capture(sim);}const changed=[];
     this.state.elevator=structuredClone(this.elevator);
     for(const [id,e] of this.stores){this.state.terrain[id]=structuredClone(terrainMeta(e));
       for(const key of e._dirty){const b=e.bricks.get(key);if(b?.edited)changed.push({...encodeBrick(e,b),key:id+':'+key,bodyId:id});}}
@@ -71,8 +78,8 @@ export class Authority {
     const before=structuredClone(this.state);
     try{
       if(!p){const id=randomUUID(),shipId=randomUUID(),pad=allocatedPad(this.state.pads.length,shipId);this.state.pads.push(pad);
-        const ship={id:shipId,owner:id,type:'meridian',pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},economy:initialEconomy(),frameId:'mars',pose:null,trip:null};
-        this.state.ships[shipId]=ship;this.sims.set(shipId,new ShipSimulation(ship,this.mars,this.site,d=>this.arrive(ship,d)));
+        const ship={id:shipId,owner:id,type:DEFAULT_SHIP_TYPE,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},economy:initialEconomy(),frameId:'mars',pose:null,trip:null};
+        this.state.ships[shipId]=ship;this.sims.set(shipId,this.makeSim(ship));
         p={id,deviceHash:key,name:cleanName(name),personId:/^[a-z]{2,24}$/.test(personId)?personId:'isaiah',shipId,currentShipId:shipId,aboardShipId:null,frameId:'mars',
           pose:{worldPos:this.site.toWorld(pad.x-10,.02,pad.z+38),velocity:{x:0,y:0,z:0},yaw:this.site.heading,pitch:0,grounded:true,aboard:false,sw:{x:0,y:0,z:12,yaw:0,pitch:0},seat:null,look:{yaw:0,pitch:0}},toolIdx:1,carried:[]};
         this.state.players[id]=p;
@@ -103,8 +110,10 @@ export class Authority {
     this.state.players[id].offlineAt=this.now();
     // The body remains aboard; the flight assist holds after the control lease ends.
   }
-  advance(seconds){let left=seconds;
-    while(left>1e-8){const active=[...this.sims.values()].some(s=>s.trip||!s.flight.landed||s.guns.bolts.length||s.drones.shots.length||s.record.crew.some(c=>c.status==='walking-aboard'));
+  advance(seconds,{catchUp=false}={}){let left=seconds;
+    // A raider is always in the air, so while the world runs it ticks at 30 Hz; while a restart catches up on hours it does not (it simply
+    // waits where it was), or loading a long-idle world would simulate a million raider ticks.
+    while(left>1e-8){const active=[...this.sims.values()].some(s=>(!catchUp||!s.record.npc)&&(s.trip||!s.flight.landed||s.guns.bolts.length||s.drones.shots.length||s.record.crew.some(c=>c.status==='walking-aboard')));
       const dt=Math.min(left,active?1/30:1);left-=dt;this.state.clock+=dt;
       const oldY=this.elevator.y,riders=[];let sill=false;
       for(const p of Object.values(this.state.players))if(!p.aboardShipId&&p.frameId==='mars'){
@@ -114,19 +123,26 @@ export class Authority {
       }
       const dy=this.elevator.tick(dt,sill);for(const p of riders)for(const k of ['x','y','z'])p.pose.worldPos[k]+=this.site.up[k]*dy;
       for(const [id,sim] of this.sims){const ship=this.state.ships[id];let control={fwd:0,lift:0,yaw:0};
+        if(ship.npc)continue;                                  // a raider is run by the fleet director, below
+        const def=sim.def,posts=def.crewPosts;let sights=null;
         const pilots=Object.values(this.state.players).filter(p=>p.aboardShipId===id&&['pilot','captain'].includes(p.pose.seat)&&this.sessions.has(p.id)&&this.inputs.get(p.id)?.until>this.now());
         const pilot=pilots.find(p=>p.pose.seat==='pilot')||pilots[0];
         if(pilot)control=this.inputs.get(pilot.id).controls;
         sim.ship.aboard=Object.values(this.state.players).some(p=>p.aboardShipId===id);
         sim.ship._rampOccupied=key=>this.rampOccupied(sim,key);
-        for(const c of ship.crew)if(c.status==='aboard'&&!c.unpaid){const gid={captain:'main',gunner_dorsal:'dorsal',gunner_ventral:'ventral'}[c.role],seat=CREW_POSTS.find(r=>r.id===c.role)?.seat;
+        for(const c of ship.crew)if(c.status==='aboard'&&!c.unpaid){const gid={captain:'main',gunner_dorsal:'dorsal',gunner_ventral:'ventral'}[c.role],seat=posts.find(r=>r.id===c.role)?.seat;
           const mainPilot=c.role==='pilot'&&!ship.crew.some(m=>m.role==='captain'&&m.status==='aboard'&&!m.displaced);
           const gun=gid||(mainPilot?'main':null);
           if(gun&&!Object.values(this.state.players).some(p=>p.aboardShipId===id&&p.pose.seat===seat)){
             sim.crewGunners=sim.crewGunners||new Map();if(!sim.crewGunners.has(c.id))sim.crewGunners.set(c.id,new GunnerAI({guns:sim.guns,flight:sim.flight,gunId:gun,skill:c.skill,rand:Math.random}));
-            sim.crewGunners.get(c.id).update(dt,sim.drones);
+            // FLEET: hired guns shoot raiders and escorts only. A surrendered raider is left out of that list, so the gunner stops.
+            if(!sights)sights=this.fleet.sightsFor(sim);
+            sim.crewGunners.get(c.id).update(dt,sights);
           }}
-        sim.step(dt,control);
+        // (catching up on a long absence a ship that is sitting on the ground with nothing asked of it stays where it is: stepping its landing
+        //  physics a hundred and twenty times a second for hours is the slowest thing a restart does)
+        if(!(catchUp&&sim.flight.landed&&!sim.trip&&!sim.flight.autoHover&&!control.lift&&!control.fwd&&!control.yaw))
+        {this.fleet.preStep(sim);sim.step(dt,control);this.fleet.postStep(sim);}
         const events=[...sim.guns.drain().map(e=>({...e,system:'guns'})),...sim.drones.drain().map(e=>({...e,system:'drones'}))];
         for(const e of events){ship.eventSeq=(ship.eventSeq||0)+1;ship.events=ship.events||[];ship.events.push({...e,seq:ship.eventSeq});}
         ship.events=(ship.events||[]).slice(-80);
@@ -134,7 +150,7 @@ export class Authority {
           const key=sim.frameId+':ground:'+Math.round(e.x)+','+Math.round(e.y)+','+Math.round(e.z);
           this.state.damage[key]={amount:(this.state.damage[key]?.amount||0)+(e.power||1),position:{x:e.x,y:e.y,z:e.z},up:{x:e.ux,y:e.uy,z:e.uz},frameId:sim.frameId};}
         for(const p of Object.values(this.state.players))if(p.aboardShipId===id){p.frameId=sim.frameId;sim.flight.toWorld(p.pose.sw,p.pose.worldPos);}
-        for(const c of ship.crew){const seat=SEATS.find(s=>s.id===CREW_POSTS.find(r=>r.id===c.role)?.seat);
+        for(const c of ship.crew){const seat=def.seats.find(s=>s.id===posts.find(r=>r.id===c.role)?.seat);
           c.displaced=Object.values(this.state.players).some(p=>p.aboardShipId===id&&p.pose.seat===seat?.id);
           if(c.displaced)c.standPose=this.standNear(sim,seat);
           if(c.status==='leaving-ground'){
@@ -147,27 +163,28 @@ export class Authority {
           if(c.unpaid&&!c.status.startsWith('leaving'))continue;if(!c.status.startsWith('leaving')&&this.state.clock>=c.nextPay){const count=Math.floor((this.state.clock-c.nextPay)/SOL_SECONDS)+1,due=count*c.wageCredits*4;
           if(ship.economy.marks<due)c.unpaid=true;else{ship.economy.marks-=due;ship.economy.payrollMarks+=due;c.nextPay+=count*SOL_SECONDS;}}
           if(c.status==='boarding'&&sim.flight.landed&&sim.frameId==='mars'){
-            const target=c.groundRoute?.[0]||{x:ship.pad.x,z:ship.pad.z+25},pos=c.position,dist=Math.hypot(target.x-pos.x,target.z-pos.z),step=Math.min(dist,dt*1.5);
+            const target=c.groundRoute?.[0]||{x:ship.pad.x,z:ship.pad.z+def.dock.rampFoot.z-1},pos=c.position,dist=Math.hypot(target.x-pos.x,target.z-pos.z),step=Math.min(dist,dt*1.5);
             if(dist>.15){pos.x+=(target.x-pos.x)/dist*step;pos.z+=(target.z-pos.z)/dist*step;}
             else if(c.groundRoute?.length)c.groundRoute.shift();
-            else if(sim.ship.state.ramps.cargo.lowered){const angle=sim.ship.state.ramps.cargo.angle,from={x:0,y:-Math.sin(angle)*5,z:20.9+Math.cos(angle)*5},sw=new ShipWalker(shipIndex,sim.ship.state);
-              sw.place(from.x,from.y,from.z,0);const seat=SEATS.find(s=>s.id===CREW_POSTS.find(r=>r.id===c.role).seat),route=routeToSeat(sw,from,seat);
+            else if(sim.ship.state.ramps.cargo.lowered){const R=def.ramps.cargo,angle=sim.ship.state.ramps.cargo.angle,from={x:R.hinge.x,y:R.hinge.y-Math.sin(angle)*R.length,z:R.hinge.z+Math.cos(angle)*R.length},sw=new ShipWalker(shipIndexFor(def),sim.ship.state);
+              sw.place(from.x,from.y,from.z,0);const seat=def.seats.find(s=>s.id===posts.find(r=>r.id===c.role).seat),route=routeToSeat(sw,from,seat);
               if(route){const rw=new RouteWalker(sw,route,1.5);this.crewRoutes.set(c.id,rw);c.status='walking-aboard';c.localPose={...from,yaw:0};c.routeState={route,ri:0,pi:0};}
             }
           }
           if(c.status==='walking-aboard'||c.status==='leaving-aboard'){
-            let rw=this.crewRoutes.get(c.id);if(!rw){const sw=new ShipWalker(shipIndex,sim.ship.state);sw.place(c.localPose.x,c.localPose.y,c.localPose.z,c.localPose.yaw);
+            let rw=this.crewRoutes.get(c.id);if(!rw){const sw=new ShipWalker(shipIndexFor(def),sim.ship.state);sw.place(c.localPose.x,c.localPose.y,c.localPose.z,c.localPose.yaw);
               sw.ladder=structuredClone(c.localPose.ladder||null);rw=new RouteWalker(sw,c.routeState.route,1.5);Object.assign(rw,c.routeState);this.crewRoutes.set(c.id,rw);}
             rw.step(dt);c.localPose={x:rw.sw.x,y:rw.sw.y,z:rw.sw.z,yaw:rw.sw.yaw,ladder:structuredClone(rw.sw.ladder)};c.routeState={route:rw.route,ri:rw.ri,pi:rw.pi,stuckT:rw.stuckT,ladderT:rw.ladderT,lastKey:rw.lastKey};
             if(rw.done){if(c.status==='leaving-aboard'){
                 c.status='leaving-ground';c.position=this.site.toLocal(sim.flight.toWorld(c.localPose,{}));
                 c.groundRoute=[{x:ship.pad.x-28,z:ship.pad.z+32},{x:-28,z:-57},{x:CREW_HALL.door.x,z:CREW_HALL.door.z+1}];
-              }else{c.status='aboard';c.seatPose={...SEATS.find(s=>s.id===CREW_POSTS.find(r=>r.id===c.role).seat)};}
+              }else{c.status='aboard';c.seatPose={...def.seats.find(s=>s.id===posts.find(r=>r.id===c.role).seat)};}
               delete c.routeState;this.crewRoutes.delete(c.id);}
           }
           if(!c.status.startsWith('leaving'))ship.economy.crew[c.role]={nextPay:c.nextPay,unpaid:c.unpaid};}
         ship.economy.elapsedSeconds=this.state.clock;
       }
+      if(!catchUp){this.fleet.stepRaiders(dt);if(this.state.clock>=(this.fleetCheckAt||0)){this.fleetCheckAt=this.state.clock+5;this.fleet.ensure();}}
       for(const c of Object.values(this.state.pool)){
         if(!c.shipId&&!c.retired&&this.state.clock>=c.refillAt&&c.status==='reserved')c.status='inside';
         const slot=CREW_POSTS.findIndex(r=>r.id===c.role),outside={x:CREW_HALL.x+(slot-2.5)*2.4,z:CREW_HALL.door.z+5};
@@ -184,12 +201,12 @@ export class Authority {
     }this.refill();
     this.state.elevator=structuredClone(this.elevator);
     if(this.state.clock>=(this.state.nextRestock||300)){for(const stock of Object.values(this.state.market.traders))for(const k of Object.keys(stock))stock[k]=Math.max(stock[k],30);this.state.nextRestock=this.state.clock+300;}
-    for(const sim of this.sims.values())sim.capture();
+    for(const sim of this.sims.values()){sim.capture();this.fleet.capture(sim);}
   }
   shipFor(p){return this.state.ships[p.aboardShipId||p.currentShipId||p.shipId];}
-  rampOccupied(sim,key){const r=RAMPS[key],run=r.length*Math.cos(sim.ship.rampCtl[key].angle);
+  rampOccupied(sim,key){const r=sim.def.ramps[key],run=r.length*Math.cos(sim.ship.rampCtl[key].angle);
     const on=q=>{const along=(q.x-r.hinge.x)*r.dir.x+(q.z-r.hinge.z)*r.dir.z,across=r.dir.z?Math.abs(q.x-r.hinge.x):Math.abs(q.z-r.hinge.z);return along>.2&&along<run+1&&across<r.width/2+.3&&q.y<.6;};
-    return Object.values(this.state.players).some(p=>p.aboardShipId===sim.record.id&&on(p.pose.sw))||sim.record.crew.some(c=>['walking-aboard','leaving-aboard'].includes(c.status)&&on(c.localPose));
+    return Object.values(this.state.players).some(p=>p.aboardShipId===sim.record.id&&on(p.pose.sw))||sim.record.crew.some(c=>['walking-aboard','leaving-aboard'].includes(c.status)&&c.localPose&&on(c.localPose));
   }
   canPlaceSpoil(frame,x,y,z){
     const point={x,y,z},loc=this.site.toLocal(point);
@@ -207,13 +224,58 @@ export class Authority {
     }
     return true;
   }
-  standNear(sim,seat){const sw=new ShipWalker(shipIndex,sim.ship.state);
+  standNear(sim,seat){const sw=new ShipWalker(shipIndexFor(sim.def),sim.ship.state);
     for(const [dx,dz] of [[0,.9],[.9,0],[-.9,0],[0,-.9],[1.2,0]]){const s=sw.canStand(seat.x+dx,seat.y,seat.z+dz);if(s)return {x:seat.x+dx,y:s.floor,z:seat.z+dz,yaw:seat.yaw*Math.PI/180};}
     return {x:seat.x,y:seat.y,z:seat.z+.9,yaw:0};
   }
-  releaseSeat(p){const seat=SEATS.find(s=>s.id===p.pose.seat);if(seat&&p.aboardShipId)Object.assign(p.pose.sw,this.standNear(this.sims.get(p.aboardShipId),seat));p.pose.seat=null;}
+  releaseSeat(p){const sim=p.aboardShipId&&this.sims.get(p.aboardShipId),seat=sim&&sim.def.seats.find(s=>s.id===p.pose.seat);if(seat)Object.assign(p.pose.sw,this.standNear(sim,seat));p.pose.seat=null;}
   owner(p,ship){if(ship.owner!==p.id)throw Error('Only the ship owner can do that.');}
   near(p,local,r=4){if(p.aboardShipId||p.frameId!=='mars'||distance(this.site.toLocal(p.pose.worldPos),local)>r)throw Error('Walk over to them first.');}
+  // -------------------------------------------------------------------------------------------------------------------
+  // FLEET: owning more than one hull. A ship is bought, claimed or captured; one of them is the flagship (p.shipId): the one a
+  // player walks to, hires for and spends the treasury of. The others stay where they were put, on a pad, owned.
+  // -------------------------------------------------------------------------------------------------------------------
+  /** A new owned ship on a pad of its own. */
+  newOwnedShip(p,type,o={}){
+    const id=randomUUID(),pad=allocatedPad(this.state.pads.length,id);this.state.pads.push(pad);
+    const rec={id,owner:p.id,type,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},
+      economy:{...initialEconomy(),marks:o.marks||0},frameId:'mars',pose:null,trip:null,acquired:{how:o.how||'bought',at:this.state.clock}};
+    this.state.ships[id]=rec;this.sims.set(id,this.makeSim(rec));return rec;
+  }
+  /** Buy a ship at the yard: on foot at the kiosk, paid from the flagship's treasury, delivered to a new pad. */
+  buyShip(p,a){
+    const yard=SHIPYARD,item=forSale().find(q=>q.type===a.shipType);if(!item)throw Error('The yard does not sell that.');
+    this.near(p,yard.spot,yard.reach);
+    const flag=this.state.ships[p.shipId];this.owner(p,flag);
+    const price=item.priceCredits*4;if(flag.economy.marks<price)throw Error(`A ${item.name} costs ${item.priceCredits} credits; your ship's account has ${Math.floor(flag.economy.marks/4)}.`);
+    flag.economy.marks-=price;
+    const rec=this.newOwnedShip(p,item.type,{how:'bought'});
+    return {ok:true,msg:`Bought a ${item.name} for ${item.priceCredits} credits. It is on pad ${rec.pad.number}. Make it your flagship to fly it.`,shipId:rec.id};
+  }
+  /** Make another ship you own the one you fly: on the ground, away from any ship, in the port's air. The client reloads into it. */
+  setFlagship(p,a){
+    const t=this.state.ships[a.shipId];if(!t||t.owner!==p.id)throw Error('That is not your ship.');
+    if(p.aboardShipId)throw Error('Leave your ship first.');
+    const s=this.sims.get(t.id);if(!s.flight.landed||s.frameId!=='mars')throw Error('That ship has to be on the ground at the port.');
+    p.shipId=t.id;p.currentShipId=t.id;
+    return {ok:true,msg:`${shipDef(t.type).class} is now your flagship. Walk to its ramp (pad ${t.pad.number}).`,shipId:t.id};
+  }
+  /** Take a disabled raider (its crew surrender and sign on) or an abandoned hull: a prize crew brings it home to a pad of its own. */
+  claimShip(p,a){
+    const rec=this.fleet.claimable(p,a.shipId),how=rec.npc.state==='disabled'?'captured':'claimed',def=shipDef(rec.type);
+    const loot=rec.npc.lootCredits||0,crew=rec.crew.filter(c=>c.status==='surrendered'||c.status==='aboard');
+    const pad=allocatedPad(this.state.pads.length,rec.id);this.state.pads.push(pad);
+    Object.assign(rec,{owner:p.id,pad,npc:null,crew:[],pose:null,state:null,combat:null,frameId:'mars',trip:null,acquired:{how,at:this.state.clock}});
+    rec.economy.marks+=loot*4;
+    // the surrendered crew sign on: they are the ship's hired crew from now, on wages, like anyone from the hall
+    for(const c of crew){const post=def.crewPosts.find(r=>r.id===c.role),wage=WAGES[c.role]??100;
+      this.state.pool[c.id]={id:c.id,role:c.role,name:c.name,personId:c.personId,skill:c.skill,wageCredits:wage,shipId:rec.id,status:'hired',position:{x:pad.x,y:0,z:pad.z},refillAt:this.state.clock+30};
+      rec.crew.push({id:c.id,role:c.role,name:c.name,personId:c.personId,skill:c.skill,wageCredits:wage,status:'aboard',nextPay:this.state.clock+SOL_SECONDS,unpaid:false,seatPose:{...def.seats.find(s=>s.id===post.seat)},groundRoute:[]});
+      rec.economy.crew[c.role]={nextPay:this.state.clock+SOL_SECONDS,unpaid:false};}
+    this.sims.set(rec.id,this.makeSim(rec));
+    return {ok:true,msg:`${how==='captured'?'Captured':'Claimed'} the ${def.class}${crew.length?` with ${crew.length} crew who sign on`:''}. A prize crew brought it to pad ${pad.number}${loot?`; ${loot} credits were in its hold`:''}.`,shipId:rec.id};
+  }
+
   async action(id,actionId,a){if(!/^[\w-]{8,100}$/.test(actionId))throw Error('Invalid action ID.');const key=id+':'+actionId;
     if(this.state.receipts[key])return {...this.state.receipts[key].result,replay:true};
     const before=structuredClone(this.state);let result;
@@ -229,7 +291,8 @@ export class Authority {
     // still client-side; station transitions use the shared ShipWalker rules.
     const elapsed=Math.max(.1,Math.min(3,(this.now()-(p.poseAt||this.now()-1000))/1000));
     if(aboard){if(distance(r.sw,p.pose.sw)>elapsed*12+2)throw Error('Walk to that place aboard.');
-      if(Math.abs(r.sw.x)>22||Math.abs(r.sw.z)>35||r.sw.y< -4||r.sw.y>13)throw Error('Outside the cabin.');
+      const B=this.sims.get(ship.id).def.dock.bounds;
+      if(Math.abs(r.sw.x)>B.x||Math.abs(r.sw.z)>B.z||r.sw.y<B.y0||r.sw.y>B.y1)throw Error('Outside the cabin.');
       if(r.seat!==p.pose.seat)throw Error('Use the seat request.');
     }else if(distance(r.worldPos,p.pose.worldPos)>elapsed*12+2)throw Error('Walk to that place.');
     p.pose={...structuredClone(r),seat:p.pose.seat};p.poseAt=this.now();
@@ -246,33 +309,35 @@ export class Authority {
       case 'boarding-permission':{const own=this.state.ships[p.shipId];this.owner(p,own);own.crewMayBoard=!!a.allowed;break;}
       case 'board':{const target=this.state.ships[a.shipId||p.shipId];if(!target)throw Error('Unknown ship.');
         if(target.owner!==p.id&&!target.crewMayBoard)throw Error('The owner has boarding closed.');
-        const ts=this.sims.get(target.id);if(p.frameId!==ts.frameId||distance(p.pose.worldPos,ts.flight.toWorld({x:0,y:0,z:26},{}))>24)throw Error('Walk to the stern ramp.');
+        const ts=this.sims.get(target.id),dock=ts.def.dock;if(target.npc)throw Error('That is not your ship to board.');
+        if(p.frameId!==ts.frameId||distance(p.pose.worldPos,ts.flight.toWorld(dock.rampFoot,{}))>24)throw Error('Walk to the stern ramp.');
         if(!ts.flight.landed)throw Error('Wait for the ship to land.');
         if(a.walkPose){const r=a.walkPose,loc=ts.flight.toLocal(p.pose.worldPos,{});
           if(!finitePoint(r.sw)||!Number.isFinite(r.sw.yaw)||!Number.isFinite(r.sw.pitch))throw Error('Invalid walked boarding pose.');
-          const entry=Object.keys(RAMPS).map(k=>rampEntry(k,ts.ship.state.ramps[k],loc,{x:-RAMPS[k].dir.x,z:-RAMPS[k].dir.z})).find(Boolean);
-          const sw=new ShipWalker(shipIndex,ts.ship.state);
+          const ramps=ts.def.ramps;
+          const entry=Object.keys(ramps).map(k=>rampEntry(k,ts.ship.state.ramps[k],loc,{x:-ramps[k].dir.x,z:-ramps[k].dir.z},ramps)).find(Boolean);
+          const sw=new ShipWalker(shipIndexFor(ts.def),ts.ship.state);
           if(!entry||distance(entry,r.sw)>.5||!sw.canStand(r.sw.x,r.sw.y,r.sw.z))throw Error('Walk onto the lowered ramp.');
           p.pose.sw=structuredClone(r.sw);p.pose.pitch=r.pitch;p.pose.yaw=r.yaw;
-        }else p.pose.sw={x:0,y:0,z:12,yaw:0,pitch:0};
+        }else p.pose.sw={...dock.boardSw,pitch:0};
         p.aboardShipId=target.id;p.currentShipId=target.id;p.pose.aboard=true;p.frameId=ts.frameId;p.pose.seat=null;
         ts.flight.toWorld(p.pose.sw,p.pose.worldPos);break;}
       case 'leave':{if(!p.aboardShipId||!sim.flight.landed)throw Error('Land before leaving.');
-        if(a.walkPose){const ramp=RAMPS[a.key],r=sim.ship.state.ramps[a.key],local=p.pose.sw;
+        if(a.walkPose){const ramp=sim.def.ramps[a.key],r=sim.ship.state.ramps[a.key],local=p.pose.sw;
           if(!ramp||!r?.lowered||!finitePoint(a.walkPose.worldPos))throw Error('Use a lowered ramp.');
           const along=(local.x-ramp.hinge.x)*ramp.dir.x+(local.z-ramp.hinge.z)*ramp.dir.z;
           if(along<ramp.length*Math.cos(r.angle)-.5||along>ramp.length*Math.cos(r.angle)+1||distance(a.walkPose.worldPos,sim.flight.toWorld(local,{}))>.6)throw Error('Walk off the ramp tip.');
           p.pose={...structuredClone(a.walkPose),seat:null};
-        }else p.pose.worldPos=sim.flight.toWorld({x:-10,y:-1,z:38},{});
+        }else p.pose.worldPos=sim.flight.toWorld(sim.def.dock.leaveLocal,{});
         p.pose.aboard=false;p.aboardShipId=null;p.pose.seat=null;break;}
-      case 'seat':{if(!p.aboardShipId)throw Error('Come aboard first.');const seat=SEATS.find(s=>s.id===a.seat);
+      case 'seat':{if(!p.aboardShipId)throw Error('Come aboard first.');const seat=sim.def.seats.find(s=>s.id===a.seat);
         if(a.seat&&!seat)throw Error('Unknown seat.');if(seat&&distance(p.pose.sw,seat)>3)throw Error('Walk to the station first.');
         if(seat&&Object.values(this.state.players).some(q=>q.id!==p.id&&q.aboardShipId===ship.id&&q.pose.seat===seat.id))throw Error('That seat is occupied.');
         if(!seat)this.releaseSeat(p);else{p.pose.seat=seat.id;Object.assign(p.pose.sw,{x:seat.x,y:seat.y,z:seat.z,yaw:seat.yaw*Math.PI/180});}break;}
       case 'engage':if(!p.aboardShipId||!['pilot','captain','nav','comms'].includes(p.pose.seat))throw Error('Use a bridge station to set a course.');
-        if(Object.values(this.state.players).some(q=>q.aboardShipId===ship.id&&q.pose.sw.z>21)||ship.crew.some(c=>c.status==='walking-aboard'&&c.localPose.z>21))throw Error('Clear the ramp before departure.');sim.engage(a.destination);break;
+        if(Object.values(this.state.players).some(q=>q.aboardShipId===ship.id&&q.pose.sw.z>sim.def.dock.clearRampZ)||ship.crew.some(c=>c.status==='walking-aboard'&&c.localPose.z>sim.def.dock.clearRampZ))throw Error('Clear the ramp before departure.');sim.engage(a.destination);break;
       case 'ramp':{if(!['cargo','airlock'].includes(a.key))throw Error('Unknown ramp.');if(!sim.flight.landed)throw Error('Land before opening a ramp.');
-        if(!p.aboardShipId)this.near(p,this.site.toLocal(sim.flight.toWorld({x:0,y:-1,z:26},{})),20);
+        if(!p.aboardShipId)this.near(p,this.site.toLocal(sim.flight.toWorld({...sim.def.dock.rampFoot,y:-1},{})),20);
         if(ship.owner!==p.id&&!p.aboardShipId)throw Error('The owner controls the boarding ramp.');
         const ctl=sim.ship.rampCtl[a.key];if(ctl.target>.5&&sim.ship._rampOccupied(a.key))throw Error('Clear the ramp first.');
         if(ctl.target<.5)sim.ship._solveRamp(a.key);ctl.target=ctl.target>.5?0:1;sim.ship.state.ramps[a.key].target=ctl.target;break;}
@@ -282,15 +347,16 @@ export class Authority {
       case 'airlock':sim.cycleAirlock();break;
       case 'power-split':if(p.pose.seat!=='engineer')throw Error('Use the engineering station.');if(![a.engines,a.guns,a.shields].every(Number.isFinite))throw Error('Invalid power split.');sim.flight.setPowerSplit(a.engines,a.guns,a.shields);break;
       case 'power':if(p.pose.seat!=='engineer')throw Error('Use the engineering station.');if(!['engines','guns','shields'].includes(a.key)||!Number.isFinite(a.value))throw Error('Invalid power request.');sim.flight.routePower(a.key,a.value);break;
-      case 'fire-gun':{if(!p.aboardShipId)throw Error('Come aboard.');const gun={captain:'main',gun_dorsal:'dorsal',gun_ventral:'ventral'}[p.pose.seat];
+      case 'fire-gun':{if(!p.aboardShipId)throw Error('Come aboard.');const gun=sim.def.seatGun[p.pose.seat];
         if(!gun)throw Error('Use a gun station.');if(!finitePoint(a.direction)||distance(a.direction,{x:0,y:0,z:0})<.5||distance(a.direction,{x:0,y:0,z:0})>1.5)throw Error('Invalid aim.');
-        const seat=SEATS.find(s=>s.id===p.pose.seat),eye=sim.flight.toWorld({...seat,y:seat.y+1.2},{});sim.stations.seated=p.pose.seat;
+        const seat=sim.def.seats.find(s=>s.id===p.pose.seat),eye=sim.flight.toWorld({...seat,y:seat.y+1.2},{});sim.stations.seated=p.pose.seat;
         const worldDir=a.direction,local=sim.flight.toLocal({x:sim.flight.pos.x+worldDir.x,y:sim.flight.pos.y+worldDir.y,z:sim.flight.pos.z+worldDir.z},{});
         const aim=sim.guns.point(gun,local);sim.guns.fire(gun,sim.flight.dirToWorld(sim.guns.constructor.dirFor(aim),{}),eye);break;}
       case 'meet':{this.near(p,{x:CREW_HALL.door.x,y:0,z:CREW_HALL.door.z},6);const c=this.state.pool[a.id];if(!c||c.shipId||c.retired)throw Error('Candidate unavailable.');c.status='meeting';break;}
       case 'decline':{const c=this.state.pool[a.id];if(!c||c.shipId)throw Error('Candidate unavailable.');c.status='returning';break;}
-      case 'hire':{this.owner(p,this.state.ships[p.shipId]);const s=this.state.ships[p.shipId],c=this.state.pool[a.id];
+      case 'hire':{this.owner(p,this.state.ships[p.shipId]);const s=this.state.ships[p.shipId],c=this.state.pool[a.id],hdef=shipDef(s.type);
         if(!c||c.shipId||c.retired)throw Error('Someone else already hired that person.');this.near(p,c.position,5);
+        if(!hdef.seats.some(q=>q.id===hdef.crewPosts.find(r=>r.id===c.role)?.seat))throw Error(`A ${hdef.class} has no station for a ${c.role}.`);
         if(c.status!=='waiting')throw Error('Ask them to meet you at the hall door.');if(s.crew.some(m=>m.role===c.role))throw Error('That post is already filled.');
         const fee=c.wageCredits*4;if(s.economy.marks<fee)throw Error('Insufficient signing fee.');s.economy.marks-=fee;s.economy.payrollMarks+=fee;
         c.shipId=s.id;c.status='hired';c.refillAt=this.state.clock+30;s.crew.push({...c,position:{...c.position},
@@ -300,12 +366,16 @@ export class Authority {
         if(!sim.flight.landed||sim.frameId!=='mars'||distance(this.site.toLocal(sim.flight.pos),{...ship.pad,y:0})>140)throw Error('They will step off when we are down at the port.');
         delete ship.economy.crew[c.role];sim.crew.cancelOrder();
         if(c.status==='boarding'){c.status='leaving-ground';c.groundRoute=[{x:-28,z:-57},{x:CREW_HALL.door.x,z:CREW_HALL.door.z+1}];}
-        else{const seat=SEATS.find(s=>s.id===CREW_POSTS.find(r=>r.id===c.role).seat),from=c.status==='aboard'?(c.displaced?c.standPose:this.standNear(sim,seat)):c.localPose;
-          const ramp=sim.ship.state.ramps.cargo,tip={id:'tip',x:0,y:-Math.sin(ramp.angle)*5,z:20.9+Math.cos(ramp.angle)*5+.5,yaw:180,room:'cargo'};
-          const sw=new ShipWalker(shipIndex,sim.ship.state);sw.place(from.x,from.y,from.z,from.yaw||0);
+        else{const post=sim.def.crewPosts.find(r=>r.id===c.role),seat=sim.def.seats.find(s=>s.id===post?.seat),from=c.status==='aboard'?(c.displaced?c.standPose:this.standNear(sim,seat)):c.localPose;
+          const spec=sim.def.ramps.cargo,ramp=sim.ship.state.ramps.cargo,run=spec.length*Math.cos(ramp.angle);
+          const tip={id:'tip',x:spec.hinge.x+spec.dir.x*(run+.5),y:spec.hinge.y-Math.sin(ramp.angle)*spec.length,z:spec.hinge.z+spec.dir.z*(run+.5),yaw:180,room:sim.def.roles.cargo};
+          const sw=new ShipWalker(shipIndexFor(sim.def),sim.ship.state);sw.place(from.x,from.y,from.z,from.yaw||0);
           const route=routeToSeat(sw,from,tip);if(!route)throw Error('Lower the cargo ramp before dismissing crew.');
           c.status='leaving-aboard';c.localPose={...from};c.routeState={route,ri:0,pi:0};this.crewRoutes.delete(c.id);
         }break;}
+      case 'buy-ship':return this.buyShip(p,a);
+      case 'set-flagship':return this.setFlagship(p,a);
+      case 'claim-ship':return this.claimShip(p,a);
       case 'tool-change':if(!Number.isSafeInteger(a.index))throw Error('Invalid tool.');p.toolIdx=((a.index%3)+3)%3;break;
       case 'dig-edit':case 'spoil-pour':{if(p.aboardShipId)throw Error('Use ground tools outside.');const body=p.frameId==='mars'?this.mars:makeMoon(p.frameId),w=new Walker(body);
         Object.assign(w.worldPos,p.pose.worldPos);w.yaw=p.pose.yaw;w.pitch=p.pose.pitch;w.updateFrame();const d=new Digger(body,this.stores.get(p.frameId),w);d.toolIdx=p.toolIdx;d.carried=structuredClone(p.carried);
