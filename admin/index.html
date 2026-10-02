@@ -27,8 +27,12 @@
     background:#141b24; color:var(--text); padding:11px 16px; }
   button.primary { background:var(--text); color:#0a0e14; border-color:var(--text); font-weight:600; width:100%; margin-top:20px; }
   button:disabled { opacity:0.5; cursor:default; }
-  .msg { margin-top:14px; font-size:13px; min-height:18px; }
+  .msg { margin-top:14px; font-size:13px; min-height:18px; overflow-wrap:anywhere; }
   .msg.err { color:var(--beat); } .msg.ok { color:var(--ok); }
+  input[type="checkbox"] { width:22px; height:22px; padding:0; flex:none; accent-color:#e6edf3; }
+  .agree { display:flex; align-items:flex-start; gap:10px; margin:18px 0 0; color:var(--muted);
+    cursor:pointer; line-height:1.45; font-size:15px; }
+  .agree a { color:var(--text); }
   .note { color:var(--muted); font-size:12px; margin-top:16px; line-height:1.6; }
   .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
   .who { font-size:13px; color:var(--muted); }
@@ -126,13 +130,52 @@
   const backlinks = '<div class="links"><a href="/">\u2190 Back to the public site</a></div>';
 
   /* ---------- Sign in ---------- */
-  function renderLogin(error) {
+  function emailLooksOk(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  // Server messages are terse or misleading. Say the same thing in plain words.
+  function explainAuth(error) {
+    const message = error && error.message ? String(error.message) : "";
+    const code = error && error.code ? String(error.code) : "";
+    const lower = message.toLowerCase();
+    if (code === "user_already_exists" || lower.includes("already registered") || lower.includes("already been registered") || lower.includes("user already exists")) {
+      return { text: "That email already has an account - sign in instead.", signIn: true };
+    }
+    if (code === "invalid_credentials" || lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
+      return { text: "That email or password is wrong." };
+    }
+    if (lower.includes("email not confirmed")) return { text: "Check your email to confirm." };
+    const atLeast = message.match(/at least (\d+) character/i);
+    if (atLeast) return { text: "Use at least " + atLeast[1] + " characters for your password." };
+    if (lower.includes("password should contain") || lower.includes("one character of each")) {
+      return { text: "Use a password with upper and lower case letters, a number, and a symbol." };
+    }
+    if (code === "weak_password" || lower.includes("easy to guess") || lower.includes("known to be weak") || lower.includes("pwned")) {
+      return { text: "That password is too easy to guess. Choose a different one." };
+    }
+    if (lower.includes("unable to validate email") || lower.includes("invalid format") || lower.includes("valid email")) {
+      return { text: "That email address doesn't look right." };
+    }
+    if (lower.includes("rate limit") || lower.includes("only request this once") || lower.includes("for security purposes") || lower.includes("too many requests")) {
+      return { text: "Too many tries. Wait a minute and try again." };
+    }
+    if (lower.includes("signups not allowed") || lower.includes("signup is disabled") || code === "signup_disabled") {
+      return { text: "New accounts are turned off right now." };
+    }
+    if (lower.includes("error sending")) return { text: "The confirmation email could not be sent. Try again in a minute." };
+    if (lower.includes("database error")) return { text: "The account could not be saved. Try again in a minute." };
+    return { text: message || "Something went wrong. Try again." };
+  }
+
+  function renderLogin(error, prefillEmail) {
+    const em = prefillEmail ? escA(prefillEmail) : "";
     root.innerHTML =
       '<h1>Sign in</h1>' +
       '<p class="lede">Sign in to post or to steer the site. Viewing never requires this.</p>' +
       '<div class="card">' +
         '<label for="email">Email</label>' +
-        '<input id="email" type="email" autocomplete="username" placeholder="you@example.com" />' +
+        '<input id="email" type="email" autocomplete="username" placeholder="you@example.com" value="' + em + '" />' +
         '<label for="password">Password</label>' +
         '<div class="pwwrap">' +
           '<input id="password" type="password" autocomplete="current-password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" />' +
@@ -152,18 +195,22 @@
   async function doSignIn() {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
+    if (!email) return renderLogin("Type your email.");
+    if (!emailLooksOk(email)) return renderLogin("That email address doesn't look right.", email);
+    if (!password) return renderLogin("Type your password.", email);
     const msg = document.getElementById("msg");
     document.getElementById("signin").disabled = true;
     msg.className = "msg"; msg.textContent = "Signing in\u2026";
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { renderLogin(error.message); return; }
+    if (error) { renderLogin(explainAuth(error).text, email); return; }
     boot();
   }
 
   /* ---------- Create account ---------- */
-  function renderSignup(error, prefill) {
+  function renderSignup(message, prefill, kind) {
     const n = prefill && prefill.name ? escA(prefill.name) : "";
     const em = prefill && prefill.email ? escA(prefill.email) : "";
+    const tone = message ? (kind === "ok" ? "ok" : "err") : "";
     root.innerHTML =
       '<h1>Create your account</h1>' +
       '<p class="lede">Choose a name to post under and set a password. You can start posting right away.</p>' +
@@ -182,19 +229,24 @@
           '<input id="password2" type="password" autocomplete="new-password" placeholder="Type it again" />' +
           '<button type="button" class="pwtoggle" id="pwtoggle2">Show</button>' +
         '</div>' +
-        '<label for="agree" style="display:flex;align-items:flex-start;gap:9px;margin:18px 0 0;color:var(--muted);cursor:pointer;line-height:1.5;font-size:13px;">' +
-          '<input id="agree" type="checkbox" style="width:auto;margin:2px 0 0;flex:none;"' + (prefill && prefill.agree ? ' checked' : '') + ' />' +
-          '<span>I\u2019ve read the <a href="/standards" target="_blank" rel="noopener" style="color:var(--text);">About the Observatory</a> page and understand the basic boundaries for participating in a public service.</span>' +
+        '<label class="agree" for="agree">' +
+          '<input id="agree" type="checkbox"' + (prefill && prefill.agree ? ' checked' : '') + ' />' +
+          '<span>I\u2019ve read the <a href="/standards" target="_blank" rel="noopener">About the Observatory</a> page and understand the basic boundaries for participating in a public service.</span>' +
         '</label>' +
         '<button class="primary" id="signup">Create account</button>' +
-        '<div class="msg ' + (error ? 'err' : '') + '" id="msg">' + (error ? esc(error) : '') + '</div>' +
+        '<div class="msg ' + tone + '" id="msg">' + (message ? esc(message) : '') + '</div>' +
       '</div>' +
       '<div class="toggle-line">Already have an account? <a id="toSignin">Sign in</a></div>' +
       backlinks;
     wireToggle("password","pwtoggle");
     wireToggle("password2","pwtoggle2");
+    const about = document.querySelector(".agree a");
+    if (about) about.addEventListener("click", (e) => e.stopPropagation());
     document.getElementById("signup").onclick = doSignUp;
-    document.getElementById("toSignin").onclick = () => renderLogin(null);
+    document.getElementById("toSignin").onclick = () => {
+      const current = document.getElementById("email").value.trim();
+      renderLogin(null, current || null);
+    };
     document.getElementById("password2").addEventListener("keydown", e => { if (e.key === "Enter") doSignUp(); });
   }
 
@@ -204,23 +256,41 @@
     const pw = document.getElementById("password").value;
     const pw2 = document.getElementById("password2").value;
     const agree = document.getElementById("agree").checked;
-    const fail = (m) => renderSignup(m, { name, email, agree });
-    if (!name) return fail("Please choose a display name.");
-    if (!email) return fail("Please enter your email.");
+    const fail = (m, kind) => {
+      renderSignup(m, { name, email, agree }, kind);
+      const p1 = document.getElementById("password");
+      const p2 = document.getElementById("password2");
+      if (p1) p1.value = pw;
+      if (p2) p2.value = pw2;
+    };
+    if (!name) return fail("Type the name you want on your posts.");
+    if (!email) return fail("Type your email.");
+    if (!emailLooksOk(email)) return fail("That email address doesn't look right.");
+    if (!pw) return fail("Type a password.");
     if (pw.length < 6) return fail("Use at least 6 characters for your password.");
-    if (pw !== pw2) return fail("The two passwords don\u2019t match \u2014 check with Show.");
-    if (!agree) return fail("Please review the About the Observatory page before creating an account.");
+    if (!pw2) return fail("Type the password again.");
+    if (pw !== pw2) return fail("The two passwords don't match.");
+    if (!agree) return fail("Tick the box to agree.");
     const btn = document.getElementById("signup"); btn.disabled = true;
     const msg = document.getElementById("msg"); msg.className = "msg"; msg.textContent = "Creating your account\u2026";
     const { data, error } = await supabase.auth.signUp({ email, password: pw, options: { data: { display_name: name } } });
-    if (error) return fail(error.message);
-    let session = data.session;
-    if (!session) {
-      const r = await supabase.auth.signInWithPassword({ email, password: pw });
-      if (r.error) { renderLogin("Account created \u2014 please sign in."); return; }
-      session = r.data.session;
+    if (error) {
+      const explained = explainAuth(error);
+      if (explained.signIn) { renderLogin(explained.text, email); return; }
+      return fail(explained.text);
     }
-    try { await supabase.from("people").update({ display_name: name }).eq("auth_user_id", session.user.id); } catch (e) {}
+    // Confirm-email is on, so an email that already has an account comes back
+    // as a fake user with no identities and no session. Signing in with the
+    // new password then fails, which looked like "wrong information".
+    const identities = data && data.user && data.user.identities;
+    if (data && data.user && Array.isArray(identities) && identities.length === 0) {
+      renderLogin("That email already has an account - sign in instead.", email);
+      return;
+    }
+    if (!data || !data.session) {
+      return fail("Check your email to confirm.", "ok");
+    }
+    try { await supabase.from("people").update({ display_name: name }).eq("auth_user_id", data.session.user.id); } catch (e) {}
     boot();
   }
 
