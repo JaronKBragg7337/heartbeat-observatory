@@ -56,7 +56,7 @@ export class Authority {
     this.sims=new Map(Object.values(this.state.ships).map(s=>[s.id,this.makeSim(s)]));
   }
   /** One ship's simulation, whatever its type; a raider also gets its brain and its escort wing. */
-  makeSim(s){const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));if(s.npc)this.fleet.attach(sim);return sim;}
+  makeSim(s){const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.otherSim=id=>this.sims.get(id);if(s.npc)this.fleet.attach(sim);return sim;}
   enqueue(fn){const p=this.queue.then(fn);this.queue=p.catch(()=>{});return p;}
   publicState(){const s=structuredClone(this.state);delete s.receipts;
     for(const p of Object.values(s.players)){delete p.deviceHash;p.online=this.sessions.has(p.id);}
@@ -150,9 +150,11 @@ export class Authority {
           const key=sim.frameId+':ground:'+Math.round(e.x)+','+Math.round(e.y)+','+Math.round(e.z);
           this.state.damage[key]={amount:(this.state.damage[key]?.amount||0)+(e.power||1),position:{x:e.x,y:e.y,z:e.z},up:{x:e.ux,y:e.uy,z:e.uz},frameId:sim.frameId};}
         for(const p of Object.values(this.state.players))if(p.aboardShipId===id){p.frameId=sim.frameId;sim.flight.toWorld(p.pose.sw,p.pose.worldPos);}
-        for(const c of ship.crew){const seat=def.seats.find(s=>s.id===posts.find(r=>r.id===c.role)?.seat);
-          c.displaced=Object.values(this.state.players).some(p=>p.aboardShipId===id&&p.pose.seat===seat?.id);
-          if(c.displaced)c.standPose=this.standNear(sim,seat);
+        for(const c of ship.crew){const post=posts.find(r=>r.id===c.role),seat=post?def.seats.find(s=>s.id===post.seat):null;
+          // A station this hull does not have (a navigator aboard a Shrike) stays standing where they were put.
+          if(!seat)c.displaced=true;
+          else{c.displaced=Object.values(this.state.players).some(p=>p.aboardShipId===id&&p.pose.seat===seat.id);
+            if(c.displaced)c.standPose=this.standNear(sim,seat);}
           if(c.status==='leaving-ground'){
             const target=c.groundRoute[0],d=Math.hypot(target.x-c.position.x,target.z-c.position.z),step=Math.min(d,dt*1.55);
             if(d){c.position.x+=(target.x-c.position.x)/d*step;c.position.z+=(target.z-c.position.z)/d*step;}
@@ -269,11 +271,79 @@ export class Authority {
     rec.economy.marks+=loot*4;
     // the surrendered crew sign on: they are the ship's hired crew from now, on wages, like anyone from the hall
     for(const c of crew){const post=def.crewPosts.find(r=>r.id===c.role),wage=WAGES[c.role]??100;
-      this.state.pool[c.id]={id:c.id,role:c.role,name:c.name,personId:c.personId,skill:c.skill,wageCredits:wage,shipId:rec.id,status:'hired',position:{x:pad.x,y:0,z:pad.z},refillAt:this.state.clock+30};
-      rec.crew.push({id:c.id,role:c.role,name:c.name,personId:c.personId,skill:c.skill,wageCredits:wage,status:'aboard',nextPay:this.state.clock+SOL_SECONDS,unpaid:false,seatPose:{...def.seats.find(s=>s.id===post.seat)},groundRoute:[]});
+      const signed={id:c.id,role:c.role,name:c.name,personId:c.personId,skill:c.skill,wageCredits:wage,shipId:rec.id,status:'hired',position:{x:pad.x,y:0,z:pad.z},refillAt:this.state.clock+30};
+      if(c.look)signed.look=structuredClone(c.look);
+      this.state.pool[c.id]=signed;
+      const aboard={id:c.id,role:c.role,name:c.name,personId:c.personId,skill:c.skill,wageCredits:wage,status:'aboard',nextPay:this.state.clock+SOL_SECONDS,unpaid:false,seatPose:{...def.seats.find(s=>s.id===post.seat)},groundRoute:[]};
+      if(c.look)aboard.look=structuredClone(c.look);
+      rec.crew.push(aboard);
       rec.economy.crew[c.role]={nextPay:this.state.clock+SOL_SECONDS,unpaid:false};}
     this.sims.set(rec.id,this.makeSim(rec));
     return {ok:true,msg:`${how==='captured'?'Captured':'Claimed'} the ${def.class}${crew.length?` with ${crew.length} crew who sign on`:''}. A prize crew brought it to pad ${pad.number}${loot?`; ${loot} credits were in its hold`:''}.`,shipId:rec.id};
+  }
+  /**
+   * Walk aboard a disabled or abandoned raider and fly it from where it is. The hull becomes an owned ship
+   * in place (same frame, same flight pose, a home pad allocated but not used yet). The surrendered crew
+   * leave. One flyer stays on the player's own ship so it can hold or follow; everyone else comes across.
+   * The flagship does not change: that is still set on the ground at the port.
+   */
+  boardPrize(p,a){
+    const mode=a.ownShip;
+    if(mode!=='hold'&&mode!=='follow')throw Error('Say whether your own ship holds or follows.');
+    const rec=this.fleet.claimable(p,a.shipId);
+    if(p.aboardShipId===rec.id)throw Error('You are already aboard it.');
+    const mine=this.state.ships[p.aboardShipId],prizeSim=this.sims.get(rec.id);
+    prizeSim.capture();
+    const pose=structuredClone(rec.pose),frameId=rec.frameId,state=rec.state,name=rec.npc.name,loot=rec.npc.lootCredits||0,def=shipDef(rec.type);
+    const pad=allocatedPad(this.state.pads.length,rec.id);this.state.pads.push(pad);
+    const hired=(mine.crew||[]).filter(c=>!String(c.status||'').startsWith('leaving'));
+    const flyer=hired.find(c=>c.role==='pilot')||hired.find(c=>c.role==='captain')||null;
+    const stayers=flyer?[flyer]:[],coming=hired.filter(c=>c!==flyer);
+    const mineClass=shipDef(mine.type).class;
+    rec.crew=[];
+    rec.economy.crew={};
+    Object.assign(rec,{owner:p.id,pad,npc:null,pose,state,frameId,trip:null,combat:null,escort:null,acquired:{how:'boarded',at:this.state.clock}});
+    rec.economy.marks=(rec.economy.marks||0)+loot*4;
+    const sim=this.makeSim(rec);this.sims.set(rec.id,sim);
+    const dock=def.dock.boardSw;
+    p.pose.sw={x:dock.x,y:dock.y,z:dock.z,yaw:dock.yaw||0,pitch:0};
+    p.aboardShipId=rec.id;p.currentShipId=rec.id;p.pose.aboard=true;p.pose.seat=null;p.frameId=sim.frameId;
+    sim.flight.toWorld(p.pose.sw,p.pose.worldPos);
+    mine.crew=stayers;
+    mine.economy.crew=mine.economy.crew||{};
+    for(const c of coming)delete mine.economy.crew[c.role];
+    const came=[];
+    coming.forEach((c,i)=>{
+      const member=structuredClone(c);
+      delete member.groundRoute;delete member.routeState;delete member.position;
+      const post=def.crewPosts.find(r=>r.id===c.role),seat=post&&def.seats.find(s=>s.id===post.seat);
+      const pool=this.state.pool[c.id];
+      if(pool){pool.shipId=rec.id;pool.status='hired';if(c.look)pool.look=structuredClone(c.look);}
+      if(seat){
+        const from={x:dock.x+(i-1)*0.55,y:dock.y,z:dock.z,yaw:0};
+        let route=null,walker=null;
+        try{
+          walker=new ShipWalker(shipIndexFor(def),sim.ship.state);
+          walker.place(from.x,from.y,from.z,0);
+          route=routeToSeat(walker,from,seat);
+        }catch{route=null;}
+        if(route){
+          this.crewRoutes.set(c.id,new RouteWalker(walker,route,1.5));
+          Object.assign(member,{status:'walking-aboard',localPose:{...from,yaw:0},routeState:{route,ri:0,pi:0},seatPose:{...seat}});
+        }else Object.assign(member,{status:'aboard',seatPose:{...seat},localPose:{x:seat.x,y:seat.y,z:seat.z,yaw:(seat.yaw||0)*Math.PI/180}});
+      }else{
+        const stand={x:dock.x+((i%3)-1)*1.15,y:dock.y,z:dock.z-0.55*(1+(i%2)),yaw:0};
+        Object.assign(member,{status:'aboard',displaced:true,standPose:stand,seatPose:{...stand},localPose:{...stand}});
+      }
+      rec.crew.push(member);
+      rec.economy.crew[c.role]={nextPay:c.nextPay,unpaid:!!c.unpaid};
+      came.push(c.name);
+    });
+    mine.escort={mode,targetId:rec.id};
+    const cameMsg=came.length===0?'You came aboard alone.':came.length===1?`${came[0]} came aboard.`:`${came.slice(0,-1).join(', ')} and ${came.at(-1)} came aboard.`;
+    const stayMsg=stayers.length?`${stayers.map(c=>c.name).join(' and ')} stayed with ${mineClass}, which will ${mode==='hold'?'hold station':'follow'}.`:`${mineClass} is empty and will ${mode==='hold'?'hold station':'follow'}.`;
+    const lootMsg=loot?` ${loot} credits were in its hold.`:'' ;
+    return {ok:true,msg:`You boarded ${name}. ${cameMsg} ${stayMsg} Walk forward to the helm. ${mineClass} remains your flagship until you set it at the port.${lootMsg}`,shipId:rec.id};
   }
 
   async action(id,actionId,a){if(!/^[\w-]{8,100}$/.test(actionId))throw Error('Invalid action ID.');const key=id+':'+actionId;
@@ -376,6 +446,7 @@ export class Authority {
       case 'buy-ship':return this.buyShip(p,a);
       case 'set-flagship':return this.setFlagship(p,a);
       case 'claim-ship':return this.claimShip(p,a);
+      case 'board-prize':return this.boardPrize(p,a);
       case 'tool-change':if(!Number.isSafeInteger(a.index))throw Error('Invalid tool.');p.toolIdx=((a.index%3)+3)%3;break;
       case 'dig-edit':case 'spoil-pour':{if(p.aboardShipId)throw Error('Use ground tools outside.');const body=p.frameId==='mars'?this.mars:makeMoon(p.frameId),w=new Walker(body);
         Object.assign(w.worldPos,p.pose.worldPos);w.yaw=p.pose.yaw;w.pitch=p.pose.pitch;w.updateFrame();const d=new Digger(body,this.stores.get(p.frameId),w);d.toolIdx=p.toolIdx;d.carried=structuredClone(p.carried);

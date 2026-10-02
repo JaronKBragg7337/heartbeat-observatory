@@ -1,0 +1,80 @@
+{
+  "results": {
+    "port": 64092,
+    "raiderId": "fleet-raider-1",
+    "raiderName": "Dust Wolf",
+    "helmetsBefore": [
+      {
+        "name": "Rafe Pike",
+        "visor": "7a5a32",
+        "shell": "3c434c"
+      },
+      {
+        "name": "Lio Rook",
+        "visor": "6a6248",
+        "shell": "3c434c"
+      },
+      {
+        "name": "Corin Hale",
+        "visor": "1c2128",
+        "shell": "3c434c"
+      },
+      {
+        "name": "Imre Kessler",
+        "visor": "7a5a32",
+        "shell": "3c434c"
+      }
+    ],
+    "bodyCountBefore": 10,
+    "crewAim": [
+      {
+        "name": "Lio Rook",
+        "bow": 11
+      },
+      {
+        "name": "Rafe Pike",
+        "bow": 11
+      },
+      {
+        "name": "Corin Hale",
+        "bow": -3
+      },
+      {
+        "name": "Imre Kessler",
+        "bow": -6
+      }
+    ],
+    "helmetScale": [
+      {
+        "name": "Rafe Pike",
+        "sx": 0.0108,
+        "sy": 0.0105,
+        "sz": 0.0112,
+        "radiusM": 0.124
+      },
+      {
+        "name": "Lio Rook",
+        "sx": 0.0108,
+        "sy": 0.0105,
+        "sz": 0.0112,
+        "radiusM": 0.124
+      },
+      {
+        "name": "Corin Hale",
+        "sx": 0.0108,
+        "sy": 0.0105,
+        "sz": 0.0112,
+        "radiusM": 0.124
+      },
+      {
+        "name": "Imre Kessler",
+        "sx": 0.0108,
+        "sy": 0.0105,
+        "sz": 0.0112,
+        "radiusM": 0.124
+      }
+    ],
+    "pageErrors": []
+  },
+  "errors": []
+}

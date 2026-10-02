@@ -194,11 +194,15 @@ export class FleetView {
         const d = sameFrame ? dist(pos, cam) : 1e9;
         v.label.visible = d < this.cull;
         if (v.label.visible) {
-          const n = ship.npc, st = STATE_TEXT[n.state] || n.state;
+          const n = ship.npc;
+          // The view was built while this hull was a raider. Once a player owns it, the label would read n.state and throw.
+          if (!n) v.label.visible = false;
+          else { const st = STATE_TEXT[n.state] || n.state;
           setText(v.label, `${n.name} - ${st}${n.state === 'engage' || n.state === 'patrol' || n.state === 'return' ? ` - hull ${Math.round(f.hull)}%` : ''}`, n.state === 'disabled' ? '#9fffc2' : n.state === 'abandoned' ? '#c8c8c8' : '#ffb0a0');
           const up = new THREE.Vector3(pos.x, pos.y, pos.z).normalize();
           Object.assign(v.labelEntry.worldPos, { x: pos.x + up.x * 11, y: pos.y + up.y * 11, z: pos.z + up.z * 11 }); v.labelEntry.frame = frame;
           v.label.scale.setScalar(Math.max(1, d / 160));
+          }
         }
       }
       // fire: this ship's bolts (a raider's, or another player's) and its escorts' shots, carried forward by the age of the snapshot
@@ -242,7 +246,7 @@ export class FleetView {
       if (was !== undefined && was !== st && s.frameId === act.frameId && dist(s.pose.pos, act.pose.pos) < 5000) {
         if (st === 'engage' && s.npc.targetId === activeId) sys.note(`${s.npc.name} is attacking us.`, true);
         else if (st === 'return' && was === 'engage') sys.note(`${s.npc.name} has broken off.`);
-        else if (st === 'disabled') sys.note(`${s.npc.name} is disabled: its crew have surrendered. Bring your ship within ${CLAIM_REACH_M} m and open World / crew to capture it.`);
+        else if (st === 'disabled') sys.note(`${s.npc.name} is disabled: its crew have surrendered. Bring your ship within ${CLAIM_REACH_M} m and open World / crew to board it, or to send a prize crew.`);
         else if (st === 'abandoned') sys.note(`${s.npc.name} has been abandoned. Bring your ship within ${CLAIM_REACH_M} m and open World / crew to claim it.`);
       }
       (this.seen || (this.seen = new Map())).set(s.id, st);
@@ -278,7 +282,7 @@ export class FleetView {
         if (snapshot.pool && snapshot.pool[c.id]) continue;            // hired crew are drawn with the pool
         if (!near) continue;
         seen.add(c.id);
-        const b = this.mp.body(c.id, c.personId, c.name);
+        const b = this.mp.body(c.id, c.personId, c.name, c.look);
         const seat = c.seatPose || def.seats.find((s) => s.id === def.crewPosts.find((r) => r.id === c.role)?.seat);
         if (!seat) continue;
         const sitting = c.status === 'aboard';
@@ -298,6 +302,8 @@ export class FleetView {
   panel(snapshot, me, text, btn) {
     const mine = Object.values(snapshot.ships).filter((s) => s.owner === me.id);
     text(`Your fleet (${mine.length}): ` + mine.map((s) => `${shipDef(s.type).class}${s.id === me.shipId ? ' [flagship]' : ''} pad ${s.pad ? s.pad.number : '?'}`).join(', '));
+    const flag = snapshot.ships[me.shipId];
+    if (flag && flag.escort && flag.id !== me.aboardShipId) text(`Your ${shipDef(flag.type).class} is ${flag.escort.mode === 'follow' ? 'following this ship' : 'holding station'}.`);
     if (!me.aboardShipId) for (const s of mine) if (s.id !== me.shipId && s.pose.landed && s.frameId === 'mars') btn(`Make ${shipDef(s.type).class} (pad ${s.pad.number}) my flagship`, { type: 'set-flagship', shipId: s.id });
     // the shipyard
     const rows = forSale();
@@ -314,7 +320,11 @@ export class FleetView {
       const st = s.npc.state;
       text(`${s.npc.name}: ${STATE_TEXT[st] || st}, ${Math.round(d)} m, hull ${Math.round(s.pose.hull)}%`);
       if (st === 'disabled' || st === 'abandoned') {
-        if (d <= CLAIM_REACH_M) btn(st === 'disabled' ? `Capture ${s.npc.name} (crew sign on)` : `Claim ${s.npc.name}`, { type: 'claim-ship', shipId: s.id });
+        if (d <= CLAIM_REACH_M) {
+          btn(st === 'disabled' ? `Prize crew brings ${s.npc.name} home` : `Claim ${s.npc.name}`, { type: 'claim-ship', shipId: s.id });
+          btn(`Board ${s.npc.name}, my ship holds`, { type: 'board-prize', shipId: s.id, ownShip: 'hold' });
+          btn(`Board ${s.npc.name}, my ship follows`, { type: 'board-prize', shipId: s.id, ownShip: 'follow' });
+        }
         else text(`Bring your ship within ${CLAIM_REACH_M} m to take it.`);
       }
     }

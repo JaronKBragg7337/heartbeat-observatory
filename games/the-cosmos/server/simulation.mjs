@@ -10,6 +10,7 @@ import { GunSystem, DroneSystem } from '../src/ship/guns.js';
 import { Stations } from '../src/ship/shipStations.js';
 import { BOUNTY_CREDITS } from '../src/space/spaceSpec.js';
 import { CrewSystem } from '../src/crew/crewSystem.js';
+import { Autopilot } from '../src/crew/autopilot.js';
 import { CREW_POSTS } from '../src/crew/crewSpec.js';
 import { ShipSystem } from '../src/ship/shipSystem.js';
 import { shipDef } from '../src/ships/registry.js';
@@ -127,9 +128,14 @@ export class ShipSimulation {
     if(this.flight.hull<=0){this.flight.controls={fwd:0,lift:0,yaw:0};this.flight.power.engines=0;this.flight.autoHover=false;this.trip=null;this.flight.override=null;}
     else {this.syncCrew();
       const manual=Object.values(controls).some(v=>Math.abs(v)>.05);
+      // A hand on the stick ends an escort. The escort is the ship's own autopilot (escortAp), not a crew order:
+      // a ship with nobody in the pilot's seat would have pilotControls cancel a crew order on the next tick.
+      if(manual&&this.record.escort){this.record.escort=null;this.escortAp=null;}
       if(manual&&this.crew.hasOrder())this.crew.cancelOrder();
       if(manual&&this.trip?.active&&this.trip.phase!=='transit')this.trip.cancel();
-      this.flight.controls=this.trip?.active?(this.trip.tick(dt)||{fwd:0,lift:0,yaw:0}):manual?controls:this.crew.pilotControls(dt)||controls;
+      if(!manual)this._escortCatchTrip();
+      const escort=!manual&&!this.trip?.active?this.escortStick(dt):null;
+      this.flight.controls=this.trip?.active?(this.trip.tick(dt)||{fwd:0,lift:0,yaw:0}):manual?controls:(escort||this.crew.pilotControls(dt)||controls);
     }
     if(this.flight.landed&&this.flight.controls.lift>0&&Object.values(this.ship.rampCtl).some(r=>r.progress>.02)){
       this.flight.controls.lift=0;if(!this.ship._rampOccupied('cargo'))this.ship.rampCtl.cargo.target=0;
@@ -144,6 +150,45 @@ export class ShipSimulation {
     if(this.flight.landed&&this.flight.hull<100&&this.ship.rampCtl.cargo.progress<.02)this.flight.hull=Math.min(100,this.flight.hull+dt*.5);
     this.guns.update(dt);this.drones.update(dt);
   }
+  /**
+   * Hold or follow another ship (`record.escort = { mode, targetId }`). Hold is a zero stick.
+   * Follow flies a slot behind the target. A missing target, or one in another frame, holds.
+   * Returns null when this ship has no escort, so the crew pilot can fly instead.
+   */
+  escortStick(dt) {
+    const esc = this.record.escort;
+    if (!esc) return null;
+    const tgt = this.otherSim?.(esc.targetId);
+    if (!tgt || tgt.frameId !== this.frameId || !tgt.flight) return { fwd: 0, lift: 0, yaw: 0 };
+    if (esc.mode !== 'follow') return { fwd: 0, lift: 0, yaw: 0 };
+    if (!this.escortAp) {
+      const flyer = this.crew.flyer();
+      this.escortAp = new Autopilot(this.flight, {
+        ground: (x, y, z) => this.ship.ground(x, y, z),
+        skill: flyer?.def?.skill ?? 0.75,
+        home: { x: this.flight.pos.x, y: this.flight.pos.y, z: this.flight.pos.z },
+        seed: 7,
+      });
+      this.escortAp.setOrder({ type: 'follow' });
+    }
+    this.escortAp._slot = this.escortAp.followSlot(tgt.flight);
+    return this.escortAp.update(dt);
+  }
+
+  /** When the ship we are following starts a drive trip in this frame, set the same course. A refusal stays in formation. */
+  _escortCatchTrip() {
+    const esc = this.record.escort;
+    if (!esc || esc.mode !== 'follow' || this.trip?.active) return;
+    const tgt = this.otherSim?.(esc.targetId);
+    if (!tgt || tgt.frameId !== this.frameId || !tgt.trip?.active) return;
+    const id = tgt.trip.dest?.id;
+    if (!id) return;
+    if (this.flight.time < (this._escortTryAt || 0)) return;
+    this._escortTryAt = this.flight.time + 1;
+    try { this.engage(id); }
+    catch (e) { if (this._escortTried !== id) { this._escortTried = id; this.ship.note(e.message || 'Could not follow that course.'); } }
+  }
+
   capture() {
     const t=this.trip;
     this.record.pose=flightRecord(this.flight);this.record.frameId=this.frameId;

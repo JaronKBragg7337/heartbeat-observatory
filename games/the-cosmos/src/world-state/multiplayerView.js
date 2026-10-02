@@ -144,12 +144,15 @@ export class MultiplayerView {
     this.engine.scene.add(g);const q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().copy(site.right),new THREE.Vector3().copy(site.up),new THREE.Vector3().copy(site.back)));
     this.engine.track({worldPos:site.center,object3d:g,quaternion:q});
   }
-  body(id,personId,name){let v=this.bodies.get(id);if(v)return v;
+  body(id,personId,name,look){let v=this.bodies.get(id);
+    if(v){if(look){v.wantLook=look;v.person.dress(look);}return v;}
     const person=this.people.spawn(personId),group=new THREE.Group();group.name='remote-person:'+id;group.add(person.group);
     const tag=label(name);tag.position.y=2.15;group.add(tag);this.engine.scene.add(group);
-    const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.22,1.2,4,8),new THREE.MeshStandardMaterial({color:0xcbbba7}));fallback.position.y=.9;group.add(fallback);person.ready.then(p=>{if(p.loaded)group.remove(fallback);});
+    const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.22,1.2,4,8),new THREE.MeshStandardMaterial({color:0xcbbba7}));fallback.position.y=.9;group.add(fallback);
+    if(look)person.dress(look);
+    person.ready.then(p=>{if(p.loaded){group.remove(fallback);if(v.wantLook)p.dress(v.wantLook);}});
     const entry=this.engine.track({worldPos:{x:0,y:0,z:0},object3d:group,quaternion:new THREE.Quaternion()});
-    v={person,group,entry,last:null,name,tag};this.bodies.set(id,v);return v;
+    v={person,group,entry,last:null,name,tag,wantLook:look||null};this.bodies.set(id,v);return v;
   }
   updateBodies(dt){const s=this.world.snapshot,current=this.activeId(),seen=new Set();
     for(const p of Object.values(s.players)){if(p.id===this.world.playerId||!p.online)continue;seen.add(p.id);const b=this.body(p.id,p.personId,p.name);
@@ -160,7 +163,8 @@ export class MultiplayerView {
         forward=new THREE.Vector3().copy(frame.north).multiplyScalar(Math.cos(p.pose.yaw)).addScaledVector(new THREE.Vector3().copy(frame.east),Math.sin(p.pose.yaw)),right=new THREE.Vector3().crossVectors(up,forward).normalize();
         q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,forward));}
       this.placeBody(b,pos,q,p.frameId,p.pose.seat?'Sit':p.animation||'Idle',dt);}
-    for(const c of Object.values(s.pool)){if(c.retired||c.status==='reserved')continue;seen.add(c.id);const b=this.body(c.id,c.personId,c.name);
+    for(const c of Object.values(s.pool)){if(c.retired||c.status==='reserved')continue;seen.add(c.id);const ship0=c.shipId?s.ships[c.shipId]:null,contract0=ship0?.crew.find(m=>m.id===c.id);
+      const b=this.body(c.id,c.personId,c.name,c.look||contract0?.look);
       const ship=c.shipId?s.ships[c.shipId]:null,contract=ship?.crew.find(m=>m.id===c.id);
       let pos=this.site.toWorld(c.position.x,c.position.y||0,c.position.z),frame='mars',pose=['waiting','inside'].includes(c.status)?'Idle':'Walk',q=new THREE.Quaternion().copy(this.hallRoot.quaternion);
       if(['aboard','walking-aboard','leaving-aboard'].includes(contract?.status)){const seat=contract.status==='aboard'?(contract.displaced?contract.standPose:contract.seatPose):contract.localPose;pos=ship.pose.pos;frame=ship.frameId;pose=contract.status==='aboard'?(contract.displaced?'Idle':'Sit'):'Walk';if(seat){const v=new THREE.Vector3().copy(seat).applyQuaternion(new THREE.Quaternion().fromArray(ship.pose.quaternion));pos={x:pos.x+v.x,y:pos.y+v.y,z:pos.z+v.z};}q=new THREE.Quaternion().fromArray(ship.pose.quaternion);}

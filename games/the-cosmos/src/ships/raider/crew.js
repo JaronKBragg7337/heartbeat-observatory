@@ -1,9 +1,17 @@
 // ============================================================================
-// ships/raider/crew.js - who flies a raider. Four people at four stations. They are the Loft's people (homes/people: seven MetaHuman
-// models in all, so a raider's crew shares faces with the port's hiring pool, as any seven people would), with raiders' names.
+// ships/raider/crew.js - who flies a raider. Four people at four stations.
 //
-// A post is { id, name, personId, title, seat, skill }: id is the role a crew record carries, seat is the seat in spec.js it works from.
+// The bodies are the Loft's seven MetaHumans (homes/people). Which four a hull uses is rotated by the hull's
+// number (src/ships/raider/looks.js), and each of them wears a duty look: cloth, hair and skin tints, and a
+// helmet with a visor. A raider's four therefore never read as Ada, Zuri, Jorge or the other hall faces.
+// The names are the raiders' own. The hire pool's posts and names are not changed here.
+//
+// A post is { id, name, personId, title, seat, skill }: id is the role a crew record carries, seat is the
+// seat in spec.js it works from. The post's personId is only the station's old label. The crew record's
+// personId comes from the look, and that is what gets drawn.
 // ============================================================================
+
+import { raiderLook } from './looks.js';
 
 export const RAIDER_CREW_POSTS = [
   { id: 'pilot', name: 'Pilot', personId: 'jorge', title: 'Pilot', seat: 'pilot', skill: 0.84,
@@ -19,12 +27,15 @@ export const RAIDER_CREW_POSTS = [
 const FIRST = ['Dagny', 'Kell', 'Imre', 'Mags', 'Tove', 'Rafe', 'Sana', 'Oren', 'Lio', 'Bex', 'Nyah', 'Corin'];
 const LAST = ['Rook', 'Brandt', 'Soto', 'Okoro', 'Vance', 'Hale', 'Marrow', 'Pike', 'Ng', 'Duarte', 'Kessler', 'Adeyemi'];
 
-/** The crew of the nth raider: four people, named from the tables by the hull's number, so every boat has its own faces and names. */
+/** The crew of the nth raider: four people, named from the tables by the hull's number, each with their own look. */
 export function raiderCrew(seq) {
-  return RAIDER_CREW_POSTS.map((post, i) => ({
-    id: `raider-${seq}-${post.id}`, role: post.id, personId: post.personId,
-    name: `${FIRST[(seq * 5 + i * 3) % FIRST.length]} ${LAST[(seq * 7 + i * 5) % LAST.length]}`,
-    skill: Math.max(0.7, Math.min(0.88, post.skill + (((seq * 13 + i * 7) % 9) - 4) * 0.01)),
-    wageCredits: 0, status: 'aboard', unpaid: false, nextPay: 1e15, hostile: true,
-  }));
+  return RAIDER_CREW_POSTS.map((post, i) => {
+    const look = raiderLook(seq, i);
+    return {
+      id: `raider-${seq}-${post.id}`, role: post.id, personId: look.personId, look,
+      name: `${FIRST[(seq * 5 + i * 3) % FIRST.length]} ${LAST[(seq * 7 + i * 5) % LAST.length]}`,
+      skill: Math.max(0.7, Math.min(0.88, post.skill + (((seq * 13 + i * 7) % 9) - 4) * 0.01)),
+      wageCredits: 0, status: 'aboard', unpaid: false, nextPay: 1e15, hostile: true,
+    };
+  });
 }

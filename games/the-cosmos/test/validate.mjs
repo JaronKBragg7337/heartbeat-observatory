@@ -637,6 +637,10 @@ await runFleetChecks({check,section,THREE,mars,FIELD});
 const { runLooksChecks } = await import('./looks-checks.mjs');
 await runLooksChecks({ check, section, THREE });
 
+// 28. Board a captured Shrike in space, and raider crews that do not wear the hall's faces.
+const { runGrok2Checks } = await import('./grok2-checks.mjs');
+await runGrok2Checks({ check, section, THREE });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));

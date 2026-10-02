@@ -601,14 +601,13 @@ server/fleet.mjs             the raiders of the shared world: spawning, the tick
 **The Shrike** (`src/ships/raider/`): 36 m long, 18 m across the wings; a fast, hard-hitting boat for four. Walk-through rooms fore to aft:
 cockpit (captain and pilot seats under the canopy), main corridor, crew quarters and mess, the airlock (with a gangway) and the armoury, the
 ladder niche up to the dorsal turret, the engine room (reactor, engineer's station), the cargo hold with the stern boarding ramp. Same Kit,
-same textures, same depth-layer solver as the Meridian, so the same level of detail. Four people from the Loft's seven sit at the four stations.
+same textures, same depth-layer solver as the Meridian, so the same level of detail. Four people drawn from the Loft's seven sit at the four stations. Each raider crew rotates which bodies it uses and wears its own duty cloth, hair and skin, plus a helmet and visor, so those four never read as Ada, Zuri, Jorge or the other hall faces.
 It lifts 16 m/s, cruises 52, turns 1.05 rad/s; shield 240, hull armour 0.22.
 
 **Raiders in the shared world**: one high over the port, one over Phobos, one abandoned hull adrift near Deimos (`server/fleet.mjs`). They
 fly outside Mars neutral airspace only and fight only a crewed ship that is in hostile air: strafing runs with the nose guns and the turret,
 three escort drones on their quarters, a break away after each pass. A raider at 35% hull is **disabled** (the crew surrender); at none it is
-**abandoned**. **Players can take one**: capture a disabled one (its crew sign on) or claim an abandoned one, from your own ship within 160 m
-(World / crew panel); buy one at the shipyard kiosk at the port (2,400 credits); make any ship you own your flagship. See
+**abandoned**. **Players can take one** from their own ship within 160 m (World / crew): a prize crew brings a disabled raider home (its crew sign on, helmets and all) or an abandoned hull, or you board the prize where it hangs and fly it while your own ship holds station or follows with whoever stayed at the helm. Buy one at the shipyard kiosk at the port (2,400 credits); make any ship you own your flagship. See
 [docs/WORLD-STATE.md](docs/WORLD-STATE.md) for the rules and what the server keeps, and
 [docs/qa/2026-10-01/fleet/REVIEW.md](docs/qa/2026-10-01/fleet/REVIEW.md) for what was verified and what was not.
 
@@ -617,6 +616,7 @@ Offline solo keeps the old three drones and has no raiders (`?ship=raider` lets 
 **Adding a class**: write `src/ships/<type>/` (spec and def), add it to the registry and its visuals to `visuals.js`; nothing else changes.
 Validator sections 20-26 (`test/fleet-checks.mjs`) prove the registry, the raider's rooms, hull, flight, guns, brain and escorts, the world's
 fight, capture, claim, buy and flagship rules, persistence, and two clients seeing the same raider and the same damage.
+Section 28 (`test/grok2-checks.mjs`) proves boarding a prize in space (the hull stays put, one flyer holds or follows, the rest come aboard) and that a raider crew never wears an unmodified hall face.
 
 ## Marineris Port (local review build, 2026-09-30)
 

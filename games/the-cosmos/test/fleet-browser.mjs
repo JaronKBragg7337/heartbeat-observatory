@@ -84,8 +84,8 @@ try {
   const label = await b.evaluate((rid) => cosmos.multiplayer.fleetView.views.get(rid).label.userData.text, rid); results.disabledLabel = label; assert.ok(/DISABLED/.test(label), label);
   await look(b, shipB, 100, 0.1); await shot(b, 'm04_disabled_raider_label');
   await b.evaluate(() => { const m = cosmos.multiplayer; m.panel.hidden = false; m.draw(); });
-  const claimBtn = await b.evaluate(() => [...cosmos.multiplayer.panel.querySelectorAll('button')].map((x) => x.textContent).filter((t) => /Capture|Claim/.test(t)));
-  results.panelClaimButtons = claimBtn; assert.ok(claimBtn.length === 1, claimBtn.join());
+  const claimBtn = await b.evaluate(() => [...cosmos.multiplayer.panel.querySelectorAll('button')].map((x) => x.textContent).filter((t) => /Prize crew|Board |Capture|Claim/.test(t)));
+  results.panelClaimButtons = claimBtn; assert.ok(claimBtn.some((t) => /Prize crew brings|Capture/.test(t)) && claimBtn.some((t) => /my ship holds/.test(t)) && claimBtn.some((t) => /my ship follows/.test(t)), claimBtn.join(' | '));
   await shot(b, 'm05_panel_capture_button');
   const claim = await b.evaluate((rid) => cosmos.multiplayer.request({ type: 'claim-ship', shipId: rid }), rid);
   assert.equal(claim.ok, true, claim.msg); results.claim = claim.msg;

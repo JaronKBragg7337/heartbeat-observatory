@@ -62,6 +62,7 @@ export class Autopilot {
       case 'return': this.steps = [{ k: 'goto', target: this.home, land: true, name: 'the pad' }]; break;
       case 'hunt': this.steps = [{ k: 'hunt' }]; break;
       case 'roam': this.steps = [{ k: 'roam' }]; break;
+      case 'follow': this.steps = [{ k: 'follow' }]; break;
       case 'supply':
         this.steps = [
           { k: 'goto', target: o.depot, land: true, name: 'the depot apron' },
@@ -123,9 +124,40 @@ export class Autopilot {
         break;
       case 'hunt': this._hunt(c, st, thr); break;
       case 'roam': this._roam(c, st, thr); break;
+      case 'follow': this._follow(c); break;
       default: break;
     }
     return c;
+  }
+
+  /**
+   * A formation slot on another ship's flight: 75 m behind its nose (−fwdH) and 28 m to starboard (+rightH).
+   * rightH is forward × up, the ship's own right. `speed` is that ship's horizontal speed, which the stick matches.
+   */
+  followSlot(tf) {
+    const behind = 75, side = 28;
+    return {
+      pos: {
+        x: tf.pos.x - tf.fwdH.x * behind + tf.rightH.x * side,
+        y: tf.pos.y - tf.fwdH.y * behind + tf.rightH.y * side,
+        z: tf.pos.z - tf.fwdH.z * behind + tf.rightH.z * side,
+      },
+      speed: tf.groundSpeed || 0,
+    };
+  }
+
+  /** Close until the slot is near, brake if we overshoot, otherwise match the target's speed. The caller sets `_slot` each frame. */
+  _follow(c) {
+    const slot = this._slot;
+    if (!slot) return;
+    const tw = this._toward(slot.pos), dist = tw.dist;
+    const sp = this.f.groundSpeed;
+    const align = clamp(1 - Math.abs(tw.err) / 0.9, 0, 1);
+    c.yaw = clamp(tw.err * 1.6, -1, 1);
+    if (dist > 40) c.fwd = clamp(0.4 + dist / 180, 0.4, 1) * Math.max(align, 0.35);
+    else if (dist < 18) c.fwd = sp > 1.5 ? -clamp(sp / 16, 0.15, 0.85) : 0;
+    else c.fwd = clamp((slot.speed - sp) / 14, -0.55, 0.75);
+    c.lift = this._liftTo(this._r(slot.pos));
   }
 
   _land(c) {

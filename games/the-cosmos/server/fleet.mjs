@@ -17,6 +17,7 @@ import { BOUNTY_CREDITS } from '../src/space/spaceSpec.js';
 import { RaiderBrain, newNpcRecord } from '../src/ships/raider/brain.js';
 import { EscortWing } from '../src/ships/raider/escorts.js';
 import { raiderCrew } from '../src/ships/raider/crew.js';
+import { raiderLook } from '../src/ships/raider/looks.js';
 import { FLEET_PLAN, RESPAWN_S, ABANDONED_CAP, DISABLE_BOUNTY_CREDITS, STATIONS, RAIDER_NAMES, LOOT_CREDITS, CLAIM_REACH_M, FIGHT } from '../src/ships/raider/stats.js';
 import { shipDef } from '../src/ships/registry.js';
 import { initialEconomy } from '../src/economy/economy.js';
@@ -67,6 +68,13 @@ export class FleetDirector {
     const def = shipDef(rec.type), seq = rec.npc.seq;
     sim.rand = mulberry(0xA5A5 + seq * 7919);
     sim.brain = new RaiderBrain({ flight: sim.flight, guns: sim.guns, record: rec, rand: sim.rand });
+    // A raider saved before looks existed still has the hall's personId and no look. Dress them on load,
+    // so a restart does not wait for the station to respawn. Names stay. The body follows the look.
+    if (Array.isArray(rec.crew)) for (const c of rec.crew) if (!c.look) {
+      const postIndex = def.crewPosts.findIndex((r) => r.id === c.role);
+      const look = raiderLook(seq, postIndex < 0 ? 0 : postIndex);
+      c.look = look; c.personId = look.personId;
+    }
     sim.wing = new EscortWing(rec.id, def.stats.escorts);
     sim.wing.load(rec.npc.escorts);
     sim.proxies = new Map();
