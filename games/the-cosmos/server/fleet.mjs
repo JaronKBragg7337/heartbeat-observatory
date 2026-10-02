@@ -88,7 +88,9 @@ export class FleetDirector {
     const def = shipDef('raider');
     const crew = state === 'abandoned' ? [] : raiderCrew(seq).map((c) => ({ ...c, seatPose: { ...def.seats.find((s) => s.id === def.crewPosts.find((r) => r.id === c.role).seat) } }));
     return {
-      id: `fleet-raider-${seq}`, owner: null, type: 'raider', pad: null, crewMayBoard: false, crew,
+      // The live ships table requires a non-null owner, and one owner id cannot be shared. An NPC hull's owner is its own id,
+      // which is never a player's id, so nobody owns it until it is captured or claimed.
+      id: `fleet-raider-${seq}`, owner: `npc:fleet-raider-${seq}`, type: 'raider', pad: null, crewMayBoard: false, crew,
       hold: {}, holdLots: [], jobs: { taken: [], samples: [], salvaged: false },
       economy: { ...initialEconomy(), marks: 0 }, frameId: S.frame, pose: null, trip: null,
       npc: newNpcRecord({ name, seq, station, state, phase: (seq * 2.399) % (Math.PI * 2), lootCredits: LOOT_CREDITS[seq % LOOT_CREDITS.length], spawnedAt: this.state.clock }),
