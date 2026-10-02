@@ -68,10 +68,16 @@
     const L = b.ledger;
     $("board").innerHTML = [[L.fills, "trades"], [usd(L.spent), "put in"], [`${L.wins}–${L.losses}`, "won–lost (settled)"], [usd(L.pnl), "made, settled"]]
       .map(([v, l]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
-    // Darios Twin trades under two tags (grok-bot/live-wire until 9/28, grok-bot/darios-twin after); DeepSeek under the proposer's
-    const who = (q) => {   // Darios Twin and the retired Live Wire share a tag; the handover time splits them
-      if (b.id === "deepseek") return q.like("actor", "auto:proposer-script%");
-      q = q.eq("actor", b.actor); if (b.since) q = q.gte("at", b.since); if (b.until) q = q.lt("at", b.until); return q;
+    // Each bot's money is its own actor tag from the snapshot. A prefix covers every tag under one bot (DeepSeek).
+    // Darios Twin and the retired Live Wire share grok-bot/live-wire; since/until splits them.
+    const who = (q) => {
+      if (b.actor_prefix) return q.like("actor", b.actor_prefix + "%");
+      const actor = b.actor || (b.money ? "auto:grok-bot/" + b.id : "");
+      if (!actor) return q;
+      q = q.eq("actor", actor);
+      if (b.since) q = q.gte("at", b.since);
+      if (b.until) q = q.lt("at", b.until);
+      return q;
     };
     const [{ data: res }, { data: fills }] = await Promise.all([
       who(supabase.from("desk_trades").select("at,pnl_usd").eq("kind", "resolution")).limit(2000),

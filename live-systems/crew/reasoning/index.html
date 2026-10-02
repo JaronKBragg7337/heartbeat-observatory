@@ -109,7 +109,7 @@
   </div>
 
 <script type="module">
-  import { nav as crewNav } from "../crew.js";
+  import { nav as crewNav, snapshot } from "../crew.js";
   crewNav("Reasoning");
   document.querySelectorAll("#crewnav a").forEach((a) => { a.style.cssText = "border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:.88rem;color:var(--ink);text-decoration:none" + (a.getAttribute("aria-current") ? ";background:var(--ink);color:var(--bg,#0a0f18)" : ""); });
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -119,10 +119,10 @@
   );
 
   /* ---------------------------------------------------------------------------
-     Who trades. One entry per trader. A second trader (the Kraken lane) is one
-     more entry here: how its rows are named in trade_proposals / desk_trades,
-     what venue it trades, and which watch folders it reads before deciding.
-     Any trader found in the data but not listed here still shows, by its name.
+     Who trades. Darios Twin and DeepSeek stay here because a shared tag and a
+     handover time have to stay put. Every other bot that trades comes from the
+     crew snapshot (a state/crew file or a grok-bot tag), so a new trader needs
+     no edit on this page. A row whose tag is not listed still shows, by its name.
      ------------------------------------------------------------------------- */
   const TRADERS = [
     {
@@ -271,11 +271,39 @@
     document.querySelectorAll("#trades [data-day]").forEach(b => b.onclick = () => { showTab("news"); showDay(b.dataset.day); window.scrollTo({ top: $("newsTitle").getBoundingClientRect().top + scrollY - 70 }); });
   }
 
+  function addSnapshotTraders(snap) {
+    const have = new Set(TRADERS.map((t) => t.id));
+    const actors = new Set(TRADERS.map((t) => t.actor).filter(Boolean));
+    for (const b of (snap && snap.data && snap.data.bots) || []) {
+      const actor = b.actor || "";
+      if (!b.id || have.has(b.id)) continue;
+      if (!b.money && !/^auto:grok-bot\//.test(actor)) continue;
+      if (actor && actors.has(actor)) continue;
+      const slug = (actor.match(/^auto:grok-bot\/([a-z0-9-]+)/) || [])[1] || b.id;
+      TRADERS.push({
+        id: b.id,
+        name: b.name,
+        also: b.also || "",
+        kind: b.ai || "Grok Bot",
+        venue: "Polymarket US",
+        proposedBy: new RegExp("^grok-bot/" + slug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?:$|\\b)"),
+        actor: actor || "auto:grok-bot/" + slug,
+        since: b.since,
+        until: b.until,
+        reads: ["market-feed", "brief"],
+        alsoReads: "the live score and the order book",
+      });
+      have.add(b.id);
+    }
+  }
+
   async function loadTrades() {
-    const [{ data: props, error }, { data: res }] = await Promise.all([
+    const [snap, { data: props, error }, { data: res }] = await Promise.all([
+      snapshot().catch(() => null),
       supabase.from("trade_proposals").select("*").or("proposed_by.like.grok-bot/%,proposed_by.like.proposer-script/%deepseek").order("proposed_at", { ascending: false }).limit(800),
       supabase.from("desk_trades").select("slug,actor,pnl_usd,cost_usd,at").eq("kind", "resolution").like("actor", "auto:%").limit(2000),
     ]);
+    addSnapshotTraders(snap);
     if (error) throw error;
     const { data: dsFills } = await supabase.from("desk_trades").select("slug").eq("kind", "fill").like("actor", "%deepseek%").limit(2000);
     const dsTraded = new Set((dsFills || []).map((f) => f.slug));

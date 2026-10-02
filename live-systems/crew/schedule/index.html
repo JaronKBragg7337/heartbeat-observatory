@@ -81,9 +81,24 @@
   day.insertAdjacentHTML("beforeend", `<span class="now" style="left:${((n.getHours() * 60 + n.getMinutes()) / 1440) * 100}%"></span>`);
   const fmt = (t) => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
   $("legend").innerHTML = DAILY.map(([t, c, who, what]) => `<div><i style="background:${c}"></i><b>${fmt(t)}</b><span><strong>${esc(who)}</strong>: ${esc(what)}</span></div>`).join("");
-  $("repeat").innerHTML = REPEAT.map(([when, who, what]) => `<div class="card"><span class="muted small">${esc(when)}</span><b>${esc(who)}</b><p class="small" style="margin-top:4px;line-height:1.5">${esc(what)}</p></div>`).join("");
 
   const snap = await snapshot();
+  const labels = [...REPEAT.map((r) => r[1]), ...DAILY.map((d) => d[2])];
+  const known = (name) => {
+    const n = String(name || "").toLowerCase();
+    return labels.some((l) => {
+      const a = l.toLowerCase();
+      return a.includes(n) || n.includes(a.split(" (")[0]);
+    });
+  };
+  if (snap) {
+    for (const b of snap.data.bots || []) {
+      if (!b.schedule || known(b.name)) continue;
+      REPEAT.push([b.schedule, /grok/i.test(b.ai || "") ? b.name + " (Grok)" : b.name, b.job || "On the crew."]);
+      labels.push(b.name);
+    }
+  }
+  $("repeat").innerHTML = REPEAT.map(([when, who, what]) => `<div class="card"><span class="muted small">${esc(when)}</span><b>${esc(who)}</b><p class="small" style="margin-top:4px;line-height:1.5">${esc(what)}</p></div>`).join("");
   if (snap) {
     $("updated").textContent = `Machine status updated ${ago(snap.updated_at)}`;
     $("health").textContent = (snap.data.health || "").replace(/^# /, "");
