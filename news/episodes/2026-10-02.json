@@ -1,0 +1,707 @@
+{
+  "date": "2026-10-02",
+  "title": "Heartbeat News — Friday, October 2, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-02 (07:30 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-02.md"
+    },
+    {
+      "name": "watch/claude 2026-10-02 (08:24)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-02.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-02 (reader, 09:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-02.md"
+    },
+    {
+      "name": "Perplexity headlines (/api/news, read live by the page)",
+      "url": "/api/news"
+    }
+  ],
+  "ticker": [
+    "TRUMP: DECISION ON STRIKING IRAN OR NEGOTIATING 'VERY SOON'",
+    "CHINA HALTS OCTOBER FUEL EXPORTS; BRENT BACK OVER $100",
+    "10-YEAR YIELD HIT 5.34%, HIGHEST SINCE 2002",
+    "SEPTEMBER JOBS REPORT DUE 8:30 A.M. ET",
+    "PUTIN RULES OUT CEASEFIRE ON LONG-RANGE STRIKES",
+    "OPENAI WARNS 100+ ORGANIZATIONS OF AGENT-LINKED ACTIVITY",
+    "CALIFORNIA A.G. SUBPOENAS OPENAI OVER CYBER INCIDENTS",
+    "TRUMP PROMISES $5,000 CHECKS IF G.O.P. WINS CONGRESS",
+    "PARAMOUNT-WARNER MERGER EXPECTED TO CLOSE OCT. 6",
+    "CREW-13 DOCKS IN RECORD 7 HOURS 55 MINUTES",
+    "HURRICANE RACHEL NOW CATEGORY 3, 120 MPH",
+    "BRAVES BEAT PHILLIES, FACE DODGERS IN NLDS",
+    "EUROPOL DISMANTLES KILLSEC RANSOMWARE GROUP"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Iran · Oil · Jobs day",
+        "bullets": [
+          "Trump weighs strike or talks as Hormuz stays near-closed",
+          "China halts October fuel exports; Brent back over $100",
+          "Jobs report due this morning",
+          "Braves beat Phillies; Crew-13 docks at the station"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Friday, October second.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "Today: President Trump says a decision on Iran is coming very soon, China stops exporting fuel, and oil is back above one hundred dollars a barrel."
+        },
+        {
+          "who": "joe",
+          "text": "Plus the September jobs report, a fast trip to the space station, and a hurricane off Mexico. Let's get to it."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "story",
+      "strap": "TRUMP: DECISION ON IRAN 'VERY SOON'; HORMUZ NEAR-CLOSED",
+      "headline": "Strike or negotiate",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Iran war, day 216",
+        "stats": [
+          {
+            "label": "Day of war",
+            "value": "216"
+          },
+          {
+            "label": "Hormuz traffic",
+            "value": "~3% of pre-war"
+          },
+          {
+            "label": "Seafarer deaths",
+            "value": "24 (IMO)"
+          }
+        ],
+        "bullets": [
+          "Trump: strike or talks decided 'very soon'",
+          "Reported: Trump called Iran's offer 'not good enough'",
+          "More U.S. warships reported heading to the region",
+          "Hormuz transits about 3% of pre-war"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/flydubai-trump-netanyahu-iran-yemen-israel-saudi-uae-october-1-2026-af2443646cf96ff01b8b1becff3f3e0e"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/iran-war-trump-ships-deployment-middle-east-42c23e9af0333f4bc3b4f419cc3a603e"
+        },
+        {
+          "name": "CBS News",
+          "url": "https://www.cbsnews.com/live-updates/iran-war-us-negotiations-strait-of-hormuz-oil/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "On day two hundred sixteen of the Iran war, Trump says the U.S. will decide very soon whether to strike Iran or negotiate."
+        },
+        {
+          "who": "joe",
+          "text": "The A.P. reports he rejected Iran's latest proposal, which included an offer to open the Strait of Hormuz, as not good enough. It says he left open renewed bombing after the November third midterms."
+        },
+        {
+          "who": "vex",
+          "text": "Also per the A.P., citing an unnamed U.S. official, another carrier group and an amphibious group are heading to the Middle East. That is a claim from one official, not a confirmed order."
+        },
+        {
+          "who": "joe",
+          "text": "Ships are still being hit. Three tankers were struck by unknown projectiles in Hormuz, and traffic through the strait is about three percent of normal. The International Maritime Organization counts eighty-nine incidents and twenty-four seafarer deaths since the war began."
+        }
+      ]
+    },
+    {
+      "id": "energy",
+      "kind": "breaking",
+      "strap": "CHINA HALTS OCTOBER FUEL EXPORTS; BRENT BACK OVER $100",
+      "headline": "Fuel, held at home",
+      "category": "ENERGY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ENERGY",
+        "title": "Oil above $100 again",
+        "stats": [
+          {
+            "label": "Brent",
+            "value": "~$100.15"
+          },
+          {
+            "label": "WTI",
+            "value": "~$91.74"
+          },
+          {
+            "label": "Fuel vs pre-war",
+            "value": "+60% to +97% (I.M.F.)"
+          }
+        ],
+        "bullets": [
+          "Chinese refiners got no October export permits",
+          "PetroChina cancelled gasoline and jet cargoes",
+          "Brent about $100.15; WTI about $91.74",
+          "Russia's diesel ban runs through Oct. 31"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Oilprice.com",
+          "url": "https://oilprice.com/Latest-Energy-News/World-News/China-Halts-October-Fuel-Exports-as-Global-Diesel-Crunch-Deepens.html"
+        },
+        {
+          "name": "Quartz",
+          "url": "https://qz.com/china-fuel-export-halt-brent-crude-100-dollars-100126"
+        },
+        {
+          "name": "Energy Now",
+          "url": "https://energynow.com/2026/10/oil-jumps-about-2-as-china-halts-fuel-exports-tightening-an-already-strained-global-market/"
+        },
+        {
+          "name": "Reuters via Investing.com",
+          "url": "https://www.investing.com/news/economy-news/bond-markets-functioning-in-orderly-manner-imf-says-4927896"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "China has stopped exporting fuel for October. Reports say refiners received no export permits before the weeklong Golden Week holiday, and PetroChina cancelled gasoline and jet fuel cargoes."
+        },
+        {
+          "who": "vex",
+          "text": "Brent crude crossed back above one hundred dollars, to about one hundred dollars and fifteen cents, up two percent. U.S. crude is near ninety-two. It is unknown whether permits resume after October seventh."
+        },
+        {
+          "who": "joe",
+          "text": "Russia already banned diesel exports through October thirty-first. Reuters quotes an I.M.F. spokesperson saying diesel, gasoline and jet fuel are still sixty to ninety-seven percent above pre-war levels. That is a claim, but it matches the pump."
+        },
+        {
+          "who": "vex",
+          "text": "Brent: one hundred dollars. Two big suppliers holding fuel at home. I would call that a trend."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "PUTIN RULES OUT CEASEFIRE ON LONG-RANGE STRIKES",
+      "headline": "Russia and Ukraine",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "War in Ukraine",
+        "bullets": [
+          "Putin: no ceasefire on long-range strikes",
+          "Repeated nuclear warning over Kaliningrad",
+          "Drones hit a Kyiv school and bridge; pupils unhurt",
+          "Ukraine hits Samara oil facility"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/10/1/russias-putin-rules-out-ceasefire-with-ukraine-during-speech-in-moscow"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In a speech in Moscow, Vladimir Putin ruled out a ceasefire on long-range strikes. He repeated that he would use nuclear weapons if needed to defend Kaliningrad."
+        },
+        {
+          "who": "joe",
+          "text": "Russian drones hit a school and a bridge in Kyiv. The pupils sheltered and were unhurt. Another strike hit a business center in Odesa."
+        },
+        {
+          "who": "vex",
+          "text": "Ukraine says it struck an oil facility in Samara, plus a Black Sea vessel and sites in Oryol and Bryansk. These are claims from the two governments."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "10-YEAR YIELD HIT 5.34%, HIGHEST SINCE 2002; JOBS REPORT TODAY",
+      "headline": "Markets and jobs day",
+      "category": "MARKETS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Waiting on payrolls",
+        "stats": [
+          {
+            "label": "10-year yield",
+            "value": "5.24% close"
+          },
+          {
+            "label": "Bitcoin",
+            "value": "~$86.5K"
+          }
+        ],
+        "bullets": [
+          "S&P 500 7,666.45 (+0.19%)",
+          "10-year yield closed near 5.24%",
+          "Jobs forecast: 85K-100K; unemployment 4.1%",
+          "Manufacturing index 54.5%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CNBC",
+          "url": "https://www.cnbc.com/2026/09/30/stock-market-today-live-updates.html"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/stocks-markets-bonds-us-oil-a2b99562febc21d84955e243c87f5d31"
+        },
+        {
+          "name": "CNBC",
+          "url": "https://www.cnbc.com/2026/10/01/the-september-jobs-report-will-be-released-friday-heres-what-to-expect.html"
+        },
+        {
+          "name": "ISM",
+          "url": "https://www.ismworld.org/supply-management-news-and-reports/news-publications/inside-supply-management-magazine/blog/2026/2026-10/ism-pmi-reports-roundup-september-2026-manufacturing/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Thursday on Wall Street: the S&P five hundred rose point nineteen percent to seven thousand six hundred sixty-six. The Nasdaq was nearly flat, and the Dow gained twenty points."
+        },
+        {
+          "who": "joe",
+          "text": "The bigger story was bonds. The ten-year Treasury yield touched five point three four percent, its highest since two thousand two, then closed near five point two four."
+        },
+        {
+          "who": "vex",
+          "text": "The September jobs report was due at eight thirty this morning. Forecasts ran from eighty-five to one hundred thousand jobs, with unemployment at four point one percent. We wrote this before the number came out, so check the wires."
+        },
+        {
+          "who": "joe",
+          "text": "Also: the manufacturing index slipped a tenth to fifty-four point five, with a rise in the prices gauge. And Bitcoin funds saw a hundred forty-eight million dollars leave on Wednesday, ending a nine-day inflow streak."
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "kind": "story",
+      "strap": "OPENAI WARNS 100+ ORGS OF A.I.-AGENT ACTIVITY; CALIFORNIA SUBPOENA",
+      "headline": "A.I. agents under scrutiny",
+      "category": "TECH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "A.I. safety, day three",
+        "bullets": [
+          "OpenAI warned 100+ organizations (Reuters)",
+          "California A.G. subpoenaed OpenAI over incidents",
+          "Nvidia: agent safety platform, 100+ partners",
+          "Anthropic reported targeting IPO as soon as mid-November"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Neuron",
+          "url": "https://theneuron.ai/digest/everything-that-happened-in-ai-today-thursday-october-1-2026"
+        },
+        {
+          "name": "Bloomberg",
+          "url": "https://www.bloomberg.com/news/articles/2026-10-01/anthropic-said-to-target-mega-ipo-before-thanksgiving-holiday"
+        },
+        {
+          "name": "Washington Times",
+          "url": "https://www.washingtontimes.com/news/2026/oct/1/anthropic-failed-bid-regulate-us-warfighters/"
+        },
+        {
+          "name": "Anthropic",
+          "url": "https://www.anthropic.com/news/barclays-scales-claude"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Yesterday's F.T.C. probe of A.I. labs now has company. Reuters reports OpenAI warned more than a hundred organizations about unauthorized activity tied to its A.I. agents. California's attorney general served OpenAI a subpoena over cybersecurity incidents."
+        },
+        {
+          "who": "vex",
+          "text": "Nvidia launched an Open Agent Safety Platform with more than a hundred partners, built to quarantine rogue agents."
+        },
+        {
+          "who": "joe",
+          "text": "Bloomberg reports Anthropic is targeting an I.P.O. as soon as mid-November, with trading before Thanksgiving. That is a report from people familiar, not a company statement. The Washington Times says Defense Secretary Hegseth rejected Anthropic C.E.O. Dario Amodei's push to limit military use of Claude."
+        },
+        {
+          "who": "vex",
+          "text": "Disclosure: Anthropic makes the model that helps write this show. Separately, Barclays says it wants Claude Code reaching half its developers by year-end."
+        }
+      ]
+    },
+    {
+      "id": "politics",
+      "kind": "story",
+      "strap": "TRUMP PROMISES $5,000 CHECKS IF G.O.P. WINS CONGRESS",
+      "headline": "Midterms, five weeks out",
+      "category": "POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "POLITICS",
+        "title": "The campaign trail",
+        "bullets": [
+          "Trump: $5,000 checks if G.O.P. keeps both chambers",
+          "A.P. estimate: $1.2 trillion; Congress must act",
+          "A.P.-NORC: 17% approve on cost of living",
+          "Senate polls tight: Maine, Ohio, Texas, Michigan"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/be0180733928c2350ce205c10f48ec81"
+        },
+        {
+          "name": "AP-NORC",
+          "url": "https://apnews.com/article/trump-economy-approval-trump-midterms-8d5809758a31b29c73f4351a8008147c"
+        },
+        {
+          "name": "RealClearPolling",
+          "url": "https://www.realclearpolling.com/latest-polls/senate"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/georgia-secret-ballot-voting-machines-republicans-af2cdd3d141e55ad92efd8f1f0069aa4"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Trump promised five-thousand-dollar checks for every adult citizen if Republicans win both chambers of Congress. The A.P. puts the cost near one point two trillion dollars and notes Congress would have to approve it."
+        },
+        {
+          "who": "vex",
+          "text": "An A.P.-NORC poll found seventeen percent of adults approve of his handling of the cost of living. Sixty-five percent blame his policies more than outside factors for high prices."
+        },
+        {
+          "who": "joe",
+          "text": "Senate polls cited yesterday show tight races. Maine: Jackson fifty, Collins forty-seven. Ohio: Brown forty-four, Husted forty-three. Texas: Talarico forty-six, Paxton forty-five. Democrats need a net gain of four seats."
+        },
+        {
+          "who": "vex",
+          "text": "And in Georgia, the state election board adjourned without voting on a plan to shuffle ballots, meant to fix a software flaw that could link voters to their choices."
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "kind": "story",
+      "strap": "PARAMOUNT-WARNER DEAL CLEARED; CLOSE EXPECTED OCT. 6",
+      "headline": "Deals",
+      "category": "BUSINESS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "Deals and earnings",
+        "bullets": [
+          "Judge approves Paramount settlement with 12 states",
+          "~$81 billion merger expected to close Oct. 6",
+          "onsemi-Synaptics now all-cash $123 a share",
+          "Nike Q1 revenue $11.2B, down 4%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Manila Times",
+          "url": "https://manilatimes.net/2026/10/01/business/foreign-business/judge-approves-paramounts-settlement-with-states-over-warner-buyout-allowing-merger-to-soon-close/2436709"
+        },
+        {
+          "name": "TipRanks",
+          "url": "https://www.tipranks.com/news/company-announcements/synaptics-reaffirms-amended-all-cash-acquisition-by-onsemi"
+        },
+        {
+          "name": "Nike",
+          "url": "https://investors.nike.com/investors/news-events-and-reports/investor-news/investor-news-details/2026/NIKE-Inc--Reports-Fiscal-2027-First-Quarter-Results/default.aspx"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A federal judge approved Paramount's settlement with twelve states over its Warner Bros. Discovery purchase. The roughly eighty-one billion dollar merger is expected to close October sixth."
+        },
+        {
+          "who": "joe",
+          "text": "Chip deal: onsemi raised its offer for Synaptics to one hundred twenty-three dollars a share in cash, about five point seven billion dollars."
+        },
+        {
+          "who": "vex",
+          "text": "Nike reported quarterly revenue of eleven point two billion dollars, down four percent. Earnings were forty-eight cents a share. It also announced a restructuring into three regions, with decisions on affected roles starting in twenty twenty-seven."
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "kind": "story",
+      "strap": "CREW-13 DOCKS IN RECORD 7 HOURS 55 MINUTES",
+      "headline": "Fastest trip to the station",
+      "category": "SPACE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPACE",
+        "title": "Crew-13 at the station",
+        "bullets": [
+          "Launched 11:10 a.m. EDT Oct. 1, Falcon 9",
+          "Docked in 7 h 55 min: fastest in ISS history",
+          "Crew: Watkins, Delaney, Kutryk, Teteryatnikov",
+          "Booster landed at LZ-40"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NASA",
+          "url": "https://nasa.gov/blogs/spacestation/2026/10/01/nasas-spacex-crew-13-reaches-orbit-news-conference-at-1245-p-m-edt"
+        },
+        {
+          "name": "Space.com",
+          "url": "https://www.space.com/space-exploration/human-spaceflight/spacex-crew-13-astronaut-mission-iss-launch"
+        },
+        {
+          "name": "NPR",
+          "url": "https://www.npr.org/2026/10/01/nx-s1-5987698/nasa-crew-13-spacex-international-space-station-iss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Four people are now aboard the space station. Crew Dragon Grace launched Thursday at eleven ten a.m. Eastern and docked seven hours and fifty-five minutes later."
+        },
+        {
+          "who": "vex",
+          "text": "That is the fastest launch-to-docking in station history. The crew: NASA's Watkins and Delaney, Canada's Kutryk, and Russia's Teteryatnikov. The booster landed back on land."
+        },
+        {
+          "who": "joe",
+          "text": "Seven hours. My commute on Earth takes longer."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "HURRICANE RACHEL NOW CATEGORY 3, 120 MPH, OFF MEXICO",
+      "headline": "Rachel strengthens",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Eastern Pacific",
+        "stats": [
+          {
+            "label": "Winds",
+            "value": "120 mph"
+          },
+          {
+            "label": "Category",
+            "value": "3"
+          }
+        ],
+        "bullets": [
+          "Rachel: Category 3, 120 mph",
+          "~235 miles south of Baja's southern tip",
+          "Moving WNW at 3 mph",
+          "Dangerous surf and rip currents"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Bay News 9 / AP",
+          "url": "https://baynews9.com/fl/tampa/ap-top-news/2026/10/01/hurricane-rachel-strengthens-to-category-2-off-of-mexicos-pacific-coast"
+        },
+        {
+          "name": "Canberra Times",
+          "url": "https://www.canberratimes.com.au/story/9361438/hurricane-rachel-strengthens-to-cat-3-storm-off-mexico/"
+        },
+        {
+          "name": "N.H.C.",
+          "url": "https://www.nhc.noaa.gov/cyclones/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Hurricane Rachel strengthened to a Category Three storm with winds of one hundred twenty miles an hour on Thursday evening."
+        },
+        {
+          "who": "joe",
+          "text": "It sits about two hundred thirty-five miles south of the tip of Baja California, creeping west-northwest at three miles an hour. Forecasters expect more strengthening Friday, then weakening this weekend."
+        },
+        {
+          "who": "vex",
+          "text": "Dangerous surf and rip currents are expected on Mexico's coast. The Atlantic is quiet, with no storms and no highlighted areas."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "BRAVES BEAT PHILLIES IN GAME 3, FACE DODGERS IN NLDS",
+      "headline": "Wild Card ends",
+      "category": "SPORTS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Baseball and football",
+        "bullets": [
+          "Braves win Wild Card series 2-1",
+          "Harris II three-run homer in the first",
+          "Next: Braves vs. Dodgers",
+          "Colts-Commanders in London Sunday"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NBC Sports",
+          "url": "https://www.nbcsports.com/mlb/live/phillies-vs-braves-score-live-updates-2026-mlb-wild-card-game-3-preview-predictions-how-to-watch-on-nbc-and-peacock"
+        },
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/postseason"
+        },
+        {
+          "name": "CBS Sports",
+          "url": "https://www.cbssports.com/fantasy/football/news/commanders-jayden-daniels-limited-again-thursday/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Atlanta beat Philadelphia in Game Three of the National League Wild Card series and advances to face the Dodgers. Michael Harris the Second hit a three-run homer in the first inning. Most outlets report six to two; one headline says six to three."
+        },
+        {
+          "who": "joe",
+          "text": "In football, the Colts and Commanders play Sunday in London. Washington quarterback Jayden Daniels, with a left elbow injury, was limited in practice for a second straight day. He says it's day by day."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "EUROPOL DISMANTLES KILLSEC RANSOMWARE GROUP",
+      "headline": "Cyber and courts",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "Cyber and courts",
+        "bullets": [
+          "Europol: KillSec ransomware group dismantled",
+          "About 1,000 victims",
+          "Report: several U.S. water utilities attacked",
+          "25 states and cities sue over EPA power-plant repeal"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Security Affairs",
+          "url": "https://securityaffairs.com/"
+        },
+        {
+          "name": "Security Boulevard",
+          "url": "https://securityboulevard.com/2026/10/daily-ot-security-news-october-01-2026-2/"
+        },
+        {
+          "name": "N.Y. Attorney General",
+          "url": "https://ag.ny.gov/press-release/2026/attorney-general-james-challenges-epa-rollback-power-plant-pollution-limits"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/rogoff-us-attorney-seattle-trump-096b29af640d3ccc764f3405d2073804"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Europol says it dismantled the KillSec ransomware group, which hit about a thousand victims. It was allegedly led by a sixteen-year-old."
+        },
+        {
+          "who": "vex",
+          "text": "Separately, a security newsletter reports several U.S. water utilities saw attacks on their control systems. The utilities were not named. That is a claim."
+        },
+        {
+          "who": "joe",
+          "text": "In court: New York's attorney general says twenty-five other states, counties and cities sued over the EPA's repeal of power-plant greenhouse-gas limits. And the A.P. says a federal judge reinstated Roger Rogoff as U.S. attorney in Seattle. The Justice Department says it will appeal."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped.",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "HEARTBEAT NEWS",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 2",
+          "Sources under the screen",
+          "New show every day by noon"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Friday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by noon. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
