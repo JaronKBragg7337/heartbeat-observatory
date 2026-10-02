@@ -14,11 +14,14 @@ export const REGOLITH_PERIOD = 360;
 export function mod360(v) { return ((v % REGOLITH_PERIOD) + REGOLITH_PERIOD) % REGOLITH_PERIOD; }
 
 export function installRegolith(material, THREE, opts = {}) {
+  const phobos = opts.kind === 'phobos';
+  const across = opts.across || { x: 0, y: 1, z: 0 };
   const uniforms = {
     uRegOffset: { value: new THREE.Vector3() },
     uRegBump: { value: opts.bump ?? 0.9 },
     uRegPebble: { value: opts.pebble ?? 1.0 },     // how dark the scattered pebbles are (a dark moon wants fewer black flecks)
   };
+  if (phobos) uniforms.uGrooveAcross = { value: new THREE.Vector3(across.x, across.y, across.z) };
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
@@ -30,6 +33,7 @@ export function installRegolith(material, THREE, opts = {}) {
       .replace('#include <common>', `#include <common>
 uniform float uRegBump;
 uniform float uRegPebble;
+${phobos ? 'uniform vec3 uGrooveAcross;' : ''}
 varying vec3 vRegPos;
 float regH(vec3 i, float P) { i = mod(i, P); return fract(sin(dot(i, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 float regN(vec3 p, float P) {   // value noise, periodic every P cells
@@ -60,11 +64,19 @@ vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) 
   float pebble; float h = regField(vRegPos, near, pebble); regHeight = h;
   float shade = 0.8 + 0.3 * (h - 0.5) - 0.28 * pebble;       // dust lighter, grit and pebbles darker
   diffuseColor.rgb *= clamp(shade, 0.5, 1.15);
+  ${phobos ? `// Phobos: pull the rust out, then streak ACROSS the grooves (they run with the long axis, so the lines follow them). Mean of the multiplier is 1, so the 1.22 colour lift still matches the shell.
+  float luma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luma), 0.38);
+  float across = dot(vRegPos, uGrooveAcross);
+  float lane = sin(across * 0.08);
+  float streak = sin(across * 9.0 + regN(vRegPos * 0.7, 252.0) * 6.2831853);
+  float dustg = regN(vRegPos * 1.6, 576.0);
+  diffuseColor.rgb *= clamp(1.0 + 0.09 * lane + 0.06 * streak + 0.04 * (dustg - 0.5), 0.82, 1.18);` : ''}
 }`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 normal = regPerturb(-vViewPosition, normal, vec2(dFdx(regHeight), dFdy(regHeight)) * uRegBump, faceDirection);`);
   };
-  material.customProgramCacheKey = () => (opts.world ? 'regolith-v2-world' : 'regolith-v2');
+  material.customProgramCacheKey = () => (phobos ? 'regolith-v3-phobos' : (opts.world ? 'regolith-v2-world' : 'regolith-v2'));
   material.needsUpdate = true;
   return uniforms;
 }

@@ -511,7 +511,7 @@ now 288 x 144 (phone 192 x 96) so the limb from orbit is not faceted. The ship's
    marked as such in the material record: water-bearing clay is a hypothesis for Phobos, not an established fact). Walk within 38 m of the
    ship and tap **Stow**: the hopper's lots move into the hold as matter (the ground's books still balance) and the cargo hook is told the kilograms by material.
 3. **A distress call.** Landing on Phobos, Comms reports a beacon about 800 m south-west of the pad: a drifting cargo module
-   (a battered box with a blinking lamp). Walk up and **Salvage**: 1.8 t of alloy plate comes aboard and a 150 credit claim is paid, once.
+   (plated, dogged door, broken hazard stripe, scorch, a blinking lamp). Walk up and **Salvage**: 1.8 t of alloy plate comes aboard and a 150 credit claim is paid, once.
 4. **Raiders.** 25 credits each outside neutral space (above), in orbit and over the moons.
 
 ### The hooks for money (the economy / port builder wires these)
@@ -532,13 +532,14 @@ Pass your own in the `SpaceSystem` options (`hooks: {...}` in `main.js`), or ass
 
 ```
 src/space/spaceSpec.js    the numbers: drive, moons (NSSDC / NASA), destinations, the Sun, bounty (pure)
-src/space/moonField.js    a moon as a field.js body: ellipsoid, craters, grooves, strata, the pad, sample sites (pure)
+src/space/moonField.js    a moon as a field.js body: ellipsoid, craters, grooves, strata, the pad, loose rock on Phobos, sample sites (pure)
 src/space/transit.js      the drive: flip and burn, braking envelope, legs round Mars (pure)
 src/space/spaceTrip.js    one journey: lift, ascent, transit, settle, descent; what the ship says
 src/space/spaceSystem.js  frames and the switch, destinations, hooks, the per-frame sky/moon update
 src/space/moonWorld.js    a moon's shell, tiers, dug-ground meshes, ground samplers
 src/space/spaceSky.js     the sky, stars, Sun, Mars's limb
 src/space/jobs.js         samples, stow, salvage, bounty, the markers on Phobos
+src/space/hardware.js     the survey beacons and the drifting cargo module (panels, latches, damage, decals, lights)
 src/space/spaceUI.js      the nav computer's sheet (Course / Jobs)
 test/space-checks.mjs     sections 12-17 of the validator; test/_space-only.mjs runs just those (7 s)
 ```
@@ -568,11 +569,13 @@ paid once; samples as real lots; stowing; the survey payout once; the salvage on
 * **No orbital mechanics.** The ship hovers at any height under its own thrust (the flight assist always did); transit is a commanded
   flip and burn, not a Kepler orbit. The moons do not move. Mars does not rotate.
 * **Mars's pull is ignored in transit; the drive's thrust is the Meridian's own number** (fictional). Distances, sizes, masses and gravity are real.
-* **Cosmetic:** a faint dotted outline can show where the 8 km tier meets the whole-moon shell when you look down from a few km; there
-  are no boulders; no shadows from craters onto craters (the sun's shadow map covers 120 m round the camera).
+* **Cosmetic:** a faint dotted outline can show where the 8 km tier meets the whole-moon shell when you look down from a few km. Phobos
+  carries loose rock in the density field off the pad (mounds, boulders, stones), and crater floors are darkened in the vertex colour
+  where a rim blocks the sun. The sun's shadow map still only covers about 120 m round the camera, so a rim beyond that does not cast a
+  live shadow. Deimos is still the smooth one.
 * **No persistence and no server:** a refresh puts you back at the port, the moons forget the holes (as Mars does).
 * The jobs' prices are mine and small; the economy owns the real ones. No second planet and no jump drive: Fortis, Greenhaven and Ironclad are listed and refused.
-* The cargo module of the distress call is a plain box with a stripe (a placeholder prop); the sample beacons are poles with a lamp.
+* The cargo module of the distress call is a plated pod (seams, a dogged door, a broken stripe, scorch, skids, a blinking lamp). The sample beacons are staked instruments: a mast, a coring head, a latch, a lamp.
 * Ground view of Phobos at the pad is lit by one Sun at about 30 degrees: shadows are long; the Mars-lit side has only a faint ambient (no real Marsshine).
 
 ## The fleet (2026-10-01)

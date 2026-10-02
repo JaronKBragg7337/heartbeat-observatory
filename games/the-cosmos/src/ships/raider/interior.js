@@ -46,6 +46,9 @@ export function dressRaiderRoom(k, layout, r, rnd, out, low) {
     for (let z = r.z0 + 0.6; z < r.z1 - 0.3; z += 1.6) for (const sx of [-1, 1]) k.bevelBox('steelDark', sx * (r.x1 - 0.08), (yF + yC) / 2, z, 0.13, r.h, 0.15, 0.02);
     for (const x of [-1.8, 1.8]) k.box(HAZ, x, yF + 0.012, 13.0, 0.09, 0.003, 5.8);
     for (let z = 10.4; z < 15.8; z += 1.5) for (const sx of [-1, 1]) k.cyl('steel', sx * 2.5, yF + 0.02, z, 0.055, 0.02, 10);
+    // a scorched plate and a red patch bolted over the port wall. Thin: the room's collision is the layout, not these meshes.
+    k.box('steelDark', r.x0 + 0.02, yF + 1.55, 12.2, 0.018, 0.85, 0.62);
+    k.box('red', r.x0 + 0.032, yF + 1.5, 13.15, 0.01, 0.38, 0.26);
     // the stern door: a frame round the ramp opening, with hazard chevrons along its head
     const w = 3.2, h = 3.0;
     k.bevelBox('steelDark', -w / 2 - 0.1, h / 2, r.z1 - 0.06, 0.2, h + 0.2, 0.3, 0.02);
@@ -69,6 +72,7 @@ export function dressRaiderRoom(k, layout, r, rnd, out, low) {
     const x = r.id === 'crew_a' ? r.x0 + 0.014 : r.x1 - 0.014, n = r.id === 'crew_a' ? 1 : -1;
     k.box('red', x, yF + 2.2, (r.z0 + r.z1) / 2, 0.006, 0.34, 0.9);
     k.box('hazard', x + n * 0.003, yF + 2.2, (r.z0 + r.z1) / 2 + 0.2, 0.004, 0.2, 0.12);
+    k.box('steelDark', x + n * 0.004, yF + 1.35, (r.z0 + r.z1) / 2 - 0.55, 0.012, 0.7, 0.42);
   }
 }
 

@@ -149,12 +149,12 @@ export const MATERIALS = {
   // --- list, so the older materials must keep their numbers.
   phobosRegolith: {
     id: 'MAT-PHOBOS-REGOLITH', name: 'Phobos regolith',
-    densityKgM3: 1150, strength: 0.10, color: 0x5a4d45, roughness: 0.97,
+    densityKgM3: 1150, strength: 0.10, color: 0x464b4e, roughness: 0.97,
     note: 'Fine, dark, fluffy dust and gravel; one of the least reflective surfaces in the solar system. Loose; a blanket tens of metres thick.',
   },
   phobosRubble: {
     id: 'MAT-PHOBOS-RUBBLE', name: 'Phobos rubble',
-    densityKgM3: 1860, strength: 0.35, color: 0x433a35, roughness: 0.93,
+    densityKgM3: 1860, strength: 0.35, color: 0x34383b, roughness: 0.93,
     note: 'Fractured, porous carbonaceous-looking rock below the regolith. Bulk density of the whole moon is about 1.86 t/m3.',
   },
   deimosRegolith: {

@@ -12,7 +12,7 @@
 
 import * as THREE from 'three';
 import { Kit } from '../../ship/shipKit.js';
-import { mulberry } from '../../ship/shipTextures.js';
+import { mulberry, Layers, enableDepthLift } from '../../ship/shipTextures.js';
 import { HULL, HULL_STATIONS, GEAR, GUNS, RAMPS, RAIDER_CLASS, SEATS, LAYOUT } from './spec.js';
 
 export { HULL_STATIONS };
@@ -63,15 +63,19 @@ function buildHullMesh(mats, opts) {
     const ny = nrm.getY(i);
     let m = tints[i];
     m *= 0.94 + 0.08 * (0.5 + 0.5 * Math.sin(x * 0.7 + z * 0.31) * Math.cos(y * 0.9 - z * 0.17));
-    let r = m, g = m, b = m;
-    const dust = Math.max(0, ny) * 0.16;
-    r = r * (1 - dust) + 0.93 * dust; g = g * (1 - dust) + 0.78 * dust; b = b * (1 - dust) + 0.62 * dust;
-    if (ny < -0.2) { const k = Math.min(1, -ny) * 0.45; r *= 1 - k; g *= 1 - k; b *= 1 - k; }
-    // the raiders paint scheme: charcoal plate, a red band behind the canopy and a red stripe near the stern
-    const band = (z > -8.9 && z < -7.6) || (z > 12.2 && z < 12.9);
-    if (band) { r *= 1.1; g *= 0.3; b *= 0.2; }
-    else { r *= 0.4; g *= 0.42; b *= 0.47; }
-    if (z < -14.8) { r *= 0.6; g *= 0.62; b *= 0.66; }
+    // Scorched charcoal, red primer where a plate was replaced, black where the engines cooked the skin.
+    // Bands stay: one behind the canopy, one across the stern. Numbers are the vertex colours the looks check measures.
+    const panel = Math.floor((z + 20) / 2.2) * 11 + Math.floor(x * 1.3 + (y > 1.2 ? 5 : 0));
+    const h = faceHash(panel, 0), h2 = faceHash(panel + 19, 9);
+    const band = (z > -9.4 && z < -7.2) || (z > 11.6 && z < 13.6);
+    const scorch = z > 13.15 || h2 < 0.08 || (ny < -0.35 && z > 9);
+    let r, g, b;
+    if (scorch) { r = 0.05; g = 0.045; b = 0.04; }
+    else if (band || h > 0.8) { r = 0.86; g = 0.15; b = 0.1; }
+    else {
+      const tone = (0.28 + 0.1 * h) * (0.94 + 0.08 * (m - 0.95));
+      r = tone * 0.94; g = tone * 0.98; b = tone;
+    }
     col.push(r, g, b);
   }
   geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
@@ -99,7 +103,7 @@ function buildHullMesh(mats, opts) {
     if (facing < 0) { const nn = g.attributes.normal; for (let i = 0; i < nn.count; i++) nn.setZ(i, -1); }
     const u = g.attributes.uv;
     for (let i = 0; i < u.count; i++) u.setXY(i, u.getX(i) / 8, u.getY(i) / 8);
-    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 3).fill(0.55), 3));
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 3).fill(0.32), 3));
     const m = new THREE.Mesh(g, mats.hull);
     m.castShadow = true; m.receiveShadow = true;
     return m;
@@ -112,7 +116,95 @@ function buildHullMesh(mats, opts) {
 
 // ---------------------------------------------------------------------------
 
-export function buildRaiderExterior(layout, mats, opts = {}) {
+/** Dark armour tile for the Shrike. The Meridian's paintHull stays pale; this one is only assigned to a cloned hull material. */
+function paintRaiderHull(pxPerM, seed) {
+  const L = new Layers(8, 8, pxPerM, seed);
+  const rnd = L.rnd;
+  L.fill({ c: '#3c4146', h: 78, r: 0.72, m: 0.48 });
+  const tones = ['#454b50', '#3a342f', '#2e3236', '#514840', '#3d2c2a', '#34383c', '#5a4038', '#26282b', '#4a4e52'];
+  const rowH = 1.0;
+  for (let j = 0; j < 8; j++) {
+    const off = (j % 2) * 1.0;
+    for (let i = -1; i < 5; i++) {
+      const x = i * 2.0 + off, y = j * rowH;
+      const roll = rnd();
+      const tone = roll < 0.14 ? '#7a2a22' : roll < 0.22 ? '#1a1816' : roll < 0.34 ? '#6e726e' : tones[Math.floor(rnd() * tones.length)];
+      L.rect(x + 0.012, y + 0.012, 1.976, rowH - 0.024, { c: tone, h: 60 + rnd() * 40, r: 0.55 + rnd() * 0.3, m: 0.35 + rnd() * 0.4 });
+      L.rect(x, y, 2.0, 0.014, { c: '#121416', h: 30, r: 0.85, m: 0.2 });
+      L.rect(x, y, 0.014, rowH, { c: '#121416', h: 30, r: 0.85, m: 0.2 });
+      if (rnd() < 0.35) {
+        const cx = x + rnd() * 1.6, cy = y + rnd() * 0.7;
+        L.rect(cx, cy, 0.08 + rnd() * 0.35, 0.04, { c: '#141210', h: 24, r: 0.9, m: 0.15, a: 0.85 });
+      }
+    }
+  }
+  L.streaks(28, 0.03, 0.4, 2.2, { c: '#100e0c', a: 0.45, r: 0.9 });
+  L.streaks(12, 0.02, 0.3, 1.2, { c: '#8a2e24', a: 0.35, r: 0.7 });
+  L.speckle(900, 0.006, 0.02, { c: '#1a1816', a: 0.4, jitter: 1 });
+  return L.finish(2.4);
+}
+
+/**
+ * A real 2D canvas. The validator installs a stand-in `document` for the hiring board, and that stand-in's
+ * getContext answers every call with undefined. `typeof document` is then true, and painting would throw.
+ * The Meridian's painter decided this once, at import, before that stand-in exists. Match the outcome here.
+ */
+function canvasPaints() {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return false;
+  try {
+    const c = document.createElement('canvas');
+    const g = c && c.getContext && c.getContext('2d');
+    if (!g || typeof g.getImageData !== 'function') return false;
+    const img = g.getImageData(0, 0, 1, 1);
+    return !!(img && img.data && img.data.length);
+  } catch {
+    return false;
+  }
+}
+
+/** Clone every material. The caller's set is what the Meridian is built with next; nothing here may write into it. */
+function raiderFinish(matsIn, opts) {
+  const mats = {};
+  for (const k of Object.keys(matsIn)) {
+    if (k === '_textures') { mats[k] = matsIn[k]; continue; }
+    mats[k] = matsIn[k] && matsIn[k].clone ? matsIn[k].clone() : matsIn[k];
+  }
+  const hull = mats.hull;
+  if (hull) {
+    if (canvasPaints()) {
+      const tex = paintRaiderHull(opts.tier === 'low' ? 40 : 72, 91);
+      hull.map = tex.albedo; hull.normalMap = tex.normal;
+      hull.roughnessMap = tex.orm; hull.metalnessMap = tex.orm;
+      hull.normalScale = new THREE.Vector2(1.15, 1.15);
+      hull.color.setHex(0xffffff); hull.roughness = 1; hull.metalness = 1;
+    } else {
+      hull.map = null; hull.normalMap = null; hull.roughnessMap = null; hull.metalnessMap = null;
+      hull.color.setHex(0x5c6166); hull.roughness = 0.72; hull.metalness = 0.42;
+    }
+    hull.needsUpdate = true;
+  }
+  if (mats.hullAccent) mats.hullAccent.color.setHex(0x8e1e18);
+  if (mats.hullStripe) mats.hullStripe.color.setHex(0x141414);
+  if (mats.engineGlow) mats.engineGlow.color.setHex(0xff6a3a);
+  for (const k of Object.keys(mats)) enableDepthLift(mats[k]);
+  return mats;
+}
+
+/** Dusk walls, dark decks, blood-red hazard tape. Called on the interior material set only. */
+export function applyRaiderInteriorPalette(mats) {
+  if (!mats) return mats;
+  for (const k of Object.keys(mats)) {
+    if (!mats[k] || !mats[k].color) continue;
+    if (k.startsWith('wall:')) mats[k].color.setHex(0x6a5348);
+    else if (k.startsWith('floor:')) mats[k].color.setHex(0x4a403c);
+  }
+  if (mats.ceil && mats.ceil.color) mats.ceil.color.setHex(0x3e3a38);
+  if (mats.hazard && mats.hazard.color) mats.hazard.color.setHex(0x8e1e18);
+  return mats;
+}
+
+export function buildRaiderExterior(layout, matsIn, opts = {}) {
+  const mats = raiderFinish(matsIn, opts);
   const low = opts.tier === 'low';
   const root = new THREE.Group(); root.name = 'ship-exterior';
   const ext = { root, legs: [], ramps: {}, guns: {}, engines: [], liftPods: [], nav: [], triangles: 0, decals: null, type: 'raider' };
@@ -173,10 +265,10 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
       const hw = hullHalfWidth(z);
       for (const s of mirror) {
         k.bevelBox('gunmetal', s * (hw + 0.1), 1.8, z, 0.05, 0.3, 0.45, 0.03);
-        k.box('glowAmber', s * (hw + 0.13), 1.8, z, 0.008, 0.2, 0.34);
+        k.box('glowRed', s * (hw + 0.13), 1.8, z, 0.008, 0.2, 0.34);
       }
     }
-    for (const s of mirror) for (let z = -3.4; z < 8.0; z += 2.2) k.box('hazard', s * (hullHalfWidth(z) + 0.06), 0.05, z, 0.02, 0.1, 0.8);
+    for (const s of mirror) for (let z = -3.4; z < 8.0; z += 2.2) k.box('red', s * (hullHalfWidth(z) + 0.06), 0.05, z, 0.02, 0.1, 0.8);
   }
 
   // ============== swept wings with engine pods at the tips ============================================
@@ -205,7 +297,7 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
   for (const l of GEAR.legs) {
     k.bevelBox('hullDark', l.x, -0.7, l.z, 1.5, 0.8, 2.4, 0.15);
     k.bevelBox('metal', l.x, -1.12, l.z, 1.1, 0.1, 1.9, 0.04);
-    for (let i = -1; i <= 1; i += 2) k.box('hazard', l.x, -0.42, l.z + i * 0.95, 1.2, 0.05, 0.14);
+    for (let i = -1; i <= 1; i += 2) k.box('red', l.x, -0.42, l.z + i * 0.95, 1.2, 0.05, 0.14);
   }
 
   // ============== the cockpit canopy: armoured frame, roof, nose cannon housings ===========================
@@ -226,7 +318,7 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
     for (const s of mirror) {
       k.bevelBox('hullDark', s * 0.85, 0.6, -15.4, 0.8, 0.7, 2.2, 0.08);
       k.bevelBox('metal', s * 0.85, 0.6, -14.3, 0.62, 0.55, 0.4, 0.05);
-      k.box('glowAmber', s * 0.85, 1.0, -15.8, 0.4, 0.04, 0.6);
+      k.box('glowRed', s * 0.85, 1.0, -15.8, 0.4, 0.04, 0.6);
     }
     k.bevelBox('gunmetal', 0, 0.45, -16.6, 0.6, 0.22, 0.4, 0.04);
     k.box('glowCool', 0, 0.45, -16.82, 0.4, 0.04, 0.03);
@@ -287,7 +379,7 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
       }
       for (let i = 0; i < 4; i++) k.bevelBox('gunmetal', x, 1.6 + 1.18, zc + 0.6 + i * 0.28, 0.7, 0.05, 0.12, 0.02);
     }
-    for (let i = 0; i < 7; i++) k.box(i % 2 ? 'hazard' : 'gunmetal', -1.2 + i * 0.4, 3.05, zc + 0.22, 0.2, 0.2, 0.01);
+    for (let i = 0; i < 7; i++) k.box(i % 2 ? 'red' : 'gunmetal', -1.2 + i * 0.4, 3.05, zc + 0.22, 0.2, 0.2, 0.01);
   }
 
   // ============== the airlock hatch: a frame, and a lit recess =====================================================
@@ -326,8 +418,41 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
     k.pipe('engine', [0, -0.45, 0], [0, 0.35, leg.z < 0 ? 1.1 : -1.1], 0.13, 10);
     k.cyl('metal', -out * 0.9, 0.4, 0, 0.14, 0.16, 10, { axis: 'x' });
     k.pipe('pipeYellow', [0.3, -0.15, 0.0], [0.3, -1.0, 0.0], 0.026, 6);
-    k.cyl('hazard', 0, -0.85, 0, 0.4, 0.14, 16);
+    k.cyl('red', 0, -0.85, 0, 0.4, 0.14, 16);
     k.pop();
+  }
+
+  // Silhouette that is the Shrike's own: a sawtooth spine, one cheek heavier than the other, a chin blade, one wing fence.
+  // Every piece stays inside the measured envelope (wing tips |x| 9.14, tail y 7, nose z -17.2, nozzles z ~19.35).
+  {
+    const sk = new Kit();
+    sk.tiles = { hull: 8, metal: 1 };
+    const dark = [0.16, 0.16, 0.17], primer = [1.15, 0.22, 0.16], bare = [0.78, 0.76, 0.7], soot = [0.07, 0.06, 0.055];
+    for (let z = -6.2, n = 0; z < 14.2; z += 1.45, n++) {
+      const h = 0.28 + (n % 3) * 0.22;
+      const yt = hullTop(z + 0.4);
+      const col = n % 5 === 0 ? primer : n % 4 === 0 ? bare : dark;
+      sk.box('hull', 0, yt + 0.16 + h / 2, z + 0.4, 0.22 + (n % 2) * 0.08, h, 0.7, { col });
+    }
+    // port cheek: a short dark patch. Starboard: a longer primer plate and a bare-metal cover that does not match it.
+    const hwP = hullHalfWidth(-1.5), hwS = hullHalfWidth(3.5);
+    sk.box('hull', -(hwP + 0.06), 1.55, -1.6, 0.08, 0.9, 1.7, { col: dark });
+    sk.box('hull', hwS + 0.08, 1.7, 3.4, 0.1, 1.25, 2.8, { col: primer });
+    sk.box('hull', hwS + 0.12, 1.35, 4.5, 0.06, 0.55, 1.1, { col: bare });
+    // chin blade under the nose, above the gear feet
+    sk.box('hull', 0, -0.32, -15.85, 0.62, 0.14, 1.35, { col: dark });
+    sk.box('red', 0, -0.26, -15.7, 0.28, 0.04, 0.7);
+    // one fence, starboard wing only, inboard of the tip pod
+    sk.box('hull', 7.15, 1.48, 6.1, 0.06, 0.62, 1.25, { col: dark });
+    sk.box('red', 7.15, 1.72, 6.1, 0.07, 0.08, 0.9);
+    // soot and a mismatched plate by the engines, short of the nozzles
+    sk.box('hull', -2.4, 2.55, 14.6, 1.3, 0.55, 0.06, { col: soot });
+    sk.box('hull', 2.15, 2.15, 14.2, 0.9, 0.4, 0.07, { col: bare });
+    sk.box('hull', 1.1, 3.15, 13.4, 0.7, 0.28, 0.05, { col: primer });
+    const scars = sk.toGroup(mats, { name: 'raider-scars', cast: true, receive: true });
+    root.add(scars);
+    ext.triangles += sk.triangles;
+    ext.scars = scars;
   }
 
   const staticGroup = k.toGroup(mats, { name: 'ext-static', cast: true, receive: true });
@@ -347,7 +472,7 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
     fk.bevelBox('engine', 0, 0.14, 0, 0.42, 0.28, 0.42, 0.05);
     fk.cyl('metal', 0, -0.1, 0, GEAR.padRadius, 0.18, 22, { r2: GEAR.padRadius * 0.9 });
     fk.cyl('rubber', 0, -0.21, 0, GEAR.padRadius * 0.96, 0.06, 22);
-    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; fk.box('hazard', Math.cos(a) * GEAR.padRadius * 0.7, 0.02, Math.sin(a) * GEAR.padRadius * 0.7, 0.16, 0.012, 0.05); }
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; fk.box('red', Math.cos(a) * GEAR.padRadius * 0.7, 0.02, Math.sin(a) * GEAR.padRadius * 0.7, 0.16, 0.012, 0.05); }
     for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2 + 0.5; fk.pipe('engine', [0, 0.1, 0], [Math.cos(a) * 0.5, -0.04, Math.sin(a) * 0.5], 0.05, 6); }
     const foot = fk.toGroup(mats, { name: 'foot', cast: true, receive: true });
     g.add(foot);
@@ -366,9 +491,9 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
     rk.bevelBox('hullDark', 0, -t / 2, len / 2, w, t, len, 0.03);
     rk.poly('floor:deck', [[-w / 2 + 0.06, 0.004, len - 0.05], [w / 2 - 0.06, 0.004, len - 0.05], [w / 2 - 0.06, 0.004, 0.05], [-w / 2 + 0.06, 0.004, 0.05]]);
     for (let z = 0.4; z < len - 0.1; z += 0.4) rk.box('metal', 0, 0.02, z, w - 0.2, 0.02, 0.05);
-    for (const s of [-1, 1]) { rk.bevelBox('metal', s * (w / 2 - 0.04), 0.08, len / 2, 0.08, 0.16, len, 0.02); rk.box('glowAmber', s * (w / 2 - 0.04), 0.17, len / 2, 0.02, 0.01, len - 0.4); }
+    for (const s of [-1, 1]) { rk.bevelBox('metal', s * (w / 2 - 0.04), 0.08, len / 2, 0.08, 0.16, len, 0.02); rk.box('glowRed', s * (w / 2 - 0.04), 0.17, len / 2, 0.02, 0.01, len - 0.4); }
     rk.bevelBox('metal', 0, -0.06, len, w, 0.12, 0.18, 0.02);
-    if (key === 'cargo') for (let i = 0; i < 5; i++) rk.box(i % 2 ? 'hazard' : 'gunmetal', 0, -t - 0.004, 0.5 + i * 0.5, w - 0.3, 0.008, 0.25);
+    if (key === 'cargo') for (let i = 0; i < 5; i++) rk.box(i % 2 ? 'red' : 'gunmetal', 0, -t - 0.004, 0.5 + i * 0.5, w - 0.3, 0.008, 0.25);
     const m = rk.toGroup(mats, { name: 'ramp-mesh:' + key, cast: true, receive: true });
     hinge.add(m);
     root.add(hinge);
@@ -388,7 +513,7 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
       kk.cyl('metal', 0, 0, -1.8, 0.15, 0.24, 12, { axis: 'z' });
       for (let i = 0; i < 3; i++) kk.box('gunmetal', 0.0, 0.13, -1.75 - i * 0.04, 0.02, 0.08, 0.03);
       kk.bevelBox('hullDark', 0, 0.0, -0.1, 0.36, 0.34, 0.4, 0.04);
-      kk.box('glowAmber', 0, 0.19, -0.3, 0.05, 0.02, 0.4);
+      kk.box('glowRed', 0, 0.19, -0.3, 0.05, 0.02, 0.4);
       g.add(kk.toGroup(mats, { name: 'main-gun', cast: true, receive: true }));
       root.add(g);
       ext.guns.main.push({ group: g, muzzle: new THREE.Vector3(0, 0, -1.9) });
@@ -405,7 +530,7 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
         kk.cyl('gunmetal', s * 0.95, 0.0, -1.2, 0.085, 1.6, 12, { axis: 'z' });
         kk.cyl('steel', s * 0.95, 0.0, -0.8, 0.13, 0.7, 12, { axis: 'z' });
         kk.cyl('metal', s * 0.95, 0.0, -1.95, 0.12, 0.22, 12, { axis: 'z' });
-        kk.box('glowAmber', s * 0.95, 0.27, -0.15, 0.05, 0.02, 0.5);
+        kk.box('glowRed', s * 0.95, 0.27, -0.15, 0.05, 0.02, 0.5);
       }
       kk.bevelBox('hullDark', 0, 0.0, 0.55, 2.3, 0.26, 0.42, 0.05);
       pitch.add(kk.toGroup(mats, { name: 'dorsal-barrels', cast: true, receive: true }));
@@ -469,6 +594,7 @@ export function buildRaiderExterior(layout, mats, opts = {}) {
   }
 
   ext.tier = low ? 'low' : 'high';
+  ext.paint = 'shrike-scorched';
   return ext;
 }
 
@@ -489,7 +615,7 @@ export function applyRaiderNeutralPose(ext) {
 
 /** The boat name and registry number painted on the flank. */
 export function raiderDecalTexture(THREE_, def, name = 'SHRIKE', registry = 'SHRIKE CLASS') {
-  if (typeof document === 'undefined') return null;
+  if (!canvasPaints()) return null;
   const c = document.createElement('canvas');
   c.width = 2048; c.height = 256;
   const g = c.getContext('2d');

@@ -16,6 +16,7 @@
 
 import * as THREE from 'three';
 import { makeMoon } from './moonField.js';
+import { buildSampleBeacon, buildCargoModule } from './hardware.js';
 
 export const SAMPLE_PAY_CREDITS = 300;
 export const SAMPLE_MAX = 3;
@@ -52,31 +53,17 @@ export class SpaceJobs {
       engine.track({ worldPos: { x: p.x, y: p.y, z: p.z }, object3d: obj, quaternion: q, frame });
     };
     const upAt = (p) => { const l = Math.hypot(p.x, p.y, p.z); return { x: p.x / l, y: p.y / l, z: p.z / l }; };
+    const low = this.space.tier === 'low';
     for (const s of body.sampleSites) {
-      const g = new THREE.Group(); g.name = `sample-site:${s.id}`;
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 3.2, 8), new THREE.MeshStandardMaterial({ color: 0xc9c4b8, roughness: 0.5, metalness: 0.6, fog: false }));
-      pole.position.y = 1.6;
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), mkMat(0x42d9ff)); lamp.position.y = 3.3;
-      const halo = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.5, 40), new THREE.MeshBasicMaterial({ color: 0x42d9ff, transparent: true, opacity: 0.55, side: THREE.DoubleSide, toneMapped: false, depthWrite: false, fog: false }));
-      halo.rotation.x = -Math.PI / 2; halo.position.y = 0.06;
-      g.add(pole, lamp, halo);
-      place(g, s.point, upAt(s.point));
-      this.markers.sites.set(s.id, { lamp, halo, group: g });
+      const built = buildSampleBeacon({ low, id: s.id });
+      place(built.group, s.point, upAt(s.point));
+      this.markers.sites.set(s.id, { lamp: built.lamp, halo: built.halo, group: built.group });
     }
-    // the drifting cargo module (the distress beacon's source): a battered box, hazard stripes, an amber light that blinks until it is claimed
+    // the drifting cargo module: plated hardware, a dogged door, a broken stripe, a lamp that blinks until it is claimed
     if (body.derelict) {
-      const g = new THREE.Group(); g.name = 'derelict-cargo-module';
-      const hull = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.9, 2.9), new THREE.MeshStandardMaterial({ color: 0x77706a, roughness: 0.7, metalness: 0.4, emissive: 0x26231f, fog: false }));
-      hull.position.y = 1.2; hull.rotation.z = 0.11; hull.rotation.y = 0.5;
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(6.25, 0.5, 2.95), new THREE.MeshStandardMaterial({ color: 0xc89b2a, roughness: 0.6, metalness: 0.2, emissive: 0x2e2308, fog: false }));
-      stripe.position.copy(hull.position); stripe.rotation.copy(hull.rotation); stripe.position.y += 0.7;
-      const door = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, 2.2), new THREE.MeshStandardMaterial({ color: 0x4a4642, roughness: 0.8, metalness: 0.3, emissive: 0x1c1a18, fog: false }));
-      door.position.set(2.9, 1.15, 0.2); door.rotation.copy(hull.rotation); door.position.applyEuler(hull.rotation);
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), mkMat(0xffb23a)); lamp.position.set(-2.0, 2.95, 0.8); lamp.position.applyEuler(hull.rotation); lamp.position.y += 0.1;
-      g.add(hull, stripe, door, lamp);
-      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(body.derelict.up.x, body.derelict.up.y, body.derelict.up.z));
-      engine.scene.add(g); engine.track({ worldPos: { ...body.derelict.point }, object3d: g, quaternion: q, frame });
-      this.markers.derelict = { group: g, lamp };
+      const built = buildCargoModule({ low });
+      place(built.group, body.derelict.point, body.derelict.up);
+      this.markers.derelict = { group: built.group, lamp: built.lamp };
     }
     // the landing pad: a painted disc with four corner lights (it is a real graded plane in the field: moonField's pad)
     const pi = body.padInfo, c = document.createElement('canvas'); c.width = c.height = 1024;

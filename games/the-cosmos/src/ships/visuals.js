@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { buildExterior, applyNeutralPose, decalCanvasTexture } from '../ship/shipExterior.js';
-import { buildRaiderExterior, applyRaiderNeutralPose, raiderDecalTexture } from './raider/exterior.js';
+import { buildRaiderExterior, applyRaiderNeutralPose, raiderDecalTexture, applyRaiderInteriorPalette } from './raider/exterior.js';
 import { RAIDER_CUSTOM } from './raider/interior.js';
 
 const VISUALS = {
@@ -19,6 +19,7 @@ const VISUALS = {
     buildExterior: buildRaiderExterior, applyNeutralPose: applyRaiderNeutralPose,
     decalTexture: (THREE_, def, name, registry) => raiderDecalTexture(THREE_, def, name, registry),
     custom: RAIDER_CUSTOM,
+    interiorPalette: applyRaiderInteriorPalette,
     shield: { scale: [6.8, 4.6, 18.5], pos: [0, 1.3, -0.5] },
   },
 };

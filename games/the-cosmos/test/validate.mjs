@@ -633,6 +633,10 @@ await runParityUIChecks({check,section});
 const { runFleetChecks } = await import('./fleet-checks.mjs');
 await runFleetChecks({check,section,THREE,mars,FIELD});
 
+// 27. Looks: salvage props, Phobos ground, the Shrike's paint. Client-only.
+const { runLooksChecks } = await import('./looks-checks.mjs');
+await runLooksChecks({ check, section, THREE });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));

@@ -98,7 +98,11 @@ export function shadeVertex(body, px, py, pz, elevation, color, matKnown) {
     // dust tints below are Mars's.)
     const k = 0.84 + 0.30 * (0.5 + 0.5 * Math.sin(px * 0.0023 + py * 0.0017) * Math.sin(pz * 0.0021 + px * 0.0009 + 1.3));
     const f = 0.9 + 0.2 * (0.5 + 0.5 * Math.sin(px * 0.071 + pz * 0.053) * Math.sin(py * 0.067 + px * 0.041));
-    return color.multiplyScalar(k * f);
+    color.multiplyScalar(k * f);
+    // Crater floors and groove troughs, baked into the vertex colour. The sun's shadow map only covers the ground under the camera.
+    if (body.cavityShade) color.multiplyScalar(body.cavityShade(px, py, pz));
+    if (body.id === 'phobos') { color.r *= 0.92; color.g *= 0.96; }
+    return color;
   }
 
   // Planet-scale albedo, seen from orbit: dark basaltic provinces, bright dust, and the polar caps. The waves are thousands

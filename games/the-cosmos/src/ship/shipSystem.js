@@ -117,6 +117,8 @@ export class ShipSystem {
     // --- materials: one set of textures, two sets of materials (each needs its own environment)
     this.matsInt = makeShipMaterials({ tier: this.tier });
     this.matsExt = cloneMaterials(this.matsInt);
+    // The raider's rooms share the Meridian's wall maps. Tint only the interior set, after the exterior clone, so a Shrike's dusk paint does not stain the Meridian or the hull outside.
+    if (this.def.type === 'raider' && this.visuals.interiorPalette) this.visuals.interiorPalette(this.matsInt);
     this._makeEnvironments();
     this._initWindowClip();
 

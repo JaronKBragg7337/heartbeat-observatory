@@ -17,7 +17,7 @@
 // ellipsoid's axes are turned, in here.
 // ============================================================================
 
-import { MOONS, moonCentre, moonSurfaceGravity, G_CONST } from './spaceSpec.js';
+import { MOONS, moonCentre, moonSurfaceGravity, G_CONST, sunDirection } from './spaceSpec.js';
 
 const DEG = Math.PI / 180;
 
@@ -139,6 +139,104 @@ export function makeMoon(id) {
   }
 
   const reOf = (u, v, w) => 1 / Math.sqrt(u * u * AGAIN + v * v * BGAIN + w * w * CGAIN);
+  // world direction (unit, world-aligned) -> body-frame unit vector. Declared here: the sun used by crater shadows is converted once, at build.
+  const toBodyDir = (dx, dy, dz) => [dx * ex.x + dz * ex.z, dx * ey.x + dz * ey.z, dy];
+  const fromBody = (u, v, w, out = {}) => { out.x = u * ex.x + v * ey.x; out.y = w; out.z = u * ex.z + v * ey.z; return out; };
+
+  // Loose rock, in the density field (so a boot and a bucket meet the same stone the mesh draws). One rock per cell, inset so
+  // it never crosses into the next cell: the height is zero, with zero slope, on the cell boundary. Phobos only; Deimos stays
+  // the smooth one. The steepest ring stays under about 40 degrees, so a running step still meets the surface on 0.0057 g
+  // (a steeper face launches the walker and the 90 s grounded check fails).
+  const ROCKS = S.id === 'phobos' ? [
+    { s: 32, dens: 0.7, rLo: 2.8, rHi: 5.2, hLo: 1.35, hHi: 2.7 },   // boulders: a couple of metres tall, drawn by the near tier
+    { s: 12, dens: 0.48, rLo: 1.2, rHi: 2.3, hLo: 0.4, hHi: 1.15 },   // rocks at knee and waist height
+    { s: 6, dens: 0.3, rLo: 0.5, rHi: 1.05, hLo: 0.08, hHi: 0.35 },   // stones underfoot
+  ] : [];
+  function boulderHeight(px, py, pz) {
+    let h = 0;
+    const r = Math.hypot(px, py, pz) || 1;
+    for (let ci = 0; ci < ROCKS.length; ci++) {
+      const spec = ROCKS[ci], s = spec.s;
+      const ix = Math.floor(px / s), iy = Math.floor(py / s), iz = Math.floor(pz / s);
+      const sd = seed + 9100 + ci * 173;
+      if (hash3(ix, iy, iz, sd) > spec.dens) continue;
+      // The hash point sits in the cell, then slides out to the ellipsoid so the stone is on the ground
+      // you walk, not buried in the cube. If that slide leaves the cell, this cell has no stone (no seam).
+      let cx = (ix + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 1)) * s;
+      let cy = (iy + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 2)) * s;
+      let cz = (iz + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 3)) * s;
+      const cr = Math.hypot(cx, cy, cz) || 1;
+      cx *= r / cr; cy *= r / cr; cz *= r / cr;
+      if (Math.floor(cx / s) !== ix || Math.floor(cy / s) !== iy || Math.floor(cz / s) !== iz) continue;
+      const margin = Math.min(cx - ix * s, (ix + 1) * s - cx, cy - iy * s, (iy + 1) * s - cy, cz - iz * s, (iz + 1) * s - cz);
+      const rc = Math.min(spec.rLo + (spec.rHi - spec.rLo) * hash3(ix, iy, iz, sd + 4), margin * 0.92);
+      if (rc < 0.35) continue;
+      const dx = px - cx, dy = py - cy, dz = pz - cz, d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 >= rc * rc) continue;
+      const t = Math.sqrt(d2) / rc;
+      const dome = 1 - t * t;
+      let hh = spec.hLo + (spec.hHi - spec.hLo) * hash3(ix, iy, iz, sd + 5);
+      const slopeCap = 1.15 * rc / 1.54;
+      if (hh > slopeCap) hh = slopeCap;
+      h += hh * dome * dome;
+    }
+    return h;
+  }
+
+  // Crater-on-crater shadow, as a darkening of the vertex colour. The sun's shadow map only covers the ground under the
+  // camera, so a rim does not cast onto the next bowl. This walks the same craters the field uses and darkens the floor
+  // on the up-sun side, where that rim blocks the sun. Nested bowls multiply. Grooves take a little dust-shadow too.
+  const sunW = sunDirection();
+  const sunB = toBodyDir(sunW.x, sunW.y, sunW.z);
+  const SHADE_CELLS = CELLS.filter((c) => c >= 64);
+  function shadeAt(px, py, pz, u, v, w) {
+    const elev = u * sunB[0] + v * sunB[1] + w * sunB[2];
+    let sx = sunB[0] - u * elev, sy = sunB[1] - v * elev, sz = sunB[2] - w * elev;
+    const sl = Math.hypot(sx, sy, sz) || 1;
+    sx /= sl; sy /= sl; sz /= sl;
+    const tanE = elev > 0.08 ? elev / Math.sqrt(Math.max(1e-4, 1 - elev * elev)) : 0;
+    let shade = 1;
+    const addCrater = (cx, cy, cz, rc, dep) => {
+      if (tanE <= 0) return;
+      const dx = px - cx, dy = py - cy, dz = pz - cz, d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 > rc * rc) return;
+      const along = dx * sx + dy * sy + dz * sz;          // metres toward the sun from the crater centre
+      const fromRim = rc - along;                         // 0 at the up-sun rim, 2 rc at the down-sun rim
+      const shadowLen = Math.min(rc * 1.85, dep / tanE);
+      if (fromRim < shadowLen) {
+        const t = Math.sqrt(d2) / rc;
+        const k = (1 - fromRim / shadowLen) * (1 - t * 0.3);
+        shade *= 1 - Math.min(0.58, 0.62 * k);
+      }
+    };
+    for (const f of feat) {
+      const cre = reOf(f.d[0], f.d[1], f.d[2]);
+      addCrater(f.d[0] * cre, f.d[1] * cre, f.d[2] * cre, f.radiusM, f.depthM);
+    }
+    for (let k = 0; k < SHADE_CELLS.length; k++) {
+      const s = SHADE_CELLS[k] * CS;
+      const ix = Math.floor(px / s), iy = Math.floor(py / s), iz = Math.floor(pz / s);
+      for (let j = 0; j < 2; j++) {
+        const sd = seed + 101 * CELLS.indexOf(SHADE_CELLS[k]) + 37 * j;
+        if (hash3(ix, iy, iz, sd + 3) > DENS) continue;
+        const cx = (ix + 0.3 + 0.4 * hash3(ix, iy, iz, sd)) * s;
+        const cy = (iy + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 1)) * s;
+        const cz = (iz + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 2)) * s;
+        const rc = s * (0.1 + 0.14 * hash3(ix, iy, iz, sd + 4));
+        const dx = px - cx, dy = py - cy, dz = pz - cz;
+        if (dx * dx + dy * dy + dz * dz > rc * rc * 4) continue;
+        addCrater(cx, cy, cz, rc, 0.16 * 2 * rc * scale);
+      }
+    }
+    if (RS > 0.5) {
+      for (let i = 0; i < grooves.length; i++) {
+        const gg = grooves[i];
+        const dd = Math.abs(py * gg.n[1] + pz * gg.n[2] - gg.off);
+        if (dd < gg.w) shade *= 1 - 0.16 * (1 - (dd / gg.w) * (dd / gg.w));
+      }
+    }
+    return Math.max(0.42, Math.min(1, shade));
+  }
 
   // the graded pad: a true plane perpendicular to the radial through the pad's centre, blended into the natural ground
   const padRc = (() => { const re = reOf(...padDir); return re + relief(padDir[0], padDir[1], padDir[2], re) - 0.0; })();
@@ -147,19 +245,29 @@ export function makeMoon(id) {
     const re = reOf(u, v, w);
     let R = re + relief(u, v, w, re);
     const cosp = u * padDir[0] + v * padDir[1] + w * padDir[2];
+    let padS = 1e9;
     if (cosp > 0.97) {
-      const s = Rm * Math.acos(Math.min(1, cosp));
-      if (s < pad.blendM) {
-        const wt = 1 - sstep(pad.flatM, pad.blendM, s);
+      padS = Rm * Math.acos(Math.min(1, cosp));
+      if (padS < pad.blendM) {
+        const wt = 1 - sstep(pad.flatM, pad.blendM, padS);
         R += (padPlaneR / cosp - R) * wt;
       }
     }
+    // rocks sit on the graded ground, and they stay off the landing plane (flat to 5 cm inside the pad)
+    R += rockAdded(u, v, w, re);
     return R;
   }
-
-  // world direction (unit, world-aligned) -> body-frame unit vector
-  const toBodyDir = (dx, dy, dz) => [dx * ex.x + dz * ex.z, dx * ey.x + dz * ey.z, dy];
-  const fromBody = (u, v, w, out = {}) => { out.x = u * ex.x + v * ey.x; out.y = w; out.z = u * ex.z + v * ey.z; return out; };
+  function rockAdded(u, v, w, re) {
+    if (!ROCKS.length) return 0;
+    const cosp = u * padDir[0] + v * padDir[1] + w * padDir[2];
+    let along = 1e9;
+    if (cosp > 0.97) along = Rm * Math.acos(Math.min(1, cosp));
+    let fade = 1;
+    if (along < 58) fade = 0;
+    else if (along < 86) fade = sstep(58, 86, along);
+    if (fade <= 0) return 0;
+    return fade * boulderHeight(u * re, v * re, w * re);
+  }
 
   const surfaceRadius = (dx, dy, dz) => { const q = toBodyDir(dx, dy, dz); return surfaceRadiusBody(q[0], q[1], q[2]); };
 
@@ -233,11 +341,31 @@ export function makeMoon(id) {
     centre,                       // where its centre is in Mars's frame
     spec: S,
     baseField, materialField, surfaceRadius,
+    /** Metres of loose rock added to the surface along a world direction. Zero on Deimos and on the Phobos pad. */
+    rockRelief: (dx, dy, dz) => {
+      const l = Math.hypot(dx, dy, dz) || 1;
+      const q = toBodyDir(dx / l, dy / l, dz / l);
+      return rockAdded(q[0], q[1], q[2], reOf(q[0], q[1], q[2]));
+    },
     // helpers
     bodyLatLon, surfacePoint, padInfo: { ...pad, point: padPoint, up: padUp, east: padEast, north: padNorth, planeR: padPlaneR },
     sampleSites, derelict,
     axesWorld: { ex, ey, ez },
     toBodyDir, fromBody,
+    /** 0.42..1 darkening from crater rims and groove floors. 1 on the graded pad, where those shapes were planed off. */
+    cavityShade: (x, y, z) => {
+      const r = Math.hypot(x, y, z) || 1;
+      const q = toBodyDir(x / r, y / r, z / r);
+      const re = reOf(q[0], q[1], q[2]);
+      let s = shadeAt(q[0] * re, q[1] * re, q[2] * re, q[0], q[1], q[2]);
+      const cosp = q[0] * padDir[0] + q[1] * padDir[1] + q[2] * padDir[2];
+      if (cosp > 0.97) {
+        const padS = Rm * Math.acos(Math.min(1, cosp));
+        if (padS < pad.flatM) s = 1;
+        else if (padS < pad.blendM) s += (1 - s) * (1 - sstep(pad.flatM, pad.blendM, padS));
+      }
+      return s;
+    },
     /** the bare ellipsoid's radius along a world direction (no relief): for measuring how rough the ground is */
     ellipsoidRadius: (dx, dy, dz) => { const q = toBodyDir(dx, dy, dz); return reOf(q[0], q[1], q[2]); },
     /** where the ship stops before it descends: straight above the pad */
