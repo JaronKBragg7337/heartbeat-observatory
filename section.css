@@ -55,3 +55,22 @@ html.hb-tier-no-webgl .status::after {
   content:" · 3D limited";
   color:var(--amber);
 }
+
+/* Phone pass (390px): 44px tap targets, 12px+ text, less dead padding. */
+@media (max-width: 560px) {
+  .topnav { padding: 8px 16px; min-height: 56px; }
+  .brand { min-height: 44px; font-size: 12px; letter-spacing: 0.12em; }
+  .signin { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 18px; }
+  .wrap { padding: 12px 16px 60px; }
+  .back, .feed-head .add, footer a, html .embed-bar a, html .systems a.name, .crew-nav a, .tabs a {
+    display: inline-flex; align-items: center; min-height: 44px; }
+  .back { margin-bottom: 8px; }
+  html .embed-bar a { padding: 0 6px; }
+  html .embed-bar { gap: 0 12px; }
+  footer a { padding: 0 8px; }
+  .panel { padding: 22px 16px; }
+  .post { padding: 14px; }
+  .status { font-size: 13px; }
+  html .systems .kind, .post .meta { font-size: 12px; }
+  html .systems li { padding: 16px; }
+}
