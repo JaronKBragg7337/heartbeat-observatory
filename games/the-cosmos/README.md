@@ -6,7 +6,9 @@ Live: https://www.heartbeatobservatory.com/games/the-cosmos/
 Local: `node server.js` → http://localhost:8378/
 Validate: `node test/validate.mjs`
 
-The opening is implemented for new players. Returning players resume their saved world; unfinished openings resume their own progress. Shared multiplayer keeps each opening private and joins players into the shared world when it finishes. Desktop and phone controls use the same progression rules. A survey rover (type `survey`) is the Meridian's hold vehicle and a depot purchase at 2,400 marks. `board`, `seat`, `drive` and `leave` in `src/vehicles/api.js` are the calls an opening can use for that same type. See [world ownership and persistence](docs/WORLD-STATE.md) and [opening QA](docs/qa/2026-10-02/opening/REVIEW.md).
+Before any publish: node test/phone-check.mjs must pass.
+
+The opening is implemented for new players. Returning players resume their saved world; unfinished openings resume their own progress. Shared multiplayer keeps each opening private and joins players into the shared world when it finishes. Desktop and phone controls use the same progression rules. See [world ownership and persistence](docs/WORLD-STATE.md) and [opening QA](docs/qa/2026-10-02/opening/REVIEW.md). This worktree is awaiting publication.
 
 ---
 

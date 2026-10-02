@@ -1251,6 +1251,7 @@ engine.start();
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
 if (devMode) window.cosmos = {
+  buildId: BUILD_VERSION,
   opening,
   buildVersion:BUILD_VERSION,
   multiplayer, vehicles,
