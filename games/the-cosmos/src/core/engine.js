@@ -194,12 +194,16 @@ export class Engine {
 
     if(this.safe){safeMaterials(this.scene,this.safeCache);for(const sc of this.overlayScenes)safeMaterials(sc,this.safeCache);}
     const renderFrame=this.renderer.info.render.frame;
-    try { this.renderer.render(this.scene, this.camera);
+    try {
+    // A film pass (cinematic mode) draws the scene itself, overlays included.
+    // Left unset, this is the same draw the graphics probe has always measured.
+    if (typeof this.present === 'function') this.present(this);
+    else this.renderer.render(this.scene, this.camera);
     const drewWorld=this.renderer.info.render.frame!==renderFrame;
     // Overlay renders change GL's clear-color state even with autoClear off.
     // Remember the world's clear color before they do, for the frame probe.
-    if(drewWorld&&this.graphics.checked<90&&(this.graphics.checked+1)%10===0){const gl=this.renderer.getContext();this.graphics.clearColor=Array.from(gl.getParameter(gl.COLOR_CLEAR_VALUE));}
-    if (this.overlayScenes.length) {
+    if(drewWorld&&typeof this.present!=='function'&&this.graphics.checked<90&&(this.graphics.checked+1)%10===0){const gl=this.renderer.getContext();this.graphics.clearColor=Array.from(gl.getParameter(gl.COLOR_CLEAR_VALUE));}
+    if (typeof this.present !== 'function' && this.overlayScenes.length) {
       const r = this.renderer;
       r.autoClear = false;
       for (const sc of this.overlayScenes) r.render(sc, this.camera);

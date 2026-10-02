@@ -645,6 +645,10 @@ await runGrok2Checks({ check, section, THREE });
 const { runGrok4Checks } = await import('./grok4-checks.mjs');
 await runGrok4Checks({ check, section });
 
+// 30. Trailer filming: camera paths, letterbox, and the capture script.
+const { runCinemaChecks } = await import('./cinema-checks.mjs');
+await runCinemaChecks({ check, section });
+
 const {runTwoPlayerChecks,runTwoPlayerBrowserChecks}=await import('./twoplayer-checks.mjs');
 await runTwoPlayerChecks({check,section});
 await runTwoPlayerBrowserChecks({check,section});

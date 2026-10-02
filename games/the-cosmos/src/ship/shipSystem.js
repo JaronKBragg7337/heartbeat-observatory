@@ -38,6 +38,7 @@ import { ShipAudio } from './shipAudio.js';
 import { geodeticToCartesian, cartesianToGeodetic, localFrame, cellIndex, cellLabel } from '../world/geodesy.js';
 import { gravityAtRadius } from '../world/bodies.js';
 import { Kit } from './shipKit.js';
+import { applyCinemaFlight } from '../cinema/math.js';
 import { findLandingSite, siteOrigin } from './shipSite.js';
 import { buildPortals, reachRooms } from './shipVisibility.js';
 import { rampEntry } from './rampTransfer.js';
@@ -57,6 +58,7 @@ export class ShipSystem {
     this.tier = o.tier || 'high';
     this.ready = false;
     this.aboard = false;
+    this.cinemaFlight = null;          // a filmed stick, written over the player's hands for one shot
     // FLEET: the ship's definition. `o.def` is one; `o.shipType` names one; with neither this is the Meridian.
     this.def = o.def || shipDef(o.shipType);
     this.visuals = visualsFor(this.def.type);
@@ -724,6 +726,8 @@ export class ShipSystem {
       if (this.state.airlock.outerOpen && this.air.phase === 'idle') this.cycleAirlock();
       if (this.time - (this._warnAt || -9) > 6) { this.note('Securing ramp and hatches for lift-off. Hold LIFT.', true); this._warnAt = this.time; }
     }
+    // A trailer shot flies the ship itself. Its stick replaces whoever was holding it, then the same step runs.
+    applyCinemaFlight(f, this.cinemaFlight);
     // space-fix: a climb or a landing under a course may be run faster than the clock. The flight model still sub-steps whatever it is
     // handed at 1/120 s, so every contact, spring and landing check is run exactly; the cap near the ground lives in spaceSpec.stickWarpCap.
     const flightDt = this.space ? Math.min(dt * this.space.stickWarp(dt), 1.0) : dt;

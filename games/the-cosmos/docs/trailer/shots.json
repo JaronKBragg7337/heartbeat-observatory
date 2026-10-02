@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "fps": 24,
+  "width": 1920,
+  "height": 1080,
+  "shots": [
+    {
+      "id": "port-dusk",
+      "beat": "port-dusk",
+      "duration": 6,
+      "fps": 24,
+      "fov": 42,
+      "focus": 32,
+      "aperture": 0.01,
+      "motion": 0.2,
+      "letterbox": true,
+      "frame": "port",
+      "rig": {
+        "type": "dolly",
+        "frame": "port",
+        "keys": [
+          { "t": 0, "eye": [72, 2.2, 82], "target": [-18, 7, 4] },
+          { "t": 3, "eye": [16, 1.7, 54], "target": [-48, 10, -12] },
+          { "t": 6, "eye": [-24, 2.0, 32], "target": [-62, 14, -34] }
+        ]
+      }
+    },
+    {
+      "id": "port-orbit",
+      "beat": "port-dusk",
+      "duration": 6,
+      "fps": 24,
+      "fov": 42,
+      "focus": 70,
+      "aperture": 0.016,
+      "motion": 0.35,
+      "letterbox": true,
+      "frame": "port",
+      "rig": {
+        "type": "orbit",
+        "frame": "port",
+        "duration": 6,
+        "target": [-20, 6, -10],
+        "radius": 80,
+        "height": 18,
+        "yaw0": -0.8,
+        "yaw1": 0.9
+      }
+    },
+    {
+      "id": "tower-elevator",
+      "beat": "tower",
+      "duration": 6,
+      "fps": 24,
+      "fov": 40,
+      "focus": 45,
+      "aperture": 0.02,
+      "motion": 0.35,
+      "letterbox": true,
+      "frame": "port",
+      "rig": {
+        "type": "dolly",
+        "frame": "port",
+        "keys": [
+          { "t": 0, "eye": [-18, 3, 22], "target": [-60, 14, -39] },
+          { "t": 3, "eye": [-40, 12, 4], "target": [-60, 20, -39] },
+          { "t": 6, "eye": [-70, 20, -10], "target": [-60, 24, -39] }
+        ]
+      }
+    },
+    {
+      "id": "meridian-liftoff",
+      "beat": "liftoff",
+      "duration": 5,
+      "fps": 24,
+      "fov": 42,
+      "focus": 32,
+      "aperture": 0.02,
+      "motion": 0.45,
+      "letterbox": true,
+      "frame": "ship",
+      "rig": {
+        "type": "chase",
+        "frame": "ship",
+        "duration": 5,
+        "offset": { "x": 26, "y": 10, "z": 32 },
+        "offsetTo": { "x": 18, "y": 7, "z": 24 },
+        "look": { "x": 0, "y": 3, "z": -10 }
+      }
+    },
+    {
+      "id": "climb-out",
+      "beat": "climb",
+      "duration": 5,
+      "fps": 24,
+      "fov": 46,
+      "focus": 55,
+      "aperture": 0.014,
+      "motion": 0.4,
+      "letterbox": true,
+      "frame": "ship",
+      "rig": {
+        "type": "chase",
+        "frame": "ship",
+        "duration": 5,
+        "offset": { "x": 40, "y": 16, "z": 55 },
+        "look": { "x": 0, "y": 0, "z": -20 }
+      }
+    },
+    {
+      "id": "mars-limb",
+      "beat": "limb",
+      "duration": 5,
+      "fps": 24,
+      "fov": 50,
+      "focus": 180,
+      "aperture": 0.01,
+      "motion": 0.3,
+      "letterbox": true,
+      "frame": "ship",
+      "shake": { "amount": 0.35, "roll": 0.004, "speed": 0.7, "seed": 11 },
+      "rig": {
+        "type": "chase",
+        "frame": "ship",
+        "duration": 5,
+        "offset": { "x": 80, "y": 20, "z": 120 },
+        "look": { "x": 0, "y": -30, "z": -40 }
+      }
+    },
+    {
+      "id": "phobos-landing",
+      "beat": "phobos",
+      "duration": 6,
+      "fps": 24,
+      "fov": 42,
+      "focus": 30,
+      "aperture": 0.02,
+      "motion": 0.4,
+      "letterbox": true,
+      "frame": "ship",
+      "rig": {
+        "type": "chase",
+        "frame": "ship",
+        "duration": 6,
+        "offset": { "x": 34, "y": 14, "z": 40 },
+        "look": { "x": 0, "y": 2, "z": -6 }
+      }
+    },
+    {
+      "id": "shrike-strafe",
+      "beat": "raider",
+      "duration": 5,
+      "fps": 24,
+      "fov": 50,
+      "focus": 55,
+      "aperture": 0.01,
+      "motion": 0.18,
+      "letterbox": true,
+      "frame": "port",
+      "rig": {
+        "type": "chase",
+        "frame": "port",
+        "duration": 5,
+        "offset": { "x": 24, "y": 16, "z": 62 },
+        "look": { "x": -8, "y": 4, "z": -20 },
+        "subject": {
+          "kind": "raider",
+          "from": [160, 80, -70],
+          "to": [-150, 55, 40],
+          "up": [0, 1, 0]
+        }
+      }
+    },
+    {
+      "id": "crew-bridge",
+      "beat": "crew",
+      "duration": 5,
+      "fps": 24,
+      "fov": 58,
+      "focus": 4.5,
+      "aperture": 0.011,
+      "motion": 0.08,
+      "letterbox": true,
+      "frame": "ship",
+      "shake": { "amount": 0.004, "roll": 0.001, "speed": 0.8, "seed": 4 },
+      "rig": {
+        "type": "dolly",
+        "frame": "ship",
+        "keys": [
+          { "t": 0, "eye": [-3.25, 7.2, -17.85], "target": [1.5, 7.0, -18.7] },
+          { "t": 5, "eye": [-2.5, 7.1, -18.05], "target": [1.8, 6.9, -18.5] }
+        ]
+      }
+    },
+    {
+      "id": "deep-tunnel",
+      "beat": "tunnel",
+      "duration": 5,
+      "fps": 24,
+      "fov": 64,
+      "focus": 6,
+      "aperture": 0.012,
+      "motion": 0.04,
+      "letterbox": true,
+      "showPlayer": false,
+      "frame": "port",
+      "rig": {
+        "type": "dolly",
+        "frame": "port",
+        "keys": [
+          { "t": 0, "eye": [148, -4.4, 23.6], "target": [148, -6.3, 16] },
+          { "t": 1.8, "eye": [148, -6.2, 21.2], "target": [148, -6.4, 13] },
+          { "t": 5, "eye": [148, -6.3, 17.2], "target": [148, -6.4, 12] }
+        ]
+      }
+    }
+  ]
+}

@@ -20,7 +20,7 @@ import { Engine } from './core/engine.js';
 import { registry } from './core/registry.js';
 import { BODIES, getBody } from './world/bodies.js';
 import { buildGlobalShell, LocalPatch, DISTANT_TIERS, installTierDiscard, TERRAIN_FOG_DENSITY } from './world/planetMesh.js';
-import { geodeticToCartesian, cartesianToGeodetic, formatCoord, coordSlug } from './world/geodesy.js';
+import { geodeticToCartesian, cartesianToGeodetic, formatCoord, coordSlug, localFrame } from './world/geodesy.js';
 import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, MATERIALS, attachEdits, attachGrades, density, normalAt, raycast, baseDensityAt } from './world/field.js';
 import { EditStore } from './world/edits.js';
 import { Digger } from './player/digging.js';
@@ -52,6 +52,7 @@ import { MultiplayerView } from './world-state/multiplayerView.js';
 import { RemoteCrew } from './world-state/remoteCrew.js';
 import { landingField } from './world-state/fleet.js';
 import { attachMoonPads } from './space/moonField.js';
+import { Cinema } from './cinema/cinema.js';
 
 const canvas = document.getElementById('game-canvas');
 const body = getBody('mars');
@@ -590,6 +591,25 @@ const SUN = {
   azimuthRad: 118 * Math.PI / 180,
 };
 
+/** Stand the suit plumb, facing the walker's look. The film path skips updateCamera, so a dug-tunnel shot has to pose the body itself. */
+function poseSuit() {
+  const f = walker.updateFrame();
+  const up = new THREE.Vector3(f.up.x, f.up.y, f.up.z);
+  const north = new THREE.Vector3(f.north.x, f.north.y, f.north.z);
+  const east = new THREE.Vector3(f.east.x, f.east.y, f.east.z);
+  const cy = Math.cos(walker.yaw), sy = Math.sin(walker.yaw);
+  const cp = Math.cos(walker.pitch), sp = Math.sin(walker.pitch);
+  const fwd = new THREE.Vector3()
+    .addScaledVector(north, cy * cp)
+    .addScaledVector(east, sy * cp)
+    .addScaledVector(up, sp);
+  const flat = fwd.clone().projectOnPlane(up);
+  if (flat.lengthSq() < 1e-8) flat.copy(north);
+  flat.normalize();
+  const xAxis = new THREE.Vector3().crossVectors(up, flat).normalize();
+  suitEntry.quaternion = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis, up, flat));
+}
+
 function updateCamera() {
   walker.eyeWorldPos(eye);
   const f = walker.updateFrame();
@@ -706,7 +726,12 @@ const hud = document.createElement('div');hud.id='hud-readout';hudRoot.prepend(h
 const settingsPanel = document.getElementById('settings-panel');
 document.getElementById('btn-close-settings').onclick=()=>settingsPanel.classList.remove('open');
 document.getElementById('settings-account').onclick=()=>{settingsPanel.classList.remove('open');economyUI.open=true;economyUI.draw();};
-window.addEventListener('keydown',e=>{if(e.code==='Escape')settingsPanel.classList.remove('open');});
+window.addEventListener('keydown', (e) => {
+  if (e.code !== 'Escape') return;
+  // Cinematic mode hides the Settings button. Escape opens the panel so the toggle can be turned off.
+  if (settingsPanel.classList.contains('open')) settingsPanel.classList.remove('open');
+  else if (document.documentElement.classList.contains('cinema-on')) settingsPanel.classList.add('open');
+});
 
 function refreshHud() {
   const g = walker.geodetic;
@@ -918,9 +943,14 @@ const freeCam = {
   off() { this.active = false; return this; },
 };
 
+// Assigned after SpaceSystem exists. The updater closes over the binding.
+let cinema = null;
+
 engine.addUpdater((dt) => {
   multiplayer?.smoothActiveShip();
-  if (freeCam.active) {
+  const filming = !!(cinema && cinema.playing);
+  if (filming) cinema.preFrame();
+  if (freeCam.active && !filming) {
     suitGroup.visible = false;
     Object.assign(engine.cameraWorldPos, freeCam.eye);
     const l = Math.hypot(freeCam.eye.x, freeCam.eye.y, freeCam.eye.z) || 1;
@@ -938,7 +968,7 @@ engine.addUpdater((dt) => {
     }
     return;
   }
-  if (portTour.active) {
+  if (portTour.active && !filming) {
     suitGroup.visible=false;portPeople.tick(dt,walker.worldPos);port.tick(dt, walker, false, true);portTour.update();
     if(crewUI){crewUI.close();crewUI.btn.style.display='none';}
     return;
@@ -972,11 +1002,11 @@ engine.addUpdater((dt) => {
   const onMars = space.marsTerrain, inMarsFrame = space.frameId === 'mars';
   if (onMars && !wasOnMars) { if (inMarsFrame) rebuildNear(true); }
   wasOnMars = onMars;
-  if (owned) {
+  if (owned && !filming) {
     suitGroup.visible = false;
     updateSun(walker.updateFrame());
     if (onMars) followTerrain();
-  } else {
+  } else if (!filming) {
     walker.yaw += lookDX;
     walker.pitch -= lookDY;
     walker.pitch = Math.max(-1.45, Math.min(1.45, walker.pitch));
@@ -984,6 +1014,12 @@ engine.addUpdater((dt) => {
     if (inMarsFrame) { port.tick(dt, walker); rebuildNear(); }
     multiplayer?.collideShips();
     updateCamera();
+  } else {
+    // The shot owns the camera and holds the walker where the stage posed them.
+    // The port still runs, so the tower car and the ships keep moving.
+    if (inMarsFrame) port.tick(dt, walker);
+    if (onMars) followTerrain();
+    multiplayer?.collideShips();
   }
   if (ship.ready) ship.late(dt);
   if (owned && inMarsFrame) port.tick(dt, walker, false);
@@ -1014,6 +1050,7 @@ engine.addUpdater((dt) => {
   if (actionFlash > 0) { actionFlash -= dt; if (actionFlash <= 0) refreshAction(); }
 
   space.late(dt);
+  if (filming) cinema.postFrame(dt);
   hudAccum += dt;
   if (hudAccum > 0.2) { refreshHud(); refreshAction(); hudAccum = 0; }
 });
@@ -1079,6 +1116,77 @@ if(!devMode) document.getElementById('set-dev').hidden=true;
 
 document.getElementById('boot')?.remove();
 refreshHud();
+
+// ?cinema=1 hides the HUD and letterboxes 2.39:1. A shot played through cosmos.cinema.prepare replays from JSON.
+cinema = new Cinema({ engine, tier, safe: safeGraphics, search: params });
+cinema.stageApi = {
+  ship, port, space, walker, engine, edits, tier,
+  cinema,
+  crew: () => crew,
+  flight(script) { ship.cinemaFlight = script || null; },
+  toWorld(p, frame) {
+    if (frame === 'port') return port.site.toWorld(p.x, p.y, p.z);
+    if (frame === 'ship') return ship.flight.toWorld(p);
+    return { x: p.x, y: p.y, z: p.z };
+  },
+  radialUp(eye) {
+    const l = Math.hypot(eye.x, eye.y, eye.z) || 1;
+    return { x: eye.x / l, y: eye.y / l, z: eye.z / l };
+  },
+  shipUp() { return ship.flight.up || { x: 0, y: 1, z: 0 }; },
+  setSun(elevDeg, azDeg) {
+    SUN.elevationRad = elevDeg * Math.PI / 180;
+    SUN.azimuthRad = azDeg * Math.PI / 180;
+  },
+  setTool(i) { setTool(i); },
+  doDig() { return doDig(); },
+  flush() { terrain.flush(walker.worldPos); },
+};
+cinema.hooks.pre = (shot) => {
+  suitGroup.visible = !!(shot && shot.showPlayer) && !(ship.ready && ship.aboard);
+};
+cinema.hooks.after = (dt) => {
+  const c = engine.cameraWorldPos;
+  const radius = walker.body && walker.body.radiusMean ? walker.body.radiusMean : 0;
+  const h = Math.hypot(c.x, c.y, c.z) - radius;
+  // Near the ground the sun is the shot's elevation. High up, the sky already aimed it.
+  if (h < 20000) {
+    const g = cartesianToGeodetic(walker.body, c.x, c.y, c.z);
+    updateSun(localFrame(g.lat, g.lon));
+  }
+  // A shot can ask for a grade after the sky has set the sun: dusk contrast, a warmer key,
+  // and the port's practicals held on (port.tick would otherwise key them to the walker).
+  const grade = cinema.grade;
+  if (grade) {
+    if (grade.sky != null) sky.intensity = grade.sky;
+    if (grade.sun) sun.color.setRGB(grade.sun[0], grade.sun[1], grade.sun[2]);
+    if (grade.sunIntensity != null) sun.intensity = grade.sunIntensity;
+    if (grade.portLights && port.lights) {
+      const pools = [[-58, 7.5, -28, 120], [8, 5.2, 4, 140], [46, 4.2, 48, 110]];
+      port.lights.forEach((l, i) => {
+        const p = pools[i] || pools[0];
+        l.position.set(p[0], p[1], p[2]);
+        l.intensity = p[3];
+        l.distance = 56;
+      });
+    }
+    if (grade.lamp != null) {
+      suitLamp.intensity = grade.lamp;
+      suitLamp.distance = 18;
+      suitLamp.decay = 1.15;
+    }
+  }
+  if (ship.ready) ship._updateVisuals(dt, false);
+  if (cinema.shot && cinema.shot.showPlayer && !ship.aboard) {
+    suitGroup.visible = true;
+    poseSuit();
+  } else suitGroup.visible = false;
+  digMark.group.visible = false;
+  dropMark.group.visible = false;
+};
+document.getElementById('set-cinema').addEventListener('change', (e) => cinema.setEnabled(e.target.checked));
+document.getElementById('set-letterbox').addEventListener('change', (e) => cinema.setLetterbox(e.target.checked));
+
 engine.start();
 
 // Debug handle. This is the hook automated verification uses to drive frames
@@ -1092,7 +1200,7 @@ if (devMode) window.cosmos = {
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   drones: () => ship.drones,
   at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,
-  ship, shipUI, engine, body, walker, patch, registry, debugLayer, view, people,
+  ship, shipUI, engine, body, walker, patch, registry, debugLayer, view, people, cinema,
   get crew() { return crew; }, get crewUI() { return crewUI; }, playerPerson, suitGroup,
   report: () => debugLayer.reportAt(walker),
   edits, carried, doDig, doDump, doDumpAll, digger, digTarget, dumpPlan, terrain, TOOLS, setTool, tool,

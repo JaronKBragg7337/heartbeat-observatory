@@ -133,6 +133,10 @@
     border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 11px;
   }
   .set-row input[type=checkbox] { width: 20px; height: 20px; accent-color: #f0b978; }
+  /* Cinematic mode. 2.39:1 letterbox bars are .letterbox; everything else but the world and Settings goes away. */
+  html.cinema-on body > *:not(#game-canvas):not(#settings-panel):not(.letterbox) { visibility: hidden !important; }
+  html.cinema-on #settings-panel { z-index: 400; }
+  html.cinema-on #settings-panel.open { visibility: visible !important; }
   #btn-copy-coord {
     position: static; width: 100%; margin-top: 10px; text-align: center;
   }
@@ -297,6 +301,20 @@
       <option value="1" selected>Shovel</option>
       <option value="2">Excavator bucket</option>
     </select>
+  </div>
+
+  <div class="set-row">
+    <label for="set-cinema">Cinematic mode
+      <span class="hint">Hide the HUD and buttons. Escape opens this panel again. Add ?cinema=1 to start this way.</span>
+    </label>
+    <input type="checkbox" id="set-cinema">
+  </div>
+
+  <div class="set-row">
+    <label for="set-letterbox">Letterbox 2.39:1
+      <span class="hint">Black bars for a film frame. The picture stays 2.39:1.</span>
+    </label>
+    <input type="checkbox" id="set-letterbox">
   </div>
 
   <div class="set-row">
