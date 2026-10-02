@@ -1,3 +1,4 @@
+import { mayBoard } from '../src/ship/hullCollision.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { getBody } from '../src/world/bodies.js';
 import { attachGrades, attachEdits } from '../src/world/field.js';
@@ -387,7 +388,7 @@ export class Authority {
       if(Math.abs(r.sw.x)>B.x||Math.abs(r.sw.z)>B.z||r.sw.y<B.y0||r.sw.y>B.y1)throw Error('Outside the cabin.');
       if(r.seat!==p.pose.seat)throw Error('Use the seat request.');
     }else if(distance(r.worldPos,p.pose.worldPos)>elapsed*12+2)throw Error('Walk to that place.');
-    p.pose={...structuredClone(r),seat:p.pose.seat};p.poseAt=this.now();
+    p.pose={...structuredClone(r),seat:p.pose.seat};p.poseAt=this.now();if(Number.isSafeInteger(a.seq))p.poseSeq=a.seq;
     if(aboard)this.sims.get(ship.id).flight.toWorld(p.pose.sw,p.pose.worldPos);
     if(a.controls&&['pilot','captain'].includes(p.pose.seat))this.inputs.set(p.id,{until:this.now()+1000,controls:Object.fromEntries(['fwd','lift','yaw'].map(k=>[k,Math.max(-1,Math.min(1,Number(a.controls[k])||0))]))});
   }
@@ -400,8 +401,8 @@ export class Authority {
         if(!this.elevator.request(a.destination))throw Error('The lift is already moving.');break;}
       case 'boarding-permission':{const own=this.state.ships[p.shipId];this.owner(p,own);own.crewMayBoard=!!a.allowed;break;}
       case 'board':{const target=this.state.ships[a.shipId||p.shipId];if(!target)throw Error('Unknown ship.');
-        if(target.owner!==p.id&&!target.crewMayBoard)throw Error('The owner has boarding closed.');
-        const ts=this.sims.get(target.id),dock=ts.def.dock;if(target.npc)throw Error('That is not your ship to board.');
+        if(!mayBoard(target,p.id))throw Error('The owner has boarding closed.');
+        const ts=this.sims.get(target.id),dock=ts.def.dock;
         if(p.frameId!==ts.frameId||distance(p.pose.worldPos,ts.flight.toWorld(dock.rampFoot,{}))>24)throw Error('Walk to the stern ramp.');
         if(!ts.flight.landed)throw Error('Wait for the ship to land.');
         if(a.walkPose){const r=a.walkPose,loc=ts.flight.toLocal(p.pose.worldPos,{});

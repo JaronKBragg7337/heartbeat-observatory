@@ -25,29 +25,42 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { GraphicsHealth } from './graphicsHealth.js';
+import { safeMaterials } from './safeMaterials.js';
 
 export class Engine {
   constructor(canvas, opts = {}) {
+    const params=new URLSearchParams(location.search);
+    this.safe=params.get('tier')==='safe';this.dprCap=this.safe?1:(opts.dprCap||2);this.safeCache=new Map();
+    window.addEventListener('error',e=>{if(/webgl|shader|out of memory|allocation failed/i.test(e.message||''))this.graphics.problem('Graphics initialization failed: '+e.message.slice(0,200));});
+    this.graphics=new GraphicsHealth(this.safe?'safe':params.get('tier')||('ontouchstart' in window?'low':'high'));
+    if(opts.world)this.graphics.bindWorld(opts.world);
+    canvas.addEventListener('webglcontextcreationerror',e=>this.graphics.problem('WebGL context creation: '+(e.statusMessage||'unavailable')));
+    const webgl1=this.safe||params.get('webgl')==='1';
+    try { const context=webgl1?canvas.getContext('webgl',{alpha:false,antialias:false,stencil:false}):undefined;
+    if(webgl1&&!context)throw Error('WebGL1 context unavailable');
     this.renderer = new THREE.WebGLRenderer({
+      ...(context?{context}:{}),
       canvas,
-      antialias: opts.antialias !== false,
+      antialias: !this.safe && opts.antialias !== false,
       powerPreference: 'high-performance',
       // Ask for a stencil too: some phones give a bare 16-bit depth buffer when none is requested, and give a
       // 24-bit depth+stencil one when it is. (Surfaces a centimetre apart fight in 16 bits.)
-      stencil: true,
+      stencil: !this.safe,
       // Metre-scale surfaces and a 160 km horizon cannot share linear 24-bit depth
       // with a 0.1 m near plane: at 20 km its steps are hundreds of metres.
-      logarithmicDepthBuffer: true,
-    });
+      logarithmicDepthBuffer: !this.safe && params.get('logdepth')!=='0',
+    }); } catch(e) {this.graphics.problem('WebGL renderer creation failed: '+String(e.message||e).slice(0,200));throw e;}
+    this.graphics.attach(this,this.renderer.getContext());
     // Cap DPR: a modern phone can report 3-4x, which quadruples fragment cost
     // for detail no one can resolve. This is a measured budget, not a
     // fidelity opinion — raise it when a real device says it can afford more.
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, opts.dprCap || 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.dprCap));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = !this.safe && params.get('shadows')!=='0';
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene = new THREE.Scene();
@@ -61,7 +74,7 @@ export class Engine {
       0.1,
       // Far enough for the Sun and Deimos (23,463 km out) as well as Mars's own limb. Logarithmic depth makes the
       // ratio free: precision is relative, so 0.1 m up close and 1e9 m away both resolve.
-      1.0e9
+      this.safe ? 2000 : Number(params.get('far')) || 1.0e9
     );
 
     /** Authoritative f64 camera position in the ACTIVE FRAME's metres (see "frames" below). */
@@ -104,7 +117,7 @@ export class Engine {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.dprCap));
     for (const fn of this._resizers) fn(w, h);
   }
 
@@ -179,13 +192,23 @@ export class Engine {
     }
     this.camera.position.set(0, 0, 0);
 
-    this.renderer.render(this.scene, this.camera);
+    if(this.safe){safeMaterials(this.scene,this.safeCache);for(const sc of this.overlayScenes)safeMaterials(sc,this.safeCache);}
+    const renderFrame=this.renderer.info.render.frame;
+    try { this.renderer.render(this.scene, this.camera);
+    const drewWorld=this.renderer.info.render.frame!==renderFrame;
+    // Overlay renders change GL's clear-color state even with autoClear off.
+    // Remember the world's clear color before they do, for the frame probe.
+    if(drewWorld&&this.graphics.checked<90&&(this.graphics.checked+1)%10===0){const gl=this.renderer.getContext();this.graphics.clearColor=Array.from(gl.getParameter(gl.COLOR_CLEAR_VALUE));}
     if (this.overlayScenes.length) {
       const r = this.renderer;
       r.autoClear = false;
       for (const sc of this.overlayScenes) r.render(sc, this.camera);
       r.autoClear = true;
     }
+    // Deterministic physics harnesses can replace render() with a no-op. An
+    // intentionally undrawn frame must not count as a failed GPU frame.
+    if(drewWorld)this.graphics.afterFrame();
+    } catch(e) { this.renderer.autoClear=true;this.graphics.problem('Render failed: '+String(e.message||e).slice(0,200)); }
   }
 
   start() {

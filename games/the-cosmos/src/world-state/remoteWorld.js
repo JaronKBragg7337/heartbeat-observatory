@@ -8,7 +8,7 @@ export function deviceIdentity(storage=localStorage,slot=identityKey) {
 }
 export class RemoteWorld {
   constructor(identity,url){this.identity=identity;this.url=url;this.remote=true;this.connected=false;this.saving=0;this.error='';this.handlers=new Map();
-    this.pendingActions=new Map();this.listeners=new Set();this.bricks=new Map();this.lastRevision=-1;}
+    this.pendingActions=new Map();this.listeners=new Set();this.bricks=new Map();this.lastRevision=-1;this.poseSeq=0;this.sentPoses=new Map();}
   register(){} // Existing local rule registration cannot mutate the remote authority.
   async load(){await this.connect();return {record:this.state,bricks:[...this.bricks.values()].filter(b=>b.bodyId==='mars')};}
   connect(){return new Promise((resolve,reject)=>{
@@ -30,7 +30,7 @@ export class RemoteWorld {
     };
   });}
   scheduleReconnect(){clearTimeout(this.retry);this.retry=setTimeout(()=>this.connect().then(()=>this.onConnection?.(true)).catch(()=>this.scheduleReconnect()),1500);}
-  apply(m){if(!m.state||m.state.revision<this.lastRevision)return;this.lastRevision=m.state.revision;this.snapshot=m.state;
+  apply(m){if(!m.state||m.state.revision<this.lastRevision||(m.serverAt&&m.serverAt<(this.serverAt||0)))return;this.lastRevision=m.state.revision;this.snapshot=m.state;this.serverAt=m.serverAt;
     for(const b of m.bricks||[])this.bricks.set(b.key,b);
     const p=m.state.players[this.playerId],ship=m.state.ships[p.aboardShipId||p.currentShipId||p.shipId],owned=m.state.ships[p.shipId];
     this.state={schema:1,revision:m.state.revision,economy:{...owned.economy,cargo:p.carried,traders:m.state.market.traders},
@@ -38,7 +38,7 @@ export class RemoteWorld {
     this.error=m.state.storageError||'';
     for(const fn of this.listeners)fn(m);
   }
-  sendPose(pose,controls){if(this.connected&&this.socket.readyState===WebSocket.OPEN)this.socket.send(stringify({type:'pose',pose,controls}));}
+  sendPose(pose,controls){if(this.connected&&this.socket.readyState===WebSocket.OPEN){const seq=++this.poseSeq;this.sentPoses.set(seq,structuredClone(pose));while(this.sentPoses.size>64)this.sentPoses.delete(this.sentPoses.keys().next().value);this.socket.send(stringify({type:'pose',pose,controls,seq}));}}
   request(action){if(!this.connected||this.socket.readyState!==WebSocket.OPEN)return Promise.resolve({ok:false,msg:'Shared world disconnected; wait for reconnect.'});
     const actionId=crypto.randomUUID();this.saving++;
     return new Promise(resolve=>{this.pendingActions.set(actionId,{action,resolve});this.socket.send(stringify({type:'action',actionId,action}));});}

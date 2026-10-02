@@ -24,9 +24,11 @@ export class PeopleLibrary {
   constructor(o = {}) {
     this.base = o.base || PEOPLE_BASE;
     this.phone = !!o.phone;
+    this.safe = !!o.safe;
     this.loader = new GLTFLoader();
     this._roster = null;
     this._glb = new Map();
+    this._safeFiles = new Set();
   }
 
   /** The people that exist: ['isaiah', 'ada', ...]. Empty if the folder cannot be reached (the game still runs). */
@@ -43,11 +45,12 @@ export class PeopleLibrary {
     if (!this._glb.has(file)) this._glb.set(file, this.loader.loadAsync(this.base + file));
     return this._glb.get(file);
   }
-  cachedFiles() { return [...this._glb.keys()]; }
+  cachedFiles() { return this.safe ? [...this._safeFiles] : [...this._glb.keys()]; }
 
   /** A person standing at the origin. Resolves once the model is in; the Person object is usable immediately. */
   spawn(id, file) {
     const p = new Person(id);
+    if(this.safe){this._safeFiles.add(file||id+'.glb');p._attachSafe();p.ready=Promise.resolve(p);return p;}
     p.ready = this.glb(file || id + '.glb').then((gl) => { p._attach(gl, this.phone); return p; })
       .catch((e) => { console.warn('person failed to load', id, e); return p; });
     return p;
@@ -107,9 +110,23 @@ export class Person {
     this._lookKey = key;
   }
 
+  // Avoid bone float textures and GLSL 3 texelFetch in the vendored renderer's
+  // skinning chunk. Safe mode uses a small animated, unskinned suit silhouette.
+  _attachSafe() {
+    this.safe=true;this.phase=0;this.body=new THREE.Group();this.group.add(this.body);
+    const mat=new THREE.MeshLambertMaterial({color:0xc3b7a2}),dark=new THREE.MeshLambertMaterial({color:0x453e37});
+    const part=(geometry,material,x,y,z)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);this.body.add(m);return m;};
+    part(new THREE.CapsuleGeometry(.23,.46,3,6),mat,0,1.15,0);
+    part(new THREE.SphereGeometry(.19,8,6),dark,0,1.61,0);
+    this.safeLegs=[-.13,.13].map(x=>part(new THREE.CapsuleGeometry(.09,.58,3,6),dark,x,.37,0));
+    this.safeArms=[-.32,.32].map(x=>part(new THREE.CapsuleGeometry(.07,.48,3,6),mat,x,1.1,0));
+    this.loaded=true;this.pose='Idle';
+  }
+
   /** Cross-fade to Idle, Walk or Sit. */
   play(name, fade = 0.25) {
     this._want = name;
+    if(this.safe){this.pose=name;return;}
     if (!this.loaded || this.pose === name) return;
     const next = this.acts[name]; if (!next) return;
     const prev = this.pose ? this.acts[this.pose] : null;
@@ -121,6 +138,10 @@ export class Person {
 
   /** Advance the animation. `speed` is the ground speed in m/s, so a slow walk is a slow step. */
   update(dt, speed = 0) {
+    if(this.safe){this.phase+=dt*Math.max(1,speed)*3;
+      const walking=this.pose==='Walk',sitting=this.pose==='Sit';
+      this.safeLegs.forEach((m,i)=>{m.rotation.x=sitting?-Math.PI/2:walking?Math.sin(this.phase+i*Math.PI)*.45:0;m.position.y=sitting?.6:.37;m.position.z=sitting?.28:0;});
+      this.safeArms.forEach((m,i)=>m.rotation.x=walking?-Math.sin(this.phase+i*Math.PI)*.35:0);return;}
     if (!this.mixer) return;
     if (this.pose === 'Walk' && this.acts.Walk) this.acts.Walk.timeScale = Math.max(0.4, Math.min(2.2, speed / WALK_CLIP_SPEED));
     this.mixer.update(dt);

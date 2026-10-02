@@ -54,7 +54,6 @@ import { landingField } from './world-state/fleet.js';
 import { attachMoonPads } from './space/moonField.js';
 
 const canvas = document.getElementById('game-canvas');
-const engine = new Engine(canvas, { fov: 72 });
 const body = getBody('mars');
 
 // --- Spawn. A real place, not a random direction. ---------------------------
@@ -70,6 +69,8 @@ try { const chosen = await chooseWorld(world); world = chosen.world; savedWorld 
 
 catch(e) { world.error=e.message;console.error('World save unavailable',e); }
 
+const engine = new Engine(canvas, { fov: 72,world });
+const safeGraphics=engine.safe;
 if(world.remote){attachGrades([portSite,landingField(portSite,()=>world.snapshot.pads)]);
   attachMoonPads(()=>{const out=[];for(const s of Object.values(world.snapshot?.ships||{})){if(!s.moonPads)continue;
     for(const id of ['phobos','deimos'])if(s.moonPads[id])out.push(s.moonPads[id]);}return out;});}
@@ -78,7 +79,7 @@ let multiplayer = null;
 // ---------------------------------------------------------------------------
 // World
 // ---------------------------------------------------------------------------
-const shell = buildGlobalShell(body, { segments: (new URLSearchParams(location.search).get('tier') === 'low' || (('ontouchstart' in window) && new URLSearchParams(location.search).get('tier') !== 'high')) ? 192 : 288 });   // finer than the old 128: from orbit the limb is the shell's silhouette
+const shell = buildGlobalShell(body, { segments: safeGraphics ? 64 : (new URLSearchParams(location.search).get('tier') === 'low' || (('ontouchstart' in window) && new URLSearchParams(location.search).get('tier') !== 'high')) ? 192 : 288 });   // finer than the old 128: from orbit the limb is the shell's silhouette
 const shellEntry = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: shell });
 engine.scene.add(shell);
 registry.register({
@@ -103,18 +104,18 @@ registry.register({
 // lid back on a hole as soon as you walked off and returned.
 const params = new URLSearchParams(location.search);
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-const tier = params.get('tier') === 'low' || params.get('tier') === 'high' ? params.get('tier') : (isTouch ? 'low' : 'high');
+const tier = safeGraphics ? 'low' : params.get('tier') === 'low' || params.get('tier') === 'high' ? params.get('tier') : (isTouch ? 'low' : 'high');
 
-const patch = new LocalPatch(body, { sizeM: 880, res: 132, skirtM: 15 });
+const patch = new LocalPatch(body, { sizeM: 880, res: safeGraphics ? 49 : 132, skirtM: 15 });
 engine.scene.add(patch.mesh);
 const patchEntry = engine.track({ worldPos: patch.worldPos, object3d: patch.mesh });
 
-const nearPatch = new LocalPatch(body, { sizeM: 48, res: 81 });
+const nearPatch = new LocalPatch(body, { sizeM: 48, res: safeGraphics ? 41 : 81 });
 nearPatch.mesh.name = `patch-near:${body.id}`;
 engine.scene.add(nearPatch.mesh);
 const nearEntry = engine.track({ worldPos: nearPatch.worldPos, object3d: nearPatch.mesh });
 
-const farPatches = DISTANT_TIERS[tier].map((opts, i) => {
+const farPatches = (safeGraphics ? [{sizeM:2400,res:33,skirtM:15}] : DISTANT_TIERS[tier]).map((opts, i) => {
   const p = new LocalPatch(body, opts);
   p.mesh.name = `patch-far-${i}:${body.id}`;
   // Grain is invisible at these distances; don't spend fragment work on it.
@@ -339,6 +340,7 @@ const shipType = (() => {
   return DEFAULT_SHIP_TYPE;
 })();
 const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier, landingSite: portSite, shipType });
+ship.safeGraphics=safeGraphics;
 let shipUI = null;
 try {
   ship.build();
@@ -372,7 +374,7 @@ const portTour = makePortTour({ engine, walker, ship: () => ship, port, rebuild:
 // --- the registry entry and the shadow are never empty. `hb-look` is the person you picked in the Loft (default Isaiah).
 const suitGroup = new THREE.Group();
 suitGroup.name = 'player-body';
-const people = new PeopleLibrary({ phone: tier === 'low' });
+const people = new PeopleLibrary({ phone: tier === 'low',safe:safeGraphics });
 let playerLook = 'isaiah';
 try { playerLook = localStorage.getItem('hb-look') || 'isaiah'; } catch (e) { /* storage may be blocked */ }
 const stand_in = [];
@@ -917,6 +919,7 @@ const freeCam = {
 };
 
 engine.addUpdater((dt) => {
+  multiplayer?.smoothActiveShip();
   if (freeCam.active) {
     suitGroup.visible = false;
     Object.assign(engine.cameraWorldPos, freeCam.eye);
@@ -979,6 +982,7 @@ engine.addUpdater((dt) => {
     walker.pitch = Math.max(-1.45, Math.min(1.45, walker.pitch));
     walker.tick(dt, input);
     if (inMarsFrame) { port.tick(dt, walker); rebuildNear(); }
+    multiplayer?.collideShips();
     updateCamera();
   }
   if (ship.ready) ship.late(dt);

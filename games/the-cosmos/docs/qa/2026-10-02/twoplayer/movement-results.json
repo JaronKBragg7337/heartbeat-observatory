@@ -1,0 +1,19 @@
+{
+  "results": {
+    "remoteHullCollision": true,
+    "closedBoarding": true,
+    "guestRampAndInterior": {
+      "start": 25.378740219620664,
+      "end": 20.24374021962065
+    },
+    "ownCorrectionStep": 0.04,
+    "networkJitter": {
+      "samples": 121,
+      "playerRms": 0.170659842124327,
+      "shipRms": 0.8306210698682349,
+      "playerMax": 0.623599609224703,
+      "shipMax": 3.117998046723487
+    }
+  },
+  "errors": []
+}

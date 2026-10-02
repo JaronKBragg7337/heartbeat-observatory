@@ -33,7 +33,8 @@ export async function runParityUIChecks({check,section}){
    await solo.evaluate(m=>{const c=cosmos;c.ship.aboard=false;Object.assign(c.walker.worldPos,c.port.site.toWorld(m.x,(m.y||0)+.02,m.z+1));c.walker.velocity={x:0,y:0,z:0};c.walker.grounded=false;c.walker.updateFrame();c.crewUI._accum=1;c.crewUI.close();c.step(1/30);},worker);
    const texts=[];
    for(const page of [solo,online]){await page.evaluate(()=>{cosmos.walker.velocity={x:0,y:0,z:0};cosmos.crewUI._accum=1;cosmos.crewUI.close();cosmos.step(1/30);});
-    assert.equal(await page.evaluate(()=>cosmos.crewUI.target?.id),worker.id);await page.locator('#crew-talk').tap();await page.locator('[data-a="worker-question"]').tap();texts.push(await page.locator('#crew-panel').innerText());}
+    const target=await page.evaluate(()=>({id:cosmos.crewUI.target?.id,remote:!!cosmos.world.remote,aboard:cosmos.ship.aboard,position:cosmos.port.site.toLocal(cosmos.walker.worldPos),correction:cosmos.multiplayer?.correction}));
+    assert.equal(target.id,worker.id,JSON.stringify(target));await page.locator('#crew-talk').tap();await page.locator('[data-a="worker-question"]').tap();texts.push(await page.locator('#crew-panel').innerText());}
    assert.equal(texts[0],texts[1]);
   }
   check('all 15 workers expose Talk and answer the same question identically solo and online',true);

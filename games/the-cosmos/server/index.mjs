@@ -4,6 +4,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FileAdapter, SupabaseAdapter } from './storage.mjs';
+import { logClientError } from './clientErrors.mjs';
 import { upgrade } from './websocket.mjs';
 import { stringify, parse } from '../src/world-state/wire.js';
 // Resolve browser import-map names after runtime hooks are registered, even on
@@ -12,7 +13,7 @@ const { Authority } = await import('./authority.mjs');
 
 const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.glb':'model/gltf-binary','.svg':'image/svg+xml','.webp':'image/webp'};
-export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,now=Date.now}={}) {
+export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,now=Date.now,clientErrorLog=resolve(root,'server/.data/client-errors.log')}={}) {
   if(!adapter){const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
     if(!!url!==!!key)throw Error('Set both Supabase environment variables.');
     if(url&&key)adapter=new SupabaseAdapter(url,key,process.env.COSMOS_WORLD_ID||'marineris');
@@ -21,7 +22,7 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
   const world=await new Authority(adapter,{now}).load();let timer,checkpoint=0,closing=false;
   const peers=new Set();
   const send=(peer,msg)=>peer.send(stringify(msg));
-  function broadcast(bricks=[]){for(const peer of peers)if(peer.playerId)send(peer,{type:'state',state:world.publicState(),bricks});}
+  function broadcast(bricks=[]){for(const peer of peers)if(peer.playerId)send(peer,{type:'state',state:world.publicState(),serverAt:now(),bricks});}
   const server=createServer(async(req,res)=>{
     if(req.url==='/health'){res.writeHead(world.error?503:200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({ok:!world.error,revision:world.state.revision,players:world.sessions.size,storage:adapter.constructor.name}));return;}
     try {const path=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
@@ -41,8 +42,9 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
       world.enqueue(async()=>{if(closing)return;let m;try{m=parse(text);}catch{peer.close();return;}
         try{
           if(m.type==='hello'){const p=await world.join(m.deviceKey,m.name,m.personId);peer.playerId=p.id;world.sessions.set(p.id,peer);
-            send(peer,{type:'welcome',playerId:p.id,state:world.publicState(),bricks:[...world.bricks.values()]});broadcast();}
+            send(peer,{type:'welcome',playerId:p.id,state:world.publicState(),serverAt:now(),bricks:[...world.bricks.values()]});broadcast();}
           else if(!peer.playerId)throw Error('Join first.');
+          else if(m.type==='client-error'){if(!peer.errorReports||peer.errorReports<4){peer.errorReports=(peer.errorReports||0)+1;await logClientError(clientErrorLog,m);}}
           else if(m.type==='pose'){world.updatePose(world.state.players[peer.playerId],m);}
           else if(m.type==='action'){const result=await world.action(peer.playerId,m.actionId,m.action);const bricks=result.bricks||[];delete result.bricks;
             send(peer,{type:'receipt',actionId:m.actionId,...result,revision:world.state.revision});broadcast(bricks);}

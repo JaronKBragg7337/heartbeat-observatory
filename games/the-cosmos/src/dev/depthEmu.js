@@ -12,7 +12,8 @@ import * as THREE from 'three';
 
 export const depthEmulation = (() => {
   try {
-    const v = new URLSearchParams(location.search).get('depth');
+    const params=new URLSearchParams(location.search);if(params.get('tier')==='safe'||params.get('webgl')==='1'||params.get('logdepth')==='0')return 0;
+    const v = params.get('depth');
     return v === '16' || v === '12' ? Number(v) : 0;
   } catch (e) { return 0; }
 })();

@@ -158,11 +158,12 @@ export const COVER_SIZE = 64;
 export const COVER_SHRINK_M = 0.15;
 
 export class CoverGrid {
-  constructor() {
-    this.size = COVER_SIZE;
+  constructor({safe=false}={}) {
+    this.safe=safe;this.size = COVER_SIZE;
     this.data = new Uint8Array(COVER_SIZE ** 3);
-    this.tex = new THREE.Data3DTexture(this.data, COVER_SIZE, COVER_SIZE, COVER_SIZE);
-    this.tex.format = THREE.RedFormat; this.tex.type = THREE.UnsignedByteType;
+    this.atlas=safe?new Uint8Array(COVER_SIZE ** 3):null;
+    this.tex = safe?new THREE.DataTexture(this.atlas,512,512):new THREE.Data3DTexture(this.data, COVER_SIZE, COVER_SIZE, COVER_SIZE);
+    this.tex.format = safe?THREE.LuminanceFormat:THREE.RedFormat; this.tex.type = THREE.UnsignedByteType;
     this.tex.minFilter = THREE.NearestFilter; this.tex.magFilter = THREE.NearestFilter;
     this.tex.wrapS = this.tex.wrapT = this.tex.wrapR = THREE.ClampToEdgeWrapping;
     this.tex.unpackAlignment = 1;
@@ -202,6 +203,7 @@ export class CoverGrid {
       if (!has.has(`${b.bx},${b.by},${b.bz + 1}`)) v |= 64;
       this.data[i] = v; any++;
     }
+    if(this.safe)for(let z=0;z<COVER_SIZE;z++)for(let y=0;y<COVER_SIZE;y++)for(let x=0;x<COVER_SIZE;x++)this.atlas[(Math.floor(z/8)*64+y)*512+(z%8)*64+x]=this.data[(z*64+y)*64+x];
     this.shared.uCoverOn.value = any ? 1 : 0;
     this.tex.needsUpdate = true;
   }
@@ -226,6 +228,7 @@ export class CoverGrid {
  * occupancy window's world origin), refreshed each frame by the owner.
  */
 export function installCoverDiscard(material, grid, offset, THREE_) {
+  material.userData.safeCover = {grid,offset};
   const prev = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     if (prev) prev(shader, renderer);
@@ -275,7 +278,7 @@ export class EditedTerrain {
     this.meshes = new Map();               // key -> { mesh, entry, bx, by, bz }
     this.pending = new Map();              // key -> { bx, by, bz }
     this.coverDirty = true;
-    this.cover = new CoverGrid();
+    this.cover = new CoverGrid({safe:!!engine.safe});
     this.focus = { bx: 0, by: 0, bz: 0 };
     this.lastBuildMs = 0; this.builtCount = 0; this.triangles = 0;
     this.material = new THREE.MeshStandardMaterial({

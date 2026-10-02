@@ -50,6 +50,7 @@ export function installTierDiscard(material) {
     uTierNorth: { value: new THREE.Vector3() }, uTierHalf: { value: 0 },
     uTierUp: { value: new THREE.Vector3() }, uTierPlane: { value: new THREE.Vector3() },
   };
+  material.userData.safeTier = uniforms;
   const prior = material.onBeforeCompile, priorKey = material.customProgramCacheKey();
   material.onBeforeCompile = function(shader, renderer) {
     prior.call(this, shader, renderer);

@@ -520,7 +520,7 @@ function paintFabric(pxPerM, seed, tone) {
  * @param {object} o  { tier: 'high'|'low', envInterior, envExterior }
  */
 export function makeShipMaterials(o = {}) {
-  const low = o.tier === 'low';
+  const low = o.tier === 'low' || o.tier === 'safe';
   const px = low ? 96 : 192;             // pixels per metre for room surfaces
   const pxHull = low ? 40 : 72;
   const mats = {};
@@ -536,7 +536,7 @@ export function makeShipMaterials(o = {}) {
   };
 
   const tex = {};
-  if (HAS_DOM) {
+  if (HAS_DOM && o.tier !== 'safe') {
     let seed = 11;
     for (const style of Object.keys(PALETTE)) {
       tex['wall:' + style] = paintWall(style, px, seed++, style === 'cargo');

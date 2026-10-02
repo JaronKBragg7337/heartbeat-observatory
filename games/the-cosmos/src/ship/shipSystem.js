@@ -1,3 +1,4 @@
+import { hullPush } from './hullCollision.js';
 // ============================================================================
 // shipSystem.js — the ship as a whole: built, placed on Mars, boarded, flown.
 //
@@ -115,7 +116,7 @@ export class ShipSystem {
     DEPTH_LIFT.value = depthLiftStepFor(this.depthBits);
 
     // --- materials: one set of textures, two sets of materials (each needs its own environment)
-    this.matsInt = makeShipMaterials({ tier: this.tier });
+    this.matsInt = makeShipMaterials({ tier: this.safeGraphics ? 'safe' : this.tier });
     this.matsExt = cloneMaterials(this.matsInt);
     // The raider's rooms share the Meridian's wall maps. Tint only the interior set, after the exterior clone, so a Shrike's dusk paint does not stain the Meridian or the hull outside.
     if (this.def.type === 'raider' && this.visuals.interiorPalette) this.visuals.interiorPalette(this.matsInt);
@@ -257,6 +258,7 @@ export class ShipSystem {
   }
 
   _makeEnvironments() {
+    if(this.safeGraphics||(typeof location!=='undefined'&&new URLSearchParams(location.search).get('env')==='0'))return;
     const r = this.engine.renderer;
     const pm = new THREE.PMREMGenerator(r);
     // exterior: a dusty sky with a low sun
@@ -861,29 +863,7 @@ export class ShipSystem {
 
   /** Horizontal push (ship-local) needed to get a body at `loc` out of the hull, or null. */
   _hullPush(loc) {
-    const H = AVATAR.heightM;
-    const feet = loc.y;
-    const P = this.def.hull.push, keelY = this.def.gear.keelY;
-    if (feet > P.topY || feet + H < keelY - 0.05) return null;
-    const z = loc.z;
-    if (z < P.zNose || z > P.zTail) {
-      // engines and the ramp gap: only the engine housings are solid, and only up high
-      return null;
-    }
-    // ramp corridors are open when lowered
-    const rc = this.state.ramps;
-    if (rc.cargo.lowered && z > P.rampGap.z && Math.abs(loc.x) < P.rampGap.hw) return null;
-    const hw = P.hwAt(z) + 0.3;
-    // the belly is solid down to the keel
-    if (feet + H < keelY - 0.05) return null;
-    if (Math.abs(loc.x) >= hw) return null;
-    // where would the shortest way out be?
-    const outX = (hw - Math.abs(loc.x)) * Math.sign(loc.x || 1);
-    const outZ = loc.z < 0 ? (P.zNose - z) : (P.zTail - z);
-    // the gangway hatch on the port side lets you in only when it is open
-    if (rc.airlock.lowered && loc.x < P.hatch.x && Math.abs(z - P.hatch.z) < P.hatch.r) return null;
-    if (Math.abs(outX) < Math.abs(outZ)) return { x: outX, z: 0, blockedVel: true };
-    return { x: 0, z: outZ, blockedVel: true };
+    return hullPush(this.def, this.state, loc);
   }
 
   // ---- guns ----------------------------------------------------------------------------

@@ -1,3 +1,4 @@
+import { buildInterior, buildSeats } from '../ship/shipInterior.js';
 // ============================================================================
 // world-state/fleetView.js - the other ships of the shared world, as you see them: raiders and their escorts, other players' hulls,
 // the fleet's bolts, the shipyard kiosk at the port, and the fleet section of the World / crew panel.
@@ -7,8 +8,9 @@
 //       buttons for buying a ship, making one your flagship and claiming a disabled or abandoned raider.
 // DOES NOT OWN: any of the state (server/authority.mjs holds it; this only reads the snapshot), or how a ship is built or flies.
 //
-// Positions arrive ten times a second; what is drawn is the snapshot's position carried forward by its velocity for the time since it
-// arrived, so a raider at 50 m/s does not jump five metres a tick.
+// Ship poses use the shared 100 ms interpolation buffer and bounded prediction;
+// crew ride the same displayed hull transform. Bolts and escorts retain their
+// existing short age-based prediction.
 // ============================================================================
 
 import * as THREE from 'three';
@@ -185,9 +187,12 @@ export class FleetView {
       seenShips.add(ship.id);
       const v = v0 || this.makeView(ship);
       const f = ship.pose, frame = this.frameOf(ship.frameId);
-      const pos = { x: f.pos.x + f.vel.x * age, y: f.pos.y + f.vel.y * age, z: f.pos.z + f.vel.z * age };
-      Object.assign(v.entry.worldPos, pos); v.entry.quaternion.fromArray(f.quaternion); v.entry.frame = frame;
+      const rendered = this.mp.shipPose(ship), pos = rendered.pos;
+      Object.assign(v.entry.worldPos, pos); v.entry.quaternion.fromArray(rendered.quaternion); v.entry.frame = frame;
       v.root.visible = sameFrame;
+      const near=sameFrame&&dist(pos,cam)<100;
+      if(near&&!v.interior){v.interior=buildInterior({...v.def.layout,custom:visualsFor(ship.type).custom},this.ship.matsInt,{tier:'low'});buildSeats(v.def.layout,this.ship.matsInt,v.interior);v.root.add(v.interior.root);}
+      if(v.interior){v.interior.root.visible=near;for(const d of v.interior.doors)d.group.visible=d.def.gate==='airlock_outer'?!ship.state.airlock.outerOpen:d.def.gate==='airlock_inner'?!ship.state.airlock.innerOpen:false;}
       if (sameFrame) { this.pose(v, ship); this.smoke(v, ship, dt); }
       // the label: what it is and how it is doing, for as long as it is near enough to read
       if (v.label) {
@@ -275,7 +280,7 @@ export class FleetView {
     const cam = this.engine.cameraWorldPos;
     for (const ship of Object.values(snapshot.ships)) {
       if (!ship.npc && ship.type === 'meridian') continue;
-      const f = ship.pose, def = shipDef(ship.type);
+      const f = this.mp.shipPose(ship), def = shipDef(ship.type);
       const near = ship.frameId === this.space.frameId && dist(f.pos, cam) < Math.min(this.cull, 700);
       const q = new THREE.Quaternion().fromArray(f.quaternion);
       for (const c of ship.crew || []) {

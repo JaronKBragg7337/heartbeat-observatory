@@ -10,7 +10,7 @@ export function shipPose(ship) {
 }
 export function playerPose(w,ship) {
   return {worldPos:{...w.worldPos},velocity:{...w.velocity},yaw:w.yaw,pitch:w.pitch,grounded:w.grounded,
-    aboard:ship.aboard,sw:{x:ship.sw.x,y:ship.sw.y,z:ship.sw.z,yaw:ship.sw.yaw,pitch:ship.sw.pitch},
+    aboard:ship.aboard,sw:{x:ship.sw.x,y:ship.sw.y,z:ship.sw.z,yaw:ship.sw.yaw,pitch:ship.sw.pitch,velocity:{x:ship.sw.vx||0,y:ship.sw.vy||0,z:ship.sw.vz||0}},
     seat:ship.seat?.id||null,look:{...ship.look}};
 }
 export class GameBridge {

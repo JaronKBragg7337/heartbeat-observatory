@@ -645,6 +645,10 @@ await runGrok2Checks({ check, section, THREE });
 const { runGrok4Checks } = await import('./grok4-checks.mjs');
 await runGrok4Checks({ check, section });
 
+const {runTwoPlayerChecks,runTwoPlayerBrowserChecks}=await import('./twoplayer-checks.mjs');
+await runTwoPlayerChecks({check,section});
+await runTwoPlayerBrowserChecks({check,section});
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));
