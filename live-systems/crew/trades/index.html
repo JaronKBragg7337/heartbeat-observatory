@@ -132,7 +132,10 @@
     page++;
     const html = (rows || []).map((t) => {
       const w = who(t.actor, t.at); let what;
-      if (t.kind === "fill") what = `${esc(t.side === "yes" ? "Bought" : "Sold")} ${esc(t.outcome || "")} · ${Number(t.quantity).toFixed(2)} shares at ${cents(t.price)} · ${usd(t.cost_usd)}`;
+      if (t.kind === "fill") {
+        const verb = t.action === "sell" ? "Sold" : t.action === "buy" ? "Bought" : "Filled";
+        what = `${verb} ${esc(t.outcome || "")} · ${Number(t.quantity).toFixed(2)} shares at ${cents(t.price)} · ${usd(t.cost_usd)}`;
+      }
       else if (t.kind === "resolution") { const p = Number(t.pnl_usd); what = `Settled · <b class="${p >= 0 ? "good" : "bad"}">${p >= 0 ? "+" : ""}${usd(p)}</b> on ${usd(t.cost_usd)} put in`; }
       else what = `${esc(t.kind)} ${usd(t.cost_usd)}${t.note ? " · " + esc(t.note) : ""}`;
       return `<div class="row"><div class="t">${esc(t.title || (t.kind === "deposit" ? "Deposit" : t.kind))}</div><div class="s">${what}</div>

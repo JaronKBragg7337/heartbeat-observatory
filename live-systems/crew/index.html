@@ -63,7 +63,7 @@
   ]);
   if (!snap) { $("updated").textContent = "No snapshot yet."; throw 0; }
   const d = snap.data;
-  $("updated").textContent = `Updated ${ago(snap.updated_at)} · refreshed every hour from the machine they run on`;
+  $("updated").textContent = `Updated ${ago(snap.updated_at)} · refreshed every 5 minutes from the machine they run on`;
   const traders = d.bots.filter((b) => b.ledger);
   const pnl = traders.reduce((t, b) => t + (b.ledger.pnl || 0), 0);
   const trades = traders.reduce((t, b) => t + (b.ledger.fills || 0), 0);

@@ -69,7 +69,8 @@
     ["Every 30 min", "Darios Twin (Grok)", "Reads the board and trades live games."],
     ["Every 2 h", "DeepSeek", "Researches markets that settle within 14 days and proposes trades."],
     ["Every 3 h", "Sams Twin (Grok)", "Reads what X says about the markets being traded."],
-    ["Every hour", "Health check", "Checks every job and connection, runs DeepSeek's loss breaker, updates these pages."],
+    ["Every 5 min", "Crew page", "Publishes each bot's instructions, what it just did, and the money roll-up. No AI."],
+    ["Every hour", "Health check", "Checks every job and connection, and runs DeepSeek's loss breaker."],
     ["Weekly, Mon 8:25", "Elons Twin (Grok)", "The Musk scoreboard: the gap and the one move that closes it most."],
   ];
   const toMin = (s) => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };

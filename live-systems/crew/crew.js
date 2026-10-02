@@ -1,4 +1,4 @@
-// Shared by every /live-systems/crew/ page. Data: public.crew_snapshot (written hourly by tools/publish-crew.py on the MSI),
+// Shared by every /live-systems/crew/ page. Data: public.crew_snapshot (written every 5 minutes by tools/publish-crew.py on the MSI),
 // plus the public trade tables. Everything here is public on purpose - Jaron: "people only believe it when they can see it."
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

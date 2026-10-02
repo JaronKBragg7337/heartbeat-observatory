@@ -75,20 +75,26 @@
     };
     const [{ data: res }, { data: fills }] = await Promise.all([
       who(supabase.from("desk_trades").select("at,pnl_usd").eq("kind", "resolution")).limit(2000),
-      who(supabase.from("desk_trades").select("at,title,slug,side,outcome,price,cost_usd").eq("kind", "fill")).order("at", { ascending: false }).limit(120),
+      who(supabase.from("desk_trades").select("at,title,slug,side,outcome,price,cost_usd,quantity,action").eq("kind", "fill")).order("at", { ascending: false }).limit(120),
     ]);
     $("chart").innerHTML = pnlChart(res || []);
-    // group the venue's partial fills into one row per trade (same market + side within the hour)
+    // One row per order: same market, side, and buy/sell within the hour (the venue splits a fill).
+    // A close is action "sell" and must not be folded into the buy.
     const grouped = [];
     for (const t of fills || []) {
-      const g = grouped.find((x) => x.slug === t.slug && x.side === t.side && Math.abs(new Date(x.at) - new Date(t.at)) < 3600e3);
-      if (g) { g.cost += Number(t.cost_usd) || 0; g.n += 1; g.px.push(Number(t.price) || 0); }
-      else grouped.push({ ...t, cost: Number(t.cost_usd) || 0, n: 1, px: [Number(t.price) || 0] });
+      const act = t.action === "sell" || t.action === "buy" ? t.action : "";
+      const qty = Number(t.quantity) || 0;
+      const px = Number(t.price) || 0;
+      const w = qty || 1;
+      const g = grouped.find((x) => x.slug === t.slug && x.side === t.side && x.action === act && Math.abs(new Date(x.at) - new Date(t.at)) < 3600e3);
+      if (g) { g.cost += Number(t.cost_usd) || 0; g.pxQty += px * w; g.w += w; g.n += 1; }
+      else grouped.push({ ...t, action: act, cost: Number(t.cost_usd) || 0, pxQty: px * w, w, n: 1 });
     }
     const when = (iso) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(",", "");
+    const verb = (a) => a === "sell" ? "sold" : a === "buy" ? "bought" : "filled";
     $("trades").querySelector("tbody").innerHTML = grouped.slice(0, 15).map((t) => {
-      const px = t.px.reduce((a, b) => a + b, 0) / t.px.length;
-      return `<tr><td class="small">${esc(when(t.at))}</td><td>${esc(t.title || t.slug)}<br><span class="muted small">bought ${esc(t.outcome || t.side || "")} at ${Math.round(px * 100)}¢</span></td><td>${usd(t.cost)}</td></tr>`;
+      const px = t.w > 0 ? t.pxQty / t.w : 0;
+      return `<tr><td class="small">${esc(when(t.at))}</td><td>${esc(t.title || t.slug)}<br><span class="muted small">${verb(t.action)} ${esc(t.outcome || t.side || "")} at ${Math.round(px * 100)}¢</span></td><td>${usd(t.cost)}</td></tr>`;
     }).join("") || `<tr><td colspan="3" class="muted">No trades yet.</td></tr>`;
   }
   const act = b.activity || [];
@@ -102,7 +108,10 @@
     const show = (i) => {
       $("text").textContent = blocks[i][1];
       [...$("tabs").children].forEach((btn, j) => btn.setAttribute("aria-selected", String(i === j)));
-      $("textnote").textContent = retired ? "Retired: kept for the record, no longer in use." : "This is the live text the AI runs on right now.";
+      const fresh = !retired && b.instructions_changed
+        ? ` Last change${b.instructions_updated ? " (" + b.instructions_updated + ")" : ""}: ${b.instructions_changed}.`
+        : "";
+      $("textnote").textContent = (retired ? "Retired: kept for the record, no longer in use." : "This is the live text the AI runs on right now.") + fresh;
     };
     $("tabs").innerHTML = blocks.map(([t], i) => `<button role="tab" data-i="${i}">${esc(t)}</button>`).join("");
     $("tabs").addEventListener("click", (e) => { if (e.target.dataset.i) show(+e.target.dataset.i); });
