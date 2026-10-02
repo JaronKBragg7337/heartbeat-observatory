@@ -51,6 +51,7 @@ import { chooseWorld } from './world-state/remoteWorld.js';
 import { MultiplayerView } from './world-state/multiplayerView.js';
 import { RemoteCrew } from './world-state/remoteCrew.js';
 import { landingField } from './world-state/fleet.js';
+import { attachMoonPads } from './space/moonField.js';
 
 const canvas = document.getElementById('game-canvas');
 const engine = new Engine(canvas, { fov: 72 });
@@ -69,7 +70,9 @@ try { const chosen = await chooseWorld(world); world = chosen.world; savedWorld 
 
 catch(e) { world.error=e.message;console.error('World save unavailable',e); }
 
-if(world.remote) attachGrades([portSite,landingField(portSite,()=>world.snapshot.pads)]);
+if(world.remote){attachGrades([portSite,landingField(portSite,()=>world.snapshot.pads)]);
+  attachMoonPads(()=>{const out=[];for(const s of Object.values(world.snapshot?.ships||{})){if(!s.moonPads)continue;
+    for(const id of ['phobos','deimos'])if(s.moonPads[id])out.push(s.moonPads[id]);}return out;});}
 let multiplayer = null;
 
 // ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ function label(text){const c=document.createElement('canvas');c.width=512;c.heig
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:true}));s.scale.set(3.6,.45,1);return s;}
 export class MultiplayerView {
   constructor(world,{engine,ship,walker,edits,digger,site,space,people,bridge,rebuild,port}) {
-    Object.assign(this,{world,engine,ship,walker,edits,digger,site,space,people,bridge,rebuild,port});this.bodies=new Map();this.fleet=new Map();this.pads=new Set();this.accum=0;this.forcePlayer=true;
+    Object.assign(this,{world,engine,ship,walker,edits,digger,site,space,people,bridge,rebuild,port});this.bodies=new Map();this.fleet=new Map();this.pads=new Set();this.moonPadIds=new Set();this.accum=0;this.forcePlayer=true;
     attachGrades([site,landingField(site,()=>world.snapshot.pads)]);
     space.portSite={...site,toWorld:(x,y,z)=>{const pad=world.snapshot.ships[this.activeId()].pad;return site.toWorld(pad.x+x,y,pad.z+z);}};
     ship.remoteAuthority=true;ship.flight.remoteAuthority=true;
@@ -120,6 +120,7 @@ export class MultiplayerView {
     for(const id of ids){const store=id==='mars'?this.edits:this.space.moonWorld(id).edits;
       restoreTerrain(store,snapshot.terrain[id],(m.bricks||[]).filter(b=>b.bodyId===id));}
     for(const pad of snapshot.pads)this.addPad(pad);
+    this.syncMoonPads();
     this.updateBodies(0);this.draw();
   }
   reloadForShip(s){if(this._reloading)return;let n=0;try{n=+sessionStorage.getItem('cosmos-ship-reloads')||0;}catch{}
@@ -134,6 +135,27 @@ export class MultiplayerView {
     for(const z of [-a.d/2+1,a.d/2-1]){const stripe=new THREE.Mesh(new THREE.BoxGeometry(a.w-2,.03,.18),paint);stripe.position.set(0,.035,z);g.add(stripe);}
     for(const x of [-a.w/2+1,a.w/2-1])for(const z of [-a.d/2+1,a.d/2-1]){const light=new THREE.Mesh(new THREE.CylinderGeometry(.16,.2,.7,8),new THREE.MeshBasicMaterial({color:0x58dbff}));light.position.set(x,.35,z);g.add(light);}
     const sign=label('PAD '+a.number);sign.position.set(0,1,a.d/2-3);g.add(sign);this.hallRoot.add(g);this.rebuild?.(true);
+  }
+  /** Markings for a ship's own moon pad. Drawn in that moon's frame, and only once the moon world exists. Regolith stays; this is paint and lights. */
+  syncMoonPads(){const space=this.space;if(!space?.worlds)return;
+    for(const ship of Object.values(this.world.snapshot.ships||{})){if(!ship.moonPads)continue;
+      for(const bodyId of ['phobos','deimos']){const a=ship.moonPads[bodyId];if(!a||this.moonPadIds.has(a.id))continue;
+        const w=space.worlds.get(bodyId);if(!w?.frame||!w.body?.playerPad)continue;
+        const pp=w.body.playerPad(a.east,a.north);this.moonPadIds.add(a.id);
+        const g=new THREE.Group();g.name='moon-pad-'+a.id;
+        const paint=new THREE.MeshStandardMaterial({color:0xf0bf55,emissive:0x34220a,roughness:.55,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-8});
+        for(const x of [-a.w/2+1,a.w/2-1]){const stripe=new THREE.Mesh(new THREE.BoxGeometry(.22,.02,a.d-4),paint);stripe.position.set(x,.04,0);g.add(stripe);}
+        for(const z of [-a.d/2+1,a.d/2-1]){const stripe=new THREE.Mesh(new THREE.BoxGeometry(a.w-4,.02,.22),paint);stripe.position.set(0,.04,z);g.add(stripe);}
+        const lampMat=new THREE.MeshBasicMaterial({color:0x58dbff});
+        for(const x of [-a.w/2+1.4,a.w/2-1.4])for(const z of [-a.d/2+1.4,a.d/2-1.4]){const light=new THREE.Mesh(new THREE.CylinderGeometry(.16,.2,.7,8),lampMat);light.position.set(x,.4,z);g.add(light);}
+        const sign=label('PAD '+a.number);sign.position.set(0,1.6,a.d/2-4);g.add(sign);
+        const east=new THREE.Vector3(pp.east.x,pp.east.y,pp.east.z),up=new THREE.Vector3(pp.up.x,pp.up.y,pp.up.z);
+        const south=new THREE.Vector3().crossVectors(east,up).normalize();
+        const q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(east,up,south));
+        this.engine.scene.add(g);
+        this.engine.track({worldPos:{x:pp.point.x,y:pp.point.y,z:pp.point.z},object3d:g,quaternion:q,frame:w.frame});
+      }
+    }
   }
   buildHall(){const site=this.site,g=this.hallRoot=new THREE.Group();const mat=new THREE.MeshStandardMaterial({color:0xb5a187,roughness:.85});
     const add=(x,y,z,w,h,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);g.add(m);};

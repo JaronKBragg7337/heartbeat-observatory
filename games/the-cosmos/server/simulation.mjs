@@ -8,7 +8,7 @@ import { makeMoon } from '../src/space/moonField.js';
 import { surfaceRadiusFast } from '../src/world/field.js';
 import { GunSystem, DroneSystem } from '../src/ship/guns.js';
 import { Stations } from '../src/ship/shipStations.js';
-import { BOUNTY_CREDITS } from '../src/space/spaceSpec.js';
+import { BOUNTY_CREDITS, STANDOFF_M } from '../src/space/spaceSpec.js';
 import { CrewSystem } from '../src/crew/crewSystem.js';
 import { Autopilot } from '../src/crew/autopilot.js';
 import { CREW_POSTS } from '../src/crew/crewSpec.js';
@@ -53,7 +53,16 @@ export class ShipSimulation {
     this.onLanded=dest=>onArrive(dest);this.onHeld=dest=>onArrive(dest);this.say=(msg,warn)=>this.ship.note(msg,warn);
     this.moonWorld=id=>({body:makeMoon(id)});
     this.portHeading=()=>site.heading;
-    this.resolve=id=>SpaceSystem.prototype.resolve.call(this,id);
+    this.resolve=id=>{
+      const dest=SpaceSystem.prototype.resolve.call(this,id);
+      if(!dest||dest.kind!=='moon')return dest;
+      const pad=record.moonPads?.[dest.moon];
+      if(!pad||!Number.isFinite(pad.east)||!Number.isFinite(pad.north))return dest;
+      const moon=dest.moon;
+      dest.goalS=()=>{const b=makeMoon(moon),c=b.centre,s=b.playerPad(pad.east,pad.north).standoff(STANDOFF_M);return {x:c.x+s.x,y:c.y+s.y,z:c.z+s.z};};
+      dest.name=`${dest.name} (pad ${pad.number})`;
+      return dest;
+    };
     if(record.pose)applyFlight(this.flight,record.pose);
     else if(record.pad) {
       const p=site.toWorld(record.pad.x,2,record.pad.z);this.flight.setDown(p,site.heading);
@@ -99,9 +108,25 @@ export class ShipSimulation {
     for(const c of this.record.crew){const post=this.def.crewPosts.find(r=>r.id===c.role)||CREW_POSTS.find(r=>r.id===c.role);if(!post)continue;const def={...post,skill:c.skill};
       this.crew.members.set(c.id,{...c,def,status:'hired',seated:c.status==='aboard'&&!c.displaced,mode:c.status==='aboard'?'sit':c.status==='boarding'?'boarding':c.status.startsWith('leaving')?'leaving':'walk'});}
   }
-  crewOrder(p,a,authority){if(p.aboardShipId!==this.record.id)throw Error('Come aboard first.');
+  orderKey(order,args){if(order==='hold')return null;if(order==='goto')return `goto:${args?.id||''}`;return order;}
+  /** The same order, already being flown, is not given again. A second player or a repeated click keeps the one flight. */
+  _sameOrder(order,args,key){
+    if(!key)return false;
+    if(order==='goto'&&String(args.id||'').startsWith('sp:')){
+      const id=String(args.id).slice(3);
+      if(this.trip?.active&&this.trip.dest?.id===id){this.record.orderKey=key;return true;}
+      return false;
+    }
+    if(this.record.orderKey!==key)return false;
+    if(this.crew.pending?.o&&this.crew.pending.o.type!=='hold')return true;
+    return this.crew.hasOrder();
+  }
+  crewOrder(p,a){if(p.aboardShipId!==this.record.id)throw Error('Come aboard first.');
     this.syncCrew();this.ship.aboard=true;
-    const result=this.crew.order(a.order,a.args||{});if(!result.ok)throw Error(result.msg);return result;
+    const args=a.args||{},key=this.orderKey(a.order,args);
+    if(this._sameOrder(a.order,args,key))return {ok:true,same:true,msg:'Already on that order.'};
+    const result=this.crew.order(a.order,args);if(!result.ok)throw Error(result.msg);
+    this.record.orderKey=key;return result;
   }
   cycleAirlock(){if(!this.ship.cycleAirlock())throw Error('The airlock is busy or cannot open here.');}
   setFrame(id) {
@@ -196,6 +221,9 @@ export class ShipSimulation {
       progress:{...t.progress},said:[...t._said],attFrom:t._attFrom?.toArray()||null,transit:t.transit?structuredClone(t.transit):null}:null;
     this.record.state=this.ship.state;
     this.record.air={...this.ship.air};this.record.order=this.crew.activeOrder()||this.crew.pending?.o||null;
+    const pending=this.crew.pending;
+    const spaceLive=!!(t?.active&&this.record.orderKey&&this.record.orderKey===`goto:sp:${t.dest?.id}`);
+    if(!spaceLive&&(pending?.o?.type==='hold'||(!this.crew.hasOrder()&&!pending)))this.record.orderKey=null;
     const ap=this.crew.ap;this.record.autopilot=ap?structuredClone(Object.fromEntries(['order','steps','step','t','out','_think','_seen','_lastCall'].map(k=>[k,ap[k]]))):null;
     this.record.pendingOrder=this.crew.pending?{o:structuredClone(this.crew.pending.o),t:this.crew.pending.t}:null;
     this.record.combat={bolts:structuredClone(this.guns.bolts),cool:{...this.guns.cool},alt:{...this.guns.alt},shots:{...this.guns.shots},aim:structuredClone(this.guns.aim),

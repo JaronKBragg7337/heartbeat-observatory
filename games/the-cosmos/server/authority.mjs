@@ -5,7 +5,7 @@ import { createPortSite, TOWER_SPOTS, TOWER, clearSpoilGround } from '../src/por
 import { PORT_WORKERS } from '../src/port/portPeople.js';
 import { rampEntry } from '../src/ship/rampTransfer.js';
 import { TowerElevator } from '../src/port/towerElevator.js';
-import { allocatedPad, landingField } from '../src/world-state/fleet.js';
+import { allocatedPad, allocatedMoonPad, landingField } from '../src/world-state/fleet.js';
 import { initialEconomy, reduceEconomy, sumExact } from '../src/economy/economy.js';
 import { WAGES, SOL_SECONDS, QUESTS } from '../src/economy/catalog.js';
 import { CREW_POSTS } from '../src/crew/crewSpec.js';           // the Meridian's posts, and the pool of candidates the hall holds
@@ -19,7 +19,7 @@ import { SHIPYARD, forSale } from '../src/ships/shipyard.js';
 import { FleetDirector } from './fleet.mjs';
 import { RAIDER_CREW_POSTS } from '../src/ships/raider/crew.js';
 import { encodeBrick, terrainMeta, restoreTerrain } from '../src/world-state/terrainCodec.js';
-import { makeMoon } from '../src/space/moonField.js';
+import { makeMoon, attachMoonPads } from '../src/space/moonField.js';
 import { GunnerAI } from '../src/crew/gunnerAI.js';
 import { routeToSeat, RouteWalker } from '../src/crew/shipPath.js';
 import { SAMPLE_PAY_CREDITS, SAMPLE_REACH_M, SALVAGE_CREDITS, SALVAGE_KG, SALVAGE_REACH_M, MAT_ITEM } from '../src/space/jobs.js';
@@ -30,6 +30,12 @@ const cleanName=s=>String(s||'Visitor').replace(/[<>\x00-\x1f]/g,'').slice(0,32)
 const finitePoint=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
 const yes=(msg='Saved to the shared world.')=>({ok:true,msg});
+// A hired pilot's order is work, even while the ship is still on the ground. Hold is not.
+const orderLive=sim=>{const r=sim.record,p=r.pendingOrder?.o,o=r.order,ap=r.autopilot?.order;
+  if(p&&p.type&&p.type!=='hold')return true;
+  if(o&&o.type&&o.type!=='hold')return true;
+  if(ap&&ap.type&&ap.type!=='hold')return true;
+  return !!r.orderKey;};
 export const CREW_HALL={x:-28,z:-68,w:24,d:14,h:5,door:{x:-28,z:-60}};
 
 export class Authority {
@@ -49,14 +55,24 @@ export class Authority {
     if(elapsed){this.advance(elapsed,{catchUp:true});}
     this.fleet.ensure();await this.commit();return this;
   }
-  rebuild(){attachGrades([this.site,landingField(this.site,()=>this.state.pads)]);this.stores=new Map();
+  rebuild(){attachGrades([this.site,landingField(this.site,()=>this.state.pads)]);
+    attachMoonPads(()=>{const out=[];for(const s of Object.values(this.state.ships)){if(!s.moonPads)continue;
+      for(const id of ['phobos','deimos'])if(s.moonPads[id])out.push(s.moonPads[id]);}return out;});
+    this.stores=new Map();
     this.elevator=Object.assign(new TowerElevator(),this.state.elevator||{});this.crewRoutes=new Map();
     for(const id of ['mars','phobos','deimos']){const e=new EditStore(id==='mars'?this.mars:makeMoon(id));attachEdits(e);
       restoreTerrain(e,this.state.terrain[id],[...this.bricks.values()].filter(b=>b.bodyId===id));this.stores.set(id,e);}
     this.sims=new Map(Object.values(this.state.ships).map(s=>[s.id,this.makeSim(s)]));
   }
   /** One ship's simulation, whatever its type; a raider also gets its brain and its escort wing. */
-  makeSim(s){const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.otherSim=id=>this.sims.get(id);if(s.npc)this.fleet.attach(sim);return sim;}
+  makeSim(s){this.ensureMoonPads(s);const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.otherSim=id=>this.sims.get(id);if(s.npc)this.fleet.attach(sim);return sim;}
+  /** One Phobos pad and one Deimos pad per owned ship. Append-only: a pad already on the record stays put. */
+  ensureMoonPads(ship){if(ship.npc)return;ship.moonPads=ship.moonPads||{};
+    for(const bodyId of ['phobos','deimos']){const cur=ship.moonPads[bodyId];
+      if(cur&&cur.shipId===ship.id&&Number.isFinite(cur.east)&&Number.isFinite(cur.north))continue;
+      let index=0;for(const other of Object.values(this.state.ships)){if(other===ship||other.npc)continue;
+        const p=other.moonPads?.[bodyId];if(p&&Number.isFinite(p.east))index++;}
+      ship.moonPads[bodyId]=allocatedMoonPad(bodyId,index,ship.id);}}
   enqueue(fn){const p=this.queue.then(fn);this.queue=p.catch(()=>{});return p;}
   publicState(){const s=structuredClone(this.state);delete s.receipts;
     for(const p of Object.values(s.players)){delete p.deviceHash;p.online=this.sessions.has(p.id);}
@@ -113,7 +129,7 @@ export class Authority {
   advance(seconds,{catchUp=false}={}){let left=seconds;
     // A raider is always in the air, so while the world runs it ticks at 30 Hz; while a restart catches up on hours it does not (it simply
     // waits where it was), or loading a long-idle world would simulate a million raider ticks.
-    while(left>1e-8){const active=[...this.sims.values()].some(s=>(!catchUp||!s.record.npc)&&(s.trip||!s.flight.landed||s.guns.bolts.length||s.drones.shots.length||s.record.crew.some(c=>c.status==='walking-aboard')));
+    while(left>1e-8){const active=[...this.sims.values()].some(s=>(!catchUp||!s.record.npc)&&(s.trip||!s.flight.landed||orderLive(s)||s.guns.bolts.length||s.drones.shots.length||s.record.crew.some(c=>c.status==='walking-aboard')));
       const dt=Math.min(left,active?1/30:1);left-=dt;this.state.clock+=dt;
       const oldY=this.elevator.y,riders=[];let sill=false;
       for(const p of Object.values(this.state.players))if(!p.aboardShipId&&p.frameId==='mars'){
@@ -141,7 +157,7 @@ export class Authority {
           }}
         // (catching up on a long absence a ship that is sitting on the ground with nothing asked of it stays where it is: stepping its landing
         //  physics a hundred and twenty times a second for hours is the slowest thing a restart does)
-        if(!(catchUp&&sim.flight.landed&&!sim.trip&&!sim.flight.autoHover&&!control.lift&&!control.fwd&&!control.yaw))
+        if(!(catchUp&&sim.flight.landed&&!sim.trip&&!orderLive(sim)&&!sim.flight.autoHover&&!control.lift&&!control.fwd&&!control.yaw))
         {this.fleet.preStep(sim);sim.step(dt,control);this.fleet.postStep(sim);}
         const events=[...sim.guns.drain().map(e=>({...e,system:'guns'})),...sim.drones.drain().map(e=>({...e,system:'drones'}))];
         for(const e of events){ship.eventSeq=(ship.eventSeq||0)+1;ship.events=ship.events||[];ship.events.push({...e,seq:ship.eventSeq});}
@@ -218,6 +234,12 @@ export class Authority {
       if(PORT_WORKERS.some(m=>Math.hypot(loc.x-m.x,loc.z-m.z)<.55))return false;
       if(Math.abs(loc.x-CREW_HALL.x)<CREW_HALL.w/2+.3&&Math.abs(loc.z-CREW_HALL.z)<CREW_HALL.d/2+.3)return false;
       if(Object.values(this.state.pool).some(c=>!c.retired&&!c.shipId&&distance(loc,c.position)<1))return false;
+    }
+    if(frame==='phobos'||frame==='deimos'){
+      const info=makeMoon(frame).padInfo,rel={x:x-info.point.x,y:y-info.point.y,z:z-info.point.z};
+      const east=rel.x*info.east.x+rel.y*info.east.y+rel.z*info.east.z,north=rel.x*info.north.x+rel.y*info.north.y+rel.z*info.north.z;
+      for(const s of Object.values(this.state.ships)){const a=s.moonPads?.[frame];
+        if(a&&Math.abs(east-a.east)<a.w/2+1.8&&Math.abs(north-a.north)<a.d/2+1.8)return false;}
     }
     for(const sim of this.sims.values())if(sim.frameId===frame){const q=sim.flight.toLocal(point,{});
       if(Math.abs(q.x)<13.5&&q.z>-25&&q.z<36&&q.y>-5&&q.y<12)return false;

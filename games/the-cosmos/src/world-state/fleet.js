@@ -5,6 +5,18 @@ export function allocatedPad(index, shipId) {
     x: index === 0 ? 0 : 150 + ((index - 1) % 4) * 64,
     z: index === 0 ? 0 : -120 + Math.floor((index - 1) / 4) * 100, w: 38, d: 64 };
 }
+/** One pad on Phobos or Deimos, in the survey pad's east/north metres. Append-only, like Mars.
+ *  The grid starts north of the Phobos rock survey (east 90..400, north -100..200) so the graded
+ *  disc does not plane off the boulders the looks checks measure. A 40 m flat holds the 38×64
+ *  rectangle; the step is wider than two flats, so neighbouring pads do not share a plane. */
+export function allocatedMoonPad(bodyId, index, shipId) {
+  const n = index + 1;
+  return {
+    id: `moon-${bodyId}-${n}`, shipId, bodyId, number: String(n).padStart(2, '0'),
+    east: 220 + (index % 4) * 96, north: 260 + Math.floor(index / 4) * 120,
+    flatM: 40, blendM: 52, w: 38, d: 64,
+  };
+}
 export function landingField(site, getPads) {
   return { bodyId: 'mars',
     weight(x,y,z) { const p=site.toLocal({x,y,z}); let best=0;

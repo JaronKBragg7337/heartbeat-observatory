@@ -52,6 +52,15 @@ const CELLS = [4200, 2100, 1050, 520, 260, 130, 64, 32, 16];
 
 /** Build the body record for a moon id. Cached per id: one record, one field. */
 const _bodies = new Map();
+// Per-ship pads, read when the field is sampled. Empty until an authority (or the remote client) attaches them.
+// The cached body stays valid: the getter is read at query time, and it is null while the survey pad is built.
+let _getMoonPads = () => [];
+export function attachMoonPads(get) { _getMoonPads = typeof get === 'function' ? get : (() => []); }
+function padsFor(bodyId) {
+  let all = [];
+  try { all = _getMoonPads() || []; } catch { all = []; }
+  return all.filter((a) => a && a.bodyId === bodyId && Number.isFinite(a.east) && Number.isFinite(a.north));
+}
 export function makeMoon(id) {
   if (_bodies.has(id)) return _bodies.get(id);
   const S = MOONS[id];
@@ -238,23 +247,64 @@ export function makeMoon(id) {
     return Math.max(0.42, Math.min(1, shade));
   }
 
-  // the graded pad: a true plane perpendicular to the radial through the pad's centre, blended into the natural ground
+  // the graded survey pad: a true plane perpendicular to the radial through the pad's centre, blended into the natural ground
   const padRc = (() => { const re = reOf(...padDir); return re + relief(padDir[0], padDir[1], padDir[2], re) - 0.0; })();
   const padPlaneR = padRc;
-  function surfaceRadiusBody(u, v, w) {
+  // Null until the survey pad's east/north exist, so measuring that pad cannot see a player pad.
+  let padFrame = null;
+  const geomCache = new Map();
+  function radiusBare(u, v, w) {
     const re = reOf(u, v, w);
     let R = re + relief(u, v, w, re);
     const cosp = u * padDir[0] + v * padDir[1] + w * padDir[2];
-    let padS = 1e9;
     if (cosp > 0.97) {
-      padS = Rm * Math.acos(Math.min(1, cosp));
+      const padS = Rm * Math.acos(Math.min(1, cosp));
       if (padS < pad.blendM) {
         const wt = 1 - sstep(pad.flatM, pad.blendM, padS);
         R += (padPlaneR / cosp - R) * wt;
       }
     }
-    // rocks sit on the graded ground, and they stay off the landing plane (flat to 5 cm inside the pad)
-    R += rockAdded(u, v, w, re);
+    return R;
+  }
+  // east/north metres in the survey pad's tangent plane -> unit moon-local direction. Small-angle, same as the sample sites.
+  function tangentDir(eastM, northM) {
+    const ke = eastM / Rm, kn = northM / Rm;
+    const dx = padUp.x + padEast.x * ke + padNorth.x * kn;
+    const dy = padUp.y + padEast.y * ke + padNorth.y * kn;
+    const dz = padUp.z + padEast.z * ke + padNorth.z * kn;
+    const l = Math.hypot(dx, dy, dz) || 1;
+    return [dx / l, dy / l, dz / l];
+  }
+  function geomOf(a) {
+    let g = geomCache.get(a.id);
+    if (g) return g;
+    const d = tangentDir(a.east, a.north);
+    const q = toBodyDir(d[0], d[1], d[2]);
+    g = { d, q, plane: radiusBare(q[0], q[1], q[2]) };
+    geomCache.set(a.id, g);
+    return g;
+  }
+  // The nearest player pad's plane, or null. One pad wins, so two shoulders do not stack.
+  function playerWeight(u, v, w) {
+    if (!padFrame) return null;
+    let bestWt = 0, best = null;
+    for (const a of padsFor(S.id)) {
+      const g = geomOf(a);
+      const cosp = u * g.q[0] + v * g.q[1] + w * g.q[2];
+      if (cosp <= 0.97) continue;
+      const s = Rm * Math.acos(Math.min(1, cosp));
+      if (!(s < a.blendM)) continue;
+      const wt = 1 - sstep(a.flatM, a.blendM, s);
+      if (wt > bestWt) bestWt = wt, best = { wt, plane: g.plane, cosp, flat: s < a.flatM };
+    }
+    return best;
+  }
+  function surfaceRadiusBody(u, v, w) {
+    let R = radiusBare(u, v, w);
+    const pw = playerWeight(u, v, w);
+    if (pw) R += (pw.plane / pw.cosp - R) * pw.wt;
+    // rocks sit on the graded ground, and they stay off every landing plane
+    R += rockAdded(u, v, w, reOf(u, v, w));
     return R;
   }
   function rockAdded(u, v, w, re) {
@@ -265,6 +315,8 @@ export function makeMoon(id) {
     let fade = 1;
     if (along < 58) fade = 0;
     else if (along < 86) fade = sstep(58, 86, along);
+    const pw = playerWeight(u, v, w);
+    if (pw) { if (pw.flat) return 0; fade = Math.min(fade, 1 - pw.wt); }
     if (fade <= 0) return 0;
     return fade * boulderHeight(u * re, v * re, w * re);
   }
@@ -308,6 +360,7 @@ export function makeMoon(id) {
   // east/north at the pad, world-aligned (same convention as geodesy.js: east = -Z at lon 0)
   const padEast = (() => { const l = Math.hypot(padUp.x, padUp.z) || 1; return { x: padUp.z / l, y: 0, z: -padUp.x / l }; })();
   const padNorth = (() => { const u = padUp, e = padEast; return { x: u.y * e.z - u.z * e.y, y: u.z * e.x - u.x * e.z, z: u.x * e.y - u.y * e.x }; })();
+  padFrame = { up: padUp, east: padEast, north: padNorth };
   const SITES = [[170, 70], [640, 150], [1100, 20]];
   const sampleSites = SITES.map(([dist, brg], i) => {
     const bb = brg * DEG, k = dist / Rm;
@@ -349,6 +402,20 @@ export function makeMoon(id) {
     },
     // helpers
     bodyLatLon, surfacePoint, padInfo: { ...pad, point: padPoint, up: padUp, east: padEast, north: padNorth, planeR: padPlaneR },
+    /** A per-ship pad in moon-local metres. `standoff` is where a descent starts, straight above that pad. */
+    playerPad(eastM, northM) {
+      const d = tangentDir(eastM, northM);
+      const q = toBodyDir(d[0], d[1], d[2]);
+      const plane = radiusBare(q[0], q[1], q[2]);
+      const up = { x: d[0], y: d[1], z: d[2] };
+      const point = { x: up.x * plane, y: up.y * plane, z: up.z * plane };
+      const dotE = padEast.x * up.x + padEast.y * up.y + padEast.z * up.z;
+      const ex = padEast.x - up.x * dotE, ey = padEast.y - up.y * dotE, ez = padEast.z - up.z * dotE;
+      const el = Math.hypot(ex, ey, ez) || 1;
+      const east = { x: ex / el, y: ey / el, z: ez / el };
+      const north = { x: up.y * east.z - up.z * east.y, y: up.z * east.x - up.x * east.z, z: up.x * east.y - up.y * east.x };
+      return { up, point, east, north, planeR: plane, standoff(alt) { const L = plane + alt; return { x: up.x * L, y: up.y * L, z: up.z * L }; } };
+    },
     sampleSites, derelict,
     axesWorld: { ex, ey, ez },
     toBodyDir, fromBody,
@@ -364,6 +431,8 @@ export function makeMoon(id) {
         if (padS < pad.flatM) s = 1;
         else if (padS < pad.blendM) s += (1 - s) * (1 - sstep(pad.flatM, pad.blendM, padS));
       }
+      const pw = playerWeight(q[0], q[1], q[2]);
+      if (pw) { if (pw.flat) s = 1; else s += (1 - s) * pw.wt; }
       return s;
     },
     /** the bare ellipsoid's radius along a world direction (no relief): for measuring how rough the ground is */

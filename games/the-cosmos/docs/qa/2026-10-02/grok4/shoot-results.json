@@ -1,0 +1,28 @@
+{
+  "port": 56509,
+  "hunt": {
+    "landed": false,
+    "agl": 93.66749594267458,
+    "order": "hunt",
+    "frame": "mars"
+  },
+  "phobos": {
+    "a": {
+      "landed": true,
+      "number": "01"
+    },
+    "b": {
+      "landed": true,
+      "number": "02"
+    }
+  },
+  "deimos": {
+    "landed": true,
+    "number": "01",
+    "frames": {
+      "desk": "deimos",
+      "phone": "deimos"
+    }
+  },
+  "pageErrors": []
+}

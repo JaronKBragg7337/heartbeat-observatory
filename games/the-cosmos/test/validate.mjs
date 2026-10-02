@@ -641,6 +641,10 @@ await runLooksChecks({ check, section, THREE });
 const { runGrok2Checks } = await import('./grok2-checks.mjs');
 await runGrok2Checks({ check, section, THREE });
 
+// 29. Server-held pilot orders, and a pad of your own on each moon.
+const { runGrok4Checks } = await import('./grok4-checks.mjs');
+await runGrok4Checks({ check, section });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));
