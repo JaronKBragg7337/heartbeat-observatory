@@ -14,6 +14,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
+const COSMOS_BUILD_ID = 'phone-check-2026-10-02-a';
 import { depthEmulation } from './dev/depthEmu.js';
 import { auditGaps } from './dev/gapAudit.js';
 import { Engine } from './core/engine.js';
@@ -1218,6 +1219,7 @@ engine.start();
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
 if (devMode) window.cosmos = {
+  buildId: COSMOS_BUILD_ID,
   opening,
   multiplayer,
   world, worldBridge, economyUI,
