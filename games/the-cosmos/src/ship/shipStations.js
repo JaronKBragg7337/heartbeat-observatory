@@ -137,7 +137,8 @@ export class Stations {
   mayOperateRamp() { return this.allowed('ramp'); }
 
   note(msg, warn = false) {
-    this.log.push({ t: this.ship.time, msg, warn });
+    if (msg == null || msg === '') return;
+    this.log.push({ t: this.ship.time, msg: String(msg), warn });
     if (this.log.length > 200) this.log.shift();
   }
 

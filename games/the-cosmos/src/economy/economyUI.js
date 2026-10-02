@@ -5,16 +5,21 @@ export class EconomyUI {
   constructor(world,{port,walker,ship,bridge}) {
     Object.assign(this,{world,port,walker,ship,bridge});this.accum=0;this.open=false;
     const style=document.createElement('style');style.textContent=`
-      #purse{position:fixed;right:12px;top:62px;z-index:67;color:#ffdb9c;background:#18120be8;border:1px solid #ae8548;border-radius:9px;min-height:44px;padding:5px 10px;font:12px ui-monospace,monospace;max-width:calc(100vw - 24px)}
+      #purse{position:static;display:block;color:#ffdb9c;background:none;border:0;padding:0;text-align:left;font:10px ui-monospace,monospace;pointer-events:auto;max-width:100%;cursor:pointer}
+      #save-warning{position:fixed;right:16px;top:56px;width:10px;height:10px;border-radius:50%;background:#ff6351;z-index:70;border:0;padding:0;cursor:pointer}
       #account-panel{display:none;position:fixed;right:12px;top:110px;z-index:70;width:min(320px,calc(100vw - 24px));max-height:calc(100dvh - 190px);overflow:auto;box-sizing:border-box;background:#18120bf5;color:#ffdfb9;border:1px solid #ae8548;border-radius:12px;padding:14px;font:12px/1.5 ui-monospace,monospace}
       #account-panel button,#quest-deliver{min-height:46px;padding:8px 12px;border:1px solid #ae8548;border-radius:9px;background:#342713;color:#ffdfb9;font:inherit}
       #quest-deliver{display:none;position:fixed;bottom:230px;right:12px;z-index:67;max-width:calc(100vw - 24px)}
-      @media(max-width:520px){#purse{font-size:10px;top:calc(var(--hud-bottom,140px) + 52px);right:8px}#account-panel{right:8px;top:calc(var(--hud-bottom,140px) + 100px);max-height:calc(100dvh - var(--hud-bottom,140px) - 164px)}}
+      #account-panel{touch-action:pan-y;overscroll-behavior:contain}
+      #account-panel .account-close{position:sticky;top:0;display:block;margin-left:auto;background:#342713}
+      @media(max-width:520px){#account-panel{right:10px;left:10px;width:auto;top:68px;max-height:calc(100dvh - 90px)}}
     `;document.head.appendChild(style);
     this.purse=document.createElement('button');this.purse.id='purse';this.purse.setAttribute('aria-label','Purse, supplies, crew wages and quests');
     this.panel=document.createElement('div');this.panel.id='account-panel';
     this.deliver=document.createElement('button');this.deliver.id='quest-deliver';this.deliver.textContent='Deliver 1 tonne · receive 400 marks';
-    document.body.append(this.purse,this.panel,this.deliver);
+    document.getElementById('hud').append(this.purse);document.body.append(this.panel,this.deliver);
+    this.warning=document.createElement('button');this.warning.id='save-warning';this.warning.title='Connection / save problem';this.warning.setAttribute('aria-label','Connection or save problem — open Settings');this.warning.hidden=true;document.body.append(this.warning);
+    this.warning.onclick=()=>document.getElementById('settings-panel').classList.add('open');
     this.purse.onclick=()=>{this.open=!this.open;this.draw();};
     this.panel.onclick=e=>{if(e.target.closest('button')){this.open=false;this.draw();}};
     this.deliver.onclick=()=>{if(!this.deliveryQuest)return;const r=world.dispatch({type:'quest-step',id:this.deliveryQuest.id});ship.note(r.msg,!r.ok);this.draw();};
@@ -36,17 +41,20 @@ export class EconomyUI {
   }
   tick(dt) {this.accum+=dt;if(this.accum<.25)return;this.accum=0;this.draw();}
   draw() {
+    if(!this.purse.isConnected)document.getElementById('hud').append(this.purse);
     const e=this.world.state.economy,w=this.world;
     const save=w.error?(w.remote?'Shared world disconnected':'SAVE FAILED'):w.saving?'Saving...':w.remote?'Saved to shared world':w.offline?'Offline solo - saved locally':'Saved locally';
-    this.purse.textContent=`${e.marks.toLocaleString()} marks · ${(e.marks/4).toLocaleString()} cr · ${save}`;
+    this.purse.textContent=`${e.marks.toLocaleString()} marks · ${(e.marks/4).toLocaleString()} cr`;
+    document.getElementById('save-status').textContent=save+(w.error?': '+w.error:'');
     this.purse.style.borderColor=w.error?'#ff6351':'#ae8548';
+    this.warning.hidden=!w.error;
     const p=this.port.site.toLocal(this.walker.worldPos);
     this.deliveryQuest=QUESTS.find(q=>e.quests[q.id]?.status==='active'&&Math.hypot(p.x-q.target.x,p.z-q.target.z)<q.target.radius);
     const q=this.deliveryQuest;
     this.deliver.style.display=q&&!this.ship.aboard&&Math.abs(p.y)<2?'block':'none';
     if(q)this.deliver.textContent=`Deliver ${q.tonnes} tonne · receive ${q.rewardMarks} marks`;
     this.panel.style.display=this.open?'block':'none';if(!this.open)return;
-    this.panel.innerHTML=`<b>Ship account · Mars marks</b><p>${e.marks} marks (${e.marks/4} credits)<br>4 marks = 1 credit<br>${save}${w.error?': '+w.error:''}</p>`+
+    this.panel.innerHTML=`<button class="account-close" aria-label="Close account">Close</button><b>Ship account · Mars marks</b><p>${e.marks} marks (${e.marks/4} credits)<br>4 marks = 1 credit<br>${save}${w.error?': '+w.error:''}</p>`+
       `<p>Supplies · ${inventoryMass(e.inventory)} kg<br>${Object.entries(e.inventory).map(([k,n])=>`${GOODS[k].name}: ${n}`).join('<br>')}</p>`+
       `<p>Crew wages per Mars sol (${(88775.244/3600).toFixed(2)} hours)<br>${Object.entries(e.crew).map(([id,c])=>`${id}: ${WAGES[id]*4} marks · ${c.unpaid?'UNPAID: leaves at next port':Math.max(0,(c.nextPay-e.elapsedSeconds)/3600).toFixed(1)+' h until due'}`).join('<br>')||'No crew hired.'}</p>`+
       QUESTS.map(q=>`<p>${q.title}<br>${e.quests[q.id]?.status==='active'?`Accepted · bay ${Math.round(Math.hypot(p.x-q.target.x,p.z-q.target.z))} m away`:e.quests[q.id]?.status==='complete'?'Complete · paid':'Ask the tower watch supervisor for work.'}</p>`).join('')+`<button>Close</button>`;

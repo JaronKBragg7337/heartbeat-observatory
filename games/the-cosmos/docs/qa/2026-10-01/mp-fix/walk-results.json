@@ -1,0 +1,299 @@
+{
+  "results": {
+    "boarding": {
+      "world": {
+        "x": 1689074.5976573776,
+        "y": -812739.0798087316,
+        "z": 2833346.060112598
+      },
+      "sw": {
+        "x": -8.370060200491025e-11,
+        "y": -2.1456212823498166,
+        "z": 25.379304470462174
+      }
+    },
+    "walkedOff": true,
+    "hallTrail": [
+      {
+        "name": "Ada",
+        "status": "meeting",
+        "position": {
+          "x": -30.67179882264862,
+          "y": 0,
+          "z": -63.007698233972924
+        }
+      },
+      {
+        "name": "Zuri",
+        "status": "meeting",
+        "position": {
+          "x": -29.37165594187538,
+          "y": 0,
+          "z": -62.42913985468846
+        }
+      },
+      {
+        "name": "Jorge",
+        "status": "meeting",
+        "position": {
+          "x": -28.407017679453894,
+          "y": 0,
+          "z": -62.052632595904186
+        }
+      },
+      {
+        "name": "Aoi",
+        "status": "meeting",
+        "position": {
+          "x": -27.592982320546106,
+          "y": 0,
+          "z": -62.052632595904186
+        }
+      },
+      {
+        "name": "Sunita",
+        "status": "meeting",
+        "position": {
+          "x": -26.62834405812462,
+          "y": 0,
+          "z": -62.42913985468846
+        }
+      },
+      {
+        "name": "Walter",
+        "status": "meeting",
+        "position": {
+          "x": -25.328201177351374,
+          "y": 0,
+          "z": -63.007698233972924
+        }
+      }
+    ],
+    "workers": [
+      {
+        "id": "cab-pad-1",
+        "answer": "Pad controller, pad 01\nPad controller, pad 01\n✕\n\nPad 01 is assigned to Meridian. Keep the approach clear.\n\nWe keep the port running a watch at a time. The supervisor upstairs has the paid jobs.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "cab-pad-2",
+        "answer": "Pad controller, pads 02 and 03\nPad controller, pads 02 and 03\n✕\n\nShuttle and courier traffic use pads 02 and 03.\n\nWe keep the port running a watch at a time. The supervisor upstairs has the paid jobs.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "cab-ground",
+        "answer": "Ground controller\nGround controller\n✕\n\nStay on the marked foot route across the apron.\n\nWe keep the port running a watch at a time. The supervisor upstairs has the paid jobs.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "cab-approach",
+        "answer": "Approach controller\nApproach controller\n✕\n\nApproach desk. Watching for inbound traffic.\n\nWe keep the port running a watch at a time. The supervisor upstairs has the paid jobs.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "cab-weather",
+        "answer": "Weather officer\nWeather officer\n✕\n\nWeather sensors are offline. Watch the dust outside.\n\nWe keep the port running a watch at a time. The supervisor upstairs has the paid jobs.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "cab-supervisor",
+        "answer": "Watch supervisor\nWatch supervisor\n✕\n\nThis watch keeps the apron clear for arrivals.\n\nThe depot needs one tonne of raw regolith. Take it to the amber weigh bay west of the depot. Payment: 400 marks.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "cab-runner",
+        "answer": "Shift runner\nShift runner\n✕\n\nI carry the shift notes between desks.\n\nWe keep the port running a watch at a time. The supervisor upstairs has the paid jobs.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "cab-binoculars",
+        "answer": "Lookout at the glass\nLookout at the glass\n✕\n\nWatching the horizon. No traffic to report.\n\nWe keep the port running a watch at a time. The supervisor upstairs has the paid jobs.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "depot-clerk",
+        "answer": "Supply clerk\nSupply clerk\n✕\n\nSupply desk. Raw regolith: 12 marks a tonne. We weigh it here.\n\nOne tonne at a time from your cart or hopper. Pure regolith only. The rest of your load stays with you.\nAll right. Let us trade.\nGoodbye"
+      },
+      {
+        "id": "arrival-guide",
+        "answer": "Arrival guide\nArrival guide\n✕\n\nWelcome to Marineris. Depot west, market south, control tower north. Use the lift inside.\n\nWe keep the port running a watch at a time. The supervisor upstairs has the paid jobs.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "reception-clerk",
+        "answer": "Reception clerk\nReception clerk\n✕\n\nControl is upstairs. Call the lift straight ahead.\n\nWe keep the port running a watch at a time. The supervisor upstairs has the paid jobs.\nUnderstood. What can I do here?\nGoodbye"
+      },
+      {
+        "id": "trader-1",
+        "answer": "Food trader\nFood trader\n✕\n\nYou look like someone who skipped breakfast. I can fix that.\n\nSealed rations. Coffee is a morale budget, but food is a fuel budget.\nThen I had better pack some.\nGoodbye"
+      },
+      {
+        "id": "trader-2",
+        "answer": "Salvage trader\nSalvage trader\n✕\n\nGot a serial number? Good. Got a broken part? Better.\n\nWorking spares and sealed ammunition, yes. I pay half the shelf price. No mystery scrap.\nFair. Show me the shelf.\nGoodbye"
+      },
+      {
+        "id": "trader-3",
+        "answer": "Water trader\nWater trader\n✕\n\nA tight cap is worth more than a pretty bottle out here.\n\nFiltered ice melt. Every seal checked twice. Dust only has to win once.\nI will check my seals too.\nGoodbye"
+      },
+      {
+        "id": "trader-4",
+        "answer": "Field kit trader\nField kit trader\n✕\n\nBefore you leave: hose, valve, seam. In that order.\n\nThe part you did not check. Carry oxygen and a spare kit. Come back with both unused.\nLet me see the field supplies.\nGoodbye"
+      }
+    ],
+    "crew": [
+      {
+        "role": "pilot",
+        "text": "Ada\nPilot · skill 82%\n✕\n\nAt their station.\n\nFly to...\nPick a place\nHunt hostile drones\nOut beyond Mars neutral airspace\nGet supplies\nDepot run and back\nRoam and explore\nWander the country; call out what is found\nLand here\nSet down where we are\nHold position\nHover and wait\nReturn to port\nBack to the Meridian's pad\nTake the pilot seat\nDismiss"
+      },
+      {
+        "role": "captain",
+        "text": "Zuri\nCaptain · skill 85%\n✕\n\nAt their station.\n\nFly to...\nPick a place\nHunt hostile drones\nOut beyond Mars neutral airspace\nGet supplies\nDepot run and back\nRoam and explore\nWander the country; call out what is found\nLand here\nSet down where we are\nHold position\nHover and wait\nReturn to port\nBack to the Meridian's pad\nTake the captain's chair\nDismiss"
+      },
+      {
+        "role": "nav",
+        "text": "Jorge\nNavigator · skill 78%\n✕\n\nAt their station.\n\nReport: where are we, what is around us\nThe navigator reads the scanner\nTake the navigation seat\nDismiss"
+      },
+      {
+        "role": "comms",
+        "text": "Aoi\nCommunications officer · skill 80%\n✕\n\nAt their station.\n\nChannel and account report\nTake the comms seat\nDismiss"
+      },
+      {
+        "role": "gunner_dorsal",
+        "text": "Sunita\nGunner (dorsal) · skill 75%\n✕\n\nAt their station.\n\nTake the dorsal turret\nDismiss"
+      },
+      {
+        "role": "gunner_ventral",
+        "text": "Walter\nGunner (ventral) · skill 72%\n✕\n\nAt their station.\n\nTake the ventral turret\nDismiss"
+      }
+    ],
+    "pilotTripSpeeds": true,
+    "observation": true,
+    "soloTalkCompared": [
+      "cab-pad-1",
+      "cab-pad-2",
+      "cab-ground",
+      "cab-approach",
+      "cab-weather",
+      "cab-supervisor",
+      "cab-runner",
+      "cab-binoculars",
+      "depot-clerk",
+      "arrival-guide",
+      "reception-clerk",
+      "trader-1",
+      "trader-2",
+      "trader-3",
+      "trader-4"
+    ],
+    "phonePanels": {
+      "world": {
+        "top": 68,
+        "bottom": 822,
+        "left": 10,
+        "right": 380,
+        "height": 752,
+        "content": 928,
+        "touch": "pan-y"
+      },
+      "settings": {
+        "top": 58,
+        "bottom": 662.5,
+        "left": 80,
+        "right": 380,
+        "height": 603,
+        "content": 603,
+        "touch": "pan-y"
+      },
+      "account": {
+        "top": 68,
+        "bottom": 502,
+        "left": 10,
+        "right": 380,
+        "height": 432,
+        "content": 432,
+        "touch": "pan-y"
+      },
+      "talk": {
+        "top": 68,
+        "bottom": 421.046875,
+        "left": 12,
+        "right": 378,
+        "height": 351,
+        "content": 351,
+        "touch": "pan-y"
+      },
+      "course": {
+        "top": 96,
+        "bottom": 501.109375,
+        "left": 10,
+        "right": 380,
+        "height": 403,
+        "content": 667,
+        "touch": "pan-y"
+      },
+      "jobs": {
+        "top": 96,
+        "bottom": 372.515625,
+        "left": 10,
+        "right": 380,
+        "height": 275,
+        "content": 275,
+        "touch": "pan-y"
+      },
+      "controls": {
+        "top": 406,
+        "bottom": 728,
+        "left": 12,
+        "right": 362,
+        "height": 322,
+        "content": 322,
+        "touch": "pan-y"
+      }
+    },
+    "phoneStations": [
+      {
+        "seat": "captain",
+        "top": 70,
+        "bottom": 110,
+        "left": 10,
+        "right": 380,
+        "height": 38,
+        "content": 38,
+        "touch": "pan-y"
+      },
+      {
+        "seat": "pilot",
+        "top": 70,
+        "bottom": 110,
+        "left": 10,
+        "right": 380,
+        "height": 38,
+        "content": 38,
+        "touch": "pan-y"
+      },
+      {
+        "seat": "nav",
+        "top": 88,
+        "bottom": 400.5,
+        "left": 10,
+        "right": 380,
+        "height": 311,
+        "content": 311,
+        "touch": "pan-y"
+      },
+      {
+        "seat": "comms",
+        "top": 88,
+        "bottom": 270,
+        "left": 10,
+        "right": 380,
+        "height": 180,
+        "content": 180,
+        "touch": "pan-y"
+      },
+      {
+        "seat": "engineer",
+        "top": 88,
+        "bottom": 334,
+        "left": 10,
+        "right": 380,
+        "height": 244,
+        "content": 244,
+        "touch": "pan-y"
+      }
+    ],
+    "pageErrors": []
+  },
+  "errors": []
+}

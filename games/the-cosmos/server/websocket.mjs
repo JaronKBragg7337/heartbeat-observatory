@@ -23,7 +23,7 @@ export function upgrade(req, socket, head, onMessage, onClose) {
       if ((buf[0] & 112) || !(buf[1] & 128) || ![0, 1, 8, 9, 10].includes(op)) return socket.destroy();
       let n = buf[1] & 127, offset = 2;
       if (n === 126) { if (buf.length < 4) return; n = buf.readUInt16BE(2); offset = 4; }
-      if (n === 127) { if (buf.length < 10) return; const large = buf.readBigUInt64BE(2); if (large > 65536n) return socket.destroy(); n = Number(large); offset = 10; }
+      else if (n === 127) { if (buf.length < 10) return; const large = buf.readBigUInt64BE(2); if (large > 65536n) return socket.destroy(); n = Number(large); offset = 10; }
       if (n > 65536 || (op >= 8 && (!fin || n > 125))) return socket.destroy();
       if (buf.length < offset + 4 + n) return;
       const mask = buf.subarray(offset, offset + 4), payload = Buffer.from(buf.subarray(offset + 4, offset + 4 + n));

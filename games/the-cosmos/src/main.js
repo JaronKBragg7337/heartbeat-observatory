@@ -48,6 +48,7 @@ import { DamageView } from './world-state/damageView.js';
 import { SpaceSystem } from './space/spaceSystem.js';
 import { chooseWorld } from './world-state/remoteWorld.js';
 import { MultiplayerView } from './world-state/multiplayerView.js';
+import { RemoteCrew } from './world-state/remoteCrew.js';
 import { landingField } from './world-state/fleet.js';
 
 const canvas = document.getElementById('game-canvas');
@@ -415,7 +416,10 @@ if (ship.ready && !world.remote) {
     crewUI = new CrewUI(c, { ship, walker, isTouch, portPeople });
   }).catch((e) => console.error('Crew failed to build', e));
 }
-if(world.remote) portPeople.build().then(()=>{worldBridge.portPeople=portPeople;});
+if(world.remote) portPeople.build().then(()=>{worldBridge.portPeople=portPeople;
+  crew = new RemoteCrew(multiplayer);ship.crew=crew;multiplayer.crew=crew;
+  crewUI = new CrewUI(crew,{ship,walker,isTouch,portPeople});
+});
 digger.canPlaceSpoil = makeSpoilGuard({ port, portPeople, ship, getCrew: () => crew });
 
 // --- Landmark markers, so the debug layer has real registered assets --------
@@ -681,15 +685,19 @@ let ambientDepth = 0;
 // Debug layer + HUD
 // ---------------------------------------------------------------------------
 const debugLayer = new DebugLayer(engine, body, registry);
-const hud = document.getElementById('hud');
+const hudRoot = document.getElementById('hud');
+const hud = document.createElement('div');hud.id='hud-readout';hudRoot.prepend(hud);
 const settingsPanel = document.getElementById('settings-panel');
+document.getElementById('btn-close-settings').onclick=()=>settingsPanel.classList.remove('open');
+document.getElementById('settings-account').onclick=()=>{settingsPanel.classList.remove('open');economyUI.open=true;economyUI.draw();};
+window.addEventListener('keydown',e=>{if(e.code==='Escape')settingsPanel.classList.remove('open');});
 
 function refreshHud() {
   const g = walker.geodetic;
   const load = carriedMass();
   if (ship.ready && ship.aboard) {
     hud.innerHTML = ship.hudText() + `<br><span class="dim">${formatCoord(g.lat, g.lon, g.alt)}</span>`;
-    document.documentElement.style.setProperty('--hud-bottom', `${hud.offsetTop + hud.offsetHeight}px`);
+    document.documentElement.style.setProperty('--hud-bottom', `${hudRoot.offsetTop + hudRoot.offsetHeight}px`);
     return;
   }
   const moon = space.activeMoon;
@@ -703,7 +711,7 @@ function refreshHud() {
       `<br><span class="load">${tool().carrier}: ${load.toFixed(1)} / ${tool().capacityKg.toFixed(0)} kg</span>` +
       `<div class="load-bar" role="progressbar" aria-label="Carried soil" aria-valuemin="0" aria-valuemax="${tool().capacityKg}" aria-valuenow="${load}"><i style="width:${Math.min(100, load / tool().capacityKg * 100)}%"></i></div>` +
       `<span class="dim">tool: ${tool().name}</span>`;
-    document.documentElement.style.setProperty('--hud-bottom', `${hud.offsetTop + hud.offsetHeight}px`);
+    document.documentElement.style.setProperty('--hud-bottom', `${hudRoot.offsetTop + hudRoot.offsetHeight}px`);
     return;
   }
   hud.innerHTML =
@@ -716,7 +724,7 @@ function refreshHud() {
     `<i style="width:${Math.min(100, load / tool().capacityKg * 100)}%"></i></div>` +
     (load ? `<span class="dim">${(carriedVolume() * 1000).toFixed(0)} L · ${carried.length} loads</span><br>` : '<br>') +
     `<span class="dim">tool: ${tool().name}</span>`;
-  document.documentElement.style.setProperty('--hud-bottom', `${hud.offsetTop + hud.offsetHeight}px`);
+  document.documentElement.style.setProperty('--hud-bottom', `${hudRoot.offsetTop + hudRoot.offsetHeight}px`);
 }
 engine.onResize(refreshHud);
 

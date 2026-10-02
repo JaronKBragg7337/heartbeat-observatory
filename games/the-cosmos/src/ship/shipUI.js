@@ -44,7 +44,7 @@ const CSS = `
   width: min(300px, calc(100vw - 210px)); min-width: 176px;
   background: rgba(4,20,27,.86); backdrop-filter: blur(9px);
   border: 1px solid rgba(95,216,255,.4); border-radius: 12px; padding: 9px 10px; color: #d8f6ff;
-  font-size: 11px; line-height: 1.5; display: none; pointer-events: auto; max-height: 46vh; overflow: hidden;
+  font-size: 11px; line-height: 1.5; display: none; pointer-events: auto; max-height: 46vh; overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain;
 }
 #ship-panel h3 { margin: 0 0 6px; font-size: 10px; letter-spacing: 2px; color: #5fd8ff; font-weight: 600; }
 #ship-panel canvas { width: 100%; height: auto; display: block; border-radius: 8px; }

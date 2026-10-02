@@ -15,7 +15,8 @@ const CSS = `
   max-height: calc(100vh - 150px); overflow-y: auto; -webkit-overflow-scrolling: touch;
   background: rgba(4,20,27,.92); backdrop-filter: blur(10px); border: 1px solid rgba(95,216,255,.45); border-radius: 14px;
   padding: 10px 11px 12px; color: #d8f6ff; font-size: 12px; line-height: 1.45; }
-#space-sheet h3 { margin: 0 0 6px; font-size: 10px; letter-spacing: 2px; color: #5fd8ff; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+#space-sheet { touch-action: pan-y; overscroll-behavior: contain; }
+#space-sheet h3 { position: sticky; top: -10px; background: #04141b; z-index: 1; margin: 0 0 6px; font-size: 10px; letter-spacing: 2px; color: #5fd8ff; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
 #space-sheet .tabs { display: flex; gap: 6px; margin-bottom: 8px; }
 #space-sheet .tab, #space-sheet .go, #space-sheet .wp { font: inherit; font-size: 12px; color: #d8f6ff; background: rgba(95,216,255,.1); border: 1px solid rgba(95,216,255,.4);
   border-radius: 10px; padding: 8px 10px; min-height: 44px; text-align: left; line-height: 1.25; }
@@ -31,7 +32,7 @@ const CSS = `
 #space-sheet .wp.on { background: rgba(95,216,255,.35); }
 #space-sheet .dim { color: #6fa3b3; }
 #space-sheet .big { font-size: 15px; color: #fff; }
-#space-sheet .close { font: inherit; background: none; border: none; color: #8fc8d8; font-size: 18px; padding: 0 4px; }
+#space-sheet .close { font: inherit; background: none; border: none; color: #8fc8d8; font-size: 18px; padding: 0 4px; min-width:44px;min-height:44px; }
 @media (max-width: 520px) { #space-sheet { top: calc(96px + env(safe-area-inset-top, 0px)); right: 10px; left: 10px; width: auto; max-height: 48vh; } }
 `;
 

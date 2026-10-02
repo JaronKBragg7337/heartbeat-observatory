@@ -21,7 +21,8 @@ const CSS = `
 #crew-panel { position: fixed; display: none; pointer-events: auto; left: 50%; transform: translateX(-50%);
   bottom: calc(66px + env(safe-area-inset-bottom, 0px)); width: min(380px, calc(100vw - 24px)); max-height: min(calc(100vh - 150px), 560px); overflow-y: auto;
   background: rgba(14,10,7,.9); backdrop-filter: blur(10px); border: 1px solid rgba(240,185,120,.45); border-radius: 14px; padding: 10px 11px 11px; color: #ead9c6; font-size: 12px; line-height: 1.45; }
-#crew-panel .hd { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+#crew-panel { touch-action: pan-y; overscroll-behavior: contain; }
+#crew-panel .hd { position: sticky; top: -10px; background: #100c09; z-index: 1; display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
 #crew-panel .hd img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: #2a211a; flex: none; }
 #crew-panel .hd b { display: block; color: #ffd9ac; font-size: 14px; letter-spacing: .3px; }
 #crew-panel .hd span { color: #a8917b; font-size: 11px; }
@@ -32,6 +33,7 @@ const CSS = `
 #crew-panel .cbtn small { display: block; color: #a8917b; font-size: 10.5px; margin-top: 1px; }
 #crew-panel .row2 { display: flex; gap: 6px; } #crew-panel .row2 .cbtn { flex: 1; text-align: center; }
 #crew-panel .stat { color: #a8917b; font-size: 11px; margin: 0 0 8px; }
+@media(max-width:520px){#crew-panel{top:68px;bottom:auto;max-height:calc(100dvh - 90px)} }
 `;
 
 export class CrewUI {
@@ -110,9 +112,10 @@ export class CrewUI {
       h += workerHTML(m,this.view,c.world?.state.economy||c.account);
     } else if (m.status === 'candidate') {
       h += `<p>${esc(def.pitch)}</p><p class="stat">Works at ${Math.round(def.skill * 100)}% of a good hand: about ${thinkDelay(def.skill).toFixed(1)} s to react, and a little off in the aim. Stays aboard until you say otherwise.</p>`;
-      const fee=WAGES[m.id]*4,balance=(c.world?.state.economy||c.account).marks;
-      h += `<p class="stat">Signing fee ${fee} marks (${WAGES[m.id]} credits). Wage ${fee} marks per Mars sol. Purse ${balance} marks. Unpaid crew leave at the next port.</p>`;
-      h += `<div class="col"><button class="cbtn" data-a="hire" ${balance<fee?'disabled':''}>Hire ${esc(m.name)} · ${fee} marks</button><button class="cbtn" data-a="close">Not now</button></div>`;
+      const wage=WAGES[m.def.id],fee=wage*4,balance=(c.world?.state.economy||c.account).marks;
+      h += `<p class="stat">Signing fee ${fee} marks (${wage} credits). Wage ${fee} marks per Mars sol. Purse ${balance} marks. Unpaid crew leave at the next port.</p>`;
+      const meeting=m.meetingState&&m.meetingState!=='waiting';
+      h += `<div class="col"><button class="cbtn" data-a="${meeting?'meet':'hire'}" ${balance<fee?'disabled':''}>${meeting?'Meet':'Hire'} ${esc(m.name)} · ${fee} marks</button><button class="cbtn" data-a="close">Not now</button></div>`;
     } else {
       const isFlyer = c.flyer() === m;
       const atSeat = m.seated && !m.displaced;
@@ -189,7 +192,7 @@ export class CrewUI {
     return h;
   }
 
-  _click(e) {
+  async _click(e) {
     const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
     const m = this.target, a = b.dataset.a, c = this.crew;
     e.preventDefault();
@@ -209,14 +212,15 @@ export class CrewUI {
         c.say(m,this.reply);break;
       }
       case 'back': this.view = 'main'; break;
-      case 'hire': r = c.hire(m.id); if (r.ok) { this.close(); return; } break;
-      case 'dismiss': r = c.dismiss(m.id); if (r.ok) { this.close(); return; } break;
+      case 'hire': r = await c.hire(m.id); if (r.ok) { this.close(); return; } break;
+      case 'meet': r=c.world.dispatch({type:'meet',id:m.id});break;
+      case 'dismiss': r = await c.dismiss(m.id); if (r.ok) { this.close(); return; } break;
       case 'seat': if (this.ship.takeSeat(m.def.seat)) { this.close(); return; } break;
       case 'order': {
         if (b.dataset.o === 'goto') { this.view = 'places'; break; }
-        r = c.order(b.dataset.o); if (r.ok) { this.close(); return; } break;
+        r = await c.order(b.dataset.o); if (r.ok) { this.close(); return; } break;
       }
-      case 'goto': r = c.order('goto', { id: b.dataset.p }); if (r.ok) { this.view = 'main'; this.close(); return; } break;
+      case 'goto': r = await c.order('goto', { id: b.dataset.p }); if (r.ok) { this.view = 'main'; this.close(); return; } break;
       case 'report': this.reply = c.report(m); break;
       case 'warp': if (this.ship.space) this.ship.space.setWarp(Number(b.dataset.w)); break;                                      // SPACE-FIX
       case 'cancel-course': if (this.ship.space) { const q = this.ship.space.cancel(); if (!q.ok) this.reply = q.msg; } break;     // SPACE-FIX

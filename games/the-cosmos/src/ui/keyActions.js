@@ -13,7 +13,7 @@ export function buildKeyControls() {
   const style=document.createElement('style');style.textContent=`
     #key-controls{position:fixed;left:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:67;font:11px ui-monospace,monospace;pointer-events:none}
     #key-controls button{pointer-events:auto;min-height:46px;border:1px solid #ba936a;border-radius:9px;padding:8px;background:#21190fe8;color:#ffe1bb;font:inherit;touch-action:none}
-    #key-pad{display:none;grid-template-columns:repeat(3,1fr);gap:6px;background:#120e09f5;padding:8px;border-radius:12px;width:min(360px,calc(100vw - 40px));max-height:calc(100dvh - 160px);overflow:auto;margin-bottom:6px;pointer-events:auto}
+    #key-pad{display:none;grid-template-columns:repeat(3,1fr);gap:6px;background:#120e09f5;padding:8px;border-radius:12px;width:min(360px,calc(100vw - 40px));max-height:calc(100dvh - 160px);overflow:auto;touch-action:pan-y;overscroll-behavior:contain;margin-bottom:6px;pointer-events:auto}
   `;document.head.appendChild(style);
   const root=document.createElement('div');root.id='key-controls';
   root.innerHTML='<div id="key-pad"></div><button id="btn-key-controls" aria-expanded="false">Controls</button>';document.body.appendChild(root);

@@ -193,7 +193,7 @@ export const DRAW = {
     let y = h * 0.16;
     for (const l of lines.slice(-n)) {
       g.fillStyle = DIM; g.fillText(l.t, 12, y);
-      g.fillStyle = l.warn ? AMBER : WHITE; g.fillText(l.msg.slice(0, Math.floor((w - 100) / (h * 0.038))), 12 + h * 0.19, y);
+      g.fillStyle = l.warn ? AMBER : WHITE; g.fillText(String(l.msg ?? '').slice(0, Math.floor((w - 100) / (h * 0.038))), 12 + h * 0.19, y);
       y += h * 0.075;
     }
   },

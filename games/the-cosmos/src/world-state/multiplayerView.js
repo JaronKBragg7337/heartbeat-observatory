@@ -4,6 +4,10 @@ import { restoreTerrain } from './terrainCodec.js';
 import { attachGrades } from '../world/field.js';
 import { landingField } from './fleet.js';
 import { cartesianToGeodetic, localFrame } from '../world/geodesy.js';
+import { SpaceTrip } from '../space/spaceTrip.js';
+import { rampEntry } from '../ship/rampTransfer.js';
+import { RAMPS } from '../ship/shipSpec.js';
+import { ShipWalker, shipIndex } from '../ship/shipWalker.js';
 const hall={x:-28,z:-68,w:24,d:14,h:5};
 function label(text){const c=document.createElement('canvas');c.width=512;c.height=64;const x=c.getContext('2d');
   x.fillStyle='#17120cdd';x.fillRect(0,0,512,64);x.fillStyle='#ffe0ab';x.font='28px sans-serif';x.textAlign='center';x.fillText(text,256,44,500);
@@ -12,9 +16,10 @@ export class MultiplayerView {
   constructor(world,{engine,ship,walker,edits,digger,site,space,people,bridge,rebuild,port}) {
     Object.assign(this,{world,engine,ship,walker,edits,digger,site,space,people,bridge,rebuild,port});this.bodies=new Map();this.fleet=new Map();this.pads=new Set();this.accum=0;this.forcePlayer=true;
     attachGrades([site,landingField(site,()=>world.snapshot.pads)]);
+    space.portSite={...site,toWorld:(x,y,z)=>{const pad=world.snapshot.ships[this.activeId()].pad;return site.toWorld(pad.x+x,y,pad.z+z);}};
     ship.remoteAuthority=true;ship.flight.remoteAuthority=true;
     this.installControls();this.buildHall();this.buildPanel();
-    world.beforeAction=()=>this.sendPose();world.onReceipt=r=>{ship.note(r.msg,!r.ok);if(!r.ok)this.forcePlayer=true;};
+    world.beforeAction=()=>this.sendPose();world.onReceipt=r=>{if(!r.ok)ship.note(r.msg,true);if(this.crew?.onSay)this.crew.onSay('',r.msg==='Saved to the shared world.'?'Done.':r.msg);if(!r.ok)this.forcePlayer=true;};
     world.onConnection=()=>this.forcePlayer=true;
     world.listeners.add(m=>this.apply(m));this.apply({state:world.snapshot,bricks:[...world.bricks.values()]});
   }
@@ -23,10 +28,28 @@ export class MultiplayerView {
     // Seat/boarding transitions require an action; pose packets only describe predicted movement.
     pose.aboard=!!p.aboardShipId;pose.seat=p.pose.seat;
     this.world.sendPose(pose,this.ship.flight.controls);}
-  request(a){this.sendPose();return this.world.request(a).then(r=>{this.ship.note(r.msg,!r.ok);this.forcePlayer=true;return r;});}
+  request(a){this.sendPose();return this.world.request(a).then(r=>{if(r.ok&&r.msg&&r.msg!=='Saved to the shared world.')this.ship.note(r.msg);if(!r.ok)this.forcePlayer=true;return r;});}
   installControls(){const ship=this.ship,space=this.space;
-    ship.boardAt=()=>{if(!this.boardPending){this.boardPending=true;this.request({type:'board',shipId:this.activeId()}).finally(()=>this.boardPending=false);}};
-    ship.disembark=()=>{if(!this.boardPending){this.boardPending=true;this.request({type:'leave'}).finally(()=>this.boardPending=false);}};
+    const outside=ship._outsideFrame.bind(ship);
+    ship._outsideFrame=(dt,inp)=>{outside(dt,inp);if(ship.aboard||this.boardPending)return;
+      for(const s of Object.values(this.world.snapshot.ships))if(s.id!==this.activeId()&&(s.owner===this.world.playerId||s.crewMayBoard)&&s.frameId===space.frameId&&s.pose.landed&&Math.hypot(s.pose.pos.x-this.walker.worldPos.x,s.pose.pos.y-this.walker.worldPos.y,s.pose.pos.z-this.walker.worldPos.z)<45){
+        const q=new THREE.Quaternion().fromArray(s.pose.quaternion).invert(),loc=new THREE.Vector3().copy(this.walker.worldPos).sub(new THREE.Vector3().copy(s.pose.pos)).applyQuaternion(q),yaw=this.walker.yaw-s.pose.heading;
+        const motion={x:Math.sin(yaw)*(inp.moveNorth||0)+Math.cos(yaw)*(inp.moveEast||0),z:-Math.cos(yaw)*(inp.moveNorth||0)+Math.sin(yaw)*(inp.moveEast||0)};
+        const entry=Object.keys(RAMPS).map(k=>rampEntry(k,s.state.ramps[k],loc,motion)).find(Boolean);
+        if(entry&&new ShipWalker(shipIndex,s.state).canStand(entry.x,entry.y,entry.z)){
+          this.boardPending=true;this.request({type:'board',shipId:s.id,walkPose:{sw:{...entry,yaw,pitch:this.walker.pitch},yaw:this.walker.yaw,pitch:this.walker.pitch}}).finally(()=>{this.boardPending=false;this.forcePlayer=true;});break;
+        }
+      }
+    };
+    const board=ship.boardAt.bind(ship),leave=ship.disembark.bind(ship);
+    ship.boardAt=(x,y,z,yaw)=>{if(this.boardPending)return;this.boardPending=true;
+      const groundPose=playerPose(this.walker,ship);board(x,y,z,yaw);ship.sw.pitch=this.walker.pitch;
+      ship.flight.toWorld(ship.sw,this.walker.worldPos);
+      this.request({type:'board',shipId:this.activeId(),walkPose:playerPose(this.walker,ship),groundPose})
+        .finally(()=>this.boardPending=false);};
+    ship.disembark=key=>{if(this.boardPending)return;this.boardPending=true;
+      const aboardPose=playerPose(this.walker,ship);leave(key);
+      this.request({type:'leave',key,walkPose:playerPose(this.walker,ship),aboardPose}).finally(()=>this.boardPending=false);};
     ship.stations.sit=loc=>{const s=ship.stations.seatNear(loc);if(s)this.request({type:'seat',seat:s.id});return null;};
     ship.stations.stand=()=>{this.request({type:'seat',seat:null});return null;};
     ship.takeSeat=id=>{this.request({type:'seat',seat:id});return false;};
@@ -36,7 +59,12 @@ export class MultiplayerView {
     ship.stations.power=(key,value)=>{this.request({type:'power',key,value});return true;};
     space.engage=id=>{this.request({type:'engage',destination:id});return {ok:true,msg:'Course requested.'};};
     space.cancel=()=>{this.request({type:'cancel-trip'});return {ok:true,msg:'Cancellation requested.'};};
-    space.setWarp=()=>ship.note('Shared trips run on the world clock.');space.tripControls=()=>null;
+    space.setWarp=warp=>{this.request({type:'trip-warp',warp});};space.tripControls=()=>null;
+    space.stickWarp=()=>1; // Compression is stepped by the authority, never twice.
+    ship.stations.powerSplit=(engines,guns,shields)=>{this.request({type:'power-split',engines,guns,shields});return true;};
+    ship.cycleAirlock=()=>{this.request({type:'airlock'});return true;};
+    ship._rampFrame=()=>{for(const key of ['cargo','airlock'])ship._applyRampPose(key);};
+    ship._airlockStep=()=>{};
     space.jobs.takeSample=s=>{this.request({type:'sample',site:s.id});return {ok:true,msg:'Sample requested.'};};
     space.jobs.salvage=()=>{this.request({type:'salvage'});return {ok:true,msg:'Claim requested.'};};
     space.jobs.stow=()=>{this.request({type:'stow'});return {ok:true,msg:'Cargo transfer requested.'};};
@@ -46,33 +74,48 @@ export class MultiplayerView {
   }
   apply(m){const snapshot=this.world.snapshot,p=snapshot.players[this.world.playerId],s=snapshot.ships[this.activeId()],f=this.ship.flight;
     const changed=this.lastShipId!==s.id||this.lastFrame!==p.frameId||this.lastAboard!==p.aboardShipId||this.lastSeat!==p.pose.seat;
+    if(this.lastShipId!==s.id){this.messageSeq=0;this.eventSeq=s.eventSeq||0;}
     if(snapshot.elevator){const loc=this.site.toLocal(this.walker.worldPos),oldY=this.port.elevator.y;
       if(!this.ship.aboard&&this.port.elevator.contains(loc.x+60,loc.z+39)&&Math.abs(loc.y-oldY)<.4)
         for(const k of ['x','y','z'])this.walker.worldPos[k]+=this.site.up[k]*(snapshot.elevator.y-oldY);
       Object.assign(this.port.elevator,snapshot.elevator);this.port.updateElevatorVisuals();}
     if(this.space.frameId!==p.frameId)this.space.setFrame(p.frameId);
+    const previousFrame=this.lastFrame;
     this.lastFrame=p.frameId;this.lastShipId=s.id;this.lastAboard=p.aboardShipId;this.lastSeat=p.pose.seat;
     Object.assign(f.pos,s.pose.pos);Object.assign(f.vel,s.pose.vel);Object.assign(f.power,s.pose.power);
-    for(const k of ['heading','pitch','roll','yawRate','hull','shield','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown'])if(s.pose[k]!==undefined)f[k]=s.pose[k];
+    for(const k of ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd'])if(s.pose[k]!==undefined)f[k]=s.pose[k];
+    f.attitude=s.pose.attitude?new THREE.Quaternion().fromArray(s.pose.attitude):null;s.pose.legs?.forEach((leg,i)=>Object.assign(f.legs[i],leg));
     f.quaternion.fromArray(s.pose.quaternion);f.refreshOrientation();f.quaternion.fromArray(s.pose.quaternion);
     for(const [key,v] of Object.entries(s.state))if(this.ship.state[key])Object.assign(this.ship.state[key],v);
-    for(const [key,r] of Object.entries(s.state.ramps)){const ctl=this.ship.rampCtl[key];Object.assign(ctl,{progress:r.progress||0,target:r.lowered?1:0,angle:r.angle});}
-    this.ship.aboard=!!p.aboardShipId;this.ship.stations.seated=p.pose.seat;
-    if(changed||this.forcePlayer){Object.assign(this.walker.worldPos,p.pose.worldPos);Object.assign(this.walker.velocity,p.pose.velocity);
+    for(const [key,r] of Object.entries(s.state.ramps)){const ctl=this.ship.rampCtl[key];Object.assign(ctl,{progress:r.progress??(r.lowered?1:0),target:r.target??(r.lowered?1:0),angle:r.angle});}
+    if(s.air)Object.assign(this.ship.air,s.air);
+    const predictedTransition=this.ship.aboard===!!p.aboardShipId&&previousFrame===p.frameId&&this.ship.stations.seated===p.pose.seat;
+    const previousSeat=this.ship.stations.seated;
+    if(!this.boardPending)this.ship.aboard=!!p.aboardShipId;
+    this.ship.stations.seated=p.pose.seat;
+    if(!this.boardPending&&(changed&&!predictedTransition||this.forcePlayer)){Object.assign(this.walker.worldPos,p.pose.worldPos);Object.assign(this.walker.velocity,p.pose.velocity);
       Object.assign(this.walker,{yaw:p.pose.yaw,pitch:p.pose.pitch,grounded:p.pose.grounded});this.walker.updateFrame();
       this.ship.sw.place(p.pose.sw.x,p.pose.sw.y,p.pose.sw.z,p.pose.sw.yaw);this.ship.sw.pitch=p.pose.sw.pitch;Object.assign(this.ship.look,p.pose.look);this.forcePlayer=false;}
+    if(previousSeat!==p.pose.seat){if(p.pose.seat)this.ship._onSit(this.ship.stations.seatDef(p.pose.seat));else if(previousSeat){const seat=this.ship.stations.seatDef(previousSeat),sg=this.ship.interior.seatGroups.get(previousSeat);if(sg)sg.visible=true;this.ship._swivelSeat(seat,seat.yaw*Math.PI/180);this.ship.onStationChange?.(null);}}
     this.ship._syncEntries();this.digger.carried.splice(0,this.digger.carried.length,...structuredClone(p.carried));this.digger.setTool(p.toolIdx);
-    const trip=s.trip;this.space.trip=trip?{...trip,dest:trip.dest||this.space.resolve(trip.destId),active:true,setWarp:()=>{}}:null;
+    const trip=s.trip;
+    if(trip){const dest={...this.space.resolve(trip.destId),...trip.dest},t=new SpaceTrip(this.space,dest);
+      Object.assign(t,trip);t.dest=dest;this.space.trip=t;this.space.warp=t.warp;}
+    else this.space.trip=null;
     this.space.ledger.credits=s.economy.marks/4;this.space.ledger.cargo=new Map(Object.entries(s.hold));
     this.space.jobs.taken=new Set(s.jobs.taken);this.space.jobs.salvaged=s.jobs.salvaged;this.space.jobs.samplesAboard=s.jobs.samples.length;
-    if(s.combat){this.ship.guns.bolts=structuredClone(s.combat.bolts);this.ship.guns.aim=structuredClone(s.combat.aim);
-      this.ship.drones.shots=structuredClone(s.combat.enemyShots);this.ship.drones.neutral=s.combat.neutral;
-      s.combat.drones.forEach((r,i)=>{const d=this.ship.drones.drones[i];if(d){Object.assign(d.pos,r.pos);Object.assign(d.vel,r.vel);d.state=r.state;d.target.hp=r.target.hp;d.target.inactive=r.target.inactive;}});}
+    if(s.combat){this.ship.guns.bolts=structuredClone(s.combat.bolts);this.ship.guns.aim=structuredClone(s.combat.aim);Object.assign(this.ship.guns,{cool:{...s.combat.cool},alt:{...s.combat.alt},shots:{...s.combat.shots}});
+      this.ship.drones.shots=structuredClone(s.combat.enemyShots);this.ship.drones.neutral=s.combat.neutral;this.ship.drones.suspended=s.combat.suspended;
+      s.combat.drones.forEach((r,i)=>{const d=this.ship.drones.drones[i];if(d){Object.assign(d.pos,r.pos);Object.assign(d.vel,r.vel);d.state=r.state;d.target.hp=r.target.hp;d.target.inactive=r.target.inactive;}});
+      s.combat.practice?.forEach((r,i)=>{const t=this.ship.targets[i];if(t){Object.assign(t.t,r);t.mesh.visible=r.hp>0||r.respawn>6.5;}});}
+    for(const e of s.events||[])if(e.seq>(this.eventSeq||0)){const event={...e};if(e.id?.includes(':practice-'))event.id=this.ship.targets[Number(e.id.split(':practice-')[1])]?.id||e.id;
+      (e.system==='drones'?this.ship.drones:this.ship.guns).events.push(event);this.eventSeq=e.seq;}
+    for(const line of s.messages||[])if(line.seq>(this.messageSeq||0)){this.ship.note(line.msg,line.warn);this.messageSeq=line.seq;}
     const ids=new Set((m.bricks||[]).map(b=>b.bodyId));
     for(const id of ids){const store=id==='mars'?this.edits:this.space.moonWorld(id).edits;
       restoreTerrain(store,snapshot.terrain[id],(m.bricks||[]).filter(b=>b.bodyId===id));}
     for(const pad of snapshot.pads)this.addPad(pad);
-    this.draw();
+    this.updateBodies(0);this.draw();
   }
   addPad(a){if(this.pads.has(a.id)||a.x===0&&a.z===0)return;this.pads.add(a.id);
     const g=new THREE.Group();g.name='allocated-'+a.id;g.position.set(a.x,0,a.z);
@@ -108,13 +151,20 @@ export class MultiplayerView {
         forward=new THREE.Vector3().copy(frame.north).multiplyScalar(Math.cos(p.pose.yaw)).addScaledVector(new THREE.Vector3().copy(frame.east),Math.sin(p.pose.yaw)),right=new THREE.Vector3().crossVectors(up,forward).normalize();
         q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,forward));}
       this.placeBody(b,pos,q,p.frameId,p.pose.seat?'Sit':p.animation||'Idle',dt);}
-    for(const c of Object.values(s.pool)){if(c.retired||c.status==='inside'||c.status==='reserved')continue;seen.add(c.id);const b=this.body(c.id,c.personId,c.name);
+    for(const c of Object.values(s.pool)){if(c.retired||c.status==='reserved')continue;seen.add(c.id);const b=this.body(c.id,c.personId,c.name);
       const ship=c.shipId?s.ships[c.shipId]:null,contract=ship?.crew.find(m=>m.id===c.id);
-      let pos=this.site.toWorld(c.position.x,0,c.position.z),frame='mars',pose=c.status==='waiting'?'Idle':'Walk',q=new THREE.Quaternion().copy(this.hallRoot.quaternion);
-      if(contract?.status==='aboard'||contract?.status==='walking-aboard'){const seat=contract.status==='aboard'?(contract.displaced?contract.standPose:contract.seatPose):contract.localPose;pos=ship.pose.pos;frame=ship.frameId;pose=contract.status==='aboard'?(contract.displaced?'Idle':'Sit'):'Walk';if(seat){const v=new THREE.Vector3().copy(seat).applyQuaternion(new THREE.Quaternion().fromArray(ship.pose.quaternion));pos={x:pos.x+v.x,y:pos.y+v.y,z:pos.z+v.z};}q=new THREE.Quaternion().fromArray(ship.pose.quaternion);}
+      let pos=this.site.toWorld(c.position.x,c.position.y||0,c.position.z),frame='mars',pose=['waiting','inside'].includes(c.status)?'Idle':'Walk',q=new THREE.Quaternion().copy(this.hallRoot.quaternion);
+      if(['aboard','walking-aboard','leaving-aboard'].includes(contract?.status)){const seat=contract.status==='aboard'?(contract.displaced?contract.standPose:contract.seatPose):contract.localPose;pos=ship.pose.pos;frame=ship.frameId;pose=contract.status==='aboard'?(contract.displaced?'Idle':'Sit'):'Walk';if(seat){const v=new THREE.Vector3().copy(seat).applyQuaternion(new THREE.Quaternion().fromArray(ship.pose.quaternion));pos={x:pos.x+v.x,y:pos.y+v.y,z:pos.z+v.z};}q=new THREE.Quaternion().fromArray(ship.pose.quaternion);}
       else if(contract?.position)pos=this.site.toWorld(contract.position.x,0,contract.position.z);
-      this.placeBody(b,pos,q,frame,pose,dt);}
-    for(const [id,b] of this.bodies)b.group.visible=seen.has(id)&&b.frameId===this.space.frameId;
+      this.placeBody(b,pos,q,frame,pose,dt);
+      const local=contract&&c.shipId===current&&['aboard','walking-aboard','leaving-aboard'].includes(contract.status);
+      if(local){if(!b.local){this.engine.untrack(b.entry);this.ship.interior.root.add(b.group);b.local=true;}
+        const seat=contract.displaced?contract.standPose:contract.localPose||contract.seatPose;
+        if(seat){b.group.position.set(seat.x,seat.y+(contract.status==='aboard'&&!contract.displaced?({pilot:.47,captain:.63,nav:.57,comms:.57,gun_dorsal:.44,gun_ventral:.44}[seat.id]||0):0),seat.z);b.group.rotation.set(0,Math.PI-(Number.isFinite(seat.yaw)?seat.yaw*(seat.id?Math.PI/180:1):0),0);}
+      }else if(b.local){b.group.removeFromParent();this.engine.scene.add(b.group);b.entry=this.engine.track(b.entry);b.local=false;}
+    }
+    for(const [id,b] of this.bodies)if(!b.local||!seen.has(id))b.group.visible=seen.has(id)&&b.frameId===this.space.frameId;
+    this.crew?.sync();
     for(const ship of Object.values(s.ships)){if(ship.id===current){const v=this.fleet.get(ship.id);if(v)v.root.visible=false;continue;}
       let v=this.fleet.get(ship.id);if(!v){const root=this.ship.exterior.root.clone(true);root.name='owned-ship:'+ship.id;this.engine.scene.add(root);v={root,entry:this.engine.track({worldPos:{...ship.pose.pos},object3d:root,quaternion:new THREE.Quaternion()})};this.fleet.set(ship.id,v);}
       Object.assign(v.entry.worldPos,ship.pose.pos);v.entry.quaternion.fromArray(ship.pose.quaternion);v.root.visible=ship.frameId===this.space.frameId;
@@ -127,9 +177,13 @@ export class MultiplayerView {
   buildPanel(){this.button=document.createElement('button');this.button.id='multiplayer-button';this.button.textContent='World / crew';
     this.panel=document.createElement('div');this.panel.id='multiplayer-panel';
     const style=document.createElement('style');style.textContent=`#multiplayer-button{position:fixed;left:12px;bottom:120px;z-index:68;min-height:44px;background:#281c12;color:#ffe0b0;border:1px solid #ae8548;border-radius:8px}#multiplayer-panel{position:fixed;left:12px;bottom:170px;z-index:74;padding:14px;background:#18120bf5;color:#ffe0b0;width:min(310px,calc(100vw - 48px));max-height:65vh;overflow:auto;font:12px/1.5 monospace;border:1px solid #ae8548;border-radius:10px}#multiplayer-panel button,#multiplayer-panel input{min-height:44px;margin:3px;color:#ffe0b0;background:#382817;border:1px solid #ae8548;border-radius:6px} @media(max-width:520px){#multiplayer-button{top:auto;bottom:170px}#multiplayer-panel{top:150px;max-height:55vh}}`;
+    style.textContent+=`#multiplayer-panel{box-sizing:border-box;touch-action:pan-y;overscroll-behavior:contain}#multiplayer-panel .world-heading{position:sticky;top:-14px;background:#18120b;display:flex;justify-content:space-between;align-items:center;z-index:1}#multiplayer-panel .world-close{min-width:44px} @media(max-width:520px){#multiplayer-panel{top:68px;bottom:auto;left:10px;width:calc(100vw - 20px);max-height:calc(100dvh - 90px)}}`;
     document.head.append(style);document.body.append(this.button,this.panel);this.panel.hidden=true;this.button.onclick=()=>{this.panel.hidden=!this.panel.hidden;this.draw();};
+    window.addEventListener('keydown',e=>{if(e.code==='Escape')this.panel.hidden=true;});
   }
-  draw(){this.button.textContent=this.world.connected?'World / crew':'World disconnected';if(this.panel.hidden||this.panel.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;this.panel.replaceChildren();
+  draw(){this.button.textContent=this.world.connected?'World / crew':'World disconnected';if(this.panel.hidden||this.panel.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;const scroll=this.panel.scrollTop;this.panel.replaceChildren();
+    const heading=document.createElement('div');heading.className='world-heading';heading.textContent='World / crew';
+    const close=document.createElement('button');close.className='world-close';close.textContent='✕';close.setAttribute('aria-label','Close world / crew');close.onclick=()=>this.panel.hidden=true;heading.append(close);this.panel.append(heading);
     const s=this.world.snapshot,p=s.players[this.world.playerId],owned=s.ships[p.shipId];
     const text=t=>{const e=document.createElement('p');e.textContent=t;this.panel.append(e);};
     const btn=(t,a)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>this.request(a);this.panel.append(b);};
@@ -138,13 +192,12 @@ export class MultiplayerView {
     const save=document.createElement('button');save.textContent='Save name';save.onclick=()=>{this.world.identity.name=name.value;localStorage.setItem(this.world.identity.slot||'cosmos-device-v2',JSON.stringify(this.world.identity));this.request({type:'rename',name:name.value});};this.panel.append(save);
     if(!this.world.connected){text('The shared world keeps running while you are away.');const solo=document.createElement('button');solo.textContent='Play my saved solo world';solo.onclick=()=>{const u=new URL(location.href);u.searchParams.set('solo','1');location.href=u.href;};this.panel.append(solo);}
     btn(owned.crewMayBoard?'Close guest boarding':'Allow crew to board',{type:'boarding-permission',allowed:!owned.crewMayBoard});
-    if(p.aboardShipId)btn('Leave after landing',{type:'leave'});
-    else for(const ship of Object.values(s.ships))if(ship.frameId===p.frameId&&Math.hypot(ship.pose.pos.x-this.walker.worldPos.x,ship.pose.pos.y-this.walker.worldPos.y,ship.pose.pos.z-this.walker.worldPos.z)<65)
-      btn(`Board ${s.players[ship.owner].name}'s ship`,{type:'board',shipId:ship.id});
+    text('Walk onto a lowered ramp to board. Walk back down it to leave. Guest ramps work when their owner allows boarding.');
     text('Hiring: walk to the crew hall door, north of the main pad. Candidates come outside when called.');
     for(const c of Object.values(s.pool).filter(c=>!c.shipId&&!c.retired)){text(`${c.name} · ${c.role} · ${Math.round(c.skill*100)}% · ${c.wageCredits} cr/sol`);
       if(c.status==='inside')btn('Meet '+c.name,{type:'meet',id:c.id});else if(c.status==='waiting'){btn('Hire '+c.name,{type:'hire',id:c.id});btn('Decline',{type:'decline',id:c.id});}}
     text('Your crew: '+(owned.crew.map(c=>`${c.name} (${c.status}${c.unpaid?', unpaid':''})`).join(', ')||'none'));
+    this.panel.scrollTop=scroll;
   }
   tick(dt){this.accum+=dt;this.updateBodies(dt);this.button.style.bottom=this.ship.aboard?'190px':'120px';if(this.accum>=.1){this.accum=0;this.sendPose();
     if(this.ship.remoteFireWanted&&['captain','gun_dorsal','gun_ventral'].includes(this.ship.seat?.id)){const direction=new THREE.Vector3(0,0,-1).applyQuaternion(this.engine.camera.quaternion);

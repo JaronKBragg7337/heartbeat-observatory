@@ -51,7 +51,8 @@ export async function runMultiplayerChecks({check,section}) {
     assert.ok(world.state.players[a.id].carried[0].massKg>0);check('authority carves a hole and broadcasts exact typed terrain and retained matter',true);
     const candidate=Object.values(world.state.pool).find(c=>c.role==='pilot');
     await move(a,world.site.toWorld(-28,.02,-57));await move(b,world.site.toWorld(-29,.02,-57));
-    assert.equal((await a.action({type:'meet',id:candidate.id})).ok,true);world.advance(9);await world.commit();
+    assert.equal((await a.action({type:'meet',id:candidate.id})).ok,true);world.advance(20);await world.commit();
+    await move(a,world.site.toWorld(candidate.position.x,.02,candidate.position.z+1));await move(b,world.site.toWorld(candidate.position.x+1,.02,candidate.position.z+1));
     const hires=await Promise.all([a.action({type:'hire',id:candidate.id}),b.action({type:'hire',id:candidate.id})]);
     assert.equal(hires.filter(r=>r.ok).length,1);assert.equal(world.state.ships[pa.shipId].crew.length,1);
     check('two simultaneous hires can only contract a candidate to one ship',true);

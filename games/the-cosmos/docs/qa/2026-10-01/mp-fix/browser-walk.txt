@@ -1,0 +1,24 @@
+Screenshot: desktop-01-walk-onto-ramp
+Screenshot: desktop-02-walk-through-cargo
+Screenshot: desktop-03-walk-off-ramp
+Screenshot: desktop-04-hall-walk-out
+Screenshot: desktop-05-candidates-visible
+Screenshot: desktop-07-talk-tower
+Screenshot: desktop-06-talk-trader
+Screenshot: desktop-08-talk-candidate
+Screenshot: desktop-09-talk-own-pilot
+Screenshot: desktop-10-pilot-trip-speeds
+Screenshot: desktop-11-observation-binoculars
+Screenshot: phone-01-clear-world
+Screenshot: phone-02-world-crew
+Screenshot: phone-03-world-scrolled
+Screenshot: phone-04-settings
+Screenshot: phone-05-account
+Screenshot: phone-06-talk-trader
+Screenshot: phone-07-talk-tower
+Screenshot: phone-08-talk-candidate
+Screenshot: phone-10-course
+Screenshot: phone-11-jobs
+Screenshot: phone-09-engineering
+Screenshot: phone-12-controls
+All browser walk / conversation / phone assertions passed.

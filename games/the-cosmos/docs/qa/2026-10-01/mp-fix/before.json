@@ -1,0 +1,88 @@
+{
+  "results": {
+    "candidateStates": [
+      {
+        "name": "Ada",
+        "status": "inside",
+        "position": {
+          "x": -28,
+          "y": 0,
+          "z": -68
+        }
+      },
+      {
+        "name": "Zuri",
+        "status": "inside",
+        "position": {
+          "x": -28,
+          "y": 0,
+          "z": -68
+        }
+      },
+      {
+        "name": "Jorge",
+        "status": "inside",
+        "position": {
+          "x": -28,
+          "y": 0,
+          "z": -68
+        }
+      },
+      {
+        "name": "Aoi",
+        "status": "inside",
+        "position": {
+          "x": -28,
+          "y": 0,
+          "z": -68
+        }
+      },
+      {
+        "name": "Sunita",
+        "status": "inside",
+        "position": {
+          "x": -28,
+          "y": 0,
+          "z": -68
+        }
+      },
+      {
+        "name": "Walter",
+        "status": "inside",
+        "position": {
+          "x": -28,
+          "y": 0,
+          "z": -68
+        }
+      }
+    ],
+    "hall": {
+      "visible": [],
+      "crewUI": false
+    },
+    "trader": {
+      "workers": 15,
+      "talk": false,
+      "crewUI": false
+    },
+    "boardBefore": {
+      "x": 1.8524382028317632e-10,
+      "y": -2.140030302612594,
+      "z": 25.379304527212156
+    },
+    "boardAfter": {
+      "aboard": true,
+      "sw": {
+        "x": 0,
+        "y": 0,
+        "z": 12
+      },
+      "world": {
+        "x": 1.8524382028317632e-10,
+        "y": -2.140030302612594,
+        "z": 25.379304527212156
+      }
+    }
+  },
+  "errors": []
+}
