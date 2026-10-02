@@ -56,5 +56,5 @@ export const MERIDIAN = {
   hudName: SHIP_NAME,
   deckName,
   envelope: { width: 24.52, height: 13.45, depth: 48.65 },
-  stats: { crewMax: 6, cargoKg: 24000, escorts: 0 },
+  stats: { crewMax: 6, cargoKg: 24000, escorts: 0, priceCredits: 18000 },
 };

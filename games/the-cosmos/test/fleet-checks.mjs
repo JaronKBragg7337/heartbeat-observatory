@@ -47,7 +47,7 @@ export async function runFleetChecks({ check, section, THREE, mars, FIELD }) {
   {
     const M = shipDef('meridian'), RD = shipDef('raider');
     check('the registry knows the Meridian and the raider by a type string, the default is the Meridian, and an unknown type is an error, not a Meridian',
-      shipTypes().join() === 'meridian,raider' && DEFAULT_SHIP_TYPE === 'meridian' && hasShipType('raider') && !hasShipType('frigate') && (() => { try { shipDef('frigate'); return false; } catch { return true; } })());
+      shipTypes().join() === 'meridian,raider,courier' && DEFAULT_SHIP_TYPE === 'meridian' && hasShipType('raider') && hasShipType('courier') && !hasShipType('frigate') && (() => { try { shipDef('frigate'); return false; } catch { return true; } })());
     check('the Meridian entry is built from the numbers in shipSpec.js, not copies of them: same gear, guns, seats, ramps and physics objects',
       M.gear === SPEC.GEAR && M.guns === SPEC.GUNS && M.seats === SPEC.SEATS && M.ramps === SPEC.RAMPS && M.phys === SPEC.SHIP_PHYS && M.layout.rooms.length === buildLayout().rooms.length);
     for (const d of allShipDefs()) {

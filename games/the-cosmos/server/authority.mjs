@@ -25,6 +25,8 @@ import { GunnerAI } from '../src/crew/gunnerAI.js';
 import { routeToSeat, RouteWalker } from '../src/crew/shipPath.js';
 import { SAMPLE_PAY_CREDITS, SAMPLE_REACH_M, SALVAGE_CREDITS, SALVAGE_KG, SALVAGE_REACH_M, MAT_ITEM } from '../src/space/jobs.js';
 import { ShipSimulation } from './simulation.mjs';
+import { freshOpening, OpeningModel } from '../src/opening/state.js';
+import { detachBodyEdits } from '../src/world/field.js';
 
 const hash = s=>createHash('sha256').update(s).digest('hex');
 const cleanName=s=>String(s||'Visitor').replace(/[<>\x00-\x1f]/g,'').slice(0,32);
@@ -56,7 +58,8 @@ export class Authority {
     if(elapsed){this.advance(elapsed,{catchUp:true});}
     this.fleet.ensure();await this.commit();return this;
   }
-  rebuild(){attachGrades([this.site,landingField(this.site,()=>this.state.pads)]);
+  rebuild(){for(const id of this.openingModels?.keys()||[])this.releaseOpening(id);
+    attachGrades([this.site,landingField(this.site,()=>this.state.pads)]);
     attachMoonPads(()=>{const out=[];for(const s of Object.values(this.state.ships)){if(!s.moonPads)continue;
       for(const id of ['phobos','deimos'])if(s.moonPads[id])out.push(s.moonPads[id]);}return out;});
     this.stores=new Map();
@@ -75,8 +78,9 @@ export class Authority {
         const p=other.moonPads?.[bodyId];if(p&&Number.isFinite(p.east))index++;}
       ship.moonPads[bodyId]=allocatedMoonPad(bodyId,index,ship.id);}}
   enqueue(fn){const p=this.queue.then(fn);this.queue=p.catch(()=>{});return p;}
-  publicState(){const s=structuredClone(this.state);delete s.receipts;
-    for(const p of Object.values(s.players)){delete p.deviceHash;p.online=this.sessions.has(p.id);}
+  publicState(viewerId){const s=structuredClone(this.state);delete s.receipts;
+    for(const p of Object.values(s.players)){delete p.deviceHash;p.online=this.sessions.has(p.id);
+      if(p.opening&&p.id!==viewerId)p.opening={complete:p.opening.complete};}
     s.storageError=this.error;
     return s;
   }
@@ -89,16 +93,17 @@ export class Authority {
     for(const b of changed)this.bricks.set(b.key,b);for(const e of this.stores.values())e._dirty.clear();
     this.error='';return changed;
   }
-  async join(deviceKey,name,personId='isaiah') {
+  async join(deviceKey,name,personId='isaiah',openingVersion=0) {
     if(typeof deviceKey!=='string'||deviceKey.length<24||deviceKey.length>128)throw Error('Invalid device identity.');
     const key=hash(deviceKey);let p=Object.values(this.state.players).find(p=>p.deviceHash===key);
     const before=structuredClone(this.state);
     try{
       if(!p){const id=randomUUID(),shipId=randomUUID(),pad=allocatedPad(this.state.pads.length,shipId);this.state.pads.push(pad);
-        const ship={id:shipId,owner:id,type:DEFAULT_SHIP_TYPE,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},economy:initialEconomy(),frameId:'mars',pose:null,trip:null};
+        const ship={id:shipId,owner:id,type:openingVersion===1?'courier':DEFAULT_SHIP_TYPE,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},economy:initialEconomy(),frameId:'mars',pose:null,trip:null};
         this.state.ships[shipId]=ship;this.sims.set(shipId,this.makeSim(ship));
         p={id,deviceHash:key,name:cleanName(name),personId:/^[a-z]{2,24}$/.test(personId)?personId:'isaiah',shipId,currentShipId:shipId,aboardShipId:null,frameId:'mars',
           pose:{worldPos:this.site.toWorld(pad.x-10,.02,pad.z+38),velocity:{x:0,y:0,z:0},yaw:this.site.heading,pitch:0,grounded:true,aboard:false,sw:{x:0,y:0,z:12,yaw:0,pitch:0},seat:null,look:{yaw:0,pitch:0}},toolIdx:1,carried:[]};
+        if(openingVersion===1)p.opening=freshOpening();
         this.state.players[id]=p;
       }else p.name=cleanName(name||p.name);
       await this.commit();this.sessions.get(p.id)?.close();return p;
@@ -123,7 +128,9 @@ export class Authority {
   award(ship,credits){const marks=credits*4;if(!Number.isSafeInteger(marks)||marks<0)throw Error('Invalid reward.');ship.economy.marks+=marks;}
   addCargo(ship,item,kg){if(!Number.isFinite(kg)||kg<=0)throw Error('Invalid cargo.');ship.hold[item]=(ship.hold[item]||0)+kg;}
   removeCargo(ship,item,kg){if((ship.hold[item]||0)+1e-5<kg)throw Error('Hold has insufficient cargo.');ship.hold[item]=Math.max(0,ship.hold[item]-kg);}
-  disconnect(id,peer){if(this.sessions.get(id)!==peer)return;this.sessions.delete(id);this.inputs.delete(id);
+  releaseOpening(id){const model=this.openingModels?.get(id);if(!model)return;
+    detachBodyEdits(model.body.id);this.openingModels.delete(id);}
+  disconnect(id,peer){if(this.sessions.get(id)!==peer)return;this.sessions.delete(id);this.inputs.delete(id);this.releaseOpening(id);
     this.state.players[id].offlineAt=this.now();
     // The body remains aboard; the flight assist holds after the control lease ends.
   }
@@ -370,14 +377,20 @@ export class Authority {
   }
 
   async action(id,actionId,a){if(!/^[\w-]{8,100}$/.test(actionId))throw Error('Invalid action ID.');const key=id+':'+actionId;
-    if(this.state.receipts[key])return {...this.state.receipts[key].result,replay:true};
+    if(this.state.receipts[key])return {...this.state.receipts[key].result,replay:true,
+      ...(a?.type?.startsWith('opening-')?{opening:structuredClone(this.state.players[id]?.opening)}:{})};
     const before=structuredClone(this.state);let result;
     try{if(this.error)throw Error(this.error);const p=this.state.players[id];if(!p)throw Error('Join first.');result=this.reduce(p,a)||yes();
       if(result.ok===false)throw Error(result.msg);
-      this.state.receipts[key]={playerId:id,actionId,revision:this.state.revision+1,result:structuredClone(result)};const bricks=await this.commit();return {...result,bricks};
+      const receipt=structuredClone(result);
+      // Retain the durable action outcome once; private cut history lives on the player.
+      // A retry reads the current opening rather than rewinding to an old pose.
+      if(a.type.startsWith('opening-'))delete receipt.opening;
+      this.state.receipts[key]={playerId:id,actionId,revision:this.state.revision+1,result:receipt};const bricks=await this.commit();return {...result,bricks};
     }catch(e){this.state=before;this.rebuild();return {ok:false,msg:e.message};}
   }
   updatePose(p,a){const r=a.pose;if(!r||!finitePoint(r.worldPos)||!finitePoint(r.sw)||![r.yaw,r.pitch,r.sw.yaw,r.sw.pitch].every(Number.isFinite))throw Error('Invalid player pose.');
+    if(p.opening&&!p.opening.complete)return;
     const ship=this.shipFor(p);const aboard=!!p.aboardShipId;
     if(!!r.aboard!==aboard)throw Error('Board or leave through the boarding action.');
     // Client-predicted poses have speed/cabin bounds. Swept player collision is
@@ -393,6 +406,22 @@ export class Authority {
     if(a.controls&&['pilot','captain'].includes(p.pose.seat))this.inputs.set(p.id,{until:this.now()+1000,controls:Object.fromEntries(['fwd','lift','yaw'].map(k=>[k,Math.max(-1,Math.min(1,Number(a.controls[k])||0))]))});
   }
   reduce(p,a){if(!a||typeof a.type!=='string')throw Error('Invalid action.');const ship=this.shipFor(p),sim=this.sims.get(ship.id);
+    if(a.type.startsWith('opening-')){
+      if(!p.opening)throw Error('This saved player has already arrived.');
+      if(p.opening.complete)return {ok:true,msg:'The opening is complete.',opening:structuredClone(p.opening)};
+      this.openingModels ||= new Map();let model=this.openingModels.get(p.id);
+      if(!model||model.state!==p.opening){model=new OpeningModel(p.opening,p.id);this.openingModels.set(p.id,model);}
+      if(a.type==='opening-pose'){
+        const seconds=Math.max(0,Math.min(2,(this.now()-(p.openingPoseAt||this.now()))/1000));
+        a={...a,seconds};p.openingPoseAt=this.now();
+      }
+      const r=model.act(a);if(!r.ok)return r;
+      if(p.opening.complete){p.opening.played=true;p.pose.worldPos=this.site.toWorld(ship.pad.x-7,.02,ship.pad.z+20);
+        p.pose.yaw=this.site.heading;p.pose.pitch=0;p.pose.velocity={x:0,y:0,z:0};p.poseAt=this.now();
+        this.releaseOpening(p.id);}
+      return {...r,opening:structuredClone(p.opening),arrivalPose:p.opening.complete?structuredClone(p.pose):null};
+    }
+    if(p.opening&&!p.opening.complete)throw Error('Continue the opening first.');
     sim.ship._rampOccupied=key=>this.rampOccupied(sim,key);
     switch(a.type){
       case 'player-pose':this.updatePose(p,a);break;

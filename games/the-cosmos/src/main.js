@@ -53,6 +53,9 @@ import { RemoteCrew } from './world-state/remoteCrew.js';
 import { landingField } from './world-state/fleet.js';
 import { attachMoonPads } from './space/moonField.js';
 import { Cinema } from './cinema/cinema.js';
+import { Opening } from './opening/opening.js';
+import { freshOpening, needsOpening } from './opening/state.js';
+import { buildShowcase } from './port/showcase.js';
 
 const canvas = document.getElementById('game-canvas');
 const body = getBody('mars');
@@ -69,6 +72,12 @@ let savedWorld = {record:null,bricks:[]};
 try { const chosen = await chooseWorld(world); world = chosen.world; savedWorld = chosen.saved; }
 
 catch(e) { world.error=e.message;console.error('World save unavailable',e); }
+const openingParams=new URLSearchParams(location.search);
+const legacyReview=openingParams.get('dev')==='1'&&openingParams.get('opening')==='off';
+if(!world.remote&&!legacyReview&&needsOpening(world.state.opening,savedWorld.record)){
+  world.state.opening ||= freshOpening();world.state.shipType='courier';
+}
+let opening=null;
 
 const engine = new Engine(canvas, { fov: 72,world });
 const safeGraphics=engine.safe;
@@ -338,7 +347,7 @@ const shipType = (() => {
     const q = new URLSearchParams(location.search).get('ship');
     if (q && hasShipType(q)) return q;
   } catch (e) { /* the default below */ }
-  return DEFAULT_SHIP_TYPE;
+  return hasShipType(world.state.shipType)?world.state.shipType:DEFAULT_SHIP_TYPE;
 })();
 const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier, landingSite: portSite, shipType });
 ship.safeGraphics=safeGraphics;
@@ -355,6 +364,7 @@ try {
 // Reuse the actual Meridian texture objects and sky environment: no second
 // ship-sized texture set for the port. Fallback still allows independent builds.
 const port = new PortSystem(engine, registry, portSite, tier, ship.matsExt).build();
+port.showcase=buildShowcase(port,ship.matsExt,tier);
 portRef = port;
 // Persistence and economy use the existing ship pose through this small bridge.
 const worldBridge = new GameBridge(world,{edits,digger,walker,ship,site:portSite});
@@ -947,6 +957,12 @@ const freeCam = {
 let cinema = null;
 
 engine.addUpdater((dt) => {
+  if(opening?.active){
+    const a=touch.consumeLook(),b=desktop.consumeLook();
+    opening.frame(dt,{moveEast:touch.moveEast||desktop.moveEast,moveNorth:touch.moveNorth||desktop.moveNorth,
+      run:touch.run||desktop.run,jump:touch.consumeJump()||desktop.consumeJump()},{dx:a.dx+b.dx,dy:a.dy+b.dy});
+    return;
+  }
   multiplayer?.smoothActiveShip();
   const filming = !!(cinema && cinema.playing);
   if (filming) cinema.preFrame();
@@ -1067,6 +1083,7 @@ function followTerrain() {
 
 // Keyboard shortcuts for desktop: V toggles view, G toggles the debug layer.
 window.addEventListener('keydown', (e) => {
+  if(opening?.active)return;
   if (e.code === 'KeyV') {
     view.mode = view.mode === 'first' ? 'third' : 'first';
     document.getElementById('set-view').value = view.mode;
@@ -1110,6 +1127,14 @@ if(!world.remote){
   space.ledger.credits=world.state.economy.marks/4;
 }
 if(world.remote) multiplayer = new MultiplayerView(world,{engine,ship,walker,edits,digger,site:portSite,space,people,bridge:worldBridge,rebuild:rebuildNear,port});
+opening=new Opening({engine,world,ship,people,port,tier,onFinish:(pose)=>{
+  const pad=world.remote?world.snapshot.ships[world.snapshot.players[world.playerId].shipId].pad:{x:0,z:0};
+  const arrival=pose?.worldPos||portSite.toWorld(pad.x-7,.02,pad.z+20);
+  Object.assign(walker.worldPos,arrival);Object.assign(walker.velocity,{x:0,y:0,z:0});walker.yaw=portSite.heading;walker.pitch=0;
+  walker.grounded=true;walker.updateFrame();if(multiplayer){multiplayer.forcePlayer=true;multiplayer.correction=null;multiplayer.apply({});}
+  ship.note('Passenger line settlement: 10,000 Mars marks (2,500 credits). Your Wayfarer is on your pad. Work is available around the port.',true);
+  rebuildNear(true);worldBridge.checkpoint();refreshHud();
+}});
 const devMode = params.get('dev') === '1';
 if(!devMode) document.querySelector('label[for="set-dev"]').hidden=true;
 if(!devMode) document.getElementById('set-dev').hidden=true;
@@ -1193,6 +1218,7 @@ engine.start();
 // deterministically when a browser tab is throttled, and to read world truth
 // without guessing from pixels.
 if (devMode) window.cosmos = {
+  opening,
   multiplayer,
   world, worldBridge, economyUI,
   port, portTour, portPeople, space,

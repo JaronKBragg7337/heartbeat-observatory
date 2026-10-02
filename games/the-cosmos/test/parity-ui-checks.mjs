@@ -24,7 +24,7 @@ export async function runParityUIChecks({check,section}){
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   await ctx.addInitScript(ws=>{const WS=window.WebSocket;window.WebSocket=class extends WS{constructor(url,...rest){super(String(url).replace('ws://localhost:8390',ws),...rest);}};},ws);
   const online=await ctx.newPage(),solo=await ctx.newPage(),errors=[];for(const p of [online,solo])p.on('pageerror',e=>errors.push(String(e)));
-  for(const [p,mode] of [[online,''],[solo,'&solo=1']]){await p.goto(base+'/?dev=1&tier=low'+mode);await p.waitForFunction(()=>window.cosmos?.crewUI&&cosmos.portPeople.members.every(m=>m.person.loaded),null,{timeout:90000});await p.evaluate(()=>{cosmos.engine.stop();cosmos.engine.renderer.render=()=>{};});}
+  for(const [p,mode] of [[online,''],[solo,'&solo=1']]){await p.goto(base+'/?dev=1&opening=off&tier=low'+mode);await p.waitForFunction(()=>window.cosmos?.crewUI&&cosmos.portPeople.members.every(m=>m.person.loaded),null,{timeout:90000});await p.evaluate(()=>{cosmos.engine.stop();cosmos.engine.renderer.render=()=>{};});}
   assert.ok(await online.evaluate(()=>cosmos.world.remote));assert.ok(await solo.evaluate(()=>!cosmos.world.remote));
   const id=await online.evaluate(()=>cosmos.world.playerId),w=app.world;
   async function sync(){await w.enqueue(()=>w.commit());await online.evaluate(()=>cosmos.world.socket.send(JSON.stringify({type:'checkpoint'})));await online.waitForFunction(r=>cosmos.world.state.revision>=r,w.state.revision);await online.evaluate(()=>{cosmos.multiplayer.forcePlayer=true;cosmos.multiplayer.apply({bricks:[]});cosmos.walker.velocity={x:0,y:0,z:0};cosmos.crewUI._accum=1;cosmos.step(1/30);});}

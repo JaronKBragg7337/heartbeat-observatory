@@ -14,7 +14,8 @@ export class RemoteWorld {
   connect(){return new Promise((resolve,reject)=>{
     const ws=this.socket=new WebSocket(this.url);let joined=false;
     const timer=setTimeout(()=>{if(!joined){ws.close();reject(Error('World server unavailable.'));}},3500);
-    ws.onopen=()=>ws.send(stringify({type:'hello',deviceKey:this.identity.key,name:this.identity.name,personId:localStorage.getItem('hb-look')||'isaiah'}));
+    ws.onopen=()=>{const p=new URLSearchParams(location.search),review=p.get('dev')==='1'&&p.get('opening')==='off';
+      ws.send(stringify({type:'hello',deviceKey:this.identity.key,name:this.identity.name,personId:localStorage.getItem('hb-look')||'isaiah',openingVersion:review?0:1}));};
     ws.onmessage=e=>{let m;try{m=parse(e.data);}catch{return;}
       if(m.type==='welcome'){this.playerId=m.playerId;this.connected=true;this.error='';joined=true;clearTimeout(timer);this.apply(m);resolve();
         for(const [actionId,p] of this.pendingActions)ws.send(stringify({type:'action',actionId,action:p.action}));}
@@ -34,7 +35,7 @@ export class RemoteWorld {
     for(const b of m.bricks||[])this.bricks.set(b.key,b);
     const p=m.state.players[this.playerId],ship=m.state.ships[p.aboardShipId||p.currentShipId||p.shipId],owned=m.state.ships[p.shipId];
     this.state={schema:1,revision:m.state.revision,economy:{...owned.economy,cargo:p.carried,traders:m.state.market.traders},
-      player:p.pose,ship:{...ship.pose,state:ship.state},crew:ship.crew,damage:m.state.damage,terrain:m.state.terrain.mars,toolIdx:p.toolIdx};
+      player:p.pose,ship:{...ship.pose,state:ship.state},crew:ship.crew,damage:m.state.damage,terrain:m.state.terrain.mars,toolIdx:p.toolIdx,opening:p.opening};
     this.error=m.state.storageError||'';
     for(const fn of this.listeners)fn(m);
   }

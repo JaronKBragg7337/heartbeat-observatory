@@ -7,8 +7,11 @@
 import { buildExterior, applyNeutralPose, decalCanvasTexture } from '../ship/shipExterior.js';
 import { buildRaiderExterior, applyRaiderNeutralPose, raiderDecalTexture, applyRaiderInteriorPalette } from './raider/exterior.js';
 import { RAIDER_CUSTOM } from './raider/interior.js';
+import { buildCourierExterior, courierNeutral } from './courier/exterior.js';
 
 const VISUALS = {
+  courier: {buildExterior:buildCourierExterior,applyNeutralPose:courierNeutral,decalTexture:()=>null,
+    custom:{dress:()=>{}},shield:{scale:[5,4,13],pos:[0,1,0]}},
   meridian: {
     buildExterior, applyNeutralPose,
     decalTexture: (THREE_) => decalCanvasTexture(THREE_),

@@ -12,7 +12,7 @@ const out=fileURLToPath(new URL('../docs/qa/2026-10-02/twoplayer/',import.meta.u
 const temp=await mkdtemp(join(tmpdir(),'cosmos-twoplayer-')),results={},errors=[],movementOnly=process.env.COSMOS_QA_MOVEMENT_ONLY==='1';let app,browser;
 try {
   app=await startServer({adapter:new FileAdapter(join(temp,'world.json')),port:0,tick:false,clientErrorLog:join(temp,'client-errors.log')});
-  const origin=app.url.replace('ws:','http:'),url=q=>`${origin}/?dev=1&ws=${app.url}&${q}`;
+  const origin=app.url.replace('ws:','http:'),url=q=>`${origin}/?dev=1&opening=off&ws=${app.url}&${q}`;
   browser=await chromium.launch({headless:true,...(process.env.COSMOS_CHROME||process.platform==='win32'?{executablePath:process.env.COSMOS_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{}),args:['--use-gl=swiftshader','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist','--enable-webgl']});
   async function make(name,phone=false){const ctx=await browser.newContext({viewport:phone?{width:390,height:844}:{width:1100,height:700},isMobile:phone,hasTouch:phone,userAgent:phone?'Mozilla/5.0 (Linux; Android 13; SM-A145F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36':undefined});
     await ctx.addInitScript(name=>{localStorage.setItem('cosmos-device-v2',JSON.stringify({key:name.repeat(48).slice(0,48),name}));

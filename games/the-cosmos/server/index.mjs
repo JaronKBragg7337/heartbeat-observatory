@@ -22,7 +22,7 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
   const world=await new Authority(adapter,{now}).load();let timer,checkpoint=0,closing=false;
   const peers=new Set();
   const send=(peer,msg)=>peer.send(stringify(msg));
-  function broadcast(bricks=[]){for(const peer of peers)if(peer.playerId)send(peer,{type:'state',state:world.publicState(),serverAt:now(),bricks});}
+  function broadcast(bricks=[]){for(const peer of peers)if(peer.playerId)send(peer,{type:'state',state:world.publicState(peer.playerId),serverAt:now(),bricks});}
   const server=createServer(async(req,res)=>{
     if(req.url==='/health'){res.writeHead(world.error?503:200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({ok:!world.error,revision:world.state.revision,players:world.sessions.size,storage:adapter.constructor.name}));return;}
     try {const path=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
@@ -41,8 +41,8 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
     let peer;peer=upgrade(req,socket,head,text=>{
       world.enqueue(async()=>{if(closing)return;let m;try{m=parse(text);}catch{peer.close();return;}
         try{
-          if(m.type==='hello'){const p=await world.join(m.deviceKey,m.name,m.personId);peer.playerId=p.id;world.sessions.set(p.id,peer);
-            send(peer,{type:'welcome',playerId:p.id,state:world.publicState(),serverAt:now(),bricks:[...world.bricks.values()]});broadcast();}
+          if(m.type==='hello'){const p=await world.join(m.deviceKey,m.name,m.personId,m.openingVersion);peer.playerId=p.id;world.sessions.set(p.id,peer);
+            send(peer,{type:'welcome',playerId:p.id,state:world.publicState(p.id),serverAt:now(),bricks:[...world.bricks.values()]});broadcast();}
           else if(!peer.playerId)throw Error('Join first.');
           else if(m.type==='client-error'){if(!peer.errorReports||peer.errorReports<4){peer.errorReports=(peer.errorReports||0)+1;await logClientError(clientErrorLog,m);}}
           else if(m.type==='pose'){world.updatePose(world.state.players[peer.playerId],m);}

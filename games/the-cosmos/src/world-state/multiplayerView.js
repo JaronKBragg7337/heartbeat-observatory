@@ -78,6 +78,7 @@ export class MultiplayerView {
     space.hooks.cargoKg=item=>this.world.snapshot.ships[this.activeId()].hold[item]||0;
   }
   apply(m){const snapshot=this.world.snapshot,p=snapshot.players[this.world.playerId],s=snapshot.ships[this.activeId()],f=this.ship.flight;
+    if(this.engine.scene.userData.privateOpening||p.opening&&!p.opening.complete)return;
     // FLEET: the flagship changed to another class (bought, captured, switched): this cockpit is built for the old one, so come back in.
     if(s.type!==this.ship.def.type){this.reloadForShip(s);return;}
     this.recordMotion(m);this.fleetView?.onSnapshot();
@@ -217,7 +218,7 @@ export class MultiplayerView {
     v={person,group,entry,last:null,name,tag,wantLook:look||null};this.bodies.set(id,v);return v;
   }
   updateBodies(dt){const s=this.world.snapshot,current=this.activeId(),seen=new Set();
-    for(const p of Object.values(s.players)){if(p.id===this.world.playerId||!p.online)continue;seen.add(p.id);const b=this.body(p.id,p.personId,p.name);
+    for(const p of Object.values(s.players)){if(p.id===this.world.playerId||!p.online||p.opening&&!p.opening.complete)continue;seen.add(p.id);const b=this.body(p.id,p.personId,p.name);
       const rendered=this.motion.render('player:'+p.id,performance.now());
       let pos=rendered?.pos||p.pose.worldPos,q;
       if(p.aboardShipId){const ship=s.ships[p.aboardShipId],f=this.shipPose(ship),offset=new THREE.Vector3().copy(rendered?.pos||p.pose.sw).applyQuaternion(new THREE.Quaternion().fromArray(f.quaternion));

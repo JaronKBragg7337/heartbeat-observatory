@@ -652,6 +652,9 @@ await runCinemaChecks({ check, section });
 const {runTwoPlayerChecks,runTwoPlayerBrowserChecks}=await import('./twoplayer-checks.mjs');
 await runTwoPlayerChecks({check,section});
 await runTwoPlayerBrowserChecks({check,section});
+const {runOpeningChecks,runOpeningBrowserChecks}=await import('./opening-checks.mjs');
+await runOpeningChecks({check,section});
+await runOpeningBrowserChecks({check,section});
 
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);

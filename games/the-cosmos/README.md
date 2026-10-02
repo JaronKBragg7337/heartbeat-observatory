@@ -6,7 +6,7 @@ Live: https://www.heartbeatobservatory.com/games/the-cosmos/
 Local: `node server.js` → http://localhost:8378/
 Validate: `node test/validate.mjs`
 
-October 1 economy/save build (uncommitted): paid crew including comms, trader dialogue and inventory, a tower delivery quest, touch paths for keyboard prompts, and a local persistent world. See [world ownership and server plan](docs/WORLD-STATE.md) and [desktop/phone QA](docs/qa/2026-10-01/economy/REVIEW.md). Shared multiplayer authority is the next step; current saves live in this browser.
+The opening is implemented for new players. Returning players resume their saved world; unfinished openings resume their own progress. Shared multiplayer keeps each opening private and joins players into the shared world when it finishes. Desktop and phone controls use the same progression rules. See [world ownership and persistence](docs/WORLD-STATE.md) and [opening QA](docs/qa/2026-10-02/opening/REVIEW.md). This worktree is awaiting publication.
 
 ---
 
@@ -87,7 +87,7 @@ That turns "there's a rock stuck in a hill somewhere" into
 and a reproduction step.
 
 **The goal is to never need it.** `test/validate.mjs` is the first line of
-defence and runs without anyone looking: 390 checks (2026-10-01) covering placement,
+defence and runs without anyone looking, covering placement,
 collision, dimension drift, physics correctness, determinism, the ship, digging and spoil, the port and its tower.
 
 ---
@@ -239,7 +239,7 @@ paper-thin.
 *Built by Claude Sonnet 5.5 on 2026-09-29.*
 
 **MSV Meridian** (`COS-MARS-VEH-0001`) is a 46-tonne gunship, 49 m long and 24.5 m across the wings, landed
-a few dozen metres from where you spawn (the spawn now faces it). You walk up its boarding ramp, through
+at Marineris Port. You walk up its boarding ramp, through
 its rooms, sit in its seats, and fly it off the real planet. It is the same Mars: real 3.72 m/s^2 gravity,
 the same drawn ground for landing legs and bolts as for boots.
 

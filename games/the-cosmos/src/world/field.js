@@ -310,6 +310,7 @@ export function attachEdits(store) {
   if (!_edits || !store.body || store.body.id === 'mars') _edits = store;
 }
 export function getEdits() { return _edits; }
+export function detachBodyEdits(bodyId){const store=_editsByBody.get(bodyId);_editsByBody.delete(bodyId);if(_edits===store)_edits=null;}
 const editsOf = (body) => _editsByBody.get(body.id) || (body.id === 'mars' ? _edits : null);
 
 /**
