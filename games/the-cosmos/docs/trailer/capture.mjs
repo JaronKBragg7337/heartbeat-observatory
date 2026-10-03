@@ -61,7 +61,7 @@ try {
     const text = msg.text();
     if (msg.type() === 'error' && !/Failed to load resource/.test(text)) errors.push('console: ' + text);
   });
-  const url = `http://127.0.0.1:${port}/?solo=1&dev=1&tier=high&cinema=1`;
+  const url = `http://127.0.0.1:${port}/?solo=1&dev=1&opening=off&tier=high&cinema=1`;
   console.log('loading', url);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 180000 });
   await page.waitForFunction(() => window.cosmos && window.cosmos.ship && window.cosmos.ship.ready && window.cosmos.cinema, null, { timeout: 180000 });
