@@ -6,7 +6,7 @@
       "identity": true
     },
     "seating": [
-      2.0000000000002274,
+      1.9999999999997726,
       1.2199999999999993,
       1.22,
       1.2200000000000002,
@@ -19,7 +19,7 @@
     "refresh": {
       "stage": 2,
       "exposed": true,
-      "distance": 0.000005214020341417494,
+      "distance": 0.000003319889511506618,
       "pitch": -0.6936953842355726
     },
     "multiplayer": {
@@ -30,8 +30,8 @@
     "returningSave": true,
     "phone": {
       "stage": 2,
-      "calls": 73,
-      "triangles": 154164,
+      "calls": 93,
+      "triangles": 182540,
       "failures": 0,
       "actorsLoaded": true,
       "touchLook": true,
@@ -41,7 +41,7 @@
       "active": true,
       "stage": 2,
       "failures": 0,
-      "calls": 12
+      "calls": 33
     },
     "rooms": [
       {

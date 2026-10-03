@@ -11,7 +11,7 @@ import { detachBodyEdits } from '../world/field.js';
 import { OpeningLook } from './look.js';
 import { WRECK_Y } from './freighterHull.js';
 import { bindActivation } from '../ui/activation.js';
-import { openingRideVehicle, ridePose } from './rideVehicle.js';
+import { surveyOpeningVehicle, ridePose } from './rideVehicle.js';
 import { writeOpeningCheckpoint } from './checkpoint.js';
 
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -47,11 +47,11 @@ export class Opening {
     this.sw.place(this.state.pose.x,this.state.pose.y,this.state.pose.z,this.state.pose.yaw);this.sw.pitch=this.state.pose.pitch;
     this.dust=driftingDust(this.low);this.cabin.root.add(this.dust);
     this.sky=stormSky(this.low);this.root.add(this.sky.mesh);
-    this.rover=openingRideVehicle(rescueRover(mats,this.low));this.root.add(this.rover.root);
+    this.rover=surveyOpeningVehicle(mats,this.tier);this.root.add(this.rover.root);
     this.rover.root.position.set(-7,0,23);this.rover.root.rotation.y=Math.PI*.64;
     this.crate=supplyCrate(mats);this.crate.position.set(4,-.09,20);this.root.add(this.crate);
     this.contact=CONTACTS[this.state.contact];this.driver=people.spawn(this.contact.person);
-    this.driver.dress({cloth:this.contact.color});this.driver.group.position.set(-.55,.65,-1.15);
+    this.driver.dress({cloth:this.contact.color});this.driver.group.position.set(this.rover.driverSeat.x,this.rover.driverSeat.y-.42,this.rover.driverSeat.z);
     this.driver.group.rotation.y=Math.PI;this.driver.play('Sit');this.rover.root.add(this.driver.group);
     this.passengers=[];
     for(let i=0;i<(this.low?2:4);i++){
@@ -233,7 +233,7 @@ export class Opening {
       if(this.sw.z>12)actionLabel='Climb out (E)';
     }else{
       this.fade.style.opacity='0';this.cabin.root.position.set(0,WRECK_Y,0);this.cabin.root.rotation.set(.015,0,.105);
-      if(s.stage===4&&s.ride){
+      if(s.stage===4&&s.ride){this.rover.seatPlayer();
         this.fade.style.opacity=String(clamp((this.rideSeconds-64)/2,0,1));
         const rp=ridePose(this.rideSeconds,m.height);
         this.rover.root.position.set(rp.x,rp.y+.03*Math.sin(this.elapsed*6),rp.z);
@@ -257,8 +257,8 @@ export class Opening {
         if(s.stage>=3){
           const rv=this.rover.root,dx=p.x-rv.position.x,dz=p.z-rv.position.z,c=Math.cos(rv.rotation.y),v=Math.sin(rv.rotation.y);
           const x=c*dx-v*dz,z=v*dx+c*dz;
-          if(Math.abs(x)<2&&Math.abs(z)<3.15){
-            const moves=[{x:2-x,z:0},{x:-2-x,z:0},{x:0,z:3.15-z},{x:0,z:-3.15-z}];
+          if(Math.abs(x)<1.7&&Math.abs(z)<2.5){
+            const moves=[{x:1.7-x,z:0},{x:-1.7-x,z:0},{x:0,z:2.5-z},{x:0,z:-2.5-z}];
             moves.sort((a,b)=>Math.hypot(a.x,a.z)-Math.hypot(b.x,b.z));const d=moves[0];
             p.x+=c*d.x+v*d.z;p.z+=-v*d.x+c*d.z;m.place(p);
           }
@@ -271,7 +271,7 @@ export class Opening {
           if(s.contactSeconds>=8&&Math.hypot(p.x+7,p.z-23)<5)actionLabel='Ride (E)';}
         else if(s.stage===4){this.hint.textContent='Follow the port lights';if(Math.hypot(p.x+2600,p.z+350)<100&&!this.busy)this.savePose().then(()=>this.command({type:'opening-finish'}));}
       }
-      if(s.carriedCrate&&s.stage===4&&s.ride){this.crate.position.set(.7,1.08,1.9).applyMatrix4(this.rover.root.matrix);this.crate.rotation.y=this.rover.root.rotation.y;}
+      if(s.carriedCrate&&s.stage===4&&s.ride){this.crate.position.set(0,1.62,1.15).applyMatrix4(this.rover.root.matrix);this.crate.rotation.y=this.rover.root.rotation.y;}
       else if(s.carriedCrate){this.crate.position.copy(local?eye:this.localPoint(eye));
         const dir=local?forward:forward.clone().applyQuaternion(this.q.clone().invert());this.crate.position.addScaledVector(dir,.72);this.crate.position.y-=.65;
       }

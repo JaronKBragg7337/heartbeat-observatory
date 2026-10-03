@@ -10,12 +10,13 @@
 
 import { createServer } from 'http';
 import { readFile, stat } from 'fs/promises';
+import { readFileSync } from 'fs';
 import { join, extname, normalize } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const PORT = process.env.PORT || 8378;
-const BUILD_ID = 'phone-check-2026-10-02-a';
+const BUILD_ID = () => { try { return JSON.parse(readFileSync(join(ROOT, 'build.json'), 'utf8')).id; } catch { return 'unknown'; } };
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -58,7 +59,7 @@ createServer(async (req, res) => {
     res.writeHead(200, {
       'content-type': TYPES[extname(full).toLowerCase()] || 'application/octet-stream',
       'cache-control': 'no-cache',
-      'x-cosmos-build': BUILD_ID,
+      'x-cosmos-build': BUILD_ID(),
     }).end(buf);
   } catch (err) {
     res.writeHead(500, { 'content-type': 'text/plain' }).end(String(err));

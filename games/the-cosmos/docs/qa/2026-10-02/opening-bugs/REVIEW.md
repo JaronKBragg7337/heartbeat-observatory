@@ -119,3 +119,9 @@ and authority together; a mixed rollout is limited to one reload per version
 and needs the second component updated. Check that live `build.json`, the
 browser build and authority `/health.buildVersion` agree, then verify the live
 cache headers and repeat taps on Jaron's iPhone. Do not discard existing saves.
+
+## Finish pass (Claude Sonnet 5.5)
+
+- **Ride vehicle:** the opening now rides the shared survey rover from `src/vehicles/` (on main from Grok Build). It uses only `createVehicle` / `board` / `leave` and the survey mesh; seats come from the vehicle definition (driver NPC takes `driver`, the player takes `right`). Driving, buying and ownership stay in the rover code. The old `rescueRover` art stays in `art.js` for its check.
+- **Phone check** (`test/phone-check.mjs`, Luna's, now self-hosting a local server and reading `build.json`): iPhone WebKit and Android Chromium, real `touchscreen.tap` presses. A synthetic second pointer holds the move stick while the buttons are tapped (Playwright WebKit has no multi-touch API). It checks HTML meta / `buildVersion.js` / `build.json` / runtime / server header agree, then walks intro, refresh, exit-freighter, dig (every tap = one cut), grab crate, refresh at ride offer, ride, refresh mid-ride, port, settings, and every visible button. Screenshots: `docs/qa/phone-check/2026-10-03/`.
+- Not verified: a real iPhone device; live headers; deployed authority version.

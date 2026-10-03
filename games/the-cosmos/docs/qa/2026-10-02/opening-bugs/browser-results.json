@@ -103,16 +103,16 @@
   "ride": {
     "seconds": 22.000000000000007,
     "pose": {
-      "x": -697.0566663634371,
-      "y": 3.686310983964404,
-      "z": -76.26383978158438,
-      "yaw": -2.105846905610111,
-      "pitch": 0.06621145657380903
+      "x": -697.0566663634141,
+      "y": 3.697088253062361,
+      "z": -76.26383978162512,
+      "yaw": -2.10584664261681,
+      "pitch": 0.06642609244150098
     },
     "eye": {
-      "x": 0.55,
-      "y": 1.85,
-      "z": -1.15
+      "x": 0.42,
+      "y": 1.455,
+      "z": -0.85
     },
     "refresh": true,
     "arrived": true
@@ -131,7 +131,7 @@
     "padDistance": 3.034839492957798
   },
   "staleBuildReload": true,
-  "buildVersion": "f17b99c9a94fb030922a",
+  "buildVersion": "b01694836c9b72f34900",
   "serviceWorker": "No controlling service worker in isolated browser",
   "failedGlbVisible": true
 }
