@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { CrewSystem } from '../crew/crewSystem.js';
 import { CREW_POSTS } from '../crew/crewSpec.js';
 
@@ -20,7 +21,16 @@ export class RemoteCrew extends CrewSystem {
       b.group.visible=visible&&(!m.seated||rooms.has(seat.room));
     }
   }
-  worldPosOf(m) { return m.gpos; }
+  // Someone aboard is where the ship carries them, not where they stood when they signed on (that spot is only a body's last ground position;
+  // using it left the 'Talk to' prompt hanging in the hall while the person sat on the bridge).
+  worldPosOf(m) {
+    if (m.place !== 'ship') return m.gpos;
+    const ship = this.world.snapshot.ships[this.view.activeId()], f = ship && this.view.shipPose(ship);
+    const loc = m.seated || m.mode === 'sit' ? this._seatPos(m) : { x: m.sw.x, y: m.sw.y, z: m.sw.z };
+    if (!f || !Number.isFinite(loc.x)) return m.gpos;
+    const v = new THREE.Vector3(loc.x, loc.y, loc.z).applyQuaternion(new THREE.Quaternion().fromArray(f.quaternion));
+    return { x: f.pos.x + v.x, y: f.pos.y + v.y, z: f.pos.z + v.z };
+  }
   actors() { return this.hiredList().filter(m=>m.place==='ship'&&!m.seated).map(m=>m.sw); }
   activeOrder() { return this.world.snapshot.ships[this.view.activeId()].order||null; }
   hire(id) { return this.view.request({type:'hire',id}); }

@@ -1,0 +1,21 @@
+{
+  "padField": {
+    "ships": 24,
+    "views": 23,
+    "visible": 21,
+    "pads": 20
+  },
+  "keepWorks": true,
+  "startFresh": {
+    "old": "a8a00dc5",
+    "fresh": "16d51316"
+  },
+  "slots": {
+    "main": "a7589e6b",
+    "test": "6fc3d5bd",
+    "switchedBack": true
+  },
+  "secondDeviceSamePlayer": true,
+  "localDeadServerSolo": true,
+  "engine": "webkit-iphone"
+}

@@ -20,10 +20,14 @@ export function allocatedMoonPad(bodyId, index, shipId) {
 export function landingField(site, getPads) {
   return { bodyId: 'mars',
     weight(x,y,z) { const p=site.toLocal({x,y,z}); let best=0;
+      // Every terrain sample asks this, and a busy port has dozens of pads: a pad more than 16 m (+ its 6 m skirt) away weighs exactly zero,
+      // so most are rejected on two subtractions before any square root.
       for(const a of getPads()) {
         if(a.x===0&&a.z===0)continue;
-        const d=Math.hypot(Math.max(0,Math.abs(p.x-a.x)-a.w/2-6),Math.max(0,Math.abs(p.z-a.z)-a.d/2-6));
-        const t=Math.min(1,d/16);best=Math.max(best,1-t*t*(3-2*t));
+        const dx=Math.abs(p.x-a.x)-a.w/2-6;if(dx>=16)continue;
+        const dz=Math.abs(p.z-a.z)-a.d/2-6;if(dz>=16)continue;
+        const d=Math.hypot(Math.max(0,dx),Math.max(0,dz));
+        const t=Math.min(1,d/16);const w=1-t*t*(3-2*t);if(w>best)best=w;
       } return best;
     },
     apply(base,x,y,z) { const w=this.weight(x,y,z);return base*(1-w)+site.toLocal({x,y,z}).y*w; },

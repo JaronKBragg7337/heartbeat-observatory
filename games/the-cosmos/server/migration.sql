@@ -74,6 +74,13 @@ begin
     then raise exception 'Invalid world revision'; end if;
   insert into public.cosmos_worlds values(wid,(rec->>'revision')::bigint,rec,now())
     on conflict(world_id) do update set revision=excluded.revision, record=excluded.record, updated_at=excluded.updated_at;
+  -- A player, ship or pad that left the world record (start fresh, a deleted throwaway) leaves the projections too, so a new player can reuse its device hash.
+  delete from public.cosmos_players where world_id=wid and not jsonb_exists(rec->'players',player_id);
+  delete from public.cosmos_quests where world_id=wid and not jsonb_exists(rec->'ships',ship_id);
+  delete from public.cosmos_accounts where world_id=wid and not jsonb_exists(rec->'ships',ship_id);
+  delete from public.cosmos_ships where world_id=wid and not jsonb_exists(rec->'ships',ship_id);
+  -- Every pad is free until the loop below says whose it is (a pad can change hands within one save).
+  update public.cosmos_pads set ship_id='free:'||pad_id where world_id=wid;
   -- Clear seat projections together before upsert so handing over a seat is atomic.
   update public.cosmos_players set seat=null where world_id=wid;
   for kv in select * from jsonb_each(rec->'players') loop
@@ -98,8 +105,8 @@ begin
     end loop;
   end loop;
   for b in select * from jsonb_array_elements(rec->'pads') loop
-    insert into public.cosmos_pads values(wid,b->>'id',b->>'shipId',b)
-      on conflict(world_id,pad_id) do update set record=excluded.record;
+    insert into public.cosmos_pads values(wid,b->>'id',coalesce(b->>'shipId','free:'||(b->>'id')),b)
+      on conflict(world_id,pad_id) do update set ship_id=excluded.ship_id,record=excluded.record;
   end loop;
   for kv in select * from jsonb_each(rec->'damage') loop
     insert into public.cosmos_damage values(wid,kv.key,kv.value)

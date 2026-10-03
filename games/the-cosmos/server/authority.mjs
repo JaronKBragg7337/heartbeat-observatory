@@ -29,6 +29,7 @@ import { VehicleDirector } from './vehicles.mjs';
 import { freshOpening, OpeningModel } from '../src/opening/state.js';
 import { detachBodyEdits } from '../src/world/field.js';
 import { landingOrder } from '../src/space/spaceSpec.js';
+import { humanMarkers, DEFAULT_NAME, GUEST_IDLE_MS, EPHEMERAL_IDLE_MS, MAX_SLOTS } from './identity.mjs';
 
 const hash = s=>createHash('sha256').update(s).digest('hex');
 const cleanName=s=>String(s||'Visitor').replace(/[<>\x00-\x1f]/g,'').slice(0,32);
@@ -44,20 +45,23 @@ const orderLive=sim=>{const r=sim.record,p=r.pendingOrder?.o,o=r.order,ap=r.auto
 export const CREW_HALL={x:-28,z:-68,w:24,d:14,h:5,door:{x:-28,z:-60}};
 
 export class Authority {
-  constructor(adapter,{now=Date.now}={}) {
-    this.adapter=adapter;this.now=now;this.mars=getBody('mars');this.site=createPortSite(this.mars);
+  constructor(adapter,{now=Date.now,verify=null}={}) {
+    this.adapter=adapter;this.now=now;this.verify=verify;this.mars=getBody('mars');this.site=createPortSite(this.mars);
     this.sessions=new Map();this.inputs=new Map();this.queue=Promise.resolve();this.error='';this.bricks=new Map();
     this.state={schema:2,revision:0,clock:0,savedAt:now(),players:{},ships:{},pads:[],pool:{},poolSeq:0,
-      market:initialEconomy(),terrain:{},damage:{},vehicles:{},receipts:{}};
+      market:initialEconomy(),terrain:{},damage:{},vehicles:{},receipts:{},users:{}};
     this.fleet=new FleetDirector(this);this.vehicleInputs=new Map();this.vehicles=new VehicleDirector(this);
   }
   async load(){const s=await this.adapter.load();if(s.record){if(s.record.schema!==2)throw Error('Unsupported authority schema.');this.state=s.record;}
     for(const c of Object.values(this.state.pool))if(!c.shipId&&c.status==='inside'&&c.position.x===CREW_HALL.x&&c.position.z===CREW_HALL.z)c.position.x+=(CREW_POSTS.findIndex(r=>r.id===c.role)-2.5)*2.4;
-    for(const p of Object.values(this.state.players))p.offlineAt=p.offlineAt||this.state.savedAt;
+    this.state.users=this.state.users||{};
+    for(const p of Object.values(this.state.players)){p.offlineAt=p.offlineAt||this.state.savedAt;p.seenAt=p.seenAt||p.offlineAt;}
     this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.state.vehicles=this.state.vehicles||{};this.rebuild();this.vehicles.ensureAll();this.refill();
     // Restart catch-up uses real elapsed time. It continues trips/wages, never a browser clock.
     const elapsed=Math.min(300,Math.max(0,(this.now()-this.state.savedAt)/1000)); // hotfix 10/2: cap catch-up at 5 min; an active ship at 30 Hz over hours pegged the CPU and the watchdog restart loop made it worse
     if(elapsed){this.advance(elapsed,{catchUp:true});}
+    // Test clients (a few minutes after they were last seen) and guests idle a day leave their pads.
+    this.lastSweep=this.sweep();
     this.fleet.ensure();await this.commit();return this;
   }
   rebuild(){for(const id of this.openingModels?.keys()||[])this.releaseOpening(id);
@@ -68,7 +72,7 @@ export class Authority {
     this.elevator=Object.assign(new TowerElevator(),this.state.elevator||{});this.crewRoutes=new Map();
     for(const id of ['mars','phobos','deimos']){const e=new EditStore(id==='mars'?this.mars:makeMoon(id));attachEdits(e);
       restoreTerrain(e,this.state.terrain[id],[...this.bricks.values()].filter(b=>b.bodyId===id));this.stores.set(id,e);}
-    this.sims=new Map(Object.values(this.state.ships).map(s=>[s.id,this.makeSim(s)]));
+    this.sims=new Map(Object.values(this.state.ships).filter(s=>!s.parked).map(s=>[s.id,this.makeSim(s)]));
   }
   /** One ship's simulation, whatever its type; a raider also gets its brain and its escort wing. */
   makeSim(s){this.ensureMoonPads(s);const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.otherSim=id=>this.sims.get(id);if(s.npc)this.fleet.attach(sim);return sim;}
@@ -76,14 +80,17 @@ export class Authority {
   ensureMoonPads(ship){if(ship.npc)return;ship.moonPads=ship.moonPads||{};
     for(const bodyId of ['phobos','deimos']){const cur=ship.moonPads[bodyId];
       if(cur&&cur.shipId===ship.id&&Number.isFinite(cur.east)&&Number.isFinite(cur.north))continue;
-      let index=0;for(const other of Object.values(this.state.ships)){if(other===ship||other.npc)continue;
-        const p=other.moonPads?.[bodyId];if(p&&Number.isFinite(p.east))index++;}
+      // The lowest grid slot nobody else holds. (A count would hand a new ship the slot of a pad that is still in use once ships can leave.)
+      const used=new Set();for(const other of Object.values(this.state.ships)){if(other===ship||other.npc)continue;
+        const q=other.moonPads?.[bodyId];if(q&&Number.isFinite(q.east)){const m=/-(\d+)$/.exec(q.id||'');if(m)used.add(Number(m[1])-1);}}
+      let index=0;while(used.has(index))index++;
       ship.moonPads[bodyId]=allocatedMoonPad(bodyId,index,ship.id);}}
   enqueue(fn){const p=this.queue.then(fn);this.queue=p.catch(()=>{});return p;}
   _parkBlockers(){const held=[];for(const sim of this.sims.values()){if(sim?.ship?.state?.blockers){held.push([sim,sim.ship.state.blockers]);delete sim.ship.state.blockers;}}return held;}
   _unpark(held){for(const [sim,b] of held)sim.ship.state.blockers=b;}
-  publicState(viewerId){const held=this._parkBlockers();const s=structuredClone(this.state);this._unpark(held);delete s.receipts;
-    for(const p of Object.values(s.players)){delete p.deviceHash;p.online=this.sessions.has(p.id);
+  publicState(viewerId){const held=this._parkBlockers();const s=structuredClone(this.state);this._unpark(held);delete s.receipts;delete s.users;
+    for(const [id,sh] of Object.entries(s.ships))if(sh.parked)delete s.ships[id];
+    for(const p of Object.values(s.players)){delete p.deviceHash;delete p.userId;delete p.slot;p.online=this.sessions.has(p.id);
       if(p.opening&&p.id!==viewerId)p.opening={complete:p.opening.complete};}
     s.storageError=this.error;
     return s;
@@ -98,22 +105,125 @@ export class Authority {
     for(const b of changed)this.bricks.set(b.key,b);for(const e of this.stores.values())e._dirty.clear();
     this.error='';return changed;
   }
-  async join(deviceKey,name,personId='isaiah',openingVersion=0) {
+  /** A new player (and the ship and pad that come with them). A signed-in person's player also carries their account id and slot. */
+  createPlayer(deviceHash,name,personId,openingVersion,{userId=null,slot=null,ephemeral=false}={}){
+    const id=randomUUID(),shipId=randomUUID(),pad=this.allocPad(shipId);
+    const ship={id:shipId,owner:id,type:openingVersion===1?'courier':DEFAULT_SHIP_TYPE,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},economy:initialEconomy(),frameId:'mars',pose:null,trip:null};
+    this.state.ships[shipId]=ship;this.sims.set(shipId,this.makeSim(ship));this.vehicles.ensure(ship);
+    const p={id,deviceHash,name:cleanName(name),personId:/^[a-z]{2,24}$/.test(personId)?personId:'isaiah',shipId,currentShipId:shipId,aboardShipId:null,vehicleId:null,vehicleSeat:null,frameId:'mars',
+      pose:{worldPos:this.site.toWorld(pad.x-10,.02,pad.z+38),velocity:{x:0,y:0,z:0},yaw:this.site.heading,pitch:0,grounded:true,aboard:false,sw:{x:0,y:0,z:12,yaw:0,pitch:0},seat:null,look:{yaw:0,pitch:0}},toolIdx:1,carried:[],createdAt:this.now(),seenAt:this.now()};
+    if(userId){p.userId=userId;p.slot=slot||'main';}
+    if(ephemeral)p.ephemeral=true;
+    if(openingVersion===1)p.opening=freshOpening();
+    this.state.players[id]=p;return p;
+  }
+  /**
+   * Who is joining. `ident` is what the server verified (never what the browser claimed): { userId, email, admin, slot, test }.
+   * A guest is their device key, as before. A signed-in person is their account: the same player, ship, pad, money and pose from any
+   * device or a private tab. The first time an account signs in on a device that already has a guest player, that player moves onto the account.
+   */
+  async join(deviceKey,name,personId='isaiah',openingVersion=0,ident={}) {
     if(typeof deviceKey!=='string'||deviceKey.length<24||deviceKey.length>128)throw Error('Invalid device identity.');
-    const key=hash(deviceKey);let p=Object.values(this.state.players).find(p=>p.deviceHash===key);
+    const key=hash(deviceKey),user=ident.userId?ident:null;let p=null,note=null;
     const before=structuredClone(this.state);
     try{
-      if(!p){const id=randomUUID(),shipId=randomUUID(),pad=allocatedPad(this.state.pads.length,shipId);this.state.pads.push(pad);
-        const ship={id:shipId,owner:id,type:openingVersion===1?'courier':DEFAULT_SHIP_TYPE,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},economy:initialEconomy(),frameId:'mars',pose:null,trip:null};
-        this.state.ships[shipId]=ship;this.sims.set(shipId,this.makeSim(ship));this.vehicles.ensure(ship);
-        p={id,deviceHash:key,name:cleanName(name),personId:/^[a-z]{2,24}$/.test(personId)?personId:'isaiah',shipId,currentShipId:shipId,aboardShipId:null,vehicleId:null,vehicleSeat:null,frameId:'mars',
-          pose:{worldPos:this.site.toWorld(pad.x-10,.02,pad.z+38),velocity:{x:0,y:0,z:0},yaw:this.site.heading,pitch:0,grounded:true,aboard:false,sw:{x:0,y:0,z:12,yaw:0,pitch:0},seat:null,look:{yaw:0,pitch:0}},toolIdx:1,carried:[]};
-        if(openingVersion===1)p.opening=freshOpening();
-        this.state.players[id]=p;
-      }else p.name=cleanName(name||p.name);
+      this.state.users=this.state.users||{};
+      const here=Object.values(this.state.players).find(g=>g.deviceHash===key);
+      if(user){
+        const acct=this.state.users[user.userId]||={slots:{},createdAt:this.now()};
+        acct.email=user.email||acct.email||'';acct.admin=!!user.admin;
+        const slot=user.admin&&/^[a-z0-9-]{1,16}$/.test(ident.slot||'')?ident.slot:'main';
+        p=this.state.players[acct.slots[slot]?.playerId];
+        if(!p){delete acct.slots[slot];
+          if(Object.keys(acct.slots).length>=MAX_SLOTS)throw Error('Too many saved characters.');
+          if(slot==='main'&&here&&!here.userId&&!here.ephemeral){p=here;note='adopted';}
+          else{
+            // A guest ship on this device that the account does not take stays a guest ship; it is cleaned up once it has been idle a day.
+            note=slot==='main'&&here&&!here.userId?'kept-account':'created';
+            p=this.createPlayer(here?hash(deviceKey+':'+user.userId+':'+slot+':'+randomUUID().slice(0,8)):key,!name||DEFAULT_NAME.test(name)?(user.email?.split('@')[0]||name):name,personId,openingVersion);
+          }
+          p.userId=user.userId;p.slot=slot;
+        }
+        if(!note&&slot==='main'&&here&&!here.userId&&!here.ephemeral&&here.id!==p.id)note='kept-account';
+        acct.slots[slot]={playerId:p.id,name:p.name,at:this.now()};acct.lastSlot=slot;
+      }else{
+        p=here||this.createPlayer(key,name,personId,openingVersion,{ephemeral:!!ident.test});
+      }
+      if(p.parked)this.unpark(p);
+      p.name=cleanName(name||p.name);
+      p.seenAt=this.now();
+      this.joinNote=note;
       await this.commit();this.sessions.get(p.id)?.close();return p;
     }catch(e){this.state=before;this.rebuild();throw e;}
   }
+  /** What a hello proves: a verified account (never an id the browser typed) and whether the client says it is a test. */
+  async identify(m){const ident={test:m.test===true,slot:typeof m.slot==='string'?m.slot.slice(0,16):undefined};
+    if(m.token&&this.verify){const u=await this.verify(m.token).catch(()=>null);if(u)Object.assign(ident,u);else ident.tokenRejected=true;}
+    return ident;}
+  /** What the browser is told about who it is (never another player's account). */
+  identityInfo(p,note=null){const acct=p.userId&&this.state.users?.[p.userId];
+    return {guest:!p.userId,signedIn:!!p.userId,email:acct?.email||'',admin:!!acct?.admin,slot:p.slot||null,ephemeral:!!p.ephemeral,note,
+      slots:acct?Object.entries(acct.slots).map(([id,s])=>({id,name:this.state.players[s.playerId]?.name||s.name,current:s.playerId===p.id})).sort((a,b)=>a.id==='main'?-1:b.id==='main'?1:a.id.localeCompare(b.id)):[]};}
+  /** Everything a player owns leaves the world: ships and their crew contracts, rovers, pads (kept free for the next arrival), moon pads. Refused while anyone else is aboard. */
+  removePlayer(id){const p=this.state.players[id];if(!p||this.sessions.has(id))return false;
+    const owned=Object.values(this.state.ships).filter(s=>s.owner===id&&!s.npc);
+    for(const s of owned)if(Object.values(this.state.players).some(q=>q.id!==id&&q.aboardShipId===s.id))return false;
+    const before=structuredClone(this.state);
+    try{
+      for(const s of owned){
+        for(const c of s.crew||[]){const pc=this.state.pool[c.id];if(pc&&pc.shipId===s.id){const slot=Math.max(0,CREW_POSTS.findIndex(r=>r.id===pc.role));
+          Object.assign(pc,{shipId:null,status:'inside',position:{x:CREW_HALL.x+(slot-2.5)*2.4,y:0,z:CREW_HALL.z},refillAt:this.state.clock});}}
+        for(const a of this.state.pads)if(a.shipId===s.id)a.shipId=null;
+        for(const [vid,v] of Object.entries(this.state.vehicles||{}))if(v.owner===id||v.homeShipId===s.id||v.parentShipId===s.id)delete this.state.vehicles[vid];
+        this.sims.delete(s.id);delete this.state.ships[s.id];
+      }
+      for(const [k,r] of Object.entries(this.state.receipts||{}))if(r?.playerId===id)delete this.state.receipts[k];
+      for(const q of Object.values(this.state.players))if(q.id!==id&&owned.some(s=>s.id===q.currentShipId))q.currentShipId=q.shipId;
+      for(const u of Object.values(this.state.users||{}))for(const [sl,v] of Object.entries(u.slots))if(v.playerId===id)delete u.slots[sl];
+      this.releaseOpening(id);this.inputs.delete(id);this.vehicleInputs.delete(id);delete this.state.players[id];
+      return true;
+    }catch(e){this.state=before;this.rebuild();throw e;}
+  }
+  /** A guest's ship that has been idle a day is taken off its pad and kept; it comes back on a pad when they return. */
+  park(p){const ship=this.state.ships[p.shipId];if(!ship||ship.parked||ship.npc)return false;
+    if(ship.frameId!=='mars'||ship.trip||!this.sims.get(ship.id)?.flight.landed)return false;
+    if(Object.values(this.state.players).some(q=>q.id!==p.id&&q.aboardShipId===ship.id))return false;
+    for(const a of this.state.pads)if(a.shipId===ship.id)a.shipId=null;
+    ship.parked=true;ship.pad=null;this.sims.delete(ship.id);
+    p.aboardShipId=null;p.currentShipId=p.shipId;p.pose.aboard=false;p.pose.seat=null;p.vehicleId=null;p.vehicleSeat=null;p.parked=true;return true;}
+  unpark(p){const ship=this.state.ships[p.shipId];
+    if(ship?.parked){const pad=this.allocPad(ship.id);Object.assign(ship,{parked:false,pad,pose:null,trip:null,frameId:'mars',order:null,orderKey:null,pendingOrder:null,autopilot:null});
+      this.sims.set(ship.id,this.makeSim(ship));this.vehicles.ensure(ship);
+      for(const c of ship.crew||[])if(!String(c.status).startsWith('leaving')){c.status='aboard';c.groundRoute=[];}
+      p.pose.worldPos=this.site.toWorld(pad.x-10,.02,pad.z+38);p.pose.velocity={x:0,y:0,z:0};p.pose.grounded=true;p.frameId='mars';}
+    delete p.parked;}
+  /** True while a hull is landed, settled and asked for nothing (see advance). */
+  resting(sim,control){const r=sim.record,f=sim.flight;
+    return !r.npc&&f.landed&&!sim.trip&&!orderLive(sim)&&!f.autoHover&&!control.lift&&!control.fwd&&!control.yaw&&!r.escort&&!r.pendingOrder&&f.hull>=100
+      &&!sim.guns.bolts.length&&!sim.drones.shots.length&&sim.ship.air.phase==='idle'
+      &&Object.values(sim.ship.rampCtl).every(c=>Math.abs(c.target-c.progress)<1e-4)&&!r.crew.some(c=>c.status==='walking-aboard'||c.status==='boarding'||String(c.status).startsWith('leaving'));}
+  allocPad(shipId){const free=this.state.pads.find(a=>!a.shipId);
+    if(free){free.shipId=shipId;return {...free};}
+    const pad=allocatedPad(this.state.pads.length,shipId);this.state.pads.push(pad);return {...pad};}
+  /**
+   * Housekeeping, at start and about once a minute. A test client (it flags itself) is removed shortly after it disconnects. A guest player idle
+   * a day is deleted if it is plainly throwaway (default name and look, nothing done), parked if all it has is progress, kept when a person
+   * made it (a chosen look or typed name) because the sweep cannot be sure whose it is. Signed-in players are never touched. `idleMs` lets a
+   * one-off cleanup use a shorter clock. Returns what it did, for the log.
+   */
+  sweep({idleMs=GUEST_IDLE_MS,dryRun=false}={}){const out={removed:[],parked:[],kept:[]},now=this.now(),tag=p=>({id:p.id.slice(0,8),name:p.name});
+    const PROGRESS=['spent or earned marks','hired crew','cargo','jobs','away from Mars'];
+    for(const p of Object.values(this.state.players)){
+      if(this.sessions.has(p.id))continue;
+      const idle=now-(p.seenAt||p.offlineAt||this.state.savedAt),ship=this.state.ships[p.shipId];
+      if(p.ephemeral){if(idle>=EPHEMERAL_IDLE_MS){if(dryRun||this.removePlayer(p.id))out.removed.push({...tag(p),why:'test client'});}continue;}
+      if(p.userId||idle<idleMs||p.parked)continue;
+      const human=humanMarkers(p,ship);
+      if(!human.length){if(dryRun||this.removePlayer(p.id))out.removed.push({...tag(p),why:'idle guest, nothing done'});else out.kept.push({...tag(p),why:'someone aboard'});}
+      else if(human.every(w=>PROGRESS.includes(w))){if(dryRun||this.park(p))out.parked.push({...tag(p),why:human.join(', ')});else out.kept.push({...tag(p),why:'cannot park: '+human.join(', ')});}
+      else out.kept.push({...tag(p),why:human.join(', ')});
+    }
+    return out;}
   refill(){const available=Object.values(this.state.pool).filter(c=>!c.shipId&&!c.retired);
     for(const role of CREW_POSTS){if(available.some(c=>c.role===role.id)||Object.values(this.state.pool).some(c=>c.role===role.id&&c.shipId&&c.refillAt>this.state.clock))continue;
       const seq=++this.state.poolSeq;const suffix=seq<=6?'':` ${['Rivera','Okafor','Chen','Patel','Diaz','Khan'][seq%6]} ${Math.floor(seq/6)}`;
@@ -136,7 +246,7 @@ export class Authority {
   releaseOpening(id){const model=this.openingModels?.get(id);if(!model)return;
     detachBodyEdits(model.body.id);this.openingModels.delete(id);}
   disconnect(id,peer){if(this.sessions.get(id)!==peer)return;this.sessions.delete(id);this.inputs.delete(id);this.vehicleInputs.delete(id);this.releaseOpening(id);
-    this.state.players[id].offlineAt=this.now();
+    this.state.players[id].offlineAt=this.now();this.state.players[id].seenAt=this.now();
     // The body remains aboard; the flight assist holds after the control lease ends.
   }
   advance(seconds,{catchUp=false}={}){let left=seconds;
@@ -171,7 +281,14 @@ export class Authority {
         // (catching up on a long absence a ship that is sitting on the ground with nothing asked of it stays where it is: stepping its landing
         //  physics a hundred and twenty times a second for hours is the slowest thing a restart does)
         if(!(catchUp&&sim.flight.landed&&!sim.trip&&!orderLive(sim)&&!sim.flight.autoHover&&!control.lift&&!control.fwd&&!control.yaw))
-        {this.fleet.preStep(sim);sim.step(dt,control);this.fleet.postStep(sim);}
+        {
+          // A ship sitting on its pad with nothing asked of it (most of a busy port, most of the day) is stepped twice a second with the
+          // time it missed, not thirty times: the physics treats a resting hull the same, and a world of two dozen idle hulls was spending
+          // its whole tick on them. Anything that wakes a ship (a stick, an order, a ramp moving, shots in the air, a trip) steps it at full rate again.
+          if(!catchUp&&this.resting(sim,control)){sim.restDt=(sim.restDt||0)+dt;
+            if(sim.restDt>=.5){const d=sim.restDt;sim.restDt=0;this.fleet.preStep(sim);sim.step(d,control);this.fleet.postStep(sim);}}
+          else{sim.restDt=0;this.fleet.preStep(sim);sim.step(dt,control);this.fleet.postStep(sim);}
+        }
         const events=[...sim.guns.drain().map(e=>({...e,system:'guns'})),...sim.drones.drain().map(e=>({...e,system:'drones'}))];
         for(const e of events){ship.eventSeq=(ship.eventSeq||0)+1;ship.events=ship.events||[];ship.events.push({...e,seq:ship.eventSeq});}
         ship.events=(ship.events||[]).slice(-80);
@@ -275,7 +392,7 @@ export class Authority {
   // -------------------------------------------------------------------------------------------------------------------
   /** A new owned ship on a pad of its own. */
   newOwnedShip(p,type,o={}){
-    const id=randomUUID(),pad=allocatedPad(this.state.pads.length,id);this.state.pads.push(pad);
+    const id=randomUUID(),pad=this.allocPad(id);
     const rec={id,owner:p.id,type,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},
       economy:{...initialEconomy(),marks:o.marks||0},frameId:'mars',pose:null,trip:null,acquired:{how:o.how||'bought',at:this.state.clock}};
     this.state.ships[id]=rec;this.sims.set(id,this.makeSim(rec));return rec;
@@ -302,7 +419,7 @@ export class Authority {
   claimShip(p,a){
     const rec=this.fleet.claimable(p,a.shipId),how=rec.npc.state==='disabled'?'captured':'claimed',def=shipDef(rec.type);
     const loot=rec.npc.lootCredits||0,crew=rec.crew.filter(c=>c.status==='surrendered'||c.status==='aboard');
-    const pad=allocatedPad(this.state.pads.length,rec.id);this.state.pads.push(pad);
+    const pad=this.allocPad(rec.id);
     Object.assign(rec,{owner:p.id,pad,npc:null,crew:[],pose:null,state:null,combat:null,frameId:'mars',trip:null,acquired:{how,at:this.state.clock}});
     rec.economy.marks+=loot*4;
     // the surrendered crew sign on: they are the ship's hired crew from now, on wages, like anyone from the hall
@@ -331,7 +448,7 @@ export class Authority {
     const mine=this.state.ships[p.aboardShipId],prizeSim=this.sims.get(rec.id);
     prizeSim.capture();
     const pose=structuredClone(rec.pose),frameId=rec.frameId,state=rec.state,name=rec.npc.name,loot=rec.npc.lootCredits||0,def=shipDef(rec.type);
-    const pad=allocatedPad(this.state.pads.length,rec.id);this.state.pads.push(pad);
+    const pad=this.allocPad(rec.id);
     const hired=(mine.crew||[]).filter(c=>!String(c.status||'').startsWith('leaving'));
     const flyer=hired.find(c=>c.role==='pilot')||hired.find(c=>c.role==='captain')||null;
     const stayers=flyer?[flyer]:[],coming=hired.filter(c=>c!==flyer);

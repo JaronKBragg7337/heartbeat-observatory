@@ -13,6 +13,7 @@ import { rampEntry } from '../ship/rampTransfer.js';
 import { ShipWalker, shipIndexFor } from '../ship/shipWalker.js';
 import { FleetView } from './fleetView.js';      // FLEET: the other ships, the raiders, the shipyard
 import { shipDef } from '../ships/registry.js';
+import { AccountView } from './accountView.js';
 const hall={x:-28,z:-68,w:24,d:14,h:5};
 function label(text){const c=document.createElement('canvas');c.width=512;c.height=64;const x=c.getContext('2d');
   x.fillStyle='#17120cdd';x.fillRect(0,0,512,64);x.fillStyle='#ffe0ab';x.font='28px sans-serif';x.textAlign='center';x.fillText(text,256,44,500);
@@ -24,6 +25,7 @@ export class MultiplayerView {
     space.portSite={...site,toWorld:(x,y,z)=>{const pad=world.snapshot.ships[this.activeId()].pad;return site.toWorld(pad.x+x,y,pad.z+z);}};
     ship.remoteAuthority=true;ship.flight.remoteAuthority=true;
     this.installControls();this.buildHall();this.buildPanel();this.fleetView=new FleetView(this);
+    this.account=new AccountView(this);       // Settings: guest or signed in, sign in/out, start fresh, saved characters
     world.beforeAction=()=>this.sendPose();world.onReceipt=r=>{if(!r.ok)ship.note(r.msg,true);if(this.crew?.onSay)this.crew.onSay('',r.msg==='Saved to the shared world.'?'Done.':r.msg);if(!r.ok)this.reconcilePlayer=true;};
     world.onConnection=()=>this.reconcilePlayer=true;
     world.listeners.add(m=>this.apply(m));this.apply({state:world.snapshot,bricks:[...world.bricks.values()]});

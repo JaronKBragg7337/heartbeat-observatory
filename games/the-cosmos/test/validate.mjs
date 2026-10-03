@@ -623,6 +623,8 @@ await runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, Walker, gravityA
 
 const { runMultiplayerChecks } = await import('./multiplayer-checks.mjs');
 await runMultiplayerChecks({check,section});
+const { runIdentityChecks } = await import('./identity-checks.mjs');
+await runIdentityChecks({ check, section });
 const { runServerStorageChecks } = await import('./server-storage-checks.mjs');
 await runServerStorageChecks({check,section});
 const {runParityChecks}=await import('./parity-checks.mjs');
