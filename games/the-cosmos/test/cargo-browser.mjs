@@ -204,10 +204,10 @@ try {
   assert.ok(off, 'the rover did not drive off the hauler under a held thumb');
   console.log('PASS the held thumb drove the rover aft along the aisle and off the wide ramp');
   await sleep(600);
-  // the watcher sees the same rover on the ground, in the world, with a mesh
-  const seen = await until(() => D.evaluate(() => { const v = cosmos.world.snapshot.vehicles['dray-rover']; return v && !v.parentShipId ? { parent: v.parentShipId, w: v.world, mesh: cosmos.vehicles.meshes.has('dray-rover') } : null; }), 60000, 'D to see the rover on the ground');
+  // the watcher sees the same rover on the ground, in the world, with a mesh. The rover coasts to a stop after the thumb lifts, so wait for it to rest and for the watcher's snapshot to catch up.
+  await until(() => Math.abs(world.state.vehicles['dray-rover'].pose.speed) < 0.05, 30000, 'the rover to stop');
   const srv = world.state.vehicles['dray-rover'];
-  assert.ok(Math.hypot(seen.w.x - srv.world.x, seen.w.y - srv.world.y, seen.w.z - srv.world.z) < 3, 'D sees the rover where the server has it');
+  const seen = await until(() => D.evaluate((srvW) => { const v = cosmos.world.snapshot.vehicles['dray-rover']; return v && !v.parentShipId && Math.hypot(v.world.x - srvW.x, v.world.y - srvW.y, v.world.z - srvW.z) < 1 ? { parent: v.parentShipId, w: v.world, mesh: cosmos.vehicles.meshes.has('dray-rover') } : null; }, srv.world), 60000, 'D to see the rover where the server has it');
   assert.ok(seen.mesh, 'D has the rover drawn');
   results.rover = { watcherSees: seen.w, server: srv.world };
   console.log('PASS the second phone sees the rover on the ground');

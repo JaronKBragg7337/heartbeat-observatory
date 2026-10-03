@@ -132,7 +132,6 @@ prop('console', 'cockpit', 3.1, -11.6, 1.6, 0.5, 1.0, 3, { extra: { screens: 2, 
 prop('locker', 'cockpit', -3.1, -13.6, 0.6, 0.5, 2.0, 1);
 prop('locker', 'cockpit', 3.1, -13.6, 0.6, 0.5, 2.0, 3);
 prop('extinguisher', 'cockpit', -3.3, -10.9, 0.16, 0.16, 0.5, 1, { blocks: false, y: 1.2 });
-prop('rug', 'cockpit', 0, -12.4, 3.0, 2.2, 0.02, 0, { blocks: false });
 
 // crew berth: four bunks (two double bunks) on the port wall, lockers and a table
 prop('bunk', 'crew_a', -5.0, -8.8, 0.95, 2.1, 1.9, 0);

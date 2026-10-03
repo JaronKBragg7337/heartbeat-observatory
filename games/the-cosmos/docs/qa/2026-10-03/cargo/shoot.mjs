@@ -65,9 +65,9 @@ try {
     await page.waitForFunction(() => window.cosmos && window.cosmos.vehicles && window.cosmos.ship && window.cosmos.ship.ready, null, { timeout: 240000 });
     await page.evaluate(() => {
       window.__look = (eye, at) => { const c = cosmos; c.ship.aboard = false; if (c.multiplayer.panel) c.multiplayer.panel.hidden = true; c.freeCam.set(eye, at); c.vehicles.prepare(); c.vehicles.frame(1 / 30, { moveNorth: 0, moveEast: 0, look: { dx: 0, dy: 0 } }); for (let i = 0; i < 28; i++) c.step(1 / 30); };
-      window.__ext = (off, look) => { const f = cosmos.ship.flight; window.__look(f.toWorld({ x: off[0], y: off[1], z: off[2] }), f.toWorld({ x: look[0], y: look[1], z: look[2] })); };
-      window.__in = (room, x, z, yaw, pitch) => { cosmos.freeCam.off(); cosmos.vehicles.prepare(); cosmos.ship.debugAt(room, x, z, yaw, pitch, 40); };
-      window.__site = (x, y, z, tx, ty, tz) => { const s = cosmos.port.site; window.__look(s.toWorld(x, y, z), s.toWorld(tx, ty, tz)); };
+      window.__ext = (off, look) => { cosmos.ship.scene.visible = false; const f = cosmos.ship.flight; window.__look(f.toWorld({ x: off[0], y: off[1], z: off[2] }), f.toWorld({ x: look[0], y: look[1], z: look[2] })); };
+      window.__in = (room, x, z, yaw, pitch) => { cosmos.ship.scene.visible = true; cosmos.freeCam.off(); cosmos.vehicles.prepare(); cosmos.ship.debugAt(room, x, z, yaw, pitch, 40); };
+      window.__site = (x, y, z, tx, ty, tz) => { const s = cosmos.port.site; cosmos.ship.scene.visible = false; cosmos.ship.aboard = false; const g = s.toWorld(x, 0.05, z), w = cosmos.walker; w.worldPos.x = g.x; w.worldPos.y = g.y; w.worldPos.z = g.z; w.velocity = { x: 0, y: 0, z: 0 }; w.grounded = true; w.updateFrame?.(); cosmos.rebuildNear(true); for (let i = 0; i < 12; i++) cosmos.step(1 / 30); window.__look(s.toWorld(x, y, z), s.toWorld(tx, ty, tz)); };
     });
     await page.evaluate(() => cosmos.engine.stop());
     return page;
@@ -79,7 +79,8 @@ try {
     await page.waitForFunction((r) => cosmos.world.snapshot && cosmos.world.snapshot.revision >= r, rev, { timeout: 30000 });
     await page.evaluate(() => { cosmos.multiplayer.forcePlayer = true; cosmos.multiplayer.apply({ bricks: [] }); cosmos.vehicles.prepare(); for (let i = 0; i < 8; i++) cosmos.step(1 / 30); });
   };
-  const shot = async (page, name) => { await page.screenshot({ path: join(out, name + '.jpg'), type: 'jpeg', quality: 84 }); console.log('shot', name); };
+  const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null;
+  const shot = async (page, name) => { if (ONLY && !ONLY.includes(name)) return; await page.screenshot({ path: join(out, name + '.jpg'), type: 'jpeg', quality: 84 }); console.log('shot', name); };
 
   console.log('loading desktop');
   const desk = await open(dKey, 'Jaron', DESK);
@@ -106,6 +107,8 @@ try {
   // inside
   await desk.evaluate(() => window.__in('cockpit', 0, -10.8, 0, -9));
   await shot(desk, 'd_in_flight_deck');
+  await desk.evaluate(() => window.__in('cockpit', 2.6, -13.4, -90, -12));
+  await shot(desk, 'd_in_flight_deck_side');
   await desk.evaluate(() => window.__in('crew_a', -3.0, -4.2, -20, -2));
   await shot(desk, 'd_in_crew_berth');
   await desk.evaluate(() => window.__in('galley', 2.4, -4.2, 20, -2));
@@ -127,7 +130,7 @@ try {
   await desk.evaluate(() => window.__site(-3, 2.2, 53, -4, 2.1, 60));
   await shot(desk, 'd_market_stall_close');
 
-  await desk.evaluate(() => window.__site(-30, 3.4, 33, -36, 1.8, 40));
+  await desk.evaluate(() => window.__site(-32.8, 2.4, 36.2, -36, 1.7, 40.2));
   await shot(desk, 'd_shipyard_kiosk');
   console.log('loading phone');
   await w.enqueue(() => {
