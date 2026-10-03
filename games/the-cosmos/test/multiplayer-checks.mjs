@@ -29,6 +29,7 @@ export async function runMultiplayerChecks({check,section}) {
     const adapter=new FileAdapter(join(dir,'world.json'));app=await startServer({adapter,port:0,tick:false,now:()=>clock});
     a=new TestClient(app.url,'a'.repeat(48),'Jaron');b=new TestClient(app.url,'b'.repeat(48),'Lilith');await a.connect();await b.connect();
     const world=app.world,pa=world.state.players[a.id],pb=world.state.players[b.id],sa=world.state.ships[pa.shipId],sb=world.state.ships[pb.shipId];
+    check('the socket negotiates permessage-deflate (the 114 KB world snapshot travels as about 21 KB) and large messages arrive intact',/permessage-deflate/.test(a.socket.extensions)&&JSON.stringify(a.state).length>5000);
     assert.notEqual(sa.id,sb.id);assert.notDeepEqual(sa.pad,sb.pad);check('joining allocates independent owned ships, typed hulls and unique pads',true);
     assert.equal(JSON.stringify(world.publicState()).includes('deviceHash'),false);check('public snapshots omit device credentials and private receipts',true);
     const move=async(client,worldPoint,sw=null)=>{const p=world.state.players[client.id],origin=sw?p.pose.sw:p.pose.worldPos,dest=worldPoint;

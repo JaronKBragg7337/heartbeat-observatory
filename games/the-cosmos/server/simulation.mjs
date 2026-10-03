@@ -168,7 +168,8 @@ export class ShipSimulation {
       if(this.ship.state.airlock.outerOpen&&this.ship.air.phase==='idle')this.ship.cycleAirlock();
     }
     this.eff=this.trip?.active?this.trip.stickWarp(dt):landingOrder(this.crew.activeOrder())?stickWarpCap(this.warp,this.flight.agl,this.flight.verticalSpeed,dt):1;
-    this.flight.step(Math.max(dt,Math.min(dt*this.eff,1)));
+    if(this.restCoarse){const fdt=Math.min(dt,1/30);this.flight.step(fdt);this.flight.updateShields(dt-fdt);} // a settled hull on its pad: one short physics step is the same answer as sixty, the rest of the time only recharges shields
+    else this.flight.step(Math.max(dt,Math.min(dt*this.eff,1)));
     if(this.trip&&!this.trip.active){this.trip=null;this.flight.override=null;this.flight.climbCap=12;this.flight.thrustDown=false;}
     for(const [key,c] of Object.entries(this.ship.rampCtl)){const speed=key==='cargo'?1/6:1/5;
       c.progress+=Math.sign(c.target-c.progress)*Math.min(Math.abs(c.target-c.progress),dt*speed);

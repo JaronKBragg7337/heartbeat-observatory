@@ -23,12 +23,17 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
     else throw Error('Supabase credentials missing. Use COSMOS_LOCAL_STORE=1 only for local tests.');}
   // Sign-in: browsers send a Supabase access token; the server asks Supabase who it belongs to. Without Supabase credentials (local tests) tokens are ignored unless a verifier is passed in.
   if(verify===undefined)verify=process.env.SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY?tokenVerifier({url:process.env.SUPABASE_URL,key:process.env.SUPABASE_SERVICE_ROLE_KEY}):null;
-  const world=await new Authority(adapter,{now,verify}).load();let timer,checkpoint=0,closing=false;
+  // The listener opens FIRST (health answers 503 'starting' while the world loads and catches up), so a slow start is visible and never looks like a dead port.
+  let world=null,timer,checkpoint=0,closing=false;const stats={n:0,sum:0,max:0,since:Date.now()};
   const peers=new Set();
   const send=(peer,msg)=>peer.send(stringify(msg));
   function broadcast(bricks=[]){for(const peer of peers)if(peer.playerId)send(peer,{type:'state',state:world.publicState(peer.playerId),serverAt:now(),bricks});}
   const server=createServer(async(req,res)=>{
-    if(req.url==='/health'){res.writeHead(world.error?503:200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({ok:!world.error,buildVersion:BUILD_VERSION,revision:world.state.revision,players:world.sessions.size,storage:adapter.constructor.name}));return;}
+    if(req.url==='/health'){
+      // Answered from plain memory: no queue, no storage, no await. Only a blocked event loop can delay it, and the tick is bounded (see below) so it cannot be blocked for long.
+      if(!world){res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({ok:false,starting:true,buildVersion:BUILD_VERSION}));return;}
+      const tick={avgMs:stats.n?+(stats.sum/stats.n).toFixed(2):0,maxMs:+stats.max.toFixed(1),samples:stats.n};
+      res.writeHead(world.error?503:200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({ok:!world.error,buildVersion:BUILD_VERSION,revision:world.state.revision,players:world.sessions.size,storage:adapter.constructor.name,tick}));return;}
     try {const path=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
       const allowed=path==='/'||path==='/index.html'||path==='/build.json'||path==='/favicon.svg'||/^\/(src|lib|assets)\//.test(path)||/^\/[\w-]+\.css$/.test(path)||path.startsWith('/homes/people/');
       if(!allowed||path.split('/').some(p=>p.startsWith('.'))){res.writeHead(404).end();return;}
@@ -39,6 +44,7 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
     }catch{res.writeHead(404).end();}
   });
   server.on('upgrade',(req,socket,head)=>{
+    if(!world){socket.destroy();return;}
     // Browser origins are checked; protocol-only headless clients have no Origin.
     const origin=req.headers.origin;const extras=(process.env.COSMOS_ALLOWED_ORIGINS||'').split(',').filter(Boolean);
     if(origin&&!/^https:\/\/(www\.|cosmos\.)?heartbeatobservatory\.com$/.test(origin)&&!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)&&!extras.includes(origin)){socket.destroy();return;}
@@ -68,9 +74,12 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
     if(peer){peers.add(peer);socket.setTimeout(45000,()=>socket.destroy());}
   });
   await new Promise((ok,no)=>{server.once('error',no);server.listen(port,host,ok);});
+  try{world=await new Authority(adapter,{now,verify}).load();}catch(e){await new Promise(r=>server.close(r));throw e;}
   if(tick){let last=performance.now(),busy=false,updates=0,sweepClock=0;
-    timer=setInterval(()=>{if(busy||closing)return;busy=true;const t=performance.now(),elapsed=(t-last)/1000;last=t;
-      world.enqueue(async()=>{world.advance(elapsed);checkpoint+=elapsed;updates+=elapsed;sweepClock+=elapsed;
+    timer=setInterval(()=>{if(busy||closing)return;busy=true;const t=performance.now(),elapsed=Math.min(.25,(t-last)/1000);last=t;
+      // The simulated step is capped at a quarter second. If the machine falls behind, the world runs a little slow for a moment; it never tries to
+      // make up the lost time in one go (that catch-up is what turned one slow tick into a pegged CPU on October 2).
+      world.enqueue(async()=>{const a=performance.now();world.advance(elapsed);const ms=performance.now()-a;stats.n++;stats.sum+=ms;if(ms>stats.max)stats.max=ms;if(stats.n>=900){stats.n=Math.round(stats.n/2);stats.sum/=2;stats.max=ms;}checkpoint+=elapsed;updates+=elapsed;sweepClock+=elapsed;
         if(sweepClock>=60){sweepClock=0;try{world.lastSweep=world.sweep();}catch(e){console.error('sweep failed:',e.message);}}
         if(checkpoint>=2){checkpoint=0;try{const bricks=await world.commit();broadcast(bricks);}catch{world.error='Durable storage failed; transactions are paused.';broadcast();}}
         else if(updates>=.1){updates=0;broadcast();}

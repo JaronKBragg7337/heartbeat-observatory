@@ -195,13 +195,18 @@ export class FleetView {
       const rendered = this.mp.shipPose(ship), pos = rendered.pos;
       Object.assign(v.entry.worldPos, pos); v.entry.quaternion.fromArray(rendered.quaternion); v.entry.frame = frame;
       v.root.visible = sameFrame;
-      const near=sameFrame&&dist(pos,cam)<100;
+      // An interior is only ever seen through a ramp, hatch or window, so it is built and drawn within ~50 m (it stays built, hidden, beyond 65 m: no flicker at the edge).
+      const dCam=sameFrame?dist(pos,cam):1e9,near=dCam<(v.interior&&v.interior.root.visible?65:50);
       if(near&&!v.interior){v.interior=buildInterior({...v.def.layout,custom:visualsFor(ship.type).custom},this.ship.matsInt,{tier:'low'});buildSeats(v.def.layout,this.ship.matsInt,v.interior);v.root.add(v.interior.root);}
       if(v.interior){v.interior.root.visible=near;for(const d of v.interior.doors)d.group.visible=d.def.gate==='airlock_outer'?!ship.state.airlock.outerOpen:d.def.gate==='airlock_inner'?!ship.state.airlock.innerOpen:false;}
-      if (sameFrame) { this.pose(v, ship); this.smoke(v, ship, dt); }
+      if (sameFrame) {
+        // Posing (legs, ramps, guns, engine glow) rewrites dozens of transforms; a hull that is not changing keeps the pose it has.
+        const r0=ship.state?.ramps,sig=ship.npc||ship.combat?.aim?null:`${f.gearPos}|${f.landed}|${Math.round(Math.hypot(f.vel.x,f.vel.y,f.vel.z))}|${r0?.cargo?.progress}|${r0?.cargo?.angle}|${r0?.airlock?.progress}|${r0?.airlock?.angle}`;
+        if(sig===null||sig!==v.poseSig){v.poseSig=sig;this.pose(v,ship);}
+        this.smoke(v,ship,dt);}
       // the label: what it is and how it is doing, for as long as it is near enough to read
       if (v.label) {
-        const d = sameFrame ? dist(pos, cam) : 1e9;
+        const d = dCam;
         v.label.visible = d < this.cull;
         if (v.label.visible) {
           const n = ship.npc;

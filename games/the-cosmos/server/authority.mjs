@@ -44,6 +44,7 @@ const orderLive=sim=>{const r=sim.record,p=r.pendingOrder?.o,o=r.order,ap=r.auto
   return !!r.orderKey;};
 export const CREW_HALL={x:-28,z:-68,w:24,d:14,h:5,door:{x:-28,z:-60}};
 
+const restPhase=id=>{let h=0;for(const c of String(id))h=(h*31+c.charCodeAt(0))>>>0;return (h%500)/1000;};
 export class Authority {
   constructor(adapter,{now=Date.now,verify=null}={}) {
     this.adapter=adapter;this.now=now;this.verify=verify;this.mars=getBody('mars');this.site=createPortSite(this.mars);
@@ -66,8 +67,11 @@ export class Authority {
   }
   rebuild(){for(const id of this.openingModels?.keys()||[])this.releaseOpening(id);
     attachGrades([this.site,landingField(this.site,()=>this.state.pads)]);
-    attachMoonPads(()=>{const out=[];for(const s of Object.values(this.state.ships)){if(!s.moonPads)continue;
-      for(const id of ['phobos','deimos'])if(s.moonPads[id])out.push(s.moonPads[id]);}return out;});
+    // Terrain sampling asks for this list thousands of times a second: rebuild it only when a pad is allocated or at most every 250 ms (pads are append-only).
+    this._moonPadList=null;this._moonPadAt=0;
+    attachMoonPads(()=>{const t=this.now();if(this._moonPadList&&t-this._moonPadAt<250&&t>=this._moonPadAt)return this._moonPadList;
+      const out=[];for(const s of Object.values(this.state.ships)){if(!s.moonPads)continue;
+      for(const id of ['phobos','deimos'])if(s.moonPads[id])out.push(s.moonPads[id]);}this._moonPadList=out;this._moonPadAt=t;return out;});
     this.stores=new Map();
     this.elevator=Object.assign(new TowerElevator(),this.state.elevator||{});this.crewRoutes=new Map();
     for(const id of ['mars','phobos','deimos']){const e=new EditStore(id==='mars'?this.mars:makeMoon(id));attachEdits(e);
@@ -77,7 +81,7 @@ export class Authority {
   /** One ship's simulation, whatever its type; a raider also gets its brain and its escort wing. */
   makeSim(s){this.ensureMoonPads(s);const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.otherSim=id=>this.sims.get(id);if(s.npc)this.fleet.attach(sim);return sim;}
   /** One Phobos pad and one Deimos pad per owned ship. Append-only: a pad already on the record stays put. */
-  ensureMoonPads(ship){if(ship.npc)return;ship.moonPads=ship.moonPads||{};
+  ensureMoonPads(ship){this._moonPadList=null;if(ship.npc)return;ship.moonPads=ship.moonPads||{};
     for(const bodyId of ['phobos','deimos']){const cur=ship.moonPads[bodyId];
       if(cur&&cur.shipId===ship.id&&Number.isFinite(cur.east)&&Number.isFinite(cur.north))continue;
       // The lowest grid slot nobody else holds. (A count would hand a new ship the slot of a pad that is still in use once ships can leave.)
@@ -285,8 +289,11 @@ export class Authority {
           // A ship sitting on its pad with nothing asked of it (most of a busy port, most of the day) is stepped twice a second with the
           // time it missed, not thirty times: the physics treats a resting hull the same, and a world of two dozen idle hulls was spending
           // its whole tick on them. Anything that wakes a ship (a stick, an order, a ramp moving, shots in the air, a trip) steps it at full rate again.
-          if(!catchUp&&this.resting(sim,control)){sim.restDt=(sim.restDt||0)+dt;
-            if(sim.restDt>=.5){const d=sim.restDt;sim.restDt=0;this.fleet.preStep(sim);sim.step(d,control);this.fleet.postStep(sim);}}
+          if(!catchUp&&this.resting(sim,control)){
+            // Phase each hull differently (a hash of its id) so two dozen resting ships never all step on the same tick: that burst was a 400 ms stall every half second.
+            if(!sim.restDt)sim.restDt=restPhase(id);
+            sim.restDt+=dt;
+            if(sim.restDt>=.5){const d=sim.restDt;sim.restDt=.0001;sim.restCoarse=true;this.fleet.preStep(sim);sim.step(d,control);this.fleet.postStep(sim);sim.restCoarse=false;}}
           else{sim.restDt=0;this.fleet.preStep(sim);sim.step(dt,control);this.fleet.postStep(sim);}
         }
         const events=[...sim.guns.drain().map(e=>({...e,system:'guns'})),...sim.drones.drain().map(e=>({...e,system:'drones'}))];

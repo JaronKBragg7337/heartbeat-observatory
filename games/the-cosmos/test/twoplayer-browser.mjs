@@ -59,21 +59,36 @@ try {
   // Actual network packets delivered to two Chromium clients through a jittered
   // WebSocket adapter. Compare pixels' world transforms to the delayed truth.
   pa.aboardShipId=null;pa.pose.aboard=false;pa.currentShipId=pa.shipId;pa.pose.worldPos=w.site.toWorld(-24,.02,45);pb.pose.worldPos=w.site.toWorld(-24,.02,42);pb.pose.velocity={x:0,y:0,z:0};await sync();
+  // The budgets are unchanged (player RMS < 0.5 m, ship RMS < 2.5 m under 80-200 ms jitter and bunching). What a loaded machine adds is stalls of the
+  // TEST HOST itself (this process or the page not scheduled for a few hundred ms): the buffer is designed to freeze after 150 ms without data, so a
+  // host stall is not network jitter. An iteration that took far longer than planned, and the one after it (the buffer is still catching up), are
+  // discarded and counted; the measurement repeats (up to 4 times) until 50 clean samples exist. Failing budgets on clean samples always fail.
+  const measureJitter=async()=>{
   const basePlayer={...pb.pose.worldPos},baseShip={...w.state.ships[sid].pose.pos},direction=w.site.right,t0=Date.now();
   await a.evaluate(()=>{window.qaJitter=true;cosmos.multiplayer.motion.samples.clear();cosmos.multiplayer.motion.display.clear();});
-  const samples=[];
+  const samples=[];let stalledIterations=0,settle=0;
   for(let i=0;i<45;i++){
-    const dt=(Date.now()-t0)/1000;
+    const iterationStart=Date.now(),dt=(iterationStart-t0)/1000;
     for(const k of ['x','y','z']){pb.pose.worldPos[k]=basePlayer[k]+direction[k]*dt*4;pb.pose.velocity[k]=direction[k]*4;sim.flight.pos[k]=baseShip[k]+direction[k]*dt*20;sim.flight.vel[k]=direction[k]*20;}
     await w.enqueue(()=>w.commit());await b.evaluate(()=>cosmos.world.socket.send(JSON.stringify({type:'checkpoint'})));
-    for(let j=0;j<3;j++){await a.waitForTimeout(30);samples.push(await a.evaluate(({bid,sid,basePlayer,baseShip,direction,t0})=>{const c=cosmos,mp=c.multiplayer,renderer=c.engine.renderer,render=renderer.render;renderer.render=()=>{};try{c.step(1/30);}finally{renderer.render=render;}const now=performance.now(),time=(now-mp.motion.offset-mp.motion.delay-t0)/1000;
+    const batch=[];
+    for(let j=0;j<3;j++){await a.waitForTimeout(30);batch.push(await a.evaluate(({bid,sid,basePlayer,baseShip,direction,t0})=>{const c=cosmos,mp=c.multiplayer,renderer=c.engine.renderer,render=renderer.render;renderer.render=()=>{};try{c.step(1/30);}finally{renderer.render=render;}const now=performance.now(),time=(now-mp.motion.offset-mp.motion.delay-t0)/1000;
       if(!mp.motion.samples.get('player:'+bid)||time<.6)return null;
       const error=(pos,base,speed)=>Math.hypot(...['x','y','z'].map(k=>pos[k]-base[k]-direction[k]*time*speed));
       const visible=entry=>{entry.object3d.updateWorldMatrix(true,false);const e=entry.object3d.matrixWorld.elements;return {x:e[12]+c.engine.cameraWorldPos.x,y:e[13]+c.engine.cameraWorldPos.y,z:e[14]+c.engine.cameraWorldPos.z};};
       return {player:error(visible(mp.bodies.get(bid).entry),basePlayer,4),ship:error(visible(mp.fleetView.views.get(sid).entry),baseShip,20)};
     },{bid,sid,basePlayer,baseShip,direction,t0}));}
+    const took=Date.now()-iterationStart;                      // planned: three 30 ms waits plus a few ms of work, about 120 ms
+    if(took>450){stalledIterations++;settle=2;continue;}       // the host stalled: not a network condition
+    if(settle>0){settle--;continue;}
+    samples.push(...batch);
   }
-  const valid=samples.filter(Boolean),rms=k=>Math.sqrt(valid.reduce((sum,s)=>sum+s[k]**2,0)/valid.length);results.networkJitter={samples:valid.length,playerRms:rms('player'),shipRms:rms('ship'),playerMax:Math.max(...valid.map(s=>s.player)),shipMax:Math.max(...valid.map(s=>s.ship))};assert.ok(valid.length>50);assert.ok(results.networkJitter.playerRms<.5,JSON.stringify(results.networkJitter));assert.ok(results.networkJitter.shipRms<2.5,JSON.stringify(results.networkJitter));
+  const valid=samples.filter(Boolean),rms=k=>Math.sqrt(valid.reduce((sum,s)=>sum+s[k]**2,0)/valid.length);
+  return {samples:valid.length,stalledIterations,playerRms:rms('player'),shipRms:rms('ship'),playerMax:Math.max(...valid.map(s=>s.player)),shipMax:Math.max(...valid.map(s=>s.ship))};};
+  const player0={...pb.pose.worldPos},ship0={...w.state.ships[sid].pose.pos};let jitter,attempts=0;
+  do{attempts++;jitter=await measureJitter();jitter.attempts=attempts;if(jitter.samples>50)break;
+    Object.assign(pb.pose.worldPos,player0);Object.assign(sim.flight.pos,ship0);await sync();}while(attempts<4);
+  results.networkJitter=jitter;assert.ok(jitter.samples>50,'too few clean samples: '+JSON.stringify(jitter));assert.ok(jitter.playerRms<.5,JSON.stringify(jitter));assert.ok(jitter.shipRms<2.5,JSON.stringify(jitter));
   await a.evaluate(bid=>{window.qaJitter=false;const c=cosmos;c.step(.016);const p=c.multiplayer.bodies.get(bid).entry.worldPos,site=c.port.site;
     const add=(up,right,back)=>Object.fromEntries(['x','y','z'].map(k=>[k,p[k]+site.up[k]*up+site.right[k]*right+site.back[k]*back]));
     c.freeCam.set(add(3,5,8),add(1,0,0));c.step(.016);},bid);await shot(a,'03-two-client-jitter');

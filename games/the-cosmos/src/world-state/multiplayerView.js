@@ -88,10 +88,15 @@ export class MultiplayerView {
     this.recordMotion(m);this.fleetView?.onSnapshot();
     const changed=this.lastShipId!==s.id||this.lastFrame!==p.frameId||this.lastAboard!==p.aboardShipId||this.lastSeat!==p.pose.seat;
     if(this.lastShipId!==s.id){this.messageSeq=0;this.eventSeq=s.eventSeq||0;}
-    if(snapshot.elevator){const loc=this.site.toLocal(this.walker.worldPos),oldY=this.port.elevator.y;
-      if(!this.ship.aboard&&this.port.elevator.contains(loc.x+60,loc.z+39)&&Math.abs(loc.y-oldY)<.4)
-        for(const k of ['x','y','z'])this.walker.worldPos[k]+=this.site.up[k]*(snapshot.elevator.y-oldY);
-      Object.assign(this.port.elevator,snapshot.elevator);this.port.updateElevatorVisuals();}
+    if(snapshot.elevator){const loc=this.site.toLocal(this.walker.worldPos),e=this.port.elevator,oldY=e.y,sv=snapshot.elevator;
+      // The authority sends the lift ten times a second; between those the client runs the same lift rules (see tick) so the car and a rider
+      // move every frame. A snapshot corrects the prediction: the state words are taken as sent, and the height is eased toward where the
+      // server's lift is right now (its height plus the time this packet spent in flight), never snapped by more than a step.
+      const flight=Math.min(.3,(this.fleetView?.age?.()??0)),dir=Math.sign((sv.target??sv.y)-sv.y),now=sv.phase==='moving'?sv.y+dir*Math.min(Math.abs((sv.target??sv.y)-sv.y),(sv.speed||0)*flight):sv.y;
+      const err=now-oldY,newY=Math.abs(err)>1.2||sv.phase!=='moving'&&Math.abs(err)<.02?now:oldY+err*.5;
+      if(!this.ship.aboard&&e.contains(loc.x+60,loc.z+39)&&Math.abs(loc.y-oldY)<.4)
+        for(const k of ['x','y','z'])this.walker.worldPos[k]+=this.site.up[k]*(newY-oldY);
+      Object.assign(e,sv,{y:newY});this.port.updateElevatorVisuals();}
     if(this.space.frameId!==p.frameId)this.space.setFrame(p.frameId);
     const previousFrame=this.lastFrame;
     this.lastFrame=p.frameId;this.lastShipId=s.id;this.lastAboard=p.aboardShipId;this.lastSeat=p.pose.seat;
@@ -145,7 +150,11 @@ export class MultiplayerView {
       this.motion.push('player:'+p.id,time,now,{pos:aboard?p.pose.sw:p.pose.worldPos,vel,yaw:aboard?p.pose.sw.yaw:p.pose.yaw},p.frameId+':'+(p.aboardShipId||'ground'));
     }
   }
-  shipPose(s){return this.motion.render('ship:'+s.id,performance.now())||s.pose;}
+  shipPose(s){
+    // Rendered once per ship per frame (interpolation state advances on a call, and a dozen systems ask for the same pose every frame).
+    const f=this.engine.frameCount,c=this._poseCache||(this._poseCache=new Map()),hit=c.get(s.id);
+    if(hit&&hit.f===f&&hit.src===s.pose)return hit.pose;
+    const pose=this.motion.render('ship:'+s.id,performance.now())||s.pose;c.set(s.id,{f,pose,src:s.pose});return pose;}
   smoothActiveShip(){const s=this.world.snapshot.ships[this.activeId()],pose=this.shipPose(s),f=this.ship.flight;
     Object.assign(f.pos,pose.pos);f.quaternion.fromArray(pose.quaternion);
   }
@@ -237,10 +246,13 @@ export class MultiplayerView {
       let pos=this.site.toWorld(c.position.x,c.position.y||0,c.position.z),frame='mars',pose=['waiting','inside'].includes(c.status)?'Idle':'Walk',q=new THREE.Quaternion().copy(this.hallRoot.quaternion);
       if(['aboard','walking-aboard','leaving-aboard'].includes(contract?.status)){const seat=contract.status==='aboard'?(contract.displaced?contract.standPose:contract.seatPose):contract.localPose;pos=ship.pose.pos;frame=ship.frameId;pose=contract.status==='aboard'?(contract.displaced?'Idle':'Sit'):'Walk';if(seat){const v=new THREE.Vector3().copy(seat).applyQuaternion(new THREE.Quaternion().fromArray(ship.pose.quaternion));pos={x:pos.x+v.x,y:pos.y+v.y,z:pos.z+v.z};}q=new THREE.Quaternion().fromArray(ship.pose.quaternion);}
       else if(contract?.position)pos=this.site.toWorld(contract.position.x,0,contract.position.z);
+      // People on the ground arrive in ten-per-second steps; a walk (out of the hall, to the ramp) is eased between them so it reads as walking.
+      if(frame==='mars'&&!['aboard','walking-aboard','leaving-aboard'].includes(contract?.status))pos=this.easeBody(b,'ground',pos,dt);else b.eased=null;
       this.placeBody(b,pos,q,frame,pose,dt);
       const local=contract&&c.shipId===current&&['aboard','walking-aboard','leaving-aboard'].includes(contract.status);
       if(local){if(!b.local){this.engine.untrack(b.entry);this.ship.interior.root.add(b.group);b.local=true;}
-        const seat=contract.displaced?contract.standPose:contract.localPose||contract.seatPose;
+        let seat=contract.displaced?contract.standPose:contract.localPose||contract.seatPose;
+        if(seat&&(contract.status==='walking-aboard'||contract.status==='leaving-aboard')){const e=this.easeBody(b,'aboard',{x:seat.x,y:seat.y,z:seat.z},dt);seat={...seat,x:e.x,y:e.y,z:e.z};}else b.easedAboard=null;
         if(seat){b.group.position.set(seat.x,seat.y+(contract.status==='aboard'&&!contract.displaced?({pilot:.47,captain:.63,nav:.57,comms:.57,gun_dorsal:.44,gun_ventral:.44}[seat.id]||0):0),seat.z);b.group.rotation.set(0,Math.PI-(Number.isFinite(seat.yaw)?seat.yaw*(seat.id?Math.PI/180:1):0),0);}
       }else if(b.local){b.group.removeFromParent();this.engine.scene.add(b.group);b.entry=this.engine.track(b.entry);b.local=false;}
     }
@@ -249,6 +261,10 @@ export class MultiplayerView {
     this.crew?.sync();
     this.fleetView.update(dt,s,current);     // FLEET: every other ship, raiders and escorts, built from its own definition
   }
+  /** Ease a body toward its latest known place: frame-rate smooth between 10 Hz snapshots, snapped when it jumps (a teleport, a new place). */
+  easeBody(b,kind,target,dt){const key=kind==='ground'?'eased':'easedAboard',cur=b[key];
+    if(!cur||Math.hypot(target.x-cur.x,target.y-cur.y,target.z-cur.z)>4){b[key]={x:target.x,y:target.y,z:target.z};return target;}
+    const f=1-Math.exp(-Math.min(.1,dt)*14);cur.x+=(target.x-cur.x)*f;cur.y+=(target.y-cur.y)*f;cur.z+=(target.z-cur.z)*f;return cur;}
   placeBody(b,pos,q,frame,pose,dt){const cam=this.engine.cameraWorldPos;if(b.tag)b.tag.visible=Math.hypot(pos.x-cam.x,pos.y-cam.y,pos.z-cam.z)>3.5;     // FLEET: a name over someone you are sitting beside is in the way
     const speed=b.last?Math.min(4,Math.hypot(pos.x-b.last.x,pos.y-b.last.y,pos.z-b.last.z)/Math.max(.1,dt)):0;
     if(pose==='Idle'&&speed>.3)pose='Walk';b.person.play(pose);b.person.update(dt,speed);Object.assign(b.entry.worldPos,pos);b.entry.quaternion.copy(q);b.last={...pos};b.frameId=frame;
@@ -281,7 +297,15 @@ export class MultiplayerView {
     text('Your crew: '+(owned.crew.map(c=>`${c.name} (${c.status}${c.unpaid?', unpaid':''})`).join(', ')||'none'));
     this.panel.scrollTop=scroll;
   }
-  tick(dt){this.smoothActiveShip();if(this.correction&&!this.boardPending&&!this.vehicles?.seated?.()){const pos=this.ship.aboard?this.ship.sw:this.walker.worldPos;const candidate={x:pos.x,y:pos.y,z:pos.z},delta={...this.correction};reconcile(candidate,delta,dt);if(!this.ship.aboard||this.ship.sw.canStand(candidate.x,candidate.y,candidate.z)){Object.assign(pos,candidate);this.correction=delta;}}this.accum+=dt;this.updateBodies(dt);this.button.style.bottom=this.ship.aboard?'190px':'120px';if(this.accum>=.1){this.accum=0;this.sendPose();
+  /** Run the lift between snapshots with its own rules (the instance's tick is stubbed so nothing else moves it), carrying a rider by the same step. */
+  predictElevator(dt){const e=this.port.elevator;if(!e||e.phase==='open'&&e.open>=1&&e.y===e.target)return;
+    const loc=this.site.toLocal(this.walker.worldPos),x=loc.x+60,z=loc.z+39,oldY=e.y;
+    const sill=!this.ship.aboard&&Math.abs(x)<.9&&Math.abs(z-.35)<.4&&Math.abs(loc.y-oldY)<.3;
+    const rider=!this.ship.aboard&&e.contains(x,z)&&Math.abs(loc.y-oldY)<.4;
+    const dy=Object.getPrototypeOf(e).tick.call(e,dt,sill);
+    if(dy&&rider)for(const k of ['x','y','z'])this.walker.worldPos[k]+=this.site.up[k]*dy;
+    if(dy||e.phase!=='moving')this.port.updateElevatorVisuals();}
+  tick(dt){this.smoothActiveShip();if(this.correction&&!this.boardPending&&!this.vehicles?.seated?.()){const pos=this.ship.aboard?this.ship.sw:this.walker.worldPos;const candidate={x:pos.x,y:pos.y,z:pos.z},delta={...this.correction};reconcile(candidate,delta,dt);if(!this.ship.aboard||this.ship.sw.canStand(candidate.x,candidate.y,candidate.z)){Object.assign(pos,candidate);this.correction=delta;}}this.accum+=dt;this.predictElevator(dt);this.updateBodies(dt);this.button.style.bottom=this.ship.aboard?'190px':'120px';if(this.accum>=.1){this.accum=0;this.sendPose();
     if(this.ship.remoteFireWanted&&this.ship.def.seatGun[this.ship.seat?.id]){const direction=new THREE.Vector3(0,0,-1).applyQuaternion(this.engine.camera.quaternion);
       this.world.request({type:'fire-gun',direction:{x:direction.x,y:direction.y,z:direction.z}});}}}
 }

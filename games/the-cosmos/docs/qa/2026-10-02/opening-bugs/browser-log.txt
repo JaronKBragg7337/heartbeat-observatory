@@ -1,2 +1,15 @@
 Phone opening: loaded
-Phone opening bugs: {"errors":[],"passed":true,"browser":"Chromium with iPhone Safari user agent","viewport":{"width":390,"height":844},"introRefresh":true,"exitTap":{"events":[{"type":"pointerdown","target":"game-canvas","id":2,"x":80,"y":650,"button":0},{"type":"pointerup","target":"game-canvas","id":2,"x":80,"y":588,"button":0},{"type":"lostpointercapture","target":"game-canvas","id":2,"x":80,"y":588,"button":0},{"type":"pointerdown","target":"game-canvas","id":3,"x":80,"y":650,"button":0},{"type":"pointerdown","target":"opening-action","id":4,"x":313.9453125,"y":796,"button":0},{"type":"pointerup","target":"opening-action","id":4,"x":313.9453125,"y":796,"button":0},{"type":"lostpointercapture","target":"opening-action","id":4,"x":313.9453125,"y":796,"button":0},{"type":"pointerup","target":"game-canvas","id":3,"x":80,"y":588,"button":0},{"type":"lostpointercapture","target":"game-canvas","id":3,"x":80,"y":588,"button":0}],"stage":2,"pose":{"x":0,"y":0.02,"z":15,"yaw":3.141592653589793,"pitch":-0.2},"sw":13.737066666666665},"exitDuringSave":true,"exitRefresh":true,"dig":{"taps":4,"cuts":4,"refresh":true},"unacknowledgedCarryRefresh":true,"ride":{"seconds":22.000000000000007,"pose":{"x":-697.0566663634141,"y":3.697088253062361,"z":-76.26383978162512,"yaw":-2.10584664261681,"pitch":0.06642609244150098},"eye":{"x":0.42,"y":1.455,"z":-0.85},"refresh":true,"arrived":true},"completeRefresh":true,"hiddenPromptClears":true,"movedWorkerClears":true,"shipPresence":true,"returnLanding":{"requested":60,"effective":60,"flightSecondsInOneSecond":60.00000000000085,"hull":100,"landed":true,"secondsToLand":43.50000000000035,"padDistance":3.034839492957798},"staleBuildReload":true,"buildVersion":"b01694836c9b72f34900","serviceWorker":"No controlling service worker in isolated browser","failedGlbVisible":true}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.evaluate: TypeError: Cannot read properties of undefined (reading 'bind')
+    at eval (eval at evaluate (:311:30), <anonymous>:1:45)
+    at UtilityScript.evaluate (<anonymous>:313:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at delaySave (C:\Users\lilli\Projects\ho-stable\games\the-cosmos\test\opening-bugs-browser.mjs:57:41)
+    at C:\Users\lilli\Projects\ho-stable\games\the-cosmos\test\opening-bugs-browser.mjs:60:9 {
+  log: []
+}
+
+Node.js v24.16.0
