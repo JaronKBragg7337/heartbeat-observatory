@@ -1,0 +1,39 @@
+{
+  "vacantLabel": "Stall 2 is free: rent it",
+  "receipt": "Receipt 1: 5 x Water at 7 = 35 marks from Maren Salvage. It is in your ship.",
+  "sales": [
+    [
+      1,
+      "water",
+      5,
+      35
+    ],
+    [
+      2,
+      "phobos-regolith",
+      1,
+      35
+    ]
+  ],
+  "marksTotal": 1033000,
+  "npcRows": 6,
+  "rover": {
+    "watcherSees": {
+      "x": 1689372.3614592724,
+      "y": -812643.562740745,
+      "z": 2833184.0998429065,
+      "yaw": 3.141592653589793,
+      "pitch": 0.8028195494327914,
+      "roll": -0.08347568519080784
+    },
+    "server": {
+      "x": 1689372.3614592724,
+      "y": -812643.562740745,
+      "z": 2833184.0998429065,
+      "yaw": 3.141592653589793,
+      "pitch": 0.8028195494327914,
+      "roll": -0.08347568519080784
+    }
+  },
+  "errors": []
+}

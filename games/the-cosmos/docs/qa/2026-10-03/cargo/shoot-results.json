@@ -1,0 +1,8 @@
+{
+  "type": "hauler",
+  "phoneButton": {
+    "text": "Drive",
+    "shown": true
+  },
+  "errors": []
+}

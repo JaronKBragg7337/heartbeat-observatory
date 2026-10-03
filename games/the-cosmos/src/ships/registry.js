@@ -12,10 +12,11 @@
 import { MERIDIAN } from './meridian/def.js';
 import { RAIDER } from './raider/def.js';
 import { COURIER } from './courier/def.js';
+import { HAULER } from './hauler/def.js';
 
 export const DEFAULT_SHIP_TYPE = 'meridian';
 
-const DEFS = new Map([MERIDIAN, RAIDER, COURIER].map((d) => [d.type, d]));
+const DEFS = new Map([MERIDIAN, RAIDER, COURIER, HAULER].map((d) => [d.type, d]));
 
 /** The definition for a ship type. An unknown type throws: a record naming a ship the build does not have is a bug, not a Meridian. */
 export function shipDef(type) {

@@ -114,7 +114,7 @@ export class GameBridge {
   ledger() {
     let lots=this.digger.carried,e=this.world.state.economy;
     if(this.world.remote){const s=this.world.snapshot;
-      lots=[...Object.values(s.players).flatMap(p=>p.carried),...Object.values(s.ships).flatMap(sh=>[...(sh.holdLots||[]),...sh.jobs.samples])];
+      lots=[...Object.values(s.players).flatMap(p=>p.carried),...Object.values(s.ships).flatMap(sh=>[...(sh.holdLots||[]),...sh.jobs.samples]),...Object.values(s.shops||{}).flatMap(sh=>sh.lots||[])];
       e={exportedMassExact:String(Object.values(s.ships).reduce((n,sh)=>n+BigInt(sh.economy.exportedMassExact),0n)),
         exportedVolumeExact:String(Object.values(s.ships).reduce((n,sh)=>n+BigInt(sh.economy.exportedVolumeExact),0n))};
       // Every body's material account contributes to the same world ledger.

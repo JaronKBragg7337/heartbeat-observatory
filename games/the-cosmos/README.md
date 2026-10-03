@@ -8,6 +8,8 @@ Validate: `node test/validate.mjs`
 
 Before any publish: node test/phone-check.mjs must pass.
 
+**Cargo (Oct 3):** the Drayman hauler (a ship class that is data, bought at the shipyard kiosk), rovers that drive up its wide ramp and lock into berths for flight, and player shops at Marineris Port. See [docs/WORLD-STATE.md](docs/WORLD-STATE.md) ("Cargo") and [the QA review](docs/qa/2026-10-03/cargo/REVIEW.md). Tests: `test/cargo-checks.mjs` (in validate) and `node test/cargo-browser.mjs` (two iPhone-profile WebKit phones).
+
 The opening is implemented for new players. Returning players resume their saved world; unfinished openings resume their own progress. Shared multiplayer keeps each opening private and joins players into the shared world when it finishes. Desktop and phone controls use the same progression rules. See [world ownership and persistence](docs/WORLD-STATE.md) and [opening QA](docs/qa/2026-10-02/opening/REVIEW.md). This worktree is awaiting publication.
 
 ---

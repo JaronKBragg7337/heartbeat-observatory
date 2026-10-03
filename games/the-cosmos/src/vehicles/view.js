@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { vehicleDef } from './registry.js';
 import { createVehicle, board, seat, leave, drive, localToFrame, basis, footprint } from './api.js';
-import { makeShipEnv, makePlanetEnv, SHIP_AXES } from './support.js';
+import { makeShipEnv, makePlanetEnv, SHIP_AXES, deckOf } from './support.js';
 import { buildSurveyRover } from './survey/mesh.js';
 import { PORT_WORKERS } from '../port/portPeople.js';
 import { makeMoon } from '../space/moonField.js';
@@ -104,6 +104,7 @@ export class VehicleSystem {
     if (this.ship.aboard && this.ship.seat) return null;
     const near = this._nearVehicle();
     if (!near) return null;
+    if (near.locked) return null;       // clamped down for flight: nothing to drive until the ship lands
     const def = vehicleDef(near.type);
     const driverFree = !near.passengers.driver;
     const anyFree = def.seats.some((s) => !near.passengers[s.id]);
@@ -207,6 +208,9 @@ export class VehicleSystem {
     for (let i = 0; i < n; i++) {
       for (const v of this.solo) {
         v.transfer = Math.max(0, (v.transfer || 0) - s);
+        // clamped down whenever the ship is off the ground (the server does the same: server/vehicles.mjs)
+        if (v.parentShipId && !this.ship.flight.landed) { v.locked = true; v.pose.speed = 0; this._soloWorld(v); continue; }
+        v.locked = false;
         const env = v.parentShipId ? this._soloShipEnv() : makePlanetEnv(this._body(v.frameId));
         const driving = this.soloSeat?.vehicleId === v.id && this.soloSeat.seat === 'driver';
         const result = drive(v, driving ? { throttle: this._throttle, steer: this._steer } : { throttle: 0, steer: 0 }, s, env);
@@ -218,13 +222,13 @@ export class VehicleSystem {
   }
 
   _soloShipEnv() {
-    const ramp = this.ship.def.ramps.cargo;
+    const deck = deckOf(this.ship.def);
     return makeShipEnv({
       ramps: this.ship.def.ramps,
       rampState: this.ship.state.ramps,
       landed: () => this.ship.flight.landed,
-      deck: { x0: -5.8, x1: 5.8, z0: 9.8, z1: ramp.hinge.z, y: 0 },
-      obstacles: (this.ship.sw?.index?.obstacles || []).filter((o) => o.z1 > 9 && o.y0 < 2.4),
+      deck,
+      obstacles: (this.ship.sw?.index?.obstacles || []).filter((o) => o.z1 > deck.z0 - 0.8 && o.y0 < 2.4),
     });
   }
 

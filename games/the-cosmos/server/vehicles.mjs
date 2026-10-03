@@ -6,16 +6,18 @@
 import { randomUUID } from 'node:crypto';
 import { vehicleDef } from '../src/vehicles/registry.js';
 import { createVehicle, board, seat, leave, drive, localToFrame, footprint } from '../src/vehicles/api.js';
-import { makeShipEnv, makePlanetEnv, SHIP_AXES } from '../src/vehicles/support.js';
+import { makeShipEnv, makePlanetEnv, SHIP_AXES, deckOf } from '../src/vehicles/support.js';
 import { shipIndexFor } from '../src/ship/shipWalker.js';
 import { PORT_WORKERS } from '../src/port/portPeople.js';
 import { makeMoon } from '../src/space/moonField.js';
+import { mayBoard } from '../src/ship/hullCollision.js';
+
 
 const BOUGHT_CAP = 3;
 const LEAVE_OFFSETS = [[1.7, 0.2], [-1.7, 0.2], [0, 2.4], [0, -2.2]];
 
 export class VehicleDirector {
-  constructor(auth) { this.auth = auth; }
+  constructor(auth) { this.auth = auth; this.rest = new Map(); this.air = new Map(); }
 
   ensureAll() {
     this.auth.state.vehicles = this.auth.state.vehicles || {};
@@ -51,12 +53,46 @@ export class VehicleDirector {
       this._dropOffline(v);
       const sim = v.parentShipId ? this.auth.sims.get(v.parentShipId) : null;
       if (v.parentShipId && !sim) continue;
-      const env = sim ? this._shipEnv(sim) : makePlanetEnv(this._body(v.frameId));
+      // A rover inside a ship is chocked and clamped whenever the ship is off the ground: it cannot be driven, and on a hauler it is
+      // drawn into the nearest free berth. Landing releases it. One flag, no per-tick work for a ship that stays parked.
+      if (sim) {
+        // "Off the ground" means for a full second: a touchdown bounce does not clamp a rover to a berth and let it go again.
+        const air = sim.flight.landed ? 0 : (this.air.get(v.id) || 0) + dt;
+        if (air) this.air.set(v.id, air); else if (this.air.size) this.air.delete(v.id);
+        if (air > 1 && !v.locked) this._lock(v, sim);
+        else if (!air && v.locked) { v.locked = false; v.berth = null; }
+        if (v.locked) { v.pose.speed = 0; continue; }
+      } else if (v.locked) { v.locked = false; v.berth = null; }
       const input = this._input(v);
+      // A rover that is stopped, undriven and not mid-transfer (parked on a hauler, on the apron) is looked at twice a second, not thirty times:
+      // it settles on changed ground and can still roll onto a ramp, but a hold full of parked rovers costs next to nothing.
+      if (!input && v.pose.speed === 0 && !v.transfer) {
+        const acc = (this.rest.get(v.id) || 0) + dt;
+        if (acc < 0.5) { this.rest.set(v.id, acc); continue; }
+        this.rest.set(v.id, 0);
+      }
+      const env = sim ? this._shipEnv(sim) : makePlanetEnv(this._body(v.frameId));
       const result = drive(v, input || { throttle: 0, steer: 0 }, dt, env);
       if (result.left && sim) this._detach(v, sim, result.tried);
       else if (!v.parentShipId) this._reattach(v);
     }
+  }
+
+  /** Clamp a rover down for flight. On a ship with berths: the nearest free berth, nose to the stern or the bow, whichever is closer. */
+  _lock(v, sim) {
+    v.locked = true; v.pose.speed = 0; v.pose.pitch = 0; v.pose.roll = 0;
+    const berths = sim.def.berths;
+    if (!berths?.length) { v.berth = null; return; }
+    const taken = new Set(Object.values(this.auth.state.vehicles).filter((q) => q !== v && q.parentShipId === v.parentShipId && q.berth).map((q) => q.berth));
+    let best = null, bd = Infinity;
+    for (const b of berths) {
+      if (taken.has(b.id)) continue;
+      const d = Math.hypot(b.x - v.pose.x, b.z - v.pose.z);
+      if (d < bd) { bd = d; best = b; }
+    }
+    if (!best) { v.berth = null; return; }
+    const toStern = Math.cos(v.pose.yaw - best.yaw) > 0 ? best.yaw : best.yaw + Math.PI;
+    v.pose.x = best.x; v.pose.z = best.z; v.pose.y = deckOf(sim.def).y; v.pose.yaw = toStern; v.berth = best.id;
   }
 
   _input(v) {
@@ -74,13 +110,13 @@ export class VehicleDirector {
   _obstacles(sim) {
     if (sim._roverObs) return sim._roverObs;
     const idx = shipIndexFor(sim.def);
-    sim._roverObs = (idx.obstacles || []).filter((o) => o.z1 > 9 && o.y0 < 2.4);
+    const z0 = deckOf(sim.def).z0;
+    sim._roverObs = (idx.obstacles || []).filter((o) => o.z1 > z0 - 0.8 && o.y0 < 2.4);
     return sim._roverObs;
   }
 
   _shipEnv(sim) {
-    const ramp = sim.def.ramps?.cargo;
-    const deck = { x0: -5.8, x1: 5.8, z0: 9.8, z1: ramp ? ramp.hinge.z : 20.9, y: 0 };
+    const deck = deckOf(sim.def);
     return makeShipEnv({
       ramps: sim.def.ramps, rampState: sim.ship.state.ramps,
       landed: () => sim.flight.landed, deck, obstacles: this._obstacles(sim),
@@ -108,6 +144,10 @@ export class VehicleDirector {
       if (!sim || seen.has(sim.record.id)) continue;
       seen.add(sim.record.id);
       if (!sim.flight.landed || sim.frameId !== v.frameId || sim.record.npc) continue;
+      // only a ship that lets this driver aboard takes a rover, and a hauler takes as many as it has berths
+      if (!mayBoard(sim.record, v.passengers.driver || v.owner)) continue;
+      const cap = sim.def.berths?.length;
+      if (cap && Object.values(this.auth.state.vehicles).filter((q) => q.parentShipId === sim.record.id).length >= cap) continue;
       const ramp = sim.def.ramps?.cargo;
       const st = sim.ship.state.ramps?.cargo;
       if (!ramp || !st?.lowered) continue;

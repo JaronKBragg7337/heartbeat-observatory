@@ -8,8 +8,13 @@ import { buildExterior, applyNeutralPose, decalCanvasTexture } from '../ship/shi
 import { buildRaiderExterior, applyRaiderNeutralPose, raiderDecalTexture, applyRaiderInteriorPalette } from './raider/exterior.js';
 import { RAIDER_CUSTOM } from './raider/interior.js';
 import { buildCourierExterior, courierNeutral } from './courier/exterior.js';
+import { buildHaulerExterior, haulerNeutral, haulerDecalTexture } from './hauler/exterior.js';
+import { HAULER_CUSTOM } from './hauler/interior.js';
 
 const VISUALS = {
+  hauler: {buildExterior:buildHaulerExterior,applyNeutralPose:haulerNeutral,
+    decalTexture:(THREE_,def,name,registry)=>haulerDecalTexture(THREE_,def,name,registry),
+    custom:HAULER_CUSTOM,shield:{scale:[9.5,6.5,29],pos:[0,2.2,6.5]}},
   courier: {buildExterior:buildCourierExterior,applyNeutralPose:courierNeutral,decalTexture:()=>null,
     custom:{dress:()=>{}},shield:{scale:[5,4,13],pos:[0,1,0]}},
   meridian: {

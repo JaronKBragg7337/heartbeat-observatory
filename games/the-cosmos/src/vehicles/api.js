@@ -45,6 +45,8 @@ export function createVehicle(type, opts = {}) {
     passengers: { ...(opts.passengers || {}) },
     wheels: def.wheels.map(() => 0),
     transfer: opts.transfer || 0,
+    locked: false,
+    berth: null,
     world: opts.world ? { ...opts.world } : null,
   };
 }

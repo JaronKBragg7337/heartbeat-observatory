@@ -32,7 +32,7 @@ import { GunSystem, DroneSystem, NEUTRAL_AIRSPACE_M } from './guns.js';
 import { makeShipMaterials, applyEnvironment, makeSignAtlas, makePosterAtlas, DEPTH_LIFT, depthLiftStepFor } from './shipTextures.js';
 import { depthEmulation } from '../dev/depthEmu.js';
 import { buildInterior, buildSeats, NEST_SILL } from './shipInterior.js';
-import { ShipScreens, TerrainScanner, KIND_FOR } from './shipScreens.js';
+import { ShipScreens, TerrainScanner, KIND_FOR, SCREEN_LABEL } from './shipScreens.js';
 import { ShipFx, buildTargetMesh, buildDroneMesh, buildShieldMesh } from './shipFx.js';
 import { ShipAudio } from './shipAudio.js';
 import { geodeticToCartesian, cartesianToGeodetic, localFrame, cellIndex, cellLabel } from '../world/geodesy.js';
@@ -144,6 +144,7 @@ export class ShipSystem {
     // --- screens
     this.scanner = new TerrainScanner(this.ground, low ? 48 : 72);
     this.screens = new ShipScreens({ tier: this.tier, scanner: this.scanner });
+    SCREEN_LABEL.ship = String(this.def.hudName || 'MERIDIAN').toUpperCase();      // an idle screen names the ship it is in, not always the Meridian
     this._buildScreens();
 
     // --- exterior, in the world scene

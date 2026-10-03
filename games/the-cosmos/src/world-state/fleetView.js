@@ -92,7 +92,7 @@ export class FleetView {
       try {
         const V = visualsFor(r.type), def = shipDef(r.type);
         const ext = V.buildExterior(def.layout, this.ship.matsExt, { tier: 'low', def, remote: true });
-        ext.root.scale.setScalar(0.045); ext.root.position.set(-0.8 + i * 1.4, 1.15, 0); ext.root.rotation.y = Math.PI * 0.9;
+        ext.root.scale.setScalar(Math.min(0.045, 1.5 / def.envelope.depth)); ext.root.position.set(-0.7 + i * 1.4, 1.15, 0); ext.root.rotation.y = Math.PI * 0.9;     // every model fits the counter, whatever the class is
         V.applyNeutralPose(ext);
         for (const e of ext.engines) e.outer.visible = e.core.visible = false;                       // a model on a counter is not burning
         for (const p of ext.liftPods) p.mesh.visible = p.core.visible = false;

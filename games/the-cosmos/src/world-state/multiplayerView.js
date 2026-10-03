@@ -11,6 +11,7 @@ import { cartesianToGeodetic, localFrame } from '../world/geodesy.js';
 import { SpaceTrip } from '../space/spaceTrip.js';
 import { rampEntry } from '../ship/rampTransfer.js';
 import { ShipWalker, shipIndexFor } from '../ship/shipWalker.js';
+import { ShopView } from '../economy/shopView.js';   // CARGO: the market row and its phone sheet
 import { FleetView } from './fleetView.js';      // FLEET: the other ships, the raiders, the shipyard
 import { shipDef } from '../ships/registry.js';
 import { AccountView } from './accountView.js';
@@ -24,7 +25,7 @@ export class MultiplayerView {
     attachGrades([site,landingField(site,()=>world.snapshot.pads)]);
     space.portSite={...site,toWorld:(x,y,z)=>{const pad=world.snapshot.ships[this.activeId()].pad;return site.toWorld(pad.x+x,y,pad.z+z);}};
     ship.remoteAuthority=true;ship.flight.remoteAuthority=true;
-    this.installControls();this.buildHall();this.buildPanel();this.fleetView=new FleetView(this);
+    this.installControls();this.buildHall();this.buildPanel();this.fleetView=new FleetView(this);this.shopView=new ShopView(this);
     this.account=new AccountView(this);       // Settings: guest or signed in, sign in/out, start fresh, saved characters
     world.beforeAction=()=>this.sendPose();world.onReceipt=r=>{if(!r.ok)ship.note(r.msg,true);if(this.crew?.onSay)this.crew.onSay('',r.msg==='Saved to the shared world.'?'Done.':r.msg);if(!r.ok)this.reconcilePlayer=true;};
     world.onConnection=()=>this.reconcilePlayer=true;
@@ -85,7 +86,7 @@ export class MultiplayerView {
     if(this.engine.scene.userData.privateOpening||p.opening&&!p.opening.complete)return;
     // FLEET: the flagship changed to another class (bought, captured, switched): this cockpit is built for the old one, so come back in.
     if(s.type!==this.ship.def.type){this.reloadForShip(s);return;}
-    this.recordMotion(m);this.fleetView?.onSnapshot();
+    this.recordMotion(m);this.fleetView?.onSnapshot();this.shopView?.refresh();
     const changed=this.lastShipId!==s.id||this.lastFrame!==p.frameId||this.lastAboard!==p.aboardShipId||this.lastSeat!==p.pose.seat;
     if(this.lastShipId!==s.id){this.messageSeq=0;this.eventSeq=s.eventSeq||0;}
     if(snapshot.elevator){const loc=this.site.toLocal(this.walker.worldPos),e=this.port.elevator,oldY=e.y,sv=snapshot.elevator;
@@ -307,7 +308,7 @@ export class MultiplayerView {
     const dy=Object.getPrototypeOf(e).tick.call(e,dt,sill);
     if(dy&&rider)for(const k of ['x','y','z'])this.walker.worldPos[k]+=this.site.up[k]*dy;
     if(dy||e.phase!=='moving')this.port.updateElevatorVisuals();}
-  tick(dt){this.smoothActiveShip();if(this.correction&&!this.boardPending&&!this.vehicles?.seated?.()){const pos=this.ship.aboard?this.ship.sw:this.walker.worldPos;const candidate={x:pos.x,y:pos.y,z:pos.z},delta={...this.correction};reconcile(candidate,delta,dt);if(!this.ship.aboard||this.ship.sw.canStand(candidate.x,candidate.y,candidate.z)){Object.assign(pos,candidate);this.correction=delta;}}this.accum+=dt;this.predictElevator(dt);this.updateBodies(dt);this.button.style.bottom=this.ship.aboard?'190px':'120px';if(this.accum>=.1){this.accum=0;this.sendPose();
+  tick(dt){this.shopView?.update(dt);this.smoothActiveShip();if(this.correction&&!this.boardPending&&!this.vehicles?.seated?.()){const pos=this.ship.aboard?this.ship.sw:this.walker.worldPos;const candidate={x:pos.x,y:pos.y,z:pos.z},delta={...this.correction};reconcile(candidate,delta,dt);if(!this.ship.aboard||this.ship.sw.canStand(candidate.x,candidate.y,candidate.z)){Object.assign(pos,candidate);this.correction=delta;}}this.accum+=dt;this.predictElevator(dt);this.updateBodies(dt);this.button.style.bottom=this.ship.aboard?'190px':'120px';if(this.accum>=.1){this.accum=0;this.sendPose();
     if(this.ship.remoteFireWanted&&this.ship.def.seatGun[this.ship.seat?.id]){const direction=new THREE.Vector3(0,0,-1).applyQuaternion(this.engine.camera.quaternion);
       this.world.request({type:'fire-gun',direction:{x:direction.x,y:direction.y,z:direction.z}});}}}
 }

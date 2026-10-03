@@ -6,6 +6,10 @@ import { cartesianToGeodetic, localFrame } from '../world/geodesy.js';
 import { gravityAtRadius } from '../world/bodies.js';
 import { DECK_GRAVITY } from '../ship/shipWalker.js';
 
+/** A ship's cargo deck: its own definition says where rovers drive (src/ships/<type>/spec.js CARGO_DECK); the Meridian's bay is the default. */
+const MERIDIAN_DECK = { x0: -5.8, x1: 5.8, z0: 9.8, y: 0 };
+export const deckOf = (def) => def.cargoDeck || { ...MERIDIAN_DECK, z1: def.ramps?.cargo ? def.ramps.cargo.hinge.z : 20.9 };
+
 /** Ship-local flat frame. Yaw 0 faces the bow (−Z). */
 export const SHIP_AXES = {
   up: { x: 0, y: 1, z: 0 },

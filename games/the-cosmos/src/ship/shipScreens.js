@@ -320,9 +320,12 @@ export const DRAW = {
   idle(g, w, h, tel, t) {
     frame(g, w, h, 'STANDBY');
     mono(g, h * 0.09, 500); g.fillStyle = DIM; g.textBaseline = 'top';
-    g.fillText('MERIDIAN', 14, h * 0.4);
+    g.fillText(SCREEN_LABEL.ship, 14, h * 0.4);
   },
 };
+
+/** The ship's own name on its idle screens (set by ShipSystem when it builds; the Meridian by default). */
+export const SCREEN_LABEL = { ship: 'MERIDIAN' };
 
 const KIND_FOR = {
   pilot: ['attitude', 'flight', 'systems'], nav: ['coords', 'map', 'scan'], comms: ['log', 'signal'],

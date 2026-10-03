@@ -670,6 +670,10 @@ const { runVoiceChecks, runVoiceBrowserChecks } = await import('./voice-checks.m
 await runVoiceChecks({ check, section });
 await runVoiceBrowserChecks({ check, section });
 
+// 40-44. The Drayman hauler, the vehicle bay (berths, lock-down) and player shops.
+const { runCargoChecks } = await import('./cargo-checks.mjs');
+await runCargoChecks({ check, section, THREE, mars, FIELD });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));
