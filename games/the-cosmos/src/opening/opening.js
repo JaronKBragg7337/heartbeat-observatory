@@ -8,6 +8,8 @@ import { Kit } from '../ship/shipKit.js';
 import { shipDef } from '../ships/registry.js';
 import { visualsFor } from '../ships/visuals.js';
 import { detachBodyEdits } from '../world/field.js';
+import { OpeningLook } from './look.js';
+import { WRECK_Y } from './freighterHull.js';
 
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function seatPerson(person,headHeight){return person.ready.then(p=>{
@@ -20,7 +22,7 @@ function seatPerson(person,headHeight){return person.ready.then(p=>{
 });}
 export class Opening {
   constructor({engine,world,ship,people,port,tier,onFinish}){
-    Object.assign(this,{engine,world,ship,people,port,tier,onFinish});
+    Object.assign(this,{engine,world,ship,people,port,tier,onFinish});const buildStart=performance.now();
     this.active=!!world.state.opening&&!world.state.opening.complete;
     this.state=structuredClone(world.state.opening||freshOpening());this.accum=0;this.pending=Promise.resolve();this.busy=false;
     this.film=false;this.elapsed=this.state.elapsed;this.rideSeconds=this.state.rideSeconds;
@@ -37,7 +39,7 @@ export class Opening {
     this.root=new THREE.Group();this.scene.add(this.root);
     engine.track({worldPos:this.model.origin,object3d:this.root,quaternion:this.q});
     const mats=ship.matsInt;
-    this.cabin=passengerCabin(mats,this.low);this.root.add(this.cabin.root);
+    this.cabin=passengerCabin(mats,this.low,ship.matsExt);this.root.add(this.cabin.root);
     this.sw=new ShipWalker(shipIndexFor({type:'opening-passenger',layout:this.cabin.layout}));
     this.sw.place(this.state.pose.x,this.state.pose.y,this.state.pose.z,this.state.pose.yaw);this.sw.pitch=this.state.pose.pitch;
     this.dust=driftingDust(this.low);this.cabin.root.add(this.dust);
@@ -81,10 +83,8 @@ export class Opening {
     const portClone=port.root.clone(true);this.scene.add(portClone);
     engine.track({worldPos:port.site.center,object3d:portClone,quaternion:port.quaternion});
     this.portClone=portClone;
-    this.portLights=new THREE.Group();const pk=new Kit();
-    for(let i=0;i<16;i++)pk.box('glowAmber',-2600+(i-8)*9,3,-350,.22,.2,.3);
-    this.portLights.add(pk.toGroup(mats));this.root.add(this.portLights);
     this.buildUI();
+    this.look=new OpeningLook(this);
     this.keyboard=e=>{if(!this.active)return;if(e.code==='KeyE'&&!e.repeat){e.preventDefault();this.interact();}
       if(e.code==='KeyQ'&&!e.repeat)this.walkInstead();};
     window.addEventListener('keydown',this.keyboard);
@@ -92,6 +92,7 @@ export class Opening {
     this.hideMainUI=true;document.body.dataset.opening='active';
     this.stage=this.state.stage;this.placeStage();
     this.pageHide=()=>this.savePose();window.addEventListener('pagehide',this.pageHide);
+    this.buildMs=Math.round(performance.now()-buildStart);
   }
   buildUI(){
     this.style=document.createElement('style');this.style.textContent=`
@@ -208,7 +209,7 @@ export class Opening {
       if(t>=OPENING_SECONDS&&!this.busy){this.savePose().then(()=>this.command({type:'opening-next'}));}
     }else if(s.stage===1){
       this.fade.style.opacity=String(clamp(1-(this.elapsed-OPENING_SECONDS)/3,0,1));
-      this.cabin.root.position.set(0,.65,0);this.cabin.root.rotation.set(.015,0,.105);
+      this.cabin.root.position.set(0,WRECK_Y,0);this.cabin.root.rotation.set(.015,0,.105);
       this.sw.yaw+=look.dx;this.sw.pitch=clamp(this.sw.pitch-look.dy,-1.4,1.3);
       this.sw.tick(dt,{moveX:input.moveEast,moveZ:input.moveNorth,run:input.run,jump:input.jump});
       eye=new THREE.Vector3().copy(this.sw.eyeLocal());forward=new THREE.Vector3(Math.sin(this.sw.yaw)*Math.cos(this.sw.pitch),Math.sin(this.sw.pitch),-Math.cos(this.sw.yaw)*Math.cos(this.sw.pitch));
@@ -218,7 +219,7 @@ export class Opening {
       this.hint.textContent='Move: WASD / left thumb · Look: mouse / right thumb';
       if(this.sw.z>12){this.action.hidden=false;this.action.textContent='Climb out (E)';}
     }else{
-      this.fade.style.opacity='0';this.cabin.root.position.set(0,.65,0);this.cabin.root.rotation.set(.015,0,.105);
+      this.fade.style.opacity='0';this.cabin.root.position.set(0,WRECK_Y,0);this.cabin.root.rotation.set(.015,0,.105);
       if(s.stage===4&&s.ride){
         this.fade.style.opacity=String(clamp((this.rideSeconds-64)/2,0,1));
         const t=clamp(this.rideSeconds/65,0,1),ease=t*t*(3-2*t);
@@ -270,6 +271,7 @@ export class Opening {
     if(s.stage!==0&&this.audio)this.audio.alarmGain.gain.setTargetAtTime(0,this.audio.ctx.currentTime,.2);
     if(disconnected)this.caption.textContent='Shared world disconnected. Reconnecting…';
     else if(this.statusUntil>this.elapsed)this.caption.textContent=this.status;
+    this.look.frame(dt,s,this.elapsed);
     if(this.accum>=1&&!this.busy)this.savePose();
     return true;
   }
@@ -280,7 +282,7 @@ export class Opening {
     transition.animate([{opacity:1},{opacity:0}],{duration:1600,easing:'ease-out',fill:'forwards'}).finished.then(()=>transition.remove());
     e.scene=this.mainScene;e.overlayScenes=this.mainOverlays;
     for(const t of [...e._tracked])if(!this.beforeTracks.has(t))e._tracked.delete(t);
-    this.ui.remove();this.style.remove();delete document.body.dataset.opening;delete document.body.dataset.openingFilm;
+    this.look?.dispose();this.look=null;this.ui.remove();this.style.remove();delete document.body.dataset.opening;delete document.body.dataset.openingFilm;
     window.removeEventListener('keydown',this.keyboard);window.removeEventListener('pagehide',this.pageHide);
     window.removeEventListener('pointerdown',this.audioStart);window.removeEventListener('keydown',this.audioStart);
     if(this.audio)this.audio.ctx.close().catch(()=>{});

@@ -1,52 +1,38 @@
 import * as THREE from 'three';
 import { Kit } from '../ship/shipKit.js';
 import { layoutKit } from '../ships/layoutKit.js';
+import { Kit3, rng } from './wreckKit.js';
+import { buildSkin, buildFrames, buildLining, DAMAGE } from './freighterHull.js';
+import { buildInterior, buildWindows } from './freighterInterior.js';
 
-export function passengerCabin(mats,low=false){
-  const k=new Kit(),K=layoutKit({main:0,clear:3,pitch:3,slab:.25});
+export function passengerCabin(mats,low=false,ext=mats){
+  const K=layoutKit({main:0,clear:3,pitch:3,slab:.25});
   K.room('cabin','Passenger cabin','cargo','main',-3,3,-12,14,{h:3});
   K.door('exit','cabin','outside','z',14,0,{kind:'portal',w:2,h:2.7,noZone:true});
-  for(let z=-10;z<12;z+=2.6){
-    for(const s of [-1,1]){
-      k.bevelBox('fabricBlue',s*1.75,.44,z,1.2,.22,.8,.1);
-      k.bevelBox('fabricBlue',s*1.75,.98,z+.38,1.2,1.05,.22,.08);
-      for(const dx of [-.5,.5]){k.bevelBox('metal',s*1.75+dx,.5,z,.07,.07,1,.02);k.pipe('metal',[s*1.75+dx,.15,z],[s*1.75+dx,.45,z],.03,8);}
-      for(const dx of [-.25,.25])k.box('plasticDark',s*1.75+dx,1.02,z+.235,.065,.9,.03);
-      k.box('hazard',s*1.75,.55,z+.1,.32,.06,.04);
-      K.prop('bench','cabin',s*1.75,z,1.2,1,.5);
-    }
-    k.box('metal',0,3.03,z,6.3,.12,.14);
-    for(const s of [-1,1]){
-      k.bevelBox('paint',s*3.05,.5,z,.15,1,2.6,.03);
-      k.bevelBox('paint',s*3.05,2.7,z,.15,.6,2.6,.03);
-      for(const dz of [-1.25,1.25])k.bevelBox('metal',s*3.05,1.8,z+dz,.16,1.7,.13,.03);
-      // Real window openings, with a fractured end section visible after the transition.
-      if(z<7)k.box('glassTint',s*3.08,1.8,z,.015,1.7,2.3);
-      for(let dz=-1;dz<1.1;dz+=.4)k.cyl('steel',s*2.95,.8,z+dz,.022,.02,6,{axis:'x'});
-      k.pipe('pipeBlue',[s*2.88,2.98,z-1.3],[s*2.88,2.98,z+1.3],.035,8);
-    }
-    k.box('glowCool',0,2.94,z,1.3,.03,.13);
-  }
-  k.bevelBox('floor:deck',0,-.13,1,6.2,.26,26,.06);
-  k.bevelBox('ceil',0,3.16,-2,6.3,.22,20,.05);
-  k.box('paint',0,1.5,-12.1,6.2,3,.18);
-  for(const s of [-1,1])k.bevelBox('paint',s*2,1.4,14,2,2.8,.18,.03);
-  k.pipe('metal',[-3,3,7],[1.8,2.65,11],.08,10);
-  k.pipe('metal',[2.9,2.95,8],[2.6,1.4,13],.065,10);
-  for(let i=0;i<8;i++)k.prism('metal',[[2.8,8+i*.7],[3.6+(i%3)*.3,8.1+i*.7],[2.8,8.6+i*.7]],1.05,1.12,.01,.01);
-  // Outer pressure skin and scarred structural ribs, with an open torn stern.
-  k.bevelBox('hull',0,-.36,0,6.7,.3,25,.08);
-  k.bevelBox('hull',0,3.38,-2,6.7,.25,20,.08);
-  for(const s of [-1,1]){
-    k.bevelBox('hull',s*3.25,.38,-2,.18,1.2,20,.04);
-    k.bevelBox('hull',s*3.25,2.85,-2,.18,.5,20,.04);
-    for(let z=-11;z<8;z+=2.6)k.bevelBox('metal',s*3.3,1.65,z,.12,2.8,.18,.025);
-    k.prism('hull',[[s*3.1,8],[s*4.3,11],[s*3.6,13.4],[s*3,12]],.05,.32,.03,.03);
-    for(let i=0;i<4;i++)k.prism('hull',[[s*3.1,8+i*1.2],[s*(3.6+i*.15),8.7+i*1.2],[s*3.1,9.1+i*1.2]],1.2,1.32,.015,.015);
-  }
-  k.prism('hull',[[-3.3,-12],[3.3,-12],[1.8,-17],[-1.8,-17]],-.36,2.7,.08,.15);
-  const root=k.toGroup(mats,{name:'opening-cabin',cast:!low,receive:true});
-  return {root,layout:K.finish({stairs:{},ramps:{},ladders:[],extraZones:[],portals:[],gear:{legs:[]}}),triangles:k.triangles};
+  // The collision layout is unchanged: one bench block per seat, so walking never depends on how the wreck looks.
+  for(let z=-10;z<12;z+=2.6)for(const s of [-1,1])K.prop('bench','cabin',s*1.75,z,1.2,1,.5);
+  const root=new THREE.Group();root.name='opening-cabin';let triangles=0;
+  const variant=(pristine)=>{
+    DAMAGE.on=!pristine;const ik=new Kit3(low),rnd=rng(pristine?5521:7741);
+    ik.tiles={'floor:deck':2,ceil:1.5,metal:1,hull:8};
+    const lamps={emerg:new THREE.MeshBasicMaterial({vertexColors:true,toneMapped:false}),flick:new THREE.MeshBasicMaterial({vertexColors:true,toneMapped:false})};
+    const inner=buildInterior(ik,low,rnd,pristine);buildLining(ik,low);buildWindows(ik,rnd,pristine);
+    const g=ik.toGroup({...mats,...lamps},{name:pristine?'cabin-intact':'cabin-wreck',cast:!low,receive:true});
+    triangles+=ik.triangles;let hull=null;
+    if(!pristine){const xk=new Kit3(low);xk.tiles={hull:8,metal:1};buildSkin(xk,low,rnd);buildFrames(xk,low,rnd);
+      hull=xk.toGroup(ext,{name:'opening-hull',cast:!low,receive:true});g.add(hull);triangles+=xk.triangles;}
+    DAMAGE.on=true;root.add(g);return {group:g,lamps,sparks:inner.sparks};
+  };
+  const intact=variant(true),wreck=variant(false);
+  // Before the crash the cabin is whole; after it, it is the wreck. The opening flips them at the impact.
+  const fx={intact,wreck,sparks:wreck.sparks,show(stage){intact.group.visible=stage===0;wreck.group.visible=stage>=1;},
+    update(t,dt,stage,impact){
+      const pre=stage===0&&!impact;
+      intact.lamps.emerg.color.setScalar(stage===0&&impact?1:.35);intact.lamps.flick.color.setScalar(1);
+      wreck.lamps.emerg.color.setScalar(1);wreck.lamps.flick.color.setScalar(Math.sin(t*37)*Math.sin(t*11.3)>.2?.9:.05);
+    }};
+  fx.show(1);
+  return {root,fx,layout:K.finish({stairs:{},ramps:{},ladders:[],extraZones:[],portals:[],gear:{legs:[]}}),triangles};
 }
 
 export function rescueRover(mats,low=false){
@@ -90,17 +76,23 @@ export function rescueRover(mats,low=false){
   light.target.position.set(0,0,-40);root.add(light,light.target);
   return {root,wheels,light,triangles:k.triangles};
 }
-export function supplyCrate(mats){const k=new Kit();k.bevelBox('crateB',0,.24,0,.68,.48,.55,.045);
-  for(const x of [-.24,.24])k.box('metal',x,.24,0,.065,.49,.57);
-  k.bevelBox('metal',0,.49,0,.22,.045,.12,.015);k.box('hazard',0,.27,.282,.3,.13,.008);
-  for(const s of [-1,1]){
-    k.bevelBox('gunmetal',s*.34,.25,0,.045,.13,.25,.015);
-    k.box('metal',s*.366,.25,0,.012,.05,.16);
-    for(const x of [-.24,.24])for(const y of [.07,.41])k.cyl('steel',x,y,s*.294,.018,.012,6,{axis:'z'});
-    k.bevelBox('gunmetal',s*.17,.42,-.292,.08,.1,.025,.01);
-  }
-  for(let i=0;i<12;i++)k.box('gunmetal',-.1+i*.016,.14,.282,.005,.06,.005);
-  return k.toGroup(mats,{name:'opening-carry',cast:true,receive:true});}
+export function supplyCrate(mats){
+  // A hard-shell survivor supply case: ribbed body, rubber corner guards, latches, a stencilled band and a small beacon.
+  const k=new Kit3();k.tiles={metal:1};
+  k.bevelBox('crateA',0,.25,0,.7,.4,.56,.05,{col:[1,.95,.82]});          // body
+  k.bevelBox('crateA',0,.5,0,.72,.1,.58,.04,{col:[1.08,1.02,.9]});       // lid
+  k.box('rubber',0,.447,0,.725,.012,.585);                                  // gasket
+  for(const sz of [-1,1])for(let i=-3;i<=3;i++){k.bevelBox('steelDark',i*.095,.25,sz*.286,.035,.34,.022,.008);}
+  for(const sx of [-1,1]){k.bevelBox('steelDark',sx*.356,.25,0,.022,.3,.4,.01);k.bevelBox('gunmetal',sx*.37,.34,0,.03,.07,.2,.012);k.bevelBox('rubber',sx*.378,.34,0,.012,.045,.17,.005);}
+  for(const sx of [-1,1])for(const sz of [-1,1]){k.bevelBox('rubber',sx*.33,.05,sz*.265,.1,.1,.1,.025);k.bevelBox('rubber',sx*.335,.5,sz*.27,.1,.1,.1,.025);}
+  for(const sx of [-.2,.2]){k.bevelBox('steel',sx,.43,.292,.08,.08,.03,.01);k.bevelBox('red',sx,.41,.31,.05,.025,.01,.005,{col:[.9,.4,.3]});}
+  k.box('hazard',0,.25,.292,.5,.1,.004);                                    // stencilled band
+  for(let i=0;i<9;i++)k.box('gunmetal',-.2+i*.05,.25,.295,.02+(i%3)*.008,.06,.003);
+  k.bevelBox('white',-.27,.37,.291,.07,.04,.004,.002);k.box('red',.26,.37,.292,.07,.012,.004);
+  k.bevelBox('gunmetal',0,.57,0,.22,.035,.12,.012);k.cyl('steel',.2,.575,.18,.012,.03,6);k.pipe('steel',[.2,.575,.18],[.2,.82,.2],.006,5);
+  const g=k.toGroup(mats,{name:'opening-carry',cast:true,receive:true});
+  const led=new THREE.MeshBasicMaterial({color:0x40ff80,toneMapped:false}),m=new THREE.Mesh(new THREE.BoxGeometry(.045,.025,.045),led);
+  m.position.set(.2,.83,.2);g.add(m);g.userData.led=led;return g;}
 
 export function stormSky(low=false){
   // One bounded transparent ribbon mesh. No full-screen postprocessing or per-particle draw calls.
@@ -125,8 +117,9 @@ export function stormSky(low=false){
       #include <logdepthbuf_pars_fragment>
       void main(){float y=fract(v.y/2.)*2.;float edge=sin(clamp(y,0.,1.)*3.14159);
       float folds=.55+.45*sin(v.x*90.+sin(v.x*23.+time*.08)*4.+time*.17);
-      vec3 color=mix(vec3(.16,.48,.68),vec3(.75,.22,.1),y);
-      gl_FragColor=vec4(color*folds,edge*strength*.65);
+      float ray=.78+.22*sin(v.x*70.+sin(v.x*13.+time*.12)*4.);
+      vec3 color=mix(vec3(.32,.85,.78),vec3(.62,.24,.62),pow(y,.7));
+      gl_FragColor=vec4(color*folds*ray*(1.25-y*.5),edge*edge*strength*.8);
       #include <logdepthbuf_fragment>
       }`});
   const mesh=new THREE.Mesh(g,mat);mesh.frustumCulled=false;
