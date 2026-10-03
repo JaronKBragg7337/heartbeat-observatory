@@ -1,0 +1,741 @@
+{
+  "date": "2026-10-03",
+  "title": "Heartbeat News — Saturday, October 3, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-03 (07:30 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-03.md"
+    },
+    {
+      "name": "watch/claude 2026-10-03 (08:25)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-03.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-03 (reader, 09:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-03.md"
+    },
+    {
+      "name": "Perplexity headlines (/api/news, read live by the page)",
+      "url": "/api/news"
+    }
+  ],
+  "ticker": [
+    "SEPTEMBER PAYROLLS +29,000; UNEMPLOYMENT 4.2%",
+    "JULY-AUGUST JOBS REVISED DOWN BY 60,000",
+    "S&P 500 CLOSES AT 7,722.72, UP 0.7%",
+    "G7 AGREES 100 MILLION BARREL OIL RELEASE",
+    "BRENT SETTLES AT $102.25; CHINA FUEL EXPORTS HALTED",
+    "REPORT: TRUMP AIDES MEET AT CAMP DAVID ON IRAN",
+    "U.S. REPORTED TO SEND THIRD CARRIER TO MIDDLE EAST",
+    "RUSSIAN STRIKES HIT KYIV; TWO DNIPRO BRIDGES CLOSED",
+    "OPENAI LAUNCHES GPT-6.1 SOL AT $2 PER MILLION TOKENS",
+    "GOOGLE'S GEMINI 4 ARGON GOES FIRST TO CYBER DEFENDERS",
+    "FDA CLOSES CYCLOSPORA PROBE: 12,883 ILLNESSES",
+    "JUDGE PAUSES BORDER WALL BUILD IN BIG BEND",
+    "CONGRESS FUNDS GOVERNMENT THROUGH DEC. 11",
+    "BRAVES-DODGERS NLDS GAME 1 TODAY, 4 P.M. ET",
+    "TESLA Q3 DELIVERIES: 486,532"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Jobs · Oil · Iran",
+        "bullets": [
+          "September payrolls miss: +29,000",
+          "G7 orders a 100-million-barrel oil release",
+          "Reported Camp David meeting on Iran",
+          "Braves face Dodgers in the playoffs"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Saturday, October third.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "Today: a weak September jobs report, the world's biggest economies agree to release emergency oil, and a reported war council at Camp David."
+        },
+        {
+          "who": "joe",
+          "text": "Plus new A.I. models, a food outbreak that officials have now closed, and baseball's division series. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "story",
+      "strap": "REPORT: TRUMP AIDES MEET AT CAMP DAVID ON IRAN",
+      "headline": "Iran, day two hundred seventeen",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Iran war, day 217",
+        "stats": [
+          {
+            "label": "Day of war",
+            "value": "217"
+          },
+          {
+            "label": "Tankers hit in Hormuz",
+            "value": "5 in 3 days"
+          }
+        ],
+        "bullets": [
+          "Axios: Camp David meeting as talks stall",
+          "Trump reported weighing renewed major combat",
+          "W.S.J.: third carrier, up to 10,000 troops",
+          "New Treasury sanctions on Iran's auto and rail sectors"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Axios",
+          "url": "https://www.axios.com/2026/10/03/trumps-cabinet-camp-david-iran-war-yemen-houthis"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/aaa62ff83ed516b04bbaa290e6a49a02"
+        },
+        {
+          "name": "FDD overnight brief",
+          "url": "https://www.fdd.org/overnight-brief/october-2-2026/"
+        },
+        {
+          "name": "GlobalSecurity",
+          "url": "https://www.globalsecurity.org/military/ops/iran-war-oprep.htm"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "On day two hundred seventeen of the Iran war, Axios reports that Trump's senior national-security aides met at Camp David on Iran and Yemen, as negotiations stalled. Axios says Trump is considering renewed major combat operations. That is a report, not an announcement."
+        },
+        {
+          "who": "joe",
+          "text": "Other outlets describe a buildup. The Wall Street Journal reports a third U.S. carrier and nine to ten thousand more troops, with Patriot batteries going to Saudi Arabia and Qatar. Sources differ on the troop number."
+        },
+        {
+          "who": "vex",
+          "text": "New Treasury sanctions hit Iran's auto and rail sectors. And Iran struck a fifth tanker in the Strait of Hormuz in three days."
+        },
+        {
+          "who": "joe",
+          "text": "In Britain, a twenty-five-year-old was arrested on suspicion of terrorism preparation, tied to the R.A.F. Fairford base. The A.P. says U.S. and British leaders suggested Iran was involved in two incidents this week, but it presented no evidence. That is a claim."
+        }
+      ]
+    },
+    {
+      "id": "energy",
+      "kind": "breaking",
+      "strap": "G7 AGREES 100 MILLION BARREL OIL RELEASE; BRENT $102.25",
+      "headline": "Emergency oil",
+      "category": "ENERGY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ENERGY",
+        "title": "G7 opens the reserves",
+        "stats": [
+          {
+            "label": "G7 / I.E.A. release",
+            "value": "100M barrels"
+          },
+          {
+            "label": "Brent settle",
+            "value": "$102.25"
+          },
+          {
+            "label": "Dated Brent (reported)",
+            "value": "over $120"
+          }
+        ],
+        "bullets": [
+          "Released over four months, diesel first",
+          "G7 pledges against export limits between members",
+          "China suspends fuel exports until further notice",
+          "W.T.I. fell nearly 4% on Friday"
+        ]
+      },
+      "sources": [
+        {
+          "name": "G7 declaration (Élysée)",
+          "url": "https://www.elysee.fr/G7evian/2026/10/02/declaration-du-g7-sur-la-securite-energetique-mondiale-et-la-stabilite-des-marches"
+        },
+        {
+          "name": "G7 Research Group",
+          "url": "https://g7.utoronto.ca/summit/2026evian/261002-energy-security.html"
+        },
+        {
+          "name": "Energy Now",
+          "url": "https://energynow.com/2026/10/oil-ends-volatile-week-mixed-as-emergency-reserve-release-knocks-wti-lower-but-brent-holds-above-102"
+        },
+        {
+          "name": "Oilprice.com",
+          "url": "https://oilprice.com/Energy/Crude-Oil/Dated-Brent-Above-120-Signals-a-Serious-Oil-Squeeze.html"
+        },
+        {
+          "name": "CNBC",
+          "url": "https://www.cnbc.com/2026/10/02/oil-rises-slightly-as-market-weighs-mixed-supply-signals.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "G7 leaders agreed to a coordinated release of one hundred million barrels of oil from reserves, over four months. A lot of it is diesel, front-loaded into the first twenty days."
+        },
+        {
+          "who": "vex",
+          "text": "The G7 also pledged not to restrict exports between its members. That follows China's suspension of diesel, gasoline and jet fuel exports, which it says lasts until further notice."
+        },
+        {
+          "who": "joe",
+          "text": "Friday's prices: Brent settled at one hundred two dollars and twenty-five cents, almost unchanged. U.S. crude fell nearly four percent."
+        },
+        {
+          "who": "vex",
+          "text": "One more number, from Oilprice dot com. Physical Dated Brent is reported above one hundred twenty dollars. That is a claim, and it is far above the futures price. The physical market is tighter than the screen suggests."
+        }
+      ]
+    },
+    {
+      "id": "jobs",
+      "kind": "story",
+      "strap": "SEPTEMBER PAYROLLS +29,000; UNEMPLOYMENT 4.2%",
+      "headline": "A weak jobs report",
+      "category": "MARKETS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "September jobs",
+        "stats": [
+          {
+            "label": "Payrolls",
+            "value": "+29,000"
+          },
+          {
+            "label": "Expected",
+            "value": "~84,000"
+          },
+          {
+            "label": "Unemployment",
+            "value": "4.2%"
+          },
+          {
+            "label": "Revisions",
+            "value": "-60,000"
+          }
+        ],
+        "bullets": [
+          "Wages +0.1% on the month, +3.0% on the year",
+          "S&P 500 7,722.72 (+0.7%)",
+          "Dow 51,176.96; Nasdaq 27,190.86",
+          "10-year yield about 5.18%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BLS",
+          "url": "https://www.bls.gov/news.release/empsit.nr0.htm"
+        },
+        {
+          "name": "CNBC",
+          "url": "https://www.cnbc.com/2026/10/02/jobs-report-september-2026.html"
+        },
+        {
+          "name": "CNN",
+          "url": "https://www.cnn.com/2026/10/02/economy/us-jobs-report-september-final"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/48e9066481cba91a5d7c6688aa74a5cd"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Bureau of Labor Statistics reports employers added twenty-nine thousand jobs in September. Forecasts were near eighty-four thousand. Unemployment rose to four point two percent."
+        },
+        {
+          "who": "joe",
+          "text": "July and August were revised down by a combined sixty thousand jobs. Hourly pay rose a tenth of a percent in the month, and three percent over the year."
+        },
+        {
+          "who": "vex",
+          "text": "Stocks still rose. The S&P five hundred gained point seven percent to seven thousand seven hundred twenty-two. The Dow added half a percent. The Nasdaq rose one point two."
+        },
+        {
+          "who": "joe",
+          "text": "Treasury yields fell after the report, then pulled back. The ten-year is near five point one eight percent, after its run to the highest since two thousand two. Coverage says the numbers raise the odds the Fed holds rates at its late-October meeting."
+        },
+        {
+          "who": "vex",
+          "text": "Congress also avoided a shutdown. Funding now runs through December eleventh."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "RUSSIAN STRIKES HIT KYIV; PUTIN REPEATS KALININGRAD THREAT",
+      "headline": "Russia and Ukraine",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "War in Ukraine",
+        "bullets": [
+          "Kyiv strikes: one killed, two hurt",
+          "Two Dnipro bridges closed",
+          "Drone hit a school with children sheltering",
+          "Putin repeats Kaliningrad nuclear threat"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Just Security",
+          "url": "https://www.justsecurity.org/159499/early-edition-october-2-2026/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Russian strikes on Kyiv killed one person and injured two, and closed two bridges over the Dnipro. A drone hit a school while children were sheltering inside."
+        },
+        {
+          "who": "vex",
+          "text": "Vladimir Putin repeated his threat to use nuclear weapons over Kaliningrad. That is a statement of intent, not an action."
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "kind": "story",
+      "strap": "OPENAI LAUNCHES GPT-6.1 SOL; GOOGLE GATES GEMINI 4 ARGON",
+      "headline": "A week of new models",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "The week in A.I.",
+        "bullets": [
+          "OpenAI: GPT-6.1 Sol at $2 / $10 per million tokens",
+          "OpenAI reported scrapping GPT-6.1 Astra over safety concerns",
+          "Google: Gemini 4 Argon to trusted defenders first",
+          "Anthropic IPO reported for mid-November"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Micro Center",
+          "url": "https://www.microcenter.com/site/mc-news/article/this-week-in-ai-oct-2-2026.aspx"
+        },
+        {
+          "name": "CNBC",
+          "url": "https://www.cnbc.com/2026/10/02/tech-download-google-argon-frontier-openai-anthropic.html"
+        },
+        {
+          "name": "The Neuron",
+          "url": "https://theneuron.ai/digest/everything-that-happened-in-ai-today-thursday-october-1-2026"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "OpenAI launched GPT-6.1 Sol, priced at two dollars and ten dollars per million tokens. That is one-fifth the price of GPT-6 Astra, with similar results on agentic coding. It also added a five-hundred-dollar plan and an automation product called Dots."
+        },
+        {
+          "who": "joe",
+          "text": "Reports say OpenAI scrapped a bigger model, GPT-6.1 Astra, over internal safety and alignment concerns. Google released Gemini 4 Argon first to trusted cyber defenders, claiming it can find, validate and fix serious software flaws on its own."
+        },
+        {
+          "who": "vex",
+          "text": "Two labs held back capability in the same week. Reportedly, Bloomberg says Anthropic is targeting an I.P.O. in mid-November."
+        },
+        {
+          "who": "joe",
+          "text": "Disclosure: Anthropic makes the model that helps write this show."
+        }
+      ]
+    },
+    {
+      "id": "nation",
+      "kind": "story",
+      "strap": "JUDGE PAUSES BORDER WALL IN BIG BEND; SPRINGFIELD PLANT CLOSES",
+      "headline": "Around the country",
+      "category": "NATIONAL",
+      "status": "claim",
+      "graphic": {
+        "kicker": "NATIONAL",
+        "title": "Around the country",
+        "bullets": [
+          "Judge pauses Big Bend border construction",
+          "Supreme Court takes major immigration case",
+          "Springfield, Ohio: ~1,400 laid off",
+          "Vicksburg, Miss.: ransomware shuts city systems"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/56ea4f79b989a4c894e1f2256bc0b886"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/trump-ohio-midterms-factory-workers-7c8dc7901de15a22a909bcd9c8b78a3e"
+        },
+        {
+          "name": "Substack (Lisa Remillard)",
+          "url": "https://lisaremillard.substack.com/p/scotus-will-take-up-trump-immigration"
+        },
+        {
+          "name": "Databreaches.net",
+          "url": "https://databreaches.net/2026/10/02/city-of-vicksburg-mississippi-shuts-down-computers-after-cyberattack/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "The A.P. reports a federal judge, Kathleen Cardone, temporarily blocked border-wall construction in Texas' Big Bend region while a challenge goes forward. The work is part of a forty-six billion dollar border program."
+        },
+        {
+          "who": "vex",
+          "text": "The Supreme Court agreed Thursday to take up a major case central to the administration's immigration crackdown. Arguments are expected in the coming months."
+        },
+        {
+          "who": "joe",
+          "text": "In Springfield, Ohio, the A.P. says nearly fourteen hundred workers lost their jobs as the former Navistar truck plant closed. One worker told the A.P. five grocery items now cost what a full cart once did. That is one person's account."
+        },
+        {
+          "who": "vex",
+          "text": "And in Vicksburg, Mississippi, a ransomware attack forced the city's computers offline. Nine-one-one, police and fire are still running."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "FDA CLOSES CYCLOSPORA PROBE: 12,883 ILLNESSES, TWO DEATHS",
+      "headline": "Lettuce outbreak closed",
+      "category": "HEALTH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Cyclospora investigation closed",
+        "stats": [
+          {
+            "label": "Illnesses",
+            "value": "12,883"
+          },
+          {
+            "label": "Hospitalized",
+            "value": "570"
+          },
+          {
+            "label": "Deaths",
+            "value": "2"
+          },
+          {
+            "label": "States",
+            "value": "21"
+          }
+        ],
+        "bullets": [
+          "Linked to iceberg lettuce from central Mexico",
+          "Two positive environmental samples",
+          "Contamination route not established",
+          "Salmonella outbreak from jalapenos also closed: 488 cases"
+        ]
+      },
+      "sources": [
+        {
+          "name": "FDA (Cyclospora)",
+          "url": "https://www.fda.gov/food/outbreaks-foodborne-illness/investigation-multistate-outbreak-cyclospora-illnesses-iceberg-lettuce-july-2026"
+        },
+        {
+          "name": "FDA (response)",
+          "url": "https://www.fda.gov/food/outbreaks-foodborne-illness/post-outbreak-response-activities-multistate-outbreaks-cyclospora-illnesses"
+        },
+        {
+          "name": "FDA (Salmonella)",
+          "url": "https://www.fda.gov/food/outbreaks-foodborne-illness/outbreak-investigation-salmonella-jalapeno-august-2026"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The F.D.A. closed its investigation of a Cyclospora outbreak tied to recalled iceberg lettuce from central Mexico. The final count is twelve thousand eight hundred eighty-three illnesses, five hundred seventy hospitalizations and two deaths, across twenty-one states."
+        },
+        {
+          "who": "joe",
+          "text": "Two environmental samples tested positive, one from a processing plant's wastewater tank and one from a grower's drainage ditch. But the F.D.A. says it could not establish how the contamination happened."
+        },
+        {
+          "who": "vex",
+          "text": "A second outbreak is also closed: Salmonella Javiana, linked to jalapenos from Sinaloa, with four hundred eighty-eight cases in thirty-four states. The last Cyclospora illness began August seventeenth."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "HURRICANES RACHEL AND NOLO IN THE PACIFIC; SOCAL HEAT WAVE",
+      "headline": "Two Pacific hurricanes",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Pacific storms and heat",
+        "stats": [
+          {
+            "label": "Rachel",
+            "value": "100 mph"
+          },
+          {
+            "label": "Nolo",
+            "value": "85 mph"
+          }
+        ],
+        "bullets": [
+          "Rachel weakening, moving west at 5 mph",
+          "Nolo strengthening, moving west at 7 mph",
+          "No active Atlantic storms",
+          "S. California heat wave: low 90s to mid-100s"
+        ]
+      },
+      "sources": [
+        {
+          "name": "N.H.C.",
+          "url": "https://www.nhc.noaa.gov/"
+        },
+        {
+          "name": "AccuWeather",
+          "url": "https://accuweather.com/en/weather-forecasts/october-heat-wave-to-bring-100-degree-temperatures-wildfire-risk-to-southern-california/1940877"
+        },
+        {
+          "name": "N.I.F.C.",
+          "url": "https://www.nifc.gov/nicc-files/predictive/outlooks/monthly_seasonal_outlook.pdf"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "The National Hurricane Center lists two hurricanes in the Eastern Pacific. Rachel has winds of one hundred miles an hour, down from a Category Three, and is moving west at five."
+        },
+        {
+          "who": "vex",
+          "text": "Nolo has winds of eighty-five miles an hour and is strengthening, moving west at seven. The Atlantic has no active storms."
+        },
+        {
+          "who": "joe",
+          "text": "On land, Southern California is in a long October heat wave. AccuWeather says highs run from the low nineties to the mid-one-hundreds, with low humidity and gusty winds raising fire risk. Federal forecasters also see above-normal fire potential in north Texas and western Oklahoma."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "BRAVES-DODGERS NLDS OPENS TODAY; DANIELS OUT FOR LONDON",
+      "headline": "Playoffs and football",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Baseball and football",
+        "bullets": [
+          "Braves at Dodgers, Game 1: 4 p.m. ET",
+          "Triple-digit heat forecast at Dodger Stadium",
+          "Chris Sale unavailable before Game 2",
+          "Commanders QB Daniels out; Mariota starts in London"
+        ]
+      },
+      "sources": [
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/news/braves-vs-dodgers-nlds-game-1-starting-lineups-pitching-matchup"
+        },
+        {
+          "name": "Commanders",
+          "url": "https://www.commanders.com/news/game-status-commanders-colts-2026"
+        },
+        {
+          "name": "Covers",
+          "url": "https://www.covers.com/sport/football/ncaaf/injuries"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Braves and Dodgers open the National League Division Series today at four p.m. Eastern, at Dodger Stadium. M.L.B. says triple-digit heat is forecast. Atlanta's Chris Sale is unavailable before Game Two."
+        },
+        {
+          "who": "joe",
+          "text": "In the N.F.L., the Commanders ruled out quarterback Jayden Daniels with an elbow injury for Sunday's game against the Colts in London. Coach Dan Quinn says Marcus Mariota will start."
+        },
+        {
+          "who": "vex",
+          "text": "Saturday's college football slate is full, with injury lists posted for Nebraska, Boise State and others."
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "kind": "story",
+      "strap": "FALCON HEAVY FLIES FIRST N.R.O. MISSION; CREW-13 AT STATION",
+      "headline": "Launch roundup",
+      "category": "SPACE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPACE",
+        "title": "Three launches in two days",
+        "bullets": [
+          "Crew-13 launched to the station on time Oct. 1",
+          "Transporter-18 carries NASA's SPRITE observatory",
+          "Falcon Heavy flies NROL-97, first N.R.O. Falcon Heavy",
+          "Starlink V3 Starship result not yet confirmed"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Spaceflight Now",
+          "url": "https://spaceflightnow.com/2026/10/01/live-coverage-nasa-spacex-to-launch-next-crewed-mission-to-the-international-space-station/"
+        },
+        {
+          "name": "Spaceflight Now",
+          "url": "https://spaceflightnow.com/2026/10/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "A busy few days for SpaceX. Crew Thirteen launched to the space station on time Thursday, commanded by Jessica Watkins. Transporter Eighteen flew the same day from Vandenberg with NASA's SPRITE observatory."
+        },
+        {
+          "who": "vex",
+          "text": "Friday, a Falcon Heavy launched N.R.O.L. ninety-seven, the first Falcon Heavy flight for the National Reconnaissance Office."
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "kind": "story",
+      "strap": "TESLA Q3 DELIVERIES 486,532; PARAMOUNT-WARNER CLOSE OCT. 6",
+      "headline": "Business and the box office",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "Deals and weekend film",
+        "stats": [
+          {
+            "label": "Tesla Q3 deliveries",
+            "value": "486,532"
+          },
+          {
+            "label": "Tesla Q3 production",
+            "value": "464,391"
+          }
+        ],
+        "bullets": [
+          "Tesla full Q3 results Oct. 21",
+          "Paramount-Warner Bros. close reported for Oct. 6",
+          "Box office: Verity opens, ~$27M projected",
+          "Social estimate ~$35M; unconfirmed"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Tesla",
+          "url": "https://ir.tesla.com/press-release/tesla-third-quarter-2026-production-deliveries-and-deployments"
+        },
+        {
+          "name": "Android Headlines",
+          "url": "https://androidheadlines.com/2026/10/paramounts-81-billion-warner-bros-merger-is-officially-happening-and-it-closes-october-6.html"
+        },
+        {
+          "name": "Box Office Pro",
+          "url": "https://www.boxofficepro.com/weekend-preview-verity-to-lead-another-competitive-frame/"
+        },
+        {
+          "name": "Reddit r/boxoffice",
+          "url": "https://www.reddit.com/r/boxoffice/comments/1wwc41f/looks-like-105m-fri-for-verity-giving-it-a-15m/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Tesla reports it built four hundred sixty-four thousand vehicles in the third quarter and delivered four hundred eighty-six thousand five hundred thirty-two. It deployed thirteen point seven gigawatt-hours of energy storage. Full results come October twenty-first."
+        },
+        {
+          "who": "joe",
+          "text": "The roughly eighty-one billion dollar Paramount and Warner Bros. merger is still reported to close Tuesday, October sixth."
+        },
+        {
+          "who": "vex",
+          "text": "At the box office, preview sites project about twenty-seven million dollars for the film Verity this weekend. One social-media poster guesses closer to thirty-five. That is an estimate, not a final number."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped.",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "HEARTBEAT NEWS",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 3",
+          "Sources under the screen",
+          "New show every day by noon"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Saturday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by noon. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
