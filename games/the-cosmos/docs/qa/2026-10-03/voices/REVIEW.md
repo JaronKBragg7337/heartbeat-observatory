@@ -55,7 +55,7 @@ to a named online player, 12 KB cap, rate limited, nothing stored).
 
 ## What was verified
 
-**Locally, by a machine (all pass in `node test/validate.mjs`, sections 32 and 33):**
+**Locally, by a machine (`node test/validate.mjs` on the rebased tree: 845 passed, 0 failed; voices are sections 32 and 33):**
 - The cast, hashes, speaker prefixes, every hire candidate and port worker has a distinct voice, voice gender matches body kind.
 - **Every static spoken line has a clip** (337 of 337), clips are real mp3, small.
 - Distance gain curve, connect/hold/drop hysteresis, crew channel rule.
@@ -65,7 +65,9 @@ to a named online player, 12 KB cap, rate limited, nothing stored).
   no setup; the mic dialog explains first and asks only after Allow; **holding Talk puts real audio packets into the other browser**
   (150 packets, 7.6 KB in 3 s; the listener's own analyser measures a signal) and the speaker shows in the listener's HUD; at 25 m
   the listener's gain is 0.26, at 60 m the connection drops; the same-ship rule connects them at 60 m at full volume; mute stops Talk;
-  chat off drops every connection and releases the microphone; a phone-sized touch screen holds Talk with a real touch (CDP touch
+  chat off drops every connection and releases the microphone; **the other direction works too** (the second player talks, the
+  first hears: 217 packets and a clear signal), which matters because one side is always the offerer and the other the answerer;
+  a phone-sized touch screen holds Talk with a real touch (CDP touch
   events) and audio reaches the other player.
 - NPC speech: a port worker's clip decoded in Chromium, played through a panner at 12.5 m with its x position set from the
   speaker's body, and another worker 96 m away was refused as too far.
@@ -85,6 +87,10 @@ to a named online player, 12 KB cap, rate limited, nothing stored).
   it was not repeated here.
 - The in-flight pilot lines were checked as data (every static line has a clip for Ada and Zuri and the ship), not by flying a trip
   and listening.
+
+**A real bug the two-browser test found and this fixed:** the player answering a call had made its own audio line before applying
+the other side's offer, so its microphone went to a line nobody negotiated and the offerer heard nothing from it. The answerer now
+uses the line the offer creates. Without the reverse-direction test this would have shipped with one-way voice half the time.
 
 ## Files
 

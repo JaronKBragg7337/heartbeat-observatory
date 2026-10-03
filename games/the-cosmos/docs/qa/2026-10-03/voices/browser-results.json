@@ -5,7 +5,7 @@
       "a": {
         "offers": 2,
         "answers": 0,
-        "ice": 8,
+        "ice": 9,
         "connected": 1,
         "remoteTracks": 1,
         "micStarts": 0
@@ -13,7 +13,7 @@
       "b": {
         "offers": 0,
         "answers": 2,
-        "ice": 4,
+        "ice": 12,
         "connected": 1,
         "remoteTracks": 2,
         "micStarts": 0
@@ -23,29 +23,29 @@
     "micGranted": true,
     "audioStats": {
       "first": {
-        "packets": 75,
-        "bytes": 3333,
+        "packets": 74,
+        "bytes": 3301,
         "level": 0,
         "energy": 0
       },
       "second": {
-        "packets": 150,
-        "bytes": 7665,
+        "packets": 149,
+        "bytes": 7662,
         "level": 0,
         "energy": 0
       },
-      "analyserPeak": 0.038
+      "analyserPeak": 0.467
     },
     "audioFlowing": true,
     "heardClose": 1,
     "hudShowsSpeaker": true,
     "reverseAudio": true,
     "reverseStats": {
-      "packets": 217,
-      "bytes": 12172,
-      "analyserPeak": 0.46
+      "packets": 212,
+      "bytes": 11765,
+      "analyserPeak": 0.096
     },
-    "heardMid": 0.26435503567071084,
+    "heardMid": 0.26141964610866597,
     "midPeers": 1,
     "droppedFar": true,
     "crewChannel": 1,
@@ -55,15 +55,15 @@
     "phoneLabel": "Hold to talk",
     "phoneTouchHold": true,
     "phoneStats": {
-      "packets": 286,
-      "bytes": 16270
+      "packets": 246,
+      "bytes": 13926
     },
     "npc": {
       "near": {
         "id": "arrival-guide",
-        "d": 12.479124563175999,
+        "d": 12.479124570305311,
         "log": {
-          "t": 131591,
+          "t": 122118,
           "voice": "w-adam",
           "text": "Welcome to Marineris. Depot west, market south, control tower north. Use the lift inside.",
           "mode": "clip",
@@ -77,13 +77,13 @@
       },
       "far": {
         "id": "cab-runner",
-        "d": 96.04463747933045,
+        "d": 96.04463748737774,
         "log": {
-          "t": 132776,
+          "t": 123306,
           "voice": "w-puck",
           "text": "I carry the shift notes between desks.",
           "mode": "too-far",
-          "dist": 96.04463747833792
+          "dist": 96.04463748657247
         }
       }
     },
