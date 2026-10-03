@@ -42,3 +42,9 @@ touch no shared file. The four ships that exist (`meridian`, `raider`, `courier`
   a pad size field (`PADS` in `src/port/portSpec.js`, a shared file: one line).
 * Owner-visible names in dialogue and shop text are written per ship (src/economy/dialogue.js, src/port/workerLines.js).
 * Vehicles (rovers, trucks) are a different registry: `src/vehicles/` and `server/vehicles.mjs`.
+
+## Shared builders for passenger and line ships (SH14 / SH15)
+
+`src/ships/_liner/` is a kit (the leading underscore keeps gen-registry from treating it as a ship): `hullShell.js` turns your `makeHull` table into a plated mesh with livery vertex colours, flank cut-outs for doors, a ramp hole in the stern cap, window rows and hull-name decals; `parts.js` makes the legs, ramps, engines with flame cones, lift pods and the neutral pose the game expects; `props.js` adds passenger furniture (`paxrow`, `planter`, `vending`, `departboard`, `luggage`, `kiosk`, `windowseat`, `bunkpair`, `lifeboatcradle`); `dress.js` dresses a room by its kind; `livery.js` reads F0's faction style (`linerLivery('mars')`); `pax.js` lists passenger seats from a layout. `buildExterior(layout, mats, opts)` gets `opts.decal` as a ready MeshBasicMaterial from the game and a CanvasTexture from a thumbnail page: accept both (`nameDecals` does). A ship with per-world paint (`lifeboat`) reads `opts.world`.
+Thumbnails: `node tools/render-ship-thumbs.mjs thumbs [type ...]` writes `assets/ships/<type>.webp` from `visuals.buildExterior` in headless Chromium; `shot <out> "<query>"` renders one view (exterior, or `mode=interior&x=..&z=..&look=..`) for QA.
+

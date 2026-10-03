@@ -1,0 +1,75 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ship thumb</title>
+<style>html,body{margin:0;background:#05060a;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"../lib/three.module.js","./lib/three.module.js":"../lib/three.module.js"}}</script>
+<body>
+<script type="module">
+// Renders one ship for the shipyard card (mode=exterior, the default) or one view inside it (mode=interior) for the QA sheet.
+// Used by tools/render-ship-thumbs.mjs: ?type=transport&w=960&h=540&yaw=..&pitch=..&mode=interior&x=..&y=..&z=..&look=..
+import * as THREE from 'three';
+const q = new URLSearchParams(location.search);
+const type = q.get('type') || 'transport', W = +(q.get('w') || 960), H = +(q.get('h') || 540), mode = q.get('mode') || 'exterior';
+try {
+  const { shipDef } = await import('../src/ships/registry.js');
+  const { visualsFor } = await import('../src/ships/visuals.js');
+  const { makeShipMaterials } = await import('../src/ship/shipTextures.js');
+  const { buildInterior, buildSeats } = await import('../src/ship/shipInterior.js');
+  const D = shipDef(type), V = visualsFor(type);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: false });
+  renderer.setSize(W, H); renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = +(q.get('exp') || 1.15);
+  document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(+(q.get('fov') || 32), W / H, 0.05, 4000);
+  const mats = makeShipMaterials({ tier: 'high' });
+  let decal = null;
+  try { decal = V.decalTexture(THREE, D, q.get('name') || D.name, D.registryId); } catch {}
+  const world = q.get('world') || 'mars';
+  const Lx = { ...D.layout, custom: V.custom };
+  if (mode === 'exterior') {
+    // a backdrop: deep sky, a few stars, and the home world's limb glowing along the bottom
+    const BG = { mars: ['#05040a', '#1a0d08', '#c46a3c'], moon: ['#030305', '#101217', '#8d9099'], ceres: ['#040507', '#12151a', '#9aa0a8'], earth: ['#02040a', '#0a1a30', '#4b8fd8'], callisto: ['#03040a', '#0f1220', '#7f8fb0'] }[world] || ['#05040a', '#1a0d08', '#c46a3c'];
+    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 576; const g = cv.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, 576); gr.addColorStop(0, BG[0]); gr.addColorStop(0.75, BG[1]); gr.addColorStop(1, BG[1]); g.fillStyle = gr; g.fillRect(0, 0, 1024, 576);
+    let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let i = 0; i < 260; i++) { g.fillStyle = 'rgba(255,255,255,' + (0.15 + rnd() * 0.6) + ')'; const r = rnd() < 0.05 ? 1.6 : 0.8; g.fillRect(rnd() * 1024, rnd() * 420, r, r); }
+    const lg = g.createRadialGradient(512, 1500, 880, 512, 1500, 960); lg.addColorStop(0, 'rgba(0,0,0,0)'); lg.addColorStop(0.6, BG[2] + '66'); lg.addColorStop(1, BG[2] + 'ff');
+    g.fillStyle = lg; g.fillRect(0, 440, 1024, 136);
+    g.fillStyle = BG[1]; g.beginPath(); g.ellipse(512, 1060, 1500, 640, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = BG[2] + 'aa'; g.lineWidth = 3; g.beginPath(); g.ellipse(512, 1060, 1500, 640, 0, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; scene.background = t;
+    const ext = V.buildExterior(Lx, mats, { tier: 'high', def: D, decal, world, remote: true });
+    V.applyNeutralPose(ext);
+    ext.root.traverse((o) => { if (o.name === 'exhaust') o.visible = false; });
+    scene.add(ext.root);
+    const box = new THREE.Box3(); ext.root.traverse((o) => { if (o.isMesh && o.visible && o.name !== 'exhaust' && !(o.material && o.material.blending === THREE.AdditiveBlending)) box.expandByObject(o); });
+    const c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3()), r = s.length() / 2;
+    const yaw = +(q.get('yaw') || 38) * Math.PI / 180, pitch = +(q.get('pitch') || 16) * Math.PI / 180;
+    const dist = r / Math.tan(cam.fov * Math.PI / 360) * +(q.get('zoom') || 1.02);
+    // yaw 0 = looking at the bow from the front; positive swings to starboard
+    cam.position.set(c.x + Math.sin(yaw) * Math.cos(pitch) * dist, c.y + Math.sin(pitch) * dist, c.z - Math.cos(yaw) * Math.cos(pitch) * dist);
+    cam.lookAt(c.x, c.y - s.y * 0.04, c.z);
+    scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x5a3a2a, 0.9));
+    const sun = new THREE.DirectionalLight(0xfff0dd, 3.6); sun.position.set(c.x + 60, c.y + 90, c.z - 70); sun.target.position.copy(c); scene.add(sun, sun.target);
+    const rim = new THREE.DirectionalLight(0x6fa8ff, 1.0); rim.position.set(c.x - 80, c.y + 20, c.z + 90); scene.add(rim);
+    window.__info = { size: s.toArray(), box: [box.min.toArray(), box.max.toArray()] };
+  } else {
+    scene.background = new THREE.Color(0x0a0c10);
+    const it = buildInterior(Lx, mats, { tier: 'high' }); buildSeats(Lx, mats, it); scene.add(it.root);
+    const x = +q.get('x'), y = +(q.get('y') || 1.66), z = +q.get('z'), look = +(q.get('look') || 0) * Math.PI / 180, pit = +(q.get('pitch') || 0) * Math.PI / 180;
+    cam.fov = +(q.get('fov') || 70); cam.updateProjectionMatrix();
+    cam.position.set(x, y, z);
+    // look 0 = toward the bow (-Z); positive swings to starboard (+X)
+    cam.lookAt(x + Math.sin(look) * Math.cos(pit), y + Math.sin(pit), z - Math.cos(look) * Math.cos(pit));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9)); scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.7));
+    const lights = (Lx.lights || []).filter((l) => Math.hypot(l.x - x, l.z - z) < 24).sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z)).slice(0, 10);
+    for (const l of lights) { const p = new THREE.PointLight(0xfff1e0, 22, 18, 1.4); p.position.set(l.x, l.y - 0.3, l.z); scene.add(p); }
+    const sunL = new THREE.DirectionalLight(0xffe6c8, 1.2); sunL.position.set(30, 40, -20); scene.add(sunL);
+  }
+  renderer.render(scene, cam);
+  window.__png = renderer.domElement.toDataURL('image/png');
+  window.__jpg = renderer.domElement.toDataURL('image/jpeg', 0.88);
+  window.__webp = renderer.domElement.toDataURL('image/webp', 0.86);
+  window.__done = true;
+} catch (e) { window.__error = String((e && e.stack) || e); window.__done = true; }
+</script>
