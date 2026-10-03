@@ -1,9 +1,9 @@
 // Runs only the cargo checks (hauler, vehicle bay, shops). Not part of validate: for quick iteration.
-import { fileURLToPath } from 'url'; import { dirname, join } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url'; import { dirname, join } from 'path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const THREE = await import('three');
-const { getBody } = await import(`file://${join(ROOT, 'src/world/bodies.js')}`);
-const FIELD = await import(`file://${join(ROOT, 'src/world/field.js')}`);
+const { getBody } = await import(pathToFileURL(join(ROOT, 'src/world/bodies.js')).href);
+const FIELD = await import(pathToFileURL(join(ROOT, 'src/world/field.js')).href);
 let pass = 0, fail = 0; const failures = [];
 const check = (n, c, d = '') => { if (c) { pass++; console.log(`  PASS  ${n}`); } else { fail++; failures.push(n); console.log(`  FAIL  ${n} ${d}`); } };
 const section = (s) => console.log(`\n== ${s} ==`);

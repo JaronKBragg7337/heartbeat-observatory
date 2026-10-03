@@ -512,6 +512,12 @@ export async function runCargoChecks({ check, section, THREE, mars, FIELD }) {
       // the ground under the foot of the ramp: try from just above the pad outwards (a query that starts too high above the ground is refused)
       let hit = null;
       for (const dy of [-2.0, -1.0, 0, -3.0, 1.0]) { const w = sim.flight.toWorld({ x: 0, y: dy, z: localZ }); hit = planetEnv.sample(w.x, w.y, w.z); if (hit) break; }
+      if (!hit && process.env.CARGO_DEBUG) {
+        for (let dy = -3; dy <= 2; dy += 0.5) {
+          const w = sim.flight.toWorld({ x: 0, y: dy, z: localZ }), l = Math.hypot(w.x, w.y, w.z), g = FIELD.groundBelow(world.mars, w.x * (1 + 2.5 / l), w.y * (1 + 2.5 / l), w.z * (1 + 2.5 / l), 8);
+          console.log('  diag dy', dy, 'groundBelow', g ? `${g.distance.toFixed(2)} inside ${g.startedInside}` : 'null', 'surfaceR - r', (FIELD.surfaceRadiusFast(world.mars, w.x / l, w.y / l, w.z / l) - l).toFixed(2));
+        }
+      }
       assert.ok(hit, `no ground under the foot of the ramp: pad ${JSON.stringify(hauler.pad)} ship ${JSON.stringify(sim.flight.pos)} agl ${sim.flight.agl} landed ${sim.flight.landed}`);
       v.parentShipId = null; v.frameId = 'mars'; v.pose = { x: hit.point.x, y: hit.point.y, z: hit.point.z, yaw: sim.flight.heading, pitch: 0, roll: 0, speed: 0 }; v.transfer = 0;
     };
