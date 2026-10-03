@@ -99,7 +99,9 @@ export class CrewUI {
     let near = this.crew.nearest(this.walker.worldPos) || (!this.ship.aboard && this.portPeople?.nearest(this.walker.worldPos));
     // stay with the person the button is about while they are still close (up to 4.5 m, and not once someone else is clearly closer by 0.4 m), so walking past or a second person
     // nearby does not swap or drop the target under the thumb
-    if (this.target && near !== this.target) { const d0 = this._dist(this.target); if (d0 < 4.5 && d0 <= (near ? this._dist(near) : Infinity) + 0.4) near = this.target; }
+    // an open conversation stays with the person you are talking to for as long as they are within reach (walking past someone else must not swap or close it)
+    if (this.open && this.target && this._dist(this.target) < 4.5) near = this.target;
+    else if (this.target && near !== this.target) { const d0 = this._dist(this.target); if (d0 < 4.5 && d0 <= (near ? this._dist(near) : Infinity) + 0.4) near = this.target; }
     if (this.open) {
       if (!near || near !== this.target) { this.close(); this.target = near; }
       else this._draw();

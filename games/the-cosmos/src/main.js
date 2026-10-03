@@ -57,6 +57,8 @@ import { chooseWorld } from './world-state/remoteWorld.js';
 import { MultiplayerView } from './world-state/multiplayerView.js';
 import { RemoteCrew } from './world-state/remoteCrew.js';
 import { landingField } from './world-state/fleet.js';
+import { GroundDetail } from './world/groundDetail.js';      // ROUND7: pebbles, boot prints and contact shadows at walking scale
+import { personVisible } from './crew/personVisibility.js';
 import { attachMoonPads } from './space/moonField.js';
 import { Cinema } from './cinema/cinema.js';
 import { VehicleSystem } from './vehicles/view.js';
@@ -1054,6 +1056,7 @@ engine.addUpdater((dt) => {
   if (onMars && !wasOnMars) { if (inMarsFrame) rebuildNear(true); }
   wasOnMars = onMars;
   if (owned && !filming) {
+    groundDetail.hide();
     suitGroup.visible = false;
     updateSun(walker.updateFrame());
     if (onMars) followTerrain();
@@ -1065,6 +1068,7 @@ engine.addUpdater((dt) => {
     if (inMarsFrame) { port.tick(dt, walker); rebuildNear(); }
     multiplayer?.collideShips();
     updateCamera();
+    groundDetail.update(dt);
   } else {
     // The shot owns the camera and holds the walker where the stage posed them.
     // The port still runs, so the tower car and the ships keep moving.
@@ -1263,6 +1267,26 @@ cinema.hooks.after = (dt) => {
 document.getElementById('set-cinema').addEventListener('change', (e) => cinema.setEnabled(e.target.checked));
 document.getElementById('set-letterbox').addEventListener('change', (e) => cinema.setLetterbox(e.target.checked));
 
+// ROUND7: what is on the ground round your boots. Built after the port, the people and the space system exist.
+let padField = null;
+const groundDetail = new GroundDetail({
+  engine, walker, tier,
+  frameId: () => space.frameId,
+  radiusM: () => (space.frameId === 'mars' ? 3389500 : (space.activeMoon?.body?.radiusMean || 11000)),
+  up: (p) => { const r = Math.hypot(p.x, p.y, p.z) || 1; return { x: p.x / r, y: p.y / r, z: p.z / r }; },
+  thirdPerson: () => view.mode === 'third' && !ship.aboard,
+  // pebbles stay off port concrete, pads (and the port's graded apron), and out of the ship
+  allow: (w) => { if (space.frameId !== 'mars') return true; if (portSite.weight(w.x, w.y, w.z) > 0) return false; if (world.remote && world.snapshot?.pads) { padField = padField || landingField(portSite, () => world.snapshot.pads); if (padField.weight(w.x, w.y, w.z) > 0) return false; } return true; },
+  allowPrint: (w) => { if (space.frameId !== 'mars') return true; const l = portSite.toLocal(w); return !(l.y > 1.2 && Math.abs(l.x + 60) < 10 && Math.abs(l.z + 39) < 10); },   // not up in the tower's cab
+  people: () => {
+    const out = [], cam = walker.worldPos;
+    if (space.frameId !== 'mars') return out;
+    for (const m of portPeople.members) { if (!personVisible(m.person)) continue; const g = m.person.group.position; if (m.pose === 'seated') continue; const w = portSite.toWorld(g.x, g.y, g.z); if (Math.hypot(w.x - cam.x, w.y - cam.y, w.z - cam.z) < 30) out.push(w); }
+    if (crew && crew.members) for (const m of crew.members.values()) { if (m.place !== 'ground' || !m.person || !personVisible(m.person)) continue; const w = crew.worldPosOf(m); if (w && Math.hypot(w.x - cam.x, w.y - cam.y, w.z - cam.z) < 30) out.push({ x: w.x, y: w.y, z: w.z }); }
+    return out;
+  },
+});
+
 engine.start();
 
 // Debug handle. This is the hook automated verification uses to drive frames
@@ -1281,6 +1305,7 @@ if (devMode) window.cosmos = {
   at: (...a) => ship.debugAt(...a), viewFrom: (...a) => ship.debugViewFrom(...a), desktop, touch,
   ship, shipUI, engine, body, walker, patch, registry, debugLayer, view, people, cinema,
   get crew() { return crew; }, get crewUI() { return crewUI; }, playerPerson, suitGroup,
+  groundDetail,
   report: () => debugLayer.reportAt(walker),
   edits, carried, doDig, doDump, doDumpAll, digger, digTarget, dumpPlan, terrain, TOOLS, setTool, tool,
   nearPatch, farPatches, rebuildNear, freeCam, horizonView,

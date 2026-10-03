@@ -1,0 +1,32 @@
+{
+ "openGround": {
+  "n": 156,
+  "frame": "mars",
+  "vis": true,
+  "need": 0
+ },
+ "worstStoneOffsetM": 0.012465348653495311,
+ "stonesStable": true,
+ "onPort": {
+  "bad": 0,
+  "n": 0
+ },
+ "prints": [
+  1,
+  14
+ ],
+ "printsSaved": 14,
+ "drawCalls": {
+  "on": 86,
+  "off": 84
+ },
+ "updateMs": 0.01,
+ "pebbleTriangles": 4600,
+ "blobsNearPeople": 6,
+ "phobos": {
+  "frame": "phobos",
+  "stones": 147,
+  "prints": 24,
+  "followActive": true
+ }
+}

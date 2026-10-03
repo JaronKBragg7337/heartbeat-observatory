@@ -556,12 +556,15 @@ export class Authority {
     // Client-predicted poses have speed/cabin bounds. Swept player collision is
     // still client-side; station transitions use the shared ShipWalker rules.
     const elapsed=Math.max(.1,Math.min(3,(this.now()-(p.poseAt||this.now()-1000))/1000));
-    if(aboard){if(distance(r.sw,p.pose.sw)>elapsed*12+2)throw Error('Walk to that place aboard.');
+    // ROUND7: a pose further than a person can have walked is pulled back to the furthest reachable point (the client reconciles to it), never refused:
+    // a refusal left the server pose behind for good ("Walk to that place." on the phone every few seconds until the page was reloaded).
+    const reach=elapsed*12+2;let pose=r;
+    if(aboard){const d=distance(r.sw,p.pose.sw);if(d>reach){const k=reach/d,o=p.pose.sw;pose={...r,sw:{...r.sw,x:o.x+(r.sw.x-o.x)*k,y:o.y+(r.sw.y-o.y)*k,z:o.z+(r.sw.z-o.z)*k}};}
       const B=this.sims.get(ship.id).def.dock.bounds;
-      if(Math.abs(r.sw.x)>B.x||Math.abs(r.sw.z)>B.z||r.sw.y<B.y0||r.sw.y>B.y1)throw Error('Outside the cabin.');
-      if(r.seat!==p.pose.seat)throw Error('Use the seat request.');
-    }else if(distance(r.worldPos,p.pose.worldPos)>elapsed*12+2)throw Error('Walk to that place.');
-    p.pose={...structuredClone(r),seat:p.pose.seat};p.poseAt=this.now();if(Number.isSafeInteger(a.seq))p.poseSeq=a.seq;
+      if(Math.abs(pose.sw.x)>B.x||Math.abs(pose.sw.z)>B.z||pose.sw.y<B.y0||pose.sw.y>B.y1)throw Error('Outside the cabin.');
+      if(pose.seat!==p.pose.seat)throw Error('Use the seat request.');
+    }else{const d=distance(r.worldPos,p.pose.worldPos);if(d>reach){const k=reach/d,o=p.pose.worldPos;pose={...r,worldPos:{x:o.x+(r.worldPos.x-o.x)*k,y:o.y+(r.worldPos.y-o.y)*k,z:o.z+(r.worldPos.z-o.z)*k}};}}
+    p.pose={...structuredClone(pose),seat:p.pose.seat};p.poseAt=this.now();if(Number.isSafeInteger(a.seq))p.poseSeq=a.seq;
     if(aboard)this.sims.get(ship.id).flight.toWorld(p.pose.sw,p.pose.worldPos);
     if(a.controls&&['pilot','captain'].includes(p.pose.seat)){
       // FREEFLIGHT: a free-flight stick is intent only: finite numbers clamped to -1..1 (thrust 0..1). The physics, the fuel and the pose are the authority's.

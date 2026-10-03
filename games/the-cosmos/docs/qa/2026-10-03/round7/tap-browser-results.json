@@ -1,0 +1,35 @@
+{
+ "talkFree": {
+  "ok": 20,
+  "N": 20,
+  "noBtn": 0,
+  "lost": []
+ },
+ "talkHeld": {
+  "ok": 20,
+  "N": 20,
+  "noBtn": 0,
+  "lost": []
+ },
+ "staleTarget": {
+  "id": "depot-clerk",
+  "near": false,
+  "tapped": true,
+  "open": true
+ },
+ "dig": {
+  "free": {
+   "ok": 20,
+   "N": 20,
+   "noBtn": 0,
+   "lost": []
+  },
+  "held": {
+   "ok": 20,
+   "N": 20,
+   "noBtn": 0,
+   "lost": []
+  }
+ },
+ "errors": []
+}

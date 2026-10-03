@@ -60,7 +60,8 @@ try {
       const tapped = await tapEl('#crew-talk'); if (tapped) await page.evaluate(() => window.__L('btnrect ' + JSON.stringify(document.getElementById('crew-talk').getBoundingClientRect())));
       let opened = false; for (let k = 0; k < 14 && !opened; k++) { await sleep(60); opened = await page.evaluate(() => cosmos.crewUI.open); }
       if (held) await stick(false);
-      if (tapped && opened) ok++; else lost.push({ i, tapped, opened, ev: await page.evaluate(() => window.__ev.slice()), btn: await page.evaluate(() => { const b = document.getElementById('crew-talk'); const r = b.getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { disp: getComputedStyle(b).display, top: e && (e.id || e.tagName), cls: b.className }; }) });
+      if (!tapped) { noBtn++; continue; }          // the button was not on screen at that moment (the worker was out of reach): nothing to tap
+      if (opened) ok++; else lost.push({ i, tapped, opened, ev: await page.evaluate(() => window.__ev.slice()), btn: await page.evaluate(() => { const b = document.getElementById('crew-talk'); const r = b.getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { disp: getComputedStyle(b).display, top: e && (e.id || e.tagName), cls: b.className }; }) });
     }
     return { ok, N, noBtn, lost };
   };
@@ -81,10 +82,10 @@ try {
 
   // ---------------- DIG
   let digShift = 0;
-  const toDig = async () => { digShift += 2.5; const at = await page.evaluate((sh) => [window.__dig[0] + sh, window.__dig[1]], digShift); await placeServer(...at); await page.evaluate((at) => { cosmos.walker.velocity = { x: 0, y: 0, z: 0 }; cosmos.walker.pitch = -0.6; const t = cosmos.port.site.toWorld(at[0], .3, at[1]); const w = cosmos.walker; w.worldPos.x = t.x; w.worldPos.y = t.y; w.worldPos.z = t.z; }, at); };
+  const toDig = async () => { digShift++; const at = await page.evaluate((n) => [window.__dig[0] - 2.5 * (n % 8), window.__dig[1] + 2.5 * Math.floor(n / 8)], digShift); await placeServer(...at); await page.evaluate((at) => { cosmos.walker.velocity = { x: 0, y: 0, z: 0 }; cosmos.walker.pitch = -0.6; const t = cosmos.port.site.toWorld(at[0], .3, at[1]); const w = cosmos.walker; w.worldPos.x = t.x; w.worldPos.y = t.y; w.worldPos.z = t.z; }, at); };
   results.dig = {};
   // find open ground away from the ship, the lift and the people where the button reads Dig
-  window_dig: for (const [x, z] of [[-110, 120], [100, 130], [-150, 40], [0, 160], [180, 60], [-60, -120], [60, -150]]) {
+  window_dig: for (const [x, z] of [[-140, 60], [-110, 120], [100, 130], [-150, 40], [0, 160], [180, 60], [-60, -120], [60, -150]]) {
     await placeServer(x, z); await page.evaluate(([x, z]) => { window.__dig = [x, z]; const t = cosmos.port.site.toWorld(x, .3, z); const w = cosmos.walker; w.worldPos.x = t.x; w.worldPos.y = t.y; w.worldPos.z = t.z; w.velocity = { x: 0, y: 0, z: 0 }; w.pitch = -0.6; }, [x, z]);
     await sleep(1200);
     const lbl = await page.evaluate(() => { const b = document.getElementById('btn-action'); return getComputedStyle(b).display !== 'none' ? b.textContent : ''; });
@@ -97,11 +98,11 @@ try {
       await toDig(); await sleep(500); await page.evaluate(() => { cosmos.carried.length = 0; });
       const vis = await page.waitForFunction(() => { const b = document.getElementById('btn-action'); return getComputedStyle(b).display !== 'none' && /Dig/.test(b.textContent); }, null, { timeout: 4000 }).then(() => true, () => false);
       if (!vis) { noBtn++; lost.push({ i, why: 'no Dig button: ' + await page.evaluate(() => document.getElementById('btn-action').textContent + '|' + getComputedStyle(document.getElementById('btn-action')).display + '|' + !!cosmos.digTarget()) }); await toDig(); await sleep(300); continue; }
-      const before = await page.evaluate(() => cosmos.carried.length);
+      const before = await page.evaluate(() => cosmos.digger.carriedMass());
       if (held) await stick(true);
       await sleep(60 + Math.random() * 300);
       const tapped = await tapEl('#btn-action');
-      let dug = false; for (let k = 0; k < 20 && !dug; k++) { await sleep(60); dug = await page.evaluate((b) => cosmos.carried.length > b, before); }
+      let dug = false; for (let k = 0; k < 20 && !dug; k++) { await sleep(60); dug = await page.evaluate((b) => cosmos.digger.carriedMass() > b + 0.01, before); }
       if (held) await stick(false);
       if (tapped && dug) ok++; else lost.push({ i, tapped, dug, label: await page.evaluate(() => document.getElementById('btn-action').textContent) });
     }

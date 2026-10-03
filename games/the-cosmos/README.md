@@ -10,6 +10,8 @@ Before any publish: node test/phone-check.mjs must pass.
 
 **Cargo (Oct 3):** the Drayman hauler (a ship class that is data, bought at the shipyard kiosk), rovers that drive up its wide ramp and lock into berths for flight, and player shops at Marineris Port. See [docs/WORLD-STATE.md](docs/WORLD-STATE.md) ("Cargo") and [the QA review](docs/qa/2026-10-03/cargo/REVIEW.md). Tests: `test/cargo-checks.mjs` (in validate) and `node test/cargo-browser.mjs` (two iPhone-profile WebKit phones).
 
+**Round 7 (Oct 3):** the ground up close has real pebbles, boot prints that stay, and contact shadows (`src/world/groundDetail.js`); the port's side kerbs have walkable openings; the pilot strip, status box and nav sheet stack from the real status-box bottom (free flight too); one open candidate per crew post; the trip estimate no longer depends on the exact height of the standoff point; moon craters no longer end in cliffs at cell walls. See [the round 7 review](docs/qa/2026-10-03/round7/REVIEW.md). Tests: `node test/tap-browser.mjs`, `node test/ground-browser.mjs`, `test/round7-checks.mjs` (in validate).
+
 The opening is implemented for new players. Returning players resume their saved world; unfinished openings resume their own progress. Shared multiplayer keeps each opening private and joins players into the shared world when it finishes. Desktop and phone controls use the same progression rules. See [world ownership and persistence](docs/WORLD-STATE.md) and [opening QA](docs/qa/2026-10-02/opening/REVIEW.md). This worktree is awaiting publication.
 
 ---

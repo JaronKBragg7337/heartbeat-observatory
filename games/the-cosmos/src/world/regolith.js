@@ -58,8 +58,13 @@ float regField(vec3 p, float near, out float pebble) {
   float broad = regN(p * 0.05, 18.0) * 0.6 + mix(0.5, regN(p * 0.2, 72.0), fineK) * 0.4;       // 20 m / 5 m dusty vs darker patches
   float grit  = regN(p * 2.0, 720.0) * 0.6 + regN(p * 6.0, 2160.0) * 0.4;     // 50 cm / 17 cm grit
   float peb   = regN(p * 3.0, 1080.0);                                          // pebbles: the peaks of a 33 cm field
-  pebble = smoothstep(0.78, 0.86, peb) * near * uRegPebble;                                  // fine detail fades with distance (no far speckle)
-  return broad * 0.55 + mix(0.5, grit, near) * 0.35 + pebble * 0.6;
+  float nearP = 1.0 - smoothstep(10.0, 60.0, length(vViewPosition));      // ROUND7: the 33 cm pebble speckle aliased into black sparkle from 30 m out; it now fades 10-60 m (the real stones below take over close in)
+  pebble = smoothstep(0.78, 0.86, peb) * nearP * uRegPebble;                                  // fine detail fades with distance (no far speckle)
+  // ROUND7 micro grain, only within a few metres of the eye (a walking-height shot looks at ground a metre or two away): 4 cm crumbs and 1.4 cm grain.
+  // Each octave is gone before a pixel (about 1.5 cm at 8 m on a phone) gets as big as half its feature, or it moirés into rings.
+  float dEye = length(vViewPosition), mk1 = 1.0 - smoothstep(1.2, 4.5, dEye), mk2 = 1.0 - smoothstep(0.5, 1.8, dEye), micro = 0.0;
+  if (mk1 > 0.0) { micro = (regN(p * 25.0, 9000.0) - 0.5) * 0.34 * mk1; if (mk2 > 0.0) micro += (regN(p * 70.0, 25200.0) - 0.5) * 0.26 * mk2; }
+  return broad * 0.55 + mix(0.5, grit, near) * 0.35 + pebble * 0.6 + micro;
 }
 float regHeight = 0.0;
 vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) {   // three.js perturbNormalArb
@@ -103,7 +108,7 @@ ${flat ? `{
 }` : ''}
 normal = regPerturb(-vViewPosition, normal, vec2(dFdx(regHeight), dFdy(regHeight)) * uRegBump, faceDirection);`);
   };
-  material.customProgramCacheKey = () => (far ? (phobos ? 'regolith-v3-phobos-far' : 'regolith-v3-far') : opts.moon ? `regolith-v5-moon-${phobos ? 'p' : 'd'}${flat ? '-flat' : ''}` : phobos ? (flat ? 'regolith-v5-phobos-flat' : 'regolith-v3-phobos') : (opts.world ? 'regolith-v2-world' : 'regolith-v2'));
+  material.customProgramCacheKey = () => (far ? (phobos ? 'regolith-v3-phobos-far' : 'regolith-v3-far') : opts.moon ? `regolith-v7-moon-${phobos ? 'p' : 'd'}${flat ? '-flat' : ''}` : phobos ? (flat ? 'regolith-v7-phobos-flat' : 'regolith-v5-phobos') : (opts.world ? 'regolith-v4-world' : 'regolith-v4'));
   material.needsUpdate = true;
   return uniforms;
 }

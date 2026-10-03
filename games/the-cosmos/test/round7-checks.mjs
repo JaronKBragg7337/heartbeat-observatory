@@ -33,6 +33,20 @@ export async function runRound7Checks({ check, section }) {
     const spots = Object.values(w.state.pool).filter((c) => !c.shipId && !c.retired).map((c) => `${c.position.x.toFixed(1)},${c.position.z.toFixed(1)}`);
     check('no two open candidates share a spot', new Set(spots).size === spots.length, spots.join(' | '));
 
+    // ---- a pose further than a person can walk is pulled back, never refused (a refusal left the server behind: "Walk to that place." for ever)
+    {
+      const me = await w.join('p'.repeat(48), 'Poser'); let ok = true, msg = '';
+      await w.enqueue(() => { const p = w.state.players[me.id]; p.aboardShipId = null; p.pose.aboard = false; p.pose.seat = null; p.pose.worldPos = w.site.toWorld(-100, 0.02, 100); p.poseAt = w.now() - 1000; });
+      const p0 = structuredClone(w.state.players[me.id].pose.worldPos);
+      const far = structuredClone(w.state.players[me.id].pose); far.worldPos = w.site.toWorld(-100, 0.02, 400); far.aboard = false;       // 300 m in a second
+      const r1 = await w.enqueue(() => { try { w.updatePose(w.state.players[me.id], { pose: far }); return null; } catch (e) { return e.message; } });
+      const moved1 = Math.hypot(...['x', 'y', 'z'].map((k) => w.state.players[me.id].pose.worldPos[k] - p0[k]));
+      check('a pose 300 m from the last one in a second is not refused: the server takes the furthest point a person could reach (about 14 m) and the player carries on from there', r1 === null && moved1 > 5 && moved1 < 20, `${r1} moved ${moved1.toFixed(1)}`);
+      let last = moved1; for (let i = 0; i < 70; i++) { await w.enqueue(() => { w.state.players[me.id].poseAt = w.now() - 300; try { w.updatePose(w.state.players[me.id], { pose: far }); } catch (e) { ok = false; msg = e.message; } }); }
+      const total = Math.hypot(...['x', 'y', 'z'].map((k) => w.state.players[me.id].pose.worldPos[k] - far.worldPos[k]));
+      check('and keeps catching up on every later pose until it is where the player is (never an error)', ok && total < 1, `${msg} ${total.toFixed(1)} m short`);
+    }
+
     // ---- storage: the world is flagged, then the database comes back with nobody doing anything: it must clear on its own (the next 2 s checkpoint)
     failing = true;
     const t0 = Date.now(); let flagged = false;
