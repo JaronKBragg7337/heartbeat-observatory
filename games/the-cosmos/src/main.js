@@ -53,6 +53,7 @@ import { RemoteCrew } from './world-state/remoteCrew.js';
 import { landingField } from './world-state/fleet.js';
 import { attachMoonPads } from './space/moonField.js';
 import { Cinema } from './cinema/cinema.js';
+import { VehicleSystem } from './vehicles/view.js';
 import { Opening } from './opening/opening.js';
 import { freshOpening, needsOpening } from './opening/state.js';
 import { buildShowcase } from './port/showcase.js';
@@ -85,6 +86,7 @@ if(world.remote){attachGrades([portSite,landingField(portSite,()=>world.snapshot
   attachMoonPads(()=>{const out=[];for(const s of Object.values(world.snapshot?.ships||{})){if(!s.moonPads)continue;
     for(const id of ['phobos','deimos'])if(s.moonPads[id])out.push(s.moonPads[id]);}return out;});}
 let multiplayer = null;
+let vehicles = null;
 
 // ---------------------------------------------------------------------------
 // World
@@ -832,15 +834,18 @@ let actionFlash = 0;
 // has to drop.
 let tapAction = 'dig';
 
-let shipPress = false, spacePress = false;
-/** On a moon: take a core sample, stow the hopper. */
-function spaceAction() { return space.onMoon && !ship.aboard ? space.jobs.contextAction(!!(ship.ready && ship.contextAction())) : null; }
+let shipPress = false, spacePress = false, vehiclePress = false;
+/** On a moon: take a core sample, stow the hopper. A rover prompt wins, so this stays quiet while one is up. */
+function spaceAction() { return space.onMoon && !ship.aboard && !vehicles?.contextAction() ? space.jobs.contextAction(!!(ship.ready && ship.contextAction())) : null; }
 function refreshAction() {
+  const riding = !!vehicles?.seated();
   const climbing=!!walker._climb;
-  climbBtn.style.display=!ship.aboard&&(climbing||walker.climbTarget())?'block':'none';
+  climbBtn.style.display=!ship.aboard&&!riding&&(climbing||walker.climbTarget())?'block':'none';
   climbBtn.textContent=climbing?'Climbing…':'Climb (C)';climbBtn.disabled=climbing;
-  dropAllBtn.style.display = carried.length && !(ship.ready && ship.aboard) ? 'block' : 'none';
+  dropAllBtn.style.display = carried.length && !(ship.ready && ship.aboard) && !riding ? 'block' : 'none';
   if (actionFlash > 0) return;
+  const va = vehicles?.contextAction();
+  if (va) { tapAction = 'vehicle'; actionBtn.style.display = 'block'; actionBtn.textContent = va.label; toolBtn.style.display = 'none'; return; }
   const sa = spaceAction();
   if (sa) { tapAction = 'space'; actionBtn.style.display = 'block'; actionBtn.textContent = sa.label; toolBtn.style.display = 'none'; return; }
   if (ship.ready) {
@@ -886,6 +891,7 @@ function stopHold() {
 }
 actionBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault(); e.stopPropagation();
+  if (tapAction === 'vehicle') { vehiclePress = true; return; }
   if (tapAction === 'ship') { shipPress = true; return; }
   if (tapAction === 'space') { spacePress = true; return; }
   if (tapAction === 'lift') { liftPress = true; return; }
@@ -901,6 +907,13 @@ actionBtn.addEventListener('pointerdown', (e) => {
 const endPress = (e) => {
   e.preventDefault(); e.stopPropagation();
   if(liftPress) {liftPress=false;port.elevatorAction(walker)?.run();hudAccum=1;return;}
+  if (vehiclePress) {
+    vehiclePress = false;
+    const a = vehicles?.contextAction();
+    if (a) { const r = a.run(); if (r && r.then) r.then((x) => { if (x && x.msg) flash(x.msg); }); else if (r && r.msg) flash(r.msg); }
+    hudAccum = 1;
+    return;
+  }
   if (spacePress) { spacePress = false; const sa = spaceAction(); if (sa) { const r = sa.run(); flash(r && r.msg ? r.msg : sa.label); } hudAccum = 1; return; }
   if (shipPress) {
     shipPress = false;
@@ -915,8 +928,8 @@ const endPress = (e) => {
   } else stopHold();                                // hold already fired
 };
 actionBtn.addEventListener('pointerup', endPress);
-actionBtn.addEventListener('pointercancel', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;});
-actionBtn.addEventListener('pointerleave', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;});
+actionBtn.addEventListener('pointercancel', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
+actionBtn.addEventListener('pointerleave', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
 
 // Settings, including the DEV toggle that turns on the measurement layer.
 document.getElementById('btn-settings').addEventListener('click', () => {
@@ -1004,13 +1017,17 @@ engine.addUpdater((dt) => {
 
   // The ship gets first refusal. Aboard, it owns the body and the camera; outside
   // it still flies itself (hover, ramps) and checks whether you are boarding.
+  // A rover prepares first, so the hull does not shove someone who is already seated,
+  // then takes the camera once the ship has stepped.
   let owned = false;
+  vehicles?.prepare();
   if (ship.ready) {
     owned = ship.frame(dt, {
       look: { dx: lookDX, dy: lookDY }, ...input, keys: heldKeys,
       fire: shipUI ? shipUI.fire : false,
     });
   }
+  if (vehicles?.frame(dt, { look: { dx: lookDX, dy: lookDY }, ...input })) owned = true;
 
   // Space (src/space/): Mars's ground meshes and the port are only kept up while Mars's ground is near; on a moon the moon's own
   // tiers are kept by space.late(). Coming back to Mars rebuilds the tiers under the player once.
@@ -1089,17 +1106,22 @@ window.addEventListener('keydown', (e) => {
     document.getElementById('set-view').value = view.mode;
   }
   if (e.code === 'KeyE') {
-    const sa = spaceAction();
-    if (sa && !e.repeat) { const r = sa.run(); flash(r && r.msg ? r.msg : sa.label); hudAccum = 1; }
-    else if (sa) { /* held: one action per press */ }
-    else if (ship.ready && (ship.aboard || ship.contextAction())) { ship.interact(); hudAccum = 1; }
-    else if(port.elevatorAction(walker)) {if(!e.repeat)port.elevatorAction(walker).run();hudAccum=1;}
-    else flash(doDig().msg);
+    const va = vehicles?.contextAction();
+    if (va && !e.repeat) { const r = va.run(); if (r && r.then) r.then((x) => { if (x && x.msg) flash(x.msg); }); else if (r && r.msg) flash(r.msg); hudAccum = 1; }
+    else if (va) { /* held: one action per press */ }
+    else {
+      const sa = spaceAction();
+      if (sa && !e.repeat) { const r = sa.run(); flash(r && r.msg ? r.msg : sa.label); hudAccum = 1; }
+      else if (sa) { /* held: one action per press */ }
+      else if (ship.ready && (ship.aboard || ship.contextAction())) { ship.interact(); hudAccum = 1; }
+      else if(port.elevatorAction(walker)) {if(!e.repeat)port.elevatorAction(walker).run();hudAccum=1;}
+      else flash(doDig().msg);
+    }
   }
-  if(e.code==='KeyC'&&!e.repeat&&!ship.aboard)flash(walker.requestClimb().msg);
-  if (e.code === 'KeyQ' && !(ship.ready && ship.aboard)) flash(doDump().msg);
-  if (e.code === 'KeyR' && !e.repeat && !(ship.ready && ship.aboard)) { flash(doDumpAll().msg); hudAccum = 1; }
-  if (!(ship.ready && ship.aboard) && /^Digit[123]$/.test(e.code)) { setTool(Number(e.code.slice(5)) - 1); document.getElementById('set-tool').value = String(digger.toolIdx); flash(tool().name); }
+  if(e.code==='KeyC'&&!e.repeat&&!ship.aboard&&!vehicles?.seated())flash(walker.requestClimb().msg);
+  if (e.code === 'KeyQ' && !(ship.ready && ship.aboard) && !vehicles?.seated()) flash(doDump().msg);
+  if (e.code === 'KeyR' && !e.repeat && !(ship.ready && ship.aboard) && !vehicles?.seated()) { flash(doDumpAll().msg); hudAccum = 1; }
+  if (!(ship.ready && ship.aboard) && !vehicles?.seated() && /^Digit[123]$/.test(e.code)) { setTool(Number(e.code.slice(5)) - 1); document.getElementById('set-tool').value = String(digger.toolIdx); flash(tool().name); }
   if (e.code === 'KeyN' && !e.repeat && ship.ready && ship.seat && space.ui && ['nav', 'pilot', 'captain', 'comms'].includes(ship.seat.id)) space.ui.toggle('course');
   if (params.get('dev') === '1' && e.code === 'KeyG') {
     const box = document.getElementById('set-dev');
@@ -1127,6 +1149,11 @@ if(!world.remote){
   space.ledger.credits=world.state.economy.marks/4;
 }
 if(world.remote) multiplayer = new MultiplayerView(world,{engine,ship,walker,edits,digger,site:portSite,space,people,bridge:worldBridge,rebuild:rebuildNear,port});
+if (ship.ready) {
+  vehicles = new VehicleSystem({ engine, ship, walker, world, space, site: portSite, tier });
+  vehicles.multiplayer = multiplayer;
+  if (multiplayer) multiplayer.vehicles = vehicles;
+}
 opening=new Opening({engine,world,ship,people,port,tier,onFinish:(pose)=>{
   const pad=world.remote?world.snapshot.ships[world.snapshot.players[world.playerId].shipId].pad:{x:0,z:0};
   const arrival=pose?.worldPos||portSite.toWorld(pad.x-7,.02,pad.z+20);
@@ -1219,7 +1246,7 @@ engine.start();
 // without guessing from pixels.
 if (devMode) window.cosmos = {
   opening,
-  multiplayer,
+  multiplayer, vehicles,
   world, worldBridge, economyUI,
   port, portTour, portPeople, space,
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,

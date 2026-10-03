@@ -656,6 +656,10 @@ const {runOpeningChecks,runOpeningBrowserChecks}=await import('./opening-checks.
 await runOpeningChecks({check,section});
 await runOpeningBrowserChecks({check,section});
 
+// 31. Survey rovers: the hold, the depot, and two clients watching one drive.
+const { runRoverChecks } = await import('./rover-checks.mjs');
+await runRoverChecks({ check, section, THREE });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));

@@ -30,7 +30,7 @@ export class MultiplayerView {
   sendPose(){const p=this.world.snapshot.players[this.world.playerId];const pose=playerPose(this.walker,this.ship);
     // Seat/boarding transitions require an action; pose packets only describe predicted movement.
     pose.aboard=!!p.aboardShipId;pose.seat=p.pose.seat;
-    this.world.sendPose(pose,this.ship.flight.controls);}
+    this.world.sendPose(pose,this.ship.flight.controls,this.vehicles?.controlPacket?.()||null);}
   request(a){this.sendPose();return this.world.request(a).then(r=>{if(r.ok&&r.msg&&r.msg!=='Saved to the shared world.')this.ship.note(r.msg);if(!r.ok)this.reconcilePlayer=true;return r;});}
   installControls(){const ship=this.ship,space=this.space;
     const outside=ship._outsideFrame.bind(ship);
@@ -226,7 +226,7 @@ export class MultiplayerView {
       else{const geo=cartesianToGeodetic(this.walker.body,pos.x,pos.y,pos.z),frame=localFrame(geo.lat,geo.lon),up=new THREE.Vector3().copy(frame.up),
         forward=new THREE.Vector3().copy(frame.north).multiplyScalar(Math.cos(rendered?.yaw??p.pose.yaw)).addScaledVector(new THREE.Vector3().copy(frame.east),Math.sin(rendered?.yaw??p.pose.yaw)),right=new THREE.Vector3().crossVectors(up,forward).normalize();
         q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,forward));}
-      this.placeBody(b,pos,q,p.frameId,p.pose.seat?'Sit':p.animation||'Idle',dt);}
+      this.placeBody(b,pos,q,p.frameId,(p.pose.seat||p.vehicleSeat)?'Sit':p.animation||'Idle',dt);}
     for(const c of Object.values(s.pool)){if(c.retired||c.status==='reserved')continue;seen.add(c.id);const ship0=c.shipId?s.ships[c.shipId]:null,contract0=ship0?.crew.find(m=>m.id===c.id);
       const b=this.body(c.id,c.personId,c.name,c.look||contract0?.look);
       const ship=c.shipId?{...s.ships[c.shipId],pose:this.shipPose(s.ships[c.shipId])}:null,contract=ship?.crew.find(m=>m.id===c.id);
@@ -276,7 +276,7 @@ export class MultiplayerView {
     text('Your crew: '+(owned.crew.map(c=>`${c.name} (${c.status}${c.unpaid?', unpaid':''})`).join(', ')||'none'));
     this.panel.scrollTop=scroll;
   }
-  tick(dt){this.smoothActiveShip();if(this.correction&&!this.boardPending){const pos=this.ship.aboard?this.ship.sw:this.walker.worldPos;const candidate={x:pos.x,y:pos.y,z:pos.z},delta={...this.correction};reconcile(candidate,delta,dt);if(!this.ship.aboard||this.ship.sw.canStand(candidate.x,candidate.y,candidate.z)){Object.assign(pos,candidate);this.correction=delta;}}this.accum+=dt;this.updateBodies(dt);this.button.style.bottom=this.ship.aboard?'190px':'120px';if(this.accum>=.1){this.accum=0;this.sendPose();
+  tick(dt){this.smoothActiveShip();if(this.correction&&!this.boardPending&&!this.vehicles?.seated?.()){const pos=this.ship.aboard?this.ship.sw:this.walker.worldPos;const candidate={x:pos.x,y:pos.y,z:pos.z},delta={...this.correction};reconcile(candidate,delta,dt);if(!this.ship.aboard||this.ship.sw.canStand(candidate.x,candidate.y,candidate.z)){Object.assign(pos,candidate);this.correction=delta;}}this.accum+=dt;this.updateBodies(dt);this.button.style.bottom=this.ship.aboard?'190px':'120px';if(this.accum>=.1){this.accum=0;this.sendPose();
     if(this.ship.remoteFireWanted&&this.ship.def.seatGun[this.ship.seat?.id]){const direction=new THREE.Vector3(0,0,-1).applyQuaternion(this.engine.camera.quaternion);
       this.world.request({type:'fire-gun',direction:{x:direction.x,y:direction.y,z:direction.z}});}}}
 }

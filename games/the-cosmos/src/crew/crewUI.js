@@ -203,7 +203,7 @@ export class CrewUI {
       case 'worker-reply': this.view=m.id.startsWith('trader')||m.id==='depot-clerk'?'trade':'main';break;
       case 'worker-trade': this.view='trade';break;
       case 'worker-back': this.view='main';break;
-      case 'purchase': case 'sale': case 'regolith-sale': case 'quest-accept':
+      case 'purchase': case 'sale': case 'regolith-sale': case 'quest-accept': case 'buy-vehicle':
         r=c.world?.dispatch({type:a,trader:m.id,good:b.dataset.good,id:b.dataset.quest});
         if(r)this.reply=r.msg;break;
       case 'comms-report': {

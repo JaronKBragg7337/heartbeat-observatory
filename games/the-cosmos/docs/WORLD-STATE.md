@@ -44,6 +44,8 @@ Offline saves follow the same eligibility and progression rules. Solo and shared
 
 Authority schema 2 contains players, owned ships/pads, contracts/pool, accounts, quests, market, damage, frame-specific terrain metadata and receipts. Aboard positions are ship-local metres; outside positions include their body frame. Trips retain transit state, phase/progress, attitude and velocity. Combat retains drones, shots, bolts and cooldowns. Crew boarding routes and elevator state are checkpointed too.
 
+Survey rovers live in that same JSON record under `state.vehicles` (owner, pose, passengers, parent ship). They are not a SQL table and they do not bump the schema: a save from before them loads with `vehicles` defaulting to `{}`, and each Meridian gains one hold rover (`hold-<ship id>`) on load. The port depot sells more at 2,400 marks from the flagship account, capped at three purchased rovers besides the one in the hold. Drive input rides the pose message as a one-second lease, the same way a helm does. `board`, `seat`, `drive` and `leave` in `src/vehicles/api.js` take type `survey`. That is the opening's vehicle contract. The opening scripts are not this rover's owner.
+
 `server/storage.mjs` exposes the same load/save interface for a local atomic file and Supabase. `server/migration.sql` supplies world snapshot storage plus normalized players, ships, pads, contracts, accounts, quests, damage, terrain bricks and append-only action receipts. `cosmos_save` takes an advisory world lock, checks the expected revision, and writes the snapshot, projections, changed bricks and receipts in one Postgres transaction. Seats and ownership have uniqueness constraints. Tables and RPC execution are restricted to `service_role`; browsers never receive its key.
 
 Terrain saves contain sparse uint16 offsets, float32 density and material bytes. Unedited deterministic geology is regenerated. Wire JSON encodes typed arrays losslessly. Replacing a sparse patch resets old offsets before applying new ones, including a filled-in hole. Changing the base geology or grading rule requires a deliberate save migration.
@@ -67,6 +69,8 @@ The device key in localStorage is a temporary bearer identity, hashed in private
 **Not done:** raiders and the fleet exist only in the shared world (the offline solo world keeps its three old drones; `?ship=raider` lets solo fly a Shrike, but nothing attacks it); there is no player-to-player ship trade; ship-to-ship collision is not implemented, and there is no vacuum walk from hull to hull (boarding a disabled prize places you on its deck).
 
 ## Limits and evidence
+
+A survey rover drives on the density field under Mars and the moons' real gravity. It does not roll off a drop: if the ground more than about six metres below the wheels is missing, it stops. Offline solo uses the same drive and keeps a hold rover for the session; a solo purchase is not written into the solo save. The shared world is the one that owns rovers.
 
 The implementation sends full public snapshots to all connected clients and all saved bricks at join; there is no terrain interest filtering or remote-body interpolation yet. Combat runs per ship against its raiders; fleet-wide PvP and inter-ship collision are not implemented. The crew hall has a visible doorway and moving people, but its interior/art and collision need refinement. Long restart catch-up and growing fleets need a capacity test before promising large populations. Run one authority process per world; this is not a horizontally scaled service.
 

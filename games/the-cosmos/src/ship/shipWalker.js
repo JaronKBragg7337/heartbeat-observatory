@@ -232,6 +232,20 @@ export class ShipWalker {
       const dx = x - cx, dz = z - cz;
       if (dx * dx + dz * dz < R * R * 0.9) return true;
     }
+    // A rover is not furniture: its box moves, so it is not in the static index.
+    // Callers replace state.blockers with a fresh array each step. It is not part of defaultState,
+    // because a shorter synced array would leave stale boxes behind.
+    const extra = this.state?.blockers;
+    if (extra) {
+      for (let i = 0; i < extra.length; i++) {
+        const o = extra[i];
+        if (y + H <= o.y0 + 0.02 || y >= o.y1 - 0.02) continue;
+        const cx = Math.max(o.x0, Math.min(x, o.x1));
+        const cz = Math.max(o.z0, Math.min(z, o.z1));
+        const dx = x - cx, dz = z - cz;
+        if (dx * dx + dz * dz < R * R * 0.9) return true;
+      }
+    }
     return false;
   }
 

@@ -10,14 +10,14 @@ import { stringify, parse } from '../src/world-state/wire.js';
 import { SEATS } from '../src/ship/shipSpec.js';
 
 export class TestClient {
-  constructor(url,key,name){this.url=url;this.key=key;this.name=name;this.messages=[];this.waiters=[];}
+  constructor(url,key,name,openingVersion=0){this.url=url;this.key=key;this.name=name;this.openingVersion=openingVersion;this.messages=[];this.waiters=[];}
   wait(predicate,from=0){const found=this.messages.slice(from).find(predicate);if(found)return Promise.resolve(found);
     return new Promise((resolve,reject)=>{const w={predicate,resolve,reject,timer:setTimeout(()=>{this.waiters=this.waiters.filter(v=>v!==w);reject(Error('Protocol wait timed out: '+this.name));},10000)};this.waiters.push(w);});}
   async connect(){this.socket=new WebSocket(this.url);this.socket.addEventListener('message',e=>{const m=parse(e.data);this.messages.push(m);
       if(m.state)this.state=m.state;if(m.type==='welcome')this.id=m.playerId;
       for(const w of [...this.waiters])if(w.predicate(m)){clearTimeout(w.timer);this.waiters.splice(this.waiters.indexOf(w),1);w.resolve(m);}});
     await new Promise((r,j)=>{this.socket.addEventListener('open',r,{once:true});this.socket.addEventListener('error',j,{once:true});});
-    this.send({type:'hello',deviceKey:this.key,name:this.name});return this.wait(m=>m.type==='welcome');}
+    this.send({type:'hello',deviceKey:this.key,name:this.name,personId:'isaiah',openingVersion:this.openingVersion});return this.wait(m=>m.type==='welcome');}
   send(m){this.socket.send(stringify(m));}
   async action(action,actionId=randomUUID()){const from=this.messages.length;this.send({type:'action',action,actionId});return this.wait(m=>m.type==='receipt'&&m.actionId===actionId,from);}
   close(){this.socket?.close();}

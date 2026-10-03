@@ -330,7 +330,7 @@ prop('crate', 'cargo',  5.0, 14.2, 1.0, 1.0, 1.0, 0);
 prop('drum',  'cargo',  4.8, 15.2, 0.7, 0.7, 1.0, 0);
 prop('drum',  'cargo',  4.8, 16.1, 0.7, 0.7, 1.0, 0);
 prop('drum',  'cargo',  4.0, 15.6, 0.7, 0.7, 1.0, 0);
-prop('rover', 'cargo',  2.5, 18.2, 2.6, 3.6, 1.7, 0);
+// The hold rover is a vehicle (src/vehicles, type 'survey'), spawned on the centreline by the server.
 // the gantry: columns under it and a rail along every open edge (a rail only stops someone standing ON the gantry)
 prop('column', 'cargo', -3.0, 11.2, 0.3, 0.3, 2.7, 0);
 prop('column', 'cargo', -0.4, 11.2, 0.3, 0.3, 2.7, 0);

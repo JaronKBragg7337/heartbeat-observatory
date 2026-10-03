@@ -839,6 +839,8 @@ export class ShipSystem {
   }
 
   _outsideFrame(dt, inp) {
+    // A rover driver is not aboard. Without this the hull push ejects them and the ramp boards them.
+    if (this.suppressBoard) return;
     const w = this.walker, f = this.flight;
     const loc = f.toLocal(w.worldPos, this._v);
     // Solid hull: you cannot walk through it, or under the belly.
@@ -1053,10 +1055,14 @@ export class ShipSystem {
 
   _roomsAndLights(dt, first) {
     const low = this.tier === 'low';
-    const cam = this.aboard ? this.eyeLocal : this.flight.toLocal(this.engine.cameraWorldPos, {});
+    // interiorForce: the player is driving a rover that is still inside this hull. Draw the bay
+    // and the hull beyond the glass, and do not treat them as standing on the deck.
+    const driven = !!this.interiorForce;
+    const cam = (this.aboard || driven) ? (driven && this.vehicleEye ? this.vehicleEye : this.eyeLocal) : this.flight.toLocal(this.engine.cameraWorldPos, {});
     // which room is the camera in?
     let cur = null;
     if (this.aboard) cur = this.seat ? this.seat.room : (this.sw.zoneRoom || null);
+    else if (driven) cur = this.roles.cargo;
     if (cur === 'stair_up') cur = this.sw.y > 4.6 ? this.roles.bridge : this.roles.corridor;
     if (cur && cur.startsWith('d_')) cur = this._doorSideRoom(cur) || this._lastRoom || this.roles.corridor;
     if (cur && !this.interior.rooms.has(cur)) cur = this._lastRoom || null;
@@ -1069,7 +1075,7 @@ export class ShipSystem {
     //     dropped for being "two doors away" if you can see it, and a room you just walked out of stays drawn
     //     for as long as its door is anything but shut. ------------------------------------------------------
     let set;
-    if (this.aboard || first) {
+    if (this.aboard || driven || first) {
       set = this._reach([cur || this.roles.cargo], cam, this._lookLocal(), low ? 8 : 14);
       this.interior.root.visible = true;
     } else {
@@ -1093,8 +1099,8 @@ export class ShipSystem {
 
     // The hull, legs, wings and engines are only worth drawing when something you can see looks out at them
     // (about 60 draw calls, twice over when the sun's shadow pass counts).
-    if (this.aboard) {
-      let looksOut = !cur;
+    if (this.aboard || driven) {
+      let looksOut = !cur || driven;
       for (const id of set) {
         if (id === this.roles.bridge || id === this.roles.nest || id === 'ventral' || id === this.roles.cargo) looksOut = true;
         else if (id === this.roles.airlock && (this.state.airlock.outerOpen || this.rampCtl.airlock.progress > 0.02)) looksOut = true;

@@ -25,6 +25,7 @@ import { GunnerAI } from '../src/crew/gunnerAI.js';
 import { routeToSeat, RouteWalker } from '../src/crew/shipPath.js';
 import { SAMPLE_PAY_CREDITS, SAMPLE_REACH_M, SALVAGE_CREDITS, SALVAGE_KG, SALVAGE_REACH_M, MAT_ITEM } from '../src/space/jobs.js';
 import { ShipSimulation } from './simulation.mjs';
+import { VehicleDirector } from './vehicles.mjs';
 import { freshOpening, OpeningModel } from '../src/opening/state.js';
 import { detachBodyEdits } from '../src/world/field.js';
 
@@ -46,13 +47,13 @@ export class Authority {
     this.adapter=adapter;this.now=now;this.mars=getBody('mars');this.site=createPortSite(this.mars);
     this.sessions=new Map();this.inputs=new Map();this.queue=Promise.resolve();this.error='';this.bricks=new Map();
     this.state={schema:2,revision:0,clock:0,savedAt:now(),players:{},ships:{},pads:[],pool:{},poolSeq:0,
-      market:initialEconomy(),terrain:{},damage:{},receipts:{}};
-    this.fleet=new FleetDirector(this);
+      market:initialEconomy(),terrain:{},damage:{},vehicles:{},receipts:{}};
+    this.fleet=new FleetDirector(this);this.vehicleInputs=new Map();this.vehicles=new VehicleDirector(this);
   }
   async load(){const s=await this.adapter.load();if(s.record){if(s.record.schema!==2)throw Error('Unsupported authority schema.');this.state=s.record;}
     for(const c of Object.values(this.state.pool))if(!c.shipId&&c.status==='inside'&&c.position.x===CREW_HALL.x&&c.position.z===CREW_HALL.z)c.position.x+=(CREW_POSTS.findIndex(r=>r.id===c.role)-2.5)*2.4;
     for(const p of Object.values(this.state.players))p.offlineAt=p.offlineAt||this.state.savedAt;
-    this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.rebuild();this.refill();
+    this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.state.vehicles=this.state.vehicles||{};this.rebuild();this.vehicles.ensureAll();this.refill();
     // Restart catch-up uses real elapsed time. It continues trips/wages, never a browser clock.
     const elapsed=Math.max(0,(this.now()-this.state.savedAt)/1000);
     if(elapsed){this.advance(elapsed,{catchUp:true});}
@@ -78,7 +79,9 @@ export class Authority {
         const p=other.moonPads?.[bodyId];if(p&&Number.isFinite(p.east))index++;}
       ship.moonPads[bodyId]=allocatedMoonPad(bodyId,index,ship.id);}}
   enqueue(fn){const p=this.queue.then(fn);this.queue=p.catch(()=>{});return p;}
-  publicState(viewerId){const s=structuredClone(this.state);delete s.receipts;
+  _parkBlockers(){const held=[];for(const sim of this.sims.values()){if(sim?.ship?.state?.blockers){held.push([sim,sim.ship.state.blockers]);delete sim.ship.state.blockers;}}return held;}
+  _unpark(held){for(const [sim,b] of held)sim.ship.state.blockers=b;}
+  publicState(viewerId){const held=this._parkBlockers();const s=structuredClone(this.state);this._unpark(held);delete s.receipts;
     for(const p of Object.values(s.players)){delete p.deviceHash;p.online=this.sessions.has(p.id);
       if(p.opening&&p.id!==viewerId)p.opening={complete:p.opening.complete};}
     s.storageError=this.error;
@@ -89,7 +92,8 @@ export class Authority {
     for(const [id,e] of this.stores){this.state.terrain[id]=structuredClone(terrainMeta(e));
       for(const key of e._dirty){const b=e.bricks.get(key);if(b?.edited)changed.push({...encodeBrick(e,b),key:id+':'+key,bodyId:id});}}
     this.state.savedAt=this.now();this.state.revision++;
-    await this.adapter.save(structuredClone(this.state),changed);
+    const held=this._parkBlockers();const snapshot=structuredClone(this.state);this._unpark(held);
+    await this.adapter.save(snapshot,changed);
     for(const b of changed)this.bricks.set(b.key,b);for(const e of this.stores.values())e._dirty.clear();
     this.error='';return changed;
   }
@@ -100,8 +104,8 @@ export class Authority {
     try{
       if(!p){const id=randomUUID(),shipId=randomUUID(),pad=allocatedPad(this.state.pads.length,shipId);this.state.pads.push(pad);
         const ship={id:shipId,owner:id,type:openingVersion===1?'courier':DEFAULT_SHIP_TYPE,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},economy:initialEconomy(),frameId:'mars',pose:null,trip:null};
-        this.state.ships[shipId]=ship;this.sims.set(shipId,this.makeSim(ship));
-        p={id,deviceHash:key,name:cleanName(name),personId:/^[a-z]{2,24}$/.test(personId)?personId:'isaiah',shipId,currentShipId:shipId,aboardShipId:null,frameId:'mars',
+        this.state.ships[shipId]=ship;this.sims.set(shipId,this.makeSim(ship));this.vehicles.ensure(ship);
+        p={id,deviceHash:key,name:cleanName(name),personId:/^[a-z]{2,24}$/.test(personId)?personId:'isaiah',shipId,currentShipId:shipId,aboardShipId:null,vehicleId:null,vehicleSeat:null,frameId:'mars',
           pose:{worldPos:this.site.toWorld(pad.x-10,.02,pad.z+38),velocity:{x:0,y:0,z:0},yaw:this.site.heading,pitch:0,grounded:true,aboard:false,sw:{x:0,y:0,z:12,yaw:0,pitch:0},seat:null,look:{yaw:0,pitch:0}},toolIdx:1,carried:[]};
         if(openingVersion===1)p.opening=freshOpening();
         this.state.players[id]=p;
@@ -130,7 +134,7 @@ export class Authority {
   removeCargo(ship,item,kg){if((ship.hold[item]||0)+1e-5<kg)throw Error('Hold has insufficient cargo.');ship.hold[item]=Math.max(0,ship.hold[item]-kg);}
   releaseOpening(id){const model=this.openingModels?.get(id);if(!model)return;
     detachBodyEdits(model.body.id);this.openingModels.delete(id);}
-  disconnect(id,peer){if(this.sessions.get(id)!==peer)return;this.sessions.delete(id);this.inputs.delete(id);this.releaseOpening(id);
+  disconnect(id,peer){if(this.sessions.get(id)!==peer)return;this.sessions.delete(id);this.inputs.delete(id);this.vehicleInputs.delete(id);this.releaseOpening(id);
     this.state.players[id].offlineAt=this.now();
     // The body remains aboard; the flight assist holds after the control lease ends.
   }
@@ -224,6 +228,7 @@ export class Authority {
           if(passed&&d<.03)c.status=meeting?'waiting':'inside';}
       }
       for(const p of Object.values(this.state.players))if(p.pose.seat&&!this.sessions.has(p.id)&&p.offlineAt&&this.now()-p.offlineAt>30000)this.releaseSeat(p);
+      this.vehicles.step(dt,{catchUp});
     }this.refill();
     this.state.elevator=structuredClone(this.elevator);
     if(this.state.clock>=(this.state.nextRestock||300)){for(const stock of Object.values(this.state.market.traders))for(const k of Object.keys(stock))stock[k]=Math.max(stock[k],30);this.state.nextRestock=this.state.clock+300;}
@@ -232,7 +237,7 @@ export class Authority {
   shipFor(p){return this.state.ships[p.aboardShipId||p.currentShipId||p.shipId];}
   rampOccupied(sim,key){const r=sim.def.ramps[key],run=r.length*Math.cos(sim.ship.rampCtl[key].angle);
     const on=q=>{const along=(q.x-r.hinge.x)*r.dir.x+(q.z-r.hinge.z)*r.dir.z,across=r.dir.z?Math.abs(q.x-r.hinge.x):Math.abs(q.z-r.hinge.z);return along>.2&&along<run+1&&across<r.width/2+.3&&q.y<.6;};
-    return Object.values(this.state.players).some(p=>p.aboardShipId===sim.record.id&&on(p.pose.sw))||sim.record.crew.some(c=>['walking-aboard','leaving-aboard'].includes(c.status)&&c.localPose&&on(c.localPose));
+    return Object.values(this.state.players).some(p=>p.aboardShipId===sim.record.id&&on(p.pose.sw))||sim.record.crew.some(c=>['walking-aboard','leaving-aboard'].includes(c.status)&&c.localPose&&on(c.localPose))||this.vehicles.onRamp(sim,key);
   }
   canPlaceSpoil(frame,x,y,z){
     const point={x,y,z},loc=this.site.toLocal(point);
@@ -391,6 +396,7 @@ export class Authority {
   }
   updatePose(p,a){const r=a.pose;if(!r||!finitePoint(r.worldPos)||!finitePoint(r.sw)||![r.yaw,r.pitch,r.sw.yaw,r.sw.pitch].every(Number.isFinite))throw Error('Invalid player pose.');
     if(p.opening&&!p.opening.complete)return;
+    if(p.vehicleId){const v=a.vehicle;if(p.vehicleSeat==='driver'&&v&&Number.isFinite(+v.throttle)&&Number.isFinite(+v.steer))this.vehicleInputs.set(p.id,{until:this.now()+1000,throttle:Math.max(-1,Math.min(1,+v.throttle)),steer:Math.max(-1,Math.min(1,+v.steer))});p.poseAt=this.now();return;}
     const ship=this.shipFor(p);const aboard=!!p.aboardShipId;
     if(!!r.aboard!==aboard)throw Error('Board or leave through the boarding action.');
     // Client-predicted poses have speed/cabin bounds. Swept player collision is
@@ -495,6 +501,10 @@ export class Authority {
           const route=routeToSeat(sw,from,tip);if(!route)throw Error('Lower the cargo ramp before dismissing crew.');
           c.status='leaving-aboard';c.localPose={...from};c.routeState={route,ri:0,pi:0};this.crewRoutes.delete(c.id);
         }break;}
+      case 'vehicle-board':return this.vehicles.boardPlayer(p,a);
+      case 'vehicle-seat':return this.vehicles.seatPlayer(p,a);
+      case 'vehicle-leave':return this.vehicles.leavePlayer(p);
+      case 'buy-vehicle':return this.vehicles.buy(p);
       case 'buy-ship':return this.buyShip(p,a);
       case 'set-flagship':return this.setFlagship(p,a);
       case 'claim-ship':return this.claimShip(p,a);

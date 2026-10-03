@@ -1,5 +1,6 @@
 import { GOODS, TRADERS, QUESTS, WAGES } from './catalog.js';
 import { inventoryMass, regolithKg } from './economy.js';
+import { vehicleDef } from '../vehicles/registry.js';
 export { WAGES };
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function workerHTML(m,view,e) {
@@ -17,10 +18,12 @@ export function workerHTML(m,view,e) {
       h+=`<button class="cbtn" data-a="sale" data-good="${id}" ${have<1?'disabled':''}>Sell · ${g.sell} marks</button></div>`;
     }
     if(m.id==='depot-clerk')h+=`<button class="cbtn" data-a="regolith-sale" ${regolithKg(e.cargo)<1000?'disabled':''}>Sell 1 tonne raw regolith · 12 marks</button>`;
+    if(m.id==='depot-clerk')h+=`<button class="cbtn" data-a="buy-vehicle" ${(e.marks||0)<vehicleDef('survey').priceMarks?'disabled':''}>Buy a survey rover · ${vehicleDef('survey').priceMarks} marks</button>`;
     h+=`<button class="cbtn" data-a="worker-back">Back to conversation</button>`;
   } else {
     h+=`<button class="cbtn" data-a="worker-question">${esc(t?.question || (q?'Is there paid work for a hauler?':'What is your watch like?'))}</button>`;
     if(t)h+=`<button class="cbtn" data-a="worker-trade">Show me what you buy and sell</button>`;
+    if(m.id==='depot-clerk')h+=`<button class="cbtn" data-a="buy-vehicle" ${(e.marks||0)<vehicleDef('survey').priceMarks?'disabled':''}>Buy a survey rover · ${vehicleDef('survey').priceMarks} marks<small>Four seats. It waits on the east apron.</small></button>`;
     for(const job of jobs) {
       const status=e.quests[job.id]?.status;
       h+=`<p>${esc(job.offer)}</p>`;
