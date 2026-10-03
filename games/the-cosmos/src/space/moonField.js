@@ -153,14 +153,20 @@ export function makeMoon(id) {
   const fromBody = (u, v, w, out = {}) => { out.x = u * ex.x + v * ey.x; out.y = w; out.z = u * ex.z + v * ey.z; return out; };
 
   // Loose rock, in the density field (so a boot and a bucket meet the same stone the mesh draws). One rock per cell, inset so
-  // it never crosses into the next cell: the height is zero, with zero slope, on the cell boundary. Phobos only; Deimos stays
-  // the smooth one. The steepest ring stays under about 40 degrees, so a running step still meets the surface on 0.0057 g
-  // (a steeper face launches the walker and the 90 s grounded check fails).
+  // it never crosses into the next cell: the height is zero on the footprint's edge, and the footprint stays inside the cell.
+  // Phobos only; Deimos stays the smooth one.
+  //
+  // A rock is an ANGULAR block, not a dome: a 5-7 sided footprint (each facet its own distance and turn), a flat-ish top cut by two
+  // tilted planes (so there is a ridge), and straight walls that rise from the footprint's edge at no more than about 40 degrees,
+  // so a running step still meets the surface on 0.0057 g (a steeper face launches the walker and the 90 s grounded check fails).
+  // The height is min(wall, planeA, planeB): crisp creases where the faces meet, still one number per point of the radial field.
   const ROCKS = S.id === 'phobos' ? [
-    { s: 32, dens: 0.7, rLo: 2.8, rHi: 5.2, hLo: 1.35, hHi: 2.7 },   // boulders: a couple of metres tall, drawn by the near tier
-    { s: 12, dens: 0.48, rLo: 1.2, rHi: 2.3, hLo: 0.4, hHi: 1.15 },   // rocks at knee and waist height
-    { s: 6, dens: 0.3, rLo: 0.5, rHi: 1.05, hLo: 0.08, hHi: 0.35 },   // stones underfoot
+    { s: 48, dens: 0.6, rLo: 5, rHi: 11, hLo: 1.5, hHi: 3.4 },        // boulders: two to three metres tall and a dozen across, angular
+    { s: 12, dens: 0.48, rLo: 1.8, rHi: 3.4, hLo: 0.45, hHi: 1.3 },   // rocks at knee and waist height
+    { s: 6, dens: 0.3, rLo: 0.8, rHi: 1.5, hLo: 0.1, hHi: 0.42 },    // stones underfoot
   ] : [];
+  let derelictU = null;                                                // unit direction of the drifting cargo module: no loose rock under it
+  const MAX_WALL = 0.82;                                               // tan of the steepest face, about 39 degrees
   function boulderHeight(px, py, pz) {
     let h = 0;
     const r = Math.hypot(px, py, pz) || 1;
@@ -179,15 +185,40 @@ export function makeMoon(id) {
       if (Math.floor(cx / s) !== ix || Math.floor(cy / s) !== iy || Math.floor(cz / s) !== iz) continue;
       const margin = Math.min(cx - ix * s, (ix + 1) * s - cx, cy - iy * s, (iy + 1) * s - cy, cz - iz * s, (iz + 1) * s - cz);
       const rc = Math.min(spec.rLo + (spec.rHi - spec.rLo) * hash3(ix, iy, iz, sd + 4), margin * 0.92);
-      if (rc < 0.35) continue;
+      if (rc < 0.4) continue;
       const dx = px - cx, dy = py - cy, dz = pz - cz, d2 = dx * dx + dy * dy + dz * dz;
       if (d2 >= rc * rc) continue;
-      const t = Math.sqrt(d2) / rc;
-      const dome = 1 - t * t;
+      // the ground plane under the stone: two tangent axes from the radial
+      const ux = cx / cr, uy = cy / cr, uz = cz / cr;
+      let ax = 0, ay = 0, az = 0;
+      if (Math.abs(ux) <= Math.abs(uy) && Math.abs(ux) <= Math.abs(uz)) ax = 1; else if (Math.abs(uy) <= Math.abs(uz)) ay = 1; else az = 1;
+      let e1x = uy * az - uz * ay, e1y = uz * ax - ux * az, e1z = ux * ay - uy * ax;
+      const e1l = Math.hypot(e1x, e1y, e1z) || 1; e1x /= e1l; e1y /= e1l; e1z /= e1l;
+      const e2x = uy * e1z - uz * e1y, e2y = uz * e1x - ux * e1z, e2z = ux * e1y - uy * e1x;
+      const a = dx * e1x + dy * e1y + dz * e1z, b = dx * e2x + dy * e2y + dz * e2z;
+      // footprint: N facets, each at its own turn and distance (apothem up to 0.6 rc keeps every corner inside rc)
+      const N = 5 + Math.floor(hash3(ix, iy, iz, sd + 6) * 3);
+      const th0 = hash3(ix, iy, iz, sd + 7) * Math.PI * 2;
+      let t = -1e9, apMin = 1e9;
+      for (let i = 0; i < N; i++) {
+        const phi = th0 + (i / N) * Math.PI * 2 + (hash3(ix, iy, iz, sd + 20 + i) - 0.5) * 0.5;
+        const ap = rc * 0.6 * (0.8 + 0.2 * hash3(ix, iy, iz, sd + 40 + i));
+        if (ap < apMin) apMin = ap;
+        const ti = (a * Math.cos(phi) + b * Math.sin(phi)) / ap;
+        if (ti > t) t = ti;
+      }
+      if (t >= 1) continue;
+      const tf = 0.3 + 0.2 * hash3(ix, iy, iz, sd + 8);                // share of the footprint that is top
       let hh = spec.hLo + (spec.hHi - spec.hLo) * hash3(ix, iy, iz, sd + 5);
-      const slopeCap = 1.15 * rc / 1.54;
-      if (hh > slopeCap) hh = slopeCap;
-      h += hh * dome * dome;
+      hh = Math.min(hh, MAX_WALL * (1 - tf) * apMin);
+      let top = Math.min(1, (1 - t) / (1 - tf)) * hh;                    // the straight wall
+      // two cutting planes tilt the top and make a ridge; a plane's slope is at most 0.3 of hh over the stone's radius
+      for (let q = 0; q < 2; q++) {
+        const al = hash3(ix, iy, iz, sd + 60 + q) * Math.PI * 2, k = (0.12 + 0.2 * hash3(ix, iy, iz, sd + 70 + q)) * hh / rc;
+        const plane = hh * (1 + 0.1 * (q ? -1 : 1)) + k * (a * Math.cos(al) + b * Math.sin(al)) * (q ? 1.4 : 1);
+        if (plane < top) top = plane;
+      }
+      if (top > 0) h += top;
     }
     return h;
   }
@@ -317,6 +348,10 @@ export function makeMoon(id) {
     else if (along < 86) fade = sstep(58, 86, along);
     const pw = playerWeight(u, v, w);
     if (pw) { if (pw.flat) return 0; fade = Math.min(fade, 1 - pw.wt); }
+    if (derelictU) {
+      const cd = u * derelictU[0] + v * derelictU[1] + w * derelictU[2];
+      if (cd > 0.9999) { const dd = Rm * Math.acos(Math.min(1, cd)); fade = Math.min(fade, sstep(9, 17, dd)); }
+    }
     if (fade <= 0) return 0;
     return fade * boulderHeight(u * re, v * re, w * re);
   }
@@ -369,6 +404,13 @@ export function makeMoon(id) {
     return { id: `S${i + 1}`, distM: dist, bearingDeg: brg, point: p };
   });
 
+  if (S.derelict) {
+    // the direction first, so the rocks can leave room for the module before its ground is measured
+    const bb = S.derelict.bearingDeg * DEG, k = S.derelict.distM / Rm;
+    const dx = padUp.x + (padEast.x * Math.sin(bb) + padNorth.x * Math.cos(bb)) * k, dy = padUp.y + (padEast.y * Math.sin(bb) + padNorth.y * Math.cos(bb)) * k, dz = padUp.z + (padEast.z * Math.sin(bb) + padNorth.z * Math.cos(bb)) * k;
+    const l = Math.hypot(dx, dy, dz), q = toBodyDir(dx / l, dy / l, dz / l);
+    derelictU = q;
+  }
   const derelict = S.derelict ? (() => {
     const bb = S.derelict.bearingDeg * DEG, k = S.derelict.distM / Rm;
     const dx = padUp.x + (padEast.x * Math.sin(bb) + padNorth.x * Math.cos(bb)) * k, dy = padUp.y + (padEast.y * Math.sin(bb) + padNorth.y * Math.cos(bb)) * k, dz = padUp.z + (padEast.z * Math.sin(bb) + padNorth.z * Math.cos(bb)) * k;
@@ -418,6 +460,8 @@ export function makeMoon(id) {
     },
     sampleSites, derelict,
     axesWorld: { ex, ey, ez },
+    /** The world-aligned unit vector toward the Sun (the patches cast shadows along it). */
+    sunDir: sunW,
     toBodyDir, fromBody,
     /** 0.42..1 darkening from crater rims and groove floors. 1 on the graded pad, where those shapes were planed off. */
     cavityShade: (x, y, z) => {

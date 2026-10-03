@@ -63,6 +63,16 @@ export class SpaceJobs {
     if (body.derelict) {
       const built = buildCargoModule({ low });
       place(built.group, body.derelict.point, body.derelict.up);
+      // seat it on the slope it came down on: the group's axes are the tangent frame at the derelict, +Y up
+      {
+        const dl = body.derelict, q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dl.up.x, dl.up.y, dl.up.z));
+        const v = new THREE.Vector3();
+        built.settle((x, z) => {
+          v.set(x, 0, z).applyQuaternion(q);
+          const px = dl.point.x + v.x, py = dl.point.y + v.y, pz = dl.point.z + v.z, l = Math.hypot(px, py, pz) || 1, R = body.surfaceRadius(px / l, py / l, pz / l);
+          return (px / l * R - dl.point.x) * dl.up.x + (py / l * R - dl.point.y) * dl.up.y + (pz / l * R - dl.point.z) * dl.up.z;
+        });
+      }
       this.markers.derelict = { group: built.group, lamp: built.lamp };
     }
     // the landing pad: a painted disc with four corner lights (it is a real graded plane in the field: moonField's pad)

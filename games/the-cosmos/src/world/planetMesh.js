@@ -91,7 +91,7 @@ if (abs(te) < uTierHalf && abs(tn) < uTierHalf) discard;`);
 // ---------------------------------------------------------------------------
 const _basalt = new THREE.Color(0x4a3029), _dustBright = new THREE.Color(0xd7a06c), _ice = new THREE.Color(0xe6e2dc);
 const _scoured = new THREE.Color(0x8a6048), _dusty = new THREE.Color(0xc27a4a);   // allocated once: this runs per vertex
-export function shadeVertex(body, px, py, pz, elevation, color, matKnown) {
+export function shadeVertex(body, px, py, pz, elevation, color, matKnown, castShadows, tintRock) {
   const mat = matKnown || materialAt(body, px, py, pz);
   color.setHex(mat.color);
   if (body.kind === 'moon') {
@@ -101,8 +101,15 @@ export function shadeVertex(body, px, py, pz, elevation, color, matKnown) {
     const f = 0.9 + 0.2 * (0.5 + 0.5 * Math.sin(px * 0.071 + pz * 0.053) * Math.sin(py * 0.067 + px * 0.041));
     color.multiplyScalar(k * f);
     // Crater floors and groove troughs, baked into the vertex colour. The sun's shadow map only covers the ground under the camera.
-    if (body.cavityShade) color.multiplyScalar(body.cavityShade(px, py, pz));
-    if (body.id === 'phobos') { color.r *= 0.92; color.g *= 0.96; }
+    // (A patch that casts its own shadows from its heights skips this statistical stand-in.)
+    if (body.cavityShade && !castShadows) color.multiplyScalar(body.cavityShade(px, py, pz));
+    if (body.id === 'phobos') {
+      color.r *= 0.92; color.g *= 0.96;
+      // loose rock is its own darker, cooler stone; the dust between it is a little lighter and warmer
+      const r = Math.hypot(px, py, pz) || 1, rock = tintRock && body.rockRelief ? body.rockRelief(px / r, py / r, pz / r) : 0;
+      if (rock > 0.02) { const k = Math.min(1, rock * 4); color.multiplyScalar(1 - 0.24 * k); color.b *= 1 + 0.06 * k; color.r *= 1 - 0.04 * k; }
+      else if (tintRock) { color.r *= 1.03; color.g *= 1.01; }
+    }
     return color;
   }
 
@@ -191,6 +198,7 @@ export class LocalPatch {
     this.sizeM = opts.sizeM || 768;
     this.res = opts.res || 96;                 // 96x96 -> ~8 m spacing at 768 m
     this.skirtM = opts.skirtM || 0;
+    this.horizon = !!opts.horizon;             // a moon's patch casts shadows from its own heights (see _horizonShade)
     this.rebuildThreshold = this.sizeM * 0.28; // rebuild before the edge shows
     this.centre = null;                        // {lat, lon}
     this.builtAt = null;                       // cartesian centre of last build
@@ -517,13 +525,14 @@ export class LocalPatch {
         radii[j * n + i] = R;
 
         const gg = cartesianToGeodetic(body, sx, sy, sz);
-        shadeVertex(body, sx, sy, sz, gg.alt, color);
+        shadeVertex(body, sx, sy, sz, gg.alt, color, undefined, this.horizon, this.horizon && this.sizeM / (n - 1) < 2);
         col[k] = color.r; col[k + 1] = color.g; col[k + 2] = color.b;
       }
       if (now() - t0 >= budgetMs) break;
     }
     job.spent += now() - t0;
     if (job.row < n) return false;
+    if (this.horizon) this._horizonShade(job);
 
     for (let e = 0; e < this._edge.length; e++) {
       const k = this._edge[e] * 3, q = (n * n + e) * 3;
@@ -538,6 +547,7 @@ export class LocalPatch {
     this.centre = { lat: job.g.lat, lon: job.g.lon };
     this.worldPos = { x: ox, y: oy, z: oz };
     if (this._regolith) this._regolith.uRegOffset.value.set(mod360(ox), mod360(oy), mod360(oz));
+    if (this._regolith && this._regolith.uRegUp) { const ol = Math.hypot(ox, oy, oz) || 1; this._regolith.uRegUp.value.set(ox / ol, oy / ol, oz / ol); }
     this.builtAt = { x: job.px, y: job.py, z: job.pz };
     this._frame = f;
     this._originR = job.originR;
@@ -553,6 +563,56 @@ export class LocalPatch {
     this.lastBuildMs = job.spent;
     this._job = null;
     return true;
+  }
+
+  /**
+   * Real shadows for a moon's ground, from the heights this patch just sampled. Every vertex looks toward the Sun along the
+   * grid and asks whether the ground between it and the horizon rises above the ray. A rim then darkens the floor behind it,
+   * a bowl inside a bowl is shaded by both rims, a boulder throws a long shadow. Rays that leave the patch before they have
+   * travelled far are trusted less (the ground beyond is not here), so the next rebuild does not change what you can see. Crevices
+   * (a vertex well below its neighbours) take a little ambient occlusion; a rock's edges (well above them) are a touch lighter. The sun's shadow map covers only about 120 m around the
+   * camera and the ground does not cast into it; this is what stands in for that, baked into the vertex colour.
+   */
+  _horizonShade(job) {
+    const body = this.body, n = this.res, step = this.sizeM / (n - 1), { pos, col, ox, oy, oz } = job;
+    if (!body.sunDir) return;
+    const sun = body.sunDir, f = job.f, ol = Math.hypot(ox, oy, oz) || 1, ux = ox / ol, uy = oy / ol, uz = oz / ol;
+    const se = sun.x * f.east.x + sun.y * f.east.y + sun.z * f.east.z, sn = sun.x * f.north.x + sun.y * f.north.y + sun.z * f.north.z;
+    const su = sun.x * ux + sun.y * uy + sun.z * uz;
+    const dh = Math.hypot(se, sn);
+    const hts = new Float32Array(n * n);
+    for (let v = 0; v < n * n; v++) hts[v] = pos[v * 3] * ux + pos[v * 3 + 1] * uy + pos[v * 3 + 2] * uz;   // metres above the patch's tangent plane
+    const K = 22, tanE = su > 0.02 && dh > 1e-6 ? su / dh : 0;
+    const gx = dh > 1e-6 ? se / dh : 0, gy = dh > 1e-6 ? sn / dh : 0;
+    const sample = (gi, gj) => {
+      const i0 = Math.floor(gi), j0 = Math.floor(gj), fx = gi - i0, fy = gj - j0, i1 = Math.min(n - 1, i0 + 1), j1 = Math.min(n - 1, j0 + 1);
+      return (hts[j0 * n + i0] * (1 - fx) + hts[j0 * n + i1] * fx) * (1 - fy) + (hts[j1 * n + i0] * (1 - fx) + hts[j1 * n + i1] * fx) * fy;
+    };
+    const dists = new Float32Array(K);
+    for (let k = 0; k < K; k++) dists[k] = step * (1 + 0.8 * k + 0.12 * k * k);     // step lengths grow: 22 taps reach ~150 cells
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const v = j * n + i, h0 = hts[v];
+      let occ = 0, exitD = 1e9;
+      if (tanE > 0) {
+        for (let k = 0; k < K; k++) {
+          const d = dists[k], gi = i + gx * d / step, gj = j + gy * d / step;
+          if (gi < 0 || gj < 0 || gi > n - 1 || gj > n - 1) { exitD = d; break; }
+          const over = sample(gi, gj) - (h0 + d * tanE) + 0.04;
+          if (over > 0) { const w = Math.min(1, over / (0.12 + 0.012 * d)); if (w > occ) occ = w; if (occ >= 1) break; }
+        }
+      } else occ = 1;                                      // the Sun is on the horizon or below it: everything is in shadow
+      const trust = Math.min(1, exitD / Math.min(10, this.sizeM * 0.12));
+      // ambient occlusion: how far this vertex sits below its neighbours 2 steps out
+      let avg = 0, c = 0;
+      for (const [di, dj] of [[2, 0], [-2, 0], [0, 2], [0, -2], [2, 2], [-2, -2], [2, -2], [-2, 2]]) {
+        const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= n || jj >= n) continue;
+        avg += hts[jj * n + ii]; c++;
+      }
+      const ao = c ? Math.max(-0.16, Math.min(0.32, (avg / c - h0) / (step * 3.2))) : 0;      // below the neighbours darkens, a convex edge catches a little light
+      const m = (1 - 0.74 * occ * trust) * (1 - ao);
+      const k3 = v * 3;
+      col[k3] *= m; col[k3 + 1] *= m; col[k3 + 2] *= m;
+    }
   }
 
   _computeNormals() {

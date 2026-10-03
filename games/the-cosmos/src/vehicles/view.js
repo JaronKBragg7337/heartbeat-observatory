@@ -162,7 +162,7 @@ export class VehicleSystem {
     const r = board(v, SOLO, seatId || undefined);
     if (!r.ok) return r;
     this.soloSeat = { vehicleId: id, seat: r.seat };
-    if (this.ship.aboard) { this.ship.aboard = false; this.ship.seat = null; }
+    if (this.ship.aboard) this.ship.aboard = false;   // (the seat is already null: the guard above refuses while seated; ship.seat is a getter and cannot be assigned)
     return { ok: true, msg: r.seat === 'driver' ? 'You have the wheel.' : 'You are in.' };
   }
 
@@ -196,7 +196,7 @@ export class VehicleSystem {
       this._steer = 0;
     }
     if (!this.world.remote) this._stepSolo(dt);
-    this._syncMeshes();
+    this._syncMeshes(dt);
     if (!this.seated()) return false;
     this._placeCamera();
     return true;
@@ -310,7 +310,7 @@ export class VehicleSystem {
     return { ok: true, msg: `Bought a survey rover for ${def.priceMarks} marks. It is on the apron east of the depot.` };
   }
 
-  _syncMeshes() {
+  _syncMeshes(dt = 1 / 60) {
     const seen = new Set();
     for (const v of this.list()) {
       seen.add(v.id);
@@ -348,7 +348,8 @@ export class VehicleSystem {
       }
       const wheels = v.wheels || [];
       slot.wheels.forEach((g, i) => { g.position.y = vehicleDef(v.type).wheelRadius + (wheels[i] || 0); });
-      this._dust(slot, v);
+      slot.sync?.();
+      slot.update?.(dt, { speed: v.pose?.speed || 0, inside: slot.inside });
     }
     for (const [id, slot] of this.meshes) {
       if (seen.has(id)) continue;
@@ -371,22 +372,6 @@ export class VehicleSystem {
     const qp = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), v.world.pitch || 0);
     const qr = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), v.world.roll || 0);
     out.multiply(qp).multiply(qr);
-  }
-
-  _dust(slot, v) {
-    const speed = Math.abs(v.pose?.speed || 0);
-    const mat = slot.dust.material;
-    mat.opacity = speed > 1.2 && !slot.inside ? Math.min(0.45, (speed - 1.2) * 0.08) : 0;
-    if (mat.opacity <= 0) return;
-    const pos = slot.dust.geometry.attributes.position.array;
-    const t = performance.now() * 0.004;
-    for (let i = 0; i < pos.length; i += 3) {
-      const k = i / 3;
-      pos[i] = Math.sin(k * 1.7 + t) * 1.1;
-      pos[i + 1] = 0.15 + (k % 5) * 0.05;
-      pos[i + 2] = 1.6 + (k % 7) * 0.18;
-    }
-    slot.dust.geometry.attributes.position.needsUpdate = true;
   }
 
   _placeCamera() {

@@ -19,7 +19,7 @@ export const SURVEY = {
   wheelbase: 2.9,
   track: 2.1,
   half: { x: 1.15, y: 1.72, z: 2.15 },
-  eye: 1.05,
+  eye: 1.08,            // seat.y + eye = 1.80 m above the ground: the seated eye of the cab (floor 0.555 m, cushion 1.0 m)
   doorReach: 2.6,
   wheels: [
     { id: 'fl', x: -1.05, z: -1.45 },

@@ -59,8 +59,10 @@ export async function runGrok2Checks({ check, section, THREE }) {
       hairMesh.material.color.getHex() === new THREE.Color(0xffffff).multiply(new THREE.Color(look.hair)).getHex() &&
       clothMesh.material.color.getHex() === new THREE.Color(0xffffff).multiply(new THREE.Color(look.cloth)).getHex() &&
       eyeMesh.material === eyeMat && eyeMat.color.getHex() === eyeHex && toothMesh.material === toothMat);
+    visor.geometry.computeBoundingBox();
+    const visorY = visor.position.y + (visor.geometry.boundingBox.min.y + visor.geometry.boundingBox.max.y) / 2;
     check('the helmet is one child of the head bone, sized in centimetres (shell toward the face, visor further that way)',
-      helmets.length === 1 && shell && shell.position.y < 0 && shell.position.y > -16 && visor && visor.position.y < shell.position.y &&
+      helmets.length === 1 && shell && shell.position.y < 0 && shell.position.y > -16 && visor && visorY < shell.position.y &&
       head.getObjectByName('helmet-seal') && shell.parent.name === 'raider-helmet' && shell.parent.parent === head);
   }
 

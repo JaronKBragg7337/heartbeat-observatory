@@ -22,6 +22,10 @@ export function installRegolith(material, THREE, opts = {}) {
     uRegPebble: { value: opts.pebble ?? 1.0 },     // how dark the scattered pebbles are (a dark moon wants fewer black flecks)
   };
   if (phobos) uniforms.uGrooveAcross = { value: new THREE.Vector3(across.x, across.y, across.z) };
+  // Flat faces on steep ground (the walking-scale patch only): the normal snaps toward each triangle's own, so a rock wall reads as a plane
+  // with a hard edge where two walls meet, and gentle ground stays smooth. uRegUp is the patch's local up in world space.
+  const flat = !!opts.flat;
+  if (flat) uniforms.uRegUp = { value: new THREE.Vector3(0, 1, 0) };
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
@@ -34,6 +38,7 @@ export function installRegolith(material, THREE, opts = {}) {
 uniform float uRegBump;
 uniform float uRegPebble;
 ${phobos ? 'uniform vec3 uGrooveAcross;' : ''}
+${flat ? 'uniform vec3 uRegUp;' : ''}
 varying vec3 vRegPos;
 float regH(vec3 i, float P) { i = mod(i, P); return fract(sin(dot(i, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 float regN(vec3 p, float P) {   // value noise, periodic every P cells
@@ -74,9 +79,17 @@ vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) 
   diffuseColor.rgb *= clamp(1.0 + 0.09 * lane + 0.06 * streak + 0.04 * (dustg - 0.5), 0.82, 1.18);` : ''}
 }`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+${flat ? `{
+  vec3 nW = inverseTransformDirection(normal, viewMatrix);
+  float steep = 1.0 - clamp(dot(nW, uRegUp), 0.0, 1.0);
+  float faceAmt = smoothstep(0.10, 0.26, steep);
+  vec3 fN = normalize(cross(dFdx(-vViewPosition), dFdy(-vViewPosition)));
+  if (dot(fN, normal) < 0.0) fN = -fN;
+  normal = normalize(mix(normal, fN, faceAmt * 0.9));
+}` : ''}
 normal = regPerturb(-vViewPosition, normal, vec2(dFdx(regHeight), dFdy(regHeight)) * uRegBump, faceDirection);`);
   };
-  material.customProgramCacheKey = () => (phobos ? 'regolith-v3-phobos' : (opts.world ? 'regolith-v2-world' : 'regolith-v2'));
+  material.customProgramCacheKey = () => (phobos ? (flat ? 'regolith-v3-phobos-flat' : 'regolith-v3-phobos') : (opts.world ? 'regolith-v2-world' : 'regolith-v2'));
   material.needsUpdate = true;
   return uniforms;
 }

@@ -61,7 +61,8 @@ try{
     return [o.driver,...o.passengers].map(p=>{let head;p.group.traverse(n=>{if(n.isBone&&/(^|[:_])head$/i.test(n.name))head=n;});
       p.group.updateWorldMatrix(true,true);return head?p.group.worldToLocal(head.getWorldPosition(new THREE.Vector3())).y+p.group.position.y:null;});
   });
-  assert.ok(Math.abs(results.seating[0]-2)<.06&&results.seating.slice(1).every(h=>Math.abs(h-1.22)<.06),JSON.stringify(results.seating));
+  const driverHead=await a.evaluate(()=>cosmos.opening.rover.driverHead||2);   // the survey rover's cab seats the driver's head at its own height
+  assert.ok(Math.abs(results.seating[0]-driverHead)<.06&&results.seating.slice(1).every(h=>Math.abs(h-1.22)<.06),JSON.stringify(results.seating));
   await step(a,10);await a.evaluate(()=>cosmos.opening.syncFilm());await scene(a,'desktop',1);
   await a.evaluate(()=>{const o=cosmos.opening;o.sw.yaw=1.2;o.sw.pitch=0;cosmos.step(0);});await scene(a,'desktop','1-angle-2');
   await step(a,22);await scene(a,'desktop','1-angle-3');await step(a,22);

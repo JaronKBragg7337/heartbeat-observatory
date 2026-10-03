@@ -203,30 +203,106 @@ function findHead(root) {
   return head;
 }
 
+/**
+ * A patch of an ellipsoid, as its own geometry. Centre c, radii r (bone-local axes: X up, -Y forward, Z lateral).
+ * a0..a1 run around the head (0 = straight ahead, + toward +Z), b0..b1 run up the head (0 = level with the centre, + up).
+ */
+function ellipsoidPatch(c, r, a0, a1, b0, b1, na, nb) {
+  const pos = [], idx = [];
+  for (let j = 0; j <= nb; j++) {
+    const b = b0 + (b1 - b0) * (j / nb);
+    for (let i = 0; i <= na; i++) {
+      const a = a0 + (a1 - a0) * (i / na);
+      pos.push(c[0] + r[0] * Math.sin(b), c[1] - r[1] * Math.cos(b) * Math.cos(a), c[2] + r[2] * Math.cos(b) * Math.sin(a));
+    }
+  }
+  for (let j = 0; j < nb; j++) for (let i = 0; i < na; i++) {
+    const p = j * (na + 1) + i, q = p + na + 1;
+    idx.push(p, p + 1, q, p + 1, q + 1, q);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * A duty helmet: a closed shell that clears the head AND the hair (no hair pokes through), a crest, ear pods, a chin guard, a neck seal,
+ * and a curved visor in a bezel. Built in the head bone's frame, in centimetres (measured on ada.glb: face from x -21.6 (chin) to +16.3
+ * (crown), nose at y -12.5, hair to x +20.6 and y +11.3 behind, eyes at x +4.7..7.4 and z about ±3; X is up, -Y is the face, Z is lateral).
+ * The shell is an ellipsoid with centre (5, -0.3, 0) and radii (18, 17.5, 14.5), cut below the jaw.
+ */
 function dutyHelmet(look) {
   const g = new THREE.Group();
   g.name = 'raider-helmet';
-  const shellMat = new THREE.MeshStandardMaterial({ color: 0x3c434c, roughness: 0.55, metalness: 0.32 });
-  const shell = new THREE.Mesh(new THREE.SphereGeometry(14, 18, 14), shellMat);
-  shell.name = 'helmet-shell';
-  shell.position.set(0, -2, 0);          // local +Y runs back; negative Y covers the face and the crown
-  shell.scale.set(1.08, 1.05, 1.12);
-  const sealMat = new THREE.MeshStandardMaterial({ color: 0x23272c, roughness: 0.84, metalness: 0.04 });
-  const seal = new THREE.Mesh(new THREE.SphereGeometry(12, 14, 10), sealMat);
-  seal.name = 'helmet-seal';
-  seal.position.set(0, 8, 0);            // the rim, toward the nape
-  seal.scale.set(1.16, 0.22, 1.2);
+  const C = [5, -0.3, 0], RAD = [18, 17.5, 14.5];
+  const accent = look.cloth != null ? new THREE.Color(look.cloth).multiplyScalar(0.7) : new THREE.Color(0x8a5a2c);
+  const shellMat = new THREE.MeshStandardMaterial({ color: 0x5a636c, roughness: 0.52, metalness: 0.12 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: accent, roughness: 0.55, metalness: 0.3 });
+  const sealMat = new THREE.MeshStandardMaterial({ color: 0x2c3237, roughness: 0.85, metalness: 0.05 });
+  const bezelMat = new THREE.MeshStandardMaterial({ color: 0x14171a, roughness: 0.4, metalness: 0.6, side: THREE.DoubleSide });
   const visorMat = new THREE.MeshStandardMaterial({
-    color: look.visorTint != null ? look.visorTint : 0x1c2128,
-    roughness: 0.08, metalness: 0.55,
-    transparent: true, opacity: look.visorOpacity != null ? look.visorOpacity : 0.72,
-    depthWrite: false,
+    color: look.visorTint != null ? new THREE.Color(look.visorTint).multiplyScalar(1.7) : 0x2a3340, roughness: 0.08, metalness: 0.15,
+    emissive: look.visorTint != null ? new THREE.Color(look.visorTint).multiplyScalar(0.35) : 0x0a0e12,
+    transparent: true, opacity: look.visorOpacity != null ? look.visorOpacity : 0.72, depthWrite: false, side: THREE.DoubleSide,
   });
-  const visor = new THREE.Mesh(new THREE.SphereGeometry(8.4, 16, 12), visorMat);
-  visor.name = 'helmet-visor';
-  visor.position.set(0, -11, 0.6);       // further toward the face than the shell
-  visor.scale.set(1.7, 0.28, 0.55);
-  for (const m of [shell, seal, visor]) { m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; g.add(m); }
+  const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+  const lampMat = new THREE.MeshBasicMaterial({ color: 0xffb25a, toneMapped: false });
+  const add = (name, mesh, mat) => { mesh.name = 'helmet-' + name; mesh.frustumCulled = false; mesh.castShadow = false; mesh.receiveShadow = false; g.add(mesh); return mesh; };
+
+  // shell: a sphere with its pole on +X (up), scaled to the ellipsoid, the bottom cut away below the jaw
+  const dome = new THREE.SphereGeometry(1, 28, 16, 0, Math.PI * 2, 0, 2.5);
+  dome.rotateZ(-Math.PI / 2);
+  const shell = add('shell', new THREE.Mesh(dome, shellMat));
+  shell.position.set(C[0], C[1], C[2]); shell.scale.set(RAD[0], RAD[1], RAD[2]);
+  shellMat.side = THREE.DoubleSide;           // the cut edge shows its inside from below
+
+  // crest: a ridge from the brow over the crown to the nape, riding on the shell
+  const crestPts = [];
+  for (let i = 0; i <= 10; i++) {
+    const t = -1.0 + 2.0 * (i / 10), ang = t * 1.25;                 // angle in the sagittal plane, 0 = straight up
+    crestPts.push([C[0] + (RAD[0] + 0.6) * Math.cos(ang), C[1] + (RAD[1] + 0.6) * Math.sin(ang), 0]);
+  }
+  for (let i = 0; i < crestPts.length - 1; i++) {
+    const a = crestPts[i], b = crestPts[i + 1];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const bar = add('crest', new THREE.Mesh(new THREE.BoxGeometry(len + 0.3, 1.0, 2.6), trimMat));
+    bar.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0);
+    bar.rotation.z = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  }
+
+  // ear pods and a lamp, left and right
+  for (const s of [-1, 1]) {
+    const pod = add('pod', new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.6, 3.2, 14), sealMat));
+    pod.rotation.x = Math.PI / 2;
+    pod.position.set(1.5, 2.5, s * (RAD[2] + 0.4));
+    const cap = add('pod-cap', new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.6, 0.6, 12), trimMat));
+    cap.rotation.x = Math.PI / 2;
+    cap.position.set(1.5, 2.5, s * (RAD[2] + 2.2));
+  }
+  const lamp = add('lamp', new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.0, 1.0), lampMat));
+  lamp.position.set(15.2, -9.5, 10.2);
+
+  // chin guard and neck seal
+  const chin = add('chin', new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), shellMat));
+  chin.scale.set(6.2, 8.5, 11.5); chin.position.set(-8.4, -8.6, 0);
+  const seal = add('seal', new THREE.Mesh(new THREE.CylinderGeometry(11.5, 12.8, 4.2, 22), sealMat));
+  seal.rotation.z = Math.PI / 2 * 0 ; seal.position.set(-9.5, 1.0, 0);          // the cylinder's axis is already local Y; turn it to X
+  seal.rotation.set(0, 0, Math.PI / 2);
+  seal.scale.set(1, 1, 1);
+  const ring = add('ring', new THREE.Mesh(new THREE.TorusGeometry(11.6, 0.7, 6, 24), trimMat));
+  ring.rotation.y = Math.PI / 2; ring.position.set(-7.4, 1.0, 0);
+
+  // visor: the lens in a thin bezel, both patches of a slightly larger ellipsoid so they stand proud of the shell
+  const bezelGeo = ellipsoidPatch(C, [RAD[0] + 0.5, RAD[1] + 0.5, RAD[2] + 0.5], -1.22, 1.22, -0.72, 0.5, 20, 8);
+  add('bezel', new THREE.Mesh(bezelGeo, bezelMat));
+  const lensGeo = ellipsoidPatch(C, [RAD[0] + 1.0, RAD[1] + 1.0, RAD[2] + 1.0], -1.12, 1.12, -0.62, 0.4, 20, 8);
+  const lens = add('visor', new THREE.Mesh(lensGeo, visorMat));
+  lens.renderOrder = 3;
+  // a pale band across the upper lens, so the glass reads as glass and not as a hole
+  const glint = add('glint', new THREE.Mesh(ellipsoidPatch(C, [RAD[0] + 1.15, RAD[1] + 1.15, RAD[2] + 1.15], -0.78, 0.5, 0.12, 0.2, 14, 1), glintMat));
+  glint.renderOrder = 4;
   return g;
 }
 
@@ -238,7 +314,7 @@ function dutyHelmet(look) {
 export function applyPersonLook(root, look) {
   if (!root || !look) return;
   root.traverse((m) => {
-    if (!m.isMesh || !m.material || m.name === 'helmet-shell' || m.name === 'helmet-seal' || m.name === 'helmet-visor') return;
+    if (!m.isMesh || !m.material || (m.name && m.name.startsWith('helmet-'))) return;
     const mats = Array.isArray(m.material) ? m.material : [m.material];
     const next = mats.map((mt) => {
       const kind = lookKind(mt.name || '');

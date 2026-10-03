@@ -31,12 +31,12 @@ export function surveyOpeningVehicle(materials, tier) {
   const seatOf = id => def.seats.find(s => s.id === id);
   const out = {
     root: built.group, wheels: built.wheels, vehicle, def, dispose: built.group.userData.dispose,
-    driverSeat: seatOf('driver'), passengerSeat: null, passengerEye: { x: 0.42, y: 1.45, z: -0.85 },
+    driverSeat: seatOf('driver'), passengerSeat: null, passengerEye: { x: 0.42, y: 1.8, z: -0.85 }, driverHead: 1.76, update: built.update, sync: built.sync,
     seatPlayer() {
       if (Object.values(vehicle.passengers).includes(OPENING_PLAYER)) return true;
       const r = board(vehicle, OPENING_PLAYER, 'right'); if (!r.ok) return false;
       out.passengerSeat = seatOf(r.seat);
-      out.passengerEye = { x: out.passengerSeat.x, y: out.passengerSeat.y + def.eye * .7, z: out.passengerSeat.z };
+      out.passengerEye = { x: out.passengerSeat.x, y: out.passengerSeat.y + def.eye, z: out.passengerSeat.z };
       return true;
     },
     unseatPlayer() { leave(vehicle, OPENING_PLAYER); out.passengerSeat = null; },

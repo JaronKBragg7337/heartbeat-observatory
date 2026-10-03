@@ -84,8 +84,9 @@ export async function runGrok4Checks({ check, section }) {
   check('a Deimos pad is a plane to 5 cm and still has no loose rock',
     deimosPad.worst < 0.05 && deimosPad.rock === 0, `worst ${deimosPad.worst.toFixed(3)} rock ${deimosPad.rock}`);
 
-  const stone = dirOf(ph, 270, -56);
-  const stoneRock = ph.rockRelief(stone.x, stone.y, stone.z);
+  // the tallest loose rock between 90 m and 400 m of the pad (the layout of the stones changed with the angular rocks: find one, do not hard-code it)
+  let stoneRock = -1;
+  for (let e = 90; e <= 400; e += 5) for (let n = -100; n <= 200; n += 5) { const d = dirOf(ph, e, n); stoneRock = Math.max(stoneRock, ph.rockRelief(d.x, d.y, d.z)); }
   const survey = dirOf(ph, 20, -12);
   check('the survey pad and the photographed boulder are not planed off by a player pad',
     ph.rockRelief(survey.x, survey.y, survey.z) === 0 && stoneRock >= 0.25, `boulder ${stoneRock.toFixed(2)}`);

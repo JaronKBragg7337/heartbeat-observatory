@@ -98,20 +98,20 @@ export class MoonWorld {
     this.far.mesh.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.97, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2 });
     this.far.mesh.receiveShadow = false;
     this.far.handover = installTierDiscard(this.far.mesh.material);
-    this.mid = mk({ sizeM: 880, res: 132, skirtM: 15 }, 'patch-mid');
-    this.near = mk({ sizeM: 48, res: 81 }, 'patch-near');
+    this.mid = mk({ sizeM: 880, res: 132, skirtM: 15, horizon: true }, 'patch-mid');
+    this.near = mk({ sizeM: 48, res: 81, horizon: true }, 'patch-near');
     // dark soil shows every dark fleck: soften the pebbles and the bump on the patches you walk on
     // (the regolith grain darkens the albedo to about 0.8 on average: lift the walking-scale patches by the same amount so they match the shell and the far tier)
     const phobos = body.id === 'phobos';
     const across = body.axesWorld && body.axesWorld.ey;
     for (const p of [this.mid, this.near]) {
       p.mesh.material.roughness = phobos ? 0.985 : 0.97;
-      p.mesh.material.color.setScalar(1.22);
+      p.mesh.material.color.setScalar(phobos ? 1.38 : 1.22);
       p._regolith = installRegolith(p.mesh.material, THREE, phobos
-        ? { kind: 'phobos', bump: 0.95, pebble: 0.22, across }
+        ? { kind: 'phobos', bump: 0.95, pebble: 0.22, across, flat: p === this.near }
         : { bump: 0.55, pebble: 0.22 });
     }
-    this.terrain.material.color.setScalar(1.22);
+    this.terrain.material.color.setScalar(phobos ? 1.38 : 1.22);
     installCoverDiscard(this.mid.mesh.material, this.terrain.cover, this.midCover, THREE);
     installCoverDiscard(this.near.mesh.material, this.terrain.cover, this.nearCover, THREE);
     this.shellHandover = installTierDiscard(this.shell.material);

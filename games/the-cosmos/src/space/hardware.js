@@ -283,14 +283,75 @@ export function buildCargoModule(opts = {}) {
   inner.add(decal);
 
   bake(inner, new Set(['cargo-beacon', 'cargo-sidelight', 'hardware-decal']));
-  // listed, as if it struck and stayed. Lift it so the low skid meets the ground.
+  // listed, as if it struck and stayed. Lift it so the low skid meets the ground (settle() redoes this against the real slope).
   inner.rotation.set(0.05, 0.46, 0.12);
   inner.updateMatrixWorld(true);
   const bb = new THREE.Box3().setFromObject(inner);
   inner.position.y = -bb.min.y + 0.03;
   g.userData.parts = parts;
   g.userData.kind = 'cargo-module';
-  return { group: g, lamp };
+
+  /**
+   * Seat the module on real ground. `heightAt(x, z)` is the ground's height above the module's origin plane, at a point of
+   * that plane (the group's own frame, +Y up). The pod is laid on the best-fit plane through six points along its two skids,
+   * kept a little off true (it came down hard), lifted until nothing is below the ground, and every skid point that is left
+   * hanging in the air gets a prop to the dirt: a steel post on a flat foot, set a little way into the ground. So it rests
+   * on six points and not one, whatever the slope. Safe to call once.
+   */
+  function settle(heightAt) {
+    const YAW = 0.46, pts = [];
+    for (const sx of [-2.7, 0, 2.7]) for (const sz of [-0.72, 0.72]) pts.push([sx, sz]);
+    // 1. plane fit on the ground under the skids, in the module's yawed footprint
+    const c = Math.cos(YAW), sn = Math.sin(YAW);
+    const place = pts.map(([x, z]) => [x * c + z * sn, -x * sn + z * c]);
+    let sx = 0, sz = 0, sy = 0, sxx = 0, szz = 0, sxz = 0, sxy = 0, szy = 0;
+    const H = place.map(([x, z]) => heightAt(x, z));
+    place.forEach(([x, z], i) => { const h = H[i]; sx += x; sz += z; sy += h; sxx += x * x; szz += z * z; sxz += x * z; sxy += x * h; szy += z * h; });
+    const n = place.length;
+    // normal equations for h = a x + b z + d
+    const m = [[sxx, sxz, sx, sxy], [sxz, szz, sz, szy], [sx, sz, n, sy]];
+    for (let i = 0; i < 3; i++) {
+      let p = i; for (let r = i + 1; r < 3; r++) if (Math.abs(m[r][i]) > Math.abs(m[p][i])) p = r;
+      [m[i], m[p]] = [m[p], m[i]];
+      for (let r = i + 1; r < 3; r++) { const f = m[r][i] / (m[i][i] || 1e-9); for (let k = i; k < 4; k++) m[r][k] -= f * m[i][k]; }
+    }
+    const d = m[2][3] / (m[2][2] || 1e-9), b = (m[1][3] - m[1][2] * d) / (m[1][1] || 1e-9), a = (m[0][3] - m[0][1] * b - m[0][2] * d) / (m[0][0] || 1e-9);
+    const slope = new THREE.Vector3(-a, 1, -b).normalize();
+    // a pod does not sit square on a 20 degree slope: it settles at most 9 degrees off level, and props take up the rest
+    const fullDeg = Math.acos(Math.min(1, slope.y)), keep = Math.min(1, 0.157 / (fullDeg || 1e-6));
+    slope.lerp(new THREE.Vector3(0, 1, 0), 1 - keep).normalize();
+    const tilt = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), slope);
+    // 2. the pod lies on that plane, with a small list of its own
+    const q = tilt.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0.02, YAW, 0.04, 'YXZ')));
+    inner.quaternion.copy(q);
+    inner.position.set(0, 0, 0);
+    inner.updateMatrixWorld(true);
+    // 3. lift until no skid point is under the ground
+    const feet = pts.map(([x, z]) => {
+      const w = new THREE.Vector3(x, 0.08, z).applyMatrix4(inner.matrix);
+      return { w, ground: heightAt(w.x, w.z) };
+    });
+    let lift = -Infinity;
+    for (const f of feet) lift = Math.max(lift, f.ground - f.w.y);
+    inner.position.y = lift;
+    // 4. a prop under every point that is left in the air
+    const props = new THREE.Group();
+    const postMat = _shared.steelDark, footMat = _shared.skid;
+    let posts = 0;
+    for (const f of feet) {
+      const bottom = f.w.y + lift, gap = bottom - f.ground;
+      if (gap < 0.04) continue;
+      const len = gap + 0.14;
+      addCyl(props, postMat, f.w.x, bottom - len / 2 + 0.02, f.w.z, 0.09, len, seg, 'y');
+      addCyl(props, footMat, f.w.x, f.ground - 0.1, f.w.z, 0.2, 0.08, seg, 'y');
+      posts++;
+    }
+    if (posts) { g.add(props); bake(props, new Set()); }
+    g.userData.settled = { groundSlopeDeg: fullDeg * 180 / Math.PI, tiltDeg: Math.acos(Math.min(1, slope.y)) * 180 / Math.PI, lift, posts, gaps: feet.map((f) => f.w.y + lift - f.ground) };
+    return g.userData.settled;
+  }
+
+  return { group: g, lamp, settle };
 }
 
 /** Triangles in a built prop, for the phone budget. */

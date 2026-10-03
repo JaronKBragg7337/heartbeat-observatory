@@ -61,7 +61,7 @@ export class Opening {
       p.group.rotation.y=Math.PI;p.play('Sit');this.cabin.root.add(p.group);this.passengers.push(p);
     }
     // Load every actor before filming; normal play remains interactive while models stream.
-    this.ready=Promise.all([seatPerson(this.driver,2),...this.passengers.map(p=>seatPerson(p,1.22))]);
+    this.ready=Promise.all([seatPerson(this.driver,this.rover.driverHead||2),...this.passengers.map(p=>seatPerson(p,1.22))]);
     this.actorsReady=false;this.ready.then(()=>{this.actorsReady=true;});
     this.cabinEmitters=[];this.cabin.root.traverse(o=>{if(o.isMesh&&o.name.endsWith(':glow')){
       o.material=o.material.clone();this.cabinEmitters.push(o.material);
@@ -206,7 +206,7 @@ export class Opening {
     if(s.stage===3){const t=clamp(this.contactSeconds/8,0,1),ease=1-(1-t)**3;
       this.rover.root.position.set(-7-(1-ease)*90,0,23+(1-ease)*20);
       this.rover.root.rotation.y=Math.atan2(-90,20);
-      for(const w of this.rover.wheels)w.rotation.x+=dt*(1-t)*18;
+      for(const w of this.rover.wheels)w.rotation.x+=dt*(1-t)*18;this.rover.update?.(dt,{speed:(1-t)*14,night:true});
     }
     this.cabin.root.visible=s.stage<4||!s.ride&&Math.hypot(s.pose.x,s.pose.z)<90;
     this.caption.textContent='';this.hint.textContent='';
@@ -246,7 +246,7 @@ export class Opening {
         const rp=ridePose(this.rideSeconds,m.height);
         this.rover.root.position.set(rp.x,rp.y+.03*Math.sin(this.elapsed*6),rp.z);
         this.rover.root.rotation.y=THREE.MathUtils.lerp(Math.atan2(-90,20),Math.atan2(2593,373),clamp(this.rideSeconds/6,0,1));
-        for(const w of this.rover.wheels)w.rotation.x+=dt*12;
+        for(const w of this.rover.wheels)w.rotation.x+=dt*12;this.rover.update?.(dt,{speed:12,night:true});
         const p=this.rover.root.position;m.place({...s.pose,x:p.x,y:p.y,z:p.z});
         eye=new THREE.Vector3().copy(this.rover.passengerEye);this.rover.root.updateMatrix();eye.applyMatrix4(this.rover.root.matrix);
         this.rideYaw=(this.rideYaw||0)+look.dx;this.ridePitch=clamp((this.ridePitch||0)-look.dy,-1,1);
