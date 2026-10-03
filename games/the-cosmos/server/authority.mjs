@@ -56,7 +56,7 @@ export class Authority {
     for(const p of Object.values(this.state.players))p.offlineAt=p.offlineAt||this.state.savedAt;
     this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.state.vehicles=this.state.vehicles||{};this.rebuild();this.vehicles.ensureAll();this.refill();
     // Restart catch-up uses real elapsed time. It continues trips/wages, never a browser clock.
-    const elapsed=Math.max(0,(this.now()-this.state.savedAt)/1000);
+    const elapsed=Math.min(300,Math.max(0,(this.now()-this.state.savedAt)/1000)); // hotfix 10/2: cap catch-up at 5 min; an active ship at 30 Hz over hours pegged the CPU and the watchdog restart loop made it worse
     if(elapsed){this.advance(elapsed,{catchUp:true});}
     this.fleet.ensure();await this.commit();return this;
   }
