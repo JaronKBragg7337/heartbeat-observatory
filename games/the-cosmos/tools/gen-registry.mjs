@@ -46,7 +46,7 @@ let stale = 0;
 for (const [rel, text] of Object.entries(OUT)) {
   const p = join(ROOT, rel);
   const cur = existsSync(p) ? readFileSync(p, 'utf8') : '';
-  if (cur === text) continue;
+  if (cur.split(String.fromCharCode(13, 10)).join(String.fromCharCode(10)) === text) continue;               // a Windows checkout may have turned LF into CRLF: same content
   stale++;
   if (check) console.error(`out of date: ${rel}`); else { writeFileSync(p, text); console.log(`wrote ${rel}`); }
 }
