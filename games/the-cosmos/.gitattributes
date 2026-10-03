@@ -3,3 +3,4 @@ src/worlds/_manifest.js merge=union
 src/ships/_manifest.js merge=union
 src/ships/_visuals-manifest.js merge=union
 src/worlds/_client-manifest.js merge=union
+src/factions/_manifest.js merge=union

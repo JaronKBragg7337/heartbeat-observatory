@@ -1,0 +1,55 @@
+// The Unbound (Callisto's second seat; DECISIONS 2026-10-03 12:06 PM: solo outcasts who never need a partner to progress but face many
+// more hoops. Claude's proposed name; Jaron can rename). Look: unpainted and self-made. Primer, bare metal, one hot colour, and
+// everything sized for one.
+export default {
+  id: 'unbound', name: 'The Unbound', kind: 'faction', home: 'callisto',
+  tagline: 'Nobody needed. Everything yours. Good luck with the door.',
+  ethos: 'Bare, stubborn and self-made. Unfinished primer, welded repairs, one hand-painted warm colour on each thing so you can tell it is theirs; the rooms have one chair and the signs say so. They never needed a partner, and they have the receipts.',
+  palette: { primary: 0x6a6258, secondary: 0xa89a86, accent: 0xff6a2e, trim: 0xe7dfd0, dark: 0x1e1b18, light: 0xefe9dc, extra: [0x7a4a38, 0x8c9496] },
+  lights: { ambient: 0xffe2bd, work: 0xfff0d8, signal: 0xff6a2e, alarm: 0xff3a1a },
+  materials: [
+    { id: 'red-primer', name: 'Red-oxide primer', color: 0x7a4a38, roughness: 0.85, metalness: 0.3, use: 'the base coat on everything: never got the topcoat, did not miss it' },
+    { id: 'bare-aluminium', name: 'Bare brushed aluminium', color: 0xa8aaa6, roughness: 0.35, metalness: 0.95, use: 'salvaged panels left unpainted; welds show as dull seams' },
+    { id: 'weld-scar', name: 'Weld scar', color: 0x3a342e, roughness: 0.7, metalness: 0.8, use: 'every join: wavy beads in a straight line (mostly)' },
+    { id: 'hand-orange', name: 'Hand-painted orange', color: 0xff6a2e, roughness: 0.55, metalness: 0.0, use: 'the one colour: a stripe, a number, a handprint, painted with a brush' },
+    { id: 'tarp-grey', name: 'Salvaged tarp', color: 0x8c9496, roughness: 0.95, metalness: 0.0, use: 'door flaps, roofs, awnings; patched and re-patched' },
+  ],
+  signs: {
+    font: 'Hand-stencilled capitals', fontStack: '"Marker Felt", "Chalkboard SE", "Comic Sans MS", cursive, sans-serif', weight: 700, upper: true, tracking: 0.06,
+    plate: { bg: 0x1e1b18, fg: 0xff6a2e, edge: 0xa89a86, radius: 0.0, rivets: true },
+    warning: { bg: 0xff6a2e, fg: 0x1e1b18, stripe: [0xff6a2e, 0x1e1b18] },
+    banner: { bg: 0x6a6258, fg: 0xefe9dc },
+    emblem: { shape: 'broken-chain', fg: 0xff6a2e, bg: 0x1e1b18, meaning: 'a chain with one open link: bound to nobody' },
+    numbering: { pattern: 'ONE / #', example: 'ONE / 1' },
+    places: ['Camp One', 'The One Chair', 'Back of Beyond', 'Door (Locked)', 'Your Own Problem', 'The Other Door (Also Locked)'],
+    slogans: ['NOBODY NEEDED.', 'ONE CHAIR. YOURS.', 'SELF-SERVICE. ALL OF IT.', 'THE DOOR IS LOCKED. THE KEY IS IN THE OTHER BUILDING.', 'WE ASKED FOR HELP ONCE. IT WAS FINE.'],
+    graffiti: ['MYSTARA HAS A KEY. IT IS NOT FOR US.', 'I DID THIS ALONE (AGAIN)', 'DAY 212: STILL NOBODY. GREAT.'],
+  },
+  uniforms: {
+    worker: { cloth: 0x7a7468, trim: 0xff6a2e, note: 'whatever fits, patched: grey canvas with one orange sleeve that someone sewed on themselves' },
+    civilian: { cloth: 0x8a7a68, trim: 0xe7dfd0, note: 'layers of mismatched surplus, an orange scarf or glove; never a matching pair' },
+    guard: { cloth: 0x4a443c, trim: 0xff6a2e, note: 'the camp\'s one watcher: heavy coat, a rifle-shaped thing made of pipe, an orange handprint on the helmet', helmet: { shell: 0x6a6258, trim: 0xff6a2e, visorTint: 0x7a5a32, visorOpacity: 0.6 } },
+    officer: { cloth: 0x5a544a, trim: 0xff6a2e, note: 'whoever is in charge this week: a clipboard with one name on it' },
+    pilot: { cloth: 0x6a5f50, trim: 0xff6a2e, note: 'a solo pilot: sheepskin collar, goggles pushed up, a seat sized exactly for them', helmet: { shell: 0x7a4a38, trim: 0xff6a2e, visorTint: 0x7a5a32, visorOpacity: 0.7 } },
+    trader: { cloth: 0x9a8a72, trim: 0xff6a2e, note: 'the camp swap-table keeper: sells what the last stranger left behind, at fair-ish prices' },
+    leader: { cloth: 0x3a342e, trim: 0xff6a2e, note: 'no leader, officially: the person with the best coat and the most orange paint on their hands' },
+  },
+  hair: [0x1c140f, 0x3b2416, 0x6b3a22, 0x7a736c, 0xb6b0a4],
+  architecture: {
+    massing: 'Small and singular: one-person huts, a lean-to against a wreck, a hab made from a cargo can; nothing connects to anything else. A larger shared building is a workshop with exactly one bench.',
+    roofs: 'tarp and corrugated sheet, weighted with rocks and a tyre; an orange handprint on the ridge',
+    windows: 'one porthole per building, usually salvaged from a ship',
+    lighting: 'a single warm lamp per door, an orange glow in the window; the dark between is very dark',
+    ground: 'bare ice and dust, a single path worn to each door, orange paint arrows that point at things nobody asked about',
+    motifs: ['open chain link', 'orange handprint', 'single chair', 'weld bead', 'tarp patch', 'one porthole'],
+    props: ['one chair at a table for one', 'a mug with a name on it', 'salvaged ship seat as a sofa', 'a kettle on a heater', 'a padlock on everything', 'a tally of days scratched on the wall', 'a "back in 5 years" sign'],
+    avoid: ['tidy rows and uniform colour (any faction)', 'shared halls and long tables', 'new paint'],
+  },
+  livery: {
+    hull: 0x6a6258, hullAlt: 0x7a4a38, belly: 0x3a342e, trim: 0xa8aaa6, accent: 0xff6a2e, engineGlow: 0xff9a5a,
+    stripe: { kind: 'handpaint', colors: [0xff6a2e, 0xe7dfd0], widthFrac: 0.04, note: 'one hand-brushed orange stripe, not quite straight, and a hand-painted name; panels left in primer or bare metal' },
+    shape: 'A single-seat or two-seat working hull bashed out of salvage: asymmetric, patched, a mismatched engine on one side. Built by one person, for one person; every weld is visible and proud.',
+    registryPrefix: 'UB-', nameStyle: 'a one-word grumble, hand-painted: Nope, Fine, Mine, Alone-ish',
+    weathering: { grime: 0.5, scorch: 0.2, patchwork: 0.6 }, navBeacon: 0xff6a2e,
+  },
+};

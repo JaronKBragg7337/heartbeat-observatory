@@ -9,6 +9,7 @@
 //   src/worlds/_client-manifest.js   one import per src/worlds/<name>/client.js         -> WORLD_CLIENTS (client only: the world's dressing)
 //   src/ships/_manifest.js           one import per src/ships/<name>/def.js             -> SHIP_DEFS     (server-safe: no renderer)
 //   src/ships/_visuals-manifest.js   one import per src/ships/<name>/visuals.js         -> SHIP_VISUALS  (client only)
+//   src/factions/_manifest.js        one import per src/factions/<name>/style.js        -> FACTION_STYLES (F0: the faction style sheet; server-safe)
 //
 // Why files and not a directory scan at run time: the game is plain ES modules in the browser, with no build step, so every module
 // must be named in an import. Why one line per entry: git's union merge driver (see .gitattributes) then merges two builders'
@@ -38,6 +39,7 @@ const OUT = {
   'src/worlds/_manifest.js': manifest({ header: HDR('Every src/worlds/<name>/def.js.'), sub: 'worlds', file: 'def.js', prefix: 'w', exportName: 'WORLD_DEFS' }),
   'src/worlds/_client-manifest.js': manifest({ header: HDR('Every src/worlds/<name>/client.js (client only: sites, props, weather).'), sub: 'worlds', file: 'client.js', prefix: 'c', exportName: 'WORLD_CLIENTS', keyed: true }),
   'src/ships/_manifest.js': manifest({ header: HDR('Every src/ships/<name>/def.js (server-safe).'), sub: 'ships', file: 'def.js', prefix: 's', exportName: 'SHIP_DEFS' }),
+  'src/factions/_manifest.js': manifest({ header: HDR('Every src/factions/<name>/style.js (F0 faction style sheet; pure data).'), sub: 'factions', file: 'style.js', prefix: 'f', exportName: 'FACTION_STYLES' }),
   'src/ships/_visuals-manifest.js': manifest({ header: HDR('Every src/ships/<name>/visuals.js (client only).'), sub: 'ships', file: 'visuals.js', prefix: 'v', exportName: 'SHIP_VISUALS', keyed: true }),
 };
 

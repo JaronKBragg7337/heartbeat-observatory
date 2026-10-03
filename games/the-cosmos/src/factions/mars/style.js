@@ -1,0 +1,55 @@
+// Mars: neutral. Nobody owns anything on Mars; its traders and staff are NPCs; Marineris Port is the one built world today.
+// This style is what the port ALREADY looks like (src/port/portArt.js: teal display panels with cyan and amber text, ochre ground
+// marks, grey concrete) written down, so new Mars work (the arrivals hall, the town, the orbit ring) matches it.
+export default {
+  id: 'mars', name: 'Mars (neutral)', kind: 'neutral', home: 'mars',
+  tagline: 'Mars serves everyone. Mars also charges everyone.',
+  ethos: 'Practical and weathered: a port town in rust-coloured dust. Teal display glass, amber text, ochre lane marks and a lot of grey concrete; the staff are neutral and a little tired of being stared at. Every sign is bilingual in the sense that it says both the rule and the fee.',
+  palette: { primary: 0x77766d, secondary: 0xb5694a, accent: 0x67c4cf, trim: 0xd3ad63, dark: 0x071c24, light: 0xe9ecec, extra: [0xe5ac6c, 0x8fedef] },
+  lights: { ambient: 0xffe4c4, work: 0xfff1de, signal: 0x67c4cf, alarm: 0xe5ac6c },
+  materials: [
+    { id: 'port-concrete', name: 'Port concrete', color: 0x77766d, roughness: 0.95, metalness: 0.0, use: 'pads, walls, kerbs: grey going orange with dust' },
+    { id: 'regolith-rust', name: 'Rust regolith', color: 0xb5694a, roughness: 1.0, metalness: 0.0, use: 'the ground, dust on everything, the lowest metre of every wall' },
+    { id: 'lane-ochre', name: 'Lane-mark ochre', color: 0xd3ad63, roughness: 1.0, metalness: 0.0, use: 'painted lines, pad numbers, hazard edges' },
+    { id: 'display-teal', name: 'Display glass', color: 0x071c24, roughness: 0.15, metalness: 0.2, use: 'boards, kiosks, tower glass: dark teal with cyan and amber text' },
+    { id: 'port-white', name: 'Port white', color: 0xe9ecec, roughness: 0.5, metalness: 0.05, use: 'tugs, shuttles, staff vehicles, the arrivals hall panels' },
+  ],
+  signs: {
+    font: 'Monospace display', fontStack: '"SF Mono", Menlo, Consolas, monospace', weight: 700, upper: true, tracking: 0.06,
+    plate: { bg: 0x071c24, fg: 0x8fedef, edge: 0x67c4cf, radius: 0.02, rivets: false },
+    warning: { bg: 0xe5ac6c, fg: 0x071c24, stripe: [0xd3ad63, 0x071c24] },
+    banner: { bg: 0x077c8a, fg: 0xe9ecec },
+    emblem: { shape: 'horizon-ring', fg: 0x67c4cf, bg: 0x071c24, meaning: 'a ring cut by a horizon line: a stopping place between worlds, belonging to none' },
+    numbering: { pattern: 'PAD ## / BAY #', example: 'PAD 03 / BAY 1' },
+    places: ['Marineris Port', 'The Arrivals Hall', 'Survey Office', 'The Weigh Bay', 'Crew Hall', 'The Exchange'],
+    slogans: ['MARS SERVES EVERYONE. MARS ALSO CHARGES EVERYONE.', 'NO WEAPONS IN NEUTRAL AIRSPACE. YES, YOU.', 'PLEASE DO NOT SHOOT THE STAFF. THEY ARE NEUTRAL.', 'ALL WORLDS WELCOME. ALL WORLDS PAY THE SAME DOCKING FEE.', 'THE DUST GETS EVERYWHERE. WE KNOW.'],
+    graffiti: ['FORTIS WAS HERE (ASKED NICELY)', 'SECOND PAD FROM THE LEFT IS A MYTH', 'THE EXCHANGE RATE IS A SUGGESTION'],
+  },
+  uniforms: {
+    worker: { cloth: 0x8d7264, trim: 0xd3ad63, note: 'rust-dusted overalls with an ochre patch and a port ID badge; the people already in the hall' },
+    civilian: { cloth: 0x9a7b62, trim: 0x67c4cf, note: 'practical layers, dust-coloured; a visitor from anywhere is in their own faction\'s colours' },
+    guard: { cloth: 0x6a7078, trim: 0xe5ac6c, note: 'port patrol: grey with an amber stripe and a "NEUTRAL" armband; their gun is holstered under three straps', helmet: { shell: 0x77766d, trim: 0xe5ac6c, visorTint: 0x7a5a32, visorOpacity: 0.6 } },
+    officer: { cloth: 0x4a5a64, trim: 0xe5ac6c, note: 'the port master: a clean dark-teal jacket with an amber cuff and a very large mug' },
+    pilot: { cloth: 0x7a7060, trim: 0x67c4cf, note: 'shuttle pilot in a white-and-rust jacket', helmet: { shell: 0xe9ecec, trim: 0xb5694a, visorTint: 0x1c2128, visorOpacity: 0.7 } },
+    trader: { cloth: 0x9a8a72, trim: 0xe5ac6c, note: 'market stall-holder: an apron in every colour, a calculator that has been taped back together' },
+    leader: { cloth: 0x2d4a52, trim: 0xe5ac6c, note: 'port master again: neutral means no colour of their own, only the port\'s' },
+  },
+  hair: [0x1c140f, 0x3b2416, 0x6b3a22, 0x7a736c, 0x4a2418],
+  architecture: {
+    massing: 'Low rectangular halls, towers and fuel farms scattered across graded flat pads; buried habitats in the town; low walls against the dust. Nothing taller than the control tower.',
+    roofs: 'flat with dust drifts, solar panels tilted toward a thin sun, a few domes in the town',
+    windows: 'wide dark-teal glass in public buildings, small shuttered ports in the town',
+    lighting: 'amber at pad edges, cyan on boards and kiosks, warm white inside; red only for an emergency',
+    ground: 'graded rust regolith, grey concrete pads, ochre lane marks, boot-worn paths',
+    motifs: ['horizon ring', 'ochre lane mark', 'cyan display panel', 'pad number', 'dust drift', 'neutral armband'],
+    props: ['fuel bowser', 'display board with live status', 'weigh bay scale', 'cargo pallet', 'baggage trolley', 'tea urn at the hall', 'a very dusty flag of nobody'],
+    avoid: ['any one faction\'s emblem as a main motif', 'bright new paint', 'weapons on display'],
+  },
+  livery: {
+    hull: 0xd8d2c4, hullAlt: 0xc4beb0, belly: 0x77766d, trim: 0x071c24, accent: 0x67c4cf, engineGlow: 0xffd9a0,
+    stripe: { kind: 'band', colors: [0xb5694a, 0x67c4cf], widthFrac: 0.05, note: 'a rust-orange band with a thin cyan line; large pad numbers on the sides' },
+    shape: 'Workmanlike: boxy tugs, shuttles and tenders. Plain white hulls, a rust band, big windows and little ornament. Looks like it has done this ten thousand times and will do it ten thousand more.',
+    registryPrefix: 'MR-', nameStyle: 'a pad number or a plain place: TUG 4, SHUTTLE 2, PHOBOS RUN',
+    weathering: { grime: 0.45, scorch: 0.15, patchwork: 0.1 }, navBeacon: 0xe5ac6c,
+  },
+};

@@ -1331,6 +1331,9 @@ if (devMode) window.cosmos = {
   },
 };
 
+// F0 (faction style sheet): the in-game style gallery, dev only. ?dev=1&styles=1 opens it (styles=<faction id> opens on that faction); window.cosmos.styles() too.
+if (devMode) { const openStyles = (id) => import('./factions/gallery.js').then((m) => m.openGallery({ engine, people, THREE, mats: ship.matsExt, open: id || params.get('styles') })); window.cosmos.styles = openStyles; if (params.get('styles')) setTimeout(() => openStyles(), 1500); }
+
 /** Reproducible horizon review, metres above the ORIGINAL ground; simulation pauses. */
 function horizonView(height = 120, { before = false, yaw = 0 } = {}) {
   const p = patch.worldPos, f = walker.updateFrame();
