@@ -31,7 +31,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
-import { installRegolith, mod360 } from './regolith.js';
+import { installRegolith, mod360, modP } from './regolith.js';
 import { surfaceRadiusAlong, surfaceRadiusFast, materialAt, elevationAt, MATERIALS } from './field.js';
 import { localFrame, geodeticToCartesian, cartesianToGeodetic } from './geodesy.js';
 
@@ -90,8 +90,10 @@ if (abs(te) < uTierHalf && abs(tn) < uTierHalf) discard;`);
 // ground is coloured by its geology.
 // ---------------------------------------------------------------------------
 const _basalt = new THREE.Color(0x4a3029), _dustBright = new THREE.Color(0xd7a06c), _ice = new THREE.Color(0xe6e2dc);
+const _alb = { k: 1, red: 0 };
 const _scoured = new THREE.Color(0x8a6048), _dusty = new THREE.Color(0xc27a4a);   // allocated once: this runs per vertex
 export function shadeVertex(body, px, py, pz, elevation, color, matKnown, castShadows, tintRock) {
+  shadeVertex.rock = 0;
   const mat = matKnown || materialAt(body, px, py, pz);
   color.setHex(mat.color);
   if (body.kind === 'moon') {
@@ -100,16 +102,18 @@ export function shadeVertex(body, px, py, pz, elevation, color, matKnown, castSh
     const k = 0.84 + 0.30 * (0.5 + 0.5 * Math.sin(px * 0.0023 + py * 0.0017) * Math.sin(pz * 0.0021 + px * 0.0009 + 1.3));
     const f = 0.9 + 0.2 * (0.5 + 0.5 * Math.sin(px * 0.071 + pz * 0.053) * Math.sin(py * 0.067 + px * 0.041));
     color.multiplyScalar(k * f);
+    // the moon's own albedo units (red and blue, bright ejecta, dust drifts): one grey made the wide views flat
+    if (body.albedo) { const a = body.albedo(px, py, pz, _alb); color.multiplyScalar(a.k); color.r *= 1 + 0.07 * a.red; color.g *= 1 + 0.01 * a.red; color.b *= 1 - 0.09 * a.red; }
     // Crater floors and groove troughs, baked into the vertex colour. The sun's shadow map only covers the ground under the camera.
     // (A patch that casts its own shadows from its heights skips this statistical stand-in.)
     if (body.cavityShade && !castShadows) color.multiplyScalar(body.cavityShade(px, py, pz));
-    if (body.id === 'phobos') {
-      color.r *= 0.92; color.g *= 0.96;
-      // loose rock is its own darker, cooler stone; the dust between it is a little lighter and warmer
-      const r = Math.hypot(px, py, pz) || 1, rock = tintRock && body.rockRelief ? body.rockRelief(px / r, py / r, pz / r) : 0;
-      if (rock > 0.02) { const k = Math.min(1, rock * 4); color.multiplyScalar(1 - 0.24 * k); color.b *= 1 + 0.06 * k; color.r *= 1 - 0.04 * k; }
-      else if (tintRock) { color.r *= 1.03; color.g *= 1.01; }
-    }
+    if (body.id === 'phobos') { color.r *= 0.92; color.g *= 0.96; }
+    else { const lum = color.r * 0.299 + color.g * 0.587 + color.b * 0.114; color.r += (lum - color.r) * 0.3; color.g += (lum - color.g) * 0.3; color.b += (lum - color.b) * 0.3; }      // Deimos: a pale dust, less orange than its material
+    // loose rock is its own darker, cooler stone; the dust between it is a little lighter and warmer
+    const r = Math.hypot(px, py, pz) || 1, rock = tintRock && body.rockRelief ? body.rockRelief(px / r, py / r, pz / r) : 0;
+    shadeVertex.rock = Math.min(1, rock * 8);       // read back by the patch that is building (rockness attribute)
+    if (rock > 0.02) { const k = Math.min(1, rock * 4); color.multiplyScalar(1 - 0.24 * k); color.b *= 1 + 0.06 * k; color.r *= 1 - 0.04 * k; }
+    else if (tintRock) { color.r *= 1.03; color.g *= 1.01; }
     return color;
   }
 
@@ -233,6 +237,8 @@ export class LocalPatch {
     this.geo = new THREE.BufferGeometry();
     this.geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
     this.geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    // how much of a vertex's ground is loose rock (moon walking patch only): the faceted shading is for rock faces, not for crater walls
+    if (opts.horizon) this.geo.setAttribute('rockness', new THREE.BufferAttribute(new Float32Array(verts.length / 3), 1));
     this.geo.setIndex(indices);
 
     this.mesh = new THREE.Mesh(this.geo, new THREE.MeshStandardMaterial({
@@ -407,9 +413,10 @@ export class LocalPatch {
   }
 
   /** Morph the outer two rows into the actual coarser triangles, sealing LOD height discontinuities. */
-  blendEdgeTo(coarse) {
+  blendEdgeTo(coarse, fine = null) {
     if (!this.builtAt || !coarse.builtAt) return;
-    const signature = `${this.buildCount}/${coarse.buildCount}/${coarse._blendSignature || ''}`;
+    if (fine && !fine.builtAt) fine = null;
+    const signature = `${this.buildCount}/${coarse.buildCount}/${coarse._blendSignature || ''}/${fine ? fine.buildCount : 0}`;
     if (this._blendSignature === signature) return;
     if (this._baseBuild !== this.buildCount) {
       this._baseBuild = this.buildCount;
@@ -428,6 +435,19 @@ export class LocalPatch {
       const t = 1 - edge / 2, weight = t * t * (3 - 2 * t), nr = l + (r - l) * weight;
       pos[k] = x / l * nr - o.x; pos[k + 1] = y / l * nr - o.y; pos[k + 2] = z / l * nr - o.z;
       this._radii[v] = nr;
+    }
+    // Under the finer tier this patch lies on the finer tier's surface. The finer tier (0.6 m) sees relief this one (6.7 m) cannot, so
+    // where this patch's coarse triangles sat above it they poked through as a staircase of square cells round the edge of the finer
+    // patch. Conforming every vertex inside the finer patch to its drawn surface makes the two meet at the finer patch's edge
+    // (nothing of this patch under it is seen: it is hidden, or cut away as the hole).
+    if (fine) {
+      for (let v = 0; v < n * n; v++) {
+        const k = v * 3, x = pos[k] + o.x, y = pos[k + 1] + o.y, z = pos[k + 2] + o.z, l = Math.hypot(x, y, z);
+        const r = fine.surfaceRadiusExact(x / l, y / l, z / l);
+        if (r === null || !(r > 0)) continue;
+        pos[k] = x / l * r - o.x; pos[k + 1] = y / l * r - o.y; pos[k + 2] = z / l * r - o.z;
+        this._radii[v] = r;
+      }
     }
     for (let e = 0; e < this._edge.length; e++) {
       const k = this._edge[e] * 3, q = (n * n + e) * 3;
@@ -479,7 +499,7 @@ export class LocalPatch {
     this._job = {
       px, py, pz, g, f, originR, row: 0,
       ox: (px / l) * originR, oy: (py / l) * originR, oz: (pz / l) * originR,
-      pos: new Float32Array(this.geo.attributes.position.array.length), col: new Float32Array(this.geo.attributes.color.array.length), radii: new Float64Array(n * n),
+      pos: new Float32Array(this.geo.attributes.position.array.length), col: new Float32Array(this.geo.attributes.color.array.length), rockness: this.geo.attributes.rockness ? new Float32Array(this.geo.attributes.rockness.array.length) : null, radii: new Float64Array(n * n),
       t0: (typeof performance !== 'undefined' ? performance.now() : Date.now()), spent: 0,
       color: new THREE.Color(),
     };
@@ -527,11 +547,13 @@ export class LocalPatch {
         const gg = cartesianToGeodetic(body, sx, sy, sz);
         shadeVertex(body, sx, sy, sz, gg.alt, color, undefined, this.horizon, this.horizon && this.sizeM / (n - 1) < 2);
         col[k] = color.r; col[k + 1] = color.g; col[k + 2] = color.b;
+        if (job.rockness) job.rockness[j * n + i] = shadeVertex.rock;
       }
       if (now() - t0 >= budgetMs) break;
     }
     job.spent += now() - t0;
     if (job.row < n) return false;
+    if (body.kind === 'moon') this._slopeTint(job);
     if (this.horizon) this._horizonShade(job);
 
     for (let e = 0; e < this._edge.length; e++) {
@@ -546,13 +568,14 @@ export class LocalPatch {
     // Done: swap the new surface in, all at once.
     this.centre = { lat: job.g.lat, lon: job.g.lon };
     this.worldPos = { x: ox, y: oy, z: oz };
-    if (this._regolith) this._regolith.uRegOffset.value.set(mod360(ox), mod360(oy), mod360(oz));
+    if (this._regolith) { const P = this.regPeriod || 360; this._regolith.uRegOffset.value.set(modP(ox, P), modP(oy, P), modP(oz, P)); }
     if (this._regolith && this._regolith.uRegUp) { const ol = Math.hypot(ox, oy, oz) || 1; this._regolith.uRegUp.value.set(ox / ol, oy / ol, oz / ol); }
     this.builtAt = { x: job.px, y: job.py, z: job.pz };
     this._frame = f;
     this._originR = job.originR;
     this.geo.attributes.position.array.set(pos);
     this.geo.attributes.color.array.set(col);
+    if (job.rockness) { this.geo.attributes.rockness.array.set(job.rockness); this.geo.attributes.rockness.needsUpdate = true; }
     this._radii.set(radii);
     this._reindexFrom(this.geo.attributes.position.array, ox, oy, oz);
     this.geo.attributes.position.needsUpdate = true;
@@ -563,6 +586,28 @@ export class LocalPatch {
     this.lastBuildMs = job.spent;
     this._job = null;
     return true;
+  }
+
+  /**
+   * Steep ground on a moon is lighter and a little bluer than the dust around it: loose regolith slides off a slope and shows the
+   * fresher, brighter material under it (the bright streaks down real crater walls). Crater walls, groove banks and the faces of
+   * rocks read as different stuff from the flat dust, which makes the wide views readable. Heights are those the patch just sampled.
+   */
+  _slopeTint(job) {
+    const n = this.res, step = this.sizeM / (n - 1), { pos, col, ox, oy, oz } = job;
+    if (step < 2) return;                      // the walking-scale patch keeps the albedo colours: its slopes are grit and rock faces, which the shading already shows
+    const ol = Math.hypot(ox, oy, oz) || 1, ux = ox / ol, uy = oy / ol, uz = oz / ol;
+    const hts = new Float32Array(n * n);
+    for (let v = 0; v < n * n; v++) hts[v] = pos[v * 3] * ux + pos[v * 3 + 1] * uy + pos[v * 3 + 2] * uz;
+    // the slope over a fixed ~70 m baseline, whatever the tier's spacing, so the tiers agree where they meet
+    const kk = Math.max(1, Math.min(12, Math.round(70 / step)));
+    for (let j = kk; j < n - kk; j++) for (let i = kk; i < n - kk; i++) {
+      const v = j * n + i, gx = (hts[v + kk] - hts[v - kk]) / (2 * kk * step), gy = (hts[v + kk * n] - hts[v - kk * n]) / (2 * kk * step), sl = Math.hypot(gx, gy);
+      const t = Math.min(1, Math.max(0, (sl - 0.2) / 0.6)), s = t * t * (3 - 2 * t);
+      if (s <= 0) continue;
+      const m = 1 + 0.22 * s, k3 = v * 3;
+      col[k3] *= m * (1 - 0.03 * s); col[k3 + 1] *= m; col[k3 + 2] *= m * (1 + 0.05 * s);
+    }
   }
 
   /**
@@ -598,7 +643,7 @@ export class LocalPatch {
           const d = dists[k], gi = i + gx * d / step, gj = j + gy * d / step;
           if (gi < 0 || gj < 0 || gi > n - 1 || gj > n - 1) { exitD = d; break; }
           const over = sample(gi, gj) - (h0 + d * tanE) + 0.04;
-          if (over > 0) { const w = Math.min(1, over / (0.12 + 0.012 * d)); if (w > occ) occ = w; if (occ >= 1) break; }
+          if (over > 0) { const w = Math.min(1, over / (0.3 + 0.02 * d)); if (w > occ) occ = w; if (occ >= 1) break; }
         }
       } else occ = 1;                                      // the Sun is on the horizon or below it: everything is in shadow
       const trust = Math.min(1, exitD / Math.min(10, this.sizeM * 0.12));
@@ -615,21 +660,34 @@ export class LocalPatch {
     }
   }
 
+  /**
+   * Vertex normals from the WHOLE grid, never from the quads that happen to be drawn.
+   *
+   * The drawn index drops the quads handed to a finer tier, and that hole moves every time the finer tier re-centres (setExcluded
+   * re-cuts the index and does not re-sample). Normals taken from the cut index left a vertex that sat inside the old hole with
+   * none: zero length, so the quads that came back into view when the hole moved on drew pure black (the "black hexagon" in aerial
+   * shots, one ~16 m polygon per re-centring). Normals from the full grid depend only on the heights, so they stay right wherever
+   * the hole goes.
+   */
   _computeNormals() {
-    const n = this.res;
-    this.geo.computeVertexNormals();
-    // Skirts seal the edge but must not bend the terrain's lighting toward a vertical wall.
+    const n = this.res, geo = this.geo, drawn = geo.index;
+    if (!this._fullIndex || this._fullIndexRes !== n) {
+      const full = new Uint32Array((n - 1) * (n - 1) * 6);
+      let q = 0;
+      for (let j = 0; j < n - 1; j++) for (let i = 0; i < n - 1; i++) { const a = j * n + i, b = a + 1, c2 = a + n, dd = c2 + 1; full[q++] = a; full[q++] = b; full[q++] = c2; full[q++] = b; full[q++] = dd; full[q++] = c2; }
+      this._fullIndex = new THREE.BufferAttribute(full, 1); this._fullIndexRes = n;
+    }
+    geo.index = this._fullIndex;                 // the grid's own triangles, skirts excluded: they must not bend the terrain's lighting
+    geo.computeVertexNormals();
+    geo.index = drawn;
     if (this._edge.length) {
-      const all = this.geo.index.array.slice(), coreCount = all.length - this._edge.length * 6;
-      this.geo.setIndex(Array.from(all.subarray(0, coreCount)));
-      this.geo.computeVertexNormals();
-      const normals = this.geo.attributes.normal.array;
+      const normals = geo.attributes.normal.array;
       for (let e = 0; e < this._edge.length; e++) {
         const k = this._edge[e] * 3, q = (n * n + e) * 3;
         normals[q] = normals[k]; normals[q + 1] = normals[k + 1]; normals[q + 2] = normals[k + 2];
       }
-      this.geo.setIndex(Array.from(all));
     }
+    geo.attributes.normal.needsUpdate = true;
   }
 
   /**

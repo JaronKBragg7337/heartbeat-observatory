@@ -325,7 +325,9 @@ export class SpaceSystem {
       else if (w.active) w.setTiersVisible(false);
     }
     const near = this.activeMoon;
-    this.sky.update(dt, this._localSun, { marsShine: near ? 1 : 0 });
+    let up = null;
+    if (near) { const cm = this._camIn(near, this._cam), l = Math.hypot(cm.x, cm.y, cm.z) || 1; up = this._moonUp || (this._moonUp = { x: 0, y: 1, z: 0 }); up.x = cm.x / l; up.y = cm.y / l; up.z = cm.z / l; }
+    this.sky.update(dt, this._localSun, { marsShine: near ? 1 : 0, up });
     if (this.o.ship && this.o.ship.ready) this.sky.scaleEnvironment(this.o.ship.matsExt);
     this.jobs.update(dt);
     if (this.ui) this.ui.update(dt);

@@ -81,8 +81,11 @@ export function makeMoon(id) {
   const grooves = [];
   for (let i = 0; i < 16; i++) {
     const ang = (-25 + 70 * hash3(i, 1, 7, seed)) * DEG;
+    // Wide and deep enough to read from orbit (the real ones are 100-200 m across and tens of metres deep). About a third carry a
+    // chain of pits along the floor, as the real grooves do.
     grooves.push({ n: [0, Math.cos(ang), Math.sin(ang)], off: (hash3(i, 2, 7, seed) * 2 - 1) * Rm * 0.8,
-      w: 55 + 70 * hash3(i, 3, 7, seed), dep: 5 + 11 * hash3(i, 4, 7, seed), phase: i * 17.31 });
+      w: 70 + 85 * hash3(i, 3, 7, seed), dep: 8 + 14 * hash3(i, 4, 7, seed), phase: i * 17.31,
+      chain: hash3(i, 5, 7, seed) < 0.42 ? { rp: 15 + 22 * hash3(i, 6, 7, seed), gap: 2.4 + 0.8 * hash3(i, 8, 7, seed) } : null });
   }
 
   const M = MATS[S.id];
@@ -103,9 +106,11 @@ export function makeMoon(id) {
       const s = Rm * Math.acos(Math.min(1, cosang));
       const t = s / f.radiusM;
       if (t < 1) { const q = 1 - t * t; h -= f.depthM * Math.pow(q, 1.15) * (t > 0.82 ? 1 : 1); }
+      // The rim and the ejecta blanket fade in and out smoothly: they used to switch on at a fixed radius, and a switch is a cliff
+      // (60 m round Stickney's rim, 49 m where its blanket starts, 3.7 m where it ends)
       const rimH = f.depthM * 0.12;
-      if (t >= 0.8) h += rimH * Math.exp(-(((t - 1.02) / 0.2) ** 2));
-      if (t > 1.1 && t < 4) h += f.depthM * 0.035 / (t * t);       // ejecta blanket
+      h += rimH * Math.exp(-(((t - 1.02) / 0.2) ** 2));
+      if (t > 0.9 && t < 4.4) h += f.depthM * 0.035 / (t * t) * sstep(0.9, 1.5, t) * (1 - sstep(3, 4.4, t));       // ejecta blanket
     }
     // craters at every scale
     for (let k = 0; k < CELLS.length; k++) {
@@ -123,8 +128,11 @@ export function makeMoon(id) {
         if (d2 > rc * rc * 9) continue;
         const t = Math.sqrt(d2) / rc, D = 2 * rc * scale, dep = 0.16 * D;
         if (t < 1) h -= dep * Math.pow(1 - t * t, 1.2);
+        // (Known and left alone: a point only looks at the craters of its own cell, so the rim's shoulder and the 1/t^3 ejecta tail are cut off
+        // at the cell's wall, a straight step up to a few metres high for the biggest craters. Fading them out changes the survey pad's
+        // height by 6 m, which moves the drive's standoff point and tips estimateTrip into a non-arriving case; see REVIEW.)
         h += 0.04 * D * Math.exp(-(((t - 1.04) / 0.22) ** 2));
-        if (t > 1.2) h += 0.012 * D / (t * t * t);
+        h += 0.012 * D / (t * t * t) * sstep(1.0, 1.45, t);
       }
     }
     // grooves
@@ -138,6 +146,18 @@ export function makeMoon(id) {
       const t = dd / g.w;
       h -= g.dep * seg * RS * (t < 1 ? (1 - t * t) : 0);
       h += g.dep * 0.25 * seg * RS * Math.exp(-(((t - 1.15) / 0.25) ** 2));
+      // the pit chain: round pits one after another down the middle of the trough
+      if (g.chain && seg > 0.5 && RS > 0.5 && dd < g.w * 0.5) {
+        const tt = -py * g.n[2] + pz * g.n[1], rr = Math.hypot(px, tt) || 1;       // in the groove's plane, about the body's long axis
+        const sp = g.chain.rp * 2 * g.chain.gap, dphi = sp / rr, phi = Math.atan2(tt, px);
+        const k = Math.round(phi / dphi), dph = (phi - k * dphi) * rr;
+        const ps = Math.hypot(dph, dd), q = ps / g.chain.rp;
+        if (q < 1.6 && hash3(k, i, 11, seed) > 0.18) {
+          const dp = g.chain.rp * (0.22 + 0.1 * hash3(k, i, 12, seed));
+          if (q < 1) h -= dp * Math.pow(1 - q * q, 1.15);
+          h += dp * 0.16 * Math.exp(-(((q - 1.08) / 0.2) ** 2));
+        }
+      }
     }
     // regolith roughness: hills you walk over, rocks you step round, grit
     h += fbm(px * 0.012, py * 0.012, pz * 0.012, seed + 21, 3) * 6.0 * RS;
@@ -154,7 +174,7 @@ export function makeMoon(id) {
 
   // Loose rock, in the density field (so a boot and a bucket meet the same stone the mesh draws). One rock per cell, inset so
   // it never crosses into the next cell: the height is zero on the footprint's edge, and the footprint stays inside the cell.
-  // Phobos only; Deimos stays the smooth one.
+  // Phobos is rocky; Deimos has only a few low blocks and stones standing out of its dust.
   //
   // A rock is an ANGULAR block, not a dome: a 5-7 sided footprint (each facet its own distance and turn), a flat-ish top cut by two
   // tilted planes (so there is a ridge), and straight walls that rise from the footprint's edge at no more than about 40 degrees,
@@ -164,13 +184,68 @@ export function makeMoon(id) {
     { s: 48, dens: 0.6, rLo: 5, rHi: 11, hLo: 1.5, hHi: 3.4 },        // boulders: two to three metres tall and a dozen across, angular
     { s: 12, dens: 0.48, rLo: 1.8, rHi: 3.4, hLo: 0.45, hHi: 1.3 },   // rocks at knee and waist height
     { s: 6, dens: 0.3, rLo: 0.8, rHi: 1.5, hLo: 0.1, hHi: 0.42 },    // stones underfoot
-  ] : [];
+  ] : [
+    // Deimos: a deep dust blanket with a few blocks sticking out of it and small stones on top. Low and soft, never a boulder field.
+    { s: 40, dens: 0.34, rLo: 4, rHi: 8, hLo: 0.7, hHi: 1.6 },
+    { s: 9, dens: 0.2, rLo: 1.2, rHi: 2.6, hLo: 0.2, hHi: 0.55 },
+    { s: 6, dens: 0.22, rLo: 0.7, rHi: 1.3, hLo: 0.08, hHi: 0.3 },
+  ];
+  // Named rocks around the survey pad (east, north metres from the pad centre; rc footprint radius, h height). The pad is graded flat out to
+  // 62 m and the loose rock is kept off it, so these stand at its edge and beyond: something to frame a ship, shade a rover and
+  // throw a shadow across the dust. The same angular block as the scatter, so they walk and dig like it.
+  const HEROES = S.id === 'phobos' ? [
+    { e: -47, n: 40, rc: 5.5, h: 2.7 }, { e: 54, n: 30, rc: 4.5, h: 2.2 }, { e: 24, n: -60, rc: 6.5, h: 3.2 }, { e: -62, n: -22, rc: 3.5, h: 1.6 },
+    { e: 40, n: 54, rc: 2.6, h: 1.2 }, { e: -30, n: -50, rc: 2.2, h: 1.0 }, { e: 66, n: -34, rc: 1.8, h: 0.8 }, { e: -8, n: 66, rc: 2.8, h: 1.3 },
+    { e: 34, n: 46, rc: 1.4, h: 0.6 }, { e: -52, n: 18, rc: 1.6, h: 0.7 },
+  ] : [
+    { e: -50, n: 34, rc: 7, h: 1.1 }, { e: 58, n: -26, rc: 5, h: 0.8 }, { e: 20, n: 62, rc: 2.8, h: 0.5 }, { e: -36, n: -56, rc: 2, h: 0.35 },
+  ];
+  let heroes = null;                                                   // built on first use: it needs the pad's frame
   let derelictU = null;                                                // unit direction of the drifting cargo module: no loose rock under it
   const MAX_WALL = 0.82;                                               // tan of the steepest face, about 39 degrees
-  function boulderHeight(px, py, pz) {
+  const HERO_WALL = 1.6;                                               // the named rocks stand at the pad's edge, off the walking routes: chunky blocks with steep faces (about 58 degrees)
+  /**
+   * Height of one angular block at tangent-plane offset (a, b) from its centre. rand(k) is the block's own deterministic stream
+   * (the same k offsets the scatter always used, so the scatter is unchanged); rc footprint radius; hLo..hHi the height range.
+   */
+  function blockTop(a, b, rc, hLo, hHi, rand, maxWall = MAX_WALL) {
+    // footprint: N facets, each at its own turn and distance (apothem up to 0.6 rc keeps every corner inside rc)
+    const N = 5 + Math.floor(rand(6) * 3);
+    const th0 = rand(7) * Math.PI * 2;
+    let t = -1e9, apMin = 1e9;
+    for (let i = 0; i < N; i++) {
+      const phi = th0 + (i / N) * Math.PI * 2 + (rand(20 + i) - 0.5) * 0.5;
+      const ap = rc * 0.6 * (0.8 + 0.2 * rand(40 + i));
+      if (ap < apMin) apMin = ap;
+      const ti = (a * Math.cos(phi) + b * Math.sin(phi)) / ap;
+      if (ti > t) t = ti;
+    }
+    if (t >= 1) return 0;
+    const tf = 0.3 + 0.2 * rand(8);                                    // share of the footprint that is top
+    let hh = hLo + (hHi - hLo) * rand(5);
+    hh = Math.min(hh, maxWall * (1 - tf) * apMin);
+    let top = Math.min(1, (1 - t) / (1 - tf)) * hh;                    // the straight wall
+    // two cutting planes tilt the top and make a ridge; a plane's slope is at most 0.3 of hh over the stone's radius
+    for (let q = 0; q < 2; q++) {
+      const al = rand(60 + q) * Math.PI * 2, k = (0.12 + 0.2 * rand(70 + q)) * hh / rc;
+      const plane = hh * (1 + 0.1 * (q ? -1 : 1)) + k * (a * Math.cos(al) + b * Math.sin(al)) * (q ? 1.4 : 1);
+      if (plane < top) top = plane;
+    }
+    return top > 0 ? top : 0;
+  }
+  /** Two tangent axes at a unit radial u: e1 from the least-aligned world axis, e2 completes the set. */
+  function tangentAxes(ux, uy, uz) {
+    let ax = 0, ay = 0, az = 0;
+    if (Math.abs(ux) <= Math.abs(uy) && Math.abs(ux) <= Math.abs(uz)) ax = 1; else if (Math.abs(uy) <= Math.abs(uz)) ay = 1; else az = 1;
+    let e1x = uy * az - uz * ay, e1y = uz * ax - ux * az, e1z = ux * ay - uy * ax;
+    const e1l = Math.hypot(e1x, e1y, e1z) || 1; e1x /= e1l; e1y /= e1l; e1z /= e1l;
+    return [e1x, e1y, e1z, uy * e1z - uz * e1y, uz * e1x - ux * e1z, ux * e1y - uy * e1x];
+  }
+  /** Rock height at a body-frame point on the surface; `classFrom` skips the larger classes (the stones near the pad are the last). */
+  function boulderHeight(px, py, pz, classFrom = 0) {
     let h = 0;
     const r = Math.hypot(px, py, pz) || 1;
-    for (let ci = 0; ci < ROCKS.length; ci++) {
+    for (let ci = classFrom; ci < ROCKS.length; ci++) {
       const spec = ROCKS[ci], s = spec.s;
       const ix = Math.floor(px / s), iy = Math.floor(py / s), iz = Math.floor(pz / s);
       const sd = seed + 9100 + ci * 173;
@@ -188,37 +263,27 @@ export function makeMoon(id) {
       if (rc < 0.4) continue;
       const dx = px - cx, dy = py - cy, dz = pz - cz, d2 = dx * dx + dy * dy + dz * dz;
       if (d2 >= rc * rc) continue;
-      // the ground plane under the stone: two tangent axes from the radial
-      const ux = cx / cr, uy = cy / cr, uz = cz / cr;
-      let ax = 0, ay = 0, az = 0;
-      if (Math.abs(ux) <= Math.abs(uy) && Math.abs(ux) <= Math.abs(uz)) ax = 1; else if (Math.abs(uy) <= Math.abs(uz)) ay = 1; else az = 1;
-      let e1x = uy * az - uz * ay, e1y = uz * ax - ux * az, e1z = ux * ay - uy * ax;
-      const e1l = Math.hypot(e1x, e1y, e1z) || 1; e1x /= e1l; e1y /= e1l; e1z /= e1l;
-      const e2x = uy * e1z - uz * e1y, e2y = uz * e1x - ux * e1z, e2z = ux * e1y - uy * e1x;
-      const a = dx * e1x + dy * e1y + dz * e1z, b = dx * e2x + dy * e2y + dz * e2z;
-      // footprint: N facets, each at its own turn and distance (apothem up to 0.6 rc keeps every corner inside rc)
-      const N = 5 + Math.floor(hash3(ix, iy, iz, sd + 6) * 3);
-      const th0 = hash3(ix, iy, iz, sd + 7) * Math.PI * 2;
-      let t = -1e9, apMin = 1e9;
-      for (let i = 0; i < N; i++) {
-        const phi = th0 + (i / N) * Math.PI * 2 + (hash3(ix, iy, iz, sd + 20 + i) - 0.5) * 0.5;
-        const ap = rc * 0.6 * (0.8 + 0.2 * hash3(ix, iy, iz, sd + 40 + i));
-        if (ap < apMin) apMin = ap;
-        const ti = (a * Math.cos(phi) + b * Math.sin(phi)) / ap;
-        if (ti > t) t = ti;
-      }
-      if (t >= 1) continue;
-      const tf = 0.3 + 0.2 * hash3(ix, iy, iz, sd + 8);                // share of the footprint that is top
-      let hh = spec.hLo + (spec.hHi - spec.hLo) * hash3(ix, iy, iz, sd + 5);
-      hh = Math.min(hh, MAX_WALL * (1 - tf) * apMin);
-      let top = Math.min(1, (1 - t) / (1 - tf)) * hh;                    // the straight wall
-      // two cutting planes tilt the top and make a ridge; a plane's slope is at most 0.3 of hh over the stone's radius
-      for (let q = 0; q < 2; q++) {
-        const al = hash3(ix, iy, iz, sd + 60 + q) * Math.PI * 2, k = (0.12 + 0.2 * hash3(ix, iy, iz, sd + 70 + q)) * hh / rc;
-        const plane = hh * (1 + 0.1 * (q ? -1 : 1)) + k * (a * Math.cos(al) + b * Math.sin(al)) * (q ? 1.4 : 1);
-        if (plane < top) top = plane;
-      }
-      if (top > 0) h += top;
+      const ax = tangentAxes(cx / cr, cy / cr, cz / cr);
+      const a = dx * ax[0] + dy * ax[1] + dz * ax[2], b = dx * ax[3] + dy * ax[4] + dz * ax[5];
+      h += blockTop(a, b, rc, spec.hLo, spec.hHi, (k) => hash3(ix, iy, iz, sd + k));
+    }
+    return h;
+  }
+  /** The named rocks around the pad. */
+  function heroHeight(px, py, pz) {
+    if (!padFrame) return 0;
+    if (!heroes) {
+      heroes = HEROES.map((hr, i) => {
+        const d = tangentDir(hr.e, hr.n), q = toBodyDir(d[0], d[1], d[2]), re = reOf(q[0], q[1], q[2]);
+        return { c: [q[0] * re, q[1] * re, q[2] * re], rc: hr.rc, h: hr.h, i, ax: tangentAxes(q[0], q[1], q[2]) };
+      });
+    }
+    let h = 0;
+    for (const hr of heroes) {
+      const dx = px - hr.c[0], dy = py - hr.c[1], dz = pz - hr.c[2];
+      if (dx * dx + dy * dy + dz * dz >= hr.rc * hr.rc) continue;
+      const ax = hr.ax;
+      h += blockTop(dx * ax[0] + dy * ax[1] + dz * ax[2], dx * ax[3] + dy * ax[4] + dz * ax[5], hr.rc, hr.h * 0.999, hr.h, (k) => hash3(hr.i, 3, 5, seed + 300 + k), HERO_WALL);
     }
     return h;
   }
@@ -272,7 +337,7 @@ export function makeMoon(id) {
       for (let i = 0; i < grooves.length; i++) {
         const gg = grooves[i];
         const dd = Math.abs(py * gg.n[1] + pz * gg.n[2] - gg.off);
-        if (dd < gg.w) shade *= 1 - 0.16 * (1 - (dd / gg.w) * (dd / gg.w));
+        if (dd < gg.w) shade *= 1 - 0.3 * (1 - (dd / gg.w) * (dd / gg.w));      // a trough reads from orbit as a dark lane
       }
     }
     return Math.max(0.42, Math.min(1, shade));
@@ -343,17 +408,25 @@ export function makeMoon(id) {
     const cosp = u * padDir[0] + v * padDir[1] + w * padDir[2];
     let along = 1e9;
     if (cosp > 0.97) along = Rm * Math.acos(Math.min(1, cosp));
-    let fade = 1;
+    let fade = 1, fadeStones = 1;
     if (along < 58) fade = 0;
     else if (along < 86) fade = sstep(58, 86, along);
+    if (along < 26) fadeStones = 0;                                    // the smallest stones come in close to the pad: a few ankle-high ones around the ship
+    else if (along < 44) fadeStones = sstep(26, 44, along);
     const pw = playerWeight(u, v, w);
-    if (pw) { if (pw.flat) return 0; fade = Math.min(fade, 1 - pw.wt); }
+    if (pw) { if (pw.flat) return 0; fade = Math.min(fade, 1 - pw.wt); fadeStones = Math.min(fadeStones, 1 - pw.wt); }
+    let keepOff = 1;
     if (derelictU) {
       const cd = u * derelictU[0] + v * derelictU[1] + w * derelictU[2];
-      if (cd > 0.9999) { const dd = Rm * Math.acos(Math.min(1, cd)); fade = Math.min(fade, sstep(9, 17, dd)); }
+      if (cd > 0.9999) { const dd = Rm * Math.acos(Math.min(1, cd)); keepOff = sstep(9, 17, dd); }
     }
-    if (fade <= 0) return 0;
-    return fade * boulderHeight(u * re, v * re, w * re);
+    fade = Math.min(fade, keepOff); fadeStones = Math.min(fadeStones, keepOff);
+    const px = u * re, py = v * re, pz = w * re;
+    let h = 0;
+    if (fade > 0) h += fade * boulderHeight(px, py, pz);
+    if (fadeStones > fade) h += (fadeStones - fade) * boulderHeight(px, py, pz, ROCKS.length - 1);
+    if (along < 90 && keepOff > 0) h += keepOff * (pw ? 1 - pw.wt : 1) * heroHeight(px, py, pz);
+    return h;
   }
 
   const surfaceRadius = (dx, dy, dz) => { const q = toBodyDir(dx, dy, dz); return surfaceRadiusBody(q[0], q[1], q[2]); };
@@ -463,6 +536,31 @@ export function makeMoon(id) {
     /** The world-aligned unit vector toward the Sun (the patches cast shadows along it). */
     sunDir: sunW,
     toBodyDir, fromBody,
+    /**
+     * Albedo variation at a world-aligned point: out.k a brightness multiplier (about 0.7..1.35), out.red -1..1 (negative = bluer unit).
+     * Phobos has a redder, darker unit and a bluer, brighter one (the ejecta around Stickney is the blue one), so from orbit it is not
+     * one grey. Deimos is a dusty, low-contrast blanket: a little brighter and warmer, with soft patches.
+     */
+    albedo: (x, y, z, out) => {
+      const r = Math.hypot(x, y, z) || 1, q = toBodyDir(x / r, y / r, z / r), re = reOf(q[0], q[1], q[2]);
+      const px = q[0] * re, py = q[1] * re, pz = q[2] * re;
+      const lo = fbm(px * 0.00042, py * 0.00042, pz * 0.00042, seed + 301, 3);       // thousands of metres: the red and blue units
+      const mid = fbm(px * 0.0032, py * 0.0032, pz * 0.0032, seed + 313, 2);        // a few hundred metres: dust drifts and old ejecta
+      let k, red;
+      if (S.id === 'phobos') { k = 1 + 0.2 * lo + 0.11 * mid; red = 0.75 * lo + 0.35 * mid; }
+      else { k = 1.08 + 0.08 * lo + 0.07 * mid; red = 0.35 + 0.25 * lo + 0.2 * mid; }
+      const f = feat[0];
+      if (f) {
+        const cosang = q[0] * f.d[0] + q[1] * f.d[1] + q[2] * f.d[2];
+        if (cosang > 0.2) {
+          const t = Rm * Math.acos(Math.min(1, cosang)) / f.radiusM;
+          if (S.id === 'phobos') { const e = Math.exp(-(((t - 1.4) / 1.5) ** 2)); k *= 1 + 0.14 * e; red -= 0.95 * e; }       // the blue, bright ejecta blanket
+          else if (t < 1.15) k *= 1 + 0.12 * Math.exp(-(((t - 1) / 0.25) ** 2));                                          // a bright rim on Voltaire
+        }
+      }
+      out.k = k; out.red = red;
+      return out;
+    },
     /** 0.42..1 darkening from crater rims and groove floors. 1 on the graded pad, where those shapes were planed off. */
     cavityShade: (x, y, z) => {
       const r = Math.hypot(x, y, z) || 1;

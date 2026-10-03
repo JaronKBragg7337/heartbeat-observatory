@@ -12,6 +12,8 @@
 export const REGOLITH_PERIOD = 360;
 
 export function mod360(v) { return ((v % REGOLITH_PERIOD) + REGOLITH_PERIOD) % REGOLITH_PERIOD; }
+/** The same wrap for a patch whose noise repeats over a longer period (the far tier of a moon: 3600 m). */
+export function modP(v, P) { return ((v % P) + P) % P; }
 
 export function installRegolith(material, THREE, opts = {}) {
   const phobos = opts.kind === 'phobos';
@@ -24,21 +26,24 @@ export function installRegolith(material, THREE, opts = {}) {
   if (phobos) uniforms.uGrooveAcross = { value: new THREE.Vector3(across.x, across.y, across.z) };
   // Flat faces on steep ground (the walking-scale patch only): the normal snaps toward each triangle's own, so a rock wall reads as a plane
   // with a hard edge where two walls meet, and gentle ground stays smooth. uRegUp is the patch's local up in world space.
+  // The FAR tier (a moon's 8 km patch, seen from a few hundred metres up to orbit): the grit and pebbles are far below a pixel there, so it gets
+  // the large-scale mottling and lumpy relief instead (30-120 m dust drifts, rock-strewn and clean ground), repeating every 3600 m.
+  const far = !!opts.far;
   const flat = !!opts.flat;
   if (flat) uniforms.uRegUp = { value: new THREE.Vector3(0, 1, 0) };
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform vec3 uRegOffset;\nvarying vec3 vRegPos;')
-      .replace('#include <begin_vertex>', opts.world
+      .replace('#include <common>', '#include <common>\nuniform vec3 uRegOffset;\nvarying vec3 vRegPos;' + (flat ? '\nattribute float rockness;\nvarying float vRockness;' : ''))
+      .replace('#include <begin_vertex>', (opts.world
         ? '#include <begin_vertex>\nvRegPos = (modelMatrix * vec4(position, 1.0)).xyz + uRegOffset;'
-        : '#include <begin_vertex>\nvRegPos = position + uRegOffset;');
+        : '#include <begin_vertex>\nvRegPos = position + uRegOffset;') + (flat ? '\nvRockness = rockness;' : ''));
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
 uniform float uRegBump;
 uniform float uRegPebble;
 ${phobos ? 'uniform vec3 uGrooveAcross;' : ''}
-${flat ? 'uniform vec3 uRegUp;' : ''}
+${flat ? 'uniform vec3 uRegUp;\nvarying float vRockness;' : ''}
 varying vec3 vRegPos;
 float regH(vec3 i, float P) { i = mod(i, P); return fract(sin(dot(i, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 float regN(vec3 p, float P) {   // value noise, periodic every P cells
@@ -49,7 +54,8 @@ float regN(vec3 p, float P) {   // value noise, periodic every P cells
 }
 // frequencies are cells per metre; P = 360 m * frequency keeps every octave periodic over 360 m
 float regField(vec3 p, float near, out float pebble) {
-  float broad = regN(p * 0.05, 18.0) * 0.6 + regN(p * 0.2, 72.0) * 0.4;       // 20 m / 5 m dusty vs darker patches
+  float fineK = ${opts.moon || phobos ? '1.0 - smoothstep(250.0, 1000.0, length(vViewPosition))' : '1.0'};       // the 5 m octave is below a pixel past a few hundred metres: it aliases into a hatching
+  float broad = regN(p * 0.05, 18.0) * 0.6 + mix(0.5, regN(p * 0.2, 72.0), fineK) * 0.4;       // 20 m / 5 m dusty vs darker patches
   float grit  = regN(p * 2.0, 720.0) * 0.6 + regN(p * 6.0, 2160.0) * 0.4;     // 50 cm / 17 cm grit
   float peb   = regN(p * 3.0, 1080.0);                                          // pebbles: the peaks of a 33 cm field
   pebble = smoothstep(0.78, 0.86, peb) * near * uRegPebble;                                  // fine detail fades with distance (no far speckle)
@@ -63,7 +69,15 @@ vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) 
   vec3 vGrad = sign(fDet) * (dHdxy.x * R1 + dHdxy.y * R2);
   return normalize(abs(fDet) * surf_norm - vGrad);
 }`)
-      .replace('#include <color_fragment>', `#include <color_fragment>
+      .replace('#include <color_fragment>', far ? `#include <color_fragment>
+{
+  float broadF = regN(vRegPos / 120.0, 30.0) * 0.5 + regN(vRegPos / 30.0, 120.0) * 0.3 + regN(vRegPos / 9.0, 400.0) * 0.2;
+  float h = broadF; regHeight = h;
+  diffuseColor.rgb *= clamp(0.84 + 0.42 * (h - 0.5), 0.62, 1.15);
+  ${phobos ? `float luma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luma), 0.38);
+  diffuseColor.rgb *= clamp(1.0 + 0.035 * sin(dot(vRegPos, uGrooveAcross) * 0.013), 0.95, 1.05);` : ''}
+}` : `#include <color_fragment>
 {
   float near = 1.0 - smoothstep(35.0, 140.0, length(vViewPosition));
   float pebble; float h = regField(vRegPos, near, pebble); regHeight = h;
@@ -76,20 +90,20 @@ vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) 
   float lane = sin(across * 0.08);
   float streak = sin(across * 9.0 + regN(vRegPos * 0.7, 252.0) * 6.2831853);
   float dustg = regN(vRegPos * 1.6, 576.0);
-  diffuseColor.rgb *= clamp(1.0 + 0.09 * lane + 0.06 * streak + 0.04 * (dustg - 0.5), 0.82, 1.18);` : ''}
+  diffuseColor.rgb *= clamp(1.0 + 0.09 * lane * (1.0 - 0.6 * (1.0 - near)) + (0.06 * streak + 0.04 * (dustg - 0.5)) * near, 0.82, 1.18);     // the 70 cm streaks fade out with distance (they alias into a grid past a few tens of metres)` : ''}
 }`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 ${flat ? `{
   vec3 nW = inverseTransformDirection(normal, viewMatrix);
   float steep = 1.0 - clamp(dot(nW, uRegUp), 0.0, 1.0);
-  float faceAmt = smoothstep(0.10, 0.26, steep);
+  float faceAmt = smoothstep(0.10, 0.26, steep) * smoothstep(0.05, 0.5, vRockness);     // facets on rock only: on a crater wall a 0.6 m grid of flat triangles reads as a staircase
   vec3 fN = normalize(cross(dFdx(-vViewPosition), dFdy(-vViewPosition)));
   if (dot(fN, normal) < 0.0) fN = -fN;
   normal = normalize(mix(normal, fN, faceAmt * 0.9));
 }` : ''}
 normal = regPerturb(-vViewPosition, normal, vec2(dFdx(regHeight), dFdy(regHeight)) * uRegBump, faceDirection);`);
   };
-  material.customProgramCacheKey = () => (phobos ? (flat ? 'regolith-v3-phobos-flat' : 'regolith-v3-phobos') : (opts.world ? 'regolith-v2-world' : 'regolith-v2'));
+  material.customProgramCacheKey = () => (far ? (phobos ? 'regolith-v3-phobos-far' : 'regolith-v3-far') : opts.moon ? `regolith-v5-moon-${phobos ? 'p' : 'd'}${flat ? '-flat' : ''}` : phobos ? (flat ? 'regolith-v5-phobos-flat' : 'regolith-v3-phobos') : (opts.world ? 'regolith-v2-world' : 'regolith-v2'));
   material.needsUpdate = true;
   return uniforms;
 }

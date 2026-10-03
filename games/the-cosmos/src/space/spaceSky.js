@@ -225,12 +225,28 @@ export class SpaceSky {
     this.sun.color.setRGB(1, 0.914 + 0.06 * inSpace, 0.824 + 0.14 * inSpace);
     this.hemi.intensity *= 0.05 + 0.95 * s;
     this.hemi.color.copy(this.skyColor).lerp(new THREE.Color(0x6a5c58), 1 - s);
+    // On a moon there is no sky, and the Sun alone leaves everything it does not touch black. What lights the shadow side is Mars
+    // (a huge, rust-coloured, sunlit ball overhead) and the sunlit ground itself, so the fill is a rusty ambient from above and a
+    // warm grey bounce from below, strongest when Mars is full. Real Phobos gets less than this: the picture needs to be readable.
+    this.moonFill = 0;
+    if (!this._groundBase) this._groundBase = this.hemi.groundColor.clone();
+    else if (!(extra.marsShine && space > 0.5)) this.hemi.groundColor.copy(this._groundBase);
+    if (extra.marsShine && space > 0.5) {
+      const d = Math.max(r, 1), cosPhase = (cam.x * this.sunWorld.x + cam.y * this.sunWorld.y + cam.z * this.sunWorld.z) / d;
+      const big = Math.min(1, (MARS_RADIUS_M / d) * (MARS_RADIUS_M / d) * 6), lit = 0.35 + 0.65 * sstep(-0.2, 0.7, cosPhase);
+      this.moonFill = big * lit;
+      this.hemi.color.setRGB(0.72, 0.45, 0.34);
+      this.hemi.groundColor.setRGB(0.30, 0.27, 0.25);
+      this.hemi.intensity = 0.85 * (0.4 + 0.6 * big * lit);
+      if (extra.up) this.hemi.position.set(extra.up.x, extra.up.y, extra.up.z);          // the moon's own up (the ground game's is the planet's: right for Mars, wrong here)
+      this.sun.intensity = 2.4 * 1.55;
+    }
 
     // Marsshine: from Mars's centre toward the camera; strength by how big Mars is in the sky and how much of it the Sun lights
     {
       const d = Math.max(r, 1), cosPhase = (cam.x * this.sunWorld.x + cam.y * this.sunWorld.y + cam.z * this.sunWorld.z) / d;
       const big = Math.min(1, (MARS_RADIUS_M / d) * (MARS_RADIUS_M / d) * 6), lit = sstep(-0.2, 0.7, cosPhase);
-      this.shine.intensity = space > 0.5 ? 0.34 * big * lit : 0;
+      this.shine.intensity = space > 0.5 ? (extra.marsShine ? 0.62 : 0.34) * big * lit : 0;
       this.shine.position.set(-cam.x / d * 10, -cam.y / d * 10, -cam.z / d * 10);        // the light sits toward Mars, shining out at the camera
     }
 

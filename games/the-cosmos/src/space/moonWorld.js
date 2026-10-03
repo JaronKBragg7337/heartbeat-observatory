@@ -32,6 +32,14 @@ export function buildMoonShell(body, segW = 256) {
     colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
   }
   geo.computeVertexNormals();
+  // steep ground shows lighter, fresher material (see LocalPatch._slopeTint): crater walls and groove banks read from orbit
+  const nor = geo.attributes.normal;
+  for (let i = 0; i < pos.count; i++) {
+    const l = Math.hypot(pos.getX(i), pos.getY(i), pos.getZ(i)) || 1;
+    const cs = Math.min(1, Math.max(0.05, (nor.getX(i) * pos.getX(i) + nor.getY(i) * pos.getY(i) + nor.getZ(i) * pos.getZ(i)) / l)), sl = Math.sqrt(1 - cs * cs) / cs;   // tan of the slope
+    const t = Math.min(1, Math.max(0, (sl - 0.3) / 0.7)), m = 1 + 0.24 * t * t * (3 - 2 * t);
+    colors[i * 3] *= m * (1 - 0.03 * t); colors[i * 3 + 1] *= m; colors[i * 3 + 2] *= m * (1 + 0.05 * t);
+  }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
     vertexColors: true, roughness: 0.97, metalness: 0,
@@ -93,9 +101,13 @@ export class MoonWorld {
       p.entry = engine.track({ worldPos: p.worldPos, object3d: p.mesh, frame: this.frame });
       return p;
     };
-    this.far = mk({ sizeM: 8000, res: low ? 65 : 97, skirtM: 60 }, 'patch-far');
+    this.far = mk({ sizeM: 8000, res: low ? 65 : 97, skirtM: 60, horizon: true }, 'patch-far');      // horizon: real sun shadows from its own heights, like the tier below, so the two match where they meet
     this.far.mesh.material.dispose();
     this.far.mesh.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.97, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2 });
+    // the far tier is all you see from a few hundred metres up: give it mottling and a lumpy normal (regolith.js, far mode), matched in colour to the tier below it
+    this.far.regPeriod = 3600;
+    this.far.mesh.material.color.setScalar(body.id === 'phobos' ? 1.3 : 1.18);
+    this.far._regolith = installRegolith(this.far.mesh.material, THREE, { kind: body.id === 'phobos' ? 'phobos' : 'moon', bump: 0.55, far: true, across: body.axesWorld && body.axesWorld.ey });
     this.far.mesh.receiveShadow = false;
     this.far.handover = installTierDiscard(this.far.mesh.material);
     this.mid = mk({ sizeM: 880, res: 132, skirtM: 15, horizon: true }, 'patch-mid');
@@ -108,8 +120,8 @@ export class MoonWorld {
       p.mesh.material.roughness = phobos ? 0.985 : 0.97;
       p.mesh.material.color.setScalar(phobos ? 1.38 : 1.22);
       p._regolith = installRegolith(p.mesh.material, THREE, phobos
-        ? { kind: 'phobos', bump: 0.95, pebble: 0.22, across, flat: p === this.near }
-        : { bump: 0.55, pebble: 0.22 });
+        ? { kind: 'phobos', moon: true, bump: 0.95, pebble: 0.22, across, flat: p === this.near }
+        : { moon: true, bump: 0.3, pebble: 0.14 });                       // Deimos: a deep fine dust, smoother and with fewer dark flecks than Mars's gravel
     }
     this.terrain.material.color.setScalar(phobos ? 1.38 : 1.22);
     installCoverDiscard(this.mid.mesh.material, this.terrain.cover, this.midCover, THREE);
@@ -158,7 +170,7 @@ export class MoonWorld {
   }
 
   _joins() {
-    this.mid.blendEdgeTo(this.far);
+    this.mid.blendEdgeTo(this.far, this.near);
     this.far.handover.update(this.far.worldPos, this.mid);
     this.shellHandover.update({ x: 0, y: 0, z: 0 }, this.far);
   }
