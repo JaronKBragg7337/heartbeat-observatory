@@ -178,3 +178,4 @@ export function stickWarpCap(requested, aglM, vsMs, dtReal) {
   }
   return Math.min(best, requested);
 }
+export function landingOrder(order) {return order?.type==='return'||order?.type==='land'||order?.type==='goto'&&!!order.land;}

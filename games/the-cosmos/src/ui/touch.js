@@ -93,6 +93,7 @@ export class TouchControls {
         this._look = { id: e.pointerId, lastX: e.clientX, lastY: e.clientY, startX: e.clientX, startY: e.clientY, t0: performance.now(), moved: 0 };
         e.preventDefault();
       }
+      if(this._stick?.id===e.pointerId||this._look?.id===e.pointerId)try{c.setPointerCapture?.(e.pointerId);}catch{}
     }, opt);
 
     c.addEventListener('pointermove', (e) => {
@@ -147,15 +148,22 @@ export class TouchControls {
         // A quick tap on the right half that barely moved is a jump, so
         // jumping needs no button taking up screen space.
         const dt = performance.now() - this._look.t0;
-        if (dt < 260 && this._look.moved < 12) this.jumpQueued = true;
+        if (e.type==='pointerup'&&dt < 260 && this._look.moved < 12) this.jumpQueued = true;
         this._look = null;
       }
     };
     c.addEventListener('pointerup', end);
     c.addEventListener('pointercancel', end);
+    c.addEventListener('lostpointercapture', end);
+    window.addEventListener('pointerup',end);
+    window.addEventListener('pointercancel',end);
+    const reset=()=>{this._stick=this._look=null;this.moveEast=this.moveNorth=this.lookDX=this.lookDY=0;
+      this.active=this.run=this.jumpQueued=false;this._hide();};
+    window.addEventListener('blur',reset);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)reset();});
 
     // Stop iOS rubber-banding and the double-tap zoom from fighting the game.
-    document.addEventListener('touchmove', (e) => { if (e.touches.length) e.preventDefault(); }, opt);
+    c.addEventListener('touchmove', (e) => { if (e.touches.length) e.preventDefault(); }, opt);
     document.addEventListener('gesturestart', (e) => e.preventDefault());
   }
 

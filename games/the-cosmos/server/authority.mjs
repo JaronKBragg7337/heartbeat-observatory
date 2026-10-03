@@ -28,6 +28,7 @@ import { ShipSimulation } from './simulation.mjs';
 import { VehicleDirector } from './vehicles.mjs';
 import { freshOpening, OpeningModel } from '../src/opening/state.js';
 import { detachBodyEdits } from '../src/world/field.js';
+import { landingOrder } from '../src/space/spaceSpec.js';
 
 const hash = s=>createHash('sha256').update(s).digest('hex');
 const cleanName=s=>String(s||'Visitor').replace(/[<>\x00-\x1f]/g,'').slice(0,32);
@@ -470,7 +471,7 @@ export class Authority {
         const ctl=sim.ship.rampCtl[a.key];if(ctl.target>.5&&sim.ship._rampOccupied(a.key))throw Error('Clear the ramp first.');
         if(ctl.target<.5)sim.ship._solveRamp(a.key);ctl.target=ctl.target>.5?0:1;sim.ship.state.ramps[a.key].target=ctl.target;break;}
       case 'cancel-trip':if(!p.aboardShipId)throw Error('Come aboard first.');return sim.trip?.cancel()||{ok:false,msg:'No course in progress.'};
-      case 'trip-warp':if(!p.aboardShipId||!sim.trip?.active)throw Error('No course in progress.');if(![1,5,20,60].includes(a.warp))throw Error('Invalid trip speed.');sim.trip.setWarp(a.warp);break;
+      case 'trip-warp':if(!p.aboardShipId||!sim.trip?.active&&!landingOrder(sim.crew.activeOrder()))throw Error('No course in progress.');if(![1,5,20,60].includes(a.warp))throw Error('Invalid trip speed.');sim.warp=a.warp;if(sim.trip?.active)sim.trip.setWarp(a.warp);break;
       case 'crew-order':return sim.crewOrder(p,a,this);
       case 'airlock':sim.cycleAirlock();break;
       case 'power-split':if(p.pose.seat!=='engineer')throw Error('Use the engineering station.');if(![a.engines,a.guns,a.shields].every(Number.isFinite))throw Error('Invalid power split.');sim.flight.setPowerSplit(a.engines,a.guns,a.shields);break;

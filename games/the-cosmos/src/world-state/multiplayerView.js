@@ -1,4 +1,6 @@
 import { hullPush, mayBoard } from '../ship/hullCollision.js';
+import { shipPresence } from './shipPresence.js';
+import { guardSheetPress } from '../ui/activation.js';
 import { MotionBuffer, reconcile } from './motionBuffer.js';
 import * as THREE from 'three';
 import { playerPose } from './gameBridge.js';
@@ -114,7 +116,7 @@ export class MultiplayerView {
     const trip=s.trip;
     if(trip){const dest={...this.space.resolve(trip.destId),...trip.dest},t=new SpaceTrip(this.space,dest);
       Object.assign(t,trip);t.dest=dest;this.space.trip=t;this.space.warp=t.warp;}
-    else this.space.trip=null;
+    else {this.space.trip=null;this.space.warp=s.flightWarp||1;this.space.eff=s.flightEff||1;}
     this.space.ledger.credits=s.economy.marks/4;this.space.ledger.cargo=new Map(Object.entries(s.hold));
     this.space.jobs.taken=new Set(s.jobs.taken);this.space.jobs.salvaged=s.jobs.salvaged;this.space.jobs.samplesAboard=s.jobs.samples.length;
     if(s.combat){this.ship.guns.bolts=structuredClone(s.combat.bolts);this.ship.guns.aim=structuredClone(s.combat.aim);Object.assign(this.ship.guns,{cool:{...s.combat.cool},alt:{...s.combat.alt},shots:{...s.combat.shots}});
@@ -156,7 +158,7 @@ export class MultiplayerView {
   }
   collideShips(){
     for(const s of Object.values(this.world.snapshot.ships)){
-      if(s.id===this.activeId()||s.frameId!==this.space.frameId)continue;
+      if(s.id===this.activeId()||s.frameId!==this.space.frameId||!shipPresence(s,this.world.snapshot))continue;
       const f=this.shipPose(s),w=this.walker;
       if(Math.hypot(f.pos.x-w.worldPos.x,f.pos.y-w.worldPos.y,f.pos.z-w.worldPos.z)>100)continue;
       const q=new THREE.Quaternion().fromArray(f.quaternion),loc=new THREE.Vector3().copy(w.worldPos).sub(new THREE.Vector3().copy(f.pos)).applyQuaternion(q.clone().invert());
@@ -252,12 +254,13 @@ export class MultiplayerView {
   }
   buildPanel(){this.button=document.createElement('button');this.button.id='multiplayer-button';this.button.textContent='World / crew';
     this.panel=document.createElement('div');this.panel.id='multiplayer-panel';
+    guardSheetPress(this.panel);
     const style=document.createElement('style');style.textContent=`#multiplayer-button{position:fixed;left:12px;bottom:120px;z-index:68;min-height:44px;background:#281c12;color:#ffe0b0;border:1px solid #ae8548;border-radius:8px}#multiplayer-panel{position:fixed;left:12px;bottom:170px;z-index:74;padding:14px;background:#18120bf5;color:#ffe0b0;width:min(310px,calc(100vw - 48px));max-height:65vh;overflow:auto;font:12px/1.5 monospace;border:1px solid #ae8548;border-radius:10px}#multiplayer-panel button,#multiplayer-panel input{min-height:44px;margin:3px;color:#ffe0b0;background:#382817;border:1px solid #ae8548;border-radius:6px} @media(max-width:520px){#multiplayer-button{top:auto;bottom:170px}#multiplayer-panel{top:150px;max-height:55vh}}`;
     style.textContent+=`#multiplayer-panel{box-sizing:border-box;touch-action:pan-y;overscroll-behavior:contain}#multiplayer-panel .world-heading{position:sticky;top:-14px;background:#18120b;display:flex;justify-content:space-between;align-items:center;z-index:1}#multiplayer-panel .world-close{min-width:44px} @media(max-width:520px){#multiplayer-panel{top:68px;bottom:auto;left:10px;width:calc(100vw - 20px);max-height:calc(100dvh - 90px)}}`;
     document.head.append(style);document.body.append(this.button,this.panel);this.panel.hidden=true;this.button.onclick=()=>{this.panel.hidden=!this.panel.hidden;this.draw();};
     window.addEventListener('keydown',e=>{if(e.code==='Escape')this.panel.hidden=true;});
   }
-  draw(){this.button.textContent=this.world.connected?'World / crew':'World disconnected';if(this.panel.hidden||this.panel.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;const scroll=this.panel.scrollTop;this.panel.replaceChildren();
+  draw(){this.button.textContent=this.world.connected?'World / crew':'World disconnected';if(this.panel.hidden||this.panel.dataset.pressed||this.panel.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;const scroll=this.panel.scrollTop;this.panel.replaceChildren();
     const heading=document.createElement('div');heading.className='world-heading';heading.textContent='World / crew';
     const close=document.createElement('button');close.className='world-close';close.textContent='✕';close.setAttribute('aria-label','Close world / crew');close.onclick=()=>this.panel.hidden=true;heading.append(close);this.panel.append(heading);
     const s=this.world.snapshot,p=s.players[this.world.playerId],owned=s.ships[p.shipId];

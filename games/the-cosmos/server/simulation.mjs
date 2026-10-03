@@ -8,7 +8,7 @@ import { makeMoon } from '../src/space/moonField.js';
 import { surfaceRadiusFast } from '../src/world/field.js';
 import { GunSystem, DroneSystem } from '../src/ship/guns.js';
 import { Stations } from '../src/ship/shipStations.js';
-import { BOUNTY_CREDITS, STANDOFF_M } from '../src/space/spaceSpec.js';
+import { BOUNTY_CREDITS, STANDOFF_M, landingOrder, stickWarpCap } from '../src/space/spaceSpec.js';
 import { CrewSystem } from '../src/crew/crewSystem.js';
 import { Autopilot } from '../src/crew/autopilot.js';
 import { CREW_POSTS } from '../src/crew/crewSpec.js';
@@ -29,6 +29,7 @@ export function applyFlight(f,r) {
 export class ShipSimulation {
   constructor(record,mars,site,onArrive) {
     this.record=record;this.mars=mars;this.site=site;
+    this.warp=record.flightWarp||1;this.eff=1;
     this.frameId=record.frameId||'mars';
     // FLEET: a ship is whatever its `type` says (src/ships/registry.js): its gear, guns, seats and hull numbers come from there.
     this.def=shipDef(record.type);
@@ -166,7 +167,8 @@ export class ShipSimulation {
       this.flight.controls.lift=0;if(!this.ship._rampOccupied('cargo'))this.ship.rampCtl.cargo.target=0;
       if(this.ship.state.airlock.outerOpen&&this.ship.air.phase==='idle')this.ship.cycleAirlock();
     }
-    this.flight.step(Math.max(dt,Math.min(dt*(this.trip?.stickWarp(dt)||1),1)));
+    this.eff=this.trip?.active?this.trip.stickWarp(dt):landingOrder(this.crew.activeOrder())?stickWarpCap(this.warp,this.flight.agl,this.flight.verticalSpeed,dt):1;
+    this.flight.step(Math.max(dt,Math.min(dt*this.eff,1)));
     if(this.trip&&!this.trip.active){this.trip=null;this.flight.override=null;this.flight.climbCap=12;this.flight.thrustDown=false;}
     for(const [key,c] of Object.entries(this.ship.rampCtl)){const speed=key==='cargo'?1/6:1/5;
       c.progress+=Math.sign(c.target-c.progress)*Math.min(Math.abs(c.target-c.progress),dt*speed);
@@ -217,6 +219,7 @@ export class ShipSimulation {
   capture() {
     const t=this.trip;
     this.record.pose=flightRecord(this.flight);this.record.frameId=this.frameId;
+    this.record.flightWarp=this.warp;this.record.flightEff=this.eff;
     this.record.trip=t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon},phase:t.phase,t:t.t,warp:t.warp,eff:t.eff,planS:t.planS,settleT:t.settleT,cancelled:t.cancelled,
       progress:{...t.progress},said:[...t._said],attFrom:t._attFrom?.toArray()||null,transit:t.transit?structuredClone(t.transit):null}:null;
     this.record.state=this.ship.state;

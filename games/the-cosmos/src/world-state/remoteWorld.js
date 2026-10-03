@@ -1,4 +1,5 @@
 import { stringify, parse } from './wire.js';
+import { BUILD_VERSION, reloadStaleBuild } from '../core/buildHandshake.js';
 const identityKey='cosmos-device-v2';
 export function deviceIdentity(storage=localStorage,slot=identityKey) {
   let id;try{id=JSON.parse(storage.getItem(slot));}catch{}
@@ -8,19 +9,30 @@ export function deviceIdentity(storage=localStorage,slot=identityKey) {
 }
 export class RemoteWorld {
   constructor(identity,url){this.identity=identity;this.url=url;this.remote=true;this.connected=false;this.saving=0;this.error='';this.handlers=new Map();
-    this.pendingActions=new Map();this.listeners=new Set();this.bricks=new Map();this.lastRevision=-1;this.poseSeq=0;this.sentPoses=new Map();}
+    this.pendingActions=new Map();this.listeners=new Set();this.bricks=new Map();this.lastRevision=-1;this.poseSeq=0;this.sentPoses=new Map();
+    this.journalKey='cosmos-opening-requests:'+identity.slot;
+    try{const journal=JSON.parse(localStorage.getItem(this.journalKey));if(journal?.identity===identity.key)
+      for(const [id,action] of journal.actions||[])if(action.type?.startsWith('opening-'))this.pendingActions.set(id,{action,resolve:()=>{}});
+    }catch{}
+  }
+  journal(){try{localStorage.setItem(this.journalKey,JSON.stringify({identity:this.identity.key,
+    actions:[...this.pendingActions].filter(([,p])=>p.action.type.startsWith('opening-')).map(([id,p])=>[id,p.action])}));}catch{}}
   register(){} // Existing local rule registration cannot mutate the remote authority.
-  async load(){await this.connect();return {record:this.state,bricks:[...this.bricks.values()].filter(b=>b.bodyId==='mars')};}
+  async load(){await this.connect();while(this.pendingActions.size)await new Promise(r=>setTimeout(r,20));
+    return {record:this.state,bricks:[...this.bricks.values()].filter(b=>b.bodyId==='mars')};}
   connect(){return new Promise((resolve,reject)=>{
     const ws=this.socket=new WebSocket(this.url);let joined=false;
     const timer=setTimeout(()=>{if(!joined){ws.close();reject(Error('World server unavailable.'));}},3500);
     ws.onopen=()=>{const p=new URLSearchParams(location.search),review=p.get('dev')==='1'&&p.get('opening')==='off';
-      ws.send(stringify({type:'hello',deviceKey:this.identity.key,name:this.identity.name,personId:localStorage.getItem('hb-look')||'isaiah',openingVersion:review?0:1}));};
+      ws.send(stringify({type:'hello',deviceKey:this.identity.key,name:this.identity.name,personId:localStorage.getItem('hb-look')||'isaiah',openingVersion:review?0:1,buildVersion:BUILD_VERSION}));};
     ws.onmessage=e=>{let m;try{m=parse(e.data);}catch{return;}
-      if(m.type==='welcome'){this.playerId=m.playerId;this.connected=true;this.error='';joined=true;clearTimeout(timer);this.apply(m);resolve();
+      if(m.type==='welcome'){if(m.buildVersion)reloadStaleBuild(m.buildVersion);this.serverBuildVersion=m.buildVersion;
+        this.playerId=m.playerId;this.connected=true;this.error='';joined=true;clearTimeout(timer);this.apply(m);resolve();
         for(const [actionId,p] of this.pendingActions)ws.send(stringify({type:'action',actionId,action:p.action}));}
       else if(m.type==='state')this.apply(m);
-      else if(m.type==='receipt'){const p=this.pendingActions.get(m.actionId);if(p){this.pendingActions.delete(m.actionId);this.saving=this.pendingActions.size;p.resolve(m);this.onReceipt?.(m);}}
+      else if(m.type==='receipt'){const p=this.pendingActions.get(m.actionId);if(p){this.pendingActions.delete(m.actionId);this.journal();this.saving=this.pendingActions.size;
+        if(m.opening){this.state.opening=m.opening;this.snapshot.players[this.playerId].opening=m.opening;}
+        p.resolve(m);this.onReceipt?.(m);}}
       else if(m.type==='error'){this.onReceipt?.({ok:false,msg:m.msg});}
     };
     ws.onerror=()=>{};
@@ -42,7 +54,7 @@ export class RemoteWorld {
   sendPose(pose,controls,vehicle){if(this.connected&&this.socket.readyState===WebSocket.OPEN){const seq=++this.poseSeq;this.sentPoses.set(seq,structuredClone(pose));while(this.sentPoses.size>64)this.sentPoses.delete(this.sentPoses.keys().next().value);this.socket.send(stringify({type:'pose',pose,controls,vehicle:vehicle||undefined,seq}));}}
   request(action){if(!this.connected||this.socket.readyState!==WebSocket.OPEN)return Promise.resolve({ok:false,msg:'Shared world disconnected; wait for reconnect.'});
     const actionId=crypto.randomUUID();this.saving++;
-    return new Promise(resolve=>{this.pendingActions.set(actionId,{action,resolve});this.socket.send(stringify({type:'action',actionId,action}));});}
+    return new Promise(resolve=>{this.pendingActions.set(actionId,{action,resolve});this.journal();this.socket.send(stringify({type:'action',actionId,action}));});}
   dispatch(action){if(['ship-pose','wages','player-pose','damage'].includes(action.type))return {ok:true,msg:'Server owns this state.'};
     this.beforeAction?.();this.request(action);return {ok:this.connected,msg:this.connected?'Request sent to the world.':'Disconnected; wait for reconnect.'};}
   async flush(){if(!this.connected)throw Error('Disconnected.');this.socket.send(stringify({type:'checkpoint'}));
@@ -54,6 +66,8 @@ export async function chooseWorld(local){const dev=['localhost','127.0.0.1'].inc
   const asked=params.get('ws'),url=dev?(asked&&/^ws:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/.test(asked)?asked:'ws://localhost:8390'):'wss://cosmos.heartbeatobservatory.com';
   if(params.get('solo')==='1'){local.offline=true;return {world:local,saved:await local.load()};}
   const remote=new RemoteWorld(deviceIdentity(localStorage,params.get('test')==='1'?'cosmos-test-device-v2':identityKey),url);
-  try{const saved=await remote.load();return {world:remote,saved};}catch{remote.socket?.close();local.offline=true;
-    const saved=await local.load();return {world:local,saved};}
+  for(;;){try{const saved=await remote.load();return {world:remote,saved};}catch{remote.socket?.close();
+    if(dev){local.offline=true;const saved=await local.load();return {world:local,saved};}
+    const boot=document.querySelector('#boot p');if(boot)boot.textContent='Shared world unavailable. Reconnecting to your saved journey…';
+    await new Promise(r=>setTimeout(r,1500));}}
 }

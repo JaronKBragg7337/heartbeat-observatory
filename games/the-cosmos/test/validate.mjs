@@ -655,6 +655,9 @@ await runTwoPlayerBrowserChecks({check,section});
 const {runOpeningChecks,runOpeningBrowserChecks}=await import('./opening-checks.mjs');
 await runOpeningChecks({check,section});
 await runOpeningBrowserChecks({check,section});
+const {runOpeningBugChecks,runOpeningBugsBrowserChecks}=await import('./opening-bugs-checks.mjs');
+await runOpeningBugChecks({check,section});
+await runOpeningBugsBrowserChecks({check,section});
 
 // 31. Survey rovers: the hold, the depot, and two clients watching one drive.
 const { runRoverChecks } = await import('./rover-checks.mjs');

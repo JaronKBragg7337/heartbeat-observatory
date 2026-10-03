@@ -14,6 +14,7 @@ import { buildInterior, buildSeats } from '../ship/shipInterior.js';
 // ============================================================================
 
 import * as THREE from 'three';
+import { shipPresence } from './shipPresence.js';
 import { shipDef } from '../ships/registry.js';
 import { visualsFor } from '../ships/visuals.js';
 import { SHIPYARD, forSale } from '../ships/shipyard.js';
@@ -184,8 +185,12 @@ export class FleetView {
       const sameFrame = ship.frameId === this.space.frameId;
       const v0 = this.views.get(ship.id);
       if (ship.id === activeId) { if (v0) v0.root.visible = false; if (v0 && v0.label) v0.label.visible = false; continue; }
+      const presence=shipPresence(ship,snapshot);
+      if(!presence){if(v0){v0.root.visible=false;if(v0.label)v0.label.visible=false;}continue;}
       seenShips.add(ship.id);
       const v = v0 || this.makeView(ship);
+      if(!ship.npc&&!v.label){v.label=textSprite('',640,80);this.engine.scene.add(v.label);
+        v.labelEntry=this.engine.track({worldPos:{...ship.pose.pos},object3d:v.label,quaternion:IDENT});}
       const f = ship.pose, frame = this.frameOf(ship.frameId);
       const rendered = this.mp.shipPose(ship), pos = rendered.pos;
       Object.assign(v.entry.worldPos, pos); v.entry.quaternion.fromArray(rendered.quaternion); v.entry.frame = frame;
@@ -201,7 +206,8 @@ export class FleetView {
         if (v.label.visible) {
           const n = ship.npc;
           // The view was built while this hull was a raider. Once a player owns it, the label would read n.state and throw.
-          if (!n) v.label.visible = false;
+          if (!n) {setText(v.label,`${snapshot.players[ship.owner]?.name||'Owner'} · ${presence==='parked'?'PARKED · owner offline':'CONNECTED'}`);
+            const up=new THREE.Vector3(pos.x,pos.y,pos.z).normalize();Object.assign(v.labelEntry.worldPos,{x:pos.x+up.x*11,y:pos.y+up.y*11,z:pos.z+up.z*11});v.labelEntry.frame=frame;}
           else { const st = STATE_TEXT[n.state] || n.state;
           setText(v.label, `${n.name} - ${st}${n.state === 'engage' || n.state === 'patrol' || n.state === 'return' ? ` - hull ${Math.round(f.hull)}%` : ''}`, n.state === 'disabled' ? '#9fffc2' : n.state === 'abandoned' ? '#c8c8c8' : '#ffb0a0');
           const up = new THREE.Vector3(pos.x, pos.y, pos.z).normalize();

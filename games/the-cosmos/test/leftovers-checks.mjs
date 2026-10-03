@@ -77,7 +77,7 @@ try {
     check('Talk never offers an unloaded worker',workers.nearest(near)===null);
     const empty=new PortPeople({site,root:new THREE.Group()}, {...library,cachedFiles:()=>[]});
     const before=spawns.length;await empty.build();
-    check('missing cached people do not trigger fallback downloads',empty.members.length===0&&spawns.length===before);
+    check('missing cached people use visible suits without fallback downloads',empty.members.length===15&&empty.members.every(m=>m.person.loaded&&m.person.safe)&&spawns.length===before);
   }
   {
     let hullX=-90, crew=null;

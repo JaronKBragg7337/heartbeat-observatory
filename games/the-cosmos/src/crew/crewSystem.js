@@ -13,6 +13,9 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { personVisible } from './personVisibility.js';
+import { ATMOSPHERE_TOP_M } from '../space/spaceSpec.js';
+import { MARS_R } from '../space/spaceTrip.js';
 import { ShipWalker, shipIndexFor } from '../ship/shipWalker.js';
 
 import { CREW_POSTS as ALL_POSTS, HIRE_SPOTS, HIRE_FACE, HIRE_BOARD, PLACES, MAX_TRIP_M, LINES, thinkDelay, aimErrorRad } from './crewSpec.js';
@@ -154,7 +157,7 @@ export class CrewSystem {
   nearest(playerWorld) {
     let best = null, bd = TALK_M;
     for (const m of this.members.values()) {
-      if (!m.person.loaded) continue;
+      if (!personVisible(m.person)) continue;
       const w = this.worldPosOf(m), d = Math.hypot(w.x - playerWorld.x, w.y - playerWorld.y, w.z - playerWorld.z);
       if (d < bd) { bd = d; best = m; }
     }
@@ -251,7 +254,12 @@ export class CrewSystem {
     switch (type) {
       case 'hold': o = { type: 'hold' }; accept = f.landed ? 'Holding on the ground.' : 'Holding here.'; break;
       case 'land': o = { type: 'land' }; accept = 'Setting her down.'; break;
-      case 'return': o = { type: 'return' }; accept = 'Heading back to the pad.'; break;
+      case 'return': {
+        const sp=this.ship.space;
+        if(sp&&(sp.frameId!=='mars'||Math.hypot(f.pos.x,f.pos.y,f.pos.z)-MARS_R>=ATMOSPHERE_TOP_M))
+          return sp.engage('port',{by:m.name});
+        o = { type: 'return' }; accept = 'Heading back to the pad.'; break;
+      }
       case 'roam': o = { type: 'roam' }; accept = 'Aye. A wander. I will call out what I see.'; break;
       case 'hunt': o = { type: 'hunt' }; accept = 'Hunting raiders. Mars is neutral, so we have to climb out of its airspace for that.'; break;
       case 'supply': o = { type: 'supply', depot: this._local(PLACES.find((p) => p.id === 'depot').x, PLACES.find((p) => p.id === 'depot').z) }; accept = 'Supply run to the depot and back.'; break;

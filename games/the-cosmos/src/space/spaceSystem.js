@@ -23,7 +23,7 @@ import * as THREE from 'three';
 import { SpaceSky, MARS_RADIUS_M } from './spaceSky.js';
 import { SpaceTrip, fmtDuration, MARS_R } from './spaceTrip.js';
 import { estimateTrip } from './transit.js';
-import { DESTINATIONS, DRIVE, MOONS, STANDOFF_M, BOUNTY_CREDITS, moonCentre } from './spaceSpec.js';
+import { DESTINATIONS, DRIVE, MOONS, STANDOFF_M, BOUNTY_CREDITS, moonCentre, landingOrder, stickWarpCap } from './spaceSpec.js';
 import { MoonWorld } from './moonWorld.js';
 import { makeMoon } from './moonField.js';
 import { makeTools } from '../player/digging.js';
@@ -252,7 +252,9 @@ export class SpaceSystem {
 
   setWarp(w) { this.warp = w; if (this.trip) this.trip.setWarp(w); }
   /** Seconds of flight per real second for the climb and the landing this frame (1 unless a course is compressing them). */
-  stickWarp(dt) { const t = this.trip; return t && t.active ? t.stickWarp(dt) : 1; }
+  stickWarp(dt) { const t=this.trip;if(t?.active)return t.stickWarp(dt);
+    const f=this.ship.flight;this.eff=landingOrder(this.ship.crew?.activeOrder())?stickWarpCap(this.warp,f.agl,f.verticalSpeed,dt):1;
+    return this.eff; }
 
   /** The ship asks, every frame, before it flies: the trip's stick values (or null). */
   tripControls(dt) {

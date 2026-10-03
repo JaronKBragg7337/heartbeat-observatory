@@ -36,13 +36,18 @@ export class PeopleLibrary {
     if (!this._roster) {
       this._roster = fetch(this.base + 'people.json', { cache: 'no-cache' })
         .then((r) => r.json()).then((j) => (j.people || []).map((p) => ({ id: p.id, file: p.file })))
-        .catch(() => []);
+        .catch(() => ['isaiah','ada','zuri','jorge','sunita','walter'].map(id=>({id,file:id+'.glb'})));
     }
     return this._roster;
   }
 
   glb(file) {
-    if (!this._glb.has(file)) this._glb.set(file, this.loader.loadAsync(this.base + file));
+    if (!this._glb.has(file)) {
+      const loading=this.loader.loadAsync(this.base + file);let timer;
+      const bounded=Promise.race([loading,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Person load timed out')),15000);})])
+        .finally(()=>clearTimeout(timer));
+      this._glb.set(file,bounded);
+    }
     return this._glb.get(file);
   }
   cachedFiles() { return this.safe ? [...this._safeFiles] : [...this._glb.keys()]; }
@@ -50,6 +55,8 @@ export class PeopleLibrary {
   /** A person standing at the origin. Resolves once the model is in; the Person object is usable immediately. */
   spawn(id, file) {
     const p = new Person(id);
+    // Visible, animated suit from the first frame, including failed downloads.
+    p._attachSafe();
     if(this.safe){this._safeFiles.add(file||id+'.glb');p._attachSafe();p.ready=Promise.resolve(p);return p;}
     p.ready = this.glb(file || id + '.glb').then((gl) => { p._attach(gl, this.phone); return p; })
       .catch((e) => { console.warn('person failed to load', id, e); return p; });
@@ -84,6 +91,8 @@ export class Person {
         if (!phone) mt.alphaToCoverage = true;
       }
     });
+    if(this.safe){this.body.removeFromParent();const mats=new Set();this.body.traverse(o=>{o.geometry?.dispose();if(o.material)mats.add(o.material);});
+      for(const mat of mats)mat.dispose();this.safe=false;}
     this.body = body;
     this.group.add(body);
     this.mixer = new THREE.AnimationMixer(body);
@@ -92,6 +101,7 @@ export class Person {
     this.pose = null;
     this.play(this._want, 0);
     this.mixer.update(0);
+    this._lookKey=null;
     if (this._pendingLook) this.dress(this._pendingLook);
   }
 
@@ -113,6 +123,7 @@ export class Person {
   // Avoid bone float textures and GLSL 3 texelFetch in the vendored renderer's
   // skinning chunk. Safe mode uses a small animated, unskinned suit silhouette.
   _attachSafe() {
+    if(this.loaded)return;
     this.safe=true;this.phase=0;this.body=new THREE.Group();this.group.add(this.body);
     const mat=new THREE.MeshLambertMaterial({color:0xc3b7a2}),dark=new THREE.MeshLambertMaterial({color:0x453e37});
     const part=(geometry,material,x,y,z)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);this.body.add(m);return m;};

@@ -6,7 +6,8 @@
 // covers LIFT, SINK or FIRE.
 // ============================================================================
 
-import { DRIVE } from './spaceSpec.js';
+import { DRIVE, landingOrder } from './spaceSpec.js';
+import { bindActivation, guardSheetPress } from '../ui/activation.js';
 import { fmtDuration } from './spaceTrip.js';
 
 const CSS = `
@@ -42,8 +43,16 @@ export class SpaceUI {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     const el = document.createElement('div'); el.id = 'space-sheet'; document.body.appendChild(el);
     this.el = el;
+    guardSheetPress(el);
     el.addEventListener('click', (e) => this._click(e));
     el.addEventListener('pointerdown', (e) => e.stopPropagation());
+    const speed=document.createElement('div');speed.id='flight-speed';speed.hidden=true;
+    speed.style.cssText='position:fixed;left:12px;right:12px;bottom:112px;z-index:71;padding:7px;background:#04141be8;border:1px solid #5fd8ff66;border-radius:10px;color:#d8f6ff;font:11px system-ui';
+    const label=document.createElement('div');speed.append(label);this.speedLabel=label;
+    for(const w of DRIVE.warps){const button=document.createElement('button');button.textContent='×'+w;button.dataset.w=String(w);
+      button.style.cssText='min-height:44px;min-width:56px;margin:3px;background:#12333f;color:#d8f6ff;border:1px solid #5fd8ff66;border-radius:7px';
+      bindActivation(button,()=>space.setWarp(w));speed.append(button);}
+    document.body.append(speed);this.speed=speed;
   }
 
   toggle(tab) {
@@ -58,6 +67,11 @@ export class SpaceUI {
   }
 
   update(dt) {
+    const t=this.space.trip,o=this.space.ship.crew?.activeOrder(),active=this.space.ship.aboard&&(t?.active||landingOrder(o));
+    this.speed.hidden=!active;
+    if(active){const warp=t?.active?t.warp:this.space.warp,eff=t?.active?t.eff:this.space.eff||1;
+      this.speedLabel.textContent=`${t?.active?t.dest.name+' · '+t.phase:'Pilot · '+o.type} · speed ×${warp}${eff<warp?' (near ground: ×'+eff+')':''}`;
+      for(const b of this.speed.querySelectorAll('button'))b.setAttribute('aria-pressed',String(Number(b.dataset.w)===warp));}
     if (this.open && !this._seatOk()) { this.close(); return; }
     if (!this.open) return;
     this.acc += dt;
@@ -67,6 +81,7 @@ export class SpaceUI {
   }
 
   draw(force) {
+    if(this.el.dataset.pressed)return;
     const sp = this.space, trip = sp.trip && sp.trip.active ? sp.trip : null;
     let h = `<h3><span>NAV COMPUTER</span><button class="close" data-a="close" aria-label="Close">×</button></h3>`;
     h += `<div class="tabs"><button class="tab ${this.tab === 'course' ? 'on' : ''}" data-a="tab" data-t="course">Course</button><button class="tab ${this.tab === 'jobs' ? 'on' : ''}" data-a="tab" data-t="jobs">Jobs</button></div>`;
@@ -80,7 +95,7 @@ export class SpaceUI {
       else if (trip.phase === 'descent') h += `<div>${fmtKm(p.distM)} up · ${Math.round(p.speed)} m/s down</div>`;
       // space-fix: every phase with the time left in it (real time, at the compression it runs at)
       h += `<div style="margin:6px 0">` + ph.map((q) => `<div style="display:flex;justify-content:space-between;gap:8px;${q.state === 'now' ? 'color:#fff' : q.state === 'done' ? 'color:#6fa3b3' : 'color:#9cd8e8'}"><span>${q.state === 'done' ? '✓' : q.state === 'now' ? '▶' : '·'} ${esc(q.name)}</span><span>${q.state === 'done' ? 'done' : fmtDuration(trip.wallS(q))}</span></div>`).join('') + `<div style="display:flex;justify-content:space-between;border-top:1px solid rgba(95,216,255,.25);margin-top:3px;padding-top:3px"><span>Whole trip</span><span>${fmtDuration(ph.reduce((a, q) => a + trip.wallS(q), 0))}</span></div></div>`;
-      if (trip.phase === 'ascent' || trip.phase === 'transit' || trip.phase === 'descent') {
+      if (trip.active) {
         h += `<div class="dim" style="margin-top:6px">Time compression runs the flight faster${trip.eff < trip.warp ? ` (held to ×${trip.eff} here: near the ground it drops, to ×1 for the last 400 m)` : ''}. The cabin, crew and doors keep real time.</div><div class="row">`;
         for (const w of DRIVE.warps) h += `<button class="wp ${trip.warp === w ? 'on' : ''}" data-a="warp" data-w="${w}">×${w}</button>`;
         h += `</div>`;

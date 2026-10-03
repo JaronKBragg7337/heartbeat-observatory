@@ -13,5 +13,7 @@ foreach ($line in [System.IO.File]::ReadLines($envFile)) {
 if (-not $env:SUPABASE_URL -or -not $env:SUPABASE_SERVICE_ROLE_KEY) { throw 'Required Supabase settings are missing from keys.env.' }
 $env:COSMOS_PORT = '8390'
 Set-Location $repoRoot
+& node (Join-Path $repoRoot 'tools\stamp-cosmos-build.mjs')
+if ($LASTEXITCODE -ne 0) { throw 'Cosmos build version stamping failed.' }
 & node (Join-Path $repoRoot 'games\the-cosmos\server\index.mjs')
 exit $LASTEXITCODE

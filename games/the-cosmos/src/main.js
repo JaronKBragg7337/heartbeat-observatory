@@ -14,6 +14,8 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { watchBuild, BUILD_VERSION } from './core/buildHandshake.js';
+watchBuild();
 import { depthEmulation } from './dev/depthEmu.js';
 import { auditGaps } from './dev/gapAudit.js';
 import { Engine } from './core/engine.js';
@@ -56,6 +58,7 @@ import { Cinema } from './cinema/cinema.js';
 import { VehicleSystem } from './vehicles/view.js';
 import { Opening } from './opening/opening.js';
 import { freshOpening, needsOpening } from './opening/state.js';
+import { readOpeningCheckpoint } from './opening/checkpoint.js';
 import { buildShowcase } from './port/showcase.js';
 
 const canvas = document.getElementById('game-canvas');
@@ -76,7 +79,7 @@ catch(e) { world.error=e.message;console.error('World save unavailable',e); }
 const openingParams=new URLSearchParams(location.search);
 const legacyReview=openingParams.get('dev')==='1'&&openingParams.get('opening')==='off';
 if(!world.remote&&!legacyReview&&needsOpening(world.state.opening,savedWorld.record)){
-  world.state.opening ||= freshOpening();world.state.shipType='courier';
+  world.state.opening=readOpeningCheckpoint()||world.state.opening||freshOpening();world.state.shipType='courier';
 }
 let opening=null;
 
@@ -891,6 +894,7 @@ function stopHold() {
 }
 actionBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault(); e.stopPropagation();
+  try{actionBtn.setPointerCapture(e.pointerId);}catch{}
   if (tapAction === 'vehicle') { vehiclePress = true; return; }
   if (tapAction === 'ship') { shipPress = true; return; }
   if (tapAction === 'space') { spacePress = true; return; }
@@ -929,7 +933,9 @@ const endPress = (e) => {
 };
 actionBtn.addEventListener('pointerup', endPress);
 actionBtn.addEventListener('pointercancel', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
-actionBtn.addEventListener('pointerleave', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
+actionBtn.addEventListener('pointerleave', (e) => {if(actionBtn.hasPointerCapture?.(e.pointerId))return;stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
+actionBtn.addEventListener('lostpointercapture', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
+window.addEventListener('blur', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
 
 // Settings, including the DEV toggle that turns on the measurement layer.
 document.getElementById('btn-settings').addEventListener('click', () => {
@@ -1246,6 +1252,7 @@ engine.start();
 // without guessing from pixels.
 if (devMode) window.cosmos = {
   opening,
+  buildVersion:BUILD_VERSION,
   multiplayer, vehicles,
   world, worldBridge, economyUI,
   port, portTour, portPeople, space,

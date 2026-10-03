@@ -9,6 +9,8 @@
 // ============================================================================
 
 import { CREW_POSTS, ORDERS, thinkDelay } from './crewSpec.js';
+import { bindActivation, guardSheetPress } from '../ui/activation.js';
+import { landingOrder } from '../space/spaceSpec.js';
 import { workerHTML, WAGES } from '../economy/dialogue.js';
 
 const CSS = `
@@ -52,9 +54,8 @@ export class CrewUI {
     root.innerHTML = `<button class="cbtn" id="crew-talk"></button><div id="crew-panel"></div>`;
     document.body.appendChild(root);
     this.btn = root.querySelector('#crew-talk'); this.panel = root.querySelector('#crew-panel');
-    const press = (e) => { e.preventDefault(); e.stopPropagation(); };
-    this.btn.addEventListener('pointerdown', press);
-    this.btn.addEventListener('pointerup', (e) => { press(e); this.toggle(); });
+    bindActivation(this.btn,()=>{this._accum=1;this.update(0);this.toggle();});
+    guardSheetPress(this.panel);
     this.panel.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.panel.addEventListener('click', (e) => this._click(e));
     window.addEventListener('keydown', (e) => {
@@ -87,7 +88,8 @@ export class CrewUI {
     if (t && !this.open && t.person.loaded) {
       this.btn.style.display = 'block';
       const verb = t.status === 'candidate' ? 'Hire' : 'Talk';
-      this.btn.innerHTML = `${verb}  ·  ${esc(t.name)}${this.isTouch ? '' : ' (T)'}<br><span style="color:#a8917b;font-size:10.5px">${esc(t.def.title)}</span>`;
+      const label=`${verb}  ·  ${esc(t.name)}${this.isTouch ? '' : ' (T)'}<br><span style="color:#a8917b;font-size:10.5px">${esc(t.def.title)}</span>`;
+      if(label!==this._buttonLabel){this.btn.innerHTML=label;this._buttonLabel=label;}
     } else this.btn.style.display = 'none';
   }
 
@@ -100,6 +102,7 @@ export class CrewUI {
   }
 
   _draw() {
+    if(this.panel.dataset.pressed)return;
     const m = this.target; if (!m) { this.close(); return; }
     const sig = this._signature(m);
     if (sig === this._sig && this.panel.style.display === 'block') return;
@@ -164,13 +167,13 @@ export class CrewUI {
   // SPACE-FIX: while a course is under way, the pilot's panel shows each phase with its time left, the time compression buttons and Cancel course.
   _tripHTML() {
     const sp = this.ship.space, t = sp && sp.trip;
-    if (!t || !t.active) return '';
+    if (!t || !t.active) return landingOrder(this.crew.activeOrder())?`<p class="stat">Pilot return / landing · speed ×${sp.warp}</p><div class="row2">${[1,5,20,60].map(w=>`<button class="cbtn" data-a="warp" data-w="${w}">×${w}</button>`).join('')}</div>`:'';
     const fmtT = (s) => (s >= 5400 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min` : s >= 120 ? `${Math.round(s / 60)} min` : `${Math.round(s)} s`);
     const ph = t.phases();
     let h = `<p class="stat">Course to ${esc(t.dest.name)}</p>`;
     h += ph.map((q) => `<p class="stat" style="margin:1px 0${q.state === 'now' ? ';color:#fff' : ''}">${q.state === 'done' ? '✓' : q.state === 'now' ? '▶' : '·'} ${esc(q.name)}: ${q.state === 'done' ? 'done' : fmtT(t.wallS(q))}</p>`).join('');
     h += `<p class="stat" style="margin:1px 0 6px">Whole trip: ${fmtT(ph.reduce((a, q) => a + t.wallS(q), 0))}${t.eff < t.warp ? ` · held to ×${t.eff} here (×1 for the last 400 m)` : ''}</p>`;
-    if (t.phase === 'ascent' || t.phase === 'transit' || t.phase === 'descent') {
+    if (t.active) {
       h += `<div class="row2" style="margin-bottom:6px">${[1, 5, 20, 60].map((w) => `<button class="cbtn" data-a="warp" data-w="${w}" ${t.warp === w ? 'style="border-color:#fff"' : ''}>×${w}</button>`).join('')}</div>`;
     }
     h += `<div class="col"><button class="cbtn" data-a="cancel-course">Cancel course<small>${t.phase === 'transit' ? 'Brakes to a stop where we are' : 'Holds here'}</small></button></div>`;

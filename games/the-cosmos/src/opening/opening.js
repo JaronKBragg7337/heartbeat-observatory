@@ -10,6 +10,9 @@ import { visualsFor } from '../ships/visuals.js';
 import { detachBodyEdits } from '../world/field.js';
 import { OpeningLook } from './look.js';
 import { WRECK_Y } from './freighterHull.js';
+import { bindActivation } from '../ui/activation.js';
+import { openingRideVehicle, ridePose } from './rideVehicle.js';
+import { writeOpeningCheckpoint } from './checkpoint.js';
 
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function seatPerson(person,headHeight){return person.ready.then(p=>{
@@ -44,7 +47,7 @@ export class Opening {
     this.sw.place(this.state.pose.x,this.state.pose.y,this.state.pose.z,this.state.pose.yaw);this.sw.pitch=this.state.pose.pitch;
     this.dust=driftingDust(this.low);this.cabin.root.add(this.dust);
     this.sky=stormSky(this.low);this.root.add(this.sky.mesh);
-    this.rover=rescueRover(mats,this.low);this.root.add(this.rover.root);
+    this.rover=openingRideVehicle(rescueRover(mats,this.low));this.root.add(this.rover.root);
     this.rover.root.position.set(-7,0,23);this.rover.root.rotation.y=Math.PI*.64;
     this.crate=supplyCrate(mats);this.crate.position.set(4,-.09,20);this.root.add(this.crate);
     this.contact=CONTACTS[this.state.contact];this.driver=people.spawn(this.contact.person);
@@ -91,8 +94,9 @@ export class Opening {
     this.audioStart=()=>this.startAudio();window.addEventListener('pointerdown',this.audioStart,{once:true});window.addEventListener('keydown',this.audioStart,{once:true});
     this.hideMainUI=true;document.body.dataset.opening='active';
     this.stage=this.state.stage;this.placeStage();
-    this.pageHide=()=>this.savePose();window.addEventListener('pagehide',this.pageHide);
+    this.pageHide=()=>{this.checkpoint(true);this.savePose();};window.addEventListener('pagehide',this.pageHide);
     this.buildMs=Math.round(performance.now()-buildStart);
+    this.visibility=()=>{if(document.hidden)this.pageHide();};document.addEventListener('visibilitychange',this.visibility);
   }
   buildUI(){
     this.style=document.createElement('style');this.style.textContent=`
@@ -117,7 +121,8 @@ export class Opening {
     document.body.appendChild(this.ui);this.caption=this.ui.querySelector('#opening-caption');this.hint=this.ui.querySelector('#opening-hint');
     this.action=this.ui.querySelector('#opening-action');this.walkButton=this.ui.querySelector('#opening-walk');this.fade=this.ui.querySelector('#opening-fade');
     this.skip=this.ui.querySelector('#opening-skip');this.skip.hidden=!this.state.played;
-    this.action.addEventListener('click',()=>this.interact());this.walkButton.addEventListener('click',()=>this.walkInstead());this.skip.addEventListener('click',()=>this.command({type:'opening-skip'}));
+    bindActivation(this.action,()=>this.interact());bindActivation(this.walkButton,()=>this.walkInstead());
+    bindActivation(this.skip,()=>this.useAction(()=>this.command({type:'opening-skip'})));
   }
   startAudio(){if(this.audio||!this.active)return;const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
     const ctx=new C(),gain=ctx.createGain(),rumble=ctx.createOscillator(),alarm=ctx.createOscillator(),alarmGain=ctx.createGain();
@@ -136,7 +141,10 @@ export class Opening {
     if(s.stage===0){this.sw.yaw=0;this.sw.pitch=0;this.cabin.root.position.set(0,1500,0);}
   }
   pose(){return this.state.stage===1?{x:this.sw.x,y:this.sw.y,z:this.sw.z,yaw:this.sw.yaw,pitch:this.sw.pitch}:this.state.stage===0?this.state.pose:this.model.pose();}
-  savePose(seconds=this.accum){if(!this.active||this.busy)return;this.accum=0;
+  checkpoint(force=false){if(!this.active||this.world.remote||!force&&performance.now()<(this.nextCheckpoint||0))return;
+    this.nextCheckpoint=performance.now()+150;writeOpeningCheckpoint(this.world,{...this.state,pose:this.pose(),
+    elapsed:this.elapsed,rideSeconds:this.rideSeconds,contactSeconds:this.contactSeconds});}
+  savePose(seconds=this.accum){if(!this.active||this.busy)return this.pending;this.accum=0;
     return this.command({type:'opening-pose',pose:this.pose(),seconds:Math.min(2,seconds)},false);}
   command(a,show=true){
     this.busy=true;
@@ -155,15 +163,19 @@ export class Opening {
         return r;
       }catch(e){this.status=e.message;this.statusUntil=this.elapsed+6;return {ok:false,msg:e.message};}
     };
-    this.pending=this.pending.then(task).finally(()=>{this.busy=false;});return this.pending;
+    this.pending=this.pending.then(task).finally(()=>{this.busy=false;this.checkpoint(true);});return this.pending;
   }
-  async interact(){if(this.busy||!this.active)return;
+  async useAction(run){if(this.actionPending||!this.active)return;this.actionPending=true;
+    try{await this.pending;if(!this.active)return;return await run();}finally{this.actionPending=false;}}
+  interact(){return this.useAction(()=>this._interact());}
+  async _interact(){
     await this.savePose(Math.max(this.accum,.1));const s=this.state;
     if(s.stage===1&&this.sw.z>12)return this.command({type:'opening-next'});
     if(s.stage===2){if(this.model.exposed())return this.command({type:'opening-carry'});return this.command({type:'opening-dig'});}
     if(s.stage===3)return this.command({type:'opening-ride'});
   }
-  async walkInstead(){if(this.busy||this.state.stage!==3||this.contactSeconds<8)return;await this.savePose();return this.command({type:'opening-walk'});}
+  walkInstead(){return this.useAction(async()=>{if(this.state.stage!==3||this.state.contactSeconds<8)return;
+    await this.savePose();return this.command({type:'opening-walk'});});}
   frame(dt,input,look){
     if(!this.active)return false;const s=this.state,m=this.model,e=this.engine;
     const disconnected=this.world.remote&&!this.world.connected;
@@ -171,8 +183,9 @@ export class Opening {
     if(s.stage===0&&!this.actorsReady)dt=0;
     this.elapsed+=dt;if(s.stage===4&&s.ride)this.rideSeconds+=dt;
     if(s.stage===3)this.contactSeconds+=dt;this.accum+=dt;
-    this.skip.hidden=!s.played;this.walkButton.hidden=s.stage!==3||this.contactSeconds<8;this.action.hidden=true;
-    this.action.disabled=this.walkButton.disabled=this.skip.disabled=this.busy||disconnected;
+    this.skip.hidden=!s.played;this.walkButton.hidden=s.stage!==3||s.contactSeconds<8;
+    let actionLabel='';
+    this.action.disabled=this.walkButton.disabled=this.skip.disabled=!!this.actionPending||disconnected;
     this.driver.update(dt);for(const p of this.passengers)p.update(dt);
     this.hemi.intensity=s.stage<2?.22:.7;this.sun.intensity=s.stage<2?.08:1.7;
     this.sky.uniforms.time.value=this.elapsed;this.sky.uniforms.strength.value=s.stage===0?clamp((this.elapsed-12)/12,.1,1):.65;
@@ -217,18 +230,17 @@ export class Opening {
       this.lamp.intensity=12+Math.sin(this.elapsed*6)*3;this.cabinFill.intensity=4;
       for(const mat of this.cabinEmitters)mat.color.setScalar(.08);
       this.hint.textContent='Move: WASD / left thumb · Look: mouse / right thumb';
-      if(this.sw.z>12){this.action.hidden=false;this.action.textContent='Climb out (E)';}
+      if(this.sw.z>12)actionLabel='Climb out (E)';
     }else{
       this.fade.style.opacity='0';this.cabin.root.position.set(0,WRECK_Y,0);this.cabin.root.rotation.set(.015,0,.105);
       if(s.stage===4&&s.ride){
         this.fade.style.opacity=String(clamp((this.rideSeconds-64)/2,0,1));
-        const t=clamp(this.rideSeconds/65,0,1),ease=t*t*(3-2*t);
-        const rx=-7-2593*ease,rz=23-373*ease;
-        this.rover.root.position.set(rx,m.height(rx,rz)+.03*Math.sin(this.elapsed*6),rz);
+        const rp=ridePose(this.rideSeconds,m.height);
+        this.rover.root.position.set(rp.x,rp.y+.03*Math.sin(this.elapsed*6),rp.z);
         this.rover.root.rotation.y=THREE.MathUtils.lerp(Math.atan2(-90,20),Math.atan2(2593,373),clamp(this.rideSeconds/6,0,1));
         for(const w of this.rover.wheels)w.rotation.x+=dt*12;
         const p=this.rover.root.position;m.place({...s.pose,x:p.x,y:p.y,z:p.z});
-        eye=new THREE.Vector3(.55,1.85,-1.15);this.rover.root.updateMatrix();eye.applyMatrix4(this.rover.root.matrix);
+        eye=new THREE.Vector3().copy(this.rover.passengerEye);this.rover.root.updateMatrix();eye.applyMatrix4(this.rover.root.matrix);
         this.rideYaw=(this.rideYaw||0)+look.dx;this.ridePitch=clamp((this.ridePitch||0)-look.dy,-1,1);
         forward=new THREE.Vector3(Math.sin(this.rideYaw)*Math.cos(this.ridePitch),Math.sin(this.ridePitch),-Math.cos(this.rideYaw)*Math.cos(this.ridePitch)).transformDirection(this.rover.root.matrix);
         this.caption.textContent=this.rideSeconds<9?`${this.contact.name}: ${this.contact.faction}. We saw you come down.`:this.rideSeconds<20?'The port is neutral. You can find work there.':this.rideSeconds>52?'The passenger line has a settlement waiting for you.':'';
@@ -254,9 +266,9 @@ export class Opening {
         eye=new THREE.Vector3().copy(m.walker.eyeWorldPos());forward=new THREE.Vector3().copy(m.digger.lookDir());up.copy(m.walker.updateFrame().up);local=false;
         if(s.stage===2){const d=Math.hypot(p.x-4,p.z-20);this.hint.textContent='Walk · Look · Use (E / touch)';
           this.caption.textContent=d>4?'Something lies beneath the collapsed dust.':this.model.exposed()?'Lift the cleared supply crate.':'Aim the shovel at the dust around the crate.';
-          if(d<4){this.action.hidden=false;this.action.textContent=this.model.exposed()?'Carry (E)':'Dig (E)';}
+          if(d<4)actionLabel=this.model.exposed()?'Carry (E)':'Dig (E)';
         }else if(s.stage===3){this.caption.textContent=this.contactSeconds<8?'A vehicle is approaching.':`${this.contact.name}: Need a lift? You can ride with me, or follow the port lights.`;
-          if(this.contactSeconds>=8&&Math.hypot(p.x+7,p.z-23)<5){this.action.hidden=false;this.action.textContent='Ride (E)';}}
+          if(s.contactSeconds>=8&&Math.hypot(p.x+7,p.z-23)<5)actionLabel='Ride (E)';}
         else if(s.stage===4){this.hint.textContent='Follow the port lights';if(Math.hypot(p.x+2600,p.z+350)<100&&!this.busy)this.savePose().then(()=>this.command({type:'opening-finish'}));}
       }
       if(s.carriedCrate&&s.stage===4&&s.ride){this.crate.position.set(.7,1.08,1.9).applyMatrix4(this.rover.root.matrix);this.crate.rotation.y=this.rover.root.rotation.y;}
@@ -271,7 +283,10 @@ export class Opening {
     if(s.stage!==0&&this.audio)this.audio.alarmGain.gain.setTargetAtTime(0,this.audio.ctx.currentTime,.2);
     if(disconnected)this.caption.textContent='Shared world disconnected. Reconnecting…';
     else if(this.statusUntil>this.elapsed)this.caption.textContent=this.status;
+    this.action.hidden=!actionLabel;if(this.action.textContent!==actionLabel)this.action.textContent=actionLabel;
+    this.checkpoint();
     this.look.frame(dt,s,this.elapsed);
+    this.checkpoint();
     if(this.accum>=1&&!this.busy)this.savePose();
     return true;
   }
@@ -284,6 +299,7 @@ export class Opening {
     for(const t of [...e._tracked])if(!this.beforeTracks.has(t))e._tracked.delete(t);
     this.look?.dispose();this.look=null;this.ui.remove();this.style.remove();delete document.body.dataset.opening;delete document.body.dataset.openingFilm;
     window.removeEventListener('keydown',this.keyboard);window.removeEventListener('pagehide',this.pageHide);
+    document.removeEventListener('visibilitychange',this.visibility);
     window.removeEventListener('pointerdown',this.audioStart);window.removeEventListener('keydown',this.audioStart);
     if(this.audio)this.audio.ctx.close().catch(()=>{});
     // Geometry is ours; material maps and Loft mesh buffers are shared with the main game.
@@ -293,6 +309,7 @@ export class Opening {
     this.terrain.cover.tex.dispose();this.terrain.material.dispose();this.sky.mesh.material.dispose();this.dust.material.map?.dispose();this.dust.material.dispose();detachBodyEdits(this.model.body.id);
     for(const mat of this.cabinEmitters)mat.dispose();
     this.world.state.opening={...this.state,complete:true,played:true};
+    writeOpeningCheckpoint(this.world,this.world.state.opening);
     try{localStorage.setItem('cosmos-opening-played','1');}catch{}
     this.onFinish(pose);
     for(const p of [...this.passengers,this.driver]){p.mixer?.stopAllAction();p.group.traverse(o=>{

@@ -1,5 +1,7 @@
 // Workers use the same cached Loft GLBs and the same Talk UI as the ship crew.
 import { NPC_SPOTS, TOWER_SPOTS } from './portSpec.js';
+import { personVisible } from '../crew/personVisibility.js';
+import { Person } from '../crew/personRig.js';
 
 const lines = [
   'Pad 01 is assigned to Meridian. Keep the approach clear.',
@@ -31,9 +33,11 @@ export class PortPeople {
     // share geometry/textures, and do not fetch another roster of bodies for the port.
     const cached=new Set(this.library.cachedFiles());
     const pool=roster.filter(r=>cached.has(r.file));
+    if(!pool.length)pool.push({id:'isaiah',fallback:true});
     if(!pool.length)return this;
     for(const [i,s] of PORT_WORKERS.entries()) {
-      const model=pool[i%pool.length], person=this.library.spawn(model.id,model.file);
+      const model=pool[i%pool.length],person=model.fallback?new Person(model.id):this.library.spawn(model.id,model.file);
+      if(model.fallback){person._attachSafe();person.ready=Promise.resolve(person);}
       const m={...s,status:'worker',def:{title:s.name},personId:model.id,person};
       person.group.position.set(s.x,(s.y||0)+(s.pose==='seated'?.51:.02),s.z);
       person.group.rotation.y={south:0,east:Math.PI/2,north:Math.PI,west:-Math.PI/2}[s.face]||0;
@@ -54,8 +58,8 @@ export class PortPeople {
     const p=this.port.site.toLocal(worldPos);
     let best=null,dist=3;
     for(const m of this.members) {
-      const d=Math.hypot(p.x-m.x,p.y-(m.y||0),p.z-m.z);
-      if(d<dist&&m.person.loaded){best=m;dist=d;}
+      const pos=m.person.group.position,d=Math.hypot(p.x-pos.x,p.y-pos.y,p.z-pos.z);
+      if(d<dist&&personVisible(m.person)){best=m;dist=d;}
     }
     return best;
   }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { guardSheetPress } from '../ui/activation.js';
 import { QUESTS, WAGES, GOODS } from './catalog.js';
 import { inventoryMass } from './economy.js';
 export class EconomyUI {
@@ -16,6 +17,7 @@ export class EconomyUI {
     `;document.head.appendChild(style);
     this.purse=document.createElement('button');this.purse.id='purse';this.purse.setAttribute('aria-label','Purse, supplies, crew wages and quests');
     this.panel=document.createElement('div');this.panel.id='account-panel';
+    guardSheetPress(this.panel);
     this.deliver=document.createElement('button');this.deliver.id='quest-deliver';this.deliver.textContent='Deliver 1 tonne · receive 400 marks';
     document.getElementById('hud').append(this.purse);document.body.append(this.panel,this.deliver);
     this.warning=document.createElement('button');this.warning.id='save-warning';this.warning.title='Connection / save problem';this.warning.setAttribute('aria-label','Connection or save problem — open Settings');this.warning.hidden=true;document.body.append(this.warning);
@@ -54,6 +56,7 @@ export class EconomyUI {
     this.deliver.style.display=q&&!this.ship.aboard&&Math.abs(p.y)<2?'block':'none';
     if(q)this.deliver.textContent=`Deliver ${q.tonnes} tonne · receive ${q.rewardMarks} marks`;
     this.panel.style.display=this.open?'block':'none';if(!this.open)return;
+    if(this.panel.dataset.pressed)return;
     this.panel.innerHTML=`<button class="account-close" aria-label="Close account">Close</button><b>Ship account · Mars marks</b><p>${e.marks} marks (${e.marks/4} credits)<br>4 marks = 1 credit<br>${save}${w.error?': '+w.error:''}</p>`+
       `<p>Supplies · ${inventoryMass(e.inventory)} kg<br>${Object.entries(e.inventory).map(([k,n])=>`${GOODS[k].name}: ${n}`).join('<br>')}</p>`+
       `<p>Crew wages per Mars sol (${(88775.244/3600).toFixed(2)} hours)<br>${Object.entries(e.crew).map(([id,c])=>`${id}: ${WAGES[id]*4} marks · ${c.unpaid?'UNPAID: leaves at next port':Math.max(0,(c.nextPay-e.elapsedSeconds)/3600).toFixed(1)+' h until due'}`).join('<br>')||'No crew hired.'}</p>`+
