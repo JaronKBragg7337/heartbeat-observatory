@@ -43,6 +43,7 @@
 
     <h2 class="sec">Every settled AI trade, added up</h2>
     <div class="card" id="chart"><p class="muted small">Loading&hellip;</p></div>
+    <p class="muted small" id="chartnote" style="margin-top:8px"></p>
 
     <h2 class="sec">Who's on shift. Tap one.</h2>
     <div class="tiles" id="tiles"></div>
@@ -53,13 +54,13 @@
     <footer><a href="/live-systems/crew/trades/">Full trade desk</a> · <a href="/live-systems/crew/reasoning/">Every trade's reasoning</a></footer>
   </div>
 <script type="module">
-  import { supabase, snapshot, nav, $, esc, usd, ago, pnlChart, CREW_CSS } from "./crew.js";
+  import { supabase, snapshot, nav, $, esc, usd, ago, mountPnlChart, CREW_CSS } from "./crew.js";
   $("crewcss").textContent = CREW_CSS;
   nav("Overview");
   const [snap, { data: acct }, { data: res }] = await Promise.all([
     snapshot(),
     supabase.from("desk_account").select("*").eq("id", "polymarket-us").maybeSingle(),
-    supabase.from("desk_trades").select("at,pnl_usd,actor").eq("kind", "resolution").like("actor", "auto:%").limit(2000),
+    supabase.from("desk_trades").select("at,pnl_usd,cost_usd,actor,title,slug").eq("kind", "resolution").like("actor", "auto:%").limit(2000),
   ]);
   if (!snap) { $("updated").textContent = "No snapshot yet."; throw 0; }
   const d = snap.data;
@@ -72,7 +73,8 @@
     [d.bots.length, "AIs on shift"], [trades, "AI trades so far"], [usd(pnl), "AI profit, settled"],
     [acct ? usd(acct.buying_power) : "–", "cash ready"], [acct ? usd(inPos) : "–", "in open trades"],
   ].map(([v, l]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
-  $("chart").innerHTML = pnlChart(res || []) + `<p class="muted small" style="margin-top:6px">Each dot is one trade that settled: green won, red lost. Hover a dot for the amount.</p>`;
+  mountPnlChart($("chart"), res || [], snap);
+  $("chartnote").textContent = "Each dot is one trade that settled: green won, red lost. Tap a dot for the trade. This is settled profit only; open trades and cash ready are the numbers above.";
   $("tiles").innerHTML = d.bots.map((b) => {
     const L = b.ledger;
     const recent = L && L.last && Date.now() - new Date(L.last) < 6 * 3600e3;
