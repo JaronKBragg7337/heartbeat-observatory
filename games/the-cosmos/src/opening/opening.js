@@ -13,6 +13,7 @@ import { WRECK_Y } from './freighterHull.js';
 import { bindActivation } from '../ui/activation.js';
 import { surveyOpeningVehicle, ridePose } from './rideVehicle.js';
 import { writeOpeningCheckpoint } from './checkpoint.js';
+import { PORT_CONTROL, CABIN_CREW, FLIGHT_DECK_1, FLIGHT_DECK_2, DRIVER_NEUTRAL, DRIVER_SETTLEMENT, driverGreeting, driverOffer, openingSpeaker } from './dialogue.js';   // VOICES
 
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function seatPerson(person,headHeight){return person.ready.then(p=>{
@@ -24,8 +25,8 @@ function seatPerson(person,headHeight){return person.ready.then(p=>{
   }return p;
 });}
 export class Opening {
-  constructor({engine,world,ship,people,port,tier,onFinish}){
-    Object.assign(this,{engine,world,ship,people,port,tier,onFinish});const buildStart=performance.now();
+  constructor({engine,world,ship,people,port,tier,onFinish,voice}){
+    Object.assign(this,{engine,world,ship,people,port,tier,onFinish,voice});const buildStart=performance.now();
     this.active=!!world.state.opening&&!world.state.opening.complete;
     this.state=structuredClone(world.state.opening||freshOpening());this.accum=0;this.pending=Promise.resolve();this.busy=false;
     this.film=false;this.elapsed=this.state.elapsed;this.rideSeconds=this.state.rideSeconds;
@@ -212,8 +213,9 @@ export class Opening {
       this.sw.yaw=clamp(this.sw.yaw,-1.2,1.2);
       eye=new THREE.Vector3(-1.75,1.24,3.1);forward=new THREE.Vector3(Math.sin(this.sw.yaw),Math.sin(this.sw.pitch),-Math.cos(this.sw.yaw));
       this.cabin.root.updateMatrix();eye.applyMatrix4(this.cabin.root.matrix);forward.transformDirection(this.cabin.root.matrix);up.transformDirection(this.cabin.root.matrix);
-      this.caption.textContent=t<7?'':t<15?'Port control: inbound passenger service, approach approved.':t<23?'Cabin crew: keep your harness fastened.':t<30?'Flight deck: port control, do you read?':t<38?'Flight deck: guidance lost. Brace.':'';
+      this.caption.textContent=t<7?'':t<15?PORT_CONTROL:t<23?CABIN_CREW:t<30?FLIGHT_DECK_1:t<38?FLIGHT_DECK_2:'';
       this.fade.style.opacity=String(t<3?1-t/3:t>43?clamp((t-43)/3,0,1):0);
+      if(this.voice&&!this.voice.unlocked&&t>2)this.hint.textContent='Tap the screen once to turn on sound.';   // VOICES: browsers need a tap before any sound
       if(!this.actorsReady){this.fade.style.opacity='1';this.caption.textContent='Preparing the opening…';}
       this.cabinFill.intensity=t>23?1:(this.low?14:30);
       for(const mat of this.cabinEmitters)mat.color.setScalar(t>23?.08:1);
@@ -243,7 +245,7 @@ export class Opening {
         eye=new THREE.Vector3().copy(this.rover.passengerEye);this.rover.root.updateMatrix();eye.applyMatrix4(this.rover.root.matrix);
         this.rideYaw=(this.rideYaw||0)+look.dx;this.ridePitch=clamp((this.ridePitch||0)-look.dy,-1,1);
         forward=new THREE.Vector3(Math.sin(this.rideYaw)*Math.cos(this.ridePitch),Math.sin(this.ridePitch),-Math.cos(this.rideYaw)*Math.cos(this.ridePitch)).transformDirection(this.rover.root.matrix);
-        this.caption.textContent=this.rideSeconds<9?`${this.contact.name}: ${this.contact.faction}. We saw you come down.`:this.rideSeconds<20?'The port is neutral. You can find work there.':this.rideSeconds>52?'The passenger line has a settlement waiting for you.':'';
+        this.caption.textContent=this.rideSeconds<9?driverGreeting(this.contact):this.rideSeconds<20?DRIVER_NEUTRAL:this.rideSeconds>52?DRIVER_SETTLEMENT:'';
         if(this.rideSeconds>=66&&!this.busy)this.savePose().then(()=>this.command({type:'opening-finish'}));
       }else{
         m.walker.yaw+=look.dx;m.walker.pitch=clamp(m.walker.pitch-look.dy,-1.4,1.3);m.walker.tick(dt,input);
@@ -267,7 +269,7 @@ export class Opening {
         if(s.stage===2){const d=Math.hypot(p.x-4,p.z-20);this.hint.textContent='Walk · Look · Use (E / touch)';
           this.caption.textContent=d>4?'Something lies beneath the collapsed dust.':this.model.exposed()?'Lift the cleared supply crate.':'Aim the shovel at the dust around the crate.';
           if(d<4)actionLabel=this.model.exposed()?'Carry (E)':'Dig (E)';
-        }else if(s.stage===3){this.caption.textContent=this.contactSeconds<8?'A vehicle is approaching.':`${this.contact.name}: Need a lift? You can ride with me, or follow the port lights.`;
+        }else if(s.stage===3){this.caption.textContent=this.contactSeconds<8?'A vehicle is approaching.':driverOffer(this.contact);
           if(s.contactSeconds>=8&&Math.hypot(p.x+7,p.z-23)<5)actionLabel='Ride (E)';}
         else if(s.stage===4){this.hint.textContent='Follow the port lights';if(Math.hypot(p.x+2600,p.z+350)<100&&!this.busy)this.savePose().then(()=>this.command({type:'opening-finish'}));}
       }
@@ -284,11 +286,20 @@ export class Opening {
     if(disconnected)this.caption.textContent='Shared world disconnected. Reconnecting…';
     else if(this.statusUntil>this.elapsed)this.caption.textContent=this.status;
     this.action.hidden=!actionLabel;if(this.action.textContent!==actionLabel)this.action.textContent=actionLabel;
+    this._speakCaption();   // VOICES: a caption that is a person talking is also spoken, from that person
     this.checkpoint();
     this.look.frame(dt,s,this.elapsed);
     this.checkpoint();
     if(this.accum>=1&&!this.busy)this.savePose();
     return true;
+  }
+  /** VOICES: speak the caption once when it changes, if a person (or the radio) is the one saying it. */
+  _speakCaption(){
+    const text=this.caption.textContent;
+    if(text===this._spoken)return;this._spoken=text;
+    const who=this.voice&&text&&openingSpeaker(text,this.contact);if(!who)return;
+    const source=who.source==='driver'?this.driver?.group:who.source==='cabin'?(this.passengers[1]||this.passengers[0])?.group:null;
+    this.voice.sayLine(text,{voice:who.voice,source,channel:who.source?'room':'radio'});
   }
   localPoint(p){return new THREE.Vector3().copy(this.model.toLocal(p));}
   finish(pose){if(!this.active)return;this.active=false;const e=this.engine;

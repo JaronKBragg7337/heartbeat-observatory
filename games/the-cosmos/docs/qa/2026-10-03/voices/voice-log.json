@@ -1,0 +1,41 @@
+{
+ "opening": {
+  "unlocked": true,
+  "log": [
+   {
+    "t": 6671,
+    "voice": "radio",
+    "text": "inbound passenger service, approach approved.",
+    "mode": "waiting-for-tap"
+   },
+   {
+    "t": 9070,
+    "voice": "sunita",
+    "text": "keep your harness fastened.",
+    "mode": "clip",
+    "channel": "room",
+    "dur": 1.76,
+    "dist": 2.8,
+    "x": 0,
+    "key": "07c0f19bfe34e8"
+   }
+  ]
+ },
+ "trader": {
+  "member": "Salvage trader",
+  "personId": "walter",
+  "log": [
+   {
+    "t": 17580,
+    "voice": "w-fenrir",
+    "text": "Got a serial number? Good. Got a broken part? Better.",
+    "mode": "clip",
+    "channel": "room",
+    "dur": 3.1,
+    "dist": 2.6,
+    "x": 0,
+    "key": "0e60f5d95385cf"
+   }
+  ]
+ }
+}

@@ -26,7 +26,7 @@ const TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.webp': 'image/webp', '.svg': 'image/svg+xml',
-  '.ktx2': 'image/ktx2', '.glb': 'model/gltf-binary',
+  '.ktx2': 'image/ktx2', '.glb': 'model/gltf-binary', '.mp3': 'audio/mpeg',
 };
 
 createServer(async (req, res) => {

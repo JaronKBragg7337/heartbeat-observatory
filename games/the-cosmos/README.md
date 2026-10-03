@@ -661,6 +661,18 @@ Tours pause physics, show a review pose of the lift, and restore the original pl
 `node test/validate.mjs` now includes the leftovers regressions (and, since the space work, 59 more: **390 checks** in total). The **49** focused
 worker, Climb and protected/tunnel-pour checks can also run with `node test/leftovers-checks.mjs`. All changes remain local and uncommitted for Claude/Jaron review.
 
+## Voices (2026-10-03)
+
+Everyone who talks is heard, from where they stand, and the subtitle stays. Two parts.
+
+**People.** Every line a person says on screen (the opening's port control, cabin crew, flight deck and driver; port workers, traders and the tower; hire candidates' pitches; your crew's replies and barks; the pilot's trip lines) is a small mp3 clip played through a Web Audio panner that follows the speaker's body: it comes from their side, fades out by 45 m, and is silent past it. Each person is cast to fit their Loft model (`src/voice/cast.js`: Kokoro voices, Apache-2.0). The ship log is the one place all crew and trip lines pass, so `ship.stations.onNote` is the hook; the talk panel and the opening speak their own lines. A line with no clip (ones with free numbers: "Contact at 412 metres") is spoken by the browser's own `speechSynthesis` instead, in a voice of the right gender, unplaced.
+
+- Clips live in `assets/voices/<hash>.mp3` (`hash = clipKey(voice, text)`), indexed by `manifest.json` (what the browser loads) and `lines.json` (hash to voice and text, for people).
+- **New lines get voices automatically:** `node tools/gen-voices.mjs` reads the game's own dialogue data (`src/voice/lines.js`: catalog, worker lines, crew lines, the opening's `dialogue.js`, plus `tools/scan-lines.mjs` which finds crew, trip and job sentences in the source), and voices whatever has no clip yet with Kokoro-82M on this machine (no key, no network once the model is cached). `--check` lists lines without clips; `validate.mjs` fails on any.
+- **iPhone:** audio unlocks on the first tap (`voice.unlock()`, every pointer/touch/key event); the page asks for a "playback" audio session so the silent switch does not mute it.
+
+**Players.** `src/voice/proximity.js`: WebRTC audio between players in the shared world, handshake carried by the authority (`server/voiceRelay.mjs`, message type `voice`; it only relays offer/answer/ICE/bye, bounded and rate limited, to a named online player). Players connect inside 40 m (let go past 50 m); players aboard the same ship are one crew channel, heard everywhere on it. Volume follows distance and the voice is panned to the speaker's body. You hear everyone near you with no setup. To talk: hold **Talk** (phone) or **B** (desktop). The mic is asked for the first time, after a plain-words explanation, and is only live while the button is held (released a few seconds after). Settings: voice volume, player voice chat on/off, mute my microphone. STUN only, no TURN: two players behind strict mobile or office networks may not connect.
+
 ## What is not done yet
 
 Stated plainly, because a known gap is cheaper than a surprise:

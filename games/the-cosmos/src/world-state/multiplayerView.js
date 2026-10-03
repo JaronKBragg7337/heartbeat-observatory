@@ -132,7 +132,9 @@ export class MultiplayerView {
       s.combat.practice?.forEach((r,i)=>{const t=this.ship.targets[i];if(t){Object.assign(t.t,r);t.mesh.visible=r.hp>0||r.respawn>6.5;}});}
     for(const e of s.events||[])if(e.seq>(this.eventSeq||0)){const event={...e};if(e.id?.includes(':practice-'))event.id=this.ship.targets[Number(e.id.split(':practice-')[1])]?.id||e.id;
       (e.system==='drones'?this.ship.drones:this.ship.guns).events.push(event);this.eventSeq=e.seq;}
+    const backlog=!this.messageSeq;if(backlog)this.ship.voiceQuiet=true;   // VOICES: the log you join with is history, not speech
     for(const line of s.messages||[])if(line.seq>(this.messageSeq||0)){this.ship.note(line.msg,line.warn);this.messageSeq=line.seq;}
+    this.ship.voiceQuiet=false;
     const ids=new Set((m.bricks||[]).map(b=>b.bodyId));
     for(const id of ids){const store=id==='mars'?this.edits:this.space.moonWorld(id).edits;
       restoreTerrain(store,snapshot.terrain[id],(m.bricks||[]).filter(b=>b.bodyId===id));}

@@ -47,6 +47,9 @@ import { restoreTerrain } from './world-state/terrainCodec.js';
 import { GameBridge } from './world-state/gameBridge.js';
 import { EconomyUI } from './economy/economyUI.js';
 import { buildKeyControls } from './ui/keyActions.js';
+import { VoiceSystem } from './voice/voice.js';           // VOICES
+import { ProximityChat } from './voice/proximity.js';
+import { VoiceUI, bindVoiceSettings } from './voice/voiceUI.js';
 import { DamageView } from './world-state/damageView.js';
 import { SpaceSystem } from './space/spaceSystem.js';
 import { chooseWorld } from './world-state/remoteWorld.js';
@@ -356,6 +359,13 @@ const shipType = (() => {
 })();
 const ship = new ShipSystem({ engine, body, registry, ground: groundRadius, walker, spawn: SPAWN, tier, landingSite: portSite, shipType });
 ship.safeGraphics=safeGraphics;
+// VOICES: every line a person says is spoken from that person (src/voice). The ship log is the one place all lines pass.
+let crew = null, crewUI = null;
+const voice = new VoiceSystem({ camera: engine.camera, base: new URL('../assets/voices/', import.meta.url).href,
+  resolveSpeaker: (name) => { for (const m of crew?.members?.values?.() || []) if (m.name === name && m.person?.group) return m.person.group; return null; } });
+ship.stations.onNote = (msg) => { if (!ship.voiceQuiet) voice.onNote(msg); };
+let chat = null, voiceUI = null;
+bindVoiceSettings(voice);
 let shipUI = null;
 try {
   ship.build();
@@ -438,19 +448,18 @@ playerPerson.ready.then((p) => {
 });
 
 // --- The crew: six people waiting at the port to be hired (src/crew).
-let crew = null, crewUI = null;
 const portPeople=new PortPeople(port,people);
 if (ship.ready && !world.remote) {
   const c = new CrewSystem({ engine, ship, site: portSite, people, ground: groundRadius, walker, tier, playerLook });
   c.build().then(async () => { crew = c; ship.crew = c;
     await portPeople.build();
     worldBridge.attachCrew(c,portPeople);
-    crewUI = new CrewUI(c, { ship, walker, isTouch, portPeople });
+    crewUI = new CrewUI(c, { ship, walker, isTouch, portPeople, voice });
   }).catch((e) => console.error('Crew failed to build', e));
 }
 if(world.remote) portPeople.build().then(()=>{worldBridge.portPeople=portPeople;
   crew = new RemoteCrew(multiplayer);ship.crew=crew;multiplayer.crew=crew;
-  crewUI = new CrewUI(crew,{ship,walker,isTouch,portPeople});
+  crewUI = new CrewUI(crew,{ship,walker,isTouch,portPeople,voice});
 });
 digger.canPlaceSpoil = makeSpoilGuard({ port, portPeople, ship, getCrew: () => crew });
 
@@ -976,6 +985,7 @@ const freeCam = {
 let cinema = null;
 
 engine.addUpdater((dt) => {
+  voice.update();
   if(opening?.active){
     const a=touch.consumeLook(),b=desktop.consumeLook();
     opening.frame(dt,{moveEast:touch.moveEast||desktop.moveEast,moveNorth:touch.moveNorth||desktop.moveNorth,
@@ -1066,6 +1076,7 @@ engine.addUpdater((dt) => {
   if (crewUI) crewUI.update(dt);
   if (inMarsFrame) portPeople.tick(dt,walker.worldPos);
   if(multiplayer) multiplayer.tick(dt); else worldBridge.tick(dt);
+  if (chat) { chat.tick(dt); voiceUI.update(); }
   economyUI.tick(dt);
   damageView.tick(dt,walker.worldPos);
   if (suitGroup.visible && playerPerson.loaded) {
@@ -1155,12 +1166,17 @@ if(!world.remote){
   space.ledger.credits=world.state.economy.marks/4;
 }
 if(world.remote) multiplayer = new MultiplayerView(world,{engine,ship,walker,edits,digger,site:portSite,space,people,bridge:worldBridge,rebuild:rebuildNear,port});
+if(world.remote){   // VOICES: proximity voice chat between players (src/voice/proximity.js)
+  chat = new ProximityChat({ world, voice, bodyOf: (id) => multiplayer.bodies.get(id)?.group || null,
+    sameFrame: (id) => { const b = multiplayer.bodies.get(id); return !!b && b.frameId === space.frameId; } });
+  voiceUI = new VoiceUI({ voice, chat, isTouch });
+}
 if (ship.ready) {
   vehicles = new VehicleSystem({ engine, ship, walker, world, space, site: portSite, tier });
   vehicles.multiplayer = multiplayer;
   if (multiplayer) multiplayer.vehicles = vehicles;
 }
-opening=new Opening({engine,world,ship,people,port,tier,onFinish:(pose)=>{
+opening=new Opening({engine,world,ship,people,port,tier,voice,onFinish:(pose)=>{
   const pad=world.remote?world.snapshot.ships[world.snapshot.players[world.playerId].shipId].pad:{x:0,z:0};
   const arrival=pose?.worldPos||portSite.toWorld(pad.x-7,.02,pad.z+20);
   Object.assign(walker.worldPos,arrival);Object.assign(walker.velocity,{x:0,y:0,z:0});walker.yaw=portSite.heading;walker.pitch=0;
@@ -1254,7 +1270,7 @@ if (devMode) window.cosmos = {
   buildId: BUILD_VERSION,
   opening,
   buildVersion:BUILD_VERSION,
-  multiplayer, vehicles,
+  multiplayer, vehicles, voice, get chat() { return chat; },
   world, worldBridge, economyUI,
   port, portTour, portPeople, space,
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,

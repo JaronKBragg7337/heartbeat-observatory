@@ -99,6 +99,8 @@ for (const target of targets) for (const spec of devices) {
     const stage = () => page.evaluate(() => cosmos.opening.state.stage);
     await record(scope, 'opening: intro plays, refresh resumes the same step', async () => {
       await page.evaluate(() => { cosmos.engine.stop(); cosmos.step(0); }); await step(10); await shot('opening-intro');
+      // VOICES: the port-control caption is also asked of the voice system (it waits for the first tap on iPhone)
+      assert.ok(await page.evaluate(() => cosmos.voice.log.some(l => /inbound passenger service/.test(l.text))), 'port control line was never sent to the voice system');
       await page.evaluate(async () => { await cosmos.opening.savePose(); }); const t = await page.evaluate(() => cosmos.opening.state.elapsed);
       await ready(); assert.ok(Math.abs(await page.evaluate(() => cosmos.opening.elapsed) - t) < 1.5, 'intro did not resume near ' + t);
     });
@@ -145,6 +147,40 @@ for (const target of targets) for (const spec of devices) {
       assert.notEqual(await page.locator('#settings-panel').evaluate(e => e.classList.contains('open')), before); await shot('settings-open');
       await realTap('#btn-close-settings'); await page.waitForTimeout(100);
       assert.equal(await page.locator('#settings-panel').evaluate(e => e.classList.contains('open')), false); await shot('settings-close');
+    });
+    // VOICES: the first real tap unlocks audio on iOS; mp3 clips must decode in THIS browser; the settings rows must work by touch.
+    await record(scope, 'voices: settings rows work by touch, a tap unlocks audio, a port worker line decodes and plays from their body', async () => {
+      await realTap('#btn-settings'); await page.waitForTimeout(150);
+      for (const id of ['set-voice-volume', 'set-voice-chat', 'set-voice-mute']) { const el = page.locator('#' + id); await el.scrollIntoViewIfNeeded(); assert.ok(await el.isVisible(), id + ' not visible'); }
+      const chat = page.locator('#set-voice-chat'); await chat.scrollIntoViewIfNeeded(); let box = await chat.boundingBox();
+      await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(100);
+      assert.equal(await page.evaluate(() => cosmos.voice.settings.chat), false, 'tap on the chat checkbox did not turn chat off');
+      await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(100);
+      assert.equal(await page.evaluate(() => cosmos.voice.settings.chat), true, 'second tap did not turn it back on');
+      const vol = page.locator('#set-voice-volume'); await vol.scrollIntoViewIfNeeded(); box = await vol.boundingBox();
+      await page.touchscreen.tap(box.x + box.width * .15, box.y + box.height / 2); await page.waitForTimeout(100);
+      const v = await page.evaluate(() => cosmos.voice.settings.volume); assert.ok(v < .5, 'tap on the volume slider did not move it (volume ' + v + ')');
+      await shot('settings-voice'); await realTap('#btn-close-settings');
+      const webAudio = await page.evaluate(() => cosmos.voice.hasWebAudio);
+      if (webAudio) assert.equal(await page.evaluate(() => cosmos.voice.unlocked && cosmos.voice.ctx.state), 'running', 'audio did not unlock on a real tap');
+      else rows.push({ scope, step: 'voices: NOTE this browser build has no Web Audio (the Playwright Windows WebKit)', result: 'PASS', detail: 'unlock and placed playback verified on the Chromium profile only; mp3 decode checked below through an audio element; real iOS Safari not tested' });
+      await page.waitForFunction(() => cosmos.portPeople?.members?.length > 0, null, { timeout: 30000 });
+      if (!webAudio) {
+        const d = await page.evaluate(async () => { const m = await (await fetch('./assets/voices/manifest.json')).json(), k = Object.keys(m.clips)[0], a = new Audio();
+          return new Promise(res => { a.onloadedmetadata = () => res(a.duration); a.onerror = () => res(-1); setTimeout(() => res(-2), 6000); a.src = './assets/voices/' + k + '.mp3'; a.load(); }); });
+        assert.ok(d > .8, 'this browser could not decode a voice mp3 (' + d + ')');
+        const threw = await page.evaluate(() => { try { cosmos.voice.sayLine('Supply desk. Spares and field kits are on the racks.', { voice: 'w-jessica', source: null, channel: 'room' }); return false; } catch (e) { return String(e); } });
+        assert.equal(threw, false, 'the voice system threw without Web Audio: ' + threw); return;
+      }
+      const r = await page.evaluate(async () => { const c = cosmos, v = c.voice; v.set('volume', .9); await v._manifestLoad();
+        const { WORKER_CAST, clipKey } = await import('/src/voice/cast.js'), { WORKER_LINES } = await import('/src/port/workerLines.js');
+        const m = c.portPeople.members.find(x => WORKER_CAST[x.id]); const before = v.log.length;
+        v.sayLine(WORKER_LINES[m.id], { voice: WORKER_CAST[m.id].voice, source: m.person.group, channel: 'room' }); await new Promise(r => setTimeout(r, 1500));
+        const buf = await v._buffer(clipKey(WORKER_CAST[m.id].voice, WORKER_LINES[m.id]));
+        return { id: m.id, log: v.log.slice(before), clips: v.stats.clips, fails: v.stats.decodeFailures, decoded: buf.duration }; });
+      const e = r.log.find(x => x.mode === 'clip' || x.mode === 'too-far');
+      assert.ok(r.fails === 0, 'mp3 decode failed in this browser'); assert.ok(e, 'no voice log for the worker line: ' + JSON.stringify(r));
+      assert.ok(r.decoded > .8, 'mp3 decoded to ' + r.decoded + ' s'); if (e.mode === 'clip') assert.ok(e.dur > .8, 'clip too short');
     });
     await record(scope, 'after the opening: visible buttons respond to real taps while a thumb holds the stick', async () => {
       await holdThumb();

@@ -56,6 +56,7 @@ export class RemoteWorld {
       else if(m.type==='receipt'){const p=this.pendingActions.get(m.actionId);if(p){this.pendingActions.delete(m.actionId);this.journal();this.saving=this.pendingActions.size;
         if(m.opening){this.state.opening=m.opening;this.snapshot.players[this.playerId].opening=m.opening;}
         p.resolve(m);this.onReceipt?.(m);}}
+      else if(m.type==='voice')this.onVoice?.(m);   // VOICES: WebRTC handshake from another player
       else if(m.type==='error'){this.onReceipt?.({ok:false,msg:m.msg});}
     };
     ws.onerror=()=>{};
@@ -78,6 +79,7 @@ export class RemoteWorld {
     for(const fn of this.listeners)fn(m);
   }
   sendPose(pose,controls,vehicle){if(this.connected&&this.socket.readyState===WebSocket.OPEN){const seq=++this.poseSeq;this.sentPoses.set(seq,structuredClone(pose));while(this.sentPoses.size>64)this.sentPoses.delete(this.sentPoses.keys().next().value);this.socket.send(stringify({type:'pose',pose,controls,vehicle:vehicle||undefined,seq}));}}
+  sendVoice(to,data){if(this.connected&&this.socket.readyState===WebSocket.OPEN){this.socket.send(stringify({type:'voice',to,data}));return true;}return false;}
   request(action){if(!this.connected||this.socket.readyState!==WebSocket.OPEN)return Promise.resolve({ok:false,msg:'Shared world disconnected; wait for reconnect.'});
     const actionId=crypto.randomUUID();this.saving++;
     return new Promise(resolve=>{this.pendingActions.set(actionId,{action,resolve});this.journal();this.socket.send(stringify({type:'action',actionId,action}));});}

@@ -12,6 +12,9 @@ import { CREW_POSTS, ORDERS, thinkDelay } from './crewSpec.js';
 import { bindActivation, guardSheetPress } from '../ui/activation.js';
 import { landingOrder } from '../space/spaceSpec.js';
 import { workerHTML, WAGES } from '../economy/dialogue.js';
+import { TRADERS, QUESTS } from '../economy/catalog.js';   // VOICES
+import { WORKER_CAST, voiceForName } from '../voice/cast.js';
+import { WORKER_FALLBACK } from '../port/workerLines.js';
 
 const CSS = `
 #crew-ui { position: fixed; inset: 0; pointer-events: none; z-index: 68; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
@@ -42,7 +45,7 @@ export class CrewUI {
   /** @param crew CrewSystem, @param o { ship, walker, isTouch } */
   constructor(crew, o) {
     this.crew = crew; this.ship = o.ship; this.walker = o.walker; this.isTouch = !!o.isTouch;
-    this.portPeople = o.portPeople || null;
+    this.portPeople = o.portPeople || null; this.voice = o.voice || null;   // VOICES
     this.target = null; this.open = false; this.view = 'main'; this._sig = ''; this._accum = 0; this.reply = '';
     this._build();
     crew.onSay = (name, text) => this.say(name, text);
@@ -71,8 +74,8 @@ export class CrewUI {
   }
 
   toggle() { if (this.open) this.close(); else if (this.target) this.openFor(this.target); }
-  openFor(m) { this.open = true; this.view = 'main'; this._sig = ''; this.reply = ''; this.target = m; this._draw(); }
-  close() { this.open = false; this.panel.style.display = 'none'; }
+  openFor(m) { this._voiced = ''; this.open = true; this.view = 'main'; this._sig = ''; this.reply = ''; this.target = m; this._draw(); }
+  close() { this._voiced = ''; this.open = false; this.panel.style.display = 'none'; }
 
   /** Per frame: find who is within reach, show or hide the button, keep the panel honest. */
   update(dt) {
@@ -93,6 +96,24 @@ export class CrewUI {
     } else this.btn.style.display = 'none';
   }
 
+  /** VOICES: what the person says in the open panel is spoken once per view, from their body, in their voice. */
+  _speakPanel(m) {
+    const v = this.voice; if (!v || !this.open) return;
+    const key = m.id + '|' + this.view; if (key === this._voiced) return; this._voiced = key;
+    const o = { source: m.person?.group || null, channel: 'room' };
+    if (m.status === 'worker') {
+      const cast = WORKER_CAST[m.id]; if (!cast) return;
+      const t = TRADERS[m.id], jobs = QUESTS.filter((q) => q.giver === m.id);
+      if (this.view === 'answer') v.sayLine(t?.answer || (jobs[0] ? jobs[0].offer : WORKER_FALLBACK.answer), { ...o, voice: cast.voice });
+      else if (this.view === 'main') {
+        v.sayLine(t?.greeting || m.line, { ...o, voice: cast.voice });
+        for (const q of jobs) v.sayLine(q.offer, { ...o, voice: cast.voice, queue: true });
+      }
+    } else if (m.status === 'candidate') {
+      const id = voiceForName(m.name); if (id) v.sayLine(m.def.pitch, { ...o, voice: id });
+    }
+  }
+
   // ---- the panel ---------------------------------------------------------------------------------------------
   _signature(m) {
     const f = this.crew.ship.flight, o = this.crew.activeOrder();
@@ -107,6 +128,7 @@ export class CrewUI {
     const sig = this._signature(m);
     if (sig === this._sig && this.panel.style.display === 'block') return;
     this._sig = sig;
+    this._speakPanel(m);
     const def = m.def, c = this.crew, ship = this.ship;
     const skill=m.status==='worker'?'':` · skill ${Math.round(def.skill*100)}%`;
     let h = `<div class="hd"><img src="/homes/people/${m.personId}.jpg" alt=""><div><b>${esc(m.name)}</b><span>${esc(def.title)}${skill}</span></div><button class="cbtn x" data-a="close">✕</button></div>`;

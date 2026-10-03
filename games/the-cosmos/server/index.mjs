@@ -7,6 +7,7 @@ import { FileAdapter, SupabaseAdapter } from './storage.mjs';
 import { logClientError } from './clientErrors.mjs';
 import { upgrade } from './websocket.mjs';
 import { tokenVerifier } from './identity.mjs';
+import { relayVoice } from './voiceRelay.mjs';   // VOICES
 import { stringify, parse } from '../src/world-state/wire.js';
 import { BUILD_VERSION } from '../src/core/buildVersion.js';
 // Resolve browser import-map names after runtime hooks are registered, even on
@@ -14,7 +15,7 @@ import { BUILD_VERSION } from '../src/core/buildVersion.js';
 const { Authority } = await import('./authority.mjs');
 
 const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
-const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.glb':'model/gltf-binary','.svg':'image/svg+xml','.webp':'image/webp'};
+const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.glb':'model/gltf-binary','.svg':'image/svg+xml','.webp':'image/webp','.mp3':'audio/mpeg'};
 export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,now=Date.now,verify,clientErrorLog=resolve(root,'server/.data/client-errors.log')}={}) {
   if(!adapter){const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
     if(!!url!==!!key)throw Error('Set both Supabase environment variables.');
@@ -66,6 +67,7 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
               if(ok){peer.playerId=null;await world.commit();}
               send(peer,{type:'identity-done',op:'discard',ok,msg:ok?'':'Someone is aboard your ship. Try again when they leave.'});broadcast();}
             else throw Error('Unknown identity request.');}
+          else if(m.type==='voice'){relayVoice(world,peer,m,send);}   // VOICES: WebRTC handshake relay (server/voiceRelay.mjs)
           else if(m.type==='checkpoint'){const bricks=await world.commit();broadcast(bricks);}
           else throw Error('Unknown message.');
         }catch(e){send(peer,{type:'error',msg:e.message});}

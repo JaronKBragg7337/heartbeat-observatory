@@ -3,28 +3,25 @@ import { NPC_SPOTS, TOWER_SPOTS } from './portSpec.js';
 import { personVisible } from '../crew/personVisibility.js';
 import { Person } from '../crew/personRig.js';
 
-const lines = [
-  'Pad 01 is assigned to Meridian. Keep the approach clear.',
-  'Shuttle and courier traffic use pads 02 and 03.',
-  'Stay on the marked foot route across the apron.',
-  'Approach desk. Watching for inbound traffic.',
-  'Weather sensors are offline. Watch the dust outside.',
-  'This watch keeps the apron clear for arrivals.',
-  'I carry the shift notes between desks.',
-  'Watching the horizon. No traffic to report.',
-];
+import { WORKER_LINES } from './workerLines.js';
+import { WORKER_CAST, BODY_KIND } from '../voice/cast.js';
+
 export const PORT_WORKERS = [
-  ...TOWER_SPOTS.map((s,i)=>({...s,line:lines[i]})),
-  {...NPC_SPOTS[0],id:'depot-clerk',face:'south',line:'Supply desk. Spares and field kits are on the racks.'},
-  {...NPC_SPOTS[1],id:'arrival-guide',face:'east',line:'Welcome to Marineris. Depot west, market south, control tower north. Use the lift inside.'},
-  {...NPC_SPOTS[3],id:'reception-clerk',face:'south',line:'Control is upstairs. Call the lift straight ahead.'},
+  ...TOWER_SPOTS.map(s=>({...s,line:WORKER_LINES[s.id]})),
+  {...NPC_SPOTS[0],id:'depot-clerk',face:'south',line:WORKER_LINES['depot-clerk']},
+  {...NPC_SPOTS[1],id:'arrival-guide',face:'east',line:WORKER_LINES['arrival-guide']},
+  {...NPC_SPOTS[3],id:'reception-clerk',face:'south',line:WORKER_LINES['reception-clerk']},
   ...[-70,-62,-54,-46].map((x,i)=>({id:'trader-'+(i+1),name:['Food trader','Salvage trader','Water trader','Field kit trader'][i],
-    x,y:0,z:50.25,face:'south',line:['Rations and coffee here. Keep your suit sealed outside.',
-      'Filters, connectors, salvage. Bring the part you need matched.',
-      'Sealed water bottles. Mind the cap in the dust.',
-      'Field rolls and repair fabric. Check your suit seams before you leave.'][i]})),
+    x,y:0,z:50.25,face:'south',line:WORKER_LINES['trader-'+(i+1)]})),
 ];
 
+/** VOICES: a worker's body matches their voice (a woman's voice gets a woman's body, an older man's the older man), so the
+ *  mouth and the sound agree. Falls back to the old rotation when the wanted kind is not in the cache. */
+function bodyFor(id,pool,i,used){
+  const want=WORKER_CAST[id]?.body,fit=pool.filter(r=>BODY_KIND[r.id]===want);
+  if(!want||!fit.length)return pool[i%pool.length];
+  const n=used[want]=(used[want]||0)+1;return fit[(n-1)%fit.length];
+}
 export class PortPeople {
   constructor(port,library) { this.port=port;this.library=library;this.members=[]; }
   async build() {
@@ -35,8 +32,9 @@ export class PortPeople {
     const pool=roster.filter(r=>cached.has(r.file));
     if(!pool.length)pool.push({id:'isaiah',fallback:true});
     if(!pool.length)return this;
+    const used={};
     for(const [i,s] of PORT_WORKERS.entries()) {
-      const model=pool[i%pool.length],person=model.fallback?new Person(model.id):this.library.spawn(model.id,model.file);
+      const model=bodyFor(s.id,pool,i,used),person=model.fallback?new Person(model.id):this.library.spawn(model.id,model.file);
       if(model.fallback){person._attachSafe();person.ready=Promise.resolve(person);}
       const m={...s,status:'worker',def:{title:s.name},personId:model.id,person};
       person.group.position.set(s.x,(s.y||0)+(s.pose==='seated'?.51:.02),s.z);

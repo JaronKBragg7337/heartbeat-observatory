@@ -1,0 +1,1350 @@
+{
+ "000d092ed06f62": {
+  "voice": "zuri",
+  "text": "That is all three. Take them home to the Survey Office at Marineris Port."
+ },
+ "008eb7cfc05d30": {
+  "voice": "sunita",
+  "text": "Come aboard first, boss. I won't lift without you."
+ },
+ "00950f66405a8e": {
+  "voice": "ada",
+  "text": "Course set for Pad 03 (courier)."
+ },
+ "009d13c8fca894": {
+  "voice": "ada",
+  "text": "That is another one down."
+ },
+ "00a1316c4d90b7": {
+  "voice": "ship",
+  "text": "Come aboard first: the ship will not lift without you."
+ },
+ "00a21eba01792a": {
+  "voice": "zuri",
+  "text": "Back in Mars space."
+ },
+ "00ab3c7616bf04": {
+  "voice": "ada",
+  "text": "Down and holding."
+ },
+ "00b244d2021251": {
+  "voice": "ada",
+  "text": "Supplies are aboard and stowed."
+ },
+ "00b62c037cf5ef": {
+  "voice": "zuri",
+  "text": "Plotting a course round Mars first."
+ },
+ "00b812349b4961": {
+  "voice": "ship",
+  "text": "We are at Mars already."
+ },
+ "00c7ca31a934c8": {
+  "voice": "zuri",
+  "text": "Hull's at 27 percent. Breaking off, going down to neutral airspace."
+ },
+ "00cb3a68908f63": {
+  "voice": "zuri",
+  "text": "Course set for Phobos."
+ },
+ "00f8e315d7689d": {
+  "voice": "ada",
+  "text": "Hull's at 28 percent. Breaking off, going down to neutral airspace."
+ },
+ "00f90761c954a6": {
+  "voice": "ship",
+  "text": "On station over Mars."
+ },
+ "010a1b05d3920b": {
+  "voice": "zuri",
+  "text": "We are under the neutral line. Holding here. Say the word and we go home."
+ },
+ "011bbd3b86b045": {
+  "voice": "ship",
+  "text": "Course cancelled. Holding."
+ },
+ "011bda9317497b": {
+  "voice": "zuri",
+  "text": "On station over Airy-0."
+ },
+ "0125e814a98754": {
+  "voice": "ada",
+  "text": "Taking her down."
+ },
+ "0132d6732711f9": {
+  "voice": "ship",
+  "text": "Course set for Deimos."
+ },
+ "014143ab5d25e6": {
+  "voice": "zuri",
+  "text": "On station over Mars."
+ },
+ "0142d468ccfb2c": {
+  "voice": "zuri",
+  "text": "Arrived over Phobos. Easing level."
+ },
+ "0199bab537060d": {
+  "voice": "aoi",
+  "text": "Thanks, boss. I will be at the board."
+ },
+ "01a38830574ff9": {
+  "voice": "walter",
+  "text": "Still getting the crew settled. One moment."
+ },
+ "01ca9f38d8f58d": {
+  "voice": "zuri",
+  "text": "The port is neutral. You can find work there."
+ },
+ "01ef177430775d": {
+  "voice": "zuri",
+  "text": "Heading back to the pad."
+ },
+ "020c02ad02ed40": {
+  "voice": "ada",
+  "text": "The ramp is up. Lower it and I'll come aboard."
+ },
+ "0214753a738846": {
+  "voice": "ship",
+  "text": "Engine power is too low to lift off. Route more to the engines."
+ },
+ "0250b17472c996": {
+  "voice": "zuri",
+  "text": "Hull's at 29 percent. Breaking off, going down to neutral airspace."
+ },
+ "026240bd1a5865": {
+  "voice": "w-aoede",
+  "text": "Watching the horizon. No traffic to report."
+ },
+ "02727fae413251": {
+  "voice": "jorge",
+  "text": "Aye. I'll find my station."
+ },
+ "027cd50fc7c5d9": {
+  "voice": "walter",
+  "text": "Thanks, boss. I will be at the board."
+ },
+ "028c4dff3c259c": {
+  "voice": "w-sky",
+  "text": "Sealed rations. Coffee is a morale budget, but food is a fuel budget."
+ },
+ "02925afa29d430": {
+  "voice": "zuri",
+  "text": "Down at Hellas Planitia."
+ },
+ "029f3fb6b29acc": {
+  "voice": "ada",
+  "text": "Braking burn."
+ },
+ "029fda35645d07": {
+  "voice": "zuri",
+  "text": "A course is already under way. Cancel it first."
+ },
+ "02a943f2f5c9eb": {
+  "voice": "w-jessica",
+  "text": "Supply desk. Raw regolith: 12 marks a tonne. We weigh it here."
+ },
+ "02aa7608c0b9e5": {
+  "voice": "ada",
+  "text": "Down at Airy-0."
+ },
+ "02c4975f6f613b": {
+  "voice": "ship",
+  "text": "Down at Phobos."
+ },
+ "02eb74de6b5431": {
+  "voice": "zuri",
+  "text": "We are at Phobos already."
+ },
+ "030399a2e3bfb0": {
+  "voice": "ship",
+  "text": "Down at Mars orbit (400 km)."
+ },
+ "030d43553e121f": {
+  "voice": "ship",
+  "text": "Committed to the climb: the lift pods only push up, they cannot stop the ship. The main drive can once we are above the air."
+ },
+ "031e3de3ee6657": {
+  "voice": "ada",
+  "text": "Holding here."
+ },
+ "031f387631bf9a": {
+  "voice": "ada",
+  "text": "a weak distress beacon on the survey band, about 800 m south-west of the pad. A drifting cargo module."
+ },
+ "035e62f84efaae": {
+  "voice": "ada",
+  "text": "Need a lift? You can ride with me, or follow the port lights."
+ },
+ "036ceb852d7d6b": {
+  "voice": "w-liam",
+  "text": "Shuttle and courier traffic use pads 02 and 03."
+ },
+ "03922a6a72e984": {
+  "voice": "w-aoede",
+  "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "03a12a5594054f": {
+  "voice": "zuri",
+  "text": "Course set for Deimos."
+ },
+ "03a1664bf88ff6": {
+  "voice": "ada",
+  "text": "Engine power is too low to lift off. Route more to the engines."
+ },
+ "03e0cbd991bbe7": {
+  "voice": "ada",
+  "text": "Flies what you point her at. Keeps the ship off the rocks and out of trouble."
+ },
+ "03f21ec9f74539": {
+  "voice": "zuri",
+  "text": "Holding on the ground."
+ },
+ "04005f94b7016e": {
+  "voice": "ada",
+  "text": "The ramp is down."
+ },
+ "04034f20539a39": {
+  "voice": "ship",
+  "text": "Arrived over Marineris Port. Easing level."
+ },
+ "041056f6e6ba62": {
+  "voice": "zuri",
+  "text": "Loading stores. Food, water, bolts."
+ },
+ "04152382326177": {
+  "voice": "zuri",
+  "text": "Course cancelled. Holding."
+ },
+ "0439bebbc356c3": {
+  "voice": "zuri",
+  "text": "Aye. A wander. I will call out what I see."
+ },
+ "0478a5f7a8507b": {
+  "voice": "ada",
+  "text": "New heading. Let us see what is over there."
+ },
+ "048bf126a676f7": {
+  "voice": "aoi",
+  "text": "The ramp is up. Lower it and I'll come aboard."
+ },
+ "049060e98bc858": {
+  "voice": "ada",
+  "text": "Down at Pad 01, the Meridian's own pad."
+ },
+ "04b94b62ee0ad5": {
+  "voice": "sunita",
+  "text": "Aye. I'll find my station."
+ },
+ "04eae4cc12a4aa": {
+  "voice": "ada",
+  "text": "Down at Deimos."
+ },
+ "04ed8f4288df08": {
+  "voice": "zuri",
+  "text": "Thanks, boss. I will be at the board."
+ },
+ "050d7b472d8ad4": {
+  "voice": "zuri",
+  "text": "Course set for The supply depot apron."
+ },
+ "051ea7d9d33c74": {
+  "voice": "zuri",
+  "text": "Braking burn."
+ },
+ "0552c052e7953f": {
+  "voice": "aoi",
+  "text": "All yours, boss."
+ },
+ "05554f3b15124d": {
+  "voice": "zuri",
+  "text": "Course set for Olympus Mons."
+ },
+ "057c1c59a1a67b": {
+  "voice": "zuri",
+  "text": "Course set for Mars orbit (400 km)."
+ },
+ "05a0739875b66d": {
+  "voice": "zuri",
+  "text": "Hull's at 34 percent. Breaking off, going down to neutral airspace."
+ },
+ "05de549c1a2710": {
+  "voice": "ship",
+  "text": "Arrived over Mars orbit (400 km). Easing level."
+ },
+ "05ea7d2bd928dd": {
+  "voice": "zuri",
+  "text": "Above the air. The main drive will light at the gate."
+ },
+ "05ef7ef54b4fd7": {
+  "voice": "ada",
+  "text": "Hull's at 34 percent. Breaking off, going down to neutral airspace."
+ },
+ "060a12b4fb8cdf": {
+  "voice": "ship",
+  "text": "No course to cancel."
+ },
+ "06127b53432eba": {
+  "voice": "zuri",
+  "text": "Down at Pad 03 (courier)."
+ },
+ "0622adb9a834b9": {
+  "voice": "w-echo",
+  "text": "Before you leave: hose, valve, seam. In that order."
+ },
+ "062a449a85bbd5": {
+  "voice": "zuri",
+  "text": "Hull's at 26 percent. Breaking off, going down to neutral airspace."
+ },
+ "065d1f2848478a": {
+  "voice": "zuri",
+  "text": "Down at Valles Marineris."
+ },
+ "0670506e565fb7": {
+  "voice": "w-fenrir",
+  "text": "Working spares and sealed ammunition, yes. I pay half the shelf price. No mystery scrap."
+ },
+ "06768e0dc1520b": {
+  "voice": "zuri",
+  "text": "Arrived over Mars orbit (400 km). Easing level."
+ },
+ "067c23ef783ac4": {
+  "voice": "ada",
+  "text": "Course set for Valles Marineris."
+ },
+ "06949144b490c8": {
+  "voice": "ada",
+  "text": "Course set for The supply depot apron."
+ },
+ "06b1e25174bdf2": {
+  "voice": "ada",
+  "text": "Down at Marineris Port."
+ },
+ "06c84da071e328": {
+  "voice": "ship",
+  "text": "Above the air. The main drive will light at the gate."
+ },
+ "06cf67f39ac64c": {
+  "voice": "zuri",
+  "text": "Supplies are aboard and stowed."
+ },
+ "06d46b7d958371": {
+  "voice": "zuri",
+  "text": "Hull's at 31 percent. Breaking off, going down to neutral airspace."
+ },
+ "06e8f9a661fba7": {
+  "voice": "w-fenrir",
+  "text": "Filters, connectors, salvage. Bring the part you need matched."
+ },
+ "073fff72145498": {
+  "voice": "ada",
+  "text": "The ramp is up."
+ },
+ "075477c164087c": {
+  "voice": "zuri",
+  "text": "Down at Pad 01, the Meridian's own pad."
+ },
+ "07554aa665ed3d": {
+  "voice": "w-heart",
+  "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "077e52f983175d": {
+  "voice": "ada",
+  "text": "Down at Pad 03 (courier)."
+ },
+ "07b3ae89db439f": {
+  "voice": "w-bella",
+  "text": "Control is upstairs. Call the lift straight ahead."
+ },
+ "07b45ad72fd1f9": {
+  "voice": "zuri",
+  "text": "Taking her down."
+ },
+ "07c0f19bfe34e8": {
+  "voice": "sunita",
+  "text": "keep your harness fastened."
+ },
+ "07d5a6d9f51193": {
+  "voice": "ada",
+  "text": "Come aboard first, boss. I won't lift without you."
+ },
+ "07de2e9db50bd6": {
+  "voice": "ada",
+  "text": "Holding over Mars."
+ },
+ "07fd599f345075": {
+  "voice": "ada",
+  "text": "Raider down. Bounty 25 credits."
+ },
+ "08002811921450": {
+  "voice": "jorge",
+  "text": "I cannot find a way to my station. I will wait here."
+ },
+ "08a00d08e1808a": {
+  "voice": "zuri",
+  "text": "Raider down. Bounty 25 credits."
+ },
+ "08b120a0b344a4": {
+  "voice": "ada",
+  "text": "Down at Mars orbit (400 km)."
+ },
+ "08c0f9b0c1ab36": {
+  "voice": "jorge",
+  "text": "All yours, boss."
+ },
+ "08c1a6f6f98721": {
+  "voice": "zuri",
+  "text": "We are at Deimos already."
+ },
+ "08c640efa022b4": {
+  "voice": "ada",
+  "text": "Down at Over the control tower."
+ },
+ "08e48d1c86d5cc": {
+  "voice": "jorge",
+  "text": "Need a lift? You can ride with me, or follow the port lights."
+ },
+ "091ec8ba56a444": {
+  "voice": "ada",
+  "text": "Hull's at 27 percent. Breaking off, going down to neutral airspace."
+ },
+ "092c4d334772ee": {
+  "voice": "ada",
+  "text": "On station over The supply depot apron."
+ },
+ "09390e2e0d2f82": {
+  "voice": "zuri",
+  "text": "Course cancelled. Braking to a stop."
+ },
+ "0978050297b6a5": {
+  "voice": "ada",
+  "text": "Arrived over Deimos. Easing level."
+ },
+ "098177b495b306": {
+  "voice": "zuri",
+  "text": "On station over Valles Marineris."
+ },
+ "09bb653ca8e64b": {
+  "voice": "w-fable",
+  "text": "The depot needs one tonne of raw regolith. Take it to the amber weigh bay west of the depot. Payment: 400 marks."
+ },
+ "09c4b7237d7e26": {
+  "voice": "zuri",
+  "text": "Course set for Pad 03 (courier)."
+ },
+ "09e11de8cd606b": {
+  "voice": "w-fable",
+  "text": "This watch keeps the apron clear for arrivals."
+ },
+ "0a0783341474fd": {
+  "voice": "w-echo",
+  "text": "The part you did not check. Carry oxygen and a spare kit. Come back with both unused."
+ },
+ "0a086280f818a7": {
+  "voice": "walter",
+  "text": "Come aboard first, boss. I won't lift without you."
+ },
+ "0a29f514757be3": {
+  "voice": "ship",
+  "text": "Arrived over Deimos. Easing level."
+ },
+ "0a38e622e65808": {
+  "voice": "ada",
+  "text": "We are at Phobos already."
+ },
+ "0a4a8556df3b09": {
+  "voice": "w-sky",
+  "text": "Rations and coffee here. Keep your suit sealed outside."
+ },
+ "0a5f58f9c1b3ac": {
+  "voice": "ada",
+  "text": "Inside Mars neutral airspace: no raiders, nothing firing."
+ },
+ "0a77cc91190df5": {
+  "voice": "zuri",
+  "text": "a weak distress beacon on the survey band, about 800 m south-west of the pad. A drifting cargo module."
+ },
+ "0a94934e6ced8f": {
+  "voice": "ada",
+  "text": "Hull's at 29 percent. Breaking off, going down to neutral airspace."
+ },
+ "0ab43c3adc0403": {
+  "voice": "ship",
+  "text": "Down at Deimos."
+ },
+ "0ab8ba6222b326": {
+  "voice": "ship",
+  "text": "Taking her down."
+ },
+ "0ab90dc146cd28": {
+  "voice": "zuri",
+  "text": "Inside Mars neutral airspace: no raiders, nothing firing."
+ },
+ "0abf7b4b3bdd14": {
+  "voice": "ada",
+  "text": "Course set for Hellas Planitia."
+ },
+ "0b1b763461afd4": {
+  "voice": "w-river",
+  "text": "Stay on the marked foot route across the apron."
+ },
+ "0b307c171b1435": {
+  "voice": "w-jessica",
+  "text": "Supply desk. Spares and field kits are on the racks."
+ },
+ "0b3f77bfab70bb": {
+  "voice": "sunita",
+  "text": "Thanks, boss. I will be at the board."
+ },
+ "0b42292fbfa722": {
+  "voice": "zuri",
+  "text": "Hull's at 28 percent. Breaking off, going down to neutral airspace."
+ },
+ "0b8198feb3fb8c": {
+  "voice": "zuri",
+  "text": "Outside the neutral line. The scope is clear for now."
+ },
+ "0b94ba2835de81": {
+  "voice": "ada",
+  "text": "Hull's at 30 percent. Breaking off, going down to neutral airspace."
+ },
+ "0ba3c1a16b74e0": {
+  "voice": "aoi",
+  "text": "Still getting the crew settled. One moment."
+ },
+ "0bda0403f3bb63": {
+  "voice": "ada",
+  "text": "That is all three. Take them home to the Survey Office at Marineris Port."
+ },
+ "0c047fb063fe94": {
+  "voice": "zuri",
+  "text": "Hull's at 32 percent. Breaking off, going down to neutral airspace."
+ },
+ "0c553a7d291214": {
+  "voice": "ada",
+  "text": "Come aboard first: the ship will not lift without you."
+ },
+ "0c69db11e90f75": {
+  "voice": "ada",
+  "text": "No course to cancel."
+ },
+ "0c6bd912e91e05": {
+  "voice": "aoi",
+  "text": "I cannot find a way to my station. I will wait here."
+ },
+ "0c9e51784dc413": {
+  "voice": "ada",
+  "text": "Arrived over Mars orbit (400 km). Easing level."
+ },
+ "0cac256449677e": {
+  "voice": "w-sky",
+  "text": "You look like someone who skipped breakfast. I can fix that."
+ },
+ "0cb41da91d3ecc": {
+  "voice": "zuri",
+  "text": "Engine share is too low for the main drive. Route power to the engines (Engineering)."
+ },
+ "0cb5138a381c80": {
+  "voice": "ada",
+  "text": "Course set for Olympus Mons."
+ },
+ "0cd7899281c9b6": {
+  "voice": "w-lewis",
+  "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "0ceb50883bc1e6": {
+  "voice": "ship",
+  "text": "Raider down. Bounty 25 credits."
+ },
+ "0cf17be4c5aa47": {
+  "voice": "intercom",
+  "text": "guidance lost. Brace."
+ },
+ "0cf45fbf38ed1b": {
+  "voice": "zuri",
+  "text": "We are on the ground."
+ },
+ "0cfa7cda494245": {
+  "voice": "zuri",
+  "text": "On station over The supply depot apron."
+ },
+ "0d260917b54b17": {
+  "voice": "ada",
+  "text": "Hunting raiders. Mars is neutral, so we have to climb out of its airspace for that."
+ },
+ "0d4d59bae48976": {
+  "voice": "ada",
+  "text": "Leaving Mars neutral airspace. Expect raiders."
+ },
+ "0d62a0d15809a0": {
+  "voice": "zuri",
+  "text": "Down at Phobos."
+ },
+ "0d730b5c291ca0": {
+  "voice": "zuri",
+  "text": "No contacts on the scope. Waiting."
+ },
+ "0d91ae0dd939da": {
+  "voice": "zuri",
+  "text": "Down at Mars orbit (400 km)."
+ },
+ "0de626041f3f07": {
+  "voice": "zuri",
+  "text": "Down at The supply depot apron."
+ },
+ "0deffa9313295d": {
+  "voice": "ship",
+  "text": "Course set for Marineris Port."
+ },
+ "0df0fbcba33954": {
+  "voice": "ada",
+  "text": "We are at Mars already."
+ },
+ "0e10936290170e": {
+  "voice": "ada",
+  "text": "Down at The supply depot apron."
+ },
+ "0e166293af1775": {
+  "voice": "ada",
+  "text": "Down at Phobos."
+ },
+ "0e1685331fcb88": {
+  "voice": "ada",
+  "text": "On station over Pad 01, the Meridian's own pad."
+ },
+ "0e2dd81955731a": {
+  "voice": "w-lily",
+  "text": "Sealed water bottles. Mind the cap in the dust."
+ },
+ "0e40ae862d6a90": {
+  "voice": "ada",
+  "text": "On station over Olympus Mons."
+ },
+ "0e60f5d95385cf": {
+  "voice": "w-fenrir",
+  "text": "Got a serial number? Good. Got a broken part? Better."
+ },
+ "0e7463d5a5ed53": {
+  "voice": "walter",
+  "text": "The ramp is up. Lower it and I'll come aboard."
+ },
+ "0e787e521fbd72": {
+  "voice": "ada",
+  "text": "Hull's at 33 percent. Breaking off, going down to neutral airspace."
+ },
+ "0e7dfeb443e082": {
+  "voice": "walter",
+  "text": "Aye. I'll find my station."
+ },
+ "0e907c748f0cf1": {
+  "voice": "zuri",
+  "text": "That is another one down."
+ },
+ "0e91841e73c5f6": {
+  "voice": "sunita",
+  "text": "Still getting the crew settled. One moment."
+ },
+ "0e9d186914bd8d": {
+  "voice": "ada",
+  "text": "Drone down."
+ },
+ "0eb8d97574c9e4": {
+  "voice": "zuri",
+  "text": "On station over Olympus Mons."
+ },
+ "0edad38c2035a1": {
+  "voice": "ada",
+  "text": "On station over Pad 03 (courier)."
+ },
+ "0ee6f324c263e8": {
+  "voice": "sunita",
+  "text": "I cannot find a way to my station. I will wait here."
+ },
+ "0ef241ff70bed3": {
+  "voice": "ada",
+  "text": "Course cancelled. Holding."
+ },
+ "0ef7319ca22bed": {
+  "voice": "zuri",
+  "text": "Down at Olympus Mons."
+ },
+ "0f08fa99d5dddd": {
+  "voice": "ada",
+  "text": "Main drive lit. Hold on to something."
+ },
+ "0f376f443ffc4c": {
+  "voice": "ship",
+  "text": "We are at Phobos already."
+ },
+ "0f65aa6f6201c6": {
+  "voice": "zuri",
+  "text": "Down at Deimos."
+ },
+ "0f701f76a03b3c": {
+  "voice": "w-jessica",
+  "text": "One tonne at a time from your cart or hopper. Pure regolith only. The rest of your load stays with you."
+ },
+ "0f9c097e0ffa2c": {
+  "voice": "zuri",
+  "text": "On station over Pad 02 (shuttle)."
+ },
+ "0f9f41568c0e09": {
+  "voice": "zuri",
+  "text": "Holding over Mars."
+ },
+ "0fbc84f8d5814b": {
+  "voice": "ada",
+  "text": "Setting her down."
+ },
+ "0fc596eda8086b": {
+  "voice": "zuri",
+  "text": "Course set for Hellas Planitia."
+ },
+ "0fc7b4cf785ccd": {
+  "voice": "zuri",
+  "text": "Holding here."
+ },
+ "0fd31d204b50d6": {
+  "voice": "zuri",
+  "text": "Drone down."
+ },
+ "0fff7f1fe69240": {
+  "voice": "ship",
+  "text": "That is out of range: it needs a jump drive the Meridian does not have."
+ },
+ "1023e2977eee9e": {
+  "voice": "ada",
+  "text": "We are at Deimos already."
+ },
+ "10298935b5ecd9": {
+  "voice": "ada",
+  "text": "On station over Over the control tower."
+ },
+ "1085c9e369d537": {
+  "voice": "zuri",
+  "text": "Down and holding."
+ },
+ "1086d29c13c630": {
+  "voice": "ada",
+  "text": "On station over Airy-0."
+ },
+ "108a1c593f092c": {
+  "voice": "jorge",
+  "text": "Come aboard first, boss. I won't lift without you."
+ },
+ "108a449c4741be": {
+  "voice": "ship",
+  "text": "Course set for Mars orbit (400 km)."
+ },
+ "10a0332cd0e2d2": {
+  "voice": "ada",
+  "text": "Plotting a course round Mars first."
+ },
+ "10b221b1d7c3d9": {
+  "voice": "ada",
+  "text": "Aye. A wander. I will call out what I see."
+ },
+ "10e66af1a59005": {
+  "voice": "ada",
+  "text": "Course set for Phobos."
+ },
+ "110b5258ef6bb5": {
+  "voice": "ada",
+  "text": "On station."
+ },
+ "1116662f1e5307": {
+  "voice": "ada",
+  "text": "Still getting the crew settled. One moment."
+ },
+ "111c692d62f599": {
+  "voice": "zuri",
+  "text": "New heading. Let us see what is over there."
+ },
+ "1121f756c56d68": {
+  "voice": "ada",
+  "text": "I cannot find a way to my station. I will wait here."
+ },
+ "1135bc8c01e593": {
+  "voice": "ada",
+  "text": "Above the air. The main drive will light at the gate."
+ },
+ "1150dd88b85bad": {
+  "voice": "ada",
+  "text": "The sky is going black. Stars."
+ },
+ "11609f79de1440": {
+  "voice": "zuri",
+  "text": "Turn-over. Brace for the burn to slow down."
+ },
+ "11703554bed341": {
+  "voice": "jorge",
+  "text": "The port is neutral. You can find work there."
+ },
+ "117f435e1390cb": {
+  "voice": "zuri",
+  "text": "Down at Marineris Port."
+ },
+ "11b16a8ffcbf72": {
+  "voice": "w-liam",
+  "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "11e8d975123acd": {
+  "voice": "ship",
+  "text": "Down at Marineris Port."
+ },
+ "11e943c14bcebb": {
+  "voice": "ada",
+  "text": "Down at Valles Marineris."
+ },
+ "120238238c576d": {
+  "voice": "zuri",
+  "text": "I cannot find a way to my station. I will wait here."
+ },
+ "12067f1ddf01a8": {
+  "voice": "zuri",
+  "text": "Mars airspace is neutral: nothing here to shoot. Climbing to 1750 metres to find the raiders."
+ },
+ "122900950c426e": {
+  "voice": "w-adam",
+  "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "124c3befd406e1": {
+  "voice": "sunita",
+  "text": "All yours, boss."
+ },
+ "126e42d5c1e712": {
+  "voice": "ada",
+  "text": "We are beyond the neutral line. Watching for contacts."
+ },
+ "12894005554ab8": {
+  "voice": "zuri",
+  "text": "On station over Pad 01, the Meridian's own pad."
+ },
+ "12c45faef820a7": {
+  "voice": "ada",
+  "text": "Aye. I'll find my station."
+ },
+ "12ee0c0d70d1eb": {
+  "voice": "zuri",
+  "text": "On station over Pad 03 (courier)."
+ },
+ "12ef47b090ef7c": {
+  "voice": "ada",
+  "text": "Hull's at 26 percent. Breaking off, going down to neutral airspace."
+ },
+ "12f2ee93c43bb9": {
+  "voice": "zuri",
+  "text": "Engine power is too low to lift off. Route more to the engines."
+ },
+ "135d2795636646": {
+  "voice": "ada",
+  "text": "Nobody is flying. Hire a pilot or a captain, or take the chair yourself."
+ },
+ "13618997599d5c": {
+  "voice": "zuri",
+  "text": "Need a lift? You can ride with me, or follow the port lights."
+ },
+ "139184672afffc": {
+  "voice": "ada",
+  "text": "On station over Mars."
+ },
+ "13afe2079fe6e1": {
+  "voice": "zuri",
+  "text": "The sky is going black. Stars."
+ },
+ "13b51bbcf21d34": {
+  "voice": "ada",
+  "text": "Supply run to the depot and back."
+ },
+ "13c2305ff8a359": {
+  "voice": "zuri",
+  "text": "We are beyond the neutral line. Watching for contacts."
+ },
+ "13d788739bf3f4": {
+  "voice": "zuri",
+  "text": "On station over Over the control tower."
+ },
+ "13dc029a92833a": {
+  "voice": "ada",
+  "text": "Turn-over. Brace for the burn to slow down."
+ },
+ "14308ecb0b2dc7": {
+  "voice": "zuri",
+  "text": "Takes the chair, flies if there is no pilot, and works the main guns. You do not have to be the captain."
+ },
+ "145bacabb8fa8b": {
+  "voice": "w-alice",
+  "text": "Weather sensors are offline. Watch the dust outside."
+ },
+ "14dcd00ea35dc7": {
+  "voice": "sunita",
+  "text": "Takes the turret on top. Fires only at raiders, and only outside Mars airspace."
+ },
+ "150c36ca04474b": {
+  "voice": "intercom",
+  "text": "port control, do you read?"
+ },
+ "150dbd9a9eaf6e": {
+  "voice": "jorge",
+  "text": "The ramp is up. Lower it and I'll come aboard."
+ },
+ "15307f035d741b": {
+  "voice": "ship",
+  "text": "Leaving Mars neutral airspace. Expect raiders."
+ },
+ "157b0b917be24e": {
+  "voice": "ada",
+  "text": "Course set for Pad 01, the Meridian's own pad."
+ },
+ "157c99a45c6720": {
+  "voice": "ada",
+  "text": "Loading stores. Food, water, bolts."
+ },
+ "158ae3ddd6208c": {
+  "voice": "w-alice",
+  "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "158ff305cd0a88": {
+  "voice": "ada",
+  "text": "Hull's at 32 percent. Breaking off, going down to neutral airspace."
+ },
+ "15a55e9ff40a38": {
+  "voice": "w-lily",
+  "text": "A tight cap is worth more than a pretty bottle out here."
+ },
+ "15acccf43a030b": {
+  "voice": "ada",
+  "text": "Engine share is too low for the main drive. Route power to the engines (Engineering)."
+ },
+ "15af6f59d7d935": {
+  "voice": "zuri",
+  "text": "Hunting raiders. Mars is neutral, so we have to climb out of its airspace for that."
+ },
+ "15c326a0248a64": {
+  "voice": "ada",
+  "text": "Course cancelled. Braking to a stop."
+ },
+ "15e1300977958b": {
+  "voice": "ada",
+  "text": "No contacts on the scope. Waiting."
+ },
+ "15f135c2a430c2": {
+  "voice": "zuri",
+  "text": "Main drive lit. Hold on to something."
+ },
+ "161c626f3a5b07": {
+  "voice": "ada",
+  "text": "Course set for Pad 02 (shuttle)."
+ },
+ "16373cfab26424": {
+  "voice": "aoi",
+  "text": "Aye. I'll find my station."
+ },
+ "163b5e8c3aed62": {
+  "voice": "ada",
+  "text": "The passenger line has a settlement waiting for you."
+ },
+ "163f7317cfa235": {
+  "voice": "zuri",
+  "text": "That is out of range: it needs a jump drive the Meridian does not have."
+ },
+ "1661dcb14db1cc": {
+  "voice": "aoi",
+  "text": "Come aboard first, boss. I won't lift without you."
+ },
+ "16657ff0672c3b": {
+  "voice": "zuri",
+  "text": "Arrived over Deimos. Easing level."
+ },
+ "1691aa2eacdab9": {
+  "voice": "ship",
+  "text": "We are at Deimos already."
+ },
+ "16c060f80a0de7": {
+  "voice": "ada",
+  "text": "Down at Olympus Mons."
+ },
+ "16c09447348481": {
+  "voice": "ship",
+  "text": "Arrived over Phobos. Easing level."
+ },
+ "16c48ba3c59d15": {
+  "voice": "w-lewis",
+  "text": "Approach desk. Watching for inbound traffic."
+ },
+ "16c79d62d2e35d": {
+  "voice": "zuri",
+  "text": "The passenger line has a settlement waiting for you."
+ },
+ "16f42c74ee964e": {
+  "voice": "ada",
+  "text": "Outside the neutral line. The scope is clear for now."
+ },
+ "17190f3b79ecd3": {
+  "voice": "ada",
+  "text": "Down at Hellas Planitia."
+ },
+ "17457d1fbe3062": {
+  "voice": "ship",
+  "text": "Course set for Phobos."
+ },
+ "17620d0ab18475": {
+  "voice": "w-heart",
+  "text": "Pad 01 is assigned to Meridian. Keep the approach clear."
+ },
+ "1765051d048640": {
+  "voice": "ship",
+  "text": "Main drive lit. Hold on to something."
+ },
+ "176945f2943630": {
+  "voice": "zuri",
+  "text": "My wage was unpaid. I am leaving at this port; a new contract needs a new signing fee."
+ },
+ "177375e8ef805c": {
+  "voice": "jorge",
+  "text": "Thanks, boss. I will be at the board."
+ },
+ "17b606f31487b3": {
+  "voice": "zuri",
+  "text": "Committed to the climb: the lift pods only push up, they cannot stop the ship. The main drive can once we are above the air."
+ },
+ "17bbb335fd3e2d": {
+  "voice": "zuri",
+  "text": "On station."
+ },
+ "17bf0af8791d02": {
+  "voice": "zuri",
+  "text": "Outer Accord. We saw you come down."
+ },
+ "17c32c6572c718": {
+  "voice": "zuri",
+  "text": "Supply run to the depot and back."
+ },
+ "17c7fc94f5261f": {
+  "voice": "ada",
+  "text": "Roaming. I will keep low and look around."
+ },
+ "17e9d8d37dc2eb": {
+  "voice": "zuri",
+  "text": "Arrived over Marineris Port. Easing level."
+ },
+ "17f04e3fcdba82": {
+  "voice": "ada",
+  "text": "Holding on the ground."
+ },
+ "17f8c9d652377d": {
+  "voice": "ship",
+  "text": "A course is already under way. Cancel it first."
+ },
+ "182239f589ac0c": {
+  "voice": "ship",
+  "text": "Course cancelled. Braking to a stop."
+ },
+ "1839fc8fbdaa2a": {
+  "voice": "ada",
+  "text": "We are on the ground."
+ },
+ "1863d66eabc5f1": {
+  "voice": "ship",
+  "text": "a weak distress beacon on the survey band, about 800 m south-west of the pad. A drifting cargo module."
+ },
+ "18a78b3b5b2e3d": {
+  "voice": "ship",
+  "text": "Turn-over. Brace for the burn to slow down."
+ },
+ "18a9ae15d5a186": {
+  "voice": "zuri",
+  "text": "Down at Airy-0."
+ },
+ "18bc45afb6d1d5": {
+  "voice": "ada",
+  "text": "We are under the neutral line. Holding here. Say the word and we go home."
+ },
+ "18c9fa56421517": {
+  "voice": "zuri",
+  "text": "Come aboard first: the ship will not lift without you."
+ },
+ "18f6307d000a57": {
+  "voice": "w-adam",
+  "text": "Welcome to Marineris. Depot west, market south, control tower north. Use the lift inside."
+ },
+ "1971540b8386c8": {
+  "voice": "walter",
+  "text": "Takes the belly turret. Slower to find a target than the others, steady once he has one."
+ },
+ "19e237664b5080": {
+  "voice": "jorge",
+  "text": "Free Settlements. We saw you come down."
+ },
+ "19e4e43e20ad57": {
+  "voice": "ada",
+  "text": "Arrived over Marineris Port. Easing level."
+ },
+ "19eb22b3c967c5": {
+  "voice": "zuri",
+  "text": "Hull's at 30 percent. Breaking off, going down to neutral airspace."
+ },
+ "19f234d73c0d02": {
+  "voice": "zuri",
+  "text": "Come aboard first, boss. I won't lift without you."
+ },
+ "1a0db873419a26": {
+  "voice": "ship",
+  "text": "The sky is going black. Stars."
+ },
+ "1a1416e47b95f1": {
+  "voice": "zuri",
+  "text": "The ramp is up. Lower it and I'll come aboard."
+ },
+ "1a248c70d67a13": {
+  "voice": "jorge",
+  "text": "Still getting the crew settled. One moment."
+ },
+ "1a2c9317607464": {
+  "voice": "ada",
+  "text": "Course set for Mars orbit (400 km)."
+ },
+ "1a304e74e7286d": {
+  "voice": "ada",
+  "text": "My wage was unpaid. I am leaving at this port; a new contract needs a new signing fee."
+ },
+ "1a367b57f27d96": {
+  "voice": "jorge",
+  "text": "Reads the scanner and the ground ahead and calls out what he sees."
+ },
+ "1a4576c809f64c": {
+  "voice": "ada",
+  "text": "The port is neutral. You can find work there."
+ },
+ "1a6b28035bf6e5": {
+  "voice": "zuri",
+  "text": "On station over Hellas Planitia."
+ },
+ "1a80484aae69b7": {
+  "voice": "zuri",
+  "text": "Course set for Over the control tower."
+ },
+ "1a98568bba567b": {
+  "voice": "ada",
+  "text": "Down at Pad 02 (shuttle)."
+ },
+ "1aba3401a4a9f7": {
+  "voice": "w-river",
+  "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "1ad890d23bb706": {
+  "voice": "ada",
+  "text": "Course set for Over the control tower."
+ },
+ "1ae0ae0c7595b1": {
+  "voice": "ada",
+  "text": "Hull's at 31 percent. Breaking off, going down to neutral airspace."
+ },
+ "1ae98fb1a0dda2": {
+  "voice": "sunita",
+  "text": "The ramp is up. Lower it and I'll come aboard."
+ },
+ "1aed1b87366d85": {
+  "voice": "ada",
+  "text": "Mars airspace is neutral: nothing here to shoot. Climbing to 1750 metres to find the raiders."
+ },
+ "1b7cce7a20c36d": {
+  "voice": "ship",
+  "text": "That is all three. Take them home to the Survey Office at Marineris Port."
+ },
+ "1b894a17471a35": {
+  "voice": "zuri",
+  "text": "All yours, boss."
+ },
+ "1bcde20be5a070": {
+  "voice": "aoi",
+  "text": "Keeps the port channel and the ship log open. Tracks the crew account and your accepted jobs."
+ },
+ "1bebc768c51da5": {
+  "voice": "ada",
+  "text": "Back in Mars space."
+ },
+ "1c107cc9016fc7": {
+  "voice": "zuri",
+  "text": "We are at Mars already."
+ },
+ "1c28cea21cc545": {
+  "voice": "ada",
+  "text": "Committed to the climb: the lift pods only push up, they cannot stop the ship. The main drive can once we are above the air."
+ },
+ "1c58ff611e0f63": {
+  "voice": "w-echo",
+  "text": "Field rolls and repair fabric. Check your suit seams before you leave."
+ },
+ "1c63110e4af7f5": {
+  "voice": "w-lily",
+  "text": "Filtered ice melt. Every seal checked twice. Dust only has to win once."
+ },
+ "1c92f1b52507e0": {
+  "voice": "zuri",
+  "text": "Hull's at 33 percent. Breaking off, going down to neutral airspace."
+ },
+ "1c98bec072626c": {
+  "voice": "jorge",
+  "text": "The passenger line has a settlement waiting for you."
+ },
+ "1c9b7757d1b745": {
+  "voice": "walter",
+  "text": "I cannot find a way to my station. I will wait here."
+ },
+ "1cad006e6d8efc": {
+  "voice": "zuri",
+  "text": "Still getting the crew settled. One moment."
+ },
+ "1caf97dbf657e1": {
+  "voice": "ada",
+  "text": "Arrived over Phobos. Easing level."
+ },
+ "1cbb24eeaa599c": {
+  "voice": "ada",
+  "text": "Heading back to the pad."
+ },
+ "1ce05a1df37655": {
+  "voice": "ada",
+  "text": "A course is already under way. Cancel it first."
+ },
+ "1ce7253b11cb53": {
+  "voice": "ship",
+  "text": "Plotting a course round Mars first."
+ },
+ "1cf74e009b74ee": {
+  "voice": "zuri",
+  "text": "The ramp is down."
+ },
+ "1d0a1a6106b77f": {
+  "voice": "zuri",
+  "text": "Nobody is flying. Hire a pilot or a captain, or take the chair yourself."
+ },
+ "1d19420933da41": {
+  "voice": "w-puck",
+  "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "1d33b72914f751": {
+  "voice": "ada",
+  "text": "Thanks, boss. I will be at the board."
+ },
+ "1d5f33007405d1": {
+  "voice": "zuri",
+  "text": "No course to cancel."
+ },
+ "1d6a9bade43f18": {
+  "voice": "ada",
+  "text": "On station over Hellas Planitia."
+ },
+ "1d85ce0f2ccc11": {
+  "voice": "zuri",
+  "text": "Roaming. I will keep low and look around."
+ },
+ "1d86ae69ded5d8": {
+  "voice": "zuri",
+  "text": "Aye. I'll find my station."
+ },
+ "1d883089dada1c": {
+  "voice": "walter",
+  "text": "All yours, boss."
+ },
+ "1d8e224860b3f2": {
+  "voice": "zuri",
+  "text": "Setting her down."
+ },
+ "1d982e47daf748": {
+  "voice": "ada",
+  "text": "Course set for Airy-0."
+ },
+ "1dd6fccc24031a": {
+  "voice": "zuri",
+  "text": "Course set for Pad 01, the Meridian's own pad."
+ },
+ "1e24aa3eea3f11": {
+  "voice": "w-bella",
+  "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "1e3522f0083a42": {
+  "voice": "ada",
+  "text": "Solar Union. We saw you come down."
+ },
+ "1e3ca63c92fc2d": {
+  "voice": "zuri",
+  "text": "Course set for Marineris Port."
+ },
+ "1e4396969bce3a": {
+  "voice": "w-puck",
+  "text": "I carry the shift notes between desks."
+ },
+ "1e6f56e4b4f569": {
+  "voice": "zuri",
+  "text": "Course set for Valles Marineris."
+ },
+ "1e88d0fd03b479": {
+  "voice": "ada",
+  "text": "That is out of range: it needs a jump drive the Meridian does not have."
+ },
+ "1e8bf4315bb9ec": {
+  "voice": "zuri",
+  "text": "Course set for Pad 02 (shuttle)."
+ },
+ "1eb5dbe16b58fd": {
+  "voice": "zuri",
+  "text": "Down at Pad 02 (shuttle)."
+ },
+ "1ec394e2dea6f8": {
+  "voice": "zuri",
+  "text": "Course set for Airy-0."
+ },
+ "1eea6919ff1f0c": {
+  "voice": "ada",
+  "text": "Course set for Marineris Port."
+ },
+ "1ef760aaf76c31": {
+  "voice": "ship",
+  "text": "Back in Mars space."
+ },
+ "1f0d8400ebf2b3": {
+  "voice": "radio",
+  "text": "inbound passenger service, approach approved."
+ },
+ "1f3b2644d94dea": {
+  "voice": "ada",
+  "text": "On station over Valles Marineris."
+ },
+ "1f42bb19d0db04": {
+  "voice": "ada",
+  "text": "Course set for Deimos."
+ },
+ "1f519fe4b2d974": {
+  "voice": "ship",
+  "text": "Holding over Mars."
+ },
+ "1f53f90302ff78": {
+  "voice": "zuri",
+  "text": "The ramp is up."
+ },
+ "1f6081d2e33c1b": {
+  "voice": "ship",
+  "text": "Braking burn."
+ },
+ "1f8140f8cb4106": {
+  "voice": "zuri",
+  "text": "Leaving Mars neutral airspace. Expect raiders."
+ },
+ "1f9b9f0f420504": {
+  "voice": "zuri",
+  "text": "Down at Over the control tower."
+ },
+ "1fccb206f3cd83": {
+  "voice": "ada",
+  "text": "All yours, boss."
+ },
+ "1ff828ee95024a": {
+  "voice": "ship",
+  "text": "Engine share is too low for the main drive. Route power to the engines (Engineering)."
+ },
+ "1fffff20c1df74": {
+  "voice": "ada",
+  "text": "On station over Pad 02 (shuttle)."
+ }
+}

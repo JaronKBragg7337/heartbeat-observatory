@@ -1,0 +1,93 @@
+{
+  "results": {
+    "connected": true,
+    "handshake": {
+      "a": {
+        "offers": 2,
+        "answers": 0,
+        "ice": 8,
+        "connected": 1,
+        "remoteTracks": 1,
+        "micStarts": 0
+      },
+      "b": {
+        "offers": 0,
+        "answers": 2,
+        "ice": 4,
+        "connected": 1,
+        "remoteTracks": 2,
+        "micStarts": 0
+      }
+    },
+    "explained": true,
+    "micGranted": true,
+    "audioStats": {
+      "first": {
+        "packets": 75,
+        "bytes": 3333,
+        "level": 0,
+        "energy": 0
+      },
+      "second": {
+        "packets": 150,
+        "bytes": 7665,
+        "level": 0,
+        "energy": 0
+      },
+      "analyserPeak": 0.038
+    },
+    "audioFlowing": true,
+    "heardClose": 1,
+    "hudShowsSpeaker": true,
+    "reverseAudio": true,
+    "reverseStats": {
+      "packets": 217,
+      "bytes": 12172,
+      "analyserPeak": 0.46
+    },
+    "heardMid": 0.26435503567071084,
+    "midPeers": 1,
+    "droppedFar": true,
+    "crewChannel": 1,
+    "muteStopsTalk": true,
+    "chatOffClosesAll": true,
+    "micReleased": true,
+    "phoneLabel": "Hold to talk",
+    "phoneTouchHold": true,
+    "phoneStats": {
+      "packets": 286,
+      "bytes": 16270
+    },
+    "npc": {
+      "near": {
+        "id": "arrival-guide",
+        "d": 12.479124563175999,
+        "log": {
+          "t": 131591,
+          "voice": "w-adam",
+          "text": "Welcome to Marineris. Depot west, market south, control tower north. Use the lift inside.",
+          "mode": "clip",
+          "channel": "room",
+          "dur": 5.91,
+          "dist": 12.5,
+          "x": 12,
+          "key": "18f6307d000a57"
+        },
+        "hasKey": true
+      },
+      "far": {
+        "id": "cab-runner",
+        "d": 96.04463747933045,
+        "log": {
+          "t": 132776,
+          "voice": "w-puck",
+          "text": "I carry the shift notes between desks.",
+          "mode": "too-far",
+          "dist": 96.04463747833792
+        }
+      }
+    },
+    "npcPlaced": true
+  },
+  "errors": []
+}

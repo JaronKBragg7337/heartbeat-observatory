@@ -665,6 +665,11 @@ await runOpeningBugsBrowserChecks({check,section});
 const { runRoverChecks } = await import('./rover-checks.mjs');
 await runRoverChecks({ check, section, THREE });
 
+// 32-33. Voices: the cast and the clips, proximity rules and handshake relay, then two real browsers with a fake microphone.
+const { runVoiceChecks, runVoiceBrowserChecks } = await import('./voice-checks.mjs');
+await runVoiceChecks({ check, section });
+await runVoiceBrowserChecks({ check, section });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));

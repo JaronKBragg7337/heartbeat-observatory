@@ -143,6 +143,7 @@ export class Stations {
     if (msg == null || msg === '') return;
     this.log.push({ t: this.ship.time, msg: String(msg), warn });
     if (this.log.length > 200) this.log.shift();
+    if (this.onNote) this.onNote(String(msg), warn);   // VOICES: people in the log are also spoken
   }
 
   /** Camera limits for the seat you are in. */
