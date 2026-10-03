@@ -20,7 +20,7 @@ async function run(browser, device, tag, views, opts = {}) {
   const ctx = await browser.newContext(device);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('[pageerror]', String(e).slice(0, 300)));
-  await page.goto(`http://127.0.0.1:${port}/?dev=1&solo=1&opening=off&tier=${opts.tier || 'high'}`, { waitUntil: 'load' });
+  await page.goto(`${process.env.LIVE || `http://127.0.0.1:${port}`}/?dev=1&solo=1&opening=off&tier=${opts.tier || 'high'}`, { waitUntil: 'load' });   // LIVE=https://www.heartbeatobservatory.com/games/the-cosmos for the published build
   await page.waitForFunction(() => window.cosmos?.portTour && window.cosmos.engine.frameCount > 5, null, { timeout: 180000 });
   await page.waitForTimeout(6000);
   await page.evaluate(() => { const c = window.cosmos; if (c.engine.graphics) c.engine.graphics.checked = 1e6; for (const e of document.body.children) if (e.tagName !== 'CANVAS' && e.tagName !== 'SCRIPT') e.style.visibility = 'hidden'; });
