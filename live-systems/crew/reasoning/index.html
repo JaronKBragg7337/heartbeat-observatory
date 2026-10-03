@@ -6,8 +6,12 @@
   <meta name="theme-color" content="#0a0f18" />
   <meta name="description" content="How the trading bots decide: every trade with its written reason and kill criterion, how it resolved, and the news the bot had that day." />
   <title>How the Traders Decide — Heartbeat Observatory</title>
-  <link rel="stylesheet" href="/live-systems/crew/trades/trades.css?v=7" />
+  <link rel="stylesheet" href="/live-systems/trades/trades.css?v=7" />
   <style>
+    @media (max-width:560px){
+      .tab,.news-link button{min-height:44px}
+      .crumbs a,.topbar a,nav a,footer a{display:inline-flex;align-items:center;min-height:44px}
+    }
     .trader-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:26px 0 0}
     .trader{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--radius);padding:16px 18px}
     .trader h3{margin:0;font-size:18px}
