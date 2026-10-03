@@ -12,6 +12,9 @@ Jaron's report: same normal iPhone Safari tab for days, 18,924 marks, hired crew
 ### 2. The connected client draws every ship (so it was not a drawing bug)
 Opened a real client against an exported copy of the live world (23 players, 26 ships): Chromium and iPhone WebKit both build and show every landed ship on its pad. `00-live-world-copy-aerial-chromium.png` is the live data; `02-pad-field-aerial.png` is iPhone WebKit with 20 other ships. `fleetView.js` draws any same-frame ship at any distance; I found nothing that hides them. So the missing ships were a world problem (point 1), not a render problem.
 
+### 2b. What the live page draws now, and why it is fewer than the world holds
+After Sol's ship-presence change (bdd8692, 9:06 PM, after Jaron's report) a ship is drawn only if its owner is online, or it is landed (parked), and never while its owner is still inside the private opening. On the live site at 10:30 PM an iPhone-WebKit client received 28 ships and drew 15: 3 raiders, 12 Meridians, and none of the 13 courier ships, because their owners are test clients that never finished the opening (`10-live-site-pad-field-iphone-webkit.png` shows their empty pads). That rule is intentional and I left it alone; the ghost couriers go away with the new cleanup (test clients and idle guests).
+
 ### 3. His progress is not in the shared world at all
 Supabase has 23 players, every ship at exactly 10,000 marks and no hired crew (the only crew rows are the 8 raider crews). No record anywhere (Supabase, `heartbeat-observatory` or `ho-sol` local files) has 18,924 marks, hired crew, or a Phobos trip. Those came from the solo era (before multiplayer went live on Oct 1, 7:30 PM) and live in his phone's **offline solo save**. Before Sol's refresh-resume fix (bdd8692, now on main) the page tried the authority for only 3.5 s and otherwise dropped a device into that separate solo world with only a line in the purse text; during the restart storm that is what a phone on mobile data would hit. "Hired crew invisible" and "only one other ship" are both consistent with a solo/odd-world session. I cannot see his phone, so this is the most consistent explanation, not a proof.
 
@@ -41,6 +44,13 @@ None of the 23 records in the shared world is his. His 18,924-mark character is 
 * `node test/validate.mjs`: green (800 passed, 0 failed). New section 18b has 42 checks: guest return, adoption, second device, forged ids, kept-account, admin slots vs non-admin, discard, pad reuse, parking and return, test-client removal, restart persistence, the token check with a mocked Supabase.
 * `node test/identity-browser.mjs` in **iPhone-profile WebKit with real touch taps**: pad field with 20 other ships, guest Settings, the two-step Start fresh (Keep works, then the player really changes and the old one is gone), signed-in admin with two characters and switching, the same player in a second browser profile. Screenshots `01`-`08` in this folder.
 * The restart storm and the file-world evidence are from the live logs and files above.
+
+## Verified live (10:25-10:35 PM EDT)
+
+* Deployed: pulled `fc9a6ca` into `heartbeat-observatory`, restarted the authority (the 8390 listener stopped, started again), `/health` locally and at `https://cosmos.heartbeatobservatory.com/health` shows `ok:true`, `storage: SupabaseAdapter`. The watchdog was restarted with the new start-up grace (log: `watching ... health=ok`).
+* Public wss: a flagged test guest joined and its welcome carries the new `identity` block (`guest:true, ephemeral:true`).
+* Live site in iPhone-profile WebKit: connected to the shared world, 0 page errors, Settings > Account and character renders at 393 px (`11-live-site-settings-account-iphone-webkit.png`).
+* `cosmos_save` migration applied and saves continue (revision rising, `ok:true`); the world record and the projection tables agree (22 players in each) after the 24 h sweep ran at start-up.
 
 ## Not verified
 
