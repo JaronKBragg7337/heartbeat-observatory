@@ -147,7 +147,7 @@ try{
   const failed=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,userAgent:iphoneUA});contexts.push(failed);
   const fallback=await failed.newPage();fallback.on('pageerror',e=>results.errors.push(String(e)));
   await fallback.route('**/homes/people/*.glb',route=>route.abort('failed'));
-  await fallback.goto(url+'&opening=off');await fallback.waitForFunction(()=>cosmos?.crewUI&&cosmos.portPeople.members.length===15,null,{timeout:120000});
+  await fallback.goto(url+'&opening=off');await fallback.waitForFunction(()=>window.cosmos?.crewUI&&cosmos.portPeople.members.length===15,null,{timeout:120000});   // window.cosmos: a bare cosmos throws while the page is still loading
   await fallback.evaluate(()=>{const c=cosmos;c.engine.stop();c.multiplayer.updateBodies(0);const m=[...c.crew.members.values()].find(m=>m.status==='candidate');
     const w=c.walker;for(const k of ['x','y','z'])w.worldPos[k]=m.gpos[k]+c.port.site.back[k]*2.2;
     const f=w.updateFrame(),eye=w.eyeWorldPos({}),d=Object.fromEntries(['x','y','z'].map(k=>[k,m.gpos[k]+c.port.site.up[k]*1.4-eye[k]])),dot=v=>d.x*v.x+d.y*v.y+d.z*v.z;

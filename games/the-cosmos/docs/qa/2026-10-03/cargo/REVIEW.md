@@ -24,10 +24,8 @@ Every shop action is one authority transaction on a copy of the world, rolled ba
 
 ## What was verified
 
-{{VALIDATE}}
-
-* **`node test/validate.mjs`: {{COUNTS}}.** Sections 40 to 44 are `test/cargo-checks.mjs`: the hauler as a ship definition (rooms, every room reachable on foot, every door, every seat reachable, furniture inside rooms, hull fit, 5 cm measured size, phone-tier triangles, flight and landing), the vehicle bay (berths clear of freight and walls, aisle width), the shop catalogue and the exact-matter helpers, shops on the real authority with two WebSocket clients (rent, stock, price, buy, a receipt, an idempotent retry, a stale price, an overbuy, a fraction, a negative, no funds, a full hold, across the port, your own stall, a stranger's stall, lapse and renew, close, NPC buyers online and offline, per-sol caps, restart, removal), and rover transport on a real flight to Phobos (buy the hauler at the kiosk, make it the flagship, drive a rover up the ramp, park it, a stranger's rover refused, the seventh rover refused, close the ramp, fly to Phobos, clamped into a berth and unmoved by full throttle, landing releases it, drive off onto the moon, restart).
-* **`node test/phone-check.mjs`: {{PHONE}}** (iPhone-15 WebKit and Galaxy S9 Chromium, real touch).
+* **`node test/validate.mjs`: 938 passed, 1 failed, on the rebased tree.** The one failure was a race in someone else's test, not the game: `test/opening-bugs-browser.mjs` waited on a bare `cosmos` while the page was still loading, which throws instead of returning false. It passed in the first full run and the earlier baseline run hit it too. The test now reads `window.cosmos`, and that script run on its own passes (`passed: true`, no page errors). A first full run before the rebase was 890 passed and the two cargo-test faults it showed (a stall-close check that counted a newly joined player's purse, and a ground probe) are fixed in the tests, not the game. Sections 40 to 44 are `test/cargo-checks.mjs`: the hauler as a ship definition (rooms, every room reachable on foot, every door, every seat reachable, furniture inside rooms, hull fit, 5 cm measured size, phone-tier triangles, flight and landing), the vehicle bay (berths clear of freight and walls, aisle width), the shop catalogue and the exact-matter helpers, shops on the real authority with two WebSocket clients (rent, stock, price, buy, a receipt, an idempotent retry, a stale price, an overbuy, a fraction, a negative, no funds, a full hold, across the port, your own stall, a stranger's stall, lapse and renew, close, NPC buyers online and offline, per-sol caps, restart, removal), and rover transport on a real flight to Phobos (buy the hauler at the kiosk, make it the flagship, drive a rover up the ramp, park it, a stranger's rover refused, the seventh rover refused, close the ramp, fly to Phobos, clamped into a berth and unmoved by full throttle, landing releases it, drive off onto the moon, restart).
+* **`node test/phone-check.mjs`: all steps pass**. iPhone-15 WebKit and Galaxy S9 Chromium, real touch (the first attempt had the WebKit process crash outright mid-run while other test runs were using the machine; the rerun is clean, 0 failures).
 * **`node test/cargo-browser.mjs`: passes with 0 page errors.** Two real iPhone-profile WebKit phones against one isolated authority, real taps and a held thumb. Phone A rents a stall by tapping, stocks water, alloy and regolith through the sheet; phone B buys by tapping and gets a receipt; a stale price is refused and shown; the owner sees the sales; the owner goes away and NPC buyers buy. Phone C taps **Drive** in the hold and a held thumb drives the rover aft down the aisle and off the ramp; phone D, standing behind the ramp, sees the same rover arrive on the ground. Screenshots: `p_stall_*`, `p_rover_*` (PNG, committed).
 * **Server tick on a copy of the live world** (25 ships, 22 players, 9 rovers; `test/perf-export-live.mjs`, `test/perf-tick.mjs`, `test/perf-cargo.mjs`): before (origin/main) **avg 1.60-1.73 ms, p95 3.0-3.4 ms**; after, same world **avg 1.58-1.60 ms, p95 3.0 ms**; after with six of its ships turned into parked Draymans carrying 36 rovers and six stocked shops (half sold to by NPC buyers during the run) **avg 1.59-1.67 ms, p95 3.0-3.2 ms**. Parked haulers and idle shops cost nothing you can measure. The full public snapshot is 1.3 to 1.5 ms to build either way.
 
@@ -35,7 +33,20 @@ Every shop action is one authority transaction on a copy of the world, rolled ba
 
 Desktop frames are 1280 by 720 JPEG from `shoot.mjs` (Playwright Chromium on SwiftShader, free camera in the real client; JPEGs are gitignored by convention and stay in this folder). Phone frames are 393 by 852 at 2x PNG from the WebKit run.
 
-{{PICTURES}}
+| Frame | What it shows |
+|---|---|
+| `d_ext_bow_three_quarter.jpg` | The Drayman on its pad beside another ship: pale plate, orange flank band, canopy, the 52 m length |
+| `d_ext_stern_three_quarter.jpg` | The stern: the wide ramp down, the open cargo door, two nacelles with twin nozzles on pylons |
+| `d_ext_flank.jpg` | The flank: DRAYMAN on the plate, crew-section windows, hatch, belt line round the hold |
+| `d_ext_ramp_down.jpg`, `d_ext_ramp_head_on.jpg` | The ramp down with rovers parked in the lit hold, seen from outside |
+| `d_in_flight_deck.jpg`, `d_in_flight_deck_side.jpg` | The flight deck: canopy, pilot and captain seats, the navigator and comms consoles with live screens, lockers |
+| `d_in_crew_berth.jpg`, `d_in_mess.jpg`, `d_in_cargo_control.jpg`, `d_in_engine_room.jpg` | The walkable rooms: four bunks, the mess and galley, cargo control with its berth board, the reactor room |
+| `d_in_hold_aft.jpg`, `d_in_hold_fore.jpg`, `d_in_hold_berths.jpg` | The hold: gantry, six cradles with chocks and clamp posts, rovers in berths, the aisle guide lines, the lit ramp opening onto Mars |
+| `d_market_row.jpg`, `d_market_stall_close.jpg` | The market row: five stalls "FOR RENT" with their shutters down and one open ("Jaron Salvage & Supply, 3 lines for sale") |
+| `d_shipyard_kiosk.jpg` | The shipyard kiosk's board and scale models, now with the Drayman beside the Shrike and the Meridian |
+| `p_hold_rover_prompt.jpg`, `p_in_flight_deck.jpg`, `p_in_hold.jpg` | 390 px frames: the Drive prompt beside a rover in the hold, the flight deck, the hold |
+| `p_stall_1_vacant.png` ... `p_stall_7_owner_sales.png` | The WebKit phone sheet, in order: a free stall, rented and empty, stocked, the customer's list, the receipt, a stale price refused, the owner's sales |
+| `p_rover_1_hold.png` ... `p_rover_4_out.png` | The WebKit phones: the Drive prompt, at the wheel with the ramp down, the second phone watching the rover arrive on the ground, stepping out |
 
 ## What does not work, and what is not verified
 
