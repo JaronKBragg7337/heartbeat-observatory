@@ -38,6 +38,9 @@ export function worldSale(auth, p, ship, sim, a) {
     fund = { get marks() { return market.marketMarks; }, set marks(v) { market.marketMarks = v; } };
   } else throw Error('Nobody there buys that.');
   ship.holdLots = ship.holdLots || [];
-  const r = a.kind === 'matter' ? sellMatter(ship, a.item, where === 'ceres' ? 'works' : where, a.tonnes, fund) : sellSupply(ship, a.good, a.n, fund);
+  // F4: Ceres prices follow the world's balance and home strength (dear for outsiders when it competes, cheap and busy when it cooperates) and the governor's tax.
+  const tm = where === 'ceres' ? auth.roles.tradeMult(p.id, 'ceres', 'sell') : { mult: 1, tax: 0 };
+  const r = a.kind === 'matter' ? sellMatter(ship, a.item, where === 'ceres' ? 'works' : where, a.tonnes, fund, tm.mult, tm.tax) : sellSupply(ship, a.good, a.n, fund, tm.mult, tm.tax);
+  if (where === 'ceres') auth.roles.addIntake('ceres', r.taxed);
   return { ok: true, msg: a.kind === 'matter' ? `${a.tonnes} t weighed. ${r.paid} marks paid.` : `Sold. ${r.paid} marks paid.` };
 }

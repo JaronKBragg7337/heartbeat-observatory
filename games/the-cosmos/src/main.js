@@ -1185,6 +1185,7 @@ if(!world.remote){
   space.ledger.credits=world.state.economy.marks/4;
 }
 if(world.remote) multiplayer = new MultiplayerView(world,{engine,ship,walker,edits,digger,site:portSite,space,people,bridge:worldBridge,rebuild:rebuildNear,port});
+if (multiplayer) multiplayer.sayRole = (v, t) => voice.sayLine(t, { voice: v, channel: 'flat' });   // F5: a seat's NPC speaks (roles/npcs.js lines are voiced)
 if(world.remote){   // VOICES: proximity voice chat between players (src/voice/proximity.js)
   chat = new ProximityChat({ world, voice, bodyOf: (id) => multiplayer.bodies.get(id)?.group || null,
     sameFrame: (id) => { const b = multiplayer.bodies.get(id); return !!b && b.frameId === space.frameId; } });

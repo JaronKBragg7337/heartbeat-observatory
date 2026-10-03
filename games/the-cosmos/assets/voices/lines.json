@@ -1,7 +1,15 @@
 {
+ "00049b31d3a609": {
+  "voice": "w-lewis",
+  "text": "Since you asked. I fix people. The part where you were warned is billed separately. That is the exciting part, I am afraid."
+ },
  "000d092ed06f62": {
   "voice": "zuri",
   "text": "That is all three. Take them home to the Survey Office at Marineris Port."
+ },
+ "0070d7f7a2ffeb": {
+  "voice": "w-puck",
+  "text": "I command a station made of other stations. Do not ask which ones, and do not ask for them back."
  },
  "008eb7cfc05d30": {
   "voice": "sunita",
@@ -55,6 +63,10 @@
   "voice": "zuri",
   "text": "We are under the neutral line. Holding here. Say the word and we go home."
  },
+ "0118accad2d7f6": {
+  "voice": "w-alice",
+  "text": "Oh, you are here to talk to me. Of course you are."
+ },
  "011bbd3b86b045": {
   "voice": "ship",
   "text": "Course cancelled. Holding."
@@ -67,6 +79,10 @@
   "voice": "ada",
   "text": "Taking her down."
  },
+ "012a7f625046ae": {
+  "voice": "w-heart",
+  "text": "I command a village that is also a fleet. The paperwork is mostly lanterns."
+ },
  "0132d6732711f9": {
   "voice": "ship",
   "text": "Course set for Deimos."
@@ -78,6 +94,10 @@
  "0142d468ccfb2c": {
   "voice": "zuri",
   "text": "Arrived over Phobos. Easing level."
+ },
+ "016e9234be6d5c": {
+  "voice": "w-lewis",
+  "text": "Yes? Go on. I am listening with moderate enthusiasm."
  },
  "0199bab537060d": {
   "voice": "aoi",
@@ -103,6 +123,10 @@
   "voice": "ship",
   "text": "Engine power is too low to lift off. Route more to the engines."
  },
+ "021957a9b54010": {
+  "voice": "w-heart",
+  "text": "Happy to tell you. I keep the lane safe, or at least quieter than it would be without me. Come back and tell me how it went."
+ },
  "0243ac5ba6cb1d": {
   "voice": "ship",
   "text": "The autopilot has the ship."
@@ -114,6 +138,10 @@
  "026240bd1a5865": {
   "voice": "w-aoede",
   "text": "Watching the horizon. No traffic to report."
+ },
+ "026a8262b919c8": {
+  "voice": "w-puck",
+  "text": "Pay attention, this is simple. I fix people. The part where you were warned is billed separately. Do not make me repeat it, genius."
  },
  "026b99a48b2e6b": {
   "voice": "ship",
@@ -127,6 +155,10 @@
   "voice": "walter",
   "text": "Thanks, boss. I will be at the board."
  },
+ "027e1f309782fb": {
+  "voice": "w-puck",
+  "text": "Pay attention, this is simple. I fly people and parcels where they asked to go, usually near the time they asked. Do not make me repeat it, genius."
+ },
  "028c4dff3c259c": {
   "voice": "w-sky",
   "text": "Sealed rations. Coffee is a morale budget, but food is a fuel budget."
@@ -134,6 +166,14 @@
  "02925afa29d430": {
   "voice": "zuri",
   "text": "Down at Hellas Planitia."
+ },
+ "02952e120160dc": {
+  "voice": "w-fenrir",
+  "text": "The mine works, the greenhouse works, and the two of them will not speak to each other. Progress."
+ },
+ "029958d3ef0a6f": {
+  "voice": "w-heart",
+  "text": "Happy to tell you. I run the port. Every dock, every fee, every complaint, in that order. Come back and tell me how it went."
  },
  "02999be0e0fea8": {
   "voice": "ada",
@@ -159,6 +199,10 @@
   "voice": "ship",
   "text": "Down at Phobos."
  },
+ "02c9616996d14a": {
+  "voice": "w-river",
+  "text": "Sure. Interrupt me. Everyone does."
+ },
  "02eb74de6b5431": {
   "voice": "zuri",
   "text": "We are at Phobos already."
@@ -175,6 +219,10 @@
   "voice": "zuri",
   "text": "Coils at half charge. Hold on."
  },
+ "031cbb4f674097": {
+  "voice": "w-alice",
+  "text": "Allow me. I sell fuel and I know where the bathroom is. That is the whole job. I make it look easy. It is not. I am just good."
+ },
  "031e3de3ee6657": {
   "voice": "ada",
   "text": "Holding here."
@@ -182,6 +230,10 @@
  "031f387631bf9a": {
   "voice": "ada",
   "text": "a weak distress beacon on the survey band, about 800 m south-west of the pad. A drifting cargo module."
+ },
+ "0326686abfbee8": {
+  "voice": "w-lewis",
+  "text": "Mars serves everyone. Mars also charges everyone. I am the governor, which means I take the complaints."
  },
  "035e62f84efaae": {
   "voice": "ada",
@@ -202,6 +254,10 @@
  "03a1664bf88ff6": {
   "voice": "ada",
   "text": "Engine power is too low to lift off. Route more to the engines."
+ },
+ "03d97bb888c520": {
+  "voice": "w-fenrir",
+  "text": "Fine. I sell fuel and I know where the bathroom is. That is the whole job. Now go away."
  },
  "03e0cbd991bbe7": {
   "voice": "ada",
@@ -230,6 +286,10 @@
  "041a9df889dc33": {
   "voice": "ship",
   "text": "Main drive lit for the Ore Lane. Hold on to something."
+ },
+ "04352fce447027": {
+  "voice": "w-fenrir",
+  "text": "Fine. I decide who gets watched and for how long. Mostly it is everyone, a little. Now go away."
  },
  "0439bebbc356c3": {
   "voice": "zuri",
@@ -267,6 +327,10 @@
   "voice": "zuri",
   "text": "Thanks, boss. I will be at the board."
  },
+ "04f896d1a1a624": {
+  "voice": "w-puck",
+  "text": "Not pirates. Aggressive recyclers. Do not touch the trophies."
+ },
  "050d7b472d8ad4": {
   "voice": "zuri",
   "text": "Course set for The supply depot apron."
@@ -283,13 +347,25 @@
   "voice": "zuri",
   "text": "Course set for Olympus Mons."
  },
+ "05727878a21a24": {
+  "voice": "w-heart",
+  "text": "We go wherever the lanterns go. Bring a cup, bring a story, bring something that needs fixing."
+ },
  "057c1c59a1a67b": {
   "voice": "zuri",
   "text": "Course set for Mars orbit (400 km)."
  },
+ "057e54d4b91e53": {
+  "voice": "w-fenrir",
+  "text": "We never needed a partner and we have the receipts. Ask us for help and we will ask you why."
+ },
  "05a0739875b66d": {
   "voice": "zuri",
   "text": "Hull's at 34 percent. Breaking off, going down to neutral airspace."
+ },
+ "05b1478df535f0": {
+  "voice": "w-lily",
+  "text": "Oh! Hello! You startled me. Everything is fine. Is everything fine?"
  },
  "05de549c1a2710": {
   "voice": "ship",
@@ -306,6 +382,10 @@
  "060a12b4fb8cdf": {
   "voice": "ship",
   "text": "No course to cancel."
+ },
+ "06108f2efd40f5": {
+  "voice": "w-heart",
+  "text": "Hello, friend. Come in, sit down, someone will bring you something hot."
  },
  "06127b53432eba": {
   "voice": "zuri",
@@ -339,13 +419,25 @@
   "voice": "ada",
   "text": "Course set for Valles Marineris."
  },
+ "067ce3a0de6682": {
+  "voice": "w-lewis",
+  "text": "Since you asked. I buy what you are selling and sell what you did not know you needed. That is the exciting part, I am afraid."
+ },
  "06949144b490c8": {
   "voice": "ada",
   "text": "Course set for The supply depot apron."
  },
+ "06a7cc88c1fa14": {
+  "voice": "w-heart",
+  "text": "Happy to tell you. I fly people and parcels where they asked to go, usually near the time they asked. Come back and tell me how it went."
+ },
  "06b1e25174bdf2": {
   "voice": "ada",
   "text": "Down at Marineris Port."
+ },
+ "06b7b61a90b6e6": {
+  "voice": "w-river",
+  "text": "Oh, you want to know. I fly people and parcels where they asked to go, usually near the time they asked. Not that anyone ever says thank you."
  },
  "06c84da071e328": {
   "voice": "ship",
@@ -359,9 +451,21 @@
   "voice": "zuri",
   "text": "Hull's at 31 percent. Breaking off, going down to neutral airspace."
  },
+ "06e73c5a85a7c5": {
+  "voice": "w-lily",
+  "text": "Right, okay. I keep the lane safe, or at least quieter than it would be without me. Please do not ask me anything harder."
+ },
  "06e8f9a661fba7": {
   "voice": "w-fenrir",
   "text": "Filters, connectors, salvage. Bring the part you need matched."
+ },
+ "06f4ce62f88d60": {
+  "voice": "w-heart",
+  "text": "Happy to tell you. I carry heavy things from where they are to where they are not, and I do it slowly. Come back and tell me how it went."
+ },
+ "07186dc037bb35": {
+  "voice": "w-puck",
+  "text": "You found the Refuge. Nobody told you where it was, so now you owe us for the tour."
  },
  "073fff72145498": {
   "voice": "ada",
@@ -395,6 +499,10 @@
   "voice": "sunita",
   "text": "keep your harness fastened."
  },
+ "07d0857bb5201f": {
+  "voice": "w-alice",
+  "text": "Allow me. I fix people. The part where you were warned is billed separately. I make it look easy. It is not. I am just good."
+ },
  "07d5a6d9f51193": {
   "voice": "ada",
   "text": "Come aboard first, boss. I won't lift without you."
@@ -402,6 +510,10 @@
  "07de2e9db50bd6": {
   "voice": "ada",
   "text": "Holding over Mars."
+ },
+ "07e1265bed3ea9": {
+  "voice": "w-heart",
+  "text": "Take it, it is yours. I will be around, probably eating."
  },
  "07fd599f345075": {
   "voice": "ada",
@@ -411,9 +523,25 @@
   "voice": "jorge",
   "text": "I cannot find a way to my station. I will wait here."
  },
+ "080520ff7197d4": {
+  "voice": "w-river",
+  "text": "We listen first. Everything else is polite noise until we have heard what is out there."
+ },
+ "0821102f670827": {
+  "voice": "w-heart",
+  "text": "Happy to tell you. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. Come back and tell me how it went."
+ },
  "08472ee80e89ec": {
   "voice": "zuri",
   "text": "Arrived over Ceres: Occator Works. Easing level."
+ },
+ "084d0a5c0e3b8d": {
+  "voice": "w-lewis",
+  "text": "Since you asked. I fly people and parcels where they asked to go, usually near the time they asked. That is the exciting part, I am afraid."
+ },
+ "0854695251445c": {
+  "voice": "w-puck",
+  "text": "If it drifts, it is ours. If it is nailed down, it was ours yesterday. We call that a recycling programme."
  },
  "08a00d08e1808a": {
   "voice": "zuri",
@@ -438,6 +566,10 @@
  "08e48d1c86d5cc": {
   "voice": "jorge",
   "text": "Need a lift? You can ride with me, or follow the port lights."
+ },
+ "0916743e70a49f": {
+  "voice": "w-lily",
+  "text": "Oh no. You left? Okay. Okay! I can do this. I can absolutely do this."
  },
  "091ec8ba56a444": {
   "voice": "ada",
@@ -479,6 +611,10 @@
   "voice": "w-echo",
   "text": "The part you did not check. Carry oxygen and a spare kit. Come back with both unused."
  },
+ "0a085ec70f7d9c": {
+  "voice": "w-puck",
+  "text": "Ha. Quit already. Get out of my chair. Mine. I mean it."
+ },
  "0a086280f818a7": {
   "voice": "walter",
   "text": "Come aboard first, boss. I won't lift without you."
@@ -491,13 +627,25 @@
   "voice": "ada",
   "text": "We are at Phobos already."
  },
+ "0a3d72ba81f401": {
+  "voice": "w-river",
+  "text": "Oh, you want to know. I run the port. Every dock, every fee, every complaint, in that order. Not that anyone ever says thank you."
+ },
  "0a4a8556df3b09": {
   "voice": "w-sky",
   "text": "Rations and coffee here. Keep your suit sealed outside."
  },
+ "0a4e663bffeae3": {
+  "voice": "w-alice",
+  "text": "Allow me. I keep the lane safe, or at least quieter than it would be without me. I make it look easy. It is not. I am just good."
+ },
  "0a5f58f9c1b3ac": {
   "voice": "ada",
   "text": "Inside Mars neutral airspace: no raiders, nothing firing."
+ },
+ "0a6e4238941444": {
+  "voice": "w-heart",
+  "text": "Oh good, a new face. I was getting bored of the old ones."
  },
  "0a77cc91190df5": {
   "voice": "zuri",
@@ -531,6 +679,14 @@
   "voice": "zuri",
   "text": "Down at Ceres: Occator Works."
  },
+ "0b0c8daf75e970": {
+  "voice": "w-heart",
+  "text": "Welcome to the dome. Please do not feed it."
+ },
+ "0b11be4c881dda": {
+  "voice": "w-puck",
+  "text": "I did not hear you. I did, actually. I just did not care."
+ },
  "0b1941905ff02d": {
   "voice": "ship",
   "text": "Down at Ceres: Occator Works."
@@ -559,6 +715,10 @@
   "voice": "zuri",
   "text": "Outside the neutral line. The scope is clear for now."
  },
+ "0b913eea6f9f7b": {
+  "voice": "w-river",
+  "text": "Oh, you gave it back. How generous. I have just been sitting here."
+ },
  "0b94ba2835de81": {
   "voice": "ada",
   "text": "Hull's at 30 percent. Breaking off, going down to neutral airspace."
@@ -570,6 +730,10 @@
  "0bda0403f3bb63": {
   "voice": "ada",
   "text": "That is all three. Take them home to the Survey Office at Marineris Port."
+ },
+ "0bec867a5c91f3": {
+  "voice": "w-lily",
+  "text": "Right, okay. I buy what you are selling and sell what you did not know you needed. Please do not ask me anything harder."
  },
  "0c047fb063fe94": {
   "voice": "zuri",
@@ -586,6 +750,10 @@
  "0c6bd912e91e05": {
   "voice": "aoi",
   "text": "I cannot find a way to my station. I will wait here."
+ },
+ "0c702eaf1ead28": {
+  "voice": "w-lewis",
+  "text": "Since you asked. I sell fuel and I know where the bathroom is. That is the whole job. That is the exciting part, I am afraid."
  },
  "0c9e51784dc413": {
   "voice": "ada",
@@ -606,6 +774,10 @@
  "0cd7899281c9b6": {
   "voice": "w-lewis",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "0ce92316373029": {
+  "voice": "w-lily",
+  "text": "Right, okay. I fix people. The part where you were warned is billed separately. Please do not ask me anything harder."
  },
  "0ceb50883bc1e6": {
   "voice": "ship",
@@ -631,13 +803,25 @@
   "voice": "ada",
   "text": "Hunting raiders. Mars is neutral, so we have to climb out of its airspace for that."
  },
+ "0d3dc3cd2aedee": {
+  "voice": "w-puck",
+  "text": "Oh, sure, take my job. See how long you last, hero."
+ },
  "0d4d59bae48976": {
   "voice": "ada",
   "text": "Leaving Mars neutral airspace. Expect raiders."
  },
+ "0d5b2e04862bb9": {
+  "voice": "w-fenrir",
+  "text": "Back. I knew it. Everybody leaves, and then I get the paperwork."
+ },
  "0d62a0d15809a0": {
   "voice": "zuri",
   "text": "Down at Phobos."
+ },
+ "0d6d1c92368895": {
+  "voice": "w-puck",
+  "text": "Look who finally walked up. What do you want, a medal?"
  },
  "0d730b5c291ca0": {
   "voice": "zuri",
@@ -646,6 +830,18 @@
  "0d91ae0dd939da": {
   "voice": "zuri",
   "text": "Down at Mars orbit (400 km)."
+ },
+ "0d933446ccf81b": {
+  "voice": "w-lily",
+  "text": "Right, okay. I decide who gets watched and for how long. Mostly it is everyone, a little. Please do not ask me anything harder."
+ },
+ "0d940f6d45b620": {
+  "voice": "w-alice",
+  "text": "Welcome to the wall. It is eleven metres of opinions, and all of them are right."
+ },
+ "0da7e0f42bb7c6": {
+  "voice": "w-heart",
+  "text": "Happy to tell you. I fix people. The part where you were warned is billed separately. Come back and tell me how it went."
  },
  "0de626041f3f07": {
   "voice": "zuri",
@@ -658,6 +854,10 @@
  "0df0fbcba33954": {
   "voice": "ada",
   "text": "We are at Mars already."
+ },
+ "0e07a4e224a117": {
+  "voice": "w-lily",
+  "text": "Right, okay. I fly people and parcels where they asked to go, usually near the time they asked. Please do not ask me anything harder."
  },
  "0e10936290170e": {
   "voice": "ada",
@@ -675,9 +875,17 @@
   "voice": "w-lily",
   "text": "Sealed water bottles. Mind the cap in the dust."
  },
+ "0e3cd84e897e46": {
+  "voice": "w-puck",
+  "text": "Pay attention, this is simple. I decide who gets watched and for how long. Mostly it is everyone, a little. Do not make me repeat it, genius."
+ },
  "0e40ae862d6a90": {
   "voice": "ada",
   "text": "On station over Olympus Mons."
+ },
+ "0e45303b33c464": {
+  "voice": "w-heart",
+  "text": "Oh, you left. That is fine. I kept the seat warm, and I did not move it an inch."
  },
  "0e60f5d95385cf": {
   "voice": "w-fenrir",
@@ -731,6 +939,14 @@
   "voice": "ada",
   "text": "Main drive lit. Hold on to something."
  },
+ "0f283239198d18": {
+  "voice": "w-alice",
+  "text": "Allow me. I decide who gets watched and for how long. Mostly it is everyone, a little. I make it look easy. It is not. I am just good."
+ },
+ "0f2a1a9495f46a": {
+  "voice": "w-river",
+  "text": "Oh, you want to know. I decide who gets watched and for how long. Mostly it is everyone, a little. Not that anyone ever says thank you."
+ },
  "0f376f443ffc4c": {
   "voice": "ship",
   "text": "We are at Phobos already."
@@ -742,6 +958,18 @@
  "0f701f76a03b3c": {
   "voice": "w-jessica",
   "text": "One tonne at a time from your cart or hopper. Pure regolith only. The rest of your load stays with you."
+ },
+ "0f84dc1a7bffc3": {
+  "voice": "w-lewis",
+  "text": "It is your seat now. I will go and be unremarkable somewhere else."
+ },
+ "0f8df644f8c8a8": {
+  "voice": "w-alice",
+  "text": "Allow me. I buy what you are selling and sell what you did not know you needed. I make it look easy. It is not. I am just good."
+ },
+ "0f93c78ef32c93": {
+  "voice": "w-river",
+  "text": "Oh, you want to know. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. Not that anyone ever says thank you."
  },
  "0f9c097e0ffa2c": {
   "voice": "zuri",
@@ -767,9 +995,25 @@
   "voice": "zuri",
   "text": "Drone down."
  },
+ "0fef22b77bcc6e": {
+  "voice": "w-heart",
+  "text": "Everything we build is a ladder. We would rather be late and up there than comfortable and down here."
+ },
+ "0ff532a71705c9": {
+  "voice": "w-heart",
+  "text": "Third door on the left, if it is still there. Come in, the kettle is on."
+ },
  "0fff7f1fe69240": {
   "voice": "ship",
   "text": "That is out of range: it needs a jump drive the Meridian does not have."
+ },
+ "100d73b044622a": {
+  "voice": "w-fenrir",
+  "text": "Fine. I run the port. Every dock, every fee, every complaint, in that order. Now go away."
+ },
+ "10165764f2b52e": {
+  "voice": "w-lewis",
+  "text": "Since you asked. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. That is the exciting part, I am afraid."
  },
  "1023e2977eee9e": {
   "voice": "ada",
@@ -778,6 +1022,10 @@
  "10298935b5ecd9": {
   "voice": "ada",
   "text": "On station over Over the control tower."
+ },
+ "1037d6a2a3cb4d": {
+  "voice": "w-alice",
+  "text": "Allow me. I run the port. Every dock, every fee, every complaint, in that order. I make it look easy. It is not. I am just good."
  },
  "1085c9e369d537": {
   "voice": "zuri",
@@ -823,6 +1071,10 @@
   "voice": "ada",
   "text": "I cannot find a way to my station. I will wait here."
  },
+ "1135b48d25b38e": {
+  "voice": "w-alice",
+  "text": "I am very good at this job, in case you were wondering. Everyone says so. Mostly me."
+ },
  "1135bc8c01e593": {
   "voice": "ada",
   "text": "Above the air. The main drive will light at the gate."
@@ -842,6 +1094,10 @@
  "117f435e1390cb": {
   "voice": "zuri",
   "text": "Down at Marineris Port."
+ },
+ "119e8b7cf8db3f": {
+  "voice": "w-puck",
+  "text": "Pay attention, this is simple. I keep the lane safe, or at least quieter than it would be without me. Do not make me repeat it, genius."
  },
  "11b16a8ffcbf72": {
   "voice": "w-liam",
@@ -863,13 +1119,25 @@
   "voice": "zuri",
   "text": "Mars airspace is neutral: nothing here to shoot. Climbing to 1750 metres to find the raiders."
  },
+ "1228d6ac96848d": {
+  "voice": "w-puck",
+  "text": "We kept this Moon alive when the storms cut it off. Remember that at the checkpoint."
+ },
  "122900950c426e": {
   "voice": "w-adam",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
  },
+ "1239aef4b75fc7": {
+  "voice": "w-fenrir",
+  "text": "Fine. I carry heavy things from where they are to where they are not, and I do it slowly. Now go away."
+ },
  "124c3befd406e1": {
   "voice": "sunita",
   "text": "All yours, boss."
+ },
+ "1259528964e992": {
+  "voice": "w-puck",
+  "text": "The Moon is open. Mind the dust. Mind the checkpoint. Mind me."
  },
  "126e42d5c1e712": {
   "voice": "ada",
@@ -878,6 +1146,10 @@
  "12894005554ab8": {
   "voice": "zuri",
   "text": "On station over Pad 01, the Meridian's own pad."
+ },
+ "12ba87bfaae4cf": {
+  "voice": "w-river",
+  "text": "No, no, you take it. I only did it for years. Do not thank me."
  },
  "12c45faef820a7": {
   "voice": "ada",
@@ -895,6 +1167,14 @@
   "voice": "zuri",
   "text": "Engine power is too low to lift off. Route more to the engines."
  },
+ "131b6d1023a8d8": {
+  "voice": "w-heart",
+  "text": "Happy to tell you. I set the margins. If something costs too much, that was me, and I meant it. Come back and tell me how it went."
+ },
+ "132dbf03a2ef96": {
+  "voice": "w-fenrir",
+  "text": "We dig, we haul, and we argue about the pay later. In that order. Always."
+ },
  "135d2795636646": {
   "voice": "ada",
   "text": "Nobody is flying. Hire a pilot or a captain, or take the chair yourself."
@@ -902,6 +1182,10 @@
  "13618997599d5c": {
   "voice": "zuri",
   "text": "Need a lift? You can ride with me, or follow the port lights."
+ },
+ "137be376339840": {
+  "voice": "w-fenrir",
+  "text": "You are standing in my light. Make it quick."
  },
  "139184672afffc": {
   "voice": "ada",
@@ -927,6 +1211,14 @@
   "voice": "ada",
   "text": "Turn-over. Brace for the burn to slow down."
  },
+ "13ea18b210ea48": {
+  "voice": "w-heart",
+  "text": "Happy to tell you. I buy what you are selling and sell what you did not know you needed. Come back and tell me how it went."
+ },
+ "13ee50e4af3b32": {
+  "voice": "w-alice",
+  "text": "You quit? Oh, what a surprise. No, it is not. Move over."
+ },
  "142c988888604e": {
   "voice": "ship",
   "text": "We are at Ceres already."
@@ -935,13 +1227,29 @@
   "voice": "zuri",
   "text": "Takes the chair, flies if there is no pilot, and works the main guns. You do not have to be the captain."
  },
+ "144cb7370201d9": {
+  "voice": "w-lily",
+  "text": "Right, okay. I set the margins. If something costs too much, that was me, and I meant it. Please do not ask me anything harder."
+ },
  "145bacabb8fa8b": {
   "voice": "w-alice",
   "text": "Weather sensors are offline. Watch the dust outside."
  },
+ "1487412bd1d80d": {
+  "voice": "w-river",
+  "text": "Oh, you want to know. I buy what you are selling and sell what you did not know you needed. Not that anyone ever says thank you."
+ },
  "149a2305aa12cf": {
   "voice": "ada",
   "text": "Main drive lit for the Ore Lane. Hold on to something."
+ },
+ "149c60cf6f7b06": {
+  "voice": "w-fenrir",
+  "text": "Union made. Union broken. Union made again. What do you want?"
+ },
+ "14bb59b555d043": {
+  "voice": "w-alice",
+  "text": "We stay. We rebuild. We will not be leaving, and the harbour fees are not negotiable."
  },
  "14dcd00ea35dc7": {
   "voice": "sunita",
@@ -971,6 +1279,14 @@
   "voice": "ada",
   "text": "Loading stores. Food, water, bolts."
  },
+ "157fb99031efb3": {
+  "voice": "w-alice",
+  "text": "Allow me. I fly people and parcels where they asked to go, usually near the time they asked. I make it look easy. It is not. I am just good."
+ },
+ "15858bfe965f60": {
+  "voice": "w-lily",
+  "text": "Oh, thank goodness. I mean, congratulations. Please be careful with the, well, everything."
+ },
  "158ae3ddd6208c": {
   "voice": "w-alice",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
@@ -995,6 +1311,14 @@
   "voice": "ada",
   "text": "Course cancelled. Braking to a stop."
  },
+ "15ca1ac382f411": {
+  "voice": "w-river",
+  "text": "Oh, hello. I was having a lovely nothing. It is fine."
+ },
+ "15d20a4416e902": {
+  "voice": "w-river",
+  "text": "Everything here is far away, including the other faction. I recommend it."
+ },
  "15e1300977958b": {
   "voice": "ada",
   "text": "No contacts on the scope. Waiting."
@@ -1002,6 +1326,10 @@
  "15f135c2a430c2": {
   "voice": "zuri",
   "text": "Main drive lit. Hold on to something."
+ },
+ "16029af33786f5": {
+  "voice": "w-alice",
+  "text": "Allow me. I carry heavy things from where they are to where they are not, and I do it slowly. I make it look easy. It is not. I am just good."
  },
  "161c626f3a5b07": {
   "voice": "ada",
@@ -1023,6 +1351,10 @@
   "voice": "zuri",
   "text": "We are at Ceres already."
  },
+ "164e639defb998": {
+  "voice": "w-lewis",
+  "text": "Since you asked. I decide who gets watched and for how long. Mostly it is everyone, a little. That is the exciting part, I am afraid."
+ },
  "1661dcb14db1cc": {
   "voice": "aoi",
   "text": "Come aboard first, boss. I won't lift without you."
@@ -1034,6 +1366,10 @@
  "1691aa2eacdab9": {
   "voice": "ship",
   "text": "We are at Deimos already."
+ },
+ "169f5b45702e78": {
+  "voice": "w-alice",
+  "text": "I govern the only world with weather, which makes everything my fault. Keep your hands off the sea wall."
  },
  "16c060f80a0de7": {
   "voice": "ada",
@@ -1119,6 +1455,10 @@
   "voice": "ada",
   "text": "We are on the ground."
  },
+ "18572999e66727": {
+  "voice": "w-puck",
+  "text": "Pay attention, this is simple. I buy what you are selling and sell what you did not know you needed. Do not make me repeat it, genius."
+ },
  "1863d66eabc5f1": {
   "voice": "ship",
   "text": "a weak distress beacon on the survey band, about 800 m south-west of the pad. A drifting cargo module."
@@ -1130,6 +1470,10 @@
  "1896065f6922cc": {
   "voice": "ship",
   "text": "Arrived over Ceres: Occator Works. Easing level."
+ },
+ "18993b367ebb7c": {
+  "voice": "w-fenrir",
+  "text": "What."
  },
  "18a78b3b5b2e3d": {
   "voice": "ship",
@@ -1143,6 +1487,10 @@
   "voice": "ada",
   "text": "We are under the neutral line. Holding here. Say the word and we go home."
  },
+ "18c57c6df60e70": {
+  "voice": "w-river",
+  "text": "The instrument is listening. Please do not touch it."
+ },
  "18c9fa56421517": {
   "voice": "zuri",
   "text": "Come aboard first: the ship will not lift without you."
@@ -1151,9 +1499,29 @@
   "voice": "w-adam",
   "text": "Welcome to Marineris. Depot west, market south, control tower north. Use the lift inside."
  },
+ "18f99f0b33dd57": {
+  "voice": "w-river",
+  "text": "Oh, you want to know. I set the margins. If something costs too much, that was me, and I meant it. Not that anyone ever says thank you."
+ },
+ "18f9abc6ada9c1": {
+  "voice": "w-lewis",
+  "text": "Since you asked. I carry heavy things from where they are to where they are not, and I do it slowly. That is the exciting part, I am afraid."
+ },
+ "19329fe840c6ee": {
+  "voice": "w-alice",
+  "text": "Fine, you take it. Try not to do it worse than I did. That will be difficult."
+ },
+ "194bf7464b6f96": {
+  "voice": "w-fenrir",
+  "text": "Fine. I set the margins. If something costs too much, that was me, and I meant it. Now go away."
+ },
  "1971540b8386c8": {
   "voice": "walter",
   "text": "Takes the belly turret. Slower to find a target than the others, steady once he has one."
+ },
+ "19db4ce0058f4a": {
+  "voice": "w-fenrir",
+  "text": "Take the chair, then. Do not touch my mug."
  },
  "19e237664b5080": {
   "voice": "jorge",
@@ -1171,13 +1539,25 @@
   "voice": "zuri",
   "text": "Come aboard first, boss. I won't lift without you."
  },
+ "19fadd58f6e7d0": {
+  "voice": "w-lewis",
+  "text": "Hello. I would say it is a pleasure, but I would have to file a form."
+ },
  "1a0db873419a26": {
   "voice": "ship",
   "text": "The sky is going black. Stars."
  },
+ "1a1400adf2c3d7": {
+  "voice": "w-puck",
+  "text": "Pay attention, this is simple. I carry heavy things from where they are to where they are not, and I do it slowly. Do not make me repeat it, genius."
+ },
  "1a1416e47b95f1": {
   "voice": "zuri",
   "text": "The ramp is up. Lower it and I'll come aboard."
+ },
+ "1a214178279a4c": {
+  "voice": "w-fenrir",
+  "text": "Ceres runs on ore and bad moods. I supply the second one."
  },
  "1a248c70d67a13": {
   "voice": "jorge",
@@ -1207,6 +1587,10 @@
   "voice": "zuri",
   "text": "On station over Hellas Planitia."
  },
+ "1a7381daecf2f5": {
+  "voice": "w-puck",
+  "text": "State your business at the gate. Badges visible. All clear, until it is not."
+ },
  "1a80484aae69b7": {
   "voice": "zuri",
   "text": "Course set for Over the control tower."
@@ -1215,9 +1599,17 @@
   "voice": "ada",
   "text": "Down at Pad 02 (shuttle)."
  },
+ "1ab8b20f18dfd4": {
+  "voice": "w-river",
+  "text": "Oh, you want to know. I keep the lane safe, or at least quieter than it would be without me. Not that anyone ever says thank you."
+ },
  "1aba3401a4a9f7": {
   "voice": "w-river",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "1abb4956722df0": {
+  "voice": "w-lewis",
+  "text": "We build the thing everyone needs and let them come to us. Eventually, they do."
  },
  "1ad890d23bb706": {
   "voice": "ada",
@@ -1239,17 +1631,49 @@
   "voice": "ship",
   "text": "Course set for Ceres: Occator Works."
  },
+ "1b1e78824947f2": {
+  "voice": "w-lily",
+  "text": "Right, okay. I run the port. Every dock, every fee, every complaint, in that order. Please do not ask me anything harder."
+ },
+ "1b36e62d438787": {
+  "voice": "w-heart",
+  "text": "Welcome aboard. Up is a direction, and also, as you will notice, our entire career plan."
+ },
+ "1b3a86dd2d2879": {
+  "voice": "w-puck",
+  "text": "Two factions, one sky, and a very long gate queue. I enjoy all three."
+ },
+ "1b4680dc43b85f": {
+  "voice": "w-river",
+  "text": "Callisto is cold, quiet, and a very long way from help. I find that restful."
+ },
  "1b7cce7a20c36d": {
   "voice": "ship",
   "text": "That is all three. Take them home to the Survey Office at Marineris Port."
+ },
+ "1b7fad7095be21": {
+  "voice": "w-puck",
+  "text": "Pay attention, this is simple. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. Do not make me repeat it, genius."
+ },
+ "1b848f78bfa05a": {
+  "voice": "w-fenrir",
+  "text": "Fine. I keep the lane safe, or at least quieter than it would be without me. Now go away."
  },
  "1b894a17471a35": {
   "voice": "zuri",
   "text": "All yours, boss."
  },
+ "1bc0b7c5bbb936": {
+  "voice": "w-fenrir",
+  "text": "Nobody needed. Everything yours. Mind the door, it sticks."
+ },
  "1bcde20be5a070": {
   "voice": "aoi",
   "text": "Keeps the port channel and the ship log open. Tracks the crew account and your accepted jobs."
+ },
+ "1bd5b504ff674e": {
+  "voice": "w-lewis",
+  "text": "Since you asked. I keep the lane safe, or at least quieter than it would be without me. That is the exciting part, I am afraid."
  },
  "1bd629c8e948df": {
   "voice": "zuri",
@@ -1279,6 +1703,10 @@
   "voice": "w-lily",
   "text": "Filtered ice melt. Every seal checked twice. Dust only has to win once."
  },
+ "1c7e64b2319c17": {
+  "voice": "w-fenrir",
+  "text": "Fine. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. Now go away."
+ },
  "1c92f1b52507e0": {
   "voice": "zuri",
   "text": "Hull's at 33 percent. Breaking off, going down to neutral airspace."
@@ -1306,6 +1734,14 @@
  "1ce05a1df37655": {
   "voice": "ada",
   "text": "A course is already under way. Cancel it first."
+ },
+ "1ce88b72791fca": {
+  "voice": "w-heart",
+  "text": "We grow what we need and we share what we grew. The seeds are not negotiable. The sharing is."
+ },
+ "1cee85370a1f10": {
+  "voice": "w-lewis",
+  "text": "Nobody owns anything on Mars, including me. I just hold the clipboard."
  },
  "1cf74e009b74ee": {
   "voice": "zuri",
@@ -1343,6 +1779,10 @@
   "voice": "walter",
   "text": "All yours, boss."
  },
+ "1d88339a058108": {
+  "voice": "w-lily",
+  "text": "I am supposed to say something helpful. Give me one second."
+ },
  "1d8e224860b3f2": {
   "voice": "zuri",
   "text": "Setting her down."
@@ -1354,6 +1794,14 @@
  "1dd6fccc24031a": {
   "voice": "zuri",
   "text": "Course set for Pad 01, the Meridian's own pad."
+ },
+ "1df6e392df1aec": {
+  "voice": "w-lewis",
+  "text": "Signal over noise. Your data is safe with us. Legally, that is."
+ },
+ "1e1fd87cd696da": {
+  "voice": "w-lewis",
+  "text": "Back already. The seat missed you. I did not, but the seat did."
  },
  "1e24aa3eea3f11": {
   "voice": "w-bella",
@@ -1387,6 +1835,10 @@
   "voice": "zuri",
   "text": "Down at Pad 02 (shuttle)."
  },
+ "1ebc11e89d5a22": {
+  "voice": "w-fenrir",
+  "text": "Fine. I buy what you are selling and sell what you did not know you needed. Now go away."
+ },
  "1ec394e2dea6f8": {
   "voice": "zuri",
   "text": "Course set for Airy-0."
@@ -1419,13 +1871,29 @@
   "voice": "zuri",
   "text": "The ramp is up."
  },
+ "1f5f0c3e757e7c": {
+  "voice": "w-river",
+  "text": "Oh, you want to know. I carry heavy things from where they are to where they are not, and I do it slowly. Not that anyone ever says thank you."
+ },
  "1f6081d2e33c1b": {
   "voice": "ship",
   "text": "Braking burn."
  },
+ "1f71e84f4708a7": {
+  "voice": "w-heart",
+  "text": "You are on Wanderhome. Nothing matches, everyone knows where everything is, and the third door on the left moves."
+ },
  "1f8140f8cb4106": {
   "voice": "zuri",
   "text": "Leaving Mars neutral airspace. Expect raiders."
+ },
+ "1f8ac546c759a1": {
+  "voice": "w-alice",
+  "text": "Earth is full. Earth is flooded. Earth is, nevertheless, still the best address in the Solar System."
+ },
+ "1f91fb10437008": {
+  "voice": "w-alice",
+  "text": "Allow me. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. I make it look easy. It is not. I am just good."
  },
  "1f9b9f0f420504": {
   "voice": "zuri",

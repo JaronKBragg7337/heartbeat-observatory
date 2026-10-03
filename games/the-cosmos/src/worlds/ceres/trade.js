@@ -41,13 +41,13 @@ export const matterKg = (lots, item) => lotKg(lots || [], item);
  * keeps it only if this does not throw). `where` is 'marineris' or 'works'. `fund` is the dealer's marks (an object { marks } this subtracts from).
  * Returns { paid, kg }.
  */
-export function sellMatter(ship, item, where, tonnes, fund) {
+export function sellMatter(ship, item, where, tonnes, fund, mult = 1, tax = 0) {      // F4: `mult` is the world's price factor, `tax` the governor's cut
   const row = MATTER[item], price = row && row[where === 'cutbank' ? 'works' : where];
   if (!price) throw Error('Nobody here buys that.');
   if (!Number.isSafeInteger(tonnes) || tonnes < 1) throw Error('Sell a whole number of tonnes.');
   const kg = tonnes * 1000, have = matterKg(ship.holdLots, item);
   if (have + 1e-6 < kg) throw Error(`Your hold has ${(have / 1000).toFixed(2)} t of ${row.name.toLowerCase()} sealed in lots: not ${tonnes} t.`);
-  const pay = price * tonnes;
+  const gross = Math.round(price * tonnes * mult), taxed = Math.round(gross * tax), pay = gross - taxed;
   if (fund.marks < pay) throw Error('The dealer cannot pay for that much today.');
   const t = takeMatter(ship.holdLots, item, kg, 'sale');
   ship.holdLots = t.remaining;
@@ -60,20 +60,20 @@ export function sellMatter(ship, item, where, tonnes, fund) {
   e.exportedMassExact = String(BigInt(e.exportedMassExact || '0') + t.massExact);
   e.exportedVolumeExact = String(BigInt(e.exportedVolumeExact || '0') + t.volumeExact);
   e.marks += pay; fund.marks -= pay;
-  return { paid: pay, kg };
+  return { paid: pay, kg, taxed };
 }
 /** Ore: the original one-item call (`where` 'marineris' | 'cutbank' | 'works'). */
 export const sellOre = (ship, where, tonnes, fund) => sellMatter(ship, ORE_ITEM, where, tonnes, fund);
 
 /** Sell `n` units of a supply at the Occator desk. `ship.economy.inventory` is changed. Returns { paid }. */
-export function sellSupply(ship, good, n, fund) {
+export function sellSupply(ship, good, n, fund, mult = 1, tax = 0) {
   const pay1 = SUPPLY_PAY[good];
   if (!pay1 || !GOODS[good]) throw Error('The desk does not buy that.');
   if (!Number.isSafeInteger(n) || n < 1) throw Error('Sell a whole number of units.');
   const e = ship.economy;
   if ((e.inventory[good] || 0) < n) throw Error(`You have ${e.inventory[good] || 0} ${GOODS[good].name}.`);
-  const pay = pay1 * n;
+  const gross = Math.round(pay1 * n * mult), taxed = Math.round(gross * tax), pay = gross - taxed;
   if (fund.marks < pay) throw Error('The desk cannot pay for that much today.');
   e.inventory[good] -= n; e.marks += pay; fund.marks -= pay;
-  return { paid: pay };
+  return { paid: pay, taxed };
 }

@@ -13,6 +13,7 @@ import { CREW_POSTS, LINES as CREW_LINES, PLACES } from '../crew/crewSpec.js';
 import { WORKER_LINES, WORKER_FALLBACK } from '../port/workerLines.js';
 import { WORKER_CAST, CREW_VOICE, spokenText } from './cast.js';
 import { openingLines } from '../opening/dialogue.js';
+import { roleLines } from '../roles/npcs.js';
 import { DESTINATIONS } from '../space/spaceSpec.js';
 import { BODIES } from '../world/bodies.js';
 import { frameWorlds } from '../worlds/registry.js';
@@ -58,6 +59,7 @@ export function structuredLines() {
     out.push({ voice: cast.voice, text: t?.answer || (q ? q.offer : WORKER_FALLBACK.answer) });
     if (q) out.push({ voice: cast.voice, text: q.offer });
   }
+  out.push(...roleLines());          // F5: every NPC seat-holder's lines (src/roles/npcs.js)
   for (const p of CREW_POSTS) {
     out.push({ voice: p.personId, text: p.pitch });
     for (const k of ['hired', 'noRamp', 'settle', 'needYou']) out.push({ voice: p.personId, text: CREW_LINES[k](p.name) });

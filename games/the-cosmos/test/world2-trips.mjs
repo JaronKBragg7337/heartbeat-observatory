@@ -55,7 +55,7 @@ export async function runWorld2Trips({ check, log = () => {} } = {}) {
     const ok = (r, frame) => r && !r.err && r.frame === frame && r.landed && !r.tripLeft;
     check('a ship flown from the port to Ceres crosses the Ore Lane and ends the trip landed in Ceres\'s frame', ok(results.out, 'ceres'), JSON.stringify(results.out));
     check('the trip had a spool of the full 20 cabin seconds at the lane mouth and one lane fee of 120 credits', results.out && Math.abs(results.out.spoolS - 20) < 1.2 && results.out.fee === 120, JSON.stringify(results.out));
-    check('the foreman buys a tonne of ore from the hold for 130 marks when you stand at him, and refuses from 50 m away', results.sale && !!results.sale.far && results.sale.ok && results.sale.ok.ok && results.sale.paid === 130 && Math.abs(results.sale.hold - 1000) < 1e-6 && Math.abs(results.sale.lots - 1000) < 1e-6, JSON.stringify(results.sale));
+    check('the foreman buys a tonne of ore from the hold for about 130 marks (F4: the world price factor and tax move it, 100 to 135) when you stand at him, and refuses from 50 m away', results.sale && !!results.sale.far && results.sale.ok && results.sale.ok.ok && results.sale.paid >= 100 && results.sale.paid <= 135 && Math.abs(results.sale.hold - 1000) < 1e-6 && Math.abs(results.sale.lots - 1000) < 1e-6, JSON.stringify(results.sale));
     check('from Ceres a course to Marineris Port crosses back and ends landed at Mars', ok(results.home, 'mars'), JSON.stringify(results.home));
     check('the way home costs another 120 credits', results.home && results.home.fee === 120, JSON.stringify(results.home));
   }

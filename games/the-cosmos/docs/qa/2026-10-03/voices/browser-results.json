@@ -3,19 +3,19 @@
     "connected": true,
     "handshake": {
       "a": {
-        "offers": 2,
-        "answers": 0,
-        "ice": 9,
+        "offers": 0,
+        "answers": 2,
+        "ice": 8,
         "connected": 1,
-        "remoteTracks": 1,
+        "remoteTracks": 2,
         "micStarts": 0
       },
       "b": {
-        "offers": 0,
-        "answers": 2,
-        "ice": 12,
+        "offers": 2,
+        "answers": 0,
+        "ice": 8,
         "connected": 1,
-        "remoteTracks": 2,
+        "remoteTracks": 1,
         "micStarts": 0
       }
     },
@@ -23,29 +23,29 @@
     "micGranted": true,
     "audioStats": {
       "first": {
-        "packets": 74,
-        "bytes": 3301,
+        "packets": 75,
+        "bytes": 3333,
         "level": 0,
         "energy": 0
       },
       "second": {
-        "packets": 149,
-        "bytes": 7662,
+        "packets": 150,
+        "bytes": 7665,
         "level": 0,
         "energy": 0
       },
-      "analyserPeak": 0.467
+      "analyserPeak": 0.043
     },
     "audioFlowing": true,
     "heardClose": 1,
     "hudShowsSpeaker": true,
     "reverseAudio": true,
     "reverseStats": {
-      "packets": 212,
-      "bytes": 11765,
-      "analyserPeak": 0.096
+      "packets": 214,
+      "bytes": 11927,
+      "analyserPeak": 0.035
     },
-    "heardMid": 0.26141964610866597,
+    "heardMid": 0.26435503540860184,
     "midPeers": 1,
     "droppedFar": true,
     "crewChannel": 1,
@@ -55,15 +55,15 @@
     "phoneLabel": "Hold to talk",
     "phoneTouchHold": true,
     "phoneStats": {
-      "packets": 246,
-      "bytes": 13926
+      "packets": 259,
+      "bytes": 14702
     },
     "npc": {
       "near": {
         "id": "arrival-guide",
-        "d": 12.479124570305311,
+        "d": 12.479124568861458,
         "log": {
-          "t": 122118,
+          "t": 128526,
           "voice": "w-adam",
           "text": "Welcome to Marineris. Depot west, market south, control tower north. Use the lift inside.",
           "mode": "clip",
@@ -77,13 +77,13 @@
       },
       "far": {
         "id": "cab-runner",
-        "d": 96.04463748737774,
+        "d": 96.04463748594989,
         "log": {
-          "t": 123306,
+          "t": 129729,
           "voice": "w-puck",
           "text": "I carry the shift notes between desks.",
           "mode": "too-far",
-          "dist": 96.04463748657247
+          "dist": 96.04463748594989
         }
       }
     },

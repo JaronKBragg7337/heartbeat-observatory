@@ -57,7 +57,7 @@ export async function runVoiceChecks({ check, section }) {
   const missing = lines.filter((l) => !manifest.clips[clipKey(l.voice, l.text)]);
   check(`every static spoken line has a clip (${lines.length} lines, ${dynamic.length} templates with free numbers use the browser voice)`, missing.length === 0, missing.slice(0, 3).map((l) => l.voice + ': ' + l.text).join(' | ') + ` (${missing.length} missing; run node tools/gen-voices.mjs)`);
   const sizes = Object.values(manifest.clips), total = sizes.reduce((a, b) => a + b, 0);
-  check(`clips are small compressed audio (${sizes.length} clips, ${(total / 1024).toFixed(0)} KB, largest ${Math.max(0, ...sizes)} B)`, sizes.length > 0 && Math.max(...sizes) < 90000 && total < 8 * 1024 * 1024);
+  check(`clips are small compressed audio (${sizes.length} clips, ${(total / 1024).toFixed(0)} KB, largest ${Math.max(0, ...sizes)} B)`, sizes.length > 0 && Math.max(...sizes) < 90000 && total < 12 * 1024 * 1024);
   const sample = Object.keys(manifest.clips).slice(0, 12);
   const mp3 = (k) => { const b = readFileSync(join(VDIR, k + '.mp3')); return (b[0] === 0xff && (b[1] & 0xe0) === 0xe0) || b.slice(0, 3).toString() === 'ID3'; };
   check('clips are real mp3 files (frame sync or ID3), which iPhone Safari and Chrome both decode', sample.length > 0 && sample.every(mp3));

@@ -35,6 +35,8 @@ export class FleetDirector {
 
   get state() { return this.a.state; }
   fleetState() { const s = this.state; return s.fleet || (s.fleet = { seq: 0, nextAt: {}, derelicts: {} }); }
+  /** F4: the lanes get busier as the settled worlds compete and richer as they hoard (src/roles/balance.js lanePressure). 1 at the start of the world. */
+  respawnS() { const k = this.a.roles?.lanePressure?.() || 1; return RESPAWN_S / k; }
   npcSims() { return [...this.a.sims.values()].filter((s) => s.record.npc); }
   playerSims() { return [...this.a.sims.values()].filter((s) => !s.record.npc); }
 
@@ -138,8 +140,8 @@ export class FleetDirector {
       const live = here.filter((s) => ['patrol', 'engage', 'return'].includes(s.record.npc.state)).length;
       if (live < slot.raiders) {
         if (f.nextAt[slot.station] === undefined) f.nextAt[slot.station] = clock;           // first time: now
-        if (clock >= f.nextAt[slot.station]) { this.spawn(slot.station, 'patrol'); f.nextAt[slot.station] = clock + RESPAWN_S; }
-      } else if (f.nextAt[slot.station] === undefined || live >= slot.raiders) f.nextAt[slot.station] = clock + RESPAWN_S;
+        if (clock >= f.nextAt[slot.station]) { this.spawn(slot.station, 'patrol'); f.nextAt[slot.station] = clock + this.respawnS(); }
+      } else if (f.nextAt[slot.station] === undefined || live >= slot.raiders) f.nextAt[slot.station] = clock + this.respawnS();
       const left = (f.derelicts[slot.station] || 0);
       if (left < slot.derelicts) { this.spawn(slot.station, 'abandoned'); f.derelicts[slot.station] = left + 1; }
     }

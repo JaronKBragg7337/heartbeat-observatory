@@ -1,3 +1,4 @@
+import { rolesPanel } from '../roles/rolesView.js';   // F5
 import { frameWorldIds } from '../worlds/registry.js';
 import { hullPush, mayBoard } from '../ship/hullCollision.js';
 import { shipPresence } from './shipPresence.js';
@@ -37,7 +38,7 @@ export class MultiplayerView {
     // Seat/boarding transitions require an action; pose packets only describe predicted movement.
     pose.aboard=!!p.aboardShipId;pose.seat=p.pose.seat;
     this.world.sendPose(pose,this.ship.flight.controls,this.vehicles?.controlPacket?.()||null,this.space.ff.active?{...this.space.ff.input}:null);}   // FREEFLIGHT: the free-flight stick rides the same lease
-  request(a){this.sendPose();return this.world.request(a).then(r=>{if(r.ok&&r.msg&&r.msg!=='Saved to the shared world.')this.ship.note(r.msg);if(!r.ok)this.reconcilePlayer=true;return r;});}
+  request(a){this.sendPose();return this.world.request(a).then(r=>{if(r.ok&&r.say)this.sayRole?.(r.say.voice,r.say.text);/* F5 */if(r.ok&&r.msg&&r.msg!=='Saved to the shared world.')this.ship.note(r.msg);if(!r.ok)this.reconcilePlayer=true;return r;});}
   installControls(){const ship=this.ship,space=this.space;
     const outside=ship._outsideFrame.bind(ship);
     ship._outsideFrame=(dt,inp)=>{outside(dt,inp);if(ship.aboard||this.boardPending)return;this.collideShips();
@@ -305,6 +306,7 @@ export class MultiplayerView {
     btn(owned.crewMayBoard?'Close guest boarding':'Allow crew to board',{type:'boarding-permission',allowed:!owned.crewMayBoard});
     text('Walk onto a lowered ramp to board. Walk back down it to leave. Guest ramps work when their owner allows boarding.');
     this.fleetView.panel(s,p,text,btn);
+    rolesPanel(s,p,text,btn);   // F5 roles, F4 balance
     text('Hiring: walk to the crew hall door, north of the main pad. Candidates come outside when called.');
     for(const c of Object.values(s.pool).filter(c=>!c.shipId&&!c.retired)){text(`${c.name} · ${c.role} · ${Math.round(c.skill*100)}% · ${c.wageCredits} cr/sol`);
       if(c.status==='inside')btn('Meet '+c.name,{type:'meet',id:c.id});else if(c.status==='waiting'){btn('Hire '+c.name,{type:'hire',id:c.id});btn('Decline',{type:'decline',id:c.id});}}

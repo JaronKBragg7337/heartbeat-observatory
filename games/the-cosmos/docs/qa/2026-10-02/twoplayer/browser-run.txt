@@ -1,12 +1,34 @@
-node:internal/modules/run_main:107
-    triggerUncaughtException(
-    ^
-
-page.waitForFunction: Timeout 120000ms exceeded.
-    at ready (C:\Users\lilli\Projects\ho-stable\games\the-cosmos\test\twoplayer-browser.mjs:29:17)
-    at async file:///C:/Users/lilli/Projects/ho-stable/games/the-cosmos/test/twoplayer-browser.mjs:37:70 {
-  log: [],
-  name: 'TimeoutError'
+Ready tier=low { safe: false, failed: 0, problem: undefined }
+Ready tier=low { safe: false, failed: 0, problem: undefined }
+Remote hull collision passed
+Guest ramp/interior passed
+Ready tier=low { safe: false, failed: 0, problem: undefined }
+Graphics matrix tier=low {"safe":false,"webgl2":true,"logdepth":true,"far":1000000000,"shadows":true,"environment":true,"problem":"","calls":87,"nonClearFrame":true,"failures":0}
+Ready tier=low&depth=16 { safe: false, failed: 0, problem: undefined }
+Graphics matrix tier=low&depth=16 {"safe":false,"webgl2":true,"logdepth":true,"far":1000000000,"shadows":true,"environment":true,"problem":"","calls":87,"nonClearFrame":true,"failures":0}
+Ready tier=low&logdepth=0&env=0&shadows=0&far=2000 { safe: false, failed: 0, problem: undefined }
+Graphics matrix tier=low&logdepth=0&env=0&shadows=0&far=2000 {"safe":false,"webgl2":true,"logdepth":false,"far":2000,"shadows":false,"environment":false,"problem":"","calls":87,"nonClearFrame":true,"failures":0}
+Ready tier=low&webgl=1&env=0 {
+  safe: true,
+  failed: 0,
+  problem: 'Graphics problem: Shader compile/link: Fragment shader is not compiled.\n' +
+    " ERROR: 0:264: 'sampler3D' : Illegal use of reserved word\n" +
+    "ERROR: 0:264: 'sampler3D' : syntax error\n" +
+    ' - safe mode active'
 }
-
-Node.js v24.16.0
+Graphics matrix tier=low&webgl=1&env=0 {"safe":true,"webgl2":false,"logdepth":false,"far":2000,"shadows":false,"environment":false,"problem":"Graphics problem: Shader compile/link: Fragment shader is not compiled.\n ERROR: 0:264: 'sampler3D' : Illegal use of reserved word\nERROR: 0:264: 'sampler3D' : syntax error\n - safe mode active","calls":87,"nonClearFrame":true,"failures":0}
+Ready tier=safe { safe: true, failed: 0, problem: undefined }
+Graphics matrix tier=safe {"safe":true,"webgl2":false,"logdepth":false,"far":2000,"shadows":false,"environment":false,"problem":"","calls":87,"nonClearFrame":true,"failures":0}
+Ready tier=low&logdepth=0 { safe: false, failed: 0, problem: undefined }
+Graphics matrix tier=low&logdepth=0 {"safe":false,"webgl2":true,"logdepth":false,"far":1000000000,"shadows":true,"environment":true,"problem":"","calls":87,"nonClearFrame":true,"failures":0}
+Ready tier=low&env=0 { safe: false, failed: 0, problem: undefined }
+Graphics matrix tier=low&env=0 {"safe":false,"webgl2":true,"logdepth":true,"far":1000000000,"shadows":true,"environment":false,"problem":"","calls":87,"nonClearFrame":true,"failures":0}
+Ready tier=low&shadows=0 { safe: false, failed: 0, problem: undefined }
+Graphics matrix tier=low&shadows=0 {"safe":false,"webgl2":true,"logdepth":true,"far":1000000000,"shadows":false,"environment":true,"problem":"","calls":87,"nonClearFrame":true,"failures":0}
+Ready tier=low&far=2000 { safe: false, failed: 0, problem: undefined }
+Graphics matrix tier=low&far=2000 {"safe":false,"webgl2":true,"logdepth":true,"far":2000,"shadows":true,"environment":true,"problem":"","calls":87,"nonClearFrame":true,"failures":0}
+Ready tier=low { safe: false, failed: 0, problem: undefined }
+Ready tier=low { safe: false, failed: 0, problem: undefined }
+Ready tier=low { safe: false, failed: 0, problem: undefined }
+Ready tier=low { safe: false, failed: 0, problem: undefined }
+Two-player browser checks passed {"samples":121,"stalledIterations":0,"playerRms":0.1748875055303306,"shipRms":0.9033839404926232,"playerMax":0.48040039038329735,"shipMax":2.402001952870267,"attempts":1}

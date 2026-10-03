@@ -28,6 +28,7 @@ import { SAMPLE_PAY_CREDITS, SAMPLE_REACH_M, SALVAGE_CREDITS, SALVAGE_KG, SALVAG
 import { ShipSimulation } from './simulation.mjs';
 import { VehicleDirector } from './vehicles.mjs';
 import { ShopDirector } from './shops.mjs';
+import { RoleDirector } from './roles.mjs';      // F5 roles and NPC stand-ins, F4 balance and home strength
 import { worldSale } from './world2.mjs';       // WORLD2
 import { freshOpening, OpeningModel } from '../src/opening/state.js';
 import { detachBodyEdits } from '../src/world/field.js';
@@ -54,13 +55,13 @@ export class Authority {
     this.sessions=new Map();this.inputs=new Map();this.queue=Promise.resolve();this.error='';this.bricks=new Map();
     this.state={schema:2,revision:0,clock:0,savedAt:now(),players:{},ships:{},pads:[],pool:{},poolSeq:0,
       market:initialEconomy(),terrain:{},damage:{},vehicles:{},shops:{},receipts:{},users:{}};
-    this.fleet=new FleetDirector(this);this.vehicleInputs=new Map();this.vehicles=new VehicleDirector(this);this.shops=new ShopDirector(this);
+    this.fleet=new FleetDirector(this);this.vehicleInputs=new Map();this.vehicles=new VehicleDirector(this);this.shops=new ShopDirector(this);this.roles=new RoleDirector(this);
   }
   async load(){const s=await this.adapter.load();if(s.record){if(s.record.schema!==2)throw Error('Unsupported authority schema.');this.state=s.record;}
     for(const c of Object.values(this.state.pool))if(!c.shipId&&c.status==='inside'&&c.position.x===CREW_HALL.x&&c.position.z===CREW_HALL.z)c.position.x+=(CREW_POSTS.findIndex(r=>r.id===c.role)-2.5)*2.4;
     this.state.users=this.state.users||{};
     for(const p of Object.values(this.state.players)){p.offlineAt=p.offlineAt||this.state.savedAt;p.seenAt=p.seenAt||p.offlineAt;}
-    this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.state.vehicles=this.state.vehicles||{};this.rebuild();this.vehicles.ensureAll();this.shops.ensureAll();this.refill();
+    this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.state.vehicles=this.state.vehicles||{};this.rebuild();this.vehicles.ensureAll();this.shops.ensureAll();this.roles.ensureAll();this.refill();
     // Restart catch-up uses real elapsed time. It continues trips/wages, never a browser clock.
     const elapsed=Math.min(300,Math.max(0,(this.now()-this.state.savedAt)/1000)); // hotfix 10/2: cap catch-up at 5 min; an active ship at 30 Hz over hours pegged the CPU and the watchdog restart loop made it worse
     if(elapsed){this.advance(elapsed,{catchUp:true});}
@@ -187,7 +188,7 @@ export class Authority {
       for(const [k,r] of Object.entries(this.state.receipts||{}))if(r?.playerId===id)delete this.state.receipts[k];
       for(const q of Object.values(this.state.players))if(q.id!==id&&owned.some(s=>s.id===q.currentShipId))q.currentShipId=q.shipId;
       for(const u of Object.values(this.state.users||{}))for(const [sl,v] of Object.entries(u.slots))if(v.playerId===id)delete u.slots[sl];
-      this.shops.removeOwner(id);this.releaseOpening(id);this.inputs.delete(id);this.vehicleInputs.delete(id);delete this.state.players[id];
+      this.shops.removeOwner(id);this.roles.removePlayer(id);this.releaseOpening(id);this.inputs.delete(id);this.vehicleInputs.delete(id);delete this.state.players[id];
       return true;
     }catch(e){this.state=before;this.rebuild();throw e;}
   }
@@ -382,7 +383,7 @@ export class Authority {
           if(passed&&d<.03)c.status=meeting?'waiting':'inside';}
       }
       for(const p of Object.values(this.state.players))if(p.pose.seat&&!this.sessions.has(p.id)&&p.offlineAt&&this.now()-p.offlineAt>30000)this.releaseSeat(p);
-      this.vehicles.step(dt,{catchUp});this.shops.step(dt,{catchUp});
+      this.vehicles.step(dt,{catchUp});this.shops.step(dt,{catchUp});this.roles.step(dt,{catchUp});
     }this.refill();
     this.state.elevator=structuredClone(this.elevator);
     if(this.state.clock>=(this.state.nextRestock||300)){for(const stock of Object.values(this.state.market.traders))for(const k of Object.keys(stock))stock[k]=Math.max(stock[k],30);this.state.nextRestock=this.state.clock+300;}
@@ -688,6 +689,7 @@ export class Authority {
       case 'shop-unstock':return this.shops.unstock(p,a);
       case 'shop-close':return this.shops.close(p,a);
       case 'shop-buy':return this.shops.buy(p,a);
+      case 'faction-join':case 'faction-leave':case 'role-talk':case 'role-take':case 'role-leave':case 'role-work':case 'role-set':case 'role-stand':case 'role-vote':case 'project-deliver':case 'project-buy-half':case 'peace-step':return this.roles.act(p,a);   // F5/F4
       case 'buy-ship':return this.buyShip(p,a);
       case 'set-flagship':return this.setFlagship(p,a);
       case 'claim-ship':return this.claimShip(p,a);
