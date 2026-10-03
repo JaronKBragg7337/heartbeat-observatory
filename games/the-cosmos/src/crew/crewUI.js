@@ -18,10 +18,10 @@ import { WORKER_FALLBACK } from '../port/workerLines.js';
 
 const CSS = `
 #crew-ui { position: fixed; inset: 0; pointer-events: none; z-index: 68; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
-#crew-ui .cbtn { pointer-events: auto; background: rgba(10,7,5,.7); backdrop-filter: blur(7px); color: #ffe2bd;
+.cbtn { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; pointer-events: auto; background: rgba(10,7,5,.7); backdrop-filter: blur(7px); color: #ffe2bd;
   border: 1px solid rgba(240,185,120,.6); border-radius: 12px; font: inherit; font-size: 12px; letter-spacing: .4px; min-height: 46px; padding: 8px 12px; text-align: left; line-height: 1.25; }
-#crew-ui .cbtn:active, #crew-ui .cbtn.on { background: rgba(240,185,120,.3); }
-#crew-ui .cbtn[disabled] { opacity: .45; }
+.cbtn:active, .cbtn.on { background: rgba(240,185,120,.3); }
+.cbtn[disabled] { opacity: .45; }
 #crew-talk { position: fixed; display: none; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(174px + env(safe-area-inset-bottom, 0px)); min-width: 116px; text-align: center !important; }
 #crew-panel { position: fixed; display: none; pointer-events: auto; left: 50%; transform: translateX(-50%);
   bottom: calc(66px + env(safe-area-inset-bottom, 0px)); width: min(380px, calc(100vw - 24px)); max-height: min(calc(100vh - 150px), 560px); overflow-y: auto;

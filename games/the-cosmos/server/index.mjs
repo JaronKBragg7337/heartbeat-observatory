@@ -34,7 +34,7 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
       // Answered from plain memory: no queue, no storage, no await. Only a blocked event loop can delay it, and the tick is bounded (see below) so it cannot be blocked for long.
       if(!world){res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({ok:false,starting:true,buildVersion:BUILD_VERSION}));return;}
       const tick={avgMs:stats.n?+(stats.sum/stats.n).toFixed(2):0,maxMs:+stats.max.toFixed(1),samples:stats.n};
-      res.writeHead(world.error?503:200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({ok:!world.error,buildVersion:BUILD_VERSION,revision:world.state.revision,players:world.sessions.size,storage:adapter.constructor.name,tick}));return;}
+      res.writeHead(world.error?503:200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({ok:!world.error,buildVersion:BUILD_VERSION,revision:world.state.revision,players:world.sessions.size,commit:world.commitStats?{n:world.commitStats.n,avgMs:+(world.commitStats.sum/world.commitStats.n).toFixed(0),maxMs:+world.commitStats.maxMs.toFixed(0),lastMs:+world.commitStats.lastMs.toFixed(0)}:null,storage:adapter.constructor.name,tick}));return;}
     try {const path=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
       const allowed=path==='/'||path==='/index.html'||path==='/build.json'||path==='/favicon.svg'||/^\/(src|lib|assets)\//.test(path)||/^\/[\w-]+\.css$/.test(path)||path.startsWith('/homes/people/');
       if(!allowed||path.split('/').some(p=>p.startsWith('.'))){res.writeHead(404).end();return;}
@@ -83,7 +83,7 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
       // make up the lost time in one go (that catch-up is what turned one slow tick into a pegged CPU on October 2).
       world.enqueue(async()=>{const a=performance.now();world.advance(elapsed);const ms=performance.now()-a;stats.n++;stats.sum+=ms;if(ms>stats.max)stats.max=ms;if(stats.n>=900){stats.n=Math.round(stats.n/2);stats.sum/=2;stats.max=ms;}checkpoint+=elapsed;updates+=elapsed;sweepClock+=elapsed;
         if(sweepClock>=60){sweepClock=0;try{world.lastSweep=world.sweep();}catch(e){console.error('sweep failed:',e.message);}}
-        if(checkpoint>=2){checkpoint=0;try{const bricks=await world.commit();broadcast(bricks);}catch{world.error='Durable storage failed; transactions are paused.';broadcast();}}
+        if(checkpoint>=2){checkpoint=0;try{const bricks=await world.commit();broadcast(bricks);}catch(e){world.error='Durable storage failed; transactions are paused.';if(world.commitStats)world.commitStats.failed++;console.error('checkpoint save failed:',e.message);broadcast();}}
         else if(updates>=.1){updates=0;broadcast();}
       }).finally(()=>busy=false);
     },1000/30);}

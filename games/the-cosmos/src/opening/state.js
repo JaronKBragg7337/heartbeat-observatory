@@ -7,6 +7,7 @@ import { Walker } from '../player/walker.js';
 import { Digger } from '../player/digging.js';
 
 export const OPENING_SECONDS = 48;
+export const RIDE_SECONDS = 65;
 export const CONTACTS = [
   { person: 'ada', name: 'Ada', faction: 'Solar Union', color: 0xb3a47b },
   { person: 'zuri', name: 'Zuri', faction: 'Outer Accord', color: 0x6b949b },
@@ -56,10 +57,18 @@ export class OpeningModel {
   act(a){const s=this.state;if(s.complete)return {ok:true,msg:'The opening is complete.'};
     if(a.type==='opening-pose'){
       const p=a.pose;if(!p||!['x','y','z','yaw','pitch'].every(k=>Number.isFinite(p[k]))||Math.abs(p.x)>5000||p.z< -5000||p.z>80||p.y< -25||p.y>(s.stage===4?25:8))throw Error('Invalid opening position.');
-    const d=Math.hypot(p.x-s.pose.x,p.y-s.pose.y,p.z-s.pose.z),seconds=Math.max(0,Math.min(2,a.seconds||0));
-      if(d>seconds*(s.ride?75:9)+2)throw Error('Walk to that place.');
-      s.pose={...p};s.walked+=d;s.elapsed+=seconds;if(s.ride)s.rideSeconds+=seconds;
-      if(s.stage===3)s.contactSeconds=(s.contactSeconds||0)+seconds;return {ok:true};
+      // The ride is a script: the authority advances it by its own clock and the client's pose does not matter. A pose never refuses and never loops.
+      if(s.ride&&s.stage===4){
+        const seconds=Math.max(0,Math.min(RIDE_SECONDS*2,a.seconds||0));s.elapsed+=seconds;s.rideSeconds+=seconds;
+        const t=Math.max(0,Math.min(1,s.rideSeconds/RIDE_SECONDS)),e=t*t*(3-2*t),x=-7-2593*e,z=23-373*e;
+        s.pose={x,y:this.height(x,z),z,yaw:Math.atan2(2593,373),pitch:0};return {ok:true,ride:true};
+      }
+      // On foot, a pose further than a person can have walked is pulled back to the furthest reachable point and the caller is told where it is
+      // (it used to be refused outright, and a client that kept sending a far-ahead pose was refused forever).
+      const seconds=Math.max(0,Math.min(2,a.seconds||0)),reach=seconds*9+2,d=Math.hypot(p.x-s.pose.x,p.y-s.pose.y,p.z-s.pose.z);
+      const k=d>reach?reach/d:1,q={x:s.pose.x+(p.x-s.pose.x)*k,y:s.pose.y+(p.y-s.pose.y)*k,z:s.pose.z+(p.z-s.pose.z)*k,yaw:p.yaw,pitch:p.pitch};
+      s.pose=q;s.walked+=d*k;s.elapsed+=seconds;
+      if(s.stage===3)s.contactSeconds=(s.contactSeconds||0)+seconds;return k<1?{ok:true,corrected:true,pose:{...q}}:{ok:true};
     }
     if(a.type==='opening-next'){
       if(s.stage===0&&s.elapsed>=OPENING_SECONDS){s.stage=1;s.played=true;s.pose={x:0,y:.02,z:4,yaw:Math.PI,pitch:0};}
@@ -74,11 +83,12 @@ export class OpeningModel {
       s.carriedCrate=true;s.stage=3;
     } else if(a.type==='opening-ride'){
       if(s.stage!==3||(s.contactSeconds||0)<8||Math.hypot(s.pose.x+7,s.pose.z-23)>5)throw Error('Meet the driver first.');
-      s.stage=4;s.ride=true;s.rideSeconds=0;
+      s.stage=4;s.ride=true;s.rideSeconds=0;s.pose={x:-7,y:this.height(-7,23),z:23,yaw:s.pose.yaw,pitch:0};
     } else if(a.type==='opening-walk'){
       if(s.stage!==3)throw Error('Continue the opening first.');s.stage=4;s.ride=false;
     } else if(a.type==='opening-finish'){
-      if(s.stage!==4||(s.ride?s.rideSeconds<65:Math.hypot(s.pose.x+2600,s.pose.z+350)>100))throw Error('Reach the port first.');
+      if(s.ride&&s.stage===4)s.rideSeconds+=Math.max(0,Math.min(RIDE_SECONDS*2,a.seconds||0));
+      if(s.stage!==4||(s.ride?s.rideSeconds<RIDE_SECONDS:Math.hypot(s.pose.x+2600,s.pose.z+350)>100))throw Error('Reach the port first.');
       s.stage=5;s.complete=true;
     } else if(a.type==='opening-skip'){
       if(!s.played)throw Error('Skip intro is available after first play.');s.stage=5;s.complete=true;

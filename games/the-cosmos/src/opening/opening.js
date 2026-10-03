@@ -155,7 +155,7 @@ export class Opening {
         if(this.world.remote){r=await this.world.request(a);if(r.opening){
           const count=this.state.cuts.length,pose=this.model.pose();Object.assign(this.state,r.opening);
           for(const cut of this.state.cuts.slice(count))this.model.cut(cut,false);
-          this.model.place(pose);
+          this.model.place(r.corrected&&r.pose?r.pose:pose);   // pulled back by the authority: take its point, do not argue
         }}else {r=this.model.act(a);this.world.state.opening=structuredClone(this.state);this.world.state.shipType='courier';
           await this.world.persist();await this.world.flush();}
         if(!r.ok){this.status=r.msg||'Wait for the shared world.';this.statusUntil=this.elapsed+6;return r;}
@@ -168,6 +168,12 @@ export class Opening {
   }
   async useAction(run){if(this.actionPending||!this.active)return;this.actionPending=true;
     try{await this.pending;if(!this.active)return;return await run();}finally{this.actionPending=false;}}
+  /** Arrive. A refusal is never retried every frame forever: it waits, asks again, and after three refusals takes the same ending through the authority's own skip (same ship, same start). */
+  tryFinish(){if(this.busy||(this.finishRetryAt||0)>this.elapsed)return;
+    this.finishRetryAt=this.elapsed+2.5;
+    this.savePose().then(()=>this.command({type:'opening-finish'})).then(r=>{
+      if(r?.ok||!this.active)return;this.finishFails=(this.finishFails||0)+1;
+      if(this.finishFails>=3)this.command({type:'opening-skip'});});}
   interact(){return this.useAction(()=>this._interact());}
   async _interact(){
     await this.savePose(Math.max(this.accum,.1));const s=this.state;
@@ -246,7 +252,7 @@ export class Opening {
         this.rideYaw=(this.rideYaw||0)+look.dx;this.ridePitch=clamp((this.ridePitch||0)-look.dy,-1,1);
         forward=new THREE.Vector3(Math.sin(this.rideYaw)*Math.cos(this.ridePitch),Math.sin(this.ridePitch),-Math.cos(this.rideYaw)*Math.cos(this.ridePitch)).transformDirection(this.rover.root.matrix);
         this.caption.textContent=this.rideSeconds<9?driverGreeting(this.contact):this.rideSeconds<20?DRIVER_NEUTRAL:this.rideSeconds>52?DRIVER_SETTLEMENT:'';
-        if(this.rideSeconds>=66&&!this.busy)this.savePose().then(()=>this.command({type:'opening-finish'}));
+        if(this.rideSeconds>=66)this.tryFinish();
       }else{
         m.walker.yaw+=look.dx;m.walker.pitch=clamp(m.walker.pitch-look.dy,-1.4,1.3);m.walker.tick(dt,input);
         const p=m.pose();
@@ -271,7 +277,7 @@ export class Opening {
           if(d<4)actionLabel=this.model.exposed()?'Carry (E)':'Dig (E)';
         }else if(s.stage===3){this.caption.textContent=this.contactSeconds<8?'A vehicle is approaching.':driverOffer(this.contact);
           if(s.contactSeconds>=8&&Math.hypot(p.x+7,p.z-23)<5)actionLabel='Ride (E)';}
-        else if(s.stage===4){this.hint.textContent='Follow the port lights';if(Math.hypot(p.x+2600,p.z+350)<100&&!this.busy)this.savePose().then(()=>this.command({type:'opening-finish'}));}
+        else if(s.stage===4){this.hint.textContent='Follow the port lights';if(Math.hypot(p.x+2600,p.z+350)<100)this.tryFinish();}
       }
       if(s.carriedCrate&&s.stage===4&&s.ride){this.crate.position.set(0,1.62,1.15).applyMatrix4(this.rover.root.matrix);this.crate.rotation.y=this.rover.root.rotation.y;}
       else if(s.carriedCrate){this.crate.position.copy(local?eye:this.localPoint(eye));

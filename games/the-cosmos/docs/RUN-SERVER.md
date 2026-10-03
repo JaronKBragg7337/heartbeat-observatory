@@ -91,3 +91,18 @@ Measured on the MSI with a copy of the live world (25 ships, 3 raiders, 10 rover
 * **Cold start.** A world last saved three days ago (catch-up is capped at five minutes of simulated time) starts as a real process and answers healthy in about 1.3 s locally; add the `cosmos_load` round trip to Supabase (about 1 s).
 * **Bandwidth.** The world snapshot is about 114 KB, sent about ten times a second to each player. The WebSocket now negotiates permessage-deflate when the browser offers it (stateless, thread pool, level 1): about 21 KB per message. Browsers that do not offer it are unchanged.
 * **Client.** A frame of JavaScript on a busy port (26 ships) went from 14.5 ms to 4 ms at a 4x CPU slowdown: the interpolation buffer cloned whole ship poses per ship per call; it now copies three small vectors and a pose is rendered once per ship per frame. The tower lift is predicted between snapshots (it only changed ten times a second). People walking on the ground are eased between snapshots. Other ships' interiors are built and drawn only inside about 50 m, and a hull that is not changing keeps its pose instead of rewriting its transforms every frame.
+
+## Reset the world (admin)
+
+While the game is still being built, everyone can be started over. Through the authority (so the world record and the `cosmos_*` tables agree):
+
+```powershell
+# 1. stop node on 8390 (the watchdog will try to restart it: stop the watchdog's child only after the script below has run, or run the script fast)
+# 2. dry run: prints what would go, writes nothing
+node games/the-cosmos/server/reset-world.mjs --live --env C:\Users\lilli\.secrets\keys.env
+# 3. do it
+node games/the-cosmos/server/reset-world.mjs --live --env C:\Users\lilli\.secrets\keys.env --apply
+# 4. the watchdog starts the authority again; check /health
+```
+
+Removes players, player-owned ships, pads, crew contracts, accounts (sign-in links), quests, receipts, damage, rovers and terrain edits (`--keep-terrain` keeps the edits). Keeps the market, the clock and the NPC raiders. Browsers that come back start a new opening. Never prints keys.

@@ -105,7 +105,7 @@ export class Authority {
       for(const key of e._dirty){const b=e.bricks.get(key);if(b?.edited)changed.push({...encodeBrick(e,b),key:id+':'+key,bodyId:id});}}
     this.state.savedAt=this.now();this.state.revision++;
     const held=this._parkBlockers();const snapshot=structuredClone(this.state);this._unpark(held);
-    await this.adapter.save(snapshot,changed);
+    const t0=performance.now();try{await this.adapter.save(snapshot,changed);}finally{const ms=performance.now()-t0,c=this.commitStats||(this.commitStats={n:0,sum:0,maxMs:0,failed:0});c.n++;c.sum+=ms;if(ms>c.maxMs)c.maxMs=ms;c.lastMs=ms;}
     for(const b of changed)this.bricks.set(b.key,b);for(const e of this.stores.values())e._dirty.clear();
     this.error='';return changed;
   }
@@ -187,6 +187,24 @@ export class Authority {
       this.releaseOpening(id);this.inputs.delete(id);this.vehicleInputs.delete(id);delete this.state.players[id];
       return true;
     }catch(e){this.state=before;this.rebuild();throw e;}
+  }
+  /**
+   * RESET THE WORLD (admin, while the game is still being built). Every player, player-owned ship, pad, crew contract, account, quest, receipt, damage
+   * record, rover and (by default) terrain edit is removed; the market, the clock and the NPC raiders stay. Run through the authority so the world
+   * record and the database projections agree: see server/reset-world.mjs (stop the node process, run it, let the watchdog restart the server).
+   * Returns a count of what went.
+   */
+  resetWorld({terrain=true}={}){
+    const out={players:Object.keys(this.state.players).length,ships:0,pads:this.state.pads.length,crew:Object.keys(this.state.pool).length,
+      receipts:Object.keys(this.state.receipts||{}).length,damage:Object.keys(this.state.damage||{}).length,vehicles:Object.keys(this.state.vehicles||{}).length,
+      accounts:Object.keys(this.state.users||{}).length,terrainBricks:this.bricks.size,keptRaiders:0};
+    for(const [id,s] of Object.entries(this.state.ships)){if(s.npc){out.keptRaiders++;continue;}this.sims.delete(id);delete this.state.ships[id];out.ships++;}
+    for(const id of [...(this.openingModels?.keys()||[])])this.releaseOpening(id);
+    Object.assign(this.state,{players:{},pads:[],pool:{},poolSeq:0,damage:{},vehicles:{},receipts:{},users:{}});
+    this.sessions.clear();this.inputs.clear();this.vehicleInputs.clear();
+    if(terrain){this.state.terrain={};this.bricks=new Map();}
+    this.rebuild();this.vehicles.ensureAll();this.refill();
+    return out;
   }
   /** A guest's ship that has been idle a day is taken off its pad and kept; it comes back on a pad when they return. */
   park(p){const ship=this.state.ships[p.shipId];if(!ship||ship.parked||ship.npc)return false;
@@ -510,13 +528,15 @@ export class Authority {
     if(this.state.receipts[key])return {...this.state.receipts[key].result,replay:true,
       ...(a?.type?.startsWith('opening-')?{opening:structuredClone(this.state.players[id]?.opening)}:{})};
     const before=structuredClone(this.state);let result;
-    try{if(this.error)throw Error(this.error);const p=this.state.players[id];if(!p)throw Error('Join first.');result=this.reduce(p,a)||yes();
+    try{if(this.error){await this.commit().catch(()=>{});if(this.error)throw Error('The shared world could not save just now. Try again in a moment.');}   // a stale storage fault clears itself the moment a save works, not at the next 2-second tick
+      const p=this.state.players[id];if(!p)throw Error('Join first.');result=this.reduce(p,a)||yes();
       if(result.ok===false)throw Error(result.msg);
       const receipt=structuredClone(result);
       // Retain the durable action outcome once; private cut history lives on the player.
       // A retry reads the current opening rather than rewinding to an old pose.
       if(a.type.startsWith('opening-'))delete receipt.opening;
-      this.state.receipts[key]={playerId:id,actionId,revision:this.state.revision+1,result:receipt};const bricks=await this.commit();return {...result,bricks};
+      this.state.receipts[key]={playerId:id,actionId,revision:this.state.revision+1,result:receipt};
+      /* a retry only ever needs the recent receipts; every save used to carry and re-insert all of them */const keys=Object.keys(this.state.receipts);if(keys.length>240){keys.sort((x,y)=>this.state.receipts[x].revision-this.state.receipts[y].revision);for(const k of keys.slice(0,keys.length-160))delete this.state.receipts[k];}const bricks=await this.commit();return {...result,bricks};
     }catch(e){this.state=before;this.rebuild();return {ok:false,msg:e.message};}
   }
   updatePose(p,a){const r=a.pose;if(!r||!finitePoint(r.worldPos)||!finitePoint(r.sw)||![r.yaw,r.pitch,r.sw.yaw,r.sw.pitch].every(Number.isFinite))throw Error('Invalid player pose.');
@@ -542,10 +562,12 @@ export class Authority {
       if(p.opening.complete)return {ok:true,msg:'The opening is complete.',opening:structuredClone(p.opening)};
       this.openingModels ||= new Map();let model=this.openingModels.get(p.id);
       if(!model||model.state!==p.opening){model=new OpeningModel(p.opening,p.id);this.openingModels.set(p.id,model);}
-      if(a.type==='opening-pose'){
-        const seconds=Math.max(0,Math.min(2,(this.now()-(p.openingPoseAt||this.now()))/1000));
-        a={...a,seconds};p.openingPoseAt=this.now();
-      }
+      if(a.type==='opening-pose'||a.type==='opening-finish'){
+        // The server's own clock drives the opening: a first pose after a join is credited one second, a pose on foot at most two,
+        // and the scripted ride is credited the full wall time since the last one (it needs no client pose to arrive).
+        const ride=p.opening.ride&&p.opening.stage===4,wall=Math.max(0,(this.now()-(p.openingPoseAt||this.now()-1000))/1000);
+        a={...a,seconds:ride?Math.min(130,wall):Math.min(2,wall)};p.openingPoseAt=this.now();
+      }else if(a.type==='opening-ride')p.openingPoseAt=this.now();
       const r=model.act(a);if(!r.ok)return r;
       if(p.opening.complete){p.opening.played=true;p.pose.worldPos=this.site.toWorld(ship.pad.x-7,.02,ship.pad.z+20);
         p.pose.yaw=this.site.heading;p.pose.pitch=0;p.pose.velocity={x:0,y:0,z:0};p.poseAt=this.now();

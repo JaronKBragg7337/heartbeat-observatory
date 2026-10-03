@@ -19,16 +19,16 @@ import { SHIP_PHYS } from './shipSpec.js';
 
 const CSS = `
 #ship-ui { position: fixed; inset: 0; pointer-events: none; z-index: 65; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
-#ship-ui .sbtn {
+.sbtn { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   pointer-events: auto; position: fixed; display: none; user-select: none; -webkit-user-select: none; touch-action: none;
   background: rgba(10,7,5,.66); backdrop-filter: blur(7px);
   border: 1px solid rgba(95,216,255,.45); color: #bfefff;
   border-radius: 12px; font: inherit; font-size: 12px; letter-spacing: .5px;
   min-width: 78px; min-height: 52px; padding: 8px 12px; text-align: center; line-height: 1.25;
 }
-#ship-ui .sbtn:active, #ship-ui .sbtn.held { background: rgba(95,216,255,.28); }
-#ship-ui .sbtn.fire { border-color: rgba(255,120,90,.7); color: #ffd6c9; min-width: 96px; min-height: 64px; font-size: 14px; }
-#ship-ui .sbtn.fire:active, #ship-ui .sbtn.fire.held { background: rgba(255,90,60,.4); }
+.sbtn:active, .sbtn.held { background: rgba(95,216,255,.28); }
+.sbtn.fire { border-color: rgba(255,120,90,.7); color: #ffd6c9; min-width: 96px; min-height: 64px; font-size: 14px; }
+.sbtn.fire:active, .sbtn.fire.held { background: rgba(255,90,60,.4); }
 #btn-lift { right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 #btn-sink { right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 #btn-fire { right: calc(106px + env(safe-area-inset-right, 0px)); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }

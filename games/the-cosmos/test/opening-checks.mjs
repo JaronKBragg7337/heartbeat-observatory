@@ -111,6 +111,26 @@ export async function runOpeningChecks({check,section}){
   const privatePose=structuredClone(world.state.players[two.id].pose);
   world.updatePose(world.state.players[two.id],{pose:{...privatePose,worldPos:world.site.toWorld(-20,.02,40)}});
   assert.deepEqual(world.state.players[two.id].pose,privatePose);
+  // PLAYFIX: the ride and any refusal recover (10/3: a phone looped "Walk to that place" / "Reach the port first" for five minutes on a black screen).
+  {const three=await world.join('opening-three-'.repeat(4),'QA three','zuri',1),q=world.state.players[three.id];q.opening.played=true;q.opening.stage=3;q.opening.contactSeconds=9;q.opening.pose={x:-7,y:.02,z:23,yaw:0,pitch:0};
+    clock+=1000;let r=await world.action(q.id,'pf-ride-act',{type:'opening-ride'});assert.equal(r.ok,true,r.msg);
+    // a client that stalled 20 s and then reports a pose 2.5 km ahead is not refused and does not wedge the ride
+    clock+=20000;r=await world.action(q.id,'pf-pose-far-act',{type:'opening-pose',pose:{x:-2600,y:2,z:-350,yaw:1,pitch:0},seconds:2});assert.equal(r.ok,true,r.msg);
+    assert.ok(world.state.players[q.id].opening.rideSeconds>=19,'the ride is credited the server clock');
+    // finishing early is refused with a readable reason, and the same call succeeds once the real time has passed (no client pose needed)
+    r=await world.action(q.id,'pf-fin-early-act',{type:'opening-finish'});assert.equal(r.ok,false);
+    clock+=50000;r=await world.action(q.id,'pf-fin-act',{type:'opening-finish'});assert.equal(r.ok,true,r.msg);assert.ok(r.opening.complete);}
+  {const m=new OpeningModel(freshOpening(0),'pf-walk');m.state.stage=2;
+    const far=m.act({type:'opening-pose',pose:{x:400,y:.02,z:15,yaw:0,pitch:0},seconds:1});
+    assert.equal(far.ok,true);assert.equal(far.corrected,true);assert.ok(far.pose.x<=11.01,'a teleporting pose is pulled back, not refused');
+    assert.ok(m.act({type:'opening-pose',pose:{x:far.pose.x+5,y:.02,z:15,yaw:0,pitch:0},seconds:1}).ok);}
+  {const w2=await new Authority(new MemoryAdapter(),{now:()=>clock}).load();await w2.join('reset-a-'.repeat(5),'R one','isaiah',1);await w2.join('reset-b-'.repeat(5),'R two','ada',0);
+    const raiders=Object.values(w2.state.ships).filter(x=>x.npc).length,r=w2.resetWorld();
+    assert.equal(r.players,2);assert.equal(Object.keys(w2.state.players).length,0);assert.equal(Object.values(w2.state.ships).filter(x=>!x.npc).length,0);
+    assert.equal(Object.values(w2.state.ships).filter(x=>x.npc).length,raiders);assert.equal(w2.state.pads.length,0);assert.deepEqual(w2.state.receipts,{});
+    await w2.commit();const again=await w2.join('reset-a-'.repeat(5),'R one','isaiah',1);assert.equal(again.opening.complete,false);}
+  check('reset world removes players, ships, pads, receipts and keeps the raiders; a returning device starts a new opening',true);
+  check('the opening ride runs on the server clock; a stalled or teleporting client is pulled back, never refused in a loop; skip ends the same as finishing',true);
   const restarted=await new Authority(adapter,{now:()=>clock}).load();assert.ok(restarted.state.players[p.id].opening.complete);
   assert.equal(restarted.state.players[two.id].opening.complete,false);
   check('the authority isolates new openings, preserves existing identities, and records one settlement through retry and restart',true);

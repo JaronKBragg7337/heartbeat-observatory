@@ -47,6 +47,7 @@ import { restoreTerrain } from './world-state/terrainCodec.js';
 import { GameBridge } from './world-state/gameBridge.js';
 import { EconomyUI } from './economy/economyUI.js';
 import { buildKeyControls } from './ui/keyActions.js';
+import { PhoneLayout } from './ui/phoneLayout.js';
 import { VoiceSystem } from './voice/voice.js';           // VOICES
 import { ProximityChat } from './voice/proximity.js';
 import { VoiceUI, bindVoiceSettings } from './voice/voiceUI.js';
@@ -387,6 +388,7 @@ rebuildNear(true);
 const economyUI = new EconomyUI(world,{port,walker,ship,bridge:worldBridge});
 const damageView = new DamageView(world,engine);
 buildKeyControls();
+const phoneLayout = new PhoneLayout();
 port.padOccupancy = () => {
   if (!ship.flight.landed) return [];
   const p = portSite.toLocal(ship.flight.pos);

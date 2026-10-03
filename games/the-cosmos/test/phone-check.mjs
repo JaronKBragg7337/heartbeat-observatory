@@ -96,6 +96,34 @@ for (const target of targets) for (const spec of devices) {
     const ready = async () => { await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 90000 });
       await page.waitForFunction(() => window.cosmos?.opening && cosmos.engine.frameCount >= 2, null, { timeout: 90000 });
       await page.evaluate(async () => { cosmos.engine.stop(); if (cosmos.opening.active) await cosmos.opening.ready; cosmos.step(0); }); };
+
+    // --- PLAYFIX: no two visible buttons may overlap. Rectangles of every visible button (and link-button), pairwise; a button inside another
+    //     (the Controls toggle inside its holder) is not an overlap. Returns the offending pairs.
+    const overlaps = () => page.evaluate(() => {
+      const shown = el => { for (let n = el; n && n !== document.documentElement; n = n.parentElement) { const c = getComputedStyle(n); if (c.display === 'none' || c.visibility === 'hidden' || +c.opacity === 0 || n.hidden) return false; } const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2; };
+      const name = e => (e.id ? '#' + e.id : (e.textContent || '').trim().slice(0, 18));
+      const list = [...document.querySelectorAll('button,a.btn,[role=button]')].filter(shown).filter(e => !e.closest('#settings-panel,#multiplayer-panel,#account-panel,#crew-panel,#space-sheet,#ship-panel,#key-pad,#voice-mic-dialog'));
+      const bad = [], W = innerWidth, H = innerHeight;
+      for (const e of list) { const r = e.getBoundingClientRect(); if (r.left < -1 || r.top < -1 || r.right > W + 1 || r.bottom > H + 1) bad.push(name(e) + ' off-screen'); }
+      for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+        const a = list[i], b = list[j]; if (a.contains(b) || b.contains(a)) continue;
+        const p = a.getBoundingClientRect(), q = b.getBoundingClientRect();
+        const w = Math.min(p.right, q.right) - Math.max(p.left, q.left), h = Math.min(p.bottom, q.bottom) - Math.max(p.top, q.top);
+        if (w > 1 && h > 1) bad.push(name(a) + ' x ' + name(b) + ` (${Math.round(w)}x${Math.round(h)})`);
+      }
+      return { count: list.length, bad };
+    });
+    const noOverlap = async (label, min = 0) => { const r = await overlaps(); assert.ok(r.count >= min, `${label}: only ${r.count} buttons visible, expected at least ${min} (a panel is hiding the rest, so the check would prove nothing)`); assert.deepEqual(r.bad, [], `${label}: buttons overlap or leave the screen: ${r.bad.join('; ')}`); return r.count; };
+    // Force a set of the game's own buttons visible (they are shown by game state; here we show them directly so every combination is checked).
+    const showOnly = async (selectors) => page.evaluate(sels => {
+      const all = ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb', '#crew-talk', '#quest-deliver', '#btn-fire', '#btn-sink', '#btn-lift', '#voice-talk', '#flight-speed', '#save-warning'];
+      for (const sel of all) { const el = document.querySelector(sel); if (!el) continue; const on = sels.includes(sel);
+        if (sel === '#flight-speed') { el.hidden = !on; if (!el.style.display || el.style.display === 'none') el.style.display = ''; } else el.style.display = on ? 'block' : 'none'; }
+      document.querySelector('#btn-action') && (document.querySelector('#btn-action').textContent = sels.includes('#btn-action') ? 'Sit  ·  Pilot' : 'Dig');
+      cosmos.touch && 0; window.dispatchEvent(new Event('resize')); }, selectors).then(() => page.waitForTimeout(350));
+    const COMBOS = { 'on foot (Controls, World)': [], 'digging': ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb'], 'near people': ['#btn-action', '#crew-talk', '#voice-talk', '#quest-deliver'],
+      'seated': ['#btn-action', '#voice-talk'], 'piloting': ['#btn-action', '#btn-lift', '#btn-sink', '#btn-fire', '#flight-speed', '#voice-talk'] };
+    const ALL = ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb', '#crew-talk', '#quest-deliver', '#btn-fire', '#btn-sink', '#btn-lift', '#voice-talk', '#flight-speed'];
     const stage = () => page.evaluate(() => cosmos.opening.state.stage);
     await record(scope, 'opening: intro plays, refresh resumes the same step', async () => {
       await page.evaluate(() => { cosmos.engine.stop(); cosmos.step(0); }); await step(10); await shot('opening-intro');
@@ -133,6 +161,7 @@ for (const target of targets) for (const spec of devices) {
     });
     await record(scope, 'opening: ride offer, riding the vehicle to the port', async () => {
       await step(10); await walkTo(-3.1, 22.16); await aim(-6, 22.2, 1.9); await shot('opening-ride-offer');
+      await noOverlap('opening, ride offer');
       await realTap('#opening-action'); assert.equal(await stage(), 4, 'ride button did nothing');
       await step(22); await shot('opening-riding');
       await ready(); assert.equal(await stage(), 4, 'refresh mid-ride lost the ride');
@@ -197,6 +226,23 @@ for (const target of targets) for (const spec of devices) {
         await page.evaluate(() => { document.querySelector('#settings-panel.open #btn-close-settings')?.click(); });
       }
       assert.ok(tapped >= 1, 'no visible buttons found'); await releaseThumb(); await shot('buttons');
+    });
+    await record(scope, 'PLAYFIX: no two visible buttons overlap (aboard, seated, piloting, near people, all at once; portrait and landscape)', async () => {
+      await page.evaluate(() => { cosmos.engine.stop(); cosmos.step(0);
+        for (const sel of ['#account-panel', '#space-sheet', '#crew-panel']) { const e = document.querySelector(sel); if (e) e.style.display = 'none'; }
+        const mp = document.querySelector('#multiplayer-panel'); if (mp) mp.hidden = true; document.querySelector('#settings-panel')?.classList.remove('open'); });
+      const vp = spec.device.viewport, sizes = [[vp.width, vp.height], [375, 667], [vp.height, vp.width], [667, 375]];
+      for (const [w, h] of sizes) {
+        await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(250);
+        for (const [name, sels] of Object.entries(COMBOS)) { await showOnly(sels); await noOverlap(`${w}x${h} ${name}`, sels.length + 2); if (name === 'piloting') await shot(`overlap-${w}x${h}-piloting`); }
+        if (w < h) { await showOnly(ALL); await noOverlap(`${w}x${h} every button at once`, ALL.length + 2); await shot(`overlap-${w}x${h}-all`); }
+        // the Controls pad open: it is the only thing on top, everything else steps aside
+        await showOnly(COMBOS.piloting); await page.evaluate(() => document.querySelector('#btn-key-controls').click()); await page.waitForTimeout(350);
+        const open = await page.evaluate(() => document.querySelector('#key-pad').style.display); assert.equal(open, 'grid', 'Controls pad did not open');
+        const hidden = await page.evaluate(() => ['#btn-lift', '#btn-sink', '#flight-speed'].every(s => getComputedStyle(document.querySelector(s)).visibility === 'hidden'));
+        assert.ok(hidden, `${w}x${h}: buttons stayed visible under the open Controls pad`); await page.evaluate(() => document.querySelector('#btn-key-controls').click());
+      }
+      await page.setViewportSize(vp); await showOnly([]);
     });
   } catch (e) { rows.push({ scope, step: 'harness', result: 'FAIL', detail: String(e.stack || e).split('\n')[0] }); }
   finally { await context?.close().catch(()=>{}); await browser?.close().catch(()=>{}); }

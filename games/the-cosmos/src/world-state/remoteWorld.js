@@ -55,7 +55,7 @@ export class RemoteWorld {
       else if(m.type==='state')this.apply(m);
       else if(m.type==='receipt'){const p=this.pendingActions.get(m.actionId);if(p){this.pendingActions.delete(m.actionId);this.journal();this.saving=this.pendingActions.size;
         if(m.opening){this.state.opening=m.opening;this.snapshot.players[this.playerId].opening=m.opening;}
-        p.resolve(m);this.onReceipt?.(m);}}
+        p.resolve(m);try{window.dispatchEvent(new CustomEvent('cosmos-receipt',{detail:{id:m.actionId,ok:m.ok!==false}}));}catch{}this.onReceipt?.(m);}}
       else if(m.type==='voice')this.onVoice?.(m);   // VOICES: WebRTC handshake from another player
       else if(m.type==='error'){this.onReceipt?.({ok:false,msg:m.msg});}
     };
@@ -82,6 +82,7 @@ export class RemoteWorld {
   sendVoice(to,data){if(this.connected&&this.socket.readyState===WebSocket.OPEN){this.socket.send(stringify({type:'voice',to,data}));return true;}return false;}
   request(action){if(!this.connected||this.socket.readyState!==WebSocket.OPEN)return Promise.resolve({ok:false,msg:'Shared world disconnected; wait for reconnect.'});
     const actionId=crypto.randomUUID();this.saving++;
+    try{window.dispatchEvent(new CustomEvent('cosmos-request',{detail:{id:actionId,type:action?.type}}));}catch{}
     return new Promise(resolve=>{this.pendingActions.set(actionId,{action,resolve});this.journal();this.socket.send(stringify({type:'action',actionId,action}));});}
   dispatch(action){if(['ship-pose','wages','player-pose','damage'].includes(action.type))return {ok:true,msg:'Server owns this state.'};
     this.beforeAction?.();this.request(action);return {ok:this.connected,msg:this.connected?'Request sent to the world.':'Disconnected; wait for reconnect.'};}
