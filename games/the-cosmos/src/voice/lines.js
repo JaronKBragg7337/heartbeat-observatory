@@ -15,6 +15,7 @@ import { WORKER_CAST, CREW_VOICE, spokenText } from './cast.js';
 import { openingLines } from '../opening/dialogue.js';
 import { DESTINATIONS } from '../space/spaceSpec.js';
 import { BODIES } from '../world/bodies.js';
+import { frameWorlds } from '../worlds/registry.js';
 import { HUNT_ALT_M } from '../crew/autopilot.js';
 import { BOUNTY_CREDITS } from '../space/spaceSpec.js';
 
@@ -43,7 +44,7 @@ export const TEMPLATES = {
   'Course set for ${dest.name}.': () => destNames().map((n) => `Course set for ${n}.`),
   'Arrived over ${d.name}. Easing level.': () => destNames().map((n) => `Arrived over ${n}. Easing level.`),
   'Down at ${this.dest.name}.': () => destNames().map((n) => `Down at ${n}.`),
-  'We are at ${w.body.name} already.': () => ['Mars', 'Phobos', 'Deimos'].map((n) => `We are at ${n} already.`),
+  'We are at ${w.body.name} already.': () => ['Mars', ...frameWorlds().map((w) => w.name)].map((n) => `We are at ${n} already.`),
   'Raider down. Bounty ${BOUNTY_CREDITS} credits.': () => [`Raider down. Bounty ${BOUNTY_CREDITS} credits.`],
 };
 

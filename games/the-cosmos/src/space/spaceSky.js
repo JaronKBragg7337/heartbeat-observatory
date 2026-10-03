@@ -183,38 +183,47 @@ export class SpaceSky {
     scene.add(this.atm);
   }
 
+  /** A cached THREE.Color for a world's sky/horizon (0xRRGGBB), so the per-frame update allocates nothing. */
+  _airSky(hex, key) { const c = this._airC || (this._airC = {}); const k = key + hex; return c[k] || (c[k] = new THREE.Color(hex)); }
+
   /** The Sun's direction as a unit vector, world axes (the same in every frame: frames are translated copies). */
   get sunDir() { return this.sunWorld; }
 
   /**
    * Call once a frame, AFTER main.js has set the lights and camera.
    * @param localSun   THREE.Vector3 the ground game's own Sun direction this frame (what main.js just used)
-   * @param extra      { marsShine: number 0..1 } extra ambient for a moon's Mars-lit side
+   * @param extra      { marsShine: number 0..1 } extra ambient for a moon's Mars-lit side;
+   *                   { air: { h, scaleHeightM, skyColor, horizonColor, fogDensity } } the camera is over a world with its OWN atmosphere
+   *                   (a planet from its def): its sky, fog and daylight fade with height replace Mars's (the limb glow stays Mars's)
    */
   update(dt, localSun, extra = {}) {
     const e = this.engine, scene = e.scene;
     const cam = e.cameraIn(e.rootFrame, this._cam);
-    const r = Math.hypot(cam.x, cam.y, cam.z), h = r - MARS_RADIUS_M;
-    const s = skyBlend(h);
+    const r = Math.hypot(cam.x, cam.y, cam.z), hMars = r - MARS_RADIUS_M;
+    const air = extra.air || null, k = air ? air.scaleHeightM / 11_100 : 1;       // a thicker or thinner air scales the whole fade (Mars: 11.1 km scale height)
+    const h = air ? air.h : hMars;
+    const skyC = air ? this._airSky(air.skyColor, 'sky') : this.skyColor, horC = air ? this._airSky(air.horizonColor, 'hor') : this.horizonColor;
+    const groundFog = air && air.fogDensity !== undefined ? air.fogDensity : this.groundFog;
+    const s = air ? (h <= SKY_FULL_M * k ? 1 : Math.exp(-(h - SKY_FULL_M * k) / (SKY_SCALE_M * k))) : skyBlend(h);
     const space = 1 - s;
     this.state.h = h; this.state.s = s;
 
     // background and fog
-    if (scene.background && scene.background.isColor) scene.background.copy(this.skyColor).multiplyScalar(s);
-    if (scene.fog) { scene.fog.density = this.groundFog * s * s; scene.fog.color.copy(this.horizonColor).multiplyScalar(Math.max(0.02, s)); }
+    if (scene.background && scene.background.isColor) scene.background.copy(skyC).multiplyScalar(s);
+    if (scene.fog) { scene.fog.density = groundFog * s * s; scene.fog.color.copy(horC).multiplyScalar(Math.max(0.02, s)); }
 
     // star dome
     const dome = this.dome;
     dome.visible = space > 0.02;
     if (dome.visible) {
       const u = dome.material.uniforms;
-      u.uBg.value.copy(scene.background && scene.background.isColor ? scene.background : this.skyColor);
+      u.uBg.value.copy(scene.background && scene.background.isColor ? scene.background : skyC);
       u.uStars.value = Math.min(1, space * 1.15);
     }
     if (this.oldStars) { this.oldStars.visible = s > 0.4; this.oldStars.material.opacity = 0.55 * Math.min(1, (s - 0.4) / 0.6); }
 
     // lights
-    const t = sstep(20000, 80000, h);
+    const t = sstep(20000 * k, 80000 * k, h);
     this.state.sunBlend = t;
     if (t > 0) {
       const v = this._tmp.copy(localSun).multiplyScalar(1 - t).addScaledVector(this.sunWorld, t).normalize();
@@ -224,7 +233,7 @@ export class SpaceSky {
     this.sun.intensity = 2.4 * (1 + 0.45 * inSpace);
     this.sun.color.setRGB(1, 0.914 + 0.06 * inSpace, 0.824 + 0.14 * inSpace);
     this.hemi.intensity *= 0.05 + 0.95 * s;
-    this.hemi.color.copy(this.skyColor).lerp(new THREE.Color(0x6a5c58), 1 - s);
+    this.hemi.color.copy(skyC).lerp(new THREE.Color(0x6a5c58), 1 - s);
     // On a moon there is no sky, and the Sun alone leaves everything it does not touch black. What lights the shadow side is Mars
     // (a huge, rust-coloured, sunlit ball overhead) and the sunlit ground itself, so the fill is a rusty ambient from above and a
     // warm grey bounce from below, strongest when Mars is full. Real Phobos gets less than this: the picture needs to be readable.
@@ -258,12 +267,12 @@ export class SpaceSky {
 
     // the limb
     const atm = this.atm;
-    atm.visible = h > 15000;
+    atm.visible = hMars > 15000;
     if (atm.visible) {
       atm.position.set(-cam.x, -cam.y, -cam.z);
       atm.material.uniforms.uC.value.set(-cam.x, -cam.y, -cam.z);
-      atm.material.side = h > 95000 ? THREE.FrontSide : THREE.BackSide;
-      atm.material.uniforms.uK.value = sstep(15000, 60000, h) * 3.0e-6;
+      atm.material.side = hMars > 95000 ? THREE.FrontSide : THREE.BackSide;
+      atm.material.uniforms.uK.value = sstep(15000, 60000, hMars) * 3.0e-6;
     }
   }
 

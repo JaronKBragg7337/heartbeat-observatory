@@ -267,7 +267,7 @@ export class SpaceTrip {
     this._attFrom = f.attitude ? f.attitude.clone() : null;
     if (d.kind === 'moon') this.space.setFrame(d.moon);
     if (d.kind === 'port') f.heading = this.space.portHeading();
-    this.say(d.kind === 'orbit' ? `On station over Mars.` : `Arrived over ${d.name}. Easing level.`, 'arrive');
+    this.say(d.kind === 'orbit' ? `On station over Mars.` : d.kind === 'station' ? `Arrived off ${d.name}. Easing level.` : `Arrived over ${d.name}. Easing level.`, 'arrive');
   }
 
   _settle(c, dt) {
@@ -282,6 +282,7 @@ export class SpaceTrip {
     }
     f.vel.x = f.vel.y = f.vel.z = 0;
     if (k >= 1 && !f.attitude) {
+      if (this.dest.kind === 'station') { this._finishHere(`Holding off ${this.dest.name}. Docking is the station's own business: ask its dock.`); return null; }
       if (this.dest.kind === 'orbit' || this.dest.kind === 'hold') {
         // nowhere to come down to: hold here (the flight assist hovers the ship against whatever pull there is)
         this._finishHere(this.dest.kind === 'hold' ? `Stopped. Holding ${fmtKm(this._marsAlt())} above Mars.` : `Holding over Mars at ${fmtKm(this._marsAlt())}.`);

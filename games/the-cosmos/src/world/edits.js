@@ -48,7 +48,7 @@
 // at, and the ledger can balance to zero in kilograms as well as litres.
 // ============================================================================
 
-import { MATERIALS, baseDensityAt, naturalMaterialAt } from './field.js';
+import { MATERIALS, MATERIAL_LIST, baseDensityAt, naturalMaterialAt } from './field.js';
 
 export const CELL_M = 0.1;                 // lattice spacing
 export const BRICK_N = 32;                 // lattice cells per brick edge -> 3.2 m bricks
@@ -66,7 +66,6 @@ const FLOOR_EMBED_M = 0.25;                // a pile sinks this far into what it
 const ACCOUNT_SCALE = 2 ** 96;
 const account = (v) => BigInt(v * ACCOUNT_SCALE);
 
-const MATERIAL_LIST = Object.values(MATERIALS);
 const matIndexOf = (id) => { const i = MATERIAL_LIST.findIndex((m) => m.id === id); return i < 0 ? 0 : i + 1; };
 const matFromIndex = (i) => (i > 0 ? MATERIAL_LIST[i - 1] : null);
 

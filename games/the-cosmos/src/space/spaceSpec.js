@@ -15,6 +15,8 @@
 //   * Transit ignores Mars's pull: the flight computer is assumed to hold the line.
 // ============================================================================
 
+import { allWorlds, isFrameWorld, onWorldsChanged, worldCentre } from '../worlds/registry.js';
+
 const DEG = Math.PI / 180;
 
 /** Mars's gravitational parameter, m3/s2 (G * mass of Mars; the same product the body record states). */
@@ -31,6 +33,8 @@ export const DRIVE = {
   vMaxMs: 30_000,
   /** The turn-over: how fast the hull can swing its nose (rad/s). 0.12 rad/s is 6.9 degrees a second: a flip takes 26 s. */
   turnRate: 0.12,
+  /** How far a course can fly under the drive, metres from Mars: the registry lists anything beyond as far (needs a jump lane). 1,000,000 km is nine hours at the top speed. */
+  rangeM: 1.0e9,
   /** Where the lift pods hand over to the main drive: above the atmosphere's last wisp, metres above the ground. */
   gateAltM: 120_000,
   /** Where "orbit Mars" holds the ship, metres above the ground. */
@@ -73,53 +77,31 @@ export function equatorial(lonDeg, r) {
   return { x: r * Math.cos(lon), y: 0, z: -r * Math.sin(lon) };      // geodesy.js: -Z is east
 }
 
-export const MOONS = {
-  phobos: {
-    id: 'phobos', name: 'Phobos', designation: 'SOL-4-I',
-    // Semi-axes, metres: NSSDC Mars satellite table 13.0 x 11.4 x 9.1 km (live fetch 2026-10-01); NASA states 27 x 22 x 18 km across.
-    axes: { a: 13_030, b: 11_400, c: 9_140 },          // a points at Mars, b along the orbit, c along the spin axis
-    radiusMean: 11_266.7,                              // NSSDC mean radius
-    massKg: 1.0659e16,                                 // NSSDC table value
-    orbitRadiusM: 9_376_000,                           // semi-major axis, centre of Mars to centre of Phobos
-    orbitPeriodS: 0.31891 * 86400,
-    lonS: -109,                                        // where it is parked: low over the spawn's sky (19 degrees up), and on the sunlit side so the pad is in daylight
-    seed: 61,
-    regolithDepthM: 70,
-    craterScale: 1.0,
-    roughScale: 1.0,
-    craterDensity: 0.62,                               // share of crater cells that hold a crater
-    cellScale: 1.0,                                    // crater cell sizes (the biggest crater is a quarter of its cell)
-    landmarks: [
-      // Stickney: the big crater, about 9 km across (NASA: ~9 km), near 1 N 49 W on the Mars-facing hemisphere's trailing side.
-      { id: 'COS-PHB-LMK-0001', name: 'Stickney', lat: 1, lon: -49, radiusM: 4500, depthM: 1700, note: 'The largest crater, about 9 km across.' },
-      { id: 'COS-PHB-LMK-0002', name: 'Limtoc', lat: 11, lon: -54, radiusM: 1000, depthM: 220, note: 'A 2 km crater on the rim of Stickney.' },
-    ],
-    // The landing zone and its three sample sites, in body latitude / longitude. The pad is graded flat (a plane under the ship).
-    pad: { lat: -25, lon: -8, flatM: 62, blendM: 150, name: 'Stickney East survey pad' },
-    // a drifting cargo module that came down on the moon: the distress beacon (jobs.js). Distance and bearing from the pad.
-    derelict: { distM: 780, bearingDeg: 215 },
-  },
-  deimos: {
-    id: 'deimos', name: 'Deimos', designation: 'SOL-4-II',
-    axes: { a: 7_800, b: 6_000, c: 5_100 },            // NSSDC 7.8 x 6.0 x 5.1 km (NASA: 15 x 12 x 11 km across)
-    radiusMean: 6_200,
-    massKg: 1.4762e15,                                 // Jacobson and Lainey 2014; the NSSDC page still lists an older 2.4e15
-    orbitRadiusM: 23_459_000,
-    orbitPeriodS: 1.26244 * 86400,
-    lonS: -89,
-    seed: 83,
-    regolithDepthM: 100,                               // NASA: regolith about 100 m deep, which is why Deimos looks smooth
-    craterScale: 0.55,
-    craterDensity: 0.3, cellScale: 0.5,
-    roughScale: 0.3,                                   // the deep dust smooths everything below a few hundred metres
-    landmarks: [{ id: 'COS-DMS-LMK-0001', name: 'Voltaire', lat: 20, lon: 5, radiusM: 950, depthM: 120, note: 'The largest crater, about 2 km across (NASA: 2.3 km).' }],
-    pad: { lat: -20, lon: -49, flatM: 62, blendM: 150, name: 'Deimos survey pad' },
-  },
-};
+/**
+ * Every world with a frame of its own (a moon or a planet you can land on), by id: the SAME def objects the world registry holds
+ * (src/worlds/<name>/def.js). Phobos and Deimos used to be written out here; they moved to their own folders unchanged. The table is
+ * rebuilt in place if a world is registered after load (tests, a dev tool). The name "MOONS" is kept for the many callers: it means
+ * "worlds with a frame", which now includes planets.
+ */
+export const MOONS = {};
+/** The ids of MOONS (every frame world beyond Mars), kept current in place: one pad per ship and one edit store each. */
+export const MOON_IDS = [];
+/** The ids of the stations (built places with docks and no ground), kept current in place. */
+export const STATION_IDS = [];
 
 export const G_CONST = 6.6743e-11;
 
-export const moonCentre = (m) => equatorial(m.lonS, m.orbitRadiusM);
+/**
+ * Where a world's centre is in Mars's frame (metres). Read from the world's `orbit` (src/worlds/_kit/ephemeris.js): a moon of Mars
+ * parked by the legacy shorthand (Phobos, Deimos) comes out bit-identical to the old `equatorial(lonS, orbitRadiusM)`; a real planet
+ * sits where the Solar System puts it on the game's start date. Cached while nothing moves.
+ */
+const _centres = new Map();
+export const moonCentre = (m) => {
+  let c = _centres.get(m.id);
+  if (!c) { c = worldCentre(m.id); _centres.set(m.id, c); }
+  return c;
+};
 
 /** Surface gravity from mass and mean radius: real numbers in, real number out (about 0.0056 m/s2 on Phobos). */
 export const moonSurfaceGravity = (m) => G_CONST * m.massKg / (m.radiusMean * m.radiusMean);
@@ -133,15 +115,38 @@ export const moonSurfaceGravity = (m) => G_CONST * m.massKg / (m.radiusMean * m.
  *       'moon'    arrive and land on a moon (a frame of its own)
  *       'far'     listed so the player knows it exists; out of range until the drive is better
  */
-export const DESTINATIONS = [
-  { id: 'port', kind: 'port', name: 'Marineris Port', blurb: 'Back to the Meridian\'s own pad.' },
-  { id: 'orbit', kind: 'orbit', name: 'Mars orbit (400 km)', blurb: 'Hold over Mars. The view, and raiders.' },
-  { id: 'phobos', kind: 'moon', name: 'Phobos', moon: 'phobos', blurb: 'Land at the Stickney East survey pad. Low gravity, you can dig.' },
-  { id: 'deimos', kind: 'moon', name: 'Deimos', moon: 'deimos', blurb: 'The outer moon. A smooth, deep-dust world.' },
-  { id: 'fortis', kind: 'far', name: 'Fortis (the Empire\'s home world)', blurb: 'Another system. Needs a jump drive the Meridian does not have.' },
-  { id: 'greenhaven', kind: 'far', name: 'Greenhaven', blurb: 'Another system. Needs a jump drive the Meridian does not have.' },
-  { id: 'ironclad', kind: 'far', name: 'Ironclad (the miners\' home)', blurb: 'Another system. Needs a jump drive the Meridian does not have.' },
-];
+export const DESTINATIONS = [];
+
+/** Base rows (Mars's own), then one row per world in the registry's order: a frame world is `kind: 'moon'` (the word means "a world
+ *  with a frame of its own", planets included), a placeholder is `kind: 'far'`. Built from src/worlds/<name>/def.js. */
+function rebuildFromRegistry() {
+  for (const k of Object.keys(MOONS)) delete MOONS[k];
+  MOON_IDS.length = 0; STATION_IDS.length = 0; _centres.clear();
+  DESTINATIONS.length = 0;
+  DESTINATIONS.push(
+    { id: 'port', kind: 'port', name: 'Marineris Port', blurb: "Back to the Meridian's own pad." },
+    { id: 'orbit', kind: 'orbit', name: 'Mars orbit (400 km)', blurb: 'Hold over Mars. The view, and raiders.' },
+  );
+  const far = (d, blurb) => DESTINATIONS.push({ id: d.id, kind: 'far', name: d.navName || d.name, blurb: d.blurb || blurb });
+  for (const d of allWorlds()) {
+    if (d.root || d.nav === false || d.kind === 'star') continue;
+    if (d.placeholder) { far(d, 'Another system. Needs a jump drive the Meridian does not have.'); continue; }
+    const dist = Math.hypot(...Object.values(worldCentre(d.id)));
+    // beyond the drive's range a world is reached by a jump lane (F3, `jump: true`) or not at all yet: it is listed, not flyable
+    if (!d.jump && dist > DRIVE.rangeM) { far({ ...d, blurb: `${(dist / 1.495978707e11).toFixed(2)} AU away: beyond the drive's range. Needs a jump drive the Meridian does not have.` }); continue; }
+    if (d.kind === 'station') {
+      STATION_IDS.push(d.id);
+      DESTINATIONS.push({ id: d.id, kind: 'station', name: d.navName || d.name, station: d.id, ...(d.jump ? { jump: true } : {}), blurb: d.blurb || `A station. The course holds ${Math.round(stationStandoff(d))} m off it.` });
+    } else if (isFrameWorld(d)) {
+      MOONS[d.id] = d; MOON_IDS.push(d.id);
+      DESTINATIONS.push({ id: d.id, kind: 'moon', name: d.navName || d.name, moon: d.id, ...(d.jump ? { jump: true } : {}), blurb: d.blurb || `Land at the ${d.pad.name}.` });
+    }
+  }
+}
+/** Metres off a station's centre where a course holds: its own `standoffM`, else three radii and a margin. */
+export const stationStandoff = (d) => d.standoffM ?? (3 * d.radiusM + 500);
+rebuildFromRegistry();
+onWorldsChanged(rebuildFromRegistry);
 
 /** The altitude, in metres above the moon's surface, a ship is brought to before it descends to land. */
 export const STANDOFF_M = 1800;

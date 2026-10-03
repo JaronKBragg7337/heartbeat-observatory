@@ -17,6 +17,7 @@ import { EditStore } from '../world/edits.js';
 import { EditedTerrain, installCoverDiscard } from '../world/excavation.js';
 import { attachEdits, surfaceRadiusFast, materialAt } from '../world/field.js';
 import { makeMoon } from './moonField.js';
+import { WORLD_CLIENTS } from '../worlds/_client-manifest.js';
 
 /** The whole moon as one mesh: spacing about 180 m (phone 270 m). The tiers draw everything finer. */
 export function buildMoonShell(body, segW = 256) {
@@ -63,6 +64,7 @@ export class MoonWorld {
     this.built = false;
     this.active = false;          // tiers are being kept under the focus
     this.entries = [];
+    this.client = null;           // what the world's client.js `dress()` returned: { update?(dt, focus), dispose?() }
   }
 
   /** The brick meshes' view of the engine: entries are drawn in this moon's frame; the camera is asked for in it. */
@@ -106,33 +108,35 @@ export class MoonWorld {
     this.far.mesh.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.97, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2 });
     // the far tier is all you see from a few hundred metres up: give it mottling and a lumpy normal (regolith.js, far mode), matched in colour to the tier below it
     this.far.regPeriod = 3600;
-    this.far.mesh.material.color.setScalar(body.id === 'phobos' ? 1.3 : 1.18);
-    this.far._regolith = installRegolith(this.far.mesh.material, THREE, { kind: body.id === 'phobos' ? 'phobos' : 'moon', bump: 0.55, far: true, across: body.axesWorld && body.axesWorld.ey });
+    // how this world's ground is drawn comes from its def (`render`): Phobos is the dark grooved one, anything else the Deimos-like default
+    const R = { farColor: 1.18, tierColor: 1.22, roughness: 0.97, farRegolith: { kind: 'moon', bump: 0.55 }, regolith: { moon: true, bump: 0.3, pebble: 0.14 }, flatNear: false, across: false, ...(body.spec.render || {}) };
+    this.far.mesh.material.color.setScalar(R.farColor);
+    this.far._regolith = installRegolith(this.far.mesh.material, THREE, { ...R.farRegolith, far: true, across: body.axesWorld && body.axesWorld.ey });
     this.far.mesh.receiveShadow = false;
     this.far.handover = installTierDiscard(this.far.mesh.material);
     this.mid = mk({ sizeM: 880, res: 132, skirtM: 15, horizon: true }, 'patch-mid');
     this.near = mk({ sizeM: 48, res: 81, horizon: true }, 'patch-near');
     // dark soil shows every dark fleck: soften the pebbles and the bump on the patches you walk on
     // (the regolith grain darkens the albedo to about 0.8 on average: lift the walking-scale patches by the same amount so they match the shell and the far tier)
-    const phobos = body.id === 'phobos';
     const across = body.axesWorld && body.axesWorld.ey;
     for (const p of [this.mid, this.near]) {
-      p.mesh.material.roughness = phobos ? 0.985 : 0.97;
-      p.mesh.material.color.setScalar(phobos ? 1.38 : 1.22);
-      p._regolith = installRegolith(p.mesh.material, THREE, phobos
-        ? { kind: 'phobos', moon: true, bump: 0.95, pebble: 0.22, across, flat: p === this.near }
-        : { moon: true, bump: 0.3, pebble: 0.14 });                       // Deimos: a deep fine dust, smoother and with fewer dark flecks than Mars's gravel
+      p.mesh.material.roughness = R.roughness;
+      p.mesh.material.color.setScalar(R.tierColor);
+      p._regolith = installRegolith(p.mesh.material, THREE, { ...R.regolith, ...(R.across ? { across } : {}), ...(R.flatNear ? { flat: p === this.near } : {}) });
     }
-    this.terrain.material.color.setScalar(phobos ? 1.38 : 1.22);
+    this.terrain.material.color.setScalar(R.tierColor);
     installCoverDiscard(this.mid.mesh.material, this.terrain.cover, this.midCover, THREE);
     installCoverDiscard(this.near.mesh.material, this.terrain.cover, this.nearCover, THREE);
     this.shellHandover = installTierDiscard(this.shell.material);
-    // a moon has no air: Mars's dusty-sky fog must not wash it out when it is seen across a daylit sky (Phobos from the port)
-    for (const m of [this.shell.material, this.far.mesh.material, this.mid.mesh.material, this.near.mesh.material, this.terrain.material]) { m.fog = false; m.needsUpdate = true; }
+    // a moon has no air: Mars's dusty-sky fog must not wash it out (a world WITH an atmosphere keeps the scene fog, tinted by its own sky: see SpaceSystem.late) when it is seen across a daylit sky (Phobos from the port)
+    for (const m of [this.shell.material, this.far.mesh.material, this.mid.mesh.material, this.near.mesh.material, this.terrain.material]) { m.fog = !!body.atmosphere; m.needsUpdate = true; }
     this.entries = [this.shellEntry, this.farEntry, this.far.entry, this.mid.entry, this.near.entry];
     this.buildMs = performance.now() - t0;
     this.built = true;
     this.setTiersVisible(false);
+    // the world's own dressing (src/worlds/<name>/client.js: sites, buildings, props, weather): built once with the world, ticked with it
+    const mod = WORLD_CLIENTS[this.id];
+    if (mod && mod.dress) { try { this.client = mod.dress(this, { THREE, engine }) || null; } catch (e) { console.error(`world ${this.id}: dress() failed`, e); } }
     return this;
   }
 
@@ -202,6 +206,7 @@ export class MoonWorld {
       left -= performance.now() - t0;
     }
     this._joins();
+    if (this.client && this.client.update) this.client.update(dt, focus);
     if (!this.edits.isEmpty || this.terrain.meshes.size) {
       this.terrain.update(dt, focus);
       this.terrain.coverOffsetFor(this.mid.worldPos, this.midCover);

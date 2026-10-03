@@ -21,6 +21,7 @@ import { FleetDirector } from './fleet.mjs';
 import { RAIDER_CREW_POSTS } from '../src/ships/raider/crew.js';
 import { encodeBrick, terrainMeta, restoreTerrain } from '../src/world-state/terrainCodec.js';
 import { makeMoon, attachMoonPads } from '../src/space/moonField.js';
+import { frameWorldIds } from '../src/worlds/registry.js';
 import { GunnerAI } from '../src/crew/gunnerAI.js';
 import { routeToSeat, RouteWalker } from '../src/crew/shipPath.js';
 import { SAMPLE_PAY_CREDITS, SAMPLE_REACH_M, SALVAGE_CREDITS, SALVAGE_KG, SALVAGE_REACH_M, MAT_ITEM } from '../src/space/jobs.js';
@@ -72,10 +73,10 @@ export class Authority {
     this._moonPadList=null;this._moonPadAt=0;
     attachMoonPads(()=>{const t=this.now();if(this._moonPadList&&t-this._moonPadAt<250&&t>=this._moonPadAt)return this._moonPadList;
       const out=[];for(const s of Object.values(this.state.ships)){if(!s.moonPads)continue;
-      for(const id of ['phobos','deimos'])if(s.moonPads[id])out.push(s.moonPads[id]);}this._moonPadList=out;this._moonPadAt=t;return out;});
+      for(const id of frameWorldIds())if(s.moonPads[id])out.push(s.moonPads[id]);}this._moonPadList=out;this._moonPadAt=t;return out;});
     this.stores=new Map();
     this.elevator=Object.assign(new TowerElevator(),this.state.elevator||{});this.crewRoutes=new Map();
-    for(const id of ['mars','phobos','deimos']){const e=new EditStore(id==='mars'?this.mars:makeMoon(id));attachEdits(e);
+    for(const id of ['mars',...frameWorldIds()]){const e=new EditStore(id==='mars'?this.mars:makeMoon(id));attachEdits(e);
       restoreTerrain(e,this.state.terrain[id],[...this.bricks.values()].filter(b=>b.bodyId===id));this.stores.set(id,e);}
     this.sims=new Map(Object.values(this.state.ships).filter(s=>!s.parked).map(s=>[s.id,this.makeSim(s)]));
   }
@@ -83,7 +84,7 @@ export class Authority {
   makeSim(s){this.ensureMoonPads(s);const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.otherSim=id=>this.sims.get(id);sim.allSims=()=>this.sims.values();if(s.npc)this.fleet.attach(sim);return sim;}
   /** One Phobos pad and one Deimos pad per owned ship. Append-only: a pad already on the record stays put. */
   ensureMoonPads(ship){this._moonPadList=null;if(ship.npc)return;ship.moonPads=ship.moonPads||{};
-    for(const bodyId of ['phobos','deimos']){const cur=ship.moonPads[bodyId];
+    for(const bodyId of frameWorldIds()){const cur=ship.moonPads[bodyId];
       if(cur&&cur.shipId===ship.id&&Number.isFinite(cur.east)&&Number.isFinite(cur.north))continue;
       // The lowest grid slot nobody else holds. (A count would hand a new ship the slot of a pad that is still in use once ships can leave.)
       const used=new Set();for(const other of Object.values(this.state.ships)){if(other===ship||other.npc)continue;
@@ -400,7 +401,7 @@ export class Authority {
       if(Math.abs(loc.x-CREW_HALL.x)<CREW_HALL.w/2+.3&&Math.abs(loc.z-CREW_HALL.z)<CREW_HALL.d/2+.3)return false;
       if(Object.values(this.state.pool).some(c=>!c.retired&&!c.shipId&&distance(loc,c.position)<1))return false;
     }
-    if(frame==='phobos'||frame==='deimos'){
+    if(frame!=='mars'){
       const info=makeMoon(frame).padInfo,rel={x:x-info.point.x,y:y-info.point.y,z:z-info.point.z};
       const east=rel.x*info.east.x+rel.y*info.east.y+rel.z*info.east.z,north=rel.x*info.north.x+rel.y*info.north.y+rel.z*info.north.z;
       for(const s of Object.values(this.state.ships)){const a=s.moonPads?.[frame];

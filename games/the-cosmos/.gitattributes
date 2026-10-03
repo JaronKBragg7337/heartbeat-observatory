@@ -1,0 +1,5 @@
+# Generated one-line-per-entry lists: when two branches add a line, keep both (see tools/gen-registry.mjs, docs/ADD-A-WORLD.md).
+src/worlds/_manifest.js merge=union
+src/ships/_manifest.js merge=union
+src/ships/_visuals-manifest.js merge=union
+src/worlds/_client-manifest.js merge=union

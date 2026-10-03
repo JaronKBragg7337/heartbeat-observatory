@@ -174,6 +174,15 @@ export const MATERIALS = {
   },
 };
 
+/** Every material in table order: edits.js stores a lattice point's material as its position here (+1). Append only. */
+export const MATERIAL_LIST = Object.values(MATERIALS);
+/** Append a material (a world's own regolith, say). Idempotent by id. The table and the list only ever grow at their end. */
+export function extendMaterials(key, mat) {
+  if (MATERIAL_LIST.some((m) => m.id === mat.id)) return MATERIALS[key] || mat;
+  MATERIALS[key] = mat; MATERIAL_LIST.push(mat);
+  return mat;
+}
+
 // ---------------------------------------------------------------------------
 // TERRAIN ENVELOPE — the broad shape, in metres above the datum.
 // This is the low-frequency landscape: basins, rises, canyon systems. It is

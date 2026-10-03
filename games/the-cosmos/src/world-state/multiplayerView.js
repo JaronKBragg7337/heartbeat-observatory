@@ -1,3 +1,4 @@
+import { frameWorldIds } from '../worlds/registry.js';
 import { hullPush, mayBoard } from '../ship/hullCollision.js';
 import { shipPresence } from './shipPresence.js';
 import { guardSheetPress } from '../ui/activation.js';
@@ -199,7 +200,7 @@ export class MultiplayerView {
   /** Markings for a ship's own moon pad. Drawn in that moon's frame, and only once the moon world exists. Regolith stays; this is paint and lights. */
   syncMoonPads(){const space=this.space;if(!space?.worlds)return;
     for(const ship of Object.values(this.world.snapshot.ships||{})){if(!ship.moonPads)continue;
-      for(const bodyId of ['phobos','deimos']){const a=ship.moonPads[bodyId];if(!a||this.moonPadIds.has(a.id))continue;
+      for(const bodyId of frameWorldIds()){const a=ship.moonPads[bodyId];if(!a||this.moonPadIds.has(a.id))continue;
         const w=space.worlds.get(bodyId);if(!w?.frame||!w.body?.playerPad)continue;
         const pp=w.body.playerPad(a.east,a.north);this.moonPadIds.add(a.id);
         const g=new THREE.Group();g.name='moon-pad-'+a.id;

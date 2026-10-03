@@ -17,7 +17,9 @@
 // ellipsoid's axes are turned, in here.
 // ============================================================================
 
-import { MOONS, moonCentre, moonSurfaceGravity, G_CONST, sunDirection } from './spaceSpec.js';
+import { moonCentre, moonSurfaceGravity, G_CONST, sunDirection } from './spaceSpec.js';
+import { worldDef, isFrameWorld, worldPlacement } from '../worlds/registry.js';
+import { profileOf, profileParams, pick } from '../worlds/_kit/terrain.js';
 
 const DEG = Math.PI / 180;
 
@@ -83,12 +85,20 @@ function nearCells(px, py, pz, s, reach) {
 
 export function makeMoon(id) {
   if (_bodies.has(id)) return _bodies.get(id);
-  const S = MOONS[id];
-  if (!S) throw new Error(`unknown moon: ${id}`);
-  const { a, b, c } = S.axes, Rm = S.radiusMean, seed = S.seed, scale = S.craterScale, RS = S.roughScale ?? 1, DENS = S.craterDensity ?? 0.62, CS = S.cellScale ?? 1;
+  const S = worldDef(id);
+  if (!isFrameWorld(S)) throw new Error(`unknown moon: ${id}`);
+  const PROF = profileOf(S), PP = profileParams(S);                      // the terrain profile (rocky for Phobos and Deimos: adds nothing)
+  const { a, b, c } = S.axes, Rm = S.radiusMean, seed = S.seed, scale = pick(S, 'craterScale', 1), RS = pick(S, 'roughScale', 1), DENS = pick(S, 'craterDensity', 0.62), CS = pick(S, 'cellScale', 1);
+  // Low-frequency lumpiness: amplitude as a share of the radius and a spatial frequency in 1/metres. A potato moon: 6% and 1.6%, at
+  // 6 km and 1.7 km wavelengths. A PLANET must lower all four (a 2,000 km world at 6% would be 120 km high and as steep as a wall):
+  // set `lump`, `lump2`, `lumpFreq`, `lump2Freq` in the def so the wavelengths are a good share of the radius.
+  const LUMP = S.lump ?? 0.06, LUMP2 = S.lump2 ?? 0.016, LF = S.lumpFreq ?? 0.00016, LF2 = S.lump2Freq ?? 0.0006;
+  const REGOLITH_M = pick(S, 'regolithDepthM', 50);
   const centre = moonCentre(S);
   // body axes in world directions
-  const lonM = (S.lonS + 180) * DEG;
+  // where it sits as seen from Mars (its +X axis points at Mars: tidal lock): the parked shorthand's own longitude, or the one the orbit puts it at
+  const LON_S = S.orbit && !S.orbit.parked ? worldPlacement(S.id).lonS : S.lonS;
+  const lonM = (LON_S + 180) * DEG;
   const ex = { x: Math.cos(lonM), y: 0, z: -Math.sin(lonM) };
   const ez = { x: 0, y: 1, z: 0 };
   const ey = { x: ez.y * ex.z - ez.z * ex.y, y: ez.z * ex.x - ez.x * ex.z, z: ez.x * ex.y - ez.y * ex.x };
@@ -99,7 +109,7 @@ export function makeMoon(id) {
 
   // grooves: planar troughs parallel to the long axis, as the observed ones run. Seeded, so the same every time.
   const grooves = [];
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < (pick(S, 'grooves', true) === false ? 0 : 16); i++) {
     const ang = (-25 + 70 * hash3(i, 1, 7, seed)) * DEG;
     // Wide and deep enough to read from orbit (the real ones are 100-200 m across and tens of metres deep). About a third carry a
     // chain of pits along the floor, as the real grooves do.
@@ -108,7 +118,7 @@ export function makeMoon(id) {
       chain: hash3(i, 5, 7, seed) < 0.42 ? { rp: 15 + 22 * hash3(i, 6, 7, seed), gap: 2.4 + 0.8 * hash3(i, 8, 7, seed) } : null });
   }
 
-  const M = MATS[S.id];
+  const M = materialsOf(S);
   const pad = S.pad;
   const padDir = dirOf(pad.lat, pad.lon);
 
@@ -117,8 +127,8 @@ export function makeMoon(id) {
     const px = u * re, py = v * re, pz = w * re;
     let h = 0;
     // the lumpy potato: low-frequency departures from the ellipsoid
-    h += fbm(px * 0.00016, py * 0.00016, pz * 0.00016, seed + 5, 3) * 0.06 * Rm;
-    h += fbm(px * 0.0006, py * 0.0006, pz * 0.0006, seed + 9, 3) * 0.016 * Rm;
+    h += fbm(px * LF, py * LF, pz * LF, seed + 5, 3) * LUMP * Rm;
+    h += fbm(px * LF2, py * LF2, pz * LF2, seed + 9, 3) * LUMP2 * Rm;
     // the named craters
     for (const f of feat) {
       const cosang = u * f.d[0] + v * f.d[1] + w * f.d[2];
@@ -185,6 +195,7 @@ export function makeMoon(id) {
     h += fbm(px * 0.06, py * 0.06, pz * 0.06, seed + 33, 3) * 1.2 * RS;
     h += fbm(px * 0.45, py * 0.45, pz * 0.45, seed + 44, 2) * 0.22 * RS;
     h += noise3(px * 2.4, py * 2.4, pz * 2.4, seed + 55) * 0.05 * RS;
+    if (PROF.relief) h += PROF.relief({ px, py, pz, seed, Rm, p: PP });          // the world's terrain profile (dunes, ice cracks, volcanoes, islands)
     return h;
   }
 
@@ -201,12 +212,8 @@ export function makeMoon(id) {
   // tilted planes (so there is a ridge), and straight walls that rise from the footprint's edge at no more than about 40 degrees,
   // so a running step still meets the surface on 0.0057 g (a steeper face launches the walker and the 90 s grounded check fails).
   // The height is min(wall, planeA, planeB): crisp creases where the faces meet, still one number per point of the radial field.
-  const ROCKS = S.id === 'phobos' ? [
-    { s: 48, dens: 0.6, rLo: 5, rHi: 11, hLo: 1.5, hHi: 3.4 },        // boulders: two to three metres tall and a dozen across, angular
-    { s: 12, dens: 0.48, rLo: 1.8, rHi: 3.4, hLo: 0.45, hHi: 1.3 },   // rocks at knee and waist height
-    { s: 6, dens: 0.3, rLo: 0.8, rHi: 1.5, hLo: 0.1, hHi: 0.42 },    // stones underfoot
-  ] : [
-    // Deimos: a deep dust blanket with a few blocks sticking out of it and small stones on top. Low and soft, never a boulder field.
+  // The world's own loose rock (def.rocks; Phobos boulders, Deimos low blocks). A world that names none gets a gentle scatter; `rocks: []` has none.
+  const ROCKS = S.rocks ?? [
     { s: 40, dens: 0.34, rLo: 4, rHi: 8, hLo: 0.7, hHi: 1.6 },
     { s: 9, dens: 0.2, rLo: 1.2, rHi: 2.6, hLo: 0.2, hHi: 0.55 },
     { s: 6, dens: 0.22, rLo: 0.7, rHi: 1.3, hLo: 0.08, hHi: 0.3 },
@@ -214,13 +221,7 @@ export function makeMoon(id) {
   // Named rocks around the survey pad (east, north metres from the pad centre; rc footprint radius, h height). The pad is graded flat out to
   // 62 m and the loose rock is kept off it, so these stand at its edge and beyond: something to frame a ship, shade a rover and
   // throw a shadow across the dust. The same angular block as the scatter, so they walk and dig like it.
-  const HEROES = S.id === 'phobos' ? [
-    { e: -47, n: 40, rc: 5.5, h: 2.7 }, { e: 54, n: 30, rc: 4.5, h: 2.2 }, { e: 24, n: -60, rc: 6.5, h: 3.2 }, { e: -62, n: -22, rc: 3.5, h: 1.6 },
-    { e: 40, n: 54, rc: 2.6, h: 1.2 }, { e: -30, n: -50, rc: 2.2, h: 1.0 }, { e: 66, n: -34, rc: 1.8, h: 0.8 }, { e: -8, n: 66, rc: 2.8, h: 1.3 },
-    { e: 34, n: 46, rc: 1.4, h: 0.6 }, { e: -52, n: 18, rc: 1.6, h: 0.7 },
-  ] : [
-    { e: -50, n: 34, rc: 7, h: 1.1 }, { e: 58, n: -26, rc: 5, h: 0.8 }, { e: 20, n: 62, rc: 2.8, h: 0.5 }, { e: -36, n: -56, rc: 2, h: 0.35 },
-  ];
+  const HEROES = S.heroes ?? [];
   let heroes = null;                                                   // built on first use: it needs the pad's frame
   let derelictU = null;                                                // unit direction of the drifting cargo module: no loose rock under it
   const MAX_WALL = 0.82;                                               // tan of the steepest face, about 39 degrees
@@ -368,6 +369,8 @@ export function makeMoon(id) {
   }
 
   // the graded survey pad: a true plane perpendicular to the radial through the pad's centre, blended into the natural ground
+  // Extra named ports (def.ports): more graded sites on the same ground. The arrival pad above stays the one a course lands at.
+  const ports = (S.ports || []).map((q) => { const d = dirOf(q.lat, q.lon), re = reOf(d[0], d[1], d[2]); return { ...q, d, plane: re + relief(d[0], d[1], d[2], re) }; });
   const padRc = (() => { const re = reOf(...padDir); return re + relief(padDir[0], padDir[1], padDir[2], re) - 0.0; })();
   const padPlaneR = padRc;
   // Null until the survey pad's east/north exist, so measuring that pad cannot see a player pad.
@@ -383,6 +386,10 @@ export function makeMoon(id) {
         const wt = 1 - sstep(pad.flatM, pad.blendM, padS);
         R += (padPlaneR / cosp - R) * wt;
       }
+    }
+    for (let i = 0; i < ports.length; i++) {
+      const q = ports[i], cq = u * q.d[0] + v * q.d[1] + w * q.d[2];
+      if (cq > 0.97) { const s = Rm * Math.acos(Math.min(1, cq)); if (s < q.blendM) R += (q.plane / cq - R) * (1 - sstep(q.flatM, q.blendM, s)); }
     }
     return R;
   }
@@ -432,6 +439,7 @@ export function makeMoon(id) {
     const cosp = u * padDir[0] + v * padDir[1] + w * padDir[2];
     let along = 1e9;
     if (cosp > 0.97) along = Rm * Math.acos(Math.min(1, cosp));
+    for (let i = 0; i < ports.length; i++) { const q = ports[i], cq = u * q.d[0] + v * q.d[1] + w * q.d[2]; if (cq > 0.97) along = Math.min(along, Rm * Math.acos(Math.min(1, cq))); }       // no loose rock on a port
     let fade = 1, fadeStones = 1;
     if (along < 58) fade = 0;
     else if (along < 86) fade = sstep(58, 86, along);
@@ -468,7 +476,7 @@ export function makeMoon(id) {
     const depth = surfaceRadiusBody(q[0], q[1], q[2]) - r;
     const cosp = q[0] * padDir[0] + q[1] * padDir[1] + q[2] * padDir[2];
     const sp = cosp > 0.97 ? Rm * Math.acos(Math.min(1, cosp)) : 1e9;
-    const reg = S.regolithDepthM * (0.55 + 0.45 * (0.5 + 0.5 * noise3(px * 0.004, py * 0.004, pz * 0.004, seed + 77)));
+    const reg = REGOLITH_M * (0.55 + 0.45 * (0.5 + 0.5 * noise3(px * 0.004, py * 0.004, pz * 0.004, seed + 77)));
     if (depth < reg) return M.regolith;
     if (depth > 2.2 && feat.length && M.clay) {
       const f = feat[0], cosang = q[0] * f.d[0] + q[1] * f.d[1] + q[2] * f.d[2];
@@ -515,21 +523,21 @@ export function makeMoon(id) {
     return { point: p, up: { x: p.x / pl, y: p.y / pl, z: p.z / pl } };
   })() : null;
 
+  const LOOK = S.look || {}, LK = LOOK.k || [1, 0.12, 0.08], LR = LOOK.red || [0, 0.2, 0.2];            // albedo units (def.look)
   const g0 = moonSurfaceGravity(S);
   const body = {
     id: S.id, name: S.name, designation: S.designation, kind: 'moon', parentId: 'mars',
     radiusMean: Rm, radiusEquatorial: Rm, radiusPolar: Rm,      // the sphere the lat/lon grid and the walker use; the real shape is baseField
     axes: S.axes, mass: S.massKg, surfaceGravity: g0, escapeVelocity: Math.sqrt(2 * G_CONST * S.massKg / Rm),
-    siderealRotationPeriod: S.orbitPeriodS, obliquityDeg: 0,
-    atmosphere: null, datum: 'mean radius',
+    siderealRotationPeriod: (S.rotation && S.rotation.periodS) || S.orbitPeriodS, obliquityDeg: (S.rotation && S.rotation.axialTiltDeg) || 0,
+    rotation: S.rotation || null, orbit: S.orbit || null,                // the ephemeris data (src/worlds/_kit/ephemeris.js); nothing turns or moves until DYNAMICS is switched on
+    worldKind: S.kind,                                          // the world's real kind (planet, moon, ...); `kind: 'moon'` above means "has a frame of its own"
+    atmosphere: S.atmosphere ? { ...S.atmosphere, scaleHeight: S.atmosphere.scaleHeightM, surfacePressure: S.atmosphere.surfacePressure ?? 0 } : null, datum: 'mean radius',
     terrain: { seed, reliefMax: 4200, reliefMin: -2400, localRelief: 700, crustThickness: Rm * 0.95 },
     // lat/lon here are in the world-aligned grid geodesy.js uses (so the nav screens place them); `bodyLon` is the moon's own
     // longitude, measured from the sub-Mars meridian, which is the one the HUD and the real maps use
-    landmarks: S.landmarks.map((l) => ({ ...l, bodyLon: l.lon, lon: ((l.lon + S.lonS + 180 + 540) % 360) - 180, elevation: 0, verified: 'table' })),
-    sources: [
-      { field: 'axes, radiusMean, orbit', url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html', verified: 'live', note: 'fetched 2026-10-01' },
-      { field: 'overall size, Stickney, regolith depth', url: `https://science.nasa.gov/mars/moons/${S.id}/`, verified: 'live', note: 'fetched 2026-10-01: 27x22x18 km (Phobos), 15x12x11 km (Deimos)' },
-    ],
+    landmarks: S.landmarks.map((l) => ({ ...l, bodyLon: l.lon, lon: ((l.lon + LON_S + 180 + 540) % 360) - 180, elevation: 0, verified: 'table' })),
+    sources: S.sources || [{ field: 'everything', url: '', verified: 'invented', note: `${S.name} is a game world: its numbers are the world's own and not measured (state each source in the def's \`sources\`).` }],
     centre,                       // where its centre is in Mars's frame
     spec: S,
     baseField, materialField, surfaceRadius,
@@ -556,6 +564,8 @@ export function makeMoon(id) {
       return { up, point, east, north, planeR: plane, standoff(alt) { const L = plane + alt; return { x: up.x * L, y: up.y * L, z: up.z * L }; } };
     },
     sampleSites, derelict,
+    /** Extra named ports (def.ports) with their graded point and up vector, body-local. */
+    ports: ports.map((q) => { const pt = surfacePoint(q.d[0], q.d[1], q.d[2]), l = Math.hypot(pt.x, pt.y, pt.z); return { id: q.id, name: q.name, flatM: q.flatM, point: pt, up: { x: pt.x / l, y: pt.y / l, z: pt.z / l } }; }),
     axesWorld: { ex, ey, ez },
     /** The world-aligned unit vector toward the Sun (the patches cast shadows along it). */
     sunDir: sunW,
@@ -571,15 +581,14 @@ export function makeMoon(id) {
       const lo = fbm(px * 0.00042, py * 0.00042, pz * 0.00042, seed + 301, 3);       // thousands of metres: the red and blue units
       const mid = fbm(px * 0.0032, py * 0.0032, pz * 0.0032, seed + 313, 2);        // a few hundred metres: dust drifts and old ejecta
       let k, red;
-      if (S.id === 'phobos') { k = 1 + 0.2 * lo + 0.11 * mid; red = 0.75 * lo + 0.35 * mid; }
-      else { k = 1.08 + 0.08 * lo + 0.07 * mid; red = 0.35 + 0.25 * lo + 0.2 * mid; }
+      k = LK[0] + LK[1] * lo + LK[2] * mid; red = LR[0] + LR[1] * lo + LR[2] * mid;
       const f = feat[0];
       if (f) {
         const cosang = q[0] * f.d[0] + q[1] * f.d[1] + q[2] * f.d[2];
         if (cosang > 0.2) {
           const t = Rm * Math.acos(Math.min(1, cosang)) / f.radiusM;
-          if (S.id === 'phobos') { const e = Math.exp(-(((t - 1.4) / 1.5) ** 2)); k *= 1 + 0.14 * e; red -= 0.95 * e; }       // the blue, bright ejecta blanket
-          else if (t < 1.15) k *= 1 + 0.12 * Math.exp(-(((t - 1) / 0.25) ** 2));                                          // a bright rim on Voltaire
+          if (LOOK.ejecta) { const e = Math.exp(-(((t - LOOK.ejecta.centre) / LOOK.ejecta.width) ** 2)); k *= 1 + LOOK.ejecta.k * e; red -= LOOK.ejecta.red * e; }       // Phobos: the blue, bright ejecta blanket
+          else if (LOOK.rim && t < LOOK.rim.edge) k *= 1 + LOOK.rim.k * Math.exp(-(((t - 1) / LOOK.rim.width) ** 2));                                          // Deimos: a bright rim on Voltaire
         }
       }
       out.k = k; out.red = red;
@@ -610,9 +619,7 @@ export function makeMoon(id) {
   return body;
 }
 
-// materials are looked up lazily from field.js's list (so this file stays importable in any order)
+// A world's materials: names of entries in field.js's MATERIALS, or material objects (the registry has already appended those).
+const matOf = (m) => (typeof m === 'string' ? MATERIALS[m] : m);
+const materialsOf = (S) => ({ regolith: matOf(S.materials.regolith), rubble: matOf(S.materials.rubble), clay: S.materials.clay ? matOf(S.materials.clay) : null });
 import { MATERIALS } from '../world/field.js';
-const MATS = {
-  phobos: { regolith: MATERIALS.phobosRegolith, rubble: MATERIALS.phobosRubble, clay: MATERIALS.phobosClay },
-  deimos: { regolith: MATERIALS.deimosRegolith, rubble: MATERIALS.deimosRubble, clay: null },
-};

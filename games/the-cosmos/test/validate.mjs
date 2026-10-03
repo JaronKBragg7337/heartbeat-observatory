@@ -12,7 +12,7 @@
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { pathToFileURL } from 'node:url';
-import { mkdirSync, writeFileSync, existsSync } from 'fs';
+import { mkdirSync, writeFileSync, existsSync, readdirSync } from 'fs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -684,6 +684,17 @@ await runFreeflightChecks({ check, section, THREE, mars });
 // 31. Round 7: one candidate per post, storage fault clears itself.
 const { runRound7Checks } = await import('./round7-checks.mjs');
 await runRound7Checks({ check, section });
+
+// F1. The registries and generic planets, then EVERY test/pkg-*.mjs a package drops in (no edit to this file needed): each exports
+// `run({ check, section, THREE, mars, FIELD, ROOT })`. A world or ship package puts its own checks in test/pkg-<name>.mjs.
+{
+  const { run: runWorlds } = await import('./worlds-checks.mjs');
+  await runWorlds({ check, section, THREE });
+  for (const f of readdirSync(join(ROOT, 'test')).filter((n) => /^pkg-.*\.mjs$/.test(n)).sort()) {
+    const m = await import(pathToFileURL(join(ROOT, 'test', f)).href);
+    await m.run({ check, section, THREE, mars, FIELD, ROOT });
+  }
+}
 
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);

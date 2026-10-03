@@ -60,6 +60,7 @@ import { landingField } from './world-state/fleet.js';
 import { GroundDetail } from './world/groundDetail.js';      // ROUND7: pebbles, boot prints and contact shadows at walking scale
 import { personVisible } from './crew/personVisibility.js';
 import { attachMoonPads } from './space/moonField.js';
+import { frameWorldIds } from './worlds/registry.js';
 import { Cinema } from './cinema/cinema.js';
 import { VehicleSystem } from './vehicles/view.js';
 import { Opening } from './opening/opening.js';
@@ -93,7 +94,7 @@ const engine = new Engine(canvas, { fov: 72,world });
 const safeGraphics=engine.safe;
 if(world.remote){attachGrades([portSite,landingField(portSite,()=>world.snapshot.pads)]);
   attachMoonPads(()=>{const out=[];for(const s of Object.values(world.snapshot?.ships||{})){if(!s.moonPads)continue;
-    for(const id of ['phobos','deimos'])if(s.moonPads[id])out.push(s.moonPads[id]);}return out;});}
+    for(const id of frameWorldIds())if(s.moonPads[id])out.push(s.moonPads[id]);}return out;});}
 let multiplayer = null;
 let vehicles = null;
 
@@ -1196,6 +1197,16 @@ if(!devMode) document.getElementById('set-dev').hidden=true;
 
 document.getElementById('boot')?.remove();
 refreshHud();
+
+// ?dev=1&body=<id>: stand on any registered world (a moon or a planet from src/worlds/<name>/) without travel. Solo only: in a shared
+// world the ship's frame belongs to the server. ?dev=1&body=mars is the ordinary start.
+{
+  const bid = params.get('body');
+  if (devMode && bid && bid !== 'mars' && !world.remote) {
+    try { if (!frameWorldIds().includes(bid)) throw new Error(`no world '${bid}' (have: ${frameWorldIds().join(', ')})`); console.info('[body]', bid, space.debugStand(bid)); }
+    catch (e) { console.error('?body=', e); }
+  }
+}
 
 // ?cinema=1 hides the HUD and letterboxes 2.39:1. A shot played through cosmos.cinema.prepare replays from JSON.
 cinema = new Cinema({ engine, tier, safe: safeGraphics, search: params });

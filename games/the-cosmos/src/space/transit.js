@@ -181,12 +181,15 @@ export class Transit {
  *  (never a made-up number): `arrived` is false and `seconds` is that estimate, not the step cap. */
 export function estimateTrip(o) {
   const t = new Transit(o), CAP = 4 * 3600 * 24;       // four days of ship time is far beyond any course here
-  let guard = 0;
-  while (!t.done && t.t < CAP && guard++ < 2_000_000) t.step(0.25, o.aMax);
-  if (t.done) return { seconds: t.t, peakSpeed: t.peakSpeed, arrived: true, error: len(sub(t.pos, o.goal)) };
   const D = len(sub(o.goal, o.pos)), a = Math.max(1e-6, (o.aMax || 1) * (t.brakeFrac || 0.85)), vMax = o.vMax ?? TRANSIT_DEFAULTS.vMax;
   const dAcc = vMax * vMax / a, flip = Math.PI / (o.turnRate ?? TRANSIT_DEFAULTS.turnRate);
   const secs = D <= dAcc ? 2 * Math.sqrt(D / a) + 2 * flip : 2 * vMax / a + (D - dAcc) / vMax + 2 * flip;
+  // A world a long way off (a planet at real distance) would cost over a million sub-steps to fly just to ask how long it takes: past six
+  // hours the closed form is within a percent of the flown time (the same one the four-day fallback below used), so say that at once.
+  if (secs > 6 * 3600) return { seconds: secs, peakSpeed: Math.min(vMax, Math.sqrt(D * a)), arrived: false, error: NaN, closedForm: true };
+  let guard = 0;
+  while (!t.done && t.t < CAP && guard++ < 2_000_000) t.step(0.25, o.aMax);
+  if (t.done) return { seconds: t.t, peakSpeed: t.peakSpeed, arrived: true, error: len(sub(t.pos, o.goal)) };
   return { seconds: secs, peakSpeed: Math.min(vMax, Math.sqrt(D * a)), arrived: false, error: len(sub(t.pos, o.goal)) };
 }
 

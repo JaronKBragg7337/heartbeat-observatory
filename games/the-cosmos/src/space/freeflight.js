@@ -24,28 +24,49 @@
 // ============================================================================
 
 import * as THREE from 'three';
-import { MARS_MU, MOONS, G_CONST, moonCentre, DRIVE, ATMOSPHERE_TOP_M, FREE, RAIDER_SUSPEND_MS, stickWarpCap } from './spaceSpec.js';
+import { MARS_MU, MOONS, STATION_IDS, G_CONST, moonCentre, DRIVE, ATMOSPHERE_TOP_M, FREE, RAIDER_SUSPEND_MS, stickWarpCap } from './spaceSpec.js';
 import { makeMoon } from './moonField.js';
 import { surfaceRadiusFast } from '../world/field.js';
+import { onWorldsChanged, worldDef } from '../worlds/registry.js';
 
 export const MARS_R = 3_389_500;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const len3 = (a) => Math.hypot(a.x, a.y, a.z);
 export const ASSISTS = ['off', 'prograde', 'retro', 'target'];
-export const TARGETS = ['phobos', 'deimos', 'mars'];
+export const TARGETS = [];                                    // every world with a frame, then Mars (rebuilt with BODIES below)
 export const ZERO_INPUT = Object.freeze({ thr: 0, brake: false, pitch: 0, yaw: 0, roll: 0, tx: 0, ty: 0, tz: 0 });
 
 // ---------------------------------------------------------------------------
 // THE BODIES (static: the moons are parked)
 // ---------------------------------------------------------------------------
-export const BODIES = (() => {
-  const out = { mars: { id: 'mars', name: 'Mars', mu: MARS_MU, c: { x: 0, y: 0, z: 0 }, R: MARS_R, moon: false } };
-  for (const m of Object.values(MOONS)) out[m.id] = { id: m.id, name: m.name, mu: G_CONST * m.massKg, c: moonCentre(m), R: m.radiusMean, moon: true };
-  return out;
-})();
-const MOON_LIST = [BODIES.phobos, BODIES.deimos];
-// what Mars pulls a parked moon's centre with, per moon: cancelled inside the patch
-for (const b of MOON_LIST) { const r = len3(b.c), k = MARS_MU / (r * r * r); b.marsAtCentre = { x: -k * b.c.x, y: -k * b.c.y, z: -k * b.c.z }; }
+export const BODIES = {};
+/** Every frame world (a moon or a planet: `moon: true` here means "has a frame of its own and is parked"), in registry order. */
+export const MOON_LIST = [];
+/** Bodies that pull and have ground (Mars and every frame world): what the physics loops walk. Stations are targets only. */
+export const PHYS_LIST = [];
+/** A body's patch: the distance inside which the ship rides with it (Mars's pull cancelled at its centre). 400 km for the little moons,
+ *  8 radii for anything bigger so a planet's whole neighbourhood is inside it. */
+export const patchOf = (R) => Math.max(FREE.patchM, 8 * R);
+function rebuildBodies() {
+  for (const k of Object.keys(BODIES)) delete BODIES[k];
+  MOON_LIST.length = 0; TARGETS.length = 0; PHYS_LIST.length = 0;
+  BODIES.mars = { id: 'mars', name: 'Mars', mu: MARS_MU, c: { x: 0, y: 0, z: 0 }, R: MARS_R, moon: false };
+  for (const m of Object.values(MOONS)) {
+    const b = BODIES[m.id] = { id: m.id, name: m.name, mu: G_CONST * m.massKg, c: moonCentre(m), R: m.radiusMean, moon: true, patchM: patchOf(m.radiusMean), air: m.atmosphere || null };
+    MOON_LIST.push(b); TARGETS.push(m.id);
+    // what Mars pulls a parked moon's centre with, per moon: cancelled inside the patch
+    const r = len3(b.c), k = MARS_MU / (r * r * r); b.marsAtCentre = { x: -k * b.c.x, y: -k * b.c.y, z: -k * b.c.z };
+  }
+  for (const id of STATION_IDS) {                              // a station: something to steer for (target, bearing, distance), never a pull or a ground
+    const d = worldDef(id);
+    BODIES[id] = { id, name: d.name, mu: 0, c: moonCentre(d), R: d.radiusM, moon: false, station: true };
+    TARGETS.push(id);
+  }
+  TARGETS.push('mars');
+  PHYS_LIST.push(...Object.values(BODIES).filter((b) => !b.station));
+}
+rebuildBodies();
+onWorldsChanged(rebuildBodies);
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
 /** Acceleration (m/s2) on a ship at `p` (Mars frame): Mars, the two moons, and the patch cancellation. Pure, allocation-free. */
@@ -56,11 +77,19 @@ export function gravityAt(p, out = { x: 0, y: 0, z: 0 }) {
     const dx = p.x - b.c.x, dy = p.y - b.c.y, dz = p.z - b.c.z;
     const d2 = Math.max(dx * dx + dy * dy + dz * dz, b.R * b.R * 0.25), d = Math.sqrt(d2), km = -b.mu / (d2 * d);
     ax += km * dx; ay += km * dy; az += km * dz;
-    const w = smooth(FREE.patchM * 1.25, FREE.patchM, Math.sqrt(dx * dx + dy * dy + dz * dz));
+    const w = smooth(b.patchM * 1.25, b.patchM, Math.sqrt(dx * dx + dy * dy + dz * dz));
     if (w > 0) { ax -= w * b.marsAtCentre.x; ay -= w * b.marsAtCentre.y; az -= w * b.marsAtCentre.z; }
   }
   out.x = ax; out.y = ay; out.z = az;
   return out;
+}
+
+/** Drag (per second, the factor on velocity) of a world's own atmosphere on a ship at `pp` (Mars-frame metres) moving at `sp` m/s.
+ *  Height is above its mean radius; the air thins with the world's scale height and is gone above `topM`. Mars is handled by dragDecel. */
+export function worldDrag(b, pp, sp) {
+  const alt = Math.hypot(pp.x - b.c.x, pp.y - b.c.y, pp.z - b.c.z) - b.R;
+  if (alt > b.air.topM) return 0;
+  return b.air.rho0 * Math.exp(-Math.max(0, alt) / b.air.scaleHeightM) * sp / (2 * FREE.ballisticKgM2);
 }
 
 /** Mars's air density, kg/m3, at a height above the mean radius. */
@@ -224,6 +253,7 @@ export class FreeFlight {
   /** Height above the ground of each body, and what the ship is doing relative to the nearest. */
   bodyState(b, p = this.shipS(), v = this.f.vel) {
     const dx = p.x - b.c.x, dy = p.y - b.c.y, dz = p.z - b.c.z, d = Math.hypot(dx, dy, dz) || 1;
+    if (b.station) return { id: b.id, name: b.name, d, alt: d - b.R, closing: -(dx * v.x + dy * v.y + dz * v.z) / d, ground: b.R, dir: { x: dx / d, y: dy / d, z: dz / d } };
     // the true ground only when she is near enough for it to matter (a crater rim is a few km; the mean radius does for the rest)
     const near = b.moon ? d < b.R * 3 : d - MARS_R < 40_000;
     const R = near ? groundOf(this.mars, b.id, dx / d, dy / d, dz / d) : b.R;
@@ -234,9 +264,9 @@ export class FreeFlight {
   nearest() {
     const p = this.shipS(), v = this.f.vel;
     let best = null;
-    for (const b of Object.values(BODIES)) {
+    for (const b of PHYS_LIST) {
       const s = this.bodyState(b, p, v);
-      s.inPatch = !b.moon || s.d < FREE.patchM;
+      s.inPatch = !b.moon || s.d < b.patchM;
       if (!s.inPatch) continue;
       const score = s.alt / (b.moon ? b.R : 1e5);                // a moon's 5 km is as near as Mars's 100 km
       if (!best || score < best.score) best = { ...s, score };
@@ -276,9 +306,9 @@ export class FreeFlight {
     if (i.tx || i.ty || i.tz || i.pitch || i.yaw || i.roll) { cap = 1; why = 'you are flying her'; }
     else if (i.thr > 0 || i.brake) { if (cap > 20) { cap = 20; why = 'the drive is lit'; } }
     const p = this.shipS(), v = f.vel;
-    for (const b of Object.values(BODIES)) {
+    for (const b of PHYS_LIST) {
       const s = this.bodyState(b, p, v);
-      if (b.moon && s.d > FREE.patchM * 2) continue;
+      if (b.moon && s.d > b.patchM * 2) continue;
       const lim = b.moon ? (s.alt < 8_000 ? 1 : s.alt < 30_000 ? 5 : s.alt < 100_000 ? 60 : 1e9) : (s.alt < 130_000 ? 1 : s.alt < 250_000 ? 20 : 1e9);
       if (lim < cap) { cap = lim; why = `near ${b.name}`; }
       if (s.closing > 1) {
@@ -396,7 +426,7 @@ export class FreeFlight {
     if (m.alt < FREE.marsHandoverM && speed <= FREE.handoverMs) { this.handover('mars', 'Low and slow over Mars. The flight assist has her.'); return; }
     for (const b of MOON_LIST) {
       const s = this.bodyState(b, p, v);
-      if (s.d > FREE.patchM) continue;
+      if (s.d > b.patchM) continue;
       const vc = Math.max(0, s.closing), need = clamp(1.3 * vc * vc / 10 + 1000, FREE.moonHandoverM, 12_000);
       if (s.alt < FREE.moonHandoverM || (s.closing > 0 && s.alt < need)) { this.handover(b.id, `Close to ${b.name}. The flight assist has her: land anywhere.`); return; }
     }
@@ -425,7 +455,7 @@ export class FreeFlight {
     let h = clamp(0.02 * tau, 0.01, 5);
     const alt = Math.max(5, this.bodyState(BODIES.mars).alt);
     h = Math.min(h, Math.max(0.01, 0.25 * alt / (speed + 1)));
-    for (const b of MOON_LIST) { const s = this.bodyState(b); if (s.d < FREE.patchM) h = Math.min(h, Math.max(0.01, 0.25 * Math.max(5, s.alt) / (speed + 1))); }
+    for (const b of MOON_LIST) { const s = this.bodyState(b); if (s.d < b.patchM) h = Math.min(h, Math.max(0.01, 0.25 * Math.max(5, s.alt) / (speed + 1))); }
     return h;
   }
 
@@ -501,7 +531,13 @@ export class FreeFlight {
     // gravity and drag, kick-drift-kick
     gravityAt(p, _g);
     let dragx = 0, dragy = 0, dragz = 0, decel = 0;
-    const drag = (pp, vv) => { const a = len3(pp) - MARS_R, sp = len3(vv); if (a > 160_000 || sp < 1e-6) return 0; return dragDecel(a, sp) / sp; };
+    const drag = (pp, vv) => {
+      const sp = len3(vv); if (sp < 1e-6) return 0;
+      let k = 0;
+      const a = len3(pp) - MARS_R; if (a <= 160_000) k += dragDecel(a, sp) / sp;
+      for (const b of MOON_LIST) if (b.air) k += worldDrag(b, pp, sp);                       // a world with an atmosphere brakes a ship in its air
+      return k;
+    };
     const k0 = drag(p, v);
     const vhx = v.x + (_g.x + ax - k0 * v.x) * h / 2, vhy = v.y + (_g.y + ay - k0 * v.y) * h / 2, vhz = v.z + (_g.z + az - k0 * v.z) * h / 2;
     p.x += vhx * h; p.y += vhy * h; p.z += vhz * h;
@@ -516,9 +552,9 @@ export class FreeFlight {
     this.decel = decel;
     f.agl = this.bodyState(BODIES.mars).alt;
     // the ground
-    for (const b of Object.values(BODIES)) {
+    for (const b of PHYS_LIST) {
       const s = this.bodyState(b, p, v);
-      if (s.alt < 3 && (!b.moon || s.d < FREE.patchM)) { this._impact(b, s); break; }
+      if (s.alt < 3 && (!b.moon || s.d < b.patchM)) { this._impact(b, s); break; }
     }
   }
 

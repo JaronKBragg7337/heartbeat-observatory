@@ -107,8 +107,10 @@ export function shadeVertex(body, px, py, pz, elevation, color, matKnown, castSh
     // Crater floors and groove troughs, baked into the vertex colour. The sun's shadow map only covers the ground under the camera.
     // (A patch that casts its own shadows from its heights skips this statistical stand-in.)
     if (body.cavityShade && !castShadows) color.multiplyScalar(body.cavityShade(px, py, pz));
-    if (body.id === 'phobos') { color.r *= 0.92; color.g *= 0.96; }
-    else { const lum = color.r * 0.299 + color.g * 0.587 + color.b * 0.114; color.r += (lum - color.r) * 0.3; color.g += (lum - color.g) * 0.3; color.b += (lum - color.b) * 0.3; }      // Deimos: a pale dust, less orange than its material
+    // the world's own colour treatment (def.look): a tint (Phobos: less red and green) or a desaturation (Deimos: a pale dust, less orange than its material)
+    const L = (body.spec && body.spec.look) || null;
+    if (L && L.tint) { color.r *= L.tint.r; color.g *= L.tint.g; }
+    else if (L && L.desaturate) { const lum = color.r * 0.299 + color.g * 0.587 + color.b * 0.114, d = L.desaturate; color.r += (lum - color.r) * d; color.g += (lum - color.g) * d; color.b += (lum - color.b) * d; }
     // loose rock is its own darker, cooler stone; the dust between it is a little lighter and warmer
     const r = Math.hypot(px, py, pz) || 1, rock = tintRock && body.rockRelief ? body.rockRelief(px / r, py / r, pz / r) : 0;
     shadeVertex.rock = Math.min(1, rock * 8);       // read back by the patch that is building (rockness attribute)

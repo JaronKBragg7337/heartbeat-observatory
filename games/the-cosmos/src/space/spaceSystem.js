@@ -23,9 +23,11 @@ import * as THREE from 'three';
 import { SpaceSky, MARS_RADIUS_M } from './spaceSky.js';
 import { SpaceTrip, fmtDuration, MARS_R } from './spaceTrip.js';
 import { estimateTrip } from './transit.js';
-import { DESTINATIONS, DRIVE, MOONS, STANDOFF_M, BOUNTY_CREDITS, moonCentre, landingOrder, stickWarpCap } from './spaceSpec.js';
+import { DESTINATIONS, DRIVE, MOONS, STANDOFF_M, BOUNTY_CREDITS, moonCentre, landingOrder, stickWarpCap, stationStandoff } from './spaceSpec.js';
+import { worldCentre, worldDef } from '../worlds/registry.js';
 import { MoonWorld } from './moonWorld.js';
 import { makeMoon } from './moonField.js';
+import { surfaceRadiusFast } from '../world/field.js';
 import { makeTools } from '../player/digging.js';
 import { SpaceJobs } from './jobs.js';
 import { SpaceUI } from './spaceUI.js';
@@ -81,7 +83,8 @@ export class SpaceSystem {
     // the moons: Phobos after a moment (it is in the sky from the start); Deimos is built when a course to it is engaged.
     this._built = false;
     if (typeof window !== 'undefined') {
-      const build = () => { try { this.moonWorld('phobos').setVisible(true); } catch (e) { console.error('Phobos failed to build', e); } };
+      // worlds that show in the sky from the start (def.showFromStart: Phobos) are built when the browser is idle
+      const build = () => { for (const id of Object.keys(MOONS)) if (MOONS[id].showFromStart) { try { this.moonWorld(id).setVisible(true); } catch (e) { console.error(`${id} failed to build`, e); } } };
       // not in the first seconds of play: when the browser is idle (a phone may take half a second over it)
       setTimeout(() => { if (window.requestIdleCallback) window.requestIdleCallback(build, { timeout: 4000 }); else build(); }, 2500);
     }
@@ -150,7 +153,8 @@ export class SpaceSystem {
       ship.body = f.body = w.body = b;
       this.setGround(mw.shipGround());
       w.groundSampler = mw.groundSampler(); w.collisionActive = mw.collisionActive();
-      w.jumpSpeed = 0.6;                              // a hop: Phobos's gravity is 0.0056 m/s2, a 3 m/s jump is a 15-minute flight
+      // a hop that clears about 1.3 m (Mars's own jump): v = sqrt(2 g 1.3), never under 0.6 m/s. Phobos's gravity is 0.0056 m/s2, a 3 m/s jump is a 15-minute flight
+      w.jumpSpeed = Math.min(6, Math.max(0.6, Math.sqrt(2 * b.surfaceGravity * 1.3)));
       dg.body = b; dg.edits = mw.edits;
       const idx = dg.toolIdx;
       dg.tools = makeTools(b).map((t) => ({ ...t, capacityKg: t.machine ? t.capacityKg : Math.min(t.capacityKg, 1054) }));   // a cart is rated by inertia, not weight
@@ -180,6 +184,18 @@ export class SpaceSystem {
     return { landed: f.landed, agl: f.agl };
   }
 
+  /** Dev entry (`?dev=1&body=<id>`, solo only): set the ship down on a world's pad and stand the walker ten metres east of it, on the
+   *  ground, without any travel. Returns { landed, agl, standing } or throws for an unknown world. */
+  debugStand(id) {
+    const r = this.debugLand(id), mw = this.moonWorld(id), b = mw.body, pi = b.padInfo, w = this.walker;
+    const x = pi.point.x + pi.east.x * 10, y = pi.point.y + pi.east.y * 10, z = pi.point.z + pi.east.z * 10, l = Math.hypot(x, y, z) || 1;
+    const R = surfaceRadiusFast(b, x / l, y / l, z / l) + 0.05;
+    Object.assign(w.worldPos, { x: x / l * R, y: y / l * R, z: z / l * R }); Object.assign(w.velocity, { x: 0, y: 0, z: 0 });
+    w.updateFrame(); mw.force(w.worldPos);
+    for (let i = 0; i < 60; i++) w.tick(1 / 60, {});
+    return { ...r, standing: !!w.grounded };
+  }
+
   /** In the moon's local metres: where the camera is. */
   _camIn(world, out) { return this.engine.cameraIn(world.frame, out); }
 
@@ -194,6 +210,10 @@ export class SpaceSystem {
     if (row.kind === 'port') r.goalS = () => this.portSite.toWorld(0, DRIVE.gateAltM, 0);        // the gate over the pad: the lift pods bring her down from there
     else if (row.kind === 'orbit') r.goalS = (trip) => { const p = trip.f.pos, l = Math.hypot(p.x, p.y, p.z); const R = MARS_R + DRIVE.orbitAltM; return { x: p.x / l * R, y: p.y / l * R, z: p.z / l * R }; };
     else if (row.kind === 'moon') r.goalS = () => { const b = makeMoon(row.moon), c = b.centre, s = b.standoffPoint(STANDOFF_M); return { x: c.x + s.x, y: c.y + s.y, z: c.z + s.z }; };
+    else if (row.kind === 'station') r.goalS = () => {            // a point off the station on the side facing Mars, `standoff` metres from its centre
+      const c = worldCentre(row.station), k = stationStandoff(worldDef(row.station)), l = Math.hypot(c.x, c.y, c.z) || 1;
+      return { x: c.x - c.x / l * k, y: c.y - c.y / l * k, z: c.z - c.z / l * k };
+    };
     else r.goalS = null;
     return r;
   }
@@ -221,7 +241,7 @@ export class SpaceSystem {
       const start = gate ? this._gatePoint(p) : p;
       const goal = res.goalS({ f: { pos: p } });
       r.distM = Math.hypot(goal.x - start.x, goal.y - start.y, goal.z - start.z);
-      const climb = gate ? 240 : (this.onMoon ? 90 : 0), descend = row.kind === 'orbit' ? 0 : (row.kind === 'port' ? 330 : 70);
+      const climb = gate ? 240 : (this.onMoon ? 90 : 0), descend = row.kind === 'orbit' || row.kind === 'station' ? 0 : (row.kind === 'port' ? 330 : 70);
       const est = estimateTrip({ pos: start, vel: { x: 0, y: 0, z: 0 }, nose: { x: f.fwdH.x, y: f.fwdH.y, z: f.fwdH.z }, up: { x: 0, y: 1, z: 0 }, goal, aMax, vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate });
       r.etaS = est.seconds + climb + descend + 40; r.peakSpeed = est.peakSpeed;
       if (row.kind === 'port' && gate && Math.hypot(p.x, p.y, p.z) - MARS_R < 100000) { r.ok = false; r.reason = 'already in Mars airspace'; }
@@ -327,7 +347,14 @@ export class SpaceSystem {
     const near = this.activeMoon;
     let up = null;
     if (near) { const cm = this._camIn(near, this._cam), l = Math.hypot(cm.x, cm.y, cm.z) || 1; up = this._moonUp || (this._moonUp = { x: 0, y: 1, z: 0 }); up.x = cm.x / l; up.y = cm.y / l; up.z = cm.z / l; }
-    this.sky.update(dt, this._localSun, { marsShine: near ? 1 : 0, up });
+    // over a world with its own atmosphere: that sky, not Mars's, fades with height (the camera's height above its mean radius)
+    let air = null;
+    if (near && near.body.atmosphere) {
+      const A = near.body.atmosphere, cm = this._camIn(near, this._cam);
+      air = this._air || (this._air = {});
+      air.h = Math.hypot(cm.x, cm.y, cm.z) - near.body.radiusMean; air.scaleHeightM = A.scaleHeightM; air.skyColor = A.skyColor; air.horizonColor = A.horizonColor; air.fogDensity = A.fogDensity;
+    }
+    this.sky.update(dt, this._localSun, { marsShine: near && near.body.worldKind === 'moon' ? 1 : 0, up, air });
     if (this.o.ship && this.o.ship.ready) this.sky.scaleEnvironment(this.o.ship.matsExt);
     this.jobs.update(dt);
     if (this.ui) this.ui.update(dt);
@@ -338,7 +365,7 @@ export class SpaceSystem {
   hudLines() {
     const f = this.ship.flight, t = this.trip, out = [];
     const ffl = ffHudLines(this.ff); if (ffl) out.push(ffl);        // FREEFLIGHT
-    if (this.onMoon) { const m = this.activeMoon; out.push(`<span class="dim">${m.body.name} · gravity ${(m.body.surfaceGravity * 1000).toFixed(2)} mm/s²</span>`); }
+    if (this.onMoon) { const m = this.activeMoon, g = m.body.surfaceGravity; out.push(`<span class="dim">${m.body.name} · gravity ${g >= 0.5 ? g.toFixed(2) + ' m/s²' : (g * 1000).toFixed(2) + ' mm/s²'}</span>`); }
     if (t && t.active) {
       const p = t.progress, ph = t.phases(), now = ph.find((q) => q.state === 'now');
       if (t.phase === 'transit') out.push(`<span class="load">DRIVE · ${(p.speed / 1000).toFixed(2)} km/s · ${fmtKmSpace(p.distM)} to go${t.warp > 1 ? ` · ×${t.warp}` : ''}</span>`);
