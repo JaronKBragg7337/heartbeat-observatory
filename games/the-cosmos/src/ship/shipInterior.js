@@ -21,7 +21,7 @@ import * as THREE from 'three';
 import { Kit, resolveDepthLayers } from './shipKit.js';
 import { drawProp, SEAT_DRAW } from './shipProps.js';
 import { mulberry, enableDepthLift } from './shipTextures.js';
-import { DECK, STAIRS, GANTRY, stairFloor, propBox } from './shipSpec.js';
+import { DECK, STAIRS, GANTRY, stairFloor, propBox, seatVariant } from './shipSpec.js';
 
 const WALL_U = 1.35, WALL_V = 2.7;
 
@@ -709,7 +709,7 @@ export function buildSeats(layout, mats, interior) {
   const low = !!interior.low;
   for (const s of layout.seats) {
     const k = new Kit();
-    const variant = s.variant || { captain: 'captain', pilot: 'pilot', nav: 'swivel', comms: 'swivel', engineer: 'swivel', gun_dorsal: 'gunner', gun_ventral: 'gunner' }[s.id];
+    const variant = seatVariant(s);
     SEAT_DRAW[variant](k);
     const g = k.toGroup(mats, { name: 'seat:' + s.id, cast: !low, receive: !low });
     g.position.set(s.x, s.y, s.z);

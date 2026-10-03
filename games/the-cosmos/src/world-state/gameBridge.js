@@ -65,13 +65,14 @@ export class GameBridge {
     try {const p=this.world.remote?null:JSON.parse(localStorage.getItem(poseKey));if(p&&p.revision>=s.revision){ship=p.ship;player=p.player;}}catch{}
     if(ship) {
       const f=this.ship.flight;Object.assign(f.pos,ship.pos);Object.assign(f.vel,ship.vel);
-      f.quaternion.fromArray(ship.quaternion);Object.assign(f.power,ship.power);
+      f.quaternion.fromArray(ship.quaternion);Object.assign(f.power,ship.power||{});
       f.attitude=ship.attitude?f.quaternion.clone().fromArray(ship.attitude):null;
       for(const k of fields)if(ship[k]!==undefined)f[k]=ship[k];
       // Keep nested references held by the existing ship controls/walkers.
-      for(const [k,v] of Object.entries(ship.state||{}))Object.assign(this.ship.state[k],v);
-      for(const [k,v] of Object.entries(ship.rampCtl||{}))Object.assign(this.ship.rampCtl[k],v);
-      Object.assign(this.ship.air,ship.air);f.controls.fwd=0;f.controls.lift=0;f.controls.yaw=0;
+      // moons-fix: a saved key the live ship lacks (older save / other ship) must not throw
+      for(const [k,v] of Object.entries(ship.state||{})){const t=this.ship.state[k];if(t&&typeof t==='object'&&v&&typeof v==='object')Object.assign(t,v);else if(v!==undefined)this.ship.state[k]=v;}
+      for(const [k,v] of Object.entries(ship.rampCtl||{})){const t=this.ship.rampCtl[k];if(t&&v&&typeof v==='object')Object.assign(t,v);}
+      Object.assign(this.ship.air,ship.air||{});f.controls.fwd=0;f.controls.lift=0;f.controls.yaw=0;
       this.ship._syncEntries();
     }
     if(player) {

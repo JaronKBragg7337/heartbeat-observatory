@@ -602,8 +602,9 @@ export class ShipSystem {
     const R = (this.def?.ramps || RAMPS)[key];
     const w = this.sw;
     const run = R.length * Math.cos(this.rampCtl[key].angle);
-    if (R.dir.z) return w.z > R.hinge.z + 0.2 && w.z < R.hinge.z + run + 1 && Math.abs(w.x - R.hinge.x) < R.width / 2 + 0.3 && w.y < 0.6;
-    return w.x < R.hinge.x - 0.2 && w.x > R.hinge.x - run - 1 && Math.abs(w.z - R.hinge.z) < R.width / 2 + 0.3 && w.y < 0.6;
+    // moons-fix: along the ramp's own direction (the Wayfarer's gangway points +X, the Meridian's -X)
+    const along = (w.x - R.hinge.x) * R.dir.x + (w.z - R.hinge.z) * R.dir.z, across = R.dir.z ? Math.abs(w.x - R.hinge.x) : Math.abs(w.z - R.hinge.z);
+    return along > 0.2 && along < run + 1 && across < R.width / 2 + 0.3 && w.y < 0.6;
   }
 
   toggleRamp(key = 'cargo') {
@@ -1498,20 +1499,20 @@ export function registerShipAssets(reg, THREE_, hardware, seatGroups, shipPos, d
 export function poseRamp(r, R, key, progress, angle) {
   const p = progress;
   const ease = p * p * (3 - 2 * p);
+  // moons-fix: a ramp is built along +Z and swung to point along ITS OWN direction (R.dir). The airlock used to be hard-wired to port (-X),
+  // which on the Wayfarer (hatch on the starboard side, dir +X) laid the gangway back through the hull instead of down to the ground.
+  const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(R.dir ? R.dir.x : (key === 'cargo' ? 0 : -1), R.dir ? R.dir.z : (key === 'cargo' ? 1 : 0)));
+  const tilt = -Math.PI / 2 + (angle + Math.PI / 2) * ease;
   if (key === 'cargo') {
-    r.hinge.rotation.set(-Math.PI / 2 + (angle + Math.PI / 2) * ease, 0, 0);
     r.hinge.scale.set(1, 1, 1);
   } else {
     // the gangway swings out from a vertical flap and extends: 2.5 m flap, 5 m deployed
     const len = 2.5 + (R.length - 2.5) * Math.max(0, (p - 0.45) / 0.55);
     r.hinge.scale.set(1, 1, len / R.length);
-    // built along +Z: rotate so +Z points to port (-X) and tilts down
-    const tilt = -Math.PI / 2 + (angle + Math.PI / 2) * ease;
-    r.hinge.rotation.set(0, 0, 0);
-    r.hinge.quaternion.setFromEuler(new THREE.Euler(tilt, 0, 0, 'XYZ'));
-    const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
-    r.hinge.quaternion.premultiply(yaw);
   }
+  r.hinge.rotation.set(0, 0, 0);
+  r.hinge.quaternion.setFromEuler(new THREE.Euler(tilt, 0, 0, 'XYZ'));
+  r.hinge.quaternion.premultiply(yaw);
 }
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

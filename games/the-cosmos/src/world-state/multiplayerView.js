@@ -14,6 +14,7 @@ import { ShipWalker, shipIndexFor } from '../ship/shipWalker.js';
 import { ShopView } from '../economy/shopView.js';   // CARGO: the market row and its phone sheet
 import { FleetView } from './fleetView.js';      // FLEET: the other ships, the raiders, the shipyard
 import { shipDef } from '../ships/registry.js';
+import { seatPan } from '../ship/shipSpec.js';   // moons-fix
 import { AccountView } from './accountView.js';
 const hall={x:-28,z:-68,w:24,d:14,h:5};
 function label(text){const c=document.createElement('canvas');c.width=512;c.height=64;const x=c.getContext('2d');
@@ -256,7 +257,7 @@ export class MultiplayerView {
       if(local){if(!b.local){this.engine.untrack(b.entry);this.ship.interior.root.add(b.group);b.local=true;}
         let seat=contract.displaced?contract.standPose:contract.localPose||contract.seatPose;
         if(seat&&(contract.status==='walking-aboard'||contract.status==='leaving-aboard')){const e=this.easeBody(b,'aboard',{x:seat.x,y:seat.y,z:seat.z},dt);seat={...seat,x:e.x,y:e.y,z:e.z};}else b.easedAboard=null;
-        if(seat){b.group.position.set(seat.x,seat.y+(contract.status==='aboard'&&!contract.displaced?({pilot:.47,captain:.63,nav:.57,comms:.57,gun_dorsal:.44,gun_ventral:.44}[seat.id]||0):0),seat.z);b.group.rotation.set(0,Math.PI-(Number.isFinite(seat.yaw)?seat.yaw*(seat.id?Math.PI/180:1):0),0);}
+        if(seat){b.group.position.set(seat.x,seat.y+(contract.status==='aboard'&&!contract.displaced?(seat.id?seatPan(seat):0):0),seat.z);b.group.rotation.set(0,Math.PI-(Number.isFinite(seat.yaw)?seat.yaw*(seat.id?Math.PI/180:1):0),0);}
       }else if(b.local){b.group.removeFromParent();this.engine.scene.add(b.group);b.entry=this.engine.track(b.entry);b.local=false;}
     }
     this.fleetView.crew(dt,s,seen);          // FLEET: the people at a raider's stations

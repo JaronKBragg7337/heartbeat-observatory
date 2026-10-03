@@ -117,7 +117,7 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
   section('13. Space: walking, hopping and digging on Phobos');
   const store = new EditStore(ph); FIELD.attachEdits(store);
   const standOn = (w, e, n) => { const pi = ph.padInfo, x = pi.point.x + pi.east.x * e + pi.north.x * n, y = pi.point.y + pi.east.y * e + pi.north.y * n, z = pi.point.z + pi.east.z * e + pi.north.z * n, l = len({ x, y, z }), R = FIELD.surfaceRadiusFast(ph, x / l, y / l, z / l); w.worldPos = { x: x / l * (R + 0.02), y: y / l * (R + 0.02), z: z / l * (R + 0.02) }; w.velocity = { x: 0, y: 0, z: 0 }; w.grounded = true; w.updateFrame(); };
-  const walker = new Walker(ph, { jumpSpeed: 0.6 });
+  const walker = new Walker(ph, { jumpSpeed: 0.6, suitHoldAccel: 0 });   // moons-fix: 0 = real gravity (the physics check below); the game's default has the boot-grip jets
   standOn(walker, 0, 0);
   for (let i = 0; i < 120; i++) walker.tick(1 / 60, {});
   check('a person standing on the pad stays on it: grounded, density at the feet about zero, 2 s of ticks', walker.grounded && Math.abs(FIELD.density(ph, walker.worldPos.x, walker.worldPos.y, walker.worldPos.z)) < 0.1);
@@ -140,6 +140,32 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
     const g = ph.surfaceGravity, expectApex = 0.6 * 0.6 / (2 * g), expectT = 2 * 0.6 / g;
     check(`a hop with a 0.6 m/s push-off rises ${expectApex.toFixed(0)} m and hangs ${expectT.toFixed(0)} s on Phobos (measured ${apex.toFixed(0)} m, ${t.toFixed(0)} s): real gravity, within 12%`,
       Math.abs(apex - expectApex) / expectApex < 0.12 && Math.abs(t - expectT) / expectT < 0.12, `${apex} ${t}`);
+  }
+  {
+    // moons-fix: Jaron stepped off the ramp on Phobos and floated away. The game's walker (default options) must stay down on every moon.
+    const sink = (body, standFn) => {
+      const out = {};
+      const w = new Walker(body); standFn(w, 0, 0); for (let i = 0; i < 120; i++) w.tick(1 / 60, {});
+      const r0 = len(w.worldPos); out.settled = w.grounded;
+      let apex = 0, t = 0; w.tick(1 / 60, { jump: true }); for (let i = 0; i < 60 * 60; i++) { w.tick(1 / 60, {}); t += 1 / 60; apex = Math.max(apex, len(w.worldPos) - r0); if (w.grounded && t > 0.5) break; }
+      out.hopApex = apex; out.hopT = t; out.hopGrounded = w.grounded;
+      // stepped off a 3 m ledge with the ramp's push: 2 m/s up and 2 m/s along
+      standFn(w, 5, 5); for (let i = 0; i < 60; i++) w.tick(1 / 60, {}); const up = { x: w.worldPos.x / len(w.worldPos), y: w.worldPos.y / len(w.worldPos), z: w.worldPos.z / len(w.worldPos) };
+      w.worldPos.x += up.x * 3; w.worldPos.y += up.y * 3; w.worldPos.z += up.z * 3; w.velocity = { x: up.x * 6 + 2, y: up.y * 6, z: up.z * 6 }; w.grounded = false;
+      const r1 = len(w.worldPos) - 3; let t2 = 0, apex2 = 0; for (let i = 0; i < 60 * 120; i++) { w.tick(1 / 60, {}); t2 += 1 / 60; apex2 = Math.max(apex2, len(w.worldPos) - r1); if (w.grounded) break; }
+      out.fallT = t2; out.fallApex = apex2; out.fallGrounded = w.grounded;
+      // walking 60 s, never airborne for long
+      standFn(w, 0, 0); for (let i = 0; i < 60; i++) w.tick(1 / 60, {}); let air = 0, maxAir = 0, cur = 0; for (let i = 0; i < 60 * 60; i++) { w.yaw = 0.5; w.tick(1 / 60, { moveNorth: 1 }); if (!w.grounded) { air++; cur++; maxAir = Math.max(maxAir, cur); } else cur = 0; }
+      out.walkAirFrac = air / 3600; out.walkMaxAirS = maxAir / 60;
+      return out;
+    };
+    const standDm = (w, e, n) => { const pi = dm.padInfo, x = pi.point.x + pi.east.x * e + pi.north.x * n, y = pi.point.y + pi.east.y * e + pi.north.y * n, z = pi.point.z + pi.east.z * e + pi.north.z * n, l = len({ x, y, z }), R = FIELD.surfaceRadiusFast(dm, x / l, y / l, z / l); w.worldPos = { x: x / l * (R + 0.02), y: y / l * (R + 0.02), z: z / l * (R + 0.02) }; w.velocity = { x: 0, y: 0, z: 0 }; w.grounded = false; };
+    for (const [name, body, fn] of [['Phobos', ph, standOn], ['Deimos', dm, standDm]]) {
+      const o = sink(body, fn);
+      check(`${name}: the game's own walker settles, a deliberate hop stays under 2.5 m and is back on the ground in under 8 s (apex ${o.hopApex.toFixed(2)} m, ${o.hopT.toFixed(1)} s)`, o.settled && o.hopGrounded && o.hopApex < 2.5 && o.hopApex > 0.3 && o.hopT < 8, JSON.stringify(o));
+      check(`${name}: stepping off a ledge with a 6 m/s shove still comes down inside 20 s and never rises past 12 m (${o.fallT.toFixed(1)} s, ${o.fallApex.toFixed(1)} m)`, o.fallGrounded && o.fallT < 20 && o.fallApex < 12, JSON.stringify(o));
+      check(`${name}: a minute of walking keeps the boots down: airborne under 15% of the time and never for more than 3 s at once (${(o.walkAirFrac * 100).toFixed(1)}%, longest ${o.walkMaxAirS.toFixed(1)} s)`, o.walkAirFrac < 0.15 && o.walkMaxAirS < 3, JSON.stringify(o));
+    }
   }
   {
     const digger = new Digger(ph, store, walker);

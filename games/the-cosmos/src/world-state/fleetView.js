@@ -21,6 +21,7 @@ import { SHIPYARD, forSale } from '../ships/shipyard.js';
 import { CLAIM_REACH_M } from '../ships/raider/stats.js';
 import { buildDroneMesh } from '../ship/shipFx.js';
 import { poseRamp } from '../ship/shipSystem.js';
+import { seatPan } from '../ship/shipSpec.js';   // moons-fix
 
 const IDENT = new THREE.Quaternion();
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
@@ -302,7 +303,7 @@ export class FleetView {
         const seat = c.seatPose || def.seats.find((s) => s.id === def.crewPosts.find((r) => r.id === c.role)?.seat);
         if (!seat) continue;
         const sitting = c.status === 'aboard';
-        const loc = sitting ? seat : { x: seat.x, y: seat.y, z: seat.z + 0.9 };
+        const loc = sitting ? { x: seat.x, y: seat.y + seatPan(seat), z: seat.z } : { x: seat.x, y: seat.y, z: seat.z + 0.9 };   // moons-fix: hips at the chair's pan
         const v = new THREE.Vector3(loc.x, loc.y, loc.z).applyQuaternion(q);
         const pos = { x: f.pos.x + v.x, y: f.pos.y + v.y, z: f.pos.z + v.z };
         const qq = q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI - (seat.yaw || 0) * Math.PI / 180));

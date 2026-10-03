@@ -48,6 +48,10 @@ export class Walker {
     this.walkSpeed = opts.walkSpeed || 1.9;   // m/s, encumbered EVA pace
     this.runSpeed = opts.runSpeed || 4.4;     // m/s
     this.jumpSpeed = opts.jumpSpeed || 3.1;   // m/s initial vertical
+    /** moons-fix: the suit's boot-grip jets. On a body whose own gravity is below this (Phobos 0.0057, Deimos 0.003 m/s2) they add the
+     *  difference while you are off the ground, so a step off a ramp lands in about a second and a deliberate hop (about 1.3 m high)
+     *  comes back down in about 4 s, instead of 800 m and 18 minutes. Mars is above it, so nothing changes there. 0 = real gravity. */
+    this.suitHoldAccel = opts.suitHoldAccel ?? 0.8;
 
     this.grounded = false;
     this.groundMaterial = null;
@@ -207,10 +211,14 @@ export class Walker {
     vTanY += (wishY - vTanY) * k;
     vTanZ += (wishZ - vTanZ) * k;
 
-    let vRad = vDotG + gMag * dt;              // positive = falling inward
+    const gEff = Math.max(gMag, this.suitHoldAccel || 0);        // moons-fix: boot-grip jets (see suitHoldAccel)
+    const jumpEff = gEff > gMag ? Math.min(this.jumpSpeed, Math.sqrt(2 * gEff * 1.3)) : this.jumpSpeed;
+    let vRad = vDotG + gEff * dt;              // positive = falling inward
+    // moons-fix: nothing the legs do may throw you up faster than a hop (a ramp's slope, a bump, a step off a ledge)
+    if (gEff > gMag && vRad < -jumpEff * 1.25) vRad = -jumpEff * 1.25;
 
     if (this.grounded && input.jump) {
-      vRad = -this.jumpSpeed;
+      vRad = -jumpEff;
       this.grounded = false;
     }
 

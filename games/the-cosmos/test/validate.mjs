@@ -636,6 +636,9 @@ const { runFleetChecks } = await import('./fleet-checks.mjs');
 await runFleetChecks({check,section,THREE,mars,FIELD});
 
 // 27. Looks: salvage props, Phobos ground, the Shrike's paint. Client-only.
+const { runMoonsChecks, runMoonTripChecks } = await import('./moons-checks.mjs');
+await runMoonsChecks({ check, section, THREE });
+await runMoonTripChecks({ check, section });
 const { runLooksChecks } = await import('./looks-checks.mjs');
 await runLooksChecks({ check, section, THREE });
 

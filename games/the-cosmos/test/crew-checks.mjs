@@ -42,6 +42,16 @@ export async function runCrewChecks({ check, section, THREE, mars, FIELD }) {
   }
   check('every crew seat can be walked to from the foot of the ramp with the real ShipWalker (stairs, gantry, both ladders), ending within reach of the seat',
     allReach, detail.join(', '));
+  {
+    // moons-fix: after a landing on a moon the ramp is raised and the one person aboard has to reach the ramp panel from the bridge
+    const { planPath, standPointsFor } = await import('../src/crew/shipPath.js');
+    const swP = new ShipWalker(shipIndex, defaultState());                    // ramp raised, as after a landing anywhere
+    const { PANELS } = await import('../src/ship/shipSpec.js');
+    const pn = PANELS.find((q) => q.action === 'ramp_cargo');
+    const sp = standPointsFor(swP, SEATS.find((s) => s.id === 'pilot'))[0];
+    const way = pn && sp ? planPath(swP, sp, { x: pn.x, z: pn.z }, { reach: pn.radius - 0.3 }) : null;
+    check('from beside the pilot seat there is a walkable way to within reach of the ramp panel (so the ramp can be lowered from inside on a moon)', !!way, pn ? `panel ${pn.x},${pn.z} r${pn.radius}` : 'no ramp panel found');
+  }
   check('on the way no crew member is ever inside a wall or a bunk, and none had to be pushed past a point they were stuck at', bad === 0 && worstSnap === 0, `${bad} bad frames, ${worstSnap} snaps`);
   {
     const up = new ShipWalker(shipIndex, defaultState());       // ramp raised: there is no way aboard

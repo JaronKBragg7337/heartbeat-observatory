@@ -6,7 +6,7 @@ export class EconomyUI {
   constructor(world,{port,walker,ship,bridge}) {
     Object.assign(this,{world,port,walker,ship,bridge});this.accum=0;this.open=false;
     const style=document.createElement('style');style.textContent=`
-      #purse{position:static;display:block;color:#ffdb9c;background:none;border:0;padding:0;text-align:left;font:10px ui-monospace,monospace;pointer-events:auto;max-width:100%;cursor:pointer}
+      #purse{position:static;display:block;color:#ffdb9c;background:none;border:0;padding:0;text-align:left;font:12px ui-monospace,monospace;pointer-events:auto;max-width:100%;cursor:pointer;min-height:44px;margin:-16px 0;padding:16px 0;box-sizing:border-box}/* moons-fix: a 138x11 tap target; the padding is cancelled by the margin so the HUD keeps its height */
       #save-warning{position:fixed;right:16px;top:56px;width:10px;height:10px;border-radius:50%;background:#ff6351;z-index:70;border:0;padding:0;cursor:pointer}
       #account-panel{display:none;position:fixed;right:12px;top:110px;z-index:70;width:min(320px,calc(100vw - 24px));max-height:calc(100dvh - 190px);overflow:auto;box-sizing:border-box;background:#18120bf5;color:#ffdfb9;border:1px solid #ae8548;border-radius:12px;padding:14px;font:12px/1.5 ui-monospace,monospace}
       #account-panel button,#quest-deliver{min-height:46px;padding:8px 12px;border:1px solid #ae8548;border-radius:9px;background:#342713;color:#ffdfb9;font:inherit}

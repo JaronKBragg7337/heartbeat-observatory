@@ -20,6 +20,7 @@ import { ShipWalker, shipIndexFor } from '../ship/shipWalker.js';
 
 import { CREW_POSTS as ALL_POSTS, HIRE_SPOTS, HIRE_FACE, HIRE_BOARD, PLACES, MAX_TRIP_M, LINES, thinkDelay, aimErrorRad } from './crewSpec.js';
 import { routeToSeat, RouteWalker } from './shipPath.js';
+import { seatPan } from '../ship/shipSpec.js';   // moons-fix
 import { Autopilot, rng } from './autopilot.js';
 import { GunnerAI } from './gunnerAI.js';
 import { geodeticToCartesian } from '../world/geodesy.js';
@@ -29,7 +30,6 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrapPI = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 const TALK_M = 3.0;
 /** How high the seat pan is above the seat's floor mark, per seat: where a person's hips go. */
-const PAN = { captain: 0.63, pilot: 0.47, nav: 0.57, comms: 0.57, engineer: 0.57, gun_dorsal: 0.44, gun_ventral: 0.44 };
 
 export class CrewSystem {
   /**
@@ -507,7 +507,7 @@ export class CrewSystem {
     // aboard: ship-local
     const seat = this._seat(m);
     if (m.mode === 'sit') {
-      const t = m.sitT, e = t * t * (3 - 2 * t), pan = PAN[seat.id] || 0.5;
+      const t = m.sitT, e = t * t * (3 - 2 * t), pan = seatPan(seat);
       let yaw = seat.yaw * Math.PI / 180;
       const a = this.ship.guns.aim;
       if (seat.id === 'gun_dorsal') yaw += a.dorsal.yaw; else if (seat.id === 'gun_ventral') yaw += a.ventral.yaw;

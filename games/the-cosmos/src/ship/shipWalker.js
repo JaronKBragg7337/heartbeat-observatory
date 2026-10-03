@@ -170,19 +170,18 @@ export class ShipWalker {
       const t = Math.tan(rp.angle), c = Math.cos(rp.angle);
       const run = def.length * c;
       const hw = def.width / 2;
-      if (def.dir.z) {           // cargo: along +Z
-        // The zone reaches back into the bay so it overlaps the bay floor.
-        out.push({ id: def.id, x0: def.hinge.x - hw, x1: def.hinge.x + hw,
-          z0: def.hinge.z - 0.9, z1: def.hinge.z + run + R + .1,
-          floor: (x, z) => def.hinge.y - Math.max(0, Math.min(run, z - def.hinge.z)) * t,
-          ceil: (x, z) => def.hinge.y - Math.max(0, z - def.hinge.z) * t + 4,
-          holes: [], kind: 'ramp', ramp: key });
-      } else {                   // airlock gangway: along -X
-        out.push({ id: def.id, x0: def.hinge.x - run - R - .1, x1: def.hinge.x + 0.9,
-          z0: def.hinge.z - hw, z1: def.hinge.z + hw,
-          floor: (x) => def.hinge.y - Math.max(0, Math.min(run, def.hinge.x - x)) * t,
-          ceil: (x) => def.hinge.y - Math.max(0, def.hinge.x - x) * t + 4,
-          holes: [], kind: 'ramp', ramp: key });
+      // moons-fix: along the ramp's OWN direction (+Z for a stern ramp, -X for the Meridian's airlock, +X for the Wayfarer's). Both used to be
+      // hard-wired (cargo +Z, gangway -X), so the Wayfarer's starboard gangway had no walkable surface and nobody could leave through its airlock.
+      const sg = def.dir.z ? Math.sign(def.dir.z) : Math.sign(def.dir.x), a0 = -0.9, a1 = run + R + .1;
+      const alongOf = def.dir.z ? (x, z) => sg * (z - def.hinge.z) : (x) => sg * (x - def.hinge.x);
+      const floor = (x, z) => def.hinge.y - Math.max(0, Math.min(run, alongOf(x, z))) * t;
+      const ceil = (x, z) => def.hinge.y - Math.max(0, alongOf(x, z)) * t + 4;
+      if (def.dir.z) {
+        const za = def.hinge.z + sg * a0, zb = def.hinge.z + sg * a1;
+        out.push({ id: def.id, x0: def.hinge.x - hw, x1: def.hinge.x + hw, z0: Math.min(za, zb), z1: Math.max(za, zb), floor, ceil, holes: [], kind: 'ramp', ramp: key });
+      } else {
+        const xa = def.hinge.x + sg * a0, xb = def.hinge.x + sg * a1;
+        out.push({ id: def.id, x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: def.hinge.z - hw, z1: def.hinge.z + hw, floor, ceil, holes: [], kind: 'ramp', ramp: key });
       }
     }
     return out;
@@ -382,8 +381,10 @@ export class ShipWalker {
       const def = this.index.layout.ramps[key];
       const run = def.length * Math.cos(rp.angle);
       let atEnd = false;
-      if (def.dir.z) atEnd = this.z > def.hinge.z + run - 0.9 && wz > 0.2 && Math.abs(this.x - def.hinge.x) < def.width / 2;
-      else atEnd = this.x < def.hinge.x - run + 0.9 && wx < -0.2 && Math.abs(this.z - def.hinge.z) < def.width / 2;
+      // moons-fix: along the ramp's own direction (see _dynamicZones)
+      const along = (this.x - def.hinge.x) * def.dir.x + (this.z - def.hinge.z) * def.dir.z, push = wx * def.dir.x + wz * def.dir.z;
+      const across = def.dir.z ? Math.abs(this.x - def.hinge.x) : Math.abs(this.z - def.hinge.z);
+      atEnd = along > run - 0.9 && push > 0.2 && across < def.width / 2;
       if (atEnd) { this.events.push('exit:' + key); return; }
     }
   }

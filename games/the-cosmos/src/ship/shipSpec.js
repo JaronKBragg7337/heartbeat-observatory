@@ -207,6 +207,12 @@ export const SEATS = [
 // ---------------------------------------------------------------------------
 // Other things you operate by standing at them.
 // ---------------------------------------------------------------------------
+// moons-fix: how high a seated person's hips sit above the seat's floor mark depends on the chair that is DRAWN (its variant), not on the seat's name.
+// Three renderers each had their own table keyed by the Meridian's seat ids, so on the Wayfarer (nav/comms/engineer drawn as bucket seats) crew floated or sank.
+export const SEAT_PAN = { captain: 0.63, pilot: 0.47, swivel: 0.57, gunner: 0.44 };
+const DEFAULT_SEAT_VARIANT = { captain: 'captain', pilot: 'pilot', nav: 'swivel', comms: 'swivel', engineer: 'swivel', gun_dorsal: 'gunner', gun_ventral: 'gunner' };
+export const seatVariant = (seat) => seat.variant || DEFAULT_SEAT_VARIANT[seat.id] || 'pilot';
+export const seatPan = (seat) => SEAT_PAN[seatVariant(seat)] ?? 0.47;
 export const PANELS = [
   { id: 'panel_ramp',    name: 'Boarding ramp',  x: -5.0, y: 0, z: 20.1, radius: 2.1, action: 'ramp_cargo' },
   { id: 'panel_air',     name: 'Airlock',        x: -3.5, y: 0, z: -12.0, radius: 1.9, action: 'airlock' },
@@ -321,7 +327,8 @@ prop('crate',   'engineering',  5.7, 7.2, 1.0, 1.0, 1.0, 0);
 // cargo
 // (the west side belongs to the stair and the gantry now; its crates stand at the aft end of the bay)
 prop('crate', 'cargo', -4.9, 18.1, 1.4, 1.4, 1.4, 0);
-prop('crate', 'cargo', -2.8, 19.7, 1.4, 1.4, 1.4, 0);
+// moons-fix: this crate stood at (-2.8, 19.7) and sealed the ramp panel (-5, 20.1) in a pocket: from inside the ship you could not get within reach of it, so on a moon (ramp raised) nobody could lower the ramp
+prop('crate', 'cargo', 4.9, 19.9, 1.4, 1.4, 1.4, 0);
 prop('crate', 'cargo', -4.9, 18.1, 1.4, 1.4, 1.4, 0, { y: 1.4 });
 prop('crate', 'cargo', -3.0, 17.8, 1.8, 1.4, 1.2, 0);
 prop('crate', 'cargo',  5.0, 12.7, 1.6, 1.6, 1.6, 0);              // clear of the engineering door: 1 m of floor in front of it
