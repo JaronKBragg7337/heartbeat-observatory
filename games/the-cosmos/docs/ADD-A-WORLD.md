@@ -144,9 +144,14 @@ Jaron (10/3): the star system is our real Solar System at real scale; planets sp
   `?sky=live|noon|morning|afternoon|sunset|dusk|dawn|sunrise|night|midnight|fixed` and `?skyshift=<seconds>` choose.
 * `rotation`: `{ periodS, axialTiltDeg, prime0Deg?, lockedTo?: 'parent' }`. Mars carries its real one (`rootSpin` uses the IAU rate; its `periodS` is kept as data); a moon defaults to locked.
   A frame turns about Mars's pole axis only: a world's tilt is data, not yet a tilted frame.
-* **Range.** The drive reaches `DRIVE.rangeM` (1,000,000 km: nine hours at the top speed) from Mars. A world farther than that is listed as
-  far, with the distance in AU, unless it has a jump lane (`jump: true`, F3): then it is an ordinary destination marked `jump`. A trip of
-  more than six hours is estimated in closed form (a planet at real distance would otherwise cost a million sub-steps).
+* **Range (F3).** The main drive's course is meant for `DRIVE.rangeM` (1,000,000 km: nine hours at the top speed) from Mars. Farther than that,
+  **every world is reachable from day one by the long-range drive** (`src/space/longRange.js`, docs/LONG-RANGE-DRIVE.md): slow on purpose (5% of a g,
+  400 km/s cap), with its own time compression (x1 to x5400) and a closed-form path, so it follows a MOVING target (F2's orbits) exactly. A built
+  world with a lane (`jump: true`) is offered by the lane (fee, quick) and the drive (free, slow: the nav computer adds the `~drive` row); a built
+  world without one is drive-only (the registry marks its row `via: 'drive'`). A **placeholder with an `orbit`** (Earth, the Moon, Callisto) is a
+  `kind: 'deep'` row: the drive brings her to a drop-out point 14 radii off the world and holds ("Holding off the world"); when its builder
+  replaces the placeholder with a real def, the row becomes an ordinary landable destination and the drive route comes with it. Give a placeholder
+  a `radiusMean` so the drop-out distance is right.
 
 ## Stations: places that are built, not grounds
 

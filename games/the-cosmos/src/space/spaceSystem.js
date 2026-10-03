@@ -40,6 +40,8 @@ import { FreeFlight } from './freeflight.js';           // FREEFLIGHT
 import { FreeFlightUI, ffHudLines } from './freeflightUI.js';
 import { JUMP, systemOfFrame, rootFrameOf, mouthPoint, solMouthDir, isLaneWorld } from './jump.js';       // WORLD2
 import { buildLaneGate } from './laneGate.js';
+import { LONG, targetAt, realSeconds, longDriveAllowed } from './longRange.js';
+import { installHold } from './deepHold.js';       // F3: the long-range drive
 
 const DEG = Math.PI / 180;
 
@@ -119,9 +121,9 @@ export class SpaceSystem {
 
   snapshotState() {
     const t=this.trip,j=this.jobs;
-    return {ff:this.ff.save(),epochS:this.ship.flight.epochS,frameId:this.frameId,ledger:{credits:this.ledger.credits,cargo:[...this.ledger.cargo]},
+    return {ff:this.ff.save(),epochS:this.ship.flight.epochS,deepHold:this.ship.flight.deepHold||null,frameId:this.frameId,ledger:{credits:this.ledger.credits,cargo:[...this.ledger.cargo]},
       jobs:{taken:[...j.taken],hold:structuredClone(j.hold),samplesAboard:j.samplesAboard,salvaged:j.salvaged,beaconHeard:j.beaconHeard,paidTotal:j.paidTotal},
-      trip:t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon,sys:t.dest.sys},phase:t.phase,t:t.t,warp:t.warp,settleT:t.settleT,cancelled:t.cancelled,progress:{...t.progress},legs:t.legs?structuredClone(t.legs):null,leg:t.leg,spoolT:t.spoolT,
+      trip:t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon,sys:t.dest.sys},phase:t.phase,t:t.t,warp:t.warp,settleT:t.settleT,cancelled:t.cancelled,progress:{...t.progress},legs:t.legs?structuredClone(t.legs):null,leg:t.leg,spoolT:t.spoolT,cruise:t.cruise?structuredClone(t.cruise):null,
         said:[...t._said],attFrom:t._attFrom?.toArray()||null,transit:t.transit?structuredClone(t.transit):null}:null};
   }
   restoreState(saved) {
@@ -132,13 +134,14 @@ export class SpaceSystem {
     this.ship.flight.refreshOrientation();this.walker.updateFrame();this.ship._syncEntries();
     Object.assign(this.jobs,saved.jobs);this.jobs.taken=new Set(saved.jobs.taken);
     this.ledger.credits=saved.ledger.credits;this.ledger.cargo=new Map(saved.ledger.cargo);
-    this.ship.flight.epochS=saved.epochS??null;
+    this.ship.flight.epochS=saved.epochS??null;this.ship.flight.deepHold=saved.deepHold||null;if(this.ship.flight.deepHold&&!saved.trip)installHold(this.ship.flight);          // F3: held out in deep space
     if(saved.ff)this.ff.load(saved.ff);   // FREEFLIGHT
     if(saved.epochS===undefined&&this.ff.active){const p=this.ship.flight.pos,v=this.ship.flight.vel;v.x-=OMEGA*p.z;v.z+=OMEGA*p.x;}     // saved before F2: an inertial velocity; keep the orbit
     if(saved.trip&&saved.trip.transit&&saved.trip.transit.T0===undefined)saved.trip=null;   // a drive course saved before F2 cannot be resumed: the ship is held where she is
     if(saved.trip){const r=saved.trip,dest={...this.resolve(r.destId),...r.dest};if(dest.kind==='hold')dest.goalS=()=>r.transit.finalGoal;if(!dest.kind)return;
       const t=new SpaceTrip(this,dest);Object.assign(t,r);t.dest=dest;t._said=new Set(r.said);t._attFrom=r.attFrom?new THREE.Quaternion().fromArray(r.attFrom):null;
       if(r.transit){t.transit=Object.assign(Object.create(Transit.prototype),r.transit);t.rebindTransit();this.ship.flight.override=dt=>t._drive(dt);}
+      if(r.cruise){t.cruise=r.cruise;this.ship.flight.override=dt=>t._cruiseStep(dt);}          // F3
       this.trip=t;
     }
   }
@@ -302,8 +305,9 @@ export class SpaceSystem {
    * as it moves: a moon's standoff point, the gate over a port that turns with Mars); `goalS()` is the same point now.
    */
   resolve(id) {
-    const row = DESTINATIONS.find((d) => d.id === id); if (!row) return null;
-    const r = { ...row };
+    const [base, via] = String(id).split('~');             // F3: 'ceres~drive' is the Ceres row flown by the long-range drive instead of the lane
+    const row = DESTINATIONS.find((d) => d.id === base); if (!row) return null;
+    const r = { ...row, id, ...(via ? { via } : {}) };
     if (row.kind === 'port') { const g = () => this.portSite.toWorld(0, DRIVE.gateAltM, 0); r.fixedAt = g; }        // the gate over the pad: the lift pods bring her down from there
     else if (row.kind === 'orbit') r.fixedAt = () => { if (!r._o) { const p = this._shipS(), l = Math.hypot(p.x, p.y, p.z), R = MARS_R + DRIVE.orbitAltM; r._o = { x: p.x / l * R, y: p.y / l * R, z: p.z / l * R }; } return r._o; };
     else if (row.kind === 'moon') {
@@ -317,7 +321,8 @@ export class SpaceSystem {
       const c = worldKin(row.station, T).c, k = stationStandoff(worldDef(row.station)), l = Math.hypot(c.x, c.y, c.z) || 1;
       return { x: c.x - c.x / l * k, y: c.y - c.y / l * k, z: c.z - c.z / l * k };
     };
-    if (r.fixedAt) r.goalS = () => r.fixedAt(this.timeS()); else if (!r.goalS) r.goalS = null;
+    if (row.kind === 'deep') r.goalS = () => targetAt(row.deep, this.timeS(), this._shipS());      // F3: a world with no ground yet: the drop-out point on the side facing the ship (Mars's turning axes)
+    else if (r.fixedAt) r.goalS = () => r.fixedAt(this.timeS()); else if (!r.goalS) r.goalS = null;
     return r;
   }
 
@@ -335,22 +340,31 @@ export class SpaceSystem {
     const f = this.ship.flight, out = [];
     const aMax = DRIVE.thrustN * Math.min(1.8, f.engineFactor) * f.damageFactor / f.massKg;
     const hereSys = systemOfFrame(this.frameId);
+    const away = (hereSys === 'mars' ? (() => { const q = this._shipS(); return Math.hypot(q.x, q.y, q.z); })() : Math.hypot(f.pos.x, f.pos.y, f.pos.z)) > LONG.homeM;       // F3: out in deep space
     for (const row of DESTINATIONS) {
-      const r = { id: row.id, name: row.name, blurb: row.blurb, kind: row.kind, ok: true, reason: '', distM: 0, etaS: 0 };
-      if (row.kind === 'far') { r.ok = false; r.reason = 'no lane surveyed yet'; out.push(r); continue; }
-      const res = this.resolve(row.id);
+      if (row.kind === 'far') { out.push({ id: row.id, name: row.name, blurb: row.blurb, kind: row.kind, ok: false, reason: 'no lane surveyed yet', distM: 0, etaS: 0 }); continue; }
       const destSys = row.kind === 'moon' ? systemOfFrame(row.moon) : 'mars';
-      if (destSys !== hereSys) {
-        // WORLD2: across the Ore Lane: climb, drive to the mouth, spool, drive in. Each leg is flown to estimate it (SpaceTrip._plan0 does the arithmetic).
-        const probe = new SpaceTrip(this, res), pl = probe._plan0(), legs = probe._route();
-        r.etaS = pl.climb + pl.drive + pl.spool + pl.drive2 + pl.descent + 40;
+      // F3: a world across the lane is offered by the lane (fee, quick) AND by the long-range drive (free, slow on purpose); a world with no lane only by the drive
+      const ids = [row.id];
+      if (!row.via && destSys !== hereSys) ids.push(row.id + '~drive');
+      for (const rid of ids) {
+      const r = { id: rid, name: row.name, blurb: row.blurb, kind: row.kind, ok: true, reason: '', distM: 0, etaS: 0 };
+      const res = this.resolve(rid);
+      if (destSys !== hereSys || row.kind === 'deep' || res.via === 'drive' || away) {
+        // WORLD2: across the Ore Lane: climb, drive to the mouth, spool, drive in. F3: or the long-range drive. Each leg is flown to estimate it (SpaceTrip._plan0 does the arithmetic).
+        const probe = new SpaceTrip(this, res), pl = probe._plan0(), legs = probe._route(), cr = legs.some((l) => l.cruise), lane = legs.some((l) => l.jump);
+        r.etaS = pl.climb + pl.drive + pl.spool + pl.long + pl.drive2 + pl.descent + 40;
         const p = hereSys === 'mars' ? this._shipS() : { x: f.pos.x, y: f.pos.y, z: f.pos.z };
-        const m2 = mouthPoint(legs[1].sys, makeMoon(legs[1].sys));
-        r.distM = Math.hypot(legs[0].goal.x - p.x, legs[0].goal.y - p.y, legs[0].goal.z - p.z) + Math.hypot(legs[1].goal.x - m2.x, legs[1].goal.y - m2.y, legs[1].goal.z - m2.z);
-        r.crossing = true; r.laneFee = JUMP.feeCredits;
-        if (this.ledger.credits < JUMP.feeCredits && !this.o.remoteFee) { r.ok = false; r.reason = `the lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.ledger.credits)}`; }
+        if (cr) { r.distM = pl.longL; r.route = 'drive'; r.longS = pl.long; r.realTopS = realSeconds(pl.long) + (pl.climb + pl.drive + pl.drive2) / 60 + pl.descent / 8 + 30; r.peakSpeed = pl.longPeak; r.warps = LONG.warps; }      // realTopS: the long drive at the top of its ladder, the main-drive legs at x60, the landing mostly at x1
+        else {
+          const m2 = mouthPoint(legs[1].sys, makeMoon(legs[1].sys));
+          r.distM = Math.hypot(legs[0].goal.x - p.x, legs[0].goal.y - p.y, legs[0].goal.z - p.z) + Math.hypot(legs[1].goal.x - m2.x, legs[1].goal.y - m2.y, legs[1].goal.z - m2.z);
+          r.route = 'lane'; r.crossing = true; r.laneFee = JUMP.feeCredits;
+        }
+        if (lane && this.ledger.credits < JUMP.feeCredits && !this.o.remoteFee) { r.ok = false; r.reason = `the lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.ledger.credits)}`; }
+        if (cr) { const g = longDriveAllowed(this.ship.def, false); if (!g.ok) { r.ok = false; r.reason = g.msg; } }
         if (!f.canLiftOff() && f.landed) { r.ok = false; r.reason = 'engines too low to lift'; }
-        if (r.ok) r.blurb = `${row.blurb} Lane fee ${JUMP.feeCredits} credits.`;
+        if (r.ok && lane) r.blurb = `${row.blurb} Lane fee ${JUMP.feeCredits} credits.`;
         out.push(r); continue;
       }
       // from where? in Mars space or a moon's: take the ship as it is (a ship on the ground starts from the gate, after the climb)
@@ -366,6 +380,7 @@ export class SpaceSystem {
       if (row.kind === 'moon' && this.frameId === row.moon) { r.ok = false; r.reason = 'we are here'; }
       if (!f.canLiftOff() && f.landed) { r.ok = false; r.reason = 'engines too low to lift'; }
       out.push(r);
+      }
     }
     return out;
   }
@@ -382,15 +397,14 @@ export class SpaceSystem {
     if (!ship.aboard) return { ok: false, msg: 'Come aboard first: the ship will not lift without you.' };
     const dest = this.resolve(id);
     if (!dest || !dest.goalS) return { ok: false, msg: 'That is out of range: it needs a jump drive the Meridian does not have.' };
-    if ((dest.kind === 'moon' ? systemOfFrame(dest.moon) : 'mars') !== systemOfFrame(this.frameId)) {        // WORLD2: across the lane
-      if (this.ledger.credits < JUMP.feeCredits) return { ok: false, msg: `The Compact's lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.ledger.credits)}. Earn it first.` };
-    }
     if (f.landed && !f.canLiftOff()) return { ok: false, msg: 'Engine power is too low to lift off. Route more to the engines.' };
     if (f.engineFactor < 0.3) return { ok: false, msg: 'Engine share is too low for the main drive. Route power to the engines (Engineering).' };
     if (this.ship.crew && this.ship.crew.cancelOrder) this.ship.crew.cancelOrder();
     this.ff.suspend('The autopilot has the ship.');          // FREEFLIGHT
-    if (dest.kind === 'moon' && systemOfFrame(dest.moon) === systemOfFrame(this.frameId)) this.moonWorld(dest.moon);        // build the world now (a moment's hitch at the button, not on arrival); a world across the lane is built behind the jump spool (WORLD2)
+    if (dest.kind === 'moon' && systemOfFrame(dest.moon) === systemOfFrame(this.frameId) && dest.via !== 'drive') this.moonWorld(dest.moon);        // build the world now (a moment's hitch at the button, not on arrival); a world across the lane is built behind the jump spool (WORLD2)
     const trip = new SpaceTrip(this, dest, o);
+    if (trip._route().some((l) => l.jump) && this.ledger.credits < JUMP.feeCredits) return { ok: false, msg: `The Compact's lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.ledger.credits)}. Earn it first.` };     // WORLD2: across the lane
+    if (trip.usesLong()) { const g = trip._plan(); if (!g.ok) return { ok: false, msg: g.msg }; }          // F3: may this hull use the long-range drive?
     trip.setWarp(1);
     this.trip = trip;
     return { ok: true, msg: `Course set for ${dest.name}.` };
@@ -425,7 +439,7 @@ export class SpaceSystem {
     if (!t) return null;
     if (!t.active) {
       if (t.failed) { this.say(t.failed, true, t.by); }
-      this.lastTrip = t; this.trip = null; this.ship.flight.override = null; this.ship.flight.climbCap = 12; this.ship.flight.thrustDown = false;
+      this.lastTrip = t; this.trip = null; this.ship.flight.override = null; this.ship.flight.climbCap = 12; this.ship.flight.thrustDown = false; if (this.ship.flight.deepHold) installHold(this.ship.flight);
       return null;
     }
     return t.tick(dt);
@@ -523,6 +537,7 @@ export class SpaceSystem {
     if (t && t.active) {
       const p = t.progress, ph = t.phases(), now = ph.find((q) => q.state === 'now');
       if (t.phase === 'transit') out.push(`<span class="load">DRIVE · ${(p.speed / 1000).toFixed(2)} km/s · ${fmtKmSpace(p.distM)} to go${t.warp > 1 ? ` · ×${t.warp}` : ''}</span>`);
+      else if (t.phase === 'longdrive' && p.long) out.push(`<span class="load">LONG DRIVE · ${(p.speed / 1000).toFixed(0)} km/s · ${fmtAU(p.distM)} to go · day ${(p.long.tau / 86400).toFixed(1)} of ${(p.long.T / 86400).toFixed(1)}${t.eff > 1 ? ` · ×${t.eff}` : ''}</span>`);
       else if (t.phase === 'spool') out.push(`<span class="load">JUMP COILS · ${Math.max(0, JUMP.spoolS - t.spoolT).toFixed(0)} s</span>`);
       else out.push(`<span class="dim">${t.phase} · ${t.dest.name}${t.eff > 1 ? ` · ×${t.eff}` : ''}</span>`);
       out.push(`<span class="dim">${now ? `${now.name}: ${fmtDuration(t.wallS(now))} left` : ''} · whole trip ${fmtDuration(ph.reduce((a, q) => a + t.wallS(q), 0))}</span>`);
@@ -531,4 +546,5 @@ export class SpaceSystem {
   }
 }
 
+import { fmtAU } from './longRange.js';
 export const fmtKmSpace = (m) => (m >= 1e6 ? `${(m / 1000).toFixed(0)} km` : m >= 1e4 ? `${(m / 1000).toFixed(0)} km` : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`);

@@ -30,6 +30,7 @@ const CREW_IDS = Object.values(CREW_VOICE).filter((v) => v !== 'isaiah');
 
 const placeNames = () => [...PLACES.map((p) => p.name), ...BODIES.filter((b) => b.id === 'mars').flatMap((b) => (b.landmarks || []).map((l) => l.name))];
 const destNames = () => DESTINATIONS.filter((d) => d.kind !== 'far').map((d) => d.name);
+const landNames = () => DESTINATIONS.filter((d) => d.kind !== 'far' && d.kind !== 'deep').map((d) => d.name);       // F3: a held-off world (kind 'deep') is never arrived over or landed on
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
 /** Template source (as written in the code) -> every text it can be. Anything not listed is spoken by the browser voice. */
@@ -43,8 +44,8 @@ export const TEMPLATES = {
     range(26, 34).map((n) => `Hull's at ${n} percent. Breaking off, going down to neutral airspace.`),
   'Course set for ${this.dest.name}.': () => destNames().map((n) => `Course set for ${n}.`),
   'Course set for ${dest.name}.': () => destNames().map((n) => `Course set for ${n}.`),
-  'Arrived over ${d.name}. Easing level.': () => destNames().map((n) => `Arrived over ${n}. Easing level.`),
-  'Down at ${this.dest.name}.': () => destNames().map((n) => `Down at ${n}.`),
+  'Arrived over ${d.name}. Easing level.': () => landNames().map((n) => `Arrived over ${n}. Easing level.`),
+  'Down at ${this.dest.name}.': () => landNames().map((n) => `Down at ${n}.`),
   'We are at ${w.body.name} already.': () => ['Mars', ...frameWorlds().map((w) => w.name)].map((n) => `We are at ${n} already.`),
   'Raider down. Bounty ${BOUNTY_CREDITS} credits.': () => [`Raider down. Bounty ${BOUNTY_CREDITS} credits.`],
 };

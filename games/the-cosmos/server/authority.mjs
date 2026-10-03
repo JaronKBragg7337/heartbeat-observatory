@@ -30,6 +30,7 @@ import { VehicleDirector } from './vehicles.mjs';
 import { ShopDirector } from './shops.mjs';
 import { RoleDirector } from './roles.mjs';      // F5 roles and NPC stand-ins, F4 balance and home strength
 import { worldSale } from './world2.mjs';       // WORLD2
+import { tripWarps } from '../src/space/longRange.js';       // F3: the compression ladder depends on the drive that has the ship
 import { freshOpening, OpeningModel } from '../src/opening/state.js';
 import { detachBodyEdits } from '../src/world/field.js';
 import { landingOrder, MOON_IDS } from '../src/space/spaceSpec.js';
@@ -636,7 +637,7 @@ export class Authority {
         const ctl=sim.ship.rampCtl[a.key];if(ctl.target>.5&&sim.ship._rampOccupied(a.key))throw Error('Clear the ramp first.');
         if(ctl.target<.5)sim.ship._solveRamp(a.key);ctl.target=ctl.target>.5?0:1;sim.ship.state.ramps[a.key].target=ctl.target;break;}
       case 'cancel-trip':if(!p.aboardShipId)throw Error('Come aboard first.');return sim.trip?.cancel()||{ok:false,msg:'No course in progress.'};
-      case 'trip-warp':if(!p.aboardShipId||!sim.trip?.active&&!landingOrder(sim.crew.activeOrder()))throw Error('No course in progress.');if(![1,5,20,60].includes(a.warp))throw Error('Invalid trip speed.');sim.warp=a.warp;if(sim.trip?.active)sim.trip.setWarp(a.warp);break;
+      case 'trip-warp':if(!p.aboardShipId||!sim.trip?.active&&!landingOrder(sim.crew.activeOrder()))throw Error('No course in progress.');if(!tripWarps(sim.trip).includes(a.warp))throw Error('Invalid trip speed.');sim.warp=a.warp;if(sim.trip?.active)sim.trip.setWarp(a.warp);break;
       case 'ff-set':{   // FREEFLIGHT: free flight on or off, the assist, the target, the throttle, the time compression. Bridge stations only.
         if(!p.aboardShipId||!['pilot','captain','nav','comms'].includes(p.pose.seat))throw Error('Use a bridge station to set free flight.');
         if(sim.trip?.active&&a.enabled===true)throw Error('A course is under way. Cancel it first.');

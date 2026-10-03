@@ -10,6 +10,8 @@ import { GunSystem, DroneSystem } from '../src/ship/guns.js';
 import { Stations } from '../src/ship/shipStations.js';
 import { BOUNTY_CREDITS, STANDOFF_M, landingOrder, stickWarpCap } from '../src/space/spaceSpec.js';
 import { JUMP, systemOfFrame, isLaneWorld } from '../src/space/jump.js';       // WORLD2
+import { longDriveAllowed } from '../src/space/longRange.js';       // F3
+import { installHold } from '../src/space/deepHold.js';       // F3: a ship held out in deep space
 import { CrewSystem } from '../src/crew/crewSystem.js';
 import { Autopilot } from '../src/crew/autopilot.js';
 import { CREW_POSTS } from '../src/crew/crewSpec.js';
@@ -20,7 +22,7 @@ import { FREE } from '../src/space/spaceSpec.js';
 import { worldTimeAt } from '../src/space/clock.js';
 import { frameAt, carryFlight, worldPointFixed, framePoint, OMEGA } from '../src/space/frames.js';
 
-export const flightFields = ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd','epochS'];
+export const flightFields = ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd','epochS','deepHold'];
 export function flightRecord(f) {
   return {pos:{...f.pos},vel:{...f.vel},quaternion:f.quaternion.toArray(),power:{...f.power},attitude:f.attitude?.toArray()||null,legs:structuredClone(f.legs),
     ...Object.fromEntries(flightFields.map(k=>[k,f[k]]))};
@@ -121,7 +123,9 @@ export class ShipSimulation {
       this.trip._said=new Set(r.said);delete this.trip.said;
       this.trip._attFrom=r.attFrom?new THREE.Quaternion().fromArray(r.attFrom):null;
       if(r.transit){this.trip.transit=Object.assign(Object.create(Transit.prototype),r.transit);this.trip.rebindTransit();this.flight.override=dt=>this.trip._drive(dt);}
+      if(r.cruise){this.trip.cruise=r.cruise;this.flight.override=dt=>this.trip._cruiseStep(dt);}      // F3: the long-range drive
     }
+    if(!this.trip&&this.flight.deepHold)installHold(this.flight);      // F3: held out in deep space when the world was saved
   }
   body(){return this.frameId==='mars'?this.mars:makeMoon(this.frameId);}
   /** The world's game time (real UTC through the authority's clock) and this ship's own (hers runs fast under time compression while she is in space). */
@@ -178,9 +182,9 @@ export class ShipSimulation {
     if(this.trip?.active)throw Error('A course is already under way.');
     const dest=this.resolve(id);if(!dest?.goalS)throw Error('Destination is out of range.');
     if(this.flight.engineFactor<.3||this.flight.landed&&!this.flight.canLiftOff())throw Error('Route more power to engines.');
-    if((dest.kind==='moon'?systemOfFrame(dest.moon):'mars')!==systemOfFrame(this.frameId)&&this.record.economy.marks<JUMP.feeCredits*4)throw Error(`The Compact's lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.record.economy.marks/4)}. Earn it first.`);
     this.ff.suspend('The autopilot has the ship.');
     this.trip=new SpaceTrip(this,dest);const plan=this.trip._plan();if(!plan.ok){this.trip=null;throw Error(plan.msg);}
+    if(this.trip._route().some(l=>l.jump)&&this.record.economy.marks<JUMP.feeCredits*4){this.trip=null;throw Error(`The Compact's lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.record.economy.marks/4)}. Earn it first.`);}      // WORLD2: across the lane
     this.crew.cancelOrder();
     for(const [key,r] of Object.entries(this.ship.state.ramps)){r.lowered=false;r.target=0;this.ship.rampCtl[key].target=0;}
     return {ok:true,msg:'Course set for '+dest.name+'.'};
@@ -212,7 +216,7 @@ export class ShipSimulation {
     if(this.restCoarse){const fdt=Math.min(dt,1/30);this.flight.step(fdt);this.flight.updateShields(dt-fdt);} // a settled hull on its pad: one short physics step is the same answer as sixty, the rest of the time only recharges shields
     else if(this.ff.active)this.flight.step(dt*this.eff);
     else this.flight.step(Math.max(dt,Math.min(dt*this.eff,1)));
-    if(this.trip&&!this.trip.active){this.trip=null;this.flight.override=null;this.flight.climbCap=12;this.flight.thrustDown=false;}
+    if(this.trip&&!this.trip.active){this.trip=null;this.flight.override=null;this.flight.climbCap=12;this.flight.thrustDown=false;if(this.flight.deepHold)installHold(this.flight);}
     for(const [key,c] of Object.entries(this.ship.rampCtl)){const speed=key==='cargo'?1/6:1/5;
       c.progress+=Math.sign(c.target-c.progress)*Math.min(Math.abs(c.target-c.progress),dt*speed);
       Object.assign(this.ship.state.ramps[key],{...c,lowered:c.progress>=.999&&c.target>=1});}
@@ -263,7 +267,7 @@ export class ShipSimulation {
     const t=this.trip;
     this.record.pose=flightRecord(this.flight);this.record.frameId=this.frameId;this.record.ff=this.ff.save();
     this.record.flightWarp=this.warp;this.record.flightEff=this.eff;
-    this.record.trip=t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon,sys:t.dest.sys},phase:t.phase,t:t.t,warp:t.warp,eff:t.eff,planS:t.planS,settleT:t.settleT,cancelled:t.cancelled,legs:t.legs?structuredClone(t.legs):null,leg:t.leg,spoolT:t.spoolT,
+    this.record.trip=t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon,sys:t.dest.sys},phase:t.phase,t:t.t,warp:t.warp,eff:t.eff,planS:t.planS,settleT:t.settleT,cancelled:t.cancelled,legs:t.legs?structuredClone(t.legs):null,leg:t.leg,spoolT:t.spoolT,cruise:t.cruise?structuredClone(t.cruise):null,
       progress:{...t.progress},said:[...t._said],attFrom:t._attFrom?.toArray()||null,transit:t.transit?structuredClone(t.transit):null}:null;
     this.record.state=this.ship.state;
     this.record.air={...this.ship.air};this.record.order=this.crew.activeOrder()||this.crew.pending?.o||null;

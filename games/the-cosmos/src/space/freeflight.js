@@ -392,6 +392,7 @@ export class FreeFlight {
     const f = this.f, frame = this.host.frameId();
     this.events.length = 0;
     // WORLD2: free flight is charted in Mars's space only (its bodies are Mars and its moons). On a far world the course and the flight assist fly her.
+    if (f.deepHold) { if (this.enabled || this.active) this.suspend('Free flight is only charted in Mars\'s space. Out here the long-range drive flies the ship.'); this.eff = 1; return 1; }       // F3: held out in deep space
     if (isLaneWorld(frame)) { if (this.enabled || this.active) this.suspend("Free flight is only charted in Mars's space. Here the autopilot and the flight assist fly the ship."); this.eff = 1; return 1; }
     // refuel on a pad
     if (f.landed && this.fuel < 1 && this.host.atPad && this.host.atPad()) {

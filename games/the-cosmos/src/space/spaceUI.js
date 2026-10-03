@@ -9,6 +9,7 @@
 import { DRIVE, landingOrder } from './spaceSpec.js';
 import { bindActivation, guardSheetPress } from '../ui/activation.js';
 import { fmtDuration } from './spaceTrip.js';
+import { LONG, fmtLong, fmtAU, realSeconds } from './longRange.js';        // F3: the long-range drive
 
 const CSS = `
 #space-sheet { position: fixed; z-index: 70; display: none; pointer-events: auto; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -49,8 +50,8 @@ export class SpaceUI {
     const speed=document.createElement('div');speed.id='flight-speed';speed.hidden=true;
     speed.style.cssText='position:fixed;left:12px;right:12px;bottom:112px;z-index:71;padding:7px;background:#04141be8;border:1px solid #5fd8ff66;border-radius:10px;color:#d8f6ff;font:11px system-ui';
     const label=document.createElement('div');speed.append(label);this.speedLabel=label;
-    for(const w of DRIVE.warps){const button=document.createElement('button');button.textContent='×'+w;button.dataset.w=String(w);
-      button.style.cssText='min-height:44px;min-width:56px;margin:3px;background:#12333f;color:#d8f6ff;border:1px solid #5fd8ff66;border-radius:7px';
+    for(const w of [...new Set([...DRIVE.warps,...LONG.warps])].sort((a,b)=>a-b)){const button=document.createElement('button');button.textContent='×'+w;button.dataset.w=String(w);
+      button.style.cssText='min-height:44px;min-width:48px;margin:3px;background:#12333f;color:#d8f6ff;border:1px solid #5fd8ff66;border-radius:7px';
       bindActivation(button,()=>space.setWarp(w));speed.append(button);}
     document.body.append(speed);this.speed=speed;
   }
@@ -69,9 +70,9 @@ export class SpaceUI {
   update(dt) {
     const t=this.space.trip,o=this.space.ship.crew?.activeOrder(),active=this.space.ship.aboard&&(t?.active||landingOrder(o));
     this.speed.hidden=!active;
-    if(active){const warp=t?.active?t.warp:this.space.warp,eff=t?.active?t.eff:this.space.eff||1;
-      this.speedLabel.textContent=`${t?.active?t.dest.name+' · '+t.phase:'Pilot · '+o.type} · speed ×${warp}${eff<warp?' (near ground: ×'+eff+')':''}`;
-      for(const b of this.speed.querySelectorAll('button'))b.setAttribute('aria-pressed',String(Number(b.dataset.w)===warp));}
+    if(active){const warp=t?.active?t.warp:this.space.warp,eff=t?.active?t.eff:this.space.eff||1,ladder=t?.active&&t.phase==='longdrive'?LONG.warps:DRIVE.warps;
+      this.speedLabel.textContent=`${t?.active?t.dest.name+' · '+t.phase:'Pilot · '+o.type} · speed ×${warp}${eff<warp?(t?.phase==='longdrive'?' (slowing for the arrival: ×'+eff+')':' (near ground: ×'+eff+')'):''}`;
+      for(const b of this.speed.querySelectorAll('button')){b.hidden=!ladder.includes(Number(b.dataset.w));b.setAttribute('aria-pressed',String(Number(b.dataset.w)===warp));}}
     if (this.open && !this._seatOk()) { this.close(); return; }
     if (!this.open) return;
     this.acc += dt;
@@ -89,15 +90,16 @@ export class SpaceUI {
       h += `<div>${sp.jobs.summary()}</div>`;
     } else if (trip) {
       const p = trip.progress, d = trip.dest, ph = trip.phases();
-      h += `<div class="big">${trip.phase === 'transit' ? 'Drive burning' : trip.phase[0].toUpperCase() + trip.phase.slice(1)} to ${d.name}</div>`;
+      h += `<div class="big">${trip.phase === 'transit' ? 'Drive burning' : trip.phase === 'longdrive' ? 'Long-range drive' : trip.phase[0].toUpperCase() + trip.phase.slice(1)} to ${d.name}</div>`;
+      if (trip.phase === 'longdrive' && p.long) h += `<div>${(p.speed / 1000).toFixed(0)} km/s · ${fmtAU(p.distM)} to go</div><div class="dim">Day ${(p.long.tau / 86400).toFixed(1)} of ${(p.long.T / 86400).toFixed(1)} · ${p.stage === 'accelerate' ? 'burning' : p.stage === 'coast' ? 'coasting' : p.stage === 'decelerate' ? 'braking' : p.stage || ''}</div>`;
       if (trip.phase === 'transit') h += `<div>${(p.speed / 1000).toFixed(2)} km/s · ${fmtKm(p.distM)} to go</div>`;
       else if (trip.phase === 'ascent') h += `<div>${fmtKm(p.distM)} to the gate · ${Math.round(p.speed)} m/s</div>`;
       else if (trip.phase === 'descent') h += `<div>${fmtKm(p.distM)} up · ${Math.round(p.speed)} m/s down</div>`;
       // space-fix: every phase with the time left in it (real time, at the compression it runs at)
       h += `<div style="margin:6px 0">` + ph.map((q) => `<div style="display:flex;justify-content:space-between;gap:8px;${q.state === 'now' ? 'color:#fff' : q.state === 'done' ? 'color:#6fa3b3' : 'color:#9cd8e8'}"><span>${q.state === 'done' ? '✓' : q.state === 'now' ? '▶' : '·'} ${esc(q.name)}</span><span>${q.state === 'done' ? 'done' : fmtDuration(trip.wallS(q))}</span></div>`).join('') + `<div style="display:flex;justify-content:space-between;border-top:1px solid rgba(95,216,255,.25);margin-top:3px;padding-top:3px"><span>Whole trip</span><span>${fmtDuration(ph.reduce((a, q) => a + trip.wallS(q), 0))}</span></div></div>`;
       if (trip.active) {
-        h += `<div class="dim" style="margin-top:6px">Time compression runs the flight faster${trip.eff < trip.warp ? ` (held to ×${trip.eff} here: near the ground it drops, to ×1 for the last 400 m)` : ''}. The cabin, crew and doors keep real time.</div><div class="row">`;
-        for (const w of DRIVE.warps) h += `<button class="wp ${trip.warp === w ? 'on' : ''}" data-a="warp" data-w="${w}">×${w}</button>`;
+        h += `<div class="dim" style="margin-top:6px">${trip.phase === 'longdrive' ? 'The long drive is slow on purpose: x1 is real time, x5400 is an hour and a half a second. The compression steps down on its own in the last minutes, so the arrival is seen.' : ''} Time compression runs the flight faster${trip.eff < trip.warp ? ` (held to ×${trip.eff} here: near the ground it drops, to ×1 for the last 400 m)` : ''}. The cabin, crew and doors keep real time.</div><div class="row">`;
+        for (const w of (trip.phase === 'longdrive' ? LONG.warps : DRIVE.warps)) h += `<button class="wp ${trip.warp === w ? 'on' : ''}" data-a="warp" data-w="${w}">×${w}</button>`;
         h += `</div>`;
       }
       h += `<button class="go stop" data-a="cancel">Cancel course<small>${trip.phase === 'transit' ? 'Brakes to a stop where we are' : 'Holds here'}</small></button>`;
@@ -105,7 +107,9 @@ export class SpaceUI {
       const f = sp.ship.flight;
       h += `<div class="dim" style="margin-bottom:6px">${sp.onMoon ? sp.activeMoon.body.name : 'Mars'} · drive ${(DRIVE.thrustN * Math.min(1.8, f.engineFactor) * f.damageFactor / f.massKg).toFixed(1)} m/s² at ${f.power.engines}% engines</div>`;
       for (const d of sp.destinations()) {
-        h += `<button class="go" data-a="go" data-d="${d.id}" ${d.ok ? '' : 'disabled'}>${esc(d.name)}<small>${d.ok ? `${fmtKm(d.distM)} · about ${fmtDuration(d.etaS)}` : esc(d.reason)}</small><small>${esc(d.blurb)}</small></button>`;
+        const drive = d.route === 'drive', tag = drive ? ' · long-range drive' : d.route === 'lane' ? ' · Ore Lane' : '';
+        const sub = !d.ok ? esc(d.reason) : drive ? `${fmtAU(d.distM)} · ${fmtLong(d.etaS)} of flight · about ${fmtDuration(d.realTopS)} at x${LONG.warps.at(-1)}` : `${fmtKm(d.distM)} · about ${fmtDuration(d.etaS)}`;
+        h += `<button class="go" data-a="go" data-d="${d.id}" ${d.ok ? '' : 'disabled'}>${esc(d.name)}${tag}<small>${sub}</small><small>${esc(d.blurb)}</small></button>`;
       }
     }
     if (force || h !== this._sig) { this.el.innerHTML = h; this._sig = h; }

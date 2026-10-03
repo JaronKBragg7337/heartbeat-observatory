@@ -35,7 +35,8 @@ export const DRIVE = {
   vMaxMs: 30_000,
   /** The turn-over: how fast the hull can swing its nose (rad/s). 0.12 rad/s is 6.9 degrees a second: a flip takes 26 s. */
   turnRate: 0.12,
-  /** How far a course can fly under the drive, metres from Mars: the registry lists anything beyond as far (needs a jump lane). 1,000,000 km is nine hours at the top speed. */
+  /** How far the MAIN drive's course is meant to fly, metres from Mars (1,000,000 km: nine hours at the top speed). Beyond it a world is reached by the
+   *  long-range drive (F3: src/space/longRange.js: Earth, the Moon, Ceres, Callisto) or, for a world with a lane, the Ore Lane (jump.js). */
   rangeM: 1.0e9,
   /** Where the lift pods hand over to the main drive: above the atmosphere's last wisp, metres above the ground. */
   gateAltM: 120_000,
@@ -129,16 +130,21 @@ function rebuildFromRegistry() {
   const far = (d, blurb) => DESTINATIONS.push({ id: d.id, kind: 'far', name: d.navName || d.name, blurb: d.blurb || blurb });
   for (const d of allWorlds()) {
     if (d.root || d.nav === false || d.kind === 'star') continue;
-    if (d.placeholder) { far(d, 'Another system. Needs a jump drive the Meridian does not have.'); continue; }
+    // F3: a placed world with no ground yet (Earth, the Moon, Callisto: a placeholder with an `orbit`) is reachable by the long-range drive and held off, not landed on
+    if (d.placeholder) {
+      if (d.orbit) DESTINATIONS.push({ id: d.id, kind: 'deep', deep: d.id, via: 'drive', name: d.navName || d.name, blurb: d.blurb || 'Reached by the long-range drive. Nothing there is charted for landing yet.' });
+      else far(d, 'Another system. Needs a jump drive the Meridian does not have.');
+      continue;
+    }
     const dist = Math.hypot(...Object.values(worldCentre(d.id)));
-    // beyond the drive's range a world is reached by a jump lane (F3, `jump: true`) or not at all yet: it is listed, not flyable
-    if (!d.jump && dist > DRIVE.rangeM) { far({ ...d, blurb: `${(dist / 1.495978707e11).toFixed(2)} AU away: beyond the drive's range. Needs a jump drive the Meridian does not have.` }); continue; }
+    // F3: beyond the main drive's range a built world with no lane is reached by the long-range drive; one with a lane (`jump: true`) by the lane, and the drive is offered beside it (SpaceSystem._destinations)
+    const driveOnly = !d.jump && dist > DRIVE.rangeM;
     if (d.kind === 'station') {
       STATION_IDS.push(d.id);
-      DESTINATIONS.push({ id: d.id, kind: 'station', name: d.navName || d.name, station: d.id, ...(d.jump ? { jump: true } : {}), blurb: d.blurb || `A station. The course holds ${Math.round(stationStandoff(d))} m off it.` });
+      DESTINATIONS.push({ id: d.id, kind: 'station', name: d.navName || d.name, station: d.id, ...(d.jump ? { jump: true } : {}), ...(driveOnly ? { via: 'drive' } : {}), blurb: d.blurb || `A station. The course holds ${Math.round(stationStandoff(d))} m off it.` });
     } else if (isFrameWorld(d)) {
       MOONS[d.id] = d; MOON_IDS.push(d.id);
-      DESTINATIONS.push({ id: d.id, kind: 'moon', name: d.navName || d.name, moon: d.id, ...(d.jump ? { jump: true } : {}), blurb: d.blurb || `Land at the ${d.pad.name}.` });
+      DESTINATIONS.push({ id: d.id, kind: 'moon', name: d.navName || d.name, moon: d.id, ...(d.jump ? { jump: true } : {}), ...(driveOnly ? { via: 'drive' } : {}), blurb: d.blurb || `Land at the ${d.pad.name}.` });
     }
   }
 }
