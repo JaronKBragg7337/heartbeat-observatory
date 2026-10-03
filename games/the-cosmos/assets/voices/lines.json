@@ -107,6 +107,10 @@
   "voice": "ship",
   "text": "Engine power is too low to lift off. Route more to the engines."
  },
+ "0243ac5ba6cb1d": {
+  "voice": "ship",
+  "text": "The autopilot has the ship."
+ },
  "0250b17472c996": {
   "voice": "zuri",
   "text": "Hull's at 29 percent. Breaking off, going down to neutral airspace."
@@ -223,6 +227,10 @@
   "voice": "ada",
   "text": "New heading. Let us see what is over there."
  },
+ "04856a7709c0a2": {
+  "voice": "zuri",
+  "text": "A course is under way. Cancel it first."
+ },
  "048bf126a676f7": {
   "voice": "aoi",
   "text": "The ramp is up. Lower it and I'll come aboard."
@@ -234,6 +242,10 @@
  "04b94b62ee0ad5": {
   "voice": "sunita",
   "text": "Aye. I'll find my station."
+ },
+ "04ce556d0355f9": {
+  "voice": "ada",
+  "text": "The autopilot has the ship."
  },
  "04eae4cc12a4aa": {
   "voice": "ada",
@@ -482,6 +494,10 @@
  "0abf7b4b3bdd14": {
   "voice": "ada",
   "text": "Course set for Hellas Planitia."
+ },
+ "0acbc16f3eb17b": {
+  "voice": "ada",
+  "text": "A course is under way. Cancel it first."
  },
  "0b1b763461afd4": {
   "voice": "w-river",
@@ -891,6 +907,10 @@
   "voice": "ship",
   "text": "Leaving Mars neutral airspace. Expect raiders."
  },
+ "1550d7b6ad88fc": {
+  "voice": "zuri",
+  "text": "The autopilot has the ship."
+ },
  "157b0b917be24e": {
   "voice": "ada",
   "text": "Course set for Pad 01, the Meridian's own pad."
@@ -1102,6 +1122,10 @@
  "1a2c9317607464": {
   "voice": "ada",
   "text": "Course set for Mars orbit (400 km)."
+ },
+ "1a2e3e0b32bbbc": {
+  "voice": "ship",
+  "text": "A course is under way. Cancel it first."
  },
  "1a304e74e7286d": {
   "voice": "ada",

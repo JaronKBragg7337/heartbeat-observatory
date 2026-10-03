@@ -17,6 +17,7 @@ Run date: 2026-10-03
 | local/iPhone-15-WebKit | voices: settings rows work by touch, a tap unlocks audio, a port worker line decodes and plays from their body | PASS |  |
 | local/iPhone-15-WebKit | after the opening: visible buttons respond to real taps while a thumb holds the stick | PASS |  |
 | local/iPhone-15-WebKit | PLAYFIX: no two visible buttons overlap (aboard, seated, piloting, near people, all at once; portrait and landscape) | PASS |  |
+| local/iPhone-15-WebKit | FREEFLIGHT: real taps on the free-flight bar, a held THRUST burns the drive, the stick turns the ship, no overlaps in four viewports | PASS |  |
 | local/Galaxy-S9-Chromium | load page | PASS |  |
 | local/Galaxy-S9-Chromium | HTML / JS / manifest / server build id agree | PASS |  |
 | local/Galaxy-S9-Chromium | opening: intro plays, refresh resumes the same step | PASS |  |
@@ -29,3 +30,4 @@ Run date: 2026-10-03
 | local/Galaxy-S9-Chromium | voices: settings rows work by touch, a tap unlocks audio, a port worker line decodes and plays from their body | PASS |  |
 | local/Galaxy-S9-Chromium | after the opening: visible buttons respond to real taps while a thumb holds the stick | PASS |  |
 | local/Galaxy-S9-Chromium | PLAYFIX: no two visible buttons overlap (aboard, seated, piloting, near people, all at once; portrait and landscape) | PASS |  |
+| local/Galaxy-S9-Chromium | FREEFLIGHT: real taps on the free-flight bar, a held THRUST burns the drive, the stick turns the ship, no overlaps in four viewports | PASS |  |
