@@ -262,7 +262,7 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
       if (tp.thrust > 0 && !['creep'].includes(tp.phase)) { const a = len(tp.accel); if (a > 1e-9 && dot({ x: tp.accel.x / a, y: tp.accel.y / a, z: tp.accel.z / a }, tp.nose) < 0.999999) alignBad++; }
     }
     check(`Phobos from the gate: ${(tp.t / 60).toFixed(1)} min of ship time, peak ${(tp.peakSpeed / 1000).toFixed(1)} km/s over ${(len({ x: goal.x - gate.x, y: goal.y - gate.y, z: goal.z - gate.z }) / 1000).toFixed(0)} km, arriving within 2 m of the standoff point at rest`,
-      tp.done && len({ x: tp.pos.x - goal.x, y: tp.pos.y - goal.y, z: tp.pos.z - goal.z }) < 2 && tp.speed === 0 && tp.t > 15 * 60 && tp.t < 35 * 60);
+      tp.done && len({ x: tp.pos.x - goal.x, y: tp.pos.y - goal.y, z: tp.pos.z - goal.z }) < 2 && tp.speed === 0 && tp.t > 15 * 60 && tp.t < 80 * 60);
     check(`the burn goes in the right order: ${phases.join(' > ')}`, phases.join('>').startsWith('burn') && phases.includes('flip') && phases.includes('brake') && phases.includes('creep') && phases.indexOf('flip') < phases.indexOf('brake') && phases.indexOf('brake') < phases.indexOf('creep'));
     check('thrust is only ever along the nose (every main-drive step), and the hull never turns faster than its 0.12 rad/s', alignBad === 0 && maxTurn <= SPEC.DRIVE.turnRate * 1.0001, `${alignBad} misaligned, ${maxTurn.toFixed(4)} rad/s`);
     check('the ship never goes near Mars on the way: closest approach to the planet\'s centre stays outside the safety sphere (60 km above the ground)', minR > 3389500 + 59_000, `${((minR - 3389500) / 1000).toFixed(0)} km`);

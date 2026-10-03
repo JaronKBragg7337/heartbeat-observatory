@@ -39,7 +39,7 @@ worlds, every player reads the server's clock. Worktree `ho-f2` (branch `cosmos-
 | What | Result |
 |---|---|
 | Mars->Phobos, Mars->Deimos, Deimos->Phobos, Phobos->port, real authority (`pkg-f2-time`, `moons-trips`) | all end landed in the right frame on the player's own pad (2.5 m from the pad point, 0.000 m/s over the ground); the moon moved 1,000 to 7,000 km while she flew |
-| The same four in the real game in a browser, solo (`f2-browser`, results.json `trips`) | all end landed in the right frame, speed 0, ship clock back on the world's |
+| The same in the real game in a browser, solo (`f2-browser`, results.json `trips`): Phobos, Deimos, Phobos, then **Ceres across the Ore Lane (world 2) and back to the port** | all five end landed in the right frame, speed 0, ship clock back on the world's |
 | Arrival of the drive on a moving standoff point (Phobos 49 min, Deimos 51 min of ship time) | 0.00 m off, 0.000 m/s relative to it; the estimate equals the flown time to the second |
 | A static goal flies as before | 1554.8 s with and without a goal function |
 | Server tick | 1.48 ms flying a course at x60 and 0.88 ms in free flight at x500 (a whole authority tick with raiders, in Node; live idle tick averages 1.9 ms) |
@@ -53,6 +53,13 @@ worlds, every player reads the server's clock. Worktree `ho-f2` (branch `cosmos-
 `08`/`09` the same patch of sky three hours apart (the stars turn), `10-phobos-over-the-port-*` Phobos through a 4-degree field at three moments 20 min apart in
 sunlit dusk sky (it is 0.2 degrees across: a dot at the normal view), `20-*` the ship on a course to each world, `21-*` landed on Phobos and Deimos, `22` back at the
 port at night, `23` Mars seen from Phobos (locked: it hangs in one place; the terminator is the real day and night), `30/31` the two synced browsers.
+
+## Merged with world 2 (Ceres, the Ore Lane) and F0
+
+The branch was rebased onto world 2 and F0 before publishing. World 2 flies a far world as its own region (its own frame, its own star, a jump at the lane mouth). F2 leaves that
+alone: a leg in a far region is flown as it was (in the world's frame, static goals, no ship clock, its own `def.sky`, no live Sun); a leg in Mars's region (the climb, the lane mouth, a moon, the port)
+is flown in inertial axes against its moving goal, the mouth included (it turns with Mars, so it moves at 4 km/s through inertial space: the drive matches it).
+`test/pkg-ceres.mjs` and `test/_world2-only.mjs` (the real authority flies Mars -> Ceres -> Mars) pass on the merged tree, and the browser flew Mars -> Ceres -> port (`21-landed-on-ceres.png`).
 
 ## Honest limits and what is not verified
 

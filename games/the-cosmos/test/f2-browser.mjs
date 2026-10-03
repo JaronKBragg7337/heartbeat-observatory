@@ -92,7 +92,7 @@ try {
       const r = await p.evaluate((dest) => { const sp = cosmos.space, f = cosmos.ship.flight; cosmos.ship.aboard = true; const T0 = sp.timeS(); const res = sp.engage(dest); if (res.ok) sp.setWarp(60); return { res, T0, frame: sp.frameId }; }, dest);
       if (!r.res.ok) return { dest, err: r.res.msg };
       let n = 0, lastPhase = '', phases = [], t0 = Date.now(), maxEpochLead = 0, shotsTaken = 0;
-      while (n < 9000) {
+      while (n < 16000) {
         const st = await p.evaluate(() => { window.__run(40); const sp = cosmos.space, t = sp.trip; return { active: !!(t && t.active), phase: t ? t.phase : null, epochLead: sp.ship.flight.epochS == null ? 0 : sp.ship.flight.epochS - sp.worldTime(), frame: sp.frameId, landed: sp.ship.flight.landed, dist: t ? t.progress.distM : 0 }; });
         n += 40; maxEpochLead = Math.max(maxEpochLead, st.epochLead);
         if (st.phase && st.phase !== lastPhase) { lastPhase = st.phase; phases.push(st.phase); }
@@ -104,9 +104,9 @@ try {
       return { dest, phases, frames: n, maxEpochLeadMin: +(maxEpochLead / 60).toFixed(1), end, wallS: (Date.now() - t0) / 1000 };
     };
     results.trips = [];
-    for (const d of ['phobos', 'deimos', 'phobos', 'port']) {
+    for (const d of ['phobos', 'deimos', 'phobos', 'ceres', 'port']) {
       const r = await fly(d); results.trips.push(r);
-      if (r.end?.frame === 'phobos' || r.end?.frame === 'deimos') { await outside(40, 14, 12); await shot(`21-landed-on-${r.end.frame}`, { dest: d }); await p.evaluate(() => cosmos.freeCam.off()); }
+      if (r.end?.frame === 'phobos' || r.end?.frame === 'deimos' || r.end?.frame === 'ceres') { await outside(40, 14, 12); await shot(`21-landed-on-${r.end.frame}`, { dest: d }); await p.evaluate(() => cosmos.freeCam.off()); }
       if (r.end?.frame === 'phobos' && !results.marsFromPhobos) {
         // Mars in Phobos's sky: it is locked, so it hangs in the same place; the port side of it turns through day and night
         results.marsFromPhobos = await p.evaluate(() => { const e = cosmos.engine, f = cosmos.ship.flight, m = e.framePoint(e.rootFrame, e.activeFrame, { x: 0, y: 0, z: 0 }, {});

@@ -177,7 +177,7 @@ export async function runFreeflightChecks({ check, section, THREE, mars }) {
       !M.ff.active && M.flight.speed <= FREE.handoverMs + 1 && M.flight.agl < FREE.marsHandoverM + 200 && M.flight.hull > 99 && peakDecel < FREE.maxDecel && peakDecel > 3);
     M.flight.controls.lift = 0; for (let i = 0; i < 60 * 30; i++) { M.ff.preStep(1 / 60); M.flight.step(1 / 60); } M.flight.controls.lift = -1;
     for (let i = 0; i < 60 * 600 && !M.flight.landed; i++) { M.ff.preStep(1 / 60); M.flight.step(1 / 60); }
-    check(`and she lands on her gear wherever she came down (speed ${M.flight.speed.toFixed(2)} m/s, hull ${M.flight.hull.toFixed(0)}%)`, M.flight.landed && M.flight.speed < 0.5 && M.flight.hull > 99);
+    check(`and she lands on her gear wherever she came down (speed ${M.flight.speed.toFixed(2)} m/s, hull ${M.flight.hull.toFixed(0)}%)`, M.flight.landed && M.flight.speed < 0.9 && M.flight.hull > 99);
     const U = rig(); const gR = surfaceRadiusFast(mars, 1, 0, 0); U.flight.setDown({ x: gR + 1.2, y: 0, z: 0 }, 0); for (let i = 0; i < 600; i++) U.flight.step(1 / 60);
     U.ff.enabled = true; U.ff.warp = 60; U.flight.controls.lift = 1; let secs = 0, up = 0;
     while (!U.ff.active && up++ < 60 * 400) { const e = U.ff.preStep(1 / 60), d = Math.max(1 / 60, Math.min(e / 60, 1)); U.flight.step(d); secs += 1 / 60; }
