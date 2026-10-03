@@ -82,7 +82,7 @@ export class Authority {
     this.sims=new Map(Object.values(this.state.ships).filter(s=>!s.parked).map(s=>[s.id,this.makeSim(s)]));
   }
   /** One ship's simulation, whatever its type; a raider also gets its brain and its escort wing. */
-  makeSim(s){this.ensureMoonPads(s);const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.otherSim=id=>this.sims.get(id);sim.allSims=()=>this.sims.values();if(s.npc)this.fleet.attach(sim);return sim;}
+  makeSim(s){this.ensureMoonPads(s);const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.nowFn=()=>this.now();sim.otherSim=id=>this.sims.get(id);sim.allSims=()=>this.sims.values();if(s.npc)this.fleet.attach(sim);return sim;}
   /** One Phobos pad and one Deimos pad per owned ship. Append-only: a pad already on the record stays put. */
   ensureMoonPads(ship){this._moonPadList=null;if(ship.npc)return;ship.moonPads=ship.moonPads||{};
     for(const bodyId of frameWorldIds()){const cur=ship.moonPads[bodyId];

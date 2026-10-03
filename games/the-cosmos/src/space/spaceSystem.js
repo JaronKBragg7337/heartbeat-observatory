@@ -6,6 +6,9 @@
 // DOES NOT OWN: money (the economy builder's src/economy and src/port: this only calls the hooks), the ship's physics (it
 //       asks shipFlight.js for an override), the moons' ground (moonField.js / moonWorld.js).
 //
+// F2: THE FRAMES MOVE. Mars's body-fixed frame turns once per sol and a moon's frame is that frame translated to the moon's centre and turned
+// by its yaw (core/frameMath.js, space/frames.js); every frame's motion is refreshed from the clock at the top of each frame (early()). The
+// time a frame is evaluated at is `timeS()`: the ship's own clock while she is in space, the world's (real UTC) otherwise.
 // FRAMES. A frame is a translated copy of Mars's body-fixed frame with a moon's centre at its origin. The ship, the player, the
 // camera and the drones live in whichever frame is ACTIVE; switching (setFrame) re-expresses their positions and re-points the
 // walker, the digger and the ground the ship lands on. It only happens when the ship is hovering or has just stopped, so no
@@ -21,9 +24,10 @@
 
 import * as THREE from 'three';
 import { SpaceSky, MARS_RADIUS_M } from './spaceSky.js';
-import { SpaceTrip, fmtDuration, MARS_R } from './spaceTrip.js';
-import { estimateTrip } from './transit.js';
-import { DESTINATIONS, DRIVE, MOONS, STANDOFF_M, BOUNTY_CREDITS, moonCentre, landingOrder, stickWarpCap, stationStandoff } from './spaceSpec.js';
+import { SpaceTrip, fmtDuration, MARS_R, estimateCourse } from './spaceTrip.js';
+import { OMEGA, worldKin, worldPointFixed, frameAt, carryFlight, framePoint, frameDir, frameVel, sunDirFixed, sunAt, rotY, toInertial, velToInertial, skyShiftFor } from './frames.js';
+import { worldTimeS, setSkyShift } from './clock.js';
+import { DESTINATIONS, DRIVE, MOONS, STANDOFF_M, BOUNTY_CREDITS, SPAWN, sunDirection, landingOrder, stickWarpCap, stationStandoff } from './spaceSpec.js';
 import { worldCentre, worldDef } from '../worlds/registry.js';
 import { MoonWorld } from './moonWorld.js';
 import { makeMoon } from './moonField.js';
@@ -50,6 +54,9 @@ export class SpaceSystem {
     this.sky = new SpaceSky({ engine: o.engine, sun: o.sun, hemi: o.hemi, oldStars: o.engine.scene.getObjectByName('starfield'), tier: o.tier,
       skyColor: o.body.atmosphere.skyColor, horizonColor: o.body.atmosphere.horizonColor, fogDensity: o.fogDensity });
     this._localSun = new THREE.Vector3();
+    this.sunLocal = new THREE.Vector3(0.5, 0.7, 0.5);       // the Sun in the ACTIVE frame's axes (early())
+    this.skyMode = o.skyMode || 'live';                      // 'live': the real Sun at the real time; 'fixed': the legacy mid-morning Sun (dev sessions, trailer shots)
+    this.timeShift = 0;
     this.worlds = new Map();
     this.trip = null; this.lastTrip = null;
     this.warp = 1;
@@ -84,7 +91,7 @@ export class SpaceSystem {
       document.body.appendChild(fl); this._flashEl = fl;
     }
     // FREEFLIGHT: manual flight anywhere (freeflight.js), and its HUD (freeflightUI.js). Solo runs the physics here; the shared world mirrors the authority's.
-    this.ff = new FreeFlight({ flight: o.ship.flight, mars: o.body, frameId: () => this.frameId, setFrame: (id) => this.setFrame(id), say: (m, w) => this.say(m, w), drones: o.ship.drones,
+    this.ff = new FreeFlight({ flight: o.ship.flight, mars: o.body, frameId: () => this.frameId, worldTime: () => this.worldTime(), setFrame: (id) => this.setFrame(id), say: (m, w) => this.say(m, w), drones: o.ship.drones,
       cancelOrders: () => { if (o.ship.crew && o.ship.crew.cancelOrder) o.ship.crew.cancelOrder(); }, tripActive: () => !!(this.trip && this.trip.active),
       atPad: () => this.frameId === 'mars' && !!this.portSite && Math.hypot(...['x', 'y', 'z'].map((k, i) => o.ship.flight.pos[k] - this.portSite.toWorld(0, 0, 0)[k])) < 60 });
     this.ui = typeof document !== 'undefined' ? new SpaceUI(this) : null;
@@ -112,7 +119,7 @@ export class SpaceSystem {
 
   snapshotState() {
     const t=this.trip,j=this.jobs;
-    return {ff:this.ff.save(),frameId:this.frameId,ledger:{credits:this.ledger.credits,cargo:[...this.ledger.cargo]},
+    return {ff:this.ff.save(),epochS:this.ship.flight.epochS,frameId:this.frameId,ledger:{credits:this.ledger.credits,cargo:[...this.ledger.cargo]},
       jobs:{taken:[...j.taken],hold:structuredClone(j.hold),samplesAboard:j.samplesAboard,salvaged:j.salvaged,beaconHeard:j.beaconHeard,paidTotal:j.paidTotal},
       trip:t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon,sys:t.dest.sys},phase:t.phase,t:t.t,warp:t.warp,settleT:t.settleT,cancelled:t.cancelled,progress:{...t.progress},legs:t.legs?structuredClone(t.legs):null,leg:t.leg,spoolT:t.spoolT,
         said:[...t._said],attFrom:t._attFrom?.toArray()||null,transit:t.transit?structuredClone(t.transit):null}:null};
@@ -125,17 +132,49 @@ export class SpaceSystem {
     this.ship.flight.refreshOrientation();this.walker.updateFrame();this.ship._syncEntries();
     Object.assign(this.jobs,saved.jobs);this.jobs.taken=new Set(saved.jobs.taken);
     this.ledger.credits=saved.ledger.credits;this.ledger.cargo=new Map(saved.ledger.cargo);
+    this.ship.flight.epochS=saved.epochS??null;
     if(saved.ff)this.ff.load(saved.ff);   // FREEFLIGHT
+    if(saved.epochS===undefined&&this.ff.active){const p=this.ship.flight.pos,v=this.ship.flight.vel;v.x-=OMEGA*p.z;v.z+=OMEGA*p.x;}     // saved before F2: an inertial velocity; keep the orbit
+    if(saved.trip&&saved.trip.transit&&saved.trip.transit.T0===undefined)saved.trip=null;   // a drive course saved before F2 cannot be resumed: the ship is held where she is
     if(saved.trip){const r=saved.trip,dest={...this.resolve(r.destId),...r.dest};if(dest.kind==='hold')dest.goalS=()=>r.transit.finalGoal;if(!dest.kind)return;
       const t=new SpaceTrip(this,dest);Object.assign(t,r);t.dest=dest;t._said=new Set(r.said);t._attFrom=r.attFrom?new THREE.Quaternion().fromArray(r.attFrom):null;
-      if(r.transit){t.transit=Object.assign(Object.create(Transit.prototype),r.transit);this.ship.flight.override=dt=>t._drive(dt);}
+      if(r.transit){t.transit=Object.assign(Object.create(Transit.prototype),r.transit);t.rebindTransit();this.ship.flight.override=dt=>t._drive(dt);}
       this.trip=t;
     }
   }
 
+  // =========================================================================
+  // TIME
+  // =========================================================================
+  /** The world's game time, seconds since the epoch: real UTC (clock.js). */
+  worldTime() { return worldTimeS(); }
+  /** The time the sky and the frames are at for the player's ship: her own clock in space, the world's otherwise. A shared-world client extrapolates the server's. */
+  timeS() {
+    const e = this.ship.flight.epochS;
+    if (e == null) return this.worldTime();
+    const a = this.epochAnchor;                                  // set by the shared-world view: the server's value and when it arrived
+    return a ? a.epochS + Math.min(2, (performance.now() - a.at) / 1000) * a.eff : e;
+  }
+  /** Refresh every moon frame's origin, turn and velocity at game time T, and the Sun in the active frame's axes. Called at the top of each frame. */
+  updateFrames(T = this.timeS()) {
+    const e = this.engine;
+    for (const w of this.worlds.values()) e.setFrameState(w.frame, worldKin(w.id, T));
+    const sf = this.skyMode === 'fixed' ? sunDirection() : sunDirFixed(T), r = rotY(sf, -e.activeFrame.yaw);
+    this.sunLocal.set(r.x, r.y, r.z);
+    // each moon's baked shadows follow the Sun in ITS axes (a far world of another system, WORLD2, has its own star: fixed in its own axes, never moved here)
+    for (const w of this.worlds.values()) { if (!w.built || w.body.spec.sun) continue; const q = rotY(sf, -w.frame.yaw); w.body.setSun(q.x, q.y, q.z); }
+    const af = this.activeMoon; if (af && af.body.spec.sun) this.sunLocal.set(af.body.sunDir.x, af.body.sunDir.y, af.body.sunDir.z);
+    this.T = T;
+    return T;
+  }
+  /** First thing in a frame: frames and the Sun are where the clock puts them. */
+  early(dt) { this.updateFrames(); }
+  /** The local solar time and Sun height at the port (the spawn's coordinates): what the HUD says. */
+  portSky() { return sunAt(SPAWN.lat, SPAWN.lon, this.skyMode === 'fixed' ? this.worldTime() : this.worldTime()); }
+
   moonWorld(id) {
     let w = this.worlds.get(id);
-    if (!w) { w = new MoonWorld({ engine: this.engine, id, tier: this.tier, space: this }); this.worlds.set(id, w); w.build(); w.setVisible(true); this._dressWorld(w); if (this.onWorldBuilt) this.onWorldBuilt(id, w); }
+    if (!w) { w = new MoonWorld({ engine: this.engine, id, tier: this.tier, space: this, time: this.timeS() }); this.worlds.set(id, w); w.build(); w.setVisible(true); this._dressWorld(w); if (this.onWorldBuilt) this.onWorldBuilt(id, w); }
     else if (!w.built) w.build();
     return w;
   }
@@ -181,14 +220,18 @@ export class SpaceSystem {
     const e = this.engine;
     const to = id === 'mars' ? e.rootFrame : this.moonWorld(id).frame, from = e.activeFrame;
     if (to === from) return;
-    const d = e.frameShift(from, to), sh = (p) => { if (p) { p.x += d.x; p.y += d.y; p.z += d.z; } };
+    this.updateFrames();                                     // both frames at this instant
+    // Everything that rides with the player is carried across with its velocity and its turn: the frames move and turn against each other.
     const ship = this.ship, f = ship.flight, w = this.walker, dg = this.digger;
-    sh(f.pos); sh(w.worldPos);
-    if (ship.drones) { for (const dr of ship.drones.drones) { sh(dr.pos); sh(dr.anchor); } for (const b of ship.drones.shots) { sh(b); b.px += d.x; b.py += d.y; b.pz += d.z; } }
-    for (const b of ship.guns.bolts) { b.x += d.x; b.y += d.y; b.z += d.z; b.px += d.x; b.py += d.y; b.pz += d.z; }
+    carryFlight(f, from, to);
+    e.frameVel(from, to, w.worldPos, w.velocity, w.velocity); e.framePoint(from, to, w.worldPos, w.worldPos);
+    const pt = (p) => { if (p) e.framePoint(from, to, p, p); };
+    if (ship.drones) { for (const dr of ship.drones.drones) { pt(dr.pos); pt(dr.anchor); if (dr.vel) e.frameDir(from, to, dr.vel, dr.vel); } for (const b of ship.drones.shots) { pt(b); const q = e.framePoint(from, to, { x: b.px, y: b.py, z: b.pz }); b.px = q.x; b.py = q.y; b.pz = q.z; } }
+    for (const b of ship.guns.bolts) { pt(b); const q = e.framePoint(from, to, { x: b.px, y: b.py, z: b.pz }); b.px = q.x; b.py = q.y; b.pz = q.z; }
     e.setActiveFrame(to);
     if (ship.drones) ship.drones.safeFrame = isLaneWorld(id);       // WORLD2: a far world keeps its own lanes clear of raiders
     if (systemOfFrame(from.id) !== systemOfFrame(to.id)) this.flash = 1;       // WORLD2: crossing the lane
+    this.updateFrames();                                     // the Sun in the new frame's axes
 
     if (id === 'mars') {
       const s = this.marsSaved;
@@ -254,23 +297,27 @@ export class SpaceSystem {
   // =========================================================================
   // DESTINATIONS AND TRIPS
   // =========================================================================
-  /** Resolve a destination row into something a trip can fly to. */
+  /**
+   * Resolve a destination row into something a trip can fly to. `fixedAt(T)` is the goal in Mars's TURNING axes at game time T (the course chases it
+   * as it moves: a moon's standoff point, the gate over a port that turns with Mars); `goalS()` is the same point now.
+   */
   resolve(id) {
     const row = DESTINATIONS.find((d) => d.id === id); if (!row) return null;
-    const sys = this;
     const r = { ...row };
-    if (row.kind === 'port') r.goalS = () => this.portSite.toWorld(0, DRIVE.gateAltM, 0);        // the gate over the pad: the lift pods bring her down from there
-    else if (row.kind === 'orbit') r.goalS = (trip) => { const p = trip.f.pos, l = Math.hypot(p.x, p.y, p.z); const R = MARS_R + DRIVE.orbitAltM; return { x: p.x / l * R, y: p.y / l * R, z: p.z / l * R }; };
+    if (row.kind === 'port') { const g = () => this.portSite.toWorld(0, DRIVE.gateAltM, 0); r.fixedAt = g; }        // the gate over the pad: the lift pods bring her down from there
+    else if (row.kind === 'orbit') r.fixedAt = () => { if (!r._o) { const p = this._shipS(), l = Math.hypot(p.x, p.y, p.z), R = MARS_R + DRIVE.orbitAltM; r._o = { x: p.x / l * R, y: p.y / l * R, z: p.z / l * R }; } return r._o; };
     else if (row.kind === 'moon') {
-      r.goalS = () => { const b = makeMoon(row.moon), c = b.centre, s = b.standoffPoint(STANDOFF_M); return { x: c.x + s.x, y: c.y + s.y, z: c.z + s.z }; };
+      const local = makeMoon(row.moon).standoffPoint(STANDOFF_M); r.localGoal = local;
       r.goalLocal = () => { const s = makeMoon(row.moon).standoffPoint(STANDOFF_M); return { x: s.x, y: s.y, z: s.z }; };         // WORLD2: in the world's own frame (the root of its system)
       r.sys = systemOfFrame(row.moon);
+      if (r.sys === 'mars') r.fixedAt = (T) => worldPointFixed(row.moon, local, T);          // a moon of Mars moves: the course chases it. A far world (another system) is flown in its own frame, which does not move for the drive (jump.js)
+      else r.goalS = () => { const b = makeMoon(row.moon), c = b.centre, s = b.standoffPoint(STANDOFF_M); return { x: c.x + s.x, y: c.y + s.y, z: c.z + s.z }; };
     }
-    else if (row.kind === 'station') r.goalS = () => {            // a point off the station on the side facing Mars, `standoff` metres from its centre
-      const c = worldCentre(row.station), k = stationStandoff(worldDef(row.station)), l = Math.hypot(c.x, c.y, c.z) || 1;
+    else if (row.kind === 'station') r.fixedAt = (T) => {            // a point off the station on the side facing Mars, `standoff` metres from its centre
+      const c = worldKin(row.station, T).c, k = stationStandoff(worldDef(row.station)), l = Math.hypot(c.x, c.y, c.z) || 1;
       return { x: c.x - c.x / l * k, y: c.y - c.y / l * k, z: c.z - c.z / l * k };
     };
-    else r.goalS = null;
+    if (r.fixedAt) r.goalS = () => r.fixedAt(this.timeS()); else if (!r.goalS) r.goalS = null;
     return r;
   }
 
@@ -313,7 +360,7 @@ export class SpaceSystem {
       const goal = res.goalS({ f: { pos: p } });
       r.distM = Math.hypot(goal.x - start.x, goal.y - start.y, goal.z - start.z);
       const climb = gate ? 240 : (this.onMoon ? 90 : 0), descend = row.kind === 'orbit' || row.kind === 'station' ? 0 : (row.kind === 'port' ? 330 : 70);
-      const est = estimateTrip({ pos: start, vel: { x: 0, y: 0, z: 0 }, nose: { x: f.fwdH.x, y: f.fwdH.y, z: f.fwdH.z }, up: { x: 0, y: 1, z: 0 }, goal, aMax, vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate });
+      const est = estimateCourse({ dest: res, startFixed: start, T: this.timeS(), nose: { x: f.fwdH.x, y: f.fwdH.y, z: f.fwdH.z }, aMax });
       r.etaS = est.seconds + climb + descend + 40; r.peakSpeed = est.peakSpeed;
       if (row.kind === 'port' && gate && Math.hypot(p.x, p.y, p.z) - MARS_R < 100000) { r.ok = false; r.reason = 'already in Mars airspace'; }
       if (row.kind === 'moon' && this.frameId === row.moon) { r.ok = false; r.reason = 'we are here'; }
@@ -323,7 +370,8 @@ export class SpaceSystem {
     return out;
   }
 
-  _shipS() { const e = this.engine, f = this.ship.flight; const d = e.frameShift(e.activeFrame, e.rootFrame); return { x: f.pos.x + d.x, y: f.pos.y + d.y, z: f.pos.z + d.z }; }
+  /** The ship's position in Mars's turning axes (carried out of a moon's frame at this instant). */
+  _shipS() { const e = this.engine, f = this.ship.flight; if (e.activeFrame === e.rootFrame) return { x: f.pos.x, y: f.pos.y, z: f.pos.z }; this.updateFrames(); return e.framePoint(e.activeFrame, e.rootFrame, f.pos, {}); }
   _gatePoint(p) { const l = Math.hypot(p.x, p.y, p.z), R = MARS_R + DRIVE.gateAltM; return { x: p.x / l * R, y: p.y / l * R, z: p.z / l * R }; }
   portHeading() { return this.portSite && this.portSite.site ? this.portSite.site.hd * DEG : 0; }
 
@@ -433,7 +481,17 @@ export class SpaceSystem {
       air = this._air || (this._air = {});
       air.h = Math.hypot(cm.x, cm.y, cm.z) - near.body.radiusMean; air.scaleHeightM = A.scaleHeightM; air.skyColor = A.skyColor; air.horizonColor = A.horizonColor; air.fogDensity = A.fogDensity;
     }
-    this.sky.update(dt, this._localSun, { marsShine: near && near.body.worldKind === 'moon' ? 1 : 0, up, air });
+    // the Sun's fill on the moons seen from afar: on when the key light is down at the camera, off in Mars's own shadow and on a moon's own ground
+    if (this.skyMode !== 'fixed') {
+      const st = this.sky.state, sr = this.engine.frameDir(this.engine.activeFrame, this.engine.rootFrame, this.sunLocal, this._sr || (this._sr = {}));
+      for (const w of this.worlds.values()) {
+        if (!w.built || !w.sunFill) continue;
+        const k = w.frame.origin, along = k.x * sr.x + k.y * sr.y + k.z * sr.z;
+        let lit = 1; if (along < 0) { const mx = k.x - along * sr.x, my = k.y - along * sr.y, mz = k.z - along * sr.z, d = Math.hypot(mx, my, mz) / MARS_R; lit = Math.min(1, Math.max(0, (d - 0.985) / 0.03)); }
+        w.sunFill.dir.value.copy(this.sunLocal); w.sunFill.k.value = w === near ? 0 : 2.4 * (1 - st.vis) * lit;
+      }
+    }
+    this.sky.update(dt, this._localSun, { marsShine: near && near.body.worldKind === 'moon' ? 1 : 0, up, air, sun: this.sunLocal, T: this.T ?? this.timeS(), live: this.skyMode !== 'fixed', frame: this.engine.activeFrame, body: near ? near.body : null });
     if (this.o.ship && this.o.ship.ready) this.sky.scaleEnvironment(this.o.ship.matsExt);
     this.jobs.update(dt);
     if (this.ui) this.ui.update(dt);
@@ -457,6 +515,10 @@ export class SpaceSystem {
   hudLines() {
     const f = this.ship.flight, t = this.trip, out = [];
     const ffl = ffHudLines(this.ff); if (ffl) out.push(ffl);        // FREEFLIGHT
+    if (this.skyMode !== 'fixed' && !this.onMoon) {                  // Mars time where the ship is, and the Sun's height: the sol is real (24 h 39.6 min)
+      const c = this.engine.cameraWorldPos, r = Math.hypot(c.x, c.y, c.z) || 1;
+      if (r - MARS_R < 150_000) { const q = sunAt(Math.asin(c.y / r) * 180 / Math.PI, Math.atan2(-c.z, c.x) * 180 / Math.PI, this.timeS()), hh = Math.floor(q.hours), mm = Math.floor((q.hours - hh) * 60); out.push(`<span class="dim">Local time ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')} · Sun ${q.elevDeg >= 0 ? q.elevDeg.toFixed(0) + '° up' : 'down'}</span>`); }
+    }
     if (this.onMoon) { const m = this.activeMoon, g = m.body.surfaceGravity; out.push(`<span class="dim">${m.body.name} · gravity ${g >= 0.5 ? g.toFixed(2) + ' m/s²' : (g * 1000).toFixed(2) + ' mm/s²'}</span>`); }
     if (t && t.active) {
       const p = t.progress, ph = t.phases(), now = ph.find((q) => q.state === 'now');

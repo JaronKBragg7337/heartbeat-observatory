@@ -464,6 +464,8 @@ export class LocalPatch {
   /** Does the player need a fresh patch? */
   needsRebuild(px, py, pz) {
     if (!this.builtAt) return true;
+    // a moon's patch carries shadows baked for the Sun where it was: the Sun has moved on (a few degrees): bake them again
+    if (this.horizon && this._sunBaked && this.body.sunDir) { const a = this.body.sunDir, b = this._sunBaked; if (a.x * b.x + a.y * b.y + a.z * b.z < 0.9976) return true; }
     const dx = px - this.builtAt.x, dy = py - this.builtAt.y, dz = pz - this.builtAt.z;
     // Climbing above the same ground does not change its samples. Only travel along
     // the surface should spend the phone's rebuild budget.
@@ -623,6 +625,7 @@ export class LocalPatch {
   _horizonShade(job) {
     const body = this.body, n = this.res, step = this.sizeM / (n - 1), { pos, col, ox, oy, oz } = job;
     if (!body.sunDir) return;
+    this._sunBaked = { x: body.sunDir.x, y: body.sunDir.y, z: body.sunDir.z };
     const sun = body.sunDir, f = job.f, ol = Math.hypot(ox, oy, oz) || 1, ux = ox / ol, uy = oy / ol, uz = oz / ol;
     const se = sun.x * f.east.x + sun.y * f.east.y + sun.z * f.east.z, sn = sun.x * f.north.x + sun.y * f.north.y + sun.z * f.north.z;
     const su = sun.x * ux + sun.y * uy + sun.z * uz;

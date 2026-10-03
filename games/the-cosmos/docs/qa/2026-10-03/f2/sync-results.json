@@ -1,0 +1,11 @@
+{
+ "errors": [],
+ "alphaT": 60705.77,
+ "betaT": 60705.771,
+ "serverT": 60705.773,
+ "alphaMinusServerS": 0,
+ "betaMinusServerS": 0,
+ "alphaMinusBetaS": 0,
+ "sunAgree": 0.0008173251234131612,
+ "ok": true
+}

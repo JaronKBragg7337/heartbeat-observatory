@@ -100,6 +100,9 @@ export class ShipBody {
     this.thrustDown = false;          // vacuum descent: the pods are ducted both ways, so a ship can push itself down (a moon's pull is a few mm/s2)
     this.attitude = null;
     this.levelQ = new THREE.Quaternion();
+    // F2: the ship's own clock, game seconds, while she is in space (a course or free flight): time compression runs it fast. null = she is in a
+    // frame (on the ground, a pad, a moon) and keeps the world's time. See space/clock.js.
+    this.epochS = null;
     this.updateShields(0, true);
   }
 

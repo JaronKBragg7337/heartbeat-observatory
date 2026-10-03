@@ -47,7 +47,7 @@ export function ffTextLines(ff) {
   const t = ff.telemetry(), tg = t.target, lines = [];
   lines.push({ hot: true, text: `SPD ${fmtV(t.speed)} · ${t.nearName} ${fmtD(t.alt)} up${t.closing > 0.5 ? ` · falling ${fmtV(t.closing)}` : t.closing < -0.5 ? ` · rising ${fmtV(-t.closing)}` : ''}${t.eff > 1 ? ` · ×${t.eff}` : ''}` });
   lines.push({ text: t.bound ? `orbit ${t.ref}: Pe ${fmtD(t.periM)} · Ap ${fmtD(t.apoM)} · ${fmtT(t.periodS)}` : `escaping ${t.ref}` });
-  lines.push({ text: `→ ${tg.name} ${fmtD(tg.surfaceM)} · ${tg.closing >= 0 ? 'closing' : 'leaving'} ${fmtV(Math.abs(tg.closing))} · ETA ${fmtT(tg.etaS)}` });
+  lines.push({ text: `→ ${tg.name} ${fmtD(tg.surfaceM)} · ${tg.closing >= 0 ? 'closing' : 'leaving'} ${fmtV(Math.abs(tg.closing))} · rel ${fmtV(tg.relSpeed ?? 0)} · ETA ${fmtT(tg.etaS)}` });
   lines.push({ hot: t.fuel < 0.15, text: `FUEL ${Math.round(t.fuel * 100)}% · Δv ${fmtV(t.dvLeft)}${t.inAir ? ' · IN MARS AIR, drive cut' : ''}` });
   return lines;
 }
@@ -161,7 +161,7 @@ export class FreeFlightUI {
     if (!this.path || now - this._pathAt > 400) {
       this._pathAt = now;
       const per = t.bound && Number.isFinite(t.periodS) ? Math.min(t.periodS * 1.02, 6 * 3600) : 3000;
-      this.path = predictPath(ff.shipS(), ff.f.vel, { n: 140, horizonS: t.nearId !== 'mars' ? 1800 : per });
+      this.path = predictPath(ff.shipS(), ff.f.vel, { n: 140, horizonS: t.nearId !== 'mars' ? 1800 : per, T: ff.timeS() });
     }
     const pts = this.path.points;
     g.lineWidth = 2; g.strokeStyle = 'rgba(120,230,255,.75)'; g.setLineDash([8, 6]);
@@ -183,7 +183,8 @@ export class FreeFlightUI {
       this._mark(g, ps, 'prograde', '#7dff9c'); this._mark(g, rs, 'retro', '#ffb26b');
     }
     // the target: where it is, how far, how fast it is coming, how long
-    const tg = t.target, tb = BODIES[tg.id], s = edge(proj(tb.c.x - camS.x, tb.c.y - camS.y, tb.c.z - camS.z));
+    const tg = t.target, tb = BODIES[tg.id], tc = ff._kin(tb).c, s = edge(proj(tc.x - camS.x, tc.y - camS.y, tc.z - camS.z));
+    if (tg.dir && tb.id !== 'mars') this._mark(g, edge(proj(tg.dir.x * 1e6, tg.dir.y * 1e6, tg.dir.z * 1e6)), 'retro', '#9cf1ff');     // the intercept: where it will be when she gets there (the TARGET assist steers for it)
     this._mark(g, s, 'target', '#5fd8ff', `${tb.name.toUpperCase()}  ${fmtD(tg.surfaceM)}  ${tg.closing >= 0 ? '▼' : '▲'}${fmtV(Math.abs(tg.closing))}  ${tg.etaS < 1e7 ? 'ETA ' + fmtT(tg.etaS) : ''}`);
   }
 

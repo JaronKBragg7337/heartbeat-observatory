@@ -116,30 +116,34 @@ catches duplicates). A def may instead name existing materials as strings (`'pho
   gone above `topM`). The drive is **not** cut off in a non-Mars atmosphere (only Mars's air forbids it; see gaps).
 * Not done: the glowing limb seen from orbit (Mars's limb shader is Mars-only), weather, wind.
 
-## Orbits and rotation: the real Solar System, switched off for now
+## Orbits and rotation: the real Solar System, running (F2, Oct 3)
 
-Jaron (10/3): the star system is our real Solar System at real scale; planets spin and moons orbit. The registry is built for that
-already; the clock is not (package F2).
+Jaron (10/3): the star system is our real Solar System at real scale; planets spin and moons orbit. The registry is built for that and
+**the clock now runs**: `DYNAMICS.orbits` and `DYNAMICS.rotation` are `true`.
 
-* **Every world has an `orbit`** with a `parent` (`'sun'`, `'mars'`, or any other world id: the Moon's parent is `'earth'`) and
-  Kepler elements: `a` (m), `e`, `i`, `node`, `peri` or `lonPeri`, `M0` (mean anomaly at the game's start) or `meanLon` (at J2000, with
-  `rates.meanLon`), optional `periodS` (else Kepler's third law from the parent's mass), `rates` per century, `frame` (`'ecliptic'`
-  for heliocentric elements, `'equator'` = Mars's equatorial plane, the default for `parent: 'mars'`). Format and maths:
-  `src/worlds/_kit/ephemeris.js`. A station may instead use `orbit: { parent, offset: {x,y,z} }` (hangs beside its parent).
-* **The real planets are data you paste**: `orbit: SOLAR.orbit.earth` (`src/worlds/_kit/solar.js`: JPL approximate elements and rates,
-  Mercury to Neptune; typed from the published table and checked against the October 2020 closest approach of Mars, Earth-Mars
-  conjunction and opposition distances, Mars's perihelion and aphelion, and periods). Earth's row is the Earth-Moon barycentre as in
-  the table. **Placeholders for Mercury, Venus, Earth, the Moon, Jupiter, Saturn, Uranus and Neptune already exist** (`nav: false`: placed
-  at their real positions, not listed in the nav until built). The **Sun** is a world (`kind: 'star'`) at the root of the tree.
-* **Positions are in the game's axes**, relative to Mars (the root frame): `worldCentre(id)` (registry), `worldPlacement(id)` for
-  distance, S-longitude and latitude. Everything is placed on the game's start date (2026-10-03: `START_JD`), so Earth really is where
-  Earth is. Mars's own frame is body-fixed and does not spin yet.
-* **`DYNAMICS.orbits` and `DYNAMICS.rotation` are both `false`.** Positions are still computed from real elements, but at the start date
-  for every moment; `centreAt(def, lookup, tSec)` and `rotationAngle(def, tSec)` already take a time. F2 flips the switches, supplies the
-  clock and makes free flight's body centres (`BODIES[id].c`, static today) follow. A def does not change when it does. Phobos and
-  Deimos are written in the parked shorthand and come out of the ephemeris bit-for-bit where they always were.
-* `rotation`: `{ periodS, axialTiltDeg, prime0Deg?, lockedTo?: 'parent' }`. Mars carries its real one; a moon defaults to locked to its
-  planet (the face toward its parent is the same face: Phobos's long axis already points at Mars).
+* **The calendar is real UTC and is not compressed** (`src/space/clock.js`, rate 1). Game time is seconds since 2026-10-03 00:00 UT (`START_JD`).
+  A Martian sol at the port is 24 h 39.6 min of real time, Phobos goes round in 7 h 39 min, and every player reads the server's clock (a browser
+  measures its offset once from the `serverAt` of the server's messages: `setServerTime`). **Time compression stays on the ship** (x5 to x500 on a
+  course or free flight): it runs the ship's own clock (`flight.epochS`) ahead of the world's while she is in space, so a warped ship sees the sky and
+  the moons run fast and everything she flew is consistent with where the moons were; on a pad or in a moon's frame she rejoins the world's time
+  (`epochS = null`).
+* **Two sets of axes** (`src/space/frames.js`). FIXED = Mars's body-fixed axes: they turn with the planet (IAU rate, 350.89198226 deg/day), and the whole
+  ground game, the port, the root frame and every ship's `flight.pos` live in them. INERTIAL = the same axes frozen at J2000: the Sun, the stars, the
+  orbits and the courses the drive flies are fixed in them. `worldCentre(id, t)` is in FIXED axes (`t` omitted = now); `worldCentreInertial(id, t)` in INERTIAL.
+* **A world with a frame is carried by it.** A moon's frame is Mars's FIXED axes translated to its centre and turned about +Y by `yaw` (a locked moon keeps one face
+  to Mars; the yaw follows its longitude). `worldKin(id, T)` gives centre, velocity, yaw and yaw rate in both sets of axes; `core/frameMath.js` carries a point, a direction
+  or a velocity between frames. Ground, players, holes, ships on a pad are body-fixed: they are consistent with no extra work. Anything that crosses frames
+  (a ship arriving, a bolt) goes through `carryFlight` / `framePoint` / `frameVel`.
+* **`orbit: SOLAR.orbit.earth`** (JPL elements) gives a real planet; the legacy shorthand (`orbitRadiusM` + `orbitPeriodS` + `lonS`) is a circle in Mars's equatorial plane whose `lonS`
+  is where it is at the epoch (its phase is invented, its period and distance are real). A station with `orbit.offset` hangs fixed in Mars's turning axes.
+* **Courses chase moving goals** (transit.js): the drive flies in INERTIAL axes and works on the goal-relative state, so it arrives at rest relative to a moving standoff
+  point. A destination row carries `fixedAt(T)` (the goal in FIXED axes at game time T); a world's goal is `worldPointFixed(id, localPoint, T)`. Free flight (freeflight.js) is exact
+  in the turning frame (Coriolis and centrifugal terms, the moons pulling from where they are); its TARGET assist steers for the intercept point.
+* **Sky** (`spaceSky.js`, `spaceSystem.early`): the Sun is in `space.sunLocal` (the active frame's axes); day, dusk, night, stars turning with the planet, the key light fading as
+  the Sun sets, Mars's shadow in space, the apron floodlights (`port.setNight`). A `?dev=1` session without `?sky=` keeps the old fixed mid-morning Sun (so the browser checks see one lighting);
+  `?sky=live|noon|morning|afternoon|sunset|dusk|dawn|sunrise|night|midnight|fixed` and `?skyshift=<seconds>` choose.
+* `rotation`: `{ periodS, axialTiltDeg, prime0Deg?, lockedTo?: 'parent' }`. Mars carries its real one (`rootSpin` uses the IAU rate; its `periodS` is kept as data); a moon defaults to locked.
+  A frame turns about Mars's pole axis only: a world's tilt is data, not yet a tilted frame.
 * **Range.** The drive reaches `DRIVE.rangeM` (1,000,000 km: nine hours at the top speed) from Mars. A world farther than that is listed as
   far, with the distance in AU, unless it has a jump lane (`jump: true`, F3): then it is an ordinary destination marked `jump`. A trip of
   more than six hours is estimated in closed form (a planet at real distance would otherwise cost a million sub-steps).

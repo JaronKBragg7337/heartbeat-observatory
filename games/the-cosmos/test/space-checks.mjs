@@ -39,10 +39,11 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
     const el = Math.asin(dot(s, f.up)) * 180 / Math.PI, e = dot(s, f.east), n = dot(s, f.north), az = ((Math.atan2(e, n) * 180 / Math.PI) + 360) % 360;
     return Math.abs(len(s) - 1) < 1e-12 && Math.abs(el - 38) < 1e-6 && Math.abs(az - 118) < 1e-6;
   })());
-  check('both moons are above the spawn\'s horizon (Phobos 19 degrees up, Deimos higher) so they can be seen from the port', (() => {
+  check("F2: both moons are seen from the port: over a week each spends hours more than 10 degrees above the spawn's horizon (Phobos rises in the west and crosses twice a day; Deimos creeps round the sky in 5.5 days and hangs above the horizon for days)", (() => {
     const sp = GEO.geodeticToCartesian(mars, SPEC.SPAWN.lat, SPEC.SPAWN.lon, 2200), up = GEO.localFrame(SPEC.SPAWN.lat, SPEC.SPAWN.lon).up;
-    const el = (c) => Math.asin(dot({ x: (c.x - sp.x) / len({ x: c.x - sp.x, y: c.y - sp.y, z: c.z - sp.z }), y: (c.y - sp.y) / len({ x: c.x - sp.x, y: c.y - sp.y, z: c.z - sp.z }), z: (c.z - sp.z) / len({ x: c.x - sp.x, y: c.y - sp.y, z: c.z - sp.z }) }, up)) * 180 / Math.PI;
-    return el(ph.centre) > 10 && el(dm.centre) > 10;
+    const el = (id, t) => { const c = SPEC.moonCentre({ id }, t), d = { x: c.x - sp.x, y: c.y - sp.y, z: c.z - sp.z }, l = len(d); return Math.asin(dot({ x: d.x / l, y: d.y / l, z: d.z / l }, up)) * 180 / Math.PI; };
+    const hours = (id) => { let n = 0; for (let k = 0; k < 7 * 24 * 4; k++) if (el(id, 1e6 + k * 900) > 10) n++; return n / 4; };
+    return hours('phobos') > 3 && hours('deimos') > 3;
   })());
   check('both pads are in daylight: the Sun is more than 15 degrees above each pad\'s horizon (a pad in the dark is not a landing site)',
     [ph, dm].every((b) => Math.asin(dot(SPEC.sunDirection(), b.padInfo.up)) * 180 / Math.PI > 15));
@@ -251,7 +252,8 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
   const up0 = { x: gate.x / len(gate) * 800, y: gate.y / len(gate) * 800, z: gate.z / len(gate) * 800 };
   let tp;
   {
-    tp = new Transit(mk(gate, up0, goalOf('phobos')));
+    const goal = goalOf('phobos');           // F2: the moon moves a metre in a millisecond: ask once
+    tp = new Transit(mk(gate, up0, goal));
     const phases = [], seen = new Set(); let guard = 0, minR = 1e12, maxTurn = 0, prevNose = { ...tp.nose }, alignBad = 0, minArr = 1e9;
     while (!tp.done && guard++ < 20000) {
       tp.step(0.25); if (!seen.has(tp.phase)) { seen.add(tp.phase); phases.push(tp.phase); }
@@ -259,7 +261,6 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
       const ang = Math.acos(Math.min(1, Math.max(-1, dot(prevNose, tp.nose)))); maxTurn = Math.max(maxTurn, ang / 0.25); prevNose = { ...tp.nose };
       if (tp.thrust > 0 && !['creep'].includes(tp.phase)) { const a = len(tp.accel); if (a > 1e-9 && dot({ x: tp.accel.x / a, y: tp.accel.y / a, z: tp.accel.z / a }, tp.nose) < 0.999999) alignBad++; }
     }
-    const goal = goalOf('phobos');
     check(`Phobos from the gate: ${(tp.t / 60).toFixed(1)} min of ship time, peak ${(tp.peakSpeed / 1000).toFixed(1)} km/s over ${(len({ x: goal.x - gate.x, y: goal.y - gate.y, z: goal.z - gate.z }) / 1000).toFixed(0)} km, arriving within 2 m of the standoff point at rest`,
       tp.done && len({ x: tp.pos.x - goal.x, y: tp.pos.y - goal.y, z: tp.pos.z - goal.z }) < 2 && tp.speed === 0 && tp.t > 15 * 60 && tp.t < 35 * 60);
     check(`the burn goes in the right order: ${phases.join(' > ')}`, phases.join('>').startsWith('burn') && phases.includes('flip') && phases.includes('brake') && phases.includes('creep') && phases.indexOf('flip') < phases.indexOf('brake') && phases.indexOf('brake') < phases.indexOf('creep'));
@@ -307,18 +308,19 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
   // ---- frames and the world they carry ---------------------------------------------------------------------------------------
   section('16. Space: frames, the sky, the raiders');
   {
-    const eng = Object.create(Engine.prototype);
-    eng.rootFrame = { id: 'mars', origin: { x: 0, y: 0, z: 0 } }; eng.activeFrame = eng.rootFrame; eng.cameraWorldPos = { x: 5, y: 6, z: 7 };
-    const pf = { id: 'phobos', origin: { ...ph.centre } };
-    const sh = eng.frameShift(eng.rootFrame, pf);
-    check('a frame shift is a pure translation: Mars-frame point + shift = the same point in Phobos\'s frame, and back', Math.abs(sh.x + ph.centre.x) < 1e-6 && Math.abs(sh.z + ph.centre.z) < 1e-6 && Math.abs(eng.frameShift(pf, eng.rootFrame).x - ph.centre.x) < 1e-6);
+    const eng = Object.create(Engine.prototype), FM = await import('../src/core/frameMath.js');
+    eng.rootFrame = FM.makeFrame('mars'); eng.activeFrame = eng.rootFrame; eng.cameraWorldPos = { x: 5, y: 6, z: 7 };
+    const pc = { ...ph.centre }, pf = FM.makeFrame('phobos'); FM.setFrameState(pf, { c: pc, v: { x: 0, y: 0, z: 0 }, yaw: 0.7, yawRate: 0 });
+    const sh = eng.frameShift(eng.rootFrame, pf), turned = FM.makeFrame('t'); FM.setFrameState(turned, { c: pc, v: { x: 0, y: 0, z: 0 }, yaw: 0, yawRate: 0 });
+    check("a frame shift (two frames not turned against each other) is a pure translation: Mars-frame point + shift = the same point in Phobos's frame, and back", Math.abs(eng.frameShift(eng.rootFrame, turned).x + pc.x) < 1e-6 && Math.abs(eng.frameShift(eng.rootFrame, turned).z + pc.z) < 1e-6 && Math.abs(eng.frameShift(turned, eng.rootFrame).x - pc.x) < 1e-6);
     eng.setActiveFrame(pf);
     const back = eng.cameraIn(eng.rootFrame, {});
-    check('switching the active frame keeps the camera where it is in space (f64: it round-trips to the nanometre at 9,400 km)', Math.abs(back.x - 5) < 1e-9 && Math.abs(back.y - 6) < 1e-9 && Math.abs(back.z - 7) < 1e-9);
-    // render positions: an entry in the Mars frame is drawn at (worldPos - activeOrigin - camera)
-    const worldPos = { x: 100, y: 0, z: 0 }, A = eng.activeFrame.origin, cam = eng.cameraWorldPos;
-    const draw = { x: worldPos.x + 0 - A.x - cam.x, y: worldPos.y - A.y - cam.y, z: worldPos.z - A.z - cam.z };
-    check('a Mars-frame object is still drawn where it really is while a moon\'s frame is active (relative to the camera, f64 to the millimetre)', Math.abs(draw.x - (100 - 5)) < 1e-6 && Math.abs(draw.y + 6) < 1e-6 && Math.abs(draw.z + 7) < 1e-6);
+    check('switching the active frame keeps the camera where it is in space, through a frame that is turned (f64: it round-trips to a tenth of a micrometre at 9,400 km: an f64 step there is two nanometres)', Math.abs(back.x - 5) < 1e-7 && Math.abs(back.y - 6) < 1e-7 && Math.abs(back.z - 7) < 1e-7);
+    // render positions: an entry in the Mars frame is drawn at the frame's turn and shift of its position, relative to the camera
+    const worldPos = { x: 100, y: 0, z: 0 }, cam = eng.cameraWorldPos, inPf = eng.framePoint(eng.rootFrame, pf, worldPos, {});
+    const draw = { x: inPf.x - cam.x, y: inPf.y - cam.y, z: inPf.z - cam.z }, c = Math.cos(0.7), s2 = Math.sin(0.7), rel = { x: 100 - pc.x, y: -pc.y, z: -pc.z };
+    const want = { x: rel.x * c - rel.z * s2, y: rel.y, z: rel.x * s2 + rel.z * c };
+    check("a Mars-frame object is still drawn where it really is while a moon's turned frame is active (relative to the camera, f64 to the millimetre)", Math.abs(draw.x - (want.x - cam.x)) < 1e-6 && Math.abs(draw.y - (want.y - cam.y)) < 1e-6 && Math.abs(draw.z - (want.z - cam.z)) < 1e-6);
     check('float32 draw positions stay precise at Deimos\'s distance because everything is camera-relative in f64 first: a 0.1 m offset 23,459 km from Mars survives the trip to the GPU (subtracting float32 positions instead would lose it)',
       (() => { const a = 23_459_000.1, b = 23_459_000.0; return Math.abs(Math.fround(a - b) - 0.1) < 1e-6 && Math.abs(Math.fround(a) - Math.fround(b) - 0.1) > 0.05; })());
   }
@@ -382,8 +384,8 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
     // the phase list the panels show
     const { SpaceTrip } = await import('../src/space/spaceTrip.js');
     const fp = new ShipBody(mars, groundM); fp.setDown(at(3), 0); for (let i = 0; i < 540; i++) fp.step(1 / 60);
-    const sp = { frameId: 'mars', ship: { flight: fp }, _shipS: () => ({ ...fp.pos }), _gatePoint: (q) => { const l = len(q), R = 3389500 + SPEC.DRIVE.gateAltM; return { x: q.x / l * R, y: q.y / l * R, z: q.z / l * R }; }, say() {}, moonWorld() { return null; } };
-    const dest = { id: 'phobos', kind: 'moon', moon: 'phobos', name: 'Phobos', goalS: () => goalOf('phobos') };
+    const sp = { frameId: 'mars', ship: { flight: fp }, _shipS: () => ({ ...fp.pos }), _gatePoint: (q) => { const l = len(q), R = 3389500 + SPEC.DRIVE.gateAltM; return { x: q.x / l * R, y: q.y / l * R, z: q.z / l * R }; }, say() {}, moonWorld() { return null; }, timeS: () => 1e6, worldTime: () => 1e6 };
+    const dest = { id: 'phobos', kind: 'moon', moon: 'phobos', name: 'Phobos', goalS: () => goalOf('phobos'), fixedAt: () => goalOf('phobos') };
     const tp2 = new SpaceTrip(sp, dest); tp2.phase = 'lift'; tp2.planS = tp2._plan0();
     const names = tp2.phases().map((q) => q.name + ':' + q.state);
     check('the trip lists every phase with its state and time left: ' + names.join(', '), tp2.phases().length === 3 && tp2.phases()[0].state === 'now' && tp2.phases()[1].state === 'next' && tp2.phases()[2].state === 'next' && tp2.phases().every((q) => q.leftS > 0));

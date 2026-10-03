@@ -18,6 +18,8 @@ import { EditedTerrain, installCoverDiscard } from '../world/excavation.js';
 import { attachEdits, surfaceRadiusFast, materialAt } from '../world/field.js';
 import { makeMoon } from './moonField.js';
 import { WORLD_CLIENTS } from '../worlds/_client-manifest.js';
+import { makeFrame, setFrameState } from '../core/frameMath.js';
+import { worldKin } from './frames.js';
 
 /** The whole moon as one mesh: spacing about 180 m (phone 270 m). The tiers draw everything finer. */
 export function buildMoonShell(body, segW = 256) {
@@ -61,7 +63,9 @@ export class MoonWorld {
     this.space = o.space || null;       // WORLD2: the space system (a world's client.js dress() needs the ship's materials and the people library)
     this.id = o.id;
     this.body = makeMoon(o.id);
-    this.frame = { id: this.id, origin: this.body.centre, body: this.body };
+    // the frame MOVES (origin and turn: SpaceSystem.updateFrames keeps it where the clock puts the world); its entries are drawn through it
+    this.frame = makeFrame(this.id); this.frame.body = this.body;
+    setFrameState(this.frame, worldKin(this.id, o.time ?? 0));
     this.built = false;
     this.active = false;          // tiers are being kept under the focus
     this.entries = [];
@@ -84,12 +88,13 @@ export class MoonWorld {
     if (this.built) return this;
     const t0 = performance.now();
     const { engine, body } = this, low = this.tier === 'low';
-    this.shell = buildMoonShell(body, low ? 256 : body.radiusMean > 1e6 ? 512 : 384);       // WORLD2: a planet-sized world needs more
+    this.shell = body.withoutSun(() => buildMoonShell(body, low ? 256 : body.radiusMean > 1e6 ? 512 : 384));       // WORLD2: a planet-sized world needs more; F2: baked without the Sun's crater shadows (seen at every hour)
     engine.scene.add(this.shell);
+    this._sunFill(this.shell.material);
     this.shellEntry = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: this.shell, frame: this.frame });
     // a coarse copy for when it is a few pixels across (Phobos from the port, from Mars orbit): 4,600 triangles instead of 65,000
-    this.shellFar = buildMoonShell(body, body.radiusMean > 1e6 ? 96 : 48);
-    this.shellFar.material.fog = false;
+    this.shellFar = body.withoutSun(() => buildMoonShell(body, body.radiusMean > 1e6 ? 96 : 48));
+    this.shellFar.material.fog = false; this._sunFill(this.shellFar.material);
     engine.scene.add(this.shellFar);
     this.farEntry = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: this.shellFar, frame: this.frame });
 
@@ -155,6 +160,22 @@ export class MoonWorld {
     return this;
   }
 
+  /**
+   * F2: the Sun lights the world seen from afar even when it is night where the camera stands (the key light is off then: it follows the camera's
+   * horizon). A moon high over the night side is sunlit unless Mars's shadow is on it: this adds the Sun's diffuse light to the shells alone,
+   * from `uFillDir` (the Sun in the scene's axes) at strength `uFillK` (0 by day, and 0 on the moon's own ground). SpaceSystem.late sets both.
+   */
+  _sunFill(mat) {
+    const u = this.sunFill || (this.sunFill = { dir: { value: new THREE.Vector3(0, 1, 0) }, k: { value: 0 } });
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uFillDir = u.dir; sh.uniforms.uFillK = u.k;
+      sh.fragmentShader = `uniform vec3 uFillDir; uniform float uFillK;
+` + sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+ reflectedLight.directDiffuse += diffuseColor.rgb * uFillK * max(dot(normal, normalize((viewMatrix * vec4(uFillDir, 0.0)).xyz)), 0.0);`);
+    };
+    mat.customProgramCacheKey = () => 'moonSunFill';
+    mat.needsUpdate = true;
+  }
   setVisible(on) { if (!this.built) return; this.wantVisible = on; this._lod(this._lastDist ?? 1e9); if (!on) this.setTiersVisible(false); }
   /** The whole-moon shell in two detail levels, by how far the camera is from the moon's centre. */
   _lod(dist) { this._lastDist = dist; const near = dist < this.body.radiusMean * (this.body.radiusMean > 1e6 ? 8 : 30); this.shell.visible = !!this.wantVisible && near; this.shellFar.visible = !!this.wantVisible && !near; }

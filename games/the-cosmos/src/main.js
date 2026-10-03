@@ -60,6 +60,8 @@ import { landingField } from './world-state/fleet.js';
 import { GroundDetail } from './world/groundDetail.js';      // ROUND7: pebbles, boot prints and contact shadows at walking scale
 import { personVisible } from './crew/personVisibility.js';
 import { attachMoonPads } from './space/moonField.js';
+import { setSkyShift, worldTimeS } from './space/clock.js';
+import { skyShiftFor } from './space/frames.js';
 import { frameWorldIds } from './worlds/registry.js';
 import { registerWorld2Trade } from './worlds/ceres/soloTrade.js';       // WORLD2
 import { Cinema } from './cinema/cinema.js';
@@ -128,6 +130,15 @@ registry.register({
 const params = new URLSearchParams(location.search);
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const tier = safeGraphics ? 'low' : params.get('tier') === 'low' || params.get('tier') === 'high' ? params.get('tier') : (isTouch ? 'low' : 'high');
+
+// F2: the sky is REAL (real UTC, Mars's real spin: space/clock.js). ?sky=live (or no parameter in a normal session) is that. A `?dev=1` session without ?sky=
+// keeps the old fixed mid-morning Sun (so the automated browser checks see one lighting at any hour); ?sky=fixed asks for it. ?sky=noon|dusk|dawn|sunset|
+// sunrise|morning|afternoon|night|midnight moves the clock (forward, up to one sol) to that moment at the port, for review shots.
+const skyParam = params.get('sky');
+const skyMode = skyParam === 'fixed' || (skyParam === null && params.get('dev') === '1') ? 'fixed' : 'live';
+if (skyMode === 'live' && skyParam && skyParam !== 'live') setSkyShift(skyShiftFor(skyParam, SPAWN.lat, SPAWN.lon, worldTimeS()));
+const skyOffset = Number(params.get('skyshift'));
+if (skyMode === 'live' && Number.isFinite(skyOffset) && skyOffset) setSkyShift(skyOffset);
 
 const patch = new LocalPatch(body, { sizeM: 880, res: safeGraphics ? 49 : 132, skirtM: 15 });
 engine.scene.add(patch.mesh);
@@ -707,18 +718,13 @@ function updateSun(f) {
   const north = new THREE.Vector3(f.north.x, f.north.y, f.north.z);
   const east = new THREE.Vector3(f.east.x, f.east.y, f.east.z);
   // --- Sun -----------------------------------------------------------------
-  // The first version of this used a fixed world-space direction, which put
-  // the sun 13.3 degrees BELOW the local horizon at the spawn coordinate — the
-  // planet rendered black because it was night there and nothing said so.
-  //
-  // A direction in world space means nothing without a place to stand. The sun
-  // is built from the player's own local frame instead, so its elevation and
-  // azimuth are the angles an observer would actually measure. Wiring this to
-  // the body's real rotation period gives a true day/night cycle later without
-  // changing anything here.
+  // F2: the Sun is where the clock puts it, in the active frame's axes (space.sunLocal, set at the top of the frame). The old fixed Sun is the
+  // fallback: a ?dev=1 session without ?sky=, a trailer shot that names an elevation (SUN.override), or before the space system exists.
   const elev = SUN.elevationRad;
   const az = SUN.azimuthRad;
-  const sunDir = new THREE.Vector3()
+  const sunDir = new THREE.Vector3();
+  if (!SUN.override && SUN.space && SUN.space.skyMode === 'live' && SUN.space.sunLocal && !(SUN.cinema && SUN.cinema.enabled)) sunDir.copy(SUN.space.sunLocal);
+  else sunDir
     .addScaledVector(up, Math.sin(elev))
     .addScaledVector(north, Math.cos(elev) * Math.cos(az))
     .addScaledVector(east, Math.cos(elev) * Math.sin(az))
@@ -743,7 +749,9 @@ function updateSun(f) {
   ambientDepth += (Math.min(1, below / 2.5) - ambientDepth) * 0.15;
   sky.intensity = 0.85 + 1.3 * ambientDepth;
   suitLamp.position.set(0, 0.15, 0);
-  suitLamp.intensity = 9 * Math.min(1, Math.max(0, (below - 0.8) / 1.2));
+  // the helmet lamp comes on in a hole, and on the surface once the Sun is well down (night: a warm pool 24 m across)
+  const night = SUN.space && SUN.space.sky ? Math.max(0, Math.min(1, (-SUN.space.sky.state.elev - 2) / 8)) * (SUN.space.sky.state.s > 0.5 ? 1 : 0) : 0;
+  suitLamp.intensity = 9 * Math.max(Math.min(1, Math.max(0, (below - 0.8) / 1.2)), 0.7 * night);
 }
 let ambientDepth = 0;
 
@@ -992,6 +1000,7 @@ let cinema = null;
 
 engine.addUpdater((dt) => {
   voice.update();
+  space.early(dt);                                  // F2: the frames and the Sun are where the clock puts them
   if(opening?.active){
     const a=touch.consumeLook(),b=desktop.consumeLook();
     opening.frame(dt,{moveEast:touch.moveEast||desktop.moveEast,moveNorth:touch.moveNorth||desktop.moveNorth,
@@ -1108,6 +1117,7 @@ engine.addUpdater((dt) => {
   if (actionFlash > 0) { actionFlash -= dt; if (actionFlash <= 0) refreshAction(); }
 
   space.late(dt);
+  { const st = space.sky.state, nk = st.s > 0.5 ? Math.max(0, Math.min(1, (4 - st.elev) / 12)) : 0; port.setNight(nk * nk * (3 - 2 * nk)); }       // F2: the apron floodlights come on as the Sun goes down
   if (filming) cinema.postFrame(dt);
   hudAccum += dt;
   if (hudAccum > 0.2) { refreshHud(); refreshAction(); hudAccum = 0; }
@@ -1158,10 +1168,10 @@ window.addEventListener('keydown', (e) => {
 // ---------------------------------------------------------------------------
 // Space (src/space/): the sky that follows the height, the moons, the drive. Built last: it scales the lights above.
 // ---------------------------------------------------------------------------
-const space = new SpaceSystem({ engine, body, tier, sun, hemi: sky, ship, walker, digger, portSite, fogDensity: TERRAIN_FOG_DENSITY,
+const space = new SpaceSystem({ engine, body, tier, skyMode, sun, hemi: sky, ship, walker, digger, portSite, fogDensity: TERRAIN_FOG_DENSITY,
   setGround: (fn) => { activeGround = fn; }, marsGround, followEntries: [suitEntry] });
 
-worldBridge.space=space;space.peopleLib=people;       registerWorld2Trade(world,{space,walker,ship,bridge:worldBridge});       // WORLD2: the same Loft people library populates a world's settlement
+worldBridge.space=space; SUN.space = space;space.peopleLib=people;       registerWorld2Trade(world,{space,walker,ship,bridge:worldBridge});       // WORLD2: the same Loft people library populates a world's settlement
 if(!world.remote){
   space.hooks.award=(credits,reason)=>world.dispatch({type:'space-award',credits,reason});
   space.hooks.charge=(credits,reason)=>world.dispatch({type:'space-charge',credits,reason});       // WORLD2
@@ -1211,7 +1221,7 @@ refreshHud();
 }
 
 // ?cinema=1 hides the HUD and letterboxes 2.39:1. A shot played through cosmos.cinema.prepare replays from JSON.
-cinema = new Cinema({ engine, tier, safe: safeGraphics, search: params });
+cinema = new Cinema({ engine, tier, safe: safeGraphics, search: params }); SUN.cinema = cinema;
 cinema.stageApi = {
   ship, port, space, walker, engine, edits, tier,
   cinema,
@@ -1228,6 +1238,7 @@ cinema.stageApi = {
   },
   shipUp() { return ship.flight.up || { x: 0, y: 1, z: 0 }; },
   setSun(elevDeg, azDeg) {
+    SUN.override = true;
     SUN.elevationRad = elevDeg * Math.PI / 180;
     SUN.azimuthRad = azDeg * Math.PI / 180;
   },
@@ -1312,6 +1323,7 @@ if (devMode) window.cosmos = {
   multiplayer, vehicles, voice, get chat() { return chat; },
   world, worldBridge, economyUI,
   port, portTour, portPeople, space,
+  setSkyShift, skyShiftFor, worldTimeS,                    // F2: review shots move the clock (cosmos.setSkyShift(seconds)) and ask for a named hour
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   drones: () => ship.drones,

@@ -1,0 +1,358 @@
+{
+ "shots": {
+  "01-port-noon": {
+   "T": 90368.633,
+   "elev": 75.4,
+   "vis": 1,
+   "day": 1,
+   "sunI": 2.45,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Local time 12:02 · Sun 75° up "
+  },
+  "02-port-morning": {
+   "T": 74470.681,
+   "elev": 25.1,
+   "vis": 1,
+   "day": 1,
+   "sunI": 2.45,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Local time 07:44 · Sun 25° up "
+  },
+  "03-port-sunset": {
+   "T": 112271.74799999999,
+   "elev": 0.4,
+   "vis": 1,
+   "day": 0.08,
+   "sunI": 0.61,
+   "flood": [
+    35,
+    35
+   ],
+   "hud": " Local time 17:57 · Sun 0° up "
+  },
+  "04-port-dusk": {
+   "T": 112872.247,
+   "elev": -2,
+   "vis": 0.46,
+   "day": 0.02,
+   "sunI": 0.28,
+   "flood": [
+    80,
+    80
+   ],
+   "hud": " Local time 18:07 · Sun down "
+  },
+  "05-port-night": {
+   "T": 134472.758,
+   "elev": -77,
+   "vis": 0,
+   "day": 0,
+   "sunI": 0,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Local time 23:57 · Sun down "
+  },
+  "06-night-sky-stars": {
+   "T": 134473.41,
+   "elev": -77,
+   "vis": 0,
+   "day": 0,
+   "sunI": 0,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Local time 23:57 · Sun down "
+  },
+  "07-port-dawn": {
+   "T": 67874.247,
+   "elev": -0.8,
+   "vis": 0.51,
+   "day": 0.04,
+   "sunI": 0.32,
+   "flood": [
+    56,
+    56
+   ],
+   "hud": " Local time 05:57 · Sun down "
+  },
+  "08-stars-a": {
+   "T": 134474.76,
+   "elev": -77,
+   "vis": 0,
+   "day": 0,
+   "sunI": 0,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Local time 23:57 · Sun down "
+  },
+  "09-stars-three-hours-later": {
+   "T": 145274.72699999998,
+   "elev": -45.3,
+   "vis": 0,
+   "day": 0,
+   "sunI": 0,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Local time 02:53 · Sun down "
+  },
+  "10-phobos-over-the-port-0": {
+   "T": 375376.27599999995,
+   "elev": 12.7,
+   "vis": 1,
+   "day": 0.71,
+   "sunI": 1.74,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Local time 17:06 · Sun 13° up ",
+   "dtS": -1200,
+   "note": "camera zoomed to a 4 degree field so Phobos (0.2 degrees across) can be seen",
+   "phobos": {
+    "speedKmS": 1.47
+   }
+  },
+  "10-phobos-over-the-port-1": {
+   "T": 376576.12,
+   "elev": 7.9,
+   "vis": 1,
+   "day": 0.44,
+   "sunI": 1.16,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Local time 17:25 · Sun 8° up ",
+   "dtS": 0,
+   "note": "camera zoomed to a 4 degree field so Phobos (0.2 degrees across) can be seen",
+   "phobos": {
+    "speedKmS": 1.47
+   }
+  },
+  "10-phobos-over-the-port-2": {
+   "T": 377775.98600000003,
+   "elev": 3.2,
+   "vis": 1,
+   "day": 0.19,
+   "sunI": 0.72,
+   "flood": [
+    2,
+    2
+   ],
+   "hud": " Local time 17:45 · Sun 3° up ",
+   "dtS": 1200,
+   "note": "camera zoomed to a 4 degree field so Phobos (0.2 degrees across) can be seen",
+   "phobos": {
+    "speedKmS": 1.47
+   }
+  },
+  "20-phobos-in-transit": {
+   "T": 62913.096,
+   "elev": 19.4,
+   "vis": 1,
+   "day": 0.97,
+   "sunI": 3.48,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " DRIVE · 3.47 km/s · 29867 km to go · ×60   Main drive: 54 s left · whole trip 85 s ",
+   "dest": "phobos"
+  },
+  "21-landed-on-phobos": {
+   "T": 62862.38,
+   "elev": -23.9,
+   "vis": 0,
+   "day": 0,
+   "sunI": 3.72,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Phobos · gravity 5.60 mm/s² ",
+   "dest": "phobos"
+  },
+  "23-mars-from-phobos": {
+   "T": 62809.084,
+   "elev": -23.3,
+   "vis": 0,
+   "day": 0,
+   "sunI": 3.72,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Phobos · gravity 5.60 mm/s² ",
+   "dest": "phobos"
+  },
+  "20-deimos-in-transit": {
+   "T": 62886.699,
+   "elev": 34.7,
+   "vis": 1,
+   "day": 1,
+   "sunI": 3.48,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " DRIVE · 3.42 km/s · 29893 km to go · ×60   Main drive: 54 s left · whole trip 85 s ",
+   "dest": "deimos"
+  },
+  "21-landed-on-deimos": {
+   "T": 62835.502,
+   "elev": -61.3,
+   "vis": 0,
+   "day": 0,
+   "sunI": 3.72,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Deimos · gravity 2.56 mm/s² ",
+   "dest": "deimos"
+  },
+  "20-port-in-transit": {
+   "T": 62939.563,
+   "elev": 35.2,
+   "vis": 1,
+   "day": 1,
+   "sunI": 3.48,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " DRIVE · 1.88 km/s · 7981 km to go · ×60   Main drive: 29 s left · whole trip 65 s ",
+   "dest": "port"
+  },
+  "22-back-at-the-port": {
+   "T": 62884.199,
+   "elev": -20.4,
+   "vis": 0,
+   "day": 0,
+   "sunI": 0,
+   "flood": [
+    160,
+    160
+   ],
+   "hud": " Local time 04:36 · Sun down ",
+   "dest": "port"
+  }
+ },
+ "errors": [],
+ "phobosPass": {
+  "k": 5230,
+  "el": 68.38817808322227,
+  "sunEl": 7.930659259990154
+ },
+ "board": {
+  "aboard": true
+ },
+ "trips": [
+  {
+   "dest": "phobos",
+   "phases": [
+    "lift",
+    "ascent",
+    "transit",
+    "settle",
+    "descent"
+   ],
+   "frames": 3280,
+   "maxEpochLeadMin": 44.2,
+   "end": {
+    "frame": "phobos",
+    "landed": true,
+    "speed": 0,
+    "epochS": null,
+    "agl": 1.406621682945115
+   },
+   "wallS": 30.075
+  },
+  {
+   "dest": "deimos",
+   "phases": [
+    "lift",
+    "ascent",
+    "transit",
+    "settle",
+    "descent"
+   ],
+   "frames": 3000,
+   "maxEpochLeadMin": 54.3,
+   "end": {
+    "frame": "deimos",
+    "landed": true,
+    "speed": 0,
+    "epochS": null,
+    "agl": 1.407740887097134
+   },
+   "wallS": 25.573
+  },
+  {
+   "dest": "phobos",
+   "phases": [
+    "lift",
+    "ascent",
+    "transit",
+    "settle",
+    "descent"
+   ],
+   "frames": 3000,
+   "maxEpochLeadMin": 54.3,
+   "end": {
+    "frame": "phobos",
+    "landed": true,
+    "speed": 0,
+    "epochS": null,
+    "agl": 1.4066196859348565
+   },
+   "wallS": 26.375
+  },
+  {
+   "dest": "port",
+   "phases": [
+    "lift",
+    "ascent",
+    "transit",
+    "settle",
+    "descent"
+   ],
+   "frames": 3000,
+   "maxEpochLeadMin": 30.4,
+   "end": {
+    "frame": "mars",
+    "landed": true,
+    "speed": 0,
+    "epochS": null,
+    "agl": 1.1884638080373406
+   },
+   "wallS": 21.318
+  }
+ ],
+ "marsFromPhobos": {
+  "marsDirInPhobosFrame": {
+   "x": 3052527.0161902998,
+   "y": 0,
+   "z": -8865182.164819194
+  },
+  "upDotMars": 0.8974876549025995
+ },
+ "cost": {
+  "dayMs": 0.53,
+  "nightMs": 0.56,
+  "updateFramesMs": 0.0037
+ }
+}

@@ -12,6 +12,12 @@
 //   * Time can be compressed (`warp`): the trip is run in sub-steps of at most a quarter of a second of ship time, so a 60x
 //     warp is the same flight, not a different one.
 // Mars's pull is ignored in transit (the computer is assumed to hold the line).
+//
+// A MOVING GOAL (F2). Every number here is in INERTIAL axes (Mars-centred, not turning). A goal may move: `goalFn(t)` gives its
+// { pos, vel, acc } t seconds into the trip (a moon's standoff point, the gate over a port that turns with Mars). The computer then
+// works on the goal-RELATIVE state: it burns toward where the goal is, brakes the speed it has RELATIVE to the goal, feeds the goal's
+// acceleration forward, and arrives at rest relative to it (its velocity is then the goal's). With no goalFn nothing changed: a
+// static goal is a goal whose velocity is zero.
 // ============================================================================
 
 const clampN = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -54,10 +60,16 @@ export class Transit {
    */
   constructor(o) {
     const D = TRANSIT_DEFAULTS;
+    this.T0 = o.T0 ?? 0;
+    this.inertial = !!o.inertial;                            // flown in the inertial axes of Mars's region (the ship's own coordinates turn); a far world's region is flown in its own frame                                     // game time at the start of the trip: goalFn(t) is the goal at T0 + t
+    // not enumerable: a trip is saved with structuredClone, which cannot take a function (the owner re-binds it: bindGoal)
+    Object.defineProperty(this, 'goalFn', { value: o.goalFn || null, writable: true, enumerable: false, configurable: true });
     this.pos = { ...o.pos }; this.vel = { ...o.vel };
     this.nose = unit(o.nose || { x: 0, y: 0, z: -1 }); this.up = unit(o.up || { x: 0, y: 1, z: 0 });
     this.finalGoal = { ...o.goal };
-    this.legs = Transit.planLegs(this.pos, this.finalGoal, o.centre || TRANSIT_DEFAULTS.centre, o.safeR ?? TRANSIT_DEFAULTS.safeR).map((p) => ({ ...p }));
+    const planGoal = this.goalFn ? Transit.interceptPoint(this.pos, this.goalFn, o.aMax, o.vMax ?? D.vMax, o.turnRate ?? D.turnRate) : this.finalGoal;
+    this.legs = Transit.planLegs(this.pos, planGoal, o.centre || TRANSIT_DEFAULTS.centre, o.safeR ?? TRANSIT_DEFAULTS.safeR).map((p) => ({ ...p }));
+    if (this.goalFn) this.legs[this.legs.length - 1].moving = true;     // the last leg chases the goal; waypoints before it are fixed points
     this.goal = this.legs.shift();
     this.aMax = o.aMax; this.vMax = o.vMax ?? D.vMax; this.turnRate = o.turnRate ?? D.turnRate;
     this.centre = o.centre || D.centre; this.safeR = o.safeR ?? D.safeR; this.floorR = o.floorR ?? D.floorR;
@@ -71,6 +83,28 @@ export class Transit {
   }
 
   get speed() { return len(this.vel); }
+  /** Speed relative to the goal (the closing speed that matters at the end): the same as `speed` for a goal that stands still. */
+  get relSpeed() { return this._gv ? len(sub(this.vel, this._gv)) : len(this.vel); }
+  bindGoal(fn) { Object.defineProperty(this, 'goalFn', { value: fn, writable: true, enumerable: false, configurable: true }); return this; }
+
+  /** Where a moving goal will be about when a ship starting at `pos` reaches it (a few passes of "how long to get there"). Used to plan the legs round Mars. */
+  static interceptPoint(pos, goalFn, aMax, vMax, turnRate) {
+    const a = Math.max(1e-6, (aMax || 1) * 0.85), flip = Math.PI / (turnRate || 0.12), dAcc = vMax * vMax / a;
+    let g = goalFn(0).pos;
+    for (let k = 0; k < 6; k++) {
+      const D = len(sub(g, pos)), t = D <= dAcc ? 2 * Math.sqrt(D / a) + 2 * flip : 2 * vMax / a + (D - dAcc) / vMax + 2 * flip;
+      g = goalFn(Math.min(t, 6 * 3600)).pos;
+    }
+    return g;
+  }
+  /** The moving goal's state now: refreshed every step near it, every two seconds far off (and carried along by its velocity between). */
+  _chase() {
+    const near = this._gD !== undefined && this._gD < 60_000;
+    if (!this._g || this.t - this._gT >= (near ? 0.25 : 2.0) - 1e-9) { this._g = this.goalFn(this.t); this._gT = this.t; }
+    const g = this._g, dt = this.t - this._gT;
+    if (dt < 1e-9) return g;
+    return { pos: add(add(g.pos, mul(g.vel, dt)), mul(g.acc, 0.5 * dt * dt)), vel: add(g.vel, mul(g.acc, dt)), acc: g.acc };
+  }
 
   /**
    * Legs: a straight line, or (when the straight line would pass through Mars's safety sphere) two stops: a point out past the
@@ -95,9 +129,14 @@ export class Transit {
   step(dt, aMax = this.aMax) {
     if (this.done) return;
     this.aMax = aMax;
-    const aim = this.goal, final = true;
+    const mov = !!(this.goal.moving && this.goalFn), ZERO = { x: 0, y: 0, z: 0 };
+    let aim = this.goal, gv = ZERO, ga = ZERO;
+    if (mov) { const g = this._chase(); aim = g.pos; gv = g.vel; ga = g.acc; this.finalGoal = { ...aim }; }
+    this._gv = mov ? gv : null;
     const toAim = sub(aim, this.pos), D = len(toAim), dir = D > 1e-6 ? mul(toAim, 1 / D) : this.nose;
-    const v = this.speed, vh = v > 1e-9 ? mul(this.vel, 1 / v) : dir;
+    if (mov) this._gD = D;
+    const vrel = mov ? sub(this.vel, gv) : this.vel;
+    const v = len(vrel), vh = v > 1e-9 ? mul(vrel, 1 / v) : dir;
     const aD = this.aMax * this.brakeFrac;
     const STOP_SHORT = 700;                      // the main drive brings the ship to rest this far short; the manoeuvring jets do the rest
 
@@ -110,14 +149,16 @@ export class Transit {
     if (this.phase === 'creep') {
       // manoeuvring jets: a gentle, direct approach onto the point (no turning needed, a few m/s2 at most)
       const vDes = Math.min(25, Math.sqrt(2 * 0.9 * Math.max(0, D - 0.5)));
-      const want = mul(sub(mul(dir, vDes), this.vel), 1 / 2.0);
+      let want = mul(sub(mul(dir, vDes), vrel), 1 / 2.0);
+      if (mov) want = add(want, ga);
       const wl = len(want);
       aWant = wl > 2.5 ? mul(want, 2.5 / wl) : want;
       jets = true;
     } else {
       // follow the envelope: a velocity wanted along the line to the goal, and the acceleration that gets the ship onto it (a
       // sideways drift is part of the difference, so it is cancelled on the way, not left for the end)
-      aWant = mul(sub(mul(dir, vEnv), this.vel), 1 / this.tau);
+      aWant = mul(sub(mul(dir, vEnv), vrel), 1 / this.tau);
+      if (mov) aWant = add(aWant, ga);
       let aw0 = len(aWant), nh = aw0 > 1e-9 ? mul(aWant, 1 / aw0) : this.nose;
       // once the turn-over has begun it is committed: from then on the main drive only ever slows the ship (it is never
       // turned back round to speed up again), and the envelope is followed by throttling
@@ -128,7 +169,7 @@ export class Transit {
         aw0 = len(aWant); nh = aw0 > 1e-9 ? mul(aWant, 1 / aw0) : mul(vh, -1);
         if (aw0 < 1e-3) aWant = { x: 0, y: 0, z: 0 };
         this.phase = dot(this.nose, mul(vh, -1)) > 0.985 ? 'brake' : 'flip';
-      } else this.phase = v >= this.vMax * 0.999 && aw0 < 1 ? 'coast' : 'burn';
+      } else this.phase = this.speed >= this.vMax * 0.999 && aw0 < 1 ? 'coast' : 'burn';
     }
 
     // the hull turns toward the thrust direction at its turn rate; the main drive follows how well it is lined up
@@ -159,9 +200,11 @@ export class Transit {
     if (rr < floor && rr > 1) { this.pos = add(this.centre, mul(rel, floor / rr)); }
 
     // arrived
-    const dd = len(sub(this.goal, this.pos));
-    if (this.phase === 'creep' && dd < 1.5 && this.speed < 0.12) {
-      this.pos = { ...this.goal }; this.vel = { x: 0, y: 0, z: 0 };
+    let aim2 = this.goal, gv2 = ZERO;
+    if (mov) { const g2 = this._chase(); aim2 = g2.pos; gv2 = g2.vel; this.finalGoal = { ...aim2 }; this._gv = gv2; }
+    const dd = len(sub(aim2, this.pos));
+    if (this.phase === 'creep' && dd < 1.5 && len(sub(this.vel, gv2)) < 0.12) {
+      this.pos = { ...aim2 }; this.vel = { ...gv2 };
       if (this.legs.length) { this.goal = this.legs.shift(); this.phase = 'burn'; this.committed = false; this.legIndex = (this.legIndex || 0) + 1; }
       else { this.done = true; this.phase = 'arrived'; this.thrust = 0; }
     }
@@ -180,7 +223,7 @@ export class Transit {
  *  Now it flies the real 0.25 s steps, and if a flight still does not arrive it falls back to the plain flip-and-burn arithmetic
  *  (never a made-up number): `arrived` is false and `seconds` is that estimate, not the step cap. */
 export function estimateTrip(o) {
-  const t = new Transit(o), CAP = 4 * 3600 * 24;       // four days of ship time is far beyond any course here
+  const t = new Transit(o), CAP = 4 * 3600 * 24;       // o.goalFn (optional): a moving goal, as in Transit       // four days of ship time is far beyond any course here
   const D = len(sub(o.goal, o.pos)), a = Math.max(1e-6, (o.aMax || 1) * (t.brakeFrac || 0.85)), vMax = o.vMax ?? TRANSIT_DEFAULTS.vMax;
   const dAcc = vMax * vMax / a, flip = Math.PI / (o.turnRate ?? TRANSIT_DEFAULTS.turnRate);
   const secs = D <= dAcc ? 2 * Math.sqrt(D / a) + 2 * flip : 2 * vMax / a + (D - dAcc) / vMax + 2 * flip;

@@ -17,8 +17,10 @@ import { ShipSystem } from '../src/ship/shipSystem.js';
 import { shipDef } from '../src/ships/registry.js';
 import { FreeFlight } from '../src/space/freeflight.js';   // FREEFLIGHT
 import { FREE } from '../src/space/spaceSpec.js';
+import { worldTimeAt } from '../src/space/clock.js';
+import { frameAt, carryFlight, worldPointFixed, framePoint, OMEGA } from '../src/space/frames.js';
 
-export const flightFields = ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd'];
+export const flightFields = ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd','epochS'];
 export function flightRecord(f) {
   return {pos:{...f.pos},vel:{...f.vel},quaternion:f.quaternion.toArray(),power:{...f.power},attitude:f.attitude?.toArray()||null,legs:structuredClone(f.legs),
     ...Object.fromEntries(flightFields.map(k=>[k,f[k]]))};
@@ -33,6 +35,7 @@ export class ShipSimulation {
   constructor(record,mars,site,onArrive) {
     this.record=record;this.mars=mars;this.site=site;
     this.warp=record.flightWarp||1;this.eff=1;
+    this.nowFn=Date.now;       // the authority sets its own clock (tests inject one)
     this.frameId=record.frameId||'mars';
     // FLEET: a ship is whatever its `type` says (src/ships/registry.js): its gear, guns, seats and hull numbers come from there.
     this.def=shipDef(record.type);
@@ -63,8 +66,10 @@ export class ShipSimulation {
       const pad=record.moonPads?.[dest.moon];
       if(!pad||!Number.isFinite(pad.east)||!Number.isFinite(pad.north))return dest;
       const moon=dest.moon;
-      dest.goalS=()=>{const b=makeMoon(moon),c=b.centre,s=b.playerPad(pad.east,pad.north).standoff(STANDOFF_M);return {x:c.x+s.x,y:c.y+s.y,z:c.z+s.z};};
-      dest.goalLocal=()=>{const s=makeMoon(moon).playerPad(pad.east,pad.north).standoff(STANDOFF_M);return {x:s.x,y:s.y,z:s.z};};     // WORLD2: in the world's own frame
+      const local=makeMoon(moon).playerPad(pad.east,pad.north).standoff(STANDOFF_M);       // above the ship's own pad, in the moon's own axes: it goes where the moon goes
+      dest.localGoal=local;dest.goalLocal=()=>({x:local.x,y:local.y,z:local.z});     // WORLD2: in the world's own frame
+      if(!dest.sys||dest.sys==='mars'){dest.fixedAt=T=>worldPointFixed(moon,local,T);dest.goalS=()=>dest.fixedAt(this.timeS());}
+      else dest.goalS=()=>{const c=makeMoon(moon).centre;return {x:c.x+local.x,y:c.y+local.y,z:c.z+local.z};};      // a far world (another system) does not move for the drive
       dest.name=`${dest.name} (pad ${pad.number})`;
       return dest;
     };
@@ -81,12 +86,14 @@ export class ShipSimulation {
     // FREEFLIGHT: manual flight anywhere (src/space/freeflight.js). The authority owns it: inputs are clamped intents, the physics is this file's.
     this.allSims=()=>[];
     const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
-    this.ff=new FreeFlight({flight:this.flight,mars,frameId:()=>this.frameId,setFrame:id=>this.setFrame(id),say:(m,w)=>this.ship.note(m,w),drones:this.drones,
+    this.ff=new FreeFlight({flight:this.flight,mars,frameId:()=>this.frameId,worldTime:()=>this.worldTime(),setFrame:id=>this.setFrame(id),say:(m,w)=>this.ship.note(m,w),drones:this.drones,
       cancelOrders:()=>this.crew.cancelOrder(),tripActive:()=>!!this.trip?.active,
       atPad:()=>this.frameId==='mars'&&dist(this.flight.pos,this.portSite.toWorld(0,0,0))<60,
       hostileNear:()=>{for(const o of this.allSims())if(o!==this&&o.record.npc&&o.frameId===this.frameId&&o.flight.hull>0&&dist(o.flight.pos,this.flight.pos)<FREE.raiderNearM)return true;return false;},
       shipNear:()=>{for(const o of this.allSims())if(o!==this&&!o.record.npc&&!o.flight.landed&&o.frameId===this.frameId&&dist(o.flight.pos,this.flight.pos)<FREE.shipNearM)return true;return false;}});
     if(record.ff)this.ff.load(record.ff);
+    // A save from before F2 (no ship clock) had its velocity in axes that did not turn: it was an inertial velocity. Keep the orbit: take Mars's turn at that point off it.
+    if(record.pose&&record.pose.epochS===undefined&&this.ff.active){const p=this.flight.pos;this.flight.vel.x-=OMEGA*p.z;this.flight.vel.z+=OMEGA*p.x;}
     if(!record.state){Object.assign(this.ship.rampCtl.cargo,{progress:1,target:1,angle:this.ship.state.ramps.cargo.angle});}
     // FLEET: the three drones that used to arrive around a ship are a raider's escorts now (src/ships/raider/escorts.js).
     // The authority does not spawn them on a player's ship. Solo still does, from def.features.personalDrones (shipSystem.js).
@@ -104,6 +111,8 @@ export class ShipSimulation {
     record.combat?.practice?.forEach((r,i)=>{const t=this.guns.targets.filter(q=>q.id.includes(':practice-'))[i];if(t)Object.assign(t,r);});
     if(record.autopilot){this.crew._ensureAP();Object.assign(this.crew.ap,structuredClone(record.autopilot));}
     if(record.pendingOrder)this.crew.pending=structuredClone(record.pendingOrder);
+    // a drive course saved before F2 flew in axes that did not turn and chased a fixed point: it cannot be resumed; the ship is held where she is
+    if(record.trip&&record.trip.transit&&record.trip.transit.T0===undefined){record.trip=null;this.flight.override=null;this.flight.attitude=null;this.flight.autoHover=true;this.flight.thrustFwd=0;}
     if(record.trip) {
       const r=record.trip, dest={...this.resolve(r.destId),...r.dest};
       if(dest.kind==='hold')dest.goalS=()=>r.transit.finalGoal;
@@ -111,11 +120,15 @@ export class ShipSimulation {
       this.trip=new SpaceTrip(this,dest);Object.assign(this.trip,r);this.trip.dest=dest;
       this.trip._said=new Set(r.said);delete this.trip.said;
       this.trip._attFrom=r.attFrom?new THREE.Quaternion().fromArray(r.attFrom):null;
-      if(r.transit){this.trip.transit=Object.assign(Object.create(Transit.prototype),r.transit);this.flight.override=dt=>this.trip._drive(dt);}
+      if(r.transit){this.trip.transit=Object.assign(Object.create(Transit.prototype),r.transit);this.trip.rebindTransit();this.flight.override=dt=>this.trip._drive(dt);}
     }
   }
   body(){return this.frameId==='mars'?this.mars:makeMoon(this.frameId);}
-  _shipS(){const c=this.frameId==='mars'?{x:0,y:0,z:0}:makeMoon(this.frameId).centre;return {x:this.flight.pos.x+c.x,y:this.flight.pos.y+c.y,z:this.flight.pos.z+c.z};}
+  /** The world's game time (real UTC through the authority's clock) and this ship's own (hers runs fast under time compression while she is in space). */
+  worldTime(){return worldTimeAt(this.nowFn());}
+  timeS(){return this.flight.epochS??this.worldTime();}
+  /** Where the ship is in Mars's turning axes (carried out of a moon's frame at this instant). */
+  _shipS(){if(this.frameId==='mars')return {...this.flight.pos};return framePoint(frameAt(this.frameId,this.timeS()),frameAt('mars',0),this.flight.pos,{});}
   _gatePoint(p){return SpaceSystem.prototype._gatePoint.call(this,p);}
   destinations(){return [];}
   /** WORLD2: the Ore Lane. The ship appears at `arrival` in the other system's root frame, at rest; the lane fee comes from the ship's own account. */
@@ -154,11 +167,11 @@ export class ShipSimulation {
   cycleAirlock(){if(!this.ship.cycleAirlock())throw Error('The airlock is busy or cannot open here.');}
   setFrame(id) {
     if(id===this.frameId)return;
-    const from=this.frameId==='mars'?{x:0,y:0,z:0}:makeMoon(this.frameId).centre;
-    const to=id==='mars'?{x:0,y:0,z:0}:makeMoon(id).centre;
-    for(const k of ['x','y','z'])this.flight.pos[k]+=from[k]-to[k];
-    for(const d of this.drones.drones)for(const p of [d.pos,d.anchor])for(const k of ['x','y','z'])p[k]+=from[k]-to[k];
-    for(const b of [...this.guns.bolts,...this.drones.shots])for(const k of ['x','y','z']){b[k]+=from[k]-to[k];b['p'+k]+=from[k]-to[k];}
+    // both frames at this instant; position, velocity and a held attitude are carried across (the frames move and turn against each other)
+    const T=this.timeS(),from=frameAt(this.frameId,T),to=frameAt(id,T);
+    carryFlight(this.flight,from,to);
+    for(const d of this.drones.drones)for(const p of [d.pos,d.anchor])framePoint(from,to,p,p);
+    for(const b of [...this.guns.bolts,...this.drones.shots]){framePoint(from,to,b,b);const q=framePoint(from,to,{x:b.px,y:b.py,z:b.pz});b.px=q.x;b.py=q.y;b.pz=q.z;}
     this.frameId=id;this.ship.body=this.flight.body=this.body();this.flight.refreshOrientation();this.drones.safeFrame=isLaneWorld(id);
   }
   engage(id) {

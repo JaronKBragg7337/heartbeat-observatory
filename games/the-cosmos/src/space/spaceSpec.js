@@ -8,9 +8,11 @@
 //       flight itself (spaceTrip.js), money (the economy: see hooks in spaceSystem.js).
 //
 // HONEST SIMPLIFICATIONS (stated, not hidden)
-//   * Mars does not spin in this build (everything is in Mars's body-fixed frame), so the moons do not orbit: each is parked
-//     over a fixed spot of the sky at its real distance from Mars's centre. Phobos is tidally locked, so its real face
-//     toward Mars is the face you see here; what is missing is its 2.1 km/s of orbital motion.
+//   * (F2, Oct 3) Mars SPINS and the moons ORBIT: the game runs on real UTC (space/clock.js, rate 1: the calendar is not compressed). The
+//     ground frame is Mars's turning body-fixed frame, so the Sun crosses the sky and a moon's centre moves in it (space/frames.js).
+//     Phobos and Deimos have the real periods and distances; their PHASE is invented (the registry's parked shorthand: lonS is the
+//     longitude at the epoch), and they move in Mars's equatorial plane on circles. A moon keeps one face to Mars (its yaw follows
+//     its longitude); libration is not modelled.
 //   * The drive's acceleration is fictional (it is the Meridian's own number, below). Distances, sizes and gravity are real.
 //   * Transit ignores Mars's pull: the flight computer is assumed to hold the line.
 // ============================================================================
@@ -52,7 +54,8 @@ export const ATMOSPHERE_TOP_M = 100_000;
 // ---------------------------------------------------------------------------
 // THE SUN
 // ---------------------------------------------------------------------------
-/** The Sun's direction is fixed in the world: it equals the mid-morning sun the ground game has always used, AT THE SPAWN. */
+/** The LEGACY fixed Sun: the mid-morning sun the ground game used before F2, at the spawn. It is what a `?dev=1` session without `?sky=` still uses (so
+ *  the automated browser checks see one lighting whatever the hour); a real session uses the real Sun (space/frames.js sunDirFixed). */
 export const SUN_ELEV_DEG = 38, SUN_AZ_DEG = 118;
 export const SPAWN = { lat: -14.0, lon: -59.2 };
 
@@ -96,12 +99,8 @@ export const G_CONST = 6.6743e-11;
  * parked by the legacy shorthand (Phobos, Deimos) comes out bit-identical to the old `equatorial(lonS, orbitRadiusM)`; a real planet
  * sits where the Solar System puts it on the game's start date. Cached while nothing moves.
  */
-const _centres = new Map();
-export const moonCentre = (m) => {
-  let c = _centres.get(m.id);
-  if (!c) { c = worldCentre(m.id); _centres.set(m.id, c); }
-  return c;
-};
+/** Where a world is NOW (or at game time t), metres, in Mars's turning axes. Nothing is cached: it moves. */
+export const moonCentre = (m, t) => worldCentre(m.id, t);
 
 /** Surface gravity from mass and mean radius: real numbers in, real number out (about 0.0056 m/s2 on Phobos). */
 export const moonSurfaceGravity = (m) => G_CONST * m.massKg / (m.radiusMean * m.radiusMean);
@@ -121,7 +120,7 @@ export const DESTINATIONS = [];
  *  with a frame of its own", planets included), a placeholder is `kind: 'far'`. Built from src/worlds/<name>/def.js. */
 function rebuildFromRegistry() {
   for (const k of Object.keys(MOONS)) delete MOONS[k];
-  MOON_IDS.length = 0; STATION_IDS.length = 0; _centres.clear();
+  MOON_IDS.length = 0; STATION_IDS.length = 0;
   DESTINATIONS.length = 0;
   DESTINATIONS.push(
     { id: 'port', kind: 'port', name: 'Marineris Port', blurb: "Back to the Meridian's own pad." },

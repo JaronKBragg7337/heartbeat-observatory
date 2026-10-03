@@ -3,12 +3,12 @@
 //
 // OWNS: the orbit and rotation model a world def describes (`orbit`, `rotation`), the Sun as the root of the tree, the game's
 //   root axes (Mars's own), and the maths from elements to a position. Pure: no three.js, no DOM, no clock. The server uses it.
-// DOES NOT OWN: the clock (there is none yet: package F2), the numbers of any world (src/worlds/<name>/def.js), the real planets'
-//   elements (_kit/solar.js), how a frame follows a moving world (F2), the jump drive (F3).
+// DOES NOT OWN: the clock (space/clock.js), the numbers of any world (src/worlds/<name>/def.js), the real planets' elements (_kit/solar.js),
+//   how a frame follows a moving world (space/frames.js, core/frameMath.js), the jump drive (F3).
 //
-// THE SWITCH. `DYNAMICS.orbits` and `DYNAMICS.rotation` are both FALSE: every world sits where it is at the game's start date
-// (START_JD, today's sky) and nothing turns. Positions are still computed from real elements, so Earth really is where Earth is
-// from Mars. A later package flips the switches and gives the world a clock; nothing in a def changes when it does.
+// THE SWITCH (F2, Oct 3). `DYNAMICS.orbits` and `DYNAMICS.rotation` are both TRUE: worlds move along their orbits and Mars turns, on real UTC
+// (space/clock.js). A def does not change with them. Turning either off puts the sky back where it was at the game's start (START_JD), which
+// is how the F1 checks of "where is Earth from Mars" still read a fixed sky.
 //
 // AXES. Everything is expressed in the GAME's axes: the frame the whole game already uses, Mars's body-fixed frame, +Y = Mars's
 // north pole, +X = the prime meridian (Airy-0) as it points at J2000, -Z = east. Heliocentric (ecliptic J2000) elements are rotated
@@ -32,8 +32,8 @@ export const AU = 1.495978707e11;
 export const MU_SUN = 1.32712440018e20;
 export const G = 6.6743e-11;
 
-/** The switches. A later package (F2: time and sky) sets these and supplies the clock; until then the sky is the sky of START_JD. */
-export const DYNAMICS = { orbits: false, rotation: false };
+/** The switches. On since F2; the clock is space/clock.js (real UTC). Positions here are in the INERTIAL axes (centreAt) or Mars's turning axes (centreFixedAt). */
+export const DYNAMICS = { orbits: true, rotation: true };
 
 /** The epoch the elements are given for (J2000.0) and the game's start date (2026-10-03 00:00 UT), as Julian dates. */
 export const J2000_JD = 2451545.0;
@@ -47,6 +47,18 @@ export const centuriesAt = (tSec = 0) => (jdAt(tSec) - J2000_JD) / 36525;
  */
 export const ROOT_POLE = { raDeg: 317.68143, decDeg: 52.88650, prime0Deg: 176.630, rotationDegPerDay: 350.89198226 };
 export const OBLIQUITY_DEG = 23.4392911;
+
+/** Mars's spin, radians per second (IAU rate 350.89198226 deg/day: one turn per 88,642.66 s). */
+export const OMEGA = ROOT_POLE.rotationDegPerDay * DEG / 86400;
+/**
+ * How far Mars's body-fixed axes have turned about +Y from the game's inertial axes (Mars's axes at J2000), radians, at game time tSec
+ * (seconds since START_JD). Zero while DYNAMICS.rotation is off. The angle is wrapped in degrees first: the product is millions of degrees.
+ */
+export function rootSpin(tSec = 0) {
+  if (!DYNAMICS.rotation) return 0;
+  const days = (START_JD - J2000_JD) + tSec / 86400;
+  return ((ROOT_POLE.rotationDegPerDay * days) % 360) * DEG;
+}
 
 // ---- the rotation from ICRF equatorial vectors to the game's axes (computed once) ----------------------------------------
 const GAME = (() => {
@@ -120,7 +132,12 @@ export function muOf(def) {
 function relToParent(d, lookup, tSec) {
   const o = d.orbit;
   if (!o) throw new Error(`world '${d.id}' has no orbit: it cannot be placed (give it an \`orbit\`, or the legacy orbitRadiusM + lonS)`);
-  if (o.offset) return { x: o.offset.x, y: o.offset.y, z: o.offset.z };
+  if (o.offset) {                                  // hung beside its parent: fixed in MARS's turning axes when the parent is the root, so inertially it turns with Mars
+    const r = { x: o.offset.x, y: o.offset.y, z: o.offset.z };
+    if (o.parent !== 'mars' || !DYNAMICS.rotation) return r;
+    const a = rootSpin(tSec), c = Math.cos(a), sn = Math.sin(a);
+    return { x: r.x * c + r.z * sn, y: r.y, z: -r.x * sn + r.z * c };
+  }
   if (o.parked && !DYNAMICS.orbits) {              // the legacy shorthand while nothing moves: a fixed longitude on a circle in the parent's equatorial plane (Phobos, Deimos, test planets), exact to the last bit
     // (with the switch on it is an ordinary circular orbit: M0 = that longitude, advanced by the period)
     const lon = o.M0 * DEG, lat = (o.parkedLatDeg || 0) * DEG, r = o.a;
@@ -155,13 +172,25 @@ export function centreAt(def, lookup, tSec = 0) {
 
 /** The sidereal rotation angle (radians) of a world at game time `tSec`: its prime meridian's angle from the reference direction. Zero while DYNAMICS.rotation is false. */
 export function rotationAngle(def, tSec = 0) {
+  if (def.root) return rootSpin(tSec);
   const R = def.rotation;
   if (!DYNAMICS.rotation || !R || !R.periodS) return 0;
   return ((R.prime0Deg || 0) * DEG + 2 * Math.PI * tSec / R.periodS) % (2 * Math.PI);
 }
 
-/** Epoch placement of a world, in the legacy shorthand's terms: where it sits as seen from the root (distance, S-longitude, latitude). */
+/**
+ * Where a world's centre is in Mars's TURNING (body-fixed) axes at game time tSec: the axes the whole ground game and every ship live in.
+ * A station hung beside Mars (`offset`) is exactly its offset. (centreAt above is in the inertial axes.)
+ */
+export function centreFixedAt(def, lookup, tSec = 0) {
+  const o = def.orbit;
+  if (o && o.offset && o.parent === 'mars') return { x: o.offset.x, y: o.offset.y, z: o.offset.z };
+  const c = centreAt(def, lookup, tSec), a = -rootSpin(tSec), cs = Math.cos(a), sn = Math.sin(a);
+  return { x: c.x * cs + c.z * sn, y: c.y, z: -c.x * sn + c.z * cs };
+}
+
+/** Placement of a world seen from the root, in the turning axes: distance, S-longitude, latitude. */
 export function placementOf(def, lookup, tSec = 0) {
-  const c = centreAt(def, lookup, tSec), r = Math.hypot(c.x, c.y, c.z) || 1;
+  const c = centreFixedAt(def, lookup, tSec), r = Math.hypot(c.x, c.y, c.z) || 1;
   return { centre: c, distM: r, lonS: Math.atan2(-c.z, c.x) / DEG, latS: Math.asin(Math.max(-1, Math.min(1, c.y / r))) / DEG };
 }

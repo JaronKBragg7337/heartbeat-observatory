@@ -9,12 +9,14 @@
 // DOES NOT OWN: the courses (spaceTrip.js / transit.js: they still exist and take the ship when asked), the ship's gear and landing
 //       physics (shipFlight.js: below a moon's handover height and below 10 km over Mars it is the one that flies), drawing.
 //
+// F2 (Oct 3): THE FRAME TURNS. The ship's coordinates (flight.pos / vel) are in Mars's body-fixed axes, which turn once per 88,642 s, and the
+//   moons move in them (space/frames.js). The physics is exact for that: Mars and the moons pull as point masses at THEIR place at the ship's
+//   own clock (flight.epochS), and the turning frame adds its centrifugal and Coriolis terms (a kick-drift-kick whose Coriolis half-steps rotate
+//   the velocity exactly). A ship that matches a moon's velocity therefore stays with it as it would in the real sky; the old trick that
+//   cancelled Mars's pull near a moon is gone. The hull's attitude holds against the stars (the jets keep it inertial), so in these axes it
+//   turns backward at Mars's spin. Speeds shown, and what prograde/retro/brake work against, are RELATIVE to the body that matters: a moon's
+//   velocity, Mars's surface below 300 km, Mars's inertial velocity (orbital speed) above that.
 // HONEST SIMPLIFICATIONS (stated, not hidden)
-//   * The frame is the one the rest of the build uses: Mars's body-fixed frame, which does not spin, and the moons are parked in it
-//     (spaceSpec.js says why). A ship at rest in that frame therefore falls toward Mars like anything else. Inside FREE.patchM of a
-//     moon the pull of Mars at the moon's centre is cancelled (smoothly: none outside the patch, all of it inside half of it), so a
-//     ship that matches a moon stays with it as it would if the moon were carried along in its orbit. Mars's pull on what is left (the
-//     tide) and the moon's own pull are real and are what a ship feels there.
 //   * Mars's pull is a point mass (no flattening), the moons pull as point masses.
 //   * The main drive's thrust is the Meridian's own (spaceSpec.js DRIVE) and the tank is a number of metres per second (FREE.dvFullMs),
 //     not a mass: the ship does not get lighter as she burns. The drive will not light inside Mars's air (DRIVE rule); the jets will.
@@ -26,6 +28,8 @@
 import { isLaneWorld } from './jump.js';
 import * as THREE from 'three';
 import { MARS_MU, MOONS, STATION_IDS, G_CONST, moonCentre, DRIVE, ATMOSPHERE_TOP_M, FREE, RAIDER_SUSPEND_MS, stickWarpCap } from './spaceSpec.js';
+import { worldKin, worldCentreFixed, rotY, OMEGA } from './frames.js';
+import { worldTimeS } from './clock.js';
 import { makeMoon } from './moonField.js';
 import { surfaceRadiusFast } from '../world/field.js';
 import { onWorldsChanged, worldDef } from '../worlds/registry.js';
@@ -38,29 +42,31 @@ export const TARGETS = [];                                    // every world wit
 export const ZERO_INPUT = Object.freeze({ thr: 0, brake: false, pitch: 0, yaw: 0, roll: 0, tx: 0, ty: 0, tz: 0 });
 
 // ---------------------------------------------------------------------------
-// THE BODIES (static: the moons are parked)
+// THE BODIES (they move: ask where one is at a game time)
 // ---------------------------------------------------------------------------
 export const BODIES = {};
-/** Every frame world (a moon or a planet: `moon: true` here means "has a frame of its own and is parked"), in registry order. */
+/** Every frame world (a moon or a planet: `moon: true` here means "has a frame of its own"), in registry order. */
 export const MOON_LIST = [];
 /** Bodies that pull and have ground (Mars and every frame world): what the physics loops walk. Stations are targets only. */
 export const PHYS_LIST = [];
-/** A body's patch: the distance inside which the ship rides with it (Mars's pull cancelled at its centre). 400 km for the little moons,
+/** A body's patch: the distance inside which a ship counts as "at" it (nearest body, handover, time compression). 400 km for the little moons,
  *  8 radii for anything bigger so a planet's whole neighbourhood is inside it. */
 export const patchOf = (R) => Math.max(FREE.patchM, 8 * R);
+const ZERO3 = Object.freeze({ x: 0, y: 0, z: 0 });
 function rebuildBodies() {
   for (const k of Object.keys(BODIES)) delete BODIES[k];
   MOON_LIST.length = 0; TARGETS.length = 0; PHYS_LIST.length = 0;
-  BODIES.mars = { id: 'mars', name: 'Mars', mu: MARS_MU, c: { x: 0, y: 0, z: 0 }, R: MARS_R, moon: false };
+  BODIES.mars = { id: 'mars', name: 'Mars', mu: MARS_MU, R: MARS_R, moon: false };
+  Object.defineProperty(BODIES.mars, 'c', { get: () => ZERO3, enumerable: true });
   for (const m of Object.values(MOONS)) {
-    const b = BODIES[m.id] = { id: m.id, name: m.name, mu: G_CONST * m.massKg, c: moonCentre(m), R: m.radiusMean, moon: true, patchM: patchOf(m.radiusMean), air: m.atmosphere || null };
+    const b = BODIES[m.id] = { id: m.id, name: m.name, mu: G_CONST * m.massKg, R: m.radiusMean, moon: true, patchM: patchOf(m.radiusMean), air: m.atmosphere || null };
+    Object.defineProperty(b, 'c', { get: () => worldCentreFixed(m.id, worldTimeS()), enumerable: true });          // NOW (a UI convenience); the physics asks cAt(b, T)
     MOON_LIST.push(b); TARGETS.push(m.id);
-    // what Mars pulls a parked moon's centre with, per moon: cancelled inside the patch
-    const r = len3(b.c), k = MARS_MU / (r * r * r); b.marsAtCentre = { x: -k * b.c.x, y: -k * b.c.y, z: -k * b.c.z };
   }
   for (const id of STATION_IDS) {                              // a station: something to steer for (target, bearing, distance), never a pull or a ground
     const d = worldDef(id);
-    BODIES[id] = { id, name: d.name, mu: 0, c: moonCentre(d), R: d.radiusM, moon: false, station: true };
+    const b = BODIES[id] = { id, name: d.name, mu: 0, R: d.radiusM, moon: false, station: true };
+    Object.defineProperty(b, 'c', { get: () => worldCentreFixed(id, worldTimeS()), enumerable: true });
     TARGETS.push(id);
   }
   TARGETS.push('mars');
@@ -70,25 +76,30 @@ rebuildBodies();
 onWorldsChanged(rebuildBodies);
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
-/** Acceleration (m/s2) on a ship at `p` (Mars frame): Mars, the two moons, and the patch cancellation. Pure, allocation-free. */
-export function gravityAt(p, out = { x: 0, y: 0, z: 0 }) {
+/** Where a body's centre is at game time T, in Mars's turning axes. Mars is the origin. */
+export const cAt = (b, T) => (b.id === 'mars' ? ZERO3 : worldCentreFixed(b.id, T));
+/** The centres of every moon (MOON_LIST order) at game time T: what gravityAt wants. */
+export const centresAt = (T) => MOON_LIST.map((b) => worldCentreFixed(b.id, T));
+
+/** Acceleration (m/s2) on a ship at `p` (Mars's turning axes) from Mars and the moons (point masses). `cs` is centresAt(T), or the game time T itself (default: now). */
+export function gravityAt(p, out = { x: 0, y: 0, z: 0 }, cs) {
   const r2 = p.x * p.x + p.y * p.y + p.z * p.z, r = Math.sqrt(r2), k = -MARS_MU / (r2 * r);
   let ax = k * p.x, ay = k * p.y, az = k * p.z;
-  for (const b of MOON_LIST) {
-    const dx = p.x - b.c.x, dy = p.y - b.c.y, dz = p.z - b.c.z;
+  if (!Array.isArray(cs)) cs = centresAt(cs ?? worldTimeS());
+  for (let n = 0; n < MOON_LIST.length; n++) {
+    const b = MOON_LIST[n], c = cs[n];
+    const dx = p.x - c.x, dy = p.y - c.y, dz = p.z - c.z;
     const d2 = Math.max(dx * dx + dy * dy + dz * dz, b.R * b.R * 0.25), d = Math.sqrt(d2), km = -b.mu / (d2 * d);
     ax += km * dx; ay += km * dy; az += km * dz;
-    const w = smooth(b.patchM * 1.25, b.patchM, Math.sqrt(dx * dx + dy * dy + dz * dz));
-    if (w > 0) { ax -= w * b.marsAtCentre.x; ay -= w * b.marsAtCentre.y; az -= w * b.marsAtCentre.z; }
   }
   out.x = ax; out.y = ay; out.z = az;
   return out;
 }
 
 /** Drag (per second, the factor on velocity) of a world's own atmosphere on a ship at `pp` (Mars-frame metres) moving at `sp` m/s.
- *  Height is above its mean radius; the air thins with the world's scale height and is gone above `topM`. Mars is handled by dragDecel. */
-export function worldDrag(b, pp, sp) {
-  const alt = Math.hypot(pp.x - b.c.x, pp.y - b.c.y, pp.z - b.c.z) - b.R;
+ *  Height is above its mean radius; the air thins with the world's scale height and is gone above `topM`. Mars is handled by dragDecel. `c` is the world's centre now. */
+export function worldDrag(b, pp, sp, c = b.c) {
+  const alt = Math.hypot(pp.x - c.x, pp.y - c.y, pp.z - c.z) - b.R;
   if (alt > b.air.topM) return 0;
   return b.air.rho0 * Math.exp(-Math.max(0, alt) / b.air.scaleHeightM) * sp / (2 * FREE.ballisticKgM2);
 }
@@ -113,36 +124,45 @@ export function orbitElements(rel, vel, mu, R) {
 }
 export const circularSpeed = (mu, r) => Math.sqrt(mu / r);
 
-/** Where the ship goes with the engines off: n positions in the Mars frame, spaced evenly in time over `horizonS`. Stops at a surface. */
-export function predictPath(pos, vel, { n = 120, horizonS = 3600 } = {}) {
-  const pts = [], p = { ...pos }, v = { ...vel }, a = { x: 0, y: 0, z: 0 }, dtOut = horizonS / n;
-  let hit = null;
-  gravityAt(p, a);
+/** Where the ship goes with the engines off: n positions in the Mars frame, spaced evenly in time over `horizonS`, starting at game time `T` (default now) in Mars's turning axes. Stops at a surface. */
+export function predictPath(pos, vel, { n = 120, horizonS = 3600, T = worldTimeS() } = {}) {
+  const pts = [], p = { ...pos }, v = { ...vel }, a = { x: 0, y: 0, z: 0 }, dtOut = horizonS / n, w2 = OMEGA * OMEGA;
+  let hit = null, t = T, cs = centresAt(t);
+  const acc = () => { gravityAt(p, a, cs); a.x += w2 * p.x; a.z += w2 * p.z; };
+  acc();
   for (let i = 0; i < n && !hit; i++) {
     let left = dtOut;
     while (left > 1e-9 && !hit) {
       const r = len3(p), tau = Math.sqrt(r * r * r / MARS_MU), h = Math.min(left, Math.max(0.5, tau * 0.03), 20);
       v.x += a.x * h / 2; v.y += a.y * h / 2; v.z += a.z * h / 2;
+      rotY(v, -OMEGA * h, v);                                   // Coriolis: the velocity turns at twice the frame's spin, half now and half after the drift
       p.x += v.x * h; p.y += v.y * h; p.z += v.z * h;
-      gravityAt(p, a);
+      rotY(v, -OMEGA * h, v);
+      t += h; cs = centresAt(t);
+      acc();
       v.x += a.x * h / 2; v.y += a.y * h / 2; v.z += a.z * h / 2;
       left -= h;
       const rr = len3(p);
       if (rr < MARS_R + 500) hit = { body: 'mars', t: (i + 1) * dtOut - left };
-      else for (const b of MOON_LIST) if (Math.hypot(p.x - b.c.x, p.y - b.c.y, p.z - b.c.z) < b.R * 0.8) hit = { body: b.id, t: (i + 1) * dtOut - left };
+      else MOON_LIST.forEach((b, k) => { if (Math.hypot(p.x - cs[k].x, p.y - cs[k].y, p.z - cs[k].z) < b.R * 0.8) hit = { body: b.id, t: (i + 1) * dtOut - left }; });
     }
     pts.push({ x: p.x, y: p.y, z: p.z });
   }
   return { points: pts, hit, horizonS };
 }
 
-const groundOf = (mars, id, dx, dy, dz) => (id === 'mars' ? surfaceRadiusFast(mars, dx, dy, dz) : surfaceRadiusFast(makeMoon(id), dx, dy, dz));
+/** The ground radius under a direction from a body's centre. A direction in Mars's axes is turned into the moon's own axes first (its frame is turned by `k.yaw`). */
+const groundOf = (mars, id, dx, dy, dz, b, k) => {
+  if (id === 'mars') return surfaceRadiusFast(mars, dx, dy, dz);
+  const q = rotY({ x: dx, y: dy, z: dz }, -(k ? k.yaw : 0));
+  return surfaceRadiusFast(makeMoon(id), q.x, q.y, q.z);
+};
 
 // ---------------------------------------------------------------------------
 // THE FREE-FLIGHT SYSTEM
 // ---------------------------------------------------------------------------
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _v = new THREE.Vector3(), _w = new THREE.Vector3(), _n = new THREE.Vector3();
-const _g = { x: 0, y: 0, z: 0 }, _g2 = { x: 0, y: 0, z: 0 };
+const _g = { x: 0, y: 0, z: 0 }, _g2 = { x: 0, y: 0, z: 0 }, _qy = new THREE.Quaternion(), _Yax = new THREE.Vector3(0, 1, 0);
 
 export class FreeFlight {
   /**
@@ -192,6 +212,7 @@ export class FreeFlight {
   _install() {
     const f = this.f;
     this.active = true; this._owns = true;
+    if (f.epochS == null) f.epochS = this.host.worldTime();           // her own clock starts at the world's and runs with the drive
     if (!f.attitude) f.attitude = f.quaternion.clone();
     f.override = (dt) => this.advance(dt);
     f.autoHover = false; f.thrustDown = false; f.landed = false; f.airborne = true;
@@ -224,6 +245,7 @@ export class FreeFlight {
     const was = this.active;
     this.enabled = false; this.active = false; this.settleFrom = null;
     if (this.f.override && this._owns) this.f.override = null;
+    this.f.epochS = null;
     this.f.climbCap = this.f.P.climbSpeed;
     this._owns = false;
     if (this.host.drones) this.host.drones.suspended = false;
@@ -244,22 +266,38 @@ export class FreeFlight {
   get dvLeft() { return this.fuel * FREE.dvFullMs; }
 
   // ---- where is everything ------------------------------------------------------------------------------------------------
-  /** The Mars-frame position of the ship (free flight only runs there; in a moon's frame add the moon's centre). */
+  /** The ship's own clock, game seconds: her `epochS` while she is in space (time compression runs it fast), else the world's. */
+  timeS() { const e = this.f.epochS; return e == null ? this.host.worldTime() : e; }
+  /** Every moon's centre and velocity (Mars's turning axes) at the ship's clock, worked out once per instant. */
+  _kin(b) {
+    const T = this.timeS(), c = this._kc || (this._kc = new Map());
+    let e = c.get(b.id);
+    if (!e || e.T !== T) { e = { T, k: b.id === 'mars' ? { c: ZERO3, v: ZERO3 } : worldKin(b.id, T) }; c.set(b.id, e); }
+    return e.k;
+  }
+  /** The Mars-frame position of the ship (free flight only runs there; in a moon's frame it is carried out of that frame). */
   shipS() {
     const f = this.f, id = this.host.frameId();
     if (id === 'mars') return f.pos;
-    const c = BODIES[id].c;
-    return { x: f.pos.x + c.x, y: f.pos.y + c.y, z: f.pos.z + c.z };
+    const k = this._kin(BODIES[id]), r = rotY(f.pos, k.yaw);
+    return { x: r.x + k.c.x, y: r.y + k.c.y, z: r.z + k.c.z };
   }
-  /** Height above the ground of each body, and what the ship is doing relative to the nearest. */
+  /**
+   * Height above the ground of each body, and what the ship is doing relative to it. `relVel` is her velocity relative to the body (Mars's
+   * turning axes): a moon's velocity is taken off; Mars's own is her velocity over the ground below 300 km and her inertial velocity above.
+   */
   bodyState(b, p = this.shipS(), v = this.f.vel) {
-    const dx = p.x - b.c.x, dy = p.y - b.c.y, dz = p.z - b.c.z, d = Math.hypot(dx, dy, dz) || 1;
-    if (b.station) return { id: b.id, name: b.name, d, alt: d - b.R, closing: -(dx * v.x + dy * v.y + dz * v.z) / d, ground: b.R, dir: { x: dx / d, y: dy / d, z: dz / d } };
+    const k = this._kin(b), c = k.c;
+    const dx = p.x - c.x, dy = p.y - c.y, dz = p.z - c.z, d = Math.hypot(dx, dy, dz) || 1;
+    let rv;
+    if (b.id === 'mars') rv = d - MARS_R < 300_000 ? v : { x: v.x + OMEGA * p.z, y: v.y, z: v.z - OMEGA * p.x };
+    else rv = { x: v.x - k.v.x, y: v.y - k.v.y, z: v.z - k.v.z };
+    const closing = -(dx * rv.x + dy * rv.y + dz * rv.z) / d;
+    if (b.station) return { id: b.id, name: b.name, d, alt: d - b.R, closing, ground: b.R, dir: { x: dx / d, y: dy / d, z: dz / d }, relVel: rv };
     // the true ground only when she is near enough for it to matter (a crater rim is a few km; the mean radius does for the rest)
     const near = b.moon ? d < b.R * 3 : d - MARS_R < 40_000;
-    const R = near ? groundOf(this.mars, b.id, dx / d, dy / d, dz / d) : b.R;
-    const alt = d - R, closing = -(dx * v.x + dy * v.y + dz * v.z) / d;
-    return { id: b.id, name: b.name, d, alt, closing, ground: R, dir: { x: dx / d, y: dy / d, z: dz / d } };
+    const R = near ? groundOf(this.mars, b.id, dx / d, dy / d, dz / d, b, k) : b.R;
+    return { id: b.id, name: b.name, d, alt: d - R, closing, ground: R, dir: { x: dx / d, y: dy / d, z: dz / d }, relVel: rv };
   }
   /** The body that matters now: the lowest ship above its ground (a moon only counts inside its patch). */
   nearest() {
@@ -272,28 +310,44 @@ export class FreeFlight {
       const score = s.alt / (b.moon ? b.R : 1e5);                // a moon's 5 km is as near as Mars's 100 km
       if (!best || score < best.score) best = { ...s, score };
     }
-    best.vRel = Math.hypot(v.x, v.y, v.z);                       // moons are parked and Mars does not spin in this build: the velocity is the relative speed
+    best.vRel = Math.hypot(best.relVel.x, best.relVel.y, best.relVel.z);     // her speed relative to it
     return best;
   }
+  /**
+   * Where to point to meet the target: the place it will be when she gets there. She is closing on it at her present speed relative to it
+   * (or, if she is not yet closing, at the speed her drive would make over that distance), and the target keeps moving round Mars meanwhile.
+   */
+  leadPoint(b, p, v, c0, kv) {
+    const d0 = Math.hypot(c0.x - p.x, c0.y - p.y, c0.z - p.z), vrel = Math.hypot(v.x - kv.x, v.y - kv.y, v.z - kv.z);
+    const vEff = Math.max(vrel, 0.5 * Math.sqrt(2 * Math.max(1, this.aMax) * d0), 50);
+    let t = Math.min(d0 / vEff, 6 * 3600), c = c0;
+    for (let k = 0; k < 3; k++) { c = b.id === 'mars' ? c0 : worldCentreFixed(b.id, this.timeS() + t); t = Math.min(Math.hypot(c.x - p.x, c.y - p.y, c.z - p.z) / vEff, 6 * 3600); }
+    return c;
+  }
   targetState() {
-    const b = BODIES[this.target], p = this.shipS(), v = this.f.vel, s = this.bodyState(b, p, v);
-    const dist = s.d, toward = { x: (b.c.x - p.x) / dist, y: (b.c.y - p.y) / dist, z: (b.c.z - p.z) / dist };
-    const closing = v.x * toward.x + v.y * toward.y + v.z * toward.z;
-    return { ...s, body: b, toward, distM: dist, surfaceM: Math.max(0, s.alt), closing, etaS: closing > 0.5 ? Math.max(0, s.alt) / closing : Infinity };
+    const b = BODIES[this.target], p = this.shipS(), v = this.f.vel, s = this.bodyState(b, p, v), k = this._kin(b);
+    const dist = s.d, lead = this.leadPoint(b, p, v, k.c, k.v), ld = Math.hypot(lead.x - p.x, lead.y - p.y, lead.z - p.z) || 1;
+    const toward = { x: (lead.x - p.x) / ld, y: (lead.y - p.y) / ld, z: (lead.z - p.z) / ld };       // toward where it WILL be: an intercept, not the point it is at
+    const now = { x: (k.c.x - p.x) / dist, y: (k.c.y - p.y) / dist, z: (k.c.z - p.z) / dist };
+    const closing = -(s.relVel.x * (p.x - k.c.x) + s.relVel.y * (p.y - k.c.y) + s.relVel.z * (p.z - k.c.z)) / dist;
+    return { ...s, body: b, toward, now, distM: dist, surfaceM: Math.max(0, s.alt), closing, etaS: closing > 0.5 ? Math.max(0, s.alt) / closing : Infinity };
   }
 
   // ---- the read-outs ----------------------------------------------------------------------------------------------------
   telemetry() {
     const f = this.f, p = this.shipS(), v = f.vel, n = this.nearest(), t = this.targetState();
-    const ref = n.inPatch && n.id !== 'mars' ? BODIES[n.id] : BODIES.mars;
-    const rel = { x: p.x - ref.c.x, y: p.y - ref.c.y, z: p.z - ref.c.z };
-    const el = orbitElements(rel, v, ref.mu, ref.R);
-    const hSpeed = Math.sqrt(Math.max(0, el.speed * el.speed - (n.closing * n.closing)));
-    return { active: this.active, enabled: this.enabled, speed: el.speed, closing: n.closing, vertical: -n.closing, horizontal: hSpeed, alt: n.alt, ref: ref.name, refId: ref.id, nearId: n.id, nearName: n.name,
+    const ref = n.inPatch && n.id !== 'mars' ? BODIES[n.id] : BODIES.mars, kr = this._kin(ref);
+    const rel = { x: p.x - kr.c.x, y: p.y - kr.c.y, z: p.z - kr.c.z };
+    // orbit elements want the INERTIAL velocity relative to the reference: the velocity over the turning axes plus the frame's own motion at that point
+    const rv = ref.id === 'mars' ? { x: v.x + OMEGA * p.z, y: v.y, z: v.z - OMEGA * p.x } : { x: v.x - kr.v.x + OMEGA * rel.z, y: v.y - kr.v.y, z: v.z - kr.v.z - OMEGA * rel.x };
+    const el = orbitElements(rel, rv, ref.mu, ref.R);
+    const speed = ref.id === n.id ? n.vRel : el.speed;
+    const hSpeed = Math.sqrt(Math.max(0, speed * speed - (n.closing * n.closing)));
+    return { active: this.active, enabled: this.enabled, speed, closing: n.closing, vertical: -n.closing, horizontal: hSpeed, alt: n.alt, ref: ref.name, refId: ref.id, nearId: n.id, nearName: n.name,
       periM: el.periM, apoM: el.apoM, periodS: el.periodS, bound: el.bound, ecc: el.e, circularMs: circularSpeed(ref.mu, el.r), escapeMs: el.escapeMs,
-      target: { id: this.target, name: t.body.name, distM: t.distM, surfaceM: t.surfaceM, closing: t.closing, etaS: t.etaS, dir: t.toward },
+      target: { id: this.target, name: t.body.name, distM: t.distM, surfaceM: t.surfaceM, closing: t.closing, etaS: t.etaS, dir: t.toward, relSpeed: Math.hypot(t.relVel.x, t.relVel.y, t.relVel.z) },
       fuel: this.fuel, dvLeft: this.dvLeft, throttle: this.throttle, assist: this.assist, warp: this.warp, eff: this.eff, aMax: this.aMax,
-      prograde: el.speed > 0.05 ? { x: v.x / el.speed, y: v.y / el.speed, z: v.z / el.speed } : null, thrusting: f.thrustFwd > 0, inAir: ref.id === 'mars' && n.alt < ATMOSPHERE_TOP_M };
+      prograde: speed > 0.05 ? { x: n.relVel.x / speed, y: n.relVel.y / speed, z: n.relVel.z / speed } : null, thrusting: f.thrustFwd > 0, inAir: ref.id === 'mars' && n.alt < ATMOSPHERE_TOP_M };
   }
 
   // ---- compression ------------------------------------------------------------------------------------------------------
@@ -398,12 +452,16 @@ export class FreeFlight {
     if (bodyId !== 'mars' && this.host.frameId() !== bodyId) this.host.setFrame(bodyId);
     else if (bodyId === 'mars' && this.host.frameId() !== 'mars') this.host.setFrame('mars');
     const from = f.attitude ? f.attitude.clone() : f.quaternion.clone();
+    // A moon turns under a ship that rode in with it (a few m/s at the surface): the flight assist takes her over holding the ground's speed, so a drift of
+    // under 10 m/s across the ground is taken out (the lift pods can do that at once); a faster one is hers to deal with.
+    if (bodyId !== 'mars') { const v = f.vel, r = len3(f.pos) || 1, ux = f.pos.x / r, uy = f.pos.y / r, uz = f.pos.z / r, vr = v.x * ux + v.y * uy + v.z * uz;
+      if (Math.hypot(v.x - ux * vr, v.y - uy * vr, v.z - uz * vr) < 10) { v.x = ux * vr; v.y = uy * vr; v.z = uz * vr; } }
     // the nose's heading on the local horizon, so the levelled hull points where she was pointing
     f.refreshOrientation();
     const fr = f._frame, nose = _v.set(0, 0, -1).applyQuaternion(from);
     const hn = nose.x * fr.north.x + nose.y * fr.north.y + nose.z * fr.north.z, he = nose.x * fr.east.x + nose.y * fr.east.y + nose.z * fr.east.z;
     if (Math.hypot(hn, he) > 0.1) f.heading = ((Math.atan2(he, hn) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    f.override = null; this._owns = false; this.active = false;
+    f.override = null; this._owns = false; this.active = false; f.epochS = null;     // she rejoins the world's clock: from here a frame carries her
     f.attitude = from; this.settleFrom = from.clone(); this.settleT = 0;
     f.autoHover = true; f.thrustDown = bodyId !== 'mars'; f.climbCap = f.P.climbSpeed; f.thrustFwd = 0;
     f.refreshOrientation();
@@ -443,9 +501,11 @@ export class FreeFlight {
     if (this.host.frameId() !== 'mars') { this.active = false; f.override = null; return false; }
     let left = dt, n = 0;
     this._burning = false;
+    if (f.epochS == null) f.epochS = this.host.worldTime();
     while (left > 1e-9 && this.active && n++ < 400) {
       const h = Math.min(left, this._maxStep());
       this._substep(h); left -= h;
+      if (f.epochS != null) f.epochS += h;
     }
     f.refreshOrientation();
     if (this.active) { f.autoHover = false; f.landed = false; f.airborne = true; f.gearPos = Math.max(0, f.gearPos - dt * 0.5); f.thrustUp = 0; }
@@ -454,7 +514,7 @@ export class FreeFlight {
   _maxStep() {
     const f = this.f, p = f.pos, v = f.vel, speed = Math.hypot(v.x, v.y, v.z);
     let tau = Math.sqrt(Math.pow(Math.max(len3(p), MARS_R), 3) / MARS_MU);
-    for (const b of MOON_LIST) { const d = Math.max(Math.hypot(p.x - b.c.x, p.y - b.c.y, p.z - b.c.z), b.R); tau = Math.min(tau, Math.sqrt(d * d * d / b.mu)); }
+    for (const b of MOON_LIST) { const c = this._kin(b).c, d = Math.max(Math.hypot(p.x - c.x, p.y - c.y, p.z - c.z), b.R); tau = Math.min(tau, Math.sqrt(d * d * d / b.mu)); }
     let h = clamp(0.02 * tau, 0.01, 5);
     const alt = Math.max(5, this.bodyState(BODIES.mars).alt);
     h = Math.min(h, Math.max(0.01, 0.25 * alt / (speed + 1)));
@@ -463,11 +523,12 @@ export class FreeFlight {
   }
 
   _desiredDirection() {
-    const f = this.f, v = f.vel, sp = Math.hypot(v.x, v.y, v.z);
     let mode = this.assist;
     if (this.input.brake) mode = 'retro';
-    if (mode === 'prograde' && sp > 0.05) return { x: v.x / sp, y: v.y / sp, z: v.z / sp };
-    if (mode === 'retro' && sp > 0.05) return { x: -v.x / sp, y: -v.y / sp, z: -v.z / sp };
+    if (mode === 'prograde' || mode === 'retro') {
+      const n = this.nearest(), v = n.relVel, sp = n.vRel;                      // against the body that matters (its velocity taken off)
+      if (sp > 0.05) { const k = mode === 'retro' ? -1 / sp : 1 / sp; return { x: v.x * k, y: v.y * k, z: v.z * k }; }
+    }
     if (mode === 'target') { const t = this.targetState(); return t.toward; }
     return null;
   }
@@ -515,7 +576,7 @@ export class FreeFlight {
     // the drive: the throttle setting while the thrust is held; the brake works the drive on its own, once the nose is on the retrograde
     let thr = i.thr * this.throttle;
     if (i.brake) {
-      const sp = Math.hypot(v.x, v.y, v.z);
+      const sp = this.nearest().vRel;
       thr = this._aligned ? clamp(sp / Math.max(1, aMax * 0.8), 0, 1) * (sp > 0.05 ? 1 : 0) : 0;
       thr = Math.min(thr, 0.98 * sp / Math.max(1e-6, aMax * h));            // never more than it takes to stop her in this step (a compressed step is long)
     }
@@ -531,22 +592,27 @@ export class FreeFlight {
     // fuel: the main drive burns its acceleration, the jets a hundredth as hard
     const dv = (ac + (Math.abs(tx) + Math.abs(ty) + Math.abs(tz)) * rc * 0.01) * h;
     if (dv > 0) this.fuel = Math.max(0, this.fuel - dv / FREE.dvFullMs);
-    // gravity and drag, kick-drift-kick
-    gravityAt(p, _g);
+    // gravity, the turning frame's centrifugal pull, and drag: kick-drift-kick, with the Coriolis turn of the velocity (exact) between the kicks
+    const T0 = f.epochS, cs0 = centresAt(T0), cs1 = centresAt(T0 + h), w2 = OMEGA * OMEGA;
+    gravityAt(p, _g, cs0); _g.x += w2 * p.x; _g.z += w2 * p.z;
     let dragx = 0, dragy = 0, dragz = 0, decel = 0;
-    const drag = (pp, vv) => {
+    const drag = (pp, vv, cs) => {
       const sp = len3(vv); if (sp < 1e-6) return 0;
       let k = 0;
       const a = len3(pp) - MARS_R; if (a <= 160_000) k += dragDecel(a, sp) / sp;
-      for (const b of MOON_LIST) if (b.air) k += worldDrag(b, pp, sp);                       // a world with an atmosphere brakes a ship in its air
+      for (let n = 0; n < MOON_LIST.length; n++) { const b = MOON_LIST[n]; if (b.air) k += worldDrag(b, pp, sp, cs[n]); }       // a world with an atmosphere brakes a ship in its air
       return k;
     };
-    const k0 = drag(p, v);
-    const vhx = v.x + (_g.x + ax - k0 * v.x) * h / 2, vhy = v.y + (_g.y + ay - k0 * v.y) * h / 2, vhz = v.z + (_g.z + az - k0 * v.z) * h / 2;
+    const k0 = drag(p, v, cs0);
+    let vhx = v.x + (_g.x + ax - k0 * v.x) * h / 2, vhy = v.y + (_g.y + ay - k0 * v.y) * h / 2, vhz = v.z + (_g.z + az - k0 * v.z) * h / 2;
+    { const c = Math.cos(OMEGA * h), s2 = -Math.sin(OMEGA * h), x = vhx; vhx = x * c + vhz * s2; vhz = -x * s2 + vhz * c; }          // Coriolis, first half
     p.x += vhx * h; p.y += vhy * h; p.z += vhz * h;
-    gravityAt(p, _g2);
-    const k1 = drag(p, { x: vhx, y: vhy, z: vhz });
+    { const c = Math.cos(OMEGA * h), s2 = -Math.sin(OMEGA * h), x = vhx; vhx = x * c + vhz * s2; vhz = -x * s2 + vhz * c; }          // Coriolis, second half
+    gravityAt(p, _g2, cs1); _g2.x += w2 * p.x; _g2.z += w2 * p.z;
+    const k1 = drag(p, { x: vhx, y: vhy, z: vhz }, cs1);
     v.x = vhx + (_g2.x + ax - k1 * vhx) * h / 2; v.y = vhy + (_g2.y + ay - k1 * vhy) * h / 2; v.z = vhz + (_g2.z + az - k1 * vhz) * h / 2;
+    // the hull holds its attitude against the stars: in the turning axes that is a slow turn the other way
+    q.premultiply(_qy.setFromAxisAngle(_Yax, -OMEGA * h));
     decel = k1 * Math.hypot(vhx, vhy, vhz);
     if (decel > FREE.maxDecel) {
       f.hull = Math.max(0, f.hull - (decel - FREE.maxDecel) * 0.02 * h);
@@ -569,9 +635,9 @@ export class FreeFlight {
     f.hull = Math.max(0, f.hull - hurt);
     this.say(hurt > 0 ? `Impact at ${Math.round(rate)} m/s. Hull ${Math.round(f.hull)}%.` : 'Touched down.', hurt > 0, 'impact', 3);
     const lift = (s.ground + 4) / s.d;
-    const c = b.c;
+    const k = this._kin(b), c = k.c;
     f.pos.x = c.x + (f.pos.x - c.x) * lift; f.pos.y = c.y + (f.pos.y - c.y) * lift; f.pos.z = c.z + (f.pos.z - c.z) * lift;
-    v.x = v.y = v.z = 0;
+    v.x = k.v.x; v.y = k.v.y; v.z = k.v.z;                    // at rest on the ground she hit: a moon's ground moves with the moon, Mars's is the frame (zero)
     this.handover(b.id, 'Down. The flight assist has her.');
   }
 }

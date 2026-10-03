@@ -27,6 +27,8 @@
 import * as THREE from 'three';
 import { GraphicsHealth } from './graphicsHealth.js';
 import { safeMaterials } from './safeMaterials.js';
+import { makeFrame, setFrameState, framePoint, frameDir, frameVel } from './frameMath.js';
+const _Y = new THREE.Vector3(0, 1, 0);
 
 export class Engine {
   constructor(canvas, opts = {}) {
@@ -87,7 +89,9 @@ export class Engine {
     // (Mars's ground, the port) belongs to the root frame, or to the frame it names with `frame`, and is drawn at
     // worldPos + frame.origin - activeFrame.origin - cameraWorldPos. With the root frame active that is the formula it
     // always was.
-    this.rootFrame = { id: 'mars', origin: { x: 0, y: 0, z: 0 } };
+    // F2: a moving moon's frame is Mars's turning axes translated to its centre and turned about +Y by `yaw`; it carries `vel` and
+    // `yawRate` (in the root's axes) so a ship can be carried across with its velocity. Change a frame only with setFrameState().
+    this.rootFrame = makeFrame('mars');
     this.activeFrame = this.rootFrame;
 
     // Extra scenes drawn after the main one, into the SAME depth buffer, with the
@@ -147,23 +151,32 @@ export class Engine {
    */
   setActiveFrame(frame) {
     if (frame === this.activeFrame) return;
-    const d = this.frameShift(this.activeFrame, frame);
-    const c = this.cameraWorldPos;
-    c.x += d.x; c.y += d.y; c.z += d.z;
+    this.framePoint(this.activeFrame, frame, this.cameraWorldPos, this.cameraWorldPos);
     this.activeFrame = frame;
   }
 
-  /** What to ADD to a position in frame `from` to express it in frame `to`. */
+  /** Give a frame its motion: k = { c: centre, v: velocity, yaw, yawRate } in the ROOT frame's axes (space/frames.js worldKin). */
+  setFrameState(frame, k) { return setFrameState(frame, k); }
+  /** What to ADD to a position in frame `from` to express it in frame `to` WHEN THE TWO ARE NOT TURNED RELATIVE TO EACH OTHER (use framePoint otherwise). */
   frameShift(from, to, out = {}) {
     out.x = from.origin.x - to.origin.x; out.y = from.origin.y - to.origin.y; out.z = from.origin.z - to.origin.z;
     return out;
   }
+  framePoint(from, to, p, out) { return framePoint(from, to, p, out); }
+  frameDir(from, to, v, out) { return frameDir(from, to, v, out); }
+  frameVel(from, to, p, v, out) { return frameVel(from, to, p, v, out); }
 
   /** The camera in another frame's coordinates (f64). */
-  cameraIn(frame, out = {}) {
-    const d = this.frameShift(this.activeFrame, frame);
-    out.x = this.cameraWorldPos.x + d.x; out.y = this.cameraWorldPos.y + d.y; out.z = this.cameraWorldPos.z + d.z;
-    return out;
+  cameraIn(frame, out = {}) { return this.framePoint(this.activeFrame, frame, this.cameraWorldPos, out); }
+
+  /** The placement of frame F in the active frame AF's axes for this step (cached per step): the origin's position, and the turn between them. */
+  _xf(F, AF) {
+    if (F._xfAt === this.frameCount && F._xfFor === AF) return F._xf;
+    const t = this.framePoint(F, AF, { x: 0, y: 0, z: 0 }), d = F.yaw - AF.yaw, xf = F._xf || (F._xf = { q: new THREE.Quaternion() });
+    xf.tx = t.x; xf.ty = t.y; xf.tz = t.z; xf.c = Math.cos(d); xf.s = Math.sin(d);
+    xf.q.setFromAxisAngle(_Y, d);
+    F._xfAt = this.frameCount; F._xfFor = AF;
+    return xf;
   }
 
   /**
@@ -179,16 +192,25 @@ export class Engine {
 
     // Rebase everything against the camera's f64 position. An entry that rides with the player (`followActive`)
     // is in the active frame; one that names a `frame` is in that; the rest are in the root (Mars) frame.
-    const A = this.activeFrame.origin, cam = this.cameraWorldPos;
+    const AF = this.activeFrame, A = AF.origin, cam = this.cameraWorldPos;
     for (const e of this._tracked) {
       if (!e.object3d) continue;
-      const o = e.followActive ? A : (e.frame ? e.frame.origin : this.rootFrame.origin);
-      e.object3d.position.set(
-        e.worldPos.x + o.x - A.x - cam.x,
-        e.worldPos.y + o.y - A.y - cam.y,
-        e.worldPos.z + o.z - A.z - cam.z
-      );
-      if (e.quaternion) e.object3d.quaternion.copy(e.quaternion);
+      const F = e.followActive ? AF : (e.frame || this.rootFrame), q = e.object3d.quaternion;
+      if (F === AF || (F.yaw === AF.yaw && F.yaw === 0)) {
+        const o = F.origin;
+        e.object3d.position.set(e.worldPos.x + o.x - A.x - cam.x, e.worldPos.y + o.y - A.y - cam.y, e.worldPos.z + o.z - A.z - cam.z);
+        if (e._wq) { if (q.equals(e._wq)) q.copy(e.quaternion || e._bq); e._wq = null; }      // it was turned for another frame: put its own orientation back
+        if (e.quaternion) q.copy(e.quaternion);
+        continue;
+      }
+      // a frame turned relative to the active one (a moon's, seen from Mars; Mars's, seen from a moon): translate, turn the position about +Y and turn the object with it
+      const xf = this._xf(F, AF);
+      const wx = e.worldPos.x, wz = e.worldPos.z;
+      e.object3d.position.set(xf.tx + wx * xf.c + wz * xf.s - cam.x, xf.ty + e.worldPos.y - cam.y, xf.tz - wx * xf.s + wz * xf.c - cam.z);
+      let base = e.quaternion;
+      if (!base) { if (!e._wq || !q.equals(e._wq)) e._bq = (e._bq || new THREE.Quaternion()).copy(q); base = e._bq; }
+      q.copy(base).premultiply(xf.q);
+      (e._wq || (e._wq = new THREE.Quaternion())).copy(q);
     }
     this.camera.position.set(0, 0, 0);
 

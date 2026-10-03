@@ -21,11 +21,10 @@ export async function runEphemerisChecks({ check, section, TESTIA }) {
   const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z });
 
   check('Kepler\'s equation is solved to 1e-12 for every eccentricity from a circle to 0.9', (() => { let worst = 0; for (const e of [0, 0.01, 0.1, 0.5, 0.9]) for (let k = -12; k <= 12; k++) { const M = k * 0.5, Ea = E.solveKepler(M, e), wrapM = Math.atan2(Math.sin(M), Math.cos(M)); worst = Math.max(worst, Math.abs(Ea - e * Math.sin(Ea) - wrapM)); } return worst < 1e-12; })());
-  check('the switches are OFF: nothing orbits or turns yet (a later package flips them); the Sun is in the registry as the root of every orbit', E.DYNAMICS.orbits === false && E.DYNAMICS.rotation === false && reg.worldDef('sun').kind === 'star' && reg.worldDef('mars').orbit.parent === 'sun');
+  check('the switches are ON (F2): worlds orbit and Mars turns; the Sun is in the registry as the root of every orbit', E.DYNAMICS.orbits === true && E.DYNAMICS.rotation === true && reg.worldDef('sun').kind === 'star' && reg.worldDef('mars').orbit.parent === 'sun');
   const periodD = (id) => E.periodOf(lookup(id).orbit, E.MU_SUN) / 86400;
   check(`periods come from the Sun's mass and the semi-major axis: Mars ${periodD('mars').toFixed(1)} d (real 686.98), Earth ${periodD('earth').toFixed(2)} d (365.26), Jupiter ${(periodD('jupiter') / 365.25).toFixed(2)} y (11.86)`, Math.abs(periodD('mars') - 686.98) < 0.5 && Math.abs(periodD('earth') - 365.26) < 0.2 && Math.abs(periodD('jupiter') / 365.25 - 11.86) < 0.02);
 
-  E.DYNAMICS.orbits = true;
   try {
     const mars = lookup('mars');
     let lo = 1e30, hi = 0; const T = E.periodOf(mars.orbit, E.MU_SUN);
@@ -38,12 +37,14 @@ export async function runEphemerisChecks({ check, section, TESTIA }) {
     const moonAt = (jd) => { const t = (jd - E.START_JD) * 86400; return dist(sub(reg.worldCentre('moon', t), reg.worldCentre('earth', t))); };
     let mlo = 1e30, mhi = 0; for (let d = 0; d < 28; d += 0.25) { const r = moonAt(2461316.5 + d); mlo = Math.min(mlo, r); mhi = Math.max(mhi, r); }
     check(`the Moon, a moon of a planet (a nested orbit, parent earth), stays between ${(mlo / 1e6).toFixed(0)} and ${(mhi / 1e6).toFixed(0)} thousand km of the Earth (real 356 to 407)`, mlo > 3.45e8 && mhi < 4.15e8);
-    const ph = lookup('phobos'), P = E.periodOf(ph.orbit, 6.6743e-11 * 6.417e23), c0 = reg.worldCentre('phobos', 0), c1 = reg.worldCentre('phobos', P), c2 = reg.worldCentre('phobos', P / 2);
+    const ph = lookup('phobos'), P = E.periodOf(ph.orbit, 6.6743e-11 * 6.417e23), c0 = reg.worldCentreInertial('phobos', 0), c1 = reg.worldCentreInertial('phobos', P), c2 = reg.worldCentreInertial('phobos', P / 2);
     check(`with the switch on Phobos is back where it started after one period (${(P / 3600).toFixed(2)} h) and on the far side after half`, dist(sub(c0, c1)) < 5 && dist({ x: c0.x + c2.x, y: c0.y + c2.y, z: c0.z + c2.z }) < 5);
-    E.DYNAMICS.rotation = true;
-    const R = lookup('mars').rotation;
-    check('with rotation on, Mars turns a quarter turn in a quarter of its day (from its prime meridian at J2000)', Math.abs(E.rotationAngle(lookup('mars'), R.periodS / 4) - (R.prime0Deg * E.DEG + Math.PI / 2) % (2 * Math.PI)) < 1e-9);
-  } finally { E.DYNAMICS.orbits = false; E.DYNAMICS.rotation = false; }
+    const day = 360 / E.ROOT_POLE.rotationDegPerDay * 86400;           // Mars's sidereal day, from the IAU rate
+    const q = (E.rootSpin(day / 4) - E.rootSpin(0) + 4 * Math.PI) % (2 * Math.PI), full = Math.abs(((E.rootSpin(day) - E.rootSpin(0) + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+    check('with rotation on, Mars turns a quarter turn in a quarter of its sidereal day (88,642.66 s, the IAU rate) and a whole turn in a day', Math.abs(q - Math.PI / 2) < 1e-9 && full < 1e-9, `${q} ${full}`);
+  } finally { /* the switches stay on */ }
+  // the static checks below want the sky still: the switches off for a moment (and put back)
+  E.DYNAMICS.orbits = false; E.DYNAMICS.rotation = false;
   const e0 = reg.worldCentre('earth', 0), e1 = reg.worldCentre('earth', 1e9);
   check('with the switch off a world sits still: asked a thousand million seconds later, Earth is in the same place, 0.4 to 2.7 AU from Mars', dist(sub(e0, e1)) === 0 && dist(e0) / AU > 0.4 && dist(e0) / AU < 2.7);
   check('Phobos, parked, is bit-for-bit where the old equatorial() put it (no 2e11 m minus 2e11 m)', (() => { const p = reg.worldCentre('phobos'), lon = -109 * (Math.PI / 180), r = 9_376_000; return p.x === r * Math.cos(lon) && p.y === 0 && p.z === -r * Math.sin(lon); })());
@@ -75,6 +76,7 @@ export async function runEphemerisChecks({ check, section, TESTIA }) {
   })());
 
   // ---- stations, range, jump -----------------------------------------------------------------------------------------------
+  E.DYNAMICS.orbits = true; E.DYNAMICS.rotation = true;            // the station flight below is flown in the live sky
   section('W5. Stations as places, the drive\'s range, and a jump lane: the registry lists them honestly and the real authority flies to a station');
   const spec = await src('space/spaceSpec.js');
   const { validateWorldDef } = await src('worlds/_kit/schema.js');

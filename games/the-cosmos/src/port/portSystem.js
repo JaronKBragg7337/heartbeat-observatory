@@ -231,6 +231,11 @@ export class PortSystem {
       const l=new THREE.PointLight(0xffd9ac,75,13,2);l.name='port practical light pool';this.root.add(l);return l;
     });
     this.practical=this.lights[0];
+    // F2 NIGHT: the Sun goes down at the port now. The four apron masts (buildEarthworks) light the apron: a fixed small pool of real lights, moved to the
+    // masts nearest the player (never a different NUMBER of lights: that would recompile every shader), off by day, up as the Sun sets.
+    this.masts=[[-32,-64],[91,-48],[90,54],[-32,44]];
+    this.flood=Array.from({length:low?2:3},()=>{const l=new THREE.PointLight(0xfff0d8,0,95,1.5);l.name='port apron flood';this.root.add(l);return l;});
+    this.night=0;
     this.updateDisplays();
     const basis=new THREE.Matrix4().makeBasis(new THREE.Vector3(...Object.values(this.site.right)),new THREE.Vector3(...Object.values(this.site.up)),new THREE.Vector3(...Object.values(this.site.back)));
     this.quaternion=new THREE.Quaternion().setFromRotationMatrix(basis);
@@ -390,7 +395,13 @@ export class PortSystem {
       this.boxes.push({id:PORT_ID,x0:x-.6,x1:x+.6,z0:z-.6,z1:z+.6,y0:0,y1:12});
     }
   }
+  /** Night, 0 (day) to 1 (dark): the masts' floodlights follow it. Set by main from the sky each frame. */
+  setNight(k){this.night=k;if(!this.flood)return;for(const l of this.flood)l.visible=k>0.01;}
   tick(dt,walker,collide=true,holdDoors=false) {
+    if(this.flood&&this.night>0.01){
+      const q=this.site.toLocal(walker.worldPos),near=this.masts.map(m=>({m,d:Math.hypot(q.x-m[0],q.z-m[1])})).sort((a,b)=>a.d-b.d);
+      this.flood.forEach((l,i)=>{const m=near[i].m;l.position.set(m[0],10.2,m[1]);l.intensity=160*this.night;});
+    }
     if(holdDoors)this.updateElevatorVisuals();else this.tickElevator(dt,walker,collide);
     const p=this.site.toLocal(walker.worldPos), r=walker.radiusM;
     this.time+=dt;

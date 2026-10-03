@@ -18,7 +18,9 @@
 // ============================================================================
 
 import { moonCentre, moonSurfaceGravity, G_CONST, sunDirection } from './spaceSpec.js';
-import { worldDef, isFrameWorld, worldPlacement } from '../worlds/registry.js';
+import { worldDef, isFrameWorld } from '../worlds/registry.js';
+import { refLonS, worldKin } from './frames.js';
+import { worldTimeS } from './clock.js';
 import { profileOf, profileParams, pick } from '../worlds/_kit/terrain.js';
 
 const DEG = Math.PI / 180;
@@ -96,10 +98,9 @@ export function makeMoon(id) {
   const REGOLITH_M = pick(S, 'regolithDepthM', 50);
   const CELLS_S = S.cells || CELLS;                                  // WORLD2: a larger body has larger crater cells (def.cells)
   const depthRatio = S.depthRatio || (() => 0.16);                   // WORLD2: depth of a crater of diameter D (the Mars moons: 0.16 at every size; def.depthRatio)
-  const centre = moonCentre(S);
   // body axes in world directions
   // where it sits as seen from Mars (its +X axis points at Mars: tidal lock): the parked shorthand's own longitude, or the one the orbit puts it at
-  const LON_S = S.orbit && !S.orbit.parked ? worldPlacement(S.id).lonS : S.lonS;
+  const LON_S = refLonS(S);             // the longitude its axes were drawn at (frames.js): the frame turns from there as it goes round
   const lonM = (LON_S + 180) * DEG;
   const ex = { x: Math.cos(lonM), y: 0, z: -Math.sin(lonM) };
   const ez = { x: 0, y: 1, z: 0 };
@@ -346,11 +347,12 @@ export function makeMoon(id) {
   // Crater-on-crater shadow, as a darkening of the vertex colour. The sun's shadow map only covers the ground under the
   // camera, so a rim does not cast onto the next bowl. This walks the same craters the field uses and darkens the floor
   // on the up-sun side, where that rim blocks the sun. Nested bowls multiply. Grooves take a little dust-shadow too.
-  const sunW = S.sun ? worldDir0(...S.sun.body) : sunDirection();           // WORLD2: a world has its own star
+  const sunW = S.sun ? worldDir0(...S.sun.body) : sunDirection();           // WORLD2: a world has its own star; F2: otherwise the Sun in this world's axes starts as the legacy fixed Sun, then body.setSun() keeps it the real one
   const sunB = toBodyDir(sunW.x, sunW.y, sunW.z);
+  let sunless = false;                  // true while the whole-moon shell is baked: its shading must not carry one hour's shadows
   const SHADE_CELLS = CELLS_S.filter((c) => c >= 64);
   function shadeAt(px, py, pz, u, v, w) {
-    const elev = u * sunB[0] + v * sunB[1] + w * sunB[2];
+    const elev = sunless ? 0 : u * sunB[0] + v * sunB[1] + w * sunB[2];
     let sx = sunB[0] - u * elev, sy = sunB[1] - v * elev, sz = sunB[2] - w * elev;
     const sl = Math.hypot(sx, sy, sz) || 1;
     sx /= sl; sy /= sl; sz /= sl;
@@ -600,7 +602,14 @@ export function makeMoon(id) {
       return { id: l.id, name: l.name, note: l.note, radiusM: l.radiusM, depthM: l.depthM, lat, bodyLon: lon0, lon: ((lon0 + LON_S + 180 + 540) % 360) - 180, elevation: 0, verified: S.measured === false ? 'invented' : 'table' };
     }),
     sources: S.sources || [{ field: 'everything', url: '', verified: 'invented', note: `${S.name} is a game world: its numbers are the world's own and not measured (state each source in the def's \`sources\`).` }],
-    centre,                       // where its centre is in Mars's frame
+    /** Where its centre is NOW in Mars's turning frame (a moon moves: ask again, or use centreAt(t)). */
+    get centre() { return worldKin(S, worldTimeS()).c; },
+    centreAt: (t) => worldKin(S, t).c,
+    kinAt: (t) => worldKin(S, t),
+    /** The Sun in this world's own axes changed (it moves): the patches' baked shadows follow it when it has moved enough (planetMesh.needsRebuild). */
+    setSun(x, y, z) { sunW.x = x; sunW.y = y; sunW.z = z; const b = toBodyDir(x, y, z); sunB[0] = b[0]; sunB[1] = b[1]; sunB[2] = b[2]; },
+    /** Bake without the Sun's crater shadows (the shell: seen from anywhere, at any hour). */
+    withoutSun(fn) { sunless = true; try { return fn(); } finally { sunless = false; } },
     spec: S,
     baseField, materialField, surfaceRadius,
     /** Metres of loose rock added to the surface along a world direction. Zero on Deimos and on the Phobos pad. */
@@ -630,7 +639,7 @@ export function makeMoon(id) {
     ports: ports.map((q) => { const pt = surfacePoint(q.d[0], q.d[1], q.d[2]), l = Math.hypot(pt.x, pt.y, pt.z); return { id: q.id, name: q.name, flatM: q.flatM, point: pt, up: { x: pt.x / l, y: pt.y / l, z: pt.z / l } }; }),
     axesWorld: { ex, ey, ez },
     /** The world-aligned unit vector toward the Sun (the patches cast shadows along it). */
-    sunDir: sunW,
+    get sunDir() { return sunW; },
     /** WORLD2: is this body-local point on a settlement's buildings, pad or people (def.settlement)? `margin` metres of room. Used by the spoil guards. */
     settlementSolid: (x, y, z, margin = 0.3) => settlementSolid(x, y, z, margin),
     toBodyDir, fromBody,

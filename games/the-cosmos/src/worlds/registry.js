@@ -14,7 +14,8 @@
 import { WORLD_DEFS } from './_manifest.js';
 import { validateWorldDef } from './_kit/schema.js';
 import { PROFILES } from './_kit/terrain.js';
-import { centreAt, placementOf, rotationAngle } from './_kit/ephemeris.js';
+import { centreAt, centreFixedAt, placementOf, rotationAngle } from './_kit/ephemeris.js';
+import { worldTimeS } from '../space/clock.js';
 import { MATERIALS, extendMaterials } from '../world/field.js';
 
 const DEFS = new Map();
@@ -69,11 +70,13 @@ export function registerWorldLate(def, opts) { const d = registerWorld(def, opts
 /** Remove a world registered late (a test's fixture). Never used on a manifest world. Its materials stay in the table: the table only grows. */
 export function unregisterWorld(id) { const had = DEFS.delete(id); if (had) for (const fn of listeners) fn(null); return had; }
 
-/** Where a world's centre is, in the game's axes, relative to Mars's centre, at game time t (t is ignored until DYNAMICS.orbits is switched on: _kit/ephemeris.js). */
-export const worldCentre = (id, t = 0) => centreAt(worldDef(id), worldDef, t);
-/** The epoch placement as seen from Mars: { centre, distM, lonS, latS }. */
-export const worldPlacement = (id, t = 0) => placementOf(worldDef(id), worldDef, t);
-export const worldRotation = (id, t = 0) => rotationAngle(worldDef(id), t);
+/** Where a world's centre is, relative to Mars's centre, in Mars's TURNING (body-fixed) axes: the axes the ground game and every ship use. `t` is game seconds since the epoch; omitted it is NOW (space/clock.js). */
+export const worldCentre = (id, t) => centreFixedAt(worldDef(id), worldDef, t ?? worldTimeS());
+/** The same in the INERTIAL axes (Mars's axes at J2000): where the Sun, the stars and the orbits are fixed. */
+export const worldCentreInertial = (id, t) => centreAt(worldDef(id), worldDef, t ?? worldTimeS());
+/** Distance, S-longitude and latitude as seen from Mars's surface frame (turning axes). */
+export const worldPlacement = (id, t) => placementOf(worldDef(id), worldDef, t ?? worldTimeS());
+export const worldRotation = (id, t) => rotationAngle(worldDef(id), t ?? worldTimeS());
 
 export const worldDef = (id) => { const d = DEFS.get(id); if (!d) throw new Error(`unknown world: ${id}`); return d; };
 export const hasWorld = (id) => DEFS.has(id);

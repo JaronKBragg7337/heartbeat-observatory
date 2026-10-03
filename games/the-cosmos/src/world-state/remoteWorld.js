@@ -1,3 +1,4 @@
+import { setServerTime } from '../space/clock.js';
 import { stringify, parse } from './wire.js';
 import { BUILD_VERSION, reloadStaleBuild } from '../core/buildHandshake.js';
 const identityKey='cosmos-device-v2';
@@ -70,7 +71,9 @@ export class RemoteWorld {
   discardCurrent(){return new Promise(resolve=>{if(!this.connected||this.socket.readyState!==WebSocket.OPEN){resolve({ok:false,msg:'Not connected to the shared world.'});return;}
     this.onIdentityDone=m=>{this.onIdentityDone=null;resolve(m);};this.socket.send(stringify({type:'identity',op:'discard'}));});}
   scheduleReconnect(){clearTimeout(this.retry);this.retry=setTimeout(()=>this.connect().then(()=>this.onConnection?.(true)).catch(()=>this.scheduleReconnect()),1500);}
-  apply(m){if(!m.state||m.state.revision<this.lastRevision||(m.serverAt&&m.serverAt<(this.serverAt||0)))return;this.lastRevision=m.state.revision;this.snapshot=m.state;this.serverAt=m.serverAt;
+  apply(m){if(!m.state||m.state.revision<this.lastRevision||(m.serverAt&&m.serverAt<(this.serverAt||0)))return;
+    /* F2: the sky's clock is the server's (space/clock.js) */ if(m.serverAt)setServerTime(m.serverAt,Date.now());
+    this.lastRevision=m.state.revision;this.snapshot=m.state;this.serverAt=m.serverAt;
     for(const b of m.bricks||[])this.bricks.set(b.key,b);
     const p=m.state.players[this.playerId],ship=m.state.ships[p.aboardShipId||p.currentShipId||p.shipId],owned=m.state.ships[p.shipId];
     this.state={schema:1,revision:m.state.revision,economy:{...owned.economy,cargo:p.carried,traders:m.state.market.traders},

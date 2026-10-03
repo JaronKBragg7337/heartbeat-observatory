@@ -10,6 +10,7 @@ import { FileAdapter } from '../server/storage.mjs';
 import { makeMoon } from '../src/space/moonField.js';
 import { SpaceSystem } from '../src/space/spaceSystem.js';
 import { STANDOFF_M } from '../src/space/spaceSpec.js';
+import { worldPointFixed } from '../src/space/frames.js';
 import { TestClient } from './multiplayer-checks.mjs';
 
 const mem = () => { const m = { rec: null, bricks: [], load: async () => (m.rec ? { record: structuredClone(m.rec), bricks: [] } : { record: null, bricks: [] }), save: async (r) => { m.rec = r; } }; return m; };
@@ -93,15 +94,15 @@ export async function runGrok4Checks({ check, section }) {
 
   const sim = world.sims.get(ship.id);
   const solo = SpaceSystem.prototype.resolve.call(sim, 'phobos');
-  const soloGoal = solo.goalS();
+  const T = sim.timeS();                     // F2: the goal is where the moon's standoff point is at a time: ask both at one time
+  const soloGoal = solo.fixedAt(T);
   const surveyStand = ph.standoffPoint(STANDOFF_M);
   const own = sim.resolve('phobos');
-  const ownGoal = own.goalS();
+  const ownGoal = own.fixedAt(T);
   const ownStand = ph.playerPad(ship.moonPads.phobos.east, ship.moonPads.phobos.north).standoff(STANDOFF_M);
-  const c = ph.centre;
-  check('solo still aims at the survey pad; the shared ship aims at its own pad',
-    dist(soloGoal, { x: c.x + surveyStand.x, y: c.y + surveyStand.y, z: c.z + surveyStand.z }) < 1 &&
-    dist(ownGoal, { x: c.x + ownStand.x, y: c.y + ownStand.y, z: c.z + ownStand.z }) < 1 &&
+  check('solo still aims at the survey pad; the shared ship aims at its own pad (each carried by the moon: the point above the pad where the moon is then)',
+    dist(soloGoal, worldPointFixed('phobos', surveyStand, T)) < 1e-6 &&
+    dist(ownGoal, worldPointFixed('phobos', ownStand, T)) < 1e-6 &&
     dist(soloGoal, ownGoal) > 100 && /pad 01/.test(own.name));
 
   const onPad = mine.pp.point;

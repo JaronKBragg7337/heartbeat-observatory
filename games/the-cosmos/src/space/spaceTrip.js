@@ -19,6 +19,21 @@ import { Transit, turnToward, estimateTrip } from './transit.js';
 import { DRIVE, ATMOSPHERE_TOP_M, STANDOFF_M, RAIDER_SUSPEND_MS, stickWarpCap } from './spaceSpec.js';
 import { JUMP, systemOfFrame, rootFrameOf, regionName, laneName, mouthPoint, transitBody, solMouthDir } from './jump.js';     // WORLD2: the Ore Lane
 import { makeMoon } from './moonField.js';
+import { toInertial, velToInertial, velToFixed, rotY, rootSpin, inertialGoal } from './frames.js';
+
+/**
+ * How long a leg takes, flown for real (transit.js) from a ship hovering at `startFixed` (Mars's turning axes) at game time T, chasing the leg's goal
+ * as it moves. `leg` is a destination row (it has `fixedAt(T)`, the goal in Mars's turning axes at game time T) or a drive leg { goal } (a point
+ * fixed in those axes). The nav list, the trip plan and the tests share it.
+ * @returns { seconds, peakSpeed, arrived, error, closedForm? }
+ */
+export function estimateCourse({ dest, startFixed, T, nose, aMax }) {
+  const pos = toInertial(startFixed, T), vel = velToInertial(startFixed, { x: 0, y: 0, z: 0 }, T);
+  const fixedAt = dest.fixedAt || (dest.goal ? () => dest.goal : null);
+  const goalFn = fixedAt ? inertialGoal(fixedAt, T) : null;
+  const goal = goalFn ? goalFn(0).pos : dest.goalS({ f: { pos: startFixed } });
+  return estimateTrip({ pos, vel, nose: rotY(nose, rootSpin(T)), up: { x: 0, y: 1, z: 0 }, goal, goalFn, T0: T, aMax, vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate });
+}
 
 export const MARS_R = 3_389_500;
 const DEG = Math.PI / 180;
@@ -144,10 +159,13 @@ export class SpaceTrip {
       else if (here !== 'mars') { const r = Math.hypot(p.x, p.y, p.z), R = this._regionBody(here).radiusMean + this._ascentM(); if (r < R) start = { x: p.x / r * R, y: p.y / r * R, z: p.z / r * R }; }
       const legs = this.legs || (d.kind === 'hold' ? null : this._route());
       const nose = { x: f.fwdH.x, y: f.fwdH.y, z: f.fwdH.z };
-      const est = (pos, goal, sys) => estimateTrip({ pos, vel: { x: 0, y: 0, z: 0 }, nose, up: { x: 0, y: 1, z: 0 }, goal, aMax: this._aMax(), vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate, ...transitBody(sys, this._regionBody(sys)) }).seconds;
+      // F2: a leg in Mars's region is flown against a goal that moves (a moon, the port that turns with Mars, the lane mouth that turns with it); a far world's region is its own frame, which does not move for the drive
+      const est = (pos, leg) => leg.sys === 'mars'
+        ? estimateCourse({ dest: { fixedAt: this._legFixed(leg), goal: leg.goal, goalS: () => leg.goal }, startFixed: pos, T: sp.timeS(), nose, aMax: this._aMax() }).seconds
+        : estimateTrip({ pos, vel: { x: 0, y: 0, z: 0 }, nose, up: { x: 0, y: 1, z: 0 }, goal: leg.goal, aMax: this._aMax(), vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate, ...transitBody(leg.sys, this._regionBody(leg.sys)) }).seconds;
       if (legs) {
-        drive = est(start, legs[0].goal, legs[0].sys);
-        if (legs.length > 1) drive2 = est(mouthPoint(legs[1].sys, this._regionBody(legs[1].sys)), legs[1].goal, legs[1].sys);
+        drive = est(start, legs[0]);
+        if (legs.length > 1) drive2 = est(mouthPoint(legs[1].sys, this._regionBody(legs[1].sys)), legs[1]);
       }
     } catch (e) { drive = 0; }
     return { climb, drive, drive2, spool: this._crossing() ? JUMP.spoolS : 0, descent: d.kind === 'moon' || d.kind === 'port' ? this._descentS(this._descentStartAgl(), d.kind === 'port' ? 800 : 60) + 8 : 0 };
@@ -245,21 +263,43 @@ export class SpaceTrip {
     if (!this.legs) { this.legs = this._route(); this.leg = 0; }       // WORLD2: the ship's own frame decides the route, once, at the first burn
     const leg = this.legs[this.leg], tb = transitBody(leg.sys, this._regionBody(leg.sys));
     sp.setFrame(rootFrameOf(leg.sys));              // transit is in the system's root frame (Mars's, or the far world's); the ship is moving or hovering when it switches
-    const goal = leg.goal;
-    this.goalS = goal;
     // the first leg leaves a level ship; the second (after the jump) carries on from the hull's own attitude
     const q = this.leg > 0 && f.quaternion ? f.quaternion : null;
     const nose = q ? new THREE.Vector3(0, 0, -1).applyQuaternion(q) : new THREE.Vector3(f.fwdH.x, f.fwdH.y, f.fwdH.z);
     const upv = q ? new THREE.Vector3(0, 1, 0).applyQuaternion(q) : new THREE.Vector3(f.up.x, f.up.y, f.up.z);
+    // F2: in Mars's region the drive flies in INERTIAL axes (Mars-centred, not turning) and chases a goal that moves with its world; the ship's own
+    // coordinates (flight.pos) stay in Mars's turning axes, written back every tick, and the ship's own clock (flight.epochS) starts here and runs with the
+    // drive. A far world's region (WORLD2) is flown in its own frame, as before.
+    const inertial = leg.sys === 'mars';
+    let T0 = 0, goalFn = null, goal = leg.goal, pos = f.pos, vel = f.vel, nv = { x: nose.x, y: nose.y, z: nose.z }, uv = { x: upv.x, y: upv.y, z: upv.z };
+    if (inertial) {
+      T0 = f.epochS ?? sp.worldTime(); f.epochS = T0;
+      const fx = this._legFixed(leg), phi = rootSpin(T0);
+      goalFn = fx ? inertialGoal(fx, T0) : null; goal = goalFn ? goalFn(0).pos : leg.goal;          // a 'hold' (a cancelled course) is a fixed inertial point
+      pos = toInertial(f.pos, T0); vel = velToInertial(f.pos, f.vel, T0); nv = rotY(nv, phi); uv = rotY(uv, phi);
+    }
+    this.goalS = goal;
     this.transit = new Transit({
-      pos: f.pos, vel: f.vel, nose: { x: nose.x, y: nose.y, z: nose.z }, up: { x: upv.x, y: upv.y, z: upv.z },
-      goal, aMax: this._aMax(), vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate, centre: tb.centre, safeR: tb.safeR, floorR: tb.floorR,
+      pos, vel, nose: nv, up: uv,
+      goal, goalFn, T0, inertial, aMax: this._aMax(), vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate, centre: tb.centre, safeR: tb.safeR, floorR: tb.floorR,
     });
     f.attitude = new THREE.Quaternion().copy(f.quaternion);
     f.override = (dt) => this._drive(dt);
     f.autoHover = false;
     this.say(this.transit.legs.length ? `Plotting a course round ${leg.sys === 'mars' ? 'Mars' : regionName(leg.sys)} first.` : leg.jump ? 'Main drive lit for the Ore Lane. Hold on to something.' : 'Main drive lit. Hold on to something.', 'burn' + this.leg);
     this.progress.distM = this.transit.distance;
+  }
+  /** A trip restored from a save or the shared world has lost its goal function: bind it again from the destination. */
+  rebindTransit() {
+    const t = this.transit, leg = this.legs && this.legs[this.leg], fx = leg ? this._legFixed(leg) : (this.dest && this.dest.fixedAt);
+    if (t && t.inertial && fx && !t.goalFn) t.bindGoal(inertialGoal(fx, t.T0));
+    return this;
+  }
+  /** The goal of a drive leg in Mars's turning axes as a function of game time, or null: the lane mouth is a fixed point in them; the destination's own goal may move (a moon). A far region's legs and a hold are not. */
+  _legFixed(leg) {
+    if (!leg || leg.sys !== 'mars' || this.dest.kind === 'hold') return null;
+    if (leg.jump) { const m = mouthPoint('mars'); return () => m; }
+    return this.dest.fixedAt || null;
   }
 
   /** The override: the drive moves the ship. */
@@ -271,10 +311,17 @@ export class SpaceTrip {
       // the lift pods and main engines are the same reactor: engine share is what sets the push, even mid-flight
       tr.advance(sim, this._aMax());
     }
-    f.pos.x = tr.pos.x; f.pos.y = tr.pos.y; f.pos.z = tr.pos.z;
-    f.vel.x = tr.vel.x; f.vel.y = tr.vel.y; f.vel.z = tr.vel.z;
+    // the ship's clock runs with the drive; her coordinates are Mars's turning axes at that moment (a far world's region is flown in its own frame as it was)
+    let pf = tr.pos, vf = tr.vel, nf = tr.nose, uf = tr.up;
+    if (tr.inertial) {
+      const T1 = tr.T0 + tr.t, phi = rootSpin(T1);
+      f.epochS = T1;
+      pf = rotY(tr.pos, -phi); vf = velToFixed(tr.pos, tr.vel, T1); nf = rotY(tr.nose, -phi); uf = rotY(tr.up, -phi);
+    }
+    f.pos.x = pf.x; f.pos.y = pf.y; f.pos.z = pf.z;
+    f.vel.x = vf.x; f.vel.y = vf.y; f.vel.z = vf.z;
     // hull: nose along the thrust, up carried over from the level ship
-    _a.set(tr.nose.x, tr.nose.y, tr.nose.z); _b.set(tr.up.x, tr.up.y, tr.up.z);
+    _a.set(nf.x, nf.y, nf.z); _b.set(uf.x, uf.y, uf.z);
     _c.crossVectors(_a, _b).normalize();                  // right = fwd x up
     _b.crossVectors(_c, _a).normalize();                  // re-orthogonalise up
     const back = _a.clone().negate();
@@ -285,10 +332,10 @@ export class SpaceTrip {
     f.landed = false; f.airborne = true; f.gearPos = Math.max(0, f.gearPos - dt * 0.5);
     f.agl = this._alt();
     // raiders cannot keep up with a ship doing km/s: they do not follow a transit
-    const dr = this.ship.drones; if (dr) dr.suspended = tr.speed > RAIDER_SUSPEND_MS;
-    // progress for the readouts
+    const dr = this.ship.drones; if (dr) dr.suspended = tr.relSpeed > RAIDER_SUSPEND_MS;
+    // progress for the readouts: the distance to the goal and the speed relative to it
     const D = Math.hypot(tr.finalGoal.x - tr.pos.x, tr.finalGoal.y - tr.pos.y, tr.finalGoal.z - tr.pos.z);
-    this.progress.distM = D; this.progress.speed = tr.speed;
+    this.progress.distM = D; this.progress.speed = tr.relSpeed;
     this.progress.etaS = this._eta(tr, D);
     this.progress.stage = tr.phase;
     if (tr.phase === 'flip') this.say('Turn-over. Brace for the burn to slow down.', 'flip' + (tr.legIndex || 0));
@@ -309,10 +356,11 @@ export class SpaceTrip {
   _arrive() {
     const f = this.f, d = this.dest;
     f.override = null; this.transit = null;
-    f.vel.x = f.vel.y = f.vel.z = 0; f.thrustFwd = 0; f.autoHover = true;
+    f.thrustFwd = 0; f.autoHover = true;                  // her velocity stays what the drive matched: the goal's (a moon's, or the port's turn)
     const dr = this.ship.drones; if (dr) dr.suspended = false;
     const leg = this.legs && this.legs[this.leg];
     if (leg && leg.jump) {                                // WORLD2: at the lane mouth. Hold still; the coils spool.
+      f.epochS = null;                                    // (F2) she holds in the frame: back on the world's clock
       this.phase = 'spool'; this.spoolT = 0;
       this._attFrom = f.attitude ? f.attitude.clone() : null;
       if (this.space.prepareWorld) this.space.prepareWorld(rootFrameOf(this._destSys()));      // the far world is built now, behind the spool, not at the jump
@@ -320,8 +368,9 @@ export class SpaceTrip {
       return;
     }
     this.phase = 'settle'; this.settleT = 0;
+    if (d.kind === 'moon') this.space.setFrame(d.moon);   // re-expresses her position, velocity and attitude in the moon's turning frame
+    f.epochS = null;                                      // she rejoins the world's clock: from here she is carried by the ground's frame
     this._attFrom = f.attitude ? f.attitude.clone() : null;
-    if (d.kind === 'moon') this.space.setFrame(d.moon);
     if (d.kind === 'port') f.heading = this.space.portHeading();
     this.say(d.kind === 'orbit' ? `On station over Mars.` : d.kind === 'station' ? `Arrived off ${d.name}. Easing level.` : `Arrived over ${d.name}. Easing level.`, 'arrive');
   }
@@ -402,11 +451,11 @@ export class SpaceTrip {
       if (v < 5) { this._holdHere(msg); return { ok: true }; }
       // a new goal: where braking would stop us along the present velocity
       const aD = tr.aMax * 0.85, d = v * v / (2 * aD) + v * tr.flipT * 1.1 + 900;
-      const vh = { x: tr.vel.x / v, y: tr.vel.y / v, z: tr.vel.z / v };
+      const vh = { x: tr.vel.x / v, y: tr.vel.y / v, z: tr.vel.z / v };     // (inertial: a hold is a point in inertial space; the speed that matters here is the ship's own)
       const goal = { x: tr.pos.x + vh.x * d, y: tr.pos.y + vh.y * d, z: tr.pos.z + vh.z * d };
       this.dest = { id: 'hold', kind: 'hold', name: 'a stop', goalS: () => goal, sys: this._here() };
       this.legs = [{ sys: this._here(), goal }]; this.leg = 0;       // WORLD2: a stop is one leg in the system the ship is in (it must not go on to the jump)
-      this.transit = new Transit({ pos: tr.pos, vel: tr.vel, nose: tr.nose, up: tr.up, goal, aMax: tr.aMax, vMax: tr.vMax, turnRate: tr.turnRate });
+      this.transit = new Transit({ pos: tr.pos, vel: tr.vel, nose: tr.nose, up: tr.up, goal, T0: tr.T0 + tr.t, inertial: tr.inertial, aMax: tr.aMax, vMax: tr.vMax, turnRate: tr.turnRate, centre: tr.centre, safeR: tr.safeR, floorR: tr.floorR });
       this.say(msg || 'Course cancelled. Braking to a stop.', 'cancel', true);
       return { ok: true };
     }
@@ -419,7 +468,7 @@ export class SpaceTrip {
 
   _holdHere(msg) {
     const f = this.f;
-    f.override = null; this.transit = null; f.autoHover = true; f.climbCap = 12; f.thrustFwd = 0; f.thrustDown = false;
+    f.override = null; this.transit = null; f.autoHover = true; f.climbCap = 12; f.thrustFwd = 0; f.thrustDown = false; f.epochS = null;
     const dr = this.ship.drones; if (dr) dr.suspended = false;
     if (f.attitude) { this.phase = 'settle'; this.settleT = 0; this._attFrom = f.attitude.clone(); this.dest = { ...this.dest, kind: 'orbit', name: 'here' }; }
     else this.phase = 'done';
