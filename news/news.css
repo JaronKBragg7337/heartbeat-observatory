@@ -150,7 +150,7 @@ button { font: inherit; color: inherit; }
 
 /* Closed captions: top of frame so they never cover the lower third. */
 .cc { position: absolute; left: 50%; top: calc(var(--u) * 2); transform: translateX(-50%); width: 62%; }
-@media (max-width: 640px) { .cc { width: 76%; } .tap { top: 40%; min-height: 36px; padding: 6px 14px; }
+@media (max-width: 640px) { .cc { width: 76%; } .tap { top: 40%; min-height: 44px; padding: 6px 14px; }
 }
 .cc { text-align: center; pointer-events: none; }
 .cc span { display: inline; background: rgba(0,0,0,0.78); color: #fff; font-family: var(--sans); font-weight: 600; font-size: max(10px, calc(var(--u) * 1.75)); line-height: 1.5; padding: 0.12em 0.4em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
@@ -267,7 +267,11 @@ footer.foot a { color: #8fb8ff; }
   .tv .power { right: 10px; bottom: 6px; }
   .tv-foot { display: none; }
   .now .hd { font-size: 19px; }
-  .btn { padding: 0 13px; }
+  .btn { padding: 0 13px; min-height: 44px; }
+  .back { min-height: 44px; }
+  footer.foot a { display: inline-block; padding: 12px 0; }
+  .chip, .strip .grp { font-size: 12px; }
+  .tap { min-height: 44px; }
 }
 /* Phone held sideways: the TV fills the screen. */
 @media (orientation: landscape) and (max-height: 520px) {

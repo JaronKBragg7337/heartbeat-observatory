@@ -30,13 +30,13 @@
   .hbr .rock{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
   .hbr .rk{display:grid;grid-template-rows:38px 20px 38px;border-radius:22px;background:linear-gradient(#30353d,#23272d);box-shadow:0 2px 0 #0b0c0f,inset 0 1px 0 rgba(255,255,255,.1)}
   .hbr .rk b.k{background:none;box-shadow:none;height:auto;font-size:18px}
-  .hbr .rk span{font-size:10px;letter-spacing:.14em;text-align:center;color:#8b96a3;align-self:center}
+  .hbr .rk span{font-size:12px;letter-spacing:.14em;text-align:center;color:#8b96a3;align-self:center}
   .hbr .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
   .hbr .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .hbr b.hbr-guide{background:linear-gradient(#264b9e,#1b3572);color:#fff}
   .hbr b.mute.on{background:linear-gradient(#7a1a24,#4d0f16);color:#fff}
   .hbr .vol{height:5px;border-radius:3px;background:#15181c;margin:0 4px 12px;overflow:hidden}.hbr .vol i{display:block;height:100%;background:#7ff0b4}
-  .hbr .brand{margin-top:14px;text-align:center;font:800 11px/1 system-ui;letter-spacing:.3em;color:#6d7784}
+  .hbr .brand{margin-top:14px;text-align:center;font:800 12px/1 system-ui;letter-spacing:.3em;color:#6d7784}
   .hbr .brand em{color:#ff3b4e;font-style:normal}`;
   const s = document.createElement("style"); s.textContent = css; document.head.appendChild(s);
   const tab = document.createElement("button"); tab.className = "hbr-tab"; tab.setAttribute("aria-label", "TV remote");

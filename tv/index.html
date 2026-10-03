@@ -77,13 +77,24 @@
   .gc { display: grid; gap: 6px; } .gcn { font: 800 13px/1 "Barlow Condensed", sans-serif; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
   html:not(.embed) .gbtn { display: none; }
   footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 30px; }
+  /* phone pass (390px): 44px tap targets, 12px+ text */
+  @media (max-width: 560px) {
+    .top .back { display: inline-flex; align-items: center; min-height: 44px; }
+    .updown button, .btn, .ch { min-height: 44px; }
+    .gx { width: 44px; height: 44px; }
+    .gbtn, .unmute { min-height: 44px; }
+    .item .row button { min-height: 44px; }
+    footer a { display: inline-block; padding: 15px 4px; }
+    .tag, .gi em, .brand small { font-size: 12px; }
+    .brand { font-size: 20px; }
+  }
 </style>
 </head>
 <body>
   <div class="top"><a class="back" href="/">← Heartbeat Observatory</a><span class="brand">HEARTBEAT <b>TV</b></span></div>
   <div class="wrap">
     <div class="tv"><div class="screen" id="screen"></div></div><div class="stand"></div>
-    <div class="now"><h1 id="nowTitle">…</h1><span id="nowSub"></span></div>
+    <div class="now"><h1 id="nowTitle">Heartbeat TV — tuning in…</h1><span id="nowSub"></span></div>
     <div class="remote" id="remote"></div>
     <div class="list" id="list"></div>
     <div class="updown"><button id="chDown">◀ CH</button><button id="chUp">CH ▶</button></div>
