@@ -17,6 +17,9 @@ export const BUILDINGS = [
   { id: 'COS-MARS-PRP-0113', kind: 'fuel', name: 'Fuel farm', x: 57, z: -70, w: 24, d: 12, h: 6 },
   { id: 'COS-MARS-PRP-0114', kind: 'containers', name: 'Cargo staging', x: 51, z: 65, w: 26, d: 6, h: 2.9 },
   { id: 'COS-MARS-STR-0115', kind: 'sign', name: 'Port beacon sign', x: -28, z: 65, w: 16, d: 1, h: 5 },
+  // PORT-POLISH: the crew hall / cantina is a real building now (it was four boxes and a sprite in multiplayerView). Same footprint
+  // and door the server uses (server/authority.mjs CREW_HALL: door at z -60, candidates stand along z -68, x -34..-22).
+  { id: 'COS-MARS-STR-0116', kind: 'hall', name: 'Crew hall', x: -28, z: -68, w: 24, d: 14, h: 5, doorW: 4 },
 ];
 export const NPC_SPOTS = [
   { name: 'Supply clerk', x: -65, z: 16.9 }, { name: 'Arrival guide', x: -12, z: 39 },
@@ -76,7 +79,7 @@ export function clearSpoilGround(site, x, y, z, margin=.3) {
   if(p.x>=58-margin&&p.x<=86+margin&&Math.abs(p.z+70)<1+margin)return false;
   if(PADS.slice(1).some(a=>p.x>=a.x+a.w/2-margin&&p.x<=86+margin&&Math.abs(p.z-a.z)<1+margin))return false;
   if(Math.abs(p.x+27)<1+margin&&p.z>=-60-margin&&p.z<=65+margin)return false;
-  if([[-32,-64],[91,-48],[90,54],[-32,44]].some(([x,z])=>Math.hypot(p.x-x,p.z-z)<1+margin))return false;
+  if([[-50,-62],[91,-48],[90,54],[-32,44]].some(([x,z])=>Math.hypot(p.x-x,p.z-z)<1+margin))return false;
   if(Math.abs(p.x)>=102-margin&&Math.abs(p.x)<=104+margin&&Math.abs(p.z)<=88+margin)return false;
   return true;
 }

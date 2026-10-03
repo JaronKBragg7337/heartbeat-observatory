@@ -52,7 +52,8 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     check('graded edge meets natural terrain continuously and has solid ground beneath it',seams&&maxSlope<.65&&depthOK&&outside<.005,`max slope ${maxSlope}, outside ${outside}`);
     const engine={scene:new THREE.Scene(),track:()=>{},camera:new THREE.PerspectiveCamera(),cameraWorldPos:{x:0,y:0,z:0}};
     const registry=new Registry(),port=new PortSystem(engine,registry,site,'low').build();
-    check('port, every pad and all six structures have stable registered IDs and measured sizes',registry.all().length===10&&registry.all().every(a=>a.measured&&a.id.startsWith('COS-MARS-')));
+    // PORT-POLISH: seven structures now (the crew hall joined the port).
+    check('port, every pad and all seven structures have stable registered IDs and measured sizes',registry.all().length===11&&registry.all().every(a=>a.measured&&a.id.startsWith('COS-MARS-')));
     // ROUND7: the port is walkable to every pad. Flood the apron on a 1 m grid with a 34 cm body against every solid that reaches above a 35 cm step,
     // from the middle of the port to the foot of each of the first twelve pads (the far ones are at x 150 to 342): all reachable, and no detour of more than 20%.
     {const {allocatedPad}=await import('../src/world-state/fleet.js');
@@ -74,7 +75,9 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     const drift=port.assets.filter(a=>a.authored&&!registry.dimensionDrift(a.id).withinTolerance);
     check('port assets measure within 5 cm of their authored sizes',drift.length===0,JSON.stringify(drift.map(a=>[a.name,a.authored,a.measured])));
     // 2026-10-01: 19 calls including the moving car and three door leaves; geometry still stays under 40k triangles.
-    check('phone port costs at most 19 draw calls, 40k triangles and 4 MB of geometry',port.stats.drawCalls<=19&&port.stats.triangles<40000&&port.stats.geometryBytes<4e6,JSON.stringify(port.stats));
+    // PORT-POLISH 2026-10-03: 21 calls (the crew hall's sliding door and the additive `haze` bucket), 55k triangles, 4.9 MB. Measured on
+    // the phone profile (393x852, tier=low, 4x CPU throttle): see docs/qa/2026-10-03/port-polish/REVIEW.md before/after frame numbers.
+    check('phone port costs at most 21 draw calls, 60k triangles and 5.5 MB of geometry',port.stats.drawCalls<=21&&port.stats.triangles<60000&&port.stats.geometryBytes<5.5e6,JSON.stringify(port.stats));
     // The production path receives the ship's already-uploaded textures. Test
     // identity with a real texture object even in this headless Node build.
     const {makePortMaterials,textureBytes}=await import('../src/port/portArt.js');
@@ -85,13 +88,13 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
       finishes.sharedTextures&&finishes.mats.paint.map===hullMap&&finishes.mats.wall===shared['wall:cargo']&&finishes.mats.floor===shared['floor:deck']&&finishes.mats.fabric===shared.fabric);
     const atlasProbe=new THREE.Texture({width:1024,height:512});
     check('texture budget includes RGBA mipmaps and counts shared references once',textureBytes([atlasProbe,atlasProbe])===2796204);
-    check('port uses a fixed phone light pool and adds no fixture shadow maps',port.lights.length===2&&port.lights.every(l=>!l.castShadow)&&port.stats.sunShadowDrawCalls<=6);
+    check('port uses a fixed phone light pool and adds no fixture shadow maps',port.lights.length===2&&port.lights.every(l=>!l.castShadow)&&port.stats.sunShadowDrawCalls<=7);
     check('port pavement and hardware stay within four depth-buffer lift layers',port.depthLayers.maxLayer<=4,JSON.stringify(port.depthLayers));
     check('control tower and depot roof equipment have silhouettes above the old bare shells',
       port.assets.find(a=>a.name==='Port control').measured.height>31&&port.assets.find(a=>a.name==='Supply depot').measured.height>7.5);
     const highPort=new PortSystem({scene:new THREE.Scene(),track:()=>{}},new Registry(),site,'high',shared).build();
-    check('high tier remains merged within 19 main calls, 65k triangles and 6 MB of geometry',
-      highPort.stats.drawCalls<=19&&highPort.stats.triangles<65000&&highPort.stats.geometryBytes<6e6,JSON.stringify(highPort.stats));
+    check('high tier remains merged within 21 main calls, 100k triangles and 9 MB of geometry',
+      highPort.stats.drawCalls<=21&&highPort.stats.triangles<100000&&highPort.stats.geometryBytes<9e6,JSON.stringify(highPort.stats));
     let footings=true;
     for(const a of BUILDINGS) for(const dx of [-a.w/2+.2,a.w/2-.2]) for(const dz of [-a.d/2+.2,a.d/2-.2]) footings&&=Math.abs(dens(a.x+dx,0,a.z+dz))<.01&&dens(a.x+dx,-.15,a.z+dz)<0;
     check('every structure and prop stands on surveyed solid ground, including every foundation corner',footings&&port.boxes.every(b=>b.y0===0||(b.id===BUILDINGS.find(a=>a.kind==='tower').id&&b.y0>=0)));
@@ -194,7 +197,7 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     check('tour holds both entrances open even from distant aerial review cameras',port.doors.every(d=>d.progress>.99));
     check('future NPC spaces stay clear of solid props',NPC_SPOTS.every(p=>!port.boxes.some(b=>p.x>b.x0-.4&&p.x<b.x1+.4&&p.z>b.z0-.4&&p.z<b.z1+.4)));
     const tour=makePortTour({engine,walker:w,ship:()=>sys,port,rebuild:()=>{}});
-    check('review tour retains original views and covers new interiors, traders, roofs and kilometre silhouette',tour('list').length===45&&['ship-ramp-ground','ship-ramp-looking-out','depot-door-inside','tower-door-outside','port-edge-grade','depot-stock','depot-service','depot-lift-cart','tower-reception','tower-elevator-call','tower-elevator-exit','tower-cab-south','tower-cab','market-trader-4','port-one-km','earthworks-detail'].every(n=>tour('list').includes(n)),tour('list').join());
+    check('review tour retains original views and covers new interiors, traders, roofs and kilometre silhouette',tour('list').length===53&&['ship-ramp-ground','ship-ramp-looking-out','depot-door-inside','tower-door-outside','port-edge-grade','depot-stock','depot-service','depot-lift-cart','tower-reception','tower-elevator-call','tower-elevator-exit','tower-cab-south','tower-cab','market-trader-4','port-one-km','earthworks-detail'].every(n=>tour('list').includes(n)),tour('list').join());
     // ------------------------------------------------------------------------------------------------------
     section('10b. The control tower: call, board, ride and leave the elevator');
     // ------------------------------------------------------------------------------------------------------

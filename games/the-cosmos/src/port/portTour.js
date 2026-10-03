@@ -43,6 +43,12 @@ export function makePortTour({engine,walker,ship,port,rebuild}) {
   add('pad-02-wear',[51,3,-8],[62,.03,-28]);
   add('earthworks-detail',[100,1.66,50],[103,.3,45]);
   add('ship-ramp-looking-out',[0,1.66,18],[0,-2,35],true);
+  // PORT-POLISH: the crew hall and the dressed apron
+  add('hall-front-wide',[-10,2.2,-50],[-28,2.5,-64]);
+  add('hall-bar',[-28,1.66,-63],[-28,1.4,-72]);
+  add('hall-corner',[-22,1.66,-66],[-16,1.2,-72]);
+  add('apron-tug',[40,1.66,-34],[46,.8,-41]);
+  add('market-row',[-40,1.66,60],[-62,1.8,52]);
   let index=-1, saved=null;
   const tour=(which)=>{
     if(which==='list') return views.map(v=>v.name);

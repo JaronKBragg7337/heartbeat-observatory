@@ -1,7 +1,7 @@
 // Architecture and fittings use the same bevels, PBR surfaces and prop kit as
 // Meridian. All static details are written into material buckets, never meshes.
 import { drawProp, PROPS } from '../ship/shipProps.js';
-import { CELLS, plaque, atlasUV } from './portArt.js';
+import { CELLS, plaque, atlasUV, wallDecal, groundDecal } from './portArt.js';
 import { TOWER } from './portSpec.js';
 
 const B=(k,m,x,y,z,w,h,d,c=.035)=>k.bevelBox(m,x,y,z,w,h,d,c);
@@ -42,7 +42,7 @@ function dustSkirt(k,a) {
 }
 
 export function moduleShell(k,a,low,block,hole=null) {
-  const h=4.2, depot=a.kind==='depot', rise=depot?1.3:.45;
+  const h=4.2, depot=a.kind==='depot', hall=a.kind==='hall', rise=depot?1.3:hall?.8:.45;
   B(k,'concrete',0,-.2,0,a.w,.4,a.d,.055);
   k.box('floor',0,.012,0,a.w-.3,.012,a.d-.3);
   // Double-sided volume walls, with an unobstructed doorway and no floor lip.
@@ -108,8 +108,9 @@ export function moduleShell(k,a,low,block,hole=null) {
   k.box('glowGreen',-a.doorW/2-.44,1.55,a.d/2+.426,.16,.11,.012);
   B(k,'steelDark',0,3.42,a.d/2+.42,a.doorW+1.3,.14,1.16,.045);
   lamp(k,0,3.3,a.d/2+.52,a.doorW*.8);
-  plaque(k,depot?CELLS.depot:CELLS.tower,0,3.85,a.d/2+.05,Math.min(a.w-1,8),.48);
+  plaque(k,depot?CELLS.depot:hall?CELLS.hall:CELLS.tower,0,3.85,a.d/2+.05,Math.min(a.w-1,8),.48);
   dustSkirt(k,a);
+  exteriorDressing(k,a,low,block,rise);
   if(depot) {
     // Rooftop environmental plant and solar arrays; all inside the footprint.
     B(k,'plasticDark',-4,6.1,-3,3,1.15,2.5,.16);
@@ -133,6 +134,188 @@ export function moduleShell(k,a,low,block,hole=null) {
     k.cyl('steel',-8,6.125,-4,.055,2.55,8);k.box('glowRed',-8,7.4,-4,.1,.08,.1);
     k.pipe('steel',[-8.7,6.8,-4],[-7.3,6.8,-4],.025,6);
   }
+}
+
+// ===========================================================================================================
+// PORT-POLISH (2026-10-03, Fable): the lived-in layer. Everything here is static, merged into the port's buckets, and
+// drawn once. Nothing here moves, blocks a doorway or changes where anyone stands. Comedy is allowed (Jaron, 10/3).
+// ===========================================================================================================
+
+/** Rust and dust streaks running down a wall from a fitting: a vertical scuff decal, tinted dark, narrow. */
+function streak(k,x,y,z,w,h,rot=0,dark=.95) { wallDecal(k,CELLS.scuff,x,y,z,w*.5,h,rot,[dark,dark*.94,dark*.9]); }
+/** A triangular dust fan blown against the foot of a wall (lit alpha decal, warm regolith tint). */
+function drift(k,x,z,w,h,rot=0) { wallDecal(k,CELLS.drift,x,h/2+.005,z,w,h,rot,[1.25,1.05,.85]); }
+function cone(k,x,z) {
+  k.cyl('hazard',x,.33,z,.14,.66,low8(k),{r2:.05});
+  k.box('white',x,.42,z,.2,.08,.2); k.box('rubber',x,.02,z,.4,.04,.4);
+}
+const low8=k=>k.low?6:10;
+/** Two or three gas bottles chained to a wall bracket. */
+function bottles(k,x,z,rot,n=2) {
+  k.push(x,0,z,rot);
+  for(let i=0;i<n;i++){const bx=(i-(n-1)/2)*.36;
+    k.cyl(i%2?'pipeBlue':'steel',bx,.75,0,.15,1.5,low8(k));k.cyl('steelDark',bx,1.56,0,.06,.12,6);k.cyl('gunmetal',bx,.03,0,.17,.06,low8(k));}
+  k.box('steelDark',0,1.15,-.17,n*.36+.1,.04,.03);k.pop();
+}
+/** A hose reel on a wall bracket: drum, coiled hose, a nozzle hanging. */
+function hoseReel(k,x,y,z,rot) {
+  k.push(x,y,z,rot);
+  k.box('steelDark',0,0,-.1,.5,.5,.04);k.cyl('gunmetal',0,0,.1,.3,.22,k.low?8:14,{axis:'z'});
+  k.cyl('red',0,0,.1,.26,.18,k.low?8:14,{axis:'z'});k.cyl('steel',0,0,.23,.04,.06,6,{axis:'z'});
+  k.pipe('red',[.22,-.1,.2],[.3,-.55,.22],.025,6);k.cyl('copper',.3,-.62,.22,.03,.12,6);k.pop();
+}
+/** A sealed waste bin: drum body, hinged lid, a label, something leaking out of the bottom seam. */
+function bin(k,x,z) {
+  k.cyl('plasticDark',x,.45,z,.3,.9,low8(k));k.cyl('steelDark',x,.92,z,.32,.06,low8(k));
+  k.box('hazard',x,.6,z+.3,.3,.12,.01);k.cyl('steelDark',x,.3,z,.31,.03,low8(k));
+  groundDecal(k,CELLS.oil,x+.25,z+.2,.9,.9,0,.034);
+}
+/** A park bench of recycled deck plate on two steel frames. */
+function bench(k,x,z,rot) {
+  k.push(x,0,z,rot);
+  for(const s of [-1,1]){B(k,'steelDark',s*.7,.22,0,.06,.44,.42,.012);B(k,'steelDark',s*.7,.6,-.2,.06,.4,.05,.012);}
+  B(k,'floor',0,.46,0,1.7,.05,.42,.01);B(k,'floor',0,.78,-.21,1.7,.36,.04,.01);k.pop();
+}
+/** Boot scraper grating and a mat at a door. */
+function doormat(k,x,z,w) {
+  k.box('gunmetal',x,.012,z,w,.02,1.1);
+  for(let dx=-w/2+.1;dx<w/2;dx+=.12)k.box('steelDark',x+dx,.03,z,.025,.015,1.0);
+  groundDecal(k,CELLS.scuff,x,z+1.1,w+.6,1.4,0,.034);groundDecal(k,CELLS.scuff,x+.6,z+2.4,w*.8,1.3,.4,.034);
+}
+/** A pile of crates, strapped, with a dust-coloured tarp thrown over the top one and a drum beside. */
+function crateStack(k,x,z,rot,block,ax,az) {
+  k.push(x,0,z,rot);
+  prop(k,'crate',0,.025,0,1.3,.9,1.2);prop(k,'crate',-.1,.94,.05,1.1,.7,1.0);
+  k._faceQuad('fabricGrey',[[-.75,1.68,-.7],[.65,1.7,-.62],[.7,1.1,.75],[-.8,1.25,.7]],[0,1,0],[.9,.72,.55]);
+  k._faceQuad('fabricGrey',[[-.75,1.68,-.7],[-.8,1.25,.7],[-.95,.45,.6],[-.9,.75,-.6]],[-1,0,0],[.9,.72,.55]);
+  prop(k,'drum',1.3,.025,.2,.6,.9,.6);k.cyl('rubber',1.2,.12,-.7,.3,.22,low8(k),{axis:'x'});
+  k.pop();block(ax,az,2.6,1.6,1.8);
+}
+/** Spot and area fittings: a wall lamp on a conduit, with the conduit run down to a junction box. */
+function wallLamp(k,x,y,z,rot) {
+  k.push(x,y,z,rot);
+  B(k,'steelDark',0,0,.1,.22,.16,.22,.02);k.box('glowWhite',0,-.07,.12,.18,.02,.16);
+  k.pipe('gunmetal',[0,.08,.03],[0,.5,.03],.018,6);k.pipe('gunmetal',[0,-.08,.03],[0,-y+.4,.03],.018,6);
+  B(k,'plasticDark',0,-y+.3,.05,.2,.24,.08,.015);k.pop();
+}
+
+/** The outside of a pressurised module: the fittings a crew bolts on in the first month and the dirt that follows. */
+function exteriorDressing(k,a,low,block,rise) {
+  const d2=a.d/2,w2=a.w/2,kind=a.kind;
+  // dust blown against every wall foot, and the streaks the roof pipes leave down the sides
+  for(const s of [-1,1]){
+    for(let z=-d2+2;z<d2-1;z+=3.4)drift(k,s*(w2+.03),z,3.2,.55,s*Math.PI/2);
+    for(let z=-d2+1.5;z<d2;z+=4.6)streak(k,s*(w2+.025),2.4,z,.5,2.6,s*Math.PI/2,.72);
+  }
+  for(let x=-w2+2.5;x<w2-1;x+=4)drift(k,x,-d2-.03,3,.5,Math.PI);
+  for(const s of [-1,1]){streak(k,s*(w2-2.2),1.2,d2+.065,1.9,1.1,0,.75);drift(k,s*(w2-3.5),d2+.03,2.6,.4,0);}
+  // conduit and lamps either side of the airlock, a junction box, the cable tray round the base
+  for(const s of [-1,1])wallLamp(k,s*(a.doorW/2+2.3),3.0,d2+.08,0);
+  k.box('gunmetal',0,.11,d2+.42,a.w-1,.1,.12);
+  for(const s of [-1,1])k.box('gunmetal',s*(w2-.06),.11,0,.12,.1,a.d-.6);
+  doormat(k,0,d2+1.1,a.doorW+.4);
+  if(kind==='tower'){
+    bench(k,a.doorW/2+2.2,d2+1.3,Math.PI);bottles(k,-w2+1.2,d2+.4,0,2);bin(k,a.doorW/2+4.2,d2+.9);
+    hoseReel(k,-a.doorW/2-2.6,1.4,d2+.12,0);
+    // the weather officer's wind sensor is "offline": a windsock does the job instead, on a mast by the door
+    k.cyl('steel',w2+1.4,2.6,d2-1,.045,5.2,6);k.box('steelDark',w2+1.4,5.25,d2-1,.2,.08,.2);
+    k.cyl('steelDark',w2+1.4,5.2,d2-.6,.16,.05,low8(k),{axis:'z'});
+    k.lathe('hazard',w2+1.4,5.2,d2-.6,[[.16,0],[.15,.4],[.12,.9],[.09,1.4],[.06,1.9]],low8(k),{axis:'z'});
+    for(const y of [.1,.3])k.box('hazard',w2+1.4,y,d2-1,.26,.04,.26);
+    block(w2+1.4,d2-1,.3,.3,5.2);
+  } else if(kind==='depot'){
+    crateStack(k,w2+2.2,-3,.3,block,w2+2.2,-3);bottles(k,-w2-.4,2,Math.PI/2,3);
+    hoseReel(k,a.doorW/2+2.9,1.5,d2+.12,0);bin(k,-a.doorW/2-3.2,d2+1);
+    // the HVAC pack on the west wall: housing, grille slats, fan ring, two pipes into the wall
+    k.push(-w2-.55,0,-4,0);
+    B(k,'plasticDark',0,1.2,0,1.0,1.6,1.8,.05);for(let z=-.7;z<.8;z+=.14)k.box('steelDark',-.51,1.2,z,.02,1.3,.05);
+    k.cyl('gunmetal',-.52,1.2,0,.5,.06,low?8:16,{axis:'x'});k.cyl('steelDark',-.56,1.2,0,.08,.08,6,{axis:'x'});
+    for(const dz of [-.5,.5])k.pipe('pipeSteel',[.3,2.1,dz],[.56,2.1,dz],.05,6);
+    B(k,'concrete',0,.08,0,1.2,.16,2,.03);k.pop();block(-w2-.55,-4,1.3,2.1,2.1);
+    // stencilled through a cardboard template on the east wall by somebody homesick
+    wallDecal(k,CELLS.graffiti,w2+.03,1.5,4.5,4.2,2.1,Math.PI/2,[1,1,1]);
+    for(const z of [d2+2.6,d2+3.3])cone(k,-a.doorW/2-1.6,z);
+  } else if(kind==='hall'){
+    bench(k,-a.doorW/2-2.6,d2+1.0,Math.PI);bench(k,a.doorW/2+2.6,d2+1.0,Math.PI);bin(k,a.doorW/2+4.6,d2+.8);
+    bottles(k,-w2+1.5,d2+.4,0,2);hoseReel(k,-a.doorW/2-5,1.4,d2+.12,0);
+    // bulbs on a sagging line across the front, a vent stack and a dish on the roof, and the mgmt's reminder by the door
+    for(const s of [-1,1])k.cyl('steelDark',s*(w2-.6),3.9+.4,d2+1.9,.03,.8,6);
+    for(let i=0;i<=14;i++){const t=i/14,x=-w2+.6+t*(a.w-1.2),y=4.3-Math.sin(t*Math.PI)*.45;
+      if(i<14){const t2=(i+1)/14;k.pipe('rubber',[x,y,d2+1.9],[-w2+.6+t2*(a.w-1.2),4.3-Math.sin(t2*Math.PI)*.45,d2+1.9],.012,4);}
+      if(i%2)k.box('glowAmber',x,y-.08,d2+1.9,.09,.12,.09);}
+    k.cyl('steelDark',-7,4.2+rise*Math.sin(5/24*Math.PI)+.55,-3,.22,1.1,low8(k));k.cyl('gunmetal',-7,4.2+rise*Math.sin(5/24*Math.PI)+1.15,-3,.34,.1,low8(k));
+    k.cyl('steel',8,5.6,-4,.05,1.4,6);k.dome('plastic',8,6.35,-4,.65,low?10:14,4,{thetaMin:Math.PI/2,thetaMax:Math.PI,scaleY:.3,inside:true});
+    wallDecal(k,CELLS.graffiti,-a.doorW/2-3.2,.62,d2+.062,1.9,.9,0,[1,1,1]);
+    for(const z of [d2+2.6,d2+3.3])cone(k,a.doorW/2+1.9,z);
+  }
+}
+
+// ===========================================================================================================
+// THE CREW HALL / CANTINA. Door on +z (local z 7). The server (CREW_HALL in authority.mjs) stands the six candidates
+// along local z 0 at x -6..6 (2.4 m apart) and walks them straight out of the door, so the strip x -7.5..7.5 by z -1..1
+// and the corridor x -2.4..2.4 from z 0 to the door stay empty. They stand at the bar: the bar is behind them.
+// ===========================================================================================================
+export function crewHall(k,a,low,block) {
+  const ceiling=x=>4.2+.8*Math.sin((x+a.w/2)/a.w*Math.PI)-.08, seg=low?6:12;
+  // ---- the bar: counter, foot rail, stools, the back bar with bottles and the pass ------------------------------
+  B(k,'counter',0,.55,-2.2,16,1.1,.9,.08);block(0,-2.2,16,.9,1.1);
+  B(k,'wood',0,1.13,-2.2,16.2,.07,1.05,.03);
+  k.pipe('steel',[-7.8,.22,-1.6],[7.8,.22,-1.6],.03,6);
+  for(const x of [-7,-4.5,-2,.5,3,5.5])k.box('glowAmber',x,.95,-1.76,.6,.03,.01);
+  for(const x of [-6,-3.6,-1.2,1.2,3.6,6]){
+    k.cyl('steelDark',x,.35,-1.25,.035,.7,6);k.cyl('gunmetal',x,.02,-1.25,.2,.04,seg);
+    k.pillow('leather',x,.74,-1.25,.4,.09,.4,3,low?6:10);block(x,-1.25,.42,.42,.8);
+  }
+  B(k,'counter',0,1.4,-5.4,16,2.8,.5,.06);block(0,-5.4,16,.5,2.8);
+  for(const y of [1.3,2.05]){k.box('wood',0,y,-5.05,15.6,.05,.3);
+    for(let x=-7.3;x<7.5;x+=.46){const t=Math.abs(Math.sin(x*7.1));
+      k.cyl(t<.33?'glassTint':t<.66?'copper':'pipeBlue',x,y+.2,-5.05,.06,.34,low?5:8);k.cyl('steelDark',x,y+.4,-5.05,.025,.08,5);}}
+  k.box('glowAmber',0,2.5,-5.12,15.4,.02,.02);
+  plaque(k,CELLS.menu,-4.2,3.25,-5.12,4.2,1.4);plaque(k,CELLS.menu,4.2,3.25,-5.12,4.2,1.4);
+  // coffee urn, hot trays under lamps, a till, a tip jar with one coin in it
+  B(k,'steel',-6.2,1.55,-2.4,.55,.85,.5,.06);k.cyl('gunmetal',-6.2,2.0,-2.4,.22,.1,seg);k.pipe('steel',[-6.2,1.5,-2.1],[-6.2,1.3,-1.95],.02,6);
+  for(let i=0;i<4;i++){B(k,'steel',-3.2+i*.9,1.24,-2.3,.78,.16,.6,.02);k.box(i%2?'red':'crateB',-3.2+i*.9,1.33,-2.3,.6,.05,.45);}
+  k.pipe('steelDark',[-3.6,1.17,-2.7],[-3.6,2.3,-2.7],.025,6);k.pipe('steelDark',[-3.6,2.3,-2.7],[-.3,2.3,-2.7],.025,6);
+  for(let i=0;i<3;i++){k.box('steelDark',-3.0+i*1.1,2.2,-2.6,.5,.12,.3);k.box('glowAmber',-3.0+i*1.1,2.13,-2.6,.44,.02,.24);}
+  B(k,'plasticDark',3.5,1.33,-2.3,.5,.36,.4,.02);k.box('glowGreen',3.5,1.45,-2.09,.32,.14,.01);
+  k.cyl('glassTint',5.2,1.3,-2.1,.1,.26,seg);k.box('glowAmber',5.2,1.2,-2.1,.06,.02,.06);
+  // ---- the pendant lamps over the bar and the ceiling lamps over the tables ----------------------------------------
+  for(const x of [-5.5,-1.5,2.5,6.5]){k.pipe('rubber',[x,ceiling(x),-2.2],[x,2.75,-2.2],.012,4);
+    k.cyl('gunmetal',x,2.62,-2.2,.26,.22,seg,{r2:.1});k.cyl('glowAmber',x,2.49,-2.2,.2,.03,seg);}
+  for(const z of [1.5,4.8])for(const x of [-9,9])lamp(k,x,3.7,z,2.2,ceiling);
+  lamp(k,0,3.75,4.5,1.6,ceiling);
+  // ---- mess tables: two each side, long along z, benches both sides, trays and mugs left out --------------------------
+  for(const s of [-1,1])for(const z of [1.6,4.8]){
+    const x=s*9.2;k.push(x,0,z,0);drawProp(k,{kind:'table',x:0,y:0,z:0,w:1.0,h:.78,d:2.4,style:'mess'});k.pop();
+    block(x,z,1.0,2.4,.8);
+    for(const b of [-1,1]){prop(k,'bench',x+b*.78,0,z,.36,.46,2.2);block(x+b*.78,z,.36,2.2,.5);}
+  }
+  // ---- lockers along the front wall, a notice board, the hiring desk by the door --------------------------------------
+  for(const s of [-1,1])for(let i=0;i<4;i++){const x=s*(4.2+i*.72);prop(k,'locker',x,0,6.4,.68,2.0,.5,2);}
+  block(-5.3,6.4,3,.5,2.0);block(5.3,6.4,3,.5,2.0);
+  B(k,'wood',8.9,2.2,6.74,2.6,1.3,.06,.02);plaque(k,CELLS.notice,8.9,2.2,6.7,2.4,1.2,Math.PI);
+  k.push(-5.2,0,4.0,Math.PI/2);drawProp(k,{kind:'desk',x:0,y:0,z:0,w:1.6,h:.76,d:.8});k.pop();block(-5.2,4.0,.8,1.6,.8);
+  screen(k,CELLS.hall,-5.2,1.3,4.0,.9,.45,Math.PI/2);k.cyl('steel',-5.2,.9,4.0,.025,.28,6);
+  prop(k,'crate',-5.6,.025,2.6,.6,.4,.5);k.box('plastic',-4.9,.78,4.5,.3,.03,.22);
+  // ---- the corner nobody cleans: sofa, low table, the jukebox, a dartboard with a wrench in it, THE plant -----------------
+  k.push(10.6,0,-3.6,-Math.PI/2);drawProp(k,{kind:'sofa',x:0,y:0,z:0,w:.9,h:.9,d:2.2});k.pop();block(10.6,-3.6,.9,2.2,.9);
+  B(k,'counter',9.0,.2,-3.6,.9,.4,.9,.04);B(k,'steel',9.0,.42,-3.6,.95,.03,.95,.01);block(9,-3.6,.9,.9,.45);
+  k.cyl('white',9.2,.5,-3.4,.04,.12,6);k.cyl('white',8.8,.5,-3.8,.04,.12,6);
+  B(k,'plasticDark',11.3,.9,1.6,.9,1.8,.6,.06);B(k,'gunmetal',11.3,1.5,1.92,.7,.5,.04,.02);k.box('glowCyan',11.3,1.5,1.95,.56,.36,.01);
+  for(const y of [.4,.7,1.0])k.box(['glowRed','glowAmber','glowGreen'][Math.round(y*10)%3],11.3,y,1.92,.6,.03,.02);
+  block(11.3,1.6,.9,.6,1.8);
+  k.cyl('wood',-11.7,1.7,-3,.32,.05,seg,{axis:'x'});k.cyl('red',-11.65,1.7,-3,.26,.02,seg,{axis:'x'});
+  k.cyl('white',-11.64,1.7,-3,.16,.015,seg,{axis:'x'});k.cyl('red',-11.63,1.7,-3,.05,.012,seg,{axis:'x'});
+  k.push(-11.6,1.78,-2.92,0);k.box('steel',.12,0,0,.24,.025,.02);k.box('steel',.28,0,0,.09,.07,.02);k.pop();
+  k.cyl('crateB',-11.0,.2,-5.0,.22,.4,seg,{r2:.17});k.pillow('fabricGrey',-11.0,.7,-5.0,.7,.6,.7,2.2,low?6:10,{col:[.35,.7,.3]});
+  k.pipe('gunmetal',[-11.0,ceiling(-11),-5],[-11.0,2.2,-5],.012,4);k.cyl('gunmetal',-11,2.1,-5,.18,.1,seg);k.cyl('glowRed',-11,2.04,-5,.14,.02,seg,{col:[1.1,.35,.9]});
+  block(-11,-5,.7,.7,1.0);
+  // ---- the floor: the walk-line from the door to the bar, a spill, scuffs where the queue stands ---------------------------
+  for(let z=6;z>-1;z-=1.5)k.box('mark',0,.028,z,.08,.005,.65);
+  for(const x of [-4.8,0,4.8])groundDecal(k,CELLS.scuff,x,-.2,4.2,1.8,x*.07,.03);groundDecal(k,CELLS.oil,6.8,.6,.9,1.1,.5,.03);
+  // ---- extinguisher, first aid, a clock that is wrong (a dial with the hands at a quarter past never) -------------------------
+  prop(k,'extinguisher',-11.5,0,5.5,.2,.55,.2,0);prop(k,'firstaid',11.5,1.4,5.6,.3,.3,.12,0);
+  k.cyl('white',0,3.3,-5.1,.25,.04,seg,{axis:'z'});k.box('steelDark',0,3.3,-5.075,.04,.3,.01);k.box('steelDark',.1,3.37,-5.075,.2,.03,.01);
 }
 
 export function depotInterior(k,a,low,block) {
@@ -491,16 +674,117 @@ export function market(k,a,low,block) {
     }
     prop(k,'crate',2.7,.025,-3,.9,.7,.85);block(x+2.7,-3,1,1,.8);
     prop(k,'crate',-2.8,.025,1.7,.85,.55,.8);block(x-2.8,1.7,1,1,.6);
+    // PORT-POLISH: a trader's stool and crate of change behind the counter, a lantern under the canopy, a tarp over the
+    // back stock, scuffs where the queue stands, and the string of bulbs that makes the row read as a market at dusk
+    k.cyl('steelDark',-2.6,.3,-2.9,.03,.6,6);k.cyl('gunmetal',-2.6,.02,-2.9,.17,.04,low?6:10);k.pillow('leather',-2.6,.64,-2.9,.34,.08,.34,3,low?6:10);
+    k.pipe('rubber',[1.6,3.05,2.4],[1.6,2.55,2.4],.01,4);k.cyl('gunmetal',1.6,2.5,2.4,.14,.1,low?6:10,{r2:.06});k.cyl('glowAmber',1.6,2.44,2.4,.11,.02,low?6:10);
+    k._faceQuad('fabricGrey',[[-3.4,1.05,-3.9],[-1.2,1.0,-3.95],[-1.1,.55,-2.6],[-3.5,.6,-2.55]],[0,1,0],[.85,.7,.5]);
+    groundDecal(k,CELLS.scuff,0,.4,5,1.8,0,.034);
+    if(i<3)for(let j=0;j<=10;j++){const t=j/10,bx=3.6+t*(8-7.2),by=3.1-Math.sin(t*Math.PI)*.35;
+      if(j<10){const t2=(j+1)/10;k.pipe('rubber',[bx,by,3.8],[3.6+t2*(8-7.2),3.1-Math.sin(t2*Math.PI)*.35,3.8],.01,4);}
+      if(j%2)k.box('glowAmber',bx,by-.07,3.8,.08,.1,.08);}
+    if(i===1){B(k,'wood',3.3,.9,3.3,.9,1.1,.05,.015);plaque(k,CELLS.notice,3.3,.9,3.33,.82,1.0);block(x+3.3,3.3,.9,.2,1.1);}
     k.pop();
   }
 }
 
-export function detailFuel(k,low) {
+export function detailFuel(k,low,block=()=>{}) {
   for(const x of [-8,0,8]) {
     for(const z of [-2.6,2.6])k.pipe('pipeSteel',[x,1,z],[x,5.5,z],.07,8);
     k.pipe('pipeRed',[x,.4,2.8],[x,2,2.8],.09,8);
     k.cyl('hazard',x,1.8,2.91,.24,.04,10,{axis:'z',open:true});
     for(let y=.35;y<5.8;y+=.35)k.pipe('steel',[x-.3,y,2.78],[x+.3,y,2.78],.018,6);
     plaque(k,CELLS.stock,x,3.7,2.72,1,.35);
+    // PORT-POLISH: a warning plate on every tank, a hand wheel on the riser, a sight-glass gauge, streaks under the manway
+    plaque(k,CELLS.warning,x,2.5,2.74,1.7,.85);
+    k.cyl('red',x,1.4,3.05,.2,.04,low?8:14,{axis:'z',open:true});k.cyl('red',x,1.4,3.05,.06,.04,low?6:10,{axis:'z'});
+    k.box('red',x,1.4,3.05,.36,.04,.04);k.box('red',x,1.4,3.05,.04,.36,.04);
+    k.cyl('white',x+.7,1.6,2.75,.1,.04,low?6:12,{axis:'z'});k.cyl('glowGreen',x+.7,1.6,2.78,.07,.004,low?6:12,{axis:'z'});
+    streak(k,x-1.2,3.9,2.74,.6,2.6,0,.72);
   }
+  // the bund: a knee-high concrete wall round the farm with a step-through on the apron side, and the kit a fuel crew keeps
+  for(const s of [-1,1]){B(k,'concrete',s*12.4,.3,0,.4,.6,13,.04);block(s*12.4,0,.4,13,.6);}
+  B(k,'concrete',0,.3,-6.6,25.2,.6,.4,.04);block(0,-6.6,25.2,.4,.6);
+  for(const s of [-1,1]){B(k,'concrete',s*7.4,.3,6.6,10.4,.6,.4,.04);block(s*7.4,6.6,10.4,.4,.6);}
+  k.push(-10.5,0,5.2,0);
+  for(let i=0;i<3;i++){k.cyl('red',(i-1)*.42,.6,0,.16,1.2,low?6:10);k.cyl('steelDark',(i-1)*.42,1.26,0,.05,.1,6);}
+  k.box('steelDark',0,.9,-.18,1.4,.05,.03);k.box('steelDark',0,.02,0,1.5,.04,.5);k.pop();block(-10.5,5.2,1.5,.5,1.3);
+  prop(k,'pump',9.5,0,5.0,1.2,1,1,2);block(9.5,5.0,1.4,1.2,1.3);
+  k.cyl('copper',11.4,.6,-5.6,.04,1.2,6);k.box('hazard',11.4,1.22,-5.6,.3,.08,.3);
+  for(let z=-5.6;z<4;z+=1.4)k.box('gunmetal',11.6,.05,z,.2,.08,1.2);
+  for(const x of [-6,2])groundDecal(k,CELLS.oil,x+2,-4.5,1.4,1.6,.7,.034);
+}
+
+/** Cargo staging: the three containers get a ladder, a tarp, a lamp, tyres, pallets and the dirt of a working yard. */
+export function containerDressing(k,a,low,block) {
+  // ladder up the east end of the east container, a floodlamp on a short pole between the first two
+  for(const y of [.4,.9,1.4,1.9,2.4])k.box('steelDark',13.05,y,-1.2,.05,.04,.45);
+  for(const dz of [-1.4,-1.0])k.box('steelDark',13.05,1.45,dz,.05,2.9,.05);
+  k.cyl('steelDark',4.5,2.6,3.9,.05,5.2,6);k.box('steelDark',4.5,5.1,3.9,.3,.2,.3);k.box('glowWhite',4.5,5.0,4.06,.26,.12,.02);
+  // a tarp lashed over the middle container's roof, straps to the corner castings
+  k._faceQuad('fabricGrey',[[-3.5,2.95,-2.6],[3.8,2.97,-2.8],[3.9,2.93,2.7],[-3.6,2.96,2.5]],[0,1,0],[.62,.5,.4]);
+  k._faceQuad('fabricGrey',[[-3.5,2.95,-2.6],[-3.6,2.96,2.5],[-3.9,2.3,2.4],[-3.85,2.4,-2.5]],[-1,0,0],[.62,.5,.4]);
+  for(const x of [-3.6,3.8])k.pipe('rubber',[x,2.95,-2.6],[x+(x<0?-.3:.3),.2,-2.9],.012,4);
+  // tyres, pallets, chocks, a dropped glove-sized something, dust at the doors
+  k.push(-14.5,0,1.5,.4);for(let i=0;i<3;i++)k.cyl('rubber',0,.14+i*.26,0,.5,.26,low?8:14);k.cyl('steelDark',0,.14,0,.3,.28,low?8:14);k.pop();
+  block(-14.5,1.5,1.1,1.1,.9);
+  for(let i=0;i<5;i++){B(k,'wood',14.8,.07+i*.15,-1.5,1.2,.1,1.0,.01);for(const dx of [-.5,0,.5])k.box('wood',14.8+dx,.07+i*.15,-1.5,.1,.14,1.0);}
+  block(14.8,-1.5,1.3,1.1,.8);
+  for(const x of [-9,0,9])for(const s of [-1,1]){k.box('hazard',x+s*2.5,.1,3.35,.5,.2,.3);}
+  for(let x=-11;x<12;x+=4.3)drift(k,x,3.1,3.4,.45,0);
+  groundDecal(k,CELLS.scuff,-2,4.3,6,2,0,.034);groundDecal(k,CELLS.tyres,9,5.5,2,6,.3,.034);
+}
+
+/** The apron between the buildings: ground support kit, pad boards, cables, scuffs, cones, and the light pools in the dust. */
+export function apronDressing(k,low,block) {
+  const seg=low?8:14;
+  // pad boards at the foot of each pad: a post, the plate, a lamp over it
+  for(const [i,x,z,cell] of [[0,-19+2,34,CELLS.padboard],[1,62-15+2,-28+19+1.5,CELLS.pads],[2,62-13+2,30+16+1.5,CELLS.pads]]) {
+    k.cyl('steelDark',x,1.2,z,.05,2.4,6);k.box('gunmetal',x,.08,z,.5,.16,.5);
+    B(k,'gunmetal',x,1.95,z,2.1,.9,.08,.03);plaque(k,cell,x,1.95,z+.045,1.95,.78);
+    k.box('steelDark',x,2.5,z+.08,2.2,.06,.3);k.box('glowWhite',x,2.46,z+.1,2.0,.02,.2);
+    block(x,z,.5,.5,2.5);
+  }
+  // the apron tug by pad 02: cab, bonnet, wheels, tow bar, beacon; and the mobile stair at pad 03
+  k.push(44,0,-40,.35);
+  B(k,'hazard',0,.55,0,2.0,.5,3.2,.05);B(k,'plasticDark',0,1.25,-.6,1.7,.9,1.4,.06);k.box('glowCool',0,1.3,-1.31,1.4,.5,.02,{col:[.4,.6,.7]});
+  B(k,'steelDark',0,.95,1.0,1.8,.3,1.2,.04);for(let i=0;i<5;i++)k.box('gunmetal',-.7+i*.35,1.12,1.0,.1,.04,1.0);
+  for(const sx of [-1,1])for(const sz of [-1,1]){k.cyl('rubber',sx*1.05,.38,sz*1.0,.38,.3,seg,{axis:'x'});k.cyl('steel',sx*1.2,.38,sz*1.0,.2,.02,seg,{axis:'x'});}
+  k.pipe('steelDark',[0,.5,1.6],[0,.35,3.0],.04,6);k.cyl('steelDark',0,.3,3.0,.14,.1,seg);
+  k.cyl('glowAmber',0,1.78,-.6,.07,.1,6);k.box('steelDark',0,1.72,-.6,.1,.03,.1);k.pop();block(44,-40,3.2,4.6,1.8);
+  k.push(44,0,42,-.4);
+  for(let i=0;i<8;i++){B(k,'steelDark',0,.2+i*.32,-i*.3,1.2,.06,.32,.01);k.box('hazard',0,.23+i*.32,-i*.3+.14,1.1,.02,.03);}
+  for(const s of [-1,1]){k.pipe('steel',[s*.62,.3,.2],[s*.62,2.8,-2.3],.03,6);k.pipe('steel',[s*.62,.9,.2],[s*.62,3.3,-2.3],.03,6);}
+  B(k,'steelDark',0,2.65,-2.6,1.4,.08,1.0,.02);for(const sx of [-1,1])for(const sz of [-1,1])k.cyl('rubber',sx*.62,.18,sz>0?.3:-2.4,.18,.14,seg,{axis:'x'});
+  k.pop();block(44,42,1.6,3.6,2.9);
+  // a bowser on a trailer by the fuel header, hose reeled, drips under the coupling
+  k.push(70,0,-58,.1);
+  k.cyl('steel',0,1.15,0,.75,3.8,seg,{axis:'z'});for(const z of [-1.2,0,1.2])k.cyl('hazard',0,1.15,z,.77,.08,seg,{axis:'z'});
+  B(k,'steelDark',0,.45,0,1.4,.2,3.6,.03);for(const s of [-1,1])k.cyl('rubber',s*.85,.36,.4,.36,.3,seg,{axis:'x'});
+  k.pipe('steelDark',[0,.5,1.8],[0,.4,3.0],.04,6);k.cyl('red',-.6,.9,-1.9,.3,.2,seg,{axis:'z'});k.cyl('red',-.6,.9,-1.9,.24,.24,seg,{axis:'z'});
+  k.box('glowGreen',.5,1.85,-1.5,.12,.06,.06);k.pop();block(70,-58,1.8,4,2);
+  groundDecal(k,CELLS.oil,69.8,-56,1.2,1.2,0,.034);
+  // cable trays from the floodmast bases to the buildings, hazard-striped ramps where they cross the foot route
+  // segments stop short of the nodes and a junction box sits on each, so no two trays share a face (depth layers stay at four)
+  const tray=(x0,z0,x1,z1)=>{const l=Math.hypot(x1-x0,z1-z0)-.5,a=Math.atan2(x1-x0,z1-z0);k.push((x0+x1)/2,0,(z0+z1)/2,a);k.box('gunmetal',0,.05,0,.28,.08,l);k.pop();};
+  const node=(x,z)=>{B(k,'steelDark',x,.08,z,.44,.16,.44,.02);k.box('glowGreen',x,.165,z+.1,.05,.01,.05);};
+  tray(-32,44,-32,52);tray(-32,52,-42,52);node(-32,52);tray(-49.3,-62,-41,-62);node(-41,-62);tray(-50,-61.3,-50,-46);node(-50,-46);
+  tray(-50,-46,-54,-46);
+  // cones where a tug would cut the corner, scuffs where people stand and turn
+  for(const [x,z] of [[-20.5,33.5],[-20.5,36],[28,-9],[31,-9],[34,-9],[21,56]])cone(k,x,z);
+  groundDecal(k,CELLS.scuff,-12,39.5,4,3,.3,.034);groundDecal(k,CELLS.scuff,0,36,5,3.5,0,.034);groundDecal(k,CELLS.scuff,-27,10,2.4,5,0,.034);
+  groundDecal(k,CELLS.scuff,-27,-30,2.4,5,0,.034);for(const x of [-70,-62,-54,-46])groundDecal(k,CELLS.scuff,x,57,5,2.6,x*.01,.034);
+  // ---- light in the dust (the `haze` bucket). Pools under the floodmasts, the halo at each lamp head, spill from windows,
+  // signs and lit lintels. Additive, so it reads at dusk and nearly vanishes under the noon sun.
+  for(const [x,z] of [[-50,-62],[91,-48],[90,54],[-32,44]]) {
+    k.pool(x,.05,z,12,[.07,.06,.045]);for(const dx of [-1,0,1])k.halo(x+dx,11.45,z+.2,.55,[.4,.35,.26]);
+  }
+  for(const x of [-70,-62,-54,-46])k.pool(x,.05,53,4.5,[.06,.045,.03]);
+  const spillAt=(x,z,w,col)=>k.spill(x,z,w,3.2,col);
+  for(const x of [-71.8,-52.2])spillAt(x,27.1,2.6,[.035,.06,.065]);
+  for(const x of [-63.8,-56.2])spillAt(x,-32.9,1.5,[.035,.06,.065]);
+  for(const x of [-37.8,-18.2])spillAt(x,-60.9,1.5,[.035,.06,.065]);
+  for(const [x,z,w] of [[-62,28.3,3.2],[-60,-31.7,2.4],[-28,-59.7,4]])spillAt(x,z,w,[.025,.05,.06]);
+  k.spill(-28,66,15,4,[.03,.07,.08]);k.spill(-28,65,15,-4,[.03,.07,.08]);
+  for(let x=-39;x<-17;x+=3.4)k.halo(x,4.2,-59.1,.35,[.4,.25,.1]);
 }

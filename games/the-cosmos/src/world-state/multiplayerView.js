@@ -17,7 +17,6 @@ import { FleetView } from './fleetView.js';      // FLEET: the other ships, the 
 import { shipDef } from '../ships/registry.js';
 import { seatPan } from '../ship/shipSpec.js';   // moons-fix
 import { AccountView } from './accountView.js';
-const hall={x:-28,z:-68,w:24,d:14,h:5};
 function label(text){const c=document.createElement('canvas');c.width=512;c.height=64;const x=c.getContext('2d');
   x.fillStyle='#17120cdd';x.fillRect(0,0,512,64);x.fillStyle='#ffe0ab';x.font='28px sans-serif';x.textAlign='center';x.fillText(text,256,44,500);
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:true}));s.scale.set(3.6,.45,1);return s;}
@@ -224,12 +223,9 @@ export class MultiplayerView {
       }
     }
   }
-  buildHall(){const site=this.site,g=this.hallRoot=new THREE.Group();const mat=new THREE.MeshStandardMaterial({color:0xb5a187,roughness:.85});
-    const add=(x,y,z,w,h,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);g.add(m);};
-    add(hall.x,hall.h,hall.z,hall.w+1,.3,hall.d+1);add(hall.x,2.5,hall.z-7,24,5,.3);
-    for(const x of [-12,12])add(hall.x+x,2.5,hall.z,.3,5,14);
-    for(const x of [-7,7])add(hall.x+x,2.5,hall.z+7,10,5,.3);add(hall.x,4,hall.z+7,4,2,.3);
-    const s=label('CREW HALL / CANTINA');s.position.set(hall.x,5.8,hall.z+7.5);g.add(s);
+  // PORT-POLISH (2026-10-03): the hall is a real building in the port now (src/port/portBuildings.js crewHall, BUILDINGS 'hall' in
+  // portSpec.js, same footprint and door the server uses). This group only carries the allocated pads from here on.
+  buildHall(){const site=this.site,g=this.hallRoot=new THREE.Group();g.name='allocated-pads';
     this.engine.scene.add(g);const q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().copy(site.right),new THREE.Vector3().copy(site.up),new THREE.Vector3().copy(site.back)));
     this.engine.track({worldPos:site.center,object3d:g,quaternion:q});
   }

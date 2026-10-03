@@ -1,8 +1,8 @@
 // Few merged meshes, measured assets, real door openings and ground-level collision.
 import * as THREE from 'three';
 import { Kit, resolveDepthLayers } from '../ship/shipKit.js';
-import { makePortMaterials, CELLS, plaque, groundDecal, textureBytes } from './portArt.js';
-import { moduleShell, depotInterior, towerInterior, market, detailFuel } from './portBuildings.js';
+import { makePortMaterials, CELLS, plaque, groundDecal, wallDecal, textureBytes } from './portArt.js';
+import { moduleShell, depotInterior, towerInterior, market, detailFuel, crewHall, apronDressing, containerDressing } from './portBuildings.js';
 import { PORT_ID, PORT_NAME, PADS, BUILDINGS, NPC_SPOTS, TOWER, TOWER_SPOTS, towerFloorAt } from './portSpec.js';
 import { TowerElevator } from './towerElevator.js';
 
@@ -13,7 +13,7 @@ class PortKit extends Kit {
   constructor(low) {super();this.low=low;}
   poly(key,pts,uvs,col) {
     if(key==='soot'&&!uvs) {
-      const t=this.low?1024:2048, h=t/2;
+      const t=this.low?1024:2048, h=t*.75;     // PORT-POLISH: the atlas is 4x6 cells now (height = 3/4 width); the white sample stays bottom-right
       const tint=[.285,.282,.239];
       return super.poly(key,pts,pts.map(()=>[1-1/t,1/h]),tint.map((v,i)=>v*(col?.[i]??1)));
     }
@@ -45,6 +45,28 @@ class PortKit extends Kit {
   }
   pipe(key,a,b,r,seg=8,o={}) {
     return super.pipe(key,a,b,r,this.low?Math.min(seg,4):seg,{open:true,...o});
+  }
+  // PORT-POLISH: per-vertex coloured polygons for the additive `haze` bucket (poly() takes one colour per face).
+  _grad(key,pts,cols) {
+    const b=this._bucket(key),base=b.pos.length/3,P=pts.map(p=>this._tp(p[0],p[1],p[2]));
+    for(let i=0;i<P.length;i++){b.pos.push(...P[i]);b.nrm.push(0,1,0);b.uv.push(0,0);b.col.push(...cols[i]);}
+    for(let i=1;i<P.length-1;i++)b.idx.push(base,base+i,base+i+1);
+    this.triangles+=P.length-2;this.faces.push({b,base,n:P.length,lift:0});
+  }
+  /** A pool of light on the ground: a fan with a coloured centre fading to nothing at the rim. */
+  pool(x,y,z,r,col,n=this.low?10:16) {
+    for(let i=0;i<n;i++){const a0=i/n*Math.PI*2,a1=(i+1)/n*Math.PI*2;
+      this._grad('haze',[[x,y,z],[x+Math.cos(a0)*r,y,z+Math.sin(a0)*r],[x+Math.cos(a1)*r,y,z+Math.sin(a1)*r]],[col,[0,0,0],[0,0,0]]);}
+  }
+  /** Light spilling from a lit window or sign onto the ground in front of it: bright at the wall, gone `d` metres out. */
+  spill(x,z,w,d,col,rot=0) {
+    this.push(x,.04,z,rot);this._grad('haze',[[-w/2,0,0],[w/2,0,0],[w/2*1.5,0,d],[-w/2*1.5,0,d]],[col,col,[0,0,0],[0,0,0]]);this.pop();
+  }
+  /** The glow round a lamp head in dusty air: two crossed vertical quads, bright at the centre line. */
+  halo(x,y,z,r,col) {
+    for(const rot of [0,Math.PI/2]){this.push(x,y,z,rot);
+      this._grad('haze',[[-r,-r*.6,0],[0,-r*.6,0],[0,r*.6,0],[-r,r*.6,0]],[[0,0,0],col,col,[0,0,0]]);
+      this._grad('haze',[[0,-r*.6,0],[r,-r*.6,0],[r,r*.6,0],[0,r*.6,0]],[col,[0,0,0],[0,0,0],col]);this.pop();}
   }
 }
 function digit(k,n,x,z,s=1) {
@@ -88,7 +110,7 @@ export class PortSystem {
       this.registry.measure(rec.id,THREE); this.assets.push(rec);
       rec.renderTriangles=[...k.buckets.values()].reduce((n,b)=>n+b.idx.length/3,0);
       rec.grounding={measuredBase:new THREE.Box3().setFromObject(obj).min.y,
-        foundationDepth:a.number?.494:(a.kind==='depot'||a.kind==='tower'?.4:0)};
+        foundationDepth:a.number?.494:(a.kind==='depot'||a.kind==='tower'||a.kind==='hall'?.4:0)};
       mergeKit(master,k); obj.traverse(m=>{if(m.isMesh)m.geometry.dispose();}); rec.object3d=null;
     };
     const box=(a,x,z,w,d,h,y0=0)=>this.boxes.push({id:a.id,x0:a.x+x-w/2,x1:a.x+x+w/2,z0:a.z+z-d/2,z1:a.z+z+d/2,y0,y1:y0+h});
@@ -140,7 +162,7 @@ export class PortSystem {
     for(const a of BUILDINGS) {
       const k=new PortKit(low); k.defaultTile=3; k.tiles={...master.tiles};k.push(a.x,0,a.z);
       const bevel=(mat,x,y,z,w,h,d,c=.055)=>k.bevelBox(mat,x,y,z,w,h,d,c);
-      if(a.kind==='depot'||a.kind==='tower') {
+      if(a.kind==='depot'||a.kind==='tower'||a.kind==='hall') {
         const block=(x,z,w,d,h,y0=0)=>box(a,x,z,w,d,h,y0);
         const c=TOWER.core, hole=a.kind==='tower'?{x0:c.x0-.02,x1:c.x1+.02,z0:c.z0-.02,z1:c.z1+.02}:null;
         moduleShell(k,a,low,block,hole);
@@ -155,6 +177,7 @@ export class PortSystem {
         const baseZ=a.z+a.d/2-.16;mesh.position.set(a.x,0,baseZ);
         this.doors.push({asset:a,mesh,progress:0,baseZ});
         if(a.kind==='depot')depotInterior(k,a,low,block);
+        else if(a.kind==='hall')crewHall(k,a,low,block);
         else towerInterior(k,a,low,block);
       } else if(a.kind==='market') {
         market(k,a,low,(x,z,w,d,h)=>box(a,x,z,w,d,h));
@@ -167,7 +190,7 @@ export class PortSystem {
           box(a,x,0,6,10,6);
         }
         k.box('pipeRed',0,.22,5.5,24,.2,.2);
-        detailFuel(k,low);
+        detailFuel(k,low,(x,z,w,d,h)=>box(a,x,z,w,d,h));
       } else if(a.kind==='containers') {
         for(const x of [-9,0,9]) {
           bevel('crateC',x,1.45,0,8,2.9,6,.06); box(a,x,0,8,6,2.9);
@@ -175,6 +198,7 @@ export class PortSystem {
           for(const dx of [-1.7,1.7]) k.box('steel',x+dx,1.4,3.04,.07,2.4,.04);
           k.box('hazard',x,.3,3.03,1.4,.15,.03);
         }
+        containerDressing(k,a,low,(x,z,w,d,h)=>box(a,x,z,w,d,h));
       } else if(a.kind==='sign') {
         for(const x of [-7,7]) { bevel('steelDark',x,2,0,.3,4,.6); box(a,x,0,.3,.6,4); }
         bevel('steelDark',0,4,0,16,2,1);
@@ -185,18 +209,22 @@ export class PortSystem {
       // silently declaring the original bare wall dimensions.
       const rec=this.registry.get(a.id);
       const envelope={
-        depot:{width:24,height:7.84,depth:19},
-        tower:{width:15,height:31.4,depth:15},
+        // PORT-POLISH: envelopes include the dressing outside the walls (crates, HVAC pack, cones, benches, the bund, the yard lamp).
+        depot:{width:28.95,height:7.84,depth:22.69},
+        tower:{width:15.06,height:31.4,depth:18.03},
         market:{width:32,height:3.46,depth:8},
-        fuel:{width:24,height:6,depth:12},
-        containers:{width:26,height:2.9,depth:6.08},
+        fuel:{width:25.2,height:6,depth:13.6},
+        containers:{width:30.36,height:5.2,depth:11.66},
         sign:{width:16,height:5,depth:1.05},
+        hall:{width:24.06,height:6.75,depth:18.81},
       };
       rec.authored=envelope[a.kind];
       if(a.kind==='containers')label(CELLS.stock,a.x,2.25,a.z+3.065,9,.6);
     }
     label(CELLS.port,-28,4,65.511,15.6,1.75);
     this.buildEarthworks(master,low);
+    // PORT-POLISH: ground equipment, pad boards, cable runs, scuffs, cones, and the light in the dust (additive haze bucket).
+    apronDressing(master,low,(x,z,w,d,h)=>this.boxes.push({id:PORT_ID,x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:h}));
     this.depthLayers=resolveDepthLayers([master],{eps:.035});
     // Whole-apron stripes intersect at identical yellow corners. A generic
     // overlap graph otherwise lifts each long strip again and again. Assign
@@ -211,7 +239,7 @@ export class PortSystem {
       if(key==='concrete')f.lift=Math.max(...ys)>.02?4:0;
       else if(key==='soot')f.lift=1;
       else if(key==='mark'||key==='glow')f.lift=3;
-      else if(key==='metal')f.lift=4;
+      else if(key==='metal'||key==='haze')f.lift=4;
     }
     this.depthLayers.maxLayer=Math.max(...master.faces.map(f=>f.lift));
     this.depthLayers.lifted=master.faces.filter(f=>f.lift>0).length;
@@ -224,6 +252,8 @@ export class PortSystem {
     // Fixed-size light pool, sorted by proximity. No per-fixture shadow maps.
     this.fixtures=[[-62,4.35,14],[-62,4.35,21],[-69,4.15,21],[-55,4.15,14],
       [-63,3.6,-39],[-57,3.6,-37],[-60,3.7,-37],...[-70,-62,-54,-46].map(x=>[x,2.75,53]),
+      // PORT-POLISH: the cantina's pendants over the bar and the lamps over the tables (port-local)
+      ...[-33.5,-29.5,-25.5,-21.5].map(x=>[x,2.6,-70.2,60]),[-37,3.6,-65],[-19,3.6,-65],[-28,3.7,-63.5],[-28,3.2,-58.5],
       // inside the tower: shaft lamps, and six over the cab (port-local x, y, z)
       ...[1,7,13,19,24].map(y=>[TOWER.x,y,TOWER.z-2,12]),
       ...[[-3.3,4.2],[3.3,4.2],[-4.5,0.2],[4.5,0.2],[0,-3],[0,2.4]].map(([x,z])=>[TOWER.x+x,TOWER.cab.roofY-.4,TOWER.z+z,30])];
@@ -382,7 +412,8 @@ export class PortSystem {
       this.boxes.push({id:PORT_ID,x0:s*103-.56,x1:s*103+.56,z0:z-3.925,z1:z+3.925,y0:0,y1:.62});
     }
     // Tall apron floodlight masts create a recognisable distant silhouette.
-    for(const [x,z] of [[-32,-64],[91,-48],[90,54],[-32,44]]) {
+    // PORT-POLISH: the north-west mast moved from (-32,-64) to (-50,-62): it stood inside the crew hall's footprint (the hall was a sprite then).
+    for(const [x,z] of [[-50,-62],[91,-48],[90,54],[-32,44]]) {
       k.bevelBox('concrete',x,.14,z,1.2,.28,1.2,.06);
       k.cyl('steelDark',x,6,z,.16,12,low?8:12,{r2:.09});
       k.box('steel',x,11.7,z,3,.13,.2);
@@ -405,6 +436,11 @@ export class PortSystem {
     if(holdDoors)this.updateElevatorVisuals();else this.tickElevator(dt,walker,collide);
     const p=this.site.toLocal(walker.worldPos), r=walker.radiusM;
     this.time+=dt;
+    // PORT-POLISH: the light pools and halos (additive haze) belong to dusk and night. Fade them with the Sun's elevation, read from the
+    // scene's own sun light (render space is the world translated to the eye, so its direction dotted with local up is sin(elevation)).
+    if(this.materials.haze){const sun=this.sun??(this.sun=this.engine.scene?.children?.find(o=>o.isDirectionalLight)||null);
+      if(sun){const s=sun.position,l=Math.hypot(s.x,s.y,s.z)||1,up=this.site.up,e=(s.x*up.x+s.y*up.y+s.z*up.z)/l;
+        this.materials.haze.opacity=Math.max(.06,Math.min(1,(.3-e)/.3));}}
     const nearby=this.fixtures.map(f=>({f,d:Math.hypot(p.x-f[0],p.y+1.2-f[1],p.z-f[2])})).sort((a,b)=>a.d-b.d);
     this.lights.forEach((l,i)=>{const {f,d}=nearby[i];l.position.set(...f);l.intensity=d<19?(f[3]??75):0;});
     if(this.time>1){this.updateDisplays();this.time=0;}
