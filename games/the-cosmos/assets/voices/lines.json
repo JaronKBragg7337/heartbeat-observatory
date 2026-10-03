@@ -31,10 +31,6 @@
   "voice": "ada",
   "text": "Supplies are aboard and stowed."
  },
- "00b62c037cf5ef": {
-  "voice": "zuri",
-  "text": "Plotting a course round Mars first."
- },
  "00b812349b4961": {
   "voice": "ship",
   "text": "We are at Mars already."
@@ -119,6 +115,10 @@
   "voice": "w-aoede",
   "text": "Watching the horizon. No traffic to report."
  },
+ "026b99a48b2e6b": {
+  "voice": "ship",
+  "text": "Coils at half charge. Hold on."
+ },
  "02727fae413251": {
   "voice": "jorge",
   "text": "Aye. I'll find my station."
@@ -134,6 +134,10 @@
  "02925afa29d430": {
   "voice": "zuri",
   "text": "Down at Hellas Planitia."
+ },
+ "02999be0e0fea8": {
+  "voice": "ada",
+  "text": "Coils at half charge. Hold on."
  },
  "029f3fb6b29acc": {
   "voice": "ada",
@@ -166,6 +170,10 @@
  "030d43553e121f": {
   "voice": "ship",
   "text": "Committed to the climb: the lift pods only push up, they cannot stop the ship. The main drive can once we are above the air."
+ },
+ "0313b02ecca9ce": {
+  "voice": "zuri",
+  "text": "Coils at half charge. Hold on."
  },
  "031e3de3ee6657": {
   "voice": "ada",
@@ -218,6 +226,10 @@
  "04152382326177": {
   "voice": "zuri",
   "text": "Course cancelled. Holding."
+ },
+ "041a9df889dc33": {
+  "voice": "ship",
+  "text": "Main drive lit for the Ore Lane. Hold on to something."
  },
  "0439bebbc356c3": {
   "voice": "zuri",
@@ -299,6 +311,10 @@
   "voice": "zuri",
   "text": "Down at Pad 03 (courier)."
  },
+ "06145fb3402e61": {
+  "voice": "ada",
+  "text": "We are at Ceres already."
+ },
  "0622adb9a834b9": {
   "voice": "w-echo",
   "text": "Before you leave: hose, valve, seam. In that order."
@@ -363,6 +379,10 @@
   "voice": "ada",
   "text": "Down at Pad 03 (courier)."
  },
+ "07969bf54c8383": {
+  "voice": "zuri",
+  "text": "Course set for Ceres: Occator Works."
+ },
  "07b3ae89db439f": {
   "voice": "w-bella",
   "text": "Control is upstairs. Call the lift straight ahead."
@@ -390,6 +410,10 @@
  "08002811921450": {
   "voice": "jorge",
   "text": "I cannot find a way to my station. I will wait here."
+ },
+ "08472ee80e89ec": {
+  "voice": "zuri",
+  "text": "Arrived over Ceres: Occator Works. Easing level."
  },
  "08a00d08e1808a": {
   "voice": "zuri",
@@ -426,6 +450,10 @@
  "09390e2e0d2f82": {
   "voice": "zuri",
   "text": "Course cancelled. Braking to a stop."
+ },
+ "0959ba040686bd": {
+  "voice": "ada",
+  "text": "Arrived over Ceres: Occator Works. Easing level."
  },
  "0978050297b6a5": {
   "voice": "ada",
@@ -499,6 +527,14 @@
   "voice": "ada",
   "text": "A course is under way. Cancel it first."
  },
+ "0af82504efb8bb": {
+  "voice": "zuri",
+  "text": "Down at Ceres: Occator Works."
+ },
+ "0b1941905ff02d": {
+  "voice": "ship",
+  "text": "Down at Ceres: Occator Works."
+ },
  "0b1b763461afd4": {
   "voice": "w-river",
   "text": "Stay on the marked foot route across the apron."
@@ -514,6 +550,10 @@
  "0b42292fbfa722": {
   "voice": "zuri",
   "text": "Hull's at 28 percent. Breaking off, going down to neutral airspace."
+ },
+ "0b644f69011bb7": {
+  "voice": "ship",
+  "text": "The lane fee was refused."
  },
  "0b8198feb3fb8c": {
   "voice": "zuri",
@@ -582,6 +622,10 @@
  "0cfa7cda494245": {
   "voice": "zuri",
   "text": "On station over The supply depot apron."
+ },
+ "0d14848f018828": {
+  "voice": "ada",
+  "text": "Course set for Ceres: Occator Works."
  },
  "0d260917b54b17": {
   "voice": "ada",
@@ -751,9 +795,9 @@
   "voice": "ship",
   "text": "Course set for Mars orbit (400 km)."
  },
- "10a0332cd0e2d2": {
+ "10ae3a70b5a15b": {
   "voice": "ada",
-  "text": "Plotting a course round Mars first."
+  "text": "Down at Ceres: Occator Works."
  },
  "10b221b1d7c3d9": {
   "voice": "ada",
@@ -883,6 +927,10 @@
   "voice": "ada",
   "text": "Turn-over. Brace for the burn to slow down."
  },
+ "142c988888604e": {
+  "voice": "ship",
+  "text": "We are at Ceres already."
+ },
  "14308ecb0b2dc7": {
   "voice": "zuri",
   "text": "Takes the chair, flies if there is no pilot, and works the main guns. You do not have to be the captain."
@@ -890,6 +938,10 @@
  "145bacabb8fa8b": {
   "voice": "w-alice",
   "text": "Weather sensors are offline. Watch the dust outside."
+ },
+ "149a2305aa12cf": {
+  "voice": "ada",
+  "text": "Main drive lit for the Ore Lane. Hold on to something."
  },
  "14dcd00ea35dc7": {
   "voice": "sunita",
@@ -966,6 +1018,10 @@
  "163f7317cfa235": {
   "voice": "zuri",
   "text": "That is out of range: it needs a jump drive the Meridian does not have."
+ },
+ "1648305400cbd1": {
+  "voice": "zuri",
+  "text": "We are at Ceres already."
  },
  "1661dcb14db1cc": {
   "voice": "aoi",
@@ -1066,6 +1122,14 @@
  "1863d66eabc5f1": {
   "voice": "ship",
   "text": "a weak distress beacon on the survey band, about 800 m south-west of the pad. A drifting cargo module."
+ },
+ "1872957172ee08": {
+  "voice": "ada",
+  "text": "The lane fee was refused."
+ },
+ "1896065f6922cc": {
+  "voice": "ship",
+  "text": "Arrived over Ceres: Occator Works. Easing level."
  },
  "18a78b3b5b2e3d": {
   "voice": "ship",
@@ -1171,6 +1235,10 @@
   "voice": "ada",
   "text": "Mars airspace is neutral: nothing here to shoot. Climbing to 1750 metres to find the raiders."
  },
+ "1b16fa8f84966e": {
+  "voice": "ship",
+  "text": "Course set for Ceres: Occator Works."
+ },
  "1b7cce7a20c36d": {
   "voice": "ship",
   "text": "That is all three. Take them home to the Survey Office at Marineris Port."
@@ -1183,9 +1251,17 @@
   "voice": "aoi",
   "text": "Keeps the port channel and the ship log open. Tracks the crew account and your accepted jobs."
  },
+ "1bd629c8e948df": {
+  "voice": "zuri",
+  "text": "The lane fee was refused."
+ },
  "1bebc768c51da5": {
   "voice": "ada",
   "text": "Back in Mars space."
+ },
+ "1c0dfa5e371bbd": {
+  "voice": "zuri",
+  "text": "Main drive lit for the Ore Lane. Hold on to something."
  },
  "1c107cc9016fc7": {
   "voice": "zuri",
@@ -1230,10 +1306,6 @@
  "1ce05a1df37655": {
   "voice": "ada",
   "text": "A course is already under way. Cancel it first."
- },
- "1ce7253b11cb53": {
-  "voice": "ship",
-  "text": "Plotting a course round Mars first."
  },
  "1cf74e009b74ee": {
   "voice": "zuri",

@@ -17,6 +17,7 @@ export function workerHTML(m,view,e) {
       h+=`<button class="cbtn" data-a="purchase" data-good="${id}" ${stock<1||e.marks<g.buy?'disabled':''}>Buy · ${g.buy} marks</button>`;
       h+=`<button class="cbtn" data-a="sale" data-good="${id}" ${have<1?'disabled':''}>Sell · ${g.sell} marks</button></div>`;
     }
+    if(m.id==='depot-clerk')for(const [item,label,price] of [['ceres-ore','Occator ore',200],['ceres-salt','Occator salt',70]]){const kg=(e.hold&&e.hold[item])||0,t=Math.floor(kg/1000+1e-9);if(kg>0)h+=`<button class="cbtn" data-a="w2-sell-mars" data-item="${item}" data-t="${t}" ${t<1?'disabled':''}>Sell ${t} t of ${label} from the hold · ${price} marks a tonne</button>`;}       // WORLD2
     if(m.id==='depot-clerk')h+=`<button class="cbtn" data-a="regolith-sale" ${regolithKg(e.cargo)<1000?'disabled':''}>Sell 1 tonne raw regolith · 12 marks</button>`;
     if(m.id==='depot-clerk')h+=`<button class="cbtn" data-a="buy-vehicle" ${(e.marks||0)<vehicleDef('survey').priceMarks?'disabled':''}>Buy a survey rover · ${vehicleDef('survey').priceMarks} marks</button>`;
     h+=`<button class="cbtn" data-a="worker-back">Back to conversation</button>`;

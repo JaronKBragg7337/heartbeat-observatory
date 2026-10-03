@@ -4,6 +4,8 @@
 //   lift      leave the ground (the crew rules still apply: ramp folded, the player aboard)
 //   ascent    straight up on the lift pods until the air is gone (Mars: 120 km; a moon: 2.5 km)
 //   transit   the main drive (transit.js): turn, burn, flip, brake, creep onto the standoff point
+//   spool     (WORLD2, a trip to another system only) hold still at the lane mouth while the jump coils spool; then the jump, and a second
+//             transit in the other system's own frame (jump.js says how and why)
 //   settle    hull eased back level, frame switched to the destination's, speed zero
 //   descent   straight down on the flight assist (its flare is what makes the landing gentle) until landed
 //
@@ -15,6 +17,8 @@
 import * as THREE from 'three';
 import { Transit, turnToward, estimateTrip } from './transit.js';
 import { DRIVE, ATMOSPHERE_TOP_M, STANDOFF_M, RAIDER_SUSPEND_MS, stickWarpCap } from './spaceSpec.js';
+import { JUMP, systemOfFrame, rootFrameOf, regionName, laneName, mouthPoint, transitBody, solMouthDir } from './jump.js';     // WORLD2: the Ore Lane
+import { makeMoon } from './moonField.js';
 
 export const MARS_R = 3_389_500;
 const DEG = Math.PI / 180;
@@ -40,6 +44,8 @@ export class SpaceTrip {
     this.progress = { distM: 0, speed: 0, etaS: 0, phase: 'start' };
     this.eff = 1;                     // the compression actually in force this frame (the requested one, held down near the ground)
     this.planS = null;                // planned ship-time seconds for { climb, drive, descent }, made when the trip starts
+    this.legs = null; this.leg = 0;   // WORLD2: the drive legs of the whole route: [{ sys, goal, jump? }] (one leg inside a system, two across the lane)
+    this.spoolT = 0;                  // WORLD2: cabin seconds spent spooling the jump coils
   }
 
   // ---- compression for the climb and the landing (space-fix) ----------------------------------------------------------
@@ -63,30 +69,58 @@ export class SpaceTrip {
     const f = this.f, a = Math.max(0.5, (f.maxLiftN / f.massKg - 3.0) * 0.9);
     return Math.max(0, (-Math.max(0, v) + Math.sqrt(Math.max(0, v) ** 2 + 2 * a * Math.max(0, distM))) / a);
   }
+  // ---- WORLD2: the route across the Ore Lane --------------------------------------------------------------------------
+  _here() { return systemOfFrame(this.space.frameId); }
+  _destSys() { const d = this.dest; return d.sys || (d.kind === 'moon' ? systemOfFrame(d.moon) : 'mars'); }
+  /** The far world's body for a region (its pad, its radius): the region's own name is the world's id. */
+  _regionBody(region) { return region === 'mars' ? null : makeMoon(region); }
+  /** The destination's goal in the coordinates of a system's root frame (Mars's frame for Sol, the world's own for a far world). */
+  _goalIn(sys) {
+    const d = this.dest;
+    if (sys !== 'mars' && d.goalLocal) return d.goalLocal(this);
+    if (sys === 'mars' && d.kind === 'orbit' && this._here() !== 'mars') { const m = solMouthDir(), R = MARS_R + DRIVE.orbitAltM; return { x: m.x * R, y: m.y * R, z: m.z * R }; }     // "orbit" from another system: over the lane's side of Mars
+    return d.goalS(this);
+  }
+  /** The drive legs from where the ship is (a trip inside a system has one; across the lane, two: to the mouth, then in from the other mouth). */
+  _route() {
+    const here = this._here(), there = this._destSys();
+    if (here === there) return [{ sys: here, goal: this._goalIn(here) }];
+    return [{ sys: here, goal: mouthPoint(here, this._regionBody(here)), jump: true }, { sys: there, goal: this._goalIn(there) }];
+  }
+  /** Height of the ship over the body whose frame it is in. */
+  _alt(p = this.f.pos) { return Math.hypot(p.x, p.y, p.z) - (this.space.frameId === 'mars' ? MARS_R : this._body().radiusMean); }
+  _body() { return this.space.frameId === 'mars' ? null : this.space.moonWorld(this.space.frameId).body; }
+  /** How high a ship climbs on the pods over a moon before the main drive takes her. */
+  _ascentM() { const id = this.space.frameId; if (id === 'mars') return DRIVE.gateAltM; try { return makeMoon(id).spec.ascentM || 2500; } catch { return 2500; } }
+  _crossing() { return this.legs ? this.legs.length > 1 : this._destSys() !== this._here(); }
+
   /** The phases of the whole trip, each with the ship-time seconds left (done: 0). Used by every panel. */
   phases() {
     const sp = this.space, f = this.f, out = [], d = this.dest;
-    const order = ['ascent', 'transit', 'descent'];
-    const cur = this.phase === 'lift' || this.phase === 'start' ? 'ascent' : this.phase === 'settle' ? 'descent' : this.phase;
+    const jump = this._crossing(), there = this._destSys();
+    const order = jump ? ['ascent', 'transit', 'spool', 'cruise', 'descent'] : ['ascent', 'transit', 'descent'];
+    const cur = this.phase === 'lift' || this.phase === 'start' ? 'ascent' : this.phase === 'settle' ? 'descent' : this.phase === 'transit' && jump && this.leg > 0 ? 'cruise' : this.phase;
     const pl = this.planS || (this.planS = this._plan0());
-    const has = { ascent: pl.climb > 0, transit: d.kind !== 'hold', descent: d.kind === 'moon' || d.kind === 'port' };
-    const names = { ascent: 'Climb out', transit: 'Main drive', descent: d.kind === 'port' ? 'Descent to the pad' : 'Descent and landing' };
+    const has = { ascent: pl.climb > 0, transit: d.kind !== 'hold', spool: jump, cruise: jump, descent: d.kind === 'moon' || d.kind === 'port' };
+    const names = { ascent: 'Climb out', transit: jump ? 'Main drive to the lane' : 'Main drive', spool: 'Jump coils spool', cruise: `Main drive, ${regionName(there)} side`, descent: d.kind === 'port' ? 'Descent to the pad' : 'Descent and landing' };
     for (const k of order) {
       if (!has[k]) continue;
       const i = order.indexOf(k), ci = order.indexOf(cur);
       let left;
       if (i < ci) left = 0;
       else if (k === 'ascent' && i === ci) left = this._climbLeftS();
-      else if (k === 'transit' && i === ci) left = this.progress.etaS || pl.drive;
+      else if ((k === 'transit' || k === 'cruise') && i === ci) left = this.progress.etaS || pl[k === 'cruise' ? 'drive2' : 'drive'] || 0;
+      else if (k === 'spool' && i === ci) left = Math.max(0, JUMP.spoolS - this.spoolT);
       else if (k === 'descent' && i === ci) left = this.phase === 'settle' ? 6 + this._descentS(this._descentStartAgl(), this._descentCap()) : this._descentS(Math.max(0, Number.isFinite(f.agl) ? f.agl : 0), this._descentCap());
-      else left = pl[k === 'ascent' ? 'climb' : k === 'transit' ? 'drive' : 'descent'];
-      out.push({ id: k, name: names[k], state: i < ci ? 'done' : i === ci ? 'now' : 'next', leftS: left, warp: i === ci ? (k === 'transit' ? this.warp : this.eff) : this.warp });
+      else left = k === 'spool' ? JUMP.spoolS : pl[k === 'ascent' ? 'climb' : k === 'transit' ? 'drive' : k === 'cruise' ? 'drive2' : 'descent'] || 0;
+      out.push({ id: k, name: names[k], state: i < ci ? 'done' : i === ci ? 'now' : 'next', leftS: left, warp: k === 'spool' ? 1 : i === ci ? (k === 'transit' || k === 'cruise' ? this.warp : this.eff) : this.warp });
     }
     return out;
   }
   /** Real seconds a phase has left at the compression it will run at (a phase not yet begun is taken at the chosen compression). */
   wallS(q) {
     if (q.state === 'done') return 0;
+    if (q.id === 'spool') return q.leftS;                                                                   // cabin time: compression does not shorten it
     const w = Math.max(1, q.state === 'now' ? (q.warp || 1) : this.warp);
     if (q.id === 'descent' && w > 1) { const tail = Math.min(q.leftS, 30); return tail + (q.leftS - tail) / w; }     // the last 400 m always run at x1
     return q.leftS / w;
@@ -96,19 +130,27 @@ export class SpaceTrip {
   _climbLeftS() {
     const f = this.f;
     if (this.space.frameId === 'mars') return this._climbS(Math.max(0, DRIVE.gateAltM - this._marsAlt()), f.verticalSpeed) + 8;
-    return this._climbS(Math.max(0, 2500 - (Number.isFinite(f.agl) ? f.agl : 0)), f.verticalSpeed) + 4;
+    return this._climbS(Math.max(0, this._ascentM() + 100 - (Number.isFinite(f.agl) ? f.agl : 0)), f.verticalSpeed) + 4;
   }
   /** What the plan was when the trip began, from where the ship is. */
   _plan0() {
     const sp = this.space, d = this.dest;
-    const climb = this.phase === 'transit' || this.phase === 'descent' || this.phase === 'settle' ? 0 : this._climbLeftS();
-    let drive = 0;
+    const climb = this.phase === 'transit' || this.phase === 'spool' || this.phase === 'descent' || this.phase === 'settle' ? 0 : this._climbLeftS();
+    let drive = 0, drive2 = 0;
     try {
-      const f = this.f, p = sp._shipS(), start = (sp.frameId === 'mars' && this._marsAlt() < DRIVE.gateAltM) ? sp._gatePoint(p) : p;
-      const goal = d.goalS ? d.goalS(this) : start;
-      drive = d.kind === 'hold' ? 0 : estimateTrip({ pos: start, vel: { x: 0, y: 0, z: 0 }, nose: { x: f.fwdH.x, y: f.fwdH.y, z: f.fwdH.z }, up: { x: 0, y: 1, z: 0 }, goal, aMax: this._aMax(), vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate }).seconds;
+      const f = this.f, here = this._here(), p = here === 'mars' ? sp._shipS() : { x: f.pos.x, y: f.pos.y, z: f.pos.z };
+      let start = p;
+      if (here === 'mars' && sp.frameId === 'mars' && this._marsAlt() < DRIVE.gateAltM) start = sp._gatePoint(p);
+      else if (here !== 'mars') { const r = Math.hypot(p.x, p.y, p.z), R = this._regionBody(here).radiusMean + this._ascentM(); if (r < R) start = { x: p.x / r * R, y: p.y / r * R, z: p.z / r * R }; }
+      const legs = this.legs || (d.kind === 'hold' ? null : this._route());
+      const nose = { x: f.fwdH.x, y: f.fwdH.y, z: f.fwdH.z };
+      const est = (pos, goal, sys) => estimateTrip({ pos, vel: { x: 0, y: 0, z: 0 }, nose, up: { x: 0, y: 1, z: 0 }, goal, aMax: this._aMax(), vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate, ...transitBody(sys, this._regionBody(sys)) }).seconds;
+      if (legs) {
+        drive = est(start, legs[0].goal, legs[0].sys);
+        if (legs.length > 1) drive2 = est(mouthPoint(legs[1].sys, this._regionBody(legs[1].sys)), legs[1].goal, legs[1].sys);
+      }
     } catch (e) { drive = 0; }
-    return { climb, drive, descent: d.kind === 'moon' || d.kind === 'port' ? this._descentS(this._descentStartAgl(), d.kind === 'port' ? 800 : 60) + 8 : 0 };
+    return { climb, drive, drive2, spool: this._crossing() ? JUMP.spoolS : 0, descent: d.kind === 'moon' || d.kind === 'port' ? this._descentS(this._descentStartAgl(), d.kind === 'port' ? 800 : 60) + 8 : 0 };
   }
 
   say(text, key, warn = false) {
@@ -137,7 +179,7 @@ export class SpaceTrip {
     const w = sp.moonWorld(sp.frameId), r = Math.hypot(f.pos.x, f.pos.y, f.pos.z);
     const agl = r - w.body.surfaceRadius(f.pos.x / r, f.pos.y / r, f.pos.z / r);
     if (this.dest.kind === 'moon' && this.dest.moon === sp.frameId) return { ok: false, msg: `We are at ${w.body.name} already.` };
-    return { ok: true, phase: agl < 2200 ? (f.landed ? 'lift' : 'ascent') : 'transit' };
+    return { ok: true, phase: agl < this._ascentM() * 0.88 ? (f.landed ? 'lift' : 'ascent') : 'transit' };
   }
 
   // ---- the per-frame brain --------------------------------------------------------------------------------------------
@@ -163,6 +205,7 @@ export class SpaceTrip {
       }
       case 'ascent': return this._ascent(c, dt);
       case 'transit': return null;
+      case 'spool': return this._spool(c, dt);
       case 'settle': return this._settle(c, dt);
       case 'descent': return this._descent(c, dt);
       default: return null;
@@ -188,29 +231,34 @@ export class SpaceTrip {
       }
       return c;
     }
-    // on a moon: straight up to 2.5 km, then the main drive
-    const w = sp.moonWorld(sp.frameId), r = Math.hypot(f.pos.x, f.pos.y, f.pos.z);
+    // on a moon: straight up to 2.5 km (a big world: above its highest ground), then the main drive
+    const w = sp.moonWorld(sp.frameId), r = Math.hypot(f.pos.x, f.pos.y, f.pos.z), top = this._ascentM();
     const agl = r - w.body.surfaceRadius(f.pos.x / r, f.pos.y / r, f.pos.z / r);
-    f.climbCap = 70; c.lift = 1;
-    this.progress.distM = Math.max(0, 2500 - agl);
-    if (agl >= 2500) { f.climbCap = 12; this.phase = 'transit'; this._beginTransit(); return null; }
+    f.climbCap = top > 3000 ? 110 : 70; c.lift = 1;
+    this.progress.distM = Math.max(0, top - agl);
+    if (agl >= top) { f.climbCap = 12; this.phase = 'transit'; this._beginTransit(); return null; }
     return c;
   }
 
   _beginTransit() {
     const sp = this.space, f = this.f;
-    sp.setFrame('mars');                                  // transit is in Mars's frame; the ship is moving or hovering when it switches
-    const goal = this.dest.goalS(this);
+    if (!this.legs) { this.legs = this._route(); this.leg = 0; }       // WORLD2: the ship's own frame decides the route, once, at the first burn
+    const leg = this.legs[this.leg], tb = transitBody(leg.sys, this._regionBody(leg.sys));
+    sp.setFrame(rootFrameOf(leg.sys));              // transit is in the system's root frame (Mars's, or the far world's); the ship is moving or hovering when it switches
+    const goal = leg.goal;
     this.goalS = goal;
-    const nose = new THREE.Vector3(f.fwdH.x, f.fwdH.y, f.fwdH.z);
+    // the first leg leaves a level ship; the second (after the jump) carries on from the hull's own attitude
+    const q = this.leg > 0 && f.quaternion ? f.quaternion : null;
+    const nose = q ? new THREE.Vector3(0, 0, -1).applyQuaternion(q) : new THREE.Vector3(f.fwdH.x, f.fwdH.y, f.fwdH.z);
+    const upv = q ? new THREE.Vector3(0, 1, 0).applyQuaternion(q) : new THREE.Vector3(f.up.x, f.up.y, f.up.z);
     this.transit = new Transit({
-      pos: f.pos, vel: f.vel, nose: { x: nose.x, y: nose.y, z: nose.z }, up: { x: f.up.x, y: f.up.y, z: f.up.z },
-      goal, aMax: this._aMax(), vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate,
+      pos: f.pos, vel: f.vel, nose: { x: nose.x, y: nose.y, z: nose.z }, up: { x: upv.x, y: upv.y, z: upv.z },
+      goal, aMax: this._aMax(), vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate, centre: tb.centre, safeR: tb.safeR, floorR: tb.floorR,
     });
     f.attitude = new THREE.Quaternion().copy(f.quaternion);
     f.override = (dt) => this._drive(dt);
     f.autoHover = false;
-    this.say(this.transit.legs.length ? 'Plotting a course round Mars first.' : 'Main drive lit. Hold on to something.', 'burn');
+    this.say(this.transit.legs.length ? `Plotting a course round ${leg.sys === 'mars' ? 'Mars' : regionName(leg.sys)} first.` : leg.jump ? 'Main drive lit for the Ore Lane. Hold on to something.' : 'Main drive lit. Hold on to something.', 'burn' + this.leg);
     this.progress.distM = this.transit.distance;
   }
 
@@ -235,7 +283,7 @@ export class SpaceTrip {
     f.refreshOrientation();
     f.thrustFwd = f.maxDriveN * tr.thrust; f.thrustUp = 0; f.autoHover = false;
     f.landed = false; f.airborne = true; f.gearPos = Math.max(0, f.gearPos - dt * 0.5);
-    f.agl = this._marsAlt();
+    f.agl = this._alt();
     // raiders cannot keep up with a ship doing km/s: they do not follow a transit
     const dr = this.ship.drones; if (dr) dr.suspended = tr.speed > RAIDER_SUSPEND_MS;
     // progress for the readouts
@@ -263,11 +311,41 @@ export class SpaceTrip {
     f.override = null; this.transit = null;
     f.vel.x = f.vel.y = f.vel.z = 0; f.thrustFwd = 0; f.autoHover = true;
     const dr = this.ship.drones; if (dr) dr.suspended = false;
+    const leg = this.legs && this.legs[this.leg];
+    if (leg && leg.jump) {                                // WORLD2: at the lane mouth. Hold still; the coils spool.
+      this.phase = 'spool'; this.spoolT = 0;
+      this._attFrom = f.attitude ? f.attitude.clone() : null;
+      if (this.space.prepareWorld) this.space.prepareWorld(rootFrameOf(this._destSys()));      // the far world is built now, behind the spool, not at the jump
+      this.say(`At the ${laneName(leg.sys)}. Jump coils spooling: ${JUMP.spoolS} seconds. The Compact's lane fee is ${JUMP.feeCredits} credits.`, 'spool' + this.leg);
+      return;
+    }
     this.phase = 'settle'; this.settleT = 0;
     this._attFrom = f.attitude ? f.attitude.clone() : null;
     if (d.kind === 'moon') this.space.setFrame(d.moon);
     if (d.kind === 'port') f.heading = this.space.portHeading();
     this.say(d.kind === 'orbit' ? `On station over Mars.` : d.kind === 'station' ? `Arrived off ${d.name}. Easing level.` : `Arrived over ${d.name}. Easing level.`, 'arrive');
+  }
+
+  /** WORLD2: the coils spool. The ship holds; at the end the fee is taken, the frame changes and the second leg begins. */
+  _spool(c, dt) {
+    const f = this.f;
+    this.spoolT += dt; f.autoHover = true;
+    f.vel.x = f.vel.y = f.vel.z = 0;
+    const left = JUMP.spoolS - this.spoolT;
+    if (left < 10 && left > 9) this.say('Coils at half charge. Hold on.', 'spool-half' + this.leg);
+    if (this.spoolT >= JUMP.spoolS) return this._jump(c);
+    return c;
+  }
+  _jump(c) {
+    const leg = this.legs[this.leg], toSys = this._destSys(), toFrame = rootFrameOf(toSys);
+    const paid = this.space.payLaneFee ? this.space.payLaneFee(JUMP.feeCredits) : { ok: true };
+    if (!paid.ok) { this.legs = null; this.leg = 0; this._finishHere(paid.msg || `The lane office wants ${JUMP.feeCredits} credits and the account is short. Holding at the lane mouth.`); return null; }
+    this.space.jumpTo(toFrame, mouthPoint(toSys, this._regionBody(toSys)));
+    this.leg++;
+    this.phase = 'transit';
+    this.say(`The corridor opens. ${regionName(toSys)} side. Lane fee paid: ${JUMP.feeCredits} credits.`, 'jumped' + this.leg);
+    this._beginTransit();
+    return null;
   }
 
   _settle(c, dt) {
@@ -285,7 +363,7 @@ export class SpaceTrip {
       if (this.dest.kind === 'station') { this._finishHere(`Holding off ${this.dest.name}. Docking is the station's own business: ask its dock.`); return null; }
       if (this.dest.kind === 'orbit' || this.dest.kind === 'hold') {
         // nowhere to come down to: hold here (the flight assist hovers the ship against whatever pull there is)
-        this._finishHere(this.dest.kind === 'hold' ? `Stopped. Holding ${fmtKm(this._marsAlt())} above Mars.` : `Holding over Mars at ${fmtKm(this._marsAlt())}.`);
+        this._finishHere(this.dest.kind === 'hold' ? `Stopped. Holding ${fmtKm(this._alt())} above ${this._bodyName()}.` : `Holding over ${this._bodyName()} at ${fmtKm(this._alt())}.`);
         return null;
       }
       this.phase = 'descent';
@@ -310,6 +388,7 @@ export class SpaceTrip {
     return c;
   }
 
+  _bodyName() { const b = this._body(); return b ? b.name : 'Mars'; }
   _finishHere(msg) { this.phase = 'done'; this.say(msg, 'here'); this.space.onHeld(this.dest, this); }
 
   // ---- the player's levers --------------------------------------------------------------------------------------------
@@ -325,7 +404,8 @@ export class SpaceTrip {
       const aD = tr.aMax * 0.85, d = v * v / (2 * aD) + v * tr.flipT * 1.1 + 900;
       const vh = { x: tr.vel.x / v, y: tr.vel.y / v, z: tr.vel.z / v };
       const goal = { x: tr.pos.x + vh.x * d, y: tr.pos.y + vh.y * d, z: tr.pos.z + vh.z * d };
-      this.dest = { id: 'hold', kind: 'hold', name: 'a stop', goalS: () => goal };
+      this.dest = { id: 'hold', kind: 'hold', name: 'a stop', goalS: () => goal, sys: this._here() };
+      this.legs = [{ sys: this._here(), goal }]; this.leg = 0;       // WORLD2: a stop is one leg in the system the ship is in (it must not go on to the jump)
       this.transit = new Transit({ pos: tr.pos, vel: tr.vel, nose: tr.nose, up: tr.up, goal, aMax: tr.aMax, vMax: tr.vMax, turnRate: tr.turnRate });
       this.say(msg || 'Course cancelled. Braking to a stop.', 'cancel', true);
       return { ok: true };

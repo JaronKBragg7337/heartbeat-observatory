@@ -70,7 +70,8 @@ export class FleetView {
   /** Called each time a new snapshot arrives. */
   onSnapshot() { this.snapAt = performance.now(); }
   age() { return Math.min(0.3, (performance.now() - this.snapAt) / 1000); }
-  frameOf(id) { return id === 'mars' ? this.engine.rootFrame : this.space.moonWorld(id).frame; }
+  /** WORLD2: a world nobody on this screen is in is not built just to place someone else's ship (it is hidden anyway: the root frame stands in) */
+  frameOf(id) { if (id === 'mars') return this.engine.rootFrame; const w = this.space.worlds.get(id); if (w && w.built) return w.frame; return id === this.space.frameId ? this.space.moonWorld(id).frame : this.engine.rootFrame; }
 
   // -------------------------------------------------------------------------
   // THE SHIPYARD KIOSK: a counter and a lit board by the hiring board, with a scale model of what is for sale.

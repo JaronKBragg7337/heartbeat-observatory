@@ -135,6 +135,8 @@ export class SpaceSky {
     this.skyColor = new THREE.Color(o.skyColor); this.horizonColor = new THREE.Color(o.horizonColor);
     this.groundFog = o.fogDensity ?? 0.000012;
     this.sunWorld = new THREE.Vector3(...Object.values(sunDirection())).normalize();
+    this.solSunDir = this.sunWorld.clone();       // WORLD2: kept so a frame of another system can borrow `sunWorld` and give it back
+    this.system = null;
     this.state = { h: 0, s: 1, sunBlend: 0 };
     // Marsshine: the light Mars throws back. Real Phobos gets about 1% of the Sun's strength from it; this is a stronger, readable fill
     // (so a cargo module's shadow side is not pure black) that only ever lights what faces Mars, and never Mars itself.
@@ -185,6 +187,23 @@ export class SpaceSky {
 
   /** A cached THREE.Color for a world's sky/horizon (0xRRGGBB), so the per-frame update allocates nothing. */
   _airSky(hex, key) { const c = this._airC || (this._airC = {}); const k = key + hex; return c[k] || (c[k] = new THREE.Color(hex)); }
+
+  /**
+   * WORLD2: the sky of a world far from Mars (Ceres): its own star in its own direction, colour and size, no Mars (no limb, no Marsshine), and a
+   * fill that comes from the bright ground. `cfg` = { sunDir: THREE.Vector3, color: [r,g,b], glow: [r,g,b], diskDeg, fill: {sky, ground, intensity},
+   * giant: { dir: THREE.Vector3, color: [r,g,b], lit: 0..1 } } or null to go back to Mars's.
+   */
+  setSystem(cfg) {
+    if (!cfg && !this.system) return;
+    this.system = cfg;
+    this.sunWorld.copy(cfg ? cfg.sunDir : this.solSunDir);
+    const f = cfg ? cfg.diskDeg / 0.34 : 1;
+    this.sunCore.scale.setScalar(2 * this.SUN_DIST * Math.tan(0.34 * Math.PI / 180) * 1.36 * f);
+    this.sunGlow.scale.setScalar(2 * this.SUN_DIST * Math.tan(5 * Math.PI / 180) * (cfg ? 1.25 : 1));
+    this.sunCore.material.color.setRGB(...(cfg ? cfg.color : [1, 1, 1]));
+    this.sunGlow.material.color.setRGB(...(cfg ? cfg.glow : [1, 1, 1]));
+    this._sunSet = true;
+  }
 
   /** The Sun's direction as a unit vector, world axes (the same in every frame: frames are translated copies). */
   get sunDir() { return this.sunWorld; }
@@ -259,6 +278,22 @@ export class SpaceSky {
       this.shine.position.set(-cam.x / d * 10, -cam.y / d * 10, -cam.z / d * 10);        // the light sits toward Mars, shining out at the camera
     }
 
+    // WORLD2: another system's own light overrides everything Mars-specific above
+    if (this.system) {
+      const c = this.system, fill = c.fill;
+      this.hemi.color.setRGB(...fill.sky); this.hemi.groundColor.setRGB(...fill.ground);
+      this.hemi.intensity = fill.intensity;
+      if (extra.up) this.hemi.position.set(extra.up.x, extra.up.y, extra.up.z);
+      this.sun.intensity = (c.sunIntensity || 2.4) * 1.1;
+      this.sun.color.setRGB(...c.color);
+      this.moonFill = 1;
+      if (c.giant) {
+        this.shine.color.setRGB(...c.giant.color);
+        this.shine.intensity = c.giant.intensity * c.giant.lit;
+        this.shine.position.set(c.giant.dir.x * 10, c.giant.dir.y * 10, c.giant.dir.z * 10);     // the light sits toward the giant and shines out at the ground (as Marsshine does)
+      } else this.shine.intensity = 0;
+    }
+
     // the Sun's disc: always where the Sun is, fixed in the world (camera-relative)
     const sd = this.sunWorld;
     for (const sp of [this.sunCore, this.sunGlow]) sp.position.set(sd.x * this.SUN_DIST, sd.y * this.SUN_DIST, sd.z * this.SUN_DIST);
@@ -267,7 +302,7 @@ export class SpaceSky {
 
     // the limb
     const atm = this.atm;
-    atm.visible = hMars > 15000;
+    atm.visible = hMars > 15000 && !this.system;
     if (atm.visible) {
       atm.position.set(-cam.x, -cam.y, -cam.z);
       atm.material.uniforms.uC.value.set(-cam.x, -cam.y, -cam.z);

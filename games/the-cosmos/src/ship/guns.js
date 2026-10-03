@@ -298,7 +298,7 @@ export class DroneSystem {
     const S = this.ship;
 
     // ---- a transit: nobody follows. The raiders are gone and come again (as on leaving neutral airspace) when it ends.
-    if (this.suspended) {
+    if (this.suspended || this.safeFrame) {                // WORLD2: safeFrame: a settlement's space (a far world: the Compact keeps its own lanes clear)
       if (!this.neutral) { this.neutral = true; for (const d of this.drones) if (!d.held) { d.state = 'away'; d.target.inactive = true; } this.shots.length = 0; }
       return;
     }

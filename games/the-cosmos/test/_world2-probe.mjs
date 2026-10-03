@@ -1,0 +1,16 @@
+import '../server/runtime.mjs';
+const { makeMoon } = await import('../src/space/moonField.js');
+const { worldCentre, worldPlacement } = await import('../src/worlds/registry.js');
+const SPEC = await import('../src/space/spaceSpec.js');
+let t0 = performance.now();
+const b = makeMoon('ceres');
+console.log('build ms', (performance.now() - t0).toFixed(1), 'g', b.surfaceGravity.toFixed(4), 'Rm', b.radiusMean);
+const c = worldCentre('ceres'); console.log('centre from Mars (AU)', Math.hypot(c.x, c.y, c.z) / 1.495978707e11, worldPlacement('ceres'));
+console.log('dest', JSON.stringify(SPEC.DESTINATIONS.find((d) => d.id === 'ceres')));
+const pi = b.padInfo, R0 = b.radiusMean;
+console.log('pad', pi.point, pi.planeR - R0, 'sun', b.sunDir);
+const f = (e, n) => { const d = { x: pi.up.x + (pi.east.x * e + pi.north.x * n) / R0, y: pi.up.y + (pi.east.y * e + pi.north.y * n) / R0, z: pi.up.z + (pi.east.z * e + pi.north.z * n) / R0 }; const l = Math.hypot(d.x, d.y, d.z); return b.surfaceRadius(d.x / l, d.y / l, d.z / l) - pi.planeR; };
+let o = []; for (let e = -30000; e <= 30000; e += 2500) o.push(e / 1000 + 'km:' + f(e, 0).toFixed(0)); console.log('profile east through the pad (relative to pad plane):', o.join(' '));
+o = []; for (let r = 0; r <= 400; r += 50) o.push(f(r, 0).toFixed(2)); console.log('pad out east', o.join(' '));
+const mat = (e, n, depth = 0) => { const d = { x: pi.up.x + (pi.east.x * e + pi.north.x * n) / R0, y: pi.up.y + (pi.east.y * e + pi.north.y * n) / R0, z: pi.up.z + (pi.east.z * e + pi.north.z * n) / R0 }; const l = Math.hypot(d.x, d.y, d.z); const R = b.surfaceRadius(d.x / l, d.y / l, d.z / l) - depth; return b.materialField(d.x / l * R, d.y / l * R, d.z / l * R).name; };
+console.log('pad', mat(0, 0), '| outcrop A', mat(420, 120), '| salt pan', mat(700, -520), '| Cerealia', mat(11000, 0), '| 30 m deep', mat(0, 120, 30), '| Cut floor', mat(-3300, 3000));

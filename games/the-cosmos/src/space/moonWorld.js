@@ -58,6 +58,7 @@ export class MoonWorld {
    */
   constructor(o) {
     this.engine = o.engine; this.tier = o.tier || 'high';
+    this.space = o.space || null;       // WORLD2: the space system (a world's client.js dress() needs the ship's materials and the people library)
     this.id = o.id;
     this.body = makeMoon(o.id);
     this.frame = { id: this.id, origin: this.body.centre, body: this.body };
@@ -83,11 +84,11 @@ export class MoonWorld {
     if (this.built) return this;
     const t0 = performance.now();
     const { engine, body } = this, low = this.tier === 'low';
-    this.shell = buildMoonShell(body, low ? 256 : 384);
+    this.shell = buildMoonShell(body, low ? 256 : body.radiusMean > 1e6 ? 512 : 384);       // WORLD2: a planet-sized world needs more
     engine.scene.add(this.shell);
     this.shellEntry = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: this.shell, frame: this.frame });
     // a coarse copy for when it is a few pixels across (Phobos from the port, from Mars orbit): 4,600 triangles instead of 65,000
-    this.shellFar = buildMoonShell(body, 48);
+    this.shellFar = buildMoonShell(body, body.radiusMean > 1e6 ? 96 : 48);
     this.shellFar.material.fog = false;
     engine.scene.add(this.shellFar);
     this.farEntry = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: this.shellFar, frame: this.frame });
@@ -114,6 +115,20 @@ export class MoonWorld {
     this.far._regolith = installRegolith(this.far.mesh.material, THREE, { ...R.farRegolith, far: true, across: body.axesWorld && body.axesWorld.ey });
     this.far.mesh.receiveShadow = false;
     this.far.handover = installTierDiscard(this.far.mesh.material);
+    // WORLD2: a body hundreds of kilometres across needs the planet's coarser tiers too (Mars has 64 km and 320 km ones): from a few
+    // thousand metres up the horizon is 50 km away, and the whole-body shell's triangles are ten kilometres wide.
+    this.distant = [];
+    if (body.radiusMean > 100_000) {
+      for (const [i, o] of (low ? [{ sizeM: 64000, res: 65, skirtM: 300 }, { sizeM: 320000, res: 49, skirtM: 1400 }] : [{ sizeM: 64000, res: 97, skirtM: 300 }, { sizeM: 320000, res: 65, skirtM: 1400 }]).entries()) {
+        const p = mk({ ...o, horizon: false }, `patch-distant-${i}`);
+        p.mesh.material.dispose();
+        p.mesh.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.97, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 3 + i });
+        p.mesh.receiveShadow = false;
+        p.mesh.material.color.setScalar(R.farColor);
+        p.handover = installTierDiscard(p.mesh.material);
+        this.distant.push(p);
+      }
+    }
     this.mid = mk({ sizeM: 880, res: 132, skirtM: 15, horizon: true }, 'patch-mid');
     this.near = mk({ sizeM: 48, res: 81, horizon: true }, 'patch-near');
     // dark soil shows every dark fleck: soften the pebbles and the bump on the patches you walk on
@@ -129,8 +144,8 @@ export class MoonWorld {
     installCoverDiscard(this.near.mesh.material, this.terrain.cover, this.nearCover, THREE);
     this.shellHandover = installTierDiscard(this.shell.material);
     // a moon has no air: Mars's dusty-sky fog must not wash it out (a world WITH an atmosphere keeps the scene fog, tinted by its own sky: see SpaceSystem.late) when it is seen across a daylit sky (Phobos from the port)
-    for (const m of [this.shell.material, this.far.mesh.material, this.mid.mesh.material, this.near.mesh.material, this.terrain.material]) { m.fog = !!body.atmosphere; m.needsUpdate = true; }
-    this.entries = [this.shellEntry, this.farEntry, this.far.entry, this.mid.entry, this.near.entry];
+    for (const m of [this.shell.material, this.far.mesh.material, this.mid.mesh.material, this.near.mesh.material, this.terrain.material, ...this.distant.map((q) => q.mesh.material)]) { m.fog = !!body.atmosphere; m.needsUpdate = true; }
+    this.entries = [this.shellEntry, this.farEntry, this.far.entry, this.mid.entry, this.near.entry, ...this.distant.map((q) => q.entry)];
     this.buildMs = performance.now() - t0;
     this.built = true;
     this.setTiersVisible(false);
@@ -142,8 +157,14 @@ export class MoonWorld {
 
   setVisible(on) { if (!this.built) return; this.wantVisible = on; this._lod(this._lastDist ?? 1e9); if (!on) this.setTiersVisible(false); }
   /** The whole-moon shell in two detail levels, by how far the camera is from the moon's centre. */
-  _lod(dist) { this._lastDist = dist; const near = dist < this.body.radiusMean * 30; this.shell.visible = !!this.wantVisible && near; this.shellFar.visible = !!this.wantVisible && !near; }
-  setTiersVisible(on) { if (!this.built) return; this.far.mesh.visible = this.mid.mesh.visible = this.near.mesh.visible = on; this.active = on; }
+  _lod(dist) { this._lastDist = dist; const near = dist < this.body.radiusMean * (this.body.radiusMean > 1e6 ? 8 : 30); this.shell.visible = !!this.wantVisible && near; this.shellFar.visible = !!this.wantVisible && !near; }
+  setTiersVisible(on) {
+    if (!this.built) return;
+    this.far.mesh.visible = this.mid.mesh.visible = this.near.mesh.visible = on; for (const p of this.distant) p.mesh.visible = on; this.active = on;
+    // WORLD2: with the tiers hidden the whole-world shell must not keep a square cut out of it (a world big enough to be seen whole shows the hole)
+    if (!on) { this.shellHandover.uniforms.uTierHalf.value = 0; this.far.handover.uniforms.uTierHalf.value = 0; for (const p of this.distant) p.handover.uniforms.uTierHalf.value = 0; }
+  }
+  get _tiers() { return [this.near, this.mid, this.far, ...this.distant]; }
 
   /** The ground the walker stands on: the drawn surface where it has not been changed, the field where it has. */
   groundSampler() {
@@ -170,13 +191,21 @@ export class MoonWorld {
     this.mid.setExcluded([{ centre: { x: np.x, y: np.y, z: np.z }, radius: this.near.sizeM * 0.40 }]);
     this.mid.rebuild(f.x, f.y, f.z); this.mid.entry.worldPos = this.mid.worldPos;
     this.far.rebuild(f.x, f.y, f.z); this.far.entry.worldPos = this.far.worldPos;
+    for (const p of this.distant) { p._job = null; p.rebuild(f.x, f.y, f.z); p.entry.worldPos = p.worldPos; }
     this._joins();
   }
 
   _joins() {
+    // outside-in, so each join samples the coarser tier's final surface (as main.js does for Mars)
+    const D = this.distant;
+    for (let i = D.length - 2; i >= 0; i--) D[i].blendEdgeTo(D[i + 1]);
+    if (D.length) this.far.blendEdgeTo(D[0]);
     this.mid.blendEdgeTo(this.far, this.near);
     this.far.handover.update(this.far.worldPos, this.mid);
-    this.shellHandover.update({ x: 0, y: 0, z: 0 }, this.far);
+    let fine = this.far;
+    for (const p of D) { p.handover.update(p.worldPos, fine); fine = p; }
+    this.shellHandover.update({ x: 0, y: 0, z: 0 }, fine);
+
   }
 
   /**
@@ -187,16 +216,17 @@ export class MoonWorld {
     if (!this.built) return;
     const r = Math.hypot(focus.x, focus.y, focus.z), surf = this.body.surfaceRadius(focus.x / r, focus.y / r, focus.z / r);
     this._lod(r);
+    if (this.client && this.client.update) this.client.update(dt, focus);       // WORLD2: ticked whenever the world is in range, not only while the tiers are drawn
     const alt = r - surf;
-    const want = alt < 30000;
+    const want = alt < (this.body.spec.tierAltM || 30000);
     if (want !== this.active) { if (want) this.force(focus); else this.setTiersVisible(false); }
     if (!this.active) return;
     // keep the tiers under the focus
-    for (const p of [this.near, this.mid, this.far]) {
+    for (const p of this._tiers) {
       if (!p.rebuilding && p.needsRebuild(focus.x, focus.y, focus.z)) p.beginRebuild(focus.x, focus.y, focus.z);
     }
     let left = budgetMs;
-    for (const p of [this.near, this.mid, this.far]) {
+    for (const p of this._tiers) {
       if (!p.rebuilding || left <= 0) continue;
       const t0 = performance.now();
       if (p.stepRebuild(left)) {
@@ -206,7 +236,6 @@ export class MoonWorld {
       left -= performance.now() - t0;
     }
     this._joins();
-    if (this.client && this.client.update) this.client.update(dt, focus);
     if (!this.edits.isEmpty || this.terrain.meshes.size) {
       this.terrain.update(dt, focus);
       this.terrain.coverOffsetFor(this.mid.worldPos, this.midCover);

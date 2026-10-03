@@ -23,6 +23,7 @@
 //   * Fuel is for free flight. A course (the nav computer) still flies for free, as before.
 // ============================================================================
 
+import { isLaneWorld } from './jump.js';
 import * as THREE from 'three';
 import { MARS_MU, MOONS, STATION_IDS, G_CONST, moonCentre, DRIVE, ATMOSPHERE_TOP_M, FREE, RAIDER_SUSPEND_MS, stickWarpCap } from './spaceSpec.js';
 import { makeMoon } from './moonField.js';
@@ -336,6 +337,8 @@ export class FreeFlight {
     this._t = (this._t || 0) + dt;
     const f = this.f, frame = this.host.frameId();
     this.events.length = 0;
+    // WORLD2: free flight is charted in Mars's space only (its bodies are Mars and its moons). On a far world the course and the flight assist fly her.
+    if (isLaneWorld(frame)) { if (this.enabled || this.active) this.suspend("Free flight is only charted in Mars's space. Here the autopilot and the flight assist fly the ship."); this.eff = 1; return 1; }
     // refuel on a pad
     if (f.landed && this.fuel < 1 && this.host.atPad && this.host.atPad()) {
       const before = this.fuel; this.fuel = Math.min(1, this.fuel + FREE.refuelPerS * dt);

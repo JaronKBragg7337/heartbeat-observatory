@@ -18,8 +18,8 @@ Written 2026-10-03 for package F1 (world registry and generic planet plumbing). 
 
 1. `mkdir src/worlds/<name>` (the folder name **is** the id: lower case, digits, dashes).
 2. Write `src/worlds/<name>/def.js` (fields below). Start from `phobos/def.js` for a small rocky moon, or the example at the end for a
-   planet. A **placeholder** (`placeholder: true`: id, name, kind, blurb) only lists the world as "needs a jump drive"; the three
-   homes (`fortis`, `greenhaven`, `ironclad`) are placeholders now. **Replace the placeholder file** when you build the real world.
+   planet. A **placeholder** (`placeholder: true`: id, name, kind, blurb) only lists the world as "needs a jump drive"; the remaining
+   homes (`fortis`, `greenhaven`) are placeholders now (Ironclad became `ceres`). **Replace the placeholder file** when you build the real world.
 3. `node tools/gen-registry.mjs`
 4. Look at it: `?dev=1&body=<name>` (solo only) sets the ship on the world's pad and stands you beside it, no travel. The nav list
    (the ship's navigation panel) has the course; the real server flies it.

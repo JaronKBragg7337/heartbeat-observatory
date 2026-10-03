@@ -28,9 +28,10 @@ import { SAMPLE_PAY_CREDITS, SAMPLE_REACH_M, SALVAGE_CREDITS, SALVAGE_KG, SALVAG
 import { ShipSimulation } from './simulation.mjs';
 import { VehicleDirector } from './vehicles.mjs';
 import { ShopDirector } from './shops.mjs';
+import { worldSale } from './world2.mjs';       // WORLD2
 import { freshOpening, OpeningModel } from '../src/opening/state.js';
 import { detachBodyEdits } from '../src/world/field.js';
-import { landingOrder } from '../src/space/spaceSpec.js';
+import { landingOrder, MOON_IDS } from '../src/space/spaceSpec.js';
 import { humanMarkers, DEFAULT_NAME, GUEST_IDLE_MS, EPHEMERAL_IDLE_MS, MAX_SLOTS } from './identity.mjs';
 
 const hash = s=>createHash('sha256').update(s).digest('hex');
@@ -401,6 +402,7 @@ export class Authority {
       if(Math.abs(loc.x-CREW_HALL.x)<CREW_HALL.w/2+.3&&Math.abs(loc.z-CREW_HALL.z)<CREW_HALL.d/2+.3)return false;
       if(Object.values(this.state.pool).some(c=>!c.retired&&!c.shipId&&distance(loc,c.position)<1))return false;
     }
+    if(frame!=='mars'){const sb=makeMoon(frame);if(sb.settlementSolid&&sb.settlementSolid(x,y,z,.5))return false;}       // WORLD2: not on a settlement's buildings, pad or people
     if(frame!=='mars'){
       const info=makeMoon(frame).padInfo,rel={x:x-info.point.x,y:y-info.point.y,z:z-info.point.z};
       const east=rel.x*info.east.x+rel.y*info.east.y+rel.z*info.east.z,north=rel.x*info.north.x+rel.y*info.north.y+rel.z*info.north.z;
@@ -696,6 +698,7 @@ export class Authority {
         if(p.frameId!=='mars')d.tools=d.tools.map(t=>({...t,capacityKg:t.machine?t.capacityKg:Math.min(t.capacityKg,1054)}));
         d.canPlaceSpoil=(x,y,z)=>this.canPlaceSpoil(p.frameId,x,y,z);
         const r=a.type==='dig-edit'?d.dig():d.dump(!!a.all);if(!r.ok)return r;p.carried=d.carried;return r;}
+      case 'world2-sale':return worldSale(this,p,ship,sim,a);       // WORLD2
       case 'purchase':case 'sale':case 'regolith-sale':case 'quest-accept':case 'quest-step':{
         this.owner(p,this.state.ships[p.shipId]);const s=this.state.ships[p.shipId];
         if(a.type==='quest-step'){const q=QUESTS.find(q=>q.id===a.id);if(!q)throw Error('Unknown job.');this.near(p,{...q.target,y:0},q.target.radius);}

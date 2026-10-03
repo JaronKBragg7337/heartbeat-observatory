@@ -61,6 +61,7 @@ import { GroundDetail } from './world/groundDetail.js';      // ROUND7: pebbles,
 import { personVisible } from './crew/personVisibility.js';
 import { attachMoonPads } from './space/moonField.js';
 import { frameWorldIds } from './worlds/registry.js';
+import { registerWorld2Trade } from './worlds/ceres/soloTrade.js';       // WORLD2
 import { Cinema } from './cinema/cinema.js';
 import { VehicleSystem } from './vehicles/view.js';
 import { Opening } from './opening/opening.js';
@@ -776,7 +777,7 @@ function refreshHud() {
     hud.innerHTML =
       `<b>${moon.body.name}</b> · ${moon.body.padInfo.name}<br>` +
       `${Math.abs(ll.lat).toFixed(3)}° ${ll.lat >= 0 ? 'N' : 'S'}  ${Math.abs(ll.lon).toFixed(3)}° ${ll.lon >= 0 ? 'E' : 'W'}<br>` +
-      `<span class="dim">${walker.groundMaterialName()} · ${(moon.body.surfaceGravity * 1000).toFixed(2)} mm/s²${walker.grounded ? '' : ' · airborne (hop)'}</span>` +
+      `<span class="dim">${walker.groundMaterialName()} · ${moon.body.surfaceGravity > 0.5 ? moon.body.surfaceGravity.toFixed(2) + ' m/s²' : (moon.body.surfaceGravity * 1000).toFixed(2) + ' mm/s²'}${walker.grounded ? '' : (moon.body.surfaceGravity > 0.5 ? ' · airborne' : ' · airborne (hop)')}</span>` +
       (nr ? `<br><span class="dim">next sample site: ${nr.d >= 1000 ? (nr.d / 1000).toFixed(2) + ' km' : Math.round(nr.d) + ' m'}</span>` : '') +
       `<br><span class="load">${tool().carrier}: ${load.toFixed(1)} / ${tool().capacityKg.toFixed(0)} kg</span>` +
       `<div class="load-bar" role="progressbar" aria-label="Carried soil" aria-valuemin="0" aria-valuemax="${tool().capacityKg}" aria-valuenow="${load}"><i style="width:${Math.min(100, load / tool().capacityKg * 100)}%"></i></div>` +
@@ -1160,9 +1161,10 @@ window.addEventListener('keydown', (e) => {
 const space = new SpaceSystem({ engine, body, tier, sun, hemi: sky, ship, walker, digger, portSite, fogDensity: TERRAIN_FOG_DENSITY,
   setGround: (fn) => { activeGround = fn; }, marsGround, followEntries: [suitEntry] });
 
-worldBridge.space=space;
+worldBridge.space=space;space.peopleLib=people;       registerWorld2Trade(world,{space,walker,ship,bridge:worldBridge});       // WORLD2: the same Loft people library populates a world's settlement
 if(!world.remote){
   space.hooks.award=(credits,reason)=>world.dispatch({type:'space-award',credits,reason});
+  space.hooks.charge=(credits,reason)=>world.dispatch({type:'space-charge',credits,reason});       // WORLD2
   space.hooks.addCargo=(item,kg)=>world.dispatch({type:'space-cargo-add',item,kg});
   space.hooks.removeCargo=(item,kg)=>world.dispatch({type:'space-cargo-remove',item,kg});
   space.hooks.cargoKg=item=>world.state.economy.hold?.[item]||0;

@@ -6,6 +6,8 @@ Live: https://www.heartbeatobservatory.com/games/the-cosmos/
 Local: `node server.js` → http://localhost:8378/
 Validate: `node test/validate.mjs`
 
+**World 2 (Oct 3): Ceres, with Occator Works on it.** The first world beyond Mars's moons is a real dwarf planet: Ceres at Dawn's radius, mass and gravity (0.284 m/s2) and its real 9.07-hour day, a black sky and a Sun 0.19 degrees across, on its real orbit, with the Industrial Miners' station (Ironclad, bible v3) on the salt flats of Occator crater: a foundry, ore bins and a moving belt, a supply desk, a bunkhouse, the lane office, haul trucks, seven Loft people, a terraced open-pit mine (The Cut), rust-red ore seams and white sodium-carbonate salt you can dig. You get there across the Ore Lane: the nav computer plots Ceres, the drive flies to the lane mouth, the jump coils spool 20 cabin seconds, the fee is 120 credits, and the server owns every step. Ore and salt sell at the foundry or (better) the Marineris depot; the Occator supply desk pays about twice Mars's price for supplies. Greenhaven (the pair) is left to its own builder. See [the QA review](docs/qa/2026-10-03/world2/REVIEW.md). A world is data: `src/worlds/ceres/` (def, layout, outpost, people, trade, client); tests: `test/pkg-ceres.mjs`, `test/world2-trips.mjs` (both in validate).
+
 Before any publish: node test/phone-check.mjs must pass.
 
 **Worlds and ships are data (Oct 3, F1):** add a world by dropping `src/worlds/<name>/def.js`, a ship by dropping `src/ships/<name>/def.js` + `visuals.js`, then `node tools/gen-registry.mjs`; no shared file changes. Guides: [docs/ADD-A-WORLD.md](docs/ADD-A-WORLD.md), [docs/ADD-A-SHIP.md](docs/ADD-A-SHIP.md). Dev entry: `?dev=1&body=<world>`.
@@ -583,7 +585,7 @@ paid once; samples as real lots; stowing; the survey payout once; the salvage on
   where a rim blocks the sun. The sun's shadow map still only covers about 120 m round the camera, so a rim beyond that does not cast a
   live shadow. Deimos is still the smooth one.
 * **No persistence and no server:** a refresh puts you back at the port, the moons forget the holes (as Mars does).
-* The jobs' prices are mine and small; the economy owns the real ones. No second planet and no jump drive: Fortis, Greenhaven and Ironclad are listed and refused.
+* The jobs' prices are mine and small; the economy owns the real ones. No second planet and no jump drive: Fortis and Greenhaven are listed and refused; Ceres is the one world reached across the Ore Lane.
 * The cargo module of the distress call is a plated pod (seams, a dogged door, a broken stripe, scorch, skids, a blinking lamp). The sample beacons are staked instruments: a mast, a coring head, a latch, a lamp.
 * Ground view of Phobos at the pad is lit by one Sun at about 30 degrees: shadows are long; the Mars-lit side has only a faint ambient (no real Marsshine).
 

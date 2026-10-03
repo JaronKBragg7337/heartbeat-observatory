@@ -9,6 +9,7 @@ import { surfaceRadiusFast } from '../src/world/field.js';
 import { GunSystem, DroneSystem } from '../src/ship/guns.js';
 import { Stations } from '../src/ship/shipStations.js';
 import { BOUNTY_CREDITS, STANDOFF_M, landingOrder, stickWarpCap } from '../src/space/spaceSpec.js';
+import { JUMP, systemOfFrame, isLaneWorld } from '../src/space/jump.js';       // WORLD2
 import { CrewSystem } from '../src/crew/crewSystem.js';
 import { Autopilot } from '../src/crew/autopilot.js';
 import { CREW_POSTS } from '../src/crew/crewSpec.js';
@@ -45,7 +46,7 @@ export class ShipSimulation {
     this.guns=new GunSystem(this.flight,this.stations,(x,y,z)=>surfaceRadiusFast(this.body(),x,y,z),this.def);
     this.drones=new DroneSystem(this.flight,this.guns,(x,y,z)=>surfaceRadiusFast(this.body(),x,y,z));
     this.drones.onDown=()=>{record.economy.marks+=BOUNTY_CREDITS*4;};
-    this.ship.drones=this.drones;
+    this.ship.drones=this.drones;this.drones.safeFrame=isLaneWorld(this.frameId);
     this.portSite={...site,toWorld:(x,y,z)=>site.toWorld(record.pad.x+x,y,record.pad.z+z)};
     this.ship.space=this;
     this.crew=new CrewSystem({ship:this.ship,site,ground:this.ship.ground,onSay:()=>{}});this.crew.account=record.economy;
@@ -63,6 +64,7 @@ export class ShipSimulation {
       if(!pad||!Number.isFinite(pad.east)||!Number.isFinite(pad.north))return dest;
       const moon=dest.moon;
       dest.goalS=()=>{const b=makeMoon(moon),c=b.centre,s=b.playerPad(pad.east,pad.north).standoff(STANDOFF_M);return {x:c.x+s.x,y:c.y+s.y,z:c.z+s.z};};
+      dest.goalLocal=()=>{const s=makeMoon(moon).playerPad(pad.east,pad.north).standoff(STANDOFF_M);return {x:s.x,y:s.y,z:s.z};};     // WORLD2: in the world's own frame
       dest.name=`${dest.name} (pad ${pad.number})`;
       return dest;
     };
@@ -116,6 +118,14 @@ export class ShipSimulation {
   _shipS(){const c=this.frameId==='mars'?{x:0,y:0,z:0}:makeMoon(this.frameId).centre;return {x:this.flight.pos.x+c.x,y:this.flight.pos.y+c.y,z:this.flight.pos.z+c.z};}
   _gatePoint(p){return SpaceSystem.prototype._gatePoint.call(this,p);}
   destinations(){return [];}
+  /** WORLD2: the Ore Lane. The ship appears at `arrival` in the other system's root frame, at rest; the lane fee comes from the ship's own account. */
+  prepareWorld(){}
+  payLaneFee(credits){const marks=credits*4,e=this.record.economy;
+    if(e.marks<marks)return {ok:false,msg:`The lane office wants ${credits} credits and the account has ${Math.floor(e.marks/4)}. Holding at the lane mouth: earn it, then plot the course again.`};
+    e.marks-=marks;e.laneFees=(e.laneFees||0)+marks;return {ok:true};}
+  jumpTo(id,arrival){const f=this.flight;this.setFrame(id);
+    const d={x:arrival.x-f.pos.x,y:arrival.y-f.pos.y,z:arrival.z-f.pos.z};for(const k of ['x','y','z'])f.pos[k]+=d[k];
+    f.vel.x=f.vel.y=f.vel.z=0;this.drones.drones.length=0;this.drones.shots.length=0;this.guns.bolts.length=0;f.refreshOrientation();}
   syncCrew(){this.crew.time=this.record.economy.elapsedSeconds;this.crew.members.clear();
     for(const c of this.record.crew){const post=this.def.crewPosts.find(r=>r.id===c.role)||CREW_POSTS.find(r=>r.id===c.role);if(!post)continue;const def={...post,skill:c.skill};
       this.crew.members.set(c.id,{...c,def,status:'hired',seated:c.status==='aboard'&&!c.displaced,mode:c.status==='aboard'?'sit':c.status==='boarding'?'boarding':c.status.startsWith('leaving')?'leaving':'walk'});}
@@ -149,12 +159,13 @@ export class ShipSimulation {
     for(const k of ['x','y','z'])this.flight.pos[k]+=from[k]-to[k];
     for(const d of this.drones.drones)for(const p of [d.pos,d.anchor])for(const k of ['x','y','z'])p[k]+=from[k]-to[k];
     for(const b of [...this.guns.bolts,...this.drones.shots])for(const k of ['x','y','z']){b[k]+=from[k]-to[k];b['p'+k]+=from[k]-to[k];}
-    this.frameId=id;this.ship.body=this.flight.body=this.body();this.flight.refreshOrientation();
+    this.frameId=id;this.ship.body=this.flight.body=this.body();this.flight.refreshOrientation();this.drones.safeFrame=isLaneWorld(id);
   }
   engage(id) {
     if(this.trip?.active)throw Error('A course is already under way.');
     const dest=this.resolve(id);if(!dest?.goalS)throw Error('Destination is out of range.');
     if(this.flight.engineFactor<.3||this.flight.landed&&!this.flight.canLiftOff())throw Error('Route more power to engines.');
+    if((dest.kind==='moon'?systemOfFrame(dest.moon):'mars')!==systemOfFrame(this.frameId)&&this.record.economy.marks<JUMP.feeCredits*4)throw Error(`The Compact's lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.record.economy.marks/4)}. Earn it first.`);
     this.ff.suspend('The autopilot has the ship.');
     this.trip=new SpaceTrip(this,dest);const plan=this.trip._plan();if(!plan.ok){this.trip=null;throw Error(plan.msg);}
     this.crew.cancelOrder();
@@ -239,7 +250,7 @@ export class ShipSimulation {
     const t=this.trip;
     this.record.pose=flightRecord(this.flight);this.record.frameId=this.frameId;this.record.ff=this.ff.save();
     this.record.flightWarp=this.warp;this.record.flightEff=this.eff;
-    this.record.trip=t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon},phase:t.phase,t:t.t,warp:t.warp,eff:t.eff,planS:t.planS,settleT:t.settleT,cancelled:t.cancelled,
+    this.record.trip=t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon,sys:t.dest.sys},phase:t.phase,t:t.t,warp:t.warp,eff:t.eff,planS:t.planS,settleT:t.settleT,cancelled:t.cancelled,legs:t.legs?structuredClone(t.legs):null,leg:t.leg,spoolT:t.spoolT,
       progress:{...t.progress},said:[...t._said],attFrom:t._attFrom?.toArray()||null,transit:t.transit?structuredClone(t.transit):null}:null;
     this.record.state=this.ship.state;
     this.record.air={...this.ship.air};this.record.order=this.crew.activeOrder()||this.crew.pending?.o||null;

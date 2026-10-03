@@ -141,8 +141,12 @@ export class MultiplayerView {
     for(const line of s.messages||[])if(line.seq>(this.messageSeq||0)){this.ship.note(line.msg,line.warn);this.messageSeq=line.seq;}
     this.ship.voiceQuiet=false;
     const ids=new Set((m.bricks||[]).map(b=>b.bodyId));
-    for(const id of ids){const store=id==='mars'?this.edits:this.space.moonWorld(id).edits;
-      restoreTerrain(store,snapshot.terrain[id],(m.bricks||[]).filter(b=>b.bodyId===id));}
+    for(const id of ids){const bricks=(m.bricks||[]).filter(b=>b.bodyId===id);
+      // WORLD2: a world nobody here is in is not built just to hold someone else's holes: they wait and are applied the moment it is built
+      const w=id==='mars'?null:this.space.worlds.get(id),store=id==='mars'?this.edits:(w&&w.built?w.edits:null);
+      if(store)restoreTerrain(store,snapshot.terrain[id],bricks);
+      else{this.pendingTerrain=this.pendingTerrain||new Map();const old=this.pendingTerrain.get(id);this.pendingTerrain.set(id,{meta:snapshot.terrain[id],bricks:[...(old?old.bricks:[]).filter(o=>!bricks.some(n=>n.key===o.key)),...bricks]});
+        if(!this.space.onWorldBuilt)this.space.onWorldBuilt=(wid,ww)=>{const q=this.pendingTerrain&&this.pendingTerrain.get(wid);if(q){restoreTerrain(ww.edits,q.meta,q.bricks);this.pendingTerrain.delete(wid);}};}}
     for(const pad of snapshot.pads)this.addPad(pad);
     this.syncMoonPads();
     this.initialized=true;this.forcePlayer=false;this.reconcilePlayer=false;this.updateBodies(0);this.draw();
@@ -280,7 +284,7 @@ export class MultiplayerView {
       if(b.tag.visible){const fov=(this.engine.camera?.fov||60)*Math.PI/180,h=Math.min(.4,22*d*2*Math.tan(fov/2)/Math.max(300,innerHeight));b.tag.scale.set(h*8,h,1);}}
     const speed=b.last?Math.min(4,Math.hypot(pos.x-b.last.x,pos.y-b.last.y,pos.z-b.last.z)/Math.max(.1,dt)):0;
     if(pose==='Idle'&&speed>.3)pose='Walk';b.person.play(pose);b.person.update(dt,speed);Object.assign(b.entry.worldPos,pos);b.entry.quaternion.copy(q);b.last={...pos};b.frameId=frame;
-    b.entry.frame=frame==='mars'?this.engine.rootFrame:this.space.moonWorld(frame).frame;
+    {const w=frame==='mars'?null:this.space.worlds.get(frame);b.entry.frame=w&&w.built?w.frame:this.engine.rootFrame;}       // WORLD2: not built = not here = hidden
   }
   buildPanel(){this.button=document.createElement('button');this.button.id='multiplayer-button';this.button.textContent='World / crew';
     this.panel=document.createElement('div');this.panel.id='multiplayer-panel';

@@ -12,6 +12,7 @@
 // exactly at the foot of the lowered ramp, as the player does.
 // ============================================================================
 
+import { isLaneWorld } from '../space/jump.js';
 import * as THREE from 'three';
 import { personVisible } from './personVisibility.js';
 import { ATMOSPHERE_TOP_M } from '../space/spaceSpec.js';
@@ -226,6 +227,7 @@ export class CrewSystem {
   places() {
     const f = this.ship.flight, out = [];
     for (const p of PLACES) {
+      if (this.ship.space && this.ship.space.frameId !== 'mars' && isLaneWorld(this.ship.space.frameId)) break;           // WORLD2: Marineris's pads are not places on a far world
       const w = this._local(p.x, p.z), d = Math.hypot(w.x - f.pos.x, w.y - f.pos.y, w.z - f.pos.z);
       out.push({ id: p.id, name: p.name, distM: d, etaS: d / 36, ok: d <= MAX_TRIP_M, world: w, land: p.land, agl: p.agl });
     }

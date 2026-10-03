@@ -75,6 +75,7 @@ export class CrewUI {
     try {
       if (!personVisible(m.person)) return Infinity;
       const w = this.walker.worldPos;
+      if (m.worldDist) return m.worldDist(w);                       // WORLD2: a person at another world's settlement
       if (this.crew.members.get && this.crew.members.get(m.id) === m) { const p = this.crew.worldPosOf(m); return Math.hypot(p.x - w.x, p.y - w.y, p.z - w.z); }
       if (this.portPeople) { const l = this.portPeople.port.site.toLocal(w), g = m.person.group.position; return Math.hypot(l.x - g.x, l.y - g.y, l.z - g.z); }
     } catch { /* fall through */ }
@@ -96,7 +97,7 @@ export class CrewUI {
     this._accum += dt;
     if (this._accum < 0.2) return;
     this._accum = 0;
-    let near = this.crew.nearest(this.walker.worldPos) || (!this.ship.aboard && this.portPeople?.nearest(this.walker.worldPos));
+    let near = this.crew.nearest(this.walker.worldPos) || (!this.ship.aboard && (this.ship.space?.nearestWorker?.(this.walker.worldPos) || this.portPeople?.nearest(this.walker.worldPos)));       // WORLD2: workers of another world's settlement first
     // stay with the person the button is about while they are still close (up to 4.5 m, and not once someone else is clearly closer by 0.4 m), so walking past or a second person
     // nearby does not swap or drop the target under the thumb
     // an open conversation stays with the person you are talking to for as long as they are within reach (walking past someone else must not swap or close it)
@@ -153,7 +154,7 @@ export class CrewUI {
     let h = `<div class="hd"><img src="/homes/people/${m.personId}.jpg" alt=""><div><b>${esc(m.name)}</b><span>${esc(def.title)}${skill}</span></div><button class="cbtn x" data-a="close">✕</button></div>`;
     if (this.reply) h += `<div class="say">${esc(this.reply)}</div>`;
     if (m.status === 'worker') {
-      h += workerHTML(m,this.view,c.world?.state.economy||c.account);
+      h += m.talk ? m.talk(this.view, c.world?.state.economy||c.account) : workerHTML(m,this.view,c.world?.state.economy||c.account);       // WORLD2: m.talk draws a far world's worker panel
     } else if (m.status === 'candidate') {
       h += `<p>${esc(def.pitch)}</p><p class="stat">Works at ${Math.round(def.skill * 100)}% of a good hand: about ${thinkDelay(def.skill).toFixed(1)} s to react, and a little off in the aim. Stays aboard until you say otherwise.</p>`;
       const wage=WAGES[m.def.id],fee=wage*4,balance=(c.world?.state.economy||c.account).marks;
@@ -229,7 +230,7 @@ export class CrewUI {
     if (worlds.length) {
       h += `<p class="stat" style="margin:6px 0 2px">Other worlds (the main drive)</p>`;
       for (const p of worlds) h += `<button class="cbtn" data-a="goto" data-p="${p.id}" ${p.ok ? '' : 'disabled'}>${esc(p.name)}<small>${p.ok ? `${fmtD(p.distM)} · about ${fmtT(p.etaS)}` : esc(p.reason || 'not available')}</small></button>`;
-      h += `<p class="stat" style="margin:8px 0 2px">Here on Mars</p>`;
+      h += `<p class="stat" style="margin:8px 0 2px">Here on ${this.ship.space?.activeMoon?.body.name || 'Mars'}</p>`;       // WORLD2
     }
     for (const p of here) h += `<button class="cbtn" data-a="goto" data-p="${p.id}" ${p.ok ? '' : 'disabled'}>${esc(p.name)}<small>${fmtD(p.distM)}${p.ok ? '' : ': too far for now (cruise is 40 m/s)'}</small></button>`;
     h += `</div>`;
@@ -266,6 +267,8 @@ export class CrewUI {
       }
       case 'goto': r = await c.order('goto', { id: b.dataset.p }); if (r.ok) { this.view = 'main'; this.close(); return; } break;
       case 'report': this.reply = c.report(m); break;
+      case 'w2-sell-mars': r = await c.world?.dispatch({ type: 'world2-sale', kind: 'matter', item: b.dataset.item, where: 'marineris', tonnes: Number(b.dataset.t) }); if (r) this.reply = r.msg; break;       // WORLD2
+      default: if (m.act) { r = await m.act(a, b.dataset, this); if (r && r.msg) this.reply = r.msg; } break;       // WORLD2: a far world's worker's own buttons
       case 'warp': if (this.ship.space) this.ship.space.setWarp(Number(b.dataset.w)); break;                                      // SPACE-FIX
       case 'cancel-course': if (this.ship.space) { const q = this.ship.space.cancel(); if (!q.ok) this.reply = q.msg; } break;     // SPACE-FIX
     }

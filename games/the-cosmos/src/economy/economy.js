@@ -46,6 +46,12 @@ export function reduceEconomy(state, a) {
       if(!Number.isSafeInteger(marks)||marks<0)throw Error('Invalid space reward.');
       s.marks+=marks;break;
     }
+    case 'space-charge': {                                                    // WORLD2: the Ore Lane's fee, taken from the ship's account
+      const marks=a.credits*MARKS_PER_CREDIT;
+      if(!Number.isSafeInteger(marks)||marks<0)throw Error('Invalid fee.');
+      if(s.marks<marks)throw Error(`The fee is ${a.credits} credits and the account is short.`);
+      s.marks-=marks;break;
+    }
     case 'space-cargo-add':case 'space-cargo-remove': {
       if(typeof a.item!=='string'||!Number.isFinite(a.kg)||a.kg<0)throw Error('Invalid hold transfer.');
       s.hold=s.hold||{};const old=s.hold[a.item]||0;

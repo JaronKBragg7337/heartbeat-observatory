@@ -94,6 +94,8 @@ export function makeMoon(id) {
   // set `lump`, `lump2`, `lumpFreq`, `lump2Freq` in the def so the wavelengths are a good share of the radius.
   const LUMP = S.lump ?? 0.06, LUMP2 = S.lump2 ?? 0.016, LF = S.lumpFreq ?? 0.00016, LF2 = S.lump2Freq ?? 0.0006;
   const REGOLITH_M = pick(S, 'regolithDepthM', 50);
+  const CELLS_S = S.cells || CELLS;                                  // WORLD2: a larger body has larger crater cells (def.cells)
+  const depthRatio = S.depthRatio || (() => 0.16);                   // WORLD2: depth of a crater of diameter D (the Mars moons: 0.16 at every size; def.depthRatio)
   const centre = moonCentre(S);
   // body axes in world directions
   // where it sits as seen from Mars (its +X axis points at Mars: tidal lock): the parked shorthand's own longitude, or the one the orbit puts it at
@@ -104,7 +106,22 @@ export function makeMoon(id) {
   const ey = { x: ez.y * ex.z - ez.z * ex.y, y: ez.z * ex.x - ez.x * ex.z, z: ez.x * ex.y - ez.y * ex.x };
 
   const dirOf = (latDeg, lonDeg) => { const la = latDeg * DEG, lo = lonDeg * DEG; return [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)]; };
-  const feat = S.landmarks.map((l) => ({ ...l, d: dirOf(l.lat, l.lon) }));
+  // WORLD2: the pad's tangent frame from its DIRECTION alone (the field is radial, so the pad's up is its direction whatever the relief is):
+  // landmarks and seams of a world are placed in metres east / north of the pad, in the same convention the sample sites always used.
+  const padDir0 = dirOf(S.pad.lat, S.pad.lon);
+  const worldDir0 = (u, v, w) => { const x = u * ex.x + v * ey.x, y = w, z = u * ex.z + v * ey.z, l = Math.hypot(x, y, z) || 1; return { x: x / l, y: y / l, z: z / l }; };
+  const toBodyDir0 = (dx, dy, dz) => [dx * ex.x + dz * ex.z, dx * ey.x + dz * ey.z, dy];
+  const padUp0 = worldDir0(...padDir0);
+  const padEast0 = (() => { const l = Math.hypot(padUp0.x, padUp0.z) || 1; return { x: padUp0.z / l, y: 0, z: -padUp0.x / l }; })();
+  const padNorth0 = { x: padUp0.y * padEast0.z - padUp0.z * padEast0.y, y: padUp0.z * padEast0.x - padUp0.x * padEast0.z, z: padUp0.x * padEast0.y - padUp0.y * padEast0.x };
+  const offsetDir0 = (eastM, northM) => {
+    const ke = eastM / Rm, kn = northM / Rm;
+    const x = padUp0.x + padEast0.x * ke + padNorth0.x * kn, y = padUp0.y + padEast0.y * ke + padNorth0.y * kn, z = padUp0.z + padEast0.z * ke + padNorth0.z * kn;
+    return toBodyDir0(x, y, z).map((v) => v / (Math.hypot(...toBodyDir0(x, y, z)) || 1));
+  };
+  const feat = S.landmarks.map((l) => ({ ...l, d: l.eastM !== undefined ? offsetDir0(l.eastM, l.northM) : dirOf(l.lat, l.lon) }));
+  const faculaeDirs = (S.faculae || []).map((m) => ({ ...m, d: offsetDir0(m.eastM, m.northM) }));          // WORLD2: bright salt crust (Occator's faculae)
+  const seamDirs = (S.seams || []).map((m) => ({ ...m, d: offsetDir0(m.eastM, m.northM) }));          // WORLD2: exposed ore outcrops
   const AGAIN = 1 / (a * a), BGAIN = 1 / (b * b), CGAIN = 1 / (c * c);
 
   // grooves: planar troughs parallel to the long axis, as the observed ones run. Seeded, so the same every time.
@@ -135,16 +152,31 @@ export function makeMoon(id) {
       if (cosang < 0) continue;                                    // ROUND7: was 0.5 (60 degrees): Stickney's blanket was still 9 m thick there and ended in a 9 m cliff
       const s = Rm * Math.acos(Math.min(1, cosang));
       const t = s / f.radiusM, tQuarter = Rm * Math.PI / 2 / f.radiusM;
-      if (t < 1) { const q = 1 - t * t; h -= f.depthM * Math.pow(q, 1.15) * (t > 0.82 ? 1 : 1); }
+      if (t < 1) {
+        if (f.terraces) {
+          // WORLD2: an open-pit mine. Depth falls in `terraces` flat benches joined by wide ramps (a linear fall inward, so every bench
+          // is as wide as the next; `ramp` is the share of each bench that is ramp). The bench height is depthM / terraces.
+          const wob = fbm(px * 0.0007, py * 0.0007, pz * 0.0007, seed + 41, 2) * 0.03 * (1 - sstep(0.8, 1, t));     // the benches wander: a mine is not a set of rings
+          const n = f.terraces, z = (1 - Math.max(0, Math.min(1, t + wob))) * n, fl = Math.min(n - 1, Math.floor(z)), fr = z - fl, r0 = 1 - (f.ramp ?? 0.6);
+          const lin = Math.min(1, Math.max(0, (fr - r0) / (1 - r0))), sm = 0.62 * lin + 0.38 * lin * lin * (3 - 2 * lin);
+          h -= f.depthM * (fl + sm) / n;
+        } else if (f.flat) { h -= f.depthM * (1 - sstep(0.55, 1.0, t)); }       // WORLD2: a basin: a flat floor, then the wall
+        else { const q = 1 - t * t; h -= f.depthM * Math.pow(q, 1.15); }
+      }
       // The rim and the ejecta blanket fade in and out smoothly: they used to switch on at a fixed radius, and a switch is a cliff
       // (60 m round Stickney's rim, 49 m where its blanket starts, 3.7 m where it ends)
-      const rimH = f.depthM * 0.12;
+      const rimH = f.depthM * (f.rim ?? 0.12);
       h += rimH * Math.exp(-(((t - 1.02) / 0.2) ** 2));
-      if (t > 0.9 && t < 4.4) h += f.depthM * 0.035 / (t * t) * sstep(0.9, 1.5, t) * (1 - sstep(3, 4.4, t)) * (1 - sstep(0.55 * tQuarter, tQuarter, t));       // ejecta blanket, gone before the cut at 90 degrees
+      const ej = f.ejecta ?? 0.035;
+      if (ej > 0 && t > 0.9 && t < 4.4) h += f.depthM * ej / (t * t) * sstep(0.9, 1.5, t) * (1 - sstep(3, 4.4, t)) * (1 - sstep(0.55 * tQuarter, tQuarter, t));       // ejecta blanket, gone before the cut at 90 degrees
     }
+    // WORLD2: inside a mine the small craters are cleaned out (the benches and haul ramps are cut and graded, not cratered)
+    let pitW = 0;
+    for (let i = 0; i < feat.length; i++) { const f = feat[i]; if (!f.bare) continue; const ca = u * f.d[0] + v * f.d[1] + w * f.d[2]; if (ca < 0.99) continue; const tt = Rm * Math.acos(Math.min(1, ca)) / f.radiusM; pitW = Math.max(pitW, 1 - sstep(0.96, 1.12, tt)); }
+    const hPit0 = h;
     // craters at every scale
-    for (let k = 0; k < CELLS.length; k++) {
-      const s = CELLS[k] * CS;
+    for (let k = 0; k < CELLS_S.length; k++) {
+      const s = CELLS_S[k] * CS;
       const nc = nearCells(px, py, pz, s, 0.72);                   // 3 rc <= 0.72 cells: the reach of the rim and the ejecta
       for (let q = 0; q < nc; q++) {
         const ix = _cells[3 * q], iy = _cells[3 * q + 1], iz = _cells[3 * q + 2];
@@ -158,7 +190,7 @@ export function makeMoon(id) {
           const dx = px - cx, dy = py - cy, dz = pz - cz;
           const d2 = dx * dx + dy * dy + dz * dz;
           if (d2 > rc * rc * 9) continue;
-          const t = Math.sqrt(d2) / rc, D = 2 * rc * scale, dep = 0.16 * D;
+          const t = Math.sqrt(d2) / rc, D = 2 * rc * scale, dep = depthRatio(D) * D;
           if (t < 1) h -= dep * Math.pow(1 - t * t, 1.2);
           h += 0.04 * D * Math.exp(-(((t - 1.04) / 0.22) ** 2));
           // the ejecta tail dies away smoothly before the 3 rc cut (it used to stop at 0.0004 D: a step of a metre round the biggest bowls)
@@ -166,6 +198,7 @@ export function makeMoon(id) {
         }
       }
     }
+    if (pitW > 0) h = hPit0 + (h - hPit0) * (1 - pitW);
     // grooves
     for (let i = 0; i < grooves.length; i++) {
       const g = grooves[i];
@@ -313,9 +346,9 @@ export function makeMoon(id) {
   // Crater-on-crater shadow, as a darkening of the vertex colour. The sun's shadow map only covers the ground under the
   // camera, so a rim does not cast onto the next bowl. This walks the same craters the field uses and darkens the floor
   // on the up-sun side, where that rim blocks the sun. Nested bowls multiply. Grooves take a little dust-shadow too.
-  const sunW = sunDirection();
+  const sunW = S.sun ? worldDir0(...S.sun.body) : sunDirection();           // WORLD2: a world has its own star
   const sunB = toBodyDir(sunW.x, sunW.y, sunW.z);
-  const SHADE_CELLS = CELLS.filter((c) => c >= 64);
+  const SHADE_CELLS = CELLS_S.filter((c) => c >= 64);
   function shadeAt(px, py, pz, u, v, w) {
     const elev = u * sunB[0] + v * sunB[1] + w * sunB[2];
     let sx = sunB[0] - u * elev, sy = sunB[1] - v * elev, sz = sunB[2] - w * elev;
@@ -346,7 +379,7 @@ export function makeMoon(id) {
       for (let q = 0; q < nc; q++) {
         const ix = _cells[3 * q], iy = _cells[3 * q + 1], iz = _cells[3 * q + 2];
         for (let j = 0; j < 2; j++) {
-          const sd = seed + 101 * CELLS.indexOf(SHADE_CELLS[k]) + 37 * j;
+          const sd = seed + 101 * CELLS_S.indexOf(SHADE_CELLS[k]) + 37 * j;
           if (hash3(ix, iy, iz, sd + 3) > DENS) continue;
           const cx = (ix + 0.3 + 0.4 * hash3(ix, iy, iz, sd)) * s;
           const cy = (iy + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 1)) * s;
@@ -354,7 +387,7 @@ export function makeMoon(id) {
           const rc = s * (0.1 + 0.14 * hash3(ix, iy, iz, sd + 4));
           const dx = px - cx, dy = py - cy, dz = pz - cz;
           if (dx * dx + dy * dy + dz * dz > rc * rc * 4) continue;
-          addCrater(cx, cy, cz, rc, 0.16 * 2 * rc * scale);
+          addCrater(cx, cy, cz, rc, depthRatio(2 * rc * scale) * 2 * rc * scale);
         }
       }
     }
@@ -441,10 +474,11 @@ export function makeMoon(id) {
     if (cosp > 0.97) along = Rm * Math.acos(Math.min(1, cosp));
     for (let i = 0; i < ports.length; i++) { const q = ports[i], cq = u * q.d[0] + v * q.d[1] + w * q.d[2]; if (cq > 0.97) along = Math.min(along, Rm * Math.acos(Math.min(1, cq))); }       // no loose rock on a port
     let fade = 1, fadeStones = 1;
-    if (along < 58) fade = 0;
-    else if (along < 86) fade = sstep(58, 86, along);
-    if (along < 26) fadeStones = 0;                                    // the smallest stones come in close to the pad: a few ankle-high ones around the ship
-    else if (along < 44) fadeStones = sstep(26, 44, along);
+    const KR = S.rockKeep ? S.rockKeep.rocks : [58, 86], KS = S.rockKeep ? S.rockKeep.stones : [26, 44];     // WORLD2: a station keeps the rock further back
+    if (along < KR[0]) fade = 0;
+    else if (along < KR[1]) fade = sstep(KR[0], KR[1], along);
+    if (along < KS[0]) fadeStones = 0;                                 // the smallest stones come in close to the pad: a few ankle-high ones around the ship
+    else if (along < KS[1]) fadeStones = sstep(KS[0], KS[1], along);
     const pw = playerWeight(u, v, w);
     if (pw) { if (pw.flat) return 0; fade = Math.min(fade, 1 - pw.wt); fadeStones = Math.min(fadeStones, 1 - pw.wt); }
     let keepOff = 1;
@@ -461,6 +495,13 @@ export function makeMoon(id) {
     return h;
   }
 
+  // WORLD2: the settlement's footprint test (def.settlement = { depthM, solid(east, south) }): body-local point -> pad-local metres (x east, z south)
+  function settlementSolid(px, py, pz, margin = 0.3) {
+    if (!S.settlement || !padFrame) return false;
+    const dx = px - padPoint.x, dy = py - padPoint.y, dz = pz - padPoint.z;
+    const lx = dx * padEast.x + dy * padEast.y + dz * padEast.z, lz = -(dx * padNorth.x + dy * padNorth.y + dz * padNorth.z);
+    return Math.abs(lx) < 220 && Math.abs(lz) < 220 && S.settlement.solid(lx, lz, margin);
+  }
   const surfaceRadius = (dx, dy, dz) => { const q = toBodyDir(dx, dy, dz); return surfaceRadiusBody(q[0], q[1], q[2]); };
 
   const baseField = (px, py, pz) => {
@@ -471,12 +512,30 @@ export function makeMoon(id) {
   };
 
   const materialField = (px, py, pz) => {
+    const px0 = px, py0 = py, pz0 = pz;
     const r = Math.hypot(px, py, pz) || 1;
     const q = toBodyDir(px / r, py / r, pz / r);
     const depth = surfaceRadiusBody(q[0], q[1], q[2]) - r;
     const cosp = q[0] * padDir[0] + q[1] * padDir[1] + q[2] * padDir[2];
     const sp = cosp > 0.97 ? Rm * Math.acos(Math.min(1, cosp)) : 1e9;
-    const reg = REGOLITH_M * (0.55 + 0.45 * (0.5 + 0.5 * noise3(px * 0.004, py * 0.004, pz * 0.004, seed + 77)));
+    let reg = REGOLITH_M * (0.55 + 0.45 * (0.5 + 0.5 * noise3(px * 0.004, py * 0.004, pz * 0.004, seed + 77)));
+    if (M.salt && depth < 6) {
+      for (let i = 0; i < faculaeDirs.length; i++) { const fc = faculaeDirs[i]; const ca = q[0] * fc.d[0] + q[1] * fc.d[1] + q[2] * fc.d[2]; if (ca > 0.999 && Rm * Math.acos(Math.min(1, ca)) < fc.radiusM * (0.7 + 0.3 * noise3(px * 0.0012, py * 0.0012, pz * 0.0012, seed + 71))) return M.salt; }
+    }
+    if (M.ore) {
+      // WORLD2 (a mining world): bare rock inside a pit (`bare` landmarks), exposed ore at the seams, and ore veins in the rubble below
+      let bare = false;
+      for (let i = 0; i < feat.length; i++) { const f = feat[i]; if (!f.bare) continue; const ca = q[0] * f.d[0] + q[1] * f.d[1] + q[2] * f.d[2]; if (ca > 0.9 && Rm * Math.acos(Math.min(1, ca)) < f.radiusM * 1.04) { bare = true; break; } }
+      if (bare) reg = 0.5;
+      for (let i = 0; i < seamDirs.length; i++) { const sm = seamDirs[i]; const ca = q[0] * sm.d[0] + q[1] * sm.d[1] + q[2] * sm.d[2]; if (ca > 0.9999 && Rm * Math.acos(Math.min(1, ca)) < sm.radiusM * (0.72 + 0.28 * noise3(px * 0.05, py * 0.05, pz * 0.05, seed + 63))) return M.ore; }
+      if (depth >= reg || bare) {
+        const v = Math.abs(noise3(px * 0.0041, py * 0.0041, pz * 0.0041, seed + 55));       // a thin band where the noise crosses zero: a vein, some tens of metres long
+        const v2 = Math.abs(noise3(px * 0.0093 + 40, py * 0.0093, pz * 0.0093, seed + 57));
+        if ((bare || depth > 1.2) && (v < (bare ? 0.05 : 0.06) || v2 < (bare ? 0.032 : 0.04)) && noise3(px * 0.0016, py * 0.0016, pz * 0.0016, seed + 59) > -0.15) return M.ore;
+      }
+    }
+    // WORLD2: under the settlement's buildings and its pad the ground is engineered fill: a slab nothing digs through (as the Mars port's concrete is)
+    if (S.settlement && depth < S.settlement.depthM && settlementSolid(px0, py0, pz0, 0)) return MATERIALS.concrete;
     if (depth < reg) return M.regolith;
     if (depth > 2.2 && feat.length && M.clay) {
       const f = feat[0], cosang = q[0] * f.d[0] + q[1] * f.d[1] + q[2] * f.d[2];
@@ -501,12 +560,12 @@ export function makeMoon(id) {
   const padEast = (() => { const l = Math.hypot(padUp.x, padUp.z) || 1; return { x: padUp.z / l, y: 0, z: -padUp.x / l }; })();
   const padNorth = (() => { const u = padUp, e = padEast; return { x: u.y * e.z - u.z * e.y, y: u.z * e.x - u.x * e.z, z: u.x * e.y - u.y * e.x }; })();
   padFrame = { up: padUp, east: padEast, north: padNorth };
-  const SITES = [[170, 70], [640, 150], [1100, 20]];
+  const SITES = S.seams ? S.seams.map((m) => { const e = m.eastM, n = m.northM; return [Math.hypot(e, n), (Math.atan2(e, n) / DEG + 360) % 360]; }) : [[170, 70], [640, 150], [1100, 20]];
   const sampleSites = SITES.map(([dist, brg], i) => {
     const bb = brg * DEG, k = dist / Rm;
     const dx = padUp.x + (padEast.x * Math.sin(bb) + padNorth.x * Math.cos(bb)) * k, dy = padUp.y + (padEast.y * Math.sin(bb) + padNorth.y * Math.cos(bb)) * k, dz = padUp.z + (padEast.z * Math.sin(bb) + padNorth.z * Math.cos(bb)) * k;
     const l = Math.hypot(dx, dy, dz), p = surfaceDirPoint(dx / l, dy / l, dz / l);
-    return { id: `S${i + 1}`, distM: dist, bearingDeg: brg, point: p };
+    return { id: S.seams ? S.seams[i].id : `S${i + 1}`, distM: dist, bearingDeg: brg, point: p, radiusM: S.seams ? S.seams[i].radiusM : undefined };
   });
 
   if (S.derelict) {
@@ -526,7 +585,7 @@ export function makeMoon(id) {
   const LOOK = S.look || {}, LK = LOOK.k || [1, 0.12, 0.08], LR = LOOK.red || [0, 0.2, 0.2];            // albedo units (def.look)
   const g0 = moonSurfaceGravity(S);
   const body = {
-    id: S.id, name: S.name, designation: S.designation, kind: 'moon', parentId: 'mars',
+    id: S.id, name: S.name, designation: S.designation, kind: 'moon', parentId: S.region ? 'sun' : 'mars',
     radiusMean: Rm, radiusEquatorial: Rm, radiusPolar: Rm,      // the sphere the lat/lon grid and the walker use; the real shape is baseField
     axes: S.axes, mass: S.massKg, surfaceGravity: g0, escapeVelocity: Math.sqrt(2 * G_CONST * S.massKg / Rm),
     siderealRotationPeriod: (S.rotation && S.rotation.periodS) || S.orbitPeriodS, obliquityDeg: (S.rotation && S.rotation.axialTiltDeg) || 0,
@@ -536,7 +595,10 @@ export function makeMoon(id) {
     terrain: { seed, reliefMax: 4200, reliefMin: -2400, localRelief: 700, crustThickness: Rm * 0.95 },
     // lat/lon here are in the world-aligned grid geodesy.js uses (so the nav screens place them); `bodyLon` is the moon's own
     // longitude, measured from the sub-Mars meridian, which is the one the HUD and the real maps use
-    landmarks: S.landmarks.map((l) => ({ ...l, bodyLon: l.lon, lon: ((l.lon + LON_S + 180 + 540) % 360) - 180, elevation: 0, verified: 'table' })),
+    landmarks: feat.map((l) => {
+      const lat = l.eastM !== undefined ? Math.asin(Math.max(-1, Math.min(1, l.d[2]))) / DEG : l.lat, lon0 = l.eastM !== undefined ? Math.atan2(l.d[1], l.d[0]) / DEG : l.lon;
+      return { id: l.id, name: l.name, note: l.note, radiusM: l.radiusM, depthM: l.depthM, lat, bodyLon: lon0, lon: ((lon0 + LON_S + 180 + 540) % 360) - 180, elevation: 0, verified: S.measured === false ? 'invented' : 'table' };
+    }),
     sources: S.sources || [{ field: 'everything', url: '', verified: 'invented', note: `${S.name} is a game world: its numbers are the world's own and not measured (state each source in the def's \`sources\`).` }],
     centre,                       // where its centre is in Mars's frame
     spec: S,
@@ -569,6 +631,8 @@ export function makeMoon(id) {
     axesWorld: { ex, ey, ez },
     /** The world-aligned unit vector toward the Sun (the patches cast shadows along it). */
     sunDir: sunW,
+    /** WORLD2: is this body-local point on a settlement's buildings, pad or people (def.settlement)? `margin` metres of room. Used by the spoil guards. */
+    settlementSolid: (x, y, z, margin = 0.3) => settlementSolid(x, y, z, margin),
     toBodyDir, fromBody,
     /**
      * Albedo variation at a world-aligned point: out.k a brightness multiplier (about 0.7..1.35), out.red -1..1 (negative = bluer unit).
@@ -585,7 +649,7 @@ export function makeMoon(id) {
       const f = feat[0];
       if (f) {
         const cosang = q[0] * f.d[0] + q[1] * f.d[1] + q[2] * f.d[2];
-        if (cosang > 0.2) {
+        if (cosang > 0.2 && !S.albedo) {
           const t = Rm * Math.acos(Math.min(1, cosang)) / f.radiusM;
           if (LOOK.ejecta) { const e = Math.exp(-(((t - LOOK.ejecta.centre) / LOOK.ejecta.width) ** 2)); k *= 1 + LOOK.ejecta.k * e; red -= LOOK.ejecta.red * e; }       // Phobos: the blue, bright ejecta blanket
           else if (LOOK.rim && t < LOOK.rim.edge) k *= 1 + LOOK.rim.k * Math.exp(-(((t - 1) / LOOK.rim.width) ** 2));                                          // Deimos: a bright rim on Voltaire
@@ -621,5 +685,6 @@ export function makeMoon(id) {
 
 // A world's materials: names of entries in field.js's MATERIALS, or material objects (the registry has already appended those).
 const matOf = (m) => (typeof m === 'string' ? MATERIALS[m] : m);
-const materialsOf = (S) => ({ regolith: matOf(S.materials.regolith), rubble: matOf(S.materials.rubble), clay: S.materials.clay ? matOf(S.materials.clay) : null });
+const materialsOf = (S) => ({ regolith: matOf(S.materials.regolith), rubble: matOf(S.materials.rubble), clay: S.materials.clay ? matOf(S.materials.clay) : null,
+  ore: S.materials.ore ? matOf(S.materials.ore) : null, salt: S.materials.salt ? matOf(S.materials.salt) : null });       // WORLD2: ore veins and bright salt crust
 import { MATERIALS } from '../world/field.js';
