@@ -215,11 +215,12 @@ export class Walker {
     const jumpEff = gEff > gMag ? Math.min(this.jumpSpeed, Math.sqrt(2 * gEff * 1.3)) : this.jumpSpeed;
     let vRad = vDotG + gEff * dt;              // positive = falling inward
     // moons-fix: nothing the legs do may throw you up faster than a hop (a ramp's slope, a bump, a step off a ledge)
-    if (gEff > gMag && vRad < -jumpEff * 1.25) vRad = -jumpEff * 1.25;
+    if (!this.grounded && gEff > gMag && vRad < -jumpEff * 1.25) vRad = -jumpEff * 1.25;
 
     if (this.grounded && input.jump) {
       vRad = -jumpEff;
       this.grounded = false;
+      this._hopT = 0.15;                         // moons-fix: for this long after a deliberate hop the ground may not snap the feet back
     }
 
     v.x = vTanX + gx * vRad;
@@ -246,7 +247,12 @@ export class Walker {
 
     // (Rising away from the ground at more than 2 cm/s is a jump, not a bump to stay on: on a small moon a jump leaves the
     // ground at well under the 4 cm a frame the snap reaches, and would otherwise be glued back every frame.)
-    const rising = !this.grounded && vRad < -0.02;
+    // moons-fix: ...and only for a moment after a deliberate hop. Walking up a moon's slope also carries an upward speed (the velocity is slid along
+    // the slope, again every frame), and with the old rule (any upward speed over 2 cm/s) that kept the walker "airborne" for as long as it
+    // climbed: the HUD said "airborne (hop)", the feet never took the ground back, and the sluggish air control read as drifting away
+    // (Jaron, Phobos, 10/3). A hop is 20+ cm up within 0.15 s, so the grace is all a hop needs to get clear of the 4 cm snap.
+    if (this._hopT > 0) this._hopT -= dt;
+    const rising = this._hopT > 0 && !this.grounded && vRad < -0.02;
     if (ground && !rising && ground.distance >= -this.stepM && ground.distance <= snapReach) {
       // Land: rest a hair ABOVE the surface, not exactly on it. Sitting on the
       // zero crossing puts density at ~0, where float noise can read negative

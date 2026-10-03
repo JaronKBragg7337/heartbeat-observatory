@@ -160,6 +160,18 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
       return out;
     };
     const standDm = (w, e, n) => { const pi = dm.padInfo, x = pi.point.x + pi.east.x * e + pi.north.x * n, y = pi.point.y + pi.east.y * e + pi.north.y * n, z = pi.point.z + pi.east.z * e + pi.north.z * n, l = len({ x, y, z }), R = FIELD.surfaceRadiusFast(dm, x / l, y / l, z / l); w.worldPos = { x: x / l * (R + 0.02), y: y / l * (R + 0.02), z: z / l * (R + 0.02) }; w.velocity = { x: 0, y: 0, z: 0 }; w.grounded = false; };
+    // the phone run: the drawn ground sits a few cm above the field and the legs carry an upward speed up a slope. Only a deliberate hop may count as "rising".
+    {
+      const w = new Walker(ph); w.jumpSpeed = 0.6; standOn(w, 30, 10); for (let i = 0; i < 90; i++) w.tick(1 / 60, {});
+      w.groundSampler = (dx, dy, dz) => FIELD.surfaceRadiusFast(ph, dx, dy, dz) + 0.05 - 0.04 * Math.sin(dx * 4000);
+      const r = len(w.worldPos), up = { x: w.worldPos.x / r, y: w.worldPos.y / r, z: w.worldPos.z / r };
+      w.grounded = false; w.velocity = { x: up.x * 0.7, y: up.y * 0.7, z: up.z * 0.7 };         // sliding up a slope, not hopping
+      let tLand = null, air = 0, n = 0; for (let i = 0; i < 60 * 20; i++) { w.yaw = 0.6; w.tick(1 / 60, { moveNorth: 1, run: true }); if (w.grounded && tLand === null) tLand = i / 60; if (tLand !== null) { n++; if (!w.grounded) air++; } }
+      check(`Phobos: walking up a slope with the drawn ground a hand above the feet takes the ground back at once (landed after ${tLand === null ? 'never' : tLand.toFixed(2) + ' s'}, airborne ${(100 * air / Math.max(1, n)).toFixed(1)}% of the walk), not "airborne (hop)" for ever`, tLand !== null && tLand < 0.5 && air / Math.max(1, n) < 0.05, `${tLand} ${air}/${n}`);
+      w.groundSampler = null; for (let i = 0; i < 90 && !w.grounded; i++) w.tick(1 / 60, {}); w.velocity = { x: 0, y: 0, z: 0 }; for (let i = 0; i < 30; i++) w.tick(1 / 60, {});
+      w.tick(1 / 60, { jump: true }); let hopAir = 0; for (let i = 0; i < 60 * 3; i++) { w.tick(1 / 60, {}); if (!w.grounded) hopAir++; }
+      check('and a deliberate hop still leaves the ground for a while (a quarter of a second at least) before it comes back', hopAir / 60 > 0.25 && hopAir / 60 < 2.9, `${(hopAir / 60).toFixed(2)} s`);
+    }
     for (const [name, body, fn] of [['Phobos', ph, standOn], ['Deimos', dm, standDm]]) {
       const o = sink(body, fn);
       check(`${name}: the game's own walker settles, a deliberate hop stays under 2.5 m and is back on the ground in under 8 s (apex ${o.hopApex.toFixed(2)} m, ${o.hopT.toFixed(1)} s)`, o.settled && o.hopGrounded && o.hopApex < 2.5 && o.hopApex > 0.3 && o.hopT < 8, JSON.stringify(o));
