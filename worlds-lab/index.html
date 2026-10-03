@@ -30,6 +30,11 @@
       .kit b { color:var(--text); display:block; margin-bottom:2px; }
       footer { margin-top:44px; font-size:13px; color:var(--muted); border-top:1px solid var(--border); padding-top:18px; }
       footer a { color:var(--accent); }
+      @media (max-width:560px) {
+        .back, footer a { display:inline-flex; align-items:center; min-height:44px; }
+        .card .status { font-size:12px; }
+        .kit { font-size:14px; }
+      }
       .back { display:inline-block; margin:18px 0 0; color:var(--accent); text-decoration:none; font-weight:600; font-size:14px; }
     </style>
   <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
