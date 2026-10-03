@@ -5,17 +5,17 @@
 // Talk to crew, the speed bar, LIFT, SINK, Stand and Controls stacked on each other. Now the modules still own WHAT each button does
 // and WHEN it shows; this file owns WHERE. On touch devices (or a window narrower than 520px) matching buttons are moved into:
 //   #dock-right  (column, bottom up)  the thing you do now: action / tool / drop / climb / talk-to-crew / deliver / fire / sink / lift
-//   #dock-left   (column, bottom up)  Controls, World / crew, Hold to talk
+//   #dock-left   (column, bottom up)  Controls, World / crew, the market stall button, Hold to talk
 //   #dock-bottom (its own row)        the flight speed bar
 // Showing and hiding stays with the modules (display), so a hidden button takes no room.
 
 export const DOCKS = {
   right: ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb', '#crew-talk', '#quest-deliver', '#btn-fire', '#btn-sink', '#btn-lift'],
-  left: ['#key-controls', '#multiplayer-button', '#voice-talk'],
+  left: ['#key-controls', '#multiplayer-button', '#shop-button', '#voice-talk'],
   bottom: ['#flight-speed'],
 };
 // A panel that opens over the screen is a modal: the dock steps aside while it is open.
-const MODALS = ['#multiplayer-panel:not([hidden])', '#crew-panel', '#account-panel', '#space-sheet', '#settings-panel.open'];
+const MODALS = ['#multiplayer-panel:not([hidden])', '#crew-panel', '#account-panel', '#space-sheet', '#settings-panel.open', '#shop-panel'];
 
 const CSS = `
 #phone-ui{position:fixed;inset:0;z-index:68;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end;
