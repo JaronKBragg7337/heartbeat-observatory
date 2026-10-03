@@ -37,7 +37,7 @@ async function record(scope, step, fn) {
   try { await fn(); rows.push({ scope, step, result: 'PASS' }); }
   catch (e) { rows.push({ scope, step, result: 'FAIL', detail: String(e.message || e).replace(/[\r\n]+/g, ' ') }); }
 }
-for (const target of targets) for (const spec of devices) {
+for (const target of targets) for (const spec of devices.filter(d => !process.env.PHONE_ONLY || d.name.includes(process.env.PHONE_ONLY))) {
   const scope = `${target.name}/${spec.name}`;
   let browser, context, page;
   try {
@@ -46,7 +46,7 @@ for (const target of targets) for (const spec of devices) {
     browser = await spec.engine.launch({ headless: true, executablePath });
     context = await browser.newContext(spec.device);
     page = await context.newPage();
-    page.on('pageerror', e => rows.push({ scope, step: 'page error', result: 'FAIL', detail: String(e) }));
+    page.on('pageerror', e => rows.push({ scope, step: 'page error', result: 'FAIL', detail: String(e) + ' @ ' + String(e.stack || '').split(/\r?\n/).slice(0, 4).join(' | ') }));
     const base = target.url;
     const shot = async label => page.screenshot({ path: join(out, `${target.name}-${spec.name}-${label}.png`), fullPage: false });
     await record(scope, 'load page', async () => {
@@ -243,6 +243,45 @@ for (const target of targets) for (const spec of devices) {
         assert.ok(hidden, `${w}x${h}: buttons stayed visible under the open Controls pad`); await page.evaluate(() => document.querySelector('#btn-key-controls').click());
       }
       await page.setViewportSize(vp); await showOnly([]);
+    });
+    // FREEFLIGHT: manual flight anywhere on a phone. The player sits in the pilot seat of a ship in orbit (a harness puts her there: solo has no authority
+    // to refuse it), then every control is a real touch: the bar's buttons are tapped, THRUST is a held finger, and nothing may overlap in any phone shape.
+    await record(scope, 'FREEFLIGHT: real taps on the free-flight bar, a held THRUST burns the drive, the stick turns the ship, no overlaps in four viewports', async () => {
+      // a fresh page that skips the opening (the opening has had its own steps above): the flight deck, not the port, is what this step is about
+      await page.goto(base + '&opening=off&tier=low', { waitUntil: 'domcontentloaded', timeout: 90000 });
+      await page.waitForFunction(() => window.cosmos?.engine?.frameCount >= 2, null, { timeout: 90000 }); await page.waitForTimeout(800);
+      await page.evaluate(() => { cosmos.engine.stop();
+        const sh = cosmos.ship, d = sh.def.dock; if (!sh.aboard) sh.boardAt(d.boardSw.x, d.boardSw.y, d.boardSw.z, 0); if (!sh.seat) sh.takeSeat('pilot');
+        const f = sh.flight, R = 3389500 + 400000, vc = Math.sqrt(6.6743e-11 * 6.417e23 / R);
+        f.pos.x = R; f.pos.y = 0; f.pos.z = 0; f.vel.x = 0; f.vel.y = 0; f.vel.z = -vc; f.landed = false; f.airborne = true; f.autoHover = false; cosmos.step(0); });
+      await step(1);
+      assert.equal(await page.evaluate(() => cosmos.ship.seat?.id), 'pilot', 'the harness could not seat the pilot');
+      await shot('freeflight-seated');
+      assert.equal(await page.locator('#ff-bar').isVisible(), true, 'the free-flight bar is not on screen at the pilot seat: ' + JSON.stringify(await page.evaluate(() => { const b = document.getElementById('ff-bar'), c = getComputedStyle(b), r = b.getBoundingClientRect(); return { hidden: b.hidden, display: c.display, vis: c.visibility, rect: [r.x, r.y, r.width, r.height], parent: b.parentElement.id, modal: document.getElementById('phone-ui')?.className, panels: ['#multiplayer-panel:not([hidden])', '#crew-panel', '#account-panel', '#space-sheet', '#settings-panel.open', '#shop-panel'].map((q) => { const e = document.querySelector(q); return [q, e ? getComputedStyle(e).display : null]; }), seat: cosmos.ship.seat?.id, aboard: cosmos.ship.aboard, trip: !!cosmos.space.trip }; })));
+      await realTap('#ff-bar [data-a=toggle]'); await step(1);
+      assert.deepEqual(await page.evaluate(() => [cosmos.space.ff.enabled, cosmos.space.ff.active]), [true, true], 'tapping FREE FLIGHT above the air should take the ship');
+      assert.deepEqual(await page.evaluate(() => ['btn-lift', 'btn-sink'].map(i => document.getElementById(i).textContent)), ['THRUST ▲', 'BRAKE ▼']);
+      await realTap('#ff-bar [data-a=assist]'); await realTap('#ff-bar [data-a=target]'); await step(1);
+      assert.deepEqual(await page.evaluate(() => [cosmos.space.ff.assist, cosmos.space.ff.target]), ['prograde', 'deimos'], 'real taps on ASSIST and TARGET did not register');
+      await step(8);
+      const press = (sel, type, id) => page.evaluate(({ sel, type, id }) => document.querySelector(sel).dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true })), { sel, type, id });
+      const v0 = await page.evaluate(() => cosmos.ship.flight.speed); await press('#btn-lift', 'pointerdown', 81); await step(3);
+      const v1 = await page.evaluate(() => cosmos.ship.flight.speed); await press('#btn-lift', 'pointerup', 81); await step(1);
+      assert.ok(v1 - v0 > 20, `a held THRUST should burn the drive (${v0} -> ${v1})`);
+      const fuel = await page.evaluate(() => cosmos.space.ff.fuel); assert.ok(fuel < 0.999, 'the burn cost no fuel');
+      await realTap('#ff-bar [data-a=assist]'); await realTap('#ff-bar [data-a=assist]'); await realTap('#ff-bar [data-a=assist]'); await step(1);
+      assert.equal(await page.evaluate(() => cosmos.space.ff.assist), 'off');
+      const nose = () => page.evaluate(() => { const q = cosmos.ship.flight.attitude || cosmos.ship.flight.quaternion; return [-2 * (q.x * q.z + q.w * q.y), -2 * (q.y * q.z - q.w * q.x), -(1 - 2 * (q.x * q.x + q.y * q.y))]; });
+      const n0 = await nose(); await holdThumb(); await step(2); await releaseThumb(); await step(3); const n1 = await nose();
+      const turned = Math.acos(Math.max(-1, Math.min(1, n0[0] * n1[0] + n0[1] * n1[1] + n0[2] * n1[2]))); assert.ok(turned > 0.1, 'the held thumb did not turn the ship (' + turned + ' rad)');
+      await shot('freeflight-orbit');
+      const vp = spec.device.viewport, sizes = [[vp.width, vp.height], [375, 667], [vp.height, vp.width], [667, 375]];
+      for (const [w, h] of sizes) {
+        await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(350); await step(1);
+        await noOverlap(`free flight ${w}x${h}`, 9); await shot(`freeflight-${w}x${h}`);
+      }
+      await page.setViewportSize(vp); await step(1);
+      await page.evaluate(() => { cosmos.space.ff.suspend(); });
     });
   } catch (e) { rows.push({ scope, step: 'harness', result: 'FAIL', detail: String(e.stack || e).split('\n')[0] }); }
   finally { await context?.close().catch(()=>{}); await browser?.close().catch(()=>{}); }

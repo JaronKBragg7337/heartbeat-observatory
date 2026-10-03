@@ -67,6 +67,8 @@ first/third person, `G` toggles the debug layer.
 **Space.** Seated at navigation, pilot, captain or comms: tap **Course** (desktop `N`) to plot a course to Mars orbit, Phobos or Deimos; on a moon
 the action button offers **Take core sample**, **Salvage** and **Stow** where they apply. See "Space travel".
 
+**Free flight.** Seated at the pilot or captain seat, the **FREE FLIGHT** bar is on screen. Switch it on and climb above the air (100 km over Mars, 3 km over a moon): the ship is yours. Left thumb turns her (**RCS** makes it slide her instead), **THRUST** is held, **BRAKE** is held and turns her retrograde and burns the speed away, **ASSIST** points the nose at prograde / retrograde / the target for you, **TARGET** cycles Phobos / Deimos / Mars, **THR** is the throttle, **x5 ... x500** is time compression. Desktop: `W/S` pitch, `A/D` turn, `Q/E` roll, `Space` thrust, `C` brake, `J L I K U O` the jets. See "Free flight".
+
 **Digging.** Look where you want to cut and tap the action button (`E`) to dig; hold it to put loads down (`Q` drops one).
 **Drop all** (`R`) pours everything you carry as one heap on clear ground. Underground it tries your current floor, then clear ground by the connected hole mouth. The small
 chip above the button (or `1` `2` `3`, or Settings) changes tool: hand spade, shovel, excavator bucket. The amber ring is
@@ -570,8 +572,7 @@ paid once; samples as real lots; stowing; the survey payout once; the salvage on
 * **Verified in a desktop Chromium on software rendering (SwiftShader), at 1280x720, 750x470 and 390x844, on the phone tier
   (`?tier=low`) and the high tier, not on a phone.** Frame rate, heat, memory and GPU cost of the star dome (about 4 hash evaluations a
   pixel plus noise in the Milky Way band) and of the atmosphere shell are unmeasured on a real device.
-* **No orbital mechanics.** The ship hovers at any height under its own thrust (the flight assist always did); transit is a commanded
-  flip and burn, not a Kepler orbit. The moons do not move. Mars does not rotate.
+* **No orbital mechanics in a course.** A course is a commanded flip and burn, not a Kepler orbit (free flight, below, is: real gravity, coasting, a tank). The moons do not move. Mars does not rotate.
 * **Mars's pull is ignored in transit; the drive's thrust is the Meridian's own number** (fictional). Distances, sizes, masses and gravity are real.
 * **Cosmetic:** a faint dotted outline can show where the 8 km tier meets the whole-moon shell when you look down from a few km. Phobos
   carries loose rock in the density field off the pad (mounds, boulders, stones), and crater floors are darkened in the vertex colour
@@ -581,6 +582,63 @@ paid once; samples as real lots; stowing; the survey payout once; the salvage on
 * The jobs' prices are mine and small; the economy owns the real ones. No second planet and no jump drive: Fortis, Greenhaven and Ironclad are listed and refused.
 * The cargo module of the distress call is a plated pod (seams, a dogged door, a broken stripe, scorch, skids, a blinking lamp). The sample beacons are staked instruments: a mast, a coring head, a latch, a lamp.
 * Ground view of Phobos at the pad is lit by one Sun at about 30 degrees: shadows are long; the Mars-lit side has only a faint ambient (no real Marsshine).
+
+## Free flight (2026-10-03)
+
+*Jaron: "That's a must. So many people will want to see they can fly wherever however whenever."* Between worlds you used to pick a
+destination and the autopilot flew a fixed course. Now you can fly her yourself, anywhere, and the courses are still there as an option.
+Branch `cosmos-freeflight`; marked `FREEFLIGHT` where it touches a shared file. Review: [docs/qa/2026-10-03/freeflight/REVIEW.md](docs/qa/2026-10-03/freeflight/REVIEW.md).
+
+### What you can do
+
+| You do | What happens |
+|---|---|
+| Sit at the pilot or captain seat, tap **FREE FLIGHT** | Armed. Fly up by the stick (the climb cap is lifted to 40 m/s low down, then up to 1.5 km/s once clear of the ground; **x5-x60** compress it by the same height bands as a course). At 100 km over Mars (or 3.1 km over a moon) free flight takes the ship. |
+| Hold **THRUST** | The main drive burns along the nose at the throttle (**THR** 25 / 50 / 100%): 13 m/s2, fictional, the Meridian's own number. It costs fuel. |
+| Left thumb | Turns her: up/down pitch, left/right yaw (the jets change the turn rate at 1.6 rad/s2, to at most 0.6 rad/s; let go and she stops turning). **RCS** switches the thumb to slide her sideways and up/down (1.2 m/s2 a side) and THRUST/BRAKE to forward/back. |
+| **ASSIST** | Off, **prograde**, **retro**, **target**: the jets point the nose for you (and keep it there). |
+| Hold **BRAKE** | Turns her retrograde and burns the speed away, easing off so it never overshoots zero. The flip-and-burn in one finger. |
+| **TARGET**, **x1 x5 x20 x60 x500** | The marker, distance, closing speed and ETA follow the target. The compression runs the physics faster while you coast; a burn is held to x20, anything you steer by hand to x1; it also drops by itself near a body, on a collision course (it works out how long a turn-over and a burn would take, adds half as long again, and leaves you eight real seconds), near a raider (20 km) or near another ship (5 km). |
+| Fall toward a moon | Within 400 km of one, Mars's pull is cancelled at the moon (see below), so a ship that matches it stays with it. Under 2.5 km (higher if she is coming in fast, up to 12 km) the flight assist takes her: the ordinary lift-pod flight that hovers, slides and settles on her four legs **anywhere**. Ground too uneven for the legs to level on: she hovers a few metres up and says so; slide to flatter ground. |
+| Land and take off again | LIFT from a moon's surface, armed, and above 3.1 km free flight takes her again. Mars: LIFT to 100 km, or fall back through the air (below). |
+| A course from the nav sheet | Free flight lets go and switches itself off; the autopilot flies as before (a course costs no fuel). |
+
+The HUD (a phone fits it: four lines of read-outs, a sky overlay, one bar): speed, height over the nearest body and whether you are falling or rising, the
+**orbit** (periapsis, apoapsis, period, round Mars, or round a moon inside its patch), the target's distance / closing speed / ETA, **fuel and delta-v**. The
+overlay draws the **nose**, **prograde** and **retrograde** markers, the **target marker** (an arrow at the edge of the sky when it is off screen) and the **predicted
+path** (dashed; it ends in "IMPACT Mars in 12 min" if it hits). LIFT and SINK read **THRUST** and **BRAKE** while she is yours.
+
+### The physics (`src/space/freeflight.js`; the numbers are `FREE` in `spaceSpec.js`)
+
+* **Gravity:** Mars (a point mass, G M = 4.28e13), Phobos and Deimos (point masses from their real masses: 5.6 and 3.0 mm/s2 at their surfaces) pull on the ship every
+  sub-step; kick-drift-kick integration with a step of a fiftieth of the local dynamical time, at most 5 s, and a quarter of the time left to the ground. A circular
+  400 km orbit holds its energy to 2e-9 over four orbits at x500, and its period is 2 pi sqrt(a^3/mu) (118.0 min). The Hohmann burn to Phobos's distance costs the vis-viva delta-v (650 m/s).
+* **The moons are parked** (this build's frame does not spin, so the moons do not orbit: `spaceSpec.js` says why), so a ship at rest beside one would fall away from it
+  at Mars's 0.49 m/s2. **Inside 400 km of a moon, Mars's pull at the moon's centre is cancelled** (fading to nothing by 500 km): the ship rides with the moon as she would if the
+  moon were carried along its orbit. What is left is the moon's own pull and Mars's tide (the real thing: a few mm/s2 at tens of km, so a ship at rest 300 km out drifts away slowly; inside
+  Phobos's 17 km Hill sphere she is bound). This is a stated fudge, not a hidden one.
+* **Fuel:** a tank of delta-v (12 km/s), burned at acceleration x time; the jets burn a hundredth as hard. Not a mass: she does not get lighter. **Refuel on your pad at the port**
+  (landed within 60 m of it: 2% of a tank a second, free: a price is an economy decision this build does not make). A course costs no fuel. Dry: only the attitude jets work.
+* **Mars's air** (exponential, 0.020 kg/m3 at the surface, 11.1 km scale height) below 100 km: **deployable drag brakes** (ballistic coefficient 40 kg/m2) bring a ship down from orbit
+  speed (a 157 m/s deorbit burn from 400 km peaks at about 4.8 g and is through the air in about 10 minutes); above 6 g the hull suffers. The drive will not light in the air (the DRIVE rule). Under 10 km and slower than
+  300 m/s the flight assist takes her. No heat model. A ship that is too fast when the assist takes her hits the ground and the hull pays.
+* **Multiplayer: the authority owns the pose.** The browser sends *intent* (a stick: thrust 0..1, six axes -1..1, a brake flag) on the same one-second lease as the old stick, from the pilot or captain only;
+  `ff-set` (on/off, assist, target, throttle, compression) is checked and bridge-only. `server/simulation.mjs` runs the same `FreeFlight` the browser does; nothing a client sends can place the ship.
+  Other players are sent her pose, attitude and `ff` state; `MotionBuffer` is told the compression so a x500 ship is drawn without lag. Crew aboard ride in her ship-local frame, as always.
+  A saved ship keeps flying where she was: a restart advances her along her orbit (at x500, because nobody is flying her).
+* **Performance:** 24 ships in free flight cost the server 1.6-1.8 ms a tick (`test/perf-freeflight.mjs`); the overlay costs the phone about a millisecond a frame
+  (`cosmos.space.ffUI.stat` in `?dev=1`).
+
+```
+src/space/freeflight.js      the physics, the assists, fuel, handovers, compression, read-outs, predicted path (pure)
+src/space/freeflightUI.js    the bar, the sky overlay, the text lines
+test/freeflight-checks.mjs   sections 60-61 of the validator; test/_freeflight-only.mjs runs just those (30 s)
+test/freeflight-browser.mjs  a WebKit iPhone and a Chromium client against one authority: real taps, held thumb, a landing and a take-off on Phobos, the other client sees her
+test/perf-freeflight.mjs     the server's cost
+```
+
+Not done / not verified: no heat model; the air is a drag law, not a flight model (steering in the air is by the jets only); moon pads are not refuel points; fuel is not
+priced; a ship cannot be refuelled by another ship; the tide near the edge of a moon's patch is approximate (a non-rotating frame); real iPhone Safari and an Android phone were not available (WebKit and Chromium emulation only).
 
 ## The fleet (2026-10-01)
 

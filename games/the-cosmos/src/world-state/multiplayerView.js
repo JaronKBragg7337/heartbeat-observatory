@@ -36,7 +36,7 @@ export class MultiplayerView {
   sendPose(){const p=this.world.snapshot.players[this.world.playerId];const pose=playerPose(this.walker,this.ship);
     // Seat/boarding transitions require an action; pose packets only describe predicted movement.
     pose.aboard=!!p.aboardShipId;pose.seat=p.pose.seat;
-    this.world.sendPose(pose,this.ship.flight.controls,this.vehicles?.controlPacket?.()||null);}
+    this.world.sendPose(pose,this.ship.flight.controls,this.vehicles?.controlPacket?.()||null,this.space.ff.active?{...this.space.ff.input}:null);}   // FREEFLIGHT: the free-flight stick rides the same lease
   request(a){this.sendPose();return this.world.request(a).then(r=>{if(r.ok&&r.msg&&r.msg!=='Saved to the shared world.')this.ship.note(r.msg);if(!r.ok)this.reconcilePlayer=true;return r;});}
   installControls(){const ship=this.ship,space=this.space;
     const outside=ship._outsideFrame.bind(ship);
@@ -71,6 +71,7 @@ export class MultiplayerView {
     space.engage=id=>{this.request({type:'engage',destination:id});return {ok:true,msg:'Course requested.'};};
     space.cancel=()=>{this.request({type:'cancel-trip'});return {ok:true,msg:'Cancellation requested.'};};
     space.setWarp=warp=>{this.request({type:'trip-warp',warp});};space.tripControls=()=>null;
+    space.ffCommand=o=>{this.request({type:'ff-set',...o});return {ok:true};};   // FREEFLIGHT: the authority decides
     space.stickWarp=()=>1; // Compression is stepped by the authority, never twice.
     ship.stations.powerSplit=(engines,guns,shields)=>{this.request({type:'power-split',engines,guns,shields});return true;};
     ship.cycleAirlock=()=>{this.request({type:'airlock'});return true;};
@@ -104,6 +105,7 @@ export class MultiplayerView {
     this.lastFrame=p.frameId;this.lastShipId=s.id;this.lastAboard=p.aboardShipId;this.lastSeat=p.pose.seat;
     Object.assign(f.pos,this.shipPose(s).pos);Object.assign(f.vel,s.pose.vel);Object.assign(f.power,s.pose.power);
     for(const k of ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd'])if(s.pose[k]!==undefined)f[k]=s.pose[k];
+    this.space.ff.applyRemote(s.ff);   // FREEFLIGHT: mirror the authority's free-flight state (the physics runs there)
     f.attitude=s.pose.attitude?new THREE.Quaternion().fromArray(s.pose.attitude):null;s.pose.legs?.forEach((leg,i)=>Object.assign(f.legs[i],leg));
     f.quaternion.fromArray(this.shipPose(s).quaternion);f.refreshOrientation();f.quaternion.fromArray(this.shipPose(s).quaternion);
     for(const [key,v] of Object.entries(s.state))if(this.ship.state[key])Object.assign(this.ship.state[key],v);
@@ -147,7 +149,7 @@ export class MultiplayerView {
 
   recordMotion(m){
     const now=performance.now(),time=m.serverAt??this.world.serverAt??now;
-    for(const s of Object.values(this.world.snapshot.ships))this.motion.push('ship:'+s.id,time,now,{...s.pose},s.frameId);
+    for(const s of Object.values(this.world.snapshot.ships))this.motion.push('ship:'+s.id,time,now,{...s.pose,warp:s.flightEff||1},s.frameId);
     for(const p of Object.values(this.world.snapshot.players)) {
       const aboard=!!p.aboardShipId;
       const v=aboard?p.pose.sw.velocity:p.pose.velocity,vel=Object.fromEntries(['x','y','z'].map(k=>[k,Math.max(-12,Math.min(12,Number(v?.[k])||0))]));

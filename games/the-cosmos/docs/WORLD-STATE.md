@@ -94,6 +94,20 @@ Every action is one authority transaction on a copy of the state, rolled back wh
 
 Not done: stalls on the moon pads, player-to-player ship trade, selling vehicles, delivery of goods to a buyer who is not at the port, any tax or fee besides rent, and hold capacity counted in volume rather than kilograms.
 
+## Free flight (October 3)
+
+**The ship is a body in space.** `src/space/freeflight.js` (pure, shared by the browser and the authority) flies a ship in Mars's frame under Mars, Phobos and Deimos, with the main drive, RCS jets, a tank of delta-v, Mars's air, assists (prograde, retrograde, target, brake) and time compression up to x500. It takes the ship above 100 km (Mars) or 3.1 km (a moon) when the owner has switched it on, and hands her to the ordinary flight assist (lift pods, gear, landing anywhere) below 10 km over Mars or about 2.5 km over a moon. Courses and crew pilot orders still exist: either one switches free flight off.
+
+| State | Scope and authority |
+| --- | --- |
+| Pose, velocity, attitude, fuel, assist, target, compression, throttle, `enabled` / `active` (`ship.ff`, with `pose` and `frameId`) | One per ship; **server**. Saved with the ship (`record.ff`) and restored on restart; a restart advances an active ship along her orbit at x500 |
+| The pilot's free-flight stick (`ff`: thrust 0..1, brake, pitch, yaw, roll, tx, ty, tz) | Per pilot; intent only, clamped to -1..1 / 0..1, a one-second lease like `controls`; taken only from the pilot or captain seat |
+| `ff-set` (enabled, assist, target, warp, throttle) | Action; bridge seats only; validated (`warp` in 1, 5, 20, 60, 500; assist and target from fixed lists); refused during a course |
+| Compression in force (`ff.eff`), refuel | Server. Held to x1 by input, near a body, closing on one, near a raider (20 km) or another ship (5 km); a burn is held to x20. Refuel: landed within 60 m of the ship's own Mars pad, 2% of a tank a second |
+
+No client input places the ship: there is no teleport and no pose message for a ship; the browser only sends the stick. Raiders cannot keep up at free-flight speeds (they are suspended above 300 m/s, as in a transit). A ship that reaches the ground too fast is handed to the flight assist and the hull pays. Cost: 24 ships in free flight take 1.6-1.8 ms of the 33 ms tick.
+
+
 ## Limits and evidence
 
 A survey rover drives on the density field under Mars and the moons' real gravity. It does not roll off a drop: if the ground more than about six metres below the wheels is missing, it stops. Offline solo uses the same drive and keeps a hold rover for the session; a solo purchase is not written into the solo save. The shared world is the one that owns rovers.

@@ -677,6 +677,10 @@ await runVoiceBrowserChecks({ check, section });
 const { runCargoChecks } = await import('./cargo-checks.mjs');
 await runCargoChecks({ check, section, THREE, mars, FIELD });
 
+// 60-61. Free flight: orbits, the jets and the drive, fuel, compression, landing anywhere, and the authority owning the pose.
+const { runFreeflightChecks } = await import('./freeflight-checks.mjs');
+await runFreeflightChecks({ check, section, THREE, mars });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));

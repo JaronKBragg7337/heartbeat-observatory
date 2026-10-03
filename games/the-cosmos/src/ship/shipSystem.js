@@ -693,6 +693,7 @@ export class ShipSystem {
     // A person in the pilot's or captain's chair flies by hand. Otherwise, if the crew have an order and an NPC pilot at the
     // controls, THEY fly it. The player's hands always win: touch the stick and the order is cancelled ("You have the controls").
     const seat = this.seat;
+    if (this.space && this.space.ff && !(seat && (seat.id === 'captain' || seat.id === 'pilot'))) this.space.ff.setInput(null);   // FREEFLIGHT: no stale stick once you stand
     // The nav computer's course (src/space/): lifts off, climbs out, flies the drive, comes down. It writes the same three numbers a
     // stick would; in transit it moves the ship itself (flight.override) and the stick does nothing.
     const tripCtl = this.space ? this.space.tripControls(dt) : null;
@@ -701,7 +702,14 @@ export class ShipSystem {
       const k = inp.keys;
       const lift = clamp((k && k.has('Space') ? 1 : 0) - (k && (k.has('KeyC') || k.has('ControlLeft')) ? 1 : 0) + this.uiLift, -1, 1);
       const stick = Math.abs(inp.moveNorth || 0) > 0.05 || Math.abs(inp.moveEast || 0) > 0.05 || lift !== 0;
-      if (this.space && this.space.driving) {
+      const ffa = this.space && this.space.ff;
+      if (ffa && ffa.active) {
+        // FREEFLIGHT: the stick is the jets and the drive (src/space/freeflight.js). The same three numbers stay zero: the lift-pod flight is not flying.
+        f.controls.fwd = 0; f.controls.lift = 0; f.controls.yaw = 0;
+        ffa.setInput(this._ffStick(inp, lift));
+        if (crewCtl && (stick || this.uiLift)) this.crew && this.crew.cancelOrder && this.crew.cancelOrder('You have the controls.');
+      }
+      else if (this.space && this.space.driving) {
         // the drive has the ship: the stick is locked (Cancel course on the nav sheet)
         if (stick && this.time - (this._driveWarn || -9) > 6) { this._driveWarn = this.time; this.note('The drive has the ship. Cancel the course on the nav sheet to take the controls.', true); }
       }
@@ -716,8 +724,10 @@ export class ShipSystem {
         else this.stations.fly({ fwd: inp.moveNorth, yaw: inp.moveEast, lift });
       }
     } else if (crewCtl) {
+      if (this.space && this.space.ff) this.space.ff.setInput(null);
       f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw;
     } else if (!seat) {
+      if (this.space && this.space.ff) this.space.ff.setInput(null);
       // nobody flying: the flight computer hovers
       f.controls.fwd = 0; f.controls.lift = 0; f.controls.yaw = 0;
     }
@@ -732,7 +742,15 @@ export class ShipSystem {
     applyCinemaFlight(f, this.cinemaFlight);
     // space-fix: a climb or a landing under a course may be run faster than the clock. The flight model still sub-steps whatever it is
     // handed at 1/120 s, so every contact, spring and landing check is run exactly; the cap near the ground lives in spaceSpec.stickWarpCap.
-    const flightDt = this.space ? Math.min(dt * this.space.stickWarp(dt), 1.0) : dt;
+    let flightDt = this.space ? Math.min(dt * this.space.stickWarp(dt), 1.0) : dt;
+    // FREEFLIGHT: it decides how fast time runs while it has the ship (or while an armed ship climbs to it), and steps her whole slice at once: its own
+    // integrator sub-steps. The shared world's authority does all of this, so a browser that mirrors it (remoteAuthority) never steps the ship.
+    const ffs = this.space && this.space.ff;
+    if (ffs && !this.remoteAuthority) {
+      const tripOn = this.space.trip && this.space.trip.active;
+      const e = ffs.preStep(dt);
+      if (!tripOn && (ffs.active || ffs.enabled)) { this.space.eff = e; flightDt = ffs.active ? dt * e : Math.min(dt * e, 1.0); }
+    }
     if (!this.remoteAuthority) f.step(Math.max(dt, flightDt));
     for (const ev of f.events) {
       if (ev.type === 'liftoff') this.note('Lift-off.');
@@ -786,6 +804,14 @@ export class ShipSystem {
     this._updateVisuals(dt, false);
     this._windowClipFrame();
     return owns;
+  }
+
+  /** FREEFLIGHT: what the thumbs and keys mean in free flight. Left stick: turn (or slide with RCS on). THRUST and BRAKE are the LIFT and SINK buttons / Space and C. */
+  _ffStick(inp, lift) {
+    const k = inp.keys, key = (c) => (k && k.has(c) ? 1 : 0), sx = clamp(inp.moveEast || 0, -1, 1), sy = clamp(inp.moveNorth || 0, -1, 1);
+    const roll = key('KeyE') - key('KeyQ');
+    if (this.ffRcs) return { thr: 0, brake: false, pitch: 0, yaw: 0, roll, tx: sx || (key('KeyL') - key('KeyJ')), ty: sy || (key('KeyI') - key('KeyK')), tz: lift };
+    return { thr: lift > 0 ? 1 : 0, brake: lift < 0, pitch: sy, yaw: -sx, roll, tx: key('KeyL') - key('KeyJ'), ty: key('KeyU') - key('KeyO'), tz: 0 };
   }
 
   _personFrame(dt, inp) {
@@ -1447,14 +1473,15 @@ export class ShipSystem {
     const where = seat ? seat.name : `${this.def.deckName(this.sw.y)} · ${this._roomName()}`;
     const neutral = !this.drones || this.drones.neutral;
     const cruising = this.drones && this.drones.suspended;
-    const air = f.landed ? '' : cruising ? `<br><span class="dim">Cruise: raiders cannot follow a ship at this speed</span>` : neutral
+    const air = f.landed || (this.space && this.space.ff && this.space.ff.active) /* FREEFLIGHT: its own lines say it */ ? '' : cruising ? `<br><span class="dim">Cruise: raiders cannot follow a ship at this speed</span>` : neutral
       ? `<br><span class="dim">Mars neutral airspace · hostile beyond ${NEUTRAL_AIRSPACE_M} m</span>`
       : `<br><span class="load">HOSTILE SPACE · outside ${this.space && this.space.onMoon ? '' : 'Mars '}neutral airspace</span>`;
     const sp = this.space ? this.space.hudLines() : '';
     const high = f.agl > 20000, fmt = (m) => (m >= 1e5 ? `${(m / 1000).toFixed(0)} km` : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m.toFixed(0)} m`);
-    const alt = f.landed ? 'landed' : `${fmt(f.agl)} up · ${high ? `${(f.speed / 1000).toFixed(2)} km/s` : `${f.groundSpeed.toFixed(0)} m/s`}`;
+    const ffOn = this.space && this.space.ff && this.space.ff.active;   // FREEFLIGHT: the speed and height are in the free-flight lines
+    const alt = ffOn ? '' : f.landed ? 'landed' : `${fmt(f.agl)} up · ${high ? `${(f.speed / 1000).toFixed(2)} km/s` : `${f.groundSpeed.toFixed(0)} m/s`}`;
     return `<b>${this.def.hudName}</b> · ${where}<br>` +
-      `<span class="dim">${alt} · deck plating 1.00 g</span>${air}${sp ? '<br>' + sp : ''}`;
+      `<span class="dim">${alt ? alt + ' · ' : ''}deck plating 1.00 g</span>${air}${sp ? '<br>' + sp : ''}`;
   }
 
   _roomName() {

@@ -14,6 +14,8 @@ import { Autopilot } from '../src/crew/autopilot.js';
 import { CREW_POSTS } from '../src/crew/crewSpec.js';
 import { ShipSystem } from '../src/ship/shipSystem.js';
 import { shipDef } from '../src/ships/registry.js';
+import { FreeFlight } from '../src/space/freeflight.js';   // FREEFLIGHT
+import { FREE } from '../src/space/spaceSpec.js';
 
 export const flightFields = ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd'];
 export function flightRecord(f) {
@@ -74,6 +76,15 @@ export class ShipSimulation {
     if(!record.state&&record.pad){const hinge=this.flight.toWorld(ramp.hinge,{}),r=Math.hypot(hinge.x,hinge.y,hinge.z),ground=surfaceRadiusFast(this.body(),hinge.x/r,hinge.y/r,hinge.z/r);
       Object.assign(this.ship.state.ramps.cargo,{lowered:true,progress:1,angle:Math.asin(Math.max(.05,Math.min(.9,(r-ground)/ramp.length)))});}
     this.trip=null;
+    // FREEFLIGHT: manual flight anywhere (src/space/freeflight.js). The authority owns it: inputs are clamped intents, the physics is this file's.
+    this.allSims=()=>[];
+    const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+    this.ff=new FreeFlight({flight:this.flight,mars,frameId:()=>this.frameId,setFrame:id=>this.setFrame(id),say:(m,w)=>this.ship.note(m,w),drones:this.drones,
+      cancelOrders:()=>this.crew.cancelOrder(),tripActive:()=>!!this.trip?.active,
+      atPad:()=>this.frameId==='mars'&&dist(this.flight.pos,this.portSite.toWorld(0,0,0))<60,
+      hostileNear:()=>{for(const o of this.allSims())if(o!==this&&o.record.npc&&o.frameId===this.frameId&&o.flight.hull>0&&dist(o.flight.pos,this.flight.pos)<FREE.raiderNearM)return true;return false;},
+      shipNear:()=>{for(const o of this.allSims())if(o!==this&&!o.record.npc&&!o.flight.landed&&o.frameId===this.frameId&&dist(o.flight.pos,this.flight.pos)<FREE.shipNearM)return true;return false;}});
+    if(record.ff)this.ff.load(record.ff);
     if(!record.state){Object.assign(this.ship.rampCtl.cargo,{progress:1,target:1,angle:this.ship.state.ramps.cargo.angle});}
     // FLEET: the three drones that used to arrive around a ship are a raider's escorts now (src/ships/raider/escorts.js).
     // The authority does not spawn them on a player's ship. Solo still does, from def.features.personalDrones (shipSystem.js).
@@ -125,6 +136,7 @@ export class ShipSimulation {
   crewOrder(p,a){if(p.aboardShipId!==this.record.id)throw Error('Come aboard first.');
     this.syncCrew();this.ship.aboard=true;
     const args=a.args||{},key=this.orderKey(a.order,args);
+    if(a.order!=='hold')this.ff.suspend('The pilot has the ship.');   // FREEFLIGHT
     if(this._sameOrder(a.order,args,key))return {ok:true,same:true,msg:'Already on that order.'};
     const result=this.crew.order(a.order,args);if(!result.ok)throw Error(result.msg);
     this.record.orderKey=key;return result;
@@ -143,17 +155,19 @@ export class ShipSimulation {
     if(this.trip?.active)throw Error('A course is already under way.');
     const dest=this.resolve(id);if(!dest?.goalS)throw Error('Destination is out of range.');
     if(this.flight.engineFactor<.3||this.flight.landed&&!this.flight.canLiftOff())throw Error('Route more power to engines.');
+    this.ff.suspend('The autopilot has the ship.');
     this.trip=new SpaceTrip(this,dest);const plan=this.trip._plan();if(!plan.ok){this.trip=null;throw Error(plan.msg);}
     this.crew.cancelOrder();
     for(const [key,r] of Object.entries(this.ship.state.ramps)){r.lowered=false;r.target=0;this.ship.rampCtl[key].target=0;}
     return {ok:true,msg:'Course set for '+dest.name+'.'};
   }
-  step(dt,controls={}) {
+  step(dt,controls={},ffInput=null,o={}) {
     // FLEET: a raider is flown by the fleet director. One with no hull left still steps, so it hangs where it is instead of falling.
     if(this.record.npc){this.flight.controls=controls;this.flight.step(dt);this.guns.update(dt);this.drones.update(dt);return;}
-    if(this.flight.hull<=0){this.flight.controls={fwd:0,lift:0,yaw:0};this.flight.power.engines=0;this.flight.autoHover=false;this.trip=null;this.flight.override=null;}
+    if(this.flight.hull<=0){this.ff.suspend('The hull is gone.');this.flight.controls={fwd:0,lift:0,yaw:0};this.flight.power.engines=0;this.flight.autoHover=false;this.trip=null;this.flight.override=null;}
     else {this.syncCrew();
-      const manual=Object.values(controls).some(v=>Math.abs(v)>.05);
+      const ffManual=!!ffInput&&this.ff.active&&Object.entries(ffInput).some(([k,v])=>k==='brake'?!!v:Math.abs(+v)>.05);   // FREEFLIGHT
+      const manual=Object.values(controls).some(v=>Math.abs(v)>.05)||ffManual;
       // A hand on the stick ends an escort. The escort is the ship's own autopilot (escortAp), not a crew order:
       // a ship with nobody in the pilot's seat would have pilotControls cancel a crew order on the next tick.
       if(manual&&this.record.escort){this.record.escort=null;this.escortAp=null;}
@@ -167,8 +181,12 @@ export class ShipSimulation {
       this.flight.controls.lift=0;if(!this.ship._rampOccupied('cargo'))this.ship.rampCtl.cargo.target=0;
       if(this.ship.state.airlock.outerOpen&&this.ship.air.phase==='idle')this.ship.cycleAirlock();
     }
-    this.eff=this.trip?.active?this.trip.stickWarp(dt):landingOrder(this.crew.activeOrder())?stickWarpCap(this.warp,this.flight.agl,this.flight.verticalSpeed,dt):1;
+    // FREEFLIGHT: free flight takes the ship above the air, hands her back low and slow; it sets how fast time runs while it has her.
+    this.ff.setInput(this.ff.active?ffInput:null);
+    const ffEff=this.ff.preStep(dt,{catchUp:!!o.catchUp});
+    this.eff=this.trip?.active?this.trip.stickWarp(dt):(this.ff.active||this.ff.enabled)?ffEff:landingOrder(this.crew.activeOrder())?stickWarpCap(this.warp,this.flight.agl,this.flight.verticalSpeed,dt):1;
     if(this.restCoarse){const fdt=Math.min(dt,1/30);this.flight.step(fdt);this.flight.updateShields(dt-fdt);} // a settled hull on its pad: one short physics step is the same answer as sixty, the rest of the time only recharges shields
+    else if(this.ff.active)this.flight.step(dt*this.eff);
     else this.flight.step(Math.max(dt,Math.min(dt*this.eff,1)));
     if(this.trip&&!this.trip.active){this.trip=null;this.flight.override=null;this.flight.climbCap=12;this.flight.thrustDown=false;}
     for(const [key,c] of Object.entries(this.ship.rampCtl)){const speed=key==='cargo'?1/6:1/5;
@@ -219,7 +237,7 @@ export class ShipSimulation {
 
   capture() {
     const t=this.trip;
-    this.record.pose=flightRecord(this.flight);this.record.frameId=this.frameId;
+    this.record.pose=flightRecord(this.flight);this.record.frameId=this.frameId;this.record.ff=this.ff.save();
     this.record.flightWarp=this.warp;this.record.flightEff=this.eff;
     this.record.trip=t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon},phase:t.phase,t:t.t,warp:t.warp,eff:t.eff,planS:t.planS,settleT:t.settleT,cancelled:t.cancelled,
       progress:{...t.progress},said:[...t._said],attFrom:t._attFrom?.toArray()||null,transit:t.transit?structuredClone(t.transit):null}:null;

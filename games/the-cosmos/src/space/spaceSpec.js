@@ -179,3 +179,33 @@ export function stickWarpCap(requested, aglM, vsMs, dtReal) {
   return Math.min(best, requested);
 }
 export function landingOrder(order) {return order?.type==='return'||order?.type==='land'||order?.type==='goto'&&!!order.land;}
+
+// ---------------------------------------------------------------------------
+// FREEFLIGHT (October 3): manual flight anywhere. The numbers; the physics is in freeflight.js.
+// ---------------------------------------------------------------------------
+export const FREE = {
+  /** Time compression offered while coasting. Any burn, RCS or turning input drops it to x1. */
+  warps: [1, 5, 20, 60, 500],
+  /** Delta-v of a full tank, m/s. The drive's thrust is the Meridian's own fictional number; the tank is sized so a surface-to-Phobos trip is a fraction of it. */
+  dvFullMs: 12_000,
+  /** Reaction-control jets, m/s2 on each axis (they burn the same tank, one hundredth as hard per second as the main drive). */
+  rcsAccel: 1.2,
+  /** Hull turn rate under the stick, rad/s (pitch, yaw, roll) and how fast the jets can change it, rad/s2. */
+  rot: { pitch: 0.6, yaw: 0.6, roll: 0.9 }, rotAccel: 1.6,
+  /** Mars's air: density at the surface and scale height (real: about 0.020 kg/m3, 11.1 km). The deployable drag brakes: ballistic coefficient, kg/m2. */
+  rho0: 0.020, scaleHeightM: 11_100, ballisticKgM2: 40,
+  /** Aerodynamic deceleration above this, m/s2, hurts the hull. */
+  maxDecel: 60,
+  /** Below this height over Mars the stick flight (lift pods) takes over from free flight, if the ship is slower than `handoverMs`. */
+  marsHandoverM: 10_000, handoverMs: 300,
+  /** Above a moon: the flight assist takes over under this height (or higher if the ship is coming in fast: see freeflight.js). */
+  moonHandoverM: 2_500,
+  /** Inside this distance of a moon the ship rides with it (Mars's pull is cancelled at the moon's centre, fading out over the next quarter again: see freeflight.js). */
+  patchM: 400_000,
+  /** Refuel at a pad, fraction of a tank per second. */
+  refuelPerS: 0.02,
+  /** A raider closer than this, or another ship closer than `shipNearM`, holds the compression at x1. */
+  raiderNearM: 20_000, shipNearM: 5_000,
+  /** Relative speed under which free flight may be switched off again (the flight assist can hold a ship this slow). */
+  releaseMs: 150,
+};

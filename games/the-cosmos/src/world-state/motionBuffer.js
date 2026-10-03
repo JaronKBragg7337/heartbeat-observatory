@@ -19,7 +19,7 @@ export class MotionBuffer {
     let list = this.samples.get(id);
     // A delayed packet from the old ship/frame must not discard newer history.
     if (list?.length && time < list.at(-1).time) return;
-    if (!list || list.at(-1).frame !== frame || Math.hypot(...axes.map(k=>pose.pos[k]-list.at(-1).pose.pos[k])) > 1000) {this.samples.set(id, list=[]);this.display.delete(id);}
+    if (!list || list.at(-1).frame !== frame || Math.hypot(...axes.map(k=>pose.pos[k]-list.at(-1).pose.pos[k])) > Math.max(1000, Math.hypot(pose.vel?.x || 0, pose.vel?.y || 0, pose.vel?.z || 0) * (pose.warp || 1) * 0.6)/* FREEFLIGHT: a compressed ship legitimately jumps far between packets */) {this.samples.set(id, list=[]);this.display.delete(id);}
     if (list.length && time === list.at(-1).time) {list.at(-1).pose=copyPose(pose);return;}
     list.push({ time, frame, pose: copyPose(pose) });
     while (list.length > 32) list.shift();
@@ -47,7 +47,7 @@ export class MotionBuffer {
     if(last){const dt=Math.max(0,(now-last.now)/1000),distance=Math.hypot(...axes.map(k=>pose.pos[k]-last.pose.pos[k]));
       // Bound catch-up after a bunched packet. Ordinary interpolation remains
       // exact; only a discontinuity spends several frames settling its error.
-      const speed=Math.hypot(...axes.map(k=>pose.vel?.[k]||0)),limit=Math.max(.08,speed*dt*1.5),t=distance>8&&speed<12?1:Math.min(1,limit/Math.max(distance,.0001));
+      const speed=Math.hypot(...axes.map(k=>pose.vel?.[k]||0))*(pose.warp||1)/* FREEFLIGHT: a compressed ship covers its ground faster than its speed says */,limit=Math.max(.08,speed*dt*1.5),t=distance>8&&speed<12?1:Math.min(1,limit/Math.max(distance,.0001));
       if(dt===0)return copyPose(last.pose);
       for(const k of axes)pose.pos[k]=last.pose.pos[k]+(pose.pos[k]-last.pose.pos[k])*t;
     }

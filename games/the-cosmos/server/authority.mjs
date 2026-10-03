@@ -80,7 +80,7 @@ export class Authority {
     this.sims=new Map(Object.values(this.state.ships).filter(s=>!s.parked).map(s=>[s.id,this.makeSim(s)]));
   }
   /** One ship's simulation, whatever its type; a raider also gets its brain and its escort wing. */
-  makeSim(s){this.ensureMoonPads(s);const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.otherSim=id=>this.sims.get(id);if(s.npc)this.fleet.attach(sim);return sim;}
+  makeSim(s){this.ensureMoonPads(s);const sim=new ShipSimulation(s,this.mars,this.site,d=>this.arrive(s,d));sim.otherSim=id=>this.sims.get(id);sim.allSims=()=>this.sims.values();if(s.npc)this.fleet.attach(sim);return sim;}
   /** One Phobos pad and one Deimos pad per owned ship. Append-only: a pad already on the record stays put. */
   ensureMoonPads(ship){this._moonPadList=null;if(ship.npc)return;ship.moonPads=ship.moonPads||{};
     for(const bodyId of ['phobos','deimos']){const cur=ship.moonPads[bodyId];
@@ -289,7 +289,7 @@ export class Authority {
         const def=sim.def,posts=def.crewPosts;let sights=null;
         const pilots=Object.values(this.state.players).filter(p=>p.aboardShipId===id&&['pilot','captain'].includes(p.pose.seat)&&this.sessions.has(p.id)&&this.inputs.get(p.id)?.until>this.now());
         const pilot=pilots.find(p=>p.pose.seat==='pilot')||pilots[0];
-        if(pilot)control=this.inputs.get(pilot.id).controls;
+        let ffIn=null;if(pilot){const lease=this.inputs.get(pilot.id);control=lease.controls;ffIn=lease.ff||null;}   // FREEFLIGHT: the pilot's free-flight stick rides the same one-second lease
         sim.ship.aboard=Object.values(this.state.players).some(p=>p.aboardShipId===id);
         sim.ship._rampOccupied=key=>this.rampOccupied(sim,key);
         for(const c of ship.crew)if(c.status==='aboard'&&!c.unpaid){const gid={captain:'main',gunner_dorsal:'dorsal',gunner_ventral:'ventral'}[c.role],seat=posts.find(r=>r.id===c.role)?.seat;
@@ -312,8 +312,8 @@ export class Authority {
             // Phase each hull differently (a hash of its id) so two dozen resting ships never all step on the same tick: that burst was a 400 ms stall every half second.
             if(!sim.restDt)sim.restDt=restPhase(id);
             sim.restDt+=dt;
-            if(sim.restDt>=.5){const d=sim.restDt;sim.restDt=.0001;sim.restCoarse=true;this.fleet.preStep(sim);sim.step(d,control);this.fleet.postStep(sim);sim.restCoarse=false;}}
-          else{sim.restDt=0;this.fleet.preStep(sim);sim.step(dt,control);this.fleet.postStep(sim);}
+            if(sim.restDt>=.5){const d=sim.restDt;sim.restDt=.0001;sim.restCoarse=true;this.fleet.preStep(sim);sim.step(d,control,ffIn);this.fleet.postStep(sim);sim.restCoarse=false;}}
+          else{sim.restDt=0;this.fleet.preStep(sim);sim.step(dt,control,ffIn,{catchUp});this.fleet.postStep(sim);}
         }
         const events=[...sim.guns.drain().map(e=>({...e,system:'guns'})),...sim.drones.drain().map(e=>({...e,system:'drones'}))];
         for(const e of events){ship.eventSeq=(ship.eventSeq||0)+1;ship.events=ship.events||[];ship.events.push({...e,seq:ship.eventSeq});}
@@ -555,7 +555,10 @@ export class Authority {
     }else if(distance(r.worldPos,p.pose.worldPos)>elapsed*12+2)throw Error('Walk to that place.');
     p.pose={...structuredClone(r),seat:p.pose.seat};p.poseAt=this.now();if(Number.isSafeInteger(a.seq))p.poseSeq=a.seq;
     if(aboard)this.sims.get(ship.id).flight.toWorld(p.pose.sw,p.pose.worldPos);
-    if(a.controls&&['pilot','captain'].includes(p.pose.seat))this.inputs.set(p.id,{until:this.now()+1000,controls:Object.fromEntries(['fwd','lift','yaw'].map(k=>[k,Math.max(-1,Math.min(1,Number(a.controls[k])||0))]))});
+    if(a.controls&&['pilot','captain'].includes(p.pose.seat)){
+      // FREEFLIGHT: a free-flight stick is intent only: finite numbers clamped to -1..1 (thrust 0..1). The physics, the fuel and the pose are the authority's.
+      const c1=v=>Math.max(-1,Math.min(1,Number(v)||0)),f=a.ff,ff=f&&typeof f==='object'?{thr:Math.max(0,Math.min(1,Number(f.thr)||0)),brake:!!f.brake,pitch:c1(f.pitch),yaw:c1(f.yaw),roll:c1(f.roll),tx:c1(f.tx),ty:c1(f.ty),tz:c1(f.tz)}:null;
+      this.inputs.set(p.id,{until:this.now()+1000,controls:Object.fromEntries(['fwd','lift','yaw'].map(k=>[k,c1(a.controls[k])])),ff});}
   }
   reduce(p,a){if(!a||typeof a.type!=='string')throw Error('Invalid action.');const ship=this.shipFor(p),sim=this.sims.get(ship.id);
     if(a.type.startsWith('opening-')){
@@ -619,6 +622,16 @@ export class Authority {
         if(ctl.target<.5)sim.ship._solveRamp(a.key);ctl.target=ctl.target>.5?0:1;sim.ship.state.ramps[a.key].target=ctl.target;break;}
       case 'cancel-trip':if(!p.aboardShipId)throw Error('Come aboard first.');return sim.trip?.cancel()||{ok:false,msg:'No course in progress.'};
       case 'trip-warp':if(!p.aboardShipId||!sim.trip?.active&&!landingOrder(sim.crew.activeOrder()))throw Error('No course in progress.');if(![1,5,20,60].includes(a.warp))throw Error('Invalid trip speed.');sim.warp=a.warp;if(sim.trip?.active)sim.trip.setWarp(a.warp);break;
+      case 'ff-set':{   // FREEFLIGHT: free flight on or off, the assist, the target, the throttle, the time compression. Bridge stations only.
+        if(!p.aboardShipId||!['pilot','captain','nav','comms'].includes(p.pose.seat))throw Error('Use a bridge station to set free flight.');
+        if(sim.trip?.active&&a.enabled===true)throw Error('A course is under way. Cancel it first.');
+        const out=[];
+        if(typeof a.enabled==='boolean'){const r=sim.ff.setEnabled(a.enabled);if(!r.ok)throw Error(r.msg);out.push(r.msg);}
+        if(a.assist!==undefined){const r=sim.ff.setAssist(a.assist);if(!r.ok)throw Error(r.msg);out.push(r.msg);}
+        if(a.target!==undefined){const r=sim.ff.setTarget(a.target);if(!r.ok)throw Error(r.msg);out.push(r.msg);}
+        if(a.warp!==undefined){const r=sim.ff.setWarp(Number(a.warp));if(!r.ok)throw Error(r.msg);out.push(r.msg);}
+        if(a.throttle!==undefined){const r=sim.ff.setThrottle(Number(a.throttle));if(!r.ok)throw Error(r.msg);out.push(r.msg);}
+        return {ok:true,msg:out.join(' ')||'Free flight set.'};}
       case 'crew-order':return sim.crewOrder(p,a,this);
       case 'airlock':sim.cycleAirlock();break;
       case 'power-split':if(p.pose.seat!=='engineer')throw Error('Use the engineering station.');if(![a.engines,a.guns,a.shields].every(Number.isFinite))throw Error('Invalid power split.');sim.flight.setPowerSplit(a.engines,a.guns,a.shields);break;

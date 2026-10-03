@@ -12,7 +12,7 @@
 export const DOCKS = {
   right: ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb', '#crew-talk', '#quest-deliver', '#btn-fire', '#btn-sink', '#btn-lift'],
   left: ['#key-controls', '#multiplayer-button', '#shop-button', '#voice-talk'],
-  bottom: ['#flight-speed'],
+  bottom: ['#ff-bar', '#flight-speed'],   // FREEFLIGHT: the free-flight bar has the bottom row while it is on
 };
 // A panel that opens over the screen is a modal: the dock steps aside while it is open.
 const MODALS = ['#multiplayer-panel:not([hidden])', '#crew-panel', '#account-panel', '#space-sheet', '#settings-panel.open', '#shop-panel'];
@@ -34,6 +34,8 @@ const CSS = `
 #phone-ui #flight-speed.dk{max-width:none;width:100%;display:block}
 #phone-ui #flight-speed.dk[hidden]{display:none}
 #phone-ui #flight-speed.dk button{min-width:48px;min-height:44px}
+#phone-ui #ff-bar.dk{max-width:none;width:100%}
+#phone-ui #ff-bar.dk[hidden]{display:none}
 html.phone-ui #hud{max-width:calc(100vw - 118px)}
 html.phone-ui #voice-heard{top:calc(var(--hud-bottom,64px) + 46px)}
 html.phone-ui #ship-panel{max-height:calc(var(--dock-top,60vh) - 96px - env(safe-area-inset-top,0px))}

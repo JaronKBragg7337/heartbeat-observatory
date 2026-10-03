@@ -78,7 +78,7 @@ export class RemoteWorld {
     this.error=m.state.storageError||'';
     for(const fn of this.listeners)fn(m);
   }
-  sendPose(pose,controls,vehicle){if(this.connected&&this.socket.readyState===WebSocket.OPEN){const seq=++this.poseSeq;this.sentPoses.set(seq,structuredClone(pose));while(this.sentPoses.size>64)this.sentPoses.delete(this.sentPoses.keys().next().value);this.socket.send(stringify({type:'pose',pose,controls,vehicle:vehicle||undefined,seq}));}}
+  sendPose(pose,controls,vehicle,ff){if(this.connected&&this.socket.readyState===WebSocket.OPEN){const seq=++this.poseSeq;this.sentPoses.set(seq,structuredClone(pose));while(this.sentPoses.size>64)this.sentPoses.delete(this.sentPoses.keys().next().value);this.socket.send(stringify({type:'pose',pose,controls,vehicle:vehicle||undefined,ff:ff||undefined,seq}));}}
   sendVoice(to,data){if(this.connected&&this.socket.readyState===WebSocket.OPEN){this.socket.send(stringify({type:'voice',to,data}));return true;}return false;}
   request(action){if(!this.connected||this.socket.readyState!==WebSocket.OPEN)return Promise.resolve({ok:false,msg:'Shared world disconnected; wait for reconnect.'});
     const actionId=crypto.randomUUID();this.saving++;

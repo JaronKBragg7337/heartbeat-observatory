@@ -30,6 +30,8 @@ import { makeTools } from '../player/digging.js';
 import { SpaceJobs } from './jobs.js';
 import { SpaceUI } from './spaceUI.js';
 import { Transit } from './transit.js';
+import { FreeFlight } from './freeflight.js';           // FREEFLIGHT
+import { FreeFlightUI, ffHudLines } from './freeflightUI.js';
 
 const DEG = Math.PI / 180;
 
@@ -69,7 +71,12 @@ export class SpaceSystem {
       cargoKg: (item) => this.ledger.cargo.get(item) || 0,
     }, o.hooks || {});
     this.jobs = new SpaceJobs(this);
+    // FREEFLIGHT: manual flight anywhere (freeflight.js), and its HUD (freeflightUI.js). Solo runs the physics here; the shared world mirrors the authority's.
+    this.ff = new FreeFlight({ flight: o.ship.flight, mars: o.body, frameId: () => this.frameId, setFrame: (id) => this.setFrame(id), say: (m, w) => this.say(m, w), drones: o.ship.drones,
+      cancelOrders: () => { if (o.ship.crew && o.ship.crew.cancelOrder) o.ship.crew.cancelOrder(); }, tripActive: () => !!(this.trip && this.trip.active),
+      atPad: () => this.frameId === 'mars' && !!this.portSite && Math.hypot(...['x', 'y', 'z'].map((k, i) => o.ship.flight.pos[k] - this.portSite.toWorld(0, 0, 0)[k])) < 60 });
     this.ui = typeof document !== 'undefined' ? new SpaceUI(this) : null;
+    this.ffUI = typeof document !== 'undefined' ? new FreeFlightUI(this) : null;     // FREEFLIGHT
 
     // the moons: Phobos after a moment (it is in the sky from the start); Deimos is built when a course to it is engaged.
     this._built = false;
@@ -92,7 +99,7 @@ export class SpaceSystem {
 
   snapshotState() {
     const t=this.trip,j=this.jobs;
-    return {frameId:this.frameId,ledger:{credits:this.ledger.credits,cargo:[...this.ledger.cargo]},
+    return {ff:this.ff.save(),frameId:this.frameId,ledger:{credits:this.ledger.credits,cargo:[...this.ledger.cargo]},
       jobs:{taken:[...j.taken],hold:structuredClone(j.hold),samplesAboard:j.samplesAboard,salvaged:j.salvaged,beaconHeard:j.beaconHeard,paidTotal:j.paidTotal},
       trip:t?{destId:t.dest.id,dest:{id:t.dest.id,kind:t.dest.kind,name:t.dest.name,moon:t.dest.moon},phase:t.phase,t:t.t,warp:t.warp,settleT:t.settleT,cancelled:t.cancelled,progress:{...t.progress},
         said:[...t._said],attFrom:t._attFrom?.toArray()||null,transit:t.transit?structuredClone(t.transit):null}:null};
@@ -105,6 +112,7 @@ export class SpaceSystem {
     this.ship.flight.refreshOrientation();this.walker.updateFrame();this.ship._syncEntries();
     Object.assign(this.jobs,saved.jobs);this.jobs.taken=new Set(saved.jobs.taken);
     this.ledger.credits=saved.ledger.credits;this.ledger.cargo=new Map(saved.ledger.cargo);
+    if(saved.ff)this.ff.load(saved.ff);   // FREEFLIGHT
     if(saved.trip){const r=saved.trip,dest={...this.resolve(r.destId),...r.dest};if(dest.kind==='hold')dest.goalS=()=>r.transit.finalGoal;if(!dest.kind)return;
       const t=new SpaceTrip(this,dest);Object.assign(t,r);t.dest=dest;t._said=new Set(r.said);t._attFrom=r.attFrom?new THREE.Quaternion().fromArray(r.attFrom):null;
       if(r.transit){t.transit=Object.assign(Object.create(Transit.prototype),r.transit);this.ship.flight.override=dt=>t._drive(dt);}
@@ -238,6 +246,7 @@ export class SpaceSystem {
     if (f.landed && !f.canLiftOff()) return { ok: false, msg: 'Engine power is too low to lift off. Route more to the engines.' };
     if (f.engineFactor < 0.3) return { ok: false, msg: 'Engine share is too low for the main drive. Route power to the engines (Engineering).' };
     if (this.ship.crew && this.ship.crew.cancelOrder) this.ship.crew.cancelOrder();
+    this.ff.suspend('The autopilot has the ship.');          // FREEFLIGHT
     if (dest.kind === 'moon') this.moonWorld(dest.moon);        // build the world now (a moment's hitch at the button, not on arrival)
     const trip = new SpaceTrip(this, dest, o);
     trip.setWarp(1);
@@ -251,6 +260,18 @@ export class SpaceSystem {
   }
 
   setWarp(w) { this.warp = w; if (this.trip) this.trip.setWarp(w); }
+  /** FREEFLIGHT: one command from the HUD ({ enabled, assist, target, warp, throttle }). Solo applies it here; the shared world sends it to the authority. */
+  ffCommand(o) {
+    const ff = this.ff, out = [];
+    const run = (r) => { if (!r.ok) this.say(r.msg, true); else if (r.msg) out.push(r.msg); };
+    if (typeof o.enabled === 'boolean') { if (o.enabled && this.trip && this.trip.active) this.say('A course is under way. Cancel it first.', true); else run(ff.setEnabled(o.enabled)); }
+    if (o.assist !== undefined) run(ff.setAssist(o.assist));
+    if (o.target !== undefined) run(ff.setTarget(o.target));
+    if (o.warp !== undefined) run(ff.setWarp(Number(o.warp)));
+    if (o.throttle !== undefined) run(ff.setThrottle(Number(o.throttle)));
+    if (out.length) this.say(out.join(' '), false);
+    return { ok: true };
+  }
   /** Seconds of flight per real second for the climb and the landing this frame (1 unless a course is compressing them). */
   stickWarp(dt) { const t=this.trip;if(t?.active)return t.stickWarp(dt);
     const f=this.ship.flight;this.eff=landingOrder(this.ship.crew?.activeOrder())?stickWarpCap(this.warp,f.agl,f.verticalSpeed,dt):1;
@@ -308,11 +329,13 @@ export class SpaceSystem {
     if (this.o.ship && this.o.ship.ready) this.sky.scaleEnvironment(this.o.ship.matsExt);
     this.jobs.update(dt);
     if (this.ui) this.ui.update(dt);
+    if (this.ffUI) this.ffUI.update(dt);          // FREEFLIGHT
   }
 
   /** What the HUD adds. */
   hudLines() {
     const f = this.ship.flight, t = this.trip, out = [];
+    const ffl = ffHudLines(this.ff); if (ffl) out.push(ffl);        // FREEFLIGHT
     if (this.onMoon) { const m = this.activeMoon; out.push(`<span class="dim">${m.body.name} · gravity ${(m.body.surfaceGravity * 1000).toFixed(2)} mm/s²</span>`); }
     if (t && t.active) {
       const p = t.progress, ph = t.phases(), now = ph.find((q) => q.state === 'now');
