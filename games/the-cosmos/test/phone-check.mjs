@@ -173,7 +173,7 @@ for (const target of targets) for (const spec of devices) {
         assert.equal(threw, false, 'the voice system threw without Web Audio: ' + threw); return;
       }
       const r = await page.evaluate(async () => { const c = cosmos, v = c.voice; v.set('volume', .9); await v._manifestLoad();
-        const { WORKER_CAST, clipKey } = await import('/src/voice/cast.js'), { WORKER_LINES } = await import('/src/port/workerLines.js');
+        const { WORKER_CAST, clipKey } = await import('./src/voice/cast.js'), { WORKER_LINES } = await import('./src/port/workerLines.js');
         const m = c.portPeople.members.find(x => WORKER_CAST[x.id]); const before = v.log.length;
         v.sayLine(WORKER_LINES[m.id], { voice: WORKER_CAST[m.id].voice, source: m.person.group, channel: 'room' }); await new Promise(r => setTimeout(r, 1500));
         const buf = await v._buffer(clipKey(WORKER_CAST[m.id].voice, WORKER_LINES[m.id]));

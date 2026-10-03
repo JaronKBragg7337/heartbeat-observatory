@@ -82,7 +82,7 @@ to a named online player, 12 KB cap, rate limited, nothing stored).
   (4.4 s, correct). Unlock-on-tap, panning and microphone use on an iPhone are untested; the code follows the documented iOS rules.
 - **Real networks.** Both players were on one machine (host candidates). STUN only, no TURN: players on strict mobile or office
   networks (symmetric NAT) may never connect. A TURN relay is the fix if that happens.
-- **Live:** not yet checked at the time of writing (see the report).
+- **Live proof is partial.** On https://www.heartbeatobservatory.com/games/the-cosmos/ (build 390119337877cff96e1e) `phone-check --live` passes on both profiles including the voices step (a live mp3 decodes and plays from a worker's body on Chromium; the settings rows work by touch). Two players talking on the live site, through `wss://cosmos.heartbeatobservatory.com`, have not been tried: the authority was restarted on the new build and `/health` is ok, nothing more.
 - The crew channel was driven through the client's own "same ship" rule on two real peers; boarding two browsers onto one hull for
   it was not repeated here.
 - The in-flight pilot lines were checked as data (every static line has a clip for Ada and Zuri and the ship), not by flying a trip

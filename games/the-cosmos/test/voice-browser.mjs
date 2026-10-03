@@ -185,7 +185,7 @@ try {
     const near = m[0], far = m[m.length - 1];
     const lines = (await (await fetch('./assets/voices/lines.json')).json());
     const keyOf = (voice, text) => Object.entries(lines).find(([, l]) => l.voice === voice && l.text === text)?.[0];
-    const { WORKER_CAST } = await import('/src/voice/cast.js'); const { WORKER_LINES } = await import('/src/port/workerLines.js');
+    const { WORKER_CAST } = await import('./src/voice/cast.js'); const { WORKER_LINES } = await import('./src/port/workerLines.js');
     const say = (member) => { const id = member.x.id, voice = WORKER_CAST[id].voice; return v.sayLine(WORKER_LINES[id], { voice, source: member.x.person.group, channel: 'room' }); };
     const before = v.log.length; say(near); await new Promise((r) => setTimeout(r, 1200));
     const logNear = v.log.slice(before).find((e) => e.mode === 'clip' || e.mode === 'tts');
