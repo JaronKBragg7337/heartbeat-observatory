@@ -271,7 +271,12 @@ export class MultiplayerView {
   easeBody(b,kind,target,dt){const key=kind==='ground'?'eased':'easedAboard',cur=b[key];
     if(!cur||Math.hypot(target.x-cur.x,target.y-cur.y,target.z-cur.z)>4){b[key]={x:target.x,y:target.y,z:target.z};return target;}
     const f=1-Math.exp(-Math.min(.1,dt)*14);cur.x+=(target.x-cur.x)*f;cur.y+=(target.y-cur.y)*f;cur.z+=(target.z-cur.z)*f;return cur;}
-  placeBody(b,pos,q,frame,pose,dt){const cam=this.engine.cameraWorldPos;if(b.tag)b.tag.visible=Math.hypot(pos.x-cam.x,pos.y-cam.y,pos.z-cam.z)>3.5;     // FLEET: a name over someone you are sitting beside is in the way
+  placeBody(b,pos,q,frame,pose,dt){const cam=this.engine.cameraWorldPos;
+    if(b.tag){const d=Math.hypot(pos.x-cam.x,pos.y-cam.y,pos.z-cam.z);
+      // ROUND7: a name tag has one size ON THE SCREEN (about 22 px tall), not 3.6 m across in the world: at 4 m a world-sized tag filled the screen as a dark translucent banner.
+      // Hidden over someone you are sitting beside (FLEET) and past 30 m (unreadable).
+      b.tag.visible=d>3.5&&d<30;
+      if(b.tag.visible){const fov=(this.engine.camera?.fov||60)*Math.PI/180,h=Math.min(.4,22*d*2*Math.tan(fov/2)/Math.max(300,innerHeight));b.tag.scale.set(h*8,h,1);}}
     const speed=b.last?Math.min(4,Math.hypot(pos.x-b.last.x,pos.y-b.last.y,pos.z-b.last.z)/Math.max(.1,dt)):0;
     if(pose==='Idle'&&speed>.3)pose='Walk';b.person.play(pose);b.person.update(dt,speed);Object.assign(b.entry.worldPos,pos);b.entry.quaternion.copy(q);b.last={...pos};b.frameId=frame;
     b.entry.frame=frame==='mars'?this.engine.rootFrame:this.space.moonWorld(frame).frame;

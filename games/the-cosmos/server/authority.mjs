@@ -247,7 +247,15 @@ export class Authority {
       else out.kept.push({...tag(p),why:human.join(', ')});
     }
     return out;}
-  refill(){const available=Object.values(this.state.pool).filter(c=>!c.shipId&&!c.retired);
+  /** ROUND7: one open candidate per post. A dismissed hire walks back to the hall while refill() has already made a replacement, so
+   *  two Adas stood on the same spot and the panel named whichever came first. Keep the one furthest along (waiting, meeting, returning,
+   *  then the older), retire the rest: they were never hired, so no contract is touched. */
+  dedupePool(){const rank={waiting:0,meeting:1,returning:2};
+    for(const role of CREW_POSTS){const open=Object.values(this.state.pool).filter(c=>c.role===role.id&&!c.shipId&&!c.retired);
+      if(open.length<2)continue;
+      open.sort((a,b)=>(rank[a.status]??3)-(rank[b.status]??3)||Number(a.id.replace(/\D/g,''))-Number(b.id.replace(/\D/g,'')));
+      for(const c of open.slice(1))c.retired=true;}}
+  refill(){this.dedupePool();const available=Object.values(this.state.pool).filter(c=>!c.shipId&&!c.retired);
     for(const role of CREW_POSTS){if(available.some(c=>c.role===role.id)||Object.values(this.state.pool).some(c=>c.role===role.id&&c.shipId&&c.refillAt>this.state.clock))continue;
       const seq=++this.state.poolSeq;const suffix=seq<=6?'':` ${['Rivera','Okafor','Chen','Patel','Diaz','Khan'][seq%6]} ${Math.floor(seq/6)}`;
       const slot=CREW_POSTS.indexOf(role);

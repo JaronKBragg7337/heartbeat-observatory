@@ -114,6 +114,14 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
   })());
 
   // ---- walking and digging on Phobos, with the planet's own classes ------------------------------------------------------
+  // ROUND7: no crater rim, ejecta blanket or named-crater blanket ends in a cliff. Walk great circles round each moon in ~1 m steps and look at the biggest height jump.
+  {
+    for (const [name, body, Rm, cap] of [['Phobos', ph, 11000, 6], ['Deimos', dm, 6200, 3]]) {
+      let worst = 0; const N = 40000;
+      for (let tilt = 0; tilt < 3.1; tilt += 0.26) { let prev = null; for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2, x = Math.cos(a), y = Math.sin(a) * Math.cos(tilt), z = Math.sin(a) * Math.sin(tilt); const R = body.surfaceRadius(x, y, z); if (prev !== null) worst = Math.max(worst, Math.abs(R - prev)); prev = R; } }
+      check(`${name}: walking round the moon in ${(Rm * 2 * Math.PI / N).toFixed(1)} m steps the ground never jumps more than ${cap} m (no cliff where a crater cell or a blanket was cut off): worst ${worst.toFixed(2)} m`, worst < cap);
+    }
+  }
   section('13. Space: walking, hopping and digging on Phobos');
   const store = new EditStore(ph); FIELD.attachEdits(store);
   const standOn = (w, e, n) => { const pi = ph.padInfo, x = pi.point.x + pi.east.x * e + pi.north.x * n, y = pi.point.y + pi.east.y * e + pi.north.y * n, z = pi.point.z + pi.east.z * e + pi.north.z * n, l = len({ x, y, z }), R = FIELD.surfaceRadiusFast(ph, x / l, y / l, z / l); w.worldPos = { x: x / l * (R + 0.02), y: y / l * (R + 0.02), z: z / l * (R + 0.02) }; w.velocity = { x: 0, y: 0, z: 0 }; w.grounded = true; w.updateFrame(); };
@@ -266,6 +274,18 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
       e80.seconds < e40.seconds * 0.9 && e20.seconds > e40.seconds * 1.2 && e20.seconds > e80.seconds * 1.5);
     const dd = estimateTrip(mk(gate, up0, goalOf('deimos')));
     check(`Deimos is farther and takes longer (${(dd.seconds / 60).toFixed(0)} min) and the drive reaches it exactly too`, dd.arrived && dd.error < 2 && dd.seconds > e40.seconds * 1.5);
+    // ROUND7: the trip estimate must not depend on the exact height of the standoff point. It used to fly in 1 s steps (the controller is only stable at 0.25 s):
+    // a standoff point 3 m higher never "arrived" (ETA 400,000 s) and another height gave 1,996 s instead of 1,801 s.
+    {
+      const goalAt = (m, dh) => { const b = makeMoon(m), c = b.centre, sp = b.standoffPoint(SPEC.STANDOFF_M + dh); return { x: c.x + sp.x, y: c.y + sp.y, z: c.z + sp.z }; };
+      for (const m of ['phobos', 'deimos']) {
+        const base = estimateTrip(mk(gate, up0, goalAt(m, 0))).seconds; let worst = 0, notArrived = 0;
+        for (let dh = -40; dh <= 40; dh += 0.5) { const e = estimateTrip(mk(gate, up0, goalAt(m, dh))); if (!e.arrived || e.error > 2) notArrived++; worst = Math.max(worst, Math.abs(e.seconds - base) / base); }
+        check(`${m}: the trip estimate arrives for every standoff height from -40 m to +40 m (161 heights) and stays within 1% of ${(base / 60).toFixed(1)} min`, notArrived === 0 && worst < 0.01, `${notArrived} did not arrive, worst ${(worst * 100).toFixed(2)}%`);
+      }
+      const bad = estimateTrip(mk(gate, up0, goalAt('phobos', 0), 1e-9));
+      check('and when a flight really cannot arrive (no engine) the estimate says so and still gives a plain flip-and-burn figure, never the step cap', !bad.arrived && Number.isFinite(bad.seconds) && bad.seconds > 3600, JSON.stringify(bad));
+    }
     const g0 = goalOf('phobos'), far = { x: -g0.x, y: 0, z: -g0.z };
     const t = new Transit(mk(gate, up0, far)); let minR = 1e12, n = 0; while (!t.done && n++ < 40000) { t.step(0.5); minR = Math.min(minR, len(t.pos)); }
     check(`a course to the far side of Mars goes round it: ${t.legs.length === 0 && t.legIndex ? 'two legs' : 'planned'}, closest approach ${((minR - 3389500) / 1000).toFixed(0)} km up, arrives exactly`, t.done && minR > 3389500 + 59_000 && len({ x: t.pos.x - far.x, y: t.pos.y - far.y, z: t.pos.z - far.z }) < 2);

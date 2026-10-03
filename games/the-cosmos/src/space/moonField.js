@@ -61,6 +61,26 @@ function padsFor(bodyId) {
   try { all = _getMoonPads() || []; } catch { all = []; }
   return all.filter((a) => a && a.bodyId === bodyId && Number.isFinite(a.east) && Number.isFinite(a.north));
 }
+// ROUND7: which crater cells can reach a point. A cell's crater centre sits 0.3..0.7 cells in, and its rim and ejecta reach `reach` cells from the
+// centre, so a point near a cell wall is also under the neighbouring cell's craters. Looking only at its own cell cut every big rim and ejecta
+// blanket off at the cell wall: a straight step up to tens of metres on the biggest craters. Per axis the neighbours whose centre box is within
+// reach are kept, then the 3-D distance to the box is checked, so most points still look at one to three cells (and no hash is computed for the rest).
+const _cells = new Int32Array(27 * 3), _o = [new Int8Array(3), new Int8Array(3), new Int8Array(3)], _dd = [new Float64Array(3), new Float64Array(3), new Float64Array(3)], _n = [0, 0, 0], _P = [0, 0, 0], _B = [0, 0, 0];
+function nearCells(px, py, pz, s, reach) {
+  _P[0] = px / s; _P[1] = py / s; _P[2] = pz / s;
+  for (let a = 0; a < 3; a++) {
+    const b = Math.floor(_P[a]); _B[a] = b; const f = _P[a] - b; let n = 0;
+    for (let o = -1; o <= 1; o++) { const lo = o + 0.3, hi = o + 0.7, d = f < lo ? lo - f : f > hi ? f - hi : 0; if (d <= reach) { _o[a][n] = o; _dd[a][n] = d * d; n++; } }
+    _n[a] = n;
+  }
+  const r2 = reach * reach; let c = 0;
+  for (let i = 0; i < _n[0]; i++) for (let j = 0; j < _n[1]; j++) {
+    const dij = _dd[0][i] + _dd[1][j]; if (dij > r2) continue;
+    for (let k = 0; k < _n[2]; k++) { if (dij + _dd[2][k] > r2) continue; _cells[c++] = _B[0] + _o[0][i]; _cells[c++] = _B[1] + _o[1][j]; _cells[c++] = _B[2] + _o[2][k]; }
+  }
+  return c / 3;
+}
+
 export function makeMoon(id) {
   if (_bodies.has(id)) return _bodies.get(id);
   const S = MOONS[id];
@@ -102,37 +122,38 @@ export function makeMoon(id) {
     // the named craters
     for (const f of feat) {
       const cosang = u * f.d[0] + v * f.d[1] + w * f.d[2];
-      if (cosang < 0.5) continue;
+      if (cosang < 0) continue;                                    // ROUND7: was 0.5 (60 degrees): Stickney's blanket was still 9 m thick there and ended in a 9 m cliff
       const s = Rm * Math.acos(Math.min(1, cosang));
-      const t = s / f.radiusM;
+      const t = s / f.radiusM, tQuarter = Rm * Math.PI / 2 / f.radiusM;
       if (t < 1) { const q = 1 - t * t; h -= f.depthM * Math.pow(q, 1.15) * (t > 0.82 ? 1 : 1); }
       // The rim and the ejecta blanket fade in and out smoothly: they used to switch on at a fixed radius, and a switch is a cliff
       // (60 m round Stickney's rim, 49 m where its blanket starts, 3.7 m where it ends)
       const rimH = f.depthM * 0.12;
       h += rimH * Math.exp(-(((t - 1.02) / 0.2) ** 2));
-      if (t > 0.9 && t < 4.4) h += f.depthM * 0.035 / (t * t) * sstep(0.9, 1.5, t) * (1 - sstep(3, 4.4, t));       // ejecta blanket
+      if (t > 0.9 && t < 4.4) h += f.depthM * 0.035 / (t * t) * sstep(0.9, 1.5, t) * (1 - sstep(3, 4.4, t)) * (1 - sstep(0.55 * tQuarter, tQuarter, t));       // ejecta blanket, gone before the cut at 90 degrees
     }
     // craters at every scale
     for (let k = 0; k < CELLS.length; k++) {
       const s = CELLS[k] * CS;
-      const ix = Math.floor(px / s), iy = Math.floor(py / s), iz = Math.floor(pz / s);
-      for (let j = 0; j < 2; j++) {
-        const sd = seed + 101 * k + 37 * j;
-        if (hash3(ix, iy, iz, sd + 3) > DENS) continue;
-        const cx = (ix + 0.3 + 0.4 * hash3(ix, iy, iz, sd)) * s;
-        const cy = (iy + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 1)) * s;
-        const cz = (iz + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 2)) * s;
-        const rc = s * (0.1 + 0.14 * hash3(ix, iy, iz, sd + 4));
-        const dx = px - cx, dy = py - cy, dz = pz - cz;
-        const d2 = dx * dx + dy * dy + dz * dz;
-        if (d2 > rc * rc * 9) continue;
-        const t = Math.sqrt(d2) / rc, D = 2 * rc * scale, dep = 0.16 * D;
-        if (t < 1) h -= dep * Math.pow(1 - t * t, 1.2);
-        // (Known and left alone: a point only looks at the craters of its own cell, so the rim's shoulder and the 1/t^3 ejecta tail are cut off
-        // at the cell's wall, a straight step up to a few metres high for the biggest craters. Fading them out changes the survey pad's
-        // height by 6 m, which moves the drive's standoff point and tips estimateTrip into a non-arriving case; see REVIEW.)
-        h += 0.04 * D * Math.exp(-(((t - 1.04) / 0.22) ** 2));
-        h += 0.012 * D / (t * t * t) * sstep(1.0, 1.45, t);
+      const nc = nearCells(px, py, pz, s, 0.72);                   // 3 rc <= 0.72 cells: the reach of the rim and the ejecta
+      for (let q = 0; q < nc; q++) {
+        const ix = _cells[3 * q], iy = _cells[3 * q + 1], iz = _cells[3 * q + 2];
+        for (let j = 0; j < 2; j++) {
+          const sd = seed + 101 * k + 37 * j;
+          if (hash3(ix, iy, iz, sd + 3) > DENS) continue;
+          const cx = (ix + 0.3 + 0.4 * hash3(ix, iy, iz, sd)) * s;
+          const cy = (iy + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 1)) * s;
+          const cz = (iz + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 2)) * s;
+          const rc = s * (0.1 + 0.14 * hash3(ix, iy, iz, sd + 4));
+          const dx = px - cx, dy = py - cy, dz = pz - cz;
+          const d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 > rc * rc * 9) continue;
+          const t = Math.sqrt(d2) / rc, D = 2 * rc * scale, dep = 0.16 * D;
+          if (t < 1) h -= dep * Math.pow(1 - t * t, 1.2);
+          h += 0.04 * D * Math.exp(-(((t - 1.04) / 0.22) ** 2));
+          // the ejecta tail dies away smoothly before the 3 rc cut (it used to stop at 0.0004 D: a step of a metre round the biggest bowls)
+          h += 0.012 * D / (t * t * t) * sstep(1.0, 1.45, t) * (1 - sstep(2.2, 3.0, t));
+        }
       }
     }
     // grooves
@@ -320,17 +341,20 @@ export function makeMoon(id) {
     }
     for (let k = 0; k < SHADE_CELLS.length; k++) {
       const s = SHADE_CELLS[k] * CS;
-      const ix = Math.floor(px / s), iy = Math.floor(py / s), iz = Math.floor(pz / s);
-      for (let j = 0; j < 2; j++) {
-        const sd = seed + 101 * CELLS.indexOf(SHADE_CELLS[k]) + 37 * j;
-        if (hash3(ix, iy, iz, sd + 3) > DENS) continue;
-        const cx = (ix + 0.3 + 0.4 * hash3(ix, iy, iz, sd)) * s;
-        const cy = (iy + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 1)) * s;
-        const cz = (iz + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 2)) * s;
-        const rc = s * (0.1 + 0.14 * hash3(ix, iy, iz, sd + 4));
-        const dx = px - cx, dy = py - cy, dz = pz - cz;
-        if (dx * dx + dy * dy + dz * dz > rc * rc * 4) continue;
-        addCrater(cx, cy, cz, rc, 0.16 * 2 * rc * scale);
+      const nc = nearCells(px, py, pz, s, 0.48);                   // 2 rc <= 0.48 cells: a bowl's shadow reaches past its own cell too
+      for (let q = 0; q < nc; q++) {
+        const ix = _cells[3 * q], iy = _cells[3 * q + 1], iz = _cells[3 * q + 2];
+        for (let j = 0; j < 2; j++) {
+          const sd = seed + 101 * CELLS.indexOf(SHADE_CELLS[k]) + 37 * j;
+          if (hash3(ix, iy, iz, sd + 3) > DENS) continue;
+          const cx = (ix + 0.3 + 0.4 * hash3(ix, iy, iz, sd)) * s;
+          const cy = (iy + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 1)) * s;
+          const cz = (iz + 0.3 + 0.4 * hash3(ix, iy, iz, sd + 2)) * s;
+          const rc = s * (0.1 + 0.14 * hash3(ix, iy, iz, sd + 4));
+          const dx = px - cx, dy = py - cy, dz = pz - cz;
+          if (dx * dx + dy * dy + dz * dz > rc * rc * 4) continue;
+          addCrater(cx, cy, cz, rc, 0.16 * 2 * rc * scale);
+        }
       }
     }
     if (RS > 0.5) {

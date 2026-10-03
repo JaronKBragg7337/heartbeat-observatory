@@ -114,6 +114,17 @@ for (const target of targets) for (const spec of devices.filter(d => !process.en
       return { count: list.length, bad };
     });
     const noOverlap = async (label, min = 0) => { const r = await overlaps(); assert.ok(r.count >= min, `${label}: only ${r.count} buttons visible, expected at least ${min} (a panel is hiding the rest, so the check would prove nothing)`); assert.deepEqual(r.bad, [], `${label}: buttons overlap or leave the screen: ${r.bad.join('; ')}`); return r.count; };
+    // ROUND7: the big boxes at the top must not sit on each other either: the status box (#hud), the pilot / station strip (#ship-panel) and a
+    // sheet that opens under it (#space-sheet), and the free-flight read-outs start under all of them (they take their top from --strip-bottom).
+    const noBlockOverlap = async (label) => { const r = await page.evaluate(() => {
+      const ids = ['#hud', '#ship-panel', '#space-sheet', '#ff-bar'], seen = [];
+      for (const id of ids) { const e = document.querySelector(id); if (!e) continue; const c = getComputedStyle(e); if (c.display === 'none' || c.visibility === 'hidden' || e.hidden) continue; const b = e.getBoundingClientRect(); if (b.width > 2 && b.height > 2) seen.push({ id, b }); }
+      const bad = [];
+      for (let i = 0; i < seen.length; i++) for (let j = i + 1; j < seen.length; j++) { const p = seen[i].b, q = seen[j].b, w = Math.min(p.right, q.right) - Math.max(p.left, q.left), h = Math.min(p.bottom, q.bottom) - Math.max(p.top, q.top); if (w > 1 && h > 1) bad.push(`${seen[i].id} x ${seen[j].id} (${Math.round(w)}x${Math.round(h)})`); }
+      const top = seen.filter(x => x.id === '#hud' || x.id === '#ship-panel').reduce((m, x) => Math.max(m, x.b.bottom), 0), strip = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--strip-bottom')) || 0;
+      if (strip && strip < top - 1) bad.push(`the free-flight read-outs start at ${strip}px but the boxes above reach ${Math.round(top)}px`);
+      return { ids: seen.map(x => x.id), bad }; });
+      assert.deepEqual(r.bad, [], `${label}: boxes overlap: ${r.bad.join('; ')}`); return r.ids; };
     // Force a set of the game's own buttons visible (they are shown by game state; here we show them directly so every combination is checked).
     const showOnly = async (selectors) => page.evaluate(sels => {
       const all = ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb', '#crew-talk', '#quest-deliver', '#btn-fire', '#btn-sink', '#btn-lift', '#voice-talk', '#flight-speed', '#save-warning'];
@@ -278,7 +289,12 @@ for (const target of targets) for (const spec of devices.filter(d => !process.en
       const vp = spec.device.viewport, sizes = [[vp.width, vp.height], [375, 667], [vp.height, vp.width], [667, 375]];
       for (const [w, h] of sizes) {
         await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(350); await step(1);
-        await noOverlap(`free flight ${w}x${h}`, 9); await shot(`freeflight-${w}x${h}`);
+        await noOverlap(`free flight ${w}x${h}`, 9); const ids = await noBlockOverlap(`free flight ${w}x${h}`); assert.ok(ids.includes('#hud') && ids.includes('#ship-panel'), `free flight ${w}x${h}: the status box and the pilot strip should both be showing (${ids})`);
+        await page.evaluate(() => cosmos.space.ui.toggle('course')); await page.waitForTimeout(450); await step(1);
+        const open = await noBlockOverlap(`free flight ${w}x${h} with the Course sheet open`); assert.ok(open.includes('#space-sheet'), `the Course sheet did not open (${open})`);
+        await noOverlap(`free flight ${w}x${h} with the Course sheet open`, 0);
+        await shot(`freeflight-${w}x${h}`);
+        await page.evaluate(() => cosmos.space.ui.toggle('course')); await page.waitForTimeout(250);
       }
       await page.setViewportSize(vp); await step(1);
       await page.evaluate(() => { cosmos.space.ff.suspend(); });

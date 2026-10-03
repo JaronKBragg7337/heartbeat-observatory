@@ -65,6 +65,8 @@ function mergeKit(dst,src) {
     for(const f of src.faces)if(f.b===b)dst.faces.push({...f,b:a,base:f.base+offset});
   }
 }
+/** Segment centres (z) left open in the side kerbs so the apron is walkable to every pad. */
+export const KERB_GAPS=[-56,-32,-8,16,40,64];
 export class PortSystem {
   constructor(engine,registry,site,tier='low',sharedMaterials=null) {
     this.sharedMaterials=sharedMaterials; this.time=0; this.engine=engine; this.registry=registry; this.site=site; this.tier=tier;
@@ -362,7 +364,10 @@ export class PortSystem {
   buildEarthworks(k,low) {
     // Segmental retaining kerbs and wind berms sit INSIDE the flat footprint.
     // The 160 m graded density blend outside it remains untouched.
+    // ROUND7: a kerb 0.62 m high cannot be stepped over (a walker steps 0.35 m), so a player walking to the far pads (x 150 and out) met a wall
+    // 164 m long. One segment in three is now left out: an 8 m dropped-kerb opening every 24 m (centres -56, -32, -8, 16, 40, 64).
     for(const s of [-1,1])for(let z=-80;z<84;z+=8) {
+      if(KERB_GAPS.includes(z))continue;
       k.bevelBox('concrete',s*103,.28,z,1.1,.56,7.85,.06);
       k.box('steelDark',s*103,.59,z,1.16,.06,7.85);
       for(const dz of [-2.5,2.5])k.cyl('gunmetal',s*102.43,.28,z+dz,.055,.035,6,{axis:'x'});

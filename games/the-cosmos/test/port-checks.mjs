@@ -53,6 +53,24 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     const engine={scene:new THREE.Scene(),track:()=>{},camera:new THREE.PerspectiveCamera(),cameraWorldPos:{x:0,y:0,z:0}};
     const registry=new Registry(),port=new PortSystem(engine,registry,site,'low').build();
     check('port, every pad and all six structures have stable registered IDs and measured sizes',registry.all().length===10&&registry.all().every(a=>a.measured&&a.id.startsWith('COS-MARS-')));
+    // ROUND7: the port is walkable to every pad. Flood the apron on a 1 m grid with a 34 cm body against every solid that reaches above a 35 cm step,
+    // from the middle of the port to the foot of each of the first twelve pads (the far ones are at x 150 to 342): all reachable, and no detour of more than 20%.
+    {const {allocatedPad}=await import('../src/world-state/fleet.js');
+     const X0=-140,Z0=-260,W=560,H=520,rad=.34,blocked=new Uint8Array(W*H);
+     for(const b of port.boxes){ if(b.y1<=.35||b.y0>=1.78)continue;
+       for(let ix=Math.max(0,Math.floor(b.x0-rad-X0));ix<=Math.min(W-1,Math.ceil(b.x1+rad-X0));ix++)for(let iz=Math.max(0,Math.floor(b.z0-rad-Z0));iz<=Math.min(H-1,Math.ceil(b.z1+rad-Z0));iz++){
+         const x=X0+ix+.5,z=Z0+iz+.5; if(x>b.x0-rad&&x<b.x1+rad&&z>b.z0-rad&&z<b.z1+rad)blocked[iz*W+ix]=1; } }
+     const dist=new Float64Array(W*H).fill(1e9),heap=[[0,0]],idx=(x,z)=>(Math.floor(z-Z0))*W+Math.floor(x-X0);
+     const push=(d,i)=>{heap.push([d,i]);let k=heap.length-1;while(k>0){const q=(k-1)>>1;if(heap[q][0]<=heap[k][0])break;[heap[q],heap[k]]=[heap[k],heap[q]];k=q;}};
+     const pop=()=>{const t=heap[0],e=heap.pop();if(heap.length){heap[0]=e;let k=0;for(;;){let l=2*k+1,r=l+1,m=k;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===k)break;[heap[m],heap[k]]=[heap[k],heap[m]];k=m;}}return t;};
+     const start=idx(0,60);dist[start]=0;heap.length=0;push(0,start);
+     while(heap.length){const [d,i]=pop();if(d>dist[i])continue;const ix=i%W,iz=(i-ix)/W;
+       for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){if(!dx&&!dz)continue;const nx=ix+dx,nz=iz+dz;if(nx<0||nz<0||nx>=W||nz>=H)continue;const j=nz*W+nx;if(blocked[j])continue;
+         if(dx&&dz&&(blocked[iz*W+nx]||blocked[nz*W+ix]))continue;const nd=d+(dx&&dz?1.4142:1);if(nd<dist[j]){dist[j]=nd;push(nd,j);}}}
+     const bad=[];
+     for(let n=0;n<12;n++){const a=allocatedPad(n,null),foot={x:a.x,z:a.z+a.d/2+2},at=dist[idx(foot.x,foot.z)],straight=Math.hypot(foot.x,foot.z-60);
+       if(!(at<1e8)||at>straight*1.2+8)bad.push(`pad ${a.number} at ${a.x},${a.z}: ${at<1e8?Math.round(at)+' m walk for '+Math.round(straight)+' m straight':'unreachable'}`);}
+     check('every pad (the first twelve) can be walked to from the middle of the port with no detour over 20%: the side kerbs have dropped openings',bad.length===0&&dist[idx(0,60)]===0,bad.join('; '));}
     const drift=port.assets.filter(a=>a.authored&&!registry.dimensionDrift(a.id).withinTolerance);
     check('port assets measure within 5 cm of their authored sizes',drift.length===0,JSON.stringify(drift.map(a=>[a.name,a.authored,a.measured])));
     // 2026-10-01: 19 calls including the moving car and three door leaves; geometry still stays under 40k triangles.

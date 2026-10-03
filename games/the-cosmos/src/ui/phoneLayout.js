@@ -38,7 +38,10 @@ const CSS = `
 #phone-ui #ff-bar.dk[hidden]{display:none}
 html.phone-ui #hud{max-width:calc(100vw - 118px)}
 html.phone-ui #voice-heard{top:calc(var(--hud-bottom,64px) + 46px)}
-html.phone-ui #ship-panel{max-height:calc(var(--dock-top,60vh) - 96px - env(safe-area-inset-top,0px))}
+/* ROUND7: everything at the top stacks from the status box's real bottom, never from a guessed pixel: status box, then the pilot / station strip, then a sheet that opens under it (so a sheet can no longer cover Range / Course / Jobs), then the free-flight read-outs */
+html.phone-ui #ship-panel{top:calc(var(--hud-bottom,88px) + 8px)!important;bottom:auto!important;max-height:calc(var(--dock-top,60vh) - var(--hud-bottom,88px) - 16px)}
+html.phone-ui #ship-panel.fly{max-height:none}
+html.phone-ui #space-sheet{top:calc(var(--strip-bottom,var(--hud-bottom,88px)) + 8px)!important;max-height:calc(var(--dock-top,60vh) - var(--strip-bottom,var(--hud-bottom,88px)) - 16px)!important}
 /* instant feedback: every button answers the moment a finger lands, and shows it is waiting while the shared world decides */
 button.pressed,a.btn.pressed{filter:brightness(1.45)}
 button.pending{opacity:.72}
@@ -86,6 +89,9 @@ export class PhoneLayout {
     document.documentElement.style.setProperty('--dock-top', Math.round(top) + 'px');
     const hud = document.getElementById('hud');
     if (hud) document.documentElement.style.setProperty('--hud-bottom', Math.round(hud.getBoundingClientRect().bottom) + 'px');
+    // the pilot / station strip (ship panel) sits under the status box; a sheet or the free-flight read-outs sit under that
+    const sp = document.getElementById('ship-panel'), sr = sp && getComputedStyle(sp).display !== 'none' ? sp.getBoundingClientRect() : null;
+    document.documentElement.style.setProperty('--strip-bottom', sr && sr.height > 0 ? Math.round(sr.bottom) + 'px' : (hud ? Math.round(hud.getBoundingClientRect().bottom) : 64) + 'px');
   }
 
   /** The press is shown on the pointer-down, not after the round trip; an action that goes to the shared world shows a spinner until its receipt. */

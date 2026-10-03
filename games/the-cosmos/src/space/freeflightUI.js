@@ -143,8 +143,8 @@ export class FreeFlightUI {
       return { front, x: front ? (_d.x * k / tanX + 1) / 2 * W : 0, y: front ? (1 - _d.y * k / tanY) / 2 * H : 0, cx: _d.x, cy: _d.y };
     };
     // the sky the markers may use: under the read-outs, above the bar, inside the sides (a clamped marker stays where a thumb is not)
-    const hudB = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hud-bottom')) || 64, phone = document.documentElement.classList.contains('phone-ui');
-    const barTop = this.bar.getBoundingClientRect().top || H, y0 = hudB + (phone ? 52 : 6), textH = 4 * 15 + 8;
+    const hudB = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--strip-bottom')) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hud-bottom')) || 64, phone = document.documentElement.classList.contains('phone-ui');
+    const barTop = this.bar.getBoundingClientRect().top || H, y0 = hudB + (phone ? 8 : 6), textH = 4 * 15 + 8;
     const L = 22, Rr = W - 22, T = y0 + textH + 6, Bm = Math.max(T + 80, Math.min(H - 20, barTop - 14));
     const edge = (p) => {                         // clamp to that box; the arrow points the way
       const cx = (L + Rr) / 2, cyy = (T + Bm) / 2, ang = Math.atan2(-p.cy, p.cx);

@@ -9,6 +9,7 @@
 // ============================================================================
 
 import { CREW_POSTS, ORDERS, thinkDelay } from './crewSpec.js';
+import { personVisible } from './personVisibility.js';
 import { bindActivation, guardSheetPress } from '../ui/activation.js';
 import { landingOrder } from '../space/spaceSpec.js';
 import { workerHTML, WAGES } from '../economy/dialogue.js';
@@ -57,7 +58,9 @@ export class CrewUI {
     root.innerHTML = `<button class="cbtn" id="crew-talk"></button><div id="crew-panel"></div>`;
     document.body.appendChild(root);
     this.btn = root.querySelector('#crew-talk'); this.panel = root.querySelector('#crew-panel');
-    bindActivation(this.btn,()=>{this._accum=1;this.update(0);this.toggle();});
+    // ROUND7 tap loss: the tap used to re-pick who is nearest at the instant of the tap, so a thumb that was still on the move
+    // (or a worker standing next to another) turned a visible button into a no-op. The tap now acts on who the button showed.
+    bindActivation(this.btn,()=>{if(!this.target||this.btn.style.display==='none')this._accum=1,this.update(0);this.toggle();});
     guardSheetPress(this.panel);
     this.panel.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.panel.addEventListener('click', (e) => this._click(e));
@@ -65,6 +68,17 @@ export class CrewUI {
       if (e.code === 'KeyT' && !e.repeat) { this.toggle(); }
       else if (e.code === 'Escape' && this.open) this.close();
     });
+  }
+
+  /** Metres from the player to a crew member or port worker (Infinity if they are not drawn). */
+  _dist(m) {
+    try {
+      if (!personVisible(m.person)) return Infinity;
+      const w = this.walker.worldPos;
+      if (this.crew.members.get && this.crew.members.get(m.id) === m) { const p = this.crew.worldPosOf(m); return Math.hypot(p.x - w.x, p.y - w.y, p.z - w.z); }
+      if (this.portPeople) { const l = this.portPeople.port.site.toLocal(w), g = m.person.group.position; return Math.hypot(l.x - g.x, l.y - g.y, l.z - g.z); }
+    } catch { /* fall through */ }
+    return Infinity;
   }
 
   /** A line a crew member says. The ship's own message line shows it on screen (crewSystem.say sends it there); here it is
@@ -82,7 +96,10 @@ export class CrewUI {
     this._accum += dt;
     if (this._accum < 0.2) return;
     this._accum = 0;
-    const near = this.crew.nearest(this.walker.worldPos) || (!this.ship.aboard && this.portPeople?.nearest(this.walker.worldPos));
+    let near = this.crew.nearest(this.walker.worldPos) || (!this.ship.aboard && this.portPeople?.nearest(this.walker.worldPos));
+    // stay with the person the button is about while they are still close (up to 4.5 m, and not once someone else is clearly closer by 0.4 m), so walking past or a second person
+    // nearby does not swap or drop the target under the thumb
+    if (this.target && near !== this.target) { const d0 = this._dist(this.target); if (d0 < 4.5 && d0 <= (near ? this._dist(near) : Infinity) + 0.4) near = this.target; }
     if (this.open) {
       if (!near || near !== this.target) { this.close(); this.target = near; }
       else this._draw();

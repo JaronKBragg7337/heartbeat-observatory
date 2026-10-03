@@ -174,12 +174,20 @@ export class Transit {
   }
 }
 
-/** How long a trip takes, by flying it (one-second steps), and the speed it peaks at. */
+/** How long a trip takes, by flying it, and the speed it peaks at.
+ *  ROUND7: this used to step in whole seconds. The controller is only stable at 0.25 s or less (the same flight in 1 s steps chattered in
+ *  the creep and never "arrived" for a standoff point 3 m higher: ETA 400,000 s, and 1,996 s instead of 1,801 s for another height).
+ *  Now it flies the real 0.25 s steps, and if a flight still does not arrive it falls back to the plain flip-and-burn arithmetic
+ *  (never a made-up number): `arrived` is false and `seconds` is that estimate, not the step cap. */
 export function estimateTrip(o) {
-  const t = new Transit(o);
+  const t = new Transit(o), CAP = 4 * 3600 * 24;       // four days of ship time is far beyond any course here
   let guard = 0;
-  while (!t.done && guard++ < 400000) t.step(1.0, o.aMax);
-  return { seconds: t.t, peakSpeed: t.peakSpeed, arrived: t.done, error: len(sub(t.pos, o.goal)) };
+  while (!t.done && t.t < CAP && guard++ < 2_000_000) t.step(0.25, o.aMax);
+  if (t.done) return { seconds: t.t, peakSpeed: t.peakSpeed, arrived: true, error: len(sub(t.pos, o.goal)) };
+  const D = len(sub(o.goal, o.pos)), a = Math.max(1e-6, (o.aMax || 1) * (t.brakeFrac || 0.85)), vMax = o.vMax ?? TRANSIT_DEFAULTS.vMax;
+  const dAcc = vMax * vMax / a, flip = Math.PI / (o.turnRate ?? TRANSIT_DEFAULTS.turnRate);
+  const secs = D <= dAcc ? 2 * Math.sqrt(D / a) + 2 * flip : 2 * vMax / a + (D - dAcc) / vMax + 2 * flip;
+  return { seconds: secs, peakSpeed: Math.min(vMax, Math.sqrt(D * a)), arrived: false, error: len(sub(t.pos, o.goal)) };
 }
 
 export const _v = { sub, add, mul, unit, dot, len, cross };

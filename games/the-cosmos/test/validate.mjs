@@ -681,6 +681,10 @@ await runCargoChecks({ check, section, THREE, mars, FIELD });
 const { runFreeflightChecks } = await import('./freeflight-checks.mjs');
 await runFreeflightChecks({ check, section, THREE, mars });
 
+// 31. Round 7: one candidate per post, storage fault clears itself.
+const { runRound7Checks } = await import('./round7-checks.mjs');
+await runRound7Checks({ check, section });
+
 console.log('\n========================================');
 console.log(`RESULT: ${pass} passed, ${fail} failed`);
 if (fail) console.log('FAILED:\n  - ' + failures.join('\n  - '));
