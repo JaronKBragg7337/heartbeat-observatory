@@ -24,10 +24,12 @@ a trip of weeks costs the server nothing at any compression. The state is plain 
   `record.unlocks.heavyDrive` (bible 16: big ships need the unlocks). Every ship in the game today may go.
 * **Cancel**: slows at the drive's own acceleration to a stop between the worlds; a new course from there is a long drive again (a ship far from its home region can only
   come home by the drive; a main-drive transit from there would take months).
-* **F2 hook**: `CLOCK.now()` (longRange.js) is the world clock the targets are read at; F2 replaces it. The ship's trip clock runs compressed; the world clock does not, so
-  the target is where the sky says it is on arrival.
+* **F2 (spin and orbits)**: the cruise is flown in INERTIAL axes and written back into Mars's turning axes each tick (`SpaceTrip._cruiseStep`); the targets are read with
+  `worldCentreInertial(id, T)` at the SHIP's own clock (`flight.epochS`, which compression runs fast, exactly as for the main drive), so the destination is where it will be.
+  A ship that has dropped out off a world with no ground yet, or was stopped by a cancel, is a **deep hold** (`src/space/deepHold.js`): a point fixed relative to that world
+  (or in inertial space), written every tick, so she keeps her place beside Earth as Earth goes round the Sun instead of circling Mars at 7,000 km/s. It is saved with the ship.
 
 ## Honest simplifications
 The acceleration is fiction (Game 1 is semi sci-fi); distances, sizes and the moving targets are real. The planets' pull is ignored in the cruise. The path is one straight
-line (it does not steer round the Sun). The hull's turn-over at half way is a 26 second animation while the speed profile flips instantly. Free flight works at the hold
-(she answers the stick), but free flight's own target list is still Mars and its moons. Fuel is not priced. Earth, the Moon and Callisto cannot be landed on until their worlds are built.
+line (it does not steer round the Sun). The hull's turn-over at half way is a 26 second animation while the speed profile flips instantly. Free flight is refused at a deep hold
+(it is charted in Mars's space only; the drive flies her out there). Fuel is not priced. Earth, the Moon and Callisto cannot be landed on until their worlds are built.

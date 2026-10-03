@@ -274,7 +274,7 @@ export async function runSpaceChecks({ check, section, THREE, mars, FIELD, GEO, 
     check(`engine share is the drive: doubling it shortens the trip (${(e40.seconds / 60).toFixed(0)} min -> ${(e80.seconds / 60).toFixed(0)} min), halving it lengthens it (${(e20.seconds / 60).toFixed(0)} min); the cruise time goes as 1/sqrt(a), the turn-overs and the creep do not`,
       e80.seconds < e40.seconds * 0.9 && e20.seconds > e40.seconds * 1.2 && e20.seconds > e80.seconds * 1.5);
     const dd = estimateTrip(mk(gate, up0, goalOf('deimos')));
-    check(`Deimos is farther and takes longer (${(dd.seconds / 60).toFixed(0)} min) and the drive reaches it exactly too`, dd.arrived && dd.error < 2 && dd.seconds > e40.seconds * 1.5);
+    check(`Deimos is farther and takes longer (${(dd.seconds / 60).toFixed(0)} min) and the drive reaches it exactly too`, dd.arrived && dd.error < 2 && dd.seconds > e40.seconds * 1.2);      // F3: was 1.5 while the moons stood still; with orbiting moons (F2) the two trips depend on where each moon is, so the check says only that the farther moon takes clearly longer
     // ROUND7: the trip estimate must not depend on the exact height of the standoff point. It used to fly in 1 s steps (the controller is only stable at 0.25 s):
     // a standoff point 3 m higher never "arrived" (ETA 400,000 s) and another height gave 1,996 s instead of 1,801 s.
     {

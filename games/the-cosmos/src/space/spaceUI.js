@@ -50,7 +50,7 @@ export class SpaceUI {
     const speed=document.createElement('div');speed.id='flight-speed';speed.hidden=true;
     speed.style.cssText='position:fixed;left:12px;right:12px;bottom:112px;z-index:71;padding:7px;background:#04141be8;border:1px solid #5fd8ff66;border-radius:10px;color:#d8f6ff;font:11px system-ui';
     const label=document.createElement('div');speed.append(label);this.speedLabel=label;
-    for(const w of [...new Set([...DRIVE.warps,...LONG.warps])].sort((a,b)=>a-b)){const button=document.createElement('button');button.textContent='×'+w;button.dataset.w=String(w);
+    for(const w of [...new Set([...DRIVE.warps,...LONG.warps])].sort((a,b)=>a-b)){const button=document.createElement('button');button.textContent='×'+w;button.dataset.w=String(w);button.hidden=!DRIVE.warps.includes(w);
       button.style.cssText='min-height:44px;min-width:48px;margin:3px;background:#12333f;color:#d8f6ff;border:1px solid #5fd8ff66;border-radius:7px';
       bindActivation(button,()=>space.setWarp(w));speed.append(button);}
     document.body.append(speed);this.speed=speed;

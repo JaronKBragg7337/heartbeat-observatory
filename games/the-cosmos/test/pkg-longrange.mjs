@@ -53,7 +53,7 @@ export async function run({ check, section }) {
   check('only small ships may go: the Meridian (46 t) and the Drayman can, a 300 t hull cannot until the heavy drive is unlocked; an unlock lets it', L.longDriveAllowed({ phys: { massKg: 46000 } }).ok && !L.longDriveAllowed({ phys: { massKg: 300000 } }).ok && L.longDriveAllowed({ phys: { massKg: 300000 } }, true).ok && !L.longDriveAllowed({ longRange: false }).ok);
   const { allShipDefs } = await src('ships/registry.js');
   check('every ship in the game may use the drive today (none is over the limit)', allShipDefs().every((d) => L.longDriveAllowed(d).ok), allShipDefs().filter((d) => !L.longDriveAllowed(d).ok).map((d) => d.type + ' ' + (d.phys && d.phys.massKg)).join(','));
-  check('the trip clock is a hook for F2: replaced by the world clock, and the targets read it', typeof L.CLOCK.now === 'function' && L.targetAt('earth', 0, { x: 0, y: 0, z: 0 }) && Math.hypot(...Object.values(L.targetAt('earth', 0, { x: 0, y: 0, z: 0 }))) > 1e10);
+  check('targetAt names a drop-out point on the side facing the ship', Math.hypot(...Object.values(L.targetAt('earth', 0, { x: 0, y: 0, z: 0 }))) > 1e10);
 
   // ---------------------------------------------------------------- the registry and the nav rows
   section('F3b. Earth, the Moon, Ceres and Callisto are reachable from day one');
@@ -94,10 +94,12 @@ export async function run({ check, section }) {
       if (o.stopWhen && o.stopWhen(sim.trip)) break;
     }
     for (let i = 0; i < 600 && sim.trip; i++) tick();
-    return { dest, frame: sim.frameId, landed: sim.flight.landed, tripLeft: !!sim.trip, simS: Math.round(world.state.clock - t0), phases, peak, cruiseTicks: cruiseWall.ticks, realCruiseS: cruiseWall.ticks / 30, gameS, pos: { ...sim.flight.pos } };
+    return { dest, frame: sim.frameId, landed: sim.flight.landed, tripLeft: !!sim.trip, simS: Math.round(world.state.clock - t0), phases, peak, cruiseTicks: cruiseWall.ticks, realCruiseS: cruiseWall.ticks / 30, gameS, pos: { ...sim.flight.pos }, posI: posI() };
   };
+  const FR = await src('space/frames.js');
   const dist = (a2, b2) => Math.hypot(a2.x - b2.x, a2.y - b2.y, a2.z - b2.z);
-  const centre = (id) => reg.worldCentre(id, 0);
+  const posI = () => FR.toInertial(sim.flight.pos, sim.flight.epochS ?? sim.worldTime());          // F2: she is held on her own clock, in inertial axes
+  const centre = (id) => reg.worldCentreInertial(id, sim.flight.epochS ?? sim.worldTime());
 
   // the nav computer's estimate, from the client's planner on the same ship (the server's sim has no destinations(); the probe is the same code)
   const { SpaceTrip } = await src('space/spaceTrip.js');
@@ -107,16 +109,15 @@ export async function run({ check, section }) {
 
   const r1 = fly('earth');
   check(`a course to Earth: climb, main drive out, the long drive, a drop-out and a hold off the planet (${r1.phases.join(' > ')})`, !r1.err && r1.phases.includes('longdrive') && !r1.tripLeft && r1.frame === 'mars' && !r1.landed, JSON.stringify(r1));
-  const eC = centre('earth'), dEarth = dist(r1.pos, eC), kEarth = L.dropDistanceM('earth');
+  const eC = centre('earth'), dEarth = dist(r1.posI, eC), kEarth = L.dropDistanceM('earth');
   check(`she holds ${(dEarth / 1000).toFixed(0)} km off Earth's centre (the drop-out is ${(kEarth / 1000).toFixed(0)} km: 14 radii), on the side facing Mars`, Math.abs(dEarth - kEarth) < 5, `${dEarth} vs ${kEarth}`);
   check(`the cruise took ${r1.realCruiseS.toFixed(0)} real seconds at the top of the ladder for ${(e1.pl.long / 86400).toFixed(1)} game days, and she touched ${(r1.peak / 1000).toFixed(0)} km/s`, r1.realCruiseS > 60 && r1.realCruiseS < 900 && Math.abs(r1.peak - e1.pl.longPeak) / e1.pl.longPeak < 0.02, JSON.stringify([r1.realCruiseS, r1.peak, e1.pl.longPeak]));
   check(`the estimate was right: ${(r1.gameS / 86400).toFixed(2)} game days flown in the cruise against ${(e1.pl.long / 86400).toFixed(2)} quoted; ${r1.realCruiseS.toFixed(0)} real seconds against ${L.realSeconds(e1.pl.long).toFixed(0)} quoted`, Math.abs(r1.gameS - e1.pl.long) < 0.003 * e1.pl.long + 300 && Math.abs(r1.realCruiseS - L.realSeconds(e1.pl.long)) < 3, `${r1.gameS} ${e1.pl.long} ${r1.realCruiseS} ${L.realSeconds(e1.pl.long)}`);
-  // free flight works out there too (it is the way to fly a hyperbola; the long drive does not): she answers the stick and stays finite
-  { const en = sim.ff.setEnabled(true); const p0 = { ...sim.flight.pos }; seat();
-    for (let i = 0; i < 90; i++) { sim.ff.setInput({ thrust: 1, brake: 0, pitch: 0, yaw: 0, roll: 0, rcs: 0 }); tick(); }
-    const moved = dist(sim.flight.pos, p0); sim.ff.setInput(null);
-    check(`free flight off Earth: enabled (${en.ok}), a three second burn moves her ${moved.toFixed(0)} m and every number stays finite`, en.ok !== false && Number.isFinite(sim.flight.pos.x + sim.flight.pos.y + sim.flight.pos.z) && Number.isFinite(sim.flight.vel.x), JSON.stringify([en, moved]));
-    sim.ff.setEnabled(false); sim.flight.vel.x = sim.flight.vel.y = sim.flight.vel.z = 0; }
+  // free flight is not charted out there (the long drive flies the ship): it is refused, and nothing breaks
+  { const en = sim.ff.setEnabled(true); for (let i = 0; i < 60; i++) tick();
+    check('free flight is refused while she is held out in deep space (the drive owns her)', !sim.ff.active && Number.isFinite(sim.flight.pos.x + sim.flight.pos.y + sim.flight.pos.z), JSON.stringify(en)); sim.ff.setEnabled(false); }
+  { const p0 = posI(), t0 = sim.flight.epochS; for (let i = 0; i < 300; i++) tick(); const t1 = sim.flight.epochS, d = dist(posI(), centre('earth'));
+    check(`held off Earth for ten seconds she keeps her place beside the planet as it moves (${(d / 1000).toFixed(0)} km off) and her clock runs`, Math.abs(d - kEarth) < 5 && t1 > t0 + 9 && dist(p0, posI()) > 1, `${d} ${kEarth} ${t0} ${t1}`); }
   // from out there, Mars (the port) is a long drive home
   const probeHome = probe('port');
   check('held off Earth, the nav computer offers the way home as a long drive too (a main-drive transit from there would take months)', probeHome.legs[0].cruise === true && probeHome.pl.long > 1e5, JSON.stringify(probeHome.legs[0]));
@@ -125,7 +126,7 @@ export async function run({ check, section }) {
 
   // the Moon is next to Earth: reachable too
   const r3 = fly('moon');
-  check(`the Moon: ${(dist(r3.pos, centre('moon')) / 1000).toFixed(0)} km off, held`, !r3.err && r3.frame === 'mars' && !r3.landed && Math.abs(dist(r3.pos, centre('moon')) - L.dropDistanceM('moon')) < 5 && r3.phases.includes('longdrive'), JSON.stringify(r3));
+  check(`the Moon: ${(dist(r3.posI, centre('moon')) / 1000).toFixed(0)} km off, held`, !r3.err && r3.frame === 'mars' && !r3.landed && Math.abs(dist(r3.posI, centre('moon')) - L.dropDistanceM('moon')) < 5 && r3.phases.includes('longdrive'), JSON.stringify(r3));
 
   // cancelling in the middle of the cruise: she brakes to a stop between the worlds, and a new course still works
   const r4 = fly('callisto', { onCruise: (t, n) => n > 20 && t.cruise.tau > t.cruise.profile.T * 0.3 });
@@ -139,7 +140,7 @@ export async function run({ check, section }) {
   check(`the world state with a ship mid-cruise is still small (${sizeBytes} bytes, under 70 kB)`, sizeBytes < 70_000);
   world.reduce(p, { type: 'cancel-trip' });
   for (let i = 0; i < 200_000 && sim.trip && sim.trip.active; i++) { wantWarp(5400); tick(); }
-  check('the cancelled cruise brakes to rest and holds between the worlds', !sim.trip && Math.hypot(sim.flight.vel.x, sim.flight.vel.y, sim.flight.vel.z) < 1e-3 && dist(sim.flight.pos, centre('callisto')) > 1e11 && dist(sim.flight.pos, { x: 0, y: 0, z: 0 }) > 1e10 && x0 > 0, JSON.stringify(sim.flight.pos));
+  check('the cancelled cruise brakes to rest and holds between the worlds', !sim.trip && (() => { const vi = FR.velToInertial(sim.flight.pos, sim.flight.vel, sim.flight.epochS); return Math.hypot(vi.x, vi.y, vi.z) < 1e-3; })() && dist(posI(), centre('callisto')) > 1e11 && dist(sim.flight.pos, { x: 0, y: 0, z: 0 }) > 1e10 && x0 > 0, JSON.stringify(sim.flight.pos));
   for (let i = 0; i < 600; i++) tick();
   check('left alone out there for 20 seconds, she stays put (no drift, no NaN)', Number.isFinite(sim.flight.pos.x) && Number.isFinite(sim.flight.pos.y) && Number.isFinite(sim.flight.pos.z));
   const r5 = fly('port');
@@ -158,7 +159,7 @@ export async function run({ check, section }) {
   const r8 = fly('ceres');
   check(`the Ore Lane still takes her to Ceres (${r8.phases.join(' > ')}) and the fee is taken`, !r8.err && r8.frame === 'ceres' && r8.landed && r8.phases.includes('spool') && !r8.phases.includes('longdrive') && ship.economy.laneFees > 0, JSON.stringify(r8));
   const r9 = fly('callisto');
-  check('from Ceres, Callisto is reachable by the long drive (the ship leaves Ceres, cruises to Jupiter\'s moon, holds)', !r9.err && r9.phases.includes('longdrive') && r9.frame === 'ceres' || (r9.phases.includes('longdrive') && Math.abs(dist(r9.pos, centre('callisto')) - L.dropDistanceM('callisto')) < 5), JSON.stringify(r9));
+  check('from Ceres, Callisto is reachable by the long drive (the ship leaves Ceres, cruises to Jupiter\'s moon, holds)', !r9.err && r9.phases.includes('longdrive') && r9.frame === 'ceres' || (r9.phases.includes('longdrive') && Math.abs(dist(r9.posI, centre('callisto')) - L.dropDistanceM('callisto')) < 5), JSON.stringify(r9));
 
   // a heavy hull is refused with the reason (the guard is on the server, in the plan)
   const saved = sim.def.phys.massKg; sim.def.phys.massKg = 400_000;
