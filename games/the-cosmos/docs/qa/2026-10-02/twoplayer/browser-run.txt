@@ -31,4 +31,4 @@ Ready tier=low { safe: false, failed: 0, problem: undefined }
 Ready tier=low { safe: false, failed: 0, problem: undefined }
 Ready tier=low { safe: false, failed: 0, problem: undefined }
 Ready tier=low { safe: false, failed: 0, problem: undefined }
-Two-player browser checks passed {"samples":120,"stalledIterations":0,"playerRms":0.16323725210063839,"shipRms":0.8341148333257938,"playerMax":0.4779999996457192,"shipMax":2.389999999782351,"attempts":1}
+Two-player browser checks passed {"samples":120,"stalledIterations":0,"playerRms":0.16888782893886778,"shipRms":0.8673659345648469,"playerMax":0.4987998045154976,"shipMax":2.4939990232543674,"attempts":1}

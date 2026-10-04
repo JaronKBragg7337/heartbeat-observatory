@@ -12,6 +12,8 @@ import { PortSystem } from '../src/port/portSystem.js';
 import { BUILDINGS, TOWER, createPortSite } from '../src/port/portSpec.js';
 import { Registry } from '../src/core/registry.js';
 import { ShipStage } from '../src/opening/stageShip.js';
+import { buildLifeboatExterior } from '../src/ships/lifeboat/exterior.js';
+import { LAYOUT as SKIFF } from '../src/ships/lifeboat/spec.js';
 import { materialAt } from '../src/world/field.js';
 
 export async function run({ check, section, THREE, mars }) {
@@ -31,6 +33,9 @@ export async function run({ check, section, THREE, mars }) {
   check('unknown sign fails instead of silently displaying MEDBAY',(()=>{try{signs.uvFor('NONEXISTENT ROOM');return false;}catch{return true;}})());
   check('Hellas Dawn has exactly one MEDBAY label',defs.find(s=>s.type==='transport').layout.doors.filter(d=>d.sign==='MEDBAY').length===1);
   check('a deliberately obstructing decorative prop is detected',overlaps({x0:3.2,x1:3.6,y0:0,y1:3,z0:17,z1:18},doorClearSpace({axis:'x',at:3.4,c:17.7,w:1.4,y:0,h:2.3})));
+  // The port atlas paints gradients: a canvas stub whose calls return chainable no-op objects (the shared stub returns undefined).
+  const ctx=()=>new Proxy({},{get:(t,k)=>k in t?t[k]:k==='getImageData'||k==='createImageData'?(x,y,w,h)=>({width:w,height:h,data:new Uint8ClampedArray((w||1)*(h||1)*4)}):k==='createRadialGradient'||k==='createLinearGradient'||k==='createPattern'?()=>({addColorStop(){}}):k==='measureText'?()=>({width:0}):()=>{},set:(t,k,v)=>{t[k]=v;return true;}}),prevDoc=globalThis.document;
+  globalThis.document={createElement:()=>{const c={width:0,height:0};const g=ctx();c.getContext=()=>g;return c;}};
   const site=createPortSite(mars),engine={scene:new THREE.Scene(),track:x=>x,untrack:()=>{}};
   const port=new PortSystem(engine,new Registry(),site,'low',mats);port.build();
   const spaces=BUILDINGS.filter(a=>a.doorW).map(a=>doorClearSpace({id:a.id,axis:'z',at:a.z+a.d/2,c:a.x,w:a.doorW,y:0,h:2.8}));
@@ -39,6 +44,7 @@ export async function run({ check, section, THREE, mars }) {
   check('every port room: every rendered fitting box clears every entrance and lift door',port.fittingBoxes.length>100&&port.fittingBoxes.every(b=>spaces.every(d=>!overlaps(b,d))));
   const collisionBad=port.boxes.filter(b=>spaces.some(d=>overlaps(b,d)));
   check('port collision boxes do not block doorway clear spaces',collisionBad.length===0,JSON.stringify(collisionBad));
+  globalThis.document=prevDoc;
   port.setNight(1);check('night keeps settlement lights at building fronts and paths',port.settlementLights.length===4&&port.settlementLights.every(l=>l.intensity>0));
   const stage=new ShipStage({engine,type:'transport',mats:{int:mats,ext:mats},signs,tier:'low'});
   stage.setRamps(0,1,true);stage.sw.place(14,-.2,26.7,Math.PI/2);
@@ -63,4 +69,13 @@ export async function run({ check, section, THREE, mars }) {
   let h={},g={id:'arrivals',onPlanet:true,distance:50,target:{},reach:12};h=hintState(h,59,g);check('goal arrow stays hidden during the first 59 seconds',!h.visible);
   h=hintState(h,1,g);check('goal arrow appears at 60 seconds away',h.visible);
   check('goal arrow hides when close, aboard, or when the goal changes',!hintState(h,0,{...g,distance:5}).visible&&!hintState(h,0,{...g,onPlanet:false}).visible&&!hintState(h,0,{...g,id:'kestrel'}).visible);
+  { // Skiff flight deck: nothing of the hull may stand between the pilot's aisle and the deck's aft door
+    const ext=buildLifeboatExterior(SKIFF,mats,{world:'mars'}),hull=ext.root.getObjectByName('hull');ext.root.updateMatrixWorld(true);
+    const door=SKIFF.doors.find(d=>d.id==='d_cockpit'),bad=[];
+    for(const x of [-1.2,-.6,0,.6,1.2])for(const y of [1.2,1.8,2.2])for(const dxs of [-.5,0,.5]){
+      const from=new THREE.Vector3(x,y,-4.6),to=new THREE.Vector3(door.c+dxs*door.w*.8,Math.min(y,door.h-.1),door.at),dir=to.clone().sub(from);
+      const hit=new THREE.Raycaster(from,dir.clone().normalize(),0,dir.length()-.01).intersectObject(hull,false);if(hit.length)bad.push(x+','+y+' hits hull at '+hit[0].distance.toFixed(2));
+    }
+    check('Skiff flight deck: the hull never covers the aft door from the pilot aisle',bad.length===0,bad.slice(0,3).join('; '));
+  }
 }

@@ -11,10 +11,10 @@
     "networkJitter": {
       "samples": 120,
       "stalledIterations": 0,
-      "playerRms": 0.16323725210063839,
-      "shipRms": 0.8341148333257938,
-      "playerMax": 0.4779999996457192,
-      "shipMax": 2.389999999782351,
+      "playerRms": 0.16888782893886778,
+      "shipRms": 0.8673659345648469,
+      "playerMax": 0.4987998045154976,
+      "shipMax": 2.4939990232543674,
       "attempts": 1
     },
     "graphicsMatrix": [
@@ -140,7 +140,7 @@
       {
         "reason": "clear color",
         "safe": true,
-        "playerId": "a62b8c17-71c4-4242-93b8-c3af92df8ad9",
+        "playerId": "653b1811-97a7-46fc-8880-09994cfa273c",
         "nonClearFrame": true,
         "failures": 0,
         "calls": 87,
@@ -150,7 +150,7 @@
       {
         "reason": "context lost",
         "safe": true,
-        "playerId": "a62b8c17-71c4-4242-93b8-c3af92df8ad9",
+        "playerId": "653b1811-97a7-46fc-8880-09994cfa273c",
         "nonClearFrame": true,
         "failures": 0,
         "calls": 87,
@@ -160,7 +160,7 @@
       {
         "reason": "Shader compile",
         "safe": true,
-        "playerId": "a62b8c17-71c4-4242-93b8-c3af92df8ad9",
+        "playerId": "653b1811-97a7-46fc-8880-09994cfa273c",
         "nonClearFrame": true,
         "failures": 0,
         "calls": 87,
@@ -170,7 +170,7 @@
       {
         "reason": "out of memory",
         "safe": true,
-        "playerId": "a62b8c17-71c4-4242-93b8-c3af92df8ad9",
+        "playerId": "653b1811-97a7-46fc-8880-09994cfa273c",
         "nonClearFrame": true,
         "failures": 0,
         "calls": 87,
@@ -185,77 +185,77 @@
     "safeFailureDoesNotLoop": true,
     "diagnostics": [
       {
-        "at": "2026-10-04T18:07:05.826Z",
+        "at": "2026-10-04T21:43:28.784Z",
         "reason": "Shader compile/link: Fragment shader is not compiled.  ERROR: 0:264: 'sampler3D' : Illegal use of reserved word ERROR: 0:264: 'sampler3D' : syntax error ",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:07:14.561Z",
+        "at": "2026-10-04T21:43:36.579Z",
         "reason": "Shader compile/link: Fragment shader is not compiled.  ERROR: 0:264: 'sampler3D' : Illegal use of reserved word ERROR: 0:264: 'sampler3D' : syntax error ",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:08:59.043Z",
+        "at": "2026-10-04T21:45:52.994Z",
         "reason": "First frames contain only the clear color",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:09:11.362Z",
+        "at": "2026-10-04T21:46:00.140Z",
         "reason": "First frames contain only the clear color",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:09:38.074Z",
+        "at": "2026-10-04T21:46:25.854Z",
         "reason": "WebGL context lost",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:09:47.786Z",
+        "at": "2026-10-04T21:46:38.435Z",
         "reason": "WebGL context lost",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:10:08.993Z",
+        "at": "2026-10-04T21:47:10.342Z",
         "reason": "Shader compile/link: Fragment shader is not compiled.  ERROR: 0:142: 'THIS' : syntax error ",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:10:22.406Z",
+        "at": "2026-10-04T21:47:18.752Z",
         "reason": "Shader compile/link: Fragment shader is not compiled.  ERROR: 0:142: 'THIS' : syntax error ",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:10:50.471Z",
+        "at": "2026-10-04T21:47:43.594Z",
         "reason": "WebGL out of memory",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:11:03.430Z",
+        "at": "2026-10-04T21:47:51.935Z",
         "reason": "WebGL out of memory",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",
         "tier": "low"
       },
       {
-        "at": "2026-10-04T18:11:17.336Z",
+        "at": "2026-10-04T21:47:57.371Z",
         "reason": "Synthetic safe-mode failure",
         "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
         "browser": "Chrome",

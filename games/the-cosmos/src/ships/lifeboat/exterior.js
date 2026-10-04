@@ -28,7 +28,7 @@ export function buildLifeboatExterior(layout, matsIn, opts = {}) {
     return c;
   };
   const { mesh, caps } = buildHullShell(HULL, mats, {
-    dz: 0.4, colorFn, capColor: [0.45, 0.45, 0.45], tail: { hole: { x0: -1.25, x1: 1.25, y0: 0, y1: 2.25 } },
+    dz: 0.4, colorFn, riser: { z0: -2.52, z1: -2.5, yMin: 2.4 }, capColor: [0.45, 0.45, 0.45], tail: { hole: { x0: -1.25, x1: 1.25, y0: 0, y1: 2.25 } },
     cutouts: [{ side: 1, z0: -1.4, z1: -0.4, y0: 0, y1: 2.05 }],
   });
   root.add(mesh, caps);

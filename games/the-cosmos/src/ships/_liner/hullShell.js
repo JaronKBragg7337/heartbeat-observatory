@@ -26,6 +26,10 @@ export function buildHullShell(hull, mats, o = {}) {
   for (let z = hull.z0; z < hull.z1 - 1e-6; z += dz) zs.push(z);
   zs.push(hull.z1);
   // a cut-out must start and end on a ring so its edges are real edges
+  // fix-r1: a stepped roof (the Skiff's flight deck sits lower than its cabin). The near-vertical riser between z0 and z1 would stand in the
+  // flight deck's view of its own aft door, so its lower part (below yMin) is left to the deck's aft wall, which takes its place.
+  const riser = o.riser || null;
+  if (riser) for (const z of [riser.z0, riser.z1]) if (!zs.some((q) => Math.abs(q - z) < 1e-6)) zs.push(z);
   for (const c of cut) for (const z of [c.z0, c.z1]) if (!zs.some((q) => Math.abs(q - z) < 1e-6)) zs.push(z);
   zs.sort((a, b) => a - b);
   const rings = zs.map((z) => hull.octagon(z));
@@ -41,6 +45,12 @@ export function buildHullShell(hull, mats, o = {}) {
     for (let f = 0; f < 8; f++) {
       const a0 = A[f], a1 = A[(f + 1) % 8], b0 = B[f], b1 = B[(f + 1) % 8];
       const side = f === 0 ? 1 : f === 4 ? -1 : 0;
+      if (riser && f >= 1 && f <= 3 && Math.abs(zA - riser.z0) < 1e-6 && Math.abs(zB - riser.z1) < 1e-6) {
+        const lerpTo = (p, q) => { const t = Math.min(1, Math.max(0, (riser.yMin - p[1]) / Math.max(1e-6, q[1] - p[1]))); return [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, zA + (zB - zA) * t]; };
+        const c0 = lerpTo(a0, b0), c1 = lerpTo(a1, b1);
+        quad(c0, c1, [b1[0], b1[1], zB], [b0[0], b0[1], zB], [cum[i][f], c0[2]], [cum[i][f + 1], c1[2]], [cum[i + 1][f + 1], zB], [cum[i + 1][f], zB]);
+        continue;
+      }
       const cuts = side ? cut.filter((c) => c.side === side && c.z0 < zB - 1e-6 && c.z1 > zA + 1e-6) : [];
       if (!cuts.length) {
         quad([a0[0], a0[1], zA], [a1[0], a1[1], zA], [b1[0], b1[1], zB], [b0[0], b0[1], zB],

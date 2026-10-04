@@ -39,7 +39,7 @@ try {
   await setup(5,{x:-3.1,y:0,z:22.16,yaw:-Math.PI/2,pitch:0});await page.evaluate(()=>{const o=cosmos.opening;o.contactSeconds=10;cosmos.step(0);});await shot('opening-5-contact');
   await setup(6,{x:-7,y:0,z:23,yaw:0,pitch:0});await page.evaluate(()=>{cosmos.opening.state.ride=true;cosmos.opening.rover.seatPlayer();});
   for(const t of [0,10,20,30,40,50,60]){await page.evaluate(t=>{const o=cosmos.opening;o.rideSeconds=t;cosmos.step(0);},t);await shot('opening-6-ride-'+t);}
-  checks.push({name:'generated step-off MP3 decodes',pass:await page.evaluate(async()=>{const r=await fetch('/assets/voices/0432818af31325.mp3'),a=new AudioContext();try{const b=await a.decodeAudioData(await r.arrayBuffer());return b.duration>2;}finally{await a.close();}})});
+  checks.push({name:'generated step-off MP3 decodes (WebKit build has no WebAudio: size check there)',pass:await page.evaluate(async()=>{const r=await fetch('/assets/voices/0432818af31325.mp3'),buf=await r.arrayBuffer(),AC=window.AudioContext||window.webkitAudioContext;if(!AC)return buf.byteLength>20000;const a=new AC();try{const b=await a.decodeAudioData(buf);return b.duration>2;}finally{await a.close();}})});
   // Shared room renderer: capture every fleet room, since the clearance reservation applies to them all.
   const rooms=await page.evaluate(async()=>{const {allShipDefs}=await import('/src/ships/registry.js');return allShipDefs().flatMap(s=>s.layout.rooms.map(r=>({type:s.type,id:r.id})));});
   await page.evaluate(()=>{cosmos.opening.ui.hidden=true;cosmos.opening.goalHint.el.hidden=true;window.qaLabel=document.createElement('div');qaLabel.style.cssText='position:fixed;top:8px;left:8px;z-index:99;background:#111c;color:#fff;padding:6px;font:12px monospace';document.body.append(qaLabel);});
