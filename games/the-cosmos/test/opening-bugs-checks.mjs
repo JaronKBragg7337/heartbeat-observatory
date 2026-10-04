@@ -1,4 +1,5 @@
 import '../server/runtime.mjs';
+import { attachEdits, attachGrades } from '../src/world/field.js';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { Opening } from '../src/opening/opening.js';
@@ -63,6 +64,7 @@ export async function runOpeningBugChecks({check,section}) {
   const imports=JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
   assert.ok(Object.entries(imports).every(([,v])=>v.includes('?v='+JSON.parse(health).id)));
   check('space and local pilot returns accept compression, preserve the touchdown cap, and every module uses one build version',true);
+  attachEdits(null);attachGrades([]);       // OPENING2: leave the shared field as found, so the sections after this one start from the same ground
 }
 export async function runOpeningBugsBrowserChecks({check,section}) {
   section('33. Opening bug touch walkthrough at 390 × 844');

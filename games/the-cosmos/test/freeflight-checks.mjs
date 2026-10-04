@@ -259,8 +259,9 @@ export async function runFreeflightChecks({ check, section, THREE, mars }) {
     let maxStep = 0, last = { ...sim.flight.pos };
     for (let i = 0; i < 150; i++) { await tick(1, { thr: 1, pitch: 0 }); const step = Math.hypot(sim.flight.pos.x - last.x, sim.flight.pos.y - last.y, sim.flight.pos.z - last.z); maxStep = Math.max(maxStep, step); last = { ...sim.flight.pos }; }
     const gained = speedOf() - s0;
+    // (OPENING2: 3 -> 6 m/s. The ship turns to prograde from the heading she landed with, which depends on the port site the earlier sections' worlds found; she gains 61 to 65 of the 65 m/s.)
     check(`the pilot's thrust, sent as an input lease, burns the drive for the authority: +${gained.toFixed(1)} m/s in 5 s (the drive makes ${sim.ff.aMax.toFixed(1)} m/s2), fuel ${(100 * (fuel0 - sim.ff.fuel)).toFixed(2)}% used, and the ship's pose is the authority's`,
-      Math.abs(gained - 5 * sim.ff.aMax) < 3 && sim.ff.fuel < fuel0 && sim.ff.active);
+      Math.abs(gained - 5 * sim.ff.aMax) < 6 && sim.ff.fuel < fuel0 && sim.ff.active);
     check(`no teleports: the ship never moved more than her own speed allows in a tick (largest step ${maxStep.toFixed(1)} m at ${(speedOf() / 1000).toFixed(2)} km/s, a tick is 1/30 s)`, maxStep < (speedOf() + 5) / 30 * 1.01);
     // the input is clamped intent
     clock += 33; a.send({ type: 'pose', pose: pose(), controls: { fwd: 9, lift: -9, yaw: NaN }, ff: { thr: 99, pitch: Infinity, yaw: -50, roll: 'x', tx: 5, ty: -5, tz: null, brake: 1 } }); await new Promise((r) => setTimeout(r, 20)); await world.enqueue(() => {});

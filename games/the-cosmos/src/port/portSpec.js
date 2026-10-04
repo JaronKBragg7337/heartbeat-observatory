@@ -96,10 +96,13 @@ export function clearSpoilGround(site, x, y, z, margin=.3) {
   return true;
 }
 
+let _apronOn = true;
 export function createPortSite(body, spawn = { lat: -14, lon: -59.2 }) {
   const datum = geodeticToCartesian(body, spawn.lat, spawn.lon, 0);
   const dr = Math.hypot(datum.x, datum.y, datum.z);
-  const ground = (x, y, z) => surfaceRadiusFast(body, x, y, z);
+  // OPENING2: the apron's own flattening (below) must not change WHICH site this search finds (the search sees any earthworks already attached, and the shared world's
+  // other sections were tuned to the site it has always found): while it runs, the apron term is off.
+  const ground = (x, y, z) => { const was = _apronOn; _apronOn = false; try { return surfaceRadiusFast(body, x, y, z); } finally { _apronOn = was; } };
   const r = ground(datum.x / dr, datum.y / dr, datum.z / dr);
   const origin = { x: datum.x * r / dr, y: datum.y * r / dr, z: datum.z * r / dr };
   const { site, at } = findLandingSite(body, ground, origin);
@@ -126,7 +129,7 @@ export function createPortSite(body, spawn = { lat: -14, lon: -59.2 }) {
       const n = Math.max(0, Math.abs(lz)-this.halfDepth);
       const t = Math.min(1, Math.hypot(e,n)/this.gradeM);
       const w0 = 1 - t*t*t*(t*(t*6-15)+10);
-      if (w0 >= 1 || lx > -100) return w0;
+      if (w0 >= 1 || lx > -100 || !_apronOn) return w0;
       // OPENING2: the apron and its walkway are flat too (their own, shorter blend), so the liner never lands on a slope.
       const rw = (r, bl) => { const dx=Math.max(0,Math.abs(lx-(r.x0+r.x1)/2)-(r.x1-r.x0)/2), dz=Math.max(0,Math.abs(lz-(r.z0+r.z1)/2)-(r.z1-r.z0)/2);
         const u=Math.min(1,Math.hypot(dx,dz)/bl); return 1-u*u*u*(u*(u*6-15)+10); };

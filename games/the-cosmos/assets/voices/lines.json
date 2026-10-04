@@ -7,9 +7,17 @@
   "voice": "zuri",
   "text": "That is all three. Take them home to the Survey Office at Marineris Port."
  },
+ "002c5bac5a8a90": {
+  "voice": "w-lewis",
+  "text": "Comms just died. So did guidance. Everything is down, and so soon we will be. Brace for impact."
+ },
  "002d8f85affd0b": {
   "voice": "aoi",
   "text": "Oh! Hello. Badge visible. I mean, your badge. Mine is visible. Is yours visible? Please tell me what to do."
+ },
+ "0041f99e598278": {
+  "voice": "intercom",
+  "text": "Entering the atmosphere. You will feel some shaking. This is normal. The coffee will disagree."
  },
  "006da5706cdcc6": {
   "voice": "ada",
@@ -18,6 +26,10 @@
  "0070d7f7a2ffeb": {
   "voice": "w-puck",
   "text": "I command a station made of other stations. Do not ask which ones, and do not ask for them back."
+ },
+ "008884fbc3364c": {
+  "voice": "walter",
+  "text": "Take the window. I have seen Mars. It is red. That is the whole review."
  },
  "008c3bb443e55d": {
   "voice": "w-lily",
@@ -43,6 +55,10 @@
   "voice": "zuri",
   "text": "Back in Mars space."
  },
+ "00a6dc08b4d17e": {
+  "voice": "w-lewis",
+  "text": "They have taken the cargo, and now they are shooting at us. That feels like an overreaction. Brace!"
+ },
  "00ab3c7616bf04": {
   "voice": "ada",
   "text": "Down and holding."
@@ -62,6 +78,10 @@
  "00cb3a68908f63": {
   "voice": "zuri",
   "text": "Course set for Phobos."
+ },
+ "00d7619ea7fd12": {
+  "voice": "intercom",
+  "text": "The passenger line has a settlement waiting for you."
  },
  "00f8e315d7689d": {
   "voice": "ada",
@@ -143,10 +163,6 @@
   "voice": "w-sky",
   "text": "Dust marshal. My job is to move the dust from one place to another. The Moon has a lot of it. Nobody has ever told me to stop."
  },
- "01ca9f38d8f58d": {
-  "voice": "zuri",
-  "text": "The port is neutral. You can find work there."
- },
  "01e4cb5ea556a0": {
   "voice": "w-jessica",
   "text": "Fleet command. We have eleven gunships and one pilot who can park. We are working on the ratio."
@@ -178,6 +194,10 @@
  "021957a9b54010": {
   "voice": "w-heart",
   "text": "Happy to tell you. I keep the lane safe, or at least quieter than it would be without me. Come back and tell me how it went."
+ },
+ "023c9ddf1f7186": {
+  "voice": "sunita",
+  "text": "If you have lost your luggage, it is in the hold. If you never had any, you are travelling light, and I respect that."
  },
  "0243ac5ba6cb1d": {
   "voice": "ship",
@@ -214,6 +234,10 @@
  "027e1f309782fb": {
   "voice": "w-puck",
   "text": "Pay attention, this is simple. I fly people and parcels where they asked to go, usually near the time they asked. Do not make me repeat it, genius."
+ },
+ "028664c7b671a5": {
+  "voice": "ada",
+  "text": "The captain sounds so calm. That is not reassuring. Calm people scare me."
  },
  "028c4dff3c259c": {
   "voice": "w-sky",
@@ -259,9 +283,17 @@
   "voice": "w-river",
   "text": "Sure. Interrupt me. Everyone does."
  },
+ "02eb396343ee25": {
+  "voice": "ship",
+  "text": "Emergency power engaged. Please remain calm. Calm is an option."
+ },
  "02eb74de6b5431": {
   "voice": "zuri",
   "text": "We are at Phobos already."
+ },
+ "0301942d81ca17": {
+  "voice": "w-lewis",
+  "text": "Welcome aboard the Kestrel. Flight time is about a minute. We have never needed more."
  },
  "030399a2e3bfb0": {
   "voice": "ship",
@@ -303,9 +335,9 @@
   "voice": "w-puck",
   "text": "Mass driver control. We throw things at space with magnets. It is the best job on the Moon, and so loud that nobody ever hears us say so."
  },
- "035e62f84efaae": {
-  "voice": "ada",
-  "text": "Need a lift? You can ride with me, or follow the port lights."
+ "034e5fa1123840": {
+  "voice": "jorge",
+  "text": "I paid for the window seat in advance. In advance! And there is a man in it."
  },
  "036c1dc69eb1eb": {
   "voice": "w-puck",
@@ -315,9 +347,17 @@
   "voice": "w-liam",
   "text": "Shuttle and courier traffic use pads 02 and 03."
  },
+ "036e5c795b3588": {
+  "voice": "jorge",
+  "text": "Do not sit there. That is my cousin's seat. He is not here. He is also not dead. It is complicated."
+ },
  "03922a6a72e984": {
   "voice": "w-aoede",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "0397aea53a41de": {
+  "voice": "jorge",
+  "text": "The green people will talk about gardens. Gardens do not build hulls. We build hulls."
  },
  "03a12a5594054f": {
   "voice": "zuri",
@@ -326,6 +366,10 @@
  "03a1664bf88ff6": {
   "voice": "ada",
   "text": "Engine power is too low to lift off. Route more to the engines."
+ },
+ "03b509526f52b0": {
+  "voice": "isaiah",
+  "text": "Medbay. We are fully stocked on bandages and sarcasm."
  },
  "03c795e4cb55dc": {
   "voice": "w-fenrir",
@@ -343,9 +387,17 @@
   "voice": "ada",
   "text": "Flies what you point her at. Keeps the ship off the rocks and out of trouble."
  },
+ "03e658e9524c78": {
+  "voice": "w-bella",
+  "text": "Kestrel to Ceres. Boarding now. Seats are unassigned and so are the safety briefings. Please sign here, here, and here. Yes, the long one."
+ },
  "03f21ec9f74539": {
   "voice": "zuri",
   "text": "Holding on the ground."
+ },
+ "03fd20d5e7479e": {
+  "voice": "ship",
+  "text": "Passenger line settlement: 10,000 Mars marks, 2,500 credits. Your lifeboat is on its pad and drained. It needs a power cell from the Salvage trader and a fuel coupler from the Field kit trader. Three hundred marks each."
  },
  "04005f94b7016e": {
   "voice": "ada",
@@ -379,6 +431,10 @@
   "voice": "ada",
   "text": "New heading. Let us see what is over there."
  },
+ "047c8d7b38aa62": {
+  "voice": "ship",
+  "text": "Gravity outside is point two eight metres per second squared. Every step floats. Do not sneeze."
+ },
  "04856a7709c0a2": {
   "voice": "zuri",
   "text": "A course is under way. Cancel it first."
@@ -410,6 +466,10 @@
  "04ed8f4288df08": {
   "voice": "zuri",
   "text": "Thanks, boss. I will be at the board."
+ },
+ "04f6a97fd35d1c": {
+  "voice": "w-puck",
+  "text": "Need a lift? Climb in, or follow the lights. They are not very bright. Neither am I, but I know the way."
  },
  "04f896d1a1a624": {
   "voice": "w-puck",
@@ -454,6 +514,14 @@
  "05a165afcb5103": {
   "voice": "w-fenrir",
   "text": "Walls, power and a schedule. We kept this Moon alive when the storms cut it off. Sign up and you get a bunk, a badge and a number. Remember the number."
+ },
+ "05adf8c54e548a": {
+  "voice": "w-lewis",
+  "text": "We cannot see the pad. We cannot see anything. Brace."
+ },
+ "05b08fedf09158": {
+  "voice": "jorge",
+  "text": "Occator Works. Ironclad built every hull you will ever fly in. A thank you note would be nice."
  },
  "05b1478df535f0": {
   "voice": "w-lily",
@@ -555,9 +623,17 @@
   "voice": "w-river",
   "text": "Oh, you want to know. I fly people and parcels where they asked to go, usually near the time they asked. Not that anyone ever says thank you."
  },
+ "06bd93a0512c4f": {
+  "voice": "w-lewis",
+  "text": "I am going to call this a controlled crash. Heads down, folks. It will be very controlled."
+ },
  "06c84da071e328": {
   "voice": "ship",
   "text": "Above the air. The main drive will light at the gate."
+ },
+ "06cdb995cfd2e1": {
+  "voice": "zuri",
+  "text": "Doctor Roth, Greenhaven. Before you sign anything with the hard hats: we have gardens. Come and look at a tomato."
  },
  "06cf67f39ac64c": {
   "voice": "zuri",
@@ -587,6 +663,10 @@
   "voice": "w-puck",
   "text": "You found the Refuge. Nobody told you where it was, so now you owe us for the tour."
  },
+ "071a9301f3db84": {
+  "voice": "w-lewis",
+  "text": "That is ice fog below us. Thick, white, and exactly where the ground is."
+ },
  "0726abb15bed02": {
   "voice": "ship",
   "text": "Course set for Callisto."
@@ -607,6 +687,10 @@
   "voice": "w-heart",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
  },
+ "076b13d1434047": {
+  "voice": "w-adam",
+  "text": "Staying on Mars? Bold. Nobody owns it, so nobody will rescue it. Walk out the front door. Mind the dust."
+ },
  "077e52f983175d": {
   "voice": "ada",
   "text": "Down at Pad 03 (courier)."
@@ -614,6 +698,10 @@
  "07833aebba949a": {
   "voice": "ada",
   "text": "Course set for Earth."
+ },
+ "07914fe35ce251": {
+  "voice": "isaiah",
+  "text": "Motion sick? Look at the horizon. There is no horizon. Look at the other horizon."
  },
  "07969bf54c8383": {
   "voice": "zuri",
@@ -631,9 +719,9 @@
   "voice": "zuri",
   "text": "Taking her down."
  },
- "07c0f19bfe34e8": {
-  "voice": "sunita",
-  "text": "keep your harness fastened."
+ "07cfcd6a54749c": {
+  "voice": "zuri",
+  "text": "I am writing a piece about this line. Working title: Eight Months Of Beige."
  },
  "07d0857bb5201f": {
   "voice": "w-alice",
@@ -670,6 +758,10 @@
  "0821102f670827": {
   "voice": "w-heart",
   "text": "Happy to tell you. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. Come back and tell me how it went."
+ },
+ "0829afcfe7323d": {
+  "voice": "zuri",
+  "text": "The hard hats will say we are soft. We have the only fresh tomato for four hundred million kilometres. Who is soft now?"
  },
  "082ffc6fd0737d": {
   "voice": "ship",
@@ -711,10 +803,6 @@
   "voice": "ada",
   "text": "Down at Over the control tower."
  },
- "08e48d1c86d5cc": {
-  "voice": "jorge",
-  "text": "Need a lift? You can ride with me, or follow the port lights."
- },
  "0908dc1609b54a": {
   "voice": "w-liam",
   "text": "Rover hire. Pressurised, heated, and very slightly haunted. The haunting is free. The heating is extra."
@@ -739,6 +827,10 @@
   "voice": "ada",
   "text": "Arrived over Ceres: Occator Works. Easing level."
  },
+ "0975a9e14ea9e2": {
+  "voice": "w-lewis",
+  "text": "Brace! Brace! Brace!"
+ },
  "0978050297b6a5": {
   "voice": "ada",
   "text": "Arrived over Deimos. Easing level."
@@ -750,6 +842,10 @@
  "0995192d7bff1c": {
   "voice": "zuri",
   "text": "We run the dishes and the relay. Signal over noise, always. We take anyone who can listen."
+ },
+ "09b484b8be2364": {
+  "voice": "w-lewis",
+  "text": "We are climbing out of the port now. Please keep your hands inside the ship and your regrets inside yourselves."
  },
  "09bb653ca8e64b": {
   "voice": "w-fable",
@@ -791,6 +887,10 @@
   "voice": "w-sky",
   "text": "Rations and coffee here. Keep your suit sealed outside."
  },
+ "0a4b5fcb305a82": {
+  "voice": "w-puck",
+  "text": "That is the port. Welcome to Mars. Mind the dust. It minds you."
+ },
  "0a4e663bffeae3": {
   "voice": "w-alice",
   "text": "Allow me. I keep the lane safe, or at least quieter than it would be without me. I make it look easy. It is not. I am just good."
@@ -802,6 +902,10 @@
  "0a6e4238941444": {
   "voice": "w-heart",
   "text": "Oh good, a new face. I was getting bored of the old ones."
+ },
+ "0a6eab144e83d0": {
+  "voice": "w-adam",
+  "text": "Good choice. Or a choice. They are all choices. The gate is Pad 01. Do not stand under anything."
  },
  "0a77cc91190df5": {
   "voice": "zuri",
@@ -875,6 +979,10 @@
   "voice": "zuri",
   "text": "Hull's at 28 percent. Breaking off, going down to neutral airspace."
  },
+ "0b44c35e1b5a74": {
+  "voice": "walter",
+  "text": "Forty-one trips on this line, son, and the coffee has never once improved."
+ },
  "0b4ee8803c6b8a": {
   "voice": "w-river",
   "text": "State your business. Badges visible. If you have no badge, state that loudly, and we will find you one."
@@ -903,6 +1011,10 @@
   "voice": "aoi",
   "text": "Still getting the crew settled. One moment."
  },
+ "0bd2102f6d4412": {
+  "voice": "sunita",
+  "text": "Welcome aboard the Hellas Dawn. Tea, coffee, or a stern talking to?"
+ },
  "0bda0403f3bb63": {
   "voice": "ada",
   "text": "That is all three. Take them home to the Survey Office at Marineris Port."
@@ -911,9 +1023,17 @@
   "voice": "w-lily",
   "text": "Right, okay. I buy what you are selling and sell what you did not know you needed. Please do not ask me anything harder."
  },
+ "0c045abff95d48": {
+  "voice": "intercom",
+  "text": "We have begun our descent into Marineris. Please take a seat, or at least a firm opinion about one."
+ },
  "0c047fb063fe94": {
   "voice": "zuri",
   "text": "Hull's at 32 percent. Breaking off, going down to neutral airspace."
+ },
+ "0c0e99feb954cd": {
+  "voice": "w-lewis",
+  "text": "That is a dust storm below us. A big one, and we are about to meet it."
  },
  "0c4f999194577b": {
   "voice": "zuri",
@@ -922,6 +1042,10 @@
  "0c553a7d291214": {
   "voice": "ada",
   "text": "Come aboard first: the ship will not lift without you."
+ },
+ "0c6955c41359b9": {
+  "voice": "ship",
+  "text": "Corsair markings on the hull. They took the cargo and left the passengers. Rude, but efficient."
  },
  "0c69db11e90f75": {
   "voice": "ada",
@@ -979,10 +1103,6 @@
   "voice": "zuri",
   "text": "Course set for Earth."
  },
- "0cf17be4c5aa47": {
-  "voice": "intercom",
-  "text": "guidance lost. Brace."
- },
  "0cf45fbf38ed1b": {
   "voice": "zuri",
   "text": "We are on the ground."
@@ -1038,6 +1158,10 @@
  "0d730b5c291ca0": {
   "voice": "zuri",
   "text": "No contacts on the scope. Waiting."
+ },
+ "0d868b3ce926d6": {
+  "voice": "zuri",
+  "text": "Off the record, the food is the best part. On the record, I have no comment on the food."
  },
  "0d89182e19a221": {
   "voice": "w-liam",
@@ -1127,6 +1251,10 @@
   "voice": "w-heart",
   "text": "Oh, you left. That is fine. I kept the seat warm, and I did not move it an inch."
  },
+ "0e51a4765953db": {
+  "voice": "zuri",
+  "text": "That is Occator Works. You will be fine. People usually are, once the shaking stops."
+ },
  "0e60f5d95385cf": {
   "voice": "w-fenrir",
   "text": "Got a serial number? Good. Got a broken part? Better."
@@ -1203,6 +1331,10 @@
   "voice": "w-bella",
   "text": "The terminal is behind me. Fortis recruits at the red booth, Technos Prime at the white one, and the first footprints are a kilometre south west. Please do not touch the footprints. They are older than your country."
  },
+ "0f5861c64c124b": {
+  "voice": "w-lewis",
+  "text": "Unidentified ships closing fast. They are not answering the radio. That is rude."
+ },
  "0f5cf8d38d9741": {
   "voice": "zuri",
   "text": "Course set for Moon: Shackleton Base (Fortis)."
@@ -1218,6 +1350,10 @@
  "0f737816f0e92b": {
   "voice": "w-aoede",
   "text": "Signal over noise. Chips, comms, and a quiet room on the far side with the best view of nothing. Fortis will say we are soft. We are soft. We are also on the other end of every call they make."
+ },
+ "0f826e43a8b351": {
+  "voice": "ship",
+  "text": "Comms are down. The storm is still up. The storm does not care about either fact."
  },
  "0f84dc1a7bffc3": {
   "voice": "w-lewis",
@@ -1259,6 +1395,10 @@
   "voice": "zuri",
   "text": "Drone down."
  },
+ "0fd685d4a576cd": {
+  "voice": "aoi",
+  "text": "Pre-owned Mars real estate, friend. Great views, slight dust, no neighbours. That is a feature."
+ },
  "0fef22b77bcc6e": {
   "voice": "w-heart",
   "text": "Everything we build is a ladder. We would rather be late and up there than comfortable and down here."
@@ -1291,6 +1431,10 @@
   "voice": "w-alice",
   "text": "Allow me. I run the port. Every dock, every fee, every complaint, in that order. I make it look easy. It is not. I am just good."
  },
+ "104cea06688813": {
+  "voice": "intercom",
+  "text": "The cafe is open. The coffee is real. The cream is a rumour."
+ },
  "10734f255cd962": {
   "voice": "jorge",
   "text": "The glass people will tell you they are friendly. They also have your photograph. Think about that for a second."
@@ -1322,6 +1466,10 @@
  "10e66af1a59005": {
   "voice": "ada",
   "text": "Course set for Phobos."
+ },
+ "11010946248ee3": {
+  "voice": "jorge",
+  "text": "Hanrahan, shift boss, Pit Seven. We saw your boat come down. We always see them come down."
  },
  "110b5258ef6bb5": {
   "voice": "ada",
@@ -1359,10 +1507,6 @@
   "voice": "zuri",
   "text": "Turn-over. Brace for the burn to slow down."
  },
- "11703554bed341": {
-  "voice": "jorge",
-  "text": "The port is neutral. You can find work there."
- },
  "117f435e1390cb": {
   "voice": "zuri",
   "text": "Down at Marineris Port."
@@ -1395,6 +1539,10 @@
   "voice": "w-liam",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
  },
+ "11cf2532a9ac70": {
+  "voice": "intercom",
+  "text": "Landing gear is down. Landing gear confirms it is down. Landing gear would like that on the record."
+ },
  "11d9a21bf008fc": {
   "voice": "zuri",
   "text": "We are at Tranquility already."
@@ -1406,6 +1554,10 @@
  "11e943c14bcebb": {
   "voice": "ada",
   "text": "Down at Valles Marineris."
+ },
+ "11f1ce39a552bd": {
+  "voice": "intercom",
+  "text": "Touchdown at Marineris Port. Welcome to Mars. Local time is whatever the tower clock says. Please use the boarding gangway on the starboard side. Mind the step. It is three metres."
  },
  "11f5d49e6b6fa4": {
   "voice": "ship",
@@ -1435,9 +1587,17 @@
   "voice": "w-adam",
   "text": "Tranquility Mercantile. Everything here is priced for people who arrived out of options. Welcome."
  },
+ "1237beffce47aa": {
+  "voice": "w-adam",
+  "text": "Welcome to Marineris. Everything here is neutral: the dust, the coffee, the staff. Especially the staff."
+ },
  "1239aef4b75fc7": {
   "voice": "w-fenrir",
   "text": "Fine. I carry heavy things from where they are to where they are not, and I do it slowly. Now go away."
+ },
+ "1242d40d69119c": {
+  "voice": "w-lewis",
+  "text": "Pilot here. The left drive just made a noise it is not supposed to make."
  },
  "124c3befd406e1": {
   "voice": "sunita",
@@ -1471,6 +1631,10 @@
   "voice": "ada",
   "text": "Aye. I'll find my station."
  },
+ "12e980f345c2cf": {
+  "voice": "ship",
+  "text": "Drive fault logged. The crew regrets the inconvenience. The line will pay more in settlement."
+ },
  "12ee0c0d70d1eb": {
   "voice": "zuri",
   "text": "On station over Pad 03 (courier)."
@@ -1483,9 +1647,17 @@
   "voice": "zuri",
   "text": "Engine power is too low to lift off. Route more to the engines."
  },
+ "130c914f549784": {
+  "voice": "jorge",
+  "text": "Ironclad takes anyone who can swing a pick. We pay in shares and sandwiches, and one of those is usually good."
+ },
  "131b6d1023a8d8": {
   "voice": "w-heart",
   "text": "Happy to tell you. I set the margins. If something costs too much, that was me, and I meant it. Come back and tell me how it went."
+ },
+ "1326685bd4a2e0": {
+  "voice": "intercom",
+  "text": "Off the port side, the escort cutter Very Sorry About The Paperwork and the liner Tharsis Promise. Off the starboard, the Quick Receipt and the Elysium Overdraft. Yes, those are their real names. No, we did not get a vote on ours."
  },
  "132dbf03a2ef96": {
   "voice": "w-fenrir",
@@ -1494,10 +1666,6 @@
  "135d2795636646": {
   "voice": "ada",
   "text": "Nobody is flying. Hire a pilot or a captain, or take the chair yourself."
- },
- "13618997599d5c": {
-  "voice": "zuri",
-  "text": "Need a lift? You can ride with me, or follow the port lights."
  },
  "137be376339840": {
   "voice": "w-fenrir",
@@ -1551,6 +1719,10 @@
   "voice": "ship",
   "text": "We are at Shackleton already."
  },
+ "142030988a413e": {
+  "voice": "ship",
+  "text": "Passenger line settlement: 10,000 Mars marks, 2,500 credits. Your lifeboat is on its pad and drained. It needs a power cell from Marta Voss, the foundry foreman (Ironclad) and a fuel coupler from Doctor Roth (Greenhaven). Three hundred marks each."
+ },
  "142c988888604e": {
   "voice": "ship",
   "text": "We are at Ceres already."
@@ -1603,9 +1775,13 @@
   "voice": "sunita",
   "text": "Takes the turret on top. Fires only at raiders, and only outside Mars airspace."
  },
- "150c36ca04474b": {
-  "voice": "intercom",
-  "text": "port control, do you read?"
+ "14ed4507ddaf01": {
+  "voice": "radio",
+  "text": "Hellas Dawn, Marineris Port. You are cleared to land on Apron A. Please avoid Pad 01. It has a Meridian on it, and the Meridian has opinions."
+ },
+ "14fc7d4c9b8e0c": {
+  "voice": "zuri",
+  "text": "Doctor Roth, Greenhaven. Are you hurt? Do not answer, I will check. Climb in."
  },
  "150dbd9a9eaf6e": {
   "voice": "jorge",
@@ -1683,6 +1859,10 @@
   "voice": "w-echo",
   "text": "Because Fortis makes it, and we would rather you have it than the other lot. Oxygen is cheap too. The air is the one thing we never ration. The orders are ration everything but the air."
  },
+ "15cc015bd8ae4a": {
+  "voice": "w-puck",
+  "text": "Port crew. We saw you come down. Everybody saw you come down. It was loud."
+ },
  "15d20a4416e902": {
   "voice": "w-river",
   "text": "Everything here is far away, including the other faction. I recommend it."
@@ -1719,10 +1899,6 @@
   "voice": "aoi",
   "text": "Aye. I'll find my station."
  },
- "163b5e8c3aed62": {
-  "voice": "ada",
-  "text": "The passenger line has a settlement waiting for you."
- },
  "163f7317cfa235": {
   "voice": "zuri",
   "text": "That is out of range: it needs a jump drive the Meridian does not have."
@@ -1738,6 +1914,10 @@
  "1661dcb14db1cc": {
   "voice": "aoi",
   "text": "Come aboard first, boss. I won't lift without you."
+ },
+ "166519cd13ef52": {
+  "voice": "w-bella",
+  "text": "Kestrel to the Marineris desert. A scenic route. Mostly dust. Boarding now. Seats are unassigned and so are the safety briefings. Please sign here, here, and here. Yes, the long one."
  },
  "16657ff0672c3b": {
   "voice": "zuri",
@@ -1771,17 +1951,21 @@
   "voice": "w-lewis",
   "text": "Approach desk. Watching for inbound traffic."
  },
- "16c79d62d2e35d": {
-  "voice": "zuri",
-  "text": "The passenger line has a settlement waiting for you."
- },
  "16c7b878e35fb5": {
   "voice": "zuri",
   "text": "The soldiers will say they keep the Moon alive. They have the guns. We have the phone numbers. You decide which you need on a bad day."
  },
+ "16d51e60f2cab4": {
+  "voice": "ada",
+  "text": "Is it normal for the ship to hum like that? Please tell me it is normal."
+ },
  "16f42c74ee964e": {
   "voice": "ada",
   "text": "Outside the neutral line. The scope is clear for now."
+ },
+ "1716809480c37b": {
+  "voice": "aoi",
+  "text": "Okay, one neighbour. But he is very quiet. Mostly because he is a rock."
  },
  "1718f24e39b7f8": {
   "voice": "ship",
@@ -1794,6 +1978,10 @@
  "171ee8abcf33ea": {
   "voice": "w-lewis",
   "text": "Heritage Ranger Tolliver. The Eagle is a protected site. Do not touch it, do not lean on it, and please keep your selfies at a respectful distance."
+ },
+ "172f4e09750534": {
+  "voice": "ship",
+  "text": "Outside air is carbon dioxide and optimism. Gravity is point three eight of Earth. Do not jump near anything you like."
  },
  "17457d1fbe3062": {
   "voice": "ship",
@@ -1835,10 +2023,6 @@
   "voice": "zuri",
   "text": "On station."
  },
- "17bf0af8791d02": {
-  "voice": "zuri",
-  "text": "Outer Accord. We saw you come down."
- },
  "17c32c6572c718": {
   "voice": "zuri",
   "text": "Supply run to the depot and back."
@@ -1846,6 +2030,10 @@
  "17c7fc94f5261f": {
   "voice": "ada",
   "text": "Roaming. I will keep low and look around."
+ },
+ "17e0071ab4e22e": {
+  "voice": "w-puck",
+  "text": "Work is easy to find. Getting paid is a different department."
  },
  "17e9d8d37dc2eb": {
   "voice": "zuri",
@@ -1883,6 +2071,10 @@
   "voice": "ship",
   "text": "Stopped between the worlds. The long-range drive is idle."
  },
+ "1882d98c661395": {
+  "voice": "jorge",
+  "text": "Hanrahan, Ironclad. The doctor is lovely and so is her lettuce. We have hulls and a pension. Mostly a pension."
+ },
  "188b266fffdc12": {
   "voice": "w-lily",
   "text": "Everything wet on the Moon is at the bottom of a hole at the south pole, and the people who own the hole set the price. We pay haulers more than the shaft does, because haulers have other choices. Barely."
@@ -1907,6 +2099,10 @@
   "voice": "ada",
   "text": "We are under the neutral line. Holding here. Say the word and we go home."
  },
+ "18c513480723d9": {
+  "voice": "ship",
+  "text": "Hull breach confirmed. There is a hole you can look out of. Looking is free."
+ },
  "18c57c6df60e70": {
   "voice": "w-river",
   "text": "The instrument is listening. Please do not touch it."
@@ -1914,6 +2110,10 @@
  "18c9fa56421517": {
   "voice": "zuri",
   "text": "Come aboard first: the ship will not lift without you."
+ },
+ "18e79872988a0d": {
+  "voice": "ship",
+  "text": "Survival crate open. One hand tool, one day of air and water, one beacon. Beacon armed. Help is on the way, at the speed of a floating rover."
  },
  "18ea3054b71e04": {
   "voice": "zuri",
@@ -1930,6 +2130,14 @@
  "18f9abc6ada9c1": {
   "voice": "w-lewis",
   "text": "Since you asked. I carry heavy things from where they are to where they are not, and I do it slowly. That is the exciting part, I am afraid."
+ },
+ "1902f06aae1684": {
+  "voice": "w-adam",
+  "text": "Changed your mind? The board does not mind. The board has no feelings. I have a few."
+ },
+ "1907a6c6a4035c": {
+  "voice": "w-lewis",
+  "text": "Radar shows a rock the size of a bus. It is heading for us, and it has not seen us."
  },
  "191534b5f1f1ea": {
   "voice": "w-fable",
@@ -1982,10 +2190,6 @@
  "19db4ce0058f4a": {
   "voice": "w-fenrir",
   "text": "Take the chair, then. Do not touch my mug."
- },
- "19e237664b5080": {
-  "voice": "jorge",
-  "text": "Free Settlements. We saw you come down."
  },
  "19e4e43e20ad57": {
   "voice": "ada",
@@ -2043,10 +2247,6 @@
   "voice": "jorge",
   "text": "Reads the scanner and the ground ahead and calls out what he sees."
  },
- "1a4576c809f64c": {
-  "voice": "ada",
-  "text": "The port is neutral. You can find work there."
- },
  "1a6b28035bf6e5": {
   "voice": "zuri",
   "text": "On station over Hellas Planitia."
@@ -2078,6 +2278,10 @@
  "1ac9fb82bec890": {
   "voice": "w-heart",
   "text": "A pod with no signal in it at all. Not a whisper. People pay to sit in it for an hour. Most of them cry a little, and then ask for another hour. I do not charge for the crying."
+ },
+ "1acd7b9929ae84": {
+  "voice": "w-fenrir",
+  "text": "Evening, passengers. This is a Corsair boarding. Nobody move, nobody gets hurt, and nobody tells the insurer."
  },
  "1ad890d23bb706": {
   "voice": "ada",
@@ -2183,6 +2387,10 @@
   "voice": "zuri",
   "text": "We are at Mars already."
  },
+ "1c198a245b0a43": {
+  "voice": "w-lewis",
+  "text": "Control says a solar storm is building. The Sun has not apologised."
+ },
  "1c28cea21cc545": {
   "voice": "ada",
   "text": "Committed to the climb: the lift pods only push up, they cannot stop the ship. The main drive can once we are above the air."
@@ -2199,6 +2407,10 @@
   "voice": "w-echo",
   "text": "Field rolls and repair fabric. Check your suit seams before you leave."
  },
+ "1c5e6b17ed546b": {
+  "voice": "zuri",
+  "text": "We grow food under glass in the dark, and we take it very seriously. Fresh tomatoes. On a dwarf planet. Think about that."
+ },
  "1c63110e4af7f5": {
   "voice": "w-lily",
   "text": "Filtered ice melt. Every seal checked twice. Dust only has to win once."
@@ -2211,10 +2423,6 @@
   "voice": "zuri",
   "text": "Hull's at 33 percent. Breaking off, going down to neutral airspace."
  },
- "1c98bec072626c": {
-  "voice": "jorge",
-  "text": "The passenger line has a settlement waiting for you."
- },
  "1c9b7757d1b745": {
   "voice": "walter",
   "text": "I cannot find a way to my station. I will wait here."
@@ -2222,6 +2430,10 @@
  "1ca9a27ee0a0c8": {
   "voice": "ada",
   "text": "Arrived over Moon: Shackleton Base (Fortis). Easing level."
+ },
+ "1caa5ae6378ce7": {
+  "voice": "w-puck",
+  "text": "The port is neutral. Nobody owns anything here, which is why nobody ever fixed this road."
  },
  "1cad006e6d8efc": {
   "voice": "zuri",
@@ -2234,6 +2446,10 @@
  "1cbb24eeaa599c": {
   "voice": "ada",
   "text": "Heading back to the pad."
+ },
+ "1cd3d0fd66eb3c": {
+  "voice": "w-lewis",
+  "text": "Strike! Hull breach, we are venting. Hold on to something. Preferably something bolted down."
  },
  "1cdaf34ae97b04": {
   "voice": "w-jessica",
@@ -2283,6 +2499,10 @@
   "voice": "ada",
   "text": "Thanks, boss. I will be at the board."
  },
+ "1d357fccb4ba36": {
+  "voice": "intercom",
+  "text": "Good morning, passengers. This is your captain. We are on schedule, on course, and on speaking terms with the weather."
+ },
  "1d5be58714d388": {
   "voice": "w-heart",
   "text": "Hydrogen, mostly. Pulsars ticking. A few things we are not allowed to describe. And every night, somewhere in all that, a very faint hum nobody can explain. I would tell you what it is, but I would have to say I do not know."
@@ -2302,6 +2522,10 @@
  "1d6fc4b5c9d86b": {
   "voice": "ada",
   "text": "Long drive off. We have dropped out."
+ },
+ "1d7e8db2f18774": {
+  "voice": "zuri",
+  "text": "There is a blanket behind the seat. It is a nice blanket. It was grown. Well, the wool was."
  },
  "1d85ce0f2ccc11": {
   "voice": "zuri",
@@ -2331,6 +2555,10 @@
   "voice": "zuri",
   "text": "Course set for Pad 01, the Meridian's own pad."
  },
+ "1de29f0a482095": {
+  "voice": "ship",
+  "text": "Survival crate open. One hand tool, one day of air and water, one beacon. Beacon armed. Help is on the way. Probably."
+ },
  "1df24091ab5e4c": {
   "voice": "zuri",
   "text": "Course set for Moon: Daedalus Station (Technos Prime)."
@@ -2346,10 +2574,6 @@
  "1e24aa3eea3f11": {
   "voice": "w-bella",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
- },
- "1e3522f0083a42": {
-  "voice": "ada",
-  "text": "Solar Union. We saw you come down."
  },
  "1e3bae27134dad": {
   "voice": "jorge",
@@ -2370,6 +2594,10 @@
  "1e4396969bce3a": {
   "voice": "w-puck",
   "text": "I carry the shift notes between desks."
+ },
+ "1e62c331f2250a": {
+  "voice": "w-adam",
+  "text": "The Kestrel does not fly there yet. Pick a world that is open, and I will point at the gate."
  },
  "1e6f56e4b4f569": {
   "voice": "zuri",
@@ -2411,9 +2639,9 @@
   "voice": "zuri",
   "text": "Holding off the world. Nothing there is charted for landing yet."
  },
- "1f0d8400ebf2b3": {
-  "voice": "radio",
-  "text": "inbound passenger service, approach approved."
+ "1f328b113b320e": {
+  "voice": "w-adam",
+  "text": "The board shows every world and who runs it. Read it, pick a world, pick a side or pick none, then walk to Pad 01. The Kestrel is waiting."
  },
  "1f3b2644d94dea": {
   "voice": "ada",
@@ -2422,6 +2650,10 @@
  "1f42bb19d0db04": {
   "voice": "ada",
   "text": "Course set for Deimos."
+ },
+ "1f500e991e8aec": {
+  "voice": "intercom",
+  "text": "Beyond them, the ore carriers Not A Smuggler and Regolith Dreams. Please do not wave at Not A Smuggler. It makes them nervous."
  },
  "1f519fe4b2d974": {
   "voice": "ship",
@@ -2438,6 +2670,10 @@
  "1f6081d2e33c1b": {
   "voice": "ship",
   "text": "Braking burn."
+ },
+ "1f6a176b68bec4": {
+  "voice": "jorge",
+  "text": "Climb in. Mind the salt. It gets everywhere. I found some in my sandwich last Tuesday."
  },
  "1f71e84f4708a7": {
   "voice": "w-heart",
@@ -2462,6 +2698,10 @@
  "1f9b9f0f420504": {
   "voice": "zuri",
   "text": "Down at Over the control tower."
+ },
+ "1fcc8008cda3b5": {
+  "voice": "ship",
+  "text": "Visibility is poor. The weather won this round."
  },
  "1fccb206f3cd83": {
   "voice": "ada",
