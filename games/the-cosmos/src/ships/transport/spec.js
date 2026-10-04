@@ -183,7 +183,7 @@ prop('locker', 'medbay', 9.0, 22.2, 0.6, 0.55, 2.0, 2);
 // boarding hall: suit racks, a bench, the board
 prop('suitrack', 'gate', 4.6, 24.4, 1.8, 0.6, 2.0, 0);
 prop('suitrack', 'gate', 6.6, 24.4, 1.8, 0.6, 2.0, 0);
-prop('bench', 'gate', 8.9, 29.0, 0.36, 3.2, 0.46, 0);
+prop('terminal', 'gate', 8.9, 29.0, 2.6, 0.85, 1.4, 1, { extra: { seats: 4, tone: 'fabricBlue' } });   // looks-r1: terminal seats, facing inboard. Clear of both doors. Not a manifest row.
 prop('luggage', 'gate', 5.2, 29.6, 1.8, 1.0, 1.2, 0);
 prop('departboard', 'gate', 3.62, 27.6, 1.4, 0.1, 1.0, 1, { y: 1.2, blocks: false });
 prop('extinguisher', 'gate', 3.62, 25.0, 0.14, 0.14, 0.5, 1, { y: 1.2, blocks: false });

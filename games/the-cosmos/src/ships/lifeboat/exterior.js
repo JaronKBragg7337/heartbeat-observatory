@@ -1,7 +1,7 @@
 // ============================================================================
 // ships/lifeboat/exterior.js - the Skiff from outside: a plated lifeboat hull in the world's own paint (looks.js), worn: scuffed panels,
-// a sooted stern, replaced plates a shade off. A canopy over the flight deck, a side hatch with a grab rail, a rear ramp, a big stern bell
-// with two thrusters, four stubby legs, belly lift pods, a beacon mast and handrails.
+// a sooted stern, replaced plates a shade off. A canopy over the flight deck, a side hatch with a grab rail, a rear ramp, four bells on the
+// stern shoulders and lower flanks (the ramp mouth stays clear), four stubby legs, belly lift pods, a beacon mast and handrails.
 // ============================================================================
 
 import * as THREE from 'three';
@@ -70,11 +70,12 @@ export function buildLifeboatExterior(layout, matsIn, opts = {}) {
   for (const s of [-1, 1]) { k.cyl('white', s * 0.9, 0.55, -5.4, 0.16, 0.1, 12, { axis: 'z' }); k.cyl('glowWhite', s * 0.9, 0.55, -5.47, 0.12, 0.02, 12, { axis: 'z' }); }
   k.bevelBox('hullDark', 0, 0.35, -5.35, 1.4, 0.14, 0.14, 0.03);
   k.box('glowRed', -1.5, 0.6, -4.6, 0.08, 0.1, 0.18); k.box('glowGreen', 1.5, 0.6, -4.6, 0.08, 0.1, 0.18);
-  // stern: a bumper ring round the ramp mouth, the central bell, two small thrusters
+  // stern: a bumper ring round the ramp mouth. looks-r1: the bells sit on the shoulders and the lower flanks,
+  // outboard of the hatch (x -1.25..1.25, y 0..2.25) so the ramp (hinge z 5.4, width 2.4) drops through a clear opening.
   for (const sx of [-1, 1]) k.bevelBox('hullDark', sx * 1.35, 1.1, 5.55, 0.24, 2.3, 0.3, 0.04);
   k.bevelBox('hullDark', 0, 2.3, 5.55, 2.9, 0.24, 0.3, 0.04);
-  addEngine(ext, mats, k, 0, 1.55, 5.7, 0.55, 1.1, 1);
-  for (const x of [-1.85, 1.85]) addEngine(ext, mats, k, x, 0.9, 5.2, 0.22, 0.6, x > 0 ? 1 : -1);
+  for (const x of [-1.95, 1.95]) addEngine(ext, mats, k, x, 2.45, 5.95, 0.32, 0.7, x > 0 ? 1 : -1);
+  for (const x of [-2.05, 2.05]) addEngine(ext, mats, k, x, 0.55, 5.05, 0.22, 0.55, x > 0 ? 1 : -1);
   for (const [x, z] of [[-1.5, -3], [1.5, -3], [-1.5, 3.4], [1.5, 3.4]]) addLiftPod(ext, mats, k, x, -0.85, z, 0.32);
   ext.staticGroup = k.toGroup(mats, { name: 'skiff-plates', cast: true, receive: true }); root.add(ext.staticGroup);
   ext.triangles = k.triangles;

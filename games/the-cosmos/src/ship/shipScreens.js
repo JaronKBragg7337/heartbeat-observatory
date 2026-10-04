@@ -327,6 +327,15 @@ export const DRAW = {
 /** The ship's own name on its idle screens (set by ShipSystem when it builds; the Meridian by default). */
 export const SCREEN_LABEL = { ship: 'MERIDIAN' };
 
+/** Parked-ship numbers for the first paint. Every field a DRAW routine reads is present; lat and lon are numbers. */
+const STUB_TEL = {
+  roll: 0, pitch: 0, heading: 0, groundSpeed: 0, vs: 0, agl: 0, alt: 0, gear: 1, landed: true,
+  hull: 100, shield: 40, shieldMax: 40, power: { engines: 40, guns: 0, shields: 60 },
+  canLift: true, liftMargin: 12, thrustUp: 0, maxLift: 1, massKg: 6800, weightN: 25000,
+  lat: 0, lon: 0, log: [], blips: [], cell: '', nearest: '', beacon: false,
+  rampState: 'lowered', airlockState: 'inner open', sol: 1207,
+};
+
 const KIND_FOR = {
   pilot: ['attitude', 'flight', 'systems'], nav: ['coords', 'map', 'scan'], comms: ['log', 'signal'],
   engineer: ['power', 'reactor'], diag: ['systems', 'reactor'], airlock: ['airlock'], ramp: ['ramp'],
@@ -435,6 +444,18 @@ export class ShipScreens {
     parent.add(mesh);
     const s = { spec, mesh, canvas, ctx, tex, next: 0, kind: spec.kind, w: cw, h: ch, roomId: spec.room };
     this.list.push(s);
+    // looks-r1: the first frame is a lit readout. update() skips a screen until the camera is near it,
+    // so a blank canvas was a white card until then. The numbers are a parked-ship stub, replaced on the first real update.
+    if (ctx) {
+      const fn = DRAW[spec.kind] || DRAW.idle;
+      try {
+        ctx.save();
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        fn(ctx, cw, ch, STUB_TEL, 0, { scanner: this.scanner });
+        ctx.restore();
+        if (tex) tex.needsUpdate = true;
+      } catch { /* a painter that needs a live ship keeps the dark frame */ }
+    }
     return s;
   }
 

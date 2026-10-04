@@ -51,13 +51,26 @@ export function buildTransportExterior(layout, matsIn, opts = {}) {
       }
     }
   }
-  // salon windows exactly where the real ones are (outer face of the flank)
+  // salon windows exactly where the real ones are. looks-r1: a dark recess, warm cabin glass,
+  // and a frame proud of the skin. Mullions are wide enough to read from the pad. Positions stay tied to WINDOWS.
   for (const w of WINDOWS) {
     if (w.room === 'crew_q') continue;
     const s = w.wall === 'x1' ? 1 : -1, hw = HULL.halfWidth(w.c);
     const yc = (w.y0 + w.y1) / 2 - 3.0, h = w.y1 - w.y0;
-    k.box('steelDark', s * (hw + 0.012), yc, w.c, 0.02, h + 0.2, w.w + 0.2);
-    k.box('glowWhite', s * (hw + 0.026), yc, w.c, 0.02, h, w.w, { col: w.room === 'lounge' ? [0.42, 0.5, 0.6] : [0.5, 0.42, 0.3] });
+    const panes = Math.max(2, Math.round(w.w / 2.2));
+    const out = hw + 0.02;
+    // Dark paint, not lit metal: a sun-facing steel frame washed out to the hull colour from the pad.
+    const frame = [0.22, 0.24, 0.28];
+    k.box('plasticDark', s * out, yc, w.c, 0.08, h + 0.2, w.w + 0.28, { col: frame });
+    k.box('glowAmber', s * (out + 0.06), yc, w.c, 0.02, h - 0.5, w.w - 0.7, { col: [0.7, 0.42, 0.22] });
+    k.box('glassTint', s * (out + 0.09), yc, w.c, 0.018, h - 0.28, w.w - 0.4);
+    k.box('plasticDark', s * (out + 0.16), yc + h / 2 - 0.04, w.c, 0.2, 0.32, w.w + 0.44, { col: frame });
+    k.box('plasticDark', s * (out + 0.16), yc - h / 2 + 0.04, w.c, 0.2, 0.32, w.w + 0.44, { col: frame });
+    for (let i = 0; i <= panes; i++) {
+      const z = w.c - w.w / 2 + (w.w / panes) * i;
+      const end = i === 0 || i === panes;
+      k.box('plasticDark', s * (out + 0.18), yc, z, 0.22, h + 0.28, end ? 0.4 : 0.28, { col: frame });
+    }
   }
   // a quiet row of small lit portholes between the salon windows
   windowRows(k, HULL, -29, 28, 1.7, [2.7], { w: 0.28, h: 0.28, key: 'glowWhite', dark: 0.25 });
@@ -90,7 +103,9 @@ export function buildTransportExterior(layout, matsIn, opts = {}) {
     const hw = HULL.halfWidth(z);
     k.bevelBox('hullStripe', s * (hw + 0.55), 4.5, z, 1.1, 1.3, 3.6, 0.35);
     k.bevelBox('hullDark', s * (hw + 0.55), 3.78, z, 1.2, 0.12, 3.8, 0.04);
-    k.box('glowAmber', s * (hw + 1.12), 4.7, z, 0.02, 0.2, 0.9); k.box('white', s * (hw + 1.12), 4.25, z, 0.02, 0.3, 1.4);
+    k.box('glowAmber', s * (hw + 1.12), 4.7, z, 0.02, 0.16, 0.7);
+    k.bevelBox('steelDark', s * (hw + 1.1), 4.22, z, 0.04, 0.4, 1.45, 0.012);   // looks-r1: hatch, not a blank white panel
+    k.box('glowAmber', s * (hw + 1.14), 4.22, z + 0.42, 0.012, 0.05, 0.1);
   }
   // an upper docking collar on the spine, with its tube
   k.cyl('steelDark', 0, 8.0, 12, 2.0, 0.5, 20); k.cyl('hull', 0, 8.45, 12, 1.5, 0.6, 20, { col: [0.85, 0.86, 0.84] }); k.cyl('gunmetal', 0, 8.8, 12, 1.1, 0.1, 20);

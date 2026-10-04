@@ -206,11 +206,13 @@ export function makePortMaterials(tier,shared) {
   const pavementMaps=pavement?{map:pavement.albedo,normalMap:pavement.normal,roughnessMap:pavement.orm}:{};
   const concrete=new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:.95,...pavementMaps});
   if(!pavement)concrete.color.setHex(0x77766d);
+  // looks-r1: a modest self-light so the slab reads as dark concrete at night. Emissive is not multiplied by vertex colour.
+  concrete.emissive=new THREE.Color(0x6e675c); concrete.emissiveIntensity=0.32;
   const paint=ship.hull.clone();
   const metal=ship.metal.clone(); // Keep the ship's environment without mutating its materials.
   const mats={concrete,paint,metal,glow:ship.glow,wall:ship['wall:cargo'],floor:ship['floor:deck'],fabric:ship.fabric,glassTint:ship.glassTint,
     signs:new THREE.MeshBasicMaterial({map:atlas.texture,color:0xffffff,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}),
-    mark:new THREE.MeshStandardMaterial({color:0xd3ad63,roughness:1,...(pavement?{normalMap:pavement.normal,roughnessMap:pavement.orm}:{}),polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}),
+    mark:new THREE.MeshStandardMaterial({color:0xd3ad63,roughness:1,emissive:new THREE.Color(0xb8924a),emissiveIntensity:0.4,...(pavement?{normalMap:pavement.normal,roughnessMap:pavement.orm}:{}),polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}),
     soot:new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,map:atlas.texture,alphaTest:.06,roughness:1,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),
     // PORT-POLISH: light in the dust. Additive, unlit, no depth write: pools under the floodmasts, spill from the lit windows and signs
     // and the glow round a lamp head. One bucket, one draw call, drawn after everything opaque.

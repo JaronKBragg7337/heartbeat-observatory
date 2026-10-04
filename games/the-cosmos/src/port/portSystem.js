@@ -117,6 +117,7 @@ export class PortSystem {
     for(const a of PADS) {
       const k=new PortKit(low); k.defaultTile=4; k.push(a.x,0,a.z);
       // The concrete is a material volume in the field. Only its finish is drawn here.
+      // looks-r1: the night skirt is on the port root (below), not in this asset, so the registered pad stays its authored size.
       k.box('concrete',0,-.244,0,a.w,.5,a.d);
       for(let x=-a.w/2+6;x<a.w/2;x+=6) k.box('soot',x,.01,0,.035,.005,a.d-.3);
       for(let z=-a.d/2+8;z<a.d/2;z+=8) k.box('soot',0,.011,z,a.w-.3,.005,.035);
@@ -171,6 +172,12 @@ export class PortSystem {
       }
     }
     // Taxi spine and branches: concrete finishes lie on the same engineered plane.
+    // looks-r1: a wider skirt under each pad, the apron and the walkway. Same concrete, bottom above the slab
+    // (-0.405 vs -0.494) so it does not become the measured foundation. It is not part of those assets' boxes.
+    const skirt=(x,z,w,d,extra)=>master.box('concrete',x,-.21,z,w+extra,.39,d+extra,{col:[.72,.62,.52]});
+    for(const a of PADS) skirt(a.x,a.z,a.w,a.d,8);
+    skirt(APRON.x,APRON.z,APRON.w,APRON.d,8);
+    skirt((WALKWAY.x0+WALKWAY.x1)/2,(WALKWAY.z0+WALKWAY.z1)/2,WALKWAY.x1-WALKWAY.x0,WALKWAY.z1-WALKWAY.z0,4);
     master.box('concrete',30,-.244,0,18,.5,110);
     for(const z of [-28,30]) {
       master.box('concrete',49,-.244,z,22,.5,10);

@@ -43,7 +43,11 @@ export const PROPS = {
     handle(k, w / 2 - 0.09, h * 0.5, d / 2 + 0.03, 0.14);
     k.box('gunmetal', 0, h * 0.5 + 0.0, d / 2 + 0.016, 0.006, h - 0.14, 0.004);
     led(k, -w / 2 + 0.07, h - 0.18, d / 2 + 0.018, 'glowGreen');
-    k.box('white', 0, h - 0.12, d / 2 + 0.018, 0.14, 0.05, 0.004);
+    // looks-r1: a dark status plate, flush on the door. The old white card read as a floating blank panel.
+    k.bevelBox('plasticDark', 0, h - 0.12, d / 2 + 0.02, 0.18, 0.07, 0.008, 0.002);
+    k.box('glowGreen', -0.055, h - 0.12, d / 2 + 0.026, 0.018, 0.018, 0.004);
+    k.box('glowCyan', 0.02, h - 0.105, d / 2 + 0.026, 0.07, 0.006, 0.003);
+    k.box('glowCyan', 0.015, h - 0.125, d / 2 + 0.026, 0.055, 0.004, 0.003);
     k.box('gunmetal', 0, 0.03, 0, w + 0.02, 0.06, d + 0.02);
   },
 
@@ -271,15 +275,19 @@ export const PROPS = {
     k.pop();
   },
   _swivel(k, fabric = 'fabricGrey') {
-    k.cyl('steelDark', 0, 0.24, 0, 0.03, 0.4, 8);
+    // looks-r1: a station chair. Post, five-star base, a pan with an edge, a shell behind the pad.
+    k.cyl('steelDark', 0, 0.2, 0, 0.032, 0.36, 8);
+    k.cyl('steel', 0, 0.38, 0, 0.07, 0.035, 10);
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2;
-      k.pipe('steelDark', [0, 0.05, 0], [Math.cos(a) * 0.24, 0.03, Math.sin(a) * 0.24], 0.012, 6);
-      k.cyl('rubber', Math.cos(a) * 0.24, 0.02, Math.sin(a) * 0.24, 0.022, 0.04, 8);
+      k.pipe('steelDark', [0, 0.05, 0], [Math.cos(a) * 0.22, 0.02, Math.sin(a) * 0.22], 0.012, 5);
+      k.cyl('rubber', Math.cos(a) * 0.22, 0.015, Math.sin(a) * 0.22, 0.02, 0.03, 6);
     }
-    k.pillow(fabric, 0, 0.51, 0, 0.46, 0.11, 0.46, 3.0);
-    k.pillow(fabric, 0, 0.84, -0.2, 0.44, 0.58, 0.1, 3.0);
-    for (const s of [-1, 1]) { k.box('steelDark', s * 0.24, 0.66, 0, 0.03, 0.03, 0.34); k.box('steelDark', s * 0.24, 0.58, 0.05, 0.03, 0.14, 0.03); }
+    k.bevelBox('gunmetal', 0, 0.42, 0.02, 0.44, 0.045, 0.42, 0.01);
+    k.bevelBox(fabric, 0, 0.5, 0.03, 0.4, 0.07, 0.38, 0.014);
+    k.bevelBox('gunmetal', 0, 0.78, -0.16, 0.4, 0.48, 0.045, 0.01);
+    k.bevelBox(fabric, 0, 0.78, -0.11, 0.34, 0.4, 0.06, 0.012);
+    for (const s of [-1, 1]) k.bevelBox('gunmetal', s * 0.22, 0.58, 0.02, 0.04, 0.035, 0.3, 0.008);
   },
 
   toilet(k, p) {
@@ -553,73 +561,107 @@ export function drawProp(kit, p) {
 // ---------------------------------------------------------------------------
 // Seats. Drawn facing local -Z (the ship's forward at yaw 0).
 // ---------------------------------------------------------------------------
+const WEB = [0.42, 0.16, 0.14];   // looks-r1: harness webbing. A bright red box read as a pink stick under the cabin lights.
+
+/**
+ * The registered station is the old chair's box. Floor rails and a head post reach that box,
+ * so a tighter seat still measures as the station on the manifest.
+ */
+function seatReach(k, halfW, top, z0, z1) {
+  for (const s of [-1, 1]) {
+    k.pipe('steelDark', [s * halfW, 0.045, z0], [s * halfW, 0.045, z1], 0.012, 5);
+    k.cyl('rubber', s * halfW, 0.016, z0, 0.016, 0.032, 6);
+    k.cyl('rubber', s * halfW, 0.016, z1, 0.016, 0.032, 6);
+  }
+  k.cyl('steel', 0, top - 0.14, 0, 0.01, 0.28, 5);
+}
+
+/** Shoulder webs on the back pad and a lap belt with a buckle. The belt lies on the cushion. */
+function flightHarness(k, backZ) {
+  for (const s of [-1, 1]) k.bevelBox('plasticDark', s * 0.09, 0.78, backZ, 0.028, 0.5, 0.01, 0.002, { col: WEB });
+  k.bevelBox('plasticDark', 0, 0.4, -0.14, 0.32, 0.014, 0.035, 0.002, { col: WEB });
+  k.bevelBox('steel', 0, 0.415, -0.145, 0.055, 0.026, 0.04, 0.005);
+  k.box('glowAmber', 0, 0.415, -0.168, 0.016, 0.01, 0.005);
+}
+
 export const SEAT_DRAW = {
   captain(k) {
-    // a command chair: winged back, deep pan, armrest control pods
-    k.cyl('gunmetal', 0, 0.09, 0, 0.44, 0.18, 20);
-    k.cyl('steel', 0, 0.2, 0, 0.14, 0.4, 12);
-    k.cyl('gunmetal', 0, 0.4, 0, 0.26, 0.06, 16);
-    k.pillow('leather', 0, 0.53, 0.0, 0.70, 0.2, 0.66, 3.0);                     // pan
-    k.pillow('leather', 0, 0.56, -0.25, 0.52, 0.12, 0.16, 2.6);                   // waterfall edge
-    k.pillow('leather', 0, 0.99, 0.3, 0.66, 0.92, 0.22, 3.0);                      // back
-    for (const s of [-1, 1]) k.pillow('leather', s * 0.32, 0.9, 0.2, 0.14, 0.66, 0.3, 2.6);   // side wings
-    k.pillow('leather', 0, 1.55, 0.33, 0.4, 0.34, 0.17, 2.6);                     // headrest
-    for (const y of [0.8, 1.0, 1.2]) k.box('gunmetal', 0, y, 0.228, 0.5, 0.006, 0.006);   // stitched seams
-    k.box('gunmetal', 0, 0.98, 0.228, 0.006, 0.7, 0.006);
+    // looks-r1: command chair. Tube sled, pan, winged shell, headrest, harness on the cushion.
     for (const s of [-1, 1]) {
-      k.bevelBox('gunmetal', s * 0.4, 0.7, 0.02, 0.11, 0.12, 0.64, 0.03);       // armrest pod
-      k.pillow('leather', s * 0.4, 0.79, 0.0, 0.12, 0.07, 0.58, 3.0);
-      k.bevelBox('plasticDark', s * 0.39, 0.815, -0.28, 0.15, 0.045, 0.22, 0.014);
-      k.box('glowCyan', s * 0.39, 0.842, -0.28, 0.1, 0.003, 0.15);
-      k.bevelBox('gunmetal', s * 0.37, 0.62, 0.12, 0.03, 0.36, 0.32, 0.01);
+      k.cyl('steelDark', s * 0.24, 0.14, 0.02, 0.028, 0.28, 8);
+      k.pipe('steel', [s * 0.24, 0.06, -0.22], [s * 0.24, 0.06, 0.26], 0.018, 6);
+      k.cyl('steelDark', s * 0.24, 0.035, -0.2, 0.045, 0.05, 8);
+      k.cyl('steelDark', s * 0.24, 0.035, 0.22, 0.045, 0.05, 8);
     }
-    k.box('glowCyan', 0.0, 0.5, -0.33, 0.5, 0.012, 0.004);
-    k.box('hullAccent', 0, 0.98, 0.395, 0.04, 0.74, 0.006);
-    k.pipe('steel', [-0.43, 0.85, -0.05], [-0.43, 1.0, -0.16], 0.014);
-    k.bevelBox('red', -0.43, 1.03, -0.18, 0.05, 0.06, 0.08, 0.018);
-    k.pipe('steel', [0.43, 0.85, -0.05], [0.43, 1.0, -0.12], 0.014);
-    k.bevelBox('plasticDark', 0.43, 1.03, -0.14, 0.06, 0.1, 0.07, 0.02);
-    k.box('red', 0.43, 1.05, -0.185, 0.02, 0.02, 0.01);
+    k.bevelBox('gunmetal', 0, 0.24, 0.02, 0.62, 0.05, 0.62, 0.012);
+    k.bevelBox('leather', 0, 0.34, -0.02, 0.58, 0.1, 0.54, 0.02);
+    k.bevelBox('leather', 0, 0.36, -0.3, 0.56, 0.05, 0.08, 0.012);
+    k.bevelBox('gunmetal', 0, 0.86, 0.3, 0.58, 0.86, 0.06, 0.012);
+    k.bevelBox('leather', 0, 0.84, 0.23, 0.5, 0.74, 0.08, 0.016);
+    for (const s of [-1, 1]) {
+      k.bevelBox('leather', s * 0.3, 0.8, 0.2, 0.1, 0.58, 0.16, 0.02);
+      k.bevelBox('gunmetal', s * 0.4, 0.58, 0.0, 0.08, 0.05, 0.5, 0.012);
+      k.bevelBox('leather', s * 0.4, 0.63, 0.0, 0.09, 0.035, 0.44, 0.008);
+      k.bevelBox('plasticDark', s * 0.4, 0.66, -0.22, 0.1, 0.03, 0.14, 0.006);
+      k.box('glowCyan', s * 0.4, 0.678, -0.22, 0.06, 0.004, 0.08);
+    }
+    for (const s of [-1, 1]) k.cyl('steel', s * 0.1, 1.32, 0.28, 0.012, 0.14, 6);
+    k.bevelBox('gunmetal', 0, 1.44, 0.3, 0.32, 0.16, 0.05, 0.01);
+    k.bevelBox('leather', 0, 1.44, 0.24, 0.28, 0.14, 0.08, 0.016);
+    flightHarness(k, 0.2);
+    k.box('hullAccent', 0, 0.86, 0.34, 0.03, 0.7, 0.006);
+    seatReach(k, 0.449, 1.72, -0.422, 0.426);
   },
   pilot(k) {
-    // a bucket seat with harness
-    k.bevelBox('gunmetal', 0, 0.12, 0.05, 0.6, 0.24, 0.72, 0.05);
-    k.pillow('fabricBlue', 0, 0.38, 0.0, 0.6, 0.18, 0.6, 3.0);
-    k.pillow('fabricBlue', 0, 0.9, 0.3, 0.56, 0.94, 0.2, 3.0);
-    k.pillow('fabricBlue', 0, 1.4, 0.32, 0.34, 0.28, 0.15, 2.6);
+    // looks-r1: flight bucket. Frame, cushion with a front lip, back shell, bolsters, harness and buckle.
     for (const s of [-1, 1]) {
-      k.bevelBox('gunmetal', s * 0.33, 0.64, -0.02, 0.09, 0.11, 0.52, 0.03);
-      k.pillow('fabricBlue', s * 0.31, 0.75, 0.18, 0.1, 0.54, 0.2, 2.6);       // bolsters
-      k.bevelBox('red', s * 0.2, 1.0, 0.235, 0.05, 0.92, 0.008, 0.002);            // harness straps
-      k.box('steelDark', s * 0.2, 0.62, 0.235, 0.07, 0.04, 0.012);
+      k.cyl('steelDark', s * 0.2, 0.14, 0.02, 0.026, 0.28, 8);
+      k.pipe('steel', [s * 0.2, 0.06, -0.2], [s * 0.2, 0.06, 0.22], 0.016, 6);
+      k.cyl('steelDark', s * 0.2, 0.03, -0.18, 0.04, 0.045, 8);
+      k.cyl('steelDark', s * 0.2, 0.03, 0.2, 0.04, 0.045, 8);
     }
-    k.pipe('steel', [0.34, 0.7, -0.15], [0.34, 0.9, -0.3], 0.017);
-    k.bevelBox('plasticDark', 0.34, 0.95, -0.32, 0.055, 0.11, 0.065, 0.02);
-    k.pipe('steel', [-0.34, 0.7, -0.15], [-0.34, 0.84, -0.3], 0.017);
-    k.bevelBox('red', -0.34, 0.88, -0.32, 0.055, 0.065, 0.1, 0.02);
-    k.box('glowCyan', 0, 0.37, -0.295, 0.4, 0.008, 0.004);
-    for (const y of [0.7, 0.9, 1.1]) k.box('gunmetal', 0, y, 0.376, 0.4, 0.005, 0.005);
+    k.bevelBox('gunmetal', 0, 0.22, 0.02, 0.5, 0.05, 0.56, 0.012);
+    k.bevelBox('fabricBlue', 0, 0.32, -0.02, 0.46, 0.09, 0.48, 0.016);
+    k.bevelBox('fabricBlue', 0, 0.33, -0.26, 0.46, 0.045, 0.07, 0.01);
+    k.bevelBox('gunmetal', 0, 0.78, 0.28, 0.48, 0.74, 0.05, 0.012);
+    k.bevelBox('fabricBlue', 0, 0.76, 0.22, 0.4, 0.62, 0.07, 0.014);
+    for (const s of [-1, 1]) {
+      k.bevelBox('fabricBlue', s * 0.24, 0.44, -0.02, 0.07, 0.18, 0.44, 0.012);
+      k.bevelBox('gunmetal', s * 0.32, 0.5, -0.02, 0.045, 0.04, 0.4, 0.01);
+      k.bevelBox('fabricBlue', s * 0.32, 0.545, -0.02, 0.055, 0.03, 0.34, 0.008);
+    }
+    for (const s of [-1, 1]) k.cyl('steel', s * 0.08, 1.18, 0.26, 0.01, 0.12, 6);
+    k.bevelBox('gunmetal', 0, 1.28, 0.28, 0.26, 0.12, 0.04, 0.008);
+    k.bevelBox('fabricBlue', 0, 1.28, 0.23, 0.22, 0.1, 0.07, 0.012);
+    flightHarness(k, 0.2);
+    k.box('glowCyan', 0, 0.26, -0.28, 0.32, 0.008, 0.004);
+    seatReach(k, 0.359, 1.54, -0.369, 0.379);
   },
   swivel(k) {
     // _swivel is drawn facing +Z (for a desk); a station seat faces -Z, toward its screens
     k.push(0, 0, 0, Math.PI);
     PROPS._swivel(k, 'fabricBlue');
-    for (const s of [-1, 1]) k.bevelBox('gunmetal', s * 0.26, 0.72, -0.05, 0.08, 0.05, 0.3, 0.02);
     k.pop();
+    seatReach(k, 0.284, 1.13, -0.18, 0.18);
   },
   gunner(k) {
-    // a harness seat in front of a pair of grips
-    k.bevelBox('gunmetal', 0, 0.14, 0.1, 0.5, 0.28, 0.62, 0.05);
-    k.pillow('leather', 0, 0.36, 0.05, 0.48, 0.16, 0.54, 3.0);
-    k.pillow('leather', 0, 0.81, 0.3, 0.48, 0.86, 0.16, 3.0);
-    k.pillow('leather', 0, 1.32, 0.32, 0.3, 0.24, 0.13, 2.6);
+    // looks-r1: harness seat and the two grips. Webbing lies on the pad.
     for (const s of [-1, 1]) {
-      k.pipe('steel', [s * 0.29, 0.5, -0.05], [s * 0.29, 0.85, -0.35], 0.017);
-      k.bevelBox('plasticDark', s * 0.29, 0.9, -0.38, 0.055, 0.13, 0.065, 0.02);
-      k.box('red', s * 0.29, 0.955, -0.415, 0.02, 0.02, 0.008);
-      k.bevelBox('red', s * 0.2, 0.9, 0.242, 0.05, 0.82, 0.008, 0.002);
+      k.cyl('steelDark', s * 0.16, 0.12, 0.06, 0.024, 0.24, 8);
+      k.cyl('steelDark', s * 0.16, 0.03, -0.12, 0.035, 0.04, 6);
+      k.cyl('steelDark', s * 0.16, 0.03, 0.22, 0.035, 0.04, 6);
     }
-    k.bevelBox('steelDark', 0, 0.16, -0.32, 0.3, 0.22, 0.14, 0.03);
-    k.box('glowAmber', 0, 0.24, -0.395, 0.2, 0.03, 0.004);
+    k.bevelBox('gunmetal', 0, 0.2, 0.06, 0.44, 0.045, 0.5, 0.01);
+    k.bevelBox('leather', 0, 0.3, 0.04, 0.4, 0.08, 0.44, 0.014);
+    k.bevelBox('gunmetal', 0, 0.72, 0.28, 0.42, 0.7, 0.045, 0.01);
+    k.bevelBox('leather', 0, 0.7, 0.22, 0.36, 0.58, 0.06, 0.012);
+    k.bevelBox('leather', 0, 1.12, 0.24, 0.22, 0.12, 0.07, 0.012);
+    flightHarness(k, 0.2);
+    for (const s of [-1, 1]) {
+      k.pipe('steel', [s * 0.28, 0.48, -0.04], [s * 0.28, 0.78, -0.32], 0.016, 6);
+      k.bevelBox('plasticDark', s * 0.28, 0.84, -0.34, 0.05, 0.1, 0.06, 0.012);
+      k.box('glowRed', s * 0.28, 0.88, -0.372, 0.016, 0.016, 0.006);
+    }
+    seatReach(k, 0.304, 1.44, -0.431, 0.366);
   },
 };

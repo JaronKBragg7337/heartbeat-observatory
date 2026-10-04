@@ -122,16 +122,34 @@ export class Person {
 
   // Avoid bone float textures and GLSL 3 texelFetch in the vendored renderer's
   // skinning chunk. Safe mode uses a small animated, unskinned suit silhouette.
+  // looks-r1: a flight suit. Boots stay on the legs and gloves on the arms so the walk still swings them.
+  // The visor faces +Z, which is this rig's front. Materials stay unnamed so a crew tint still paints the cloth.
   _attachSafe() {
-    if(this.loaded)return;
-    this.safe=true;this.phase=0;this.body=new THREE.Group();this.group.add(this.body);
-    const mat=new THREE.MeshLambertMaterial({color:0xc3b7a2}),dark=new THREE.MeshLambertMaterial({color:0x453e37});
-    const part=(geometry,material,x,y,z)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);this.body.add(m);return m;};
-    part(new THREE.CapsuleGeometry(.23,.46,3,6),mat,0,1.15,0);
-    part(new THREE.SphereGeometry(.19,8,6),dark,0,1.61,0);
-    this.safeLegs=[-.13,.13].map(x=>part(new THREE.CapsuleGeometry(.09,.58,3,6),dark,x,.37,0));
-    this.safeArms=[-.32,.32].map(x=>part(new THREE.CapsuleGeometry(.07,.48,3,6),mat,x,1.1,0));
-    this.loaded=true;this.pose='Idle';
+    if (this.loaded) return;
+    this.safe = true; this.phase = 0; this.body = new THREE.Group(); this.group.add(this.body);
+    const suit = new THREE.MeshLambertMaterial({ color: 0xd7dbe0 });
+    const hard = new THREE.MeshLambertMaterial({ color: 0x2a3038 });
+    const visor = new THREE.MeshLambertMaterial({ color: 0x9ee7ff, emissive: new THREE.Color(0x1a6a88), emissiveIntensity: 0.65 });
+    const lamp = new THREE.MeshLambertMaterial({ color: 0x6dff9c, emissive: new THREE.Color(0x1c7a3a), emissiveIntensity: 0.55 });
+    const part = (geometry, material, x, y, z, parent) => {
+      const m = new THREE.Mesh(geometry, material);
+      m.position.set(x, y, z);
+      (parent || this.body).add(m);
+      return m;
+    };
+    part(new THREE.CapsuleGeometry(0.22, 0.4, 3, 6), suit, 0, 1.12, 0);
+    part(new THREE.BoxGeometry(0.16, 0.1, 0.025), hard, 0, 1.16, 0.2);
+    part(new THREE.BoxGeometry(0.035, 0.028, 0.01), lamp, 0, 1.14, 0.216);
+    part(new THREE.BoxGeometry(0.42, 0.055, 0.26), hard, 0, 0.9, 0);
+    part(new THREE.BoxGeometry(0.22, 0.28, 0.09), hard, 0, 1.18, -0.2);
+    part(new THREE.BoxGeometry(0.52, 0.05, 0.16), hard, 0, 1.38, 0);
+    part(new THREE.SphereGeometry(0.17, 8, 6), hard, 0, 1.62, 0);
+    part(new THREE.BoxGeometry(0.15, 0.065, 0.02), visor, 0, 1.64, 0.15);
+    this.safeLegs = [-0.12, 0.12].map((x) => part(new THREE.CapsuleGeometry(0.075, 0.48, 3, 6), suit, x, 0.38, 0));
+    for (const leg of this.safeLegs) part(new THREE.BoxGeometry(0.12, 0.08, 0.2), hard, 0, -0.3, 0.04, leg);
+    this.safeArms = [-0.32, 0.32].map((x) => part(new THREE.CapsuleGeometry(0.06, 0.4, 3, 6), suit, x, 1.12, 0));
+    for (const arm of this.safeArms) part(new THREE.BoxGeometry(0.075, 0.07, 0.09), hard, 0, -0.26, 0.02, arm);
+    this.loaded = true; this.pose = 'Idle';
   }
 
   /** Cross-fade to Idle, Walk or Sit. */

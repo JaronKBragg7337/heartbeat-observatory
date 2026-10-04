@@ -57,6 +57,7 @@ export class Kit {
     this.triangles = 0;
     this.defaultTile = 1;
     this.faces = [];                       // every flat polygon written, for resolveDepthLayers()
+    this.decals = [];                      // looks-r1: unmerged plates (a shared canvas). One mesh each, not a bucket.
   }
 
   // ---- transform -------------------------------------------------------------
@@ -69,6 +70,18 @@ export class Kit {
     return this;
   }
   pop() { this.t = this.stack.pop(); return this; }
+
+  /**
+   * looks-r1: a rectangle in the current frame, facing local +Z (the same way a Kit box's +Z face points).
+   * Kept as its own mesh so a canvas texture is not baked into a merged bucket.
+   * Yaw matches the kit: x' = c x + s z, z' = -s x + c z, and Three.js rotation.y uses that same pair.
+   */
+  plate(material, x, y, z, w, h) {
+    if (!material) return this;
+    const [px, py, pz] = this._tp(x, y, z);
+    this.decals.push({ material, x: px, y: py, z: pz, w, h, yaw: Math.atan2(this.t.s, this.t.c) });
+    return this;
+  }
 
   _tp(x, y, z) {
     const t = this.t;
@@ -510,6 +523,13 @@ export class Kit {
       const mesh = new THREE.Mesh(geo, mat);
       mesh.name = `${g.name}:${key}`;
       mesh.castShadow = !!opts.cast; mesh.receiveShadow = !!opts.receive;
+      g.add(mesh);
+    }
+    for (const d of this.decals) {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(d.w, d.h), d.material);
+      mesh.position.set(d.x, d.y, d.z);
+      mesh.rotation.y = d.yaw;
+      mesh.name = `${g.name}:plate`;
       g.add(mesh);
     }
     return g;
