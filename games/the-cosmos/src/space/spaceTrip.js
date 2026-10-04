@@ -22,7 +22,7 @@ import { Transit, turnToward, estimateTrip } from './transit.js';
 import { DRIVE, ATMOSPHERE_TOP_M, STANDOFF_M, RAIDER_SUSPEND_MS, stickWarpCap } from './spaceSpec.js';
 import { JUMP, systemOfFrame, rootFrameOf, regionName, laneName, mouthPoint, transitBody, solMouthDir } from './jump.js';     // WORLD2: the Ore Lane
 import { makeMoon } from './moonField.js';
-import { toInertial, toFixed, velToInertial, velToFixed, rotY, rootSpin, inertialGoal } from './frames.js';
+import { toInertial, toFixed, velToInertial, velToFixed, rotY, rootSpin, inertialGoal, frameAt, framePoint, frameDir, frameVel } from './frames.js';
 
 /**
  * How long a leg takes, flown for real (transit.js) from a ship hovering at `startFixed` (Mars's turning axes) at game time T, chasing the leg's goal
@@ -37,8 +37,8 @@ export function estimateCourse({ dest, startFixed, T, nose, aMax }) {
   const goal = goalFn ? goalFn(0).pos : dest.goalS({ f: { pos: startFixed } });
   return estimateTrip({ pos, vel, nose: rotY(nose, rootSpin(T)), up: { x: 0, y: 1, z: 0 }, goal, goalFn, T0: T, aMax, vMax: DRIVE.vMaxMs, turnRate: DRIVE.turnRate });
 }
-import { LONG, planCruise, cruiseAt, cruiseHeading, cruiseAccel, warpCap, realSeconds, longDriveAllowed, dropDistanceM } from './longRange.js';     // F3: the long-range drive
-import { worldCentreInertial } from '../worlds/registry.js';
+import { LONG, planCruise, cruiseAt, cruiseHeading, cruiseAccel, warpCap, nearCap, realSeconds, longDriveAllowed, dropDistanceM } from './longRange.js';     // F3: the long-range drive
+import { worldCentreInertial, allWorlds, worldDef } from '../worlds/registry.js';
 import { installHold } from './deepHold.js';
 
 export const MARS_R = 3_389_500;
@@ -46,7 +46,7 @@ const DEG = Math.PI / 180;
 const fmtKm = (m) => (m >= 1e6 ? `${(m / 1000).toFixed(0)} km` : m >= 1e4 ? `${(m / 1000).toFixed(0)} km` : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`);
 export const fmtDuration = (s) => (s >= 5400 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min` : s >= 120 ? `${Math.round(s / 60)} min` : `${Math.round(s)} s`);
 
-const _m = new THREE.Matrix4(), _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3();
+const _q = new THREE.Quaternion(), _m = new THREE.Matrix4(), _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3();
 
 export class SpaceTrip {
   /**
@@ -130,7 +130,7 @@ export class SpaceTrip {
       if (!away) return [{ sys: here, goal }];
       return [{ sys: here, cruise: true, target: here, toSys: here, mouth: true }, { sys: here, goal }];      // held far out: the drive brings her to the home mouth, the main drive does the rest
     }
-    if (d.via !== 'drive' && !away) return [{ sys: here, goal: mouthPoint(here, this._regionBody(here)), jump: true }, { sys: there, goal: this._goalIn(there) }];     // the Ore Lane (WORLD2)
+    // F3: there is no lane and no cut: every world in the Solar System is reached by flying there (the Ore Lane's corridor is retired, jump.js is kept only for its mouth points)
     const legs = [];
     if (!away) legs.push({ sys: here, goal: depart(this._ci(there, T)) });
     legs.push({ sys: here, cruise: true, target: there, toSys: there, mouth: true });
@@ -140,12 +140,14 @@ export class SpaceTrip {
   // ---- F3 and F2: the long drive flies in INERTIAL axes (Mars-centred, not turning). A far world's region is its own frame, which does not turn for the drive.
   /** A world's centre in inertial axes at game time T ('mars' is the origin). */
   _ci(id, T) { return id === 'mars' ? { x: 0, y: 0, z: 0 } : worldCentreInertial(id, T); }
-  /** A point of a region's root frame in inertial axes, and back (Mars's frame turns; a far world's does not, it only sits at its world). */
-  _toI(sys, p, T) { if (sys === 'mars') return toInertial(p, T); const c = this._ci(sys, T); return { x: p.x + c.x, y: p.y + c.y, z: p.z + c.z }; }
-  _fromI(sys, p, T) { if (sys === 'mars') return toFixed(p, T); const c = this._ci(sys, T); return { x: p.x - c.x, y: p.y - c.y, z: p.z - c.z }; }
+  /** A point of a region's root frame in inertial axes, and back. Mars's frame turns; a far world's frame is carried by its world (frames.js), turning and moving with it. */
+  _toI(sys, p, T) { if (sys === 'mars') return toInertial(p, T); return toInertial(framePoint(frameAt(sys, T), frameAt('mars', T), p), T); }
+  _fromI(sys, p, T) { const pf = toFixed(p, T); return sys === 'mars' ? pf : framePoint(frameAt('mars', T), frameAt(sys, T), pf); }
   /** A direction in a region's axes <-> inertial. */
-  _dirToI(sys, d, T) { return sys === 'mars' ? rotY(d, rootSpin(T)) : d; }
-  _dirFromI(sys, d, T) { return sys === 'mars' ? rotY(d, -rootSpin(T)) : d; }
+  _dirToI(sys, d, T) { if (sys === 'mars') return rotY(d, rootSpin(T)); return rotY(frameDir(frameAt(sys, T), frameAt('mars', T), d), rootSpin(T)); }
+  _dirFromI(sys, d, T) { const df = rotY(d, -rootSpin(T)); return sys === 'mars' ? df : frameDir(frameAt('mars', T), frameAt(sys, T), df); }
+  /** A velocity in INERTIAL axes at INERTIAL point pI, in a region's axes (what the ship's own flight.vel is). */
+  _velFromI(sys, pI, vI, T) { const vf = velToFixed(pI, vI, T); if (sys === 'mars') return vf; return frameVel(frameAt('mars', T), frameAt(sys, T), toFixed(pI, T), vf); }
   /** The lane-side "mouth" of a region (jump.js: over the pad), in inertial axes at T: where a cruise into that region ends. */
   _mouthI(sys, T) { return this._toI(sys, mouthPoint(sys, this._regionBody(sys)), T); }
   /** A point on the line from Mars toward `cI` (inertial), one mouth-distance out, in Mars's turning axes: where a ship leaving Mars for a far world drops into the long drive. */
@@ -156,11 +158,51 @@ export class SpaceTrip {
     return (t) => { const c = this._ci(leg.target, t); return { x: c.x + leg.dir.x * leg.k, y: c.y + leg.dir.y * leg.k, z: c.z + leg.dir.z * leg.k }; };
   }
   /** The plan of a cruise leg from `pos` (the leg's own frame) at the ship's own time T (default: now). */
-  _cruisePlan(leg, pos, i, T = this.space.timeS()) { return planCruise(this._toI(leg.sys, pos, T), this._cruiseGoalI(leg), T, cruiseAccel(this._aMax()), LONG.vMaxMs); }
+  _cruisePlan(leg, pos, i, T = this.space.timeS()) { const g = this._cruiseGoalI(leg), g0 = g(T); return planCruise(this._toI(leg.sys, pos, T), () => g0, T, cruiseAccel(this._aMax()), LONG.vMaxMs); }       // the goal is read at the WORLD's clock, which a trip of minutes (real) hardly moves
   /** Does the route use the long-range drive? (The trip may not start if the hull may not use it: see _plan.) */
   usesLong() { try { return (this.legs || this._route()).some((l) => l.cruise); } catch (e) { return false; } }
   /** The compression in force in the cruise: the one asked for, held down so the arrival is seen coming (longRange.warpCap). */
-  _longEff() { const c = this.cruise; return c ? warpCap(c.profile.T - c.tau, this.warp) : 1; }
+  _longEff() {
+    const c = this.cruise; if (!c) return 1;
+    const left = c.profile.T - c.tau, w = warpCap(left, this.warp);
+    if (c.nearTau === c.tau) return c.nearW <= w ? c.nearW : w;               // asked twice in one tick (the ship's step and the trip's own): one answer
+    c.nearTau = c.tau; c.nearW = this._nearWarp(w);
+    return Math.min(w, c.nearW);
+  }
+  /** The nearest world's distance (its surface, metres) from an inertial point, for the worlds at inertial time T (a list from `_bodiesAt`). */
+  _bodiesAt(T) {
+    const out = [];
+    for (const w of allWorlds()) {
+      if (w.root || w.kind === 'star' || w.kind === 'station' || !w.orbit) continue;
+      let r = w.radiusMean || (w.axes ? (w.axes.a + w.axes.b + w.axes.c) / 3 : 0); if (!r) { try { r = dropDistanceM(w.id) / LONG.dropRadii; } catch (e) { r = 0; } }
+      out.push({ c: w.id === 'mars' ? { x: 0, y: 0, z: 0 } : worldCentreInertial(w.id, T), r });
+    }
+    return out;
+  }
+  /** Real seconds a cruise takes at the top of the ladder with the neighbourhood's cap (longRange.nearCap) and the arrival's: flown in one-second steps against the worlds as they are at plan time. The nav computer quotes this. */
+  _longRealEstimate(plan) {
+    const P = plan.profile, A = plan.A, B = plan.goal, bodies = this._bodiesAt(plan.t0), top = LONG.warps.at(-1);
+    let tau = 0, real = 0;
+    for (let n = 0; tau < P.T && n < 20000; n++) {
+      const st = cruiseAt(P, tau), x = P.L > 0 ? st.x / P.L : 1, px = A.x + (B.x - A.x) * x, py = A.y + (B.y - A.y) * x, pz = A.z + (B.z - A.z) * x;
+      let d = Infinity; for (const b of bodies) d = Math.min(d, Math.hypot(b.c.x - px, b.c.y - py, b.c.z - pz) - b.r);
+      const w = Math.min(warpCap(P.T - tau, top), nearCap(d, st.v, top));
+      tau += w; real += 1;
+    }
+    return real;
+  }
+  /** The compression the nearest world allows (longRange.nearCap): she watches every planet she passes grow, and never skips by one. */
+  _nearWarp(requested) {
+    const c = this.cruise, f = this.f, T = this.space.timeS(), pI = this._toI('mars', f.pos, T), v = cruiseAt(c.profile, c.tau).v;
+    let d = Infinity;
+    for (const w of allWorlds()) {
+      if (w.root || w.kind === 'star' || w.kind === 'station' || !w.orbit) continue;
+      let r = w.radiusMean || (w.axes ? (w.axes.a + w.axes.b + w.axes.c) / 3 : 0); if (!r) { try { r = dropDistanceM(w.id) / LONG.dropRadii; } catch (e) { r = 0; } }
+      const k = w.id === 'mars' ? { x: 0, y: 0, z: 0 } : worldCentreInertial(w.id, T);
+      d = Math.min(d, Math.hypot(k.x - pI.x, k.y - pI.y, k.z - pI.z) - r);
+    }
+    return nearCap(d, v, requested);
+  }
   /** Height of the ship over the body whose frame it is in. */
   _alt(p = this.f.pos) { return Math.hypot(p.x, p.y, p.z) - (this.space.frameId === 'mars' ? MARS_R : this._body().radiusMean); }
   _body() { return this.space.frameId === 'mars' ? null : this.space.moonWorld(this.space.frameId).body; }
@@ -201,7 +243,7 @@ export class SpaceTrip {
   wallS(q) {
     if (q.state === 'done') return 0;
     if (q.id === 'spool') return q.leftS;                                                                   // cabin time: compression does not shorten it
-    if (q.id === 'longdrive') return realSeconds(q.leftS, Math.max(1, q.state === 'now' ? (q.warp || 1) : this.warp));     // the arrival steps the compression down (longRange.warpCap)
+    if (q.id === 'longdrive') { const w = Math.max(1, q.state === 'now' ? (q.warp || 1) : this.warp), pl = this.planS; return w >= LONG.warps.at(-1) && pl && pl.long > 0 && pl.longReal > 0 ? q.leftS / pl.long * pl.longReal : realSeconds(q.leftS, w); }     // the arrival steps the compression down (longRange.warpCap)
     const w = Math.max(1, q.state === 'now' ? (q.warp || 1) : this.warp > 60 ? 1 : this.warp);
     if (q.id === 'descent' && w > 1) { const tail = Math.min(q.leftS, 30); return tail + (q.leftS - tail) / w; }     // the last 400 m always run at x1
     return q.leftS / w;
@@ -217,7 +259,7 @@ export class SpaceTrip {
   _plan0() {
     const sp = this.space, d = this.dest;
     const climb = this.phase === 'transit' || this.phase === 'longdrive' || this.phase === 'spool' || this.phase === 'descent' || this.phase === 'settle' ? 0 : this._climbLeftS();
-    let drive = 0, drive2 = 0, long = 0, longL = 0, longPeak = 0; const kinds = [];
+    let drive = 0, drive2 = 0, long = 0, longL = 0, longPeak = 0, longReal = 0; const kinds = [];
     try {
       const f = this.f, here = this._here(), p = here === 'mars' ? sp._shipS() : { x: f.pos.x, y: f.pos.y, z: f.pos.z };
       let start = p;
@@ -234,7 +276,7 @@ export class SpaceTrip {
         legs.forEach((leg, i) => {
           if (i < this.leg) return;
           if (leg.cruise) {
-            const plan = this._cruisePlan(leg, pos, i); long = plan.profile.T; longL = plan.profile.L; longPeak = plan.profile.vPeak; seenLong = true; kinds.push('longdrive');
+            const plan = this._cruisePlan(leg, pos, i); long = plan.profile.T; longReal = this._longRealEstimate(plan); longL = plan.profile.L; longPeak = plan.profile.vPeak; seenLong = true; kinds.push('longdrive');
             if (leg.toSys) pos = mouthPoint(leg.toSys, this._regionBody(leg.toSys));
           } else {
             const t = est(pos, leg);
@@ -247,7 +289,7 @@ export class SpaceTrip {
     // the lane's legs read transit, spool, cruise: keep the order the phases panel lists them in
     const order = ['transit', 'spool', 'cruise'];
     if (!kinds.includes('longdrive')) kinds.sort((a, b) => order.indexOf(a) - order.indexOf(b));
-    return { climb, drive, drive2, long, longL, longPeak, kinds: kinds.length ? kinds : ['transit'], spool: this._crossing() && !kinds.includes('longdrive') ? JUMP.spoolS : 0, descent: d.kind === 'moon' || d.kind === 'port' ? this._descentS(this._descentStartAgl(), d.kind === 'port' ? 800 : 60) + 8 : 0 };
+    return { climb, drive, drive2, long, longL, longPeak, longReal, kinds: kinds.length ? kinds : ['transit'], spool: this._crossing() && !kinds.includes('longdrive') ? JUMP.spoolS : 0, descent: d.kind === 'moon' || d.kind === 'port' ? this._descentS(this._descentStartAgl(), d.kind === 'port' ? 800 : 60) + 8 : 0 };
   }
 
   say(text, key, warn = false) {
@@ -519,17 +561,20 @@ export class SpaceTrip {
   /** Begin the cruise leg `leg` from where the ship is (in the leg's own frame). The state is plain numbers, so the server saves it and every phone mirrors it. */
   _beginLong(leg) {
     const sp = this.space, f = this.f;
-    sp.setFrame(rootFrameOf(leg.sys));
-    if (leg.toSys && leg.toSys !== 'mars' && leg.toSys !== leg.sys && sp.prepareWorld) sp.prepareWorld(rootFrameOf(leg.toSys));      // the far world is built now, behind the cruise, not at the drop-out
+    const startSys = leg.sys;
+    if (sp.frameId !== 'mars') sp.setFrame('mars');                       // clear of its planet she is handed to the root frame, carried with her velocity: the whole cruise is flown there (no cut: the same place, the same speed)
+    if (leg.toSys && leg.toSys !== 'mars' && sp.prepareWorld) sp.prepareWorld(rootFrameOf(leg.toSys));      // the far world is built now and drawn all the way in, not at the end      // the far world is built now, behind the cruise, not at the drop-out
     f.deepHold = null;
-    const T0 = f.epochS ?? sp.worldTime(); f.epochS = T0;                 // F2: the ship's own clock starts here and runs with the drive (compression runs it fast)
-    const plan = this._cruisePlan(leg, f.pos, 0, T0), dir = cruiseHeading(plan);
-    let up = this._dirToI(leg.sys, { x: f.up.x, y: f.up.y, z: f.up.z }, T0);
+    f.epochS = null;                                                      // F3: the long drive never runs her own clock ahead of the world's: a trip of weeks must end in the sky the rest of the world is in (no snap-back at the end)
+    const T0 = sp.timeS();
+    void startSys;
+    const plan = this._cruisePlan({ ...leg, sys: 'mars' }, f.pos, 0, T0), dir = cruiseHeading(plan);
+    let up = this._dirToI('mars', { x: f.up.x, y: f.up.y, z: f.up.z }, T0);
     const k = up.x * dir.x + up.y * dir.y + up.z * dir.z; up = { x: up.x - dir.x * k, y: up.y - dir.y * k, z: up.z - dir.z * k };
     let ul = Math.hypot(up.x, up.y, up.z);
     if (ul < 1e-6) { up = Math.abs(dir.y) < 0.9 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 }; const k2 = up.x * dir.x + up.y * dir.y + up.z * dir.z; up = { x: up.x - dir.x * k2, y: up.y - dir.y * k2, z: up.z - dir.z * k2 }; ul = Math.hypot(up.x, up.y, up.z); }
     up = { x: up.x / ul, y: up.y / ul, z: up.z / ul };
-    this.cruise = { A: plan.A, t0: plan.t0, profile: plan.profile, tau: 0, flipR: 0, up, thr: 0, brake: null, sys: leg.sys };
+    this.cruise = { A: plan.A, t0: plan.t0, profile: plan.profile, tau: 0, alignR: 0, q0: f.quaternion.toArray(), up, thr: 0, brake: null, sys: 'mars' };
     this.goalS = plan.goal;
     f.attitude = new THREE.Quaternion().copy(f.quaternion);
     f.override = (dt) => this._cruiseStep(dt);
@@ -542,10 +587,10 @@ export class SpaceTrip {
   _cruiseStep(dt) {
     const f = this.f, c = this.cruise, leg = this.legs && this.legs[this.leg];
     if (!c || !leg) return false;
-    const sys = leg.sys, w = this._longEff(); this.eff = w;
+    const sys = 'mars', w = this._longEff(); this.eff = w;
     c.tau += dt * w;
-    const T = c.t0 + c.tau; f.epochS = T;                                  // the ship's clock runs with the drive
-    const goal = this._cruiseGoalI(leg)(T), P = c.profile;
+    const T = this.space.timeS();                                          // the world's clock: a compressed trip does not run the sky ahead
+    const goalAt = this._cruiseGoalI(leg), goal = goalAt(T), P = c.profile;
     let st = cruiseAt(P, c.tau), x = st.x, v = st.v;
     if (c.brake) {                                         // a cancelled cruise: slow at the drive's own acceleration to a stop, wherever that is
       const r = c.tau - c.brake.tau0, vv = Math.max(0, c.brake.v0 - P.a * r), rr = Math.min(r, c.brake.v0 / P.a);
@@ -555,23 +600,23 @@ export class SpaceTrip {
     const A = c.A, s = P.L > 0 ? Math.min(1, x / P.L) : 1;
     const pI = { x: A.x + (goal.x - A.x) * s, y: A.y + (goal.y - A.y) * s, z: A.z + (goal.z - A.z) * s };
     let dx = goal.x - A.x, dy = goal.y - A.y, dz = goal.z - A.z; const dl = Math.hypot(dx, dy, dz) || 1; dx /= dl; dy /= dl; dz /= dl;
-    const pf = this._fromI(sys, pI, T), vI = { x: dx * v, y: dy * v, z: dz * v };
-    const vf = sys === 'mars' ? velToFixed(pI, vI, T) : vI;
+    // her velocity is the derivative of her position: along the line, plus the goal's own motion carried by how far along she is (at the end: the goal's velocity, so she arrives at rest relative to it)
+    const g2 = goalAt(T + 1), g0 = goalAt(T - 1), sd = P.L > 0 ? v / P.L : 0;
+    const vI = { x: (goal.x - A.x) * sd + s * (g2.x - g0.x) / 2, y: (goal.y - A.y) * sd + s * (g2.y - g0.y) / 2, z: (goal.z - A.z) * sd + s * (g2.z - g0.z) / 2 };
+    const pf = this._fromI(sys, pI, T), vf = this._velFromI(sys, pI, vI, T);
     f.pos.x = pf.x; f.pos.y = pf.y; f.pos.z = pf.z; f.vel.x = vf.x; f.vel.y = vf.y; f.vel.z = vf.z;
-    // the hull: nose along the line while she speeds up, a slow turn-over once she has (26 real seconds, the course drive's own rate), then tail first
-    const turned = st.phase !== 'accelerate' || !!c.brake;
-    if (turned && c.flipR < LONG.flipRealS) c.flipR += dt;
-    const k = Math.min(1, c.flipR / LONG.flipRealS), th = Math.PI * k, up = c.up;
-    const cx = up.y * dz - up.z * dy, cy = up.z * dx - up.x * dz, cz = up.x * dy - up.y * dx;           // up x dir
-    const nI = { x: dx * Math.cos(th) + cx * Math.sin(th), y: dy * Math.cos(th) + cy * Math.sin(th), z: dz * Math.cos(th) + cz * Math.sin(th) };
-    const nf = this._dirFromI(sys, nI, T), uf = this._dirFromI(sys, up, T);
+    // the hull: nose to the destination the whole way (no turn-over: she never turns her back on it), eased onto the course over the first seconds
+    const up = c.up, nf = this._dirFromI(sys, { x: dx, y: dy, z: dz }, T), uf = this._dirFromI(sys, up, T);
     _a.set(nf.x, nf.y, nf.z); _b.set(uf.x, uf.y, uf.z);
     _c.crossVectors(_a, _b).normalize(); _b.crossVectors(_c, _a).normalize();
     _m.makeBasis(_c, _b, new THREE.Vector3().copy(_a).negate());
     if (!f.attitude) f.attitude = new THREE.Quaternion().copy(f.quaternion);          // free flight hands the hull back with no commanded attitude
-    f.attitude.setFromRotationMatrix(_m); f.refreshOrientation();
-    const burning = (st.phase === 'accelerate' && !c.brake) || (st.phase === 'decelerate' && k >= 1);
-    c.thr = burning ? 1 : 0;
+    c.alignR = Math.min(LONG.alignRealS, (c.alignR || 0) + dt);
+    const k = c.alignR / LONG.alignRealS, ease = k * k * (3 - 2 * k);
+    _q.setFromRotationMatrix(_m);
+    if (ease < 1 && c.q0) { f.attitude.fromArray(c.q0).slerp(_q, ease); } else f.attitude.copy(_q);
+    f.refreshOrientation();
+    c.thr = st.phase === 'accelerate' && !c.brake ? 1 : 0;
     f.thrustFwd = f.maxDriveN * c.thr; f.thrustUp = 0; f.autoHover = false;
     f.landed = false; f.airborne = true; f.gearPos = Math.max(0, f.gearPos - dt * 0.5);
     f.agl = this._alt();
@@ -580,7 +625,7 @@ export class SpaceTrip {
     this.progress.distM = c.brake ? Math.max(0, st.x) : rem; this.progress.speed = v; this.progress.etaS = Math.max(0, P.T - c.tau); this.progress.stage = st.phase;
     this.progress.long = { x, L: P.L, T: P.T, tau: c.tau, vPeak: P.vPeak };
     if (st.phase === 'coast') this.say('Top speed. Coasting.', 'longcoast' + this.leg);
-    if (st.phase === 'decelerate' || (turned && !c.brake)) this.say('Turning her over for the burn to slow down.', 'longflip' + this.leg);
+    if (st.phase === 'decelerate' && !c.brake) this.say('Past the half way mark. Slowing for the arrival.', 'longflip' + this.leg);
     if (!c.brake && P.T - c.tau < 3600 && P.T - c.tau > 0) this.say('Slowing for the drop-out. Time compression steps down from here.', 'longnear' + this.leg);
     if (c.brake ? v <= 0 : c.tau >= P.T) this._endCruise(pI);
     return true;
@@ -588,19 +633,18 @@ export class SpaceTrip {
 
   /** The cruise is over: the ship is at rest relative to the drop-out point (or where a cancelled cruise stopped). */
   _endCruise(pI) {
-    const f = this.f, leg = this.legs[this.leg], c = this.cruise, braked = !!(c && c.brake), T = f.epochS;
+    const f = this.f, leg = this.legs[this.leg], c = this.cruise, braked = !!(c && c.brake), T = this.space.timeS();
     if (!pI) pI = this._toI(leg.sys, f.pos, T);
     f.override = null; this.cruise = null;
-    f.vel.x = f.vel.y = f.vel.z = 0; f.thrustFwd = 0; f.autoHover = true;
+    f.thrustFwd = 0; f.autoHover = true;                                  // her velocity stays what the drive matched: the goal's, so the frame hand-off finds her at rest relative to the world
     const dr = this.ship.drones; if (dr) dr.suspended = false;
     this.warp = 1; this.eff = 1;                                          // the arrival is seen at x1: the player picks a compression again for the last leg
     this._attFrom = f.attitude ? f.attitude.clone() : null;
     if (braked || leg.deep) {
       // held out in deep space: she keeps her place relative to the world she came to (or, if stopped between worlds, her place in inertial space), on her own clock (deepHold.js)
       const tgt = !braked && leg.deep ? leg.target : null, cI = tgt ? this._ci(tgt, T) : { x: 0, y: 0, z: 0 };
-      if (leg.sys !== 'mars') { this.space.jumpTo('mars', this._fromI('mars', pI, T)); if (this.space.flash !== undefined) this.space.flash = 0; }       // the hold is written in Mars's turning axes
       f.deepHold = { sys: 'mars', target: tgt, off: { x: pI.x - cI.x, y: pI.y - cI.y, z: pI.z - cI.z } };
-      installHold(f);
+      installHold(f, () => this.space.timeS());
       if (braked) { const here = { x: f.pos.x, y: f.pos.y, z: f.pos.z }; this.dest = { id: 'hold', kind: 'deepspace', name: 'a stop', goalS: () => here, sys: leg.sys }; this.legs = [{ sys: leg.sys, goal: here }]; this.leg = 0; this.cancelled = true; this.say('Long drive off. Stopped between the worlds.', 'longstop'); }
       else this.say('Long drive off. We have dropped out.', 'longoff' + this.leg);
       this.phase = 'settle'; this.settleT = 0;
@@ -608,9 +652,7 @@ export class SpaceTrip {
     }
     this.say('Long drive off. We have dropped out.', 'longoff' + this.leg);
     if (leg.toSys && rootFrameOf(leg.toSys) !== this.space.frameId) {
-      this.space.jumpTo(rootFrameOf(leg.toSys), mouthPoint(leg.toSys, this._regionBody(leg.toSys)));
-      if (this.space.flash !== undefined) this.space.flash = 0;                // no lane flash: she is at the same place in space, only her frame changed
-      if (leg.toSys !== 'mars') f.epochS = null;                             // a far world's region runs on the world's clock
+      this.space.setFrame(rootFrameOf(leg.toSys));                           // the frame hand-off: the same place, the same velocity (at rest relative to the world), nothing re-placed, no flash
     }
     this.leg++; this.phase = 'transit'; this._beginTransit();
   }

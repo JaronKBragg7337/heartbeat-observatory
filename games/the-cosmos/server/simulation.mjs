@@ -129,7 +129,7 @@ export class ShipSimulation {
       if(r.transit){this.trip.transit=Object.assign(Object.create(Transit.prototype),r.transit);this.trip.rebindTransit();this.flight.override=dt=>this.trip._drive(dt);}
       if(r.cruise){this.trip.cruise=r.cruise;this.flight.override=dt=>this.trip._cruiseStep(dt);}      // F3: the long-range drive
     }
-    if(!this.trip&&this.flight.deepHold)installHold(this.flight);      // F3: held out in deep space when the world was saved
+    if(!this.trip&&this.flight.deepHold)installHold(this.flight,()=>this.timeS());      // F3: held out in deep space when the world was saved
   }
   body(){return this.frameId==='mars'?this.mars:makeMoon(this.frameId);}
   /** The world's game time (real UTC through the authority's clock) and this ship's own (hers runs fast under time compression while she is in space). */
@@ -229,7 +229,7 @@ export class ShipSimulation {
     if(this.restCoarse){const fdt=Math.min(dt,1/30);this.flight.step(fdt);this.flight.updateShields(dt-fdt);} // a settled hull on its pad: one short physics step is the same answer as sixty, the rest of the time only recharges shields
     else if(this.ff.active)this.flight.step(dt*this.eff);
     else this.flight.step(Math.max(dt,Math.min(dt*this.eff,1)));
-    if(this.trip&&!this.trip.active){this.trip=null;this.flight.override=null;this.flight.climbCap=12;this.flight.thrustDown=false;if(this.flight.deepHold)installHold(this.flight);}
+    if(this.trip&&!this.trip.active){this.trip=null;this.flight.override=null;this.flight.climbCap=12;this.flight.thrustDown=false;if(this.flight.deepHold)installHold(this.flight,()=>this.timeS());}
     if(this._liftWait>0)this._liftWait-=dt;
     for(const [key,c] of Object.entries(this.ship.rampCtl)){const speed=(key==='cargo'?1/6:1/5)*(this._liftWait>0&&c.target<c.progress?2.2:1);   // FLIGHTFEEL: folded away quicker for a lift-off
       c.progress+=Math.sign(c.target-c.progress)*Math.min(Math.abs(c.target-c.progress),dt*speed);

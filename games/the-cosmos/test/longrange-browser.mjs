@@ -32,9 +32,9 @@ try {
   await page.evaluate(() => { if (cosmos.engine.graphics) cosmos.engine.graphics.checked = 1e6; });
   await world.enqueue(() => { const p = world.state.players[me.id], sim = world.sims.get(ship.id), seat = sim.def.seats.find((s) => s.id === 'pilot'); p.aboardShipId = ship.id; p.currentShipId = ship.id; p.pose.aboard = true; p.frameId = sim.frameId; p.pose.seat = 'pilot'; Object.assign(p.pose.sw, { x: seat.x, y: seat.y, z: seat.z }); });
   await sleep(2500);
-  const rows = await page.evaluate(() => cosmos.space.destinations().filter((d) => ['earth', 'moon', 'callisto', 'ceres', 'ceres~drive'].includes(d.id)).map((d) => ({ id: d.id, ok: d.ok, route: d.route, distAU: d.distM / 1.496e11, etaDays: d.etaS / 86400, realMin: d.realTopS / 60, reason: d.reason })));
+  const rows = await page.evaluate(() => cosmos.space.destinations().filter((d) => ['earth', 'moon', 'callisto', 'ceres'].includes(d.id)).map((d) => ({ id: d.id, ok: d.ok, route: d.route, distAU: d.distM / 1.496e11, etaDays: d.etaS / 86400, realMin: d.realTopS / 60, reason: d.reason })));
   console.log(JSON.stringify(rows));
-  ok('the nav computer lists Earth, the Moon, Callisto and Ceres (lane and drive)', ['earth', 'moon', 'callisto', 'ceres', 'ceres~drive'].every((id) => rows.some((r) => r.id === id && r.ok)), JSON.stringify(rows));
+  ok('the nav computer lists Earth, the Moon, Callisto and Ceres (lane and drive)', ['earth', 'moon', 'callisto', 'ceres'].every((id) => rows.some((r) => r.id === id && r.ok)), JSON.stringify(rows));
   const earth = rows.find((r) => r.id === 'earth');
   ok('Earth is 1.65 AU, about two weeks of flight, minutes at the top compression', earth && earth.distAU > 1.5 && earth.distAU < 1.8 && earth.etaDays > 10 && earth.etaDays < 25 && earth.realMin > 3 && earth.realMin < 20, JSON.stringify(earth));
   // the nav sheet at phone width, with the new rows
@@ -55,11 +55,11 @@ try {
   }
   ok('the browser mirrors the trip into the long drive (phase longdrive, the cruise state present)', last === 'longdrive' && seen.includes('transit'), seen.join(' > '));
   const sim = world.sims.get(ship.id);
-  for (let i = 0; i < 12 && sim.trip && sim.trip.warp !== 5400; i++) { await page.evaluate(() => { cosmos.space.setWarp(5400); }); await sleep(1200); }
+  for (let i = 0; i < 12 && sim.trip && sim.trip.warp !== 14400; i++) { await page.evaluate(() => { cosmos.space.setWarp(14400); }); await sleep(1200); }
   await sleep(1500);
   const mid = await page.evaluate(() => { const t = cosmos.space.trip, ph = t.phases(); return { warp: t.warp, eff: t.eff, speed: t.progress.speed, distAU: t.progress.distM / 1.496e11, phases: ph.map((q) => q.id + ':' + q.state), hud: cosmos.space.hudLines(), bar: [...document.querySelectorAll('#flight-speed button')].filter((b) => !b.hidden).map((b) => b.dataset.w) }; });
   console.log(JSON.stringify(mid));
-  ok('the compression is the long drive\'s ladder (x1 x10 x60 x600 x1800 x5400) and the HUD names the long drive', JSON.stringify(mid.bar) === JSON.stringify(['1', '10', '60', '600', '1800', '5400']) && /LONG DRIVE/.test(mid.hud) && mid.warp === 5400, JSON.stringify(mid));
+  ok('the compression is the long drive\'s ladder (x1 x10 x60 x600 x3600 x14400) and the HUD names the long drive', JSON.stringify(mid.bar) === JSON.stringify(['1', '10', '60', '600', '3600', '14400']) && /LONG DRIVE/.test(mid.hud) && mid.warp === 14400, JSON.stringify(mid));
   await page.evaluate(() => { cosmos.space.ui && cosmos.space.ui.toggle('course'); });
   await sleep(500);
   await page.screenshot({ path: join(out, '02-longdrive-accelerating.png') });
@@ -79,7 +79,7 @@ try {
     held = await page.evaluate(() => { const t = cosmos.space.trip; return { phase: t && t.phase, warp: t && t.warp, eff: t && t.eff, trip: !!t, frame: cosmos.space.frameId, speed: t && t.progress.speed }; });
     if (held.phase === 'longdrive') { await page.screenshot({ path: join(out, '04-slowing-for-the-drop-out.png') }); }
     if (!sim.trip) { await sleep(2500); break; }
-    if (held.phase === 'longdrive' && held.warp < 5400) { await page.evaluate(() => { cosmos.space.setWarp(5400); }); }
+    if (held.phase === 'longdrive' && held.warp < 14400) { await page.evaluate(() => { cosmos.space.setWarp(14400); }); }
     if (held.phase === 'transit' && held.warp !== 60) await page.evaluate(() => { cosmos.space.setWarp(60); });
   }
   const end = await page.evaluate(() => { const f = cosmos.ship.flight; return { trip: !!cosmos.space.trip, frame: cosmos.space.frameId, landed: f.landed, distEarthKm: null, msgs: (cosmos.space.log || []).slice(-4).map((l) => l.text) }; });

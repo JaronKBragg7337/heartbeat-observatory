@@ -30,7 +30,7 @@ export async function run({ check, section }) {
     const p = dir(DEF.pad.lat, DEF.pad.lon), q = dir(o.lat, o.lon), d = R0 * Math.acos(p[0] * q[0] + p[1] * q[1] + p[2] * q[2]);
     return o.lat === 19.86 && o.lon === 238.85 && o.radiusM === 46_000 && o.depthM === 3000 && dome.depthM === -340 && k.lat === -11.47 && k.lon === 122.58 && Math.abs(k.radiusM * 2 / 1000 - 283.88) < 0.1 && a.lat === -10.46 && a.lon === 315.8 && d > 9_000 && d < 13_000 && d < o.radiusM * 0.3;
   })());
-  check('Ceres is registered as a world beyond the drive (a frame, a pad per ship) reached by a jump lane: the nav computer lists it as a destination', SPEC.MOON_IDS.includes('ceres') && SPEC.DESTINATIONS.some((d) => d.id === 'ceres' && d.kind === 'moon' && d.jump) && J.isLaneWorld('ceres') && !J.isLaneWorld('phobos') && J.systemOfFrame('deimos') === 'mars');
+  check('Ceres is registered as a world beyond the drive (a frame, a pad per ship) reached by the long-range drive (F3 retired the lane): the nav computer lists it as a destination', SPEC.MOON_IDS.includes('ceres') && SPEC.DESTINATIONS.some((d) => d.id === 'ceres' && d.kind === 'moon' && d.via === 'drive') && J.isLaneWorld('ceres') && !J.isLaneWorld('phobos') && J.systemOfFrame('deimos') === 'mars');
   check('the field is a real solid: negative three metres under the pad, open air three metres over it', density(b, pi.point.x - pi.up.x * 3, pi.point.y - pi.up.y * 3, pi.point.z - pi.up.z * 3) < 0 && density(b, pi.point.x + pi.up.x * 3, pi.point.y + pi.up.y * 3, pi.point.z + pi.up.z * 3) > 0);
   const at = (e, n, up = 0.05) => { const x = pi.point.x + pi.east.x * e + pi.north.x * n, y = pi.point.y + pi.east.y * e + pi.north.y * n, z = pi.point.z + pi.east.z * e + pi.north.z * n, l = Math.hypot(x, y, z), R = b.surfaceRadius(x / l, y / l, z / l); return { x: x / l * (R + up), y: y / l * (R + up), z: z / l * (R + up), R, l }; };
   {
@@ -81,7 +81,7 @@ export async function run({ check, section }) {
   check('no worker stands inside a solid; the foundry door (10 m) and the pad\'s edges are open', L.WORKERS.every((w) => !L.BOXES.some((bx) => w.x > bx.x0 - 0.3 && w.x < bx.x1 + 0.3 && w.z > bx.z0 - 0.3 && w.z < bx.z1 + 0.3)) && !L.solidAt(-4, -88.4, 0) && !L.solidAt(-4, -80, 0.3));
   check('everything of the Works lies inside the graded ground (under 160 m of the pad)', L.BOXES.every((bx) => Math.hypot(Math.max(Math.abs(bx.x0), Math.abs(bx.x1)), Math.max(Math.abs(bx.z0), Math.abs(bx.z1))) < 160));
 
-  section('World 2: the real authority flies Mars -> Ceres -> Mars across the Ore Lane, and the foreman buys ore');
+  section('World 2: the real authority flies Mars -> Ceres -> Mars by the long-range drive, and the foreman buys ore');
   const { runWorld2Trips } = await import('./world2-trips.mjs');
   await runWorld2Trips({ check });
 }

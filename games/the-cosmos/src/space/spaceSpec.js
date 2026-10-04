@@ -138,7 +138,7 @@ function rebuildFromRegistry() {
     }
     const dist = Math.hypot(...Object.values(worldCentre(d.id)));
     // F3: beyond the main drive's range a built world with no lane is reached by the long-range drive; one with a lane (`jump: true`) by the lane, and the drive is offered beside it (SpaceSystem._destinations)
-    const driveOnly = !d.jump && dist > DRIVE.rangeM;
+    const driveOnly = dist > DRIVE.rangeM;       // F3: no lane any more (jump.js is retired): a world beyond the main drive's range is reached by flying there
     if (d.kind === 'station') {
       STATION_IDS.push(d.id);
       DESTINATIONS.push({ id: d.id, kind: 'station', name: d.navName || d.name, station: d.id, ...(d.jump ? { jump: true } : {}), ...(driveOnly ? { via: 'drive' } : {}), blurb: d.blurb || `A station. The course holds ${Math.round(stationStandoff(d))} m off it.` });

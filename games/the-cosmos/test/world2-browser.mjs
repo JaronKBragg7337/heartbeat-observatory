@@ -41,15 +41,15 @@ try {
   await page.evaluate(() => { const c = cosmos; c.ship.aboard = true; c.space.ui._seatOk = () => true; c.space.ui.toggle('course'); c.space.ui.draw(true); });
   await sleep(500);
   const row = await page.evaluate(() => { const b = document.querySelector('#space-sheet [data-d="ceres"]'); return b ? { text: b.textContent, disabled: b.disabled } : null; });
-  ok('the nav computer lists Ceres: Occator Works with its lane fee and it can be tapped', !!row && !row.disabled && /Occator Works/.test(row.text) && /120 credits/.test(row.text) && /about/.test(row.text), JSON.stringify(row));
+  ok('the nav computer lists Ceres: Occator Works as a long-range drive course (days of flight, minutes at the top compression; F3 retired the lane fee) and it can be tapped', !!row && !row.disabled && /Occator Works/.test(row.text) && /long-range drive/.test(row.text) && /days/.test(row.text), JSON.stringify(row));
   await page.screenshot({ path: join(out, 'phone-nav-ceres.png') });
   const under = await page.evaluate(() => { const b = document.querySelector('#space-sheet [data-d="ceres"]'); b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { hit: e && (e.id || e.className || e.tagName), isBtn: !!e && (e === b || b.contains(e)), rect: [r.x, r.y, r.width, r.height].map(Math.round) }; });
   console.log('what is under the tap point:', JSON.stringify(under));
   await page.screenshot({ path: join(out, 'phone-nav-ceres-scrolled.png') });
   const tapped = await tap('#space-sheet [data-d="ceres"]');
   await sleep(600);
-  const trip = await page.evaluate(() => { const t = cosmos.space.trip; return t ? { active: t.active, dest: t.dest.id, jump: t._crossing && t._crossing() } : { none: true, log: cosmos.space.log.slice(-2).map((l) => l.text), aboard: cosmos.ship.aboard }; });
-  ok('tapping it starts a course across the Ore Lane', tapped && !!trip && trip.active && trip.dest === 'ceres' && trip.jump === true, JSON.stringify(trip));
+  const trip = await page.evaluate(() => { const t = cosmos.space.trip; return t ? { active: t.active, dest: t.dest.id, jump: t.usesLong && t.usesLong() } : { none: true, log: cosmos.space.log.slice(-2).map((l) => l.text), aboard: cosmos.ship.aboard }; });
+  ok('tapping it starts a long-range drive course to Ceres', tapped && !!trip && trip.active && trip.dest === 'ceres' && trip.jump === true, JSON.stringify(trip));
   await page.evaluate(() => { cosmos.space.cancel(); cosmos.space.ui.close(); });
 
   // ---- on the ground at Occator Works

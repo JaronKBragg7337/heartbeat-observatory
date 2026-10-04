@@ -76,7 +76,7 @@ export class Engine {
       0.1,
       // Far enough for the Sun and Deimos (23,463 km out) as well as Mars's own limb. Logarithmic depth makes the
       // ratio free: precision is relative, so 0.1 m up close and 1e9 m away both resolve.
-      this.safe ? 2000 : Number(params.get('far')) || 1.0e9
+      this.safe ? 2000 : Number(params.get('far')) || 1.0e13
     );
 
     /** Authoritative f64 camera position in the ACTIVE FRAME's metres (see "frames" below). */

@@ -26,10 +26,10 @@ import { PADS as PORT_PADS } from '../port/portSpec.js';   // FLIGHTFEEL
 import * as THREE from 'three';
 import { SpaceSky, MARS_RADIUS_M } from './spaceSky.js';
 import { SpaceTrip, fmtDuration, MARS_R, estimateCourse } from './spaceTrip.js';
-import { OMEGA, worldKin, worldPointFixed, frameAt, carryFlight, framePoint, frameDir, frameVel, sunDirFixed, sunAt, rotY, toInertial, velToInertial, skyShiftFor } from './frames.js';
+import { OMEGA, worldKin, worldPointFixed, frameAt, carryFlight, framePoint, frameDir, frameVel, sunDirFixed, sunAt, rotY, toInertial, velToInertial, skyShiftFor, rootSpin } from './frames.js';
 import { worldTimeS, setSkyShift } from './clock.js';
 import { DESTINATIONS, DRIVE, MOONS, STANDOFF_M, BOUNTY_CREDITS, SPAWN, sunDirection, landingOrder, stickWarpCap, stationStandoff } from './spaceSpec.js';
-import { worldCentre, worldDef } from '../worlds/registry.js';
+import { worldCentre, worldDef, worldCentreInertial } from '../worlds/registry.js';
 import { MoonWorld } from './moonWorld.js';
 import { makeMoon } from './moonField.js';
 import { surfaceRadiusFast } from '../world/field.js';
@@ -42,7 +42,8 @@ import { FreeFlightUI, ffHudLines } from './freeflightUI.js';
 import { JUMP, systemOfFrame, rootFrameOf, mouthPoint, solMouthDir, isLaneWorld } from './jump.js';       // WORLD2
 import { buildLaneGate } from './laneGate.js';
 import { LONG, targetAt, realSeconds, longDriveAllowed } from './longRange.js';
-import { installHold } from './deepHold.js';       // F3: the long-range drive
+import { installHold } from './deepHold.js';
+import { FarWorlds } from './farWorlds.js';       // F3: the long-range drive
 
 const DEG = Math.PI / 180;
 
@@ -85,14 +86,9 @@ export class SpaceSystem {
       cargoKg: (item) => this.ledger.cargo.get(item) || 0,
     }, o.hooks || {});
     this.jobs = new SpaceJobs(this);
-    // WORLD2: the lane gate on Mars's side, and the flash that covers the jump
+    // F3: no lane, no gate, no flash: the whole Solar System is one space (farWorlds.js draws the planets a ship is flying to)
     this.flash = 0; this._sysCfg = null;
-    if (typeof document !== 'undefined') {
-      this.gate = buildLaneGate({ engine: o.engine, frame: o.engine.rootFrame, point: mouthPoint('mars'), toward: { x: -solMouthDir().x, y: -solMouthDir().y, z: -solMouthDir().z }, low: this.tier === 'low' });
-      const fl = document.createElement('div'); fl.id = 'jump-flash';
-      fl.style.cssText = 'position:fixed;inset:0;z-index:88;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,#fff 0%,#d8f6ff 35%,#6fc8ff 80%,#1a4a7a 100%);mix-blend-mode:screen';
-      document.body.appendChild(fl); this._flashEl = fl;
-    }
+    this.far = typeof document !== 'undefined' ? new FarWorlds({ engine: o.engine, space: this }) : null;
     // FREEFLIGHT: manual flight anywhere (freeflight.js), and its HUD (freeflightUI.js). Solo runs the physics here; the shared world mirrors the authority's.
     this.ff = new FreeFlight({ flight: o.ship.flight, mars: o.body, frameId: () => this.frameId, worldTime: () => this.worldTime(), setFrame: (id) => this.setFrame(id), say: (m, w) => this.say(m, w), drones: o.ship.drones,
       cancelOrders: () => { if (o.ship.crew && o.ship.crew.cancelOrder) o.ship.crew.cancelOrder(); }, tripActive: () => !!(this.trip && this.trip.active),
@@ -137,7 +133,7 @@ export class SpaceSystem {
     this.ship.flight.refreshOrientation();this.walker.updateFrame();this.ship._syncEntries();
     Object.assign(this.jobs,saved.jobs);this.jobs.taken=new Set(saved.jobs.taken);
     this.ledger.credits=saved.ledger.credits;this.ledger.cargo=new Map(saved.ledger.cargo);
-    this.ship.flight.epochS=saved.epochS??null;this.ship.flight.deepHold=saved.deepHold||null;if(this.ship.flight.deepHold&&!saved.trip)installHold(this.ship.flight);          // F3: held out in deep space
+    this.ship.flight.epochS=saved.epochS??null;this.ship.flight.deepHold=saved.deepHold||null;if(this.ship.flight.deepHold&&!saved.trip)installHold(this.ship.flight, () => this.timeS());          // F3: held out in deep space
     if(saved.ff)this.ff.load(saved.ff);   // FREEFLIGHT
     if(saved.epochS===undefined&&this.ff.active){const p=this.ship.flight.pos,v=this.ship.flight.vel;v.x-=OMEGA*p.z;v.z+=OMEGA*p.x;}     // saved before F2: an inertial velocity; keep the orbit
     if(saved.trip&&saved.trip.transit&&saved.trip.transit.T0===undefined)saved.trip=null;   // a drive course saved before F2 cannot be resumed: the ship is held where she is
@@ -165,11 +161,12 @@ export class SpaceSystem {
   updateFrames(T = this.timeS()) {
     const e = this.engine;
     for (const w of this.worlds.values()) e.setFrameState(w.frame, worldKin(w.id, T));
-    const sf = this.skyMode === 'fixed' ? sunDirection() : sunDirFixed(T), r = rotY(sf, -e.activeFrame.yaw);
+    let sf = this.skyMode === 'fixed' ? sunDirection() : sunDirFixed(T);
+    if (this.skyMode !== 'fixed') { const fp = this.ship.flight.pos, sh = e.activeFrame === e.rootFrame ? fp : e.framePoint(e.activeFrame, e.rootFrame, fp, {}); if (Math.hypot(sh.x, sh.y, sh.z) > 1e9) { const shI = toInertial(sh, T), sc = worldCentreInertial('sun', T), dx = sc.x - shI.x, dy = sc.y - shI.y, dz = sc.z - shI.z, l = Math.hypot(dx, dy, dz) || 1; sf = rotY({ x: dx / l, y: dy / l, z: dz / l }, -rootSpin(T)); } }       // F3: the Sun is where it is from HERE: a ship out among the planets sees it from where she is
+    const r = rotY(sf, -e.activeFrame.yaw);
     this.sunLocal.set(r.x, r.y, r.z);
     // each moon's baked shadows follow the Sun in ITS axes (a far world of another system, WORLD2, has its own star: fixed in its own axes, never moved here)
-    for (const w of this.worlds.values()) { if (!w.built || w.body.spec.sun) continue; const q = rotY(sf, -w.frame.yaw); w.body.setSun(q.x, q.y, q.z); }
-    const af = this.activeMoon; if (af && af.body.spec.sun) this.sunLocal.set(af.body.sunDir.x, af.body.sunDir.y, af.body.sunDir.z);
+    for (const w of this.worlds.values()) { if (!w.built) continue; const q = rotY(sf, -w.frame.yaw); w.body.setSun(q.x, q.y, q.z); }       // F3: one Sun for every world (Ceres's own fixed star is retired with the lane)
     this.T = T;
     return T;
   }
@@ -186,7 +183,9 @@ export class SpaceSystem {
   }
   /** WORLD2: a world reached by a lane has its gate: a ring of beacons over its pad, where the jump coils spool. Built once, with the world. */
   _dressWorld(w) {
-    if (!isLaneWorld(w.id) || systemOfFrame(w.id) !== w.id) return;       // WD-MOON: only the region's own world carries its gate
+    return;          // F3: no lane gates
+    // eslint-disable-next-line no-unreachable
+    if (!isLaneWorld(w.id)) return;
     const up = w.body.padInfo.up;
     w.gate = buildLaneGate({ engine: this.engine, frame: w.frame, point: mouthPoint(w.id, w.body), toward: { x: -up.x, y: -up.y, z: -up.z }, low: this.tier === 'low' });
   }
@@ -236,7 +235,6 @@ export class SpaceSystem {
     for (const b of ship.guns.bolts) { pt(b); const q = e.framePoint(from, to, { x: b.px, y: b.py, z: b.pz }); b.px = q.x; b.py = q.y; b.pz = q.z; }
     e.setActiveFrame(to);
     if (ship.drones) ship.drones.safeFrame = isLaneWorld(id);       // WORLD2: a far world keeps its own lanes clear of raiders
-    if (systemOfFrame(from.id) !== systemOfFrame(to.id)) this.flash = 1;       // WORLD2: crossing the lane
     this.updateFrames();                                     // the Sun in the new frame's axes
 
     if (id === 'mars') {
@@ -349,7 +347,6 @@ export class SpaceSystem {
       const destSys = row.kind === 'moon' ? systemOfFrame(row.moon) : 'mars';
       // F3: a world across the lane is offered by the lane (fee, quick) AND by the long-range drive (free, slow on purpose); a world with no lane only by the drive
       const ids = [row.id];
-      if (!row.via && destSys !== hereSys) ids.push(row.id + '~drive');
       for (const rid of ids) {
       const r = { id: rid, name: row.name, blurb: row.blurb, kind: row.kind, ok: true, reason: '', distM: 0, etaS: 0 };
       const res = this.resolve(rid);
@@ -358,7 +355,7 @@ export class SpaceSystem {
         const probe = new SpaceTrip(this, res), pl = probe._plan0(), legs = probe._route(), cr = legs.some((l) => l.cruise), lane = legs.some((l) => l.jump);
         r.etaS = pl.climb + pl.drive + pl.spool + pl.long + pl.drive2 + pl.descent + 40;
         const p = hereSys === 'mars' ? this._shipS() : { x: f.pos.x, y: f.pos.y, z: f.pos.z };
-        if (cr) { r.distM = pl.longL; r.route = 'drive'; r.longS = pl.long; r.realTopS = realSeconds(pl.long) + (pl.climb + pl.drive + pl.drive2) / 60 + pl.descent / 8 + 30; r.peakSpeed = pl.longPeak; r.warps = LONG.warps; }      // realTopS: the long drive at the top of its ladder, the main-drive legs at x60, the landing mostly at x1
+        if (cr) { r.distM = pl.longL; r.route = 'drive'; r.longS = pl.long; r.realTopS = pl.longReal + (pl.climb + pl.drive + pl.drive2) / 60 + pl.descent / 8 + 30; r.peakSpeed = pl.longPeak; r.warps = LONG.warps; }      // realTopS: the long drive at the top of its ladder, the main-drive legs at x60, the landing mostly at x1
         else {
           const m2 = mouthPoint(legs[1].sys, legs[1].sys === 'mars' ? null : makeMoon(legs[1].sys));       // WD-MOON: the way home from a far world ends in Mars's region, which has no body record (the list threw from Ceres)
           r.distM = Math.hypot(legs[0].goal.x - p.x, legs[0].goal.y - p.y, legs[0].goal.z - p.z) + Math.hypot(legs[1].goal.x - m2.x, legs[1].goal.y - m2.y, legs[1].goal.z - m2.z);
@@ -450,7 +447,7 @@ export class SpaceSystem {
     if (!t) return null;
     if (!t.active) {
       if (t.failed) { this.say(t.failed, true, t.by); }
-      this.lastTrip = t; this.trip = null; this.ship.flight.override = null; this.ship.flight.climbCap = 12; this.ship.flight.thrustDown = false; if (this.ship.flight.deepHold) installHold(this.ship.flight);
+      this.lastTrip = t; this.trip = null; this.ship.flight.override = null; this.ship.flight.climbCap = 12; this.ship.flight.thrustDown = false; if (this.ship.flight.deepHold) installHold(this.ship.flight, () => this.timeS());
       return null;
     }
     return t.tick(dt);
@@ -492,10 +489,12 @@ export class SpaceSystem {
       else if (w.active) w.setTiersVisible(false);
     }
     // WORLD2: a far world's own star (def.sky), the lane gates' charge, the flash
-    const far = isLaneWorld(this.frameId) && this.worlds.get(this.frameId) && this.worlds.get(this.frameId).body.spec.sky ? this.worlds.get(this.frameId) : null;
+    const far = null;          // F3: one Sun, one sky for the whole Solar System: no far world has a star of its own
     if (far) { if (this._sysCfg !== far) { this.sky.setSystem(this._skyConfig(far.body)); this._sysCfg = far; } }
     else if (this._sysCfg) { this.sky.setSystem(null); this._sysCfg = null; }
     this._laneFx(dt);
+    // F3: the rest of the Solar System, in view whenever a ship is out among the planets or a long trip is plotted
+    if (this.far) { const t = this.trip, sh = this._shipS(), away = Math.hypot(sh.x, sh.y, sh.z) > 5e8, want = away || !!(t && t.active && t.usesLong()); if (want && !this.far.built) this.far.ensure(); this.far.update(this.T ?? this.timeS(), want); }
     const near = this.activeMoon;
     let up = null;
     if (near) { const cm = this._camIn(near, this._cam), l = Math.hypot(cm.x, cm.y, cm.z) || 1; up = this._moonUp || (this._moonUp = { x: 0, y: 1, z: 0 }); up.x = cm.x / l; up.y = cm.y / l; up.z = cm.z / l; }

@@ -41,13 +41,15 @@ export const LONG = {
   minM: 2.0e9,
   /** A ship farther than this from its home region's centre (Mars's, or a far world's) is "out in deep space": it can only come home by the long drive. */
   homeM: 3.0e8,
-  /** The compression ladder in the cruise: game seconds per real second. x5400 is an hour and a half a second: Earth in about four minutes. */
-  warps: [1, 10, 60, 600, 1800, 5400],
+  /** The compression ladder in the cruise: game seconds per real second. x14400 is four hours a second: Earth in about two minutes. */
+  warps: [1, 10, 60, 600, 3600, 14400],
   /** The cruise never runs faster than the time left allows: at least this many REAL seconds of the trip remain at the compression in force
    *  (so the arrival is seen coming and the compression steps down in the last minutes). */
   arriveRealS: 6,
-  /** Real seconds the hull takes to swing end for end at the half-way flip (the course drive's own turn rate, 0.12 rad/s: 26 s). */
-  flipRealS: 26,
+  /** ...and no world may be closer than this many real seconds of flight at the compression in force (so she never rushes past a planet unseen). vFloorMs keeps a ship that has just started from being held at x1. */
+  nearRealS: 8, vFloorMs: 3000,
+  /** Real seconds the hull takes to ease onto the course when the long drive takes over. There is no turn-over: she keeps her nose to the destination the whole way. */
+  alignRealS: 8,
   /** Where a trip ends, metres short of the destination's centre, for a world with no mouth of its own: this many radii (never under minDropM). */
   dropRadii: 14, minDropM: 8.0e6,
   /** A hull heavier than this needs the heavy-drive unlock (bible 16, F3: "small ships can go; big ships need the unlocks"). Kilograms. */
@@ -57,6 +59,15 @@ export const LONG = {
 /** The compression ladder a trip may use right now: the long drive's while it has the ship, the course drive's (x1 x5 x20 x60) otherwise. */
 export const tripWarps = (trip) => (trip && trip.phase === 'longdrive' ? LONG.warps : COURSE_WARPS);
 const COURSE_WARPS = [1, 5, 20, 60];
+
+/** The compression the neighbourhood allows: the nearest world (distance to its surface, metres) must stay at least `nearRealS` real seconds away at the speed she
+ *  is making (with a floor, so a ship that has barely started still gets room). The highest rung of the ladder at or under both limits. */
+export function nearCap(distM, speedMs, requested = 1, ladder = LONG.warps) {
+  const w = Math.max(1, distM) / ((Math.max(0, speedMs) + LONG.vFloorMs) * LONG.nearRealS);
+  let best = 1;
+  for (const r of ladder) if (r <= requested && r <= w) best = r;
+  return best;
+}
 
 /** The cruise acceleration for a ship whose course drive makes `aMainMs2` (the same figure the nav computer already uses). */
 export const cruiseAccel = (aMainMs2) => Math.max(0.02, aMainMs2 * LONG.accelFrac);

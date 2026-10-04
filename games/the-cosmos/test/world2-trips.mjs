@@ -1,5 +1,5 @@
-// World 2 (Ceres) trips in the real authority (no browser): Mars -> Ceres (across the Ore Lane) -> Mars port, each must END
-// landed in the right frame, with the lane fee taken once per jump from the ship's own account.
+// World 2 (Ceres) trips in the real authority (no browser): Mars -> Ceres (by the long-range drive: F3 retired the Ore Lane) -> Mars port, each must END
+// landed in the right frame, with nothing taken from the ship's account (there is no lane fee any more).
 //   node test/world2-trips.mjs
 import './../server/runtime.mjs';
 import { mkdtemp } from 'node:fs/promises';
@@ -16,7 +16,7 @@ export async function runWorld2Trips({ check, log = () => {} } = {}) {
   const sim = world.sims.get(p.shipId), ship = world.state.ships[p.shipId];
   const seatPlayer = () => { p.aboardShipId = ship.id; p.currentShipId = ship.id; p.pose.aboard = true; p.frameId = sim.frameId; const seat = sim.def.seats.find((s) => s.id === 'pilot'); p.pose.seat = 'pilot'; Object.assign(p.pose.sw, { x: seat.x, y: seat.y, z: seat.z }); };
   const results = {};
-  const fly = (dest, maxSimS = 9000) => {
+  const fly = (dest, maxSimS = 20000) => {
     seatPlayer();
     const marks0 = ship.economy.marks;
     let err = null; try { world.reduce(p, { type: 'engage', destination: dest }); world.reduce(p, { type: 'trip-warp', warp: 60 }); } catch (e) { err = e.message; }
@@ -26,7 +26,7 @@ export async function runWorld2Trips({ check, log = () => {} } = {}) {
       const ph = sim.trip.phase + (sim.trip.phase === 'transit' ? sim.trip.leg : ''); if (phases[phases.length - 1] !== ph) phases.push(ph);
       if (sim.trip.phase === 'spool') spoolFrames++;
       frames.add(sim.frameId);
-      if (sim.trip.phase !== 'spool' && sim.trip.warp !== 60) sim.trip.setWarp(60);
+      if (sim.trip.phase === 'longdrive') { if (sim.trip.warp !== 14400) sim.trip.setWarp(14400); } else if (sim.trip.warp !== 60) sim.trip.setWarp(60);
       world.advance(1 / 30); clock += 33;
     }
     for (let i = 0; i < 300 && !sim.flight.landed && !sim.trip; i++) { world.advance(1 / 30); clock += 33; }
@@ -53,11 +53,11 @@ export async function runWorld2Trips({ check, log = () => {} } = {}) {
   results.home = fly('port'); log(JSON.stringify(results.home));
   if (check) {
     const ok = (r, frame) => r && !r.err && r.frame === frame && r.landed && !r.tripLeft;
-    check('a ship flown from the port to Ceres crosses the Ore Lane and ends the trip landed in Ceres\'s frame', ok(results.out, 'ceres'), JSON.stringify(results.out));
-    check('the trip had a spool of the full 20 cabin seconds at the lane mouth and one lane fee of 120 credits', results.out && Math.abs(results.out.spoolS - 20) < 1.2 && results.out.fee === 120, JSON.stringify(results.out));
+    check('a ship flown from the port to Ceres flies there by the long-range drive and ends the trip landed in the frame of Ceres', ok(results.out, 'ceres') && results.out.phases.includes('longdrive'), JSON.stringify(results.out));
+    check('there was no spool and no lane fee: nothing was taken from the account', results.out && results.out.spoolS === 0 && results.out.fee === 0 && !results.out.phases.includes('spool'), JSON.stringify(results.out));
     check('the foreman buys a tonne of ore from the hold for about 130 marks (F4: the world price factor and tax move it, 100 to 135) when you stand at him, and refuses from 50 m away', results.sale && !!results.sale.far && results.sale.ok && results.sale.ok.ok && results.sale.paid >= 100 && results.sale.paid <= 135 && Math.abs(results.sale.hold - 1000) < 1e-6 && Math.abs(results.sale.lots - 1000) < 1e-6, JSON.stringify(results.sale));
-    check('from Ceres a course to Marineris Port crosses back and ends landed at Mars', ok(results.home, 'mars'), JSON.stringify(results.home));
-    check('the way home costs another 120 credits', results.home && results.home.fee === 120, JSON.stringify(results.home));
+    check('from Ceres a course to Marineris Port flies back and ends landed at Mars', ok(results.home, 'mars') && results.home.phases.includes('longdrive'), JSON.stringify(results.home));
+    check('the way home is free too', results.home && results.home.fee === 0, JSON.stringify(results.home));
   }
   return results;
 }

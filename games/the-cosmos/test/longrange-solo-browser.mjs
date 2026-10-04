@@ -22,11 +22,11 @@ try {
   await page.waitForFunction(() => window.cosmos?.space && cosmos.engine.frameCount >= 2, null, { timeout: 240000 });
   await page.evaluate(() => { if (cosmos.engine.graphics) cosmos.engine.graphics.checked = 1e6; });
   await page.evaluate(() => { window.__st = { seen: [], saved: false, restored: null, engage: null, rows: null, steps: 0 }; const sp = cosmos.space, ship = cosmos.ship; ship.aboard = true; const rr = cosmos.engine.renderer; window.__render = rr.render.bind(rr); rr.render = () => {};      // logic only: a software GPU cannot draw ten thousand frames in a loop
-    window.__st.rows = sp.destinations().filter((d) => ['earth', 'moon', 'callisto', 'ceres~drive'].includes(d.id)).map((d) => d.id + ':' + (d.ok ? 'ok' : d.reason));
+    window.__st.rows = sp.destinations().filter((d) => ['earth', 'moon', 'callisto', 'ceres'].includes(d.id)).map((d) => d.id + ':' + (d.ok ? 'ok' : d.reason));
     window.__st.engage = sp.engage('earth'); sp.setWarp(60); });
   const pump = () => page.evaluate(() => { const sp = cosmos.space, ship = cosmos.ship, st = window.__st; let n = 0;
     while (sp.trip && sp.trip.active && n++ < 300) {
-      const t = sp.trip; if (t.phase === 'longdrive' && t.warp !== 5400) sp.setWarp(5400); else if (t.phase !== 'longdrive' && t.warp !== 60) sp.setWarp(60);
+      const t = sp.trip; if (t.phase === 'longdrive' && t.warp !== 14400) sp.setWarp(14400); else if (t.phase !== 'longdrive' && t.warp !== 60) sp.setWarp(60);
       if (!st.seen.includes(t.phase)) st.seen.push(t.phase);
       if (t.phase === 'longdrive' && !st.saved && t.cruise.tau > t.cruise.profile.T * 0.2) {
         const saved = JSON.parse(JSON.stringify(sp.snapshotState())); st.saved = true;

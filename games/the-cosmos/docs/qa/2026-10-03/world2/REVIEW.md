@@ -27,7 +27,7 @@ The first world beyond Mars and its moons, as one self-contained folder (`src/wo
 - `test/pkg-ceres.mjs` (25 checks, part of validate): Dawn numbers, orbit, landmark placement, flat pad, slab, The Cut slopes, ore/salt as lots, lane mouths, trade maths and refusals, no worker inside a wall.
 - `test/world2-trips.mjs` (real authority): Mars to Ceres across the lane (20 s spool, 120 credits), the foreman buys 1 t of ore for 130 marks, Ceres back to Marineris Port.
 - `test/world2-browser.mjs` (iPhone-profile WebKit, real taps): 7 of 7. Nav row tap, Talk button, panel on screen, spare-parts sale, ore sale, no page errors.
-- `test/world2-shared-browser.mjs` (browser following the real server across the jump): 6 of 6.
+- (`test/world2-shared-browser.mjs`, the shared-world trip across the Ore Lane, was retired in F3 with the lane; `test/longrange-browser.mjs` is the shared-world drive test now.)
 - Screenshots in this folder: `v1` sky and Sun, `v2` buildings, `v3` people and the pad, `v4` Ceres from 3,000 km down to 20 km, `v5` The Cut, `fl-*` and `gate-*` the flight and the lane gate, `phone-*` phone taps, `shared-landed-ceres.png`.
 
 ## Not verified / honest limits
