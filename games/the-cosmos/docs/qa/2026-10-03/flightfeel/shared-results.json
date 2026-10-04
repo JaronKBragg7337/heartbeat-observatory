@@ -1,0 +1,39 @@
+{
+ "ui": {
+  "chips": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "mode": "assist",
+  "chase": true
+ },
+ "lift": {
+  "agl": 26,
+  "mode": "assist"
+ },
+ "go": {
+  "speed": 62,
+  "agl": 56
+ },
+ "boost": {
+  "speed": 127,
+  "charge": 0.84
+ },
+ "watcher": {
+  "v": 116.08167662411283,
+  "boosting": true
+ },
+ "stop": {
+  "speed": 2.3,
+  "agl": 201
+ },
+ "land": {
+  "seconds": 9,
+  "hull": 100,
+  "touchdown": 1.35
+ }
+}

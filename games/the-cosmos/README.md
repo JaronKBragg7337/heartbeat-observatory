@@ -295,7 +295,7 @@ you are sitting in it; **Stand** (`E`) lets go, and the flight computer holds a 
 
 **Controls (flying by hand, FLIGHTFEEL, 10/3).** A person at the pilot's or captain's stick flies in **ASSIST** by default (`src/ship/flightAssist.js`): point and go.
 The stick says where you want to be going and the flight computer gets her there; let go and it kills the drift and holds a hover. There are no low caps:
-speed, climb and agility **scale with height** (about 50 m/s with the legs on the ground, 400 m/s at 1 km, 1.8 km/s at the top of the air, 6 km/s in space), so she is a
+speed, climb and agility **scale with height** (about 50 m/s with the legs on the ground, 450 m/s at 1 km, 1.8 km/s at the top of the air, 6 km/s in space), so she is a
 hover-car near the ground and fast in the air. A **boost** (a charge that drains in about 5 s and refills in about 9), a nose that **eases back to the horizon**
 and is held near level close to the ground, **terrain following** (she climbs over rising ground ahead), and a **landing assist**: hold DOWN low, or tap LAND, and she sets
 down softly from any height (a pad within 150 m pulls her in, slow and low with nothing asked she settles by herself). A push on the stick on the pad takes her off.
