@@ -1,0 +1,799 @@
+{
+  "date": "2026-10-04",
+  "title": "Heartbeat News — Sunday, October 4, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-04 (07:30 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-04.md"
+    },
+    {
+      "name": "watch/claude 2026-10-04 (08:25)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-04.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-04 (reader, 09:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-04.md"
+    },
+    {
+      "name": "Perplexity headlines (/api/news, read live by the page)",
+      "url": "/api/news"
+    }
+  ],
+  "ticker": [
+    "TANKER REPORTED STRUCK IN HORMUZ; CREW SAFE",
+    "IRAN: HORMUZ SHUT UNTIL SEVEN CONDITIONS MET",
+    "BRENT $102.30; MURBAN $109.40",
+    "10-YEAR YIELD 5.28%, 30-YEAR 5.61%",
+    "OCTOBER RATE-HIKE ODDS FALL TO 14%",
+    "BRAZIL VOTES: LULA VS. FLÁVIO BOLSONARO",
+    "MERZ IN KYIV; DRONE HITS NORTHERN BRIDGE",
+    "TRUMP ANNOUNCES $90 MEDICARE PAYMENT",
+    "SCOTUS: 2022 MAP STAYS FOR MISSOURI",
+    "PA. MEASLES: 5TH DEATH, 943 CASES",
+    "WEST HEAT DOME; CALIFORNIA WARNINGS TO OCT. 8",
+    "STARSHIP REACHES ORBIT FOR FIRST TIME",
+    "DODGERS 5, BRAVES 3; GAME 2 TONIGHT 8 P.M. ET",
+    "PARAMOUNT-WARNER MERGER CLOSES OCT. 6"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Hormuz · Brazil · Yields",
+        "bullets": [
+          "Another tanker reported hit in Hormuz",
+          "Brazil votes for president",
+          "Treasury yields at a 24-year high",
+          "Braves face Dodgers in Game 2"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Sunday, October fourth.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "Today: another tanker is reported struck in the Strait of Hormuz, Brazil votes for a president, and U.S. borrowing costs sit at a twenty-four-year high."
+        },
+        {
+          "who": "joe",
+          "text": "Plus a heat dome in the West, a new Medicare payment, and baseball's division series. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "breaking",
+      "strap": "TANKER REPORTED STRUCK IN HORMUZ; IRAN SETS CONDITIONS",
+      "headline": "Iran, day two hundred eighteen",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Iran war, day 218",
+        "stats": [
+          {
+            "label": "Day of war",
+            "value": "218"
+          },
+          {
+            "label": "Brent (Oct. 2)",
+            "value": "$102.30"
+          }
+        ],
+        "bullets": [
+          "A.P.: tanker hit, engine room damaged, crew safe",
+          "Ghalibaf: Hormuz stays shut until seven conditions met",
+          "CBS: U.S. forces hit I.R.G.C.-linked tankers",
+          "Actor and timing of the strike not identified"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/a37b24d446b3066d3b17441ac5bc0264"
+        },
+        {
+          "name": "CNBC",
+          "url": "https://cnbc.com/2026/10/04/more-tankers-struck-in-gulf-waters-as-iran-reiterates-conditions.html"
+        },
+        {
+          "name": "CBS News",
+          "url": "https://www.cbsnews.com/live-updates/iran-war-us-strait-of-hormuz-oil-gas-price-strikes/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "On day two hundred eighteen of the Iran war, the A.P. reports that a tanker in the Strait of Hormuz was struck by an unknown projectile. The U.K. maritime agency says the engine room was damaged. The crew is reported safe. The report does not say who fired, or when."
+        },
+        {
+          "who": "joe",
+          "text": "Iran's parliament speaker, Mohammad Bagher Ghalibaf, says Hormuz will not open until Iran's seven conditions are met. They are based on the Islamabad Memorandum, which is described as an interim deal signed in June. That is a statement from Iran, not a settlement."
+        },
+        {
+          "who": "vex",
+          "text": "CBS live updates report U.S. forces hit tankers linked to Iran's Revolutionary Guard. Strikes on shipping have been regular for weeks, according to CNBC."
+        },
+        {
+          "who": "joe",
+          "text": "A ceasefire market is watching this closely. Nothing in the reports says how it resolves."
+        }
+      ]
+    },
+    {
+      "id": "energy",
+      "kind": "story",
+      "strap": "BRENT $102.30; MURBAN $109.40; CHINA FUEL EXPORTS HALTED",
+      "headline": "Oil and the Gulf",
+      "category": "ENERGY",
+      "status": "observed",
+      "graphic": {
+        "kicker": "ENERGY",
+        "title": "Gulf risk premium",
+        "stats": [
+          {
+            "label": "Brent (Oct. 2)",
+            "value": "$102.30"
+          },
+          {
+            "label": "Murban (Oct. 2)",
+            "value": "$109.40"
+          }
+        ],
+        "bullets": [
+          "Traders price more risk on Gulf-shipping barrels",
+          "China's fuel exports suspended beyond Hong Kong, Macau",
+          "Suspension runs 'until further notice'"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Gulf News",
+          "url": "https://gulfnews.com/business/energy/brent-crude-oil-surges-past-102-amid-hormuz-tensions-us-iran-conflict-1.500695537"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Brent crude finished Friday at one hundred two dollars and thirty cents. Murban, the Gulf benchmark, was one hundred nine dollars and forty cents."
+        },
+        {
+          "who": "joe",
+          "text": "Gulf News says traders are charging more for barrels that have to ship through the Gulf. From the earlier capture: China has suspended fuel exports beyond Hong Kong and Macau until further notice. That one was not re-read today."
+        }
+      ]
+    },
+    {
+      "id": "brazil",
+      "kind": "story",
+      "strap": "BRAZIL VOTES: LULA VS. FLÁVIO BOLSONARO; RUNOFF OCT. 25",
+      "headline": "Brazil picks a president",
+      "category": "WORLD",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Brazil's first round",
+        "stats": [
+          {
+            "label": "Voting hours (Brasília)",
+            "value": "8 a.m.–5 p.m."
+          },
+          {
+            "label": "Runoff, if needed",
+            "value": "Oct. 25"
+          }
+        ],
+        "bullets": [
+          "Lula vs. Senator Flávio Bolsonaro",
+          "Quaest poll: 37–33",
+          "AtlasIntel poll: 46–43",
+          "No result yet"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/10/3/what-to-know-about-brazils-2026-presidential-election"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/c194f8965632c8af9bcc4e7a3716cd7c"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Brazil votes today. President Luiz Inácio Lula da Silva is running against Senator Flávio Bolsonaro. Polls open at eight in the morning, Brasília time, and close at five."
+        },
+        {
+          "who": "vex",
+          "text": "If no one gets more than fifty percent, the top two meet in a runoff on October twenty-fifth. The final polls are close. Quaest has it thirty-seven to thirty-three. AtlasIntel has forty-six to forty-three. No result is in yet."
+        }
+      ]
+    },
+    {
+      "id": "world",
+      "kind": "story",
+      "strap": "MERZ IN KYIV AS DRONE HITS BRIDGE; YEMEN, GAZA STRIKES",
+      "headline": "Around the world",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Kyiv, Yemen, Gaza",
+        "bullets": [
+          "Merz arrives in Kyiv",
+          "Zelenskyy: drone hit Northern Bridge",
+          "Yemen's military claims strikes on Sanaa, Saada",
+          "Gaza: strike kills at least one, hurts 11"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP — Kyiv",
+          "url": "https://apnews.com/article/kyiv-russia-ukraine-war-merz-drones-89bb8d2a97cc09d01a316723d08d2fb3"
+        },
+        {
+          "name": "AP — Yemen and Gaza",
+          "url": "https://apnews.com/article/a37b24d446b3066d3b17441ac5bc0264"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.P. reports German Chancellor Friedrich Merz arrived in Kyiv. President Zelenskyy said a drone struck Kyiv's Northern Bridge. The article gave no casualty count."
+        },
+        {
+          "who": "joe",
+          "text": "In Yemen, the military claimed responsibility for overnight strikes on what it called vital targets in Sanaa and Saada. Houthi media reported airstrikes in Sanaa."
+        },
+        {
+          "who": "vex",
+          "text": "In Gaza, health officials say an Israeli strike killed at least one Palestinian and injured at least eleven. Israel's military says it targeted a known Hamas militant. Those are claims from both sides."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "10-YEAR YIELD 5.28%, 30-YEAR 5.61%; OCT. HIKE ODDS 14%",
+      "headline": "Yields at a 24-year high",
+      "category": "MARKETS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "The cost of borrowing",
+        "stats": [
+          {
+            "label": "10-year (Oct. 2)",
+            "value": "5.28%"
+          },
+          {
+            "label": "30-year (Oct. 2)",
+            "value": "5.61%"
+          },
+          {
+            "label": "S&P 500 (Oct. 1)",
+            "value": "7,666.45"
+          },
+          {
+            "label": "Oct. hike odds",
+            "value": "14%"
+          }
+        ],
+        "bullets": [
+          "10-year touched 5.344% this week, highest since 2002",
+          "Hike odds were 70% earlier in the week",
+          "No major data this week; Treasury auctions in focus"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Federal Reserve H.15",
+          "url": "https://www.federalreserve.gov/releases/h15/"
+        },
+        {
+          "name": "CNBC",
+          "url": "https://www.cnbc.com/2026/09/30/stock-market-today-live-updates.html"
+        },
+        {
+          "name": "CNBC outlook",
+          "url": "https://www.cnbc.com/2026/09/25/stock-market-next-week-outlook-for-sept-28-oct-2-2026.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Federal Reserve data show the ten-year Treasury yield at five point two eight percent on Friday, and the thirty-year at five point six one. The ten-year touched five point three four four this week, the highest since two thousand two."
+        },
+        {
+          "who": "joe",
+          "text": "Analysts disagree on why: inflation, growth, or the deficit. On Thursday the S and P five hundred closed at seven thousand six hundred sixty-six. Odds of an October rate hike fell to fourteen percent, from seventy earlier in the week."
+        },
+        {
+          "who": "vex",
+          "text": "Markets are closed today. This week has no major data. Treasury auctions will show how much demand there is at these yields."
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "kind": "story",
+      "strap": "BESSENT: U.S.-CHINA A.I. INCIDENT CHANNEL; OPENAI SAFETY LEAD QUITS",
+      "headline": "A.I. news",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "A.I. week in review",
+        "bullets": [
+          "Bessent plans U.S.-China A.I. incident channel (report)",
+          "Ex-OpenAI safety lead resigns, says culture is broken",
+          "GPT-6.1 Sol: $2 / $10 per million tokens",
+          "Gemini 4 Argon: trusted cyber defenders first"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Axios",
+          "url": "https://www.axios.com/2026/10/03/china-ai-bessent-axios-show"
+        },
+        {
+          "name": "TechCrunch",
+          "url": "https://techcrunch.com/2026/10/03/openai-safety-employee-resigns-claiming-the-companys-culture-is-broken/"
+        },
+        {
+          "name": "A.I. Weekly",
+          "url": "https://aiweekly.co/ai-news-today"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Axios reports Treasury Secretary Scott Bessent plans an emergency A.I. incident notification channel between the U.S. and China, discussed with He Lifeng before Xi's state visit. No formal agreement was reported."
+        },
+        {
+          "who": "joe",
+          "text": "TechCrunch reports David Robinson, a former OpenAI safety-report lead, resigned. His essay argues the company's culture is broken and its guardrails are insufficient. That is his view."
+        },
+        {
+          "who": "vex",
+          "text": "This week's releases: OpenAI's GPT-6.1 Sol, at two dollars and ten dollars per million tokens. Its separate Astra release was cancelled after alignment regressions in testing. Google's Gemini 4 Argon goes first to trusted cyber defenders."
+        },
+        {
+          "who": "joe",
+          "text": "Also: Anthropic's Sonnet 5.5, and a cryptography tool called zkAPI, launched on Ethereum, that separates using an A.I. service from paying for it."
+        }
+      ]
+    },
+    {
+      "id": "nation",
+      "kind": "story",
+      "strap": "TRUMP: $90 MEDICARE PAYMENT; SCOTUS KEEPS 2022 MAP",
+      "headline": "Washington and the midterms",
+      "category": "NATIONAL",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "NATIONAL",
+        "title": "A month to the midterms",
+        "stats": [
+          {
+            "label": "Medicare payment",
+            "value": "$90 one-time"
+          },
+          {
+            "label": "Part B enrollees",
+            "value": "20M+"
+          },
+          {
+            "label": "Election day",
+            "value": "Nov. 3"
+          }
+        ],
+        "bullets": [
+          "Payments to begin in October (White House)",
+          "Supreme Court: 2022 map stays for Missouri",
+          "Trump rallies in Mobile; 17-state push"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/trump-medicare-payments-midterms-2a314c1c4b5ae929f3dfc8a262b4f1c7"
+        },
+        {
+          "name": "CNN",
+          "url": "https://edition.cnn.com/election/2026"
+        },
+        {
+          "name": "NBC News",
+          "url": "https://nbcnews.com/politics/trump-administration/live-blog/trump-vance-2026-midterm-elections-congress-live-updates-rcna601069"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "The A.P. reports President Trump announced a one-time ninety-dollar payment for more than twenty million Medicare Part B enrollees. The White House says payments begin in October from the Medicare Improvement Fund."
+        },
+        {
+          "who": "vex",
+          "text": "The Supreme Court confirmed the twenty twenty-six election goes forward under the twenty twenty-two map. It declined, for a third time, Missouri's attempt to use a new congressional map."
+        },
+        {
+          "who": "joe",
+          "text": "Trump rallied in Mobile, Alabama, on Saturday, part of a seventeen-state push a month before the November third election. NBC reports he acknowledged an uphill fight to hold Congress."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "PA. MEASLES: 5TH DEATH, 943 CASES; FDA FINDS CYCLOSPORA SOURCE",
+      "headline": "Health",
+      "category": "HEALTH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Measles and lettuce",
+        "stats": [
+          {
+            "label": "Pa. measles cases",
+            "value": "943"
+          },
+          {
+            "label": "Pa. measles deaths",
+            "value": "5"
+          },
+          {
+            "label": "Counties",
+            "value": "39"
+          }
+        ],
+        "bullets": [
+          "Largest ongoing U.S. outbreak",
+          "F.D.A.: Cyclospora in wastewater at Taylor Farms de Mexico",
+          "Also found in a drainage ditch at a lettuce grower"
+        ]
+      },
+      "sources": [
+        {
+          "name": "ABC News",
+          "url": "https://abcnews.com/Health/fda-finds-potential-source-cyclosporiasis-outbreak-linked-lettuce/story?id=136958299"
+        },
+        {
+          "name": "HCPLive",
+          "url": "https://hcplive.com/view/q3-2026-recap-allergy-news-updates"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Pennsylvania reports a fifth measles death. The state counts nine hundred forty-three cases in thirty-nine counties, the largest ongoing outbreak in the country. That figure came from a search summary; the source page was not opened."
+        },
+        {
+          "who": "joe",
+          "text": "The F.D.A. found Cyclospora in wastewater at Taylor Farms de Mexico, and in a drainage ditch at an iceberg lettuce grower. ABC reports it as a potential source of the outbreak linked to lettuce."
+        },
+        {
+          "who": "vex",
+          "text": "In approvals: the F.D.A. extended the nasal spray Ryaltris to children ages six to eleven, and gave Fast Track status to an experimental peanut-allergy treatment."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "WEST HEAT DOME; HURRICANES RACHEL AND NOLO",
+      "headline": "Heat in the West, storms at sea",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Heat dome and Pacific hurricanes",
+        "stats": [
+          {
+            "label": "Calif. valley highs",
+            "value": "~107°F"
+          },
+          {
+            "label": "Nolo winds",
+            "value": "110 mph"
+          },
+          {
+            "label": "Rachel winds",
+            "value": "100 mph"
+          }
+        ],
+        "bullets": [
+          "Heat warnings in California through Oct. 8",
+          "Wildfire risk up in Southern California",
+          "No active Atlantic storm"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Watchers",
+          "url": "https://watchers.news/2026/10/03/california-heat-wave-triggers-heat-advisories-and-extreme-heat-warnings-through-october-8"
+        },
+        {
+          "name": "WeatherWest",
+          "url": "https://weatherwest.com/archives/44085"
+        },
+        {
+          "name": "National Hurricane Center",
+          "url": "https://www.nhc.noaa.gov/mobile/text/refresh/MIATCMEP2+html/310833.shtml"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "A heat dome sits over the West through much of next week. California has heat advisories and extreme-heat warnings through October eighth. Saturday was expected to be the hottest day, with valleys near one hundred seven degrees. That is fifteen to twenty above normal."
+        },
+        {
+          "who": "vex",
+          "text": "Gusty winds and no rain raise wildfire risk in Southern California. In the Pacific, the Hurricane Center has Nolo with ninety-five-knot winds, about one hundred ten miles an hour, and Rachel at one hundred. The National Hurricane Center lists no active Atlantic storm."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "BRAVES-DODGERS GAME 2 TONIGHT; COLTS-COMMANDERS IN LONDON",
+      "headline": "Playoffs and football",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Baseball and football",
+        "stats": [
+          {
+            "label": "NLDS Game 1",
+            "value": "Dodgers 5, Braves 3"
+          }
+        ],
+        "bullets": [
+          "Padres at Brewers, Game 2: 4 p.m. ET",
+          "Braves at Dodgers, Game 2: 8 p.m. ET",
+          "Colts–Commanders in London: 9:30 a.m. ET",
+          "Daniels out; Mariota starts"
+        ]
+      },
+      "sources": [
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/braves/news/braves-dodgers-nlds-game-1-takeaways"
+        },
+        {
+          "name": "ESPN",
+          "url": "https://www.espn.com/nfl/story/_/id/50090624/colts-wr-keenan-allen-groin-vs-commanders-london"
+        },
+        {
+          "name": "NFL",
+          "url": "https://fantasy-www.nfl.com/news/nfl-week-4-injury-report-player-statuses-for-all-16-games"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Dodgers won Game One of the National League Division Series, five to three over the Braves. Game Two is tonight at eight Eastern. Padres at Brewers is at four."
+        },
+        {
+          "who": "joe",
+          "text": "In the N.F.L., the Colts and Commanders play in London at nine thirty this morning, Eastern. Commanders quarterback Jayden Daniels is out with an elbow injury, so Marcus Mariota starts. Colts receiver Keenan Allen is out."
+        },
+        {
+          "who": "vex",
+          "text": "Also out for Washington: running back Rachaad White, guard Samuel Cosmi and safety Nick Cross. Reports conflict on receiver Terry McLaurin. One says questionable, one says out."
+        },
+        {
+          "who": "joe",
+          "text": "And Derrick Henry and Josh Allen are chasing a record rushing-touchdown start."
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "kind": "story",
+      "strap": "STARSHIP REACHES ORBIT FOR FIRST TIME",
+      "headline": "Starship in orbit",
+      "category": "SPACE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPACE",
+        "title": "Starship's orbital flight",
+        "stats": [
+          {
+            "label": "Starlink V3 satellites",
+            "value": "26"
+          },
+          {
+            "label": "Flight time",
+            "value": "~3 hours"
+          }
+        ],
+        "bullets": [
+          "Flight on Sept. 27–28",
+          "Splashed down north of Hawaii",
+          "Next Starlink launch listed Oct. 10–11"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Spaceflight Now",
+          "url": "https://spaceflightnow.com/2026/09/28/starship-returns-to-earth-rocket-splashes-down-north-of-hawaii-after-three-hour-flight/"
+        },
+        {
+          "name": "Spaceflight Now schedule",
+          "url": "https://spaceflightnow.com/launch-schedule/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Spaceflight Now reports Starship reached orbit for the first time on a flight September twenty-seventh and twenty-eighth. It carried twenty-six Starlink version-three satellites, then splashed down north of Hawaii after about three hours."
+        },
+        {
+          "who": "joe",
+          "text": "The next SpaceX Starlink launch is listed for October tenth or eleventh."
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "kind": "story",
+      "strap": "PARAMOUNT-WARNER CLOSE OCT. 6; VERITY OPENS AT NO. 1",
+      "headline": "Business and the box office",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "Deals and weekend film",
+        "stats": [
+          {
+            "label": "Paramount-WBD close",
+            "value": "Oct. 6"
+          },
+          {
+            "label": "Verity weekend (est.)",
+            "value": "~$32–33M"
+          }
+        ],
+        "bullets": [
+          "Ellison and Ynon Kreiz named co-CEOs",
+          "$1.5B more U.S. film spend promised",
+          "Amazon: no more N.D.A.s with government agencies",
+          "Box office figures are estimates"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Variety",
+          "url": "https://variety.com/2026/film/news/paramount-warner-bros-merger-judge-approves-settlement-ags-1236893467/"
+        },
+        {
+          "name": "TechCrunch — Amazon",
+          "url": "https://techcrunch.com/2026/10/03/amazon-responds-to-data-center-backlash-says-it-no-longer-uses-ndas/"
+        },
+        {
+          "name": "TheWrap",
+          "url": "https://www.thewrap.com/industry-news/business/verity-digger-box-office-saturday/"
+        },
+        {
+          "name": "Roger's Movie Nation",
+          "url": "https://rogersmovienation.com/2026/10/03/box-office-verity-opens-big-digger-takes-a-dive/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Paramount Skydance and Warner Bros. Discovery merger is still set to close Tuesday, October sixth, after a judge approved a twelve-state attorney-general settlement on September thirtieth. David Ellison and Ynon Kreiz are named co-C.E.O.s, with a promise of one and a half billion dollars more in U.S. film spending."
+        },
+        {
+          "who": "joe",
+          "text": "TechCrunch reports Amazon's C.E.O., Matt Garman, says the company no longer uses N.D.A.s with government agencies, amid data-center backlash."
+        },
+        {
+          "who": "vex",
+          "text": "At the box office, the film Verity opened first. Estimates put its weekend at about thirty-two to thirty-three million dollars. Tom Cruise's Digger is estimated between seven and a half and ten million. These are estimates. Final Sunday numbers come tomorrow."
+        }
+      ]
+    },
+    {
+      "id": "nantucket",
+      "kind": "story",
+      "strap": "DEBRIS FOUND OFF NANTUCKET FROM AIR AMBULANCE",
+      "headline": "Search off Nantucket",
+      "category": "NATIONAL",
+      "status": "observed",
+      "graphic": {
+        "kicker": "NATIONAL",
+        "title": "Air ambulance search",
+        "stats": [
+          {
+            "label": "People aboard",
+            "value": "6"
+          }
+        ],
+        "bullets": [
+          "Gulfstream G100 air ambulance",
+          "Coast Guard search continues",
+          "Next of kin notified"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/plane-search-bermuda-boston-nantucket-ccb6014ac35e2af11879e28e6c8527df"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.P. reports searchers found debris off Nantucket from a Gulfstream G-one-hundred air ambulance carrying six people. The Coast Guard is still searching. Next of kin have been notified."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped.",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "HEARTBEAT NEWS",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 4",
+          "Sources under the screen",
+          "New show every day by noon"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Sunday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by noon. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
