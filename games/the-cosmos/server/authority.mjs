@@ -31,6 +31,7 @@ import { ShopDirector } from './shops.mjs';
 import { RoleDirector } from './roles.mjs';      // F5 roles and NPC stand-ins, F4 balance and home strength
 import { worldSale } from './world2.mjs';       // WORLD2
 import { tripWarps } from '../src/space/longRange.js';       // F3: the compression ladder depends on the drive that has the ship
+import { moonTrade } from './moon.mjs';       // WD-MOON
 import { freshOpening, OpeningModel } from '../src/opening/state.js';
 import { detachBodyEdits } from '../src/world/field.js';
 import { landingOrder, MOON_IDS } from '../src/space/spaceSpec.js';
@@ -702,6 +703,7 @@ export class Authority {
         d.canPlaceSpoil=(x,y,z)=>this.canPlaceSpoil(p.frameId,x,y,z);
         const r=a.type==='dig-edit'?d.dig():d.dump(!!a.all);if(!r.ok)return r;p.carried=d.carried;return r;}
       case 'world2-sale':return worldSale(this,p,ship,sim,a);       // WORLD2
+      case 'moon-trade':return moonTrade(this,p,ship,sim,a);       // WD-MOON
       case 'purchase':case 'sale':case 'regolith-sale':case 'quest-accept':case 'quest-step':{
         this.owner(p,this.state.ships[p.shipId]);const s=this.state.ships[p.shipId];
         if(a.type==='quest-step'){const q=QUESTS.find(q=>q.id===a.id);if(!q)throw Error('Unknown job.');this.near(p,{...q.target,y:0},q.target.radius);}

@@ -1,0 +1,36 @@
+{
+  "note": "Credits for real data The Cosmos hosts its own copy of. No agency's logo or endorsement is used or implied. Add a row here when a world builder bakes in a new dataset (REAL-DATA.md has the licences).",
+  "data": [
+    {
+      "what": "The Moon's heights (LDEM_16, LDEM_128, LDEM_64 and the 80 m south polar DEM LDEM_80S_80M), cut into one global grid and three windows; and Shackleton's year of sunlight, worked out from them by tools/bake-lola.mjs",
+      "credit": "NASA Lunar Reconnaissance Orbiter, LOLA laser altimeter (NASA/GSFC; the LOLA science team). Gridded data records from the NASA Planetary Data System.",
+      "source": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/",
+      "licence": "NASA data: public domain",
+      "used_in": "src/worlds/moon/lola-data.js (generated), src/worlds/moon/lola.js",
+      "changes": "pooled to 1 pixel per degree (global) and cropped to three windows of 48 to 120 km; heights rounded to 4 to 32 m; the sunlight map is derived, not NASA's"
+    },
+    {
+      "what": "The Moon's brightness (maria, highlands, bright rays)",
+      "credit": "NASA/Goddard Space Flight Center/Arizona State University: Lunar Reconnaissance Orbiter Camera (LROC) Wide Angle Camera global mosaic, as published in NASA's Scientific Visualization Studio (CGI Moon Kit, SVS 4720)",
+      "source": "https://svs.gsfc.nasa.gov/4720",
+      "licence": "NASA imagery: public domain",
+      "used_in": "src/worlds/moon/lola-data.js (generated), src/worlds/moon/lola.js",
+      "changes": "converted to grey and reduced to 360 x 180"
+    },
+    {
+      "what": "Earth in the Moon's sky",
+      "credit": "NASA Earth Observatory: Blue Marble Next Generation (Reto Stockli, NASA Earth Observatory, based on data from NASA MODIS)",
+      "source": "https://visibleearth.nasa.gov/images/73909",
+      "licence": "NASA imagery: public domain",
+      "used_in": "assets/moon/earth.jpg, src/worlds/moon/earthSky.js",
+      "changes": "reduced to 1024 x 512"
+    },
+    {
+      "what": "The Moon's size, mass, gravity, day and orbit",
+      "credit": "NASA Space Science Data Coordinated Archive, Moon Fact Sheet (fetched 2026-10-03); orbit elements after Jean Meeus, Astronomical Algorithms",
+      "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html",
+      "licence": "facts are not copyrightable; credited as a courtesy",
+      "used_in": "src/worlds/moon/common.js"
+    }
+  ]
+}

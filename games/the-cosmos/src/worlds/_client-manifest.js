@@ -2,7 +2,13 @@
 // One line per folder; merged with git's union driver (.gitattributes). Run: node tools/gen-registry.mjs
 
 import c_ceres from './ceres/client.js';
+import c_moon from './moon/client.js';
+import c_moon_daedalus from './moon-daedalus/client.js';
+import c_moon_shackleton from './moon-shackleton/client.js';
 
 export const WORLD_CLIENTS = {
   'ceres': c_ceres,
+  'moon': c_moon,
+  'moon-daedalus': c_moon_daedalus,
+  'moon-shackleton': c_moon_shackleton,
 };

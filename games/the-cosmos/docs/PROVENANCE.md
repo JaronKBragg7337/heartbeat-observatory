@@ -115,3 +115,22 @@ the browser's system sans-serif font. The apron sizes and construction details
 are game design measurements; the planetary frame and gravity still come from
 the sourced Mars record. Field earthworks preserve the volume representation.
 Stable IDs and review instructions: [MARS-PORT-REVIEW.md](MARS-PORT-REVIEW.md).
+
+## The Moon (WD-MOON, Oct 3)
+
+| Value | Used | Source | Verified |
+|---|---|---|---|
+| Mass | 7.346e22 kg | NASA Moon Fact Sheet (0.07346e24 kg) | live, 2026-10-03 |
+| Volumetric mean radius | 1,737.4 km (LOLA's reference sphere) | NASA Moon Fact Sheet | live |
+| Surface gravity | 1.62 m/s2 (worked out from the two above: 1.624) | NASA Moon Fact Sheet | live |
+| Sidereal rotation | 655.720 h (locked to Earth) | NASA Moon Fact Sheet | live |
+| Obliquity to orbit | 6.68 deg | NASA Moon Fact Sheet | live |
+| Orbit | a 384,399 km, e 0.0549, i 5.145 deg, with Meeus's rates | NASA fact sheet (shape) and Meeus, Astronomical Algorithms (rates) | fact sheet live; rates typed from the book: re-confirm |
+| Heights | LOLA LDEM_16 pooled to 1 pixel per degree; LDEM_128 (237 m) at Tranquility; LDEM_64 (474 m) at Daedalus; LDEM_80S_80M (160 m after pooling) at Shackleton | NASA PDS, fetched 2026-10-03 (labels read: scale 0.5 m, offset 1737.4 km, polar stereographic, true at the pole) | live |
+| Brightness | LROC WAC mosaic 1k, as 360 x 180 grey | NASA SVS 4720 | live |
+| Shackleton's sunlight | worked out by tools/bake-lola.mjs from the heights (48 horizon azimuths, Sun +-1.54 deg over a year, 0.27 deg disc) | derived | the result agrees with the published picture: crest lit about 95 percent, floor never |
+| Shackleton's place | the crater is 21 km across and 4.2 km deep, centre about 89.66 S, 129.78 E (found in the heights 10.3 km from the pole) | IAU gazetteer, typed by hand; checked against the data | re-confirm |
+| Apollo 11 site, Collins, Aldrin, Armstrong, Daedalus, de Gerlache, Haworth, Shoemaker, Faustini | coordinates and sizes in the world defs' landmarks (labels only: the heights already have the craters) | IAU gazetteer, typed by hand | re-confirm by hand |
+| Earth from the Moon | Blue Marble Next Generation, 1024 x 512 | NASA Earth Observatory | live |
+
+Game fiction, marked as such in the defs: Tranquility Civil Hub, Shackleton Base, Daedalus Station, the blocs and their people, the lunars, the lane, the ice's exact amounts (the real fact is that LCROSS found water in Cabeus's shadow in 2009; how much there is remains an estimate). The Sun is fixed for play at each landing (a lunar day is 29.5 Earth days): 24 degrees at the hub, 6 degrees at Shackleton (the real Sun never clears 1.54 degrees there), 21 degrees at Daedalus.

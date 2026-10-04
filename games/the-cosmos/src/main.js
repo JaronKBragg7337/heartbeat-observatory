@@ -64,6 +64,7 @@ import { setSkyShift, worldTimeS } from './space/clock.js';
 import { skyShiftFor } from './space/frames.js';
 import { frameWorldIds } from './worlds/registry.js';
 import { registerWorld2Trade } from './worlds/ceres/soloTrade.js';       // WORLD2
+import { registerMoonTrade } from './worlds/moon/soloTrade.js';       // WD-MOON
 import { Cinema } from './cinema/cinema.js';
 import { VehicleSystem } from './vehicles/view.js';
 import { Opening } from './opening/opening.js';
@@ -1171,7 +1172,7 @@ window.addEventListener('keydown', (e) => {
 const space = new SpaceSystem({ engine, body, tier, skyMode, sun, hemi: sky, ship, walker, digger, portSite, fogDensity: TERRAIN_FOG_DENSITY,
   setGround: (fn) => { activeGround = fn; }, marsGround, followEntries: [suitEntry] });
 
-worldBridge.space=space; SUN.space = space;space.peopleLib=people;       registerWorld2Trade(world,{space,walker,ship,bridge:worldBridge});       // WORLD2: the same Loft people library populates a world's settlement
+worldBridge.space=space; SUN.space = space;space.peopleLib=people;       registerWorld2Trade(world,{space,walker,ship,bridge:worldBridge});registerMoonTrade(world,{space,walker,ship});       // WD-MOON       // WORLD2: the same Loft people library populates a world's settlement
 if(!world.remote){
   space.hooks.award=(credits,reason)=>world.dispatch({type:'space-award',credits,reason});
   space.hooks.charge=(credits,reason)=>world.dispatch({type:'space-charge',credits,reason});       // WORLD2

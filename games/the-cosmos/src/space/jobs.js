@@ -26,7 +26,8 @@ export const SALVAGE_KG = 1800, SALVAGE_CREDITS = 150, SALVAGE_REACH_M = 6;
 
 export const MAT_ITEM = { 'MAT-PHOBOS-CLAY': 'phobos-hydrated-clay', 'MAT-PHOBOS-REGOLITH': 'phobos-regolith', 'MAT-PHOBOS-RUBBLE': 'phobos-rubble',
   'MAT-DEIMOS-REGOLITH': 'deimos-regolith', 'MAT-DEIMOS-RUBBLE': 'deimos-rubble',
-  'MAT-CERES-ORE': 'ceres-ore', 'MAT-CERES-SALT': 'ceres-salt', 'MAT-CERES-REGOLITH': 'ceres-regolith', 'MAT-CERES-RUBBLE': 'ceres-rubble' };       // WORLD2
+  'MAT-CERES-ORE': 'ceres-ore', 'MAT-CERES-SALT': 'ceres-salt', 'MAT-CERES-REGOLITH': 'ceres-regolith', 'MAT-CERES-RUBBLE': 'ceres-rubble',       // WORLD2
+  'MAT-MOON-ICE': 'moon-ice', 'MAT-MOON-REGOLITH': 'moon-regolith', 'MAT-MOON-RUBBLE': 'moon-rubble' };       // WD-MOON
 
 export class SpaceJobs {
   constructor(space) {

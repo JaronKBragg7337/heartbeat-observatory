@@ -538,6 +538,7 @@ export function makeMoon(id) {
     }
     // WORLD2: under the settlement's buildings and its pad the ground is engineered fill: a slab nothing digs through (as the Mars port's concrete is)
     if (S.settlement && depth < S.settlement.depthM && settlementSolid(px0, py0, pz0, 0)) return MATERIALS.concrete;
+    if (S.groundAt && M.ice) { const m = S.groundAt(q, depth, reg, noise3(px0 * 0.011, py0 * 0.011, pz0 * 0.011, seed + 83)); if (m === 'ice') return M.ice; }       // WD-MOON: polar ice under the dry skin, in the permanent shadows
     if (depth < reg) return M.regolith;
     if (depth > 2.2 && feat.length && M.clay) {
       const f = feat[0], cosang = q[0] * f.d[0] + q[1] * f.d[1] + q[2] * f.d[2];
@@ -655,6 +656,7 @@ export function makeMoon(id) {
       const mid = fbm(px * 0.0032, py * 0.0032, pz * 0.0032, seed + 313, 2);        // a few hundred metres: dust drifts and old ejecta
       let k, red;
       k = LK[0] + LK[1] * lo + LK[2] * mid; red = LR[0] + LR[1] * lo + LR[2] * mid;
+      if (S.albedoFn) { S.albedoFn(q, k, red, lo, mid, out); return out; }       // WD-MOON: the world's own brightness map (the Moon: LROC)
       const f = feat[0];
       if (f) {
         const cosang = q[0] * f.d[0] + q[1] * f.d[1] + q[2] * f.d[2];
@@ -695,5 +697,5 @@ export function makeMoon(id) {
 // A world's materials: names of entries in field.js's MATERIALS, or material objects (the registry has already appended those).
 const matOf = (m) => (typeof m === 'string' ? MATERIALS[m] : m);
 const materialsOf = (S) => ({ regolith: matOf(S.materials.regolith), rubble: matOf(S.materials.rubble), clay: S.materials.clay ? matOf(S.materials.clay) : null,
-  ore: S.materials.ore ? matOf(S.materials.ore) : null, salt: S.materials.salt ? matOf(S.materials.salt) : null });       // WORLD2: ore veins and bright salt crust
+  ore: S.materials.ore ? matOf(S.materials.ore) : null, salt: S.materials.salt ? matOf(S.materials.salt) : null, ice: S.materials.ice ? matOf(S.materials.ice) : null });       // WORLD2: ore veins and bright salt crust
 import { MATERIALS } from '../world/field.js';

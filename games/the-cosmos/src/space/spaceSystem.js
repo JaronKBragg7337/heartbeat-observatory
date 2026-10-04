@@ -183,7 +183,7 @@ export class SpaceSystem {
   }
   /** WORLD2: a world reached by a lane has its gate: a ring of beacons over its pad, where the jump coils spool. Built once, with the world. */
   _dressWorld(w) {
-    if (!isLaneWorld(w.id)) return;
+    if (!isLaneWorld(w.id) || systemOfFrame(w.id) !== w.id) return;       // WD-MOON: only the region's own world carries its gate
     const up = w.body.padInfo.up;
     w.gate = buildLaneGate({ engine: this.engine, frame: w.frame, point: mouthPoint(w.id, w.body), toward: { x: -up.x, y: -up.y, z: -up.z }, low: this.tier === 'low' });
   }
@@ -357,7 +357,7 @@ export class SpaceSystem {
         const p = hereSys === 'mars' ? this._shipS() : { x: f.pos.x, y: f.pos.y, z: f.pos.z };
         if (cr) { r.distM = pl.longL; r.route = 'drive'; r.longS = pl.long; r.realTopS = realSeconds(pl.long) + (pl.climb + pl.drive + pl.drive2) / 60 + pl.descent / 8 + 30; r.peakSpeed = pl.longPeak; r.warps = LONG.warps; }      // realTopS: the long drive at the top of its ladder, the main-drive legs at x60, the landing mostly at x1
         else {
-          const m2 = mouthPoint(legs[1].sys, makeMoon(legs[1].sys));
+          const m2 = mouthPoint(legs[1].sys, legs[1].sys === 'mars' ? null : makeMoon(legs[1].sys));       // WD-MOON: the way home from a far world ends in Mars's region, which has no body record (the list threw from Ceres)
           r.distM = Math.hypot(legs[0].goal.x - p.x, legs[0].goal.y - p.y, legs[0].goal.z - p.z) + Math.hypot(legs[1].goal.x - m2.x, legs[1].goal.y - m2.y, legs[1].goal.z - m2.z);
           r.route = 'lane'; r.crossing = true; r.laneFee = JUMP.feeCredits;
         }
@@ -365,6 +365,14 @@ export class SpaceSystem {
         if (cr) { const g = longDriveAllowed(this.ship.def, false); if (!g.ok) { r.ok = false; r.reason = g.msg; } }
         if (!f.canLiftOff() && f.landed) { r.ok = false; r.reason = 'engines too low to lift'; }
         if (r.ok && lane) r.blurb = `${row.blurb} Lane fee ${JUMP.feeCredits} credits.`;
+        out.push(r); continue;
+      }
+      if (hereSys !== 'mars') {       // WD-MOON: a hop inside a lane world's own region (Tranquility to Shackleton): the real trip's own plan, flown in the region's frame
+        const probe = new SpaceTrip(this, res), pl = probe._plan0(), legs = probe._route();
+        r.etaS = pl.climb + pl.drive + pl.descent + 40;
+        r.distM = Math.hypot(legs[0].goal.x - f.pos.x, legs[0].goal.y - f.pos.y, legs[0].goal.z - f.pos.z);
+        if (row.kind === 'moon' && this.frameId === row.moon) { r.ok = false; r.reason = 'we are here'; }
+        if (!f.canLiftOff() && f.landed) { r.ok = false; r.reason = 'engines too low to lift'; }
         out.push(r); continue;
       }
       // from where? in Mars space or a moon's: take the ship as it is (a ship on the ground starts from the gate, after the climb)

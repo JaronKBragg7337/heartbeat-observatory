@@ -227,3 +227,19 @@ The **server never loads `client.js`**. Anything the server must know (a solid b
 | `src/world/field.js` MATERIALS | append-only; prefer your def's `materials` |
 | `src/main.js`, `server/simulation.mjs`, `server/fleet.mjs`, `src/economy/*` | still shared: touch only with a one-line, named hook |
 | `test/validate.mjs` | do not edit: your checks go in `test/pkg-<name>.mjs` |
+
+## Several landings on one body: the Moon (WD-MOON)
+
+A world has one arrival pad and a course lands at that pad, so a body with two capitals 10,000 km apart is **one world per landing, all on top of each other**. The Moon is
+`moon` (Tranquility Civil Hub), `moon-shackleton` and `moon-daedalus`: three defs from one factory (`src/worlds/moon/common.js` `moonDef`), the same centre, orbit and turn,
+so they are one body in the sky. What makes it work, and what it costs:
+
+* `region: 'moon'` in a def (read by `jump.js` `systemOfFrame`) puts a world in another world's region: one lane gate from Mars for all three, and a course between two
+  landings is an ordinary course inside the region (a hop: no lane fee, no spool). `regionName` names the region in the ship's words ("Moon side").
+* A frame is identical to its siblings, so a ship climbing from one landing and descending to another passes between frames with nothing to translate.
+* Nothing is shared between the frames' ground: a hole dug at Shackleton is not in the Tranquility copy. They are thousands of kilometres apart, so nobody can tell.
+* Roles read the three as one world (`seats.js` `frames`), so there is one set of Moon seats and one balance.
+* Terrain from data: the `sampled` profile (`_kit/terrain.js`) adds metres from a function the def supplies (`terrain.height(px, py, pz)`); the Moon's is
+  `worlds/moon/lola.js` over a baked copy of NASA's LOLA (`tools/bake-lola.mjs` writes `lola-data.js`, about 280 KB, inflated once at import: top-level `await`).
+  `albedoFn` and `groundAt` (moonField.js hooks) give a world its own brightness map and ground materials (the Moon's ice in the permanent shadows).
+* `docs/MOON.md` has the rest: the three settlements, the people, the trade, the opening hook, and what is honest and what is not.

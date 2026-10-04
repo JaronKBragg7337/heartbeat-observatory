@@ -14,14 +14,14 @@
 export const WORLDS = [
   { id: 'mars', name: 'Mars', frame: 'mars', factions: [], neutral: true },
   { id: 'earth', name: 'Earth', frame: 'earth', factions: ['homeguard', 'skyward'] },
-  { id: 'moon', name: 'the Moon', frame: 'moon', factions: ['fortis', 'technos'] },
+  { id: 'moon', name: 'the Moon', frame: 'moon', frames: ['moon', 'moon-shackleton', 'moon-daedalus'], factions: ['fortis', 'technos'] },       // WD-MOON: three landings, one world
   { id: 'ceres', name: 'Ceres', frame: 'ceres', factions: ['ironclad', 'greenhaven'] },
   { id: 'callisto', name: 'Callisto', frame: 'callisto', factions: ['mystara', 'unbound'] },
   { id: 'wanderhome', name: 'Wanderhome', frame: 'station-wanderhome', factions: ['wanderhome'], station: true },
   { id: 'corsairs', name: "Corsair's Refuge", frame: 'station-corsairs', factions: ['corsairs'], station: true },
 ];
 export const worldById = (id) => WORLDS.find((w) => w.id === id) || null;
-export const worldOfFrame = (frameId) => WORLDS.find((w) => w.frame === frameId) || (frameId === 'phobos' || frameId === 'deimos' ? WORLDS[0] : null);
+export const worldOfFrame = (frameId) => WORLDS.find((w) => w.frame === frameId || (w.frames && w.frames.includes(frameId))) || (frameId === 'phobos' || frameId === 'deimos' ? WORLDS[0] : null);
 export const factionWorld = (factionId) => WORLDS.find((w) => w.factions.includes(factionId)) || null;
 /** The ten factions a player can join. */
 export const PLAYABLE_FACTIONS = WORLDS.flatMap((w) => w.factions);

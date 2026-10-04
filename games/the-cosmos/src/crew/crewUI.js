@@ -121,6 +121,7 @@ export class CrewUI {
     const v = this.voice; if (!v || !this.open) return;
     const key = m.id + '|' + this.view; if (key === this._voiced) return; this._voiced = key;
     const o = { source: m.person?.group || null, channel: 'room' };
+    if (m.speech) { for (const l of m.speech(this.view)) v.sayLine(l.text, { ...o, voice: l.voice, queue: true }); return; }       // WD-MOON: a far world's person speaks their own lines
     if (m.status === 'worker') {
       const cast = WORKER_CAST[m.id]; if (!cast) return;
       const t = TRADERS[m.id], jobs = QUESTS.filter((q) => q.giver === m.id);

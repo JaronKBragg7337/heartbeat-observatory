@@ -64,7 +64,7 @@ function yawOf(d, T, c) {
   if (R.lockedTo === 'parent' && d.orbit && d.orbit.parent === 'mars') return wrapPi(lonOf(c) - refLonS(d) * DEG);
   if (R.lockedTo === 'parent' && d.orbit) {                                 // a moon of another world: faces it, seen along the line from the moon to the parent
     const p = fixedCentre(worldDef(d.orbit.parent), T);
-    return wrapPi(lonOf({ x: c.x - p.x, y: 0, z: c.z - p.z }) - 0);
+    return wrapPi(lonOf({ x: c.x - p.x, y: 0, z: c.z - p.z }) - refLonS(d) * DEG);       // WD-MOON: the same rule as a moon of Mars (+X faces the parent), so a moon's longitude 0 faces its planet
   }
   if (R.periodS) return wrapPi((R.prime0Deg || 0) * DEG + TAU * T / R.periodS - rootSpin(T));
   return 0;

@@ -41,13 +41,14 @@ const _regions = new Map();
 /** The region a frame belongs to: 'mars', or the far world's own id. */
 export function systemOfFrame(frameId) {
   if (frameId === 'mars') return 'mars';
+  { const rd = worldDef(frameId).region; if (rd) return rd; }       // WD-MOON: one stretch of space with several landings (the Moon's Tranquility, Shackleton and Daedalus share the Moon's region and its one gate)
   let r = _regions.get(frameId);
   if (!r) { const c = worldCentre(frameId); r = Math.hypot(c.x, c.y, c.z) < JUMP.regionM ? 'mars' : frameId; _regions.set(frameId, r); }
   return r;
 }
 /** The frame a region's drive legs are flown in (its root frame): the region's own name. */
 export const rootFrameOf = (region) => region;
-export const regionName = (region) => (region === 'mars' ? 'Mars' : worldDef(region).name);
+export const regionName = (region) => (region === 'mars' ? 'Mars' : worldDef(region).regionName || worldDef(region).name);       // WD-MOON: the Moon's region is 'Moon', whatever its first landing is called
 export const laneName = (region) => `${regionName(region)} Gate`;
 /** True for a world a ship reaches by the lane (a region of its own). */
 export const isLaneWorld = (id) => id !== 'mars' && systemOfFrame(id) !== 'mars';

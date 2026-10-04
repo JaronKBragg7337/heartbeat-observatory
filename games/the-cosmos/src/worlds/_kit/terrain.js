@@ -107,6 +107,15 @@ export const PROFILES = {
     relief: null,
   },
 
+  /** WD-MOON: ground read from measured data. The def supplies `terrain.height(px, py, pz)` (a pure function of a point on the ellipsoid, in the body frame, metres)
+   *  and its metres are added to the sphere; the world's craters, rocks and roughness still ride on top. Used by the Moon (LRO LOLA, worlds/moon/lola.js). */
+  sampled: {
+    landable: true,
+    defaults: { craterDensity: 0.5, craterScale: 1, roughScale: 0.8, regolithDepthM: 6, grooves: false },
+    params: { height: null },
+    relief({ px, py, pz, p }) { return p.height ? p.height(px, py, pz) : 0; },
+  },
+
   /** A gas or ice giant: no ground. Listed in the nav, orbit and skim only (no frame is ever built for it). */
   gas: { landable: false, defaults: {}, params: {}, relief: null },
 };

@@ -7,9 +7,21 @@
   "voice": "zuri",
   "text": "That is all three. Take them home to the Survey Office at Marineris Port."
  },
+ "002d8f85affd0b": {
+  "voice": "aoi",
+  "text": "Oh! Hello. Badge visible. I mean, your badge. Mine is visible. Is yours visible? Please tell me what to do."
+ },
+ "006da5706cdcc6": {
+  "voice": "ada",
+  "text": "Arrived over Moon: Daedalus Station (Technos Prime). Easing level."
+ },
  "0070d7f7a2ffeb": {
   "voice": "w-puck",
   "text": "I command a station made of other stations. Do not ask which ones, and do not ask for them back."
+ },
+ "008c3bb443e55d": {
+  "voice": "w-lily",
+  "text": "Hub water office. Bring me ice and I will pay you more than the pole does. Do not ask me why. I do not know why. I think it is the carry."
  },
  "008eb7cfc05d30": {
   "voice": "sunita",
@@ -87,6 +99,10 @@
   "voice": "ship",
   "text": "Course set for Deimos."
  },
+ "0134aac7bbb573": {
+  "voice": "ship",
+  "text": "Arrived over Moon: Shackleton Base (Fortis). Easing level."
+ },
  "014143ab5d25e6": {
   "voice": "zuri",
   "text": "On station over Mars."
@@ -94,6 +110,18 @@
  "0142d468ccfb2c": {
   "voice": "zuri",
   "text": "Arrived over Phobos. Easing level."
+ },
+ "0152bb794fc256": {
+  "voice": "jorge",
+  "text": "Trooper Halloran, Fortis. We watched you come down. Everyone on the ridge watched you come down. Sector four would like a word, and a form."
+ },
+ "015a17f655c0c4": {
+  "voice": "w-adam",
+  "text": "Mess hall. We serve three meals a day in sector nine. Sector nine is not a sector. The meals are real. Do not ask about the gravy."
+ },
+ "0161f054b882df": {
+  "voice": "w-sky",
+  "text": "Identity Services, Calibration. Everything here is legal. Nothing here is for sale. Please pay at the back."
  },
  "016e9234be6d5c": {
   "voice": "w-lewis",
@@ -107,17 +135,41 @@
   "voice": "walter",
   "text": "Still getting the crew settled. One moment."
  },
+ "01b3efb4c52625": {
+  "voice": "w-fable",
+  "text": "I am the attache of everyone. It saves time. Nobody has ever checked, and the one person who tried is now very happy in a quiet room."
+ },
+ "01c6bd03c4dfc0": {
+  "voice": "w-sky",
+  "text": "Dust marshal. My job is to move the dust from one place to another. The Moon has a lot of it. Nobody has ever told me to stop."
+ },
  "01ca9f38d8f58d": {
   "voice": "zuri",
   "text": "The port is neutral. You can find work there."
+ },
+ "01e4cb5ea556a0": {
+  "voice": "w-jessica",
+  "text": "Fleet command. We have eleven gunships and one pilot who can park. We are working on the ratio."
  },
  "01ef177430775d": {
   "voice": "zuri",
   "text": "Heading back to the pad."
  },
+ "01f41e4e3d6752": {
+  "voice": "ada",
+  "text": "Down at Moon: Shackleton Base (Fortis)."
+ },
+ "01fb2b9c47eb72": {
+  "voice": "w-heart",
+  "text": "Dish engineer. Listening to the universe is mostly waiting. It is also, to be honest, mostly Fortis, on a bad day, shouting about numbers."
+ },
  "020c02ad02ed40": {
   "voice": "ada",
   "text": "The ramp is up. Lower it and I'll come aboard."
+ },
+ "021046c7258e78": {
+  "voice": "w-fable",
+  "text": "Earth. I booked a cruise to see the Moon. It turned out the cruise was a seat on a cargo hauler, and the Moon is, I have to say, quite grey."
  },
  "0214753a738846": {
   "voice": "ship",
@@ -130,6 +182,10 @@
  "0243ac5ba6cb1d": {
   "voice": "ship",
   "text": "The autopilot has the ship."
+ },
+ "02462f7b3104a9": {
+  "voice": "zuri",
+  "text": "The rover has glass all round, so you can see everything. It is also all recorded, for your safety. Please do not wave."
  },
  "0250b17472c996": {
   "voice": "zuri",
@@ -227,6 +283,10 @@
   "voice": "ada",
   "text": "Holding here."
  },
+ "031f0d351f4f29": {
+  "voice": "w-alice",
+  "text": "Whole tonnes only. Hauling it to the hub pays a little more, if you can stand the hop. I cannot tell you that. I did not tell you that."
+ },
  "031f387631bf9a": {
   "voice": "ada",
   "text": "a weak distress beacon on the survey band, about 800 m south-west of the pad. A drifting cargo module."
@@ -235,9 +295,21 @@
   "voice": "w-lewis",
   "text": "Mars serves everyone. Mars also charges everyone. I am the governor, which means I take the complaints."
  },
+ "032c7ab50a35ee": {
+  "voice": "w-aoede",
+  "text": "A fine is automatic. Drop a crumb and a drone arrives, apologises, and bills you. I have never seen a crumb. I have seen the drones. They are very polite and they are everywhere."
+ },
+ "033c2b696c3df4": {
+  "voice": "w-puck",
+  "text": "Mass driver control. We throw things at space with magnets. It is the best job on the Moon, and so loud that nobody ever hears us say so."
+ },
  "035e62f84efaae": {
   "voice": "ada",
   "text": "Need a lift? You can ride with me, or follow the port lights."
+ },
+ "036c1dc69eb1eb": {
+  "voice": "w-puck",
+  "text": "A long rail, a lot of electricity from the rim, and a bucket of cargo. The rail speeds it past two kilometres a second and lets go. No fuel, no flames, no mercy for anyone standing in the road."
  },
  "036ceb852d7d6b": {
   "voice": "w-liam",
@@ -255,9 +327,17 @@
   "voice": "ada",
   "text": "Engine power is too low to lift off. Route more to the engines."
  },
+ "03c795e4cb55dc": {
+  "voice": "w-fenrir",
+  "text": "Sergeant Holloway, Fortis. The glass people are very nice, and very, very quiet. Ask yourself why. Then come and get a badge."
+ },
  "03d97bb888c520": {
   "voice": "w-fenrir",
   "text": "Fine. I sell fuel and I know where the bathroom is. That is the whole job. Now go away."
+ },
+ "03da62576e379f": {
+  "voice": "zuri",
+  "text": "Arrived over Moon: Tranquility Civil Hub. Easing level."
  },
  "03e0cbd991bbe7": {
   "voice": "ada",
@@ -363,9 +443,17 @@
   "voice": "zuri",
   "text": "Hull's at 34 percent. Breaking off, going down to neutral airspace."
  },
+ "05a165afcb5103": {
+  "voice": "w-fenrir",
+  "text": "Walls, power and a schedule. We kept this Moon alive when the storms cut it off. Sign up and you get a bunk, a badge and a number. Remember the number."
+ },
  "05b1478df535f0": {
   "voice": "w-lily",
   "text": "Oh! Hello! You startled me. Everything is fine. Is everything fine?"
+ },
+ "05b7c1a1cdacbd": {
+  "voice": "aoi",
+  "text": "Nine days. I have been shouted at forty one times, and I have counted. They say it gets easier. Mostly they say it while shouting. I think I am doing fine. Am I doing fine?"
  },
  "05de549c1a2710": {
   "voice": "ship",
@@ -378,6 +466,10 @@
  "05ef7ef54b4fd7": {
   "voice": "ada",
   "text": "Hull's at 34 percent. Breaking off, going down to neutral airspace."
+ },
+ "05ff5262e890f4": {
+  "voice": "ada",
+  "text": "Down at Moon: Tranquility Civil Hub."
  },
  "060a12b4fb8cdf": {
   "voice": "ship",
@@ -402,6 +494,14 @@
  "062a449a85bbd5": {
   "voice": "zuri",
   "text": "Hull's at 26 percent. Breaking off, going down to neutral airspace."
+ },
+ "0631231a567bfd": {
+  "voice": "w-alice",
+  "text": "Ice dock. You dig it in the dark, carry it up in the light, I weigh it, and I pay in lunars and bad news."
+ },
+ "06569babf60232": {
+  "voice": "ship",
+  "text": "Course set for Moon: Daedalus Station (Technos Prime)."
  },
  "065d1f2848478a": {
   "voice": "zuri",
@@ -450,6 +550,10 @@
  "06d46b7d958371": {
   "voice": "zuri",
   "text": "Hull's at 31 percent. Breaking off, going down to neutral airspace."
+ },
+ "06de132fe0761f": {
+  "voice": "jorge",
+  "text": "Climb in. Mind the dust, mind the badge, and mind the red stripe. It is how the rover knows who is in charge."
  },
  "06e73c5a85a7c5": {
   "voice": "w-lily",
@@ -527,9 +631,17 @@
   "voice": "w-river",
   "text": "We listen first. Everything else is polite noise until we have heard what is out there."
  },
+ "08054449de3573": {
+  "voice": "ada",
+  "text": "We are at Daedalus already."
+ },
  "0821102f670827": {
   "voice": "w-heart",
   "text": "Happy to tell you. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. Come back and tell me how it went."
+ },
+ "082ffc6fd0737d": {
+  "voice": "ship",
+  "text": "Survival crate open. One hand tool, one day of air and water, one beacon. Beacon armed. Help is on the way, in a pressurised rover, at a dignified lunar crawl."
  },
  "08472ee80e89ec": {
   "voice": "zuri",
@@ -567,6 +679,10 @@
   "voice": "jorge",
   "text": "Need a lift? You can ride with me, or follow the port lights."
  },
+ "0908dc1609b54a": {
+  "voice": "w-liam",
+  "text": "Rover hire. Pressurised, heated, and very slightly haunted. The haunting is free. The heating is extra."
+ },
  "0916743e70a49f": {
   "voice": "w-lily",
   "text": "Oh no. You left? Okay. Okay! I can do this. I can absolutely do this."
@@ -594,6 +710,10 @@
  "098177b495b306": {
   "voice": "zuri",
   "text": "On station over Valles Marineris."
+ },
+ "0995192d7bff1c": {
+  "voice": "zuri",
+  "text": "We run the dishes and the relay. Signal over noise, always. We take anyone who can listen."
  },
  "09bb653ca8e64b": {
   "voice": "w-fable",
@@ -651,6 +771,14 @@
   "voice": "zuri",
   "text": "a weak distress beacon on the survey band, about 800 m south-west of the pad. A drifting cargo module."
  },
+ "0a88b625aa223a": {
+  "voice": "w-heart",
+  "text": "Please lower your voice. You are being very loud, for a person."
+ },
+ "0a8f7e94e7da37": {
+  "voice": "w-jessica",
+  "text": "Supply desk. We make chips, not groceries. Water, food and oxygen are dear here, and I pay well for what comes in."
+ },
  "0a94934e6ced8f": {
   "voice": "ada",
   "text": "Hull's at 29 percent. Breaking off, going down to neutral airspace."
@@ -707,6 +835,10 @@
   "voice": "zuri",
   "text": "Hull's at 28 percent. Breaking off, going down to neutral airspace."
  },
+ "0b4ee8803c6b8a": {
+  "voice": "w-river",
+  "text": "State your business. Badges visible. If you have no badge, state that loudly, and we will find you one."
+ },
  "0b644f69011bb7": {
   "voice": "ship",
   "text": "The lane fee was refused."
@@ -739,6 +871,10 @@
   "voice": "zuri",
   "text": "Hull's at 32 percent. Breaking off, going down to neutral airspace."
  },
+ "0c4f999194577b": {
+  "voice": "zuri",
+  "text": "Down at Moon: Tranquility Civil Hub."
+ },
  "0c553a7d291214": {
   "voice": "ada",
   "text": "Come aboard first: the ship will not lift without you."
@@ -755,6 +891,10 @@
   "voice": "w-lewis",
   "text": "Since you asked. I sell fuel and I know where the bathroom is. That is the whole job. That is the exciting part, I am afraid."
  },
+ "0c7dc67ce0e382": {
+  "voice": "zuri",
+  "text": "Arrived over Moon: Shackleton Base (Fortis). Easing level."
+ },
  "0c9e51784dc413": {
   "voice": "ada",
   "text": "Arrived over Mars orbit (400 km). Easing level."
@@ -766,6 +906,10 @@
  "0cb41da91d3ecc": {
   "voice": "zuri",
   "text": "Engine share is too low for the main drive. Route power to the engines (Engineering)."
+ },
+ "0cb4ffd11a3d1e": {
+  "voice": "ada",
+  "text": "Course set for Moon: Shackleton Base (Fortis)."
  },
  "0cb5138a381c80": {
   "voice": "ada",
@@ -795,6 +939,14 @@
   "voice": "zuri",
   "text": "On station over The supply depot apron."
  },
+ "0d02652f90f784": {
+  "voice": "ship",
+  "text": "Arrived over Moon: Tranquility Civil Hub. Easing level."
+ },
+ "0d0bb43cf1b77f": {
+  "voice": "ship",
+  "text": "Down at Moon: Tranquility Civil Hub."
+ },
  "0d14848f018828": {
   "voice": "ada",
   "text": "Course set for Ceres: Occator Works."
@@ -802,6 +954,10 @@
  "0d260917b54b17": {
   "voice": "ada",
   "text": "Hunting raiders. Mars is neutral, so we have to climb out of its airspace for that."
+ },
+ "0d2d3ed05e446b": {
+  "voice": "w-sky",
+  "text": "It is sharp, it is charged, and it clings to everything. It smells like spent gunpowder when you bring it indoors. The Apollo crews said so. I say it with a mop, every day, to nobody. Wipe your boots."
  },
  "0d3dc3cd2aedee": {
   "voice": "w-puck",
@@ -815,6 +971,10 @@
   "voice": "w-fenrir",
   "text": "Back. I knew it. Everybody leaves, and then I get the paperwork."
  },
+ "0d61a679813986": {
+  "voice": "w-aoede",
+  "text": "Imogen Pryce, Technos Prime. Have you considered not being shouted at? We have a brochure. It is a very polite brochure."
+ },
  "0d62a0d15809a0": {
   "voice": "zuri",
   "text": "Down at Phobos."
@@ -826,6 +986,10 @@
  "0d730b5c291ca0": {
   "voice": "zuri",
   "text": "No contacts on the scope. Waiting."
+ },
+ "0d89182e19a221": {
+  "voice": "w-liam",
+  "text": "Armoury. Every item in there has a number. So do the numbers. If you find something unnumbered, report it, and then leave it very gently alone."
  },
  "0d91ae0dd939da": {
   "voice": "zuri",
@@ -843,6 +1007,10 @@
   "voice": "w-heart",
   "text": "Happy to tell you. I fix people. The part where you were warned is billed separately. Come back and tell me how it went."
  },
+ "0db80f07e80f7c": {
+  "voice": "w-liam",
+  "text": "You can look at one. All of them are out on contract, or in the shop, or in a ditch. We do not talk about the ditch. Come back on a Tuesday. We do not have Tuesdays on the Moon, but come back anyway."
+ },
  "0de626041f3f07": {
   "voice": "zuri",
   "text": "Down at The supply depot apron."
@@ -851,13 +1019,25 @@
   "voice": "ship",
   "text": "Course set for Marineris Port."
  },
+ "0df085866eea56": {
+  "voice": "zuri",
+  "text": "Arrived over Moon: Daedalus Station (Technos Prime). Easing level."
+ },
  "0df0fbcba33954": {
   "voice": "ada",
   "text": "We are at Mars already."
  },
+ "0e049cd79920cf": {
+  "voice": "w-aoede",
+  "text": "Custodian. I am cleaning a floor that is already clean. It is the one thing in Daedalus that is not being measured."
+ },
  "0e07a4e224a117": {
   "voice": "w-lily",
   "text": "Right, okay. I fly people and parcels where they asked to go, usually near the time they asked. Please do not ask me anything harder."
+ },
+ "0e0dd4dbf70b57": {
+  "voice": "w-fable",
+  "text": "Whoever stands in front of me. Today it is you. Congratulations: your embassy has one member, me, and one flag, which I am wearing. We will draft the treaty after lunch. It will be extremely polite."
  },
  "0e10936290170e": {
   "voice": "ada",
@@ -919,6 +1099,10 @@
   "voice": "zuri",
   "text": "On station over Olympus Mons."
  },
+ "0ecd31d57f4741": {
+  "voice": "zuri",
+  "text": "Down at Moon: Daedalus Station (Technos Prime)."
+ },
  "0edad38c2035a1": {
   "voice": "ada",
   "text": "On station over Pad 03 (courier)."
@@ -951,6 +1135,14 @@
   "voice": "ship",
   "text": "We are at Phobos already."
  },
+ "0f3a392cd2f7b5": {
+  "voice": "w-bella",
+  "text": "The terminal is behind me. Fortis recruits at the red booth, Technos Prime at the white one, and the first footprints are a kilometre south west. Please do not touch the footprints. They are older than your country."
+ },
+ "0f5cf8d38d9741": {
+  "voice": "zuri",
+  "text": "Course set for Moon: Shackleton Base (Fortis)."
+ },
  "0f65aa6f6201c6": {
   "voice": "zuri",
   "text": "Down at Deimos."
@@ -958,6 +1150,10 @@
  "0f701f76a03b3c": {
   "voice": "w-jessica",
   "text": "One tonne at a time from your cart or hopper. Pure regolith only. The rest of your load stays with you."
+ },
+ "0f737816f0e92b": {
+  "voice": "w-aoede",
+  "text": "Signal over noise. Chips, comms, and a quiet room on the far side with the best view of nothing. Fortis will say we are soft. We are soft. We are also on the other end of every call they make."
  },
  "0f84dc1a7bffc3": {
   "voice": "w-lewis",
@@ -970,6 +1166,10 @@
  "0f93c78ef32c93": {
   "voice": "w-river",
   "text": "Oh, you want to know. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. Not that anyone ever says thank you."
+ },
+ "0f93e252b0ceb5": {
+  "voice": "zuri",
+  "text": "We are at Shackleton already."
  },
  "0f9c097e0ffa2c": {
   "voice": "zuri",
@@ -1026,6 +1226,10 @@
  "1037d6a2a3cb4d": {
   "voice": "w-alice",
   "text": "Allow me. I run the port. Every dock, every fee, every complaint, in that order. I make it look easy. It is not. I am just good."
+ },
+ "10734f255cd962": {
+  "voice": "jorge",
+  "text": "The glass people will tell you they are friendly. They also have your photograph. Think about that for a second."
  },
  "1085c9e369d537": {
   "voice": "zuri",
@@ -1095,13 +1299,29 @@
   "voice": "zuri",
   "text": "Down at Marineris Port."
  },
+ "119b837e9c6699": {
+  "voice": "ada",
+  "text": "Down at Moon: Daedalus Station (Technos Prime)."
+ },
  "119e8b7cf8db3f": {
   "voice": "w-puck",
   "text": "Pay attention, this is simple. I keep the lane safe, or at least quieter than it would be without me. Do not make me repeat it, genius."
  },
+ "11a1128d3cde62": {
+  "voice": "zuri",
+  "text": "That is Tranquility. Please enjoy it. It is the one place on the Moon where nobody is shouting at anybody."
+ },
+ "11b07ac526111e": {
+  "voice": "w-adam",
+  "text": "Beige. Beige with a side of beige. We make it from dried everything and a lot of discipline. The coffee is the one item with a number I will not tell you. It is not a good number."
+ },
  "11b16a8ffcbf72": {
   "voice": "w-liam",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "11d9a21bf008fc": {
+  "voice": "zuri",
+  "text": "We are at Tranquility already."
  },
  "11e8d975123acd": {
   "voice": "ship",
@@ -1119,6 +1339,10 @@
   "voice": "zuri",
   "text": "Mars airspace is neutral: nothing here to shoot. Climbing to 1750 metres to find the raiders."
  },
+ "12249c73b5c372": {
+  "voice": "w-lily",
+  "text": "Whole tonnes only. I weigh it myself and I have never been wrong. Ask anyone who has tried to argue."
+ },
  "1228d6ac96848d": {
   "voice": "w-puck",
   "text": "We kept this Moon alive when the storms cut it off. Remember that at the checkpoint."
@@ -1126,6 +1350,10 @@
  "122900950c426e": {
   "voice": "w-adam",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
+ },
+ "1233598f6f5669": {
+  "voice": "w-adam",
+  "text": "Tranquility Mercantile. Everything here is priced for people who arrived out of options. Welcome."
  },
  "1239aef4b75fc7": {
   "voice": "w-fenrir",
@@ -1142,6 +1370,10 @@
  "126e42d5c1e712": {
   "voice": "ada",
   "text": "We are beyond the neutral line. Watching for contacts."
+ },
+ "1276c7d5582b69": {
+  "voice": "ship",
+  "text": "We are at Daedalus already."
  },
  "12894005554ab8": {
   "voice": "zuri",
@@ -1191,6 +1423,14 @@
   "voice": "ada",
   "text": "On station over Mars."
  },
+ "13a7421bdf4032": {
+  "voice": "w-fenrir",
+  "text": "Say the word and your name goes on the list. Nobody has ever gotten off the list. Nobody has tried."
+ },
+ "13aa9498acc5c3": {
+  "voice": "ada",
+  "text": "Course set for Moon: Tranquility Civil Hub."
+ },
  "13afe2079fe6e1": {
   "voice": "zuri",
   "text": "The sky is going black. Stars."
@@ -1202,6 +1442,10 @@
  "13c2305ff8a359": {
   "voice": "zuri",
   "text": "We are beyond the neutral line. Watching for contacts."
+ },
+ "13d14b610988c2": {
+  "voice": "w-sky",
+  "text": "Your transponder, your lanyard, your face, and occasionally your story. We do not spoof. We simulate. There is a difference, and the difference is the fee."
  },
  "13d788739bf3f4": {
   "voice": "zuri",
@@ -1219,6 +1463,10 @@
   "voice": "w-alice",
   "text": "You quit? Oh, what a surprise. No, it is not. Move over."
  },
+ "1413a39da6f849": {
+  "voice": "ship",
+  "text": "We are at Shackleton already."
+ },
  "142c988888604e": {
   "voice": "ship",
   "text": "We are at Ceres already."
@@ -1227,6 +1475,10 @@
   "voice": "zuri",
   "text": "Takes the chair, flies if there is no pilot, and works the main guns. You do not have to be the captain."
  },
+ "1437fe37e3f905": {
+  "voice": "ship",
+  "text": "Course set for Moon: Shackleton Base (Fortis)."
+ },
  "144cb7370201d9": {
   "voice": "w-lily",
   "text": "Right, okay. I set the margins. If something costs too much, that was me, and I meant it. Please do not ask me anything harder."
@@ -1234,6 +1486,10 @@
  "145bacabb8fa8b": {
   "voice": "w-alice",
   "text": "Weather sensors are offline. Watch the dust outside."
+ },
+ "146ba355bd497a": {
+  "voice": "w-echo",
+  "text": "Everything on the list is numbered. Please do not ask about the item with no number."
  },
  "1487412bd1d80d": {
   "voice": "w-river",
@@ -1251,6 +1507,14 @@
   "voice": "w-alice",
   "text": "We stay. We rebuild. We will not be leaving, and the harbour fees are not negotiable."
  },
+ "14cd0dd3bf92cc": {
+  "voice": "ada",
+  "text": "We are at Tranquility already."
+ },
+ "14d95b76b63a12": {
+  "voice": "w-adam",
+  "text": "Prices are on the board. I do not haggle. I did once. Never again."
+ },
  "14dcd00ea35dc7": {
   "voice": "sunita",
   "text": "Takes the turret on top. Fires only at raiders, and only outside Mars airspace."
@@ -1266,6 +1530,14 @@
  "15307f035d741b": {
   "voice": "ship",
   "text": "Leaving Mars neutral airspace. Expect raiders."
+ },
+ "15371e7bb7cbf0": {
+  "voice": "ship",
+  "text": "Course set for Moon: Tranquility Civil Hub."
+ },
+ "153bda3dcbf1c0": {
+  "voice": "ship",
+  "text": "Down at Moon: Daedalus Station (Technos Prime)."
  },
  "1550d7b6ad88fc": {
   "voice": "zuri",
@@ -1307,6 +1579,10 @@
   "voice": "zuri",
   "text": "Hunting raiders. Mars is neutral, so we have to climb out of its airspace for that."
  },
+ "15b4626600d4c5": {
+  "voice": "w-adam",
+  "text": "It all came up a gravity well and across a lane. Water is the worst: it is ice at the pole, and the pole belongs to men with guns. I only sell the stuff. I do not set the sky."
+ },
  "15c326a0248a64": {
   "voice": "ada",
   "text": "Course cancelled. Braking to a stop."
@@ -1315,9 +1591,17 @@
   "voice": "w-river",
   "text": "Oh, hello. I was having a lovely nothing. It is fine."
  },
+ "15cbc87ee7d0c5": {
+  "voice": "w-echo",
+  "text": "Because Fortis makes it, and we would rather you have it than the other lot. Oxygen is cheap too. The air is the one thing we never ration. The orders are ration everything but the air."
+ },
  "15d20a4416e902": {
   "voice": "w-river",
   "text": "Everything here is far away, including the other faction. I recommend it."
+ },
+ "15da4f3b438ac9": {
+  "voice": "ship",
+  "text": "We are at Tranquility already."
  },
  "15e1300977958b": {
   "voice": "ada",
@@ -1330,6 +1614,10 @@
  "16029af33786f5": {
   "voice": "w-alice",
   "text": "Allow me. I carry heavy things from where they are to where they are not, and I do it slowly. I make it look easy. It is not. I am just good."
+ },
+ "161c0ac1f116c3": {
+  "voice": "ship",
+  "text": "Down at Moon: Shackleton Base (Fortis)."
  },
  "161c626f3a5b07": {
   "voice": "ada",
@@ -1371,6 +1659,14 @@
   "voice": "w-alice",
   "text": "I govern the only world with weather, which makes everything my fault. Keep your hands off the sea wall."
  },
+ "16a3ad77015874": {
+  "voice": "w-lewis",
+  "text": "July the twentieth, nineteen sixty nine. Two men walked on this dust and one waited upstairs. They left a flag, a plaque and a great many footprints. There is no wind. The prints will outlast us all, so mind your boots."
+ },
+ "16b0d2284731c6": {
+  "voice": "w-alice",
+  "text": "From the bottom of the crater, where the Sun has not touched the ground for a couple of billion years. It is cold enough to crack a glove. Dig where the dust goes pale. The dust is lying about being dust."
+ },
  "16c060f80a0de7": {
   "voice": "ada",
   "text": "Down at Olympus Mons."
@@ -1387,6 +1683,10 @@
   "voice": "zuri",
   "text": "The passenger line has a settlement waiting for you."
  },
+ "16c7b878e35fb5": {
+  "voice": "zuri",
+  "text": "The soldiers will say they keep the Moon alive. They have the guns. We have the phone numbers. You decide which you need on a bad day."
+ },
  "16f42c74ee964e": {
   "voice": "ada",
   "text": "Outside the neutral line. The scope is clear for now."
@@ -1395,9 +1695,17 @@
   "voice": "ada",
   "text": "Down at Hellas Planitia."
  },
+ "171ee8abcf33ea": {
+  "voice": "w-lewis",
+  "text": "Heritage Ranger Tolliver. The Eagle is a protected site. Do not touch it, do not lean on it, and please keep your selfies at a respectful distance."
+ },
  "17457d1fbe3062": {
   "voice": "ship",
   "text": "Course set for Phobos."
+ },
+ "175681b609dbb8": {
+  "voice": "w-lewis",
+  "text": "The whole Moon sits between us and Earth, and blocks every radio there is. No static from home, no nonsense from home. Just the sky, very faint, and the dishes listening to it. It is the quietest place anyone has ever built."
  },
  "17620d0ab18475": {
   "voice": "w-heart",
@@ -1467,6 +1775,10 @@
   "voice": "ada",
   "text": "The lane fee was refused."
  },
+ "188b266fffdc12": {
+  "voice": "w-lily",
+  "text": "Everything wet on the Moon is at the bottom of a hole at the south pole, and the people who own the hole set the price. We pay haulers more than the shaft does, because haulers have other choices. Barely."
+ },
  "1896065f6922cc": {
   "voice": "ship",
   "text": "Arrived over Ceres: Occator Works. Easing level."
@@ -1507,9 +1819,29 @@
   "voice": "w-lewis",
   "text": "Since you asked. I carry heavy things from where they are to where they are not, and I do it slowly. That is the exciting part, I am afraid."
  },
+ "191534b5f1f1ea": {
+  "voice": "w-fable",
+  "text": "Is this the gift shop? They told me there would be a gift shop. I paid for the gift shop."
+ },
+ "191bfcabe2169d": {
+  "voice": "w-jessica",
+  "text": "Because the pole has the ice, the power and the mass driver. Whoever holds the pole holds the Moon. We hold the pole. We also hold, if you will forgive the word, a grudge."
+ },
+ "191d74fcf51fcb": {
+  "voice": "w-bella",
+  "text": "Kestrel to the Moon. A short hop for a world, a long one for you. Boarding now. Seats are unassigned, and so, to be fair, is the landing site. Please sign here, here, and here. Yes, the long one."
+ },
  "19329fe840c6ee": {
   "voice": "w-alice",
   "text": "Fine, you take it. Try not to do it worse than I did. That will be difficult."
+ },
+ "19354c55da6482": {
+  "voice": "w-liam",
+  "text": "Yes. Sector four, building seventeen, door two. The mess hall is sector nine. Sector nine is not a sector. We asked. We were told to stop asking."
+ },
+ "193dcea2dcb328": {
+  "voice": "w-echo",
+  "text": "Everything with a wire in it. Navigation computers, long range comms, ship electronics. Fortis needs all of it and will not say please. We send them an invoice. Then another one."
  },
  "194bf7464b6f96": {
   "voice": "w-fenrir",
@@ -1518,6 +1850,22 @@
  "1971540b8386c8": {
   "voice": "walter",
   "text": "Takes the belly turret. Slower to find a target than the others, steady once he has one."
+ },
+ "19746a81a2c65b": {
+  "voice": "ship",
+  "text": "Arrived over Moon: Daedalus Station (Technos Prime). Easing level."
+ },
+ "19829042f1f861": {
+  "voice": "ada",
+  "text": "Arrived over Moon: Tranquility Civil Hub. Easing level."
+ },
+ "198c38cb82af2d": {
+  "voice": "ada",
+  "text": "We are at Shackleton already."
+ },
+ "19d3d087d440fb": {
+  "voice": "w-echo",
+  "text": "Spares are cheaper here than anywhere on the Moon, because we make them ourselves. Please do not ask what is in the sealed box."
  },
  "19db4ce0058f4a": {
   "voice": "w-fenrir",
@@ -1562,6 +1910,10 @@
  "1a248c70d67a13": {
   "voice": "jorge",
   "text": "Still getting the crew settled. One moment."
+ },
+ "1a2b07fd0ca8f4": {
+  "voice": "w-aoede",
+  "text": "One click and you are one of us. We will know. We always know. It is very nice."
  },
  "1a2c9317607464": {
   "voice": "ada",
@@ -1611,6 +1963,10 @@
   "voice": "w-lewis",
   "text": "We build the thing everyone needs and let them come to us. Eventually, they do."
  },
+ "1ac9fb82bec890": {
+  "voice": "w-heart",
+  "text": "A pod with no signal in it at all. Not a whisper. People pay to sit in it for an hour. Most of them cry a little, and then ask for another hour. I do not charge for the crying."
+ },
  "1ad890d23bb706": {
   "voice": "ada",
   "text": "Course set for Over the control tower."
@@ -1626,6 +1982,10 @@
  "1aed1b87366d85": {
   "voice": "ada",
   "text": "Mars airspace is neutral: nothing here to shoot. Climbing to 1750 metres to find the raiders."
+ },
+ "1b0285e29a82d4": {
+  "voice": "zuri",
+  "text": "Technician Maren, Technos Prime. Are you hurt? Please say no. We only have the one blanket."
  },
  "1b16fa8f84966e": {
   "voice": "ship",
@@ -1647,6 +2007,10 @@
   "voice": "w-river",
   "text": "Callisto is cold, quiet, and a very long way from help. I find that restful."
  },
+ "1b4b2bd189ba18": {
+  "voice": "w-jessica",
+  "text": "Power we have. Chips we have. What we do not have is anything wet, or anything you can eat. Bring me water and I will take you out for the dinner we cannot afford."
+ },
  "1b7cce7a20c36d": {
   "voice": "ship",
   "text": "That is all three. Take them home to the Survey Office at Marineris Port."
@@ -1663,9 +2027,17 @@
   "voice": "zuri",
   "text": "All yours, boss."
  },
+ "1b8d9252fee907": {
+  "voice": "w-echo",
+  "text": "Quartermaster. Form seven for ammunition, form eight for oxygen, form nine for filling in the wrong form. I am kidding. I am not allowed to kid."
+ },
  "1bc0b7c5bbb936": {
   "voice": "w-fenrir",
   "text": "Nobody needed. Everything yours. Mind the door, it sticks."
+ },
+ "1bc3084a973af2": {
+  "voice": "jorge",
+  "text": "That is the hub. Neutral ground, they say. Remember your number."
  },
  "1bcde20be5a070": {
   "voice": "aoi",
@@ -1683,6 +2055,10 @@
   "voice": "ada",
   "text": "Back in Mars space."
  },
+ "1bf68c6a59033f": {
+  "voice": "w-fenrir",
+  "text": "Sergeant Holloway, Fortis. You look like someone who has never been shouted at on purpose. We fix that for free."
+ },
  "1c0dfa5e371bbd": {
   "voice": "zuri",
   "text": "Main drive lit for the Ore Lane. Hold on to something."
@@ -1694,6 +2070,14 @@
  "1c28cea21cc545": {
   "voice": "ada",
   "text": "Committed to the climb: the lift pods only push up, they cannot stop the ship. The main drive can once we are above the air."
+ },
+ "1c347413299442": {
+  "voice": "w-bella",
+  "text": "Welcome to Tranquility Civil Hub, the only place on the Moon where nobody is shooting at anybody. Please enjoy the weather. There is none."
+ },
+ "1c51fad47eef9f": {
+  "voice": "zuri",
+  "text": "We are at Daedalus already."
  },
  "1c58ff611e0f63": {
   "voice": "w-echo",
@@ -1719,6 +2103,10 @@
   "voice": "walter",
   "text": "I cannot find a way to my station. I will wait here."
  },
+ "1ca9a27ee0a0c8": {
+  "voice": "ada",
+  "text": "Arrived over Moon: Shackleton Base (Fortis). Easing level."
+ },
  "1cad006e6d8efc": {
   "voice": "zuri",
   "text": "Still getting the crew settled. One moment."
@@ -1730,6 +2118,14 @@
  "1cbb24eeaa599c": {
   "voice": "ada",
   "text": "Heading back to the pad."
+ },
+ "1cdaf34ae97b04": {
+  "voice": "w-jessica",
+  "text": "I pay in lunars, on the spot, with a smile I practised in a mirror."
+ },
+ "1cde14c1f5d6dd": {
+  "voice": "w-aoede",
+  "text": "Doctor Pryce, Technos Prime. Before you sign anything with the soldiers: we have a brochure, and a quiet room. Come and look at nothing with us."
  },
  "1ce05a1df37655": {
   "voice": "ada",
@@ -1743,9 +2139,17 @@
   "voice": "w-lewis",
   "text": "Nobody owns anything on Mars, including me. I just hold the clipboard."
  },
+ "1cf6688b591785": {
+  "voice": "w-lewis",
+  "text": "Welcome to Daedalus. Please do not feel observed. It is a feature. You can switch it off at the front desk. The front desk is also observed."
+ },
  "1cf74e009b74ee": {
   "voice": "zuri",
   "text": "The ramp is down."
+ },
+ "1cfe36f7c3ea94": {
+  "voice": "ada",
+  "text": "Course set for Moon: Daedalus Station (Technos Prime)."
  },
  "1d0a1a6106b77f": {
   "voice": "zuri",
@@ -1755,9 +2159,21 @@
   "voice": "w-puck",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
  },
+ "1d1c2c74e41fb4": {
+  "voice": "zuri",
+  "text": "Down at Moon: Shackleton Base (Fortis)."
+ },
  "1d33b72914f751": {
   "voice": "ada",
   "text": "Thanks, boss. I will be at the board."
+ },
+ "1d5be58714d388": {
+  "voice": "w-heart",
+  "text": "Hydrogen, mostly. Pulsars ticking. A few things we are not allowed to describe. And every night, somewhere in all that, a very faint hum nobody can explain. I would tell you what it is, but I would have to say I do not know."
+ },
+ "1d5c444491561c": {
+  "voice": "w-river",
+  "text": "Seven. Gate seven. Remember seven. If you cannot remember seven, write it on your arm. Many do. I have a pen."
  },
  "1d5f33007405d1": {
   "voice": "zuri",
@@ -1795,6 +2211,10 @@
   "voice": "zuri",
   "text": "Course set for Pad 01, the Meridian's own pad."
  },
+ "1df24091ab5e4c": {
+  "voice": "zuri",
+  "text": "Course set for Moon: Daedalus Station (Technos Prime)."
+ },
  "1df6e392df1aec": {
   "voice": "w-lewis",
   "text": "Signal over noise. Your data is safe with us. Legally, that is."
@@ -1811,9 +2231,17 @@
   "voice": "ada",
   "text": "Solar Union. We saw you come down."
  },
+ "1e3bae27134dad": {
+  "voice": "jorge",
+  "text": "Fortis keeps the Moon alive. Walls, power and a schedule. We take anyone who can read a number and hold a line."
+ },
  "1e3ca63c92fc2d": {
   "voice": "zuri",
   "text": "Course set for Marineris Port."
+ },
+ "1e3e8a70b1a5bf": {
+  "voice": "w-echo",
+  "text": "Fab Floor 2. We print chips and parts. The parts are cheap. The chips are free, if you can explain what they do."
  },
  "1e4396969bce3a": {
   "voice": "w-puck",
@@ -1846,6 +2274,10 @@
  "1eea6919ff1f0c": {
   "voice": "ada",
   "text": "Course set for Marineris Port."
+ },
+ "1ef092261da240": {
+  "voice": "zuri",
+  "text": "Course set for Moon: Tranquility Civil Hub."
  },
  "1ef760aaf76c31": {
   "voice": "ship",
@@ -1902,6 +2334,10 @@
  "1fccb206f3cd83": {
   "voice": "ada",
   "text": "All yours, boss."
+ },
+ "1fd539dae1e4e5": {
+  "voice": "ship",
+  "text": "Outside there is nothing. Gravity is point one six of Earth, so every step is a small flight. Your suit timer started when the hull opened. Please do not sneeze in the helmet."
  },
  "1ff828ee95024a": {
   "voice": "ship",

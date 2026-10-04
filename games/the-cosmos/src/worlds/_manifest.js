@@ -11,6 +11,8 @@ import w_jupiter from './jupiter/def.js';
 import w_mars from './mars/def.js';
 import w_mercury from './mercury/def.js';
 import w_moon from './moon/def.js';
+import w_moon_daedalus from './moon-daedalus/def.js';
+import w_moon_shackleton from './moon-shackleton/def.js';
 import w_neptune from './neptune/def.js';
 import w_phobos from './phobos/def.js';
 import w_saturn from './saturn/def.js';
@@ -29,6 +31,8 @@ export const WORLD_DEFS = [
   w_mars,
   w_mercury,
   w_moon,
+  w_moon_daedalus,
+  w_moon_shackleton,
   w_neptune,
   w_phobos,
   w_saturn,

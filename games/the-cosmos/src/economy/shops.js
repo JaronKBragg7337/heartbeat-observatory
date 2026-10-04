@@ -43,13 +43,15 @@ export const SHOP_GOODS = Object.fromEntries([
   { id: 'deimos-regolith', kind: 'matter', name: 'Deimos regolith', unit: 'tonne', unitKg: 1000, fair: 30, demand: 2 },
   { id: 'ceres-ore', kind: 'matter', name: 'Occator ore', unit: 'tonne', unitKg: 1000, fair: 200, demand: 2 },       // WORLD2
   { id: 'ceres-salt', kind: 'matter', name: 'Occator salt', unit: 'tonne', unitKg: 1000, fair: 70, demand: 2 },
+  { id: 'moon-ice', kind: 'matter', name: 'Lunar polar ice', unit: 'tonne', unitKg: 1000, fair: 300, demand: 2 },       // WD-MOON
 ].map((g) => [g.id, g]));
 export const goodIds = () => Object.keys(SHOP_GOODS);
 
 /** Which hold item a material becomes when stowed (the same table as src/space/jobs.js MAT_ITEM; a test keeps them equal). */
 export const ITEM_OF_MATERIAL = { 'MAT-PHOBOS-CLAY': 'phobos-hydrated-clay', 'MAT-PHOBOS-REGOLITH': 'phobos-regolith', 'MAT-PHOBOS-RUBBLE': 'phobos-rubble',
   'MAT-DEIMOS-REGOLITH': 'deimos-regolith', 'MAT-DEIMOS-RUBBLE': 'deimos-rubble',
-  'MAT-CERES-ORE': 'ceres-ore', 'MAT-CERES-SALT': 'ceres-salt', 'MAT-CERES-REGOLITH': 'ceres-regolith', 'MAT-CERES-RUBBLE': 'ceres-rubble' };       // WORLD2
+  'MAT-CERES-ORE': 'ceres-ore', 'MAT-CERES-SALT': 'ceres-salt', 'MAT-CERES-REGOLITH': 'ceres-regolith', 'MAT-CERES-RUBBLE': 'ceres-rubble',       // WORLD2
+  'MAT-MOON-ICE': 'moon-ice', 'MAT-MOON-REGOLITH': 'moon-regolith', 'MAT-MOON-RUBBLE': 'moon-rubble' };       // WD-MOON
 
 const SCALE = 2 ** 96;
 const big = (v) => BigInt(v * SCALE);
