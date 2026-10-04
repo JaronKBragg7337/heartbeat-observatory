@@ -21,7 +21,7 @@ a trip of weeks costs the server nothing at any compression. The state is plain 
 * **Trip estimator**: `SpaceTrip._plan0` / `SpaceSystem._destinations` quote game days (`pl.long`) and real minutes at the top rung (`realSeconds`, the ladder's own integral).
   The real authority flies the trip in the test and arrives within 0.3% of the quoted game time and 3 s of the quoted real time.
 * **Who may go**: small ships (under 150 t) today; a hull marked `longRange: false`, or heavier, is refused with a plain reason until a later package sets
-  `record.unlocks.heavyDrive` (bible 16: big ships need the unlocks). Every ship in the game today may go.
+  `record.unlocks.heavyDrive` (bible 16: big ships need the unlocks). The big transports and bulkers (SH15) are over the limit and need the unlock; the small ships (Meridian, Shrike, Wayfarer, Drayman, Skiff) may go.
 * **Cancel**: slows at the drive's own acceleration to a stop between the worlds; a new course from there is a long drive again (a ship far from its home region can only
   come home by the drive; a main-drive transit from there would take months).
 * **F2 (spin and orbits)**: the cruise is flown in INERTIAL axes and written back into Mars's turning axes each tick (`SpaceTrip._cruiseStep`); the targets are read with

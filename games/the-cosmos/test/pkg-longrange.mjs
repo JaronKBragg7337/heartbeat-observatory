@@ -52,7 +52,7 @@ export async function run({ check, section }) {
   { let tau = 0, real = 0; const T = 400_000; while (tau < T) { tau += (1 / 30) * L.warpCap(T - tau, 5400); real += 1 / 30; } check(`realSeconds matches a brute-force tick loop (${L.realSeconds(T).toFixed(2)} s against ${real.toFixed(2)} s)`, Math.abs(L.realSeconds(T) - real) < 1.5, `${L.realSeconds(T)} ${real}`); }
   check('only small ships may go: the Meridian (46 t) and the Drayman can, a 300 t hull cannot until the heavy drive is unlocked; an unlock lets it', L.longDriveAllowed({ phys: { massKg: 46000 } }).ok && !L.longDriveAllowed({ phys: { massKg: 300000 } }).ok && L.longDriveAllowed({ phys: { massKg: 300000 } }, true).ok && !L.longDriveAllowed({ longRange: false }).ok);
   const { allShipDefs } = await src('ships/registry.js');
-  check('every ship in the game may use the drive today (none is over the limit)', allShipDefs().every((d) => L.longDriveAllowed(d).ok), allShipDefs().filter((d) => !L.longDriveAllowed(d).ok).map((d) => d.type + ' ' + (d.phys && d.phys.massKg)).join(','));
+  check('the hull limit holds for every ship in the game: those up to 150 t may use the drive, the big transports and bulkers need the heavy-drive unlock', allShipDefs().every((d) => L.longDriveAllowed(d).ok === !(d.phys && d.phys.massKg > LONG.smallShipMassKg)), allShipDefs().map((d) => d.type + ' ' + (d.phys && d.phys.massKg) + ' ' + L.longDriveAllowed(d).ok).join(', '));
   check('targetAt names a drop-out point on the side facing the ship', Math.hypot(...Object.values(L.targetAt('earth', 0, { x: 0, y: 0, z: 0 }))) > 1e10);
 
   // ---------------------------------------------------------------- the registry and the nav rows
