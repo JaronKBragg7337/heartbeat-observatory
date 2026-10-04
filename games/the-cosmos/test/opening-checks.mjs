@@ -62,7 +62,7 @@ export async function runOpeningChecks({check,section}){
     const ceres=b.worlds.find(w=>w.id==='ceres'),mars=b.worlds.find(w=>w.id==='mars');
     check('the board\'s numbers are the registries\': Ceres at Dawn\'s gravity and day, Mars at its own, live counts and goods prices',
       Math.abs(ceres.facts.gravity-.284)<.002&&Math.abs(ceres.facts.dayH-9.074)<.01&&Math.abs(mars.facts.gravity-3.72076)<1e-6&&ceres.players===3&&ceres.online===1&&ceres.factions.find(f=>f.id==='ironclad').members===2&&
-      ceres.goods.some(g=>/130 marks/.test(g))&&ceres.facts.distanceMkm>100&&mars.facts.distanceMkm===0&&worldFacts('moon').source==='published'&&b.season.cause==='storm'&&b.moons.length===2);
+      ceres.goods.some(g=>/130 marks/.test(g))&&ceres.facts.distanceMkm>100&&mars.facts.distanceMkm===0&&worldFacts('moon').source==='registry'&&worldFacts('earth').source==='published'&&b.season.cause==='storm'&&b.moons.length===2);
     check('a start can be chosen only on an open world, with one of its two sides or none',validChoice('ceres','ironclad')&&validChoice('ceres',null)&&validChoice('mars',null)&&!validChoice('mars','ironclad')&&!validChoice('moon',null)&&!validChoice('ceres','fortis')&&!validChoice('nowhere',null));
   }
   // ---- the words -------------------------------------------------------------------------------------------------------------

@@ -16,8 +16,7 @@ import { allLines } from '../src/voice/lines.js';
 import { scanGroup } from '../tools/scan-lines.mjs';
 import { distanceGain, HEARD_M } from '../src/voice/voice.js';
 import { wantConnection, chatGain, ENTER_M, LEAVE_M } from '../src/voice/proximity.js';
-import { openingSpeaker, openingLines, driverGreeting, driverOffer, DRIVER_NEUTRAL, PORT_CONTROL } from '../src/opening/dialogue.js';
-import { CONTACTS } from '../src/opening/state.js';
+import { speakerOf, LINER_SCRIPT, worldDialogue } from '../src/opening/dialogue.js';
 import { CREW_POSTS } from '../src/crew/crewSpec.js';
 import { PORT_WORKERS } from '../src/port/portPeople.js';
 import { TRADERS } from '../src/economy/catalog.js';
@@ -47,17 +46,16 @@ export async function runVoiceChecks({ check, section }) {
   check('every trader and clerk line comes from the catalog, spoken by their own voice', Object.keys(TRADERS).every((id) => lines.some((l) => l.voice === WORKER_CAST[id].voice && l.text === TRADERS[id].greeting)));
 
   // --- the opening
-  const c0 = CONTACTS[0];
-  check('opening captions map to speakers: radio, cabin crew, intercom, and the driver in their own crew voice',
-    openingSpeaker(PORT_CONTROL, c0).voice === 'radio' && openingSpeaker('Cabin crew: keep your harness fastened.', c0).source === 'cabin' &&
-    openingSpeaker('Flight deck: guidance lost. Brace.', c0).voice === 'intercom' && openingSpeaker(driverGreeting(c0), c0).voice === c0.person && openingSpeaker(driverOffer(c0), c0).source === 'driver' &&
-    openingSpeaker(DRIVER_NEUTRAL, CONTACTS[2]).voice === CONTACTS[2].person && openingSpeaker('Aim the shovel at the dust around the crate.', c0) === null);
+  // (OPENING2: the speakers are found by the line itself, src/opening/dialogue.js speakerOf)
+  const radioLine = LINER_SCRIPT.find((l) => l.voice === 'radio'), drv = worldDialogue('mars').drivers.none;
+  check('opening captions map to speakers: radio, and the driver in their own crew voice, and a hint is nobody',
+    !!radioLine && speakerOf(radioLine.text).voice === 'radio' && speakerOf(drv.greeting).source === 'driver' && speakerOf(drv.greeting).voice === drv.voice && speakerOf('Aim the shovel at the dust around the crate.') === null);
 
   // --- the library
   const missing = lines.filter((l) => !manifest.clips[clipKey(l.voice, l.text)]);
   check(`every static spoken line has a clip (${lines.length} lines, ${dynamic.length} templates with free numbers use the browser voice)`, missing.length === 0, missing.slice(0, 3).map((l) => l.voice + ': ' + l.text).join(' | ') + ` (${missing.length} missing; run node tools/gen-voices.mjs)`);
   const sizes = Object.values(manifest.clips), total = sizes.reduce((a, b) => a + b, 0);
-  check(`clips are small compressed audio (${sizes.length} clips, ${(total / 1024).toFixed(0)} KB, largest ${Math.max(0, ...sizes)} B)`, sizes.length > 0 && Math.max(...sizes) < 90000 && total < 14 * 1024 * 1024);   // WD-MOON: 12 -> 14 MB (the Moon adds ~135 voiced lines, about 1.3 MB; each clip is still small)
+  check(`clips are small compressed audio (${sizes.length} clips, ${(total / 1024).toFixed(0)} KB, largest ${Math.max(0, ...sizes)} B)`, sizes.length > 0 && Math.max(...sizes) < 90000 && total < 15 * 1024 * 1024);   // OPENING2: 14 -> 15 MB (about 80 new opening lines); WD-MOON: 12 -> 14 MB (the Moon adds ~135 voiced lines, about 1.3 MB; each clip is still small)
   const sample = Object.keys(manifest.clips).slice(0, 12);
   const mp3 = (k) => { const b = readFileSync(join(VDIR, k + '.mp3')); return (b[0] === 0xff && (b[1] & 0xe0) === 0xe0) || b.slice(0, 3).toString() === 'ID3'; };
   check('clips are real mp3 files (frame sync or ID3), which iPhone Safari and Chrome both decode', sample.length > 0 && sample.every(mp3));

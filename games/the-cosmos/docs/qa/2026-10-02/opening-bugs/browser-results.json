@@ -103,9 +103,9 @@
   "ride": {
     "seconds": 22.000000000000007,
     "pose": {
-      "x": -697.0566663631904,
-      "y": 3.704649185921994,
-      "z": -76.26383978159362,
+      "x": -697.0566663632084,
+      "y": 3.704085554604603,
+      "z": -76.26383978151951,
       "yaw": 1.4279275601234334,
       "pitch": 0
     },
@@ -131,7 +131,7 @@
     "padDistance": 2.161159995193481
   },
   "staleBuildReload": true,
-  "buildVersion": "68c16e8290ca1594b15f",
+  "buildVersion": "08b1358f7adab61e38d5",
   "serviceWorker": "No controlling service worker in isolated browser",
   "failedGlbVisible": true
 }

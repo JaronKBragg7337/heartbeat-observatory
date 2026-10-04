@@ -11,7 +11,7 @@
           "faction": "ironclad",
           "stay": false
         },
-        "driver": "greenhaven"
+        "driver": "ironclad"
       },
       "arrivedFrame": "ceres",
       "drained": true,
