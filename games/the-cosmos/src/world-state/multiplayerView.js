@@ -105,7 +105,7 @@ export class MultiplayerView {
     const previousFrame=this.lastFrame;
     this.lastFrame=p.frameId;this.lastShipId=s.id;this.lastAboard=p.aboardShipId;this.lastSeat=p.pose.seat;
     Object.assign(f.pos,this.shipPose(s).pos);Object.assign(f.vel,s.pose.vel);Object.assign(f.power,s.pose.power);
-    for(const k of ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd','epochS'])if(s.pose[k]!==undefined)f[k]=s.pose[k];
+    for(const k of ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd','epochS','boostCharge','boosting','aimPitch'])if(s.pose[k]!==undefined)f[k]=s.pose[k];
     // F2: the ship's own clock (space time compression runs it ahead of the world's): the sky follows it, carried on between snapshots at the rate she flies
     this.space.epochAnchor=s.pose.epochS==null?null:{epochS:s.pose.epochS,at:performance.now(),eff:s.flightEff||1};
     this.space.ff.applyRemote(s.ff);   // FREEFLIGHT: mirror the authority's free-flight state (the physics runs there)

@@ -22,6 +22,7 @@
 //   space.hooks.cargoKg(item)               -> how much of an item the hold has (default: this file's own tally).
 // ============================================================================
 
+import { PADS as PORT_PADS } from '../port/portSpec.js';   // FLIGHTFEEL
 import * as THREE from 'three';
 import { SpaceSky, MARS_RADIUS_M } from './spaceSky.js';
 import { SpaceTrip, fmtDuration, MARS_R, estimateCourse } from './spaceTrip.js';
@@ -96,6 +97,8 @@ export class SpaceSystem {
     this.ff = new FreeFlight({ flight: o.ship.flight, mars: o.body, frameId: () => this.frameId, worldTime: () => this.worldTime(), setFrame: (id) => this.setFrame(id), say: (m, w) => this.say(m, w), drones: o.ship.drones,
       cancelOrders: () => { if (o.ship.crew && o.ship.crew.cancelOrder) o.ship.crew.cancelOrder(); }, tripActive: () => !!(this.trip && this.trip.active),
       atPad: () => this.frameId === 'mars' && !!this.portSite && Math.hypot(...['x', 'y', 'z'].map((k, i) => o.ship.flight.pos[k] - this.portSite.toWorld(0, 0, 0)[k])) < 60 });
+    // FLIGHTFEEL: the pads the landing assist may pull toward (Mars's port: the Meridian's own pad and the two beside it)
+    o.ship.flight.landingPads = () => (this.frameId === 'mars' && this.portSite ? PORT_PADS.map((p) => this.portSite.toWorld(p.x, 0, p.z)) : null);
     this.ui = typeof document !== 'undefined' ? new SpaceUI(this) : null;
     this.ffUI = typeof document !== 'undefined' ? new FreeFlightUI(this) : null;     // FREEFLIGHT
 

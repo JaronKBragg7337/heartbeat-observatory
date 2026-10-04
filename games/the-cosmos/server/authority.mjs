@@ -227,7 +227,7 @@ export class Authority {
     delete p.parked;}
   /** True while a hull is landed, settled and asked for nothing (see advance). */
   resting(sim,control){const r=sim.record,f=sim.flight;
-    return !r.npc&&f.landed&&!sim.trip&&!orderLive(sim)&&!f.autoHover&&!control.lift&&!control.fwd&&!control.yaw&&!r.escort&&!r.pendingOrder&&f.hull>=100
+    return !r.npc&&f.landed&&!sim.trip&&!orderLive(sim)&&!f.autoHover&&!control.lift&&!control.fwd&&!control.yaw&&!control.strafe&&!control.land&&!control.boost&&!r.escort&&!r.pendingOrder&&f.hull>=100
       &&!sim.guns.bolts.length&&!sim.drones.shots.length&&sim.ship.air.phase==='idle'
       &&Object.values(sim.ship.rampCtl).every(c=>Math.abs(c.target-c.progress)<1e-4)&&!r.crew.some(c=>c.status==='walking-aboard'||c.status==='boarding'||String(c.status).startsWith('leaving'));}
   allocPad(shipId){const free=this.state.pads.find(a=>!a.shipId);
@@ -316,7 +316,7 @@ export class Authority {
           }}
         // (catching up on a long absence a ship that is sitting on the ground with nothing asked of it stays where it is: stepping its landing
         //  physics a hundred and twenty times a second for hours is the slowest thing a restart does)
-        if(!(catchUp&&sim.flight.landed&&!sim.trip&&!orderLive(sim)&&!sim.flight.autoHover&&!control.lift&&!control.fwd&&!control.yaw))
+        if(!(catchUp&&sim.flight.landed&&!sim.trip&&!orderLive(sim)&&!sim.flight.autoHover&&!control.lift&&!control.fwd&&!control.yaw&&!control.strafe&&!control.land))
         {
           // A ship sitting on its pad with nothing asked of it (most of a busy port, most of the day) is stepped twice a second with the
           // time it missed, not thirty times: the physics treats a resting hull the same, and a world of two dozen idle hulls was spending
@@ -575,7 +575,12 @@ export class Authority {
     if(a.controls&&['pilot','captain'].includes(p.pose.seat)){
       // FREEFLIGHT: a free-flight stick is intent only: finite numbers clamped to -1..1 (thrust 0..1). The physics, the fuel and the pose are the authority's.
       const c1=v=>Math.max(-1,Math.min(1,Number(v)||0)),f=a.ff,ff=f&&typeof f==='object'?{thr:Math.max(0,Math.min(1,Number(f.thr)||0)),brake:!!f.brake,pitch:c1(f.pitch),yaw:c1(f.yaw),roll:c1(f.roll),tx:c1(f.tx),ty:c1(f.ty),tz:c1(f.tz)}:null;
-      this.inputs.set(p.id,{until:this.now()+1000,controls:Object.fromEntries(['fwd','lift','yaw'].map(k=>[k,c1(a.controls[k])])),ff});}
+      // FLIGHTFEEL: a hand on the stick: pitch and strafe are -1..1, boost, land and level are 0/1, mode is one of two names. A controls packet with no mode is the old
+      // three numbers (an older client, an autopilot's shape) and flies the old way. Nothing here can name a position or a speed: only a lever.
+      const hand=a.controls.mode==='assist'||a.controls.mode==='newtonian',b01=v=>v?1:0;
+      const controls=Object.fromEntries(['fwd','lift','yaw'].map(k=>[k,c1(a.controls[k])]));
+      if(hand)Object.assign(controls,{pitch:c1(a.controls.pitch),strafe:c1(a.controls.strafe),boost:b01(a.controls.boost),land:b01(a.controls.land),level:b01(a.controls.level),mode:a.controls.mode});
+      this.inputs.set(p.id,{until:this.now()+1000,controls,ff});}
   }
   reduce(p,a){if(!a||typeof a.type!=='string')throw Error('Invalid action.');const ship=this.shipFor(p),sim=this.sims.get(ship.id);
     if(a.type.startsWith('opening-')){

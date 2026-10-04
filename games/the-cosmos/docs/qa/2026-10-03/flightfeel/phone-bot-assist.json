@@ -1,0 +1,21 @@
+{
+ "style": "assist",
+ "out": {
+  "tTakeoff": 7.400000000000005,
+  "tNear": 58.249999999998025,
+  "tLanded": 63.44999999999773,
+  "offGoal": 21.2,
+  "landed": true,
+  "hull": 100
+ },
+ "back": {
+  "tTakeoff": 1.1499999999999346,
+  "tNear": 34.29999999999805,
+  "tLanded": 44.0299999999975,
+  "offGoal": 11.1,
+  "landed": true,
+  "hull": 100
+ },
+ "total": 107.5,
+ "errors": []
+}

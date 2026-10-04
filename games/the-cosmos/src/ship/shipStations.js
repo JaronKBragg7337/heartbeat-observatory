@@ -93,9 +93,14 @@ export class Stations {
   // ---- commands --------------------------------------------------------------------
   /** Flight: only the pilot and the captain. Values are -1..1. */
   fly(cmd) {
-    if (!this.allowed('fly')) { this.ship.controls.fwd = 0; this.ship.controls.lift = 0; this.ship.controls.yaw = 0; return this._refuse(); }
+    if (!this.allowed('fly')) { const k = this.ship.controls; k.fwd = 0; k.lift = 0; k.yaw = 0; delete k.mode; k.pitch = k.strafe = k.boost = k.land = k.level = 0; return this._refuse(); }
     const c = this.ship.controls;
     c.fwd = clamp(cmd.fwd || 0); c.lift = clamp(cmd.lift || 0); c.yaw = clamp(cmd.yaw || 0);
+    // FLIGHTFEEL: a person's hand also has pitch, strafe, boost, land, level and a mode (assist | newtonian). No mode = the old three levers.
+    if (cmd.mode === 'assist' || cmd.mode === 'newtonian') {
+      c.mode = cmd.mode; c.pitch = clamp(cmd.pitch || 0); c.strafe = clamp(cmd.strafe || 0);
+      c.boost = cmd.boost ? 1 : 0; c.land = cmd.land ? 1 : 0; c.level = cmd.level ? 1 : 0;
+    } else { delete c.mode; c.pitch = c.strafe = c.boost = c.land = c.level = 0; }
     return true;
   }
 

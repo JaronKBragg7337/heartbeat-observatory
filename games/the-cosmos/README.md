@@ -293,10 +293,22 @@ you are sitting in it; **Stand** (`E`) lets go, and the flight computer holds a 
 | **Engineering** | Routes 100 reactor units between engines, guns and shields. It changes real performance: engine share sets lift and drive thrust (below ~19% the ship cannot leave the ground), gun share sets rate of fire and damage, shield share sets the shield cap and recharge. |
 | **Dorsal / ventral turrets** | Aim by looking, fire twin barrels. Only from their own seat. |
 
-**Controls.** Phone: the invisible left-half stick flies (up = thrust, sideways = turn), right-half drag looks,
-LIFT / SINK / FIRE buttons appear only when you are in a seat that uses them, the station panel sits at the top
-so thumbs keep the bottom. Desktop: `W/S` thrust, `A/D` turn, hold `Space` up, `C` down, click or `F` fire,
-mouse looks and aims, `E` sit / stand / use.
+**Controls (flying by hand, FLIGHTFEEL, 10/3).** A person at the pilot's or captain's stick flies in **ASSIST** by default (`src/ship/flightAssist.js`): point and go.
+The stick says where you want to be going and the flight computer gets her there; let go and it kills the drift and holds a hover. There are no low caps:
+speed, climb and agility **scale with height** (about 50 m/s with the legs on the ground, 400 m/s at 1 km, 1.8 km/s at the top of the air, 6 km/s in space), so she is a
+hover-car near the ground and fast in the air. A **boost** (a charge that drains in about 5 s and refills in about 9), a nose that **eases back to the horizon**
+and is held near level close to the ground, **terrain following** (she climbs over rising ground ahead), and a **landing assist**: hold DOWN low, or tap LAND, and she sets
+down softly from any height (a pad within 150 m pulls her in, slow and low with nothing asked she settles by herself). A push on the stick on the pad takes her off.
+The **NEWTON** chip is the expert's mode: the stick is thrust at the engines' real rated numbers, she keeps whatever speed you give her, nothing brakes or lands her
+(the hover trim still carries her weight). The power split still decides whether she flies at all (below ~19% engines she cannot lift, by hand either).
+Free flight (the **FREE FLIGHT** bar) is the other, orbital, Newtonian system and is unchanged. Autopilots (a course, a crew pilot, an escort) fly the old law.
+
+*Phone:* the invisible left-half stick (up = go, sideways = turn), a drag on the right half steers the nose (yaw and pitch), **UP / DOWN** and **BOOST** buttons (the boost
+button fills with its charge), chips **ASSIST / NEWTON**, **CHASE / COCKPIT** and **LAND**, and a strip that reads speed, height and vertical speed. The camera rides behind
+and above the hull in CHASE, trails further back the faster she goes, the field of view widens, and streaks of dust (stars in space) stream past.
+*Desktop:* `W/S` go, mouse or `A/D` steer, `Space` up, `C` / `Ctrl` down, `Shift` boost, arrows slide, `L` land, `R` hold the nose where it is, `V` view, `M` mode, click or `F` fire, `E` sit / stand / use.
+The authority validates intent only (clamped levers, a boost flag, a mode name: never a position or a speed) and runs the same law the browser does; see `test/flightfeel-checks.mjs`
+and `docs/qa/2026-10-03/flightfeel/REVIEW.md`.
 
 ### Real people, and hiring a crew (src/crew/)
 

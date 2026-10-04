@@ -2,7 +2,7 @@ import { encodeBrick, terrainMeta } from './terrainCodec.js';
 import { reduceEconomy } from '../economy/economy.js';
 import { QUESTS } from '../economy/catalog.js';
 const poseKey='cosmos-pose-v1';
-const fields=['heading','pitch','roll','yawRate','hull','shield','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown'];
+const fields=['heading','pitch','roll','yawRate','hull','shield','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','boostCharge','boosting','aimPitch'];
 export function shipPose(ship) {
   const f=ship.flight;
   return {pos:{...f.pos},vel:{...f.vel},quaternion:f.quaternion.toArray(),attitude:f.attitude?.toArray()||null,power:{...f.power},

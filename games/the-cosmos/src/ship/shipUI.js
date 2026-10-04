@@ -31,6 +31,15 @@ const CSS = `
 .sbtn.fire:active, .sbtn.fire.held { background: rgba(255,90,60,.4); }
 #btn-lift { right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 #btn-sink { right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+#btn-boost { right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(216px + env(safe-area-inset-bottom, 0px)); border-color: rgba(255,200,110,.65); color: #ffe6b8;
+  background: linear-gradient(90deg, rgba(255,170,60,.40) var(--boost, 100%), rgba(10,7,5,.66) var(--boost, 100%)); }
+#btn-boost.held { border-color: #ffd38a; box-shadow: 0 0 14px rgba(255,170,60,.7); }
+#fly-bar { position: fixed; left: calc(10px + env(safe-area-inset-left, 0px)); top: calc(var(--strip-bottom, var(--hud-bottom, 100px)) + 8px); display: none; flex-direction: column; gap: 6px; pointer-events: none; }
+#fly-bar button { pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; min-width: 78px; min-height: 44px; font: inherit; font-size: 11px; letter-spacing: .5px;
+  background: rgba(10,7,5,.66); backdrop-filter: blur(7px); border: 1px solid rgba(95,216,255,.45); color: #bfefff; border-radius: 12px; padding: 4px 8px; line-height: 1.2; }
+@media (max-height: 520px) and (orientation: landscape) { #fly-bar { top: calc(10px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); flex-direction: row; } }
+#fly-bar button.on { background: rgba(95,216,255,.3); border-color: rgba(95,216,255,.9); color: #fff; }
+#fly-bar button small { display: block; font-size: 9px; opacity: .7; letter-spacing: 0; }
 #btn-fire { right: calc(106px + env(safe-area-inset-right, 0px)); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 #ship-reticle { position: fixed; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; display: none; pointer-events: none; }
 #ship-reticle i { position: absolute; background: rgba(255,214,120,.9); }
@@ -97,6 +106,8 @@ export class ShipUI {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     const root = document.createElement('div'); root.id = 'ship-ui';
     root.innerHTML = `
+      <button class="sbtn" id="btn-boost"><span>BOOST</span></button>
+      <div id="fly-bar"><button id="fb-mode"></button><button id="fb-view"></button><button id="fb-land"></button></div>
       <button class="sbtn" id="btn-lift">LIFT ▲</button>
       <button class="sbtn" id="btn-sink">SINK ▼</button>
       <button class="sbtn fire" id="btn-fire">FIRE</button>
@@ -109,6 +120,8 @@ export class ShipUI {
     this.btnLift = root.querySelector('#btn-lift');
     this.btnSink = root.querySelector('#btn-sink');
     this.btnFire = root.querySelector('#btn-fire');
+    this.btnBoost = root.querySelector('#btn-boost'); this.flyBar = root.querySelector('#fly-bar');
+    this.fbMode = root.querySelector('#fb-mode'); this.fbView = root.querySelector('#fb-view'); this.fbLand = root.querySelector('#fb-land');
     this.reticle = root.querySelector('#ship-reticle');
     this.panel = root.querySelector('#ship-panel');
     this.hint = root.querySelector('#ship-hint');
@@ -125,6 +138,18 @@ export class ShipUI {
     hold(this.btnLift, () => { ship.uiLift = 1; }, () => { if (ship.uiLift > 0) ship.uiLift = 0; });
     hold(this.btnSink, () => { ship.uiLift = -1; }, () => { if (ship.uiLift < 0) ship.uiLift = 0; });
     hold(this.btnFire, () => { ship.fireHeld = true; }, () => { ship.fireHeld = false; });
+    hold(this.btnBoost, () => { ship.uiBoost = 1; }, () => { ship.uiBoost = 0; });
+    // FLIGHTFEEL: the flight chips. A tap, not a hold.
+    const tap = (el, fn) => { el.addEventListener('pointerup', (e) => { e.preventDefault(); e.stopPropagation(); fn(); this._flyChips(); }); el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); }); };
+    tap(this.fbMode, () => ship.setFlightMode(ship.flightMode === 'assist' ? 'newtonian' : 'assist'));
+    tap(this.fbView, () => ship.toggleView());
+    tap(this.fbLand, () => ship.toggleLand());
+    window.addEventListener('keydown', (e) => {
+      if (!ship.seat || (ship.seat.id !== 'pilot' && ship.seat.id !== 'captain') || e.repeat || (e.target && e.target.closest && e.target.closest('input,textarea'))) return;
+      if (e.code === 'KeyL') { ship.toggleLand(); this._flyChips(); }
+      else if (e.code === 'KeyV') { ship.toggleView(); this._flyChips(); }
+      else if (e.code === 'KeyM') { ship.setFlightMode(ship.flightMode === 'assist' ? 'newtonian' : 'assist'); this._flyChips(); }
+    });
 
     // Mouse fire on desktop: a click while the pointer is captured.
     window.addEventListener('mousedown', (e) => {
@@ -158,18 +183,19 @@ export class ShipUI {
     this.mapCanvas = null;
     this.btnLift.style.display = this.btnSink.style.display = 'none';
     this.btnFire.style.display = 'none';
+    this.btnBoost.style.display = 'none'; this.flyBar.style.display = 'none'; this.ship.uiBoost = 0;
     this.reticle.style.display = 'none';
     this.ship.uiLift = 0; this.ship.fireHeld = false;
     if (!s) { P.style.display = 'none'; this._showHint(''); return; }
 
     const flying = id === 'captain' || id === 'pilot';
     const gun = id === 'captain' || id === 'gun_dorsal' || id === 'gun_ventral';
-    if (flying) { this.btnLift.style.display = this.btnSink.style.display = 'block'; }
+    if (flying) { this.btnLift.style.display = this.btnSink.style.display = 'block'; this.btnBoost.style.display = 'block'; this.flyBar.style.display = 'flex'; this._flyChips(); }
     if (gun) { this.btnFire.style.display = 'block'; this.reticle.style.display = 'block'; }
 
     let hint = 'E stand';
-    if (id === 'captain') hint = 'W/S thrust · A/D turn · Space up · C down · click or F fire · mouse aims · N course · E stand';
-    else if (id === 'pilot') hint = 'W/S thrust · A/D turn · Space up · C down · N course · E stand';
+    if (id === 'captain') hint = 'W/S go · mouse or A/D steer · Space up · C down · Shift boost · L land · V view · M mode · click or F fire · E stand';
+    else if (id === 'pilot') hint = 'W/S go · mouse or A/D steer · Space up · C down · Shift boost · L land · V view · M mode · N course · E stand';
     else if (id === 'gun_dorsal' || id === 'gun_ventral') hint = 'mouse aims · click or F fire · E stand';
     else if (id === 'engineer') hint = 'route power with the panel · E stand';
     else if (id === 'nav') hint = 'range button cycles the map · N course · E stand';
@@ -211,6 +237,21 @@ export class ShipUI {
     }
   }
 
+  /** The flight chips and the boost meter show the mode, the view, the landing assist and the boost charge. Hidden while free flight (its own bar) has the ship. */
+  _flyChips() {
+    const ship = this.ship, ff = ship.space && ship.space.ff && ship.space.ff.active;
+    const flying = this.seatId === 'captain' || this.seatId === 'pilot';
+    this.flyBar.style.display = flying && !ff ? 'flex' : 'none';
+    this.btnBoost.style.display = flying && !ff ? 'block' : 'none';
+    if (!flying || ff) return;
+    const A = ship.flightMode === 'assist';
+    this.fbMode.innerHTML = `${A ? 'ASSIST' : 'NEWTON'}<small>${A ? 'point and go' : 'real physics'}</small>`; this.fbMode.classList.toggle('on', A);
+    this.fbView.innerHTML = `${ship.chaseView ? 'CHASE' : 'COCKPIT'}<small>view</small>`; this.fbView.classList.toggle('on', ship.chaseView);
+    this.fbLand.innerHTML = `LAND<small>${ship.landAssist ? 'on' : 'assist'}</small>`; this.fbLand.classList.toggle('on', !!ship.landAssist); this.fbLand.style.display = A ? '' : 'none';
+    this.btnBoost.style.setProperty('--boost', Math.round((ship.flight.boostCharge ?? 1) * 100) + '%');
+    this.btnBoost.querySelector('span').textContent = ship.flight.boosting ? 'BOOST ●' : 'BOOST';
+  }
+
   update(dt) {
     const ship = this.ship;
     if (!ship.ready) return;
@@ -236,9 +277,13 @@ export class ShipUI {
     const f = ship.flight;
     if (this.seatId === 'captain' || this.seatId === 'pilot') {
       const el = P.querySelector('#fl-read');
+      const hand = ship._handSteering && ship._handSteering();
+      this._flyChips();
+      const spd = f.speed >= 1000 ? `<b>${(f.speed / 1000).toFixed(2)}</b> km/s` : `<b>${f.speed.toFixed(0)}</b> m/s`;
       if (el) el.innerHTML =
-        (f.agl > 20000 ? `SPD <b>${(f.speed / 1000).toFixed(2)}</b> km/s &nbsp; ALT <b>${(f.agl / 1000).toFixed(f.agl > 1e5 ? 0 : 1)}</b> km<br class="more">` :
-        `SPD <b>${f.groundSpeed.toFixed(0)}</b> m/s &nbsp; ALT <b>${Math.max(0, f.agl).toFixed(0)}</b> m &nbsp; VS <b>${f.verticalSpeed >= 0 ? '+' : ''}${f.verticalSpeed.toFixed(1)}</b><br class="more">`) +
+        (f.agl > 20000 ? `SPD ${spd} &nbsp; ALT <b>${(f.agl / 1000).toFixed(f.agl > 1e5 ? 0 : 1)}</b> km<br class="more">` :
+        `SPD ${spd} &nbsp; ALT <b>${Math.max(0, f.agl).toFixed(0)}</b> m &nbsp; VS <b>${f.verticalSpeed >= 0 ? '+' : ''}${f.verticalSpeed.toFixed(f.agl > 300 ? 0 : 1)}</b><br class="more">`) +
+        (hand ? `<span class="dim more">${ship.flightMode === 'assist' ? 'ASSIST' : 'NEWTONIAN'}${f.boosting ? ' · BOOST' : ''}${f.handInfo && f.handInfo.landing ? ' · LANDING' : ''} · </span>` : '') +
         `<span class="dim more">${f.landed ? 'LANDED · ' : ''}gear ${f.gearPos > 0.99 ? 'down' : f.gearPos < 0.01 ? 'up' : 'moving'} · engines ${f.power.engines}%</span>` +
         (f.canLiftOff() ? '' : ' <span style="color:#ff6a55">CANNOT LIFT</span>') +
         (this.seatId === 'captain' ? `<br class="more"><span class="dim more">guns ${f.power.guns}% · shield ${f.shield.toFixed(0)}/${f.shieldMax.toFixed(0)}</span>` : '');

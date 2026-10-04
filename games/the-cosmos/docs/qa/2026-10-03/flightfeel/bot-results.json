@@ -1,0 +1,422 @@
+{
+ "table": [
+  {
+   "style": "legacy",
+   "timeToTakeoff": 3.6,
+   "time2km": 58.8,
+   "landOut": 388.1,
+   "landedOutOk": "2/3",
+   "landedPadOk": "3/3",
+   "total": 277.1,
+   "hardLandings": 0,
+   "hullLost": 0
+  },
+  {
+   "style": "assist",
+   "timeToTakeoff": 1.8,
+   "time2km": 30.6,
+   "landOut": 38.3,
+   "landedOutOk": "3/3",
+   "landedPadOk": "3/3",
+   "total": 74.1,
+   "hardLandings": 0,
+   "hullLost": 0
+  },
+  {
+   "style": "assist-pro",
+   "timeToTakeoff": 1.8,
+   "time2km": 11.2,
+   "landOut": 26.3,
+   "landedOutOk": "3/3",
+   "landedPadOk": "3/3",
+   "total": 53.8,
+   "hardLandings": 0,
+   "hullLost": 0
+  },
+  {
+   "style": "newtonian",
+   "timeToTakeoff": 3.6,
+   "time2km": 42,
+   "landOut": 64.1,
+   "landedOutOk": "3/3",
+   "landedPadOk": "3/3",
+   "total": 127.2,
+   "hardLandings": 0,
+   "hullLost": 33
+  }
+ ],
+ "rows": [
+  {
+   "style": "legacy",
+   "azimuth": 0,
+   "out": {
+    "style": "legacy",
+    "ok": true,
+    "t": 77.2,
+    "tTakeoff": 3.6,
+    "tNear": 58.7,
+    "tLanded": 77.2,
+    "off": 7.7,
+    "touchdown": 2.03,
+    "hullLost": 0,
+    "maxAgl": 62,
+    "maxSpeed": 41
+   },
+   "back": {
+    "style": "legacy",
+    "ok": true,
+    "t": 86.6,
+    "tTakeoff": 3.6,
+    "tNear": 57.6,
+    "tLanded": 86.6,
+    "off": 7.7,
+    "touchdown": 2.09,
+    "hullLost": 0,
+    "maxAgl": 173,
+    "maxSpeed": 40
+   },
+   "total": 163.8
+  },
+  {
+   "style": "legacy",
+   "azimuth": 1.9,
+   "out": {
+    "style": "legacy",
+    "ok": false,
+    "t": 420,
+    "tTakeoff": 3.6,
+    "tNear": 60.3,
+    "tLanded": null,
+    "off": 9.4,
+    "touchdown": 1.67,
+    "hullLost": 0,
+    "maxAgl": 41,
+    "maxSpeed": 41
+   },
+   "back": {
+    "style": "legacy",
+    "ok": true,
+    "t": 84.2,
+    "tTakeoff": 3.2,
+    "tNear": 57.3,
+    "tLanded": 84.2,
+    "off": 7.9,
+    "touchdown": 2.09,
+    "hullLost": 0,
+    "maxAgl": 128,
+    "maxSpeed": 40
+   },
+   "total": 504.2
+  },
+  {
+   "style": "legacy",
+   "azimuth": 3.8,
+   "out": {
+    "style": "legacy",
+    "ok": true,
+    "t": 88.1,
+    "tTakeoff": 3.6,
+    "tNear": 57.4,
+    "tLanded": 88.1,
+    "off": 10.7,
+    "touchdown": 2.11,
+    "hullLost": 0,
+    "maxAgl": 220,
+    "maxSpeed": 40
+   },
+   "back": {
+    "style": "legacy",
+    "ok": true,
+    "t": 75.1,
+    "tTakeoff": 3.4,
+    "tNear": 57.4,
+    "tLanded": 75.1,
+    "off": 7.5,
+    "touchdown": 2,
+    "hullLost": 0,
+    "maxAgl": 86,
+    "maxSpeed": 41
+   },
+   "total": 163.2
+  },
+  {
+   "style": "assist",
+   "azimuth": 0,
+   "out": {
+    "style": "assist",
+    "ok": true,
+    "t": 39.8,
+    "tTakeoff": 1.8,
+    "tNear": 33.9,
+    "tLanded": 39.8,
+    "off": 6,
+    "touchdown": 1.16,
+    "hullLost": 0,
+    "maxAgl": 77,
+    "maxSpeed": 80
+   },
+   "back": {
+    "style": "assist",
+    "ok": true,
+    "t": 34.1,
+    "tTakeoff": 1.8,
+    "tNear": 24.3,
+    "tLanded": 34.1,
+    "off": 2.7,
+    "touchdown": 1.15,
+    "hullLost": 0,
+    "maxAgl": 195,
+    "maxSpeed": 127
+   },
+   "total": 73.9
+  },
+  {
+   "style": "assist",
+   "azimuth": 1.9,
+   "out": {
+    "style": "assist",
+    "ok": true,
+    "t": 42.5,
+    "tTakeoff": 1.8,
+    "tNear": 35.9,
+    "tLanded": 42.5,
+    "off": 9.2,
+    "touchdown": 1.13,
+    "hullLost": 0,
+    "maxAgl": 57,
+    "maxSpeed": 72
+   },
+   "back": {
+    "style": "assist",
+    "ok": true,
+    "t": 35.5,
+    "tTakeoff": 1.7,
+    "tNear": 26.2,
+    "tLanded": 35.5,
+    "off": 2.7,
+    "touchdown": 1.17,
+    "hullLost": 0,
+    "maxAgl": 153,
+    "maxSpeed": 104
+   },
+   "total": 78
+  },
+  {
+   "style": "assist",
+   "azimuth": 3.8,
+   "out": {
+    "style": "assist",
+    "ok": true,
+    "t": 32.5,
+    "tTakeoff": 1.8,
+    "tNear": 22.1,
+    "tLanded": 32.5,
+    "off": 11.9,
+    "touchdown": 1.27,
+    "hullLost": 0,
+    "maxAgl": 238,
+    "maxSpeed": 143
+   },
+   "back": {
+    "style": "assist",
+    "ok": true,
+    "t": 37.9,
+    "tTakeoff": 1.7,
+    "tNear": 32.8,
+    "tLanded": 37.9,
+    "off": 2.8,
+    "touchdown": 1.11,
+    "hullLost": 0,
+    "maxAgl": 104,
+    "maxSpeed": 91
+   },
+   "total": 70.4
+  },
+  {
+   "style": "assist-pro",
+   "azimuth": 0,
+   "out": {
+    "style": "assist-pro",
+    "ok": true,
+    "t": 27.4,
+    "tTakeoff": 1.8,
+    "tNear": 11.2,
+    "tLanded": 27.4,
+    "off": 11.4,
+    "touchdown": 1.29,
+    "hullLost": 0,
+    "maxAgl": 314,
+    "maxSpeed": 378
+   },
+   "back": {
+    "style": "assist-pro",
+    "ok": true,
+    "t": 26.1,
+    "tTakeoff": 1.7,
+    "tNear": 11.6,
+    "tLanded": 26.1,
+    "off": 2.7,
+    "touchdown": 1.17,
+    "hullLost": 0,
+    "maxAgl": 442,
+    "maxSpeed": 408
+   },
+   "total": 53.5
+  },
+  {
+   "style": "assist-pro",
+   "azimuth": 1.9,
+   "out": {
+    "style": "assist-pro",
+    "ok": true,
+    "t": 28.2,
+    "tTakeoff": 1.8,
+    "tNear": 11.6,
+    "tLanded": 28.2,
+    "off": 11.9,
+    "touchdown": 1.97,
+    "hullLost": 0,
+    "maxAgl": 293,
+    "maxSpeed": 361
+   },
+   "back": {
+    "style": "assist-pro",
+    "ok": true,
+    "t": 26.3,
+    "tTakeoff": 1.4,
+    "tNear": 10.7,
+    "tLanded": 26.3,
+    "off": 2.7,
+    "touchdown": 1.16,
+    "hullLost": 0,
+    "maxAgl": 402,
+    "maxSpeed": 395
+   },
+   "total": 54.5
+  },
+  {
+   "style": "assist-pro",
+   "azimuth": 3.8,
+   "out": {
+    "style": "assist-pro",
+    "ok": true,
+    "t": 23.2,
+    "tTakeoff": 1.8,
+    "tNear": 10.7,
+    "tLanded": 23.2,
+    "off": 12.1,
+    "touchdown": 1.25,
+    "hullLost": 0,
+    "maxAgl": 536,
+    "maxSpeed": 464
+   },
+   "back": {
+    "style": "assist-pro",
+    "ok": true,
+    "t": 30.3,
+    "tTakeoff": 1.7,
+    "tNear": 10.2,
+    "tLanded": 30.3,
+    "off": 2.7,
+    "touchdown": 1.16,
+    "hullLost": 0,
+    "maxAgl": 362,
+    "maxSpeed": 412
+   },
+   "total": 53.5
+  },
+  {
+   "style": "newtonian",
+   "azimuth": 0,
+   "out": {
+    "style": "newtonian",
+    "ok": true,
+    "t": 64,
+    "tTakeoff": 3.6,
+    "tNear": 41.9,
+    "tLanded": 64,
+    "off": 4.9,
+    "touchdown": 0,
+    "hullLost": 18.1,
+    "maxAgl": 47,
+    "maxSpeed": 86
+   },
+   "back": {
+    "style": "newtonian",
+    "ok": true,
+    "t": 62.6,
+    "tTakeoff": 3.4,
+    "tNear": 43,
+    "tLanded": 62.6,
+    "off": 5.2,
+    "touchdown": -0.53,
+    "hullLost": 16.7,
+    "maxAgl": 80,
+    "maxSpeed": 86
+   },
+   "total": 126.6
+  },
+  {
+   "style": "newtonian",
+   "azimuth": 1.9,
+   "out": {
+    "style": "newtonian",
+    "ok": true,
+    "t": 63.8,
+    "tTakeoff": 3.6,
+    "tNear": 42.6,
+    "tLanded": 63.8,
+    "off": 8.3,
+    "touchdown": 3.79,
+    "hullLost": 31.5,
+    "maxAgl": 41,
+    "maxSpeed": 86
+   },
+   "back": {
+    "style": "newtonian",
+    "ok": true,
+    "t": 64,
+    "tTakeoff": 2.5,
+    "tNear": 43,
+    "tLanded": 64,
+    "off": 4.4,
+    "touchdown": 0.51,
+    "hullLost": 16.1,
+    "maxAgl": 61,
+    "maxSpeed": 86
+   },
+   "total": 127.8
+  },
+  {
+   "style": "newtonian",
+   "azimuth": 3.8,
+   "out": {
+    "style": "newtonian",
+    "ok": true,
+    "t": 64.5,
+    "tTakeoff": 3.6,
+    "tNear": 41.6,
+    "tLanded": 64.5,
+    "off": 8.6,
+    "touchdown": 0,
+    "hullLost": 0,
+    "maxAgl": 132,
+    "maxSpeed": 86
+   },
+   "back": {
+    "style": "newtonian",
+    "ok": true,
+    "t": 62.6,
+    "tTakeoff": 3.4,
+    "tNear": 42.7,
+    "tLanded": 62.6,
+    "off": 5.7,
+    "touchdown": -0.51,
+    "hullLost": 16.7,
+    "maxAgl": 51,
+    "maxSpeed": 86
+   },
+   "total": 127.1
+  }
+ ]
+}

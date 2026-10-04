@@ -19,10 +19,12 @@ import { ShipSystem } from '../src/ship/shipSystem.js';
 import { shipDef } from '../src/ships/registry.js';
 import { FreeFlight } from '../src/space/freeflight.js';   // FREEFLIGHT
 import { FREE } from '../src/space/spaceSpec.js';
+import { PADS as PORT_PADS } from '../src/port/portSpec.js';   // FLIGHTFEEL
 import { worldTimeAt } from '../src/space/clock.js';
 import { frameAt, carryFlight, worldPointFixed, framePoint, OMEGA } from '../src/space/frames.js';
 
-export const flightFields = ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd','epochS','deepHold'];
+export const HAND_KEYS=['fwd','lift','yaw','pitch','strafe','boost','land'];   // FLIGHTFEEL: every lever a hand can move
+export const flightFields = ['heading','pitch','roll','yawRate','hull','shield','shieldMax','gearPos','landed','autoHover','airborne','agl','time','climbCap','thrustDown','thrustUp','thrustFwd','epochS','deepHold','boostCharge','boosting','aimPitch'];
 export function flightRecord(f) {
   return {pos:{...f.pos},vel:{...f.vel},quaternion:f.quaternion.toArray(),power:{...f.power},attitude:f.attitude?.toArray()||null,legs:structuredClone(f.legs),
     ...Object.fromEntries(flightFields.map(k=>[k,f[k]]))};
@@ -87,6 +89,8 @@ export class ShipSimulation {
     this.trip=null;
     // FREEFLIGHT: manual flight anywhere (src/space/freeflight.js). The authority owns it: inputs are clamped intents, the physics is this file's.
     this.allSims=()=>[];
+    // FLIGHTFEEL: the pads the landing assist may pull toward (Mars's port only)
+    this.flight.landingPads=()=>this.frameId==='mars'?[this.portSite.toWorld(0,0,0),...PORT_PADS.map(p=>site.toWorld(p.x,0,p.z))]:null;
     const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
     this.ff=new FreeFlight({flight:this.flight,mars,frameId:()=>this.frameId,worldTime:()=>this.worldTime(),setFrame:id=>this.setFrame(id),say:(m,w)=>this.ship.note(m,w),drones:this.drones,
       cancelOrders:()=>this.crew.cancelOrder(),tripActive:()=>!!this.trip?.active,
@@ -178,6 +182,15 @@ export class ShipSimulation {
     for(const b of [...this.guns.bolts,...this.drones.shots]){framePoint(from,to,b,b);const q=framePoint(from,to,{x:b.px,y:b.py,z:b.pz});b.px=q.x;b.py=q.y;b.pz=q.z;}
     this.frameId=id;this.ship.body=this.flight.body=this.body();this.flight.refreshOrientation();this.drones.safeFrame=isLaneWorld(id);
   }
+  /**
+   * FLIGHTFEEL: a ship that was being flown by hand and is now moving fast with nobody's lease on the stick (the pilot's connection dropped) must not coast for minutes on the old
+   * law (its brake is 5.6 m/s2): the flight assist brings her to a hover, as it does when a pilot lets go.
+   */
+  failsafe(controls){
+    const f=this.flight;
+    if(controls.mode||this.ff.active||f.landed||!f.airborne||f.speed<45||!f.autoHover)return controls;
+    return {fwd:0,lift:0,yaw:0,pitch:0,strafe:0,boost:0,land:0,level:1,mode:'assist'};
+  }
   engage(id) {
     if(this.trip?.active)throw Error('A course is already under way.');
     const dest=this.resolve(id);if(!dest?.goalS)throw Error('Destination is out of range.');
@@ -195,7 +208,7 @@ export class ShipSimulation {
     if(this.flight.hull<=0){this.ff.suspend('The hull is gone.');this.flight.controls={fwd:0,lift:0,yaw:0};this.flight.power.engines=0;this.flight.autoHover=false;this.trip=null;this.flight.override=null;}
     else {this.syncCrew();
       const ffManual=!!ffInput&&this.ff.active&&Object.entries(ffInput).some(([k,v])=>k==='brake'?!!v:Math.abs(+v)>.05);   // FREEFLIGHT
-      const manual=Object.values(controls).some(v=>Math.abs(v)>.05)||ffManual;
+      const manual=HAND_KEYS.some(k=>Math.abs(+controls[k]||0)>.05)||ffManual;   // FLIGHTFEEL: pitch, strafe, boost and the landing assist are a hand on the stick too
       // A hand on the stick ends an escort. The escort is the ship's own autopilot (escortAp), not a crew order:
       // a ship with nobody in the pilot's seat would have pilotControls cancel a crew order on the next tick.
       if(manual&&this.record.escort){this.record.escort=null;this.escortAp=null;}
@@ -203,10 +216,10 @@ export class ShipSimulation {
       if(manual&&this.trip?.active&&this.trip.phase!=='transit')this.trip.cancel();
       if(!manual)this._escortCatchTrip();
       const escort=!manual&&!this.trip?.active?this.escortStick(dt):null;
-      this.flight.controls=this.trip?.active?(this.trip.tick(dt)||{fwd:0,lift:0,yaw:0}):manual?controls:(escort||this.crew.pilotControls(dt)||controls);
+      this.flight.controls=this.trip?.active?(this.trip.tick(dt)||{fwd:0,lift:0,yaw:0}):manual?controls:(escort||this.crew.pilotControls(dt)||this.failsafe(controls));
     }
-    if(this.flight.landed&&this.flight.controls.lift>0&&Object.values(this.ship.rampCtl).some(r=>r.progress>.02)){
-      this.flight.controls.lift=0;if(!this.ship._rampOccupied('cargo'))this.ship.rampCtl.cargo.target=0;
+    if(this.flight.landed&&this.flight.upIntent&&Object.values(this.ship.rampCtl).some(r=>r.progress>.02)){
+      this.flight.controls.lift=0;this.flight.controls.fwd=0;this.flight.controls.strafe=0;this.flight.controls.land=0;this._liftWait=.3;if(!this.ship._rampOccupied('cargo'))this.ship.rampCtl.cargo.target=0;
       if(this.ship.state.airlock.outerOpen&&this.ship.air.phase==='idle')this.ship.cycleAirlock();
     }
     // FREEFLIGHT: free flight takes the ship above the air, hands her back low and slow; it sets how fast time runs while it has her.
@@ -217,7 +230,8 @@ export class ShipSimulation {
     else if(this.ff.active)this.flight.step(dt*this.eff);
     else this.flight.step(Math.max(dt,Math.min(dt*this.eff,1)));
     if(this.trip&&!this.trip.active){this.trip=null;this.flight.override=null;this.flight.climbCap=12;this.flight.thrustDown=false;if(this.flight.deepHold)installHold(this.flight);}
-    for(const [key,c] of Object.entries(this.ship.rampCtl)){const speed=key==='cargo'?1/6:1/5;
+    if(this._liftWait>0)this._liftWait-=dt;
+    for(const [key,c] of Object.entries(this.ship.rampCtl)){const speed=(key==='cargo'?1/6:1/5)*(this._liftWait>0&&c.target<c.progress?2.2:1);   // FLIGHTFEEL: folded away quicker for a lift-off
       c.progress+=Math.sign(c.target-c.progress)*Math.min(Math.abs(c.target-c.progress),dt*speed);
       Object.assign(this.ship.state.ramps[key],{...c,lowered:c.progress>=.999&&c.target>=1});}
     this.ship._airlockStep(dt);

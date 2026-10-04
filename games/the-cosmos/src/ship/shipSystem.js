@@ -27,6 +27,8 @@ import { ShipWalker, shipIndexFor, defaultState } from './shipWalker.js';
 import { shipDef } from '../ships/registry.js';
 import { visualsFor } from '../ships/visuals.js';
 import { ShipBody } from './shipFlight.js';
+import { vmaxAt } from './flightAssist.js';
+import { SpeedFx, fovKickDeg } from './speedFx.js';     // FLIGHTFEEL
 import { Stations } from './shipStations.js';
 import { GunSystem, DroneSystem, NEUTRAL_AIRSPACE_M } from './guns.js';
 import { makeShipMaterials, applyEnvironment, makeSignAtlas, makePosterAtlas, DEPTH_LIFT, depthLiftStepFor } from './shipTextures.js';
@@ -95,6 +97,11 @@ export class ShipSystem {
     this.targets = [];
     this.fireHeld = false;
     this.uiLift = 0;
+    // FLIGHTFEEL
+    this.uiBoost = 0; this.landAssist = false; this._sy = 0; this._sp = 0;
+    this.flightMode = lsGet('cosmos.flightMode') === 'newtonian' ? 'newtonian' : 'assist';     // assist is the default; newtonian is the expert's
+    this.chaseView = lsGet('cosmos.flightView') !== 'cockpit';
+    this._chase = { x: 0, y: 12, z: 54 }; this._fovKick = 0;
     this.lastFrameStats = { visibleRooms: 0 };
     this.hudExtra = '';
     this.zoomOn = false; this.zoomFov = 24; this.baseFov = null;     // binoculars at an observation spot
@@ -190,6 +197,7 @@ export class ShipSystem {
 
     // --- fx (world scene)
     this.fx = new ShipFx(engine.scene, { tier: this.tier });
+    this.speedFx = new SpeedFx(engine.scene, { tier: this.tier });     // FLIGHTFEEL: streaks past the camera
 
     // --- size is measured in the neutral pose, before anything moves
     this.visuals.applyNeutralPose(this.exterior);
@@ -659,9 +667,11 @@ export class ShipSystem {
   }
 
   _rampFrame(dt) {
+    if (this._liftWait > 0) this._liftWait -= dt;
     for (const key of ['cargo', 'airlock']) {
       const c = this.rampCtl[key];
-      const speed = key === 'cargo' ? 1 / 6.0 : 1 / 5.0;
+      // FLIGHTFEEL: a pilot waiting to lift off has the ramp and lock folded away in half the time (a first lift-off was 6 s of waiting before anything moved)
+      const speed = (key === 'cargo' ? 1 / 6.0 : 1 / 5.0) * (this._liftWait > 0 && c.target < c.progress ? 2.2 : 1);
       if (c.progress < c.target) c.progress = Math.min(c.target, c.progress + dt * speed);
       else if (c.progress > c.target) c.progress = Math.max(c.target, c.progress - dt * speed);
       const lowered = c.progress >= 0.999 && c.target >= 1;
@@ -701,11 +711,11 @@ export class ShipSystem {
     if (seat && (seat.id === 'captain' || seat.id === 'pilot')) {
       const k = inp.keys;
       const lift = clamp((k && k.has('Space') ? 1 : 0) - (k && (k.has('KeyC') || k.has('ControlLeft')) ? 1 : 0) + this.uiLift, -1, 1);
-      const stick = Math.abs(inp.moveNorth || 0) > 0.05 || Math.abs(inp.moveEast || 0) > 0.05 || lift !== 0;
+      const stick = Math.abs(inp.moveNorth || 0) > 0.05 || Math.abs(inp.moveEast || 0) > 0.05 || lift !== 0 || (k && (k.has('ArrowLeft') || k.has('ArrowRight')));
       const ffa = this.space && this.space.ff;
       if (ffa && ffa.active) {
         // FREEFLIGHT: the stick is the jets and the drive (src/space/freeflight.js). The same three numbers stay zero: the lift-pod flight is not flying.
-        f.controls.fwd = 0; f.controls.lift = 0; f.controls.yaw = 0;
+        this._autoControls(f, null);
         ffa.setInput(this._ffStick(inp, lift));
         if (crewCtl && (stick || this.uiLift)) this.crew && this.crew.cancelOrder && this.crew.cancelOrder('You have the controls.');
       }
@@ -713,27 +723,27 @@ export class ShipSystem {
         // the drive has the ship: the stick is locked (Cancel course on the nav sheet)
         if (stick && this.time - (this._driveWarn || -9) > 6) { this._driveWarn = this.time; this.note('The drive has the ship. Cancel the course on the nav sheet to take the controls.', true); }
       }
-      else if (crewCtl && !stick) { f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw; }
+      else if (crewCtl && !stick) { this._autoControls(f, crewCtl); }
       else {
         let refused = false;
         if (crewCtl && stick) {
           if (tripCtl) { const r = this.space.cancel('You have the controls.'); if (!r.ok) { refused = true; if (this.time - (this._cancelWarn || -9) > 5) { this._cancelWarn = this.time; this.note(r.msg, true); } } }
           else this.crew.cancelOrder('You have the controls.');
         }
-        if (refused) { f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw; }
-        else this.stations.fly({ fwd: inp.moveNorth, yaw: inp.moveEast, lift });
+        if (refused) { this._autoControls(f, crewCtl); }
+        else this._handFly(dt, inp, lift);
       }
     } else if (crewCtl) {
       if (this.space && this.space.ff) this.space.ff.setInput(null);
-      f.controls.fwd = crewCtl.fwd; f.controls.lift = crewCtl.lift; f.controls.yaw = crewCtl.yaw;
+      this._autoControls(f, crewCtl);
     } else if (!seat) {
       if (this.space && this.space.ff) this.space.ff.setInput(null);
       // nobody flying: the flight computer hovers
-      f.controls.fwd = 0; f.controls.lift = 0; f.controls.yaw = 0;
+      this._autoControls(f, null);
     }
     // Ramp down means no lift-off. The flight computer folds it away first.
-    if ((this.rampCtl.cargo.progress > 0.02 || this.rampCtl.airlock.progress > 0.02 || this.air.phase !== 'idle') && f.landed && f.controls.lift > 0) {
-      f.controls.lift = 0;
+    if ((this.rampCtl.cargo.progress > 0.02 || this.rampCtl.airlock.progress > 0.02 || this.air.phase !== 'idle') && f.landed && f.upIntent) {
+      f.controls.lift = 0; f.controls.fwd = 0; f.controls.strafe = 0; f.controls.land = 0; this._liftWait = 0.3;      // FLIGHTFEEL: by hand any push to leave counts; the ramp folds faster while she waits
       if (this.rampCtl.cargo.target > 0.5) this.toggleRamp('cargo');
       if (this.state.airlock.outerOpen && this.air.phase === 'idle') this.cycleAirlock();
       if (this.time - (this._warnAt || -9) > 6) { this.note('Securing ramp and hatches for lift-off. Hold LIFT.', true); this._warnAt = this.time; }
@@ -806,6 +816,49 @@ export class ShipSystem {
     return owns;
   }
 
+  /** FLIGHTFEEL: is a person flying by hand right now (in a pilot's or captain's chair, the lift-pod flight, no course, no free flight)? */
+  _handSteering() {
+    const seat = this.seat;
+    if (!seat || (seat.id !== 'captain' && seat.id !== 'pilot')) return false;
+    if (this.space && ((this.space.ff && this.space.ff.active) || this.space.driving)) return false;
+    return !!(this.flight.controls && this.flight.controls.mode);
+  }
+  setFlightMode(m) {
+    if (m !== 'assist' && m !== 'newtonian') return;
+    this.flightMode = m; lsSet('cosmos.flightMode', m);
+    this.note(m === 'assist' ? 'Flight assist ON: point and go; the computer kills drift and sets her down.' : 'Newtonian: the stick is thrust. She keeps what speed you give her.');
+  }
+  toggleView() { this.chaseView = !this.chaseView; lsSet('cosmos.flightView', this.chaseView ? 'chase' : 'cockpit'); }
+  toggleLand() { this.landAssist = !this.landAssist; if (this.landAssist) this.note('Landing assist: hands off, she comes down. Any stick input takes her back.'); }
+
+  /** FLIGHTFEEL: an autopilot's, a crew pilot's or nobody's controls: the old three levers, no mode (so the old flight law). */
+  _autoControls(f, ctl) {
+    const c = f.controls;
+    c.fwd = ctl ? ctl.fwd : 0; c.lift = ctl ? ctl.lift : 0; c.yaw = ctl ? ctl.yaw : 0;
+    if (c.mode !== undefined) { delete c.mode; c.pitch = c.strafe = c.boost = c.land = c.level = 0; }
+  }
+
+  /**
+   * FLIGHTFEEL: what the thumbs, keys and mouse mean when a person flies by hand (src/ship/flightAssist.js).
+   *   stick up/down (W/S): go / back        stick left/right (A/D): turn        drag the right half or the mouse: steer the nose (yaw, pitch)
+   *   SPACE / UP button: climb              C, Ctrl / DOWN button: descend (and the landing assist, low)        SHIFT / BOOST: boost
+   *   arrows left/right: slide              L / LAND: landing assist           R: hold the nose where it is (it eases back to the horizon otherwise)
+   */
+  _handFly(dt, inp, lift) {
+    const k = inp.keys, key = (c) => (k && k.has(c) ? 1 : 0), l = inp.look || { dx: 0, dy: 0 };
+    const TURN = 2.4, PITCH = 1.5;
+    // the drag / mouse steers: radians this frame -> a rate command, smoothed so a drag is not a stutter
+    const wantYaw = clamp(l.dx / Math.max(dt, 1e-3) / TURN, -1, 1), wantPitch = clamp(-l.dy / Math.max(dt, 1e-3) / PITCH, -1, 1);
+    this._sy += (wantYaw - this._sy) * Math.min(1, 16 * dt); this._sp += (wantPitch - this._sp) * Math.min(1, 16 * dt);
+    const fwd = clamp(inp.moveNorth || 0, -1, 1), yaw = clamp((inp.moveEast || 0) + this._sy, -1, 1), pitch = clamp(this._sp, -1, 1);
+    const strafe = key('ArrowRight') - key('ArrowLeft'), boost = key('ShiftLeft') || key('ShiftRight') || this.uiBoost ? 1 : 0;
+    const level = key('KeyR') ? 0 : 1;
+    const acting = Math.abs(fwd) > 0.15 || Math.abs(lift) > 0.05 || strafe !== 0;
+    if (acting && this.landAssist) this.landAssist = false;          // a hand on the stick takes the ship back from the landing assist
+    if (this.flight.landed) this.landAssist = false;
+    return this.stations.fly({ fwd, yaw, lift, pitch, strafe, boost, land: this.landAssist ? 1 : 0, level, mode: this.flightMode });
+  }
+
   /** FREEFLIGHT: what the thumbs and keys mean in free flight. Left stick: turn (or slide with RCS on). THRUST and BRAKE are the LIFT and SINK buttons / Space and C. */
   _ffStick(inp, lift) {
     const k = inp.keys, key = (c) => (k && k.has(c) ? 1 : 0), sx = clamp(inp.moveEast || 0, -1, 1), sy = clamp(inp.moveNorth || 0, -1, 1);
@@ -821,8 +874,13 @@ export class ShipSystem {
     const l = inp.look || { dx: 0, dy: 0 };
     if (seat) {
       const lim = this.stations.lookLimits();
-      this.look.yaw = clamp(this.look.yaw + l.dx, -lim.yaw, lim.yaw);
-      this.look.pitch = clamp(this.look.pitch - l.dy, -lim.down, lim.up);
+      if (this._handSteering()) {
+        // FLIGHTFEEL: at the stick by hand the drag / mouse steers the ship (_handFly), so the head stays square to the windscreen
+        this.look.yaw += (0 - this.look.yaw) * Math.min(1, 8 * dt); this.look.pitch += (0 - this.look.pitch) * Math.min(1, 8 * dt);
+      } else {
+        this.look.yaw = clamp(this.look.yaw + l.dx, -lim.yaw, lim.yaw);
+        this.look.pitch = clamp(this.look.pitch - l.dy, -lim.down, lim.up);
+      }
       sw.vx = sw.vz = 0;
       const eyeY = seat.y + AVATAR.seatedEyeM;
       this.eyeLocal = { x: seat.x, y: eyeY, z: seat.z };
@@ -844,7 +902,7 @@ export class ShipSystem {
       this.eyeLocal = { x: sw.x, y: sw.y + AVATAR.eyeM, z: sw.z };
       this.camYaw = sw.yaw; this.camPitch = sw.pitch;
     }
-    this._placeCamera();
+    this._placeCamera(dt);
     // keep the planet walker glued to the person so patches, sun and debug follow
     const wp = this.flight.toWorld({ x: sw.x, y: sw.y, z: sw.z });
     this.walker.worldPos.x = wp.x; this.walker.worldPos.y = wp.y; this.walker.worldPos.z = wp.z;
@@ -855,13 +913,30 @@ export class ShipSystem {
     this.walker.updateFrame();
   }
 
-  _placeCamera() {
+  /** FLIGHTFEEL: chase view: by hand at the stick the camera rides behind and above the hull and trails further back the faster she goes. */
+  _chaseActive() { return this.chaseView && !this.zoomOn && this._handSteering(); }
+
+  _placeCamera(dt = 1 / 60) {
     const f = this.flight;
-    const eye = f.toWorld(this.eyeLocal, this._eye);
+    let at = this.eyeLocal, pitchAdd = 0;
+    if (this._chaseActive()) {
+      const agl = Number.isFinite(f.agl) ? f.agl : 1e6, sp = f.speed;
+      const kk = clamp(sp / Math.max(120, vmaxAt(agl) * 0.8), 0, 1);
+      const T = { x: -f.yawRate * 4.5, y: 12 + 3 * kk, z: 54 + 16 * kk + (f.boosting ? 6 : 0) };
+      const a = 1 - Math.exp(-Math.min(dt, 0.1) * 3.2), c = this._chase;
+      c.x += (T.x - c.x) * a; c.y += (T.y - c.y) * a; c.z += (T.z - c.z) * a;
+      at = c; pitchAdd = -0.11;
+    }
+    const eye = f.toWorld(at, this._eye);
     const cam = this.engine.cameraWorldPos;
+    if (at !== this.eyeLocal && f.up) {
+      // never under the ground: a hill behind her must not swallow the view
+      const gap = f._groundAtWorld(eye).gap;
+      if (Number.isFinite(gap) && gap < 4) { const lift = 4 - gap; eye.x += f.up.x * lift; eye.y += f.up.y * lift; eye.z += f.up.z * lift; }
+    }
     cam.x = eye.x; cam.y = eye.y; cam.z = eye.z;
     const sh = this.hitShake > 0 ? this.hitShake * 0.03 : 0;
-    this._q.setFromEuler(new THREE.Euler(this.camPitch + (sh ? (Math.random() - 0.5) * sh : 0), -this.camYaw + (sh ? (Math.random() - 0.5) * sh : 0), sh ? (Math.random() - 0.5) * sh * 0.6 : 0, 'YXZ'));
+    this._q.setFromEuler(new THREE.Euler(this.camPitch + pitchAdd + (sh ? (Math.random() - 0.5) * sh : 0), -this.camYaw + (sh ? (Math.random() - 0.5) * sh : 0), sh ? (Math.random() - 0.5) * sh * 0.6 : 0, 'YXZ'));
     this.engine.camera.quaternion.copy(f.quaternion).multiply(this._q);
     this.engine.camera.up.set(0, 1, 0).applyQuaternion(f.quaternion);
   }
@@ -1293,6 +1368,12 @@ export class ShipSystem {
     this.fx.update(dt, cam, enemy.length ? this.guns.bolts.concat(enemy) : this.guns.bolts);
     // dust from the thrusters when low
     this._dust(dt);
+    // FLIGHTFEEL: streaks past the camera while she is flown (by hand or free flight) and moving
+    {
+      const flying = this.aboard && this.seat && (this.seat.id === 'pilot' || this.seat.id === 'captain');
+      const agl = Number.isFinite(f.agl) ? f.agl : 1e6;
+      this.speedFx.update(dt, cam, f.vel, { vmax: vmaxAt(agl), air: agl < 90000 ? 1 : 0, boosting: !!f.boosting, on: !!flying });
+    }
     // target flash
     for (const e of events) {
       if (e.type === 'target_hit') { const t = this.targets.find((q) => q.id === e.id); if (t) t.flash = 1; }
@@ -1384,7 +1465,11 @@ export class ShipSystem {
     const cam = this.engine.camera;
     if (this.baseFov == null) this.baseFov = cam.fov;
     if (this.zoomOn && (!this.aboard || this.seat || !this._observationNear({ x: this.sw.x, y: this.sw.y, z: this.sw.z }))) this.zoomOn = false;
-    const want = this.zoomOn ? this.zoomFov : this.baseFov;
+    let want = this.zoomOn ? this.zoomFov : this.baseFov;
+    // FLIGHTFEEL: the field of view widens with speed (and a boost), so speed is felt in the whole picture
+    const kickWant = (!this.zoomOn && this._handSteering()) ? fovKickDeg(this.flight.speed, vmaxAt(Number.isFinite(this.flight.agl) ? this.flight.agl : 1e6), !!this.flight.boosting) : 0;
+    this._fovKick += (kickWant - this._fovKick) * Math.min(1, dt * 2.6);
+    want += this._fovKick;
     if (Math.abs(cam.fov - want) > 0.05) { cam.fov += (want - cam.fov) * Math.min(1, dt * 9); cam.updateProjectionMatrix(); }
     else if (cam.fov !== want) { cam.fov = want; cam.updateProjectionMatrix(); }
   }
@@ -1543,6 +1628,8 @@ export function poseRamp(r, R, key, progress, angle) {
 }
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* private window */ } };
 const fmtTime = (t) => { const m = Math.floor(t / 60), s = Math.floor(t % 60); return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; };
 
 function GunSystemDir(a) {

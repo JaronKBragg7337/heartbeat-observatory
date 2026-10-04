@@ -39,6 +39,7 @@ import { gravityAtRadius } from '../world/bodies.js';
 import { cartesianToGeodetic, localFrame } from '../world/geodesy.js';
 import { GEAR, SHIP_PHYS } from './shipSpec.js';
 import { hullUnderside } from './shipExterior.js';
+import { handCommand, isHandMode, ASSIST, pitchLimitAt } from './flightAssist.js';   // FLIGHTFEEL
 
 // The Meridian's hull envelope for the landing constraint (the lofted octagon, its wing tips and the ventral turret).
 const MERIDIAN_HULL = {
@@ -73,6 +74,11 @@ export class ShipBody {
     this.massKg = this.P.massKg;
     this.power = { ...this.P.defaultPower };
     this.controls = { fwd: 0, lift: 0, yaw: 0 };   // set only by a seated pilot
+    // FLIGHTFEEL: a person at the stick also sends pitch (nose rate), strafe, boost, land (the landing assist), level (nose back to the horizon) and a
+    // mode ('assist' | 'newtonian'). A controls object with no mode is an autopilot's (a course, a crew order, an escort): it flies the old way, unchanged.
+    this.aimPitch = 0;               // rad, the nose's pitch the pilot has asked for (a hand mode); `pitch` is this plus the cosmetic lean
+    this.boosting = false; this.boostCharge = 1;
+    this.landingPads = null;         // () => [{x,y,z}] world positions of pads the landing assist may pull toward (the host gives it)
     this.hull = 100;                                 // integrity, percent
     this.shield = 0;                                 // current shield points
     this.shieldMax = 0;
@@ -168,6 +174,12 @@ export class ShipBody {
   weightN() {
     const r = Math.hypot(this.pos.x, this.pos.y, this.pos.z);
     return this.massKg * gravityAtRadius(this.body, r);
+  }
+  /** FLIGHTFEEL: a person is asking to leave the ground (the lift lever, or in a hand mode any push on the stick). The ground hold and the ramp interlock read this. */
+  get upIntent() {
+    const c = this.controls;
+    if (c.lift > 0.01) return true;
+    return isHandMode(c.mode) && (Math.abs(c.fwd) > 0.05 || Math.abs(c.strafe || 0) > 0.05 || c.land > 0.5);
   }
   /** True if the thrusters can lift the ship at all at the current power split. */
   canLiftOff() { return this.maxLiftN > this.weightN() * 1.02; }
@@ -274,6 +286,7 @@ export class ShipBody {
     const p = this.pos, v = this.vel;
     this.refreshOrientation();
     const up = this.up;
+    const hand = isHandMode(this.controls.mode);             // FLIGHTFEEL: a person flies by hand (assist / newtonian); an autopilot's controls carry no mode
 
     const r = Math.hypot(p.x, p.y, p.z);
     const g = gravityAtRadius(this.body, r);
@@ -321,6 +334,10 @@ export class ShipBody {
       const s = this._groundAtWorld(w);
       if (s.gap < 0) { fSpring += 400000 * (-s.gap) - 60000 * Math.min(0, vUp); contacts++; }
     }
+    // FLIGHTFEEL: on rough ground the legs may not reach while the hull's underside is resting on a crest (the landing constraint holds it up). By hand that is a landing:
+    // she is down, the legs find the ground by themselves. (An autopilot's landing keeps the old rule.)
+    if (hand && this._belly) contacts++;
+    this._belly = false;
     this.contacts = contacts;
 
     // --- Commands. ---------------------------------------------------------------
@@ -339,7 +356,8 @@ export class ShipBody {
     const onGround = contacts > 0 && aglNow < 2.5;
     // Engines run only when somebody asked for them, or once the ship has left the
     // ground and must be held there. A ship set down and left alone stays down.
-    const engaged = this.autoHover || c.lift > 0.01 || Math.abs(c.fwd) > 0.01;
+    // (by hand she is never left in free fall: above the last couple of metres the flight computer always holds her, whatever the landing logic believes)
+    const engaged = this.autoHover || c.lift > 0.01 || Math.abs(c.fwd) > 0.01 || (hand && (this.upIntent || (Number.isFinite(aglNow) && aglNow > 2.5)));
     let aCmd;
     if (!engaged) aCmd = 0;
     else if (onGround && c.lift <= 0.01 && vUp <= 0.3) aCmd = 0;              // parked: engines idle
@@ -371,6 +389,27 @@ export class ShipBody {
       hx -= hx * k; hy -= hy * k; hz -= hz * k;
     }
 
+    // --- FLIGHTFEEL: a person at the stick flies by the hand modes (flightAssist.js); any other controls are an autopilot's and keep the old law above. ---
+    if (hand) {
+      // the boost: a charge that drains while it burns; once empty it stays off until a third of a charge is back (no flicker at the empty line)
+      if (this.boostCharge <= 0.02) this._boostLock = true; else if (this.boostCharge >= 0.3) this._boostLock = false;
+      const wantBoost = (c.boost || 0) > 0.5 && !this._boostLock && !onGround && engaged;
+      this.boosting = wantBoost;
+      this.boostCharge = clamp(this.boostCharge + (wantBoost ? -dt / ASSIST.boostDrainS : dt / ASSIST.boostRefillS), 0, 1);
+      const hFlare = Number.isFinite(aglNow) && aglNow < 80 ? Math.min(hFoot, Math.max(0, this.hullClearance() - 0.1)) : hFoot;
+      const hc = handCommand(this, { m, g, up, fwdH: this.fwdH, rightH: this.rightH, v, vUp, agl: aglNow, hFoot: hFlare, contacts, onGround, eng, canLift: this.canLiftOff(),
+        maxLiftN: this.maxLiftN, maxDriveN: this.maxDriveN, aimPitch: this.aimPitch, hSpeed: Math.hypot(hx, hy, hz) });
+      if (!engaged) { fUp = 0; ax = ay = az = 0; fwdAcc = 0; this.thrustFwd = 0; }
+      else if (onGround && !this.upIntent && vUp <= 0.3) {              // parked: engines idle, friction takes any drift
+        fUp = 0; ax = ay = az = 0; fwdAcc = 0; this.thrustFwd = 0;
+        const k = Math.min(1, 6 * dt); hx -= hx * k; hy -= hy * k; hz -= hz * k;
+      } else {
+        fUp = clamp(hc.fUp, hc.fMin, hc.fMax); ax = hc.ax; ay = hc.ay; az = hc.az; fwdAcc = hc.fwdAcc; this.thrustFwd = hc.thrustFwdN;
+      }
+      this.thrustUp = Math.max(0, Math.min(fUp, this.maxLiftN * 1.4));
+      this.handInfo = hc;
+    } else { this.boosting = false; this.boostCharge = Math.min(1, this.boostCharge + dt / ASSIST.boostRefillS); this.handInfo = null; }
+
     // --- Integrate velocity. -------------------------------------------------------
     // vertical: thrust + springs along up, gravity toward the centre
     const aUp = (fUp + fSpring) / m;
@@ -389,10 +428,10 @@ export class ShipBody {
     }
     if (!wasAir && this.airborne && engaged) { this.events.push({ type: 'liftoff' }); this.autoHover = true; }
     this.landed = contacts > 0 && Math.abs(vUp) < 0.6 && fUp < this.weightN() * 0.97 + 1;
-    if (this.landed && c.lift <= 0.01) this.autoHover = false;
+    if (this.landed && !this.upIntent) this.autoHover = false;
 
     // --- Landing gear self-levelling once we are down. --------------------------------
-    if (this.landed && c.lift <= 0.01) {
+    if (this.landed && !this.upIntent) {
       for (const l of this.legs) {
         const target = this.G.stroke * 0.45;
         if (!l.contact && l.gap > 0.02) l.ext = Math.min(this.G.max, l.ext + 0.45 * dt);
@@ -404,8 +443,29 @@ export class ShipBody {
       for (const l of this.legs) l.ext += Math.max(-0.6 * dt, Math.min(0.6 * dt, this.G.nominal - l.ext));
     }
 
-    // --- Attitude. ----------------------------------------------------------------------
+    // --- Attitude. ----------------------------------------------------------------------------------------------------------
     const flying = !onGround;
+    if (hand) {
+      // FLIGHTFEEL: the stick steers the nose (yaw rate, pitch rate); the hull banks into the turn and the nose is held where it was put. Near the ground the
+      // nose is brought back toward the horizon (the legs and hull want a level ship there); level asked for brings it back anywhere.
+      const turn = flying ? (c.yaw || 0) * ASSIST.turnRate / (1 + Math.hypot(hx, hy, hz) / ASSIST.turnSpeedK) : 0;
+      this.yawRate += (turn - this.yawRate) * Math.min(1, ASSIST.turnLag * dt);
+      this.heading += this.yawRate * dt;
+      this.heading = ((this.heading % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const pl = pitchLimitAt(Number.isFinite(aglNow) ? aglNow : 1e7);
+      if (flying) {
+        this.aimPitch += (c.pitch || 0) * ASSIST.pitchRate * dt;
+        if (c.level > 0.5 && Math.abs(c.pitch || 0) < 0.05) this.aimPitch -= this.aimPitch * Math.min(1, ASSIST.levelRate * dt);
+      } else this.aimPitch -= this.aimPitch * Math.min(1, 6 * dt);
+      if (Math.abs(this.aimPitch) > pl) this.aimPitch -= Math.sign(this.aimPitch) * Math.min(Math.abs(this.aimPitch) - pl, 1.6 * dt);
+      this.aimPitch = clamp(this.aimPitch, -1.45, 1.45);
+      this._fwdAccLP += (fwdAcc - this._fwdAccLP) * Math.min(1, 3.0 * dt);
+      const lean = c.mode === 'assist' && flying ? clamp(-this._fwdAccLP * 0.0035, -0.14, 0.14) : 0;
+      const speedH = Math.hypot(hx, hy, hz);
+      const rollT = flying ? clamp(-this.yawRate * (0.28 + Math.min(speedH, 400) * 0.0012), -0.6, 0.6) : 0;
+      this.pitch += ((flying ? this.aimPitch + lean : 0) - this.pitch) * Math.min(1, 10 * dt);
+      this.roll += (rollT - this.roll) * Math.min(1, 4 * dt);
+    } else {
     const yawCmd = flying ? c.yaw * this.P.turnRate * Math.min(1.4, 0.7 + eng * 0.3) : 0;
     this.yawRate += (yawCmd - this.yawRate) * Math.min(1, 2.5 * dt);
     this.heading += this.yawRate * dt;
@@ -416,6 +476,7 @@ export class ShipBody {
     const rollT = flying ? clamp(-this.yawRate * (0.25 + speedH * 0.012) * 1.6, -0.32, 0.32) : 0;
     this.pitch += (pitchT - this.pitch) * Math.min(1, 1.6 * dt);
     this.roll += (rollT - this.roll) * Math.min(1, 1.6 * dt);
+    }
 
     // --- Move. ---------------------------------------------------------------------------
     p.x += v.x * dt; p.y += v.y * dt; p.z += v.z * dt;
@@ -425,8 +486,23 @@ export class ShipBody {
     if (this.gearPos > .95 && (worstGap < .5 || aglNow < 5)) this.constrainLanding();
   }
 
+  /** FLIGHTFEEL: how far the lowest point of the hull's underside is above the ground (m), looked at ten times a second while she is low. A ship set down by hand slows for THIS,
+   *  not just for her feet: on a slope the nose or a wing tip arrives before any leg does. */
+  hullClearance() {
+    const c = this._hc;
+    if (c && this.time - c.t < 0.1) return c.v;
+    const H = this.hullDef || MERIDIAN_HULL;
+    let m = Infinity;
+    const probe = (point) => { const g = this._groundAtWorld(this.toWorld(point)).gap; if (g < m) m = g; };
+    for (let z = H.z0; z <= H.z1; z += 4) { const u = H.underside(z); probe({ x: 0, y: u.yb, z }); probe({ x: -u.hw, y: u.yb + u.cb, z }); probe({ x: u.hw, y: u.yb + u.cb, z }); }
+    for (const q of H.extraPoints) probe(q);
+    for (const l of this.G.legs) probe({ x: l.x, y: -this.G.nominal - this.G.soleOffset, z: l.z });     // the feet, as far down as the legs will reach
+    this._hc = { t: this.time, v: m };
+    return m;
+  }
+
   constrainLanding() {
-    if(this.landed && this.controls.lift<=.01) { this.pitch=this.roll=0; this.refreshOrientation(); }
+    if(this.landed && !this.upIntent) { this.pitch=this.roll=this.aimPitch=0; this.refreshOrientation(); }
     let lift = 0;
     const clearance = (point) => this._groundAtWorld(this.toWorld(point)).gap;
     // A conservative underside grid covers keel, flanks, wings, nose and aft hull.
@@ -443,6 +519,7 @@ export class ShipBody {
       lift=Math.max(lift,-clearance({x:l.x,y:-l.ext+this.G.stroke-this.G.soleOffset,z:l.z}));
     }
     if(lift>0) {
+      this._belly = true;
       this.pos.x+=this.up.x*lift; this.pos.y+=this.up.y*lift; this.pos.z+=this.up.z*lift;
       const down=this.verticalSpeed;
       if(down<0) { this.vel.x-=this.up.x*down; this.vel.y-=this.up.y*down; this.vel.z-=this.up.z*down; }
@@ -452,8 +529,8 @@ export class ShipBody {
     const gaps=this.legs.map(l=>clearance({x:l.x,y:0,z:l.z}));
     const equilibrium=this.weightN()/(4*130000);
     const canSettle=gaps.every(g=>g-this.G.soleOffset+equilibrium>=this.G.min && g-this.G.soleOffset+equilibrium<=this.G.max);
-    if(this.controls.lift<=.01 && canSettle && (this.landed || lift>0) && this.verticalSpeed<.6) {
-      this.landed=true; this.airborne=false;
+    if(!this.upIntent && canSettle && (this.landed || lift>0) && this.verticalSpeed<.6) {
+      this.landed=true; this.airborne=false; this._belly = true;
       this.autoHover=false;
       this.pitch=this.roll=0; this.refreshOrientation();
       for(const l of this.legs) {

@@ -1,0 +1,100 @@
+{
+ "cruise": {
+  "agl": 178.2,
+  "speed": 120.3,
+  "vs": 0,
+  "gs": 120.3,
+  "landed": false,
+  "mode": "assist",
+  "boosting": false,
+  "fov": 88,
+  "seat": "pilot",
+  "chase": true
+ },
+ "boost": {
+  "agl": 228.4,
+  "speed": 280.6,
+  "vs": 0,
+  "gs": 280.6,
+  "landed": false,
+  "mode": "assist",
+  "boosting": true,
+  "fov": 94,
+  "seat": "pilot",
+  "chase": true
+ },
+ "cockpit": {
+  "agl": 215.2,
+  "speed": 21.1,
+  "vs": 0,
+  "gs": 21.1,
+  "landed": false,
+  "mode": "assist",
+  "boosting": false,
+  "fov": 74.6,
+  "seat": "pilot",
+  "chase": false
+ },
+ "newton": {
+  "agl": 217.3,
+  "speed": 14.3,
+  "vs": 0,
+  "gs": 14.3,
+  "landed": false,
+  "mode": "newtonian",
+  "boosting": false,
+  "fov": 72.4,
+  "seat": "pilot",
+  "chase": true
+ },
+ "landing": {
+  "agl": 95.1,
+  "speed": 37.6,
+  "vs": -37.6,
+  "gs": 0,
+  "landed": false,
+  "mode": "assist",
+  "boosting": false,
+  "fov": 74.4,
+  "seat": "pilot",
+  "chase": true
+ },
+ "landed": {
+  "agl": 3.8,
+  "speed": 0,
+  "vs": 0,
+  "gs": 0,
+  "landed": true,
+  "mode": "assist",
+  "boosting": false,
+  "fov": 72,
+  "seat": "pilot",
+  "chase": true
+ },
+ "high": {
+  "agl": 2193.8,
+  "speed": 1955.6,
+  "vs": 80.7,
+  "gs": 1953.9,
+  "landed": false,
+  "mode": "assist",
+  "boosting": true,
+  "fov": 94,
+  "seat": "pilot",
+  "chase": true
+ },
+ "phoneErrors": [],
+ "dboost": {
+  "agl": 227.4,
+  "speed": 310.1,
+  "vs": 0.1,
+  "gs": 310.1,
+  "landed": false,
+  "mode": "assist",
+  "boosting": true,
+  "fov": 94,
+  "seat": "pilot",
+  "chase": true
+ },
+ "desktopErrors": []
+}

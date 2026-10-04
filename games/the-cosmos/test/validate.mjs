@@ -680,6 +680,8 @@ await runCargoChecks({ check, section, THREE, mars, FIELD });
 // 60-61. Free flight: orbits, the jets and the drive, fuel, compression, landing anywhere, and the authority owning the pose.
 const { runFreeflightChecks } = await import('./freeflight-checks.mjs');
 await runFreeflightChecks({ check, section, THREE, mars });
+const { runFlightFeelChecks } = await import('./flightfeel-checks.mjs');   // FLIGHTFEEL
+await runFlightFeelChecks({ check, section, THREE, mars, FIELD });
 
 // 31. Round 7: one candidate per post, storage fault clears itself.
 const { runRound7Checks } = await import('./round7-checks.mjs');

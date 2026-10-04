@@ -10,7 +10,7 @@
 // Showing and hiding stays with the modules (display), so a hidden button takes no room.
 
 export const DOCKS = {
-  right: ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb', '#crew-talk', '#quest-deliver', '#btn-fire', '#btn-sink', '#btn-lift'],
+  right: ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb', '#crew-talk', '#quest-deliver', '#btn-fire', '#btn-sink', '#btn-lift', '#btn-boost'],
   left: ['#key-controls', '#multiplayer-button', '#shop-button', '#voice-talk'],
   bottom: ['#ff-bar', '#flight-speed'],   // FREEFLIGHT: the free-flight bar has the bottom row while it is on
 };
