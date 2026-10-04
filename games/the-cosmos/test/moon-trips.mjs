@@ -27,7 +27,7 @@ export async function runMoonTrips({ check, log = () => {} } = {}) {
       const ph = sim.trip.phase + (sim.trip.phase === 'transit' ? sim.trip.leg : ''); if (phases[phases.length - 1] !== ph) phases.push(ph);
       if (sim.trip.phase === 'spool') spoolFrames++;
       frames.add(sim.frameId);
-      if (sim.trip.phase !== 'spool' && sim.trip.warp !== 60) sim.trip.setWarp(60);
+      { const want = sim.trip.phase === 'longdrive' ? 5400 : 60; if (sim.trip.phase !== 'spool' && sim.trip.warp !== want) sim.trip.setWarp(want); }       // (F3: the long-range drive's own ladder)
       world.advance(1 / 30); clock += 33;
     }
     for (let i = 0; i < 300 && !sim.flight.landed && !sim.trip; i++) { world.advance(1 / 30); clock += 33; }
@@ -68,6 +68,9 @@ export async function runMoonTrips({ check, log = () => {} } = {}) {
   seatPlayer();
   results.toDae = fly('moon-daedalus'); log(JSON.stringify(results.toDae));
   results.home = fly('port'); log(JSON.stringify(results.home));
+  // F3: the long-range drive offers the same landings beside the lane: free, no spool, slow on purpose (x5400 here); it ends landed at Shackleton's own pad
+  results.driveOut = fly('moon-shackleton~drive', 400000); log(JSON.stringify(results.driveOut));
+  results.driveHome = fly('port~drive', 400000); log(JSON.stringify(results.driveHome));
   if (check) {
     const ok = (r, frame) => r && !r.err && r.frame === frame && r.landed && !r.tripLeft;
     check('a ship flown from the port to the Moon crosses the lane and ends the trip landed in the hub frame', ok(results.out, 'moon'), JSON.stringify(results.out));
@@ -79,6 +82,7 @@ export async function runMoonTrips({ check, log = () => {} } = {}) {
     check('the mercantile sells five water at its shelf and buys them back for less (no free money), through the real authority', results.shop && !results.shop.serr && results.shop.net < 0 && results.shop.water === 0, JSON.stringify(results.shop));
     check('from the hub a course to Daedalus Station ends landed in its frame, still no lane fee', ok(results.toDae, 'moon-daedalus') && results.toDae.fee === 0, JSON.stringify(results.toDae));
     check('from Daedalus a course to Marineris Port crosses back and ends landed at Mars for one more fee', ok(results.home, 'mars') && results.home.fee === 120, JSON.stringify(results.home));
+    check('the long-range drive takes her to Shackleton Base too: free, no spool, landed in its frame, and home again', ok(results.driveOut, 'moon-shackleton') && results.driveOut.fee === 0 && results.driveOut.spoolS === 0 && results.driveOut.phases.includes('longdrive') && ok(results.driveHome, 'mars') && results.driveHome.fee === 0, JSON.stringify([results.driveOut, results.driveHome]));
   }
   return results;
 }

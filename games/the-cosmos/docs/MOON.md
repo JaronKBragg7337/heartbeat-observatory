@@ -33,7 +33,8 @@ Every building, tower and wall is solid for the walker and for the server's spoi
 
 ## How you get there and between
 
-* From Mars: the nav computer lists the three as destinations with the lane fee (120 credits, 20 s of coils). The Moon has one lane gate (over the hub), 50,000 km out.
+* From Mars: the nav computer lists each landing twice, as it does for Ceres (F3): by the lane (120 credits, 20 s of coils; one gate over the hub, 50,000 km out) and by the long-range
+  drive (`moon~drive`, `moon-shackleton~drive`, ...: free, no spool, slow on purpose, x1 to x5400, and it lands at the landing's own pad). `test/pkg-longrange.mjs` and `test/moon-trips.mjs` fly both.
 * Between the landings: they share the Moon's region (`region: 'moon'`), so a hop is an ordinary course inside it: about two minutes at x60, **no lane fee**. The real authority
   flies the whole route in `test/moon-trips.mjs`.
 * Time: the clock is real UTC, the Moon goes round the Earth on its real orbit, and the Sun at each landing is fixed for play (a lunar day is 29.5 Earth days).

@@ -395,6 +395,10 @@
   "voice": "sunita",
   "text": "Aye. I'll find my station."
  },
+ "04bed1ac312bb5": {
+  "voice": "zuri",
+  "text": "Long drive off. Stopped between the worlds."
+ },
  "04ce556d0355f9": {
   "voice": "ada",
   "text": "The autopilot has the ship."
@@ -419,6 +423,10 @@
   "voice": "zuri",
   "text": "Braking burn."
  },
+ "05417dd45bc13c": {
+  "voice": "ship",
+  "text": "Long-range drive engaged. Slow, and safe. Pick a time compression."
+ },
  "0552c052e7953f": {
   "voice": "aoi",
   "text": "All yours, boss."
@@ -434,6 +442,10 @@
  "057c1c59a1a67b": {
   "voice": "zuri",
   "text": "Course set for Mars orbit (400 km)."
+ },
+ "057dd9e283a43f": {
+  "voice": "ship",
+  "text": "Turning her over for the burn to slow down."
  },
  "057e54d4b91e53": {
   "voice": "w-fenrir",
@@ -527,6 +539,10 @@
   "voice": "ada",
   "text": "Course set for The supply depot apron."
  },
+ "06a46fc5f9fd5f": {
+  "voice": "zuri",
+  "text": "Slowing for the drop-out. Time compression steps down from here."
+ },
  "06a7cc88c1fa14": {
   "voice": "w-heart",
   "text": "Happy to tell you. I fly people and parcels where they asked to go, usually near the time they asked. Come back and tell me how it went."
@@ -534,6 +550,10 @@
  "06b1e25174bdf2": {
   "voice": "ada",
   "text": "Down at Marineris Port."
+ },
+ "06b2c35a02314d": {
+  "voice": "ada",
+  "text": "Long drive off. Stopped between the worlds."
  },
  "06b7b61a90b6e6": {
   "voice": "w-river",
@@ -571,6 +591,14 @@
   "voice": "w-puck",
   "text": "You found the Refuge. Nobody told you where it was, so now you owe us for the tour."
  },
+ "0726abb15bed02": {
+  "voice": "ship",
+  "text": "Course set for Callisto."
+ },
+ "073dd1790cad8a": {
+  "voice": "ada",
+  "text": "Slowing for the drop-out. Time compression steps down from here."
+ },
  "073fff72145498": {
   "voice": "ada",
   "text": "The ramp is up."
@@ -587,9 +615,17 @@
   "voice": "ada",
   "text": "Down at Pad 03 (courier)."
  },
+ "07833aebba949a": {
+  "voice": "ada",
+  "text": "Course set for Earth."
+ },
  "07969bf54c8383": {
   "voice": "zuri",
   "text": "Course set for Ceres: Occator Works."
+ },
+ "079ffbf62f470c": {
+  "voice": "ada",
+  "text": "Course set for Callisto."
  },
  "07b3ae89db439f": {
   "voice": "w-bella",
@@ -823,6 +859,10 @@
   "voice": "w-river",
   "text": "Stay on the marked foot route across the apron."
  },
+ "0b1f2553e18d81": {
+  "voice": "ada",
+  "text": "Stopped between the worlds. The long-range drive is idle."
+ },
  "0b307c171b1435": {
   "voice": "w-jessica",
   "text": "Supply desk. Spares and field kits are on the racks."
@@ -846,6 +886,10 @@
  "0b8198feb3fb8c": {
   "voice": "zuri",
   "text": "Outside the neutral line. The scope is clear for now."
+ },
+ "0b87606e772c09": {
+  "voice": "ship",
+  "text": "Top speed. Coasting."
  },
  "0b913eea6f9f7b": {
   "voice": "w-river",
@@ -919,6 +963,10 @@
   "voice": "w-lewis",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
  },
+ "0ce4f7a6b0f4df": {
+  "voice": "ada",
+  "text": "Course cancelled. The drive slows her to a stop."
+ },
  "0ce92316373029": {
   "voice": "w-lily",
   "text": "Right, okay. I fix people. The part where you were warned is billed separately. Please do not ask me anything harder."
@@ -926,6 +974,10 @@
  "0ceb50883bc1e6": {
   "voice": "ship",
   "text": "Raider down. Bounty 25 credits."
+ },
+ "0cf144378ee04a": {
+  "voice": "zuri",
+  "text": "Course set for Earth."
  },
  "0cf17be4c5aa47": {
   "voice": "intercom",
@@ -1043,6 +1095,10 @@
   "voice": "ada",
   "text": "Down at The supply depot apron."
  },
+ "0e15813a1252dd": {
+  "voice": "ship",
+  "text": "Long drive off. Stopped between the worlds."
+ },
  "0e166293af1775": {
   "voice": "ada",
   "text": "Down at Phobos."
@@ -1050,6 +1106,10 @@
  "0e1685331fcb88": {
   "voice": "ada",
   "text": "On station over Pad 01, the Meridian's own pad."
+ },
+ "0e296538f69653": {
+  "voice": "ship",
+  "text": "Holding off the world. Nothing there is charted for landing yet."
  },
  "0e2dd81955731a": {
   "voice": "w-lily",
@@ -1098,6 +1158,10 @@
  "0eb8d97574c9e4": {
   "voice": "zuri",
   "text": "On station over Olympus Mons."
+ },
+ "0ecbba5fa79eee": {
+  "voice": "ada",
+  "text": "Long-range drive engaged. Slow, and safe. Pick a time compression."
  },
  "0ecd31d57f4741": {
   "voice": "zuri",
@@ -1227,6 +1291,10 @@
   "voice": "w-alice",
   "text": "Allow me. I run the port. Every dock, every fee, every complaint, in that order. I make it look easy. It is not. I am just good."
  },
+ "105bfa1cb6873d": {
+  "voice": "ada",
+  "text": "Turning her over for the burn to slow down."
+ },
  "10734f255cd962": {
   "voice": "jorge",
   "text": "The glass people will tell you they are friendly. They also have your photograph. Think about that for a second."
@@ -1262,6 +1330,10 @@
  "110b5258ef6bb5": {
   "voice": "ada",
   "text": "On station."
+ },
+ "111352748e161d": {
+  "voice": "zuri",
+  "text": "Top speed. Coasting."
  },
  "1116662f1e5307": {
   "voice": "ada",
@@ -1303,6 +1375,10 @@
   "voice": "ada",
   "text": "Down at Moon: Daedalus Station (Technos Prime)."
  },
+ "119bc5b8c54dc9": {
+  "voice": "ship",
+  "text": "Long drive off. We have dropped out."
+ },
  "119e8b7cf8db3f": {
   "voice": "w-puck",
   "text": "Pay attention, this is simple. I keep the lane safe, or at least quieter than it would be without me. Do not make me repeat it, genius."
@@ -1310,6 +1386,10 @@
  "11a1128d3cde62": {
   "voice": "zuri",
   "text": "That is Tranquility. Please enjoy it. It is the one place on the Moon where nobody is shouting at anybody."
+ },
+ "11a6695cd1c297": {
+  "voice": "ship",
+  "text": "Course cancelled. The drive slows her to a stop."
  },
  "11b07ac526111e": {
   "voice": "w-adam",
@@ -1330,6 +1410,10 @@
  "11e943c14bcebb": {
   "voice": "ada",
   "text": "Down at Valles Marineris."
+ },
+ "11f5d49e6b6fa4": {
+  "voice": "ship",
+  "text": "Slowing for the drop-out. Time compression steps down from here."
  },
  "120238238c576d": {
   "voice": "zuri",
@@ -1583,6 +1667,10 @@
   "voice": "w-adam",
   "text": "It all came up a gravity well and across a lane. Water is the worst: it is ice at the pole, and the pole belongs to men with guns. I only sell the stuff. I do not set the sky."
  },
+ "15bf10173e546a": {
+  "voice": "zuri",
+  "text": "Long-range drive engaged. Slow, and safe. Pick a time compression."
+ },
  "15c326a0248a64": {
   "voice": "ada",
   "text": "Course cancelled. Braking to a stop."
@@ -1614,6 +1702,10 @@
  "16029af33786f5": {
   "voice": "w-alice",
   "text": "Allow me. I carry heavy things from where they are to where they are not, and I do it slowly. I make it look easy. It is not. I am just good."
+ },
+ "160c55e3ab81a4": {
+  "voice": "ada",
+  "text": "Top speed. Coasting."
  },
  "161c0ac1f116c3": {
   "voice": "ship",
@@ -1699,6 +1791,10 @@
   "voice": "w-lewis",
   "text": "Heritage Ranger Tolliver. The Eagle is a protected site. Do not touch it, do not lean on it, and please keep your selfies at a respectful distance."
  },
+ "1743ae34b058e7": {
+  "voice": "zuri",
+  "text": "Turning her over for the burn to slow down."
+ },
  "17457d1fbe3062": {
   "voice": "ship",
   "text": "Course set for Phobos."
@@ -1722,6 +1818,14 @@
  "177375e8ef805c": {
   "voice": "jorge",
   "text": "Thanks, boss. I will be at the board."
+ },
+ "1777db4c02046f": {
+  "voice": "zuri",
+  "text": "Course cancelled. The drive slows her to a stop."
+ },
+ "17a3dbdaeff23c": {
+  "voice": "zuri",
+  "text": "Course set for Callisto."
  },
  "17b606f31487b3": {
   "voice": "zuri",
@@ -1775,6 +1879,10 @@
   "voice": "ada",
   "text": "The lane fee was refused."
  },
+ "1876ff15ee2905": {
+  "voice": "ship",
+  "text": "Stopped between the worlds. The long-range drive is idle."
+ },
  "188b266fffdc12": {
   "voice": "w-lily",
   "text": "Everything wet on the Moon is at the bottom of a hole at the south pole, and the people who own the hole set the price. We pay haulers more than the shaft does, because haulers have other choices. Barely."
@@ -1806,6 +1914,10 @@
  "18c9fa56421517": {
   "voice": "zuri",
   "text": "Come aboard first: the ship will not lift without you."
+ },
+ "18ea3054b71e04": {
+  "voice": "zuri",
+  "text": "Stopped between the worlds. The long-range drive is idle."
  },
  "18f6307d000a57": {
   "voice": "w-adam",
@@ -2059,6 +2171,10 @@
   "voice": "w-fenrir",
   "text": "Sergeant Holloway, Fortis. You look like someone who has never been shouted at on purpose. We fix that for free."
  },
+ "1c03bbbf6617b7": {
+  "voice": "zuri",
+  "text": "Long drive off. We have dropped out."
+ },
  "1c0dfa5e371bbd": {
   "voice": "zuri",
   "text": "Main drive lit for the Ore Lane. Hold on to something."
@@ -2183,6 +2299,10 @@
   "voice": "ada",
   "text": "On station over Hellas Planitia."
  },
+ "1d6fc4b5c9d86b": {
+  "voice": "ada",
+  "text": "Long drive off. We have dropped out."
+ },
  "1d85ce0f2ccc11": {
   "voice": "zuri",
   "text": "Roaming. I will keep low and look around."
@@ -2243,6 +2363,10 @@
   "voice": "w-echo",
   "text": "Fab Floor 2. We print chips and parts. The parts are cheap. The chips are free, if you can explain what they do."
  },
+ "1e4250ee755b91": {
+  "voice": "ada",
+  "text": "Holding off the world. Nothing there is charted for landing yet."
+ },
  "1e4396969bce3a": {
   "voice": "w-puck",
   "text": "I carry the shift notes between desks."
@@ -2282,6 +2406,10 @@
  "1ef760aaf76c31": {
   "voice": "ship",
   "text": "Back in Mars space."
+ },
+ "1f015d532e15dd": {
+  "voice": "zuri",
+  "text": "Holding off the world. Nothing there is charted for landing yet."
  },
  "1f0d8400ebf2b3": {
   "voice": "radio",
@@ -2326,6 +2454,10 @@
  "1f91fb10437008": {
   "voice": "w-alice",
   "text": "Allow me. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. I make it look easy. It is not. I am just good."
+ },
+ "1f92a61eb79645": {
+  "voice": "ship",
+  "text": "Course set for Earth."
  },
  "1f9b9f0f420504": {
   "voice": "zuri",

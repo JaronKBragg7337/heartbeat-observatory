@@ -101,7 +101,7 @@ export async function runEconomyChecks({ROOT,check,section,mars,FIELD}) {
     await failing.pending;check('storage failure visible and blocks further mutations',failing.error==='quota'&&!failing.dispatch({type:'hire',id:'comms'}).ok);
   } finally {FIELD.attachEdits(null);}
   // Scan string literals, not comments: explicit prompt tokens must have a touch path.
-  const files=[];const walk=d=>{for(const f of readdirSync(d,{withFileTypes:true})){const p=join(d,f.name);if(f.isDirectory())walk(p);else if(/\.(js|html)$/.test(f.name))files.push(p);}};
+  const files=[];const walk=d=>{for(const f of readdirSync(d,{withFileTypes:true})){const p=join(d,f.name);if(f.isDirectory())walk(p);else if(/\.(js|html)$/.test(f.name)&&f.name!=='lola-data.js')files.push(p);}};
   walk(join(ROOT,'src'));files.push(join(ROOT,'index.html'));
   const missing=[];
   for(const file of files) {

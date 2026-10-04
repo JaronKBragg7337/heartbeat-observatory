@@ -58,9 +58,10 @@ export async function run({ check, section }) {
   // ---------------------------------------------------------------- the registry and the nav rows
   section('F3b. Earth, the Moon, Ceres and Callisto are reachable from day one');
   const rows = Object.fromEntries(spec.DESTINATIONS.map((d) => [d.id, d]));
-  for (const id of ['earth', 'moon', 'callisto']) check(`${id} is a nav row of kind deep (held off, reached by the long drive)`, rows[id] && rows[id].kind === 'deep' && rows[id].deep === id && rows[id].via === 'drive', JSON.stringify(rows[id]));
+  for (const id of ['earth', 'callisto']) check(`${id} is a nav row of kind deep (held off, reached by the long drive)`, rows[id] && rows[id].kind === 'deep' && rows[id].deep === id && rows[id].via === 'drive', JSON.stringify(rows[id]));
+  check('the Moon is built now (WD-MOON): its three landings are ordinary frame worlds with a lane, and the drive is offered beside the lane like Ceres\'s', ['moon', 'moon-shackleton', 'moon-daedalus'].every((id) => rows[id] && rows[id].kind === 'moon' && rows[id].jump === true && !rows[id].via), JSON.stringify(rows.moon));
   check('Ceres keeps its lane row and the drive is offered beside it (the "~drive" row is made by the nav computer)', rows.ceres && rows.ceres.jump === true && !rows.ceres.via);
-  check('every deep row sits at its real distance, past the main drive\'s range', ['earth', 'moon', 'callisto'].every((id) => Math.hypot(...Object.values(reg.worldCentre(id))) > spec.DRIVE.rangeM * 10));
+  check('every deep row and the Moon sit at their real distance, past the main drive\'s range', ['earth', 'moon', 'callisto'].every((id) => Math.hypot(...Object.values(reg.worldCentre(id))) > spec.DRIVE.rangeM * 10));
   const cal = reg.worldCentre('callisto'), jup = reg.worldCentre('jupiter');
   check('Callisto goes round Jupiter at its real distance (1.88 million km)', Math.abs(Math.hypot(cal.x - jup.x, cal.y - jup.y, cal.z - jup.z) - 1.8827e9) < 0.02 * 1.8827e9);
   const mo = reg.worldCentre('moon'), ea = reg.worldCentre('earth');
@@ -125,8 +126,11 @@ export async function run({ check, section }) {
   check(`and she comes home: ${r2.phases.join(' > ')}, down at Marineris Port`, !r2.err && r2.landed && r2.frame === 'mars' && !r2.tripLeft && r2.phases.includes('longdrive') && dist(r2.pos, sim.portSite.toWorld(0, 0, 0)) < 400, JSON.stringify(r2));
 
   // the Moon is next to Earth: reachable too
-  const r3 = fly('moon');
-  check(`the Moon: ${(dist(r3.posI, centre('moon')) / 1000).toFixed(0)} km off, held`, !r3.err && r3.frame === 'mars' && !r3.landed && Math.abs(dist(r3.posI, centre('moon')) - L.dropDistanceM('moon')) < 5 && r3.phases.includes('longdrive'), JSON.stringify(r3));
+  // (WD-MOON) the Moon is a built world now: by the long drive she crosses to it and lands at the hub, no fee, no spool; then home by the drive
+  const r3 = fly('moon~drive');
+  check(`the Moon by the long drive (${r3.phases.join(' > ')}): lands in the hub's frame, no spool`, !r3.err && r3.frame === 'moon' && r3.landed && !r3.tripLeft && r3.phases.includes('longdrive') && !r3.phases.includes('spool'), JSON.stringify(r3));
+  const r3b = fly('port~drive');
+  check(`and home from the Moon by the drive (${r3b.phases.join(' > ')})`, !r3b.err && r3b.frame === 'mars' && r3b.landed && r3b.phases.includes('longdrive'), JSON.stringify(r3b));
 
   // cancelling in the middle of the cruise: she brakes to a stop between the worlds, and a new course still works
   const r4 = fly('callisto', { onCruise: (t, n) => n > 20 && t.cruise.tau > t.cruise.profile.T * 0.3 });
