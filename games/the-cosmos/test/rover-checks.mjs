@@ -130,8 +130,8 @@ export async function runRoverChecks({ check, section, THREE }) {
     courier = new TestClient(app.url, 't'.repeat(48), 'Courier', 1);
     await courier.connect();
     const courierShip = world.state.ships[world.state.players[courier.id].shipId];
-    check('an opening client gets a courier and no hold rover',
-      courierShip.type === 'courier' && !world.state.vehicles[`hold-${courierShip.id}`]);
+    check('an opening client gets the drained lifeboat and no hold rover',
+      courierShip.type === 'lifeboat' && !world.state.vehicles[`hold-${courierShip.id}`]);
 
     const marsEnv = makePlanetEnv(world.mars);
     const stand = world.state.players[a.id].pose.worldPos;

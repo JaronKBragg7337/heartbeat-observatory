@@ -23,7 +23,7 @@ export async function runOpeningBugChecks({check,section}) {
   const tap=opening.interact();opening.interact();assert.equal(count,0);release();await tap;assert.equal(count,1);
   check('an opening tap waits for a background save and runs once',true);
   const data=new Map(),storage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};
-  for(const stage of [0,1,2,3,4,5]){const s={...freshOpening(),stage,elapsed:21,rideSeconds:13,complete:stage===5};
+  for(const stage of [0,1,2,3,4,5,6,7]){const s={...freshOpening(),stage,elapsed:21,rideSeconds:13,complete:stage===7};
     writeOpeningCheckpoint({},s,storage);assert.deepEqual(readOpeningCheckpoint(storage),s);}
   const before=readOpeningCheckpoint(storage);writeOpeningCheckpoint({remote:true},freshOpening(),storage);
   assert.deepEqual(readOpeningCheckpoint(storage),before);

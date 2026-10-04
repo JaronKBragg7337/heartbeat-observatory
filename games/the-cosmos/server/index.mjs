@@ -67,6 +67,7 @@ export async function startServer({adapter,port=8390,host='127.0.0.1',tick=true,
               if(ok){peer.playerId=null;await world.commit();}
               send(peer,{type:'identity-done',op:'discard',ok,msg:ok?'':'Someone is aboard your ship. Try again when they leave.'});broadcast();}
             else throw Error('Unknown identity request.');}
+          else if(m.type==='board'){send(peer,{type:'board',data:world.boardData()});}   // OPENING2: the arrivals board's live numbers, no state change
           else if(m.type==='voice'){relayVoice(world,peer,m,send);}   // VOICES: WebRTC handshake relay (server/voiceRelay.mjs)
           else if(m.type==='checkpoint'){const bricks=await world.commit();broadcast(bricks);}
           else throw Error('Unknown message.');

@@ -240,3 +240,14 @@ so they are one body in the sky. What makes it work, and what it costs:
   `worlds/moon/lola.js` over a baked copy of NASA's LOLA (`tools/bake-lola.mjs` writes `lola-data.js`, about 280 KB, inflated once at import: top-level `await`).
   `albedoFn` and `groundAt` (moonField.js hooks) give a world its own brightness map and ground materials (the Moon's ice in the permanent shadows).
 * `docs/MOON.md` has the rest: the three settlements, the people, the trade, the opening hook, and what is honest and what is not.
+
+## Making a world a start world (OPENING2)
+
+A new pilot chooses where to start on the arrivals board (BIBLE-v3 10.1). A built world becomes a start world with four small edits, none of them in shared rules:
+
+1. `src/opening/worlds.js`: change its row in `START_WORLDS` from `status: 'coming'` to `'open'` (the row already names the faction pair; a world not in the table gets a row with its `line`, `good`, `lacks`, `port`, `money`). The board's numbers are read from your def (radius, mass, rotation), the ephemeris and the economy tables, so keep those honest.
+2. `src/opening/worlds/<id>/dialogue.js` (copy `ceres/dialogue.js`; the keys must be the same, `test/opening-checks.mjs` checks them): the crash site's words, the crew locker's note, and `drivers` (one per faction of the world: person, voice, name, greeting, pitch1, pitch2, offer, closing) and `counter` (the other side's recruiter). Register the file in `src/opening/dialogue.js` (`WORLD_DIALOGUE`). Every line is voiced: run `node tools/gen-voices.mjs`.
+3. `src/opening/lifeboat.js`: `REPAIR_GIVERS[<id>]` names who gives the power cell and the fuel coupler and where they stand (the two parts, one from each side).
+4. The world needs a pad for the player's lifeboat: the authority gives every ship a pad on every landable world (`allocatedMoonPad`), and `ShipSimulation.placeOnWorld` sets her down on it.
+
+The crash site itself is the same private desert for every world (a flat-floored body with your world's gravity, `openingBody(id, gravity)`), seen under your world's sky (`OpeningLook` reads `worldId`: an airless world gets a black sky). The wreck is dug, the crate is carried, the rover rides, whatever world it is.

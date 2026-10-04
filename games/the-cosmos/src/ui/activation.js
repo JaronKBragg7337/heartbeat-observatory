@@ -11,11 +11,13 @@ export function bindActivation(button, run) {
   });
   button.addEventListener('pointerup',e=>{
     if(press?.id!==e.pointerId)return;
-    const p=press;press=null;suppressUntil=performance.now()+700;
+    const p=press;press=null;
     e.preventDefault();e.stopPropagation();
     const r=button.getBoundingClientRect();
+    // Only a release that really ran the action suppresses the click that follows it (a release the browser reports at a wrong place, as a
+    // touch emulator can, must still let the click activate the button: OPENING2, found on the Galaxy profile).
     if(!button.disabled&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<18&&
-      e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)run();
+      e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){suppressUntil=performance.now()+700;run();}
   });
   for(const name of ['pointercancel','lostpointercapture'])button.addEventListener(name,()=>{press=null;});
   button.addEventListener('click',e=>{

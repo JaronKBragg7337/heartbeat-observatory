@@ -13,7 +13,7 @@ import { MATTER, ORE_ITEM, SALT_ITEM, SUPPLY_PAY } from './trade.js';
 import { GOODS } from '../../economy/catalog.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const LOOKS = { foreman: 0xd9772b, supply: 0xc9b04a, 'pad-marshal': 0xe6a020, 'lane-clerk': 0x3f6f9a, 'shift-boss': 0xd9772b, driller: 0xd9772b, welder: 0x7a5a3a };
+const LOOKS = { foreman: 0xd9772b, supply: 0xc9b04a, 'pad-marshal': 0xe6a020, 'lane-clerk': 0x3f6f9a, 'greenhaven-rep': 0x5fbf6a, 'shift-boss': 0xd9772b, driller: 0xd9772b, welder: 0x7a5a3a };
 
 export class OutpostPeople {
   constructor(o) { this.root = o.root; this.library = o.people; this.space = o.space; this.pi = o.pi; this.members = []; this.built = false; }

@@ -191,6 +191,16 @@ export class ShipSimulation {
     if(controls.mode||this.ff.active||f.landed||!f.airborne||f.speed<45||!f.autoHover)return controls;
     return {fwd:0,lift:0,yaw:0,pitch:0,strafe:0,boost:0,land:0,level:1,mode:'assist'};
   }
+  /** OPENING2: the two parts are fitted: her engines have their power back. */
+  repairDone(){this.record.drained=false;this.flight.power={...this.flight.P.defaultPower};}
+  /** OPENING2: set this ship down on her own pad on another world (the opening ends there): landed, level, gear out. */
+  placeOnWorld(id) {
+    const pad=this.record.moonPads?.[id];if(!pad)throw Error('No pad for this ship on '+id+'.');
+    this.setFrame(id);
+    const mp=makeMoon(id).playerPad(pad.east,pad.north),up=mp.up,R=mp.planeR+2;
+    this.flight.setDown({x:up.x*R,y:up.y*R,z:up.z*R},0);
+    for(let i=0;i<540;i++)this.flight.step(1/60);
+  }
   engage(id) {
     if(this.trip?.active)throw Error('A course is already under way.');
     const dest=this.resolve(id);if(!dest?.goalS)throw Error('Destination is out of range.');
@@ -203,6 +213,7 @@ export class ShipSimulation {
     return {ok:true,msg:'Course set for '+dest.name+'.'};
   }
   step(dt,controls={},ffInput=null,o={}) {
+    if(this.record.drained&&!this.record.npc)this.flight.power.engines=0;     // OPENING2: a drained lifeboat has no power for her engines until the parts are fitted
     // FLEET: a raider is flown by the fleet director. One with no hull left still steps, so it hangs where it is instead of falling.
     if(this.record.npc){this.flight.controls=controls;this.flight.step(dt);this.guns.update(dt);this.drones.update(dt);return;}
     if(this.flight.hull<=0){this.ff.suspend('The hull is gone.');this.flight.controls={fwd:0,lift:0,yaw:0};this.flight.power.engines=0;this.flight.autoHover=false;this.trip=null;this.flight.override=null;}

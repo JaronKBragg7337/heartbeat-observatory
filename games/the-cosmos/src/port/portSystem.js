@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 import { Kit, resolveDepthLayers } from '../ship/shipKit.js';
 import { makePortMaterials, CELLS, plaque, groundDecal, wallDecal, textureBytes } from './portArt.js';
-import { moduleShell, depotInterior, towerInterior, market, detailFuel, crewHall, apronDressing, containerDressing } from './portBuildings.js';
-import { PORT_ID, PORT_NAME, PADS, BUILDINGS, NPC_SPOTS, TOWER, TOWER_SPOTS, towerFloorAt } from './portSpec.js';
+import { moduleShell, depotInterior, towerInterior, market, detailFuel, crewHall, apronDressing, containerDressing, arrivalsHall } from './portBuildings.js';
+import { PORT_ID, PORT_NAME, PADS, BUILDINGS, NPC_SPOTS, TOWER, TOWER_SPOTS, towerFloorAt, APRON, WALKWAY } from './portSpec.js';
 import { TowerElevator } from './towerElevator.js';
 
 const segments=['abcdef','bc','abdeg','abcdg'];
@@ -110,7 +110,7 @@ export class PortSystem {
       this.registry.measure(rec.id,THREE); this.assets.push(rec);
       rec.renderTriangles=[...k.buckets.values()].reduce((n,b)=>n+b.idx.length/3,0);
       rec.grounding={measuredBase:new THREE.Box3().setFromObject(obj).min.y,
-        foundationDepth:a.number?.494:(a.kind==='depot'||a.kind==='tower'||a.kind==='hall'?.4:0)};
+        foundationDepth:a.number?.494:(a.kind==='depot'||a.kind==='tower'||a.kind==='hall'?.4:a.kind==='arrivals'?.494:0)};
       mergeKit(master,k); obj.traverse(m=>{if(m.isMesh)m.geometry.dispose();}); rec.object3d=null;
     };
     const box=(a,x,z,w,d,h,y0=0)=>this.boxes.push({id:a.id,x0:a.x+x-w/2,x1:a.x+x+w/2,z0:a.z+z-d/2,z1:a.z+z+d/2,y0,y1:y0+h});
@@ -138,6 +138,37 @@ export class PortSystem {
       groundDecal(k,CELLS.oil,-a.w/2+5,-a.d/2+7,1.5,2,0,.017);
       digit(k,a.number[0],-1.4,a.d/2-5,1.7); digit(k,a.number[1],1.4,a.d/2-5,1.7);
       k.pop(); add(a,k,{width:a.w,height:.5385,depth:a.d});
+    }
+    // OPENING2: apron A (the line transports) and the walkway from it to the arrivals hall: the same engineered plane as the pads.
+    {
+      const A=APRON,k=new PortKit(low);k.defaultTile=4;k.push(A.x,0,A.z);
+      k.box('concrete',0,-.244,0,A.w,.5,A.d);
+      for(let x=-A.w/2+12.5;x<A.w/2;x+=12.5) k.box('soot',x,.01,0,.035,.005,A.d-.3);
+      for(let z=-A.d/2+15;z<A.d/2;z+=15) k.box('soot',0,.011,z,A.w-.3,.005,.035);
+      for(const s of [-1,1]) {
+        k.box('mark',s*(A.w/2-1),.026,0,.2,.006,A.d-2);
+        k.box('mark',0,.026,s*(A.d/2-1),A.w-2,.006,.2);
+        for(let z=-A.d/2+6;z<A.d/2;z+=15){k.box('glowCyan',s*(A.w/2-.8),.025,z,.34,.035,.2);}
+      }
+      for(let z=-A.d/2+8;z<A.d/2-4;z+=9) k.box('mark',0,.026,z,.16,.006,2.2);              // the centreline the ship comes down on
+      for(const z of [-50,-12,34]) k.box('mark',0,.026,z,A.w-6,.006,.14);                  // stop bars
+      for(const x of [-9,9])for(const z of [-30,28])groundDecal(k,CELLS.scorch,x,z,7,9,0,.017);
+      groundDecal(k,CELLS.oil,-A.w/2+6,A.d/2-14,1.6,2.2,0,.017);
+      digit(k,'0',-1.4,A.d/2-9,2.2); digit(k,'1',1.4,A.d/2-9,2.2);
+      k.pop();add(A,k,{width:A.w,height:.5385,depth:A.d});
+      const W=WALKWAY,wk=new PortKit(low);wk.defaultTile=4;wk.push((W.x0+W.x1)/2,0,(W.z0+W.z1)/2);
+      wk.box('concrete',0,-.244,0,W.x1-W.x0,.5,W.z1-W.z0);
+      for(const s of [-1,1])wk.box('mark',0,.026,s*((W.z1-W.z0)/2-.7),W.x1-W.x0,.006,.16);
+      for(let x=-(W.x1-W.x0)/2+4;x<(W.x1-W.x0)/2-2;x+=8)wk.box('glowAmber',x,.03,0,1.2,.012,.14);
+      wk.pop();add(WALKWAY,wk,{width:W.x1-W.x0,height:.5385,depth:W.z1-W.z0});
+      // two floodmasts on the apron's east edge (the night pool lights the nearest ones)
+      for(const [mx,mz] of [[A.x+A.w/2+3,-45],[A.x+A.w/2+3,45]]){
+        master.bevelBox('concrete',mx,.14,mz,1.2,.28,1.2,.06);master.cyl('steelDark',mx,6,mz,.16,12,low?8:12,{r2:.09});
+        master.box('steel',mx,11.7,mz,3,.13,.2);
+        for(const dx of [-1,0,1]){master.bevelBox('gunmetal',mx+dx,11.55,mz,.65,.35,.4,.055);master.box('glowWhite',mx+dx,11.45,mz+.21,.55,.18,.02);}
+        master.box('glowRed',mx,12.02,mz,.12,.04,.12);
+        this.boxes.push({id:PORT_ID,x0:mx-.6,x1:mx+.6,z0:mz-.6,z1:mz+.6,y0:0,y1:12});
+      }
     }
     // Taxi spine and branches: concrete finishes lie on the same engineered plane.
     master.box('concrete',30,-.244,0,18,.5,110);
@@ -199,6 +230,8 @@ export class PortSystem {
           k.box('hazard',x,.3,3.03,1.4,.15,.03);
         }
         containerDressing(k,a,low,(x,z,w,d,h)=>box(a,x,z,w,d,h));
+      } else if(a.kind==='arrivals') {
+        arrivalsHall(k,a,low,(x,z,w,d,h)=>box(a,x,z,w,d,h));
       } else if(a.kind==='sign') {
         for(const x of [-7,7]) { bevel('steelDark',x,2,0,.3,4,.6); box(a,x,0,.3,.6,4); }
         bevel('steelDark',0,4,0,16,2,1);
@@ -217,6 +250,7 @@ export class PortSystem {
         containers:{width:30.36,height:5.2,depth:11.66},
         sign:{width:16,height:5,depth:1.05},
         hall:{width:24.06,height:6.75,depth:18.81},
+        arrivals:{width:33.3,height:5.244,depth:12},
       };
       rec.authored=envelope[a.kind];
       if(a.kind==='containers')label(CELLS.stock,a.x,2.25,a.z+3.065,9,.6);
@@ -263,7 +297,7 @@ export class PortSystem {
     this.practical=this.lights[0];
     // F2 NIGHT: the Sun goes down at the port now. The four apron masts (buildEarthworks) light the apron: a fixed small pool of real lights, moved to the
     // masts nearest the player (never a different NUMBER of lights: that would recompile every shader), off by day, up as the Sun sets.
-    this.masts=[[-32,-64],[91,-48],[90,54],[-32,44]];
+    this.masts=[[-32,-64],[91,-48],[90,54],[-32,44],[APRON.x+APRON.w/2+3,-45],[APRON.x+APRON.w/2+3,45]];
     this.flood=Array.from({length:low?2:3},()=>{const l=new THREE.PointLight(0xfff0d8,0,95,1.5);l.name='port apron flood';this.root.add(l);return l;});
     this.night=0;
     this.updateDisplays();

@@ -1,0 +1,10 @@
+Opening2 QA: starting isolated authority
+desktop flow ok
+refresh ok {"liner":true,"port":true,"descent":true,"dig":true}
+phone flow ok {"thumbHeld":true,"boardFits":true,"arrivedFrame":"ceres","complete":true,"failures":0}
+cause {"cause":"storm","world":"ceres","ok":true}
+cause {"cause":"meteor","world":"mars","ok":true}
+cause {"cause":"pirates","world":"ceres","ok":true}
+cause {"cause":"failure","world":"mars","ok":true}
+cause {"cause":"weather","world":"ceres","ok":true}
+multiplayer ok {"private":true,"sameCause":true,"skipSame":true}

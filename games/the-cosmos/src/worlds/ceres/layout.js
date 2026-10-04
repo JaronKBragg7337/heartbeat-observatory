@@ -63,6 +63,10 @@ export const WORKERS = [
   { id: 'driller', name: 'Noor Bekele', title: 'Haul driver', x: -95, z: 44, face: 'east', trade: null, personId: 'ada', pose: 'seated',
     line: 'Eight benches down and eight back up, forty tonnes a run. Mind the ramps: they are wider than they look. And do not drop anything on the way: it falls slowly enough to hit you.',
     question: 'What is it like in The Cut?', answer: 'Dark at the bottom and the walls ring when the blasting starts. Seams run rust-red through the grey, and the white salt comes up in veins. Dig where the colour is.', reply: 'Dig where the colour is.' },
+  // OPENING2: the Greenhaven side of Ceres, here to meet newcomers (the lifeboat's fuel coupler comes from her: src/opening/lifeboat.js)
+  { id: 'greenhaven-rep', name: 'Doctor Roth', title: 'Greenhaven recruiter', x: 30, z: 44, face: 'west', trade: null, personId: 'zuri',
+    line: 'Doctor Roth, Greenhaven. We grow food under glass in Kerwan basin, and we heal what the Compact breaks. If you need a fuel coupler for a lifeboat, I have one. It is not for free. Nothing on Ceres is, except the salt.',
+    question: 'Why is a doctor selling fuel couplers?', answer: 'Because every pit head on this rock sends me the people who fixed their own boat with a hammer. I would sooner they had the right part. The Compact has the metal; we have the patience.', reply: 'The right part. Understood.' },
   { id: 'welder', name: 'Piet Lang', title: 'Maintenance welder', x: 14, z: -86, face: 'west', trade: null, personId: 'isaiah',
     line: 'Everything here is welded twice: once for the load and once for the cold. Stand back from the tap.',
     question: 'Any advice for a newcomer?', answer: 'It is a hundred and seventy below in the shade and not much warmer in the light. Keep your suit heaters up, and never put a bare hand on anything that has not seen the Sun.', reply: 'Heaters up. Right.' },

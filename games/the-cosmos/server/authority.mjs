@@ -32,7 +32,12 @@ import { RoleDirector } from './roles.mjs';      // F5 roles and NPC stand-ins, 
 import { worldSale } from './world2.mjs';       // WORLD2
 import { tripWarps } from '../src/space/longRange.js';       // F3: the compression ladder depends on the drive that has the ship
 import { moonTrade } from './moon.mjs';       // WD-MOON
-import { freshOpening, OpeningModel } from '../src/opening/state.js';
+import { freshOpening, OpeningModel, OPENING_VERSION } from '../src/opening/state.js';
+import { currentSeason } from '../src/opening/season.js';       // OPENING2
+import { boardData } from '../src/opening/worlds.js';
+import { REPAIR_PARTS, giverFor, FIT_REACH, missingParts } from '../src/opening/lifeboat.js';
+import { frameToOutpost } from '../src/worlds/ceres/layout.js';
+import { makeMoon as makeMoonBody } from '../src/space/moonField.js';
 import { detachBodyEdits } from '../src/world/field.js';
 import { landingOrder, MOON_IDS } from '../src/space/spaceSpec.js';
 import { humanMarkers, DEFAULT_NAME, GUEST_IDLE_MS, EPHEMERAL_IDLE_MS, MAX_SLOTS } from './identity.mjs';
@@ -62,7 +67,9 @@ export class Authority {
   async load(){const s=await this.adapter.load();if(s.record){if(s.record.schema!==2)throw Error('Unsupported authority schema.');this.state=s.record;}
     for(const c of Object.values(this.state.pool))if(!c.shipId&&c.status==='inside'&&c.position.x===CREW_HALL.x&&c.position.z===CREW_HALL.z)c.position.x+=(CREW_POSTS.findIndex(r=>r.id===c.role)-2.5)*2.4;
     this.state.users=this.state.users||{};
-    for(const p of Object.values(this.state.players)){p.offlineAt=p.offlineAt||this.state.savedAt;p.seenAt=p.seenAt||p.offlineAt;}
+    for(const p of Object.values(this.state.players)){p.offlineAt=p.offlineAt||this.state.savedAt;p.seenAt=p.seenAt||p.offlineAt;
+      // OPENING2: an unfinished opening of the old shape (the freighter crash) is not resumed: the beats changed, so the player starts the new one.
+      if(p.opening&&!p.opening.complete&&p.opening.version!==OPENING_VERSION)p.opening=freshOpening({season:this.season(),now:this.now()});}
     this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.state.vehicles=this.state.vehicles||{};this.rebuild();this.vehicles.ensureAll();this.shops.ensureAll();this.roles.ensureAll();this.refill();
     // Restart catch-up uses real elapsed time. It continues trips/wages, never a browser clock.
     const elapsed=Math.min(300,Math.max(0,(this.now()-this.state.savedAt)/1000)); // hotfix 10/2: cap catch-up at 5 min; an active ship at 30 Hz over hours pegged the CPU and the watchdog restart loop made it worse
@@ -118,13 +125,14 @@ export class Authority {
   /** A new player (and the ship and pad that come with them). A signed-in person's player also carries their account id and slot. */
   createPlayer(deviceHash,name,personId,openingVersion,{userId=null,slot=null,ephemeral=false}={}){
     const id=randomUUID(),shipId=randomUUID(),pad=this.allocPad(shipId);
-    const ship={id:shipId,owner:id,type:openingVersion===1?'courier':DEFAULT_SHIP_TYPE,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},economy:initialEconomy(),frameId:'mars',pose:null,trip:null};
+    const ship={id:shipId,owner:id,type:openingVersion>=1?'lifeboat':DEFAULT_SHIP_TYPE,pad,crewMayBoard:false,crew:[],hold:{},holdLots:[],jobs:{taken:[],samples:[],salvaged:false},economy:initialEconomy(),frameId:'mars',pose:null,trip:null};
     this.state.ships[shipId]=ship;this.sims.set(shipId,this.makeSim(ship));this.vehicles.ensure(ship);
     const p={id,deviceHash,name:cleanName(name),personId:/^[a-z]{2,24}$/.test(personId)?personId:'isaiah',shipId,currentShipId:shipId,aboardShipId:null,vehicleId:null,vehicleSeat:null,frameId:'mars',
       pose:{worldPos:this.site.toWorld(pad.x-10,.02,pad.z+38),velocity:{x:0,y:0,z:0},yaw:this.site.heading,pitch:0,grounded:true,aboard:false,sw:{x:0,y:0,z:12,yaw:0,pitch:0},seat:null,look:{yaw:0,pitch:0}},toolIdx:1,carried:[],createdAt:this.now(),seenAt:this.now()};
     if(userId){p.userId=userId;p.slot=slot||'main';}
     if(ephemeral)p.ephemeral=true;
-    if(openingVersion===1)p.opening=freshOpening();
+    // OPENING2: the player's first ship is the drained lifeboat (it flies once two parts are fitted); the opening is the new one, with this season's crash.
+    if(openingVersion>=1){p.opening=freshOpening({season:this.season(),now:this.now()});ship.drained=true;ship.repair={need:['cell','coupler'],have:[]};}
     this.state.players[id]=p;return p;
   }
   /**
@@ -280,7 +288,58 @@ export class Authority {
   addCargo(ship,item,kg){if(!Number.isFinite(kg)||kg<=0)throw Error('Invalid cargo.');ship.hold[item]=(ship.hold[item]||0)+kg;}
   removeCargo(ship,item,kg){if((ship.hold[item]||0)+1e-5<kg)throw Error('Hold has insufficient cargo.');ship.hold[item]=Math.max(0,ship.hold[item]-kg);}
   releaseOpening(id){const model=this.openingModels?.get(id);if(!model)return;
-    detachBodyEdits(model.body.id);this.openingModels.delete(id);}
+    model.release();this.openingModels.delete(id);}
+  /** OPENING2: this season (number and the crash cause its transports share). COSMOS_CRASH_CAUSE overrides the cause for review runs only. */
+  season(){return currentSeason(this.now(),process.env.COSMOS_CRASH_CAUSE||null);}
+  /** The live counts the arrivals board shows: players and members per start world and side, online now. */
+  boardLive(){const players={},online={},factions={};
+    for(const p of Object.values(this.state.players)){const h=p.home;if(!h)continue;players[h.world]=(players[h.world]||0)+1;
+      if(this.sessions.has(p.id))online[h.world]=(online[h.world]||0)+1;if(h.faction)factions[h.faction]=(factions[h.faction]||0)+1;}
+    return {players,online,factions,season:this.season()};}
+  boardData(){return boardData(this.boardLive());}
+  /**
+   * The opening is over: put the player at their world's port with the purse and the drained lifeboat on its pad. Mars is the port itself (the
+   * ship is on the player's pad); any other world sets the lifeboat down on the player's own pad there and stands the player beside it.
+   */
+  /** OPENING2: the drained lifeboat. 'lifeboat-part' buys the part its giver holds (the player must stand at the giver, and pay); 'lifeboat-fit' fits both at the boat. */
+  lifeboat(p,a){
+    const own=this.state.ships[p.shipId];this.owner(p,own);
+    if(!own.drained)throw Error('Your lifeboat is not drained.');
+    const world=p.home?.world||'mars';
+    if(a.type==='lifeboat-part'){
+      const part=String(a.part),info=REPAIR_PARTS[part];if(!info)throw Error('Unknown part.');
+      own.repair=own.repair||{need:['cell','coupler'],have:[]};
+      if(own.repair.have.includes(part))throw Error('You already have the '+info.name+'.');
+      const g=giverFor(world,part);
+      if(g.frame==='port')this.near(p,{x:g.at.x,y:0,z:g.at.z},g.reach);
+      else{if(p.aboardShipId||p.frameId!==world)throw Error('Walk over to them first.');
+        const o=frameToOutpost(makeMoonBody(world).padInfo,p.pose.worldPos);if(Math.hypot(o.x-g.at.x,o.z-g.at.z)>g.reach)throw Error('Walk over to them first.');}
+      if(own.economy.marks<info.priceMarks)throw Error(`The ${info.name} is ${info.priceMarks} marks and the purse has ${own.economy.marks}.`);
+      own.economy.marks-=info.priceMarks;own.repair.have.push(part);
+      return {ok:true,msg:own.repair.have.length>=2?`The ${info.name} is yours. Both parts: fit them at the lifeboat.`:`The ${info.name} is yours. One part to go, from the other side.`};
+    }
+    if(missingParts(own).length)throw Error('You still need a part from the other side.');
+    const sim=this.sims.get(own.id);if(!sim||p.frameId!==sim.frameId)throw Error('Stand beside your lifeboat.');
+    const d=distance(p.pose.worldPos,sim.flight.pos);if(d>FIT_REACH)throw Error('Stand beside your lifeboat.');
+    own.drained=false;own.repair=null;sim.repairDone();
+    return {ok:true,msg:'The parts are fitted. The lifeboat has power. Go and make her earn.'};
+  }
+  arriveFromOpening(p,ship){
+    const o=p.opening,d=o.dest||{world:'mars',faction:null,stay:true};
+    p.opening.played=true;
+    p.home={world:d.world,faction:d.faction||null,driver:o.driver||null,cause:o.season?.cause||null,season:o.season?.number||null,stay:!!d.stay,at:this.now()};
+    const sim=this.sims.get(ship.id);
+    if(d.world==='mars'||!sim||!(d.world in (ship.moonPads||{}))){
+      p.frameId='mars';p.pose.worldPos=this.site.toWorld(ship.pad.x-7,.02,ship.pad.z+20);
+      p.pose.yaw=this.site.heading;
+    }else{
+      sim.placeOnWorld(d.world);
+      const moon=makeMoonBody(d.world),pad=ship.moonPads[d.world],mp=moon.playerPad(pad.east,pad.north);
+      const at=(e,n)=>({x:mp.point.x+mp.east.x*e+mp.north.x*n+mp.up.x*.02,y:mp.point.y+mp.east.y*e+mp.north.y*n+mp.up.y*.02,z:mp.point.z+mp.east.z*e+mp.north.z*n+mp.up.z*.02});
+      p.frameId=d.world;p.pose.worldPos=at(9,-3);p.pose.yaw=-Math.PI/2;
+    }
+    p.pose.pitch=0;p.pose.velocity={x:0,y:0,z:0};p.pose.aboard=false;p.poseAt=this.now();
+  }
   disconnect(id,peer){if(this.sessions.get(id)!==peer)return;this.sessions.delete(id);this.inputs.delete(id);this.vehicleInputs.delete(id);this.releaseOpening(id);
     this.state.players[id].offlineAt=this.now();this.state.players[id].seenAt=this.now();
     // The body remains aboard; the flight assist holds after the control lease ends.
@@ -589,16 +648,14 @@ export class Authority {
       this.openingModels ||= new Map();let model=this.openingModels.get(p.id);
       if(!model||model.state!==p.opening){model=new OpeningModel(p.opening,p.id);this.openingModels.set(p.id,model);}
       if(a.type==='opening-pose'||a.type==='opening-finish'){
-        // The server's own clock drives the opening: a first pose after a join is credited one second, a pose on foot at most two,
-        // and the scripted ride is credited the full wall time since the last one (it needs no client pose to arrive).
-        const ride=p.opening.ride&&p.opening.stage===4,wall=Math.max(0,(this.now()-(p.openingPoseAt||this.now()-1000))/1000);
-        a={...a,seconds:ride?Math.min(130,wall):Math.min(2,wall)};p.openingPoseAt=this.now();
-      }else if(a.type==='opening-ride')p.openingPoseAt=this.now();
+        // The server's own clock drives the opening: a first pose after a join is credited one second, a pose on foot at most two (the model clamps by stage),
+        // and the scripted parts (the liner, the Kestrel, the ride) are credited the full wall time since the last pose (they need no client pose to advance).
+        const wall=Math.max(0,(this.now()-(p.openingPoseAt||this.now()-1000))/1000);
+        a={...a,seconds:Math.min(130,wall)};p.openingPoseAt=this.now();
+      }else if(a.type==='opening-ride'||a.type==='opening-board'||a.type==='opening-next')p.openingPoseAt=this.now();
       const r=model.act(a);if(!r.ok)return r;
-      if(p.opening.complete){p.opening.played=true;p.pose.worldPos=this.site.toWorld(ship.pad.x-7,.02,ship.pad.z+20);
-        p.pose.yaw=this.site.heading;p.pose.pitch=0;p.pose.velocity={x:0,y:0,z:0};p.poseAt=this.now();
-        this.releaseOpening(p.id);}
-      return {...r,opening:structuredClone(p.opening),arrivalPose:p.opening.complete?structuredClone(p.pose):null};
+      if(p.opening.complete){this.arriveFromOpening(p,ship);this.releaseOpening(p.id);}
+      return {...r,opening:structuredClone(p.opening),arrivalPose:p.opening.complete?structuredClone(p.pose):null,arrivalFrame:p.opening.complete?p.frameId:undefined};
     }
     if(p.opening&&!p.opening.complete)throw Error('Continue the opening first.');
     sim.ship._rampOccupied=key=>this.rampOccupied(sim,key);
@@ -709,6 +766,7 @@ export class Authority {
         const r=a.type==='dig-edit'?d.dig():d.dump(!!a.all);if(!r.ok)return r;p.carried=d.carried;return r;}
       case 'world2-sale':return worldSale(this,p,ship,sim,a);       // WORLD2
       case 'moon-trade':return moonTrade(this,p,ship,sim,a);       // WD-MOON
+      case 'lifeboat-part':case 'lifeboat-fit':return this.lifeboat(p,a);       // OPENING2: earning the first ship
       case 'purchase':case 'sale':case 'regolith-sale':case 'quest-accept':case 'quest-step':{
         this.owner(p,this.state.ships[p.shipId]);const s=this.state.ships[p.shipId];
         if(a.type==='quest-step'){const q=QUESTS.find(q=>q.id===a.id);if(!q)throw Error('Unknown job.');this.near(p,{...q.target,y:0},q.target.radius);}

@@ -29,13 +29,13 @@ export function skyBlend(h) { return h <= SKY_FULL_M ? 1 : Math.exp(-(h - SKY_FU
 const D2R = Math.PI / 180;
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-const DOME_VS = `
+export const DOME_VS = `
 varying vec3 vDir;
 void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 
 // Stars: three layers of hashed cells on the sphere of directions, sized to about a pixel with derivatives, so they stay
 // crisp and do not shimmer into noise. The Milky Way is a band round a galactic plane, mottled and cut by dust lanes.
-const DOME_FS = `
+export const DOME_FS = `
 precision highp float;
 varying vec3 vDir;
 uniform vec3 uBg;

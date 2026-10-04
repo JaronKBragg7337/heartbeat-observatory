@@ -1,153 +1,224 @@
-// Isolated Chromium walkthrough. Output and filenames use scene numbers only.
+// The new opening in real browsers (OPENING2): a desktop Chromium walkthrough of the whole flow through normal actions, an iPhone-profile WebKit
+// phone with real taps and a held thumb, a refresh in every stage, all five crash causes on both worlds, and two players in one world.
+// Output and filenames use stage names only. Run: node test/opening-browser.mjs   (writes docs/qa/2026-10-03/opening2/browser-results.json)
 import { createRequire } from 'node:module';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { startServer } from '../server/index.mjs';
 import { MemoryAdapter } from '../src/world-state/storage.js';
-let chromium;try{({chromium}=createRequire(import.meta.url)('playwright'));}catch{({chromium}=createRequire(process.env.COSMOS_PLAYWRIGHT_ROOT||join(homedir(),'.codex/runtime/unfinished-island/node_modules/'))('playwright'));}
-const out=fileURLToPath(new URL('../docs/qa/2026-10-02/opening/',import.meta.url));await mkdir(out,{recursive:true});
-let app,browser,clock=Date.now();const errors=[],results={};
+import { outpostToFrame } from '../src/worlds/ceres/layout.js';
+import { makeMoon } from '../src/space/moonField.js';
+import { LINER_WAKE } from '../src/opening/state.js';
+import * as S from '../src/opening/script.js';
+import { shipDef } from '../src/ships/registry.js';
+let pw;try{pw=createRequire(import.meta.url)('playwright');}catch{pw=createRequire(process.env.COSMOS_PLAYWRIGHT_ROOT||'C:/Users/lilli/.codex/runtime/unfinished-island/node_modules/')('playwright');}
+const out=fileURLToPath(new URL('../docs/qa/2026-10-03/opening2/',import.meta.url));await mkdir(out,{recursive:true});
+const WEBKIT=process.env.COSMOS_WEBKIT||join(process.env.LOCALAPPDATA||'','ms-playwright','webkit-2336','Playwright.exe');
+const CHROME=process.env.COSMOS_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const IPHONE={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',viewport:{width:393,height:852},deviceScaleFactor:2,isMobile:true,hasTouch:true};
+const errors=[],results={desktop:{},phone:{},refresh:{},causes:[],multiplayer:{}};
+let app,chrome,webkit,clock=Date.now();
+const L=shipDef('transport'),K=shipDef('descender');
 try{
-  console.log('Opening QA: starting isolated authority');
+  console.log('Opening2 QA: starting isolated authority');
   app=await startServer({adapter:new MemoryAdapter(),port:0,tick:false,now:()=>clock});
-  browser=await chromium.launch({headless:true,...(process.env.COSMOS_CHROME||process.platform==='win32'?{executablePath:process.env.COSMOS_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{}),args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist','--enable-webgl']});
-  const url=q=>app.url.replace('ws:','http:')+'/?dev=1&ws='+app.url+'&'+q;
-  async function make(phone=false){
-    const ctx=await browser.newContext({viewport:phone?{width:390,height:844}:{width:1280,height:720},isMobile:phone,hasTouch:phone});
-    const page=await ctx.newPage();page.on('pageerror',e=>errors.push(String(e)));
-    page.on('response',r=>{if(r.status()>=400&&/\/(src|lib|assets|homes\/people)\//.test(new URL(r.url()).pathname))errors.push('HTTP '+r.status()+' '+new URL(r.url()).pathname);});
-    return {ctx,page};
+  chrome=await pw.chromium.launch({headless:true,executablePath:CHROME,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist','--enable-webgl']});
+  webkit=await pw.webkit.launch({headless:true,executablePath:WEBKIT});
+  const url=q=>app.url.replace('ws:','http:')+'/?ws='+app.url+'&dev=1&'+q;
+  async function make(browser,phone,tag){
+    const ctx=await browser.newContext(phone?IPHONE:{viewport:{width:1280,height:720}});const page=await ctx.newPage();
+    page.on('pageerror',e=>errors.push(tag+': '+String(e)+' @ '+String(e.stack||'').split(/\r?\n/).slice(0,3).join(' | ')));
+    page.on('response',r=>{if(r.status()>=400&&/\/(src|lib|assets|homes\/people)\//.test(new URL(r.url()).pathname))errors.push(tag+': HTTP '+r.status()+' '+new URL(r.url()).pathname);});
+    return {ctx,page,tag,phone};
   }
-  async function ready(page,q){await page.goto(url(q));await page.waitForFunction(()=>window.cosmos?.opening&&cosmos.engine.frameCount>=2,null,{timeout:120000});
+  async function ready(c,q=''){const {page}=c;await page.goto(url((c.phone?'tier=low':'tier=high')+'&'+q));
+    await page.waitForFunction(()=>window.cosmos?.opening&&cosmos.engine.frameCount>=2,null,{timeout:150000});
     await page.evaluate(async()=>{cosmos.engine.stop();if(cosmos.opening.active)await cosmos.opening.ready;cosmos.step(0);});}
-  async function step(page,seconds){
-    for(let left=seconds;left>1e-7;){const chunk=Math.min(1,left);left-=chunk;clock+=chunk*1000;
-      await page.evaluate(async seconds=>{const c=cosmos,r=c.engine.renderer,render=r.render;r.render=()=>{};
-        try{for(let t=0;t<seconds-1e-7;t+=1/60)c.step(Math.min(1/60,seconds-t));await c.opening.pending;}finally{r.render=render;}c.step(0);
-      },chunk);
+  async function step(c,seconds){const {page}=c;for(let left=seconds;left>1e-7;){const chunk=Math.min(2,left);left-=chunk;clock+=chunk*1000;
+    await page.evaluate(async seconds=>{const k=cosmos,r=k.engine.renderer,render=r.render;r.render=()=>{};
+      try{for(let t=0;t<seconds-1e-7;t+=1/30)k.step(Math.min(1/30,seconds-t));await k.opening.pending;}finally{r.render=render;}k.step(0);},chunk);}}
+  const shot=async(c,name)=>{await c.page.evaluate(()=>cosmos.step(0));await c.page.screenshot({path:join(out,`${c.tag}-${name}.png`)});};
+  const st=c=>c.page.evaluate(()=>({stage:cosmos.opening.state.stage,clock:cosmos.opening.clock,scene:cosmos.opening.sceneKind,active:cosmos.opening.active,label:cosmos.opening.actionLabel,caption:cosmos.opening.caption?.textContent||''}));
+  /** Edit this player's opening on the server, drop the page's socket first (a live page would keep posting its old pose), and reload into it. */
+  async function jump(c,patch,q=''){const {page}=c;const pid=await page.evaluate(()=>{cosmos.engine.stop();const w=cosmos.world,id=w.playerId;w.socket.onclose=null;w.socket.close();return id;});
+    await new Promise(r=>setTimeout(r,400));const p=app.world.state.players[pid];Object.assign(p.opening,typeof patch==='function'?patch(p.opening,p):patch);await app.world.commit();await ready(c,q);return pid;}
+  /** Step the page (frames are what send the opening's own next-step calls) until a stage is reached or the opening is over. */
+  const waitStage=async(c,n,max=40)=>{for(let i=0;i<max*2;i++){if((await st(c)).stage===n)return;await step(c,.5);}assert.equal((await st(c)).stage,n,'stage '+n+' was not reached');};
+  const waitDone=async(c,max=40)=>{for(let i=0;i<max*2;i++){if(!(await st(c)).active)return;await step(c,.5);}assert.fail('the opening did not finish');};
+  const press=async(c,key,ms=0)=>{await c.page.keyboard.down(key);if(ms){await step(c,ms/1000);}await c.page.keyboard.up(key);};
+  /** Place the player's body aboard (which = 'liner' | 'kestrel' | 'cabin') on the page AND on the server (a teleport the server did not see is pulled back). */
+  const tpAboard=async(c,pid,which,x,y,z,yaw=0)=>{app.world.state.players[pid].opening.pose={x,y,z,yaw,pitch:0};
+    await c.page.evaluate(({which,x,y,z,yaw})=>{const o=cosmos.opening;(which==='liner'?o.liner.sw:which==='kestrel'?o.kestrel.sw:o.cabinSw).place(x,y,z,yaw);cosmos.step(0);},{which,x,y,z,yaw});};
+  const tpPort=async(c,pid,x,z,yaw=0)=>{app.world.state.players[pid].opening.pose={x,y:0,z,yaw,pitch:0};await c.page.evaluate(({x,z,yaw})=>{cosmos.opening.model.place({x,y:0,z,yaw,pitch:0});},{x,z,yaw});};
+
+  // ============================== desktop ======================================================================================
+  const d=await make(chrome,false,'desktop');
+  await ready(d);const dpid=await d.page.evaluate(()=>cosmos.world.playerId);
+  assert.ok(await d.page.evaluate(()=>cosmos.world.remote&&cosmos.opening.active&&cosmos.opening.state.version===2));
+  results.desktop.convoy=await d.page.evaluate(()=>cosmos.opening.space.convoy.length);
+  results.desktop.people=await d.page.evaluate(()=>cosmos.opening.linerPeople.length);
+  await step(d,14);await shot(d,'liner-wake');
+  assert.match((await st(d)).caption,/captain|Captain|schedule/i);
+  // walk up to the steward and the old man: they talk
+  await d.page.evaluate(()=>{const o=cosmos.opening;o.liner.sw.place(4.4,0,9.0,0);});await step(d,1);
+  await d.page.evaluate(()=>{const o=cosmos.opening;o.talk.next=0;});await step(d,2);
+  results.desktop.talked=await d.page.evaluate(()=>cosmos.opening.talkers.filter(t=>t.said>0).length);
+  assert.ok(results.desktop.talked>=1,'nobody talked');
+  await shot(d,'liner-lounge');
+  // the entry and the landing
+  await step(d,112);assert.equal((await st(d)).scene,'port');await shot(d,'liner-convoy');
+  await step(d,14);await shot(d,'liner-entry');
+  await step(d,20);assert.equal((await st(d)).scene,'port');await shot(d,'liner-descent');
+  await step(d,40);await shot(d,'liner-touchdown');
+  const landed=await st(d);assert.ok(landed.clock>195&&landed.clock<215,String(landed.clock));
+  await step(d,8);
+  assert.equal(await d.page.evaluate(()=>cosmos.opening.liner.ramp.airlock),1);
+  // the way off: forward along the gangway
+  await tpAboard(d,dpid,'liner',S.rampFoot(L,'airlock').x-5,-1.5,26.7,Math.PI/2);
+  await step(d,1);await press(d,'KeyW',3500);for(let i=0;i<20&&(await st(d)).stage!==1;i++)await step(d,.5);assert.equal((await st(d)).stage,1,'walking off the gangway did not reach the port');
+  await shot(d,'port-exit');
+  assert.equal((await st(d)).stage,1);
+  // the port: the hall and the board
+  await tpPort(d,dpid,-98,44,Math.PI/2);await step(d,1);await tpPort(d,dpid,-88,44.5,0);await step(d,1);
+  assert.equal((await st(d)).label,'Read the board (E)');await shot(d,'port-hall');
+  await d.page.keyboard.press('KeyE');await d.page.waitForSelector('#opening-board',{timeout:10000});
+  results.desktop.boardTabs=await d.page.locator('#opening-board .ob-tabs button').count();assert.equal(results.desktop.boardTabs,5);
+  await shot(d,'board-mars');
+  await d.page.locator('.ob-tabs button[data-w="moon"]').click();assert.ok(await d.page.locator('.ob-note').first().isVisible());
+  assert.equal(await d.page.locator('[data-act="go"]').count(),0);await shot(d,'board-moon-coming');
+  await d.page.locator('.ob-tabs button[data-w="ceres"]').click();await d.page.locator('.ob-side[data-f="ironclad"]').click();await shot(d,'board-ceres');
+  await d.page.locator('[data-act="go"]').click();await d.page.waitForFunction(()=>!document.querySelector('#opening-board'),null,{timeout:10000});
+  const picked=app.world.state.players[dpid].opening;assert.deepEqual([picked.dest.world,picked.dest.faction],['ceres','ironclad']);assert.ok(['ironclad','greenhaven'].includes(picked.driver));
+  results.desktop.pick={dest:picked.dest,driver:picked.driver};
+  // the Kestrel's gate
+  const g=S.kestrelGate(K);await tpPort(d,dpid,g.x-2,g.z,0);await step(d,1.5);
+  assert.match((await st(d)).label,/Board the Kestrel to Ceres/);await shot(d,'port-gate');
+  await d.page.keyboard.press('KeyE');await waitStage(d,2);
+  await step(d,16);assert.equal(await d.page.evaluate(()=>cosmos.opening.kestrel.interior.root.visible),true,'the Kestrel cabin is not drawn after boarding (its rooms were never updated)');await shot(d,'kestrel-climb');await step(d,12);await shot(d,'kestrel-space');
+  await step(d,24);await shot(d,'kestrel-descent');await step(d,10);await shot(d,'kestrel-crash');
+  await step(d,12);await waitStage(d,3);
+  assert.equal((await st(d)).scene,'wreck');await step(d,1);await shot(d,'wreck-wake');
+  // the wreck: the locker, then out
+  await tpAboard(d,dpid,'cabin',1.2,.02,6.8,Math.PI/2);await step(d,1.5);
+  assert.match((await st(d)).label,/crew locker/);await d.page.keyboard.press('KeyE');await d.page.waitForSelector('#opening-note',{timeout:8000});await shot(d,'wreck-locker');
+  assert.equal(app.world.state.players[dpid].opening.lockerOpened,true);await d.page.locator('#opening-note button').click();
+  await tpAboard(d,dpid,'cabin',0,.02,13,0);await step(d,1);assert.equal((await st(d)).label,'Climb out (E)');
+  await d.page.keyboard.press('KeyE');await waitStage(d,4);await step(d,1);await shot(d,'dig-site');
+  // the dig
+  const aim=async(c,x,z,y=.35)=>c.page.evaluate(({x,y,z})=>{const m=cosmos.opening.model,w=m.walker,e=w.eyeWorldPos({}),p=m.toWorld(x,y,z),f=w.updateFrame();
+    const dd={x:p.x-e.x,y:p.y-e.y,z:p.z-e.z},l=Math.hypot(dd.x,dd.y,dd.z),dot=v=>dd.x*v.x+dd.y*v.y+dd.z*v.z;w.yaw=Math.atan2(dot(f.east),dot(f.north));w.pitch=Math.asin(dot(f.up)/l);cosmos.step(0);},{x,y,z});
+  await d.page.evaluate(()=>{const m=cosmos.opening.model;m.place({x:4,y:.03,z:18.5,yaw:0,pitch:-1});});app.world.state.players[dpid].opening.pose={x:4,y:.03,z:18.5,yaw:0,pitch:-1};
+  let taps=0;for(let i=0;i<40&&!await d.page.evaluate(()=>cosmos.opening.model.exposed());i++){const [x,z]=[[4,20],[4.18,20],[3.82,20],[4,20.18],[4,19.82]][i%5];await aim(d,x,z);await d.page.keyboard.press('KeyE');
+    await d.page.evaluate(async()=>{const o=cosmos.opening;while(o.actionPending||o.busy)await new Promise(r=>setTimeout(r,10));cosmos.step(0);});taps++;}
+  assert.ok(await d.page.evaluate(()=>cosmos.opening.model.exposed()),'the crate never came clear');await shot(d,'dig-cleared');
+  await d.page.keyboard.press('KeyE');await waitStage(d,5);
+  await step(d,9);await shot(d,'driver-arrives');
+  await d.page.evaluate(()=>{cosmos.opening.model.place({x:-6,y:.02,z:23,yaw:Math.PI/2,pitch:0});});app.world.state.players[dpid].opening.pose={x:-6,y:.02,z:23,yaw:1.57,pitch:0};await step(d,1);
+  assert.equal((await st(d)).label,'Ride (E)');await d.page.keyboard.press('KeyE');await waitStage(d,6);
+  await step(d,20);await shot(d,'ride-pitch');await step(d,30);await shot(d,'ride-port-lights');
+  await step(d,22);await waitDone(d);await d.page.waitForFunction(()=>!document.querySelector('.opening-transition'),null,{timeout:10000});
+  await step(d,1);await shot(d,'ceres-arrival');
+  const arr=await d.page.evaluate(()=>({frame:cosmos.space.frameId,snapFrame:cosmos.world.snapshot.players[cosmos.world.playerId].frameId,drained:cosmos.world.snapshot.ships[cosmos.world.snapshot.players[cosmos.world.playerId].shipId].drained,marks:cosmos.world.snapshot.ships[cosmos.world.snapshot.players[cosmos.world.playerId].shipId].economy.marks}));
+  results.desktop.arrivedFrame=arr.frame;results.desktop.drained=arr.drained;results.desktop.marks=arr.marks;assert.equal(arr.frame,'ceres');assert.equal(arr.snapFrame,'ceres');assert.equal(arr.marks,10000);
+  // the lifeboat chain, through the real button
+  const pi=makeMoon('ceres').padInfo,setStand=async g=>{const p=app.world.state.players[dpid],wp=outpostToFrame(pi,g.at.x,.02,g.at.z);p.pose.worldPos=wp;p.frameId='ceres';await app.world.commit();
+    await d.page.evaluate(w=>{Object.assign(cosmos.walker.worldPos,w);cosmos.walker.velocity={x:0,y:0,z:0};cosmos.walker.updateFrame();},wp);await step(d,2.5);};
+  const label=()=>d.page.evaluate(()=>document.getElementById('btn-action').style.display!=='none'?document.getElementById('btn-action').textContent:'');
+  await setStand({at:{x:-6,z:-84}});results.desktop.partLabel=await label();assert.match(results.desktop.partLabel,/power cell/);await d.page.keyboard.press('KeyE');await step(d,1.5);
+  assert.equal(app.world.state.ships[app.world.state.players[dpid].shipId].repair.have.join(),'cell');
+  await setStand({at:{x:30,z:44}});assert.match(await label(),/fuel coupler/);await d.page.keyboard.press('KeyE');await step(d,1.5);
+  const simD=app.world.sims.get(app.world.state.players[dpid].shipId);await setStand({at:{x:0,z:0}});{const wp={...simD.flight.pos};app.world.state.players[dpid].pose.worldPos=wp;await app.world.commit();await d.page.evaluate(w=>{Object.assign(cosmos.walker.worldPos,w);cosmos.walker.updateFrame();},wp);await step(d,2.5);}
+  assert.match(await label(),/Fit the power cell/);await d.page.keyboard.press('KeyE');await step(d,1.5);
+  assert.equal(app.world.state.ships[app.world.state.players[dpid].shipId].drained,false);results.desktop.fitted=true;await shot(d,'ceres-fitted');
+  results.desktop.complete=true;console.log('desktop flow ok');
+
+  // ============================== refresh in every stage ========================================================================
+  {
+    const c=await make(chrome,false,'refresh');await ready(c);await step(c,30);const t0=await st(c);await c.page.evaluate(async()=>{await cosmos.opening.savePose();});await ready(c);
+    const t1=await st(c);results.refresh.liner=t1.stage===0&&Math.abs(t1.clock-t0.clock)<2&&t1.clock>25;
+    const pid=await jump(c,{stage:1,pose:S.linerExit(L),played:true,clock:0});results.refresh.port=(await st(c)).stage===1&&Math.hypot(await c.page.evaluate(()=>cosmos.opening.model.pose().x)-S.linerExit(L).x)<3;
+    await jump(c,{stage:2,clock:30,dest:{world:'ceres',faction:null,stay:false},driver:'ironclad',pose:{x:2.6,y:0,z:-12.5,yaw:1.57,pitch:0}});const t2=await st(c);results.refresh.descent=t2.stage===2&&Math.abs(t2.clock-30)<3&&t2.scene==='port';
+    await jump(c,{stage:4,clock:0,dest:{world:'mars',faction:null,stay:false},driver:null,pose:{x:4,y:.03,z:18.5,yaw:0,pitch:-1}});
+    await step(c,1);await aim(c,4,20);await c.page.keyboard.press('KeyE');await c.page.evaluate(async()=>{const o=cosmos.opening;while(o.actionPending||o.busy)await new Promise(r=>setTimeout(r,10));});
+    const cuts=await c.page.evaluate(()=>cosmos.opening.state.cuts.length);await ready(c);
+    results.refresh.dig=(await st(c)).stage===4&&await c.page.evaluate(n=>cosmos.opening.state.cuts.length===n,cuts)&&cuts>0;
+    await c.ctx.close();void pid;
+  }
+  console.log('refresh ok',JSON.stringify(results.refresh));
+
+  // ============================== a phone with a held thumb =====================================================================
+  {
+    const c=await make(webkit,true,'phone');await ready(c);const pid=await c.page.evaluate(()=>cosmos.world.playerId);
+    const touchThumb=async(down)=>c.page.evaluate(down=>{const cv=document.querySelector('canvas');const ev=(t,y)=>new PointerEvent(t,{pointerId:71,pointerType:'touch',isPrimary:false,clientX:80,clientY:y,bubbles:true,cancelable:true});
+      if(down){cv.dispatchEvent(ev('pointerdown',650));cv.dispatchEvent(ev('pointermove',600));}else cv.dispatchEvent(ev('pointerup',600));},down);
+    const tap=async sel=>{const box=await c.page.locator(sel).boundingBox();assert.ok(box,sel+' has no box');await c.page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
+      await c.page.evaluate(async()=>{const o=cosmos.opening;while(o.active&&(o.actionPending||o.busy))await new Promise(r=>setTimeout(r,10));cosmos.step(0);});};
+    await step(c,12);await shot(c,'liner-wake');
+    await jump(c,{stage:1,pose:S.linerExit(L),played:true,clock:0},'');
+    await tpPort(c,pid,-98,44,Math.PI/2);await step(c,1);await tpPort(c,pid,-88,44.5,0);await step(c,1);
+    await touchThumb(true);results.phone.thumbHeld=true;
+    assert.equal((await st(c)).label,'Read the board (E)');await tap('#opening-action');await c.page.waitForSelector('#opening-board',{timeout:10000});
+    await shot(c,'board-mars');
+    results.phone.boardFits=await c.page.evaluate(()=>{const b=document.querySelector('#opening-board');const bad=[];for(const el of b.querySelectorAll('button')){const r=el.getBoundingClientRect();if(r.height<44||r.right>innerWidth+1||r.left<-1)bad.push(el.textContent.trim().slice(0,20)+' '+Math.round(r.height));}
+      return b.scrollWidth<=b.clientWidth+1&&bad.length===0;});
+    await c.page.locator('.ob-tabs button[data-w="ceres"]').tap();await c.page.locator('.ob-side[data-f="greenhaven"]').tap();await shot(c,'board-ceres');
+    await c.page.locator('[data-act="go"]').tap();await c.page.waitForFunction(()=>!document.querySelector('#opening-board'),null,{timeout:10000});
+    assert.equal(app.world.state.players[pid].opening.dest.faction,'greenhaven');
+    const g2=S.kestrelGate(K);await tpPort(c,pid,g2.x-2,g2.z,0);await step(c,1.5);assert.match((await st(c)).label,/Board the Kestrel/);await tap('#opening-action');
+    await waitStage(c,2);
+    await step(c,30);await shot(c,'kestrel-space');await step(c,42);await waitStage(c,3);await step(c,1);await shot(c,'wreck-wake');
+    await tpAboard(c,pid,'cabin',1.2,.02,6.8,Math.PI/2);await step(c,1.5);assert.match((await st(c)).label,/crew locker/);await tap('#opening-action');
+    await c.page.waitForSelector('#opening-note',{timeout:8000});await shot(c,'wreck-locker');await tap('#opening-note button');
+    await tpAboard(c,pid,'cabin',0,.02,13,0);await step(c,.05);await tap('#opening-action');await waitStage(c,4);
+    await c.page.evaluate(()=>{cosmos.opening.model.place({x:4,y:.03,z:18.5,yaw:0,pitch:-1});});app.world.state.players[pid].opening.pose={x:4,y:.03,z:18.5,yaw:0,pitch:-1};
+    let taps2=0;for(let i=0;i<40&&!await c.page.evaluate(()=>cosmos.opening.model.exposed());i++){const [x,z]=[[4,20],[4.18,20],[3.82,20],[4,20.18],[4,19.82]][i%5];await aim(c,x,z);await tap('#opening-action');taps2++;}
+    assert.ok(await c.page.evaluate(()=>cosmos.opening.model.exposed()));const cuts=await c.page.evaluate(()=>cosmos.opening.state.cuts.length);assert.equal(cuts,taps2,`${taps2} taps made ${cuts} cuts`);
+    await shot(c,'dig-cleared');await tap('#opening-action');assert.equal((await st(c)).stage,5);
+    await step(c,9);await c.page.evaluate(()=>{cosmos.opening.model.place({x:-6,y:.02,z:23,yaw:Math.PI/2,pitch:0});});app.world.state.players[pid].opening.pose={x:-6,y:.02,z:23,yaw:1.57,pitch:0};await step(c,1);
+    await tap('#opening-action');assert.equal((await st(c)).stage,6);await step(c,22);await shot(c,'ride-pitch');await touchThumb(false);await step(c,50);
+    await waitDone(c);await step(c,1);await shot(c,'ceres-arrival');
+    results.phone.arrivedFrame=await c.page.evaluate(()=>cosmos.space.frameId);results.phone.complete=results.phone.arrivedFrame==='ceres';results.phone.failures=0;
+    await c.ctx.close();
+  }
+  console.log('phone flow ok',JSON.stringify(results.phone));
+
+  // ============================== five causes, both worlds ======================================================================
+  {
+    const c=await make(webkit,true,'cause');await ready(c);
+    for(const [i,cause] of ['storm','meteor','pirates','failure','weather'].entries()){
+      const world=i%2?'mars':'ceres',rec={cause,world,ok:false};
+      try{
+        await jump(c,o=>({stage:2,clock:20,played:true,season:{number:i+1,cause},dest:{world,faction:null,stay:false},driver:world==='ceres'?'ironclad':null,pose:{x:2.6,y:0,z:-12.5,yaw:1.57,pitch:0}}));
+        await step(c,30);await shot(c,`${cause}-${world}-flight`);await step(c,18);await shot(c,`${cause}-${world}-late`);await step(c,10);await shot(c,`${cause}-${world}-crash`);
+        await step(c,12);await waitStage(c,3);await step(c,5);await shot(c,`${cause}-${world}-wreck`);
+        const cap=await c.page.evaluate(()=>cosmos.opening.look?.cause);rec.ok=cap===cause;
+      }catch(e){rec.error=String(e.message||e);}
+      results.causes.push(rec);console.log('cause',JSON.stringify(rec));
     }
+    await c.ctx.close();
   }
-  const scene=async(p,prefix,n)=>{await p.evaluate(()=>cosmos.step(0));await p.screenshot({path:join(out,`${prefix}-scene-${n}.png`)});};
-  async function thumb(page,down){await page.evaluate(down=>{const c=document.getElementById('game-canvas');
-    if(down){c.dispatchEvent(new PointerEvent('pointerdown',{pointerId:91,pointerType:'touch',clientX:80,clientY:650,bubbles:true}));c.dispatchEvent(new PointerEvent('pointermove',{pointerId:91,pointerType:'touch',clientX:80,clientY:600,bubbles:true}));}
-    else c.dispatchEvent(new PointerEvent('pointerup',{pointerId:91,pointerType:'touch',clientX:80,clientY:600,bubbles:true}));},down);}
-  async function walkTo(page,x,z,touch=false){
-    if(touch)await thumb(page,true);else await page.keyboard.down('KeyW');
-    try{for(let i=0;i<120;i++){
-      const distance=await page.evaluate(({x,z})=>{const m=cosmos.opening.model,p=m.pose(),target=m.toWorld(x,0,z),f=m.walker.updateFrame();
-        const dx=target.x-m.walker.worldPos.x,dy=target.y-m.walker.worldPos.y,dz=target.z-m.walker.worldPos.z;
-        m.walker.yaw=Math.atan2(dx*f.east.x+dy*f.east.y+dz*f.east.z,dx*f.north.x+dy*f.north.y+dz*f.north.z);return Math.hypot(p.x-x,p.z-z);},{x,z});
-      if(distance<.2)break;await step(page,Math.min(.25,distance/2));
-    }}finally{if(touch)await thumb(page,false);else await page.keyboard.up('KeyW');}
-    return page.evaluate(({x,z})=>{const p=cosmos.opening.model.pose();return Math.hypot(p.x-x,p.z-z);},{x,z});
+
+  // ============================== two players, one world ========================================================================
+  {
+    const a=await make(chrome,false,'twoA'),b=await make(chrome,false,'twoB');
+    // the second page needs its own device identity: a fresh browser context has its own storage
+    await ready(a);await ready(b);const ida=await a.page.evaluate(()=>cosmos.world.playerId),idb=await b.page.evaluate(()=>cosmos.world.playerId);
+    assert.notEqual(ida,idb);
+    results.multiplayer.private=await a.page.evaluate(id=>cosmos.world.snapshot.players[id].opening.cuts===undefined&&cosmos.world.snapshot.players[id].opening.complete===false,idb);
+    results.multiplayer.sameCause=app.world.state.players[ida].opening.season.cause===app.world.state.players[idb].opening.season.cause;
+    // A finishes by staying on Mars; B plays the first flight then uses Skip intro: the same start
+    await jump(a,{stage:1,pose:S.linerExit(L),played:true,clock:0});const sa=await a.page.evaluate(()=>cosmos.opening.command({type:'opening-pick',world:'mars',faction:null,stay:true}).then(r=>r.ok));
+    await b.page.evaluate(()=>cosmos.opening.command({type:'opening-skip',replay:true}));await waitDone(b);
+    const A=app.world.state.players[ida],B=app.world.state.players[idb],SA=app.world.state.ships[A.shipId],SB=app.world.state.ships[B.shipId];
+    results.multiplayer.skipSame=sa&&A.home.world==='mars'&&B.home.world==='mars'&&SA.type===SB.type&&SA.drained===SB.drained&&SA.economy.marks===SB.economy.marks&&A.frameId===B.frameId;
+    await a.ctx.close();await b.ctx.close();
   }
-  async function aim(page,x,z,y=.35){await page.evaluate(({x,y,z})=>{const m=cosmos.opening.model,w=m.walker,e=w.eyeWorldPos({}),p=m.toWorld(x,y,z),f=w.updateFrame();
-    const d={x:p.x-e.x,y:p.y-e.y,z:p.z-e.z},l=Math.hypot(d.x,d.y,d.z),dot=v=>d.x*v.x+d.y*v.y+d.z*v.z;
-    w.yaw=Math.atan2(dot(f.east),dot(f.north));w.pitch=Math.asin(dot(f.up)/l);cosmos.step(0);},{x,y,z});}
-  const A=await make(),B=await make(),a=A.page,b=B.page;
-  await ready(a,'tier=high');await ready(b,'tier=low');
-  assert.ok(await a.evaluate(()=>cosmos.world.remote&&cosmos.opening.active));
-  const aid=await a.evaluate(()=>cosmos.world.playerId),bid=await b.evaluate(()=>cosmos.world.playerId),shipId=app.world.state.players[aid].shipId;
-  await b.evaluate(()=>cosmos.world.socket.close());await b.waitForFunction(()=>!cosmos.world.connected);
-  results.reconnect=await b.evaluate(()=>{const c=cosmos,t=c.opening.elapsed;for(let i=0;i<30;i++)c.step(1/60);
-    return {paused:c.opening.elapsed===t,visible:c.opening.caption.textContent.includes('Reconnecting')};});
-  await b.waitForFunction(()=>cosmos.world.connected,null,{timeout:15000});
-  results.reconnect.identity=await b.evaluate(id=>cosmos.world.playerId===id,bid);
-  assert.ok(results.reconnect.paused&&results.reconnect.visible&&results.reconnect.identity);
-  results.seating=await a.evaluate(async()=>{const THREE=await import('/lib/three.module.js'),o=cosmos.opening;
-    return [o.driver,...o.passengers].map(p=>{let head;p.group.traverse(n=>{if(n.isBone&&/(^|[:_])head$/i.test(n.name))head=n;});
-      p.group.updateWorldMatrix(true,true);return head?p.group.worldToLocal(head.getWorldPosition(new THREE.Vector3())).y+p.group.position.y:null;});
-  });
-  const driverHead=await a.evaluate(()=>cosmos.opening.rover.driverHead||2);   // the survey rover's cab seats the driver's head at its own height
-  assert.ok(Math.abs(results.seating[0]-driverHead)<.06&&results.seating.slice(1).every(h=>Math.abs(h-1.22)<.06),JSON.stringify(results.seating));
-  await step(a,10);await a.evaluate(()=>cosmos.opening.syncFilm());await scene(a,'desktop',1);
-  await a.evaluate(()=>{const o=cosmos.opening;o.sw.yaw=1.2;o.sw.pitch=0;cosmos.step(0);});await scene(a,'desktop','1-angle-2');
-  await step(a,22);await scene(a,'desktop','1-angle-3');await step(a,22);
-  assert.equal(await a.evaluate(()=>cosmos.opening.state.stage),1);
-  await a.evaluate(()=>cosmos.opening.syncFilm(false));await scene(a,'desktop',2);
-  await a.evaluate(()=>{cosmos.opening.sw.yaw=0;cosmos.step(0);});await scene(a,'desktop','2-angle-2');
-  await a.evaluate(()=>cosmos.opening.sw.yaw=Math.PI);
-  await a.keyboard.down('KeyW');await step(a,5);await a.keyboard.up('KeyW');
-  assert.ok(await a.evaluate(()=>cosmos.opening.sw.z>12));await a.locator('#opening-action').click();await a.evaluate(()=>cosmos.opening.pending);
-  assert.equal(await a.evaluate(()=>cosmos.opening.state.stage),2);
-  assert.ok(await walkTo(a,4,18.5)<.3);await aim(a,4,20);await scene(a,'desktop',3);
-  let bites=0;
-  for(let round=0;round<7&&!await a.evaluate(()=>cosmos.opening.model.exposed());round++)for(const [x,z] of [[4,20],[4.18,20],[3.82,20],[4,20.18],[4,19.82]]){
-    if(await a.evaluate(()=>cosmos.opening.model.exposed()))break;
-    await aim(a,x,z);await a.locator('#opening-action').click();await a.evaluate(()=>cosmos.opening.pending);bites++;
-  }
-  assert.ok(await a.evaluate(()=>cosmos.opening.model.exposed()));
-  results.scene3={bites,cuts:await a.evaluate(()=>cosmos.opening.state.cuts.length)};await scene(a,'desktop','3-angle-2');
-  const pose=await a.evaluate(async()=>{await cosmos.opening.savePose();return cosmos.opening.pose();});
-  await ready(a,'tier=high');
-  results.refresh=await a.evaluate(p=>({stage:cosmos.opening.state.stage,exposed:cosmos.opening.model.exposed(),distance:Math.hypot(cosmos.opening.pose().x-p.x,cosmos.opening.pose().z-p.z),pitch:cosmos.opening.pose().pitch}),pose);
-  assert.ok(results.refresh.exposed&&results.refresh.distance<.01);assert.equal(results.refresh.stage,2);
-  await aim(a,-2600,-350,3);await scene(a,'desktop','3-angle-3');await aim(a,4,20);
-  await a.locator('#opening-action').click();await a.evaluate(()=>cosmos.opening.pending);assert.equal(await a.evaluate(()=>cosmos.opening.state.stage),3);
-  await step(a,10);assert.ok(await walkTo(a,-3.1,22.16)<.3);await aim(a,-6,22.2,1.9);await scene(a,'desktop',4);
-  await a.locator('#opening-action').click();await a.evaluate(()=>cosmos.opening.pending);assert.equal(await a.evaluate(()=>cosmos.opening.state.stage),4);
-  await step(a,33);await a.evaluate(()=>cosmos.opening.syncFilm());await scene(a,'desktop',5);
-  await step(a,36);assert.equal(await a.evaluate(()=>cosmos.opening.active),false);
-  await a.waitForFunction(()=>cosmos.world.state.opening.complete);await step(a,1);
-  await a.waitForFunction(()=>!document.querySelector('.opening-transition'));
-  assert.equal(app.world.state.players[bid].opening.complete,false);assert.equal(app.world.state.players[bid].opening.cuts.length,0);
-  results.multiplayer={privateProgress:true,ownShip:app.world.state.players[aid].shipId===shipId,marks:app.world.state.ships[shipId].economy.marks};assert.equal(results.multiplayer.marks,10000);
-  assert.equal(await a.evaluate(()=>cosmos.engine.scene.userData.privateOpening),undefined);
-  await a.evaluate(()=>{const c=cosmos,p=c.world.snapshot.ships[c.world.snapshot.players[c.world.playerId].shipId].pad;
-    c.freeCam.set(c.port.site.toWorld(p.x-19,8,p.z+30),c.ship.flight.pos);c.step(.016);});await scene(a,'desktop',6);
-  // Review the actual built interior without changing the server-owned player pose.
-  await a.evaluate(()=>{const c=cosmos;c.freeCam.set(c.ship.flight.toWorld({x:0,y:1.66,z:8},{}),c.ship.flight.toWorld({x:0,y:1.66,z:0},{}));c.step(.016);});await scene(a,'desktop','6-angle-2');
-  const final=structuredClone(app.world.state.players[aid].pose);await ready(a,'tier=high');
-  assert.equal(await a.evaluate(()=>cosmos.opening.active),false);assert.equal(await a.evaluate(()=>cosmos.world.snapshot.players[cosmos.world.playerId].shipId),shipId);
-  const restored=app.world.state.players[aid].pose;
-  assert.ok(Math.hypot(...['x','y','z'].map(k=>restored.worldPos[k]-final.worldPos[k]))<.01);
-  assert.equal(restored.aboard,final.aboard);assert.equal(restored.seat,final.seat);results.returningSave=true;
-  const P=await make(true),phone=P.page;await ready(phone,'tier=low&solo=1');
-  const cdp=await P.ctx.newCDPSession(phone);await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
-  await step(phone,8);await scene(phone,'phone',1);await step(phone,45);
-  // Touch movement uses the same canvas pointer handlers as a phone thumb.
-  await phone.evaluate(()=>{const c=document.getElementById('game-canvas');c.dispatchEvent(new PointerEvent('pointerdown',{pointerId:91,pointerType:'touch',clientX:80,clientY:650,bubbles:true}));c.dispatchEvent(new PointerEvent('pointermove',{pointerId:91,pointerType:'touch',clientX:80,clientY:588,bubbles:true}));});
-  await step(phone,4);await phone.evaluate(()=>document.getElementById('game-canvas').dispatchEvent(new PointerEvent('pointerup',{pointerId:91,pointerType:'touch',clientX:80,clientY:588,bubbles:true})));
-  assert.ok(await phone.evaluate(()=>cosmos.opening.sw.z>12));await scene(phone,'phone',2);
-  await phone.locator('#opening-action').tap();await phone.evaluate(()=>cosmos.opening.pending);await scene(phone,'phone',3);
-  results.phone=await phone.evaluate(()=>({stage:cosmos.opening.state.stage,calls:cosmos.engine.renderer.info.render.calls,triangles:cosmos.engine.renderer.info.render.triangles,failures:cosmos.engine.graphics.failures,actorsLoaded:[cosmos.opening.driver,...cosmos.opening.passengers].every(p=>p.loaded)}));
-  assert.equal(results.phone.failures,0);assert.equal(results.phone.actorsLoaded,true);
-  await ready(phone,'tier=safe&solo=1');await scene(phone,'phone-safe',3);
-  results.safe=await phone.evaluate(()=>({active:cosmos.opening.active,stage:cosmos.opening.state.stage,failures:cosmos.engine.graphics.failures,calls:cosmos.engine.renderer.info.render.calls}));assert.equal(results.safe.stage,2);assert.equal(results.safe.failures,0);
-  await ready(phone,'tier=low&solo=1');
-  const pitch=await phone.evaluate(()=>cosmos.opening.model.walker.pitch);
-  await phone.evaluate(()=>{const c=document.getElementById('game-canvas');for(const [type,y] of [['pointerdown',600],['pointermove',560],['pointerup',560]])c.dispatchEvent(new PointerEvent(type,{pointerId:92,pointerType:'touch',clientX:300,clientY:y,bubbles:true}));cosmos.step(.016);});
-  assert.ok(Math.abs(await phone.evaluate(()=>cosmos.opening.model.walker.pitch)-pitch)>.05);results.phone.touchLook=true;
-  assert.ok(await walkTo(phone,4,18.5,true)<.3);
-  for(let i=0;i<35&&!await phone.evaluate(()=>cosmos.opening.model.exposed());i++){
-    const [x,z]=[[4,20],[4.18,20],[3.82,20],[4,20.18],[4,19.82]][i%5];await aim(phone,x,z);await phone.locator('#opening-action').tap();await phone.evaluate(()=>cosmos.opening.pending);
-  }
-  assert.ok(await phone.evaluate(()=>cosmos.opening.model.exposed()));await phone.locator('#opening-action').tap();await phone.evaluate(()=>cosmos.opening.pending);
-  await step(phone,10);assert.ok(await walkTo(phone,-3.1,22.16,true)<.3);await aim(phone,-6,22.2,1.9);await scene(phone,'phone',4);
-  await phone.locator('#opening-action').tap();await phone.evaluate(()=>cosmos.opening.pending);await step(phone,33);await scene(phone,'phone',5);await step(phone,36);
-  assert.equal(await phone.evaluate(()=>cosmos.opening.active),false);await phone.waitForFunction(()=>!document.querySelector('.opening-transition'));
-  results.phone.complete=true;await scene(phone,'phone',6);
-  results.rooms=await phone.evaluate(async()=>{
-    const c=cosmos,s=c.ship,{planPath,RouteWalker}=await import('/src/crew/shipPath.js'),results=[];
-    s.boardAt(0,0,8,0);s.state.airlock.innerOpen=true;s.state.airlock.outerOpen=false;
-    const r=c.engine.renderer,render=r.render;r.render=()=>{};
-    try{for(const room of s.def.layout.rooms){
-      const targets=[];for(let x=room.x0+.45;x<room.x1-.3;x+=.4)for(let z=room.z0+.45;z<room.z1-.3;z+=.4)if(s.sw.canStand(x,room.y,z))targets.push({x,y:room.y,z});
-      const cx=(room.x0+room.x1)/2,cz=(room.z0+room.z1)/2;targets.sort((a,b)=>Math.hypot(a.x-cx,a.z-cz)-Math.hypot(b.x-cx,b.z-cz));
-      const target=targets[0],path=target&&planPath(s.sw,{x:s.sw.x,y:s.sw.y,z:s.sw.z},target,{reach:.25});
-      if(!path){results.push({scene:6,room:results.length+1,walked:false});continue;}
-      const walker=new RouteWalker(s.sw,[{type:'walk',pts:path.slice(1)}]);
-      for(let i=0;i<6000&&!walker.done;i++){walker.step(1/60);s._doorsFrame(1/60,false);}
-      s.sw.yaw=Math.atan2(cx-s.sw.x,-(cz-s.sw.z));
-      results.push({scene:6,room:results.length+1,walked:walker.done&&s.sw.x>room.x0&&s.sw.x<room.x1&&s.sw.z>room.z0&&s.sw.z<room.z1,snaps:walker.snaps,
-        pose:{x:s.sw.x,y:s.sw.y,z:s.sw.z,yaw:s.sw.yaw}});
-    }}finally{r.render=render;}c.step(.016);return results;
-  });
-  assert.ok(results.rooms.length===7&&results.rooms.every(r=>r.walked&&r.snaps===0),JSON.stringify(results.rooms));await scene(phone,'phone','6-angle-2');
-  for(const q of results.rooms){await phone.evaluate(p=>{cosmos.ship.sw.place(p.x,p.y,p.z,p.yaw);cosmos.step(.016);},q.pose);await scene(phone,'phone',`6-room-${q.room}`);}
-  assert.equal(errors.length,0,errors.join('\n'));console.log('Opening QA:',JSON.stringify(results));
-  await A.ctx.close();await B.ctx.close();await P.ctx.close();
-}finally{await writeFile(join(out,'browser-results.json'),JSON.stringify({results,errors},null,2));await browser?.close();await app?.close();}
+  console.log('multiplayer ok',JSON.stringify(results.multiplayer));
+  assert.equal(errors.length,0,errors.join('\n'));results.passed=true;
+}catch(e){results.failure=String(e.stack||e);console.error(results.failure);process.exitCode=1;}
+finally{
+  await writeFile(join(out,'browser-results.json'),JSON.stringify({results,errors},null,2));
+  await chrome?.close();await webkit?.close();await app?.close();
+}

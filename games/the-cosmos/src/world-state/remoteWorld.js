@@ -57,6 +57,7 @@ export class RemoteWorld {
       else if(m.type==='receipt'){const p=this.pendingActions.get(m.actionId);if(p){this.pendingActions.delete(m.actionId);this.journal();this.saving=this.pendingActions.size;
         if(m.opening){this.state.opening=m.opening;this.snapshot.players[this.playerId].opening=m.opening;}
         p.resolve(m);try{window.dispatchEvent(new CustomEvent('cosmos-receipt',{detail:{id:m.actionId,ok:m.ok!==false}}));}catch{}this.onReceipt?.(m);}}
+      else if(m.type==='board'){this._boardWait?.(m.data);this._boardWait=null;}   // OPENING2: the arrivals board's live numbers
       else if(m.type==='voice')this.onVoice?.(m);   // VOICES: WebRTC handshake from another player
       else if(m.type==='error'){this.onReceipt?.({ok:false,msg:m.msg});}
     };
@@ -82,6 +83,9 @@ export class RemoteWorld {
     for(const fn of this.listeners)fn(m);
   }
   sendPose(pose,controls,vehicle,ff){if(this.connected&&this.socket.readyState===WebSocket.OPEN){const seq=++this.poseSeq;this.sentPoses.set(seq,structuredClone(pose));while(this.sentPoses.size>64)this.sentPoses.delete(this.sentPoses.keys().next().value);this.socket.send(stringify({type:'pose',pose,controls,vehicle:vehicle||undefined,ff:ff||undefined,seq}));}}
+  /** OPENING2: the arrivals board's data (worlds, sides and their live counts) from the authority. */
+  board(){return new Promise((resolve,reject)=>{if(!this.connected||this.socket.readyState!==WebSocket.OPEN){reject(Error('Disconnected.'));return;}
+    const t=setTimeout(()=>{this._boardWait=null;reject(Error('timeout'));},6000);this._boardWait=d=>{clearTimeout(t);resolve(d);};this.socket.send(stringify({type:'board'}));});}
   sendVoice(to,data){if(this.connected&&this.socket.readyState===WebSocket.OPEN){this.socket.send(stringify({type:'voice',to,data}));return true;}return false;}
   request(action){if(!this.connected||this.socket.readyState!==WebSocket.OPEN)return Promise.resolve({ok:false,msg:'Shared world disconnected; wait for reconnect.'});
     const actionId=crypto.randomUUID();this.saving++;

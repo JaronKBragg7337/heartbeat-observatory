@@ -736,6 +736,51 @@ export function containerDressing(k,a,low,block) {
 }
 
 /** The apron between the buildings: ground support kit, pad boards, cables, scuffs, cones, and the light pools in the dust. */
+// ===========================================================================================================
+// OPENING2: THE ARRIVALS HALL. An open concourse under a roof just inside the west kerb: the world board, benches, a luggage tug, a vending
+// machine that has seen things. Local frame: x -12..12, z -5..5, open on every side. Where a new pilot reads the boards (BIBLE-v3 10.1).
+// ===========================================================================================================
+export function arrivalsHall(k,a,low,block) {
+  const w2=a.w/2,d2=a.d/2,H=a.h,seg=low?6:10;
+  k.box('concrete',0,-.244,0,a.w+2,.5,a.d+2);
+  for(let x=-w2+3;x<w2;x+=3)k.box('soot',x,.012,0,.03,.005,a.d-.4);
+  // roof on eight posts: two lean panels meeting over a long skylight, a drip edge, a lit fascia
+  for(const x of [-w2+.6,-w2/3,w2/3,w2-.6])for(const z of [-d2+.6,d2-.6]){
+    k.cyl('steelDark',x,H/2,z,.11,H,seg);k.box('concrete',x,.12,z,.5,.24,.5);block(x,z,.3,.3,H);
+  }
+  for(const s of [-1,1]){
+    const roof=[[-w2-.8,H+.15,0],[w2+.8,H+.15,0],[w2+.8,H-.2,s*(d2+.9)],[-w2-.8,H-.2,s*(d2+.9)]];
+    k._faceQuad('paint',roof,[0,1,0],[.95,.9,.82]);k._faceQuad('paint',roof.map(([x,y,z])=>[x,y-.05,z]),[0,-1,0],[.55,.52,.5]);
+    k.box('glowCyan',0,H-.22,s*(d2+.9),a.w+1.6,.06,.05);
+  }
+  for(const x of [-8,0,8])lamp(k,x,H-.25,-1.5,2.2);
+  // the board wall: a long gantry of screens on the north side (the live board is the game's own panel; these are the port's repeat displays)
+  B(k,'gunmetal',0,2.2,-d2+.5,a.w-2.4,2.5,.18,.05);
+  for(const [i,x] of [-7,0,7].entries())screen(k,[CELLS.port,CELLS.weather,CELLS.pads][i],x,2.25,-d2+.62,5.2,2.0);
+  B(k,'steelDark',0,3.75,-d2+.5,a.w-2.4,.5,.2,.03);plaque(k,CELLS.port,0,3.75,-d2+.62,a.w-3.2,.4);
+  block(0,-d2+.5,a.w-2.4,.4,3.4);
+  // the guide's lectern in the middle: a counter with a bell, a leaflet rack, a dish of mints
+  B(k,'counter',0,.52,.2,3.2,1.04,.9,.06);k.box('steel',0,1.06,.2,3.3,.06,1.0);B(k,'steelDark',1.1,1.2,.0,.2,.2,.2,.03);
+  k.cyl('copper',-1.0,1.14,.1,.12,.1,seg);for(let i=0;i<4;i++)B(k,'white',-.2+i*.18,1.2,.1,.14,.22,.03,.01);
+  block(0,.2,3.2,.9,1.1);
+  // benches, bins, luggage, a planter that gave up, a vending machine, the notice board
+  for(const x of [-9.5,-5.5,5.5,9.5])bench(k,x,3.2,Math.PI);
+  for(const x of [-9.5,9.5])block(x,3.2,1.8,.5,.8);
+  bin(k,-11,-1);bin(k,11,-1);
+  for(const [x,z,w,h,d,m] of [[-6.4,-2.6,1.4,.8,1.0,'crateB'],[-5.1,-2.4,1.2,.7,.9,'crateC'],[6.8,-2.8,1.5,.8,1.0,'crateA']]){k.box(m,x,h/2+.03,z,w,h,d);k.box('steelDark',x,h+.05,z,w*.9,.04,.06);}
+  k.cyl('concrete',-11.2,.35,2.2,.5,.7,seg);k.cyl('steelDark',-11.2,.72,2.2,.46,.06,seg);for(let i=0;i<5;i++)k.pipe('pipeBlue',[-11.2+(i-2)*.06,.74,2.2],[-11.2+(i-2)*.18,1.2,2.2+(i%2?.1:-.1)],.012,4);   // a planter that gave up
+  block(-11.2,2.2,1,1,1.0);
+  B(k,'plasticDark',11.3,.95,-3.5,.9,1.9,.8,.06);k.box('glowCool',11.3,1.35,-3.08,.6,.7,.02,{col:[.4,.7,.8]});k.box('steelDark',11.3,.55,-3.1,.5,.3,.03);block(11.3,-3.5,.9,.8,1.9);   // the vending machine that has seen things
+  B(k,'gunmetal',-11.8,1.5,.2,.08,1.1,1.5,.03);plaque(k,CELLS.notice,-11.74,1.5,.2,1.4,1.0,-Math.PI/2);
+  // floor routes: a lit stripe from the walkway side to the board, arrows toward the pads
+  for(let x=-w2-7;x<-w2+.5;x+=2.2)k.box('mark',x,.026,.2,1.2,.006,.2);
+  for(let x=-8;x<=8;x+=2.4)k.box('mark',x,.026,-1.7,1.1,.006,.14);
+  groundDecal(k,CELLS.scuff,-4,1.5,5,3,.3,.034);
+  for(const [x,z] of [[w2+1.5,3],[w2+1.5,4.2]])cone(k,x,z);
+  // lamps, pools and halos in the dust
+  k.pool(0,.05,0,6,[.07,.06,.04]);k.halo(0,H-.3,-1.5,.5,[.35,.3,.2]);
+}
+
 export function apronDressing(k,low,block) {
   const seg=low?8:14;
   // pad boards at the foot of each pad: a post, the plate, a lamp over it

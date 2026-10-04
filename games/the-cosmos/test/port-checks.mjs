@@ -53,7 +53,8 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     const engine={scene:new THREE.Scene(),track:()=>{},camera:new THREE.PerspectiveCamera(),cameraWorldPos:{x:0,y:0,z:0}};
     const registry=new Registry(),port=new PortSystem(engine,registry,site,'low').build();
     // PORT-POLISH: seven structures now (the crew hall joined the port).
-    check('port, every pad and all seven structures have stable registered IDs and measured sizes',registry.all().length===11&&registry.all().every(a=>a.measured&&a.id.startsWith('COS-MARS-')));
+    // OPENING2: the arrivals hall, the line-transport apron (A) and its walkway joined the port: 14 records now.
+    check('port, every pad and all eight structures (and the apron and walkway) have stable registered IDs and measured sizes',registry.all().length===14&&registry.all().every(a=>a.measured&&a.id.startsWith('COS-MARS-')));
     // ROUND7: the port is walkable to every pad. Flood the apron on a 1 m grid with a 34 cm body against every solid that reaches above a 35 cm step,
     // from the middle of the port to the foot of each of the first twelve pads (the far ones are at x 150 to 342): all reachable, and no detour of more than 20%.
     {const {allocatedPad}=await import('../src/world-state/fleet.js');
@@ -197,7 +198,7 @@ export async function runPortChecks({check,section,THREE,mars,FIELD,Walker,Regis
     check('tour holds both entrances open even from distant aerial review cameras',port.doors.every(d=>d.progress>.99));
     check('future NPC spaces stay clear of solid props',NPC_SPOTS.every(p=>!port.boxes.some(b=>p.x>b.x0-.4&&p.x<b.x1+.4&&p.z>b.z0-.4&&p.z<b.z1+.4)));
     const tour=makePortTour({engine,walker:w,ship:()=>sys,port,rebuild:()=>{}});
-    check('review tour retains original views and covers new interiors, traders, roofs and kilometre silhouette',tour('list').length===53&&['ship-ramp-ground','ship-ramp-looking-out','depot-door-inside','tower-door-outside','port-edge-grade','depot-stock','depot-service','depot-lift-cart','tower-reception','tower-elevator-call','tower-elevator-exit','tower-cab-south','tower-cab','market-trader-4','port-one-km','earthworks-detail'].every(n=>tour('list').includes(n)),tour('list').join());
+    check('review tour retains original views and covers new interiors, traders, roofs and kilometre silhouette',tour('list').length===54&&['ship-ramp-ground','ship-ramp-looking-out','depot-door-inside','tower-door-outside','port-edge-grade','depot-stock','depot-service','depot-lift-cart','tower-reception','tower-elevator-call','tower-elevator-exit','tower-cab-south','tower-cab','market-trader-4','port-one-km','earthworks-detail'].every(n=>tour('list').includes(n)),tour('list').join());
     // ------------------------------------------------------------------------------------------------------
     section('10b. The control tower: call, board, ride and leave the elevator');
     // ------------------------------------------------------------------------------------------------------

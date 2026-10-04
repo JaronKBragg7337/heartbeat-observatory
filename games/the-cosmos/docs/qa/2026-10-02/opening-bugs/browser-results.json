@@ -82,7 +82,7 @@
         "button": 0
       }
     ],
-    "stage": 2,
+    "stage": 4,
     "pose": {
       "x": 0,
       "y": 0.02,
@@ -103,9 +103,9 @@
   "ride": {
     "seconds": 22.000000000000007,
     "pose": {
-      "x": -697.0566663633422,
-      "y": 3.7042205365432608,
-      "z": -76.26383978154381,
+      "x": -697.0566663631904,
+      "y": 3.704649185921994,
+      "z": -76.26383978159362,
       "yaw": 1.4279275601234334,
       "pitch": 0
     },
@@ -127,11 +127,11 @@
     "flightSecondsInOneSecond": 60.00000000000085,
     "hull": 100,
     "landed": true,
-    "secondsToLand": 43.50000000000035,
-    "padDistance": 3.034839492957798
+    "secondsToLand": 27.40000000000012,
+    "padDistance": 2.161159995193481
   },
   "staleBuildReload": true,
-  "buildVersion": "c0ca7c0123710983b95c",
+  "buildVersion": "68c16e8290ca1594b15f",
   "serviceWorker": "No controlling service worker in isolated browser",
   "failedGlbVisible": true
 }

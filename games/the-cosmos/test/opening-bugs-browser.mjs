@@ -45,13 +45,16 @@ try{
       const dx=target.x-w.worldPos.x,dy=target.y-w.worldPos.y,dz=target.z-w.worldPos.z;
       w.yaw=Math.atan2(dx*f.east.x+dy*f.east.y+dz*f.east.z,dx*f.north.x+dy*f.north.y+dz*f.north.z);return Math.hypot(p.x-x,p.z-z);},{x,z});
     if(d<.2)return;await step(Math.min(.25,d/2));}throw Error('Touch walk did not reach '+x+','+z);}finally{await stick(false);}}
-  await ready();console.log('Phone opening: loaded');await step(10);await shot('01-intro');
+  // OPENING2: the liner, the port and the Kestrel have their own checks (opening-browser.mjs, phone-check.mjs); this walkthrough starts in the wreck.
+  await ready();console.log('Phone opening: loaded');
+  {const pid0=await page.evaluate(()=>cosmos.world.playerId),o=app.world.state.players[pid0].opening;
+   Object.assign(o,{stage:3,clock:0,played:true,dest:{world:'mars',faction:null,stay:false},driver:null,pose:{x:0,y:.02,z:4,yaw:Math.PI,pitch:0}});await app.world.commit();}
+  await ready();assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),3);await page.evaluate(async()=>{const o=cosmos.opening;o.cabinSw.place(0,.02,4,Math.PI);o.state.pose={x:0,y:.02,z:4,yaw:Math.PI,pitch:0};await o.savePose(.1);});await step(10);await shot('01-wreck');
   const elapsed=await page.evaluate(async()=>{await cosmos.opening.savePose();return cosmos.opening.state.elapsed;});
   await ready();assert.ok(Math.abs(await page.evaluate(()=>cosmos.opening.elapsed)-elapsed)<1);results.introRefresh=true;
-  await step(44);assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),1);
   await page.evaluate(()=>{window.__qaPointers=[];for(const name of ['pointerdown','pointerup','pointercancel','lostpointercapture'])document.addEventListener(name,e=>{
     window.__qaPointers.push({type:name,target:e.target.id,id:e.pointerId,x:e.clientX,y:e.clientY,button:e.button});},true);});
-  await stick(true);await step(4);await stick(false);assert.ok(await page.evaluate(()=>cosmos.opening.sw.z>12));await shot('02-exit-action');
+  await stick(true);await step(9);await stick(false);assert.ok(await page.evaluate(()=>cosmos.opening.cabinSw.z>12),JSON.stringify(await page.evaluate(()=>({z:cosmos.opening.cabinSw.z,st:cosmos.opening.state.stage,touch:cosmos.touch?.active,st2:cosmos.opening.status,pose:cosmos.opening.state.pose}))));await shot('02-exit-action');
   // A real second finger taps the action while the movement finger remains held,
   // and while an intentionally delayed background request is still busy.
   async function delaySave(){await page.evaluate(()=>{const w=cosmos.world,request=w.request.bind(w);let once=true;
@@ -59,9 +62,9 @@ try{
     cosmos.opening.savePose(.1);cosmos.step(0);});}
   await delaySave();await stick(true);assert.equal(await page.locator('#opening-action').isDisabled(),false);
   await tap('#opening-action',true);await stick(false);
-  results.exitTap=await page.evaluate(()=>({events:__qaPointers,stage:cosmos.opening.state.stage,pose:cosmos.opening.state.pose,sw:cosmos.opening.sw.z,status:cosmos.opening.status}));
-  assert.equal(results.exitTap.stage,2,JSON.stringify(results.exitTap));results.exitDuringSave=true;
-  await ready();assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),2);results.exitRefresh=true;
+  results.exitTap=await page.evaluate(()=>({events:__qaPointers,stage:cosmos.opening.state.stage,pose:cosmos.opening.state.pose,sw:cosmos.opening.cabinSw.z,status:cosmos.opening.status}));
+  assert.equal(results.exitTap.stage,4,JSON.stringify(results.exitTap));results.exitDuringSave=true;
+  await ready();assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),4);results.exitRefresh=true;
   await walkTo(4,18.5);let taps=0;
   for(let i=0;i<35&&!await page.evaluate(()=>cosmos.opening.model.exposed());i++){
     const [x,z]=[[4,20],[4.18,20],[3.82,20],[4,20.18],[4,19.82]][i%5];await aim(x,z);await delaySave();await tap('#opening-action');taps++;}
@@ -72,17 +75,17 @@ try{
   // Drop the carry receipt after its durable commit. Refresh must replay the
   // journaled action id and resume at the driver without applying it twice.
   const id=await page.evaluate(()=>cosmos.world.playerId),peer=app.world.sessions.get(id),send=peer.send.bind(peer);
-  peer.send=text=>{const m=JSON.parse(text);if(m.type==='receipt'&&m.opening?.stage===3)return;send(text);};
+  peer.send=text=>{const m=JSON.parse(text);if(m.type==='receipt'&&m.opening?.stage===5)return;send(text);};
   await page.locator('#opening-action').tap();
-  await page.waitForFunction(()=>cosmos.world.state.opening?.stage===3);
+  await page.waitForFunction(()=>cosmos.world.state.opening?.stage===5);
   assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem(cosmos.world.journalKey)).actions.length>0));
-  await ready();assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),3);
+  await ready();assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),5);
   assert.equal(await page.evaluate(()=>cosmos.world.pendingActions.size),0);results.unacknowledgedCarryRefresh=true;
   await step(10);await walkTo(-3.1,22.16);await aim(-6,22.2,1.9);await shot('04-ride-offer');
-  await delaySave();await tap('#opening-action');assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),4);
+  await delaySave();await tap('#opening-action');assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),6);
   await step(22);await shot('05-passenger-ride');
   const ride=await page.evaluate(()=>({seconds:cosmos.opening.rideSeconds,pose:cosmos.opening.pose(),eye:cosmos.opening.rover.passengerEye}));
-  await ready();assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),4);
+  await ready();assert.equal(await page.evaluate(()=>cosmos.opening.state.stage),6);
   assert.ok(Math.abs(await page.evaluate(()=>cosmos.opening.rideSeconds)-ride.seconds)<1);
   await step(48);assert.equal(await page.evaluate(()=>cosmos.opening.active),false);await page.waitForFunction(()=>!document.querySelector('.opening-transition'));
   await shot('06-port-arrival');assert.equal(app.world.state.players[id].opening.complete,true);results.ride={...ride,refresh:true,arrived:true};
@@ -116,6 +119,7 @@ try{
   // airborne fixture, then use the public pilot order and on-screen ×60 control.
   const p=app.world.state.players[id],s=app.world.state.ships[p.shipId],sim=app.world.sims.get(s.id),role=CREW_POSTS.find(r=>r.seat==='pilot');
   const pilot={id:'qa-pilot',role:role.id,name:'QA Pilot',skill:1,status:'aboard',displaced:false,seatPose:sim.def.seats.find(v=>v.id==='pilot'),personId:'ada'};
+  sim.repairDone();   // OPENING2: the opening ship is a drained lifeboat; a hired pilot's return needs her engines
   s.crew.push(pilot);p.aboardShipId=s.id;p.currentShipId=s.id;p.pose.aboard=true;p.pose.seat=null;
   sim.ship.aboard=true;sim.syncCrew();sim.flight.pos=sim.portSite.toWorld(0,125000,0);sim.flight.vel={x:0,y:0,z:0};sim.flight.agl=125000;sim.flight.landed=false;sim.flight.refreshOrientation();
   await app.world.commit();await ready();

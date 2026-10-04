@@ -69,6 +69,9 @@ import { Cinema } from './cinema/cinema.js';
 import { VehicleSystem } from './vehicles/view.js';
 import { Opening } from './opening/opening.js';
 import { freshOpening, needsOpening } from './opening/state.js';
+import { currentSeason } from './opening/season.js';
+import { arrivalNoteFor } from './opening/dialogue.js';
+import { RepairChain } from './opening/repair.js';
 import { readOpeningCheckpoint } from './opening/checkpoint.js';
 import { buildShowcase } from './port/showcase.js';
 
@@ -90,9 +93,9 @@ catch(e) { world.error=e.message;console.error('World save unavailable',e); }
 const openingParams=new URLSearchParams(location.search);
 const legacyReview=openingParams.get('dev')==='1'&&openingParams.get('opening')==='off';
 if(!world.remote&&!legacyReview&&needsOpening(world.state.opening,savedWorld.record)){
-  world.state.opening=readOpeningCheckpoint()||world.state.opening||freshOpening();world.state.shipType='courier';
+  world.state.opening=readOpeningCheckpoint()||world.state.opening||freshOpening({season:currentSeason(Date.now(),openingParams.get('cause'))});world.state.shipType='lifeboat';
 }
-let opening=null;
+let opening=null,repair=null;
 
 const engine = new Engine(canvas, { fov: 72,world });
 const safeGraphics=engine.safe;
@@ -861,7 +864,7 @@ let actionFlash = 0;
 // has to drop.
 let tapAction = 'dig';
 
-let shipPress = false, spacePress = false, vehiclePress = false;
+let shipPress = false, spacePress = false, vehiclePress = false, repairPress = false;
 /** On a moon: take a core sample, stow the hopper. A rover prompt wins, so this stays quiet while one is up. */
 function spaceAction() { return space.onMoon && !ship.aboard && !vehicles?.contextAction() ? space.jobs.contextAction(!!(ship.ready && ship.contextAction())) : null; }
 function refreshAction() {
@@ -873,6 +876,8 @@ function refreshAction() {
   if (actionFlash > 0) return;
   const va = vehicles?.contextAction();
   if (va) { tapAction = 'vehicle'; actionBtn.style.display = 'block'; actionBtn.textContent = va.label; toolBtn.style.display = 'none'; return; }
+  const ra = repair?.contextAction();
+  if (ra) { tapAction = 'repair'; actionBtn.style.display = 'block'; actionBtn.textContent = ra.label; toolBtn.style.display = 'none'; return; }
   const sa = spaceAction();
   if (sa) { tapAction = 'space'; actionBtn.style.display = 'block'; actionBtn.textContent = sa.label; toolBtn.style.display = 'none'; return; }
   if (ship.ready) {
@@ -920,6 +925,7 @@ actionBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault(); e.stopPropagation();
   try{actionBtn.setPointerCapture(e.pointerId);}catch{}
   if (tapAction === 'vehicle') { vehiclePress = true; return; }
+  if (tapAction === 'repair') { repairPress = true; return; }
   if (tapAction === 'ship') { shipPress = true; return; }
   if (tapAction === 'space') { spacePress = true; return; }
   if (tapAction === 'lift') { liftPress = true; return; }
@@ -942,6 +948,7 @@ const endPress = (e) => {
     hudAccum = 1;
     return;
   }
+  if (repairPress) { repairPress = false; const a = repair?.contextAction(); if (a) { const r = a.run(); flash(r && r.msg ? r.msg : a.label); } hudAccum = 1; return; }
   if (spacePress) { spacePress = false; const sa = spaceAction(); if (sa) { const r = sa.run(); flash(r && r.msg ? r.msg : sa.label); } hudAccum = 1; return; }
   if (shipPress) {
     shipPress = false;
@@ -956,7 +963,7 @@ const endPress = (e) => {
   } else stopHold();                                // hold already fired
 };
 actionBtn.addEventListener('pointerup', endPress);
-actionBtn.addEventListener('pointercancel', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
+actionBtn.addEventListener('pointercancel', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;repairPress=false;});
 actionBtn.addEventListener('pointerleave', (e) => {if(actionBtn.hasPointerCapture?.(e.pointerId))return;stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
 actionBtn.addEventListener('lostpointercapture', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
 window.addEventListener('blur', () => {stopHold();shipPress=false;spacePress=false;liftPress=false;vehiclePress=false;});
@@ -1145,6 +1152,7 @@ window.addEventListener('keydown', (e) => {
     const va = vehicles?.contextAction();
     if (va && !e.repeat) { const r = va.run(); if (r && r.then) r.then((x) => { if (x && x.msg) flash(x.msg); }); else if (r && r.msg) flash(r.msg); hudAccum = 1; }
     else if (va) { /* held: one action per press */ }
+    else if (repair?.contextAction()) { const ra = repair.contextAction(); if (!e.repeat) { const r = ra.run(); flash(r && r.msg ? r.msg : ra.label); hudAccum = 1; } }
     else {
       const sa = spaceAction();
       if (sa && !e.repeat) { const r = sa.run(); flash(r && r.msg ? r.msg : sa.label); hudAccum = 1; }
@@ -1197,12 +1205,15 @@ if (ship.ready) {
   vehicles.multiplayer = multiplayer;
   if (multiplayer) multiplayer.vehicles = vehicles;
 }
-opening=new Opening({engine,world,ship,people,port,tier,voice,onFinish:(pose)=>{
+repair=world.remote?new RepairChain({world,walker,portSite,space}):null;   // OPENING2: the drained lifeboat's parts
+opening=new Opening({engine,world,ship,people,port,tier,voice,onFinish:(pose,frameId)=>{
   const pad=world.remote?world.snapshot.ships[world.snapshot.players[world.playerId].shipId].pad:{x:0,z:0};
   const arrival=pose?.worldPos||portSite.toWorld(pad.x-7,.02,pad.z+20);
-  Object.assign(walker.worldPos,arrival);Object.assign(walker.velocity,{x:0,y:0,z:0});walker.yaw=portSite.heading;walker.pitch=0;
+  // OPENING2: a player who chose another world arrives on it: the server has put them (and their lifeboat) on that world's frame
+  if(frameId&&frameId!==space.frameId)space.setFrame(frameId);
+  Object.assign(walker.worldPos,arrival);Object.assign(walker.velocity,{x:0,y:0,z:0});walker.yaw=pose?.yaw??portSite.heading;walker.pitch=0;
   walker.grounded=true;walker.updateFrame();if(multiplayer){multiplayer.forcePlayer=true;multiplayer.correction=null;multiplayer.apply({});}
-  ship.note('Passenger line settlement: 10,000 Mars marks (2,500 credits). Your Wayfarer is on your pad. Work is available around the port.',true);
+  ship.note(arrivalNoteFor(opening?.worldId||world.snapshot?.players?.[world.playerId]?.home?.world||'mars'),true);
   rebuildNear(true);worldBridge.checkpoint();refreshHud();
 }});
 const devMode = params.get('dev') === '1';

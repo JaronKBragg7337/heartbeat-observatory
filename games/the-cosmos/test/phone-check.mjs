@@ -84,6 +84,7 @@ for (const target of targets) for (const spec of devices.filter(d => !process.en
         try { for (let t = 0; t < sec - 1e-7; t += 1 / 60) c.step(Math.min(1 / 60, sec - t)); await c.opening.pending; } finally { r.render = render; } c.step(0); }, chunk); } };
     const realTap = async selector => { const box = await page.locator(selector).boundingBox(); assert.ok(box, selector + ' has no box');
       await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+      await page.waitForTimeout(150);        // the browser turns a touch into a click a moment later; the opening's own wait below must not start before it has
       await page.evaluate(async () => { const o = cosmos.opening; while (o.active && (o.actionPending || o.busy)) await new Promise(r => setTimeout(r, 10)); cosmos.step(0); }); };
     const aim = async (x, z, y = .35) => page.evaluate(({ x, y, z }) => { const m = cosmos.opening.model, w = m.walker, e = w.eyeWorldPos({}), p = m.toWorld(x, y, z), f = w.updateFrame();
       const d = { x: p.x - e.x, y: p.y - e.y, z: p.z - e.z }, l = Math.hypot(d.x, d.y, d.z), dot = v => d.x * v.x + d.y * v.y + d.z * v.z;
@@ -136,25 +137,53 @@ for (const target of targets) for (const spec of devices.filter(d => !process.en
       'seated': ['#btn-action', '#voice-talk'], 'piloting': ['#btn-action', '#btn-lift', '#btn-sink', '#btn-fire', '#flight-speed', '#voice-talk'] };
     const ALL = ['#btn-action', '#btn-tool', '#btn-drop-all', '#btn-climb', '#crew-talk', '#quest-deliver', '#btn-fire', '#btn-sink', '#btn-lift', '#voice-talk', '#flight-speed'];
     const stage = () => page.evaluate(() => cosmos.opening.state.stage);
-    await record(scope, 'opening: intro plays, refresh resumes the same step', async () => {
-      await page.evaluate(() => { cosmos.engine.stop(); cosmos.step(0); }); await step(10); await shot('opening-intro');
-      // VOICES: the port-control caption is also asked of the voice system (it waits for the first tap on iPhone)
-      assert.ok(await page.evaluate(() => cosmos.voice.log.some(l => /inbound passenger service/.test(l.text))), 'port control line was never sent to the voice system');
-      await page.evaluate(async () => { await cosmos.opening.savePose(); }); const t = await page.evaluate(() => cosmos.opening.state.elapsed);
-      await ready(); assert.ok(Math.abs(await page.evaluate(() => cosmos.opening.elapsed) - t) < 1.5, 'intro did not resume near ' + t);
+    // OPENING2: the new opening (the liner, the port, the board, the Kestrel, the wreck). A solo world has Mars only; every step is a real tap with a held thumb.
+    const tp = async (x, z, yaw = 0) => page.evaluate(({ x, z, yaw }) => { const o = cosmos.opening; o.state.pose = { x, y: 0, z, yaw, pitch: 0 }; o.model.place({ x, y: 0, z, yaw, pitch: 0 }); cosmos.step(0); }, { x, z, yaw });
+    await record(scope, 'opening: the liner plays with the convoy, the captain is asked of the voice system, refresh resumes the same step', async () => {
+      await page.evaluate(() => { cosmos.engine.stop(); cosmos.step(0); }); await step(14); await shot('opening-liner');
+      assert.ok(await page.evaluate(() => cosmos.voice.log.some(l => /on schedule, on course/.test(l.text))), 'the captain line was never sent to the voice system');
+      assert.ok(await page.evaluate(() => cosmos.opening.space.convoy.length >= 4), 'the convoy was not built');
+      await page.evaluate(async () => { await cosmos.opening.savePose(); }); const t = await page.evaluate(() => cosmos.opening.state.clock);
+      await ready(); assert.ok(Math.abs(await page.evaluate(() => cosmos.opening.clock) - t) < 1.5, 'the liner did not resume near ' + t);
     });
-    await record(scope, 'opening: exit-freighter button works with a thumb held on the stick', async () => {
-      await step(44); assert.equal(await stage(), 1);
-      await holdThumb(); await step(4);
-      assert.ok(await page.evaluate(() => cosmos.opening.sw.z > 12), 'walker did not move with the held thumb');
-      assert.equal(await page.evaluate(() => cosmos.touch.active), true, 'thumb not registered as held');
-      await realTap('#opening-action');
-      assert.equal(await stage(), 2, 'tap on the exit button did nothing while the thumb was held');
-      assert.equal(await page.evaluate(() => cosmos.touch.active), true, 'the held thumb was dropped by the tap');
-      await releaseThumb(); await shot('opening-exit');
+    await record(scope, 'opening: the landing, then the gangway works with a thumb held on the stick', async () => {
+      await step(190); assert.equal(await page.evaluate(() => cosmos.opening.sceneKind), 'port'); await shot('opening-landed');
+      await page.evaluate(() => { const o = cosmos.opening, L = o.liner; L.sw.place(16, -1.2, 26.7, Math.PI / 2); o.state.pose = { x: 16, y: -1.2, z: 26.7, yaw: Math.PI / 2, pitch: 0 }; cosmos.step(0); });
+      await holdThumb(); await step(5);
+      assert.equal(await stage(), 1, 'walking off the gangway with the thumb held did not take the player to the port');
+      assert.equal(await page.evaluate(() => cosmos.touch.active), true, 'thumb not registered as held'); await releaseThumb(); await shot('opening-port');
+    });
+    await record(scope, 'opening: the board opens by a tap, fits the phone, and the pick is by taps', async () => {
+      await tp(-98, 44, Math.PI / 2); await step(1); await tp(-88, 44.5, 0); await step(1); await holdThumb();
+      assert.equal(await page.evaluate(() => cosmos.opening.actionLabel), 'Read the board (E)');
+      await realTap('#opening-action'); await page.waitForSelector('#opening-board', { timeout: 10000 }); await shot('opening-board');
+      const fits = await page.evaluate(() => { const b = document.querySelector('#opening-board'), bad = [];
+        for (const el of b.querySelectorAll('button')) { const r = el.getBoundingClientRect(); if (r.height < 44 || r.right > innerWidth + 1 || r.left < -1) bad.push(el.textContent.trim().slice(0, 20)); }
+        return b.scrollWidth <= b.clientWidth + 1 && bad.length === 0; });
+      assert.ok(fits, 'the board overflows the screen or has a small button');
+      const solo = await page.evaluate(() => [...document.querySelectorAll('.ob-tabs button')].map(b => b.textContent.replace(/\s+/g, ' ').trim()));
+      assert.equal(solo.length, 5, solo.join());
+      await page.locator('[data-act="go"]').tap(); await page.waitForFunction(() => !document.querySelector('#opening-board'), null, { timeout: 10000 });
+      assert.equal(await page.evaluate(() => cosmos.opening.state.dest.world), 'mars'); assert.equal(await stage(), 1); await releaseThumb();
+    });
+    await record(scope, 'opening: the Kestrel gate answers a tap with the thumb held, and the flight ends in the wreck', async () => {
+      await tp(19.4, 9.3, -Math.PI / 2); await step(1.5); await holdThumb();
+      assert.match(await page.evaluate(() => cosmos.opening.actionLabel), /Board the Kestrel/); await realTap('#opening-action');
+      assert.equal(await stage(), 2, 'the gate tap did nothing while the thumb was held'); await releaseThumb();
+      await step(30); await shot('opening-kestrel'); await step(46); await page.waitForFunction(() => cosmos.opening.state.stage === 3, null, { timeout: 20000 }); await shot('opening-wreck');
+    });
+    await record(scope, 'opening: the locker and the exit button work with a thumb held', async () => {
+      await page.evaluate(() => { const o = cosmos.opening; o.cabinSw.place(1.2, .02, 6.8, Math.PI / 2); o.state.pose = { x: 1.2, y: .02, z: 6.8, yaw: Math.PI / 2, pitch: 0 }; cosmos.step(0); });
+      await step(1.5); await holdThumb(); assert.match(await page.evaluate(() => cosmos.opening.actionLabel), /crew locker/);
+      await realTap('#opening-action'); await page.waitForSelector('#opening-note', { timeout: 8000 }); await shot('opening-locker'); await realTap('#opening-note button');
+      await releaseThumb();
+      await page.evaluate(() => { const o = cosmos.opening; o.cabinSw.place(0, .02, 13, 0); o.state.pose = { x: 0, y: .02, z: 13, yaw: 0, pitch: 0 }; cosmos.step(0); }); await step(1);
+      await holdThumb(); await realTap('#opening-action');
+      assert.equal(await stage(), 4, 'tap on the exit button did nothing while the thumb was held: ' + await page.evaluate(() => JSON.stringify({ at: (() => { const r = cosmos.opening.action.getBoundingClientRect(), e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return e && (e.id || e.tagName) + ' ' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + innerWidth + 'x' + innerHeight; })(), status: cosmos.opening.status, ap: cosmos.opening.actionPending, busy: cosmos.opening.busy, dis: cosmos.opening.action.disabled, hid: cosmos.opening.action.hidden, boardOpen: cosmos.opening.boardOpen, noteEl: !!cosmos.opening.noteEl, pose: cosmos.opening.pose(), srv: cosmos.opening.state.pose, label: cosmos.opening.actionLabel })));
+      assert.equal(await page.evaluate(() => cosmos.touch.active), true, 'the held thumb was dropped by the tap'); await releaseThumb(); await shot('opening-exit');
     });
     await record(scope, 'opening: refresh in the dig stage resumes the dig stage', async () => {
-      await page.evaluate(async () => { await cosmos.opening.savePose(); }); await ready(); assert.equal(await stage(), 2);
+      await page.evaluate(async () => { await cosmos.opening.savePose(); }); await ready(); assert.equal(await stage(), 4);
     });
     await record(scope, 'opening: dig and grab-the-crate buttons respond to every tap, thumb held', async () => {
       await walkTo(4, 18.5); await holdThumb();
@@ -164,21 +193,21 @@ for (const target of targets) for (const spec of devices.filter(d => !process.en
       assert.ok(await page.evaluate(() => cosmos.opening.model.exposed()), 'crate never uncovered after ' + taps + ' taps');
       const cuts = await page.evaluate(() => cosmos.opening.state.cuts.length); assert.equal(cuts, taps, `${taps} taps made ${cuts} dig cuts (a tap was lost or doubled)`);
       await shot('opening-dug');
-      await realTap('#opening-action'); assert.equal(await stage(), 3, 'grab-the-crate tap did nothing');
+      await realTap('#opening-action'); assert.equal(await stage(), 5, 'grab-the-crate tap did nothing');
       await releaseThumb();
     });
     await record(scope, 'opening: refresh at the ride offer stays at the ride offer', async () => {
-      await page.evaluate(async () => { await cosmos.opening.savePose(); }); await ready(); assert.equal(await stage(), 3);
+      await page.evaluate(async () => { await cosmos.opening.savePose(); }); await ready(); assert.equal(await stage(), 5);
     });
     await record(scope, 'opening: ride offer, riding the vehicle to the port', async () => {
       await step(10); await walkTo(-3.1, 22.16); await aim(-6, 22.2, 1.9); await shot('opening-ride-offer');
       await noOverlap('opening, ride offer');
-      await realTap('#opening-action'); assert.equal(await stage(), 4, 'ride button did nothing');
+      await realTap('#opening-action'); assert.equal(await stage(), 6, 'ride button did nothing');
       await step(22); await shot('opening-riding');
-      await ready(); assert.equal(await stage(), 4, 'refresh mid-ride lost the ride');
+      await ready(); assert.equal(await stage(), 6, 'refresh mid-ride lost the ride');
       await step(48); assert.equal(await page.evaluate(() => cosmos.opening.active), false, 'ride never reached the port');
       await page.waitForFunction(() => !document.querySelector('.opening-transition'), null, { timeout: 15000 });
-      await shot('opening-port');
+      await shot('opening-port-arrival');
     });
     await record(scope, 'after the opening: settings opens and closes via real taps', async () => {
       await page.evaluate(() => { cosmos.engine.stop(); cosmos.step(0); });
