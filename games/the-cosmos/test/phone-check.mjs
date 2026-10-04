@@ -42,7 +42,7 @@ for (const target of targets) for (const spec of devices.filter(d => !process.en
   let browser, context, page;
   try {
     const oldRoot = join(process.env.LOCALAPPDATA || '', 'ms-playwright');
-    const executablePath = spec.name.startsWith('iPhone') ? join(oldRoot, 'webkit-2336', 'Playwright.exe') : join(oldRoot, 'chromium-1234', 'chrome-win64', 'chrome.exe');
+    const executablePath = spec.name.startsWith('iPhone') ? (process.env.COSMOS_WEBKIT_EXE || join(oldRoot, 'webkit-2336', 'Playwright.exe')) : (process.env.COSMOS_CHROMIUM_EXE || join(oldRoot, 'chromium-1234', 'chrome-win64', 'chrome.exe'));
     browser = await spec.engine.launch({ headless: true, executablePath });
     context = await browser.newContext(spec.device);
     page = await context.newPage();

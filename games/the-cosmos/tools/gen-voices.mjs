@@ -53,7 +53,14 @@ if (todo.length) {
     const r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', wav,
       '-af', 'silenceremove=start_periods=1:start_threshold=-48dB:start_silence=0.05,areverse,silenceremove=start_periods=1:start_threshold=-48dB:start_silence=0.12,areverse,loudnorm=I=-19:TP=-2:LRA=9,apad=pad_dur=0.08',
       '-ac', '1', '-ar', '24000', '-c:a', 'libmp3lame', '-b:a', '40k', t.file], { encoding: 'utf8' });
-    if (r.status !== 0) throw Error('ffmpeg failed for ' + t.text + ': ' + r.stderr);
+    if (r.status !== 0) {
+      // fix-r1: an explicit installed Blender path supplies its bundled MP3 encoder on machines without ffmpeg CLI.
+      if (r.error?.code !== 'ENOENT' || !process.env.COSMOS_BLENDER) throw Error('ffmpeg failed for ' + t.text + ': ' + (r.error?.message || r.stderr));
+      const script = join(tmp, 'encode.py');
+      writeFileSync(script, `import bpy, math\ns=bpy.context.scene\ns.render.fps=24\ns.sequence_editor_create()\na=s.sequence_editor.strips.new_sound('voice', ${JSON.stringify(wav)}, channel=1, frame_start=1)\ns.frame_start=1\ns.frame_end=a.frame_final_end\nbpy.ops.sound.mixdown(filepath=${JSON.stringify(t.file)}, check_existing=False, container='MP3', codec='MP3', channels='MONO', mixrate=24000, bitrate=40, format='S16')\n`);
+      const fallback=spawnSync(process.env.COSMOS_BLENDER,['--background','--factory-startup','--python',script],{encoding:'utf8'});
+      if (fallback.status !== 0 || !existsSync(t.file)) throw Error('Blender MP3 encoding failed: '+fallback.stderr);
+    }
     have[t.key] = statSync(t.file).size;
     if (++n % 20 === 0 || n === todo.length) console.log(`  ${n}/${todo.length}`);
   }

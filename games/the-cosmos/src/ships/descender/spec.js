@@ -85,7 +85,7 @@ rows('cabin_b', -3.4, 8.6, 5);
 prop('vending', 'cabin_a', -6.5, -21.4, 0.9, 0.7, 1.9, 2);
 prop('luggage', 'cabin_a', 6.2, -6.0, 1.5, 0.8, 1.2, 0);
 prop('planter', 'cabin_b', 6.0, 10.6, 1.0, 1.6, 1.2, 0);
-prop('departboard', 'cabin_a', 0, -21.9, 2.4, 0.1, 1.4, 0, { y: 1.0, blocks: false });
+prop('departboard', 'cabin_a', 4.4, -21.9, 2.4, 0.1, 1.4, 0, { y: 1.0, blocks: false });
 prop('extinguisher', 'cabin_a', 7.1, -12.0, 0.14, 0.14, 0.5, 3, { y: 1.2, blocks: false });
 prop('extinguisher', 'cabin_b', -7.1, 4.0, 0.14, 0.14, 0.5, 1, { y: 1.2, blocks: false });
 

@@ -170,7 +170,7 @@ prop('suitrack', 'stores', -5.1, 2.2, 0.8, 0.6, 2.0, 1);
 prop('suitrack', 'stores', -5.1, 5.0, 0.8, 0.6, 2.0, 1);
 prop('rack', 'stores', -2.8, 5.6, 1.6, 0.5, 2.2, 2);
 prop('crate', 'stores', -2.2, 2.0, 0.9, 0.9, 0.9, 0);
-prop('locker', 'stores', -1.5, 4.0, 0.6, 0.5, 2.0, 3);
+prop('locker', 'stores', -1.5, 5.0, 0.6, 0.5, 2.0, 3);
 
 // engine room
 prop('minireactor', 'engine', -2.8, 9.9, 2.4, 2.4, 2.4, 0, { extra: { radius: 0.95 } });

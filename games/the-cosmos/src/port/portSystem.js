@@ -5,6 +5,7 @@ import { makePortMaterials, CELLS, plaque, groundDecal, wallDecal, textureBytes 
 import { moduleShell, depotInterior, towerInterior, market, detailFuel, crewHall, apronDressing, containerDressing, arrivalsHall } from './portBuildings.js';
 import { PORT_ID, PORT_NAME, PADS, BUILDINGS, NPC_SPOTS, TOWER, TOWER_SPOTS, towerFloorAt, APRON, WALKWAY } from './portSpec.js';
 import { TowerElevator } from './towerElevator.js';
+import { reserveClearance, doorClearSpace } from '../ship/clearance.js';
 
 const segments=['abcdef','bc','abdeg','abcdg'];
 // Phone fittings retain bevelled silhouettes; sub-centimetre chamfers on thin
@@ -93,6 +94,7 @@ export class PortSystem {
   constructor(engine,registry,site,tier='low',sharedMaterials=null) {
     this.sharedMaterials=sharedMaterials; this.time=0; this.engine=engine; this.registry=registry; this.site=site; this.tier=tier;
     this.boxes=[]; this.doors=[]; this.assets=[]; this.npcSpots=NPC_SPOTS; this.towerSpots=TOWER_SPOTS;
+    this.fittingBoxes=[];
     this.elevator=new TowerElevator();
   }
   build() {
@@ -199,6 +201,10 @@ export class PortSystem {
 
     for(const a of BUILDINGS) {
       const k=new PortKit(low); k.defaultTile=3; k.tiles={...master.tiles};k.push(a.x,0,a.z);
+      const spaces = a.doorW ? [doorClearSpace({id:a.id,axis:'z',at:a.z+a.d/2,c:a.x,w:a.doorW,y:0,h:2.8})] : [];
+      if(a.kind==='arrivals') for(const s of [-1,1])spaces.push(doorClearSpace({id:a.id+' entry '+s,axis:'x',at:a.x+s*a.w/2,c:a.z+.2,w:3,y:0,h:3}));
+      if(a.kind==='tower')for(const y of [0,TOWER.cab.floorY])spaces.push(doorClearSpace({id:'tower lift '+y,axis:'z',at:a.z+TOWER.core.z1,c:a.x,w:1.2,y,h:2.3}));
+      reserveClearance(k,spaces,this.fittingBoxes);
       const bevel=(mat,x,y,z,w,h,d,c=.055)=>k.bevelBox(mat,x,y,z,w,h,d,c);
       if(a.kind==='depot'||a.kind==='tower'||a.kind==='hall') {
         const block=(x,z,w,d,h,y0=0)=>box(a,x,z,w,d,h,y0);
@@ -214,6 +220,7 @@ export class PortSystem {
         const mesh=dk.toGroup(this.materials,{name:a.name+' sliding door',cast:true,receive:true});
         const baseZ=a.z+a.d/2-.16;mesh.position.set(a.x,0,baseZ);
         this.doors.push({asset:a,mesh,progress:0,baseZ});
+        k.clearanceEnabled=true;
         if(a.kind==='depot')depotInterior(k,a,low,block);
         else if(a.kind==='hall')crewHall(k,a,low,block);
         else towerInterior(k,a,low,block);
@@ -266,6 +273,18 @@ export class PortSystem {
     this.buildEarthworks(master,low);
     // PORT-POLISH: ground equipment, pad boards, cable runs, scuffs, cones, and the light in the dust (additive haze bucket).
     apronDressing(master,low,(x,z,w,d,h)=>this.boxes.push({id:PORT_ID,x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:h}));
+    // fix-r1: make the settlement legible from the pad at night without lifting the ambient sky.
+    for(const a of BUILDINGS.filter(a=>['depot','hall','arrivals','tower'].includes(a.kind))) {
+      master.spill(a.x,a.z+a.d/2+.1,Math.min(a.w,14),10,[.28,.19,.10]);
+      master.pool(a.x,.055,a.z+a.d/2+4,7,[.10,.065,.03],8);
+    }
+    const route=[[18,38],[-27,38],[-62,38],[-76,40]];
+    for(let i=1;i<route.length;i++) {
+      const [ax,az]=route[i-1],[bx,bz]=route[i],n=Math.ceil(Math.hypot(bx-ax,bz-az)/7);
+      for(let j=0;j<=n;j++) {const x=ax+(bx-ax)*j/n,z=az+(bz-az)*j/n;
+        master.poly('glowAmber',[[x-.25,.063,z+2.09],[x+.25,.063,z+2.09],[x+.25,.063,z+1.91],[x-.25,.063,z+1.91]]);
+        master.pool(x,.06,z+2,3,[.12,.07,.025],8);}
+    }
     this.depthLayers=resolveDepthLayers([master],{eps:.035});
     // Whole-apron stripes intersect at identical yellow corners. A generic
     // overlap graph otherwise lifts each long strip again and again. Assign
@@ -307,6 +326,9 @@ export class PortSystem {
     this.masts=[[-32,-64],[91,-48],[90,54],[-32,44],[APRON.x+APRON.w/2+3,-45],[APRON.x+APRON.w/2+3,45]];
     this.flood=Array.from({length:low?2:3},()=>{const l=new THREE.PointLight(0xfff0d8,0,95,1.5);l.name='port apron flood';this.root.add(l);return l;});
     this.night=0;
+    this.settlementLights=[[-62,3.4,31],[-88,3.8,40],[-28,3.4,-58],[10,3,38]].map(([x,y,z])=>{
+      const l=new THREE.PointLight(0xffd4a0,0,65,1.5);l.position.set(x,y,z);l.name='settlement front light';this.root.add(l);return l;
+    });
     this.updateDisplays();
     const basis=new THREE.Matrix4().makeBasis(new THREE.Vector3(...Object.values(this.site.right)),new THREE.Vector3(...Object.values(this.site.up)),new THREE.Vector3(...Object.values(this.site.back)));
     this.quaternion=new THREE.Quaternion().setFromRotationMatrix(basis);
@@ -468,7 +490,7 @@ export class PortSystem {
     }
   }
   /** Night, 0 (day) to 1 (dark): the masts' floodlights follow it. Set by main from the sky each frame. */
-  setNight(k){this.night=k;if(!this.flood)return;for(const l of this.flood)l.visible=k>0.01;}
+  setNight(k){this.night=k;for(const l of this.settlementLights||[])l.intensity=110*k;if(!this.flood)return;for(const l of this.flood)l.visible=k>0.01;}
   tick(dt,walker,collide=true,holdDoors=false) {
     if(this.flood&&this.night>0.01){
       const q=this.site.toLocal(walker.worldPos),near=this.masts.map(m=>({m,d:Math.hypot(q.x-m[0],q.z-m[1])})).sort((a,b)=>a.d-b.d);

@@ -22,6 +22,7 @@ export const worldDialogue = (id) => WORLD_DIALOGUE[id] || WORLD_DIALOGUE.mars;
 // Aboard the Ares: the captain on the intercom, on the liner clock (seconds from waking). LINER_SECONDS is the whole of stage 0.
 // ---------------------------------------------------------------------------
 export const LINER_SECONDS = 205;
+export const STEP_OFF = 'Welcome to Mars. Follow the amber lights to the big Arrivals sign. If you reach a fuel tank, you have taken tourism too far.';
 /** t0..t1: seconds on the liner clock. voice: intercom (the captain) or radio (port control). */
 export const LINER_SCRIPT = [
   { t0: 6, t1: 16, voice: 'intercom', text: 'Good morning, passengers. This is your captain. We are on schedule, on course, and on speaking terms with the weather.' },
@@ -162,6 +163,7 @@ export function openingLines() {
   const out = [];
   const add = (voice, text) => { if (voice && text) out.push({ voice, text }); };
   for (const l of LINER_SCRIPT) add(l.voice, l.text);
+  add('sunita', STEP_OFF);
   for (const t of LINER_TALKERS) for (const text of t.lines) add(t.voice, text);
   for (const text of Object.values(GUIDE_LINES)) add(GUIDE.voice, text);
   for (const text of Object.values(GATE_LINES)) add(GATE.voice, text);
@@ -184,6 +186,7 @@ export function openingLines() {
  * 'talker:<id>', or null for the ship's own voice and the radio). Looks the text up in the same tables the lines come from.
  */
 export function speakerOf(text, ctx = {}) {
+  if (text === STEP_OFF) return { voice: 'sunita', source: null };
   for (const l of LINER_SCRIPT) if (l.text === text) return { voice: l.voice, source: null };
   for (const t of LINER_TALKERS) if (t.lines.includes(text)) return { voice: t.voice, source: 'talker:' + t.id };
   if (Object.values(GUIDE_LINES).includes(text) || text === NOT_YET) return { voice: GUIDE.voice, source: 'guide' };

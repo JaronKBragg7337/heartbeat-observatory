@@ -24,7 +24,7 @@ import * as THREE from 'three';
 import { AVATAR, RAMPS } from './shipSpec.js';
 import { ShipWalker, shipIndexFor, defaultState } from './shipWalker.js';
 // FLEET: which ship this is. Every number that used to be the Meridian's comes from `this.def` (src/ships/registry.js).
-import { shipDef } from '../ships/registry.js';
+import { shipDef, allShipDefs } from '../ships/registry.js';
 import { visualsFor } from '../ships/visuals.js';
 import { ShipBody } from './shipFlight.js';
 import { vmaxAt } from './flightAssist.js';
@@ -138,7 +138,7 @@ export class ShipSystem {
     this.hemi = new THREE.HemisphereLight(0xb4c4d6, 0x59606a, 1.0);
     this.scene.add(this.hemi);
 
-    this.signs = makeSignAtlas();
+    this.signs = makeSignAtlas(allShipDefs().flatMap(s => s.layout.doors.map(d => d.sign).filter(Boolean)));
     this.posters = makePosterAtlas();
     this.interior = buildInterior(this.layout, this.matsInt, { tier: this.tier, signs: this.signs, posters: this.posters });
     this.interior.mats = this.matsInt;

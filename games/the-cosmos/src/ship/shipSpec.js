@@ -26,6 +26,8 @@
 // rise 0.1875 m per step, the same as a building code riser.
 // ============================================================================
 
+import { assignDoorLabels } from '../ships/layoutKit.js';
+
 export const SHIP_ID = 'COS-MARS-VEH-0001';
 export const SHIP_NAME = 'MSV Meridian';
 
@@ -511,6 +513,7 @@ export const SHIP_PHYS = {
 // ---------------------------------------------------------------------------
 export function buildLayout() {
   const roomById = new Map(rooms.map((r) => [r.id, r]));
+  assignDoorLabels(doors,roomById,Object.values(STAIRS));
   return { rooms, roomById, doors, props, lights, posters: POSTERS, windows: WINDOWS, stairs: STAIRS, ramps: RAMPS, ladders: LADDERS,
            seats: SEATS, panels: PANELS, extraZones: EXTRA_ZONES, gear: GEAR, guns: GUNS };
 }

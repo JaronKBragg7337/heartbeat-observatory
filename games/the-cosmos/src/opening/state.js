@@ -11,6 +11,7 @@ import { STAGE, OPENING_VERSION, RIDE_SECONDS, CONTACT_SECONDS, LINER_SECONDS, K
   linerExit, gangwayEndX, kestrelGate, PORT_BOUNDS, LOCKER, CRATE } from './script.js';
 import { startWorld, validChoice, worldFacts } from './worlds.js';
 import { currentSeason } from './season.js';
+import { worldDef } from '../worlds/registry.js';
 
 export { STAGE, OPENING_VERSION, RIDE_SECONDS, CONTACT_SECONDS, LINER_SECONDS, KESTREL_SECONDS };
 /** Kept for callers that still read it: the liner is the opening's first stage and its length is LINER_SECONDS. */
@@ -53,7 +54,7 @@ function bodyOver(mars, id, origin, frame, height, gravity) {
   return b;
 }
 /** The wreck site: the old desert 2.6 km from the port, with a gravity of the destination world. */
-export function openingBody(id = 'solo', gravity = 0) {
+export function openingBody(id = 'solo', gravity = 0, world = 'mars') {
   const mars = getBody('mars'), port = createPortSite(mars), origin = port.toWorld(2600, 0, 350);
   const frame = { right: port.right, up: port.up, back: port.back };
   const { toLocal, toWorld } = frameKit(mars, origin, frame);
@@ -63,7 +64,15 @@ export function openingBody(id = 'solo', gravity = 0) {
     return .035 * Math.sin(x * .28) * Math.sin(z * .2) + .54 * Math.exp(-((x - 4) ** 2 + (z - 20) ** 2) / 1.3)
       + blend * (9 * Math.sin(x * .0023 + 2) * Math.sin(z * .0042) + 5 * Math.sin(x * .006 + z * .003));
   };
-  return { body: bodyOver(mars, 'opening-' + id, origin, frame, height, gravity), origin, frame, toWorld, toLocal, height, port };
+  const body = bodyOver(mars, 'opening-' + id, origin, frame, height, gravity);
+  // The private terrain has a synthetic shape, but its soil belongs to the destination's geology.
+  if (world !== 'mars') {
+    const def = worldDef(world), resolve = m => typeof m === 'string' ? MATERIALS[m] : m;
+    body.materialField = (x,y,z) => { const p=toLocal({x,y,z}), depth=height(p.x,p.z)-p.y;
+      return resolve(depth > (def.regolithDepthM ?? 12) ? def.materials.rubble : def.materials.regolith); };
+    body.render = def.render; body.groundWorld = world;
+  }
+  return { body, origin, frame, toWorld, toLocal, height, port };
 }
 /**
  * The port stage: the port's own frame (x right, y up, z back, origin the port's centre), flat ground a kilometre round (the port is graded
@@ -92,7 +101,7 @@ export class OpeningModel {
         k.walker = new Walker(k.body); this.kits.port = k;
       } else {
         const gravity = this.state.dest ? worldFacts(this.state.dest.world).gravity : 0;
-        const k = openingBody(this.id, gravity || 0);
+        const k = openingBody(this.id, gravity || 0, this.state.dest?.world || 'mars');
         k.edits = new EditStore(k.body); k.walker = new Walker(k.body); k.digger = new Digger(k.body, k.edits, k.walker);
         this.kits.wreck = k;
       }

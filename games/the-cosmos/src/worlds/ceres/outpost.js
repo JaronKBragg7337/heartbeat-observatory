@@ -322,6 +322,16 @@ export function buildOutpost({ engine, world, space, tier }) {
   X('concrete', -52, 0.03, 0, 100, 0.01, 6, [0.22, 0.22, 0.22]);
   X('concrete', -52, 0.04, 2.4, 100, 0.01, 0.5, [0.14, 0.14, 0.14]); X('concrete', -52, 0.04, -2.4, 100, 0.01, 0.5, [0.14, 0.14, 0.14]);
 
+  // fix-r1: illuminated routes and building fronts stay readable across the real night side.
+  const paths=[[[32,20],[32,44]],[[32,20],[-52,20]],[[-32,-28],[-6,-84]]];
+  for(const pts of paths)for(let i=1;i<pts.length;i++) {
+    const [ax,az]=pts[i-1],[bx,bz]=pts[i],n=Math.ceil(Math.hypot(bx-ax,bz-az)/6);
+    for(let j=0;j<=n;j++){const x=ax+(bx-ax)*j/n,z=az+(bz-az)*j/n;X('glowAmber',x,.12,z,.3,.12,.3);}
+  }
+  for(const [x,z] of [[-7,-87],[-56,18],[32,45]]) {
+    X('glowAmber',x,3,z,5,.12,.08);
+    const l=new THREE.PointLight(0xffd4a0,100,65,1.5);l.position.set(x,3.5,z+2);l.name='settlement front light';root.add(l);
+  }
   // ---- merge into meshes, add the pad's painted decal, the station sign, the beacons ------------------------------------------------
   const mapMats = { ...mats };
   const kitGroup = k.toGroup(mapMats, { name: 'outpost-kit', cast: true, receive: true });

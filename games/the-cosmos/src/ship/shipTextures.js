@@ -392,24 +392,27 @@ function paintDoor(pxPerM, seed) {
 }
 
 // (the last six are the raider's doors: src/ships/raider/spec.js)
-const SIGN_NAMES = ['MEDBAY', 'CREW A', 'LOUNGE', 'GALLEY', 'WORKSHOP', 'CAPTAIN', 'HEAD', 'ENGINEERING', 'AIRLOCK', 'EVA', 'CARGO', 'BRIDGE', 'COCKPIT', 'CREW', 'MESS', 'ARMOURY', 'ENGINE', 'HOLD'];
+// fix-r1: build the atlas from the fleet's labels; an unfamiliar room must never become MEDBAY.
+export const SIGN_NAMES = ['MEDBAY', 'CREW A', 'LOUNGE', 'GALLEY', 'WORKSHOP', 'CAPTAIN', 'HEAD', 'ENGINEERING', 'AIRLOCK', 'EVA', 'CARGO', 'BRIDGE', 'COCKPIT', 'CREW', 'MESS', 'ARMOURY', 'ENGINE', 'HOLD'];
 /** One canvas holding every door sign; each sign is a 512 x 64 cell. */
-export function makeSignAtlas() {
-  const n = SIGN_NAMES.length;
+export function makeSignAtlas(labels = []) {
+  const names = [...new Set([...SIGN_NAMES,...labels])];
+  const n = names.length;
   const uvFor = (name) => {
-    const i = Math.max(0, SIGN_NAMES.indexOf(name));
+    const i = names.indexOf(name);
+    if (i < 0) throw new Error('Unregistered door label: ' + name);
     const v0 = 1 - (i + 1) / n, v1 = 1 - i / n;
     return [[0, v0], [1, v0], [1, v1], [0, v1]];
   };
   if (!HAS_DOM) return { material: new THREE.MeshBasicMaterial({ color: 0x3a2a12, vertexColors: true }), uvFor };
   const c = document.createElement('canvas'); c.width = 512; c.height = 64 * n;
   const g = c.getContext('2d');
-  SIGN_NAMES.forEach((name, i) => {
+  names.forEach((name, i) => {
     const y = i * 64;
     g.fillStyle = '#10130f'; g.fillRect(0, y, 512, 64);
     g.strokeStyle = '#ffb45a'; g.lineWidth = 4; g.strokeRect(5, y + 5, 502, 54);
     g.fillStyle = '#ffb45a'; g.font = '700 40px ui-monospace, Consolas, monospace'; g.textBaseline = 'middle'; g.textAlign = 'center';
-    g.fillText(name, 266, y + 34);
+    g.fillText(name, 266, y + 34, 440);
     g.fillRect(16, y + 20, 12, 24);
     g.beginPath(); g.moveTo(34, y + 20); g.lineTo(50, y + 32); g.lineTo(34, y + 44); g.fill();
   });

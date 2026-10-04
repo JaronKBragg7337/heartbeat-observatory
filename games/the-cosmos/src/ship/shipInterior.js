@@ -18,6 +18,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { reserveClearance, doorClearSpace } from './clearance.js';
 import { Kit, resolveDepthLayers } from './shipKit.js';
 import { drawProp, SEAT_DRAW } from './shipProps.js';
 import { mulberry, enableDepthLift } from './shipTextures.js';
@@ -253,6 +254,9 @@ export function buildInterior(layout, mats, opts = {}) {
     }
 
     // room-specific dressing
+    out.fittingBoxes ||= [];
+    reserveClearance(k, layout.doors.map(d => doorClearSpace(d)), out.fittingBoxes);
+    k.clearanceEnabled = true;
     dressRoom(k, layout, r, rnd, out, low);
 
     // props

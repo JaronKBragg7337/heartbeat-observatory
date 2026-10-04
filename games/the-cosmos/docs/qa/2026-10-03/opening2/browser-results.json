@@ -1,71 +1,11 @@
 {
   "results": {
-    "desktop": {
-      "convoy": 6,
-      "people": 15,
-      "talked": 2,
-      "boardTabs": 5,
-      "pick": {
-        "dest": {
-          "world": "ceres",
-          "faction": "ironclad",
-          "stay": false
-        },
-        "driver": "ironclad"
-      },
-      "arrivedFrame": "ceres",
-      "drained": true,
-      "marks": 10000,
-      "partLabel": "Ask Marta Voss, the foundry foreman (Ironclad) for the power cell (300 marks)",
-      "fitted": true,
-      "complete": true
-    },
-    "phone": {
-      "thumbHeld": true,
-      "boardFits": true,
-      "arrivedFrame": "ceres",
-      "complete": true,
-      "failures": 0
-    },
-    "refresh": {
-      "liner": true,
-      "port": true,
-      "descent": true,
-      "dig": true
-    },
-    "causes": [
-      {
-        "cause": "storm",
-        "world": "ceres",
-        "ok": true
-      },
-      {
-        "cause": "meteor",
-        "world": "mars",
-        "ok": true
-      },
-      {
-        "cause": "pirates",
-        "world": "ceres",
-        "ok": true
-      },
-      {
-        "cause": "failure",
-        "world": "mars",
-        "ok": true
-      },
-      {
-        "cause": "weather",
-        "world": "ceres",
-        "ok": true
-      }
-    ],
-    "multiplayer": {
-      "private": true,
-      "sameCause": true,
-      "skipSame": true
-    },
-    "passed": true
+    "desktop": {},
+    "phone": {},
+    "refresh": {},
+    "causes": [],
+    "multiplayer": {},
+    "failure": "browserType.launch: Failed to launch webkit because executable doesn't exist at C:\\Users\\lilli\\AppData\\Local\\ms-playwright\\webkit-2336\\Playwright.exe\n    at C:\\Users\\lilli\\Projects\\ho-fix1\\games\\the-cosmos\\test\\opening-browser.mjs:28:26"
   },
   "errors": []
 }

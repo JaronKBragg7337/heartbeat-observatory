@@ -9,6 +9,24 @@ export function ridePose(seconds,height) {
   const x=-7-2593*ease,z=23-373*ease;
   return {x,y:height(x,z),z,yaw:Math.atan2(2593,373)};
 }
+/** Height of the visible triangle under a point, with the authoritative field as a lower bound. */
+export function rideSurfaceHeight(model, patches, x, z) {
+  let y = model.height(x,z);
+  const p = model.toWorld(x,y,z), l = Math.hypot(p.x,p.y,p.z), d = {x:p.x/l,y:p.y/l,z:p.z/l};
+  // The fine patch masks the coarse one within its square.
+  for (const patch of patches) {
+    const r = patch.surfaceRadiusExact(d.x,d.y,d.z);
+    if (r !== null && Number.isFinite(r)) { y=Math.max(y,model.toLocal({x:d.x*r,y:d.y*r,z:d.z*r}).y); break; }
+  }
+  return y;
+}
+export function rideSupportHeight(model, patches, x, z, yaw) {
+  let y=-Infinity;
+  for (const dx of [-1.6,0,1.6]) for (const dz of [-2.2,0,2.2]) {
+    y=Math.max(y,rideSurfaceHeight(model,patches,x+Math.cos(yaw)*dx+Math.sin(yaw)*dz,z-Math.sin(yaw)*dx+Math.cos(yaw)*dz));
+  }
+  return y + .025;
+}
 
 // ---------------------------------------------------------------------------
 // The shared survey rover (src/vehicles/, built by Grok Build) as the opening's

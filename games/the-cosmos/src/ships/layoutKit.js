@@ -8,6 +8,11 @@
 // A ship definition writes its rooms with these and calls finish() once. Nothing here knows which ship it is.
 // ============================================================================
 
+export function assignDoorLabels(doors, roomById, extraRooms = []) {
+  const names=new Map([...roomById,...extraRooms.map(r=>[r.id,r])]);
+  for(const d of doors)if(!d.sign)d.sign=d.kind==='outer'?'GANGWAY':d.b==='outside'?'CARGO HATCH':(names.get(d.b)?.name||names.get(d.a)?.name||d.b.replaceAll('_',' ')).toUpperCase();
+}
+
 export function layoutKit(DECK) {
   const rooms = [], doors = [], props = [], lights = [];
   const byId = (id) => rooms.find((q) => q.id === id);
@@ -55,6 +60,7 @@ export function layoutKit(DECK) {
   /** The layout object: everything a ship's walkable, drawable interior is made of. */
   function finish(extra) {
     const roomById = new Map(rooms.map((r) => [r.id, r]));
+    assignDoorLabels(doors,roomById,Object.values(extra?.stairs||{}));
     return { rooms, roomById, doors, props, lights, ...extra };
   }
 

@@ -27,11 +27,12 @@ import { Kit } from '../ship/shipKit.js';
 import { detachBodyEdits } from '../world/field.js';
 import { WRECK_Y } from './freighterHull.js';
 import { bindActivation } from '../ui/activation.js';
-import { surveyOpeningVehicle, ridePose } from './rideVehicle.js';
+import { surveyOpeningVehicle, ridePose, rideSupportHeight } from './rideVehicle.js';
 import { writeOpeningCheckpoint } from './checkpoint.js';
 import { factionLook } from '../factions/registry.js';
 import { shipDef } from '../ships/registry.js';
 import { ShipWalker, shipIndexFor } from '../ship/shipWalker.js';
+import { GoalHint } from '../ui/goalHint.js';
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -78,6 +79,7 @@ export class Opening {
     this.portCloneEntryL = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: this.portClone, quaternion: new THREE.Quaternion() });
     this.portCloneEntryW = engine.track({ worldPos: port.site.center, object3d: null, quaternion: port.quaternion });
     this._buildPortGround();
+    this._buildPath();
     this._buildJourney();
     this.hemi = new THREE.HemisphereLight(0xb5bacc, 0x492e23, .5); this.hemi.position.set(0, 1, 0); this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(0xffcf9a, 1.7); this.sun.position.copy(SUN); this.scene.add(this.sun, this.sun.target);
@@ -89,6 +91,7 @@ export class Opening {
     // ---- the wreck's art waits until it is wanted (it is heavy); the Kestrel is built when the port is reached -------------------
     this.wreckBuilt = false; this.kestrel = null; this.crashFx = null;
     this.buildUI();
+    this.goalHint=new GoalHint(engine);
     this.keyboard = (e) => { if (!this.active) return; if (e.code === 'KeyE' && !e.repeat) { e.preventDefault(); this.interact(); } if (e.code === 'KeyQ' && !e.repeat) this.walkInstead(); };
     window.addEventListener('keydown', this.keyboard);
     this.audioStart = () => this.startAudio(); window.addEventListener('pointerdown', this.audioStart, { once: true }); window.addEventListener('keydown', this.audioStart, { once: true });
@@ -362,6 +365,8 @@ export class Opening {
     if (n === STAGE.LINER) { this.setScene('port'); this._linerPlace(); this.liner.sw.place(s.pose.x, s.pose.y, s.pose.z, s.pose.yaw); this.liner.sw.pitch = s.pose.pitch; this.engine.overlayScenes = [this.liner.interiorScene]; this._firstRooms = true; }
     else if (n === STAGE.PORT) { this.setScene('port'); this.space.setConvoyVisible(false); this._atmosphere(0, linerDown(this.linerDef), { x: 0, y: 2, z: 0 }); this.model.use('port'); this.model.place(s.pose); this.engine.overlayScenes = []; this._linerPlace(); this.liner.exterior.root.visible = true; this.liner.interior.root.visible = false;
       setTimeout(() => { if (this.active && !this.kestrel) this._ensureKestrel(); }, 700);
+      this.liner.hardware.visible = true;
+      this.say(D.STEP_OFF, 'Steward');
       this._pathBuilt || this._buildPath(); }
     else if (n === STAGE.DESCENT) { this._ensureKestrel(); this.liner.group.visible = true; this.engine.overlayScenes = [this.kestrel.interiorScene]; this.kestrel.sw.place(s.pose.x, s.pose.y, s.pose.z, s.pose.yaw); this.kestrel.sw.pitch = s.pose.pitch; this._firstRooms = true;
       this.crashFx?.dispose(); this.crashFx = new CrashFx({ space: this.space, stage: this.kestrel, cause: this.cause, worldId: this.worldId, tier: this.tier, mats: this.ship.matsExt, scene: this.scene }); this.space.setConvoyVisible(false); this._kestrelScene = null; }
@@ -376,6 +381,14 @@ export class Opening {
     for (let i = 1; i < pts.length; i++) { const [x0, z0] = pts[i - 1], [x1, z1] = pts[i], len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.floor(len / 14));
       for (let j = 0; j < n; j++) { const t = (j + .5) / n; pk.cyl('steelDark', x0 + (x1 - x0) * t, .6, z0 + (z1 - z0) * t + 3.4, .04, 1.2, 6); pk.box('glowAmber', x0 + (x1 - x0) * t, 1.25, z0 + (z1 - z0) * t + 3.4, .14, .1, .14); } }
     this.pathMesh = pk.toGroup(this.ship.matsExt, { name: 'opening-path' }); this.portRoot.add(this.pathMesh);
+    const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=192;
+    const ctx=canvas.getContext('2d');ctx.fillStyle='#102021';ctx.fillRect(0,0,1024,192);
+    ctx.strokeStyle='#ffd28b';ctx.lineWidth=12;ctx.strokeRect(8,8,1008,176);
+    ctx.fillStyle='#ffd28b';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 132px Arial';ctx.fillText('ARRIVALS',512,103,970);
+    const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+    const sign=new THREE.Mesh(new THREE.PlaneGeometry(8,1.5),new THREE.MeshBasicMaterial({map:tex,toneMapped:false,side:THREE.DoubleSide}));
+    sign.name='lit ARRIVALS entrance';sign.position.set(-100.65,3.7,40.2);sign.rotation.y=-Math.PI/2;this.portRoot.add(sign);
+    for(const [x,z] of [pts[1],pts[2],pts[4],pts[6]]){const l=new THREE.PointLight(0xffc486,35,35,1.4);l.position.set(x,2.7,z+3.4);this.portRoot.add(l);}
   }
 
   // ---- ship placement --------------------------------------------------------------------------------------------------------
@@ -390,7 +403,8 @@ export class Opening {
     if (w > 0) { const d = new THREE.Vector3(this.marsPos.x - p.x, this.marsPos.y - p.y, this.marsPos.z - p.z).normalize(), qc = new THREE.Quaternion().setFromUnitVectors(LINER_MARS_DIR, d); q.premultiply(new THREE.Quaternion().slerp(qc, w)); }
     this.spaceEntry.quaternion.copy(q);
     L.place({ x: p.x, y: p.y, z: p.z }, q); this.linerQ.copy(q); this.linerLocal = p;
-    L.setRamps(linerRampProgress(down ? 99 : t), linerRampProgress(down ? 99 : t));
+    // Passenger exit only; the cargo hatch stays closed throughout the opening.
+    L.setRamps(0, linerRampProgress(down ? LINER_PHASE.rampsDown : t));
     return p;
   }
 
@@ -521,6 +535,9 @@ export class Opening {
     this.caption.innerHTML = text ? (who ? `<span class="who">${who}</span>` : '') + text.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) : '';
     this.action.hidden = !this.actionLabel; if (this.action.textContent !== this.actionLabel) this.action.textContent = this.actionLabel;
     if (!this.hint.textContent && cam.hint) this.hint.textContent = cam.hint;
+    const gate=kestrelGate(this.kestrelDef||shipDef(KESTREL.type));
+    const goal=s.stage===STAGE.PORT ? (!this.dest ? {id:'arrivals',label:'Arrivals hall',target:{x:-100,y:1.5,z:40.2},reach:14} : {id:'kestrel',label:'Pad 01 / Kestrel',target:{x:gate.x,y:1.5,z:gate.z},reach:8}) : null;
+    this.goalHint.update(dt,goal?{...goal,onPlanet:true,eye:cam.eye}:null);
     this._speak(disconnected || this.statusUntil > this.elapsed ? '' : text);
     this.checkpoint();
     if (this.look && s.stage >= STAGE.WRECK) this.look.frame(dt, s, this.elapsed);
@@ -549,7 +566,7 @@ export class Opening {
     const { eye, fwd } = this._linerEyeCam(L, look, input, dt, true);
     const worldEye = this._shipWorld(L, eye, fwd, 'liner');
     this._atmosphere(p.alt, p, worldEye.eye);
-    L.update(dt, eye, fwd, { walking: true, inside: true, aspect: this.engine.camera.aspect, fov: this.engine.camera.fov, first: this._firstRooms }); this._firstRooms = false;
+    L.update(dt, eye, fwd, { walking: true, inside: L.sw.x < def.ramps.airlock.hinge.x, aspect: this.engine.camera.aspect, fov: this.engine.camera.fov, first: this._firstRooms }); this._firstRooms = false;
     // the wake: fade in from black over three seconds (and a black screen while the people are still loading)
     if (this.t0 === undefined && dt > 0) this.t0 = this.elapsed;
     const waiting = !this.actorsReady && performance.now() - this.readyAt < 7000;
@@ -568,7 +585,7 @@ export class Opening {
     const landed = ph === 'landed' && t >= LINER_PHASE.rampsDown + 1;
     if (landed) {
       this.hint.textContent = 'Welcome to Marineris. Leave by the starboard gangway: the boarding hall is behind the promenade.';
-      if (L.sw.x >= gangwayEndX(def) - 1.2 && L.sw.y < 0.5 && !this.busy && !this._leaving) { this._leaving = true; this.savePose().then(() => this.command({ type: 'opening-next' })).finally(() => { this._leaving = false; }); }
+      if ((L.sw.wantsExit || L.sw.x >= gangwayEndX(def) + .4 && L.sw.y <= -restHeight(def) + .35) && !this.busy && !this._leaving) { this._leaving = true; this.savePose().then(() => this.command({ type: 'opening-next' })).finally(() => { this._leaving = false; }); }
     }
     if (prep) { caption = 'Preparing the opening…'; who = ''; }
     return { eye: worldEye.eye, forward: worldEye.forward, up: worldEye.up, caption, who };
@@ -727,8 +744,8 @@ export class Opening {
       if (s.stage === STAGE.TRAVEL && s.ride) {
         this.rover.seatPlayer(); this.fade.style.opacity = String(clamp((this.rideSeconds - 64) / 2, 0, 1));
         const rp = ridePose(this.rideSeconds, m.height);
-        this.rover.root.position.set(rp.x, rp.y + .03 * Math.sin(this.elapsed * 6), rp.z);
         this.rover.root.rotation.y = THREE.MathUtils.lerp(Math.atan2(-90, 20), Math.atan2(2593, 373), clamp(this.rideSeconds / 6, 0, 1));
+        this.rover.root.position.set(rp.x, rideSupportHeight(m, [this.ground,this.far], rp.x,rp.z,this.rover.root.rotation.y), rp.z);
         for (const w of this.rover.wheels) w.rotation.x += dt * 12; this.rover.update?.(dt, { speed: 12, night: true });
         const p = this.rover.root.position; m.place({ ...s.pose, x: p.x, y: p.y, z: p.z });
         eye = new THREE.Vector3().copy(this.rover.passengerEye); this.rover.root.updateMatrix(); eye.applyMatrix4(this.rover.root.matrix);
@@ -781,6 +798,7 @@ export class Opening {
     e.scene = this.mainScene; e.overlayScenes = this.mainOverlays;
     for (const t of [...e._tracked]) if (!this.beforeTracks.has(t)) e._tracked.delete(t);
     this.boardCtl?.close(); this.noteEl?.remove();
+    this.goalHint?.dispose();
     this.look?.dispose(); this.look = null; this.ui.remove(); this.style.remove(); delete document.body.dataset.opening; delete document.body.dataset.openingFilm;
     window.removeEventListener('keydown', this.keyboard); window.removeEventListener('pagehide', this.pageHide);
     document.removeEventListener('visibilitychange', this.visibility); window.removeEventListener('pointerdown', this.audioStart); window.removeEventListener('keydown', this.audioStart);

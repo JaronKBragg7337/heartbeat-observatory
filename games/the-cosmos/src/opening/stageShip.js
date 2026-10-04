@@ -48,6 +48,12 @@ export class ShipStage {
       if (ch.name === 'exhaust' || (ch.isMesh && ch.material && ch.material.blending === THREE.AdditiveBlending)) this.effects.add(ch); else this.hardware.add(ch);
     }
     this.exterior.root.add(this.hardware, this.effects);
+    // Keep the walkable ramp in the world pass even while the hull is hidden from an interior camera.
+    for (const r of Object.values(this.exterior.ramps)) this.exterior.root.add(r.hinge);
+    // The closed loading hatch is a solid panel at the cargo opening, rather than an exposed portal.
+    const cargoDoor=this.layout.doors.find(d=>d.noZone&&d.b==='outside'&&d.kind==='portal');
+    if(cargoDoor){this.cargoClosure=new THREE.Mesh(new THREE.BoxGeometry(cargoDoor.w,cargoDoor.h,.16),o.mats.ext.hull);
+      this.cargoClosure.name='closed cargo hatch';this.cargoClosure.position.set(cargoDoor.c,cargoDoor.y+cargoDoor.h/2,cargoDoor.at);this.hardware.add(this.cargoClosure);}
     this.group.add(this.exterior.root);
     this.visuals.applyNeutralPose(this.exterior);
     // legs at their resting length (a landed ship), ramps raised
@@ -77,6 +83,7 @@ export class ShipStage {
       const p = p0 > 0.9999 ? 1 : p0 < 0.0001 ? 0 : p0;      // snap, so a ramp that is 'all the way down' is exactly 1
       if (!force && Math.abs(p - this.ramp[key]) < 1e-4) continue;
       this.ramp[key] = p; const ang = rampAngle(this.def, key);
+      if(key==='cargo'&&this.cargoClosure)this.cargoClosure.visible=p<.01;
       const st = this.state.ramps[key]; st.angle = ang; st.progress = p; st.lowered = p >= 0.999;
       poseRamp(this.exterior.ramps[key], this.def.ramps[key], key, p, ang);
     }
@@ -177,8 +184,9 @@ export class ShipStage {
     if (inside) {
       let looksOut = !cur;
       for (const id of set) if (id === this.roles.bridge || id === this.roles.cargo || (this.windowRooms.has(id) && !this.low)) looksOut = true;
-      this.exterior.root.visible = false;
-    } else this.exterior.root.visible = true;
+      this.hardware.visible = false;
+    } else this.hardware.visible = true;
+    this.exterior.root.visible = true;
     // the nearest lamp fixtures get the pooled lights
     const fixtures = this.interior.lights, cand = [];
     for (let i = 0; i < fixtures.length; i++) { const L = fixtures[i]; if (!set.has(L.roomId)) continue; cand.push([Math.hypot(L.x - cam.x, (L.y - cam.y) * 0.6, L.z - cam.z), i]); }

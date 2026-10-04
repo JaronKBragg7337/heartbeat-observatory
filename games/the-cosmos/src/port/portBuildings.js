@@ -110,7 +110,9 @@ export function moduleShell(k,a,low,block,hole=null) {
   lamp(k,0,3.3,a.d/2+.52,a.doorW*.8);
   plaque(k,depot?CELLS.depot:hall?CELLS.hall:CELLS.tower,0,3.85,a.d/2+.05,Math.min(a.w-1,8),.48);
   dustSkirt(k,a);
+  k.clearanceEnabled=true;
   exteriorDressing(k,a,low,block,rise);
+  k.clearanceEnabled=false;
   if(depot) {
     // Rooftop environmental plant and solar arrays; all inside the footprint.
     B(k,'plasticDark',-4,6.1,-3,3,1.15,2.5,.16);
@@ -741,6 +743,7 @@ export function containerDressing(k,a,low,block) {
 // machine that has seen things. Local frame: x -12..12, z -5..5, open on every side. Where a new pilot reads the boards (BIBLE-v3 10.1).
 // ===========================================================================================================
 export function arrivalsHall(k,a,low,block) {
+  k.clearanceEnabled=true;
   const w2=a.w/2,d2=a.d/2,H=a.h,seg=low?6:10;
   k.box('concrete',0,-.244,0,a.w+2,.5,a.d+2);
   for(let x=-w2+3;x<w2;x+=3)k.box('soot',x,.012,0,.03,.005,a.d-.4);

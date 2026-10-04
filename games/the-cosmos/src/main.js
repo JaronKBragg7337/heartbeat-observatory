@@ -1103,6 +1103,7 @@ engine.addUpdater((dt) => {
   if(multiplayer) multiplayer.tick(dt); else worldBridge.tick(dt);
   if (chat) { chat.tick(dt); voiceUI.update(); }
   economyUI.tick(dt);
+  repair?.tick(dt);
   damageView.tick(dt,walker.worldPos);
   if (suitGroup.visible && playerPerson.loaded) {
     // the body stands or walks with what the legs are doing
@@ -1205,7 +1206,7 @@ if (ship.ready) {
   vehicles.multiplayer = multiplayer;
   if (multiplayer) multiplayer.vehicles = vehicles;
 }
-repair=world.remote?new RepairChain({world,walker,portSite,space}):null;   // OPENING2: the drained lifeboat's parts
+repair=world.remote?new RepairChain({world,walker,portSite,space,engine,shipSystem:ship,vehicles}):null;   // OPENING2: the drained lifeboat's parts
 opening=new Opening({engine,world,ship,people,port,tier,voice,onFinish:(pose,frameId)=>{
   const pad=world.remote?world.snapshot.ships[world.snapshot.players[world.playerId].shipId].pad:{x:0,z:0};
   const arrival=pose?.worldPos||portSite.toWorld(pad.x-7,.02,pad.z+20);

@@ -64,10 +64,10 @@ prop('firstaid', 'cabin', 0.95, 0.4, 0.5, 0.2, 0.5, 3, { y: 1.3, blocks: false }
 prop('extinguisher', 'cabin', -2.2, 3.0, 0.14, 0.14, 0.5, 1, { y: 1.2, blocks: false });
 prop('suitrack', 'lock', 1.75, 0.0, 0.5, 1.0, 2.0, 3);
 prop('locker', 'stores', 1.9, 1.05, 0.6, 0.5, 2.0, 3);
-prop('crate', 'stores', 1.75, 2.7, 0.8, 0.8, 0.8);
+prop('crate', 'stores', 1.75, 2.85, 0.7, 0.4, 0.8);
 prop('tank', 'hold', -1.4, 4.2, 0.6, 0.6, 1.4);
-prop('tank', 'hold', -1.4, 4.9, 0.6, 0.6, 1.4);
-prop('crate', 'hold', 1.4, 4.7, 0.8, 0.8, 0.8);
+prop('tank', 'hold', -1.4, 3.5, 0.6, 0.6, 1.4);
+prop('crate', 'hold', 1.4, 3.6, 0.8, 0.8, 0.8);
 for (const r of K.rooms) lamp(r.id, (r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2, { intensity: 6, len: 1.4, range: 7 });
 
 export const WINDOWS = [{ room: 'cabin', wall: 'x0', c: -0.4, w: 1.6, y0: 4.0, y1: 4.9 }, { room: 'cabin', wall: 'x0', c: 1.6, w: 1.0, y0: 4.0, y1: 4.9 }];

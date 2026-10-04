@@ -4,12 +4,25 @@
 // (world.dispatch); it owns no state. A shared world only: a solo world has no drained boat.
 // ============================================================================
 import { REPAIR_PARTS, missingParts, giverFor, FIT_REACH } from './lifeboat.js';
-import { frameToOutpost } from '../worlds/ceres/layout.js';
+import { frameToOutpost, outpostToFrame } from '../worlds/ceres/layout.js';
 import { makeMoon } from '../space/moonField.js';
+import { GoalHint } from '../ui/goalHint.js';
 
 export class RepairChain {
-  /** o: { world, walker, portSite, space } */
-  constructor(o) { Object.assign(this, o); }
+  /** o: { world, walker, portSite, space, engine, shipSystem, vehicles } */
+  constructor(o) { Object.assign(this, o); this.hint=new GoalHint(o.engine); }
+  tick(dt) {
+    const m=this._mine();let goal=null;
+    if(m&&!this.shipSystem.aboard&&!this.vehicles?.seated()&&(this.walker.grounded||this.walker.altitudeAboveGround()<50)) {
+      const world=m.p.home?.world||'mars',parts=missingParts(m.ship);
+      if(this.space.frameId===world) {
+        if(parts.length){const g=giverFor(world,parts[0]);const target=g.frame==='port'?this.portSite.toWorld(g.at.x,1.5,g.at.z):outpostToFrame(makeMoon(world).padInfo,g.at.x,1.5,g.at.z);
+          goal={id:g.id,label:g.who,target,reach:8};}
+        else if(m.ship.pose?.pos)goal={id:m.ship.id||'lifeboat-pad',label:'Lifeboat pad',target:m.ship.pose.pos,reach:FIT_REACH};
+      }
+    }
+    this.hint.update(dt,goal?{...goal,onPlanet:true}:null);
+  }
   _mine() {
     const w = this.world; if (!w.remote || !w.snapshot) return null;
     const p = w.snapshot.players[w.playerId]; if (!p || (p.opening && !p.opening.complete)) return null;
