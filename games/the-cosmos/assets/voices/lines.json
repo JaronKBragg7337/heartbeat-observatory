@@ -443,10 +443,6 @@
   "voice": "zuri",
   "text": "Course set for Mars orbit (400 km)."
  },
- "057dd9e283a43f": {
-  "voice": "ship",
-  "text": "Turning her over for the burn to slow down."
- },
  "057e54d4b91e53": {
   "voice": "w-fenrir",
   "text": "We never needed a partner and we have the receipts. Ask us for help and we will ask you why."
@@ -686,6 +682,10 @@
  "084d0a5c0e3b8d": {
   "voice": "w-lewis",
   "text": "Since you asked. I fly people and parcels where they asked to go, usually near the time they asked. That is the exciting part, I am afraid."
+ },
+ "08512c50d4b8cc": {
+  "voice": "zuri",
+  "text": "Past the half way mark. Slowing for the arrival."
  },
  "0854695251445c": {
   "voice": "w-puck",
@@ -1291,10 +1291,6 @@
   "voice": "w-alice",
   "text": "Allow me. I run the port. Every dock, every fee, every complaint, in that order. I make it look easy. It is not. I am just good."
  },
- "105bfa1cb6873d": {
-  "voice": "ada",
-  "text": "Turning her over for the burn to slow down."
- },
  "10734f255cd962": {
   "voice": "jorge",
   "text": "The glass people will tell you they are friendly. They also have your photograph. Think about that for a second."
@@ -1458,6 +1454,10 @@
  "1276c7d5582b69": {
   "voice": "ship",
   "text": "We are at Daedalus already."
+ },
+ "1287f3c5a5d5b6": {
+  "voice": "ada",
+  "text": "Past the half way mark. Slowing for the arrival."
  },
  "12894005554ab8": {
   "voice": "zuri",
@@ -1783,6 +1783,10 @@
   "voice": "ada",
   "text": "Outside the neutral line. The scope is clear for now."
  },
+ "1718f24e39b7f8": {
+  "voice": "ship",
+  "text": "Past the half way mark. Slowing for the arrival."
+ },
  "17190f3b79ecd3": {
   "voice": "ada",
   "text": "Down at Hellas Planitia."
@@ -1790,10 +1794,6 @@
  "171ee8abcf33ea": {
   "voice": "w-lewis",
   "text": "Heritage Ranger Tolliver. The Eagle is a protected site. Do not touch it, do not lean on it, and please keep your selfies at a respectful distance."
- },
- "1743ae34b058e7": {
-  "voice": "zuri",
-  "text": "Turning her over for the burn to slow down."
  },
  "17457d1fbe3062": {
   "voice": "ship",

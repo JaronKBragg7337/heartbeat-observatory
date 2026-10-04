@@ -37,7 +37,7 @@ ship and mirrored to every phone.
   as it goes round the Sun (or in inertial space), written every tick, saved with the ship. Free flight is refused at a hold; the drive flies her out there.
 * **Who may go**: hulls up to 150 t; the big transports and bulkers (SH15) need the heavy-drive unlock (`record.unlocks.heavyDrive`, not built yet).
 * **Cancel**: slows at the drive's own acceleration to a stop between the worlds; a new course from there is a long drive again.
-* **Estimator**: `SpaceTrip._plan0` quotes game days and, with the neighbourhood's cap, real minutes; the authority flies within 0.3% of the quoted game time and about 30% of the quoted real time (the quote flies the worlds as they are at plan time).
+* **Estimator**: `SpaceTrip._plan0` quotes game days and, with the neighbourhood's cap, real minutes; the authority flies within 0.3% of the quoted game time and about 40% of the quoted real time (the quote flies the worlds as they are at plan time).
 
 ## Honest simplifications
 The acceleration is fiction (Game 1 is semi sci-fi); distances, sizes and the moving targets are real. The planets' pull is ignored in the cruise. The path is one straight line

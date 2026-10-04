@@ -74,14 +74,14 @@ export async function runMoonTrips({ check, log = () => {} } = {}) {
   if (check) {
     const ok = (r, frame) => r && !r.err && r.frame === frame && r.landed && !r.tripLeft;
     check('a ship flown from the port to the Moon crosses the lane and ends the trip landed in the hub frame', ok(results.out, 'moon'), JSON.stringify(results.out));
-    check('the way out cost one spool of the full 20 cabin seconds and one lane fee of 120 credits', results.out && Math.abs(results.out.spoolS - 20) < 1.2 && results.out.fee === 120, JSON.stringify(results.out));
+    check('the way out is the long drive: no spool and no fee (F3 retired the lane)', results.out && results.out.spoolS === 0 && results.out.fee === 0 && results.out.phases.includes('longdrive'), JSON.stringify(results.out));
     check('from the hub a course to Shackleton Base is a hop in the Moon\'s own region: landed in the Shackleton frame, no spool and no lane fee', ok(results.toShack, 'moon-shackleton') && results.toShack.spoolS === 0 && results.toShack.fee === 0, JSON.stringify(results.toShack));
     check('the dock master buys a tonne of lunar ice from the hold (about 250 marks: F4 and the tax move it) when you stand at her, and refuses from afar', results.dock && !!results.dock.far && results.dock.ok && results.dock.paid > 150 && results.dock.paid < 320 && results.dock.hold === 1000 && results.dock.lots === 1000, JSON.stringify(results.dock));
     check('a hop back to the hub is free of the lane fee', ok(results.toHub, 'moon') && results.toHub.fee === 0, JSON.stringify(results.toHub));
     check('the hub\'s water office pays more for a tonne than the Fortis dock did', results.hub && results.hub.ok && results.hub.paid > results.dock.paid, JSON.stringify(results.hub));
     check('the mercantile sells five water at its shelf and buys them back for less (no free money), through the real authority', results.shop && !results.shop.serr && results.shop.net < 0 && results.shop.water === 0, JSON.stringify(results.shop));
     check('from the hub a course to Daedalus Station ends landed in its frame, still no lane fee', ok(results.toDae, 'moon-daedalus') && results.toDae.fee === 0, JSON.stringify(results.toDae));
-    check('from Daedalus a course to Marineris Port crosses back and ends landed at Mars for one more fee', ok(results.home, 'mars') && results.home.fee === 120, JSON.stringify(results.home));
+    check('from Daedalus a course to Marineris Port flies back by the long drive and ends landed at Mars, free', ok(results.home, 'mars') && results.home.fee === 0, JSON.stringify(results.home));
     check('the long-range drive takes her to Shackleton Base too: free, no spool, landed in its frame, and home again', ok(results.driveOut, 'moon-shackleton') && results.driveOut.fee === 0 && results.driveOut.spoolS === 0 && results.driveOut.phases.includes('longdrive') && ok(results.driveHome, 'mars') && results.driveHome.fee === 0, JSON.stringify([results.driveOut, results.driveHome]));
   }
   return results;
