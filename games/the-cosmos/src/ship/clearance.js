@@ -4,6 +4,12 @@ export function doorClearSpace(d, approach = .55) {
     ...(d.axis === 'x' ? { x0: d.at - approach, x1: d.at + approach, z0: d.c - d.w / 2, z1: d.c + d.w / 2 }
       : { x0: d.c - d.w / 2, x1: d.c + d.w / 2, z0: d.at - approach, z1: d.at + approach }) };
 }
+/** The volume a wall screen occupies: its face is flat on the wall, so a thin slab. facing 'x+' / 'x-' screens span z; 'z+' / 'z-' screens span x. */
+export function screenBox(sc, thick = .12) {
+  const fx = /^x/.test(sc.facing || ''), hw = sc.w / 2, hh = sc.h / 2;
+  return fx ? { id: sc.id, x0: sc.x - thick, x1: sc.x + thick, y0: sc.y - hh, y1: sc.y + hh, z0: sc.z - hw, z1: sc.z + hw }
+    : { id: sc.id, x0: sc.x - hw, x1: sc.x + hw, y0: sc.y - hh, y1: sc.y + hh, z0: sc.z - thick, z1: sc.z + thick };
+}
 export function overlaps(a, b) {
   return ['x', 'y', 'z'].every(k => a[k + '1'] > b[k + '0'] + .001 && a[k + '0'] < b[k + '1'] - .001);
 }

@@ -124,7 +124,7 @@ export const WALL_SCREENS = [
   { id: 'scr_crew_1', room: 'crew_a', kind: 'vitals', x: -4.57, y: 1.6, z: -2.6, w: 0.5, h: 0.32, facing: 'x+' },
   { id: 'scr_galley', room: 'galley', kind: 'menu', x: 4.57, y: 1.9, z: -4.5, w: 0.9, h: 0.55, facing: 'x-' },
   { id: 'scr_hold', room: 'hold', kind: 'manifest', x: -4.37, y: 1.7, z: 12.8, w: 1.0, h: 0.65, facing: 'x+' },
-  { id: 'scr_eng_wall', room: 'engine', kind: 'reactorwall', x: 0.0, y: 2.0, z: 4.63, w: 1.6, h: 0.75, facing: 'z+' },
+  { id: 'scr_eng_wall', room: 'engine', kind: 'reactorwall', x: 2.0, y: 2.0, z: 4.63, w: 1.6, h: 0.75, facing: 'z+' },
 ];
 
 // ---------------------------------------------------------------------------

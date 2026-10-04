@@ -35,7 +35,7 @@ prop('locker','berth',-2.8,2.2,.6,.55,2,2);
 prop('table','mess',2.5,-2.7,.8,1.6,.76);
 prop('bench','mess',3.08,-2.7,.36,1.6,.46);
 prop('counter','mess',3,-.7,1.1,.6,.95,3);
-prop('suitrack','airlock',2.6,.45,.8,.6,2,2);
+prop('suitrack','airlock',2.6,.38,.8,.6,2,2);
 prop('minireactor','engine',-2.2,4.8,1.6,1.6,2.3,0,{extra:{radius:.6}});
 prop('console','engine',3,4.7,1.4,.5,1.1,3,{extra:{screens:2,station:'engineer'}});
 prop('tank','engine',-2.9,6,.8,.8,2.2);

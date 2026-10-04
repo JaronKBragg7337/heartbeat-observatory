@@ -1,7 +1,7 @@
 import { allShipDefs } from '../src/ships/registry.js';
 import { visualsFor } from '../src/ships/visuals.js';
 import { propBoxOf } from '../src/ships/layoutKit.js';
-import { overlaps, doorClearSpace } from '../src/ship/clearance.js';
+import { overlaps, doorClearSpace, screenBox } from '../src/ship/clearance.js';
 import { buildInterior } from '../src/ship/shipInterior.js';
 import { makeShipMaterials, makeSignAtlas } from '../src/ship/shipTextures.js';
 import { OpeningModel, freshOpening, openingBody } from '../src/opening/state.js';
@@ -24,6 +24,11 @@ export async function run({ check, section, THREE, mars }) {
     const spaces=s.layout.doors.map(d=>doorClearSpace(d)),bad=[];
     for(const p of s.layout.props)for(const d of spaces)if(overlaps(propBoxOf(p),d))bad.push(p.kind+' in '+p.room+' / '+d.id);
     check(s.type+': every prop box clears every door, including decorative props',bad.length===0,bad.join('; '));
+    const screenBad=[];for(const sc of s.layout.wallScreens||[])for(const d of s.layout.doors)if(overlaps(screenBox(sc),doorClearSpace(d)))screenBad.push(sc.id+' in '+sc.room+' / '+d.id);
+    check(s.type+': no wall screen sits in a door opening',screenBad.length===0,screenBad.join('; '));
+    const signCount=new Map();for(const d of s.layout.doors)if(d.sign)signCount.set(d.sign,(signCount.get(d.sign)||0)+1);
+    const dupSigns=[...signCount].filter(([,n])=>n>1).map(([k])=>k);
+    check(s.type+': no two doors share one sign label',dupSigns.length===0,dupSigns.join('; '));
     const interior=buildInterior({...s.layout,custom:visualsFor(s.type).custom},mats,{tier:'low',signs});
     const fittingBad=(interior.fittingBoxes||[]).filter(b=>spaces.some(d=>overlaps(b,d)));
     check(s.type+': rendered pipes, rails, glass and notices clear door approaches',fittingBad.length===0);

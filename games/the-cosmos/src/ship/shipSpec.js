@@ -124,8 +124,8 @@ door('d_eng_fore', 'engineering', 'corridor_low', 'z', -7.1, 0, { deck: 'lower',
 door('d_airlock_in',  'corridor_low', 'airlock',   'x', -0.9, -10.8, { deck: 'lower', sign: 'AIRLOCK' });
 door('d_evalocker',   'corridor_low', 'evalocker', 'x',  0.9, -10.8, { deck: 'lower', sign: 'EVA' });
 door('d_ventral',     'corridor_low', 'ventral',   'z', -13.8, 0,   { deck: 'lower', kind: 'open', w: 1.2, h: 2.4 });
-door('d_cargo',       'engineering',  'cargo',     'z',  9.5, 3.4,  { deck: 'lower', w: 2.4, h: 2.4, sign: 'CARGO' });
-door('d_cargo_up',    'corridor_main', 'cargo',    'z',  9.7, 0,    { w: 1.0, h: 2.1, sign: 'CARGO' });
+door('d_cargo',       'engineering',  'cargo',     'z',  9.5, 3.4,  { deck: 'lower', w: 2.4, h: 2.4, sign: 'CARGO LOWER' });
+door('d_cargo_up',    'corridor_main', 'cargo',    'z',  9.7, 0,    { w: 1.0, h: 2.1, sign: 'CARGO UPPER' });
 door('d_ramp',        'cargo',        'outside',   'z', 20.9, 0,    { deck: 'lower', kind: 'portal', w: 3.6, h: 5.2, noZone: true });
 door('d_airlock_out', 'airlock',      'outside',   'x', -6.5, -10.8, { deck: 'lower', kind: 'outer', w: 1.3, h: 2.2 });
 
@@ -227,7 +227,7 @@ export const WALL_SCREENS = [
   { id: 'scr_galley', room: 'galley', kind: 'menu', x: 6.37, y: 4.9, z: -3.9, w: 0.9, h: 0.55, facing: 'x-' },
   { id: 'scr_work', room: 'workshop', kind: 'schematic', x: -6.37, y: 4.5, z: 5.0, w: 0.9, h: 0.6, facing: 'x+' },
   { id: 'scr_cargo', room: 'cargo', kind: 'manifest', x: -5.77, y: 1.7, z: 16.4, w: 1.0, h: 0.65, facing: 'x+' },
-  { id: 'scr_eng_wall', room: 'engineering', kind: 'reactorwall', x: 0.0, y: 2.0, z: -6.97, w: 1.6, h: 0.75, facing: 'z+' },
+  { id: 'scr_eng_wall', room: 'engineering', kind: 'reactorwall', x: 2.3, y: 2.0, z: -6.97, w: 1.6, h: 0.75, facing: 'z+' },
   { id: 'scr_bridge_big', room: 'bridge', kind: 'ship', x: -3.97, y: 7.45, z: -15.8, w: 1.2, h: 0.7, facing: 'x+' },
 ];
 
