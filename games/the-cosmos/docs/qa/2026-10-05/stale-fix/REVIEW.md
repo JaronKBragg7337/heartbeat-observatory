@@ -21,3 +21,7 @@ Source: AI-Shared/projects/syl/STALE-AUDIT-2026-10-04.md. Rule: DECISIONS 10/3 7
 - test/phone-check.mjs: all PASS, no FAIL.
 - test/validate.mjs: see bottom.
 - validate.mjs (partial at push time, ~1300 lines, run still going): 1 FAIL 'Deimos is farther and takes longer (50 min)' in test/space-checks.mjs:277, pure transit physics on orbit phase (Deimos 50 min vs Phobos 58); transit.js untouched, so not caused by this change (unverified against baseline).
+
+## Final results
+- validate.mjs complete: 1863 passed, 1 failed (the Deimos timing check above; pre-existing physics test, not touched by this change; not verified against baseline).
+- AI playtester (live, 15 min, iphone): 12 problems total, 0 blockers, 2 serious (stuck walking to Shift runner; stuck walking to Lookout at the glass). Also: a Dig tap in the opening made no cut. Report: AI-Shared/state/playtest/2026-10-05_01-40/REPORT.md. Vision calls failed with fetch errors 3 times.
