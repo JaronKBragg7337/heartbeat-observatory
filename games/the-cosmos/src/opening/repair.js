@@ -23,6 +23,29 @@ export class RepairChain {
     }
     this.hint.update(dt,goal?{...goal,onPlanet:true}:null);
   }
+  /** FIX-R3: why the lifeboat will not lift, in words a phone can show ('' when it is not the drained boat's doing). */
+  liftBlock() {
+    const m = this._mine(); if (!m) return '';
+    const miss = missingParts(m.ship).map((x) => REPAIR_PARTS[x].name);
+    return miss.length ? `Can't lift: no ${miss.join(' / ')} fitted` : `Can't lift: the parts are bought but not fitted. Stand by the lifeboat and tap Fit`;
+  }
+  /** FIX-R3: the plain next step for a new pilot, shown in the status card until it is done. { text } or null. */
+  nextGoal(aboard) {
+    const w = this.world; if (!w.remote || !w.snapshot) return null;
+    const p = w.snapshot.players[w.playerId]; if (!p || (p.opening && !p.opening.complete)) return null;
+    const ship = w.snapshot.ships[p.shipId]; if (!ship) return null;
+    const world = p.home?.world || 'mars', stand = aboard ? 'Stand up (E), leave by the ramp. ' : '';
+    if (ship.drained) {
+      const miss = missingParts(ship), at = (g) => `${g.who}, ${g.where}`;
+      if (miss.length === 2) return { text: `${stand}The lifeboat has no power. Buy a power cell from ${at(giverFor(world, 'cell'))} and a fuel coupler from ${at(giverFor(world, 'coupler'))}: 300 marks each. Then fit both at the boat.` };
+      if (miss.length === 1) return { text: `${stand}Buy the ${REPAIR_PARTS[miss[0]].name} (300 marks) from ${at(giverFor(world, miss[0]))}. Then fit both at the boat.` };
+      return { text: `${stand}Both parts are yours. Walk to the lifeboat and tap "Fit the power cell and the coupler".` };
+    }
+    if (!(ship.crew || []).length) return { text: 'Lifeboat ready. Next: hire a crew. The Crew Hall at Marineris Port (Mars) has six people looking for work; talk to one and tap Hire. World / crew lists them.' };
+    return { text: world === 'mars'
+      ? 'First job: talk to the depot supervisor (tower, Marineris Port) about "A tonne for the foundation", 400 marks. Or fly to Phobos for core samples, 300 credits each (Course, Jobs).'
+      : 'Ceres has no job board yet. Dig ore or salt and sell it at Occator Works, or fly home to Marineris Port (Course) where the depot job and the Phobos core samples pay.' };
+  }
   _mine() {
     const w = this.world; if (!w.remote || !w.snapshot) return null;
     const p = w.snapshot.players[w.playerId]; if (!p || (p.opening && !p.opening.complete)) return null;

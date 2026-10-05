@@ -1,0 +1,94 @@
+{
+ "res": {
+  "arrived": {
+   "frame": "ceres",
+   "home": "ceres"
+  },
+  "sat": {
+   "drained": true
+  },
+  "clientType": "lifeboat",
+  "hudArrival": "Skiff · Pilot\nlanded · deck plating 1.00 g\nCeres · gravity 283.89 mm/s²\n19°53'32.0\"N 178°39'50.2\"E +5260.3 m\n10,000 marks · 2,500 cr",
+  "snap": {
+   "seat": "pilot",
+   "shipAboard": true,
+   "seated": "pilot",
+   "engines": 0
+  },
+  "dbg": {
+   "remote": true,
+   "opening": {
+    "version": 2,
+    "stage": 7,
+    "elapsed": 0,
+    "clock": 0,
+    "seed": 0.2635961981999252,
+    "season": {
+     "number": 1,
+     "cause": "storm"
+    },
+    "pose": {
+     "x": 4.6,
+     "y": 0,
+     "z": 4,
+     "yaw": 1.5707963267948966,
+     "pitch": 0
+    },
+    "cuts": [],
+    "dest": {
+     "world": "ceres",
+     "faction": null,
+     "stay": false
+    },
+    "driver": null,
+    "carriedCrate": false,
+    "lockerOpened": false,
+    "ride": false,
+    "rideSeconds": 0,
+    "contactSeconds": 0,
+    "walked": 0,
+    "complete": true,
+    "played": true
+   },
+   "home": {
+    "world": "ceres",
+    "faction": null,
+    "driver": null,
+    "cause": "storm",
+    "season": 1,
+    "stay": false,
+    "at": 1791168661535
+   },
+   "drained": true,
+   "crew": [],
+   "frames": 20,
+   "hasNext": false
+  },
+  "hud": "Skiff · Pilot\nlanded · deck plating 1.00 g\nCeres · gravity 283.89 mm/s²\n19°53'32.0\"N 178°39'50.2\"E +5260.3 m\n10,000 marks · 2,500 cr",
+  "dom": [
+   "ship-panel:flex",
+   "fl-read:block",
+   "chip-course:block"
+  ],
+  "panel": {
+   "text": "SPD 0 m/s   ALT 0 m   VS +0.0 CANNOT LIFT",
+   "warnRect": null,
+   "vw": 390
+  },
+  "courseTap": {
+   "alive": true,
+   "ms": 5377
+  },
+  "sheet": {
+   "text": "",
+   "html": 0,
+   "display": "block",
+   "err": "TypeError: undefined is not an object (evaluating 'legs[1].sys') _destinations@http://127.0.0.1:58086/src/space/spaceSystem.js:360:40|destinations@http://127.0.0.1:58086/src/space/spaceSystem.js:336:35|draw@http://127.0.0.1:58086/src/space/spaceUI.js:109:38|@",
+   "open": true
+  }
+ },
+ "errors": [
+  "TypeError: undefined is not an object (evaluating 'legs[1].sys')",
+  "TypeError: undefined is not an object (evaluating 'legs[1].sys')"
+ ]
+}

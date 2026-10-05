@@ -57,6 +57,7 @@ import { chooseWorld } from './world-state/remoteWorld.js';
 import { MultiplayerView } from './world-state/multiplayerView.js';
 import { RemoteCrew } from './world-state/remoteCrew.js';
 import { landingField } from './world-state/fleet.js';
+import { buildAimMarker } from './player/aimMarker.js';  // FIX-R3: shared with the opening's crate dig
 import { GroundDetail } from './world/groundDetail.js';      // ROUND7: pebbles, boot prints and contact shadows at walking scale
 import { personVisible } from './crew/personVisibility.js';
 import { attachMoonPads } from './space/moonField.js';
@@ -285,23 +286,6 @@ function doDumpAll() { return calmRefusal(world.dispatch({type:'spoil-pour',all:
 // ground, and the stem is how far in this scoop goes. The spoil marker is where the load
 // will land and how wide the heap will be.
 // ---------------------------------------------------------------------------
-function buildAimMarker(hex) {
-  const g = new THREE.Group();
-  const glow = (geo, opacity) => new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-    color: hex, transparent: true, opacity, side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
-  }));
-  const rim = glow(new THREE.RingGeometry(0.88, 1.0, 56), 0.95);
-  const fill = glow(new THREE.CircleGeometry(1.0, 56), 0.13);
-  const stem = glow(new THREE.CylinderGeometry(0.045, 0.045, 1, 10, 1, true), 0.5);
-  stem.rotation.x = Math.PI / 2;          // cylinder is +Y; the stem runs along -Z
-  g.add(rim, fill, stem);
-  g.renderOrder = 10;
-  g.frustumCulled = false;
-  for (const m of g.children) m.frustumCulled = false;
-  return { group: g, rim, fill, stem };
-}
-
 // Amber for cutting, cyan for placing. Two verbs, two colours, same shape.
 const digMark = buildAimMarker(0xffb057);
 const dropMark = buildAimMarker(0x63e0ff);
@@ -790,7 +774,13 @@ window.addEventListener('keydown', (e) => {
   else if (document.documentElement.classList.contains('cinema-on')) settingsPanel.classList.add('open');
 });
 
+/** FIX-R3: the status card plus, for a new pilot, the one plain next step (RepairChain.nextGoal). */
 function refreshHud() {
+  refreshHudBase();
+  const goal = repair?.nextGoal(ship.ready && ship.aboard);
+  if (goal) { hud.insertAdjacentHTML('beforeend', `<div class="next-goal"><b>NEXT</b> ${goal.text.replace(/[<>&]/g, '')}</div>`); document.documentElement.style.setProperty('--hud-bottom', `${hudRoot.offsetTop + hudRoot.offsetHeight}px`); }
+}
+function refreshHudBase() {
   const g = walker.geodetic;
   const load = carriedMass();
   if (ship.ready && ship.aboard) {
@@ -1221,7 +1211,7 @@ if (ship.ready) {
   vehicles.multiplayer = multiplayer;
   if (multiplayer) multiplayer.vehicles = vehicles;
 }
-repair=world.remote?new RepairChain({world,walker,portSite,space,engine,shipSystem:ship,vehicles}):null;   // OPENING2: the drained lifeboat's parts
+repair=world.remote?new RepairChain({world,walker,portSite,space,engine,shipSystem:ship,vehicles}):null;ship.liftBlockReason=()=>repair?.liftBlock()||'';   // OPENING2: the drained lifeboat's parts
 opening=new Opening({engine,world,ship,people,port,tier,voice,onFinish:(pose,frameId)=>{
   const pad=world.remote?world.snapshot.ships[world.snapshot.players[world.playerId].shipId].pad:{x:0,z:0};
   const arrival=pose?.worldPos||portSite.toWorld(pad.x-7,.02,pad.z+20);

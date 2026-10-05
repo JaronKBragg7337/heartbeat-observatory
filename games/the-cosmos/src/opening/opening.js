@@ -27,6 +27,8 @@ import { Kit } from '../ship/shipKit.js';
 import { detachBodyEdits } from '../world/field.js';
 import { WRECK_Y } from './freighterHull.js';
 import { bindActivation } from '../ui/activation.js';
+import { buildAimMarker } from '../player/aimMarker.js';
+import { density } from '../world/field.js';
 import { surveyOpeningVehicle, ridePose, rideSupportHeight } from './rideVehicle.js';
 import { writeOpeningCheckpoint } from './checkpoint.js';
 import { factionLook } from '../factions/registry.js';
@@ -234,6 +236,7 @@ export class Opening {
     this.rover = surveyOpeningVehicle(mats, this.tier); this.root.add(this.rover.root);
     this.rover.root.position.set(-7, 0, 23); this.rover.root.rotation.y = Math.PI * .64; this.rover.root.visible = false;
     this.crate = supplyCrate(mats); this.crate.position.set(CRATE.x, -.09, CRATE.z); this.root.add(this.crate);
+    this.digMark = buildAimMarker(0xffb057); this.digMark.group.visible = false; this.root.add(this.digMark.group);      // FIX-R3: the same amber dig ring as the ordinary game
     this._buildLocker();
     // the driver (the rover's), and the recruiter of the other side who waits at the port
     this._dressDriver();
@@ -314,7 +317,7 @@ export class Opening {
       @media(max-width:600px){#opening-caption{font-size:13px;left:5%;right:5%;bottom:100px}#opening-hint{font-size:11px}}
     `; document.head.appendChild(this.style);
     this.ui = document.createElement('div'); this.ui.id = 'opening-ui';
-    this.ui.innerHTML = '<div id="opening-plasma"></div><div id="opening-noise"></div><div id="opening-flash"></div><div id="opening-warp" hidden>Cruise to another world &middot; time compressed</div><div id="opening-fade"></div><div id="opening-hint"></div><div id="opening-caption" aria-live="polite"></div><button id="opening-action"></button><button id="opening-walk">Walk (Q)</button><button id="opening-skip">Skip intro</button>';
+    this.ui.innerHTML = '<div id="opening-plasma"></div><div id="opening-noise"></div><div id="opening-flash"></div><div id="opening-warp" hidden>Cruise to another world &middot; time compressed</div><div id="opening-fade"></div><div id="opening-hint"></div><div id="opening-caption" aria-live="polite">Preparing the opening…</div><button id="opening-action" hidden></button><button id="opening-walk" hidden>Walk (Q)</button><button id="opening-skip">Skip intro</button>';
     document.body.appendChild(this.ui);
     const q = (s) => this.ui.querySelector(s);
     Object.assign(this, { caption: q('#opening-caption'), hint: q('#opening-hint'), action: q('#opening-action'), walkButton: q('#opening-walk'), fade: q('#opening-fade'), skip: q('#opening-skip'),
@@ -457,12 +460,35 @@ export class Opening {
   /** FIX-R2: "Dig" at the crate cuts where you LOOK, within arm's reach (3 m or so); a phone player looking at the horizon cut nothing and got "Nothing in reach".
    *  The button said Dig, so the tap now turns the head to the buried crate first. Only when the crate is close enough to dig (the button is already gated on that). */
   _aimAtCrate() {
-    const m = this.model, w = m?.walker; if (!w || m.kind !== 'wreck' || m.digger?.digTarget()) return;      // already aimed at ground in reach: leave the aim alone
-    const f = w.updateFrame(), eye = w.eyeWorldPos({}), t = m.toWorld(CRATE.x, .3, CRATE.z);
+    const m = this.model, w = m?.walker; if (!w || m.kind !== 'wreck' || m.exposed()) return;      // FIX-R3: always aim; r2 left a look at ground already in reach alone, so the cut could land in a hole already dug
+    const t = this._crateDirt(); if (!t) return;
+    const f = w.updateFrame(), eye = w.eyeWorldPos({});
     const dx = t.x - eye.x, dy = t.y - eye.y, dz = t.z - eye.z;
     const e = dx * f.east.x + dy * f.east.y + dz * f.east.z, n = dx * f.north.x + dy * f.north.y + dz * f.north.z, u = dx * f.up.x + dy * f.up.y + dz * f.up.z;
     const flat = Math.hypot(e, n); if (flat < .05) return;
     w.yaw = Math.atan2(e, n); w.pitch = Math.max(-1.2, Math.min(1.2, Math.atan2(u, flat)));
+  }
+  /** FIX-R3: the dirt that still covers the crate (world point): the highest surface, just inside it, over the five spots exposed() tests. The cut then lands on the
+   *  top of that dirt, never beside or underneath the crate. */
+  _crateDirt() {
+    const m = this.model; let best = null;
+    for (const [x, z] of [[0, 0], [.18, 0], [-.18, 0], [0, .18], [0, -.18]]) {
+      let w = m.toWorld(CRATE.x + x, .34, CRATE.z + z); if (!(density(m.body, w.x, w.y, w.z) < 0)) continue;      // this spot is already clear
+      let top = .34; for (let y = .9; y > .34; y -= .02) { w = m.toWorld(CRATE.x + x, y, CRATE.z + z); if (density(m.body, w.x, w.y, w.z) < 0) { top = y; break; } }
+      if (!best || top > best.top) best = { x, z, top };
+    }
+    return best ? m.toWorld(CRATE.x + best.x, best.top - .03, CRATE.z + best.z) : null;
+  }
+  /** FIX-R3: the amber ring on the dirt the Dig button will cut (same marker as the ordinary game's dig). */
+  _updateDigMark(show) {
+    const mk = this.digMark; if (!mk) return;
+    const m = this.model, hit = show && m?.kind === 'wreck' ? m.digger.digTarget() : null;
+    if (!hit) { mk.group.visible = false; return; }
+    const l = m.toLocal(hit.point), tl = m.digger.tool, n = new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z).normalize().applyQuaternion(this.q.clone().invert());
+    mk.group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n); mk.group.position.set(l.x + n.x * .02, l.y + n.y * .02, l.z + n.z * .02);
+    const r = tl.radius * .9, pulse = .5 + .5 * Math.sin(performance.now() / 1000 * 3.4);
+    mk.group.scale.setScalar(r); mk.stem.scale.set(1, Math.max(.001, tl.radius * 1.5 / r), 1); mk.stem.position.set(0, 0, -tl.radius * 1.5 / 2 / r);
+    mk.rim.material.opacity = .42 + .18 * pulse; mk.fill.material.opacity = .055 + .035 * pulse; mk.stem.material.opacity = .30 + .15 * pulse; mk.group.visible = true;
   }
   async _interact() {
     if (this.actionKind === 'dig') this._aimAtCrate();
@@ -781,9 +807,10 @@ export class Opening {
             moves.sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z)); const d = moves[0]; p.x += c * d.x + v * d.z; p.z += -v * d.x + c * d.z; m.place(p); }
         }
         eye = new THREE.Vector3().copy(m.walker.eyeWorldPos()); forward = new THREE.Vector3().copy(m.digger.lookDir()); up.copy(m.walker.updateFrame().up); local = false;
+        this._updateDigMark(false);
         if (s.stage === STAGE.DIG) { const d = Math.hypot(p.x - CRATE.x, p.z - CRATE.z); this.hint.textContent = 'Walk · Look · Use (E / touch)';
           caption = d > 4 ? 'Something lies beneath the collapsed dust.' : m.exposed() ? 'Lift the cleared supply crate.' : 'Aim the shovel at the dust around the crate.';
-          if (d < 4) { const ex = m.exposed(); if (ex || d < 2.8) { this.actionLabel = ex ? 'Carry (E)' : 'Dig (E)'; this.actionKind = ex ? 'carry' : 'dig'; } else { this.actionLabel = ''; this.actionKind = null; this.hint.textContent = 'Closer to the crate, then Dig.'; } } }
+          if (d < 4) { const ex = m.exposed(); if (ex || d < 2.8) { this.actionLabel = ex ? 'Carry (E)' : 'Dig (E)'; this.actionKind = ex ? 'carry' : 'dig'; } else { this.actionLabel = ''; this.actionKind = null; this.hint.textContent = 'Closer to the crate, then Dig.'; } } this._updateDigMark(this.actionKind === 'dig'); }
         else if (s.stage === STAGE.CONTACT) {
           const d = this.driverInfo, cs = this.contactSeconds;
           caption = cs < 5 ? 'A vehicle is approaching.' : cs < CONTACT_SECONDS ? d.greeting : d.offer; who = cs < 5 ? '' : d.name;

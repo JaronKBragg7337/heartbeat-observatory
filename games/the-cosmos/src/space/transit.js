@@ -230,6 +230,8 @@ export function estimateTrip(o) {
   // A world a long way off (a planet at real distance) would cost over a million sub-steps to fly just to ask how long it takes: past six
   // hours the closed form is within a percent of the flown time (the same one the four-day fallback below used), so say that at once.
   if (secs > 6 * 3600) return { seconds: secs, peakSpeed: Math.min(vMax, Math.sqrt(D * a)), arrived: false, error: NaN, closedForm: true };
+  // FIX-R3: engines with no power (the drained lifeboat) can never arrive: flying 345,600 steps per destination, every redraw of the Course sheet, froze the phone
+  if (!(o.aMax > 1e-9)) return { seconds: secs, peakSpeed: 0, arrived: false, error: NaN, closedForm: true, noThrust: true };
   let guard = 0;
   while (!t.done && t.t < CAP && guard++ < 2_000_000) t.step(0.25, o.aMax);
   if (t.done) return { seconds: t.t, peakSpeed: t.peakSpeed, arrived: true, error: len(sub(t.pos, o.goal)) };

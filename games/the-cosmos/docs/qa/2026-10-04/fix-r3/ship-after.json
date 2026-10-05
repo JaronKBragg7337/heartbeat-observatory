@@ -1,0 +1,93 @@
+{
+ "res": {
+  "arrived": {
+   "frame": "ceres",
+   "home": "ceres"
+  },
+  "sat": {
+   "drained": true
+  },
+  "clientType": "lifeboat",
+  "hudArrival": "Skiff · Pilot\nlanded · deck plating 1.00 g\nCeres · gravity 283.89 mm/s²\n19°53'32.0\"N 178°39'50.2\"E +5260.3 m\nNEXT Stand up (E), leave by the ramp. The lifeboat has no power. Buy a power cell from Marta Voss, the foundry foreman (Ironclad), Occator Works and a fuel coupler from Doctor Roth (Greenhaven), Occator Works: 300 marks each. Then fit both at the boat.\n10,000 marks · 2,500 cr",
+  "snap": {
+   "seat": "pilot",
+   "shipAboard": true,
+   "seated": "pilot",
+   "engines": 40
+  },
+  "dbg": {
+   "remote": true,
+   "opening": {
+    "version": 2,
+    "stage": 7,
+    "elapsed": 0,
+    "clock": 0,
+    "seed": 0.9017436748674718,
+    "season": {
+     "number": 1,
+     "cause": "storm"
+    },
+    "pose": {
+     "x": 4.6,
+     "y": 0,
+     "z": 4,
+     "yaw": 1.5707963267948966,
+     "pitch": 0
+    },
+    "cuts": [],
+    "dest": {
+     "world": "ceres",
+     "faction": null,
+     "stay": false
+    },
+    "driver": null,
+    "carriedCrate": false,
+    "lockerOpened": false,
+    "ride": false,
+    "rideSeconds": 0,
+    "contactSeconds": 0,
+    "walked": 0,
+    "complete": true,
+    "played": true
+   },
+   "home": {
+    "world": "ceres",
+    "faction": null,
+    "driver": null,
+    "cause": "storm",
+    "season": 1,
+    "stay": false,
+    "at": 1791168620246
+   },
+   "drained": true,
+   "crew": [],
+   "frames": 18,
+   "hasNext": true
+  },
+  "hud": "Skiff · Pilot\nlanded · deck plating 1.00 g\nCeres · gravity 283.89 mm/s²\n19°53'32.0\"N 178°39'50.2\"E +5260.3 m\nNEXT Stand up (E), leave by the ramp. The lifeboat has no power. Buy a power cell from Marta Voss, the foundry foreman (Ironclad), Occator Works and a fuel coupler from Doctor Roth (Greenhaven), Occator Works: 300 marks each. Then fit both at the boat.\n10,000 marks · 2,500 cr",
+  "dom": [
+   "ship-panel:flex",
+   "fl-read:block",
+   "chip-course:block",
+   "fl-warn:none"
+  ],
+  "panel": {
+   "text": "SPD 0 m/s   ALT 0 m   VS +0.0",
+   "warn": "",
+   "warnRect": "{\"x\":0,\"y\":0,\"width\":0,\"height\":0,\"top\":0,\"right\":0,\"bottom\":0,\"left\":0}",
+   "vw": 390
+  },
+  "courseTap": {
+   "alive": true,
+   "ms": 625
+  },
+  "sheet": {
+   "text": "NAV COMPUTER\n×\nCourse\nJobs\nCeres · drive 88.2 m/s² at 40% engines\nMarineris Port · long-range drive\n1.12 AU · 6.2 days of flight · about 13 min at x14400\nBack to the Meridian's own pad.\nMars orbit (400 km) · long-range drive\n1.12 AU · 6.2 days of flight · about 12 min at x14400\nHold over Mars. The v",
+   "html": 3617,
+   "display": "block",
+   "err": null,
+   "open": true
+  }
+ },
+ "errors": []
+}

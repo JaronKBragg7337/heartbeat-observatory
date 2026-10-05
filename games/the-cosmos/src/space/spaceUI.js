@@ -106,7 +106,8 @@ export class SpaceUI {
     } else {
       const f = sp.ship.flight;
       h += `<div class="dim" style="margin-bottom:6px">${sp.onMoon ? sp.activeMoon.body.name : 'Mars'} · drive ${(DRIVE.thrustN * Math.min(1.8, f.engineFactor) * f.damageFactor / f.massKg).toFixed(1)} m/s² at ${f.power.engines}% engines</div>`;
-      for (const d of sp.destinations()) {
+      let dests = []; try { dests = sp.destinations(); } catch (e) { console.error('course list', e); h += `<div class="dim">The course list is not available from here. Close this and try again in a moment.</div>`; }      // FIX-R3: never let a list error stop the game's frame loop
+      for (const d of dests) {
         const drive = d.route === 'drive', tag = drive ? ' · long-range drive' : d.route === 'lane' ? ' · Ore Lane' : '';
         const sub = !d.ok ? esc(d.reason) : drive ? `${fmtAU(d.distM)} · ${fmtLong(d.etaS)} of flight · about ${fmtDuration(d.realTopS)} at x${LONG.warps.at(-1)}` : `${fmtKm(d.distM)} · about ${fmtDuration(d.etaS)}`;
         h += `<button class="go" data-a="go" data-d="${d.id}" ${d.ok ? '' : 'disabled'}>${esc(d.name)}${tag}<small>${sub}</small><small>${esc(d.blurb)}</small></button>`;

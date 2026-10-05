@@ -567,13 +567,15 @@ const WEB = [0.42, 0.16, 0.14];   // looks-r1: harness webbing. A bright red box
  * The registered station is the old chair's box. Floor rails and a head post reach that box,
  * so a tighter seat still measures as the station on the manifest.
  */
-function seatReach(k, halfW, top, z0, z1) {
+function seatReach(k, halfW, top, z0, z1, backZ = 0.31) {
   for (const s of [-1, 1]) {
     k.pipe('steelDark', [s * halfW, 0.045, z0], [s * halfW, 0.045, z1], 0.012, 5);
     k.cyl('rubber', s * halfW, 0.016, z0, 0.016, 0.032, 6);
     k.cyl('rubber', s * halfW, 0.016, z1, 0.016, 0.032, 6);
   }
-  k.cyl('steel', 0, top - 0.14, 0, 0.01, 0.28, 5);
+  // FIX-R3: the head post used to stand at the seat's centre (x 0, z 0), a rod in front of a seated player's face and through the cushion's air. It now stands
+  // behind the back shell (backZ), where only the reach to the registered box is kept.
+  k.cyl('steelDark', 0, top - 0.14, backZ, 0.006, 0.28, 5);
 }
 
 /** Shoulder webs on the back pad and a lap belt with a buckle. The belt lies on the cushion. */
@@ -642,7 +644,7 @@ export const SEAT_DRAW = {
     k.push(0, 0, 0, Math.PI);
     PROPS._swivel(k, 'fabricBlue');
     k.pop();
-    seatReach(k, 0.284, 1.13, -0.18, 0.18);
+    seatReach(k, 0.284, 1.13, -0.18, 0.18, 0.2);
   },
   gunner(k) {
     // looks-r1: harness seat and the two grips. Webbing lies on the pad.

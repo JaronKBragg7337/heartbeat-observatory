@@ -1,0 +1,28 @@
+[
+ {
+  "W": 390,
+  "H": 844,
+  "overlaps": [],
+  "worst": 0,
+  "panelBottom": 824,
+  "vh": 844,
+  "xInside": true,
+  "canScroll": true,
+  "emptyButtons": [],
+  "pass": true
+ },
+ {
+  "W": 375,
+  "H": 667,
+  "overlaps": [
+   "LABEL"
+  ],
+  "worst": 0.00040569780021637217,
+  "panelBottom": 647,
+  "vh": 667,
+  "xInside": true,
+  "canScroll": true,
+  "emptyButtons": [],
+  "pass": true
+ }
+]

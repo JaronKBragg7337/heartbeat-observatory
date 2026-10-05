@@ -1,0 +1,161 @@
+{
+ "results": [
+  {
+   "look": "horizon",
+   "markerVisibleBeforeTap": "none",
+   "before": {
+    "cuts": 0,
+    "label": "Dig (E)",
+    "d": 2.199982183130759
+   },
+   "cutsPerTap": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "pass": false
+  },
+  {
+   "look": "sky",
+   "markerVisibleBeforeTap": "none",
+   "before": {
+    "cuts": 0,
+    "label": "Dig (E)",
+    "d": 2.1999776446723276
+   },
+   "cutsPerTap": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "pass": false
+  },
+  {
+   "look": "sideways",
+   "markerVisibleBeforeTap": "none",
+   "before": {
+    "cuts": 0,
+    "label": "Dig (E)",
+    "d": 2.199978126745563
+   },
+   "cutsPerTap": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "pass": false
+  },
+  {
+   "look": "back turned",
+   "markerVisibleBeforeTap": "none",
+   "before": {
+    "cuts": 0,
+    "label": "Dig (E)",
+    "d": 2.199974767986253
+   },
+   "cutsPerTap": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "pass": false
+  },
+  {
+   "look": "far down",
+   "markerVisibleBeforeTap": "none",
+   "before": {
+    "cuts": 0,
+    "label": "Dig (E)",
+    "d": 2.199978657886644
+   },
+   "cutsPerTap": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "pass": false
+  },
+  {
+   "look": "at feet",
+   "markerVisibleBeforeTap": "none",
+   "before": {
+    "cuts": 0,
+    "label": "Dig (E)",
+    "d": 2.1999791397946376
+   },
+   "cutsPerTap": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "pass": false
+  }
+ ],
+ "errors": []
+}

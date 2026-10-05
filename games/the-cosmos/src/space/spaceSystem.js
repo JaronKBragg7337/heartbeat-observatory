@@ -357,9 +357,13 @@ export class SpaceSystem {
         const p = hereSys === 'mars' ? this._shipS() : { x: f.pos.x, y: f.pos.y, z: f.pos.z };
         if (cr) { r.distM = pl.longL; r.route = 'drive'; r.longS = pl.long; r.realTopS = pl.longReal + (pl.climb + pl.drive + pl.drive2) / 60 + pl.descent / 8 + 30; r.peakSpeed = pl.longPeak; r.warps = LONG.warps; }      // realTopS: the long drive at the top of its ladder, the main-drive legs at x60, the landing mostly at x1
         else {
+          // FIX-R3: a route of ONE leg (a goal in this world's own region, as from Ceres) has no second leg: legs[1].sys threw here and the Course sheet took the frame loop down with it (the "COURSE freezes the game" report)
+          if (legs.length < 2) { r.distM = Math.hypot(legs[0].goal.x - p.x, legs[0].goal.y - p.y, legs[0].goal.z - p.z); }
+          else {
           const m2 = mouthPoint(legs[1].sys, legs[1].sys === 'mars' ? null : makeMoon(legs[1].sys));       // WD-MOON: the way home from a far world ends in Mars's region, which has no body record (the list threw from Ceres)
           r.distM = Math.hypot(legs[0].goal.x - p.x, legs[0].goal.y - p.y, legs[0].goal.z - p.z) + Math.hypot(legs[1].goal.x - m2.x, legs[1].goal.y - m2.y, legs[1].goal.z - m2.z);
           r.route = 'lane'; r.crossing = true; r.laneFee = JUMP.feeCredits;
+          }
         }
         if (lane && this.ledger.credits < JUMP.feeCredits && !this.o.remoteFee) { r.ok = false; r.reason = `the lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.ledger.credits)}`; }
         if (cr) { const g = longDriveAllowed(this.ship.def, false); if (!g.ok) { r.ok = false; r.reason = g.msg; } }

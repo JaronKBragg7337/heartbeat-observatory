@@ -1,0 +1,38 @@
+[
+ {
+  "W": 390,
+  "H": 844,
+  "overlaps": [
+   "set-view",
+   "set-tool",
+   "LABEL",
+   "set-cinema"
+  ],
+  "worst": 0.725,
+  "panelBottom": 824,
+  "vh": 844,
+  "xInside": true,
+  "canScroll": true,
+  "emptyButtons": [],
+  "pass": false
+ },
+ {
+  "W": 375,
+  "H": 667,
+  "overlaps": [
+   "set-view",
+   "set-tool",
+   "LABEL",
+   "set-cinema",
+   "set-letterbox",
+   "set-dev"
+  ],
+  "worst": 1,
+  "panelBottom": 647,
+  "vh": 667,
+  "xInside": true,
+  "canScroll": true,
+  "emptyButtons": [],
+  "pass": false
+ }
+]

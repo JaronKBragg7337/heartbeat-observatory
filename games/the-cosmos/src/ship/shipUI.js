@@ -85,10 +85,11 @@ const CSS = `
   #ship-panel canvas { max-height: 24vh; width: auto; margin: 0 auto; }
   #ship-hint { display: none !important; }
   /* Flying: the panel shrinks to one thin strip so the windscreen is the picture, not the readout. */
-  #ship-panel.fly { display: flex !important; align-items: center; gap: 8px; padding: 4px 8px; top: calc(70px + env(safe-area-inset-top, 0px)); max-height: none; width: calc(100vw - 20px); }
+  #ship-panel.fly { display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 4px 8px; top: calc(70px + env(safe-area-inset-top, 0px)); max-height: none; width: calc(100vw - 20px); }
   #ship-panel.fly h3, #ship-panel.fly .more { display: none; }
   #ship-panel.fly #fl-read { flex: 1; font-size: 11px; line-height: 1.3; white-space: nowrap; overflow: hidden; }
   #ship-panel.fly .chips { margin: 0; flex: none; }
+  #ship-panel.fly #fl-warn { flex: 1 1 100%; white-space: normal; color: #ff8a73; font-size: 12px; line-height: 1.35; font-weight: 600; }
   #ship-panel.fly .chip { min-height: 30px; padding: 2px 10px; }
 }
 `;
@@ -162,7 +163,7 @@ export class ShipUI {
     if (sp && ship.audio) {
       const row = document.createElement('div'); row.className = 'set-row';
       row.innerHTML = '<label for="set-shipsound">Ship sound<span class="hint">Engines, guns, doors. Starts on your first touch.</span></label><input type="checkbox" id="set-shipsound">';
-      sp.insertBefore(row, sp.querySelector('#btn-copy-coord'));
+      { const ref = sp.querySelector('#btn-copy-coord'); ref.parentNode.insertBefore(row, ref); }
       const cb = row.querySelector('input'); cb.checked = ship.audio.on;
       cb.addEventListener('change', () => ship.audio.setOn(cb.checked));
     }
@@ -204,7 +205,7 @@ export class ShipUI {
 
     if (flying) {
       P.style.display = 'block'; P.className = 'fly';
-      P.innerHTML = `<h3>${s.name.toUpperCase()}</h3><div id="fl-read"></div><div class="chips"><button class="chip" id="chip-ramp">Ramp</button><button class="chip" id="chip-course">Course</button></div>`;
+      P.innerHTML = `<h3>${s.name.toUpperCase()}</h3><div id="fl-read"></div><div class="chips"><button class="chip" id="chip-ramp">Ramp</button><button class="chip" id="chip-course">Course</button></div><div id="fl-warn"></div>`;
       P.querySelector('#chip-ramp').onclick = () => { if (this.ship.stations.mayOperateRamp()) this.ship.toggleRamp('cargo'); };
       P.querySelector('#chip-course').onclick = () => { if (this.ship.space && this.ship.space.ui) this.ship.space.ui.toggle('course'); };
     } else if (id === 'nav') {
@@ -279,13 +280,14 @@ export class ShipUI {
       const el = P.querySelector('#fl-read');
       const hand = ship._handSteering && ship._handSteering();
       this._flyChips();
+      const warn = P.querySelector('#fl-warn');   // FIX-R3: its own full-width row, so the reason is never cut off behind Ramp and Course
+      if (warn) { const why = f.canLiftOff() ? '' : (ship.liftBlockReason?.() || "Can't lift: the engines are too weak for this load. Route more power to the engines."); if (warn.textContent !== why) warn.textContent = why; warn.style.display = why ? 'block' : 'none'; }
       const spd = f.speed >= 1000 ? `<b>${(f.speed / 1000).toFixed(2)}</b> km/s` : `<b>${f.speed.toFixed(0)}</b> m/s`;
       if (el) el.innerHTML =
         (f.agl > 20000 ? `SPD ${spd} &nbsp; ALT <b>${(f.agl / 1000).toFixed(f.agl > 1e5 ? 0 : 1)}</b> km<br class="more">` :
         `SPD ${spd} &nbsp; ALT <b>${Math.max(0, f.agl).toFixed(0)}</b> m &nbsp; VS <b>${f.verticalSpeed >= 0 ? '+' : ''}${f.verticalSpeed.toFixed(f.agl > 300 ? 0 : 1)}</b><br class="more">`) +
         (hand ? `<span class="dim more">${ship.flightMode === 'assist' ? 'ASSIST' : 'NEWTONIAN'}${f.boosting ? ' · BOOST' : ''}${f.handInfo && f.handInfo.landing ? ' · LANDING' : ''} · </span>` : '') +
         `<span class="dim more">${f.landed ? 'LANDED · ' : ''}gear ${f.gearPos > 0.99 ? 'down' : f.gearPos < 0.01 ? 'up' : 'moving'} · engines ${f.power.engines}%</span>` +
-        (f.canLiftOff() ? '' : ' <span style="color:#ff6a55">CANNOT LIFT</span>') +
         (this.seatId === 'captain' ? `<br class="more"><span class="dim more">guns ${f.power.guns}% · shield ${f.shield.toFixed(0)}/${f.shieldMax.toFixed(0)}</span>` : '');
     } else if (this.seatId === 'nav' && this.mapCanvas) {
       const c = this.mapCanvas;
