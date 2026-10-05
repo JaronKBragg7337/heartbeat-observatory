@@ -41,9 +41,9 @@ export class RepairChain {
       if (miss.length === 1) return { text: `${stand}Buy the ${REPAIR_PARTS[miss[0]].name} (300 marks) from ${at(giverFor(world, miss[0]))}. Then fit both at the boat.` };
       return { text: `${stand}Both parts are yours. Walk to the lifeboat and tap "Fit the power cell and the coupler".` };
     }
-    if (!(ship.crew || []).length) return { text: 'Lifeboat ready. Next: hire a crew. The Crew Hall at Marineris Port (Mars) has six people looking for work; talk to one and tap Hire. World / crew lists them.' };
+    if (!(ship.crew || []).length) return { text: `${p.home?.stay ? 'Your ship is on its pad.' : 'Lifeboat ready.'} Next: hire a crew. The Crew Hall at Marineris Port (Mars) has six people looking for work; talk to one and tap Hire. World / crew lists them.` };
     return { text: world === 'mars'
-      ? 'First job: talk to the depot supervisor (tower, Marineris Port) about "A tonne for the foundation", 400 marks. Or fly to Phobos for core samples, 300 credits each (Course, Jobs).'
+      ? 'First job: ride the lift up the control tower at Marineris Port and talk to the watch supervisor about "A tonne for the foundation", 400 marks. Or fly to Phobos for core samples, 300 credits each (Course, Jobs).'
       : 'Ceres has no job board yet. Dig ore or salt and sell it at Occator Works, or fly home to Marineris Port (Course) where the depot job and the Phobos core samples pay.' };
   }
   _mine() {

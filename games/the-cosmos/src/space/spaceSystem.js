@@ -201,8 +201,8 @@ export class SpaceSystem {
   /** WORLD2: the lane fee, taken as the coils fire. { ok, msg }. Solo takes it from the account; the shared world's authority does it for itself. */
   payLaneFee(credits) {
     if (this.ledger.credits < credits) return { ok: false, msg: `The lane office wants ${credits} credits and the account has ${Math.floor(this.ledger.credits)}. Holding at the lane mouth: earn it, then plot the course again.` };
-    const r = this.hooks.charge ? this.hooks.charge(credits, 'Ore Lane fee') : { ok: true };
-    if (r && r.ok === false) return { ok: false, msg: r.msg || 'The lane fee was refused.' };
+    const r = this.hooks.charge ? this.hooks.charge(credits, 'Fee') : { ok: true };
+    if (r && r.ok === false) return { ok: false, msg: r.msg || 'The payment was refused.' };
     this.ledger.credits -= credits;
     return { ok: true };
   }
@@ -343,7 +343,7 @@ export class SpaceSystem {
     const hereSys = systemOfFrame(this.frameId);
     const away = (hereSys === 'mars' ? (() => { const q = this._shipS(); return Math.hypot(q.x, q.y, q.z); })() : Math.hypot(f.pos.x, f.pos.y, f.pos.z)) > LONG.homeM;       // F3: out in deep space
     for (const row of DESTINATIONS) {
-      if (row.kind === 'far') { out.push({ id: row.id, name: row.name, blurb: row.blurb, kind: row.kind, ok: false, reason: 'no lane surveyed yet', distM: 0, etaS: 0 }); continue; }
+      if (row.kind === 'far') { out.push({ id: row.id, name: row.name, blurb: row.blurb, kind: row.kind, ok: false, reason: 'not charted yet', distM: 0, etaS: 0 }); continue; }
       const destSys = row.kind === 'moon' ? systemOfFrame(row.moon) : 'mars';
       // F3: a world across the lane is offered by the lane (fee, quick) AND by the long-range drive (free, slow on purpose); a world with no lane only by the drive
       const ids = [row.id];
@@ -362,13 +362,12 @@ export class SpaceSystem {
           else {
           const m2 = mouthPoint(legs[1].sys, legs[1].sys === 'mars' ? null : makeMoon(legs[1].sys));       // WD-MOON: the way home from a far world ends in Mars's region, which has no body record (the list threw from Ceres)
           r.distM = Math.hypot(legs[0].goal.x - p.x, legs[0].goal.y - p.y, legs[0].goal.z - p.z) + Math.hypot(legs[1].goal.x - m2.x, legs[1].goal.y - m2.y, legs[1].goal.z - m2.z);
-          r.route = 'lane'; r.crossing = true; r.laneFee = JUMP.feeCredits;
+          r.crossing = true;
           }
         }
-        if (lane && this.ledger.credits < JUMP.feeCredits && !this.o.remoteFee) { r.ok = false; r.reason = `the lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.ledger.credits)}`; }
-        if (cr) { const g = longDriveAllowed(this.ship.def, false); if (!g.ok) { r.ok = false; r.reason = g.msg; } }
+                if (cr) { const g = longDriveAllowed(this.ship.def, false); if (!g.ok) { r.ok = false; r.reason = g.msg; } }
         if (!f.canLiftOff() && f.landed) { r.ok = false; r.reason = 'engines too low to lift'; }
-        if (r.ok && lane) r.blurb = `${row.blurb} Lane fee ${JUMP.feeCredits} credits.`;
+       
         out.push(r); continue;
       }
       if (hereSys !== 'mars') {       // WD-MOON: a hop inside a lane world's own region (Tranquility to Shackleton): the real trip's own plan, flown in the region's frame
@@ -408,14 +407,13 @@ export class SpaceSystem {
     if (this.trip && this.trip.active) return { ok: false, msg: 'A course is already under way. Cancel it first.' };
     if (!ship.aboard) return { ok: false, msg: 'Come aboard first: the ship will not lift without you.' };
     const dest = this.resolve(id);
-    if (!dest || !dest.goalS) return { ok: false, msg: 'That is out of range: it needs a jump drive the Meridian does not have.' };
+    if (!dest || !dest.goalS) return { ok: false, msg: 'That place is not charted yet: the nav computer has no landing there.' };
     if (f.landed && !f.canLiftOff()) return { ok: false, msg: 'Engine power is too low to lift off. Route more to the engines.' };
     if (f.engineFactor < 0.3) return { ok: false, msg: 'Engine share is too low for the main drive. Route power to the engines (Engineering).' };
     if (this.ship.crew && this.ship.crew.cancelOrder) this.ship.crew.cancelOrder();
     this.ff.suspend('The autopilot has the ship.');          // FREEFLIGHT
     if (dest.kind === 'moon' && systemOfFrame(dest.moon) === systemOfFrame(this.frameId) && dest.via !== 'drive') this.moonWorld(dest.moon);        // build the world now (a moment's hitch at the button, not on arrival); a world across the lane is built behind the jump spool (WORLD2)
     const trip = new SpaceTrip(this, dest, o);
-    if (trip._route().some((l) => l.jump) && this.ledger.credits < JUMP.feeCredits) return { ok: false, msg: `The Compact's lane fee is ${JUMP.feeCredits} credits and the account has ${Math.floor(this.ledger.credits)}. Earn it first.` };     // WORLD2: across the lane
     if (trip.usesLong()) { const g = trip._plan(); if (!g.ok) return { ok: false, msg: g.msg }; }          // F3: may this hull use the long-range drive?
     trip.setWarp(1);
     this.trip = trip;
@@ -552,7 +550,6 @@ export class SpaceSystem {
       const p = t.progress, ph = t.phases(), now = ph.find((q) => q.state === 'now');
       if (t.phase === 'transit') out.push(`<span class="load">DRIVE · ${(p.speed / 1000).toFixed(2)} km/s · ${fmtKmSpace(p.distM)} to go${t.warp > 1 ? ` · ×${t.warp}` : ''}</span>`);
       else if (t.phase === 'longdrive' && p.long) out.push(`<span class="load">LONG DRIVE · ${(p.speed / 1000).toFixed(0)} km/s · ${fmtAU(p.distM)} to go · day ${(p.long.tau / 86400).toFixed(1)} of ${(p.long.T / 86400).toFixed(1)}${t.eff > 1 ? ` · ×${t.eff}` : ''}</span>`);
-      else if (t.phase === 'spool') out.push(`<span class="load">JUMP COILS · ${Math.max(0, JUMP.spoolS - t.spoolT).toFixed(0)} s</span>`);
       else out.push(`<span class="dim">${t.phase} · ${t.dest.name}${t.eff > 1 ? ` · ×${t.eff}` : ''}</span>`);
       out.push(`<span class="dim">${now ? `${now.name}: ${fmtDuration(t.wallS(now))} left` : ''} · whole trip ${fmtDuration(ph.reduce((a, q) => a + t.wallS(q), 0))}</span>`);
     }

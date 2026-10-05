@@ -7,7 +7,7 @@
 // THE GOODS
 //   ICE      "Lunar polar ice", dug in the shadows round Shackleton (the world's `materials.ice`): matter, kept as the exact lots it was dug as, sold by the whole
 //            tonne from the ship's hold. The Fortis ice dock pays the lower price (it is the producer's own door); the hub's water office pays more, because the
-//            hub's people have nobody else to buy from. Carrying it a short hop costs no lane fee: the three landings are one region.
+//            hub's people have nobody else to buy from. Carrying it a short hop costs no toll: the three landings are one region.
 //   SUPPLIES counted units in the ship's inventory: each vendor has what it sells (the player buys) and what it pays for (the player sells), never the same
 //            good, so no vendor can be milked alone. The vendors' own funds bound what they can pay.
 // HONEST SIMPLIFICATIONS: the prices are the game's own first balance; shelves never run out (only the vendor's fund and the player's purse bound a trade);

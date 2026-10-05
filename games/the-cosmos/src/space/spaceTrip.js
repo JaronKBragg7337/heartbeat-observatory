@@ -222,7 +222,7 @@ export class SpaceTrip {
     let cur = this.phase === 'lift' || this.phase === 'start' ? 'ascent' : this.phase === 'settle' ? 'descent' : this.phase;
     if (cur === 'transit' && (this.leg > 0 || mid[0] === 'longdrive')) cur = 'cruise';          // the main drive after the lane or the long drive is the far side's
     const has = (k) => k === 'ascent' ? pl.climb > 0 : k === 'descent' ? d.kind === 'moon' || d.kind === 'port' : k === 'transit' ? d.kind !== 'hold' : true;
-    const names = { ascent: 'Climb out', transit: mid.includes('longdrive') ? 'Main drive out to the long drive' : mid.length > 1 ? 'Main drive to the lane' : 'Main drive', spool: 'Jump coils spool', longdrive: 'Long-range drive', cruise: d.deep ? 'Main drive' : `Main drive, ${regionName(there)} side`, descent: d.kind === 'port' ? 'Descent to the pad' : 'Descent and landing' };
+    const names = { ascent: 'Climb out', transit: mid.includes('longdrive') ? 'Main drive out to the long drive' : mid.length > 1 ? 'Main drive, clear of the planet' : 'Main drive', longdrive: 'Long-range drive', cruise: d.deep ? 'Main drive' : `Main drive, ${regionName(there)} side`, descent: d.kind === 'port' ? 'Descent to the pad' : 'Descent and landing' };
     const ci = order.indexOf(cur);
     for (const k of order) {
       if (!has(k)) continue;
@@ -415,7 +415,7 @@ export class SpaceTrip {
     f.attitude = new THREE.Quaternion().copy(f.quaternion);
     f.override = (dt) => this._drive(dt);
     f.autoHover = false;
-    this.say(this.transit.legs.length ? `Plotting a course round ${leg.sys === 'mars' ? 'Mars' : regionName(leg.sys)} first.` : leg.jump ? 'Main drive lit for the Ore Lane. Hold on to something.' : 'Main drive lit. Hold on to something.', 'burn' + this.leg);
+    this.say(this.transit.legs.length ? `Plotting a course round ${leg.sys === 'mars' ? 'Mars' : regionName(leg.sys)} first.` : 'Main drive lit. Hold on to something.', 'burn' + this.leg);
     this.progress.distM = this.transit.distance;
   }
   /** A trip restored from a save or the shared world has lost its goal function: bind it again from the destination. */
@@ -498,7 +498,7 @@ export class SpaceTrip {
       this.phase = 'spool'; this.spoolT = 0;
       this._attFrom = f.attitude ? f.attitude.clone() : null;
       if (this.space.prepareWorld) this.space.prepareWorld(rootFrameOf(this._destSys()));      // the far world is built now, behind the spool, not at the jump
-      this.say(`At the ${laneName(leg.sys)}. Jump coils spooling: ${JUMP.spoolS} seconds. The Compact's lane fee is ${JUMP.feeCredits} credits.`, 'spool' + this.leg);
+      this.say('Holding for the long drive.', 'spool' + this.leg);
       return;
     }
     this.phase = 'settle'; this.settleT = 0;
@@ -526,7 +526,7 @@ export class SpaceTrip {
     this.space.jumpTo(toFrame, mouthPoint(toSys, this._regionBody(toSys)));
     this.leg++;
     this.phase = 'transit';
-    this.say(`The corridor opens. ${regionName(toSys)} side. Lane fee paid: ${JUMP.feeCredits} credits.`, 'jumped' + this.leg);
+    this.say(`${regionName(toSys)} ahead. Main drive.`, 'jumped' + this.leg);
     this._beginTransit();
     return null;
   }

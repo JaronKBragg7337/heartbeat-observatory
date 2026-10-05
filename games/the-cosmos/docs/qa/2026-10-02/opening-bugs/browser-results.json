@@ -95,8 +95,8 @@
   "exitDuringSave": true,
   "exitRefresh": true,
   "dig": {
-    "taps": 4,
-    "cuts": 4,
+    "taps": 5,
+    "cuts": 5,
     "refresh": true
   },
   "unacknowledgedCarryRefresh": true,

@@ -7,6 +7,6 @@ import { SOLAR } from '../_kit/solar.js';
 
 export default {
   id: 'mercury', name: 'Mercury', kind: 'planet', placeholder: true, nav: false, order: 100,
-  blurb: 'A world of this Solar System, not built yet. Needs a jump drive the Meridian does not have.',
+  blurb: 'A world of this Solar System, not built yet. Not open yet; nothing there is charted for landing.',
   orbit: SOLAR.orbit.mercury,
 };

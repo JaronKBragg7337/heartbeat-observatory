@@ -133,7 +133,7 @@ function rebuildFromRegistry() {
     // F3: a placed world with no ground yet (Earth, the Moon, Callisto: a placeholder with an `orbit`) is reachable by the long-range drive and held off, not landed on
     if (d.placeholder) {
       if (d.orbit) DESTINATIONS.push({ id: d.id, kind: 'deep', deep: d.id, via: 'drive', name: d.navName || d.name, blurb: d.blurb || 'Reached by the long-range drive. Nothing there is charted for landing yet.' });
-      else far(d, 'Another system. Needs a jump drive the Meridian does not have.');
+      else far(d, 'A world of this Solar System, not open yet. The nav computer has no landing there.');
       continue;
     }
     const dist = Math.hypot(...Object.values(worldCentre(d.id)));

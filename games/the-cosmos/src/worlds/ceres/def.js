@@ -19,13 +19,13 @@
 //   Facula on it, Vinalia Faculae east of it), Kerwan (11.47 S, 122.58 E, 284 km, shallow), Ahuna Mons (10.46 S, 315.8 E, 4 km high, 20 km wide).
 //   Placed from the real map but SHAPED BY THE FIELD: the relief between those features is the density field's cratered heightfield (every
 //   crater a procedure), not the Dawn terrain model (135 m per pixel, public domain: a later package could sample it).
-//   Game fiction (marked, never claimed): Occator Works and its pits (The Cut, Seam Hollow), the ore, the Compact, the lane, the lane fee,
+//   Game fiction (marked, never claimed): Occator Works and its pits (The Cut, Seam Hollow), the ore, the Compact,
 //   the salt pans beside the station (the real faculae are 11 to 20 km east of it).
 //
 // HONEST SIMPLIFICATIONS (stated, not hidden)
 //   * Nothing spins or orbits yet (the registry's switch is off: _kit/ephemeris.js): the Sun stands at a fixed mid-morning angle over the
 //     station. Ceres's real day is 9.07 hours, so when F2 flips the switch the Sun will cross the sky in four and a half hours; `rotation` is
-//     here for it. Ceres is at its real place for the game's start date (a few AU from Mars); the drive cannot fly it, so a lane joins them.
+//     here for it. Ceres is at its real place for the game's start date (a few AU from Mars); the main drive cannot fly it, so the long-range drive joins them.
 //   * Real Ceres has no air, so the sky is black with stars at every hour; the Sun is 0.19 degrees across (a seventh of its Earth sunlight).
 // ============================================================================
 
@@ -51,8 +51,8 @@ function sunBodyDir() {
 export default {
   id: 'ceres', name: 'Ceres', designation: '1 Ceres', kind: 'dwarf', order: 30, worldIndex: 3,
   navName: 'Ceres: Occator Works',
-  blurb: "The miners' home on the Belt's dwarf planet, on the bright salt flats of Occator crater. Pits, smelters, ore to haul, and a lane to jump: Ceres is far past the drive's range.",
-  jump: true,                                    // reached by the Ore Lane (src/space/jump.js)
+  blurb: "The miners' home on the Belt's dwarf planet, on the bright salt flats of Occator crater. Pits, smelters, ore to haul. Ceres is far past the main drive's range: the long-range drive flies there.",
+  jump: true,                                    // legacy flag, no longer used by the course planner (one seamless Solar System)
 
   // ---- shape and mass: Dawn (Wikipedia, NASA): 966.2 x 962.0 x 891.8 km, mean radius 469.7 km, 9.38392e20 kg
   axes: { a: 483_100, b: 481_000, c: 445_900 },
@@ -134,6 +134,6 @@ export default {
     { field: 'orbit', url: 'https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=1', verified: 'live', note: 'fetched 2026-10-03: epoch JD 2461200.5, e 0.0797, i 10.6, node 80.2, peri 73.3, M 274 deg, period 1680 d; a worked from the period (the database prints 2.77 AU)' },
     { field: 'Occator, Cerealia Tholus, faculae', url: 'https://en.wikipedia.org/wiki/Occator_(crater)', verified: 'live', note: 'fetched 2026-10-03: 19.86 N 238.85 E, 92 km, 3 km deep, dome 3 km across and 340 m high, sodium carbonate' },
     { field: 'Kerwan, Ahuna Mons', url: 'https://en.wikipedia.org/wiki/Kerwan_(crater)', verified: 'live', note: 'fetched 2026-10-03: Kerwan 11.47 S 122.58 E, 283.88 km, about 5 km deep; Ahuna Mons 10.46 S 315.8 E, about 4 km high, 20 km wide' },
-    { field: 'Occator Works, the Compact, the lane, the ore, the fee, the salt pans beside the station', url: '', verified: 'invented', note: 'GAME FICTION (bible v2.9 / v3 section 4.3)' },
+    { field: 'Occator Works, the Compact, the ore, the salt pans beside the station', url: '', verified: 'invented', note: 'GAME FICTION (bible v2.9 / v3 section 4.3)' },
   ],
 };

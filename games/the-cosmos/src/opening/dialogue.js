@@ -72,7 +72,7 @@ export const GUIDE_LINES = {
   welcome: 'Welcome to Marineris. Everything here is neutral: the dust, the coffee, the staff. Especially the staff.',
   board: 'The board shows every world and who runs it. Read it, pick a world, pick a side or pick none, then walk to Pad 01. The Kestrel is waiting.',
   picked: 'Good choice. Or a choice. They are all choices. The gate is Pad 01. Do not stand under anything.',
-  stay: 'Staying on Mars? Bold. Nobody owns it, so nobody will rescue it. Walk out the front door. Mind the dust.',
+  stay: 'Staying on Mars? Bold. Nobody owns it, so nobody will rescue it. Walk out the front door, ride the lift up the control tower, and ask the watch supervisor for a paid job. Mind the dust.',
   back: 'Changed your mind? The board does not mind. The board has no feelings. I have a few.',
 };
 export const GATE = { person: 'ada', voice: 'w-bella', name: 'Gate agent' };

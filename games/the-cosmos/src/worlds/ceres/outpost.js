@@ -271,7 +271,7 @@ export function buildOutpost({ engine, world, space, tier }) {
     k.dome('steel', x + 2.5, 13.8, z, 1.4, low ? 10 : 14, low ? 4 : 7, { thetaMax: Math.PI * 0.45, col: STEEL });
     pipe('steelDark', [x + 2.5, 12.6, z], [x + 2.5, 14.6, z], 0.08, 6);
     for (const a of [0, 1.57, 3.14, 4.71]) pipe('steelDark', [x, 22, z], [x + Math.cos(a) * 2.2, 17, z + Math.sin(a) * 2.2], 0.025, 4);
-    const ls = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.2), new THREE.MeshBasicMaterial({ map: signTexture(['LANE OFFICE', 'ORE LANE · 120 CR / JUMP'], 1024, 270, { size: 0.3 }), toneMapped: false }));
+    const ls = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.2), new THREE.MeshBasicMaterial({ map: signTexture(['FLIGHT OFFICE', 'LONG DRIVE TO MARS · NO TOLL'], 1024, 270, { size: 0.3 }), toneMapped: false }));
     ls.position.set(x - 4.12, 4.2, z); ls.rotation.y = -Math.PI / 2; root.add(ls);
   }
 

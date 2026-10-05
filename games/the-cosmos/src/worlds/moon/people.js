@@ -91,7 +91,7 @@ export class MoonPeople {
     } else if (view === 'trade' && w.trade && w.trade.startsWith('ice')) {
       const price = ICE_PRICE[w.trade], kg = (e.hold && e.hold[ICE_ITEM]) || 0, t = Math.floor(kg / 1000 + 1e-9);
       h += `<p class="stat">Purse ${e.marks} marks · ${w.trade === 'ice-hub' ? "the hub's water office" : "Fortis's own ice dock"} pays ${price} marks a tonne</p>`;
-      h += `<p>Lunar ice in the hold: ${(kg / 1000).toFixed(2)} t${w.trade === 'ice-dock' ? ` · the hub pays ${ICE_PRICE['ice-hub']} (a short hop, no lane fee)` : ''}</p>`;
+      h += `<p>Lunar ice in the hold: ${(kg / 1000).toFixed(2)} t${w.trade === 'ice-dock' ? ` · the hub pays ${ICE_PRICE['ice-hub']} (a short hop)` : ''}</p>`;
       h += `<button class="cbtn" data-a="m-sell-ice" data-t="1" ${t < 1 ? 'disabled' : ''}>Sell 1 tonne · ${price} marks</button>`;
       if (t > 1) h += `<button class="cbtn" data-a="m-sell-ice" data-t="${t}">Sell all ${t} t · ${t * price} marks</button>`;
       h += `<p class="stat">Dig the pale, hard ground in the permanent shadows round Shackleton, stow it in the ship's hold, and bring her down at a landing with a buyer. Whole tonnes only.</p>`;

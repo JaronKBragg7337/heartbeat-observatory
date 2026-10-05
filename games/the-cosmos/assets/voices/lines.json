@@ -79,6 +79,10 @@
   "voice": "zuri",
   "text": "Course set for Phobos."
  },
+ "00cb72a927d8e1": {
+  "voice": "zuri",
+  "text": "The payment was refused."
+ },
  "00d7619ea7fd12": {
   "voice": "intercom",
   "text": "The passenger line has a settlement waiting for you."
@@ -415,10 +419,6 @@
   "voice": "zuri",
   "text": "Course cancelled. Holding."
  },
- "041a9df889dc33": {
-  "voice": "ship",
-  "text": "Main drive lit for the Ore Lane. Hold on to something."
- },
  "0432818af31325": {
   "voice": "sunita",
   "text": "Welcome to Mars. Follow the amber lights to the big Arrivals sign. If you reach a fuel tank, you have taken tourism too far."
@@ -518,6 +518,10 @@
  "05a165afcb5103": {
   "voice": "w-fenrir",
   "text": "Walls, power and a schedule. We kept this Moon alive when the storms cut it off. Sign up and you get a bunk, a badge and a number. Remember the number."
+ },
+ "05a97a88dd650b": {
+  "voice": "ship",
+  "text": "That place is not charted yet: the nav computer has no landing there."
  },
  "05adf8c54e548a": {
   "voice": "w-lewis",
@@ -691,10 +695,6 @@
   "voice": "w-heart",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
  },
- "076b13d1434047": {
-  "voice": "w-adam",
-  "text": "Staying on Mars? Bold. Nobody owns it, so nobody will rescue it. Walk out the front door. Mind the dust."
- },
  "077e52f983175d": {
   "voice": "ada",
   "text": "Down at Pad 03 (courier)."
@@ -859,6 +859,10 @@
   "voice": "zuri",
   "text": "Course set for Pad 03 (courier)."
  },
+ "09d7600d4a96d9": {
+  "voice": "ship",
+  "text": "The payment was refused."
+ },
  "09e11de8cd606b": {
   "voice": "w-fable",
   "text": "This watch keeps the apron clear for arrivals."
@@ -990,10 +994,6 @@
  "0b4ee8803c6b8a": {
   "voice": "w-river",
   "text": "State your business. Badges visible. If you have no badge, state that loudly, and we will find you one."
- },
- "0b644f69011bb7": {
-  "voice": "ship",
-  "text": "The lane fee was refused."
  },
  "0b8198feb3fb8c": {
   "voice": "zuri",
@@ -1311,6 +1311,10 @@
   "voice": "ada",
   "text": "Course cancelled. Holding."
  },
+ "0ef5ecca45154d": {
+  "voice": "zuri",
+  "text": "Holding for the long drive."
+ },
  "0ef7319ca22bed": {
   "voice": "zuri",
   "text": "Down at Olympus Mons."
@@ -1391,6 +1395,10 @@
   "voice": "zuri",
   "text": "Course set for Hellas Planitia."
  },
+ "0fc650ae79b1e8": {
+  "voice": "w-adam",
+  "text": "Staying on Mars? Bold. Nobody owns it, so nobody will rescue it. Walk out the front door, ride the lift up the control tower, and ask the watch supervisor for a paid job. Mind the dust."
+ },
  "0fc7b4cf785ccd": {
   "voice": "zuri",
   "text": "Holding here."
@@ -1410,10 +1418,6 @@
  "0ff532a71705c9": {
   "voice": "w-heart",
   "text": "Third door on the left, if it is still there. Come in, the kettle is on."
- },
- "0fff7f1fe69240": {
-  "voice": "ship",
-  "text": "That is out of range: it needs a jump drive the Meridian does not have."
  },
  "100d73b044622a": {
   "voice": "w-fenrir",
@@ -1478,6 +1482,10 @@
  "110b5258ef6bb5": {
   "voice": "ada",
   "text": "On station."
+ },
+ "110f19559c493d": {
+  "voice": "zuri",
+  "text": "That place is not charted yet: the nav computer has no landing there."
  },
  "111352748e161d": {
   "voice": "zuri",
@@ -1627,6 +1635,10 @@
   "voice": "zuri",
   "text": "On station over Pad 01, the Meridian's own pad."
  },
+ "128cc901a1e184": {
+  "voice": "ada",
+  "text": "Holding for the long drive."
+ },
  "12ba87bfaae4cf": {
   "voice": "w-river",
   "text": "No, no, you take it. I only did it for years. Do not thank me."
@@ -1719,6 +1731,10 @@
   "voice": "w-alice",
   "text": "You quit? Oh, what a surprise. No, it is not. Move over."
  },
+ "1401b06896850a": {
+  "voice": "ada",
+  "text": "That place is not charted yet: the nav computer has no landing there."
+ },
  "1413a39da6f849": {
   "voice": "ship",
   "text": "We are at Shackleton already."
@@ -1754,10 +1770,6 @@
  "1487412bd1d80d": {
   "voice": "w-river",
   "text": "Oh, you want to know. I buy what you are selling and sell what you did not know you needed. Not that anyone ever says thank you."
- },
- "149a2305aa12cf": {
-  "voice": "ada",
-  "text": "Main drive lit for the Ore Lane. Hold on to something."
  },
  "149c60cf6f7b06": {
   "voice": "w-fenrir",
@@ -1903,10 +1915,6 @@
   "voice": "aoi",
   "text": "Aye. I'll find my station."
  },
- "163f7317cfa235": {
-  "voice": "zuri",
-  "text": "That is out of range: it needs a jump drive the Meridian does not have."
- },
  "1648305400cbd1": {
   "voice": "zuri",
   "text": "We are at Ceres already."
@@ -2019,6 +2027,10 @@
   "voice": "zuri",
   "text": "Course set for Callisto."
  },
+ "17a752bf3150c9": {
+  "voice": "ship",
+  "text": "Holding for the long drive."
+ },
  "17b606f31487b3": {
   "voice": "zuri",
   "text": "Committed to the climb: the lift pods only push up, they cannot stop the ship. The main drive can once we are above the air."
@@ -2066,10 +2078,6 @@
  "1863d66eabc5f1": {
   "voice": "ship",
   "text": "a weak distress beacon on the survey band, about 800 m south-west of the pad. A drifting cargo module."
- },
- "1872957172ee08": {
-  "voice": "ada",
-  "text": "The lane fee was refused."
  },
  "1876ff15ee2905": {
   "voice": "ship",
@@ -2367,10 +2375,6 @@
   "voice": "w-lewis",
   "text": "Since you asked. I keep the lane safe, or at least quieter than it would be without me. That is the exciting part, I am afraid."
  },
- "1bd629c8e948df": {
-  "voice": "zuri",
-  "text": "The lane fee was refused."
- },
  "1bebc768c51da5": {
   "voice": "ada",
   "text": "Back in Mars space."
@@ -2382,10 +2386,6 @@
  "1c03bbbf6617b7": {
   "voice": "zuri",
   "text": "Long drive off. We have dropped out."
- },
- "1c0dfa5e371bbd": {
-  "voice": "zuri",
-  "text": "Main drive lit for the Ore Lane. Hold on to something."
  },
  "1c107cc9016fc7": {
   "voice": "zuri",
@@ -2579,6 +2579,10 @@
   "voice": "w-bella",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
  },
+ "1e2c12b315f1fe": {
+  "voice": "ada",
+  "text": "The payment was refused."
+ },
  "1e3bae27134dad": {
   "voice": "jorge",
   "text": "Fortis keeps the Moon alive. Walls, power and a schedule. We take anyone who can read a number and hold a line."
@@ -2606,10 +2610,6 @@
  "1e6f56e4b4f569": {
   "voice": "zuri",
   "text": "Course set for Valles Marineris."
- },
- "1e88d0fd03b479": {
-  "voice": "ada",
-  "text": "That is out of range: it needs a jump drive the Meridian does not have."
  },
  "1e8bf4315bb9ec": {
   "voice": "zuri",

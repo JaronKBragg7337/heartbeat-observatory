@@ -8,13 +8,13 @@
 //     `moon-shackleton` Shackleton Base, Fortis (the south pole)
 //     `moon-daedalus`   Daedalus Station, Technos Prime (the far side)
 //   All three give the same centre, the same orbit and the same turn, so they are one body in the sky; they share one region (`region: 'moon'`,
-//   src/space/jump.js): one lane gate from Mars, and a course between two landings is an ordinary hop inside the region. A hole dug at
+//   src/space/jump.js): one landing region, and a course between two landings is an ordinary hop inside the region. A hole dug at
 //   Shackleton is not in the Tranquility frame's copy of the ground: the sites are thousands of kilometres apart, and nobody can see one
 //   from the other.
 // WHAT IS REAL AND WHAT IS NOT (every number says which; `sources` in each def)
 //   Real: the Moon's radius, mass, gravity, orbit and day (NASA Moon Fact Sheet, fetched 2026-10-03); the heights (LOLA) and brightness (LROC);
 //   where Shackleton's shadows fall and how long the Sun stays on its rim (worked out from the LOLA heights: tools/bake-lola.mjs).
-//   Game fiction: Tranquility Civil Hub, Shackleton Base, Daedalus Station, the blocs, the lunars, the lane, every person.
+//   Game fiction: Tranquility Civil Hub, Shackleton Base, Daedalus Station, the blocs, the lunars, every person.
 // ============================================================================
 import { heightAt, albedoAt, illumAt, windowAt } from './lola.js';
 import { groundMaterials, extraMaterial } from '../_kit/materials.js';

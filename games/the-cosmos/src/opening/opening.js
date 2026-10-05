@@ -507,9 +507,9 @@ export class Opening {
   // ---- the board, the locker ---------------------------------------------------------------------------------------------------
   async fetchBoard() {
     if (this.world.remote && this.world.board) { try { return await this.world.board(); } catch { /* fall through to the local data */ } }
-    // A solo world has only Mars (the other worlds are the shared world's): the board says so rather than offering a start it cannot give.
+    // Solo: the opening's landing (frame + pose) comes from the shared-world authority, so a solo game can only END the opening at Mars. Other worlds stay reachable by flying there (long-range drive). The board says so.
     const data = boardData({ season: this.state.season });
-    for (const w of data.worlds) if (w.id !== 'mars' && w.status === 'open') { w.status = 'coming'; w.nearest = 'mars'; w.line += ' Only the shared world can start you here.'; }
+    for (const w of data.worlds) if (w.id !== 'mars' && w.status === 'open') { w.status = 'coming'; w.nearest = 'mars'; w.line += ' A solo game starts at Mars and flies here on the long-range drive.'; }
     return data;
   }
   async showBoard() {
