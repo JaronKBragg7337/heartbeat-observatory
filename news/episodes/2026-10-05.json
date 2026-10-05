@@ -1,0 +1,690 @@
+{
+  "date": "2026-10-05",
+  "title": "Heartbeat News — Monday, October 5, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-05 (07:35 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-05.md"
+    },
+    {
+      "name": "watch/claude 2026-10-05 (08:25)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-05.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-05 (reader, 09:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-05.md"
+    },
+    {
+      "name": "Perplexity headlines (/api/news, read live by the page)",
+      "url": "/api/news"
+    }
+  ],
+  "ticker": [
+    "BRAZIL: BOLSONARO ~47%, LULA ~45%; RUNOFF OCT. 25",
+    "YEMEN GOVERNMENT LAUNCHES COASTAL OFFENSIVE; HOUTHIS CLAIM ARAMCO STRIKES",
+    "BRENT ~$102; G7 TO RELEASE 100 MILLION BARRELS",
+    "SEPTEMBER JOBS +29,000; UNEMPLOYMENT 4.2%",
+    "10-YEAR YIELD ~5.18%; OCT. HIKE ODDS FALL",
+    "BITCOIN ~$86,000",
+    "SUPREME COURT TERM OPENS; CLIMATE CASE ARGUED",
+    "TRUMP ANNOUNCES A.I. 'SUPER INTELLIGENCE FORCE'",
+    "U.S. MEASLES: 3,887 CASES, MOST IN 35 YEARS",
+    "HURRICANES RACHEL AND NOLO OVER OPEN PACIFIC",
+    "CALIFORNIA HEAT ADVISORIES THROUGH OCT. 8",
+    "BRAVES 3, DODGERS 2; SERIES TIED",
+    "PARAMOUNT-WARNER CLOSE EXPECTED TUESDAY",
+    "NANTUCKET: DEBRIS FOUND IN AIR AMBULANCE SEARCH"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Brazil · Yemen · Jobs",
+        "bullets": [
+          "Brazil heads to a runoff",
+          "Yemen offensive, Houthi claims",
+          "Weak jobs report, yields still high",
+          "Supreme Court term opens"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Monday, October fifth.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "Today: Brazil's first round ends in a surprise and a runoff, Yemen's government launches an offensive, and a weak jobs report meets very high borrowing costs."
+        },
+        {
+          "who": "joe",
+          "text": "Plus a new Supreme Court term, two Pacific hurricanes, and a playoff series that is tied. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "brazil",
+      "kind": "breaking",
+      "strap": "BRAZIL: BOLSONARO ~47%, LULA ~45%; RUNOFF OCT. 25",
+      "headline": "Brazil goes to a runoff",
+      "category": "WORLD",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Brazil's first round",
+        "stats": [
+          {
+            "label": "Flávio Bolsonaro",
+            "value": "~47%"
+          },
+          {
+            "label": "Lula",
+            "value": "~45%"
+          },
+          {
+            "label": "Runoff",
+            "value": "Oct. 25"
+          }
+        ],
+        "bullets": [
+          "More than 99% of votes counted (NPR)",
+          "Polls had Lula ahead",
+          "Neither passed 50%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NPR",
+          "url": "https://www.npr.org/2026/10/04/nx-s1-5981181/brazil-presidential-lula-bolsonaro"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Brazil's first round is done. NPR reports Senator Flávio Bolsonaro has about forty-seven percent, and President Luiz Inácio Lula da Silva about forty-five, with more than ninety-nine percent of votes counted."
+        },
+        {
+          "who": "joe",
+          "text": "Polls had Lula ahead, so this was a surprise. Neither man cleared fifty percent, so they meet in a runoff on October twenty-fifth."
+        }
+      ]
+    },
+    {
+      "id": "mideast",
+      "kind": "story",
+      "strap": "YEMEN OFFENSIVE; HOUTHIS CLAIM ARAMCO STRIKES; HORMUZ STAYS SHUT",
+      "headline": "The Gulf and Yemen",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Yemen and the Gulf",
+        "stats": [
+          {
+            "label": "Coalition jets (claimed)",
+            "value": "100"
+          },
+          {
+            "label": "Brent",
+            "value": "~$102"
+          }
+        ],
+        "bullets": [
+          "Yemen's government begins coastal offensive (A.P.)",
+          "Houthis claim missile and drone strikes on Aramco",
+          "Saudi Arabia has not confirmed",
+          "Iran: Hormuz shut until its conditions are met"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/yemen-houthis-iran-saudi-arabia-red-sea-taiz-e87beb84a0d146e4f0546b50508f7e32"
+        },
+        {
+          "name": "Reuters via LSE",
+          "url": "https://www.lse.co.uk/news/oil-steadies-as-middle-east-crude-exports-rise-and-g7-to-release-stocks-b90hbkd68c76ery.html"
+        },
+        {
+          "name": "Times of Israel",
+          "url": "https://www.timesofisrael.com/liveblog-october-04-2026/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.P. reports Yemen's internationally recognized government has begun a coastal offensive against the Houthis, backed by a Saudi-led air campaign. The coalition says one hundred fighter jets are supporting it. The A.P. says those details are not independently verified."
+        },
+        {
+          "who": "joe",
+          "text": "Reuters reports the Houthis say they fired missiles and drones at Saudi Aramco sites. Saudi Arabia has not confirmed that. It is a claim."
+        },
+        {
+          "who": "vex",
+          "text": "Iran repeats that the Strait of Hormuz stays closed until its seven conditions are met. Separately, Israel's defense minister ordered a general closure of the West Bank and Gaza for today and for October seventh."
+        }
+      ]
+    },
+    {
+      "id": "oil",
+      "kind": "story",
+      "strap": "BRENT ~$102; G7 TO RELEASE 100 MILLION BARRELS",
+      "headline": "Oil and the G7",
+      "category": "ENERGY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ENERGY",
+        "title": "Oil on Monday",
+        "stats": [
+          {
+            "label": "Brent",
+            "value": "$102.30"
+          },
+          {
+            "label": "WTI",
+            "value": "$90.62"
+          },
+          {
+            "label": "G7 release",
+            "value": "100M bbl"
+          }
+        ],
+        "bullets": [
+          "Reuters: G7 agreed Friday to release crude and diesel",
+          "Middle East exports above pre-war levels on 4 of last 7 September days",
+          "Another tracker had Brent near $101"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters via LSE",
+          "url": "https://www.lse.co.uk/news/oil-steadies-as-middle-east-crude-exports-rise-and-g7-to-release-stocks-b90hbkd68c76ery.html"
+        },
+        {
+          "name": "Gulf News",
+          "url": "https://gulfnews.com/world/americas/17gix0n-oil-prices-rise-brent-above-103-1.500698305"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Reuters has Brent at one hundred two dollars and thirty cents this morning, and U.S. crude at ninety dollars and sixty-two cents."
+        },
+        {
+          "who": "vex",
+          "text": "The report cites a Friday agreement by the G7 to release one hundred million barrels of crude and diesel. It also cites shipping data showing Middle East exports above pre-war levels on four of the last seven days of September. Quotes vary by tracker. One had Brent near one hundred one."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "SEPT. JOBS +29,000 VS ~84,000 EXPECTED; 10-YEAR ~5.18%",
+      "headline": "Weak jobs, high yields",
+      "category": "MARKETS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Jobs and yields",
+        "stats": [
+          {
+            "label": "Payrolls",
+            "value": "+29,000"
+          },
+          {
+            "label": "Expected",
+            "value": "~84,000"
+          },
+          {
+            "label": "Unemployment",
+            "value": "4.2%"
+          },
+          {
+            "label": "10-year",
+            "value": "~5.18%"
+          }
+        ],
+        "bullets": [
+          "No October move priced at ~72% (CNBC)",
+          "10-year peaked at 5.344%, highest since 2002",
+          "Services PMI due 10 a.m. ET",
+          "Bitcoin near $86,000"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CNBC",
+          "url": "https://www.cnbc.com/2026/10/02/treasury-yields-bonds-nonfarm-payrolls.html"
+        },
+        {
+          "name": "Bloomberg",
+          "url": "https://www.bloomberg.com/news/articles/2026-10-02/wall-street-tries-to-live-with-5-yields-as-market-cracks-grow"
+        },
+        {
+          "name": "CoinDesk",
+          "url": "https://www.coindesk.com/business/2026/10/05/live-updates-bitcoin-above-usd86-000-as-traders-price-out-an-october-fed-hike"
+        },
+        {
+          "name": "ISM",
+          "url": "https://www.ismworld.org/supply-management-news-and-reports/reports/rob-report-calendar/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The economy added twenty-nine thousand jobs in September. Economists expected about eighty-four thousand. Unemployment rose to four point two percent, from an expected four point one."
+        },
+        {
+          "who": "joe",
+          "text": "Fed funds futures now put the odds of no October move at about seventy-two percent. The ten-year yield is near five point one eight, after touching five point three four four on Thursday, the highest since two thousand two."
+        },
+        {
+          "who": "vex",
+          "text": "Bitcoin is near eighty-six thousand dollars, which CoinDesk ties to the weaker jobs data. Today at ten a.m. Eastern, the September services report is due from the Institute for Supply Management. Japan's Nikkei gained two point four percent to nearly seventy thousand."
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "kind": "story",
+      "strap": "TRUMP ANNOUNCES FEDERAL A.I. 'SUPER INTELLIGENCE FORCE'",
+      "headline": "A.I. news",
+      "category": "TECH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "A.I. and Washington",
+        "bullets": [
+          "Led by D.N.I. Jay Clayton (A.P.)",
+          "Aim: coordinate federal A.I. efforts",
+          "SpaceX A.I. unit to be renamed SpaceXSI (Musk)",
+          "Nvidia-backed Reflection preparing open-weight model"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/b8689ea07de9102a52bd1cd2049b5901"
+        },
+        {
+          "name": "Reuters via Investing.com",
+          "url": "https://www.investing.com/news/stock-market-news/musk-says-he-will-rename-spacexai-to-spacexsi-4930944"
+        },
+        {
+          "name": "Axios",
+          "url": "https://www.axios.com/newsletters/axios-am-2b1de489-384e-4789-90c6-c71365f81223"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "The A.P. reports President Trump announced a federal Super Intelligence Force, led by Director of National Intelligence Jay Clayton, to coordinate federal A.I. efforts and engage outside groups."
+        },
+        {
+          "who": "vex",
+          "text": "Reuters reports Elon Musk says SpaceX will rename its A.I. unit from SpaceXAI to SpaceXSI. No timing was given. And Axios reports Nvidia-backed Reflection is preparing an open-weight model, with no release date."
+        }
+      ]
+    },
+    {
+      "id": "scotus",
+      "kind": "story",
+      "strap": "SUPREME COURT TERM OPENS; CLIMATE-LIABILITY CASE ARGUED",
+      "headline": "The Court returns",
+      "category": "NATIONAL",
+      "status": "observed",
+      "graphic": {
+        "kicker": "NATIONAL",
+        "title": "A new Supreme Court term",
+        "bullets": [
+          "Suncor v. Boulder County argued today",
+          "A test of climate-damage suits against energy firms (A.P.)",
+          "Congress in recess until after Nov. 3",
+          "Generic ballot: Democrats +5.9"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Supreme Court calendar",
+          "url": "https://www.supremecourt.gov/oral_arguments/argument_calendars/MonthlyArgumentCalOctober2026.pdf"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/supreme-court-immigration-climate-change-religious-rights-voting-389e2c111d351361c406e5ed7e0728c5"
+        },
+        {
+          "name": "WRDW",
+          "url": "https://www.wrdw.com/2026/10/04/week-ahead-washington-october-4/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Supreme Court's new term opens today. First up, at ten a.m., is Suncor Energy versus Boulder County. The A.P. calls it a test of climate-damage lawsuits against energy companies."
+        },
+        {
+          "who": "joe",
+          "text": "This is an argument, not a ruling. A decision comes later. Meanwhile Congress is in recess until after the November third election, and Trump is on the campaign trail. A generic-ballot average has Democrats ahead by five point nine."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "U.S. MEASLES: 3,887 CASES, MOST IN 35 YEARS",
+      "headline": "Measles count",
+      "category": "HEALTH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Measles, October 1",
+        "stats": [
+          {
+            "label": "Cases",
+            "value": "3,887"
+          },
+          {
+            "label": "Week over week",
+            "value": "+228"
+          },
+          {
+            "label": "Jurisdictions",
+            "value": "47"
+          }
+        ],
+        "bullets": [
+          "Most cases in 35 years",
+          "95% outbreak-associated",
+          "About 93% unvaccinated or unknown status"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Contagion Live (C.D.C. data)",
+          "url": "https://www.contagionlive.com/view/measles-update-october-2-2026"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The C.D.C. counts three thousand eight hundred eighty-seven confirmed U.S. measles cases as of October first. That is up two hundred twenty-eight in a week, and the most in thirty-five years."
+        },
+        {
+          "who": "joe",
+          "text": "Forty-seven jurisdictions have cases. About ninety-five percent are linked to outbreaks, and about ninety-three percent involve people who were unvaccinated or whose status is unknown."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "HURRICANES RACHEL, NOLO; CALIF. HEAT; SOUTHEAST RAIN",
+      "headline": "Storms and heat",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Pacific hurricanes, Western heat",
+        "stats": [
+          {
+            "label": "Rachel winds",
+            "value": "90 mph"
+          },
+          {
+            "label": "Nolo winds",
+            "value": "90 kt"
+          }
+        ],
+        "bullets": [
+          "Rachel: no coastal watches; surf hazards for Baja",
+          "Nolo crossed the Date Line, moving west",
+          "California heat advisories to Oct. 8; easing Thursday",
+          "Flash-flood risk, Gulf Coast and Southeast"
+        ]
+      },
+      "sources": [
+        {
+          "name": "National Hurricane Center",
+          "url": "https://www.nhc.noaa.gov/mobile/text/refresh/MIATCPEP3%2Bhtml/280245.shtml"
+        },
+        {
+          "name": "Japan Meteorological Agency",
+          "url": "https://www.data.jma.go.jp/multi/cyclone/?lang=en"
+        },
+        {
+          "name": "Weather Prediction Center",
+          "url": "https://www.wpc.ncep.noaa.gov/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Hurricane Rachel has ninety-mile-an-hour winds, moving west at eight, well off Baja. No coastal watches or warnings are in effect, but swells bring surf and rip-current hazards."
+        },
+        {
+          "who": "vex",
+          "text": "Japan's weather agency lists Nolo as a very strong typhoon with ninety-knot winds. The A.P. says it crossed the International Date Line over open water."
+        },
+        {
+          "who": "joe",
+          "text": "On land, California heat advisories run through October eighth, and the heat wave should begin weakening Thursday. A heavy-rain and flash-flood threat covers the central Gulf Coast and the Southeast through Friday."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "BRAVES 3, DODGERS 2; BREWERS 4, PADRES 3; COLTS 30, COMMANDERS 13",
+      "headline": "Playoffs and football",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Playoffs and Sunday football",
+        "stats": [
+          {
+            "label": "NLDS Game 2",
+            "value": "Braves 3, Dodgers 2"
+          },
+          {
+            "label": "NLDS Game 2",
+            "value": "Brewers 4, Padres 3"
+          }
+        ],
+        "bullets": [
+          "ALDS Game 2: White Sox at Guardians, 5 p.m. ET",
+          "ALDS Game 2: Yankees at Rays, 8 p.m. ET",
+          "Falcons at Packers, tonight, 9 p.m.",
+          "Chase out with concussion"
+        ]
+      },
+      "sources": [
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/amp/news/2026-mlb-playoff-and-world-series-schedule.html"
+        },
+        {
+          "name": "NFL",
+          "url": "https://www.nfl.com/games/colts-at-commanders-2026-reg-4?tab=highlights-replays"
+        },
+        {
+          "name": "Yahoo Sports",
+          "url": "https://sports.yahoo.com/nfl/live/nfl-live-updates-scores-week-4-news-schedule-highlights-inactives-stats-where-to-watch-121103604.html"
+        },
+        {
+          "name": "Canadian Press via Yahoo",
+          "url": "https://ca.sports.yahoo.com/news/scores-schedule-sunday-oct-4-034423315.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Baseball. The Braves beat the Dodgers three to two in Game Two, so that series is tied. The Brewers beat the Padres four to three. Tonight, the White Sox are at the Guardians at five Eastern, and the Yankees are at the Rays at eight."
+        },
+        {
+          "who": "joe",
+          "text": "Football. The Colts beat the Commanders thirty to thirteen in London. Elsewhere: Patriots twenty-nine, Bills twenty-six. Rams twenty-four, Eagles twenty. Cowboys thirty-four, Texans thirty. Vikings and Forty-Niners remain unbeaten."
+        },
+        {
+          "who": "vex",
+          "text": "Injuries: Bengals receiver Ja'Marr Chase is out with a concussion. Ravens quarterback Lamar Jackson left his game with an ankle injury. Tonight, Falcons at Packers, nine p.m."
+        },
+        {
+          "who": "joe",
+          "text": "In the W.N.B.A. semifinals, Atlanta beat New York ninety-two to eighty-two, and Golden State beat Las Vegas seventy-one to sixty."
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "kind": "story",
+      "strap": "PARAMOUNT-WARNER CLOSE EXPECTED TUESDAY; VERITY $32.6M",
+      "headline": "Business and the box office",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "Deals and weekend film",
+        "stats": [
+          {
+            "label": "Deal value",
+            "value": "$110B"
+          },
+          {
+            "label": "Verity",
+            "value": "$32.6M"
+          },
+          {
+            "label": "Digger",
+            "value": "$8M"
+          }
+        ],
+        "bullets": [
+          "Warner film chiefs expected to leave; layoffs expected (A.P.)",
+          "Estimates; final figures due Monday",
+          "Endgame Encore passes Avatar, $2.9255B to $2.9237B"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/digger-levity-box-office-7d59b53ae7dbbb22d661d421c941988d"
+        },
+        {
+          "name": "The Numbers",
+          "url": "https://www.the-numbers.com/weekend-box-office-chart"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.P. reports Paramount Skydance expects to close its one hundred ten billion dollar purchase of Warner Bros. Discovery on Tuesday. Warner film executives Michael De Luca and Pamela Abdy are expected to leave this week, with layoffs anticipated."
+        },
+        {
+          "who": "joe",
+          "text": "At the box office, the film Verity opened first with thirty-two point six million dollars. Digger took eight million. Those are estimates; final numbers are due today. And Avengers: Endgame Encore has passed Avatar in all-time worldwide gross, by a small margin."
+        }
+      ]
+    },
+    {
+      "id": "nantucket",
+      "kind": "story",
+      "strap": "DEBRIS FOUND OFF NANTUCKET IN AIR AMBULANCE SEARCH",
+      "headline": "Search off Massachusetts",
+      "category": "NATIONAL",
+      "status": "claim",
+      "graphic": {
+        "kicker": "NATIONAL",
+        "title": "Medevac search",
+        "stats": [
+          {
+            "label": "Area searched",
+            "value": "2,840 sq mi"
+          },
+          {
+            "label": "People aboard",
+            "value": "6"
+          }
+        ],
+        "bullets": [
+          "Flight from Bermuda to Boston",
+          "Debris found off Nantucket",
+          "Sonar seabed search planned",
+          "No cause reported"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/plane-search-bermuda-boston-nantucket-35f4da84247adcc4d91e0e7e81b3d26e"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.P. reports the Coast Guard and partner crews have searched twenty-eight hundred forty square miles off Massachusetts for a medical flight carrying six people, missing between Bermuda and Boston. Debris was found off Nantucket. Sonar searches of the seabed are planned. No cause has been reported."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": [],
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped."
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "HEARTBEAT NEWS",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 5",
+          "Sources under the screen",
+          "New show every day by noon"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Monday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by noon. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
