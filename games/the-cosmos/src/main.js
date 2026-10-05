@@ -255,12 +255,27 @@ const setTool = (i) => world.dispatch({type:'tool-change',index:i});
 const digTarget = (r) => digger.digTarget(r);
 const dumpPlan = (lot) => digger.dumpPlan(lot);
 const groundBelowPoint = (...a) => digger.groundBelowPoint(...a);
+// FIX-R2: the same refusal said again and again reads as a dead button (the playtester got "Nothing in reach" and "Structural concrete will not cut."
+// four times a minute). The first two say it plainly; from the third in a row inside 45 s the game says what to DO about it instead.
+const REFUSAL_NEXT = {
+  'Nothing in reach': 'Look down at the ground near your feet, then dig.',
+  'Structural concrete will not cut.': 'That is port concrete. Step onto the dust past the kerb to dig.',
+  'Nothing there to dig.': 'Aim at solid ground, closer in.',
+  'The mantle will not cut.': 'Too deep to cut. Dig where you started.',
+};
+const refusalSeen = new Map();
+function calmRefusal(r) {
+  if (!r || r.ok !== false || !r.msg) return r;
+  const now = performance.now(), prev = refusalSeen.get(r.msg), n = prev && now - prev.t < 45000 ? prev.n + 1 : 1;
+  refusalSeen.set(r.msg, { n, t: now });
+  return n >= 3 && REFUSAL_NEXT[r.msg] ? { ...r, msg: REFUSAL_NEXT[r.msg] } : r;
+}
 function doDig() {
   if (ship.ready && ship.aboard) return { ok: false, msg: 'Not aboard' };
-  return world.dispatch({type:'dig-edit'});
+  return calmRefusal(world.dispatch({type:'dig-edit'}));
 }
-function doDump() { return world.dispatch({type:'spoil-pour',all:false}); }
-function doDumpAll() { return world.dispatch({type:'spoil-pour',all:true}); }
+function doDump() { return calmRefusal(world.dispatch({type:'spoil-pour',all:false})); }
+function doDumpAll() { return calmRefusal(world.dispatch({type:'spoil-pour',all:true})); }
 
 // ---------------------------------------------------------------------------
 // AIM MARKER — where the tool will actually bite, drawn at its real size.

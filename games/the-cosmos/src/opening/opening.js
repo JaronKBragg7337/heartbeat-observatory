@@ -454,7 +454,18 @@ export class Opening {
     this.savePose().then(() => this.command({ type: 'opening-finish' })).then((r) => { if (r?.ok || !this.active) return; this.finishFails = (this.finishFails || 0) + 1; if (this.finishFails >= 3) this.command({ type: 'opening-skip' }); });
   }
   interact() { return this.useAction(() => this._interact()); }
+  /** FIX-R2: "Dig" at the crate cuts where you LOOK, within arm's reach (3 m or so); a phone player looking at the horizon cut nothing and got "Nothing in reach".
+   *  The button said Dig, so the tap now turns the head to the buried crate first. Only when the crate is close enough to dig (the button is already gated on that). */
+  _aimAtCrate() {
+    const m = this.model, w = m?.walker; if (!w || m.kind !== 'wreck' || m.digger?.digTarget()) return;      // already aimed at ground in reach: leave the aim alone
+    const f = w.updateFrame(), eye = w.eyeWorldPos({}), t = m.toWorld(CRATE.x, .3, CRATE.z);
+    const dx = t.x - eye.x, dy = t.y - eye.y, dz = t.z - eye.z;
+    const e = dx * f.east.x + dy * f.east.y + dz * f.east.z, n = dx * f.north.x + dy * f.north.y + dz * f.north.z, u = dx * f.up.x + dy * f.up.y + dz * f.up.z;
+    const flat = Math.hypot(e, n); if (flat < .05) return;
+    w.yaw = Math.atan2(e, n); w.pitch = Math.max(-1.2, Math.min(1.2, Math.atan2(u, flat)));
+  }
   async _interact() {
+    if (this.actionKind === 'dig') this._aimAtCrate();
     await this.savePose(Math.max(this.accum, .1)); const s = this.state, a = this.actionKind;
     if (a === 'board') return this.showBoard();
     if (a === 'gate') return this.command({ type: 'opening-board' });
@@ -704,6 +715,7 @@ export class Opening {
     const script = D.kestrelScript(this.cause, this.worldId), line = script.find((l) => t >= l.t0 && t < l.t1);
     let caption = line ? line.text : '', who = line ? (line.voice === 'w-fenrir' ? 'Corsair' : 'Pilot') : '';
     if (t < 4 && !caption) this.hint.textContent = 'You are aboard the Kestrel. Walk to a window if you like.';
+    else if (gone) this.hint.textContent = 'Impact. Hold on, the cabin is going dark.';   // FIX-R2: ten seconds of black with no word on it read as a crash of the page
     // when the clock runs out the authority takes us to the wreck
     if (t >= KESTREL_SECONDS && !this.busy && !this._leaving) { this._leaving = true; this.savePose().then(() => this.command({ type: 'opening-next' })).finally(() => { this._leaving = false; }); }
     return { eye: worldEye.eye, forward: worldEye.forward, up: worldEye.up, caption, who };
@@ -771,7 +783,7 @@ export class Opening {
         eye = new THREE.Vector3().copy(m.walker.eyeWorldPos()); forward = new THREE.Vector3().copy(m.digger.lookDir()); up.copy(m.walker.updateFrame().up); local = false;
         if (s.stage === STAGE.DIG) { const d = Math.hypot(p.x - CRATE.x, p.z - CRATE.z); this.hint.textContent = 'Walk · Look · Use (E / touch)';
           caption = d > 4 ? 'Something lies beneath the collapsed dust.' : m.exposed() ? 'Lift the cleared supply crate.' : 'Aim the shovel at the dust around the crate.';
-          if (d < 4) { this.actionLabel = m.exposed() ? 'Carry (E)' : 'Dig (E)'; this.actionKind = m.exposed() ? 'carry' : 'dig'; } }
+          if (d < 4) { const ex = m.exposed(); if (ex || d < 2.8) { this.actionLabel = ex ? 'Carry (E)' : 'Dig (E)'; this.actionKind = ex ? 'carry' : 'dig'; } else { this.actionLabel = ''; this.actionKind = null; this.hint.textContent = 'Closer to the crate, then Dig.'; } } }
         else if (s.stage === STAGE.CONTACT) {
           const d = this.driverInfo, cs = this.contactSeconds;
           caption = cs < 5 ? 'A vehicle is approaching.' : cs < CONTACT_SECONDS ? d.greeting : d.offer; who = cs < 5 ? '' : d.name;

@@ -1,0 +1,50 @@
+{
+ "tag": "after",
+ "checks": [
+  {
+   "name": "settings: nothing but the X is under the close button",
+   "pass": true,
+   "detail": {
+    "overlaps": [
+     "set-view"
+    ],
+    "topAtClose": "btn-close-settings",
+    "sel": "none"
+   }
+  },
+  {
+   "name": "dialog panel starts below the HUD card",
+   "pass": true,
+   "detail": {
+    "opened": true,
+    "panelTop": 156,
+    "hudBottom": 148
+   }
+  },
+  {
+   "name": "repeated \"Structural concrete will not cut.\" escalates to advice by the 3rd",
+   "pass": true,
+   "detail": [
+    "Structural concrete will not cut.",
+    "Structural concrete will not cut.",
+    "That is port concrete. Step onto the dust past the kerb to dig.",
+    "That is port concrete. Step onto the dust past the kerb to dig."
+   ]
+  },
+  {
+   "name": "repeated \"Nothing in reach\" escalates to advice by the 3rd",
+   "pass": true,
+   "detail": [
+    "Nothing in reach",
+    "Nothing in reach",
+    "Look down at the ground near your feet, then dig.",
+    "Look down at the ground near your feet, then dig."
+   ]
+  }
+ ],
+ "errors": [],
+ "sp": {
+  "panelTop": 156,
+  "hudBottom": 148
+ }
+}

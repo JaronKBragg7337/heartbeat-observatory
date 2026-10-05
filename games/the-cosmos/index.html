@@ -36,7 +36,9 @@
     background: #0a0705; z-index: 500; text-align: center; padding: 24px;
   }
   #boot h1 { margin: 0; font-size: 22px; letter-spacing: 5px; font-weight: 500; color: #e8c9a8; }
-  #boot p { margin: 0; font-size: 12px; color: #8a7566; line-height: 1.7; max-width: 340px; }
+  #boot .boot-status { color: #b59a82; animation: bootPulse 1.6s ease-in-out infinite; }
+  @keyframes bootPulse { 50% { opacity: .45; } }
+  #boot p { text-wrap: balance; margin: 0; font-size: 12px; color: #8a7566; line-height: 1.7; max-width: 340px; }
 
   /* --- HUD ----------------------------------------------------------------- */
   #hud {
@@ -113,8 +115,10 @@
     padding: 14px; font-size: 12px;
   }
   #settings-panel.open { display: block; }
+  /* FIX-R2: on a phone the panel opens under the status card, not over it */
+  html.phone-ui #settings-panel { top: calc(var(--hud-bottom, 50px) + 8px); max-height: calc(100dvh - var(--hud-bottom, 50px) - 28px - env(safe-area-inset-bottom, 0px)); }
   #settings-panel { max-height: calc(100dvh - 78px - env(safe-area-inset-bottom, 0px)); overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain; }
-  #settings-panel .settings-heading { position: sticky; top: -14px; background: #100c09; display: flex; align-items: center; justify-content: space-between; z-index: 1; padding: 8px 0; }
+  #settings-panel .settings-heading { position: sticky; top: -14px; background: #100c09; display: flex; align-items: center; justify-content: space-between; z-index: 5; padding: 8px 0; isolation: isolate; }
   #settings-panel .settings-heading h2 { margin: 0; }
   #settings-panel button, #settings-panel a { min-height: 44px; }
   #btn-close-settings, #settings-account { position: static; }
@@ -132,8 +136,12 @@
   .set-row label { color: #cbb8a6; flex: 1; }
   .set-row .hint { display: block; color: #7d6b5d; font-size: 10px; margin-top: 3px; line-height: 1.5; }
   .set-row select {
-    background: #17110d; color: #e8d5c2; border: 1px solid rgba(232, 201, 168, .25);
-    border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 11px;
+    background-color: #17110d; color: #e8d5c2; border: 1px solid rgba(232, 201, 168, .25);
+    border-radius: 6px; padding: 6px 26px 6px 8px; font: inherit; font-size: 11px; min-height: 44px;
+    /* FIX-R2: iOS Safari drew a native white select with pale text (unreadable) and painted it above the sticky heading; own look, own arrow. */
+    -webkit-appearance: none; appearance: none; position: relative; z-index: 0; max-width: 55%;
+    background-image: linear-gradient(45deg, transparent 50%, #f0b978 50%), linear-gradient(135deg, #f0b978 50%, transparent 50%);
+    background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
   }
   .set-row input[type=checkbox] { width: 20px; height: 20px; accent-color: #f0b978; }
   .set-row input[type=range] { width: 120px; min-height: 44px; accent-color: #f0b978; touch-action: pan-x; }
@@ -271,6 +279,7 @@
 <div id="boot">
   <h1>THE COSMOS</h1>
   <p>Your ship. Your crew. Real worlds at their real size.<br>Mars is only the first port.</p>
+  <p id="boot-status" class="boot-status">Loading the port&hellip;</p>
 </div>
 
 <div id="hud"></div>

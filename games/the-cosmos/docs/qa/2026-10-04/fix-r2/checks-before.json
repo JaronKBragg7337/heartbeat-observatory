@@ -1,0 +1,48 @@
+{
+ "tag": "before",
+ "checks": [
+  {
+   "name": "settings: nothing but the X is under the close button",
+   "pass": true,
+   "detail": {
+    "overlaps": [
+     "set-view"
+    ],
+    "topAtClose": "btn-close-settings",
+    "sel": "auto"
+   }
+  },
+  {
+   "name": "dialog panel starts below the HUD card",
+   "pass": false,
+   "detail": {
+    "opened": true,
+    "panelTop": 68,
+    "hudBottom": 148
+   }
+  },
+  {
+   "name": "repeated dig refusal escalates to advice",
+   "pass": true,
+   "detail": {
+    "dump": [
+     "Carrying nothing",
+     "Carrying nothing",
+     "Carrying nothing",
+     "Carrying nothing"
+    ],
+    "dig": [
+     "+25.9 kg Martian regolith",
+     "+28.8 kg Martian regolith",
+     "+28.5 kg Martian regolith",
+     "+28.4 kg Martian regolith"
+    ]
+   }
+  }
+ ],
+ "errors": [],
+ "sp": {
+  "panelTop": 58,
+  "hudBottom": 148
+ }
+}

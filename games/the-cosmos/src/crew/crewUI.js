@@ -39,7 +39,8 @@ const CSS = `
 #crew-panel .cbtn small { display: block; color: #a8917b; font-size: 10.5px; margin-top: 1px; }
 #crew-panel .row2 { display: flex; gap: 6px; } #crew-panel .row2 .cbtn { flex: 1; text-align: center; }
 #crew-panel .stat { color: #a8917b; font-size: 11px; margin: 0 0 8px; }
-@media(max-width:520px){#crew-panel{top:68px;bottom:auto;max-height:calc(100dvh - 90px)} }
+/* FIX-R2: start under the status card (its real bottom, set by phoneLayout), never over it: the card holds where you are and what you carry. */
+@media(max-width:520px){#crew-panel{top:calc(var(--hud-bottom,60px) + 8px);bottom:auto;max-height:calc(100dvh - var(--hud-bottom,60px) - 24px)} }
 `;
 
 export class CrewUI {
