@@ -75,12 +75,12 @@
   const inPos = acct ? (acct.positions || []).reduce((t, p) => t + (Number(p.value) || 0), 0) : 0;
   const S = d.account_story;
   const cards = [
-    [(d.trading_now || []).length || d.bots.length, (d.trading_now || []).length ? "AIs trading now" : "AIs on shift"], [d.bots.length, "AIs on the crew"], [trades, "AI trades so far"], [usd(pnl), "AI profit, settled"],
+    [(d.trading_now || []).length || d.bots.length, (d.trading_now || []).length ? "AIs trading now" : "AIs on shift"], [d.bots.length, "AIs on the crew"], [trades, "AI trades so far"], [usd(pnl), "AI profit, settled" + (S && S.ai_won_n != null ? `: +${usd(S.ai_won)} won (${S.ai_won_n}) / -${usd(S.ai_lost)} lost (${S.ai_lost_n})` : "")],
     [acct ? usd(acct.buying_power) : "–", "cash ready"], [acct ? usd(inPos) : "–", "in open trades"],
   ];
   const sg = (n) => (n < 0 ? "-$" : "+$") + Math.abs(n).toFixed(2);
   if (S) {
-    cards.push([usd(S.withdrawals), "Human withdrawals, all time"], [sg(S.hand_result), "Human spend: hand trades, settled"], [usd(S.deposits), "Human deposits, all time"], [usd(S.bills_paid || 0), "Bills paid by the system"]);
+    cards.push([usd(S.withdrawals), "Human withdrawals, all time"], [sg(S.hand_result), "Human hand trades, net" + (S.hand_won_n != null ? `: +${usd(S.hand_won)} won (${S.hand_won_n}) / -${usd(S.hand_lost)} lost (${S.hand_lost_n})` : "")], [usd(S.deposits), "Human deposits, all time"], [usd(S.bills_paid || 0), "Bills paid by the system"]);
   }
   $("board").innerHTML = cards.map(([v, l], i) => `<div class="stat${S && i >= 6 && i < 9 ? " human" : S && i >= 9 ? " bills" : ""}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
   if (S && acct) {
