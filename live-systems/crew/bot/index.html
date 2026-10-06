@@ -105,7 +105,8 @@
   }
   const act = b.activity || [];
   $("activity").innerHTML = act.length ? act.slice().reverse().map((l) => `<div>${esc(l)}</div>`).join("") : `<p class="muted small">Nothing logged here yet.</p>`;
-  if (b.breaker) $("activity").insertAdjacentHTML("afterbegin", `<p class="small" style="margin-bottom:8px">Loss breaker: <b>${/TRIPPED/.test(b.breaker) ? "tripped, stopped until someone checks it" : "armed. Stops itself after a $10 losing week."}</b></p>`);
+  if (b.status_note) $("activity").insertAdjacentHTML("afterbegin", `<p class="small" style="margin-bottom:8px">Status: <b>${esc(b.status_note)}</b></p>`);
+  if (b.breaker && b.status !== "paused") $("activity").insertAdjacentHTML("afterbegin", `<p class="small" style="margin-bottom:8px">Loss breaker: <b>${/TRIPPED/.test(b.breaker) ? "tripped, stopped until someone checks it" : "armed. Stops itself after a $10 losing week."}</b></p>`);
 
   const routines = Array.isArray(b.routine) ? b.routine : b.routine ? [b.routine] : [];
   const blocks = [["Main instructions", b.instructions], ...routines.map((r, i) => [routines.length > 1 ? `Routine ${i + 1}` : (b.id === "codex" ? "Funding lane task" : b.id === "claude-code" ? "News show job" : b.id === "deepseek" ? "Research step" : "Routine"), r])].filter(([, t]) => t && t.trim());

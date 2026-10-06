@@ -18,6 +18,8 @@
   .tile .go { font-size: .85rem; color: var(--muted); margin-top: 10px; display: block; }
   .stat.human { border-color: rgba(76,154,255,.55); }
   .stat.human b { color: #7db6ff; }
+  .stat.bills { border-color: rgba(242,201,76,.55); }
+  .stat.bills b { color: #f2c94c; }
   .rules { list-style: none; display: grid; gap: 8px; }
   .rules li { border-left: 3px solid var(--beat); padding: 3px 0 3px 12px; line-height: 1.5; font-size: .93rem; }
 </style>
@@ -48,7 +50,7 @@
     <div class="card" id="chart"><p class="muted small">Loading&hellip;</p></div>
     <p class="muted small" id="chartnote" style="margin-top:8px"></p>
 
-    <h2 class="sec">Who's on shift. Tap one.</h2>
+    <h2 class="sec">The crew. Tap one.</h2>
     <div class="tiles" id="tiles"></div>
 
     <h2 class="sec">The rules they all run under</h2>
@@ -73,31 +75,32 @@
   const inPos = acct ? (acct.positions || []).reduce((t, p) => t + (Number(p.value) || 0), 0) : 0;
   const S = d.account_story;
   const cards = [
-    [d.bots.length, "AIs on shift"], [trades, "AI trades so far"], [usd(pnl), "AI profit, settled"],
+    [(d.trading_now || []).length || d.bots.length, (d.trading_now || []).length ? "AIs trading now" : "AIs on shift"], [d.bots.length, "AIs on the crew"], [trades, "AI trades so far"], [usd(pnl), "AI profit, settled"],
     [acct ? usd(acct.buying_power) : "–", "cash ready"], [acct ? usd(inPos) : "–", "in open trades"],
   ];
   const sg = (n) => (n < 0 ? "-$" : "+$") + Math.abs(n).toFixed(2);
   if (S) {
-    cards.push([usd(S.withdrawals), "Human withdrawals, all time"], [sg(S.hand_result), "Human spend: hand trades, settled"], [usd(S.deposits), "Human deposits, all time"]);
+    cards.push([usd(S.withdrawals), "Human withdrawals, all time"], [sg(S.hand_result), "Human spend: hand trades, settled"], [usd(S.deposits), "Human deposits, all time"], [usd(S.bills_paid || 0), "Bills paid by the system"]);
   }
-  $("board").innerHTML = cards.map(([v, l], i) => `<div class="stat${S && i >= 5 ? " human" : ""}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  $("board").innerHTML = cards.map(([v, l], i) => `<div class="stat${S && i >= 6 && i < 9 ? " human" : S && i >= 9 ? " bills" : ""}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
   if (S && acct) {
     const value = Number(acct.buying_power) + inPos, parts = S.deposits - S.withdrawals + pnl + S.hand_result, other = value - parts;
     $("adds").innerHTML = `<b>How the account adds up:</b> ${usd(S.deposits)} put in &minus; ${usd(S.withdrawals)} taken out ${sg(pnl)} AI trades ${sg(S.hand_result)} Jaron by hand `
       + `${Math.abs(other) < 0.005 ? "" : sg(other) + " bonuses and rounding "}= <b>${usd(value)}</b> in the account now (cash ${usd(acct.buying_power)} + open trades ${usd(inPos)}).`;
   }
   mountAccountChart($("chart"), S ? S.events : [], snap);
-  $("chartnote").innerHTML = `<span style="color:#3fb950">Green</span> = an AI trade won. <span style="color:#e23a45">Red</span> = an AI trade lost. <span style="color:#4c9aff">Blue</span> = a human move: Jaron's hand trade (dot), or a withdrawal or deposit (square). Tap any dot for details. The account only counts settled trades; open trades and cash ready are the cards above.`;
+  $("chartnote").innerHTML = `<span style="color:#3fb950">Green</span> = an AI trade won. <span style="color:#e23a45">Red</span> = an AI trade lost. <span style="color:#4c9aff">Blue</span> = a human move: Jaron's hand trade (dot), or a withdrawal or deposit (square). <span style="color:#f2c94c">Yellow</span> = a withdrawal that paid a real bill, with a receipt shown (for example an AI subscription). Tap any dot for details. The account only counts settled trades; open trades and cash ready are the cards above.`;
   $("tiles").innerHTML = d.bots.map((b) => {
     const L = b.ledger;
-    const recent = L && L.last && Date.now() - new Date(L.last) < 6 * 3600e3;
+    const recent = L && L.last && Date.now() - new Date(L.last) < 6 * 3600e3 && b.status !== "paused";
+    const st = b.status === "paused" ? `<span class="chip down">paused</span>` : b.status === "trading" ? `<span class="chip up">trading now</span>` : "";
     const chips = L
       ? `<span class="chip">${L.fills} trades</span><span class="chip ${L.pnl > 0 ? "up" : L.pnl < 0 ? "down" : ""}">${usd(L.pnl)} settled</span>`
       : `<span class="chip">no money</span>`;
     return `<a class="card tile" href="/live-systems/crew/bot/?id=${encodeURIComponent(b.id)}">
       <span class="ai">${esc(b.ai)}</span>
       <h3><span class="dot ${recent ? "live" : "quiet"}"></span>${esc(b.name)}${b.also ? ` <span class="muted small">· ${esc(b.also)}</span>` : ""}</h3>
-      <p>${esc(b.job)}</p><div class="chips">${chips}<span class="chip">${esc(b.schedule)}</span></div>
+      <p>${esc(b.job)}</p>${b.status_note && b.status === "paused" ? `<p class="muted small">${esc(b.status_note)}</p>` : ""}<div class="chips">${st}${chips}<span class="chip">${esc(b.schedule)}</span></div>
       <span class="go">Open: instructions, activity, trades &rarr;</span></a>`;
   }).join("");
   $("rules").innerHTML = d.rules.map((r) => `<li>${esc(r)}</li>`).join("");
