@@ -1211,6 +1211,7 @@ export class ShipSystem {
       }
       this.exterior.root.visible = looksOut;
     } else this.exterior.root.visible = true;
+    if (this.exterior.insideHide) { const hide = this.aboard && !this._chaseActive(); for (const o of this.exterior.insideHide) o.visible = !hide; }       // FIX-R4: skin that cuts across a flight deck is hidden from inside
 
     // light pool: nearest fixtures among visible rooms
     const fixtures = this.interior.lights;

@@ -35,8 +35,14 @@ export function buildHullShell(hull, mats, o = {}) {
   const rings = zs.map((z) => hull.octagon(z));
 
   const cum = rings.map((P) => { const c = [0]; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; c.push(c[i] + Math.hypot(b[0] - a[0], b[1] - a[1])); } return c; });
-  const pos = [], uv = [], col = [];
-  const quad = (p0, p1, p2, p3, t0, t1, t2, t3) => {          // four [x,y,z] points and their [u,v] (metres): two triangles
+  const posMain = [], uvMain = [], col = [];
+  const pos = posMain, uv = uvMain;
+  // FIX-R4: o.splitTop {z0,z1}: the roof faces of that stretch go into their own mesh (the 'inside-hidden' deck), so a ship can hide the part of its own skin
+  // that lies across a flight deck's console and seats while the camera is aboard. Everything else is unchanged.
+  const sp = o.splitTop || null, pos2 = [], uv2 = [];
+  let into2 = false;
+  const quad = (p0, p1, p2, p3, t0, t1, t2, t3) => {
+    const pos = into2 ? pos2 : posMain, uv = into2 ? uv2 : uvMain;          // four [x,y,z] points and their [u,v] (metres): two triangles
     const P = [p0, p1, p2, p0, p2, p3], T = [t0, t1, t2, t0, t2, t3];
     for (let i = 0; i < 6; i++) { pos.push(P[i][0], P[i][1], P[i][2]); uv.push(T[i][0] / 8, T[i][1] / 8); }
   };
@@ -45,6 +51,7 @@ export function buildHullShell(hull, mats, o = {}) {
     for (let f = 0; f < 8; f++) {
       const a0 = A[f], a1 = A[(f + 1) % 8], b0 = B[f], b1 = B[(f + 1) % 8];
       const side = f === 0 ? 1 : f === 4 ? -1 : 0;
+      into2 = !!(sp && f >= 1 && f <= 3 && (zA + zB) / 2 > sp.z0 && (zA + zB) / 2 < sp.z1);
       if (riser && f >= 1 && f <= 3 && Math.abs(zA - riser.z0) < 1e-6 && Math.abs(zB - riser.z1) < 1e-6) {
         const lerpTo = (p, q) => { const t = Math.min(1, Math.max(0, (riser.yMin - p[1]) / Math.max(1e-6, q[1] - p[1]))); return [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, zA + (zB - zA) * t]; };
         const c0 = lerpTo(a0, b0), c1 = lerpTo(a1, b1);
@@ -71,26 +78,33 @@ export function buildHullShell(hull, mats, o = {}) {
       q(lo, y0); q(y1, hi);
     }
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  geo.computeVertexNormals();
-  const nrm = geo.attributes.normal;
-  for (let q = 0; q < nrm.count; q += 6) {
-    let x = 0, y = 0, z = 0;
-    for (let i = 0; i < 6; i++) { x += nrm.getX(q + i); y += nrm.getY(q + i); z += nrm.getZ(q + i); }
-    const l = Math.hypot(x, y, z) || 1;
-    for (let i = 0; i < 6; i++) nrm.setXYZ(q + i, x / l, y / l, z / l);
-  }
   const colorFn = o.colorFn || (() => [0.85, 0.85, 0.85]);
-  for (let i = 0; i < pos.length / 3; i++) {
-    const c = colorFn(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], nrm.getY(i), nrm.getX(i));
-    col.push(c[0], c[1], c[2]);
-  }
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  geo.computeBoundingSphere(); geo.computeBoundingBox();
-  const mesh = new THREE.Mesh(geo, mats.hull);
-  mesh.name = 'hull'; mesh.castShadow = true; mesh.receiveShadow = true;
+  const toMesh = (pos, uv, name) => {
+    if (!pos.length) return null;
+    const col = [];
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geo.computeVertexNormals();
+    const nrm = geo.attributes.normal;
+    for (let q = 0; q < nrm.count; q += 6) {
+      let x = 0, y = 0, z = 0;
+      for (let i = 0; i < 6; i++) { x += nrm.getX(q + i); y += nrm.getY(q + i); z += nrm.getZ(q + i); }
+      const l = Math.hypot(x, y, z) || 1;
+      for (let i = 0; i < 6; i++) nrm.setXYZ(q + i, x / l, y / l, z / l);
+    }
+    for (let i = 0; i < pos.length / 3; i++) {
+      const c = colorFn(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], nrm.getY(i), nrm.getX(i));
+      col.push(c[0], c[1], c[2]);
+    }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.computeBoundingSphere(); geo.computeBoundingBox();
+    const m = new THREE.Mesh(geo, mats.hull);
+    m.name = name; m.castShadow = true; m.receiveShadow = true;
+    return m;
+  };
+  const mesh = toMesh(posMain, uvMain, 'hull');
+  const topMesh = toMesh(pos2, uv2, 'hull-top-inside-hidden');
 
   // end caps: the nose is closed, the tail may have a hole for a ramp
   const caps = new THREE.Group(); caps.name = 'hull-caps';
@@ -114,7 +128,7 @@ export function buildHullShell(hull, mats, o = {}) {
   };
   if (o.nose !== false) caps.add(cap(hull.z0, -1, null));
   if (o.tail) caps.add(cap(hull.z1, +1, o.tail === true ? null : o.tail.hole));
-  return { mesh, caps };
+  return { mesh, caps, topMesh };
 }
 
 /** A tint wobble per panel so a flat hull reads as plates, not paint. Returns a multiplier near 1. */

@@ -254,10 +254,11 @@ export class MultiplayerView {
       const b=this.body(c.id,c.personId,c.name,c.look||contract0?.look);
       const ship=c.shipId?{...s.ships[c.shipId],pose:this.shipPose(s.ships[c.shipId])}:null,contract=ship?.crew.find(m=>m.id===c.id);
       let pos=this.site.toWorld(c.position.x,c.position.y||0,c.position.z),frame='mars',pose=['waiting','inside'].includes(c.status)?'Idle':'Walk',q=new THREE.Quaternion().copy(this.hallRoot.quaternion);
-      if(['aboard','walking-aboard','leaving-aboard'].includes(contract?.status)){const seat=contract.status==='aboard'?(contract.displaced?contract.standPose:contract.seatPose):contract.localPose;pos=ship.pose.pos;frame=ship.frameId;pose=contract.status==='aboard'?(contract.displaced?'Idle':'Sit'):'Walk';if(seat){const v=new THREE.Vector3().copy(seat).applyQuaternion(new THREE.Quaternion().fromArray(ship.pose.quaternion));pos={x:pos.x+v.x,y:pos.y+v.y,z:pos.z+v.z};}q=new THREE.Quaternion().fromArray(ship.pose.quaternion);}
+      if(['aboard','walking-aboard','leaving-aboard'].includes(contract?.status)){const seat=contract.status==='aboard'?(contract.displaced?contract.standPose:contract.seatPose):contract.localPose;pos=ship.pose.pos;frame=ship.frameId;pose=contract.status==='aboard'?(contract.displaced?'Idle':'Sit'):'Walk';if(seat){const v=new THREE.Vector3().copy(seat).applyQuaternion(new THREE.Quaternion().fromArray(ship.pose.quaternion));pos={x:pos.x+v.x,y:pos.y+v.y,z:pos.z+v.z};}q=new THREE.Quaternion().fromArray(ship.pose.quaternion);if(seat&&['walking-aboard','leaving-aboard'].includes(contract.status)&&Number.isFinite(seat.yaw))q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI-seat.yaw));}       // FIX-R4: a walker aboard faces where the route goes (it faced the bow)
       else if(contract?.position)pos=this.site.toWorld(contract.position.x,0,contract.position.z);
       // People on the ground arrive in ten-per-second steps; a walk (out of the hall, to the ramp) is eased between them so it reads as walking.
       if(frame==='mars'&&!['aboard','walking-aboard','leaving-aboard'].includes(contract?.status))pos=this.easeBody(b,'ground',pos,dt);else b.eased=null;
+      if(frame==='mars'&&!['aboard','walking-aboard','leaving-aboard'].includes(contract?.status))q=this.faceMove(b,pos,q,dt);else b.fm=null;       // FIX-R4: people on the ground turn to face where they walk
       this.placeBody(b,pos,q,frame,pose,dt);
       const local=contract&&c.shipId===current&&['aboard','walking-aboard','leaving-aboard'].includes(contract.status);
       if(local){if(!b.local){this.engine.untrack(b.entry);this.ship.interior.root.add(b.group);b.local=true;}
@@ -271,6 +272,15 @@ export class MultiplayerView {
     this.crew?.sync();
     this.fleetView.update(dt,s,current);     // FLEET: every other ship, raiders and escorts, built from its own definition
   }
+  /** FIX-R4: a person on the ground faces the way they move (a smooth turn); standing still they keep the way they last faced, or `rest` before they ever moved. */
+  faceMove(b,pos,rest,dt){const last=b.fm;b.fm={x:pos.x,y:pos.y,z:pos.z};
+    if(!b.faceQ)b.faceQ=rest.clone();
+    if(last&&dt>0){const dx=pos.x-last.x,dy=pos.y-last.y,dz=pos.z-last.z;
+      if(Math.hypot(dx,dy,dz)/Math.max(.01,dt)>.25&&Math.hypot(dx,dy,dz)<4){
+        const up=new THREE.Vector3(pos.x,pos.y,pos.z).normalize(),d=new THREE.Vector3(dx,dy,dz);d.addScaledVector(up,-d.dot(up));
+        if(d.lengthSq()>1e-12){const fwd=d.normalize(),right=new THREE.Vector3().crossVectors(up,fwd).normalize();b.faceT=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,fwd));}}}
+    if(b.faceT)b.faceQ.slerp(b.faceT,1-Math.exp(-Math.min(.1,dt)*7));
+    return b.faceQ;}
   /** Ease a body toward its latest known place: frame-rate smooth between 10 Hz snapshots, snapped when it jumps (a teleport, a new place). */
   easeBody(b,kind,target,dt){const key=kind==='ground'?'eased':'easedAboard',cur=b[key];
     if(!cur||Math.hypot(target.x-cur.x,target.y-cur.y,target.z-cur.z)>4){b[key]={x:target.x,y:target.y,z:target.z};return target;}

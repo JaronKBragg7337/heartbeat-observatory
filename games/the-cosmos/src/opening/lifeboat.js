@@ -35,3 +35,8 @@ export function arrivalNote(world) {
   const g = REPAIR_GIVERS[world] || REPAIR_GIVERS.mars;
   return `Passenger line settlement: 10,000 Mars marks, 2,500 credits. Your lifeboat is on its pad and drained. It needs a power cell from ${g.cell.who} and a fuel coupler from ${g.coupler.who}. Three hundred marks each.`;
 }
+
+/** FIX-R4: the parts a given person sells right now (the drained lifeboat's missing parts whose giver is this person), so the shop/talk panel can list them. */
+export function partsSoldBy(giverId, world, ship) {
+  return missingParts(ship).filter((part) => giverFor(world, part).id === giverId);
+}

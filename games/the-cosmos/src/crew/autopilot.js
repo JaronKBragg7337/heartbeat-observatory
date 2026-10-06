@@ -27,7 +27,7 @@ export function rng(seed) {
 }
 
 export const HUNT_ALT_M = NEUTRAL_AIRSPACE_M + 250;       // metres above the ground to work the raiders from
-export const CRUISE_AGL_M = 110;
+export const CRUISE_AGL_M = 260;       // FIX-R4: was 110, which read as skimming the rocks; the climb out below finishes before the ship sets off
 export const CLEARANCE_M = 45;
 
 export class Autopilot {
@@ -169,12 +169,16 @@ export class Autopilot {
   _goto(c, st, thr) {
     const f = this.f, tg = st.target;
     if (!st.phase) st.phase = f.landed ? 'lift' : 'cruise';
-    const tw = this._toward(tg), cruiseAgl = st.agl ?? CRUISE_AGL_M;
+    const tw = this._toward(tg);
+    // FIX-R4: a sane cruise height: the full cruise height for a real trip, scaled down for a hop across the port (never below 60 m, never an order's own agl)
+    const cruiseAgl = st.agl ?? clamp(tw.dist * 0.5, 60, CRUISE_AGL_M);
     if (st.phase === 'lift') {
+      // straight up first: the nose is not pointed and no thrust goes forward until she is well clear of the ground
       c.lift = 1;
-      if (f.agl > 40) st.phase = 'cruise';
+      if (f.agl > Math.min(cruiseAgl * 0.6, 120)) st.phase = 'cruise';
       return;
     }
+    const fs = f.vel.x * f.fwdH.x + f.vel.y * f.fwdH.y + f.vel.z * f.fwdH.z;       // speed along the nose, negative = going tail first
     const r = this._r(f.pos);
     const dist = tw.dist;
     const approach = st.land ? 70 : 14;
@@ -187,6 +191,7 @@ export class Autopilot {
         c.yaw = clamp(tw.err * 1.4, -0.8, 0.8);
         c.fwd = clamp(dist / 70, 0.07, 0.4) * align * (sp > 14 ? 0.3 : 1) - (sp > 16 && dist < 40 ? 0.3 : 0);
         c.lift = this._liftTo(Math.max(this._r(f.pos), this._followRadius(30, 120)));
+        if (fs < -1.5) c.fwd = Math.max(c.fwd, 0.2);       // FIX-R4: never creep onto the spot tail first
         return;
       }
       c.fwd = sp > 1.2 ? -clamp(sp / 14, 0, 1) * 0.5 : 0;
@@ -207,6 +212,7 @@ export class Autopilot {
     const high = r - this._groundAt(f.pos) > 30;
     c.fwd = high ? thr * align * clamp(dist / 160, 0.12, 1) * (c.lift > 0.5 ? 0.45 : 1) : 0;
     if (R - r > 60) c.fwd *= 0.3;           // a hill bigger than the lift can climb: slow down so the ship does not fly into it
+    if (fs < -1.5) c.fwd = Math.max(c.fwd, 0.3);       // FIX-R4: drifting tail first (a turn-about from a stop, a braking overshoot): thrust ahead until the nose leads again
   }
 
   // ---- hunt: out beyond Mars's neutral airspace ---------------------------------------------------------
@@ -282,11 +288,12 @@ export class Autopilot {
     }
     const tw = this._toward(st.wp);
     if (f.landed) { c.lift = 1; return; }
-    const R = this._followRadius(80 + (st.legs % 3) * 40, 700);
+    const R = this._followRadius(200 + (st.legs % 3) * 60, 700);       // FIX-R4: was 80-160 m
     c.lift = this._liftTo(R);
     c.yaw = clamp(tw.err * 1.3, -1, 1) * 0.8;
-    const high = this._r(f.pos) - this._groundAt(f.pos) > 25;
+    const fs = f.vel.x * f.fwdH.x + f.vel.y * f.fwdH.y + f.vel.z * f.fwdH.z, high = this._r(f.pos) - this._groundAt(f.pos) > 100;       // FIX-R4: climb out before setting off
     c.fwd = high ? thr * 0.7 * clamp(1 - Math.abs(tw.err) / 1.0, 0, 1) * (R - this._r(f.pos) > 50 ? 0.3 : 1) : 0;
+    if (fs < -1.5) c.fwd = Math.max(c.fwd, 0.3);
     this._callOuts(st);
   }
 

@@ -27,11 +27,14 @@ export function buildLifeboatExterior(layout, matsIn, opts = {}) {
     if (hash(Math.floor(x * 2), Math.floor(z * 1.6) + 7) > 0.93 - 0.08 * wear) c = [c[0] * 0.72, c[1] * 0.7, c[2] * 0.68];             // a replaced plate
     return c;
   };
-  const { mesh, caps } = buildHullShell(HULL, mats, {
-    dz: 0.4, colorFn, riser: { z0: -2.52, z1: -2.5, yMin: 2.4 }, capColor: [0.45, 0.45, 0.45], tail: { hole: { x0: -1.25, x1: 1.25, y0: 0, y1: 2.25 } },
+  const { mesh, caps, topMesh } = buildHullShell(HULL, mats, {
+    dz: 0.4, colorFn, riser: { z0: -2.52, z1: -2.5, yMin: 2.4 }, splitTop: { z0: -5.1, z1: -2.51 }, capColor: [0.45, 0.45, 0.45], tail: { hole: { x0: -1.25, x1: 1.25, y0: 0, y1: 2.25 } },
     cutouts: [{ side: 1, z0: -1.4, z1: -0.4, y0: 0, y1: 2.05 }],
   });
   root.add(mesh, caps);
+  // FIX-R4 (28): the hull's roof across the flight deck sits at the sill (y 1.05), i.e. through the consoles and seats. Seen from outside it is the nose deck; seen from
+  // the seats it was a tan slab. It is its own mesh and the ship system hides it while the camera is aboard (ext.insideHide).
+  if (topMesh) { root.add(topMesh); ext.insideHide = [topMesh]; }
 
   const k = new Kit(); k.tiles = { hull: 4, metal: 1 };
   const hwAt = (z) => HULL.halfWidth(z);

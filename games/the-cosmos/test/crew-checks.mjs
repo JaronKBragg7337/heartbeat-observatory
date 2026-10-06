@@ -103,6 +103,11 @@ export async function runCrewChecks({ check, section, THREE, mars, FIELD }) {
     check('roaming for seven minutes keeps the ship clear of the ground (over 20 m at the lowest), takes it well away from the port, and the hull is untouched',
       rr.minAgl > 20 && far > 3000 && f2.hull === 100, `lowest ${rr.minAgl.toFixed(0)} m, furthest ${(far / 1000).toFixed(1)} km`);
     check('and the crew call out what is on the ground as they go', lines.some((l) => /ridge|drop|cut|high ground|falls away/i.test(l)), lines.length + ' lines');
+    // FIX-R4: a flown trip goes nose first at a sane height
+    {const f3 = makeFlight(), ap3 = new Autopilot(f3, { ground, drones: () => null, skill: 0.8, home, seed: 5 });
+      const far3 = onGround({ x: 900, z: -500 }); let minFs = 0, maxAgl3 = 0;
+      fly(f3, ap3, { type: 'goto', target: far3, land: false, name: 'far' }, 120, null, () => { const fs = f3.vel.x * f3.fwdH.x + f3.vel.y * f3.fwdH.y + f3.vel.z * f3.fwdH.z; minFs = Math.min(minFs, fs); maxAgl3 = Math.max(maxAgl3, f3.agl); });
+      check('FIX-R4: a crew-flown trip never travels tail first (forward speed along the nose never below -2 m/s) and cruises at a sane height (over 150 m up)', minFs > -2 && maxAgl3 > 150, `slowest along the nose ${minFs.toFixed(1)} m/s, highest ${maxAgl3.toFixed(0)} m`);}
   }
 
   // ---- hunting: only outside neutral airspace, only at drones ---------------------------------------------------------------

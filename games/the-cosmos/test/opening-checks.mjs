@@ -228,6 +228,17 @@ export async function runOpeningChecks({check,section}){
     const sk=await world.join('opening2-sk-'.repeat(4),'QA skip','zuri',1),ps=world.state.players[sk.id];ps.opening.played=true;
     r=await act(ps,'sk-skip',{type:'opening-skip'});const ss=world.state.ships[sk.shipId];
     check('Skip intro gives the same start as staying on Mars: the same ship, the same purse, the same place',r.ok&&ps.home.world==='mars'&&ss.type===ms.type&&ss.drained===ms.drained&&ss.economy.marks===ms.economy.marks&&JSON.stringify(Object.keys(ps.home).sort())===JSON.stringify(Object.keys(pm.home).sort()));
+    // FIX-R4 (26): the parts are for sale exactly where the NEXT line says, on Mars and Ceres, and the whole chain works from the Mars start
+    {const G=await import('../src/opening/lifeboat.js'),C=await import('../src/economy/catalog.js');
+      const sold=(w,who)=>G.partsSoldBy(who,w,{drained:true,repair:{have:[]}});
+      check('FIX-R4: the Salvage trader sells the power cell and the Field kit trader the fuel coupler (Mars); the Ceres givers sell theirs; no one else sells them',
+        sold('mars','trader-2').join()==='cell'&&sold('mars','trader-4').join()==='coupler'&&sold('ceres','foreman').join()==='cell'&&sold('ceres','greenhaven-rep').join()==='coupler'&&!sold('mars','trader-1').length&&!G.partsSoldBy('trader-2','mars',{drained:false}).length&&!!C.TRADERS['trader-2']&&!!C.TRADERS['trader-4']);
+      const at=(g)=>{pm.frameId='mars';pm.pose.worldPos=world.site.toWorld(g.at.x,.02,g.at.z);};
+      at(giverFor('mars','cell'));let rr=await act(pm,'m1-cell',{type:'lifeboat-part',part:'cell'});
+      at(giverFor('mars','coupler'));let r2=await act(pm,'m1-coup',{type:'lifeboat-part',part:'coupler'});
+      const msim=world.sims.get(ms.id);pm.pose.worldPos={...msim.flight.pos};const r3=await act(pm,'m1-fit',{type:'lifeboat-fit'});
+      check('FIX-R4: a Mars arrival with the drained lifeboat buys the cell at the Salvage trader and the coupler at the Field kit trader (300 each), fits both, and can lift',
+        rr.ok&&r2.ok&&r3.ok&&ms.economy.marks===9400&&!ms.drained&&(msim.step(1/30),msim.flight.canLiftOff()),JSON.stringify([rr,r2,r3]));}
     // a restart converts an old unfinished opening
     const stale=world.state.players[two.id];stale.opening={version:1,stage:2,elapsed:9,pose:{x:1,y:0,z:1,yaw:0,pitch:0},cuts:[],contact:1,complete:false};await world.commit();
     const restarted=await new Authority(adapter,{now:()=>clock}).load();

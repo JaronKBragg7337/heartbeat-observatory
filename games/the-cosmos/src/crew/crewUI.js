@@ -13,6 +13,7 @@ import { personVisible } from './personVisibility.js';
 import { bindActivation, guardSheetPress } from '../ui/activation.js';
 import { landingOrder } from '../space/spaceSpec.js';
 import { workerHTML, WAGES } from '../economy/dialogue.js';
+import { partsSoldBy, REPAIR_PARTS } from '../opening/lifeboat.js';
 import { TRADERS, QUESTS } from '../economy/catalog.js';   // VOICES
 import { WORKER_CAST, voiceForName } from '../voice/cast.js';
 import { WORKER_FALLBACK } from '../port/workerLines.js';
@@ -157,6 +158,7 @@ export class CrewUI {
     if (this.reply) h += `<div class="say">${esc(this.reply)}</div>`;
     if (m.status === 'worker') {
       h += m.talk ? m.talk(this.view, c.world?.state.economy||c.account) : workerHTML(m,this.view,c.world?.state.economy||c.account);       // WORLD2: m.talk draws a far world's worker panel
+      h += this._repairOffer(m);       // FIX-R4: the drained lifeboat's parts are sold where the NEXT line says
     } else if (m.status === 'candidate') {
       h += `<p>${esc(def.pitch)}</p><p class="stat">Works at ${Math.round(def.skill * 100)}% of a good hand: about ${thinkDelay(def.skill).toFixed(1)} s to react, and a little off in the aim. Stays aboard until you say otherwise.</p>`;
       const wage=WAGES[m.def.id],fee=wage*4,balance=(c.world?.state.economy||c.account).marks;
@@ -239,6 +241,14 @@ export class CrewUI {
     return h;
   }
 
+  /** FIX-R4: buy buttons for the lifeboat part(s) this person sells, only while the player's lifeboat is drained and lacks them. */
+  _repairOffer(m) {
+    const w = this.crew.world; if (!w || !w.remote || !w.snapshot || this.view === 'answer') return '';
+    const p = w.snapshot.players[w.playerId], ship = p && w.snapshot.ships[p.shipId]; if (!ship || !ship.drained) return '';
+    const parts = partsSoldBy(m.id, p.home?.world || 'mars', ship); if (!parts.length) return '';
+    return `<div class="col"><p class="stat">Lifeboat repair</p>${parts.map((x) => `<button class="cbtn" data-a="lifeboat-part" data-part="${x}">Buy the ${esc(REPAIR_PARTS[x].name)} · ${REPAIR_PARTS[x].priceMarks} marks<small>For your drained lifeboat</small></button>`).join('')}</div>`;
+  }
+
   async _click(e) {
     const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
     const m = this.target, a = b.dataset.a, c = this.crew;
@@ -253,6 +263,7 @@ export class CrewUI {
       case 'purchase': case 'sale': case 'regolith-sale': case 'quest-accept': case 'buy-vehicle':
         r=c.world?.dispatch({type:a,trader:m.id,good:b.dataset.good,id:b.dataset.quest});
         if(r)this.reply=r.msg;break;
+      case 'lifeboat-part': r = await c.world?.dispatch({ type: 'lifeboat-part', part: b.dataset.part }); if (r) this.reply = r.msg; break;
       case 'comms-report': {
         const e=c.world?.state.economy||c.account;
         this.reply=`Port channel clear. Account ${e.marks} marks. ${Object.values(e.quests).filter(q=>q.status==='active').length} accepted jobs. Wages are paid each Mars sol.`;
