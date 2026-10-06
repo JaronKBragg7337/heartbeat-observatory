@@ -16,6 +16,8 @@
   .tile h3 { font-size: 1.15rem; margin: 4px 0 2px; }
   .tile p { font-size: .92rem; line-height: 1.5; color: #c2ccd6; margin-top: 6px; }
   .tile .go { font-size: .85rem; color: var(--muted); margin-top: 10px; display: block; }
+  .stat.human { border-color: rgba(76,154,255,.55); }
+  .stat.human b { color: #7db6ff; }
   .rules { list-style: none; display: grid; gap: 8px; }
   .rules li { border-left: 3px solid var(--beat); padding: 3px 0 3px 12px; line-height: 1.5; font-size: .93rem; }
 </style>
@@ -40,8 +42,9 @@
 
     <h2 class="sec">Right now</h2>
     <div class="board" id="board"></div>
+    <p class="muted small" id="adds" style="margin-top:10px;line-height:1.6"></p>
 
-    <h2 class="sec">Every settled AI trade, added up</h2>
+    <h2 class="sec">The account: every settled trade and every human move</h2>
     <div class="card" id="chart"><p class="muted small">Loading&hellip;</p></div>
     <p class="muted small" id="chartnote" style="margin-top:8px"></p>
 
@@ -54,13 +57,12 @@
     <footer><a href="/live-systems/crew/trades/">Full trade desk</a> · <a href="/live-systems/crew/reasoning/">Every trade's reasoning</a></footer>
   </div>
 <script type="module">
-  import { supabase, snapshot, nav, $, esc, usd, ago, mountPnlChart, CREW_CSS } from "./crew.js";
+  import { supabase, snapshot, nav, $, esc, usd, ago, mountAccountChart, CREW_CSS } from "./crew.js";
   $("crewcss").textContent = CREW_CSS;
   nav("Overview");
-  const [snap, { data: acct }, { data: res }] = await Promise.all([
+  const [snap, { data: acct }] = await Promise.all([
     snapshot(),
     supabase.from("desk_account").select("*").eq("id", "polymarket-us").maybeSingle(),
-    supabase.from("desk_trades").select("at,pnl_usd,cost_usd,actor,title,slug").eq("kind", "resolution").like("actor", "auto:%").limit(2000),
   ]);
   if (!snap) { $("updated").textContent = "No snapshot yet."; throw 0; }
   const d = snap.data;
@@ -69,12 +71,23 @@
   const pnl = d.ai_money ? d.ai_money.ai_settled : traders.reduce((t, b) => t + (b.ledger.pnl || 0), 0);
   const trades = traders.reduce((t, b) => t + (b.ledger.fills || 0), 0);
   const inPos = acct ? (acct.positions || []).reduce((t, p) => t + (Number(p.value) || 0), 0) : 0;
-  $("board").innerHTML = [
+  const S = d.account_story;
+  const cards = [
     [d.bots.length, "AIs on shift"], [trades, "AI trades so far"], [usd(pnl), "AI profit, settled"],
     [acct ? usd(acct.buying_power) : "–", "cash ready"], [acct ? usd(inPos) : "–", "in open trades"],
-  ].map(([v, l]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
-  mountPnlChart($("chart"), res || [], snap);
-  $("chartnote").textContent = "Each dot is one trade that settled: green won, red lost. Tap a dot for the trade. This is settled profit only; open trades and cash ready are the numbers above.";
+  ];
+  const sg = (n) => (n < 0 ? "-$" : "+$") + Math.abs(n).toFixed(2);
+  if (S) {
+    cards.push([usd(S.withdrawals), "Human withdrawals, all time"], [sg(S.hand_result), "Human spend: hand trades, settled"], [usd(S.deposits), "Human deposits, all time"]);
+  }
+  $("board").innerHTML = cards.map(([v, l], i) => `<div class="stat${S && i >= 5 ? " human" : ""}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  if (S && acct) {
+    const value = Number(acct.buying_power) + inPos, parts = S.deposits - S.withdrawals + pnl + S.hand_result, other = value - parts;
+    $("adds").innerHTML = `<b>How the account adds up:</b> ${usd(S.deposits)} put in &minus; ${usd(S.withdrawals)} taken out ${sg(pnl)} AI trades ${sg(S.hand_result)} Jaron by hand `
+      + `${Math.abs(other) < 0.005 ? "" : sg(other) + " bonuses and rounding "}= <b>${usd(value)}</b> in the account now (cash ${usd(acct.buying_power)} + open trades ${usd(inPos)}).`;
+  }
+  mountAccountChart($("chart"), S ? S.events : [], snap);
+  $("chartnote").innerHTML = `<span style="color:#3fb950">Green</span> = an AI trade won. <span style="color:#e23a45">Red</span> = an AI trade lost. <span style="color:#4c9aff">Blue</span> = a human move: Jaron's hand trade (dot), or a withdrawal or deposit (square). Tap any dot for details. The account only counts settled trades; open trades and cash ready are the cards above.`;
   $("tiles").innerHTML = d.bots.map((b) => {
     const L = b.ledger;
     const recent = L && L.last && Date.now() - new Date(L.last) < 6 * 3600e3;

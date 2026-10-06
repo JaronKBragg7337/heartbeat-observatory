@@ -114,6 +114,98 @@ export function mountPnlChart(el, rows, snap) {
   if (window.ResizeObserver) new ResizeObserver(() => { const w = Math.round(el.clientWidth); if (w && Math.abs(w - lastW) > 1) draw(); }).observe(el);
 }
 
+// The account story, brokerage style: range buttons, change header, y-axis rescaled to the range, tap a dot for the event.
+// events: [{at, k: "ai"|"hand"|"dep"|"wd", usd, title, actor}] from the crew snapshot (Polymarket's own history, fees included).
+// The line = cash in - cash out + every settled trade (AI and Jaron's hand trades). AI steps are green up / red down; human moves are blue.
+const BLUE = "#4c9aff", GREEN = "#3fb950", RED = "#e23a45";
+export function mountAccountChart(el, events, snap) {
+  const all = (events || []).filter((r) => r.at && r.usd != null).sort((a, b) => a.at.localeCompare(b.at));
+  if (all.length < 2) { el.innerHTML = `<p class="muted small">The chart starts once two things have settled.</p>`; return; }
+  const T = all.map((r) => new Date(r.at).getTime());
+  const cum = []; let run = 0;
+  for (const r of all) cum.push((run += Number(r.usd)));
+  const stepCol = (r) => (r.k === "ai" ? (Number(r.usd) >= 0 ? GREEN : RED) : BLUE);
+  let range = "All", sel = null, lastW = 0;
+  try { const s = localStorage.getItem("crewPnlRange"); if (RANGES.some((r) => r[0] === s)) range = s; } catch (e) {}
+  const who = (r) => {
+    if (r.k === "hand") return "Jaron, by hand";
+    if (r.k === "wd") return "Jaron, withdrawal";
+    if (r.k === "dep") return "Jaron, deposit";
+    if (!r.actor) return "AI";
+    return String(r.actor).endsWith("#v1") ? "Live Wire (retired)" : whoName(r.actor, "", snap);
+  };
+
+  function draw() {
+    const [, days, label] = RANGES.find((r) => r[0] === range);
+    const now = Date.now();
+    const t0 = days ? now - days * 864e5 : T[0] - 3600e3, t1 = days ? now : T[T.length - 1];
+    const idx = []; let before = 0;
+    T.forEach((t, i) => { if (t < t0) before = i + 1; else if (t <= t1) idx.push(i); });
+    const base = before ? cum[before - 1] : 0;
+    const end = idx.length ? cum[idx[idx.length - 1]] : base;
+    const change = end - base;
+    const sum = (f) => idx.reduce((t, i) => t + (f(all[i]) ? Number(all[i].usd) : 0), 0);
+    const aiS = sum((r) => r.k === "ai"), handS = sum((r) => r.k === "hand"), wdS = sum((r) => r.k === "wd"), depS = sum((r) => r.k === "dep");
+    const col = change >= 0 ? GREEN : RED;
+    if (sel != null && !idx.includes(sel)) sel = null;
+
+    const W = Math.max(260, Math.round(el.clientWidth || 340)), H = W < 500 ? 260 : 290;
+    const padL = 50, padR = 12, padT = 12, padB = 28;
+    const vals = [base, ...idx.map((i) => cum[i])];
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    if (hi - lo < 1) { hi += 0.5; lo -= 0.5; }
+    const room = (hi - lo) * 0.1; lo -= room; hi += room;
+    const raw = (hi - lo) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw);
+    const ticks = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) ticks.push(Math.abs(v) < 1e-9 ? 0 : v);
+    const x = (t) => padL + ((t - t0) / (t1 - t0 || 1)) * (W - padL - padR);
+    const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+    const pts = idx.map((i) => ({ i, x: x(T[i]), y: y(cum[i]) }));
+    let segs = ""; let px0 = x(t0), py0 = y(base);
+    pts.forEach((p) => { segs += `<line x1="${px0.toFixed(1)}" y1="${py0.toFixed(1)}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="${stepCol(all[p.i])}" stroke-width="2.4" stroke-linecap="round"/>`; px0 = p.x; py0 = p.y; });
+    if (days && pts.length) segs += `<line x1="${px0.toFixed(1)}" y1="${py0.toFixed(1)}" x2="${x(t1).toFixed(1)}" y2="${y(end).toFixed(1)}" stroke="#7d8896" stroke-width="1.6" stroke-dasharray="2 4"/>`;
+    const fmt = days === 1 ? { hour: "numeric" } : (t1 - t0 < 120 * 864e5) ? { month: "short", day: "numeric" } : { month: "short", year: "2-digit" };
+    const xl = [0, 1, 2, 3].map((k) => { const t = t0 + ((t1 - t0) * k) / 3; const anchor = k === 0 ? "start" : k === 3 ? "end" : "middle";
+      return `<text x="${(k === 0 ? padL : k === 3 ? W - padR : x(t)).toFixed(1)}" y="${H - 8}" text-anchor="${anchor}" class="ax">${new Date(t).toLocaleString([], fmt)}</text>`; }).join("");
+    const grid = ticks.map((v) => `<line x1="${padL}" x2="${W - padR}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="#222c38"/><text x="${padL - 6}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" class="ax">${axisUsd(v, step)}</text>`).join("");
+    const dots = pts.map((p) => { const r = all[p.i], c = stepCol(r), on = p.i === sel;
+      const rad = on ? 7 : pts.length > 60 ? 3.4 : 4.8, stroke = on ? "#fff" : "#0d1117", sw = on ? 2.5 : 1;
+      if (r.k === "dep" || r.k === "wd") { const s2 = rad + 1.2; return `<rect x="${(p.x - s2).toFixed(1)}" y="${(p.y - s2).toFixed(1)}" width="${(s2 * 2).toFixed(1)}" height="${(s2 * 2).toFixed(1)}" rx="1.5" fill="${c}" stroke="${stroke}" stroke-width="${sw}"/>`; }
+      return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${on ? rad : r.k === "hand" ? rad + 0.6 : rad}" fill="${c}" stroke="${stroke}" stroke-width="${sw}"/>`; }).join("");
+    const empty = idx.length ? "" : `<text x="${W / 2}" y="${H / 2 - 14}" text-anchor="middle" class="ax">Nothing settled in this range</text>`;
+    const ri = sel == null ? null : all[sel];
+    const kindWord = (r) => (r.k === "wd" ? "taken out" : r.k === "dep" ? "put in" : r.k === "hand" ? "hand trade" : "AI trade");
+    const detail = ri
+      ? `<div class="pc-trade"><b style="color:${stepCol(ri)}">${sgn(Number(ri.usd))}</b> <span>${esc(ri.k === "wd" ? "Withdrawal: money taken out of the account" : ri.k === "dep" ? "Deposit: money put into the account" : ri.title || "a market")}</span>
+          <div class="muted"><span style="color:${stepCol(ri)};font-weight:600">${esc(who(ri))}</span> (${kindWord(ri)}) · ${esc(new Date(ri.at).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))} · account line then ${usd(cum[sel])}</div>
+          <div class="pc-step"><button type="button" data-step="-1" aria-label="Previous event">&lsaquo; Earlier</button><button type="button" data-step="1" aria-label="Next event">Later &rsaquo;</button></div></div>`
+      : `<div class="pc-trade muted">${idx.length ? "Tap a dot to see what happened." : "Pick a longer range to see events."}</div>`;
+    const chip = (t, v, c) => `<span class="chip" style="border-color:${c};color:${c}">${t} ${sgn(v)}</span>`;
+    el.innerHTML = `<div class="pc-head"><div class="pc-big" style="color:${col}">${sgn(change)}</div>
+        <div class="pc-sub">account line, ${label.toLowerCase()} · ${idx.length} events</div>
+        <div class="chips">${chip("AI trades", aiS, aiS >= 0 ? GREEN : RED)}${chip("Jaron by hand", handS, BLUE)}${chip("Taken out", wdS, BLUE)}${chip("Put in", depS, BLUE)}</div></div>
+      <div class="pc-ranges" role="group" aria-label="Chart range">${RANGES.map(([k]) => `<button type="button" data-r="${k}"${k === range ? ' aria-pressed="true"' : ""}>${k}</button>`).join("")}</div>
+      <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="pc-svg" role="img" aria-label="Account line, ${label}: ${sgn(change)}; AI ${sgn(aiS)}, hand trades ${sgn(handS)}, withdrawals ${sgn(wdS)}, deposits ${sgn(depS)}">
+        ${grid}${xl}
+        <line x1="${padL}" x2="${W - padR}" y1="${y(base).toFixed(1)}" y2="${y(base).toFixed(1)}" stroke="#7d8896" stroke-dasharray="3 5" opacity=".7"/>
+        ${segs}${dots}${empty}
+      </svg>${detail}`;
+    lastW = W;
+    const svg = el.querySelector("svg");
+    svg.addEventListener("click", (e) => {
+      const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * (W / r.width), py = (e.clientY - r.top) * (H / r.height);
+      let best = null, bd = 30 * 30;
+      for (const p of pts) { const dd = (p.x - px) ** 2 + (p.y - py) ** 2; if (dd < bd) { bd = dd; best = p.i; } }
+      if (best != null) { sel = best; draw(); }
+    });
+    el.querySelectorAll("[data-r]").forEach((b) => b.addEventListener("click", () => {
+      range = b.dataset.r; sel = null; try { localStorage.setItem("crewPnlRange", range); } catch (e) {} draw(); }));
+    el.querySelectorAll("[data-step]").forEach((b) => b.addEventListener("click", () => {
+      const k = idx.indexOf(sel) + Number(b.dataset.step); if (k >= 0 && k < idx.length) { sel = idx[k]; draw(); } }));
+  }
+  draw();
+  if (window.ResizeObserver) new ResizeObserver(() => { const w = Math.round(el.clientWidth); if (w && Math.abs(w - lastW) > 1) draw(); }).observe(el);
+}
+
 // A cumulative-profit line from resolution rows [{at, pnl_usd}]. Plain SVG, no library.
 export function pnlChart(rows, { height = 150 } = {}) {
   const pts = rows.filter((r) => r.pnl_usd != null).sort((a, b) => a.at.localeCompare(b.at));
