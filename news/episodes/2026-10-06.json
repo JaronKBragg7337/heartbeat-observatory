@@ -1,0 +1,690 @@
+{
+  "date": "2026-10-06",
+  "title": "Heartbeat News — Tuesday, October 6, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-06 (07:30 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-06.md"
+    },
+    {
+      "name": "watch/claude 2026-10-06 (08:25)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-06.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-06 (reader, 09:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-06.md"
+    },
+    {
+      "name": "Perplexity headlines (/api/news, read live by the page)",
+      "url": "/api/news"
+    }
+  ],
+  "ticker": [
+    "IRAN SAYS IT KEEPS CONTROL OF HORMUZ; RIAL AT RECORD LOW",
+    "HOUTHIS CLAIM STRIKES ON SAUDI AIRPORTS, ARAMCO REFINERY",
+    "BRENT ~$100; WTI ~$89",
+    "NASDAQ CLOSES AT RECORD 27,477; S&P 500 7,774",
+    "10-YEAR TREASURY YIELD 5.31%",
+    "PARAMOUNT-WARNER BROS. DEAL EXPECTED TO CLOSE TODAY",
+    "TRUMP SIGNS RED-DYED DIESEL ORDER FOR FARMERS",
+    "HALF OF U.S. ADULTS HIGHLY CONCERNED ABOUT GAS COSTS",
+    "PENNSYLVANIA MEASLES: 1,004 CASES, FIVE DEATHS",
+    "CALIFORNIA HEAT WAVE 15-20 DEGREES ABOVE NORMAL",
+    "WHITE SOX 4, GUARDIANS 3; RAYS 5, YANKEES 2",
+    "SEC APPROVES 3X BITCOIN, ETHER ETF LISTINGS; NO LAUNCH DATE",
+    "UIC MEDICAL COLLEGE HIT BY RANSOMWARE",
+    "MICROSOFT EXCHANGE FLAW: ON-PREMISES SERVERS NEED PATCH"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Hormuz · Wall Street · Paramount",
+        "bullets": [
+          "Iran, Hormuz and Houthi claims",
+          "Record Nasdaq, 5% yields",
+          "Paramount-Warner close expected",
+          "Measles and a heat wave"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Tuesday, October sixth.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "Today: Iran says it controls the Strait of Hormuz, Houthis claim strikes on Saudi sites, and Wall Street hits a record with yields above five percent."
+        },
+        {
+          "who": "joe",
+          "text": "Plus a giant media merger, a measles outbreak, and a heat wave out West. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "hormuz",
+      "kind": "story",
+      "strap": "IRAN: HORMUZ CONTROLLED; HOUTHIS CLAIM SAUDI STRIKES",
+      "headline": "Hormuz and the Gulf",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Hormuz and the Gulf",
+        "stats": [
+          {
+            "label": "Hormuz reopening (Iran)",
+            "value": "within 7 days, if conditions met"
+          }
+        ],
+        "bullets": [
+          "Euronews: Iran says it retains full control",
+          "Rial at record low; oil minister reported to resign",
+          "Houthis claim Saudi airport and Aramco strikes",
+          "Pakistan: talks show 'significant progress'"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Euronews",
+          "url": "https://www.euronews.com/2026/10/05/iran-insists-it-controls-hormuz-as-rial-hits-record-low-and-exports-dry-up"
+        },
+        {
+          "name": "Reuters via MarketScreener",
+          "url": "https://www.marketscreener.com/news/oil-prices-slip-as-traders-weigh-strong-mideast-exports-against-gulf-tensions-ce785dd8dd80f424"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/c4306184648d24c5d749ec7fb41610d9"
+        },
+        {
+          "name": "Al-Ahram",
+          "url": "https://english.ahram.org.eg/News/573756.aspx"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Euronews reports Iran's military says it keeps full control of the Strait of Hormuz. Iran's foreign minister says the strait could reopen within seven days if Tehran's conditions are met."
+        },
+        {
+          "who": "joe",
+          "text": "The same report says Iran's oil minister resigned, and the rial hit a record low. Those are reports, not confirmed by us."
+        },
+        {
+          "who": "vex",
+          "text": "Reuters reports the Houthis claim attacks on Saudi sites, including King Khalid airport, an Aramco refinery at Rabigh, and Abha airport. Saudi Arabia had not confirmed them."
+        },
+        {
+          "who": "joe",
+          "text": "Pakistan says U.S.-Iran talks are ongoing, with significant progress. It also says Hormuz is a point of serious disagreement. And the A.P. says Trump attributed the return of B-1 bombers from Britain to an Iran-linked threat. That is his account."
+        }
+      ]
+    },
+    {
+      "id": "oil",
+      "kind": "story",
+      "strap": "BRENT ~$100, WTI ~$89 AS EXPORTS RECOVER",
+      "headline": "Oil on Tuesday",
+      "category": "ENERGY",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ENERGY",
+        "title": "Oil, early Tuesday",
+        "stats": [
+          {
+            "label": "Brent",
+            "value": "$100.28"
+          },
+          {
+            "label": "WTI",
+            "value": "$89.33"
+          }
+        ],
+        "bullets": [
+          "Reuters quotes, 00:03 GMT",
+          "G7 reserve releases eased supply worries",
+          "Middle East exports above pre-war levels",
+          "Another early read: Brent $99.07"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters via MarketScreener",
+          "url": "https://www.marketscreener.com/news/oil-prices-slip-as-traders-weigh-strong-mideast-exports-against-gulf-tensions-ce785dd8dd80f424"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/stocks-markets-oil-bonds-us-e8285ec7afbe81e9df277e8ee2127982"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Reuters has Brent at one hundred dollars and twenty-eight cents early today, and U.S. crude at eighty-nine thirty-three. An A.P. morning report had Brent a little lower, at ninety-nine oh seven."
+        },
+        {
+          "who": "joe",
+          "text": "Reuters says G7 reserve releases and strong Middle East exports eased supply worries, while Houthi attacks keep Gulf risks in view."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "NASDAQ RECORD 27,477; S&P 500 7,774; 10-YEAR 5.31%",
+      "headline": "Wall Street and yields",
+      "category": "MARKETS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Monday's close",
+        "stats": [
+          {
+            "label": "S&P 500",
+            "value": "7,773.95 (+0.7%)"
+          },
+          {
+            "label": "Nasdaq",
+            "value": "27,477.31 (+1.1%)"
+          },
+          {
+            "label": "Dow",
+            "value": "51,267.90 (+0.2%)"
+          },
+          {
+            "label": "10-year",
+            "value": "5.31%"
+          }
+        ],
+        "bullets": [
+          "Nasdaq at a record (A.P.)",
+          "S&P within 0.3% of its record",
+          "Nikkei +1.1%; Kospi -0.9%",
+          "Bitcoin ~$85,800 at Monday's close"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/wall-street-stocks-dow-nasdaq-7f89624b604f25f313502c77d4d0b010"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/stocks-markets-oil-bonds-us-e8285ec7afbe81e9df277e8ee2127982"
+        },
+        {
+          "name": "StatMuse",
+          "url": "https://www.statmuse.com/money/ask/oct-1-to-today-bitcoin-price"
+        },
+        {
+          "name": "BabyPips",
+          "url": "https://www.babypips.com/news/headline-us-jobs-report-september-2026-payrolls-miss-fed-hike-odds"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "The A.P. reports the S and P five hundred rose seven tenths of a percent, to seven thousand seven hundred seventy-four. The Nasdaq rose one point one percent to a record, twenty-seven thousand four hundred seventy-seven."
+        },
+        {
+          "who": "vex",
+          "text": "The Dow gained two tenths, to fifty-one thousand two hundred sixty-eight. The ten-year Treasury yield reached five point three one percent. In Asia, Japan's Nikkei rose one point one percent, and South Korea's Kospi fell nine tenths, with chipmakers Samsung and SK Hynix down."
+        },
+        {
+          "who": "joe",
+          "text": "Last week's jobs report showed twenty-nine thousand new jobs, far below forecasts. Odds of an October Fed hike depend on who is counting. One read has about seventy-seven percent for no move. Another outlet headlines fifty-fifty. That conflict is unresolved."
+        },
+        {
+          "who": "vex",
+          "text": "Bitcoin closed Monday near eighty-five thousand eight hundred dollars, per StatMuse."
+        }
+      ]
+    },
+    {
+      "id": "paramount",
+      "kind": "story",
+      "strap": "PARAMOUNT-WARNER BROS. CLOSE EXPECTED TODAY; WEISS TO CBS NEWS",
+      "headline": "Paramount and Warner Bros.",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "A $110 billion media deal",
+        "stats": [
+          {
+            "label": "Deal value",
+            "value": "~$110B"
+          },
+          {
+            "label": "Price per share",
+            "value": "$31 cash"
+          },
+          {
+            "label": "Expected close",
+            "value": "Oct. 6"
+          }
+        ],
+        "bullets": [
+          "Combined company to be called Skydance",
+          "Mark Thompson to lead CNN Worldwide",
+          "Bari Weiss to lead CBS News",
+          "Closing not yet confirmed"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Paramount press release",
+          "url": "https://www.paramount.com/press/david-ellison-and-ynon-kreiz-announce-their-ceo-leadership-team-for-skydance-following-anticipated-close-of-warner-bros-discovery-acquisition"
+        },
+        {
+          "name": "NBC News",
+          "url": "https://www.nbcnews.com/business/media/warner-bros-discovery-signs-merger-agreement-paramount-skydance-rcna261035"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Paramount Skydance's purchase of Warner Bros. Discovery is expected to close today, according to NBC News and Paramount's own release. The price is thirty-one dollars a share in cash, about one hundred ten billion dollars in all."
+        },
+        {
+          "who": "joe",
+          "text": "Paramount says the combined company will be called Skydance. Mark Thompson is named to lead CNN Worldwide, and Bari Weiss to lead CBS News. We have not seen the closing itself yet."
+        }
+      ]
+    },
+    {
+      "id": "diesel",
+      "kind": "story",
+      "strap": "TRUMP EASES RED-DYED DIESEL LIMITS; GAS COSTS WORRY HALF OF ADULTS",
+      "headline": "Fuel, food and farms",
+      "category": "NATIONAL",
+      "status": "claim",
+      "graphic": {
+        "kicker": "NATIONAL",
+        "title": "Prices and the midterms",
+        "bullets": [
+          "Order eases limits on tax-free red-dyed diesel (A.P.)",
+          "Signed at a Nebraska campaign stop",
+          "AP-NORC: about half highly concerned about gas costs, up from 39% in July",
+          "About half also concerned about food"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/trump-nebraska-senate-pete-ricketts-106c5ad829c53b71bdf18a501fc6e07f"
+        },
+        {
+          "name": "AP-NORC poll",
+          "url": "https://apnews.com/article/c4306184648d24c5d749ec7fb41610d9"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "The A.P. reports President Trump signed an order temporarily easing limits on red-dyed diesel, the tax-free fuel used off-road, including on farms. He said it would lower costs for farmers and for goods."
+        },
+        {
+          "who": "vex",
+          "text": "He signed it in Grand Island, Nebraska, while campaigning for Senator Pete Ricketts against independent Dan Osborn."
+        },
+        {
+          "who": "joe",
+          "text": "An A.P.-NORC poll finds about half of Americans are highly concerned about affording gasoline. In July it was thirty-nine percent. About half are also highly concerned about food."
+        }
+      ]
+    },
+    {
+      "id": "tech",
+      "kind": "story",
+      "strap": "OPENAI BEGINS BILLING FOR GPT-ROSALIND; SEC OKS 3X CRYPTO ETFS",
+      "headline": "Tech and crypto rules",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "A.I. pricing, crypto approvals",
+        "stats": [
+          {
+            "label": "Input tokens",
+            "value": "$5 / million"
+          },
+          {
+            "label": "Output tokens",
+            "value": "$25 / million"
+          }
+        ],
+        "bullets": [
+          "GPT-Rosalind: approved life-sciences research only",
+          "SEC order dated Oct. 2: Cboe 3x Bitcoin, Ether ETFs",
+          "No launch date yet",
+          "Coinbase ALEO delay resolved"
+        ]
+      },
+      "sources": [
+        {
+          "name": "OpenAI changelog",
+          "url": "https://developers.openai.com/api/docs/changelog?mw_entry=2026-08-20-974ac0734e053853"
+        },
+        {
+          "name": "Yahoo Finance",
+          "url": "https://finance.yahoo.com/markets/crypto/articles/sec-approves-first-3x-bitcoin-175103976.html"
+        },
+        {
+          "name": "SEC",
+          "url": "https://www.sec.gov/rule-release/34-106577"
+        },
+        {
+          "name": "Coinbase status",
+          "url": "https://status.coinbase.com/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "OpenAI's changelog says billing for its GPT-Rosalind research model began Monday. Five dollars per million input tokens, twenty-five dollars per million output tokens. Access is for approved life-sciences research."
+        },
+        {
+          "who": "joe",
+          "text": "Yahoo Finance reports the S.E.C. approved Cboe listings for three-times-leveraged Bitcoin and Ether funds. The order is dated October second. The funds still need registration, and no launch date was reported."
+        },
+        {
+          "who": "vex",
+          "text": "And Coinbase says delays in sending and receiving the ALEO token were resolved Monday. Buying, selling and fiat transfers were not affected."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "PENNSYLVANIA MEASLES: 1,004 CASES; RUSSIA HOSPITAL QUARANTINED",
+      "headline": "Health watch",
+      "category": "HEALTH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Measles and a Siberian quarantine",
+        "stats": [
+          {
+            "label": "Pennsylvania cases",
+            "value": "1,004"
+          },
+          {
+            "label": "Hospitalized",
+            "value": "198"
+          },
+          {
+            "label": "Deaths",
+            "value": "5"
+          },
+          {
+            "label": "U.S. total (C.D.C.)",
+            "value": "~3,900"
+          }
+        ],
+        "bullets": [
+          "Pennsylvania outbreak since April (A.P.)",
+          "Siberian institute employee died of unknown pneumonia",
+          "Authorities: no evidence her work caused it",
+          "Plague rumors unconfirmed"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/measles-outbreak-pennsylvania-4cae9e5cd28a164a07ac69147505b763"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/9ddc8e3e064637853407bfd24d8937f5"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Pennsylvania officials count one thousand four cases of measles in an outbreak since April, with one hundred ninety-eight hospitalizations and five deaths, the A.P. reports. The latest national C.D.C. figure is nearly thirty-nine hundred."
+        },
+        {
+          "who": "vex",
+          "text": "Separately, the A.P. reports Russian authorities quarantined a hospital after an employee of a Siberian anti-plague institute died of pneumonia of unknown cause. Officials say there is no evidence the pathogens she studied caused it. Plague rumors are unconfirmed."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "CALIFORNIA HEAT 15-20° ABOVE NORMAL; FLORIDA HEAVY RAIN RISK",
+      "headline": "Heat and rain",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Heat out West, rain in Florida",
+        "stats": [
+          {
+            "label": "California, Great Basin",
+            "value": "15-20°F above normal"
+          }
+        ],
+        "bullets": [
+          "Heat advisories in California through Oct. 8",
+          "Heavy-rain risk lingers in Florida",
+          "Cooler air across Great Lakes, Northeast"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Weather Prediction Center",
+          "url": "https://origin-east-www-wpc.woc.noaa.gov/discussions/pmdspd.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Weather Prediction Center forecasts a late-season heat wave in central and southern California and the Great Basin, fifteen to twenty degrees above normal."
+        },
+        {
+          "who": "joe",
+          "text": "Florida keeps a heavy-rain risk. Cooler air crosses the Great Lakes and the Northeast."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "UIC MEDICAL COLLEGE RANSOMWARE; EXCHANGE FLAW NEEDS PATCH",
+      "headline": "Cyber watch",
+      "category": "TECH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "Ransomware and an Exchange bug",
+        "bullets": [
+          "UIC College of Medicine systems disrupted",
+          "UIC: systems restored, some information stolen",
+          "Patient care and main network unaffected",
+          "Exchange CVE-2026-96940: on-premises servers must patch"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Recorded Future News",
+          "url": "https://therecord.media/ransomware-university-illinois-chicago"
+        },
+        {
+          "name": "The Hacker News",
+          "url": "https://thehackernews.com/2026/10/microsoft-exchange-flaw-lets.html"
+        },
+        {
+          "name": "Microsoft",
+          "url": "https://support.microsoft.com/en-us/servicing/exchange/server/update/2026/5129955"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Recorded Future News reports ransomware disrupted systems at the University of Illinois Chicago's medical college. The school says the systems are restored, some information was stolen, and patient care was not affected."
+        },
+        {
+          "who": "vex",
+          "text": "And The Hacker News reports a flaw in Microsoft Exchange, tracked as C.V.E. twenty twenty-six, ninety-six nine forty, could let a signed-in user read other mailboxes in the same organization. Microsoft says Exchange Online is fixed. On-premises servers need the patch."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "WHITE SOX 4, GUARDIANS 3; RAYS 5, YANKEES 2; NLDS GAME 3 TODAY",
+      "headline": "Baseball playoffs",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Division Series",
+        "stats": [
+          {
+            "label": "ALDS Game 2",
+            "value": "White Sox 4, Guardians 3"
+          },
+          {
+            "label": "ALDS Game 2",
+            "value": "Rays 5, Yankees 2"
+          }
+        ],
+        "bullets": [
+          "Today: Dodgers at Braves, 6 p.m. ET",
+          "Today: Brewers at Padres, 9:30 p.m. ET"
+        ]
+      },
+      "sources": [
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/schedule/2026-10-05"
+        },
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/news/2026-mlb-playoff-and-world-series-schedule?lctg=4006332837"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Baseball. M.L.B. records the White Sox beating the Guardians four to three, and the Rays beating the Yankees five to two."
+        },
+        {
+          "who": "joe",
+          "text": "Today, the Dodgers visit the Braves at six Eastern, and the Brewers visit the Padres at nine thirty."
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "kind": "story",
+      "strap": "FALCON 9 SDA LAUNCH SLIPS TO OCT. 8; VERITY LEADS BOX OFFICE",
+      "headline": "Space and the box office",
+      "category": "CULTURE",
+      "status": "claim",
+      "graphic": {
+        "kicker": "CULTURE",
+        "title": "Launch tracker, weekend film",
+        "stats": [
+          {
+            "label": "Verity (est.)",
+            "value": "$32.6M"
+          },
+          {
+            "label": "Digger (est.)",
+            "value": "$8M"
+          }
+        ],
+        "bullets": [
+          "Falcon 9 SDA mission now listed Oct. 8, 07:54 UTC",
+          "SpaceX page still showed an earlier date",
+          "Box office figures are estimates"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Space Launch Live",
+          "url": "https://spacelaunchlive.com/launches/falcon-9-block-5-sda-tranche-1-transport-layer-a/"
+        },
+        {
+          "name": "Box Office Mojo",
+          "url": "https://www.boxofficemojo.com/weekend/2026W40/?sort=rank&sortDir=asc"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "A launch tracker now lists SpaceX's Falcon 9 mission for the Space Development Agency for October eighth, after the October sixth target passed. SpaceX's own page still showed an earlier date, so treat it as a claim."
+        },
+        {
+          "who": "vex",
+          "text": "Box Office Mojo lists Verity at thirty-two point six million dollars for the weekend, and Digger at eight million. Both are estimates."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": [],
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped."
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "HEARTBEAT NEWS",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 6",
+          "Sources under the screen",
+          "New show every day by noon"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Tuesday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by noon. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
