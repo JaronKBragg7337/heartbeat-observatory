@@ -33,6 +33,13 @@ at the next story break; until then it keeps looping the last show.
   is big enough to matter to people outside Indiana (a major disaster, a national story), and then as a normal story.
 - **Domains 09 and 10** (market resolution rules, catalysts) are for the traders; mention only if it is real news.
 
+## Coverage (Jaron 2026-10-07, after the audit in AI-Shared/projects/news-show/AUDIT-2026-10-07.md)
+- Every sourced item in the captures that is real news airs - including scary ones and including [claim] items (say plainly
+  it's a claim and who made it; don't add hedges the capture didn't have). The audit found the scariest items were the ones
+  silently dropped (a threat against US cities, a deadly strike, cyber attacks on infrastructure).
+- Anything you skip goes in the episode field `skipped`: [{"item": "...", "source": "...", "why": "..."}]. Nothing
+  leaves the show without a written reason.
+
 ## How it should read
 - Two hosts. **AI Robot Vex**: precise, numbers-first, dry; a rare one-line robot aside. **Alien Joe**: plain-spoken,
   an outsider noticing what humans do; warmth, the occasional wry line. Facts first, never softened: say the scary-but-real
