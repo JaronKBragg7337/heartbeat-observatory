@@ -35,8 +35,11 @@ at the next story break; until then it keeps looping the last show.
 
 ## How it should read
 - Two hosts. **AI Robot Vex**: precise, numbers-first, dry; a rare one-line robot aside. **Alien Joe**: plain-spoken,
-  an outsider noticing what humans do; warmth, the occasional wry line. Straight news. No jokes on deaths, disease or
-  disasters. Alternate who speaks; either can lead a story.
+  an outsider noticing what humans do; warmth, the occasional wry line. Facts first, never softened: say the scary-but-real
+  news plainly with its source - wars, attacks, disasters, outbreaks, shocks are never dropped or watered down (Jaron
+  2026-10-07: people may just need to know). THEN humor carries it: the hosts can be dry and darkly funny (Jaron's old
+  Vex + Joe TikToks), joking at the absurdity and at the powerful, never at victims, and the joke comes after the fact,
+  never instead of it - if a viewer can't tell what happened, the joke went too far. Alternate who speaks; either can lead a story.
 - **Written for the ear.** Short sentences. Spell numbers the way they should be said ("six dollars and fifty-three
   cents", "one hundred five", "twenty twenty-six"). Write A.I., C.D.C., F.D.A. with periods so the synth spells them.
   Digits and symbols are fine in `strap`, `graphic` and `ticker`, which are read by eye.
