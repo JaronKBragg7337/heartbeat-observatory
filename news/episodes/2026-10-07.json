@@ -1,0 +1,762 @@
+{
+  "date": "2026-10-07",
+  "title": "Heartbeat News — Wednesday, October 7, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-07 (07:30 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-07.md"
+    },
+    {
+      "name": "watch/claude 2026-10-07 (08:25)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-07.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-07 (reader, 09:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-07.md"
+    },
+    {
+      "name": "Perplexity headlines (/api/news, read live by the page)",
+      "url": "/api/news"
+    }
+  ],
+  "ticker": [
+    "HOUTHIS CLAIM STRIKES ON SAUDI AIRPORT; RIYADH INTERCEPT",
+    "BRENT $101.51; WTI $90.25",
+    "S&P 500 7,819 AND NASDAQ 27,600 CLOSE AT RECORDS",
+    "FED MINUTES DUE TODAY",
+    "SEPT PAYROLLS +29,000; UNEMPLOYMENT 4.2%",
+    "SKYDANCE COMPLETES WARNER BROS. DISCOVERY DEAL",
+    "TRUMP: IRAN COULD 'TAKE OUT' L.A., SAN DIEGO; WHITE HOUSE CLARIFIES",
+    "GOOGLE, CONSTELLATION: 890 MW NEW NUCLEAR",
+    "MISTRAL LARGE 4 IN PUBLIC PREVIEW",
+    "BITCOIN ~$83,800, DOWN 2.7%",
+    "FINCEN WITHDRAWS CRYPTO MIXING PROPOSAL",
+    "LOS ANGELES: FOUR STRAIGHT 100-DEGREE OCTOBER DAYS",
+    "PADRES 4, BREWERS 3; DODGERS 3, BRAVES 1",
+    "CREW-12 SPLASHDOWN THURSDAY 11:34 A.M. EDT",
+    "EMMYS MOVE TO PRIME VIDEO IN 2027"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Records, a merger, and Gulf risk",
+        "bullets": [
+          "Wall Street records, Brent above $100",
+          "Skydance closes Warner Bros. Discovery",
+          "Houthis claim strikes on Saudi sites",
+          "Google's nuclear deal; L.A. heat"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Wednesday, October seventh.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "Today: Houthis claim strikes on Saudi Arabia, oil stays above one hundred dollars, and Wall Street closes at records."
+        },
+        {
+          "who": "joe",
+          "text": "Plus a giant media merger is done, Google signs a big nuclear deal, and Southern California keeps baking. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "houthi",
+      "kind": "story",
+      "strap": "HOUTHIS CLAIM STRIKES ON SAUDI AIRPORT; RIYADH INTERCEPT",
+      "headline": "Houthis and Saudi Arabia",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Yemen and Saudi Arabia",
+        "stats": [
+          {
+            "label": "Saudi statement",
+            "value": "one missile intercepted"
+          }
+        ],
+        "bullets": [
+          "Houthis claim King Khalid Airport strikes",
+          "Saudi: ballistic missile intercepted north of Riyadh",
+          "Flight tracking: brief disruption",
+          "Claim, not independently confirmed"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/yemen-houthis-saudi-airport-aden-f22f20dd78b03b741dfa1279881cedbb"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.P. reports the Houthis claim missile and drone strikes on King Khalid Airport in Riyadh and on military sites."
+        },
+        {
+          "who": "joe",
+          "text": "Saudi Arabia says it intercepted one ballistic missile north of the capital. Flight tracking showed a brief disruption. The strike claims are the Houthis' own. We have not confirmed them."
+        },
+        {
+          "who": "vex",
+          "text": "Both strands matter for oil, which is next."
+        }
+      ]
+    },
+    {
+      "id": "oil",
+      "kind": "story",
+      "strap": "BRENT $101.51, WTI $90.25 AS GULF RISK WEIGHS",
+      "headline": "Oil on Wednesday",
+      "category": "ENERGY",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ENERGY",
+        "title": "Oil, early Wednesday",
+        "stats": [
+          {
+            "label": "Brent",
+            "value": "$101.51"
+          },
+          {
+            "label": "WTI",
+            "value": "$90.25"
+          },
+          {
+            "label": "Saudi East-West pipeline",
+            "value": "5.8M bbl/day"
+          }
+        ],
+        "bullets": [
+          "Reuters quotes, 00:22 GMT",
+          "Gulf storm risk and Houthi attacks in view",
+          "Middle East exports rising"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters via Investing.com",
+          "url": "https://au.investing.com/news/commodities-news/oil-prices-rise-as-storms-and-air-strikes-threaten-supply-4676100"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Reuters has Brent at one hundred one dollars and fifty-one cents early today. U.S. crude is at ninety dollars and twenty-five cents."
+        },
+        {
+          "who": "vex",
+          "text": "Reuters says Gulf storm risk and Houthi attacks are weighing against rising Middle East exports. It reports Saudi Arabia's East-West pipeline moving five point eight million barrels a day."
+        },
+        {
+          "who": "joe",
+          "text": "That is Reuters' account. Brent has now been above one hundred dollars for several days running."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "S&P 500 7,819 AND NASDAQ 27,600 BOTH CLOSE AT RECORDS",
+      "headline": "Wall Street at records",
+      "category": "MARKETS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Tuesday's close",
+        "stats": [
+          {
+            "label": "S&P 500",
+            "value": "7,818.93 (+0.6%)"
+          },
+          {
+            "label": "Nasdaq",
+            "value": "27,599.79 (+0.4%)"
+          },
+          {
+            "label": "Dow",
+            "value": "+0.5%"
+          },
+          {
+            "label": "Russell 2000",
+            "value": "-0.6%"
+          }
+        ],
+        "bullets": [
+          "A.P.: S&P and Nasdaq both at records",
+          "Treasury yields eased",
+          "Fed minutes due today",
+          "Sept jobs: +29,000; unemployment 4.2%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/wall-street-stocks-dow-nasdaq-267ca73e15e09f7e8deb5f6076405f48"
+        },
+        {
+          "name": "Federal Reserve",
+          "url": "https://www.federalreserve.gov/monetarypolicy.htm"
+        },
+        {
+          "name": "BabyPips",
+          "url": "https://www.babypips.com/news/headline-us-jobs-report-september-2026-payrolls-miss-fed-hike-odds"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.P. reports the S and P five hundred rose six tenths of a percent to seven thousand eight hundred eighteen. The Nasdaq rose four tenths to twenty-seven thousand five hundred ninety-nine. Both are records."
+        },
+        {
+          "who": "joe",
+          "text": "The Dow gained five tenths. Small companies lagged: the Russell two thousand fell six tenths. Treasury yields eased."
+        },
+        {
+          "who": "vex",
+          "text": "The Federal Reserve's calendar lists minutes from its September meeting for today. None were posted when we checked."
+        },
+        {
+          "who": "joe",
+          "text": "One more number. Press reports say September payrolls rose just twenty-nine thousand, and unemployment is four point two percent. Traders see about a seventy-seven percent chance the Fed holds on October twenty-eighth. That is a market estimate, not a decision."
+        }
+      ]
+    },
+    {
+      "id": "paramount",
+      "kind": "story",
+      "strap": "SKYDANCE COMPLETES WARNER BROS. DISCOVERY ACQUISITION",
+      "headline": "Paramount and Warner Bros. Discovery",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "The merger closes",
+        "stats": [
+          {
+            "label": "Closed",
+            "value": "October 6"
+          },
+          {
+            "label": "Anduril shipyard plan",
+            "value": "$3.7B (reported)"
+          },
+          {
+            "label": "Lamb Weston Q1 sales",
+            "value": "$1.67B"
+          }
+        ],
+        "bullets": [
+          "Company release and SEC filing confirm close",
+          "Anduril: Baltimore-area submarine shipyard (A.P.)",
+          "Lamb Weston raises full-year profit outlook"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Paramount release",
+          "url": "https://paramount.gcs-web.com/news-releases/news-release-details/paramount-completes-acquisition-warner-bros-discovery-creating"
+        },
+        {
+          "name": "SEC filing",
+          "url": "https://www.sec.gov/Archives/edgar/data/1437107/000119312526415055/d200872d8k.htm"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/1cacc864be999e71ef8bcf9b15e21cda"
+        },
+        {
+          "name": "Lamb Weston",
+          "url": "https://investors.lambweston.com/news-releases/news-release-details/lamb-weston-announces-first-quarter-fiscal-2027-results-above"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Skydance has completed its acquisition of Warner Bros. Discovery. The company's release and an S.E.C. filing say it closed on October sixth."
+        },
+        {
+          "who": "vex",
+          "text": "Elsewhere in business, the A.P. reports Anduril plans a three point seven billion dollar investment in a Baltimore-area shipyard to build nuclear-submarine components. That is a report of plans."
+        },
+        {
+          "who": "joe",
+          "text": "And Lamb Weston, the french fry maker, reported first-quarter sales of one point six seven billion dollars, up one percent. It raised its full-year profit outlook."
+        }
+      ]
+    },
+    {
+      "id": "losangeles",
+      "kind": "story",
+      "strap": "TRUMP SAYS IRAN COULD 'TAKE OUT' L.A. AND SAN DIEGO",
+      "headline": "Rally remark draws objections",
+      "category": "NATIONAL",
+      "status": "claim",
+      "graphic": {
+        "kicker": "NATIONAL",
+        "title": "Trump's Los Angeles remark",
+        "bullets": [
+          "A.P.: said at a rally",
+          "White House: he was explaining how he prevents the threat",
+          "California officials objected",
+          "No rally video or transcript located"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/36a6e4f32e3e2e617b0cd463ce6da5cf"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/52a8262c33c8e28357634a3f06a5034c"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The A.P. reports President Trump said at a rally that Iran could take out Los Angeles and San Diego."
+        },
+        {
+          "who": "joe",
+          "text": "The White House later said he was explaining how he was preventing that threat. California officials objected."
+        },
+        {
+          "who": "vex",
+          "text": "We did not find the rally video or a transcript. The wording here rests on A.P. reporting."
+        }
+      ]
+    },
+    {
+      "id": "midterms",
+      "kind": "story",
+      "strap": "REPUBLICAN GROUPS HAVE ABOUT $1B FOR MIDTERMS",
+      "headline": "Midterm money",
+      "category": "POLITICS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "POLITICS",
+        "title": "Midterm money",
+        "stats": [
+          {
+            "label": "Republican groups, available",
+            "value": "about $1B"
+          },
+          {
+            "label": "MAGA Inc. cash, end of Aug",
+            "value": "$416M"
+          },
+          {
+            "label": "Texas Senate-aligned PAC, last month",
+            "value": "$83M+"
+          }
+        ],
+        "bullets": [
+          "A.P. report",
+          "Midterms are November third"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/midterms-campaign-money-republicans-democrats-a47f6b38c2490efae42eafdb63676fa9"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "The A.P. reports Republican groups have about one billion dollars available for the midterms."
+        },
+        {
+          "who": "vex",
+          "text": "It says MAGA Inc. reported four hundred sixteen million dollars in cash at the end of August. A Senate-aligned Texas committee spent more than eighty-three million last month."
+        },
+        {
+          "who": "joe",
+          "text": "The elections are November third."
+        }
+      ]
+    },
+    {
+      "id": "tech",
+      "kind": "story",
+      "strap": "GOOGLE-CONSTELLATION NUCLEAR DEAL; MISTRAL LARGE 4",
+      "headline": "Nuclear power and a new model",
+      "category": "TECH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "Power and models",
+        "stats": [
+          {
+            "label": "New nuclear capacity",
+            "value": "890 MW"
+          },
+          {
+            "label": "Supply agreement",
+            "value": "2,700 MW, 15 years"
+          },
+          {
+            "label": "Constellation investment",
+            "value": "over $4.3B"
+          },
+          {
+            "label": "Mistral Large 4",
+            "value": "1T params, 49B active"
+          }
+        ],
+        "bullets": [
+          "Google, Constellation: 20-year agreement, 11 plants",
+          "Mistral Large 4 in public preview",
+          "API: $0.68 in, $2.09 out per million tokens",
+          "Weights expected by month-end"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Constellation",
+          "url": "https://www.constellationenergy.com/news/2026/10/google-and-constellation-announce-landmark-agreement-to-bring-890-mw-of-new-nuclear-capacity-to-pjm-grid.html"
+        },
+        {
+          "name": "Mistral",
+          "url": "https://mistral.ai/news/mistral-large-4/"
+        },
+        {
+          "name": "Mistral docs",
+          "url": "https://docs.mistral.ai/models/mistral-large"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Google and Constellation announced a twenty-year agreement enabling eight hundred ninety megawatts of new nuclear capacity across eleven plants. There is also a fifteen-year supply deal for twenty-seven hundred megawatts."
+        },
+        {
+          "who": "joe",
+          "text": "Constellation says its investment will top four point three billion dollars. The power serves the Mid-Atlantic grid known as P.J.M."
+        },
+        {
+          "who": "vex",
+          "text": "In A.I., the French lab Mistral released Large 4 in public preview. It describes a one-trillion-parameter model, with forty-nine billion active at a time. Weights are expected by month's end."
+        },
+        {
+          "who": "joe",
+          "text": "Its listed price is sixty-eight cents per million input tokens and two dollars and nine cents for output."
+        }
+      ]
+    },
+    {
+      "id": "crypto",
+      "kind": "story",
+      "strap": "BITCOIN ~$83,800; FINCEN WITHDRAWS CRYPTO PROPOSALS",
+      "headline": "Crypto and regulation",
+      "category": "CRYPTO",
+      "status": "observed",
+      "graphic": {
+        "kicker": "CRYPTO",
+        "title": "Crypto desk",
+        "stats": [
+          {
+            "label": "Bitcoin",
+            "value": "$83,796"
+          },
+          {
+            "label": "24-hour change",
+            "value": "-2.67%"
+          }
+        ],
+        "bullets": [
+          "FinCEN withdraws crypto transaction proposal",
+          "FinCEN drops mixing special-measure proposal",
+          "Solana Foundation: open-source settlement tool",
+          "J.P. Morgan gave settlement input"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Binance.US",
+          "url": "https://www.binance.us/price/bitcoin"
+        },
+        {
+          "name": "Federal Register",
+          "url": "https://www.federalregister.gov/documents/2026/10/06/2026-20430/requirements-for-certain-transactions-involving-convertible-virtual-currency-or-digital-assets"
+        },
+        {
+          "name": "Federal Register",
+          "url": "https://www.federalregister.gov/documents/2026/10/06/2026-20429/proposal-of-special-measure-regarding-convertible-virtual-currency-mixing-as-a-class-of-transactions"
+        },
+        {
+          "name": "Solana Foundation",
+          "url": "https://solana.com/vi/news/solana-foundation-launches-solana-dv-p-an-atomic-settlement-program-built-for-financial-institutions"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Bitcoin showed about eighty-three thousand eight hundred dollars on Binance dot U.S., down two point seven percent in a day."
+        },
+        {
+          "who": "vex",
+          "text": "The Federal Register published two notices on October sixth. The Treasury's FinCEN withdrew its proposed crypto transaction requirements. It also withdrew a proposed special measure on crypto mixing."
+        },
+        {
+          "who": "joe",
+          "text": "And the Solana Foundation released an open-source tool for institutions to settle trades atomically. It says J.P. Morgan contributed settlement-practice input."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "L.A. HITS 100°F FOUR OCTOBER DAYS IN A ROW; STORM ISAIAS",
+      "headline": "Heat out West, a Gulf storm",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Weather",
+        "stats": [
+          {
+            "label": "Los Angeles",
+            "value": "4 days at 100°F+"
+          },
+          {
+            "label": "San Diego",
+            "value": "100°F; old record 97°F"
+          },
+          {
+            "label": "T.S. Isaias",
+            "value": "40 mph"
+          }
+        ],
+        "bullets": [
+          "San Diego broke its 1987 daily record",
+          "Isaias at 22.0°N, 94.1°W, moving ENE",
+          "No coastal warnings; strengthening forecast"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Los Angeles Times",
+          "url": "https://www.latimes.com/california/story/2026-10-06/its-october-to-remember-as-socal-continues-to-bake-heres-what-we-know"
+        },
+        {
+          "name": "National Hurricane Center",
+          "url": "https://www.nhc.noaa.gov/text/refresh/MIATCPAT4%2Bshtml/070852.shtml"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Los Angeles Times reports four straight October days at or above one hundred degrees in Los Angeles. San Diego hit one hundred, breaking a ninety-seven-degree record set in nineteen eighty-seven."
+        },
+        {
+          "who": "joe",
+          "text": "In the Gulf, the Hurricane Center's five a.m. advisory has Tropical Storm Isaias with forty mile an hour winds, moving east-northeast. No coastal warnings are up, but strengthening is forecast."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "PADRES 4, BREWERS 3; DODGERS 3, BRAVES 1 IN NLDS GAME 3",
+      "headline": "Baseball playoffs",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "NLDS Game 3",
+        "stats": [
+          {
+            "label": "Padres-Brewers",
+            "value": "4-3; Milwaukee leads 2-1"
+          },
+          {
+            "label": "Dodgers-Braves",
+            "value": "3-1"
+          }
+        ],
+        "bullets": [
+          "Padres' Mason Miller on paternity list",
+          "Today: A.L.D.S. Game 3s",
+          "Tigers-Mariners split 3-2, 3-2"
+        ]
+      },
+      "sources": [
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/news/padres-win-nlds-game-3-2026"
+        },
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/braves/video/dodgers-vs-braves-game-3-highlights"
+        },
+        {
+          "name": "ESPN",
+          "url": "https://www.espn.com/mlb/story/_/id/49639373/2026-mlb-postseason-schedule-playoffs-world-series"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "In the playoffs, the Padres beat the Brewers four to three in Game 3. Milwaukee still leads that series two games to one. San Diego's closer Mason Miller went on the paternity list."
+        },
+        {
+          "who": "vex",
+          "text": "The Dodgers beat the Braves three to one in their Game 3. Today brings the A.L.D.S. Game 3s. Tigers and Mariners have split the first two, three to two each."
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "kind": "story",
+      "strap": "CREW-12 UNDOCKS TODAY; SPLASHDOWN THURSDAY; WEBB IMAGE",
+      "headline": "Space",
+      "category": "SCIENCE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SCIENCE",
+        "title": "Space",
+        "stats": [
+          {
+            "label": "Crew-12 undock",
+            "value": "Oct 7, 8:05 a.m. EDT"
+          },
+          {
+            "label": "Splashdown",
+            "value": "Oct 8, 11:34 a.m. EDT"
+          }
+        ],
+        "bullets": [
+          "Schedule is subject to weather and readiness",
+          "Webb images NGC 7129 protostars and jets"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NASA",
+          "url": "https://www.nasa.gov/news-release/nasa-to-stream-spacex-crew-12-return-splashdown-live/"
+        },
+        {
+          "name": "NASA",
+          "url": "https://science.nasa.gov/missions/webb/nasas-webb-captures-commotion-from-nebulas-stellar-jets/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "NASA says SpaceX Crew Twelve was scheduled to undock from the station today at eight oh five a.m. Eastern. Splashdown is planned for Thursday at eleven thirty-four a.m., subject to weather and readiness."
+        },
+        {
+          "who": "joe",
+          "text": "And NASA's Webb telescope released a new image of the nebula N.G.C. seventy-one twenty-nine, showing young stars and the jets they blast out."
+        }
+      ]
+    },
+    {
+      "id": "culture",
+      "kind": "story",
+      "strap": "EMMYS MOVE TO PRIME VIDEO IN 2027; STAYS FREE TO WATCH",
+      "headline": "Emmys find a new home",
+      "category": "CULTURE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "CULTURE",
+        "title": "The Emmys on Prime Video",
+        "stats": [
+          {
+            "label": "Deal",
+            "value": "six years"
+          },
+          {
+            "label": "Starts",
+            "value": "2027"
+          }
+        ],
+        "bullets": [
+          "Ceremony stays free without a Prime subscription"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/emmys-awards-prime-video-amazon-television-academy-71d31be97a3e17d6289b6de36cd8f530"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "The Emmys are moving to Amazon Prime Video in twenty twenty-seven, under a six-year deal, the A.P. reports."
+        },
+        {
+          "who": "vex",
+          "text": "The ceremony is to remain free to watch without a Prime subscription."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": [],
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped."
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "HEARTBEAT NEWS",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 7",
+          "Sources under the screen",
+          "New show every day by noon"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Wednesday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by noon. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
