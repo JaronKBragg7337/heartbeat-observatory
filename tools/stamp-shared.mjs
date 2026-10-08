@@ -9,6 +9,7 @@
 //   editor     - /hb-editor.js (admin Edit button + phone fixes) opt out: <!-- hb:no-editor -->
 //   phone      - /bubble.js (the messages phone)               opt out: <!-- hb:no-phone -->  (pages with their own phone,
 //                e.g. Ashgrove's shell phone, are skipped automatically)
+//   icon       - the H-heartbeat tab icon (/brand)            opt out: <!-- hb:no-icon -->  (pages with their own icon keep it)
 import { readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,6 +22,8 @@ const PIECES = [
   { id: "analytics", has: /_vercel\/insights\/script\.js/, optOut: "hb:no-analytics", where: "head",
     tag: '<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>\n<script defer src="/_vercel/insights/script.js"></script>\n' },
   { id: "editor", has: /\/hb-editor\.js/, optOut: "hb:no-editor", where: "body", tag: '<script defer src="/hb-editor.js"></script>\n' },
+  { id: "icon", has: /rel=["'](?:shortcut )?icon/i, optOut: "hb:no-icon", where: "head",
+    tag: '<link rel="icon" type="image/svg+xml" href="/brand/h-heartbeat.svg">\n<link rel="icon" type="image/png" href="/brand/h-heartbeat.png">\n<link rel="apple-touch-icon" href="/brand/h-heartbeat.png">\n' },
   { id: "phone", has: /\/bubble\.js/, optOut: "hb:no-phone", where: "body", tag: '<script defer src="/bubble.js"></script>\n' },
 ];
 
