@@ -23,6 +23,11 @@ export const REPAIR_GIVERS = {
     cell: { id: 'foreman', who: 'Marta Voss, the foundry foreman (Ironclad)', where: 'Occator Works', frame: 'outpost', at: { x: -6, z: -84 }, reach: 4 },
     coupler: { id: 'greenhaven-rep', who: 'Doctor Roth (Greenhaven)', where: 'Occator Works', frame: 'outpost', at: { x: 30, z: 44 }, reach: 4 },
   },
+  // Earth: the Skyward Launch Complex (src/worlds/earth/layout.js; the two stand where cast.js puts them). Homeguard has nothing built, so its man stands in Skyward's yard.
+  earth: {
+    cell: { id: 'e-okafor', who: 'Okafor, the flight line crew chief (Skyward)', where: 'the Skyward Launch Complex', frame: 'outpost', at: { x: -50, z: 36 }, reach: 4 },
+    coupler: { id: 'e-pruitt', who: 'Pruitt, the Homeguard organiser', where: 'the Skyward Launch Complex', frame: 'outpost', at: { x: 48, z: -58 }, reach: 4 },
+  },
 };
 export const FIT_REACH = 20;
 

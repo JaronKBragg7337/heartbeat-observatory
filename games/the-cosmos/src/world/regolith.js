@@ -15,6 +15,36 @@ export function mod360(v) { return ((v % REGOLITH_PERIOD) + REGOLITH_PERIOD) % R
 /** The same wrap for a patch whose noise repeats over a longer period (the far tier of a moon: 3600 m). */
 export function modP(v, P) { return ((v % P) + P) % P; }
 
+// EARTH: the grass, scrub and sand of a Florida coast, in place of the moons' grey grit. The vertex colour already says what the ground is made of (green soil, pale sand);
+// this only breathes life into the green: wet and dry country (10 m cells), tussocks (2.5 m), bare sandy patches with ragged edges, and a close grain of blades. Every
+// octave's frequency times 360 m is a whole number, so the pattern repeats over 360 m with no seam, like the rest of regolith.js. Linear colours.
+const EARTH_NEAR = `{
+  float lumaE = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+  float rE = clamp(lumaE / 0.14, 0.6, 1.5);
+  float nearE = 1.0 - smoothstep(18.0, 110.0, length(vViewPosition));
+  float lushN = regN(vRegPos * 0.1, 36.0) * 0.65 + regN(vRegPos * 0.4, 144.0) * 0.35;
+  float clumpN = regN(vRegPos * 0.4, 144.0) * 0.6 + regN(vRegPos * 1.0, 360.0) * 0.4;
+  float bladeN = regN(vRegPos * 4.0, 1440.0) * 0.55 + regN(vRegPos * 12.0, 4320.0) * 0.45;
+  float grassy = smoothstep(0.02, 0.05, diffuseColor.g - diffuseColor.r + (bladeN - 0.5) * 0.09 + (clumpN - 0.5) * 0.06);      // the edge of the beach is ragged, not a straight line between two vertices
+  float bareN = smoothstep(0.62, 0.72, regN(vRegPos * 0.2, 72.0) * 0.6 + regN(vRegPos * 1.0, 360.0) * 0.25 + bladeN * 0.15);
+  vec3 lushC = vec3(0.085, 0.19, 0.035), dryC = vec3(0.27, 0.255, 0.085), darkC = vec3(0.035, 0.085, 0.03), sandC = vec3(0.52, 0.46, 0.31);
+  vec3 gE = mix(mix(darkC, lushC, smoothstep(0.30, 0.66, clumpN)), dryC, smoothstep(0.42, 0.78, lushN));
+  gE *= 0.58 + 0.84 * mix(0.5, bladeN, nearE);
+  gE = mix(gE, sandC * (0.88 + 0.24 * mix(0.5, bladeN, nearE)), bareN * 0.9);
+  diffuseColor.rgb = mix(diffuseColor.rgb, gE * rE, grassy * 0.95);
+}`;
+const EARTH_FAR = `{
+  float dF = length(vViewPosition), k30 = 1.0 - smoothstep(1500.0, 9000.0, dF), k15 = 1.0 - smoothstep(800.0, 5000.0, dF), k9 = 1.0 - smoothstep(300.0, 2500.0, dF);     // finer grain than a pixel is dropped (it shimmers)
+  float lumaF = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+  float lushF = regN(vRegPos / 120.0, 30.0) * 0.6 + mix(0.5, regN(vRegPos / 30.0, 120.0), k30) * 0.4;
+  float bareF = smoothstep(0.58, 0.72, regN(vRegPos / 60.0, 60.0) * 0.7 + mix(0.5, regN(vRegPos / 15.0, 240.0), k15) * 0.3);
+  float edgeF = regN(vRegPos / 120.0, 30.0) * 0.4 + mix(0.5, regN(vRegPos / 30.0, 120.0), k30) * 0.35 + mix(0.5, regN(vRegPos / 9.0, 400.0), k9) * 0.25;
+  float grassyF = smoothstep(0.02, 0.05, diffuseColor.g - diffuseColor.r + (edgeF - 0.5) * 0.2);       // ragged edges where sand meets grass (the triangles are hundreds of metres wide)
+  vec3 gF = mix(vec3(0.055, 0.125, 0.028), vec3(0.14, 0.145, 0.05), smoothstep(0.35, 0.8, lushF));
+  gF = mix(gF, vec3(0.34, 0.30, 0.20), bareF * 0.4);
+  diffuseColor.rgb = mix(diffuseColor.rgb, gF * clamp(lumaF / 0.14, 0.6, 1.25), grassyF * 0.92);
+}`;
+
 export function installRegolith(material, THREE, opts = {}) {
   const phobos = opts.kind === 'phobos';
   const across = opts.across || { x: 0, y: 1, z: 0 };
@@ -30,6 +60,7 @@ export function installRegolith(material, THREE, opts = {}) {
   // the large-scale mottling and lumpy relief instead (30-120 m dust drifts, rock-strewn and clean ground), repeating every 3600 m.
   const far = !!opts.far;
   const flat = !!opts.flat;
+  const earth = !!opts.earth;      // Earth's own ground (Florida grass, scrub and sand): see EARTH_NEAR / EARTH_FAR
   if (flat) uniforms.uRegUp = { value: new THREE.Vector3(0, 1, 0) };
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
@@ -79,6 +110,7 @@ vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) 
   float broadF = regN(vRegPos / 120.0, 30.0) * 0.5 + regN(vRegPos / 30.0, 120.0) * 0.3 + regN(vRegPos / 9.0, 400.0) * 0.2;
   float h = broadF; regHeight = h;
   diffuseColor.rgb *= clamp(0.84 + 0.42 * (h - 0.5), 0.62, 1.15);
+  ${earth ? EARTH_FAR : ''}
   ${phobos ? `float luma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luma), 0.38);
   diffuseColor.rgb *= clamp(1.0 + 0.035 * sin(dot(vRegPos, uGrooveAcross) * 0.013), 0.95, 1.05);` : ''}
@@ -88,6 +120,7 @@ vec3 regPerturb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection) 
   float pebble; float h = regField(vRegPos, near, pebble); regHeight = h;
   float shade = 0.8 + 0.3 * (h - 0.5) - 0.28 * pebble;       // dust lighter, grit and pebbles darker
   diffuseColor.rgb *= clamp(shade, 0.5, 1.15);
+  ${earth ? EARTH_NEAR : ''}
   ${phobos ? `// Phobos: pull the rust out, then streak ACROSS the grooves (they run with the long axis, so the lines follow them). Mean of the multiplier is 1, so the 1.22 colour lift still matches the shell.
   float luma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luma), 0.38);
@@ -108,7 +141,7 @@ ${flat ? `{
 }` : ''}
 normal = regPerturb(-vViewPosition, normal, vec2(dFdx(regHeight), dFdy(regHeight)) * uRegBump, faceDirection);`);
   };
-  material.customProgramCacheKey = () => (far ? (phobos ? 'regolith-v3-phobos-far' : 'regolith-v3-far') : opts.moon ? `regolith-v7-moon-${phobos ? 'p' : 'd'}${flat ? '-flat' : ''}` : phobos ? (flat ? 'regolith-v7-phobos-flat' : 'regolith-v5-phobos') : (opts.world ? 'regolith-v4-world' : 'regolith-v4'));
+  material.customProgramCacheKey = () => (earth ? `regolith-v1-earth-${far ? 'far' : 'near'}` : far ? (phobos ? 'regolith-v3-phobos-far' : 'regolith-v3-far') : opts.moon ? `regolith-v7-moon-${phobos ? 'p' : 'd'}${flat ? '-flat' : ''}` : phobos ? (flat ? 'regolith-v7-phobos-flat' : 'regolith-v5-phobos') : (opts.world ? 'regolith-v4-world' : 'regolith-v4'));
   material.needsUpdate = true;
   return uniforms;
 }

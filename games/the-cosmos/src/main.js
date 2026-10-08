@@ -1319,7 +1319,7 @@ const groundDetail = new GroundDetail({
   up: (p) => { const r = Math.hypot(p.x, p.y, p.z) || 1; return { x: p.x / r, y: p.y / r, z: p.z / r }; },
   thirdPerson: () => view.mode === 'third' && !ship.aboard,
   // pebbles stay off port concrete, pads (and the port's graded apron), and out of the ship
-  allow: (w) => { if (space.frameId !== 'mars') return true; if (portSite.weight(w.x, w.y, w.z) > 0) return false; if (world.remote && world.snapshot?.pads) { padField = padField || landingField(portSite, () => world.snapshot.pads); if (padField.weight(w.x, w.y, w.z) > 0) return false; } return true; },
+  allow: (w) => { if (space.frameId === 'earth') { const b = space.activeMoon?.body; return !!b && materialAt(b, w.x, w.y, w.z).id === 'MAT-EARTH-SAND'; } if (space.frameId !== 'mars') return true; if (portSite.weight(w.x, w.y, w.z) > 0) return false; if (world.remote && world.snapshot?.pads) { padField = padField || landingField(portSite, () => world.snapshot.pads); if (padField.weight(w.x, w.y, w.z) > 0) return false; } return true; },
   allowPrint: (w) => { if (space.frameId !== 'mars') return true; const l = portSite.toLocal(w); return !(l.y > 1.2 && Math.abs(l.x + 60) < 10 && Math.abs(l.z + 39) < 10); },   // not up in the tower's cab
   people: () => {
     const out = [], cam = walker.worldPos;

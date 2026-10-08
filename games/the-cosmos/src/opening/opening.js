@@ -21,6 +21,7 @@ import { openBoard } from './boardUI.js';
 import { boardData } from './worlds.js';
 import { OpeningLook, skyDome, SUN } from './look.js';
 import { LocalPatch, installTierDiscard } from '../world/planetMesh.js';
+import { installRegolith } from '../world/regolith.js';
 import { getBody } from '../world/bodies.js';
 import { EditedTerrain, installCoverDiscard } from '../world/excavation.js';
 import { Kit } from '../ship/shipKit.js';
@@ -249,10 +250,12 @@ export class Opening {
     m.walker.collisionActive = (x, y, z) => this.wreckTerrain.touchedAt(x, y, z);
     this.ground = new LocalPatch(m.body, { sizeM: 140, res: this.low ? 81 : 121, skirtM: 6 });
     this.ground.rebuild(m.origin.x, m.origin.y, m.origin.z);
+    if (this.worldId === 'earth') installRegolith(this.ground.mesh.material, THREE, { moon: true, bump: 0.22, pebble: 0.02, earth: true });      // Florida grass, scrub and sand, not Mars's dust (the same shader the world's own ground has)
     this.scene.add(this.ground.mesh); this.groundEntry = engine.track({ worldPos: this.ground.worldPos, object3d: this.ground.mesh });
     this.cover = { value: new THREE.Vector3() }; installCoverDiscard(this.ground.mesh.material, this.wreckTerrain.cover, this.cover, THREE);
     this.far = new LocalPatch(m.body, { sizeM: 10000, res: this.low ? 49 : 81, skirtM: 15 });
     this.far.rebuild(m.origin.x, m.origin.y, m.origin.z);
+    if (this.worldId === 'earth') installRegolith(this.far.mesh.material, THREE, { moon: true, bump: 0.22, pebble: 0.02, earth: true });
     installTierDiscard(this.far.mesh.material).update(this.far.worldPos, this.ground);
     this.scene.add(this.far.mesh); this.farEntry = engine.track({ worldPos: this.far.worldPos, object3d: this.far.mesh });
     // Ceres: grey crust and salt, not rust (the patches' vertex colours are Mars's: take the colour out of them in the shader)

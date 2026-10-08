@@ -57,7 +57,8 @@ export async function runOpeningChecks({check,section}){
   // ---- worlds and the board ---------------------------------------------------------------------------------------------
   {
     const open=openStartWorlds(),b=boardData({players:{ceres:3},online:{ceres:1},factions:{ironclad:2},season:{number:1,cause:'storm'}});
-    check('five start worlds: Mars and Ceres open, the Moon, Earth and Callisto shown honestly as coming',START_WORLDS.length===5&&open.join()==='mars,ceres'&&b.worlds.filter(w=>w.status==='coming').map(w=>w.id).join()==='moon,earth,callisto');
+    check('five start worlds: Mars, Ceres and Earth open, the Moon and Callisto shown honestly as coming',START_WORLDS.length===5&&open.join()==='mars,ceres,earth'&&b.worlds.filter(w=>w.status==='coming').map(w=>w.id).join()==='moon,callisto');
+    check('Earth is a start at the Skyward Launch Complex with Homeguard and Skyward, in dollars, and says Homeguard has nothing built',(()=>{const e=b.worlds.find(w=>w.id==='earth');return e.status==='open'&&e.factions.map(f=>f.id).join()==='homeguard,skyward'&&e.money==='dollars'&&/Skyward Launch Complex/.test(e.port)&&/nothing built/.test(e.port)&&Math.abs(e.facts.gravity-9.82)<.02&&validChoice('earth','skyward')&&validChoice('earth','homeguard')&&validChoice('earth',null)&&!validChoice('earth','fortis');})());
     check('every faction on the board is a faction of F0\'s style sheet, two on each world but Mars',START_WORLDS.every(w=>w.factions.every(hasFaction))&&START_WORLDS.filter(w=>w.id!=='mars').every(w=>w.factions.length===2)&&START_WORLDS.find(w=>w.id==='mars').factions.length===0);
     const ceres=b.worlds.find(w=>w.id==='ceres'),mars=b.worlds.find(w=>w.id==='mars');
     check('the board\'s numbers are the registries\': Ceres at Dawn\'s gravity and day, Mars at its own, live counts and goods prices',

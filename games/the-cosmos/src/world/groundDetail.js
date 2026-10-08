@@ -96,6 +96,8 @@ export class GroundDetail {
   }
 
   _place(c) {
+    const earth = this.frameId() === 'earth';
+    if (earth && c.ri === 0) return false;       // Earth: no loose stones on a Florida coast (they were the Moon's and Mars's black rocks); only shell grit on sand, below
     const ring = RINGS[c.ri], dir = this._dir(c.lat, c.lon), r0 = this.radiusM();
     const gr = this.walker.groundSampler ? this.walker.groundSampler(dir.x, dir.y, dir.z, r0) : null;
     if (typeof gr !== 'number' || !(gr > 0)) return false;
@@ -108,7 +110,8 @@ export class GroundDetail {
     const d = this.pd; d.pos.set([wp.x, wp.y, wp.z], slot * 3); d.size[slot] = size; d.sy[slot] = 0.7 + 0.35 * c.h4; this._q.toArray(d.q, slot * 4);
     // colour: a dark basalt-and-rust mix on Mars, greys on the moons (the frame says which), a few lighter ones
     const moon = this.frameId() !== 'mars', t = c.h3, light = c.h4 > 0.9 ? 1.35 : 1;
-    if (moon) this._col.setRGB((0.20 + 0.14 * t) * light, (0.19 + 0.13 * t) * light, (0.18 + 0.12 * t) * light, THREE.SRGBColorSpace);
+    if (earth) this._col.setRGB((0.62 + 0.22 * t) * light, (0.57 + 0.2 * t) * light, (0.45 + 0.17 * t) * light, THREE.SRGBColorSpace);      // shell grit: cream and pale tan
+    else if (moon) this._col.setRGB((0.20 + 0.14 * t) * light, (0.19 + 0.13 * t) * light, (0.18 + 0.12 * t) * light, THREE.SRGBColorSpace);
     else this._col.setRGB((0.17 + 0.18 * t) * light, (0.10 + 0.10 * t) * light, (0.07 + 0.07 * t) * light, THREE.SRGBColorSpace);
     this.pebbles.setColorAt(slot, this._col); if (this.pebbles.instanceColor) this.pebbles.instanceColor.needsUpdate = true;
     const s = { slot, key: c.key, ri: c.ri }; this.slots.set(c.key, s); this._writePebble(s); this.pebbleN = Math.max(this.pebbleN, slot + 1); this.pebbles.count = this.pebbleN;

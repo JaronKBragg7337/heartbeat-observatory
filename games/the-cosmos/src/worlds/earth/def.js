@@ -66,6 +66,13 @@ function albedoFn(q, k0, red0, lo, mid, out) {
   out.red = bio === 1 ? 0.5 : -0.12 * lo;
 }
 
+/** The ground is named for what you stand on, not 'regolith' (that is a word for the Moon and Mars): grass and soil on top, packed sand and shell rock under it; the sand slot is 'Sand'. */
+function earthNames(m) {
+  m.regolith.name = 'Grass and soil'; m.rubble.name = 'Packed sand and shell rock';
+  m.rubble.note = 'Cemented shell and sand, the limestone-like rock under the Florida coast.';
+  return m;
+}
+
 export default {
   id: 'earth', name: 'Earth', designation: 'SOL-3', kind: 'planet', order: 50, worldIndex: 71,
   navName: 'Earth: Skyward Launch Complex',
@@ -101,14 +108,14 @@ export default {
   ascentM: 9000, tierAltM: 60_000,
 
   materials: {
-    ...groundMaterials({ key: 'earth', name: 'Earth', regolithColor: 0x607c3a, rubbleColor: 0xa89c7e, regolithKgM3: 1300, rubbleKgM3: 2000,
-      note: 'Florida scrub: thin sandy soil under tough grass and palmetto.' }),
+    ...earthNames(groundMaterials({ key: 'earth', name: 'Earth', regolithColor: 0x607c3a, rubbleColor: 0xa89c7e, regolithKgM3: 1300, rubbleKgM3: 2000,
+      note: 'Florida scrub: thin sandy soil under tough grass and palmetto.' })),
     // the `ice` slot is Earth's sand (see groundAt): a beach, a shelf, a desert
     ice: extraMaterial('MAT-EARTH-SAND', 'Sand', 1600, 0.18, 0xdccfa6, 'Pale quartz and shell sand: the beach, the sea floor of the shelf and the deserts.'),
   },
   look: { k: [1, 0.1, 0.06], red: [0, 0.15, 0.1] },
   albedoFn, groundAt,
-  render: { farColor: 1.05, tierColor: 1.0, roughness: 0.93, regolith: { moon: true, bump: 0.22, pebble: 0.05 }, farRegolith: { kind: 'moon', bump: 0.3 } },
+  render: { farColor: 1.05, tierColor: 1.0, roughness: 0.93, regolith: { moon: true, bump: 0.22, pebble: 0.02, earth: true }, farRegolith: { kind: 'moon', bump: 0.3, earth: true } },
   sources: [
     { field: 'radius, mass, gravity, day, tilt', url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html', verified: 'table', note: 'NASA Earth Fact Sheet values typed in (mean radius 6371.0 km, mass 5.9722e24 kg, sidereal rotation 23.9345 h, obliquity 23.44 deg): re-confirm by hand (docs/PROVENANCE.md)' },
     { field: 'orbit', url: 'https://ssd.jpl.nasa.gov/planets/approx_pos.html', verified: 'table', note: 'JPL approximate elements (the Earth-Moon barycentre), _kit/solar.js' },

@@ -99,6 +99,10 @@
   "voice": "zuri",
   "text": "We are under the neutral line. Holding here. Say the word and we go home."
  },
+ "01137c144bc4c9": {
+  "voice": "isaiah",
+  "text": "Flight line. If you need something fixed, you are in the right place. If you need something launched, that is a longer conversation."
+ },
  "0118accad2d7f6": {
   "voice": "w-alice",
   "text": "Oh, you are here to talk to me. Of course you are."
@@ -439,6 +443,14 @@
   "voice": "zuri",
   "text": "Aye. A wander. I will call out what I see."
  },
+ "0452239c090948": {
+  "voice": "isaiah",
+  "text": "The Skyward Launch Complex. A pad, a tower, an assembly hall and a tank farm. The Atlantic is that way, about seven hundred metres. Everything here exists to get things off Earth, because Earth does not let go easily."
+ },
+ "0453a8eb6bbe4f": {
+  "voice": "walter",
+  "text": "This is the Skyward complex. Homeguard has nothing built here yet. Not a hall, not a wall. Remember that, for when we do."
+ },
  "0478a5f7a8507b": {
   "voice": "ada",
   "text": "New heading. Let us see what is over there."
@@ -647,6 +659,10 @@
   "voice": "w-river",
   "text": "Oh, you want to know. I fly people and parcels where they asked to go, usually near the time they asked. Not that anyone ever says thank you."
  },
+ "06bad6a52d4d64": {
+  "voice": "isaiah",
+  "text": "Okafor, Skyward. The Homeguard man is lovely and so is his plan. We have a launch pad. It is a very good pad."
+ },
  "06bd93a0512c4f": {
   "voice": "w-lewis",
   "text": "I am going to call this a controlled crash. Heads down, folks. It will be very controlled."
@@ -698,6 +714,10 @@
  "073dd1790cad8a": {
   "voice": "ada",
   "text": "Slowing for the drop-out. Time compression steps down from here."
+ },
+ "073f4e72343e76": {
+  "voice": "walter",
+  "text": "Pruitt, Homeguard. I am all of Homeguard on this coast. Please do not count the chairs."
  },
  "073fff72145498": {
   "voice": "ada",
@@ -799,6 +819,10 @@
   "voice": "w-puck",
   "text": "If it drifts, it is ours. If it is nailed down, it was ours yesterday. We call that a recycling programme."
  },
+ "0863484cf72f11": {
+  "voice": "walter",
+  "text": "Climb in. The only thing standing on this coast is the Skyward complex, so that is where we are going. I borrowed the truck. Do not tell them."
+ },
  "08a00d08e1808a": {
   "voice": "zuri",
   "text": "Raider down. Bounty 25 credits."
@@ -839,6 +863,10 @@
   "voice": "zuri",
   "text": "Course cancelled. Braking to a stop."
  },
+ "09578630693eca": {
+  "voice": "w-bella",
+  "text": "Kestrel to Earth. Boarding now. Seats are unassigned, the safety briefings are the same, and yes, the planet really is that heavy. Please sign here, here, and here."
+ },
  "0959ba040686bd": {
   "voice": "ada",
   "text": "Arrived over Ceres: Occator Works. Easing level."
@@ -870,6 +898,10 @@
  "09c4b7237d7e26": {
   "voice": "zuri",
   "text": "Course set for Pad 03 (courier)."
+ },
+ "09d324f9d39201": {
+  "voice": "ship",
+  "text": "Survival crate open. One hand tool, one day of air and water, one beacon. Beacon armed. Help is on the way, and for once it is not far."
  },
  "09d7600d4a96d9": {
   "voice": "ship",
@@ -990,6 +1022,10 @@
  "0b307c171b1435": {
   "voice": "w-jessica",
   "text": "Supply desk. Spares and field kits are on the racks."
+ },
+ "0b3ecadf6381cd": {
+  "voice": "isaiah",
+  "text": "Okafor, flight line, Skyward. We saw you on radar. You were not on the schedule."
  },
  "0b3f77bfab70bb": {
   "voice": "sunita",
@@ -1175,6 +1211,10 @@
   "voice": "zuri",
   "text": "No contacts on the scope. Waiting."
  },
+ "0d7dada0f5f0e0": {
+  "voice": "walter",
+  "text": "The rocket people want everyone off the planet. Someone should leave, I suppose. Not everyone."
+ },
  "0d868b3ce926d6": {
   "voice": "zuri",
   "text": "Off the record, the food is the best part. On the record, I have no comment on the food."
@@ -1351,6 +1391,10 @@
   "voice": "w-bella",
   "text": "The terminal is behind me. Fortis recruits at the red booth, Technos Prime at the white one, and the first footprints are a kilometre south west. Please do not touch the footprints. They are older than your country."
  },
+ "0f524cbc41a98d": {
+  "voice": "ship",
+  "text": "Passenger line settlement: 10,000 Mars marks, 2,500 credits. Your lifeboat is on its pad and drained. It needs a power cell from Okafor, the flight line crew chief (Skyward) and a fuel coupler from Pruitt, the Homeguard organiser. Three hundred marks each."
+ },
  "0f5861c64c124b": {
   "voice": "w-lewis",
   "text": "Unidentified ships closing fast. They are not answering the radio. That is rude."
@@ -1439,6 +1483,10 @@
   "voice": "w-lewis",
   "text": "Since you asked. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. That is the exciting part, I am afraid."
  },
+ "101e721889addc": {
+  "voice": "isaiah",
+  "text": "The Homeguard people will tell you to stay and rebuild. Fine. Someone should. But someone also has to go."
+ },
  "1023e2977eee9e": {
   "voice": "ada",
   "text": "We are at Deimos already."
@@ -1510,6 +1558,10 @@
  "111c692d62f599": {
   "voice": "zuri",
   "text": "New heading. Let us see what is over there."
+ },
+ "111ea7c0a4e491": {
+  "voice": "walter",
+  "text": "To stay, and to rebuild. Sea walls, fields, schools, and a great deal of patience. We have nothing built yet, so I am standing in someone else's yard. They are very polite about it."
  },
  "1121f756c56d68": {
   "voice": "ada",
@@ -2203,6 +2255,10 @@
   "voice": "w-fenrir",
   "text": "Fine. I set the margins. If something costs too much, that was me, and I meant it. Now go away."
  },
+ "19511274a05951": {
+  "voice": "isaiah",
+  "text": "Skyward runs the launch sites. We take anyone who wants to learn what it costs to leave this planet. It costs a great deal. We keep the receipts."
+ },
  "1971540b8386c8": {
   "voice": "walter",
   "text": "Takes the belly turret. Slower to find a target than the others, steady once he has one."
@@ -2339,6 +2395,10 @@
   "voice": "ada",
   "text": "Mars airspace is neutral: nothing here to shoot. Climbing to 1750 metres to find the raiders."
  },
+ "1af082b309287b": {
+  "voice": "walter",
+  "text": "Pruitt, Homeguard. Before you sign with the rocket people: there is a whole planet down here to rebuild, and nobody else is offering to stay."
+ },
  "1b0285e29a82d4": {
   "voice": "zuri",
   "text": "Technician Maren, Technos Prime. Are you hurt? Please say no. We only have the one blanket."
@@ -2447,6 +2507,10 @@
   "voice": "w-lily",
   "text": "Filtered ice melt. Every seal checked twice. Dust only has to win once."
  },
+ "1c705e86bb05fa": {
+  "voice": "isaiah",
+  "text": "Climb in. The seat is hot from the sun. It is a short drive to the complex, and we will not stop for alligators."
+ },
  "1c7e64b2319c17": {
   "voice": "w-fenrir",
   "text": "Fine. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. Now go away."
@@ -2454,6 +2518,10 @@
  "1c92f1b52507e0": {
   "voice": "zuri",
   "text": "Hull's at 33 percent. Breaking off, going down to neutral airspace."
+ },
+ "1c9a9457b2c398": {
+  "voice": "w-lewis",
+  "text": "That is a thunderstorm below us. Florida, in the afternoon. It does this on purpose."
  },
  "1c9b7757d1b745": {
   "voice": "walter",
@@ -2647,9 +2715,17 @@
   "voice": "zuri",
   "text": "Course set for Valles Marineris."
  },
+ "1e702d9789b1df": {
+  "voice": "walter",
+  "text": "Pruitt, Homeguard. We saw you come down. I would say welcome home, but there is not much home built yet."
+ },
  "1e8bf4315bb9ec": {
   "voice": "zuri",
   "text": "Course set for Pad 02 (shuttle)."
+ },
+ "1ea531027c8ce7": {
+  "voice": "walter",
+  "text": "Homeguard wants to stay and rebuild. Sea walls, fields, schools, the long slow work. We have the plans and the people. We do not have a roof yet. You could raise the first one."
  },
  "1eb5dbe16b58fd": {
   "voice": "zuri",
@@ -2735,6 +2811,10 @@
   "voice": "zuri",
   "text": "Down at Over the control tower."
  },
+ "1fa717e22f643a": {
+  "voice": "ship",
+  "text": "Outside air is warm, wet and full of mosquitoes. Gravity is nine point eight two metres per second squared. Everything weighs exactly what you remember."
+ },
  "1fcc8008cda3b5": {
   "voice": "ship",
   "text": "Visibility is poor. The weather won this round."
@@ -2746,6 +2826,10 @@
  "1fd539dae1e4e5": {
   "voice": "ship",
   "text": "Outside there is nothing. Gravity is point one six of Earth, so every step is a small flight. Your suit timer started when the hull opened. Please do not sneeze in the helmet."
+ },
+ "1fdff5e1981bab": {
+  "voice": "isaiah",
+  "text": "That is the Skyward Launch Complex. Range Control is the long building. The tall one is the tower. Do not touch the tower."
  },
  "1ff828ee95024a": {
   "voice": "ship",

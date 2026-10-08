@@ -90,7 +90,8 @@ export function ceresRelative(t, radiusM, finalAltM) {
   const a = smooth(30, KESTREL_PHASE.crash, t);
   const u0 = [0.55, 0.28, -0.78], u1 = [0.95, -0.3, -0.12];
   let v = u0.map((c, i) => c + (u1[i] - c) * a); const n = Math.hypot(...v); v = v.map((c) => c / n);
-  if (!kestrelPath._ceresD) kestrelPath._ceresD = pchip([[24, Math.log(9.5e8)], [34, Math.log(2.4e8)], [FAR_FLIGHT_COMPRESSED[1], Math.log(7.0e6)], [KESTREL_PHASE.crash, Math.log(radiusM + finalAltM)]], undefined);
+  if (kestrelPath._ceresR !== radiusM) { kestrelPath._ceresR = radiusM; kestrelPath._ceresD = null; }
+  if (!kestrelPath._ceresD) kestrelPath._ceresD = pchip([[24, Math.log(9.5e8)], [34, Math.log(2.4e8)], [FAR_FLIGHT_COMPRESSED[1], Math.log(radiusM + 6.53e6)], [KESTREL_PHASE.crash, Math.log(radiusM + finalAltM)]], undefined);
   const dist = Math.exp(kestrelPath._ceresD(t));
   return { dir: { x: v[0], y: v[1], z: v[2] }, dist };
 }

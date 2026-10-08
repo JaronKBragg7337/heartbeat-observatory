@@ -121,6 +121,21 @@ export async function run({ check, section }) {
     check('from Earth a course up to Mars orbit climbs out through the air and leaves her frame', !r2.err && r2.frame === 'mars' && !r2.tripLeft, JSON.stringify(r2));
     check('the world state, saved with the Earth trip behind it, is still small (under 60 kB)', JSON.stringify(world.publicState(p.id)).length < 60_000);
   }
+
+  section('WD-EARTH round 2: the start world, the people, the ground is named for what it is');
+  {
+    const START = await src('opening/worlds.js'), LIFE = await src('opening/lifeboat.js'), CAST = await src('worlds/earth/cast.js'), DLG = await src('opening/dialogue.js');
+    const e = START.startWorld('earth');
+    check('Earth is an open start world with Homeguard and Skyward, in dollars, landing at the Skyward Launch Complex', e.status === 'open' && e.factions.join() === 'homeguard,skyward' && e.money === 'dollars' && /Skyward Launch Complex/.test(e.port) && START.openStartWorlds().includes('earth'));
+    check('the start says plainly that Homeguard has nothing built yet', /nothing built/.test(e.port) && START.goodsLines('earth').some((l) => /Homeguard has nothing built/.test(l)));
+    const ids = CAST.EARTH_CAST.map((p) => p.id), cell = LIFE.giverFor('earth', 'cell'), coupler = LIFE.giverFor('earth', 'coupler');
+    check('the two lifeboat parts come from two people who stand at the complex, one from each side (the Skyward crew chief and the Homeguard organiser)', cell.id !== coupler.id && ids.includes(cell.id) && ids.includes(coupler.id) && CAST.EARTH_CAST.find((p) => p.id === cell.id).faction === 'skyward' && CAST.EARTH_CAST.find((p) => p.id === coupler.id).faction === 'homeguard');
+    const inBox = (x, z, m) => L.layoutOf().BOXES.some((bx) => x > bx.x0 - m && x < bx.x1 + m && z > bx.z0 - m && z < bx.z1 + m), free = CAST.EARTH_CAST.every((p) => !inBox(p.x, p.z, 0.8)) && [cell, coupler].every((g) => !inBox(g.at.x, g.at.z, 0.8));
+    check('nobody stands inside a wall, and each giver spot is within reach of the person', free && CAST.EARTH_CAST.every((p) => { const g = [cell, coupler].find((x) => x.id === p.id); return Math.hypot(g.at.x - p.x, g.at.z - p.z) <= 3.5; }));
+    check('the Earth opening words exist, are in the registry of worlds, and the gate line is its own', DLG.WORLD_DIALOGUE.earth && DLG.GATE_LINES.earth && /Earth/.test(DLG.GATE_LINES.earth) && Object.keys(DLG.WORLD_DIALOGUE.earth.drivers).sort().join() === 'homeguard,skyward' && /nothing built/.test(DLG.WORLD_DIALOGUE.earth.drivers.homeguard.closing));
+    check('the ground is named for what you stand on: grass and soil, packed sand and shell rock, sand; the word regolith is not used', DEF.materials.regolith.name === 'Grass and soil' && DEF.materials.rubble.name === 'Packed sand and shell rock' && DEF.materials.ice.name === 'Sand' && !Object.values(DEF.materials).some((m) => /regolith/i.test(m.name)));
+    check('the Earth ground shader is its own (grass, scrub, sand) and the pebbles are nearly off', DEF.render.regolith.earth === true && DEF.render.farRegolith.earth === true && DEF.render.regolith.pebble <= 0.05);
+  }
 }
 
 if (process.argv[1] && process.argv[1].endsWith('pkg-earth.mjs')) {

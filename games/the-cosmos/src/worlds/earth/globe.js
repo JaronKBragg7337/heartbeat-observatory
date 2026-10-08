@@ -45,7 +45,7 @@ export function buildGlobe({ engine, world, tier, space }) {
 
   // ---- the globe
   const gmat = new THREE.ShaderMaterial({
-    uniforms: { uMap: { value: null }, uSun: sunU, uHaze: hazeCol, uHazeK: hazeK },
+    uniforms: { uMap: { value: null }, uSun: sunU, uHaze: hazeCol, uHazeK: hazeK, uDetail: { value: 0 } },
     vertexShader: `${LOG_VS}
 varying vec3 vN; varying vec3 vNV; varying vec2 vUv; varying vec3 vV;
 void main(){ vN = normal; vNV = normalize(normalMatrix * normal); vUv = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = -mv.xyz; gl_Position = projectionMatrix * mv;
@@ -54,19 +54,42 @@ void main(){ vN = normal; vNV = normalize(normalMatrix * normal); vUv = uv; vec4
     fragmentShader: `precision highp float;
 #include <common>
 #include <logdepthbuf_pars_fragment>
-uniform sampler2D uMap; uniform vec3 uSun; uniform vec3 uHaze; uniform float uHazeK;
+${NOISE}
+uniform sampler2D uMap; uniform vec3 uSun; uniform vec3 uHaze; uniform float uHazeK; uniform float uDetail;
 varying vec3 vN; varying vec3 vNV; varying vec2 vUv; varying vec3 vV;
 void main(){
 #include <logdepthbuf_fragment>
-  vec3 c = texture2D(uMap, vUv).rgb;
+  vec3 c0 = texture2D(uMap, vUv).rgb, c = c0;
+  float sea = smoothstep(0.30, 0.0, c0.r - c0.b + 0.05);                       // the dark blue part of the picture (soft: used for the Sun's glint)
+  // ---- DETAIL. The picture is 2048 wide: one texel is 20 km, so from 400 km up it is a soft blur. Where a pixel covers less than a texel, the coast is cut sharp along the
+  // picture's own land/sea edge (jittered by noise, so it is ragged like a real one), the blue that bled onto the land is taken out, and the land gets grain at 18 km, 4 km and 0.9 km.
+  // Nothing here is real data: it only makes the real picture read sharper. It fades out with the pixel's footprint, and is off above 3000 km and below 20 km (the ground tiers draw there).
+  float foot = 6371000.0 * length(fwidth(vN));                                   // metres one pixel covers
+  if (uDetail > 0.5 && foot < 26000.0) {
+    vec3 P = normalize(vN) * 6371.0;                                            // km
+    float w1 = 1.0 - smoothstep(4500.0, 12600.0, foot), w2 = 1.0 - smoothstep(1000.0, 2800.0, foot), w3 = 1.0 - smoothstep(225.0, 630.0, foot);
+    float n1 = fb(P / 18.0), n2 = w2 > 0.0 ? fb(P / 4.0) : 0.5, n3 = w3 > 0.0 ? fb(P / 0.9) : 0.5;
+    vec3 s0 = pow(c0, vec3(0.4545));                                            // back to the picture's own (sRGB) numbers
+    float share = s0.b / (s0.r + s0.g + s0.b + 0.03);                           // how blue: deep sea 0.6 to 0.75, shallows 0.5, a blurred coast 0.3 to 0.5, land 0.15 to 0.33
+    float edge = 0.40 + (n1 - 0.5) * 0.20 * w1 + (n2 - 0.5) * 0.12 * w2 + (n3 - 0.5) * 0.08 * w3;
+    float ew = 0.02 + 0.06 * smoothstep(1500.0, 12000.0, foot);
+    float isSea = smoothstep(edge - ew, edge + ew, share);
+    vec3 target = mix(vec3(0.020, 0.030, 0.011), vec3(0.060, 0.050, 0.028), smoothstep(0.35, 0.65, n1));      // linear: Florida green, and a drier brown (the picture's own land is about this dark)
+    vec3 landC = mix(c0, target * (0.8 + 1.2 * dot(c0, vec3(0.33))), smoothstep(0.24, 0.42, share));
+    landC *= 1.0 + (n1 - 0.5) * 0.30 * w1 + (n2 - 0.5) * 0.50 * w2 + (n3 - 0.5) * 0.40 * w3;
+    landC.r *= 1.0 + (n2 - 0.5) * 0.18 * w2;
+    vec3 seaC = vec3(min(c0.r, c0.b * 0.6), c0.g, c0.b) * (1.0 + (n2 - 0.5) * 0.10 * w2);
+    float m = 1.0 - smoothstep(14000.0, 26000.0, foot);
+    c = mix(c0, mix(landC, seaC, isSea), m);
+    sea = mix(sea, isSea, m);
+  }
   float d = dot(normalize(vN), normalize(uSun));
   float day = smoothstep(-0.06, 0.22, d);
   vec3 lit = c * (0.05 + 1.35 * max(d, 0.0));
   float ndv = clamp(dot(normalize(vNV), normalize(vV)), 0.0, 1.0);
   float rim = pow(1.0 - ndv, 3.0);
   lit += vec3(0.28, 0.52, 1.0) * rim * 0.55 * smoothstep(-0.2, 0.4, d);
-  // a glint of the Sun off the sea (the sea is the dark, blue part of the picture)
-  float sea = smoothstep(0.30, 0.0, c.r - c.b + 0.05);
+  // a glint of the Sun off the sea
   vec3 refl = reflect(-normalize(vV), normalize(vNV));
   lit += vec3(1.0, 0.95, 0.85) * sea * pow(max(dot(refl, normalize((viewMatrix * vec4(uSun, 0.0)).xyz)), 0.0), 60.0) * 0.5;
   vec3 night = c * c * vec3(0.012, 0.016, 0.03);
@@ -84,7 +107,7 @@ void main(){
   globe.scale.setScalar((R - 150) / R);
   scene.add(globe); objs.push(globe);
   const gEntry = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: globe, frame: world.frame });
-  new THREE.TextureLoader().load(new URL('../../../assets/earth/earth-2k.jpg', import.meta.url).href, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping; gmat.uniforms.uMap.value = t; gmat.needsUpdate = true; }, undefined, () => {});
+  new THREE.TextureLoader().load(new URL('../../../assets/earth/earth-2k.jpg', import.meta.url).href, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; t.wrapS = THREE.RepeatWrapping; gmat.uniforms.uMap.value = t; gmat.needsUpdate = true; }, undefined, () => {});
 
   // ---- the rim of air, and the cloud
   const amat = new THREE.ShaderMaterial({
@@ -239,6 +262,7 @@ void main(){
       dk.uOff.value.set(ox, oz);
       cmat.uniforms.uT.value = t; dk.uT.value = t;
       fill.intensity = (space && space.frameId === 'earth') ? 0.55 * blend * Math.max(0, Math.min(1, st.day)) : 0;
+      gmat.uniforms.uDetail.value = alt > 15_000 && alt < 3_500_000 ? 1 : 0;
       clouds.visible = alt > 9_000;
       atmo.visible = alt > 30_000;
       deck.material.uniforms.uK.value = dk.uK.value;

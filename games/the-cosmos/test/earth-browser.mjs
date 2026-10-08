@@ -56,6 +56,10 @@ try {
     'ground-west-vab': () => page.evaluate(() => __eye(-60, 40, 285, 9)),
     'ground-toward-tower': () => page.evaluate(() => __eye(60, -88, 55, 10)),
     'ground-pad-view': () => page.evaluate(() => __eye(-40, 52, 40, 4)),
+    // the ground itself: grass and scrub south of the complex, wide and up close, and the beach sand
+    'ground-grass-wide': () => page.evaluate(() => __eye(-150, 235, 200, 2)),
+    'ground-grass-close': () => page.evaluate(() => __eye(-150, 235, 200, -38)),
+    'ground-sand-close': () => page.evaluate(() => __eye(655, -10, 95, -34)),
     // looking out to sea from the shore, a kilometre east of the pad
     'shore-looking-out': () => page.evaluate(() => __eye(690, -10, 95, 1)),
     'shore-along-coast': () => page.evaluate(() => __eye(660, 0, 350, 3)),

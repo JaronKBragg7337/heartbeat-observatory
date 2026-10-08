@@ -71,6 +71,7 @@ export function openingBody(id = 'solo', gravity = 0, world = 'mars') {
     body.materialField = (x,y,z) => { const p=toLocal({x,y,z}), depth=height(p.x,p.z)-p.y;
       return resolve(depth > (def.regolithDepthM ?? 12) ? def.materials.rubble : def.materials.regolith); };
     body.render = def.render; body.groundWorld = world;
+    if (world === 'earth') body.kind = 'moon';       // Earth's soil is coloured by its own material (green scrub), not through Mars's rust and basalt ramp (planetMesh shadeVertex)
   }
   return { body, origin, frame, toWorld, toLocal, height, port };
 }

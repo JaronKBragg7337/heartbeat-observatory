@@ -5,7 +5,7 @@
 // WHAT IS LIVE: the numbers come from the registries as they stand NOW. A built world's size, gravity and day come from its def (the same
 // def the ground is made from); its distance from Mars is where the ephemeris puts it at this moment; a faction's name, line, colours and
 // look come from F0's style sheet (src/factions/); the goods prices come from the economy tables; the player and member counts are the
-// shared world's own (passed in by whoever asks). Worlds not built yet (the Moon, Earth, Callisto) show their real published facts
+// shared world's own (passed in by whoever asks). Worlds not open yet (the Moon, Callisto) show their real published facts
 // and say plainly that nobody can land there yet: `status: 'coming'`. Their factions are on the board, so nobody wonders where they went.
 // ============================================================================
 
@@ -33,9 +33,9 @@ export const START_WORLDS = [
   { id: 'ceres', status: 'open', factions: ['ironclad', 'greenhaven'], port: 'Occator Works (Kerwan Landing is next)', money: 'shares', startPlace: 'Occator Works, on the bright salt flats',
     line: 'The Belt\'s capital: the miners work the bright salt flats of Occator crater, the farmers grow under glass in Kerwan basin. They need each other and say otherwise.',
     good: 'Water ice, fuel, metal, hulls, people who fix things.', lacks: 'Electronics, security, long-range comms.' },
-  { id: 'earth', status: 'coming', factions: ['homeguard', 'skyward'], port: 'A launch site on the continent you choose', money: 'dollars', nearest: 'mars',
-    line: 'Real continents and oceans, no real cities: you build where you like. Homeguard wants to stay and rebuild; Skyward wants everyone off.',
-    good: 'People, food, water, everything in bulk.', lacks: 'Easy launches: the gravity well is deep.',
+  { id: 'earth', status: 'open', factions: ['homeguard', 'skyward'], port: 'Skyward Launch Complex (Homeguard has nothing built yet)', money: 'dollars', startPlace: 'Skyward Launch Complex, on the Florida coast at Cape Canaveral',
+    line: 'Real continents and oceans, no real cities: you build where you like. Homeguard wants to stay and rebuild; Skyward wants everyone off. Today the only thing standing is Skyward\'s launch complex on the Florida coast.',
+    good: 'People, food, water, everything in bulk.', lacks: 'Easy launches: the gravity well is deep. Nothing of Homeguard\'s is built yet.',
     facts: { radiusKm: 6371.0, gravity: 9.80665, dayH: 23.934, note: 'real, from the published fact sheets' } },
   { id: 'callisto', status: 'coming', factions: ['mystara', 'unbound'], port: 'Valhalla camp', money: 'credits', nearest: 'mars',
     line: 'The one big Jupiter moon outside the worst radiation. Mystara\'s instruments stand in the Valhalla basin; the second seat is open to whoever raises a building first.',
@@ -100,6 +100,7 @@ export function distanceFromMarsMkm(id) {
 export function goodsLines(id) {
   if (id === 'mars') return [`Water ${GOODS.water.buy} marks, food ${GOODS.food.buy} marks, parts ${GOODS.parts.buy} marks a unit at the Exchange`, `The depot pays ${12} marks a tonne for regolith`];
   if (id === 'ceres') return [`Occator ore ${MATTER['ceres-ore'].works} marks a tonne at the foundry, ${MATTER['ceres-ore'].marineris} at the Marineris depot`, `The supply desk pays ${SUPPLY_PAY.water} for water and ${SUPPLY_PAY.parts} for parts, about twice Mars`];
+  if (id === 'earth') return ['The complex has no shop and no trader yet: nothing is bought or sold on Earth today', 'Homeguard has nothing built: its first town is the next job on this world'];
   return [];
 }
 

@@ -12,8 +12,8 @@ import { buildSite } from './wreckSite.js';
 export const SUN = new THREE.Vector3(-100, 19, 16);
 const SUN_DIR = SUN.clone().normalize();
 
-export function skyDome(low, sunDir, air = 1) {
-  const uniforms = { sunDir: { value: sunDir.clone() }, time: { value: 0 }, flash: { value: 0 }, storm: { value: .3 }, air: { value: air } };
+export function skyDome(low, sunDir, air = 1, earth = 0) {
+  const uniforms = { sunDir: { value: sunDir.clone() }, time: { value: 0 }, flash: { value: 0 }, storm: { value: .3 }, air: { value: air }, earth: { value: earth } };
   const mat = new THREE.ShaderMaterial({
     uniforms, side: THREE.BackSide, depthWrite: false, fog: false,
     vertexShader: `varying vec3 vDir;
@@ -22,7 +22,7 @@ export function skyDome(low, sunDir, air = 1) {
       void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
       #include <logdepthbuf_vertex>
       }`,
-    fragmentShader: `uniform vec3 sunDir;uniform float time;uniform float flash;uniform float storm;uniform float air;varying vec3 vDir;
+    fragmentShader: `uniform vec3 sunDir;uniform float time;uniform float flash;uniform float storm;uniform float air;uniform float earth;varying vec3 vDir;
       #include <logdepthbuf_pars_fragment>
       float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
       float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}
@@ -48,6 +48,15 @@ export function skyDome(low, sunDir, air = 1) {
       vec3 sp2=vec3(2.,2.2,2.6)*smoothstep(.99985,.99993,sd);
       vec2 g2=vec2(atan(d.x,d.z)*820.,h*820.);vec2 q2=floor(g2);float s2=h21(q2);float dot2=smoothstep(.36,.0,length(fract(g2)-.5));
       vec3 black=vec3(.004,.004,.006)+vec3(.9,.95,1.)*step(.992,s2)*dot2*smoothstep(-.05,.12,h)*(.6+.4*sin(time*1.3+s2*70.))+sp2;
+      // Earth: a clear blue evening, warm along the horizon under a low Sun, thunderheads in the storm (not Mars's rust and dust)
+      vec3 eh=mix(vec3(.55,.62,.78),vec3(1.,.66,.42),pow(sd,.6)),ez=vec3(.1,.22,.52),em=vec3(.36,.5,.76);
+      vec3 ecol=mix(eh,mix(em,ez,smoothstep(.1,.85,h)),smoothstep(.02,.45,h));
+      ecol+=vec3(1.,.55,.28)*pow(sd,6.)*.5+vec3(1.,.85,.6)*pow(sd,60.)*.5+vec3(2.,2.,2.)*smoothstep(.99985,.99993,sd);
+      float cl=vn(vec2(atan(d.x,d.z)*3.,h*7.+time*.004))*.6+vn(vec2(atan(d.x,d.z)*9.,h*18.))*.4;
+      ecol=mix(ecol,vec3(.62,.6,.66)*(.55+.5*sd),smoothstep(.5,.8,cl)*smoothstep(.04,.3,h)*(.35+storm*.35));
+      ecol+=vec3(.55,.6,.9)*flash*(.6+.4*h);
+      ecol=mix(ecol,vec3(.16,.2,.15),smoothstep(0.,-.12,h));
+      col=mix(col,ecol,earth);
       col=mix(black,col,air);
       gl_FragColor=vec4(col,1.);}`,
   });
@@ -110,12 +119,12 @@ export class OpeningLook {
   /** o: the opening. o.worldId and o.cause pick the sky and what happens overhead. */
   constructor(o) {
     this.o = o; this.low = o.low; const low = this.low, scene = o.scene, root = o.root;
-    this.world = o.worldId || 'mars'; this.cause = o.cause || 'storm'; this.air = this.world === 'ceres' ? 0 : 1;
+    this.world = o.worldId || 'mars'; this.cause = o.cause || 'storm'; this.air = this.world === 'ceres' ? 0 : 1; this.earthy = this.world === 'earth' ? 1 : 0;
     this.scaleRef = { value: 600 }; this.t = 0; this.rnd = rng(31);
     // sky, haze
-    this.sky = skyDome(low, SUN_DIR, this.air); root.add(this.sky.mesh);
-    scene.fog = this.air ? new THREE.FogExp2(0x84524a, this.cause === 'weather' ? .0032 : .00021) : new THREE.FogExp2(0x1a1a1e, .00002);
-    scene.background = new THREE.Color(this.air ? 0x2a1a22 : 0x050507);
+    this.sky = skyDome(low, SUN_DIR, this.air, this.earthy); root.add(this.sky.mesh);
+    scene.fog = this.air ? new THREE.FogExp2(this.earthy ? 0x8d97ad : 0x84524a, this.cause === 'weather' ? .0032 : .00021) : new THREE.FogExp2(0x1a1a1e, .00002);
+    scene.background = new THREE.Color(this.earthy ? 0x1a2236 : this.air ? 0x2a1a22 : 0x050507);
     // the crash site on the ground
     this.site = buildSite({ ext: o.ship.matsExt, mats: o.ship.matsInt, h: (x, z) => o.model.height(x, z), low, scaleRef: this.scaleRef });
     root.add(this.site.group);
@@ -179,8 +188,10 @@ export class OpeningLook {
     this.sky.uniforms.flash.value = flash;
     // lights
     const outside = stage >= 2, ceres = !this.air;
+    const earthy = !!this.earthy;
     if (stage === 1) { o.sun.color.set(ceres ? 0xfff2e0 : 0xffa464); o.sun.intensity = ceres ? 1.1 : .45; o.hemi.intensity = ceres ? .22 : .42; o.hemi.color.set(ceres ? 0x8aa0c0 : 0x9aa6d4); o.hemi.groundColor.set(ceres ? 0x606060 : 0x4a2a22); }
     else { o.sun.color.set(ceres ? 0xfff6e8 : 0xffa464); o.sun.intensity = ceres ? 3.4 : 2.5; o.hemi.color.set(ceres ? 0x93a4c6 : 0xa49cc0); o.hemi.groundColor.set(ceres ? 0x77736d : 0x8a4a34); o.hemi.intensity = ceres ? .5 : .85; }
+    if (earthy) { o.sun.color.set(0xffc58a); if (stage > 1) o.sun.intensity = 3.4; o.hemi.color.set(0xb4c6f0); o.hemi.groundColor.set(stage === 1 ? 0x4a5638 : 0x7a8a58); if (stage > 1) o.hemi.intensity = 1.3; }      // Earth: a warm low Sun, a blue sky, green ground
     o.hemi.intensity += flash * .12;
     if (!this.sunSet) { this.sunSet = true; o.sun.position.copy(SUN).applyQuaternion(o.q); }
     if (stage === 1) { o.lamp.color.set(0xff4a2c); o.lamp.intensity = (this.low ? 7 : 10) + Math.sin(t * 6) * 3; o.cabinFill.color.set(0xb6c4e8); o.cabinFill.intensity = this.low ? 6 : 8; }

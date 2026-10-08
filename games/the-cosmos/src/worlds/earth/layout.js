@@ -9,6 +9,7 @@
 // Skyward, its buildings, the vehicle on the mount ("Skyward Heavy"), every sign. The layout is ours, not NASA's.
 // ============================================================================
 import { solidIn } from '../moon/place.js';
+import { EARTH_CAST } from './cast.js';
 
 /** The four walls of a hall with one doorway on `side` ('n' | 's' | 'e' | 'w'), `c` metres off the middle of that side, `w` wide. Wall thickness 0.5 (the same walls the Moon's halls have). */
 export function hallBoxes(id, x0, z0, x1, z1, h, door) {
@@ -57,7 +58,7 @@ export const COMPLEX = {
 };
 
 let _cache = null;
-/** The complex, resolved: { name, MAIN_PAD, BOXES, PEOPLE } (no people here yet: Earth's hands are a later package). Same shape as the Moon's, so its `solidIn` / `pushOut` work on it. */
-export function layoutOf() { return _cache || (_cache = { id: 'earth', name: COMPLEX.name, MAIN_PAD: COMPLEX.MAIN_PAD, BOXES: COMPLEX.BOXES, PEOPLE: [], raw: COMPLEX }); }
+/** The complex, resolved: { name, MAIN_PAD, BOXES, PEOPLE } (two people so far: cast.js). Same shape as the Moon's, so its `solidIn` / `pushOut` work on it. */
+export function layoutOf() { return _cache || (_cache = { id: 'earth', name: COMPLEX.name, MAIN_PAD: COMPLEX.MAIN_PAD, BOXES: COMPLEX.BOXES, PEOPLE: EARTH_CAST, raw: COMPLEX }); }
 /** Is outpost-local (x, z) on something solid at the complex? (the spoil guard and the concrete slab) */
 export const solidAtEarth = (x, z, margin = 0.3) => solidIn(layoutOf(), x, z, margin);

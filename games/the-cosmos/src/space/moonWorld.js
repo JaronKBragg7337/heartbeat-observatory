@@ -130,6 +130,7 @@ export class MoonWorld {
         p.mesh.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.97, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 3 + i });
         p.mesh.receiveShadow = false;
         p.mesh.material.color.setScalar(R.farColor);
+        if (R.farRegolith && R.farRegolith.earth) { p.regPeriod = 3600; p._regolith = installRegolith(p.mesh.material, THREE, { ...R.farRegolith, far: true }); }      // Earth only: ragged coasts and grass in the wide tiers too (def.render.farRegolith.earth)
         p.handover = installTierDiscard(p.mesh.material);
         this.distant.push(p);
       }

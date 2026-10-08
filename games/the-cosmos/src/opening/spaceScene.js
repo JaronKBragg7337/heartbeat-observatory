@@ -53,6 +53,17 @@ function ceresGlobe(low) {
   return new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0 }));
 }
 
+/** Earth from space: NASA's Blue Marble (assets/earth/earth-2k.jpg, the picture the world itself uses) on a lit ball, Florida turned to the face the ship sees (the same spot ceresGlobe puts Occator). Unit radius. */
+function earthGlobe(low) {
+  const g = new THREE.SphereGeometry(1, low ? 96 : 160, low ? 48 : 80), mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 }), m = new THREE.Mesh(g, mat);
+  new THREE.TextureLoader().load(new URL('../../assets/earth/earth-2k.jpg', import.meta.url).href, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; mat.map = t; mat.needsUpdate = true; }, undefined, () => {});
+  // the sphere's own texture point for 28.6 N 80.6 W, turned to where the ship looks
+  const lat = 28.6 * Math.PI / 180, ph = (-80.6 + 180) * Math.PI / 180, th = Math.PI / 2 - lat;
+  const florida = new THREE.Vector3(-Math.cos(ph) * Math.sin(th), Math.cos(th), Math.sin(ph) * Math.sin(th));
+  m.quaternion.setFromUnitVectors(florida, new THREE.Vector3(0.9, 0.34, -0.28).normalize());
+  return m;
+}
+
 function atmosphere(color, power, k, low) {
   const m = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide, toneMapped: false,
@@ -131,8 +142,8 @@ export class SpaceScene {
   _worldGlobe(id) {
     if (id === 'mars') return null;
     if (!this.worldGlobes[id]) {
-      const m = ceresGlobe(this.low), grp = new THREE.Group(); grp.add(m);
-      const a = atmosphere(0xb9c4d6, 6.0, 0.12, this.low); grp.add(a); a.scale.setScalar(1.006);
+      const earth = id === 'earth', m = earth ? earthGlobe(this.low) : ceresGlobe(this.low), grp = new THREE.Group(); grp.add(m);
+      const a = earth ? atmosphere(0x6fa6ff, 3.2, 0.5, this.low) : atmosphere(0xb9c4d6, 6.0, 0.12, this.low); grp.add(a); a.scale.setScalar(earth ? 1.012 : 1.006);
       this.globe.add(grp); grp.visible = false; this.worldGlobes[id] = { grp, mesh: m, radius: (worldFacts(id).radiusKm || 470) * 1000 };
     }
     return this.worldGlobes[id];
