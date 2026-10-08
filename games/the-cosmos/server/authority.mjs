@@ -107,6 +107,8 @@ export class Authority {
   _unpark(held){for(const [sim,b] of held)sim.ship.state.blockers=b;}
   publicState(viewerId){const held=this._parkBlockers();const s=structuredClone(this.state);this._unpark(held);delete s.receipts;delete s.users;
     for(const [id,sh] of Object.entries(s.ships))if(sh.parked)delete s.ships[id];
+    // The crew of a parked ship go with it (a browser that is told of a hired person on a ship it was not sent has nothing to place them on).
+    for(const [id,c] of Object.entries(s.pool))if(c.shipId&&!s.ships[c.shipId])delete s.pool[id];
     for(const p of Object.values(s.players)){delete p.deviceHash;delete p.userId;delete p.slot;p.online=this.sessions.has(p.id);
       if(p.opening&&p.id!==viewerId)p.opening={complete:p.opening.complete};}
     s.storageError=this.error;

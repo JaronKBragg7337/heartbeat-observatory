@@ -477,10 +477,9 @@ if (ship.ready && !world.remote) {
     crewUI = new CrewUI(c, { ship, walker, isTouch, portPeople, voice });
   }).catch((e) => console.error('Crew failed to build', e));
 }
-if(world.remote) portPeople.build().then(()=>{worldBridge.portPeople=portPeople;
-  crew = new RemoteCrew(multiplayer);ship.crew=crew;multiplayer.crew=crew;
-  crewUI = new CrewUI(crew,{ship,walker,isTouch,portPeople,voice});
-});
+// The shared crew needs the shared view, which is made much further down. On a reload (cached files, fast build) the people were ready first and
+// RemoteCrew got no view (the page died in the promise: 'null is not an object (evaluating view.ship)'), so it is attached once the view exists.
+const portPeopleBuilt = world.remote ? portPeople.build() : null;
 digger.canPlaceSpoil = makeSpoilGuard({ port, portPeople, ship, getCrew: () => crew });
 
 // --- Landmark markers, so the debug layer has real registered assets --------
@@ -1200,6 +1199,10 @@ if(!world.remote){
   space.ledger.credits=world.state.economy.marks/4;
 }
 if(world.remote) multiplayer = new MultiplayerView(world,{engine,ship,walker,edits,digger,site:portSite,space,people,bridge:worldBridge,rebuild:rebuildNear,port});
+portPeopleBuilt?.then(()=>{worldBridge.portPeople=portPeople;
+  crew = new RemoteCrew(multiplayer);ship.crew=crew;multiplayer.crew=crew;
+  crewUI = new CrewUI(crew,{ship,walker,isTouch,portPeople,voice});
+});
 if (multiplayer) multiplayer.sayRole = (v, t) => voice.sayLine(t, { voice: v, channel: 'flat' });   // F5: a seat's NPC speaks (roles/npcs.js lines are voiced)
 if(world.remote){   // VOICES: proximity voice chat between players (src/voice/proximity.js)
   chat = new ProximityChat({ world, voice, bodyOf: (id) => multiplayer.bodies.get(id)?.group || null,

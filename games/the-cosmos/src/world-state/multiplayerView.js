@@ -250,7 +250,10 @@ export class MultiplayerView {
         forward=new THREE.Vector3().copy(frame.north).multiplyScalar(Math.cos(rendered?.yaw??p.pose.yaw)).addScaledVector(new THREE.Vector3().copy(frame.east),Math.sin(rendered?.yaw??p.pose.yaw)),right=new THREE.Vector3().crossVectors(up,forward).normalize();
         q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,forward));}
       this.placeBody(b,pos,q,p.frameId,(p.pose.seat||p.vehicleSeat)?'Sit':p.animation||'Idle',dt);}
-    for(const c of Object.values(s.pool)){if(c.retired||c.status==='reserved')continue;seen.add(c.id);const ship0=c.shipId?s.ships[c.shipId]:null,contract0=ship0?.crew.find(m=>m.id===c.id);
+    for(const c of Object.values(s.pool)){if(c.retired||c.status==='reserved')continue;
+      // Crew hired onto a ship that is not in the world (its owner is parked, the ship is kept off the pads) are not in the world either: no body, no pose to ask for.
+      if(c.shipId&&!s.ships[c.shipId])continue;
+      seen.add(c.id);const ship0=c.shipId?s.ships[c.shipId]:null,contract0=ship0?.crew.find(m=>m.id===c.id);
       const b=this.body(c.id,c.personId,c.name,c.look||contract0?.look);
       const ship=c.shipId?{...s.ships[c.shipId],pose:this.shipPose(s.ships[c.shipId])}:null,contract=ship?.crew.find(m=>m.id===c.id);
       let pos=this.site.toWorld(c.position.x,c.position.y||0,c.position.z),frame='mars',pose=['waiting','inside'].includes(c.status)?'Idle':'Walk',q=new THREE.Quaternion().copy(this.hallRoot.quaternion);

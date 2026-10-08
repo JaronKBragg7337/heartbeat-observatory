@@ -76,9 +76,22 @@ try {
   ok('the crate comes clear on the Earth ground', await page.evaluate(() => cosmos.opening.model.exposed())); await shot('dig-cleared-earth');
   await tap('#opening-action'); await step(9); await shot('driver-earth');
   await page.evaluate(() => { cosmos.opening.model.place({ x: -6, y: .02, z: 23, yaw: Math.PI / 2, pitch: 0 }); }); app.world.state.players[pid].opening.pose = { x: -6, y: .02, z: 23, yaw: 1.57, pitch: 0 }; await step(1);
-  await tap('#opening-action'); await step(22); await shot('ride-earth'); await step(50); await waitDone(); await step(1);
+  await tap('#opening-action'); await step(22); await shot('ride-earth');
+  // a refresh mid-ride (the playtester found this: shipPose threw on every frame after the page came back, and the phone went black)
+  // live data had hired crew on a parked ship (the owner idle a day): the ship is kept out of what browsers are sent, the crew were not
+  { const before = errors.length, parkedCrew = Object.values(app.world.state.pool).find((c) => !c.shipId && !c.retired);
+    Object.assign(parkedCrew, { shipId: '00000000-0000-4000-8000-0000000000aa', status: 'hired' }); await app.world.commit(); await ready(); await step(6); await shot('ride-earth-after-refresh');
+    ok('the server does not send crew of a ship it does not send', !(await page.evaluate((id) => !!cosmos.world.snapshot.pool[id], parkedCrew.id)));
+    globalThis.parkedCrewId = parkedCrew.id;
+    const alive = await page.evaluate(() => ({ frames: cosmos.engine.frameCount, stage: cosmos.opening.state.stage, active: cosmos.opening.active }));
+    ok('a refresh mid-ride comes back to the ride with no page errors', errors.length === before && alive.frames > 2 && alive.stage >= 5, errors.slice(before, before + 2).join(' | ') + ' ' + JSON.stringify(alive)); }
+  await step(50); await waitDone(); await step(1);
   const arr = await page.evaluate(() => ({ frame: cosmos.space.frameId, drained: cosmos.world.snapshot.ships[cosmos.world.snapshot.players[cosmos.world.playerId].shipId].drained }));
-  ok('the opening ends standing on Earth beside a drained lifeboat', arr.frame === 'earth' && arr.drained, JSON.stringify(arr)); await step(3); await shot('earth-arrival-complex');
+  ok('the opening ends standing on Earth beside a drained lifeboat', arr.frame === 'earth' && arr.drained, JSON.stringify(arr));
+  // people are only drawn once the opening is over (the playtester's page errors began there): with the parked crew still in the server's data, and then one forced into the browser's copy
+  { const before = errors.length; await step(3);
+    await page.evaluate((id) => { const s = cosmos.world.snapshot; s.pool[id] = { ...(s.pool[id] || Object.values(s.pool)[0]), id, name: 'Orphan', role: 'pilot', status: 'hired', shipId: '00000000-0000-4000-8000-0000000000aa', position: { x: 0, y: 0, z: 0 } }; }, globalThis.parkedCrewId); await step(3);
+    ok('crew of a ship that is not in the world are skipped, not drawn (no page errors)', errors.length === before, errors.slice(before, before + 2).join(' | ')); } await step(3); await shot('earth-arrival-complex');
   // the people and the chain
   const pi = makeMoon('earth').padInfo, label = () => page.evaluate(() => document.getElementById('btn-action').style.display !== 'none' ? document.getElementById('btn-action').textContent : '');
   const setStand = async (at) => {
