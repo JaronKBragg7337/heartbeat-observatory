@@ -58,8 +58,8 @@ export async function run({ check, section, THREE }) {
   // ---------------------------------------------------------------- the registry and the nav rows
   section('F3b. Earth, the Moon, Ceres and Callisto are reachable from day one');
   const rows = Object.fromEntries(spec.DESTINATIONS.map((d) => [d.id, d]));
-  for (const id of ['earth', 'callisto']) check(`${id} is a nav row of kind deep (held off, reached by the long drive)`, rows[id] && rows[id].kind === 'deep' && rows[id].deep === id && rows[id].via === 'drive', JSON.stringify(rows[id]));
-  check('the Moon is built (WD-MOON): its three landings and Ceres are plain drive rows: no lane, no fee, no spool (the Ore Lane is retired)', ['moon', 'moon-shackleton', 'moon-daedalus', 'ceres'].every((id) => rows[id] && rows[id].kind === 'moon' && rows[id].via === 'drive'), JSON.stringify(['moon', 'ceres'].map((id) => rows[id])));
+  for (const id of ['callisto']) check(`${id} is a nav row of kind deep (held off, reached by the long drive)`, rows[id] && rows[id].kind === 'deep' && rows[id].deep === id && rows[id].via === 'drive', JSON.stringify(rows[id]));
+  check('the Moon is built (WD-MOON), and so is Earth (WD-EARTH): its three landings, Earth and Ceres are plain drive rows: no lane, no fee, no spool (the Ore Lane is retired)', ['moon', 'moon-shackleton', 'moon-daedalus', 'earth', 'ceres'].every((id) => rows[id] && rows[id].kind === 'moon' && rows[id].via === 'drive'), JSON.stringify(['moon', 'ceres'].map((id) => rows[id])));
   check('every deep row and the Moon sit at their real distance, past the range of the main drive', ['earth', 'moon', 'callisto'].every((id) => Math.hypot(...Object.values(reg.worldCentre(id))) > spec.DRIVE.rangeM * 10));
   const cal = reg.worldCentre('callisto'), jup = reg.worldCentre('jupiter');
   check('Callisto goes round Jupiter at its real distance (1.88 million km)', Math.abs(Math.hypot(cal.x - jup.x, cal.y - jup.y, cal.z - jup.z) - 1.8827e9) < 0.02 * 1.8827e9);
@@ -106,22 +106,17 @@ export async function run({ check, section, THREE }) {
   const { SpaceTrip } = await src('space/spaceTrip.js');
   const probe = (id) => { seat(); const dest = sim.resolve(id); const t = new SpaceTrip(sim, dest); return { t, pl: t._plan0(), legs: t._route() }; };
   const e1 = probe('earth');
-  check(`the estimate for Earth: ${(e1.pl.long / 86400).toFixed(1)} days of drive over ${(e1.pl.longL / AU).toFixed(2)} AU, peaking at ${(e1.pl.longPeak / 1000).toFixed(0)} km/s; ${(L.realSeconds(e1.pl.long) / 60).toFixed(1)} real minutes at xTOP`, e1.pl.long > 5 * 86400 && e1.pl.long < 30 * 86400 && e1.pl.kinds.includes('longdrive') && e1.legs.at(-1).cruise && e1.legs.at(-1).deep);
+  check(`the estimate for Earth: ${(e1.pl.long / 86400).toFixed(1)} days of drive over ${(e1.pl.longL / AU).toFixed(2)} AU, peaking at ${(e1.pl.longPeak / 1000).toFixed(0)} km/s; ${(L.realSeconds(e1.pl.long) / 60).toFixed(1)} real minutes at xTOP`, e1.pl.long > 5 * 86400 && e1.pl.long < 30 * 86400 && e1.pl.kinds.includes('longdrive') && e1.legs.some((q) => q.cruise), JSON.stringify(e1.legs));
 
   const r1 = fly('earth');
-  check(`a course to Earth: climb, main drive out, the long drive, a drop-out and a hold off the planet (${r1.phases.join(' > ')})`, !r1.err && r1.phases.includes('longdrive') && !r1.tripLeft && r1.frame === 'mars' && !r1.landed, JSON.stringify(r1));
-  const eC = centre('earth'), dEarth = dist(r1.posI, eC), kEarth = L.dropDistanceM('earth');
-  check(`she holds ${(dEarth / 1000).toFixed(0)} km off Earth's centre (the drop-out is ${(kEarth / 1000).toFixed(0)} km: 14 radii), on the side facing Mars`, Math.abs(dEarth - kEarth) < 20000, `${dEarth} vs ${kEarth}`);
+  for (let i = 0; i < 1200 && !sim.flight.landed; i++) tick(); r1.landed = sim.flight.landed;          // the descent through her air ends a little after the course does
+  check(`a course to Earth (WD-EARTH made her a landing): climb, main drive out, the long drive, a drop-out, the descent through her air (${r1.phases.join(' > ')}), landed in Earth's own frame`, !r1.err && r1.phases.includes('longdrive') && !r1.tripLeft && r1.frame === 'earth' && r1.landed, JSON.stringify(r1));
   check(`the cruise took ${r1.realCruiseS.toFixed(0)} real seconds at the top of the ladder for ${(e1.pl.long / 86400).toFixed(1)} game days, and she touched ${(r1.peak / 1000).toFixed(0)} km/s`, r1.realCruiseS > 60 && r1.realCruiseS < 1500 && Math.abs(r1.peak - e1.pl.longPeak) / e1.pl.longPeak < 0.02, JSON.stringify([r1.realCruiseS, r1.peak, e1.pl.longPeak]));
   check(`the estimate was right: ${(r1.gameS / 86400).toFixed(2)} game days flown in the cruise against ${(e1.pl.long / 86400).toFixed(2)} quoted; ${r1.realCruiseS.toFixed(0)} real seconds against ${e1.pl.longReal.toFixed(0)} quoted`, Math.abs(r1.gameS - e1.pl.long) < 0.003 * e1.pl.long + 300 && Math.abs(r1.realCruiseS - e1.pl.longReal) < 0.5 * e1.pl.longReal + 5, `${r1.gameS} ${e1.pl.long} ${r1.realCruiseS} ${L.realSeconds(e1.pl.long)}`);
-  // free flight is not charted out there (the long drive flies the ship): it is refused, and nothing breaks
-  { const en = sim.ff.setEnabled(true); for (let i = 0; i < 60; i++) tick();
-    check('free flight is refused while she is held out in deep space (the drive owns her)', !sim.ff.active && Number.isFinite(sim.flight.pos.x + sim.flight.pos.y + sim.flight.pos.z), JSON.stringify(en)); sim.ff.setEnabled(false); }
-  { const p0 = posI(), t0 = sim.worldTime(); for (let i = 0; i < 300; i++) tick(); const t1 = sim.worldTime(), d = dist(posI(), centre('earth'));
-    check(`held off Earth for ten seconds she keeps her place beside the planet as it moves (${(d / 1000).toFixed(0)} km off) and the world's clock runs`, Math.abs(d - kEarth) < 20000 && t1 > t0 + 9 && dist(p0, posI()) > 1, `${d} ${kEarth} ${t0} ${t1}`); }
-  // from out there, Mars (the port) is a long drive home
+  // from the ground on Earth the way home needs engines (g = 9.8): a worn hull and the stock power cannot lift her, so the pilot mends and routes (WD-EARTH, test/pkg-earth.mjs)
+  sim.flight.hull = 100; sim.flight.routePower('engines', 100);
   const probeHome = probe('port');
-  check('held off Earth, the nav computer offers the way home as a long drive too (a main-drive transit from there would take months)', probeHome.legs[0].cruise === true && probeHome.pl.long > 1e5, JSON.stringify(probeHome.legs[0]));
+  check('on Earth, the nav computer offers the way home to Mars as a long drive (a main-drive transit would take months)', probeHome.legs.some((q) => q.cruise === true) && probeHome.pl.long > 1e5, JSON.stringify(probeHome.legs[0]));
   const r2 = fly('port');
   check(`and she comes home: ${r2.phases.join(' > ')}, down at Marineris Port`, !r2.err && r2.landed && r2.frame === 'mars' && !r2.tripLeft && r2.phases.includes('longdrive') && dist(r2.pos, sim.portSite.toWorld(0, 0, 0)) < 400, JSON.stringify(r2));
 

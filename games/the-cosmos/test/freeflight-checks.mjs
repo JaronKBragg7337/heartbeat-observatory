@@ -271,7 +271,7 @@ export async function runFreeflightChecks({ check, section, THREE, mars }) {
     clock += 33; c.send({ type: 'pose', pose: { ...structuredClone(world.state.players[c.id].pose), aboard: true }, controls: { fwd: 0, lift: 0, yaw: 0 }, ff: { thr: 1 } }); await new Promise((r) => setTimeout(r, 20)); await world.enqueue(() => {});
     check('a passenger in the navigator\'s seat cannot put a stick on the ship: only the pilot and the captain\'s input is taken', !world.inputs.get(c.id));
     // actions are validated and bridge-only
-    const bad = [await a.action({ type: 'ff-set', warp: 7 }), await a.action({ type: 'ff-set', assist: 'ram' }), await a.action({ type: 'ff-set', target: 'earth' }), await a.action({ type: 'ff-set', throttle: 'abc' }), await b.action({ type: 'ff-set', enabled: true })];
+    const bad = [await a.action({ type: 'ff-set', warp: 7 }), await a.action({ type: 'ff-set', assist: 'ram' }), await a.action({ type: 'ff-set', target: 'saturn' }), await a.action({ type: 'ff-set', throttle: 'abc' }), await b.action({ type: 'ff-set', enabled: true })];
     sim = S();
     check('free-flight requests are checked by the authority: an unknown compression, assist, target, throttle, or a player who is not at a bridge station, is refused', bad.every((x) => x.ok === false), JSON.stringify(bad.map((x) => x.msg)));
     const nav = await c.action({ type: 'ff-set', target: 'deimos' }); sim = S();

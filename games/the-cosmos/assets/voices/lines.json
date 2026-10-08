@@ -147,6 +147,10 @@
   "voice": "w-sky",
   "text": "Identity Services, Calibration. Everything here is legal. Nothing here is for sale. Please pay at the back."
  },
+ "01677a7fac1c28": {
+  "voice": "ada",
+  "text": "Down at Earth: Skyward Launch Complex."
+ },
  "016e9234be6d5c": {
   "voice": "w-lewis",
   "text": "Yes? Go on. I am listening with moderate enthusiasm."
@@ -359,6 +363,10 @@
   "voice": "w-aoede",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
  },
+ "03948678d10705": {
+  "voice": "ada",
+  "text": "Course set for Earth: Skyward Launch Complex."
+ },
  "0397aea53a41de": {
   "voice": "jorge",
   "text": "The green people will talk about gardens. Gardens do not build hulls. We build hulls."
@@ -479,6 +487,10 @@
   "voice": "w-puck",
   "text": "Not pirates. Aggressive recyclers. Do not touch the trophies."
  },
+ "04fa03365eed34": {
+  "voice": "ada",
+  "text": "Arrived over Earth: Skyward Launch Complex. Easing level."
+ },
  "050d7b472d8ad4": {
   "voice": "zuri",
   "text": "Course set for The supply depot apron."
@@ -582,6 +594,10 @@
  "0631231a567bfd": {
   "voice": "w-alice",
   "text": "Ice dock. You dig it in the dark, carry it up in the light, I weigh it, and I pay in lunars and bad news."
+ },
+ "0656170078359d": {
+  "voice": "ship",
+  "text": "Down at Earth: Skyward Launch Complex."
  },
  "06569babf60232": {
   "voice": "ship",
@@ -698,10 +714,6 @@
  "077e52f983175d": {
   "voice": "ada",
   "text": "Down at Pad 03 (courier)."
- },
- "07833aebba949a": {
-  "voice": "ada",
-  "text": "Course set for Earth."
  },
  "07914fe35ce251": {
   "voice": "isaiah",
@@ -1007,6 +1019,10 @@
   "voice": "w-river",
   "text": "Oh, you gave it back. How generous. I have just been sitting here."
  },
+ "0b92ba92c1e4e7": {
+  "voice": "zuri",
+  "text": "Course set for Earth: Skyward Launch Complex."
+ },
  "0b94ba2835de81": {
   "voice": "ada",
   "text": "Hull's at 30 percent. Breaking off, going down to neutral airspace."
@@ -1102,10 +1118,6 @@
  "0ceb50883bc1e6": {
   "voice": "ship",
   "text": "Raider down. Bounty 25 credits."
- },
- "0cf144378ee04a": {
-  "voice": "zuri",
-  "text": "Course set for Earth."
  },
  "0cf45fbf38ed1b": {
   "voice": "zuri",
@@ -1723,6 +1735,10 @@
   "voice": "ada",
   "text": "Turn-over. Brace for the burn to slow down."
  },
+ "13e253b9353df6": {
+  "voice": "ship",
+  "text": "We are at Earth already."
+ },
  "13ea18b210ea48": {
   "voice": "w-heart",
   "text": "Happy to tell you. I buy what you are selling and sell what you did not know you needed. Come back and tell me how it went."
@@ -1803,6 +1819,10 @@
   "voice": "jorge",
   "text": "The ramp is up. Lower it and I'll come aboard."
  },
+ "15169772ea207b": {
+  "voice": "zuri",
+  "text": "We are at Earth already."
+ },
  "15307f035d741b": {
   "voice": "ship",
   "text": "Leaving Mars neutral airspace. Expect raiders."
@@ -1858,6 +1878,10 @@
  "15b4626600d4c5": {
   "voice": "w-adam",
   "text": "It all came up a gravity well and across a lane. Water is the worst: it is ice at the pole, and the pole belongs to men with guns. I only sell the stuff. I do not set the sky."
+ },
+ "15b4f5f690359d": {
+  "voice": "ada",
+  "text": "We are at Earth already."
  },
  "15bf10173e546a": {
   "voice": "zuri",
@@ -2194,6 +2218,10 @@
  "198c38cb82af2d": {
   "voice": "ada",
   "text": "We are at Shackleton already."
+ },
+ "199cefc7a60e0c": {
+  "voice": "ship",
+  "text": "Arrived over Earth: Skyward Launch Complex. Easing level."
  },
  "19d3d087d440fb": {
   "voice": "w-echo",
@@ -2555,6 +2583,10 @@
   "voice": "ada",
   "text": "Course set for Airy-0."
  },
+ "1d9a91e1d9abe1": {
+  "voice": "ship",
+  "text": "Course set for Earth: Skyward Launch Complex."
+ },
  "1dd6fccc24031a": {
   "voice": "zuri",
   "text": "Course set for Pad 01, the Meridian's own pad."
@@ -2562,6 +2594,10 @@
  "1de29f0a482095": {
   "voice": "ship",
   "text": "Survival crate open. One hand tool, one day of air and water, one beacon. Beacon armed. Help is on the way. Probably."
+ },
+ "1de4621df86518": {
+  "voice": "zuri",
+  "text": "Down at Earth: Skyward Launch Complex."
  },
  "1df24091ab5e4c": {
   "voice": "zuri",
@@ -2695,10 +2731,6 @@
   "voice": "w-alice",
   "text": "Allow me. I dig things up. Some of it is valuable. Some of it is dust that cost a great deal of effort. I make it look easy. It is not. I am just good."
  },
- "1f92a61eb79645": {
-  "voice": "ship",
-  "text": "Course set for Earth."
- },
  "1f9b9f0f420504": {
   "voice": "zuri",
   "text": "Down at Over the control tower."
@@ -2718,6 +2750,10 @@
  "1ff828ee95024a": {
   "voice": "ship",
   "text": "Engine share is too low for the main drive. Route power to the engines (Engineering)."
+ },
+ "1ff84d722fb7f7": {
+  "voice": "zuri",
+  "text": "Arrived over Earth: Skyward Launch Complex. Easing level."
  },
  "1fffff20c1df74": {
   "voice": "ada",
