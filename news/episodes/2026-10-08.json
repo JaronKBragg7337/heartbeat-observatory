@@ -1,0 +1,855 @@
+{
+  "date": "2026-10-08",
+  "title": "Heartbeat News — Thursday, October 8, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-08 (07:30 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-08.md"
+    },
+    {
+      "name": "watch/claude 2026-10-08 (08:24)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-08.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-08 (reader, 09:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-08.md"
+    },
+    {
+      "name": "watch/msi 2026-10-08 (07:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-10-08.md"
+    },
+    {
+      "name": "Perplexity headlines (/api/news, read live by the page)",
+      "url": "/api/news"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Teenage Engineering CEO says it will stop making synths",
+      "source": "The Verge (MSI headline)",
+      "why": "Headline only, no detail; minor product news."
+    },
+    {
+      "item": "Microsoft Surface Laptop Ultra event; Copilot control of Windows",
+      "source": "The Verge (MSI headline)",
+      "why": "Headline only; no facts beyond the title."
+    },
+    {
+      "item": "Prime Day deals (Roku OLED, under-$50 picks); Android nav buttons on Googlebooks",
+      "source": "The Verge (MSI headline)",
+      "why": "Shopping and gadget filler, not news."
+    },
+    {
+      "item": "Brent $102.31 and S&P 7,722.72 weekly-recap figures",
+      "source": "thriveinmarkets.com",
+      "why": "Stale (Oct 1-2); newer AP numbers aired instead."
+    },
+    {
+      "item": "Tigers lost to Mariners in ALDS Game 3; wild-card sweeps; Astros-A's 9-7 headline",
+      "source": "Fox 2 Detroit",
+      "why": "Undated and flagged unreliable by the capture; official MLB results aired instead."
+    },
+    {
+      "item": "FDA approval of tucatinib for HER2-positive breast cancer maintenance",
+      "source": "FDA",
+      "why": "Real but cut for time; no market-wide or outbreak urgency."
+    },
+    {
+      "item": "Anthropic Opus 5.5 / GPT-6 Sol and Luna on Bedrock / Gemini 4 in post-training",
+      "source": "The Hans India",
+      "why": "Trade-outlet roundup, dated Sept 22 or undated; no confirmed Oct 7-8 release."
+    },
+    {
+      "item": "Domains 09 and 10 market slugs and lines",
+      "source": "codex",
+      "why": "For traders; the real news inside them (MLB results, Genesis Mission) aired."
+    }
+  ],
+  "ticker": [
+    "HURRICANE ISAIAS: 80 MPH, WARNINGS MISSISSIPPI TO FLORIDA",
+    "EXPLOSIONS HEARD IN RIYADH; FLIGHTS HALTED",
+    "UKMTO: TANKER STRUCK OFF QATAR, CASUALTIES REPORTED",
+    "UKRAINE: RUSSIAN STRIKES KILL AT LEAST 28",
+    "KENYA CONFIRMS FIRST EBOLA CASE; PATIENT DIED",
+    "BRENT SETTLES AT $100.20",
+    "S&P 500 -0.2%; 10-YEAR YIELD 5.28%",
+    "FED MINUTES: MOST SEE ANOTHER HIKE BY YEAR-END",
+    "BITCOIN $83,710, ONE-WEEK LOW",
+    "GPT-6 ROLLS OUT; ANTHROPIC LAUNCHES HAIKU 5.5",
+    "UK DOWNGRADES EAST JERUSALEM CONSULATE",
+    "JAPAN CLOUD RANSOMWARE OUTAGE HITS 495 CUSTOMERS",
+    "TROPICAL STORM SIMON STRENGTHENING OFF MEXICO",
+    "NASA RELEASES ARTEMIS II LUNAR DATA",
+    "DODGERS, RAYS, BREWERS WIN DIVISION SERIES"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "A hurricane, a gulf under fire, and a new Ebola case",
+        "bullets": [
+          "Hurricane Isaias nears the Gulf Coast",
+          "Riyadh explosions; tanker struck off Qatar",
+          "Russian strikes kill at least 28 in Ukraine",
+          "Ebola reaches Kenya; GPT-6 rolls out"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Thursday, October eighth.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "Today: Hurricane Isaias closes in on the Gulf Coast, explosions in Riyadh and a tanker hit off Qatar, and Ebola crosses into Kenya."
+        },
+        {
+          "who": "joe",
+          "text": "Plus Russian strikes in Ukraine, oil at one hundred dollars, and a new version of ChatGPT. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "isaias",
+      "kind": "breaking",
+      "strap": "HURRICANE ISAIAS: WARNINGS FROM MISSISSIPPI TO FLORIDA",
+      "headline": "Hurricane Isaias",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Hurricane Isaias, Gulf Coast",
+        "stats": [
+          {
+            "label": "Winds",
+            "value": "80 mph"
+          },
+          {
+            "label": "Advisory",
+            "value": "7"
+          }
+        ],
+        "bullets": [
+          "Winds 80 mph at 4 a.m. Central",
+          "Warnings: Ocean Springs, Miss. to Bay/Gulf County Line, Fla.",
+          "Evacuations, school closures",
+          "Some Gulf oil wells paused"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NHC Advisory 7",
+          "url": "https://www.nhc.noaa.gov/text/refresh/MIATCPAT4+shtml/081441.shtml"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/hurricane-isaias-gulf-atlantic-alabama-florida-mississippi-8244ca45b8d4c292350f00adfabb0967"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Hurricane Isaias is the biggest story this morning. The National Hurricane Center's Advisory Seven puts its winds at eighty miles an hour as of four a.m. Central."
+        },
+        {
+          "who": "joe",
+          "text": "Hurricane warnings run from Ocean Springs, Mississippi, to the Bay and Gulf County line in Florida."
+        },
+        {
+          "who": "vex",
+          "text": "The A.P. reports evacuations, school closures and emergency actions across Florida, Alabama and Mississippi. It also says some Gulf oil wells were paused."
+        },
+        {
+          "who": "joe",
+          "text": "If you are in that stretch, follow local officials and the hurricane center, not us. We are a talking robot and a confused alien."
+        }
+      ]
+    },
+    {
+      "id": "riyadh",
+      "kind": "story",
+      "strap": "EXPLOSIONS HEARD IN RIYADH; TANKER STRUCK OFF QATAR",
+      "headline": "Gulf under fire",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Riyadh and the Gulf",
+        "stats": [
+          {
+            "label": "Tanker warning",
+            "value": "UKMTO 158-26"
+          }
+        ],
+        "bullets": [
+          "Witnesses: explosions near Riyadh airport; flights halted",
+          "Cause not established by A.P.",
+          "Roundup: Houthis struck Riyadh and Abha airports, 3 killed",
+          "UKMTO: tanker hit by projectiles 51 nautical miles north of Madinat ash Shamal, Qatar"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/israel-consulate-britain-mideast-october-8-2026-c7a446e1bd01966f19b88af07149c3d5"
+        },
+        {
+          "name": "UKMTO",
+          "url": "https://www.ukmto.org/"
+        },
+        {
+          "name": "SBS roundup",
+          "url": "https://news.sbs.co.kr/english/article.do?news_id=N1008788937"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Witnesses told the A.P. they heard explosions in Riyadh, including near the airport. Flights were halted. The A.P. says the cause was not established."
+        },
+        {
+          "who": "joe",
+          "text": "A separate headline roundup says the Houthis struck the Riyadh and Abha airports, with three killed and dozens hurt. That is a single roundup source. We have not confirmed it."
+        },
+        {
+          "who": "vex",
+          "text": "The official one is from U.K.M.T.O., the maritime watchdog. Warning one fifty-eight says a tanker was struck by multiple projectiles fifty-one nautical miles north of Madinat ash Shamal, Qatar. Casualties were reported. Authorities were investigating."
+        },
+        {
+          "who": "joe",
+          "text": "So: a claim about airports, and an official warning about a ship. Both point at the same shipping lanes, and at oil."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "RUSSIAN STRIKES KILL AT LEAST 28, UKRAINE SAYS",
+      "headline": "Ukraine",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Ukraine strikes and talks",
+        "bullets": [
+          "Interior ministry: at least 28 killed Wednesday",
+          "One report: missile in Pryluky killed 20+ in an apartment block",
+          "Pryluky toll not confirmed by a second source",
+          "Zelensky: U.S. wants three-way talks by end of October"
+        ]
+      },
+      "sources": [
+        {
+          "name": "SBS roundup",
+          "url": "https://news.sbs.co.kr/english/article.do?news_id=N1008788937"
+        },
+        {
+          "name": "Kyiv Independent",
+          "url": "https://kyivindependent.com/us-proposes-trilateral-talks-with-russia-ukraine-by-end-of-october-zelensky-says/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ukraine's interior ministry says Wednesday's Russian strikes killed at least twenty-eight people."
+        },
+        {
+          "who": "joe",
+          "text": "One report says a missile in Pryluky killed at least twenty of them in an apartment building. Our desk could not find a second source for that. It stays a claim."
+        },
+        {
+          "who": "vex",
+          "text": "On diplomacy, the Kyiv Independent reports that on October fourth Zelensky said Washington is pushing a technical-level three-way meeting, with the U.S., Russia and Ukraine, by the end of October."
+        },
+        {
+          "who": "joe",
+          "text": "No Russian reply has been seen. Apartment buildings are not a negotiating position, but here we are."
+        }
+      ]
+    },
+    {
+      "id": "ebola",
+      "kind": "story",
+      "strap": "EBOLA REACHES KENYA; FIRST CASE DIES",
+      "headline": "Ebola in Kenya",
+      "category": "HEALTH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Ebola crosses into Kenya",
+        "bullets": [
+          "Kenya's first case died late Monday",
+          "28 contacts, 23 passengers, 4 crew traced",
+          "Africa CDC: 4,000+ deaths in Congo",
+          "Africa CDC: 70%+ of new cases outside known contacts"
+        ]
+      },
+      "sources": [
+        {
+          "name": "ITV News",
+          "url": "https://www.itv.com/news/2026-10-06/kenya-confirms-first-ebola-case-in-man-who-traveled-from-congo-and-died"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/congo-ebola-kaseya-northkivu-outbreak-disease-42e9c7f66b9ee7628b0a852a4e9dd73b"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Kenya confirmed its first Ebola case on October sixth. ITV reports the man lived in Congo for seven years, flew from Kampala to Nairobi on Saturday, and was screened at the airport."
+        },
+        {
+          "who": "joe",
+          "text": "He was admitted to Nairobi Hospital with fever and bleeding. He died late Monday. Officials have identified twenty-eight contacts, plus twenty-three passengers and four crew from his flight. Africa C.D.C. is sending a team."
+        },
+        {
+          "who": "vex",
+          "text": "ITV says Kenya is the fourth country linked to the eastern Congo epidemic, which has passed eight thousand cases."
+        },
+        {
+          "who": "joe",
+          "text": "Separately, an Africa C.D.C. director told the A.P. the outbreak has caused more than four thousand deaths, and that over seventy percent of new cases come from outside known contacts. That last number is the one that worries the experts, because it means the chains are not being traced."
+        }
+      ]
+    },
+    {
+      "id": "world",
+      "kind": "story",
+      "strap": "UK DOWNGRADES JERUSALEM CONSULATE; MORE WORLD NEWS",
+      "headline": "Around the world",
+      "category": "WORLD",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Around the world",
+        "bullets": [
+          "U.K. cuts East Jerusalem consulate: 20 leave, 7 stay",
+          "Ex-aide accuses Netanyahu's chief of staff over Oct. 7 call records",
+          "Roundup: Eritrean troops reported moving into Tigray",
+          "Report: ex-Syrian general wanted for crimes lives in Lebanon"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/israel-consulate-britain-mideast-october-8-2026-c7a446e1bd01966f19b88af07149c3d5"
+        },
+        {
+          "name": "SBS roundup",
+          "url": "https://news.sbs.co.kr/english/article.do?news_id=N1008788937"
+        },
+        {
+          "name": "NPR",
+          "url": "https://www.npr.org/sections/news/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The U.K. downgraded its East Jerusalem consulate after Israeli pressure. The A.P. says twenty diplomats will leave and seven remain."
+        },
+        {
+          "who": "joe",
+          "text": "Also from Israel, Netanyahu's former military secretary, Avi Gil, accused the prime minister's chief of staff of trying to alter phone-call records from October seventh, twenty twenty-three. That is an accusation, not a finding."
+        },
+        {
+          "who": "vex",
+          "text": "A roundup reports Eritrean troops moving into Tigray amid renewed fighting with Ethiopia, and says the Gaza ceasefire is a year old, with more than fourteen hundred killed since. Single source."
+        },
+        {
+          "who": "joe",
+          "text": "And N.P.R. and the B.B.C. report that a former Syrian general wanted for crimes against humanity is living in Lebanon, reportedly protected and funded by U.S. and Lebanese authorities. That is a roundup summary, and a claim."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "STOCKS SLIP; 10-YEAR YIELD 5.28%; FED SEES ANOTHER HIKE",
+      "headline": "Markets and the Fed",
+      "category": "MARKETS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Wall Street and the Fed",
+        "stats": [
+          {
+            "label": "Brent",
+            "value": "$100.20"
+          },
+          {
+            "label": "10-yr yield",
+            "value": "5.28%"
+          }
+        ],
+        "bullets": [
+          "S&P 500 -0.2%, Dow -0.7%, Nasdaq -0.2%",
+          "10-year yield touched 5.36%, ended 5.28%",
+          "Fed minutes: all backed hike to 3.75%-4.00%",
+          "Most see another hike likely by year-end"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/stocks-markets-rates-oil-earnings-44b75c188756038371cf3112ede9cee8"
+        },
+        {
+          "name": "Federal Reserve",
+          "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260916.htm"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "U.S. stocks closed lower. The S. and P. five hundred fell two-tenths of a percent, the Dow fell seven-tenths, and the Nasdaq fell two-tenths. That is from the A.P."
+        },
+        {
+          "who": "joe",
+          "text": "The ten-year Treasury yield touched five point three six percent before ending at five point two eight."
+        },
+        {
+          "who": "vex",
+          "text": "The Federal Reserve published its September minutes. They say all participants supported the quarter-point increase to three and three-quarters to four percent. Most judged another increase likely appropriate by year-end."
+        },
+        {
+          "who": "joe",
+          "text": "Brent crude settled at one hundred dollars and twenty cents. A very round number."
+        },
+        {
+          "who": "vex",
+          "text": "A round number that expensive is nobody's favorite shape."
+        }
+      ]
+    },
+    {
+      "id": "crypto",
+      "kind": "story",
+      "strap": "BITCOIN HITS ONE-WEEK LOW NEAR $83,700",
+      "headline": "Crypto",
+      "category": "CRYPTO",
+      "status": "claim",
+      "graphic": {
+        "kicker": "CRYPTO",
+        "title": "Bitcoin and Ether slide",
+        "stats": [
+          {
+            "label": "Bitcoin",
+            "value": "$83,710"
+          },
+          {
+            "label": "Ether",
+            "value": "$2,578"
+          }
+        ],
+        "bullets": [
+          "Reuters: BTC -2.2% to $83,710.93",
+          "ETH -4.5% to $2,578.39",
+          "One-week low for Bitcoin",
+          "Crypto stocks fell too"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters via Boursorama",
+          "url": "https://www.boursorama.com/bourse/actualites/les-actions-liees-aux-cryptomonnaies-reculent-alors-que-le-bitcoin-atteint-son-plus-bas-niveau-depuis-une-semaine-a26d97f54a03b3591b2267aa74e004ea"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Reuters reports Bitcoin fell two point two percent to eighty-three thousand, seven hundred ten dollars, a one-week low."
+        },
+        {
+          "who": "joe",
+          "text": "Ether fell four and a half percent to twenty-five hundred seventy-eight dollars. Crypto-linked stocks fell with them."
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "kind": "story",
+      "strap": "GPT-6 ROLLS OUT; ANTHROPIC LAUNCHES HAIKU 5.5",
+      "headline": "A.I. launches",
+      "category": "TECH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "GPT-6 and Haiku 5.5",
+        "bullets": [
+          "OpenAI: GPT-6 to paid tiers, then Free and Go from Oct. 8",
+          "Answers can include charts, graphics, buttons",
+          "Anthropic: Haiku 5.5 costs ~75% less to run than Haiku 4.5",
+          "Axios: $1B+ pledged to Genesis Mission at White House summit"
+        ]
+      },
+      "sources": [
+        {
+          "name": "OpenAI",
+          "url": "https://openai.com/index/gpt-6-for-everyone/"
+        },
+        {
+          "name": "Anthropic",
+          "url": "https://www.anthropic.com/claude-haiku-5-5"
+        },
+        {
+          "name": "Axios",
+          "url": "https://www.axios.com/2026/10/07/exclusive-inside-trumps-ai-science-summit"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "OpenAI announced GPT-6 for ChatGPT. It rolls out to paid tiers first, then to Free and Go, starting October eighth. Answers can now include interactive graphics, charts and buttons."
+        },
+        {
+          "who": "joe",
+          "text": "Anthropic announced Claude Haiku five point five. The company says it costs about seventy-five percent less to run than Haiku four point five."
+        },
+        {
+          "who": "vex",
+          "text": "Axios reports the White House expects to announce more than one billion dollars in industry commitments to its Genesis Mission, from AMD, OpenAI, Anthropic and others, at an October eighth summit. That is Axios's report, not an announcement yet."
+        },
+        {
+          "who": "joe",
+          "text": "Disclosure from the desk: two of those companies build robots like Vex. We report it anyway."
+        }
+      ]
+    },
+    {
+      "id": "politics",
+      "kind": "story",
+      "strap": "TRUMP ACCOUNTS PUSHED; PROTESTERS INTERRUPT SAN ANTONIO RALLY",
+      "headline": "Politics",
+      "category": "POLITICS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "POLITICS",
+        "title": "Politics and the courts",
+        "bullets": [
+          "Trump Accounts: $1,000 federal seed, children born 2025-2028",
+          "Up to $5,000 a year after-tax contributions",
+          "Protesters interrupt Trump rally for Paxton",
+          "DNC, Common Cause sue over taxpayer-funded ads"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/c3653612100f15c0c4de86daffc08677"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/cd12a03fd2a900699459678c3a77dd22"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/trump-taxpayer-funded-ads-propaganda-lawsuit-a1e286d37989f1cb5bbe13905f8fbbf1"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/abortion-pill-mifepristone-fda-trump-kennedy-4cc8100112d11d04118eaffc23a6df9d"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The White House is highlighting Trump Accounts amid household frustration over prices. The A.P. reports up to five thousand dollars a year in after-tax contributions, and a one-thousand-dollar federal seed for children born between twenty twenty-five and twenty twenty-eight."
+        },
+        {
+          "who": "joe",
+          "text": "In Texas, protesters interrupted President Trump during a San Antonio rally for Ken Paxton's Senate campaign."
+        },
+        {
+          "who": "vex",
+          "text": "The Democratic National Committee and Common Cause sued to stop taxpayer-funded Trump administration TV ads. The A.P. says the campaign has cost more than twelve million dollars, and that D.H.S. had a twenty-million-dollar contract."
+        },
+        {
+          "who": "joe",
+          "text": "And an F.D.A. court filing says its review of the abortion pill mifepristone will continue into next year. Midterms are November third."
+        }
+      ]
+    },
+    {
+      "id": "tech",
+      "kind": "story",
+      "strap": "ICANN OPENS 2026 DOMAIN ROUND; JAPAN CLOUD RANSOMWARE OUTAGE CONTINUES",
+      "headline": "Tech and cyber",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "Tech and cyber",
+        "bullets": [
+          "Japan: IDC Frontier ransomware outage, 495 customers",
+          "No recovery timetable published",
+          "ICANN: replacement applications Oct. 8-21; final list Nov. 17",
+          "Nvidia RTX Spark laptops up to $7,000"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Security.io",
+          "url": "https://www.security.io/articles/2026/10/08/idcf-cloud-ransomware-region-outage"
+        },
+        {
+          "name": "ICANN",
+          "url": "https://www.icann.org/en/announcements/details/icann-reveals-2026-round-applications-for-new-generic-top-level-domains-07-10-2026-en"
+        },
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com/gadgets/1007040/nvidias-powerful-rtx-spark-laptops-can-cost-up-to-7000"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Security.io reports a ransomware outage at Japanese cloud provider I.D.C. Frontier is still going. Its East Japan Region One is down, affecting four hundred ninety-five business and municipal customers. No recovery timetable has been published."
+        },
+        {
+          "who": "joe",
+          "text": "ICANN published the twenty twenty-six list of new top-level domain applications. Replacement applications are open October eighth to twenty-first. The final list is due November seventeenth. The Verge says .agent and .agi may be popular. That is a headline, not an approval."
+        },
+        {
+          "who": "vex",
+          "text": "And The Verge reports the first Nvidia RTX Spark laptops cost up to seven thousand dollars."
+        },
+        {
+          "who": "joe",
+          "text": "Seven thousand dollars. For a laptop. The ransomware people would like to meet whoever buys that."
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "kind": "story",
+      "strap": "SAMSUNG Q3 PROFIT REPORTED AT 107.4 TRILLION WON",
+      "headline": "Business",
+      "category": "BUSINESS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "Samsung and the carmakers",
+        "bullets": [
+          "Samsung Q3 preliminary operating profit: 107.4 trillion won (roundup)",
+          "Analyst estimates: 101.7-108 trillion won",
+          "BMW iX4: claimed 428-mile range",
+          "India bans AI promotions, fake reviews in medical ads"
+        ]
+      },
+      "sources": [
+        {
+          "name": "SBS roundup",
+          "url": "https://news.sbs.co.kr/english/article.do?news_id=N1008788937"
+        },
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com/transportation/1006837/bmw-ix4-ev-range-price-specs-tesla"
+        },
+        {
+          "name": "Best Media Info",
+          "url": "https://bestmediainfo.com/mediainfo/advertising/top-advertising-marketing-and-media-news-headlines-of-today-october-8-2026-12636290"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A headline roundup reports Samsung Electronics' third-quarter preliminary operating profit at one hundred seven point four trillion won. Analyst estimates ran from one hundred one point seven to one hundred eight trillion. We did not see Samsung's own release."
+        },
+        {
+          "who": "joe",
+          "text": "The Verge reports BMW's iX4 electric SUV has a claimed range of four hundred twenty-eight miles."
+        },
+        {
+          "who": "vex",
+          "text": "And one roundup says India's medical regulator issued new advertising rules barring A.I. promotions and fake reviews, effective immediately."
+        }
+      ]
+    },
+    {
+      "id": "simon",
+      "kind": "weather",
+      "strap": "TROPICAL STORM SIMON STRENGTHENING OFF MEXICO",
+      "headline": "Tropical Storm Simon",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Tropical Storm Simon",
+        "stats": [
+          {
+            "label": "Winds",
+            "value": "50 mph"
+          }
+        ],
+        "bullets": [
+          "Winds 50 mph",
+          "South of Lazaro Cardenas, Mexico",
+          "Strengthening forecast",
+          "NHC Advisory 3"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NHC Advisory 3",
+          "url": "https://www.nhc.noaa.gov/text/refresh/MIATCPEP5+shtml/080233.shtml"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "On the Pacific side, the hurricane center's Advisory Three puts Tropical Storm Simon at fifty miles an hour, south of Lázaro Cárdenas, Mexico. Strengthening is forecast."
+        },
+        {
+          "who": "joe",
+          "text": "Two named storms in one morning. The ocean is showing off."
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "kind": "story",
+      "strap": "NASA RELEASES ARTEMIS II LUNAR SCIENCE DATA",
+      "headline": "Artemis II",
+      "category": "SCIENCE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SCIENCE",
+        "title": "Artemis II data",
+        "bullets": [
+          "Preliminary science data and images",
+          "Crew observations of lunar colors",
+          "Topography along the terminator",
+          "54-minute far-side eclipse"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NASA",
+          "url": "https://www.nasa.gov/blogs/missions/2026/10/07/nasa-releases-artemis-ii-lunar-science-data-images/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "NASA released preliminary Artemis Two lunar science data and images. They include the crew's observations of lunar colors, the shape of the terrain along the terminator, and a fifty-four-minute eclipse seen from the far side."
+        },
+        {
+          "who": "joe",
+          "text": "A fifty-four minute eclipse, from the far side of the Moon. Humans really do go the long way for a good view."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "DODGERS, BREWERS, RAYS WIN; GUARDIANS BEAT WHITE SOX",
+      "headline": "Playoffs and the NFL",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Division Series, Thursday NFL",
+        "bullets": [
+          "Dodgers 4, Braves 1: win series 3-1",
+          "Rays 4, Yankees 3: sweep, 3-0",
+          "Brewers 3, Padres 1: win series 3-1",
+          "Cleveland 9, Chicago 3; White Sox lead 2-1"
+        ]
+      },
+      "sources": [
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/amp/news/2026-mlb-playoff-and-world-series-schedule.html"
+        },
+        {
+          "name": "NFL.com",
+          "url": "https://amp.nfl.com/news/nfl-week-5-injury-report-player-statuses-for-all-15-games"
+        },
+        {
+          "name": "Eagles",
+          "url": "https://www.philadelphiaeagles.com/news/eagles-agree-to-trade-cam-jurgens-to-the-ravens"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Baseball. Per MLB's official page, Los Angeles beat Atlanta four to one and won the Division Series three games to one. Tampa Bay beat New York four to three and swept three to nothing. Milwaukee beat San Diego three to one and won three to one."
+        },
+        {
+          "who": "joe",
+          "text": "In the other series, Cleveland beat Chicago nine to three. Chicago leads two games to one."
+        },
+        {
+          "who": "vex",
+          "text": "Football. Tonight, Tampa Bay visits Dallas at eight-fifteen Eastern. The N.F.L. injury report lists Buccaneers quarterback Baker Mayfield out with a thumb injury."
+        },
+        {
+          "who": "joe",
+          "text": "And the Eagles agreed to trade center Cam Jurgens to Baltimore, pending a physical."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": [],
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped."
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "HEARTBEAT NEWS",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 8",
+          "Sources under the screen",
+          "New show every day by noon"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Thursday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by noon. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
