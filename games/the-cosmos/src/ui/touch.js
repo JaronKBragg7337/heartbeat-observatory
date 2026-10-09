@@ -202,7 +202,7 @@ export class DesktopControls {
     window.addEventListener('keyup', (e) => { this.keys.delete(e.code); this.held.delete(e.code); });
     window.addEventListener('blur', () => { this.keys.clear(); this.held.clear(); });
 
-    canvas.addEventListener('click', () => { if (!this.locked) canvas.requestPointerLock?.(); });
+    canvas.addEventListener('click', () => { if (!this.locked) { try { const r = canvas.requestPointerLock?.(); if (r && r.catch) r.catch(() => {}); } catch { /* the browser refuses a lock asked for too often: ask again on the next click */ } } });
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
     });

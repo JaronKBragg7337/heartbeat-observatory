@@ -53,7 +53,8 @@ export class MissionTracker {
     const open = MISSIONS.filter((m) => m.world === here && !r.done[m.id] && unlocked(m, r.done));
     if (!open.length) return null;
     const mine = (this.world.snapshot.roles && this.world.snapshot.roles.members || {})[this.world.playerId];
-    const m = open.find((x) => !x.faction || x.faction === mine) || open.find((x) => x.oath) || open[0], who = personById(m.giver);
+    const pref = mine || (p.home && p.home.faction) || null;       // the side you belong to, or the one you picked on the board
+    const m = open.find((x) => pref && x.faction === pref) || open.find((x) => !x.faction) || open.find((x) => x.oath) || open[0], who = personById(m.giver);
     return { text: `Work: ${who ? who.title + ' ' + who.name.replace(/^(Sergeant|Doctor|Commander|Quartermaster|Dock Master) /, '') : 'a person here'} has a job: "${m.title}". Walk up, tap Talk, then "Is there paid work for me?".` };
   }
   /** The hiring desk of the world the player stands on, or null (Mars has its Crew Hall). */
