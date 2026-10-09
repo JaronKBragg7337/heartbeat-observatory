@@ -1,0 +1,1035 @@
+{
+  "date": "2026-10-09",
+  "title": "Heartbeat News — Friday, October 9, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-09 (07:30 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-09.md"
+    },
+    {
+      "name": "watch/claude 2026-10-09 (08:25)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-09.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-09 (reader, 09:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-09.md"
+    },
+    {
+      "name": "watch/msi 2026-10-09 (07:00)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-10-09.md"
+    },
+    {
+      "name": "Perplexity headlines (/api/news, read live by the page)",
+      "url": "/api/news"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Polymarket us-iran-ceasefire-continues-through-the-midterms rules; other market slugs",
+      "source": "codex",
+      "why": "Trader material; the news inside it (Trump's statement) aired."
+    },
+    {
+      "item": "Conflicting Oct 5-6 Fox local reports on a Gulf depression",
+      "source": "claude",
+      "why": "Older and unofficial; NHC Advisory 11 aired instead."
+    },
+    {
+      "item": "NASA Starliner uncrewed test flight planned for year end",
+      "source": "Spaceflight Now",
+      "why": "Minor and undated plan; not in the window."
+    },
+    {
+      "item": "Domains 18 and 20 (UAP, entertainment)",
+      "source": "all captures",
+      "why": "Empty in every capture."
+    }
+  ],
+  "ticker": [
+    "HURRICANE ISAIAS: 110 MPH, WARNINGS IN EFFECT",
+    "62.89% OF GULF OIL OUTPUT SHUT IN",
+    "BRENT TOPS $104",
+    "RUSSIA STRIKES UKRAINE; AT LEAST 20 KILLED OCT 7",
+    "U.S. ENVOYS MEET UKRAINE IN MIAMI TODAY",
+    "TRUMP: NO IRAN ATTACK BEFORE NOV. 3 (CLAIM)",
+    "EBOLA: 8,750 CASES, 4,208 DEATHS",
+    "30-YEAR MORTGAGE RATE 7.40%, HIGHEST SINCE 2023",
+    "S&P 500 -0.5%; NASDAQ -1.3%",
+    "BITCOIN $82,551",
+    "OPENAI DEFENDS SAFETY-RESEARCHER FIRINGS",
+    "MICROSOFT, ADOBE, INFOSYS SUSPENDED FROM PERM PROGRAM",
+    "JAPAN CLOUD RANSOMWARE OUTAGE: 495 CUSTOMERS",
+    "CREW-12 SPLASHES DOWN AFTER 237 DAYS",
+    "GUARDIANS FORCE ALDS GAME 5 SATURDAY"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "A hurricane at the Gulf, Ukraine talks in Miami, and Ebola spreads",
+        "bullets": [
+          "Hurricane Isaias: 110 mph, Gulf oil shut in",
+          "Russian strikes; U.S. envoys meet Ukraine in Miami",
+          "Ebola: 8,750 cases; Kenya, Netherlands",
+          "Mortgage rates highest since 2023"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Friday, October ninth.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "Today: Hurricane Isaias builds off the Mississippi, more than half of Gulf oil is shut in, and U.S. envoys sit down with Ukraine in Miami."
+        },
+        {
+          "who": "joe",
+          "text": "Plus Ebola numbers, a mortgage rate that keeps climbing, and a new legal fight over who gets into the White House. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "isaias",
+      "kind": "weather",
+      "strap": "HURRICANE ISAIAS: 110 MPH, 200 MILES FROM THE MISSISSIPPI",
+      "headline": "Hurricane Isaias",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Hurricane Isaias, Gulf Coast",
+        "stats": [
+          {
+            "label": "Winds",
+            "value": "110 mph"
+          },
+          {
+            "label": "Advisory",
+            "value": "11"
+          }
+        ],
+        "bullets": [
+          "About 200 miles SSE of the Mississippi River mouth",
+          "Storm-surge and hurricane warnings in effect",
+          "El Niño shear vs. warm water (AP)"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NHC Advisory 11",
+          "url": "https://www.nhc.noaa.gov/archive/2026/al09/al092026.public_a.011.shtml"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/8ab63c748db4549f6bd96fb977fe98d0"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Hurricane Isaias leads the show. The National Hurricane Center's Advisory Eleven puts its winds at one hundred ten miles an hour. The center is about two hundred miles south-southeast of the mouth of the Mississippi River."
+        },
+        {
+          "who": "joe",
+          "text": "Storm-surge and hurricane warnings are still in effect. That is the official word."
+        },
+        {
+          "who": "vex",
+          "text": "A.P. describes two forces pulling against each other. Wind shear from El Niño could hold the storm down. Warm Gulf water could feed it."
+        },
+        {
+          "who": "joe",
+          "text": "So the storm is deciding what kind of day it wants to have. Everyone on the coast would like to vote."
+        },
+        {
+          "who": "vex",
+          "text": "One note from the desk. Claude's morning search could not find an official advisory, and older local reports disagreed about the storm's strength. The hurricane center's advisory is the source here."
+        }
+      ]
+    },
+    {
+      "id": "gulfoil",
+      "kind": "story",
+      "strap": "62.89% OF GULF OIL OUTPUT SHUT IN FOR ISAIAS",
+      "headline": "Gulf oil shut-ins",
+      "category": "ENERGY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ENERGY",
+        "title": "Gulf production shut in",
+        "stats": [
+          {
+            "label": "Oil shut in",
+            "value": "62.89%"
+          },
+          {
+            "label": "Gas shut in",
+            "value": "57.35%"
+          },
+          {
+            "label": "Brent",
+            "value": "$104+"
+          }
+        ],
+        "bullets": [
+          "Marine Minerals Administration estimate",
+          "Based on operator reports through 11 a.m. CDT, Oct 8",
+          "Brent topped $104 Thursday (AP)"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Marine Minerals Administration",
+          "url": "https://www.bsee.gov/newsroom/latest-news/statements-and-releases/press-releases/mma-monitors-gulf-response-isaias2"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/4499d3b2906917ed3d8670095bf1c321"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Marine Minerals Administration estimates sixty-two point eight nine percent of Gulf oil production is shut in because of Isaias. For natural gas, it is fifty-seven point three five percent. Those figures come from operator reports through eleven a.m. Central on Thursday."
+        },
+        {
+          "who": "joe",
+          "text": "More than half of the Gulf's oil, switched off by weather."
+        },
+        {
+          "who": "vex",
+          "text": "A.P. reports Brent crude topped one hundred four dollars on Thursday. That is a press report, and the link between the two is not stated in the capture."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "RUSSIAN STRIKES HIT UKRAINE; U.S. ENVOYS MEET IN MIAMI",
+      "headline": "Ukraine: strikes and talks",
+      "category": "WORLD",
+      "status": "claim",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Ukraine: strikes and a Miami meeting",
+        "stats": [
+          {
+            "label": "Oct. 7 dead",
+            "value": "20+"
+          },
+          {
+            "label": "Miami meeting",
+            "value": "Oct 9"
+          }
+        ],
+        "bullets": [
+          "Reuters: at least 20 killed Oct 7, incl. children",
+          "A.P.: 2 killed in Zaporizhzhia, Ivano-Frankivsk",
+          "Witkoff and Kushner meet Ukraine in Miami",
+          "Winter energy-strike campaign under way"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters via Global Banking & Finance",
+          "url": "https://www.globalbankingandfinance.com/russia-launches-heavy-strikes-ukraine-killing-least-20/"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/russia-ukraine-war-drone-missile-strikes-2c6c8b081e8e316c83af17a39bce7fe5"
+        },
+        {
+          "name": "Axios",
+          "url": "https://www.axios.com/2026/10/08/ukraine-russia-war-kushner-witkoff-negotiations-winter"
+        },
+        {
+          "name": "Critical Threats",
+          "url": "https://www.criticalthreats.org/analysis/russian-offensive-campaign-assessment-october-4-2026"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ukraine. Reuters, via Global Banking and Finance, reports Russia hit Ukraine with waves of missiles and drones on October seventh. At least twenty people were killed, including children. Industrial and energy sites were damaged."
+        },
+        {
+          "who": "joe",
+          "text": "President Zelenskiy called it one of the most brutal attacks of the war. It came on Putin's birthday. A missile destroyed an apartment block in Pryluky, in the Chernihiv region."
+        },
+        {
+          "who": "vex",
+          "text": "Newer strikes: A.P. reports two people killed in the Zaporizhzhia and Ivano-Frankivsk regions, and five wounded in Zaporizhzhia. Another strike wounded three in the Kyiv region."
+        },
+        {
+          "who": "joe",
+          "text": "And today in Miami, Axios says U.S. envoys Steve Witkoff and Jared Kushner are to meet Ukrainian negotiators and European officials. They bring proposals to break the stalemate."
+        },
+        {
+          "who": "vex",
+          "text": "The think tank Critical Threats, a solo analyst source, says Russia began its winter energy-infrastructure strike campaign in late September. It cites the U.N. counting more than fifteen thousand two hundred eighty civilian casualties in the first eight months of this year, fifty-five percent more than in twenty twenty-five. All of this is reported by press and analysts, not confirmed here."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "story",
+      "strap": "TRUMP: NO U.S. ATTACK ON IRAN BEFORE NOV. 3 MIDTERMS",
+      "headline": "Iran and the midterms",
+      "category": "POLITICS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "POLITICS",
+        "title": "Trump on Iran",
+        "stats": [
+          {
+            "label": "Midterms",
+            "value": "Nov 3"
+          }
+        ],
+        "bullets": [
+          "A.P.: Trump says no attack before the midterms",
+          "He wrote that talks with Tehran were productive",
+          "That is his claim, via A.P."
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/422b1799a1a06466279ac265f560e014"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "A.P. reports President Trump said the United States would not attack Iran before the November third midterm elections. He wrote that discussions with Tehran were productive."
+        },
+        {
+          "who": "vex",
+          "text": "That is a claim from the president, reported by A.P. No agreement or text was produced in the capture."
+        },
+        {
+          "who": "joe",
+          "text": "A promise with an expiration date of election day. The robot may want to circle that."
+        }
+      ]
+    },
+    {
+      "id": "ebola",
+      "kind": "story",
+      "strap": "EBOLA: 8,750 CONFIRMED CASES, 4,208 DEATHS",
+      "headline": "Ebola outbreak",
+      "category": "HEALTH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Ebola outbreak",
+        "stats": [
+          {
+            "label": "Cases",
+            "value": "8,750"
+          },
+          {
+            "label": "Deaths",
+            "value": "4,208"
+          },
+          {
+            "label": "U.S. cases",
+            "value": "0"
+          }
+        ],
+        "bullets": [
+          "C.D.C. Oct 8: one confirmed case in Kenya",
+          "W.H.O.: spread to Alimbongo, North Kivu",
+          "Netherlands evacuated an infected health worker",
+          "Kenya: first case died in Nairobi; 28 contacts"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CDC",
+          "url": "https://www.cdc.gov/ebola/situation-summary/index.html"
+        },
+        {
+          "name": "WHO",
+          "url": "https://www.who.int/emergencies/disease-outbreak-news/item/2026-DON619"
+        },
+        {
+          "name": "CTV News",
+          "url": "https://www.ctvnews.ca/health/article/kenya-confirms-first-ebola-case-after-traveller-from-congo-dies-in-nairobi/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ebola. The C.D.C.'s October eighth update counts eight thousand seven hundred fifty confirmed cases and four thousand two hundred eight confirmed deaths across the affected countries. It reports one confirmed case in Kenya and none in the United States."
+        },
+        {
+          "who": "joe",
+          "text": "The World Health Organization says the outbreak in the Democratic Republic of the Congo has spread to the Alimbongo health zone in North Kivu. It also notes the Netherlands evacuated an infected health worker for medical care."
+        },
+        {
+          "who": "vex",
+          "text": "On Kenya, CTV News reports the first case was a traveler from Congo, on October sixth. The patient died in Nairobi. Twenty-eight contacts have been identified, and Africa C.D.C. sent a team."
+        },
+        {
+          "who": "joe",
+          "text": "The same report says the outbreak is slowing in Ituri and spreading in North and South Kivu. It found no second Kenyan case."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "MORTGAGE RATE 7.40%, HIGHEST SINCE NOV. 2023",
+      "headline": "Money: rates and markets",
+      "category": "ECONOMY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ECONOMY",
+        "title": "Rates and markets",
+        "stats": [
+          {
+            "label": "30-yr mortgage",
+            "value": "7.40%"
+          },
+          {
+            "label": "S&P 500",
+            "value": "-0.5%"
+          },
+          {
+            "label": "Nasdaq",
+            "value": "-1.3%"
+          },
+          {
+            "label": "Bitcoin",
+            "value": "$82,551"
+          }
+        ],
+        "bullets": [
+          "Freddie Mac: 7th straight weekly rise",
+          "S&P 7,765.36; Dow 51,231.64; Nasdaq 27,193.34",
+          "Bitcoin low $80,544, back to $82,551",
+          "Next CPI Oct 14, 8:30 ET (carried)"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Freddie Mac",
+          "url": "https://www.freddiemac.com/media-room"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/4499d3b2906917ed3d8670095bf1c321"
+        },
+        {
+          "name": "MarketScreener",
+          "url": "https://www.marketscreener.com/news/bitcoin-recovers-some-ground-on-falling-yields-oil-ce785ddfd18aff22"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Freddie Mac says the thirty-year fixed mortgage rate rose to seven point four percent. That is its seventh weekly increase and the highest since November twenty twenty-three."
+        },
+        {
+          "who": "joe",
+          "text": "Seven weeks in a row. Somewhere a house is looking at its price tag and sweating."
+        },
+        {
+          "who": "vex",
+          "text": "Stocks, per A.P.: the S and P five hundred fell half a percent to seven thousand seven hundred sixty-five. The Dow rose a tenth of a percent to fifty-one thousand two hundred thirty-one. The Nasdaq fell one point three percent."
+        },
+        {
+          "who": "joe",
+          "text": "MarketScreener says Bitcoin rose nine tenths of a percent to eighty-two thousand five hundred fifty-one dollars, after dipping to eighty thousand five hundred forty-four."
+        },
+        {
+          "who": "vex",
+          "text": "One date ahead. A morning search carried forward that the next consumer price report is October fourteenth at eight-thirty Eastern. That is carried from earlier days, not freshly sourced."
+        }
+      ]
+    },
+    {
+      "id": "openai",
+      "kind": "story",
+      "strap": "OPENAI DEFENDS FIRING THREE SAFETY RESEARCHERS",
+      "headline": "OpenAI safety firings",
+      "category": "TECH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "OpenAI and the safety researchers",
+        "stats": [
+          {
+            "label": "Fired",
+            "value": "3"
+          }
+        ],
+        "bullets": [
+          "OpenAI says they mishandled sensitive information",
+          "Researchers: firings chilled safety talk",
+          "Reported by A.P. and The Verge"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/789d4f5293fba45a22fcb62ebfbc2a41"
+        },
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1008604/openai-defends-decision-fire-safety-researchers"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A.I. news. A.P. reports OpenAI defended firing three safety researchers for allegedly mishandling sensitive information. The researchers said the dismissals chilled internal safety discussion."
+        },
+        {
+          "who": "joe",
+          "text": "The Verge says OpenAI is doubling down on the decision. Two accounts, one dispute, and no outside finding yet on who is right."
+        }
+      ]
+    },
+    {
+      "id": "anthropic",
+      "kind": "story",
+      "strap": "ANTHROPIC LAUNCHES FREE OPEN-SOURCE SECURITY SCANS",
+      "headline": "Anthropic OSS Scanner",
+      "category": "TECH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "Anthropic OSS Scanner",
+        "bullets": [
+          "Opt-in; free periodic scans",
+          "Run by Anthropic's strongest models",
+          "Reports are model-generated, no human review"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Anthropic",
+          "url": "https://www.anthropic.com/news/anthropic-cyber-mission"
+        },
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1008521/anthropic-open-source-oss-scanner"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Anthropic launched an opt-in tool called the O.S.S. Scanner. Open-source projects get free periodic security scans from its strongest models."
+        },
+        {
+          "who": "joe",
+          "text": "The company says the reports are model-generated and not reviewed by a human. So a robot checks your code and no person looks at the answer. Read it with that in mind."
+        }
+      ]
+    },
+    {
+      "id": "greencard",
+      "kind": "story",
+      "strap": "U.S. SUSPENDS MICROSOFT, ADOBE, INFOSYS, TATA FROM GREEN-CARD PROGRAM",
+      "headline": "Labor certification suspensions",
+      "category": "IMMIGRATION",
+      "status": "claim",
+      "graphic": {
+        "kicker": "IMMIGRATION",
+        "title": "Permanent Labor Certification suspended",
+        "stats": [
+          {
+            "label": "Firms named",
+            "value": "8"
+          }
+        ],
+        "bullets": [
+          "Microsoft, Adobe, Cognizant, Capgemini",
+          "HCL, Infosys, Tata, Wipro",
+          "Microsoft: 80% of ~6,000 H-1B filings were existing staff"
+        ]
+      },
+      "sources": [
+        {
+          "name": "TechCrunch",
+          "url": "https://techcrunch.com/2026/10/08/us-bars-microsoft-adobe-and-major-it-firms-from-green-card-program-for-skilled-foreign-workers/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "TechCrunch reports the administration suspended eight companies from the Permanent Labor Certification Program, a step in the green-card process for skilled foreign workers. They are Microsoft, Adobe, Cognizant, Capgemini, H.C.L., Infosys, Tata and Wipro."
+        },
+        {
+          "who": "joe",
+          "text": "Microsoft said eighty percent of its roughly six thousand H-1B applications last fiscal year were for existing employees. That is the company's statement, as reported."
+        }
+      ]
+    },
+    {
+      "id": "press",
+      "kind": "story",
+      "strap": "NEWS ORGS ASK JUDGE TO BLOCK WHITE HOUSE ACCESS BAN",
+      "headline": "White House press access",
+      "category": "LAW",
+      "status": "claim",
+      "graphic": {
+        "kicker": "LAW",
+        "title": "Press access lawsuit",
+        "stats": [
+          {
+            "label": "News orgs",
+            "value": "3"
+          }
+        ],
+        "bullets": [
+          "Request to block barring their reporters",
+          "While their case proceeds",
+          "Reported by A.P."
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/6459d3612a0a845a0cf1a093acafbe6f"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In court, A.P. reports lawyers for three news organizations asked a federal judge to block the White House from barring their reporters while their case goes forward."
+        },
+        {
+          "who": "joe",
+          "text": "Reporters arguing in court about being let into the room. Which is a bit like asking the room to describe itself."
+        }
+      ]
+    },
+    {
+      "id": "arch",
+      "kind": "story",
+      "strap": "ARLINGTON COUNTY SUES OVER TRUMP'S PLANNED TRIUMPHAL ARCH",
+      "headline": "Triumphal Arch lawsuit",
+      "category": "LAW",
+      "status": "claim",
+      "graphic": {
+        "kicker": "LAW",
+        "title": "Arch lawsuit",
+        "bullets": [
+          "First government body to sue over the project",
+          "Filed by Arlington County",
+          "Reported by A.P."
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/d642d3d3f196a9806667a92b4c536050"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Arlington County filed a lawsuit opposing construction of the president's planned Triumphal Arch."
+        },
+        {
+          "who": "vex",
+          "text": "A.P. says it is the first government body to sue over the project."
+        }
+      ]
+    },
+    {
+      "id": "ice",
+      "kind": "story",
+      "strap": "ICE DETAINEES IN GEORGIA USED VIDEO-CALL SOFTWARE TO SHOW CONDITIONS",
+      "headline": "Georgia detention video",
+      "category": "U.S.",
+      "status": "claim",
+      "graphic": {
+        "kicker": "U.S.",
+        "title": "Folkston, Georgia detention",
+        "bullets": [
+          "Detainees used the facility's video-calling software",
+          "Used it to expose conditions inside",
+          "Hunger strike in URL; headline only"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com/report/1008342/folkston-georgia-ice-detention-hunger-strike-video"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Verge reports ICE detainees in Georgia used the facility's own video-calling software to expose conditions inside."
+        },
+        {
+          "who": "joe",
+          "text": "Only the headline reached our desk, so we have no more detail than that. We will say so rather than guess."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "JAPAN CLOUD RANSOMWARE OUTAGE HITS 495 CUSTOMERS",
+      "headline": "Cyber: Japan cloud and ASOS",
+      "category": "CYBER",
+      "status": "claim",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "Cyber incidents",
+        "stats": [
+          {
+            "label": "IDCF customers",
+            "value": "495"
+          }
+        ],
+        "bullets": [
+          "IDC Frontier blames ransomware",
+          "East Japan Region 1 cloud; govt clients",
+          "ASOS: customer names, contacts may be exposed"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BleepingComputer",
+          "url": "https://www.bleepingcomputer.com/news/security/ransomware-attack-disrupts-japans-idcf-cloud-used-by-govt-clients/"
+        },
+        {
+          "name": "TechCrunch",
+          "url": "https://techcrunch.com/2026/10/08/asos-confirms-breach-of-customer-data-after-hackers-send-rogue-app-notification/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Cyber. BleepingComputer reports IDC Frontier attributed an East Japan Region One cloud outage to ransomware. It affected four hundred ninety-five business and municipal customers."
+        },
+        {
+          "who": "joe",
+          "text": "And TechCrunch reports the British retailer ASOS confirmed unauthorized notifications went to customers through a third-party platform. Names and contact details may have been accessed."
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "kind": "story",
+      "strap": "NASA CREW-12 SPLASHES DOWN AFTER 237 DAYS IN SPACE",
+      "headline": "Crew-12 splashdown",
+      "category": "SPACE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPACE",
+        "title": "Crew-12 splashdown",
+        "stats": [
+          {
+            "label": "Days on ISS",
+            "value": "237"
+          },
+          {
+            "label": "Astronauts",
+            "value": "4"
+          }
+        ],
+        "bullets": [
+          "Pacific splashdown off Los Angeles, 11:34 a.m. EDT",
+          "Crew-13 launched Oct 1 (Spaceflight Now)",
+          "SpaceX plans mobile-carrier business (The Verge)"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NASA",
+          "url": "https://www.nasa.gov/blogs/commercialcrew/2026/10/08/nasas-spacex-crew-12-dragon-splashes-down-at-1134-a-m-edt/"
+        },
+        {
+          "name": "Spaceflight Now",
+          "url": "https://spaceflightnow.com/2026/10/"
+        },
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com/science/1008467/spacex-announces-plan-to-become-a-major-mobile-carrier"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Space. N.A.S.A.'s SpaceX Crew Twelve Dragon splashed down in the Pacific off Los Angeles at eleven thirty-four a.m. Eastern. Four astronauts came home after two hundred thirty-seven days on the space station."
+        },
+        {
+          "who": "joe",
+          "text": "Two hundred thirty-seven days. Their first meal back had better be enormous."
+        },
+        {
+          "who": "vex",
+          "text": "Their replacements are already up. Spaceflight Now says Crew Thirteen launched October first. Separately, The Verge headline says SpaceX plans to become a major mobile carrier."
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "kind": "story",
+      "strap": "WAYMO CLOSES $5 BILLION LOAN; TSMC AND SAMSUNG NUMBERS",
+      "headline": "Business: Waymo, TSMC, Samsung",
+      "category": "BUSINESS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "Waymo, TSMC, Samsung",
+        "stats": [
+          {
+            "label": "Waymo loan",
+            "value": "$5B"
+          },
+          {
+            "label": "TSMC Sept",
+            "value": "NT$511.86B"
+          },
+          {
+            "label": "Samsung Q3 op. profit",
+            "value": "KRW 107.4T"
+          }
+        ],
+        "bullets": [
+          "Waymo: first debt financing, term loan",
+          "TSMC Sept revenue +54.6% year on year",
+          "Samsung Q3 guide: revenue KRW 195 trillion"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Waymo",
+          "url": "https://blog.waymo.com/blog/2026/10/waymo-closes-5-billion-debt-financing/"
+        },
+        {
+          "name": "TSMC",
+          "url": "https://pr.tsmc.com/english/news/3343"
+        },
+        {
+          "name": "Samsung",
+          "url": "https://www.samsung.com/global/ir/reports-disclosures/public-disclosure-view.84775/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Business, from the companies themselves. Waymo closed its first debt financing, a five billion dollar term loan, to support commercial expansion."
+        },
+        {
+          "who": "joe",
+          "text": "T.S.M.C. reported September revenue of five hundred eleven point eight six billion Taiwan dollars. That is up fifty-four point six percent from a year ago and down six tenths of a percent from August."
+        },
+        {
+          "who": "vex",
+          "text": "Samsung's third-quarter guidance estimates operating profit of one hundred seven point four trillion won, on revenue of one hundred ninety-five trillion won."
+        }
+      ]
+    },
+    {
+      "id": "illinois",
+      "kind": "story",
+      "strap": "FEMA AGAIN DENIES ILLINOIS DISASTER RELIEF",
+      "headline": "FEMA denies Illinois",
+      "category": "U.S.",
+      "status": "claim",
+      "graphic": {
+        "kicker": "U.S.",
+        "title": "FEMA and Illinois",
+        "bullets": [
+          "Chicago-area August tornadoes, damaging winds",
+          "Illinois request denied a second time",
+          "Indiana's request for the same storm was granted"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NPR Illinois",
+          "url": "https://www.nprillinois.org/illinois/2026-10-08/trump-administration-denies-illinois-request-for-disaster-relief-again"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "FEMA again denied Illinois' request for disaster relief after August tornadoes and damaging winds in the Chicago region, NPR Illinois reports. Indiana's request for the same storm was granted."
+        }
+      ]
+    },
+    {
+      "id": "alsotoday",
+      "kind": "story",
+      "strap": "ALSO TODAY: A.I. SHARING, WINDOWS, MACBOOK, ROBOTS",
+      "headline": "Also today",
+      "category": "TECH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "Also today",
+        "bullets": [
+          "Microsoft 365 Family: shared A.I. benefits",
+          "Windows 11 Search overhaul",
+          "Apple touchscreen MacBook rumored in ~3 weeks",
+          "California vs. robot-vs-human cage matches",
+          "Firing-squad execution livestream planned (headline)"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Verge: Microsoft 365",
+          "url": "https://www.theverge.com/news/1008581/microsoft-365-family-premium-shared-ai-features-storage-changes"
+        },
+        {
+          "name": "The Verge: Windows Search",
+          "url": "https://www.theverge.com/news/1008320/microsoft-windows-search-overhaul-windows-11"
+        },
+        {
+          "name": "The Verge: MacBook",
+          "url": "https://www.theverge.com/tech/1008422/apple-macbook-pro-touchscreen-ipad-mini-rumor"
+        },
+        {
+          "name": "The Verge: robot fights",
+          "url": "https://www.theverge.com/tech/1008401/california-shut-down-rek-fighting-robot-company-human"
+        },
+        {
+          "name": "The Verge: execution livestream",
+          "url": "https://www.theverge.com/tech/1008530/us-government-livestream-execution-firing-squad-fort-hood"
+        },
+        {
+          "name": "The Verge: AMD FSR 4",
+          "url": "https://www.theverge.com/games/1008353/amd-will-bring-fsr-4-to-handhelds-by-the-end-of-2026"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Also today, all from The Verge, mostly headlines only. Microsoft three sixty-five Family subscribers can share A.I. benefits. Microsoft is overhauling Windows Search for Windows Eleven."
+        },
+        {
+          "who": "joe",
+          "text": "Apple will reportedly debut its first touchscreen MacBook in about three weeks. That is a rumor. And A.M.D. says it will bring FSR Four to handhelds by the end of the year."
+        },
+        {
+          "who": "vex",
+          "text": "California is trying to stop robot-versus-human cage matches. And The Verge headline says the U.S. plans to livestream an execution by firing squad."
+        },
+        {
+          "who": "joe",
+          "text": "We only have the headline on that last one, so we will leave it there."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "TAMPA BAY BEATS DALLAS 24-16; GUARDIANS FORCE GAME 5",
+      "headline": "Playoffs and the NFL",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Division Series and Thursday NFL",
+        "stats": [
+          {
+            "label": "Bucs-Cowboys",
+            "value": "24-16"
+          },
+          {
+            "label": "Guardians-White Sox",
+            "value": "9-5"
+          }
+        ],
+        "bullets": [
+          "Tampa Bay 24, Dallas 16",
+          "Rookie QB Jalon Daniels started for injured Baker Mayfield",
+          "Cleveland 9, Chicago 5 in ALDS Game 4",
+          "Game 5: Oct 10, 8 p.m. ET"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Buccaneers",
+          "url": "https://www.buccaneers.com/news/bucs-win-dallas-cowboys-week-5-2026-score-24-16"
+        },
+        {
+          "name": "MLB",
+          "url": "https://www.mlb.com/amp/news/2026-mlb-playoff-and-world-series-schedule.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Sports. Tampa Bay beat Dallas twenty-four to sixteen on Thursday night. Rookie quarterback Jalon Daniels started in place of the injured Baker Mayfield."
+        },
+        {
+          "who": "joe",
+          "text": "In baseball, Cleveland beat Chicago nine to five in Game Four of the Division Series. That forces a deciding Game Five on Saturday, October tenth, at eight p.m. Eastern."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": [],
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped."
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "HEARTBEAT NEWS",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 9",
+          "Sources under the screen",
+          "New show every day by noon"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Friday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by noon. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
