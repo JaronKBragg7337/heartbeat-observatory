@@ -21,7 +21,21 @@ export class GraphicsHealth {
     this.engine=engine;this.gl=gl;
     try { const ext=gl.getExtension('WEBGL_debug_renderer_info');this.gpu=String(gl.getParameter(ext?ext.UNMASKED_RENDERER_WEBGL:gl.RENDERER)).slice(0,200); } catch {this.gpu='Unavailable';}
     engine.renderer.debug.onShaderError=(gl,program,vs,fs)=>this.problem('Shader compile/link: '+[gl.getProgramInfoLog(program),gl.getShaderInfoLog(vs),gl.getShaderInfoLog(fs)].filter(Boolean).join(' ').slice(0,700));
-    engine.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();this.problem('WebGL context lost'+(e.statusMessage?': '+e.statusMessage.slice(0,120):''));});
+    // A lost context is NOT a failure by itself: iPhones drop it whenever the app is backgrounded (a text, the lock screen) and give it back on return. preventDefault tells
+    // the browser we want it restored; three.js rebuilds its state and re-uploads textures on 'webglcontextrestored'. Only a context that does not come back (12 s, 25 s
+    // when the page was hidden meanwhile) or keeps dropping (three losses in a minute) falls back to reduced graphics.
+    const cv = engine.renderer.domElement; this.losses = [];
+    cv.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      const now = Date.now(); this.losses = this.losses.filter((t) => now - t < 60000); this.losses.push(now);
+      const reason = 'WebGL context lost' + (e.statusMessage ? ': ' + e.statusMessage.slice(0, 120) : '');
+      if (this.losses.length >= 3) { this.problem(reason + ' (three times in a minute)'); return; }
+      clearTimeout(this.restoreTimer);
+      const wait = document.hidden ? 25000 : 12000, t0 = performance.now();
+      const check = () => { if (!this.gl || !this.gl.isContextLost()) return; if (document.hidden || performance.now() - t0 < wait) { this.restoreTimer = setTimeout(check, 1000); return; } this.problem(reason + ' and it did not come back'); };
+      this.restoreTimer = setTimeout(check, 1000);
+    });
+    cv.addEventListener('webglcontextrestored', () => { clearTimeout(this.restoreTimer); this.checked = 0; this.blankCount = 0; });
   }
   problem(reason) {
     if(this.failures++)return;

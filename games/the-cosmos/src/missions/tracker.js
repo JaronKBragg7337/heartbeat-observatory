@@ -12,7 +12,8 @@ import { syncProps } from './props.js';
 export class MissionTracker {
   /** o: { world, space, portSite, engine, note(text, important) } */
   constructor(o) { Object.assign(this, o); this.hint = new GoalHint(o.engine); this.seen = null; }
-  rec() { const w = this.world; if (!w.remote || !w.snapshot) return null; return (w.snapshot.missions || {})[w.playerId] || null; }
+  /** The player's jobs record; a player who has never been given a job has none on the server yet, which reads as an empty one. */
+  rec() { const w = this.world; if (!w.remote || !w.snapshot) return null; return (w.snapshot.missions || {})[w.playerId] || { active: null, done: {}, flags: {}, log: [], n: 0 }; }
   me() { const w = this.world; return w.remote && w.snapshot ? w.snapshot.players[w.playerId] : null; }
   active() { const r = this.rec(); if (!r || !r.active) return null; const m = missionById(r.active.id); return m ? { m, step: m.steps[r.active.step], index: r.active.step, carry: r.active.carry } : null; }
 

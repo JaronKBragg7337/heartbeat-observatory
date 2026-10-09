@@ -100,7 +100,7 @@ try {
   results.recoveredFrames=[];
   let phoneId;
   async function recovered(reason) {
-    await phone.waitForURL(/tier=safe/,{waitUntil:'commit',timeout:15000});
+    await phone.waitForURL(/tier=safe/,{waitUntil:'commit',timeout:30000});
     await phone.waitForFunction(()=>window.cosmos?.multiplayer&&cosmos.engine.frameCount>=2,null,{timeout:120000});
     const info=await phone.evaluate(()=>{
       const c=cosmos,e=c.engine;e.stop();e.graphics.checked=9;c.step(.016);
