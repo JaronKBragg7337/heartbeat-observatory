@@ -22,8 +22,10 @@ at the next story break; until then it keeps looping the last show.
   air ("Reuters quotes...", "that is a claim"), and the segment's `status` is `claim` or `mixed`. `[observed]` = `observed`.
   `[theory]` items stay out, or are said plainly as a pattern someone is watching.
 - **Sources:** each story's `sources` are the URLs the capture cites for it (name them by outlet).
-- **Length follows the news.** One segment per story worth telling. A thin day is 5-7 segments; a big day 12-18.
-  2-6 lines per segment. Lead with the biggest story of the day. Group small items (e.g. a "Tech" or "Around the country" block).
+- **Length follows the news, with no upper cap** (Jaron 10/8: longer shows that cover more). One segment per story worth
+  telling. A thin day is 5-7 segments; a big day can run 20-30. Never skip a real item "for time" - if it doesn't earn its own
+  segment, put it in a quick-hits block ("Also today", one or two lines each). Skips are only for headline-only items, stale or
+  undated items, shopping/deals, and duplicates. 2-6 lines per segment. Lead with the biggest story of the day. Group small items (e.g. a "Tech" or "Around the country" block).
 - **Fixed segments:** `open` first (Vex greets, Joe names the day, a two-line tease), a `wire` segment near the end
   (leave `lines: []`; the page fills it from the live Perplexity headlines), `close` last (sign-off, "new show every day by
   noon" - the filmed show is ready by 12 PM; never promise an earlier time). Use `kind: "breaking"` for at most one story that broke in the last 24 h. `weather` and `sports`
