@@ -6,6 +6,8 @@ import { buildSea } from './sea.js';
 import { buildGlobe } from './globe.js';
 import { buildComplex } from './complex.js';
 import { buildLife } from './life.js';
+import { buildBoard } from '../../missions/boardProp.js';       // MISSIONS: the dispatcher's notice board
+import { DESKS } from '../../missions/desk.js';
 import { MoonPeople } from '../moon/people.js';
 import { layoutOf } from './layout.js';
 import { frameToOutpost, outpostToFrame, pushOut } from '../moon/place.js';
@@ -17,6 +19,7 @@ export default {
     const sea = buildSea({ engine, world, tier });
     const complex = buildComplex({ engine, world, space, tier });
     const life = buildLife({ engine, world, complex, tier });
+    if (complex.root) complex.root.add(buildBoard({ ...DESKS.earth.board, title: 'JOBS', sub: 'HANDS FOR HIRE · ASK THE DISPATCHER', seed: 11 }));
     // the two people (cast.js): the Moon's person class reads the layout it is given, here Earth's, and builds them from the same Loft library when the world is built
     const people = new MoonPeople({ root: complex.root || engine.scene, people: space.peopleLib || null, space, pi, worldId: 'earth' });
     people.layout = layout;

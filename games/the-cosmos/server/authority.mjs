@@ -29,6 +29,7 @@ import { ShipSimulation } from './simulation.mjs';
 import { VehicleDirector } from './vehicles.mjs';
 import { ShopDirector } from './shops.mjs';
 import { RoleDirector } from './roles.mjs';      // F5 roles and NPC stand-ins, F4 balance and home strength
+import { MissionDirector } from './missions.mjs';      // MISSIONS: jobs, stories and the hiring desks of the worlds that are not Mars
 import { worldSale } from './world2.mjs';       // WORLD2
 import { tripWarps } from '../src/space/longRange.js';       // F3: the compression ladder depends on the drive that has the ship
 import { moonTrade } from './moon.mjs';       // WD-MOON
@@ -61,8 +62,8 @@ export class Authority {
     this.adapter=adapter;this.now=now;this.verify=verify;this.mars=getBody('mars');this.site=createPortSite(this.mars);
     this.sessions=new Map();this.inputs=new Map();this.queue=Promise.resolve();this.error='';this.bricks=new Map();
     this.state={schema:2,revision:0,clock:0,savedAt:now(),players:{},ships:{},pads:[],pool:{},poolSeq:0,
-      market:initialEconomy(),terrain:{},damage:{},vehicles:{},shops:{},receipts:{},users:{}};
-    this.fleet=new FleetDirector(this);this.vehicleInputs=new Map();this.vehicles=new VehicleDirector(this);this.shops=new ShopDirector(this);this.roles=new RoleDirector(this);
+      market:initialEconomy(),terrain:{},damage:{},vehicles:{},shops:{},receipts:{},users:{},missions:{}};
+    this.fleet=new FleetDirector(this);this.vehicleInputs=new Map();this.vehicles=new VehicleDirector(this);this.shops=new ShopDirector(this);this.roles=new RoleDirector(this);this.missions=new MissionDirector(this);
   }
   async load(){const s=await this.adapter.load();if(s.record){if(s.record.schema!==2)throw Error('Unsupported authority schema.');this.state=s.record;}
     for(const c of Object.values(this.state.pool))if(!c.shipId&&c.status==='inside'&&c.position.x===CREW_HALL.x&&c.position.z===CREW_HALL.z)c.position.x+=(CREW_POSTS.findIndex(r=>r.id===c.role)-2.5)*2.4;
@@ -70,7 +71,7 @@ export class Authority {
     for(const p of Object.values(this.state.players)){p.offlineAt=p.offlineAt||this.state.savedAt;p.seenAt=p.seenAt||p.offlineAt;
       // OPENING2: an unfinished opening of the old shape (the freighter crash) is not resumed: the beats changed, so the player starts the new one.
       if(p.opening&&!p.opening.complete&&p.opening.version!==OPENING_VERSION)p.opening=freshOpening({season:this.season(),now:this.now()});}
-    this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.state.vehicles=this.state.vehicles||{};this.rebuild();this.vehicles.ensureAll();this.shops.ensureAll();this.roles.ensureAll();this.refill();
+    this.bricks=new Map(s.bricks.map(b=>[b.key,b]));this.state.vehicles=this.state.vehicles||{};this.rebuild();this.vehicles.ensureAll();this.shops.ensureAll();this.roles.ensureAll();this.missions.ensureAll();this.refill();
     // Restart catch-up uses real elapsed time. It continues trips/wages, never a browser clock.
     const elapsed=Math.min(300,Math.max(0,(this.now()-this.state.savedAt)/1000)); // hotfix 10/2: cap catch-up at 5 min; an active ship at 30 Hz over hours pegged the CPU and the watchdog restart loop made it worse
     if(elapsed){this.advance(elapsed,{catchUp:true});}
@@ -106,6 +107,8 @@ export class Authority {
   _parkBlockers(){const held=[];for(const sim of this.sims.values()){if(sim?.ship?.state?.blockers){held.push([sim,sim.ship.state.blockers]);delete sim.ship.state.blockers;}}return held;}
   _unpark(held){for(const [sim,b] of held)sim.ship.state.blockers=b;}
   publicState(viewerId){const held=this._parkBlockers();const s=structuredClone(this.state);this._unpark(held);delete s.receipts;delete s.users;
+    // MISSIONS: a player is sent only their own jobs (the others' are theirs)
+    {const mine=s.missions?.[viewerId];s.missions=mine?{[viewerId]:mine}:{};}
     for(const [id,sh] of Object.entries(s.ships))if(sh.parked)delete s.ships[id];
     // The crew of a parked ship go with it (a browser that is told of a hired person on a ship it was not sent has nothing to place them on).
     for(const [id,c] of Object.entries(s.pool))if(c.shipId&&!s.ships[c.shipId])delete s.pool[id];
@@ -191,7 +194,7 @@ export class Authority {
     const before=structuredClone(this.state);
     try{
       for(const s of owned){
-        for(const c of s.crew||[]){const pc=this.state.pool[c.id];if(pc&&pc.shipId===s.id){const slot=Math.max(0,CREW_POSTS.findIndex(r=>r.id===pc.role));
+        for(const c of s.crew||[]){const pc=this.state.pool[c.id];if(pc&&pc.deskKey){delete this.state.pool[c.id];continue;}if(pc&&pc.shipId===s.id){const slot=Math.max(0,CREW_POSTS.findIndex(r=>r.id===pc.role));
           Object.assign(pc,{shipId:null,status:'inside',position:{x:CREW_HALL.x+(slot-2.5)*2.4,y:0,z:CREW_HALL.z},refillAt:this.state.clock});}}
         for(const a of this.state.pads)if(a.shipId===s.id)a.shipId=null;
         for(const [vid,v] of Object.entries(this.state.vehicles||{}))if(v.owner===id||v.homeShipId===s.id||v.parentShipId===s.id)delete this.state.vehicles[vid];
@@ -200,7 +203,7 @@ export class Authority {
       for(const [k,r] of Object.entries(this.state.receipts||{}))if(r?.playerId===id)delete this.state.receipts[k];
       for(const q of Object.values(this.state.players))if(q.id!==id&&owned.some(s=>s.id===q.currentShipId))q.currentShipId=q.shipId;
       for(const u of Object.values(this.state.users||{}))for(const [sl,v] of Object.entries(u.slots))if(v.playerId===id)delete u.slots[sl];
-      this.shops.removeOwner(id);this.roles.removePlayer(id);this.releaseOpening(id);this.inputs.delete(id);this.vehicleInputs.delete(id);delete this.state.players[id];
+      this.shops.removeOwner(id);this.roles.removePlayer(id);this.missions.removePlayer(id);this.releaseOpening(id);this.inputs.delete(id);this.vehicleInputs.delete(id);delete this.state.players[id];
       return true;
     }catch(e){this.state=before;this.rebuild();throw e;}
   }
@@ -446,7 +449,7 @@ export class Authority {
           if(passed&&d<.03)c.status=meeting?'waiting':'inside';}
       }
       for(const p of Object.values(this.state.players))if(p.pose.seat&&!this.sessions.has(p.id)&&p.offlineAt&&this.now()-p.offlineAt>30000)this.releaseSeat(p);
-      this.vehicles.step(dt,{catchUp});this.shops.step(dt,{catchUp});this.roles.step(dt,{catchUp});
+      this.vehicles.step(dt,{catchUp});this.shops.step(dt,{catchUp});this.roles.step(dt,{catchUp});this.missions.step(dt,{catchUp});
     }this.refill();
     this.state.elevator=structuredClone(this.elevator);
     if(this.state.clock>=(this.state.nextRestock||300)){for(const stock of Object.values(this.state.market.traders))for(const k of Object.keys(stock))stock[k]=Math.max(stock[k],30);this.state.nextRestock=this.state.clock+300;}
@@ -733,6 +736,8 @@ export class Authority {
           groundRoute:[{x:s.pad.x-28,z:CREW_HALL.door.z+3},{x:s.pad.x-28,z:s.pad.z+32},{x:s.pad.x,z:s.pad.z+25}],
           status:'boarding',nextPay:this.state.clock+SOL_SECONDS,unpaid:false});break;}
       case 'fire':{this.owner(p,ship);const c=ship.crew.find(m=>m.id===a.id);if(!c||c.status.startsWith('leaving'))throw Error('Not your crew.');
+        // MISSIONS: away from Mars a hand simply steps off where the ship stands (the desk's list takes a desk hand back); at the port they walk to the Crew Hall as before
+        if(sim.frameId!=='mars'&&sim.flight.landed){delete ship.economy.crew[c.role];ship.crew=ship.crew.filter(m=>m.id!==c.id);const pc=this.state.pool[c.id];if(pc){pc.retired=true;pc.shipId=null;}this.crewRoutes.delete(c.id);break;}
         if(!sim.flight.landed||sim.frameId!=='mars'||distance(this.site.toLocal(sim.flight.pos),{...ship.pad,y:0})>140)throw Error('They will step off when we are down at the port.');
         delete ship.economy.crew[c.role];sim.crew.cancelOrder();
         if(c.status==='boarding'){c.status='leaving-ground';c.groundRoute=[{x:-28,z:-57},{x:CREW_HALL.door.x,z:CREW_HALL.door.z+1}];}
@@ -756,6 +761,7 @@ export class Authority {
       case 'shop-close':return this.shops.close(p,a);
       case 'shop-buy':return this.shops.buy(p,a);
       case 'faction-join':case 'faction-leave':case 'role-talk':case 'role-take':case 'role-leave':case 'role-work':case 'role-set':case 'role-stand':case 'role-vote':case 'project-deliver':case 'project-buy-half':case 'peace-step':return this.roles.act(p,a);   // F5/F4
+      case 'mission-accept':case 'mission-choose':case 'mission-drop':case 'desk-hire':return this.missions.act(p,a);   // MISSIONS
       case 'buy-ship':return this.buyShip(p,a);
       case 'set-flagship':return this.setFlagship(p,a);
       case 'claim-ship':return this.claimShip(p,a);

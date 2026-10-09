@@ -16,6 +16,7 @@ import { openingLines } from '../opening/dialogue.js';
 import { roleLines } from '../roles/npcs.js';
 import { moonLines } from '../worlds/moon/cast.js';       // WD-MOON
 import { earthLines } from '../worlds/earth/cast.js';
+import { missionLines } from '../missions/lines.js';       // MISSIONS: each giver's pitch
 import { DESTINATIONS } from '../space/spaceSpec.js';
 import { BODIES } from '../world/bodies.js';
 import { frameWorlds } from '../worlds/registry.js';
@@ -64,7 +65,8 @@ export function structuredLines() {
   }
   out.push(...roleLines());          // F5: every NPC seat-holder's lines (src/roles/npcs.js)
   out.push(...moonLines());          // WD-MOON: the Moon's people (src/worlds/moon/cast.js)
-  out.push(...earthLines());         // Earth: the two people at the Skyward complex
+  out.push(...earthLines());         // Earth: the people at the Skyward complex
+  out.push(...missionLines());       // MISSIONS: the pitch of every job whose giver has a voice
   for (const p of CREW_POSTS) {
     out.push({ voice: p.personId, text: p.pitch });
     for (const k of ['hired', 'noRamp', 'settle', 'needYou']) out.push({ voice: p.personId, text: CREW_LINES[k](p.name) });

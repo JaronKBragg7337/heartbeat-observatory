@@ -16,6 +16,11 @@ export const EARTH_CAST = [
     question: 'What does Homeguard want?',
     answer: 'To stay, and to rebuild. Sea walls, fields, schools, and a great deal of patience. We have nothing built yet, so I am standing in someone else\'s yard. They are very polite about it.',
     reply: 'Someone has to start.' },
+  { id: 'e-dispatch', name: 'Marisol Quintero', title: 'Range dispatcher', faction: 'mars', role: 'officer', body: 'zuri', voice: 'w-bella', x: -9, z: -64, face: 'south',
+    line: 'Range dispatch. I log every gate, every key card and every launch that did not happen. There are a lot of those. Jobs and hands for hire are on my board.',
+    question: 'What does dispatch do?',
+    answer: 'Everything that is not a rocket. The gate log, the jobs, the hands for hire, the coffee. Skyward runs the launches; I run the day. If you need work, ask me. If you need a crew, I have names.',
+    reply: 'Work and a crew. Understood.' },
 ];
 
 /** Every static line these two say, with the voice that says it (read by src/voice/lines.js for tools/gen-voices.mjs). */

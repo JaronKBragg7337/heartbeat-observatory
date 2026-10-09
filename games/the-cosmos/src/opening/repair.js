@@ -51,11 +51,16 @@ export class RepairChain {
       if (miss.length === 1) return { text: `${stand}Buy the ${REPAIR_PARTS[miss[0]].name} (300 marks) from ${at(giverFor(world, miss[0]))}. Then fit both at the boat.` };
       return { text: `${stand}Both parts are yours. Walk to the lifeboat and tap "Fit the power cell and the coupler".` };
     }
-    if (!(ship.crew || []).length && world !== 'mars') return { text: 'Lifeboat ready. Crew are hired at the Crew Hall at Marineris Port on Mars: fly home (Course), land, and walk to the hall at the north end of the pads. Until then, dig ore or salt and sell it at Occator Works.' };
-    if (!(ship.crew || []).length) return { text: `${p.home?.stay ? 'Your ship is on its pad.' : 'Lifeboat ready.'} Next: hire a crew. Walk to the Crew Hall at Marineris Port (the long building at the north end of the pads, an arrow points the way after a minute). Stand at its door and the six people inside come out to meet you; talk to one and tap Hire.` };
-    return { text: world === 'mars'
-      ? 'First job: ride the lift up the control tower at Marineris Port and talk to the watch supervisor about "A tonne for the foundation", 400 marks. Or fly to Phobos for core samples, 300 credits each (Course, Jobs).'
-      : 'Ceres has no job board yet. Dig ore or salt and sell it at Occator Works, or fly home to Marineris Port (Course) where the depot job and the Phobos core samples pay.' };
+    // MISSIONS: a job in hand is the next step; otherwise, on Mars the crew first (the Crew Hall), elsewhere the job a person here is offering
+    const mt = this.missions, onJob = mt && mt.active();
+    if (onJob) return mt.nextGoal(ship);
+    const hereWorld = this.space.frameId;
+    if (!(ship.crew || []).length && world === 'mars' && hereWorld === 'mars') return { text: `${p.home?.stay ? 'Your ship is on its pad.' : 'Lifeboat ready.'} Next: hire a crew. Walk to the Crew Hall at Marineris Port (the long building at the north end of the pads, an arrow points the way after a minute). Stand at its door and the six people inside come out to meet you; talk to one and tap Hire.` };
+    const offer = mt && mt.nextGoal(ship);
+    if (offer) return offer;
+    return { text: hereWorld === 'mars'
+      ? 'Jobs: the Phobos core samples pay 300 credits each (Course, Jobs), and the watch supervisor in the control tower has "A tonne for the foundation", 400 marks. Hands for hire wait at the Crew Hall.'
+      : 'No more jobs here for now. Dig, haul and sell what the ground gives, or fly to another world (Course). The people here will have more when the world changes.' };
   }
   _mine() {
     const w = this.world; if (!w.remote || !w.snapshot) return null;

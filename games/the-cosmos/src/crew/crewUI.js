@@ -17,6 +17,7 @@ import { partsSoldBy, REPAIR_PARTS } from '../opening/lifeboat.js';
 import { TRADERS, QUESTS } from '../economy/catalog.js';   // VOICES
 import { WORKER_CAST, voiceForName } from '../voice/cast.js';
 import { WORKER_FALLBACK } from '../port/workerLines.js';
+import * as MT from '../missions/talk.js';       // MISSIONS: jobs and hands for hire in the Talk panel
 
 const CSS = `
 #crew-ui { position: fixed; inset: 0; pointer-events: none; z-index: 68; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
@@ -123,6 +124,11 @@ export class CrewUI {
     const v = this.voice; if (!v || !this.open) return;
     const key = m.id + '|' + this.view; if (key === this._voiced) return; this._voiced = key;
     const o = { source: m.person?.group || null, channel: 'room' };
+    if (this.view === 'work') {       // MISSIONS: the offer, said by the person who makes it (their own voice when they have one)
+      const w = this.crew.world;
+      if (w && w.remote && w.snapshot) { const voice = m.voice || (WORKER_CAST[m.id] && WORKER_CAST[m.id].voice) || null; if (voice) for (const l of MT.lines(m.id, 'work', w.snapshot, w.playerId, this.ship.space && this.ship.space.frameId)) v.sayLine(l.text, { ...o, voice, queue: true }); }
+      return;
+    }
     if (m.speech) { for (const l of m.speech(this.view)) v.sayLine(l.text, { ...o, voice: l.voice, queue: true }); return; }       // WD-MOON: a far world's person speaks their own lines
     if (m.status === 'worker') {
       const cast = WORKER_CAST[m.id]; if (!cast) return;
@@ -142,7 +148,9 @@ export class CrewUI {
     const f = this.crew.ship.flight, o = this.crew.activeOrder();
     const tr = this.ship.space && this.ship.space.trip;
     const trTick = tr && tr.active ? `${tr.phase}|${tr.warp}|${tr.eff}|${Math.round(tr.progress.etaS / 10)}|${Math.round(tr.progress.distM / 2000)}` : '-';   // SPACE-FIX: redraw as the course moves on
-    return [m.id, m.status, m.mode, m.seated, m.displaced, this.view, this.reply, this.crew.world?.state.economy.marks, o ? o.type : '-', this.crew.flyer() ? 1 : 0, f.landed ? 1 : 0, this.ship.aboard ? 1 : 0, this.ship.seat ? this.ship.seat.id : '-', trTick].join('|');
+    const mw = this.crew.world, ms = mw && mw.remote && mw.snapshot && mw.snapshot.missions && mw.snapshot.missions[mw.playerId];
+    const mSig = ms ? `${ms.active ? ms.active.id + ms.active.step : '-'}|${ms.n}|${Object.keys(ms.done).length}|${Object.keys(mw.snapshot.pool || {}).length}` : '-';
+    return [mSig, m.id, m.status, m.mode, m.seated, m.displaced, this.view, this.reply, this.crew.world?.state.economy.marks, o ? o.type : '-', this.crew.flyer() ? 1 : 0, f.landed ? 1 : 0, this.ship.aboard ? 1 : 0, this.ship.seat ? this.ship.seat.id : '-', trTick].join('|');
   }
 
   _draw() {
@@ -157,7 +165,13 @@ export class CrewUI {
     let h = `<div class="hd"><img src="/homes/people/${m.personId}.jpg" alt=""><div><b>${esc(m.name)}</b><span>${esc(def.title)}${skill}</span></div><button class="cbtn x" data-a="close">✕</button></div>`;
     if (this.reply) h += `<div class="say">${esc(this.reply)}</div>`;
     if (m.status === 'worker') {
-      h += m.talk ? m.talk(this.view, c.world?.state.economy||c.account) : workerHTML(m,this.view,c.world?.state.economy||c.account);       // WORLD2: m.talk draws a far world's worker panel
+      const jw = c.world && c.world.remote && c.world.snapshot ? c.world : null, jf = this.ship.space && this.ship.space.frameId;
+      const jobView = jw && (this.view === 'work' || this.view === 'hire') ? MT.view(m.id, m.name, this.view, jw.snapshot, jw.playerId, jf) : '';
+      if (jobView) h += jobView;       // MISSIONS: the job they offer, or the desk's list of hands
+      else {
+        h += m.talk ? m.talk(this.view, c.world?.state.economy||c.account) : workerHTML(m,this.view,c.world?.state.economy||c.account);       // WORLD2: m.talk draws a far world's worker panel
+        if (jw && this.view === 'main') h += MT.entry(m.id, jw.snapshot, jw.playerId, jf);       // MISSIONS: Is there paid work? / the question a job asks / hands for hire
+      }
       h += this._repairOffer(m);       // FIX-R4: the drained lifeboat's parts are sold where the NEXT line says
     } else if (m.status === 'candidate') {
       h += `<p>${esc(def.pitch)}</p><p class="stat">Works at ${Math.round(def.skill * 100)}% of a good hand: about ${thinkDelay(def.skill).toFixed(1)} s to react, and a little off in the aim. Stays aboard until you say otherwise.</p>`;
@@ -246,8 +260,11 @@ export class CrewUI {
     const w = this.crew.world; if (!w || !w.remote || !w.snapshot || this.view === 'answer') return '';
     const p = w.snapshot.players[w.playerId], ship = p && w.snapshot.ships[p.shipId]; if (!ship || !ship.drained) return '';
     const parts = partsSoldBy(m.id, p.home?.world || 'mars', ship); if (!parts.length) return '';
-    return `<div class="col"><p class="stat">Lifeboat repair</p>${parts.map((x) => `<button class="cbtn" data-a="lifeboat-part" data-part="${x}">Buy the ${esc(REPAIR_PARTS[x].name)} � ${REPAIR_PARTS[x].priceMarks} marks<small>For your drained lifeboat</small></button>`).join('')}</div>`;
+    return `<div class="col"><p class="stat">Lifeboat repair</p>${parts.map((x) => `<button class="cbtn" data-a="lifeboat-part" data-part="${x}">Buy the ${esc(REPAIR_PARTS[x].name)} · ${REPAIR_PARTS[x].priceMarks} marks<small>For your drained lifeboat</small></button>`).join('')}</div>`;
   }
+
+  /** MISSIONS: send an action through the shared view (it sends the player's pose first, so the authority checks where they really stand). */
+  _rq(a) { const v = this.crew.view; return v && v.request ? v.request(a) : this.crew.world.request(a); }
 
   async _click(e) {
     const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
@@ -263,6 +280,11 @@ export class CrewUI {
       case 'purchase': case 'sale': case 'regolith-sale': case 'quest-accept': case 'buy-vehicle':
         r=c.world?.dispatch({type:a,trader:m.id,good:b.dataset.good,id:b.dataset.quest});
         if(r)this.reply=r.msg;break;
+      case 'mission-ask': this.view = 'work'; break;       // MISSIONS
+      case 'mission-hires': this.view = 'hire'; break;
+      case 'mission-accept': r = await this._rq({ type: 'mission-accept', id: b.dataset.m }); if (r && r.ok) { this.reply = r.msg; this.view = 'main'; } break;
+      case 'mission-choose': r = await this._rq({ type: 'mission-choose', option: b.dataset.o }); if (r && r.ok) this.reply = r.msg; break;
+      case 'desk-hire': r = await this._rq({ type: 'desk-hire', key: b.dataset.k }); if (r && r.ok) this.reply = r.msg; break;
       case 'lifeboat-part': r = await c.world?.dispatch({ type: 'lifeboat-part', part: b.dataset.part }); if (r) this.reply = r.msg; break;
       case 'comms-report': {
         const e=c.world?.state.economy||c.account;

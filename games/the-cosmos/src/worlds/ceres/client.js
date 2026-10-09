@@ -5,10 +5,13 @@
 // things stand, what is for sale) is layout.js and trade.js.
 // ============================================================================
 import { buildOutpost } from './outpost.js';
+import { buildBoard } from '../../missions/boardProp.js';       // MISSIONS: the flight office's notice board
+import { DESKS } from '../../missions/desk.js';
 
 function dress(world, { engine }) {
   const space = world.space;
   const out = buildOutpost({ engine, world, space, tier: world.tier });
+  if (out.root) out.root.add(buildBoard({ ...DESKS.ceres.board, title: 'JOBS', sub: 'HANDS FOR HIRE · ASK THE FLIGHT OFFICE', seed: 23 }));
   return {
     outpost: out, people: out.people,
     update(dt) {

@@ -9,10 +9,13 @@ import { acquireEarth } from './earthSky.js';
 import { layoutOf } from './layout.js';
 import { frameToOutpost, outpostToFrame, pushOut } from './place.js';
 import { buildSampleBeacon } from '../../space/hardware.js';
+import { buildBoard } from '../../missions/boardProp.js';       // MISSIONS: the hub terminal's notice board
+import { DESKS } from '../../missions/desk.js';
 
 export function dressMoon(world, { engine }, build) {
   const space = world.space, pi = world.body.padInfo, layout = layoutOf(world.id);
   const out = build({ engine, world, space, tier: world.tier });
+  if (world.id === 'moon' && out.root) out.root.add(buildBoard({ ...DESKS.moon.board, title: 'JOBS', sub: 'HANDS FOR HIRE · ASK ARRIVALS', seed: 37 }));
   const people = new MoonPeople({ root: out.root, people: space.peopleLib || null, space, pi, worldId: world.id });
   const earth = acquireEarth({ engine, space });       // one Earth for all three landings, shown whenever the ship is in the Moon's region
   // survey beacons on a world's marked finds (def.seams: Shackleton's ice), as Occator Works marks its ore

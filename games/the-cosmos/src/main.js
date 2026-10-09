@@ -73,6 +73,7 @@ import { freshOpening, needsOpening } from './opening/state.js';
 import { currentSeason } from './opening/season.js';
 import { arrivalNoteFor } from './opening/dialogue.js';
 import { RepairChain } from './opening/repair.js';
+import { MissionTracker } from './missions/tracker.js';       // MISSIONS: jobs and stories
 import { readOpeningCheckpoint } from './opening/checkpoint.js';
 import { buildShowcase } from './port/showcase.js';
 
@@ -96,7 +97,7 @@ const legacyReview=openingParams.get('dev')==='1'&&openingParams.get('opening')=
 if(!world.remote&&!legacyReview&&needsOpening(world.state.opening,savedWorld.record)){
   world.state.opening=readOpeningCheckpoint()||world.state.opening||freshOpening({season:currentSeason(Date.now(),openingParams.get('cause'))});world.state.shipType='lifeboat';
 }
-let opening=null,repair=null;
+let opening=null,repair=null,missions=null;
 
 const engine = new Engine(canvas, { fov: 72,world });
 const safeGraphics=engine.safe;
@@ -1108,6 +1109,7 @@ engine.addUpdater((dt) => {
   if (chat) { chat.tick(dt); voiceUI.update(); }
   economyUI.tick(dt);
   repair?.tick(dt);
+  missions?.tick(dt,!!repair?._mine());
   damageView.tick(dt,walker.worldPos);
   if (suitGroup.visible && playerPerson.loaded) {
     // the body stands or walks with what the legs are doing
@@ -1215,6 +1217,7 @@ if (ship.ready) {
   if (multiplayer) multiplayer.vehicles = vehicles;
 }
 repair=world.remote?new RepairChain({world,walker,portSite,space,engine,shipSystem:ship,vehicles}):null;ship.liftBlockReason=()=>repair?.liftBlock()||'';   // OPENING2: the drained lifeboat's parts
+missions=world.remote?new MissionTracker({world,space,portSite,engine,shipSystem:ship,note:(t,imp)=>ship.note(t,imp)}):null;if(repair)repair.missions=missions;if(multiplayer)multiplayer.missions=missions;   // MISSIONS
 opening=new Opening({engine,world,ship,people,port,tier,voice,onFinish:(pose,frameId)=>{
   const pad=world.remote?world.snapshot.ships[world.snapshot.players[world.playerId].shipId].pad:{x:0,z:0};
   const arrival=pose?.worldPos||portSite.toWorld(pad.x-7,.02,pad.z+20);

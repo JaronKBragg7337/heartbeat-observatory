@@ -318,10 +318,13 @@ export class MultiplayerView {
     if(!this.world.connected){text('The shared world keeps running while you are away.');const solo=document.createElement('button');solo.textContent='Play my saved solo world';solo.onclick=()=>{const u=new URL(location.href);u.searchParams.set('solo','1');location.href=u.href;};this.panel.append(solo);}
     btn(owned.crewMayBoard?'Close guest boarding':'Allow crew to board',{type:'boarding-permission',allowed:!owned.crewMayBoard});
     text('Walk onto a lowered ramp to board. Walk back down it to leave. Guest ramps work when their owner allows boarding.');
+    this.missions?.panel(text,btn);   // MISSIONS: the job you are on, and the hiring desk of this world (first: it is what you are doing)
     this.fleetView.panel(s,p,text,btn);
     rolesPanel(s,p,text,btn);   // F5 roles, F4 balance
-    text('Hiring: walk to the crew hall door, north of the main pad. Candidates come outside when called.');
-    for(const c of Object.values(s.pool).filter(c=>!c.shipId&&!c.retired)){text(`${c.name} · ${c.role} · ${Math.round(c.skill*100)}% · ${c.wageCredits} cr/sol`);
+    const onMars=['mars','phobos','deimos'].includes(this.space.frameId);
+    if(onMars)text('Hiring: walk to the crew hall door, north of the main pad. Candidates come outside when called.');
+    else if(!this.missions?.deskHere())text('Hiring: the Crew Hall is at Marineris Port on Mars. This place has no hiring desk.');
+    for(const c of Object.values(s.pool).filter(c=>!c.shipId&&!c.retired&&!c.deskKey&&onMars)){text(`${c.name} · ${c.role} · ${Math.round(c.skill*100)}% · ${c.wageCredits} cr/sol`);
       if(c.status==='inside')btn('Meet '+c.name,{type:'meet',id:c.id});else if(c.status==='waiting'){btn('Hire '+c.name,{type:'hire',id:c.id});btn('Decline',{type:'decline',id:c.id});}}
     text('Your crew: '+(owned.crew.map(c=>`${c.name} (${c.status}${c.unpaid?', unpaid':''})`).join(', ')||'none'));
     this.panel.scrollTop=scroll;

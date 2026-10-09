@@ -223,6 +223,10 @@
   "voice": "zuri",
   "text": "Hull's at 29 percent. Breaking off, going down to neutral airspace."
  },
+ "0251bfeda9db7b": {
+  "voice": "w-fenrir",
+  "text": "Quartermaster Ostrander is short of food and too proud to say so. Buy six food packs at the Mercantile, land at Shackleton and hand them over. He will pretend to be ungrateful. That is how you know it worked."
+ },
  "026240bd1a5865": {
   "voice": "w-aoede",
   "text": "Watching the horizon. No traffic to report."
@@ -403,6 +407,10 @@
   "voice": "ada",
   "text": "Flies what you point her at. Keeps the ship off the rocks and out of trouble."
  },
+ "03e45bfd04a0dd": {
+  "voice": "isaiah",
+  "text": "I need to know whose flatbed that was. Ask the Homeguard man. Politely. Then ask Quintero at dispatch what the gate logged. Then come back to me, and do not shout at anyone in my name."
+ },
  "03e658e9524c78": {
   "voice": "w-bella",
   "text": "Kestrel to Ceres. Boarding now. Seats are unassigned and so are the safety briefings. Please sign here, here, and here. Yes, the long one."
@@ -558,6 +566,10 @@
  "05b1478df535f0": {
   "voice": "w-lily",
   "text": "Oh! Hello! You startled me. Everything is fine. Is everything fine?"
+ },
+ "05b33a6fcf24fe": {
+  "voice": "w-bella",
+  "text": "The Heritage Ranger has not called in since last week, and he is eleven hundred metres out at the first footprints. They are older than your country. Go and see that he is well. Do not touch anything. I have to say that every time."
  },
  "05b7c1a1cdacbd": {
   "voice": "aoi",
@@ -783,6 +795,10 @@
   "voice": "jorge",
   "text": "I cannot find a way to my station. I will wait here."
  },
+ "0801f6ac7d5fb3": {
+  "voice": "w-bella",
+  "text": "Fortis pays well for parts and Technos prints them cheap, and neither will say the word out loud. You can say it for them: carry four parts from the fab on the far side to the quartermaster at Shackleton. It is a trade run. Nobody will call it cooperation, and everybody will cash it."
+ },
  "080520ff7197d4": {
   "voice": "w-river",
   "text": "We listen first. Everything else is polite noise until we have heard what is out there."
@@ -946,6 +962,10 @@
  "0a4e663bffeae3": {
   "voice": "w-alice",
   "text": "Allow me. I keep the lane safe, or at least quieter than it would be without me. I make it look easy. It is not. I am just good."
+ },
+ "0a5e85a4fe13f4": {
+  "voice": "w-lewis",
+  "text": "My receiver works now. The survey band keeps repeating a transponder from Phobos, from that old cargo module, and it has no power to repeat anything. Go and take its flight recorder. Do not rest your hand on anything warm."
  },
  "0a5f58f9c1b3ac": {
   "voice": "ada",
@@ -1211,6 +1231,10 @@
   "voice": "zuri",
   "text": "No contacts on the scope. Waiting."
  },
+ "0d7d1ecdcd2f88": {
+  "voice": "w-bella",
+  "text": "Range Control needs another pair of hands on the line before the next test. Sign a hand at my desk and I will clear the cost with the budget office, which is also me."
+ },
  "0d7dada0f5f0e0": {
   "voice": "walter",
   "text": "The rocket people want everyone off the planet. Someone should leave, I suppose. Not everyone."
@@ -1242,6 +1266,10 @@
  "0db80f07e80f7c": {
   "voice": "w-liam",
   "text": "You can look at one. All of them are out on contract, or in the shop, or in a ditch. We do not talk about the ditch. Come back on a Tuesday. We do not have Tuesdays on the Moon, but come back anyway."
+ },
+ "0de2360e5d8bf6": {
+  "voice": "walter",
+  "text": "Homeguard has nothing built on this coast. Not a wall, not a hut. Dig me a cartload of shell rock or sand, carry it to the stakes by the road to Range Control, and that is Homeguard's first foundation. Please do not count the chairs."
  },
  "0de626041f3f07": {
   "voice": "zuri",
@@ -1531,6 +1559,10 @@
   "voice": "ada",
   "text": "Aye. A wander. I will call out what I see."
  },
+ "10e34616a3f2c0": {
+  "voice": "isaiah",
+  "text": "Flight line, daily check. Hangar door, tank farm gauge, tower foot, back to me. It is a long walk and you will hate it. I do it every day and I have thoughts about that."
+ },
  "10e66af1a59005": {
   "voice": "ada",
   "text": "Course set for Phobos."
@@ -1566,6 +1598,10 @@
  "1121f756c56d68": {
   "voice": "ada",
   "text": "I cannot find a way to my station. I will wait here."
+ },
+ "1130e9434b4c1d": {
+  "voice": "w-bella",
+  "text": "The port pays a grant for every new hand signed at the Crew Hall, because empty chairs make for expensive accidents. Sign anyone. Bring them aboard. I will pay you the grant, and I will pretend it was paperwork."
  },
  "1135b48d25b38e": {
   "voice": "w-alice",
@@ -1711,6 +1747,10 @@
   "voice": "ada",
   "text": "Aye. I'll find my station."
  },
+ "12df1068eb5faf": {
+  "voice": "w-alice",
+  "text": "The weather sensors died with the relays in the seventies. I can bring one back with two spare parts kits. The Salvage trader sells them, eighty marks each. I am not allowed to leave the glass. You are. Think about it."
+ },
  "12e980f345c2cf": {
   "voice": "ship",
   "text": "Drive fault logged. The crew regrets the inconvenience. The line will pay more in settlement."
@@ -1818,6 +1858,10 @@
  "14308ecb0b2dc7": {
   "voice": "zuri",
   "text": "Takes the chair, flies if there is no pilot, and works the main guns. You do not have to be the captain."
+ },
+ "1435fc3c38ba00": {
+  "voice": "w-bella",
+  "text": "The range officer wants the tank log signed by sunset: twenty-eight percent short and a Skyward key card. Whether you walked the line or dug the footing, you know where the fuel went. Write it up however you like. I only stamp it."
  },
  "1437fe37e3f905": {
   "voice": "ship",
@@ -2051,6 +2095,10 @@
   "voice": "ada",
   "text": "Outside the neutral line. The scope is clear for now."
  },
+ "16fa3001896fb8": {
+  "voice": "w-aoede",
+  "text": "This tray holds a chip the dish array has been waiting a month for. It has to go to Dish Engineer Yara at Daedalus, on the far side, and it has to go with someone who will not open it. You look like someone who will not open it. I may be wrong. It is a very polite tray."
+ },
  "1716809480c37b": {
   "voice": "aoi",
   "text": "Okay, one neighbour. But he is very quiet. Mostly because he is a rock."
@@ -2138,6 +2186,10 @@
  "17f8c9d652377d": {
   "voice": "ship",
   "text": "A course is already under way. Cancel it first."
+ },
+ "180a815564b418": {
+  "voice": "w-bella",
+  "text": "Everything that is not a rocket. The gate log, the jobs, the hands for hire, the coffee. Skyward runs the launches; I run the day. If you need work, ask me. If you need a crew, I have names."
  },
  "182239f589ac0c": {
   "voice": "ship",
@@ -2382,6 +2434,10 @@
  "1ad890d23bb706": {
   "voice": "ada",
   "text": "Course set for Over the control tower."
+ },
+ "1add032cef561f": {
+  "voice": "w-bella",
+  "text": "Range dispatch. I log every gate, every key card and every launch that did not happen. There are a lot of those. Jobs and hands for hire are on my board."
  },
  "1ae0ae0c7595b1": {
   "voice": "ada",
@@ -2727,6 +2783,10 @@
   "voice": "walter",
   "text": "Homeguard wants to stay and rebuild. Sea walls, fields, schools, the long slow work. We have the plans and the people. We do not have a roof yet. You could raise the first one."
  },
+ "1ead88e26a11ad": {
+  "voice": "w-aoede",
+  "text": "I log every light I see. Last night one crossed Deimos' track faster than the Ares line, and it had no transponder. The controller's recording matches. I need a second witness at the glass. Stand beside me. Look east."
+ },
  "1eb5dbe16b58fd": {
   "voice": "zuri",
   "text": "Down at Pad 02 (shuttle)."
@@ -2814,6 +2874,10 @@
  "1fa717e22f643a": {
   "voice": "ship",
   "text": "Outside air is warm, wet and full of mosquitoes. Gravity is nine point eight two metres per second squared. Everything weighs exactly what you remember."
+ },
+ "1fb2caceb2e33f": {
+  "voice": "w-puck",
+  "text": "I carry the shift notes between desks and the lift is slow. Take this green folder: the supply desk first, then the Salvage trader on the market row, then bring me the receipt. Do not read it. It is boring and you would not understand it."
  },
  "1fcc8008cda3b5": {
   "voice": "ship",
