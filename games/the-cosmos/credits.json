@@ -54,6 +54,36 @@
       "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html",
       "licence": "facts are not copyrightable; credited as a courtesy",
       "used_in": "src/worlds/earth/def.js"
+    },
+    {
+      "what": "Callisto seen from space and in the sky (the globe picture, and the map of its bright and dark ground used for the look)",
+      "credit": "U.S. Geological Survey: Callisto Voyager/Galileo global mosaic (public domain NASA mission data, mapped by the USGS Astrogeology Science Center); the game's copy from Wikimedia Commons (Callisto USGS global small.jpg)",
+      "source": "https://commons.wikimedia.org/wiki/File:Callisto_USGS_global_small.jpg",
+      "licence": "NASA/USGS imagery: public domain",
+      "used_in": "assets/callisto/usgs-global.jpg, assets/callisto/callisto-1k.jpg (baked by tools/bake-callisto.mjs), src/worlds/callisto/jupiterSky.js, src/opening/spaceScene.js",
+      "changes": "resampled to 1024 x 512, the unmapped pole wedges filled with their row's mean, and the grey albedo coloured to Callisto's ice palette"
+    },
+    {
+      "what": "Jupiter in Callisto's sky",
+      "credit": "Solar System Scope textures (solarsystemscope.com), CC BY 4.0, based on NASA data",
+      "source": "https://www.solarsystemscope.com/textures/",
+      "licence": "CC BY 4.0 (changes made); credit and license link at solarsystemscope.com",
+      "used_in": "assets/callisto/jupiter-1k.jpg, src/worlds/callisto/jupiterSky.js",
+      "changes": "reduced from 2048 x 1024 to 1024 x 512"
+    },
+    {
+      "what": "Callisto's size, mass, gravity, rotation and orbit round Jupiter; Jupiter's pole (the plane of that orbit)",
+      "credit": "NASA Space Science Data Coordinated Archive, Jupiter Satellite Fact Sheet; JPL satellite mean elements; IAU Working Group on Cartographic Coordinates and Rotational Elements (Archinal et al. 2018)",
+      "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/joviansatfact.html",
+      "licence": "facts are not copyrightable; credited as a courtesy",
+      "used_in": "src/worlds/callisto/def.js"
+    },
+    {
+      "what": "Valhalla and Asgard, the basins the camp and the map are placed by",
+      "credit": "U.S. Geological Survey controlled photomosaic of Callisto (JC 15M CMN), as published with the Valhalla and Asgard entries; coordinates and sizes after Greeley et al. 2000",
+      "source": "https://en.wikipedia.org/wiki/Valhalla_(crater)",
+      "licence": "facts are not copyrightable; credited as a courtesy",
+      "used_in": "src/worlds/callisto/def.js"
     }
   ]
 }

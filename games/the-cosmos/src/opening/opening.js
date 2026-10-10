@@ -264,6 +264,12 @@ export class Opening {
       mat.onBeforeCompile = (sh, r) => { if (prev) prev(sh, r); sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n diffuseColor.rgb = mix(vec3(dot(diffuseColor.rgb, vec3(.299, .587, .114))) * vec3(.93, .95, 1.), diffuseColor.rgb, .1) * 1.15;'); };
       mat.customProgramCacheKey = () => key + '|ceres-grey'; mat.needsUpdate = true;
     }
+    // Callisto: pale impact ice, not rust (the same idea, a colder cast)
+    if (this.worldId === 'callisto') for (const patch of [this.ground, this.far]) {
+      const mat = patch.mesh.material, prev = mat.onBeforeCompile, key = mat.customProgramCacheKey ? mat.customProgramCacheKey() : '';
+      mat.onBeforeCompile = (sh, r) => { if (prev) prev(sh, r); sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n diffuseColor.rgb = mix(vec3(dot(diffuseColor.rgb, vec3(.299, .587, .114))) * vec3(.9, .94, 1.05), diffuseColor.rgb, .12) * 1.12;'); };
+      mat.customProgramCacheKey = () => key + '|callisto-ice'; mat.needsUpdate = true;
+    }
     this.wreckLook = new OpeningLook({ engine, scene: this.scene, root: this.root, low: this.low, ship, model: m, cabin: this.cabin, crate: this.crate, ui: this.ui, lamp: this.lamp, cabinFill: this.cabinFill, sun: this.sun, hemi: this.hemi, q: this.q, dust: this.dust, worldId: this.worldId, cause: this.cause });
     this.look = this.wreckLook; this.wreckFog = this.scene.fog; this.wreckBg = this.scene.background;
     this.wreckSun.shadow.mapSize.set(1024, 1024); Object.assign(this.wreckSun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 180 }); this.wreckSun.shadow.bias = -.0001; this.wreckSun.shadow.normalBias = .025;

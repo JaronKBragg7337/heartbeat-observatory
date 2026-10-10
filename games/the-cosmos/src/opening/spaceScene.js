@@ -64,6 +64,18 @@ function earthGlobe(low) {
   return m;
 }
 
+/** Callisto from space: the USGS Galileo-Voyager mosaic (assets/callisto/callisto-1k.jpg, the picture the world itself uses) on a
+ *  lit ball, Valhalla's bright floor (16 N, 57 W) turned to the face the ship sees. Unit radius. */
+function callistoGlobe(low) {
+  const g = new THREE.SphereGeometry(1, low ? 96 : 160, low ? 48 : 80), mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0 }), m = new THREE.Mesh(g, mat);
+  new THREE.TextureLoader().load(new URL('../../assets/callisto/callisto-1k.jpg', import.meta.url).href, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; mat.map = t; mat.needsUpdate = true; }, undefined, () => {});
+  // the sphere's own texture point for 16 N 57 W (the pad), turned to where the ship looks
+  const lat = 16.0 * Math.PI / 180, ph = (57 + 180) * Math.PI / 180, th = Math.PI / 2 - lat;
+  const valhalla = new THREE.Vector3(-Math.cos(ph) * Math.sin(th), Math.cos(th), Math.sin(ph) * Math.sin(th));
+  m.quaternion.setFromUnitVectors(valhalla, new THREE.Vector3(0.9, 0.34, -0.28).normalize());
+  return m;
+}
+
 function atmosphere(color, power, k, low) {
   const m = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide, toneMapped: false,
@@ -142,7 +154,8 @@ export class SpaceScene {
   _worldGlobe(id) {
     if (id === 'mars') return null;
     if (!this.worldGlobes[id]) {
-      const earth = id === 'earth', m = earth ? earthGlobe(this.low) : ceresGlobe(this.low), grp = new THREE.Group(); grp.add(m);
+      const earth = id === 'earth', callisto = id === 'callisto';
+      const m = earth ? earthGlobe(this.low) : callisto ? callistoGlobe(this.low) : ceresGlobe(this.low), grp = new THREE.Group(); grp.add(m);
       const a = earth ? atmosphere(0x6fa6ff, 3.2, 0.5, this.low) : atmosphere(0xb9c4d6, 6.0, 0.12, this.low); grp.add(a); a.scale.setScalar(earth ? 1.012 : 1.006);
       this.globe.add(grp); grp.visible = false; this.worldGlobes[id] = { grp, mesh: m, radius: (worldFacts(id).radiusKm || 470) * 1000 };
     }

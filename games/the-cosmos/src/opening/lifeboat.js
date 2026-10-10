@@ -28,6 +28,12 @@ export const REPAIR_GIVERS = {
     cell: { id: 'e-okafor', who: 'Okafor, the flight line crew chief (Skyward)', where: 'the Skyward Launch Complex', frame: 'outpost', at: { x: -50, z: 36 }, reach: 4 },
     coupler: { id: 'e-pruitt', who: 'Pruitt, the Homeguard organiser', where: 'the Skyward Launch Complex', frame: 'outpost', at: { x: 48, z: -58 }, reach: 4 },
   },
+  // Callisto: the Valhalla Camp (src/worlds/callisto/layout.js; the two stand where cast.js puts them). The power cell comes from
+  // Mystara's quartermaster; the fuel coupler from the prospectors' camp, which holds the open seat.
+  callisto: {
+    cell: { id: 'c-archivist', who: 'Tomas Grey, the quartermaster (Mystara)', where: 'the Valhalla Camp', frame: 'outpost', at: { x: 30, z: 56 }, reach: 4 },
+    coupler: { id: 'c-prospector', who: 'Bram Okonkwo, the prospectors\' spokesman', where: 'the prospectors\' camp, a kilometre north', frame: 'outpost', at: { x: 6, z: -1200 }, reach: 4 },
+  },
 };
 export const FIT_REACH = 20;
 

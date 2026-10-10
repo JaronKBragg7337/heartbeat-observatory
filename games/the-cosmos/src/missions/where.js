@@ -12,6 +12,7 @@ import { PORT_WORKERS } from '../port/portPeople.js';
 import { WORKERS as CERES_PEOPLE } from '../worlds/ceres/layout.js';
 import { castOf } from '../worlds/moon/cast.js';
 import { EARTH_CAST } from '../worlds/earth/cast.js';
+import { CALISTO_CAST } from '../worlds/callisto/cast.js';
 import { frameToOutpost } from '../worlds/moon/place.js';
 import { makeMoon } from '../space/moonField.js';
 import { worldOfFrame } from '../roles/seats.js';
@@ -25,6 +26,7 @@ export function peopleIndex() {
   for (const w of PORT_WORKERS) m.set(w.id, { id: w.id, name: w.name, title: w.name, frame: 'mars', kind: 'port', x: w.x, y: w.y || 0, z: w.z });
   for (const w of CERES_PEOPLE) m.set(w.id, { id: w.id, name: w.name, title: w.title, frame: 'ceres', kind: 'outpost', x: w.x, y: 0, z: w.z });
   for (const w of EARTH_CAST) m.set(w.id, { id: w.id, name: w.name, title: w.title, frame: 'earth', kind: 'outpost', x: w.x, y: 0, z: w.z });
+  for (const w of CALISTO_CAST) m.set(w.id, { id: w.id, name: w.name, title: w.title, frame: 'callisto', kind: 'outpost', x: w.x, y: 0, z: w.z });
   for (const f of MOON_FRAMES) for (const w of castOf(f)) m.set(w.id, { id: w.id, name: w.name || w.title, title: w.title, frame: f, kind: 'outpost', x: w.x, y: 0, z: w.z });
   return (_people = m);
 }

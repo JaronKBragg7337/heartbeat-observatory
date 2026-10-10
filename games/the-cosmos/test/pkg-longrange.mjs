@@ -58,9 +58,8 @@ export async function run({ check, section, THREE }) {
   // ---------------------------------------------------------------- the registry and the nav rows
   section('F3b. Earth, the Moon, Ceres and Callisto are reachable from day one');
   const rows = Object.fromEntries(spec.DESTINATIONS.map((d) => [d.id, d]));
-  for (const id of ['callisto']) check(`${id} is a nav row of kind deep (held off, reached by the long drive)`, rows[id] && rows[id].kind === 'deep' && rows[id].deep === id && rows[id].via === 'drive', JSON.stringify(rows[id]));
-  check('the Moon is built (WD-MOON), and so is Earth (WD-EARTH): its three landings, Earth and Ceres are plain drive rows: no lane, no fee, no spool (the Ore Lane is retired)', ['moon', 'moon-shackleton', 'moon-daedalus', 'earth', 'ceres'].every((id) => rows[id] && rows[id].kind === 'moon' && rows[id].via === 'drive'), JSON.stringify(['moon', 'ceres'].map((id) => rows[id])));
-  check('every deep row and the Moon sit at their real distance, past the range of the main drive', ['earth', 'moon', 'callisto'].every((id) => Math.hypot(...Object.values(reg.worldCentre(id))) > spec.DRIVE.rangeM * 10));
+  check('all four far worlds are plain drive rows now (WD-CALLISTO made Callisto a landing: no world is held off any more)', ['earth', 'moon', 'moon-shackleton', 'moon-daedalus', 'ceres', 'callisto'].every((id) => rows[id] && rows[id].kind === 'moon' && rows[id].via === 'drive') && !Object.values(rows).some((r) => r.kind === 'deep'), JSON.stringify(['earth', 'moon', 'ceres', 'callisto'].map((id) => rows[id] && rows[id].kind)));
+  check('every far world sits at its real distance, past the range of the main drive', ['earth', 'moon', 'callisto'].every((id) => Math.hypot(...Object.values(reg.worldCentre(id))) > spec.DRIVE.rangeM * 10));
   const cal = reg.worldCentre('callisto'), jup = reg.worldCentre('jupiter');
   check('Callisto goes round Jupiter at its real distance (1.88 million km)', Math.abs(Math.hypot(cal.x - jup.x, cal.y - jup.y, cal.z - jup.z) - 1.8827e9) < 0.02 * 1.8827e9);
   const mo = reg.worldCentre('moon'), ea = reg.worldCentre('earth');
@@ -178,7 +177,8 @@ export async function run({ check, section, THREE }) {
   check(`and back to Mars by the drive (${r7.phases.join(' > ')})`, !r7.err && r7.frame === 'mars' && r7.landed && r7.phases.includes('longdrive'), JSON.stringify(r7));
 
   const r9 = fly('callisto');
-  check('from Ceres, Callisto is reachable by the long drive (the ship leaves Ceres, cruises to Jupiter\'s moon, holds)', !r9.err && r9.phases.includes('longdrive') && r9.frame === 'ceres' || (r9.phases.includes('longdrive') && Math.abs(dist(r9.posI, centre('callisto')) - L.dropDistanceM('callisto')) < 1e-3 * L.dropDistanceM('callisto')), JSON.stringify(r9) + ' off by ' + (dist(r9.posI, centre('callisto')) - L.dropDistanceM('callisto')));
+  for (let i = 0; i < 1200 && !sim.flight.landed; i++) tick(); r9.landed = sim.flight.landed;
+  check(`from Ceres, Callisto is reachable by the long drive (WD-CALLISTO made her a landing): the ship cruises to Jupiter's moon and comes down at the Valhalla Camp (${r9.phases.join(' > ')})`, !r9.err && r9.phases.includes('longdrive') && r9.frame === 'callisto' && r9.landed && !r9.tripLeft, JSON.stringify(r9));
 
   // a heavy hull is refused with the reason (the guard is on the server, in the plan)
   const saved = sim.def.phys.massKg; sim.def.phys.massKg = 400_000;

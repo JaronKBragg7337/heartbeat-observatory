@@ -7,6 +7,10 @@
   "voice": "zuri",
   "text": "That is all three. Take them home to the Survey Office at Marineris Port."
  },
+ "0020b5ffaa8466": {
+  "voice": "aoi",
+  "text": "That is the Valhalla Camp. The Archive is the low building with the gold line. The Director waits at the door, and she already knows your name."
+ },
  "002c5bac5a8a90": {
   "voice": "w-lewis",
   "text": "Comms just died. So did guidance. Everything is down, and so soon we will be. Brace for impact."
@@ -18,6 +22,10 @@
  "0041f99e598278": {
   "voice": "intercom",
   "text": "Entering the atmosphere. You will feel some shaking. This is normal. The coffee will disagree."
+ },
+ "006b40f0aec5b1": {
+  "voice": "jorge",
+  "text": "The second seat on Callisto is open. No faction, no masters, no deeds. The first side to raise a building gets it, and until then we hold it, and we prospect. Ice, metal, and whatever the ice is hiding."
  },
  "006da5706cdcc6": {
   "voice": "ada",
@@ -227,6 +235,10 @@
   "voice": "w-fenrir",
   "text": "Quartermaster Ostrander is short of food and too proud to say so. Buy six food packs at the Mercantile, land at Shackleton and hand them over. He will pretend to be ungrateful. That is how you know it worked."
  },
+ "025503f31e589e": {
+  "voice": "aoi",
+  "text": "Because the first record is for us, and the second is for whoever digs this camp out of the ice in a thousand years. The Director says the instrument is the point. I say the notebook is. We agree to disagree."
+ },
  "026240bd1a5865": {
   "voice": "w-aoede",
   "text": "Watching the horizon. No traffic to report."
@@ -290,6 +302,10 @@
  "02aa7608c0b9e5": {
   "voice": "ada",
   "text": "Down at Airy-0."
+ },
+ "02ad8f01ee989b": {
+  "voice": "ship",
+  "text": "Arrived over Callisto: Valhalla Camp. Easing level."
  },
  "02c4975f6f613b": {
   "voice": "ship",
@@ -367,6 +383,10 @@
   "voice": "jorge",
   "text": "Do not sit there. That is my cousin's seat. He is not here. He is also not dead. It is complicated."
  },
+ "0370d6bc6c3b3d": {
+  "voice": "aoi",
+  "text": "Quartermaster. Water, rations, cable, hand warmers, and one power cell I have been saving for a boat that deserves it. Ask if you need something; everything is written down twice."
+ },
  "03922a6a72e984": {
   "voice": "w-aoede",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
@@ -391,6 +411,10 @@
   "voice": "isaiah",
   "text": "Medbay. We are fully stocked on bandages and sarcasm."
  },
+ "03b7955f7ac8f7": {
+  "voice": "w-lewis",
+  "text": "That is Jupiter below us. Yes, all of it. The camp said the drive would drop us east of the basin. The drive disagreed."
+ },
  "03c795e4cb55dc": {
   "voice": "w-fenrir",
   "text": "Sergeant Holloway, Fortis. The glass people are very nice, and very, very quiet. Ask yourself why. Then come and get a badge."
@@ -410,6 +434,10 @@
  "03e45bfd04a0dd": {
   "voice": "isaiah",
   "text": "I need to know whose flatbed that was. Ask the Homeguard man. Politely. Then ask Quintero at dispatch what the gate logged. Then come back to me, and do not shout at anyone in my name."
+ },
+ "03e5933c03c44c": {
+  "voice": "ship",
+  "text": "Down at Callisto: Valhalla Camp."
  },
  "03e658e9524c78": {
   "voice": "w-bella",
@@ -438,6 +466,10 @@
  "04152382326177": {
   "voice": "zuri",
   "text": "Course cancelled. Holding."
+ },
+ "042b0116a492bd": {
+  "voice": "jorge",
+  "text": "Bram, of the prospectors. We watched you come down and we had a bet on whether the beacon would work. I won. Welcome to Callisto, the only place in the system where nobody owns anything yet."
  },
  "0432818af31325": {
   "voice": "sunita",
@@ -575,9 +607,17 @@
   "voice": "aoi",
   "text": "Nine days. I have been shouted at forty one times, and I have counted. They say it gets easier. Mostly they say it while shouting. I think I am doing fine. Am I doing fine?"
  },
+ "05d7d9beeafd3d": {
+  "voice": "jorge",
+  "text": "Bram, of the prospectors. Before you sign with the listeners: the seat is open and the ice is rich. Raise one building and it is yours. They will never say that to you."
+ },
  "05de549c1a2710": {
   "voice": "ship",
   "text": "Arrived over Mars orbit (400 km). Easing level."
+ },
+ "05e7ad12a8e409": {
+  "voice": "ada",
+  "text": "The band we do not name. It has been lit since the year of the storms, and it pulses harder when a ship comes down hard, and I do not know why, and the Director has stopped pretending she does not see it. Walk the relay line for me if you want to be useful."
  },
  "05ea7d2bd928dd": {
   "voice": "zuri",
@@ -719,9 +759,9 @@
   "voice": "w-lewis",
   "text": "That is ice fog below us. Thick, white, and exactly where the ground is."
  },
- "0726abb15bed02": {
-  "voice": "ship",
-  "text": "Course set for Callisto."
+ "0739796984cb26": {
+  "voice": "ada",
+  "text": "Arrived over Callisto: Valhalla Camp. Easing level."
  },
  "073dd1790cad8a": {
   "voice": "ada",
@@ -743,6 +783,10 @@
   "voice": "w-heart",
   "text": "We keep the port running a watch at a time. The supervisor upstairs has the paid jobs."
  },
+ "0762403ff980a5": {
+  "voice": "aoi",
+  "text": "Tomas Grey, Mystara, keeper of the camp's cupboards and, today, its rescue rover. We saw your beacon. We always see the beacons. We are very good at beacons."
+ },
  "077e52f983175d": {
   "voice": "ada",
   "text": "Down at Pad 03 (courier)."
@@ -754,10 +798,6 @@
  "07969bf54c8383": {
   "voice": "zuri",
   "text": "Course set for Ceres: Occator Works."
- },
- "079ffbf62f470c": {
-  "voice": "ada",
-  "text": "Course set for Callisto."
  },
  "07b3ae89db439f": {
   "voice": "w-bella",
@@ -798,6 +838,10 @@
  "0801f6ac7d5fb3": {
   "voice": "w-bella",
   "text": "Fortis pays well for parts and Technos prints them cheap, and neither will say the word out loud. You can say it for them: carry four parts from the fab on the far side to the quartermaster at Shackleton. It is a trade run. Nobody will call it cooperation, and everybody will cash it."
+ },
+ "0802637d31afb5": {
+  "voice": "sunita",
+  "text": "Every ship that leaves here crosses a billion kilometres of nothing with empty chairs, and empty chairs make for slow rescues, and slow rescues make for my least favourite paperwork. Sign a hand at my desk. I cover the grant, you get the company, and the nothing between here and Mars gets one pair of eyes closer."
  },
  "080520ff7197d4": {
   "voice": "w-river",
@@ -939,9 +983,17 @@
   "voice": "walter",
   "text": "Come aboard first, boss. I won't lift without you."
  },
+ "0a0cdab964d436": {
+  "voice": "sunita",
+  "text": "Camp dispatch. I log every pad, every boot print and every job. The board beside me lists them; the desk signs hands for any ship that flies out of here. The road to Mars is long and the company is good."
+ },
  "0a29f514757be3": {
   "voice": "ship",
   "text": "Arrived over Deimos. Easing level."
+ },
+ "0a2c3e4cb96aa5": {
+  "voice": "jorge",
+  "text": "That is the Valhalla Camp. The camp desk has jobs and hands for hire. My lot is a kilometre north, past the Scar. Follow the lights, or your nose, whichever is sharper."
  },
  "0a38e622e65808": {
   "voice": "ada",
@@ -1087,6 +1139,10 @@
   "voice": "aoi",
   "text": "Still getting the crew settled. One moment."
  },
+ "0bbc8ddbed96a1": {
+  "voice": "aoi",
+  "text": "Climb in. Do not touch the middle stone as we pass the array. It is measuring something, and it prefers quiet."
+ },
  "0bd2102f6d4412": {
   "voice": "sunita",
   "text": "Welcome aboard the Hellas Dawn. Tea, coffee, or a stern talking to?"
@@ -1150,6 +1206,10 @@
  "0cb41da91d3ecc": {
   "voice": "zuri",
   "text": "Engine share is too low for the main drive. Route power to the engines (Engineering)."
+ },
+ "0cb4f86c76713b": {
+  "voice": "zuri",
+  "text": "Europa, mostly. The ocean under the ice sings on the long bands, and lately it answers the short ones too. The storms took our relays, so we listen from here, and we do not look away. That is all I will say about it in the cold."
  },
  "0cb4ffd11a3d1e": {
   "voice": "ada",
@@ -1263,9 +1323,17 @@
   "voice": "w-heart",
   "text": "Happy to tell you. I fix people. The part where you were warned is billed separately. Come back and tell me how it went."
  },
+ "0db6bd9c151f6a": {
+  "voice": "zuri",
+  "text": "Down at Callisto: Valhalla Camp."
+ },
  "0db80f07e80f7c": {
   "voice": "w-liam",
   "text": "You can look at one. All of them are out on contract, or in the shop, or in a ditch. We do not talk about the ditch. Come back on a Tuesday. We do not have Tuesdays on the Moon, but come back anyway."
+ },
+ "0dbb45cc2a28ef": {
+  "voice": "ship",
+  "text": "We are at Callisto already."
  },
  "0de2360e5d8bf6": {
   "voice": "walter",
@@ -1435,6 +1503,10 @@
   "voice": "zuri",
   "text": "Down at Deimos."
  },
+ "0f6cd971c3ba78": {
+  "voice": "jorge",
+  "text": "Whatever the ice is hiding. Clean ice for the melt, metal in the dark craters, and last month my number four drill went clang on something that is not in any map. The Director went very quiet when I showed her the core. You want a coupler for a boat? I have three. I have a use for hands like yours, too."
+ },
  "0f701f76a03b3c": {
   "voice": "w-jessica",
   "text": "One tonne at a time from your cart or hopper. Pure regolith only. The rest of your load stays with you."
@@ -1567,6 +1639,10 @@
   "voice": "ada",
   "text": "Course set for Phobos."
  },
+ "10feffdb7a277e": {
+  "voice": "aoi",
+  "text": "Tomas Grey, Mystara. The prospectors are good people and their drills are loud. We have the maps of this system and the road to Europa. Do come and see the array before you decide anything."
+ },
  "11010946248ee3": {
   "voice": "jorge",
   "text": "Hanrahan, shift boss, Pit Seven. We saw your boat come down. We always see them come down."
@@ -1574,6 +1650,10 @@
  "110b5258ef6bb5": {
   "voice": "ada",
   "text": "On station."
+ },
+ "110c08b4434426": {
+  "voice": "zuri",
+  "text": "Our melt runs on the clean ice the impact threw up under this dust: pale, a metre down on the bright floor. Dig me three hundred kilos with your own hands and carry it to my door. It is the first thing everyone does here, and there is a reason for that. The ice is older than the Sun's light on it. Handle it like it remembers."
  },
  "110f19559c493d": {
   "voice": "zuri",
@@ -1642,6 +1722,10 @@
  "11a6695cd1c297": {
   "voice": "ship",
   "text": "Course cancelled. The drive slows her to a stop."
+ },
+ "11a7d6a347a51d": {
+  "voice": "jorge",
+  "text": "The purple people will tell you the road to Europa is theirs. The road is whoever drives it, friend. Raise the first wall and the seat is yours, and we will follow you."
  },
  "11b07ac526111e": {
   "voice": "w-adam",
@@ -1771,6 +1855,10 @@
   "voice": "jorge",
   "text": "Ironclad takes anyone who can swing a pick. We pay in shares and sandwiches, and one of those is usually good."
  },
+ "1313fabe370b15": {
+  "voice": "zuri",
+  "text": "I am the Director. Everything you see that is standing, we measure with; everything that is sealed, we do not open. You are welcome at the camp if you can be useful."
+ },
  "131b6d1023a8d8": {
   "voice": "w-heart",
   "text": "Happy to tell you. I set the margins. If something costs too much, that was me, and I meant it. Come back and tell me how it went."
@@ -1783,6 +1871,14 @@
   "voice": "w-fenrir",
   "text": "We dig, we haul, and we argue about the pay later. In that order. Always."
  },
+ "13525246573a2c": {
+  "voice": "ada",
+  "text": "Mind the array stones. Nine of them, one for each band we listen on, and the middle one for the band we do not name. If a glyph is lit, something is being measured. Most of them are lit."
+ },
+ "135329d41887d4": {
+  "voice": "ship",
+  "text": "Survival crate open. One hand tool, one day of air and water, one beacon. Beacon armed. Help is on the way at rover speed, which is honest but slow."
+ },
  "135d2795636646": {
   "voice": "ada",
   "text": "Nobody is flying. Hire a pilot or a captain, or take the chair yourself."
@@ -1794,6 +1890,10 @@
  "139184672afffc": {
   "voice": "ada",
   "text": "On station over Mars."
+ },
+ "139eef0bb7e100": {
+  "voice": "zuri",
+  "text": "We are at Callisto already."
  },
  "13a7421bdf4032": {
   "voice": "w-fenrir",
@@ -1810,6 +1910,10 @@
  "13b51bbcf21d34": {
   "voice": "ada",
   "text": "Supply run to the depot and back."
+ },
+ "13b6cf3c1e5bfd": {
+  "voice": "jorge",
+  "text": "Bram, of the prospectors. Twenty-three of us, six drills, and not one deed to our name, which is exactly how we like it. The seat is open, friend. Raise a building and it is yours. Until then, we hold it."
  },
  "13c2305ff8a359": {
   "voice": "zuri",
@@ -1875,6 +1979,10 @@
   "voice": "w-alice",
   "text": "Weather sensors are offline. Watch the dust outside."
  },
+ "146601c9943e2b": {
+  "voice": "ship",
+  "text": "Passenger line settlement: 10,000 Mars marks, 2,500 credits. Your lifeboat is on its pad and drained. It needs a power cell from Tomas Grey, the quartermaster (Mystara) and a fuel coupler from Bram Okonkwo, the prospectors' spokesman. Three hundred marks each."
+ },
  "146ba355bd497a": {
   "voice": "w-echo",
   "text": "Everything on the list is numbered. Please do not ask about the item with no number."
@@ -1886,6 +1994,10 @@
  "149c60cf6f7b06": {
   "voice": "w-fenrir",
   "text": "Union made. Union broken. Union made again. What do you want?"
+ },
+ "14b1dce74ab02b": {
+  "voice": "jorge",
+  "text": "Climb in. The heater works when it feels like it. Kick it twice, politely."
  },
  "14bb59b555d043": {
   "voice": "w-alice",
@@ -1967,6 +2079,10 @@
   "voice": "ada",
   "text": "Engine share is too low for the main drive. Route power to the engines (Engineering)."
  },
+ "15ae6877f278d8": {
+  "voice": "ada",
+  "text": "The relay on the Scar's rim repeats our listening band to the camp, and it has been silent for two days. It has no moving parts, so something moved them. Walk out east past the camp, look at it, and come back and tell me what you found. Do not fix anything. Everyone always tries to fix things."
+ },
  "15af6f59d7d935": {
   "voice": "zuri",
   "text": "Hunting raiders. Mars is neutral, so we have to climb out of its airspace for that."
@@ -2019,6 +2135,10 @@
   "voice": "w-alice",
   "text": "Allow me. I carry heavy things from where they are to where they are not, and I do it slowly. I make it look easy. It is not. I am just good."
  },
+ "1606e0ecf4c0d9": {
+  "voice": "w-bella",
+  "text": "Kestrel to Callisto. Boarding now. Seats are unassigned and so are the safety briefings. The weather is fine, the gravity is gentle, and the distance is the largest in the timetable. Please sign here, here, and here."
+ },
  "160c55e3ab81a4": {
   "voice": "ada",
   "text": "Top speed. Coasting."
@@ -2054,6 +2174,10 @@
  "16657ff0672c3b": {
   "voice": "zuri",
   "text": "Arrived over Deimos. Easing level."
+ },
+ "1677f692f72657": {
+  "voice": "ada",
+  "text": "Down at Callisto: Valhalla Camp."
  },
  "1691aa2eacdab9": {
   "voice": "ship",
@@ -2146,10 +2270,6 @@
  "1777db4c02046f": {
   "voice": "zuri",
   "text": "Course cancelled. The drive slows her to a stop."
- },
- "17a3dbdaeff23c": {
-  "voice": "zuri",
-  "text": "Course set for Callisto."
  },
  "17a752bf3150c9": {
   "voice": "ship",
@@ -2263,6 +2383,10 @@
   "voice": "w-adam",
   "text": "Welcome to Marineris. Depot west, market south, control tower north. Use the lift inside."
  },
+ "18f929d000a74b": {
+  "voice": "aoi",
+  "text": "Mystara studies what Jupiter is singing about. We have the only safe routes in this system, the only complete maps, and more questions than a person can carry. We cannot build much and we do not fight. We listen."
+ },
  "18f99f0b33dd57": {
   "voice": "w-river",
   "text": "Oh, you want to know. I set the margins. If something costs too much, that was me, and I meant it. Not that anyone ever says thank you."
@@ -2327,6 +2451,10 @@
   "voice": "ada",
   "text": "We are at Shackleton already."
  },
+ "19924016d7821c": {
+  "voice": "ada",
+  "text": "Course set for Callisto: Valhalla Camp."
+ },
  "199cefc7a60e0c": {
   "voice": "ship",
   "text": "Arrived over Earth: Skyward Launch Complex. Easing level."
@@ -2350,6 +2478,10 @@
  "19f234d73c0d02": {
   "voice": "zuri",
   "text": "Come aboard first, boss. I won't lift without you."
+ },
+ "19f3934fcf38ec": {
+  "voice": "zuri",
+  "text": "Bram drilled into something under the Scar that is not ice and is not rock, and he kept the core against my advice, which is the only way anyone keeps anything out here. Walk to his camp, take the core from him, and bring it to me. What happens then is a decision I have been avoiding for eleven years, and you are going to stand there while I make it."
  },
  "19fadd58f6e7d0": {
   "voice": "w-lewis",
@@ -2395,9 +2527,17 @@
   "voice": "jorge",
   "text": "Reads the scanner and the ground ahead and calls out what he sees."
  },
+ "1a3f4322be11ba": {
+  "voice": "ship",
+  "text": "Gravity outside is one point two four metres per second squared. Every step is a small leap. The ground is impact ice, four billion years old, and it rings under your boots."
+ },
  "1a6b28035bf6e5": {
   "voice": "zuri",
   "text": "On station over Hellas Planitia."
+ },
+ "1a733f439abc46": {
+  "voice": "ship",
+  "text": "Course set for Callisto: Valhalla Camp."
  },
  "1a7381daecf2f5": {
   "voice": "w-puck",
@@ -2410,6 +2550,10 @@
  "1a98568bba567b": {
   "voice": "ada",
   "text": "Down at Pad 02 (shuttle)."
+ },
+ "1ab7be777957ba": {
+  "voice": "jorge",
+  "text": "The Scar is the freshest ground for two hundred kilometres, and fresh ground on Callisto means whatever the impact stirred up. My drills want it, and claiming is law out here: a beacon on the rim, set by a living hand. Carry mine out and set it. And when you are standing there, listen. The ground does something. I want to know if it does it for you too."
  },
  "1ab8b20f18dfd4": {
   "voice": "w-river",
@@ -2495,6 +2639,10 @@
   "voice": "w-fenrir",
   "text": "Fine. I keep the lane safe, or at least quieter than it would be without me. Now go away."
  },
+ "1b86d2de07197e": {
+  "voice": "sunita",
+  "text": "Whatever keeps the camp standing. Ice for the melt, parts for the dishes, a relay that stopped answering, a core sample someone drilled where they should not have. Ask the board, or ask the people. Everyone here is a little desperate and very polite."
+ },
  "1b894a17471a35": {
   "voice": "zuri",
   "text": "All yours, boss."
@@ -2530,6 +2678,10 @@
  "1c03bbbf6617b7": {
   "voice": "zuri",
   "text": "Long drive off. We have dropped out."
+ },
+ "1c0e77a2e96493": {
+  "voice": "ada",
+  "text": "We are at Callisto already."
  },
  "1c107cc9016fc7": {
   "voice": "zuri",
@@ -2598,6 +2750,10 @@
  "1caf97dbf657e1": {
   "voice": "ada",
   "text": "Arrived over Phobos. Easing level."
+ },
+ "1cb96e1f648852": {
+  "voice": "zuri",
+  "text": "Course set for Callisto: Valhalla Camp."
  },
  "1cbb24eeaa599c": {
   "voice": "ada",
@@ -2767,6 +2923,10 @@
   "voice": "w-adam",
   "text": "The Kestrel does not fly there yet. Pick a world that is open, and I will point at the gate."
  },
+ "1e63520aa8f52b": {
+  "voice": "aoi",
+  "text": "The prospectors will tell you the seat here is open and everything can be yours. It is open. But the road to Europa goes through our maps, and the maps go through us."
+ },
  "1e6f56e4b4f569": {
   "voice": "zuri",
   "text": "Course set for Valles Marineris."
@@ -2902,6 +3062,10 @@
  "1ff84d722fb7f7": {
   "voice": "zuri",
   "text": "Arrived over Earth: Skyward Launch Complex. Easing level."
+ },
+ "1ffa722410e32b": {
+  "voice": "zuri",
+  "text": "Arrived over Callisto: Valhalla Camp. Easing level."
  },
  "1fffff20c1df74": {
   "voice": "ada",

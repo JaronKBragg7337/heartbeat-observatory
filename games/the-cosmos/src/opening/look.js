@@ -119,7 +119,7 @@ export class OpeningLook {
   /** o: the opening. o.worldId and o.cause pick the sky and what happens overhead. */
   constructor(o) {
     this.o = o; this.low = o.low; const low = this.low, scene = o.scene, root = o.root;
-    this.world = o.worldId || 'mars'; this.cause = o.cause || 'storm'; this.air = this.world === 'ceres' ? 0 : 1; this.earthy = this.world === 'earth' ? 1 : 0;
+    this.world = o.worldId || 'mars'; this.cause = o.cause || 'storm'; this.air = (this.world === 'ceres' || this.world === 'callisto') ? 0 : 1; this.earthy = this.world === 'earth' ? 1 : 0;
     this.scaleRef = { value: 600 }; this.t = 0; this.rnd = rng(31);
     // sky, haze
     this.sky = skyDome(low, SUN_DIR, this.air, this.earthy); root.add(this.sky.mesh);
@@ -159,7 +159,7 @@ export class OpeningLook {
   buildPath() {
     const o = this.o, h = (x, z) => o.model.height(x, z), pk = new Kit3(this.low), pts = [], P0 = [-7, 23], P1 = [-2600, -350];
     const N = 17, ext = o.ship.matsExt, emit = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }); this.emit = emit;
-    const amber = this.world === 'ceres' ? [1, .5, .12] : [1, .6, .22];
+    const amber = !this.air ? [1, .5, .12] : [1, .6, .22];
     for (let i = 1; i <= N; i++) {
       const t = i / (N + .5) * (i < 6 ? .9 : 1), x = lerp(P0[0], P1[0], t * .985) + 0, z = lerp(P0[1], P1[1], t * .985), nz = -(P1[0] - P0[0]), nx = (P1[1] - P0[1]), l = Math.hypot(nx, nz), off = 7;
       const px = x + nx / l * off, pz = z + nz / l * off, y = h(px, pz), dist = Math.hypot(px - 0, pz - 0);

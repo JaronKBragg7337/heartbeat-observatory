@@ -24,12 +24,15 @@
 
 /** Hopper materials that count as "ground" on Earth (grass and soil, shell rock, sand): dig any of them. */
 export const EARTH_GROUND = ['MAT-EARTH-REGOLITH', 'MAT-EARTH-RUBBLE', 'MAT-EARTH-SAND'];
+/** Hopper materials that count as "ground" on Callisto (the dark ice gravel and the bright basin ice). */
+export const CALLISTO_GROUND = ['MAT-CALLISTO-REGOLITH', 'MAT-CALLISTO-RUBBLE', 'MAT-CALLISTO-ICE'];
 
 export const THREADS = [
   { id: 'mars-port', world: 'mars', title: 'The Quiet Band', blurb: 'Marineris Port is neutral and short of everything. Something on the survey band is not on any list.' },
   { id: 'earth-cold-fuel', world: 'earth', title: 'Cold Fuel', blurb: 'Twenty-eight percent of Skyward\'s cold fuel is gone. Two sides of one coast know where.' },
   { id: 'ceres-salt-water', world: 'ceres', title: 'Salt and Water', blurb: 'Ironclad needs the water, Greenhaven needs the metal. Neither will say so first.' },
   { id: 'moon-two-way', world: 'moon', title: 'The Two-Way Run', blurb: 'Fortis has the power and Technos has the parts. Everybody cashes it and nobody says cooperation.' },
+  { id: 'callisto-quiet-road', world: 'callisto', title: 'The Quiet Road', blurb: 'Mystara listens to Europa. The prospectors drill. Something under the ice has started answering.' },
 ];
 
 export const MISSIONS = [
@@ -196,6 +199,63 @@ export const MISSIONS = [
     ],
     done: 'Flight office: A name on the roster, a ship off my pad one day sooner. Thank you.' },
 
+  // ============================================================================ CALLISTO: THE QUIET ROAD (Mystara and the open seat)
+  { id: 'callisto-relay', thread: 'callisto-quiet-road', world: 'callisto', giver: 'c-array', title: 'The quiet relay', side: 'port', pay: 90,
+    brief: 'The relay on the Listening Scar has stopped answering. Walk out, look at it, come back and tell Odette what you found.',
+    pitch: 'The relay on the Scar\'s rim repeats our listening band to the camp, and it has been silent for two days. It has no moving parts, so something moved them. Walk out east past the camp, look at it, and come back and tell me what you found. Do not fix anything. Everyone always tries to fix things.',
+    take: 'Walk, do not run. The ice rings, and the ring carries.',
+    steps: [
+      { k: 'go', to: { at: [606, -474], frame: 'callisto', name: 'the dead relay' }, r: 12, text: 'Walk east to the dead relay on the Listening Scar\'s rim (follow the dark track, about 800 m).', beat: 'The mast is down against its own dish, and the break is clean: cut, not fallen. The last log entry is the hour your ship came down. Someone stood here and switched it off, in a suit with no transponder.' },
+      { k: 'go', to: 'c-array', r: 5, drop: true, text: 'Go back and tell Odette Marsh, at the Standing Array.', beat: 'Odette reads the log date and goes still. "That is the hour you fell. I will tell the Director. Do not tell the prospectors."' },
+    ],
+    done: 'Odette Marsh: Thank you. The band the middle stone listens on has been loud since that night, and now I know which night it was.' },
+
+  { id: 'callisto-ice', thread: 'callisto-quiet-road', world: 'callisto', giver: 'c-director', title: 'Ice for the melt', faction: 'mystara', side: 'home', trade: 'wealth', oath: true, pay: 160, size: 1,
+    brief: 'Dig 300 kg of the bright basin ice and carry it to the Director at the Archive door.',
+    pitch: 'Our melt runs on the clean ice the impact threw up under this dust: pale, a metre down on the bright floor. Dig me three hundred kilos with your own hands and carry it to my door. It is the first thing everyone does here, and there is a reason for that. The ice is older than the Sun\'s light on it. Handle it like it remembers.',
+    take: 'Three hundred kilos. The pale ground, not the dark.',
+    steps: [
+      { k: 'give', from: 'hopper', mats: 'callisto', kg: 300, to: 'c-director', r: 6, text: 'Dig 300 kg of ground (the bright ice just under the dust), fill the cart, and carry it to Director Sorn at the Archive door (north of the pad).',
+        beat: 'The Director lays a glove on the load. "Valhalla threw this up when the sky fell, four billion years before there was a word for falling. It will become drinking water and breath. That is the whole trade we are in, out here."' },
+    ],
+    done: 'Director Sorn: The melt will run a week on this. Mystara keeps its accounts in ice and answers. You are in both ledgers now.' },
+
+  { id: 'callisto-claim', thread: 'callisto-quiet-road', world: 'callisto', giver: 'c-prospector', title: 'A beacon on the Scar', faction: 'unbound', side: 'home', trade: 'industry', oath: true, pay: 160, size: 1,
+    brief: 'Carry a claim beacon to the rim of the Listening Scar, east of the camp, and set it down.',
+    pitch: 'The Scar is the freshest ground for two hundred kilometres, and fresh ground on Callisto means whatever the impact stirred up. My drills want it, and claiming is law out here: a beacon on the rim, set by a living hand. Carry mine out and set it. And when you are standing there, listen. The ground does something. I want to know if it does it for you too.',
+    take: 'One beacon, one walk east. It is heavier than it looks and it hums.',
+    carry: 'the claim beacon',
+    steps: [
+      { k: 'go', to: { at: [640, -530], frame: 'callisto', name: "the Scar's rim" }, r: 25, drop: true, text: 'Carry the claim beacon east to the rim of the Listening Scar (about 850 m) and set it down.',
+        beat: 'The beacon bites the ice and starts its slow blink. Under your boots, faint but there: a pulse, regular, from deep under the crater. Not machinery. Machinery has a rhythm you can count. This one you cannot.' },
+    ],
+    done: 'Bram Okonkwo: You heard it too. Good. That is not on any of Mystara\'s maps, and now it is on ours.' },
+
+  { id: 'callisto-seal', thread: 'callisto-quiet-road', world: 'callisto', giver: 'c-director', title: 'The core and the seal', side: 'joint', trade: 'population', pay: 320, size: 2, needsAny: ['callisto-ice', 'callisto-claim'],
+    brief: 'Carry Bram\'s core sample from the prospectors\' camp to the Director, then stand with her while she decides about Sealed Site Four.',
+    pitch: 'Bram drilled into something under the Scar that is not ice and is not rock, and he kept the core against my advice, which is the only way anyone keeps anything out here. Walk to his camp, take the core from him, and bring it to me. What happens then is a decision I have been avoiding for eleven years, and you are going to stand there while I make it.',
+    take: 'The core goes from his hands to mine. Not through anyone else\'s.',
+    carry: 'the core sample',
+    steps: [
+      { k: 'go', to: 'c-prospector', r: 6, text: 'Walk north to the prospectors\' camp (a kilometre, follow the worn track) and take the core from Bram.',
+        beat: 'Bram hands it over wrapped in a drill rag, warm as bread. "Tell her the number four site and the Scar share a pulse. Tell her I said so. She likes it less when it is me."' },
+      { k: 'go', to: 'c-director', r: 6, drop: true, text: 'Carry the core to Director Sorn at the Archive.', beat: 'The Director unwraps the core on the Archive step. The stone inside is dark, warm, and wrong: it has a grain, like wood, and the grain is a spiral. The middle stone of the array, a kilometre away, begins to pulse harder. You can see its light from here.' },
+      { k: 'choose', to: 'c-director', r: 7, ask: 'The Director looks at you. "Eleven years. Open it, or let it keep its secret?"', text: 'Stand with the Director while she decides.', options: [
+        { id: 'seal', label: 'Open Sealed Site Four. Whatever it is, it is time.', side: 'joint', size: 2, pay: 320, flag: 'opened', beat: 'Director Sorn: Then we open it together, and the record will say so. She radios the array. Somewhere east, seven locks come off one door, and the middle stone\'s light steadies to a single slow beat. Europa, on the far band, goes quiet. The Director almost smiles. "It knows. Good. Now we can introduce ourselves."' },
+        { id: 'keep', label: 'Leave it sealed. Some doors stay shut for a reason.', side: 'joint', size: 2, pay: 320, flag: 'sealed', beat: 'Director Sorn: Sealed, then, and the record will say you stood here and said so. She wraps the core and marks it with a glyph. The middle stone\'s light eases. Europa keeps singing. "Patience is also an instrument," she says, "and you have just played it."' },
+      ] },
+    ],
+    done: 'The Quiet Road keeps its own record now, and your name is in it.' },
+
+  { id: 'callisto-hand', thread: 'callisto-quiet-road', world: 'callisto', giver: 'c-dispatcher', title: 'A hand for the long road', side: 'port', pay: 140,
+    brief: 'Sign a hand at the camp desk: Callisto pays a grant for every new hand on a ship that flies out.',
+    pitch: 'Every ship that leaves here crosses a billion kilometres of nothing with empty chairs, and empty chairs make for slow rescues, and slow rescues make for my least favourite paperwork. Sign a hand at my desk. I cover the grant, you get the company, and the nothing between here and Mars gets one pair of eyes closer.',
+    take: 'My desk, beside the board. The hands are on the list.',
+    steps: [
+      { k: 'hire', n: 1, text: 'Sign a hand at the camp desk (Talk to Farah Adeyemi, then Hire). They come aboard your landed ship.' },
+    ],
+    done: 'Camp dispatch: One more name on the roster. The long road feels shorter already.' },
+
   // ============================================================================ MOON: THE TWO-WAY RUN (Fortis and Technos Prime)
   { id: 'moon-footprints', thread: 'moon-two-way', world: 'moon', giver: 'h-guide', title: 'Do not touch', side: 'port', pay: 90,
     brief: 'Walk (or hop) to the first footprints, eleven hundred metres south-west, and see the ranger is well.',
@@ -260,4 +320,4 @@ export function payWords(m) {
   const w = m.side === 'joint' ? 'helps both factions' : m.side === 'home' ? `helps ${m.faction || 'your faction'}` : 'a port job';
   return `${m.pay} credits · ${w}`;
 }
-export const GROUND_MATS = { earth: EARTH_GROUND };
+export const GROUND_MATS = { earth: EARTH_GROUND, callisto: CALLISTO_GROUND };
