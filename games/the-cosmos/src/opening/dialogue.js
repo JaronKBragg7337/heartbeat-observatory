@@ -11,10 +11,11 @@
 import MARS from './worlds/mars/dialogue.js';
 import CERES from './worlds/ceres/dialogue.js';
 import EARTH from './worlds/earth/dialogue.js';
+import CALLISTO from './worlds/callisto/dialogue.js';
 import { CRASH_CAUSES } from './season.js';
 import { arrivalNote } from './lifeboat.js';
 
-export const WORLD_DIALOGUE = { mars: MARS, ceres: CERES, earth: EARTH };
+export const WORLD_DIALOGUE = { mars: MARS, ceres: CERES, earth: EARTH, callisto: CALLISTO };
 /** The keys every world's dialogue file must have (checked by the tests). */
 export const WORLD_DIALOGUE_KEYS = ['id', 'place', 'port', 'surface', 'weather', 'locker', 'crate', 'drivers', 'counter'];
 export const worldDialogue = (id) => WORLD_DIALOGUE[id] || WORLD_DIALOGUE.mars;
@@ -81,6 +82,7 @@ export const GATE_LINES = {
   mars: 'Kestrel to the Marineris desert. A scenic route. Mostly dust. Boarding now. Seats are unassigned and so are the safety briefings. Please sign here, here, and here. Yes, the long one.',
   ceres: 'Kestrel to Ceres. Boarding now. Seats are unassigned and so are the safety briefings. Please sign here, here, and here. Yes, the long one.',
   earth: 'Kestrel to Earth. Boarding now. Seats are unassigned, the safety briefings are the same, and yes, the planet really is that heavy. Please sign here, here, and here.',
+  callisto: 'Kestrel to Callisto. Boarding now. Seats are unassigned and so are the safety briefings. The weather is fine, the gravity is gentle, and the distance is the largest in the timetable. Please sign here, here, and here.',
 };
 export const NOT_YET = 'The Kestrel does not fly there yet. Pick a world that is open, and I will point at the gate.';
 

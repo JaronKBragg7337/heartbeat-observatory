@@ -37,10 +37,9 @@ export const START_WORLDS = [
     line: 'Real continents and oceans, no real cities: you build where you like. Homeguard wants to stay and rebuild; Skyward wants everyone off. Today the only thing standing is Skyward\'s launch complex on the Florida coast.',
     good: 'People, food, water, everything in bulk.', lacks: 'Easy launches: the gravity well is deep. Nothing of Homeguard\'s is built yet.',
     facts: { radiusKm: 6371.0, gravity: 9.80665, dayH: 23.934, note: 'real, from the published fact sheets' } },
-  { id: 'callisto', status: 'coming', factions: ['mystara', 'unbound'], port: 'Valhalla camp', money: 'credits', nearest: 'mars',
-    line: 'The one big Jupiter moon outside the worst radiation. Mystara\'s instruments stand in the Valhalla basin; the second seat is open to whoever raises a building first.',
-    good: 'Maps of the Jupiter system, safe ground, the road to Europa.', lacks: 'Industry. They cannot build much.',
-    facts: { radiusKm: 2410.3, gravity: 1.236, dayH: 400.5, note: 'one turn is 16.69 days, the same as its orbit round Jupiter; distance from Mars varies with Jupiter' } },
+  { id: 'callisto', status: 'open', factions: ['mystara', 'unbound'], port: 'Valhalla Camp', money: 'credits', startPlace: 'the Valhalla Camp, on the bright floor of the basin',
+    line: 'Jupiter fills the eastern sky, nine Moons wide. Mystara\'s instruments stand in the Valhalla basin, glyph-lit and listening; the second seat is open to whoever raises a building first, and an NPC prospectors\' camp holds it loosely.',
+    good: 'Maps of the Jupiter system, safe ground, the road to Europa, strange finds.', lacks: 'Industry. They cannot build much, and nobody holds the open seat yet.' },
 ];
 
 /** What each faction is strong and weak at, in plain words (bible v3 section 4). */
@@ -101,6 +100,7 @@ export function goodsLines(id) {
   if (id === 'mars') return [`Water ${GOODS.water.buy} marks, food ${GOODS.food.buy} marks, parts ${GOODS.parts.buy} marks a unit at the Exchange`, `The depot pays ${12} marks a tonne for regolith`];
   if (id === 'ceres') return [`Occator ore ${MATTER['ceres-ore'].works} marks a tonne at the foundry, ${MATTER['ceres-ore'].marineris} at the Marineris depot`, `The supply desk pays ${SUPPLY_PAY.water} for water and ${SUPPLY_PAY.parts} for parts, about twice Mars`];
   if (id === 'earth') return ['The complex has no shop and no trader yet: nothing is bought or sold on Earth today', 'Homeguard has nothing built: its first town is the next job on this world'];
+  if (id === 'callisto') return ['The lifeboat\'s power cell comes from Mystara\'s quartermaster and the fuel coupler from the prospectors\' camp; there is no open market yet', 'The open seat waits: raise the first building and a faction claims it'];
   return [];
 }
 

@@ -21,6 +21,9 @@ const BODY = {
   callisto: { r: 2_410_300, c: 0x6a625a }, mars: { r: 3_389_500, c: 0xb5694a },
 };
 
+/** Frames that draw their own picture of a plain far ball, so the plain one stays hidden there: frame id -> world id. */
+const OWN_SKY = { callisto: 'jupiter' };
+
 export class FarWorlds {
   constructor({ engine, space }) {
     this.engine = engine; this.space = space; this.built = false; this.items = [];
@@ -63,14 +66,15 @@ export class FarWorlds {
       const dx = c.x - A.x - cam.x, dy = c.y - A.y - cam.y, dz = c.z - A.z - cam.z, dist = Math.hypot(dx, dy, dz) || 1;
       const ang = it.r / dist;                                     // the true disc's angular radius, radians
       const here = e.activeFrame.id === it.id;                      // standing on it (or in its frame): its own shell is all there is
-      const wantMarker = show && !here && ang < 0.0035;
+      const owned = OWN_SKY[e.activeFrame.id] === it.id;           // a world draws its own banded picture of that planet (Callisto: callisto/jupiterSky.js)
+      const wantMarker = show && !here && !owned && ang < 0.0035;
       it.marker.visible = wantMarker;
       if (wantMarker) {
         it.markerEntry.worldPos.x = c.x; it.markerEntry.worldPos.y = c.y; it.markerEntry.worldPos.z = c.z;
         it.marker.material.opacity = Math.min(0.95, 0.25 + 0.7 * (1 - ang / 0.0035));
       }
       if (it.mesh) {
-        const wantBall = show && !here && ang > 0.0006;
+        const wantBall = show && !here && !owned && ang > 0.0006;
         it.mesh.visible = wantBall;
         if (wantBall) { it.meshEntry.worldPos.x = c.x; it.meshEntry.worldPos.y = c.y; it.meshEntry.worldPos.z = c.z; it.mesh.rotation.y = -k.yawI; }
       }

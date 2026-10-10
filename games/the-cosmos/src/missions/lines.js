@@ -6,9 +6,10 @@ import { MISSIONS } from './catalog.js';
 import { WORKER_CAST } from '../voice/cast.js';
 import { castOf } from '../worlds/moon/cast.js';
 import { EARTH_CAST } from '../worlds/earth/cast.js';
+import { CALISTO_CAST } from '../worlds/callisto/cast.js';
 
 const voiceOf = (id) => (WORKER_CAST[id] && WORKER_CAST[id].voice)
-  || [...EARTH_CAST, ...castOf('moon'), ...castOf('moon-shackleton'), ...castOf('moon-daedalus')].find((p) => p.id === id)?.voice || null;
+  || [...EARTH_CAST, ...CALISTO_CAST, ...castOf('moon'), ...castOf('moon-shackleton'), ...castOf('moon-daedalus')].find((p) => p.id === id)?.voice || null;
 
 export function missionLines() {
   const out = [];

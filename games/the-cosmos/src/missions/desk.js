@@ -14,6 +14,7 @@ export const DESKS = {
   earth: { id: 'earth', person: 'e-dispatch', frames: ['earth'], name: 'Range Control dispatch', board: { x: -4, z: -62, face: 'south' }, world: 'earth' },
   ceres: { id: 'ceres', person: 'lane-clerk', frames: ['ceres'], name: 'the flight office', board: { x: 67, z: 29, face: 'west' }, world: 'ceres' },
   moon: { id: 'moon', person: 'h-guide', frames: ['moon'], name: 'the hub terminal desk', board: { x: -12, z: -57, face: 'south' }, world: 'moon' },
+  callisto: { id: 'callisto', person: 'c-dispatcher', frames: ['callisto'], name: 'the camp desk', board: { x: -8, z: -70, face: 'south' }, world: 'callisto' },
 };
 export const deskOfPerson = (personId) => Object.values(DESKS).find((d) => d.person === personId) || null;
 export const deskOfFrame = (frameId) => Object.values(DESKS).find((d) => d.frames.includes(frameId)) || null;
@@ -44,6 +45,14 @@ export const HANDS = {
     H('comms', 'Linnea Hart', 0.8, 'Far-side relay operator. Hears things. Knows which ones to forget.'),
     H('gunner_dorsal', 'Ptolemy Kane', 0.76, 'Gate guard at Checkpoint Rille until it closed. Likes a clear field and a short briefing.'),
     H('gunner_ventral', 'Rue Calder', 0.73, 'Drifter and a good shot. Tells long stories about the one that got away.'),
+  ],
+  callisto: [
+    H('pilot', 'Sylvie Okafor', 0.82, 'Flew ice tugs for the prospectors until the drills got louder than the engines. Will fly anything with a window in it.'),
+    H('captain', 'Dmitri Roan', 0.85, 'Twenty years on the Mars run. Keeps the ship warm, the log honest, and the crew out of the Director\'s bad books.'),
+    H('nav', 'Imogen Voss', 0.79, 'Mystara\'s own chart keeper. Knows the safe lanes round Jupiter the way other people know their own street.'),
+    H('comms', 'Elias Thorne', 0.8, 'Listened to static for a living and swears it answers, occasionally, in a friendly way.'),
+    H('gunner_dorsal', 'Marta Bekele', 0.75, 'Prospector who learned to shoot after one very quiet winter. Patient, exact, unbothered.'),
+    H('gunner_ventral', 'Anouk Ferreira', 0.72, 'Ex relay tech. Aims the way she tunes an antenna: slowly, then all at once.'),
   ],
 };
 /** The hand at a desk with this post, as the authority tracks them: a stable id per (desk, post). */

@@ -10,21 +10,21 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export async function run({ check, section }) {
   const C = await load('src/missions/catalog.js'), W = await load('src/missions/where.js'), D = await load('src/missions/desk.js'), T = await load('src/missions/talk.js');
   const SEATS = await load('src/roles/seats.js'), CATALOG = await load('src/economy/catalog.js');
-  const EARTH = await load('src/worlds/earth/layout.js'), CERES = await load('src/worlds/ceres/layout.js'), MOON = await load('src/worlds/moon/layout.js');
-  const solidAt = { earth: (x, z) => EARTH.solidAtEarth(x, z, 0.2), ceres: (x, z) => CERES.solidAt(x, z, 0.2), moon: (x, z) => MOON.solidAtMoon('moon', x, z, 0.2) };
+  const EARTH = await load('src/worlds/earth/layout.js'), CERES = await load('src/worlds/ceres/layout.js'), MOON = await load('src/worlds/moon/layout.js'), CALLISTO = await load('src/worlds/callisto/layout.js');
+  const solidAt = { earth: (x, z) => EARTH.solidAtEarth(x, z, 0.2), ceres: (x, z) => CERES.solidAt(x, z, 0.2), moon: (x, z) => MOON.solidAtMoon('moon', x, z, 0.2), callisto: (x, z) => CALLISTO.solidAt(x, z, 0.2) };
 
   // ===================================================================================================================
   section('MISSIONS 1: the catalog is whole, and every place in it exists');
   // ===================================================================================================================
   const M = C.MISSIONS;
-  check(`${M.length} jobs in ${C.THREADS.length} threads (Mars, Earth, Ceres, the Moon), every id unique, every thread has jobs`, new Set(M.map((m) => m.id)).size === M.length && C.THREADS.every((t) => M.some((m) => m.thread === t.id)) && M.every((m) => C.threadById(m.thread)));
+  check(`${M.length} jobs in ${C.THREADS.length} threads (Mars, Earth, Ceres, the Moon, Callisto), every id unique, every thread has jobs`, new Set(M.map((m) => m.id)).size === M.length && C.THREADS.every((t) => M.some((m) => m.thread === t.id)) && M.every((m) => C.threadById(m.thread)));
   check('every job needs only jobs that exist (and none needs itself), and every job has at least one step, a pitch, a closing line and a brief', M.every((m) => [...(m.needs || []), ...(m.needsAny || [])].every((id) => C.missionById(id) && id !== m.id) && m.steps.length && m.pitch && m.done && m.brief && m.take));
   check('every giver and every step place resolves to a real person or spot, in the world the job says', M.every((m) => {
     const g = W.resolve(m.giver); if (!g || W.worldIdOfFrame(g.frame) !== m.world) return false;
     return m.steps.every((st) => (st.k === 'go' || st.k === 'give' || st.k === 'choose') ? (!!W.resolve(st.to) && Number.isFinite(st.r || 1)) : true);
   }));
   check('step kinds are the six the authority checks, and a choose step ends every job that has one (with 2+ answers, each paid and told)', M.every((m) => m.steps.every((st) => ['go', 'land', 'haul', 'give', 'hire', 'choose'].includes(st.k)) && m.steps.every((st, i) => st.k !== 'choose' || (i === m.steps.length - 1 && st.options.length >= 2 && st.options.every((o) => o.id && o.label && o.beat && Number.isFinite(o.pay))))));
-  check('a faction job belongs to a faction of its own world, and every two-sided world with a thread has an oath job for each of its factions', M.every((m) => !m.faction || SEATS.worldById(m.world).factions.includes(m.faction)) && ['earth', 'ceres', 'moon'].every((w) => SEATS.worldById(w).factions.every((f) => M.some((m) => m.world === w && m.oath && m.faction === f))));
+  check('a faction job belongs to a faction of its own world, and every two-sided world with a thread has an oath job for each of its factions', M.every((m) => !m.faction || SEATS.worldById(m.world).factions.includes(m.faction)) && ['earth', 'ceres', 'moon', 'callisto'].every((w) => SEATS.worldById(w).factions.every((f) => M.some((m) => m.world === w && m.oath && m.faction === f))));
   check('Mars is neutral: its jobs take no side, no faction and move no meter', M.filter((m) => m.world === 'mars').every((m) => m.side === 'port' && !m.faction));
   check('pay is modest and honest (every job 60 to 400 credits; the survey bounty is 300 for one sample)', M.every((m) => m.pay >= 60 && m.pay <= 400 && (m.steps.at(-1).options || []).every((o) => o.pay <= 400)));
   check('every place a job asks you to stand is open ground, not inside a wall (the spoil guard and the walker agree)', M.every((m) => m.steps.every((st) => {
@@ -32,7 +32,7 @@ export async function run({ check, section }) {
     return !solidAt[pl.frame](pl.x, pl.z - 0) || !!pl.person;       // a person stands where they stand; a spot must be free
   })));
   check('the tower people the jobs name stand in the tower cab (22.5 m up): the lift is part of the job', ['cab-runner', 'cab-weather', 'cab-approach', 'cab-binoculars'].every((id) => W.resolve(id).y === 22.5));
-  check('the dispatchers exist and are people on their own world: Quintero (Earth), the flight office (Ceres), the arrivals guide (the Moon hub)', Object.values(D.DESKS).every((d) => { const p = W.resolve(d.person); return p && W.worldIdOfFrame(p.frame) === d.world; }));
+  check('the dispatchers exist and are people on their own world: Quintero (Earth), the flight office (Ceres), the arrivals guide (the Moon hub), the camp desk (Callisto)', Object.values(D.DESKS).every((d) => { const p = W.resolve(d.person); return p && W.worldIdOfFrame(p.frame) === d.world; }));
   check('every desk lists six hands, one per post the crew system knows, with a body from the crew\'s own people and a wage from the wage table', Object.keys(D.HANDS).every((k) => D.HANDS[k].length === 6 && D.HANDS[k].every((h) => CATALOG.WAGES[h.role] && h.skill >= 0.7 && h.skill <= 0.9 && h.personId)));
   check('the notice board stands in the open beside each desk (not inside a wall)', Object.values(D.DESKS).every((d) => !solidAt[d.world] || !solidAt[d.world](d.board.x, d.board.z)));
 

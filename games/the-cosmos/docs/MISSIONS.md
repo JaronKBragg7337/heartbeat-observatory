@@ -41,5 +41,5 @@ Gap list that started it: `AI-Shared/state/cosmos-gaps-2026-10-08.md`. Handoff: 
 * Repeatable board jobs (the stories are one-time; the markets are the repeating work).
 * Fuel and repair pricing (the bible says "priced later"), freight between players, convoys.
 * A walkable Homeguard building beyond the footing; an Earth shop.
-* Callisto, Wanderhome and Corsair jobs (those worlds are not built).
+* Callisto jobs (WD-CALLISTO 2026-10-09: the Quiet Road thread is built). Wanderhome and Corsair jobs (those worlds are not built).
 * Voices for Ceres: the people of Occator Works have none yet, so their pitches are text.
