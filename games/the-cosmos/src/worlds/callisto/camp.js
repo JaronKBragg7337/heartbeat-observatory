@@ -21,7 +21,7 @@ import { factionLook, factionStyle } from '../../factions/registry.js';
 import { personVisible } from '../../crew/personVisibility.js';
 import { Person } from '../../crew/personRig.js';
 import { bleedSideways } from '../moon/place.js';
-import { BOXES, PORT_BOXES, MAIN_PAD, PEOPLE, OUTPOST_NAME, outpostToFrame, frameToOutpost, pushOut } from './layout.js';
+import { BOXES, PORT_BOXES, PORT_CENTRE, MAIN_PAD, PEOPLE, OUTPOST_NAME, outpostToFrame, frameToOutpost, pushOut } from './layout.js';
 import { buildBoard } from '../../missions/boardProp.js';
 import { DESKS } from '../../missions/desk.js';
 
@@ -357,7 +357,9 @@ export function buildCamp({ engine, world, space, tier }) {
 /** The camp's people: the same Loft bodies as everywhere, dressed by F0's faction styles, standing where cast.js puts them.
  *  A person has the shape of a port worker so the Talk button treats them the same; `talk`/`act`/`speech` drive the panel. */
 class CampPeople {
-  constructor(o) { this.roots = o.roots; this.padPi = o.padPi; this.portPi = o.portPi; this.library = o.people; this.members = []; this.built = false; }
+  constructor(o) { this.roots = o.roots; this.padPi = o.padPi; this.portPi = o.portPi; this.library = o.people; this.members = []; this.built = false;
+    /** the solids in the pad frame, the shape the Moon's people carry: the playtester's route planner (and any tool) reads `people.layout.BOXES` */
+    this.layout = { BOXES: [...BOXES, ...PORT_BOXES.map((b) => ({ ...b, x0: b.x0 + PORT_CENTRE.x, x1: b.x1 + PORT_CENTRE.x, z0: b.z0 + PORT_CENTRE.z, z1: b.z1 + PORT_CENTRE.z }))], MAIN_PAD, PEOPLE }; }
   async build() {
     if (this.built || !this.library) return this;
     this.built = true;
