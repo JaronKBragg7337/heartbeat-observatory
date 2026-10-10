@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { MoonPeople } from './people.js';
 import { acquireEarth } from './earthSky.js';
 import { layoutOf } from './layout.js';
-import { frameToOutpost, outpostToFrame, pushOut } from './place.js';
+import { frameToOutpost, outpostToFrame, pushOut, bleedSideways } from './place.js';
 import { buildSampleBeacon } from '../../space/hardware.js';
 import { buildBoard } from '../../missions/boardProp.js';       // MISSIONS: the hub terminal's notice board
 import { DESKS } from '../../missions/desk.js';
@@ -42,7 +42,7 @@ export function dressMoon(world, { engine }, build) {
         if (Math.abs(p.x) < 260 && Math.abs(p.z) < 260 && pushOut(layout, p)) {
           const w = outpostToFrame(pi, p.x, p.y, p.z), walker = space.walker;
           walker.worldPos.x = w.x; walker.worldPos.y = w.y; walker.worldPos.z = w.z;
-          if (walker.velocity) { walker.velocity.x *= 0.2; walker.velocity.y *= 0.2; walker.velocity.z *= 0.2; }
+          bleedSideways(walker, pi.up);
         }
       }
     },

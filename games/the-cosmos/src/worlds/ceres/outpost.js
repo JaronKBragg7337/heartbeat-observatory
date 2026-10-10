@@ -12,6 +12,7 @@
 // ============================================================================
 
 import * as THREE from 'three';
+import { bleedSideways } from '../moon/place.js';
 import { Kit } from '../../ship/shipKit.js';
 import { makePortMaterials } from '../../port/portArt.js';
 import { buildSampleBeacon } from '../../space/hardware.js';
@@ -393,7 +394,7 @@ export function buildOutpost({ engine, world, space, tier }) {
             const ch = [{ dx: b.x0 - r - p.x, dz: 0 }, { dx: b.x1 + r - p.x, dz: 0 }, { dx: 0, dz: b.z0 - r - p.z }, { dx: 0, dz: b.z1 + r - p.z }].sort((a, c) => Math.hypot(a.dx, a.dz) - Math.hypot(c.dx, c.dz))[0];
             p.x += ch.dx; p.z += ch.dz; pushed = true;
           }
-          if (pushed) { const w = outpostToFrame(pi, p.x, p.y, p.z); walker.worldPos.x = w.x; walker.worldPos.y = w.y; walker.worldPos.z = w.z; if (walker.velocity) { walker.velocity.x *= 0.2; walker.velocity.y *= 0.2; walker.velocity.z *= 0.2; } }
+          if (pushed) { const w = outpostToFrame(pi, p.x, p.y, p.z); walker.worldPos.x = w.x; walker.worldPos.y = w.y; walker.worldPos.z = w.z; bleedSideways(walker, pi.up); }
         }
       }
     },

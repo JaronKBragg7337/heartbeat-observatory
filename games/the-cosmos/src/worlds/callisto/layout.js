@@ -25,7 +25,8 @@ export const BOXES = [
   { id: 'supply-back', x0: 49.4, x1: 50.2, z0: 46, z1: 66, h: 6 },
   { id: 'supply-n', x0: 26, x1: 50.2, z0: 45.6, z1: 46.4, h: 6 },
   { id: 'supply-s', x0: 26, x1: 50.2, z0: 65.6, z1: 66.4, h: 6 },
-  { id: 'supply-counter', x0: 27.4, x1: 28.4, z0: 47, z1: 65, h: 1.1 },
+  { id: 'supply-counter-n', x0: 27.4, x1: 28.4, z0: 47, z1: 54, h: 1.1 },       // a 4 m gap between the two halves, in front of the quartermaster
+  { id: 'supply-counter-s', x0: 27.4, x1: 28.4, z0: 58, z1: 65, h: 1.1 },
   // the standing array: the central plinth and the nine stones (walk round them, not through them)
   { id: 'array-plinth', x0: -56.6, x1: -51.4, z0: 35.4, z1: 40.6, h: 1.2 },
   ...Array.from({ length: 9 }, (_, i) => { const a = i * (Math.PI * 2 / 9) + 0.35, r = 34, x = -54 + Math.cos(a) * r, z = 38 + Math.sin(a) * r; return { id: 'array-stone-' + i, x0: x - 1.3, x1: x + 1.3, z0: z - 1.3, z1: z + 1.3, h: 7.5 }; }),

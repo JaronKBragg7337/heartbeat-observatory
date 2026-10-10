@@ -20,6 +20,7 @@ import { makePortMaterials } from '../../port/portArt.js';
 import { factionLook, factionStyle } from '../../factions/registry.js';
 import { personVisible } from '../../crew/personVisibility.js';
 import { Person } from '../../crew/personRig.js';
+import { bleedSideways } from '../moon/place.js';
 import { BOXES, PORT_BOXES, MAIN_PAD, PEOPLE, OUTPOST_NAME, outpostToFrame, frameToOutpost, pushOut } from './layout.js';
 import { buildBoard } from '../../missions/boardProp.js';
 import { DESKS } from '../../missions/desk.js';
@@ -189,8 +190,8 @@ export function buildCamp({ engine, world, space, tier }) {
     }
     const goods = [[0.35, 0.28, 0.22], [0.4, 0.42, 0.48], [0.55, 0.5, 0.3], [0.3, 0.36, 0.5]];
     for (let z = z0 + 1.6; z < z1 - 1; z += 2.4) for (let sh = 0; sh < 3; sh++) for (let j = 0; j < 2; j++) Bk('paint', x1 - 1.6, 0.7 + sh * 1.1, z + 0.7 + j * 1.1, 0.9, 0.5, 0.8, goods[(Math.floor(z) + sh + j) & 3], 0.03);
-    Bk('plasticDark', 27.9, 0.55, 56, 1.0, 1.1, 18, [0.4, 0.38, 0.42], 0.04);
-    Xk('steel', 27.9, 1.12, 56, 1.2, 0.06, 18.2, STEEL);
+    // the counter has a 4 m gap in the middle (z 54 to 58) so a customer can walk up to the quartermaster
+    for (const zc of [50.5, 61.5]) { Bk('plasticDark', 27.9, 0.55, zc, 1.0, 1.1, 7, [0.4, 0.38, 0.42], 0.04); Xk('steel', 27.9, 1.12, zc, 1.2, 0.06, 7.2, STEEL); }
     for (const z of [52.5, 59.5]) { Bk('plasticDark', 27.95, 1.4, z, 0.5, 0.5, 0.06, null, 0.02); Xk('glowCyan', 28.0, 1.4, z, 0.4, 0.38, 0.02); }
     for (let z = z0 + 2.5; z < z1; z += 4) lampK(x0 + 6, H - 0.5, z, 2.2);
     const sg = new THREE.Mesh(new THREE.PlaneGeometry(9, 2.2), new THREE.MeshBasicMaterial({ map: signTexture(['QUARTERMASTER', 'WATER · RATIONS · CABLE · SPARES · POWER CELLS'], 1024, 250, { size: 0.3 }), toneMapped: false }));
@@ -340,10 +341,10 @@ export function buildCamp({ engine, world, space, tier }) {
         const p = frameToOutpost(pi, walkerWorldPos);
         if (Math.abs(p.x) < 200 && Math.abs(p.z) < 200 && pushOut(p, BOXES)) {
           const w = outpostToFrame(pi, p.x, p.y, p.z); walker.worldPos.x = w.x; walker.worldPos.y = w.y; walker.worldPos.z = w.z;
-          if (walker.velocity) { walker.velocity.x *= 0.2; walker.velocity.y *= 0.2; walker.velocity.z *= 0.2; }
+          bleedSideways(walker, pi.up);
         } else if (portPi && Math.abs(p.x) < 80 && Math.abs(p.z + 1200) < 80) {
           const pc = frameToOutpost(portPi, walkerWorldPos);
-          if (pushOut(pc, PORT_BOXES)) { const w = outpostToFrame(portPi, pc.x, pc.y, pc.z); walker.worldPos.x = w.x; walker.worldPos.y = w.y; walker.worldPos.z = w.z; if (walker.velocity) { walker.velocity.x *= 0.2; walker.velocity.y *= 0.2; walker.velocity.z *= 0.2; } }
+          if (pushOut(pc, PORT_BOXES)) { const w = outpostToFrame(portPi, pc.x, pc.y, pc.z); walker.worldPos.x = w.x; walker.worldPos.y = w.y; walker.worldPos.z = w.z; bleedSideways(walker, portPi.up); }
         }
       }
     },

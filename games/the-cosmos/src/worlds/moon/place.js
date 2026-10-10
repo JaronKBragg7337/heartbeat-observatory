@@ -32,3 +32,11 @@ export function pushOut(layout, p, r = 0.38) {
   }
   return pushed;
 }
+
+/** A wall stops a walker's sideways speed but must never take his fall: the old "x0.2 every frame on all three axes" held a jumper in
+ *  the air in low gravity (the playtester floated for minutes, `Floating off the ground on a moon`). `up` is the local up vector. */
+export function bleedSideways(walker, up) {
+  const v = walker.velocity; if (!v) return;
+  const vu = v.x * up.x + v.y * up.y + v.z * up.z;
+  v.x = (v.x - vu * up.x) * 0.2 + vu * up.x; v.y = (v.y - vu * up.y) * 0.2 + vu * up.y; v.z = (v.z - vu * up.z) * 0.2 + vu * up.z;
+}

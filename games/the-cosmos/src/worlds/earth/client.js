@@ -10,7 +10,7 @@ import { buildBoard } from '../../missions/boardProp.js';       // MISSIONS: the
 import { DESKS } from '../../missions/desk.js';
 import { MoonPeople } from '../moon/people.js';
 import { layoutOf } from './layout.js';
-import { frameToOutpost, outpostToFrame, pushOut } from '../moon/place.js';
+import { frameToOutpost, outpostToFrame, pushOut, bleedSideways } from '../moon/place.js';
 
 export default {
   dress(world, { engine }) {
@@ -37,7 +37,7 @@ export default {
           if (Math.abs(p.x) < 260 && Math.abs(p.z) < 260 && pushOut(layout, p)) {
             const w = outpostToFrame(pi, p.x, p.y, p.z);
             walker.worldPos.x = w.x; walker.worldPos.y = w.y; walker.worldPos.z = w.z;
-            if (walker.velocity) { walker.velocity.x *= 0.2; walker.velocity.y *= 0.2; walker.velocity.z *= 0.2; }
+            bleedSideways(walker, pi.up);
           }
         }
       },
