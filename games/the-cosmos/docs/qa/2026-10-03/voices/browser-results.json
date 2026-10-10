@@ -5,7 +5,7 @@
       "a": {
         "offers": 0,
         "answers": 2,
-        "ice": 16,
+        "ice": 8,
         "connected": 1,
         "remoteTracks": 2,
         "micStarts": 0
@@ -13,7 +13,7 @@
       "b": {
         "offers": 2,
         "answers": 0,
-        "ice": 5,
+        "ice": 8,
         "connected": 1,
         "remoteTracks": 1,
         "micStarts": 0
@@ -34,18 +34,18 @@
         "level": 0,
         "energy": 0
       },
-      "analyserPeak": 0.446
+      "analyserPeak": 0.096
     },
     "audioFlowing": true,
     "heardClose": 1,
     "hudShowsSpeaker": true,
     "reverseAudio": true,
     "reverseStats": {
-      "packets": 218,
-      "bytes": 12251,
-      "analyserPeak": 0.08
+      "packets": 211,
+      "bytes": 11731,
+      "analyserPeak": 0.416
     },
-    "heardMid": 0.2614196462946801,
+    "heardMid": 0.26435503545680106,
     "midPeers": 1,
     "droppedFar": true,
     "crewChannel": 1,
@@ -55,15 +55,15 @@
     "phoneLabel": "Hold to talk",
     "phoneTouchHold": true,
     "phoneStats": {
-      "packets": 373,
-      "bytes": 21683
+      "packets": 287,
+      "bytes": 16242
     },
     "npc": {
       "near": {
         "id": "arrival-guide",
-        "d": 12.479124564438376,
+        "d": 12.479124567448466,
         "log": {
-          "t": 141369,
+          "t": 125972,
           "voice": "w-adam",
           "text": "Welcome to Marineris. Depot west, market south, control tower north. Use the lift inside.",
           "mode": "clip",
@@ -77,13 +77,13 @@
       },
       "far": {
         "id": "cab-runner",
-        "d": 96.04463748572158,
+        "d": 96.04463748461563,
         "log": {
-          "t": 142557,
+          "t": 127164,
           "voice": "w-puck",
           "text": "I carry the shift notes between desks.",
           "mode": "too-far",
-          "dist": 96.04463748537981
+          "dist": 96.04463748452203
         }
       }
     },

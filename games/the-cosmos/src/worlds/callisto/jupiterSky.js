@@ -11,14 +11,21 @@ import { worldCentre } from '../registry.js';
 import { rotY } from '../../space/frames.js';
 
 const JUPITER_R = 71_492_000, D = 2.0e8;
+const UP = new THREE.Vector3(0, 1, 0), pole = new THREE.Vector3(), spin = new THREE.Quaternion();
 const VS = `varying vec3 vN; varying vec3 vNV; varying vec2 vUv; void main(){ vN = normalize(mat3(modelMatrix) * normal); vNV = normalize(normalMatrix * normal); vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const FS = `uniform sampler2D uMap; uniform vec3 uSun; varying vec3 vN; varying vec3 vNV; varying vec2 vUv;
 void main(){
   vec3 c = texture2D(uMap, vUv).rgb;
+  // the cloud bands are low-contrast in the picture: stretch them and warm them so the stripes and the Great Red Spot read at 4 degrees
+  float l = dot(c, vec3(0.299, 0.587, 0.114));
+  c = clamp(mix(vec3(l), c, 1.55), 0.0, 1.0);
+  c = clamp((c - 0.5) * 1.45 + 0.5, 0.0, 1.0);
   float d = dot(normalize(vN), normalize(uSun));
-  float day = smoothstep(-0.06, 0.16, d);
-  vec3 night = c * c * vec3(0.008, 0.010, 0.02);
-  vec3 lit = c * (0.06 + 1.45 * max(d, 0.0));
+  // a deep cloud deck scatters light round the terminator: wrap the light so the lit side is a broad, banded crescent-to-gibbous
+  float wrap = clamp((d + 0.25) / 1.25, 0.0, 1.0);
+  float day = smoothstep(-0.25, 0.1, d);
+  vec3 night = c * c * vec3(0.012, 0.014, 0.026);
+  vec3 lit = c * (0.12 + 1.75 * wrap);
   float rim = pow(1.0 - clamp(normalize(vNV).z, 0.0, 1.0), 3.0);
   gl_FragColor = vec4(mix(night, lit, day) + vec3(0.72, 0.62, 0.5) * rim * (0.15 + 0.85 * day) * 0.35, 1.0);
   #include <colorspace_fragment>
@@ -49,7 +56,13 @@ export function acquireJupiter({ engine, space }) {
       mesh.position.copy(dir).multiplyScalar(D);
       mesh.scale.setScalar(D * Math.tan(Math.asin(Math.min(1, JUPITER_R / dist))));
       mat.uniforms.uSun.value.copy(space.sunLocal);
-      mesh.rotation.y = (space.timeS() / 35730) * Math.PI * 2;                    // it turns once every 9 h 55 m
+      // The spin axis must lie across the line of sight, or the camp sees Jupiter pole-on (the dull grey cap, no stripes). Callisto's frame
+      // turns about Mars's pole only, so Jupiter's real pole is not drawable here: take whichever frame axis is most across the line of
+      // sight (so the bands run across the disc) and turn the planet about it, once every 9 h 55 m.
+      const ax = Math.abs(dir.x) <= Math.abs(dir.y) && Math.abs(dir.x) <= Math.abs(dir.z) ? [1, 0, 0] : Math.abs(dir.z) <= Math.abs(dir.y) ? [0, 0, 1] : [0, 1, 0];
+      const dp = ax[0] * dir.x + ax[1] * dir.y + ax[2] * dir.z;
+      pole.set(ax[0] - dir.x * dp, ax[1] - dir.y * dp, ax[2] - dir.z * dp).normalize();
+      mesh.quaternion.setFromUnitVectors(UP, pole).multiply(spin.setFromAxisAngle(UP, (space.timeS() / 35730) * Math.PI * 2));
     },
     release() { if (_shared && _shared.api === api && --_shared.refs <= 0) { engine.scene.remove(mesh); mat.dispose(); mesh.geometry.dispose(); _shared = null; } },
   };

@@ -111,6 +111,7 @@ export class GroundDetail {
     // colour: a dark basalt-and-rust mix on Mars, greys on the moons (the frame says which), a few lighter ones
     const moon = this.frameId() !== 'mars', t = c.h3, light = c.h4 > 0.9 ? 1.35 : 1;
     if (earth) this._col.setRGB((0.62 + 0.22 * t) * light, (0.57 + 0.2 * t) * light, (0.45 + 0.17 * t) * light, THREE.SRGBColorSpace);      // shell grit: cream and pale tan
+    else if (this.frameId() === 'callisto') { if (c.h4 > 0.82) this._col.setRGB(0.52 + 0.14 * t, 0.57 + 0.13 * t, 0.62 + 0.12 * t, THREE.SRGBColorSpace); else this._col.setRGB(0.30 + 0.14 * t, 0.27 + 0.12 * t, 0.24 + 0.10 * t, THREE.SRGBColorSpace); }      // Callisto: dust-stained brown-grey stones, one in six clean ice
     else if (moon) this._col.setRGB((0.20 + 0.14 * t) * light, (0.19 + 0.13 * t) * light, (0.18 + 0.12 * t) * light, THREE.SRGBColorSpace);
     else this._col.setRGB((0.17 + 0.18 * t) * light, (0.10 + 0.10 * t) * light, (0.07 + 0.07 * t) * light, THREE.SRGBColorSpace);
     this.pebbles.setColorAt(slot, this._col); if (this.pebbles.instanceColor) this.pebbles.instanceColor.needsUpdate = true;

@@ -70,7 +70,9 @@ function albedoFn(q, k0, red0, lo, mid, out) {
 function groundAt(q, depth, reg, n) {
   const [la, lon] = latLon(q[0], q[1], q[2]);
   const dV = angDist(la, lon, VALHALLA.lat, VALHALLA.lon) * 2_410_300;
-  if (dV < 190_000 && depth < 1.1 + 0.7 * (0.5 + 0.5 * n)) return 'ice';
+  // the dark dust skin lies on top (about 0.8 to 1.3 m, ragged); the clean ice is under it, down to a dozen metres, then broken rock
+  const skin = 0.8 + 0.5 * (0.5 + 0.5 * n);
+  if (dV < 190_000 && depth > skin && depth < 12) return 'ice';
   return null;
 }
 

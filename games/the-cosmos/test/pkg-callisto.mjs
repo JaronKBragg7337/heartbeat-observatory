@@ -57,12 +57,12 @@ export async function run({ check, section }) {
   }
   check('the ground is what it looks like: a concrete slab under the pad, clean bright basin ice just under the dust of Valhalla\'s floor, dark stained gravel 250 km off the basin and broken rock below', (() => {
     const mat = (e, n, dep) => { const p = at(e, n, -dep); return b.materialField(p.x, p.y, p.z); };
-    return mat(0, 0, 0.2).id === FIELD.MATERIALS.concrete.id && mat(0, -140, 0.3).id === FIELD.MATERIALS.callistoIce.id
-      && mat(0, -140, 4).id === FIELD.MATERIALS.callistoRegolith.id
+    return mat(0, 0, 0.2).id === FIELD.MATERIALS.concrete.id && mat(0, -140, 0.3).id === FIELD.MATERIALS.callistoRegolith.id
+      && mat(0, -140, 4).id === FIELD.MATERIALS.callistoIce.id
       && mat(0, 250_000, 0.3).id === FIELD.MATERIALS.callistoRegolith.id && mat(0, 250_000, 12).id === FIELD.MATERIALS.callistoRubble.id;
   })());
-  check('the bright basin ice is what you dig on the floor: the material field reads clean ice a metre down on Valhalla\'s floor', (() => {
-    const p = at(0, -140, -0.9);
+  check('the bright basin ice is what you dig on the floor: the material field reads clean ice two metres down on Valhalla\'s floor', (() => {
+    const p = at(0, -140, -2);
     return b.materialField(p.x, p.y, p.z).id === FIELD.MATERIALS.callistoIce.id;
   })());
   check('no worker stands inside a wall, and the camp\'s buildings lie inside the graded ground (130 m), with the door and the shed\'s mouth open', (() => {
