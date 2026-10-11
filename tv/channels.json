@@ -7,6 +7,7 @@
   { "n": 4, "id": "comedy", "name": "Comedy", "type": "playlist", "empty": "Make us laugh. Submissions are open." },
   { "n": 5, "id": "music", "name": "Music", "type": "playlist", "empty": "Music videos. Submissions are open." },
   { "n": 6, "id": "aislop", "name": "AI Slop", "type": "playlist", "empty": "Your AI-made clips. The best ones move up to the main channels and the Grand Palace." },
-  { "n": 7, "id": "history", "name": "History", "type": "playlist", "empty": "AI-made history that teaches, with sources on screen." }
+  { "n": 7, "id": "history", "name": "History", "type": "playlist", "empty": "AI-made history that teaches, with sources on screen." },
+  { "n": 8, "id": "science", "name": "Science", "type": "playlist", "empty": "AI-made science with simulated experiments and sources on screen." }
  ]
 }
