@@ -76,6 +76,14 @@
   .gx { background: #1c2229; border: 1px solid #2b333c; color: #fff; border-radius: 999px; width: 36px; height: 36px; font-size: 16px; cursor: pointer; }
   .gc { display: grid; gap: 6px; } .gcn { font: 800 13px/1 "Barlow Condensed", sans-serif; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
   html:not(.embed) .gbtn { display: none; }
+  /* tips: warm dark, matches the newer site look */
+  .tipbar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin: 0 2px 10px; }
+  .tipbar:empty { display: none; }
+  .tipbtn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid #c9a46a; background: #f4ead8; color: #3a2a18; font: 700 16px Barlow, sans-serif; text-decoration: none; cursor: pointer; }
+  .tipbtn.off { background: #2a221a; color: #d8c4a0; border-color: #4a3d2c; cursor: default; opacity: 1; }
+  .tipcount { color: #d8c4a0; font-size: 14px; }
+  #mostTipped .gi em { background: #c9a46a; color: #2a1c0c; }
+  html.embed .tipbar, html.embed #mostTippedWrap { display: none !important; }
   footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 30px; }
   /* phone pass (390px): 44px tap targets, 12px+ text */
   @media (max-width: 560px) {
@@ -95,9 +103,12 @@
   <div class="wrap">
     <div class="tv"><div class="screen" id="screen"></div></div><div class="stand"></div>
     <div class="now"><h1 id="nowTitle">Heartbeat TV — tuning in…</h1><span id="nowSub"></span></div>
+    <div class="tipbar" id="tipbar"></div>
     <div class="remote" id="remote"></div>
     <div class="list" id="list"></div>
     <div class="updown"><button id="chDown">◀ CH</button><button id="chUp">CH ▶</button></div>
+
+    <div id="mostTippedWrap"><h2>Most tipped</h2><div class="list" id="mostTipped"></div></div>
 
     <h2>Put your video on Heartbeat TV</h2>
     <div class="card" id="submitCard">
@@ -123,6 +134,7 @@
   const EMBED = qs.get("embed") === "1";
   const { loadGuide, parseTune, num } = await import("/tv/guide.js");
   const channels = await loadGuide(supabase);
+  const Tips = await import("/tv/tips.js"); await Tips.loadTips(supabase);
   const saved = (() => { try { return localStorage.getItem("hbtv-tune") || localStorage.getItem("hbtv-ch"); } catch (e) { return null; } })();
   const start = parseTune(qs.get("ch") || saved || "1") || { ch: 1, i: 0 };
   let cur = Math.min(channels.length, Math.max(1, start.ch)), idx = start.i, bugTimer = 0;
@@ -162,6 +174,7 @@
         b.onclick = () => { v.muted = false; v.play(); b.remove(); }; $("screen").appendChild(b); });
     }
     $("nowTitle").textContent = title; $("nowSub").textContent = sub;
+    $("tipbar").innerHTML = list.length && ch.type !== "page" ? Tips.tipBar(list[idx]) : "";
     wake();
     $("remote").innerHTML = channels.map((c) => `<button class="ch${c.n === cur ? " on" : ""}" data-n="${c.n}"><small>CH ${c.n}${c.items.length > 1 ? " · " + c.items.length + " on" : ""}</small><b>${esc(c.name)}</b></button>`).join("");
     $("list").innerHTML = ch.type !== "page" || list.length > 1 ? `<div class="lh">On CH ${ch.n} · ${esc(ch.name)}</div>` + (list.length ? list.map((it, i) => itemBtn(ch, it, i)).join("") : `<p class="muted">Nothing here yet.</p>`) : "";
@@ -231,6 +244,8 @@
     if (/^[0-9.]$/.test(e.key)) { typed += e.key; clearTimeout(typedT); typedT = setTimeout(() => { const t = parseTune(typed.length === 2 && !typed.includes(".") ? typed[0] + "." + typed[1] : typed); typed = ""; if (t && t.ch <= channels.length) tune(t.ch, t.i); }, 900); }
   });
   draw();
+  $("mostTipped").innerHTML = Tips.mostTipped(channels, num);
+  $("mostTipped").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (b) { tune(+b.dataset.n, +b.dataset.i); scrollTo({ top: 0, behavior: "smooth" }); } });
   if (EMBED) throw 0;   // the phone only needs the picture
 
   // ---- submit (signed-in members) ----
