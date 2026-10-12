@@ -256,9 +256,12 @@ function toggleTV(force, remote) {
   showCh();
   if (!remote) shareTV();
 }
+// channel numbers are labels, not positions (the guide can skip a number); step by position, pick by number
+const chObj = () => channels.find((c) => c.n === ch) || channels[ch - 1];
 function tune(d) {
   if (!channels.length) return;
-  pick(((ch - 1 + d + channels.length) % channels.length) + 1, 0);
+  const k = Math.max(0, channels.indexOf(chObj()));
+  pick(channels[(k + d + channels.length) % channels.length].n, 0);
 }
 function pick(n, i) {   // put on one numbered item, for everyone in the room
   ch = n; item = i || 0; saveTune();
@@ -293,7 +296,7 @@ function toast(msg) {
   t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => (t.style.opacity = 0), 3500);
 }
 function nowLabel() {
-  const c = channels[ch - 1]; if (!c) return `CH ${ch}`;
+  const c = chObj(); if (!c) return `CH ${ch}`;
   const it = (c.items || [])[item];
   return it && c.type !== "page" ? `CH ${ch}.${item + 1} · ${it.title}` : `CH ${ch} · ${c.name}`;
 }

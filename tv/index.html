@@ -137,7 +137,9 @@
   const Tips = await import("/tv/tips.js"); await Tips.loadTips(supabase);
   const saved = (() => { try { return localStorage.getItem("hbtv-tune") || localStorage.getItem("hbtv-ch"); } catch (e) { return null; } })();
   const start = parseTune(qs.get("ch") || saved || "1") || { ch: 1, i: 0 };
-  let cur = Math.min(channels.length, Math.max(1, start.ch)), idx = start.i, bugTimer = 0;
+  // channel NUMBERS are labels (the guide can skip numbers, e.g. CH 10 before CH 9 exists); positions in the list are separate
+  const posOf = (n) => { const k = channels.findIndex((c) => c.n === n); return k < 0 ? Math.min(channels.length, Math.max(1, n)) : k + 1; };
+  let cur = posOf(start.ch), idx = start.i, bugTimer = 0;
   if (qs.get("i")) idx = Math.max(0, +qs.get("i") - 1);
   { const n = channels[cur - 1].items.length; idx = n ? Math.min(idx, n - 1) : 0; }
 
@@ -149,13 +151,14 @@
     return `<iframe src="${esc(item.src)}" allow="autoplay; fullscreen"></iframe>`;
   }
   // tune(channel, item): any numbered thing plays straight away - no waiting through the one before it (Jaron 9/27)
-  function tune(n, i = 0, byUser = true) {
-    cur = ((n - 1 + channels.length) % channels.length) + 1;
+  function tune(n, i = 0, byUser = true) { tuneAt(posOf(n), i, byUser); }
+  function tuneAt(pos, i = 0, byUser = true) {
+    cur = ((pos - 1 + channels.length) % channels.length) + 1;
     const items = channels[cur - 1].items; idx = items.length ? ((i % items.length) + items.length) % items.length : 0;
     try { localStorage.setItem("hbtv-tune", num(channels[cur - 1], idx)); } catch (e) {}
     draw();
     // the Loft (and anything else embedding the TV) hears the change so the whole room's TV follows the remote
-    if (byUser && parent !== window) parent.postMessage({ type: "hbtv-tuned", ch: cur, i: idx }, location.origin);
+    if (byUser && parent !== window) parent.postMessage({ type: "hbtv-tuned", ch: channels[cur - 1].n, i: idx }, location.origin);
   }
   function draw() {
     const ch = channels[cur - 1], list = ch.items;
@@ -176,10 +179,10 @@
     $("nowTitle").textContent = title; $("nowSub").textContent = sub;
     $("tipbar").innerHTML = list.length && ch.type !== "page" ? Tips.tipBar(list[idx]) : "";
     wake();
-    $("remote").innerHTML = channels.map((c) => `<button class="ch${c.n === cur ? " on" : ""}" data-n="${c.n}"><small>CH ${c.n}${c.items.length > 1 ? " · " + c.items.length + " on" : ""}</small><b>${esc(c.name)}</b></button>`).join("");
+    $("remote").innerHTML = channels.map((c) => `<button class="ch${c === channels[cur - 1] ? " on" : ""}" data-n="${c.n}"><small>CH ${c.n}${c.items.length > 1 ? " · " + c.items.length + " on" : ""}</small><b>${esc(c.name)}</b></button>`).join("");
     $("list").innerHTML = ch.type !== "page" || list.length > 1 ? `<div class="lh">On CH ${ch.n} · ${esc(ch.name)}</div>` + (list.length ? list.map((it, i) => itemBtn(ch, it, i)).join("") : `<p class="muted">Nothing here yet.</p>`) : "";
   }
-  const itemBtn = (c, it, i) => `<button class="gi${c.n === cur && i === idx ? " on" : ""}" data-n="${c.n}" data-i="${i}"><small>${num(c, i)}</small><span>${esc(it.title)}</span>${c.n === cur && i === idx ? "<em>ON NOW</em>" : ""}</button>`;
+  const itemBtn = (c, it, i) => `<button class="gi${c === channels[cur - 1] && i === idx ? " on" : ""}" data-n="${c.n}" data-i="${i}"><small>${num(c, i)}</small><span>${esc(it.title)}</span>${c === channels[cur - 1] && i === idx ? "<em>ON NOW</em>" : ""}</button>`;
   // the on-screen guide (phone app, Loft, embeds): every channel and every numbered item, tap to watch
   function openGuide() {
     const g = $("gpanel");
@@ -223,7 +226,7 @@
   }
   window.HBTV = {
     state: () => { const c = channels[cur - 1], it = c.items[idx]; return { on: powered, label: `CH ${c.items.length ? num(c, idx) : c.n} · ${it ? it.title : c.name}`, volume, muted }; },
-    soundOn, tune: (n, i) => tune(n, i), step: (d) => tune(cur + d),
+    soundOn, tune: (n, i) => tune(n, i), step: (d) => tuneAt(cur + d),
     volume: (x) => { volume = Math.max(0, Math.min(1, x)); if (volume > 0) muted = false; saveSound(); applyVolume(); soundOn(); },
     mute: (m) => { muted = m; saveSound(); applyVolume(); if (!m) soundOn(); },
     power: () => { powered = !powered; if (!powered) $("screen").innerHTML = '<div class="nosig"><b>OFF</b></div>'; else draw(); },
@@ -235,13 +238,13 @@
   addEventListener("message", (e) => { if (e.data && e.data.type === "hbtv-ended") tune(cur, idx + 1, false); });
   $("remote").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (b) tune(+b.dataset.n); });
   $("list").addEventListener("click", (e) => { const b = e.target.closest("[data-n]"); if (b) tune(+b.dataset.n, +b.dataset.i); });
-  $("chUp").onclick = () => tune(cur + 1); $("chDown").onclick = () => tune(cur - 1);
+  $("chUp").onclick = () => tuneAt(cur + 1); $("chDown").onclick = () => tuneAt(cur - 1);
   // keyboard remote: arrows flip channels; type 2.2 (or 22) to jump straight to a number
   let typed = "", typedT = 0;
   document.addEventListener("keydown", (e) => {
     if (e.target.closest && e.target.closest("input,textarea,select")) return;
-    if (e.key === "ArrowRight" || e.key === "PageUp") tune(cur + 1); if (e.key === "ArrowLeft" || e.key === "PageDown") tune(cur - 1);
-    if (/^[0-9.]$/.test(e.key)) { typed += e.key; clearTimeout(typedT); typedT = setTimeout(() => { const t = parseTune(typed.length === 2 && !typed.includes(".") ? typed[0] + "." + typed[1] : typed); typed = ""; if (t && t.ch <= channels.length) tune(t.ch, t.i); }, 900); }
+    if (e.key === "ArrowRight" || e.key === "PageUp") tuneAt(cur + 1); if (e.key === "ArrowLeft" || e.key === "PageDown") tuneAt(cur - 1);
+    if (/^[0-9.]$/.test(e.key)) { typed += e.key; clearTimeout(typedT); typedT = setTimeout(() => { const t = parseTune(typed.length === 2 && !typed.includes(".") ? typed[0] + "." + typed[1] : typed); typed = ""; if (t && channels.some((c) => c.n === t.ch)) tune(t.ch, t.i); }, 900); }
   });
   draw();
   $("mostTipped").innerHTML = Tips.mostTipped(channels, num);
