@@ -1,0 +1,1705 @@
+{
+ "date": "2026-10-13",
+ "title": "Heartbeat News — Tuesday, October 13, 2026",
+ "writer": "Claude, daily news job",
+ "tone": "straight news, two characters",
+ "sources": [
+  {
+   "name": "watch/codex 2026-10-13 (07:30 EDT)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-13.md"
+  },
+  {
+   "name": "watch/claude 2026-10-13 (08:25)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-13.md"
+  },
+  {
+   "name": "watch/deepseek 2026-10-13 (reader, 09:00)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-13.md"
+  },
+  {
+   "name": "watch/kimi 2026-10-13 (First Light, 07:21)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-10-13.md"
+  },
+  {
+   "name": "watch/msi 2026-10-13 (07:00)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-10-13.md"
+  },
+  {
+   "name": "Perplexity headlines (/api/news, read live by the page)",
+   "url": "/api/news"
+  }
+ ],
+ "skipped": [
+  {
+   "item": "Polymarket slugs, resolution rules and odds (Saudi daily market, Iran ceasefire, box office, JPM EPS)",
+   "source": "codex, deepseek, kimi",
+   "why": "Market resolution rules and pricing are for the traders, not news."
+  },
+  {
+   "item": "Claude capture: undated Gemini 4 and Techmeme early-model-access items",
+   "source": "claude",
+   "why": "Undated; the capture itself could not place them in the window."
+  },
+  {
+   "item": "Claude capture: NFL Week 5 injuries and Monday close",
+   "source": "claude",
+   "why": "The capture found no verified results; nothing to report."
+  },
+  {
+   "item": "The Verge view that the Yandex outage probably did not disable Russian bot networks",
+   "source": "codex, msi",
+   "why": "[theory] item; the article body could not be read."
+  },
+  {
+   "item": "Livestream claim of a 47-day Iran internet blackout",
+   "source": "kimi",
+   "why": "[theory], social-only, no NetBlocks corroboration."
+  },
+  {
+   "item": "Gold premium in Shanghai, metals prices, freight indices, Newcastle coal",
+   "source": "kimi, deepseek",
+   "why": "Trader data with no news event; quiet-day numbers."
+  },
+  {
+   "item": "Guowang satellite count; NPPA game-license batch; HYBE share price; Saudi Pro League transfer spending",
+   "source": "kimi",
+   "why": "Community-tracker counts or non-news data points."
+  },
+  {
+   "item": "OnePlus 16 and Googlebooks reviews",
+   "source": "msi",
+   "why": "Headline-only product items, shopping coverage."
+  },
+  {
+   "item": "PBoC e-CNY framework",
+   "source": "deepseek, kimi",
+   "why": "Single state-media source, no detail."
+  },
+  {
+   "item": "Drishyam 3 box office; Oricon and Kogyotsushin charts; NPB and ACL fixtures beyond the one-liners",
+   "source": "kimi",
+   "why": "Trackers disagree or the numbers are routine."
+  },
+  {
+   "item": "Upcoming calendar (CCP plenum, BOJ, OPEC+, Diwali)",
+   "source": "kimi",
+   "why": "Future dates, no news yet."
+  },
+  {
+   "item": "Indiana / Fort Wayne items",
+   "source": "all",
+   "why": "None appeared; local items are covered only when nationally significant."
+  }
+ ],
+ "ticker": [
+  "SAUDI AIRSTRIKES HIT SANAA AND TAIZ; HOUTHIS THREATEN 'SWIFT AND PAINFUL' REPLY",
+  "RIYADH KING KHALID AIRPORT CLOSED THROUGH OCT 17; 99.7% OF FLIGHTS CANCELLED",
+  "KREMLIN STILL WON'T CONFIRM TRUMP'S ENERGY CEASEFIRE: 'CONTACTS ARE ONGOING'",
+  "E.U. SANCTIONS 826 RUSSIAN COMPANIES, 743 PEOPLE: LARGEST PACKAGE SINCE INVASION",
+  "KOSPI -5.46% TO 6,035; SK HYNIX -8.9%, SAMSUNG -8% ON CHINA DRAM REPORTS",
+  "HORMUZ TRAFFIC ~10% OF NORMAL; THREE SHIPS STRUCK MONDAY EVENING",
+  "IRAN: U.S. REPLY 'INSUFFICIENT'; THREATENS GULF DATA CENTERS AND CABLES",
+  "BRENT ~$105; OFAC ALLOWS RUSSIAN DIESEL; DUTCH GAS AT CRISIS HIGH",
+  "NVIDIA'S CHINA A.I.-CHIP SHARE FALLS TO 34% AS HUAWEI HITS 28% (I.D.C.)",
+  "LEDGER IMPLANT DRAIN PASSES $100M; SECOND TAMPERED DEVICE FOUND",
+  "BITCOIN DIPS BELOW $81K, BACK NEAR $83.7K; ETH E.T.F.s: 10TH STRAIGHT OUTFLOW",
+  "CHARACTER.AI FILES CHAPTER 11; DISNEY AFFILIATE BIDS $20M FOR I.P. LICENSE",
+  "MUSK HAS GIVEN $276M+ TO GOP MIDTERM EFFORTS SINCE JULY, A.P. REPORTS",
+  "U.S. CPI WEDNESDAY 8:30 ET; J.P. MORGAN EARNINGS TODAY 8:30 ET"
+ ],
+ "segments": [
+  {
+   "id": "open",
+   "kind": "open",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "The day's news from the watch desk",
+   "category": "TODAY",
+   "graphic": {
+    "kicker": "TODAY",
+    "title": "Saudi jets, a closed Riyadh airport, and a chip crash",
+    "bullets": [
+     "Saudi strikes on Yemen; Riyadh airport shut",
+     "Kremlin will not confirm the energy ceasefire",
+     "Seoul stocks plunge more than five percent",
+     "Hormuz traffic at about ten percent of normal"
+    ]
+   },
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+    },
+    {
+     "who": "joe",
+     "text": "And I'm Alien Joe. It's Tuesday, October thirteenth.",
+     "shot": "two"
+    },
+    {
+     "who": "vex",
+     "text": "Today: Saudi Arabia strikes Yemen while Riyadh's main airport stays closed, the Kremlin still will not confirm Trump's energy ceasefire, and a chip sell-off flattens the Seoul stock market."
+    },
+    {
+     "who": "joe",
+     "text": "Plus tankers burning in the Gulf, two hurricanes' worth of damage, a Bitcoin scare, and a very long quick-hits list. Let's go."
+    }
+   ]
+  },
+  {
+   "id": "saudi",
+   "kind": "breaking",
+   "strap": "SAUDI STRIKES ON YEMEN CONFIRMED; HOUTHIS VOW REPLY",
+   "headline": "Saudi strikes on Yemen",
+   "category": "BREAKING",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "BREAKING",
+    "title": "Saudi airstrikes hit Sanaa and Taiz",
+    "bullets": [
+     "Sanaa airport hit Sunday; more strikes near midnight",
+     "Houthi health ministry: one dead, twelve hurt at a factory",
+     "A.P.: ten killed across Sanaa and the north",
+     "Houthis threaten a 'swift and painful' reply if the U.S. joins"
+    ]
+   },
+   "sources": [
+    {
+     "name": "CBS News live updates",
+     "url": "https://www.cbsnews.com/live-updates/iran-war-us-trump-saudi-arabia-houthi/"
+    },
+    {
+     "name": "AP",
+     "url": "https://apnews.com/article/saudi-arabia-yemen-houthis-october-13-2026-3e6e5f152048c035081eac369f62ed4f"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Saudi Arabia has now struck Yemen, according to the weekend's reporting. Sanaa International Airport was hit Sunday. More strikes landed around midnight on districts of Sanaa and on Taiz."
+    },
+    {
+     "who": "joe",
+     "text": "The Houthi health ministry says one person was killed and twelve hurt at a salt factory. The Associated Press counts ten killed across Sanaa and the north. Those are Houthi and A.P. figures. They are not independently confirmed."
+    },
+    {
+     "who": "vex",
+     "text": "The New York Times counts ninety-one people killed by Saudi airstrikes since September third. A.P. reported overnight that the Houthis accused Saudi Arabia of the strikes, and that Saudi Arabia had not responded."
+    },
+    {
+     "who": "joe",
+     "text": "The Houthis threaten a, quote, swift and painful, end quote, response if the United States joins in. President Trump called the Houthis, quote, misbehaving very badly, and said he is still weighing his options."
+    },
+    {
+     "who": "vex",
+     "text": "Turkey, Pakistan and Egypt joined Saudi Arabia in condemning the airport strikes. Explosions were heard in Riyadh overnight."
+    }
+   ]
+  },
+  {
+   "id": "riyadh",
+   "kind": "story",
+   "strap": "RIYADH AIRPORT STAYS SHUT; AIRLINES PULL OUT",
+   "headline": "Riyadh airport closed",
+   "category": "GULF",
+   "status": "observed",
+   "graphic": {
+    "kicker": "GULF",
+    "title": "Riyadh's main airport: closed to October 17",
+    "bullets": [
+     "King Khalid airport closed 'for safety checks'",
+     "Closure runs to 2100 GMT Oct 17, no reopening date",
+     "99.7% of scheduled flights cancelled",
+     "At least 20 dead in a week of airport attacks"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Saudi Press Agency",
+     "url": "https://www.spa.gov.sa/en/N2699133"
+    },
+    {
+     "name": "Al Jazeera live",
+     "url": "https://www.aljazeera.com/news/liveblog/2026/10/13/iran-war-live-trump-says-houthis-misbehaving-as-riyadh"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Saudi aviation authorities extended the suspension of King Khalid International Airport in Riyadh again, saying it is for safety checks. The notice keeps the airport closed through twenty-one hundred G.M.T. on October seventeenth. No reopening date is announced."
+    },
+    {
+     "who": "joe",
+     "text": "Cirium shows nearly every scheduled flight, ninety-nine point seven percent, cancelled. At least twenty people have died in a week of attacks on the airport."
+    },
+    {
+     "who": "vex",
+     "text": "British Airways, KLM, Air India, Qatar Airways and Gulf Air are among the airlines that suspended Riyadh or Jeddah service. The Houthis warned airlines to avoid all Saudi airspace except the Mecca and Medina routes."
+    },
+    {
+     "who": "joe",
+     "text": "The Saudi-led coalition says it intercepted two Houthi ballistic missiles aimed at the Khamis Mushait air base."
+    }
+   ]
+  },
+  {
+   "id": "taiz",
+   "kind": "story",
+   "strap": "HOUTHIS CLOSING IN ON TAIZ; FUEL RUNNING LOW",
+   "headline": "Taiz under pressure",
+   "category": "YEMEN",
+   "status": "claim",
+   "graphic": {
+    "kicker": "YEMEN",
+    "title": "Taiz: residents stocking up as Houthis advance",
+    "bullets": [
+     "Houthi forces moving to encircle Yemen's third-largest city",
+     "Residents crowd groceries",
+     "Diesel and cooking gas running low"
+    ]
+   },
+   "sources": [
+    {
+     "name": "AP",
+     "url": "https://apnews.com/article/yemen-taiz-city-war-houthis-89a793d5c55c34fd4f7e08c9df5835a6"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The A.P. reports Houthi forces are moving to encircle Taiz, Yemen's third-largest city."
+    },
+    {
+     "who": "joe",
+     "text": "Residents told the A.P. they are afraid. They are crowding grocery stores, and diesel and cooking gas are running low. That is the human end of a headline about oil prices."
+    }
+   ]
+  },
+  {
+   "id": "ceasefire",
+   "kind": "story",
+   "strap": "KREMLIN STILL WON'T CONFIRM ENERGY CEASEFIRE",
+   "headline": "The energy ceasefire, day three",
+   "category": "UKRAINE",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "UKRAINE",
+    "title": "Contacts are 'ongoing'; the strikes are too",
+    "bullets": [
+     "Peskov: 'contacts are ongoing'",
+     "Kremlin rejects Zelensky's sixty-day truce idea",
+     "Russia hit six Ukrainian energy sites after the announcement",
+     "Kharkiv: three dead, twenty-eight hurt nearby"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Reuters",
+     "url": "https://www.reuters.com/world/kremlin-says-contacts-trumps-russia-ukraine-energy-ceasefire-are-continuing-2026-10-13/"
+    },
+    {
+     "name": "Politico",
+     "url": "https://www.politico.com/news/2026/10/12/peskov-rebuffs-zelenskyy-s-60-day-truce-after-trump-s-energy-ceasefire-post"
+    },
+    {
+     "name": "Ukraine presidency",
+     "url": "https://www.president.gov.ua/en/news/last"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The Kremlin still will not confirm the energy ceasefire President Trump announced. Spokesman Dmitry Peskov said, quote, contacts are ongoing."
+    },
+    {
+     "who": "joe",
+     "text": "Monday the Kremlin turned down Zelensky's idea of a sixty-day truce. It wants a, quote, long-term settlement. It also said Putin could halt attacks, quote, on election day."
+    },
+    {
+     "who": "vex",
+     "text": "Russia struck six Ukrainian energy sites hours after Trump's announcement. In Kharkiv, a combined heat and power plant was hit Monday evening. Three people died and twenty-eight were hurt nearby."
+    },
+    {
+     "who": "joe",
+     "text": "Trump's explanation, as reported: both sides agreed, quote, because I said they agreed. Ukraine's presidency says Zelensky and Germany's Merz discussed Russia answering the announcement with new attacks."
+    }
+   ]
+  },
+  {
+   "id": "purl",
+   "kind": "story",
+   "strap": "REPORT: U.S. THREATENS UKRAINE ARMS AND INTEL OVER REFINERY HITS",
+   "headline": "Arms and intel as leverage",
+   "category": "UKRAINE",
+   "status": "claim",
+   "graphic": {
+    "kicker": "UKRAINE",
+    "title": "Financial Times: Kyiv told to stop refinery strikes",
+    "bullets": [
+     "Claim: U.S. may halt P.U.R.L. weapons purchases",
+     "Claim: intelligence sharing could be cut too",
+     "Condition: Ukraine stops hitting refineries"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Reuters, citing the Financial Times",
+     "url": "https://www.reuters.com/world/europe/us-threatens-block-arms-ukraine-over-refinery-attacks-ft-reports-2026-10-11/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "A claim from the Financial Times, carried by Reuters: the United States has threatened to halt weapons purchases for Ukraine through the P.U.R.L. program."
+    },
+    {
+     "who": "joe",
+     "text": "It also reportedly threatened to cut intelligence sharing. The condition is that Kyiv stops striking Russian refineries. That is a claim from one report. Neither government is quoted confirming it."
+    }
+   ]
+  },
+  {
+   "id": "sanctions",
+   "kind": "story",
+   "strap": "E.U. SANCTIONS 826 RUSSIAN COMPANIES, 743 PEOPLE",
+   "headline": "Biggest E.U. listing yet",
+   "category": "SANCTIONS",
+   "status": "observed",
+   "graphic": {
+    "kicker": "SANCTIONS",
+    "title": "Largest E.U. Russia sanctions package since the invasion",
+    "bullets": [
+     "826 Russian companies listed",
+     "743 individuals",
+     "Targets Russia's military-industrial complex",
+     "Also: 3 people, 4 entities added over North Korea"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Ukraine presidency",
+     "url": "https://www.president.gov.ua/en/news/last"
+    },
+    {
+     "name": "E.U. Council",
+     "url": "https://www.consilium.europa.eu/en/press/press-releases/?keyword=sanctions"
+    },
+    {
+     "name": "E.U. Council, North Korea",
+     "url": "https://www.consilium.europa.eu/en/press/press-releases/2026/10/12/dprk-council-adds-three-individuals-and-four-entities-to-sanctions-lists-over-nuclear-missile-programmes-and-russia-ties/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The European Union adopted restrictive measures against eight hundred twenty-six Russian companies and seven hundred forty-three individuals active in Russia's military-industrial complex. Ukraine's presidency calls it the largest listing package since the invasion began."
+    },
+    {
+     "who": "joe",
+     "text": "Separately, the E.U. added three individuals and four entities to its North Korea list over weapons programs, sanctions evasion and ties to Russia."
+    }
+   ]
+  },
+  {
+   "id": "iran",
+   "kind": "story",
+   "strap": "IRAN: U.S. REPLY 'INSUFFICIENT'; THREATENS GULF DATA CENTERS",
+   "headline": "Iran holds its position",
+   "category": "IRAN",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "IRAN",
+    "title": "Iran says the U.S. reply falls short",
+    "bullets": [
+     "Rezaei: reply via Qatar 'insufficient'",
+     "Hormuz stays closed to U.S. shipping",
+     "Threat: Gulf data centers, A.I. sites, undersea cables",
+     "OFAC warns foreign banks"
+    ]
+   },
+   "sources": [
+    {
+     "name": "IRNA",
+     "url": "https://en.irna.ir/news/86289861/Security-chief-US-response-to-Iran-s-7-conditions-insufficient"
+    },
+    {
+     "name": "Fortune",
+     "url": "https://fortune.com/2026/10/11/iran-war-cables-data-centers-ai-facilities-gulf-region/"
+    },
+    {
+     "name": "Baker McKenzie Sanctions News",
+     "url": "https://sanctionsnews.bakermckenzie.com/ofac-warns-that-foreign-financial-institutions-face-targeting-under-iran-sanctions-without-being-provided-advance-notice/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Iran's Supreme National Security Council secretary, Ali Akbar Rezaei, told state media the American reply, passed through Qatar, remains, quote, insufficient. Hormuz stays closed to American shipping."
+    },
+    {
+     "who": "joe",
+     "text": "He also threatened strikes on American-linked data centers, A.I. facilities and undersea cables in the Gulf if the war resumes. That is a threat from Iran's state media, not an event."
+    },
+    {
+     "who": "vex",
+     "text": "The Treasury's sanctions office warned foreign banks that they face Iran-sanctions action without advance notice."
+    },
+    {
+     "who": "joe",
+     "text": "A Polymarket editorial note mentions a new sixty-day ceasefire framework from early October. Today's captures show no sign that either side is acting like it."
+    }
+   ]
+  },
+  {
+   "id": "hormuz",
+   "kind": "story",
+   "strap": "HORMUZ AT ABOUT 10% OF NORMAL; THREE SHIPS STRUCK MONDAY",
+   "headline": "Strait of Hormuz",
+   "category": "SHIPPING",
+   "status": "observed",
+   "graphic": {
+    "kicker": "SHIPPING",
+    "title": "Hormuz: about ten percent of normal traffic",
+    "bullets": [
+     "5 crossings today vs 84.8/day before the crisis",
+     "659 commercial ships stationary",
+     "Monday evening: crude tanker, products tanker, boxship hit",
+     "Petro Dolphin: 2 Indian sailors missing"
+    ]
+   },
+   "sources": [
+    {
+     "name": "hormuz.now",
+     "url": "https://hormuz.now"
+    },
+    {
+     "name": "Hormuz Ship Monitor / UKMTO log",
+     "url": "https://hormuz.data-tracking.net/guides/shipping-timeline"
+    },
+    {
+     "name": "Times of India",
+     "url": "https://timesofindia.indiatimes.com/videos/international/indians-caught-in-gulf-crossfire-again-tanker-engulfed-in-flames-two-sailors-missing/videoshow/134897424.cms"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The live tracker hormuz dot now lists the strait as restricted. Five crossings so far today. The seven-day average is nine a day, against about eighty-five before the crisis. That is roughly ten percent."
+    },
+    {
+     "who": "joe",
+     "text": "Six hundred fifty-nine commercial ships are sitting still. At Fujairah the median wait is forty hours."
+    },
+    {
+     "who": "vex",
+     "text": "The British maritime security agency, U.K.M.T.O., logged three strikes Monday evening: a crude tanker and a products tanker outbound, and a container ship inbound. The first container ship hit in weeks."
+    },
+    {
+     "who": "joe",
+     "text": "The tanker Petro Dolphin, hit by a drone near Sohar, is still burning. Nine crew were rescued. Two Indian sailors, BirBahadur Yadav and Amit Singh, are still missing."
+    }
+   ]
+  },
+  {
+   "id": "oil",
+   "kind": "story",
+   "strap": "BRENT NEAR $105 AS RUSSIAN DIESEL DEAL DRAWS FIRE",
+   "headline": "Oil, diesel and gas",
+   "category": "ENERGY",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "ENERGY",
+    "title": "Brent slips on Russian diesel, but gas hits a crisis high",
+    "bullets": [
+     "Brent about $105; U.S. crude about $92",
+     "Trump says Russia will supply diesel",
+     "OFAC General License 135 allows Russian diesel",
+     "Dutch gas at €86.33/MWh, a crisis high"
+    ]
+   },
+   "sources": [
+    {
+     "name": "AP, markets",
+     "url": "https://apnews.com/article/stocks-markets-us-tech-oil-mideast-a2edaf9ec297fb75ff2a4e245063ec08"
+    },
+    {
+     "name": "AP, diesel deal",
+     "url": "https://apnews.com/article/trump-russian-diesel-putin-congress-ukraine-963624ed2ed30ae4a0259ffd1880fefa"
+    },
+    {
+     "name": "Mondaq",
+     "url": "https://www.mondaq.com/unitedstates/export-controls-trade-investment-sanctions/1853490/ofac-issues-general-license-135-authorizing-transactions-involving-russian-origin-diesel-fuel"
+    },
+    {
+     "name": "Trading Economics",
+     "url": "https://tradingeconomics.com/commodity/eu-natural-gas"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Brent crude fell about one point seven percent to a hundred four dollars and eighty cents a barrel in early Tuesday trading, per the A.P. U.S. crude fell to ninety-one ninety-four. Strategists cited Houthi attacks and risks to Persian Gulf oil flows."
+    },
+    {
+     "who": "joe",
+     "text": "Part of the dip followed Trump saying Russia agreed to supply diesel, three hundred thousand tons immediately. The Treasury issued General License one thirty-five authorizing Russian-origin diesel deals."
+    },
+    {
+     "who": "vex",
+     "text": "The A.P. says the plan drew criticism from Republicans and Democrats. Six senators urged a reversal. Some call it illegal. It is unclear whether it adds any supply or lowers any price."
+    },
+    {
+     "who": "joe",
+     "text": "Meanwhile Dutch gas rose two point three percent to eighty-six euros thirty-three a megawatt-hour, a fresh crisis high. QatarEnergy's force majeure runs through November."
+    }
+   ]
+  },
+  {
+   "id": "chips",
+   "kind": "story",
+   "strap": "CHIP ROUT: KOSPI -5.5%, SAMSUNG -8%, SK HYNIX -9%",
+   "headline": "Seoul's chip crash",
+   "category": "MARKETS",
+   "status": "observed",
+   "graphic": {
+    "kicker": "MARKETS",
+    "title": "Kospi falls five and a half percent on chip fears",
+    "bullets": [
+     "Kospi -5.46% to 6,035.35; sell sidecar triggered",
+     "SK hynix -8.9%, Samsung -8%",
+     "Trigger: China's CXMT dense DRAM reports",
+     "Nikkei -1.8%; Kioxia -13.3%"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Yonhap",
+     "url": "https://en.yna.co.kr/view/AEN20261013007552320"
+    },
+    {
+     "name": "AFP",
+     "url": "https://www.afp.com/en/seoul-tokyo-stocks-plunge-asia-suffers-fresh-tech-rout"
+    },
+    {
+     "name": "Yahoo Finance / Reuters",
+     "url": "https://finance.yahoo.com/markets/stocks/articles/asia-stocks-slide-china-chip-034712009.html"
+    },
+    {
+     "name": "AP, markets",
+     "url": "https://apnews.com/article/stocks-markets-us-tech-oil-mideast-a2edaf9ec297fb75ff2a4e245063ec08"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "South Korea's Kospi index fell five point four six percent to six thousand thirty-five. Trading hit the exchange's sell sidecar. Foreign investors sold for a sixth straight session."
+    },
+    {
+     "who": "joe",
+     "text": "SK hynix dropped almost nine percent. Samsung lost eight. The trigger: reports that China's memory maker CXMT is advancing denser DRAM, with server memory targeted by year-end. Add Broadcom's chief calling A.I. spending a, quote, casino, on Monday."
+    },
+    {
+     "who": "vex",
+     "text": "Tokyo followed. The Nikkei fell one point eight percent. Kioxia lost thirteen percent, Tokyo Electron seven. A.P. says Nvidia fell one point three percent and Micron three point nine."
+    },
+    {
+     "who": "joe",
+     "text": "Korea's president then said rates will likely have to rise soon. Not the sentence you want while the market is on fire."
+    },
+    {
+     "who": "vex",
+     "text": "Some wires gave different Kospi figures. The Yonhap number, with a full close, is the one used here."
+    }
+   ]
+  },
+  {
+   "id": "china_chips",
+   "kind": "story",
+   "strap": "NVIDIA'S CHINA A.I.-CHIP SHARE FALLS TO 34%",
+   "headline": "Nvidia in China",
+   "category": "TECH",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "TECH",
+    "title": "Huawei closes in on Nvidia in China",
+    "bullets": [
+     "Nvidia share 34% in H1; shipments -44%",
+     "Huawei 28%, up from about half that",
+     "Claim: Chinese firms bought 1M+ gaming chips",
+     "Big-three capex to ~RMB 700B"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Reuters / IDC",
+     "url": "https://www.reuters.com/business/retail-consumer/nvidias-china-ai-chip-share-falls-huawei-closes-gap-report-finds-2026-10-13/"
+    },
+    {
+     "name": "Financial Times",
+     "url": "https://www.ft.com/content/9dbd99db-6b0c-43bd-b7be-849f129df098"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Data from research firm I.D.C. says Nvidia's share of China's data-center A.I.-chip market fell to thirty-four percent in the first half. It shipped six hundred seventy-eight thousand accelerators, down forty-four percent."
+    },
+    {
+     "who": "joe",
+     "text": "Huawei rose to twenty-eight percent, with five hundred seventy-two thousand units. Non-G.P.U. accelerators passed G.P.U.s in shipments."
+    },
+    {
+     "who": "vex",
+     "text": "A claim from the Financial Times: Chinese firms bought over a million Nvidia gaming and workstation chips this year to plug shortfalls. Domestic supply is about three and a half million units, against more than five million in demand."
+    }
+   ]
+  },
+  {
+   "id": "ai",
+   "kind": "story",
+   "strap": "META LAUNCHES MUSE WONDER; CHARACTER.AI FILES CHAPTER 11",
+   "headline": "A.I. industry news",
+   "category": "A.I.",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "A.I.",
+    "title": "Meta ships Muse Wonder; Character.ai goes bankrupt",
+    "bullets": [
+     "Meta: Muse Wonder and Wonder Full",
+     "Character.ai: Chapter 11, platform keeps running",
+     "Disney affiliate bids $20M for an IP license",
+     "DeepSeek to lead ~$400M robotics-A.I. seed"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Meta",
+     "url": "https://about.fb.com/news/2026/10/introducing-muse-wonder-models/"
+    },
+    {
+     "name": "The Verge, Meta",
+     "url": "https://www.theverge.com/ai-artificial-intelligence/1009479/meta-muse-wonder-full-ai-model"
+    },
+    {
+     "name": "Business Wire",
+     "url": "https://markets.financialcontent.com/wedbush/article/bizwire-2026-10-13-characterai-initiates-voluntary-chapter-11-proceeding-to-facilitate-value-maximizing-sale-process"
+    },
+    {
+     "name": "The Verge, Character.ai",
+     "url": "https://www.theverge.com/ai-artificial-intelligence/1009802/character-ai-files-for-bankruptcy-disney"
+    },
+    {
+     "name": "Bloomberg via Quartz",
+     "url": "https://qz.com/deepseek-winverse-ai-robotics-seed-round-101226"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Meta announced two models, Muse Wonder and Muse Wonder Full. Wonder is available through Meta's model API and Muse Code. Wonder Full is for Muse Code subscribers."
+    },
+    {
+     "who": "joe",
+     "text": "Character Technologies, the company behind Character dot A.I., filed for Chapter Eleven and a sale process. It says the platform keeps running. A Disney affiliate is the opening bidder for a nonexclusive I.P. license, at twenty million dollars."
+    },
+    {
+     "who": "vex",
+     "text": "A claim from Bloomberg: DeepSeek will lead a roughly four-hundred-million-dollar seed round for Winverse A.I., a months-old robotics startup. It would draw on DeepSeek's reported twelve-billion-dollar raise."
+    },
+    {
+     "who": "joe",
+     "text": "Nikkei reports, as a claim, that N.T.T. Data is in final talks to build Anthropic's first Japan data center in Osaka, up to one trillion yen, with signing targeted by March."
+    },
+    {
+     "who": "vex",
+     "text": "StepFun's Step Five open-weights release is still promised for October fifteenth. No official license is published yet."
+    }
+   ]
+  },
+  {
+   "id": "crypto",
+   "kind": "story",
+   "strap": "BITCOIN DIPS BELOW $81K, REBOUNDS; ETF OUTFLOWS CONTINUE",
+   "headline": "Crypto markets",
+   "category": "CRYPTO",
+   "status": "observed",
+   "graphic": {
+    "kicker": "CRYPTO",
+    "title": "Bitcoin wobbles; ETFs keep bleeding",
+    "bullets": [
+     "BTC under $81K, then back to about $83.7K",
+     "$770M in liquidations",
+     "Spot BTC ETFs: -$65.4M Monday; ETH -$85.4M, tenth day",
+     "Dormant wallet moves 4,582 BTC"
+    ]
+   },
+   "sources": [
+    {
+     "name": "CoinDesk",
+     "url": "https://www.coindesk.com/markets/2026/10/13/bitcoin-rebounds-above-usd83-000-as-it-decouples-from-tumbling-korean-stocks-and-nasdaq-futures"
+    },
+    {
+     "name": "Farside Investors",
+     "url": "https://farside.co.uk/btc/"
+    },
+    {
+     "name": "Farside, ETH",
+     "url": "https://farside.co.uk/eth/"
+    },
+    {
+     "name": "PANews",
+     "url": "https://t.me/s/ChannelPANews"
+    },
+    {
+     "name": "FameEX recap",
+     "url": "https://www.fameex.com/en-US/news/crypto-news-recap-20261013"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Bitcoin slipped below eighty-one thousand dollars in a Monday evening flush, with more than seven hundred seventy million dollars in liquidations. It rebounded above eighty-three thousand in Asian trade, ignoring the Korean crash."
+    },
+    {
+     "who": "joe",
+     "text": "Spot Bitcoin E.T.F.s lost sixty-five point four million dollars Monday, all from BlackRock's fund. Spot Ether E.T.F.s lost eighty-five million, the tenth straight outflow day."
+    },
+    {
+     "who": "vex",
+     "text": "Separately, a dormant early Bitcoin wallet moved all forty-five hundred eighty-two coins, worth about three hundred seventy-eight million dollars. Where they went is not disclosed."
+    },
+    {
+     "who": "joe",
+     "text": "Blur says it will shut its N.F.T. marketplace site on November twelfth. Volume is down more than ninety-nine percent from the peak. Thailand's spot Bitcoin and Ether E.T.F. rules start Friday."
+    }
+   ]
+  },
+  {
+   "id": "ledger",
+   "kind": "story",
+   "strap": "LEDGER IMPLANT DRAIN PASSES $100M; SECOND DEVICE FOUND",
+   "headline": "The Ledger implant theft",
+   "category": "CRYPTO",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "CRYPTO",
+    "title": "Tampered Ledger wallets: losses past $100 million",
+    "bullets": [
+     "Bitquery estimate: $102.0M, 315 wallets",
+     "Second tampered device, bought at MediaMarkt",
+     "Tether froze about $10M",
+     "2,990 ETH laundered via Tornado Cash"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Bitquery",
+     "url": "https://bitquery.io/investigations/ledger-cryptobilis-hack"
+    },
+    {
+     "name": "Bitcoin.com News",
+     "url": "https://news.bitcoin.com/security/user-exposes-hidden-hardware-implant-in-european-ledger-wallet/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The Ledger tampering theft keeps growing. Bitquery now estimates one hundred two million dollars drained from three hundred fifteen wallets, up from ninety-three million. A new victim reported losing eighty Bitcoin."
+    },
+    {
+     "who": "joe",
+     "text": "Tether froze about ten million in U.S.D.T. About fifteen million was moved into another stablecoin out of reach of a freeze, and nearly three thousand Ether went through Tornado Cash."
+    },
+    {
+     "who": "vex",
+     "text": "A claim from social media and Bitcoin dot com: a second tampered Ledger, bought at MediaMarkt in Europe. Security firm Veria Labs says it looks like an earlier version of the same implant. Posts flag more retailers."
+    }
+   ]
+  },
+  {
+   "id": "macro",
+   "kind": "story",
+   "strap": "IMF RAISES 2026 GROWTH TO 3.1%; CPI DUE WEDNESDAY",
+   "headline": "Economy and the week ahead",
+   "category": "ECONOMY",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "ECONOMY",
+    "title": "IMF edges up world growth; U.S. inflation report Wednesday",
+    "bullets": [
+     "IMF: world growth 3.1% (from 3.0%)",
+     "U.S. growth held at 2.3%",
+     "U.S. CPI Wed Oct 14, 8:30 ET",
+     "J.P. Morgan reports today, 8:30 ET"
+    ]
+   },
+   "sources": [
+    {
+     "name": "AP, IMF",
+     "url": "https://apnews.com/article/imf-economy-growth-ai-war-oil-23aa01c0c6922fbf0b564a0ff9b2c8e5"
+    },
+    {
+     "name": "BLS",
+     "url": "https://www.bls.gov/schedule/2026/"
+    },
+    {
+     "name": "J.P. Morgan Chase",
+     "url": "https://www.jpmorganchase.com/ir"
+    },
+    {
+     "name": "La Nación",
+     "url": "https://www.lanacion.com.ar/usa/how-major-us-stock-indexes-fared-friday-1092026-nid09102026/"
+    },
+    {
+     "name": "RBA",
+     "url": "https://www.rba.gov.au/monetary-policy/rba-board-minutes/2026/2026-09-29.html"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The I.M.F. raised its twenty twenty-six world growth forecast to three point one percent from three point oh in July. U.S. growth is held at two point three percent for this year and next. It warned about debt and A.I.-investment risks."
+    },
+    {
+     "who": "joe",
+     "text": "Wall Street's Monday close was not in today's captures. The last confirmed close, Friday, had the S and P five hundred at seventy-eight eleven, up point six percent."
+    },
+    {
+     "who": "vex",
+     "text": "Two dates. J.P. Morgan Chase reports third-quarter earnings today at eight-thirty Eastern. September's consumer price index comes out Wednesday at eight-thirty."
+    },
+    {
+     "who": "joe",
+     "text": "In Australia, the central bank's minutes show a unanimous quarter-point hike to four point six percent. It flagged A.I.-boom debt as a financial-stability risk."
+    }
+   ]
+  },
+  {
+   "id": "asia_econ",
+   "kind": "story",
+   "strap": "ASIA: INDIA INFLATION 5.54%, CHINA CAR SALES -28%",
+   "headline": "Asia's economies",
+   "category": "ASIA",
+   "status": "observed",
+   "graphic": {
+    "kicker": "ASIA",
+    "title": "India inflation climbs; China's car slump deepens",
+    "bullets": [
+     "India CPI 5.54% (Sept), 2026 high; onions +100%",
+     "China car sales -28% y/y, 12th decline",
+     "Nifty +1.23%; Shanghai +0.10%",
+     "PBoC injects ¥65bn"
+    ]
+   },
+   "sources": [
+    {
+     "name": "MoSPI via Goodreturns",
+     "url": "https://www.goodreturns.in/news/india-cpi-inflation-september-2026-retail-inflation-rises-to-5-54-as-food-prices-surge-onion-infl-1540859.html"
+    },
+    {
+     "name": "Yahoo Finance / Reuters",
+     "url": "https://finance.yahoo.com/markets/stocks/articles/asia-stocks-slide-china-chip-034712009.html"
+    },
+    {
+     "name": "Moneycontrol",
+     "url": "https://www.moneycontrol.com/news/business/markets/stock-market-live-updates-nifty50-share-price-sensex-share-price-crude-fii-gift-nifty-rupee-latest-updates-13-10-2026-alpha-liveblog-14050516.html"
+    },
+    {
+     "name": "Eastmoney",
+     "url": "https://stock.eastmoney.com/shichang.html"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "India's September consumer inflation rose to five point five four percent, the highest of twenty twenty-six. Onion prices are up more than a hundred percent from a year ago."
+    },
+    {
+     "who": "joe",
+     "text": "India's stocks still bounced. The Nifty gained one point two percent, helped by an eight percent jump in HCLTech after earnings. The rupee firmed on a central bank currency package."
+    },
+    {
+     "who": "vex",
+     "text": "In China, passenger-car retail sales fell twenty-eight percent in September to one point six million. A twelfth straight monthly drop. China's A-shares closed mixed after a rough open. The central bank injected sixty-five billion yuan."
+    }
+   ]
+  },
+  {
+   "id": "simon",
+   "kind": "weather",
+   "strap": "HURRICANE SIMON, TS RACHEL FLOODING: FIVE DEAD IN MEXICO",
+   "headline": "Mexico and the Southwest",
+   "category": "WEATHER",
+   "status": "claim",
+   "graphic": {
+    "kicker": "WEATHER",
+    "title": "Simon batters Mexico; Las Vegas dries out",
+    "bullets": [
+     "Hurricane Simon hit Mexico's Pacific coast",
+     "Storms caused five deaths and damage",
+     "Rachel flooded Las Vegas",
+     "U.S. Southwest flood advisories mostly lifted"
+    ]
+   },
+   "sources": [
+    {
+     "name": "AP",
+     "url": "https://apnews.com/article/tropical-storm-flooding-rain-hurricane-cc01ec735f4ff7c11798bc9066dc1879"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The A.P. reports Hurricane Simon battered Mexico's Pacific coast. Storms caused five deaths and damage."
+    },
+    {
+     "who": "joe",
+     "text": "In the U.S. Southwest, flood advisories were mostly lifted after Tropical Storm Rachel flooded Las Vegas. Yes, Las Vegas. The desert."
+    }
+   ]
+  },
+  {
+   "id": "isaias",
+   "kind": "weather",
+   "strap": "ISAIAS TOLL: AT LEAST 4 DEAD; HUNDREDS OF THOUSANDS WITHOUT POWER",
+   "headline": "Hurricane Isaias aftermath",
+   "category": "WEATHER",
+   "status": "claim",
+   "graphic": {
+    "kicker": "WEATHER",
+    "title": "Isaias: landfall at Destin, Category 2",
+    "bullets": [
+     "Landfall Fri Oct 9, Destin, FL, 110 mph",
+     "At least 4 dead in Florida and Alabama",
+     "Hundreds of thousands without power",
+     "Not yet checked against N.H.C. data"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Source New Mexico",
+     "url": "https://sourcenm.com/2026/10/11/repub/hurricane-isaias-brings-wind-water-and-destruction/"
+    },
+    {
+     "name": "WLOX",
+     "url": "https://www.wlox.com/2026/10/10/hurricane-isaias-winds-rip-part-roof-off-florida-hotel-during-landfall/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "A look back at Hurricane Isaias. It made landfall Friday night at Destin, Florida, as a Category Two with winds of a hundred ten miles an hour, after peaking at Category Three."
+    },
+    {
+     "who": "joe",
+     "text": "At least four deaths in Florida and Alabama are attributed to it, and hundreds of thousands lost power. At a Pensacola hotel, part of the roof was torn off. Florida's governor said the state fared relatively well."
+    },
+    {
+     "who": "vex",
+     "text": "This is press reporting. It was not checked against the Hurricane Center or state emergency data."
+    }
+   ]
+  },
+  {
+   "id": "panama",
+   "kind": "story",
+   "strap": "M7.7 QUAKE HITS PANAMA; NO DEATHS IN EARLY COUNTS",
+   "headline": "Panama earthquake",
+   "category": "DISASTER",
+   "status": "claim",
+   "graphic": {
+    "kicker": "DISASTER",
+    "title": "Panama: magnitude 7.7, buildings down, canal unaffected",
+    "bullets": [
+     "M7.7 on Fri Oct 9 (first est. 8.0), then ~M6.6",
+     "Buildings and roads collapsed near Penonomé",
+     "27 minor injuries; no deaths in early counts",
+     "Tsunami warnings; no confirmed impact"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Kuwait Times",
+     "url": "https://kuwaittimes.com/article/51311/world/powerful-77-quake-hits-panama-injuring-at-least-27/amp"
+    },
+    {
+     "name": "ZDFheute",
+     "url": "https://www.zdfheute.de/panorama/erdbeben-panama-tsunami-entwarnung-100.html"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "A powerful earthquake hit Panama Friday. The U.S. Geological Survey first said magnitude eight point oh, then revised it to seven point seven. A magnitude six point six aftershock followed."
+    },
+    {
+     "who": "joe",
+     "text": "Buildings and roads collapsed in central Panama near Penonomé. At least twenty-seven people were slightly hurt. No deaths in early counts. The Panama Canal was reported unaffected."
+    },
+    {
+     "who": "vex",
+     "text": "Tsunami warnings went out for Panama and neighbors, with one to three meters possible. No confirmed tsunami impact was found, and a German broadcaster headlined an all-clear. Reports are from press, not official agencies."
+    }
+   ]
+  },
+  {
+   "id": "asiaweather",
+   "kind": "weather",
+   "strap": "TYPHOON KOGUMA TURNS EXTRATROPICAL; KANLAON ERUPTS AGAIN",
+   "headline": "Weather across Asia",
+   "category": "WEATHER",
+   "status": "observed",
+   "graphic": {
+    "kicker": "WEATHER",
+    "title": "Koguma weakens; Kanlaon ash; monsoon withdraws",
+    "bullets": [
+     "Typhoon Koguma: extratropical in ~2 days",
+     "T.D. 28W near the Marianas",
+     "Kanlaon at Alert Level 2; classes suspended",
+     "Monsoon withdrawing from W. Rajasthan"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Zoom Earth / JTWC",
+     "url": "https://zoom.earth/storms/koguma-2026/"
+    },
+    {
+     "name": "Wikipedia: 2026 typhoon season",
+     "url": "https://en.wikipedia.org/wiki/2026_Pacific_typhoon_season"
+    },
+    {
+     "name": "GMA News / Phivolcs",
+     "url": "https://www.gmanetwork.com/news/topstories/regions/1005552/phivolcs-reports-ash-emission-observed-three-times-on-sunday-october-11-2026/story/"
+    },
+    {
+     "name": "India Meteorological Dept",
+     "url": "https://internal.imd.gov.in/pages/press_release_mausam.php"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Typhoon Koguma is about twelve hundred kilometers east-southeast of Misawa, Japan, racing northeast. It is transitioning to an extratropical storm within about two days."
+    },
+    {
+     "who": "joe",
+     "text": "A new tropical depression, twenty-eight W, formed near Guam and the Northern Marianas. Impact there is minimal."
+    },
+    {
+     "who": "vex",
+     "text": "In the Philippines, Kanlaon volcano is at Alert Level Two. It threw ash three times on Sunday. Classes were suspended Monday. In India, the monsoon is withdrawing from West Rajasthan."
+    }
+   ]
+  },
+  {
+   "id": "djibouti",
+   "kind": "story",
+   "strap": "DJIBOUTI SHIPWRECK: 139 DEAD, 84 MISSING",
+   "headline": "Djibouti migrant shipwreck",
+   "category": "MIGRATION",
+   "status": "observed",
+   "graphic": {
+    "kicker": "MIGRATION",
+    "title": "139 dead, 84 missing off Djibouti",
+    "bullets": [
+     "Boat of 305, mostly Ethiopians",
+     "Capsized night of Oct 8 to 9, bound for Yemen",
+     "I.O.M.: among the deadliest on the Eastern Route",
+     "Another boat capsizes off Tunisia: 12+ dead"
+    ]
+   },
+   "sources": [
+    {
+     "name": "I.O.M.",
+     "url": "https://www.iom.int/news/death-toll-djibouti-shipwreck-climbs-139-un-migration"
+    },
+    {
+     "name": "InfoMigrants",
+     "url": "https://www.facebook.com/InfoMigrants/videos/1858083155602621/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The International Organization for Migration confirmed the toll from the Djibouti shipwreck at one hundred thirty-nine dead and eighty-four missing. The boat carried three hundred five people, mostly Ethiopians, headed for Yemen."
+    },
+    {
+     "who": "joe",
+     "text": "It capsized the night of October eighth. The I.O.M. calls it one of the deadliest incidents on the Eastern Route. Yemen is where Saudi jets are now flying."
+    },
+    {
+     "who": "vex",
+     "text": "Separately, a migrant boat capsized off southern Tunisia. At least twelve are dead and two missing, per InfoMigrants."
+    }
+   ]
+  },
+  {
+   "id": "health",
+   "kind": "story",
+   "strap": "KENYA: NO NEW EBOLA CASE SINCE OCT 6; IRKUTSK DEATH UNEXPLAINED",
+   "headline": "Health watch",
+   "category": "HEALTH",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "HEALTH",
+    "title": "Ebola in Kenya quiet; Irkutsk cause unnamed",
+    "bullets": [
+     "Kenya: 122 contacts accounted for, 108 in quarantine",
+     "None symptomatic",
+     "Unconfirmed: suspected case isolated in Kericho",
+     "Irkutsk: W.H.O. notice; cause 'undetermined'"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Rio Times",
+     "url": "https://www.riotimesonline.com/kenya-no-new-ebola-case-108-quarantine-2026/"
+    },
+    {
+     "name": "Facebook post, Kericho",
+     "url": "https://www.facebook.com/100064457901458/posts/1522417429916839/"
+    },
+    {
+     "name": "Proseko Nexus",
+     "url": "https://proseko.substack.com/p/irkutsk-monitoring-ended-cause-unnamed"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Kenya reports no new Ebola case of the Bundibugyo strain since October sixth. All one hundred twenty-two contacts are accounted for, a hundred eight in quarantine, none with symptoms."
+    },
+    {
+     "who": "joe",
+     "text": "A social media post says a woman with suspected Ebola symptoms was isolated in Kericho. That is a claim, not a confirmed case."
+    },
+    {
+     "who": "vex",
+     "text": "In Russia, an independent synthesis says the W.H.O. published a notice on a death at the Irkutsk Anti-Plague Institute. Monitoring of about a hundred ninety-seven contacts has ended. The cause stays officially, quote, pneumonia of undetermined etiology."
+    }
+   ]
+  },
+  {
+   "id": "us_politics",
+   "kind": "story",
+   "strap": "MUSK GIVES $276M+ TO GOP; FEDS SEARCH OMAR'S HOME",
+   "headline": "U.S. politics",
+   "category": "POLITICS",
+   "status": "claim",
+   "graphic": {
+    "kicker": "POLITICS",
+    "title": "Musk's $276 million; a search of Rep. Omar's home",
+    "bullets": [
+     "Musk: $276M+ to Republican efforts since July",
+     "$158M to Senate Leadership Fund, $76M to America PAC",
+     "Federal agents searched Rep. Ilhan Omar's home",
+     "Judge ordered end to taxpayer-funded Trump ads"
+    ]
+   },
+   "sources": [
+    {
+     "name": "AP, Musk",
+     "url": "https://apnews.com/article/c06efc774a2e7c5d345e0d46641eb510"
+    },
+    {
+     "name": "The Verge",
+     "url": "https://www.theverge.com/tech/1009604/elon-musk-2026-midterm-republican-donations"
+    },
+    {
+     "name": "AP, Omar",
+     "url": "https://apnews.com/article/feb4e90a171eb830479dc42d62c6153e"
+    },
+    {
+     "name": "AP, ads",
+     "url": "https://apnews.com/article/711336589fd86b1754a3652b798bbfda"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The A.P. reports Elon Musk has given more than two hundred seventy-six million dollars to Republican midterm efforts since July. That includes a hundred fifty-eight million to the Senate Leadership Fund and seventy-six million to America PAC. His spokesperson confirmed the figures."
+    },
+    {
+     "who": "joe",
+     "text": "Also from the A.P.: federal agents searched Representative Ilhan Omar's Washington-area home under a judicially authorized warrant, in an ongoing investigation. The Justice Department gave no details. Her Minnesota election is weeks away."
+    },
+    {
+     "who": "vex",
+     "text": "And after a federal judge ordered the administration to stop its remaining taxpayer-funded Trump television ads, the White House said outside groups will pay for them going forward."
+    },
+    {
+     "who": "joe",
+     "text": "Midterms are November third."
+    }
+   ]
+  },
+  {
+   "id": "world_politics",
+   "kind": "story",
+   "strap": "PAKISTAN, DELHI, KOREA, JAPAN, AUSTRALIA, NIGERIA: POLITICS",
+   "headline": "World politics roundup",
+   "category": "WORLD",
+   "status": "observed",
+   "graphic": {
+    "kicker": "WORLD",
+    "title": "Politics around the world",
+    "bullets": [
+     "Pakistan: parliament debates K-P emergency rule",
+     "Delhi: Jantar Mantar protest ban; Supreme Court Oct 15",
+     "Korea: Lee says national interest comes first",
+     "Australia: Albanese vs. surging One Nation"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Business Recorder",
+     "url": "https://www.brecorder.com/news/amp/40443936"
+    },
+    {
+     "name": "The Hindu live blog",
+     "url": "https://www.thehindu.com/news/national/anti-cec-delhi-protest-against-gyanesh-kumar-cec-october-13-2026-live-updates/article71577767.ece"
+    },
+    {
+     "name": "SBS Korea",
+     "url": "https://news.sbs.co.kr/english/article.do?news_id=N1008795074"
+    },
+    {
+     "name": "Japan Times",
+     "url": "https://www.japantimes.co.jp/news/japan/politics"
+    },
+    {
+     "name": "ABC Australia",
+     "url": "https://www.abc.net.au/news/2026-10-13/labor-confronts-one-nations-growing-appeal/107262318"
+    },
+    {
+     "name": "The Punch",
+     "url": "https://punchng.com/2027-protest-relief-as-inec-releases-final-candidates-list/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Pakistan: President Zardari summoned both houses of parliament for tonight to debate the emergency and governor's-rule proclamation in Khyber Pakhtunkhwa. Endorsement is expected within three or four days."
+    },
+    {
+     "who": "joe",
+     "text": "India: Delhi's Jantar Mantar is no longer allowed as a protest site, police said. Three leaders were detained there today. The Supreme Court put the protest and metro pleas off to Thursday."
+    },
+    {
+     "who": "vex",
+     "text": "South Korea: President Lee told his cabinet the American alliance is vital but national interest comes first. Japan: Prime Minister Takaichi pledged continued support for the International Criminal Court after new U.S. sanctions."
+    },
+    {
+     "who": "joe",
+     "text": "Australia: Prime Minister Albanese rallied his Labor caucus against a surging One Nation. Nigeria: protests continue over names left off the final twenty twenty-seven candidate list. The eighteen presidential candidates stand."
+    }
+   ]
+  },
+  {
+   "id": "taiwan",
+   "kind": "story",
+   "strap": "CHINA LIVE-FIRE DRILLS IN FIVE SEAS TO OCT 17; N. KOREA FIRES MISSILES",
+   "headline": "China and North Korea",
+   "category": "ASIA",
+   "status": "observed",
+   "graphic": {
+    "kicker": "ASIA",
+    "title": "Live-fire in five sea areas; Pyongyang launches again",
+    "bullets": [
+     "Beijing live-fire, five sea areas, Oct 12 to 17",
+     "Taiwan: 5 PLA aircraft, 10 ships; threat 'low'",
+     "N. Korea: multiple ballistic missiles, 16th launch of 2026",
+     "One flew 900+ km"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Taiwan News",
+     "url": "https://www.taiwannews.com.tw/en/news/6456812"
+    },
+    {
+     "name": "Taiwan News",
+     "url": "https://www.taiwannews.com.tw/en/news/6456837"
+    },
+    {
+     "name": "SBS",
+     "url": "https://news.sbs.co.kr/amp/news.amp?news_id=N1008793291"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Taiwan's defense ministry counted five Chinese aircraft and ten navy ships around the island in its latest daily report. Beijing separately announced live-fire exercises in five sea areas, running through Saturday."
+    },
+    {
+     "who": "joe",
+     "text": "Taiwan assessed the threat as low. The defense minister condemned the drills. Ports are operating normally."
+    },
+    {
+     "who": "vex",
+     "text": "North Korea fired multiple ballistic missiles Monday from the Pyongyang area. One flew more than nine hundred kilometers. It is the sixteenth launch of twenty twenty-six. State media called it a tactical ballistic-missile test."
+    }
+   ]
+  },
+  {
+   "id": "russia_it",
+   "kind": "story",
+   "strap": "YANDEX CLOUD STILL DISRUPTED AFTER DRONE STRIKES ON DATA CENTERS",
+   "headline": "Yandex outage",
+   "category": "CYBER",
+   "status": "claim",
+   "graphic": {
+    "kicker": "CYBER",
+    "title": "Yandex Cloud and Pay still down after drone strikes",
+    "bullets": [
+     "Drone strikes hit three Russian data centers",
+     "Cloud connectivity ~30% of normal Oct 11 (NetBlocks)",
+     "Yandex: funds safe, no restoration date"
+    ]
+   },
+   "sources": [
+    {
+     "name": "The Register",
+     "url": "https://www.theregister.com/security/2026/10/12/ukrainian-drone-strikes-on-yandex-datacenters-knock-cloud-and-payments-offline/5302577"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The Register reports Yandex Cloud and Yandex Pay remain disrupted after drone strikes on three Russian data centers."
+    },
+    {
+     "who": "joe",
+     "text": "A Yandex executive said customer funds are safe but gave no restoration date. The monitor NetBlocks measured Cloud connectivity at thirty percent of normal on October eleventh."
+    },
+    {
+     "who": "vex",
+     "text": "Also in the region: rents in Georgia and Armenia are up twenty to thirty percent over last year as Russians fearing mobilization move in. Two-room flats in Yerevan run eight hundred to nine hundred euros, per Euronews."
+    }
+   ]
+  },
+  {
+   "id": "cyber",
+   "kind": "story",
+   "strap": "GHOSTACTION SUPPLY-CHAIN ATTACK: 500+ ACCOUNTS",
+   "headline": "GhostAction campaign",
+   "category": "CYBER",
+   "status": "claim",
+   "graphic": {
+    "kicker": "CYBER",
+    "title": "GhostAction: 500+ accounts, tens of thousands of repos",
+    "bullets": [
+     "Since Oct 7: 500+ accounts hit",
+     "Tens of thousands of code repositories",
+     "Expanding to cloud and A.I. credentials"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Socket",
+     "url": "https://socket.dev/blog/ghostaction-cloud-credentials"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "No new victim count or takedown on the GhostAction software attack, but the weekly briefing confirms more than five hundred accounts and tens of thousands of code repositories since October seventh."
+    },
+    {
+     "who": "joe",
+     "text": "Socket says it is expanding into harvesting cloud and A.I. credentials. If you keep keys in a repo, now is a good time to stop."
+    }
+   ]
+  },
+  {
+   "id": "space",
+   "kind": "story",
+   "strap": "DRAGON CRS-35 LAUNCH TODAY; JAPAN'S MARS-MOON PROBE OCT 20",
+   "headline": "Space and science",
+   "category": "SPACE",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "SPACE",
+    "title": "Dragon cargo flight, India's NavIC launch, Japan's Phobos probe",
+    "bullets": [
+     "NASA CRS-35 Dragon targeted 6:33 a.m. ET",
+     "ISRO NVS-03: NOTAM Oct 13 to Nov 11 (unconfirmed)",
+     "JAXA MMX launch Oct 20, 04:41 JST",
+     "Antarctic sea ice hit its 2026 max"
+    ]
+   },
+   "sources": [
+    {
+     "name": "NASA",
+     "url": "https://www.nasa.gov/mission/nasas-spacex-crs-35/"
+    },
+    {
+     "name": "NASA Earth Observatory",
+     "url": "https://science.nasa.gov/earth/earth-observatory/antarctic-sea-ice-grows-to-its-2026-maximum/"
+    },
+    {
+     "name": "RocketLaunch.Live",
+     "url": "https://www.rocketlaunch.live/launch/nvs-03-irnss-1l"
+    },
+    {
+     "name": "JAXA",
+     "url": "https://global.jaxa.jp/press/2026/08/20260820-1_e.html"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "NASA targeted six thirty-three this morning, Eastern, for the launch of a SpaceX Dragon on the thirty-fifth station resupply mission. The mission page still listed it as no earlier than October thirteenth when captured, so check the result."
+    },
+    {
+     "who": "joe",
+     "text": "India's second-generation NavIC satellite has a launch notice covering October thirteenth to November eleventh. A tracker says tonight. ISRO has not confirmed. That one is a claim."
+    },
+    {
+     "who": "vex",
+     "text": "Japan's JAXA confirmed its Phobos sample-return probe launches October twentieth at four forty-one A.M. Japan time on an H3 rocket."
+    },
+    {
+     "who": "joe",
+     "text": "And NASA says Antarctic sea ice reached its twenty twenty-six maximum."
+    }
+   ]
+  },
+  {
+   "id": "culture",
+   "kind": "story",
+   "strap": "'BREAKING BAD' ACTOR RJ MITTE DIES AT 34",
+   "headline": "Culture",
+   "category": "CULTURE",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "CULTURE",
+    "title": "RJ Mitte dies; 'The Social Reckoning' flops",
+    "bullets": [
+     "A.P.: RJ Mitte, 34, died; no cause announced",
+     "The Verge: 'The Social Reckoning' flopping",
+     "Nobel Economics: Hall and Woodford",
+     "EbonyLife Place opens in London"
+    ]
+   },
+   "sources": [
+    {
+     "name": "AP",
+     "url": "https://apnews.com/article/7f37c962a98362d95b1fcc7b2c6cf5c5"
+    },
+    {
+     "name": "The Verge",
+     "url": "https://www.theverge.com/entertainment/1009630/social-reckoning-box-office-other-mommy"
+    },
+    {
+     "name": "NobelPrize.org",
+     "url": "https://www.nobelprize.org/prizes/economic-sciences/2026/prize-announcement/"
+    },
+    {
+     "name": "Euronews",
+     "url": "https://www.euronews.com/2026/10/13/were-not-waiting-anymore-media-mogul-mo-abudu-opens-a-new-hub-for-african-cinema-in-london"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The A.P. reports Breaking Bad actor R.J. Mitte has died at thirty-four. A Texas justice of the peace told the A.P. she declared him dead. His representatives announced the death without a cause."
+    },
+    {
+     "who": "joe",
+     "text": "At the box office, The Verge says The Social Reckoning is flopping against Other Mommy. Final weekend numbers weren't in the captures."
+    },
+    {
+     "who": "vex",
+     "text": "The Nobel in economics went to Robert Hall and Michael Woodford for foundations of stabilization policy."
+    },
+    {
+     "who": "joe",
+     "text": "In London, Nigerian media entrepreneur Mo Abudu opened EbonyLife Place, a cinema, restaurant and boutique for African cinema. In Nigeria, Call of My Life is now the top Nollywood film of the year. In Japan and Korea, Chiikawa is back at number one."
+    }
+   ]
+  },
+  {
+   "id": "alsotoday",
+   "kind": "story",
+   "strap": "ALSO TODAY",
+   "headline": "Also today",
+   "category": "QUICK HITS",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "QUICK HITS",
+    "title": "Quick hits",
+    "bullets": [
+     "HCLTech record deal bookings",
+     "Korea blocks 27 crypto sites",
+     "Sydney homes down 7.1% from peak",
+     "No Man's Sky coming to iPhone"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Financial Express",
+     "url": "https://www.financialexpress.com/business/industry-hcltech-results-q2-2026-live-updates-hcl-quarterly-2-result-revenue-earning-profit-share-price-performance-4358958/"
+    },
+    {
+     "name": "Yonhap",
+     "url": "https://www.yna.co.kr/view/AKR20261013064600002"
+    },
+    {
+     "name": "Property Update",
+     "url": "https://propertyupdate.com.au/australian-property-market-predictions/"
+    },
+    {
+     "name": "Euronews, Tefal",
+     "url": "https://www.euronews.com/2026/10/13/outdated-and-inadequate-tefal-manufacturer-urged-to-drop-forever-chemicals-from-non-stick-"
+    },
+    {
+     "name": "The Star",
+     "url": "https://www.thestar.com.my/business/business-news/2026/10/12/malaysia039s-total-palm-oil-stocks-surge-2454-to-351mil-tonnes-in-sept"
+    },
+    {
+     "name": "The Punch",
+     "url": "https://punchng.com/nnpc-extends-n66-petrol-discount-to-october-31-debunks-subsidy-return/"
+    },
+    {
+     "name": "The Verge",
+     "url": "https://www.theverge.com/entertainment/1009541/no-mans-sky-iphone-ipad-launch-date"
+    },
+    {
+     "name": "International Business Times UK",
+     "url": "https://www.ibtimes.co.uk/burlison-considers-testimony-orange-uap-orbs-1824884"
+    },
+    {
+     "name": "The Irrawaddy",
+     "url": "https://www.facebook.com/theirrawaddy/posts/1577704037718081/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Quick hits. India's HCLTech posted record deal bookings of three point three billion dollars, with profit up twenty-one percent. It narrowed its revenue guidance."
+    },
+    {
+     "who": "joe",
+     "text": "South Korea blocked domestic access to twenty-seven unregistered foreign crypto exchange sites, including KuCoin and MEXC. A Chinese court reportedly sentenced a Kokang scam-center warlord to death, per the Irrawaddy. That is a claim."
+    },
+    {
+     "who": "vex",
+     "text": "Sydney home values are down seven point one percent from their February peak. Malaysia's palm-oil stocks jumped twenty-four percent in September to three point five million tons."
+    },
+    {
+     "who": "joe",
+     "text": "Three environmental groups put cookware maker Groupe SEB, which owns Tefal, on notice over forever chemicals. The company says it follows French and E.U. rules. Nigeria extended its petrol discount to October thirty-first."
+    },
+    {
+     "who": "vex",
+     "text": "Representative Burlison says witnesses to a late-twenty-twenty-five orange-orb U.A.P. incident near a West Coast base could testify to Congress. And No Man's Sky is coming to iPhone and iPad."
+    }
+   ]
+  },
+  {
+   "id": "sports",
+   "kind": "sports",
+   "strap": "ALCS: GUARDIANS BEAT RAYS 7-3 IN GAME 1; NHL, CRICKET, NPB, F1",
+   "headline": "Sports",
+   "category": "SPORTS",
+   "status": "observed",
+   "graphic": {
+    "kicker": "SPORTS",
+    "title": "ALCS Game 2 tonight; Antonelli's first match point",
+    "bullets": [
+     "Guardians beat Rays 7-3 in ALCS Game 1",
+     "ALCS Game 2 tonight, 8 p.m. ET",
+     "NHL: all 32 teams play tonight",
+     "F1 US GP Oct 23 to 25: Antonelli's first title match point"
+    ]
+   },
+   "sources": [
+    {
+     "name": "MLB",
+     "url": "https://www.mlb.com/news/guardians-win-alcs-game-1-2026"
+    },
+    {
+     "name": "NHL",
+     "url": "https://www.nhl.com/news/nhl-status-report-news-and-notes-october-12-2026"
+    },
+    {
+     "name": "Windies Cricket",
+     "url": "https://www.windiescricket.com/fixtures/"
+    },
+    {
+     "name": "NPB",
+     "url": "https://npb.jp/news/detail/20261006_04.html"
+    },
+    {
+     "name": "Sky Sports",
+     "url": "https://www.skysports.com/f1/news/13597654/kimi-antonelli-f1-title-permutations-how-mercedes-driver-could-clinch-world-championship-at-united-states-gp"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Baseball. Cleveland beat Tampa Bay seven to three in Game One of the American League Championship Series. Game Two is tonight at eight Eastern."
+    },
+    {
+     "who": "joe",
+     "text": "Hockey. All thirty-two N.H.L. teams play tonight. Ottawa's Jake Sanderson and Artem Zub remain out, and Washington's Pierre-Luc Dubois will not travel to Carolina."
+    },
+    {
+     "who": "vex",
+     "text": "Cricket. India leads the West Indies two to one in the twenty-over series. The fourth match is Wednesday in Hyderabad. In Japan, both Climax Series final stages open Wednesday."
+    },
+    {
+     "who": "joe",
+     "text": "Formula One. Kimi Antonelli can clinch the twenty twenty-six title at the U.S. Grand Prix in Austin, October twenty-third to twenty-fifth, if he wins and both Russell and Hamilton finish low enough."
+    }
+   ]
+  },
+  {
+   "id": "wire",
+   "kind": "wire",
+   "strap": "FROM THE WIRES",
+   "headline": "From the wires",
+   "category": "WIRES",
+   "status": "live",
+   "graphic": {
+    "kicker": "FROM THE WIRES",
+    "title": "Latest headlines",
+    "bullets": []
+   },
+   "lines": [],
+   "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped."
+  },
+  {
+   "id": "close",
+   "kind": "close",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "That's the news",
+   "category": "GOOD NIGHT",
+   "graphic": {
+    "kicker": "HEARTBEAT NEWS",
+    "title": "Every story, every source",
+    "bullets": [
+     "Written from the watch captures of Oct 13",
+     "Sources under the screen",
+     "New show every day by noon"
+    ]
+   },
+   "lines": [
+    {
+     "who": "joe",
+     "text": "That's the news for Tuesday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+     "shot": "two"
+    },
+    {
+     "who": "vex",
+     "text": "A new show comes every day by noon. I'm AI Robot Vex.",
+     "shot": "wide"
+    },
+    {
+     "who": "joe",
+     "text": "I'm Alien Joe. See you tomorrow."
+    }
+   ]
+  }
+ ]
+}
