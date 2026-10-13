@@ -177,7 +177,7 @@
         b.onclick = () => { v.muted = false; v.play(); b.remove(); }; $("screen").appendChild(b); });
     }
     $("nowTitle").textContent = title; $("nowSub").textContent = sub;
-    $("tipbar").innerHTML = list.length && ch.type !== "page" ? Tips.tipBar(list[idx]) : "";
+    $("tipbar").innerHTML = list.length && ch.type !== "page" ? Tips.tipBar(list[idx]) + Tips.saveBar(list[idx]) : ""; Tips.wireSave($("tipbar"));
     wake();
     $("remote").innerHTML = channels.map((c) => `<button class="ch${c === channels[cur - 1] ? " on" : ""}" data-n="${c.n}"><small>CH ${c.n}${c.items.length > 1 ? " · " + c.items.length + " on" : ""}</small><b>${esc(c.name)}</b></button>`).join("");
     $("list").innerHTML = ch.type !== "page" || list.length > 1 ? `<div class="lh">On CH ${ch.n} · ${esc(ch.name)}</div>` + (list.length ? list.map((it, i) => itemBtn(ch, it, i)).join("") : `<p class="muted">Nothing here yet.</p>`) : "";

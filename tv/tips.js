@@ -33,3 +33,29 @@ export function mostTipped(channels, num) {
   if (!rows.length) return `<p class="muted">No tips yet. ${enabled ? "Be the first - tap Tip on a video you love." : "Tips open soon. The most-tipped videos here are the ones we share out to YouTube, X and TikTok."}</p>`;
   return rows.slice(0, 10).map((r, k) => `<button class="gi" data-n="${r.c.n}" data-i="${r.i}"><small>${k + 1}</small><span>${esc(r.it.title)}</span><em>${money(r.t.total_cents)}</em></button>`).join("");
 }
+
+// ---- Save to phone (Jaron 10/13): every on-site video can be saved to the Photos gallery / Files, plus the 9:16 cut when one exists.
+// iPhone/Android: fetch the file and open the share sheet ("Save Video" puts it in Photos). Fallback: a normal download link.
+const isOwnFile = (it) => it && /^\/[^/].*\.(mp4|webm|mov)$/i.test(it.src || "");
+const vertOf = (src) => src.replace(/\.(mp4|webm|mov)$/i, "-vertical.$1");
+export function saveBar(item) {
+  if (!isOwnFile(item)) return "";
+  const name = (item.title || "heartbeat-video").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "heartbeat-video";
+  return `<button class="tipbtn savebtn" type="button" data-save="${esc(item.src)}" data-name="${esc(name)}.mp4">Save video</button>`
+    + `<button class="tipbtn savebtn" type="button" data-save="${esc(vertOf(item.src))}" data-name="${esc(name)}-vertical.mp4" data-vert hidden>Save vertical (9:16)</button>`;
+}
+export async function wireSave(root) {
+  const v = root.querySelector("[data-vert]");
+  if (v) { try { const r = await fetch(v.dataset.save, { method: "HEAD" }); if (r.ok) v.hidden = false; } catch (e) {} }
+  root.querySelectorAll("[data-save]").forEach((b) => b.onclick = async () => {
+    const url = b.dataset.save, name = b.dataset.name, label = b.textContent;
+    b.disabled = true; b.textContent = "Getting the video…";
+    try {
+      const blob = await (await fetch(url)).blob();
+      const file = new File([blob], name, { type: blob.type || "video/mp4" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); }
+      else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+    } catch (e) { if (e && e.name !== "AbortError") { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } }
+    b.disabled = false; b.textContent = label;
+  });
+}
