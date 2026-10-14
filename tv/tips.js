@@ -47,15 +47,27 @@ export function saveBar(item) {
 export async function wireSave(root) {
   const v = root.querySelector("[data-vert]");
   if (v) { try { const r = await fetch(v.dataset.save, { method: "HEAD" }); if (r.ok) v.hidden = false; } catch (e) {} }
-  root.querySelectorAll("[data-save]").forEach((b) => b.onclick = async () => {
+  // iPhone only opens the share sheet ("Save Video" -> Photos) if share() runs within a few seconds of a tap. Big files take longer
+  // to fetch, so the tap that started the fetch has expired by then and Safari falls back to a file download (10/13 bug on the
+  // 23-30 MB episodes). Fix: tap 1 fetches, the button turns into "Ready - tap to save"; tap 2 opens the share sheet right away.
+  root.querySelectorAll("[data-save]").forEach((b) => {
     const url = b.dataset.save, name = b.dataset.name, label = b.textContent;
-    b.disabled = true; b.textContent = "Getting the video…";
-    try {
-      const blob = await (await fetch(url)).blob();
-      const file = new File([blob], name, { type: blob.type || "video/mp4" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); }
-      else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
-    } catch (e) { if (e && e.name !== "AbortError") { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } }
-    b.disabled = false; b.textContent = label;
+    let file = null;
+    const fallback = () => { const a = document.createElement("a"); a.href = file ? URL.createObjectURL(file) : url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
+    const share = async () => {
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file] }); else fallback();
+        b.textContent = label;
+      } catch (e) { if (!e || e.name !== "AbortError") fallback(); b.textContent = "Ready - tap to save"; }
+    };
+    b.onclick = async () => {
+      if (file) return share();
+      b.disabled = true; b.textContent = "Getting the video…";
+      try {
+        const blob = await (await fetch(url)).blob();
+        file = new File([blob], name, { type: "video/mp4" });
+        b.disabled = false; b.textContent = "Ready - tap to save";
+      } catch (e) { b.disabled = false; b.textContent = label; fallback(); }
+    };
   });
 }
