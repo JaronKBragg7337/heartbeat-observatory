@@ -19,7 +19,13 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:13px;margin:0;max-heigh
 button{font:inherit;padding:12px 16px;border-radius:10px;border:0;background:var(--acc);color:#fff;min-height:44px;cursor:pointer}
 button.sm{padding:6px 10px;min-height:36px;font-size:14px}button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}button:disabled{opacity:.5;cursor:default}
 .sw{position:relative;width:52px;height:30px;border-radius:15px;background:var(--line);flex:none;border:0;padding:0;min-height:30px}.sw i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:#fff;transition:left .15s}.sw.on{background:var(--ok)}.sw.on i{left:25px}
-#log div{padding:6px 0;border-top:1px solid var(--line)}#log .me{color:var(--mut)}
+#log{max-height:min(52vh,420px);overflow-y:auto;margin-bottom:8px;display:flex;flex-direction:column;gap:8px;padding:2px}
+.msg{max-width:88%;padding:8px 12px;border-radius:14px;overflow-wrap:anywhere;white-space:pre-wrap;font-size:15px}
+.msg.me{align-self:flex-end;background:var(--acc);color:#fff;border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.wait{color:var(--mut);font-style:italic}.msg.err{border-color:var(--bad);color:var(--bad)}
+.msg small{display:block;margin-top:2px;font-size:11px;opacity:.75}
+#chaterr{color:var(--bad);font-size:14px;margin:0 0 8px;display:none;overflow-wrap:anywhere}
 table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;padding:4px 6px;border-top:1px solid var(--line)}td:first-child,td:nth-child(2){white-space:nowrap}
 .PASS{color:var(--ok)}.FAIL{color:var(--bad)}.INFO{color:var(--mut)}
 small{color:var(--mut)}.note{font-size:13px;color:var(--mut);margin:6px 0 0}.warn{color:var(--bad)}
@@ -29,8 +35,9 @@ small{color:var(--mut)}.note{font-size:13px;color:var(--mut);margin:6px 0 0}.war
 <div id="gate"><p>This page talks to the AI on the MSI and can change its rules, so it needs the owner.</p><p><a href="/admin">Sign in at /admin</a>, then come back here.</p></div>
 <div class="grid" id="main">
 <div class="card"><h2>Talk to it</h2>
-<div id="log" style="max-height:260px;overflow:auto;margin-bottom:8px"></div>
-<form class="chat" onsubmit="return send()"><input id="msg" placeholder="ask, or /teach the word glorp means happy" autocomplete="off"><button>Send</button></form>
+<div id="log" aria-live="polite"><small>loading the conversation...</small></div>
+<div id="chaterr" role="alert"></div>
+<form class="chat" onsubmit="send();return false"><input id="msg" placeholder="ask, or /teach the word glorp means happy" autocomplete="off" enterkeyhint="send"><button id="sendbtn" type="submit">Send</button></form>
 <small>/teach &lt;fact&gt; &middot; /confirm &lt;id&gt; &middot; /invalidate &lt;id&gt; &middot; /keep &lt;id&gt; &middot; /report</small></div>
 <div class="card"><h2>Heartbeat</h2><div class="kv" id="hb"></div>
 <div id="owner_hb" style="margin-top:10px"></div>
@@ -53,25 +60,33 @@ const OWNER_BASE=LOCAL?(location.port==='7337'?'http://127.0.0.1:7338':''):'';  
 let T=null;   // transport: {state(), chat(text), owner(kind,payload)}
 function localTransport(){return{
  async state(){const r=await fetch(OWNER_BASE+'/api/state');return r.json()},
- async chat(text){const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text})});return (await r.json()).out},
+ _thread:[],
+ async send(text){const it={id:Date.now(),text,status:'pending',at:new Date().toISOString()};this._thread.push(it);
+  try{const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text})});const j=await r.json();
+   if(j.error&&!j.out){it.status='error';it.result={error:j.error}}else{it.status='done';it.result=j}}catch(e){it.status='error';it.result={error:String(e.message||e)}}},
+ async thread(){return this._thread.map(x=>({...x}))},
  async owner(kind,payload){const r=await fetch(OWNER_BASE+'/owner/'+kind,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload||{})});return r.json()}}}
 async function cloudTransport(){
  const {getSupabase}=await import('/hb-supabase.js');const sb=await getSupabase();
  const {data:{session}}=await sb.auth.getSession();let admin=false;
  if(session){try{const {data}=await sb.rpc('is_admin');admin=data===true}catch(e){}}
  if(!session||!admin){$('gate').style.display='block';$('main').style.display='none';return null}
- const email=session.user.email||'';
+ const email=(session.user.email||'').toLowerCase();
  async function command(kind,payload){const {data,error}=await sb.from('sapling_commands').insert({kind,payload:payload||{},created_by:email}).select('id').single();if(error)throw new Error(error.message);
   for(let i=0;i<60;i++){await new Promise(r=>setTimeout(r,1500));const {data:row}=await sb.from('sapling_commands').select('status,result').eq('id',data.id).single();if(row&&row.status!=='pending')return row.result||{}}
   return {error:'no answer from the MSI in 90 s (is the relay running? RECONNECT.md section 9)'}}
  return{email,
   async state(){const {data}=await sb.from('sapling_state').select('*').eq('id',1).single();const s=(data&&data.state)||{};s._relay_at=data&&data.updated_at;return s},
-  async chat(text){const r=await command('chat',{text});return r.out||r.error||''},
+  async send(text){const {error}=await sb.from('sapling_commands').insert({kind:'chat',payload:{text},created_by:email});
+  if(error)throw new Error('not saved: '+error.message+(error.code?' ('+error.code+')':'')+(error.hint?' - '+error.hint:''))},
+ async thread(){const {data,error}=await sb.from('sapling_commands').select('id,created_at,payload,status,result').eq('kind','chat').order('id',{ascending:false}).limit(60);
+  if(error)throw new Error('could not read the conversation: '+error.message);
+  return (data||[]).reverse().map(r=>({id:r.id,text:(r.payload&&r.payload.text)||'',status:r.status,result:r.result,at:r.created_at}))},
   async owner(kind,payload){return command(kind,payload)}}}
 async function refresh(){try{const d=await T.state();
  const stale=d._relay_at&&(Date.now()-new Date(d._relay_at).getTime())>30000;
  $('alive').textContent=stale?'relay silent since '+fmt((Date.now()-new Date(d._relay_at).getTime())/1000)+' ago':(d.running?'beating':(d.down?'heartbeat process is down':'stopped'));
- const c=d.clock||{};$('hb').innerHTML=`<b>tick</b><span>${d.tick??'-'} (last: ${esc(d.last_action||'-')})</span><b>born</b><span>${esc(c.born_iso)}</span><b>age</b><span>${fmt(c.age_s)}</span><b>this run</b><span>${fmt(c.uptime_s)}</span><b>since last input</b><span>${fmt(c.since_last_input_s)}</span><b>generation</b><span>${d.generation??'-'} (consolidations)</span><b>memories</b><span>${d.memories??'-'}</span><b>vocab</b><span>${d.vocab_size??'-'} word parts</span><b>relay</b><span>${d.relay?esc(d.relay):'-'}</span>`;
+ DOWN=!!d.down;const c=d.clock||{};$('hb').innerHTML=`<b>tick</b><span>${d.tick??'-'} (last: ${esc(d.last_action||'-')})</span><b>born</b><span>${esc(c.born_iso)}</span><b>age</b><span>${fmt(c.age_s)}</span><b>this run</b><span>${fmt(c.uptime_s)}</span><b>since last input</b><span>${fmt(c.since_last_input_s)}</span><b>generation</b><span>${d.generation??'-'} (consolidations)</span><b>memories</b><span>${d.memories??'-'}</span><b>vocab</b><span>${d.vocab_size??'-'} word parts</span><b>relay</b><span>${d.relay?esc(d.relay):'-'}</span>`;
  $('owner_hb').innerHTML=d.running?`<button class="sm ghost" onclick="act('stop',{},'owner stop (writes a stop report)')">Stop (owner)</button>`:`<button class="sm" onclick="act('restart',{},'Restart (parole) - logged as process_start next to the stop report')">Restart (parole)</button> <small>${d.last_stop?('last stop: '+esc(d.last_stop.who)+' - '+esc(d.last_stop.reason)):''}</small>`;
  $('bar').style.width=(100*(c.budget_left_frac||0)).toFixed(1)+'%';
  $('budget').innerHTML=c.budget_total_s==null?'<small>no clock yet</small>':`<b>left</b><span>${fmt(c.budget_left_s)} of ${fmt(c.budget_total_s)} (${(100*c.budget_left_frac).toFixed(1)}%)</span><b>spent</b><span>${(c.budget_spent_s||0).toFixed(1)} compute-s</span><b>kWh today</b><span>${(c.kwh_today||0).toExponential(2)} (est.)</span><b>kWh total</b><span>${(c.kwh_total||0).toExponential(2)} (est.)</span><b>GPU now</b><span>${c.gpu_watts_now==null?'n/a':c.gpu_watts_now+' W'}</span><b>day resets in</b><span>${fmt(c.day_ends_in_s)}</span>`;
@@ -88,8 +103,25 @@ async function refresh(){try{const d=await T.state();
  $('memsize').textContent=(d.memories??'-')+' rows';$('mem').textContent=(d.memory||[]).map(m=>`#${m.id} [${m.tier}] recalls=${m.recalls} strength=${m.strength} (${m.provenance}/${m.state}) ${m.content}`).join('\n');
  $('owner_log').textContent=(d.owner_actions||[]).map(o=>`${o.ts} ${o.action||o.kind||''} ${o.rule?o.rule+' -> '+(o.after?'ON':'OFF'):''} ${o.gen?'gen '+o.gen:''} by ${o.by||''} ${o.why||''}`.replace(/\s+/g,' ')).join('\n')||'none yet';
 }catch(e){$('alive').textContent='no connection ('+(e&&e.message||e)+')'}}
-async function act(kind,payload,label){const r=await T.owner(kind,payload);const msg=r&&r.error?('not done: '+r.error):('done: '+label);$('log').insertAdjacentHTML('afterbegin',`<div class="${r&&r.error?'warn':''}">${esc(msg)}</div>`);setTimeout(refresh,800)}
-async function send(){const m=$('msg').value.trim();if(!m)return false;$('msg').value='';$('log').insertAdjacentHTML('afterbegin',`<div class="me">&gt; ${esc(m)}</div>`);
-try{const out=await T.chat(m);$('log').insertAdjacentHTML('afterbegin',`<div><pre>${esc(out)}</pre></div>`)}catch(e){$('log').insertAdjacentHTML('afterbegin',`<div class="warn">${esc(e.message||e)}</div>`)}refresh();return false}
-(async()=>{T=LOCAL?localTransport():await cloudTransport();if(!T)return;refresh();setInterval(refresh,4000)})();
+async function act(kind,payload,label){let r;try{r=await T.owner(kind,payload)}catch(e){r={error:e.message||String(e)}}const msg=r&&r.error?('not done: '+r.error):('done: '+label);showErr(r&&r.error?msg:'');if(!(r&&r.error))toast(msg);setTimeout(refresh,800)}
+function toast(m){const n=$('alive');const old=n.textContent;n.textContent=m;setTimeout(()=>{n.textContent=old},3000)}
+let DOWN=false,LASTTHREAD='';
+function hhmm(t){try{return new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}catch(e){return''}}
+function showErr(m){const e=$('chaterr');e.textContent=m||'';e.style.display=m?'block':'none'}
+async function loadThread(){try{const items=await T.thread();const key=JSON.stringify(items.map(x=>[x.id,x.status,DOWN]));
+ if(key!==LASTTHREAD){LASTTHREAD=key;const box=$('log');const near=box.scrollHeight-box.scrollTop-box.clientHeight<80||!box.children.length;
+  box.innerHTML=items.length?items.map(x=>{const r=x.result||{};
+   let bot;if(x.status==='pending')bot=`<div class="msg bot wait">${DOWN?'heartbeat is down - reply will come when it restarts':'waiting for reply...'}</div>`;
+   else if(x.status==='error'||(r.error&&!r.out))bot=`<div class="msg bot err">${esc(r.error||'no reply')}</div>`;
+   else bot=`<div class="msg bot">${esc(r.out||'(empty reply)')}${r.via?`<small>${esc(r.via)}</small>`:''}</div>`;
+   return `<div class="msg me">${esc(x.text)}<small>${esc(hhmm(x.at))}</small></div>`+bot}).join(''):'<small>No messages yet. Say hello.</small>';
+  if(near)box.scrollTop=box.scrollHeight}
+ showErr('');return items}catch(e){showErr(e.message||String(e));return[]}}
+async function send(){const inp=$('msg'),m=inp.value.trim();if(!m)return;const btn=$('sendbtn');btn.disabled=true;showErr('');
+ try{await T.send(m);inp.value='';await loadThread();const box=$('log');box.scrollTop=box.scrollHeight}
+ catch(e){showErr(e.message||String(e))}finally{btn.disabled=false}
+ pollThread()}
+let polling=false;
+async function pollThread(){if(polling)return;polling=true;try{for(let i=0;i<60;i++){const items=await loadThread();if(!items.some(x=>x.status==='pending'))break;await new Promise(r=>setTimeout(r,2000))}}finally{polling=false}}
+(async()=>{T=LOCAL?localTransport():await cloudTransport();if(!T)return;refresh();loadThread().then(pollThread);setInterval(refresh,4000);setInterval(()=>{if(!polling)loadThread()},6000)})();
 </script></body></html>
