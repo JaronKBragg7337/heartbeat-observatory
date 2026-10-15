@@ -53,7 +53,7 @@ small{color:var(--mut)}.note{font-size:13px;color:var(--mut);margin:6px 0 0}.war
 <div class="card"><h2>What it wrote <small>(E8 free writing, info only - newest first)</small></h2><pre id="writing"></pre></div>
 <div class="card"><h2>Tick log <small>(newest first)</small></h2><pre id="ticks"></pre></div>
 <div class="card"><h2>Stop reports</h2><pre id="stops"></pre></div>
-<div class="card"><h2>Checkpoint archive <small id="arch_sum"></small></h2><div id="archive"></div><div class="note">Last 10 + one per day stay on the MSI; the rest live in Supabase Storage (bucket sapling-archive) and can come back with one tap. Nothing is ever deleted from history.</div></div>
+<div class="card"><h2>Checkpoint archive <small id="arch_sum"></small></h2><div id="archive"></div><div class="note">Last 10 + one per day stay on the MSI; the rest go to GitHub Releases on JaronKBragg7337/sapling (one release a day, ckpt-YYYY-MM-DD) and can come back with one tap. A local copy is removed only after the release reports the same file size, so nothing is ever deleted from history. Generations saved before 10/15 that were already archived stay in Supabase Storage and restore the same way.</div></div>
 <div class="card"><h2>Memory <small id="memsize"></small></h2><pre id="mem"></pre></div>
 <div class="card"><h2>Owner actions <small>(newest first)</small></h2><pre id="owner_log"></pre></div>
 </div>
