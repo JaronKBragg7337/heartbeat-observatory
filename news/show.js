@@ -501,7 +501,7 @@ async function renderedFor(date) {
   if (q === "0" || (!RENDERED_DEFAULT && q !== "1")) return null;
   try {
     const idx = await (await timeout(fetch(RENDERED_INDEX, { cache: "no-cache" }), 4000)).json();
-    // today's filmed show, else the newest filmed one: the new episode is written ~9:40 but filmed by noon, and until then
+    // today's filmed show, else the newest filmed one: the new episode is written ~3:45 AM but filmed by ~7 AM, and until then
     // yesterday's filmed show keeps looping rather than the channel dropping back to the drawn 3D version (Jaron 9/28)
     return (idx.episodes || []).find((e) => e.date === date) || (idx.episodes || []).find((e) => e.date < date) || null;
   } catch (e) { return null; }

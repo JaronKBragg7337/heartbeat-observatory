@@ -249,7 +249,7 @@ async function renderDay() {
   const main = $("view");
   if (!files.length) {
     const near = DATES.filter((d) => d !== day).slice(0, 3);
-    main.innerHTML = `<section class="empty"><h2>${esc(fmtDay(day))}</h2><p>${isToday ? "Today's captures haven't landed yet. Codex writes at 7:30 AM, DeepSeek reads at 9:00, Claude files in the afternoon." : "No AI filed a capture on this day."}</p>
+    main.innerHTML = `<section class="empty"><h2>${esc(fmtDay(day))}</h2><p>${isToday ? "Today's captures haven't landed yet. Codex writes at 3:00 AM, Claude files about 3:05, DeepSeek reads at 3:40." : "No AI filed a capture on this day."}</p>
       ${near.length ? `<p>Nearest days with news: ${near.map((d) => `<a href="#/day/${d}">${esc(fmtDay(d, { weekday: "short", month: "short", day: "numeric" }))}</a>`).join(" · ")}</p>` : ""}</section>`;
     return;
   }
@@ -454,7 +454,7 @@ async function boot() {
   buildChrome();
   window.addEventListener("hashchange", render);
   await render();
-  // New captures land through the day (7:30, 9:00, afternoon): refresh the list every 10 minutes.
+  // New captures land overnight (3:00, 3:05, 3:40 AM): refresh the list every 10 minutes.
   setInterval(async () => {
     try {
       const l = await listFiles(true);

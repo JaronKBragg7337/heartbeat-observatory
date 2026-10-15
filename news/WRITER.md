@@ -1,16 +1,16 @@
 # Heartbeat News — the daily writer's job
 
-Runs every morning after 9:30 AM (America/Indiana/Indianapolis), after the Codex (7:30) and DeepSeek (9:00) watch
+Runs every morning at 3:45 AM (America/Indiana/Indianapolis), after the Codex (3:00) and DeepSeek (3:40) watch
 writers have filed. One run = one episode file. The page picks it up within ten minutes of the deploy and swaps to it
 at the next story break; until then it keeps looping the last show.
 
 ## Steps
 1. Today's date in America/Indiana/Indianapolis = `D` (YYYY-MM-DD).
 2. Read the day's captures from the public watch repo: `git clone --depth 5 https://github.com/JaronKBragg7337/watch`
-   then `codex/D.md`, `deepseek/D.md`, `claude/D.md`, `msi/D.md` and `kimi/D.md` (whichever exist; Claude's usually lands in the afternoon, so a
-   morning run often has Codex + DeepSeek only). Also read `FORMAT.md` once so the labels make sense.
+   then `codex/D.md`, `deepseek/D.md`, `claude/D.md`, `msi/D.md` and `kimi/D.md` (whichever exist; Claude's daily capture lands about 3:05, so a
+   3:45 run usually has Codex, Claude and DeepSeek). Also read `FORMAT.md` once so the labels make sense.
    Also read `msi/D.md` (headlines fetched from the MSI) as an extra source; cite its links.
-   `kimi/D.md` is **First Light**, the Eastern Hemisphere desk (Kimi, 6:30 AM): Asia, the Middle East, Russia and Central Asia,
+   `kimi/D.md` is **First Light**, the Eastern Hemisphere desk (Kimi, 3:00 AM): Asia, the Middle East, Russia and Central Asia,
    Africa, Oceania. Give its real news the same weight as the rest; on air you can call it "from the First Light desk".
    If none of them exist for `D`, stop: write nothing, push nothing. The page keeps looping the last show.
 3. Write `news/episodes/D.json` in this repo. Copy the shape of the newest file in `news/episodes/` exactly.
@@ -30,7 +30,7 @@ at the next story break; until then it keeps looping the last show.
   undated items, shopping/deals, and duplicates. 2-6 lines per segment. Lead with the biggest story of the day. Group small items (e.g. a "Tech" or "Around the country" block).
 - **Fixed segments:** `open` first (Vex greets, Joe names the day, a two-line tease), a `wire` segment near the end
   (leave `lines: []`; the page fills it from the live Perplexity headlines), `close` last (sign-off, "new show every day by
-  noon" - the filmed show is ready by 12 PM; never promise an earlier time). Use `kind: "breaking"` for at most one story that broke in the last 24 h. `weather` and `sports`
+  morning" - the filmed show is ready about 7 AM; never promise an earlier time). Use `kind: "breaking"` for at most one story that broke in the last 24 h. `weather` and `sports`
   kinds get their own colours on the wall.
 - **National and world audience (Jaron, 2026-09-24).** Viewers are anywhere - New York, California, overseas. Lead with world news,
   national news, and major cities. Indiana / Fort Wayne items (domain 11) do NOT get their own segment; include one only when it

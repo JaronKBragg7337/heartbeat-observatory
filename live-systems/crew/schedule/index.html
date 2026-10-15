@@ -54,13 +54,15 @@
   nav("Schedule");
   // Daily events, in local (Fort Wayne) time. Kept in step with the machine's tasks table below.
   const DAILY = [
+    ["3:00", "#10a37f", "Codex", "Searches the web and writes the morning news capture across 21 subjects. Kimi, the MSI reader and the What's New scouts start at the same time."],
+    ["3:00", "#10a37f", "Funding lane (Codex)", "Finds grants and funding, drafts and submits applications."],
+    ["3:05", "#d97757", "Claude Code", "Writes its own daily capture, checking what Codex found (starts between 3:00 and 3:10)."],
+    ["3:40", "#4d6bfe", "DeepSeek", "Reads the morning captures and writes its take."],
+    ["3:45", "#d97757", "Claude (cloud)", "Writes today's Heartbeat News show for Vex and Joe, and checks that the machine's Claude is awake."],
+    ["3:50", "#e6edf3", "News render", "Films the show in Unreal. It takes about 3 hours, so the filmed show is ready around 7 AM."],
+    ["4:20", "#10a37f", "Backup news writer", "Writes the show only if the 3:45 one didn't land (Claude, then Codex)."],
     ["4:30", "#7d8896", "Backup", "The whole shared workspace is copied to Google Drive."],
-    ["7:30", "#10a37f", "Codex", "Searches the web and writes the morning news capture across 21 subjects."],
-    ["8:24", "#d97757", "Claude Code", "Writes its own news capture, checking what Codex found."],
-    ["9:00", "#4d6bfe", "DeepSeek", "Reads the morning captures and writes its take."],
-    ["9:40", "#d97757", "Claude (cloud)", "Writes today's Heartbeat News show for Vex and Joe, and checks that the machine's Claude is awake."],
-    ["10:20", "#10a37f", "Backup news writer", "Writes the show only if the 9:40 one didn't land (Claude, then Codex)."],
-    ["14:00", "#10a37f", "Codex", "Funding lane: finds grants and funding, drafts and submits applications."],
+    ["5:50", "#7d8896", "Login watch", "Once a day, checks that every AI account is still signed in."],
     ["21:00", "#e6edf3", "Grok", "Captures Jaron's own posts on X for the record."],
   ];
   const REPEAT = [
