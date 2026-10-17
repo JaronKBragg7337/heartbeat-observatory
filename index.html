@@ -36,6 +36,21 @@
 </script>
 <meta name="theme-color" content="#f4f1ea" />
 <style>
+  /* 10/17 (Jaron's drawing): the three worlds as one loop, like the recycle sign - three small planets joined by arrows,
+     one screen on a phone instead of three tall cards. Same on computers, just larger. Each planet is still its link. */
+  .world-loop{position:relative;display:block;width:min(360px,100%);aspect-ratio:1;margin:6px auto 0;}
+  .world-loop::before{content:"";position:absolute;inset:0;pointer-events:none;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><marker id='a' viewBox='0 0 10 10' refX='6' refY='5' markerWidth='3.4' markerHeight='3.4' orient='auto'><path d='M0 0L10 5L0 10z' fill='rgba(32,92,84,0.55)'/></marker></defs><g fill='none' stroke='rgba(32,92,84,0.4)' stroke-width='1.6' stroke-linecap='round' marker-end='url(%23a)'><path d='M65.9 30A34 34 0 0 1 84 61.2'/><path d='M68 88.8A34 34 0 0 1 32 88.8'/><path d='M16 61.2A34 34 0 0 1 34.1 30'/></g></svg>") center/100% 100% no-repeat;}
+  .world-loop .world-card{position:absolute;width:36%;min-height:0;padding:0;border:0;background:none;box-shadow:none;align-items:center;text-align:center;gap:2px;}
+  .world-loop .world-card:hover{box-shadow:none;transform:scale(1.05);}
+  .world-loop .world-card:nth-child(1){left:32%;top:0;}
+  .world-loop .world-card:nth-child(2){right:0;top:58%;}
+  .world-loop .world-card:nth-child(3){left:0;top:58%;}
+  .world-loop .world-orb{order:1;width:62%;margin:0 auto 6px;}
+  .world-loop h3{order:2;font-size:19px;line-height:1.15;}
+  .world-loop .world-card-head{order:3;justify-content:center;}
+  .world-loop .world-index,.world-loop .world-card p,.world-loop .card-link{display:none;}
+  @media (min-width:700px){ .world-loop{width:min(460px,100%);} .world-loop h3{font-size:24px;} }
+
   /* The News tab: its own tab in the nav (2026-09-24, Jaron). */
   .news-tab { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
   .news-dot { width: 8px; height: 8px; border-radius: 50%; background: #e11d2e; box-shadow: 0 0 0 3px rgba(225, 29, 46, 0.18); animation: newsdot 2s ease-in-out infinite; }
@@ -104,7 +119,7 @@
         <p>Walk through a world, stay for a while, and follow whatever catches your attention. The routes are different; the builds are live and objects in them take you places.</p>
       </div>
 
-      <div class="world-grid" data-hb-board-anchor data-hb-board-list>
+      <div class="world-grid world-loop" data-hb-board-anchor data-hb-board-list>
         <a class="world-card" href="/engine" data-hb-card="world-town">
           <div class="world-card-head"><span class="world-index">01 / Town Square</span><span class="world-state"><span class="state-dot"></span>Live</span></div>
           <span class="world-orb orb-town"></span>
