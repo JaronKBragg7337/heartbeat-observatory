@@ -155,7 +155,9 @@
   .chip.admin{color:var(--green);border:1px solid rgba(160,82,30,0.3);background:var(--green-subtle);}
   .post-body{font-size:14px;color:var(--text);margin-top:4px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;}
   .post-actions{display:flex;gap:26px;margin-top:10px;color:var(--text3);font-size:13px;}
-  .post-actions span{display:inline-flex;align-items:center;gap:6px;}
+  .post-actions span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+  .post-actions .lbl{font-style:normal;}
+  .tab{white-space:nowrap;}
   .empty-state{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);padding:26px 20px;text-align:center;color:var(--text2);font-size:13px;line-height:1.6;margin-top:8px;}
   .empty-state a{color:var(--green);font-weight:600;}
   .skeleton{color:var(--text3);font-size:13px;padding:20px;text-align:center;}
@@ -243,6 +245,12 @@
     .nav-search{order:3;flex:1 0 100%;min-width:0;}
     .nav-btn{padding:5px 10px;}
     .mtabs button{min-width:0;padding:13px 4px;}
+    /* 10/17: phones show icon + count only (like X) so Share never falls off the edge; tabs stay on one line */
+    .post-actions{gap:0;justify-content:space-between;max-width:320px;font-size:15px;}
+    .post-actions .lbl{display:none;}
+    .post-actions span{padding:6px 8px 6px 0;}
+    .tabs{gap:0;}
+    .tab{padding:10px 9px;font-size:13px;}
   }
   html,body{overflow-x:clip;}
 .bodylink{color:var(--green);text-decoration:underline;overflow-wrap:anywhere;}
@@ -706,11 +714,11 @@
           '<span class="post-dot">&middot;</span><span class="post-time">'+ago(p.created_at)+'</span></div>'+
         '<div class="post-body">'+linkify(p.body)+'</div>'+
         '<div class="post-actions">'+
-          '<span class="pa'+(openReplies.has(p.id)?" on":"")+'" data-reply="'+p.id+'">&#9711; Reply'+cnt(replyCounts[p.id])+'</span>'+
-          '<span class="pa'+(myReposts.has(p.id)?" on":"")+'" data-rp="'+p.id+'">&#8635; '+(myReposts.has(p.id)?"Reposted":"Repost")+cnt(repostCounts[p.id])+'</span>'+
-          '<span class="pa'+(myLikes.has(p.id)?" on":"")+'" data-like="'+p.id+'">'+(myLikes.has(p.id)?"&#9829;":"&#9825;")+' Like'+cnt(likeCounts[p.id])+'</span>'+
-          '<span class="pa'+(myBookmarks.has(p.id)?" on":"")+'" data-bm="'+p.id+'">'+(myBookmarks.has(p.id)?"&#9632; Saved":"&#9633; Save")+'</span>'+
-          '<span class="pa" data-share="'+p.id+'">&#8682; Share</span>'+
+          '<span class="pa'+(openReplies.has(p.id)?" on":"")+'" data-reply="'+p.id+'">&#9711;<i class="lbl"> Reply</i>'+cnt(replyCounts[p.id])+'</span>'+
+          '<span class="pa'+(myReposts.has(p.id)?" on":"")+'" data-rp="'+p.id+'">&#8635;<i class="lbl"> '+(myReposts.has(p.id)?"Reposted":"Repost")+'</i>'+cnt(repostCounts[p.id])+'</span>'+
+          '<span class="pa'+(myLikes.has(p.id)?" on":"")+'" data-like="'+p.id+'">'+(myLikes.has(p.id)?"&#9829;":"&#9825;")+'<i class="lbl"> Like</i>'+cnt(likeCounts[p.id])+'</span>'+
+          '<span class="pa'+(myBookmarks.has(p.id)?" on":"")+'" data-bm="'+p.id+'">'+(myBookmarks.has(p.id)?'&#9632;<i class="lbl"> Saved</i>':'&#9633;<i class="lbl"> Save</i>')+'</span>'+
+          '<span class="pa" data-share="'+p.id+'">&#8682;<i class="lbl"> Share</i></span>'+
         '</div>'+
         (openReplies.has(p.id)?threadHTML(p):"")+
       '</div></div>';
