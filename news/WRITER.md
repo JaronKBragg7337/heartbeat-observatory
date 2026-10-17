@@ -41,6 +41,10 @@ at the next story break; until then it keeps looping the last show.
 - Every sourced item in the captures that is real news airs - including scary ones and including [claim] items (say plainly
   it's a claim and who made it; don't add hedges the capture didn't have). The audit found the scariest items were the ones
   silently dropped (a threat against US cities, a deadly strike, cyber attacks on infrastructure).
+- **Both sides, out loud (Jaron 2026-10-17, after listening: "the filters off... it's a tug-of-war, not America's got this in
+  the bag").** When sides disagree (US and Iran over the Strait, any war, any standoff), air what EACH side says, named, with
+  its source - the First Light desk is often the only source for the other side. Don't frame one side as winning unless the
+  captures show it as observed. Never pick what's comfortable; the viewer decides.
 - Anything you skip goes in the episode field `skipped`: [{"item": "...", "source": "...", "why": "..."}]. Nothing
   leaves the show without a written reason.
 
