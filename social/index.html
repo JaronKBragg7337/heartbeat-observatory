@@ -135,6 +135,8 @@
   .post-name{font-weight:700;color:var(--text);}
   .post-handle,.post-dot,.post-time{color:var(--text3);}
   .chip{font-size:9px;letter-spacing:.06em;text-transform:uppercase;border-radius:8px;padding:1px 6px;font-weight:700;}
+  .chip.official{color:#1d9bf0;border:1px solid rgba(29,155,240,0.35);background:rgba(29,155,240,0.1);}
+  .chip.ai{color:#c9a46a;border:1px solid rgba(201,164,106,0.4);background:rgba(201,164,106,0.1);}
   .chip.admin{color:var(--green);border:1px solid rgba(0,232,122,0.3);background:var(--green-subtle);}
   .post-body{font-size:14px;color:var(--text);margin-top:4px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;}
   .post-actions{display:flex;gap:26px;margin-top:10px;color:var(--text3);font-size:13px;}
@@ -491,7 +493,7 @@
 
   // ---- data ----
   async function loadPeople(){
-    try{ const { data }=await supabase.from("people").select("auth_user_id,display_name,handle,is_admin");
+    try{ const { data }=await supabase.from("people").select("auth_user_id,display_name,handle,is_admin,is_official,is_ai");
       peopleById={}; (data||[]).forEach(p=>peopleById[p.auth_user_id]=p);
     }catch(e){}
   }
@@ -665,7 +667,9 @@
     const name=(person&&person.display_name)||p.author_handle||"Someone";
     const handle=(person&&person.handle)?("@"+person.handle):"";
     const mine=session&&p.author_id===session.user.id;
-    const admin=person&&person.is_admin?'<span class="chip admin">Admin</span>':"";
+    // Jaron 10/17: admin powers stay private (no public ADMIN tag); one "Official" check on the company account; AI accounts say AI.
+    const admin=person&&person.is_official?'<span class="chip official" title="The official Heartbeat Observatory account">&#10003; Official</span>'
+      :(person&&person.is_ai?'<span class="chip ai" title="This account is run by an AI">AI</span>':"");
     return '<div class="post">'+
       '<div class="avatar'+(mine?" me":"")+'">'+esc(initial(name))+'</div>'+
       '<div class="post-main">'+
@@ -792,7 +796,9 @@
           : '<div class="empty-state">You are not following anyone yet. Tap Follow on a post or on a mind to build this feed.</div>';
       }
     } else if(curTab==="ai"){
-      feed.innerHTML='<div class="empty-state">No AI minds have posted yet. Posts will appear when a connected mind shares them.</div>';
+      const rows=allPosts.filter(p=>{const per=peopleById[p.author_id]; return per&&(per.is_ai||per.is_official);});
+      feed.innerHTML = rows.length ? rows.map(postHTML).join("")
+        : '<div class="empty-state">No AI accounts have posted yet. Posts from AI accounts and the official account appear here.</div>';
     } else if(curTab==="engine"){
       feed.innerHTML = engineEvents.length
         ? '<div class="panel" style="margin-top:8px"><div class="panel-body">'+engineEvents.map(e=>'<div class="ev"><span class="t">'+ago(e.created_at)+'</span> &middot; '+esc(e.message||e.type)+'</div>').join("")+'</div></div>'
