@@ -160,8 +160,25 @@
     // the Loft (and anything else embedding the TV) hears the change so the whole room's TV follows the remote
     if (byUser && parent !== window) parent.postMessage({ type: "hbtv-tuned", ch: channels[cur - 1].n, i: idx }, location.origin);
   }
+  // Watch tally (10/17): when a show stops being on screen, add one anonymous row - channel, title, seconds it played.
+  // No names or ids. Read only by the MSI (tools/site_visits.py). keepalive lets the last one land when the page closes.
+  let watch = null;
+  function flushWatch() {
+    if (!watch) return; const w = watch; watch = null;
+    const secs = Math.round((performance.now() - w.t0) / 1000); if (secs < 5) return;
+    try {
+      fetch("https://ygjpnvrwhkrowkrskftk.supabase.co/rest/v1/tv_watches", { method: "POST", keepalive: true,
+        headers: { apikey: "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN", "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({ ch: String(w.ch).slice(0, 12), title: String(w.title).slice(0, 160), seconds: Math.min(secs, 21600), place: parent !== window ? "loft" : "tv" }) }).catch(() => {});
+    } catch (e) {}
+  }
+  addEventListener("pagehide", flushWatch);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) flushWatch(); else if (!watch && channels[cur - 1].items.length) startWatch(); });
+  function startWatch() { const ch = channels[cur - 1], it = ch.items[idx]; if (it) watch = { ch: num(ch, idx), title: it.title || ch.name, t0: performance.now() }; }
   function draw() {
+    flushWatch();
     const ch = channels[cur - 1], list = ch.items;
+    if (list.length) setTimeout(startWatch, 0);
     let html = `<span class="bug" id="bug">CH ${list.length ? num(ch, idx) : ch.n} · ${esc(ch.name.toUpperCase())}</span>`, title = ch.name, sub = "";
     if (list.length) { const item = list[idx]; html += player(item); title = item.title; sub = ch.type === "page" ? `CH ${num(ch, idx)} · Live` : `CH ${num(ch, idx)} · ${ch.name} · ${list.length} on this channel`; }
     else { html += `<div class="nosig"><b>CH ${ch.n} · ${esc(ch.name)}</b>${esc(ch.empty || "Nothing on yet.")}</div>`; sub = "Coming soon"; }
