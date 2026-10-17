@@ -548,7 +548,7 @@ async function showSave(r) {
   if (!box || !panel || !r.video) return;
   const { wireSave } = await import("/tv/tips.js");
   const base = r.video.replace(/\.mp4$/i, "");
-  const files = [[r.video, "Save the show", ""], [r.vertical || base + "-vertical.mp4", "Save vertical (9:16)", "-vertical"], [r.short || base + "-short.mp4", "Save the 1-minute headlines", "-short"]];
+  const files = [[r.video, "Save the show", ""], [r.vertical || base + "-vertical.mp4", "Save vertical (9:16)", "-vertical"], [r.short || base + "-short.mp4", "Save the short (top stories)", "-short"]];
   const ok = await Promise.all(files.map(([u], i) => i === 0 ? true : fetch(u, { method: "HEAD" }).then((x) => x.ok).catch(() => false)));
   box.innerHTML = files.filter((f, i) => ok[i]).map(([u, label, sfx]) =>
     `<button class="tipbtn savebtn" type="button" data-save="${u}" data-name="heartbeat-news-${r.date}${sfx}.mp4">${label}</button>`).join("");
