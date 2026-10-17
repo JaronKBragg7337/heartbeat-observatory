@@ -541,6 +541,21 @@ async function driveRendered(r, tl) {
   setInterval(loop, 100);   // a steady clock (animation frames pause in hidden tabs; the graphics must not)
 }
 
+// Save buttons (Jaron 10/17): the day's show, its 9:16 cut and the ~1 minute headlines short, saved to Photos/Files like the TV page.
+// The vertical files are made on the MSI after the render (pipeline/make_vertical.py); a button shows only once its file exists.
+async function showSave(r) {
+  const box = document.getElementById("saveBar"), panel = document.getElementById("savePanel");
+  if (!box || !panel || !r.video) return;
+  const { wireSave } = await import("/tv/tips.js");
+  const base = r.video.replace(/\.mp4$/i, "");
+  const files = [[r.video, "Save the show", ""], [r.vertical || base + "-vertical.mp4", "Save vertical (9:16)", "-vertical"], [r.short || base + "-short.mp4", "Save the 1-minute headlines", "-short"]];
+  const ok = await Promise.all(files.map(([u], i) => i === 0 ? true : fetch(u, { method: "HEAD" }).then((x) => x.ok).catch(() => false)));
+  box.innerHTML = files.filter((f, i) => ok[i]).map(([u, label, sfx]) =>
+    `<button class="tipbtn savebtn" type="button" data-save="${u}" data-name="heartbeat-news-${r.date}${sfx}.mp4">${label}</button>`).join("");
+  panel.hidden = false;
+  wireSave(box);
+}
+
 function playRendered(r) {
   const scr = $("screen");
   $("gl").style.display = "none";
@@ -578,6 +593,7 @@ async function boot() {
   if (rendered && rendered.date !== ep.date) { try { ep = await loadEpisode(rendered.date); } catch (e) {} }   // yesterday's words with yesterday's video
   if (rendered) {
     playRendered(rendered);
+    showSave(rendered).catch(() => {});
     $("madeRendered").hidden = false; $("madeLive").hidden = true;
     const tl = rendered.timing ? await fetch(rendered.timing, { cache: "no-cache" }).then((x) => x.json()).catch(() => null) : null;
     if (tl && tl.segments) build({ segments: tl.segments }, { asRendered: true }); else build(ep);

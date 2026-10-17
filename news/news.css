@@ -290,3 +290,9 @@ html.embed, html.embed body { background: #000; overflow: hidden; }
 html.embed body * { visibility: hidden; }
 html.embed #screen, html.embed #screen * { visibility: visible; }
 html.embed #screen { position: fixed; left: 0; top: 50%; transform: translateY(-50%); width: 100vw; max-height: 100vh; border-radius: 0; z-index: 10; }
+
+/* Save buttons (10/17): same share-sheet save as the TV page */
+.savepanel { margin: 0 0 16px; }
+.savebar { display: flex; flex-wrap: wrap; gap: 10px; }
+.savebar .tipbtn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid #c9a46a; background: #f4ead8; color: #3a2a18; font: 700 16px Barlow, sans-serif; cursor: pointer; }
+.savebar .tipbtn:disabled { opacity: .7; cursor: default; }
