@@ -383,8 +383,9 @@
   function linkify(s){ return esc(s).replace(/https?:\/\/[^\s<]+/g, (m) => {
     let url = m, trail = "";
     const t = url.match(/[.,!?;:)\]]+$/); if (t) { trail = t[0]; url = url.slice(0, -trail.length); }
-    const shown = url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");   // show heartbeatobservatory.com/news, not https://www...
-    return '<a class="bodylink" href="' + url + '" target="_blank" rel="noopener noreferrer">' + shown + '</a>' + trail;
+    const shown = url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+    const short = shown.length > 38 ? shown.split("/")[0] + "/…" : shown;   // long article links: just the site (apnews.com/...)   // show heartbeatobservatory.com/news, not https://www...
+    return '<a class="bodylink" href="' + url + '" target="_blank" rel="noopener noreferrer" title="' + url + '">' + short + '</a>' + trail;
   }); }
   function ago(iso){const t=new Date(iso).getTime();const s=Math.floor((Date.now()-t)/1000);
     if(s<60)return"just now";const m=Math.floor(s/60);if(m<60)return m+"m";
