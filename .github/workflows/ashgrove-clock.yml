@@ -50,3 +50,10 @@ jobs:
           else
             node tools/advance.js
           fi
+      # 10/18 (Jaron: "email is a bad place for notifications"): a failure buzzes his phone through ntfy instead.
+      - name: Buzz Jaron's phone on failure
+        if: failure()
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          [ -n "$NTFY_TOPIC" ] && curl -s -H "Title: Ashgrove clock failed" -d "Ashgrove's daily clock failed today - tell Claude." "https://ntfy.sh/$NTFY_TOPIC" || true
