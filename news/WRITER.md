@@ -4,6 +4,8 @@ Runs every morning at 3:45 AM (America/Indiana/Indianapolis), after the Codex (3
 writers have filed. One run = one episode file. The page picks it up within ten minutes of the deploy and swaps to it
 at the next story break; until then it keeps looping the last show.
 
+> **Deadline (Jaron 10/18): the filmed show must be live by 8 AM, never after noon - the filming pipeline goes fast when late.**
+
 ## Steps
 1. Today's date in America/Indiana/Indianapolis = `D` (YYYY-MM-DD).
 2. Read the day's captures from the public watch repo: `git clone --depth 5 https://github.com/JaronKBragg7337/watch`
