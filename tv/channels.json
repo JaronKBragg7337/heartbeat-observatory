@@ -10,6 +10,7 @@
   { "n": 7, "id": "history", "name": "History", "type": "playlist", "empty": "AI-made history that teaches, with sources on screen." },
   { "n": 8, "id": "science", "name": "Science", "type": "playlist", "empty": "AI-made science with simulated experiments and sources on screen." },
   { "n": 9, "id": "openquestions", "name": "Open Questions", "type": "playlist", "empty": "Big unanswered questions, the main answers side by side, and what could settle them. Sourced." },
-  { "n": 10, "id": "stillunknown", "name": "Still Unknown", "type": "playlist", "empty": "Real mysteries: what was measured, what is claimed, what is still open. Labeled, sourced." }
+  { "n": 10, "id": "stillunknown", "name": "Still Unknown", "type": "playlist", "empty": "Real mysteries: what was measured, what is claimed, what is still open. Labeled, sourced." },
+  { "n": 11, "id": "spacenow", "name": "Space Now", "type": "playlist", "empty": "Real missions and launches, what is up there this week: what is known, what is planned, what is open. Sourced." }
  ]
 }
