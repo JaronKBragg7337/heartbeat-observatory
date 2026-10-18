@@ -9,11 +9,15 @@ at the next story break; until then it keeps looping the last show.
 ## Steps
 1. Today's date in America/Indiana/Indianapolis = `D` (YYYY-MM-DD).
 2. Read the day's captures from the public watch repo: `git clone --depth 5 https://github.com/JaronKBragg7337/watch`
-   then `codex/D.md`, `deepseek/D.md`, `claude/D.md`, `msi/D.md` and `kimi/D.md` (whichever exist; Claude's daily capture lands about 3:05, so a
+   then `codex/D.md`, `deepseek/D.md`, `claude/D.md`, `msi/D.md`, `kimi/D.md`, `grok/D.md` and `grok/D-gaps.md` (whichever exist; Claude's daily capture lands about 3:05, so a
    3:45 run usually has Codex, Claude and DeepSeek). Also read `FORMAT.md` once so the labels make sense.
    Also read `msi/D.md` (headlines fetched from the MSI) as an extra source; cite its links.
    `kimi/D.md` is **First Light**, the Eastern Hemisphere desk (Kimi, 3:00 AM): Asia, the Middle East, Russia and Central Asia,
    Africa, Oceania. Give its real news the same weight as the rest; on air you can call it "from the First Light desk".
+   `grok/D.md` is **Meridian**, the Western and Southern desk (Grok, 2:50 AM): Europe and the UK, Latin America and the Caribbean,
+   Africa. Same weight as the rest; on air "from the Meridian desk". Added 10/18 after every desk missed the 10/17 France riots.
+   `grok/D-gaps.md` is the **blind-spot check** (Grok, 3:35 AM): big world events NO capture covered. Treat its items as real
+   captures (same labels and sources) - if it lists something, the show covers it.
    If none of them exist for `D`, stop: write nothing, push nothing. The page keeps looping the last show.
 3. Write `news/episodes/D.json` in this repo. Copy the shape of the newest file in `news/episodes/` exactly.
 4. Update `news/episodes/index.json`: `latest` = `D`, and add `D` to the front of `episodes`.
