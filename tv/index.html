@@ -60,7 +60,7 @@
   html.embed .wrap { padding: 0; max-width: none; } html.embed .tv { padding: 0; border-radius: 0; background: #000; box-shadow: none; }
   html.embed .screen { position: fixed; inset: 0; aspect-ratio: auto; border-radius: 0; }
   /* numbered items (2.1, 2.2 ...) and the on-screen guide */
-  .list { display: grid; gap: 6px; margin-top: 10px; }
+  .list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin-top: 10px; }
   .lh { font: 800 13px/1 "Barlow Condensed", sans-serif; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin: 6px 2px 2px; }
   .gi { display: flex; gap: 12px; align-items: center; width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; color: var(--text); text-align: left; font: 600 15px Barlow, sans-serif; cursor: pointer; }
   .gi small { font: 800 15px/1 "Barlow Condensed", sans-serif; color: var(--red); min-width: 34px; }
