@@ -44,7 +44,12 @@ async function isAdmin() {
   return yes;
 }
 
-if (await isAdmin()) start();
+if (await isAdmin()) {
+  // 10/17: this browser belongs to an admin (Jaron, Lillith) - from the next page on, the visitor counter and the TV tally
+  // skip it, so the numbers show real people. (Automated test browsers are already skipped by Vercel.)
+  try { localStorage.setItem("hb-internal", "1"); } catch (e) {}
+  start();
+}
 
 /* ============================================================ */
 
