@@ -13,6 +13,7 @@
   { "n": 10, "id": "stillunknown", "name": "Still Unknown", "type": "playlist", "empty": "Real mysteries: what was measured, what is claimed, what is still open. Labeled, sourced." },
   { "n": 11, "id": "spacenow", "name": "Space Now", "type": "playlist", "empty": "Real missions and launches, what is up there this week: what is known, what is planned, what is open. Sourced." },
  { "n": 13, "id": "aiexplained", "name": "AI Explained", "type": "playlist", "empty": "What AI can and cannot do, tested honestly: what was measured, what is claimed, what is open. Sourced." },
- { "n": 17, "id": "earth", "name": "Earth", "type": "playlist", "empty": "Weather, volcanoes, oceans, rocks and the planet's history: what the evidence shows, what is debated, what is open. Sourced." }
+ { "n": 17, "id": "earth", "name": "Earth", "type": "playlist", "empty": "Weather, volcanoes, oceans, rocks and the planet's history: what the evidence shows, what is debated, what is open. Sourced." },
+  { "n": 22, "id": "lostplaces", "name": "Lost Places", "type": "playlist", "empty": "Ruins and lost cities: what was found, what is argued over, what is not known. Sourced." }
  ]
 }
