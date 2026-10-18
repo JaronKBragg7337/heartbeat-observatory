@@ -20,7 +20,7 @@ const SKIP_DIRS = new Set(["node_modules", ".git", ".vercel", "tests", "supabase
 
 const PIECES = [
   { id: "analytics", has: /_vercel\/insights\/script\.js/, optOut: "hb:no-analytics", where: "head",
-    tag: '<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>\n<script defer src="/_vercel/insights/script.js"></script>\n' },
+    tag: '<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>\n<script defer src="/_vercel/insights/script.js"></script>\n' },
   { id: "editor", has: /\/hb-editor\.js/, optOut: "hb:no-editor", where: "body", tag: '<script defer src="/hb-editor.js"></script>\n' },
   { id: "icon", has: /rel=["'](?:shortcut )?icon/i, optOut: "hb:no-icon", where: "head",
     tag: '<link rel="icon" type="image/svg+xml" href="/brand/h-heartbeat.svg">\n<link rel="icon" type="image/png" href="/brand/h-heartbeat.png">\n<link rel="apple-touch-icon" href="/brand/h-heartbeat.png">\n' },

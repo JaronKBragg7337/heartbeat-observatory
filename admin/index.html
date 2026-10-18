@@ -87,7 +87,7 @@
   .bub.theirs { align-self:flex-start; background:#141b24; border:1px solid var(--line); }
   .bub .b-meta { display:block; font-size:11px; opacity:0.65; margin-top:4px; }
 </style>
-<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
@@ -298,6 +298,8 @@
   async function route(session) {
     let isAdmin = false;
     try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {}
+    // 10/17: an admin signed in on this device = our own device; stop counting it as a visitor (analytics + TV tally)
+    if (isAdmin) { try { localStorage.setItem("hb-internal", "1"); } catch (e) {} }
     if (isAdmin) renderCockpit(session); else renderUser(session);
   }
 

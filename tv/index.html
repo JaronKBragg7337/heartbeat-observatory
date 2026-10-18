@@ -166,6 +166,7 @@
   function flushWatch() {
     if (!watch) return; const w = watch; watch = null;
     const secs = Math.round((performance.now() - w.t0) / 1000); if (secs < 5) return;
+    try { if (localStorage.getItem("hb-internal") === "1") return; } catch (e) {}   // our own devices + test bots don't count
     try {
       fetch("https://ygjpnvrwhkrowkrskftk.supabase.co/rest/v1/tv_watches", { method: "POST", keepalive: true,
         headers: { apikey: "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN", "Content-Type": "application/json", Prefer: "return=minimal" },
