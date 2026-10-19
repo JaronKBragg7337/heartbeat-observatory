@@ -113,7 +113,7 @@
       const { error } = await supabase.from("key_drops").insert({ target: t, env_name, blob });
       if (error) throw error;
       for (const [, id] of fields[t]) document.getElementById(id).value = "";
-      msg.className = "msg ok"; msg.textContent = "Sent, locked. The MSI picks it up within 2 minutes and buzzes your phone. See History.";
+      msg.className = "msg ok"; msg.textContent = "Sent, locked. The MSI picks it up within a minute and buzzes your phone. See History.";
     } catch (e) { msg.className = "msg bad"; msg.textContent = "Didn't send: " + (e.message || e); }
     btn.disabled = false;
   }));
