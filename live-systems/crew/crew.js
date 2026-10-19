@@ -262,6 +262,7 @@ export const CREW_CSS = `
   .pc-step { display: flex; gap: 8px; margin-top: 10px; } .pc-step button { flex: 1; font-weight: 500; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .chip { border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .stat.deposits { border-color: rgba(176,124,255,.55); } .stat.deposits b { color: #c9a6ff; }
   .chip.up { border-color: rgba(63,185,80,.5); color: #7ee08c; } .chip.down { border-color: rgba(226,58,69,.5); color: #ff8a92; }
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
   .dot.live { background: #3fb950; box-shadow: 0 0 0 3px rgba(63,185,80,.18); } .dot.quiet { background: #7d8896; }

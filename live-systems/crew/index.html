@@ -82,14 +82,14 @@
   if (S) {
     cards.push([usd(S.withdrawals), "Human withdrawals, all time"], [sg(S.hand_result), "Human hand trades, net" + (S.hand_won_n != null ? `: +${usd(S.hand_won)} won (${S.hand_won_n}) / -${usd(S.hand_lost)} lost (${S.hand_lost_n})` : "")], [usd(S.deposits), "Human deposits, all time"], [usd(S.bills_paid || 0), "Bills paid by the system"]);
   }
-  $("board").innerHTML = cards.map(([v, l], i) => `<div class="stat${S && i >= 6 && i < 9 ? " human" : S && i >= 9 ? " bills" : ""}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  $("board").innerHTML = cards.map(([v, l], i) => `<div class="stat${S && i === 8 ? " deposits" : S && i >= 6 && i < 9 ? " human" : S && i >= 9 ? " bills" : ""}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
   if (S && acct) {
     const value = Number(acct.buying_power) + inPos, parts = S.deposits - S.withdrawals + pnl + S.hand_result, other = value - parts;
     $("adds").innerHTML = `<b>How the account adds up:</b> ${usd(S.deposits)} put in &minus; ${usd(S.withdrawals)} taken out ${sg(pnl)} AI trades ${sg(S.hand_result)} Jaron by hand `
       + `${Math.abs(other) < 0.005 ? "" : sg(other) + " bonuses and rounding "}= <b>${usd(value)}</b> in the account now (cash ${usd(acct.buying_power)} + open trades ${usd(inPos)}).`;
   }
   mountAccountChart($("chart"), S ? S.events : [], snap);
-  $("chartnote").innerHTML = `<span style="color:#3fb950">Green</span> = an AI trade won. <span style="color:#e23a45">Red</span> = an AI trade lost. <span style="color:#4c9aff">Blue</span> = a human move: Jaron's hand trade (dot), or a withdrawal or deposit (square). <span style="color:#f2c94c">Yellow</span> = a withdrawal that paid a real bill, with a receipt shown (for example an AI subscription). Tap any dot for details. The account only counts settled trades; open trades and cash ready are the cards above.`;
+  $("chartnote").innerHTML = `<span style="color:#3fb950">Green</span> = an AI trade won. <span style="color:#e23a45">Red</span> = an AI trade lost. <span style="color:#4c9aff">Blue</span> = a human move: Jaron's hand trade (dot) or a withdrawal (square). <span style="color:#b07cff">Purple</span> = money put in (square). <span style="color:#f2c94c">Yellow</span> = a withdrawal that paid a real bill, with a receipt shown (for example an AI subscription). Tap any dot for details. The account only counts settled trades; open trades and cash ready are the cards above.`;
   $("tiles").innerHTML = d.bots.map((b) => {
     const L = b.ledger;
     const recent = L && L.last && Date.now() - new Date(L.last) < 6 * 3600e3 && b.status !== "paused";
