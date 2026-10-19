@@ -24,6 +24,11 @@
   .saved { font-size: 12px; color: #7ee08c; min-height: 16px; margin-top: 4px; }
   .hist div { font-size: .85rem; padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; align-items: center; }
   .hist button { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: .8rem; }
+  .tabs { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; position:sticky; top:49px; z-index:5; background:var(--bg,#070a0f); padding:6px 0; margin-top:18px; border-bottom:1px solid var(--line); }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tabs a { flex:none; display:inline-flex; align-items:center; min-height:44px; padding:0 16px; border-radius:22px; border:1px solid var(--line); background:var(--panel); color:var(--text); text-decoration:none; font-size:15px; white-space:nowrap; }
+  .tabs a.on { background:var(--text); color:#0a0e14; border-color:var(--text); font-weight:600; }
+  .tabpanel[hidden] { display:none !important; }
   .gate { text-align: center; padding: 40px 10px; }
   .gate a { color: var(--text); }
   .readonly { font-size: 12px; color: var(--amber); text-align: center; margin-top: 10px; }
@@ -37,7 +42,7 @@
     <a class="signin" href="/admin">Admin</a>
   </nav>
   <div class="wrap">
-    <a class="back" href="/admin">&larr; Admin</a>
+    <a class="back" href="/admin/" style="min-height:44px;display:inline-flex;align-items:center">&larr; Steering</a>
     <header class="hero">
       <h1>Control Room</h1>
       <p class="lede">Every number the money AIs run under, in one place. Tap to change it: the scripts on the machine pick up the
@@ -45,9 +50,10 @@
       <p class="who" id="who"></p>
       <p class="readonly" id="ro" hidden>You're viewing. Sign in as an admin to change things.</p>
     </header>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Control Room sections"></nav>
     <div id="groups"></div>
-    <h2 class="sec">Changes, newest first</h2>
-    <div class="knob hist" id="hist"></div>
+    <section class="tabpanel" id="p-changes" hidden><h2 class="sec" style="margin-top:14px">Changes, newest first</h2>
+    <div class="knob hist" id="hist"></div></section>
     <footer><a href="/live-systems/crew/">The Crew</a> · <a href="/live-systems/crew/schedule/">Schedule</a></footer>
   </div>
 <script type="module">
@@ -56,7 +62,17 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const fmt = (v, unit) => unit === "$" ? (Number(v) < 1 ? `${Math.round(v * 100)}¢` : `$${Number(v).toFixed(Number(v) % 1 ? 2 : 0)}`) : `${v}${unit ? " " + unit : ""}`;
-  let rows = [], isAdmin = false, email = "";
+  let rows = [], isAdmin = false, email = "", TABS = [];
+  function showTab() {
+    let h = decodeURIComponent((location.hash || "").slice(1));
+    if (!TABS.some((t) => t[0] === h)) h = TABS.length ? TABS[0][0] : "changes";
+    document.querySelectorAll(".tabpanel").forEach((p) => { p.hidden = p.id !== "p-" + h; });
+    document.querySelectorAll("#tabs a").forEach((a) => {
+      const on = a.dataset.t === h; a.classList.toggle("on", on); a.setAttribute("aria-selected", on);
+      if (on) { const n = a.parentNode; if (n.scrollWidth > n.clientWidth) n.scrollLeft = a.offsetLeft - (n.clientWidth - a.offsetWidth) / 2; }
+    });
+  }
+  window.addEventListener("hashchange", () => { showTab(); window.scrollTo(0, 0); });
 
   const { data: { session } } = await supabase.auth.getSession();
   if (session) {
@@ -74,7 +90,8 @@
     rows = s || [];
     const groups = {};
     rows.forEach((r) => (groups[r.who] ||= []).push(r));
-    $("groups").innerHTML = Object.entries(groups).map(([who, list]) => `<h2 class="sec">${esc(who)}</h2>` + list.map((r) => {
+    const slug = (w) => String(w).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "group";
+    $("groups").innerHTML = Object.entries(groups).map(([who, list]) => `<section class="tabpanel" id="p-${slug(who)}" hidden><h2 class="sec" style="margin-top:14px">${esc(who)}</h2>` + list.map((r) => {
       const control = r.kind === "number"
         ? `<div class="step"><button data-k="${esc(r.key)}" data-d="-1" ${isAdmin ? "" : "disabled"} aria-label="less">−</button>
              <output id="v-${esc(r.key)}">${esc(fmt(r.value, r.unit))}</output>
@@ -83,7 +100,10 @@
       return `<div class="knob"><div class="top"><h3>${esc(r.label)}</h3>${control}</div>
         <p>${esc(r.meaning)}</p><div class="meta">Obeyed by ${esc(r.who)} · lives in ${esc(r.lives_in)} · changed ${new Date(r.updated_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} by ${esc(r.updated_by)}</div>
         <div class="saved" id="s-${esc(r.key)}"></div></div>`;
-    }).join("")).join("");
+    }).join("") + `</section>`).join("");
+    TABS = Object.keys(groups).map((w) => [slug(w), w]).concat([["changes", "Changes"]]);
+    $("tabs").innerHTML = TABS.map(([id, label]) => `<a href="#${id}" role="tab" data-t="${id}">${esc(label)}</a>`).join("");
+    showTab();
     $("hist").innerHTML = (h || []).map((c) => `<div><span><b>${esc((rows.find((r) => r.key === c.key) || {}).label || c.key)}</b>: ${esc(c.old_value)} → ${esc(c.new_value)}<br><small class="muted">${esc(c.changed_by)} · ${new Date(c.changed_at).toLocaleString()}</small></span>${isAdmin ? `<button data-undo="${c.id}">Undo</button>` : ""}</div>`).join("") || `<p class="muted" style="font-size:.9rem">No changes yet.</p>`;
   }
 

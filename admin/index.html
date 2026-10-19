@@ -85,6 +85,12 @@
   .bub { max-width:82%; padding:10px 14px; border-radius:14px; font-size:14px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
   .bub.mine { align-self:flex-end; background:var(--text); color:#0a0e14; }
   .bub.theirs { align-self:flex-start; background:#141b24; border:1px solid var(--line); }
+  .tabs { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; position:sticky; top:0; z-index:5; background:var(--bg); padding:6px 0; margin:0 0 14px; border-bottom:1px solid var(--line); }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tabs a { flex:none; display:inline-flex; align-items:center; min-height:44px; padding:0 16px; border-radius:22px; border:1px solid var(--line); background:var(--panel); color:var(--text); text-decoration:none; font-size:15px; white-space:nowrap; }
+  .tabs a:hover { text-decoration:none; }
+  .tabs a.on { background:var(--text); color:#0a0e14; border-color:var(--text); font-weight:600; }
+  .tabpanel[hidden] { display:none !important; }
   .bub .b-meta { display:block; font-size:11px; opacity:0.65; margin-top:4px; }
 </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
@@ -512,23 +518,39 @@
     surfaces = data;
     root.innerHTML =
       topbar("Steering", session.user.email, true) +
+      '<nav class="tabs" id="tabs" role="tablist" aria-label="Steering sections"><a href="#tools" role="tab" data-t="tools">Tools</a><a href="#post" role="tab" data-t="post">Post</a><a href="#sections" role="tab" data-t="sections">Sections</a><a href="#posts" role="tab" data-t="posts">Moderate</a></nav>' +
+      '<section class="tabpanel" id="p-tools">' +
       '<a class="card" href="/admin/control/" style="display:block;text-decoration:none;color:inherit;margin-bottom:14px"><b>Control Room &rarr;</b><br><span style="opacity:.75;font-size:.9rem">Every number the money AIs run under. Tap to change.</span></a>' +
       '<a class="card" href="/admin/sapling/" style="display:block;text-decoration:none;color:inherit;margin-bottom:14px"><b>Sapling &rarr;</b><br><span style="opacity:.75;font-size:.9rem">The seed AI on the MSI: talk to it, its rules, heartbeat, exams, checkpoint archive, restart after a self-stop.</span></a>' +
-      '<div class="namebar" id="namebar"></div>' +
-      '<div class="card">' + composeHtml() + '</div>' +
-      '<h2 class="section">Sections</h2>' +
+      '<a class="card" href="https://claude.ai/artifact/T6C4y4gAhdAC4TTB1ocoaK" style="display:block;text-decoration:none;color:inherit;margin-bottom:14px"><b>AI Tests &rarr;</b><br><span style="opacity:.75;font-size:.9rem">Jaron\u2019s tests of each AI: what it filters, where it plays safe, where it\u2019s blunt. Used to pick which AI gets a job.</span></a>' +
+      '</section>' +
+      '<section class="tabpanel" id="p-post" hidden><div class="namebar" id="namebar"></div>' +
+      '<div class="card">' + composeHtml() + '</div></section>' +
+      '<section class="tabpanel" id="p-sections" hidden><h2 class="section" style="margin-top:6px">Sections</h2>' +
       '<div class="card" id="list"></div>' +
-      '<div class="msg ok" id="saved"></div>' +
-      '<h2 class="section">Recent posts \u2014 yours to moderate</h2>' +
-      '<div class="card" id="allposts"><div class="hint">Loading\u2026</div></div>' +
+      '<div class="msg ok" id="saved"></div></section>' +
+      '<section class="tabpanel" id="p-posts" hidden><h2 class="section" style="margin-top:6px">Recent posts \u2014 yours to moderate</h2>' +
+      '<div class="card" id="allposts"><div class="hint">Loading\u2026</div></div></section>' +
       '<div class="links">Changes are live immediately. <a href="/" target="_blank" rel="noopener">Open the public site \u2197</a></div>';
     wireSignout();
+    showTab();
     setNameBar(session, () => loadAllPosts());
     const tm = document.getElementById("tomsg"); if(tm) tm.onclick = (e)=>{ e.preventDefault(); renderMessages(session); };
     wireCompose(() => loadAllPosts());
     renderList();
     loadAllPosts();
   }
+  const TAB_IDS = ["tools","post","sections","posts"];
+  function showTab(){
+    const tabs = document.getElementById("tabs"); if(!tabs) return;
+    let h = (location.hash||"").slice(1); if(TAB_IDS.indexOf(h)<0) h = "tools";
+    TAB_IDS.forEach(id => { const p = document.getElementById("p-"+id); if(p) p.hidden = id!==h; });
+    tabs.querySelectorAll("a").forEach(a => {
+      const on = a.dataset.t===h; a.classList.toggle("on", on); a.setAttribute("aria-selected", on);
+      if(on && tabs.scrollWidth>tabs.clientWidth) tabs.scrollLeft = a.offsetLeft-(tabs.clientWidth-a.offsetWidth)/2;
+    });
+  }
+  window.addEventListener("hashchange", () => { showTab(); window.scrollTo(0,0); });
   async function loadAllPosts(){
     const { data } = await supabase.from("posts")
       .select("id,author_handle,body,created_at")

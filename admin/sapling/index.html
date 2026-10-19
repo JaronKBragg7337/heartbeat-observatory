@@ -29,34 +29,48 @@ button.sm{padding:6px 10px;min-height:36px;font-size:14px}button.ghost{backgroun
 table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;padding:4px 6px;border-top:1px solid var(--line)}td:first-child,td:nth-child(2){white-space:nowrap}
 .PASS{color:var(--ok)}.FAIL{color:var(--bad)}.INFO{color:var(--mut)}
 small{color:var(--mut)}.note{font-size:13px;color:var(--mut);margin:6px 0 0}.warn{color:var(--bad)}
+.back{display:inline-flex;align-items:center;min-height:44px;color:var(--acc);text-decoration:none;font-size:16px;font-weight:600}
+.tabs{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;margin:0 0 -2px;border-bottom:1px solid var(--line)}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:22px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none;font-size:16px;white-space:nowrap}
+.tabs a.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.card[data-tab]{display:none}
+#main[data-active=talk] .card[data-tab=talk],#main[data-active=heartbeat] .card[data-tab=heartbeat],#main[data-active=rules] .card[data-tab=rules],#main[data-active=exams] .card[data-tab=exams],#main[data-active=memory] .card[data-tab=memory],#main[data-active=archive] .card[data-tab=archive]{display:block}
 #gate{display:none;text-align:center;padding:30px 10px}#gate a{color:var(--acc)}
 </style></head><body>
+<a class="back" href="/admin/">&larr; Steering</a>
 <h1>Sapling control room <small id="alive"></small></h1>
 <div id="gate"><p>This page talks to the AI on the MSI and can change its rules, so it needs the owner.</p><p><a href="/admin">Sign in at /admin</a>, then come back here.</p></div>
-<div class="grid" id="main">
-<div class="card"><h2>Talk to it</h2>
+<div class="grid" id="main" data-active="talk">
+<nav class="tabs" id="tabs" role="tablist" aria-label="Sapling sections"><a href="#talk" role="tab" data-t="talk">Talk</a><a href="#heartbeat" role="tab" data-t="heartbeat">Heartbeat</a><a href="#rules" role="tab" data-t="rules">Rules</a><a href="#exams" role="tab" data-t="exams">Exams</a><a href="#memory" role="tab" data-t="memory">Memory</a><a href="#archive" role="tab" data-t="archive">Archive</a></nav>
+<div class="card" data-tab="talk"><h2>Talk to it</h2>
 <div id="log" aria-live="polite"><small>loading the conversation...</small></div>
 <div id="chaterr" role="alert"></div>
 <form class="chat" onsubmit="send();return false"><input id="msg" placeholder="ask, or /teach the word glorp means happy" autocomplete="off" enterkeyhint="send"><button id="sendbtn" type="submit">Send</button></form>
 <small>/teach &lt;fact&gt; &middot; /confirm &lt;id&gt; &middot; /invalidate &lt;id&gt; &middot; /keep &lt;id&gt; &middot; /report</small></div>
-<div class="card"><h2>Heartbeat</h2><div class="kv" id="hb"></div>
+<div class="card" data-tab="heartbeat"><h2>Heartbeat</h2><div class="kv" id="hb"></div>
 <div id="owner_hb" style="margin-top:10px"></div>
 <h2 style="margin-top:12px">Energy today</h2><div class="meter"><i id="bar" style="width:0"></i></div><div class="kv" id="budget"></div></div>
-<div class="card"><h2>Rules <small>(membrane.yaml; a switch here is the owner's edit, logged; the AI has no write path)</small></h2><div id="rules"></div>
+<div class="card" data-tab="rules"><h2>Rules <small>(membrane.yaml; a switch here is the owner's edit, logged; the AI has no write path)</small></h2><div id="rules"></div>
 <div id="rules_note" class="note"></div></div>
-<div class="card"><h2>Goals it set itself</h2><div id="goals"></div></div>
-<div class="card"><h2>Exams <small>(outside checks; E1-E4 word parts, E6 grammar, E7 reading; E7L long reading + E1b bridge + E10 copying probe = info; E9 = the exam you write (owner_exam.json); E5 = facts in weights, info only; "self" = self-made memories in that consolidation)</small></h2><div id="exams"></div></div>
-<div class="card"><h2>Reading stage <small id="read_sum">(which run: see the first line. E10 = copy a random sequence it just saw, E7L = copy a sentence out of a cold passage; E6 and E1b show whether what it knew holds; loss = how surprised it is by fixed text windows it never trained on (web, stories) and adult text it did read; lower is better)</small></h2><div id="reading"></div></div>
-<div class="card"><h2>Teaching - before and after <small>(Claude as teacher, 10/15: the same checks and the same ten chat prompts at each point - before, after the reading stage, after the conversation lessons, and after 5 of its own consolidations, because an ability only counts once it survives its usual memory folding)</small></h2><div id="teacher"></div></div>
-<div class="card"><h2>Sapling's own words <small>(Jaron writes these. When it is asked who it is, these are the only answers it learns - the AI example under each box is there for reference and is never trained on. An empty box = that lesson is skipped. Saved answers go into the next conversation-lesson run.)</small></h2><div id="selfwords"></div></div>
-<div class="card"><h2>Documents it has read <small>(/read &lt;path&gt; or /read: &lt;text&gt; in the chat; each passage is a memory with its document and place)</small></h2><div id="docs"></div></div>
-<div class="card"><h2>What it wrote <small>(E8 free writing, info only - newest first)</small></h2><pre id="writing"></pre></div>
-<div class="card"><h2>Tick log <small>(newest first)</small></h2><pre id="ticks"></pre></div>
-<div class="card"><h2>Stop reports</h2><pre id="stops"></pre></div>
-<div class="card"><h2>Checkpoint archive <small id="arch_sum"></small></h2><div id="archive"></div><div class="note">Last 10 + one per day stay on the MSI; the rest go to GitHub Releases on JaronKBragg7337/sapling (one release a day, ckpt-YYYY-MM-DD) and can come back with one tap. A local copy is removed only after the release reports the same file size, so nothing is ever deleted from history. Generations saved before 10/15 that were already archived stay in Supabase Storage and restore the same way.</div></div>
-<div class="card"><h2>Memory <small id="memsize"></small></h2><pre id="mem"></pre></div>
-<div class="card"><h2>Owner actions <small>(newest first)</small></h2><pre id="owner_log"></pre></div>
+<div class="card" data-tab="rules"><h2>Goals it set itself</h2><div id="goals"></div></div>
+<div class="card" data-tab="exams"><h2>Exams <small>(outside checks; E1-E4 word parts, E6 grammar, E7 reading; E7L long reading + E1b bridge + E10 copying probe = info; E9 = the exam you write (owner_exam.json); E5 = facts in weights, info only; "self" = self-made memories in that consolidation)</small></h2><div id="exams"></div></div>
+<div class="card" data-tab="exams"><h2>Reading stage <small id="read_sum">(which run: see the first line. E10 = copy a random sequence it just saw, E7L = copy a sentence out of a cold passage; E6 and E1b show whether what it knew holds; loss = how surprised it is by fixed text windows it never trained on (web, stories) and adult text it did read; lower is better)</small></h2><div id="reading"></div></div>
+<div class="card" data-tab="exams"><h2>Teaching - before and after <small>(Claude as teacher, 10/15: the same checks and the same ten chat prompts at each point - before, after the reading stage, after the conversation lessons, and after 5 of its own consolidations, because an ability only counts once it survives its usual memory folding)</small></h2><div id="teacher"></div></div>
+<div class="card" data-tab="talk"><h2>Sapling's own words <small>(Jaron writes these. When it is asked who it is, these are the only answers it learns - the AI example under each box is there for reference and is never trained on. An empty box = that lesson is skipped. Saved answers go into the next conversation-lesson run.)</small></h2><div id="selfwords"></div></div>
+<div class="card" data-tab="memory"><h2>Documents it has read <small>(/read &lt;path&gt; or /read: &lt;text&gt; in the chat; each passage is a memory with its document and place)</small></h2><div id="docs"></div></div>
+<div class="card" data-tab="memory"><h2>What it wrote <small>(E8 free writing, info only - newest first)</small></h2><pre id="writing"></pre></div>
+<div class="card" data-tab="heartbeat"><h2>Tick log <small>(newest first)</small></h2><pre id="ticks"></pre></div>
+<div class="card" data-tab="heartbeat"><h2>Stop reports</h2><pre id="stops"></pre></div>
+<div class="card" data-tab="archive"><h2>Checkpoint archive <small id="arch_sum"></small></h2><div id="archive"></div><div class="note">Last 10 + one per day stay on the MSI; the rest go to GitHub Releases on JaronKBragg7337/sapling (one release a day, ckpt-YYYY-MM-DD) and can come back with one tap. A local copy is removed only after the release reports the same file size, so nothing is ever deleted from history. Generations saved before 10/15 that were already archived stay in Supabase Storage and restore the same way.</div></div>
+<div class="card" data-tab="memory"><h2>Memory <small id="memsize"></small></h2><pre id="mem"></pre></div>
+<div class="card" data-tab="rules"><h2>Owner actions <small>(newest first)</small></h2><pre id="owner_log"></pre></div>
 </div>
+<script>
+(function(){var main=document.getElementById('main'),ts=[].slice.call(document.querySelectorAll('#tabs a')),names=ts.map(function(a){return a.dataset.t});
+function show(){var h=(location.hash||'').slice(1);if(names.indexOf(h)<0)h='talk';main.dataset.active=h;ts.forEach(function(a){var on=a.dataset.t===h;a.classList.toggle('on',on);a.setAttribute('aria-selected',on);if(on&&a.scrollIntoView&&a.parentNode.scrollWidth>a.parentNode.clientWidth){var n=a.parentNode;n.scrollLeft=a.offsetLeft-(n.clientWidth-a.offsetWidth)/2}})}
+window.addEventListener('hashchange',function(){show();window.scrollTo(0,0)});show()})();
+</script>
 <script>
 const $=id=>document.getElementById(id);const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 function fmt(s){if(s==null)return'never';s=Math.round(s);if(s<90)return s+' s';if(s<5400)return Math.round(s/60)+' min';if(s<172800)return (s/3600).toFixed(1)+' h';return (s/86400).toFixed(1)+' days'}
