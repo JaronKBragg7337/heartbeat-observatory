@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>Key Drop · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style>
+  /* 10/19 (Jaron): paste API keys from the phone. Locked in this browser with the MSI's public key before it leaves the phone;
+     only the MSI can open it. Write-only: this page can never show a key back. MSI side: AI-Shared/tools/key_drop.py. */
+  .lede { color: var(--muted); line-height: 1.6; max-width: 60ch; margin: 10px auto 0; }
+  .box { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 16px; margin: 16px 0; }
+  .box h3 { font-size: 1.05rem; margin-bottom: 6px; }
+  .box p { font-size: .9rem; line-height: 1.55; color: #c2ccd6; margin: 6px 0; }
+  .box ol { font-size: .9rem; line-height: 1.6; color: #c2ccd6; padding-left: 20px; margin: 6px 0 10px; }
+  label { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+  input { width: 100%; box-sizing: border-box; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: #0d131b; color: var(--text); padding: 0 14px; font-size: 16px; font-family: ui-monospace, monospace; }
+  button.send { width: 100%; min-height: 52px; margin-top: 16px; border-radius: 14px; border: 0; background: #7ee08c; color: #07210c; font-size: 1.05rem; font-weight: 700; cursor: pointer; }
+  button.send:disabled { opacity: .5; }
+  .msg { min-height: 20px; margin-top: 10px; font-size: .95rem; }
+  .tabs { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:6px 0; margin-top:18px; border-bottom:1px solid var(--line); }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tabs a { flex:none; display:inline-flex; align-items:center; min-height:44px; padding:0 16px; border-radius:22px; border:1px solid var(--line); background:var(--panel); color:var(--text); text-decoration:none; font-size:15px; white-space:nowrap; }
+  .tabs a.on { background:var(--text); color:#0a0e14; border-color:var(--text); font-weight:600; }
+  .hist div { font-size: .88rem; padding: 10px 0; border-bottom: 1px solid var(--line); line-height: 1.45; }
+  .ok { color: #7ee08c; } .bad { color: #ff8a80; } .wait { color: #f5c26b; }
+  .gate { text-align: center; margin-top: 30px; color: var(--muted); } .gate a { color: var(--text); }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" href="/admin">Admin</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/admin/" style="min-height:44px;display:inline-flex;align-items:center">&larr; Steering</a>
+    <header class="hero">
+      <h1>Key Drop</h1>
+      <p class="lede">Paste a new API key from anywhere. It gets locked on your phone before it's sent, and only the MSI can unlock it.
+        The MSI puts it where the tools read it, tests it, and buzzes your phone. Nobody, including this page, can read it back.</p>
+    </header>
+    <p class="gate" id="gate" hidden>Sign in as an admin to drop keys. <a href="/admin">Sign in</a></p>
+    <div id="app" hidden>
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Key Drop sections">
+        <a href="#polymarket" data-t="polymarket">Polymarket</a><a href="#kraken" data-t="kraken">Kraken</a><a href="#other" data-t="other">Other</a><a href="#history" data-t="history">History</a>
+      </nav>
+      <section class="tabpanel" id="p-polymarket">
+        <div class="box"><h3>Polymarket US</h3>
+          <ol><li>polymarket.us, then API keys, then create a new key (withdrawals on).</li><li>Paste the Key ID and the Secret below.</li></ol>
+          <p>The MSI restarts the trading service with it and checks the balance. If that fails it goes back to the old key on its own.</p>
+          <label for="pm-id">Key ID</label><input id="pm-id" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="pm-secret">Secret</label><input id="pm-secret" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button class="send" data-target="polymarket">Lock and send</button><p class="msg" data-msg="polymarket"></p></div>
+      </section>
+      <section class="tabpanel" id="p-kraken" hidden>
+        <div class="box"><h3>Kraken</h3>
+          <ol><li>First save where withdrawals should go: Funding, then Withdraw, add the destination (Kraken only sends to saved ones).</li>
+            <li>Settings, then API, then create a key with every permission you want, including Withdraw Funds.</li><li>Paste both values below.</li></ol>
+          <p>The MSI tests it with a balance check before it replaces the old key.</p>
+          <label for="kr-key">API Key</label><input id="kr-key" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <label for="kr-secret">Private Key</label><input id="kr-secret" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button class="send" data-target="kraken">Lock and send</button><p class="msg" data-msg="kraken"></p></div>
+      </section>
+      <section class="tabpanel" id="p-other" hidden>
+        <div class="box"><h3>Any other key</h3>
+          <p>Saved into the MSI's main key file under the name you give it (capital letters, numbers and _ only, like XAI_API_KEY).
+            Tell Claude the name afterwards so the right tool uses it.</p>
+          <label for="ot-name">Name</label><input id="ot-name" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XAI_API_KEY">
+          <label for="ot-val">Value</label><input id="ot-val" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button class="send" data-target="env">Lock and send</button><p class="msg" data-msg="env"></p></div>
+      </section>
+      <section class="tabpanel" id="p-history" hidden><div class="box hist" id="hist">Loading...</div></section>
+    </div>
+  </div>
+<script type="module">
+  import { getSupabase } from "/hb-supabase.js";
+  const supabase = await getSupabase();
+  const PUB = "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAznp/iwttyW9JGY997RzM6atHmvNgnIbTUMxoZ4TDq2rEu9g3EGNi3CoRinpPNxYoRNXvjF6hg3EhwBTHkBR0JfBxb0hJO9/GT8wE5XQX8uOkUHO7SJMzzOeaOhOc6Wx453sV2UQE4qjJZowjw8TtUrZvYsSkGCDdiZPjHqbY/NvxBPJ++576wboZL2P3tuHeiImQ2Pj9CJ758urKk3Y6U0ubpCOWhjoZQFme//g+/SEmMr/Oje6mXPPILa9CNOXvXoI9FHTsAAl50kiCf9BwdmltNDb3tdqpKxXVDvl5m7YbqcPVInFo33cupNz2IkheXUopPgrJBs94m8B78Fll1augsHfXtivgk8L97CRJSaCIx7xULsj2cgIGX0neTkcfEgQXrnUn41ayNPeUJbj04mOxCYlCDPlna+dKJG3jlA5hxOCN+wVKbTgU7mrNNFjHnZesuAGPGbMYQMpBlHOSZtYKX5El0AwQ1lg/LO+cxmyY1Om+a3BJgZQ7B/uzwd5wsoLaEOts5hrI3SEZcsFLHdq5ywwDKAYopmixJ3U3YlAaNLZknU4k3ahEphNU2I5a74plSrp62YoNniVOQ85hgo3zTfr9PoZsoiKVBVqMb6mZsizs0MpvBEOwOkRgmfai8X+fM6Yu0gCveURWAIMl9uINVY0eDaRRGZElOSlKU18CAwEAAQ==";   // the MSI's public key (AI-Shared/state/keydrop_public.b64); the private half never leaves the MSI
+  const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  async function lock(obj) {
+    const pub = await crypto.subtle.importKey("spki", unb64(PUB), { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
+    const aes = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"]);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aes, new TextEncoder().encode(JSON.stringify(obj)));
+    const k = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, pub, await crypto.subtle.exportKey("raw", aes));
+    return { v: 1, k: b64(k), iv: b64(iv), ct: b64(ct) };
+  }
+  const { data: { session } } = await supabase.auth.getSession();
+  let isAdmin = false;
+  if (session) { try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {} }
+  document.getElementById(isAdmin ? "app" : "gate").hidden = false;
+  const tabs = [...document.querySelectorAll("#tabs a")];
+  function show() {
+    const t = tabs.some((a) => "#" + a.dataset.t === location.hash) ? location.hash.slice(1) : "polymarket";
+    tabs.forEach((a) => a.classList.toggle("on", a.dataset.t === t));
+    document.querySelectorAll(".tabpanel").forEach((p) => (p.hidden = p.id !== "p-" + t));
+    if (t === "history" && isAdmin) load();
+  }
+  addEventListener("hashchange", show); show();
+  const fields = { polymarket: [["key_id", "pm-id"], ["secret", "pm-secret"]], kraken: [["api_key", "kr-key"], ["private_key", "kr-secret"]], env: [["value", "ot-val"]] };
+  document.querySelectorAll("button.send").forEach((btn) => btn.addEventListener("click", async () => {
+    const t = btn.dataset.target, msg = document.querySelector('[data-msg="' + t + '"]'), obj = {};
+    for (const [k, id] of fields[t]) { obj[k] = document.getElementById(id).value.trim(); if (!obj[k]) { msg.className = "msg bad"; msg.textContent = "Fill in every box."; return; } }
+    let env_name = null;
+    if (t === "env") { env_name = document.getElementById("ot-name").value.trim().toUpperCase(); if (!/^[A-Z][A-Z0-9_]{1,60}$/.test(env_name)) { msg.className = "msg bad"; msg.textContent = "Name: capital letters, numbers and _ only."; return; } }
+    btn.disabled = true; msg.className = "msg wait"; msg.textContent = "Locking...";
+    try {
+      const blob = await lock(obj);
+      const { error } = await supabase.from("key_drops").insert({ target: t, env_name, blob });
+      if (error) throw error;
+      for (const [, id] of fields[t]) document.getElementById(id).value = "";
+      msg.className = "msg ok"; msg.textContent = "Sent, locked. The MSI picks it up within 2 minutes and buzzes your phone. See History.";
+    } catch (e) { msg.className = "msg bad"; msg.textContent = "Didn't send: " + (e.message || e); }
+    btn.disabled = false;
+  }));
+  async function load() {
+    const h = document.getElementById("hist");
+    const { data, error } = await supabase.from("key_drops").select("id,target,env_name,status,note,created_at,done_at").order("created_at", { ascending: false }).limit(15);
+    if (error) { h.textContent = "Couldn't load: " + error.message; return; }
+    if (!data.length) { h.textContent = "Nothing dropped yet."; return; }
+    h.innerHTML = data.map((r) => "<div><b>" + (r.target === "env" ? r.env_name : r.target) + '</b> <span class="' + (r.status === "done" ? "ok" : r.status === "failed" ? "bad" : "wait") + '">' + r.status +
+      '</span><br><span style="color:var(--muted)">' + new Date(r.created_at).toLocaleString() + "</span>" + (r.note ? "<br>" + r.note.replace(/</g, "&lt;") : "") + "</div>").join("");
+  }
+  setInterval(() => { if (location.hash === "#history" && isAdmin) load(); }, 10000);
+</script>
+</body>
+</html>
