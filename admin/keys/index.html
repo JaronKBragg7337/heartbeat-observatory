@@ -45,7 +45,7 @@
     <p class="gate" id="gate" hidden>Sign in as an admin to drop keys. <a href="/admin">Sign in</a></p>
     <div id="app" hidden>
       <nav class="tabs" id="tabs" role="tablist" aria-label="Key Drop sections">
-        <a href="#polymarket" data-t="polymarket">Polymarket</a><a href="#kraken" data-t="kraken">Kraken</a><a href="#other" data-t="other">Other</a><a href="#history" data-t="history">History</a>
+        <a href="#polymarket" data-t="polymarket">Polymarket</a><a href="#kraken" data-t="kraken">Kraken</a><a href="#other" data-t="other">Other</a><a href="#onmsi" data-t="onmsi">On the MSI</a><a href="#history" data-t="history">History</a>
       </nav>
       <section class="tabpanel" id="p-polymarket">
         <div class="box"><h3>Polymarket US</h3>
@@ -66,12 +66,16 @@
       </section>
       <section class="tabpanel" id="p-other" hidden>
         <div class="box"><h3>Any other key</h3>
-          <p>Saved into the MSI's main key file under the name you give it (capital letters, numbers and _ only, like XAI_API_KEY).
-            Tell Claude the name afterwards so the right tool uses it.</p>
-          <label for="ot-name">Name</label><input id="ot-name" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XAI_API_KEY">
-          <label for="ot-val">Value</label><input id="ot-val" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <p>Paste any key. Most are recognized on their own (Claude, OpenAI, Grok, DeepSeek, GitHub, RunPod...), so the name can stay
+            empty. The MSI saves it with a note saying what it is, tests it, and adds it to the list every AI reads, so you never have to tell
+            an AI it exists.</p>
+          <label for="ot-val">Key</label><input id="ot-val" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <p class="msg" id="ot-guess" style="margin-top:6px"></p>
+          <label for="ot-name">Name (optional)</label><input id="ot-name" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="filled in for you when recognized">
           <button class="send" data-target="env">Lock and send</button><p class="msg" data-msg="env"></p></div>
       </section>
+      <section class="tabpanel" id="p-onmsi" hidden><div class="box hist" id="inv">Loading...</div>
+        <p style="color:var(--muted);font-size:.85rem">Names only, never the keys. "works" = the MSI just tested it. Tap Replace to send a new one.</p></section>
       <section class="tabpanel" id="p-history" hidden><div class="box hist" id="hist">Loading...</div></section>
     </div>
   </div>
@@ -99,6 +103,7 @@
     tabs.forEach((a) => a.classList.toggle("on", a.dataset.t === t));
     document.querySelectorAll(".tabpanel").forEach((p) => (p.hidden = p.id !== "p-" + t));
     if (t === "history" && isAdmin) load();
+    if (t === "onmsi" && isAdmin) loadInv();
   }
   addEventListener("hashchange", show); show();
   const fields = { polymarket: [["key_id", "pm-id"], ["secret", "pm-secret"]], kraken: [["api_key", "kr-key"], ["private_key", "kr-secret"]], env: [["value", "ot-val"]] };
@@ -106,7 +111,7 @@
     const t = btn.dataset.target, msg = document.querySelector('[data-msg="' + t + '"]'), obj = {};
     for (const [k, id] of fields[t]) { obj[k] = document.getElementById(id).value.trim(); if (!obj[k]) { msg.className = "msg bad"; msg.textContent = "Fill in every box."; return; } }
     let env_name = null;
-    if (t === "env") { env_name = document.getElementById("ot-name").value.trim().toUpperCase(); if (!/^[A-Z][A-Z0-9_]{1,60}$/.test(env_name)) { msg.className = "msg bad"; msg.textContent = "Name: capital letters, numbers and _ only."; return; } }
+    if (t === "env") { env_name = document.getElementById("ot-name").value.trim().toUpperCase() || null; if (env_name && !/^[A-Z][A-Z0-9_]{1,60}$/.test(env_name)) { msg.className = "msg bad"; msg.textContent = "Name: capital letters, numbers and _ only (or leave it empty)."; return; } }
     btn.disabled = true; msg.className = "msg wait"; msg.textContent = "Locking...";
     try {
       const blob = await lock(obj);
@@ -126,6 +131,34 @@
       '</span><br><span style="color:var(--muted)">' + new Date(r.created_at).toLocaleString() + "</span>" + (r.note ? "<br>" + r.note.replace(/</g, "&lt;") : "") + "</div>").join("");
   }
   setInterval(() => { if (location.hash === "#history" && isAdmin) load(); }, 10000);
+  // recognize a pasted key by how it starts (checked here on the phone only; nothing is sent until "Lock and send")
+  const KINDS = [["sk-ant-", "ANTHROPIC_API_KEY", "Claude (Anthropic) API key"], ["xai-", "XAI_API_KEY", "Grok (xAI) API key"], ["pplx-", "PERPLEXITY_API_KEY", "Perplexity API key"],
+    ["github_pat_", "GITHUB_TOKEN", "GitHub token"], ["ghp_", "GITHUB_TOKEN", "GitHub token"], ["rpa_", "RUNPOD_API_KEY", "RunPod key"], ["sbp_", "SUPABASE_ACCESS_TOKEN", "Supabase token"],
+    ["sk-proj-", "OPENAI_API_KEY", "OpenAI API key"], ["sk_live_", "STRIPE_SECRET_KEY", "Stripe key"], ["sk-", "", "OpenAI or DeepSeek key (the MSI tests which)"]];
+  const otv = document.getElementById("ot-val"), otn = document.getElementById("ot-name"), otg = document.getElementById("ot-guess");
+  otv.addEventListener("input", () => {
+    const v = otv.value.trim(), k = KINDS.find(([p]) => v.startsWith(p));
+    if (!v) { otg.textContent = ""; return; }
+    otg.className = "msg " + (k ? "ok" : "wait");
+    otg.textContent = k ? "Looks like: " + k[2] : "Not recognized: give it a name below (like XAI_API_KEY).";
+    if (k && k[1] && !otn.dataset.typed) otn.value = k[1];
+  });
+  otn.addEventListener("input", () => { otn.dataset.typed = "1"; });
+  async function loadInv() {
+    const h = document.getElementById("inv");
+    const { data, error } = await supabase.from("key_inventory").select("name,label,what,file,filled,status,tested_at").order("file").order("name");
+    if (error) { h.textContent = "Couldn't load: " + error.message; return; }
+    if (!data.length) { h.textContent = "The MSI hasn't sent its list yet."; return; }
+    const cls = (st) => /^works|in use/.test(st || "") ? "ok" : /rejected|failed|empty/.test(st || "") ? "bad" : "wait";
+    h.innerHTML = data.map((r) => '<div><b>' + r.label.replace(/</g, "&lt;") + '</b> <span class="' + cls(r.status) + '">' + (r.status || "") + '</span><br><span style="color:var(--muted);font-family:ui-monospace,monospace;font-size:.8rem">' +
+      r.name + ' &middot; ' + r.file + '</span>' + (r.what ? '<br><span style="color:var(--muted)">' + r.what.replace(/</g, "&lt;") + "</span>" : "") +
+      '<br><a href="#" data-rep="' + r.name + '" style="color:var(--text);display:inline-block;min-height:44px;line-height:44px">Replace &rarr;</a></div>').join("");
+    h.querySelectorAll("[data-rep]").forEach((a) => a.addEventListener("click", (ev) => {
+      ev.preventDefault(); const n = a.dataset.rep;
+      if (n === "POLYMARKET") location.hash = "#polymarket"; else if (n.startsWith("KRAKEN")) location.hash = "#kraken";
+      else { otn.value = n; otn.dataset.typed = "1"; location.hash = "#other"; otv.focus(); }
+    }));
+  }
 </script>
 </body>
 </html>
