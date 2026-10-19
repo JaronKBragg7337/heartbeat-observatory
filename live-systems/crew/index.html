@@ -22,6 +22,10 @@
   .stat.bills b { color: #f2c94c; }
   .rules { list-style: none; display: grid; gap: 8px; }
   .rules li { border-left: 3px solid var(--beat); padding: 3px 0 3px 12px; line-height: 1.5; font-size: .93rem; }
+  .cashchart svg { display: block; width: 100%; height: auto; }
+  .cashchart input { width: 100%; margin: 12px 0; }
+  .cashchart circle { cursor: pointer; }
+  .cashchart .cashdetail { min-height: 4em; line-height: 1.6; }
 </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
 <script defer src="/_vercel/insights/script.js"></script>
@@ -46,7 +50,7 @@
     <div class="board" id="board"></div>
     <p class="muted small" id="adds" style="margin-top:10px;line-height:1.6"></p>
 
-    <h2 class="sec">The account: every settled trade and every human move</h2>
+    <h2 class="sec">The account: every cash move</h2>
     <div class="card" id="chart"><p class="muted small">Loading&hellip;</p></div>
     <p class="muted small" id="chartnote" style="margin-top:8px"></p>
 
@@ -59,7 +63,7 @@
     <footer><a href="/live-systems/crew/trades/">Full trade desk</a> · <a href="/live-systems/crew/reasoning/">Every trade's reasoning</a></footer>
   </div>
 <script type="module">
-  import { supabase, snapshot, nav, $, esc, usd, ago, mountAccountChart, CREW_CSS } from "./crew.js";
+  import { supabase, snapshot, nav, $, esc, usd, ago, CREW_CSS } from "./crew.js";
   $("crewcss").textContent = CREW_CSS;
   nav("Overview");
   const [snap, { data: acct }] = await Promise.all([
@@ -70,32 +74,92 @@
   const d = snap.data;
   $("updated").textContent = `Updated ${ago(snap.updated_at)} · refreshed every 5 minutes from the machine they run on`;
   const traders = d.bots.filter((b) => b.ledger);
-  const pnl = d.ai_money ? d.ai_money.ai_settled : traders.reduce((t, b) => t + (b.ledger.pnl || 0), 0);
   const trades = traders.reduce((t, b) => t + (b.ledger.fills || 0), 0);
   const inPos = acct ? (acct.positions || []).reduce((t, p) => t + (Number(p.value) || 0), 0) : 0;
   const S = d.account_story;
+  const sg = (n) => (n < 0 ? "-$" : "+$") + Math.abs(n).toFixed(2);
+  const hasCash = S && S.balance_kind === "cash";
+  const outcomeLabel = (owner) => `; closed markets: ${S[owner + "_won_n"]} won / ${S[owner + "_lost_n"]} lost`;
   const cards = [
-    [(d.trading_now || []).length || d.bots.length, (d.trading_now || []).length ? "AIs trading now" : "AIs on shift"], [d.bots.length, "AIs on the crew"], [trades, "AI trades so far"], [usd(pnl), "AI profit, settled" + (S && S.ai_won_n != null ? `: +${usd(S.ai_won)} won (${S.ai_won_n}) / -${usd(S.ai_lost)} lost (${S.ai_lost_n})` : "")],
+    [(d.trading_now || []).length || d.bots.length, (d.trading_now || []).length ? "AIs trading now" : "AIs on shift"], [d.bots.length, "AIs on the crew"], [trades, "AI trades so far"],
+    [hasCash ? sg(S.ai_result) : "Pending", "AI trades, net (after fees)" + (hasCash ? outcomeLabel("ai") : "")],
     [acct ? usd(acct.buying_power) : "–", "cash ready"], [acct ? usd(inPos) : "–", "in open trades"],
   ];
-  const sg = (n) => (n < 0 ? "-$" : "+$") + Math.abs(n).toFixed(2);
-  if (S) {
-    cards.push([usd(S.withdrawals), "Human withdrawals, all time"], [sg(S.hand_result), "Human hand trades, net" + (S.hand_won_n != null ? `: +${usd(S.hand_won)} won (${S.hand_won_n}) / -${usd(S.hand_lost)} lost (${S.hand_lost_n})` : "")], [usd(S.deposits), "Human deposits, all time"], [usd(S.bills_paid || 0), "Bills paid by the system"]);
+  if (hasCash) {
+    cards.push(
+      [usd(S.withdrawals), "Human withdrawals, all time", "human"],
+      [sg(S.hand_result), "Jaron by hand, net (after fees)" + outcomeLabel("hand"), "human"],
+      [usd(S.funding_in), `Deposits ${usd(S.deposits)}, ${sg(S.bonus)} bonus, ${sg(S.credits)} credits`, "deposits"],
+      [usd(S.fees_paid), `Fees paid, all time (AI ${usd(S.ai_fees_paid)}, hand ${usd(S.hand_fees_paid)}; net of maker rebates)`],
+      [usd(S.bills_paid || 0), "Bills paid by the system", "bills"]
+    );
   }
-  $("board").innerHTML = cards.map(([v, l], i) => `<div class="stat${S && i === 8 ? " deposits" : S && i >= 6 && i < 9 ? " human" : S && i >= 9 ? " bills" : ""}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
-  if (S && acct) {
-    const value = Number(acct.buying_power) + inPos, parts = S.deposits - S.withdrawals + pnl + S.hand_result, other = value - parts;
-    $("adds").innerHTML = `<b>How the account adds up:</b> ${usd(S.deposits)} put in &minus; ${usd(S.withdrawals)} taken out ${sg(pnl)} AI trades ${sg(S.hand_result)} Jaron by hand `
-      + `${Math.abs(other) < 0.005 ? "" : sg(other) + " not matched in the records (fees, bonuses, rounding) "}= <b>${usd(value)}</b> in the account now (cash ${usd(acct.buying_power)} + open trades ${usd(inPos)}).`;
+  $("board").innerHTML = cards.map(([v, l, cls]) => `<div class="stat${cls ? " " + cls : ""}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  if (hasCash) {
+    $("adds").innerHTML = `<b>How the account adds up:</b> ${usd(S.deposits)} deposited + ${usd(S.bonus)} bonus + ${usd(S.credits)} credits &minus; ${usd(S.withdrawals)} withdrawn ${sg(S.ai_result)} AI trades ${sg(S.hand_result)} Jaron by hand = <b>${usd(S.cash_balance)}</b> cash at the snapshot. `
+      + `Trading cash already includes ${usd(S.fees_paid)} net fees. Open positions have a separate current value of ${usd(inPos)}${acct ? `; the latest cash reading is ${usd(acct.buying_power)}` : " (live account unavailable)"}. `
+      + `Net results include cash tied up in open positions; won/lost counts cover closed markets. Mixed-market settlement shares are pooled proportionally. Per-bot results below are approximate.`;
   }
-  mountAccountChart($("chart"), S ? S.events : [], snap, acct ? Number(acct.buying_power) + inPos : NaN);
-  $("chartnote").innerHTML = `<span style="color:#3fb950">Green</span> = an AI trade won. <span style="color:#e23a45">Red</span> = an AI trade lost. <span style="color:#4c9aff">Blue</span> = a human move: Jaron's hand trade (dot) or a withdrawal (square). <span style="color:#b07cff">Purple</span> = money put in (square). <span style="color:#f2c94c">Yellow</span> = a withdrawal that paid a real bill, with a receipt shown (for example an AI subscription). Tap any dot for details. The account only counts settled trades; open trades and cash ready are the cards above.`;
+  // This cash chart lives here because the shared crew.js chart expects settled P&L events.
+  // Plot the ledger balances without appending a live portfolio value or rounding each fill.
+  function mountCashChart(el, events) {
+    if (!events.length) {
+      el.innerHTML = '<p class="muted small">Waiting for a cash-ledger snapshot.</p>';
+      return;
+    }
+    const W = 900, H = 300, left = 65, right = 20, top = 20, bottom = 35;
+    const start = Date.parse(events[0].at), end = Date.parse(events[events.length - 1].at);
+    const balances = [0, ...events.map((e) => Number(e.cash_balance))];
+    const low = Math.min(...balances), high = Math.max(...balances), span = high - low || 1;
+    const x = (at) => left + (Date.parse(at) - start) / (end - start || 1) * (W - left - right);
+    const y = (value) => H - bottom - (value - low) / span * (H - top - bottom);
+    const color = (e) => e.k === "bill" ? "#f2c94c" : ["dep", "bonus", "transfer"].includes(e.k) ? "#b07cff"
+      : e.k === "wd" || Object.hasOwn(e.owners || {}, "hand") ? "#4c9aff" : e.usd < 0 ? "#e23a45" : "#3fb950";
+    // Horizontal, then vertical: cash changes only at an activity, not between activities.
+    const path = `M${left},${y(0)} ` + events.map((e) => `H${x(e.at)} V${y(e.cash_balance)}`).join(" ");
+    const ticks = Array.from({length: 5}, (_, i) => {
+      const v = low + span * i / 4, yy = y(v);
+      return `<line x1="${left}" x2="${W - right}" y1="${yy}" y2="${yy}" stroke="#293442"/><text x="${left - 8}" y="${yy + 4}" fill="#aab6c2" text-anchor="end" font-size="12">${esc(usd(v))}</text>`;
+    }).join("");
+    el.classList.add("cashchart");
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Running account cash from zero through every recorded activity">
+      ${ticks}<path d="${path}" fill="none" stroke="#c2ccd6" stroke-width="1.5"/>
+      ${events.map((e, i) => `<circle data-event="${i}" cx="${x(e.at)}" cy="${y(e.cash_balance)}" r="2.5" fill="${color(e)}"><title>${esc(e.title)}: ${esc(sg(e.usd))}; cash ${esc(usd(e.cash_balance))}</title></circle>`).join("")}
+      <circle id="cashselected" r="5" fill="none" stroke="white" stroke-width="2"/>
+      <text x="${left}" y="${H - 8}" fill="#aab6c2" font-size="12">${esc(events[0].at.slice(0, 10))}</text>
+      <text x="${W - right}" y="${H - 8}" fill="#aab6c2" text-anchor="end" font-size="12">${esc(events[events.length - 1].at.slice(0, 10))}</text>
+      </svg><label for="cashevent">Inspect cash activity</label><input id="cashevent" type="range" min="0" max="${events.length - 1}" value="${events.length - 1}" step="1"/><p class="cashdetail" aria-live="polite"></p>`;
+    const slider = el.querySelector("input"), detail = el.querySelector(".cashdetail"), marker = el.querySelector("#cashselected");
+    const show = (i) => {
+      const e = events[i];
+      slider.value = i;
+      marker.setAttribute("cx", x(e.at));
+      marker.setAttribute("cy", y(e.cash_balance));
+      const owners = Object.entries(e.owners || {}).map(([o, v]) => `${o === "ai" ? "AI" : "Jaron by hand"} ${sg(v)}`).join(", ");
+      detail.textContent = `${i + 1} / ${events.length} · ${e.at} · ${e.k}: ${e.title}. Cash move ${sg(e.usd)}; balance ${usd(e.cash_balance)}.${owners ? " " + owners + "." : ""}${e.fee_usd ? " Net fee " + usd(e.fee_usd) + "." : ""}${e.bill ? " Bill: " + e.bill + "." : ""}`;
+      // Match the existing receipt feature, accepting only web links.
+      if (e.receipt && /^https?:\/\//.test(e.receipt)) {
+        const link = document.createElement("a");
+        link.href = e.receipt;
+        link.textContent = " View receipt";
+        detail.append(link);
+      }
+    };
+    slider.addEventListener("input", () => show(Number(slider.value)));
+    el.querySelector("svg").addEventListener("click", (event) => {
+      const index = event.target.getAttribute("data-event");
+      if (index !== null) show(Number(index));
+    });
+    show(events.length - 1);
+  }
+  mountCashChart($("chart"), hasCash ? S.events : []);
+  $("chartnote").innerHTML = `The line is cash after every fill (including fees and short collateral), settlement payout, deposit, withdrawal, bonus and credit. Purple = funding; blue = hand or mixed cash moves and withdrawals; green/red = positive/negative AI cash moves; yellow = a receipted bill. A purchase debit is cash invested, not a settled loss. Tap a point or use the slider for details. Open-position market values are separate from this cash line.`;
   $("tiles").innerHTML = d.bots.map((b) => {
     const L = b.ledger;
     const recent = L && L.last && Date.now() - new Date(L.last) < 6 * 3600e3 && b.status !== "paused";
     const st = b.status === "paused" ? `<span class="chip down">paused</span>` : b.status === "trading" ? `<span class="chip up">trading now</span>` : "";
     const chips = L
-      ? `<span class="chip">${L.fills} trades</span><span class="chip ${L.pnl > 0 ? "up" : L.pnl < 0 ? "down" : ""}">${usd(L.pnl)} settled</span>`
+      ? `<span class="chip">${L.fills} trades</span><span class="chip ${L.pnl > 0 ? "up" : L.pnl < 0 ? "down" : ""}">${usd(L.pnl)} net (approx.)</span>`
       : `<span class="chip">no money</span>`;
     return `<a class="card tile" href="/live-systems/crew/bot/?id=${encodeURIComponent(b.id)}">
       <span class="ai">${esc(b.ai)}</span>
