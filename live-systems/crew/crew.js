@@ -118,12 +118,15 @@ export function mountPnlChart(el, rows, snap) {
 // events: [{at, k: "ai"|"hand"|"dep"|"wd", usd, title, actor}] from the crew snapshot (Polymarket's own history, fees included).
 // The line = cash in - cash out + every settled trade (AI and Jaron's hand trades). AI steps are green up / red down; human moves are blue.
 const YELLOW = "#f2c94c", BLUE = "#4c9aff", GREEN = "#3fb950", RED = "#e23a45", PURPLE = "#b07cff";   // purple = money put in (Jaron 10/18)
-export function mountAccountChart(el, events, snap) {
+export function mountAccountChart(el, events, snap, nowValue) {
   const all = (events || []).filter((r) => r.at && r.usd != null).sort((a, b) => a.at.localeCompare(b.at));
   if (all.length < 2) { el.innerHTML = `<p class="muted small">The chart starts once two things have settled.</p>`; return; }
   const T = all.map((r) => new Date(r.at).getTime());
   const cum = []; let run = 0;
   for (const r of all) cum.push((run += Number(r.usd)));
+  // 10/18 (Jaron: "it shows over $100, I definitely don't"): summing the records from zero ran ~$50 above the real balance
+  // (fees/unmatched records). Pin the line to the REAL account value now and walk back, so today is exact.
+  if (Number.isFinite(nowValue) && cum.length) { const shift = nowValue - cum[cum.length - 1]; for (let i = 0; i < cum.length; i++) cum[i] += shift; }
   const stepCol = (r) => (r.k === "ai" ? (Number(r.usd) >= 0 ? GREEN : RED) : r.k === "bill" ? YELLOW : r.k === "dep" ? PURPLE : BLUE);
   let range = "All", sel = null, lastW = 0;
   try { const s = localStorage.getItem("crewPnlRange"); if (RANGES.some((r) => r[0] === s)) range = s; } catch (e) {}
@@ -142,7 +145,7 @@ export function mountAccountChart(el, events, snap) {
     const t0 = days ? now - days * 864e5 : T[0] - 3600e3, t1 = days ? now : T[T.length - 1];
     const idx = []; let before = 0;
     T.forEach((t, i) => { if (t < t0) before = i + 1; else if (t <= t1) idx.push(i); });
-    const base = before ? cum[before - 1] : 0;
+    const base = before ? cum[before - 1] : cum[0] - Number(all[0].usd);
     const end = idx.length ? cum[idx[idx.length - 1]] : base;
     const change = end - base;
     const sum = (f) => idx.reduce((t, i) => t + (f(all[i]) ? Number(all[i].usd) : 0), 0);
