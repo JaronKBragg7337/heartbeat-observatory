@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="/observatory.css" />
+<title>Live · Heartbeat Observatory</title>
+<meta name="description" content="Big moments around the world as they happen: launches, landings and events, with a live countdown and the official stream." />
+<style>
+  /* 10/19 (Jaron): "we don't have a live page that shows things around the world events like that". First event: MMX.
+     Add an event = one object in EVENTS below (time in UTC, the official stream's YouTube id). Never call a result before a
+     real source confirms it - after T-0 the card says "liftoff time passed" until someone edits in the outcome. */
+  body { background: var(--paper, #f6f1e7); }
+  .lv-wrap { max-width: 900px; margin: 0 auto; padding: 28px 16px 80px; }
+  .lv-back { color: var(--accent); text-decoration: none; font-weight: 650; font-size: 15px; }
+  .lv-head h1 { font-family: var(--serif); font-size: clamp(38px, 8vw, 60px); line-height: 1.02; margin: 18px 0 10px; color: var(--ink); }
+  .lv-head p { color: var(--ink-soft); font-size: 18px; line-height: 1.6; margin: 0 0 8px; }
+  .ev { background: var(--surface-solid, #fffaf1); border: 1px solid var(--line, #e6dccb); border-radius: 18px; padding: 20px; margin: 22px 0; box-shadow: 0 8px 30px rgba(39,45,40,.04); }
+  .ev .tag { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .ev .state { padding: 3px 9px; border-radius: 99px; background: #efe3cf; color: #7a4f22; font-weight: 700; letter-spacing: .08em; }
+  .ev .state.live { background: #c8372d; color: #fff; }
+  .ev h2 { font-family: var(--serif); font-size: clamp(26px, 6vw, 34px); margin: 8px 0 6px; color: var(--ink); line-height: 1.1; }
+  .ev .when { color: var(--ink-soft); font-size: 15px; margin: 0 0 14px; }
+  .count { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 6px 0 16px; }
+  .count div { background: #f4ead8; border: 1px solid #e3d2b4; border-radius: 12px; text-align: center; padding: 10px 4px; }
+  .count b { display: block; font-family: var(--serif); font-size: clamp(28px, 8vw, 44px); color: #3a2a18; font-variant-numeric: tabular-nums; line-height: 1; }
+  .count span { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8a7560; }
+  .count.done { display: block; padding: 12px 14px; background: #f4ead8; border: 1px solid #e3d2b4; border-radius: 12px; color: #3a2a18; font-size: 16px; line-height: 1.5; }
+  .video { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #111; }
+  .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .ev p.what { color: var(--ink); font-size: 16px; line-height: 1.6; margin: 14px 0 6px; }
+  .ev .links { font-size: 14px; color: var(--ink-faint); line-height: 1.6; word-break: break-word; }
+  .ev .links a { color: var(--ink-soft); }
+  .note { font-size: 14px; color: var(--ink-faint); margin-top: 30px; line-height: 1.5; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #1b1611; }
+    .ev { background: #231d17; border-color: #3d3226; }
+    .lv-head h1, .ev h2, .ev p.what { color: #f3e9da; }
+    .lv-head p, .ev .when { color: #c9b8a2; }
+    .count div, .count.done { background: #2c241c; border-color: #4d3f30; }
+    .count b, .count.done { color: #f3e9da; }
+    .lv-back { color: #e0a46a; }
+  }
+</style>
+</head>
+<body>
+<main class="lv-wrap">
+  <a class="lv-back" href="/">&larr; Heartbeat Observatory</a>
+  <header class="lv-head">
+    <h1>Live</h1>
+    <p>Big moments around the world as they happen. A countdown in your own time, the official stream, and what it is for.</p>
+  </header>
+  <div id="events"></div>
+  <p class="note">Times are shown in your own time zone. Streams belong to the people who run them; we only point to the official one. Results are added once a real source confirms them.</p>
+</main>
+<script>
+const EVENTS = [
+  {
+    id: "mmx",
+    tag: "Space · Japan",
+    title: "MMX launches to the moons of Mars",
+    t0: "2026-10-19T19:41:03Z",            // 4:41:03 AM Oct 20 in Japan (JAXA)
+    streamStart: "2026-10-19T18:45:00Z",   // JAXA's live broadcast (YouTube schedule)
+    youtube: "sZGyK9jfoy4",
+    streamNote: "JAXA's official broadcast, in Japanese.",
+    what: "Japan's H3 rocket carries MMX from Tanegashima. It reaches Mars in 2027, lands on the moon Phobos, and brings at least 10 grams of it home in 2031: the first sample ever from a Martian moon.",
+    links: [["Our episode: MMX, ten grams from Phobos", "/tv/"], ["ESA: launch time", "https://www.esa.int/Science_Exploration/Space_Science/Mars_moon_lander_set_to_launch_on_19_October"], ["JAXA MMX", "https://www.mmx.jaxa.jp/en/"]],
+    result: ""                               // fill in once confirmed, e.g. "Launched. MMX separated from the rocket at ..."
+  }
+];
+const pad = n => String(n).padStart(2, "0");
+const fmt = d => d.toLocaleString(undefined, { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+const box = document.getElementById("events");
+box.innerHTML = EVENTS.map(e => `
+  <article class="ev" id="${e.id}">
+    <div class="tag">${e.tag} <span class="state" data-state></span></div>
+    <h2>${e.title}</h2>
+    <p class="when">Liftoff: ${fmt(new Date(e.t0))}</p>
+    <div class="count" data-count></div>
+    ${e.youtube ? `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${e.youtube}" title="${e.title} - live stream" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>
+    <p class="links">${e.streamNote} Stream starts ${new Date(e.streamStart).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}.</p>` : ""}
+    <p class="what">${e.what}</p>
+    <p class="links">${e.links.map(([t, u]) => `<a href="${u}">${t}</a>`).join(" · ")}</p>
+  </article>`).join("");
+function tick() {
+  const now = Date.now();
+  for (const e of EVENTS) {
+    const el = document.getElementById(e.id), c = el.querySelector("[data-count]"), s = el.querySelector("[data-state]");
+    const left = new Date(e.t0) - now, streaming = now >= new Date(e.streamStart);
+    if (left > 0) {
+      const d = Math.floor(left / 864e5), h = Math.floor(left / 36e5) % 24, m = Math.floor(left / 6e4) % 60, sec = Math.floor(left / 1e3) % 60;
+      c.className = "count";
+      c.innerHTML = `<div><b>${d}</b><span>days</span></div><div><b>${pad(h)}</b><span>hours</span></div><div><b>${pad(m)}</b><span>min</span></div><div><b>${pad(sec)}</b><span>sec</span></div>`;
+      s.textContent = streaming ? "Live now" : "Coming up"; s.className = "state" + (streaming ? " live" : "");
+    } else {
+      c.className = "count done";
+      c.textContent = e.result || "Liftoff time has passed. Watch the stream for what happened; we add the result here once it is confirmed.";
+      s.textContent = e.result ? "Done" : (now - new Date(e.t0) < 3 * 36e5 ? "Live now" : "Done"); s.className = "state" + (s.textContent === "Live now" ? " live" : "");
+    }
+  }
+}
+tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>
