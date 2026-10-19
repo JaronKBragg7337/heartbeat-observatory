@@ -117,14 +117,14 @@ export function mountPnlChart(el, rows, snap) {
 // The account story, brokerage style: range buttons, change header, y-axis rescaled to the range, tap a dot for the event.
 // events: [{at, k: "ai"|"hand"|"dep"|"wd", usd, title, actor}] from the crew snapshot (Polymarket's own history, fees included).
 // The line = cash in - cash out + every settled trade (AI and Jaron's hand trades). AI steps are green up / red down; human moves are blue.
-const YELLOW = "#f2c94c", BLUE = "#4c9aff", GREEN = "#3fb950", RED = "#e23a45";
+const YELLOW = "#f2c94c", BLUE = "#4c9aff", GREEN = "#3fb950", RED = "#e23a45", PURPLE = "#b07cff";   // purple = money put in (Jaron 10/18)
 export function mountAccountChart(el, events, snap) {
   const all = (events || []).filter((r) => r.at && r.usd != null).sort((a, b) => a.at.localeCompare(b.at));
   if (all.length < 2) { el.innerHTML = `<p class="muted small">The chart starts once two things have settled.</p>`; return; }
   const T = all.map((r) => new Date(r.at).getTime());
   const cum = []; let run = 0;
   for (const r of all) cum.push((run += Number(r.usd)));
-  const stepCol = (r) => (r.k === "ai" ? (Number(r.usd) >= 0 ? GREEN : RED) : r.k === "bill" ? YELLOW : BLUE);
+  const stepCol = (r) => (r.k === "ai" ? (Number(r.usd) >= 0 ? GREEN : RED) : r.k === "bill" ? YELLOW : r.k === "dep" ? PURPLE : BLUE);
   let range = "All", sel = null, lastW = 0;
   try { const s = localStorage.getItem("crewPnlRange"); if (RANGES.some((r) => r[0] === s)) range = s; } catch (e) {}
   const who = (r) => {
@@ -183,7 +183,7 @@ export function mountAccountChart(el, events, snap) {
     const chip = (t, v, c) => `<span class="chip" style="border-color:${c};color:${c}">${t} ${sgn(v)}</span>`;
     el.innerHTML = `<div class="pc-head"><div class="pc-big" style="color:${col}">${sgn(change)}</div>
         <div class="pc-sub">account line, ${label.toLowerCase()} · ${idx.length} events</div>
-        <div class="chips">${chip("AI trades", aiS, aiS >= 0 ? GREEN : RED)}${chip("Jaron by hand", handS, BLUE)}${chip("Taken out", wdS, BLUE)}${billS ? chip("Bills paid", billS, YELLOW) : ""}${chip("Put in", depS, BLUE)}</div></div>
+        <div class="chips">${chip("AI trades", aiS, aiS >= 0 ? GREEN : RED)}${chip("Jaron by hand", handS, BLUE)}${chip("Taken out", wdS, BLUE)}${billS ? chip("Bills paid", billS, YELLOW) : ""}${chip("Put in", depS, PURPLE)}</div></div>
       <div class="pc-ranges" role="group" aria-label="Chart range">${RANGES.map(([k]) => `<button type="button" data-r="${k}"${k === range ? ' aria-pressed="true"' : ""}>${k}</button>`).join("")}</div>
       <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="pc-svg" role="img" aria-label="Account line, ${label}: ${sgn(change)}; AI ${sgn(aiS)}, hand trades ${sgn(handS)}, withdrawals ${sgn(wdS)}, deposits ${sgn(depS)}">
         ${grid}${xl}
