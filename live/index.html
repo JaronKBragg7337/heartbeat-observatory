@@ -65,7 +65,7 @@ const EVENTS = [
     streamNote: "JAXA's official broadcast, in Japanese.",
     what: "Japan's H3 rocket carries MMX from Tanegashima. It reaches Mars in 2027, lands on the moon Phobos, and brings at least 10 grams of it home in 2031: the first sample ever from a Martian moon.",
     links: [["Our episode: MMX, ten grams from Phobos", "/tv/"], ["ESA: launch time", "https://www.esa.int/Science_Exploration/Space_Science/Mars_moon_lander_set_to_launch_on_19_October"], ["JAXA MMX", "https://www.mmx.jaxa.jp/en/"]],
-    result: ""                               // fill in once confirmed, e.g. "Launched. MMX separated from the rocket at ..."
+    result: "Liftoff! The H3 lifted off on time at 3:41 PM ET (JAXA live flight tracker, 10/19). MMX is due to separate from the rocket about 71 minutes after liftoff, around 4:52 PM ET. Next stop: Mars, August 2027."   // 10/19 3:51 PM, from JAXA's own stream (X+00:09:35)
   }
 ];
 const pad = n => String(n).padStart(2, "0");
@@ -95,7 +95,7 @@ function tick() {
     } else {
       c.className = "count done";
       c.textContent = e.result || "Liftoff time has passed. Watch the stream for what happened; we add the result here once it is confirmed.";
-      s.textContent = e.result ? "Done" : (now - new Date(e.t0) < 3 * 36e5 ? "Live now" : "Done"); s.className = "state" + (s.textContent === "Live now" ? " live" : "");
+      s.textContent = now - new Date(e.t0) < 3 * 36e5 ? "Live now" : "Done"; s.className = "state" + (s.textContent === "Live now" ? " live" : "");
     }
   }
 }
