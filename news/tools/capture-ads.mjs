@@ -41,6 +41,7 @@ async function shoot(ad) {
         if (el) { el.click(); return true; } return false; })()` });
       await sleep(ad.afterClick || 6000);
     }
+    if (ad.clickSel) { await send("Runtime.evaluate", { expression: `document.querySelector(${JSON.stringify(ad.clickSel)})?.click()` }); await sleep(ad.afterClick || 4000); }   // 10/19: tap an icon (the phone button has no text)
     if (ad.hideText) {
       // hide an intro overlay (the smallest fixed/absolute box that contains this text) so the scene behind it shows
       await send("Runtime.evaluate", { expression: `(() => {
