@@ -41,6 +41,7 @@
       <h1>Key Drop</h1>
       <p class="lede">Paste a new API key from anywhere. It gets locked on your phone before it's sent, and only the MSI can unlock it.
         The MSI puts it where the tools read it, tests it, and buzzes your phone. Nobody, including this page, can read it back.</p>
+      <p class="lede" style="font-size:.8rem">Lock fingerprint: <code id="fp">...</code> (the MSI's own is <code>c4d757adefda520f</code>; if they ever differ, don't send)</p>
     </header>
     <p class="gate" id="gate" hidden>Sign in as an admin to drop keys. <a href="/admin">Sign in</a></p>
     <div id="app" hidden>
@@ -85,13 +86,17 @@
   const PUB = "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAznp/iwttyW9JGY997RzM6atHmvNgnIbTUMxoZ4TDq2rEu9g3EGNi3CoRinpPNxYoRNXvjF6hg3EhwBTHkBR0JfBxb0hJO9/GT8wE5XQX8uOkUHO7SJMzzOeaOhOc6Wx453sV2UQE4qjJZowjw8TtUrZvYsSkGCDdiZPjHqbY/NvxBPJ++576wboZL2P3tuHeiImQ2Pj9CJ758urKk3Y6U0ubpCOWhjoZQFme//g+/SEmMr/Oje6mXPPILa9CNOXvXoI9FHTsAAl50kiCf9BwdmltNDb3tdqpKxXVDvl5m7YbqcPVInFo33cupNz2IkheXUopPgrJBs94m8B78Fll1augsHfXtivgk8L97CRJSaCIx7xULsj2cgIGX0neTkcfEgQXrnUn41ayNPeUJbj04mOxCYlCDPlna+dKJG3jlA5hxOCN+wVKbTgU7mrNNFjHnZesuAGPGbMYQMpBlHOSZtYKX5El0AwQ1lg/LO+cxmyY1Om+a3BJgZQ7B/uzwd5wsoLaEOts5hrI3SEZcsFLHdq5ywwDKAYopmixJ3U3YlAaNLZknU4k3ahEphNU2I5a74plSrp62YoNniVOQ85hgo3zTfr9PoZsoiKVBVqMb6mZsizs0MpvBEOwOkRgmfai8X+fM6Yu0gCveURWAIMl9uINVY0eDaRRGZElOSlKU18CAwEAAQ==";   // the MSI's public key (AI-Shared/state/keydrop_public.b64); the private half never leaves the MSI
   const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
   const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  // 10/20: the lock key's fingerprint goes with every drop and shows on the page. The MSI checks it against its own key: if the
+  // page was ever tampered with to swap in someone else's lock key, the MSI alarms instead of quietly failing.
+  async function fingerprint() { const h = await crypto.subtle.digest("SHA-256", unb64(PUB)); return [...new Uint8Array(h)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join(""); }
+  fingerprint().then((f) => { const el = document.getElementById("fp"); if (el) el.textContent = f; });
   async function lock(obj) {
     const pub = await crypto.subtle.importKey("spki", unb64(PUB), { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
     const aes = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"]);
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aes, new TextEncoder().encode(JSON.stringify(obj)));
     const k = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, pub, await crypto.subtle.exportKey("raw", aes));
-    return { v: 1, k: b64(k), iv: b64(iv), ct: b64(ct) };
+    return { v: 1, k: b64(k), iv: b64(iv), ct: b64(ct), fp: await fingerprint() };
   }
   const { data: { session } } = await supabase.auth.getSession();
   let isAdmin = false;
