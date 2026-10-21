@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>hb-render phone test</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #16140f; color: #e8e2d2; font: 15px/1.45 -apple-system, system-ui, sans-serif; padding: 12px 14px 40px; }
+  h1 { font-size: 20px; margin: 4px 0 2px; } .sub { color: #a9a08a; font-size: 13px; margin-bottom: 10px; }
+  button { font: inherit; font-size: 16px; background: #d9a441; color: #1b1708; border: 0; border-radius: 10px; padding: 12px 18px; font-weight: 600; width: 100%; margin: 6px 0; }
+  button.secondary { background: #34302a; color: #e8e2d2; }
+  button:disabled { opacity: 0.5; }
+  #status { color: #f0c36b; min-height: 22px; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  td, th { text-align: left; padding: 5px 4px; border-bottom: 1px solid #2d2922; vertical-align: top; }
+  th { color: #a9a08a; font-weight: 500; }
+  .ok { color: #9ad67a; } .bad { color: #f07f6b; } .warn { color: #f0c36b; }
+  canvas, img.thumb { width: 100%; height: auto; border-radius: 8px; background: #000; display: block; margin: 6px 0; }
+  pre { font-size: 11px; background: #0f0e0b; padding: 8px; border-radius: 8px; overflow: auto; max-height: 40vh; white-space: pre-wrap; }
+  .row { display: flex; gap: 8px; } .row button { flex: 1; }
+  #log { font-size: 11px; color: #8f8873; max-height: 20vh; overflow: auto; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div style="margin-bottom:6px"><a href="/artifacts/" style="color:#f0c36b">&larr; Gallery (Heartbeat Artifacts)</a> &nbsp;|&nbsp; <a href="anything/" style="color:#f0c36b">Make anything &rarr;</a></div>
+<h1>hb-render phone test</h1>
+<div class="sub">Runs the same engine files as the desktop (src/scene.js, src/render.js, src/tracer.wgsl) on this phone's GPU through WebGPU. Takes 3 to 8 minutes. Keep the screen on.</div>
+<button id="run">Run the full ladder</button>
+<div class="row"><button class="secondary" id="quick">Quick (WebGPU + one 360p render)</button><button class="secondary" id="save" disabled>Save results JSON</button></div>
+<div class="row"><button class="secondary" id="saveimg" disabled>Save image (full resolution)</button><button class="secondary" id="clear">Clear saved results</button></div>
+<div id="status"></div>
+<canvas id="cv" width="640" height="360"></canvas>
+<div id="results"></div>
+<pre id="json" hidden></pre>
+<div id="log"></div>
+<script>window.HB_BASE='/render/';</script>
+<script type="module">
+import { buildScene } from '/render/src/scene.js';
+import { createRenderer } from '/render/src/render.js';
+import { sphere, flattenMeshes } from '/render/src/mesh.js';
+import { buildBVH } from '/render/src/bvh.js';
+
+const $ = (id) => document.getElementById(id);
+const canvas = $('cv'), ctx = canvas.getContext('2d');
+const results = { version: 'hb-render phone test 0.4', when: new Date().toISOString(), ua: navigator.userAgent, screen: [screen.width, screen.height, devicePixelRatio], tests: [] };
+const log = (m) => { $('log').textContent = (m + '\n' + $('log').textContent).slice(0, 6000); };
+const setStatus = (s) => { $('status').textContent = s; };
+const yieldFrame = () => new Promise((r) => setTimeout(r, 0));
+const baseUrl = window.HB_BASE || new URL('..', location.href).href;
+const rows = [];
+const STORE = 'hb-phone-test-results';
+let lastFull = null; // full-resolution pixels of the last render for Save image
+async function persist(stage) {
+  results.lastStage = stage; results.updated = new Date().toISOString(); results.rows = rows.slice();
+  try { localStorage.setItem(STORE, JSON.stringify(results)); } catch (e) {}
+  try { const r = await fetch(new URL('/phone-results', location.href), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(results) }); results.posted = r.ok ? (await r.json()).saved : null; } catch (e) { results.posted = null; }
+}
+function addRow(name, value, cls = '') { rows.push([name, value, cls]); renderRows(); persist(name); }
+function renderRows() {
+  $('results').innerHTML = '<table><tr><th>test</th><th>result</th></tr>' + rows.map(([n, v, c]) => `<tr><td>${n}</td><td class="${c}">${v}</td></tr>`).join('') + '</table>';
+}
+function present(px, w, h) { canvas.width = w; canvas.height = h; ctx.putImageData(new ImageData(px, w, h), 0, 0); lastFull = { px, w, h }; }
+function thumb(q = 0.6) { return canvas.toDataURL('image/jpeg', q); }
+async function timed(fn) { const t0 = performance.now(); const r = await fn(); return { r, ms: performance.now() - t0 }; }
+let sceneCache = {};
+
+async function testWebGPU() {
+  const t = { name: 'webgpu' };
+  if (!navigator.gpu) { t.ok = false; t.error = 'navigator.gpu missing'; addRow('WebGPU', 'not available', 'bad'); results.tests.push(t); return false; }
+  const a = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+  if (!a) { t.ok = false; t.error = 'no adapter'; addRow('WebGPU', 'no adapter', 'bad'); results.tests.push(t); return false; }
+  t.ok = true; t.info = a.info ? { vendor: a.info.vendor, architecture: a.info.architecture, device: a.info.device, description: a.info.description } : null;
+  t.features = [...a.features];
+  const L = a.limits; t.limits = {};
+  for (const k of ['maxBufferSize', 'maxStorageBufferBindingSize', 'maxStorageBuffersPerShaderStage', 'maxComputeWorkgroupSizeX', 'maxComputeInvocationsPerWorkgroup', 'maxTextureDimension2D', 'maxTextureArrayLayers', 'maxBindGroups', 'maxComputeWorkgroupsPerDimension']) t.limits[k] = L[k];
+  addRow('WebGPU', `ok: ${t.info ? (t.info.vendor + ' ' + t.info.architecture) : 'adapter'}; maxBuffer ${(L.maxBufferSize / 1048576).toFixed(0)} MB, storage binding ${(L.maxStorageBufferBindingSize / 1048576).toFixed(0)} MB, storage buffers/stage ${L.maxStorageBuffersPerShaderStage}`, 'ok');
+  results.tests.push(t);
+  return true;
+}
+
+async function loadScene(name, device) {
+  if (sceneCache[name]) return sceneCache[name];
+  const scene = await (await fetch(baseUrl + 'scenes/' + name + '.json')).json();
+  const S = await buildScene(scene, { log, baseUrl, yield: yieldFrame, device });
+  S.sceneJson = scene;
+  sceneCache[name] = S;
+  return S;
+}
+
+// render `spp` samples progressively, reporting at checkpoints; returns timings
+async function renderLadder(S, width, height, checkpoints, label) {
+  const R = await createRenderer({ width, height, baseUrl });
+  R.setScene(S);
+  await R.buildCaustics();
+  const out = { label, width, height, checkpoints: [] };
+  const t0 = performance.now(); let done = 0;
+  for (const cp of checkpoints) {
+    while (done < cp) { const n = Math.min(8, cp - done); await R.pass(n); done += n; setStatus(`${label} ${width}x${height}: ${done}/${cp} spp`); await yieldFrame(); }
+    const el = (performance.now() - t0) / 1000;
+    out.checkpoints.push({ spp: cp, seconds: +el.toFixed(2), msPerSample: +((el / cp) * 1000).toFixed(1) });
+  }
+  const px = await R.finish({ denoise: true, iterations: 2, exposure: S.sceneJson.camera.exposure ?? 0 });
+  present(px, width, height);
+  out.thumb = thumb(0.5);
+  R.destroy();
+  return out;
+}
+
+async function testBottle(full) {
+  const configs = full ? [[640, 360], [1280, 720], [1920, 1080]] : [[640, 360]];
+  const checkpoints = full ? [16, 64, 256] : [16];
+  const R0 = await createRenderer({ width: 64, height: 64, baseUrl });
+  setStatus('building bottle scene (fluid on the GPU)...');
+  const { r: S, ms } = await timed(() => loadScene('bottle-sand-phone', R0.device));
+  const t = { name: 'bottle-sand-phone', buildSeconds: +(ms / 1000).toFixed(1), triangles: S.stats.triangles, fluid: S.stats.fluid, runs: [] };
+  addRow('bottle build', `${(ms / 1000).toFixed(1)} s, ${S.stats.triangles} tris, fluid ${S.stats.fluid ? S.stats.fluid.solver + ' ' + S.stats.fluid.seconds.toFixed(1) + ' s' : '-'}`, 'ok');
+  for (const [w, h] of configs) {
+    try {
+      const r = await renderLadder(S, w, h, checkpoints, 'bottle');
+      t.runs.push(r);
+      addRow(`bottle ${w}x${h}`, r.checkpoints.map((c) => `${c.spp} spp ${c.seconds}s (${c.msPerSample} ms/spp)`).join('<br>'), 'ok');
+    } catch (e) { t.runs.push({ width: w, height: h, error: String(e) }); addRow(`bottle ${w}x${h}`, 'failed: ' + e.message, 'bad'); log(String(e.stack || e)); }
+    await yieldFrame();
+  }
+  results.tests.push(t);
+  return S;
+}
+
+async function testBedroom() {
+  const R0 = await createRenderer({ width: 64, height: 64, baseUrl });
+  setStatus('loading bedroom (five glTF models)...');
+  try {
+    const { r: S, ms } = await timed(() => loadScene('bedroom', R0.device));
+    const r = await renderLadder(S, 1280, 720, [64], 'bedroom');
+    results.tests.push({ name: 'bedroom', buildSeconds: +(ms / 1000).toFixed(1), triangles: S.stats.triangles, run: r });
+    addRow('bedroom 1280x720', `build ${(ms / 1000).toFixed(1)} s, 64 spp ${r.checkpoints[0].seconds} s (${r.checkpoints[0].msPerSample} ms/spp)`, 'ok');
+  } catch (e) { results.tests.push({ name: 'bedroom', error: String(e) }); addRow('bedroom', 'failed: ' + e.message, 'bad'); log(String(e.stack || e)); }
+}
+
+async function testVideo(S) {
+  const W = 1280, H = 720, fps = 24, seconds = 3, spp = 4;
+  const frames = [], times = [];
+  try {
+    const R = await createRenderer({ width: W, height: H, baseUrl });
+    const cam = S.camera; const p0 = cam.position.slice(), tg = cam.target;
+    R.setScene(S); await R.buildCaustics();
+    const t0 = performance.now();
+    for (let f = 0; f < fps * seconds; f++) {
+      const a = (f / (fps * seconds)) * 0.35; // orbit 20 degrees around the target
+      const dx = p0[0] - tg[0], dz = p0[2] - tg[2];
+      cam.position = [tg[0] + dx * Math.cos(a) - dz * Math.sin(a), p0[1], tg[2] + dx * Math.sin(a) + dz * Math.cos(a)];
+      const tf = performance.now();
+      R.reset(); await R.pass(spp);
+      const px = await R.finish({ denoise: true, iterations: 2, exposure: S.sceneJson.camera.exposure ?? 0 });
+      present(px, W, H); frames.push(thumb(0.5));
+      times.push(+(performance.now() - tf).toFixed(0));
+      setStatus(`video frame ${f + 1}/${fps * seconds}`);
+      await yieldFrame();
+    }
+    cam.position = p0;
+    const total = (performance.now() - t0) / 1000;
+    R.destroy();
+    results.tests.push({ name: 'video', width: W, height: H, fps, seconds, spp, frameMs: times, totalSeconds: +total.toFixed(1), avgFrameMs: +(times.reduce((a, b) => a + b, 0) / times.length).toFixed(0) });
+    addRow('video 3 s @ 24 fps, 720p, 4 spp', `${times.length} frames in ${total.toFixed(1)} s, avg ${(times.reduce((a, b) => a + b, 0) / times.length).toFixed(0)} ms/frame (real time would need ${(1000 / fps).toFixed(0)} ms)`, 'ok');
+    // playback
+    const img = document.createElement('img'); img.className = 'thumb'; $('results').appendChild(img);
+    let i = 0; const play = () => { img.src = frames[i % frames.length]; i++; if (i < frames.length * 3) setTimeout(play, 1000 / fps); };
+    play();
+  } catch (e) { results.tests.push({ name: 'video', error: String(e) }); addRow('video', 'failed: ' + e.message, 'bad'); log(String(e.stack || e)); }
+}
+
+async function testSteady(S) {
+  const W = 1280, H = 720;
+  try {
+    const R = await createRenderer({ width: W, height: H, baseUrl });
+    R.setScene(S); await R.buildCaustics();
+    const samples = []; const t0 = performance.now(); let last = t0, count = 0, total = 0;
+    while (performance.now() - t0 < 60000) {
+      await R.pass(8); count += 8; total += 8;
+      const now = performance.now();
+      if (now - last >= 5000) { samples.push({ t: +((now - t0) / 1000).toFixed(1), sppPerSec: +((count / (now - last)) * 1000).toFixed(2) }); last = now; count = 0; setStatus(`steady load: ${samples[samples.length - 1].sppPerSec} spp/s at ${samples[samples.length - 1].t} s`); }
+      await yieldFrame();
+    }
+    const px = await R.finish({ denoise: false, exposure: S.sceneJson.camera.exposure ?? 0 }); present(px, W, H);
+    R.destroy();
+    const first = samples[0]?.sppPerSec, lastV = samples[samples.length - 1]?.sppPerSec;
+    results.tests.push({ name: 'steady60', width: W, height: H, samples, totalSpp: total, throttle: first && lastV ? +(lastV / first).toFixed(2) : null });
+    addRow('steady load 60 s (720p)', samples.map((s) => `${s.t}s: ${s.sppPerSec} spp/s`).join(', ') + (first && lastV ? ` - end/start ${(lastV / first * 100).toFixed(0)}%` : ''), first && lastV && lastV / first < 0.7 ? 'warn' : 'ok');
+  } catch (e) { results.tests.push({ name: 'steady60', error: String(e) }); addRow('steady load', 'failed: ' + e.message, 'bad'); }
+}
+
+async function testTriangles(S) {
+  // synthetic scenes of growing triangle counts until the device refuses
+  const steps = [250000, 500000, 1000000, 2000000, 4000000];
+  const t = { name: 'triangle-probe', steps: [] };
+  for (const target of steps) {
+    try {
+      const per = 2 * 64 * 40; // triangles per sphere
+      const n = Math.ceil(target / per);
+      const list = [];
+      for (let i = 0; i < n; i++) { const m = sphere(0.02, 64, 40); const ox = (i % 50) * 0.05 - 1.25, oz = Math.floor(i / 50) * 0.05 - 1; for (let k = 0; k < m.pos.length; k += 3) { m.pos[k] += ox; m.pos[k + 1] += 0.05; m.pos[k + 2] += oz; } list.push({ mesh: m, materialId: 1 }); }
+      const t0 = performance.now();
+      const flat = flattenMeshes(list); const bvh = buildBVH(flat);
+      const build = (performance.now() - t0) / 1000;
+      const R = await createRenderer({ width: 640, height: 360, baseUrl });
+      R.setScene({ ...S, bvh, wetMap: null, render: { ...S.render, caustics: null } });
+      const t1 = performance.now(); await R.pass(4);
+      const px = await R.finish({ denoise: false, exposure: S.sceneJson.camera.exposure ?? 0 }); present(px, 640, 360);
+      const ms = (performance.now() - t1) / 4;
+      R.destroy();
+      t.steps.push({ triangles: flat.triCount, buildSeconds: +build.toFixed(2), msPerSample: +ms.toFixed(1), ok: true });
+      addRow(`triangles ${(flat.triCount / 1e6).toFixed(2)} M`, `ok: BVH ${build.toFixed(1)} s, ${ms.toFixed(0)} ms/spp at 360p`, 'ok');
+      await yieldFrame();
+    } catch (e) { t.steps.push({ triangles: target, ok: false, error: String(e) }); addRow(`triangles ${(target / 1e6).toFixed(2)} M`, 'failed: ' + e.message, 'bad'); break; }
+  }
+  results.tests.push(t);
+}
+
+async function finish() {
+  results.finished = new Date().toISOString();
+  const json = JSON.stringify(results, null, 2);
+  $('json').textContent = json.replace(/"data:image[^"]+"/g, '"(thumbnail)"'); $('json').hidden = false;
+  $('save').disabled = false;
+  try {
+    const r = await fetch(new URL('/phone-results', location.href), { method: 'POST', headers: { 'content-type': 'application/json' }, body: json });
+    if (r.ok) { const j = await r.json(); addRow('results', 'posted to the server: ' + j.saved, 'ok'); }
+    else addRow('results', 'server did not accept the results (use Save)', 'warn');
+  } catch (e) { addRow('results', 'not served from the MSI: use Save results JSON', 'warn'); }
+  setStatus('done');
+}
+
+async function runAll(full) {
+  $('run').disabled = true; $('quick').disabled = true; rows.length = 0; results.tests = []; results.mode = full ? 'full' : 'quick';
+  try {
+    if (!(await testWebGPU())) return finish();
+    const S = await testBottle(full);
+    if (full) {
+      await testBedroom();
+      await testVideo(S);
+      await testSteady(S);
+      await testTriangles(S);
+    }
+  } catch (e) { addRow('ladder', 'stopped: ' + e.message, 'bad'); log(String(e.stack || e)); }
+  await finish();
+  $('run').disabled = false; $('quick').disabled = false;
+}
+$('run').onclick = () => runAll(true);
+$('quick').onclick = () => runAll(false);
+$('save').onclick = () => {
+  const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'hb-render-phone-test.json'; a.click();
+};
+$('saveimg').onclick = () => {
+  if (!lastFull) return;
+  const c = document.createElement('canvas'); c.width = lastFull.w; c.height = lastFull.h;
+  c.getContext('2d').putImageData(new ImageData(lastFull.px, lastFull.w, lastFull.h), 0, 0);
+  c.toBlob(async (b) => {
+    const file = new File([b], 'hb-render-' + lastFull.w + 'x' + lastFull.h + '.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: 'hb-render' }); return; } catch (e) {} }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = file.name; a.click();
+  }, 'image/png');
+};
+$('clear').onclick = () => { try { localStorage.removeItem(STORE); } catch (e) {} rows.length = 0; renderRows(); $('json').hidden = true; };
+// a reload shows what was already measured (results are saved after every step)
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+  if (saved && saved.rows && saved.rows.length) {
+    Object.assign(results, saved); rows.push(...saved.rows); renderRows();
+    $('json').textContent = JSON.stringify(saved, null, 2).replace(/"data:image[^"]+"/g, '"(thumbnail)"'); $('json').hidden = false; $('save').disabled = false;
+    setStatus('showing results saved ' + (saved.updated || '') + (saved.finished ? ' (finished)' : ' (the run did not finish; press Run to start over)'));
+  }
+} catch (e) {}
+window.hbPhone = { runAll, results };
+</script>
+</body>
+</html>

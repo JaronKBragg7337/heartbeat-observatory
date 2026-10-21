@@ -1,0 +1,228 @@
+{
+ "hbrender": "0.1",
+ "name": "bottle-sand-phone",
+ "description": "Phone-sized version of the bottle shot: 2k sky, 1.5 mm particles, lighter sand mesh, no caustic map. Same engine, same scene language.",
+ "units": "meters",
+ "time": 1.6,
+ "camera": {
+  "position": [
+   0.27,
+   0.21,
+   -0.42
+  ],
+  "target": [
+   0.005,
+   0.025,
+   -0.215
+  ],
+  "fov": 28,
+  "fstop": 11,
+  "focusDistance": 0.39,
+  "exposure": -0.5
+ },
+ "environment": {
+  "hdri": "assets/hdri/kloofendal_43d_clear_puresky_2k.hdr",
+  "rotation": 166,
+  "intensity": 1
+ },
+ "materials": {
+  "sand": {
+   "baseColor": [
+    1,
+    0.92,
+    0.76
+   ],
+   "baseColorTexture": "assets/textures/dense_sand_diff_2k.jpg",
+   "roughnessTexture": "assets/textures/dense_sand_rough_2k.jpg",
+   "normalTexture": "assets/textures/dense_sand_nor_gl_2k.jpg",
+   "normalStrength": 1,
+   "grain": 0.35,
+   "roughness": 1,
+   "metallic": 0,
+   "uvScale": 2,
+   "wetness": true
+  },
+  "pet": {
+   "baseColor": [
+    0.985,
+    0.995,
+    1
+   ],
+   "roughness": 0.03,
+   "metallic": 0,
+   "ior": 1.575,
+   "transmission": 1,
+   "absorption": [
+    1.5,
+    0.8,
+    0.3
+   ]
+  },
+  "water": {
+   "baseColor": [
+    1,
+    1,
+    1
+   ],
+   "roughness": 0,
+   "metallic": 0,
+   "ior": 1.333,
+   "transmission": 1,
+   "absorption": [
+    0.35,
+    0.06,
+    0.02
+   ]
+  }
+ },
+ "objects": [
+  {
+   "name": "sand-near",
+   "type": "heightfield",
+   "material": "sand",
+   "ground": true,
+   "size": [
+    2.4,
+    2.4
+   ],
+   "segments": [
+    240,
+    240
+   ],
+   "uvRepeat": 1,
+   "edgeFade": 0.3,
+   "displacement": {
+    "texture": "assets/textures/dense_sand_disp_2k.jpg",
+    "scale": 0.004
+   },
+   "ripples": {
+    "amplitude": 0.0035,
+    "wavelength": 0.07,
+    "direction": 35
+   },
+   "dunes": {
+    "amplitude": 0.014,
+    "scale": 2.2
+   },
+   "flat": {
+    "position": [
+     0,
+     -0.08
+    ],
+    "radius": 0.16,
+    "falloff": 0.18,
+    "keep": 0.15
+   },
+   "bumps": [
+    {
+     "position": [
+      0,
+      0.03
+     ],
+     "radius": 0.07,
+     "height": 0.022
+    }
+   ]
+  },
+  {
+   "name": "sand-far",
+   "type": "heightfield",
+   "material": "sand",
+   "size": [
+    80,
+    80
+   ],
+   "segments": [
+    120,
+    120
+   ],
+   "uvRepeat": 1,
+   "position": [
+    0,
+    -0.004,
+    0
+   ],
+   "dunes": {
+    "amplitude": 1.6,
+    "scale": 0.06
+   },
+   "flat": {
+    "position": [
+     0,
+     0
+    ],
+    "radius": 1.6,
+    "falloff": 3,
+    "keep": 0
+   }
+  },
+  {
+   "name": "bottle",
+   "type": "bottle",
+   "material": "pet",
+   "position": [
+    0,
+    0.05,
+    0
+   ],
+   "rotation": [
+    -96,
+    0,
+    0
+   ],
+   "params": {
+    "radius": 0.0325,
+    "height": 0.215,
+    "wall": 0.0004,
+    "ridges": 5,
+    "ridgeDepth": 0.0018,
+    "segments": 160
+   }
+  },
+  {
+   "name": "bottle-water",
+   "type": "bottle_fill",
+   "material": "water",
+   "cell": 0.0008
+  }
+ ],
+ "fluid": {
+  "material": "water",
+  "spacing": 0.0015,
+  "gpu": true,
+  "capacity": 80000,
+  "dt": 0.0025,
+  "iterations": 4,
+  "viscosity": 0.02,
+  "source": {
+   "object": "bottle",
+   "fillLevel": 0.032
+  },
+  "sand": {
+   "origin": [
+    -0.15,
+    -0.38
+   ],
+   "size": 0.3,
+   "resolution": 256,
+   "absorbRate": 40,
+   "deposit": 0.25,
+   "diffusion": 0.004,
+   "saturation": 1.5,
+   "trail": 0.2
+  },
+  "surface": {
+   "iso": 0.3
+  }
+ },
+ "render": {
+  "width": 1280,
+  "height": 720,
+  "samples": 64,
+  "maxBounces": 12,
+  "denoise": true,
+  "denoiseIterations": 2,
+  "denoiseSigma": 0.12,
+  "wetnessGain": 4
+ }
+}

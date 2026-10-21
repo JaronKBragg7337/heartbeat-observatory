@@ -1,0 +1,420 @@
+{
+ "hbrender": "0.2",
+ "name": "bedroom",
+ "description": "A small bedroom, late afternoon: sun through the window, nightstand lamp on. Poly Haven CC0 models and textures.",
+ "units": "meters",
+ "time": 0,
+ "camera": {
+  "position": [
+   1.75,
+   1.45,
+   1.5
+  ],
+  "target": [
+   -0.35,
+   0.8,
+   -0.65
+  ],
+  "fov": 58,
+  "fstop": 8,
+  "focusDistance": 2.8,
+  "exposure": 0.8
+ },
+ "environment": {
+  "hdri": "assets/hdri/qwantani_late_afternoon_puresky_2k.hdr",
+  "rotation": 218,
+  "intensity": 1,
+  "sampleDirect": false
+ },
+ "lights": [
+  {
+   "name": "window",
+   "type": "portal",
+   "position": [
+    -1.99,
+    0.9,
+    -0.9
+   ],
+   "u": [
+    0,
+    0,
+    1.2
+   ],
+   "v": [
+    0,
+    1.4,
+    0
+   ],
+   "intensity": 1
+  },
+  {
+   "name": "bulb",
+   "type": "mesh",
+   "object": "lamp",
+   "material": "desk_lamp_arm_01_light",
+   "color": [
+    1,
+    0.8,
+    0.55
+   ],
+   "intensity": 260
+  }
+ ],
+ "materials": {
+  "floor": {
+   "baseColor": [
+    1,
+    1,
+    1
+   ],
+   "clearcoat": 0.35,
+   "clearcoatRoughness": 0.18,
+   "baseColorTexture": "assets/textures/wood_floor_worn_diff_2k.jpg",
+   "roughnessTexture": "assets/textures/wood_floor_worn_rough_2k.jpg",
+   "normalTexture": "assets/textures/wood_floor_worn_nor_gl_2k.jpg",
+   "roughness": 0.9,
+   "uvScale": 0.5
+  },
+  "wall": {
+   "baseColor": [
+    1,
+    0.97,
+    0.9
+   ],
+   "baseColorTexture": "assets/textures/white_plaster_02_diff_2k.jpg",
+   "roughnessTexture": "assets/textures/white_plaster_02_rough_2k.jpg",
+   "normalTexture": "assets/textures/white_plaster_02_nor_gl_2k.jpg",
+   "normalStrength": 0.35,
+   "roughness": 1,
+   "uvScale": 1
+  },
+  "ceiling": {
+   "baseColor": [
+    0.9,
+    0.9,
+    0.88
+   ],
+   "roughness": 0.95
+  },
+  "frame": {
+   "baseColor": [
+    0.92,
+    0.9,
+    0.85
+   ],
+   "roughness": 0.35
+  },
+  "glass": {
+   "baseColor": [
+    1,
+    1,
+    1
+   ],
+   "roughness": 0,
+   "ior": 1.5,
+   "transmission": 1
+  }
+ },
+ "objects": [
+  {
+   "name": "floor",
+   "type": "plane",
+   "material": "floor",
+   "size": [
+    4.2,
+    3.7
+   ],
+   "uvRepeat": 1,
+   "position": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "ceiling",
+   "type": "plane",
+   "material": "ceiling",
+   "size": [
+    4.2,
+    3.7
+   ],
+   "position": [
+    0,
+    2.7,
+    0
+   ],
+   "rotation": [
+    180,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "wall-back",
+   "type": "box",
+   "material": "wall",
+   "size": [
+    4.3,
+    2.8,
+    0.1
+   ],
+   "position": [
+    0,
+    1.35,
+    -1.8
+   ]
+  },
+  {
+   "name": "wall-front",
+   "type": "box",
+   "material": "wall",
+   "size": [
+    4.3,
+    2.8,
+    0.1
+   ],
+   "position": [
+    0,
+    1.35,
+    1.8
+   ]
+  },
+  {
+   "name": "wall-right",
+   "type": "box",
+   "material": "wall",
+   "size": [
+    0.1,
+    2.8,
+    3.7
+   ],
+   "position": [
+    2.05,
+    1.35,
+    0
+   ]
+  },
+  {
+   "name": "wall-left-low",
+   "type": "box",
+   "material": "wall",
+   "size": [
+    0.1,
+    0.9,
+    3.7
+   ],
+   "position": [
+    -2.05,
+    0.45,
+    0
+   ]
+  },
+  {
+   "name": "wall-left-high",
+   "type": "box",
+   "material": "wall",
+   "size": [
+    0.1,
+    0.4,
+    3.7
+   ],
+   "position": [
+    -2.05,
+    2.5,
+    0
+   ]
+  },
+  {
+   "name": "wall-left-a",
+   "type": "box",
+   "material": "wall",
+   "size": [
+    0.1,
+    1.4,
+    0.95
+   ],
+   "position": [
+    -2.05,
+    1.6,
+    -1.375
+   ]
+  },
+  {
+   "name": "wall-left-b",
+   "type": "box",
+   "material": "wall",
+   "size": [
+    0.1,
+    1.4,
+    1.55
+   ],
+   "position": [
+    -2.05,
+    1.6,
+    1.075
+   ]
+  },
+  {
+   "name": "window-mullion-v",
+   "type": "box",
+   "material": "frame",
+   "size": [
+    0.04,
+    1.4,
+    0.04
+   ],
+   "position": [
+    -2,
+    1.6,
+    -0.3
+   ]
+  },
+  {
+   "name": "window-mullion-h",
+   "type": "box",
+   "material": "frame",
+   "size": [
+    0.04,
+    0.04,
+    1.2
+   ],
+   "position": [
+    -2,
+    1.6,
+    -0.3
+   ]
+  },
+  {
+   "name": "window-sill",
+   "type": "box",
+   "material": "frame",
+   "size": [
+    0.16,
+    0.03,
+    1.3
+   ],
+   "position": [
+    -1.97,
+    0.885,
+    -0.3
+   ]
+  },
+  {
+   "name": "bed",
+   "type": "model",
+   "src": "assets/models/GothicBed_01/GothicBed_01_2k.gltf",
+   "position": [
+    0.55,
+    0,
+    -0.72
+   ],
+   "materials": {
+    "GothicBed_01": {
+     "sheen": 0.35,
+     "sheenTint": 0.3
+    }
+   }
+  },
+  {
+   "name": "pillows",
+   "type": "model",
+   "src": "assets/models/throw_pillows_01/throw_pillows_01_2k.gltf",
+   "position": [
+    0.45,
+    0.84,
+    -1.15
+   ],
+   "rotation": [
+    0,
+    10,
+    0
+   ],
+   "materials": {
+    "throw_pillows_01": {
+     "sheen": 0.8,
+     "sheenTint": 0.6,
+     "roughness": 1
+    }
+   }
+  },
+  {
+   "name": "nightstand",
+   "type": "model",
+   "src": "assets/models/painted_wooden_nightstand/painted_wooden_nightstand_2k.gltf",
+   "position": [
+    -0.9,
+    0.045,
+    -1.4
+   ]
+  },
+  {
+   "name": "lamp",
+   "type": "model",
+   "src": "assets/models/desk_lamp_arm_01/desk_lamp_arm_01_2k.gltf",
+   "position": [
+    -0.9,
+    0.75,
+    -1.4
+   ],
+   "rotation": [
+    0,
+    90,
+    0
+   ],
+   "materials": {
+    "desk_lamp_arm_01": {
+     "clearcoat": 0.6,
+     "clearcoatRoughness": 0.12
+    }
+   }
+  },
+  {
+   "name": "chair",
+   "type": "model",
+   "src": "assets/models/mid_century_lounge_chair/mid_century_lounge_chair_2k.gltf",
+   "position": [
+    1.25,
+    0,
+    0.75
+   ],
+   "rotation": [
+    0,
+    -135,
+    0
+   ],
+   "materials": {
+    "mid_century_lounge_chair": {
+     "clearcoat": 0.5,
+     "clearcoatRoughness": 0.2
+    }
+   }
+  },
+  {
+   "name": "window-glass",
+   "type": "box",
+   "material": "glass",
+   "size": [
+    0.006,
+    1.4,
+    1.2
+   ],
+   "position": [
+    -2,
+    1.6,
+    -0.3
+   ]
+  }
+ ],
+ "render": {
+  "width": 1920,
+  "height": 1080,
+  "samples": 2048,
+  "maxBounces": 8,
+  "rrStart": 3,
+  "clamp": 12,
+  "denoise": true,
+  "denoiseIterations": 3,
+  "denoiseSigma": 0.2
+ }
+}

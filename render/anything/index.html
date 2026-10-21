@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Make anything - hb-render</title>
+<meta name="description" content="Type any sentence; a scene writer turns it into a 3D scene and your own device renders it with Heartbeat's own engine.">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #16140f; color: #e8e2d2; font: 16px/1.45 -apple-system, system-ui, sans-serif; padding: 12px 14px 60px; max-width: 900px; margin-inline: auto; }
+  a { color: #f0c36b; } h1 { font-size: 22px; margin: 6px 0 2px; } .sub { color: #a9a08a; font-size: 13px; margin-bottom: 10px; }
+  textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 17px; background: #0f0e0b; color: #e8e2d2; border: 1px solid #4a4332; border-radius: 10px; padding: 12px; min-height: 76px; }
+  button { font: inherit; font-size: 16px; background: #d9a441; color: #1b1708; border: 0; border-radius: 10px; padding: 12px 18px; font-weight: 600; width: 100%; margin: 8px 0; }
+  button.secondary { background: #34302a; color: #e8e2d2; } button:disabled { opacity: 0.5; }
+  .row { display: flex; gap: 8px; } .row button { flex: 1; }
+  #status { color: #f0c36b; min-height: 22px; margin: 6px 0; }
+  canvas { width: 100%; height: auto; border-radius: 8px; background: #000; display: block; margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; } td, th { text-align: left; padding: 5px 4px; border-bottom: 1px solid #2d2922; vertical-align: top; } th { color: #a9a08a; font-weight: 500; }
+  .ok { color: #9ad67a; } .bad { color: #f07f6b; } .warn { color: #f0c36b; }
+  details { margin: 8px 0; } pre { font-size: 11px; background: #0f0e0b; padding: 8px; border-radius: 8px; overflow: auto; max-height: 40vh; white-space: pre-wrap; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; } .chips span { background: #26221a; border: 1px solid #4a4332; border-radius: 16px; padding: 4px 10px; font-size: 13px; cursor: pointer; }
+  input[type=text] { font: inherit; background: #0f0e0b; color: #e8e2d2; border: 1px solid #4a4332; border-radius: 8px; padding: 8px; width: 100%; box-sizing: border-box; }
+  #log { font-size: 11px; color: #8f8873; max-height: 18vh; overflow: auto; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<a href="../">&larr; Render</a>
+<h1>Make anything</h1>
+<div class="sub">Type a sentence. A scene writer (Claude) turns it into a scene from free CC0 models, textures and skies plus shapes it builds itself; then <b>your own device</b> renders it with our engine (WebGPU). It tells you where every object came from and what it could not make.</div>
+<textarea id="prompt" placeholder="a red canoe on a misty lake at dawn"></textarea>
+<div class="chips"><span>a red canoe on a misty lake at dawn</span><span>an old diner booth with a milkshake</span><span>a cactus on Mars</span><span>a wooden chair in an empty white room, one window</span></div>
+<button id="go">Write the scene and render it here</button>
+<div class="row"><button class="secondary" id="more" disabled>Render longer (more samples)</button><button class="secondary" id="save" disabled>Save image</button></div>
+<div id="status"></div>
+<canvas id="cv" width="1280" height="720"></canvas>
+<div id="report"></div>
+<details><summary>Scene writer endpoint</summary><input type="text" id="endpoint"><div class="sub">Default: this site's /api/render-anything. On Jaron's home network the MSI writer also works at http://&lt;MSI-IP&gt;:8732/anything (only from an http page).</div></details>
+<details><summary>Scene JSON</summary><pre id="json"></pre></details>
+<div id="log"></div>
+<script>window.HB_BASE='/render/';</script>
+<script type="module">
+import { buildScene } from '/render/src/scene.js';
+import { createRenderer } from '/render/src/render.js';
+const $ = (id) => document.getElementById(id);
+const canvas = $('cv'), ctx = canvas.getContext('2d');
+const log = (m) => { $('log').textContent = (m + '\n' + $('log').textContent).slice(0, 5000); };
+const setStatus = (s) => { $('status').textContent = s; };
+const yieldFrame = () => new Promise((r) => setTimeout(r, 0));
+const baseUrl = window.HB_BASE || new URL('..', location.href).href;
+const defaultEndpoint = new URL(window.HB_ANYTHING_ENDPOINT || '/api/render-anything', location.href).href;
+$('endpoint').value = localStorage.getItem('hb-anything-endpoint') || defaultEndpoint;
+$('endpoint').onchange = () => localStorage.setItem('hb-anything-endpoint', $('endpoint').value);
+for (const c of document.querySelectorAll('.chips span')) c.onclick = () => { $('prompt').value = c.textContent; };
+let R = null, S = null, scene = null, spp = 0, lastPx = null, W = 1280, H = 720;
+
+function present(px) { canvas.width = W; canvas.height = H; ctx.putImageData(new ImageData(px, W, H), 0, 0); lastPx = px; }
+function showReport(rep, extra = []) {
+  const rows = [...rep, ...extra].map((r) => `<tr><td>${r.object || ''}</td><td class="${/polyhaven|procedural/.test(r.source) ? 'ok' : (/not available|skipped/.test(r.source) ? 'warn' : '')}">${r.source || ''}</td><td>${r.note || ''}</td></tr>`).join('');
+  $('report').innerHTML = `<table><tr><th>object</th><th>source</th><th>note</th></tr>${rows}</table>`;
+}
+async function renderMore(n) {
+  const t0 = performance.now(); let done = 0;
+  while (done < n) { const k = Math.min(8, n - done); await R.pass(k); done += k; spp += k; setStatus(`rendering: ${spp} samples per pixel, ${((performance.now() - t0) / 1000).toFixed(1)} s`); if (done % 16 === 0) present(await R.finish({ denoise: false, exposure: scene.camera.exposure ?? 0 })); await yieldFrame(); }
+  present(await R.finish({ denoise: true, iterations: 2, exposure: scene.camera.exposure ?? 0 }));
+  setStatus(`done: ${spp} samples per pixel in ${((performance.now() - t0) / 1000).toFixed(1)} s on this device`);
+  $('more').disabled = false; $('save').disabled = false;
+}
+async function go() {
+  const prompt = $('prompt').value.trim(); if (!prompt) return;
+  $('go').disabled = true; $('more').disabled = true; $('save').disabled = true; $('report').innerHTML = '';
+  try {
+    setStatus('writing the scene...');
+    const t0 = performance.now();
+    const r = await fetch($('endpoint').value, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || ('writer ' + r.status));
+    scene = j.scene;
+    $('json').textContent = JSON.stringify(scene, null, 1).slice(0, 20000);
+    log(`scene written in ${((performance.now() - t0) / 1000).toFixed(1)} s: ${scene.objects.length} objects`);
+    showReport(scene.report || []);
+    W = Math.min(scene.render.width || 1280, 1920); H = Math.min(scene.render.height || 720, 1080);
+    setStatus('loading assets and building (this device)...');
+    if (R) R.destroy();
+    R = await createRenderer({ width: W, height: H, baseUrl });
+    const skipped = [];
+    S = await buildScene(scene, { log, baseUrl, yield: yieldFrame, device: R.device, onObjectError: (name, e) => skipped.push({ object: name, source: 'failed to load', note: e.message }) });
+    R.setScene(S); await R.buildCaustics(); spp = 0;
+    showReport(scene.report || [], [...skipped, { object: '(render)', source: 'this device', note: `${S.stats.triangles} triangles, ${S.stats.lights || 0} lights, ${S.stats.buildSeconds.toFixed(1)} s to build` }]);
+    await renderMore(scene.render.samples || 64);
+  } catch (e) { setStatus('could not make it: ' + e.message); log(String(e.stack || e)); }
+  $('go').disabled = false;
+}
+$('go').onclick = go;
+$('more').onclick = () => { $('more').disabled = true; renderMore(128); };
+$('save').onclick = () => { canvas.toBlob((b) => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (scene?.name || 'hb-render') + '.png'; a.click(); }, 'image/png'); };
+window.hbAnything = { go, get scene() { return scene; }, get stats() { return S && S.stats; } };
+</script>
+</body>
+</html>
