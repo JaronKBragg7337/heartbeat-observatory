@@ -34,6 +34,15 @@ export default async function handler(req, res) {
   const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '?').split(',')[0].trim();
   const ipHash = crypto.createHash('sha256').update(ip).digest('hex').slice(0, 10);
   if (limited(ip)) return res.status(429).json({ error: 'limit: 6 scenes per hour per device, 60 per day for everyone' });
+  // 10/21: the real cap for the whole site (every server copy) - Supabase counts the last 24 h; Control Room row render_anything_daily_cap
+  let allowed = false;
+  try {
+    const r = await fetch('https://ygjpnvrwhkrowkrskftk.supabase.co/rest/v1/rpc/render_anything_take', { method: 'POST',
+      headers: { apikey: 'sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN', authorization: 'Bearer sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN', 'content-type': 'application/json' },
+      body: JSON.stringify({ p_ip_hash: ipHash }) });
+    allowed = r.ok && (await r.json()) === true;
+  } catch (e) { allowed = false; }
+  if (!allowed) return res.status(429).json({ error: 'the scene writer has made its scenes for today - try again tomorrow' });
   const prompt = String((req.body && req.body.prompt) || '').trim().slice(0, 600);
   if (prompt.length < 3) return res.status(400).json({ error: 'say what to make' });
   const t0 = Date.now();
