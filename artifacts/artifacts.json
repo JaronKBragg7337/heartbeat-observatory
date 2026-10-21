@@ -2,6 +2,28 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "hb-render-r3-bedroom",
+      "date": "2026-10-20",
+      "title": "Same engine, round 3: a real bedroom",
+      "tool": "hb-render (our own renderer)",
+      "image": "/artifacts/img/hb-render-r3-bedroom.jpg",
+      "what": "Proof the engine isn't just a bottle-and-sand demo: real 3D models (bed, chair, nightstand, lamp, pillows), late-afternoon sun through a window, and a lamp lit inside.",
+      "made": "Our own code, round 3: a loader for standard 3D model files (glTF, OBJ) and indoor lights (lamps, window light, glowing materials). All models and textures free CC0 from Poly Haven. 2,048 light samples per pixel in 116 seconds.",
+      "honest": "Reads as a 3D render. The pillows float above the bed and the bulb hangs outside the lamp shade (placed by eye), the light is flat, and walls, sheets and leather need better materials. No glass, curtains or clutter yet.",
+      "links": []
+    },
+    {
+      "id": "hb-render-r3-carpet",
+      "date": "2026-10-20",
+      "title": "The bottle, on carpet instead of sand",
+      "tool": "hb-render (our own renderer)",
+      "image": "/artifacts/img/hb-render-r3-carpet.jpg",
+      "what": "Same scene, one material swapped: the pour now lands on carpet, with its own wet patch.",
+      "made": "One change in the scene file. 35 seconds to render.",
+      "honest": "The carpet is scaled like a close-up of a doormat, and the splash is still beads until surface tension is added.",
+      "links": []
+    },
+    {
       "id": "hb-render-r2",
       "date": "2026-10-20",
       "title": "Our engine, round 2: loose sand, real light through the bottle",
