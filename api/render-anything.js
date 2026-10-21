@@ -12,12 +12,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { writeScene } from './_anything-writer.mjs';
+import { writeScene } from './_anything-writer.js';
 
 let catalog = null;
 function loadCatalog() {
   if (catalog) return catalog;
-  catalog = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'api', '_anything-catalog.json'), 'utf8'));
+  catalog = JSON.parse(fs.readFileSync(new URL('./_anything-catalog.json', import.meta.url), 'utf8'));
   return catalog;
 }
 const buckets = new Map();
