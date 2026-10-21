@@ -92,7 +92,11 @@ async function go() {
 }
 $('go').onclick = go;
 $('more').onclick = () => { $('more').disabled = true; renderMore(128); };
-$('save').onclick = () => { canvas.toBlob((b) => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (scene?.name || 'hb-render') + '.png'; a.click(); }, 'image/png'); };
+// 10/21 (Jaron, iPhone): a download link lands in Files, not Photos - use the share sheet (Save Image -> Photos) like the phone test
+$('save').onclick = () => { canvas.toBlob(async (b) => {
+  const name = (scene?.name || 'hb-render').replace(/[^\w-]+/g, '-') + '.png', file = new File([b], name, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: 'hb-render' }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click(); }, 'image/png'); };
 window.hbAnything = { go, get scene() { return scene; }, get stats() { return S && S.stats; } };
 </script>
 </body>
