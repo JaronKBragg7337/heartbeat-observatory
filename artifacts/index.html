@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="/observatory.css" />
+<title>Heartbeat Artifacts · Heartbeat Observatory</title>
+<meta name="description" content="Things made with Heartbeat Observatory's own tools and AI crew: renders, tools, experiments. What it is, how it was made, and what's not there yet." />
+<style>
+  /* 10/20 (Jaron): "Heartbeat artifacts. Things made in the heartbeat one or with the system in general by us gets posted there.
+     Then it gets a post on all socials too. Promoting the product while using the product." Entries live in artifacts.json
+     (newest first). Every entry says honestly what's not there yet. */
+  body { background: var(--paper, #f6f1e7); }
+  .ar-wrap { max-width: 900px; margin: 0 auto; padding: 28px 16px 80px; }
+  .ar-back { color: var(--accent); text-decoration: none; font-weight: 650; font-size: 15px; }
+  .ar-head h1 { font-family: var(--serif); font-size: clamp(38px, 8vw, 60px); line-height: 1.02; margin: 18px 0 10px; color: var(--ink); }
+  .ar-head p { color: var(--ink-soft); font-size: 18px; line-height: 1.6; margin: 0 0 8px; }
+  .art { background: var(--surface-solid, #fffaf1); border: 1px solid var(--line, #e6dccb); border-radius: 18px; overflow: hidden; margin: 22px 0; box-shadow: 0 8px 30px rgba(39,45,40,.05); }
+  .art img, .art video { display: block; width: 100%; height: auto; background: #111; }
+  .art .body { padding: 16px 18px 18px; }
+  .art .tag { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+  .art h2 { font-family: var(--serif); font-size: clamp(22px, 5.5vw, 30px); margin: 6px 0 8px; color: var(--ink); line-height: 1.15; }
+  .art p { margin: 8px 0; font-size: 16px; line-height: 1.6; color: var(--ink); }
+  .art b.k { display: inline-block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8a5a2b; margin-right: 6px; }
+  .art .honest { background: #f4ead8; border: 1px solid #e3d2b4; border-radius: 12px; padding: 10px 12px; color: #3a2a18; }
+  .note { font-size: 14px; color: var(--ink-faint); line-height: 1.6; margin-top: 26px; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #1b1611; }
+    .art { background: #231d17; border-color: #3d3226; }
+    .ar-head h1, .art h2, .art p { color: #f3e9da; }
+    .ar-head p { color: #c9b8a2; }
+    .art .honest { background: #2c241c; border-color: #4d3f30; color: #f3e9da; }
+    .ar-back { color: #e0a46a; }
+  }
+</style>
+</head>
+<body>
+<main class="ar-wrap">
+  <a class="ar-back" href="/">&larr; Heartbeat Observatory</a>
+  <header class="ar-head">
+    <h1>Heartbeat Artifacts</h1>
+    <p>Things we made with our own tools and our AI crew: renders, tools, experiments. Each one says what it is, how it was made, and what's honestly not there yet.</p>
+  </header>
+  <div id="list"><p class="note">Loading...</p></div>
+  <p class="note">Our tools are free and open as they mature: <a href="https://github.com/JaronKBragg7337/key-drop">Key Drop</a> is out now; the rendering engine gets its own public repo soon. Free business ideas: <a href="/ideas/">Idea Bank</a>.</p>
+</main>
+<script>
+  const esc = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  fetch("/artifacts/artifacts.json", { cache: "no-store" }).then((r) => r.json()).then((d) => {
+    document.getElementById("list").innerHTML = d.items.map((a) => `
+      <article class="art" id="${esc(a.id)}">
+        ${a.video ? `<video src="${esc(a.video)}" controls playsinline preload="metadata" ${a.image ? `poster="${esc(a.image)}"` : ""}></video>` : `<img src="${esc(a.image)}" alt="${esc(a.title)}" loading="lazy">`}
+        <div class="body">
+          <div class="tag">${esc(a.date)} · ${esc(a.tool)}</div>
+          <h2>${esc(a.title)}</h2>
+          <p>${esc(a.what)}</p>
+          <p><b class="k">How</b>${esc(a.made)}</p>
+          <p class="honest"><b class="k">Not there yet</b>${esc(a.honest)}</p>
+          ${(a.links || []).map((l) => `<p><a href="${esc(l[1])}">${esc(l[0])}</a></p>`).join("")}
+        </div>
+      </article>`).join("");
+  }).catch(() => { document.getElementById("list").innerHTML = '<p class="note">Couldn\'t load the list. Try again in a moment.</p>'; });
+</script>
+</body>
+</html>

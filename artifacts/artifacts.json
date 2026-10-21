@@ -1,0 +1,27 @@
+{
+  "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
+  "items": [
+    {
+      "id": "hb-render-r2",
+      "date": "2026-10-20",
+      "title": "Our engine, round 2: loose sand, real light through the bottle",
+      "tool": "hb-render (our own renderer)",
+      "image": "/artifacts/img/hb-render-r2.jpg",
+      "what": "Same bottle, same desert, a few hours later. Real loose sand with wind ripples, a water simulation running on the graphics card, light focused through the bottle into bright bands in the shadow, and a wet patch where the water soaks in.",
+      "made": "100% our own code: own path tracer (WebGPU), own particle water (152,000 particles, simulated in 6.6 seconds), own scene language. CC0 sand texture and sky from Poly Haven. Rendered in 83 seconds on one laptop GPU.",
+      "honest": "Not photo-real yet: the splash is a pile of equal-size beads (no surface tension yet) and the stream is a smooth rod. Takes a second or two to spot as CG.",
+      "links": []
+    },
+    {
+      "id": "hb-render-v0",
+      "date": "2026-10-20",
+      "title": "Our own engine's first picture",
+      "tool": "hb-render (our own renderer)",
+      "image": "/artifacts/img/hb-render-v0.jpg",
+      "what": "A bottle pouring water onto desert sand. Started from a question: AI image generators guess what water looks like - what if a picture came from simulating the water instead?",
+      "made": "Written the same evening: own path tracer, own water simulation, own scene file format. No Blender, no Unreal inside. 2,048 light samples per pixel in about 2.5 minutes.",
+      "honest": "First try: the water looks like jelly and the wet sand barely shows. But the water soaks into the sand instead of puddling on top, which both AI images got wrong.",
+      "links": []
+    }
+  ]
+}
