@@ -9,17 +9,10 @@
 // 60 per instance per day, 6000 output tokens, prompt <= 600 chars. Every call is logged
 // (console -> Vercel logs) with ip hash, prompt, tokens, ms.
 // ============================================================
-import fs from 'node:fs';
-import path from 'node:path';
 import crypto from 'node:crypto';
 import { writeScene } from './_anything-writer.js';
-
-let catalog = null;
-function loadCatalog() {
-  if (catalog) return catalog;
-  catalog = JSON.parse(fs.readFileSync(new URL('./_anything-catalog.json', import.meta.url), 'utf8'));
-  return catalog;
-}
+import { catalog } from './_anything-catalog.js';   // written by publish-to-site.mjs (no fs, no import.meta: Vercel transpiles this file)
+function loadCatalog() { return catalog; }
 const buckets = new Map();
 let dayCount = 0, dayStart = Date.now();
 function limited(ip) {
