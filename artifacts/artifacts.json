@@ -9,7 +9,7 @@
       "image": "/artifacts/img/hb-render-r5-canoe.jpg",
       "what": "Round 5: the engine now lives on this site at /render/. Type any sentence at /render/anything/ and a scene writer turns it into a 3D scene from free CC0 models, textures and skies plus shapes it builds itself; your own device renders it and the page says where every object came from and what it could not make. First try: \"a red canoe on a misty lake at dawn\".",
       "made": "Our own engine running in the browser (WebGPU). The scene writer is Claude (claude-sonnet-5-5) behind a rate-limited endpoint; objects come from Poly Haven CC0 (loaded live from their CDN) or our procedural builders (terrain, rocks, trees, boat hulls, rooms). A text-to-3D generator is a hook only, nothing started.",
-      "honest": "The writer places things by guesswork: the canoe floats above the water, the trees are cones, \"mist\" cannot be rendered at all. The writer endpoint is not enabled on the public site yet (a paid key behind a public URL is Jaron's call); it runs on the MSI today.",
+      "honest": "The writer places things by guesswork: the canoe floats above the water, the trees are cones, \"mist\" cannot be rendered at all. The scene writer is live on the site with hard limits (6 scenes an hour per device, 60 a day), so a busy day can run out.",
       "links": [
         {
           "label": "Make anything",
