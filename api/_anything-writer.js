@@ -44,7 +44,7 @@ JSON shape:
  "report": [ {"object":"<name>", "source":"polyhaven:<id>" | "procedural:<type>" | "generated (not available yet)" | "skipped", "note":"short plain-words note"} ],
  "camera": {"position":[x,y,z], "target":[x,y,z], "fov":40-70, "fstop":5.6-11, "focusDistance":m, "exposure":-1.5..1.5},
  "environment": {"hdri":"polyhaven:<sky id>", "rotation":0-360, "intensity":0.5-2, "sampleDirect":true},
- "lights": [ optional: {"type":"sphere","position":[..],"radius":0.05,"color":[r,g,b],"intensity":20-200} | {"type":"spot",...} | {"type":"rect","position":corner,"u":[..],"v":[..],"intensity":5-30} ],
+ "lights": [ optional: {"type":"sphere","position":[..],"radius":0.05,"color":[r,g,b],"intensity":20-200 outdoors, 200-600 for a bulb lighting a room} | {"type":"spot",...} | {"type":"rect","position":corner,"u":[..],"v":[..],"intensity":5-30} ],
  "materials": { "<name>": {"baseColor":[r,g,b], "roughness":0-1, "metallic":0-1, "ior":1.33-1.6, "transmission":0-1, "absorption":[r,g,b] per m, "sheen":0-1, "clearcoat":0-1, "baseColorTexture":"polyhaven:<texture id>", "normalTexture":"polyhaven:<texture id>", "roughnessTexture":"polyhaven:<texture id>", "uvScale":repeats per meter} },
  "objects": [ ... ]
 }
@@ -82,25 +82,83 @@ Poly Haven skies (id [when/weather]):
 ${d.h}`;
 }
 
+// pull the JSON object out of a reply, repairing trailing commas / comments
+export function parseSceneText(text) {
+  const m = String(text).match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('scene writer returned no JSON');
+  try { return JSON.parse(m[0]); }
+  catch (e) { return JSON.parse(m[0].replace(/,\s*([\]}])/g, '$1').replace(/\/\/[^\n]*/g, '')); }
+}
+
+// nearest catalog ids by shared name tokens, for "not in the catalog; nearest: ..." messages
+function nearest(id, ids, n = 3) {
+  const toks = String(id).toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 2);
+  return ids.map((x) => { const xt = x.toLowerCase().split(/[^a-z0-9]+/); return [x, toks.filter((t) => xt.some((y) => y.includes(t) || t.includes(y))).length]; })
+    .filter((p) => p[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, n).map((p) => p[0]);
+}
+
+const OBJECT_TYPES = new Set(['model', 'heightfield', 'plane', 'box', 'sphere', 'cylinder', 'cone', 'lathe', 'rock', 'tree', 'hull', 'room', 'building', 'generated', 'portal', 'bottle', 'bottle_fill', 'mesh']);
+
+// check a raw writer scene against the catalog BEFORE rendering; returns plain-words errors (empty = fine)
+export function validateScene(scene, cat) {
+  const errs = [];
+  if (!scene || typeof scene !== 'object') return ['the reply is not a scene object'];
+  const modelIds = cat.models.map((m) => m.id), kenneyIds = (cat.kenney || []).map((k) => k.id), texIds = cat.textures.map((t) => t.id), skyIds = cat.hdris.map((h) => h.id), kitIds = (cat.kits || []).map((k) => k.id);
+  const mats = scene.materials || {};
+  const sky = String(scene.environment?.hdri || '').replace(/^polyhaven:/, '');
+  if (sky && !skyIds.includes(sky)) errs.push(`sky "${sky}" is not in the sky list; nearest: ${nearest(sky, skyIds).join(', ') || 'none'}`);
+  for (const [name, m] of Object.entries(mats)) for (const k of ['baseColorTexture', 'normalTexture', 'roughnessTexture']) {
+    const v = m && m[k]; if (typeof v === 'string' && v.startsWith('polyhaven:') && !texIds.includes(v.slice(10))) errs.push(`material "${name}": texture ${v} not in the catalog; nearest: ${nearest(v.slice(10), texIds).join(', ') || 'use "look" instead'}`);
+  }
+  for (const ob of scene.objects || []) {
+    const nm = ob.name || ob.type;
+    if (!OBJECT_TYPES.has(ob.type)) { errs.push(`object "${nm}": unknown type "${ob.type}"`); continue; }
+    if (ob.type === 'model') {
+      const src = String(ob.src || '');
+      if (src.startsWith('polyhaven:') && !modelIds.includes(src.slice(10))) errs.push(`object "${nm}": model ${src} not in the catalog; nearest: ${nearest(src.slice(10), modelIds).join(', ') || 'none (build it from shapes)'}`);
+      else if (src.startsWith('kenney:') && !kenneyIds.includes(src)) errs.push(`object "${nm}": ${src} not in the Kenney list; nearest: ${nearest(src.slice(7), kenneyIds.map((k) => k.slice(7))).map((k) => 'kenney:' + k).join(', ') || 'none'}`);
+      else if (!/^(polyhaven:|kenney:|https?:|assets\/)/.test(src)) errs.push(`object "${nm}": model src must be polyhaven:<id> or kenney:<kit>/<name>`);
+    }
+    if (ob.type === 'building') { const kid = String(ob.kit || '').replace(/^polyhaven:/, ''); if (kid && !kitIds.includes(kid)) errs.push(`object "${nm}": building kit "${kid}" unknown; use ${kitIds.filter((k) => /facade/.test(k)).join(' or ')}`); }
+    const needsMat = !['model', 'building', 'generated', 'portal', 'bottle_fill'].includes(ob.type);
+    const partMats = ob.materials ? Object.values(ob.materials) : [];
+    if (needsMat && !ob.material && !partMats.length) errs.push(`object "${nm}": no material given (name one from "materials")`);
+    for (const mname of [ob.material, ...partMats]) if (typeof mname === 'string' && !mats[mname]) errs.push(`object "${nm}": material "${mname}" is not defined in "materials"`);
+  }
+  return errs;
+}
+
+// the shared write loop: ask once, validate, send the exact errors back once for a corrected scene, resolve.
+// call({ system, user }) -> { text, usage?, model? }
+export async function writeSceneWith(call, { prompt, catalog }) {
+  const system = systemPrompt(catalog);
+  const request = `Scene request: ${String(prompt).slice(0, 600)}\nReturn the JSON object only.`;
+  let r = await call({ system, user: request });
+  let scene = parseSceneText(r.text);
+  const errs = validateScene(scene, catalog);
+  let corrected = null;
+  if (errs.length) {
+    const user2 = `${request}\n\nYour previous JSON had these problems, fix every one of them and return the corrected FULL JSON object only (same scene, same objects, corrected ids/materials; use "look" for plain surfaces):\n- ${errs.join('\n- ')}\n\nPrevious JSON:\n${JSON.stringify(scene)}`;
+    r = await call({ system, user: user2 });
+    try { scene = parseSceneText(r.text); corrected = errs; } catch (e) { /* keep the first scene; resolveScene skips what it cannot find */ }
+  }
+  const resolved = resolveScene(scene, catalog);
+  if (corrected) resolved.report.push({ object: '(writer)', source: 'corrected once', note: `first draft had ${corrected.length} problem(s): ${corrected.slice(0, 3).join('; ').slice(0, 300)}` });
+  return { scene: resolved, usage: r.usage, model: r.model, corrected: !!corrected };
+}
+
 export async function writeScene({ prompt, apiKey, workspaceId, catalog, fetchImpl = fetch, maxTokens = 12000 }) {
-  const body = {
-    model: MODEL, max_tokens: maxTokens,
-    system: [{ type: 'text', text: systemPrompt(catalog), cache_control: { type: 'ephemeral' } }], // the big catalog is cached between requests
-    messages: [{ role: 'user', content: `Scene request: ${String(prompt).slice(0, 600)}\nReturn the JSON object only.` }],
-  };
   const headers = { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' };
   if (workspaceId) headers['anthropic-workspace-id'] = workspaceId;
-  const r = await fetchImpl('https://api.anthropic.com/v1/messages', { method: 'POST', headers, body: JSON.stringify(body) });
-  if (!r.ok) throw new Error('scene writer upstream ' + r.status + ': ' + (await r.text()).slice(0, 300));
-  const j = await r.json();
-  if (j.stop_reason === 'max_tokens') throw new Error('the scene came out too long to finish; try a simpler sentence');
-  const text = (j.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('\n');
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error('scene writer returned no JSON');
-  let scene;
-  try { scene = JSON.parse(m[0]); }
-  catch (e) { scene = JSON.parse(m[0].replace(/,\s*([\]}])/g, '$1').replace(/\/\/[^\n]*/g, '')); } // trailing commas / comments
-  return { scene: resolveScene(scene, catalog), usage: j.usage, model: j.model };
+  const call = async ({ system, user }) => {
+    const body = { model: MODEL, max_tokens: maxTokens, system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }], messages: [{ role: 'user', content: user }] };
+    const r = await fetchImpl('https://api.anthropic.com/v1/messages', { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('scene writer upstream ' + r.status + ': ' + (await r.text()).slice(0, 300));
+    const j = await r.json();
+    if (j.stop_reason === 'max_tokens') throw new Error('the scene came out too long to finish; try a simpler sentence');
+    return { text: (j.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('\n'), usage: j.usage, model: j.model };
+  };
+  return writeSceneWith(call, { prompt, catalog });
 }
 
 // turn polyhaven:<id> references into real CDN URLs (+ file maps for models) and sanity-fix the scene
@@ -113,6 +171,34 @@ export function resolveScene(scene, cat) {
   scene.environment = { ...(scene.environment || {}), hdri: sky.hdr1k || sky.hdr2k, hdriId: sky.id, sampleDirect: scene.environment?.sampleDirect ?? true };
   scene.materials = scene.materials || {};
   const kenney = Object.fromEntries((cat.kenney || []).map((x) => [x.id, x]));
+  // a "portal" written as an object is really a window light: move it to lights
+  scene.lights = Array.isArray(scene.lights) ? scene.lights : [];
+  scene.objects = (scene.objects || []).filter((ob) => {
+    if (ob.type !== 'portal') return true;
+    scene.lights.push({ type: 'portal', name: ob.name, position: ob.position || [0, 1, 0], u: ob.u || [0, 0, 1], v: ob.v || [0, 1, 0], intensity: ob.intensity ?? 1 });
+    note(ob.name || 'portal', 'procedural:portal light', 'window light (moved from objects to lights)');
+    return false;
+  });
+  // transforms the writer got wrong (scale 1 instead of [1,1,1], nulls, strings) become sane numbers
+  const vec3 = (v, def) => { if (typeof v === 'number' && Number.isFinite(v)) return [v, v, v]; if (Array.isArray(v) && v.length === 3 && v.every((x) => typeof x === 'number' && Number.isFinite(x))) return v; return def; };
+  for (const ob of scene.objects) { ob.position = vec3(ob.position, [0, 0, 0]); ob.rotation = vec3(ob.rotation, [0, 0, 0]); ob.scale = vec3(ob.scale, [1, 1, 1]); }
+  // furniture written outside its own room is pulled inside (the writer counts from the wrong corner sometimes)
+  const room = scene.objects.find((o) => o.type === 'room');
+  if (room) {
+    const c = room.position, w = room.width ?? 4, d = room.depth ?? 4;
+    for (const ob of scene.objects) {
+      if (['room', 'building', 'heightfield', 'plane', 'generated'].includes(ob.type)) continue;
+      const nx = Math.max(c[0] - w / 2 + 0.4, Math.min(c[0] + w / 2 - 0.4, ob.position[0])), nz = Math.max(c[2] - d / 2 + 0.4, Math.min(c[2] + d / 2 - 0.4, ob.position[2]));
+      if (nx !== ob.position[0] || nz !== ob.position[2]) { note(ob.name, 'procedural:room fit', `moved inside the room (${ob.position[0].toFixed(1)},${ob.position[2].toFixed(1)} -> ${nx.toFixed(1)},${nz.toFixed(1)})`); ob.position = [nx, ob.position[1], nz]; }
+    }
+    for (const lt of scene.lights || []) if (Array.isArray(lt.position) && lt.type !== 'portal') { lt.position[0] = Math.max(c[0] - w / 2 + 0.3, Math.min(c[0] + w / 2 - 0.3, lt.position[0])); lt.position[2] = Math.max(c[2] - d / 2 + 0.3, Math.min(c[2] + d / 2 - 0.3, lt.position[2])); }
+  }
+  // objects that name a material that does not exist get a plain grey one instead of failing the whole scene
+  for (const ob of scene.objects) {
+    const need = [ob.material, ...(ob.materials ? Object.values(ob.materials) : [])].filter((m) => typeof m === 'string');
+    for (const mname of need) if (!scene.materials[mname]) { scene.materials[mname] = { baseColor: [0.6, 0.6, 0.6], roughness: 0.7 }; note(ob.name, 'skipped', `material "${mname}" was not defined; plain grey used`); }
+    if (!ob.material && !ob.materials && !['model', 'building', 'generated', 'bottle_fill'].includes(ob.type)) { scene.materials._default = scene.materials._default || { baseColor: [0.6, 0.6, 0.6], roughness: 0.7 }; ob.material = '_default'; note(ob.name, 'skipped', 'no material given; plain grey used'); }
+  }
   for (const [name, m] of Object.entries(scene.materials)) {
     // "look": attach a scanned texture set for real-world surfaces on procedural shapes
     const look = String(m.look || '').toLowerCase().trim();

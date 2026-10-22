@@ -122,7 +122,7 @@ async function go() {
     const skipped = [];
     S = await buildScene(scene, { log, baseUrl, yield: yieldFrame, device: R.device, onObjectError: (name, e) => skipped.push({ object: name, source: 'failed to load', note: e.message }) });
     R.setScene(S); await R.buildCaustics(); spp = 0;
-    showReport(scene.report || [], [...skipped, { object: '(render)', source: 'this device', note: `${S.stats.triangles} triangles, ${S.stats.lights || 0} lights, ${S.stats.buildSeconds.toFixed(1)} s to build` }]);
+    showReport(scene.report || [], [...skipped, ...(S.stats.cameraNote ? [{ object: '(camera)', source: 'procedural:camera', note: S.stats.cameraNote }] : []), { object: '(render)', source: 'this device', note: `${S.stats.triangles} triangles, ${S.stats.lights || 0} lights, ${S.stats.buildSeconds.toFixed(1)} s to build` }]);
     await renderMore(scene.render.samples || 64);
   } catch (e) { setStatus('could not make it: ' + e.message); log(String(e.stack || e)); }
   $('go').disabled = false;

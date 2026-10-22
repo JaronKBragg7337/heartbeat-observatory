@@ -31,6 +31,10 @@ export const m4 = {
   // transform = T * Rz * Ry * Rx * S  (rotation in degrees, applied X then Y then Z)
   fromTRS(t = [0, 0, 0], rDeg = [0, 0, 0], s = [1, 1, 1]) {
     const d = Math.PI / 180;
+    // tolerate a single number for scale and bad entries anywhere (a NaN matrix makes an object vanish)
+    if (typeof s === 'number') s = [s, s, s];
+    const fix = (v, def) => (Array.isArray(v) && v.length === 3 && v.every((x) => Number.isFinite(x))) ? v : def;
+    t = fix(t, [0, 0, 0]); rDeg = fix(rDeg, [0, 0, 0]); s = fix(s, [1, 1, 1]);
     let m = m4.scale(s);
     m = m4.mul(m4.rotX(rDeg[0] * d), m);
     m = m4.mul(m4.rotY(rDeg[1] * d), m);

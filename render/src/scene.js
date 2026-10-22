@@ -462,6 +462,84 @@ export async function buildScene(scene, opts = {}) {
     images.push(await loadImage(url));
   }
 
+  // ---------- camera sanity: never a wall in the face, never outside the room ----------
+  // Writer scenes (scene.rest) get a check: inside a room the eye goes to a back corner at 1.6 m looking at the
+  // furniture; everywhere, if the first hit straight ahead is under 0.5 m or most of the frame hits one surface,
+  // the camera is re-framed from the bounds of the main objects. Reported as "camera re-framed".
+  if (scene.rest === true && scene.camera) {
+    const cam = scene.camera;
+    const groups = {};
+    for (const mm of meshes) { const key = mm.name.split(':')[0]; (groups[key] = groups[key] || []).push(mm); }
+    const bbOf = (list) => { const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity]; for (const mm of list) for (let i = 0; i < mm.mesh.pos.length; i += 3) for (let a = 0; a < 3; a++) { mn[a] = Math.min(mn[a], mm.mesh.pos[i + a]); mx[a] = Math.max(mx[a], mm.mesh.pos[i + a]); } return { mn, mx }; };
+    const mainNames = Object.keys(groups).filter((n) => { const o = objByName[n]; return o && !GROUND_TYPES.has(o.type) && !/^light:/.test(n) && o.type !== 'room'; });
+    let main = mainNames.length ? bbOf(mainNames.flatMap((n) => groups[n])) : null;
+    if (main && !main.mn.every(Number.isFinite)) main = null;   // a group with no vertices would poison the bounds
+    const roomOb = (scene.objects || []).find((o) => o.type === 'room');
+    // brute-force closest hit for a few probe rays (CPU, a few million triangle tests at most)
+    const hit = (o, d) => {
+      let best = Infinity, who = null;
+      for (const mm of meshes) {
+        const p = mm.mesh.pos, idx = mm.mesh.idx;
+        for (let t = 0; t < idx.length; t += 3) {
+          const a = idx[t] * 3, b = idx[t + 1] * 3, c = idx[t + 2] * 3;
+          const e1x = p[b] - p[a], e1y = p[b + 1] - p[a + 1], e1z = p[b + 2] - p[a + 2], e2x = p[c] - p[a], e2y = p[c + 1] - p[a + 1], e2z = p[c + 2] - p[a + 2];
+          const px = d[1] * e2z - d[2] * e2y, py = d[2] * e2x - d[0] * e2z, pz = d[0] * e2y - d[1] * e2x;
+          const det = e1x * px + e1y * py + e1z * pz; if (Math.abs(det) < 1e-12) continue;
+          const inv = 1 / det, sx = o[0] - p[a], sy = o[1] - p[a + 1], sz = o[2] - p[a + 2];
+          const u = (sx * px + sy * py + sz * pz) * inv; if (u < 0 || u > 1) continue;
+          const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+          const v = (d[0] * qx + d[1] * qy + d[2] * qz) * inv; if (v < 0 || u + v > 1) continue;
+          const tt = (e2x * qx + e2y * qy + e2z * qz) * inv; if (tt > 1e-4 && tt < best) { best = tt; who = mm.name.split(':')[0]; }
+        }
+      }
+      return { t: best, who };
+    };
+    const look = (from, to) => { const f = v3.norm(v3.sub(to, from)); const r = v3.norm(v3.cross(f, [0, 1, 0])); const u = v3.cross(r, f); return { f, r, u }; };
+    let reason = null;
+    if (roomOb) {
+      const c = roomOb.position || [0, 0, 0], w = roomOb.width ?? 4, d = roomOb.depth ?? 4, h = roomOb.height ?? 2.7;
+      const inside = cam.position[0] > c[0] - w / 2 + 0.3 && cam.position[0] < c[0] + w / 2 - 0.3 && cam.position[2] > c[2] - d / 2 + 0.3 && cam.position[2] < c[2] + d / 2 - 0.3 && cam.position[1] > c[1] + 0.3 && cam.position[1] < c[1] + h - 0.2;
+      if (!inside) reason = 'camera was outside the room';
+    }
+    if (!reason && (cam.position && cam.target)) {
+      const { f, r, u } = look(cam.position, cam.target);
+      const tanH = Math.tan((cam.fov ?? 50) * Math.PI / 360), aspect = (scene.render?.width || 16) / (scene.render?.height || 9);
+      const hits = [];
+      for (const [sx, sy] of [[0, 0], [-0.6, -0.6], [0.6, -0.6], [-0.6, 0.6], [0.6, 0.6], [0, 0.6], [0, -0.6], [-0.6, 0], [0.6, 0]]) {
+        const dir = v3.norm(v3.add(f, v3.add(v3.scale(r, sx * tanH * aspect), v3.scale(u, sy * tanH))));
+        hits.push(hit(cam.position, dir));
+      }
+      if (hits[0].t < 0.5) reason = `first hit ${hits[0].t.toFixed(2)} m ahead (${hits[0].who})`;
+      else { const counts = {}; for (const h of hits) if (h.who) counts[h.who] = (counts[h.who] || 0) + 1; const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]; if (top && top[1] >= 7 && !(objByName[top[0]] && GROUND_TYPES.has(objByName[top[0]].type))) reason = `${top[1]} of 9 probe rays hit ${top[0]}`; }
+    }
+    if (reason) {
+      const target = main ? [(main.mn[0] + main.mx[0]) / 2, (main.mn[1] + main.mx[1]) / 2, (main.mn[2] + main.mx[2]) / 2] : (cam.target || [0, 1, 0]);
+      if (roomOb) {
+        const c = roomOb.position || [0, 0, 0], w = roomOb.width ?? 4, d = roomOb.depth ?? 4, h = roomOb.height ?? 2.7;
+        const corners = [[c[0] - w / 2 + 0.4, c[2] - d / 2 + 0.4], [c[0] + w / 2 - 0.4, c[2] - d / 2 + 0.4], [c[0] - w / 2 + 0.4, c[2] + d / 2 - 0.4], [c[0] + w / 2 - 0.4, c[2] + d / 2 - 0.4]];
+        const far = corners.sort((p, q) => Math.hypot(q[0] - target[0], q[1] - target[2]) - Math.hypot(p[0] - target[0], p[1] - target[2]))[0];
+        cam.position = [far[0], Math.min(1.6, c[1] + h - 0.3), far[1]];
+        cam.target = [target[0], Math.min(target[1], 1.2), target[2]];
+        const ext = main ? Math.max(main.mx[0] - main.mn[0], main.mx[2] - main.mn[2]) : Math.max(w, d) * 0.6;
+        const dist = Math.hypot(cam.position[0] - cam.target[0], cam.position[2] - cam.target[2]);
+        cam.fov = Math.max(55, Math.min(80, 2 * Math.atan((ext * 0.6) / Math.max(dist, 0.5)) * 180 / Math.PI + 20));
+        // interiors are lit by small bulbs and one window: a camera would open up; so does ours
+        if ((cam.exposure ?? 0) < 2.0) cam.exposure = 2.0;
+      } else {
+        const ext = main ? Math.max(main.mx[0] - main.mn[0], main.mx[1] - main.mn[1], main.mx[2] - main.mn[2]) : 4;
+        const fov = Math.max(40, Math.min(70, cam.fov ?? 50));
+        const dist = (ext / 2) / Math.tan(fov * Math.PI / 360) * 1.3 + 0.5;
+        let az = cam.position && cam.target ? Math.atan2(cam.position[2] - cam.target[2], cam.position[0] - cam.target[0]) : Math.PI / 4;
+        if (!Number.isFinite(az)) az = Math.PI / 4;
+        cam.position = [target[0] + Math.cos(az) * dist, Math.max(target[1] + ext * 0.25, 0.6), target[2] + Math.sin(az) * dist];
+        cam.target = target; cam.fov = fov;
+      }
+      cam.focusDistance = Math.hypot(cam.position[0] - cam.target[0], cam.position[1] - cam.target[1], cam.position[2] - cam.target[2]);
+      stats.cameraNote = `camera re-framed: ${reason}`;
+      log(stats.cameraNote + ` -> eye ${cam.position.map((v) => v.toFixed(2)).join(',')} target ${cam.target.map((v) => v.toFixed(2)).join(',')} fov ${cam.fov.toFixed(0)}`);
+    }
+  }
+
   // ---------- flatten + BVH ----------
   const tb = performance.now();
   const flat = flattenMeshes(meshes);
