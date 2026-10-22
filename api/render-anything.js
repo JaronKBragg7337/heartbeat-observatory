@@ -24,6 +24,16 @@ function limited(ip) {
   return b.n > 6 || dayCount >= 60;
 }
 
+// 10/21 (Jaron): every request is kept (prompt + report) so the smart engine can learn and a daily Sonnet job can find
+// what people ask for that we can't make yet. Insert-only RPC; failures never block the answer.
+async function logRequest(row) {
+  try {
+    await fetch('https://ygjpnvrwhkrowkrskftk.supabase.co/rest/v1/rpc/render_anything_log', { method: 'POST',
+      headers: { apikey: 'sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN', authorization: 'Bearer sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN', 'content-type': 'application/json' },
+      body: JSON.stringify(row) });
+  } catch (e) {}
+}
+
 export default async function handler(req, res) {
   res.setHeader('access-control-allow-origin', '*');
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -50,9 +60,11 @@ export default async function handler(req, res) {
     const r = await writeScene({ prompt, apiKey, workspaceId: process.env.ANTHROPIC_WORKSPACE_ID || '', catalog: loadCatalog() });
     dayCount++;
     console.log(JSON.stringify({ route: 'render-anything', ipHash, prompt, ms: Date.now() - t0, objects: r.scene.objects.length, usage: r.usage }));
+    await logRequest({ p_ip_hash: ipHash, p_prompt: prompt, p_report: r.scene.report || null, p_objects: r.scene.objects.length, p_model: r.model || '', p_ms: Date.now() - t0, p_error: null });
     return res.status(200).json({ scene: r.scene, report: r.scene.report, usage: r.usage, model: r.model, seconds: (Date.now() - t0) / 1000 });
   } catch (e) {
     console.log(JSON.stringify({ route: 'render-anything', ipHash, prompt, error: e.message }));
+    await logRequest({ p_ip_hash: ipHash, p_prompt: prompt, p_report: null, p_objects: 0, p_model: '', p_ms: Date.now() - t0, p_error: e.message });
     return res.status(502).json({ error: e.message });
   }
 }
