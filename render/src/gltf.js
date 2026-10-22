@@ -150,7 +150,15 @@ export async function loadGLTF(url, opts = {}) {
     for (const c of nd.children || []) visit(c, world);
   };
   const scene = json.scenes ? json.scenes[json.scene || 0] : { nodes: json.nodes.map((_, i) => i) };
-  for (const ni of scene.nodes) visit(ni, m4.identity());
+  // opts.node: load only one root node of a set (a plant variant, one barrel) and stand it at the origin
+  const roots = (opts.node !== undefined && opts.node !== null) ? [opts.node] : scene.nodes;
+  for (const ni of roots) visit(ni, m4.identity());
+  if (opts.node !== undefined && opts.node !== null && meshes.length) {
+    const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+    for (const m of meshes) for (let i = 0; i < m.mesh.pos.length; i += 3) for (let a = 0; a < 3; a++) { mn[a] = Math.min(mn[a], m.mesh.pos[i + a]); mx[a] = Math.max(mx[a], m.mesh.pos[i + a]); }
+    const off = [(mn[0] + mx[0]) / 2, mn[1], (mn[2] + mx[2]) / 2];
+    for (const m of meshes) for (let i = 0; i < m.mesh.pos.length; i += 3) { m.mesh.pos[i] -= off[0]; m.mesh.pos[i + 1] -= off[1]; m.mesh.pos[i + 2] -= off[2]; }
+  }
   let tris = 0; for (const m of meshes) tris += m.mesh.idx.length / 3;
   log(`glTF ${url.split('/').pop()}: ${meshes.length} primitives, ${tris} triangles, ${materials.length} materials`);
   return { meshes, materials };

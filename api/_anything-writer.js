@@ -8,11 +8,28 @@
 
 export const MODEL = 'claude-sonnet-5-5';
 
-export function catalogDigest(cat, max = { models: 260, textures: 120, hdris: 60 }) {
-  const m = cat.models.slice(0, max.models).map((x) => `${x.id} [${(x.tags || []).slice(0, 5).join(', ')}]`).join('\n');
+export function catalogDigest(cat, max = { models: 700, textures: 160, hdris: 70 }) {
+  // sizes in meters (Poly Haven reports mm) so the writer picks a real bush, not a 20 cm groundcover
+  const dim = (x) => (x.dimensions && x.dimensions.length === 3 && !x.setOf) ? ` ${x.dimensions.map((v) => (v / 1000).toFixed(1)).join('x')}m` : '';
+  const m = cat.models.slice(0, max.models).map((x) => `${x.id} [${(x.tags || []).slice(0, 4).join(', ')}]${dim(x)}`).join('\n');
   const t = cat.textures.slice(0, max.textures).map((x) => `${x.id} [${(x.tags || []).slice(0, 4).join(', ')}]`).join('\n');
   const h = cat.hdris.slice(0, max.hdris).map((x) => `${x.id} [${(x.categories || []).filter((c) => !/outdoor|nature|skies|natural light/.test(c)).slice(0, 4).join(', ')}]`).join('\n');
-  return { m, t, h };
+  // Kenney low-poly props: vehicles, street props, buildings, furniture (real-world sizes after scaling)
+  const k = (cat.kenney || []).map((x) => `${x.id} ${x.realDims ? '(' + x.realDims.map((v) => v.toFixed(1)).join('x') + ' m)' : ''}`).join('\n');
+  const b = (cat.kits || []).filter((x) => /facade/.test(x.id)).map((x) => `${x.id} [${(x.tags || []).slice(0, 4).join(', ')}] (${x.pieces} pieces)`).join('\n');
+  return { m, t, h, k, b };
+}
+
+// words -> a real Poly Haven texture for procedural surfaces ("concrete" must not look like wood)
+export const MATERIAL_WORDS = {
+  concrete: /^concrete|concrete/, asphalt: /^asphalt|asphalt|tarmac/, brick: /^brick|brick/, wood: /^wood|planks|parquet|wooden/, metal: /^metal|metal_plate|metal/,
+  grass: /^grass|lawn|grass/, gravel: /^gravel|gravel|pebbles/, plaster: /^plaster|plaster/, tiles: /tiles/, sand: /^sand|sand/, mud: /^mud|mud/, cobble: /cobble/, snow: /snow/, marble: /marble/, rust: /rust/, leather: /leather/, fabric: /fabric/, stone: /^stone|stone|rock_wall|slate/,
+};
+export function pickTexture(cat, word) {
+  const re = MATERIAL_WORDS[word]; if (!re) return null;
+  const list = cat.textures || [];
+  const byId = list.find((t) => new RegExp('^' + word).test(t.id)) || list.find((t) => re.test(t.id)) || list.find((t) => re.test((t.tags || []).join(' ')));
+  return byId || null;
 }
 
 export function systemPrompt(cat) {
@@ -34,6 +51,7 @@ JSON shape:
 
 Object types (every object has name, type, material or materials, position [x,y,z], rotation [deg x,y,z], scale):
 - {"type":"model","src":"polyhaven:<model id>"} a CC0 scanned model from the list below (sizes are real-world)
+- {"type":"model","src":"kenney:<kit>/<name>"} a CC0 low-poly prop (cars, trucks, vans, dumpsters, benches, signs, poles, buildings, furniture) from the Kenney list below; real-world size is applied for you, do not add scale unless asked for a different size
 - {"type":"heightfield","size":[w,d],"segments":[n,n],"dunes":{"amplitude":m,"scale":1/m},"ripples":{"amplitude":m,"wavelength":m,"direction":deg},"uvRepeat":1,"material":"..."} terrain or ground (keep heightfields under 80 m; the camera exposure for a bright sky is -1 to 0, never above 0.5)
 - {"type":"plane","size":[w,d]} flat ground or water surface (give water: transmission 1, ior 1.33, roughness 0.02)
 - {"type":"box","size":[x,y,z]} {"type":"sphere","radius":r} {"type":"cylinder","radius":r,"height":h} {"type":"cone","radius":r,"height":h}
@@ -41,12 +59,21 @@ Object types (every object has name, type, material or materials, position [x,y,
 - {"type":"rock","size":m,"seed":n} {"type":"tree","height":m,"kind":"conifer"|"broadleaf","materials":{"bark":"...","leaves":"..."}}
 - {"type":"hull","length":m,"width":m,"depth":m} a boat hull (canoe, rowboat)
 - {"type":"room","width":w,"depth":d,"height":h,"window":{"y0":..,"y1":..,"z0":..,"z1":..},"materials":{"floor":"..","wall":"..","ceiling":".."}} an interior shell; add a "portal" light in the window opening for daylight: {"type":"portal","position":[-w/2,y0,z0],"u":[0,0,z1-z0],"v":[0,y1-y0,0]}
+- {"type":"building","kit":"polyhaven:<kit id>","floors":1-6,"width":2-10 (3 m modules),"features":["garage","door"],"seed":any integer} a brick/industrial building facade assembled from a modular kit (listed below). Use it for "a building", warehouse, factory, old brick block; place it with position (center of the facade, y 0) and rotation; the facade faces +z. Give a new seed every time.
 - {"type":"generated","prompt":"..."} ONLY when nothing above can stand in for an important object; it will not be built yet.
 
-Rules: prefer a Poly Haven model when one matches; otherwise build from procedural shapes (a milkshake = lathe cup + cylinder straw + sphere cream). Fog, mist, smoke, fire, rain, people and animals cannot be rendered: say so in the report and suggest the nearest visible stand-in (a misty lake = pale low-sun sky + water plane + low exposure). Keep total objects under 25, textures under 4, trees under 12. Skies must come from the sky list. Every object in the scene must appear in the report with its source.
+Rules: prefer a Poly Haven scanned model when one matches; for vehicles, street props, whole buildings and furniture use the Kenney list; otherwise build from procedural shapes (a milkshake = lathe cup + cylinder straw + sphere cream). Fog, mist, smoke, fire, rain, people and animals cannot be rendered: say so in the report and suggest the nearest visible stand-in (a misty lake = pale low-sun sky + water plane + low exposure). Keep total objects under 25, textures under 4, trees under 12. Skies must come from the sky list. Every object in the scene must appear in the report with its source.
+Materials: every procedural surface that is a real-world material MUST carry "look": one of concrete, asphalt, brick, wood, metal, grass, gravel, plaster, tiles, sand, mud, cobble, snow, marble, rust, leather, fabric, stone. A matching scanned texture is attached for you (so a sidewalk with "look":"concrete" is concrete, never wood). You may still give baseColor as a tint and uvScale (repeats per meter, usually 0.5-2).
+Placement: everything is dropped onto whatever is under it after you place it (ground, a table, a car roof), so give y = 0 for things on the ground and roughly the support height for things on top of other things; nothing will float or sink. Plants, rocks and props scatter naturally: vary spacing, rotation [0,random,0] and scale (0.7-1.3), use loose clusters, never an evenly spaced row; flowers are small plants placed by the dozen near their bush, not single tiny objects. Big things first in the list (ground, buildings, furniture), small things last.
 
 Poly Haven models (id [tags]):
 ${d.m}
+
+Kenney props (id (size w x h x d in meters)):
+${d.k}
+
+Building kits for {"type":"building"} (kit id):
+${d.b}
 
 Poly Haven textures (id [tags]):
 ${d.t}
@@ -55,10 +82,10 @@ Poly Haven skies (id [when/weather]):
 ${d.h}`;
 }
 
-export async function writeScene({ prompt, apiKey, workspaceId, catalog, fetchImpl = fetch, maxTokens = 6000 }) {
+export async function writeScene({ prompt, apiKey, workspaceId, catalog, fetchImpl = fetch, maxTokens = 12000 }) {
   const body = {
     model: MODEL, max_tokens: maxTokens,
-    system: systemPrompt(catalog),
+    system: [{ type: 'text', text: systemPrompt(catalog), cache_control: { type: 'ephemeral' } }], // the big catalog is cached between requests
     messages: [{ role: 'user', content: `Scene request: ${String(prompt).slice(0, 600)}\nReturn the JSON object only.` }],
   };
   const headers = { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' };
@@ -66,10 +93,13 @@ export async function writeScene({ prompt, apiKey, workspaceId, catalog, fetchIm
   const r = await fetchImpl('https://api.anthropic.com/v1/messages', { method: 'POST', headers, body: JSON.stringify(body) });
   if (!r.ok) throw new Error('scene writer upstream ' + r.status + ': ' + (await r.text()).slice(0, 300));
   const j = await r.json();
+  if (j.stop_reason === 'max_tokens') throw new Error('the scene came out too long to finish; try a simpler sentence');
   const text = (j.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('\n');
   const m = text.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('scene writer returned no JSON');
-  const scene = JSON.parse(m[0]);
+  let scene;
+  try { scene = JSON.parse(m[0]); }
+  catch (e) { scene = JSON.parse(m[0].replace(/,\s*([\]}])/g, '$1').replace(/\/\/[^\n]*/g, '')); } // trailing commas / comments
   return { scene: resolveScene(scene, catalog), usage: j.usage, model: j.model };
 }
 
@@ -82,7 +112,20 @@ export function resolveScene(scene, cat) {
   const sky = hdris[(scene.environment?.hdri || '').replace(/^polyhaven:/, '')] || cat.hdris.find((h) => /clear|puresky/.test(h.id)) || cat.hdris[0];
   scene.environment = { ...(scene.environment || {}), hdri: sky.hdr1k || sky.hdr2k, hdriId: sky.id, sampleDirect: scene.environment?.sampleDirect ?? true };
   scene.materials = scene.materials || {};
+  const kenney = Object.fromEntries((cat.kenney || []).map((x) => [x.id, x]));
   for (const [name, m] of Object.entries(scene.materials)) {
+    // "look": attach a scanned texture set for real-world surfaces on procedural shapes
+    const look = String(m.look || '').toLowerCase().trim();
+    if (look && !m.baseColorTexture) {
+      const t = pickTexture(cat, look);
+      if (t) {
+        m.baseColorTexture = t.diffuse; if (t.normal) m.normalTexture = t.normal; if (t.roughness) m.roughnessTexture = t.roughness;
+        if (!m.uvScale) m.uvScale = 1.0;
+        if (!m.baseColor) m.baseColor = [1, 1, 1];
+        note(name, 'polyhaven:' + t.id, `${look} look from the scanned texture ${t.id}`);
+        if (look === 'metal' && m.metallic === undefined) m.metallic = 0.8;
+      } else note(name, 'skipped', `no ${look} texture in the catalog, plain color used`);
+    }
     for (const k of ['baseColorTexture', 'normalTexture', 'roughnessTexture']) {
       if (typeof m[k] === 'string' && m[k].startsWith('polyhaven:')) {
         const t = textures[m[k].slice(10)];
@@ -97,7 +140,18 @@ export function resolveScene(scene, cat) {
     if (ob.type === 'model' && typeof ob.src === 'string' && ob.src.startsWith('polyhaven:')) {
       const id = ob.src.slice(10); const md = models[id];
       if (!md) { note(ob.name, 'skipped', `model ${id} is not in the catalog`); continue; }
-      ob.src = md.gltf; ob.files = md.files; ob.polyhavenId = id;
+      ob.src = md.gltf; ob.files = md.files; ob.polyhavenId = id; if (md.node !== undefined) ob.node = md.node;
+    } else if (ob.type === 'model' && typeof ob.src === 'string' && ob.src.startsWith('kenney:')) {
+      const kd = kenney[ob.src];
+      if (!kd) { note(ob.name, 'skipped', `${ob.src} is not in the Kenney list`); continue; }
+      const f = kd.scaleToMeters || 1, s = ob.scale || [1, 1, 1];
+      ob.src = kd.src; ob.scale = [s[0] * f, s[1] * f, s[2] * f]; ob.kenneyId = kd.id;
+    } else if (ob.type === 'building') {
+      const kid = String(ob.kit || '').replace(/^polyhaven:/, '');
+      const kd = (cat.kits || []).find((k) => k.id === kid) || (cat.kits || []).find((k) => /facade/.test(k.id));
+      if (!kd) { note(ob.name, 'skipped', 'no building kit in the catalog'); continue; }
+      ob.src = kd.gltf; ob.files = kd.files; ob.kit = kd.id; ob.seed = ob.seed ?? Math.floor(Math.random() * 1e9);
+      note(ob.name, 'assembled:' + kd.id, `facade assembled from the kit: ${ob.floors || 2} floors, ${ob.width || 4} modules, seed ${ob.seed}`);
     } else if (ob.type === 'generated') {
       note(ob.name, 'generated (not available yet)', `text-to-3D (TRELLIS.2 on RunPod) is a hook only; "${(ob.prompt || '').slice(0, 80)}" was not built`);
       continue;
@@ -108,6 +162,7 @@ export function resolveScene(scene, cat) {
   if (!scene.camera) scene.camera = { position: [3, 1.5, 4], target: [0, 0.5, 0], fov: 50, exposure: 0 };
   scene.render = { width: 1280, height: 720, samples: 64, maxBounces: 6, rrStart: 3, clamp: 12, denoise: true, denoiseIterations: 2, denoiseSigma: 0.2, ...(scene.render || {}) };
   scene.time = scene.time || 0;
+  scene.rest = true; // the engine drops every prop onto what is under it (nothing floats)
   scene.report = report;
   return scene;
 }

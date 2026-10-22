@@ -116,7 +116,7 @@ export async function buildScene(scene, opts = {}) {
   async function buildObject(ob) {
     const T = m4.fromTRS(ob.position || [0, 0, 0], ob.rotation || [0, 0, 0], ob.scale || [1, 1, 1]);
     const mat = matIndex[ob.material];
-    if (mat === undefined && ob.type !== 'model' && !ob.materials) throw new Error('unknown material ' + ob.material + ' on ' + ob.name);
+    if (mat === undefined && ob.type !== 'model' && ob.type !== 'building' && !ob.materials) throw new Error('unknown material ' + ob.material + ' on ' + ob.name);
     let mesh = null;
     if (ob.type === 'heightfield') {
       let disp = null;
@@ -185,6 +185,24 @@ export async function buildScene(scene, opts = {}) {
       if (!ob.normals) { const { computeNormals } = await import('./mesh.js'); computeNormals(mesh); }
     } else if (ob.type === 'bottle_fill') {
       return; // handled after the fluid runs (level can come from the simulation)
+    } else if (ob.type === 'building') {
+      // a facade assembled from a modular kit (src/assembler.js): floors, width in 3 m modules, features, seed
+      const { loadGLTF } = await import('./gltf.js');
+      const { assembleBuilding } = await import('./assembler.js');
+      const src = /^(https?:|blob:|data:)/.test(ob.src) ? ob.src : base + ob.src;
+      const kit = await loadGLTF(src, { log, files: ob.files || null });
+      const localMat = kit.materials.map((m) => addMaterial({ ...m, ...((ob.materials && ob.materials[m.name]) || {}), name: ob.name + '/' + m.name }));
+      const b = assembleBuilding(kit, { floors: ob.floors, width: ob.width, features: ob.features, seed: ob.seed });
+      // center the facade on the object's x, face toward +z (rotation turns it)
+      const shift = -b.widthMeters / 2 + (ob.cornerWidth || 0);
+      for (const part of b.meshes) {
+        for (let i = 0; i < part.mesh.pos.length; i += 3) part.mesh.pos[i] += shift;
+        transformMesh(part.mesh, T);
+        meshes.push({ mesh: part.mesh, materialId: localMat[part.material] ?? localMat[0], name: ob.name + ':' + part.name });
+      }
+      ob.assemblerReport = b.report.join('; ');
+      log(`building ${ob.name}: ${b.meshes.length} placed pieces - ${ob.assemblerReport}`);
+      return;
     } else if (['rock', 'tree', 'hull', 'cylinder', 'cone', 'room'].includes(ob.type)) {
       // procedural builders (src/procedural.js); multi-part builders map part names to scene materials
       const P = await import('./procedural.js');
@@ -207,7 +225,7 @@ export async function buildScene(scene, opts = {}) {
       // standard 3D file: glTF 2.0 / .glb or OBJ+MTL; its materials become scene materials
       const { loadGLTF, loadOBJ } = await import('./gltf.js');
       const src = /^(https?:|blob:|data:)/.test(ob.src) ? ob.src : base + ob.src;
-      const model = /\.obj$/i.test(ob.src) ? await loadOBJ(src, { log }) : await loadGLTF(src, { log, files: ob.files || null });
+      const model = /\.obj$/i.test(ob.src) ? await loadOBJ(src, { log }) : await loadGLTF(src, { log, files: ob.files || null, node: ob.node });
       const localMat = model.materials.map((m) => {
         const ov = (ob.materials && ob.materials[m.name]) || null;
         if (ob.material) return matIndex[ob.material];
@@ -226,6 +244,59 @@ export async function buildScene(scene, opts = {}) {
     meshes.push({ mesh, materialId: mat, name: ob.name });
     log(`object ${ob.name}: ${mesh.idx.length / 3} triangles`);
   }
+
+  // ---------- drop to ground: nothing floats ----------
+  // Every object that is not itself ground (and not marked rest:false) is lowered or lifted so its
+  // lowest point rests on the highest support under its footprint: the ground function or any
+  // earlier object's triangles (so a cup sits on a table, a car on the lot).
+  const GROUND_TYPES = new Set(['heightfield', 'plane', 'room', 'bottle_fill', 'bottle']); // bottle: the fluid uses its matrix, so it stays put
+  const objByName = Object.fromEntries((scene.objects || []).map((o) => [o.name, o]));
+  const supportMeshes = [];
+  const meshBBox = (m) => { const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity]; for (let i = 0; i < m.pos.length; i += 3) for (let a = 0; a < 3; a++) { mn[a] = Math.min(mn[a], m.pos[i + a]); mx[a] = Math.max(mx[a], m.pos[i + a]); } return { mn, mx }; };
+  const heightOnMesh = (m, bb, x, z, below) => {
+    if (x < bb.mn[0] || x > bb.mx[0] || z < bb.mn[2] || z > bb.mx[2] || bb.mn[1] > below) return -Infinity;
+    const p = m.pos, idx = m.idx; let best = -Infinity;
+    for (let t = 0; t < idx.length; t += 3) {
+      const a = idx[t] * 3, b = idx[t + 1] * 3, c = idx[t + 2] * 3;
+      const ax = p[a], az = p[a + 2], bx = p[b], bz = p[b + 2], cx = p[c], cz = p[c + 2];
+      const d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz); if (Math.abs(d) < 1e-12) continue;
+      const u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / d, v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / d, w = 1 - u - v;
+      if (u < -1e-4 || v < -1e-4 || w < -1e-4) continue;
+      const y = u * p[a + 1] + v * p[b + 1] + w * p[c + 1];
+      if (y <= below && y > best) best = y;
+    }
+    return best;
+  };
+  let dropped = 0;
+  const groupBy = {};
+  for (const mm of meshes) { const key = mm.name.split(':')[0]; (groupBy[key] = groupBy[key] || []).push(mm); }
+  for (const [name, group] of Object.entries(groupBy)) {
+    const ob = objByName[name];
+    // only scenes that ask for it (the writer sets scene.rest = true); hand-built scenes keep their exact placement
+    const isGround = scene.rest !== true || !ob || GROUND_TYPES.has(ob.type) || ob.ground || ob.rest === false || /^light:/.test(name);
+    if (isGround) { for (const mm of group) supportMeshes.push({ mesh: mm.mesh, bb: meshBBox(mm.mesh) }); continue; }
+    const bbs = group.map((mm) => meshBBox(mm.mesh));
+    const mn = [Math.min(...bbs.map((b) => b.mn[0])), Math.min(...bbs.map((b) => b.mn[1])), Math.min(...bbs.map((b) => b.mn[2]))];
+    const mx = [Math.max(...bbs.map((b) => b.mx[0])), Math.max(...bbs.map((b) => b.mx[1])), Math.max(...bbs.map((b) => b.mx[2]))];
+    const cx = (mn[0] + mx[0]) / 2, cz = (mn[2] + mx[2]) / 2, hx = (mx[0] - mn[0]) * 0.3, hz = (mx[2] - mn[2]) * 0.3;
+    const samples = [[cx, cz], [cx - hx, cz - hz], [cx + hx, cz - hz], [cx - hx, cz + hz], [cx + hx, cz + hz]];
+    const below = mn[1] + (mx[1] - mn[1]) * 0.5; // only supports that start below the object's middle count
+    let support = -Infinity;
+    for (const [x, z] of samples) {
+      let h = groundFn(x, z);
+      for (const s of supportMeshes) { const y = heightOnMesh(s.mesh, s.bb, x, z, below); if (y > h) h = y; }
+      if (h > support) support = h;
+    }
+    const dy = support - mn[1];
+    const limit = Math.max(0.6, (mx[1] - mn[1]) * 0.5); // something placed far above its support was meant to be there
+    if (Number.isFinite(dy) && Math.abs(dy) > 1e-4 && (dy > 0 || -dy <= limit)) {
+      for (const mm of group) for (let i = 1; i < mm.mesh.pos.length; i += 3) mm.mesh.pos[i] += dy;
+      dropped++;
+      if (Math.abs(dy) > 0.01) log(`rest: ${name} moved ${dy > 0 ? 'up' : 'down'} ${Math.abs(dy).toFixed(3)} m`);
+    }
+    for (const mm of group) supportMeshes.push({ mesh: mm.mesh, bb: meshBBox(mm.mesh) });
+  }
+  stats.dropped = dropped;
 
   // ---------- fluid ----------
   let wetMap = null, fluidStats = null;

@@ -2,6 +2,22 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "hb-render-r6-parking-lot",
+      "date": "2026-10-21",
+      "title": "Make anything, round 6: the parking lot, before and after",
+      "tool": "hb-render (our own renderer) + a scene writer",
+      "image": "/artifacts/img/hb-render-r6-parking-lot.jpg",
+      "what": "Jaron typed \"A parking lot by a building. A truck, a car and a dumpster with trash in it.\" Left: round 5, where a modular building kit rendered as wall tiles floating in the sky and the vehicles were painted boxes. Right: round 6, a brick factory facade assembled piece by piece from that kit, a real truck, car and dumpster (Kenney CC0), everything resting on the asphalt.",
+      "made": "Own code: a kit assembler (doors on the ground floor, windows above, corners, cornice, a seed per request), a second CC0 model source (Kenney, 390 props hosted on this site), scanned textures attached by material word (\"concrete\" is concrete now), and a drop-to-ground pass so nothing floats.",
+      "honest": "The cars and props are low-poly toys next to scanned bricks; placement left/right is still the writer's guess; the assembler knows one kit and has no roof or sides. The scene writer is down until its API credits are topped up.",
+      "links": [
+        {
+          "url": "/render/anything/",
+          "label": "Make anything"
+        }
+      ]
+    },
+    {
       "id": "hb-render-r5-anything",
       "date": "2026-10-21",
       "title": "Make anything: type a sentence, your phone renders it",
