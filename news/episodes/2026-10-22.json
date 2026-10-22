@@ -1,0 +1,1361 @@
+{
+  "date": "2026-10-22",
+  "title": "Heartbeat News — Thursday, October 22, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/claude 2026-10-22 (03:10 ET; thin, little in window)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-22.md"
+    },
+    {
+      "name": "watch/codex 2026-10-22 (03:04 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-22.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-22 (03:40, reader)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-22.md"
+    },
+    {
+      "name": "watch/kimi 2026-10-22 (First Light desk)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-10-22.md"
+    },
+    {
+      "name": "watch/grok 2026-10-22 (Meridian desk, 02:50 ET)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-22.md"
+    },
+    {
+      "name": "watch/msi 2026-10-22 (03:00; mostly headline-only)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-10-22.md"
+    },
+    {
+      "name": "watch/grok 2026-10-22-gaps (blind-spot check)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-22-gaps.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Polymarket slugs, odds and resolution-rule notes (Brazil, Saudi/Houthi dailies, RUH ladder, Iran ceasefire, Trump-insult, Champi intensity, Israel PM)",
+      "source": "codex, grok, kimi, deepseek",
+      "why": "Market pricing and resolution rules are for the traders, not news."
+    },
+    {
+      "item": "Claude capture: undated or out-of-window items (Oct 7 market snapshot, undated BTC/ETH, undated Gulf storm and Georgia wildfire, NFL injury page lag)",
+      "source": "claude",
+      "why": "Stale or undated; the capture itself says nothing was found in window."
+    },
+    {
+      "item": "MSI headline-only items: Gemini in cars, Oura features, Ann Altman lawsuit dismissed, YouTube dislike button, Bose-Skullcandy, microdrama festival, data-center air quality, Tesla Roadster",
+      "source": "msi, codex",
+      "why": "Headline only, full text not fetched, or not news of consequence; the Verge headline on Starship catching is kept as a quick hit."
+    },
+    {
+      "item": "Market minutiae: Indonesian IDX auto-rejection tweaks, PBoC overnight operations, CATL buyback, DSBJ offer, Elice debut, Taiwan TAIEX, Indian indexes, ASX/NextDC",
+      "source": "kimi",
+      "why": "Detail for traders; main central-bank and index moves are in the Asia segment."
+    },
+    {
+      "item": "Cricket, KBO, NPB, ISL, League of Legends Worlds, India box office (Jailer 2, Drishyam 3), Ramayana date conflict, China game licenses, CASC and JAXA space items, wheatgrass genome, Zambia cholera, Kolkata crush probe, Delhi and Sri Lanka and Pakistan court items, NZ debate, Takaichi polls, China plenum preview, Bangladesh",
+      "source": "kimi",
+      "why": "Lower weight than the stories aired; no room for each without padding."
+    },
+    {
+      "item": "Ukraine energy and sanctions detail: Graham Act waiver and GL 135 diesel licenses, Russia-Trump Shenzhen idea, Hormuz shipping insurance and freight prints, copper, rice, palm oil, UK-EU trade defense, Dangote Refinery IPO timeline, Nigeria fuel price, Chinese GPU order claim, UAE-France AI deal, DeepInfer release",
+      "source": "kimi, grok, codex",
+      "why": "Mostly detail for traders or already folded into aired segments; kept to one line or left out."
+    },
+    {
+      "item": "Claude-written sections 09 and 10",
+      "source": "claude",
+      "why": "Left empty by the Claude writer by design."
+    }
+  ],
+  "ticker": [
+    "SAUDI: DRONE ATTACKS HIT SHAYBAH OIL FIELD, DAMMAM AIRPORT; DEATHS REPORTED AT BOTH",
+    "NYT: U.S., ISRAEL HAVE PLANS FOR IRAN STRIKES AFTER NOV. 3; TRUMP HAS NOT APPROVED",
+    "CENTCOM CALLS IRGC SUPERTANKER-MINE CLAIM FALSE; TANKER WITH 21 INDIAN CREW HIT",
+    "WITKOFF MET PUTIN ~3 HOURS; HUBBARD FREED; TRILATERAL TALKS PENCILED FOR ~NOV. 10",
+    "MISSILES HIT KYIV AFTER MEETING; MOSCOW SAYS 630 DRONES SENT TOWARD CAPITAL",
+    "JUDGE ORDERS META TO PAY NEW MEXICO $25 BILLION; META WILL APPEAL",
+    "MACRON CALLS FOREIGN COMMENT ON RIOTS 'STUPID'; FRANCE 10-YEAR YIELD TOPS 5%",
+    "TOLEDO CHEMICAL TANK RUPTURE: EVACUATION CUT TO HALF MILE",
+    "POPE LEO: NO FURTHER TREATMENT NEEDED AFTER LUNG SURGERY, DOCTORS SAY",
+    "EL SALVADOR: HAITIAN GANGS HOLD 4 OF ITS TECHNICIANS; BUKELE LAUNCHES OPERATION",
+    "AFRICA CDC EBOLA MINISTERS' SUMMIT OCT. 28 AFTER NIGERIA'S FIRST CASE",
+    "ABYEI MARKET STRIKE: 150+ DEAD PER LOCAL OFFICIAL; UN DOES NOT NAME ATTACKER",
+    "BRAZIL RUNOFF SUNDAY: MEIO/IDEIA FLAVIO 51.1, LULA 48.9, INSIDE MARGIN",
+    "S&P 500 +0.6% AT 7,757.17; TESLA Q3 PROFIT DOWN 44%",
+    "SUPER TYPHOON CHAMPI: TAIWAN LAND WARNING OUT, 100+ FLIGHTS CANCELED",
+    "13 MILLION EARLY VOTES CAST; DEMOCRATS SUE OVER VOTER PURGES"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Saudi airport hit, Iran strike plan, Meta's $25 billion bill",
+        "bullets": [
+          "Attacks on Saudi oil field and Dammam airport",
+          "NYT: U.S. and Israel plan Iran strikes after Nov. 3",
+          "Meta ordered to pay New Mexico $25 billion",
+          "Macron vs. Trump; France's bond yield tops 5%"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Thursday, October twenty-second."
+        },
+        {
+          "who": "vex",
+          "text": "Today: drones hit a Saudi oil field and an airport in Dammam, with deaths reported at both. The New York Times says the U.S. and Israel have plans for new strikes on Iran after the midterms. And a judge orders Meta to pay New Mexico twenty-five billion dollars."
+        },
+        {
+          "who": "joe",
+          "text": "Macron calls foreign comment on France's riots stupid, and says who he means. A chemical tank ruptures in Toledo. Pope Leo's doctors report on his cancer surgery. And a super typhoon closes in on Taiwan. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "saudi",
+      "kind": "breaking",
+      "strap": "DRONE ATTACKS HIT SAUDI OIL FIELD AND DAMMAM AIRPORT",
+      "headline": "Deaths in eastern Saudi Arabia",
+      "category": "SAUDI ARABIA",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "SAUDI ARABIA",
+        "title": "Two attacks in one day in the Eastern Province",
+        "bullets": [
+          "Shaybah oil field: drone intercepted, two workers killed",
+          "Dammam airport: one dead per Reuters, two per Arab News",
+          "Riyadh airport shut since October tenth",
+          "U.S. pulls non-emergency staff from Riyadh embassy"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Arabiya, Shaybah",
+          "url": "https://english.alarabiya.net/News/saudi-arabia/2026/10/21/two-killed-two-injured-in-drone-attack-targeting-saudi-aramco-s-shaybah-oil-field"
+        },
+        {
+          "name": "The National, Shaybah",
+          "url": "https://www.thenationalnews.com/news/mena/2026/10/21/saudi-aramco-shaybah-houthi-strike/"
+        },
+        {
+          "name": "Reuters, King Fahd airport",
+          "url": "https://www.reuters.com/world/saudi-civil-aviation-says-one-killed-eight-injured-attack-king-fahd-airport-2026-10-21/"
+        },
+        {
+          "name": "Al Jazeera, King Fahd airport",
+          "url": "https://www.aljazeera.com/news/2026/10/22/one-killed-eight-injured-in-attack-on-saudi-arabias-king-fahd-airport-2"
+        },
+        {
+          "name": "AGBI, Riyadh airport",
+          "url": "https://www.agbi.com/aviation/2026/10/riyadh-airport-reopening-in-doubt-after-houthi-attacks/"
+        },
+        {
+          "name": "CBS live updates, Iran war",
+          "url": "https://www.cbsnews.com/live-updates/iran-war-trump-us-ceasefire-talks-ongoing/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Two attacks in eastern Saudi Arabia on Wednesday. Saudi air defenses intercepted a drone aimed at a processing facility at Aramco's Shaybah oil field. The Energy Ministry says debris set a contractor's vehicle on fire outside the perimeter. Two foreign workers were killed, a Filipino and a Nepali, and two were hurt. The ministry says operations were not affected."
+        },
+        {
+          "who": "joe",
+          "text": "The statement does not say who launched it. Bloomberg puts Shaybah's capacity at one million barrels a day."
+        },
+        {
+          "who": "vex",
+          "text": "That evening, an attack on King Fahd International Airport in Dammam. The civil aviation authority said one resident was killed and eight were injured. Reuters carried that sentence. A later Arab News account of the same authority names two dead, a Saudi citizen and an Indian resident, and says operations have resumed."
+        },
+        {
+          "who": "joe",
+          "text": "One dead and two dead are not the same toll. We are not adding them. We will update when the authority does."
+        },
+        {
+          "who": "vex",
+          "text": "Context from the First Light desk. Riyadh's King Khalid airport has been shut since October tenth, with at least twenty Houthi attacks on it this month, according to the Gulf business site AGBI. The notice now sets a reopening for midnight Saturday. AGBI calls that in doubt."
+        },
+        {
+          "who": "joe",
+          "text": "Saudi Arabia says it foiled a Houthi drone attack on Medina on Wednesday. The U.S. State Department ordered non-emergency staff out of the Riyadh embassy. CBS reports the U.S. is reducing its Middle East troop footprint while indirect talks on extending the Iran ceasefire continue."
+        }
+      ]
+    },
+    {
+      "id": "irannyt",
+      "kind": "story",
+      "strap": "NYT: U.S. AND ISRAEL HAVE PLANS FOR IRAN STRIKES AFTER MIDTERMS",
+      "headline": "A report of plans, not an order",
+      "category": "IRAN",
+      "status": "claim",
+      "graphic": {
+        "kicker": "IRAN",
+        "title": "What the Times reports, and what it says is not decided",
+        "bullets": [
+          "Plans for a short, intensive operation after Nov. 3",
+          "Targets named: energy, nuclear, missiles and drones",
+          "Trump has not approved a new operation",
+          "Exercises up; Hegseth met Netanyahu this week"
+        ]
+      },
+      "sources": [
+        {
+          "name": "New York Times",
+          "url": "https://www.nytimes.com/2026/10/21/us/politics/us-israel-renewed-iran-strikes.html"
+        },
+        {
+          "name": "Jerusalem Post",
+          "url": "https://www.jpost.com/middle-east/iran-news/article-912476"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "This one is a claim, and it comes from the New York Times, citing U.S. officials and others briefed on the talks. The paper reports that the U.S. and Israeli militaries have specific plans for renewed strikes on Iran after the November third midterms."
+        },
+        {
+          "who": "joe",
+          "text": "The operation described is short and intensive. The targets named are energy infrastructure, nuclear facilities, and the missile and drone arsenal."
+        },
+        {
+          "who": "vex",
+          "text": "The paper says exercises have increased, including flights over Iraq, and that Defense Secretary Pete Hegseth discussed new strikes with Benjamin Netanyahu in Israel this week."
+        },
+        {
+          "who": "joe",
+          "text": "And the other half of the report matters just as much. The Times says Trump has not approved a new operation, and that he vetoed a return to major combat earlier this month, when an attack was nearly ready."
+        }
+      ]
+    },
+    {
+      "id": "hormuz",
+      "kind": "story",
+      "strap": "TANKERS HIT NEAR HORMUZ; CENTCOM CALLS IRGC MINE CLAIM FALSE",
+      "headline": "Tanker strikes and dueling claims",
+      "category": "STRAIT OF HORMUZ",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "HORMUZ",
+        "title": "Day two hundred thirty-seven",
+        "bullets": [
+          "UKMTO: tanker with 21 Indian crew hit, all safe",
+          "Two more tankers hit by unidentified projectiles",
+          "IRGC claims four vessels, and a mined supertanker",
+          "CENTCOM: 'Like most IRGC claims, this is false'"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Straits.live brief",
+          "url": "https://straits.live/briefs/2026-10-21"
+        },
+        {
+          "name": "NewsCord relay of IRGC claim",
+          "url": "https://newscord.org/article/irgc-navy-says-supertanker-exploded-after-striking-mine-south-of-strait-of-hormu--Story_20261021_IRGCNavySuperTankerSeeca8dc5"
+        },
+        {
+          "name": "hormuz.now, IMF PortWatch AIS",
+          "url": "https://hormuz.now/"
+        },
+        {
+          "name": "CME Group settlements",
+          "url": "https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.settlements.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Both sides, on the record. The British maritime monitor UKMTO says a Kuwait-flagged tanker carrying twenty-one Indian seafarers was struck by a projectile near the strait. All crew are safe. gCaptain reports two more tankers hit by unidentified projectiles in the northern Gulf."
+        },
+        {
+          "who": "joe",
+          "text": "Iran's Revolutionary Guard Navy claims four vessels were hit while transferring oil, with explosions at Sirik, and threatens U.S. bases. It also claims a supertanker carrying about two million barrels exploded on a mine."
+        },
+        {
+          "who": "vex",
+          "text": "U.S. Central Command answered directly: quote, like most IRGC claims, this is false. Those are single-party claims. The joint maritime information center still has not substantiated any of the mined-tanker claims."
+        },
+        {
+          "who": "joe",
+          "text": "Traffic is up slightly. A ship tracker counts eleven commercial crossings in twenty-four hours. Before the crisis it was about eighty-five a day. Six hundred fifty ships are sitting still, and no gas carriers have passed."
+        },
+        {
+          "who": "vex",
+          "text": "Prices. West Texas crude settled at ninety-eight dollars and eighteen cents on Wednesday, up one dollar and three cents. Brent is around one hundred ten dollars and forty cents."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "WITKOFF MEETS PUTIN; HUBBARD FREED; TALKS PENCILED FOR NOVEMBER",
+      "headline": "Three hours at the Constantine Palace",
+      "category": "UKRAINE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "The meeting happened. A ceasefire did not.",
+        "bullets": [
+          "Putin freed U.S. prisoner Stephen Hubbard",
+          "Russia ready in principle for trilateral talks ~Nov. 10",
+          "Ushakov: Oslo ideas have little to help",
+          "Zelensky: 'we have to freeze' the front line"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Kremlin readout",
+          "url": "http://en.special.kremlin.ru/events/president/news/81046"
+        },
+        {
+          "name": "CNN, Witkoff and Putin",
+          "url": "https://www.cnn.com/2026/10/21/europe/us-envoy-witkoff-putin-talks-russia-ukraine-intl"
+        },
+        {
+          "name": "AP, Witkoff and Putin",
+          "url": "https://apnews.com/article/russia-ukraine-witkoff-putin-trump-zelenskyy-talks-3f00c0c6fd10bab948c2c3f8502e0a91"
+        },
+        {
+          "name": "Euronews, Zelensky on a freeze",
+          "url": "https://www.euronews.com/2026/10/21/zelenskyy-backs-freezing-front-line-as-first-step-towards-ukraine-ceasefire"
+        },
+        {
+          "name": "New York Times, Hubbard",
+          "url": "https://www.nytimes.com/2026/10/21/us/politics/russia-american-prisoner-release-stephen-hubbard-trump.html"
+        },
+        {
+          "name": "Guardian, Ukraine war briefing",
+          "url": "https://www.theguardian.com/world/2026/oct/22/ukraine-war-briefing-peace-proposals-lack-substance-witkoff-putin-meeting"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "U.S. envoy Steve Witkoff met Vladimir Putin in Saint Petersburg for nearly three hours. Kremlin aide Yuri Ushakov says Putin is ready, in principle, to resume three-way talks with the U.S. and Ukraine around November tenth, on a security system for after the war. A U.S. official says both Ukraine and Russia accepted a trilateral format."
+        },
+        {
+          "who": "joe",
+          "text": "Ushakov also said the ideas Witkoff brought from Oslo contain little that could help. And Putin told him the initiative on the front line remains entirely with Russian troops."
+        },
+        {
+          "who": "vex",
+          "text": "Zelensky, on Fox News: quote, right now we have to freeze, and I think this is the real way to end this war. The German news agency dpa says that position is not new, and Moscow has rejected it before."
+        },
+        {
+          "who": "joe",
+          "text": "The freeze and the little of value are both on the record. They are not the same offer."
+        },
+        {
+          "who": "vex",
+          "text": "A human outcome. Putin pardoned Stephen Hubbard, a seventy-four-year-old former teacher held more than four years. Moscow says he was serving a sentence for mercenary activity. The State Department has called the charges fabricated. Witkoff called Putin a humanitarian in open remarks. Trump said it was at his request, with no swap."
+        },
+        {
+          "who": "joe",
+          "text": "The Kremlin also says a large part of the talks was Russian diesel to the U.S. and global markets, after Washington lifted certain sanctions. We have only Moscow's account of that."
+        }
+      ]
+    },
+    {
+      "id": "kyivstrikes",
+      "kind": "story",
+      "strap": "MISSILES HIT KYIV AFTER THE MEETING; MOSCOW REGION HIT BY 630 DRONES",
+      "headline": "The war did not pause",
+      "category": "UKRAINE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "Strikes in both directions overnight",
+        "bullets": [
+          "Missiles hit Kyiv early Thursday; Southern Bridge metro damaged",
+          "Reuters: 15 wounded; Kyiv Independent: 1 killed, 22 injured",
+          "Moscow mayor: 630 drones sent toward the capital, 2 wounded",
+          "Power cuts in three Kyiv districts"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters, missiles strike Kyiv",
+          "url": "https://www.reuters.com/world/europe/missiles-strike-ukraines-kyiv-reuters-witness-says-2026-10-21/"
+        },
+        {
+          "name": "Kyiv Independent",
+          "url": "https://kyivindependent.com/russian-ballistic-missiles-rock-kyiv-in-late-night-attack-injuring-6/"
+        },
+        {
+          "name": "Ukrainska Pravda, energy",
+          "url": "https://www.pravda.com.ua/eng/news/2026/10/21/8059057/"
+        },
+        {
+          "name": "United24, Novoshakhtinsk",
+          "url": "https://united24media.com/war-in-ukraine/russias-novoshakhtinsk-oil-terminal-takes-heavy-damage-as-8-of-12-tanks-are-hit-satellite-images-show-23675"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Hours after the Putin meeting, missiles struck Kyiv early Thursday. A Reuters witness reported it. The longer Reuters dispatch says fifteen people were wounded and subway infrastructure on the Southern Bridge was damaged. The Kyiv Independent says one person was killed and twenty-two injured. The counts differ, so we are not choosing one."
+        },
+        {
+          "who": "joe",
+          "text": "Earlier Wednesday, a ballistic attack damaged homes and a petrol station on the east bank. A strike in Kharkiv killed a woman. A drone hit energy infrastructure near Kremenchuk."
+        },
+        {
+          "who": "vex",
+          "text": "The other direction. Moscow's mayor says six hundred thirty drones were sent toward the capital, and two people were wounded. The governor of Lipetsk says drones hit apartment buildings and a medical facility. Satellite images show eight of twelve storage tanks wrecked at the Novoshakhtinsk oil terminal near Rostov."
+        },
+        {
+          "who": "joe",
+          "text": "On the grid: emergency blackouts in three Kyiv districts and more than five thousand customers off in Lutsk district. Ukraine's prime minister counts about sixty Russian strikes on energy sites in three days."
+        }
+      ]
+    },
+    {
+      "id": "france",
+      "kind": "story",
+      "strap": "MACRON CALLS TRUMP RIOT COMMENTS 'STUPID'; FRANCE'S BOND YIELD HITS 5%",
+      "headline": "France's crisis spreads to the bond market",
+      "category": "FRANCE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "FRANCE",
+        "title": "A diplomatic row, a bond selloff, a profit warning",
+        "bullets": [
+          "Macron: foreign comment 'unacceptable' and 'stupid'",
+          "10-year yield above 5%, first time since 2002",
+          "Carrefour cuts outlook; shares down 13-15%",
+          "Next protest called for Saturday; Moody's review Friday"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CNN, Macron and Trump",
+          "url": "https://www.cnn.com/2026/10/21/europe/macron-trump-stupid-comments-france-protests-intl"
+        },
+        {
+          "name": "Guardian, Macron",
+          "url": "https://www.theguardian.com/world/2026/oct/21/macron-trump-foreign-leaders-stupid-comments-france-unrest"
+        },
+        {
+          "name": "Reuters, French bonds",
+          "url": "https://www.reuters.com/business/french-bonds-lead-euro-zone-yields-higher-2026-10-21/"
+        },
+        {
+          "name": "Reuters via Euronext, Carrefour",
+          "url": "https://live.euronext.com/en/financial-news/carrefour-heads-biggest-ever-drop-french-riots-trigger-forecast-cut"
+        },
+        {
+          "name": "Paris 6th arrondissement, curfew order",
+          "url": "https://mairie06.paris.fr/pages/couvre-feu-a-paris-voici-les-quartiers-et-les-rues-concernes-apres-les-violences-des-17-18-octobre-36950"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Doha, President Macron called foreign comment on the French riots unacceptable and stupid, and said the riots showed no visible foreign interference. He blamed manipulated information, including A.I. images of scenes that did not happen, for claims that France had been invaded by hordes of migrants and Islamists."
+        },
+        {
+          "who": "joe",
+          "text": "Asked whether he meant Donald Trump, who had blamed migrants, jihadists and communists, Macron said: among others."
+        },
+        {
+          "who": "vex",
+          "text": "The money. France's ten-year bond yield traded through five percent on Wednesday, the first time since July two thousand two on Reuters' account. At one reading it was four point nine nine seven percent. Those are session readings, not one closing number. Paris stocks rose one point oh six percent anyway."
+        },
+        {
+          "who": "joe",
+          "text": "Carrefour cut its annual earnings target, warning that the riots and looting could cost it between eighty and two hundred million euros in operating income. Its shares fell between thirteen and fifteen percent, which Reuters called a record one-day drop."
+        },
+        {
+          "who": "vex",
+          "text": "A curfew order from twenty-three hundred to six remains posted for central Paris. No state of emergency has been declared. A new national protest is called for Saturday, and Moody's reviews France on Friday."
+        }
+      ]
+    },
+    {
+      "id": "meta",
+      "kind": "story",
+      "strap": "JUDGE ORDERS META TO PAY NEW MEXICO $25 BILLION",
+      "headline": "The Cambridge Analytica penalty",
+      "category": "COURTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "LAW",
+        "title": "Meta will appeal",
+        "bullets": [
+          "Judge Francis Mathew: $25 billion to New Mexico",
+          "Jury found 26 of 29 statements misleading",
+          "More than 43 million violations of state law",
+          "Meta says it will appeal"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/business/meta-ordered-pay-25-billion-new-mexico-after-jury-finds-company-misled-consumers-2026-10-21/"
+        },
+        {
+          "name": "CBS News",
+          "url": "https://www.cbsnews.com/news/meta-new-mexico-25-billion-privacy-ruling/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Santa Fe, Judge Francis Mathew ordered Meta to pay New Mexico twenty-five billion dollars. A September jury found the company misled users about data privacy in the Cambridge Analytica matter. Jurors found twenty-six of twenty-nine statements misleading and counted more than forty-three million violations of state consumer law."
+        },
+        {
+          "who": "joe",
+          "text": "The judge wrote that a penalty above two hundred nineteen billion dollars was warranted under the law, and reduced it to twenty-five. The attorney general says the money goes to the state's schools. Meta's chief legal officer says the company will appeal."
+        },
+        {
+          "who": "vex",
+          "text": "This is separate from the child-safety settlement mentioned in Meta's earnings."
+        }
+      ]
+    },
+    {
+      "id": "toledo",
+      "kind": "story",
+      "strap": "TOLEDO CHEMICAL TANK RUPTURE FORCES EVACUATIONS",
+      "headline": "Nearly a thousand people ordered out",
+      "category": "OHIO",
+      "status": "observed",
+      "graphic": {
+        "kicker": "OHIO",
+        "title": "Evacuation cut back Wednesday afternoon",
+        "bullets": [
+          "5,500-gallon tank of glycidyl methacrylate ruptured",
+          "About 1,000 people inside a one-mile radius evacuated",
+          "Ohio EPA: release was an error during a transfer",
+          "By Wednesday afternoon, evacuation cut to a half mile"
+        ]
+      },
+      "sources": [
+        {
+          "name": "PBS NewsHour",
+          "url": "https://www.pbs.org/newshour/nation/chemical-tank-explosion-in-ohio-of-glycidyl-methacrylate-forces-evacuations-prompts-fears-of-another-blast"
+        },
+        {
+          "name": "CNN live news",
+          "url": "https://www.cnn.com/2026/10/21/us/live-news/toledo-chemical-tank-explosion-ohio"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Toledo, Ohio, a five thousand five hundred gallon tank of glycidyl methacrylate ruptured at about nine thirty Tuesday night. Nearly one thousand people inside a one-mile radius were ordered out. A wider shelter-in-place covered about three miles, and schools closed."
+        },
+        {
+          "who": "joe",
+          "text": "The Ohio E.P.A. said the release was an error during a transfer, and that the city let the reaction in the compromised tank finish rather than send crews in. A sheriff's deputy was hurt and drove himself to the hospital. About thirty people were evaluated."
+        },
+        {
+          "who": "vex",
+          "text": "The Blade reported that by Wednesday afternoon the evacuation was cut to a half mile and the shelter-in-place was lifted. The mayor no longer treated another explosion as a very real possibility."
+        }
+      ]
+    },
+    {
+      "id": "pope",
+      "kind": "story",
+      "strap": "POPE LEO NEEDS NO FURTHER TREATMENT, DOCTORS SAY",
+      "headline": "Lung cancer surgery results",
+      "category": "VATICAN",
+      "status": "observed",
+      "graphic": {
+        "kicker": "VATICAN",
+        "title": "Localized adenocarcinoma, fully removed",
+        "bullets": [
+          "Lower lobe of right lung removed October 13",
+          "Final pathology: localized adenocarcinoma",
+          "Doctors: no further treatment needed",
+          "Trip to South America Nov. 6-17 still unclear"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/europe/pope-leo-will-not-need-further-therapy-after-his-operation-doctors-say-2026-10-21/"
+        },
+        {
+          "name": "New York Times",
+          "url": "https://www.nytimes.com/2026/10/21/world/europe/pope-leo-cancer.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Pope Leo's doctors say he needs no further treatment after the October thirteenth removal of the lower lobe of his right lung. Final pathology confirmed a localized pulmonary adenocarcinoma. The statement came from his lead surgeon and personal physician, through the Vatican."
+        },
+        {
+          "who": "joe",
+          "text": "He was discharged Saturday and held a general audience Wednesday. Reuters says it is still unclear whether his trip to Uruguay, Argentina and Peru, planned for November sixth to seventeenth, goes ahead."
+        }
+      ]
+    },
+    {
+      "id": "haiti",
+      "kind": "story",
+      "strap": "EL SALVADOR SAYS HAITIAN GANGS HOLD FOUR OF ITS TECHNICIANS",
+      "headline": "Bukele threatens a harder response",
+      "category": "HAITI",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "HAITI",
+        "title": "Four Salvadoran aviation technicians missing since Sunday",
+        "bullets": [
+          "Bukele: gangs hold four technicians, operation launched",
+          "Reuters: ambush Sunday at Croix-des-Bouquets",
+          "They serve with the UN-backed Gang Suppression Force",
+          "Haiti: release an 'absolute priority'"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/americas/el-salvador-says-haiti-gangs-holding-4-force-members-hostage-announces-new-2026-10-21/"
+        },
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/10/22/el-salvadors-bukele-threatens-haitian-gangs-over-abducted-soldiers"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "El Salvador's president Nayib Bukele says Haitian gangs are holding four Salvadoran aviation technicians from the U.N.-backed Gang Suppression Force, and that he has launched a military operation to bring them back. He gave no details and named no group."
+        },
+        {
+          "who": "joe",
+          "text": "Reuters, citing security officials, says the four went missing Sunday after an ambush on their armored vehicle at Croix-des-Bouquets, near Port-au-Prince. Bukele says they are medical-evacuation technicians, not combatants, and warned of a harder response if they are not returned alive. Haiti's government calls their release an absolute priority."
+        }
+      ]
+    },
+    {
+      "id": "ebola",
+      "kind": "story",
+      "strap": "EBOLA: AFRICA CDC CALLS EMERGENCY MEETING AFTER NIGERIA'S FIRST CASE",
+      "headline": "Who brought it, and from where?",
+      "category": "HEALTH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EBOLA",
+        "title": "Bundibugyo strain, no licensed vaccine",
+        "bullets": [
+          "Africa CDC ministers' summit set for Oct. 28",
+          "Nigeria's patient: foreign national, arrived Oct. 5",
+          "Uganda denies the case came from there",
+          "Kenya holds at nine cases"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP via News4JAX",
+          "url": "https://www.news4jax.com/health/2026/10/21/africa-cdc-calls-an-ebola-crisis-summit-as-nigeria-records-its-first-case/"
+        },
+        {
+          "name": "ECDC",
+          "url": "https://www.ecdc.europa.eu/en/ebola-outbreak-democratic-republic-congo-and-uganda"
+        },
+        {
+          "name": "CDC situation summary",
+          "url": "https://www.cdc.gov/ebola/situation-summary/index.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Africa C.D.C. has called an emergency virtual meeting of health ministers for October twenty-eighth, after Nigeria reported its first case in the outbreak that began in Congo in May."
+        },
+        {
+          "who": "joe",
+          "text": "Nigeria's patient is a foreign national who entered on October fifth and was first treated for malaria. Forty-four contacts are being followed, mostly health workers. Nigeria says the traveler arrived from Uganda. Uganda denies the case originated there. That origin is unresolved."
+        },
+        {
+          "who": "vex",
+          "text": "The agency tables do not match. The European agency, with data through October eighteenth, has Congo at nine thousand five hundred fifty-two confirmed cases and four thousand six hundred two deaths. The U.S. C.D.C., as of October twentieth, has nine thousand six hundred thirty-seven and four thousand six hundred forty-six. Kenya holds at nine cases."
+        },
+        {
+          "who": "joe",
+          "text": "There is no licensed vaccine or specific drug for this strain. Congo plans a trial in late October testing an existing Ebola vaccine for cross-protection."
+        }
+      ]
+    },
+    {
+      "id": "sudan",
+      "kind": "story",
+      "strap": "ABYEI MARKET STRIKE: MORE THAN 150 DEAD, NO ONE CLAIMS IT",
+      "headline": "South Sudan summons Sudan's ambassador",
+      "category": "SUDAN",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "SUDAN",
+        "title": "The toll is unchanged. The blame is not.",
+        "bullets": [
+          "Abyei official: more than 150 dead at Amiet market",
+          "Local officials blame Sudan's army",
+          "Sudanese officer earlier: army hit RSF fuel tankers",
+          "UN statement does not name who fired"
+        ]
+      },
+      "sources": [
+        {
+          "name": "New York Times",
+          "url": "https://www.nytimes.com/2026/10/21/world/africa/sudan-drone-strikes.html"
+        },
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/10/21/drone-attack-in-disputed-sudan-south-sudan-border-region-kills-at-least-153"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "No new toll from Monday's drone strike on Amiet market in the disputed Abyei region. An Abyei administration official still says more than one hundred fifty were killed, and told the New York Times the bodies were charred."
+        },
+        {
+          "who": "joe",
+          "text": "Local officials blame Sudan's army. An unnamed Sudanese officer said earlier that the army struck R.S.F. fuel tankers and did not target civilians. Those claims stand, unreconciled. The U.N. spokesman condemned the attacks, said dozens of civilians were killed and the toll will likely rise, and did not name who fired."
+        },
+        {
+          "who": "vex",
+          "text": "South Sudan's government condemned the strike and summoned Sudan's ambassador in Juba. A separate strike killed five people, including two aid workers, at a refugee camp in Chad."
+        }
+      ]
+    },
+    {
+      "id": "brazil",
+      "kind": "story",
+      "strap": "BRAZIL RUNOFF SUNDAY: NEW POLL STILL INSIDE THE MARGIN",
+      "headline": "Flávio Bolsonaro 51.1, Lula 48.9",
+      "category": "BRAZIL",
+      "status": "observed",
+      "graphic": {
+        "kicker": "BRAZIL",
+        "title": "Four days to the runoff",
+        "bullets": [
+          "Meio/Ideia: Flávio 51.1%, Lula 48.9% of valid votes",
+          "Margin of error 2.5 points",
+          "Globo debate Friday",
+          "Vote Sunday, October 25"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Rio Times, Meio/Ideia poll",
+          "url": "https://www.riotimesonline.com/meio-ideia-poll-flavio-51-lula-49-runoff-2026/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Brazil votes Sunday. A new Meio/Ideia poll of fifteen hundred voters has Flávio Bolsonaro at fifty-one point one percent of valid votes and Lula at forty-eight point nine. The gap is two point two points, inside the two point five point margin of error."
+        },
+        {
+          "who": "joe",
+          "text": "The last televised debate is on Globo Friday. In the first round on October fourth, Flávio had forty-seven point oh three percent and Lula forty-five point one six. The only result that counts is the vote."
+        }
+      ]
+    },
+    {
+      "id": "asia",
+      "kind": "story",
+      "strap": "KOREA AND INDONESIA HOLD RATES; NIKKEI DROPS 1,713 POINTS",
+      "headline": "Asia's central banks and markets",
+      "category": "MARKETS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "ASIA",
+        "title": "Two holds, one rebound, one slide",
+        "bullets": [
+          "Bank Indonesia holds at 5.75%, raises deposit rate",
+          "Bank of Korea holds at 3.00%, 'hawkish'",
+          "KOSPI +3.29% Wednesday, then fades",
+          "Nikkei 62,907, first close under 63,000 in a month"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters, Bank Indonesia",
+          "url": "https://www.reuters.com/world/asia-pacific/indonesias-central-bank-keeps-main-rate-unchanged-hikes-deposit-facility-rate-2026-10-21/"
+        },
+        {
+          "name": "Yonhap, Bank of Korea",
+          "url": "https://en.yna.co.kr/view/AEN20261022001353320"
+        },
+        {
+          "name": "Yonhap, KOSPI",
+          "url": "https://en.yna.co.kr/view/AEN20261021007051320"
+        },
+        {
+          "name": "Kabutan, Japan market news",
+          "url": "https://en.kabutan.com/jp/market_news"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "From the First Light desk. Bank Indonesia held its rate at five point seven five percent but raised its deposit facility rate and will cut bank reserve requirements by about two points by December, to steady the rupiah. The rupiah still slipped to eighteen thousand twenty-two per dollar."
+        },
+        {
+          "who": "joe",
+          "text": "The Bank of Korea held at three percent in what the desk calls a hawkish freeze, and raised its growth forecast to three point three percent. South Korea's KOSPI jumped three point two nine percent Wednesday, then faded more than one percent Thursday."
+        },
+        {
+          "who": "vex",
+          "text": "Japan's Nikkei closed Wednesday at sixty-four thousand six hundred twenty-one, then fell one thousand seven hundred thirteen points to sixty-two thousand nine hundred seven. That is its first close under sixty-three thousand in about a month."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "SUPER TYPHOON CHAMPI: TAIWAN LAND WARNING OUT, 100+ FLIGHTS CANCELED",
+      "headline": "Taiwan braces for the strongest storm of the year",
+      "category": "TYPHOON",
+      "status": "observed",
+      "graphic": {
+        "kicker": "TYPHOON",
+        "title": "Peak impact Friday and Saturday",
+        "bullets": [
+          "Taiwan land warning issued early Thursday",
+          "More than 100 flights canceled",
+          "Okinawa's southern islands next, Oct. 23-24",
+          "Track bends toward Kyushu after the weekend"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters via U.S. News",
+          "url": "https://www.usnews.com/news/world/articles/2026-10-22/taiwan-issues-land-warning-ahead-of-arrival-of-powerful-typhoon-champi"
+        },
+        {
+          "name": "Taipei Times",
+          "url": "https://www.taipeitimes.com/News/front/archives/2026/10/22/2003866405"
+        },
+        {
+          "name": "Japan Times",
+          "url": "https://www.japantimes.co.jp/news/2026/10/21/japan/typhoon-champi-okinawa/"
+        },
+        {
+          "name": "PAGASA",
+          "url": "https://www.pagasa.dost.gov.ph/"
+        },
+        {
+          "name": "NOAA Weather Prediction Center",
+          "url": "https://www.wpc.ncep.noaa.gov/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Typhoon Champi, called Rosal in the Philippines, has triggered Taiwan's land warning. More than one hundred flights are canceled. Japan's weather agency classifies Champi a violent typhoon. The Philippine weather service says it is slightly weakening, with Signal Number Two over Batanes."
+        },
+        {
+          "who": "joe",
+          "text": "Peak impact in Taiwan is Friday and Saturday. Okinawa's southern islands are next on October twenty-third and twenty-fourth, and after the weekend the track shifts toward Kyushu. Japanese and Taiwanese airlines have cut flights, and port and rail delays are building."
+        },
+        {
+          "who": "vex",
+          "text": "Elsewhere: Chennai, India, faces a seventh day of rain, with a very heavy rain warning through October twenty-fifth and schools closed across several districts. A report says floods linked to Tropical Storm Narra have killed one hundred eleven in Vietnam since October sixth. That is a claim from a Sky News relay."
+        },
+        {
+          "who": "joe",
+          "text": "At home, the National Weather Service lists a moderate risk of excessive rainfall for today, and a moderate heavy-snow hazard."
+        }
+      ]
+    },
+    {
+      "id": "tech",
+      "kind": "story",
+      "strap": "DHS BAN ON DEEPSEEK ESCALATES; CHINA VOWS 'ALL NECESSARY MEASURES'",
+      "headline": "A.I. and the U.S.-China standoff",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "A.I.",
+        "title": "Ban, backlash, and a reported $15 billion raise",
+        "bullets": [
+          "China's commerce ministry: ban 'disregards' Xi-Trump consensus",
+          "Senate draft would extend ban to ten more firms (claim)",
+          "DeepSeek raise reported at about $15 billion (claim)",
+          "OpenAI models enter private preview on Google Cloud"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters, China on DeepSeek ban",
+          "url": "https://www.reuters.com/world/asia-pacific/china-says-us-banning-deepseek-government-it-systems-disregards-consensus-2026-10-20/"
+        },
+        {
+          "name": "Trending Topics citing VentureBeat",
+          "url": "https://www.trendingtopics.eu/deepseek-ban-china-response/"
+        },
+        {
+          "name": "Reuters via KSL, DeepSeek fundraising",
+          "url": "https://www.ksl.com/article/51639460/deepseek-wrapping-up-15-billion-fundraising-to-fuel-ai-race"
+        },
+        {
+          "name": "OpenAI",
+          "url": "https://openai.com/index/openai-models-google-cloud/"
+        },
+        {
+          "name": "Google Cloud",
+          "url": "https://cloud.google.com/blog/products/ai-machine-learning/google-cloud-brings-openai-models-to-customers"
+        },
+        {
+          "name": "Reuters via Euronext, EBA and Google Cloud",
+          "url": "https://live.euronext.com/en/financial-news/europes-financial-regulators-query-google-over-cloud-outage-hit-banks"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "China's commerce ministry says the U.S. Homeland Security ban on DeepSeek in federal systems disregards the Xi-Trump consensus. It demands immediate withdrawal and vows all necessary measures."
+        },
+        {
+          "who": "joe",
+          "text": "A Senate Armed Services draft would reportedly extend the Pentagon's DeepSeek ban to ten more Chinese A.I. firms. That is a claim from a trade-press report. And Reuters, via sources, says DeepSeek is wrapping up a fundraising of about fifteen billion dollars, China's largest A.I. raise, with CATL and Tencent among the biggest backers. DeepSeek has not commented."
+        },
+        {
+          "who": "vex",
+          "text": "OpenAI and Google Cloud announced OpenAI's frontier models and Codex workflows are coming to Google's model catalog. Google says three models entered private preview with selected enterprise customers."
+        },
+        {
+          "who": "joe",
+          "text": "And the Google Cloud outage in London on Tuesday is not over for regulators. The European Banking Authority told Reuters it contacted Google for information after a power event disrupted bank services. Google says service was restored."
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "kind": "story",
+      "strap": "S&P 500 +0.6% AS TESLA PROFIT FALLS 44%; META RAISES MONEY FOR A.I.",
+      "headline": "Earnings night",
+      "category": "BUSINESS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Wednesday's close and the earnings",
+        "bullets": [
+          "S&P 500 7,757.17; Dow 52,856.09; Nasdaq 26,702.86",
+          "Tesla Q3 net income $787 million, down 44%",
+          "Musk: SpaceX-Tesla merger talks, 'many hurdles'",
+          "Meta Q3 revenue $64.6 billion, new Class C shares"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP, Wall Street",
+          "url": "https://apnews.com/article/wall-street-stocks-dow-nasdaq-3ec2d8c93a390023ef8104973dea275f"
+        },
+        {
+          "name": "Tesla investor relations",
+          "url": "https://ir.tesla.com/press-release/tesla-releases-third-quarter-2026-financial-results"
+        },
+        {
+          "name": "AP, Tesla and Musk",
+          "url": "https://apnews.com/article/tesla-quarterly-earning-musk-spacex-merger-cfe0453f6bf0d08d22150022128492fa"
+        },
+        {
+          "name": "Meta Q3 results, PR Newswire",
+          "url": "https://www.prnewswire.com/news-releases/meta-reports-third-quarter-2026-results-302915964.html"
+        },
+        {
+          "name": "Wu Blockchain via Telegram, ETF flows",
+          "url": "https://t.me/s/wublockchainenglish"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "AP reports Wednesday's close: the S and P five hundred up point six percent at seven thousand seven hundred fifty-seven, the Dow up point seven at fifty-two thousand eight hundred fifty-six, the Nasdaq up one point one. AP links the rise to SpaceX results and A.I. stocks, while Netflix and other shares fell on growth concerns."
+        },
+        {
+          "who": "joe",
+          "text": "Tesla reported third-quarter net income of seven hundred eighty-seven million dollars, down forty-four percent from a year ago. Adjusted earnings were forty-eight cents a share. It cut its twenty twenty-six capital spending estimate from twenty-five billion to twenty billion."
+        },
+        {
+          "who": "vex",
+          "text": "Elon Musk said special committees at SpaceX and Tesla are discussing a possible merger, and that there are many hurdles and no deal is certain."
+        },
+        {
+          "who": "joe",
+          "text": "Meta reported revenue of sixty-four point six billion dollars, up twenty-six percent, and net income of nine point eight six billion. It announced a new publicly listed nonvoting Class C share. And it launched its Muse models."
+        },
+        {
+          "who": "vex",
+          "text": "Bitcoin is near eighty-three thousand dollars. U.S. spot bitcoin funds took in five hundred twenty-eight million dollars on Wednesday, per SoSoValue figures relayed by Wu Blockchain."
+        }
+      ]
+    },
+    {
+      "id": "uk",
+      "kind": "story",
+      "strap": "UK APPROVES JACKDAW GAS FIELD; INFLATION JUMPS TO 3.5%",
+      "headline": "Burnham's government, a gas field and a price print",
+      "category": "UNITED KINGDOM",
+      "status": "observed",
+      "graphic": {
+        "kicker": "UK",
+        "title": "The gas will not cut this winter's bills, the energy secretary says",
+        "bullets": [
+          "Jackdaw consent: about 6% of UK gas output at peak",
+          "No new exploration licenses; Rosebank undecided",
+          "UK inflation 3.5% in September, up from 3.1%",
+          "Budget October 28"
+        ]
+      },
+      "sources": [
+        {
+          "name": "GOV.UK, Jackdaw",
+          "url": "https://www.gov.uk/government/news/jackdaw-gas-field-gets-green-light"
+        },
+        {
+          "name": "BBC, Chris Mason on Jackdaw",
+          "url": "https://www.bbc.co.uk/news/articles/cked35dz47y7o"
+        },
+        {
+          "name": "ONS, September CPI",
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/consumerpriceinflation/september2026"
+        },
+        {
+          "name": "BBC, PMQs live",
+          "url": "https://www.bbc.co.uk/news/live/cqx28r6d37e3t"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The U.K. government approved production at the Jackdaw gas field, about one hundred fifty miles east of Aberdeen. The government says gas flows from the end of this month and peaks at about six percent of U.K. gas output. It says no new exploration licenses will be issued. A decision on the Rosebank oil field is still outstanding."
+        },
+        {
+          "who": "joe",
+          "text": "The energy secretary told BBC Radio Scotland the gas will not lower bills this winter. A minister said the U.K. will not stop being a net importer. At Prime Minister's Questions, Andy Burnham and Kemi Badenoch clashed over Jackdaw, public debt and inflation."
+        },
+        {
+          "who": "vex",
+          "text": "The inflation figure itself: three point five percent in the twelve months to September, up from three point one in August. Motor fuels made the largest upward contribution. Chancellor John Healey's Budget is October twenty-eighth."
+        }
+      ]
+    },
+    {
+      "id": "uspol",
+      "kind": "story",
+      "strap": "13 MILLION EARLY VOTES; DEMOCRATS SUE OVER VOTER PURGES",
+      "headline": "Twelve days to the midterms",
+      "category": "U.S. POLITICS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "MIDTERMS",
+        "title": "Turnout up sharply; a lawsuit before November 3",
+        "bullets": [
+          "Over 13 million votes cast nationally",
+          "Texas early vote up 74% vs. 2022",
+          "Democratic leaders sue to block voter purges",
+          "Also: NYT on post-midterm Iran strike plans"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP, early voting",
+          "url": "https://apnews.com/article/election-2026-midterms-voting-early-turnout-44df2c18b387d28022dbb480e99feaba"
+        },
+        {
+          "name": "AP, Democrats' lawsuit",
+          "url": "https://apnews.com/article/trump-elections-democrats-lawsuit-boasberg-8ea24aea3951ef219adc6cd4b29d4a20"
+        },
+        {
+          "name": "AP, offshore wind",
+          "url": "https://apnews.com/article/trump-offshore-wind-energy-projects-fossil-fuels-2240e0178af111dfcff46c902cb646e2"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "AP's early-voting analysis: more than thirteen million votes cast nationally through Tuesday, versus nine million at the same point in twenty twenty-two. Texas is up seventy-four percent. Kansas more than doubled. Maine, North Carolina and Ohio are up more than thirty percent."
+        },
+        {
+          "who": "joe",
+          "text": "Democratic leaders filed a federal suit to block the administration from purging legally registered voters, denying their ballots or threatening state election officials with prosecution before November third. That is the plaintiffs' account of what they fear."
+        },
+        {
+          "who": "vex",
+          "text": "And the Trump administration asked a federal judge to let it reconsider the permit for New England Wind. The project plans up to one hundred twenty-nine turbines, enough power for more than nine hundred thousand homes."
+        }
+      ]
+    },
+    {
+      "id": "israel",
+      "kind": "story",
+      "strap": "ISRAEL VOTES MONDAY: NEITHER BLOC REACHES 61 IN FINAL POLLS",
+      "headline": "Election week, plus a Cairo vote",
+      "category": "MIDDLE EAST",
+      "status": "observed",
+      "graphic": {
+        "kicker": "ISRAEL",
+        "title": "Final-week polls and a regional constraint",
+        "bullets": [
+          "N12 and Kan: neither bloc at 61 seats",
+          "About 50,000 expats flying home to vote",
+          "Egypt's Sisi: Saudi support 'won't include' strikes on Houthis",
+          "Egypt's parliament votes Oct. 26"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Jerusalem Post",
+          "url": "https://www.jpost.com/israel-election-2026/article-912482"
+        },
+        {
+          "name": "Arab News, Sisi",
+          "url": "https://www.arabnews.com/saudi-arabia/egyptian-military-support-for-saudi-arabia-will-not-include-attacks-on-yemen-president-el-sisi-says-3007577"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Israel votes next week. Final polls from Channel Twelve and Kan give the Yashar party twenty-three or twenty-four seats to Likud's nineteen to twenty-one. Neither bloc reaches sixty-one. About fifty thousand expatriates are flying home to vote. Gaza strikes killed seven Palestinians on Wednesday."
+        },
+        {
+          "who": "joe",
+          "text": "In Egypt, President Sisi said support for Saudi Arabia, quote, won't include attacks on Houthis in Yemen. Parliament votes October twenty-sixth on a deployment that needs a two-thirds majority."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "COMO BEATS UNITED 4-1; BAYERN-ARSENAL 2-2; PATRIOTS THIN FOR TNF",
+      "headline": "Wednesday's Champions League and Thursday night",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Champions League night",
+        "bullets": [
+          "Como 4, Manchester United 1; Paz scores twice",
+          "Bayern 2, Arsenal 2; Kane penalty, Rice equalizer",
+          "Real Madrid 4, Leipzig 1: three wins in three",
+          "Patriots rule out five for Thursday at Chicago"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters, Como v Manchester United",
+          "url": "https://www.reuters.com/sports/soccer/paz-dazzles-como-thrash-manchester-united-4-1-2026-10-21/"
+        },
+        {
+          "name": "Sports Mole, scores",
+          "url": "https://www.sportsmole.co.uk/live-scores/2026-10-21.html"
+        },
+        {
+          "name": "Patriots.com, injury report",
+          "url": "https://www.patriots.com/news/injury-report-analysis-patriots-rule-out-five-players-for-thursday-night-football-vs-the-bears"
+        },
+        {
+          "name": "Formula1.com, U.S. Grand Prix",
+          "url": "https://www.formula1.com/en/latest/article/what-time-is-the-formula-1-2026-united-states-grand-prix-and-how-can-i-watch-it.5jZFEoK96n4tpbRzEJjRoH"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Champions League. Como beat Manchester United four to one. Nico Paz scored twice. Joshua Zirkzee got United's goal in stoppage time. Bayern Munich and Arsenal drew two-two, with a Harry Kane penalty and a Declan Rice equalizer. Real Madrid beat Leipzig four to one, a record three wins in three."
+        },
+        {
+          "who": "joe",
+          "text": "Galatasaray beat Lille four to two. In South America's Copa Sudamericana, Boca Juniors won at Vasco da Gama, three to one."
+        },
+        {
+          "who": "vex",
+          "text": "Tonight, Thursday Night Football in Chicago. The Patriots ruled out five players, including Carlton Davis the third and Alijah Vera-Tucker. Four more are questionable."
+        },
+        {
+          "who": "joe",
+          "text": "And in Austin this weekend, Mercedes' Kimi Antonelli can clinch the Formula One title on Sunday if he wins and George Russell finishes ninth or lower and Lewis Hamilton fifth or lower."
+        }
+      ]
+    },
+    {
+      "id": "also",
+      "kind": "story",
+      "strap": "ALSO TODAY: AFRICA, ASIA AND EUROPE QUICK HITS",
+      "headline": "Also today",
+      "category": "ALSO TODAY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "More from the desks",
+        "bullets": [
+          "Dangote buys about 25% of Kenya Pipeline Company",
+          "Kenya fuel protests fizzle; new 72-hour ultimatum",
+          "Greece: 10,000 march for school funding, peacefully",
+          "Philippine Supreme Court voids budget increases"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters, Dangote and Kenya Pipeline",
+          "url": "https://www.reuters.com/business/energy/nigerias-dangote-buys-25-stake-kenyas-oil-pipeline-network-2026-10-21/"
+        },
+        {
+          "name": "Business Daily Africa",
+          "url": "https://www.businessdailyafrica.com/bd/corporate/companies/how-dangote-beat-top-oil-firms-for-24-7pc-kpc-stake-5640806"
+        },
+        {
+          "name": "The Standard, Kenya",
+          "url": "https://www.standardmedia.co.ke/national/article/2001560552/human-rights-activists-journalist-arrested-during-fuel-cost-demos"
+        },
+        {
+          "name": "eKathimerini, Athens march",
+          "url": "https://www.ekathimerini.com/news/1318864/some-10000-march-peacefully-in-athens-over-state-education/"
+        },
+        {
+          "name": "Moneycontrol, Jio IPO",
+          "url": "https://www.moneycontrol.com/news/business/ipo/jio-ipo-gmp-live-updates-jio-platforms-ipo-price-band-subscription-status-today-oct-22-liveblog-14057077.html"
+        },
+        {
+          "name": "The New Arab, Gabès sentences",
+          "url": "https://www.newarab.com/news/tunisia-sentences-10-anti-pollution-activists-over-protest"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Aliko Dangote says his company bought a twenty-five percent stake in Kenya Pipeline Company. Kenyan press puts it at twenty-four point seven percent, for forty-two and a half billion shillings. The figures are not identical, and the buyer's legal entity was not named."
+        },
+        {
+          "who": "joe",
+          "text": "Kenya's fuel-tax protests fizzled on Mashujaa Day. Eleven were arrested, including a television journalist. The group issued a new seventy-two-hour ultimatum."
+        },
+        {
+          "who": "vex",
+          "text": "In Athens, about ten thousand students and teachers marched to Parliament over school funding. No violence was reported. One banner linked Greece to France."
+        },
+        {
+          "who": "joe",
+          "text": "India's Jio Platforms I.P.O. was three point four seven times subscribed on day two. Retail investors crossed full subscription. Listing is October twenty-eighth."
+        },
+        {
+          "who": "vex",
+          "text": "A Tunisian court sentenced environmental activists over a twenty twenty protest against a state phosphate plant. Accounts differ: one says ten people, with two one-year jail terms. Another says suspended six-month sentences. We have no judgment document."
+        }
+      ]
+    },
+    {
+      "id": "also2",
+      "kind": "story",
+      "strap": "ALSO TODAY: A POLITICIAN LOSES BOTH LEGS; SPACE, SOLANA AND CHINA",
+      "headline": "Also today, part two",
+      "category": "ALSO TODAY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "More from the desks, continued",
+        "bullets": [
+          "Australian MP Helen Haines loses both legs after car attack",
+          "Philippines: Supreme Court voids budget increases (relay)",
+          "Solana's Alpenglow upgrade live on mainnet",
+          "SpaceX will try to catch Starship and booster, Musk says"
+        ]
+      },
+      "sources": [
+        {
+          "name": "ABC News wire, Haines",
+          "url": "https://abcnews.com/International/wireStory/australian-politician-hit-car-lost-legs-137438270"
+        },
+        {
+          "name": "Solana Foundation notes via solcard.cc",
+          "url": "https://www.solcard.cc/blog/solana-alpenglow-mainnet-activation"
+        },
+        {
+          "name": "The Verge, Starship catch",
+          "url": "https://www.theverge.com/science/1014913/spacex-will-try-catching-starship-and-its-booster-for-first-time-musk-says"
+        },
+        {
+          "name": "U.S. Treasury OFAC, recent actions",
+          "url": "https://ofac.treasury.gov/recent-actions"
+        },
+        {
+          "name": "Kimi relay of Philippine Supreme Court ruling (via Grok gaps)",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-21-gaps.md"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Australia, independent M.P. Helen Haines had both legs amputated after what is described as a deliberate car attack. Prime Minister Albanese led national support."
+        },
+        {
+          "who": "joe",
+          "text": "Solana activated its Alpenglow upgrade on mainnet, with a brief pause at handover and no incidents reported in the first hours. And Elon Musk says SpaceX will try to catch Starship and its booster for the first time. That headline comes from The Verge."
+        },
+        {
+          "who": "vex",
+          "text": "The U.S. Treasury targeted Iranian shadow-fleet shipping networks and removed some Belarus and North Korea designations, with new general licenses for Iran and Russia. And the Philippine Supreme Court reportedly voided the twenty twenty-four and twenty twenty-five budget increases as unconstitutional. We have that from a relay, not the court."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": [],
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped."
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "GOOD NIGHT",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 22",
+          "Sources under the screen",
+          "New show every day by morning"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Thursday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by morning. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
