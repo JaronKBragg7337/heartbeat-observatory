@@ -53,6 +53,37 @@ $('endpoint').onchange = () => localStorage.setItem('hb-anything-endpoint', $('e
 for (const c of document.querySelectorAll('.chips span')) c.onclick = () => { $('prompt').value = c.textContent; };
 let R = null, S = null, scene = null, spp = 0, lastPx = null, W = 1280, H = 720;
 
+// Owner lane: /render/anything/?owner=<code> stores the code once (then strips it from the URL); with it,
+// requests go to Supabase render_owner_queue and the MSI writes the scene on Jaron's own Claude subscription
+// (tools/owner-worker.mjs) instead of the public API writer. Only the code's hash exists on the server.
+const SB_URL = 'https://ygjpnvrwhkrowkrskftk.supabase.co', SB_ANON = 'sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN';
+let ownerCode = null;
+try {
+  const u = new URL(location.href);
+  if (u.searchParams.get('owner')) { localStorage.setItem('hb-owner-code', u.searchParams.get('owner')); u.searchParams.delete('owner'); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); }
+  ownerCode = localStorage.getItem('hb-owner-code');
+} catch (e) {}
+if (ownerCode) { const b = document.createElement('div'); b.className = 'sub'; b.style.color = '#9ad67a'; b.textContent = 'your lane (subscription): requests run on the MSI through Claude Code, not the public writer.'; $('status').before(b); }
+async function rpc(fn, args) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { 'content-type': 'application/json', apikey: SB_ANON, authorization: 'Bearer ' + SB_ANON }, body: JSON.stringify(args) });
+  const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+  if (!r.ok) throw new Error((j && (j.message || j.error)) || ('lane ' + r.status));
+  return j;
+}
+async function ownerLane(prompt) {
+  const id = await rpc('owner_enqueue', { p_code: ownerCode, p_prompt: prompt });
+  const t0 = performance.now();
+  for (;;) {
+    await new Promise((r) => setTimeout(r, 2500));
+    const s = await rpc('owner_poll', { p_code: ownerCode, p_id: id });
+    if (s.status === 'done') return { scene: s.scene, report: s.report };
+    if (s.status === 'error') throw new Error('your lane: ' + (s.error || 'failed'));
+    if (s.status === 'missing') throw new Error('your lane: request vanished');
+    setStatus(`your lane (subscription): ${s.status}${s.queuePosition ? ', ' + s.queuePosition + ' ahead' : ''}, ${((performance.now() - t0) / 1000).toFixed(0)} s`);
+    if (performance.now() - t0 > 240000) throw new Error('your lane: the MSI did not answer in 4 minutes (is the owner worker running?)');
+  }
+}
+
 function present(px) { canvas.width = W; canvas.height = H; ctx.putImageData(new ImageData(px, W, H), 0, 0); lastPx = px; }
 function showReport(rep, extra = []) {
   const rows = [...rep, ...extra].map((r) => `<tr><td>${r.object || ''}</td><td class="${/polyhaven|procedural/.test(r.source) ? 'ok' : (/not available|skipped/.test(r.source) ? 'warn' : '')}">${r.source || ''}</td><td>${r.note || ''}</td></tr>`).join('');
@@ -71,11 +102,15 @@ async function go() {
   const prompt = $('prompt').value.trim(); if (!prompt) return;
   $('go').disabled = true; $('more').disabled = true; $('save').disabled = true; $('report').innerHTML = '';
   try {
-    setStatus('writing the scene...');
+    setStatus(ownerCode ? 'your lane (subscription): queued for the MSI...' : 'writing the scene...');
     const t0 = performance.now();
-    const r = await fetch($('endpoint').value, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt }) });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error || ('writer ' + r.status));
+    let j;
+    if (ownerCode) j = await ownerLane(prompt);
+    else {
+      const r = await fetch($('endpoint').value, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt }) });
+      j = await r.json();
+      if (!r.ok) throw new Error(j.error || ('writer ' + r.status));
+    }
     scene = j.scene;
     $('json').textContent = JSON.stringify(scene, null, 1).slice(0, 20000);
     log(`scene written in ${((performance.now() - t0) / 1000).toFixed(1)} s: ${scene.objects.length} objects`);
