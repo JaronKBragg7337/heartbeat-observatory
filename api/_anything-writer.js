@@ -64,6 +64,7 @@ Object types (every object has name, type, material or materials, position [x,y,
 
 Rules: prefer a Poly Haven scanned model when one matches; for vehicles, street props, whole buildings and furniture use the Kenney list; otherwise build from procedural shapes (a milkshake = lathe cup + cylinder straw + sphere cream). Fog, mist, smoke, fire, rain, people and animals cannot be rendered: say so in the report and suggest the nearest visible stand-in (a misty lake = pale low-sun sky + water plane + low exposure). Keep total objects under 25, textures under 4, trees under 12. Skies must come from the sky list. Every object in the scene must appear in the report with its source.
 Materials: every procedural surface that is a real-world material MUST carry "look": one of concrete, asphalt, brick, wood, metal, grass, gravel, plaster, tiles, sand, mud, cobble, snow, marble, rust, leather, fabric, stone. A matching scanned texture is attached for you (so a sidewalk with "look":"concrete" is concrete, never wood). You may still give baseColor as a tint and uvScale (repeats per meter, usually 0.5-2).
+Room light: a room needs real light. Bulbs (sphere lights, radius 0.05-0.1) at intensity 200-600, scaled with the floor area (600 for 40 m2+), at least one light per 15 m2 of floor, spread over the room; a room without a window also gets a soft fill: a ceiling rect light (position = a ceiling corner, u and v along the ceiling, intensity 6-15). Window portals should cover the whole opening.
 Placement: everything is dropped onto whatever is under it after you place it (ground, a table, a car roof), so give y = 0 for things on the ground and roughly the support height for things on top of other things; nothing will float or sink. Plants, rocks and props scatter naturally: vary spacing, rotation [0,random,0] and scale (0.7-1.3), use loose clusters, never an evenly spaced row; flowers are small plants placed by the dozen near their bush, not single tiny objects. Big things first in the list (ground, buildings, furniture), small things last.
 
 Poly Haven models (id [tags]):
@@ -192,6 +193,14 @@ export function resolveScene(scene, cat) {
       if (nx !== ob.position[0] || nz !== ob.position[2]) { note(ob.name, 'procedural:room fit', `moved inside the room (${ob.position[0].toFixed(1)},${ob.position[2].toFixed(1)} -> ${nx.toFixed(1)},${nz.toFixed(1)})`); ob.position = [nx, ob.position[1], nz]; }
     }
     for (const lt of scene.lights || []) if (Array.isArray(lt.position) && lt.type !== 'portal') { lt.position[0] = Math.max(c[0] - w / 2 + 0.3, Math.min(c[0] + w / 2 - 0.3, lt.position[0])); lt.position[2] = Math.max(c[2] - d / 2 + 0.3, Math.min(c[2] + d / 2 - 0.3, lt.position[2])); }
+    // timid room light gets raised: bulbs scale with the floor area, at least one light per 15 m2, a fill when there is no window
+    const area = w * d, h = room.height ?? 2.7, minBulb = Math.min(600, Math.max(200, 200 + area * 10));
+    const bulbs = scene.lights.filter((l) => /sphere|point|spot/.test(l.type));
+    for (const l of bulbs) if ((l.intensity ?? 0) < minBulb) { note(l.name || l.type, 'procedural:light', `bulb raised ${l.intensity ?? 0} -> ${minBulb} for a ${area.toFixed(0)} m2 room`); l.intensity = minBulb; }
+    const want = Math.ceil(area / 15);
+    if (bulbs.length < want) { for (let i = bulbs.length; i < want; i++) { const gx = c[0] - w / 2 + (w / (want + 1)) * (i + 1), gz = c[2]; scene.lights.push({ type: 'sphere', name: 'fill bulb ' + (i + 1), position: [gx, c[1] + h - 0.3, gz], radius: 0.07, color: [1, 0.9, 0.75], intensity: minBulb }); } note('room light', 'procedural:light', `${want - bulbs.length} bulb(s) added so the ${area.toFixed(0)} m2 room has one per 15 m2`); }
+    const hasWindow = !!room.window || scene.lights.some((l) => l.type === 'portal');
+    if (!hasWindow && !scene.lights.some((l) => l.type === 'rect')) { scene.lights.push({ type: 'rect', name: 'ceiling fill', position: [c[0] - w / 2 + 0.5, c[1] + h - 0.05, c[2] - d / 2 + 0.5], u: [w - 1, 0, 0], v: [0, 0, d - 1], color: [1, 0.95, 0.85], intensity: 8 }); note('ceiling fill', 'procedural:light', 'soft ceiling light added: the room has no window'); }
   }
   // objects that name a material that does not exist get a plain grey one instead of failing the whole scene
   for (const ob of scene.objects) {

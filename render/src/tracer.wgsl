@@ -650,6 +650,8 @@ fn trace(@builtin(global_invocation_id) gid: vec3u) {
   }
 
   var L = vec3f(0.0);
+  var Ldirect = vec3f(0.0);   // what the first hit contributes (direct light + emission + sky seen straight)
+  var lastBounce = 0;
   var tp = vec3f(1.0);
   var lastPdf = 0.0;
   var specular = true;
@@ -661,6 +663,8 @@ fn trace(@builtin(global_invocation_id) gid: vec3u) {
   let useCaustics = P.misc.w > 0.5;
 
   for (var bounce = 0; bounce < maxB; bounce++) {
+    lastBounce = bounce;
+    if (bounce == 1) { Ldirect = L; }
     let h = traverse(ro, rd, 1e30);
     if (h.tri < 0) {
       let Le = envRadiance(rd);
@@ -806,6 +810,12 @@ fn trace(@builtin(global_invocation_id) gid: vec3u) {
     }
   }
   // clamp fireflies a little (per-sample luminance clamp)
+  // fireflies: the whole sample is clamped at render.clamp, and what arrived through bounces (indirect light)
+  // is clamped harder at a quarter of that - a lone bright bounce is noise, not light
+  if (lastBounce == 0) { Ldirect = L; }
+  let indirect = L - Ldirect;
+  let li = lum(indirect);
+  if (li > P.lt.w * 0.25) { L = Ldirect + indirect * (P.lt.w * 0.25 / li); }
   let lm = lum(L);
   if (lm > P.lt.w) { L *= P.lt.w / lm; }
   // NaN/Inf guard (a single bad sample would otherwise spread through the denoiser)

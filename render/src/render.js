@@ -84,7 +84,7 @@ export async function createRenderer(opts) {
   const npix = width * height;
   const mk = (size, usage, label) => device.createBuffer({ size: Math.max(16, Math.ceil(size / 16) * 16), usage, label });
   const accum = mk(npix * 16, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC, 'accum');
-  const gbuf = mk(npix * 32, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST, 'gbuf');
+  const gbuf = mk(npix * 32, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC, 'gbuf');
   const pingA = mk(npix * 16, GPUBufferUsage.STORAGE, 'pingA');
   const pingB = mk(npix * 16, GPUBufferUsage.STORAGE, 'pingB');
   const outBuf = mk(npix * 4, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC, 'out');
@@ -251,6 +251,31 @@ export async function createRenderer(opts) {
     const f = new Float32Array(rb.getMappedRange().slice(0));
     rb.unmap(); rb.destroy();
     return f;
+  };
+
+  // auto-exposure: read the accumulation after the first samples and return the EV that puts the
+  // geometric-mean luminance near `target` (0.18 = a mid grey), clamped to +-4 EV. Sky pixels are
+  // ignored (they would drag an interior's average up and leave the room dark).
+  R.autoExposure = async (target = 0.18) => {
+    const a = await R.readAccum();
+    const g = new Float32Array(await (async () => { const rb = mk(npix * 32, GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST, 'rbg'); const enc = device.createCommandEncoder(); enc.copyBufferToBuffer(gbuf, 0, rb, 0, npix * 32); device.queue.submit([enc.finish()]); await rb.mapAsync(GPUMapMode.READ); const f = rb.getMappedRange().slice(0); rb.unmap(); rb.destroy(); return f; })());
+    let sum = 0, n = 0; const ls = [];
+    for (let i = 0; i < npix; i += 7) {
+      const c = a[i * 4 + 3]; if (c <= 0) continue;
+      // gbuf rgb is a running SUM of albedo over the same c samples (w is just 1); sky writes albedo 1,1,1
+      const alb = (g[i * 8] + g[i * 8 + 1] + g[i * 8 + 2]) / c;
+      if (alb > 2.95) continue;
+      const l = (0.2126 * a[i * 4] + 0.7152 * a[i * 4 + 1] + 0.0722 * a[i * 4 + 2]) / c;
+      sum += Math.log(Math.max(l, 1e-4)); n++; ls.push(l);
+    }
+    if (n < 100) return 0;
+    const mean = Math.exp(sum / n);
+    let ev = Math.log2(target / mean);
+    // keep the bright end in range: the 90th percentile should land at most around 1.0 before ACES
+    ls.sort((x, y) => x - y);
+    const p90 = ls[Math.floor(ls.length * 0.9)];
+    if (p90 > 0) ev = Math.min(ev, Math.log2(1.0 / p90));
+    return Math.max(-4, Math.min(4, ev));
   };
 
   // denoise (optional) + tonemap, returns RGBA8 pixels

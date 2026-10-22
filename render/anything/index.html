@@ -32,6 +32,7 @@
 <button id="go">Write the scene and render it here</button>
 <div class="row"><button class="secondary" id="more" disabled>Render longer (more samples)</button><button class="secondary" id="save" disabled>Save image</button></div>
 <div id="status"></div>
+<label class="sub" style="display:block;margin:4px 0"><input type="checkbox" id="denoise" checked> Clean up grain (edge-aware denoise on the final picture)</label>
 <canvas id="cv" width="1280" height="720"></canvas>
 <div id="report"></div>
 <details><summary>Scene writer endpoint</summary><input type="text" id="endpoint"><div class="sub">Default: this site's /api/render-anything. On Jaron's home network the MSI writer also works at http://&lt;MSI-IP&gt;:8732/anything (only from an http page).</div></details>
@@ -91,8 +92,14 @@ function showReport(rep, extra = []) {
 }
 async function renderMore(n) {
   const t0 = performance.now(); let done = 0;
-  while (done < n) { const k = Math.min(8, n - done); await R.pass(k); done += k; spp += k; setStatus(`rendering: ${spp} samples per pixel, ${((performance.now() - t0) / 1000).toFixed(1)} s`); if (done % 16 === 0) present(await R.finish({ denoise: false, exposure: scene.camera.exposure ?? 0 })); await yieldFrame(); }
-  present(await R.finish({ denoise: true, iterations: 2, exposure: scene.camera.exposure ?? 0 }));
+  while (done < n) {
+    const k = Math.min(8, n - done); await R.pass(k); done += k; spp += k;
+    // auto-exposure once, after the first samples: writer scenes (interiors especially) come out too dark otherwise
+    if (spp === 8 && scene.rest && !scene.camera.manualExposure) { const ev = await R.autoExposure(0.18); scene.camera.exposure = Math.round(ev * 10) / 10; log('auto-exposure ' + scene.camera.exposure + ' EV'); }
+    setStatus(`rendering: ${spp} samples per pixel, ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+    if (done % 16 === 0) present(await R.finish({ denoise: false, exposure: scene.camera.exposure ?? 0 })); await yieldFrame();
+  }
+  present(await R.finish({ denoise: $('denoise').checked, iterations: 2, exposure: scene.camera.exposure ?? 0 }));
   setStatus(`done: ${spp} samples per pixel in ${((performance.now() - t0) / 1000).toFixed(1)} s on this device`);
   $('more').disabled = false;
   // make the PNG now, so the tap can open the share sheet right away (iOS refuses share() after an async wait)

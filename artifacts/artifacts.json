@@ -2,6 +2,22 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "hb-render-r10-interiors",
+      "date": "2026-10-22",
+      "title": "Make anything, round 10: rooms you can actually see",
+      "tool": "hb-render (our own renderer) + a scene writer",
+      "image": "/artifacts/img/hb-render-r10-interiors.jpg",
+      "what": "Jaron's two room sentences, rendered through his own lane. Top: \"A restaurant with tables and chairs. Nice counter space and full kitchen\". Bottom: \"A bedroom with a desk and laptop... very messy room\". Left is round 9, where the restaurant was near black (three weak bulbs in a 12 by 10 m hall) and the bedroom was dim. Right is round 10: the same sentences, now lit like real rooms.",
+      "made": "Own code: the scene writer is told how strong a bulb has to be for the floor area (200 to 600, at least one light per 15 m2, a ceiling fill when there is no window) and the engine enforces the same numbers if the writer is timid; auto-exposure measures the first samples and sets the camera; very bright bounced-light samples are clamped (fewer white speckles) and an edge-aware clean-up pass is on by default with a toggle on the page.",
+      "honest": "Brighter is not finished: the restaurant has office chairs where dining tables should be, the kitchen is a counter with bottles, and the bedroom's 'random things on the floor' are a few boxes. Walls still look flat because the writer picks one texture per room. Props are low-poly CC0 toys.",
+      "links": [
+        {
+          "url": "/render/anything/",
+          "label": "Make anything"
+        }
+      ]
+    },
+    {
       "id": "hb-render-r6-parking-lot",
       "date": "2026-10-21",
       "title": "Make anything, round 6: the parking lot, before and after",
