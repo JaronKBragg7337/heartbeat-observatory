@@ -63,7 +63,9 @@ async function renderMore(n) {
   while (done < n) { const k = Math.min(8, n - done); await R.pass(k); done += k; spp += k; setStatus(`rendering: ${spp} samples per pixel, ${((performance.now() - t0) / 1000).toFixed(1)} s`); if (done % 16 === 0) present(await R.finish({ denoise: false, exposure: scene.camera.exposure ?? 0 })); await yieldFrame(); }
   present(await R.finish({ denoise: true, iterations: 2, exposure: scene.camera.exposure ?? 0 }));
   setStatus(`done: ${spp} samples per pixel in ${((performance.now() - t0) / 1000).toFixed(1)} s on this device`);
-  $('more').disabled = false; $('save').disabled = false;
+  $('more').disabled = false;
+  // make the PNG now, so the tap can open the share sheet right away (iOS refuses share() after an async wait)
+  canvas.toBlob((b) => { readyFile = new File([b], (scene?.name || 'hb-render').replace(/[^\w-]+/g, '-') + '.png', { type: 'image/png' }); $('save').disabled = false; }, 'image/png');
 }
 async function go() {
   const prompt = $('prompt').value.trim(); if (!prompt) return;
@@ -92,11 +94,14 @@ async function go() {
 }
 $('go').onclick = go;
 $('more').onclick = () => { $('more').disabled = true; renderMore(128); };
-// 10/21 (Jaron, iPhone): a download link lands in Files, not Photos - use the share sheet (Save Image -> Photos) like the phone test
-$('save').onclick = () => { canvas.toBlob(async (b) => {
-  const name = (scene?.name || 'hb-render').replace(/[^\w-]+/g, '-') + '.png', file = new File([b], name, { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: 'hb-render' }); return; } catch (e) { if (e.name === 'AbortError') return; } }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click(); }, 'image/png'); };
+// 10/21 (Jaron, iPhone): a download link lands in Files (and blob downloads fail in Safari) - share sheet -> Save Image -> Photos.
+// share() is called straight from the tap with a file made when the render finished; a long-press on the picture also works.
+let readyFile = null;
+$('save').onclick = () => {
+  if (!readyFile) return;
+  if (navigator.canShare && navigator.canShare({ files: [readyFile] })) { navigator.share({ files: [readyFile], title: 'hb-render' }).catch(() => {}); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(readyFile); a.download = readyFile.name; a.click();
+};
 window.hbAnything = { go, get scene() { return scene; }, get stats() { return S && S.stats; } };
 </script>
 </body>
