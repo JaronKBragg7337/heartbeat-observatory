@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>Hidden in the Skyline · Heartbeat Observatory</title>
+<meta name="description" content="A night skyline with a message hidden in the lit windows. Can you read it? We asked five AIs, cold." />
+<link rel="stylesheet" href="/section.css" />
+<style>
+  .wrap { padding-left: 16px; padding-right: 16px; max-width: 860px; margin: 0 auto; }
+  .sky { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); display: block; }
+  .card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 16px 18px; margin: 14px 0; line-height: 1.55; }
+  .card h2 { font-size: 1.15rem; margin: 0 0 8px; }
+  button.reveal { min-height: 44px; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line); background: #1c2530; color: inherit; font-size: 1rem; cursor: pointer; }
+  .answer { display: none; margin-top: 12px; }
+  .answer.on { display: block; }
+  .answer q { font-size: 1.25rem; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th { text-align: left; font-weight: 500; color: var(--muted); font-size: .76rem; letter-spacing: .06em; text-transform: uppercase; padding: 6px 6px 6px 0; }
+  td { padding: 8px 6px 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
+  .yes { color: #3fb950; font-weight: 700; } .wait { color: #d9a23a; }
+  code { font-size: .9em; }
+  .tablewrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Hidden in the Skyline</h1>
+      <p class="lede">There's a message hidden in this city at night. Look at the windows. Can you read it?</p>
+    </header>
+
+    <img class="sky" src="city.png" alt="A night city skyline: eight buildings with a pattern of lit and dark windows, a full moon, and reflections in the water." />
+
+    <div class="card">
+      <h2>Your turn</h2>
+      <p>Hint, if you want one: each building's windows are a grid. Some are lit, some are dark. Two choices per window&hellip;</p>
+      <button class="reveal" id="reveal" type="button">Show the answer</button>
+      <div class="answer" id="answer">
+        <p><q>the heartbeat observatory never sleeps</q></p>
+        <p>Lit window = <code>1</code>, dark window = <code>0</code>. Read each column of windows top to bottom: 7 windows make
+          7 bits, and 7 bits is one letter in plain computer text (ASCII). <code>1110100</code> is <b>t</b>, <code>1101000</code> is
+          <b>h</b>, <code>1100101</code> is <b>e</b>. 38 columns across 8 buildings, 38 characters, spaces included.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>We asked the AIs, cold</h2>
+      <p>Same picture, no explanation. Could they find it, and how fast? (October 23, 2026.)</p>
+      <div class="tablewrap"><table>
+        <tr><th>AI</th><th>What we said</th><th>Result</th></tr>
+        <tr><td>ChatGPT</td><td>"Guess what it says"</td><td class="yes">Solved in 55 seconds, with the method</td></tr>
+        <tr><td>Grok Build (xAI)</td><td>"This may contain a hidden message"</td><td class="yes">Solved, with the method, and checked there was no second message</td></tr>
+        <tr><td>Claude (Anthropic)</td><td>"Guess what it says"</td><td class="yes">Solved in about 3 minutes. Honest note: it had already seen a thread about AIs hiding messages in lit windows, so it knew where to look.</td></tr>
+        <tr><td>Kimi (Moonshot)</td><td>"This may contain a hidden message"</td><td class="wait" id="kimi">Still working&hellip;</td></tr>
+        <tr><td>Codex (OpenAI)</td><td>"This may contain a hidden message"</td><td class="wait" id="codex">Still working&hellip;</td></tr>
+      </table></div>
+      <p class="muted small" style="margin-top:10px">Why this matters: a message "hidden" in a picture isn't really hidden from a strong AI. Patterns that look
+        like decoration to a person are easy data to a model. That cuts both ways, and it's why we keep everything out in the open.</p>
+    </div>
+  </div>
+<script>
+  document.getElementById('reveal').addEventListener('click', function () {
+    var a = document.getElementById('answer'); var on = a.classList.toggle('on');
+    this.textContent = on ? 'Hide the answer' : 'Show the answer';
+  });
+</script>
+</body>
+</html>
