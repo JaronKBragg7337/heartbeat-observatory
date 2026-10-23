@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>The Crypto Lane · Heartbeat Observatory</title>
+<meta name="description" content="Bitcoin, Ethereum, Solana and XRP up/down windows, traded live by a crew of AIs. Money first, every trade with who called it and why, each bot's record, and the rules in plain words." />
+<link rel="stylesheet" href="/section.css" />
+<style id="crewcss"></style>
+<style>
+  .wrap { padding-left: 16px; padding-right: 16px; }
+  .money { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  @media (min-width: 640px) { .money { grid-template-columns: repeat(3, 1fr); } }
+  .big { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 16px 18px; }
+  .big .lbl { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .big b { display: block; font-size: 2rem; line-height: 1.15; margin: 4px 0; font-variant-numeric: tabular-nums; }
+  .big .sub { font-size: .88rem; color: #c2ccd6; line-height: 1.45; }
+  .up { color: #3fb950; } .down { color: #e23a45; } .amb { color: #d9a23a; }
+  .phase-bar { height: 10px; border-radius: 6px; background: #1c2530; overflow: hidden; margin: 10px 0 4px; position: relative; }
+  .phase-bar i { display: block; height: 100%; background: #d9a23a; }
+  .phase-bar.stopped i { background: #e23a45; }
+  .tr { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 12px 14px; margin-bottom: 8px; }
+  .tr .top { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+  .tr .coin { font-weight: 700; font-size: 1.05rem; }
+  .tr .res { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tr .meta { font-size: .86rem; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+  .tr details { margin-top: 6px; font-size: .88rem; color: #c2ccd6; }
+  .tr summary { cursor: pointer; color: var(--muted); min-height: 32px; display: flex; align-items: center; }
+  .call { padding: 5px 0; border-top: 1px solid var(--line); line-height: 1.45; }
+  .tag { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; font-size: .78rem; color: var(--muted); }
+  .tag.open { color: #d9a23a; border-color: rgba(217,162,58,.5); }
+  .tag.won { color: #3fb950; border-color: rgba(63,185,80,.5); }
+  .tag.lost { color: #e23a45; border-color: rgba(226,58,69,.5); }
+  .bot { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 14px 16px; margin-bottom: 10px; }
+  .bot h3 { font-size: 1.1rem; margin: 0 0 2px; }
+  .bot .lens { font-size: .86rem; color: var(--muted); line-height: 1.5; }
+  .bot table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .88rem; font-variant-numeric: tabular-nums; }
+  .bot th { text-align: left; font-weight: 500; color: var(--muted); font-size: .76rem; letter-spacing: .06em; text-transform: uppercase; padding: 4px 4px 4px 0; }
+  .bot td { padding: 5px 4px 5px 0; border-top: 1px solid var(--line); }
+  .bot .scroll { overflow-x: auto; }
+  .rules { list-style: none; display: grid; gap: 8px; padding: 0; }
+  .rules li { border-left: 3px solid var(--beat); padding: 3px 0 3px 12px; line-height: 1.55; font-size: .93rem; }
+  .corr { display: flex; flex-wrap: wrap; gap: 6px; }
+  .corr span { border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; font-size: .86rem; font-variant-numeric: tabular-nums; background: var(--panel); }
+  .calls li { list-style: none; padding: 7px 0; border-top: 1px solid var(--line); font-size: .88rem; line-height: 1.5; }
+  .calls { padding: 0; margin: 0; }
+  .empty { color: var(--muted); font-size: .9rem; padding: 10px 0; }
+  p, li { overflow-wrap: anywhere; }
+  .hero a, footer a, .bot h3 a { color: #7db6ff; }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" id="authlink" href="/admin">Sign in</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/live-systems/">&larr; Live Systems</a>
+    <header class="hero">
+      <h1>The Crypto Lane</h1>
+      <p class="lede">Bitcoin, Ethereum, Solana and XRP go up or down every 15 minutes, hour and day. Three AIs look at the same coins through
+        three different lenses and call each window UP or DOWN. A script (not the AIs) places the trade, inside hard limits.
+        Everything here is out in the open, including the losses.</p>
+      <p class="updated" id="updated">Loading&hellip;</p>
+      <p class="muted small" style="margin-top:8px">Sports are on <a href="/live-systems/crew/">The Crew</a> page; this page is crypto only, and the two never blend.</p>
+    </header>
+    <nav class="crewnav" id="crewnav"></nav>
+
+    <h2 class="sec">Money first. Three numbers, never blended.</h2>
+    <div class="money" id="money"><div class="big"><p class="muted small">Loading&hellip;</p></div></div>
+    <p class="muted small" id="moneynote" style="margin-top:8px;line-height:1.6"></p>
+
+    <h2 class="sec">Live trades</h2>
+    <p class="muted small" style="margin-bottom:10px">Every real-money crypto trade the crew has placed, newest first. Tap "who called it" to see each bot's call and its reason.</p>
+    <div id="trades"></div>
+
+    <h2 class="sec">The bots, one lens each</h2>
+    <p class="muted small" style="margin-bottom:10px">Paper record = what each bot's calls would have made on play money, scored when each window ends. It is a different number from the real money above: a bot's call only becomes a real trade when the crew agrees.</p>
+    <div id="bots"></div>
+
+    <h2 class="sec">Latest calls</h2>
+    <ul class="calls" id="calls"></ul>
+
+    <h2 class="sec">How the crew decided lately</h2>
+    <p class="muted small" id="decsum" style="margin-bottom:6px"></p>
+    <ul class="calls" id="decs"></ul>
+
+    <h2 class="sec">Do the coins move together?</h2>
+    <div class="corr" id="corr"></div>
+    <p class="muted small" id="corrnote" style="margin-top:8px;line-height:1.6"></p>
+
+    <h2 class="sec">The rules, in plain words</h2>
+    <ul class="rules" id="rules"></ul>
+
+    <footer><a href="/live-systems/crew/">The Crew</a> · <a href="/live-systems/crew/trades/">Full trade desk</a> · <a href="/live-systems/">Live Systems</a></footer>
+  </div>
+<script type="module">
+  import { supabase, nav, $, esc, usd, ago, CREW_CSS } from "../crew/crew.js";
+  $("crewcss").textContent = CREW_CSS;
+  nav("Crypto lane");
+  const { data: row } = await supabase.from("crew_snapshot").select("data,updated_at").eq("id", "crypto").maybeSingle();
+  if (!row) { $("updated").textContent = "No crypto snapshot yet."; throw 0; }
+  const d = row.data;
+  const sg = (n) => (Number(n) < 0 ? "-$" : "+$") + Math.abs(Number(n)).toFixed(2);
+  const cls = (n) => (Number(n) > 0 ? "up" : Number(n) < 0 ? "down" : "");
+  const when = (iso) => new Date(iso).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const TF = { "15m": "15 min", "1h": "1 hour", "1d": "1 day" };
+  const LENS = { "momentum": "Momentum", "fair price": "Fair price", "contrarian": "Contrarian check", "contrarian check": "Contrarian check" };
+  $("updated").textContent = `Updated ${ago(row.updated_at)} · refreshed every 5 minutes from the machine they run on · since ${d.since}`;
+
+  // 1. money: three separate numbers
+  const m = d.money, ph = d.phase;
+  const loss = Math.max(0, -m.settled_pnl);
+  const target = ph.mode === "phase 2" ? ph.phase2_loss : ph.phase1_loss;
+  const pct = Math.min(100, Math.round((loss / target) * 100));
+  $("money").innerHTML = `
+    <div class="big"><span class="lbl">1 · Settled crypto profit</span><b class="${cls(m.settled_pnl)}">${sg(m.settled_pnl)}</b>
+      <span class="sub">${m.settled_n} finished trades: ${m.wins} won, ${m.losses} lost. Real money, after the windows ended.</span></div>
+    <div class="big"><span class="lbl">2 · Open crypto positions</span><b>${usd(m.open_value)}</b>
+      <span class="sub">${m.open_n} open now${m.open_cost ? `; ${usd(m.open_cost)} was spent on windows not yet settled` : ""}. This is what they are worth right now, not profit.</span></div>
+    <div class="big"><span class="lbl">3 · Lane status</span><b class="${ph.mode === "stopped" ? "down" : "amb"}" style="text-transform:capitalize">${esc(ph.mode)}</b>
+      <span class="sub">${esc(ph.note)}</span>
+      <div class="phase-bar ${ph.mode === "stopped" ? "stopped" : ""}" role="img" aria-label="Crypto losses so far: ${pct}% of the next limit"><i style="width:${pct}%"></i></div>
+      <span class="sub">${usd(loss)} down of the ${usd(target)} limit for this phase.</span></div>`;
+  $("moneynote").innerHTML = `<b>The steps:</b> phase 1 = crew consensus, until crypto alone is down ${usd(ph.phase1_loss)}. Phase 2 = Jarons Twin alone, until crypto is down ${usd(ph.phase2_loss)}. Then everything stops. `
+    + `A separate floor stops crypto only if the whole account falls to ${usd(ph.stop_account)} (it is at ${usd(m.account_value)} now). Sports wins and losses never count here.`;
+
+  // 2. live trades
+  const trades = d.trades || [];
+  $("trades").innerHTML = trades.length ? trades.map((t) => {
+    const calls = Object.entries(t.calls || {});
+    const res = t.status === "open" ? `<span class="tag open">open</span>` : t.status === "settling" ? `<span class="tag open">settling</span>`
+      : `<span class="res ${cls(t.pnl)}">${sg(t.pnl)}</span>`;
+    return `<div class="tr"><div class="top"><span class="coin">${esc(t.coin.toUpperCase())}</span><span class="tag">${esc(TF[t.tf] || t.tf)}</span>
+        <b class="${t.side === "up" ? "up" : "down"}">${esc((t.side || "?").toUpperCase())}</b><span>${usd(t.cost)}</span>${res}</div>
+      <div class="meta">${esc(when(t.at))} · ${esc(t.reason || "decision reason not recorded")}</div>
+      ${calls.length ? `<details><summary>Who called it</summary>${calls.map(([b, c]) => `<div class="call"><b>${esc(b.replace(/-/g, " "))}</b>: <b class="${c.side === "up" ? "up" : c.side === "down" ? "down" : ""}">${esc(c.side.toUpperCase())}</b>${c.side !== "pass" ? ` $${Number(c.size).toFixed(0)}` : ""}${c.why ? ` &mdash; ${esc(c.why)}` : ""}</div>`).join("")}</details>` : ""}</div>`;
+  }).join("") : `<p class="empty">No live crypto trade yet.</p>`;
+
+  // 3. bots
+  const rec = (x) => `${x.won}/${x.settled}`;
+  $("bots").innerHTML = (d.bots || []).map((b) => {
+    const tfs = ["15m", "1h", "1d"].filter((k) => b.by_tf[k]);
+    const lens = LENS[b.lens] || b.lens;
+    return `<div class="bot"><h3><a href="/live-systems/crew/bot/?id=${encodeURIComponent(b.id)}" style="color:inherit">${esc(b.name)}</a> <span class="muted small">· ${esc(lens)} lens</span></h3>
+      <p class="lens">${esc(b.lens_text || "")}</p>
+      <p class="small" style="margin-top:8px">Paper record: <b>${rec(b)} won</b>, <b class="${cls(b.pnl)}">${sg(b.pnl)}</b> on play money · ${b.calls} up/down calls, ${b.passes} passes${b.last_call ? ` · last call ${esc(ago(b.last_call))}` : ""}</p>
+      <div class="scroll"><table><thead><tr><th>Window</th><th>Calls</th><th>Won</th><th>Paper $</th><th>Passes</th><th>Empty book</th></tr></thead><tbody>
+      ${tfs.map((k) => { const x = b.by_tf[k]; return `<tr><td>${esc(TF[k])}</td><td>${x.calls}</td><td>${rec(x)}</td><td class="${cls(x.pnl)}">${sg(x.pnl)}</td><td>${x.passes - x.empty_book}</td><td>${x.empty_book}</td></tr>`; }).join("")}
+      </tbody></table></div>
+      ${b.empty_book ? `<p class="muted small" style="margin-top:6px">"Empty book" = it could not call because the market had no price at that moment. Shown apart so it does not look like a choice to pass.</p>` : ""}</div>`;
+  }).join("") || `<p class="empty">No calls yet.</p>`;
+
+  // 4. latest calls
+  $("calls").innerHTML = (d.latest_calls || []).slice(0, 16).map((c) => `<li><b>${esc(c.by.replace(/-/g, " "))}</b> · ${esc(c.coin.toUpperCase())} ${esc(TF[c.tf] || c.tf)} · <b class="${c.side === "up" ? "up" : c.side === "down" ? "down" : ""}">${esc(c.side.toUpperCase())}</b>${c.side !== "pass" ? ` $${Number(c.size).toFixed(0)} at ${Number(c.price).toFixed(2)}` : ""}${c.empty_book ? ` <span class="tag">empty book</span>` : ""}${c.result ? ` <span class="tag ${c.result === "win" ? "won" : "lost"}">${c.result === "win" ? "won" : "lost"} ${sg(c.pnl)} paper</span>` : ""}
+      <div class="muted small">${esc(when(c.at))} &mdash; ${esc(c.why)}</div></li>`).join("");
+
+  // 5. decisions
+  const dc = d.decisions;
+  $("decsum").textContent = `${dc.total} windows judged so far: ${dc.traded} became live trades, ${dc.passed} did not (no agreement, all passed, or no fresh call).`;
+  $("decs").innerHTML = (dc.recent || []).slice(0, 12).map((r) => `<li><b>${esc((r.coin || "").toUpperCase())} ${esc(TF[r.tf] || r.tf || "")}</b> · ${r.outcome === "traded" ? `<span class="tag won">traded</span>` : `<span class="tag">no trade</span>`}
+      <div class="muted small">${esc(when(r.at))} &mdash; ${esc(r.note)}</div></li>`).join("") || `<li class="muted small">Nothing yet.</li>`;
+
+  // 6. correlation
+  const c = d.correlation || {};
+  const pairs = Object.entries(c.pairs || {});
+  $("corr").innerHTML = pairs.map(([k, v]) => `<span>${esc(k.toUpperCase().replace("-", " / "))} <b>${Number(v).toFixed(2)}</b></span>`).join("") || `<p class="empty">Not measured yet.</p>`;
+  const mx = Object.entries(c.max_with_others || {});
+  $("corrnote").innerHTML = pairs.length
+    ? `Over the last ${c.hours || 24} hours (1 = move in lockstep, 0 = unrelated). The closest partner for each coin: ${mx.map(([k, v]) => `${esc(k.toUpperCase())} ${Number(v).toFixed(2)}`).join(", ")}. A coin that falls under <b>${Number(d.limits.decouple_corr).toFixed(2)}</b> with every other coin counts as its own risk in the ${usd(d.limits.max_open)} limit.${c.at ? ` Measured ${esc(ago(c.at))}.` : ""}`
+    : "";
+
+  // 7. rules
+  $("rules").innerHTML = (d.rules || []).map((r) => `<li>${esc(r)}</li>`).join("");
+</script>
+<script defer src="/hb-editor.js"></script>
+</body>
+</html>

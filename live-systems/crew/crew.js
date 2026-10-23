@@ -18,10 +18,10 @@ export async function snapshot() {
 
 // Tabs across the top of every crew page.
 export function nav(active) {
-  const tabs = [["", "Overview"], ["trades/", "Trades"], ["reasoning/", "Reasoning"], ["schedule/", "Schedule"], ["chat/", "Conversations"], ["retired/", "Retired"]];
+  const tabs = [["", "Overview"], ["trades/", "Trades"], ["reasoning/", "Reasoning"], ["schedule/", "Schedule"], ["chat/", "Conversations"], ["retired/", "Retired"], ["/live-systems/crypto/", "Crypto lane"]];
   const el = document.getElementById("crewnav");
   if (el) el.innerHTML = tabs.map(([href, label]) =>
-    `<a href="/live-systems/crew/${href}"${label === active ? ' aria-current="page"' : ""}>${label}</a>`).join("");
+    `<a href="${href.startsWith("/") ? href : "/live-systems/crew/" + href}"${label === active ? ' aria-current="page"' : ""}>${label}</a>`).join("");
 }
 
 // Which crew member made a trade (same naming as the Trades page): today's crew from the snapshot, retired ones by handover time.

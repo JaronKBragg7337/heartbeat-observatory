@@ -55,12 +55,18 @@
     <p class="muted small" id="chartnote" style="margin-top:8px"></p>
 
     <h2 class="sec">The crew. Tap one.</h2>
+    <a class="card tile" href="/live-systems/crypto/" style="margin-bottom:12px"><span class="ai">New lane</span><h3>The crypto lane</h3>
+      <p>Bitcoin, Ethereum, Solana and XRP up/down windows, every day. Money first, every trade, every bot's calls. Sports records on this page never include it.</p>
+      <span class="go">Open the crypto page &rarr;</span></a>
+    <p class="muted small" id="lanes" style="margin-bottom:12px;line-height:1.6"></p>
     <div class="tiles" id="tiles"></div>
+    <details id="pausedwrap" hidden style="margin-top:14px"><summary class="muted">Paused (<span id="pausedcount"></span>)</summary><div class="tiles" id="pausedtiles" style="margin-top:10px"></div></details>
+    <details id="retiredwrap" hidden style="margin-top:14px"><summary class="muted">Retired (<span id="retiredcount"></span>)</summary><div class="tiles" id="retiredtiles" style="margin-top:10px"></div></details>
 
     <h2 class="sec">The rules they all run under</h2>
     <ul class="rules" id="rules"></ul>
 
-    <footer><a href="/live-systems/crew/trades/">Full trade desk</a> · <a href="/live-systems/crew/reasoning/">Every trade's reasoning</a></footer>
+    <footer><a href="/live-systems/crypto/">Crypto lane</a> · <a href="/live-systems/crew/trades/">Full trade desk</a> · <a href="/live-systems/crew/reasoning/">Every trade's reasoning</a></footer>
   </div>
 <script type="module">
   import { supabase, snapshot, nav, $, esc, usd, ago, CREW_CSS } from "./crew.js";
@@ -81,7 +87,7 @@
   const hasCash = S && S.balance_kind === "cash";
   const outcomeLabel = (owner) => `; closed markets: ${S[owner + "_won_n"]} won / ${S[owner + "_lost_n"]} lost`;
   const cards = [
-    [(d.trading_now || []).length || d.bots.length, (d.trading_now || []).length ? "AIs trading now" : "AIs on shift"], [d.bots.length, "AIs on the crew"], [trades, "AI trades so far"],
+    [(d.trading_now || []).length || d.bots.length, (d.trading_now || []).length ? "AIs trading now" : "AIs on shift"], [d.bots.length, "AIs on the crew"], [trades, "AI sports trades so far (crypto is on its own page)"],
     [hasCash ? sg(S.ai_result) : "Pending", "AI trades, net (after fees)" + (hasCash ? outcomeLabel("ai") : "")],
     [acct ? usd(acct.buying_power) : "–", "cash ready"], [acct ? usd(inPos) : "–", "in open trades"],
   ];
@@ -154,19 +160,34 @@
   }
   mountCashChart($("chart"), hasCash ? S.events : []);
   $("chartnote").innerHTML = `The line is cash after every fill (including fees and short collateral), settlement payout, deposit, withdrawal, bonus and credit. Purple = funding; blue = hand or mixed cash moves and withdrawals; green/red = positive/negative AI cash moves; yellow = a receipted bill. A purchase debit is cash invested, not a settled loss. Tap a point or use the slider for details. Open-position market values are separate from this cash line.`;
-  $("tiles").innerHTML = d.bots.map((b) => {
-    const L = b.ledger;
-    const recent = L && L.last && Date.now() - new Date(L.last) < 6 * 3600e3 && b.status !== "paused";
-    const st = b.status === "paused" ? `<span class="chip down">paused</span>` : b.status === "trading" ? `<span class="chip up">trading now</span>` : "";
-    const chips = L
-      ? `<span class="chip">${L.fills} trades</span><span class="chip ${L.pnl > 0 ? "up" : L.pnl < 0 ? "down" : ""}">${usd(L.pnl)} net (approx.)</span>`
-      : `<span class="chip">no money</span>`;
+  const tile = (b) => {
+    const L = b.ledger, C = b.crypto;
+    const st = b.status === "paused" ? `<span class="chip down">paused</span>` : b.status === "trading" ? `<span class="chip up">active now</span>` : b.status === "quiet" ? `<span class="chip">quiet</span>` : "";
+    const chips = (L ? `<span class="chip">${L.fills} sports trades</span><span class="chip ${L.pnl > 0 ? "up" : L.pnl < 0 ? "down" : ""}">${usd(L.pnl)} sports net (approx.)</span>` : "")
+      + (C ? `<span class="chip">crypto: ${esc(C.lens)} lens</span><span class="chip ${C.pnl > 0 ? "up" : C.pnl < 0 ? "down" : ""}">paper ${C.won}/${C.settled} won, ${usd(C.pnl)}</span>` : "")
+      + (!L && !C ? `<span class="chip">no money</span>` : "");
+    const live = b.last_active && Date.now() - new Date(b.last_active) < 6 * 3600e3 && b.status !== "paused";
     return `<a class="card tile" href="/live-systems/crew/bot/?id=${encodeURIComponent(b.id)}">
       <span class="ai">${esc(b.ai)}</span>
-      <h3><span class="dot ${recent ? "live" : "quiet"}"></span>${esc(b.name)}${b.also ? ` <span class="muted small">· ${esc(b.also)}</span>` : ""}</h3>
-      <p>${esc(b.job)}</p>${b.status_note && b.status === "paused" ? `<p class="muted small">${esc(b.status_note)}</p>` : ""}<div class="chips">${st}${chips}<span class="chip">${esc(b.schedule)}</span></div>
+      <h3><span class="dot ${live ? "live" : "quiet"}"></span>${esc(b.name)}${b.also ? ` <span class="muted small">· ${esc(b.also)}</span>` : ""}</h3>
+      <p>${esc(b.job)}</p>${b.status_note ? `<p class="muted small">${esc(b.status_note)}</p>` : ""}
+      ${b.last_active ? `<p class="muted small">Last active ${esc(ago(b.last_active))}</p>` : ""}<div class="chips">${st}${chips}<span class="chip">${esc(b.schedule)}</span></div>
       <span class="go">Open: instructions, activity, trades &rarr;</span></a>`;
-  }).join("");
+  };
+  const now = d.bots.filter((b) => b.status !== "paused"), paused = d.bots.filter((b) => b.status === "paused");
+  $("tiles").innerHTML = now.map(tile).join("");
+  $("pausedwrap").hidden = !paused.length;
+  $("pausedcount").textContent = paused.length;
+  $("pausedtiles").innerHTML = paused.map(tile).join("");
+  const ret = d.retired || [];
+  $("retiredwrap").hidden = !ret.length;
+  $("retiredcount").textContent = ret.length;
+  $("retiredtiles").innerHTML = ret.map((b) => `<a class="card tile" href="/live-systems/crew/bot/?id=${encodeURIComponent(b.id)}">
+      <h3>${esc(b.name)}</h3>${b.retired_on ? `<p class="muted small">Retired ${esc(b.retired_on)}</p>` : ""}<p>${esc(b.why)}</p><span class="go">Read its old instructions &rarr;</span></a>`).join("");
+  if (d.desk_lanes && d.desk_lanes.length) {
+    $("lanes").innerHTML = "<b>Today's lanes (from the Control Room):</b> " + d.desk_lanes.map((l) => `${esc(l.lane)}: ${l.open ? "<b>open</b>" : "closed"}`).join(" · ")
+      + (d.desk_hours && d.desk_hours.length ? `<br>Weekly hours: ${esc(d.desk_hours.join("; "))}` : "");
+  }
   $("rules").innerHTML = d.rules.map((r) => `<li>${esc(r)}</li>`).join("");
 </script>
 <script defer src="/hb-editor.js"></script>
