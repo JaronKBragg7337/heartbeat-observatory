@@ -125,7 +125,7 @@
       <span class="sub">${esc(ph.note)}</span>
       <div class="phase-bar ${ph.mode === "stopped" ? "stopped" : ""}" role="img" aria-label="Crypto losses so far: ${pct}% of the next limit"><i style="width:${pct}%"></i></div>
       <span class="sub">${usd(loss)} down of the ${usd(target)} limit for this phase.</span></div>`;
-  $("moneynote").innerHTML = `<b>The steps:</b> phase 1 = crew consensus, until crypto alone is down ${usd(ph.phase1_loss)}. Phase 2 = Jarons Twin alone, until crypto is down ${usd(ph.phase2_loss)}. Then everything stops. `
+  $("moneynote").innerHTML = `<b>The steps:</b> phase 1 = crew consensus, until crypto alone is down ${usd(ph.phase1_loss)}. Phase 2 = Jarons Twin alone, until crypto is down ${usd(ph.phase2_loss)}. Then everything stops (Control Room settings, approved by Jaron 10/22). `
     + `A separate floor stops crypto only if the whole account falls to ${usd(ph.stop_account)} (it is at ${usd(m.account_value)} now). Sports wins and losses never count here.`;
 
   // 2. live trades
