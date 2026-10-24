@@ -82,6 +82,13 @@
     </div>
   </div>
 
+  <div class="card" id="labCard">
+    <h2>Or make your own beat · Beat Lab</h2>
+    <p class="muted" style="margin-top:0">No producer needed. Pick a style and a mood, press the dice, then change any part until it's yours: tap the drums, swap sounds, roll a new melody. Then record over it right here.</p>
+    <button class="on" id="labOpen">Open the Beat Lab</button>
+    <div id="lab" class="hide" style="margin-top:12px"></div>
+  </div>
+
   <div class="transport">
     <div class="row" style="justify-content:space-between">
       <span class="time" id="time">0:00</span>
@@ -488,6 +495,11 @@ $("reqSend").onclick = async () => {
 };
 window.addEventListener("beforeunload", (e) => { if (S.layers.some((l) => l.clips.length)) { e.preventDefault(); e.returnValue = ""; } });
 
+$("labOpen").onclick = async () => {
+  $("labOpen").classList.add("hide"); $("lab").classList.remove("hide");
+  const { mount } = await import("/studio/beatlab.js");
+  mount($("lab"), { getCtx: ensureCtx, wav, onUse: (buf, name, bpm) => { stop(); setBeat(buf, name, bpm); $("status").textContent = "Your beat is loaded. Press ● Rec"; document.querySelector(".transport").scrollIntoView({ behavior: "smooth" }); } });
+};
 addLayer("Main vocal", 1, 0); addLayer("Ad-libs", 0.75, 0.3);
 drawBeats(); draw();
 </script>
