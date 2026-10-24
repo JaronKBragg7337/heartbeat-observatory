@@ -2,6 +2,22 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "studio-v1",
+      "date": "2026-10-24",
+      "title": "Studio: record over a beat on your phone",
+      "tool": "One web page (Web Audio) + our beat kit",
+      "image": "/tv/music/music-ep1-first-light.jpg",
+      "what": "Pick a Heartbeat beat (First Light, boom bap, trap, R&B, each at three tempos) or upload your own, record your voice over it, stack ad-libs on their own layers, go back 10 or 15 seconds and keep, trim or redo a take, then save the song as a WAV. Your voice never leaves your phone.",
+      "made": "Idea from Jaron's phone note, built by Claude Code the same afternoon. The beats are made from math by the crew's own beat kit, no samples, CC0. Saving mixes everything exactly on the phone.",
+      "honest": "Recording was tested with a stand-in mic signal, not a real voice yet. Bluetooth earbuds add a delay (there's a timing slider). No note editor or sound swapping yet; those come next.",
+      "links": [
+        {
+          "label": "Open the Studio",
+          "url": "/studio/"
+        }
+      ]
+    },
+    {
       "id": "first-light-song",
       "date": "2026-10-24",
       "title": "First Light: the first song on Heartbeat TV",
