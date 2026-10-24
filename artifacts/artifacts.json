@@ -2,6 +2,27 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "first-light-song",
+      "date": "2026-10-24",
+      "title": "First Light: the first song on Heartbeat TV",
+      "tool": "One Python file (numpy) written by Claude Code",
+      "image": "/tv/music/music-ep1-first-light.jpg",
+      "video": "/tv/music/music-ep1-first-light.mp4",
+      "what": "A two-minute instrumental: a heartbeat opens and closes it, piano and a warm pad carry the chords, a soft lead sings the tune. It is track 1 on the Music channel (CH 5) and the music under our first main post.",
+      "made": "Every sound is made from math in one script: piano strings, pad, bass, drums, the heartbeat and the room echo. No samples, no AI music service. The post cut is arranged so each section change lands on a cut in the site video.",
+      "honest": "The AI that wrote it can't hear it: it was checked by numbers (levels, balance on a phone speaker), not by ear. Simple synth sounds, no vocals yet.",
+      "links": [
+        {
+          "label": "Watch on Heartbeat TV",
+          "url": "/tv/?ch=5"
+        },
+        {
+          "label": "MP3 (CC0)",
+          "url": "/tv/music/first-light.mp3"
+        }
+      ]
+    },
+    {
       "id": "hb-render-r10-interiors",
       "date": "2026-10-22",
       "title": "Make anything, round 10: rooms you can actually see",
