@@ -64,6 +64,15 @@
   <h1>Studio</h1>
   <p class="lede">Pick a beat, record over it, stack your ad-libs, go back and fix a part, then save your song. It all runs on your phone. Your voice never leaves it.</p>
 
+  <div class="card" style="border-color:#5a4632">
+    <h2 style="font-size:18px">Before your first take</h2>
+    <ul class="muted" style="margin:0;padding-left:18px;line-height:1.6">
+      <li><b style="color:var(--ink)">Wear headphones.</b> Without them the beat plays out loud and gets into your vocal.</li>
+      <li><b style="color:var(--ink)">Wired is best.</b> Bluetooth earbuds hear the beat a little late. Using them anyway? Tap <b style="color:var(--ink)">Sync my headphones</b> in step 3 once and the page fixes the delay for you.</li>
+      <li><b style="color:var(--ink)">When your phone asks for the mic, tap Allow.</b></li>
+    </ul>
+  </div>
+
   <div class="card">
     <h2>1 · Beat</h2>
     <div class="beats" id="beats"></div>
@@ -114,8 +123,13 @@
   <div class="card">
     <h2>3 · Recording settings</h2>
     <label class="inline"><input type="checkbox" id="preroll" checked /> Play 2 seconds before I come in</label>
-    <label class="inline" style="margin-top:10px">Timing nudge <b id="nudgeVal">0 ms</b><input type="range" id="nudge" min="-300" max="300" step="5" value="0" style="flex:1" /></label>
-    <p class="muted">Vocals land a little late or early? Slide this and listen back. Wired headphones work best: Bluetooth earbuds add a delay.</p>
+    <div class="row" style="margin-top:12px">
+      <button id="syncBtn">Sync my headphones</button>
+      <span class="muted" id="syncMsg">Put your headphones on, tap, then tap the big button on every click you hear.</span>
+    </div>
+    <button id="tapPad" class="hide" style="width:100%;min-height:120px;margin-top:10px;font-size:20px">Tap on each click</button>
+    <label class="inline" style="margin-top:10px">Timing nudge <b id="nudgeVal">0 ms</b><input type="range" id="nudge" min="-300" max="600" step="5" value="0" style="flex:1" /></label>
+    <p class="muted">Vocals still land a little late or early? Slide this and listen back.</p>
   </div>
 
   <div class="card">
@@ -398,7 +412,33 @@ tl.addEventListener("pointermove", (ev) => { if (ev.buttons && !S.recording && !
 window.addEventListener("resize", draw);
 
 // ---------- settings ----------
-$("nudge").oninput = () => { $("nudgeVal").textContent = $("nudge").value + " ms"; };
+$("nudge").oninput = () => { $("nudgeVal").textContent = $("nudge").value + " ms"; try { localStorage.setItem("hb-studio-nudge", $("nudge").value); } catch (e) {} };
+try { const n = localStorage.getItem("hb-studio-nudge"); if (n !== null) { $("nudge").value = n; $("nudgeVal").textContent = n + " ms"; } } catch (e) {}
+
+// Headphone sync: 10 clicks; you tap on each one you hear. How late your taps land = how late your headphones play
+// (Bluetooth is often 150-300 ms), so takes get moved back by that much.
+$("syncBtn").onclick = () => {
+  ensureCtx(); stop(); const gap = 0.6, n = 10, t0 = ctx.currentTime + 1.0, clicks = [], taps = [];
+  // clicks and taps are compared on the page clock (ms), not the audio clock, which only moves in steps
+  const wall = performance.now(), ctxNow = ctx.currentTime;
+  for (let i = 0; i < n; i++) {
+    const t = t0 + i * gap, o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = i % 4 ? 880 : 1320;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.6, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.08); clicks.push((wall + (t - ctxNow) * 1000) / 1000);
+  }
+  $("tapPad").classList.remove("hide"); $("syncBtn").disabled = true; $("syncMsg").textContent = "Listen… then tap with each click.";
+  $("tapPad").onpointerdown = (e) => { e.preventDefault(); taps.push(performance.now() / 1000); $("tapPad").textContent = "Tap on each click (" + taps.length + ")"; };
+  setTimeout(() => {
+    $("tapPad").classList.add("hide"); $("tapPad").onpointerdown = null; $("tapPad").textContent = "Tap on each click"; $("syncBtn").disabled = false;
+    const offs = taps.map((t) => { const c = clicks.reduce((a, b) => (Math.abs(b - t) < Math.abs(a - t) ? b : a)); return t - c; })
+      .filter((d) => d > -0.15 && d < 0.6).sort((a, b) => a - b);
+    if (offs.length < 5) { $("syncMsg").textContent = "Not enough taps landed. Try again: tap right when you hear each click."; return; }
+    const ms = Math.max(0, Math.round(offs[Math.floor(offs.length / 2)] * 1000 / 5) * 5);   // people tap a hair early on a steady click
+    const known = Math.round((ctx.outputLatency || 0) * 1000);           // already corrected for when the browser reports it
+    $("nudge").value = Math.max(-300, Math.min(600, ms - known)); $("nudge").oninput();
+    $("syncMsg").textContent = `Synced: your headphones are about ${ms} ms behind. Takes will be moved back by that much. Saved for next time.`;
+  }, (1.0 + n * gap + 0.8) * 1000);
+};
 
 // ---------- save (rendered offline, so it's exact) ----------
 async function render(withBeat) {
