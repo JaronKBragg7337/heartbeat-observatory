@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Studio · Heartbeat Observatory</title>
+<meta name="description" content="Record over a beat on your phone. Pick a Heartbeat beat or upload your own, set the tempo, record, layer ad-libs, punch in, save your song. Free, nothing leaves your phone." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" />
+<style>
+  /* Studio v1 (Jaron 10/24, his phone note): upload beats or use Heartbeat beats, tempo, record voice / upload voice / layer /
+     ad-libs, go back 10-15 s and keep / listen again / cut some / delete and redo, save. Everything runs in the browser:
+     the mic audio never leaves the phone. Beats are made by our own beat kit (AI-Shared/projects/music/beats), CC0. */
+  :root { --bg:#17120e; --panel:#221b15; --panel2:#2b221a; --line:#3d3226; --ink:#f3e9da; --soft:#c9b8a2; --faint:#8f7d68;
+          --accent:#e08a5a; --teal:#7fb3ab; --rec:#e0564a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Atkinson Hyperlegible", system-ui, sans-serif; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 18px 16px 120px; }
+  a.back { color: var(--accent); text-decoration: none; font-weight: 700; font-size: 15px; }
+  h1 { font-family: Fraunces, Georgia, serif; font-size: clamp(36px, 9vw, 54px); margin: 14px 0 6px; line-height: 1.02; }
+  h2 { font-family: Fraunces, Georgia, serif; font-size: 22px; margin: 0 0 10px; }
+  .lede { color: var(--soft); font-size: 17px; line-height: 1.55; margin: 0 0 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin: 14px 0; }
+  .muted { color: var(--faint); font-size: 14px; line-height: 1.5; }
+  button, .btn { font: inherit; font-weight: 700; color: var(--ink); background: var(--panel2); border: 1px solid var(--line);
+    border-radius: 12px; padding: 11px 14px; min-height: 44px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button:disabled { opacity: .4; }
+  button.on { background: var(--accent); border-color: var(--accent); color: #1b130c; }
+  button.rec { background: var(--rec); border-color: var(--rec); color: #fff; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .beats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .beat { text-align: left; padding: 12px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); }
+  .beat.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .beat b { display: block; font-size: 16px; }
+  .beat span { font-size: 13px; color: var(--faint); font-weight: 400; }
+  .chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .chips button { min-height: 34px; padding: 5px 10px; font-size: 13px; border-radius: 99px; }
+  .transport { position: sticky; top: 0; z-index: 20; background: rgba(23,18,14,.94); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    margin: 0 -16px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .time { font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 700; min-width: 74px; }
+  .tbtns { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
+  .tbtns button { padding: 8px 4px; font-size: 14px; }
+  #recBtn { font-size: 15px; }
+  canvas { width: 100%; display: block; border-radius: 12px; background: #120e0b; touch-action: none; margin-top: 10px; }
+  .layer { display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+  .layer:first-of-type { border-top: 0; }
+  .layer .name { font-weight: 700; font-size: 15px; }
+  .layer input[type=range] { width: 100%; accent-color: var(--accent); }
+  .tgt { width: 44px; height: 44px; border-radius: 50%; padding: 0; font-size: 12px; }
+  .tgt.on { background: var(--rec); border-color: var(--rec); color: #fff; }
+  .review { border-color: var(--accent); }
+  input[type=range] { accent-color: var(--accent); }
+  label.inline { display: flex; gap: 8px; align-items: center; font-size: 15px; color: var(--soft); }
+  textarea { width: 100%; min-height: 70px; font: inherit; color: var(--ink); background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  .file { position: relative; overflow: hidden; display: inline-flex; align-items: center; }
+  .file input { position: absolute; inset: 0; opacity: 0; }
+  .warn { color: #f0b48a; font-size: 14px; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← Heartbeat Observatory</a>
+  <h1>Studio</h1>
+  <p class="lede">Pick a beat, record over it, stack your ad-libs, go back and fix a part, then save your song. It all runs on your phone. Your voice never leaves it.</p>
+
+  <div class="card">
+    <h2>1 · Beat</h2>
+    <div class="beats" id="beats"></div>
+    <div class="row" style="margin-top:10px">
+      <span class="btn file">Upload your own beat<input type="file" id="beatFile" accept="audio/*" /></span>
+      <span class="muted" id="beatInfo"></span>
+    </div>
+  </div>
+
+  <div class="transport">
+    <div class="row" style="justify-content:space-between">
+      <span class="time" id="time">0:00</span>
+      <span class="muted" id="status">Pick a beat to start</span>
+    </div>
+    <div class="tbtns">
+      <button id="back15">⟲ 15s</button>
+      <button id="back10">⟲ 10s</button>
+      <button id="playBtn" disabled>▶ Play</button>
+      <button id="recBtn" disabled>● Rec</button>
+      <button id="toStart">⏮ Start</button>
+    </div>
+    <canvas id="tl" height="160"></canvas>
+  </div>
+
+  <div class="card review hide" id="review">
+    <h2>That take</h2>
+    <p class="muted" id="reviewInfo"></p>
+    <div class="row">
+      <button id="rvListen">▶ Listen back</button>
+      <button id="rvKeep" class="on">Keep it</button>
+      <button id="rvRedo">● Redo from same spot</button>
+      <button id="rvDelete">Delete</button>
+    </div>
+    <label class="inline" style="margin-top:12px">Keep the first <b id="trimVal">all</b><input type="range" id="trim" min="0" max="100" value="100" style="flex:1" /></label>
+  </div>
+
+  <div class="card">
+    <h2>2 · Voice layers</h2>
+    <p class="muted" style="margin-top:0">Tap the round button to choose which layer records. A new take replaces only the part of that layer it covers, so you can punch in a fix.</p>
+    <div id="layers"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="addLayer">+ Add a layer</button>
+      <span class="btn file">Upload a voice file<input type="file" id="voiceFile" accept="audio/*" /></span>
+      <button id="undoBtn">Undo last take</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3 · Recording settings</h2>
+    <label class="inline"><input type="checkbox" id="preroll" checked /> Play 2 seconds before I come in</label>
+    <label class="inline" style="margin-top:10px">Timing nudge <b id="nudgeVal">0 ms</b><input type="range" id="nudge" min="-300" max="300" step="5" value="0" style="flex:1" /></label>
+    <p class="muted">Vocals land a little late or early? Slide this and listen back. Wired headphones work best: Bluetooth earbuds add a delay.</p>
+  </div>
+
+  <div class="card">
+    <h2>4 · Save</h2>
+    <div class="row">
+      <button id="saveSong" class="on">Save my song (WAV)</button>
+      <button id="saveVox">Save vocals only</button>
+    </div>
+    <p class="muted">Saved to your phone. Nothing is uploaded. Leaving the page clears your takes, so save first.</p>
+  </div>
+
+  <div class="card">
+    <h2>Want a different beat?</h2>
+    <p class="muted" style="margin-top:0">Tell the crew what you want: style, tempo, mood, an artist it should feel like. Requests become new Heartbeat beats (free, CC0).</p>
+    <textarea id="reqText" maxlength="500" placeholder="Slow and dark, 70 BPM, heavy 808, room for a hook"></textarea>
+    <div class="row" style="margin-top:8px"><button id="reqSend">Send request</button><span class="muted" id="reqMsg"></span></div>
+  </div>
+
+  <p class="muted">Heartbeat beats are made from math by our AI crew's own beat kit, no samples. Free to use for anything (CC0). Studio v1 · Coming next: see and change every note of a beat, swap sounds, build a beat right on this page.</p>
+</div>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const BEATS = [
+  { id: "firstlight", name: "First Light", desc: "Hopeful, piano + heartbeat. D major", bpms: { 120: "/tv/music/first-light.mp3" } },
+  { id: "boombap", name: "Boom bap", desc: "Swung, dusty keys. A minor", bpms: { 82: "/studio/beats/studio-boombap-82.mp3", 90: "/studio/beats/studio-boombap-90.mp3", 98: "/studio/beats/studio-boombap-98.mp3" } },
+  { id: "trap", name: "Trap", desc: "Dark, sliding 808s. F# minor", bpms: { 130: "/studio/beats/studio-trap-130.mp3", 140: "/studio/beats/studio-trap-140.mp3", 150: "/studio/beats/studio-trap-150.mp3" } },
+  { id: "rnb", name: "R&B", desc: "Late night, lush chords. Db major", bpms: { 68: "/studio/beats/studio-rnb-68.mp3", 75: "/studio/beats/studio-rnb-75.mp3", 82: "/studio/beats/studio-rnb-82.mp3" } },
+];
+let ctx, master, mic, micNode, proc;
+const S = { beat: null, beatName: "", bpm: null, beatPeaks: null, layers: [], target: 0, pos: 0, playing: false, recording: false,
+            t0: 0, startPos: 0, sources: [], pending: null, history: [], capture: null };
+const fmt = (s) => { s = Math.max(0, s); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
+const dur = () => Math.max(S.beat ? S.beat.duration : 0, ...S.layers.flatMap((l) => l.clips.map((c) => c.start + c.buf.duration)), 1);
+
+function ensureCtx() {
+  if (!ctx) {
+    try { if (navigator.audioSession) navigator.audioSession.type = "play-and-record"; } catch (e) {}
+    ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
+    master = ctx.createGain(); master.connect(ctx.destination);
+  }
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+function addLayer(name, gain = 1, pan = 0) { S.layers.push({ name, gain, pan, mute: false, clips: [] }); drawLayers(); }
+
+// ---------- beat picking ----------
+function drawBeats() {
+  $("beats").innerHTML = "";
+  for (const b of BEATS) {
+    const el = document.createElement("div"); el.className = "beat" + (S.beatName === b.name ? " sel" : "");
+    el.innerHTML = `<b>${b.name}</b><span>${b.desc}</span><div class="chips"></div>`;
+    for (const bpm of Object.keys(b.bpms)) {
+      const c = document.createElement("button"); c.textContent = bpm + " BPM";
+      if (S.beatName === b.name && String(S.bpm) === bpm) c.className = "on";
+      c.onclick = () => loadBeat(b.name, +bpm, b.bpms[bpm]); el.querySelector(".chips").appendChild(c);
+    }
+    $("beats").appendChild(el);
+  }
+}
+async function loadBeat(name, bpm, url) {
+  ensureCtx(); stop();
+  const hadTakes = S.layers.some((l) => l.clips.length);
+  $("status").textContent = "Loading " + name + "…";
+  try {
+    const buf = await ctx.decodeAudioData(await (await fetch(url)).arrayBuffer());
+    setBeat(buf, name, bpm);
+    if (hadTakes) $("beatInfo").innerHTML += ` · <span class="warn">your takes stay where they are; a new tempo won't stretch them</span>`;
+  } catch (e) { $("status").textContent = "Couldn't load that beat. Try again."; }
+}
+function setBeat(buf, name, bpm) {
+  S.beat = buf; S.beatName = name; S.bpm = bpm; S.beatPeaks = peaks(buf, 800);
+  $("beatInfo").textContent = name + (bpm ? " · " + bpm + " BPM" : "") + " · " + fmt(buf.duration);
+  $("playBtn").disabled = false; $("recBtn").disabled = false; $("status").textContent = "Ready";
+  drawBeats(); draw();
+}
+$("beatFile").onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return; ensureCtx(); stop();
+  try { setBeat(await ctx.decodeAudioData(await f.arrayBuffer()), f.name.replace(/\.[^.]+$/, ""), null); }
+  catch (err) { $("status").textContent = "That file didn't open. MP3, WAV or M4A work best."; }
+  e.target.value = "";
+};
+
+// ---------- playback ----------
+function layerOut(l) {
+  const g = ctx.createGain(); g.gain.value = l.mute ? 0 : l.gain;
+  const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+  if (p) { p.pan.value = l.pan; g.connect(p); p.connect(master); } else g.connect(master);
+  return g;
+}
+function start(from, { skipLayer = -1, extra = null } = {}) {
+  stopSources(); ensureCtx();
+  const t0 = ctx.currentTime + 0.06; S.t0 = t0; S.startPos = from; S.playing = true;
+  if (S.beat && from < S.beat.duration) { const s = ctx.createBufferSource(); s.buffer = S.beat; s.connect(master); s.start(t0, from); S.sources.push(s); }
+  const sched = (clip, out) => {
+    const end = clip.start + clip.buf.duration; if (end <= from) return;
+    const s = ctx.createBufferSource(); s.buffer = clip.buf; s.connect(out);
+    s.start(t0 + Math.max(0, clip.start - from), Math.max(0, from - clip.start)); S.sources.push(s);
+  };
+  S.layers.forEach((l, i) => { if (i === skipLayer) return; const out = layerOut(l); l.clips.forEach((c) => sched(c, out)); });
+  if (extra) sched(extra.clip, layerOut(S.layers[extra.layer]));
+  $("playBtn").textContent = "■ Stop"; tick();
+}
+function stopSources() { for (const s of S.sources) { try { s.stop(); } catch (e) {} } S.sources = []; }
+function now() { return S.playing ? S.startPos + Math.max(0, ctx.currentTime - S.t0) : S.pos; }
+function stop() {
+  if (S.recording) return finishRecording();
+  if (S.playing) S.pos = Math.min(now(), dur());
+  S.playing = false; stopSources(); $("playBtn").textContent = "▶ Play"; draw();
+}
+function tick() {
+  if (!S.playing) return;
+  if (now() >= dur() + 0.3 && !S.recording) { S.pos = 0; stop(); return; }
+  $("time").textContent = fmt(now()); draw(); requestAnimationFrame(tick);
+}
+$("playBtn").onclick = () => { ensureCtx(); S.playing ? stop() : start(S.pos); };
+const seek = (p) => { const was = S.playing && !S.recording; if (S.recording) return; stop(); S.pos = Math.max(0, Math.min(p, dur())); $("time").textContent = fmt(S.pos); if (was) start(S.pos); draw(); };
+$("back10").onclick = () => seek(now() - 10);
+$("back15").onclick = () => seek(now() - 15);
+$("toStart").onclick = () => seek(0);
+
+// ---------- recording ----------
+async function getMic() {
+  if (mic) return true;
+  try {
+    mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch (e) { $("status").textContent = "The mic is blocked. Allow it in your browser settings to record."; return false; }
+  micNode = ctx.createMediaStreamSource(mic);
+  proc = ctx.createScriptProcessor(2048, 1, 1);
+  const sink = ctx.createGain(); sink.gain.value = 0;
+  micNode.connect(proc); proc.connect(sink); sink.connect(ctx.destination);
+  proc.onaudioprocess = (e) => {
+    const c = S.capture; if (!c) return;
+    if (c.firstPos === null) c.firstPos = now() - e.inputBuffer.duration;
+    c.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  };
+  return true;
+}
+async function record(at) {
+  ensureCtx(); if (!S.beat && !S.layers.some((l) => l.clips.length)) return;
+  if (!(await getMic())) return;
+  if (S.pending) discardPending();
+  stop(); S.pos = at;
+  const from = $("preroll").checked ? Math.max(0, at - 2) : at;
+  S.recording = true; S.capture = { at, chunks: [], firstPos: null, layer: S.target };
+  $("recBtn").textContent = "■ Stop"; $("recBtn").className = "rec"; $("status").textContent = "Recording on " + S.layers[S.target].name;
+  start(from, { skipLayer: S.target });
+}
+function finishRecording() {
+  const c = S.capture; S.capture = null; S.recording = false;
+  S.pos = Math.min(now(), dur()); S.playing = false; stopSources();
+  $("recBtn").textContent = "● Rec"; $("recBtn").className = ""; $("playBtn").textContent = "▶ Play";
+  if (!c || !c.chunks.length || c.firstPos === null) { $("status").textContent = "Nothing was recorded"; return draw(); }
+  const total = c.chunks.reduce((a, b) => a + b.length, 0), data = new Float32Array(total);
+  let o = 0; for (const ch of c.chunks) { data.set(ch, o); o += ch.length; }
+  const lat = (ctx.outputLatency || 0) + (ctx.baseLatency || 0) + (+$("nudge").value) / 1000;
+  const firstPos = c.firstPos - lat;                                   // song time the first captured sample belongs to
+  const skip = Math.max(0, Math.round((c.at - firstPos) * ctx.sampleRate));
+  if (skip >= data.length - ctx.sampleRate * 0.1) { $("status").textContent = "Too short to keep"; return draw(); }
+  const buf = ctx.createBuffer(1, data.length - skip, ctx.sampleRate); buf.copyToChannel(data.subarray(skip), 0);
+  S.pending = { layer: c.layer, clip: { start: Math.max(c.at, firstPos), buf }, full: buf };
+  $("trim").value = 100; $("trimVal").textContent = "all";
+  $("reviewInfo").textContent = `${fmt(buf.duration)} take on ${S.layers[c.layer].name}, starting at ${fmt(c.at)}.`;
+  $("review").classList.remove("hide"); $("status").textContent = "Keep it, listen back, or redo";
+  S.pos = c.at; $("time").textContent = fmt(S.pos); draw();
+}
+$("recBtn").onclick = () => S.recording ? finishRecording() : record(S.pos);
+
+// review: keep / listen back / redo / delete / keep the first part only
+function discardPending() { S.pending = null; $("review").classList.add("hide"); draw(); }
+$("trim").oninput = () => {
+  const p = S.pending; if (!p) return; const k = +$("trim").value / 100;
+  const n = Math.max(1, Math.round(p.full.length * k)); const b = ctx.createBuffer(1, n, p.full.sampleRate);
+  b.copyToChannel(p.full.getChannelData(0).subarray(0, n), 0); p.clip.buf = b;
+  $("trimVal").textContent = k >= 1 ? "all" : fmt(b.duration); draw();
+};
+$("rvListen").onclick = () => { const p = S.pending; if (!p) return; start(Math.max(0, p.clip.start - 2), { skipLayer: p.layer, extra: p }); };
+$("rvDelete").onclick = () => { stop(); discardPending(); $("status").textContent = "Deleted. Ready"; };
+$("rvRedo").onclick = () => { const p = S.pending; if (!p) return; stop(); discardPending(); record(p.clip.start); };
+$("rvKeep").onclick = () => {
+  const p = S.pending; if (!p) return; stop();
+  const L = S.layers[p.layer]; S.history.push({ layer: p.layer, clips: L.clips.slice() });
+  const s = p.clip.start, e = s + p.clip.buf.duration, out = [];
+  for (const c of L.clips) {                                        // punch-in: the new take replaces what it covers
+    const cs = c.start, ce = c.start + c.buf.duration;
+    if (ce <= s || cs >= e) { out.push(c); continue; }
+    if (cs < s) out.push({ start: cs, buf: slice(c.buf, 0, s - cs) });
+    if (ce > e) out.push({ start: e, buf: slice(c.buf, e - cs, ce - cs) });
+  }
+  out.push(p.clip); L.clips = out; discardPending(); $("status").textContent = "Kept. Ready";
+};
+function slice(buf, a, b) {
+  const sr = buf.sampleRate, i = Math.max(0, Math.round(a * sr)), j = Math.min(buf.length, Math.round(b * sr));
+  const n = ctx.createBuffer(buf.numberOfChannels, Math.max(1, j - i), sr);
+  for (let ch = 0; ch < buf.numberOfChannels; ch++) n.copyToChannel(buf.getChannelData(ch).subarray(i, j), ch);
+  return n;
+}
+$("undoBtn").onclick = () => { const h = S.history.pop(); if (!h) return; S.layers[h.layer].clips = h.clips; draw(); };
+$("voiceFile").onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return; ensureCtx();
+  try {
+    const buf = await ctx.decodeAudioData(await f.arrayBuffer()); const L = S.layers[S.target];
+    S.history.push({ layer: S.target, clips: L.clips.slice() }); L.clips.push({ start: S.pos, buf });
+    $("playBtn").disabled = false; $("recBtn").disabled = false; draw();
+  } catch (err) { $("status").textContent = "That file didn't open."; }
+  e.target.value = "";
+};
+
+// ---------- layers ----------
+function drawLayers() {
+  $("layers").innerHTML = "";
+  S.layers.forEach((l, i) => {
+    const el = document.createElement("div"); el.className = "layer";
+    el.innerHTML = `<button class="tgt ${i === S.target ? "on" : ""}" aria-label="Record on ${l.name}">${i === S.target ? "REC" : "●"}</button>
+      <div><div class="name">${l.name}</div><input type="range" min="0" max="150" value="${Math.round(l.gain * 100)}" aria-label="${l.name} volume"></div>
+      <button class="${l.mute ? "on" : ""}">${l.mute ? "Muted" : "Mute"}</button><button aria-label="Clear ${l.name}">Clear</button>`;
+    const [tgt, vol, mute, clr] = [el.querySelector(".tgt"), el.querySelector("input"), ...el.querySelectorAll("button:not(.tgt)")];
+    tgt.onclick = () => { S.target = i; drawLayers(); };
+    vol.oninput = () => { l.gain = vol.value / 100; };
+    mute.onclick = () => { l.mute = !l.mute; drawLayers(); };
+    clr.onclick = () => { if (!l.clips.length || !confirm("Clear everything on " + l.name + "?")) return; S.history.push({ layer: i, clips: l.clips.slice() }); l.clips = []; draw(); };
+    $("layers").appendChild(el);
+  });
+  draw();
+}
+const NAMES = ["Harmony", "Ad-libs 2", "Hook double", "Layer 6"];
+$("addLayer").onclick = () => { if (S.layers.length >= 6) return; addLayer(NAMES[S.layers.length - 2] || "Layer", 0.8, (S.layers.length % 2 ? -0.3 : 0.3)); };
+
+// ---------- timeline ----------
+function peaks(buf, n) {
+  const d = buf.getChannelData(0), step = Math.max(1, Math.floor(d.length / n)), out = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let m = 0; for (let j = i * step, e = Math.min(d.length, j + step); j < e; j += 8) m = Math.max(m, Math.abs(d[j])); out[i] = m; }
+  return out;
+}
+// Two views: a thin strip of the whole song on top (tap to jump anywhere), and a 30-second close-up under it that follows
+// the playhead, so a 2-second ad-lib is as easy to see as a whole verse.
+const tl = $("tl"), OV = 16, WIN = 30;
+function view() { const D = dur(), w = Math.min(D, WIN); return { D, w, vs: Math.max(0, Math.min(now() - w * 0.3, D - w)) }; }
+function draw() {
+  const dpr = window.devicePixelRatio || 1, W = tl.clientWidth, rows = 1 + S.layers.length, H = OV + 18 + rows * 30;
+  if (tl.width !== W * dpr || tl.height !== H * dpr) { tl.width = W * dpr; tl.height = H * dpr; tl.style.height = H + "px"; }
+  const g = tl.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const { D, w, vs } = view(), x = (t) => ((t - vs) / w) * W, ox = (t) => (t / D) * W;
+  // whole-song strip
+  g.fillStyle = "#2b221a"; g.fillRect(0, 0, W, OV - 4);
+  if (S.beatPeaks) { g.fillStyle = "#4f857d"; const p = S.beatPeaks; for (let i = 0; i < p.length; i++) g.fillRect(ox((i / p.length) * S.beat.duration), 6 - p[i] * 5, 1, Math.max(1, p[i] * 10)); }
+  g.fillStyle = "#e08a5a"; S.layers.forEach((l) => l.clips.forEach((c) => g.fillRect(ox(c.start), OV - 6, Math.max(2, ox(c.buf.duration)), 2)));
+  g.strokeStyle = "#f3e9da88"; g.strokeRect(ox(vs) + 0.5, 0.5, Math.max(3, ox(w) - 1), OV - 5);
+  g.fillStyle = "#f3e9da"; g.fillRect(ox(now()) - 0.5, 0, 1.5, OV - 4);
+  // close-up
+  const top = OV + 14, lane = (i) => top + i * 30;
+  g.fillStyle = "#8f7d68"; g.font = "11px system-ui";
+  for (let t = Math.ceil(vs / 5) * 5; t <= vs + w; t += 5) { g.fillRect(x(t), OV, 1, 5); g.fillText(fmt(t), x(t) + 3, OV + 10); }
+  const wave = (buf, start, i, col) => {
+    const a = Math.max(0, x(start)), b = Math.min(W, x(start + buf.duration)); if (b <= 0 || a >= W) return;
+    g.fillStyle = col + "33"; g.fillRect(a, lane(i) + 1, Math.max(2, b - a), 26); g.fillStyle = col;
+    const d = buf.getChannelData(0), sr = buf.sampleRate, spp = (w / W) * sr;
+    for (let px = Math.floor(a); px < b; px++) {
+      const j0 = Math.floor((vs + (px / W) * w - start) * sr); let m = 0;
+      for (let j = Math.max(0, j0); j < Math.min(d.length, j0 + spp); j += 12) m = Math.max(m, Math.abs(d[j]));
+      const h = Math.max(1, Math.min(1, m * 1.6) * 24); g.fillRect(px, lane(i) + 14 - h / 2, 1, h);
+    }
+  };
+  if (S.beat) wave(S.beat, 0, 0, "#7fb3ab");
+  S.layers.forEach((l, i) => {
+    g.fillStyle = i === S.target ? "#e0564a" : "#3d3226"; g.fillRect(0, lane(i + 1), 3, 28);
+    for (const c of l.clips) wave(c.buf, c.start, i + 1, l.mute ? "#5a4c3f" : "#e08a5a");
+  });
+  if (S.pending) wave(S.pending.clip.buf, S.pending.clip.start, S.pending.layer + 1, "#f3e9da");
+  if (S.capture) { g.fillStyle = "#e0564a55"; g.fillRect(x(S.capture.at), lane(S.capture.layer + 1), Math.max(2, x(now()) - x(S.capture.at)), 28); }
+  g.fillStyle = "#f3e9da"; g.fillRect(x(now()) - 1, OV, 2, H - OV);
+}
+function posFromEvent(ev) {
+  const r = tl.getBoundingClientRect(), fx = (ev.clientX - r.left) / r.width;
+  if (ev.clientY - r.top < OV) return fx * dur();                     // whole-song strip
+  const { w, vs } = view(); return vs + fx * w;                       // close-up
+}
+tl.addEventListener("pointerdown", (ev) => { if (S.recording) return; tl.setPointerCapture(ev.pointerId); seek(posFromEvent(ev)); });
+tl.addEventListener("pointermove", (ev) => { if (ev.buttons && !S.recording && !S.playing) { S.pos = Math.max(0, Math.min(posFromEvent(ev), dur())); $("time").textContent = fmt(S.pos); draw(); } });
+window.addEventListener("resize", draw);
+
+// ---------- settings ----------
+$("nudge").oninput = () => { $("nudgeVal").textContent = $("nudge").value + " ms"; };
+
+// ---------- save (rendered offline, so it's exact) ----------
+async function render(withBeat) {
+  ensureCtx(); stop();
+  const D = dur() + 0.5, sr = 44100, oc = new OfflineAudioContext(2, Math.ceil(D * sr), sr), m = oc.createGain(); m.connect(oc.destination);
+  if (withBeat && S.beat) { const s = oc.createBufferSource(); s.buffer = S.beat; s.connect(m); s.start(0); }
+  for (const l of S.layers) {
+    if (l.mute) continue; const gn = oc.createGain(); gn.gain.value = l.gain;
+    if (oc.createStereoPanner) { const p = oc.createStereoPanner(); p.pan.value = l.pan; gn.connect(p); p.connect(m); } else gn.connect(m);
+    for (const c of l.clips) { const s = oc.createBufferSource(); s.buffer = c.buf; s.connect(gn); s.start(c.start); }
+  }
+  return oc.startRendering();
+}
+function wav(buf) {
+  const n = buf.length, ch = 2, out = new DataView(new ArrayBuffer(44 + n * ch * 2)), w = (o, s) => [...s].forEach((c, i) => out.setUint8(o + i, c.charCodeAt(0)));
+  let peak = 0; const L = buf.getChannelData(0), R = buf.getChannelData(1);
+  for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
+  const g = peak > 0.98 ? 0.98 / peak : 1;                               // never clip the save
+  w(0, "RIFF"); out.setUint32(4, 36 + n * 4, true); w(8, "WAVEfmt "); out.setUint32(16, 16, true); out.setUint16(20, 1, true);
+  out.setUint16(22, ch, true); out.setUint32(24, buf.sampleRate, true); out.setUint32(28, buf.sampleRate * 4, true); out.setUint16(32, 4, true);
+  out.setUint16(34, 16, true); w(36, "data"); out.setUint32(40, n * 4, true);
+  for (let i = 0, o = 44; i < n; i++, o += 4) { out.setInt16(o, Math.max(-1, Math.min(1, L[i] * g)) * 32767, true); out.setInt16(o + 2, Math.max(-1, Math.min(1, R[i] * g)) * 32767, true); }
+  return new Blob([out], { type: "audio/wav" });
+}
+async function save(withBeat) {
+  if (!S.beat && !S.layers.some((l) => l.clips.length)) return;
+  $("status").textContent = "Mixing…";
+  const blob = wav(await render(withBeat)), a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = (S.beatName || "song").replace(/[^\w-]+/g, "-") + (withBeat ? "-my-song" : "-vocals") + ".wav";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  $("status").textContent = "Saved";
+}
+$("saveSong").onclick = () => save(true);
+$("saveVox").onclick = () => save(false);
+
+// ---------- beat requests (text only; goes to the crew) ----------
+$("reqSend").onclick = async () => {
+  const text = $("reqText").value.trim(); if (text.length < 3) return;
+  $("reqSend").disabled = true; $("reqMsg").textContent = "Sending…";
+  try {
+    const { getSupabase } = await import("/hb-supabase.js"); const sb = await getSupabase();
+    const { error } = await sb.from("beat_requests").insert({ text: text.slice(0, 500), beat: S.beatName || null, bpm: S.bpm || null });
+    if (error) throw error;
+    $("reqMsg").textContent = "Got it. Thank you!"; $("reqText").value = "";
+  } catch (e) { $("reqMsg").textContent = "Didn't send. Try again in a minute."; }
+  $("reqSend").disabled = false;
+};
+window.addEventListener("beforeunload", (e) => { if (S.layers.some((l) => l.clips.length)) { e.preventDefault(); e.returnValue = ""; } });
+
+addLayer("Main vocal", 1, 0); addLayer("Ad-libs", 0.75, 0.3);
+drawBeats(); draw();
+</script>
+</body>
+</html>
