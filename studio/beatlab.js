@@ -389,7 +389,7 @@ export function mount(root, { getCtx, onUse, wav }) {
     <p class="muted" id="blMsg"></p>
     <div id="blParts"></div>
     <p class="muted" style="margin:14px 0 6px">3. Take it to the recorder</p>
-    <div class="row"><button class="on" id="blUse">Use this beat → record over it</button><button id="blSave">Save beat (WAV)</button><button id="blStems">Save parts</button></div>
+    <div class="row"><button class="on" id="blUse">Use this beat → record over it</button><button id="blSave">Save / share beat</button><button id="blStems">Save parts</button></div>
     <p class="muted">Made by Heartbeat's own beat engine: music-theory rules plus your choices. No AI model makes the track, the same way a drum machine works. Nobody else gets your exact beat unless you share it. Mixed for phone speakers; headphones hear the full bass.</p>`;
   const chip = (label, on, fn, title) => { const b = document.createElement("button"); b.textContent = label; if (on) b.className = "on"; if (title) b.title = title; b.onclick = fn; return b; };
   const setStyle = (k) => { o.style = k; roll(o, seed()); remake(); };
@@ -462,12 +462,13 @@ export function mount(root, { getCtx, onUse, wav }) {
   };
   const name = () => `${STYLES[o.style].name} ${NOTE[o.key]}${o.mood === "dark" ? "m" : ""} ${o.bpm}`;
   $("#blUse").onclick = async () => { stopPrev(); const b = await build(); onUse(b, "Beat Lab: " + name(), o.bpm); };
-  const dl = (blob, fn) => { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fn; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); };
-  $("#blSave").onclick = async () => { dl(wav(await build()), name().replace(/\W+/g, "-") + ".wav"); };
-  $("#blStems").onclick = async () => {
-    $("#blMsg").textContent = "Saving parts…";
-    for (const p of ["drums", "bass", "keys", "melody"]) { $("#blMsg").textContent = "Saving " + p + "…"; dl(wav(await render(o, song, p)), name().replace(/\W+/g, "-") + "-" + p + ".wav"); }
-    drawParts();
+  const openSheet = async (start) => {
+    const { openSave } = await import("./save.js");
+    openSave({ title: name(), wav, start,
+      getBuffer: () => build(),
+      getParts: async (onP) => { const out = [], ps = ["drums", "bass", "keys", "melody"]; for (let i = 0; i < ps.length; i++) { $("#blMsg").textContent = "Making " + ps[i] + "…"; out.push({ name: ps[i], buffer: await render(o, song, ps[i]) }); onP((i + 1) / ps.length); } msg(); return out; } });
   };
+  $("#blSave").onclick = () => openSheet();
+  $("#blStems").onclick = () => openSheet("parts");
   drawTop(); drawParts();
 }

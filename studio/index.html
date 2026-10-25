@@ -157,11 +157,10 @@
   <div class="card">
     <h2>4 · Save</h2>
     <div class="row">
-      <button id="saveSong" class="on">Save my song (WAV)</button>
+      <button id="saveSong" class="on">Save / share my song</button>
       <button id="saveVox">Save vocals only</button>
     </div>
-    <p><a id="downloadLink" class="hide">Download WAV</a></p>
-    <p class="muted">Saved to your phone. Nothing is uploaded. Leaving the page clears your takes, so save first.</p>
+    <p class="muted">Save as MP3, video, or WAV, or share it from your phone. Nothing is uploaded. Leaving the page clears your takes, so save first.</p>
   </div>
 
   <div class="card">
@@ -182,7 +181,7 @@ const BEATS = [
   { id: "trap", name: "Trap", desc: "Dark, sliding 808s. F# minor", bpms: { 130: "/studio/beats/studio-trap-130.mp3", 140: "/studio/beats/studio-trap-140.mp3", 150: "/studio/beats/studio-trap-150.mp3" } },
   { id: "rnb", name: "R&B", desc: "Late night, lush chords. Db major", bpms: { 68: "/studio/beats/studio-rnb-68.mp3", 75: "/studio/beats/studio-rnb-75.mp3", 82: "/studio/beats/studio-rnb-82.mp3" } },
 ];
-let ctx, master, mic, micNode, proc, micSink, workletReady, frame, downloadURL;
+let ctx, master, mic, micNode, proc, micSink, workletReady, frame;
 let beatLoad = 0, armRequest = 0, syncTimer;
 const S = { beat: null, beatName: "", bpm: null, beatPeaks: null, layers: [], target: 0, pos: 0, playing: false, recording: false,
             t0: 0, startPos: 0, sources: [], outputs: [], pending: null, history: [], capture: null,
@@ -637,15 +636,10 @@ async function save(withBeat) {
   document.querySelectorAll("#layers input").forEach((i) => i.disabled = true);
   $("status").textContent = "Mixing...";
   try {
-    const blob = wav(await render(withBeat)), a = $("downloadLink");
-    const nextURL = URL.createObjectURL(blob);
-    if (downloadURL) URL.revokeObjectURL(downloadURL);
-    downloadURL = nextURL; a.href = downloadURL;
-    a.download = (S.beatName || "song").replace(/[^\w-]+/g, "-") + (withBeat ? "-my-song" : "-vocals") + ".wav";
-    a.textContent = "Download " + (withBeat ? "my song" : "vocals") + " (WAV)";
-    a.classList.remove("hide"); a.click();
-    $("status").textContent = "WAV ready. If it didn't save, tap the download link in step 4.";
-  } catch (e) { $("status").textContent = "Couldn't make the WAV. Try again, or save a shorter song."; }
+    const mixed = await render(withBeat), { openSave } = await import("/studio/save.js");
+    $("status").textContent = "Ready. Pick how to save it.";
+    openSave({ title: (S.beatName || "song") + (withBeat ? " my song" : " vocals"), wav, getBuffer: () => mixed });
+  } catch (e) { $("status").textContent = "Couldn't mix your song. Try again, or save a shorter song."; }
   finally {
     S.saving = false; $("beatGain").disabled = false;
     document.querySelectorAll("#layers input").forEach((i) => i.disabled = false); controls();
