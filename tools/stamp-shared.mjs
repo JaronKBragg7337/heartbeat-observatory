@@ -9,6 +9,9 @@
 //   editor     - /hb-editor.js (admin Edit button + phone fixes) opt out: <!-- hb:no-editor -->
 //   phone      - /bubble.js (the messages phone)               opt out: <!-- hb:no-phone -->  (pages with their own phone,
 //                e.g. Ashgrove's shell phone, are skipped automatically)
+//   homescreen - manifest + iPhone home-screen app metas + opaque apple-touch-icon (brand/apple-touch-icon.png)  opt out: <!-- hb:no-homescreen -->
+//   appnav     - /hb-appnav.js: Back + Refresh pill, ONLY when running as a home-screen app. <!-- hb:no-appnav --> = full-screen
+//                page: the script shows one small corner button instead of the pill (the script still loads).
 //   icon       - the H-heartbeat tab icon (/brand)            opt out: <!-- hb:no-icon -->  (pages with their own icon keep it)
 import { readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -23,7 +26,12 @@ const PIECES = [
     tag: '<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>\n<script defer src="/_vercel/insights/script.js"></script>\n' },
   { id: "editor", has: /\/hb-editor\.js/, optOut: "hb:no-editor", where: "body", tag: '<script defer src="/hb-editor.js"></script>\n' },
   { id: "icon", has: /rel=["'](?:shortcut )?icon/i, optOut: "hb:no-icon", where: "head",
-    tag: '<link rel="icon" type="image/svg+xml" href="/brand/h-heartbeat.svg">\n<link rel="icon" type="image/png" href="/brand/h-heartbeat.png">\n<link rel="apple-touch-icon" href="/brand/h-heartbeat.png">\n' },
+    tag: '<link rel="icon" type="image/svg+xml" href="/brand/h-heartbeat.svg">\n<link rel="icon" type="image/png" href="/brand/h-heartbeat.png">\n' },
+  { id: "homescreen", has: /rel=["']manifest["']/, optOut: "hb:no-homescreen", where: "head",
+    tag: '<link rel="manifest" href="/manifest.webmanifest">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black">\n<meta name="apple-mobile-web-app-title" content="Heartbeat">\n' },
+  { id: "apple-icon", has: /rel=["']apple-touch-icon/i, optOut: "hb:no-homescreen", where: "head",
+    tag: '<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">\n' },
+  { id: "appnav", has: /\/hb-appnav\.js/, optOut: null, where: "body", tag: '<script defer src="/hb-appnav.js"></script>\n' },
   { id: "phone", has: /\/bubble\.js/, optOut: "hb:no-phone", where: "body", tag: '<script defer src="/bubble.js"></script>\n' },
 ];
 
@@ -46,7 +54,7 @@ for (const file of pages(root)) {
   if (!/<\/body>/i.test(html) || !/<\/head>/i.test(html)) continue;   // fragments / partial templates
   const before = html;
   for (const piece of PIECES) {
-    if (piece.has.test(html) || html.includes(piece.optOut)) continue;
+    if (piece.has.test(html) || (piece.optOut && html.includes(piece.optOut))) continue;
     missing.push(`${relative(root, file).split(sep).join("/")}: ${piece.id}`);
     if (piece.where === "head") html = html.replace(/<\/head>/i, piece.tag + "</head>");
     else { const i = html.search(/<\/body>(?![\s\S]*<\/body>)/i); html = html.slice(0, i) + piece.tag + html.slice(i); }
