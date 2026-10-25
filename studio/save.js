@@ -64,7 +64,7 @@ export async function encodeMp3(buf, onProgress, kbps = 192) {
   await loadLame();
   const L = buf.getChannelData(0), R = buf.numberOfChannels > 1 ? buf.getChannelData(1) : L, n = buf.length;
   let peak = 0; for (let i = 0; i < n; i++) { const a = Math.abs(L[i]), b = Math.abs(R[i]); if (a > peak) peak = a; if (b > peak) peak = b; }
-  const g = peak > 0.63 ? 0.63 / peak : 1, enc = new window.lamejs.Mp3Encoder(2, buf.sampleRate, kbps), out = [], step = 1152 * 10;
+  const g = peak > 0.75 ? 0.75 / peak : 1, enc = new window.lamejs.Mp3Encoder(2, buf.sampleRate, kbps), out = [], step = 1152 * 10;
   const l16 = new Int16Array(step), r16 = new Int16Array(step);
   for (let i = 0, k = 0; i < n; i += step, k++) {
     const m = Math.min(step, n - i);
