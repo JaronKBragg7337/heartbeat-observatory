@@ -3,6 +3,14 @@
 // The PERPLEXITY_API_KEY lives only in Vercel env and is read here on the server.
 // The browser never sees the key — it only receives a finished, safe list of headlines.
 export default async function handler(req, res) {
+  // The CDN caches per full URL, so /api/news?v=123 would skip the cache and spend a Perplexity call. Any query string
+  // gets sent to the plain URL instead; the redirect itself is cached and costs nothing.
+  if ((req.url || "").includes("?")) {
+    res.setHeader("Location", "/api/news");
+    res.setHeader("Cache-Control", "s-maxage=86400");
+    res.status(308).end();
+    return;
+  }
   const key = process.env.PERPLEXITY_API_KEY;
   if (!key) {
     res.setHeader("Cache-Control", "no-store");
