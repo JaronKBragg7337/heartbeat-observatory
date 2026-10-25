@@ -16,9 +16,9 @@
     body { min-height: 100vh; min-height: 100dvh; }
     main { position: fixed; inset: 0; overflow: hidden; background: #07090c; }
     iframe { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border: 0; background: #07090c; }
-    .back { position: fixed; z-index: 2; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left));
-      padding: 7px 12px; border-radius: 999px; background: rgba(7, 9, 12, .72); border: 1px solid #2c3940; color: #cfe0e6;
-      font: 600 13px system-ui, -apple-system, sans-serif; text-decoration: none; }
+    .toprow { position: fixed; z-index: 2; top: calc(6px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); display: flex; gap: 6px; }
+    .toprow a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 999px; background: rgba(7, 9, 12, .72); border: 1px solid #2c3940; color: #cfe0e6;
+      font: 600 14px system-ui, -apple-system, sans-serif; text-decoration: none; }
   </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
 <script defer src="/_vercel/insights/script.js"></script>
@@ -35,7 +35,7 @@
       <p>Your browser cannot display the 3D theater. <a href="https://jaronkbragg7337.github.io/Movie-Theater-Three.js-Asset-/">Open it directly</a>.</p>
     </iframe>
   </main>
-  <a class="back" id="back" href="/video">&larr; Theater</a>
+  <div class="toprow"><a class="home" href="/">&larr; Heartbeat Observatory</a><a class="back" id="back" href="/video">Theater</a></div>
   <script>
     // Coming through a world's theater door (?start=seats&from=ashgrove|town|world2): pass the start through to
     // the theater so it seats you, and make the way back lead to the world you came from.

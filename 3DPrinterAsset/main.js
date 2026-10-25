@@ -8,6 +8,7 @@ const app = document.querySelector('#app');
 app.innerHTML = `
   <canvas id="world"></canvas>
   <section id="hud">
+    <a class="hb-top" href="/">&larr; Heartbeat Observatory</a>
     <div class="topline">
       <h1>World Printer Lab <span style="color:#00ff9d">v2i</span></h1>
       <button id="toggleHud" class="secondary">Hide</button>
