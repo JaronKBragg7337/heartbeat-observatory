@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: "You return current news headlines as STRICT JSON only. No prose, no markdown, no code fences. Output a JSON array of up to 6 objects, each exactly {\"title\": string, \"source\": string, \"cite\": number}. Titles are real, current headlines. Source is the outlet name only. cite is the number of YOUR search result that reports that exact headline (the same numbers you would write as [1], [2]); use 0 if none does."
+            content: "You return current news headlines as STRICT JSON only. No prose, no markdown, no code fences. Output a JSON array of up to 6 objects, each exactly {\"title\": string, \"source\": string}. Titles are real, current headlines. Source is the outlet name only."
           },
           {
             role: "user",
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
     const data = await r.json();
     const content = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "[]";
-    const citations = Array.isArray(data && data.citations) ? data.citations : [];
+
 
     let parsed = [];
     try {
@@ -53,15 +53,12 @@ export default async function handler(req, res) {
     }
     if (!Array.isArray(parsed)) parsed = [];
 
-    // Link each headline to the search result the model says reported it (cite is 1-based). Matching by list position
-    // put wrong articles under headlines (10/25), so a headline with no valid cite gets no link rather than a wrong one.
+    // Sonar's citations are mostly front pages and wire listings, not the article itself, so pairing them with headlines
+    // put wrong stories under links (10/25). Each headline now links to a news search for that exact headline + outlet.
     const items = parsed.slice(0, 6).map((x) => {
-      const c = Number(x && x.cite);
-      return {
-        title: String((x && x.title) || "").slice(0, 200),
-        source: String((x && x.source) || "").slice(0, 80),
-        url: Number.isInteger(c) && c >= 1 && typeof citations[c - 1] === "string" ? citations[c - 1] : ""
-      };
+      const title = String((x && x.title) || "").slice(0, 200);
+      const source = String((x && x.source) || "").slice(0, 80);
+      return { title, source, url: title ? "https://news.google.com/search?q=" + encodeURIComponent(`"${title}" ${source}`) : "" };
     }).filter(x => x.title);
 
     // CDN-cache for 6 hours so a fresh Perplexity call happens at most ~4x/day
