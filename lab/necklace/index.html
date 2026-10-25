@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Necklace view</title>
+<style>
+  :root { color-scheme: dark; --bg:#16140f; --card:#221e16; --line:#3a3326; --ink:#ece6d4; --dim:#a79f88; --accent:#f0c36b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, sans-serif; -webkit-text-size-adjust: 100%; }
+  main { max-width: 560px; margin: 0 auto; padding: 12px 16px 40px; }
+  h1 { font-size: 18px; margin: 4px 0 2px; } .sub { color: var(--dim); font-size: 13px; margin: 0 0 10px; }
+  #stage { position: relative; background: #000; border-radius: 10px; overflow: hidden; touch-action: manipulation; line-height: 0; }
+  video { width: 100%; height: auto; display: block; max-height: 72vh; object-fit: contain; background: #000; }
+  canvas#ov { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  .row { display: flex; gap: 8px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+  button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; min-height: 44px; }
+  button.on { border-color: var(--accent); color: var(--accent); }
+  input[type=range] { flex: 1; min-width: 120px; min-height: 44px; }
+  #info { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  #info h2 { font-size: 16px; margin: 0 0 6px; color: var(--accent); }
+  #info p { margin: 4px 0; } #info .dim { color: var(--dim); font-size: 13px; }
+  #info ul { margin: 4px 0 4px 18px; padding: 0; } #info li { margin: 2px 0; }
+  canvas#spark { width: 100%; height: 56px; margin-top: 6px; display: block; }
+  #msg { color: var(--dim); font-size: 13px; }
+  .legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); }
+  .bar { flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, hsl(220,95%,60%), hsl(150,95%,55%), hsl(60,95%,55%), hsl(0,95%,58%)); }
+</style>
+</head>
+<body>
+<main>
+  <p style="margin:0 0 6px"><a href="/" style="color:#f0c36b;text-decoration:none">&larr; Heartbeat Observatory</a></p>
+  <h1>Necklace view</h1>
+  <p class="sub">Every drop of water in this simulated clip has a recorded life. Tap one to see where it came from, how fast it went, where it hit the sand, and whether it soaked in. Made with hb-render, our own engine (CC0).</p>
+  <div id="stage"><video id="v" playsinline muted loop preload="auto"></video><canvas id="ov"></canvas></div>
+  <div class="row">
+    <button id="play">Play</button>
+    <button id="trails" class="on">Trails on</button>
+    <input id="seek" type="range" min="0" max="1000" value="0" aria-label="time">
+  </div>
+  <div class="legend"><span>slow</span><div class="bar"></div><span>2.5 m/s</span></div>
+  <p class="sub">White rings = a drop touched the sand. Pink x = soaked into the sand.</p>
+  <div id="info"><p id="msg">Loading history...</p></div>
+</main>
+<script type="module">
+import { History } from './history.js';
+import { drawOverlay, pickables, projector, speedColor } from './necklace-overlay.js';
+
+const $ = (id) => document.getElementById(id);
+const v = $('v'), cv = $('ov'), ctx = cv.getContext('2d'), info = $('info');
+const q = new URLSearchParams(location.search);
+const clip = 'bottle-sand-necklace-vertical';
+let H = null, showTrails = true, picked = null, last = null;
+
+async function loadHistory() {
+  // phones get the gzipped copy when the browser can unzip it; otherwise the plain file
+  const base = './' + clip + '.history.jsonl';
+  if (typeof DecompressionStream !== 'undefined') {
+    try { const r = await fetch(base + '.gz'); if (r.ok) { const s = r.body.pipeThrough(new DecompressionStream('gzip')); return await new Response(s).text(); } } catch (e) {}
+  }
+  throw new Error('this browser cannot unzip the history (needs iOS 16.4 or newer)');
+}
+async function init() {
+  v.src = './' + clip + '.mp4';
+  const text = await loadHistory();
+  H = History.fromJSONL(text);
+  const M = H.meta;
+  info.innerHTML = `<p id="msg">${H.traces.size.toLocaleString()} traced drops, ${H.events.length.toLocaleString()} events. Tap a drop.</p>`;
+  await new Promise((r) => { if (v.readyState >= 1) r(); else v.addEventListener('loadedmetadata', r, { once: true }); });
+  cv.width = v.videoWidth; cv.height = v.videoHeight;
+  loop();
+}
+const timeNow = () => { const M = H.meta; const f = Math.min(M.frames - 1, Math.max(0, Math.floor(v.currentTime * M.fps + 1e-3))); return H.frameTime(f); };
+
+function draw() {
+  if (!H) return;
+  const t = timeNow();
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if (showTrails) drawOverlay(ctx, cv.width, cv.height, H, t, { scale: 1.6 });
+  if (picked) {
+    const M = H.meta, P = projector(M.cameras[H.frameOf(t)], cv.width, cv.height), tr = H.traces.get(picked), px = cv.width / 1080 * 1.6;
+    // the picked drop's whole recorded path in white, and a ring on its position now
+    ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2 * px; ctx.beginPath(); let started = false;
+    for (const r of tr.s) { const p = P([r[1], r[2], r[3]]); if (!p) continue; if (!started) { ctx.moveTo(p[0], p[1]); started = true; } else ctx.lineTo(p[0], p[1]); }
+    ctx.stroke();
+    const st = H.stateAt(picked, t);
+    if (st) { const p = P(st.p); if (p) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 3 * px; ctx.beginPath(); ctx.arc(p[0], p[1], 12 * px, 0, 6.2832); ctx.stroke(); } }
+    ctx.restore();
+  }
+}
+function loop() { draw(); if (H) { $('seek').value = Math.round(v.currentTime / (v.duration || 1) * 1000); } requestAnimationFrame(loop); }
+
+const f3 = (n) => (Math.round(n * 1000) / 1000);
+const ms = (s) => Math.round(s * 1000) + ' ms';
+function tell(id, t) {
+  const S = H.story(id), s = S.summary, tr = H.traces.get(id);
+  const pos = (p) => `(${p.map((n) => (n * 100).toFixed(1)).join(', ')}) cm`;
+  const st = H.stateAt(id, t);
+  let h = `<h2>${id}</h2>`;
+  if (s.drops && s.drops.length) h += `<p>Part of drop ${s.drops.join(', ')}.</p>`;
+  if (s.leftBottleAt !== undefined) h += `<p><b>Came from</b> the bottle: left the mouth at ${s.leftBottleAt.toFixed(3)} s doing ${s.speedWhenLeaving} m/s.</p>`;
+  else h += `<p><b>Came from</b> the bottle (no mouth-exit event recorded).</p>`;
+  if (st) h += `<p><b>Now</b> (t = ${t.toFixed(2)} s): ${Math.hypot(...st.v).toFixed(2)} m/s.</p>`;
+  if (s.maxSpeed !== undefined) h += `<p><b>Top speed</b> ${s.maxSpeed} m/s.</p>`;
+  const hits = S.events.filter((e) => e.e === 'collided');
+  if (hits.length) { h += `<p><b>Hit things ${hits.length}x:</b></p><ul>` + hits.map((e) => `<li>${e.target === 'SAND' ? 'sand' : 'the bottle'} at ${e.t.toFixed(3)} s, ${Math.hypot(...e.v).toFixed(2)} m/s, ${pos(e.p)}</li>`).join('') + '</ul>'; }
+  else h += `<p><b>Hits</b> none recorded.</p>`;
+  h += `<p><b>Fate</b> ${s.fate}${s.soakedInAt !== undefined ? ` at ${s.soakedInAt.toFixed(3)} s` : ''}.</p>`;
+  if (s.secondsFromFirstHitToSoak !== undefined) h += `<p class="dim">${ms(s.secondsFromFirstHitToSoak)} from first touching sand to soaking in${s.secondsFromFirstHitToSoak < 0.1 ? ' - it never bounced or rolled, it just sank in' : ''}.</p>`;
+  h += `<canvas id="spark" width="520" height="112"></canvas><p class="dim">speed over this drop's life (m/s, line = now)</p>`;
+  info.innerHTML = h;
+  // sparkline
+  const c = $('spark').getContext('2d'); c.clearRect(0, 0, 520, 112);
+  if (tr && tr.s.length > 1) {
+    const t0 = tr.s[0][0], t1 = tr.s[tr.s.length - 1][0] + 1e-6, mx = Math.max(0.5, ...tr.s.map((r) => Math.hypot(r[4], r[5], r[6])));
+    c.strokeStyle = '#f0c36b'; c.lineWidth = 2; c.beginPath();
+    tr.s.forEach((r, i) => { const x = (r[0] - t0) / (t1 - t0) * 516 + 2, y = 108 - Math.hypot(r[4], r[5], r[6]) / mx * 100; if (i) c.lineTo(x, y); else c.moveTo(x, y); }); c.stroke();
+    for (const e of hits) { const x = (e.t - t0) / (t1 - t0) * 516 + 2; c.strokeStyle = '#fff'; c.beginPath(); c.moveTo(x, 4); c.lineTo(x, 108); c.stroke(); }
+    if (t >= t0 && t <= t1) { const x = (t - t0) / (t1 - t0) * 516 + 2; c.strokeStyle = '#ff5ac8'; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 112); c.stroke(); }
+  }
+}
+
+function pick(ev) {
+  if (!H) return;
+  const r = cv.getBoundingClientRect(), sx = cv.width / r.width;
+  const x = (ev.clientX - r.left) * sx, y = (ev.clientY - r.top) * sx;
+  const t = timeNow();
+  v.pause(); $('play').textContent = 'Play';
+  let best = null, bd = 44 * sx;     // 44 css px finger radius
+  for (const p of pickables(H, t, cv.width, cv.height)) { const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = p; } }
+  if (!best) { picked = null; info.innerHTML = '<p id="msg">No recorded drop there at this moment. Try a bit closer to the stream or a bead, or step the time slider.</p>'; return; }
+  picked = best.id; tell(best.id, t);
+}
+cv.addEventListener('pointerdown', pick);
+$('play').onclick = () => { if (v.paused) { v.play(); $('play').textContent = 'Pause'; } else { v.pause(); $('play').textContent = 'Play'; } };
+$('trails').onclick = (e) => { showTrails = !showTrails; e.target.classList.toggle('on', showTrails); e.target.textContent = showTrails ? 'Trails on' : 'Trails off'; };
+$('seek').oninput = (e) => { v.pause(); $('play').textContent = 'Play'; v.currentTime = (+e.target.value / 1000) * (v.duration || 0); if (picked) setTimeout(() => tell(picked, timeNow()), 60); };
+v.addEventListener('seeked', () => { if (picked && v.paused) tell(picked, timeNow()); });
+init().catch((e) => { info.innerHTML = '<p id="msg">Could not load: ' + e.message + '</p>'; });
+</script>
+</body>
+</html>
