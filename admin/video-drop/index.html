@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="/hb-device-tier.js"></script>
+<title>Video Drop · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style>
+  /* 10/25 (Jaron): send test videos from the phone to the MSI, like Key Drop. Files go to a private bucket (admins only);
+     the MSI pulls them down within a few minutes, buzzes the phone, and removes the cloud copy. MSI side: AI-Shared/tools/video_drop.py. */
+  .lede { color: var(--muted); line-height: 1.6; max-width: 60ch; margin: 10px auto 0; }
+  .box { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 16px; margin: 16px 0; }
+  .box h3 { font-size: 1.05rem; margin-bottom: 6px; }
+  .box p { font-size: .9rem; line-height: 1.55; color: #c2ccd6; margin: 6px 0; }
+  label { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+  input[type=text] { width: 100%; box-sizing: border-box; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: #0d131b; color: var(--text); padding: 0 14px; font-size: 16px; }
+  .pick { display: flex; align-items: center; justify-content: center; min-height: 64px; border: 1px dashed var(--line); border-radius: 14px; color: var(--text); font-size: 1rem; cursor: pointer; }
+  .pick input { display: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips button { min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid var(--line); background: #141b24; color: var(--text); font-size: .9rem; cursor: pointer; }
+  .chips button.on { background: var(--text); color: #0a0e14; }
+  .files div { font-size: .88rem; padding: 6px 0; color: #c2ccd6; }
+  button.send { width: 100%; min-height: 52px; margin-top: 16px; border-radius: 14px; border: 0; background: #7ee08c; color: #07210c; font-size: 1.05rem; font-weight: 700; cursor: pointer; }
+  button.send:disabled { opacity: .5; }
+  .msg { min-height: 20px; margin-top: 10px; font-size: .95rem; }
+  .hist div { font-size: .88rem; padding: 10px 0; border-bottom: 1px solid var(--line); line-height: 1.45; }
+  .ok { color: #7ee08c; } .bad { color: #ff8a80; } .wait { color: #f5c26b; }
+  .gate { text-align: center; margin-top: 30px; color: var(--muted); } .gate a { color: var(--text); }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" href="/admin">Admin</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/admin/" style="min-height:44px;display:inline-flex;align-items:center">&larr; Steering</a>
+    <header class="hero">
+      <h1>Video Drop</h1>
+      <p class="lede">Send videos or photos from your phone straight to the MSI. Only admins can send or see them. The MSI pulls them down
+        within a few minutes, buzzes your phone, then deletes the cloud copy.</p>
+    </header>
+    <p class="gate" id="gate" hidden>Sign in as an admin to drop videos. <a href="/admin">Sign in</a></p>
+    <div id="app" hidden>
+      <div class="box">
+        <h3>1 · Pick videos or photos</h3>
+        <label class="pick" id="pickLbl">Tap to choose<input id="file" type="file" accept="video/*,image/*" multiple></label>
+        <div class="files" id="files"></div>
+        <label for="note">2 · What is it? (tap one or type)</label>
+        <div class="chips" id="chips">
+          <button type="button">Walk side to side, far</button><button type="button">Walk toward + away</button>
+          <button type="button">Angle, turn, stop and go</button><button type="button">Close-up: hands, elbows, knees</button>
+          <button type="button">Skeleton frame (marked)</button>
+        </div>
+        <input type="text" id="note" placeholder="Or type a note" autocomplete="off" style="margin-top:10px">
+        <button class="send" id="send">Send to the MSI</button>
+        <p class="msg" id="msg"></p>
+        <p style="color:var(--muted);font-size:.8rem">Up to 1 GB a file. 1080p is plenty; 4K is fine if it fits.</p>
+      </div>
+      <div class="box hist" id="hist">Loading...</div>
+    </div>
+  </div>
+<script type="module">
+  import { getSupabase } from "/hb-supabase.js";
+  const supabase = await getSupabase();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const mb = (n) => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + " MB";
+  const { data: { session } } = await supabase.auth.getSession();
+  let isAdmin = false;
+  if (session) { try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {} }
+  $(isAdmin ? "app" : "gate").hidden = false;
+
+  $("file").addEventListener("change", () => {
+    const fs = [...$("file").files];
+    $("pickLbl").firstChild.textContent = fs.length ? fs.length + " picked (tap to change)" : "Tap to choose";
+    $("files").innerHTML = fs.map((f) => "<div>" + esc(f.name) + " · " + mb(f.size) + "</div>").join("");
+  });
+  $("chips").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    document.querySelectorAll("#chips button").forEach((x) => x.classList.toggle("on", x === b));
+    $("note").value = b.textContent;
+  });
+
+  $("send").addEventListener("click", async () => {
+    const fs = [...$("file").files], msg = $("msg"), note = $("note").value.trim() || null;
+    if (!fs.length) { msg.className = "msg bad"; msg.textContent = "Pick a video or photo first."; return; }
+    const big = fs.find((f) => f.size > 1073741824);
+    if (big) { msg.className = "msg bad"; msg.textContent = big.name + " is over 1 GB. Record in 1080p or trim it."; return; }
+    $("send").disabled = true;
+    let sent = 0;
+    for (const f of fs) {
+      msg.className = "msg wait"; msg.textContent = "Sending " + (sent + 1) + " of " + fs.length + " (" + mb(f.size) + ")... keep this page open.";
+      const ext = (f.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const path = new Date().toISOString().slice(0, 10) + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "." + ext;
+      const up = await supabase.storage.from("video-drops").upload(path, f, { contentType: f.type || undefined });
+      if (up.error) { msg.className = "msg bad"; msg.textContent = "Didn't send " + f.name + ": " + up.error.message; $("send").disabled = false; return; }
+      const { error } = await supabase.from("video_drops").insert({ path, file_name: f.name, note, size_bytes: f.size });
+      if (error) { msg.className = "msg bad"; msg.textContent = "Sent the file but couldn't log it: " + error.message; $("send").disabled = false; return; }
+      sent++;
+    }
+    msg.className = "msg ok"; msg.textContent = "Sent " + sent + ". The MSI picks them up within a few minutes and buzzes your phone.";
+    $("file").value = ""; $("files").innerHTML = ""; $("pickLbl").firstChild.textContent = "Tap to choose";
+    $("send").disabled = false; load();
+  });
+
+  async function load() {
+    const h = $("hist");
+    const { data, error } = await supabase.from("video_drops").select("file_name,note,size_bytes,status,msi_note,created_at").order("created_at", { ascending: false }).limit(20);
+    if (error) { h.textContent = "Couldn't load: " + error.message; return; }
+    if (!data.length) { h.textContent = "Nothing sent yet."; return; }
+    h.innerHTML = "<h3>Sent</h3>" + data.map((r) => "<div><b>" + esc(r.file_name) + '</b> <span class="' + (r.status === "done" ? "ok" : r.status === "failed" ? "bad" : "wait") + '">' +
+      (r.status === "done" ? "on the MSI" : r.status) + "</span><br>" + (r.note ? esc(r.note) + "<br>" : "") + '<span style="color:var(--muted)">' + mb(r.size_bytes || 0) + " · " +
+      new Date(r.created_at).toLocaleString() + "</span>" + (r.msi_note ? "<br>" + esc(r.msi_note) : "") + "</div>").join("");
+  }
+  if (isAdmin) { load(); setInterval(load, 15000); }
+</script>
+</body>
+</html>
