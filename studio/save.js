@@ -107,7 +107,7 @@ export async function embedRecipe(blob, recipe) {
 export async function readRecipe(file) {
   try {
     const u8 = async (a, b) => new Uint8Array(await file.slice(a, b).arrayBuffer()), txt = (u) => String.fromCharCode(...u);
-    const parse = (t) => { const i = t.indexOf(TAG); if (i < 0) return null; const j = t.slice(i + TAG.length); try { return JSON.parse(j.replace(/[ \s]+$/, "")); } catch (e) { return null; } };
+    const parse = (t) => { const i = t.indexOf(TAG); if (i < 0) return null; const j = t.slice(i + TAG.length); try { return JSON.parse(j.replace(/[\x00\s]+$/, "")); } catch (e) { return null; } };
     const h = await u8(0, 12);
     if (txt(h.slice(0, 4)) === "RIFF" && txt(h.slice(8, 12)) === "WAVE") {
       let pos = 12;
