@@ -56,6 +56,12 @@
   .file input { position: absolute; inset: 0; opacity: 0; }
   .warn { color: #f0b48a; font-size: 14px; }
   .hide { display: none !important; }
+  .row > *, .layer > *, .beats > * { min-width: 0; }
+  .layer .name, #beatInfo, #status { overflow-wrap: anywhere; }
+  .inline input[type=range] { min-width: 60px; width: 100%; }
+  #status { flex: 1; text-align: right; }
+  #downloadLink { color: var(--accent); overflow-wrap: anywhere; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
 </style>
 </head>
 <body>
@@ -68,7 +74,7 @@
     <h2 style="font-size:18px">Before your first take</h2>
     <ul class="muted" style="margin:0;padding-left:18px;line-height:1.6">
       <li><b style="color:var(--ink)">Wear headphones.</b> Without them the beat plays out loud and gets into your vocal.</li>
-      <li><b style="color:var(--ink)">Wired is best.</b> Bluetooth earbuds hear the beat a little late. Using them anyway? Tap <b style="color:var(--ink)">Sync my headphones</b> in step 3 once and the page fixes the delay for you.</li>
+      <li><b style="color:var(--ink)">Wired is best.</b> Bluetooth earbuds hear the beat a little late. Using them anyway? Try <b style="color:var(--ink)">Sync my headphones</b> in step 3, then check a short take.</li>
       <li><b style="color:var(--ink)">When your phone asks for the mic, tap Allow.</b></li>
     </ul>
   </div>
@@ -92,7 +98,7 @@
   <div class="transport">
     <div class="row" style="justify-content:space-between">
       <span class="time" id="time">0:00</span>
-      <span class="muted" id="status">Pick a beat to start</span>
+      <span class="muted" id="status" role="status">Pick a beat to start</span>
     </div>
     <div class="tbtns">
       <button id="back15">⟲ 15s</button>
@@ -101,7 +107,7 @@
       <button id="recBtn" disabled>● Rec</button>
       <button id="toStart">⏮ Start</button>
     </div>
-    <canvas id="tl" height="160"></canvas>
+    <canvas id="tl" height="160" aria-label="Song timeline. Tap the top strip to jump, or use the time buttons."></canvas>
   </div>
 
   <div class="card review hide" id="review">
@@ -129,6 +135,9 @@
 
   <div class="card">
     <h2>3 · Recording settings</h2>
+    <label class="inline">Beat volume <input id="beatGain" type="range" min="0" max="150" value="100" /></label>
+    <label class="inline" style="margin-top:12px"><input id="cleanVoice" type="checkbox" /> Clean voice: less rumble, steadier volume</label>
+    <p class="muted">Applies to all voice layers when you listen and save. Your original takes stay unchanged.</p>
     <label class="inline"><input type="checkbox" id="preroll" checked /> Play 2 seconds before I come in</label>
     <div class="row" style="margin-top:12px">
       <button id="syncBtn">Sync my headphones</button>
@@ -136,7 +145,7 @@
     </div>
     <button id="tapPad" class="hide" style="width:100%;min-height:120px;margin-top:10px;font-size:20px">Tap on each click</button>
     <label class="inline" style="margin-top:10px">Timing nudge <b id="nudgeVal">0 ms</b><input type="range" id="nudge" min="-300" max="600" step="5" value="0" style="flex:1" /></label>
-    <p class="muted">Vocals still land a little late or early? Slide this and listen back.</p>
+    <p class="muted">For your next take: move right if new vocals land late, left if they land early. Existing takes stay where they are.</p>
   </div>
 
   <div class="card">
@@ -145,6 +154,7 @@
       <button id="saveSong" class="on">Save my song (WAV)</button>
       <button id="saveVox">Save vocals only</button>
     </div>
+    <p><a id="downloadLink" class="hide">Download WAV</a></p>
     <p class="muted">Saved to your phone. Nothing is uploaded. Leaving the page clears your takes, so save first.</p>
   </div>
 
@@ -155,7 +165,7 @@
     <div class="row" style="margin-top:8px"><button id="reqSend">Send request</button><span class="muted" id="reqMsg"></span></div>
   </div>
 
-  <p class="muted">Heartbeat beats are made from math by our AI crew's own beat kit, no samples. Free to use for anything (CC0). Studio v1 · Coming next: see and change every note of a beat, swap sounds, build a beat right on this page.</p>
+  <p class="muted">Heartbeat beats are made from math by our crew's own beat kit, no samples. Free to use for anything (CC0). Open the Beat Lab to build your own.</p>
 </div>
 
 <script type="module">
@@ -166,11 +176,34 @@ const BEATS = [
   { id: "trap", name: "Trap", desc: "Dark, sliding 808s. F# minor", bpms: { 130: "/studio/beats/studio-trap-130.mp3", 140: "/studio/beats/studio-trap-140.mp3", 150: "/studio/beats/studio-trap-150.mp3" } },
   { id: "rnb", name: "R&B", desc: "Late night, lush chords. Db major", bpms: { 68: "/studio/beats/studio-rnb-68.mp3", 75: "/studio/beats/studio-rnb-75.mp3", 82: "/studio/beats/studio-rnb-82.mp3" } },
 ];
-let ctx, master, mic, micNode, proc;
+let ctx, master, mic, micNode, proc, micSink, workletReady, frame, downloadURL;
+let beatLoad = 0, armRequest = 0, syncTimer;
 const S = { beat: null, beatName: "", bpm: null, beatPeaks: null, layers: [], target: 0, pos: 0, playing: false, recording: false,
-            t0: 0, startPos: 0, sources: [], pending: null, history: [], capture: null };
+            t0: 0, startPos: 0, sources: [], outputs: [], pending: null, history: [], capture: null,
+            arming: false, syncing: false, saving: false, importing: false, beatGain: 1, cleanVoice: false };
 const fmt = (s) => { s = Math.max(0, s); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
-const dur = () => Math.max(S.beat ? S.beat.duration : 0, ...S.layers.flatMap((l) => l.clips.map((c) => c.start + c.buf.duration)), 1);
+const dur = () => Math.max(S.beat ? S.beat.duration : 0, ...S.layers.flatMap((l) => l.clips.map((c) => c.start + c.buf.duration)),
+  S.pending ? S.pending.clip.start + S.pending.clip.buf.duration : 0, S.recording ? now() + 1 : 0, 1);
+
+function controls() {
+  const busy = S.arming || S.recording || S.syncing || S.saving || S.importing;
+  for (const id of ["beatFile", "voiceFile", "addLayer", "undoBtn", "syncBtn", "saveSong", "saveVox", "labOpen", "preroll", "nudge", "cleanVoice",
+    "rvListen", "rvKeep", "rvRedo", "rvDelete", "trim"]) $(id).disabled = busy;
+  document.querySelectorAll("#beats button, #layers button").forEach((b) => b.disabled = busy);
+  $("playBtn").disabled = S.arming || S.syncing || S.saving || S.importing || !hasAudio();
+  $("recBtn").disabled = S.arming || S.syncing || S.saving || S.importing || !hasAudio();
+  $("beatGain").disabled = S.syncing || S.saving;
+  document.querySelectorAll("#layers input").forEach((i) => i.disabled = S.syncing || S.saving);
+  $("undoBtn").disabled ||= !S.history.length || !!S.pending;
+  $("addLayer").disabled ||= S.layers.length >= 6;
+}
+const hasAudio = () => !!S.beat || S.layers.some((l) => l.clips.length);
+const locked = () => S.arming || S.recording || S.syncing || S.saving || S.importing;
+function resolveTake() {
+  if (!S.pending) return true;
+  $("status").textContent = "Keep or delete that take first.";
+  $("review").scrollIntoView({ behavior: "smooth", block: "center" }); return false;
+}
 
 function session(type) { try { if (navigator.audioSession) navigator.audioSession.type = type; } catch (e) {} }
 function ensureCtx() {
@@ -178,8 +211,13 @@ function ensureCtx() {
     session("playback");   // iPhone: "play-and-record" plays out quietly, so only switch to it while the mic is open
     ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
     master = ctx.createGain(); master.connect(ctx.destination);
+    ctx.onstatechange = () => {
+      if ((ctx.state === "interrupted" || ctx.state === "suspended") && (S.recording || S.playing)) {
+        stop(); $("status").textContent = "Audio paused. Keep your take, then tap Play or Rec to continue.";
+      }
+    };
   }
-  if (ctx.state === "suspended") ctx.resume();
+  if (ctx.state === "suspended" || ctx.state === "interrupted") ctx.resume().catch(() => { $("status").textContent = "Tap Play or Rec to wake up audio."; });
   return ctx;
 }
 function addLayer(name, gain = 1, pan = 0) { S.layers.push({ name, gain, pan, mute: false, clips: [] }); drawLayers(); }
@@ -199,49 +237,94 @@ function drawBeats() {
   }
 }
 async function loadBeat(name, bpm, url) {
+  if (locked() || !resolveTake()) return;
+  const token = ++beatLoad;
   ensureCtx(); stop();
   const hadTakes = S.layers.some((l) => l.clips.length);
   $("status").textContent = "Loading " + name + "…";
   try {
-    const buf = await ctx.decodeAudioData(await (await fetch(url)).arrayBuffer());
+    const response = await fetch(url); if (!response.ok) throw new Error("Beat unavailable");
+    const buf = await ctx.decodeAudioData(await response.arrayBuffer());
+    if (token !== beatLoad || locked()) return;
     setBeat(buf, name, bpm);
     if (hadTakes) $("beatInfo").innerHTML += ` · <span class="warn">your takes stay where they are; a new tempo won't stretch them</span>`;
-  } catch (e) { $("status").textContent = "Couldn't load that beat. Try again."; }
+  } catch (e) { if (token === beatLoad) $("status").textContent = "Couldn't load that beat. Try again."; }
 }
 function setBeat(buf, name, bpm) {
   S.beat = buf; S.beatName = name; S.bpm = bpm; S.beatPeaks = peaks(buf, 800);
   $("beatInfo").textContent = name + (bpm ? " · " + bpm + " BPM" : "") + " · " + fmt(buf.duration);
   $("playBtn").disabled = false; $("recBtn").disabled = false; $("status").textContent = "Ready";
-  drawBeats(); draw();
+  drawBeats(); controls(); draw();
 }
 $("beatFile").onchange = async (e) => {
-  const f = e.target.files[0]; if (!f) return; ensureCtx(); stop();
-  try { setBeat(await ctx.decodeAudioData(await f.arrayBuffer()), f.name.replace(/\.[^.]+$/, ""), null); }
+  const f = e.target.files[0]; if (!f) return;
+  if (locked() || !resolveTake()) { e.target.value = ""; return; }
+  const token = ++beatLoad; ensureCtx(); stop();
+  S.importing = true; controls();
+  try { const buf = await ctx.decodeAudioData(await f.arrayBuffer()); if (token === beatLoad) setBeat(buf, f.name.replace(/\.[^.]+$/, ""), null); }
   catch (err) { $("status").textContent = "That file didn't open. MP3, WAV or M4A work best."; }
-  e.target.value = "";
+  finally { S.importing = false; e.target.value = ""; controls(); }
 };
 
 // ---------- playback ----------
-function layerOut(l) {
-  const g = ctx.createGain(); g.gain.value = l.mute ? 0 : l.gain;
-  const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-  if (p) { p.pan.value = l.pan; g.connect(p); p.connect(master); } else g.connect(master);
+function layerOut(l, audio = ctx, destination = master, live = true) {
+  const g = audio.createGain(); g.gain.value = l.mute ? 0 : l.gain;
+  const nodes = [g]; let tail = g;
+  if (S.cleanVoice) {
+    const eq = audio.createBiquadFilter(); eq.type = "highpass"; eq.frequency.value = 80; eq.Q.value = 0.7;
+    const comp = audio.createDynamicsCompressor(); comp.threshold.value = -20; comp.knee.value = 18;
+    comp.ratio.value = 3; comp.attack.value = 0.008; comp.release.value = 0.16;
+    tail.connect(eq); eq.connect(comp); tail = comp; nodes.push(eq, comp);
+  }
+  const p = audio.createStereoPanner ? audio.createStereoPanner() : null;
+  if (p) { p.pan.value = l.pan; tail.connect(p); tail = p; nodes.push(p); }
+  tail.connect(destination);
+  if (live) S.outputs.push({ l, g, p, nodes });
   return g;
+}
+function updateMix() {
+  for (const o of S.outputs) {
+    o.g.gain.setTargetAtTime(o.l ? (o.l.mute ? 0 : o.l.gain) : S.beatGain, ctx.currentTime, 0.015);
+    if (o.p) o.p.pan.setTargetAtTime(o.l.pan, ctx.currentTime, 0.015);
+  }
+}
+function outside(clips, a, b) {
+  // Schedule the original audio on either side of a punch without copying its samples.
+  return clips.flatMap((c) => {
+    const begin = c.offset || 0, end = c.start + (c.length ?? c.buf.duration);
+    if (end <= a || c.start >= b) return [c];
+    const parts = [];
+    if (c.start < a) parts.push({ ...c, offset: begin, length: a - c.start });
+    if (end > b) parts.push({ ...c, start: b, offset: begin + b - c.start, length: end - b });
+    return parts;
+  });
 }
 function start(from, { skipLayer = -1, extra = null } = {}) {
   stopSources(); ensureCtx();
   const t0 = ctx.currentTime + 0.06; S.t0 = t0; S.startPos = from; S.playing = true;
-  if (S.beat && from < S.beat.duration) { const s = ctx.createBufferSource(); s.buffer = S.beat; s.connect(master); s.start(t0, from); S.sources.push(s); }
+  if (S.beat && from < S.beat.duration) {
+    const s = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = S.beatGain; g.connect(master);
+    S.outputs.push({ g, nodes: [g] }); s.buffer = S.beat; s.connect(g); s.start(t0, from); S.sources.push(s);
+  }
   const sched = (clip, out) => {
-    const end = clip.start + clip.buf.duration; if (end <= from) return;
+    const end = clip.start + (clip.length ?? clip.buf.duration); if (end <= from) return;
     const s = ctx.createBufferSource(); s.buffer = clip.buf; s.connect(out);
-    s.start(t0 + Math.max(0, clip.start - from), Math.max(0, from - clip.start)); S.sources.push(s);
+    s.start(t0 + Math.max(0, clip.start - from), (clip.offset || 0) + Math.max(0, from - clip.start), end - Math.max(from, clip.start)); S.sources.push(s);
   };
-  S.layers.forEach((l, i) => { if (i === skipLayer) return; const out = layerOut(l); l.clips.forEach((c) => sched(c, out)); });
+  S.layers.forEach((l, i) => {
+    let clips = l.clips;
+    if (i === skipLayer) clips = outside(clips, S.capture.at, Infinity);
+    if (extra && i === extra.layer) clips = outside(clips, extra.clip.start, extra.clip.start + extra.clip.buf.duration);
+    const out = layerOut(l); clips.forEach((c) => sched(c, out));
+  });
   if (extra) sched(extra.clip, layerOut(S.layers[extra.layer]));
   $("playBtn").textContent = "■ Stop"; tick();
 }
-function stopSources() { for (const s of S.sources) { try { s.stop(); } catch (e) {} } S.sources = []; }
+function stopSources() {
+  cancelAnimationFrame(frame);
+  for (const s of S.sources) { try { s.stop(); } catch (e) {} s.disconnect(); } S.sources = [];
+  for (const o of S.outputs) for (const n of o.nodes) n.disconnect(); S.outputs = [];
+}
 function now() { return S.playing ? S.startPos + Math.max(0, ctx.currentTime - S.t0) : S.pos; }
 function stop() {
   if (S.recording) return finishRecording();
@@ -250,57 +333,101 @@ function stop() {
 }
 function tick() {
   if (!S.playing) return;
-  if (now() >= dur() + 0.3 && !S.recording) { S.pos = 0; stop(); return; }
-  $("time").textContent = fmt(now()); draw(); requestAnimationFrame(tick);
+  if (now() >= dur() + 0.3 && !S.recording) { stop(); S.pos = 0; $("time").textContent = fmt(0); draw(); return; }
+  $("time").textContent = fmt(now()); draw(); frame = requestAnimationFrame(tick);
 }
-$("playBtn").onclick = () => { ensureCtx(); S.playing ? stop() : start(S.pos); };
-const seek = (p) => { const was = S.playing && !S.recording; if (S.recording) return; stop(); S.pos = Math.max(0, Math.min(p, dur())); $("time").textContent = fmt(S.pos); if (was) start(S.pos); draw(); };
+$("playBtn").onclick = () => { ensureCtx(); S.playing ? stop() : start(S.pos, { extra: S.pending }); };
+const seek = (p) => { if (locked()) return; const was = S.playing; stop(); S.pos = Math.max(0, Math.min(p, dur())); $("time").textContent = fmt(S.pos); if (was) start(S.pos, { extra: S.pending }); draw(); };
 $("back10").onclick = () => seek(now() - 10);
 $("back15").onclick = () => seek(now() - 15);
 $("toStart").onclick = () => seek(0);
 
 // ---------- recording ----------
+async function prepareCapture() {
+  if (!ctx.audioWorklet || !window.AudioWorkletNode) return false;
+  if (!workletReady) workletReady = (async () => {
+    const source = `class StudioCapture extends AudioWorkletProcessor {
+      process(inputs) {
+        const input = inputs[0];
+        if (input && input[0]) {
+          const data = new Float32Array(input[0]);
+          this.port.postMessage({ data, time: currentFrame / sampleRate }, [data.buffer]);
+        }
+        return true;
+      }
+    }
+    registerProcessor('studio-capture', StudioCapture);`;
+    const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+    try { await ctx.audioWorklet.addModule(url); return true; }
+    catch (e) { return false; }
+    finally { URL.revokeObjectURL(url); }
+  })();
+  return workletReady;
+}
+function captureChunk(data, time) {
+  const c = S.capture; if (!c) return;
+  // Audio clock timestamps avoid main-thread/UI delays moving a take on the timeline.
+  if (time + data.length / ctx.sampleRate <= S.t0) return;
+  if (c.firstPos === null) c.firstPos = S.startPos + time - S.t0;
+  c.chunks.push(data);
+}
 async function getMic() {
   if (mic) return true;
   session("play-and-record");
   try {
     mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
   } catch (e) { session("playback"); $("status").textContent = "The mic is blocked. Allow it in your browser settings to record."; return false; }
-  micNode = ctx.createMediaStreamSource(mic);
-  proc = ctx.createScriptProcessor(2048, 1, 1);
-  const sink = ctx.createGain(); sink.gain.value = 0;
-  micNode.connect(proc); proc.connect(sink); sink.connect(ctx.destination);
-  proc.onaudioprocess = (e) => {
-    const c = S.capture; if (!c) return;
-    if (c.firstPos === null) c.firstPos = now() - e.inputBuffer.duration;
-    c.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
-  };
+  try {
+    micNode = ctx.createMediaStreamSource(mic);
+    if (await prepareCapture()) {
+      proc = new AudioWorkletNode(ctx, "studio-capture", { channelCount: 1, channelCountMode: "explicit" });
+      proc.port.onmessage = ({ data }) => captureChunk(data.data, data.time);
+    } else {
+      proc = ctx.createScriptProcessor(2048, 1, 1);
+      proc.onaudioprocess = (e) => captureChunk(new Float32Array(e.inputBuffer.getChannelData(0)), ctx.currentTime - e.inputBuffer.duration);
+    }
+    micSink = ctx.createGain(); micSink.gain.value = 0;
+    micNode.connect(proc); proc.connect(micSink); micSink.connect(ctx.destination);
+    for (const track of mic.getTracks()) track.onended = () => {
+      if (S.recording) { finishRecording(); $("status").textContent = "Mic disconnected. Review what was recorded."; }
+    };
+  } catch (e) { releaseMic(); $("status").textContent = "Couldn't start the mic. Try again."; return false; }
   return true;
 }
 async function record(at) {
-  ensureCtx(); if (!S.beat && !S.layers.some((l) => l.clips.length)) return;
-  if (!(await getMic())) return;
-  if (S.pending) discardPending();
-  stop(); S.pos = at;
-  const from = $("preroll").checked ? Math.max(0, at - 2) : at;
-  S.recording = true; S.capture = { at, chunks: [], firstPos: null, layer: S.target };
-  $("recBtn").textContent = "■ Stop"; $("recBtn").className = "rec"; $("status").textContent = "Recording on " + S.layers[S.target].name;
-  start(from, { skipLayer: S.target });
+  if (locked() || !hasAudio() || !resolveTake()) return;
+  ensureCtx(); stop(); S.arming = true; const token = ++armRequest; ++beatLoad; controls();
+  $("status").textContent = "Opening the mic...";
+  try {
+    if (!(await getMic())) return;
+    if (document.hidden || token !== armRequest) { releaseMic(); $("status").textContent = "Return to the page and tap Rec."; return; }
+    if (ctx.state !== "running") await ctx.resume();
+    S.pos = at;
+    const from = $("preroll").checked ? Math.max(0, at - 2) : at;
+    S.recording = true; S.capture = { at, chunks: [], firstPos: null, layer: S.target,
+      latency: (ctx.outputLatency || 0) + (ctx.baseLatency || 0) + (+$("nudge").value) / 1000 };
+    $("recBtn").textContent = "■ Stop"; $("recBtn").className = "rec"; $("status").textContent = "Recording on " + S.layers[S.target].name;
+    start(from, { skipLayer: S.target });
+  } catch (e) { S.capture = null; S.recording = false; releaseMic(); stop(); $("status").textContent = "Couldn't start recording. Tap Rec to try again."; }
+  finally { S.arming = false; controls(); }
 }
 function releaseMic() {   // close the mic after each take so the phone goes back to full playback volume
   if (!mic) return;
-  try { micNode.disconnect(); proc.disconnect(); proc.onaudioprocess = null; mic.getTracks().forEach((t) => t.stop()); } catch (e) {}
-  mic = micNode = proc = null; session("playback");
+  if (proc && proc.port) { proc.port.onmessage = null; proc.port.close(); }
+  if (proc) { proc.onaudioprocess = null; proc.disconnect(); }
+  if (micNode) micNode.disconnect(); if (micSink) micSink.disconnect();
+  mic.getTracks().forEach((t) => { t.onended = null; t.stop(); });
+  mic = micNode = proc = micSink = null; session("playback");
 }
 function finishRecording() {
   const c = S.capture; S.capture = null; S.recording = false; releaseMic();
   S.pos = Math.min(now(), dur()); S.playing = false; stopSources();
   $("recBtn").textContent = "● Rec"; $("recBtn").className = ""; $("playBtn").textContent = "▶ Play";
+  controls();
   if (!c || !c.chunks.length || c.firstPos === null) { $("status").textContent = "Nothing was recorded"; return draw(); }
   const total = c.chunks.reduce((a, b) => a + b.length, 0), data = new Float32Array(total);
   let o = 0; for (const ch of c.chunks) { data.set(ch, o); o += ch.length; }
-  const lat = (ctx.outputLatency || 0) + (ctx.baseLatency || 0) + (+$("nudge").value) / 1000;
-  const firstPos = c.firstPos - lat;                                   // song time the first captured sample belongs to
+  const firstPos = c.firstPos - c.latency;                            // song time the first captured sample belongs to
   const skip = Math.max(0, Math.round((c.at - firstPos) * ctx.sampleRate));
   if (skip >= data.length - ctx.sampleRate * 0.1) { $("status").textContent = "Too short to keep"; return draw(); }
   const buf = ctx.createBuffer(1, data.length - skip, ctx.sampleRate); buf.copyToChannel(data.subarray(skip), 0);
@@ -308,21 +435,21 @@ function finishRecording() {
   $("trim").value = 100; $("trimVal").textContent = "all";
   $("reviewInfo").textContent = `${fmt(buf.duration)} take on ${S.layers[c.layer].name}, starting at ${fmt(c.at)}.`;
   $("review").classList.remove("hide"); $("status").textContent = "Keep it, listen back, or redo";
-  S.pos = c.at; $("time").textContent = fmt(S.pos); draw();
+  S.pos = c.at; $("time").textContent = fmt(S.pos); controls(); draw();
 }
-$("recBtn").onclick = () => S.recording ? finishRecording() : record(S.pos);
+$("recBtn").onclick = () => S.recording ? finishRecording() : record(now());
 
 // review: keep / listen back / redo / delete / keep the first part only
-function discardPending() { S.pending = null; $("review").classList.add("hide"); draw(); }
+function discardPending() { S.pending = null; $("review").classList.add("hide"); controls(); draw(); }
 $("trim").oninput = () => {
   const p = S.pending; if (!p) return; const k = +$("trim").value / 100;
   const n = Math.max(1, Math.round(p.full.length * k)); const b = ctx.createBuffer(1, n, p.full.sampleRate);
   b.copyToChannel(p.full.getChannelData(0).subarray(0, n), 0); p.clip.buf = b;
   $("trimVal").textContent = k >= 1 ? "all" : fmt(b.duration); draw();
 };
-$("rvListen").onclick = () => { const p = S.pending; if (!p) return; start(Math.max(0, p.clip.start - 2), { skipLayer: p.layer, extra: p }); };
+$("rvListen").onclick = () => { const p = S.pending; if (!p) return; start(Math.max(0, p.clip.start - 2), { extra: p }); };
 $("rvDelete").onclick = () => { stop(); discardPending(); $("status").textContent = "Deleted. Ready"; };
-$("rvRedo").onclick = () => { const p = S.pending; if (!p) return; stop(); discardPending(); record(p.clip.start); };
+$("rvRedo").onclick = () => { const p = S.pending; if (!p) return; stop(); S.target = p.layer; discardPending(); drawLayers(); record(p.clip.start); };
 $("rvKeep").onclick = () => {
   const p = S.pending; if (!p) return; stop();
   const L = S.layers[p.layer]; S.history.push({ layer: p.layer, clips: L.clips.slice() });
@@ -341,15 +468,17 @@ function slice(buf, a, b) {
   for (let ch = 0; ch < buf.numberOfChannels; ch++) n.copyToChannel(buf.getChannelData(ch).subarray(i, j), ch);
   return n;
 }
-$("undoBtn").onclick = () => { const h = S.history.pop(); if (!h) return; S.layers[h.layer].clips = h.clips; draw(); };
+$("undoBtn").onclick = () => { if (locked() || !resolveTake()) return; const h = S.history.pop(); if (!h) return; stop(); S.layers[h.layer].clips = h.clips; controls(); draw(); };
 $("voiceFile").onchange = async (e) => {
-  const f = e.target.files[0]; if (!f) return; ensureCtx();
+  const f = e.target.files[0]; if (!f) return;
+  if (locked() || !resolveTake()) { e.target.value = ""; return; }
+  ensureCtx(); const at = now(), target = S.target; stop(); ++beatLoad; S.importing = true; controls();
   try {
-    const buf = await ctx.decodeAudioData(await f.arrayBuffer()); const L = S.layers[S.target];
-    S.history.push({ layer: S.target, clips: L.clips.slice() }); L.clips.push({ start: S.pos, buf });
+    const buf = await ctx.decodeAudioData(await f.arrayBuffer()); const L = S.layers[target];
+    S.history.push({ layer: target, clips: L.clips.slice() }); L.clips.push({ start: at, buf });
     $("playBtn").disabled = false; $("recBtn").disabled = false; draw();
   } catch (err) { $("status").textContent = "That file didn't open."; }
-  e.target.value = "";
+  finally { S.importing = false; e.target.value = ""; controls(); }
 };
 
 // ---------- layers ----------
@@ -357,17 +486,19 @@ function drawLayers() {
   $("layers").innerHTML = "";
   S.layers.forEach((l, i) => {
     const el = document.createElement("div"); el.className = "layer";
-    el.innerHTML = `<button class="tgt ${i === S.target ? "on" : ""}" aria-label="Record on ${l.name}">${i === S.target ? "REC" : "●"}</button>
-      <div><div class="name">${l.name}</div><input type="range" min="0" max="150" value="${Math.round(l.gain * 100)}" aria-label="${l.name} volume"></div>
+    el.innerHTML = `<button class="tgt ${i === S.target ? "on" : ""}" aria-pressed="${i === S.target}" aria-label="Record on ${l.name}">${i === S.target ? "REC" : "●"}</button>
+      <div><div class="name">${l.name}</div><input type="range" min="0" max="150" value="${Math.round(l.gain * 100)}" aria-label="${l.name} volume">
+      <label class="muted">Left / right<input type="range" min="-100" max="100" value="${Math.round(l.pan * 100)}" aria-label="${l.name} left or right"></label></div>
       <button class="${l.mute ? "on" : ""}">${l.mute ? "Muted" : "Mute"}</button><button aria-label="Clear ${l.name}">Clear</button>`;
     const [tgt, vol, mute, clr] = [el.querySelector(".tgt"), el.querySelector("input"), ...el.querySelectorAll("button:not(.tgt)")];
     tgt.onclick = () => { S.target = i; drawLayers(); };
-    vol.oninput = () => { l.gain = vol.value / 100; };
-    mute.onclick = () => { l.mute = !l.mute; drawLayers(); };
-    clr.onclick = () => { if (!l.clips.length || !confirm("Clear everything on " + l.name + "?")) return; S.history.push({ layer: i, clips: l.clips.slice() }); l.clips = []; draw(); };
+    vol.oninput = () => { l.gain = vol.value / 100; updateMix(); };
+    const pan = el.querySelectorAll("input")[1]; pan.oninput = () => { l.pan = pan.value / 100; updateMix(); };
+    mute.onclick = () => { l.mute = !l.mute; updateMix(); drawLayers(); };
+    clr.onclick = () => { if (locked() || !resolveTake() || !l.clips.length || !confirm("Clear everything on " + l.name + "?")) return; stop(); S.history.push({ layer: i, clips: l.clips.slice() }); l.clips = []; controls(); draw(); };
     $("layers").appendChild(el);
   });
-  draw();
+  controls(); draw();
 }
 const NAMES = ["Harmony", "Ad-libs 2", "Hook double", "Layer 6"];
 $("addLayer").onclick = () => { if (S.layers.length >= 6) return; addLayer(NAMES[S.layers.length - 2] || "Layer", 0.8, (S.layers.length % 2 ? -0.3 : 0.3)); };
@@ -426,31 +557,48 @@ tl.addEventListener("pointermove", (ev) => { if (ev.buttons && !S.recording && !
 window.addEventListener("resize", draw);
 
 // ---------- settings ----------
+$("beatGain").oninput = () => { S.beatGain = +$("beatGain").value / 100; updateMix(); };
+$("cleanVoice").onchange = () => {
+  const at = now(), playing = S.playing; stop(); S.cleanVoice = $("cleanVoice").checked;
+  if (playing) start(at, { extra: S.pending });
+};
 $("nudge").oninput = () => { $("nudgeVal").textContent = $("nudge").value + " ms"; try { localStorage.setItem("hb-studio-nudge", $("nudge").value); } catch (e) {} };
 try { const n = localStorage.getItem("hb-studio-nudge"); if (n !== null) { $("nudge").value = n; $("nudgeVal").textContent = n + " ms"; } } catch (e) {}
 
-// Headphone sync: 10 clicks; you tap on each one you hear. How late your taps land = how late your headphones play
-// (Bluetooth is often 150-300 ms), so takes get moved back by that much.
+// Tap timing is an estimate: it also includes the listener's reaction time.
+function cancelSync() {
+  clearTimeout(syncTimer); S.syncing = false; stopSources();
+  $("tapPad").classList.add("hide"); $("tapPad").onpointerdown = null; $("tapPad").textContent = "Tap on each click"; controls();
+}
 $("syncBtn").onclick = () => {
-  ensureCtx(); stop(); const gap = 0.6, n = 10, t0 = ctx.currentTime + 1.0, clicks = [], taps = [];
+  if (locked()) return;
+  ensureCtx(); stop(); S.syncing = true; ++beatLoad; controls();
+  const gap = 0.9, n = 10, t0 = ctx.currentTime + 1.0, clicks = [], taps = new Map();
   // clicks and taps are compared on the page clock (ms), not the audio clock, which only moves in steps
   const wall = performance.now(), ctxNow = ctx.currentTime;
   for (let i = 0; i < n; i++) {
     const t = t0 + i * gap, o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = i % 4 ? 880 : 1320;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.6, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.08); clicks.push((wall + (t - ctxNow) * 1000) / 1000);
+    o.connect(g); g.connect(master); S.sources.push(o); S.outputs.push({ g, nodes: [g] });
+    o.start(t); o.stop(t + 0.08); clicks.push((wall + (t - ctxNow) * 1000) / 1000);
   }
   $("tapPad").classList.remove("hide"); $("syncBtn").disabled = true; $("syncMsg").textContent = "Listen… then tap with each click.";
-  $("tapPad").onpointerdown = (e) => { e.preventDefault(); taps.push(performance.now() / 1000); $("tapPad").textContent = "Tap on each click (" + taps.length + ")"; };
-  setTimeout(() => {
-    $("tapPad").classList.add("hide"); $("tapPad").onpointerdown = null; $("tapPad").textContent = "Tap on each click"; $("syncBtn").disabled = false;
-    const offs = taps.map((t) => { const c = clicks.reduce((a, b) => (Math.abs(b - t) < Math.abs(a - t) ? b : a)); return t - c; })
-      .filter((d) => d > -0.15 && d < 0.6).sort((a, b) => a - b);
+  const tap = (e) => {
+    e.preventDefault(); const t = performance.now() / 1000;
+    const i = clicks.findIndex((c) => t - c >= -0.15 && t - c <= 0.7);
+    if (i >= 0 && !taps.has(i)) taps.set(i, t - clicks[i]);
+    $("tapPad").textContent = "Tap on each click (" + taps.size + ")";
+  };
+  $("tapPad").onpointerdown = tap;
+  $("tapPad").onclick = (e) => { if (e.detail === 0 && S.syncing) tap(e); };
+  syncTimer = setTimeout(() => {
+    cancelSync();
+    const offs = [...taps.values()].sort((a, b) => a - b);
     if (offs.length < 5) { $("syncMsg").textContent = "Not enough taps landed. Try again: tap right when you hear each click."; return; }
     const ms = Math.max(0, Math.round(offs[Math.floor(offs.length / 2)] * 1000 / 5) * 5);   // people tap a hair early on a steady click
-    const known = Math.round((ctx.outputLatency || 0) * 1000);           // already corrected for when the browser reports it
+    const known = Math.round(((ctx.outputLatency || 0) + (ctx.baseLatency || 0)) * 1000);
     $("nudge").value = Math.max(-300, Math.min(600, ms - known)); $("nudge").oninput();
-    $("syncMsg").textContent = `Synced: your headphones are about ${ms} ms behind. Takes will be moved back by that much. Saved for next time.`;
+    $("syncMsg").textContent = `Timing estimate: ${ms} ms, including your tap timing. Used for new takes only. Try a short take to check it.`;
   }, (1.0 + n * gap + 0.8) * 1000);
 };
 
@@ -458,10 +606,9 @@ $("syncBtn").onclick = () => {
 async function render(withBeat) {
   ensureCtx(); stop();
   const D = dur() + 0.5, sr = 44100, oc = new OfflineAudioContext(2, Math.ceil(D * sr), sr), m = oc.createGain(); m.connect(oc.destination);
-  if (withBeat && S.beat) { const s = oc.createBufferSource(); s.buffer = S.beat; s.connect(m); s.start(0); }
+  if (withBeat && S.beat) { const s = oc.createBufferSource(), g = oc.createGain(); g.gain.value = S.beatGain; g.connect(m); s.buffer = S.beat; s.connect(g); s.start(0); }
   for (const l of S.layers) {
-    if (l.mute) continue; const gn = oc.createGain(); gn.gain.value = l.gain;
-    if (oc.createStereoPanner) { const p = oc.createStereoPanner(); p.pan.value = l.pan; gn.connect(p); p.connect(m); } else gn.connect(m);
+    if (l.mute) continue; const gn = layerOut(l, oc, m, false);
     for (const c of l.clips) { const s = oc.createBufferSource(); s.buffer = c.buf; s.connect(gn); s.start(c.start); }
   }
   return oc.startRendering();
@@ -478,12 +625,25 @@ function wav(buf) {
   return new Blob([out], { type: "audio/wav" });
 }
 async function save(withBeat) {
-  if (!S.beat && !S.layers.some((l) => l.clips.length)) return;
-  $("status").textContent = "Mixing…";
-  const blob = wav(await render(withBeat)), a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = (S.beatName || "song").replace(/[^\w-]+/g, "-") + (withBeat ? "-my-song" : "-vocals") + ".wav";
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-  $("status").textContent = "Saved";
+  if (locked() || !hasAudio() || !resolveTake()) return;
+  if (!withBeat && !S.layers.some((l) => !l.mute && l.clips.length)) { $("status").textContent = "Keep a voice take and unmute it first."; return; }
+  S.saving = true; ++beatLoad; controls(); $("beatGain").disabled = true;
+  document.querySelectorAll("#layers input").forEach((i) => i.disabled = true);
+  $("status").textContent = "Mixing...";
+  try {
+    const blob = wav(await render(withBeat)), a = $("downloadLink");
+    const nextURL = URL.createObjectURL(blob);
+    if (downloadURL) URL.revokeObjectURL(downloadURL);
+    downloadURL = nextURL; a.href = downloadURL;
+    a.download = (S.beatName || "song").replace(/[^\w-]+/g, "-") + (withBeat ? "-my-song" : "-vocals") + ".wav";
+    a.textContent = "Download " + (withBeat ? "my song" : "vocals") + " (WAV)";
+    a.classList.remove("hide"); a.click();
+    $("status").textContent = "WAV ready. If it didn't save, tap the download link in step 4.";
+  } catch (e) { $("status").textContent = "Couldn't make the WAV. Try again, or save a shorter song."; }
+  finally {
+    S.saving = false; $("beatGain").disabled = false;
+    document.querySelectorAll("#layers input").forEach((i) => i.disabled = false); controls();
+  }
 }
 $("saveSong").onclick = () => save(true);
 $("saveVox").onclick = () => save(false);
@@ -500,12 +660,20 @@ $("reqSend").onclick = async () => {
   } catch (e) { $("reqMsg").textContent = "Didn't send. Try again in a minute."; }
   $("reqSend").disabled = false;
 };
-window.addEventListener("beforeunload", (e) => { if (S.layers.some((l) => l.clips.length)) { e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("beforeunload", (e) => { if (S.pending || S.recording || S.layers.some((l) => l.clips.length)) { e.preventDefault(); e.returnValue = ""; } });
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) return;
+  if (S.arming) ++armRequest;
+  if (S.syncing) { cancelSync(); $("syncMsg").textContent = "Sync paused. Try again with this page open."; }
+  if (S.recording || S.playing) { stop(); $("status").textContent = "Paused when you left the page. Review your take before continuing."; }
+});
 
 $("labOpen").onclick = async () => {
   $("labOpen").classList.add("hide"); $("lab").classList.remove("hide");
-  const { mount } = await import("/studio/beatlab.js");
-  mount($("lab"), { getCtx: ensureCtx, wav, onUse: (buf, name, bpm) => { stop(); setBeat(buf, name, bpm); $("status").textContent = "Your beat is loaded. Press ● Rec"; document.querySelector(".transport").scrollIntoView({ behavior: "smooth" }); } });
+  try {
+    const { mount } = await import("/studio/beatlab.js");
+    mount($("lab"), { getCtx: ensureCtx, wav, onUse: (buf, name, bpm) => { if (locked() || !resolveTake()) return; ++beatLoad; stop(); setBeat(buf, name, bpm); $("status").textContent = "Your beat is loaded. Press ● Rec"; document.querySelector(".transport").scrollIntoView({ behavior: "smooth" }); } });
+  } catch (e) { $("labOpen").classList.remove("hide"); $("status").textContent = "Couldn't open the Beat Lab. Tap to try again."; }
 };
 addLayer("Main vocal", 1, 0); addLayer("Ad-libs", 0.75, 0.3);
 drawBeats(); draw();
