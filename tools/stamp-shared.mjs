@@ -10,8 +10,6 @@
 //   phone      - /bubble.js (the messages phone)               opt out: <!-- hb:no-phone -->  (pages with their own phone,
 //                e.g. Ashgrove's shell phone, are skipped automatically)
 //   homescreen - manifest + iPhone home-screen app metas + opaque apple-touch-icon (brand/apple-touch-icon.png)  opt out: <!-- hb:no-homescreen -->
-//   appnav     - /hb-appnav.js: Back + Refresh pill, ONLY when running as a home-screen app. <!-- hb:no-appnav --> = full-screen
-//                page: the script shows one small corner button instead of the pill (the script still loads).
 //   icon       - the H-heartbeat tab icon (/brand)            opt out: <!-- hb:no-icon -->  (pages with their own icon keep it)
 import { readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -31,7 +29,6 @@ const PIECES = [
     tag: '<link rel="manifest" href="/manifest.webmanifest">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black">\n<meta name="apple-mobile-web-app-title" content="Heartbeat">\n' },
   { id: "apple-icon", has: /rel=["']apple-touch-icon/i, optOut: "hb:no-homescreen", where: "head",
     tag: '<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">\n' },
-  { id: "appnav", has: /\/hb-appnav\.js/, optOut: null, where: "body", tag: '<script defer src="/hb-appnav.js"></script>\n' },
   { id: "phone", has: /\/bubble\.js/, optOut: "hb:no-phone", where: "body", tag: '<script defer src="/bubble.js"></script>\n' },
 ];
 
