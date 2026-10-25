@@ -6,6 +6,10 @@
 // The video id is appended as ?client_reference_id=<tv_items.id> so the webhook knows which video was tipped.
 export const TIP_LINK = "";   // e.g. "https://buy.stripe.com/xxxxxxxx"  (empty = nothing can open, even if the switch is on)
 
+// X Money tips (Jaron 10/25): X Money is one per person, so tips go to Jaron's own X Money (@JaronBragg), which holds a separate
+// "Heartbeatobservatory" extra account for company money. Shown whenever the card link above is empty. No totals are tracked this way.
+export const XMONEY_HANDLE = "JaronBragg";
+
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0);
 let enabled = false, totals = {};
@@ -21,7 +25,9 @@ export function tipBar(item) {
   const t = totals[item.id], got = t ? `<span class="tipcount">${money(t.total_cents)} from ${t.tip_count} ${t.tip_count === 1 ? "tip" : "tips"}</span>` : "";
   const btn = enabled
     ? `<a class="tipbtn" href="${esc(TIP_LINK)}?client_reference_id=${encodeURIComponent(item.id)}" target="_blank" rel="noopener">Tip this video</a>`
-    : `<button class="tipbtn off" type="button" disabled>Tips open soon</button>`;
+    : XMONEY_HANDLE
+      ? `<a class="tipbtn" href="https://x.com/${XMONEY_HANDLE}" target="_blank" rel="noopener">Tip with X Money</a><span class="tipcount">send to @${XMONEY_HANDLE}</span>`
+      : `<button class="tipbtn off" type="button" disabled>Tips open soon</button>`;
   return `${btn}${got}`;
 }
 
@@ -30,7 +36,7 @@ export function mostTipped(channels, num) {
   const rows = [];
   channels.forEach((c) => c.items.forEach((it, i) => { const t = it.id && totals[it.id]; if (t && t.total_cents > 0) rows.push({ c, it, i, t }); }));
   rows.sort((a, b) => b.t.total_cents - a.t.total_cents);
-  if (!rows.length) return `<p class="muted">No tips yet. ${enabled ? "Be the first - tap Tip on a video you love." : "Tips open soon. The most-tipped videos here are the ones we share out to YouTube, X and TikTok."}</p>`;
+  if (!rows.length) return `<p class="muted">No tips yet. ${enabled ? "Be the first - tap Tip on a video you love." : XMONEY_HANDLE ? `Tips go through X Money: send any amount to @${XMONEY_HANDLE} on X.` : "Tips open soon. The most-tipped videos here are the ones we share out to YouTube, X and TikTok."}</p>`;
   return rows.slice(0, 10).map((r, k) => `<button class="gi" data-n="${r.c.n}" data-i="${r.i}"><small>${k + 1}</small><span>${esc(r.it.title)}</span><em>${money(r.t.total_cents)}</em></button>`).join("");
 }
 
