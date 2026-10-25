@@ -172,9 +172,10 @@ const S = { beat: null, beatName: "", bpm: null, beatPeaks: null, layers: [], ta
 const fmt = (s) => { s = Math.max(0, s); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
 const dur = () => Math.max(S.beat ? S.beat.duration : 0, ...S.layers.flatMap((l) => l.clips.map((c) => c.start + c.buf.duration)), 1);
 
+function session(type) { try { if (navigator.audioSession) navigator.audioSession.type = type; } catch (e) {} }
 function ensureCtx() {
   if (!ctx) {
-    try { if (navigator.audioSession) navigator.audioSession.type = "play-and-record"; } catch (e) {}
+    session("playback");   // iPhone: "play-and-record" plays out quietly, so only switch to it while the mic is open
     ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
     master = ctx.createGain(); master.connect(ctx.destination);
   }
@@ -261,9 +262,10 @@ $("toStart").onclick = () => seek(0);
 // ---------- recording ----------
 async function getMic() {
   if (mic) return true;
+  session("play-and-record");
   try {
     mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
-  } catch (e) { $("status").textContent = "The mic is blocked. Allow it in your browser settings to record."; return false; }
+  } catch (e) { session("playback"); $("status").textContent = "The mic is blocked. Allow it in your browser settings to record."; return false; }
   micNode = ctx.createMediaStreamSource(mic);
   proc = ctx.createScriptProcessor(2048, 1, 1);
   const sink = ctx.createGain(); sink.gain.value = 0;
@@ -285,8 +287,13 @@ async function record(at) {
   $("recBtn").textContent = "■ Stop"; $("recBtn").className = "rec"; $("status").textContent = "Recording on " + S.layers[S.target].name;
   start(from, { skipLayer: S.target });
 }
+function releaseMic() {   // close the mic after each take so the phone goes back to full playback volume
+  if (!mic) return;
+  try { micNode.disconnect(); proc.disconnect(); proc.onaudioprocess = null; mic.getTracks().forEach((t) => t.stop()); } catch (e) {}
+  mic = micNode = proc = null; session("playback");
+}
 function finishRecording() {
-  const c = S.capture; S.capture = null; S.recording = false;
+  const c = S.capture; S.capture = null; S.recording = false; releaseMic();
   S.pos = Math.min(now(), dur()); S.playing = false; stopSources();
   $("recBtn").textContent = "● Rec"; $("recBtn").className = ""; $("playBtn").textContent = "▶ Play";
   if (!c || !c.chunks.length || c.firstPos === null) { $("status").textContent = "Nothing was recorded"; return draw(); }

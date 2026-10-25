@@ -183,10 +183,10 @@ export async function render(o, song, only = null, onProgress) {
   };
   for (let i = 0; i < pieces.length; i += 3) await Promise.all(pieces.slice(i, i + 3).map(one));
   let peak = 1e-9; for (let i = 0; i < total; i++) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
-  const g = 1.15 / peak, k = Math.tanh(1.15);                     // gentle glue + loudness, never clips
+  const g = 2.1 / peak, k = Math.tanh(2.1);                       // glue + loudness (phone speakers), never clips
   const buf = new AudioBuffer({ length: total, numberOfChannels: 2, sampleRate: sr });
   const bl = buf.getChannelData(0), br = buf.getChannelData(1);
-  for (let i = 0; i < total; i++) { bl[i] = Math.tanh(L[i] * g) / k * 0.92; br[i] = Math.tanh(R[i] * g) / k * 0.92; }
+  for (let i = 0; i < total; i++) { bl[i] = Math.tanh(L[i] * g) / k * 0.95; br[i] = Math.tanh(R[i] * g) / k * 0.95; }
   return buf;
 }
 
