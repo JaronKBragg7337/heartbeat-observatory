@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Lyric pad · Heartbeat Observatory</title>
+<meta name="description" content="Write lyrics by bars, check syllables, find near rhymes, save on your phone, and export a text file. No account and no upload." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" />
+<style>
+  :root { --bg:#17120e; --panel:#221b15; --panel2:#2b221a; --line:#3d3226; --ink:#f3e9da; --soft:#c9b8a2; --faint:#8f7d68; --accent:#e08a5a; --teal:#7fb3ab; --rec:#e0564a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Atkinson Hyperlegible",system-ui,sans-serif; }
+  .wrap { max-width:760px; margin:0 auto; padding:18px 16px calc(50px + env(safe-area-inset-bottom)); }
+  a { color:var(--accent); }
+  a.back { color:var(--accent); text-decoration:none; font-weight:700; font-size:15px; }
+  h1,h2 { font-family:Fraunces,Georgia,serif; }
+  h1 { font-size:clamp(38px,10vw,56px); margin:14px 0 8px; line-height:1.02; }
+  h2 { font-size:23px; margin:0 0 10px; }
+  p { line-height:1.5; }
+  .lede { color:var(--soft); font-size:17px; margin:0 0 18px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; margin:14px 0; }
+  .muted { color:var(--faint); font-size:14px; line-height:1.5; }
+  label { display:block; color:var(--soft); font-size:14px; font-weight:700; margin:0 0 6px; }
+  input,textarea { width:100%; font:inherit; font-size:17px; color:var(--ink); background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:11px; }
+  input:focus,textarea:focus,button:focus-visible,a:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+  textarea { min-height:330px; resize:vertical; line-height:1.65; tab-size:4; }
+  button { font:inherit; font-weight:700; color:var(--ink); background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:11px 14px; min-height:44px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#1b130c; }
+  button:disabled { opacity:.45; cursor:default; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .title-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
+  .save-state { color:var(--teal); font-size:13px; min-height:20px; padding-bottom:5px; text-align:right; }
+  .save-state.warn { color:#f0b48a; }
+  .stats { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+  .stat { flex:1; min-width:90px; background:var(--panel2); border-radius:12px; padding:10px 12px; }
+  .stat b { display:block; font-size:22px; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .stat span { color:var(--faint); font-size:13px; }
+  .actions { margin-top:10px; }
+  .rhyme-entry { display:grid; grid-template-columns:1fr auto; gap:8px; }
+  .rhyme-entry button { white-space:nowrap; }
+  .rhymes { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .rhymes button { color:var(--ink); border-color:#58665c; background:#29352e; }
+  .rhymes .empty { color:var(--faint); border:0; background:transparent; padding:4px 0; min-height:0; cursor:default; }
+  #barList { list-style:none; padding:0; margin:8px 0 0; }
+  #barList li { display:grid; grid-template-columns:42px 55px 1fr; gap:6px; align-items:start; border-top:1px solid var(--line); padding:9px 0; }
+  #barList li:first-child { border-top:0; }
+  #barList .bar-number { color:var(--accent); font-weight:700; }
+  #barList .syllables { color:var(--teal); font-size:13px; padding-top:3px; }
+  #barList .bar-text { min-width:0; padding:0; min-height:30px; border:0; background:none; border-radius:4px; text-align:left; font-weight:400; line-height:1.4; overflow-wrap:anywhere; }
+  #barList .space { color:var(--faint); font-size:13px; padding:5px 0; border-top:1px solid var(--line); }
+  details { margin-top:12px; }
+  summary { color:var(--soft); cursor:pointer; min-height:32px; }
+  .footer { color:var(--faint); font-size:13px; line-height:1.5; margin-top:22px; }
+  @media (max-width:390px) {
+    .wrap { padding-left:13px; padding-right:13px; }
+    .card { padding:14px; }
+    .title-row { grid-template-columns:1fr; gap:2px; }
+    .save-state { text-align:left; }
+    .rhyme-entry { grid-template-columns:1fr; }
+    .rhyme-entry button { width:100%; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a class="back" href="/studio/">← Back to Studio</a>
+  <h1>Lyric pad</h1>
+  <p class="lede">One line is one bar. Write your song, check its shape, and save a copy. Everything stays on this phone.</p>
+
+  <section class="card" aria-labelledby="writeTitle">
+    <h2 id="writeTitle">Your song</h2>
+    <div class="title-row">
+      <div>
+        <label for="songTitle">Song title</label>
+        <input id="songTitle" maxlength="100" autocomplete="off" placeholder="Name this song" />
+      </div>
+      <div class="save-state" id="saveState" role="status" aria-live="polite">Ready to save here</div>
+    </div>
+    <div class="stats" aria-live="polite">
+      <div class="stat"><b id="barCount">0</b><span>bars</span></div>
+      <div class="stat"><b id="syllableCount">0</b><span>syllables, about</span></div>
+      <div class="stat"><b id="currentBar">0 / 0</b><span>syllables in this bar</span></div>
+    </div>
+    <label for="lyrics">Lyrics · one bar per line</label>
+    <textarea id="lyrics" rows="14" autocapitalize="sentences" autocomplete="off" spellcheck="true" placeholder="First bar goes here&#10;Second bar goes here&#10;&#10;Leave an empty line between sections"></textarea>
+    <div class="row actions">
+      <button class="primary" id="exportBtn" type="button">Export as text</button>
+      <button id="newBtn" type="button">Start a new song</button>
+    </div>
+    <p class="muted" id="storageNote">Your song saves on this phone as you type. It is not backed up. Export a text copy before clearing this browser or losing the phone.</p>
+  </section>
+
+  <section class="card" aria-labelledby="rhymeTitle">
+    <h2 id="rhymeTitle">Rhyme helper</h2>
+    <p class="muted">Uses a small word book on this page, not the internet. These are close rhymes, not rules.</p>
+    <label for="rhymeWord">Word to rhyme</label>
+    <div class="rhyme-entry">
+      <input id="rhymeWord" autocomplete="off" autocapitalize="none" placeholder="Try: night" />
+      <button id="rhymeBtn" type="button">Find rhymes</button>
+    </div>
+    <div class="rhymes" id="rhymes" aria-live="polite"><span class="muted">Suggestions will show here. Tap one to add it to your lyrics.</span></div>
+    <div class="row" style="margin-top:10px"><button id="lastWordBtn" type="button">Use the last word I wrote</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="barsTitle">
+    <h2 id="barsTitle">Bar check</h2>
+    <p class="muted">Empty lines make space, not bars. Tap a bar to jump back to it.</p>
+    <ol id="barList"><li class="space">Your bars will show here.</li></ol>
+    <details>
+      <summary>How syllable counting works</summary>
+      <p class="muted">The pad counts vowel sounds with a simple set of rules. It can miss slang, names, and words you stretch when you rap or sing. Use it as a guide, then trust your ears.</p>
+    </details>
+  </section>
+
+  <p class="footer">No account. No upload. No internet needed after this page loads. <a href="/studio/learn/">Know the steps before you release</a>.</p>
+</main>
+<script src="lyrics.js" defer></script>
+</body>
+</html>
