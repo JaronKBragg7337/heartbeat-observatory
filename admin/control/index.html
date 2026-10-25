@@ -83,9 +83,10 @@
   $("ro").hidden = isAdmin;
 
   async function load() {
-    const [{ data: s }, { data: h }] = await Promise.all([
+    const [{ data: s }, { data: h }, { data: lr }] = await Promise.all([
       supabase.from("system_settings").select("*").order("sort"),
       supabase.from("system_settings_history").select("*").order("changed_at", { ascending: false }).limit(30),
+      supabase.from("live_readings").select("*").order("sort"),   // balances the MSI writes hourly (tools/live-readings.py)
     ]);
     rows = s || [];
     const groups = {};
@@ -100,8 +101,12 @@
       return `<div class="knob"><div class="top"><h3>${esc(r.label)}</h3>${control}</div>
         <p>${esc(r.meaning)}</p><div class="meta">Obeyed by ${esc(r.who)} · lives in ${esc(r.lives_in)} · changed ${new Date(r.updated_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} by ${esc(r.updated_by)}</div>
         <div class="saved" id="s-${esc(r.key)}"></div></div>`;
-    }).join("") + `</section>`).join("");
-    TABS = Object.keys(groups).map((w) => [slug(w), w]).concat([["changes", "Changes"]]);
+    }).join("") + `</section>`).join("")
+      + `<section class="tabpanel" id="p-balances" hidden><h2 class="sec" style="margin-top:14px">Balances</h2>` + ((lr || []).map((r) =>
+        `<div class="knob"><div class="top"><h3>${esc(r.label)}</h3><span class="note-val" style="font-size:1.25rem">${esc(r.value)}</span></div>
+        <p>${esc(r.meaning)}</p><div class="meta">Read ${new Date(r.updated_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${esc(r.source)}</div></div>`).join("")
+        || `<p class="muted" style="font-size:.9rem">No readings yet.</p>`) + `</section>`;
+    TABS = [["balances", "Balances"]].concat(Object.keys(groups).map((w) => [slug(w), w]), [["changes", "Changes"]]);
     $("tabs").innerHTML = TABS.map(([id, label]) => `<a href="#${id}" role="tab" data-t="${id}">${esc(label)}</a>`).join("");
     showTab();
     $("hist").innerHTML = (h || []).map((c) => `<div><span><b>${esc((rows.find((r) => r.key === c.key) || {}).label || c.key)}</b>: ${esc(c.old_value)} → ${esc(c.new_value)}<br><small class="muted">${esc(c.changed_by)} · ${new Date(c.changed_at).toLocaleString()}</small></span>${isAdmin ? `<button data-undo="${c.id}">Undo</button>` : ""}</div>`).join("") || `<p class="muted" style="font-size:.9rem">No changes yet.</p>`;
