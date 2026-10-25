@@ -4,64 +4,47 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex" />
-<!-- hb:no-phone -->
-<title>Summit Roofing (sample, not a real business)</title>
-<meta name="description" content="A sample website made by Heartbeat Observatory for a fictional Fort Wayne roofing company. Not a real business." />
+<link rel="stylesheet" href="/observatory.css" />
+<title>Sample sites · Heartbeat Observatory</title>
+<meta name="description" content="Sample websites for made-up Fort Wayne businesses, showing the kind of simple, fast, phone-friendly sites we build. None are real businesses." />
 <style>
-  :root { --bg:#faf6ee; --ink:#222a2c; --soft:#5a6668; --brand:#8a3b2a; --brand2:#2d4a52; --card:#fff; --line:#e4dccb; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
-  .banner { background:#fff3c4; color:#4a3b00; text-align:center; padding:10px 16px; font-size:14px; font-weight:600; }
-  .banner a { color:#4a3b00; }
-  header, section, footer { max-width: 760px; margin: 0 auto; padding: 28px 16px; }
-  .logo { font-weight:800; font-size:20px; color:var(--brand2); }
-  h1 { font-family: Georgia,serif; font-size: clamp(34px,9vw,52px); line-height:1.05; margin:14px 0 10px; }
-  h2 { font-family: Georgia,serif; font-size:26px; margin:0 0 10px; }
-  p { margin: 0 0 12px; font-size:17px; }
-  .btn { display:inline-block; padding:14px 22px; border-radius:10px; background:var(--brand); color:#fff; text-decoration:none; font-weight:700; font-size:18px; }
-  .cards { display:grid; gap:12px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; }
-  .card h3 { margin:0 0 4px; font-size:18px; }
-  .card p { margin:0; font-size:16px; color:var(--soft); }
-  .band { background:var(--brand2); color:#fff; }
-  .band section { padding-top:24px; padding-bottom:24px; }
-  .quote { font-style:italic; }
-  footer { font-size:14px; color:var(--soft); }
-  @media (min-width:640px) { .cards { grid-template-columns: 1fr 1fr; } }
+  body { background: var(--paper, #f4f1ea); }
+  .sg { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
+  .sg a.back { color: var(--accent); text-decoration: none; font-weight: 650; font-size: 15px; }
+  .sg h1 { font-family: var(--serif); font-size: clamp(36px, 8vw, 54px); line-height: 1.05; margin: 18px 0 12px; color: var(--ink); }
+  .sg p.lead { color: var(--ink-soft); font-size: 18px; line-height: 1.6; }
+  .card { display: block; background: var(--surface-solid, #fffdf8); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; margin: 16px 0; text-decoration: none; color: inherit; box-shadow: 0 8px 30px rgba(39,45,40,.04); }
+  .sw { height: 14px; } .ct { padding: 16px 18px 18px; }
+  .k { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+  .card h2 { font-family: var(--serif); font-size: 26px; margin: 6px 0; color: var(--ink); }
+  .card p { margin: 0 0 8px; font-size: 16px; line-height: 1.55; color: var(--ink-soft); }
+  .go { color: var(--accent); font-weight: 700; }
+  .small { font-size: 14px; color: var(--ink-faint); line-height: 1.6; }
+  @media (prefers-color-scheme: dark) { body { background:#1b1611; } .sg h1, .card h2 { color:#f3e9da; } .card { background:#231d17; border-color:#3d3226; } .sg a.back, .go { color:#e0a46a; } .sg p.lead, .card p { color:#c9b8a2; } }
 </style>
 </head>
 <body>
-<div class="banner">SAMPLE ONLY. Summit Roofing is a made-up company, shown to demonstrate our work. <a href="/work/">Back to Work with us</a></div>
-<header>
-  <div class="logo">Summit Roofing</div>
-  <h1>Roofs done right, right here in Fort Wayne.</h1>
-  <p>Repairs, replacements and storm damage. Honest quotes, clean job sites, and we pick up the phone.</p>
-  <a class="btn" href="#contact">Get a free estimate</a>
-</header>
-<section>
-  <h2>What we do</h2>
-  <div class="cards">
-    <div class="card"><h3>Roof repair</h3><p>Leaks, missing shingles, flashing and small fixes, often done the same week.</p></div>
-    <div class="card"><h3>Full replacement</h3><p>Tear-off and new roof with clear materials and a written timeline.</p></div>
-    <div class="card"><h3>Storm damage</h3><p>Wind and hail checks, photos for your insurance, and honest advice.</p></div>
-    <div class="card"><h3>Gutters and vents</h3><p>The small parts that keep a roof healthy for years.</p></div>
-  </div>
-</section>
-<div class="band"><section>
-  <h2>How an estimate works</h2>
-  <p>1. You call or message us. 2. We look at the roof and give you a written price. 3. You decide. No pressure.</p>
-</section></div>
-<section>
-  <h2>What neighbors say</h2>
-  <div class="card"><p class="quote">"Placeholder review text. A real site would show real customer words here."</p><p>Sample customer, Fort Wayne</p></div>
-</section>
-<section id="contact">
-  <h2>Contact</h2>
-  <p><b>Phone:</b> (260) 555-0100 (sample number)<br /><b>Hours:</b> Mon-Fri 7am-5pm, Sat by appointment<br /><b>Area:</b> Fort Wayne and Allen County, Indiana</p>
-  <a class="btn" href="#contact">Call for an estimate</a>
-</section>
-<footer>
-  <p>Summit Roofing (sample, not a real business). Made by <a href="/work/">Heartbeat Observatory</a> to show what a simple, fast, phone-friendly business site looks like. Placeholder content throughout.</p>
-</footer>
+<main class="sg">
+  <a class="back" href="/work/">&larr; Work with us</a>
+  <h1>Sample sites</h1>
+  <p class="lead">Four made-up Fort Wayne businesses, each with its own look. None of them are real. They show the kind of simple, fast, phone-friendly site we build.</p>
+  <a class="card" href="/work/sample/auto/">
+    <div class="sw" style="background:linear-gradient(90deg,#14202b 70%,#ff8a1f 70%)"></div>
+    <div class="ct"><div class="k">Auto repair shop</div><h2>Maple Street Auto Care</h2><p>Dark navy and orange. Services, plain-English promise, book a visit.</p><span class="go">Open sample &rarr;</span></div>
+  </a>
+  <a class="card" href="/work/sample/diner/">
+    <div class="sw" style="background:linear-gradient(90deg,#b8322a 70%,#fff8e7 70%)"></div>
+    <div class="ct"><div class="k">Family diner and breakfast cafe</div><h2>Larkspur Diner</h2><p>Warm red and cream. A simple menu and hours people can find fast.</p><span class="go">Open sample &rarr;</span></div>
+  </a>
+  <a class="card" href="/work/sample/barber/">
+    <div class="sw" style="background:linear-gradient(90deg,#121212 70%,#c9a24b 70%)"></div>
+    <div class="ct"><div class="k">Barbershop</div><h2>Brass Comb Barbershop</h2><p>Black and brass. Services, prices, and a one-tap way to book.</p><span class="go">Open sample &rarr;</span></div>
+  </a>
+  <a class="card" href="/work/sample/roofing/">
+    <div class="sw" style="background:linear-gradient(90deg,#2d4a52 70%,#8a3b2a 70%)"></div>
+    <div class="ct"><div class="k">Roofing company</div><h2>Cedar Crest Roofing</h2><p>Slate and brick. Services, how an estimate works, free-estimate button.</p><span class="go">Open sample &rarr;</span></div>
+  </a>
+  <p class="small">All names, phone numbers and reviews are placeholders. Your real preview would use your own name, photos, hours and words.</p>
+</main>
 </body>
 </html>
