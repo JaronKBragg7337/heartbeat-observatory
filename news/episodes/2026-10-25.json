@@ -1,0 +1,1305 @@
+{
+  "date": "2026-10-25",
+  "title": "Heartbeat News — Sunday, October 25, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-25 (03:04 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-25.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-25 (03:40)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-25.md"
+    },
+    {
+      "name": "watch/kimi 2026-10-25 (First Light desk, 03:15)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-10-25.md"
+    },
+    {
+      "name": "watch/grok 2026-10-25 (Meridian desk, 02:52 ET)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-25.md"
+    },
+    {
+      "name": "watch/grok 2026-10-25 gaps (blind-spot check)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-25-gaps.md"
+    },
+    {
+      "name": "watch/msi 2026-10-25 (thin; headlines only)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-10-25.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Polymarket slugs, odds, order books and resolution notes (Brazil, Iran ceasefire, RUH, Saudi/Houthi dailies, Russian diesel, Israel PM, Champi intensity, Alaska, F1, World Series)",
+      "source": "codex, kimi, grok",
+      "why": "Market pricing and resolution rules are for the traders, not news."
+    },
+    {
+      "item": "Plasma XPL token unlock, Infosys/Jio/DSBJ listing calendar, UBS China allocation remarks, NSE Diwali trading, PBOC MLF, BOJ and OPEC+ dates",
+      "source": "deepseek, kimi",
+      "why": "Trader calendar and supply-schedule items; BOJ and Fed dates are mentioned in Markets."
+    },
+    {
+      "item": "Pennsylvania labels on A.I.-generated ads; Blue Planet III and A.I.; Xbox COO departure",
+      "source": "msi (The Verge), deepseek, codex",
+      "why": "Headline-only items; the article pages were not opened by any desk."
+    },
+    {
+      "item": "Iran-linked Gulf telecom items beyond the cable-threat claim; Iranshahr outage detail",
+      "source": "kimi",
+      "why": "Single anonymous reports; one line in the Iran segment."
+    },
+    {
+      "item": "Ukraine unverified Russian air-defence claims, Neptune and SCALP counts",
+      "source": "grok, deepseek",
+      "why": "Only the drone figure aired, flagged as unverified by Al Jazeera."
+    },
+    {
+      "item": "Domain 11 U.S. regional items (Florida coastal flood warning aside)",
+      "source": "codex",
+      "why": "None surfaced beyond what aired; Indiana/Fort Wayne items are not given segments."
+    },
+    {
+      "item": "Serbia, Spain, Orleans counter-march crowd counts, Paris museum closures, Black Sea shipping",
+      "source": "grok",
+      "why": "Duplicates or no new development; Serbia and Spain results do not yet exist."
+    }
+  ],
+  "ticker": [
+    "U.S. INTEL MEMO: IRANIAN PLOTS AGAINST AMERICANS 'ADVANCED STAGES'",
+    "IRAN ENVOY: HORMUZ REOPENS IF U.S. LIFTS BLOCKADE",
+    "BRAZIL RUNOFF TODAY: FLAVIO 50.7, LULA 49.3 IN FINAL POLL",
+    "SERBIA VOTES FOR 250 PARLIAMENT SEATS",
+    "FRANCE: 410,000 MARCH (MINISTRY), 800,000 (UNIONS); NEAR 1,000 ARRESTS",
+    "UKRAINE: STARLINK SPEEDS RESTORED; STRIKES CONTINUE",
+    "JORDAN: 9 DEAD IN KARAK CHURCH FUNERAL SHOOTING",
+    "11 SHOT NEAR FAMU HOMECOMING IN TALLAHASSEE; NO ARREST",
+    "BRITISH COLUMBIA: CONSERVATIVES PROJECTED TO WIN, ENDING 9 YEARS OF NDP",
+    "BREWERS BEAT RAYS 5-4, LEAD WORLD SERIES 2-0",
+    "ANTONELLI ON POLE FOR U.S. GRAND PRIX",
+    "BITCOIN DIPPED TO $79,146 SATURDAY; $810M LIQUIDATED",
+    "HURRICANE VANCE, 90 MPH, OFF MEXICO'S PACIFIC COAST",
+    "UK BUDGET WEDNESDAY; FED MEETS OCT. 27-28"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Brazil votes, Iran's memo, France's streets",
+        "bullets": [
+          "Brazil runoff and Serbia election day",
+          "U.S. intelligence memo warns of Iranian plots",
+          "France: 410,000 march, then riots",
+          "Starlink restored in Ukraine; Jordan church shooting"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Sunday, October twenty-fifth."
+        },
+        {
+          "who": "vex",
+          "text": "Today: Brazil and Serbia vote. A U.S. intelligence memo says Iranian plots against Americans have reached advanced stages. And Starlink speeds return in Ukraine, even as the strikes continue."
+        },
+        {
+          "who": "joe",
+          "text": "France marches again and the night ends in riots. A church funeral in Jordan turns deadly. And Canada's British Columbia flips after nine years. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "breaking",
+      "strap": "U.S. INTEL MEMO: IRANIAN PLOTS 'ADVANCED'; TEHRAN OFFERS HORMUZ DEAL",
+      "headline": "Iran: a warning memo and an offer",
+      "category": "IRAN WAR",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "IRAN WAR",
+        "title": "A memo, an offer and a standoff",
+        "bullets": [
+          "DNI Clayton: Iranian plotting vs. Americans 'advanced'",
+          "U.S. ordered staff out of Saudi missions Wednesday",
+          "Iran's envoy: Hormuz reopens if U.S. lifts blockade",
+          "No qualifying U.S. strike reported; both sides still talking"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters, intelligence memo on Iran",
+          "url": "https://www.reuters.com/world/middle-east/iran-has-ramped-up-efforts-target-us-personnel-intelligence-memo-warns-2026-10-24/"
+        },
+        {
+          "name": "AP, Iran's envoy on Hormuz talks",
+          "url": "https://apnews.com/article/pakistan-iran-us-talks-hormuz-45161652890bf4f3d570347b8aae6b22"
+        },
+        {
+          "name": "Hindustan Times, Gulf cable threat",
+          "url": "https://www.hindustantimes.com/ht-explainers/iran-us-war-tehran-threat-to-cut-gulf-undersea-cables-network-of-international-internet-traffic-red-sea-houthi-front-too-101792821634617.html"
+        },
+        {
+          "name": "Iran International, connectivity",
+          "url": "https://www.iranintl.com/en/202610244351"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Grok blind-spot check caught this one. Reuters reports that Director of National Intelligence Jay Clayton wrote to Secretary of State Marco Rubio on Friday that Iran has, quote, substantially increased, unquote, efforts to target U.S. personnel. He wrote that lethal plotting against American citizens has reached advanced stages in the Middle East and in certain other countries."
+        },
+        {
+          "who": "joe",
+          "text": "The one-page memo names no target, no country outside the region, and no method. Reuters says the State Department ordered non-emergency staff and families out of U.S. missions in Saudi Arabia on Wednesday. Axios reports reductions at embassies in the Emirates, Lebanon, Qatar and Jordan."
+        },
+        {
+          "who": "vex",
+          "text": "Two senior Iranian officials, one from the Revolutionary Guard, told the New York Times that targeting American officials is, quote, fair game, unquote. A U.S. official told the Times there is evidence of operatives inside the United States who are, quote, not just simply Iranian nationals. That is their account. It is not a list of plots."
+        },
+        {
+          "who": "joe",
+          "text": "Now Tehran's side. Iran's ambassador to Pakistan says Iran conveyed that it will reopen the Strait of Hormuz if the U.S. lifts its naval blockade, and that it stays open to talks under the Pakistan-brokered framework. He accuses Washington of prolonging the standoff. That is a negotiating position, not an agreement."
+        },
+        {
+          "who": "vex",
+          "text": "Two more claims. Anonymous Iranian officials told reporters Tehran has plans to cut Gulf undersea cables if U.S. or Israeli strikes resume. No attack has occurred. And a user in Iran reports severely degraded internet service. No coordinated shutdown has been confirmed."
+        }
+      ]
+    },
+    {
+      "id": "saudi",
+      "kind": "story",
+      "strap": "HOUTHIS CLAIM STRIKES ON ARAMCO; RIYADH AIRPORT PARTLY REOPENS",
+      "headline": "Missiles over Saudi Arabia",
+      "category": "GULF",
+      "status": "claim",
+      "graphic": {
+        "kicker": "GULF",
+        "title": "Claims, intercepts and a limping airport",
+        "bullets": [
+          "Houthis claim seven operations vs. Aramco sites",
+          "Saudi: debris fell near Mecca, Jeddah, Taif",
+          "Houthis deny targeting Mecca and Medina",
+          "Riyadh airport: limited restart"
+        ]
+      },
+      "sources": [
+        {
+          "name": "APA, Houthi claims on Aramco",
+          "url": "https://en.apa.az/asia/houthis-launch-attacks-on-aramco-facilities-airports-in-saudi-arabia-532013"
+        },
+        {
+          "name": "Gulf News, Saudi debris report",
+          "url": "https://gulfnews.com/world/gulf/saudi/saudi-arabia-reports-missile-debris-falling-in-mecca-jeddah-taif-and-rabigh-1.500722504"
+        },
+        {
+          "name": "China Daily Asia/AFP, Riyadh intercept",
+          "url": "https://www.chinadailyasia.com/article/641653"
+        },
+        {
+          "name": "France24, Riyadh airport resumes",
+          "url": "https://www.france24.com/en/live-news/20261025-riyadh-airport-resumes-flights-following-houthi-attacks"
+        },
+        {
+          "name": "LBCI/AFP, Ras Al Khaimah beaches",
+          "url": "https://www.lbcgroup.tv/news/middleeastnews/964579/uaes-ras-al-khaimah-shuts-all-beaches-as-neighbors-grapple-with-oil-sp/en"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Saudi Arabia. The Houthi spokesman, Yahya Saree, claims seven missile and drone operations against Aramco facilities, including Yanbu, Petro Rabigh, crude pumping stations and the East-West pipeline. No damage or production outage has been independently confirmed."
+        },
+        {
+          "who": "joe",
+          "text": "Saudi Civil Defence says debris from two intercepted Houthi ballistic missiles fell around Mecca, Jeddah, Taif and Rabigh. The Houthis deny targeting Mecca and Medina. Early Sunday, the Saudi-led coalition said it intercepted a ballistic missile toward Riyadh and two drones. Residents heard explosions and got phone alerts."
+        },
+        {
+          "who": "vex",
+          "text": "Riyadh's King Khalid airport began a limited restart, with some domestic and international flights by national carriers. That is not a broad reopening."
+        },
+        {
+          "who": "joe",
+          "text": "And in the Emirates, Ras Al Khaimah closed all its beaches until further notice. Neighboring emirates had already closed theirs over an offshore tanker oil spill. Authorities have not named the tanker or the cause."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "STARLINK SPEEDS RESTORED IN UKRAINE; STRIKES CONTINUE BOTH WAYS",
+      "headline": "Ukraine: links back, war on",
+      "category": "UKRAINE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "Starlink restored, strikes did not stop",
+        "bullets": [
+          "Zelensky: speeds 'where they need to be'",
+          "AP: Musk said he ordered the speed limits",
+          "Oleshky pause is local, not a ceasefire",
+          "Talks eyed for Abu Dhabi in early November"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP, Musk and Starlink limits",
+          "url": "https://apnews.com/article/russia-ukraine-war-starlink-drones-a3a0139dfc23365550306dd66fe43daa"
+        },
+        {
+          "name": "PBS/AP, Starlink speeds restored",
+          "url": "https://www.pbs.org/newshour/world/ukraines-starlink-satellite-speeds-restored-after-a-week-of-front-line-disruption"
+        },
+        {
+          "name": "Al Jazeera, Starlink restored, attacks continue",
+          "url": "https://www.aljazeera.com/news/2026/10/24/ukraine-says-starlink-restored-as-attacks-continue-in-russia-and-ukraine"
+        },
+        {
+          "name": "AP, Oleshky pause",
+          "url": "https://apnews.com/article/russia-ukraine-ceasefire-oleshky-melania-trump-7d8aadbf684780223434e705913ecbf3"
+        },
+        {
+          "name": "Reuters, White House on Oleshky",
+          "url": "https://www.reuters.com/world/europe/melania-trump-secures-oleshky-ceasefire-between-russia-ukraine-white-house-says-2026-10-23/"
+        },
+        {
+          "name": "Kuwait Times/AFP, Crimea outages",
+          "url": "https://kuwaittimes.com/article/52253/world/ukrainian-attack-cuts-water-power-in-occupied-crimea/"
+        },
+        {
+          "name": "Ukrainian presidency, sanctions",
+          "url": "https://president.gov.ua/news/prezident-uviv-u-diyu-sankciyi-proti-subyektiv-ta-osib-yaki-107021"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ukraine says Starlink and Starshield speeds are back. Defence Minister Yevhenii Khmara says speeds are above four hundred kilometers an hour and the connection is stable. President Zelensky says speeds are, quote, now where they need to be, unquote, and thanked Americans, members of Congress, and the president."
+        },
+        {
+          "who": "joe",
+          "text": "Who ordered the slowdown is still disputed. The A.P. reports Elon Musk said he ordered the speed restrictions that hit Ukrainian drone links. Saturday's copies still have President Trump denying responsibility and defending Musk. Neither SpaceX nor the U.S. government has a statement accepting the order."
+        },
+        {
+          "who": "vex",
+          "text": "The war did not pause. Ukraine says it struck a petrochemical plant in Togliatti and an electronics plant in Oryol that Kyiv says makes missile parts. Russian-installed officials report power and water cuts across occupied Crimea after Ukrainian drone attacks. "
+        },
+        {
+          "who": "joe",
+          "text": "Russia says it intercepted one thousand two hundred ninety-seven Ukrainian drones in a day. Al Jazeera notes that figure cannot be verified."
+        },
+        {
+          "who": "vex",
+          "text": "On the Ukrainian side, a Russian missile killed a man in Lozova, a drone hit a Kyiv apartment building and injured two, and the Kyiv Independent counts four killed and seventy-eight wounded across the country in a day."
+        },
+        {
+          "who": "joe",
+          "text": "The Oleshky pause is local. The White House credits First Lady Melania Trump. Per AP, it is a humanitarian pause for aid and civilian evacuation while the war goes on. Ukrainian and Russian statements put the start on October twenty-seventh, the evacuation operation on the twenty-ninth. "
+        },
+        {
+          "who": "vex",
+          "text": "Al Jazeera says negotiators from Ukraine, Russia and the U.S. are expected in Abu Dhabi in early November. Ukraine also sanctioned eighty-three people and seventy-nine companies tied to Russian missile production, including two China-registered firms."
+        }
+      ]
+    },
+    {
+      "id": "brazil",
+      "kind": "story",
+      "strap": "BRAZIL VOTES TODAY: LULA VS. FLAVIO BOLSONARO, A TIE IN THE POLLS",
+      "headline": "Brazil's runoff",
+      "category": "ELECTIONS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "ELECTIONS",
+        "title": "Brazil's runoff, inside the margin",
+        "bullets": [
+          "Last CNT/MDA poll: Flavio 50.7, Lula 49.3",
+          "Margin of error: 2.2 points",
+          "First round: Flavio 47.03, Lula 45.16",
+          "Serbia also votes: 250 seats, 18 lists"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CNN Brasil, CNT/MDA poll",
+          "url": "https://www.cnnbrasil.com.br/eleicoes/cnt-mda-flavio-tem-507-dos-votos-validos-lula-493/"
+        },
+        {
+          "name": "Estadao, undecided voters",
+          "url": "https://www.estadao.com.br/politica/eleicoes/cntmda-flavio-tem-507-dos-votos-validos-e-lula-493-mulheres-sao-maioria-entre-indecisos/"
+        },
+        {
+          "name": "Al Jazeera, Brazil runoff poll",
+          "url": "https://www.aljazeera.com/news/2026/10/24/brazils-lula-and-bolsonaro-about-even-ahead-of-election-run-off-poll"
+        },
+        {
+          "name": "NIN, Serbia live",
+          "url": "https://www.nin.rs/politika/vesti/127032/izbori-u-srbiji-uzivo-za-250-poslanickih-mesta-takmici-se-18-lista"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Brazil votes today. The final CNT/MDA poll, out Saturday, has Flavio Bolsonaro at fifty point seven percent of valid votes and President Lula at forty-nine point three. The margin of error is two point two points. That is a technical tie."
+        },
+        {
+          "who": "joe",
+          "text": "In the first round on October fourth, Flavio had forty-seven point oh three percent to Lula's forty-five point sixteen. Polls open at eight in the morning in Brasilia. As of this writing, no results exist."
+        },
+        {
+          "who": "vex",
+          "text": "Estadao notes women are a larger share of the undecided, four percent of women against one percent of men. And seven point three percent say they might still change their minds. Rejection is level: forty-seven point three for Flavio, forty-seven point four for Lula."
+        },
+        {
+          "who": "joe",
+          "text": "Serbia votes too. Two hundred fifty parliamentary seats, eighteen lists, more than six and a half million registered voters. Polls opened early Sunday. No results yet."
+        }
+      ]
+    },
+    {
+      "id": "france",
+      "kind": "story",
+      "strap": "FRANCE: 410,000 MARCH; RIOTERS CLASH WITH POLICE; ~1,000 ARRESTS",
+      "headline": "France's second march",
+      "category": "FRANCE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "FRANCE",
+        "title": "A march, then a riot",
+        "bullets": [
+          "Interior Ministry: 410,000 marched; unions: 800,000",
+          "500+ rioters in Paris; tear gas, water cannon",
+          "Interior minister: near 1,000 arrests nationwide",
+          "Italy: protests in Milan, Rome, Turin"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters, France security operation",
+          "url": "https://www.reuters.com/world/europe/france-mounts-huge-security-operation-protesters-prepare-march-2026-10-24/"
+        },
+        {
+          "name": "Guardian, hundreds of thousands march",
+          "url": "https://www.theguardian.com/world/2026/oct/24/hundreds-of-thousands-march-across-france-in-protests-over-schools-and-policing"
+        },
+        {
+          "name": "franceinfo, key takeaways",
+          "url": "https://www.franceinfo.fr/societe/manifestations/mobilisation-en-baisse-pres-de-1-000-interpellations-deux-blesses-graves-ce-qu-il-faut-retenir-de-cette-nouvelle-journee-de-manifestation-contre-la-vie-chere-partout-en-france_8252476.html"
+        },
+        {
+          "name": "Le Parisien, city by city",
+          "url": "https://www.leparisien.fr/faits-divers/mobilisation-du-24-octobre-entre-400-000-et-800-000-manifestants-ce-samedi-le-point-ville-par-ville-24-10-2026-TM7UP5SJJ5H5LBXV4FIFYQCFGM.php"
+        },
+        {
+          "name": "PBS/AP, protests and Paris clashes",
+          "url": "https://www.pbs.org/newshour/world/more-than-400000-protest-across-france-challenging-macron-as-paris-clashes-erupt"
+        },
+        {
+          "name": "PBS/AP, Italy marches",
+          "url": "https://www.pbs.org/newshour/world/soldiers-guard-center-of-milan-as-thousands-of-protesters-march-in-cities-across-europe"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "France's second national day of protest. The Interior Ministry counts four hundred ten thousand marchers nationwide, one hundred ten thousand in Paris. The CGT union counts eight hundred thousand. Le Parisien says the ministry's number is a slight drop from last Saturday's five hundred fifty thousand. The marches were largely peaceful."
+        },
+        {
+          "who": "joe",
+          "text": "Then the night. After the Paris march reached Porte de Vincennes, the prefecture said more than five hundred rioters attacked officers. Police used tear gas and water cannon. Reuters reports clashes in Marseille, Lyon, Bordeaux, Lille, Rennes, Nantes, Toulouse and other cities. Marseille police say several stores were ransacked."
+        },
+        {
+          "who": "vex",
+          "text": "Interior Minister Laurent Nunez says the processions, quote, went well, unquote, and that about five hundred breakaway rioters caused the problem. He counts near one thousand arrests nationwide and says that will rise significantly. The Paris prosecutor says sixty-four arrested in Paris, forty in custody."
+        },
+        {
+          "who": "joe",
+          "text": "Two people were seriously wounded, in Toulouse and Clermont-Ferrand. Nunez ties both injuries to use of force by security forces. In Toulouse, a street medic says a twenty-year-old lost fingers to a device exploding nearby. The prefecture confirms the hand injury, not the cause. No state of emergency was declared."
+        },
+        {
+          "who": "vex",
+          "text": "Marchers named school repairs, teacher numbers, the cost of living, and policing. Separately, Jordan Bardella was re-elected president of the National Rally with ninety-eight point nine eight percent. He was the only candidate. Italy also saw cost-of-living marches in Milan, Rome and Turin. Police in Rome detained three hundred seventy-one people, including one hundred ten minors."
+        }
+      ]
+    },
+    {
+      "id": "trappes",
+      "kind": "story",
+      "strap": "TRAPPES SHOOTING: SUSPECT HELD; 12-YEAR-OLD IN CRITICAL CONDITION",
+      "headline": "Trappes, the day after",
+      "category": "FRANCE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "FRANCE",
+        "title": "Trappes: custody extended",
+        "bullets": [
+          "Terror prosecutors hold the suspect, 39",
+          "Four relatives and friends also in custody",
+          "12-year-old girl still in critical condition",
+          "Limoges town hall fire: two suspects jailed"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Le Parisien, Trappes custody",
+          "url": "https://www.leparisien.fr/faits-divers/attentat-raciste-dans-les-yvelines-la-garde-a-vue-du-suspect-prolongee-trois-membres-de-son-entourage-places-en-garde-a-vue-24-10-2026-GMZS2ZQ33NEYTC6T64FVCTQWT4.php"
+        },
+        {
+          "name": "Centre Presse Aveyron, Trappes",
+          "url": "https://www.centrepresseaveyron.fr/2026/10/24/fusillade-a-trappes-et-la-verriere-la-garde-a-vue-de-kevin-t-prolongee-sa-mere-se-rend-elle-meme-a-la-police-la-jeune-fille-de-12-ans-toujours-en-13618417.php"
+        },
+        {
+          "name": "Le Parisien, Limoges suspects",
+          "url": "https://www.leparisien.fr/faits-divers/incendie-de-la-mairie-de-limoges-les-deux-suspects-mis-en-examen-et-places-en-detention-provisoire-24-10-2026-C435SCSLXZH3PKIG7EADBXC3PI.php"
+        },
+        {
+          "name": "Europe 1, Limoges",
+          "url": "https://www.europe1.fr/societe/mairie-de-limoges-incendiee-les-deux-suspects-mis-en-examen-et-places-en-detention-provisoire-1178262"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Trappes, outside Paris. The national anti-terror prosecutor extended custody of the suspect, Kevin T., thirty-nine. Four relatives and friends are also in custody. Le Parisien reports his mother went to police herself. Prosecutors cite four old convictions that were later legally cleared."
+        },
+        {
+          "who": "joe",
+          "text": "The dead man is Pengo Bossio Wangi, named by President Macron on Friday. A twelve-year-old girl remains in, quote, absolute emergency, unquote. The charges stay as the prosecutor filed them: assassination in relation to a terrorist enterprise, with the racist circumstance. A toxicology analysis is still running."
+        },
+        {
+          "who": "vex",
+          "text": "And in Limoges, two suspects, thirty-four and sixty-six, were formally placed under investigation and jailed pending trial over the town hall fire. The probe includes attempted murder of a police officer. The prosecutor did not say which charge applies to which man."
+        }
+      ]
+    },
+    {
+      "id": "levant",
+      "kind": "story",
+      "strap": "JORDAN CHURCH FUNERAL ATTACK KILLS 9; ISRAEL VOTES TUESDAY",
+      "headline": "Jordan, Hebron and Israel's election",
+      "category": "LEVANT",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "LEVANT",
+        "title": "Karak shooting; Hebron displacement; Israel votes",
+        "bullets": [
+          "Karak funeral shooting: 9 dead, 40 wounded",
+          "King orders 'iron fist'; no claim of responsibility",
+          "About 2,000 Palestinians displaced in Hebron: Katz",
+          "Israeli polls: neither bloc has a majority"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera, Jordan's king orders firm response",
+          "url": "https://www.aljazeera.com/news/2026/10/24/jordans-king-abdullah-orders-firm-response-after-deadly-church-attack"
+        },
+        {
+          "name": "Reuters, U.S. embassy in Amman",
+          "url": "https://www.reuters.com/business/media-telecom/us-embassy-says-security-ramped-up-jordan-after-deadly-church-attack-2026-10-24/"
+        },
+        {
+          "name": "Times of Israel, Katz on Hebron",
+          "url": "https://www.timesofisrael.com/liveblog_entry/katz-says-some-2000-palestinians-displaced-during-military-op-in-hebron/"
+        },
+        {
+          "name": "Times of Israel, final polls",
+          "url": "https://www.timesofisrael.com/final-polls-before-election-show-both-blocs-short-of-majority-small-parties-out-of-knesset/"
+        },
+        {
+          "name": "France24, Tel Aviv march",
+          "url": "https://www.france24.com/en/middle-east/20261024-thousands-take-to-tel-aviv-streets-for-protests-against-netanyahu"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Jordan. A shooting at a funeral at Saint George's Greek Orthodox church in Karak has killed nine and wounded forty, after one of the wounded died Saturday. King Abdullah chaired the National Security Council, called it a despicable terrorist act, and ordered an, quote, iron fist. Three days of mourning. No one has claimed responsibility, and Reuters says no one has been named as arrested."
+        },
+        {
+          "who": "joe",
+          "text": "The U.S. embassy in Amman says security was stepped up at malls, foreign embassies and other sites."
+        },
+        {
+          "who": "vex",
+          "text": "In the West Bank, Israeli Defence Minister Israel Katz acknowledged about two thousand Palestinians displaced during the Hebron operation. He said they cannot return until alleged Hamas infrastructure is dismantled. Palestinian officials report additional demolitions."
+        },
+        {
+          "who": "joe",
+          "text": "Israel votes Tuesday. Thousands marched in Tel Aviv demanding an independent inquiry into the October seventh failures. The final televised polls show both blocs short of a majority. Channel Thirteen projects Yashar at twenty-two seats, Likud nineteen, Bennett's list fourteen."
+        }
+      ]
+    },
+    {
+      "id": "africa",
+      "kind": "story",
+      "strap": "NIGERIA VILLAGE ATTACK: 10 TO 40+ DEAD; NAIROBI COLLAPSE",
+      "headline": "Africa: attack, collapse, war",
+      "category": "AFRICA",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "AFRICA",
+        "title": "A village attack, a collapse and a siege",
+        "bullets": [
+          "Taraba, Nigeria: police say 10 dead; Amnesty says 40+",
+          "Nairobi Eastleigh collapse: 7 reported missing",
+          "Sudan: drone strikes claimed in El Fasher",
+          "UN Women: Sudanese women describe hunger"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters, Nigeria attack",
+          "url": "https://www.reuters.com/world/africa/gunmen-kill-least-40-people-northeastern-nigeria-amnesty-international-says-2026-10-24/"
+        },
+        {
+          "name": "AFP, Nairobi building collapse",
+          "url": "https://www.afp.com/en/rescuers-search-seven-people-nairobi-building-collapse"
+        },
+        {
+          "name": "The Star, Eastleigh rescue",
+          "url": "https://www.the-star.co.ke/news/2026-10-24-trapped-man-pulled-alive-from-eastleigh-building-rubble"
+        },
+        {
+          "name": "Daily Nation, Eastleigh",
+          "url": "https://nation.africa/kenya/counties/nairobi/67-workers-accounted-for-seven-people-missing-5643764"
+        },
+        {
+          "name": "Darfur24, El Fasher",
+          "url": "https://darfur24.com/en/2026/10/24/drone-strikes-kill-civilians-in-el-fasher-2/"
+        },
+        {
+          "name": "UN News, Sudan testimony",
+          "url": "https://news.un.org/en/story/2026/10/1168663"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Nigeria. Gunmen attacked the village of Binnari in Taraba State on Friday. Police told Reuters ten bodies had been recovered. Amnesty International says at least forty were killed. Its Nigeria director says families put the toll as high as fifty. The numbers are not averaged. No arrest has been named."
+        },
+        {
+          "who": "joe",
+          "text": "Nairobi. A building under construction collapsed in Eastleigh on Friday, with shops occupied below. Kenya's interior minister says seven people are reported missing, and sixty-six of sixty-seven construction workers escaped. The Red Cross pulled at least one man out alive. No confirmed death toll yet."
+        },
+        {
+          "who": "vex",
+          "text": "Governor Johnson Sakaja says the county approved a change of use but did not approve the architectural plans submitted later. Those are his statements, not charges. The county report has gone to detectives."
+        },
+        {
+          "who": "joe",
+          "text": "Sudan. Local and medical sources told Darfur Twenty-Four that Sudanese army drones struck several sites in RSF-held El Fasher on Thursday, killing and wounding civilians. The outlet could not verify a toll. Neither the army nor the RSF has commented."
+        },
+        {
+          "who": "vex",
+          "text": "And UN Women published new Sudan testimony. Women describe boiled wheat as their only food and furniture burned for fuel."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "KENYA ASKS FOR 10,000 EBOLA VACCINE DOSES; WHO COUNT STANDS AT 9,704",
+      "headline": "Ebola, polio and the vaccine question",
+      "category": "HEALTH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Kenya asks for vaccine doses",
+        "bullets": [
+          "Kenya seeks 10,000 Ervebo doses",
+          "Ervebo targets Zaire strain; not proven vs. Bundibugyo",
+          "WHO: DRC 9,704 confirmed, 4,687 deaths (Oct. 20)",
+          "Ethiopia: 11 polio cases in 2026"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Standard, Kenya seeks doses",
+          "url": "https://www.standardmedia.co.ke/health/health-science/article/2001560759/tumaini-ebola-vaccine-trial-starts-as-kenya-seeks-10000-doses"
+        },
+        {
+          "name": "WHO, DON622",
+          "url": "https://www.who.int/emergencies/disease-outbreak-news/item/2026-DON622"
+        },
+        {
+          "name": "WHO Africa, Ethiopia polio",
+          "url": "https://www.afro.who.int/countries/ethiopia/news/one-day-one-focus-ending-polio-good-together-let-us-build-polio-free-future"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ebola. Kenya has asked the World Health Organization and Africa C.D.C. for ten thousand doses of the Ervebo vaccine, health workers first. The Standard says Ervebo is licensed for Zaire ebolavirus, and that there is not enough evidence it protects against Bundibugyo, the strain in this outbreak. W.H.O. recommends it for this strain only under a research protocol."
+        },
+        {
+          "who": "joe",
+          "text": "The latest W.H.O. figures, as of October twentieth: nine thousand seven hundred four confirmed cases and four thousand six hundred eighty-seven deaths in the Democratic Republic of Congo. Kenya has nine cases and one death. Nigeria has one imported case. The first vaccinations in the TUMAINI trial began in Bunia."
+        },
+        {
+          "who": "vex",
+          "text": "Separately, Ethiopia reports eleven cases of circulating vaccine-derived polio type one this year. Response rounds for more than eleven million children are set for November and December."
+        }
+      ]
+    },
+    {
+      "id": "uspol",
+      "kind": "story",
+      "strap": "OBAMA HITS THE TRAIL; TRUMP VOTES IN FLORIDA; ALASKA SENATE RACE",
+      "headline": "Midterm campaign",
+      "category": "U.S. POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "U.S. POLITICS",
+        "title": "Nine days out: the midterm trail",
+        "bullets": [
+          "Obama in Cleveland and Detroit for Democrats",
+          "Trump votes in Florida, rallies in Georgia",
+          "Alaska Senate: DOJ ballot-confusion suit",
+          "Axios: AI executives a liability in Washington"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters, Obama stumps for Democrats",
+          "url": "https://www.reuters.com/legal/government/obama-unloads-trump-while-stumping-democrats-ahead-midterms-2026-10-25/"
+        },
+        {
+          "name": "BBC, Obama rallies",
+          "url": "https://www.bbc.co.uk/news/articles/cmj6jwe1j1gjo"
+        },
+        {
+          "name": "AP, Trump votes in Florida",
+          "url": "https://apnews.com/article/trump-voting-florida-midterms-2195b4226316fa8cb13b875f08d5df88"
+        },
+        {
+          "name": "AP, Alaska Native voters",
+          "url": "https://apnews.com/article/alaska-natives-senate-peltola-sullivan-524deb897a2d512d6d4ce0954f0144f8"
+        },
+        {
+          "name": "Axios, AI CEOs and Washington",
+          "url": "https://www.axios.com/2026/10/24/ai-ceos-washington-political-liability"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The midterms are nine days away. Former President Barack Obama held his first rallies of the cycle Saturday, in Cleveland for Sherrod Brown and Amy Acton, then Detroit for Abdul El-Sayed and Jocelyn Benson. He called the administration's record, quote, two years of chaos and cruelty and corruption, unquote, and called the November third vote a, quote, circuit breaker."
+        },
+        {
+          "who": "joe",
+          "text": "He also joked that the White House looks, quote, like Saddam Hussein opened up a Cheesecake Factory. That is a joke, not a finding about contracts. Meanwhile, the A.P. reports President Trump cast his own ballot in West Palm Beach, said he voted for all Republicans, and then spoke at a Georgia rally."
+        },
+        {
+          "who": "vex",
+          "text": "In Alaska, Senator Dan Sullivan and Mary Peltola are courting Alaska Native voters. Advocates cite polling access and ballot-delivery trouble in remote communities. The attorney general defended the Justice Department's lawsuit over ballot confusion."
+        },
+        {
+          "who": "joe",
+          "text": "And Axios reports A.I. executives' public warnings and political ties have become a liability in Washington. Lawmakers are zeroing in on A.I. money, data centers, jobs, and children's safety."
+        }
+      ]
+    },
+    {
+      "id": "tallahassee",
+      "kind": "story",
+      "strap": "11 SHOT NEAR FAMU HOMECOMING IN TALLAHASSEE; NO ARREST",
+      "headline": "Tallahassee shooting",
+      "category": "UNITED STATES",
+      "status": "observed",
+      "graphic": {
+        "kicker": "UNITED STATES",
+        "title": "Eleven shot after FAMU homecoming game",
+        "bullets": [
+          "Just before 8 p.m. ET Saturday, Perry Street",
+          "11 shot; 3 seriously hurt, 1 critical",
+          "Six victims juveniles, the youngest 11",
+          "Police: altercation first; no arrest"
+        ]
+      },
+      "sources": [
+        {
+          "name": "USA Today, FAMU homecoming shooting",
+          "url": "https://www.usatoday.com/story/news/crime/2026/10/25/famu-homecoming-shooting-tallahassee/92427770007/"
+        },
+        {
+          "name": "NBC News, Tallahassee shooting",
+          "url": "https://www.nbcnews.com/news/us-news/tallahassee-florida-shooting-florida-am-university-rcna605484"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Tallahassee, Florida. Just before eight Saturday night, near Florida A and M's stadium after the homecoming game, eleven people were shot. Police Chief Lawrence Revell says three are seriously hurt, one critically. Eight are stable. Six of the victims are juveniles, the youngest eleven. A twelfth person, a grandmother, was injured while fleeing."
+        },
+        {
+          "who": "joe",
+          "text": "Police say a physical altercation between two or three people came first and call it isolated. There has been no arrest. One victim is a F.A.M.U. student. The university says the shooting was near campus, the campus is safe, and people should stay away from Perry Street."
+        }
+      ]
+    },
+    {
+      "id": "worldpol",
+      "kind": "story",
+      "strap": "B.C. FLIPS TO CONSERVATIVES; KIM IN CHINA; NZ ENROLMENT ENDS",
+      "headline": "Elections and summits abroad",
+      "category": "WORLD POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "WORLD POLITICS",
+        "title": "A new government in British Columbia",
+        "bullets": [
+          "B.C.: Conservatives projected majority; NDP out",
+          "Kim Jong Un visits Dandong, China",
+          "China's Fifth Plenum opens Oct. 26",
+          "New Zealand enrolment closes tonight"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Vancouver Sun, B.C. results",
+          "url": "https://vancouversun.com/news/bc-election-results-conservative-wave-sweeps-bc"
+        },
+        {
+          "name": "CFJC, Doerkson re-elected",
+          "url": "https://cfjctoday.com/2026/10/24/interim-conservative-leader-doerkson-projected-to-win-re-election-in-cariboo-chilcotin/"
+        },
+        {
+          "name": "Reuters, Kim in Dandong",
+          "url": "https://www.reuters.com/world/china/north-koreas-kim-jong-un-arrives-dandong-china-yonhap-says-2026-10-24/"
+        },
+        {
+          "name": "Reuters via MarketScreener, provincial chiefs",
+          "url": "https://www.marketscreener.com/news/china-s-communist-party-names-new-provincial-chiefs-ahead-of-fifth-plenum-ce785cdfde8bf527"
+        },
+        {
+          "name": "Teaonews, NZ enrolment",
+          "url": "https://www.teaonews.co.nz/2026/10/25/explainer-how-to-enrol-to-vote-and-why-today-is-your-final-chance/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Canada. A snap election in British Columbia ended nine years of N.D.P. government. The Canadian Press called a majority for the Conservatives under interim leader Lorne Doerkson. The seat count was still moving, and one Elections B.C. snapshot had the Conservatives ahead in sixty-two of ninety-three seats. A majority is forty-seven. Premier David Eby kept his seat and said he is resigning as party leader."
+        },
+        {
+          "who": "joe",
+          "text": "China. North Korean leader Kim Jong Un crossed into Dandong on Saturday and went home the same day. Reuters and Xinhua say China's Wang Huning met him with greetings from Xi Jinping. It's his sixth China visit since twenty eleven, on the eve of the anniversary of China's entry into the Korean War."
+        },
+        {
+          "who": "vex",
+          "text": "China's Communist Party named new party secretaries for Hunan and Yunnan ahead of its Fifth Plenum, which runs October twenty-sixth through twenty-ninth. And New Zealand's voter enrolment closes at midnight. Enrolment among eighteen to twenty-four year olds sat at about seventy percent, against ninety-two overall."
+        }
+      ]
+    },
+    {
+      "id": "uk",
+      "kind": "story",
+      "strap": "UK BUDGET TRAIL: HOUSING CASH; DAILY MAIL: ROSEBANK GOES AHEAD",
+      "headline": "Britain's Budget week",
+      "category": "UNITED KINGDOM",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UNITED KINGDOM",
+        "title": "Budget Wednesday: the trail and the claim",
+        "bullets": [
+          "Budget Oct. 28; 1 billion pounds more for housing",
+          "Mayors get 285 million pounds seed money",
+          "Daily Mail: Rosebank oil field to proceed (claim)",
+          "Treasury start-up adviser to leave"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC, Budget trail",
+          "url": "https://www.bbc.co.uk/news/articles/cqm24j9y9zn7o"
+        },
+        {
+          "name": "Daily Mail, Rosebank claim",
+          "url": "https://www.dailymail.com/news/article-16236095/Andy-Burnham-John-Healey-eco-zealot-Ed-Miliband-Rosebank-oil.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The U.K. Budget is Wednesday. The BBC reports it will include more than one billion pounds for social and affordable housing in England, taking the ten-year programme past forty billion. The Treasury adds an initial two hundred eighty-five million pounds in seed funding for mayors and a one-and-a-half-billion-pound borrowing facility from twenty twenty-eight."
+        },
+        {
+          "who": "joe",
+          "text": "Prime Minister Andy Burnham said, quote, I'm calling time on local leaders going cap in hand to Westminster, unquote. Shadow chancellor Andrew Griffith wants Chancellor John Healey to explain how Britain reaches three percent of G.D.P. on defense by twenty thirty. The BBC says the Sunday Times reports billions in new defense spending. The BBC did not open that story."
+        },
+        {
+          "who": "vex",
+          "text": "A claim. The Daily Mail, citing unnamed Whitehall sources, says Burnham and Healey have decided the Rosebank oil field should go ahead, over opposition it attributes to Foreign Secretary Ed Miliband. No consent has been issued. Burnham said Friday it will be, quote, done properly, unquote."
+        },
+        {
+          "who": "joe",
+          "text": "Also: the Treasury's start-up adviser, Alex Depledge, leaves Thursday. She told the Sunday Times start-ups are treated as a sideshow."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "HURRICANE VANCE OFF MEXICO; CHAMPI WEAKENS; BENGAL CYCLONE WATCH",
+      "headline": "Storms in three oceans",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Storms in three oceans",
+        "bullets": [
+          "Hurricane Vance: 90 mph, 320 mi SW of Acapulco",
+          "Champi weakening toward Kyushu Oct. 26",
+          "India: pre-cyclone watch for Andhra, Odisha",
+          "Typhoon In-Fa near Marshall Islands"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NHC Pacific, Hurricane Vance",
+          "url": "https://x.com/NHC_Pacific/status/2114186694937231812"
+        },
+        {
+          "name": "Weathernews, Champi",
+          "url": "https://weathernews.jp/onebox/typhoon/30/"
+        },
+        {
+          "name": "Weathernews, In-Fa",
+          "url": "https://weathernews.jp/onebox/typhoon/31/"
+        },
+        {
+          "name": "Hindustan Times/IMD, Bay of Bengal",
+          "url": "https://www.hindustantimes.com/india-news/andhra-pradesh-odisha-on-alert-as-imd-warns-of-possible-cyclone-over-bay-of-bengal-by-october-26-sunday-101792830961854.html"
+        },
+        {
+          "name": "Seoul Economic Daily, KBO rainout",
+          "url": "https://en.sedaily.com/sports/2026/10/25/typhoon-rains-wash-out-game-1-of-kia-samsung-playoff-series"
+        },
+        {
+          "name": "China Daily, Xizang relief",
+          "url": "https://www.chinadaily.com.cn/china/special_coverage/6adb128ee4b06d4aa056477a"
+        },
+        {
+          "name": "NWS, Florida coastal flood warning",
+          "url": "https://forecast.weather.gov/MapClick.php?lat=29.8447&lon=-81.3161"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Hurricane Vance, in the Eastern Pacific. Advisory fifteen puts it at ninety miles an hour, about three hundred twenty miles southwest of Acapulco, drifting north-northwest. No coastal watch or warning. The Hurricane Center says heavy rain from Michoacan to Jalisco could bring life-threatening flooding and mudslides next week."
+        },
+        {
+          "who": "joe",
+          "text": "Typhoon Champi has weakened over the East China Sea. Weathernews expects it near Kyushu on Monday, turning extratropical, with localized downpours of more than fifty millimeters an hour. In South Korea, Champi's rain washed out the opening game of the Samsung-KIA baseball playoff, now Monday."
+        },
+        {
+          "who": "vex",
+          "text": "In the Bay of Bengal, India's weather service issued a pre-cyclone watch for Andhra Pradesh and south Odisha. It forecasts a cyclonic storm Monday and a very severe cyclonic storm Tuesday, reaching Andhra around Wednesday morning, with extremely heavy rain."
+        },
+        {
+          "who": "joe",
+          "text": "Typhoon In-Fa is near the Marshall Islands with a possible track toward the Marianas. In Tibet, relief continues after the disaster in Drachen county: sixteen dead, seventy-six injured. And in northeast Florida, a coastal flood warning runs through Monday night."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "BITCOIN DIPS TO $79K; ETF OUTFLOWS; CHINA OBJECTS TO U.S. CURBS",
+      "headline": "Markets: a quiet weekend with edges",
+      "category": "MARKETS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Bitcoin dips; Monday's calendar",
+        "bullets": [
+          "BTC low $79,146 Sat; ~$80,900 Sun",
+          "$810M liquidated in 24h (CoinGlass)",
+          "Bitcoin ETFs: $137.9M out Oct. 23",
+          "Fed meets Oct. 27-28; BOJ decision Oct. 30"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Investing.com via Yahoo, Bitcoin price",
+          "url": "https://au.finance.yahoo.com/news/bitcoin-price-today-btc-recovers-053612906.html"
+        },
+        {
+          "name": "Farside, Bitcoin ETF flows",
+          "url": "https://farside.co.uk/btc/"
+        },
+        {
+          "name": "MOFCOM statement",
+          "url": "https://www.mofcom.gov.cn/syxwfb/art/2026/art_fe1a483e92bf48a88409978cc738e62f.html"
+        },
+        {
+          "name": "Oilprice, tanker rates",
+          "url": "https://oilprice.com/Energy/Crude-Oil/Record-Tanker-Rates-Cripple-US-Crude-Oil-Flows-to-Asia.amp.html"
+        },
+        {
+          "name": "The Star, Indonesia gas cut",
+          "url": "https://www.thestar.com.my/aseanplus/aseanplus-news/2026/10/24/indonesia-cuts-natural-gas-exports-to-singapore-by-31-bbtud-from-oct-24"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Stock markets are closed for the weekend. Bitcoin fell to seventy-nine thousand one hundred forty-six dollars on Saturday, its weakest in over a month, and recovered to about eighty thousand nine hundred. Investing dot com cites CoinGlass: eight hundred ten million dollars liquidated in a day, thin weekend trading, with the Fed meeting October twenty-seventh and twenty-eighth."
+        },
+        {
+          "who": "joe",
+          "text": "Farside's table shows U.S. spot Bitcoin funds lost one hundred thirty-seven point nine million dollars on October twenty-third, after six hundred thirty-five point six million out the day before."
+        },
+        {
+          "who": "vex",
+          "text": "China's commerce ministry formally opposed a proposed expansion of U.S. outbound-investment limits into biotechnology, broader high-performance computing and hypersonic systems. It called the plan discriminatory and reserved corresponding measures. No countermeasure has been announced."
+        },
+        {
+          "who": "joe",
+          "text": "Freight is the hidden price. Oilprice, citing traders, says a supertanker run from the U.S. Gulf to Asia costs about sixty million dollars, and Asian refiners' November orders for U.S. crude fell about half. And Indonesia cut pipeline-gas exports to Singapore by thirty-one million British thermal units a day, about eight percent of last year's pipeline exports, to protect domestic supply."
+        }
+      ]
+    },
+    {
+      "id": "tech",
+      "kind": "story",
+      "strap": "BYTEDANCE MERGES AI DRAMA APP; BAIDU AI HEALTH; KIMI K3.1 PRO PROMISED",
+      "headline": "Tech watch",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "A.I. in China: health, drama, open weights",
+        "bullets": [
+          "Baidu AI health tools: 50M+ monthly users reported",
+          "ByteDance folds Xiaoyunque into Jimeng (unnamed sources)",
+          "Kimi K3.1 Pro weights promised by Nov. 4",
+          "Brotli flaw hits Node.js, Bun, Python"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Economic Information Daily/Xinhua, Baidu Health",
+          "url": "http://jjckb.xinhuanet.com/20261024/da60f40838cc4fb688313e1842c6ed65/c.html"
+        },
+        {
+          "name": "36Kr, ByteDance Jimeng",
+          "url": "https://36kr.com/newsflashes/4039686487364480"
+        },
+        {
+          "name": "Moonshot, Kimi K3.1 Pro",
+          "url": "https://www.kimi.ai/blog/kimi-k3-1-pro"
+        },
+        {
+          "name": "The Hacker News, Brotli flaw",
+          "url": "https://thehackernews.com/2026/10/brotli-decoder-flaw-behind-nodejs-rce.html"
+        },
+        {
+          "name": "Node.js, security releases",
+          "url": "https://nodejs.org/en/blog/vulnerability/october-2026-security-releases"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Baidu upgraded its Wenxin Health Manager and launched a Health Camera that accepts text, dialect speech, photos and video. Its A.I. intake links to more than one hundred fifty thousand hospital doctors. Reported monthly users of its A.I. health tools exceed fifty million."
+        },
+        {
+          "who": "joe",
+          "text": "A claim: unnamed sources told Thirty-Six Kr that ByteDance folded its A.I. short-drama product Xiaoyunque into Jimeng. Moonshot's blog still promises Kimi K3.1 Pro weights by November fourth."
+        },
+        {
+          "who": "vex",
+          "text": "On security, a flaw in the Brotli decoder affects Node.js, Bun, Envoy and Python software that decodes attacker-controlled data. Code execution was demonstrated on one unpatched Node build. No real-world exploitation has been reported. Patched releases are out."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "$4.85M DRAINED IN X100 GOVERNANCE HACK; KEYSTONE WALLET DATA BREACH",
+      "headline": "Hacks and outages",
+      "category": "CYBER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "A hijacked vote and a leaky wallet maker",
+        "bullets": [
+          "X100: attacker bought votes with flash loan",
+          "~$4.85M and 550,000 X taken; token down 96%",
+          "Keystone wallet maker: customer addresses exposed",
+          "Keys and recovery phrases not exposed, company says"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Crypto Times, X100 exploit",
+          "url": "https://www.cryptotimes.io/2026/10/24/x100-hack-attackers-hijack-governance-drain-4-85m-as-x-token-crashes-96/"
+        },
+        {
+          "name": "Crypto Briefing, Keystone",
+          "url": "https://cryptobriefing.com/keystone-data-breach-exposed-2026/"
+        },
+        {
+          "name": "The Defiant, Keystone",
+          "url": "https://thedefiant.io/news/security/keystone-website-breach-exposes-customer-addresses-and-order-details"
+        },
+        {
+          "name": "SARS EDI bulletin",
+          "url": "https://tools.sars.gov.za/EDIBulletinBoard/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The X one hundred crypto project was hijacked Saturday. An attacker flash-borrowed Tether, bought two of three Senate seats, and passed proposals that drained the treasury. About four point eight five million dollars and five hundred fifty thousand X tokens were taken. X fell ninety-six percent. Blockaid said the attack was still ongoing."
+        },
+        {
+          "who": "joe",
+          "text": "Hardware-wallet maker Keystone, in Hong Kong, disclosed unauthorized access to its website. Customer names, contacts, shipping addresses and order details were exposed. The company says payment data, passwords, private keys and recovery phrases were not. It says access is blocked and the hole is patched."
+        },
+        {
+          "who": "vex",
+          "text": "And South Africa's revenue service had intermittent filing and customs outages from maintenance Saturday. It marked the issue resolved by evening."
+        }
+      ]
+    },
+    {
+      "id": "asia",
+      "kind": "story",
+      "strap": "WESTERN SYDNEY AIRPORT OPENS; UNITED TO TOKYO; ROOPPUR STARTUP",
+      "headline": "Asia-Pacific business and energy",
+      "category": "ASIA-PACIFIC",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ASIA-PACIFIC",
+        "title": "Asia-Pacific: a new airport and a reactor",
+        "bullets": [
+          "Western Sydney International opens to passengers",
+          "United starts Chicago-Tokyo Narita (scheduled)",
+          "Bangladesh's Rooppur reactor: power startup planned",
+          "Singapore probes unpaid migrant workers"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Western Sydney International Airport",
+          "url": "https://www.wsiairport.com.au/"
+        },
+        {
+          "name": "Qantas, Jetstar flights",
+          "url": "https://www.qantasnewsroom.com.au/media-releases/qantas-jetstar-flights-western-sydney-international"
+        },
+        {
+          "name": "United, Narita service",
+          "url": "https://www.united.com/en/us/newsroom/announcements/cision-125464"
+        },
+        {
+          "name": "The Business Standard, Rooppur",
+          "url": "https://www.tbsnews.net/economy/energy/rooppur-unit-1-prepares-power-startup-tomorrow-pending-approval-1581486"
+        },
+        {
+          "name": "Mothership, migrant workers",
+          "url": "https://mothership.sg/2026/10/migrant-workers-unpaid-two-months/"
+        },
+        {
+          "name": "Science and Technology Daily, LM-8A",
+          "url": "https://www.stdaily.com/web/gdxw/2026-10/25/content_602383.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Western Sydney International opened for scheduled passenger service. Jetstar's flight to the Gold Coast was the first departure. United's daily Chicago O'Hare to Tokyo Narita flight was scheduled to launch Saturday on a Boeing seven eighty-seven. The inaugural completion was not independently verified."
+        },
+        {
+          "who": "joe",
+          "text": "Bangladesh's Rooppur nuclear plant finished physics tests on Unit One and prepared for power startup Sunday, if regulators approve. Officials hope for at least three hundred megawatts by year-end."
+        },
+        {
+          "who": "vex",
+          "text": "Singapore's manpower ministry confirmed wage investigations into two contractors. About two hundred thirty workers were unpaid for up to two months, and nearly ninety needed daily meals. Some Bangladeshi workers say they paid up to twelve thousand Singapore dollars to get the jobs."
+        },
+        {
+          "who": "joe",
+          "text": "In space, China launched Long March Eight A from Hainan, carrying satellite internet group twenty-eight. It reached planned orbit."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "ANTONELLI ON POLE FOR U.S. GP; BREWERS LEAD 2-0; JAPAN SERIES OPENS",
+      "headline": "Sports roundup",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Brewers 5, Rays 4: lead the Series 2-0",
+        "bullets": [
+          "World Series G2: Milwaukee 5, Tampa Bay 4",
+          "F1 U.S. GP: Antonelli on pole, Verstappen 2nd",
+          "Japan Series G1: SoftBank 3, DeNA 1 (11 inn.)",
+          "Premier League: Villa 2, Man City 1"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP, World Series Game 2",
+          "url": "https://apnews.com/article/brewers-rays-world-series-game-2-f67c22051a74370846c32b98fea39fa0"
+        },
+        {
+          "name": "FIA, F1 pole report",
+          "url": "https://api.fia.com/news/f1-antonelli-takes-pole-us-grand-prix-ahead-verstappen-and-hadjar"
+        },
+        {
+          "name": "Sky Sports, F1",
+          "url": "https://www.skysports.com/f1/grandprix/united-states"
+        },
+        {
+          "name": "NBA injury report",
+          "url": "https://ak-static.cms.nba.com/referee/injury/Injury-Report_2026-10-25_02_30AM.pdf"
+        },
+        {
+          "name": "BayStars, Japan Series Game 1",
+          "url": "https://sp.baystars.co.jp/game/stats/2021039492"
+        },
+        {
+          "name": "Cricbuzz, NZ vs. India",
+          "url": "https://www.cricbuzz.com/live-cricket-scores/161201/nz-vs-ind-2nd-t20i-india-tour-of-new-zealand-2026"
+        },
+        {
+          "name": "Dot Esports, Worlds Swiss stage",
+          "url": "https://dotesports.com/league-of-legends/news/dk-beats-t1-as-lpl-picks-up-its-first-wins-on-day-2-of-worlds-2026-swiss-stage"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The World Series. Milwaukee beat Tampa Bay five to four in Game Two and leads the series two games to none, after coming back from a four-run deficit. The series moves to Tampa Bay."
+        },
+        {
+          "who": "joe",
+          "text": "Formula One. Kimi Antonelli took pole for the U.S. Grand Prix in Austin, a fifth of a second ahead of Max Verstappen. Isack Hadjar starts third. The race is today. Antonelli can clinch the title only with a win plus help from rivals."
+        },
+        {
+          "who": "vex",
+          "text": "Japan Series Game One went to SoftBank, three to one over DeNA in eleven innings. In cricket, India beat New Zealand by four wickets in the second T-twenty with one ball to spare and lead the series two to nothing."
+        },
+        {
+          "who": "joe",
+          "text": "Premier League Saturday: Aston Villa two, Manchester City one. Arsenal two, Everton nothing. Tottenham won two nothing at Chelsea. And the N.B.A. injury report has Utah's Walker Kessler available and Jusuf Nurkic out."
+        }
+      ]
+    },
+    {
+      "id": "also",
+      "kind": "story",
+      "strap": "ALSO TODAY: JAILER 2, NO CHINA GAME APPROVALS, ISRO LAUNCH OCT. 30",
+      "headline": "Also today",
+      "category": "ALSO TODAY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "More from the desks",
+        "bullets": [
+          "Jailer 2 near the Tamil film record (estimates)",
+          "China's October game approvals still missing",
+          "ISRO NVS-03 launch set for Oct. 30",
+          "Keep an eye on Monday's French markets"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Sacnilk, Jailer 2",
+          "url": "https://www.sacnilk.com/quicknews/Jailer_2_2026_Box_Office_Collection_Day_10"
+        },
+        {
+          "name": "NPPA game approvals",
+          "url": "https://www.nppa.gov.cn/bsfw/jggs/yxspjg/gcwlyxspxx/"
+        },
+        {
+          "name": "ISRO launch missions",
+          "url": "https://www.isro.gov.in/LaunchMissions.html"
+        },
+        {
+          "name": "Guardian, Louvre closure and marches",
+          "url": "https://www.theguardian.com/world/2026/oct/24/hundreds-of-thousands-march-across-france-in-protests-over-schools-and-policing"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Quick hits. The Indian film Jailer Two reached an estimated six hundred sixty-six crore rupees worldwide on day ten, about twenty-five crore short of the Tamil record. These are Sacnilk estimates, not audited totals."
+        },
+        {
+          "who": "joe",
+          "text": "China's regulator has not published October video-game approvals, four days later than last year's date. India's navigation satellite launch, N.V.S. Three, is still set for October thirtieth."
+        },
+        {
+          "who": "vex",
+          "text": "And Monday is the first French market session after the Moody's rating hold and Saturday's marches."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "FROM THE WIRES",
+      "headline": "From the wires",
+      "category": "WIRES",
+      "status": "live",
+      "graphic": {
+        "kicker": "FROM THE WIRES",
+        "title": "Latest headlines",
+        "bullets": []
+      },
+      "lines": [],
+      "note": "Lines are built on the page from the live Perplexity headlines (/api/news, the Social page's feed). If none come back, this segment is skipped."
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "That's the news",
+      "category": "GOOD NIGHT",
+      "graphic": {
+        "kicker": "GOOD NIGHT",
+        "title": "Every story, every source",
+        "bullets": [
+          "Written from the watch captures of Oct 25",
+          "Sources under the screen",
+          "New show every day by morning"
+        ]
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's the news for Sunday. Every story came from the watch desk's captures, and every source is listed under this screen.",
+          "shot": "two"
+        },
+        {
+          "who": "vex",
+          "text": "A new show comes every day by morning. I'm AI Robot Vex.",
+          "shot": "wide"
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe. See you tomorrow."
+        }
+      ]
+    }
+  ]
+}
