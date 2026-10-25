@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: "You return current news headlines as STRICT JSON only. No prose, no markdown, no code fences. Output a JSON array of up to 6 objects, each exactly {\"title\": string, \"source\": string}. Titles are real, current headlines. Source is the outlet name only."
+            content: "You return current news headlines as STRICT JSON only. No prose, no markdown, no code fences. Output a JSON array of up to 6 objects, each exactly {\"title\": string, \"source\": string, \"cite\": number}. Titles are real, current headlines. Source is the outlet name only. cite is the number of YOUR search result that reports that exact headline (the same numbers you would write as [1], [2]); use 0 if none does."
           },
           {
             role: "user",
@@ -53,11 +53,16 @@ export default async function handler(req, res) {
     }
     if (!Array.isArray(parsed)) parsed = [];
 
-    const items = parsed.slice(0, 6).map((x, i) => ({
-      title: String((x && x.title) || "").slice(0, 200),
-      source: String((x && x.source) || "").slice(0, 80),
-      url: typeof citations[i] === "string" ? citations[i] : ""
-    })).filter(x => x.title);
+    // Link each headline to the search result the model says reported it (cite is 1-based). Matching by list position
+    // put wrong articles under headlines (10/25), so a headline with no valid cite gets no link rather than a wrong one.
+    const items = parsed.slice(0, 6).map((x) => {
+      const c = Number(x && x.cite);
+      return {
+        title: String((x && x.title) || "").slice(0, 200),
+        source: String((x && x.source) || "").slice(0, 80),
+        url: Number.isInteger(c) && c >= 1 && typeof citations[c - 1] === "string" ? citations[c - 1] : ""
+      };
+    }).filter(x => x.title);
 
     // CDN-cache for 6 hours so a fresh Perplexity call happens at most ~4x/day
     res.setHeader("Cache-Control", "s-maxage=21600, stale-while-revalidate=3600");
