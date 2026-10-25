@@ -86,5 +86,30 @@
       var close = function () { bar.classList.remove("open"); more.hidden = false; for (var i = 0; i < extras.length; i++) extras[i].hidden = true; };
     }
     (document.body || document.documentElement).appendChild(bar);
+
+    // Some pages already have their own control in the top-left corner (a back pill, a menu). If something tappable sits
+    // under the bar, move the bar to the top-right; if that is taken too, leave it where it is.
+    function taken(x, y) {
+      var el = document.elementFromPoint(x, y);
+      if (!el || bar.contains(el)) return false;
+      return !!(el.closest && el.closest("a,button,input,select,textarea,summary,[role=button],[onclick]"));
+    }
+    function place() {
+      try {
+        bar.style.pointerEvents = "none";
+        bar.style.left = ""; bar.style.right = "";
+        var r = bar.getBoundingClientRect(), pts = [[r.left + 6, r.top + 6], [r.left + r.width / 2, r.top + r.height / 2], [r.right - 6, r.bottom - 6]];
+        var hit = pts.some(function (p) { return taken(p[0], p[1]); });
+        if (hit) {
+          bar.style.left = "auto"; bar.style.right = "calc(env(safe-area-inset-right,0px) + 8px)";
+          var r2 = bar.getBoundingClientRect();
+          var hit2 = [[r2.left + 6, r2.top + 6], [r2.left + r2.width / 2, r2.top + r2.height / 2], [r2.right - 6, r2.bottom - 6]].some(function (p) { return taken(p[0], p[1]); });
+          if (hit2) { bar.style.left = ""; bar.style.right = ""; }
+        }
+      } catch (e) {}
+      bar.style.pointerEvents = "";
+    }
+    place(); setTimeout(place, 1200); setTimeout(place, 3500);
+    window.addEventListener("load", place);
   } catch (e) { /* never break a page */ }
 })();
