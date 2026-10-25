@@ -113,16 +113,17 @@ export function roll(o, seed) {
 }
 
 // ---------- the sounds ----------
-function kitFor(c) {
+function kitFor(c, rnd) {   // rnd = seeded, so the same recipe renders the same samples every time
+
   const noise = c.createBuffer(1, c.sampleRate, c.sampleRate), d = noise.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  for (let i = 0; i < d.length; i++) d[i] = rnd() * 2 - 1;
   const panTo = (node, out, pan) => { if (pan && c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = pan; node.connect(p); p.connect(out); } else node.connect(out); };
   // filtered noise burst: the base of every drum's "snap"
   const ns = (t, dur, type, f, q, g, out, pan = 0, f2 = null) => {
     const s = c.createBufferSource(); s.buffer = noise; const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f, t); fl.Q.value = q;
     if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
     const a = c.createGain(); a.gain.setValueAtTime(g, t); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(fl); fl.connect(a); panTo(a, out, pan); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+    s.connect(fl); fl.connect(a); panTo(a, out, pan); s.start(t, rnd() * 0.5); s.stop(t + dur + 0.02);
   };
   const env = (p, t, peak, a, dec) => { p.setValueAtTime(0.0001, t); p.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + a); p.exponentialRampToValueAtTime(0.0001, t + a + dec); };
   const tone = (t, type, f0, f1, sweep, peak, dec, out, pan = 0) => {   // one pitched hit with a pitch drop
@@ -228,12 +229,12 @@ function plan(o, song) {
   return bars;
 }
 function graph(c, o, only) {
-  const K = kitFor(c), master = c.createGain(); master.gain.value = 0.8;
+  const rnd = rng(0x5eed1234), K = kitFor(c, rnd), master = c.createGain(); master.gain.value = 0.8;
   const tilt = c.createBiquadFilter(); tilt.type = "peaking"; tilt.frequency.value = 3200; tilt.Q.value = 0.7; tilt.gain.value = 2.5;   // presence: phone speakers live here
   const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 15500; lp.Q.value = 0.5;        // nothing above what a phone or an MP3 keeps (also tames true peaks)
   master.connect(tilt); tilt.connect(lp); lp.connect(c.destination);
   const sr = c.sampleRate, verb = c.createConvolver(), irn = Math.floor(sr * 1.8), ir = c.createBuffer(2, irn, sr);
-  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < irn; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irn, 3); }
+  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < irn; i++) d[i] = (rnd() * 2 - 1) * Math.pow(1 - i / irn, 3); }
   verb.buffer = ir; const vg = c.createGain(); vg.gain.value = 0.25; verb.connect(vg); vg.connect(master);
   const bus = (name, send) => { const g = c.createGain(); g.gain.value = only && only !== name ? 0 : (o.mute[name] ? 0 : o.vol[name]); g.connect(master); if (send) { const s = c.createGain(); s.gain.value = send; g.connect(s); s.connect(verb); } return g; };
   const B = { drums: bus("drums", 0.07), bass: bus("bass"), keys: bus("keys", 0.5), melody: bus("melody", 0.55) };
@@ -369,9 +370,10 @@ export async function render(o, song, only = null, onProgress) {
 // ---------- the page ----------
 export function mount(root, { getCtx, onUse, wav }) {
   const seed = () => Math.floor(Math.random() * 1e9);
-  const o = { style: "trap", mood: "dark", key: 6, bpm: 140, swing: 0.5, energy: 0.6, kit: "hard", bassSound: "808", keysSound: "pad", leadSound: "bell", verseMelody: true, len: 1,
+  const mk = () => ({ style: "trap", mood: "dark", key: 6, bpm: 140, swing: 0.5, energy: 0.6, kit: "hard", bassSound: "808", keysSound: "pad", leadSound: "bell", verseMelody: true, len: 1,
     seeds: { drums: seed(), bass: seed(), chords: seed(), melody: seed() }, drums: null, melody: null,
-    vol: { drums: 1, bass: 0.5, keys: 1.7, melody: 1.8 }, mute: {} };   // chords + tune forward: phone speakers lose the low end
+    vol: { drums: 1, bass: 0.5, keys: 1.7, melody: 1.8 }, mute: {} });   // chords + tune forward: phone speakers lose the low end
+  const o = mk();
   let song = compose(o), buf = null, src = null;
   const $ = (s) => root.querySelector(s);
   root.innerHTML = `
@@ -385,11 +387,15 @@ export function mount(root, { getCtx, onUse, wav }) {
     <label class="inline">Energy <input type="range" id="blEnergy" min="0" max="100" style="flex:1" aria-label="Energy"></label>
     <div class="row" style="margin-top:8px" id="blLen"></div>
     <p class="muted" style="margin:14px 0 6px">2. Roll the dice until you like it, then shape the parts</p>
-    <div class="row"><button class="on" id="blNew">🎲 Make a new beat</button><button id="blPlay">▶ Hear it</button></div>
+    <div class="row"><button class="on" id="blNew">🎲 Make a new beat</button><button id="blPlay">▶ Hear it</button><button id="blKeep" aria-pressed="false">☆ Keep this beat</button></div>
     <p class="muted" id="blMsg"></p>
     <div id="blParts"></div>
     <p class="muted" style="margin:14px 0 6px">3. Take it to the recorder</p>
     <div class="row"><button class="on" id="blUse">Use this beat → record over it</button><button id="blSave">Save / share beat</button><button id="blStems">Save parts</button></div>
+    <div class="row" style="margin-top:10px"><span class="btn file" style="min-height:44px">Open a saved beat file<input type="file" id="blOpenFile" accept="audio/*,.wav,.mp3" aria-label="Open a saved beat file"></span></div>
+    <p class="muted" id="blOpenMsg" style="margin:6px 0 0">Files you saved from here carry their recipe, so you can edit them again.</p>
+    <div class="card" style="margin:14px 0;background:var(--panel2)"><b>My beats</b>
+      <p class="muted" style="margin:4px 0 8px">Every roll and edit is saved on this phone. Tap one to reopen it exactly. Tap the star to keep it for good.</p><div id="blMine"></div></div>
     <p class="muted">Made by Heartbeat's own beat engine: music-theory rules plus your choices. No AI model makes the track, the same way a drum machine works. Nobody else gets your exact beat unless you share it. Mixed for phone speakers; headphones hear the full bass.</p>`;
   const chip = (label, on, fn, title) => { const b = document.createElement("button"); b.textContent = label; if (on) b.className = "on"; if (title) b.title = title; b.onclick = fn; return b; };
   const setStyle = (k) => { o.style = k; roll(o, seed()); remake(); };
@@ -464,11 +470,81 @@ export function mount(root, { getCtx, onUse, wav }) {
   $("#blUse").onclick = async () => { stopPrev(); const b = await build(); onUse(b, "Beat Lab: " + name(), o.bpm); };
   const openSheet = async (start) => {
     const { openSave } = await import("./save.js");
-    openSave({ title: name(), wav, start,
+    openSave({ title: name(), wav, start, recipe: recipe(),
       getBuffer: () => build(),
       getParts: async (onP) => { const out = [], ps = ["drums", "bass", "keys", "melody"]; for (let i = 0; i < ps.length; i++) { $("#blMsg").textContent = "Making " + ps[i] + "…"; out.push({ name: ps[i], buffer: await render(o, song, ps[i]) }); onP((i + 1) / ps.length); } msg(); return out; } });
   };
   $("#blSave").onclick = () => openSheet();
   $("#blStems").onclick = () => openSheet("parts");
   drawTop(); drawParts();
+  // ---------- My beats: every roll and edit is saved as a small recipe on this phone ----------
+  const KEY = "hb-studio-beats-v1", MAXRECENT = 30;
+  const recipe = () => ({ v: 1, ...JSON.parse(JSON.stringify(o)) });
+  const store = { get() { try { const a = JSON.parse(localStorage.getItem(KEY) || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } },
+    set(a) { try { localStorage.setItem(KEY, JSON.stringify(a)); return true; } catch (e) { return false; } } };
+  let curId = null, lastJson = "", timer = 0, confirmId = null, renameId = null;
+  const autoName = (r) => `${STYLES[r.style] ? STYLES[r.style].name : r.style} ${NOTE[r.key]}${r.mood === "dark" ? "m" : ""} ${r.bpm}`;
+  const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }); };
+  function saveNow() {
+    clearTimeout(timer); const r = recipe(), j = JSON.stringify(r); if (j === lastJson && curId) return; lastJson = j;
+    let all = store.get(), e = all.find((x) => x.id === curId);
+    if (e) { e.r = r; e.t = Date.now(); } else { curId = "b" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36); all.unshift({ id: curId, t: Date.now(), name: null, kept: false, r }); }
+    const kept = all.filter((x) => x.kept), rest = all.filter((x) => !x.kept).sort((a, b) => b.t - a.t).slice(0, MAXRECENT);
+    store.set(kept.concat(rest).sort((a, b) => b.t - a.t)); drawMine(); drawKeep();
+  }
+  const touch = () => { clearTimeout(timer); timer = setTimeout(saveNow, 350); };
+  ["click", "input", "change"].forEach((ev) => root.addEventListener(ev, (e) => { if (e.target.closest && e.target.closest("#blMine, #blKeep, #blPlay, #blUse, #blSave, #blStems, #blOpenFile")) return; touch(); }));
+  const fresh = () => { curId = null; };                                   // a new dice roll is a new entry
+  function openRecipe(r, id) {
+    if (!r || !STYLES[r.style] || !r.seeds) return false;
+    stopPrev(); Object.keys(o).forEach((k) => delete o[k]); Object.assign(o, mk(), JSON.parse(JSON.stringify(r))); delete o.v;
+    song = compose(o); if (o.drums) song.drums = o.drums; buf = null; curId = id || null; lastJson = JSON.stringify(recipe()); drawTop(); drawParts(); drawMine(); drawKeep();
+    if (!id) { const j = JSON.stringify(recipe()), same = store.get().find((x) => JSON.stringify({ v: 1, ...x.r, v: 1 }) === j || JSON.stringify(x.r) === j); curId = same ? same.id : null; if (!same) saveNow(); drawMine(); drawKeep(); }
+    return true;
+  }
+  function drawKeep() { const e = store.get().find((x) => x.id === curId), b = $("#blKeep"); b.textContent = e && e.kept ? "★ Kept" : "☆ Keep this beat"; b.setAttribute("aria-pressed", String(!!(e && e.kept))); b.className = e && e.kept ? "on" : ""; }
+  function drawMine() {
+    const all = store.get(), box = $("#blMine"); box.replaceChildren();
+    if (!all.length) { const p = document.createElement("p"); p.className = "muted"; p.textContent = "Nothing yet. Roll a beat and it shows up here."; box.append(p); return; }
+    const group = (label, list) => {
+      if (!list.length) return; const h = document.createElement("p"); h.className = "muted"; h.style.margin = "10px 0 4px"; h.textContent = label; box.append(h);
+      for (const e of list) {
+        const d = document.createElement("div"); d.className = "blEntry"; d.style.cssText = "border:1px solid var(--line);border-radius:12px;padding:8px;margin:6px 0;" + (e.id === curId ? "border-color:var(--accent);" : "");
+        const nm = e.name || autoName(e.r), open = document.createElement("button"); open.style.cssText = "width:100%;text-align:left;min-height:48px;overflow-wrap:anywhere";
+        open.textContent = nm; const sub = document.createElement("span"); sub.style.cssText = "display:block;font-weight:400;font-size:13px;color:var(--faint)";
+        sub.textContent = `${STYLES[e.r.style].name} · ${NOTE[e.r.key]} ${e.r.mood === "dark" ? "minor" : "major"} · ${e.r.bpm} BPM · ${ago(e.t)}`; open.append(sub);
+        open.onclick = () => { openRecipe(e.r, e.id); $("#blMsg").scrollIntoView({ behavior: "smooth", block: "center" }); };
+        const row = document.createElement("div"); row.className = "row"; row.style.marginTop = "6px";
+        const star = document.createElement("button"); star.textContent = e.kept ? "★ Kept" : "☆ Keep"; star.setAttribute("aria-label", (e.kept ? "Unkeep " : "Keep ") + nm); if (e.kept) star.className = "on";
+        star.onclick = () => { const a = store.get(), x = a.find((y) => y.id === e.id); if (x) { x.kept = !x.kept; store.set(a); } drawMine(); drawKeep(); };
+        const ren = document.createElement("button"); ren.textContent = "Rename";
+        ren.onclick = () => { renameId = renameId === e.id ? null : e.id; drawMine(); };
+        const del = document.createElement("button"); del.textContent = confirmId === e.id ? "Tap again to delete" : "Delete"; if (confirmId === e.id) del.className = "rec";
+        del.onclick = () => {
+          if (confirmId !== e.id) { confirmId = e.id; drawMine(); setTimeout(() => { if (confirmId === e.id) { confirmId = null; drawMine(); } }, 4000); return; }
+          confirmId = null; store.set(store.get().filter((y) => y.id !== e.id)); if (curId === e.id) { curId = null; lastJson = ""; } drawMine(); drawKeep();
+        };
+        row.append(star, ren, del); d.append(open, row);
+        if (renameId === e.id) {
+          const r2 = document.createElement("div"); r2.className = "row"; r2.style.marginTop = "6px"; const inp = document.createElement("input"); inp.value = nm; inp.maxLength = 40; inp.setAttribute("aria-label", "Beat name");
+          inp.style.cssText = "flex:1;font:inherit;font-size:16px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px";
+          const ok = document.createElement("button"); ok.textContent = "Save name"; ok.className = "on";
+          ok.onclick = () => { const a = store.get(), x = a.find((y) => y.id === e.id); if (x) { x.name = inp.value.trim().slice(0, 40) || null; store.set(a); } renameId = null; drawMine(); };
+          r2.append(inp, ok); d.append(r2);
+        }
+        box.append(d);
+      }
+    };
+    group("Kept", all.filter((x) => x.kept)); group("Recent (last " + MAXRECENT + ")", all.filter((x) => !x.kept));
+  }
+  $("#blKeep").onclick = () => { saveNow(); const a = store.get(), x = a.find((y) => y.id === curId); if (x) { x.kept = !x.kept; store.set(a); } drawMine(); drawKeep(); };
+  $("#blOpenFile").onchange = async (e) => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    const { readRecipe } = await import("./save.js"), r = await readRecipe(f);
+    $("#blOpenMsg").textContent = r && openRecipe(r) ? "Opened " + f.name + ". It is saved in My beats too." : "That file has no beat recipe. Only files saved from the Beat Lab can be edited again. Use Upload your own beat (step 1 above) to record over it.";
+  };
+  $("#blNew").addEventListener("click", fresh, true);
+  root.addEventListener("click", (e) => { const b = e.target.closest && e.target.closest("#blStyle button"); if (b) fresh(); }, true);
+  drawMine(); drawKeep();
+  return { open: (r) => openRecipe(r) };
 }

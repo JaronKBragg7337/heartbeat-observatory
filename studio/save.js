@@ -12,6 +12,8 @@
 //   wav        (AudioBuffer) => Blob                  the page's WAV encoder
 //   getParts   async (onProgress) => [{name, buffer}] optional: separate parts
 //   start      "parts" to jump straight to the parts option
+//   recipe     optional Beat Lab recipe (plain object). It is embedded in every WAV (LIST/INFO ICMT) and MP3 (ID3 TXXX "hbrecipe")
+//              so the beat can be reopened and edited later. readRecipe(file) reads it back.
 
 const CSS = `
 .svx-back{position:fixed;inset:0;z-index:1000;background:rgba(10,7,5,.62);display:flex;align-items:flex-end;justify-content:center}
@@ -62,7 +64,7 @@ export async function encodeMp3(buf, onProgress, kbps = 192) {
   await loadLame();
   const L = buf.getChannelData(0), R = buf.numberOfChannels > 1 ? buf.getChannelData(1) : L, n = buf.length;
   let peak = 0; for (let i = 0; i < n; i++) { const a = Math.abs(L[i]), b = Math.abs(R[i]); if (a > peak) peak = a; if (b > peak) peak = b; }
-  const g = peak > 0.98 ? 0.98 / peak : 1, enc = new window.lamejs.Mp3Encoder(2, buf.sampleRate, kbps), out = [], step = 1152 * 10;
+  const g = peak > 0.63 ? 0.63 / peak : 1, enc = new window.lamejs.Mp3Encoder(2, buf.sampleRate, kbps), out = [], step = 1152 * 10;
   const l16 = new Int16Array(step), r16 = new Int16Array(step);
   for (let i = 0, k = 0; i < n; i += step, k++) {
     const m = Math.min(step, n - i);
@@ -72,6 +74,61 @@ export async function encodeMp3(buf, onProgress, kbps = 192) {
   }
   const e = enc.flush(); if (e.length) out.push(new Uint8Array(e));
   return new Blob(out, { type: "audio/mpeg" });
+}
+
+
+// ---- the recipe travels with the file ----
+const TAG = "hbrecipe1:";
+const ascii = (s) => { const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255; return u; };
+const jsonAscii = (o) => JSON.stringify(o);   // recipe is numbers, words and note names: plain ASCII already
+export async function embedRecipe(blob, recipe) {
+  if (!recipe) return blob;
+  try {
+    const text = ascii(TAG + jsonAscii(recipe));
+    if (blob.type === "audio/wav") {
+      const cl = text.length + 1, pad = cl % 2, ck = new Uint8Array(8 + 4 + 8 + cl + pad), dv = new DataView(ck.buffer);
+      ck.set(ascii("LIST"), 0); dv.setUint32(4, 4 + 8 + cl + pad, true); ck.set(ascii("INFO"), 8); ck.set(ascii("ICMT"), 12); dv.setUint32(16, cl + pad, true); ck.set(text, 20);
+      const head = new Uint8Array(await blob.slice(0, 12).arrayBuffer()), hv = new DataView(head.buffer);
+      hv.setUint32(4, hv.getUint32(4, true) + ck.length, true);
+      return new Blob([head, blob.slice(12), ck], { type: "audio/wav" });
+    }
+    if (blob.type === "audio/mpeg") {
+      const desc = ascii("hbrecipe"), body = new Uint8Array(1 + desc.length + 1 + text.length); body.set(desc, 1); body.set(text, 1 + desc.length + 1);
+      const tag = new Uint8Array(10 + 10 + body.length), dv = new DataView(tag.buffer), n = 10 + body.length;
+      tag.set(ascii("ID3"), 0); tag[3] = 3; tag[4] = 0; tag[5] = 0;
+      tag[6] = (n >> 21) & 127; tag[7] = (n >> 14) & 127; tag[8] = (n >> 7) & 127; tag[9] = n & 127;      // sync-safe size
+      tag.set(ascii("TXXX"), 10); dv.setUint32(14, body.length, false); tag.set(body, 20);
+      return new Blob([tag, blob], { type: "audio/mpeg" });
+    }
+  } catch (e) {}
+  return blob;
+}
+// returns the recipe object from a WAV or MP3 File made by the Beat Lab, or null
+export async function readRecipe(file) {
+  try {
+    const u8 = async (a, b) => new Uint8Array(await file.slice(a, b).arrayBuffer()), txt = (u) => String.fromCharCode(...u);
+    const parse = (t) => { const i = t.indexOf(TAG); if (i < 0) return null; const j = t.slice(i + TAG.length); try { return JSON.parse(j.replace(/[ \s]+$/, "")); } catch (e) { return null; } };
+    const h = await u8(0, 12);
+    if (txt(h.slice(0, 4)) === "RIFF" && txt(h.slice(8, 12)) === "WAVE") {
+      let pos = 12;
+      while (pos + 8 <= file.size) {
+        const c = await u8(pos, pos + 8), id = txt(c.slice(0, 4)), len = new DataView(c.buffer).getUint32(4, true);
+        if (id === "LIST" && len < 200000) { const r = parse(txt(await u8(pos + 8, pos + 8 + len))); if (r) return r; }
+        pos += 8 + len + (len % 2);
+      }
+      return null;
+    }
+    if (txt(h.slice(0, 3)) === "ID3") {
+      const size = (h[6] << 21) | (h[7] << 14) | (h[8] << 7) | h[9]; if (size > 200000) return null;
+      const t = await u8(10, 10 + size);
+      for (let p = 0; p + 10 < t.length;) {
+        const id = txt(t.slice(p, p + 4)), len = new DataView(t.buffer, t.byteOffset + p + 4, 4).getUint32(0, false); if (!/^[A-Z0-9]{4}$/.test(id) || !len) break;
+        if (id === "TXXX") { const r = parse(txt(t.slice(p + 10, p + 10 + len))); if (r) return r; }
+        p += 10 + len;
+      }
+    }
+  } catch (e) {}
+  return null;
 }
 
 // ---- video (audio + a simple picture), recorded in real time ----
@@ -144,7 +201,7 @@ function wrap(g, text, x, y, maxW, lh, maxLines) {
 // ---- the sheet ----
 export function openSave(opts) {
   addStyle();
-  const { title, getBuffer, wav, getParts } = opts, base = safe(title), urls = [];
+  const { title, getBuffer, wav, getParts, recipe } = opts, base = safe(title), urls = [];
   const AC = window.AudioContext || window.webkitAudioContext;
   let bufP = null; const buffer = () => (bufP = bufP || Promise.resolve(getBuffer()));
   const back = document.createElement("div"); back.className = "svx-back";
@@ -214,6 +271,7 @@ export function openSave(opts) {
       const buf = await buffer(); let blob, name;
       if (kind === "mp3") { w.text("Making your MP3… (192 kbps stereo)"); blob = await encodeMp3(buf, (p) => w.pct(p)); name = base + ".mp3"; }
       else { blob = wav(buf); name = base + ".wav"; }
+      blob = await embedRecipe(blob, recipe);
       if (closed) return; result([toFile(blob, name, blob.type)], "Your " + kind.toUpperCase() + " is ready");
     } catch (e) { if (!closed) fail(kind === "mp3" ? "Could not make the MP3. Try WAV instead." : "Could not get the song ready. Try again."); }
   }
@@ -247,7 +305,8 @@ export function openSave(opts) {
     try {
       const list = await getParts((p) => w.pct(p));
       if (closed) return;
-      result(list.map((p) => toFile(wav(p.buffer), base + "-" + safe(p.name) + ".wav", "audio/wav")), "Your parts are ready", "Four WAV files that line up with each other. Save them one at a time, or all at once if your phone allows.");
+      const files = []; for (const p of list) files.push(toFile(await embedRecipe(wav(p.buffer), recipe), base + "-" + safe(p.name) + ".wav", "audio/wav"));
+      result(files, "Your parts are ready", "Four WAV files that line up with each other. Save them one at a time, or all at once if your phone allows.");
     } catch (e) { if (!closed) fail("Could not make the parts. Try again."); }
   }
 

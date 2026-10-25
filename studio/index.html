@@ -86,6 +86,7 @@
       <span class="btn file">Upload your own beat<input type="file" id="beatFile" accept="audio/*,.wav,.mp3,.m4a,.aac,.aif,.aiff,.flac,.ogg" /></span>
       <span class="muted" id="beatInfo"></span>
     </div>
+    <div class="row hide" id="recipeOffer" style="margin-top:8px"><span class="muted" style="flex:1 1 100%">This file was made in the Beat Lab, so it can be edited.</span><button class="on" id="recipeOpen">Open in Beat Lab to edit</button></div>
   </div>
 
   <div class="card" id="labCard">
@@ -266,7 +267,12 @@ $("beatFile").onchange = async (e) => {
   if (locked() || !resolveTake()) { e.target.value = ""; return; }
   const token = ++beatLoad; ensureCtx(); stop();
   S.importing = true; controls();
-  try { const buf = await ctx.decodeAudioData(await f.arrayBuffer()); if (token === beatLoad) setBeat(buf, f.name.replace(/\.[^.]+$/, ""), null); }
+  $("recipeOffer").classList.add("hide");
+  try {
+    const buf = await ctx.decodeAudioData(await f.arrayBuffer()); if (token === beatLoad) setBeat(buf, f.name.replace(/\.[^.]+$/, ""), null);
+    const { readRecipe } = await import("/studio/save.js"), rec = await readRecipe(f);
+    if (rec && token === beatLoad) { S.offerRecipe = rec; $("recipeOffer").classList.remove("hide"); }
+  }
   catch (err) { $("status").textContent = "That file didn't open. MP3, WAV or M4A work best."; }
   finally { S.importing = false; e.target.value = ""; controls(); }
 };
@@ -668,12 +674,20 @@ document.addEventListener("visibilitychange", () => {
   if (S.recording || S.playing) { stop(); $("status").textContent = "Paused when you left the page. Review your take before continuing."; }
 });
 
-$("labOpen").onclick = async () => {
+let labApi = null;
+async function openLab() {
+  if (labApi) return labApi;
   $("labOpen").classList.add("hide"); $("lab").classList.remove("hide");
   try {
     const { mount } = await import("/studio/beatlab.js");
-    mount($("lab"), { getCtx: ensureCtx, wav, onUse: (buf, name, bpm) => { if (locked() || !resolveTake()) return; ++beatLoad; stop(); setBeat(buf, name, bpm); $("status").textContent = "Your beat is loaded. Press ● Rec"; document.querySelector(".transport").scrollIntoView({ behavior: "smooth" }); } });
+    labApi = mount($("lab"), { getCtx: ensureCtx, wav, onUse: (buf, name, bpm) => { if (locked() || !resolveTake()) return; ++beatLoad; stop(); setBeat(buf, name, bpm); $("status").textContent = "Your beat is loaded. Press ● Rec"; document.querySelector(".transport").scrollIntoView({ behavior: "smooth" }); } });
   } catch (e) { $("labOpen").classList.remove("hide"); $("status").textContent = "Couldn't open the Beat Lab. Tap to try again."; }
+  return labApi;
+}
+$("labOpen").onclick = () => openLab();
+$("recipeOpen").onclick = async () => {
+  const api = await openLab(); if (!api || !S.offerRecipe) return;
+  if (api.open(S.offerRecipe)) { $("recipeOffer").classList.add("hide"); $("lab").scrollIntoView({ behavior: "smooth" }); $("status").textContent = "Opened in the Beat Lab. Edit it, then use it or save it."; }
 };
 addLayer("Main vocal", 1, 0); addLayer("Ad-libs", 0.75, 0.3);
 drawBeats(); draw();
