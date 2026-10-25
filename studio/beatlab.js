@@ -467,7 +467,7 @@ export function mount(root, { getCtx, onUse, wav }) {
     src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination); src.start(); $("#blPlay").textContent = "■ Stop"; src.onended = () => { src = null; $("#blPlay").textContent = "▶ Hear it"; };
   };
   const name = () => `${STYLES[o.style].name} ${NOTE[o.key]}${o.mood === "dark" ? "m" : ""} ${o.bpm}`;
-  $("#blUse").onclick = async () => { stopPrev(); const b = await build(); onUse(b, "Beat Lab: " + name(), o.bpm); };
+  $("#blUse").onclick = async () => { stopPrev(); const b = await build(); onUse(b, "Beat Lab: " + name(), o.bpm, recipe()); };
   const openSheet = async (start) => {
     const { openSave } = await import("./save.js");
     openSave({ title: name(), wav, start, recipe: recipe(),

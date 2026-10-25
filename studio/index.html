@@ -257,6 +257,7 @@ async function loadBeat(name, bpm, url) {
   } catch (e) { if (token === beatLoad) $("status").textContent = "Couldn't load that beat. Try again."; }
 }
 function setBeat(buf, name, bpm) {
+  S.beatRecipe = null;   // set again by the caller when the beat came from the Beat Lab (so a saved song can reopen its beat)
   S.beat = buf; S.beatName = name; S.bpm = bpm; S.beatPeaks = peaks(buf, 800);
   $("beatInfo").textContent = name + (bpm ? " · " + bpm + " BPM" : "") + " · " + fmt(buf.duration);
   $("playBtn").disabled = false; $("recBtn").disabled = false; $("status").textContent = "Ready";
@@ -271,7 +272,7 @@ $("beatFile").onchange = async (e) => {
   try {
     const buf = await ctx.decodeAudioData(await f.arrayBuffer()); if (token === beatLoad) setBeat(buf, f.name.replace(/\.[^.]+$/, ""), null);
     const { readRecipe } = await import("/studio/save.js"), rec = await readRecipe(f);
-    if (rec && token === beatLoad) { S.offerRecipe = rec; $("recipeOffer").classList.remove("hide"); }
+    if (rec && token === beatLoad) { S.offerRecipe = rec; S.beatRecipe = rec; $("recipeOffer").classList.remove("hide"); }
   }
   catch (err) { $("status").textContent = "That file didn't open. MP3, WAV or M4A work best."; }
   finally { S.importing = false; e.target.value = ""; controls(); }
@@ -644,7 +645,7 @@ async function save(withBeat) {
   try {
     const mixed = await render(withBeat), { openSave } = await import("/studio/save.js");
     $("status").textContent = "Ready. Pick how to save it.";
-    openSave({ title: (S.beatName || "song") + (withBeat ? " my song" : " vocals"), wav, getBuffer: () => mixed });
+    openSave({ title: (S.beatName || "song") + (withBeat ? " my song" : " vocals"), wav, getBuffer: () => mixed, recipe: withBeat ? S.beatRecipe : null });
   } catch (e) { $("status").textContent = "Couldn't mix your song. Try again, or save a shorter song."; }
   finally {
     S.saving = false; $("beatGain").disabled = false;
@@ -680,7 +681,7 @@ async function openLab() {
   $("labOpen").classList.add("hide"); $("lab").classList.remove("hide");
   try {
     const { mount } = await import("/studio/beatlab.js");
-    labApi = mount($("lab"), { getCtx: ensureCtx, wav, onUse: (buf, name, bpm) => { if (locked() || !resolveTake()) return; ++beatLoad; stop(); setBeat(buf, name, bpm); $("status").textContent = "Your beat is loaded. Press ● Rec"; document.querySelector(".transport").scrollIntoView({ behavior: "smooth" }); } });
+    labApi = mount($("lab"), { getCtx: ensureCtx, wav, onUse: (buf, name, bpm, rec) => { if (locked() || !resolveTake()) return; ++beatLoad; stop(); setBeat(buf, name, bpm); S.beatRecipe = rec || null; $("status").textContent = "Your beat is loaded. Press ● Rec"; document.querySelector(".transport").scrollIntoView({ behavior: "smooth" }); } });
   } catch (e) { $("labOpen").classList.remove("hide"); $("status").textContent = "Couldn't open the Beat Lab. Tap to try again."; }
   return labApi;
 }
