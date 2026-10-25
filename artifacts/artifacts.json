@@ -2,6 +2,30 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "studio-v2-team",
+      "date": "2026-10-24",
+      "title": "Studio round 2: built by three AIs at once",
+      "tool": "Claude Fable 5.1 + Codex GPT-6.1 Sol + Kimi K3.1 Pro, merged by Claude Code",
+      "image": "/tv/music/music-ep1-first-light.jpg",
+      "what": "Beat Lab: every dice press is a new beat, plus Drill, Lo-fi and Afrobeats, better drums and 808, louder mix for phones. Recorder: steadier timing, safer punch-ins, live volume and mute, a clean-voice option, safer saving. New: a lyric pad (bars, syllables, rhyme ideas, saves on your phone) and a Know the steps guide to rights, splits and releasing, with official sources.",
+      "made": "Jaron asked the team to look it over. Each AI got its own part and its own copy of the site, then Claude merged the three, tested at phone width and shipped it the same night.",
+      "honest": "Not yet tested on a real iPhone mic or Bluetooth headphones. Beat sound judged by measurements, not ears. No project autosave yet: leaving the page can lose takes. Save parts gives 4 downloads, which iPhones may block.",
+      "links": [
+        {
+          "label": "Open the Studio",
+          "href": "/studio/"
+        },
+        {
+          "label": "Lyric pad",
+          "href": "/studio/lyrics/"
+        },
+        {
+          "label": "Know the steps",
+          "href": "/studio/learn/"
+        }
+      ]
+    },
+    {
       "id": "studio-v1",
       "date": "2026-10-24",
       "title": "Studio: record over a beat on your phone",
