@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Bedroom lab v2 (Fable)</title>
+<!-- hb:no-phone --><!-- hb:no-editor --><!-- hb:no-analytics --><!-- hb:no-homescreen --><!-- hb:no-icon -->
+<!-- Bedroom v2 by Claude Fable 5.1 for the 2026-10-26 engine bake-off. Event history lives in window.HB; AI-README.md explains it. -->
+<style>
+  :root { color-scheme: dark; --bg:#16140f; --card:#221e16; --line:#3a3326; --ink:#ece6d4; --dim:#a79f88; --accent:#f0c36b; --made:#6fd3e3; --seen:#f0c36b; --rebuilt:#d9a86c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; overscroll-behavior: none;
+    font: 14px/1.4 system-ui, -apple-system, sans-serif; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .top { position: fixed; left: 0; right: 0; top: 0; padding: max(10px, env(safe-area-inset-top)) 16px 0; pointer-events: none; }
+  .top h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  .top p { margin: 2px 0 0; color: var(--dim); font-size: 12px; }
+  .legend { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: rgba(34,30,22,.8); color: var(--dim); }
+  .chip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+  .bar { position: fixed; left: 16px; right: 16px; bottom: calc(50px + env(safe-area-inset-bottom)); display: flex; gap: 6px; }
+  .bar button { flex: 1; padding: 8px 4px; font-size: 12px; }
+  button { font: inherit; color: var(--ink); background: rgba(34,30,22,.9); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-height: 44px; }
+  button.on { border-color: var(--accent); color: var(--accent); }
+  button.made { border-color: var(--made); color: var(--made); }
+  .corner { position: fixed; left: 16px; right: 16px; bottom: max(10px, env(safe-area-inset-bottom)); font-size: 10.5px; line-height: 1.3; color: var(--dim); pointer-events: none; }
+  #tag { position: fixed; left: 0; top: 0; font-size: 11px; color: var(--ink); background: rgba(22,20,15,.78); border: 1px solid var(--line);
+    border-radius: 999px; padding: 2px 8px; white-space: nowrap; pointer-events: none; transform: translate(-50%, -100%); display: none; }
+  #toast { position: fixed; left: 50%; top: 26%; transform: translateX(-50%); background: rgba(34,30,22,.94); border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 12px; padding: 10px 16px; font-size: 15px; opacity: 0; transition: opacity .25s; pointer-events: none; text-align: center; max-width: calc(100vw - 32px); }
+  #toast.show { opacity: 1; }
+  #toast.made { border-color: var(--made); color: var(--made); }
+  #msg { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--dim); background: var(--bg); text-align: center; padding: 24px; z-index: 5; }
+  /* Necklace-style history panel */
+  #panel { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(34,30,22,.97); border-top: 1px solid var(--line); border-radius: 16px 16px 0 0;
+    padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); max-height: 62vh; overflow: auto; transform: translateY(105%); transition: transform .28s; z-index: 4; }
+  #panel.open { transform: none; }
+  #panel h2 { font-size: 15px; margin: 0; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+  #panel h2 small { font-weight: 400; color: var(--dim); font-size: 12px; }
+  #panel .prov { font-size: 12px; margin: 4px 0 8px; }
+  .prov b { font-weight: 600; padding: 1px 6px; border-radius: 6px; font-size: 11px; }
+  .prov b.seen { background: rgba(240,195,107,.18); color: var(--seen); } .prov b.rebuilt { background: rgba(217,168,108,.18); color: var(--rebuilt); }
+  .prov b.made { background: rgba(111,211,227,.18); color: var(--made); } .prov b.unseen { background: rgba(167,159,136,.18); color: var(--dim); }
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--dim); margin: 0 0 6px; }
+  .stats span b { color: var(--ink); font-weight: 600; }
+  #tl { width: 100%; height: 46px; display: block; border-radius: 8px; background: #1a1711; margin: 4px 0 6px; touch-action: none; }
+  #ev { list-style: none; margin: 0; padding: 0; font-size: 12.5px; max-height: 150px; overflow: auto; }
+  #ev li { padding: 4px 0; border-top: 1px solid var(--line); display: flex; gap: 8px; }
+  #ev li .t { color: var(--dim); min-width: 44px; font-variant-numeric: tabular-nums; } #ev li .id { color: var(--dim); font-size: 11px; margin-left: auto; }
+  .prow { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .prow button { padding: 6px 10px; min-height: 38px; font-size: 12px; }
+  #close { position: absolute; right: 12px; top: 8px; min-height: 32px; padding: 4px 10px; font-size: 12px; }
+  pre#json { font-size: 10.5px; line-height: 1.35; background: #14120d; border: 1px solid var(--line); border-radius: 8px; padding: 8px; max-height: 180px; overflow: auto; margin: 6px 0 0; white-space: pre-wrap; word-break: break-all; color: #cfc6ad; }
+  .hint { font-size: 11px; color: var(--dim); margin: 6px 0 0; }
+  .bar button { font-size: 11.5px; padding: 8px 2px; }
+  #letterbox { position: fixed; inset: 0; pointer-events: none; z-index: 3; opacity: 0; transition: opacity .6s; }
+  #letterbox.on { opacity: 1; }
+  .lb { position: absolute; left: 0; right: 0; height: 13vh; background: #000; } .lb.top { top: 0; } .lb.bot { bottom: 0; }
+  #cap { position: fixed; left: 16px; right: 16px; bottom: calc(118px + env(safe-area-inset-bottom)); text-align: center; font-size: 16px; line-height: 1.35; color: #fff; text-shadow: 0 1px 6px #000, 0 0 2px #000; opacity: 0; transition: opacity .35s; pointer-events: none; z-index: 3; }
+  #cap.on { opacity: 1; } #cap.title { font-size: 22px; font-weight: 600; letter-spacing: .04em; color: var(--accent); bottom: 46vh; }
+  body.demo .top, body.demo .corner, body.demo #tag, body.demo .bar { opacity: 0; transition: opacity .4s; }
+  #dstop { position: fixed; right: 16px; bottom: calc(50px + env(safe-area-inset-bottom)); z-index: 4; display: none; }
+  body.demo #dstop { display: block; }
+  #dsheet { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(34,30,22,.97); border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); transform: translateY(105%); transition: transform .28s; z-index: 4; }
+  #dsheet.open { transform: none; } #dsheet h2 { font-size: 15px; margin: 0 0 8px; color: var(--accent); } #dsheet h2 small { font-weight: 400; color: var(--dim); font-size: 12px; display: block; }
+  #dclose { position: absolute; right: 12px; top: 8px; min-height: 32px; padding: 4px 10px; font-size: 12px; }
+  .dlist { display: grid; gap: 8px; } .dlist button { text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; } .dlist button b { color: var(--ink); } .dlist button span { color: var(--dim); font-size: 12px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="top"><h1>Bedroom lab v2</h1><p>Drag to look. Tap the man, a wall, a door or a footprint: it tells its history.</p>
+  <div class="legend"><span class="chip"><i style="background:var(--seen)"></i>seen</span><span class="chip"><i style="background:var(--rebuilt)"></i>rebuilt</span><span class="chip"><i style="background:var(--made)"></i>made</span><span class="chip"><i style="background:#6b6355"></i>not seen</span></div>
+</div>
+<div id="tag">AI-generated person (not real)</div>
+<div id="toast"></div>
+<div class="bar">
+  <button id="follow" type="button">Follow</button>
+  <button id="mode" type="button">Seen + made</button>
+  <button id="sound" type="button">Sound off</button>
+  <button id="hist" type="button">History</button>
+  <button id="demos" type="button">Demos</button>
+</div>
+<div id="letterbox"><div class="lb top"></div><div class="lb bot"></div></div>
+<div id="cap"></div>
+<div id="dsheet">
+  <button id="dclose" type="button">Close</button>
+  <h2>Use demos <small>all driven by the same event history</small></h2>
+  <div class="dlist">
+    <button data-demo="game" type="button"><b>Game moment</b><span>The faded door: find the one door the story lets you open, and he walks through into a made room.</span></button>
+    <button data-demo="movie" type="button"><b>Movie shot</b><span>Three camera cuts replayed from the record of what he already did. Any angle, after the fact.</span></button>
+    <button data-demo="music" type="button"><b>Music video</b><span>His footsteps set the tempo; the cuts and the lights land on the beat.</span></button>
+    <button data-demo="show" type="button"><b>Show scene</b><span>The room narrates its own history as captions, documentary style, straight from the events.</span></button>
+  </div>
+  <p class="hint">Every demo reads HB.history(): same IDs, same timeline. Nothing here is pre-recorded video.</p>
+</div>
+<div class="corner">Room + person made by Grok Imagine, rebuilt by Heartbeat Observatory tools. Blue-grid surfaces were never filmed: constructed by us, marked made. AI-generated person (not real).</div>
+<div id="panel">
+  <button id="close" type="button">Close</button>
+  <h2 id="ptitle">History</h2>
+  <div class="prov" id="pprov"></div>
+  <div class="stats" id="pstats"></div>
+  <canvas id="tl"></canvas>
+  <ul id="ev"></ul>
+  <div class="prow">
+    <button id="btrace" type="button">Trace (JSON)</button>
+    <button id="bwin" type="button">Last 10 s (JSON)</button>
+    <button id="bbeat" type="button">Beat from steps</button>
+    <button id="blive" type="button" style="display:none">Back to live</button>
+  </div>
+  <pre id="json" style="display:none"></pre>
+  <p class="hint">Drag the timeline to replay any moment (a movie from the record). Same data at <a href="history.json" style="color:var(--accent)">history.json</a>; how an AI reads it: <a href="AI-README.md" style="color:var(--accent)">AI-README.md</a>.</p>
+</div>
+<button id="dstop" type="button">Stop demo</button>
+<div id="msg">Loading the room...</div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = (id) => document.getElementById(id);
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setClearColor(0x16140f);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 80);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 1.2; controls.maxDistance = 9; controls.minPolarAngle = Math.PI * 0.05; controls.maxPolarAngle = Math.PI * 0.47;
+controls.enablePan = false;
+const HOME_TARGET = new THREE.Vector3(), HOME_POS = new THREE.Vector3();
+function home() { camera.position.copy(HOME_POS); controls.target.copy(HOME_TARGET); controls.update(); }
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 64 : 48; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+// =====================================================================================================
+// EVENT HISTORY (the fourth piece): every object has an ID + provenance; everything that happens is an event.
+// window.HB is the plain doorway for any AI: HB.history(), HB.trace_object(id), HB.events_between(t0,t1), HB.describe().
+// =====================================================================================================
+const HB = window.HB = {
+  scene: 'bedroom-fable', version: 2, made_by: 'Claude Fable 5.1 (bake-off 2026-10-26)', t0_iso: new Date().toISOString(),
+  units: { position: 'metres, y up, floor y=0, door wall at x=-1.45', time: 'seconds since page load' },
+  objects: {}, events: [], tracks: { 'PERSON-001': [] }, _n: 0,
+  add(id, o) { this.objects[id] = Object.assign({ id }, o); return id; },
+  rec(type, object, extra) {
+    const e = Object.assign({ id: 'E-' + String(++this._n).padStart(4, '0'), t: +T.now.toFixed(2), type, object }, extra || {});
+    this.events.push(e); if (this.events.length > 4000) this.events.splice(0, 500);
+    onEvent(e); return e;
+  },
+  trace_object(id) { return { object: this.objects[id] || null, events: this.events.filter((e) => e.object === id || e.target === id), track: this.tracks[id] || null }; },
+  events_between(a, b) { return this.events.filter((e) => e.t >= a && e.t <= b); },
+  history() { return { scene: this.scene, version: this.version, made_by: this.made_by, t0_iso: this.t0_iso, t_now: +T.now.toFixed(2), units: this.units, provenance_key: PROV_KEY, objects: this.objects, events: this.events, tracks: this.tracks }; },
+  describe() {
+    const p = this.trace_object('PERSON-001'); const steps = p.events.filter((e) => e.type === 'footstep').length;
+    const taps = this.events.filter((e) => e.type === 'door_tap').length, un = this.events.filter((e) => e.type === 'door_unlock').length;
+    return `Scene ${this.scene}: ${Object.keys(this.objects).length} objects, ${this.events.length} events over ${T.now.toFixed(0)} s. ` +
+      `PERSON-001 (AI-generated, not real) walked ${walkDist.toFixed(1)} m in ${steps} recorded steps. Doors tapped ${taps}x, unlocked ${un}x. ` +
+      `Seen surfaces come from 2 filmed frames; the far-right, near and door-back walls, floor fill and ceiling are MADE (never filmed).`;
+  },
+};
+const PROV_KEY = { seen: 'what the camera saw (solid)', rebuilt: 'built from evidence in the footage (depth, tracking) - approximate', made: 'constructed by our tools, never filmed', unseen: 'never seen; kept faded/locked' };
+const T = { now: 0 };
+let walkDist = 0;
+
+// ---- objects
+HB.add('ROOM-SEEN-01', { label: 'Room, frame 1 (from the bed)', kind: 'surface', provenance: 'seen', source: 'grok-room-pushin-25s.mp4 f0001, depth-filled mesh' });
+HB.add('ROOM-SEEN-02', { label: 'Room, frame 25 (push-in)', kind: 'surface', provenance: 'seen', source: 'grok-room-pushin-25s.mp4 f0025, depth-filled mesh' });
+HB.add('FLOOR-MADE', { label: 'Floor fill', kind: 'surface', provenance: 'made', note: 'dark wood planks in keeping with the filmed floor; fills where no frame saw the floor' });
+HB.add('CEIL-MADE', { label: 'Ceiling', kind: 'surface', provenance: 'made', note: 'no frame looked up; flat plaster at 2.5 m (door height 2.03 m is the scale)' });
+HB.add('WALL-RIGHT-MADE', { label: 'Right wall (window side)', kind: 'surface', provenance: 'made', note: 'only the nightstand side was seen; the wall behind it is constructed' });
+HB.add('WALL-NEAR-MADE', { label: 'Near wall (behind the camera)', kind: 'surface', provenance: 'made', note: 'nobody ever filmed this side of the room' });
+HB.add('WALL-FAR-MADE', { label: 'Far wall backing', kind: 'surface', provenance: 'made', note: 'closes the gaps around the filmed far wall' });
+HB.add('WALL-DOORS-BACK-MADE', { label: 'Door wall backing', kind: 'surface', provenance: 'made', note: 'closes the doorway alcoves the frames only half saw' });
+HB.add('DOOR-001', { label: 'Door 1 (far)', kind: 'door', provenance: 'unseen', state: 'locked' });
+HB.add('DOOR-002', { label: 'Door 2 (middle)', kind: 'door', provenance: 'unseen', state: 'locked', unlockable: true });
+HB.add('DOOR-003', { label: 'Door 3 (near)', kind: 'door', provenance: 'unseen', state: 'locked' });
+HB.add('BEYOND-002', { label: 'Room beyond door 2', kind: 'room', provenance: 'made', state: 'hidden', note: 'appears when door 2 is unlocked; nothing behind that door was ever filmed' });
+HB.add('PERSON-001', { label: 'AI-generated person (not real)', kind: 'person', provenance: 'made', rig: '17 joints', source: 'Grok Imagine still -> Hunyuan3D-2mini; walk timing measured from grok-walk-1.mp4 (rebuilt)' });
+HB.add('CAMERA', { label: 'Viewer camera', kind: 'camera', provenance: 'n/a' });
+
+// ---- lights (seen surfaces are unlit photos; made surfaces are shaded by their own shader)
+scene.add(new THREE.HemisphereLight(0xfff1d8, 0x2a2118, 1.5));
+const sun = new THREE.DirectionalLight(0xffe2b0, 1.6); sun.position.set(4, 5, 1); scene.add(sun);
+
+// ---- room box (metres): door wall x=-1.45 (alcoves to -2.6), right wall x=2.1, far wall z=-5.0, near wall z=1.9, ceiling 2.5
+const BOX = { x0: -2.65, x1: 2.1, z0: -5.0, z1: 1.9, h: 2.5 };
+let meta, person, mixer, walkAction, idleAction; const clips = {};
+const doorMeshes = [], pickables = [], madeMats = [], madeGroup = new THREE.Group(); scene.add(madeGroup);
+const gl = new GLTFLoader(); const load = (u) => new Promise((res, rej) => gl.load(u, res, undefined, rej));
+
+// ---- procedural textures (made surfaces): in keeping with the filmed room (dark wood, warm plaster)
+function tex(draw, w = 512, h = 512, rep = 1) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t;
+}
+const rnd = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const woodTex = tex((x, w, h) => {
+  x.fillStyle = '#2a1c12'; x.fillRect(0, 0, w, h);
+  const pw = w / 4;
+  for (let i = 0; i < 4; i++) {
+    const off = (i % 2) * h * 0.5; const base = 34 + rnd() * 14;
+    x.fillStyle = `rgb(${base + 10},${base - 6},${base - 16})`; x.fillRect(i * pw + 1, 0, pw - 2, h);
+    for (let k = 0; k < 40; k++) { x.strokeStyle = `rgba(${base - 20},${base - 26},${base - 30},${0.25 + rnd() * 0.3})`; x.lineWidth = 1 + rnd() * 1.5; x.beginPath(); const y0 = rnd() * h; x.moveTo(i * pw + rnd() * pw, y0); x.bezierCurveTo(i * pw + rnd() * pw, y0 + 120, i * pw + rnd() * pw, y0 + 240, i * pw + rnd() * pw, y0 + 400); x.stroke(); }
+    x.fillStyle = 'rgba(0,0,0,.55)'; x.fillRect(i * pw, (off + h * 0.5) % h, pw, 2); x.fillRect(i * pw, 0, 1.5, h);
+  }
+});
+const plasterTex = (tint) => tex((x, w, h) => {
+  // smooth plaster: a few soft wide blotches (low frequency) + a whisper of grain, never static
+  x.fillStyle = tint; x.fillRect(0, 0, w, h);
+  for (let k = 0; k < 28; k++) { const r = 40 + rnd() * 90, cx = rnd() * w, cy = rnd() * h, g = x.createRadialGradient(cx, cy, 0, cx, cy, r); const l = rnd() > 0.5; g.addColorStop(0, l ? 'rgba(255,250,235,.10)' : 'rgba(60,45,30,.09)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(cx - r, cy - r, 2 * r, 2 * r); }
+  const d = x.getImageData(0, 0, w, h), a = d.data;
+  for (let i = 0; i < a.length; i += 4) { const n = (rnd() - 0.5) * 2.5; a[i] += n; a[i + 1] += n; a[i + 2] += n; }
+  x.putImageData(d, 0, 0);
+}, 256, 256);
+const wallTex = plasterTex('#c4b59b'), ceilTex = plasterTex('#b9ae9c');
+
+// made-surface shader: photo-like texture + faint 0.5 m world grid (honest hint), modes: 0 blend, 2 highlight (cyan hatch)
+const MADE = { mode: 0 };
+function madeMat(map, rep, tint = 1.0, rough = 0) {
+  const m = new THREE.ShaderMaterial({
+    uniforms: { map: { value: map }, rep: { value: new THREE.Vector2(rep[0], rep[1]) }, mode: { value: 0 }, tint: { value: tint }, fade: { value: 1 }, h: { value: BOX.h } },
+    side: THREE.FrontSide, transparent: true,
+    vertexShader: `varying vec2 vUv; varying vec3 vW; varying vec3 vN; uniform vec2 rep;
+      void main(){ vUv = uv * rep; vW = (modelMatrix * vec4(position,1.0)).xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * vec4(vW,1.0); }`,
+    fragmentShader: `varying vec2 vUv; varying vec3 vW; varying vec3 vN; uniform sampler2D map; uniform float mode; uniform float tint; uniform float fade; uniform float h;
+      void main(){
+        vec3 col = texture2D(map, vUv).rgb * tint;
+        // soft room shading: warmer/brighter low on the walls (lamp side), darker toward ceiling corners
+        float up = clamp(vW.y / h, 0.0, 1.0); col *= 0.86 + 0.30 * (1.0 - up);
+        col *= 0.85 + 0.15 * max(0.0, dot(vN, normalize(vec3(0.6, 0.3, 0.5))));
+        // honest hint: faint 0.5 m grid on every made surface
+        vec3 g = abs(fract(vW / 0.5 + 0.5) - 0.5) / fwidth(vW / 0.5);
+        float line = 1.0 - min(min(g.x, g.y), g.z); line = clamp(line, 0.0, 1.0);
+        col = mix(col, col * 1.35 + vec3(0.02,0.05,0.06), line * 0.5);
+        if (mode > 1.5) { float hatch = step(0.5, fract((vW.x + vW.y + vW.z) * 6.0)); col = mix(col, vec3(0.35, 0.80, 0.90), 0.32 + 0.22 * hatch); }
+        gl_FragColor = vec4(col, fade);
+      }`
+  });
+  madeMats.push(m); return m;
+}
+function plane(w, h, mat, pos, rot, id) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.position.set(...pos); m.rotation.set(...rot); m.userData.id = id; madeGroup.add(m); pickables.push(m); return m;
+}
+function buildMadeRoom() {
+  const W = BOX.x1 - BOX.x0, D = BOX.z1 - BOX.z0, cx = (BOX.x0 + BOX.x1) / 2, cz = (BOX.z0 + BOX.z1) / 2;
+  plane(W, D, madeMat(woodTex, [W / 1.2, D / 1.2], 1.0), [cx, -0.012, cz], [-Math.PI / 2, 0, 0], 'FLOOR-MADE');
+  plane(W, D, madeMat(ceilTex, [W, D], 0.8), [cx, BOX.h, cz], [Math.PI / 2, 0, 0], 'CEIL-MADE');
+  plane(D, BOX.h, madeMat(wallTex, [D, BOX.h]), [BOX.x1, BOX.h / 2, cz], [0, -Math.PI / 2, 0], 'WALL-RIGHT-MADE');
+  plane(W, BOX.h, madeMat(wallTex, [W, BOX.h]), [cx, BOX.h / 2, BOX.z1], [0, Math.PI, 0], 'WALL-NEAR-MADE');
+  plane(W, BOX.h, madeMat(wallTex, [W, BOX.h], 0.9), [cx, BOX.h / 2, BOX.z0], [0, 0, 0], 'WALL-FAR-MADE');
+  // door-wall backing in 2 pieces + a plug behind door 2 (the plug goes away on unlock)
+  const d2 = meta.doors.D2; const zA = Math.min(d2.a[2], d2.b[2]) - 0.08, zB = Math.max(d2.a[2], d2.b[2]) + 0.08;
+  const p1 = [BOX.z0, zA], p2 = [zB, BOX.z1];
+  for (const [a, b] of [p1, p2]) plane(b - a, BOX.h, madeMat(wallTex, [b - a, BOX.h], 0.85), [BOX.x0, BOX.h / 2, (a + b) / 2], [0, Math.PI / 2, 0], 'WALL-DOORS-BACK-MADE');
+  const plug = plane(zB - zA, BOX.h, madeMat(wallTex, [zB - zA, BOX.h], 0.85), [BOX.x0, BOX.h / 2, (zA + zB) / 2], [0, Math.PI / 2, 0], 'WALL-DOORS-BACK-MADE');
+  // baseboard line (dark strip) along made walls for a finished look
+  const bb = new THREE.MeshBasicMaterial({ color: 0x241a12 });
+  for (const [w, pos, rot] of [[D, [BOX.x1 - 0.005, 0.05, cz], [0, -Math.PI / 2, 0]], [W, [cx, 0.05, BOX.z1 - 0.005], [0, Math.PI, 0]], [W, [cx, 0.05, BOX.z0 + 0.005], [0, 0, 0]]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, 0.1), bb); m.position.set(...pos); m.rotation.set(...rot); madeGroup.add(m);
+  }
+  return plug;
+}
+// the room beyond door 2 (made, hidden until unlock)
+let beyond, plug;
+function buildBeyond() {
+  const d2 = meta.doors.D2; const zc = (d2.a[2] + d2.b[2]) / 2, zw = 2.6, x0 = BOX.x0, x1 = BOX.x0 - 2.4, cx = (x0 + x1) / 2, w = x0 - x1;
+  beyond = new THREE.Group(); beyond.visible = false; scene.add(beyond);
+  const add = (geo, mat, pos, rot) => { const m = new THREE.Mesh(geo, mat); m.position.set(...pos); m.rotation.set(...rot); m.userData.id = 'BEYOND-002'; beyond.add(m); pickables.push(m); return m; };
+  const wt = plasterTex('#d6c6a8');
+  add(new THREE.PlaneGeometry(w, zw), madeMat(woodTex, [w / 1.2, zw / 1.2], 1.15), [cx, -0.005, zc], [-Math.PI / 2, 0, 0]);
+  add(new THREE.PlaneGeometry(w, zw), madeMat(ceilTex, [w, zw]), [cx, BOX.h, zc], [Math.PI / 2, 0, 0]);
+  add(new THREE.PlaneGeometry(zw, BOX.h), madeMat(wt, [zw, BOX.h], 1.1), [x1, BOX.h / 2, zc], [0, Math.PI / 2, 0]);
+  add(new THREE.PlaneGeometry(w, BOX.h), madeMat(wt, [w, BOX.h], 1.1), [cx, BOX.h / 2, zc - zw / 2], [0, 0, 0]);
+  add(new THREE.PlaneGeometry(w, BOX.h), madeMat(wt, [w, BOX.h], 1.1), [cx, BOX.h / 2, zc + zw / 2], [0, Math.PI, 0]);
+  // a warm lamp glow + the honest label
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: spriteTex((x) => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 64); g.addColorStop(0, 'rgba(255,220,160,.9)'); g.addColorStop(1, 'rgba(255,200,120,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); }), transparent: true, depthWrite: false }));
+  glow.position.set(x1 + 0.5, 1.6, zc); glow.scale.setScalar(1.4); beyond.add(glow);
+  const lbl = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTex('MADE - never filmed', '#6fd3e3'), transparent: true, depthWrite: false }));
+  lbl.position.set(x1 + 0.3, 1.9, zc); lbl.scale.set(1.5, 0.38, 1); beyond.add(lbl);
+  for (const m of beyond.children) if (m.material.uniforms) m.material.uniforms.fade.value = 0;
+}
+function spriteTex(draw, w = 128, h = 128) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
+function textTex(s, color) { return spriteTex((x) => { x.font = '600 44px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = 'rgba(22,20,15,.7)'; x.fillRect(0, 0, 512, 128); x.fillStyle = color; x.fillText(s, 256, 64); }, 512, 128); }
+
+// ---- seen room: unlit photo texture, edges fade; TEAR FIX = drop stretched triangles + anything outside the room box
+function roomMat(old) {
+  const m = new THREE.MeshBasicMaterial({ map: old.map, side: THREE.DoubleSide, transparent: true });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.dimSeen = { value: 1 }; sh.uniforms.cut = { value: new THREE.Vector4(0, 0, 0, 0) }; m.userData.sh = sh;
+    sh.vertexShader = sh.vertexShader.replace('#include <fog_vertex>', '#include <fog_vertex>\n vWp = (modelMatrix * vec4(transformed, 1.0)).xyz;').replace('void main() {', 'varying vec3 vWp;\nvoid main() {');
+    sh.fragmentShader = sh.fragmentShader.replace('uniform vec3 diffuse;', 'uniform vec3 diffuse; uniform float dimSeen; uniform vec4 cut; varying vec3 vWp;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+      float e = min(min(vMapUv.x, 1.0 - vMapUv.x), min(vMapUv.y, 1.0 - vMapUv.y));
+      diffuseColor.a *= smoothstep(0.0, 0.06, e);
+      // unlocked door 2: the dark alcove pixels the footage saw go translucent so the made room shows through
+      if (cut.w > 0.0 && vWp.x < -1.5 && vWp.z > cut.x && vWp.z < cut.y && vWp.y < 2.1) diffuseColor.a *= 1.0 - 0.85 * cut.w;
+      diffuseColor.rgb *= 0.92 * dimSeen;`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n if (gl_FragColor.a < 0.02) discard;');
+  };
+  return m;
+}
+function cleanSeen(mesh, S) {
+  const g = mesh.geometry, P = g.attributes.position.array, I = g.index.array, keep = []; let dropped = 0;
+  const maxE = 0.13 / S, box = { x0: -2.75 / S, x1: 2.25 / S, z0: -5.6 / S, z1: 1.9 / S, y1: 2.6 / S, y0: -0.25 / S };
+  const v = (i) => [P[3 * i], P[3 * i + 1], P[3 * i + 2]];
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  for (let i = 0; i < I.length; i += 3) {
+    const a = v(I[i]), b = v(I[i + 1]), c = v(I[i + 2]);
+    const inBox = [a, b, c].every((p) => p[0] > box.x0 && p[0] < box.x1 && p[2] > box.z0 && p[2] < box.z1 && p[1] < box.y1 && p[1] > box.y0);
+    if (inBox && dist(a, b) < maxE && dist(b, c) < maxE && dist(c, a) < maxE) keep.push(I[i], I[i + 1], I[i + 2]); else dropped++;
+  }
+  g.setIndex(keep); return dropped;
+}
+
+// ---- locked doors (unseen): pale shimmer + padlock; door 2 can be unlocked
+function makeDoor(d, name, id) {
+  const a = new THREE.Vector3(...d.a), b = new THREE.Vector3(...d.b), up = new THREE.Vector3(0, d.h, 0);
+  const g = new THREE.BufferGeometry(); const P = [a, b, b.clone().add(up), a.clone().add(up)];
+  g.setFromPoints([P[0], P[1], P[2], P[0], P[2], P[3]]);
+  g.setAttribute('uv', new THREE.Float32BufferAttribute([0,0, 1,0, 1,1, 0,0, 1,1, 0,1], 2));
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { t: { value: 0 }, k: { value: 0 }, open: { value: 0 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `varying vec2 vUv; uniform float t; uniform float k; uniform float open;
+      void main(){
+        float edge = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
+        float band = 0.5 + 0.5 * sin(vUv.y * 9.0 - t * 1.4 + vUv.x * 2.0);
+        float a = 0.34 + 0.22 * band + 0.25 * k;
+        a *= smoothstep(0.0, 0.16, edge) * 0.85 + 0.15;
+        // unlock: the fog burns away from the top down
+        a *= 1.0 - smoothstep(open - 0.25, open + 0.05, 1.0 - vUv.y) ;
+        gl_FragColor = vec4(mix(vec3(0.96,0.88,0.70), vec3(1.0,0.95,0.80), band), a);
+      }`
+  });
+  const mesh = new THREE.Mesh(g, mat); mesh.userData.id = id; mesh.renderOrder = 5;
+  const ctr = a.clone().add(b).multiplyScalar(0.5).add(new THREE.Vector3(0, d.h * 0.52, 0));
+  const spr = lockSprite(); spr.position.copy(ctr); spr.scale.setScalar(0.34); spr.renderOrder = 6;
+  const ol = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(P), new THREE.LineBasicMaterial({ color: 0xf0c36b, transparent: true, opacity: 0.55 }));
+  const grp = new THREE.Group(); grp.add(mesh, spr, ol); grp.position.x += 0.02; scene.add(grp);
+  mesh.userData.lock = spr; mesh.userData.outline = ol; mesh.userData.center = ctr.clone();
+  doorMeshes.push(mesh); pickables.push(mesh); return mesh;
+}
+function lockSprite() {
+  const t = spriteTex((x) => { x.strokeStyle = '#f0c36b'; x.fillStyle = '#f0c36b'; x.lineWidth = 5; x.globalAlpha = 0.9; x.beginPath(); x.arc(32, 26, 11, Math.PI, 0); x.stroke(); x.fillRect(18, 28, 28, 22); }, 64, 64);
+  return new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, opacity: 0.8 }));
+}
+let unlocking = null;
+function unlockDoor(m) {
+  if (m.userData.open) return; m.userData.open = true; unlocking = { m, t: 0 };
+  HB.objects['DOOR-002'].state = 'unlocked'; HB.objects['BEYOND-002'].state = 'shown';
+  HB.rec('door_unlock', 'DOOR-002', { target: 'BEYOND-002', position: m.userData.center.toArray().map((v) => +v.toFixed(2)), note: 'room beyond is MADE: nothing behind this door was filmed' });
+  say('Unlocked. The room beyond is MADE - nothing there was ever filmed.', true); sfx.unlock();
+}
+
+// ---- footprints + path trail (Necklace style: tap a footprint -> its event)
+const footGroup = new THREE.Group(); scene.add(footGroup); const footprints = [];
+const footTex = spriteTex((x) => { x.fillStyle = 'rgba(240,195,107,.9)'; x.beginPath(); x.ellipse(32, 36, 11, 20, 0, 0, Math.PI * 2); x.fill(); x.beginPath(); x.arc(32, 10, 8, 0, Math.PI * 2); x.fill(); }, 64, 64);
+function footprint(e) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 0.24), new THREE.MeshBasicMaterial({ map: footTex, transparent: true, depthWrite: false, opacity: 0.85 }));
+  m.position.set(e.position[0], 0.012, e.position[2]); m.rotation.set(-Math.PI / 2, 0, -e.yaw); m.userData.id = e.id; m.userData.ev = e; m.renderOrder = 3;
+  footGroup.add(m); pickables.push(m); footprints.push(m);
+  if (footprints.length > 60) { const o = footprints.shift(); footGroup.remove(o); pickables.splice(pickables.indexOf(o), 1); }
+}
+const TRAIL_N = 400; const trailGeo = new THREE.BufferGeometry();
+trailGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL_N * 3), 3)); trailGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(TRAIL_N * 3), 3));
+const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9 })); trail.frustumCulled = false; trail.renderOrder = 4; scene.add(trail);
+const speedColor = (v) => new THREE.Color().setHSL(0.62 - 0.62 * Math.min(1, v / 1.4), 0.9, 0.58);
+function updateTrail() {
+  const tr = HB.tracks['PERSON-001']; const n = Math.min(TRAIL_N, tr.length); const P = trailGeo.attributes.position.array, C = trailGeo.attributes.color.array;
+  for (let i = 0; i < n; i++) { const s = tr[tr.length - n + i]; P[3 * i] = s[1]; P[3 * i + 1] = 0.02; P[3 * i + 2] = s[2]; const c = speedColor(s[3]); C[3 * i] = c.r; C[3 * i + 1] = c.g; C[3 * i + 2] = c.b; }
+  trailGeo.setDrawRange(0, n); trailGeo.attributes.position.needsUpdate = true; trailGeo.attributes.color.needsUpdate = true;
+}
+
+// ---- the walk: a loop around what was seen AND into the made side (feet on y=0)
+const WALK = []; let pi = 1, dir = 1, state = 'turn', stateT = 0, yaw = 0, targetYaw = 0, speed = 0.76, lastStepPhase = 0, walking = false;
+function buildPath() {
+  const d = Object.values(meta.doors); const wallX = d.reduce((s, q) => s + q.a[0] + q.b[0], 0) / (2 * d.length);
+  const lane = (wallX + meta.bed_xz[0]) / 2 - 0.05;
+  const zA = Math.min(BOX.z1 - 0.5, meta.doors.D3.b[2] + 0.5), zB = meta.doors.D1.a[2] - 0.15, zFar = Math.min(zB, meta.bed_xz[1] - 0.7);
+  const xR = Math.min(BOX.x1 - 0.5, meta.bed_xz[2] + 0.3);
+  const pts = [[xR - 0.3, zA + 0.25], [lane + 0.1, zA], [lane, zB], [lane + 0.5, zFar - 0.2], [xR, zFar - 0.25]];
+  for (const p of pts) WALK.push(new THREE.Vector3(p[0], 0, p[1]));
+}
+function startSeg(from, to) {
+  targetYaw = Math.atan2(to.x - from.x, to.z - from.z); let d = targetYaw - yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); targetYaw = yaw + d;
+  state = 'turn'; stateT = 0; if (walking) { walking = false; HB.rec('stop', 'PERSON-001', { position: pos3(person.position) }); }
+}
+const pos3 = (p) => [+p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2)];
+const footL = { b: null, v: new THREE.Vector3() }, footR = { b: null, v: new THREE.Vector3() };
+const detour = []; let onDetour = false;
+function goVia(points) { detour.length = 0; for (const q of points) detour.push(new THREE.Vector3(q[0], 0, q[1])); onDetour = true; startSeg(person.position, detour[0]); }
+function stepPerson(dt) {
+  const p = person.position; let to = WALK[pi];
+  if (onDetour) { if (!detour.length) { onDetour = false; let best = 0, bd = 1e9; WALK.forEach((w, i) => { const d = w.distanceTo(p); if (d < bd) { bd = d; best = i; } }); pi = best; startSeg(p, WALK[pi]); return; } to = detour[0]; }
+  if (state === 'turn') {
+    yaw += (targetYaw - yaw) * Math.min(1, dt * 6); person.rotation.y = yaw; stateT += dt;
+    fade(idleAction, walkAction);
+    if (Math.abs(targetYaw - yaw) < 0.05 && stateT > (pi === 0 || pi === WALK.length - 1 ? 1.4 : 0.35)) { state = 'walk'; fade(walkAction, idleAction); walking = true; HB.rec('walk_start', 'PERSON-001', { position: pos3(p), heading_deg: +THREE.MathUtils.radToDeg(yaw).toFixed(0), target: 'waypoint ' + pi }); }
+  } else {
+    const v = new THREE.Vector3().subVectors(to, p); const dist = v.length();
+    if (dist < 0.06) { if (onDetour) { detour.shift(); if (detour.length) startSeg(p, detour[0]); else { onDetour = false; HB.rec('arrived', 'PERSON-001', { position: pos3(p), target: 'BEYOND-002' }); startSeg(p, WALK[pi]); } return; }
+      pi += dir; if (pi >= WALK.length) { dir = -1; pi = WALK.length - 2; } else if (pi < 0) { dir = 1; pi = 1; } startSeg(p, WALK[pi]); return; }
+    v.multiplyScalar(1 / dist); const step = Math.min(dist, speed * dt); p.addScaledVector(v, step); walkDist += step;
+    yaw = Math.atan2(v.x, v.z); person.rotation.y = yaw;
+    // footsteps: each half stride, the lower foot is the planted one -> a recorded, tappable event with a sound
+    const ph = (walkAction.time / clips.walk.duration) % 1; const half = Math.floor(ph * 2);
+    if (half !== lastStepPhase) {
+      lastStepPhase = half; footL.b.getWorldPosition(footL.v); footR.b.getWorldPosition(footR.v);
+      const lower = half === 0 ? 'L' : 'R'; const fp = lower === 'L' ? footL.v : footR.v;
+      const e = HB.rec('footstep', 'PERSON-001', { foot: lower, position: [+fp.x.toFixed(2), 0, +fp.z.toFixed(2)], speed_mps: +speed.toFixed(2), yaw: +yaw.toFixed(2) });
+      footprint(e); sfx.step(fp.x, lower);
+    }
+  }
+}
+function fade(inA, outA) { inA.enabled = true; inA.setEffectiveWeight(1); outA.setEffectiveWeight(0); inA.play(); }
+
+// ---- replay (movie demo): drag the timeline -> the man goes back to where he was at that moment
+let replayT = null;
+function applyReplay(t) {
+  const tr = HB.tracks['PERSON-001']; if (!tr.length) return;
+  let i = tr.findIndex((s) => s[0] >= t); if (i < 0) i = tr.length - 1; const b = tr[i], a = tr[Math.max(0, i - 1)];
+  const f = b[0] === a[0] ? 0 : (t - a[0]) / (b[0] - a[0]);
+  person.position.set(a[1] + (b[1] - a[1]) * f, 0, a[2] + (b[2] - a[2]) * f); person.rotation.y = a[4] + (b[4] - a[4]) * f;
+  const moving = (a[3] + b[3]) / 2 > 0.2; fade(moving ? walkAction : idleAction, moving ? idleAction : walkAction);
+  for (const m of footprints) m.visible = m.userData.ev.t <= t;
+}
+
+// ---- sound (Studio-style: every sound is an event on the timeline). Muted until the Sound button (iOS rule).
+const sfx = (() => {
+  let ac, master, tone; const on = () => !!ac;
+  function start() {
+    ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
+    const n = ac.sampleRate * 2, buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0); let l = 0;
+    for (let i = 0; i < n; i++) { l = 0.98 * l + 0.02 * (Math.random() * 2 - 1); d[i] = l * 3.5; }
+    tone = ac.createBufferSource(); tone.buffer = buf; tone.loop = true; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 260;
+    const g = ac.createGain(); g.gain.value = 0.05; tone.connect(f).connect(g).connect(master); tone.start();
+  }
+  function burst(dur, fq, q, gain, pan = 0, type = 'bandpass') {
+    if (!ac) return; const n = Math.floor(ac.sampleRate * dur), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.2);
+    const s = ac.createBufferSource(); s.buffer = b; const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = fq; f.Q.value = q;
+    const g = ac.createGain(); g.gain.value = gain; const p = ac.createStereoPanner ? ac.createStereoPanner() : null; if (p) p.pan.value = pan;
+    s.connect(f).connect(g); (p ? g.connect(p).connect(master) : g.connect(master)); s.start();
+  }
+  function thud(fq, dur, gain) { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(fq, ac.currentTime); o.frequency.exponentialRampToValueAtTime(fq * 0.5, ac.currentTime + dur); g.gain.setValueAtTime(gain, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur); o.connect(g).connect(master); o.start(); o.stop(ac.currentTime + dur); }
+  return {
+    on, start,
+    step(x, foot) { const pan = THREE.MathUtils.clamp((x - camera.position.x) / 4, -0.7, 0.7); burst(0.09, foot === 'L' ? 900 : 1100, 1.2, 0.35, pan); thud(110, 0.08, 0.25); },
+    knock() { thud(70, 0.16, 0.5); burst(0.06, 500, 2, 0.3); },
+    unlock() { if (!ac) return; [660, 880, 1320].forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f; const t = ac.currentTime + i * 0.12; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.2, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7); o.connect(g).connect(master); o.start(t); o.stop(t + 0.8); }); },
+    tick(hi) { burst(hi ? 0.03 : 0.07, hi ? 6000 : 160, 1, hi ? 0.15 : 0.6, 0, hi ? 'highpass' : 'lowpass'); },
+    now() { return ac ? ac.currentTime : 0; },
+  };
+})();
+// beat demo (music video use): the recorded footstep timing becomes a tempo; a 2-bar kick/hat loop plays at that tempo
+let beatTimer = null;
+function beatFromSteps() {
+  const st = HB.events.filter((e) => e.type === 'footstep').slice(-9); if (st.length < 3) return say('Need a few more steps first');
+  const gaps = st.slice(1).map((e, i) => e.t - st[i].t).filter((g) => g > 0.2 && g < 1.5); const med = gaps.sort((a, b) => a - b)[Math.floor(gaps.length / 2)];
+  const bpm = Math.round(60 / med); if (!sfx.on()) { $('sound').click(); }
+  say(`Beat from his steps: ${bpm} BPM (one step = one beat)`); HB.rec('beat_from_steps', 'PERSON-001', { bpm, steps_used: st.length });
+  clearInterval(beatTimer); let n = 0; beatTimer = setInterval(() => { sfx.tick(n % 2 === 1); if (n % 2 === 0) sfx.step(person.position.x, n % 4 ? 'R' : 'L'); if (++n >= 16) clearInterval(beatTimer); }, med * 500);
+}
+
+// =====================================================================================================
+// USE DEMOS - a game moment, a movie shot, a music video, a show scene - all driven by HB.history()
+// =====================================================================================================
+let demo = null; const cap = $('cap'), lbx = $('letterbox');
+function caption(s, title) { cap.textContent = s || ''; cap.classList.toggle('title', !!title); cap.classList.toggle('on', !!s); }
+const camTo = new THREE.Vector3(), lookTo = new THREE.Vector3(), lookCur = new THREE.Vector3();
+function cut(from, look) { camera.position.set(...from); lookCur.set(...look); camTo.set(...from); lookTo.copy(lookCur); }
+function glide(to, look, k) { camTo.set(...to); lookTo.set(...look); camera.position.lerp(camTo, k); lookCur.lerp(lookTo, k); }
+const manAt = (dy = 1.0) => [person.position.x, dy, person.position.z];
+function startDemo(name) {
+  stopDemo(); demo = { name, t: 0, i: -1, bpm: 0, beatT: 0, beatN: 0, line: 0 }; document.body.classList.add('demo'); controls.enabled = false; follow = false; $('follow').classList.remove('on');
+  closePanel(); $('dsheet').classList.remove('open'); HB.rec('demo_start', 'CAMERA', { demo: name });
+  if (name === 'movie' || name === 'show') lbx.classList.add('on');
+  if (name === 'music' && !sfx.on()) $('sound').click();
+  if (name === 'music') { const st = HB.events.filter((e) => e.type === 'footstep').slice(-9); const gaps = st.slice(1).map((e, i) => e.t - st[i].t).filter((g) => g > 0.2 && g < 1.5).sort((a, b) => a - b); demo.period = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0.55; demo.bpm = Math.round(60 / demo.period); HB.rec('beat_from_steps', 'PERSON-001', { bpm: demo.bpm, steps_used: st.length }); }
+  if (name === 'game') { demo.t0 = T.now; demo.steps0 = HB.events.filter((e) => e.type === 'footstep').length; }
+  if (name === 'movie') { demo.span = Math.min(14, Math.max(6, T.now - 1)); demo.from = T.now - demo.span; replayT = demo.from; applyReplay(replayT); HB.rec('replay_start', 'CAMERA', { to_t: +demo.from.toFixed(1), reason: 'movie shot' }); }
+  if (name === 'show') { demo.lines = narrate(); }
+}
+function stopDemo() {
+  if (!demo) return; HB.rec('demo_end', 'CAMERA', { demo: demo.name, seconds: +demo.t.toFixed(1) }); demo = null; document.body.classList.remove('demo'); controls.enabled = true; lbx.classList.remove('on'); caption('');
+  if (replayT !== null) { replayT = null; for (const m of footprints) m.visible = true; HB.rec('replay_end', 'CAMERA'); } $('blive').style.display = 'none'; clearInterval(beatTimer);
+  if (window.speechSynthesis) speechSynthesis.cancel(); for (const m of footprints) m.material.opacity = 0.85; for (const d of doorMeshes) d.material.uniforms.k.value = 0;
+  home();
+}
+// the room narrates its own history (show scene): plain sentences straight from the events
+function narrate() {
+  const ev = HB.events, fs = ev.filter((e) => e.type === 'footstep'), ws = ev.filter((e) => e.type === 'walk_start'), un = ev.find((e) => e.type === 'door_unlock'), taps = ev.filter((e) => e.type === 'door_tap');
+  const L = [];
+  L.push(['This is a bedroom nobody has ever stood in.', 'wide']);
+  L.push(['Two frames of an AI-made video are all that was ever seen of it. The rest we built, and we say so.', 'made']);
+  L.push([`A made man has walked it for ${T.now.toFixed(0)} seconds: ${fs.length} steps, ${walkDist.toFixed(1)} metres, every one of them on record.`, 'man']);
+  if (ws.length) L.push([`At ${ws[0].t.toFixed(1)} seconds he set off, heading ${ws[0].heading_deg} degrees, toward the wall of doors.`, 'doors']);
+  if (fs.length > 4) { const e = fs[Math.floor(fs.length / 2)]; L.push([`Step ${e.id}, ${e.foot === 'L' ? 'left' : 'right'} foot, landed at ${e.position[0]} by ${e.position[2]} metres. Tap it later and it will tell you this itself.`, 'foot', e]); }
+  if (un) L.push([`At ${un.t.toFixed(1)} seconds door two was unlocked. The room behind it is made: no camera ever looked there, so we built one and marked it.`, 'door2']);
+  else L.push([taps.length ? `Door ${taps[taps.length - 1].object.slice(-1)} was tried at ${taps[taps.length - 1].t.toFixed(1)} seconds. Locked. Not seen yet.` : 'Three doors stay faded. Nothing behind them was filmed, so nothing is shown.', 'doors']);
+  L.push(['Everything you just heard came from history dot json. Any AI can read the same file.', 'wide']);
+  return L;
+}
+function speak(s) { try { if (!window.speechSynthesis || !sfx.on()) return; const u = new SpeechSynthesisUtterance(s); u.rate = 0.95; u.pitch = 0.9; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }
+function stepDemo(dt) {
+  if (!demo) return; demo.t += dt; const d = demo, t = d.t, z2 = (meta.doors.D2.a[2] + meta.doors.D2.b[2]) / 2;
+  if (d.name === 'game') {
+    const steps = HB.events.filter((e) => e.type === 'footstep').length - d.steps0;
+    if (d.phase === undefined) { d.phase = 0; cut([1.6, 1.5, 1.9], [-1.2, 1.1, z2]); caption('Three doors. The footage never saw behind any of them. One can be opened. Tap it.'); }
+    if (d.phase === 0) { glide([1.4, 1.5, 1.5], [-1.2, 1.1, z2], 0.02); if (HB.objects['DOOR-002'].state === 'unlocked' && !d.sent) { d.sent = true; d.phase = 1; goVia([[-1.05, z2], [-2.1, z2], [-3.6, z2 + 0.3]]); caption('Door 2 opens. He heard it too.'); } }
+    else if (d.phase === 1) { glide([-0.2, 1.6, z2 + 2.6], [-2.4, 1.1, z2], 0.03); if (!onDetour) { d.phase = 2; HB.rec('quest_done', 'PERSON-001', { door: 'DOOR-002', seconds: +(T.now - d.t0).toFixed(1), steps }); caption(`Quest done in ${(T.now - d.t0).toFixed(0)} s and ${steps} steps. He is standing in a room that was never filmed, and the page says so. Two doors left: they open when new footage arrives.`); d.t3 = t; } }
+    else if (d.phase === 2) { glide([-1.0, 1.5, z2 + 1.4], [-3.0, 1.0, z2], 0.03); if (t - d.t3 > 7) stopDemo(); }
+    if (d.phase === 0 && t > 40) { caption('No tap. The locked doors wait; the demo ends here.'); if (t > 44) stopDemo(); }
+  }
+  if (d.name === 'movie') {
+    const rt = d.from + Math.min(t, d.span); replayT = rt; applyReplay(rt);
+    const P = person.position;
+    if (t < 2.4) { if (d.i < 0) { d.i = 0; cut([P.x + 1.4, 0.25, P.z + 1.6], [P.x, 0.5, P.z]); caption('THE WALK, REPLAYED FROM THE RECORD', true); } glide([P.x + 1.2, 0.28, P.z + 1.5], [P.x, 0.6, P.z], 0.05); }
+    else if (t < 7) { if (d.i < 1) { d.i = 1; cut([P.x - Math.sin(person.rotation.y) * 1.3 + 0.5, 1.55, P.z - Math.cos(person.rotation.y) * 1.3 + 0.4], manAt(1.4)); caption('Shot 1: over the shoulder, from a moment that already happened'); } const bx = P.x - Math.sin(person.rotation.y) * 1.4 + 0.5, bz = P.z - Math.cos(person.rotation.y) * 1.4 + 0.4; glide([bx, 1.55, bz], manAt(1.3), 0.08); }
+    else if (t < 11) { if (d.i < 2) { d.i = 2; cut([P.x + 0.3, 0.12, P.z + 0.9], [P.x, 0.35, P.z]); caption('Shot 2: the floor. Every footprint is a recorded event.'); } glide([P.x + 0.2, 0.14, P.z + 0.8], [P.x, 0.3, P.z], 0.1); }
+    else if (t < d.span + 1.5) { if (d.i < 3) { d.i = 3; cut([2.0, 2.3, 1.6], manAt(0.9)); caption('Shot 3: the crane. Same seconds, third angle. No re-shoot needed.'); } glide([1.6, 2.2, 1.2], manAt(0.9), 0.04); }
+    else if (t < d.span + 4.5) { if (d.i < 4) { d.i = 4; caption('A movie is a camera path over an event history.', true); } glide([1.4, 2.0, 1.0], manAt(0.9), 0.03); }
+    else stopDemo();
+  }
+  if (d.name === 'music') {
+    d.beatT += dt; const per = d.period;
+    if (d.beatN === 0 && d.beatT < 0.05) caption(`${d.bpm} BPM, from his own footsteps`);
+    while (d.beatT >= per) { d.beatT -= per; const n = d.beatN++; sfx.tick(n % 2 === 1); if (n % 2 === 0) sfx.step(person.position.x, n % 4 ? 'R' : 'L');
+      for (const m of footprints) m.material.opacity = 1; for (const dm of doorMeshes) dm.material.uniforms.k.value = n % 4 === 0 ? 1.2 : 0.5;
+      if (n % 4 === 0) { const a = [[[1.9, 1.3, 1.5], manAt(1.0)], [[-0.9, 0.3, 1.6], manAt(0.6)], [[0.4, 2.2, -3.8], manAt(0.9)], [[person.position.x + 1.0, 1.6, person.position.z + 0.9], manAt(1.4)]][Math.floor(n / 4) % 4]; cut(a[0], a[1]); }
+      if (n === 8) caption('Cuts land on the beat. Lights land on the beat. The beat is his.'); if (n === 24) caption('Any recorded motion can score itself.'); if (n >= 40) { stopDemo(); return; } }
+    for (const m of footprints) m.material.opacity = Math.max(0.5, m.material.opacity - dt * 1.2);
+    glide(camTo.toArray(), manAt(1.0), 0.06);
+  }
+  if (d.name === 'show') {
+    const per = 6.5, i = Math.min(d.lines.length - 1, Math.floor(t / per)); const [txt, shot, ev] = d.lines[i];
+    if (d.line !== i + 1) { d.line = i + 1; caption(txt); speak(txt); HB.rec('narration', 'CAMERA', { line: i + 1, text: txt });
+      const pos = { wide: [[2.2, 2.0, 1.7], [-0.6, 0.9, -1.4]], made: [[0.9, 1.6, 1.4], [1.9, 1.2, -1.5]], man: [manAt(1.0).map((v, k) => v + [1.2, 0.5, 1.2][k]), manAt(1.0)], doors: [[0.4, 1.3, 0.6], [-1.3, 1.1, z2]], foot: ev ? [[ev.position[0] + 0.5, 0.5, ev.position[2] + 0.6], [ev.position[0], 0.05, ev.position[2]]] : [[0.4, 1.3, 0.6], [-1.3, 1.1, z2]], door2: [[-0.3, 1.5, z2 + 2.2], [-2.6, 1.0, z2]] }[shot];
+      cut(pos[0], pos[1]); d.glideTo = pos[0].map((v, k) => v + [-0.35, 0.05, -0.25][k]); d.look = pos[1]; }
+    if (shot === 'man') glide(manAt(1.0).map((v, k) => v + [1.2, 0.5, 1.2][k]), manAt(1.0), 0.05); else glide(d.glideTo, d.look, 0.01);
+    if (t > per * d.lines.length + 1) stopDemo();
+  }
+  camera.lookAt(lookCur);
+}
+$('demos').addEventListener('click', () => { closePanel(); $('dsheet').classList.toggle('open'); });
+$('dclose').addEventListener('click', () => $('dsheet').classList.remove('open'));
+for (const b of document.querySelectorAll('.dlist button')) b.addEventListener('click', () => startDemo(b.dataset.demo));
+$('dstop').addEventListener('click', stopDemo);
+
+// ---- UI
+const toast = $('toast'); let tt;
+let toastFrames = 0;
+function say(s, made) { toast.textContent = s; toast.classList.toggle('made', !!made); toast.classList.add('show'); clearTimeout(tt); if (window.__fixedDt) { toastFrames = Math.round((made ? 3.2 : 1.8) / window.__fixedDt); return; } tt = setTimeout(() => toast.classList.remove('show'), made ? 3200 : 1800); }
+let follow = false;
+$('follow').addEventListener('click', () => { follow = !follow; $('follow').classList.toggle('on', follow); HB.rec('view_follow', 'CAMERA', { on: follow }); });
+const MODES = [['Seen+made', 0], ['Seen only', 1], ['Made', 2]]; let modeI = 0;
+function setMode(i) {
+  modeI = i % 3; const [label, v] = MODES[modeI]; $('mode').textContent = label; $('mode').classList.toggle('made', v === 2); $('mode').classList.toggle('on', v === 1);
+  madeGroup.visible = v !== 1; if (beyond) beyond.visible = v !== 1 && HB.objects['BEYOND-002'].state === 'shown';
+  for (const m of madeMats) m.uniforms.mode.value = v; for (const m of seenMeshes) if (m.material.userData.sh) m.material.userData.sh.uniforms.dimSeen.value = v === 2 ? 0.75 : 1;
+  HB.rec('view_mode', 'CAMERA', { mode: label });
+  if (v === 1) say('Seen only: this is all the footage ever showed'); if (v === 2) say('Blue = made by us, never filmed', true);
+}
+$('mode').addEventListener('click', () => setMode(modeI + 1));
+$('sound').addEventListener('click', () => { if (!sfx.on()) { sfx.start(); $('sound').textContent = 'Sound on'; $('sound').classList.add('on'); HB.rec('sound_on', 'CAMERA'); say('Footsteps and room tone follow the events'); } });
+$('hist').addEventListener('click', () => openPanel('SCENE'));
+$('close').addEventListener('click', closePanel);
+$('btrace').addEventListener('click', () => showJson(HB.trace_object(panelObj === 'SCENE' ? 'PERSON-001' : panelObj)));
+$('bwin').addEventListener('click', () => showJson({ events_between: [+(T.now - 10).toFixed(1), +T.now.toFixed(1)], events: HB.events_between(T.now - 10, T.now) }));
+$('bbeat').addEventListener('click', beatFromSteps);
+$('blive').addEventListener('click', () => { replayT = null; $('blive').style.display = 'none'; for (const m of footprints) m.visible = true; HB.rec('replay_end', 'CAMERA'); });
+function showJson(o) { const p = $('json'); p.style.display = 'block'; const s = JSON.stringify(o, null, 1); p.textContent = s.length > 6000 ? s.slice(0, 6000) + '\n... (' + s.length + ' chars; full data: HB.history())' : s; }
+let panelObj = null, panelOpen = false;
+function openPanel(id) { panelObj = id; panelOpen = true; $('panel').classList.add('open'); $('json').style.display = 'none'; HB.rec('tap', id === 'SCENE' ? 'CAMERA' : id, { panel: true }); renderPanel(); }
+function closePanel() { panelOpen = false; $('panel').classList.remove('open'); }
+const fmt = (t) => t.toFixed(1) + ' s';
+const verbs = { demo_start: (e) => `Demo: ${e.demo}`, demo_end: (e) => `Demo ${e.demo} ended (${e.seconds} s)`, quest_done: (e) => `Quest done: ${e.door} in ${e.seconds} s`, arrived: () => 'Arrived in the made room', narration: (e) => `"${e.text.slice(0, 60)}..."`, footstep: (e) => `${e.foot === 'L' ? 'Left' : 'Right'} foot down at (${e.position[0]}, ${e.position[2]})`, walk_start: (e) => `Started walking, heading ${e.heading_deg} deg`, stop: () => 'Stopped, turning', door_tap: (e) => `Tapped: ${e.result}`, door_unlock: () => 'Unlocked. Room beyond is MADE', tap: (e) => `Tapped (history opened)`, view_mode: (e) => `View: ${e.mode}`, view_follow: (e) => `Follow ${e.on ? 'on' : 'off'}`, sound_on: () => 'Sound on', scene_start: () => 'Scene loaded', beat_from_steps: (e) => `Beat from steps: ${e.bpm} BPM`, replay_start: (e) => `Replay from ${e.to_t} s`, replay_end: () => 'Back to live', foot_tap: (e) => `Footprint ${e.target} tapped` };
+function renderPanel() {
+  if (!panelOpen) return; const id = panelObj; const o = HB.objects[id];
+  let evs, title, prov;
+  if (id === 'SCENE') { evs = HB.events; title = `Scene history <small>${Object.keys(HB.objects).length} objects, ${HB.events.length} events</small>`; prov = `<b class="seen">seen</b> 2 filmed frames &nbsp; <b class="rebuilt">rebuilt</b> depth, rig, walk timing &nbsp; <b class="made">made</b> 6 surfaces + the person &nbsp; <b class="unseen">not seen</b> 3 doors`; }
+  else if (id.startsWith('E-')) { const e = HB.events.find((x) => x.id === id); evs = [e]; title = `${id} <small>footstep</small>`; prov = `<b class="made">made</b> a step the AI person took at ${fmt(e.t)}, ${e.foot === 'L' ? 'left' : 'right'} foot, ${e.speed_mps} m/s`; }
+  else { const tr = HB.trace_object(id); evs = tr.events; title = `${o.label} <small>${id}</small>`; prov = `<b class="${o.provenance}">${o.provenance}</b> ${PROV_KEY[o.provenance] || ''}${o.note ? ' - ' + o.note : ''}${o.source ? '<br>Source: ' + o.source : ''}${o.state ? '<br>State: ' + o.state : ''}`; }
+  $('ptitle').innerHTML = title; $('pprov').innerHTML = prov;
+  const steps = HB.events.filter((e) => e.type === 'footstep').length;
+  $('pstats').innerHTML = id === 'PERSON-001' || id === 'SCENE' ? `<span>walked <b>${walkDist.toFixed(1)} m</b></span><span>steps <b>${steps}</b></span><span>speed <b>${(walking ? speed : 0).toFixed(2)} m/s</b></span><span>time <b>${T.now.toFixed(0)} s</b></span>` : `<span>events <b>${evs.length}</b></span><span>time <b>${T.now.toFixed(0)} s</b></span>`;
+  $('ev').innerHTML = evs.slice(-10).reverse().map((e) => `<li><span class="t">${fmt(e.t)}</span><span>${(verbs[e.type] || (() => e.type))(e)}</span><span class="id">${e.id}</span></li>`).join('') || '<li><span>No events yet</span></li>';
+  drawTimeline(evs);
+}
+// Studio-style timeline: every event is a tick (sounds too); drag = replay
+const tl = $('tl'); const tctx = tl.getContext('2d'); const TYPE_COL = { quest_done: '#6fd3e3', narration: '#e38fd0', footstep: '#f0c36b', door_tap: '#d9a86c', door_unlock: '#6fd3e3', walk_start: '#9bd48a', stop: '#9bd48a', tap: '#a79f88', view_mode: '#a79f88', beat_from_steps: '#e38fd0' };
+function tlRange() { const span = Math.max(20, T.now); return [Math.max(0, T.now - span), T.now]; }
+function drawTimeline(evs) {
+  const W = tl.clientWidth, H = tl.clientHeight; if (tl.width !== W * 2) { tl.width = W * 2; tl.height = H * 2; } const x = tctx; x.setTransform(2, 0, 0, 2, 0, 0); x.clearRect(0, 0, W, H);
+  const [a, b] = tlRange(); const X = (t) => (t - a) / (b - a) * W;
+  x.fillStyle = '#1a1711'; x.fillRect(0, 0, W, H);
+  for (const e of evs) { x.fillStyle = TYPE_COL[e.type] || '#776f5e'; const h = e.type === 'footstep' ? 14 : 24; x.fillRect(X(e.t) - 1, H - 10 - h, 2, h); }
+  x.fillStyle = '#a79f88'; x.font = '10px system-ui'; x.fillText(a.toFixed(0) + ' s', 4, 11); x.textAlign = 'right'; x.fillText(b.toFixed(0) + ' s', W - 4, 11); x.textAlign = 'left';
+  const ph = replayT === null ? b : replayT; x.fillStyle = replayT === null ? '#ece6d4' : '#6fd3e3'; x.fillRect(X(ph) - 1, 0, 2, H);
+}
+let tlDrag = false;
+function tlSeek(ev) { const r = tl.getBoundingClientRect(); const [a, b] = tlRange(); replayT = THREE.MathUtils.clamp(a + (ev.clientX - r.left) / r.width * (b - a), a, b); applyReplay(replayT); $('blive').style.display = ''; }
+tl.addEventListener('pointerdown', (ev) => { tlDrag = true; tl.setPointerCapture(ev.pointerId); tlSeek(ev); HB.rec('replay_start', 'CAMERA', { to_t: +replayT.toFixed(1) }); });
+tl.addEventListener('pointermove', (ev) => { if (tlDrag) tlSeek(ev); }); tl.addEventListener('pointerup', () => { tlDrag = false; }); tl.addEventListener('pointercancel', () => { tlDrag = false; });
+
+// ---- taps: the man, a door, a footprint, a made wall -> its history
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null; let personMeshes = [], seenMeshes = [];
+canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null; if (moved > 8) return;
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects([...doorMeshes, ...personMeshes, ...footprints, ...(madeGroup.visible ? madeGroup.children : []), ...(beyond && beyond.visible ? beyond.children : []), ...seenMeshes], false).filter((h) => h.object.visible && (h.object.userData.id || h.object.userData.seenId));
+  if (!hits.length) { if (panelOpen) closePanel(); return; }
+  const h = hits[0], o = h.object, id = o.userData.id || o.userData.seenId;
+  if (o.userData.lock) {
+    o.material.uniforms.k.value = 1; sfx.knock();
+    const show = (pid) => { if (!demo) openPanel(pid); };
+    if (id === 'DOOR-002' && !o.userData.open) { HB.rec('door_tap', id, { result: 'unlocking', position: o.userData.center.toArray().map((v) => +v.toFixed(2)) }); unlockDoor(o); show(id); }
+    else if (o.userData.open) { HB.rec('door_tap', id, { result: 'already open (room beyond is made)' }); show('BEYOND-002'); }
+    else { HB.rec('door_tap', id, { result: 'Locked - not seen yet' }); say('Locked - not seen yet'); show(id); }
+    return;
+  }
+  if (demo) return;
+  if (o.userData.ev) { HB.rec('foot_tap', 'PERSON-001', { target: o.userData.ev.id }); openPanel(o.userData.ev.id); return; }
+  openPanel(id);
+});
+
+// ---- go
+(async () => {
+  try {
+    meta = await (await fetch('meta.json')).json();
+    const [room, per] = await Promise.all([load('room.glb'), load('person.glb')]);
+    const S = meta.scale; room.scene.scale.setScalar(S); let dropped = 0, k = 0;
+    room.scene.traverse((o) => { if (o.isMesh) { dropped += cleanSeen(o, S); o.material = roomMat(o.material); o.userData.seenId = 'ROOM-SEEN-0' + (++k); seenMeshes.push(o); } });
+    scene.add(room.scene); HB.objects['ROOM-SEEN-01'].tear_fix = HB.objects['ROOM-SEEN-02'].tear_fix = `${dropped} stretched/out-of-room triangles dropped at load`;
+    Object.entries(meta.doors).forEach(([key, d], i) => makeDoor(d, key, 'DOOR-00' + (i + 1)));
+    plug = buildMadeRoom(); buildBeyond();
+    person = per.scene; scene.add(person);
+    person.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.material.roughness = 0.9; o.material.emissive = new THREE.Color(0x0b0b10); o.userData.id = 'PERSON-001'; personMeshes.push(o); } if (o.name === 'FootL') footL.b = o; if (o.name === 'FootR') footR.b = o; });
+    mixer = new THREE.AnimationMixer(person); for (const c of per.animations) clips[c.name] = c;
+    walkAction = mixer.clipAction(clips.walk); idleAction = mixer.clipAction(clips.idle); walkAction.play(); idleAction.play(); idleAction.setEffectiveWeight(0);
+    buildPath(); person.position.copy(WALK[0]); pi = 1; startSeg(WALK[0], WALK[1]); yaw = targetYaw; person.rotation.y = yaw;
+    const zs = Object.values(meta.doors).flatMap((d) => [d.a[2], d.b[2]]); const zmid = (Math.min(...zs) + Math.max(...zs)) / 2;
+    HOME_TARGET.set(-0.3, 1.0, zmid + 0.2); HOME_POS.copy(HOME_TARGET).add(new THREE.Vector3(2.4, 1.0, 4.6));
+    home(); $('msg').remove(); setMode(0); HB.rec('scene_start', 'CAMERA', { objects: Object.keys(HB.objects).length, seen_triangles_dropped: dropped });
+  } catch (err) { $('msg').textContent = 'Could not load the room (' + (err && err.message || err) + ').'; console.error(err); return; }
+  const clock = new THREE.Clock(); const tag = $('tag'); const hv = new THREE.Vector3(); let trackT = 0, panelT = 0;
+  renderer.setAnimationLoop(() => {
+    if (window.__fixedDt) { if (!window.__step) return; window.__step = false; }   // recorder: one page step per captured frame
+    const dt = window.__fixedDt || Math.min(clock.getDelta(), 0.05); T.now += dt; const t = T.now; if (window.__fixedDt && toastFrames > 0 && --toastFrames === 0) toast.classList.remove('show');
+    if (replayT === null) { stepPerson(dt); } else { fadeStep(); }
+    mixer.update(dt);
+    if (replayT === null && (trackT += dt) > 0.2) { trackT = 0; const tr = HB.tracks['PERSON-001']; tr.push([+t.toFixed(2), +person.position.x.toFixed(3), +person.position.z.toFixed(3), walking ? +speed.toFixed(2) : 0, +yaw.toFixed(3)]); if (tr.length > 3000) tr.splice(0, 500); updateTrail(); }
+    for (const m of doorMeshes) { m.material.uniforms.t.value = t; m.material.uniforms.k.value *= 0.96; }
+    if (unlocking) { unlocking.t += dt; const u = Math.min(1, unlocking.t / 1.6); unlocking.m.material.uniforms.open.value = u; unlocking.m.userData.lock.material.opacity = 0.8 * (1 - u); unlocking.m.userData.outline.material.opacity = 0.55 * (1 - u) + 0.2 * u;
+      for (const m of seenMeshes) if (m.material.userData.sh) m.material.userData.sh.uniforms.cut.value.set(Math.min(meta.doors.D2.a[2], meta.doors.D2.b[2]) - 0.1, Math.max(meta.doors.D2.a[2], meta.doors.D2.b[2]) + 0.1, 0, u);
+      if (u > 0.3) { beyond.visible = madeGroup.visible; plug.visible = false; const f = Math.min(1, (u - 0.3) / 0.7); for (const m of beyond.children) if (m.material.uniforms) m.material.uniforms.fade.value = f; }
+      if (u >= 1) unlocking = null; }
+    if (demo) stepDemo(dt); else if (!window.__freeCam) { if (follow) controls.target.lerp(hv.set(person.position.x, 1.0, person.position.z), 0.08); controls.update(); }
+    hv.set(person.position.x, 1.95, person.position.z).project(camera);
+    if (hv.z < 1) { tag.style.display = 'block'; tag.style.left = ((hv.x + 1) / 2 * innerWidth) + 'px'; tag.style.top = ((1 - hv.y) / 2 * innerHeight) + 'px'; } else tag.style.display = 'none';
+    if (panelOpen && (panelT += dt) > 0.5) { panelT = 0; renderPanel(); }
+    renderer.render(scene, camera);
+  });
+  function fadeStep() { /* replay: pose comes from applyReplay */ }
+  window.__dbg = { doorMeshes, camera, controls, startDemo, stopDemo, get person() { return person; }, THREE, setMode, unlock() { unlockDoor(doorMeshes[1]); }, openPanel, say, get walk() { return { pi, dir, state }; } };
+  window.__ready = true;
+})();
+function onEvent(e) { if (panelOpen && (e.type === 'footstep' || e.type === 'door_tap' || e.type === 'door_unlock')) renderPanel(); }
+</script>
+</body>
+</html>

@@ -1,0 +1,1492 @@
+{
+ "scene": "bedroom-fable",
+ "version": 2,
+ "made_by": "Claude Fable 5.1 (bake-off 2026-10-26)",
+ "t0_iso": "2026-10-26T05:30:30.731Z",
+ "t_now": 27.2,
+ "units": {
+  "position": "metres, y up, floor y=0, door wall at x=-1.45",
+  "time": "seconds since page load"
+ },
+ "provenance_key": {
+  "seen": "what the camera saw (solid)",
+  "rebuilt": "built from evidence in the footage (depth, tracking) - approximate",
+  "made": "constructed by our tools, never filmed",
+  "unseen": "never seen; kept faded/locked"
+ },
+ "objects": {
+  "ROOM-SEEN-01": {
+   "id": "ROOM-SEEN-01",
+   "label": "Room, frame 1 (from the bed)",
+   "kind": "surface",
+   "provenance": "seen",
+   "source": "grok-room-pushin-25s.mp4 f0001, depth-filled mesh",
+   "tear_fix": "6342 stretched/out-of-room triangles dropped at load"
+  },
+  "ROOM-SEEN-02": {
+   "id": "ROOM-SEEN-02",
+   "label": "Room, frame 25 (push-in)",
+   "kind": "surface",
+   "provenance": "seen",
+   "source": "grok-room-pushin-25s.mp4 f0025, depth-filled mesh",
+   "tear_fix": "6342 stretched/out-of-room triangles dropped at load"
+  },
+  "FLOOR-MADE": {
+   "id": "FLOOR-MADE",
+   "label": "Floor fill",
+   "kind": "surface",
+   "provenance": "made",
+   "note": "dark wood planks in keeping with the filmed floor; fills where no frame saw the floor"
+  },
+  "CEIL-MADE": {
+   "id": "CEIL-MADE",
+   "label": "Ceiling",
+   "kind": "surface",
+   "provenance": "made",
+   "note": "no frame looked up; flat plaster at 2.5 m (door height 2.03 m is the scale)"
+  },
+  "WALL-RIGHT-MADE": {
+   "id": "WALL-RIGHT-MADE",
+   "label": "Right wall (window side)",
+   "kind": "surface",
+   "provenance": "made",
+   "note": "only the nightstand side was seen; the wall behind it is constructed"
+  },
+  "WALL-NEAR-MADE": {
+   "id": "WALL-NEAR-MADE",
+   "label": "Near wall (behind the camera)",
+   "kind": "surface",
+   "provenance": "made",
+   "note": "nobody ever filmed this side of the room"
+  },
+  "WALL-FAR-MADE": {
+   "id": "WALL-FAR-MADE",
+   "label": "Far wall backing",
+   "kind": "surface",
+   "provenance": "made",
+   "note": "closes the gaps around the filmed far wall"
+  },
+  "WALL-DOORS-BACK-MADE": {
+   "id": "WALL-DOORS-BACK-MADE",
+   "label": "Door wall backing",
+   "kind": "surface",
+   "provenance": "made",
+   "note": "closes the doorway alcoves the frames only half saw"
+  },
+  "DOOR-001": {
+   "id": "DOOR-001",
+   "label": "Door 1 (far)",
+   "kind": "door",
+   "provenance": "unseen",
+   "state": "locked"
+  },
+  "DOOR-002": {
+   "id": "DOOR-002",
+   "label": "Door 2 (middle)",
+   "kind": "door",
+   "provenance": "unseen",
+   "state": "unlocked",
+   "unlockable": true
+  },
+  "DOOR-003": {
+   "id": "DOOR-003",
+   "label": "Door 3 (near)",
+   "kind": "door",
+   "provenance": "unseen",
+   "state": "locked"
+  },
+  "BEYOND-002": {
+   "id": "BEYOND-002",
+   "label": "Room beyond door 2",
+   "kind": "room",
+   "provenance": "made",
+   "state": "shown",
+   "note": "appears when door 2 is unlocked; nothing behind that door was ever filmed"
+  },
+  "PERSON-001": {
+   "id": "PERSON-001",
+   "label": "AI-generated person (not real)",
+   "kind": "person",
+   "provenance": "made",
+   "rig": "17 joints",
+   "source": "Grok Imagine still -> Hunyuan3D-2mini; walk timing measured from grok-walk-1.mp4 (rebuilt)"
+  },
+  "CAMERA": {
+   "id": "CAMERA",
+   "label": "Viewer camera",
+   "kind": "camera",
+   "provenance": "n/a"
+  }
+ },
+ "events": [
+  {
+   "id": "E-0001",
+   "t": 0,
+   "type": "view_mode",
+   "object": "CAMERA",
+   "mode": "Seen+made"
+  },
+  {
+   "id": "E-0002",
+   "t": 0,
+   "type": "scene_start",
+   "object": "CAMERA",
+   "objects": 14,
+   "seen_triangles_dropped": 6342
+  },
+  {
+   "id": "E-0003",
+   "t": 0.37,
+   "type": "walk_start",
+   "object": "PERSON-001",
+   "position": [
+    1.3,
+    0,
+    1.65
+   ],
+   "heading_deg": -96,
+   "target": "waypoint 1"
+  },
+  {
+   "id": "E-0004",
+   "t": 0.6,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    1.21,
+    0,
+    1.55
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.68
+  },
+  {
+   "id": "E-0005",
+   "t": 1.17,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    0.75,
+    0,
+    1.69
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.68
+  },
+  {
+   "id": "E-0006",
+   "t": 1.7,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    0.38,
+    0,
+    1.46
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.68
+  },
+  {
+   "id": "E-0007",
+   "t": 2.27,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -0.09,
+    0,
+    1.6
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.68
+  },
+  {
+   "id": "E-0008",
+   "t": 2.8,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -0.45,
+    0,
+    1.37
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.68
+  },
+  {
+   "id": "E-0009",
+   "t": 3.3,
+   "type": "stop",
+   "object": "PERSON-001",
+   "position": [
+    -0.89,
+    0,
+    1.41
+   ]
+  },
+  {
+   "id": "E-0010",
+   "t": 3.83,
+   "type": "walk_start",
+   "object": "PERSON-001",
+   "position": [
+    -0.89,
+    0,
+    1.41
+   ],
+   "heading_deg": -176,
+   "target": "waypoint 2"
+  },
+  {
+   "id": "E-0011",
+   "t": 3.87,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -0.99,
+    0,
+    1.4
+   ],
+   "speed_mps": 0.76,
+   "yaw": -3.11
+  },
+  {
+   "id": "E-0012",
+   "t": 3.9,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -0.8,
+    0,
+    1.43
+   ],
+   "speed_mps": 0.76,
+   "yaw": -3.11
+  },
+  {
+   "id": "E-0013",
+   "t": 4,
+   "type": "demo_start",
+   "object": "CAMERA",
+   "demo": "game"
+  },
+  {
+   "id": "E-0014",
+   "t": 4.47,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -1.01,
+    0,
+    0.99
+   ],
+   "speed_mps": 0.76,
+   "yaw": -3.11
+  },
+  {
+   "id": "E-0015",
+   "t": 5,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -0.83,
+    0,
+    0.59
+   ],
+   "speed_mps": 0.76,
+   "yaw": -3.11
+  },
+  {
+   "id": "E-0016",
+   "t": 5.57,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -1.03,
+    0,
+    0.15
+   ],
+   "speed_mps": 0.76,
+   "yaw": -3.11
+  },
+  {
+   "id": "E-0017",
+   "t": 5.8,
+   "type": "door_tap",
+   "object": "DOOR-002",
+   "result": "unlocking",
+   "position": [
+    -1.34,
+    1.06,
+    -0.97
+   ]
+  },
+  {
+   "id": "E-0018",
+   "t": 5.8,
+   "type": "door_unlock",
+   "object": "DOOR-002",
+   "target": "BEYOND-002",
+   "position": [
+    -1.34,
+    1.06,
+    -0.97
+   ],
+   "note": "room beyond is MADE: nothing behind this door was filmed"
+  },
+  {
+   "id": "E-0019",
+   "t": 5.83,
+   "type": "stop",
+   "object": "PERSON-001",
+   "position": [
+    -0.94,
+    0,
+    -0.11
+   ]
+  },
+  {
+   "id": "E-0020",
+   "t": 6.2,
+   "type": "walk_start",
+   "object": "PERSON-001",
+   "position": [
+    -0.94,
+    0,
+    -0.11
+   ],
+   "heading_deg": -173,
+   "target": "waypoint 2"
+  },
+  {
+   "id": "E-0021",
+   "t": 6.23,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -0.83,
+    0,
+    -0.01
+   ],
+   "speed_mps": 0.76,
+   "yaw": -3.01
+  },
+  {
+   "id": "E-0022",
+   "t": 6.67,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -1.08,
+    0,
+    -0.39
+   ],
+   "speed_mps": 0.76,
+   "yaw": -3.01
+  },
+  {
+   "id": "E-0023",
+   "t": 7.2,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -0.94,
+    0,
+    -0.8
+   ],
+   "speed_mps": 0.76,
+   "yaw": -3.01
+  },
+  {
+   "id": "E-0024",
+   "t": 7.3,
+   "type": "stop",
+   "object": "PERSON-001",
+   "position": [
+    -1.04,
+    0,
+    -0.92
+   ]
+  },
+  {
+   "id": "E-0025",
+   "t": 7.8,
+   "type": "walk_start",
+   "object": "PERSON-001",
+   "position": [
+    -1.04,
+    0,
+    -0.92
+   ],
+   "heading_deg": -96,
+   "target": "waypoint 2"
+  },
+  {
+   "id": "E-0026",
+   "t": 7.83,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -0.98,
+    0,
+    -0.81
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.62
+  },
+  {
+   "id": "E-0027",
+   "t": 8.3,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -1.34,
+    0,
+    -1.02
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.62
+  },
+  {
+   "id": "E-0028",
+   "t": 8.87,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -1.8,
+    0,
+    -0.86
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.62
+  },
+  {
+   "id": "E-0029",
+   "t": 9.17,
+   "type": "stop",
+   "object": "PERSON-001",
+   "position": [
+    -2.05,
+    0,
+    -0.97
+   ]
+  },
+  {
+   "id": "E-0030",
+   "t": 9.53,
+   "type": "walk_start",
+   "object": "PERSON-001",
+   "position": [
+    -2.05,
+    0,
+    -0.97
+   ],
+   "heading_deg": -80,
+   "target": "waypoint 2"
+  },
+  {
+   "id": "E-0031",
+   "t": 9.57,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -1.94,
+    0,
+    -1.09
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.38
+  },
+  {
+   "id": "E-0032",
+   "t": 9.97,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -2.3,
+    0,
+    -0.82
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.38
+  },
+  {
+   "id": "E-0033",
+   "t": 10.5,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -2.72,
+    0,
+    -0.93
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.38
+  },
+  {
+   "id": "E-0034",
+   "t": 11.07,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -3.12,
+    0,
+    -0.66
+   ],
+   "speed_mps": 0.76,
+   "yaw": -1.38
+  },
+  {
+   "id": "E-0035",
+   "t": 11.57,
+   "type": "arrived",
+   "object": "PERSON-001",
+   "position": [
+    -3.55,
+    0,
+    -0.68
+   ],
+   "target": "BEYOND-002"
+  },
+  {
+   "id": "E-0036",
+   "t": 11.57,
+   "type": "stop",
+   "object": "PERSON-001",
+   "position": [
+    -3.55,
+    0,
+    -0.68
+   ]
+  },
+  {
+   "id": "E-0037",
+   "t": 11.57,
+   "type": "quest_done",
+   "object": "PERSON-001",
+   "door": "DOOR-002",
+   "seconds": 7.6,
+   "steps": 13
+  },
+  {
+   "id": "E-0038",
+   "t": 12.17,
+   "type": "walk_start",
+   "object": "PERSON-001",
+   "position": [
+    -3.55,
+    0,
+    -0.68
+   ],
+   "heading_deg": -223,
+   "target": "waypoint 2"
+  },
+  {
+   "id": "E-0039",
+   "t": 12.7,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -3.25,
+    0,
+    -0.85
+   ],
+   "speed_mps": 0.76,
+   "yaw": 2.34
+  },
+  {
+   "id": "E-0040",
+   "t": 13.27,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -3.06,
+    0,
+    -1.3
+   ],
+   "speed_mps": 0.76,
+   "yaw": 2.34
+  },
+  {
+   "id": "E-0041",
+   "t": 13.8,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -2.65,
+    0,
+    -1.43
+   ],
+   "speed_mps": 0.76,
+   "yaw": 2.34
+  },
+  {
+   "id": "E-0042",
+   "t": 14.37,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -2.46,
+    0,
+    -1.88
+   ],
+   "speed_mps": 0.76,
+   "yaw": 2.34
+  },
+  {
+   "id": "E-0043",
+   "t": 14.9,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -2.05,
+    0,
+    -2.02
+   ],
+   "speed_mps": 0.76,
+   "yaw": 2.34
+  },
+  {
+   "id": "E-0044",
+   "t": 15.4,
+   "type": "demo_end",
+   "object": "CAMERA",
+   "demo": "game",
+   "seconds": 11.4
+  },
+  {
+   "id": "E-0045",
+   "t": 15.4,
+   "type": "demo_start",
+   "object": "CAMERA",
+   "demo": "movie"
+  },
+  {
+   "id": "E-0046",
+   "t": 15.4,
+   "type": "replay_start",
+   "object": "CAMERA",
+   "to_t": 1.4,
+   "reason": "movie shot"
+  },
+  {
+   "id": "E-0047",
+   "t": 21.8,
+   "type": "demo_end",
+   "object": "CAMERA",
+   "demo": "movie",
+   "seconds": 6.4
+  },
+  {
+   "id": "E-0048",
+   "t": 21.8,
+   "type": "replay_end",
+   "object": "CAMERA"
+  },
+  {
+   "id": "E-0049",
+   "t": 22.07,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -1.19,
+    0,
+    -1.06
+   ],
+   "speed_mps": 0.76,
+   "yaw": 3.12
+  },
+  {
+   "id": "E-0050",
+   "t": 22.2,
+   "type": "tap",
+   "object": "PERSON-001",
+   "panel": true
+  },
+  {
+   "id": "E-0051",
+   "t": 22.6,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -0.99,
+    0,
+    -1.45
+   ],
+   "speed_mps": 0.76,
+   "yaw": 3.12
+  },
+  {
+   "id": "E-0052",
+   "t": 23.17,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -1.17,
+    0,
+    -1.9
+   ],
+   "speed_mps": 0.76,
+   "yaw": 3.12
+  },
+  {
+   "id": "E-0053",
+   "t": 23.7,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -0.97,
+    0,
+    -2.28
+   ],
+   "speed_mps": 0.76,
+   "yaw": 3.12
+  },
+  {
+   "id": "E-0054",
+   "t": 24.27,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -1.15,
+    0,
+    -2.73
+   ],
+   "speed_mps": 0.76,
+   "yaw": 3.12
+  },
+  {
+   "id": "E-0055",
+   "t": 24.67,
+   "type": "stop",
+   "object": "PERSON-001",
+   "position": [
+    -1.04,
+    0,
+    -3.07
+   ]
+  },
+  {
+   "id": "E-0056",
+   "t": 24.8,
+   "type": "view_mode",
+   "object": "CAMERA",
+   "mode": "Seen only"
+  },
+  {
+   "id": "E-0057",
+   "t": 24.8,
+   "type": "view_mode",
+   "object": "CAMERA",
+   "mode": "Made"
+  },
+  {
+   "id": "E-0058",
+   "t": 25.13,
+   "type": "walk_start",
+   "object": "PERSON-001",
+   "position": [
+    -1.04,
+    0,
+    -3.07
+   ],
+   "heading_deg": 119,
+   "target": "waypoint 3"
+  },
+  {
+   "id": "E-0059",
+   "t": 25.17,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "R",
+   "position": [
+    -1.2,
+    0,
+    -2.89
+   ],
+   "speed_mps": 0.76,
+   "yaw": 2.03
+  },
+  {
+   "id": "E-0060",
+   "t": 25.37,
+   "type": "footstep",
+   "object": "PERSON-001",
+   "foot": "L",
+   "position": [
+    -0.98,
+    0,
+    -3.22
+   ],
+   "speed_mps": 0.76,
+   "yaw": 2.03
+  },
+  {
+   "id": "E-0061",
+   "t": 25.83,
+   "type": "stop",
+   "object": "PERSON-001",
+   "position": [
+    -0.59,
+    0,
+    -3.3
+   ]
+  }
+ ],
+ "tracks": {
+  "PERSON-001": [
+   [
+    0.23,
+    1.3,
+    1.65,
+    0,
+    -1.682
+   ],
+   [
+    0.47,
+    1.224,
+    1.642,
+    0.76,
+    -1.682
+   ],
+   [
+    0.7,
+    1.048,
+    1.622,
+    0.76,
+    -1.682
+   ],
+   [
+    0.93,
+    0.872,
+    1.602,
+    0.76,
+    -1.682
+   ],
+   [
+    1.17,
+    0.696,
+    1.583,
+    0.76,
+    -1.682
+   ],
+   [
+    1.4,
+    0.52,
+    1.563,
+    0.76,
+    -1.682
+   ],
+   [
+    1.63,
+    0.343,
+    1.543,
+    0.76,
+    -1.682
+   ],
+   [
+    1.87,
+    0.167,
+    1.524,
+    0.76,
+    -1.682
+   ],
+   [
+    2.1,
+    -0.009,
+    1.504,
+    0.76,
+    -1.682
+   ],
+   [
+    2.33,
+    -0.185,
+    1.484,
+    0.76,
+    -1.682
+   ],
+   [
+    2.57,
+    -0.362,
+    1.464,
+    0.76,
+    -1.682
+   ],
+   [
+    2.8,
+    -0.538,
+    1.445,
+    0.76,
+    -1.682
+   ],
+   [
+    3.03,
+    -0.714,
+    1.425,
+    0.76,
+    -1.682
+   ],
+   [
+    3.27,
+    -0.89,
+    1.405,
+    0.76,
+    -1.682
+   ],
+   [
+    3.5,
+    -0.89,
+    1.405,
+    0,
+    -2.735
+   ],
+   [
+    3.73,
+    -0.89,
+    1.405,
+    0,
+    -3.03
+   ],
+   [
+    3.97,
+    -0.894,
+    1.304,
+    0.76,
+    -3.109
+   ],
+   [
+    4.2,
+    -0.9,
+    1.127,
+    0.76,
+    -3.109
+   ],
+   [
+    4.43,
+    -0.905,
+    0.95,
+    0.76,
+    -3.109
+   ],
+   [
+    4.67,
+    -0.911,
+    0.772,
+    0.76,
+    -3.109
+   ],
+   [
+    4.9,
+    -0.917,
+    0.595,
+    0.76,
+    -3.109
+   ],
+   [
+    5.13,
+    -0.923,
+    0.418,
+    0.76,
+    -3.109
+   ],
+   [
+    5.37,
+    -0.929,
+    0.241,
+    0.76,
+    -3.109
+   ],
+   [
+    5.6,
+    -0.935,
+    0.064,
+    0.76,
+    -3.109
+   ],
+   [
+    5.83,
+    -0.94,
+    -0.114,
+    0.76,
+    -3.109
+   ],
+   [
+    6.07,
+    -0.94,
+    -0.114,
+    0,
+    -3.035
+   ],
+   [
+    6.3,
+    -0.95,
+    -0.189,
+    0.76,
+    -3.015
+   ],
+   [
+    6.53,
+    -0.972,
+    -0.365,
+    0.76,
+    -3.015
+   ],
+   [
+    6.77,
+    -0.995,
+    -0.541,
+    0.76,
+    -3.015
+   ],
+   [
+    7,
+    -1.017,
+    -0.717,
+    0.76,
+    -3.015
+   ],
+   [
+    7.23,
+    -1.04,
+    -0.893,
+    0.76,
+    -3.015
+   ],
+   [
+    7.47,
+    -1.043,
+    -0.918,
+    0,
+    -2.08
+   ],
+   [
+    7.7,
+    -1.043,
+    -0.918,
+    0,
+    -1.72
+   ],
+   [
+    7.93,
+    -1.144,
+    -0.923,
+    0.76,
+    -1.624
+   ],
+   [
+    8.17,
+    -1.321,
+    -0.933,
+    0.76,
+    -1.624
+   ],
+   [
+    8.4,
+    -1.498,
+    -0.942,
+    0.76,
+    -1.624
+   ],
+   [
+    8.63,
+    -1.675,
+    -0.952,
+    0.76,
+    -1.624
+   ],
+   [
+    8.87,
+    -1.852,
+    -0.961,
+    0.76,
+    -1.624
+   ],
+   [
+    9.1,
+    -2.029,
+    -0.971,
+    0.76,
+    -1.624
+   ],
+   [
+    9.33,
+    -2.055,
+    -0.972,
+    0,
+    -1.46
+   ],
+   [
+    9.57,
+    -2.08,
+    -0.967,
+    0.76,
+    -1.381
+   ],
+   [
+    9.8,
+    -2.254,
+    -0.934,
+    0.76,
+    -1.381
+   ],
+   [
+    10.03,
+    -2.428,
+    -0.9,
+    0.76,
+    -1.381
+   ],
+   [
+    10.27,
+    -2.602,
+    -0.867,
+    0.76,
+    -1.381
+   ],
+   [
+    10.5,
+    -2.776,
+    -0.833,
+    0.76,
+    -1.381
+   ],
+   [
+    10.73,
+    -2.95,
+    -0.8,
+    0.76,
+    -1.381
+   ],
+   [
+    10.97,
+    -3.124,
+    -0.766,
+    0.76,
+    -1.381
+   ],
+   [
+    11.2,
+    -3.298,
+    -0.733,
+    0.76,
+    -1.381
+   ],
+   [
+    11.43,
+    -3.473,
+    -0.699,
+    0.76,
+    -1.381
+   ],
+   [
+    11.67,
+    -3.547,
+    -0.685,
+    0,
+    -2.63
+   ],
+   [
+    11.9,
+    -3.547,
+    -0.685,
+    0,
+    -3.666
+   ],
+   [
+    12.13,
+    -3.547,
+    -0.685,
+    0,
+    -3.884
+   ],
+   [
+    12.37,
+    -3.438,
+    -0.791,
+    0.76,
+    2.342
+   ],
+   [
+    12.6,
+    -3.311,
+    -0.914,
+    0.76,
+    2.342
+   ],
+   [
+    12.83,
+    -3.184,
+    -1.038,
+    0.76,
+    2.342
+   ],
+   [
+    13.07,
+    -3.057,
+    -1.161,
+    0.76,
+    2.342
+   ],
+   [
+    13.3,
+    -2.929,
+    -1.285,
+    0.76,
+    2.342
+   ],
+   [
+    13.53,
+    -2.802,
+    -1.409,
+    0.76,
+    2.342
+   ],
+   [
+    13.77,
+    -2.675,
+    -1.532,
+    0.76,
+    2.342
+   ],
+   [
+    14,
+    -2.548,
+    -1.656,
+    0.76,
+    2.342
+   ],
+   [
+    14.23,
+    -2.421,
+    -1.779,
+    0.76,
+    2.342
+   ],
+   [
+    14.47,
+    -2.293,
+    -1.903,
+    0.76,
+    2.342
+   ],
+   [
+    14.7,
+    -2.166,
+    -2.026,
+    0.76,
+    2.342
+   ],
+   [
+    14.93,
+    -2.039,
+    -2.15,
+    0.76,
+    2.342
+   ],
+   [
+    15.17,
+    -1.912,
+    -2.273,
+    0.76,
+    2.342
+   ],
+   [
+    15.4,
+    -1.785,
+    -2.397,
+    0.76,
+    2.342
+   ],
+   [
+    22.03,
+    -1.083,
+    -1.097,
+    0.76,
+    3.12
+   ],
+   [
+    22.27,
+    -1.079,
+    -1.275,
+    0.76,
+    3.12
+   ],
+   [
+    22.5,
+    -1.075,
+    -1.452,
+    0.76,
+    3.12
+   ],
+   [
+    22.73,
+    -1.072,
+    -1.629,
+    0.76,
+    3.12
+   ],
+   [
+    22.97,
+    -1.068,
+    -1.807,
+    0.76,
+    3.12
+   ],
+   [
+    23.2,
+    -1.064,
+    -1.984,
+    0.76,
+    3.12
+   ],
+   [
+    23.43,
+    -1.06,
+    -2.161,
+    0.76,
+    3.12
+   ],
+   [
+    23.67,
+    -1.056,
+    -2.339,
+    0.76,
+    3.12
+   ],
+   [
+    23.9,
+    -1.052,
+    -2.516,
+    0.76,
+    3.12
+   ],
+   [
+    24.13,
+    -1.049,
+    -2.693,
+    0.76,
+    3.12
+   ],
+   [
+    24.37,
+    -1.045,
+    -2.87,
+    0.76,
+    3.12
+   ],
+   [
+    24.6,
+    -1.041,
+    -3.048,
+    0.76,
+    3.12
+   ],
+   [
+    24.83,
+    -1.04,
+    -3.073,
+    0,
+    2.388
+   ],
+   [
+    25.07,
+    -1.04,
+    -3.073,
+    0,
+    2.105
+   ],
+   [
+    25.3,
+    -0.927,
+    -3.129,
+    0.76,
+    2.031
+   ],
+   [
+    25.53,
+    -0.768,
+    -3.208,
+    0.76,
+    2.031
+   ],
+   [
+    25.77,
+    -0.609,
+    -3.287,
+    0.76,
+    2.031
+   ],
+   [
+    26,
+    -0.586,
+    -3.298,
+    0,
+    1.744
+   ],
+   [
+    26.23,
+    -0.586,
+    -3.298,
+    0,
+    1.634
+   ],
+   [
+    26.47,
+    -0.586,
+    -3.298,
+    0,
+    1.61
+   ],
+   [
+    26.7,
+    -0.586,
+    -3.298,
+    0,
+    1.606
+   ],
+   [
+    26.93,
+    -0.586,
+    -3.298,
+    0,
+    1.605
+   ],
+   [
+    27.17,
+    -0.586,
+    -3.298,
+    0,
+    1.604
+   ]
+  ]
+ }
+}

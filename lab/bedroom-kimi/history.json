@@ -1,0 +1,37 @@
+{
+  "format": "hb-history/1",
+  "scene": "bedroom-kimi-v2",
+  "title": "Bedroom 02 — a room that remembers",
+  "author": "Kimi",
+  "units": { "time": "seconds since page scene start", "position": "metres, Y up", "velocity": "metres per second" },
+  "honesty": {
+    "rebuilt": "Derived from Grok-generated room footage and images; not camera-original pixels in this 3D view.",
+    "made": "Constructed for this scene; never present in source footage.",
+    "not_seen": "Unknown and intentionally locked or faded; no hidden content asserted.",
+    "person": "AI-generated synthetic person, not a real person."
+  },
+  "objects": [
+    { "id": "P-0001", "name": "The walking man", "kind": "person", "source": "made", "parent": "ROOM-0001", "note": "AI-generated person (not real). Procedural route and reused synthetic walk cycle." },
+    { "id": "ROOM-0001", "name": "Grok bedroom reconstruction", "kind": "room", "source": "rebuilt", "note": "Depth-filled meshes rebuilt from generated footage. Approximate scale." },
+    { "id": "FLOOR-0001", "name": "Continuous floor", "kind": "floor", "source": "made" },
+    { "id": "CEIL-0001", "name": "Constructed ceiling", "kind": "ceiling", "source": "made" },
+    { "id": "WALL-N", "name": "North closure", "kind": "wall", "source": "made" },
+    { "id": "WALL-E", "name": "East closure", "kind": "wall", "source": "made" },
+    { "id": "WALL-S", "name": "South closure", "kind": "wall", "source": "made" },
+    { "id": "WALL-W", "name": "Unseen left wall", "kind": "wall", "source": "made", "note": "The left side was never seen; this closure is constructed, not evidence." },
+    { "id": "BED-0001", "name": "Bed and repaired foot", "kind": "furniture", "source": "rebuilt", "note": "Original bed is rebuilt; foot fascia is made." },
+    { "id": "D1", "name": "First faded door", "kind": "door", "source": "not_seen", "locked": true },
+    { "id": "D2", "name": "Unlockable memory door", "kind": "door", "source": "not_seen", "locked": true, "note": "Unlock reveals an explicitly made room, not unseen footage." },
+    { "id": "D3", "name": "Third faded door", "kind": "door", "source": "not_seen", "locked": true },
+    { "id": "MADE-D2", "name": "Room beyond door two", "kind": "room", "source": "made", "note": "Entirely constructed; hidden until D2 is unlocked." }
+  ],
+  "events": [
+    { "id": "E-0001", "t": 0, "object": "ROOM-0001", "event": "reconstructed", "source": "rebuilt", "position": [0, 0, -1], "velocity": [0, 0, 0], "target": "SOURCE-FOOTAGE", "children": ["BED-0001", "D1", "D2", "D3"] },
+    { "id": "E-0002", "t": 0, "object": "WALL-W", "event": "constructed", "source": "made", "position": [-1.58, 1.32, -1.05], "velocity": [0, 0, 0], "target": "ROOM-0001" },
+    { "id": "E-0003", "t": 0, "object": "P-0001", "event": "spawned", "source": "made", "position": [-0.98, 0, 1.34], "velocity": [0, 0, 0], "target": "FLOOR-0001" }
+  ],
+  "traces": [
+    { "id": "P-0001", "rate": "live session adds up to 4 Hz", "samples": [] }
+  ],
+  "queries": { "object": "Filter events where object, id, target, or parent equals the object ID; join traces by id.", "timeWindow": "Filter events by t >= start and t <= end." }
+}

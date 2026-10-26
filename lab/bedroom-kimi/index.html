@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#111310">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111310'/%3E%3Cpath d='M8 7v18M24 7v18M8 16h16' stroke='%23f1bd73' stroke-width='3'/%3E%3C/svg%3E">
+<title>Bedroom 02 — Every object remembers · Kimi</title>
+<!-- hb:no-phone --><!-- hb:no-editor --><!-- hb:no-analytics --><!-- hb:no-homescreen --><!-- hb:no-icon -->
+<style>
+  :root { color-scheme: dark; --ink:#f4f0e6; --muted:#a7a99e; --bg:#111310; --panel:#191c17; --line:#353a30; --amber:#f1bd73; --mint:#b8d8b0; --blue:#a9c8ce; }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  html,body { margin:0; width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--ink); font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-text-size-adjust:100%; }
+  button,a { -webkit-tap-highlight-color:transparent; }
+  button { font:inherit; color:inherit; cursor:pointer; }
+  button:focus-visible,a:focus-visible { outline:2px solid var(--amber); outline-offset:3px; }
+  #app { height:100%; height:100dvh; display:flex; flex-direction:column; max-width:720px; margin:auto; position:relative; background:var(--bg); }
+  header { flex:none; padding:max(15px,env(safe-area-inset-top)) 20px 12px; position:relative; z-index:5; background:linear-gradient(#111310 75%,transparent); }
+  .eyebrow { font-size:10px; line-height:1.2; letter-spacing:.19em; text-transform:uppercase; color:var(--muted); font-weight:650; }
+  header .eyebrow { display:flex; justify-content:space-between; align-items:center; }
+  .edition { color:var(--amber); }
+  h1 { font-family:Georgia,"Times New Roman",serif; font-size:clamp(25px,7vw,38px); line-height:1.03; font-weight:400; letter-spacing:-.035em; margin:8px 0 0; }
+  h1 em { color:var(--amber); font-weight:400; }
+  #stage { flex:1; min-height:210px; position:relative; overflow:hidden; background:radial-gradient(ellipse at 50% 30%,#3b3527,#171913 70%); }
+  #c { width:100%; height:100%; display:block; touch-action:none; }
+  .stage-tools { position:absolute; left:14px; right:14px; top:5px; display:flex; justify-content:space-between; gap:8px; pointer-events:none; }
+  .tool-group { display:flex; gap:6px; pointer-events:auto; }
+  .chip { border:1px solid rgba(244,240,230,.18); background:rgba(17,19,16,.72); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:999px; padding:7px 11px; min-height:34px; font-size:11px; }
+  .chip[aria-pressed="true"] { color:var(--amber); border-color:rgba(241,189,115,.5); }
+  .legend { position:absolute; left:16px; bottom:12px; display:flex; flex-wrap:wrap; gap:9px; font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:#d1d0c5; pointer-events:none; text-shadow:0 1px 4px #000; }
+  .dot { width:6px; height:6px; display:inline-block; border-radius:50%; margin-right:4px; background:var(--mint); }
+  .dot.made { background:var(--amber); } .dot.unknown { background:transparent; border:1px solid var(--blue); }
+  #person-tag { position:absolute; display:none; transform:translate(-50%,-100%); border:1px solid rgba(241,189,115,.45); border-radius:6px; background:rgba(17,19,16,.86); padding:4px 7px; font-size:9px; white-space:nowrap; pointer-events:none; }
+  #replay-badge { position:absolute; top:50px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bg); border-radius:999px; padding:5px 10px; font-size:10px; letter-spacing:.06em; display:none; white-space:nowrap; }
+  #toast { position:absolute; left:50%; bottom:44px; transform:translate(-50%,8px); width:max-content; max-width:calc(100% - 32px); text-align:center; background:#f1bd73; color:#1b1a14; border-radius:9px; padding:9px 13px; font-size:12px; font-weight:650; opacity:0; transition:.2s; pointer-events:none; }
+  #toast.show { opacity:1; transform:translate(-50%,0); }
+  #loading { position:absolute; inset:0; display:grid; place-content:center; text-align:center; background:#171913; z-index:4; color:var(--muted); }
+  #loading strong { font-family:Georgia,serif; color:var(--ink); font-size:24px; font-weight:400; margin-bottom:6px; }
+  #sheet { flex:none; min-height:266px; max-height:43vh; display:flex; flex-direction:column; background:var(--panel); border-top:1px solid var(--line); border-radius:20px 20px 0 0; margin-top:-9px; position:relative; z-index:3; padding-bottom:env(safe-area-inset-bottom); box-shadow:0 -18px 45px rgba(0,0,0,.22); }
+  .grip { width:34px; height:3px; border-radius:4px; background:#4d5147; margin:8px auto 3px; flex:none; }
+  .tabs { display:flex; gap:20px; padding:0 20px; border-bottom:1px solid var(--line); flex:none; }
+  .tab { border:0; background:none; color:var(--muted); padding:8px 0 10px; min-height:39px; font-size:12px; position:relative; }
+  .tab[aria-selected="true"] { color:var(--ink); }
+  .tab[aria-selected="true"]::after { content:""; position:absolute; height:2px; background:var(--amber); left:0; right:0; bottom:-1px; }
+  #room-panel,#uses-panel { overflow:auto; overscroll-behavior:contain; min-height:0; flex:1; }
+  #room-panel { padding:12px 20px 8px; }
+  .live-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .live { color:var(--mint); font-size:9px; text-transform:uppercase; letter-spacing:.13em; }
+  .live::before { content:""; display:inline-block; width:5px; height:5px; background:var(--mint); border-radius:50%; margin-right:5px; box-shadow:0 0 8px var(--mint); }
+  #event-count { font-variant-numeric:tabular-nums; font-size:10px; color:var(--muted); }
+  .object-head { display:flex; justify-content:space-between; gap:10px; margin-top:5px; }
+  #object-title { margin:0; font:400 23px/1.1 Georgia,serif; letter-spacing:-.02em; }
+  .source { align-self:flex-start; flex:none; font-size:8px; letter-spacing:.1em; text-transform:uppercase; border:1px solid #695437; color:var(--amber); border-radius:999px; padding:4px 7px; }
+  .source.rebuilt { color:var(--mint); border-color:#40543c; } .source.not_seen { color:var(--blue); border-color:#405157; }
+  #object-note { color:var(--muted); font-size:11px; margin:5px 0 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .metrics { display:flex; gap:6px; margin-bottom:7px; }
+  .metric { flex:1; background:#121510; border:1px solid #2d3228; padding:6px 8px; border-radius:7px; min-width:0; }
+  .metric small { display:block; color:var(--muted); font-size:8px; text-transform:uppercase; letter-spacing:.1em; }
+  .metric b { display:block; font-weight:500; font-size:11px; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #story { list-style:none; margin:0; padding:0; }
+  #story li { display:grid; grid-template-columns:37px 1fr; gap:8px; padding:5px 0; border-top:1px solid #2b3027; font-size:10px; }
+  #story time { color:var(--amber); font-variant-numeric:tabular-nums; }
+  #story span { color:#d2d3ca; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sheet-actions { flex:none; display:flex; gap:8px; padding:7px 20px 10px; }
+  .action { flex:1; min-height:38px; border:1px solid var(--line); background:#22261e; border-radius:9px; font-size:11px; }
+  .action.primary { background:var(--ink); color:#161813; border-color:var(--ink); }
+  #uses-panel { padding:13px 20px 8px; }
+  .uses-intro { margin:0 0 10px; color:var(--muted); font-size:11px; }
+  .demo-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .demo { text-align:left; background:#121510; border:1px solid var(--line); border-radius:10px; padding:9px 10px; min-height:63px; }
+  .demo.active { border-color:var(--amber); background:#282319; }
+  .demo b { display:block; font-family:Georgia,serif; font-weight:400; font-size:15px; }
+  .demo small { display:block; color:var(--muted); font-size:9px; margin-top:2px; }
+  #demo-detail { margin-top:10px; border-top:1px solid var(--line); padding-top:9px; min-height:53px; }
+  #demo-detail p { margin:0; font-size:11px; color:#d2d3ca; }
+  #pads { display:flex; gap:6px; margin-top:8px; }
+  .pad { flex:1; min-height:39px; background:#272d25; border:1px solid #4b5845; color:var(--mint); border-radius:7px; font-size:11px; }
+  .pad.hit { background:var(--amber); color:var(--bg); }
+  .credit { flex:none; text-align:center; color:#858b7e; font-size:8px; padding:0 16px 7px; }
+  #msg { position:fixed; inset:0; z-index:20; background:var(--bg); display:grid; place-content:center; padding:24px; text-align:center; }
+  @media (max-height:700px) { header { padding-top:10px; padding-bottom:7px; } h1 { font-size:25px; margin-top:5px; } #sheet { min-height:250px; } #object-note { margin-bottom:5px; } }
+  @media (min-width:600px) { #app { border-left:1px solid #242820; border-right:1px solid #242820; } }
+  @media (prefers-reduced-motion:reduce) { #toast { transition:none; } }
+</style>
+<script type="importmap">
+{ "imports": { "three":"./vendor/three.module.js", "three/addons/":"./vendor/addons/" } }
+</script>
+</head>
+<body>
+<div id="app">
+  <header><div class="eyebrow"><span>The Necklace / Bedroom 02</span><span class="edition">Kimi</span></div><h1>Every object <em>remembers.</em></h1></header>
+  <main id="stage">
+    <canvas id="c" aria-label="Interactive reconstructed bedroom. Drag to look and tap objects for their history."></canvas>
+    <div class="stage-tools"><div class="tool-group"><button class="chip" id="made-toggle" aria-pressed="true">Made: visible</button><button class="chip" id="trail-toggle" aria-pressed="false">Path</button></div><button class="chip" id="reset">Reset view</button></div>
+    <div id="person-tag">AI-generated person (not real)</div><div id="replay-badge">REPLAY · RECORDED STATES</div><div id="toast" role="status"></div>
+    <div class="legend"><span><i class="dot"></i>Rebuilt</span><span><i class="dot made"></i>Made</span><span><i class="dot unknown"></i>Not seen</span></div>
+    <div id="loading"><strong>Gathering a memory…</strong><span>Room, person, and event history</span></div>
+  </main>
+  <section id="sheet">
+    <div class="grip"></div>
+    <div class="tabs" role="tablist"><button class="tab" id="room-tab" role="tab" aria-selected="true">Object memory</button><button class="tab" id="uses-tab" role="tab" aria-selected="false">Use this history <span style="color:var(--amber)">· 4</span></button></div>
+    <div id="room-panel" role="tabpanel">
+      <div class="live-row"><span class="live">Live event history</span><span id="event-count">3 events</span></div>
+      <div class="object-head"><h2 id="object-title">The walking man</h2><span class="source" id="object-source">Made</span></div>
+      <p id="object-note">Tap the room, a door, or the man. Nothing unknown is invented.</p>
+      <div class="metrics"><div class="metric"><small>Object ID</small><b id="metric-id">P-0001</b></div><div class="metric"><small>Speed</small><b id="metric-speed">0.00 m/s</b></div><div class="metric"><small>Recorded</small><b id="metric-events">1 event</b></div></div>
+      <ol id="story"></ol>
+    </div>
+    <div id="uses-panel" role="tabpanel" hidden>
+      <p class="uses-intro">One event stream. Four small ways to use it.</p>
+      <div class="demo-grid">
+        <button class="demo" data-demo="trace"><b>01 / Why?</b><small>Trace a footstep’s cause</small></button>
+        <button class="demo" data-demo="film"><b>02 / Rewind</b><small>Replay six seconds of film</small></button>
+        <button class="demo" data-demo="music"><b>03 / Score</b><small>Compose a tiny soundtrack</small></button>
+        <button class="demo" data-demo="game"><b>04 / Unlock</b><small>Turn unknown into a game</small></button>
+      </div>
+      <div id="demo-detail"><p>Select a demo. Every action joins the same history.</p></div>
+    </div>
+    <div class="sheet-actions"><button class="action" id="sound" aria-pressed="false">Sound off</button><button class="action" id="follow">Follow the man</button><button class="action primary" id="export">Save history ↗</button></div>
+    <div class="credit">Room + person made by Grok Imagine, rebuilt by Heartbeat Observatory tools.</div>
+  </section>
+</div>
+<div id="msg" hidden></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EventHistory } from './history.js';
+
+const $ = (id) => document.getElementById(id);
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'low-power' });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.setClearColor(0x171913);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x171913, 0.027);
+const camera = new THREE.PerspectiveCamera(58, 1, 0.05, 80);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.075; controls.enablePan = false;
+controls.minDistance = 2.2; controls.maxDistance = 9; controls.minPolarAngle = 0.25; controls.maxPolarAngle = Math.PI * 0.48;
+const HOME_POS = new THREE.Vector3(3.15, 3.45, 5.55), HOME_TARGET = new THREE.Vector3(-0.15, 0.85, -1.1);
+function home() { camera.position.copy(HOME_POS); controls.target.copy(HOME_TARGET); controls.update(); }
+home();
+function resize() { const w = $('stage').clientWidth, h = $('stage').clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.fov=w/h<0.8?62:54; camera.updateProjectionMatrix(); }
+addEventListener('resize',resize); resize();
+scene.add(new THREE.HemisphereLight(0xffedcf,0x1d241a,1.65));
+const sun = new THREE.DirectionalLight(0xffd39b,1.65); sun.position.set(4,6,3); scene.add(sun);
+const fill = new THREE.PointLight(0xa9c8ce,2.2,10); fill.position.set(-2,2,-1); scene.add(fill);
+
+let history, meta, person, mixer, walkAction, idleAction;
+let elapsed=0, selected='P-0001', showMade=true, showTrail=false, following=false, soundOn=false, replay=null;
+let lastSample=-1, lastStory=-1, distance=0, footCount=0, nextEventTime=0;
+const madeGroup = new THREE.Group(); madeGroup.name='constructed-closure'; scene.add(madeGroup);
+const beyond = new THREE.Group(); beyond.visible=false; scene.add(beyond);
+const selectables=[], doors=new Map(), snapshots=[], pathPoints=[];
+const pathLine = new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xf1bd73,transparent:true,opacity:.9})); pathLine.visible=false; scene.add(pathLine);
+const stepMarkers = new THREE.Group(); scene.add(stepMarkers);
+const vec = new THREE.Vector3(), lastPos = new THREE.Vector3();
+
+function textSprite(text, color='#f1bd73', width=300) {
+  const c=document.createElement('canvas'); c.width=width; c.height=64; const x=c.getContext('2d');
+  x.fillStyle='rgba(17,19,16,.82)'; x.roundRect(1,8,width-2,46,12); x.fill(); x.strokeStyle=color; x.lineWidth=1; x.stroke();
+  x.fillStyle=color; x.font='600 20px system-ui'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(text,width/2,32);
+  const map=new THREE.CanvasTexture(c); map.colorSpace=THREE.SRGBColorSpace;
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map,transparent:true,depthWrite:false})); sprite.scale.set(width/160,.4,1); return sprite;
+}
+function lockSprite() {
+  const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d'); x.strokeStyle='#b9d4db'; x.fillStyle='#b9d4db'; x.lineWidth=5;
+  x.beginPath(); x.arc(32,25,11,Math.PI,0); x.stroke(); x.fillRect(18,27,28,23); const map=new THREE.CanvasTexture(c); map.colorSpace=THREE.SRGBColorSpace;
+  return new THREE.Sprite(new THREE.SpriteMaterial({map,transparent:true,depthWrite:false,opacity:.85}));
+}
+function register(object,id) { object.userData.objectId=id; object.traverse((child)=>{ child.userData.objectId=id; if(child.isMesh) selectables.push(child); }); }
+function madeBox(id,size,position,material) {
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(...size),material); mesh.position.set(...position); madeGroup.add(mesh); register(mesh,id);
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0xf1bd73,transparent:true,opacity:.24})); mesh.add(edges); return mesh;
+}
+function buildClosure() {
+  const wall=new THREE.MeshStandardMaterial({color:0x655943,roughness:1,transparent:true,opacity:.22,depthWrite:false,side:THREE.DoubleSide});
+  const floor=new THREE.MeshStandardMaterial({color:0x4b3a29,roughness:1,transparent:true,opacity:.48,depthWrite:false});
+  madeBox('FLOOR-0001',[3.55,.035,5.3],[.12,-.045,-1.05],floor);
+  madeBox('CEIL-0001',[3.55,.035,5.3],[.12,2.66,-1.05],wall);
+  madeBox('WALL-W',[.035,2.7,5.3],[-1.61,1.32,-1.05],wall);
+  madeBox('WALL-E',[.035,2.7,5.3],[1.86,1.32,-1.05],wall);
+  madeBox('WALL-N',[3.5,2.7,.035],[.12,1.32,-3.69],wall);
+  madeBox('WALL-S',[3.5,2.7,.035],[.12,1.32,1.59],wall);
+  const label=textSprite('MADE · UNSEEN LEFT WALL'); label.position.set(-1.48,2.28,-.9); madeGroup.add(label);
+  const repair=new THREE.MeshStandardMaterial({color:0x403428,roughness:.95});
+  const foot=madeBox('BED-0001',[2.39,.25,.09],[.62,.13,.015],repair); foot.material.transparent=true; foot.material.opacity=.8;
+  const table=madeBox('BED-0001',[.48,.48,.45],[1.1,.24,-2.72],repair); table.material.transparent=true; table.material.opacity=.75;
+  const shade=new THREE.Mesh(new THREE.CylinderGeometry(.17,.27,.35,20,1,true),new THREE.MeshStandardMaterial({color:0xd5b482,side:THREE.DoubleSide,transparent:true,opacity:.7})); shade.position.set(1.1,.85,-2.72); madeGroup.add(shade); register(shade,'BED-0001');
+  const annexMat=new THREE.MeshStandardMaterial({color:0x426266,emissive:0x172f32,roughness:.8,side:THREE.DoubleSide});
+  const addAnnex=(size,pos)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(...size),annexMat);m.position.set(...pos);beyond.add(m);register(m,'MADE-D2');};
+  addAnnex([1.8,.05,1.2],[-2.25,-.01,-.975]); addAnnex([.04,2.25,1.2],[-3.15,1.1,-.975]); addAnnex([1.8,2.25,.04],[-2.25,1.1,-1.575]); addAnnex([1.8,.04,1.2],[-2.25,2.23,-.975]);
+  const madeLabel=textSprite('MADE ROOM · NOT FOOTAGE','#b8d8d0',350); madeLabel.position.set(-2.05,1.65,-.98); beyond.add(madeLabel);
+  const glow=new THREE.PointLight(0x9fd5ce,4,4); glow.position.set(-2.2,1.6,-.95); beyond.add(glow);
+}
+function roomMaterial(old) {
+  const material=new THREE.MeshBasicMaterial({map:old.map,side:THREE.DoubleSide,transparent:true});
+  material.onBeforeCompile=(shader)=>{ shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+    float edge=min(min(vMapUv.x,1.0-vMapUv.x),min(vMapUv.y,1.0-vMapUv.y));
+    diffuseColor.a*=smoothstep(0.0,0.045,edge); diffuseColor.rgb*=0.94;`); };
+  return material;
+}
+function makeDoor(id,data) {
+  const a=new THREE.Vector3(...data.a),b=new THREE.Vector3(...data.b),up=new THREE.Vector3(0,data.h,0),points=[a,b,b.clone().add(up),a.clone().add(up)];
+  const geometry=new THREE.BufferGeometry().setFromPoints([points[0],points[1],points[2],points[0],points[2],points[3]]);
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,1,1,0,0,1,1,0,1],2));
+  const material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{time:{value:0},pulse:{value:0},open:{value:0}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:`varying vec2 vUv;uniform float time;uniform float pulse;uniform float open;void main(){float edge=min(min(vUv.x,1.0-vUv.x),min(vUv.y,1.0-vUv.y));float wave=.5+.5*sin(vUv.y*12.0-time*1.6+vUv.x*3.0);float alpha=(.18+.20*wave+.22*pulse)*(1.0-open*.72);alpha*=smoothstep(0.0,.12,edge)*.8+.2;gl_FragColor=vec4(mix(vec3(.57,.72,.76),vec3(.95,.78,.50),pulse),alpha);}`});
+  const group=new THREE.Group(),mesh=new THREE.Mesh(geometry,material); mesh.renderOrder=4; group.add(mesh);
+  const outline=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:0xa9c8ce,transparent:true,opacity:.55})); group.add(outline);
+  const center=a.clone().add(b).multiplyScalar(.5).add(new THREE.Vector3(.04,data.h*.52,0)); const lock=lockSprite(); lock.position.copy(center); lock.scale.setScalar(.3); group.add(lock);
+  const label=textSprite(`${id} · NOT SEEN`,'#a9c8ce',220); label.position.copy(center).add(new THREE.Vector3(.03,.38,0)); label.scale.multiplyScalar(.75); group.add(label);
+  scene.add(group); register(mesh,id); doors.set(id,{group,mesh,lock,label,unlocked:false});
+}
+const WALK=[]; let pi=1,dir=1,yaw=0,targetYaw=0,state='turn',stateT=0;
+function buildPath() {
+  const wallX=Object.values(meta.doors).reduce((s,d)=>s+d.a[0]+d.b[0],0)/6;
+  const lane=(wallX+meta.bed_xz[0])/2,zA=meta.doors.D3.b[2]+.3,zB=meta.doors.D1.a[2]-.15,zFar=Math.min(zB,meta.bed_xz[1]-.7),xR=Math.min(meta.floor_xz_p3_p97[2]-.15,meta.bed_xz[2]+.35);
+  const pts=[[lane,zA],[lane,zB],[lane+.5,zFar-.2],[xR,zFar-.2]];
+  pts.forEach((p)=>WALK.push(new THREE.Vector3(p[0],0,p[1]))); for(let i=pts.length-2;i>=1;i--)WALK.push(new THREE.Vector3(pts[i][0],0,pts[i][1]));
+  person.position.copy(WALK[0]); lastPos.copy(person.position); startSegment(WALK[0],WALK[1]); yaw=targetYaw; person.rotation.y=yaw;
+}
+function startSegment(from,to) { targetYaw=Math.atan2(to.x-from.x,to.z-from.z); let d=Math.atan2(Math.sin(targetYaw-yaw),Math.cos(targetYaw-yaw)); targetYaw=yaw+d; state='turn';stateT=0; }
+function fade(inA,outA) { inA.enabled=true;inA.setEffectiveWeight(1);outA.setEffectiveWeight(0);inA.play(); }
+function movePerson(dt) {
+  const to=WALK[pi],p=person.position;
+  if(state==='turn') { yaw+=(targetYaw-yaw)*Math.min(1,dt*6);person.rotation.y=yaw;stateT+=dt;walkAction.paused=true;idleAction.paused=false;fade(idleAction,walkAction);if(Math.abs(targetYaw-yaw)<.05&&stateT>.35){state='walk';fade(walkAction,idleAction);walkAction.paused=false;} }
+  else { const v=vec.subVectors(to,p),dist=v.length(); if(dist<.06){pi+=dir;if(pi>=WALK.length){dir=-1;pi=WALK.length-2;}else if(pi<0){dir=1;pi=1;}startSegment(p,WALK[pi]);return;}v.multiplyScalar(1/dist);const step=Math.min(dist,.763*dt);p.addScaledVector(v,step);distance+=step;yaw=Math.atan2(v.x,v.z);person.rotation.y=yaw;if(distance>=.38){distance=0;recordFootstep();} }
+}
+let audio,master,roomOsc;
+function ensureAudio() {
+  if(audio) { if(audio.state==='suspended') audio.resume(); return; }
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;audio=new AC();master=audio.createGain();master.gain.value=.65;master.connect(audio.destination);
+  roomOsc=audio.createOscillator();const gain=audio.createGain(),filter=audio.createBiquadFilter();roomOsc.type='sine';roomOsc.frequency.value=58;filter.type='lowpass';filter.frequency.value=130;gain.gain.value=.018;roomOsc.connect(filter).connect(gain).connect(master);roomOsc.start();
+}
+function tone(freq=220,duration=.12,volume=.07,type='sine') { if(!soundOn||!audio)return;const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);g.gain.setValueAtTime(volume,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+duration);o.connect(g).connect(master);o.start();o.stop(audio.currentTime+duration); }
+function footSound(side) { if(!soundOn||!audio)return;const length=Math.floor(audio.sampleRate*.09),buffer=audio.createBuffer(1,length,audio.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/length,3);const source=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();source.buffer=buffer;filter.type='lowpass';filter.frequency.value=side==='left'?420:500;gain.gain.value=.14;source.connect(filter).connect(gain).connect(master);source.start(); }
+function recordEvent(event) { const complete=history.add(event); nextEventTime=elapsed; if(selected===complete.object||selected===complete.id||selected===complete.target)renderStory(); return complete; }
+function recordFootstep() {
+  footCount++;const id=history.next('F'),side=footCount%2?'left':'right',soundId=history.next('A');const p=person.position;
+  const event=recordEvent({id,t:elapsed,object:id,event:'foot_contact',source:'made',position:[p.x+(side==='left'?-.09:.09),.015,p.z],velocity:[0,.763,0],target:'FLOOR-0001',parent:'P-0001',children:[soundId],side});
+  history.objects.set(id,{id,name:`${side==='left'?'Left':'Right'} footstep ${footCount}`,kind:'footstep',source:'made',parent:'P-0001'});
+  history.add({id:soundId,t:elapsed,object:soundId,event:'sound_triggered',source:'made',position:event.position,velocity:[0,0,0],target:id,parent:id,sound:'filtered_noise_footstep'});
+  const marker=new THREE.Mesh(new THREE.RingGeometry(.055,.075,18),new THREE.MeshBasicMaterial({color:0xf1bd73,side:THREE.DoubleSide,transparent:true,opacity:.8}));marker.rotation.x=-Math.PI/2;marker.position.set(...event.position);stepMarkers.add(marker);setTimeout(()=>{stepMarkers.remove(marker);marker.geometry.dispose();marker.material.dispose();},5000);
+  footSound(side);
+}
+function describe(event) {
+  const descriptions={reconstructed:'Room rebuilt from generated footage',constructed:'Unseen closure honestly constructed',spawned:'Entered the constructed scene',foot_contact:`${event.side||''} foot met the floor`.trim(),sound_triggered:'Footstep sound joined the timeline',door_tapped:'You asked for its history',unlocked:'Made room revealed — no footage claimed',locked:'Still unknown; no room invented',made_visible:'Construction overlay changed',replay_started:'Six-second recorded-state replay',score_note:`${event.note||'Note'} added to the score`,trace_requested:'Cause chain traced: person → step → sound',follow:'Camera follow changed'};
+  return descriptions[event.event]||event.event.replaceAll('_',' ');
+}
+function selectObject(id) { if(!history.objects.has(id))return;selected=id;renderStory();if(id.startsWith('D'))recordEvent({t:elapsed,object:id,event:'door_tapped',source:'made',position:[0,1,0],velocity:[0,0,0],target:id}); }
+function renderStory() {
+  const story=history.story(selected),object=story.object;if(!object)return;
+  $('object-title').textContent=object.name;$('object-source').textContent=object.source.replace('_',' ');$('object-source').className='source '+object.source;$('object-note').textContent=object.note||(object.kind==='footstep'?'A contact, its parent, and the sound it caused.':'Stable identity. Tap another object to follow its story.');
+  $('metric-id').textContent=selected;$('metric-speed').textContent=story.summary.lastSpeed?story.summary.lastSpeed.toFixed(2)+' m/s':object.kind==='footstep'?'contact':'stationary';$('metric-events').textContent=`${story.summary.events} event${story.summary.events===1?'':'s'}`;
+  const events=story.events.slice(-3).reverse();$('story').innerHTML=events.length?events.map((e)=>`<li><time>${e.t.toFixed(1)}s</time><span>${describe(e)}</span></li>`).join(''):'<li><time>—</time><span>No events yet. Its identity is ready.</span></li>';
+  $('event-count').textContent=`${history.events.length} events`;
+}
+let toastTimer;
+function say(text) { $('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2100); }
+function unlockDoor(id) {
+  const door=doors.get(id);if(!door)return;
+  if(id!=='D2'){recordEvent({t:elapsed,object:id,event:'locked',source:'not_seen',position:[0,1,0],velocity:[0,0,0],target:id});say(`${id} is locked · the room beyond was not seen`);tone(145,.16,.04);return;}
+  if(!door.unlocked){door.unlocked=true;door.mesh.material.uniforms.open.value=1;door.lock.visible=false;door.label.visible=false;beyond.visible=true;history.objects.get(id).locked=false;history.objects.get(id).source='made';recordEvent({t:elapsed,object:id,event:'unlocked',source:'made',position:[-1.35,1,-.97],velocity:[0,0,0],target:'MADE-D2',children:['MADE-D2']});say('D2 unlocked · MADE room, not footage');tone(330,.5,.06);setTimeout(()=>tone(495,.6,.045),130);}
+  else {controls.target.lerp(new THREE.Vector3(-1.8,1,-.97),.8);say('Beyond D2: constructed space, clearly marked');}
+  renderStory();
+}
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
+canvas.addEventListener('pointerdown',(e)=>{down={x:e.clientX,y:e.clientY};});
+canvas.addEventListener('pointerup',(e)=>{if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>9){down=null;return;}down=null;const rect=canvas.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(selectables.filter((o)=>o.visible&&o.parent?.visible),false);if(!hits.length)return;const hit=hits.find((h)=>h.object.userData.objectId.startsWith('D'))||hits[0];const id=hit.object.userData.objectId;selectObject(id);if(id.startsWith('D'))unlockDoor(id);});
+$('made-toggle').addEventListener('click',()=>{showMade=!showMade;madeGroup.visible=showMade;$('made-toggle').setAttribute('aria-pressed',String(showMade));$('made-toggle').textContent=`Made: ${showMade?'visible':'hidden'}`;recordEvent({t:elapsed,object:'ROOM-0001',event:'made_visible',source:'made',position:[0,0,0],velocity:[0,0,0],target:'CONSTRUCTION',value:showMade});});
+$('trail-toggle').addEventListener('click',()=>{showTrail=!showTrail;pathLine.visible=showTrail;$('trail-toggle').setAttribute('aria-pressed',String(showTrail));});
+$('reset').addEventListener('click',()=>{following=false;$('follow').classList.remove('primary');home();});
+$('follow').addEventListener('click',()=>{following=!following;$('follow').classList.toggle('primary',following);recordEvent({t:elapsed,object:'P-0001',event:'follow',source:'made',position:person.position.toArray(),velocity:[0,0,0],target:'CAMERA',value:following});});
+$('sound').addEventListener('click',()=>{ensureAudio();soundOn=!soundOn;if(master)master.gain.value=soundOn?.65:0;$('sound').textContent=`Sound ${soundOn?'on':'off'}`;$('sound').setAttribute('aria-pressed',String(soundOn));if(soundOn)tone(260,.15,.04);});
+$('export').addEventListener('click',()=>{history.download();say('Live JSON saved · every ID and cause included');});
+function tab(name) { const room=name==='room';$('room-panel').hidden=!room;$('uses-panel').hidden=room;$('room-tab').setAttribute('aria-selected',String(room));$('uses-tab').setAttribute('aria-selected',String(!room)); }
+$('room-tab').addEventListener('click',()=>tab('room'));$('uses-tab').addEventListener('click',()=>tab('uses'));
+function demoDetail(html) {$('demo-detail').innerHTML=html;}
+function startReplay() {
+  if(replay)return;if(snapshots.length<4){say('A moment is still being recorded…');return;}const frames=snapshots.slice(-60);replay={frames,index:0};$('replay-badge').style.display='block';pathLine.visible=true;recordEvent({t:elapsed,object:'P-0001',event:'replay_started',source:'made',position:person.position.toArray(),velocity:[0,0,0],target:'FILM-DEMO'});demoDetail('<p><b>Film / continuity.</b> Replaying recorded transforms, not inventing new motion. The amber line is the actual path.</p>');
+}
+function traceStep() { const steps=history.events.filter((e)=>e.event==='foot_contact');if(!steps.length){say('Wait for his next footstep, then trace it.');return;}const step=steps.at(-1);tab('room');selectObject(step.id);pathLine.visible=true;recordEvent({t:elapsed,object:step.id,event:'trace_requested',source:'made',position:step.position,velocity:[0,0,0],target:step.children[0],parent:'P-0001'});say('One step → one sound · one causal chain'); }
+document.querySelectorAll('[data-demo]').forEach((button)=>button.addEventListener('click',()=>{
+  document.querySelectorAll('[data-demo]').forEach((b)=>b.classList.toggle('active',b===button));const kind=button.dataset.demo;
+  if(kind==='film')startReplay();
+  if(kind==='trace'){demoDetail('<p><b>Investigation / causality.</b> Follow the latest contact back to the man and forward to its sound.</p>');setTimeout(traceStep,650);}
+  if(kind==='music'){ensureAudio();demoDetail('<p><b>Music / events on a timeline.</b> Tap pads. Each note records time, pitch, target, and cause.</p><div id="pads"><button class="pad" data-note="220">Low</button><button class="pad" data-note="277.18">Soft</button><button class="pad" data-note="329.63">Warm</button><button class="pad" data-note="440">High</button></div>');document.querySelectorAll('[data-note]').forEach((pad)=>pad.addEventListener('click',()=>{if(!soundOn){soundOn=true;if(master)master.gain.value=.65;$('sound').textContent='Sound on';$('sound').setAttribute('aria-pressed','true');}const note=Number(pad.dataset.note);tone(note,.45,.08,'triangle');recordEvent({t:elapsed,object:'SCORE-0001',event:'score_note',source:'made',position:person.position.toArray(),velocity:[0,0,0],target:'P-0001',note:`${note} Hz`,frequency:note});pad.classList.add('hit');setTimeout(()=>pad.classList.remove('hit'),150);}));}
+  if(kind==='game'){tab('room');selectObject('D2');demoDetail('<p><b>Game / the faded door.</b> Tap D2 in the room. Unlocking reveals a made space, never a guessed memory.</p>');say('Tap the middle door, D2, to unlock a made room');}
+}));
+
+(async()=>{
+  try {
+    const [seed,metadata]=await Promise.all([fetch('history.json').then((r)=>r.json()),fetch('meta.json').then((r)=>r.json())]);history=new EventHistory(seed);meta=metadata;
+    const loader=new GLTFLoader(),load=(url)=>new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
+    const [room,per]=await Promise.all([load('room.glb'),load('person.glb')]);room.scene.scale.setScalar(meta.scale);room.scene.traverse((o)=>{if(o.isMesh)o.material=roomMaterial(o.material);});scene.add(room.scene);register(room.scene,'ROOM-0001');buildClosure();Object.entries(meta.doors).forEach(([id,d])=>makeDoor(id,d));
+    person=per.scene;scene.add(person);person.traverse((o)=>{if(o.isMesh){o.frustumCulled=false;o.material.roughness=.9;o.material.emissive=new THREE.Color(0x080a07);}});register(person,'P-0001');
+    mixer=new THREE.AnimationMixer(person);const clips=Object.fromEntries(per.animations.map((c)=>[c.name,c]));walkAction=mixer.clipAction(clips.walk);idleAction=mixer.clipAction(clips.idle);walkAction.play();idleAction.play();idleAction.setEffectiveWeight(0);buildPath();
+    $('loading').remove();renderStory();
+  } catch(error) {$('loading').innerHTML=`<strong>The memory could not load.</strong><span>${error.message||error}</span>`;console.error(error);return;}
+  const clock=new THREE.Clock(),projected=new THREE.Vector3();
+  renderer.setAnimationLoop(()=>{
+    const dt=Math.min(clock.getDelta(),.05);elapsed+=dt;
+    if(replay){const frame=replay.frames[Math.floor(replay.index)];person.position.fromArray(frame.position);person.rotation.y=frame.yaw;replay.index+=dt*10;if(replay.index>=replay.frames.length){replay=null;$('replay-badge').style.display='none';pathLine.visible=showTrail;say('Replay ended · live history continues');}}
+    else {movePerson(dt);mixer.update(dt);snapshots.push({t:elapsed,position:person.position.toArray(),yaw:person.rotation.y});if(snapshots.length>120)snapshots.shift();}
+    if(elapsed-lastSample>=.25){lastSample=elapsed;const velocity=person.position.clone().sub(lastPos).multiplyScalar(4);history.sample('P-0001',elapsed,person.position.toArray(),velocity.toArray());lastPos.copy(person.position);pathPoints.push(person.position.clone().add(new THREE.Vector3(0,.035,0)));if(pathPoints.length>90)pathPoints.shift();pathLine.geometry.dispose();pathLine.geometry=new THREE.BufferGeometry().setFromPoints(pathPoints);if(selected==='P-0001')renderStory();}
+    doors.forEach((door)=>{door.mesh.material.uniforms.time.value=elapsed;door.mesh.material.uniforms.pulse.value*=.95;});
+    if(following&&!replay)controls.target.lerp(projected.set(person.position.x,1,person.position.z),.08);controls.update();
+    projected.set(person.position.x,1.95,person.position.z).project(camera);const tag=$('person-tag');if(projected.z<1&&Math.abs(projected.x)<1.2&&Math.abs(projected.y)<1.2){tag.style.display='block';tag.style.left=(projected.x+1)/2*$('stage').clientWidth+'px';tag.style.top=(1-projected.y)/2*$('stage').clientHeight+'px';}else tag.style.display='none';
+    renderer.render(scene,camera);
+  });
+  window.__ready=true;
+  window.__debug={history,scene,camera,controls,person,doors,selectObject,unlockDoor,tab,startReplay,project(id){const door=doors.get(id);if(!door)return null;const box=new THREE.Box3().setFromObject(door.mesh),p=box.getCenter(new THREE.Vector3()).project(camera),r=canvas.getBoundingClientRect();return{x:r.left+(p.x+1)/2*r.width,y:r.top+(1-p.y)/2*r.height};},stats(){return{events:history.events.length,footsteps:footCount,objects:history.objects.size,closedParts:6,unlocked:doors.get('D2').unlocked,replaying:!!replay,soundOn,position:person.position.toArray()};}};
+})();
+</script>
+</body>
+</html>

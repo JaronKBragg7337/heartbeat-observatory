@@ -1,0 +1,7617 @@
+{
+  "schema": "heartbeat.event-history/1.0",
+  "author": "GPT-6.1 Sol",
+  "scene": "bedroom-sol",
+  "session": "sol-mvosffm8",
+  "clock": {
+    "unit": "seconds",
+    "now": 24,
+    "paused": false
+  },
+  "coordinates": {
+    "up": "+y",
+    "distance": "metres (assumed scale)",
+    "velocity": "metres/second"
+  },
+  "truth": {
+    "source": "Grok Imagine generated footage; no real person",
+    "seen": "Source images only; no claim of real-world observation",
+    "rebuilt": "Depth/SfM room mesh and synthetic person reconstruction",
+    "made": "Shell, repairs, route, footsteps, sound, extension and demos",
+    "not_seen": "All original spaces beyond the doorways; never recovered from footage"
+  },
+  "entities": [
+    {
+      "id": "R-0001",
+      "name": "Bedroom shell",
+      "kind": "room",
+      "provenance": "made",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Closed 3.9 × 5.2 × 2.65 m shell. Dimensions inferred, not surveyed."
+    },
+    {
+      "id": "F-0001",
+      "name": "Walnut floor",
+      "kind": "surface",
+      "provenance": "made",
+      "position": [
+        0.25,
+        0,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made floor closes holes in the depth mesh."
+    },
+    {
+      "id": "W-0001",
+      "name": "Door wall",
+      "kind": "surface",
+      "provenance": "made",
+      "position": [
+        -1.7,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made room closure; no claim of recovered geometry."
+    },
+    {
+      "id": "W-0002",
+      "name": "Window wall",
+      "kind": "surface",
+      "provenance": "made",
+      "position": [
+        2.2,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made room closure; no claim of recovered geometry."
+    },
+    {
+      "id": "W-0003",
+      "name": "Far wall",
+      "kind": "surface",
+      "provenance": "made",
+      "position": [
+        0.25,
+        1.325,
+        -3.55
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made room closure; no claim of recovered geometry."
+    },
+    {
+      "id": "W-0004",
+      "name": "Unseen left / return wall",
+      "kind": "surface",
+      "provenance": "made",
+      "position": [
+        0.25,
+        1.325,
+        1.65
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Never seen in the source; explicitly constructed."
+    },
+    {
+      "id": "W-0005",
+      "name": "Ceiling",
+      "kind": "surface",
+      "provenance": "made",
+      "position": [
+        0.25,
+        2.7,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made room closure; no claim of recovered geometry."
+    },
+    {
+      "id": "B-0001",
+      "name": "Bed / repaired foot",
+      "kind": "furnishing",
+      "provenance": "made",
+      "position": [
+        0.65,
+        0.42,
+        -1.1
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made upholstered foot and base cover torn v1 geometry; photographic center remains rebuilt."
+    },
+    {
+      "id": "L-0001",
+      "name": "Bedside lamp",
+      "kind": "light",
+      "provenance": "made",
+      "position": [
+        1.68,
+        0.95,
+        0.45
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made repair of torn v1 lamp. Spatial-score pulse follows foot contacts."
+    },
+    {
+      "id": "T-0001",
+      "name": "Bedside table",
+      "kind": "furnishing",
+      "provenance": "made",
+      "position": [
+        1.68,
+        0.35,
+        0.45
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made replacement for the damaged right-side nightstand."
+    },
+    {
+      "id": "N-0001",
+      "name": "Window framing",
+      "kind": "furnishing",
+      "provenance": "made",
+      "position": [
+        2.12,
+        1.55,
+        -2.6
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made frosted light and frame; no invented outdoor view."
+    },
+    {
+      "id": "D-0001",
+      "name": "Door 1",
+      "kind": "door",
+      "provenance": "made",
+      "position": [
+        -1.625,
+        1.02,
+        -2.53
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Not seen beyond this threshold. Locked until new evidence."
+    },
+    {
+      "id": "D-0002",
+      "name": "Door 2 / made extension",
+      "kind": "door",
+      "provenance": "made",
+      "position": [
+        -1.625,
+        1.02,
+        -0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Not seen beyond this threshold. Tap to construct a labelled new room."
+    },
+    {
+      "id": "D-0003",
+      "name": "Door 3",
+      "kind": "door",
+      "provenance": "made",
+      "position": [
+        -1.625,
+        1.02,
+        0.68
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Not seen beyond this threshold. Locked until new evidence."
+    },
+    {
+      "id": "R-0002",
+      "name": "Listening alcove",
+      "kind": "room",
+      "provenance": "made",
+      "position": [
+        -3.12,
+        1.25,
+        -0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made design, revealed on unlock. No source ever saw this space."
+    },
+    {
+      "id": "S-0001",
+      "name": "Study plinth",
+      "kind": "presentation",
+      "provenance": "made",
+      "position": [
+        0.25,
+        -0.22,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made presentation base."
+    },
+    {
+      "id": "A-0001",
+      "name": "Room / footstep audio",
+      "kind": "audio",
+      "provenance": "made",
+      "position": [
+        0,
+        1,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Made Web Audio synthesis; silence until a sound tap."
+    },
+    {
+      "id": "A-0002",
+      "name": "Spatial score",
+      "kind": "audio",
+      "provenance": "made",
+      "position": [
+        0,
+        1,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Tiny demo: notes and lamp pulses driven by the same foot-contact events."
+    },
+    {
+      "id": "R-0003",
+      "name": "Rebuilt source mesh",
+      "kind": "evidence",
+      "provenance": "rebuilt",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": null,
+      "detail": "Two v1 depth-filled frames, clipped around torn lamps, bed foot and door wall; approximate reconstruction."
+    },
+    {
+      "id": "P-0001",
+      "name": "AI-generated person (not real)",
+      "kind": "person",
+      "provenance": "rebuilt",
+      "position": [
+        0.487,
+        0.0115,
+        0.9258
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "parent": null,
+      "detail": "Grok Imagine synthetic person rebuilt by Hunyuan3D-2mini; approximate rig, measured gait clip, made route. Deformed sole vertices ground the mesh."
+    },
+    {
+      "id": "FST-00001",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9848,
+        0.012,
+        -2.2666
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00002",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1591,
+        0.012,
+        -1.8232
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00003",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9917,
+        0.012,
+        -1.3335
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00004",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1518,
+        0.012,
+        -0.8936
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00005",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9996,
+        0.012,
+        -0.4107
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00006",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1439,
+        0.012,
+        0.0222
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00007",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.0075,
+        0.012,
+        0.4957
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00008",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1366,
+        0.012,
+        0.9197
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00009",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.7974,
+        0.012,
+        0.6703
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00010",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.4224,
+        0.012,
+        0.9212
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00011",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        0.039,
+        0.012,
+        0.7632
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00012",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        0.4125,
+        0.012,
+        1.015
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00013",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        0.6937,
+        0.012,
+        1.0101
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00014",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        0.3033,
+        0.012,
+        0.8577
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00015",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.1537,
+        0.012,
+        0.9123
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00016",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.5389,
+        0.012,
+        0.7647
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00017",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9907,
+        0.012,
+        0.8179
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00018",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9858,
+        0.012,
+        0.8696
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00019",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.188,
+        0.012,
+        0.4313
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00020",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9879,
+        0.012,
+        0.0285
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00021",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.186,
+        0.012,
+        -0.4135
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00022",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9896,
+        0.012,
+        -0.8217
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00023",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1846,
+        0.012,
+        -1.2697
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00024",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9906,
+        0.012,
+        -1.6846
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00025",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.184,
+        0.012,
+        -2.1399
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00026",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1382,
+        0.012,
+        -2.6357
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00027",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.0075,
+        0.012,
+        -2.1968
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00028",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1434,
+        0.012,
+        -1.805
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00029",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.002,
+        0.012,
+        -1.3644
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00030",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1487,
+        0.012,
+        -0.9701
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00031",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9966,
+        0.012,
+        -0.5276
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00032",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1537,
+        0.012,
+        -0.1306
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00033",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.9914,
+        0.012,
+        0.3138
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00034",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -1.1584,
+        0.012,
+        0.7036
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00035",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.7237,
+        0.012,
+        0.6862
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00036",
+      "name": "R foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        -0.3077,
+        0.012,
+        0.9256
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "FST-00037",
+      "name": "L foot contact",
+      "kind": "footstep",
+      "provenance": "made",
+      "position": [
+        0.2005,
+        0.012,
+        0.7928
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "parent": "P-0001",
+      "detail": "Simulated contact with F-0001; not a measurement of real footage."
+    }
+  ],
+  "events": [
+    {
+      "id": "E-000001",
+      "t": 0,
+      "object": "R-0001",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Closed 3.9 × 5.2 × 2.65 m shell. Dimensions inferred, not surveyed."
+    },
+    {
+      "id": "E-000002",
+      "t": 0,
+      "object": "F-0001",
+      "position": [
+        0.25,
+        0,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made floor closes holes in the depth mesh."
+    },
+    {
+      "id": "E-000003",
+      "t": 0,
+      "object": "W-0001",
+      "position": [
+        -1.7,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made room closure; no claim of recovered geometry."
+    },
+    {
+      "id": "E-000004",
+      "t": 0,
+      "object": "W-0002",
+      "position": [
+        2.2,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made room closure; no claim of recovered geometry."
+    },
+    {
+      "id": "E-000005",
+      "t": 0,
+      "object": "W-0003",
+      "position": [
+        0.25,
+        1.325,
+        -3.55
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made room closure; no claim of recovered geometry."
+    },
+    {
+      "id": "E-000006",
+      "t": 0,
+      "object": "W-0004",
+      "position": [
+        0.25,
+        1.325,
+        1.65
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Never seen in the source; explicitly constructed."
+    },
+    {
+      "id": "E-000007",
+      "t": 0,
+      "object": "W-0005",
+      "position": [
+        0.25,
+        2.7,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made room closure; no claim of recovered geometry."
+    },
+    {
+      "id": "E-000008",
+      "t": 0,
+      "object": "B-0001",
+      "position": [
+        0.65,
+        0.42,
+        -1.1
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made upholstered foot and base cover torn v1 geometry; photographic center remains rebuilt."
+    },
+    {
+      "id": "E-000009",
+      "t": 0,
+      "object": "L-0001",
+      "position": [
+        1.68,
+        0.95,
+        0.45
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made repair of torn v1 lamp. Spatial-score pulse follows foot contacts."
+    },
+    {
+      "id": "E-000010",
+      "t": 0,
+      "object": "T-0001",
+      "position": [
+        1.68,
+        0.35,
+        0.45
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made replacement for the damaged right-side nightstand."
+    },
+    {
+      "id": "E-000011",
+      "t": 0,
+      "object": "N-0001",
+      "position": [
+        2.12,
+        1.55,
+        -2.6
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made frosted light and frame; no invented outdoor view."
+    },
+    {
+      "id": "E-000012",
+      "t": 0,
+      "object": "D-0001",
+      "position": [
+        -1.625,
+        1.02,
+        -2.53
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Not seen beyond this threshold. Locked until new evidence."
+    },
+    {
+      "id": "E-000013",
+      "t": 0,
+      "object": "D-0002",
+      "position": [
+        -1.625,
+        1.02,
+        -0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Not seen beyond this threshold. Tap to construct a labelled new room."
+    },
+    {
+      "id": "E-000014",
+      "t": 0,
+      "object": "D-0003",
+      "position": [
+        -1.625,
+        1.02,
+        0.68
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Not seen beyond this threshold. Locked until new evidence."
+    },
+    {
+      "id": "E-000015",
+      "t": 0,
+      "object": "R-0002",
+      "position": [
+        -3.12,
+        1.25,
+        -0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made design, revealed on unlock. No source ever saw this space."
+    },
+    {
+      "id": "E-000016",
+      "t": 0,
+      "object": "S-0001",
+      "position": [
+        0.25,
+        -0.22,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made presentation base."
+    },
+    {
+      "id": "E-000017",
+      "t": 0,
+      "object": "A-0001",
+      "position": [
+        0,
+        1,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made Web Audio synthesis; silence until a sound tap."
+    },
+    {
+      "id": "E-000018",
+      "t": 0,
+      "object": "A-0002",
+      "position": [
+        0,
+        1,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Tiny demo: notes and lamp pulses driven by the same foot-contact events."
+    },
+    {
+      "id": "E-000019",
+      "t": 0,
+      "object": "R-0003",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "rebuilt",
+      "note": "Two v1 depth-filled frames, clipped around torn lamps, bed foot and door wall; approximate reconstruction."
+    },
+    {
+      "id": "E-000020",
+      "t": 0,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0,
+        -2.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "rebuilt",
+      "note": "Grok Imagine synthetic person rebuilt by Hunyuan3D-2mini; approximate rig, measured gait clip, made route. Deformed sole vertices ground the mesh."
+    },
+    {
+      "id": "E-000021",
+      "t": 0,
+      "object": "R-0001",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "ready",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Both baseline GLBs loaded. Subsequent actions are simulated."
+    },
+    {
+      "id": "E-000022",
+      "t": 0.2333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0047,
+        -2.572
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000023",
+      "t": 0.4667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0116,
+        -2.3939
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000024",
+      "t": 0.5667,
+      "object": "P-0001",
+      "position": [
+        -0.9848,
+        0.012,
+        -2.2666
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000026"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000025",
+      "t": 0.5667,
+      "object": "FST-00001",
+      "position": [
+        -0.9848,
+        0.012,
+        -2.2666
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000026",
+      "t": 0.5667,
+      "object": "FST-00001",
+      "position": [
+        -0.9848,
+        0.012,
+        -2.2666
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000027"
+      ],
+      "provenance": "made",
+      "cause": "E-000024",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000027",
+      "t": 0.5667,
+      "object": "A-0001",
+      "position": [
+        -0.9848,
+        0.012,
+        -2.2666
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00001",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000026",
+      "pan": -0.0218,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000028",
+      "t": 0.6667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0083,
+        -2.2413
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000029",
+      "t": 0.9,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0115,
+        -2.0633
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000030",
+      "t": 1.1,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0063,
+        -1.9107
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000031",
+      "t": 1.1333,
+      "object": "P-0001",
+      "position": [
+        -1.1591,
+        0.012,
+        -1.8232
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000033"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000032",
+      "t": 1.1333,
+      "object": "FST-00002",
+      "position": [
+        -1.1591,
+        0.012,
+        -1.8232
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000033",
+      "t": 1.1333,
+      "object": "FST-00002",
+      "position": [
+        -1.1591,
+        0.012,
+        -1.8232
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000034"
+      ],
+      "provenance": "made",
+      "cause": "E-000031",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000034",
+      "t": 1.1333,
+      "object": "A-0001",
+      "position": [
+        -1.1591,
+        0.012,
+        -1.8232
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00002",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000033",
+      "pan": -0.0714,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000035",
+      "t": 1.3,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0041,
+        -1.7581
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000036",
+      "t": 1.5,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.014,
+        -1.6055
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000037",
+      "t": 1.7,
+      "object": "P-0001",
+      "position": [
+        -0.9917,
+        0.012,
+        -1.3335
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000039"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000038",
+      "t": 1.7,
+      "object": "FST-00003",
+      "position": [
+        -0.9917,
+        0.012,
+        -1.3335
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000039",
+      "t": 1.7,
+      "object": "FST-00003",
+      "position": [
+        -0.9917,
+        0.012,
+        -1.3335
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000040"
+      ],
+      "provenance": "made",
+      "cause": "E-000037",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000040",
+      "t": 1.7,
+      "object": "A-0001",
+      "position": [
+        -0.9917,
+        0.012,
+        -1.3335
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00003",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000039",
+      "pan": -0.0877,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000041",
+      "t": 1.7,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0076,
+        -1.4529
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000042",
+      "t": 1.9,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0026,
+        -1.3003
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000043",
+      "t": 2.1333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0111,
+        -1.1223
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000044",
+      "t": 2.2667,
+      "object": "P-0001",
+      "position": [
+        -1.1518,
+        0.012,
+        -0.8936
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000046"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000045",
+      "t": 2.2667,
+      "object": "FST-00004",
+      "position": [
+        -1.1518,
+        0.012,
+        -0.8936
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000046",
+      "t": 2.2667,
+      "object": "FST-00004",
+      "position": [
+        -1.1518,
+        0.012,
+        -0.8936
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000047"
+      ],
+      "provenance": "made",
+      "cause": "E-000044",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000047",
+      "t": 2.2667,
+      "object": "A-0001",
+      "position": [
+        -1.1518,
+        0.012,
+        -0.8936
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00004",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000046",
+      "pan": -0.139,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000048",
+      "t": 2.3667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0056,
+        -0.9442
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000049",
+      "t": 2.6,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.014,
+        -0.7662
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000050",
+      "t": 2.8333,
+      "object": "P-0001",
+      "position": [
+        -0.9996,
+        0.012,
+        -0.4107
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000052"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000051",
+      "t": 2.8333,
+      "object": "FST-00005",
+      "position": [
+        -0.9996,
+        0.012,
+        -0.4107
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000052",
+      "t": 2.8333,
+      "object": "FST-00005",
+      "position": [
+        -0.9996,
+        0.012,
+        -0.4107
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000053"
+      ],
+      "provenance": "made",
+      "cause": "E-000050",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000053",
+      "t": 2.8333,
+      "object": "A-0001",
+      "position": [
+        -0.9996,
+        0.012,
+        -0.4107
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00005",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000052",
+      "pan": -0.1594,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000054",
+      "t": 2.8333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0114,
+        -0.5882
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000055",
+      "t": 3,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0026,
+        -0.461
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "selected",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Necklace object inspection."
+    },
+    {
+      "id": "E-000056",
+      "t": 3.0667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0091,
+        -0.4101
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000057",
+      "t": 3.3,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0063,
+        -0.2321
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000058",
+      "t": 3.4,
+      "object": "P-0001",
+      "position": [
+        -1.1439,
+        0.012,
+        0.0222
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000060"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000059",
+      "t": 3.4,
+      "object": "FST-00006",
+      "position": [
+        -1.1439,
+        0.012,
+        0.0222
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000060",
+      "t": 3.4,
+      "object": "FST-00006",
+      "position": [
+        -1.1439,
+        0.012,
+        0.0222
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000061"
+      ],
+      "provenance": "made",
+      "cause": "E-000058",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000061",
+      "t": 3.4,
+      "object": "A-0001",
+      "position": [
+        -1.1439,
+        0.012,
+        0.0222
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00006",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000060",
+      "pan": -0.2115,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000062",
+      "t": 3.5333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0047,
+        -0.0541
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000063",
+      "t": 3.7667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0116,
+        0.124
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000064",
+      "t": 3.9667,
+      "object": "P-0001",
+      "position": [
+        -1.0075,
+        0.012,
+        0.4957
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000066"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000065",
+      "t": 3.9667,
+      "object": "FST-00007",
+      "position": [
+        -1.0075,
+        0.012,
+        0.4957
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000066",
+      "t": 3.9667,
+      "object": "FST-00007",
+      "position": [
+        -1.0075,
+        0.012,
+        0.4957
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000067"
+      ],
+      "provenance": "made",
+      "cause": "E-000064",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000067",
+      "t": 3.9667,
+      "object": "A-0001",
+      "position": [
+        -1.0075,
+        0.012,
+        0.4957
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00007",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000066",
+      "pan": -0.2359,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000068",
+      "t": 4,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0034,
+        0.302
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000069",
+      "t": 4.2333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0127,
+        0.48
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000070",
+      "t": 4.4667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0119,
+        0.6581
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000071",
+      "t": 4.5333,
+      "object": "P-0001",
+      "position": [
+        -1.1366,
+        0.012,
+        0.9197
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000073"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000072",
+      "t": 4.5333,
+      "object": "FST-00008",
+      "position": [
+        -1.1366,
+        0.012,
+        0.9197
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000073",
+      "t": 4.5333,
+      "object": "FST-00008",
+      "position": [
+        -1.1366,
+        0.012,
+        0.9197
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000074"
+      ],
+      "provenance": "made",
+      "cause": "E-000071",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000074",
+      "t": 4.5333,
+      "object": "A-0001",
+      "position": [
+        -1.1366,
+        0.012,
+        0.9197
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00008",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000073",
+      "pan": -0.2883,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000075",
+      "t": 4.6,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "turn",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made route changes direction; pauses before turning."
+    },
+    {
+      "id": "E-000076",
+      "t": 4.7,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0.8016,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000077",
+      "t": 4.9333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.3567,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000078",
+      "t": 5.1667,
+      "object": "P-0001",
+      "position": [
+        -1.0547,
+        0.0005,
+        0.7528
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000079",
+      "t": 5.2,
+      "object": "R-0001",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "provenance_lens",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "enabled": true
+    },
+    {
+      "id": "E-000080",
+      "t": 5.4,
+      "object": "P-0001",
+      "position": [
+        -0.8778,
+        0.0124,
+        0.7727
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000081",
+      "t": 5.6333,
+      "object": "P-0001",
+      "position": [
+        -0.7974,
+        0.012,
+        0.6703
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000083"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000082",
+      "t": 5.6333,
+      "object": "FST-00009",
+      "position": [
+        -0.7974,
+        0.012,
+        0.6703
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000083",
+      "t": 5.6333,
+      "object": "FST-00009",
+      "position": [
+        -0.7974,
+        0.012,
+        0.6703
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000084"
+      ],
+      "provenance": "made",
+      "cause": "E-000081",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000084",
+      "t": 5.6333,
+      "object": "A-0001",
+      "position": [
+        -0.7974,
+        0.012,
+        0.6703
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00009",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000083",
+      "pan": -0.226,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000085",
+      "t": 5.6333,
+      "object": "P-0001",
+      "position": [
+        -0.7009,
+        0.0091,
+        0.7925
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000086",
+      "t": 5.8667,
+      "object": "P-0001",
+      "position": [
+        -0.524,
+        0.0132,
+        0.8124
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000087",
+      "t": 6.1,
+      "object": "P-0001",
+      "position": [
+        -0.347,
+        0.0076,
+        0.8322
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000088",
+      "t": 6.2,
+      "object": "P-0001",
+      "position": [
+        -0.4224,
+        0.012,
+        0.9212
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000090"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000089",
+      "t": 6.2,
+      "object": "FST-00010",
+      "position": [
+        -0.4224,
+        0.012,
+        0.9212
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000090",
+      "t": 6.2,
+      "object": "FST-00010",
+      "position": [
+        -0.4224,
+        0.012,
+        0.9212
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000091"
+      ],
+      "provenance": "made",
+      "cause": "E-000088",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000091",
+      "t": 6.2,
+      "object": "A-0001",
+      "position": [
+        -0.4224,
+        0.012,
+        0.9212
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00010",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000090",
+      "pan": -0.2018,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000092",
+      "t": 6.3333,
+      "object": "P-0001",
+      "position": [
+        -0.1701,
+        0.0059,
+        0.8521
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000093",
+      "t": 6.5667,
+      "object": "P-0001",
+      "position": [
+        0.0068,
+        0.0089,
+        0.8719
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000094",
+      "t": 6.7667,
+      "object": "P-0001",
+      "position": [
+        0.039,
+        0.012,
+        0.7632
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000096"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000095",
+      "t": 6.7667,
+      "object": "FST-00011",
+      "position": [
+        0.039,
+        0.012,
+        0.7632
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000096",
+      "t": 6.7667,
+      "object": "FST-00011",
+      "position": [
+        0.039,
+        0.012,
+        0.7632
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000097"
+      ],
+      "provenance": "made",
+      "cause": "E-000094",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000097",
+      "t": 6.7667,
+      "object": "A-0001",
+      "position": [
+        0.039,
+        0.012,
+        0.7632
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00011",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000096",
+      "pan": -0.1288,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000098",
+      "t": 6.8,
+      "object": "P-0001",
+      "position": [
+        0.1837,
+        0.0041,
+        0.8918
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000099",
+      "t": 7.0333,
+      "object": "P-0001",
+      "position": [
+        0.3607,
+        0.0134,
+        0.9116
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000100",
+      "t": 7.2667,
+      "object": "P-0001",
+      "position": [
+        0.5376,
+        0.0083,
+        0.9315
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000101",
+      "t": 7.3333,
+      "object": "P-0001",
+      "position": [
+        0.4125,
+        0.012,
+        1.015
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000103"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000102",
+      "t": 7.3333,
+      "object": "FST-00012",
+      "position": [
+        0.4125,
+        0.012,
+        1.015
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000103",
+      "t": 7.3333,
+      "object": "FST-00012",
+      "position": [
+        0.4125,
+        0.012,
+        1.015
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000104"
+      ],
+      "provenance": "made",
+      "cause": "E-000101",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000104",
+      "t": 7.3333,
+      "object": "A-0001",
+      "position": [
+        0.4125,
+        0.012,
+        1.015
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00012",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000103",
+      "pan": -0.1008,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000105",
+      "t": 7.4,
+      "object": "R-0001",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "provenance_lens",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "enabled": false
+    },
+    {
+      "id": "E-000106",
+      "t": 7.5,
+      "object": "P-0001",
+      "position": [
+        0.7145,
+        0.0115,
+        0.9513
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000107",
+      "t": 7.6,
+      "object": "R-0001",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "enter_view",
+      "target": null,
+      "children": [],
+      "provenance": "made"
+    },
+    {
+      "id": "E-000108",
+      "t": 7.7333,
+      "object": "P-0001",
+      "position": [
+        0.8914,
+        0.0037,
+        0.9712
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000109",
+      "t": 7.8667,
+      "object": "P-0001",
+      "position": [
+        0.97,
+        0,
+        0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "turn",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made route changes direction; pauses before turning."
+    },
+    {
+      "id": "E-000110",
+      "t": 7.9667,
+      "object": "P-0001",
+      "position": [
+        0.97,
+        0.0078,
+        0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -0.2668,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000111",
+      "t": 8.1667,
+      "object": "P-0001",
+      "position": [
+        0.97,
+        0.0078,
+        0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.395,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000112",
+      "t": 8.4,
+      "object": "P-0001",
+      "position": [
+        0.97,
+        0.0078,
+        0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6378,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000113",
+      "t": 8.4333,
+      "object": "P-0001",
+      "position": [
+        0.6937,
+        0.012,
+        1.0101
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000115"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000114",
+      "t": 8.4333,
+      "object": "FST-00013",
+      "position": [
+        0.6937,
+        0.012,
+        1.0101
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000115",
+      "t": 8.4333,
+      "object": "FST-00013",
+      "position": [
+        0.6937,
+        0.012,
+        1.0101
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000116"
+      ],
+      "provenance": "made",
+      "cause": "E-000113",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000116",
+      "t": 8.4333,
+      "object": "A-0001",
+      "position": [
+        0.6937,
+        0.012,
+        1.0101
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00013",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000115",
+      "pan": 0.4507,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000117",
+      "t": 8.6333,
+      "object": "P-0001",
+      "position": [
+        0.7931,
+        0.0127,
+        0.9602
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000118",
+      "t": 8.8667,
+      "object": "P-0001",
+      "position": [
+        0.6162,
+        0.0119,
+        0.9403
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000119",
+      "t": 9,
+      "object": "P-0001",
+      "position": [
+        0.3033,
+        0.012,
+        0.8577
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000121"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000120",
+      "t": 9,
+      "object": "FST-00014",
+      "position": [
+        0.3033,
+        0.012,
+        0.8577
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000121",
+      "t": 9,
+      "object": "FST-00014",
+      "position": [
+        0.3033,
+        0.012,
+        0.8577
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000122"
+      ],
+      "provenance": "made",
+      "cause": "E-000119",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000122",
+      "t": 9,
+      "object": "A-0001",
+      "position": [
+        0.3033,
+        0.012,
+        0.8577
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00014",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000121",
+      "pan": 0.1518,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000123",
+      "t": 9.1,
+      "object": "P-0001",
+      "position": [
+        0.4392,
+        0.0094,
+        0.9205
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000124",
+      "t": 9.1,
+      "object": "R-0001",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "overview",
+      "target": null,
+      "children": [],
+      "provenance": "made"
+    },
+    {
+      "id": "E-000125",
+      "t": 9.3,
+      "object": "R-0001",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "demo_changed",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "demo": "memory"
+    },
+    {
+      "id": "E-000126",
+      "t": 9.3333,
+      "object": "P-0001",
+      "position": [
+        0.2623,
+        0.0057,
+        0.9006
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000127",
+      "t": 9.5,
+      "object": "L-0001",
+      "position": [
+        1.68,
+        0.95,
+        0.45
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "selected",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Necklace object inspection."
+    },
+    {
+      "id": "E-000128",
+      "t": 9.5667,
+      "object": "P-0001",
+      "position": [
+        -0.1537,
+        0.012,
+        0.9123
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000130"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000129",
+      "t": 9.5667,
+      "object": "FST-00015",
+      "position": [
+        -0.1537,
+        0.012,
+        0.9123
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000130",
+      "t": 9.5667,
+      "object": "FST-00015",
+      "position": [
+        -0.1537,
+        0.012,
+        0.9123
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000131"
+      ],
+      "provenance": "made",
+      "cause": "E-000128",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000131",
+      "t": 9.5667,
+      "object": "A-0001",
+      "position": [
+        -0.1537,
+        0.012,
+        0.9123
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00015",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000130",
+      "pan": -0.1668,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000132",
+      "t": 9.5667,
+      "object": "P-0001",
+      "position": [
+        0.0854,
+        0.0005,
+        0.8808
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000133",
+      "t": 9.8,
+      "object": "P-0001",
+      "position": [
+        -0.0915,
+        0.0124,
+        0.8609
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000134",
+      "t": 10.0333,
+      "object": "P-0001",
+      "position": [
+        -0.2685,
+        0.0091,
+        0.8411
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000135",
+      "t": 10.1333,
+      "object": "P-0001",
+      "position": [
+        -0.5389,
+        0.012,
+        0.7647
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000137"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000136",
+      "t": 10.1333,
+      "object": "FST-00016",
+      "position": [
+        -0.5389,
+        0.012,
+        0.7647
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000137",
+      "t": 10.1333,
+      "object": "FST-00016",
+      "position": [
+        -0.5389,
+        0.012,
+        0.7647
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000138"
+      ],
+      "provenance": "made",
+      "cause": "E-000135",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000138",
+      "t": 10.1333,
+      "object": "A-0001",
+      "position": [
+        -0.5389,
+        0.012,
+        0.7647
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00016",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000137",
+      "pan": -0.2026,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000139",
+      "t": 10.2667,
+      "object": "P-0001",
+      "position": [
+        -0.4454,
+        0.0132,
+        0.8212
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000140",
+      "t": 10.4,
+      "object": "L-0001",
+      "position": [
+        1.68,
+        0.95,
+        0.45
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "care_check",
+      "target": "L-0001",
+      "children": [],
+      "provenance": "made",
+      "note": "Demo lamp care check recorded. Synthetic object; not real maintenance."
+    },
+    {
+      "id": "E-000141",
+      "t": 10.4,
+      "object": "L-0001",
+      "position": [
+        1.68,
+        0.95,
+        0.45
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "selected",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Necklace object inspection."
+    },
+    {
+      "id": "E-000142",
+      "t": 10.5,
+      "object": "P-0001",
+      "position": [
+        -0.6223,
+        0.0076,
+        0.8014
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000143",
+      "t": 10.7,
+      "object": "P-0001",
+      "position": [
+        -0.9907,
+        0.012,
+        0.8179
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000145"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000144",
+      "t": 10.7,
+      "object": "FST-00017",
+      "position": [
+        -0.9907,
+        0.012,
+        0.8179
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000145",
+      "t": 10.7,
+      "object": "FST-00017",
+      "position": [
+        -0.9907,
+        0.012,
+        0.8179
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000146"
+      ],
+      "provenance": "made",
+      "cause": "E-000143",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000146",
+      "t": 10.7,
+      "object": "A-0001",
+      "position": [
+        -0.9907,
+        0.012,
+        0.8179
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00017",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000145",
+      "pan": -0.2621,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000147",
+      "t": 10.7333,
+      "object": "P-0001",
+      "position": [
+        -0.7992,
+        0.0059,
+        0.7815
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000148",
+      "t": 10.9667,
+      "object": "P-0001",
+      "position": [
+        -0.9762,
+        0.0089,
+        0.7617
+      ],
+      "velocity": [
+        -0.7582,
+        0,
+        -0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -1.6825,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000149",
+      "t": 11.1333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "turn",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made route changes direction; pauses before turning."
+    },
+    {
+      "id": "E-000150",
+      "t": 11.2,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -2.284,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000151",
+      "t": 11.4333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -3.0081,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000152",
+      "t": 11.6,
+      "object": "R-0001",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "demo_changed",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "demo": "studio"
+    },
+    {
+      "id": "E-000153",
+      "t": 11.6667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": -3.1208,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000154",
+      "t": 11.8,
+      "object": "P-0001",
+      "position": [
+        -0.9858,
+        0.012,
+        0.8696
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000156"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000155",
+      "t": 11.8,
+      "object": "FST-00018",
+      "position": [
+        -0.9858,
+        0.012,
+        0.8696
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000156",
+      "t": 11.8,
+      "object": "FST-00018",
+      "position": [
+        -0.9858,
+        0.012,
+        0.8696
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000157",
+        "E-000158"
+      ],
+      "provenance": "made",
+      "cause": "E-000154",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000157",
+      "t": 11.8,
+      "object": "A-0001",
+      "position": [
+        -0.9858,
+        0.012,
+        0.8696
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00018",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000156",
+      "pan": -0.2661,
+      "audible": false,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000158",
+      "t": 11.8,
+      "object": "A-0002",
+      "position": [
+        -0.9858,
+        0.012,
+        0.8696
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "note",
+      "target": "FST-00018",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000156",
+      "pan": -0.2661,
+      "midi": 67,
+      "audible": false,
+      "note": "Made spatial-score note caused by foot contact."
+    },
+    {
+      "id": "E-000159",
+      "t": 11.8,
+      "object": "A-0001",
+      "position": [
+        0,
+        1,
+        0
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "sound_enabled",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "audible": true
+    },
+    {
+      "id": "E-000160",
+      "t": 11.8,
+      "object": "A-0002",
+      "position": [
+        1.68,
+        1.15,
+        0.46
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "navigation_cue",
+      "target": "L-0001",
+      "children": [],
+      "provenance": "made",
+      "pan": 0.1347,
+      "midi": 72,
+      "audible": true,
+      "note": "Made wayfinding cue at the bedside lamp."
+    },
+    {
+      "id": "E-000161",
+      "t": 11.9,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0115,
+        0.572
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000162",
+      "t": 12.1333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0037,
+        0.3939
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000163",
+      "t": 12.3667,
+      "object": "P-0001",
+      "position": [
+        -1.188,
+        0.012,
+        0.4313
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000165"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000164",
+      "t": 12.3667,
+      "object": "FST-00019",
+      "position": [
+        -1.188,
+        0.012,
+        0.4313
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000165",
+      "t": 12.3667,
+      "object": "FST-00019",
+      "position": [
+        -1.188,
+        0.012,
+        0.4313
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000166",
+        "E-000167"
+      ],
+      "provenance": "made",
+      "cause": "E-000163",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000166",
+      "t": 12.3667,
+      "object": "A-0001",
+      "position": [
+        -1.188,
+        0.012,
+        0.4313
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00019",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000165",
+      "pan": -0.2514,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000167",
+      "t": 12.3667,
+      "object": "A-0002",
+      "position": [
+        -1.188,
+        0.012,
+        0.4313
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "note",
+      "target": "FST-00019",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000165",
+      "pan": -0.2514,
+      "midi": 72,
+      "audible": true,
+      "note": "Made spatial-score note caused by foot contact."
+    },
+    {
+      "id": "E-000168",
+      "t": 12.3667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.007,
+        0.2159
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000169",
+      "t": 12.6,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0089,
+        0.0379
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000170",
+      "t": 12.8333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0005,
+        -0.1402
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000171",
+      "t": 12.9333,
+      "object": "P-0001",
+      "position": [
+        -0.9879,
+        0.012,
+        0.0285
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000173"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000172",
+      "t": 12.9333,
+      "object": "FST-00020",
+      "position": [
+        -0.9879,
+        0.012,
+        0.0285
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000173",
+      "t": 12.9333,
+      "object": "FST-00020",
+      "position": [
+        -0.9879,
+        0.012,
+        0.0285
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000174",
+        "E-000175"
+      ],
+      "provenance": "made",
+      "cause": "E-000171",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000174",
+      "t": 12.9333,
+      "object": "A-0001",
+      "position": [
+        -0.9879,
+        0.012,
+        0.0285
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00020",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000173",
+      "pan": -0.1939,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000175",
+      "t": 12.9333,
+      "object": "A-0002",
+      "position": [
+        -0.9879,
+        0.012,
+        0.0285
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "note",
+      "target": "FST-00020",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000173",
+      "pan": -0.1939,
+      "midi": 60,
+      "audible": true,
+      "note": "Made spatial-score note caused by foot contact."
+    },
+    {
+      "id": "E-000176",
+      "t": 13.0667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0129,
+        -0.3182
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000177",
+      "t": 13.3,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0126,
+        -0.4962
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000178",
+      "t": 13.5,
+      "object": "P-0001",
+      "position": [
+        -1.186,
+        0.012,
+        -0.4135
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000180"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000179",
+      "t": 13.5,
+      "object": "FST-00021",
+      "position": [
+        -1.186,
+        0.012,
+        -0.4135
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000180",
+      "t": 13.5,
+      "object": "FST-00021",
+      "position": [
+        -1.186,
+        0.012,
+        -0.4135
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000181",
+        "E-000182"
+      ],
+      "provenance": "made",
+      "cause": "E-000178",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000181",
+      "t": 13.5,
+      "object": "A-0001",
+      "position": [
+        -1.186,
+        0.012,
+        -0.4135
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00021",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000180",
+      "pan": -0.1807,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000182",
+      "t": 13.5,
+      "object": "A-0002",
+      "position": [
+        -1.186,
+        0.012,
+        -0.4135
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "note",
+      "target": "FST-00021",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000180",
+      "pan": -0.1807,
+      "midi": 64,
+      "audible": true,
+      "note": "Made spatial-score note caused by foot contact."
+    },
+    {
+      "id": "E-000183",
+      "t": 13.5333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0114,
+        -0.6743
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000184",
+      "t": 13.7667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0026,
+        -0.8523
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000185",
+      "t": 14,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0026,
+        -1.0303
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000186",
+      "t": 14.0667,
+      "object": "P-0001",
+      "position": [
+        -0.9896,
+        0.012,
+        -0.8217
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000188"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000187",
+      "t": 14.0667,
+      "object": "FST-00022",
+      "position": [
+        -0.9896,
+        0.012,
+        -0.8217
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000188",
+      "t": 14.0667,
+      "object": "FST-00022",
+      "position": [
+        -0.9896,
+        0.012,
+        -0.8217
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000189",
+        "E-000190"
+      ],
+      "provenance": "made",
+      "cause": "E-000186",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000189",
+      "t": 14.0667,
+      "object": "A-0001",
+      "position": [
+        -0.9896,
+        0.012,
+        -0.8217
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00022",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000188",
+      "pan": -0.1259,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000190",
+      "t": 14.0667,
+      "object": "A-0002",
+      "position": [
+        -0.9896,
+        0.012,
+        -0.8217
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "note",
+      "target": "FST-00022",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000188",
+      "pan": -0.1259,
+      "midi": 67,
+      "audible": true,
+      "note": "Made spatial-score note caused by foot contact."
+    },
+    {
+      "id": "E-000191",
+      "t": 14.2333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0111,
+        -1.2084
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000192",
+      "t": 14.4667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0056,
+        -1.3864
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000193",
+      "t": 14.6333,
+      "object": "P-0001",
+      "position": [
+        -1.1846,
+        0.012,
+        -1.2697
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000195"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000194",
+      "t": 14.6333,
+      "object": "FST-00023",
+      "position": [
+        -1.1846,
+        0.012,
+        -1.2697
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000195",
+      "t": 14.6333,
+      "object": "FST-00023",
+      "position": [
+        -1.1846,
+        0.012,
+        -1.2697
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000196",
+        "E-000197"
+      ],
+      "provenance": "made",
+      "cause": "E-000193",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000196",
+      "t": 14.6333,
+      "object": "A-0001",
+      "position": [
+        -1.1846,
+        0.012,
+        -1.2697
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00023",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000195",
+      "pan": -0.1142,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000197",
+      "t": 14.6333,
+      "object": "A-0002",
+      "position": [
+        -1.1846,
+        0.012,
+        -1.2697
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "note",
+      "target": "FST-00023",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000195",
+      "pan": -0.1142,
+      "midi": 72,
+      "audible": true,
+      "note": "Made spatial-score note caused by foot contact."
+    },
+    {
+      "id": "E-000198",
+      "t": 14.7,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.014,
+        -1.5644
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000199",
+      "t": 14.7,
+      "object": "R-0001",
+      "position": [
+        0.25,
+        1.325,
+        -0.95
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "demo_changed",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "demo": "door"
+    },
+    {
+      "id": "E-000200",
+      "t": 14.9,
+      "object": "D-0002",
+      "position": [
+        -1.625,
+        1.02,
+        -0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "tap",
+      "target": "D-0002",
+      "children": [
+        "E-000201"
+      ],
+      "provenance": "made",
+      "note": "User tapped a faded doorway."
+    },
+    {
+      "id": "E-000201",
+      "t": 14.9,
+      "object": "D-0002",
+      "position": [
+        -1.625,
+        1.02,
+        -0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "unlock_made",
+      "target": "R-0002",
+      "children": [
+        "E-000202"
+      ],
+      "provenance": "made",
+      "cause": "E-000200",
+      "note": "A new made room. This is never newly seen evidence."
+    },
+    {
+      "id": "E-000202",
+      "t": 14.9,
+      "object": "R-0002",
+      "position": [
+        -3.12,
+        1.25,
+        -0.98
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "constructed",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000201",
+      "note": "Made listening alcove revealed."
+    },
+    {
+      "id": "E-000203",
+      "t": 14.9333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0114,
+        -1.7425
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000204",
+      "t": 15.1667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0091,
+        -1.9205
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000205",
+      "t": 15.2,
+      "object": "P-0001",
+      "position": [
+        -0.9906,
+        0.012,
+        -1.6846
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000207"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000206",
+      "t": 15.2,
+      "object": "FST-00024",
+      "position": [
+        -0.9906,
+        0.012,
+        -1.6846
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000207",
+      "t": 15.2,
+      "object": "FST-00024",
+      "position": [
+        -0.9906,
+        0.012,
+        -1.6846
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000208"
+      ],
+      "provenance": "made",
+      "cause": "E-000205",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000208",
+      "t": 15.2,
+      "object": "A-0001",
+      "position": [
+        -0.9906,
+        0.012,
+        -1.6846
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00024",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000207",
+      "pan": 0.0232,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000209",
+      "t": 15.4,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0063,
+        -2.0985
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000210",
+      "t": 15.6333,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0047,
+        -2.2766
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000211",
+      "t": 15.7667,
+      "object": "P-0001",
+      "position": [
+        -1.184,
+        0.012,
+        -2.1399
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000213"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000212",
+      "t": 15.7667,
+      "object": "FST-00025",
+      "position": [
+        -1.184,
+        0.012,
+        -2.1399
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000213",
+      "t": 15.7667,
+      "object": "FST-00025",
+      "position": [
+        -1.184,
+        0.012,
+        -2.1399
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000214"
+      ],
+      "provenance": "made",
+      "cause": "E-000211",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000214",
+      "t": 15.7667,
+      "object": "A-0001",
+      "position": [
+        -1.184,
+        0.012,
+        -2.1399
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00025",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000213",
+      "pan": 0.0305,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000215",
+      "t": 15.8667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0116,
+        -2.4546
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000216",
+      "t": 16.0667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0083,
+        -2.6072
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000217",
+      "t": 16.2667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0,
+        -2.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "turn",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made route changes direction; pauses before turning."
+    },
+    {
+      "id": "E-000218",
+      "t": 16.2667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0091,
+        -2.75
+      ],
+      "velocity": [
+        0,
+        0,
+        -0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 3.1416,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000219",
+      "t": 16.4667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        -2.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0.638,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000220",
+      "t": 16.6667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        -2.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0.1295,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000221",
+      "t": 16.8667,
+      "object": "P-0001",
+      "position": [
+        -1.1382,
+        0.012,
+        -2.6357
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000223"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000222",
+      "t": 16.8667,
+      "object": "FST-00026",
+      "position": [
+        -1.1382,
+        0.012,
+        -2.6357
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000223",
+      "t": 16.8667,
+      "object": "FST-00026",
+      "position": [
+        -1.1382,
+        0.012,
+        -2.6357
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000224"
+      ],
+      "provenance": "made",
+      "cause": "E-000221",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000224",
+      "t": 16.8667,
+      "object": "A-0001",
+      "position": [
+        -1.1382,
+        0.012,
+        -2.6357
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00026",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000223",
+      "pan": 0.0654,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000225",
+      "t": 16.8667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0132,
+        -2.6991
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000226",
+      "t": 17.0667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0026,
+        -2.5465
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000227",
+      "t": 17.2667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0005,
+        -2.3939
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000228",
+      "t": 17.4333,
+      "object": "P-0001",
+      "position": [
+        -1.0075,
+        0.012,
+        -2.1968
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000230"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000229",
+      "t": 17.4333,
+      "object": "FST-00027",
+      "position": [
+        -1.0075,
+        0.012,
+        -2.1968
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000230",
+      "t": 17.4333,
+      "object": "FST-00027",
+      "position": [
+        -1.0075,
+        0.012,
+        -2.1968
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000231"
+      ],
+      "provenance": "made",
+      "cause": "E-000228",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000231",
+      "t": 17.4333,
+      "object": "A-0001",
+      "position": [
+        -1.0075,
+        0.012,
+        -2.1968
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00027",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000230",
+      "pan": 0.0534,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000232",
+      "t": 17.4667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0129,
+        -2.2413
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000233",
+      "t": 17.6667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0119,
+        -2.0887
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000234",
+      "t": 17.8667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.007,
+        -1.9361
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000235",
+      "t": 18,
+      "object": "P-0001",
+      "position": [
+        -1.1434,
+        0.012,
+        -1.805
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000237"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000236",
+      "t": 18,
+      "object": "FST-00028",
+      "position": [
+        -1.1434,
+        0.012,
+        -1.805
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000237",
+      "t": 18,
+      "object": "FST-00028",
+      "position": [
+        -1.1434,
+        0.012,
+        -1.805
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000238"
+      ],
+      "provenance": "made",
+      "cause": "E-000235",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000238",
+      "t": 18,
+      "object": "A-0001",
+      "position": [
+        -1.1434,
+        0.012,
+        -1.805
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00028",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000237",
+      "pan": 0.0138,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000239",
+      "t": 18.0667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0116,
+        -1.7835
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000240",
+      "t": 18.2667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0083,
+        -1.6309
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000241",
+      "t": 18.4667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0091,
+        -1.4783
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000242",
+      "t": 18.5667,
+      "object": "P-0001",
+      "position": [
+        -1.002,
+        0.012,
+        -1.3644
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000244"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000243",
+      "t": 18.5667,
+      "object": "FST-00029",
+      "position": [
+        -1.002,
+        0.012,
+        -1.3644
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000244",
+      "t": 18.5667,
+      "object": "FST-00029",
+      "position": [
+        -1.002,
+        0.012,
+        -1.3644
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000245"
+      ],
+      "provenance": "made",
+      "cause": "E-000242",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000245",
+      "t": 18.5667,
+      "object": "A-0001",
+      "position": [
+        -1.002,
+        0.012,
+        -1.3644
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00029",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000244",
+      "pan": 0.0009,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000246",
+      "t": 18.6667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0089,
+        -1.3257
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000247",
+      "t": 18.8667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0056,
+        -1.1731
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000248",
+      "t": 19.0667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0132,
+        -1.0205
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000249",
+      "t": 19.1333,
+      "object": "P-0001",
+      "position": [
+        -1.1487,
+        0.012,
+        -0.9701
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000251"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000250",
+      "t": 19.1333,
+      "object": "FST-00030",
+      "position": [
+        -1.1487,
+        0.012,
+        -0.9701
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000251",
+      "t": 19.1333,
+      "object": "FST-00030",
+      "position": [
+        -1.1487,
+        0.012,
+        -0.9701
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000252"
+      ],
+      "provenance": "made",
+      "cause": "E-000249",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000252",
+      "t": 19.1333,
+      "object": "A-0001",
+      "position": [
+        -1.1487,
+        0.012,
+        -0.9701
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00030",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000251",
+      "pan": -0.0428,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000253",
+      "t": 19.2667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0026,
+        -0.8679
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000254",
+      "t": 19.4667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0005,
+        -0.7153
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000255",
+      "t": 19.6667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0129,
+        -0.5627
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000256",
+      "t": 19.7,
+      "object": "P-0001",
+      "position": [
+        -0.9966,
+        0.012,
+        -0.5276
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000258"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000257",
+      "t": 19.7,
+      "object": "FST-00031",
+      "position": [
+        -0.9966,
+        0.012,
+        -0.5276
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000258",
+      "t": 19.7,
+      "object": "FST-00031",
+      "position": [
+        -0.9966,
+        0.012,
+        -0.5276
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000259"
+      ],
+      "provenance": "made",
+      "cause": "E-000256",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000259",
+      "t": 19.7,
+      "object": "A-0001",
+      "position": [
+        -0.9966,
+        0.012,
+        -0.5276
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00031",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000258",
+      "pan": -0.0568,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000260",
+      "t": 19.8667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0119,
+        -0.4101
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000261",
+      "t": 20.0667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.007,
+        -0.2575
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000262",
+      "t": 20.2667,
+      "object": "P-0001",
+      "position": [
+        -1.1537,
+        0.012,
+        -0.1306
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000264"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000263",
+      "t": 20.2667,
+      "object": "FST-00032",
+      "position": [
+        -1.1537,
+        0.012,
+        -0.1306
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000264",
+      "t": 20.2667,
+      "object": "FST-00032",
+      "position": [
+        -1.1537,
+        0.012,
+        -0.1306
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000265"
+      ],
+      "provenance": "made",
+      "cause": "E-000262",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000265",
+      "t": 20.2667,
+      "object": "A-0001",
+      "position": [
+        -1.1537,
+        0.012,
+        -0.1306
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00032",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000264",
+      "pan": -0.1047,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000266",
+      "t": 20.2667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0116,
+        -0.1049
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000267",
+      "t": 20.4667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0083,
+        0.0477
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000268",
+      "t": 20.6667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0091,
+        0.2003
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000269",
+      "t": 20.8333,
+      "object": "P-0001",
+      "position": [
+        -0.9914,
+        0.012,
+        0.3138
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000271"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000270",
+      "t": 20.8333,
+      "object": "FST-00033",
+      "position": [
+        -0.9914,
+        0.012,
+        0.3138
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000271",
+      "t": 20.8333,
+      "object": "FST-00033",
+      "position": [
+        -0.9914,
+        0.012,
+        0.3138
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000272"
+      ],
+      "provenance": "made",
+      "cause": "E-000269",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000272",
+      "t": 20.8333,
+      "object": "A-0001",
+      "position": [
+        -0.9914,
+        0.012,
+        0.3138
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00033",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000271",
+      "pan": -0.1199,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000273",
+      "t": 20.8667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0089,
+        0.3529
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000274",
+      "t": 21.0667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0056,
+        0.5055
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000275",
+      "t": 21.2667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0132,
+        0.6581
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000276",
+      "t": 21.4,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "turn",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Made route changes direction; pauses before turning."
+    },
+    {
+      "id": "E-000277",
+      "t": 21.4,
+      "object": "P-0001",
+      "position": [
+        -1.1584,
+        0.012,
+        0.7036
+      ],
+      "velocity": [
+        0,
+        0,
+        0.763
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000279"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000278",
+      "t": 21.4,
+      "object": "FST-00034",
+      "position": [
+        -1.1584,
+        0.012,
+        0.7036
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000279",
+      "t": 21.4,
+      "object": "FST-00034",
+      "position": [
+        -1.1584,
+        0.012,
+        0.7036
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000280"
+      ],
+      "provenance": "made",
+      "cause": "E-000277",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000280",
+      "t": 21.4,
+      "object": "A-0001",
+      "position": [
+        -1.1584,
+        0.012,
+        0.7036
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00034",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000279",
+      "pan": -0.1712,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000281",
+      "t": 21.4667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 0.6015,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000282",
+      "t": 21.6667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.2849,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000283",
+      "t": 21.8667,
+      "object": "P-0001",
+      "position": [
+        -1.08,
+        0.0078,
+        0.75
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4237,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000284",
+      "t": 22.0667,
+      "object": "P-0001",
+      "position": [
+        -0.9789,
+        0.0119,
+        0.7613
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000285",
+      "t": 22.2667,
+      "object": "P-0001",
+      "position": [
+        -0.8273,
+        0.007,
+        0.7784
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000286",
+      "t": 22.4667,
+      "object": "P-0001",
+      "position": [
+        -0.6756,
+        0.0116,
+        0.7954
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000287",
+      "t": 22.5,
+      "object": "P-0001",
+      "position": [
+        -0.7237,
+        0.012,
+        0.6862
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000289"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000288",
+      "t": 22.5,
+      "object": "FST-00035",
+      "position": [
+        -0.7237,
+        0.012,
+        0.6862
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000289",
+      "t": 22.5,
+      "object": "FST-00035",
+      "position": [
+        -0.7237,
+        0.012,
+        0.6862
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000290"
+      ],
+      "provenance": "made",
+      "cause": "E-000287",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000290",
+      "t": 22.5,
+      "object": "A-0001",
+      "position": [
+        -0.7237,
+        0.012,
+        0.6862
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00035",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000289",
+      "pan": -0.117,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000291",
+      "t": 22.6667,
+      "object": "P-0001",
+      "position": [
+        -0.524,
+        0.0083,
+        0.8124
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000292",
+      "t": 22.8667,
+      "object": "P-0001",
+      "position": [
+        -0.3723,
+        0.0091,
+        0.8294
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000293",
+      "t": 23.0667,
+      "object": "P-0001",
+      "position": [
+        -0.3077,
+        0.012,
+        0.9256
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000295"
+      ],
+      "provenance": "made",
+      "note": "R foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000294",
+      "t": 23.0667,
+      "object": "FST-00036",
+      "position": [
+        -0.3077,
+        0.012,
+        0.9256
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000295",
+      "t": 23.0667,
+      "object": "FST-00036",
+      "position": [
+        -0.3077,
+        0.012,
+        0.9256
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000296"
+      ],
+      "provenance": "made",
+      "cause": "E-000293",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000296",
+      "t": 23.0667,
+      "object": "A-0001",
+      "position": [
+        -0.3077,
+        0.012,
+        0.9256
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00036",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000295",
+      "pan": -0.084,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000297",
+      "t": 23.0667,
+      "object": "P-0001",
+      "position": [
+        -0.2207,
+        0.0089,
+        0.8464
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000298",
+      "t": 23.2667,
+      "object": "P-0001",
+      "position": [
+        -0.069,
+        0.0056,
+        0.8634
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000299",
+      "t": 23.4667,
+      "object": "P-0001",
+      "position": [
+        0.0826,
+        0.0132,
+        0.8804
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000300",
+      "t": 23.6333,
+      "object": "P-0001",
+      "position": [
+        0.2005,
+        0.012,
+        0.7928
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "foot_contact",
+      "target": "F-0001",
+      "children": [
+        "E-000302"
+      ],
+      "provenance": "made",
+      "note": "L foot; simulated on constructed floor."
+    },
+    {
+      "id": "E-000301",
+      "t": 23.6333,
+      "object": "FST-00037",
+      "position": [
+        0.2005,
+        0.012,
+        0.7928
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "created",
+      "target": null,
+      "children": [],
+      "provenance": "made",
+      "note": "Simulated contact with F-0001; not a measurement of real footage."
+    },
+    {
+      "id": "E-000302",
+      "t": 23.6333,
+      "object": "FST-00037",
+      "position": [
+        0.2005,
+        0.012,
+        0.7928
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "contact",
+      "target": "F-0001",
+      "children": [
+        "E-000303"
+      ],
+      "provenance": "made",
+      "cause": "E-000300",
+      "note": "Foot contacts the made floor."
+    },
+    {
+      "id": "E-000303",
+      "t": 23.6333,
+      "object": "A-0001",
+      "position": [
+        0.2005,
+        0.012,
+        0.7928
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "event": "footstep_sound",
+      "target": "FST-00037",
+      "children": [],
+      "provenance": "made",
+      "cause": "E-000302",
+      "pan": -0.0071,
+      "audible": true,
+      "note": "Synthesized from this contact; muted until a sound tap."
+    },
+    {
+      "id": "E-000304",
+      "t": 23.6667,
+      "object": "P-0001",
+      "position": [
+        0.2343,
+        0.0026,
+        0.8975
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    },
+    {
+      "id": "E-000305",
+      "t": 23.8667,
+      "object": "P-0001",
+      "position": [
+        0.3859,
+        0.0005,
+        0.9145
+      ],
+      "velocity": [
+        0.7582,
+        0,
+        0.0851
+      ],
+      "event": "motion_sample",
+      "target": "R-0001",
+      "children": [],
+      "provenance": "made",
+      "rotation_y": 1.4591,
+      "sole_min_y": 0.008
+    }
+  ],
+  "state": {
+    "t": 24.00000000000035,
+    "paused": false,
+    "lens": false,
+    "inside": false,
+    "demo": "door",
+    "unlocked": true,
+    "sound": true,
+    "steps": 37,
+    "selected": "L-0001",
+    "speed": 0.763
+  },
+  "retention": "Complete in-memory session. Reset on reload; download to keep. No network writes.",
+  "capture": {
+    "author": "GPT-6.1 Sol",
+    "description": "Recorded from the actual page; CPU SwiftShader, deterministic scene clock, 30 fps. Audio rendered from these events.",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "frames": 720,
+    "duration": 24
+  }
+}

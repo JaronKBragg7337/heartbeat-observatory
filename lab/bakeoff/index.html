@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Engine Bake-off</title>
+<!-- hb:no-phone -->
+<style>
+  :root { --bg:#16120f; --panel:#211b16; --line:#3a3029; --text:#efe6d8; --muted:#a8998a; --gold:#e8b45a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, -apple-system, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 1.7rem; margin: 6px 0 4px; }
+  .lede { color: var(--muted); margin: 0 0 18px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; }
+  .card img { width:100%; aspect-ratio: 9/16; object-fit: cover; display:block; background:#000; }
+  .body { padding: 12px 14px 14px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .name { font-weight:700; font-size:1.1rem; } .time { color: var(--gold); font-size:.9rem; }
+  ul { margin:0; padding-left: 18px; font-size:.88rem; color:#d8ccbc; } li { margin: 2px 0; }
+  .weak { font-size:.82rem; color: var(--muted); }
+  a.open { margin-top:auto; display:block; text-align:center; min-height:44px; line-height:44px; border-radius:12px; background:var(--gold); color:#1a1208; font-weight:700; text-decoration:none; }
+  .note { margin-top: 22px; font-size:.85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Engine bake-off</h1>
+  <p class="lede">Four AIs, one brief, the same night (Oct 26, 1-1:35 AM): close the room, build the missing wall and mark it made, unlock a door,
+    let every object tell its history, add sound, and find other uses. Room + person made by Grok Imagine; the person is AI-generated (not real).</p>
+  <div class="grid">
+    <div class="card"><img src="fable.jpg" alt="Fable's bedroom" loading="lazy"><div class="body">
+      <div class="name">Claude Fable 5.1</div><div class="time">~28 min</div>
+      <ul><li>Keeps the filmed room; builds the rest, blue-grid = made</li><li>Seen / seen+made / made switch</li>
+        <li>4 demos: quest game, movie cuts, footstep music video, self-narrating show</li><li>61 events, drag-to-replay timeline</li></ul>
+      <div class="weak">Weak: cloudy ceiling, torn bed edge still visible, old rig.</div>
+      <a class="open" href="/lab/bedroom-fable/">Open</a></div></div>
+    <div class="card"><img src="kimi.jpg" alt="Kimi's bedroom" loading="lazy"><div class="body">
+      <div class="name">Kimi K3.1 Pro</div><div class="time">~25 min</div>
+      <ul><li>Filmed room inside a see-through made shell</li><li>"Made - unseen left wall" labelled</li>
+        <li>Object memory panel: tap the man, see P-0001's steps</li><li>38 uses listed</li></ul>
+      <div class="weak">Weak: torn lamp + nightstand still there; fewest demos.</div>
+      <a class="open" href="/lab/bedroom-kimi/">Open</a></div></div>
+    <div class="card"><img src="sol.jpg" alt="Sol's bedroom" loading="lazy"><div class="body">
+      <div class="name">GPT-6.1 Sol</div><div class="time">~30 min</div>
+      <ul><li>Rebuilt the whole room clean, dollhouse cutaway</li><li>Door 02 opens a made listening room</li>
+        <li>70 uses listed; demos: care log, sound wayfinding, design review</li><li>239 events, 4 AI tools</li></ul>
+      <div class="weak">Weak: swapped Grok's photo look for its own model - less like a real place.</div>
+      <a class="open" href="/lab/bedroom-sol/">Open</a></div></div>
+    <div class="card"><img src="sonnet.jpg" alt="Sonnet's bedroom" loading="lazy"><div class="body">
+      <div class="name">Claude Sonnet 5.5</div><div class="time">~33 min</div>
+      <ul><li>Filmed room + made furniture covering the torn corner</li><li>Door swings open, he hears it and walks in</li>
+        <li>4 demos: "Witness" true-or-lie game, "The Locked Door" film, "Heavy Steps" music, "The Room Remembers" show</li>
+        <li>214 events, scrub timeline, MCP server</li></ul>
+      <div class="weak">Weak: room box estimated, scripted route, small synth sound.</div>
+      <a class="open" href="/lab/bedroom-sonnet/">Open</a></div></div>
+  </div>
+  <p class="note">Times are wall-clock for each AI's whole build. Tested at phone width in WebKit; not yet on a real iPhone. v1 baseline: <a style="color:var(--gold)" href="/lab/bedroom/">/lab/bedroom/</a>.</p>
+</div>
+</body>
+</html>
