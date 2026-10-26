@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Bedroom lab</title>
+<!-- hb:no-phone --><!-- hb:no-editor --><!-- hb:no-analytics --><!-- hb:no-homescreen --><!-- hb:no-icon -->
+<style>
+  :root { color-scheme: dark; --bg:#16140f; --card:#221e16; --line:#3a3326; --ink:#ece6d4; --dim:#a79f88; --accent:#f0c36b; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; overscroll-behavior: none;
+    font: 14px/1.4 system-ui, -apple-system, sans-serif; -webkit-text-size-adjust: 100%; }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .top { position: fixed; left: 0; right: 0; top: 0; padding: max(10px, env(safe-area-inset-top)) 16px 0; pointer-events: none; }
+  .top h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  .top p { margin: 2px 0 0; color: var(--dim); font-size: 12px; }
+  .bar { position: fixed; left: 16px; right: 16px; bottom: calc(58px + env(safe-area-inset-bottom)); display: flex; gap: 8px; }
+  button { font: inherit; color: var(--ink); background: rgba(34,30,22,.88); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-height: 44px; }
+  button.on { border-color: var(--accent); color: var(--accent); }
+  .corner { position: fixed; left: 16px; right: 16px; bottom: max(10px, env(safe-area-inset-bottom)); font-size: 11px; line-height: 1.35; color: var(--dim); pointer-events: none; }
+  #tag { position: fixed; left: 0; top: 0; font-size: 11px; color: var(--ink); background: rgba(22,20,15,.78); border: 1px solid var(--line);
+    border-radius: 999px; padding: 2px 8px; white-space: nowrap; pointer-events: none; transform: translate(-50%, -100%); display: none; }
+  #toast { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); background: rgba(34,30,22,.94); border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 12px; padding: 10px 16px; font-size: 15px; opacity: 0; transition: opacity .25s; pointer-events: none; text-align: center; max-width: calc(100vw - 32px); }
+  #toast.show { opacity: 1; }
+  #msg { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--dim); background: var(--bg); text-align: center; padding: 24px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="top"><h1>Bedroom lab</h1><p>Drag to look around. Tap a faded door.</p></div>
+<div id="tag">AI-generated person (not real)</div>
+<div id="toast"></div>
+<div class="bar"><button id="follow" type="button">Follow him</button><button id="reset" type="button">Reset view</button></div>
+<div class="corner">Room + person made by Grok Imagine, rebuilt by Heartbeat Observatory tools. Faded = not seen.</div>
+<div id="msg">Loading the room...</div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = (id) => document.getElementById(id);
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setClearColor(0x16140f);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 80);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 2.6; controls.maxDistance = 8; controls.minPolarAngle = Math.PI * 0.12; controls.maxPolarAngle = Math.PI * 0.42;
+// azimuth limits set after load: stay on the side the footage saw
+controls.enablePan = false;
+const HOME_TARGET = new THREE.Vector3(), HOME_POS = new THREE.Vector3();
+function home() { camera.position.copy(HOME_POS); controls.target.copy(HOME_TARGET); controls.update(); }
+
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 62 : 48; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+const hemi = new THREE.HemisphereLight(0xfff1d8, 0x2a2118, 1.5); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffe2b0, 1.6); sun.position.set(4, 5, 1); scene.add(sun);
+
+let meta, person, mixer, clips = {}, walkAction, idleAction;
+const doorMeshes = [];
+const gl = new GLTFLoader();
+const load = (u) => new Promise((res, rej) => gl.load(u, res, undefined, rej));
+
+// ---- room: unlit photo texture, edges fade out (UV border) so unseen areas stay open
+function roomMat(old) {
+  const m = new THREE.MeshBasicMaterial({ map: old.map, side: THREE.DoubleSide, transparent: true });
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+      float e = min(min(vMapUv.x, 1.0 - vMapUv.x), min(vMapUv.y, 1.0 - vMapUv.y));
+      diffuseColor.a *= smoothstep(0.0, 0.07, e);
+      diffuseColor.rgb *= 0.92;`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n if (gl_FragColor.a < 0.02) discard;');
+  };
+  return m;
+}
+
+// ---- locked doors: pale, shimmering, "not seen yet"
+function makeDoor(d, name) {
+  const a = new THREE.Vector3(...d.a), b = new THREE.Vector3(...d.b), up = new THREE.Vector3(0, d.h, 0);
+  const g = new THREE.BufferGeometry();
+  const P = [a, b, b.clone().add(up), a.clone().add(up)];
+  g.setFromPoints([P[0], P[1], P[2], P[0], P[2], P[3]]);
+  g.setAttribute('uv', new THREE.Float32BufferAttribute([0,0, 1,0, 1,1, 0,0, 1,1, 0,1], 2));
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { t: { value: 0 }, k: { value: 0 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `varying vec2 vUv; uniform float t; uniform float k;
+      void main(){
+        float edge = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
+        float band = 0.5 + 0.5 * sin(vUv.y * 9.0 - t * 1.4 + vUv.x * 2.0);
+        float a = 0.34 + 0.22 * band + 0.25 * k;
+        a *= smoothstep(0.0, 0.16, edge) * 0.85 + 0.15;
+        gl_FragColor = vec4(mix(vec3(0.96,0.88,0.70), vec3(1.0,0.95,0.80), band), a);
+      }`
+  });
+  const mesh = new THREE.Mesh(g, mat); mesh.userData.door = name; mesh.renderOrder = 5;
+  const ctr = a.clone().add(b).multiplyScalar(0.5).add(new THREE.Vector3(0, d.h * 0.52, 0));
+  const spr = lockSprite(); spr.position.copy(ctr); spr.scale.setScalar(0.34); spr.renderOrder = 6;
+  const ol = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(P), new THREE.LineBasicMaterial({ color: 0xf0c36b, transparent: true, opacity: 0.55 }));
+  const grp = new THREE.Group(); grp.add(mesh, spr, ol); grp.position.x += 0.02; scene.add(grp);
+  doorMeshes.push(mesh); return mesh;
+}
+function lockSprite() {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+  x.strokeStyle = '#f0c36b'; x.fillStyle = '#f0c36b'; x.lineWidth = 5; x.globalAlpha = 0.9;
+  x.beginPath(); x.arc(32, 26, 11, Math.PI, 0); x.stroke(); x.fillRect(18, 28, 28, 22);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, opacity: 0.8 }));
+}
+
+// ---- path: along the wall past the three doors, round the far end of the bed, back (ping-pong)
+const WALK = [];
+let seg = 0, segT = 0, state = 'turn', stateT = 0, yaw = 0, targetYaw = 0, speed = 0.76;
+function wallX() { const d = Object.values(meta.doors); return d.reduce((s, q) => s + q.a[0] + q.b[0], 0) / (2 * d.length); }
+function buildPath() {
+  const lane = (wallX() + meta.bed_xz[0]) / 2;                       // between wall and bed, centred
+  const zA = meta.doors.D3.b[2] + 0.3, zB = meta.doors.D1.a[2] - 0.15, zFar = Math.min(zB, meta.bed_xz[1] - 0.7);
+  const xR = Math.min(meta.floor_xz_p3_p97[2] - 0.15, meta.bed_xz[2] + 0.35);
+  const pts = [[lane, zA], [lane, zB], [lane + 0.5, zFar - 0.2], [xR, zFar - 0.2]];
+  for (const p of pts) WALK.push(new THREE.Vector3(p[0], 0, p[1]));
+  for (let i = pts.length - 2; i >= 1; i--) WALK.push(new THREE.Vector3(pts[i][0], 0, pts[i][1]));
+}
+let dir = 1, pi = 0;
+function nextTarget() { return WALK[pi]; }
+function startSeg(from, to) {
+  targetYaw = Math.atan2(to.x - from.x, to.z - from.z);
+  let d = targetYaw - yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); targetYaw = yaw + d;
+  state = 'turn'; stateT = 0;
+}
+function stepPerson(dt) {
+  if (!person) return;
+  const to = nextTarget(); const p = person.position;
+  if (state === 'turn') {
+    yaw += (targetYaw - yaw) * Math.min(1, dt * 6); person.rotation.y = yaw; stateT += dt;
+    walkAction.paused = true; idleAction.paused = false; fade(idleAction, walkAction);
+    if (Math.abs(targetYaw - yaw) < 0.05 && stateT > (pi === 0 || pi === WALK.length - 1 ? 1.2 : 0.35)) { state = 'walk'; fade(walkAction, idleAction); walkAction.paused = false; }
+  } else {
+    const v = new THREE.Vector3().subVectors(to, p); const dist = v.length();
+    if (dist < 0.06) {
+      pi += dir; if (pi >= WALK.length) { dir = -1; pi = WALK.length - 2; } else if (pi < 0) { dir = 1; pi = 1; }
+      startSeg(p, WALK[pi]); return;
+    }
+    v.multiplyScalar(1 / dist); p.addScaledVector(v, Math.min(dist, speed * dt));
+    yaw = Math.atan2(v.x, v.z); person.rotation.y = yaw;
+  }
+}
+function fade(inA, outA) { inA.enabled = true; inA.setEffectiveWeight(1); outA.setEffectiveWeight(0); inA.play(); }
+
+// ---- UI
+const toast = $('toast'); let tt;
+function say(s) { toast.textContent = s; toast.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => toast.classList.remove('show'), 1800); }
+let follow = false;
+$('follow').addEventListener('click', () => { follow = !follow; $('follow').classList.toggle('on', follow); });
+$('reset').addEventListener('click', () => { follow = false; $('follow').classList.remove('on'); home(); });
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null;
+canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null;
+  if (moved > 8) return;
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(doorMeshes, false);
+  if (hits.length) { const m = hits[0].object; m.material.uniforms.k.value = 1; say('Locked - not seen yet'); }
+});
+
+// ---- go
+(async () => {
+  try {
+    meta = await (await fetch('meta.json')).json();
+    const [room, per] = await Promise.all([load('room.glb'), load('person.glb')]);
+    const S = meta.scale;
+    room.scene.scale.setScalar(S);
+    room.scene.traverse((o) => { if (o.isMesh) o.material = roomMat(o.material); });
+    scene.add(room.scene); window.__room = room.scene;
+    Object.entries(meta.doors).forEach(([k, d]) => makeDoor(d, k));
+    person = per.scene; scene.add(person);
+    person.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.material.roughness = 0.9; o.material.emissive = new THREE.Color(0x0b0b10); } });
+    mixer = new THREE.AnimationMixer(person);
+    for (const c of per.animations) clips[c.name] = c;
+    walkAction = mixer.clipAction(clips.walk); idleAction = mixer.clipAction(clips.idle);
+    walkAction.timeScale = 1; walkAction.play(); idleAction.play(); idleAction.setEffectiveWeight(0);
+    buildPath(); person.position.copy(WALK[0]); pi = 1; startSeg(WALK[0], WALK[1]); yaw = targetYaw; person.rotation.y = yaw;
+    const zs = Object.values(meta.doors).flatMap((d) => [d.a[2], d.b[2]]); const zmid = (Math.min(...zs) + Math.max(...zs)) / 2;
+    HOME_TARGET.set(wallX() + 1.2, 0.8, zmid + 0.55); HOME_POS.copy(HOME_TARGET).add(new THREE.Vector3(2.6, 3.0, 5.6));
+    const az = Math.atan2(2.6, 5.6); controls.minAzimuthAngle = az - 0.9; controls.maxAzimuthAngle = az + 0.9;
+    home(); $('msg').remove();
+  } catch (err) { $('msg').textContent = 'Could not load the room (' + (err && err.message || err) + ').'; console.error(err); return; }
+  const clock = new THREE.Clock(); const tag = $('tag'); const hv = new THREE.Vector3();
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+    stepPerson(dt); mixer.update(dt);
+    for (const m of doorMeshes) { m.material.uniforms.t.value = t; m.material.uniforms.k.value *= 0.96; }
+    if (follow) { controls.target.lerp(hv.set(person.position.x, 1.0, person.position.z), 0.08); }
+    controls.update();
+    hv.set(person.position.x, 1.95, person.position.z).project(camera);
+    if (hv.z < 1) { tag.style.display = 'block'; tag.style.left = ((hv.x + 1) / 2 * innerWidth) + 'px'; tag.style.top = ((1 - hv.y) / 2 * innerHeight) + 'px'; } else tag.style.display = 'none';
+    renderer.render(scene, camera);
+  });
+  window.__dbg = { doorMeshes, camera, controls, person, THREE, setFollow(v){ follow = v; }, hide(i){ window.__room.children[i].visible = false; }, walk(){ return {pi,dir,state}; } };
+  window.__ready = true;
+})();
+</script>
+</body>
+</html>
