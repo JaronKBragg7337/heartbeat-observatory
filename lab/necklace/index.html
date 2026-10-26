@@ -139,5 +139,6 @@ $('seek').oninput = (e) => { v.pause(); $('play').textContent = 'Play'; v.curren
 v.addEventListener('seeked', () => { if (picked && v.paused) tell(picked, timeNow()); });
 init().catch((e) => { info.innerHTML = '<p id="msg">Could not load: ' + e.message + '</p>'; });
 </script>
+<script src="/lab/lab-top.js"></script>
 </body>
 </html>

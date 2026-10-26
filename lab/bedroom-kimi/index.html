@@ -316,5 +316,6 @@ document.querySelectorAll('[data-demo]').forEach((button)=>button.addEventListen
   window.__debug={history,scene,camera,controls,person,doors,selectObject,unlockDoor,tab,startReplay,project(id){const door=doors.get(id);if(!door)return null;const box=new THREE.Box3().setFromObject(door.mesh),p=box.getCenter(new THREE.Vector3()).project(camera),r=canvas.getBoundingClientRect();return{x:r.left+(p.x+1)/2*r.width,y:r.top+(1-p.y)/2*r.height};},stats(){return{events:history.events.length,footsteps:footCount,objects:history.objects.size,closedParts:6,unlocked:doors.get('D2').unlocked,replaying:!!replay,soundOn,position:person.position.toArray()};}};
 })();
 </script>
+<script src="/lab/lab-top.js"></script>
 </body>
 </html>
