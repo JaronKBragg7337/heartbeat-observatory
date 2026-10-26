@@ -1,0 +1,56 @@
+{
+ "format": "hb-shots/1",
+ "note": "Written from the event history by Claude Sonnet 5.5. Camera is a function of (shot, local time, man pose from the track).",
+ "based_on_events": 227,
+ "shots": [
+  {
+   "sh": 1,
+   "name": "ESTABLISH",
+   "start": 0,
+   "dur": 5.5,
+   "why": "Whole room, closed. Wide orbit from the unseen corner."
+  },
+  {
+   "sh": 2,
+   "name": "TRACK",
+   "start": 5.5,
+   "dur": 5,
+   "why": "Follow shot from behind his right shoulder."
+  },
+  {
+   "sh": 3,
+   "name": "FEET",
+   "start": 10.5,
+   "dur": 3.5,
+   "why": "Low angle on the footsteps: every contact is an event."
+  },
+  {
+   "sh": 4,
+   "name": "POV",
+   "start": 14,
+   "dur": 4,
+   "why": "His view: head height, walk bob from the real gait phase."
+  },
+  {
+   "sh": 5,
+   "name": "DOOR",
+   "start": 18,
+   "dur": 4.5,
+   "why": "Lane shot toward the middle door, slow push."
+  },
+  {
+   "sh": 6,
+   "name": "WINDOW",
+   "start": 22.5,
+   "dur": 4.5,
+   "why": "If the door is open: from inside the made room, back at the doorway. Else: the window wall."
+  },
+  {
+   "sh": 7,
+   "name": "TOP",
+   "start": 27,
+   "dur": 4,
+   "why": "Top-down: the whole path is a line on the floor."
+  }
+ ]
+}

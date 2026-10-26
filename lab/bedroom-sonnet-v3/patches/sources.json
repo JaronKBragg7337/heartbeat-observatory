@@ -1,0 +1,273 @@
+{
+ "format": "hb-patches/1",
+ "note": "every patched surface lists the frame and pixel rectangle its texture was cut from",
+ "frames": {
+  "v1/f0001.jpg": {
+   "file": "patches/src_f0001.jpg",
+   "w": 768,
+   "h": 1168
+  },
+  "v1/f0040.jpg": {
+   "file": "patches/src_f0040.jpg",
+   "w": 768,
+   "h": 1168
+  },
+  "v1/f0050.jpg": {
+   "file": "patches/src_f0050.jpg",
+   "w": 768,
+   "h": 1168
+  }
+ },
+ "textures": {
+  "plaster": {
+   "file": "patches/plaster.jpg",
+   "label": "plaster wall",
+   "size": 512,
+   "frames": [
+    {
+     "frame": "v1/f0001.jpg",
+     "rect": [
+      4,
+      30,
+      112,
+      380
+     ]
+    }
+   ],
+   "method": "image quilting (Efros-Freeman), block 36px, overlap 10px, min-cut seams, light gradient flattened (sigma 30), made wrap-around warmed 7% to match the lamp-lit room"
+  },
+  "plaster_ceiling": {
+   "file": "patches/plaster_ceiling.jpg",
+   "label": "ceiling (plaster pieces, lightened)",
+   "size": 512,
+   "frames": [
+    {
+     "frame": "v1/f0001.jpg",
+     "rect": [
+      4,
+      30,
+      112,
+      380
+     ]
+    }
+   ],
+   "method": "image quilting (Efros-Freeman), block 36px, overlap 10px, min-cut seams, light gradient flattened (sigma 30), made wrap-around lightened + warmed. The ceiling was never filmed; this is wall plaster placed overhead"
+  },
+  "floor": {
+   "file": "patches/floor.jpg",
+   "label": "dark wood floor",
+   "size": 512,
+   "frames": [
+    {
+     "frame": "v1/f0040.jpg",
+     "rect": [
+      20,
+      935,
+      440,
+      1150
+     ]
+    }
+   ],
+   "method": "image quilting (Efros-Freeman), block 44px, overlap 12px, min-cut seams, light gradient flattened (sigma 40), made wrap-around brightened 30% (the frame is exposed for the window)"
+  },
+  "trim": {
+   "file": "patches/trim.jpg",
+   "label": "dark window/door trim",
+   "size": 256,
+   "frames": [
+    {
+     "frame": "v1/f0040.jpg",
+     "rect": [
+      228,
+      20,
+      258,
+      215
+     ]
+    }
+   ],
+   "method": "image quilting (Efros-Freeman), block 14px, overlap 4px, min-cut seams, light gradient flattened (sigma 0), made wrap-around"
+  },
+  "redwood": {
+   "file": "patches/redwood.jpg",
+   "label": "red wood (nightstand / bed frame)",
+   "size": 256,
+   "frames": [
+    {
+     "frame": "v1/f0050.jpg",
+     "rect": [
+      445,
+      725,
+      520,
+      795
+     ]
+    }
+   ],
+   "method": "image quilting (Efros-Freeman), block 24px, overlap 8px, min-cut seams, light gradient flattened (sigma 0), made wrap-around"
+  },
+  "fabric": {
+   "file": "patches/fabric.jpg",
+   "label": "cream headboard fabric",
+   "size": 256,
+   "frames": [
+    {
+     "frame": "v1/f0050.jpg",
+     "rect": [
+      286,
+      362,
+      330,
+      398
+     ]
+    }
+   ],
+   "method": "image quilting (Efros-Freeman), block 12px, overlap 4px, min-cut seams, light gradient flattened (sigma 0), made wrap-around"
+  },
+  "linen": {
+   "file": "patches/linen.jpg",
+   "label": "white bedding / pillows",
+   "size": 256,
+   "frames": [
+    {
+     "frame": "v1/f0050.jpg",
+     "rect": [
+      150,
+      700,
+      300,
+      790
+     ]
+    }
+   ],
+   "method": "image quilting (Efros-Freeman), block 28px, overlap 8px, min-cut seams, light gradient flattened (sigma 20), made wrap-around"
+  },
+  "lamp": {
+   "file": "patches/lamp.png",
+   "label": "real lamp + plant",
+   "size": [
+    114,
+    206
+   ],
+   "frames": [
+    {
+     "frame": "v1/f0040.jpg",
+     "rect": [
+      296,
+      172,
+      410,
+      378
+     ]
+    }
+   ],
+   "method": "GrabCut cut-out of the real pixels (6 iterations), edge feathered 1 px; placed as an upright billboard"
+  },
+  "picture": {
+   "file": "patches/picture.jpg",
+   "label": "the garden seen through the real window",
+   "size": [
+    180,
+    115
+   ],
+   "frames": [
+    {
+     "frame": "v1/f0050.jpg",
+     "rect": [
+      360,
+      120,
+      540,
+      235
+     ]
+    }
+   ],
+   "method": "straight crop (no synthesis), framed"
+  }
+ },
+ "entities": {
+  "Q-0001": {
+   "label": "plaster walls (door wall, headboard wall, window wall)",
+   "textures": [
+    "plaster"
+   ]
+  },
+  "Q-0002": {
+   "label": "the unseen +z wall (nobody filmed it): real plaster pieces",
+   "textures": [
+    "plaster"
+   ]
+  },
+  "Q-0013": {
+   "label": "window on the unseen wall: real trim frame + a crop of the real view out of the window",
+   "textures": [
+    "trim",
+    "picture"
+   ]
+  },
+  "Q-0003": {
+   "label": "floor outside the filmed strip",
+   "textures": [
+    "floor"
+   ]
+  },
+  "Q-0004": {
+   "label": "ceiling (never filmed): wall plaster placed overhead",
+   "textures": [
+    "plaster_ceiling"
+   ]
+  },
+  "Q-0005": {
+   "label": "baseboards + door trim",
+   "textures": [
+    "trim"
+   ]
+  },
+  "Q-0006": {
+   "label": "left nightstand body",
+   "textures": [
+    "redwood"
+   ]
+  },
+  "Q-0007": {
+   "label": "right nightstand body",
+   "textures": [
+    "redwood"
+   ]
+  },
+  "Q-0008": {
+   "label": "left lamp: the real lamp, cut out",
+   "textures": [
+    "lamp"
+   ]
+  },
+  "Q-0009": {
+   "label": "right lamp: the same real lamp, mirrored",
+   "textures": [
+    "lamp"
+   ]
+  },
+  "Q-0010": {
+   "label": "bed end + pillows",
+   "textures": [
+    "linen"
+   ]
+  },
+  "Q-0011": {
+   "label": "headboard (cream fabric, red wood frame)",
+   "textures": [
+    "fabric",
+    "redwood"
+   ]
+  },
+  "Q-0012": {
+   "label": "door frame + leaf of the middle door",
+   "textures": [
+    "trim",
+    "redwood"
+   ]
+  },
+  "M-0005": {
+   "label": "the study behind the middle door: walls, floor and ceiling borrow the real room textures; the furniture is made",
+   "textures": [
+    "plaster",
+    "floor",
+    "plaster_ceiling"
+   ]
+  }
+ }
+}
