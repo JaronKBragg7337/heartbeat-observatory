@@ -73,7 +73,7 @@
   .tabs { display: flex; gap: 4px; }
   .tabs button { flex: 1; min-height: 36px; padding: 0 2px; font-size: 12.5px; }
   #tlwrap { position: relative; }
-  #tl { width: 100%; height: 62px; display: block; touch-action: none; border: 1px solid var(--line); border-radius: 10px; background: #1b1812; }
+  #tl { width: 100%; height: 66px; display: block; touch-action: none; border: 1px solid var(--line); border-radius: 10px; background: #1b1812; }
   .tlbtns { position: absolute; right: 6px; top: 4px; display: flex; gap: 4px; }
   .tlbtns button { min-height: 22px; font-size: 10.5px; padding: 0 7px; border-radius: 999px; }
   .credit { font-size: 10px; line-height: 1.3; color: var(--dim); }
@@ -97,6 +97,10 @@
   /* made room label */
   .wlabel { position: fixed; z-index: 4; pointer-events: none; font-size: 11px; font-weight: 650; letter-spacing: .15px; color: var(--ink); background: rgba(22,20,15,.92); border: 1px solid #6a5b3c; border-radius: 999px; padding: 3px 8px; transform: translate(-50%,-50%); display: none; white-space: nowrap; text-shadow: 0 1px 2px #000; box-shadow: 0 1px 5px rgba(0,0,0,.45); }
   .wlabel.seen { color: #f4e6c5; border-color: #8a764d; }
+  #leaders { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; } #leaders line { stroke: rgba(236,230,212,.55); stroke-width: 1; } #leaders circle { fill: rgba(236,230,212,.8); }
+  .replay-toggle { min-height: 44px; font-size: 13px; } body.tl-open .replay-toggle { border-color: var(--accent); color: var(--accent); }
+  #tlwrap { display: none; } body.tl-open #tlwrap { display: block; } body.sheet-open details.help { display: none; }
+  details.help { padding: 6px 10px; font-size: 12px; } details.help summary { cursor: pointer; min-height: 28px; line-height: 28px; color: var(--ink); } details.help .dim { color: var(--dim); font-size: 11px; }
   #madeLabel { position: fixed; z-index: 4; pointer-events: none; font-size: 11px; color: var(--made); background: rgba(22,20,15,.8); border: 1px solid var(--made); border-radius: 999px; padding: 2px 9px; transform: translate(-50%,-50%); display: none; white-space: nowrap; }
   /* script */
   .script { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.35; max-height: 118px; overflow: hidden; color: #e8e2cf; }
@@ -117,10 +121,11 @@
 <canvas id="c"></canvas>
 <div id="grain"></div><div id="vig"></div><div id="pulse"></div>
 <div class="top">
-  <div class="row"><h1>Bedroom</h1><span class="pill">unified base - sonnet</span></div>
+  <div class="row"><h1>Bedroom</h1><span class="pill">Interactive reconstruction</span></div>
   <div class="seg" id="seg"><button data-v="seen" type="button">Seen</button><button data-v="patched" type="button">Patched</button><button data-v="made" type="button">Made</button><button data-v="all" class="on" type="button">All</button></div>
   <div class="legend"><span><i style="background:#f4efe0"></i>seen</span><span><i style="background:#e9a24b"></i>rebuilt</span><span><i style="background:#b79cff"></i>patched</span><span><i style="background:#5fd6c6"></i>made</span></div>
 </div>
+<svg id="leaders" width="100%" height="100%"></svg>
 <div id="tag">AI-generated person (not real)</div>
 <div id="madeLabel">STUDY - never filmed</div>
 <div id="toast"></div>
@@ -133,6 +138,7 @@
   <div id="sheet"></div>
   <div id="modepanel"></div>
   <div class="tabs" id="tabs"><button data-m="explore" class="on" type="button">Explore</button><button data-m="game" type="button">Game</button><button data-m="film" type="button">Film</button><button data-m="music" type="button">Music</button><button data-m="show" type="button">Show</button></div>
+  <button id="bReplay" class="replay-toggle" type="button" aria-expanded="false">Replay timeline</button>
   <div id="tlwrap"><canvas id="tl"></canvas><div class="tlbtns"><button id="bPlay" type="button">pause</button><button id="bLive" type="button">LIVE</button></div></div>
   <div class="credit">Room + person made by Grok Imagine, rebuilt by Heartbeat Observatory tools. AI-generated person (not real). Lilac = patched from real pixels. Teal = made.</div>
 </div>

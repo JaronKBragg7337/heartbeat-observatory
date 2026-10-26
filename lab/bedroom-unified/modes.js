@@ -13,7 +13,7 @@ export function initModes(ctx) {
 
   // ============================================================ EXPLORE
   function explore() {
-    panel.innerHTML = `<div class="card" style="margin-bottom:6px">Tap the man, a footprint, a door, the bed, a lamp. Teal things are <b style="color:var(--made)">made</b>. Tap the middle door to unlock it.</div>
+    panel.innerHTML = `<details class="card help" id="help" style="margin-bottom:6px"><summary>Help</summary>Tap the man, a footprint, a door, the bed, a lamp. Teal = made (the man's steps are scripted: made). Lilac = patched from real pixels. Tap the middle door to unlock it.<div class="dim" style="margin-top:4px">Interactive reconstruction. Base by Claude Sonnet 5.5; room + person made by Grok Imagine, rebuilt by Heartbeat Observatory tools.</div></details>
       <div class="btns"><button id="bSound" type="button">Sound: off</button><button id="bFollow" type="button">Follow him</button><button id="bTrail" class="on" type="button">Path</button><button id="bView" type="button">Overview</button></div>`;
     const bs = $('bSound'); bs.textContent = state.sound ? 'Sound: on' : 'Sound: off'; bs.classList.toggle('on', state.sound);
     bs.onclick = async () => { if (state.sound) { ctx.soundOff(); bs.textContent = 'Sound: off'; bs.classList.remove('on'); } else { const ok = await ctx.soundOn(); bs.textContent = ok ? 'Sound: on' : 'No audio'; bs.classList.toggle('on', ok); if (ok) { ctx.playSnd({ k: 'tick' }); ctx.say('Sound on: steps, doors, room tone'); } } };
@@ -50,7 +50,7 @@ export function initModes(ctx) {
     const q = G.quest; if (!q) return;
     if (q.stage === 0 && sim.unlockT != null) { q.stage = 1; panel.innerHTML = `<div class="card"><div style="color:var(--dim);font-size:11px">QUEST 1 · THE FADED DOOR</div><div class="big" style="margin:4px 0 6px">The latch clicks. What opens is MADE, never seen. He is on his way in.</div></div>`; }
     if (q.stage === 1) { const ent = hist.eventsBetween(sim.unlockT, sim.t, { e: 'entered', limit: 5 })[0]; if (ent) { q.stage = 2; const steps = hist.eventsBetween(0, sim.t, { e: 'planted', limit: 4000 }).length - q.steps0, secs = +(sim.t - q.t0).toFixed(1);
-      ctx.emit({ t: sim.t, id: 'P-0001', e: 'quest_done', target: 'D-0002', parent: ent.eid, basis: 'made', note: `Quest 1 done in ${secs} s and ${steps} steps: he stands in a room nobody filmed, labelled made. Two doors stay locked until new footage arrives.` });
+      ctx.emit({ t: sim.t, id: 'P-0001', e: 'quest_done', target: 'D-0002', parent: 'P-0001', cause: ent.eid, origin: 'script', basis: 'made', note: `Quest 1 done in ${secs} s and ${steps} steps: he stands in a room nobody filmed, labelled made. Two doors stay locked until new footage arrives.` });
       ctx.playSnd({ k: 'win' }); G.questDone = true;
       panel.innerHTML = `<div class="card"><div class="big">Quest done: ${secs} s, ${steps} steps.</div><div style="margin:4px 0 8px">He stands in a room nobody filmed, and the page says so. Two doors stay locked until new footage arrives. Now the room tests you.</div><div class="btns"><button id="qNext" type="button">Play Witness</button></div></div>`;
       $('qNext').onclick = () => { G.quest = null; witness(); }; } }
@@ -100,7 +100,7 @@ export function initModes(ctx) {
     F.on = true; F.t0 = view.t; F.lastShot = -1; controls.enabled = false; body.classList.add('film');
     $('fRoll').onclick = (e) => { F.on = !F.on; controls.enabled = !F.on; body.classList.toggle('film', F.on); e.target.classList.toggle('on', F.on); e.target.textContent = F.on ? 'Cut: rolling' : 'Cut: off (orbit freely)'; if (!F.on) { $('slate').style.display = 'none'; $('title').style.display = 'none'; } else F.t0 = view.t; };
     $('fClean').onclick = (e) => { const c = body.classList.toggle('clean'); e.target.textContent = c ? 'Show controls' : 'Hide controls'; };
-    $('fJson').onclick = () => { ctx.$('jpre').textContent = JSON.stringify(shotList(), null, 1); $('jsonbox').classList.add('open'); };
+    $('fJson').onclick = () => ctx.openJSON(JSON.stringify(shotList(), null, 1), 'shots.json');
   }
   function shotList() { let t = 0; return { format: 'hb-shots/1', note: 'Written from the event history by Claude Sonnet 5.5. Camera is a function of (shot, local time, man pose from the track).', based_on_events: hist.events.length, shots: SHOTS.map((s, i) => { const o = { sh: i + 1, name: shotName(s), start: t, dur: s.dur, why: s.why }; t += s.dur; return o; }) }; }
   function filmUpdate() {
@@ -129,14 +129,14 @@ export function initModes(ctx) {
     if (ev.e === 'planted') {
       const si = sim.stepInfo || {}, left = si.foot === 'L', t = ev.t, gap = Math.min(0.9, Math.max(0.3, si.gap || 0.55));
       const note = SCALE[Math.max(0, Math.min(7, Math.round(((si.z != null ? si.z : sim.z) - B.z0) / (B.z1 - B.z0) * 7)))] + (ev.place === 'patched-room' ? 3 : 0);
-      if (left) { ctx.sound(t, ev.id, ev.id, { k: 'kick', g: 1 }); ctx.sound(t, ev.id, ev.id, { k: 'bass', n: note - 12, dur: gap * 0.9, g: 0.9 }); M.lastKick = t; }
-      else ctx.sound(t, ev.id, ev.id, { k: 'clap', g: 1, pan: 0.1 });
-      sim.sched.push({ at: t + gap * 0.5, fn: (at) => ctx.sound(at, ev.id, ev.id, { k: 'hat', g: 0.9, pan: left ? -0.3 : 0.3 }) });
-      if (si.n % 8 === 0) sim.sched.push({ at: t + gap * 0.25, fn: (at) => ctx.sound(at, ev.id, ev.id, { k: 'bell', n: note + 12, g: 0.8 }) });
+      if (left) { ctx.sound(t, ev.id, ev.id, { k: 'kick', g: 1 }, null, ev); ctx.sound(t, ev.id, ev.id, { k: 'bass', n: note - 12, dur: gap * 0.9, g: 0.9 }, null, ev); M.lastKick = t; }
+      else ctx.sound(t, ev.id, ev.id, { k: 'clap', g: 1, pan: 0.1 }, null, ev);
+      sim.sched.push({ at: t + gap * 0.5, fn: (at) => ctx.sound(at, ev.id, ev.id, { k: 'hat', g: 0.9, pan: left ? -0.3 : 0.3 }, null, ev) });
+      if (si.n % 8 === 0) sim.sched.push({ at: t + gap * 0.25, fn: (at) => ctx.sound(at, ev.id, ev.id, { k: 'bell', n: note + 12, g: 0.8 }, null, ev) });
       M.li = si.n; $('lyric').textContent = M.lines[Math.floor((si.n - 1) / 2) % M.lines.length]; $('lyric').style.color = ev.place === 'seen-floor' ? '#fff' : '#9ff3e6';
-    } else if (ev.e === 'walked_past') { ctx.sound(ev.t, ev.target, ev.target, { k: 'bell', n: 76, g: 0.8, pan: -0.5 }); }
-    else if (ev.e === 'unlocked') { ctx.sound(ev.t, ev.id, ev.id, { k: 'riser', dur: 1.4, g: 1 }); ctx.sound(ev.t + 0.0, ev.id, ev.id, { k: 'pad', ns: [57, 60, 64, 67], dur: 3.2 }); }
-    else if (ev.e === 'entered') ctx.sound(ev.t, ev.id, ev.id, { k: 'pad', ns: [60, 64, 67, 71, 74], dur: 3.5 });
+    } else if (ev.e === 'walked_past') { ctx.sound(ev.t, ev.target, ev.id, { k: 'bell', n: 76, g: 0.8, pan: -0.5 }, null, ev); }
+    else if (ev.e === 'unlocked') { ctx.sound(ev.t, ev.id, ev.id, { k: 'riser', dur: 1.4, g: 1 }, null, ev); ctx.sound(ev.t, ev.id, ev.id, { k: 'pad', ns: [57, 60, 64, 67], dur: 3.2 }, null, ev); }
+    else if (ev.e === 'entered') ctx.sound(ev.t, ev.id, ev.id, { k: 'pad', ns: [60, 64, 67, 71, 74], dur: 3.5 }, null, ev);
   }
   function musicUpdate() {
     let age = 9; for (let i = ctx.sndList.length - 1; i >= 0; i--) { const e = ctx.sndList[i]; if (e.t > view.t) continue; if (e.snd.k === 'kick') { age = view.t - e.t; break; } if (view.t - e.t > 1) break; }
@@ -151,11 +151,11 @@ export function initModes(ctx) {
   function speak(s, cancel = true) { if (!S.voice || !canSpeak()) return; try { const u = new SpeechSynthesisUtterance(s); u.rate = 0.95; u.pitch = 0.9; if (cancel) speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }
   function narration() {   // the room tells its own history, every number from the record
     const T = sim.t, steps = hist.eventsBetween(0, T, { e: 'planted', limit: 4000 }), un = hist.eventsBetween(0, T, { e: 'unlocked', limit: 2 })[0], tried = hist.eventsBetween(0, T, { e: 'tried_door', limit: 50 }).length, d = distIn(0, T);
-    const L = [`This is a bedroom nobody has ever stood in. Two frames of an AI-made video are all that was ever seen of it. The rest is patched from its own pixels or made, and marked.`,
+    const L = [`This is a bedroom nobody has ever stood in. Two frames anchor its room mesh; other frames of the same video supply the patches. Everything else is patched from those pixels or invented, and marked.`,
       `A made man has walked it for ${T.toFixed(0)} seconds: ${steps.length} steps, ${d.toFixed(1)} metres, every one on record.`];
     if (steps.length) { const e = steps[Math.floor(steps.length / 2)]; L.push(`Step ${e.id} landed at ${e.t.toFixed(1)} seconds, ${/left/.test(e.note) ? 'left' : 'right'} foot. Tap it and it tells you this itself.`); }
-    L.push(un ? `At ${un.t.toFixed(1)} seconds the middle door was unlocked. The study behind it was never filmed: patched walls, invented desk, labelled.` : (tried ? `He tried the middle door ${tried} time${tried === 1 ? '' : 's'}. Locked. Not seen yet.` : `Three doors stay faded. Nothing behind them was filmed, so nothing is shown.`));
-    L.push('Everything you just heard came from history dot json. Any AI can read the same file.'); return L;
+    L.push(un ? `At ${un.t.toFixed(1)} seconds the middle door was unlocked. The study behind it was never filmed: patched surfaces, made furniture.` : (tried ? `He tried the middle door ${tried} time${tried === 1 ? '' : 's'}. Locked. Not seen yet.` : `Three doors stay faded. Nothing behind them was filmed, so nothing is shown.`));
+    L.push('These events came from this session. Download them with H B dot download. The bundled history dot json is a separate example run.'); return L;
   }
   function show() {
     panel.innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;color:var(--dim);font-size:10.5px"><span>"THE ROOM REMEMBERS" · EP 0 · SC 1</span><button id="sTake" type="button" style="min-height:22px;font-size:10.5px;border-radius:999px;padding:0 8px">Take 2</button></div>
@@ -174,8 +174,8 @@ export function initModes(ctx) {
       case 'paused': return ev.note ? { k: 'a', s: ev.note } : null;
       case 'tapped': return ev.target && ev.target.startsWith('D-') ? { k: 'a', s: `SOMEONE (you) taps ${nm(ev.target)}.` } : null;
       case 'unlocked': return { k: 'a', s: 'A latch clicks. Nothing behind this door was ever filmed.' };
-      case 'opened': return { k: 'a', s: 'The door swings open on a made room (MADE).' };
-      case 'entered': return [{ k: 's', s: 'INT. STUDY (PATCHED + MADE) - CONTINUOUS' }, { k: 'a', s: 'A small study that was never filmed. Its walls are real pixels moved here; the desk is invented.' }];
+      case 'opened': return { k: 'a', s: 'The door swings open on a room that was never filmed.' };
+      case 'entered': return [{ k: 's', s: 'INT. STUDY (PATCHED + MADE) - CONTINUOUS' }, { k: 'a', s: 'Unfilmed study: patched surfaces, made furniture.' }];
       case 'left': return [{ k: 's', s: 'INT. BEDROOM - NIGHT' }, { k: 'a', s: 'He comes back out.' }];
       default: return null;
     }

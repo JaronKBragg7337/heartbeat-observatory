@@ -218,13 +218,13 @@
    ]
   },
   "Q-0006": {
-   "label": "left nightstand body",
+   "label": "left nightstand (real red-wood pixels; drawer fronts and legs are reconstructed geometry)",
    "textures": [
     "redwood"
    ]
   },
   "Q-0007": {
-   "label": "right nightstand body",
+   "label": "right nightstand (real red-wood pixels; drawer fronts and legs are reconstructed geometry)",
    "textures": [
     "redwood"
    ]
@@ -262,11 +262,13 @@
    ]
   },
   "M-0005": {
-   "label": "the study behind the middle door: walls, floor and ceiling borrow the real room textures; the furniture is made",
+   "label": "the study behind the middle door: walls, floor, ceiling and window use real room pixels; the furniture is made",
    "textures": [
     "plaster",
     "floor",
-    "plaster_ceiling"
+    "plaster_ceiling",
+    "picture",
+    "trim"
    ]
   }
  }

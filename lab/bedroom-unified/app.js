@@ -32,25 +32,43 @@ scene.add(new THREE.HemisphereLight(0xfff1d8, 0x2a2118, 1.5)); { const sun = new
 const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 80);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false;
-controls.minDistance = 2.2; controls.maxDistance = 11; controls.minPolarAngle = 0.08; controls.maxPolarAngle = Math.PI * 0.485;
+controls.minDistance = 2.2; controls.maxDistance = 18; controls.minPolarAngle = 0.08; controls.maxPolarAngle = Math.PI * 0.485;
 // ONE place for the knobs other passes will turn (see HANDOFF.md). Cameras: 'inside' = Kimi's evidence-first opening (shows the most of the original photo), 'overview' = the dollhouse.
 const CONFIG = {
-  camera: { default: 'inside', inside: { pos: [3.15, 3.45, 5.55], target: [-0.15, 0.85, -1.1] }, overview: { pos: [1.7, 6.6, 7.7], target: [-2.0, 0.3, -1.0] } },
+  camera: { default: 'inside', inside: { pos: [5.15, 4.35, 8.15], target: [-0.15, 0.75, -1.0] }, overview: { pos: [1.7, 6.6, 7.7], target: [-2.0, 0.3, -1.0] } },
   seen: { veil: { wall: 0.22, floor: 0.48 }, anchorFrame: 'v1_f0001jpg', otherAlpha: 0.92 },
 };
 window.HB_CONFIG = CONFIG;
 let viewName = CONFIG.camera.default;
 const HOME_TARGET = new THREE.Vector3(), HOME_POS = new THREE.Vector3();
-function setView(name) { viewName = name; const c = CONFIG.camera[name]; HOME_POS.set(...c.pos); HOME_TARGET.set(...c.target); camera.position.copy(HOME_POS); controls.target.copy(HOME_TARGET); U.overview.value = name === 'overview' ? 1 : 0; controls.update(); }
+function setView(name) { viewName = name; const c = CONFIG.camera[name]; HOME_POS.set(...c.pos); HOME_TARGET.set(...c.target); camera.position.copy(HOME_POS); controls.target.copy(HOME_TARGET); U.overview.value = name === 'overview' ? 1 : 0; controls.update(); fitView(); }
+// Fit the projected room (and, in Overview, the study once it exists) inside the usable rectangle between the header and the bottom panel, 12 px margins.
+function usableRect() { const top = ($('seg') ? $('seg').parentElement.getBoundingClientRect().bottom : 90) + 12, bot = ($('bottom') ? $('bottom').getBoundingClientRect().top : innerHeight) - 12; return { l: 12, r: innerWidth - 12, t: top, b: Math.max(top + 80, bot) }; }
+function fitView() {
+  if (!person && !scene) return; const R = usableRect(), pts = [], boxes = [[B.x0, 0, B.z0, B.x1, B.h, B.z1]];
+  if (viewName === 'overview' && sim.openT != null && view.t >= sim.openT) boxes.push([MADE_ROOM.x0, 0, MADE_ROOM.z0, MADE_ROOM.x1, B.h, MADE_ROOM.z1]);
+  for (const b of boxes) for (const x of [b[0], b[3]]) for (const y of [b[1], b[4]]) for (const z of [b[2], b[5]]) pts.push(new THREE.Vector3(x, y, z));
+  const dir = new THREE.Vector3().subVectors(camera.position, controls.target), v = new THREE.Vector3();
+  const measure = () => { camera.position.copy(controls.target).add(dir); camera.updateMatrixWorld(); camera.updateProjectionMatrix(); let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { v.copy(p).project(camera); const sx = (v.x + 1) / 2 * innerWidth, sy = (1 - v.y) / 2 * innerHeight; x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); } return { x0, x1, y0, y1 }; };
+  for (let i = 0; i < 24; i++) {
+    const m = measure(), over = m.x0 < R.l || m.x1 > R.r || m.y0 < R.t || m.y1 > R.b;
+    if (over) { dir.multiplyScalar(1.07); continue; }
+    const fillX = (m.x1 - m.x0) / (R.r - R.l), fillY = (m.y1 - m.y0) / (R.b - R.t);
+    if (Math.max(fillX, fillY) < 0.82) { dir.multiplyScalar(0.96); const m2 = (() => { camera.position.copy(controls.target).add(dir); camera.updateMatrixWorld(); return 0; })(); const mm = measure(); if (mm.x0 < R.l || mm.x1 > R.r || mm.y0 < R.t || mm.y1 > R.b) { dir.multiplyScalar(1 / 0.96); break; } continue; }
+    break;
+  }
+  camera.position.copy(controls.target).add(dir); controls.update();
+}
 let bottomShift = 0;
-function home() { setView(viewName); }
+function home() { userMoved = false; setView(viewName); }
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 62 : 46;
   camera.setViewOffset(w, h, 0, bottomShift, w, h); camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
-const bro = new ResizeObserver(() => { const sh = $('sheet').offsetHeight; bottomShift = Math.round(($('bottom').offsetHeight - sh) * 0.42 + sh * 0.3); resize(); }); bro.observe($('bottom'));
+const bro = new ResizeObserver(() => { const sh = $('sheet').offsetHeight; bottomShift = Math.round(($('bottom').offsetHeight - sh) * 0.42 + sh * 0.3); resize(); if (window.__ready && !(modes && modes.cameraOwned()) && !userMoved) fitView(); }); bro.observe($('bottom'));
+let userMoved = false; controls.addEventListener('start', () => { userMoved = true; });
 
 // ---------------------------------------------------------------- shader patches (world position, made tint, cut-away)
 const U = {
@@ -158,7 +176,10 @@ const MM = (map, ao = 2, color = 0xffffff, warm = 0) => madeMat(map, ao, color, 
 let _glow; function glowTex() { return _glow || (_glow = ctex(64, 64, (x, w, h) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); })); }
 function tag(o, id, list) { o.traverse((c) => { c.userData.id = id; }); (list || pickables.props).push(...(o.isMesh || o.isSprite ? [o] : o.children.filter((c) => c.isMesh || c.isSprite))); return o; }
 
+const TEX_USE = {};   // which texture each entity id really uses (checked against patches/sources.json by selfTest)
+const use = (id, ...names) => { (TEX_USE[id] = TEX_USE[id] || new Set()); names.forEach((n) => TEX_USE[id].add(n)); };
 function buildShell() {
+  use('Q-0003', 'floor'); use('Q-0001', 'plaster'); use('Q-0002', 'plaster'); use('Q-0004', 'ceiling');
   mats.floor = PM(tex('floor'), 0); mats.wall = PM(tex('plaster'), 1, 0xffffff, 1); mats.ceil = PM(tex('ceiling'), 0);
   madeShell.userData.veil = [[mats.wall, CONFIG.seen.veil.wall], [mats.ceil, CONFIG.seen.veil.wall], [mats.floor, CONFIG.seen.veil.floor]];
   for (const [m, opacity] of madeShell.userData.veil) { m.transparent = true; m.opacity = opacity; m.depthWrite = false; }
@@ -176,27 +197,35 @@ function buildShell() {
   // baseboards: the real dark trim, turned to run along the wall
   const bb = () => PM(tex('trim', 1, 4, Math.PI / 2), 2, 0xffffff);
   const L = [[(B.x0 + B.x1) / 2, 0.07, B.z1 + w - 0.02, B.x1 - B.x0, 0.14, 0.04], [(B.x0 + B.x1) / 2, 0.07, B.z0 - w + 0.02, B.x1 - B.x0, 0.14, 0.04], [B.x0 - w + 0.02, 0.07, (B.z0 + B.z1) / 2, 0.04, 0.14, B.z1 - B.z0], [B.x1 + w - 0.02, 0.07, (B.z0 + B.z1) / 2, 0.04, 0.14, B.z1 - B.z0]];
-  for (const a of L) { const m = box(a[3], a[4], a[5], bb(), a[0], a[1], a[2]); m.userData.id = 'Q-0005'; madeShell.add(m); }
+  const sides = ['z1', 'z0', 'x0', 'x1']; use('Q-0005', 'trim'); L.forEach((a, i) => { const m = box(a[3], a[4], a[5], bb(), a[0], a[1], a[2]); m.userData.id = 'Q-0005'; m.userData.cutSide = sides[i]; madeShell.add(m); });
   // a window on the unseen wall: frame = the real dark trim, glass = the real view out of the real window (a straight crop)
   const wz = B.z1 + w - 0.02, wx = 0.25, ww = 1.0, wh = 1.25, wy = 1.45, fr = bb();
-  const glass = new THREE.Mesh(new THREE.PlaneGeometry(ww, wh), PM(tex('picture'), 2, 0xffffff)); glass.rotation.y = Math.PI; glass.position.set(wx, wy, wz); glass.userData.id = 'Q-0013'; madeShell.add(glass); pickables.shell.push(glass);
-  for (const [bw, bh, bx, by] of [[ww + 0.14, 0.07, wx, wy + wh / 2 + 0.035], [ww + 0.14, 0.09, wx, wy - wh / 2 - 0.045], [0.07, wh, wx - ww / 2 - 0.035, wy], [0.07, wh, wx + ww / 2 + 0.035, wy], [0.035, wh, wx, wy], [ww, 0.035, wx, wy]]) { const m = box(bw, bh, 0.06, PM(tex('trim', 1, 1, 0)), bx, by, wz - 0.025); m.userData.id = 'Q-0013'; madeShell.add(m); }
+  const winG = new THREE.Group(); winG.userData.cutSide = 'z1'; madeShell.add(winG); use('Q-0013', 'trim', 'picture');
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(ww, wh), PM(tex('picture'), 2, 0xffffff)); glass.rotation.y = Math.PI; glass.position.set(wx, wy, wz); glass.userData.id = 'Q-0013'; winG.add(glass); pickables.shell.push(glass);
+  for (const [bw, bh, bx, by] of [[ww + 0.14, 0.07, wx, wy + wh / 2 + 0.035], [ww + 0.14, 0.09, wx, wy - wh / 2 - 0.045], [0.07, wh, wx - ww / 2 - 0.035, wy], [0.07, wh, wx + ww / 2 + 0.035, wy], [0.035, wh, wx, wy], [ww, 0.035, wx, wy]]) { const m = box(bw, bh, 0.06, PM(tex('trim', 1, 1, 0)), bx, by, wz - 0.025); m.userData.id = 'Q-0013'; winG.add(m); }
   // pure made: a ceiling light (nothing in the footage looks like it)
-  const lamp = new THREE.Mesh(new THREE.CircleGeometry(0.2, 24), new THREE.MeshBasicMaterial({ color: 0xfff1cf, side: THREE.DoubleSide })); lamp.rotation.x = Math.PI / 2; lamp.position.set(0.3, B.h - 0.01, -1.0); lamp.userData.id = 'M-0007'; madeProps.add(lamp); pickables.props.push(lamp);
+  const lamp = new THREE.Mesh(new THREE.CircleGeometry(0.2, 24), new THREE.MeshBasicMaterial({ color: 0xfff1cf, side: THREE.DoubleSide })); lamp.rotation.x = Math.PI / 2; lamp.position.set(0.3, B.h - 0.01, -1.0); lamp.userData.id = 'M-0007'; lamp.userData.cutSide = 'y1'; madeProps.add(lamp); pickables.props.push(lamp);
 }
 function buildPatchedProps() {
-  const red = () => PM(tex('redwood', 1, 1), 2, 0xb59a8a), lampMap = (flip) => { const t = tex('lamp'); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; if (flip) { t.repeat.set(-1, 1); t.offset.set(1, 0); } return t; };
+  const red = () => PM(tex('redwood', 1, 1), 2, 0x9a8274), lampMap = (flip) => { const t = tex('lamp'); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; if (flip) { t.repeat.set(-1, 1); t.offset.set(1, 0); } return t; };
   NS.forEach((n, i) => {
     const g = new THREE.Group(); g.position.set(n.x, 0, n.z);
     g.add(box(0.40, 0.52, 0.50, red(), 0, 0.26, 0)); g.add(box(0.405, 0.035, 0.505, PM(tex('redwood', 2, 2), 2, 0xc2a898), 0, 0.535, 0));
     g.children.forEach((c) => { c.userData.id = n.id; pickables.props.push(c); }); patchedProps.add(g);
-    // the real lamp, cut out of the real frame (right one mirrored): an upright billboard so it reads from any side
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: lampMap(i === 1), transparent: true, alphaTest: 0.04, depthWrite: true })); sp.center.set(0.5, 0.03); sp.scale.set(0.8 * 114 / 206 * 1.15, 0.8, 1); sp.position.set(n.x, 0.55, n.z); sp.userData.id = n.lamp; patchedProps.add(sp); pickables.props.push(sp);
-    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: 0xffd48a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.45 })); glow.scale.setScalar(1.1); glow.position.set(n.x, 0.95, n.z); glow.userData.id = n.lamp; patchedProps.add(glow);
+    // the real lamp, cut out of the real frame (right one mirrored): a fixed upright plane standing on the nightstand, facing into the room (-x). No extra glow: the cut-out is already lit.
+    const lw = 0.8 * 114 / 206 * 1.15, lh = 0.8, pg = new THREE.PlaneGeometry(lw, lh);
+    const lm = new THREE.MeshBasicMaterial({ map: lampMap(false), transparent: true, alphaTest: 0.04, side: THREE.DoubleSide });
+    if (i === 1) { const uv = pg.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setX(k, 1 - uv.getX(k)); }   // explicit mirrored UVs for the right lamp
+    const lp = new THREE.Mesh(pg, lm); lp.rotation.y = -Math.PI / 2; lp.position.set(n.x - 0.02, 0.55 + lh / 2 - 0.02, n.z); lp.userData.id = n.lamp; patchedProps.add(lp); pickables.props.push(lp); use(n.lamp, 'lamp');
+    // restrained reconstructed detail on the nightstand (geometry only; the wood pixels are the real swatch)
+    for (const [dy, dh] of [[0.37, 0.2], [0.14, 0.2]]) { const d = box(0.02, dh, 0.42, PM(tex('redwood', 1, 1), 2, 0x8f7565), n.x - 0.205, dy, n.z); d.userData.id = n.id; pickables.props.push(d); patchedProps.add(d); }
+    for (const [lx, lz] of [[-0.17, -0.21], [-0.17, 0.21], [0.17, -0.21], [0.17, 0.21]]) { const lg = box(0.04, 0.06, 0.04, PM(tex('redwood', 1, 1), 2, 0x8f7565), n.x + lx, -0.01, n.z + lz); lg.userData.id = n.id; patchedProps.add(lg); }
+    use(n.id, 'redwood');
   });
   // headboard: cream fabric panel in a red wood frame (both are pieces of the real bed)
   const hb = (w, h, d, m, x, y, z, id) => { const o = box(w, h, d, m, x, y, z); o.userData.id = id; patchedProps.add(o); pickables.props.push(o); return o; };
-  hb(0.06, 1.12, 2.2, PM(tex('redwood', 2, 4), 2, 0xa89080), 1.985, 0.56, -1.12, 'Q-0011'); hb(0.04, 0.86, 1.94, PM(tex('fabric', 2, 1.2), 2), 1.945, 0.62, -1.12, 'Q-0011');
+  use('Q-0011', 'redwood', 'fabric'); use('Q-0010', 'linen');
+  hb(0.06, 1.12, 2.2, PM(tex('redwood', 2, 4), 2, 0x84705f), 1.985, 0.56, -1.12, 'Q-0011'); hb(0.04, 0.86, 1.94, PM(tex('fabric', 2, 1.2), 2), 1.945, 0.62, -1.12, 'Q-0011');
   // bedding: mattress end + two pillows from the real linen
   hb(0.42, 0.46, 2.0, PM(tex('linen', 2, 2), 2), 1.74, 0.23, -1.12, 'Q-0010');
   for (const z of [-0.55, -1.7]) { const p = hb(0.5, 0.13, 0.62, PM(tex('linen', 1, 1), 2), 1.66, 0.55, z, 'Q-0010'); p.rotation.y = z > -1 ? 0.12 : -0.1; }
@@ -208,6 +237,7 @@ function buildMadeProps() {
 
 function buildStudy() {
   const R = MADE_ROOM, h = B.h - 0.1, y0 = -0.06;
+  use('M-0005', 'floor', 'plaster', 'ceiling', 'picture', 'trim');
   const floorM = PM(tex('floor'), 0, 0xffffff, 1), wallM = PM(tex('plaster'), 1, 0xffffff, 1), ceilM = PM(tex('ceiling'), 0, 0xffffff, 1);
   const add = (g, m) => { const me = new THREE.Mesh(g, m); me.userData.id = 'M-0005'; studyP.add(me); pickables.shell.push(me); return me; };
   add(quad([[R.x0, y0, R.z1], [R.x1, y0, R.z1], [R.x1, y0, R.z0], [R.x0, y0, R.z0]], [0, 1, 0], uvXZ(1.9)), floorM);
@@ -261,19 +291,19 @@ function makeDoor(d) {
 let leaf = null;
 function buildRealDoor() {
   const zc = DOORS[1].z, trimM = () => PM(tex('trim', 1, 1), 2), hinge = zc + DW / 2 - 0.02, g = doorP;
-  const part = (o, id) => { o.userData.id = id; return o; };
+  const part = (o, id) => { o.userData.id = id; o.userData.interactionTarget = 'D-0002'; pickables.doors.push(o); return o; };
   g.add(part(box(0.1, DH + 0.08, 0.07, trimM(), DX - 0.01, (DH + 0.08) / 2, zc - DW / 2 - 0.03), 'Q-0012')); g.add(part(box(0.1, DH + 0.08, 0.07, trimM(), DX - 0.01, (DH + 0.08) / 2, zc + DW / 2 + 0.03), 'Q-0012')); g.add(part(box(0.1, 0.08, DW + 0.14, trimM(), DX - 0.01, DH + 0.04, zc), 'Q-0012'));
   const pivot = new THREE.Group(); pivot.position.set(DX - 0.02, 0, hinge); g.add(pivot);
-  const slab = box(0.045, DH - 0.02, DW - 0.04, PM(tex('redwood', 1, 2), 2, 0x9a7a66), 0, (DH - 0.02) / 2, -(DW - 0.04) / 2); slab.userData.id = 'D-0002'; pivot.add(slab); pickables.doors.push(slab);
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 10), new THREE.MeshBasicMaterial({ color: 0xd9b45a })); knob.position.set(0.04, 1.0, -DW + 0.14); knob.userData.id = 'D-0002'; pivot.add(knob);
-  leaf = { g, pivot };
+  const slab = box(0.045, DH - 0.02, DW - 0.04, PM(tex('redwood', 1, 2), 2, 0x9a7a66), 0, (DH - 0.02) / 2, -(DW - 0.04) / 2); slab.userData.id = 'Q-0012'; slab.userData.interactionTarget = 'D-0002'; pivot.add(slab); pickables.doors.push(slab);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 10), new THREE.MeshBasicMaterial({ color: 0xd9b45a })); knob.position.set(0.04, 1.0, -DW + 0.14); knob.userData.id = 'M-0008'; knob.userData.interactionTarget = 'D-0002'; const knobG = new THREE.Group(); knobG.userData.basisGroup = 'made'; knobG.add(knob); pivot.add(knobG); pickables.doors.push(knob); use('Q-0012', 'trim', 'redwood');
+  leaf = { g, pivot, knobG };
 }
 
 // ---------------------------------------------------------------- history + state
 const hist = new History();
 const sim = {
   t: 0, x: L, z: 1.05, yaw: Math.PI, cyc: 0, ww: 0, tasks: [], cur: null, idleT: 0, nStep: 0, lastStepT: -9, lastPass: {}, sched: [],
-  inMade: false, unlockT: null, openT: null, visitDone: 0, speed: 0.763, lastSoundN: 0, music: false,
+  inMade: false, unlockT: null, openT: null, visitDone: 0, vel: [0, 0, 0], reactEv: null, speed: 0.763, lastSoundN: 0, music: false,
 };
 const view = { t: 0, live: true, playing: true };
 const state = { sound: false, follow: false, trail: true, mode: 'explore', seg: 'all', sel: null };
@@ -293,7 +323,9 @@ function defineEntities() {
   E('M-0004', { kind: 'made', label: 'bed skirt (dark boxes)', basis: 'made', note: 'Plain geometry that hides the torn edge where the footage stopped. No pixels from the footage.' });
   E('M-0006', { kind: 'made', label: 'study furniture: desk, computer, chair, shelf, rug', basis: 'made', note: 'Invented. Nothing like it was ever filmed.' });
   E('M-0007', { kind: 'made', label: 'ceiling light', basis: 'made', note: 'Invented.' });
-  E('C-0001', { kind: 'viewer', label: 'you', basis: 'seen' });
+  E('C-0001', { kind: 'viewer', label: 'you (the viewer)', basis: 'made', note: 'Input from the person using the page. Not in the footage; every action of yours is recorded with origin viewer-input.' });
+  E('M-0008', { kind: 'made', label: 'door knob (invented brass sphere)', basis: 'made', note: 'Invented. Nothing in the footage shows a knob.' });
+  E('T-0001', { kind: 'tool', label: 'script trigger (HB API)', basis: 'made', note: 'An unlock requested by code, not by a tap.' });
   for (const id of ['O-0001', 'O-0002', 'O-0003']) hist.emit({ t: 0, id, e: 'seen', basis: 'seen', note: 'in the Grok room footage' });
   for (const id of Object.keys(SRCS.entities)) if (id[0] === 'Q') hist.emit({ t: 0, id, e: 'patched', parent: 'tool:quilt', basis: 'patched', note: 'cut from the real frames and placed where nobody filmed' });
   for (const id of ['M-0004', 'M-0007']) hist.emit({ t: 0, id, e: 'built', parent: 'tool:bedroom-sonnet-v3', basis: 'made', note: hist.entities.get(id).note });
@@ -311,7 +343,13 @@ function pumpAudioOrdered(t0, t1) {
   const arr = []; for (let i = sndList.length - 1; i >= 0; i--) { const ev = sndList[i]; if (ev.t <= t0) break; if (ev.t <= t1) arr.push(ev); }
   arr.reverse().forEach((ev) => playSnd(ev.snd, 0));
 }
-function sound(t, id, parent, snd, p) { const sid = hist.nextId('S'); hist.entity(sid, { kind: 'sound', label: 'sound ' + sid + ' (' + snd.k + ')', basis: 'made' }); const ev = emit({ t, id: sid, e: 'sounded', parent, snd, p, basis: 'made' }); sndList.push(ev); return sid; }
+// sound(t, _, actor, snd, p, causeEv, sid): causeEv = the EVENT that made this sound; sid = a pre-reserved S-id (plantStep reserves the contact sound before listeners run)
+function sound(t, id, parent, snd, p, causeEv, sid) {
+  sid = sid || hist.nextId('S'); hist.entity(sid, { kind: 'sound', label: 'sound ' + sid + ' (' + snd.k + ')', basis: 'made' });
+  const ev = emit({ t, id: sid, e: 'sounded', parent, cause: causeEv && causeEv.eid, snd, p, basis: 'made' }); sndList.push(ev);
+  if (causeEv) hist.addChild(causeEv, sid);
+  return sid;
+}
 
 // ---------------------------------------------------------------- the man
 let person, mixer, walkA, idleA, gait = { pL: 0.0, pR: 0.5, offL: [0.1, 0.1], offR: [-0.1, 0.1], yOff: 0, ok: false };
@@ -345,16 +383,16 @@ const doNow = (fn) => ({ type: 'do', fn });
 const doorOpen = () => sim.openT != null && sim.t - sim.openT > 1.5;
 function visitTasks(reason) {
   const zc = DOORS[1].z;
-  return [doNow(() => { if (reason) emit({ t: sim.t, id: 'P-0001', e: 'paused', p: [sim.x, 0, sim.z], basis: 'made', note: reason }); }),
+  return [doNow(() => { if (reason) sim.reactEv = emit({ t: sim.t, id: 'P-0001', e: 'paused', p: [sim.x, 0, sim.z], parent: 'P-0001', cause: sim.reactCause, origin: 'script', basis: 'made', note: reason }); }),
     go(L, zc, { r: 0.12 }), wait(0.5, DX, zc), go(DX + 0.1, zc, { r: 0.1, sp: 0.8 }),
-    doNow(() => emit({ t: sim.t, id: 'P-0001', e: 'entered', target: 'M-0005', p: [sim.x, 0, sim.z], basis: 'made', note: 'Into a room that exists only because the door was unlocked (made).' })),
+    doNow(() => { sim.enteredEv = emit({ t: sim.t, id: 'P-0001', e: 'entered', target: 'M-0005', p: [sim.x, 0, sim.z], parent: 'P-0001', cause: sim.reactEv ? sim.reactEv.eid : sim.reactCause, origin: 'script', basis: 'made', note: 'Into a room that was never filmed: patched surfaces, made furniture.' }); }),
     go(-2.7, zc, { r: 0.12, sp: 0.8 }), wait(3.2, -4.0, zc - 0.2, 'He looks at the desk in the made room.'),
-    go(-1.7, zc, { r: 0.15 }), doNow(() => emit({ t: sim.t, id: 'P-0001', e: 'left', target: 'M-0005', p: [sim.x, 0, sim.z], basis: 'made' })), go(L, zc, { r: 0.12 })];
+    go(-1.7, zc, { r: 0.15 }), doNow(() => emit({ t: sim.t, id: 'P-0001', e: 'left', target: 'M-0005', p: [sim.x, 0, sim.z], parent: 'P-0001', cause: sim.enteredEv && sim.enteredEv.eid, origin: 'script', basis: 'made' })), go(L, zc, { r: 0.12 })];
 }
 function loopTasks() {
   const zc = DOORS[1].z, T = [];
   T.push(go(L, 0.45));
-  if (doorOpen()) T.push(...visitTasks('')); else T.push(go(L, zc, { r: 0.1 }), wait(1.6, DX, zc, 'He tries the middle door.', { onStart: () => { const id = 'D-0002'; emit({ t: sim.t, id: 'P-0001', e: 'tried_door', target: id, p: [sim.x, 0, sim.z], basis: 'made', note: 'Locked. ' }); sound(sim.t, 'S', id, { k: 'locked', pan: -0.4 }); } }));
+  if (doorOpen()) T.push(...visitTasks('')); else T.push(go(L, zc, { r: 0.1 }), wait(1.6, DX, zc, 'He tries the middle door.', { onStart: () => { const id = 'D-0002'; const td = emit({ t: sim.t, id: 'P-0001', e: 'tried_door', target: id, p: [sim.x, 0, sim.z], parent: 'P-0001', origin: 'script', basis: 'made', note: 'Locked. ' }); sound(sim.t, 'S', id, { k: 'locked', pan: -0.4 }, null, td); } }));
   T.push(go(L, -2.5), go(-0.35, -2.8), go(1.0, -2.8), wait(2.2, 1.0, -3.8, 'He looks out of the window.'), go(-0.3, -2.8), go(L, -2.45), go(L, 0.45), go(0.5, 0.95), go(1.05, 0.95), wait(1.8, 1.8, 0.4, 'He glances at the left nightstand (made).'), go(L, 0.95));
   return T;
 }
@@ -372,14 +410,14 @@ function simStep(dt) {
   // scheduled future events (creak, hats, ...)
   if (sim.sched.length) { const keep = []; for (const s of sim.sched) { if (s.at <= sim.t) s.fn(s.at); else keep.push(s); } sim.sched = keep; }
   if (!sim.cur) nextTask();
-  const c = sim.cur; let moved = 0, moving = false;
+  const c = sim.cur; let moved = 0, moving = false; if (c.type !== 'go') sim.vel = [0, 0, 0];
   if (!c.started) { c.started = true; if (c.onStart) c.onStart(); }
   if (c.type === 'go') {
     const dx = c.to[0] - sim.x, dz = c.to[1] - sim.z, d = Math.hypot(dx, dz), want = Math.atan2(dx, dz), diff = angDiff(want, sim.yaw);
     const rate = 3.4; sim.yaw += Math.max(-rate * dt, Math.min(rate * dt, diff));
     const f = Math.abs(diff) > 1.0 ? 0 : Math.max(0.4, 1 - Math.abs(diff) / 1.4);
     const sp = sim.speed * (c.sp || 1) * f, step = Math.min(d, sp * dt);
-    sim.x += Math.sin(sim.yaw) * step; sim.z += Math.cos(sim.yaw) * step; moved = step; moving = step > 1e-5;
+    const px = sim.x, pz = sim.z; sim.x += Math.sin(sim.yaw) * step; sim.z += Math.cos(sim.yaw) * step; moved = step; moving = step > 1e-5; sim.vel = [(sim.x - px) / dt, 0, (sim.z - pz) / dt];
     const nxt = sim.tasks[0]; const r = c.r || (nxt && nxt.type === 'go' ? 0.24 : 0.07);
     if (d < r) sim.cur = null;
   } else if (c.type === 'wait') {
@@ -400,38 +438,43 @@ function simStep(dt) {
     }
   }
   // passing doors
-  if (moving && sim.x > DX + 0.1) for (const d of DOORS) if (Math.abs(sim.z - d.z) < 0.1 && sim.t - (sim.lastPass[d.id] || -9) > 4) { sim.lastPass[d.id] = sim.t; emit({ t: sim.t, id: 'P-0001', e: 'walked_past', target: d.id, p: [sim.x, 0, sim.z], v: [Math.sin(sim.yaw) * sim.speed, 0, Math.cos(sim.yaw) * sim.speed], basis: 'made', note: '' }); sound(sim.t, 'S', d.id, { k: 'tick', g: 0.5 }); }
+  if (moving && sim.x > DX + 0.1) for (const d of DOORS) if (Math.abs(sim.z - d.z) < 0.1 && sim.t - (sim.lastPass[d.id] || -9) > 4) { sim.lastPass[d.id] = sim.t; { const wp = emit({ t: sim.t, id: 'P-0001', e: 'walked_past', target: d.id, p: [sim.x, 0, sim.z], v: sim.vel.slice(), parent: 'P-0001', origin: 'script', basis: 'made', note: '' }); sound(sim.t, 'S', d.id, { k: 'tick', g: 0.5 }, null, wp); } }
   hist.sample(sim.t, sim.x, sim.z, sim.yaw, sim.cyc, sim.ww);
   if (hist.samples.length > 80000) hist.samples.splice(0, 8000);
 }
 function plantStep(t, x, z, foot) {
-  const n = ++sim.nStep, id = hist.nextId('F'), place = placeOf(x, z), v = [Math.sin(sim.yaw) * sim.speed, 0, Math.cos(sim.yaw) * sim.speed];
+  const n = ++sim.nStep, id = hist.nextId('F'), place = placeOf(x, z), v = sim.vel.slice();
   hist.entity(id, { kind: 'footstep', label: `footstep ${n} (${foot === 'L' ? 'left' : 'right'})`, basis: 'made' });
   const target = place === 'seen-floor' ? 'O-0003' : place === 'patched-room' ? 'M-0005' : 'Q-0003';
-  const sidN = (hist.counters['S'] || 0) + 1, sid = 'S-' + String(sidN).padStart(4, '0');
+  const sid = hist.nextId('S');   // reserve the contact sound id BEFORE any listener (Music) can create sounds
   sim.stepInfo = { foot, n, gap: t - sim.lastStepT, x, z }; sim.lastStepT = t;
-  const ev = emit({ t, id, e: 'planted', parent: 'P-0001', target, p: [x, 0, z], v, place, children: [sid], basis: 'made', floor_basis: place === 'seen-floor' ? 'seen' : 'patched', note: `${foot === 'L' ? 'left' : 'right'} foot, step ${n}` });
-  sound(t, id, id, { k: 'step', foot, place, pan: Math.max(-1, Math.min(1, (z + 1) / 3.5)), g: sim.music ? 0.45 : 1 }, [x, 0, z]);
+  const ev = emit({ t, id, e: 'planted', parent: 'P-0001', origin: 'script', target, p: [x, 0, z], v, place, children: [sid], basis: 'made', floor_basis: place === 'seen-floor' ? 'seen' : 'patched', note: `${foot === 'L' ? 'left' : 'right'} foot, step ${n}` });
+  sound(t, id, id, { k: 'step', foot, place, pan: Math.max(-1, Math.min(1, (z + 1) / 3.5)), g: sim.music ? 0.45 : 1 }, [x, 0, z], ev, sid);
 }
 
 // ---------------------------------------------------------------- viewer actions
-function unlockMiddleDoor() {
+function unlockMiddleDoor(tapEid) {
   const t = sim.t, id = 'D-0002';
   if (sim.unlockT != null) return false;
   sim.unlockT = t;
-  const un = emit({ t, id, e: 'unlocked', parent: 'C-0001', basis: 'made', note: 'The latch clicks. Nothing behind this door was ever filmed, so what opens is made.' });
-  sound(t, id, id, { k: 'chime', g: 1, pan: -0.3 });
+  // a script-triggered unlock (no tap) gets its own explicit made trigger event; it is never attributed to an unrelated tap
+  let causeEid = tapEid;
+  if (!causeEid) causeEid = emit({ t, id: 'T-0001', e: 'triggered', parent: 'tool:hb-api', origin: 'script', basis: 'made', target: id, note: 'Unlock requested by code (HB.unlockMiddleDoor), not by a tap.' }).eid;
+  const un = emit({ t, id, e: 'unlocked', parent: 'C-0001', cause: causeEid, origin: tapEid ? 'viewer-input' : 'script', basis: 'made', note: 'The latch clicks. Nothing behind this door was ever filmed, so what opens is not footage.' });
+  sound(t, id, 'C-0001', { k: 'chime', g: 1, pan: -0.3 }, null, un);
+  sim.reactCause = un.eid;
   sim.sched.push({ at: t + 0.5, fn: (at) => {
-    sim.openT = at; emit({ t: at, id, e: 'opened', parent: 'C-0001', children: ['M-0005', 'M-0006'], basis: 'made' }); un.children = ['M-0005'];
-    sound(at, id, id, { k: 'creak', dur: 1.5, pan: -0.5 });
-    emit({ t: at, id: 'M-0005', e: 'built', parent: id, basis: 'patched', note: 'A small study: walls, floor and ceiling patched from the real room textures.' }); emit({ t: at, id: 'M-0006', e: 'built', parent: id, basis: 'made', note: 'Desk, computer, chair, shelf and rug: invented.' });
+    sim.openT = at; const op = emit({ t: at, id, e: 'opened', parent: 'C-0001', cause: un.eid, children: ['M-0005', 'M-0006'], basis: 'made' });
+    sound(at, id, 'C-0001', { k: 'creak', dur: 1.5, pan: -0.5 }, null, op);
+    emit({ t: at, id: 'M-0005', e: 'built', parent: id, cause: op.eid, basis: 'patched', note: 'A small study: walls, floor and ceiling patched from the real room textures.' }); emit({ t: at, id: 'M-0006', e: 'built', parent: id, cause: op.eid, basis: 'made', note: 'Desk, computer, chair, shelf and rug: invented.' });
+    if (viewName === 'overview') fitView();
   } });
   sim.sched.push({ at: t + 1.9, fn: (at) => {   // he heard the click: come back and go in
     sim.tasks = visitTasks('He heard the latch click and turned back to the middle door.'); sim.cur = null;
   } });
   return true;
 }
-function viewerTap(id, p, note) { const t = sim.t; const ev = emit({ t, id: 'C-0001', e: 'tapped', target: id, p, basis: 'seen', note: note || '' }); return ev; }
+function viewerTap(id, p, note) { const t = sim.t; const ev = emit({ t, id: 'C-0001', e: 'tapped', target: id, p, basis: 'made', origin: 'viewer-input', note: note || '' }); return ev; }
 
 // ---------------------------------------------------------------- view state (a pure function of history + time)
 const stepEvents = []; // planted events (in order)
@@ -458,7 +501,7 @@ function applyView() {
   const fade = unlocked ? Math.max(0, 1 - (t - unT) / 0.5) : 1;
   const g = doorGroups['D-0002']; g.mesh.material.uniforms.fade.value = fade; g.spr.material.opacity = 0.8 * fade; g.ol.material.opacity = 0.55 * fade; g.mesh.visible = fade > 0.01; g.spr.visible = fade > 0.01; g.ol.visible = fade > 0.01;
    const fr = opened ? Math.min(1, (t - opT) / 1.4) : 0; const e = fr * fr * (3 - 2 * fr); leaf.pivot.rotation.y = e * 1.85 + Math.sin(fr * 18) * 0.02 * (1 - fr) * (fr > 0 ? 1 : 0);
-  applySegVis(unlocked, opened); madeShell.userData.plug.visible = !unlocked;
+  applySegVis(unlocked, opened); applyCutaway(); madeShell.userData.plug.visible = !unlocked;
   U.maskMin.value[0].set(1.1, 0.12, -0.3); U.maskMax.value[0].set(2.3, 1.7, 1.0); U.maskMin.value[1].set(1.1, 0.12, -3.1); U.maskMax.value[1].set(2.3, 1.7, -2.1);
   U.maskMin.value[3].set(1.52, -0.05, -2.25); U.maskMax.value[3].set(2.4, 1.05, -0.25);
   U.maskMin.value[2].set(-1.95, -0.1, DOORS[1].z - DW / 2 - 0.02); U.maskMax.value[2].set(-1.0, DH + 0.05, DOORS[1].z + DW / 2 + 0.02);
@@ -469,15 +512,16 @@ function applyView() {
   for (let i = hi - 1; i >= 0 && pi < pool.length; i--) {
     const ev = stepEvents[i], age = t - ev.t; if (age > 22) break;
     const m = pool[pi++]; m.visible = true; m.userData.id = ev.id; m.userData.ev = ev;
-    const made = ev.place !== 'seen-floor'; m.material.color.setHex(made ? 0xb79cff : 0xf0c36b);
+    m.material.color.setHex(0x5fd6c6);
     const pulse = Math.max(0, 1 - age / 0.4); m.material.opacity = Math.max(0.0, 0.62 * (1 - age / 22)) + pulse * 0.35;
     m.position.set(ev.p[0], 0.012, ev.p[2]); m.rotation.y = Math.atan2(ev.v[0], ev.v[2]); m.scale.setScalar(1 + pulse * 0.9);
   }
   for (; pi < pool.length; pi++) pool[pi].visible = false;
+  if (state.seg === 'seen') { for (const m of pool) m.visible = false; for (const m of markers) m.visible = false; }
   // trail
   const arr = trailGeo.attributes.position.array; let n = 0; const sm = hist.samples;
   if (state.trail && sm.length) { let hiS = Math.min(sm.length - 1, Math.floor(t * 30 + 0.5)); if (sm[hiS] && sm[hiS][0] > t + 0.1) { hiS = Math.max(0, hiS - 1); } for (let i = hiS; i >= 0 && n < TRAIL_N; i -= 3) { const q = sm[i]; if (!q || t - q[0] > 16) break; arr[n * 3] = q[1]; arr[n * 3 + 1] = 0.02; arr[n * 3 + 2] = q[2]; n++; } }
-  trailGeo.setDrawRange(0, n); trailGeo.attributes.position.needsUpdate = true; trail.material.color.setHex(placeOf(s[1], s[2]) === 'seen-floor' ? 0xf0c36b : 0xb79cff);
+  trailGeo.setDrawRange(0, n); trailGeo.attributes.position.needsUpdate = true; trail.material.color.setHex(0x5fd6c6);
   // selection ring
   if (state.sel === 'P-0001') { ring.material.opacity = 0.85; ring.position.set(s[1], 0.025, s[2]); ring.scale.setScalar(1 + 0.08 * Math.sin(performance.now() / 220)); } else ring.material.opacity = 0;
   // sound for this view step
@@ -488,15 +532,16 @@ function applyView() {
 const sheet = $('sheet');
 function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 function whyText(step) {
-  const ev = hist.events.find((e) => e.eid === step.eid);
-  if (!ev) return step.id && step.id.startsWith('tool:') ? 'Our bedroom tools built this from the recorded evidence.' : 'This is where the recorded chain begins.';
+  const ev = step.eid ? hist.byEid(step.eid) : null;
+  if (!ev) return step.e === 'viewer-input' ? 'Your tap: input from you, not from the footage.' : step.e === 'tool' ? 'Our bedroom tools built this from the recorded evidence.' : step.e === 'actor' ? 'He is an actor with a scripted route, not a cause: no earlier recorded event made this happen.' : 'This is where the recorded chain begins.';
   const name = (id) => (hist.entities.get(id) || { label: id }).label;
   switch (ev.e) {
     case 'planted': return `The man's ${/left/.test(ev.note || '') ? 'left' : 'right'} foot touched ${ev.place === 'seen-floor' ? 'floor the camera saw' : ev.place === 'patched-room' ? 'the study’s patched floor' : 'floor patched from real pixels'}. The contact was scripted.`;
     case 'sounded': return { step: 'That footstep made a contact sound.', locked: 'The locked handle made a dull click.', chime: 'The unlock made a chime.', creak: 'The opening door made a creak.', tick: 'The door made a small passing sound.' }[ev.snd && ev.snd.k] || 'That action made a sound.';
     case 'tapped': return `You tapped ${name(ev.target)}.`;
+    case 'triggered': return 'Code (the HB API) asked for the unlock; there was no tap.';
     case 'unlocked': return `You unlocked ${name(ev.id)}. The room beyond was never filmed.`;
-    case 'opened': return `${name(ev.id)} swung open and revealed the patched and made study.`;
+    case 'opened': return `${name(ev.id)} swung open on the unfilmed study (patched surfaces, made furniture).`;
     case 'entered': return `He stepped into ${name(ev.target)}.`;
     case 'patched': return 'We moved real pixels from the footage to repair this surface.';
     case 'built': return 'Our tools built this; it was not filmed.';
@@ -507,14 +552,17 @@ function whyText(step) {
   }
 }
 function showWhy(id) {
-  const selected = hist.why(id).find((s) => s.id === id), chain = hist.why(id).reverse();
-  const effect = hist.events.filter((e) => e.parent === id && e.e === 'sounded' && e.t >= ((selected && selected.t) || 0) - 0.001).sort((a, b) => a.t - b.t)[0];
+  const chain = hist.why(id).reverse();           // root first, effect last
+  const sel = hist.primaryEvent(id);
+  // the effect: sounds whose recorded cause is THIS event (a footstep explains its contact sound, not a music layer)
+  const eff = sel ? hist.events.filter((e) => e.cause === sel.eid && e.e === 'sounded') : [];
+  const effect = eff.find((e) => e.snd && e.snd.k === 'step') || eff[0];
   if (effect) chain.push({ id: effect.id, eid: effect.eid, t: effect.t, e: effect.e });
-  if (!chain.length) chain.push({ id, t: 0, e: 'root' });
+  if (!chain.length) chain.push({ id, e: 'actor', t: 0 });
   sheet.querySelector('.why-card')?.remove();
-  const h = `<section class="why-card" aria-label="Causal trace"><h3>Why this happened</h3><p>Cause to effect, in plain words. Tap any step to replay it.</p><ol>${chain.map((s) => {
+  const h = `<section class="why-card" aria-label="Causal trace"><h3>Why this happened</h3><p>Cause to effect, by event id. Tap any step to replay it.</p><ol>${chain.map((s) => {
     const t = Number.isFinite(s.t) ? s.t : 0;
-    return `<li><button class="why-step" type="button" data-t="${t}"><b>${esc(whyText(s))}</b><small>${t.toFixed(1)}s · Replay this moment${s.eid ? ' · ' + esc(s.eid) : ''}</small></button></li>`;
+    return `<li><button class="why-step" type="button" data-t="${t}"><b>${esc(whyText(s))}</b><small>${s.eid ? t.toFixed(1) + 's · Replay this moment · ' + esc(s.eid) : 'root'}</small></button></li>`;
   }).join('')}</ol></section>`;
   sheet.querySelector('.acts').insertAdjacentHTML('afterend', h);
   sheet.querySelectorAll('.why-step').forEach((b) => b.onclick = () => seek(parseFloat(b.dataset.t) - 0.6, true));
@@ -532,7 +580,7 @@ function select(id) {
   sheet.innerHTML = h; sheet.classList.add('open'); sheet.scrollTop = 0; drawSources();
   $('sx').onclick = () => { state.sel = null; sheet.classList.remove('open'); showMarkers(null); };
   $('swhy').onclick = () => showWhy(id);
-  $('sjson').onclick = () => openJSON(JSON.stringify(hist.story(id), null, 1));
+  $('sjson').onclick = () => openJSON(JSON.stringify(hist.story(id), null, 1), 'story-' + id + '.json');
   const sf = $('sfollow'); if (sf) sf.onclick = () => { state.follow = !state.follow; sf.classList.toggle('on', state.follow); };
   $('sreplay').onclick = () => { const first = st.events[0]; seek(first ? first.t - 1.2 : 0, true); };
   sheet.querySelectorAll('.ev').forEach((d) => d.onclick = () => seek(parseFloat(d.dataset.t) - 0.8, true));
@@ -573,9 +621,37 @@ function selfTest() {
   ck('parents and children resolve', dang.length === 0, dang.length + ' dangling');
   const steps = hist.events.filter((e) => e.e === 'planted'); ck('scripted steps are labelled made, floor basis kept apart', steps.every((e) => e.basis === 'made' && e.floor_basis), steps.length + ' steps');
   ck('feet: planted-foot slide measured', gait.slide_cm && gait.slide_cm.every((v) => v < 6), 'left ' + gait.slide_cm[0].toFixed(1) + ' cm, right ' + gait.slide_cm[1].toFixed(1) + ' cm');
+  // ---- finding 1: causal edges go by event id; an unrelated earlier tap never explains another action
+  const unl = hist.events.filter((e) => e.e === 'unlocked'), badCause = [];
+  for (const u of unl) { const ch = hist.why(u.eid); const root = ch.find((c) => c.e === 'tapped' || c.e === 'triggered'); if (!root || (root.e === 'tapped' && hist.byEid(root.eid).target !== u.id)) badCause.push(u.eid); }
+  ck('why: every unlock traces to the tap/trigger of ITS door by event id', badCause.length === 0, unl.length + ' unlocks, bad: ' + (badCause.join(',') || 'none'));
+  const noncausal = hist.events.filter((e) => e.cause && !hist.byEid(e.cause)); ck('why: every cause is an existing event id', noncausal.length === 0, noncausal.length + ' dangling');
+  const anyActorParent = hist.events.filter((e) => e.cause && /^[A-Z]-\d{4}$/.test(e.cause)); ck('why: cause is never an entity id', anyActorParent.length === 0, anyActorParent.length + ' entity-id causes');
+  // ---- finding 3: pickable pieces carry an id whose basis matches the group they live in
+  const groupBasis = (o) => { for (let q = o; q; q = q.parent) { if (q.userData && q.userData.basisGroup) return q.userData.basisGroup; if (q === madeShell || q === patchedProps || q === studyP || q === doorP) return 'patched'; if (q === madeProps || q === studyM) return 'made'; } return null; };
+  const wrong = []; for (const list of Object.values(pickables)) for (const o of list) { const gb = groupBasis(o); const id = o.userData && o.userData.id; if (!gb || !id) continue; const ent = hist.entities.get(id); if (!ent) { wrong.push(id + ' (no entity)'); continue; } if (ent.basis !== gb) wrong.push(id + ' is ' + ent.basis + ' but sits in a ' + gb + ' group'); }
+  ck('provenance: no patched/made piece answers with a seen id', wrong.length === 0, [...new Set(wrong)].slice(0, 5).join('; ') || 'all consistent');
+  const sd = pickables.doors.filter((o) => o.userData.id === 'D-0002' && groupBasis(o)); ck('provenance: D-0002 stays the filmed doorway only', sd.length === 0, sd.length + ' replacement pieces still named D-0002');
+  // ---- finding 9: every texture a piece really uses is covered by its entity's sources
+  const miss = []; for (const [id, set] of Object.entries(TEX_USE)) { const have = new Set((SRCS.entities[id] && SRCS.entities[id].textures) || []); for (const n of set) if (!have.has(n) && !have.has(n === 'ceiling' ? 'plaster_ceiling' : n)) miss.push(id + ':' + n); }
+  ck('sources cover every texture used', miss.length === 0, miss.join(',') || 'all covered');
+  // ---- finding 8: each step's first child is its own contact sound; every cause/child link is reciprocal, in any mode
+  const badStep = steps.filter((e) => { const c0 = hist.entities.has(e.children && e.children[0]) && hist.events.find((x) => x.id === e.children[0]); return !c0 || !c0.snd || c0.snd.k !== 'step' || c0.cause !== e.eid; });
+  ck('steps: children[0] is the contact sound caused by that step', badStep.length === 0, steps.length + ' steps, bad: ' + badStep.slice(0, 3).map((e) => e.eid).join(','));
+  const nonrecip = hist.events.filter((e) => e.e === 'sounded' && e.cause).filter((e) => { const p = hist.byEid(e.cause); return !p || !(p.children || []).includes(e.id); });
+  ck('sounds: cause event lists the sound as a child', nonrecip.length === 0, nonrecip.length + ' non-reciprocal');
+  // ---- finding 2: Seen hides everything invented
+  const keepSeg = state.seg; setSeg('seen'); applyView();
+  const inv = [person && person.visible, proxy.man.visible, trail.visible, ring.visible, pool.some((m) => m.visible), Object.values(doorGroups).some((d) => d.grp.visible), patchedProps.visible, madeShell.visible, studyP.visible, studyM.visible, madeProps.visible, doorP.visible].filter(Boolean).length;
+  setSeg(keepSeg); applyView();
+  ck('Seen hides the person, footprints, path, door overlays and every patched/made piece', inv === 0, inv + ' invented layers still visible');
   return { pass: out.every((o) => o.ok), checks: out };
 }
-function openJSON(txt) { $('jpre').textContent = txt; $('jsonbox').classList.add('open'); $('jcopy').onclick = () => { try { navigator.clipboard.writeText(txt); say('Copied'); } catch (e) {} }; const dl = $('jdl'); if (dl) dl.onclick = () => downloadJSON('history-excerpt.json', txt); }
+function openJSON(txt, fname = 'history-excerpt.json') {
+  $('jpre').textContent = txt; $('jsonbox').classList.add('open'); $('jsonbox').dataset.file = fname;
+  $('jcopy').onclick = async () => { try { await navigator.clipboard.writeText(txt); say('Copied'); } catch (e) { say('Copy was blocked here: use Download'); } };
+  $('jdl').onclick = () => downloadJSON(fname, txt);
+}
 $('jclose').onclick = () => $('jsonbox').classList.remove('open');
 
 function seek(t, play) { view.t = Math.max(0, Math.min(sim.t, t)); view.live = false; view.playing = !!play; lastAudioT = view.t; syncBtns(); if (view.t >= sim.t - 0.02) goLive(); }
@@ -583,8 +659,25 @@ function goLive() { view.live = true; view.playing = true; view.t = sim.t; lastA
 function syncBtns() { $('bLive').classList.toggle('on', view.live); $('bPlay').textContent = view.playing ? 'pause' : 'play'; $('bLive').style.opacity = view.live ? 0.55 : 1; }
 $('bLive').onclick = goLive; $('bPlay').onclick = () => { if (view.live) { view.live = false; view.playing = false; } else view.playing = !view.playing; syncBtns(); };
 
-const labels = { list: [], add(id, pos, text, cls = '') { const el = document.createElement('div'); el.className = 'wlabel ' + cls; el.textContent = text; document.body.appendChild(el); const o = { id, pos: new THREE.Vector3(...pos), el }; this.list.push(o); return o; }, remove(o) { o.el.remove(); this.list = this.list.filter((x) => x !== o); },
-  update() { const v = new THREE.Vector3(); for (const o of this.list) { v.copy(o.pos).project(camera); if (v.z > 0 && v.z < 1 && Math.abs(v.x) < 1 && Math.abs(v.y) < 1) { const half = o.el.offsetWidth / 2; o.el.style.display = 'block'; o.el.style.left = Math.max(half + 8, Math.min(innerWidth - half - 8, (v.x + 1) / 2 * innerWidth)) + 'px'; o.el.style.top = Math.max(102, (1 - v.y) / 2 * innerHeight) + 'px'; } else o.el.style.display = 'none'; } } };
+const labels = { list: [], add(id, pos, text, cls = '') { const el = document.createElement('div'); el.className = 'wlabel ' + cls; el.textContent = text; document.body.appendChild(el); const o = { id, pos: new THREE.Vector3(...pos), el }; this.list.push(o); return o; }, remove(o) { o.el.remove(); this.list = this.list.filter((x) => x !== o); } };
+// One layout pass for every pill on screen: the AI-person disclosure first, then the study label, then door labels. Each is measured, clamped inside the usable
+// rectangle, pushed apart by >= 6 px, and joined to its anchor by a leader line when it had to move.
+function layoutLabels(tagVisible) {
+  const R = usableRect(), svg = $('leaders'), v = new THREE.Vector3(), placed = [], items = [];
+  const add = (el, wx, wy, wz, ok) => { if (!ok) { el.style.display = 'none'; return; } v.set(wx, wy, wz).project(camera); if (!(v.z > 0 && v.z < 1)) { el.style.display = 'none'; return; } el.style.display = 'block'; items.push({ el, ax: (v.x + 1) / 2 * innerWidth, ay: (1 - v.y) / 2 * innerHeight }); };
+  add($('tag'), person.position.x, 1.95, person.position.z, tagVisible && state.seg !== 'seen');
+  add($('madeLabel'), madeRoomG.userData.label.x, madeRoomG.userData.label.y, madeRoomG.userData.label.z, madeRoomG.visible && state.seg !== 'seen' && tagVisible);
+  for (const o of labels.list) add(o.el, o.pos.x, o.pos.y, o.pos.z, tagVisible);
+  let lines = '';
+  for (const it of items) {
+    const w = it.el.offsetWidth, h = it.el.offsetHeight; let x = Math.max(R.l + w / 2, Math.min(R.r - w / 2, it.ax)), y = Math.max(R.t + h / 2, Math.min(R.b - h / 2, it.ay - (it.el.id === 'tag' ? h / 2 + 4 : 0)));
+    const hit = (yy) => placed.some((q) => Math.abs(q.x - x) < (q.w + w) / 2 + 6 && Math.abs(q.y - yy) < (q.h + h) / 2 + 6);
+    if (hit(y)) { let done = false; for (let k = 1; k < 14 && !done; k++) for (const s of [-1, 1]) { const yy = y + s * k * (h + 6); if (yy - h / 2 >= R.t && yy + h / 2 <= R.b && !hit(yy)) { y = yy; done = true; break; } } }
+    placed.push({ x, y, w, h }); it.el.style.left = x + 'px'; it.el.style.top = y + 'px'; it.el.style.transform = 'translate(-50%,-50%)';
+    if (Math.hypot(x - it.ax, y - it.ay) > 22) lines += `<line x1="${x}" y1="${y}" x2="${it.ax}" y2="${it.ay}"/><circle cx="${it.ax}" cy="${it.ay}" r="2.5"/>`;
+  }
+  if (svg) svg.innerHTML = lines;
+}
 // ---------------------------------------------------------------- toast + picking
 const toastEl = $('toast'); let tt;
 let toastUntil = 0;
@@ -599,36 +692,63 @@ canvas.addEventListener('pointerup', (e) => {
 });
 const shown = (o) => { while (o) { if (o.visible === false) return false; o = o.parent; } return true; };
 function pickFrom(list, far = 99) { const h = ray.intersectObjects(list, false).filter((x) => shown(x.object) && x.distance < far); return h[0] || null; }
+const seenMeshes = [];
+const inMask = (p) => { if (U.maskOn.value < 0.5) return false; for (let i = 0; i < 4; i++) { const a = U.maskMin.value[i], b = U.maskMax.value[i]; if (p.x > a.x && p.y > a.y && p.z > a.z && p.x < b.x && p.y < b.y && p.z < b.z) return true; } return false; };
+// a hit on the real (seen) geometry counts only where the shader would really draw it
+function seenHitOk(p) {
+  const c = camera.position; if (p.x < B.x0 - 0.10 || p.x > B.x1 + 0.10 || p.z < B.z0 - 0.10 || p.z > B.z1 + 0.10 || p.y > B.h + 0.04 || p.y < -0.25) return false;
+  if (c.x < B.x0 && p.x < B.x0 + 0.30 && p.y > 0.06) return false; if (c.x > B.x1 && p.x > B.x1 - 0.12 && p.y > 0.06) return false;
+  if (c.z < B.z0 && p.z < B.z0 + 0.30 && p.y > 0.06) return false; if (c.z > B.z1 && p.z > B.z1 - 0.35 && p.y > 0.06) return false;
+  if (c.y > B.h && p.y > B.h - 0.25) return false; return !inMask(p);
+}
+function pickSeen(maxDist) {
+  if (state.seg === 'made') return null;
+  const hs = ray.intersectObjects(seenMeshes, false).filter((x) => x.distance < maxDist && seenHitOk(x.point) && (!x.uv || Math.min(x.uv.x, 1 - x.uv.x, x.uv.y, 1 - x.uv.y) > 0.035));   // same edge fade as the shader: faded pixels are not 'seen'
+  return hs[0] || null;
+}
+function pickId() {   // returns { id, point, target }
+  let h = pickFrom([proxy.man]); if (h) return { id: 'P-0001', point: h.point };
+  h = pickFrom(pickables.foot); if (h) return { id: h.object.userData.id, point: h.point };
+  h = pickFrom(pickables.doors); if (h) return { id: h.object.userData.id, point: h.point, target: h.object.userData.interactionTarget };
+  h = pickFrom(pickables.props); if (h) return { id: h.object.userData.id, point: h.point };
+  h = pickFrom(pickables.bed); if (h) return { id: 'O-0001', point: h.point };
+  const sh = pickFrom(pickables.shell), sd = pickSeen(sh ? sh.distance + 0.05 : 99);
+  if (sd) return { id: sd.point.y < 0.12 ? 'O-0003' : 'O-0002', point: sd.point };     // real geometry: seen floor / seen walls and windows
+  if (sh) return { id: sh.object.userData.id, point: sh.point };                       // replacement surface: stays patched (no remapping to seen)
+  return null;
+}
 function handlePick() {
   if (state.mode === 'film') return;
-  let h = pickFrom([proxy.man]);
-  if (h) return onPick('P-0001', h.point);
-  h = pickFrom(pickables.foot); if (h) return onPick(h.object.userData.id, h.point);
-  h = pickFrom(pickables.doors); if (h) return onPick(h.object.userData.id, h.point);
-  h = pickFrom(pickables.props); if (h) return onPick(h.object.userData.id, h.point);
-  h = pickFrom(pickables.bed); if (h) return onPick('O-0001', h.point);
-  h = pickFrom(pickables.shell);
-  if (h) { let id = h.object.userData.id; if (h.object.userData.floor && state.seg !== 'made' && h.point.x >= SEEN_RECT.x0 && h.point.x <= SEEN_RECT.x1 && h.point.z >= SEEN_RECT.z0 && h.point.z <= SEEN_RECT.z1) id = 'O-0003'; return onPick(id, h.point); }
+  const r = pickId(); if (r) return onPick(r.id, r.point, r.target);
   if (state.sel) { state.sel = null; sheet.classList.remove('open'); showMarkers(null); }
 }
 let onPickHook = null;
-function onPick(id, point) {
+function onPick(id, point, target) {
   if (onPickHook && onPickHook(id, point)) return;
-  const p = [point.x, point.y, point.z];
-  const ent = hist.entities.get(id);
-  if (id === 'D-0002') {
-    if (sim.unlockT == null) { viewerTap(id, p, 'Locked. You unlocked it.'); unlockMiddleDoor(); say('Unlocked. What opens is MADE, never seen.', true); }
-    else { viewerTap(id, p, 'Already open.'); say('Open. The room behind it is made, not seen.', true); }
-  } else if (id === 'D-0001' || id === 'D-0003') {
-    viewerTap(id, p, 'Locked: nothing was ever filmed behind it.'); doorGroups[id].mesh.material.uniforms.k.value = 1; sound(sim.t, id, id, { k: 'locked' }); say('Locked - not seen yet');
+  const p = [point.x, point.y, point.z], act = target || id;
+  let tap;
+  if (act === 'D-0002') {
+    if (sim.unlockT == null) { tap = viewerTap(act, p, 'Locked. You unlocked it.'); unlockMiddleDoor(tap.eid); say('Unlocked. The room behind it was never filmed.', true); }
+    else { tap = viewerTap(act, p, 'Already open.'); say('Open. The room behind it was never filmed: patched surfaces, made furniture.', true); }
+  } else if (act === 'D-0001' || act === 'D-0003') {
+    tap = viewerTap(act, p, 'Locked: nothing was ever filmed behind it.'); doorGroups[act].mesh.material.uniforms.k.value = 1; sound(sim.t, act, 'C-0001', { k: 'locked' }, null, tap); say('Locked - not seen yet');
   } else viewerTap(id, p, '');
   select(id);
 }
 
 // ---------------------------------------------------------------- seen / made toggle
+function applyCutaway() {   // attached pieces step aside with the wall/ceiling they belong to (same decision as the shader)
+  const c = camera.position, hide = { x0: c.x < B.x0, x1: c.x > B.x1, z0: c.z < B.z0, z1: c.z > B.z1, y1: c.y > B.h };
+  for (const g of [madeShell, madeProps]) g.traverse((o) => { if (o.userData && o.userData.cutSide) o.visible = !hide[o.userData.cutSide]; });
+}
 function applySegVis(unlocked, opened) {
   const sg = state.seg, P = sg === 'patched' || sg === 'all', M = sg === 'made' || sg === 'all';
   madeShell.visible = P; patchedProps.visible = P; studyP.visible = P; doorP.visible = P && unlocked; madeProps.visible = M; studyM.visible = M; madeRoomG.visible = opened && (P || M);
+  // Seen = only what the camera filmed: no rebuilt person, no scripted footprints/path/markers, no generated door overlays
+  if (leaf && leaf.knobG) leaf.knobG.visible = M;
+  const S = sg !== 'seen'; if (person) person.visible = S; if (proxy.man) proxy.man.visible = S;
+  for (const k in doorGroups) doorGroups[k].grp.visible = S;
+  trail.visible = S; ring.visible = S; for (const m of markers) m.userData.hideInSeen = true;
 }
 function setSeg(v) {
   state.seg = v; document.querySelectorAll('#seg button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
@@ -645,6 +765,9 @@ document.querySelectorAll('#seg button').forEach((b) => b.addEventListener('clic
 const tl = $('tl'), tx = tl.getContext('2d'); let tlW = 0, tlH = 0; const WIN = 24;
 function tlSize() { const r = tl.getBoundingClientRect(); const d = Math.min(window.devicePixelRatio || 1, 2); tlW = r.width; tlH = r.height; tl.width = Math.round(r.width * d); tl.height = Math.round(r.height * d); tx.setTransform(d, 0, 0, d, 0, 0); }
 new ResizeObserver(tlSize).observe(tl);
+if (REC || Q.has('tl')) document.body.classList.add('tl-open');
+$('bReplay').onclick = () => { const o = document.body.classList.toggle('tl-open'); $('bReplay').setAttribute('aria-expanded', o); $('bReplay').textContent = o ? 'Hide timeline' : 'Replay timeline'; };
+new MutationObserver(() => document.body.classList.toggle('sheet-open', $('sheet').classList.contains('open'))).observe($('sheet'), { attributes: true, attributeFilter: ['class'] });
 let tlDrag = null;
 tl.addEventListener('pointerdown', (e) => { tl.setPointerCapture(e.pointerId); tlDrag = { x: e.clientX, t: view.t, moved: false }; if (REC) addTapDot(e.clientX, e.clientY); });
 tl.addEventListener('pointermove', (e) => { if (!tlDrag) return; const dx = e.clientX - tlDrag.x; if (Math.abs(dx) > 3) tlDrag.moved = true; if (tlDrag.moved) { view.live = false; view.playing = false; view.t = Math.max(0, Math.min(sim.t, tlDrag.t - (dx / tlW) * WIN)); lastAudioT = view.t; syncBtns(); } });
@@ -653,14 +776,14 @@ function drawTimeline() {
   if (!tlW) return; const t = view.t, x0 = t - WIN * 0.62, X = (tt2) => ((tt2 - x0) / WIN) * tlW;
   tx.clearRect(0, 0, tlW, tlH); tx.fillStyle = '#1b1812'; tx.fillRect(0, 0, tlW, tlH);
   // second grid
-  tx.font = '9px system-ui'; tx.fillStyle = '#6f6850'; tx.strokeStyle = '#2a251b'; tx.lineWidth = 1;
+  tx.font = '11px system-ui'; tx.fillStyle = '#8a8265'; tx.strokeStyle = '#2a251b'; tx.lineWidth = 1;
   for (let s = Math.ceil(x0 / 5) * 5; s < x0 + WIN; s += 5) { const x = X(s); tx.beginPath(); tx.moveTo(x, 0); tx.lineTo(x, tlH); tx.stroke(); tx.fillText(s + 's', x + 2, tlH - 3); }
   // made-floor band (where the man is on floor we made)
-  const lanes = [['STEPS', 15], ['DOORS', 33], ['SOUND', 49]]; tx.fillStyle = '#6f6850'; tx.font = '8px system-ui'; lanes.forEach(([n, y]) => tx.fillText(n, 4, y - 5));
+  const lanes = [['STEPS', 17], ['DOORS', 35], ['SOUND', 53]]; tx.fillStyle = '#8a8265'; tx.font = '11px system-ui'; lanes.forEach(([n, y]) => tx.fillText(n, 4, y - 3));
   const evs = hist.eventsBetween(x0 - 1, x0 + WIN + 1, { limit: 700 });
   for (const e of evs) {
     const x = X(e.t); if (x < 0 || x > tlW) continue;
-    if (e.e === 'planted') { tx.fillStyle = e.place === 'seen-floor' ? '#f0c36b' : '#b79cff'; tx.fillRect(x - 1, 7, 2, 10); }
+    if (e.e === 'planted') { tx.fillStyle = '#5fd6c6'; tx.fillRect(x - 1, 7, 2, 10); }
     else if (e.e === 'sounded') { if (e.snd.k !== 'step') { tx.fillStyle = e.snd.k === 'kick' || e.snd.k === 'clap' || e.snd.k === 'hat' || e.snd.k === 'bass' ? '#e9a24b' : '#ece6d4'; tx.fillRect(x - 1, 44, 2, 7); } }
     else if (['tapped', 'unlocked', 'opened', 'tried_door', 'walked_past', 'entered', 'left', 'paused', 'built'].includes(e.e) && e.id !== 'M-0004' && e.id !== 'M-0007' && e.id[0] !== 'Q') {
       tx.fillStyle = e.e === 'unlocked' || e.e === 'opened' || e.e === 'entered' || e.basis === 'made' && e.e === 'built' ? '#5fd6c6' : e.e === 'tapped' ? '#fff' : '#e9a24b'; tx.save(); tx.translate(x, 33); tx.rotate(Math.PI / 4); tx.fillRect(-3, -3, 6, 6); tx.restore();
@@ -669,15 +792,15 @@ function drawTimeline() {
   // now marker + playhead
   const xn = X(sim.t); if (xn < tlW) { tx.fillStyle = 'rgba(240,195,107,.12)'; tx.fillRect(xn, 0, tlW - xn, tlH); }
   const xp = X(t); tx.strokeStyle = view.live ? '#f0c36b' : '#fff'; tx.lineWidth = 2; tx.beginPath(); tx.moveTo(xp, 0); tx.lineTo(xp, tlH); tx.stroke();
-  tx.fillStyle = view.live ? '#f0c36b' : '#fff'; tx.font = '10px ui-monospace, monospace'; tx.fillText(t.toFixed(1) + 's' + (view.live ? ' live' : ' replay'), Math.max(4, Math.min(tlW - 150, xp - 80)), 10);
+  tx.fillStyle = view.live ? '#f0c36b' : '#fff'; tx.font = '11px ui-monospace, monospace'; tx.fillText(t.toFixed(1) + 's' + (view.live ? ' live' : ' replay'), Math.max(4, Math.min(tlW - 150, xp - 80)), 10);
 }
 
 // ---------------------------------------------------------------- the camera helpers modes use
-const ctx = { labels, why: (id) => hist.why(id), THREE, scene, camera, controls, renderer, hist, sim, view, state, B, DOORS, DX, DW, DH, L, MADE_ROOM, NS, $, say, emit, sound, playSnd, listeners, seek, goLive, select, placeOf, doorFrac,
+const ctx = { openJSON: (t, f) => openJSON(t, f), viewerTap: (...a) => viewerTap(...a), labels, why: (id) => hist.why(id), THREE, scene, camera, controls, renderer, hist, sim, view, state, B, DOORS, DX, DW, DH, L, MADE_ROOM, NS, $, say, emit, sound, playSnd, listeners, seek, goLive, select, placeOf, doorFrac,
   unlockMiddleDoor, get sfx() { return sfx; }, soundOn, soundOff, home, setView, get viewName() { return viewName; }, CONFIG, HOME_POS, HOME_TARGET, REC, simStep, applyView, setSeg, get person() { return person; }, doorOpen, sndList, setPickHook: (f) => { onPickHook = f; }, sceneRefs: { madeShell, madeRoomG } };
 
 // ---------------------------------------------------------------- boot
-let modes = null, clockLast = 0, acc = 0;
+var modes = null; let clockLast = 0, acc = 0;
 function frame(dtReal) {
   // advance the sim in fixed steps (live), view follows
   acc += Math.min(dtReal, 0.1);
@@ -695,12 +818,9 @@ function renderOnce(dt) {
   modes && modes.update(dt);
   if (!(modes && modes.cameraOwned())) { if (state.follow && person) controls.target.lerp(hv.set(person.position.x, 1.0, person.position.z), 0.08); controls.update(); }
   U.cam.value.copy(camera.position);
-  // labels
-  camera.updateMatrixWorld(); const tag = $('tag'); hv.set(person.position.x, 1.95, person.position.z).project(camera);
-  if (hv.z < 1 && !(modes && modes.hideTag())) { tag.style.display = 'block'; tag.style.left = ((hv.x + 1) / 2 * innerWidth - 0) + 'px'; tag.style.top = ((1 - hv.y) / 2 * innerHeight) + 'px'; } else tag.style.display = 'none';
-  const ml = $('madeLabel'); if (madeRoomG.visible && state.seg !== 'seen' && !(modes && modes.hideTag())) { hv.copy(madeRoomG.userData.label).project(camera); if (hv.z < 1) { ml.style.display = 'block'; ml.style.left = ((hv.x + 1) / 2 * innerWidth) + 'px'; ml.style.top = ((1 - hv.y) / 2 * innerHeight) + 'px'; } else ml.style.display = 'none'; } else ml.style.display = 'none';
+  camera.updateMatrixWorld(); layoutLabels(!(modes && modes.hideTag()));
   if (REC && toastUntil && sim.t > toastUntil) { toastEl.classList.remove('show'); toastUntil = 0; }
-  labels.update(); drawTimeline();
+  drawTimeline();
   renderer.render(scene, camera);
 }
 
@@ -710,10 +830,10 @@ function renderOnce(dt) {
     const [room, per] = await Promise.all([loadGLB('room.glb'), loadGLB('person.glb')]);
     room.scene.scale.setScalar(meta.scale);
     room.scene.traverse((o) => { if (o.isMesh) { o.material = makeSeenMaterial(o.material, CONFIG.seen, o.name); o.renderOrder = o.material.userData.anchor ? 2 : 1; } });
-    scene.add(room.scene);
+    scene.add(room.scene); room.scene.traverse((o) => { if (o.isMesh) seenMeshes.push(o); });
     await loadPatches(); try { SRCS = await (await fetch('patches/sources.json')).json(); } catch (e) { console.warn('no sources.json', e); }
     buildShell(); buildPatchedProps(); buildMadeProps(); buildStudy(); DOORS.forEach(makeDoor); buildRealDoor(); buildFootPool(); buildMarkers(); scene.add(trail);
-    DOORS.forEach((d, i) => labels.add(d.id, [DX + 0.04, 2.14, d.z], `D${i + 1} · NOT SEEN`, 'seen door-note'));
+    DOORS.forEach((d, i) => labels.add(d.id, [DX + 0.04, 2.14, d.z], `D${i + 1} · BEYOND UNFILMED`, 'seen door-note'));
     // bed proxy (seen), invisible but pickable
     const bedP = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.7, 1.95), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })); bedP.position.set(0.62, 0.35, -1.0); bedP.userData.id = 'O-0001'; scene.add(bedP); pickables.bed = [bedP];
     person = per.scene; scene.add(person);
@@ -735,7 +855,9 @@ function renderOnce(dt) {
   } catch (err) { $('msg').textContent = 'Could not load the room (' + (err && err.message || err) + ').'; console.error(err); return; }
   syncBtns();
   window.HB = {
-    selfTest: () => selfTest(), grounding: () => ({ sole_min_y_m: gait.sole_min_y_rest, applied_offset_m: gait.yOff, foot_slide_cm_per_7cm_of_root_travel: { left: +gait.slide_cm[0].toFixed(1), right: +gait.slide_cm[1].toFixed(1) }, note: 'Measured on the ankle bone over +/-2/48 of the walk cycle against the root travel. Grounding (sole at y=0) does not prove the feet never slide; this number says how much they do.' }),
+    selfTest: () => selfTest(),
+    pickRay: (ox, oy, oz, dx, dy, dz) => { ray.set(new THREE.Vector3(ox, oy, oz), new THREE.Vector3(dx, dy, dz).normalize()); const r = pickId(); return r && { id: r.id, target: r.target || null, point: [r.point.x, r.point.y, r.point.z].map((v) => +v.toFixed(3)) }; },
+    layerState: () => ({ seg: state.seg, person: !!person.visible, manProxy: proxy.man.visible, footprints: pool.filter((m) => m.visible).length, trail: trail.visible, doorOverlays: Object.values(doorGroups).filter((d) => d.grp.visible).length, patched: madeShell.visible, made: madeProps.visible, studyOpen: madeRoomG.visible, windowGroupVisible: (() => { let v = null; madeShell.traverse((o) => { if (o.userData && o.userData.cutSide === 'z1' && o.isGroup) v = o.visible; }); return v; })(), ceilingLight: (() => { let v = null; madeProps.traverse((o) => { if (o.userData && o.userData.id === 'M-0007') v = o.visible; }); return v; })(), camera: camera.position.toArray().map((x) => +x.toFixed(2)) }), grounding: () => ({ sole_min_y_m: gait.sole_min_y_rest, applied_offset_m: gait.yOff, foot_slide_cm_per_7cm_of_root_travel: { left: +gait.slide_cm[0].toFixed(1), right: +gait.slide_cm[1].toFixed(1) }, note: 'Measured on the ankle bone over +/-2/48 of the walk cycle against the root travel. Grounding (sole at y=0) does not prove the feet never slide; this number says how much they do.' }),
     download: () => downloadJSON('history.json', JSON.stringify(hist.toJSON())), why: (id) => hist.why(id),
     help: 'Bedroom v2 (sonnet). HB.history = event store. HB.story("P-0001"), HB.eventsBetween(t0,t1,{e,id}), HB.entities(), HB.where(t), HB.snapshot(). See AI-README.md.',
     history: hist, story: (id) => hist.story(id), eventsBetween: (a, b, o) => hist.eventsBetween(a, b, o), entities: () => [...hist.entities.values()],

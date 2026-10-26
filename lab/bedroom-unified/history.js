@@ -29,19 +29,24 @@ export class History {
     if (o.target) ev.target = o.target;
     if (o.p) ev.p = o.p.map(r3);
     if (o.v) ev.v = o.v.map(r3);
-    if (o.parent) ev.parent = o.parent;
+    if (o.parent) ev.parent = o.parent;          // the ACTOR or tool that did it (P-0001, C-0001, tool:...). Not a causal edge.
+    if (o.cause) ev.cause = o.cause;             // the EVENT (eid) that caused this one. Causal edges go by event id only.
+    if (o.origin) ev.origin = o.origin;          // 'viewer-input' | 'script' | 'tool'
     if (o.children && o.children.length) ev.children = o.children.slice();
     if (o.basis) ev.basis = o.basis;
     if (o.place) ev.place = o.place;
     if (o.floor_basis) ev.floor_basis = o.floor_basis;
     if (o.snd) ev.snd = o.snd;
     if (o.note) ev.note = o.note;
-    this.events.push(ev);
+    this.events.push(ev); if (!this._eidIndex) this._eidIndex = new Map(); this._eidIndex.set(ev.eid, ev);
     this._link(ev.id, ev); this._link(ev.target, ev); this._link(ev.parent, ev);
     if (ev.children) for (const c of ev.children) this._link(c, ev);
     return ev;
   }
   sample(t, x, z, yaw, cyc, ww) { this.samples.push([r3(t), r3(x), r3(z), r3(yaw), r3(cyc), r2(ww)]); }
+  // add a child id to an event after it was emitted (keeps the id index in step)
+  addChild(ev, id) { if (!ev.children) ev.children = []; if (!ev.children.includes(id)) { ev.children.push(id); this._link(id, ev); } }
+  byEid(eid) { return this._eidIndex && this._eidIndex.get(eid) || this.events.find((e) => e.eid === eid); }
   eventsFor(id) { return this.byId.get(id) || []; }
   eventsBetween(t0, t1, { e, id, limit = 300 } = {}) {
     const out = [];
@@ -67,14 +72,23 @@ export class History {
     let dy = b[3] - a[3]; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
     return [t, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k, a[3] + dy * k, a[4] + (b[4] - a[4]) * k, a[5] + (b[5] - a[5]) * k];
   }
-  // the chain of causes behind an id (or an event id): follows `parent` upward until a root. This is "Why?".
+  // The event that best answers "why?" for an entity id: its first event that has a recorded cause, else its first creating event.
+  primaryEvent(id) {
+    if (/^E-/.test(id)) return this.byEid(id) || null;
+    const own = this.events.filter((e) => e.id === id);
+    return own.find((e) => e.cause) || own.find((e) => ['planted', 'sounded', 'unlocked', 'opened', 'built', 'patched', 'entered'].includes(e.e)) || null;
+  }
+  // "Why?": follows `cause` (an event id) upward, event by event. It never picks "the actor's first event": actors are roots, not causes.
+  // Returns [effect, ..., root]. The last item is a root marker {e:'actor'|'tool'|'viewer-input'} when the chain ends.
   why(id) {
-    const chain = []; let cur = id; const seen = new Set();
-    for (let i = 0; i < 14 && cur && !seen.has(cur); i++) {
-      seen.add(cur); let ev = /^E-/.test(cur) ? this.events.find((e) => e.eid === cur) : this.events.find((e) => e.id === cur && e.parent) || this.events.find((e) => e.id === cur);
-      if (!ev) break; chain.push({ id: cur, eid: ev.eid, t: ev.t, e: ev.e, parent: ev.parent || null, basis: ev.basis || null, words: this.words(ev) });
-      if (!ev.parent || ev.parent.startsWith('tool:')) { if (ev.parent) chain.push({ id: ev.parent, e: 'tool', words: 'built by ' + ev.parent }); break; }
-      cur = ev.parent;
+    const chain = []; let cur = this.primaryEvent(id); const seen = new Set();
+    while (cur && !seen.has(cur.eid) && chain.length < 16) {
+      seen.add(cur.eid); chain.push({ id: cur.id, eid: cur.eid, t: cur.t, e: cur.e, cause: cur.cause || null, parent: cur.parent || null, basis: cur.basis || null, origin: cur.origin || null, words: this.words(cur) });
+      if (cur.cause) { cur = this.byEid(cur.cause); continue; }
+      const root = cur.origin === 'viewer-input' ? { id: 'C-0001', e: 'viewer-input', words: 'Your tap: input from the viewer, not from the footage.' }
+        : cur.parent && cur.parent.startsWith('tool:') ? { id: cur.parent, e: 'tool', words: 'built by ' + cur.parent }
+        : cur.parent ? { id: cur.parent, e: 'actor', words: `${(this.entities.get(cur.parent) || { label: cur.parent }).label} is an actor, not a cause: no earlier recorded event made this happen.` } : null;
+      if (root) chain.push(root); break;
     }
     return chain;
   }
@@ -133,7 +147,7 @@ export class History {
   }
   // compact export for history.json (steps' sound children are inlined as events too, so nothing is hidden)
   toJSON() {
-    return { meta: Object.assign({}, this.meta, { events: this.events.length, duration_s: this.samples.length ? this.samples[this.samples.length - 1][0] : 0, track_fields: ['t', 'x', 'z', 'yaw', 'walk_cycles', 'walk_weight'], track_hz: 30 }),
+    return { meta: Object.assign({}, this.meta, { events: this.events.length, duration_s: this.samples.length ? this.samples[this.samples.length - 1][0] : 0, track_fields: ['t', 'x', 'z', 'yaw', 'walk_cycles', 'walk_weight'], track_hz: 10 }),
       entities: [...this.entities.values()], events: this.events, tracks: { 'P-0001': this.samples.filter((_, i) => i % 3 === 0) } };
   }
   // hb-render style jsonl, so the other tools can read it

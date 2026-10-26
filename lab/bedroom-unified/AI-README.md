@@ -29,7 +29,7 @@ bed skirt, the room behind the middle door), `C-` the viewer, `E-` an event (`ei
 basis, place, snd, note}`. Coordinates: x toward the headboard wall, z toward the unseen +z wall, y up. The door wall is x = -1.36.
 Verbs: `seen patched built planted sounded walked_past tried_door paused tapped unlocked opened entered left answered`.
 Chain example: `C-0001 tapped D-0002` -> `D-0002 unlocked` (+ chime) -> `D-0002 opened` (creak) -> `M-0005 built` (the made room)
--> `P-0001 entered M-0005` -> footsteps `F-####` with `place: "made-room"`.
+-> `P-0001 entered M-0005` -> footsteps `F-####` with `place: "patched-room"`.
 
 ## The honesty rule (v3: four labels)
 `basis` is **seen** (the camera saw it), **rebuilt** (rebuilt from evidence: his walk cycle is tracked from a video),
@@ -45,8 +45,7 @@ returns it with the entity. In the page, tap a patched surface and the sheet sho
   `Q-0012` door frame + leaf, `Q-0013` window on the unseen wall, `M-0005` the study behind the middle door (surfaces patched).
 - Still **made**: `M-0004` bed skirt, `M-0006` study furniture (desk, computer, chair, shelf, rug), `M-0007` ceiling light.
 
-Footsteps: `rebuilt` on the seen floor, `patched` on `place` = `patched-floor` / `patched-room`. The man is AI-generated (not a real
-person); his route is scripted by us. The toggle in the page is Seen / Patched / Made / All. Never describe a patched or made thing as seen.
+Footsteps: the contact is a scripted action, so `basis: "made"` always; `floor_basis` says what is under it (`seen` or `patched`) and `place` says where (`seen-floor`, `patched-floor`, `patched-room`). The man is AI-generated (not a real person); his body is rebuilt from a tracked walk, his route is scripted by us. The toggle is Seen / Patched / Made / All; **Seen hides everything invented** (the person, footsteps, path, door overlays and every patched or made piece).
 
 ## Time and replay
 `sim.t` is seconds since load. The page view is a pure function of (history, time): scrub the timeline strip and the man, doors,
@@ -58,3 +57,11 @@ footprints and sounds replay from the recorded events. Game, Film, Music and Sho
 - `HB.selfTest()` (replay appends nothing, unique ids, patched entities name frame + rect, parents resolve), `HB.grounding()` (sole height + planted-foot slide), `HB.why(id)` (cause chain), `HB.download()`.
 - MCP: `C:\Users\lilli\Projects\hb-vision\bake\sonnet\mcp\server-unified.mjs` adds `causal_chain(id)` and `patch_source(id)`.
 - Seams for the next passes are listed in `HANDOFF.md`.
+
+## Fix pass (Sol review): what changed in the data
+- **Causal edges go by event id.** `cause` = the `eid` of the event that caused this one. `parent` = the actor or tool that did it (`P-0001`, `C-0001`, `tool:...`) and is never a cause. `origin` = `viewer-input | script | tool`. `HB.why(id)` / MCP `causal_chain` follow `cause` only; a chain ends at a root marker (`viewer-input`, `actor`, `tool`). An unrelated earlier tap can never appear in another action's chain; a code-requested unlock gets its own `triggered` event (`T-0001`).
+- **Ids are per piece.** `D-0002` is only the filmed doorway; the replacement slab and trim are `Q-0012`, the invented knob is `M-0008`; the viewer `C-0001` is `basis: made` (input, not footage).
+- **Sound ids are reserved** before listeners run: each step's `children[0]` is its own contact sound (`snd.k = step`, `cause` = the step). Music layers are appended as further children, each with `cause` = the step.
+- **Velocity is measured** (`v` = displacement per fixed step), track is exported at `track_hz: 10`.
+- Study sources: `M-0005` lists `plaster`, `floor`, `plaster_ceiling`, `picture` (v1/f0050 [360,120,540,235]) and `trim` (v1/f0040 [228,20,258,215]).
+- Checks: `HB.selfTest()` now has 16 checks (see HANDOFF.md); `HB.pickRay(...)`, `HB.layerState()` for tests.
