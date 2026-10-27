@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Studio Pro — Heartbeat Observatory</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="/lab/lab-top.js" defer></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="eyebrow">HEARTBEAT / STUDIO PRO</span><h1>Small hours</h1><p>A whole song, with every choice attached.</p></div>
+  <div class="transport" aria-label="Transport">
+    <button id="play" class="primary" aria-label="Play or stop">▶ Play</button>
+    <button id="record" aria-label="Record a take">● Record</button>
+    <button id="rewind" aria-label="Return to start">↺</button>
+    <output id="position">00:00.00</output>
+  </div>
+  <div class="sessionbar"><span id="saveState">Local session</span><button id="save">Save</button><button id="addTrack">+ Track</button></div>
+</header>
+<main>
+  <section class="arrangement" aria-label="Arrangement">
+    <div class="sectionbar" id="sections"></div>
+    <div class="ruler"><span>0:00</span><span id="bpm">120 BPM · 4/4</span><span>0:04</span></div>
+    <div id="tracks" class="tracks"></div>
+  </section>
+  <nav id="tabs" class="tabs" aria-label="Studio tools">
+    <button data-tab="edit" class="active">Edit</button><button data-tab="takes">Takes</button><button data-tab="notes">Notes</button><button data-tab="mix">Mix</button><button data-tab="lyrics">Lyrics</button><button data-tab="picture">Picture</button><button data-tab="export">Export</button>
+  </nav>
+  <section id="panel" class="panel" aria-live="polite"></section>
+</main>
+<footer><span id="status" role="status">Ready · originals stay untouched</span><button id="undoInfo" class="text">History</button></footer>
+<dialog id="historyDialog"><div class="dialoghead"><h2>Why this sound?</h2><button id="closeHistory" aria-label="Close">×</button></div><pre id="historyText"></pre></dialog>
+<video id="reference" playsinline muted hidden></video>
+</body>
+</html>
