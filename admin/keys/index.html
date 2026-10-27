@@ -116,7 +116,7 @@
     const t = btn.dataset.target, msg = document.querySelector('[data-msg="' + t + '"]'), obj = {};
     for (const [k, id] of fields[t]) { obj[k] = document.getElementById(id).value.trim(); if (!obj[k]) { msg.className = "msg bad"; msg.textContent = "Fill in every box."; return; } }
     let env_name = null;
-    if (t === "env") { env_name = document.getElementById("ot-name").value.trim().toUpperCase() || null; if (env_name && !/^[A-Z][A-Z0-9_]{1,60}$/.test(env_name)) { msg.className = "msg bad"; msg.textContent = "Name: capital letters, numbers and _ only (or leave it empty)."; return; } }
+    if (t === "env") { env_name = document.getElementById("ot-name").value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || null; if (env_name && !/^[A-Z][A-Z0-9_]{1,60}$/.test(env_name)) { msg.className = "msg bad"; msg.textContent = "Name: capital letters, numbers and _ only (or leave it empty)."; return; } }
     btn.disabled = true; msg.className = "msg wait"; msg.textContent = "Locking...";
     try {
       const blob = await lock(obj);
