@@ -1,0 +1,217 @@
+{
+  "date": "2026-10-27",
+  "title": "Heartbeat News — Tuesday, October 27, 2026",
+  "writer": "Codex (GPT-6 Luna), daily news job (MSI backup)",
+  "tone": "straight news, two characters",
+  "sources": [
+    { "name": "watch/codex 2026-10-27 (03:00 EDT)", "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-27.md" },
+    { "name": "watch/deepseek 2026-10-27 (03:40, reader)", "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-27.md" },
+    { "name": "watch/claude 2026-10-27 (03:20 ET)", "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-10-27.md" },
+    { "name": "watch/msi 2026-10-27 (RSS and search capture; extra headlines)", "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-10-27.md" }
+  ],
+  "skipped": [
+    { "item": "Bitcoin and ETF flow detail; regional market closes and earnings; the proposed Saudi crude storage plan; Jio and DSBJ listing details; prediction market prices and resolution notes", "source": "codex, deepseek, claude", "why": "Trader detail and market pricing do not add a distinct general audience story; Brazil's market reaction and the Anthropic filing are covered." },
+    { "item": "OpenAI GPT-6.1 Terra release and exponential-time-hypothesis claims", "source": "deepseek, claude", "why": "The captures label these claims unverified and found no primary confirmation." },
+    { "item": "Headline-only consumer technology, entertainment reviews and shopping stories, including Instagram Reels on Apple TV, iPhone Duo, Zen Browser, Fitbit Edge and The Drift review", "source": "codex, MSI", "why": "Headlines only, with no independently checked reporting in the captures; deals are excluded by the writer guide." },
+    { "item": "Muncie shooting update", "source": "claude", "why": "The writer guide excludes Indiana-only stories unless they are major disasters or otherwise nationally significant; no broader impact was captured." },
+    { "item": "Older context and unconfirmed items: prior-day New York subway shooting, unverified Trump rally details, disputed California ballot case sequence, UAP file release detail, Starlink launch schedule, and old or unresolved health and court items", "source": "claude, deepseek", "why": "Stale, incomplete, or not confirmed as a new event in this capture window." },
+    { "item": "Small sports results beyond the World Series and Monday night football; NBA partnership headline", "source": "codex, claude, MSI", "why": "Grouped secondary sports results are omitted for a clear show; the wider pattern-market partnership is noted in quick hits." }
+  ],
+  "ticker": [
+    "UKRAINE AND RUSSIA BEGIN A LOCAL PAUSE AROUND OLESHKY",
+    "KYIV REPORTS DAMAGE TO A BRIDGE AND METRO INFRASTRUCTURE",
+    "ISRAELI VOTERS BEGIN A NATIONAL ELECTION; RESULTS PENDING",
+    "NETANYAHU WARNS OF POSSIBLE IRANIAN OR PROXY ATTACKS",
+    "BRAZIL STOCKS DROP 13.88% AFTER LULA'S ELECTION WIN",
+    "ANTHROPIC FILES TO GO PUBLIC; PROPOSED NASDAQ SYMBOL ANT",
+    "MICROSOFT OFFERS VOLUNTARY EXITS TO ABOUT 60,000 STAFF",
+    "GABON RIG SINKING LEAVES FIVE PEOPLE UNACCOUNTED FOR",
+    "NAIROBI BUILDING COLLAPSE: 47 REPORTED MISSING",
+    "NEW MEXICO FLOODWATERS RECEDE; ROADS AND POWER OUT",
+    "KENYA RELEASES TWENTY EBOLA CONTACTS FROM QUARANTINE",
+    "MILWAUKEE TAKES A 3–0 WORLD SERIES LEAD",
+    "DALLAS BEATS PHILADELPHIA 38 TO 21",
+    "NASA AND USDA EXPAND EARTH DATA WORK FOR AGRICULTURE"
+  ],
+  "segments": [
+    {
+      "id": "open", "kind": "open", "strap": "HEARTBEAT NEWS", "headline": "The day's news from the watch desk", "category": "TODAY",
+      "graphic": { "kicker": "TODAY", "title": "Ukraine pause, Israel votes, Brazil reels", "bullets": [ "Local Russia-Ukraine pause begins near Oleshky", "Israeli election voting is underway", "Brazil markets plunge after Lula's win", "Anthropic files for a public offering" ] },
+      "lines": [
+        { "who": "vex", "text": "Welcome to Heartbeat News. I'm AI Robot Vex." },
+        { "who": "joe", "text": "And I'm Alien Joe. It's Tuesday, October twenty-seventh." },
+        { "who": "vex", "text": "A local pause begins near Ukraine's Oleshky, while Kyiv reports damage from a fresh attack. Israel votes in a national election, with no result yet." },
+        { "who": "joe", "text": "Brazil's market takes a historic-sized hit after Lula's win. Anthropic files to go public, and a sunken drilling rig off Gabon still has five people unaccounted for." }
+      ]
+    },
+    {
+      "id": "ukraine", "kind": "breaking", "strap": "LOCAL PAUSE IN OLESHKY; KYIV REPORTS NEW DAMAGE", "headline": "A local pause, with fighting elsewhere", "category": "UKRAINE", "status": "mixed",
+      "graphic": { "kicker": "UKRAINE", "title": "Oleshky pause begins as Kyiv is hit", "bullets": [ "Russia and Ukraine say local pause began", "Aid and civilian evacuation cited as purpose", "AFP could not verify less fighting", "Kyiv reports bridge and metro damage" ] },
+      "sources": [ { "name": "Reuters", "url": "https://www.reuters.com/world/europe/russia-ukraine-begin-localised-ceasefire-allow-humanitarian-operation-oleshky-2026-10-27/" }, { "name": "AFP", "url": "https://www.afp.com/en/us-brokered-truce-begins-ukraine-city-occupied-russia" }, { "name": "Anadolu", "url": "https://www.aa.com.tr/en/world/morning-briefing-oct-27-2026/4101934" } ],
+      "lines": [
+        { "who": "vex", "text": "Russia and Ukraine say a localized pause around Oleshky began early Tuesday to allow humanitarian work and civilian evacuation. Russia's Defense Ministry says fire toward Kherson stopped. Ukraine's human rights ombudsman says Ukraine is honoring the arrangement." },
+        { "who": "joe", "text": "This is a small, local pause, not a general ceasefire. A.F.P. could not verify that fighting had decreased, and the sides gave no end time." },
+        { "who": "vex", "text": "On the same morning, Kyiv reported ballistic warnings and damage to the Southern Bridge and metro infrastructure. The pause in one area did not stop attacks elsewhere." }
+      ]
+    },
+    {
+      "id": "iran", "kind": "story", "strap": "U.S. IRAN STRIKE PLANS REPORTED; TEHRAN TALKS CONTINUE", "headline": "U.S. military options and Iran diplomacy", "category": "MIDDLE EAST", "status": "mixed",
+      "graphic": { "kicker": "MIDDLE EAST", "title": "Plans reported; no strike reported", "bullets": [ "CNN cites two U.S. officials on possible operations", "Officials say action could follow midterms", "Trump said there would be no strike Monday", "Iran says indirect talks continue" ] },
+      "sources": [ { "name": "CNN", "url": "https://www.cnn.com/2026/10/26/politics/us-iran-strike-plans-trump" }, { "name": "CBS News, live updates", "url": "https://www.cbsnews.com/live-updates/iran-war-trump-us-diplomacy-oil-prices-strait-of-hormuz/" }, { "name": "Associated Press, Tehran meeting", "url": "https://apnews.com/article/iran-israel-us-war-10-26-2026-36486edb61b3bf4e0df67e8a17123e44" }, { "name": "Associated Press, Yemen claims", "url": "https://apnews.com/article/mideast-news-october-26-2026-7d1bcf08210539085ea0b5ed56ef4d4c" } ],
+      "lines": [
+        { "who": "vex", "text": "C.N.N., citing two U.S. officials, reports that American forces in the region could begin new, potentially major operations within ninety-six hours of an order from President Trump. The officials said plans are ready and action could come after the midterm elections. This is reporting about a possible order, not an order." },
+        { "who": "joe", "text": "President Trump said there would be no strike Monday. Iran says indirect talks are continuing, and officials from Iran, Saudi Arabia, Pakistan and Turkey met in Tehran and agreed to keep talking. No settlement was announced." },
+        { "who": "vex", "text": "Separately, the Saudi-led coalition said it destroyed missile sites in Yemen and intercepted three Houthi missiles and four drones headed toward Saudi Arabia. That is the coalition's account; the captured report did not give a full damage or casualty count." }
+      ]
+    },
+    {
+      "id": "israel", "kind": "story", "strap": "ISRAEL VOTES; NETANYAHU WARNS OF IRANIAN ATTACK", "headline": "Israel votes as regional tensions remain high", "category": "ISRAEL", "status": "mixed",
+      "graphic": { "kicker": "ISRAEL", "title": "Polls open, no result yet", "bullets": [ "Voting for the 120-seat Knesset", "Results not available at capture cutoff", "Netanyahu warns of possible Iran-linked attack", "No attack reported in the capture" ] },
+      "sources": [ { "name": "Associated Press, election", "url": "https://apnews.com/article/israel-election-netanyahu-eisenkot-3b5a0fd078208155337ee9a0b9fbfde2" }, { "name": "Associated Press, Netanyahu warning", "url": "https://apnews.com/article/36486edb61b3bf4e0df67e8a17123e44" }, { "name": "The Jerusalem Post, polling stations open", "url": "https://www.jpost.com/israel-election-2026/2026-10-27/live-updates-912992" } ],
+      "lines": [
+        { "who": "joe", "text": "Voting has opened in Israel's election for the one-hundred-twenty-seat Knesset. Thirty-seven parties and lists are competing. The captured reports have no result or exit poll yet." },
+        { "who": "vex", "text": "Prime Minister Benjamin Netanyahu warned that Iran or its proxies could attack before the vote and said Israel would respond. The Associated Press reported no attack in its account." },
+        { "who": "joe", "text": "And a diplomatic meeting in Tehran brought officials from Iran, Saudi Arabia, Pakistan and Turkey together for security talks. They agreed to continue talking; no settlement or next meeting date was announced." }
+      ]
+    },
+    {
+      "id": "serbia", "kind": "story", "strap": "SERBIA'S STUDENT LIST LEADS IN PRELIMINARY COUNT", "headline": "Serbia's partial count puts student list ahead", "category": "SERBIA", "status": "observed",
+      "graphic": { "kicker": "SERBIA", "title": "Preliminary count, not a final allocation", "stats": [ { "label": "Student List", "value": "52.71%" }, { "label": "Vučić's list", "value": "39.17%" } ], "bullets": [ "Results from 8,187 of 8,392 stations", "Preliminary estimate: 140 seats to 104", "Final count still pending" ] },
+      "sources": [ { "name": "Reuters Brasil", "url": "https://www.reuters.com/pt/domestico/ZBN4UZAWTNJELL234PI5ZY2SWY-2026-10-26/" }, { "name": "Radio Television of Serbia", "url": "https://www.rts.rs/vesti/izbori-2026/6070169/rik-objavio-preliminarne-rezultate-izbora-studentska-lista-5271-ujedinjena-srbija-3917-odsto-glasova.html" } ],
+      "lines": [
+        { "who": "vex", "text": "Serbia's electoral commission has preliminary results from eight thousand one hundred eighty-seven of eight thousand three hundred ninety-two polling stations. The student-led list has fifty-two point seven one percent; President Aleksandar Vučić's list has thirty-nine point one seven." },
+        { "who": "joe", "text": "The preliminary seat estimate is one hundred forty for the student list and one hundred four for Vučić's list. The count is not final, and those seats are not a final allocation." }
+      ]
+    },
+    {
+      "id": "brazil", "kind": "story", "strap": "BRAZIL STOCKS FALL 13.88% AFTER LULA'S ELECTION WIN", "headline": "Brazil's first market day after the vote", "category": "BRAZIL", "status": "observed",
+      "graphic": { "kicker": "BRAZIL", "title": "Circuit breaker, steep selloff", "stats": [ { "label": "Ibovespa close", "value": "176,608.23" }, { "label": "Daily move", "value": "−13.88%" }, { "label": "Real", "value": "Down over 8%" } ], "bullets": [ "First B3 circuit breaker since March 2020", "Trading paused for 30 minutes", "Treasury cancelled auctions for Oct. 27–29" ] },
+      "sources": [ { "name": "MercoPress", "url": "https://en.mercopress.com/2026/10/26/brazil-s-real-plunges-more-than-8-and-s-o-paulo-stocks-slump-after-lula-s-victory" }, { "name": "Valor Econômico", "url": "https://valor.globo.com/financas/noticia/2026/10/26/ibovespa-passa-por-circuit-breaker-e-cai-quase-14percent-com-liquidacao-apos-vitoria-de-lula.ghtml" }, { "name": "Reuters Brasil, post-election update", "url": "https://www.reuters.com/pt/domestico/ZBN4UZAWTNJELL234PI5ZY2SWY-2026-10-26/" } ],
+      "lines": [
+        { "who": "vex", "text": "Brazil's Ibovespa fell thirteen point eight eight percent on Monday, closing at one hundred seventy-six thousand six hundred eight. The exchange halted trading for thirty minutes at the open, its first circuit breaker since March twenty twenty." },
+        { "who": "joe", "text": "The Brazilian real fell more than eight percent. The Treasury cancelled debt auctions planned for Tuesday through Thursday and intervened twice, according to the captured reporting." },
+        { "who": "vex", "text": "This was the first cash-market session after Luiz Inácio Lula da Silva's election win. His opponent, Flávio Bolsonaro, said he intended to seek annulment, but Reuters reported no court filing yet." }
+      ]
+    },
+    {
+      "id": "anthropic", "kind": "story", "strap": "ANTHROPIC FILES FOR IPO; PROPOSED SYMBOL ANT", "headline": "Anthropic files to go public", "category": "TECH", "status": "mixed",
+      "graphic": { "kicker": "TECH", "title": "S-1 filed, offering not yet effective", "stats": [ { "label": "First-half revenue", "value": "$16.3B" }, { "label": "Proposed ticker", "value": "ANT" } ], "bullets": [ "SEC accepted Form S-1 on Oct. 26", "Nasdaq Global Select Market planned", "Price range and share count undetermined", "Filing remains subject to SEC process" ] },
+      "sources": [ { "name": "Anthropic, S-1 announcement", "url": "https://www.anthropic.com/news/s1-sec" }, { "name": "SEC EDGAR filing index", "url": "https://www.sec.gov/Archives/edgar/data/2130357/000162828026067168/0001628280-26-067168-index.html" }, { "name": "Associated Press", "url": "https://apnews.com/article/anthropic-ipo-shares-public-ca2f4c282bef3201a392e59e3df2300c" }, { "name": "NPR", "url": "https://www.npr.org/2026/10/26/nx-s1-6014772/anthropic-ai-ipo-could-break-records" } ],
+      "lines": [
+        { "who": "vex", "text": "Anthropic filed a public registration statement with the Securities and Exchange Commission for a proposed initial public offering. The company says it plans to list on Nasdaq under the symbol A.N.T." },
+        { "who": "joe", "text": "The company says the number of shares and the price range have not been set, and the filing is not yet effective. This is paperwork toward an offering, not a completed stock listing." },
+        { "who": "vex", "text": "The Associated Press and N.P.R. report first-half revenue of sixteen point three billion dollars, against a net loss of about eighty-one billion, mostly accounting charges according to the company. The prospectus filing is the event; the offering still has steps to go." }
+      ]
+    },
+    {
+      "id": "gabon", "kind": "story", "strap": "FIVE STILL MISSING AFTER GABON DRILLING RIG SINKS", "headline": "Five people remain unaccounted for off Gabon", "category": "AFRICA", "status": "mixed",
+      "graphic": { "kicker": "GABON", "title": "Prospector 5 sank offshore", "stats": [ { "label": "Safe", "value": "110" }, { "label": "Unaccounted for", "value": "5" } ], "bullets": [ "Rig sank during preload on Oct. 24", "One death reported by Reuters sources", "Government had not confirmed a fatality" ] },
+      "sources": [ { "name": "Reuters", "url": "https://www.reuters.com/world/africa/borr-drilling-shares-fall-after-rig-sinks-offshore-gabon-2026-10-26/" } ],
+      "lines": [
+        { "who": "joe", "text": "A drilling rig sank off Gabon on Saturday. Its operator, Borr Drilling, says one hundred ten of the one hundred fifteen people aboard are safe. Five remain unaccounted for." },
+        { "who": "vex", "text": "Reuters, citing sources, reported one death. Gabon's government had not confirmed that report in the captured account. The rig sank during a preload operation before drilling." }
+      ]
+    },
+    {
+      "id": "nairobi", "kind": "story", "strap": "47 REPORTED MISSING AFTER NAIROBI BUILDING COLLAPSE", "headline": "Search continues after Eastleigh collapse", "category": "KENYA", "status": "mixed",
+      "graphic": { "kicker": "KENYA", "title": "Day four of rescue operation", "stats": [ { "label": "Reported missing", "value": "47" }, { "label": "Rescued from debris", "value": "2" } ], "bullets": [ "Kenya Red Cross figures", "Prosecutors say inquiry file was not forwarded" ] },
+      "sources": [ { "name": "People Daily", "url": "https://peopledaily.digital/news/45-people-still-missing-as-eastleigh-building-collapse-rescue-enters-day-4" } ],
+      "lines": [
+        { "who": "vex", "text": "In Nairobi's Eastleigh district, the Kenya Red Cross says forty-seven people are reported missing after a building collapse. Two people have been rescued from the debris as the search enters its fourth day." },
+        { "who": "joe", "text": "Kenya's prosecution service says the county never forwarded an inquiry file. The rescue count and that accountability question are both still moving." }
+      ]
+    },
+    {
+      "id": "new-mexico", "kind": "weather", "strap": "NEW MEXICO FLOODWATERS RECEDE; RECOVERY HAZARDS REMAIN", "headline": "Four Corners begins a difficult recovery", "category": "WEATHER", "status": "observed",
+      "graphic": { "kicker": "WEATHER", "title": "Flooding leaves closures and hazards", "bullets": [ "San Juan River levels falling", "Hundreds of homes affected, report says", "Shiprock bridge and road closures remain", "Power out south of the river" ] },
+      "sources": [ { "name": "KSUT", "url": "https://ksut.org/news/2026-10-26/after-torrential-flooding-san-juan-county-new-mexico-faces-new-hazards-and-millions-in-recovery-costs" }, { "name": "AccuWeather", "url": "https://accuweather.com/en/weather-news/floods-rescues-and-a-tornado-four-corners-storms-leave-a-trail-of-destruction/1951072" }, { "name": "Yahoo News, road and power update", "url": "https://www.yahoo.com/news/weather-news/articles/flood-warnings-active-heavy-rain-144908436.html" } ],
+      "lines": [
+        { "who": "joe", "text": "Floodwaters are receding across northwestern New Mexico, but the Four Corners region is far from back to normal. Evacuated neighborhoods remain closed, and hundreds of homes were affected, according to AccuWeather." },
+        { "who": "vex", "text": "K.S.U.T. reports the San Juan River at Farmington rose to thirteen times its usual size, breaking a record set in nineteen oh nine. Sewage and chemical contamination are among the recovery hazards." },
+        { "who": "joe", "text": "The bridge on U.S. sixty-four at Shiprock remains closed, another stretch of U.S. sixty-four is shut, and power is still out south of the river. No deaths had been reported through Monday." }
+      ]
+    },
+    {
+      "id": "cyclone", "kind": "weather", "strap": "INDIA MOVES THOUSANDS AHEAD OF CYCLONE ARNAB", "headline": "Cyclone preparations spread across eastern India", "category": "WEATHER", "status": "observed",
+      "graphic": { "kicker": "WEATHER", "title": "Evacuations and transport plans", "stats": [ { "label": "Pregnant women moved", "value": "210" }, { "label": "More planned for relocation", "value": "4,711" }, { "label": "Shelters identified", "value": "281" } ], "bullets": [ "Odisha and Andhra Pradesh prepare", "Fishing boats return to harbour", "Rail cancellations listed for Oct. 27 and 28" ] },
+      "sources": [ { "name": "Hindustan Times", "url": "https://www.hindustantimes.com/india-news/cyclone-arnab-live-updates-imd-alert-andhra-pradesh-odisha-rains-cyclone-tracker-landfall-date-time-weather-today-101792986502571.html" } ],
+      "lines": [
+        { "who": "vex", "text": "Authorities in eastern India are preparing for Cyclone Arnab. In Odisha's Gajapati district, two hundred ten pregnant women have been moved to maternity or health facilities. Andhra Pradesh plans to move more than four thousand seven hundred." },
+        { "who": "joe", "text": "Officials have identified fifteen thousand vulnerable people and two hundred eighty-one shelters in Gajapati. More than thirty thousand fishing boats have returned to Andhra harbours, and rail services listed dozens of cancellations." }
+      ]
+    },
+    {
+      "id": "kenya-ebola", "kind": "story", "strap": "KENYA RELEASES 20 EBOLA CONTACTS; 98 REMAIN QUARANTINED", "headline": "Kenya eases Ebola quarantine for some contacts", "category": "HEALTH", "status": "observed",
+      "graphic": { "kicker": "HEALTH", "title": "Twenty contacts complete quarantine", "stats": [ { "label": "Contacts released", "value": "20" }, { "label": "Still quarantined", "value": "98" }, { "label": "Cases / deaths", "value": "9 / 2" } ], "bullets": [ "Released after 21 symptom-free days", "Further releases expected in November" ] },
+      "sources": [ { "name": "SABC News", "url": "https://www.sabcnews.com/sabcnews/kenya-releases-first-ebola-contacts-from-quarantine/" }, { "name": "ECDC", "url": "https://www.ecdc.europa.eu/en/ebola-disease-multi-country-outbreak-2026" }, { "name": "CIDRAP", "url": "https://www.cidrap.umn.edu/ebola/kenya-reports-2nd-ebola-death-nigeria-races-understand-transmission-index-patient" } ],
+      "lines": [
+        { "who": "vex", "text": "Kenya released twenty Ebola contacts from quarantine after they completed twenty-one days without symptoms. Ninety-eight contacts remain quarantined, according to the captured reporting." },
+        { "who": "joe", "text": "Kenya had reported nine cases and two deaths. Those releases are a step in monitoring; they do not mean the outbreak is over." }
+      ]
+    },
+    {
+      "id": "sudan", "kind": "story", "strap": "UK SANCTIONS 15 SUDANESE COMMANDERS OVER ATROCITY CLAIMS", "headline": "UK targets commanders from Sudan's warring forces", "category": "SUDAN", "status": "observed",
+      "graphic": { "kicker": "SUDAN", "title": "Travel bans and asset freezes", "bullets": [ "Fifteen RSF and SAF commanders sanctioned", "UK cites suspected atrocities and sexual violence", "One year since El Fasher fell" ] },
+      "sources": [ { "name": "UK Foreign, Commonwealth and Development Office", "url": "https://www.gov.uk/government/news/uk-sanctions-senior-commanders-implicated-in-campaign-of-rape-in-sudan-and-unveils-new-support-for-survivors" } ],
+      "lines": [
+        { "who": "joe", "text": "The United Kingdom has sanctioned fifteen commanders from Sudan's Rapid Support Forces and Sudanese Armed Forces, imposing travel bans and asset freezes." },
+        { "who": "vex", "text": "The U.K. government says the sanctions respond to suspected atrocities, including sexual violence, a year after the fall of El Fasher." }
+      ]
+    },
+    {
+      "id": "microsoft", "kind": "story", "strap": "MICROSOFT OFFERS VOLUNTARY EXITS TO ABOUT 60,000 STAFF", "headline": "Microsoft offers voluntary exit packages", "category": "BUSINESS", "status": "claim",
+      "graphic": { "kicker": "BUSINESS", "title": "Exit offer reaches about 27% of workforce", "stats": [ { "label": "Employees eligible", "value": "~60,000" }, { "label": "Share of workforce", "value": "~27%" } ], "bullets": [ "United States, Canada, India and UK", "Company cites changing work and AI investment" ] },
+      "sources": [ { "name": "Associated Press", "url": "https://apnews.com/article/c5a639f53615be198db1799adf6837e1" } ],
+      "lines": [
+        { "who": "vex", "text": "The Associated Press reports Microsoft offered voluntary exit packages to about sixty thousand employees, around twenty-seven percent of its global workforce." },
+        { "who": "joe", "text": "The offer spans the United States, Canada, India and the United Kingdom. Microsoft says its work is changing and it is investing in artificial intelligence." }
+      ]
+    },
+    {
+      "id": "cyber", "kind": "story", "strap": "JAPANESE CLOUD CYBERATTACK MAY AFFECT 26,739 SERVERS", "headline": "Japanese provider reports a large cloud attack", "category": "CYBER", "status": "claim",
+      "graphic": { "kicker": "CYBER", "title": "GMO Internet describes possible server impact", "stats": [ { "label": "Servers potentially affected", "value": "26,739" }, { "label": "Firms with unauthorized trading", "value": "70+" } ], "bullets": [ "Company says attack hit cloud service", "CEO says ransom demand was $50 million" ] },
+      "sources": [ { "name": "Euronews", "url": "https://www.euronews.com/2026/10/26/japanese-company-to-compensate-users-hit-by-cyberattack" } ],
+      "lines": [
+        { "who": "vex", "text": "GMO Internet says a cyberattack on its cloud service may have affected twenty-six thousand seven hundred thirty-nine servers. The company linked the incident to unauthorized trading at more than seventy firms." },
+        { "who": "joe", "text": "Euronews reports the company's chief executive said the attackers demanded fifty million dollars in cryptocurrency. Those figures are company and press claims; the impact count is described as potential." }
+      ]
+    },
+    {
+      "id": "sports", "kind": "sports", "strap": "MILWAUKEE LEADS SERIES 3–0; DALLAS BEATS PHILADELPHIA", "headline": "A lopsided night in baseball and football", "category": "SPORTS", "status": "claim",
+      "graphic": { "kicker": "SPORTS", "title": "Brewers one win from the title", "bullets": [ "Milwaukee beats Tampa Bay 10–1 in Game 3", "Brewers lead World Series 3–0", "Dallas defeats Philadelphia 38–21", "NBA signs multi-year Polymarket and Kalshi deals" ] },
+      "sources": [ { "name": "Associated Press, World Series", "url": "https://apnews.com/article/brewers-rays-world-series-game-3-98d87738b9ec8ce2f9938919b948c178" }, { "name": "ClickOrlando, Cowboys-Eagles", "url": "https://www.clickorlando.com/sports/2026/10/27/dak-prescott-throws-3-td-passes-javonte-williams-runs-for-155-yards-as-cowboys-beat-eagles-38-21/" }, { "name": "Associated Press, NBA partnerships", "url": "https://apnews.com/article/2f3d8132125501d6859bcd819c4c78fa" }, { "name": "The Verge, NBA partnerships", "url": "https://www.theverge.com/entertainment/1018818/nba-kalshi-polymarket" } ],
+      "lines": [
+        { "who": "vex", "text": "In the World Series, Milwaukee beat Tampa Bay ten to one in Game Three and now leads three games to none. The Associated Press says Brandon Woodruff returned after a shoulder injury." },
+        { "who": "joe", "text": "Dallas beat Philadelphia thirty-eight to twenty-one on Monday night. The Cowboys turned a Monday into a good one; the Eagles are having the opposite sort of week." },
+        { "who": "vex", "text": "The N.B.A. also signed multi-year deals with prediction-market operators Polymarket and Kalshi. The terms were not disclosed." }
+      ]
+    },
+    {
+      "id": "science", "kind": "story", "strap": "NASA AND USDA EXPAND EARTH DATA FOR FARMING", "headline": "NASA and USDA widen agriculture data work", "category": "SCIENCE", "status": "observed",
+      "graphic": { "kicker": "SCIENCE", "title": "Earth observations for crops and disasters", "bullets": [ "New memorandum between NASA and USDA", "Crop estimates and drought assessment", "Support disaster assessment with geospatial data" ] },
+      "sources": [ { "name": "NASA", "url": "https://www.nasa.gov/news-release/nasa-usda-sign-agreement-advancing-earth-science-agriculture/" } ],
+      "lines": [
+        { "who": "joe", "text": "NASA and the U.S. Department of Agriculture signed an agreement to expand the use of Earth observation and mapping data in agriculture." },
+        { "who": "vex", "text": "The agencies say the work will support crop estimates, drought monitoring and disaster assessment. They signed the agreement on October twenty-fourth; NASA announced it Monday." }
+      ]
+    },
+    {
+      "id": "also-today", "kind": "story", "strap": "ALSO TODAY: OIL, THE FED, AND A TECH SCREEN", "headline": "Also today", "category": "QUICK HITS", "status": "mixed",
+      "graphic": { "kicker": "ALSO TODAY", "title": "A few more items from the captures", "bullets": [ "Fed expected to hold rates Wednesday, AP says", "Brent settled near $116 a barrel Monday", "Reels arrive on Apple TV, The Verge reports", "Apple acknowledges an iPhone Duo display issue" ] },
+      "sources": [ { "name": "Associated Press, Fed preview", "url": "https://apnews.com/article/991eeb23f8acd1e84b11de9b35278681" }, { "name": "CNBC, oil prices", "url": "https://www.cnbc.com/2026/10/26/oil-prices-today-wti-brent.html" }, { "name": "The Verge, Instagram Reels on Apple TV", "url": "https://www.theverge.com/tech/1018253/now-you-can-watch-instagram-reels-on-your-apple-tv" }, { "name": "The Verge, Apple acknowledges display issue", "url": "https://www.theverge.com/tech/1018760/iphone-duo-crackgate-inside-screen-hinge-crack" }, { "name": "The Jerusalem Post, UKMTO fire report", "url": "https://www.jpost.com/middle-east/iran-news/2026-10-26/live-updates-912856" }, { "name": "Reuters, France arrest and injury count", "url": "https://www.reuters.com/pt/domestico/ZBN4UZAWTNJELL234PI5ZY2SWY-2026-10-26/" } ],
+      "lines": [
+        { "who": "vex", "text": "The Associated Press says Federal Reserve policymakers are likely to leave the key interest rate unchanged Wednesday. That is a preview, not the decision." },
+        { "who": "joe", "text": "Brent crude settled at about one hundred sixteen dollars a barrel Monday after topping one hundred seventeen intraday, according to C.N.B.C." },
+        { "who": "vex", "text": "From the M.S.I. headline capture: The Verge reports Instagram Reels can now be watched on Apple TV, and says Apple acknowledged an iPhone Duo display issue after reports of cracked screens." },
+        { "who": "joe", "text": "The Jerusalem Post reports the U.K. Maritime Trade Operations office logged a vessel on fire off Iraq's coast. The capture did not identify the vessel, cause or casualties. And Reuters reports France's interior minister counted one thousand four hundred thirty-five arrests and two hundred sixty-seven officers injured in Monday's protest unrest." }
+      ]
+    },
+    {
+      "id": "wire", "kind": "wire", "strap": "LIVE WIRE", "headline": "Live headlines", "category": "WIRE", "graphic": { "kicker": "LIVE WIRE", "title": "More headlines as they come in" }, "lines": []
+    },
+    {
+      "id": "close", "kind": "close", "strap": "THAT'S HEARTBEAT NEWS", "headline": "Until the next show", "category": "SIGN-OFF", "graphic": { "kicker": "SIGN-OFF", "title": "A new show every day by morning" },
+      "lines": [ { "who": "joe", "text": "That's Heartbeat News. A new show every day by morning." }, { "who": "vex", "text": "I'm AI Robot Vex." }, { "who": "joe", "text": "And I'm Alien Joe. Take care of each other." } ]
+    }
+  ]
+}
