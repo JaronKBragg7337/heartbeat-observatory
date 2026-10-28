@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#19251f">
+  <meta name="description" content="Move through an imagined fifty years on an Indiana highway after people stop maintaining it.">
+  <title>How a highway disappears · Heartbeat Observatory</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="masthead"><a href="https://heartbeatobservatory.com/">HEARTBEAT <span>OBSERVATORY</span></a><span class="masthead-right">AN INTERACTIVE FIELD NOTE <b>01</b></span></header>
+  <main>
+    <section class="intro wrap">
+      <div class="eyebrow"><span class="dot"></span> A LITTLE EXPERIMENT IN TIME</div>
+      <h1>How a highway<br><em>disappears.</em></h1>
+      <div class="intro-bottom"><p>One stretch of road. No more mowing, patching, or clearing the drains. What might happen next?</p><span class="intro-mark">INDIANA, IMAGINED<br>0 — 50 YEARS</span></div>
+    </section>
+
+    <section class="experience wrap" aria-label="Explore the highway through time">
+      <div class="scene" id="scene">
+        <div class="scene-image"></div><div class="scene-image scene-old" id="oldScene"></div><div class="scene-shade"></div>
+        <div class="scene-top"><span><span class="live-dot"></span> THE SAME STRETCH OF ROAD</span><span>LOOKING FORWARD IN TIME</span></div>
+        <div class="scene-year"><span>YEAR</span><strong id="yearVisual">00</strong></div>
+        <div class="scene-caption"><span id="scenePhase">THE ROAD TODAY</span><span>AN ILLUSTRATION, NOT A PREDICTION</span></div>
+      </div>
+      <div class="controls">
+        <div class="control-heading"><div><span class="small-label">MOVE THROUGH TIME</span><p>Drag the line and watch the road change.</p></div><button id="play" type="button" aria-label="Play timeline"><span id="playIcon" aria-hidden="true">▶</span> <span id="playText">PLAY</span></button></div>
+        <div class="range-wrap"><input id="timeline" type="range" min="0" max="50" value="0" step="1" aria-label="Years since maintenance stopped" aria-valuetext="Year 0"><div class="ticks" aria-hidden="true"><span>NOW</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50 YEARS</span></div></div>
+      </div>
+      <div class="story" aria-live="polite" aria-atomic="true"><div class="story-index"><span>FIELD NOTE</span><strong id="storyIndex">01 / 05</strong></div><div><p class="story-time" id="storyTime">YEAR 0 · THE BEGINNING</p><h2 id="storyTitle">The last ordinary day.</h2><p id="storyBody">The lanes are clear, the shoulders are cut, and water has somewhere to go. From here on, this road is on its own.</p></div><div class="story-symbol" aria-hidden="true">↗</div></div>
+      <p class="estimate"><span>✳</span> These years are an imagined path, not a timetable. Climate, pavement, nearby plants, and chance all change what happens.</p>
+    </section>
+
+    <section class="context wrap"><div><div class="eyebrow"><span class="dot"></span> THE IDEA BEHIND THE SCENE</div><h2>Nature doesn’t need<br><em>an invitation.</em></h2></div><div class="context-copy"><p>It starts at the edges. Grass grows tall; leaves and soil collect in the places we used to clear. Water finds openings in the pavement. Over time, plants find places to take root.</p><p>Researchers studying abandoned roads in British Columbia found that plant cover changed with time and differed between asphalt and gravel. This is one possible Indiana story, made to explore—not a forecast for every road.</p><div class="links"><a href="https://heartbeatobservatory.com/tv/science/science-ep4-highway-disappears.mp4">WATCH THE SCIENCE EPISODE <span>↗</span></a><a href="https://unbc.arcabc.ca/_flysystem/repo-bin/2023-01/unbc_59348.pdf">READ THE ROAD STUDY <span>↗</span></a></div></div></section>
+  </main>
+  <footer class="wrap"><a href="https://heartbeatobservatory.com/">HEARTBEAT OBSERVATORY</a><span>MADE FOR THE CURIOUS · KEEP LOOKING CLOSER</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>
