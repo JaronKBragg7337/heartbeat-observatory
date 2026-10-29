@@ -1,7 +1,7 @@
 /* ============================================================================
    world3/main.js — Ashgrove, wearing the Observatory shell
    ---------------------------------------------------------------------------
-   The town under town/ is an unmodified copy of the ashgrove-npc-online repo,
+   The town under town/ is adapted from the ashgrove-npc-online repo,
    guards and all (run `node tools/layers.js` from town/ and it still passes).
    Nothing in here edits it. This file is the seam:
 
@@ -189,6 +189,13 @@ const shell = window.HBShell.mount({
 
   onSettings(s) {
     document.body.classList.toggle("dev", !!s.dev);
+    if (!s.dev) {
+      if (T.Edit && T.Edit.on) T.Edit.toggle(false);
+      if (T.Debug) T.Debug.on = false;
+      if (T.Tour && T.Tour.on) T.Tour.stop();
+      if (T.Cam && T.Cam.mode !== "fps") T.Cam.exit();
+      if (T.Player) T.Player.noclip = false;
+    }
     if (T.Settings) {
       T.Settings.sens = s.sensitivity;
       T.Settings.invertY = s.invertY;
@@ -410,6 +417,7 @@ if (T.Edit) {
   shell.addApp({
     id: "edit", glyph: "✥", label: "Edit",
     onOpen() {
+      if (!document.body.classList.contains("dev")) return;
       T.Edit.toggle(!T.Edit.on);
       shell.setPrompt(T.Edit.on
         ? "Edit mode — point at furniture, drag to move. Open the phone again to stop."
@@ -489,5 +497,5 @@ window.__world3 = {
 };
 
 console.log("%cWORLD3", "color:#8fd0ff;font-weight:bold",
-  "Ashgrove mounted on the Observatory shell — town/ is an unmodified copy");
+  "Ashgrove mounted on the Observatory shell");
 })();

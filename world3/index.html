@@ -18,7 +18,7 @@
   #load{ position:fixed; inset:0; z-index:50; background:#0b0e13; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:14px; transition:opacity .5s; }
   #load h1{ font:600 15px/1.4 ui-monospace,monospace; letter-spacing:.28em; margin:0; color:var(--acc); }
-  #load .bar{ width:min(300px,70vw); height:3px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; }
+  #load .bar{ width:min(300px,70vw); height:8px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; }
   #load .bar i{ display:block; height:100%; width:0%; background:var(--acc); transition:width .18s; }
   #load p{ margin:0; opacity:.55; font-size:11px; letter-spacing:.06em; }
 
@@ -166,6 +166,13 @@
   #prompt { display:none !important; }
   #load { background:#080b10; }
   #load h1 { letter-spacing:.3em; }
+  body:not(.dev) .dev-only, body.dev .visitor-only,
+  body:not(.dev) .hbs-app[data-id="edit"],
+  body:not(.dev) #dbg, body:not(.dev) #editbar,
+  body:not(.dev) #orbitbar, body:not(.dev) #tourbar { display:none !important; }
+  #load { z-index:100; }
+  #load p { max-width:86vw; text-align:center; }
+  #town, #help { z-index:75; }
 </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
 <script defer src="/_vercel/insights/script.js"></script>
@@ -301,7 +308,14 @@
 <div class="panel" id="help">
   <div class="btn close" id="bClose">CLOSE</div>
   <h2>ASHGROVE</h2>
-  <div style="opacity:.65">A walkable town. 13 house types, three of each, plus 10 civic buildings — 49 in all, and every one has a solved interior you can walk room to room — and the town's people and their pets walk it alongside you.</div>
+  <div class="visitor-only">
+    <p>A walkable town with <span data-town-count>49 founding</span> buildings, residents and pets. New homes can be added as the town grows.</p>
+    <p>Walk with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, look with the mouse, and press <kbd>E</kbd> to use a door or talk to someone. <kbd>Space</kbd> jumps.</p>
+    <p>On a phone, drag the left side to walk and the right side to look. Tap Enter when a door or person is within reach.</p>
+    <p><kbd>J</kbd> opens town status. The menu holds settings; the phone holds places and messages.</p>
+  </div>
+  <div class="dev-only">
+  <div style="opacity:.65">A walkable town. 13 house types, three of each, plus 10 civic buildings — 49 founding buildings, plus later growth, and every one has a solved interior you can walk room to room — and the town's people and their pets walk it alongside you.</div>
 
   <h4>LIVING TOWN</h4>
   <div>Ashgrove keeps a 24-minute town day that begins at breakfast when you arrive: people walk to work, school, the shops and the park, dogs tag along on errands, cats hold the yard. Face someone and <kbd>E</kbd> talks to them. At the builders' yard you can take the builder seat (<kbd>E</kbd>), work a shift each day (<kbd>E</kbd>), or hand it back (<kbd>Q</kbd>) — skip about four days and the builder you displaced reclaims it.</div>
@@ -359,15 +373,36 @@
 
   <h4>WHY THE HOUSES DON'T BREAK</h4>
   <div>No blueprints were scraped. Each floorplan is solved at runtime against a real dimension code book (door 813×2032, ceiling 2440, hall ≥1067, bedroom ≥7.0&nbsp;m² + egress window, stair 190.5/254) and then validated: room area, hall width, reachability from the front door, and float/bury against the slab. Failures are printed in the inspection panel instead of silently shipping.</div>
+  </div>
 </div>
 
 <div id="load">
   <h1>ASHGROVE</h1>
-  <div class="bar"><i id="loadBar"></i></div>
-  <p id="loadMsg">initialising</p>
+  <div class="bar" role="progressbar" aria-label="Loading Ashgrove" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="loadBar"></i></div>
+  <p id="loadMsg" role="status">Loading town files · 0 complete</p>
 </div>
 
 <script>
+window.HB_WORLD3 = true;
+// Resource completions and finished build stages, never a timer-driven estimate.
+window.HBLoading = (() => {
+  let completed = 0, current = 0;
+  const total = 35;
+  function show(p, message) {
+    current = Math.max(current, p);
+    const percent = Math.round(current * 100);
+    document.getElementById("loadBar").style.width = percent + "%";
+    document.querySelector("#load .bar").setAttribute("aria-valuenow", percent);
+    document.getElementById("loadMsg").textContent = message;
+  }
+  return {
+    resource() { show(0.25 * ++completed / total, `Loaded ${completed} of ${total} town files`); },
+    stage(p, message) { show(0.25 + p * 0.75, message); },
+    error() { document.getElementById("loadMsg").textContent = "A town file could not load. Reload to try again."; }
+  };
+})();
+// This must also run on a first visit, when there is no saved town to migrate.
+try { localStorage.setItem("ashgrove-seen", "1"); } catch (_) {}
 /* World 3 shared-world migration. Runs BEFORE the town boots.
    Until 2026-08-06 each browser founded Ashgrove with its own genesis
    timestamp, so every player had a town with a different birthday, a
@@ -390,51 +425,43 @@
     }
   } catch (e) { try { localStorage.removeItem(KEY); } catch (_) {} }
 
-  /* The town opens its own help panel on a first visit (render/main.js: if
-     !localStorage["ashgrove-seen"]). That panel is written for the standalone
-     build and is mostly developer keys — G inspect, M edit, O orbit, F tour —
-     which World 3 keeps switched off. Seeing it full-screen is the first
-     thing a new player meets, and it describes controls they do not have.
-     Mark it seen so it never auto-opens here; H still summons it, and the
-     shell menu is where a player is meant to look. */
-  try { localStorage.setItem("ashgrove-seen", "1"); } catch (_) {}
 })();
 </script>
-<script src="town/render/core.js?v=8"></script>
-<script src="town/render/textures.js?v=8"></script>
-<script src="town/render/geom.js?v=8"></script>
-<script src="town/render/plan.js?v=8"></script>
-<script src="town/render/furniture.js?v=8"></script>
-<script src="town/render/buildings.js?v=10"></script>
-<script src="town/render/props.js?v=8"></script>
-<script src="town/render/town.js?v=9"></script>
-<script src="town/render/settings.js?v=1"></script>
-<script src="town/render/player.js?v=9"></script>
-<script src="town/render/debug.js?v=8"></script>
-<script src="town/render/camera.js?v=8"></script>
-<script src="town/render/edit.js?v=8"></script>
-<script src="town/render/npcs.js?v=5"></script>
-<script src="town/sim/rng.js?v=1"></script>
-<script src="town/sim/canonical.js?v=1"></script>
-<script src="town/sim/clock.js?v=1"></script>
-<script src="town/sim/ids.js?v=1"></script>
-<script src="town/sim/organisms.js?v=1"></script>
-<script src="town/sim/people.js?v=1"></script>
-<script src="town/sim/jobs.js?v=1"></script>
-<script src="town/sim/demand.js?v=1"></script>
-<script src="town/sim/resources.js?v=1"></script>
-<script src="town/sim/engine.js?v=1"></script>
-<script src="town/sim/pets.js?v=1"></script>
-<script src="town/sim/ambient.js?v=2"></script>
-<script src="town/world/registry.js?v=1"></script>
-<script src="town/world/growth.js?v=1"></script>
-<script src="town/world/streets.js?v=1"></script>
-<script src="town/world/bootstrap.js?v=2"></script>
-<script src="cinema.js?v=1"></script>
-<script src="town/render/main.js?v=10"></script>
-<script src="/shell/shell.js?v=6"></script>
-<script src="destinations.js?v=1"></script>
-<script src="main.js?v=9"></script>
+<script defer src="town/render/core.js?v=8" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/textures.js?v=8" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/geom.js?v=8" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/plan.js?v=8" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/furniture.js?v=8" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/buildings.js?v=10" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/props.js?v=8" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/town.js?v=2026-10-28-visitors" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/settings.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/player.js?v=9" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/debug.js?v=8" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/camera.js?v=8" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/edit.js?v=8" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/npcs.js?v=5" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/rng.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/canonical.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/clock.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/ids.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/organisms.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/people.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/jobs.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/demand.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/resources.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/engine.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/pets.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/sim/ambient.js?v=2" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/world/registry.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/world/growth.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/world/streets.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/world/bootstrap.js?v=2" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="cinema.js?v=2026-10-28-visitors" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="town/render/main.js?v=2026-10-28-visitors" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="/shell/shell.js?v=6" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="destinations.js?v=1" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
+<script defer src="main.js?v=2026-10-28-visitors" onload="HBLoading.resource()" onerror="HBLoading.error()"></script>
 <script defer src="/hb-editor.js"></script>
 <script defer src="/bubble.js"></script>
 </body>

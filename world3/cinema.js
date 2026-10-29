@@ -295,6 +295,14 @@ T.Town.build = function () {
   try { emitCinema(); } catch (e) { console.error("Grand Palace not placed", e); }
   return out;
 };
+// The first-arrival loader yields between buildings; keep its cinema identical
+// to synchronous growth/reload builds.
+const buildTownAsync = T.Town.buildAsync;
+T.Town.buildAsync = async function () {
+  const out = await buildTownAsync.apply(this, arguments);
+  try { emitCinema(); } catch (e) { console.error("Grand Palace not placed", e); }
+  return out;
+};
 
 /* ---------------------------------------------------------------- doors - */
 const CINEMA = {

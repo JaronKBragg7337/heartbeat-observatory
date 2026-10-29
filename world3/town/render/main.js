@@ -324,7 +324,9 @@ const TownPanel = (T.TownPanel = {
     let out = row("day", st.day) +
       row("population", alive) +
       row("households", Object.keys(st.households).length) +
-      row("buildings", T.Town.buildingCount);
+      row("buildings now", T.Town.buildingCount) +
+      row("founding buildings", T.Town.buildings.filter((b) => !b.growth).length) +
+      row("added since founding", T.Town.buildings.filter((b) => b.growth).length);
 
     /* stocks. state.counters are LIFETIME totals (sim/resources.js step 8.4),
        so the day's net rate is derived here from live state instead:
@@ -367,10 +369,11 @@ const TownPanel = (T.TownPanel = {
     }
     out += `</div>`;
 
-    const evs = st.events.slice(-8).reverse();
+    const dev = !window.HB_WORLD3 || document.body.classList.contains("dev");
+    const evs = st.events.filter((e) => dev || !["growth-complete", "growth-rejected", "growth-unplaceable"].includes(e.type)).slice(-8).reverse();
     out += `<div class="sec"><h3>RECENT EVENTS</h3>` +
       (evs.length
-        ? evs.map((e) => `<div class="ev"><b>d${e.day}</b>  ${esc(e.msg)}</div>`).join("")
+        ? evs.map((e) => `<div class="ev"><b>Day ${e.day}</b>  ${esc(e.msg)}</div>`).join("")
         : `<div class="row"><span>nothing yet</span></div>`) +
       `</div>`;
     body.innerHTML = out;
@@ -467,6 +470,7 @@ const wait = () => new Promise((r) => {
   setTimeout(go, 60);
 });
 function setLoad(p, msg) {
+  if (window.HBLoading) { window.HBLoading.stage(p, msg); return; }
   document.getElementById("loadBar").style.width = (p * 100).toFixed(0) + "%";
   if (msg) document.getElementById("loadMsg").textContent = msg;
 }
@@ -499,7 +503,7 @@ async function boot() {
     const doc = window.ASH && ASH.worldLoad(localStorage);
     if (doc && doc.records && doc.records.length) worldRecords = doc.records;
   } catch (e) { console.error("world records unreadable; founding town only", e); }
-  T.Town.build(20260804, (p, msg) => {}, worldRecords);
+  await T.Town.buildAsync(20260804, (p, msg) => setLoad(0.28 + p * 0.32, `Building ${msg}`), worldRecords, wait);
 
   try {
     if (window.ASH) {
@@ -642,6 +646,7 @@ async function boot() {
   T.Edit.bind(canvas);
   T.Cam.bind(canvas);
   T.Player.reset(T.Town.spawn);
+  document.querySelectorAll("[data-town-count]").forEach((el) => { el.textContent = T.Town.buildingCount; });
   T.Player.bindInput(canvas);
   if (T.mobile) document.body.classList.add("touch");
   /* coarse pointers have no Esc key: the ✕ MENU button (index.html #bMenu)
@@ -683,6 +688,7 @@ async function boot() {
 }
 
 function toggleHelp(force) {
+  document.querySelectorAll("[data-town-count]").forEach((el) => { el.textContent = T.Town.buildingCount; });
   const h = document.getElementById("help");
   const show = force === undefined ? h.style.display !== "block" : force;
   h.style.display = show ? "block" : "none";
@@ -690,6 +696,8 @@ function toggleHelp(force) {
 
 T.onKey = function (e) {
   if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+  if (window.HB_WORLD3 && !document.body.classList.contains("dev") &&
+      ["KeyG", "KeyM", "KeyO", "KeyF", "KeyT", "KeyC", "KeyV", "KeyN", "KeyP", "KeyR", "Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Comma", "Period"].includes(e.code)) return;
   switch (e.code) {
     case "KeyG": T.toggleDebug(); break;
     case "KeyH": case "Slash": toggleHelp(); break;

@@ -329,7 +329,7 @@ function allocate(entries, lots, issues) {
 /* ========================================================================= */
 /* BUILD                                                                     */
 /* ========================================================================= */
-Town.build = function (seed, progress, growth) {
+function* buildSteps(seed, progress, growth) {
   const rnd = T.rng(seed || 1337);
   W.reset(); P.resetIds(); Town.chunks.clear();
   Town.buildings = [];
@@ -372,7 +372,9 @@ Town.build = function (seed, progress, growth) {
     lot.building = B;
     yardFor(B, lot, ch, rnd);
     idx++;
-    if (progress) progress(++n / total, `${def.label} ${id}`);
+    const step = { progress: ++n / total, message: `${def.label} ${id}` };
+    if (progress) progress(step.progress, step.message);
+    yield step;
   }
   /* ---- growth buildings, appended from world records ---------------------
      These arrive as plain records ({ id, key, lot: { block, index } }) from
@@ -438,6 +440,17 @@ Town.build = function (seed, progress, growth) {
   const hall = Town.buildings.find((b) => b.def.key === "townHall") || Town.buildings[0];
   const s = Town.spawnFor(hall);
   Town.spawn = s;
+  return Town;
+}
+
+// Keep simulation rebuilds synchronous; first arrival yields between buildings
+// so completed work can actually paint in the loading bar.
+Town.build = function (seed, progress, growth) {
+  for (const step of buildSteps(seed, progress, growth)) { /* consume */ }
+  return Town;
+};
+Town.buildAsync = async function (seed, progress, growth, pause) {
+  for (const step of buildSteps(seed, progress, growth)) await pause();
   return Town;
 };
 

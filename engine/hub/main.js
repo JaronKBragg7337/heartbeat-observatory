@@ -86,7 +86,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-08-03-surface5"; // bumped with ?v= in hub HTML on every deploy so no browser runs stale code
+const BUILD = "2026-10-28-visitors"; // matches the main.js version in hub HTML
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 // Declared up here, not beside installWindowAssemblies(): updateDayNight() runs
@@ -176,7 +176,6 @@ let outScore = 0;
 let scoreboardEl = null;
 let lastBoardRender = 0;
 const PAINT_COLORS = [0xe23b4e, 0x36d07a, 0x4a86e8, 0xf2c94c, 0xb24ae8];
-const _vmOff = new THREE.Vector3();
 const projectiles = [];
 const snowPuffs = [];
 const paintSplats = [];
@@ -244,6 +243,7 @@ scene.fog = new THREE.Fog(0xaebfc6, 42, 104);
 
 const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerHeight, 0.08, 160);
 camera.rotation.order = "YXZ";
+scene.add(camera); // held objects inherit the camera transform, once
 
 const renderer = new THREE.WebGLRenderer({
   canvas,
@@ -263,7 +263,7 @@ renderer.toneMappingExposure = 1.02;
 loadSurfaceTextures(renderer);
 
 // Deterministic time-of-day for screenshots and regression diffing.
-// The day/night cycle is 300 s wall-clock, so two captures taken minutes apart
+// The day/night cycle is one real hour, so captures taken minutes apart
 // land at different sun elevations and cannot be compared. ?tod=0..1 pins it.
 // Dev-gated: players always get the live cycle.
 const HB_TOD = (() => {
@@ -768,9 +768,7 @@ pantsSwatches?.querySelectorAll("[data-pants]").forEach((button) => {
   button.addEventListener("click", () => { setMyAppearance({ ...myAppearance, pants: button.dataset.pants }); });
 });
 
-canvas.addEventListener("click", () => {
-  if (!isTouch && !settingsOpen && document.pointerLockElement !== canvas) enterTown();
-});
+// Canvas drags look around without changing fullscreen or capturing the mouse.
 
 document.addEventListener("pointerlockchange", () => {
   overlay.classList.toggle("hidden", hasEntered || document.pointerLockElement === canvas || isTouch);
@@ -828,7 +826,9 @@ document.addEventListener("keyup", (event) => {
 });
 
 canvas.addEventListener("pointerdown", (event) => {
-  if (!isTouch || settingsOpen || event.clientX < window.innerWidth * 0.35) return;
+  if (settingsOpen || document.pointerLockElement === canvas || event.button !== 0) return;
+  if (isTouch && event.clientX < window.innerWidth * 0.35) return;
+  if (!hasEntered) enterTown(false);
   input.touchLookId = event.pointerId;
   input.touchLookX = event.clientX;
   input.touchLookY = event.clientY;
@@ -837,13 +837,16 @@ canvas.addEventListener("pointerdown", (event) => {
 
 canvas.addEventListener("pointermove", (event) => {
   if (event.pointerId !== input.touchLookId) return;
-  look((event.clientX - input.touchLookX) * 2.4, (event.clientY - input.touchLookY) * 2.4);
+  const scale = event.pointerType === "touch" ? 2.4 : 1;
+  look((event.clientX - input.touchLookX) * scale, (event.clientY - input.touchLookY) * scale);
   input.touchLookX = event.clientX;
   input.touchLookY = event.clientY;
 });
 
 canvas.addEventListener("pointerup", endTouchLook);
 canvas.addEventListener("pointercancel", endTouchLook);
+canvas.addEventListener("lostpointercapture", endTouchLook);
+window.addEventListener("blur", clearMovementInput);
 
 movePad.addEventListener("pointerdown", (event) => {
   input.moveTouchId = event.pointerId;
@@ -1251,7 +1254,11 @@ function characterPresence(row) {
 }
 
 function characterName(row) {
-  return sanitizeDisplayName(row?.display_name || "Resident");
+  const name = sanitizeDisplayName(row?.display_name || "Resident");
+  const duplicates = [...characters.values()].filter((other) =>
+    sanitizeDisplayName(other.display_name || "Resident").toLowerCase() === name.toLowerCase());
+  // Different accounts can share a display name. Keep them, but distinguish them.
+  return duplicates.length > 1 ? `${name} · ${String(row.auth_user_id).slice(-6)}` : name;
 }
 
 function characterColor(row) {
@@ -1439,7 +1446,7 @@ function renderAppearanceControls(message = "", isError = false, isOk = false) {
   }
 }
 
-function enterTown() {
+function enterTown(capturePointer = true) {
   if (settingsOpen) return;
   hasEntered = true;
   wantsConnection = true;
@@ -1449,8 +1456,7 @@ function enterTown() {
   trackSelf();
   renderCharacters();
   overlay.classList.add("hidden");
-  goFullscreen();
-  if (!isTouch) {
+  if (!isTouch && capturePointer) {
     try {
       const lockAttempt = canvas.requestPointerLock?.();
       lockAttempt?.catch?.(() => {});
@@ -2006,9 +2012,9 @@ function makeHeldItem(type) {
 }
 function setHeld(type) {
   heldItem = type || null;
-  if (viewmodel) { scene.remove(viewmodel); viewmodel = null; }
+  if (viewmodel) { camera.remove(viewmodel); disposeObject(viewmodel); viewmodel = null; }
   const m = makeHeldItem(heldItem);
-  if (m) { viewmodel = m; scene.add(viewmodel); updateViewmodel(); }
+  if (m) { viewmodel = m; camera.add(viewmodel); updateViewmodel(); }
   try { if (channel && connected) sendState(true); } catch (e) {}
 }
 function cycleHeld() {
@@ -2029,9 +2035,12 @@ function updateViewmodel() {
   if (!viewmodel) return;
   if (!hasEntered || settingsOpen) { viewmodel.visible = false; return; }
   viewmodel.visible = true;
-  _vmOff.set(0.2, -0.18, -0.55).applyQuaternion(camera.quaternion);
-  viewmodel.position.copy(camera.position).add(_vmOff);
-  viewmodel.quaternion.copy(camera.quaternion);
+  // Keep a hand-sized prop low on the right, including narrow phone views.
+  const depth = 0.85;
+  const halfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * depth;
+  viewmodel.scale.setScalar(Math.min(0.8, camera.aspect * 0.8));
+  viewmodel.position.set(halfHeight * camera.aspect * 0.62, -halfHeight * 0.72, -depth);
+  viewmodel.quaternion.identity();
 }
 function placementSpot() {
   const d = 1.8;
@@ -2081,7 +2090,7 @@ function pickSky(e) {
 }
 function updateDayNight(dt) {
   if (!sunLight) return;
-  const CYCLE = 300;
+  const CYCLE = 60 * 60; // one shared hour: about 30 minutes of daylight
   const t = HB_TOD !== null ? HB_TOD : ((Date.now() / 1000) % CYCLE) / CYCLE;
   const a = t * Math.PI * 2;
   const e = Math.sin(a);
@@ -2260,6 +2269,7 @@ function animate() {
   updateMinds();
   updateNpcs();
   applySpaceVisibility();
+  declutterActorLabels();
   maybeGhostNudge();
   updateHud();
   sendState();
@@ -2612,10 +2622,24 @@ function removeNpc(id) {
 function updateNpcs() {
   if (npcs.size === 0) return;
   const t = Date.now();
-  for (const npc of npcs.values()) {
+  const occupied = [...remotes.values(), ...mindActors.values()].map((a) => a.group.position);
+  for (const [id, npc] of [...npcs.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const a = t * 0.00008 + npc.seed;
-    const x = npc.base.x * 0.3 + Math.sin(a) * 6 + Math.sin(a * 0.5 + npc.seed) * 2;
-    const z = npc.base.z * 0.3 + Math.cos(a * 0.7 + npc.seed) * 6 + Math.cos(a * 0.4) * 2;
+    // Each resident gets a clear patch of pavement; never compress all bases
+    // toward the origin or give matching names the same walking path.
+    let x = npc.base.x + Math.sin(a) * 0.35;
+    let z = npc.base.z + Math.cos(a) * 0.35;
+    const clear = (px, pz) => !buildingColliders.some((c) =>
+      Math.abs(px - c.x) < c.width / 2 + 0.7 && Math.abs(pz - c.z) < c.depth / 2 + 0.7) &&
+      occupied.every((p) => Math.hypot(px - p.x, pz - p.z) >= 2.4);
+    if (!clear(x, z)) {
+      const offset = hashString(id) % 144;
+      for (let n = 0; n < 144; n++) {
+        const slot = (offset + n) % 144;
+        const px = (slot % 12 - 5.5) * 3, pz = (Math.floor(slot / 12) - 5.5) * 3;
+        if (clear(px, pz)) { npc.base.set(px, 0, pz); x = px; z = pz; break; }
+      }
+    }
     const cx = Math.max(-worldBounds, Math.min(worldBounds, x));
     const cz = Math.max(-worldBounds, Math.min(worldBounds, z));
     const g = npc.group;
@@ -2623,8 +2647,29 @@ function updateNpcs() {
     const dx = cx - g.position.x, dz = cz - g.position.z;
     g.position.x = cx;
     g.position.z = cz;
+    occupied.push(g.position);
     if (Math.abs(dx) + Math.abs(dz) > 0.00001) g.rotation.y = Math.atan2(dx, dz);
     animateAvatarGait(g, Math.hypot(g.position.x - beforeX, g.position.z - beforeZ) * 60, true);
+  }
+}
+
+function declutterActorLabels() {
+  camera.updateMatrixWorld();
+  const placed = [];
+  const groups = [...remotes.values(), ...npcs.values(), ...mindActors.values()]
+    .map((a) => a.group).filter((g) => g && g.visible)
+    .sort((a, b) => a.position.distanceToSquared(camera.position) - b.position.distanceToSquared(camera.position));
+  for (const group of groups) {
+    const label = group.children.find((c) => c.isSprite);
+    if (!label) continue;
+    const p = label.getWorldPosition(new THREE.Vector3()).project(camera);
+    const distance = label.getWorldPosition(new THREE.Vector3()).distanceTo(camera.position);
+    const pixels = window.innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * Math.max(distance, 0.1));
+    const box = { x: (p.x + 1) * window.innerWidth / 2, y: (1 - p.y) * window.innerHeight / 2,
+      w: label.scale.x * pixels + 8, h: label.scale.y * pixels + 6 };
+    label.visible = p.z > -1 && p.z < 1 && !placed.some((b) =>
+      Math.abs(b.x - box.x) < (b.w + box.w) / 2 && Math.abs(b.y - box.y) < (b.h + box.h) / 2);
+    if (label.visible) placed.push(box);
   }
 }
 
@@ -2633,6 +2678,8 @@ function updateHud() {
 }
 
 function look(deltaX, deltaY) {
+  // Ignore pointer-lock/resize discontinuities, not ordinary drags.
+  if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY) || Math.abs(deltaX) > 150 || Math.abs(deltaY) > 150) return;
   const sensitivity = 0.0023 * settings.sensitivity;
   const invert = settings.invertY ? -1 : 1;
   state.yaw -= deltaX * sensitivity;
