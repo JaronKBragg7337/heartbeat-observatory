@@ -1,0 +1,1324 @@
+{
+  "date": "2026-10-29",
+  "title": "Heartbeat News — Thursday, October 29, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-29 (03:00 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-29.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-29 (03:40)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-29.md"
+    },
+    {
+      "name": "watch/kimi 2026-10-29 (First Light desk)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-10-29.md"
+    },
+    {
+      "name": "watch/grok 2026-10-29 (Meridian desk)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-29.md"
+    },
+    {
+      "name": "watch/grok 2026-10-29 gaps (blind-spot check)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-29-gaps.md"
+    },
+    {
+      "name": "watch/msi 2026-10-29 (thin)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-10-29.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Prediction-market prices and resolution notes (Iran ceasefire contract, RUH airport contracts, Israel PM market, FOMC settlement)",
+      "source": "codex, deepseek, kimi, grok",
+      "why": "Trader detail; the underlying events (Iran warning, Saudi claims, Israel count, Fed hold) are covered."
+    },
+    {
+      "item": "Jaron Bragg's X post about his own Polymarket balance",
+      "source": "codex",
+      "why": "Private trading post from the site owner, not news for the show."
+    },
+    {
+      "item": "Brazil/France/UK bond yields, gilt and OAT prints, Petrobras share detail beyond headline",
+      "source": "grok, deepseek",
+      "why": "Conflicting prints left unmerged in the captures; trader detail."
+    },
+    {
+      "item": "Moonshot Kimi Code elevated latency incident",
+      "source": "kimi",
+      "why": "Minor, resolved, third-party mirrored status entry."
+    },
+    {
+      "item": "Akai open-source MPC, Readwise ebook store",
+      "source": "msi",
+      "why": "Headline-only product items with no detail in the capture."
+    },
+    {
+      "item": "Serbia final result, Trappes custody, Niger-Chad dispute, South Africa and Spain election timing",
+      "source": "grok",
+      "why": "Captured only as silences or unchanged from yesterday; nothing new to report."
+    },
+    {
+      "item": "NPPA game-license batch, China plenum communiqué, BOJ decision",
+      "source": "kimi",
+      "why": "Not yet happened or published; plenum and BOJ are mentioned as scheduled."
+    },
+    {
+      "item": "Claude desk capture for 2026-10-29",
+      "source": "claude",
+      "why": "File was missing on the watch repo; Codex, DeepSeek, Kimi, Grok, Grok gaps and MSI were used."
+    }
+  ],
+  "ticker": [
+    "SPAIN: AT LEAST 68 DEAD AFTER TWO HIGH-SPEED TRAINS COLLIDE NEAR TOLEDO",
+    "NORTH KOREA FIRES ABOUT A DOZEN SHORT-RANGE MISSILES FROM WONSAN",
+    "HOUTHIS CLAIM RAS TANURA REFINERY HIT; SAUDIS HAVE NOT CONFIRMED",
+    "AP: U.S. TELLS GULF ALLIES TO PREPARE FOR POSSIBLE IRAN STRIKES AFTER NOV. 3",
+    "HEGSETH FIRES LT. GEN. BRETT SYLVIA, JOINT STAFF STRATEGY CHIEF",
+    "OLESHKY PAUSE HOLDS 30 HOURS; RUSSIA SAYS 613 DRONES AIMED AT MOSCOW",
+    "ISRAEL: 85.6% COUNTED, NO BLOC AT 61 SEATS",
+    "FLÁVIO BOLSONARO LANDS IN MIAMI, CALLS HIMSELF BRAZIL'S RIGHTFUL LEADER",
+    "FED HOLDS 3.75–4.00%, 10–2; BANK OF CANADA RAISES TO 2.5%",
+    "BREWERS WIN FIRST WORLD SERIES, 4–1 OVER RAYS",
+    "UK BUDGET: BANK SURCHARGE TO 6%, £100 ENERGY PAYMENT",
+    "KOSPI +6.63% ON CHIP RALLY; SK HYNIX +10.89%",
+    "CDC WIDENS EBOLA ATTESTATION ORDER TO ALL U.S.-BOUND AIR TRAVELERS FROM NOV. 3",
+    "NAIROBI EASTLEIGH COLLAPSE: 16 STILL MISSING, TWO DETECTED NOT REACHED",
+    "BRENT $115.32; BITCOIN NEAR $80,000"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Spain's train crash, missiles over Korea, and a war on edge",
+        "bullets": [
+          "Spain: at least sixty-eight dead after two trains collide",
+          "North Korea fires a barrage of missiles",
+          "Saudi Arabia, Iran and the Gulf on edge before the U.S. vote"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Thursday, October twenty-ninth."
+        },
+        {
+          "who": "vex",
+          "text": "Tonight we start in Spain, where two high-speed trains collided and the death toll is at least sixty-eight."
+        },
+        {
+          "who": "joe",
+          "text": "Then missiles off North Korea, a Saudi refinery claim nobody has confirmed, and a warning to Gulf allies about Iran. Stay with us."
+        }
+      ]
+    },
+    {
+      "id": "spain",
+      "kind": "breaking",
+      "strap": "SPAIN: TWO HIGH-SPEED TRAINS COLLIDE; AT LEAST 68 DEAD",
+      "headline": "Spain's deadliest train crash in years",
+      "category": "SPAIN",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "SPAIN",
+        "title": "Toledo: two trains, 68 dead, search unfinished",
+        "bullets": [
+          "Renfe and Iryo trains collided near Toledo",
+          "Regional president: at least 68 dead",
+          "Three days of national mourning",
+          "Cause not established"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Guardian",
+          "url": "https://www.theguardian.com/world/2026/oct/28/spain-train-crash-high-speed-toledo"
+        },
+        {
+          "name": "La Nación",
+          "url": "https://www.lanacion.com.ar/el-mundo/dos-trenes-de-alta-velocidad-chocaron-en-toledo-al-menos-10-muertos-nid28102026/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Two high-speed trains collided Wednesday morning in Toledo province, on the line from Madrid toward Seville. The regional president, Emiliano García-Page, said the death toll had reached sixty-eight by Wednesday afternoon."
+        },
+        {
+          "who": "joe",
+          "text": "He said more victims were likely, because rescuers had not yet reached the bottom of the carriages. Prime Minister Pedro Sánchez declared three days of mourning."
+        },
+        {
+          "who": "vex",
+          "text": "Injury counts do not match. La Nación quotes García-Page at more than one hundred fifty injured, fifteen of them serious. An earlier New York Times update had about eighty injured. Those numbers were not merged."
+        },
+        {
+          "who": "joe",
+          "text": "Renfe says its train left Madrid at eight and hit an Iryo train between Los Yébenes and Urda. Why is the open question, and the accounts disagree."
+        },
+        {
+          "who": "vex",
+          "text": "One official says a control system called L.Z.B. failed around eight-thirty after a communication fault in three network computers, leaving sixty-three kilometers without that safety layer."
+        },
+        {
+          "who": "joe",
+          "text": "A source close to the investigation told Reuters the Iryo had been stopped on an order from the track operator because of a signalling failure, and was then hit. Other officials point to an error at central command."
+        },
+        {
+          "who": "vex",
+          "text": "No agency has called it a cyber attack, and no court has found anything. Those are four accounts, not a finding."
+        },
+        {
+          "who": "joe",
+          "text": "The New York Times and La Nación both report another fatal collision on this line within the past year. That is the papers' background."
+        }
+      ]
+    },
+    {
+      "id": "korea",
+      "kind": "story",
+      "strap": "NORTH KOREA FIRES ABOUT A DOZEN SHORT-RANGE MISSILES",
+      "headline": "Missiles from Wonsan",
+      "category": "KOREA",
+      "status": "observed",
+      "graphic": {
+        "kicker": "NORTH KOREA",
+        "title": "Short-range barrage, about 250 km",
+        "bullets": [
+          "Fired from the Wonsan area around 12:30 p.m. Thursday",
+          "Counts: about 10 (Reuters), about a dozen (Yonhap)",
+          "Japan: did not appear to land in its zone",
+          "17th ballistic launch this year"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Yonhap",
+          "url": "https://en.yna.co.kr/view/AEN20261019003553315"
+        },
+        {
+          "name": "Korea Herald",
+          "url": "https://www.koreaherald.com/article/10919068"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "South Korea's Joint Chiefs of Staff say North Korea fired short-range ballistic missiles from the Wonsan area at about twelve-thirty Thursday afternoon, toward the East Sea. They flew about two hundred fifty kilometers."
+        },
+        {
+          "who": "joe",
+          "text": "The count depends on who is counting. Reuters says around ten. Yonhap says about a dozen. The Korea Herald says more than ten."
+        },
+        {
+          "who": "vex",
+          "text": "Japan's Defense Ministry says the missiles did not appear to land inside Japan's exclusive economic zone."
+        },
+        {
+          "who": "joe",
+          "text": "Seoul called an emergency security meeting and called the launch a serious violation of United Nations resolutions. A military official told Yonhap he believes the KN-twenty-five was involved. That identification is his alone."
+        },
+        {
+          "who": "vex",
+          "text": "On the Korea Herald's count, it is the year's seventeenth ballistic launch and the first in seventeen days."
+        },
+        {
+          "who": "joe",
+          "text": "South Korea's stock market jumped more than six percent Wednesday. More on that in a moment."
+        }
+      ]
+    },
+    {
+      "id": "saudi",
+      "kind": "story",
+      "strap": "HOUTHIS CLAIM RAS TANURA HIT; SAUDIS HAVE NOT CONFIRMED",
+      "headline": "Saudi Arabia: claims, intercepts and oil",
+      "category": "MIDDLE EAST",
+      "status": "claim",
+      "graphic": {
+        "kicker": "SAUDI ARABIA",
+        "title": "Ras Tanura: claim, no confirmation",
+        "bullets": [
+          "Houthis claim a direct refinery strike; Saudis have not confirmed",
+          "Saudis: two missiles at Riyadh intercepted",
+          "Houthi-run media: 14 killed at Al-Hazm market",
+          "Brent settled at $115.32"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Investing.com via Yahoo Finance",
+          "url": "https://finance.yahoo.com/energy/articles/oil-prices-climb-houthi-attacks-035300905.html"
+        },
+        {
+          "name": "Xinhua",
+          "url": "https://english.news.cn/20261028/0bff5197bf7d4bd8aef67cc902090535/c.html"
+        },
+        {
+          "name": "Reuters via Euronext",
+          "url": "https://live.euronext.com/en/financial-news/oil-prices-rise-yemen-fighting-saudi-refinery-attack"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Houthis claim they hit the Ras Tanura refinery in Saudi Arabia. Saudi authorities have not confirmed a direct hit. A fire near the site was reported and contained, and damage and loading effects are unclear."
+        },
+        {
+          "who": "joe",
+          "text": "Saudi officials say two missiles aimed at Riyadh were intercepted, and falling debris damaged a building, a construction site and a vehicle. The Houthi claim of hitting the Defense Ministry is not verified."
+        },
+        {
+          "who": "vex",
+          "text": "Now the other side. Houthi-run media say Saudi airstrikes hit a public market and a fuel station in Al-Hazm, in Yemen's Al-Jawf province. They say at least fourteen people were killed, women and children among them."
+        },
+        {
+          "who": "joe",
+          "text": "Other Houthi-aligned outlets give thirteen dead and sixteen hurt, or fourteen dead and fifteen hurt. Xinhua says it could not verify any of it. Saudi Arabia had no immediate comment."
+        },
+        {
+          "who": "vex",
+          "text": "Oil is pricing the fear either way. Reuters says Brent settled up one percent at one hundred fifteen dollars and thirty-two cents a barrel. U.S. crude rose three percent to one hundred two dollars and seventy-eight cents."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "story",
+      "strap": "U.S. WARNS GULF ALLIES OF POSSIBLE IRAN STRIKES AFTER NOV. 3 VOTE",
+      "headline": "The warning to Gulf allies",
+      "category": "IRAN",
+      "status": "claim",
+      "graphic": {
+        "kicker": "IRAN",
+        "title": "Strikes after the election? The warning, the cost, the firing",
+        "bullets": [
+          "AP: allies told to prepare for possible strikes after Nov. 3",
+          "Pentagon war-cost estimate: $47.1 billion",
+          "Hegseth fires Lt. Gen. Brett Sylvia, a top Joint Staff planner",
+          "Advocacy group: 53 laden Iranian tankers"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Associated Press",
+          "url": "https://apnews.com/article/trump-iran-strikes-midterm-elections-c7df622f1e87de6035173be8fb8c4add"
+        },
+        {
+          "name": "Associated Press, Hegseth firing",
+          "url": "https://apnews.com/article/hegseth-general-firing-iran-war-strikes-6726895f0c7fe93c7cbc94cae0ff7621"
+        },
+        {
+          "name": "United Against Nuclear Iran",
+          "url": "https://www.unitedagainstnucleariran.com/analysis/iran-shipping-update-october-28-2026"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Associated Press reports that U.S. officials warned Gulf allies to prepare for possible strikes on Iran after the November third election. The timing of any military readiness remains unclear. Those are officials, speaking to AP."
+        },
+        {
+          "who": "joe",
+          "text": "AP also reports the Pentagon's war-cost estimate to Congress has reached forty-seven point one billion dollars."
+        },
+        {
+          "who": "vex",
+          "text": "Also from AP: Defense Secretary Pete Hegseth fired Army Lieutenant General Brett Sylvia, who directed strategy, plans and policy for the Joint Staff. No reason was given and no replacement was named. He is the second general removed from that post under Hegseth."
+        },
+        {
+          "who": "joe",
+          "text": "The same reporting places the firing while President Trump weighs renewed strikes."
+        },
+        {
+          "who": "vex",
+          "text": "The shipping picture is a claim from an advocacy group, United Against Nuclear Iran. It says at least fifty-three oil-laden Iranian tankers are still near Iran, while twenty empty Iran-flagged tankers sit off Sri Lanka. That is not a customs or port-authority count."
+        },
+        {
+          "who": "joe",
+          "text": "Tehran has not spoken in today's reporting that we have. We will say so when it does."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "OLESHKY PAUSE HOLDS 30 HOURS; RUSSIA SAYS 613 DRONES AIMED AT MOSCOW",
+      "headline": "Ukraine: a local pause, a big night",
+      "category": "UKRAINE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "Oleshky quiet; Moscow drone wave claimed",
+        "bullets": [
+          "Both ombudsmen: no incidents in 30 hours",
+          "Demining under way; aid not reported delivered",
+          "Moscow mayor: most of 613 drones downed",
+          "Kharkiv struck overnight, school damaged"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Guardian",
+          "url": "https://www.theguardian.com/world/2026/oct/29/ukraine-war-briefing-oleshky-truce-holding-and-demining-under-way-to-enable-humanitarian-corridor-kyiv-says"
+        },
+        {
+          "name": "Anadolu",
+          "url": "https://aa.com.tr/en/eurasia/russia-and-ukraine-confirm-no-ceasefire-violations-in-ukrainian-town-of-oleshky/4103666"
+        },
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/10/29/russia-says-more-than-600-drones-launched-towards-moscow-overnight"
+        },
+        {
+          "name": "Kyiv Independent",
+          "url": "https://kyivindependent.com/moscow-comes-under-drone-fire-overnight-grounding-flights-at-major-airports/"
+        },
+        {
+          "name": "Associated Press",
+          "url": "https://apnews.com/article/russia-ukraine-ceasefire-melania-trump-0f135e71101c48ccd83927efeebf3347"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Oleshky, the local ceasefire is holding so far. Ukraine's ombudsman, Dmytro Lubinets, said thirty hours passed without a single incident. Russia's ombudsman, Yana Lantratova, said the same. Kherson's regional administration reported no incoming strikes in the preceding day."
+        },
+        {
+          "who": "joe",
+          "text": "This is a pause in one city, not a general ceasefire. Demining of routes is under way. Food and medicine have not been reported delivered, and an evacuation is still a plan for Friday. The pause is stated to end late on November first."
+        },
+        {
+          "who": "vex",
+          "text": "Then the night. Moscow's mayor, Sergei Sobyanin, says Russia downed most of six hundred thirteen drones heading toward the capital. Al Jazeera, citing TASS, says two hundred thirty-one were destroyed on approach to the city."
+        },
+        {
+          "who": "joe",
+          "text": "An earlier Kyiv Independent count was fifty-seven intercepted, with flight limits at three Moscow airports. Those numbers were not merged. No independent damage count is available."
+        },
+        {
+          "who": "vex",
+          "text": "In Kharkiv, Mayor Ihor Terekhov says Russia struck the city and damaged an educational institution. No toll was given."
+        },
+        {
+          "who": "joe",
+          "text": "Oleshky is quiet. Moscow and Kharkiv were not."
+        }
+      ]
+    },
+    {
+      "id": "israel",
+      "kind": "story",
+      "strap": "ISRAEL: NO BLOC HAS 61 SEATS WITH 85.6% COUNTED",
+      "headline": "Israel's count is still open",
+      "category": "ISRAEL",
+      "status": "observed",
+      "graphic": {
+        "kicker": "ISRAEL",
+        "title": "85.6% counted: 53 / 48 / 19",
+        "bullets": [
+          "Netanyahu's bloc 53; Eisenkot's bloc 48; Arab parties 19",
+          "Likud leads parties with 26 seats",
+          "About 600,000 absentee ballots outstanding",
+          "Final results due Thursday, maybe Friday"
+        ]
+      },
+      "sources": [
+        {
+          "name": "JTA, relaying the Central Elections Committee",
+          "url": "https://www.jta.org/israel-votes-2026"
+        },
+        {
+          "name": "Anadolu",
+          "url": "https://www.aa.com.tr/en/middle-east/israels-final-election-results-expected-thursday-evening-election-official/4103985"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Israel's election count is still open. With eighty-five point six percent counted, the Central Elections Committee puts Benjamin Netanyahu's bloc at fifty-three seats, Gadi Eisenkot's bloc at forty-eight, and the Arab parties at nineteen."
+        },
+        {
+          "who": "joe",
+          "text": "Likud leads all parties with twenty-six seats. A party called Yashar has twenty-one. Every bloc is short of sixty-one, the number needed for a majority."
+        },
+        {
+          "who": "vex",
+          "text": "About six hundred thousand absentee ballots are still outstanding. Final results are expected Thursday evening, though the double-envelope counting could run into Friday."
+        },
+        {
+          "who": "joe",
+          "text": "A preliminary seat count is not a government. Nobody has been certified, and no coalition exists yet."
+        }
+      ]
+    },
+    {
+      "id": "brazil",
+      "kind": "story",
+      "strap": "FLÁVIO BOLSONARO IN MIAMI, CALLS HIMSELF 'RIGHTFUL LEADER'",
+      "headline": "Brazil: the loser in Miami",
+      "category": "BRAZIL",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "BRAZIL",
+        "title": "Bolsonaro in Miami; markets slide again",
+        "bullets": [
+          "Lands at Opa-locka, 9:20 a.m. Wednesday",
+          "Calls himself rightful leader; accuses court and Lula of an electoral coup",
+          "Lula won 51.79% to 48.21%",
+          "Ibovespa −2.68% at 171,006"
+        ]
+      },
+      "sources": [
+        {
+          "name": "El País",
+          "url": "https://english.elpais.com/international/2026-10-28/flavio-bolsonaro-lands-in-miami-after-fleeing-brazil-via-argentina.html"
+        },
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/americas/flavio-bolsonaro-expected-land-miami-shortly-after-trump-offers-brazil-exit-2026-10-28/"
+        },
+        {
+          "name": "UOL Economia",
+          "url": "https://economia.uol.com.br/cotacoes/noticias/redacao/2026/10/28/dolar-fecha-em-queda-a-r-534-ibovespa-recua-quase-3-na-previa.htm"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Flávio Bolsonaro is in the United States. El País reports his plane landed at Opa-locka airport north of Miami at nine-twenty Wednesday morning, after a route through Argentina."
+        },
+        {
+          "who": "joe",
+          "text": "Reuters says he declared himself Brazil's rightful leader and accused the Supreme Court and President Lula of an electoral coup. He first posted a letter calling himself the elected president, deleted it, and posted a softer version. Brazil's electoral court counted Lula at fifty-one point seven nine percent."
+        },
+        {
+          "who": "vex",
+          "text": "The travel is contested. O Globo and CNN Brasil say a U.S. record shows entry on a diplomatic passport Brazil had already cancelled. Brazil's Federal Police say they have no record of him leaving the country. No arrest warrant has been reported."
+        },
+        {
+          "who": "joe",
+          "text": "Markets are not calm. Brazil's main stock index fell two point six eight percent to one hundred seventy-one thousand and six, the third session since the runoff. Banks led it down. The dollar sat near five dollars thirty-four reais."
+        }
+      ]
+    },
+    {
+      "id": "us-politics",
+      "kind": "story",
+      "strap": "DOJ ACTIONS BEFORE MIDTERMS; JUDGE DENIES CALIFORNIA BALLOT REQUEST",
+      "headline": "Midterms, one week out",
+      "category": "POLITICS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "U.S. POLITICS",
+        "title": "Week before the vote: DOJ, courts, rallies",
+        "bullets": [
+          "AP: DOJ moves include a search of Rep. Omar's home",
+          "Judge denies DOJ bid to halt California ballot processing",
+          "Trump in Ohio, Obama in Georgia",
+          "Voters cite record fuel prices"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Associated Press, Justice Department",
+          "url": "https://apnews.com/article/justice-department-midterm-elections-push-fc53d33a4ada827be3089ae358a5d826"
+        },
+        {
+          "name": "Associated Press, California ballots",
+          "url": "https://apnews.com/article/california-noncitizen-voting-trump-midterm-lawsuit-481bed64919ad193e80e051d28beb2c0"
+        },
+        {
+          "name": "Associated Press, campaign",
+          "url": "https://apnews.com/article/trump-obama-vance-ohio-georgia-midterm-election-0e435ba88ad76f75e88fdf98fa0b4a64"
+        },
+        {
+          "name": "Axios Boston",
+          "url": "https://www.axios.com/local/boston/2026/10/28/boston-federal-court-refugee-policy-due-process"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The midterms are next Tuesday, and the Justice Department is in the story. The Associated Press lists October actions including a search of Representative Ilhan Omar's home, charges against two former F.B.I. officials, a renewed attempt to prosecute James Comey, and an unsuccessful attempt to indict Cassidy Hutchinson."
+        },
+        {
+          "who": "joe",
+          "text": "Critics challenge the timing. The Justice Department says it is following the facts and the law."
+        },
+        {
+          "who": "vex",
+          "text": "In court, U.S. District Judge David Carter denied the department's request to stop California from processing ballots for up to twenty thousand people it alleges are likely noncitizens. The department says it will appeal."
+        },
+        {
+          "who": "joe",
+          "text": "In Boston, a federal judge granted a ten-day stay blocking a new refugee rule that cut the response time to a termination notice from thirty days to ten, Axios reports."
+        },
+        {
+          "who": "vex",
+          "text": "On the trail, Trump campaigned in Chillicothe, Ohio, while Barack Obama rallied with Georgia Democrats outside Atlanta. AP says voters are confronting record fuel prices and rising costs."
+        },
+        {
+          "who": "joe",
+          "text": "Prices are the thread tonight."
+        }
+      ]
+    },
+    {
+      "id": "fed",
+      "kind": "story",
+      "strap": "FED HOLDS 3.75–4.00% ON 10–2 VOTE; CANADA RAISES RATES",
+      "headline": "Two central banks, two answers",
+      "category": "MARKETS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "RATES",
+        "title": "Fed holds; Bank of Canada hikes",
+        "bullets": [
+          "Fed: hold, two dissenters wanted a hike",
+          "Bank of Canada: +0.25 point to 2.5%, first rise since 2023",
+          "S&P 500 +0.3% to 7,743.98",
+          "Bank of Japan meets today"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Federal Reserve",
+          "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm"
+        },
+        {
+          "name": "Bank of Canada",
+          "url": "https://www.bankofcanada.ca/2026/10/fad-press-release-2026-10-28/"
+        },
+        {
+          "name": "Associated Press, markets",
+          "url": "https://apnews.com/article/wall-street-stocks-dow-nasdaq-7864eac2e13db75f07758ed9c39ad96b"
+        },
+        {
+          "name": "Coinbase",
+          "url": "https://api.coinbase.com/v2/prices/BTC-USD/spot"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Federal Reserve held its target at three and three-quarters to four percent. The vote was ten to two. Lisa Cook and Beth Hammack wanted a quarter-point increase. The statement said inflation remained elevated."
+        },
+        {
+          "who": "joe",
+          "text": "Our blind-spot check found the other decision. The Bank of Canada raised its overnight rate a quarter point to two and a half percent, its first increase since July twenty twenty-three. Governor Tiff Macklem said the inflation outlook has worsened, with the Middle East war pushing oil higher for longer."
+        },
+        {
+          "who": "vex",
+          "text": "On Wall Street, the S&P five hundred rose point three percent to seven thousand seven hundred forty-four. The Dow rose to fifty-two thousand four hundred seventy-five, the Nasdaq to twenty-six thousand five hundred fifty. Per AP, the two-year Treasury yield rose after the Fed, then reversed."
+        },
+        {
+          "who": "joe",
+          "text": "Bitcoin is near eighty thousand dollars. Coinbase's price this morning was seventy-nine thousand eight hundred sixty, and that is one exchange's print."
+        },
+        {
+          "who": "vex",
+          "text": "The Bank of Japan starts its meeting today, and its decision lands tomorrow."
+        }
+      ]
+    },
+    {
+      "id": "uk",
+      "kind": "story",
+      "strap": "UK BUDGET: BANK SURCHARGE TO 6%, £100 ENERGY PAYMENT",
+      "headline": "Britain's first Healey Budget",
+      "category": "UNITED KINGDOM",
+      "status": "observed",
+      "graphic": {
+        "kicker": "UK BUDGET",
+        "title": "Healey Budget: banks pay more, bills fall",
+        "bullets": [
+          "Banks' surcharge 3% → 6% for 15 months from January",
+          "£100 energy payment, 20 million households",
+          "Electricity VAT cut to July; gas standing charges removed",
+          "FTSE 100 10,694.50, +0.07%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "GOV.UK, speech as delivered",
+          "url": "https://www.gov.uk/government/speeches/budget-2026-speech"
+        },
+        {
+          "name": "BBC News",
+          "url": "https://www.bbc.co.uk/news/articles/c6x2zrjl7kjno"
+        },
+        {
+          "name": "Hargreaves Lansdown, London close",
+          "url": "https://www.hl.co.uk/shares/stock-market-news/market-reports/london-close-ftse-nudges-up-as-banks,-gambling-stocks-rally-on-budget-housebuilders-slide"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In London, Chancellor John Healey delivered his first Budget. The BBC notes it is the first under Prime Minister Andy Burnham."
+        },
+        {
+          "who": "joe",
+          "text": "He said headroom against the government's fiscal rule is fifteen billion pounds in twenty twenty-nine to thirty, rising to twenty-two billion the year after."
+        },
+        {
+          "who": "vex",
+          "text": "To pay for energy help, banks face an extra three percent on their surcharge, taking it to six percent, from January for fifteen months."
+        },
+        {
+          "who": "joe",
+          "text": "For households: a hundred-pound energy payment for twenty million homes in council tax bands A to D. The electricity V.A.T. cut runs to July, which Healey says takes fifty pounds off the price cap. Gas standing charges come off bills. Fuel duty stays frozen until July."
+        },
+        {
+          "who": "vex",
+          "text": "On housing, an extra one billion pounds for social homes, and government-backed loans for first-time buyers."
+        },
+        {
+          "who": "joe",
+          "text": "Markets shrugged. The FTSE one hundred closed at ten thousand six hundred ninety-four, up a hair. Banks rose because the surcharge was six percent, not the eight that was feared. Housebuilders fell."
+        }
+      ]
+    },
+    {
+      "id": "asia",
+      "kind": "story",
+      "strap": "SOUTH KOREA'S KOSPI JUMPS 6.6% ON CHIP RALLY",
+      "headline": "Asia: chips, an IPO and a plenum",
+      "category": "ASIA",
+      "status": "observed",
+      "graphic": {
+        "kicker": "ASIA MARKETS",
+        "title": "KOSPI +6.63%; Jio lists 27% above issue",
+        "bullets": [
+          "KOSPI +6.63% to 6,012; buy-side sidecar triggered",
+          "SK hynix +10.89%, Samsung +9.01%",
+          "Jio Platforms closes first day 26.81% above issue",
+          "China's plenum scheduled to end today"
+        ]
+      },
+      "sources": [
+        {
+          "name": "SK hynix",
+          "url": "https://news.skhynix.com/en/q3-2026-business-results/"
+        },
+        {
+          "name": "Cheonji Ilbo, citing KRX",
+          "url": "https://www.newscj.com/news/articleView.html?idxno=3443945"
+        },
+        {
+          "name": "Investing.com via Yahoo Finance",
+          "url": "https://finance.yahoo.com/technology/ai/articles/japan-advantest-raises-fy-earnings-071917689.html"
+        },
+        {
+          "name": "Kotak Neo",
+          "url": "https://www.kotakneo.com/news/ipos/jio-platforms-lists-on-28-october/"
+        },
+        {
+          "name": "Hindu BusinessLine",
+          "url": "https://www.thehindubusinessline.com/markets/sensex-nifty50-today-stock-market-live-updates-28-october-2026/article71631075.ece"
+        },
+        {
+          "name": "Sina Finance",
+          "url": "https://finance.sina.com.cn/roll/2026-10-28/doc-iniwuqvx5951940.shtml"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Asia had a big Wednesday, mostly in chips. South Korea's KOSPI jumped six point six three percent to six thousand twelve. SK hynix rose nearly eleven percent and Samsung nine percent. A five-minute buying halt, called a sidecar, triggered in the morning."
+        },
+        {
+          "who": "joe",
+          "text": "SK hynix posted preliminary third-quarter operating profit of eighty-three trillion won, announced about one hundred trillion won of shareholder returns for the year, and said its next-generation H.B.M.4 memory should outsell the older version this quarter."
+        },
+        {
+          "who": "vex",
+          "text": "In Japan, Advantest raised its full-year profit guidance, citing demand for A.I. chip testing."
+        },
+        {
+          "who": "joe",
+          "text": "In India, Jio Platforms closed its first session at fourteen hundred nineteen rupees, twenty-six point eight one percent above its issue price. The main Sensex index slipped half a percent."
+        },
+        {
+          "who": "vex",
+          "text": "In Hong Kong, DSBJ opened below its offer price and closed less than one percent below it."
+        },
+        {
+          "who": "joe",
+          "text": "China's party plenum is scheduled to end today. No final communiqué had appeared at the cutoff."
+        }
+      ]
+    },
+    {
+      "id": "tech",
+      "kind": "story",
+      "strap": "ALPHABET CLOUD REVENUE DOUBLES; MICROSOFT AZURE UP 48%",
+      "headline": "Big Tech reports",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EARNINGS",
+        "title": "Alphabet and Microsoft report",
+        "bullets": [
+          "Alphabet Q3 revenue $127.6B (+25%); Cloud $30.7B (+103%)",
+          "Gemini app hits one billion users",
+          "Microsoft revenue $92.3B (+19%); Azure +48%",
+          "Alphabet shares fell after hours; Microsoft rose ~3%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Alphabet Q3 release",
+          "url": "https://s206.q4cdn.com/479360582/files/doc_financials/2026/q3/2026q3-alphabet-earnings-release.pdf"
+        },
+        {
+          "name": "Microsoft",
+          "url": "https://news.microsoft.com/source/2026/10/28/microsoft-announces-first-quarter-results-2/"
+        },
+        {
+          "name": "Associated Press",
+          "url": "https://apnews.com/article/1b5c71d31b4ce1e46b0db47b33141f6b"
+        },
+        {
+          "name": "The Verge, Gemini 4 Carbon",
+          "url": "https://www.theverge.com/tech/1021339/google-gemini-4-carbon-cybersecurity-frontier"
+        },
+        {
+          "name": "The Verge, Mosseri",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1021644/adam-mosseri-instagram-ai-negativity"
+        },
+        {
+          "name": "The Verge, Anduril",
+          "url": "https://www.theverge.com/policy/1021554/anduril-bluechip-65-percent-domestic-buy-american"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Two giants reported. Alphabet's third-quarter revenue was one hundred twenty-seven point six billion dollars, up twenty-five percent. Google Cloud revenue was thirty point seven billion, up one hundred three percent. The Gemini app reached one billion users."
+        },
+        {
+          "who": "joe",
+          "text": "Alphabet says its model A.P.I.s process nearly thirty-two billion tokens a minute. Per AP, its shares fell after hours because results came in below Wall Street expectations."
+        },
+        {
+          "who": "vex",
+          "text": "Microsoft reported ninety-two point three billion dollars in revenue, up nineteen percent. Azure grew forty-eight percent, and contracted future cloud revenue reached six hundred seventy-seven billion dollars. AP says its shares gained nearly three percent."
+        },
+        {
+          "who": "joe",
+          "text": "From The Verge, all claims by the companies or executives: Google launched Gemini 4 Carbon with a leap in cybersecurity. Instagram's Adam Mosseri says negativity about A.I. is going to get worse. Anduril says its BlueChip laptop will meet Buy American standards at launch."
+        },
+        {
+          "who": "vex",
+          "text": "The tokens-per-minute figure is the number to watch."
+        }
+      ]
+    },
+    {
+      "id": "nairobi",
+      "kind": "story",
+      "strap": "NAIROBI: 16 STILL MISSING IN EASTLEIGH COLLAPSE",
+      "headline": "Eastleigh, day six",
+      "category": "KENYA",
+      "status": "observed",
+      "graphic": {
+        "kicker": "KENYA",
+        "title": "16 missing; two people detected, not reached",
+        "bullets": [
+          "Missing count fell from 20 to 16 after verification",
+          "Phone data places nine at the site",
+          "Rescuers say 80% of debris cleared",
+          "Detectives question developer and officials"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Citizen Digital",
+          "url": "https://citizen.digital/article/eastleigh-building-collapse-16-people-still-missing-as-rescue-efforts-stall-n392934"
+        },
+        {
+          "name": "Nation",
+          "url": "https://nation.africa/kenya/counties/nairobi/eastleigh-building-collapse-rescue-operations-to-end-5649790"
+        },
+        {
+          "name": "The Star",
+          "url": "https://www.the-star.co.ke/news/2026-10-28-eastleigh-building-search-80-per-cent-complete"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Nairobi's Eastleigh district, sixteen people are still missing six days after a building collapsed. Citing the regional commissioner, Nation reports the number fell from twenty to sixteen after verification, and phone signals suggest nine were inside."
+        },
+        {
+          "who": "joe",
+          "text": "Rescuers say about eighty percent of the debris is cleared. They have not reached two people whose signs of life were detected more than a day earlier. A detection is not a rescue."
+        },
+        {
+          "who": "vex",
+          "text": "Detectives have questioned one developer and county, building-inspectorate and construction-authority officials. No death toll is confirmed, and storey counts of the building range from thirteen to eighteen across reports."
+        }
+      ]
+    },
+    {
+      "id": "ebola",
+      "kind": "story",
+      "strap": "CDC WIDENS EBOLA AIR-TRAVEL ORDER; AFRICA CDC MEETS MINISTERS",
+      "headline": "Ebola: new travel rule, three case counts",
+      "category": "HEALTH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EBOLA",
+        "title": "U.S. travel attestation widens Nov. 3",
+        "bullets": [
+          "CDC: all people on U.S.-bound flights attest no DRC stay",
+          "Effective 11:59 p.m. EST Nov. 3",
+          "Africa CDC convenes health ministers",
+          "Kenya: nine confirmed, two dead"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CDC",
+          "url": "https://www.cdc.gov/port-health/legal-authorities/attestation-order.html"
+        },
+        {
+          "name": "RFI",
+          "url": "https://www.rfi.fr/fr/afrique/20261028-ebola-r%C3%A9union-urgente-des-ministres-africains-de-la-sant%C3%A9-plus-de-10-000-cas-confirm%C3%A9s"
+        },
+        {
+          "name": "Ebola tracker",
+          "url": "https://ebola-tracker.org/en/letter/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The C.D.C. amended its Ebola order. It now covers all people on U.S.-bound international aircraft, including crew. From eleven-fifty-nine p.m. Eastern on November third, they must attest they have not been in the Democratic Republic of Congo in the past twenty-one days."
+        },
+        {
+          "who": "joe",
+          "text": "Africa C.D.C. convened an urgent virtual meeting of African health ministers Wednesday. Its chief, Jean Kaseya, said around five thousand people have died across four countries."
+        },
+        {
+          "who": "vex",
+          "text": "The case counts do not agree. Tuesday's wires said ten thousand sixty confirmed cases and four thousand eight hundred eighty-seven deaths. One tracker reads a later bulletin at ten thousand one hundred ninety-three and four thousand nine hundred sixty. Kaseya's number is a third. They are three figures, not one."
+        },
+        {
+          "who": "joe",
+          "text": "Kenya reports nine confirmed cases and two deaths, with no new case in Wednesday's reporting."
+        }
+      ]
+    },
+    {
+      "id": "africa",
+      "kind": "story",
+      "strap": "U.S. SANCTIONS RWANDA'S DEFENCE MINISTRY OVER M23 SUPPORT",
+      "headline": "Africa: sanctions, a strike and a gas find",
+      "category": "AFRICA",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "AFRICA",
+        "title": "Rwanda sanctioned; Darfur strike claimed",
+        "bullets": [
+          "OFAC sanctions Rwandan Ministry of Defence and Zigama",
+          "Treasury: thousands of Rwandan troops in the Kivus",
+          "Darfur: five reported killed near El Geneina",
+          "Tanzania: first big gas find in a decade"
+        ]
+      },
+      "sources": [
+        {
+          "name": "U.S. Treasury",
+          "url": "https://home.treasury.gov/news/press-releases/sb0668"
+        },
+        {
+          "name": "Radio Tamazuj",
+          "url": "https://www.radiotamazuj.org/en/news/article/five-killed-in-airstrike-near-el-geneina-airport-west-darfur"
+        },
+        {
+          "name": "Mada Masr",
+          "url": "https://www.madamasr.com/en/2026/10/27/news/u/lina-attalah-in-custody-after-court-issues-le3-mn-fine-orders-mada-masrs-closure/"
+        },
+        {
+          "name": "Africanews",
+          "url": "https://www.africanews.com/2026/10/28/tanzania-announces-first-major-gas-discovery-in-a-decade/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The U.S. Treasury sanctioned Rwanda's Ministry of Defence and a credit society called Zigama. Secretary Scott Bessent said Rwanda must stop supporting the M23 rebels and withdraw its troops from eastern Congo. Treasury says thousands of Rwandan troops are operating in North and South Kivu. Kigali's reply was not available."
+        },
+        {
+          "who": "joe",
+          "text": "In Sudan's West Darfur, Radio Tamazuj reports five people killed in an airstrike near El Geneina airport. An official of the R.S.F.-aligned local government blames a Sudanese Army drone on October twenty-sixth. The army has not responded. That is one side's account."
+        },
+        {
+          "who": "vex",
+          "text": "In Egypt, a court fined Mada Masr editor Lina Attalah three million pounds and ordered the independent news site closed. She was released after paying and says she will appeal."
+        },
+        {
+          "who": "joe",
+          "text": "One good-news item: Tanzania announced an estimated two hundred twenty-three billion cubic feet of gas at a well in Mnazi Bay, its first major discovery in a decade."
+        }
+      ]
+    },
+    {
+      "id": "cuba",
+      "kind": "story",
+      "strap": "UN VOTE AGAINST U.S. CUBA EMBARGO PASSES 130–17",
+      "headline": "Cuba: the annual UN vote",
+      "category": "UNITED NATIONS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "CUBA",
+        "title": "130 in favor, 17 against, 25 abstain",
+        "bullets": [
+          "Last year's tally: 165–7–12",
+          "Germany and Italy abstained",
+          "U.S.: 'There is no blockade'",
+          "Cuba in a severe energy crisis"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/americas/us-gets-more-countries-oppose-un-resolution-condemning-its-cuba-embargo-2026-10-28/"
+        },
+        {
+          "name": "UN News via Global Issues",
+          "url": "https://www.globalissues.org/news/2026/10/28/44458"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The U.N. General Assembly again voted to condemn the U.S. embargo on Cuba: one hundred thirty in favor, seventeen against, twenty-five abstaining. Last year it was one sixty-five to seven, with twelve abstentions."
+        },
+        {
+          "who": "joe",
+          "text": "Germany and Italy abstained. Al Jazeera notes both had voted in favor before."
+        },
+        {
+          "who": "vex",
+          "text": "The U.S. ambassador, Mike Waltz, said major economies had shifted. He told the Assembly, quote, there is no blockade, and blamed Cuba's troubles on its own government."
+        },
+        {
+          "who": "joe",
+          "text": "Cuba's foreign minister, Bruno Rodríguez, said the United States was isolated again while trying to strangle the Cuban people. U.N. News describes the island as in a severe energy crisis, which it ties to a U.S. fuel embargo."
+        },
+        {
+          "who": "vex",
+          "text": "The vote is symbolic. It does not repeal the embargo."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "KING TIDES FLOOD COASTS; CYCLONE ARNAB KILLS 3 IN INDIA",
+      "headline": "Floods, a cyclone and a fading storm",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "King tides, Arnab, Vance",
+        "bullets": [
+          "King tides flood California, Florida, Carolinas",
+          "NWS: 1–2 ft inundation on Outer Banks; NC-12 closed at Rodanthe",
+          "Arnab: 3 dead, 31 houses, 57,000 in relief camps",
+          "Vance now a depression, no watches"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Associated Press",
+          "url": "https://apnews.com/article/king-tides-florida-california-carolina-flooding-bd3d4258b785f428fdbdb961c4355a67"
+        },
+        {
+          "name": "National Weather Service",
+          "url": "https://www.weather.gov/wwamap/wwatxtget.php?cwa=usa&wwa=all"
+        },
+        {
+          "name": "TBS News, citing NDRF",
+          "url": "https://www.tbsnews.net/world/south-asia/cyclone-arnab-kills-three-damages-31-houses-india-1585861"
+        },
+        {
+          "name": "National Hurricane Center",
+          "url": "https://www.nhc.noaa.gov/mobile/text/MIATCPEP2.html"
+        },
+        {
+          "name": "Japan Meteorological Agency",
+          "url": "https://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/RSMC_HP.htm"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "King tides flooded streets, homes and businesses along coastal California, Florida and the Carolinas, AP reports. A section of Pacific Coast Highway in Orange County was shut. The National Weather Service cites one to two feet of water in low-lying parts of North Carolina's Outer Banks, and N.C.-twelve is closed near Rodanthe."
+        },
+        {
+          "who": "joe",
+          "text": "In India, Cyclone Arnab weakened to a severe cyclonic storm after crossing near Yanam. The disaster force's preliminary report is three deaths in Andhra Pradesh, thirty-one houses damaged, and about fifty-seven thousand people in relief camps."
+        },
+        {
+          "who": "vex",
+          "text": "Off Mexico, Vance is a tropical depression with thirty-five mile an hour winds, expected to go post-tropical within a day. No coastal watches or warnings are posted."
+        },
+        {
+          "who": "joe",
+          "text": "In the western Pacific, Typhoon In-fa is on the Japan Meteorological Agency's active list. A tracking site shows winds near two hundred fifteen kilometers an hour. That is the tracker's display, not the agency's own figure."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "GMO OFFERS $1M BOUNTY OVER CLOUD BREACH; HACKER CLAIMED AT DHS",
+      "headline": "Cyber: a bounty and a leak",
+      "category": "CYBER",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "GMO bounty; DHS records claim",
+        "bullets": [
+          "GMO: 113 tips in six hours",
+          "Up to 26,739 servers potentially affected",
+          "No malware confirmed on devices analyzed so far",
+          "The Verge: hacker took 40,000+ DHS records"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Hacker News",
+          "url": "https://thehackernews.com/2026/10/japans-gmo-offers-1-million-bounty-to.html"
+        },
+        {
+          "name": "GMO Internet",
+          "url": "https://internet.gmo/en/news/article/260/"
+        },
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com/tech/1021528/ice-cbp-data-leak"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Japan's GMO Internet Group has opened a bounty of up to one million dollars for information leading to the arrest of whoever attacked its Onamae Desktop Cloud service. It says twenty-six thousand seven hundred thirty-nine servers were potentially affected, and that does not mean all were breached."
+        },
+        {
+          "who": "joe",
+          "text": "In six hours the bounty site received one hundred thirteen tips. GMO says analysis of customer devices has not confirmed malware or ransomware, and its investigation continues."
+        },
+        {
+          "who": "vex",
+          "text": "In the U.S., The Verge reports that a hacker stole more than forty thousand employee records from the Department of Homeland Security. That is the outlet's report, and the government's account was not in our sources."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "BREWERS WIN FIRST WORLD SERIES, BEAT RAYS 4–1 IN GAME 5",
+      "headline": "Milwaukee wins it all",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Brewers win the World Series",
+        "bullets": [
+          "Game 5: Milwaukee 4, Tampa Bay 1",
+          "First championship in club history",
+          "Misiorowski: 5⅔ scoreless innings",
+          "SoftBank sweeps Japan Series"
+        ]
+      },
+      "sources": [
+        {
+          "name": "MLB.com",
+          "url": "https://www.mlb.com/brewers/news/brewers-beat-rays-game-5-win-2026-world-series"
+        },
+        {
+          "name": "Pacific League",
+          "url": "https://pacificleague.com/en/news/2026/10/10056524"
+        },
+        {
+          "name": "PlanetSport",
+          "url": "https://www.planetsport.com/soccer/matches/all/2026-10-28"
+        },
+        {
+          "name": "Patriots.com",
+          "url": "https://www.patriots.com/news/week-8-injury-report-patriots-at-dolphins-x9227"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Milwaukee won its first World Series. The Brewers beat Tampa Bay four to one in Game Five. Jacob Misiorowski threw five and two-thirds scoreless innings."
+        },
+        {
+          "who": "joe",
+          "text": "In Japan, SoftBank beat DeNA four to two to sweep the Japan Series. It is the Hawks' thirteenth title and their second straight."
+        },
+        {
+          "who": "vex",
+          "text": "In England's League Cup, Liverpool and Chelsea drew one-one, Manchester City and Brighton two-two, Bournemouth beat Aston Villa three-nil, and Sunderland beat Brentford three-two. In Serie A, Bologna won four-two at Milan and Inter won two-nil at Venezia."
+        },
+        {
+          "who": "joe",
+          "text": "In the N.F.L., the Patriots visit Miami in Week Eight. New England lists A.J. Brown among players limited. Miami lists two players with concussion-related status as not participating."
+        },
+        {
+          "who": "vex",
+          "text": "In Korea, Samsung visits KIA tonight for Game Three of the playoff series, tied after Samsung's Game Two win."
+        }
+      ]
+    },
+    {
+      "id": "also-today",
+      "kind": "story",
+      "strap": "ALSO TODAY: AUSTRALIA CASINO FINE, FRANCE PROTESTS, TRUCKING AND MORE",
+      "headline": "Also today",
+      "category": "ALSO TODAY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "The quick hits",
+        "bullets": [
+          "Star Entertainment fined A$260 million",
+          "French students plan marches Oct. 31 and Nov. 5",
+          "Australia's inflation 4.3%",
+          "UPS plans 5.9% average rate rise Dec. 21"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Yahoo Finance",
+          "url": "https://au.finance.yahoo.com/news/star-entertainment-hit-260-million-004300210.html"
+        },
+        {
+          "name": "Australian Bureau of Statistics",
+          "url": "https://www.abs.gov.au/media-centre/media-releases/cpi-rose-43-year-september-2026"
+        },
+        {
+          "name": "Deseret News",
+          "url": "https://www.deseret.com/the-west/2026/10/28/france-announces-education-changes-as-protesters-vow-to-return/"
+        },
+        {
+          "name": "Boursorama / AFP",
+          "url": "https://www.boursorama.com/bourse/actualites/la-bourse-de-paris-termine-a-l-equilibre-avant-la-fed-et-la-bce-9658d4f2f07a5755904ee891ed458cab"
+        },
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/business/energy/petrobras-third-quarter-oil-gas-output-rises-12-year-earlier-2026-10-28/"
+        },
+        {
+          "name": "Transportation Insight",
+          "url": "https://transportationinsight.com/resources/transportation-industry-trends-october-26-30-2026/"
+        },
+        {
+          "name": "NASA GCN",
+          "url": "https://gcn.nasa.gov/circulars/events/grb-261024d?limit=100&view=index"
+        },
+        {
+          "name": "Box Office Mojo",
+          "url": "https://www.boxofficemojo.com/weekend/"
+        },
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com/tech/1021308/apple-touchscreen-macbook-pro-proled-xdr-fully-specced"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Quick hits. A federal court in Australia ordered Star Entertainment to pay two hundred sixty million Australian dollars for money-laundering breaches. The regulator had sought four hundred million."
+        },
+        {
+          "who": "joe",
+          "text": "Australia's inflation rate rose to four point three percent in September, from four."
+        },
+        {
+          "who": "vex",
+          "text": "In France, student leaders vow marches on October thirty-first and November fifth, after a government education offer, according to the Deseret News."
+        },
+        {
+          "who": "joe",
+          "text": "Stellantis shares jumped fifteen percent after a four-hundred-fifty-three-million-euro loss that analysts called in line."
+        },
+        {
+          "who": "vex",
+          "text": "Petrobras reports record exports and third-quarter output up nearly twelve percent."
+        },
+        {
+          "who": "joe",
+          "text": "UPS plans an average five point nine percent rate increase from December twenty-first, while truckload capacity stays tight."
+        },
+        {
+          "who": "vex",
+          "text": "NASA logged a gamma-ray burst, detected October twenty-fourth, seen by several space telescopes."
+        },
+        {
+          "who": "joe",
+          "text": "In entertainment, Clayface led the weekend box office, and Jailer 2 has passed seven hundred fifty crore rupees worldwide."
+        },
+        {
+          "who": "vex",
+          "text": "And Apple is charging fourteen thousand five hundred forty-nine dollars for a fully specced touchscreen MacBook Pro, per The Verge."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "LIVE WIRE",
+        "title": "More headlines as they come in"
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Until the next show",
+      "category": "SIGN-OFF",
+      "graphic": {
+        "kicker": "SIGN-OFF",
+        "title": "A new show every day by morning"
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's Heartbeat News. A new show every day by morning."
+        },
+        {
+          "who": "vex",
+          "text": "I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. Take care of each other."
+        }
+      ]
+    }
+  ]
+}
