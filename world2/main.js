@@ -1613,7 +1613,7 @@ function buildPlotPads() {
     disc.position.set(pad.x, gy + 0.11, pad.z);
     disc.receiveShadow = true;
     scene.add(disc);
-    const sign = makeNameSprite("Empty plot \u00b7 sign in to claim", 1.25);
+    const sign = makeNameSprite("Empty plot", 2.4);
     sign.position.set(pad.x, gy + 2.2, pad.z);
     scene.add(sign);
     pad.sign = sign;
@@ -2024,6 +2024,7 @@ function animate() {
   updateCamera(dt);
   sendState();
   renderer.render(scene, camera);
+  document.getElementById("loadingWorld")?.classList.add("hidden");
   requestAnimationFrame(animate);
 }
 
