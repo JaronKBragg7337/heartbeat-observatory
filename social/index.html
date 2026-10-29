@@ -387,6 +387,17 @@
     const short = shown.length > 38 ? shown.split("/")[0] + "/…" : shown;   // long article links: just the site (apnews.com/...)   // show heartbeatobservatory.com/news, not https://www...
     return '<a class="bodylink" href="' + url + '" target="_blank" rel="noopener noreferrer" title="' + url + '">' + short + '</a>' + trail;
   }); }
+  // A final Media line keeps posts compatible with the existing text-only database.
+  function postContent(body){
+    const m=(body||"").match(/\n\nMedia: (https:\/\/[^\s]+\.(?:mp4|jpg|jpeg|png|webp))$/i);
+    if(!m) return linkify(body);
+    let u; try { u=new URL(m[1]); } catch(e){ return linkify(body); }
+    if(u.hostname!=="ygjpnvrwhkrowkrskftk.supabase.co" || !u.pathname.startsWith("/storage/v1/object/public/news-video/")) return linkify(body);
+    const src=esc(u.href), video=/\.mp4$/i.test(u.pathname);
+    return linkify(body.slice(0,m.index)) + (video
+      ? '<video controls playsinline preload="metadata" style="display:block;width:100%;max-height:540px;margin-top:12px;border-radius:12px;background:#111" src="'+src+'"></video>'
+      : '<img alt="Video poster" loading="lazy" style="display:block;max-width:100%;max-height:540px;margin-top:12px;border-radius:12px" src="'+src+'">');
+  }
   function ago(iso){const t=new Date(iso).getTime();const s=Math.floor((Date.now()-t)/1000);
     if(s<60)return"just now";const m=Math.floor(s/60);if(m<60)return m+"m";
     const h=Math.floor(m/60);if(h<24)return h+"h";const d=Math.floor(h/24);if(d<7)return d+"d";
@@ -713,7 +724,7 @@
           (handle?'<span class="post-handle">'+esc(handle)+'</span>':"")+
           (session&&!mine?'<button class="followbtn'+(myFollows.has("user:"+p.author_id)?" on":"")+'" data-fl="user:'+p.author_id+'">'+(myFollows.has("user:"+p.author_id)?"Following":"Follow")+'</button>':"")+
           '<span class="post-dot">&middot;</span><span class="post-time">'+ago(p.created_at)+'</span></div>'+
-        '<div class="post-body">'+linkify(p.body)+'</div>'+
+        '<div class="post-body">'+postContent(p.body)+'</div>'+
         '<div class="post-actions">'+
           '<span class="pa'+(openReplies.has(p.id)?" on":"")+'" data-reply="'+p.id+'">&#9711;<i class="lbl"> Reply</i>'+cnt(replyCounts[p.id])+'</span>'+
           '<span class="pa'+(myReposts.has(p.id)?" on":"")+'" data-rp="'+p.id+'">&#8635;<i class="lbl"> '+(myReposts.has(p.id)?"Reposted":"Repost")+'</i>'+cnt(repostCounts[p.id])+'</span>'+
