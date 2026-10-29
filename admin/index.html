@@ -178,7 +178,7 @@
     const em = prefillEmail ? escA(prefillEmail) : "";
     root.innerHTML =
       '<h1>Sign in</h1>' +
-      '<p class="lede">Sign in to post or to steer the site. Viewing never requires this.</p>' +
+      '<p class="lede">An account lets you post and message people. Anyone can look around without one.</p>' +
       '<div class="card">' +
         '<label for="email">Email</label>' +
         '<input id="email" type="email" autocomplete="username" placeholder="you@example.com" value="' + em + '" />' +
@@ -491,6 +491,7 @@
   async function renderUser(session) {
     root.innerHTML =
       topbar("You\u2019re in", session.user.email, false) +
+      '<p class="lede">Welcome! The board is a place to share ideas, questions, and what you are making. Anyone can see posts on the <a href="/social/">Social feed</a>.</p>' +
       '<div class="namebar" id="namebar"></div>' +
       '<div class="card">' + composeHtml() + '</div>' +
       '<h2 class="section">Your posts</h2>' +
@@ -593,7 +594,7 @@
 
   async function boot() {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) route(session); else renderLogin(null);
+    if (session) route(session); else if (location.hash === "#signup") renderSignup(null, null); else renderLogin(null);
   }
   boot();
 </script>

@@ -172,6 +172,7 @@
   // live status bar: real time, real battery where the browser shares it
   function tick() { $(".clock").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s?[AP]M/i, ""); }
   tick(); setInterval(tick, 15000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); });
   try { navigator.getBattery && navigator.getBattery().then(function (b) { var f = function () { $(".hbp-batt b").style.width = Math.round(b.level * 100) + "%"; }; f(); b.addEventListener("levelchange", f); }); } catch (e) {}
 
   // ---- apps ----
@@ -410,6 +411,7 @@
 
   // ---- open / close ----
   function open(app) {
+    tick();
     phone.classList.add("open"); scrim.classList.add("open"); document.documentElement.classList.add("hbp-open"); renderHome();
     if (app) setTimeout(function () { openApp(app); }, 120);
     if (state.session) { state.unread = 0; badge(); }

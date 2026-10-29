@@ -59,6 +59,7 @@
   /* Phones hide the other nav text links; the News tab stays. */
   .nav-actions .text-link.news-tab { display: inline-flex; }
   .nav-actions .text-link.nav-keep { display: inline-flex; font-weight: 700; }
+  @media (max-width: 600px) { .nav-actions { flex-wrap: wrap; justify-content: flex-start; gap: 8px 14px; padding-bottom: 8px; } }
 </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
 <script defer src="/_vercel/insights/script.js"></script>
@@ -73,8 +74,11 @@
       <a class="text-link news-tab" href="/news/"><span class="news-dot" aria-hidden="true"></span>News</a>
       <a class="text-link nav-keep" href="/tv/">TV</a>
       <a class="text-link nav-keep" href="/homes/">Loft</a>
+      <a class="text-link nav-keep" href="/studio/">Studio</a>
+      <a class="text-link nav-keep" href="/sparks/">Sparks</a>
       <a class="text-link nav-explore" href="#work">Explore</a>
       <a class="nav-button" id="authlink" href="/admin">Sign in</a>
+      <a class="nav-button" id="signuplink" href="/admin/#signup">Sign up</a>
     </div>
   </nav>
 
@@ -204,7 +208,7 @@
     <section class="statement" aria-labelledby="statement-title">
       <p class="section-label">The approach</p>
       <div>
-        <h2 id="statement-title">Open enough to change. Ensuring trust can be achieved</h2>
+        <h2 id="statement-title">Open enough to change. Built to earn trust.</h2>
         <p>The Observatory is for evolving public projects, games and other creations. People and AI can arrive with different purposes; the site describes what is available and leaves room for work to change, fail, or become something else.</p>
         <a href="/standards">Read about the Observatory <span aria-hidden="true">→</span></a>
       </div>
@@ -347,9 +351,10 @@
   const authlink = document.getElementById("authlink");
   (async () => { try {
     const { data:{ session } } = await supabase.auth.getSession();
-    if (session && authlink) authlink.textContent = "Account";
+    if (session && authlink) { authlink.textContent = "Account"; document.getElementById("signuplink").hidden = true; }
     supabase.auth.onAuthStateChange((_e, s) => {
       if (authlink) authlink.textContent = s ? "Account" : "Sign in";
+      document.getElementById("signuplink").hidden = !!s;
     });
   } catch(e) {} })();
 </script>
