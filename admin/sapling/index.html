@@ -8,6 +8,7 @@
 h1{font-size:22px;margin:4px 0 12px}h2{font-size:17px;margin:0 0 8px}
 .grid{display:grid;grid-template-columns:1fr;gap:12px}@media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0;overflow:hidden;overflow-wrap:anywhere}
+#status-card{grid-column:1/-1}
 .tbl{overflow-x:auto}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px}.kv b{color:var(--mut);font-weight:500}
 .meter{height:14px;background:var(--line);border-radius:7px;overflow:hidden;margin:6px 0}.meter i{display:block;height:100%;background:var(--acc)}
@@ -42,6 +43,7 @@ small{color:var(--mut)}.note{font-size:13px;color:var(--mut);margin:6px 0 0}.war
 <h1>Sapling control room <small id="alive"></small></h1>
 <div id="gate"><p>This page talks to the AI on the MSI and can change its rules, so it needs the owner.</p><p><a href="/admin">Sign in at /admin</a>, then come back here.</p></div>
 <div class="grid" id="main" data-active="talk">
+<div class="card" id="status-card"><h2>Status</h2><div id="status-content"><small>Loading the latest status...</small></div></div>
 <nav class="tabs" id="tabs" role="tablist" aria-label="Sapling sections"><a href="#talk" role="tab" data-t="talk">Talk</a><a href="#heartbeat" role="tab" data-t="heartbeat">Heartbeat</a><a href="#rules" role="tab" data-t="rules">Rules</a><a href="#exams" role="tab" data-t="exams">Exams</a><a href="#memory" role="tab" data-t="memory">Memory</a><a href="#archive" role="tab" data-t="archive">Archive</a></nav>
 <div class="card" data-tab="talk"><h2>Talk to it</h2>
 <div id="log" aria-live="polite"><small>loading the conversation...</small></div>
@@ -95,6 +97,7 @@ async function cloudTransport(){
   for(let i=0;i<60;i++){await new Promise(r=>setTimeout(r,1500));const {data:row}=await sb.from('sapling_commands').select('status,result').eq('id',data.id).single();if(row&&row.status!=='pending')return row.result||{}}
   return {error:'no answer from the MSI in 90 s (is the relay running? RECONNECT.md section 9)'}}
  return{email,
+  async status(){const {data,error}=await sb.from('sapling_status').select('state').eq('id',1).single();if(error)throw error;return data.state},
   async state(){const {data}=await sb.from('sapling_state').select('*').eq('id',1).single();const s=(data&&data.state)||{};s._relay_at=data&&data.updated_at;return s},
   async send(text){const {error}=await sb.from('sapling_commands').insert({kind:'chat',payload:{text},created_by:email});
   if(error)throw new Error('not saved: '+error.message+(error.code?' ('+error.code+')':'')+(error.hint?' - '+error.hint:''))},
@@ -102,6 +105,7 @@ async function cloudTransport(){
   if(error)throw new Error('could not read the conversation: '+error.message);
   return (data||[]).reverse().map(r=>({id:r.id,text:(r.payload&&r.payload.text)||'',status:r.status,result:r.result,at:r.created_at}))},
   async owner(kind,payload){return command(kind,payload)}}}
+async function loadStatus(){try{if(!T.status){$('status-content').textContent='Status is available on the phone page.';return}const s=await T.status();const p=s.practice||{};const ex=Object.entries(s.exams||{}).map(([k,v])=>`${esc(k)} ${esc(v.score)}${v.label?' ('+esc(v.label)+')':''} <small>${esc((v.date||'').slice(0,10))}</small>`).join(' · ');const loss=(s.loss||[]).map(x=>`gen ${esc(x.generation)}: ${esc(x.first)} → ${esc(x.last)}`).join('; ');$('status-content').innerHTML=`<div class="kv"><b>Updated</b><span>${esc(new Date(s.updated).toLocaleString())}</span><b>Now</b><span>${esc(s.state)} · last action ${esc(s.last_action)} · generation ${esc(s.generation)}</span><b>Today</b><span>${esc(s.ticks_today)} ticks · practice ${esc(p.ok)}/${esc(p.total)} · ${esc(s.folds_today)} folds, ${esc(s.new_facts_today)} new facts</span><b>Loss</b><span>${loss||'not recorded'} <small>(lower is better)</small></span><b>Exams</b><span>${ex||'not recorded'}</span><b>GPU</b><span>$${Number(s.gpu_spend_estimate).toFixed(2)} estimated <small>${esc(s.gpu_cost_note)}</small></span><b>Last said</b><span>${(s.said||[]).map(x=>'“'+esc(x)+'”').join('<br>')||'none recorded'}</span></div>`}catch(e){$('status-content').textContent='Status unavailable: '+(e.message||String(e))}}
 async function refresh(){try{const d=await T.state();
  const stale=d._relay_at&&(Date.now()-new Date(d._relay_at).getTime())>30000;
  $('alive').textContent=stale?'relay silent since '+fmt((Date.now()-new Date(d._relay_at).getTime())/1000)+' ago':(d.running?'beating':(d.down?'heartbeat process is down':'stopped'));
@@ -175,5 +179,5 @@ async function send(){const inp=$('msg'),m=inp.value.trim();if(!m)return;const b
  pollThread()}
 let polling=false;
 async function pollThread(){if(polling)return;polling=true;try{for(let i=0;i<60;i++){const items=await loadThread();if(!items.some(x=>x.status==='pending'))break;await new Promise(r=>setTimeout(r,2000))}}finally{polling=false}}
-(async()=>{T=LOCAL?localTransport():await cloudTransport();if(!T)return;refresh();loadThread().then(pollThread);setInterval(refresh,4000);setInterval(()=>{if(!polling)loadThread()},6000)})();
+(async()=>{T=LOCAL?localTransport():await cloudTransport();if(!T)return;loadStatus();setInterval(loadStatus,60000);refresh();loadThread().then(pollThread);setInterval(refresh,4000);setInterval(()=>{if(!polling)loadThread()},6000)})();
 </script></body></html>
