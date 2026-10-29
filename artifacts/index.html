@@ -56,7 +56,7 @@
           <p>${esc(a.what)}</p>
           <p><b class="k">How</b>${esc(a.made)}</p>
           <p class="honest"><b class="k">Not there yet</b>${esc(a.honest)}</p>
-          ${(a.links || []).map((l) => Array.isArray(l) ? { label: l[0], href: l[1] } : l).filter((l) => l && typeof l.href === "string" && l.href.trim() && l.label).map((l) => `<p><a href="${esc(l.href.trim())}">${esc(l.label)}</a></p>`).join("")}
+          ${(a.links || []).map((l) => Array.isArray(l) ? { label: l[0], href: l[1] } : l && { label: l.label, href: l.href || l.url }).filter((l) => l && typeof l.href === "string" && l.href.trim() && l.label).map((l) => `<p><a href="${esc(l.href.trim())}">${esc(l.label)}</a></p>`).join("")}
         </div>
       </article>`).join("");
   }).catch(() => { document.getElementById("list").innerHTML = '<p class="note">Couldn\'t load the list. Try again in a moment.</p>'; });
