@@ -26,17 +26,19 @@
 const T = window.TOWN;
 if (!T) { console.warn("world3: the town did not load"); return; }
 
-/* ------------------------------------------------------------------------ *
-   1. The town's own touch layer must not fight the shell's.
-   town/render/player.js binds touchstart/touchmove on window for a FIXED
-   stick; the shell uses pointer events for a floating one. Both would write
-   Player.move from the same finger. Rather than fork the town copy, swallow
-   the touch events before its listeners see them -- capture runs first.
- * ------------------------------------------------------------------------ */
-const swallow = (e) => { e.stopImmediatePropagation(); };
-for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
-  addEventListener(type, swallow, { capture: true });
-}
+/* Desktop look follows a drag on the world, leaving the pointer free for HUD controls. */
+const canvas = document.getElementById("gl");
+let mouseLook = false;
+canvas.addEventListener("pointerdown", (e) => { if (e.pointerType === "mouse" && e.button === 0) mouseLook = true; });
+window.addEventListener("pointerup", () => { mouseLook = false; });
+window.addEventListener("blur", () => { mouseLook = false; });
+window.addEventListener("pointermove", (e) => {
+  if (mouseLook && T.Player) {
+    const k = 0.0022 * ((T.Settings && T.Settings.sens) || 1);
+    T.Player.yaw -= e.movementX * k;
+    T.Player.pitch = T.clamp(T.Player.pitch - e.movementY * k * ((T.Settings && T.Settings.invertY) ? -1 : 1), -1.52, 1.52);
+  }
+});
 
 /* ------------------------------------------------------------------------ *
    2. Peer avatars. town/render/npcs.js receives the renderer's private

@@ -59,6 +59,7 @@ function sanitizeName(raw) {
 const CSS = `
 .hbs-hud{position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));z-index:70;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100vw - 120px);pointer-events:none;font:600 11px/1 system-ui,-apple-system,sans-serif;letter-spacing:.04em}
 .hbs-chip{background:rgba(14,20,23,.82);border:1px solid #2c3a42;color:#cfe0ea;border-radius:8px;padding:8px 11px;backdrop-filter:blur(8px);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+.hbs-chip.count{pointer-events:auto;cursor:pointer;font:inherit}
 .hbs-chip.on{color:#7ce38b}
 .hbs-chip.place{color:#8fd0ff}
 .hbs-top-right{position:fixed;top:calc(8px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));z-index:71;display:flex;gap:6px}
@@ -168,8 +169,9 @@ HBShell.mount = function mount(options) {
 
   /* ---------------------------------------------------------------- dom - */
   const hud = el("div", "hbs-hud");
-  const cStatus = chip("connecting"), cCount = chip("0 live"), cNet = chip("realtime"),
+  const cStatus = chip("connecting"), cCount = el("button", "hbs-chip count"), cNet = chip("realtime"),
         cName = chip("Guest"), cPlace = chip(opts.worldLabel, "place");
+  cCount.type = "button"; cCount.textContent = "0 live"; cCount.setAttribute("aria-label", "People here");
   hud.append(cStatus, cCount, cNet, cName, cPlace);
 
   const topRight = el("div", "hbs-top-right");
@@ -230,7 +232,7 @@ HBShell.mount = function mount(options) {
      kill every control on the page. */
   function onChrome(e) {
     const t = e.target;
-    return !!(t && typeof t.closest === "function" && t.closest(".hbs-act,.hbs-icon,.hbs-panel"));
+    return !!(t && typeof t.closest === "function" && t.closest(".hbs-act,.hbs-icon,.hbs-panel,.hbs-chip.count"));
   }
 
   addEventListener("pointerdown", (e) => {
@@ -266,6 +268,7 @@ HBShell.mount = function mount(options) {
 
   bPhone.addEventListener("click", () => { closeMenu(); togglePhone(); });
   bMenu.addEventListener("click", () => { closePhone(); toggleMenu(); });
+  cCount.addEventListener("click", () => { closeMenu(); openPhone("people"); });
 
   /* --------------------------------------------------------- the prompt - */
   shell.setPrompt = function (text) {

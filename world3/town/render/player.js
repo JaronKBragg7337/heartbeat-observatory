@@ -186,7 +186,7 @@ Pl.bindInput = function (canvas) {
   });
   addEventListener("blur", () => { for (const k in K) K[k] = false; Pl.sprint = false; });
 
-  canvas.addEventListener("click", () => { if (!T.mobile && !locked) canvas.requestPointerLock(); });
+  canvas.addEventListener("click", () => { if (!window.WORLD3_SHELL && !T.mobile && !locked) canvas.requestPointerLock(); });
   document.addEventListener("pointerlockchange", () => { locked = document.pointerLockElement === canvas; });
   addEventListener("mousemove", (e) => {
     if (!locked) return;
@@ -203,6 +203,7 @@ Pl.bindInput = function (canvas) {
   let stickId = null, lookId = null, sx0 = 0, sy0 = 0, lx = 0, ly = 0;
 
   const onStart = (e) => {
+    if (window.WORLD3_SHELL) return;
     for (const t of e.changedTouches) {
       if (t.clientX < innerWidth * 0.45 && stickId === null) {
         stickId = t.identifier;
@@ -212,6 +213,7 @@ Pl.bindInput = function (canvas) {
     }
   };
   const onMove = (e) => {
+    if (window.WORLD3_SHELL) return;
     for (const t of e.changedTouches) {
       if (t.identifier === stickId) {
         const dx = T.clamp((t.clientX - sx0) / 52, -1, 1), dy = T.clamp((t.clientY - sy0) / 52, -1, 1);
