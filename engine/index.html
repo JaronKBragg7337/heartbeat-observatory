@@ -135,7 +135,7 @@
   let myName = "Guest";
   (async()=>{ try{
     const { data:{ session } }=await supabase.auth.getSession();
-    if(session){ authlink.textContent="Account"; myUserId=session.user.id;
+    if(session && session.user && !session.user.is_anonymous){ authlink.textContent="Account"; myUserId=session.user.id;
       document.getElementById("joinlink").textContent="You\u2019re in the world \u2192";
       try{ const { data:me }=await supabase.from("people").select("display_name").eq("auth_user_id", myUserId).maybeSingle(); if(me&&me.display_name) myName=me.display_name; }catch(e){}
       try{ await supabase.rpc("world_presence",{ p_present:true }); }catch(e){}
