@@ -160,7 +160,7 @@ HBShell.mount = function mount(options) {
     supa: null, session: null, uid: null,
     displayName: "", handle: "",
     appearance: { body: "person", build: "regular", shirt: "#4fa3ff", skin: "#e0b48c", hair: "#5a3a22", pants: "#3a4654", pattern: "plain" },
-    settings: loadSettings(),
+    settings: loadSettings(), isAdmin: false,
     channel: null, connected: false,
     peers: new Map(),
     place: "",
@@ -176,7 +176,7 @@ HBShell.mount = function mount(options) {
 
   const topRight = el("div", "hbs-top-right");
   const bPhone = el("button", "hbs-icon"); bPhone.textContent = "▣"; bPhone.setAttribute("aria-label", "Phone");
-  const bMenu = el("button", "hbs-icon"); bMenu.textContent = "☰"; bMenu.setAttribute("aria-label", "Menu");
+  const bMenu = el("button", "hbs-icon"); bMenu.textContent = "⚙ Settings"; bMenu.setAttribute("aria-label", "Settings"); bMenu.title = "Settings";
   topRight.append(bPhone, bMenu);
 
   const stick = el("div", "hbs-stick"); stick.appendChild(document.createElement("i"));
@@ -295,9 +295,9 @@ HBShell.mount = function mount(options) {
   // 2026-09-26: the site has one phone now (bubble.js, window.HBPhone). The shell's buttons open that one; this panel
   // stays only as a fallback if the site phone failed to load.
   function togglePhone() { if (window.HBPhone) return window.HBPhone.open(); phone.classList.contains("open") ? closePhone() : openPhone(); }
-  function closePhone() { phone.classList.remove("open"); }
+  function closePhone() { phone.classList.remove("open"); if (window.HBPhone) window.HBPhone.close(); }
   function openPhone(view) {
-    if (window.HBPhone) return window.HBPhone.open(view === "messages" || view === "people" ? "messages" : undefined);
+    if (window.HBPhone && view !== "people") return window.HBPhone.open(view === "messages" ? "messages" : undefined);
     phone.classList.add("open");
     phoneView = view || "home";
     renderPhone();
@@ -476,8 +476,8 @@ HBShell.mount = function mount(options) {
             ? "Saved to your account — the same body in every world."
             : `<a class="hbs-link" href="/admin">Sign in</a> to keep this character across worlds.`}</div>
          <div class="hbs-lab">World</div>
-         <div class="hbs-row"><span>Developer tools</span><input type="checkbox" id="hbsDev" ${s.dev ? "checked" : ""}></div>
-         <div class="hbs-note">Inspect, edit, orbit and tour. Off by default — they are not player controls.</div>
+         ${shell.isAdmin ? `<div class="hbs-row"><span>Developer tools</span><input type="checkbox" id="hbsDev" ${s.dev ? "checked" : ""}></div>
+         <div class="hbs-note">Inspect, edit, orbit and tour. Off by default — they are not player controls.</div>` : ""}
          <div class="hbs-row"><a class="hbs-link" href="${opts.gateUrl}">Leave ${esc(opts.worldLabel)}</a></div>
        </div>`;
 
@@ -505,7 +505,7 @@ HBShell.mount = function mount(options) {
     n.addEventListener("input", () => {
       shell.settings[key] = isCheck ? n.checked : (cast ? cast(n.value) : n.value);
       saveSettings(shell.settings);
-      opts.onSettings(shell.settings);
+      opts.onSettings({ ...shell.settings, dev: shell.isAdmin && shell.settings.dev });
     });
   }
 
@@ -549,6 +549,9 @@ HBShell.mount = function mount(options) {
     shell.uid = shell.session ? shell.session.user.id : null;
 
     if (shell.uid) {
+      try { const { data } = await shell.supa.rpc("is_admin"); shell.isAdmin = data === true; } catch (_) {}
+      opts.onSettings({ ...shell.settings, dev: shell.isAdmin && shell.settings.dev });
+      if (menu.classList.contains("open")) renderMenu();
       const { data: ch } = await shell.supa.from("world_characters")
         .select("display_name, appearance, worlds_visited").eq("auth_user_id", shell.uid).maybeSingle();
       if (ch) {
@@ -730,15 +733,15 @@ HBShell.mount = function mount(options) {
 
   /* keyboard parity, desktop */
   addEventListener("keydown", (e) => {
-    if (e.target.matches("input,textarea,select")) return;
+    if (e.key === "Escape") { closePhone(); closeMenu(); return; }
+    if (e.target.matches && e.target.matches("input,textarea,select")) return;
     const k = e.key.toLowerCase();
     if (k === "e") opts.onAction("use");
     else if (k === " ") opts.onAction("jump");
-    else if (k === "escape") { closePhone(); closeMenu(); }
   });
 
   void connect().catch(() => { cStatus.textContent = "offline"; });
-  opts.onSettings(shell.settings);
+  opts.onSettings({ ...shell.settings, dev: false });
   /* One mounted shell per page. Exposed so a world, a console or a test can
      read who is connected and where they are without reaching into a closure. */
   HBShell.current = shell;

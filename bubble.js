@@ -451,7 +451,7 @@
   }, { passive: true });
   scrim.addEventListener("click", close);
   launch.addEventListener("click", function () { phone.classList.contains("open") ? close() : open(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && phone.classList.contains("open")) close(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && phone.classList.contains("open")) close(); }, true);
 
   // ---- data ----
   async function loadPeople() {
