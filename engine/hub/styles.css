@@ -83,3 +83,5 @@ button:disabled { cursor: default; opacity: 0.45; }
 @media (max-width: 480px) { .panel { gap: 10px; } .panel h1 { max-width: min(330px, 86vw); font-size: 27px; line-height: 1.06; } .panel p { max-width: min(320px, 88vw); } .panel .intro { max-width: min(318px, 88vw); font-size: 12px; line-height: 1.42; } #enterButton { min-height: 42px; font-size: 16px; } }
 
 #throwButton { position: absolute; right: calc(max(24px, env(safe-area-inset-right)) + 102px); bottom: calc(max(34px, env(safe-area-inset-bottom)) + 164px); width: 68px; height: 68px; border-radius: 50%; pointer-events: auto; font-size: 12px; background: #cfeffe; color: #06243a; border: none; }
+
+@media (max-width: 720px) { #askLaunch { left: auto !important; right: max(14px, env(safe-area-inset-right)) !important; top: calc(max(14px, env(safe-area-inset-top)) + 46px) !important; transform: none !important; } }

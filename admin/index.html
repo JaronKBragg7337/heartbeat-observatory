@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="/hb-device-tier.js"></script>
 <title>Sign in · Heartbeat Observatory</title>
+<script>if (location.hash === "#signup") document.title = "Sign up · Heartbeat Observatory";</script>
 <style>
   :root { --bg:#070a0f; --panel:#0e131b; --line:#1c2530; --text:#e6edf3; --muted:#7d8896;
     --beat:#e23a45; --ok:#3fb950; --amber:#d9a23a; }
@@ -14,6 +15,11 @@
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:40px 20px; }
   .wrap { width:100%; max-width:640px; }
+  .loading { margin-top:24px; color:var(--muted); display:flex; align-items:center; gap:10px; }
+  .spinner { width:20px; height:20px; border:2px solid var(--line); border-top-color:var(--text); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce) { .spinner { animation:none; } }
+  @media (max-width:600px) { body.signup-screen .hbp-launch { display:none !important; } }
   .mark { display:inline-flex; align-items:center; gap:10px; font-size:13px; letter-spacing:0.18em;
     text-transform:uppercase; color:var(--muted); }
   .pulse { width:9px; height:9px; border-radius:50%; background:var(--beat); }
@@ -100,7 +106,7 @@
 <body>
   <div class="wrap">
     <div class="mark"><span class="pulse"></span> Heartbeat Observatory</div>
-    <div id="root"></div>
+    <div id="root"><div class="loading" role="status"><span class="spinner" aria-hidden="true"></span>Loading…</div></div>
   </div>
 
 <script type="module">
@@ -176,6 +182,9 @@
   }
 
   function renderLogin(error, prefillEmail) {
+    document.title = "Sign in · Heartbeat Observatory";
+    document.body.classList.remove("signup-screen");
+    if (location.hash === "#signup") history.replaceState(null, "", location.pathname + location.search);
     const em = prefillEmail ? escA(prefillEmail) : "";
     root.innerHTML =
       '<h1>Sign in</h1>' +
@@ -215,6 +224,8 @@
 
   /* ---------- Create account ---------- */
   function renderSignup(message, prefill, kind) {
+    document.title = "Sign up · Heartbeat Observatory";
+    document.body.classList.add("signup-screen");
     const n = prefill && prefill.name ? escA(prefill.name) : "";
     const em = prefill && prefill.email ? escA(prefill.email) : "";
     const tone = message ? (kind === "ok" ? "ok" : "err") : "";
@@ -231,6 +242,7 @@
           '<input id="password" type="password" autocomplete="new-password" placeholder="At least 6 characters" />' +
           '<button type="button" class="pwtoggle" id="pwtoggle">Show</button>' +
         '</div>' +
+        '<p class="hint">For a stronger password, use a long, unique passphrase.</p>' +
         '<label for="password2">Confirm password</label>' +
         '<div class="pwwrap">' +
           '<input id="password2" type="password" autocomplete="new-password" placeholder="Type it again" />' +
@@ -298,16 +310,17 @@
       return fail("Check your email to confirm.", "ok");
     }
     try { await supabase.from("people").update({ display_name: name }).eq("auth_user_id", data.session.user.id); } catch (e) {}
-    boot();
+    history.replaceState(null, "", location.pathname + location.search);
+    route(data.session, true);
   }
 
   /* ---------- Routing ---------- */
-  async function route(session) {
+  async function route(session, accountCreated) {
     let isAdmin = false;
     try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {}
     // 10/17: an admin signed in on this device = our own device; stop counting it as a visitor (analytics + TV tally)
     if (isAdmin) { try { localStorage.setItem("hb-internal", "1"); } catch (e) {} }
-    if (isAdmin) renderCockpit(session); else renderUser(session);
+    if (isAdmin) renderCockpit(session); else renderUser(session, accountCreated);
   }
 
   /* ---------- Compose (shared) ---------- */
@@ -489,9 +502,11 @@
       t.appendChild(el);
     }
   }
-  async function renderUser(session) {
+  async function renderUser(session, accountCreated) {
+    document.body.classList.add("signup-screen");
     root.innerHTML =
       topbar("You\u2019re in", session.user.email, false) +
+      (accountCreated ? '<p class="hint">Account created.</p>' : '') +
       '<p class="lede">Welcome! The board is a place to share ideas, questions, and what you are making. Anyone can see posts on the <a href="/social/">Social feed</a>.</p>' +
       '<div class="namebar" id="namebar"></div>' +
       '<div class="card">' + composeHtml() + '</div>' +
@@ -593,9 +608,22 @@
     saved.className = "msg ok"; saved.textContent = (s ? s.name : "Section") + " set to " + value.replace("_"," ") + " \u2713";
   }
 
+  function renderAlreadySignedIn(session) {
+    document.title = "Sign up · Heartbeat Observatory";
+    document.body.classList.add("signup-screen");
+    root.innerHTML = '<h1>You’re in</h1><p class="lede">You’re signed in as ' + esc(session.user.email) + '.</p>' +
+      '<p><a href="#signup" id="new-account">Sign out to make a new account</a></p>' + backlinks;
+    document.getElementById("new-account").onclick = async (e) => {
+      e.preventDefault();
+      const { error } = await supabase.auth.signOut();
+      if (error) { root.insertAdjacentHTML("beforeend", '<p class="msg err">Could not sign out. Try again.</p>'); return; }
+      renderSignup(null, null);
+    };
+  }
+
   async function boot() {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) route(session); else if (location.hash === "#signup") renderSignup(null, null); else renderLogin(null);
+    if (session && location.hash === "#signup") renderAlreadySignedIn(session); else if (session) route(session); else if (location.hash === "#signup") renderSignup(null, null); else renderLogin(null);
   }
   boot();
 </script>

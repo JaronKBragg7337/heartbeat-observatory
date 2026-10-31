@@ -58,6 +58,7 @@ const welcomeName = document.querySelector("#welcomeName");
 const params = new URLSearchParams(location.search);
 let displayName = sanitizeDisplayName(params.get("name"));
 const hintedUserId = params.get("uid");
+const explicitGuest = params.get("name")?.trim().toLowerCase() === "guest" && !hintedUserId;
 const requestedVisitorKind = /^(ai|ai-visitor)$/i.test(params.get("visitor") || params.get("kind") || "")
   ? "ai-visitor"
   : "guest";
@@ -86,7 +87,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-10-28-visitors"; // matches the main.js version in hub HTML
+const BUILD = "2026-10-30-phone-ui"; // matches the main.js version in hub HTML
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 // Declared up here, not beside installWindowAssemblies(): updateDayNight() runs
@@ -991,7 +992,7 @@ async function loadIdentity() {
   try {
     isAdmin = false;
     const { data: { session } } = await ensureSupabase().auth.getSession();
-    if (session?.user?.id) {
+    if (session?.user?.id && !explicitGuest) {
       myUserId = session.user.id;
       myId = myUserId;
       guestId = null;
@@ -1035,7 +1036,7 @@ async function loadIdentity() {
       guestId = getSessionVisitorId(visitorKind);
       myId = guestId;
       wantsSelfPresence = false;
-      if (displayName === "Guest") displayName = defaultVisitorName(visitorKind, guestId);
+      if (displayName === "Guest" && !explicitGuest) displayName = defaultVisitorName(visitorKind, guestId);
     }
   } catch {
     myUserId = null;
@@ -1043,7 +1044,7 @@ async function loadIdentity() {
     guestId = getSessionVisitorId(visitorKind);
     myId = guestId;
     wantsSelfPresence = false;
-    if (displayName === "Guest") displayName = defaultVisitorName(visitorKind, guestId);
+    if (displayName === "Guest" && !explicitGuest) displayName = defaultVisitorName(visitorKind, guestId);
   }
 
   myAppearance = normalizeAppearance(myAppearance, myUserId || displayName);
