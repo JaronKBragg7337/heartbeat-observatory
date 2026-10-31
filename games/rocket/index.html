@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b1424" />
+<meta name="description" content="Build a rocket, launch it, touch the clouds and reach space. Real physics, made simple. Plays on a phone." />
+<title>Heartbeat Rocket</title>
+<!-- hb:no-phone -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;800&display=swap" />
+<link rel="stylesheet" href="./style.css" />
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<div id="app">
+  <canvas id="c" aria-label="Rocket game view"></canvas>
+
+  <div id="ui">
+    <header class="top">
+      <div class="goal" id="goal"><span class="goal-k">Goal</span><span id="goalText">Touch the clouds</span></div>
+      <div class="corner">
+        <button class="mini" id="btnSound" aria-label="Sound on" title="Sound">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path id="sndWaves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="mini" id="btnNums" aria-pressed="false" aria-label="Show real numbers (for grown-ups)" title="Real numbers">123</button>
+      </div>
+    </header>
+
+    <!-- Hangar -->
+    <section id="hangarUI" class="hangar">
+      <p class="tip" id="hangarTip">Tap a part to change it</p>
+      <div class="parts" id="parts">
+        <button class="part" id="pNose"><span class="pk">Nose</span><span class="pv" id="vNose">Capsule</span></button>
+        <button class="part" id="pTank"><span class="pk">Tank</span><span class="pv" id="vTank">Short</span><span class="new" id="newTank" hidden>New</span></button>
+        <button class="part" id="pEngine"><span class="pk">Engine</span><span class="pv" id="vEngine">Small</span></button>
+        <button class="part" id="pFins" hidden><span class="pk">Fins</span><span class="pv" id="vFins">On</span><span class="new" id="newFins" hidden>New</span></button>
+      </div>
+      <button class="launch" id="btnLaunch">LAUNCH</button>
+    </section>
+
+    <!-- Flight -->
+    <section id="flightUI" class="flight" hidden>
+      <div class="fl-top">
+        <button class="round" id="btnHome" aria-label="Back to hangar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+        </button>
+        <button class="round wide" id="btnMap" aria-label="Map">Map</button>
+      </div>
+      <div class="prog" aria-hidden="true">
+        <div class="prog-goal" id="progGoal"></div>
+        <div class="prog-track"><div class="prog-fill" id="progFill"></div><div class="prog-dot" id="progDot"></div></div>
+      </div>
+      <div class="fuel" aria-label="Fuel">
+        <div class="fuel-track"><div class="fuel-fill" id="fuelFill"></div></div>
+        <span class="fuel-k">fuel</span>
+      </div>
+      <button class="chute" id="btnChute" hidden>Open parachute</button>
+      <div class="ff" id="ff" hidden>fast-forward &rsaquo;&rsaquo;</div>
+      <div class="lean">
+        <div class="lean-track" id="leanTrack" role="slider" aria-label="Lean" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0" tabindex="0">
+          <div class="lean-notch"></div>
+          <div class="lean-thumb" id="leanThumb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l-5 6 5 6M15 6l5 6-5 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="lean-k"><span>&larr;</span><span>lean</span><span>&rarr;</span></div>
+      </div>
+    </section>
+
+    <div class="toast" id="toast" aria-live="polite"></div>
+    <div class="nums" id="nums" hidden></div>
+
+    <div class="mapwrap" id="mapWrap" hidden>
+      <canvas id="map"></canvas>
+      <p class="mapcap" id="mapCap">Your path. A line that hits the ground means you'll fall back. A line that goes all the way around means orbit!</p>
+      <button class="round mapclose" id="btnMapClose" aria-label="Close map">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="card-wrap" id="card" hidden>
+      <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+        <div class="card-art" id="cardArt"></div>
+        <h2 id="cardTitle">You touched the clouds!</h2>
+        <p id="cardText"></p>
+        <div class="unlock" id="cardUnlock" hidden></div>
+        <div class="next" id="cardNext" hidden></div>
+        <button class="btn-big" id="cardBtn">Back to hangar</button>
+      </div>
+    </div>
+
+    <div class="loading" id="loading"><div class="spin"></div><p>Getting the rocket ready&hellip;</p></div>
+  </div>
+</div>
+<script type="module" src="./game.js"></script>
+<script defer src="/hb-editor.js"></script>
+</body>
+</html>
