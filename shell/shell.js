@@ -57,7 +57,7 @@ function sanitizeName(raw) {
 /* Injected rather than shipped as a file so a world needs exactly one script
    tag. Everything is scoped under .hbs- so it cannot collide with a world. */
 const CSS = `
-.hbs-hud{position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));z-index:70;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100vw - 120px);pointer-events:none;font:600 11px/1 system-ui,-apple-system,sans-serif;letter-spacing:.04em}
+.hbs-hud{position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));z-index:70;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100vw - 180px);pointer-events:none;font:600 11px/1 system-ui,-apple-system,sans-serif;letter-spacing:.04em}
 .hbs-chip{background:rgba(14,20,23,.82);border:1px solid #2c3a42;color:#cfe0ea;border-radius:8px;padding:8px 11px;backdrop-filter:blur(8px);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
 .hbs-chip.count{pointer-events:auto;cursor:pointer;font:inherit}
 .hbs-chip.on{color:#7ce38b}
@@ -65,6 +65,7 @@ const CSS = `
 .hbs-top-right{position:fixed;top:calc(8px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));z-index:71;display:flex;gap:6px}
 .hbs-icon{width:46px;height:46px;border-radius:10px;background:rgba(14,20,23,.9);border:1px solid #2c3a42;color:#cfe0ea;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .hbs-icon:active{transform:scale(.94)}
+.hbs-icon.wide{width:auto;min-width:46px;padding:0 12px;font-size:15px;white-space:nowrap;gap:6px}
 
 /* Movement: no fixed pad. The stick is born under the thumb and dies with it. */
 .hbs-stick{position:fixed;z-index:64;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;
@@ -176,7 +177,7 @@ HBShell.mount = function mount(options) {
 
   const topRight = el("div", "hbs-top-right");
   const bPhone = el("button", "hbs-icon"); bPhone.textContent = "▣"; bPhone.setAttribute("aria-label", "Phone");
-  const bMenu = el("button", "hbs-icon"); bMenu.textContent = "⚙ Settings"; bMenu.setAttribute("aria-label", "Settings"); bMenu.title = "Settings";
+  const bMenu = el("button", "hbs-icon wide"); bMenu.textContent = "⚙ Settings"; bMenu.setAttribute("aria-label", "Settings"); bMenu.title = "Settings";
   topRight.append(bPhone, bMenu);
 
   const stick = el("div", "hbs-stick"); stick.appendChild(document.createElement("i"));
