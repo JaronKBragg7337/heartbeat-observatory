@@ -1,48 +1,36 @@
-// Heartbeat Rocket v1 - working title "Rocket".
-// Real physics in one flat plane (2D: inverse-square gravity, thrust, fuel mass, drag that thins with height),
-// drawn in real-looking 3D with three.js. A small planet like Kerbal's: radius 600 km, surface gravity 9.81,
-// air up to 70 km, so orbit is about 2.3 km/s. Built by Claude (Opus 5.5) for Heartbeat Observatory. CC0.
+// Heartbeat Rocket v2 - working title "Rocket".
+// Real physics in one flat plane (physics.js: inverse-square gravity, thrust, fuel mass, drag that thins with
+// height, stages, reentry heat), drawn in real-looking 3D with three.js. A small planet like Kerbal's: radius
+// 600 km, surface gravity 9.81, air up to 70 km, so orbit is about 2.3 km/s.
+// v2: stages, going all the way around, the map with a path that shows where you go, coming home with a
+// heat shield. Built by Claude (Opus 5.5) for Heartbeat Observatory. CC0.
 import * as THREE from 'three';
-
-// ---------------------------------------------------------------- planet + parts
-const R = 600000, G0 = 9.81, GM = G0 * R * R;
-const ATM_TOP = 70000, H_SCALE = 5600, RHO0 = 1.225;
-const PAD_H = 1.5, SITE_R = 14;           // launch pad top height and radius (m)
-const STEP = 1 / 120;                     // fixed physics step (s)
-const MAX_LEAN = Math.PI / 2;             // full slider = lean 90 degrees from straight up
-const CHUTE_CDA = 450, CHUTE_MAX_G = 6, SAFE_LAND = 14;
-const DEG = Math.PI / 180;
-
-const NOSES = {
-  capsule: { name: 'Capsule', m: 900, cda: 1.3 },
-  pointy:  { name: 'Pointy',  m: 860, cda: 1.0 },
-};
-const TANKS = {
-  short:  { name: 'Short',  fuel: 800,  dry: 180, h: 3.0 },
-  medium: { name: 'Medium', fuel: 3000, dry: 330, h: 5.6 },
-  tall:   { name: 'Tall',   fuel: 7200, dry: 750, h: 9.6 },
-};
-const ENGINES = {
-  small: { name: 'Small', thrust: 56000,  ispSL: 230, ispVac: 270, m: 450,  bellR: 0.72, bellH: 1.35 },
-  big:   { name: 'Big',   thrust: 150000, ispSL: 265, ispVac: 310, m: 1300, bellR: 1.12, bellH: 2.15 },
-};
-const FINS_M = 120, FINS_CDA = 0.15;
+import {
+  R, G0, ATM_TOP, PAD_H, SITE_R, STEP, DEG, NOSES, TANKS, ENGINES,
+  newFlight as physicsFlight, stepPhysics, orbitInfo, inOrbit, conicPath, suggestedLean, stage, mass,
+  fuelLeft, hasMoreStages, dropStage, separateCapsule, startComeHome, resumeBurn,
+} from './physics.js';
 
 const GOALS = [
-  { id: 'clouds', alt: 2000,  title: 'Touch the clouds', done: 'You touched the clouds!', unlock: 'fins',
+  { id: 'clouds', alt: 2000,  title: 'Touch the clouds', done: 'You touched the clouds!', unlock: ['fins'],
     unlockText: 'New part: fins', unlockSub: 'Fins help your rocket fly straighter.' },
-  { id: 'space',  alt: 70000, title: 'Reach space', done: 'You reached space!', unlock: 'tall',
-    unlockText: 'New part: the tall tank', unlockSub: 'Lots more fuel. Enough to go around the planet?' },
-  { id: 'orbit',  alt: null,  title: 'Go all the way around', done: 'You went all the way around the planet!', unlock: null,
-    unlockText: 'You are in orbit!', unlockSub: 'Stages and the trip home come in the next version.' },
+  { id: 'space',  alt: 70000, title: 'Reach space', done: 'You reached space!', unlock: ['tall', 'stages'],
+    unlockText: 'New parts: the tall tank and stages', unlockSub: 'A booster now stacks under your rocket. That is enough to go all the way around!' },
+  { id: 'orbit',  alt: null,  title: 'Go all the way around', done: 'You went all the way around!', unlock: ['shield'],
+    unlockText: 'New part: the heat shield', unlockSub: 'Coming home from orbit is HOT. The shield keeps your capsule cool.' },
+  { id: 'home',   alt: null,  title: 'Come home safe', done: 'You came home safe!', unlock: [],
+    unlockText: 'Next: fly to the Moon', unlockSub: 'Coming soon in the next version.' },
 ];
 
 // ---------------------------------------------------------------- saved progress (this device only)
-const SAVE_KEY = 'hb-rocket-v1';
+const SAVE_KEY = 'hb-rocket-v1';            // same key as v1, so progress carries over
+const WARPS = [1, 10, 50];
 const DEFAULT_SAVE = {
-  v: 1, reached: { clouds: false, space: false, orbit: false }, unlocked: { fins: false, tall: false },
-  seen: { fins: true, tall: true }, config: { nose: 'capsule', tank: 'short', engine: 'small', fins: true },
-  nums: false, sound: true, best: 0, flights: 0,
+  v: 2, reached: { clouds: false, space: false, orbit: false, home: false },
+  unlocked: { fins: false, tall: false, stages: false, shield: false },
+  seen: { fins: true, tall: true, stages: true, shield: true },
+  config: { nose: 'capsule', tank: 'short', engine: 'small', fins: true, stages: 1, shield: true },
+  nums: false, sound: true, best: 0, flights: 0, warp: 10,
 };
 function loadSave() {
   try {
@@ -50,15 +38,24 @@ function loadSave() {
     if (!raw) return structuredClone(DEFAULT_SAVE);
     const s = JSON.parse(raw);
     const out = structuredClone(DEFAULT_SAVE);
-    for (const k of Object.keys(out)) if (s[k] !== undefined) out[k] = (typeof out[k] === 'object') ? { ...out[k], ...s[k] } : s[k];
-    if (!TANKS[out.config.tank] || (out.config.tank === 'tall' && !out.unlocked.tall)) out.config.tank = 'short';
+    for (const k of Object.keys(out)) if (s[k] !== undefined && s[k] !== null) out[k] = (typeof out[k] === 'object') ? { ...out[k], ...s[k] } : s[k];
+    // v1 -> v2: whoever reached space gets stages (a booster goes on right away); whoever went around gets the shield
+    if (!s.v || s.v < 2) {
+      if (out.reached.space) { out.unlocked.tall = true; out.unlocked.stages = true; out.seen.stages = false; out.config.stages = 2; }
+      if (out.reached.orbit) { out.unlocked.shield = true; out.seen.shield = false; out.config.shield = true; }
+      out.v = 2;
+    }
+    if (!['short', 'medium', 'tall'].includes(out.config.tank) || (out.config.tank === 'tall' && !out.unlocked.tall)) out.config.tank = 'short';
     if (!NOSES[out.config.nose]) out.config.nose = 'capsule';
-    if (!ENGINES[out.config.engine]) out.config.engine = 'small';
+    if (!['small', 'big'].includes(out.config.engine)) out.config.engine = 'small';
+    if (out.config.stages !== 2 || !out.unlocked.stages) out.config.stages = out.unlocked.stages && out.config.stages === 2 ? 2 : 1;
+    if (!WARPS.includes(out.warp)) out.warp = 10;
     return out;
   } catch (e) { return structuredClone(DEFAULT_SAVE); }
 }
 let save = loadSave();
 function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* private mode: play on */ } }
+writeSave();
 function currentGoal() { return GOALS.find(g => !save.reached[g.id]) || null; }
 
 // ---------------------------------------------------------------- dom
@@ -67,13 +64,16 @@ const canvas = $('c');
 const ui = {
   goalText: $('goalText'), hangar: $('hangarUI'), flight: $('flightUI'), parts: $('parts'),
   vNose: $('vNose'), vTank: $('vTank'), vEngine: $('vEngine'), vFins: $('vFins'), pFins: $('pFins'),
+  pStages: $('pStages'), vStages: $('vStages'), newStages: $('newStages'),
+  pShield: $('pShield'), vShield: $('vShield'), newShield: $('newShield'),
   newFins: $('newFins'), newTank: $('newTank'), tip: $('hangarTip'),
-  fuelFill: $('fuelFill'), progFill: $('progFill'), progDot: $('progDot'), progGoal: $('progGoal'),
-  leanTrack: $('leanTrack'), leanThumb: $('leanThumb'), chute: $('btnChute'), ff: $('ff'),
+  fuelTrack: $('fuelTrack'), prog: $('prog'), progFill: $('progFill'), progDot: $('progDot'), progGoal: $('progGoal'),
+  leanTrack: $('leanTrack'), leanThumb: $('leanThumb'), leanGhost: $('leanGhost'), leanHint: $('leanHint'),
+  act: $('btnAct'), warp: $('btnWarp'), ff: $('ff'), mini: $('mini'), heatGlow: $('heatGlow'),
   toast: $('toast'), nums: $('nums'), btnNums: $('btnNums'), btnSound: $('btnSound'),
   card: $('card'), cardArt: $('cardArt'), cardTitle: $('cardTitle'), cardText: $('cardText'),
-  cardUnlock: $('cardUnlock'), cardNext: $('cardNext'), cardBtn: $('cardBtn'),
-  mapWrap: $('mapWrap'), map: $('map'), loading: $('loading'),
+  cardUnlock: $('cardUnlock'), cardNext: $('cardNext'), cardBtn: $('cardBtn'), cardBtn2: $('cardBtn2'),
+  mapWrap: $('mapWrap'), map: $('map'), mapCap: $('mapCap'), loading: $('loading'),
 };
 
 // ---------------------------------------------------------------- renderer
@@ -239,7 +239,7 @@ const skyMat = new THREE.ShaderMaterial({
         vec3 sunT = exp(-(BR * ld.x + BM * 1.1 * ld.y));
         float ndl = max(dot(n, uSun), 0.0);
         vec3 amb = vec3(0.35, 0.5, 0.8) * 0.5 * smoothstep(-0.15, 0.4, dot(n, uSun));
-        col = alb * (SUNC * sunT * ndl / 3.14159 + amb);
+        col = alb * (SUNC * sunT * ndl / 3.14159 + amb + vec3(0.05, 0.07, 0.13));   // a little moonlight on the night side
         col += ocean * SUNC * sunT * 0.35 * pow(max(dot(reflect(d, n), uSun), 0.0), 220.0);
         col = col * T + inscatter;
       } else {
@@ -297,7 +297,7 @@ function canvasTex(w, h, draw) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return t;
 }
-function tankTexture(heightM) {
+function tankTexture(heightM, booster) {
   const w = 512, h = Math.max(128, Math.round(512 * heightM / (2 * Math.PI * 1.25)));
   return canvasTex(w, h, (g) => {
     g.fillStyle = '#ecebe6'; g.fillRect(0, 0, w, h);
@@ -309,7 +309,8 @@ function tankTexture(heightM) {
     const gr = g.createLinearGradient(0, h * 0.6, 0, h); gr.addColorStop(0, 'rgba(90,80,60,0)'); gr.addColorStop(1, 'rgba(90,80,60,.16)');
     g.fillStyle = gr; g.fillRect(0, 0, w, h);
     // orange band near the top + roll pattern at the bottom
-    g.fillStyle = '#e8742c'; g.fillRect(0, 14, w, 16);
+    g.fillStyle = booster ? '#2b2f36' : '#e8742c'; g.fillRect(0, 14, w, 16);
+    if (booster) { g.fillStyle = '#1d1f22'; for (let x = 0; x < w; x += w / 4) g.fillRect(x, h * 0.42, w / 8, h * 0.06); }
     g.fillStyle = '#1d1f22';
     const bandY = h - 46; g.fillRect(0, bandY, w / 4, 30); g.fillRect(w / 2, bandY, w / 4, 30);
     // name down the side (faces the camera)
@@ -331,15 +332,18 @@ const M = {
   concrete: new THREE.MeshStandardMaterial({ color: 0x6e6b65, roughness: 0.95, metalness: 0 }),
   steel: new THREE.MeshStandardMaterial({ color: 0xb24a2a, roughness: 0.6, metalness: 0.5 }),
   trench: new THREE.MeshStandardMaterial({ color: 0x1c1b1a, roughness: 1, metalness: 0 }),
+  heat: new THREE.MeshStandardMaterial({ color: 0x2c211a, roughness: 0.9, metalness: 0.05, emissive: 0x000000 }),
+  inter: new THREE.MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.5, metalness: 0.6, side: THREE.DoubleSide }),
 };
-const tankTex = {}; for (const k of Object.keys(TANKS)) tankTex[k] = tankTexture(TANKS[k].h);
+const tankTex = {}; for (const k of Object.keys(TANKS)) tankTex[k] = tankTexture(TANKS[k].h, k === 'booster');
 const tankMats = {}; for (const k of Object.keys(TANKS)) tankMats[k] = new THREE.MeshStandardMaterial({ map: tankTex[k], roughness: 0.42, metalness: 0.05 });
 const stdMats = [...Object.values(M), ...Object.values(tankMats)];
 
-// ---------------------------------------------------------------- the rocket model
+// ---------------------------------------------------------------- the rocket model (a stack: booster, upper stage, capsule)
 const rocket = new THREE.Group(); scene.add(rocket);
 const rocketBody = new THREE.Group(); rocket.add(rocketBody);
 let rocketDims = { height: 10, bellR: 0.7, top: 10 };
+const stackG = { booster: null, upper: null, caps: null, boosterH: 0, upperH: 0, capsH: 0 };
 
 function lathe(points, segs = 40) { return new THREE.LatheGeometry(points.map(p => new THREE.Vector2(p[0], p[1])), segs); }
 function bellGeometry(rExit, h) {
@@ -356,63 +360,141 @@ function finGeometry() {
 const geoCache = {};
 function cached(key, make) { return geoCache[key] || (geoCache[key] = make()); }
 
-function buildRocket(cfg, finsOn) {
-  while (rocketBody.children.length) rocketBody.remove(rocketBody.children[0]);
-  const E = ENGINES[cfg.engine], T = TANKS[cfg.tank];
+// one tank + engine pair, its bell tip at y = 0. Returns its height.
+function buildStageModel(g, tankKey, engKey, finsOn) {
+  const E = ENGINES[engKey], T = TANKS[tankKey];
   let y = 0;
-  // engine: bell + mount + pumps
-  const bell = new THREE.Mesh(cached('bell' + cfg.engine, () => bellGeometry(E.bellR, E.bellH)), M.bell);
-  rocketBody.add(bell);
+  if (E.cluster) {
+    for (let i = 0; i < E.cluster; i++) {
+      const a = i / E.cluster * Math.PI * 2 + Math.PI / 2;
+      const b = new THREE.Mesh(cached('bell' + engKey, () => bellGeometry(E.bellR, E.bellH)), M.bell);
+      b.position.set(Math.cos(a) * 0.62, 0, Math.sin(a) * 0.62); g.add(b);
+    }
+  } else {
+    g.add(new THREE.Mesh(cached('bell' + engKey, () => bellGeometry(E.bellR, E.bellH)), M.bell));
+  }
   y = E.bellH;
-  const mount = new THREE.Mesh(cached('mount' + cfg.engine, () => new THREE.CylinderGeometry(1.2, E.bellR * 0.5, 0.55, 32)), M.dark);
-  mount.position.y = y + 0.27; rocketBody.add(mount);
-  if (cfg.engine === 'big') {
+  const mount = new THREE.Mesh(cached('mount' + engKey, () => new THREE.CylinderGeometry(1.2, E.cluster ? 1.05 : E.bellR * 0.5, 0.55, 32)), M.dark);
+  mount.position.y = y + 0.27; g.add(mount);
+  if (engKey === 'big') {
     const pump = new THREE.Mesh(cached('pump', () => new THREE.CylinderGeometry(0.16, 0.16, 0.7, 12)), M.metal);
-    pump.position.set(0.55, y + 0.05, 0.25); rocketBody.add(pump);
-    const pump2 = pump.clone(); pump2.position.set(-0.5, y + 0.05, -0.3); rocketBody.add(pump2);
+    pump.position.set(0.55, y + 0.05, 0.25); g.add(pump);
+    const pump2 = pump.clone(); pump2.position.set(-0.5, y + 0.05, -0.3); g.add(pump2);
   }
   y += 0.55;
   const ring = cached('ring', () => new THREE.CylinderGeometry(1.29, 1.29, 0.16, 40));
-  const r1 = new THREE.Mesh(ring, M.dark); r1.position.y = y + 0.08; rocketBody.add(r1); y += 0.16;
-  // tank
-  const tank = new THREE.Mesh(cached('tank' + cfg.tank, () => new THREE.CylinderGeometry(1.25, 1.25, T.h, 48, 1, true)), tankMats[cfg.tank]);
-  tank.rotation.y = Math.PI; tank.position.y = y + T.h / 2; rocketBody.add(tank);
+  const r1 = new THREE.Mesh(ring, M.dark); r1.position.y = y + 0.08; g.add(r1); y += 0.16;
+  const tank = new THREE.Mesh(cached('tank' + tankKey, () => new THREE.CylinderGeometry(1.25, 1.25, T.h, 48, 1, true)), tankMats[tankKey]);
+  tank.rotation.y = Math.PI; tank.position.y = y + T.h / 2; g.add(tank);
   if (finsOn) {
     const fg = cached('fin', finGeometry);
     for (let i = 0; i < 4; i++) {
       const a = i * Math.PI / 2 + Math.PI / 4;
       const f = new THREE.Mesh(fg, M.orange);
       f.position.set(Math.sin(a) * 1.22, y - 0.6, Math.cos(a) * 1.22);
-      f.rotation.y = a - Math.PI / 2; rocketBody.add(f);
+      f.rotation.y = a - Math.PI / 2; g.add(f);
     }
   }
   y += T.h;
-  const r2 = new THREE.Mesh(ring, M.dark); r2.position.y = y + 0.08; rocketBody.add(r2); y += 0.16;
-  // nose
-  if (cfg.nose === 'capsule') {
+  const r2 = new THREE.Mesh(ring, M.dark); r2.position.y = y + 0.08; g.add(r2); y += 0.16;
+  return y;
+}
+// capsule or pointy nose, with the heat shield under it when it is on. Bottom at y = 0. Returns its height.
+function buildCapsule(g, noseKey, shieldOn) {
+  let y = 0;
+  if (shieldOn) {
+    const sh = new THREE.Mesh(cached('heatshield', () => new THREE.CylinderGeometry(1.33, 1.24, 0.38, 44)), M.heat);
+    sh.position.y = 0.19; g.add(sh);
+    y = 0.38;
+  }
+  if (noseKey === 'capsule') {
     const cap = new THREE.Mesh(cached('capsule', () => lathe([[1.27, 0], [1.29, 0.1], [1.2, 0.3], [0.95, 1.0], [0.64, 1.7], [0.5, 1.95], [0.48, 2.25], [0.4, 2.33], [0, 2.35]], 48)), M.white);
-    cap.position.y = y; rocketBody.add(cap);
-    const sh = new THREE.Mesh(cached('shield', () => new THREE.CylinderGeometry(1.3, 1.28, 0.12, 40)), M.shield);
-    sh.position.y = y + 0.06; rocketBody.add(sh);
+    cap.position.y = y; g.add(cap);
+    if (!shieldOn) {
+      const sh = new THREE.Mesh(cached('shield', () => new THREE.CylinderGeometry(1.3, 1.28, 0.12, 40)), M.shield);
+      sh.position.y = y + 0.06; g.add(sh);
+    }
     const win = new THREE.Mesh(cached('win', () => new THREE.CircleGeometry(0.2, 24)), M.glass);
-    win.position.set(0, y + 1.15, 0.86); win.rotation.x = -0.42; rocketBody.add(win);
-    const win2 = win.clone(); win2.position.set(0.62, y + 0.95, 0.68); win2.rotation.set(-0.3, 0.75, 0); win2.scale.setScalar(0.7); rocketBody.add(win2);
+    win.position.set(0, y + 1.15, 0.86); win.rotation.x = -0.42; g.add(win);
+    const win2 = win.clone(); win2.position.set(0.62, y + 0.95, 0.68); win2.rotation.set(-0.3, 0.75, 0); win2.scale.setScalar(0.7); g.add(win2);
     y += 2.35;
   } else {
     const pts = []; const L = 3.5;
     for (let i = 0; i <= 16; i++) { const t = i / 16; pts.push([1.26 * Math.pow(1 - Math.pow(t, 1.9), 0.62), t * L]); }
     pts.push([0, L]);
     const cone = new THREE.Mesh(cached('pointy', () => lathe(pts, 48)), M.white);
-    cone.position.y = y; rocketBody.add(cone);
+    cone.position.y = y; g.add(cone);
     const win = new THREE.Mesh(cached('win', () => new THREE.CircleGeometry(0.2, 24)), M.glass);
-    win.position.set(0, y + 1.25, 0.98); win.rotation.x = -0.35; win.scale.setScalar(0.85); rocketBody.add(win);
+    win.position.set(0, y + 1.25, 0.98); win.rotation.x = -0.35; win.scale.setScalar(0.85); g.add(win);
     const tip = new THREE.Mesh(cached('tip', () => new THREE.SphereGeometry(0.09, 12, 8)), M.dark);
-    tip.position.y = y + L; rocketBody.add(tip);
+    tip.position.y = y + L; g.add(tip);
     y += L;
   }
-  rocketDims = { height: y, bellR: E.bellR, top: y };
+  return y;
+}
+// cfg: { nose, tank, engine, fins, shield, stages }
+function buildRocket(cfg) {
+  while (rocketBody.children.length) rocketBody.remove(rocketBody.children[0]);
+  rocketBody.position.set(0, 0, 0);
+  clearDebris();
+  let y = 0;
+  stackG.booster = null; stackG.boosterH = 0;
+  if (cfg.stages === 2) {
+    const bg = new THREE.Group();
+    const bh = buildStageModel(bg, 'booster', 'booster', cfg.fins);
+    // a dark ring (the interstage) hides the upper engine until the booster drops away
+    const E = ENGINES[cfg.engine], ih = E.bellH + 0.55;
+    const inter = new THREE.Mesh(cached('inter' + cfg.engine, () => new THREE.CylinderGeometry(1.27, 1.27, ih, 44, 1, true)), M.inter);
+    inter.position.y = bh + ih / 2; bg.add(inter);
+    rocketBody.add(bg); stackG.booster = bg; stackG.boosterH = bh; y = bh;
+  }
+  const ug = new THREE.Group();
+  const uh = buildStageModel(ug, cfg.tank, cfg.engine, cfg.fins && cfg.stages !== 2);
+  ug.position.y = y; rocketBody.add(ug); stackG.upper = ug; stackG.upperH = uh; y += uh;
+  const cg = new THREE.Group();
+  const ch = buildCapsule(cg, cfg.nose, cfg.shield);
+  cg.position.y = y; rocketBody.add(cg); stackG.caps = cg; stackG.capsH = ch; y += ch;
+  rocketDims = { height: y, bellR: cfg.stages === 2 ? 1.25 : ENGINES[cfg.engine].bellR, top: y };
   chute.position.y = y;
 }
+// after a stage drops: the stack is shorter and the rocket's base moves up
+function shiftStack(h, bellR) {
+  rocketBody.position.y -= h;
+  rocketDims = { height: rocketDims.height - h, bellR, top: rocketDims.top - h };
+  chute.position.y = rocketDims.top;
+}
+
+// pieces that fell off (spent stages), flying on their own for a while
+const debris = [];
+function shed(group, x, y, f, push) {
+  const holder = new THREE.Group();
+  group.position.set(0, 0, 0); holder.add(group); scene.add(holder);
+  const dx = Math.sin(f.heading), dy = Math.cos(f.heading);
+  debris.push({ g: holder, x, y, vx: f.vx - dx * push, vy: f.vy - dy * push, heading: f.heading, spin: (Math.random() < 0.5 ? -1 : 1) * (0.25 + Math.random() * 0.25), t: 0 });
+  // a puff where they came apart
+  for (let i = 0; i < 14; i++) {
+    const a = Math.random() * Math.PI * 2;
+    spawnSmoke(x + dx * 0.5, y + dy * 0.5, Math.sin(a) * 1.4, f.vx + Math.cos(a) * 4, f.vy + Math.sin(a) * 4, (Math.random() - 0.5) * 4,
+      1.5 + Math.random(), 1.2, 5 + Math.random() * 3, 0.45, 0);
+  }
+}
+function updateDebris(dt) {
+  for (let i = debris.length - 1; i >= 0; i--) {
+    const d = debris[i]; d.t += dt;
+    const r = Math.hypot(d.x, d.y), h = r - R;
+    if (d.t > 90 || h < 0) { scene.remove(d.g); debris.splice(i, 1); continue; }
+    const rho = h < ATM_TOP ? 1.225 * Math.exp(-h / 5600) : 0, v = Math.hypot(d.vx, d.vy);
+    const g = 9.81 * R * R / (r * r * r), drag = rho * v * 0.5 * 4 / 2500;
+    const steps = Math.max(1, Math.ceil(dt / 0.05)), s = dt / steps;
+    for (let k = 0; k < steps; k++) { d.vx += (-g * d.x - drag * d.vx) * s; d.vy += (-g * d.y - drag * d.vy) * s; d.x += d.vx * s; d.y += d.vy * s; }
+    d.heading += d.spin * dt;
+    d.g.position.set(d.x, d.y, 0);
+    d.g.quaternion.setFromUnitVectors(Y, tmpDir.set(Math.sin(d.heading), Math.cos(d.heading), 0));
+    d.g.visible = !F || Math.hypot(d.x - F.x, d.y - F.y) < 25000;
+  }
+}
+function clearDebris() { for (const d of debris) scene.remove(d.g); debris.length = 0; }
+const tmpDir = new THREE.Vector3();
 
 // parachute (canopy + lines), hidden until opened
 const chute = new THREE.Group(); rocket.add(chute);
@@ -458,6 +540,32 @@ const flameCoreMat = flameMat.clone(); flameCoreMat.uniforms = THREE.UniformsUti
 const flameCore = new THREE.Mesh(flameGeo, flameCoreMat);
 rocket.add(flameOuter, flameCore);
 const engineLight = new THREE.PointLight(0xff9a4a, 0, 80, 1.6); engineLight.position.y = -3; rocket.add(engineLight);
+
+// reentry plasma: a glowing cap on the front and a long hot tail behind, both along the way you are moving
+const plasmaMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  uniforms: { uTime: { value: 0 }, uP: { value: 0 } },
+  vertexShader: /* glsl */`
+    varying float vY; varying vec3 vN; varying vec3 vV; varying float vA;
+    void main(){ vY = -position.y; vA = atan(position.z, position.x); vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: /* glsl */`
+    varying float vY; varying vec3 vN; varying vec3 vV; varying float vA;
+    uniform float uTime; uniform float uP;
+    void main(){
+      float edge = 0.5 + 0.5 * pow(1.0 - abs(dot(vN, vV)), 1.2);
+      float streak = 0.65 + 0.35 * sin(vA * 9.0 + vY * 14.0 - uTime * 40.0) * sin(vA * 5.0 - uTime * 23.0);
+      float fall = pow(clamp(1.0 - vY, 0.0, 1.0), 1.7);
+      vec3 c = mix(vec3(1.0, 0.92, 0.75), vec3(1.0, 0.36, 0.12), smoothstep(0.0, 0.45, vY));
+      c = mix(c, vec3(0.95, 0.3, 0.55), smoothstep(0.45, 1.0, vY) * 0.6);
+      float a = edge * fall * streak * uP;
+      gl_FragColor = vec4(c * a * 2.2, 1.0);   // additive: the colour itself is the light
+    }`,
+});
+const plasma = new THREE.Group(); scene.add(plasma);
+const plasmaTail = new THREE.Mesh(new THREE.CylinderGeometry(1, 0.55, 1, 32, 8, true).translate(0, -0.5, 0), plasmaMat);
+const plasmaBow = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), plasmaMat);
+plasma.add(plasmaTail, plasmaBow); plasma.visible = false;
 
 // ---------------------------------------------------------------- launch pad
 const pad = new THREE.Group(); scene.add(pad);
@@ -592,7 +700,7 @@ const sound = {
 };
 
 // ---------------------------------------------------------------- game state
-let mode = 'hangar';          // hangar | flight | result
+let mode = 'hangar';          // hangar | flight | paused (a card over a flight that goes on) | result
 let F = null;                 // current flight
 let lean = 0;                 // slider -1..1
 let simAcc = 0, simSpeed = 1, clock = 0, hangarT = 0;
@@ -600,129 +708,75 @@ const camPos = new THREE.Vector3(), camTarget = new THREE.Vector3();
 let camSmooth = null;
 
 function cfgFins() { return !!(save.unlocked.fins && save.config.fins); }
-function rocketMass(cfg) { const N = NOSES[cfg.nose], T = TANKS[cfg.tank], E = ENGINES[cfg.engine]; return { dry: N.m + T.dry + E.m + (cfgFins() ? FINS_M : 0), fuel: T.fuel }; }
-
+function cfgShield() { return !!(save.unlocked.shield && save.config.shield); }
+function cfgStages() { return save.unlocked.stages && save.config.stages === 2 ? 2 : 1; }
+function flightCfg() {
+  const c = save.config;
+  return { nose: c.nose, tank: c.tank, engine: c.engine, fins: cfgFins(), shield: cfgShield(), stages: cfgStages(), coastAssist: !!save.unlocked.stages };
+}
 function newFlight() {
-  const cfg = save.config, E = ENGINES[cfg.engine], T = TANKS[cfg.tank], N = NOSES[cfg.nose];
-  const fins = cfgFins(), m = rocketMass(cfg);
-  return {
-    x: 0, y: R + PAD_H, vx: 0, vy: 0, heading: 0, fuel: T.fuel, fuelMax: T.fuel, dry: m.dry,
-    cda: N.cda + (fins ? FINS_CDA : 0), fins, eng: E, mdot: E.thrust / (E.ispVac * G0), engineOn: true, ign: 0,
-    lifted: false, t: 0, maxAlt: 0, chute: 0, chuteOn: false, outcome: null, newGoals: [], leanLow: 0,
-    sputter: 0, wob: 0, endIn: -1, track: [], hit: 0, alt: PAD_H, air: 1, q: 0, thr: 0, exploded: false,
-  };
+  const f = physicsFlight(flightCfg());
+  Object.assign(f, { newGoals: [], endIn: -1, track: [], exploded: false, dropAuto: -1, burnPressed: false, sputter: 0, hint: '' });
+  return f;
 }
+function vRadial(f) { return (f.vx * f.x + f.vy * f.y) / Math.hypot(f.x, f.y); }
 
-// ---------------------------------------------------------------- physics (fixed step)
-function wrapA(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; }
-function stepPhysics(f, dt) {
-  const r = Math.hypot(f.x, f.y), h = r - R, ux = f.x / r, uy = f.y / r;
-  const phi = Math.atan2(f.x, f.y);
-  const rho = h < ATM_TOP ? RHO0 * Math.exp(-h / H_SCALE) : 0, air = rho / RHO0;
-  const v2 = f.vx * f.vx + f.vy * f.vy, v = Math.sqrt(v2), q = 0.5 * rho * v2;
-  const m = f.dry + f.fuel;
-  const burning = f.engineOn && f.fuel > 0;
-  f.air = air; f.q = q;
-
-  // without fins, the rocket wobbles when the air pushes hard on it
-  const wAmp = (f.fins ? 0.12 : 1) * Math.min(9, q / 2500) * DEG;
-  f.wob = wAmp * (0.7 * Math.sin(f.t * 2.3) + 0.3 * Math.sin(f.t * 5.3 + 1));
-
-  let target = null, rate = 0;
-  if (burning) { target = f.lifted ? phi + lean * MAX_LEAN + f.wob : phi; rate = 30 * DEG; }
-  else if (f.chuteOn && v > 0.5) { target = Math.atan2(-f.vx, -f.vy); rate = 120 * DEG * f.chute; }
-  else if (q > 30 && v > 5) { target = Math.atan2(f.vx, f.vy); rate = Math.min(50, q / 250) * DEG; }
-  if (target !== null) { const dA = wrapA(target - f.heading), mx = rate * dt; f.heading += Math.max(-mx, Math.min(mx, dA)); }
-
-  let ax = -GM * ux / (r * r), ay = -GM * uy / (r * r);
-  f.thr = 0;
-  if (burning) {
-    f.ign = Math.min(1, f.ign + dt / 0.8);
-    const isp = f.eng.ispSL * air + f.eng.ispVac * (1 - air);
-    const thrust = f.mdot * isp * G0 * f.ign;
-    f.thr = thrust;
-    ax += thrust / m * Math.sin(f.heading); ay += thrust / m * Math.cos(f.heading);
-    f.fuel -= f.mdot * f.ign * dt;
-    if (f.fuel <= 0) { f.fuel = 0; f.engineOn = false; f.sputter = 0.9; sound.cough(); }
-    if (f.lifted && h < 8000) f.leanLow = Math.max(f.leanLow, Math.abs(lean));
-  }
-  if (rho > 0 && v > 0.01) {
-    const aoa = wrapA(f.heading - Math.atan2(f.vx, f.vy));
-    const s = Math.sin(aoa);
-    let D = q * f.cda * (1 + (v > 30 ? 1.5 * s * s : 0));
-    let Dc = q * CHUTE_CDA * f.chute * f.chute; Dc = Math.min(Dc, m * G0 * CHUTE_MAX_G);
-    D += Dc;
-    ax -= D / m * f.vx / v; ay -= D / m * f.vy / v;
-  }
-  if (f.chuteOn) f.chute = Math.min(1, f.chute + dt / 2.5);
-
-  f.vx += ax * dt; f.vy += ay * dt;
-  const nx = f.x + f.vx * dt, ny = f.y + f.vy * dt, nr = Math.hypot(nx, ny), nh = nr - R;
-  const onPadSpot = Math.hypot(nx, ny - R) < SITE_R;   // near the pad (it is at the top of the planet)
-  const floor = (!f.lifted || onPadSpot) ? PAD_H : 0;
-  if (nh <= floor) {
-    const nux = nx / nr, nuy = ny / nr;
-    if (!f.lifted) { f.vx = 0; f.vy = 0; f.x = nux * (R + PAD_H); f.y = nuy * (R + PAD_H); }
-    else { f.x = nux * (R + floor); f.y = nuy * (R + floor); touchdown(f, Math.hypot(f.vx, f.vy)); return; }
-  } else { f.x = nx; f.y = ny; }
-  if (nh > PAD_H + 3) f.lifted = true;
-  f.t += dt;
-  f.alt = nh;
-  if (nh > f.maxAlt) f.maxAlt = nh;
-}
-
-function touchdown(f, speed) {
-  f.engineWasOnAtHit = f.engineOn && f.fuel > 0;
-  f.vx = 0; f.vy = 0; f.engineOn = false;
-  if (speed < SAFE_LAND) { f.outcome = 'landed'; f.endIn = 1.4; sound.burst(0.3, 300, 0.4); }
-  else { f.outcome = 'crash'; f.endIn = 2.0; f.hit = speed; explode(f); }
-}
-
-function explode(f) {
+function explode(f, hot) {
   f.exploded = true; sound.thud();
-  rocket.visible = false;
+  rocket.visible = false; plasma.visible = false;
   const ux = f.x / Math.hypot(f.x, f.y), uy = f.y / Math.hypot(f.x, f.y);
   for (let i = 0; i < 70; i++) {
     const a = Math.random() * Math.PI * 2, sp = 4 + Math.random() * 14, up = 3 + Math.random() * 12;
+    const vx0 = hot ? f.vx * 0.4 : 0, vy0 = hot ? f.vy * 0.4 : 0;
     spawnSmoke(f.x + ux * 3, f.y + uy * 3, (Math.random() - 0.5) * 4,
-      Math.cos(a) * sp * uy + ux * up, -Math.cos(a) * sp * ux + uy * up, Math.sin(a) * sp,
-      3 + Math.random() * 3, 3 + Math.random() * 3, 12 + Math.random() * 10, 0.8, i < 30 ? 1.2 : 0.3);
+      vx0 + Math.cos(a) * sp * uy + ux * up, vy0 - Math.cos(a) * sp * ux + uy * up, Math.sin(a) * sp,
+      3 + Math.random() * 3, 3 + Math.random() * 3, 12 + Math.random() * 10, 0.8, hot ? 2.2 : (i < 30 ? 1.2 : 0.3));
   }
 }
 
-function orbitInfo(f) {
-  const r = Math.hypot(f.x, f.y), v2 = f.vx * f.vx + f.vy * f.vy;
-  const E = 0.5 * v2 - GM / r, hm = f.x * f.vy - f.y * f.vx;
-  if (E >= 0) return { escape: true, peri: 0, apo: Infinity };
-  const a = -GM / (2 * E), e = Math.sqrt(Math.max(0, 1 + 2 * E * hm * hm / (GM * GM)));
-  return { escape: false, peri: a * (1 - e) - R, apo: a * (1 + e) - R };
+// ---------------------------------------------------------------- flight events (from physics, goals, results)
+function handleEvents(f) {
+  for (const e of f.events) {
+    if (e === 'stageEmpty') { f.sputter = 0.9; sound.cough(); f.dropAuto = 5; toast('Bottom tank is empty!', 'Tap Drop stage'); }
+    else if (e === 'burnout') { f.sputter = 0.9; sound.cough(); }
+    else if (e === 'coast') { sound.chime(false); toast('The top of your path is in space!', 'Engine resting. At the top: lean flat, tap Burn.'); }
+    else if (e === 'orbitCut') { sound.burst(0.3, 500, 0.3); }
+    else if (e === 'retroDone') { doSeparate(); toast('Heading home!', 'The empty tank lets go. Shield first!'); }
+    else if (e === 'retroNoFuel') { toast('Out of fuel!', 'Not enough to slow down, so you keep going around.'); }
+    else if (e === 'toasty') { f.endIn = 2.4; explode(f, true); }
+    else if (e === 'landed') { f.endIn = 1.4; sound.burst(0.3, 300, 0.4); if (f.wasOrbit && !save.reached.home) reachGoal(f, GOALS[3]); }
+    else if (e === 'crash') { f.endIn = 2.0; explode(f, false); }
+  }
+  f.events.length = 0;
 }
-
-// ---------------------------------------------------------------- flight events (goals, results)
 function checkGoals(f) {
   for (const g of GOALS) {
     if (g.alt == null || save.reached[g.id] || f.newGoals.includes(g)) continue;
     if (f.maxAlt >= g.alt) reachGoal(f, g);
   }
-  if (!f.engineOn && f.alt > ATM_TOP && !f.outcome) {
-    const o = orbitInfo(f);
-    if (o.escape) { f.outcome = 'escape'; f.endIn = 2.5; }
-    else if (o.peri > ATM_TOP) {
-      const g = GOALS[2]; if (!save.reached.orbit) reachGoal(f, g);
-      f.outcome = 'orbit'; f.endIn = 3.0;
-    }
+  if (f.outcome) return;
+  if (!f.engineOn && !f.coasting && f.alt > ATM_TOP && orbitInfo(f).escape) { f.outcome = 'escape'; f.endIn = 2.5; return; }
+  if (!f.wasOrbit && !f.engineOn && !f.retro && inOrbit(f)) {
+    f.wasOrbit = true;
+    if (!save.reached.orbit) { reachGoal(f, GOALS[2], true); showOrbitCard(f); }
+    else toast('All the way around!', fuelLeft(f) > 0 ? 'Tap Come home when you are ready.' : 'No fuel left to come home. Tap X when you are done.');
   }
 }
-function reachGoal(f, g) {
+function reachGoal(f, g, quiet) {
   f.newGoals.push(g);
   save.reached[g.id] = true;
-  if (g.unlock) { save.unlocked[g.unlock] = true; save.seen[g.unlock] = false; }
-  if (g.unlock === 'fins') save.config.fins = true;
+  for (const u of g.unlock) {
+    save.unlocked[u] = true; save.seen[u] = false;
+    if (u === 'fins') save.config.fins = true;
+    if (u === 'stages') save.config.stages = 2;
+    if (u === 'shield') save.config.shield = true;
+  }
   writeSave();
   sound.chime(true);
-  toast(g.done, g.unlockText);
+  if (!quiet) toast(g.done, g.unlockText);
   setGoalText();
   ui.progGoal.style.backgroundImage = progIcon();
+  ui.prog.hidden = !currentGoal() || currentGoal().id === 'home';
 }
 
 function finishFlight() {
@@ -735,39 +789,68 @@ function finishFlight() {
 const ART = {
   cloud: '<svg viewBox="0 0 120 80"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#cfd9e6"/></linearGradient></defs><path d="M30 66c-12 0-20-8-20-18s8-18 19-18c3-12 13-20 26-20 14 0 25 9 27 22 11 0 20 8 20 17s-8 17-19 17z" fill="url(#cg)"/><path d="M60 52 l6 -22 l6 22z" fill="#f07a2e"/></svg>',
   space: '<svg viewBox="0 0 120 90"><circle cx="60" cy="120" r="70" fill="#3d6fb6"/><circle cx="60" cy="120" r="74" fill="none" stroke="#8fc0ff" stroke-opacity=".5" stroke-width="4"/><circle cx="20" cy="18" r="2" fill="#fff"/><circle cx="96" cy="12" r="2.5" fill="#fff"/><circle cx="104" cy="40" r="1.6" fill="#fff"/><circle cx="34" cy="40" r="1.4" fill="#fff"/><path d="M60 10l7 18 19 2-15 12 5 19-16-10-16 10 5-19-15-12 19-2z" fill="#ffd36a"/></svg>',
-  orbit: '<svg viewBox="0 0 120 90"><circle cx="60" cy="45" r="24" fill="#3d6fb6"/><ellipse cx="60" cy="45" rx="50" ry="22" fill="none" stroke="#f07a2e" stroke-width="3" stroke-dasharray="6 5"/><circle cx="110" cy="45" r="5" fill="#fff"/></svg>',
+  orbit: '<svg viewBox="0 0 120 90"><defs><radialGradient id="og" cx=".35" cy=".35"><stop offset="0" stop-color="#6aa2e6"/><stop offset="1" stop-color="#1d3d6e"/></radialGradient></defs><circle cx="60" cy="45" r="24" fill="url(#og)"/><path d="M48 30c6-4 14-3 18 2-4 3-11 4-18-2z" fill="#4e7d3e"/><ellipse cx="60" cy="45" rx="48" ry="34" fill="none" stroke="#7fd69b" stroke-width="3.5"/><path d="M104 36l4 9-9-2z" fill="#7fd69b"/><circle cx="12" cy="45" r="5" fill="#fff"/></svg>',
   chute: '<svg viewBox="0 0 120 90"><path d="M20 40a40 30 0 0 1 80 0z" fill="#e8642a"/><path d="M40 40a20 30 0 0 1 40 0z" fill="#f6f2ea"/><path d="M20 40l36 36M100 40l-36 36M60 40v34" stroke="#d8d2c4" stroke-width="1.5"/><rect x="52" y="72" width="16" height="12" rx="3" fill="#f1efe9"/></svg>',
   puff: '<svg viewBox="0 0 120 90"><circle cx="45" cy="52" r="20" fill="#9a958e"/><circle cx="70" cy="46" r="24" fill="#b9b4ac"/><circle cx="58" cy="62" r="18" fill="#d8d3cb"/><circle cx="84" cy="62" r="13" fill="#a7a29a"/><path d="M28 70l-10 8M96 70l10 8M60 22v-10" stroke="#f0b53a" stroke-width="4" stroke-linecap="round"/></svg>',
   heavy: '<svg viewBox="0 0 120 90"><rect x="30" y="64" width="60" height="10" rx="3" fill="#8d8a83"/><rect x="50" y="18" width="20" height="44" rx="4" fill="#f1efe9"/><path d="M50 18l10-12 10 12z" fill="#f1efe9"/><path d="M38 80q22-14 44 0" stroke="#f0b53a" stroke-width="4" fill="none" stroke-linecap="round"/></svg>',
+  toasty: '<svg viewBox="0 0 120 90"><path d="M42 18q-6 8 0 14t0 14M60 12q-6 8 0 14t0 14M78 18q-6 8 0 14t0 14" stroke="#b9b4ac" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/><path d="M36 82l8-30q16-8 32 0l8 30z" fill="#4a3426"/><path d="M44 52q16-8 32 0l-3-10q-13-6-26 0z" fill="#2b1d14"/><circle cx="60" cy="66" r="6" fill="#ff9a4d"/><path d="M30 84h60" stroke="#f07a2e" stroke-width="4" stroke-linecap="round"/></svg>',
+  home: '<svg viewBox="0 0 120 90"><path d="M24 40a36 26 0 0 1 72 0z" fill="#e8642a"/><path d="M42 40a18 26 0 0 1 36 0z" fill="#f6f2ea"/><path d="M24 40l30 30M96 40l-30 30M60 40v28" stroke="#d8d2c4" stroke-width="1.5"/><path d="M50 82l3-14h14l3 14z" fill="#f1efe9"/><rect x="48" y="81" width="24" height="5" rx="2" fill="#2a201a"/><path d="M8 88h104" stroke="#7fd69b" stroke-width="4" stroke-linecap="round"/><path d="M100 14l2.5 6 6.5.5-5 4 1.6 6.3L100 27l-5.6 3.8L96 24.5l-5-4 6.5-.5z" fill="#ffd36a"/></svg>',
 };
 
-function showResult(f) {
-  const got = f.newGoals;
-  let art, title, text = '', unlock = '', next = '';
-  const cur = currentGoal();
-  if (got.length) {
-    const top = got[got.length - 1];
-    art = top.id === 'clouds' ? ART.cloud : top.id === 'space' ? ART.space : ART.orbit;
-    title = top.done;
-    if (f.outcome === 'landed') text = got.length > 1 ? 'Clouds and space in one flight! And you landed safely.' : 'And your capsule landed safely.';
-    else if (f.outcome === 'crash') text = 'The landing was a bit bumpy, but you did it!';
-    else if (f.outcome === 'orbit') text = 'Your rocket is falling sideways so fast that it keeps missing the ground.';
-    else if (got.length > 1) text = 'Clouds and space in one flight!';
-    unlock = got.filter(g => g.unlock).map(g => `${g.unlockText}<small>${g.unlockSub}</small>`).join('');
-    if (!unlock && top.id === 'orbit') unlock = `${top.unlockText}<small>${top.unlockSub}</small>`;
-  } else {
-    const hint = hintFor(f, cur);
-    art = hint.art; title = hint.title; text = hint.text;
-  }
-  if (cur) next = `Next goal: <b>${cur.title}</b>`;
+function showCard({ art, title, text = '', unlock = '', next = '', btn = 'Back to hangar', btn2 = '' }) {
   ui.cardArt.innerHTML = art;
   ui.cardTitle.textContent = title;
   ui.cardText.textContent = text; ui.cardText.hidden = !text;
   ui.cardUnlock.innerHTML = unlock; ui.cardUnlock.hidden = !unlock;
   ui.cardNext.innerHTML = next; ui.cardNext.hidden = !next;
+  ui.cardBtn.textContent = btn;
+  ui.cardBtn2.textContent = btn2; ui.cardBtn2.hidden = !btn2;
   ui.card.hidden = false;
-  ui.chute.hidden = true; ui.ff.hidden = true;
+  ui.act.hidden = true; ui.ff.hidden = true; ui.warp.hidden = true; ui.leanHint.hidden = true;
   setTimeout(() => ui.cardBtn.focus({ preventScroll: true }), 50);
+}
+function showOrbitCard(f) {
+  mode = 'paused';
+  const g = GOALS[2];
+  const hasFuel = fuelLeft(f) > 0;
+  showCard({
+    art: ART.orbit, title: g.done,
+    text: 'Your rocket is falling sideways so fast that it keeps missing the ground. That is an orbit!',
+    unlock: `${g.unlockText}<small>${f.shield ? g.unlockSub : 'This rocket has no shield yet, so coming home now will get toasty! Try it, or put the shield on next time.'}</small>`,
+    next: `Next goal: <b>Come home safe</b>${hasFuel ? '. Tap <b>Come home</b> when you are ready.' : ''}`,
+    btn: 'Keep flying', btn2: 'Back to hangar',
+  });
+}
+
+function showResult(f) {
+  const got = f.newGoals;
+  let art, title, text = '', unlock = '', next = '';
+  const cur = currentGoal();
+  if (f.outcome === 'toasty') {
+    art = ART.toasty; title = 'Too toasty!';
+    text = save.unlocked.shield
+      ? (save.config.shield ? 'Coming home that fast heats the air until it glows, and this capsule had no heat shield. Your next rocket has the shield on. Try again!'
+        : 'Coming home that fast heats the air until it glows, and your capsule got way too hot. Turn the heat shield on in the hangar.')
+      : (f.maxAlt > ATM_TOP && orbitInfo(f).apo !== Infinity && f.maxAlt < 200000
+        ? 'So close to going all the way around! Coming back down that fast made it way too hot. Lean over a bit sooner, and tap Burn at the top.'
+        : 'Falling from way up high makes you super fast, and super fast through the air gets HOT. Go all the way around to unlock the heat shield.');
+    if (got.length) unlock = got.filter(g => g.unlock.length).map(g => `${g.unlockText}<small>${g.unlockSub}</small>`).join('');
+  } else if (got.length) {
+    const top = got[got.length - 1];
+    art = top.id === 'clouds' ? ART.cloud : top.id === 'space' ? ART.space : top.id === 'orbit' ? ART.orbit : ART.home;
+    title = top.done;
+    if (top.id === 'home') text = 'All the way around the planet, through the fire, and down under the parachute. A real space trip!';
+    else if (f.outcome === 'landed') text = got.length > 1 ? 'Clouds and space in one flight! And you landed safely.' : 'And your capsule landed safely.';
+    else if (f.outcome === 'crash') text = 'The landing was a bit bumpy, but you did it!';
+    else if (top.id === 'orbit') text = 'Your rocket is falling sideways so fast that it keeps missing the ground.';
+    else if (got.length > 1) text = 'Clouds and space in one flight!';
+    unlock = got.map(g => `${g.unlockText}<small>${g.unlockSub}</small>`).join('');
+  } else {
+    const hint = hintFor(f, cur);
+    art = hint.art; title = hint.title; text = hint.text;
+  }
+  next = cur ? `Next goal: <b>${cur.title}</b>` : (save.reached.home && !got.some(g => g.id === 'home') ? 'Next: <b>the Moon</b>, coming soon' : '');
+  showCard({ art, title, text, unlock, next });
 }
 
 function suggestion(f) {
@@ -779,6 +862,16 @@ function suggestion(f) {
   if (save.unlocked.fins && !c.fins) return 'Try adding fins?';
   return 'Every flight teaches you something. Try again?';
 }
+function orbitTip(f) {
+  const c = save.config;
+  if (cfgStages() === 1 && save.unlocked.stages) return 'Tap + Stage in the hangar. A booster gives you lots more push.';
+  if (c.tank === 'short') return 'Try the medium tank on top of the booster?';
+  if (c.engine === 'small' && (c.tank === 'tall' || f.maxAlt < ATM_TOP)) return 'Try the big engine on top. The small one is too weak to push that much fuel sideways.';
+  if (f.leanLow > 0.6) return 'Go straight up first. Lean when you see "Lean now".';
+  if (!f.coastUsed) return f.maxAlt < ATM_TOP ? 'Lean over more once you are above the clouds, so the top of your path reaches space.' : 'Lean over once you are above the clouds, so you go sideways and not just up.';
+  if (!f.burnPressed) return 'When the engine rests, wait for the top of your path, lean flat and tap Burn!';
+  return 'At the top, lean all the way flat while you burn.';
+}
 function hintFor(f, goal) {
   if (f.outcome === 'heavy') return { art: ART.heavy, title: 'Too heavy to lift off!',
     text: 'The small engine can\'t push that much fuel. Try the big engine?' };
@@ -788,12 +881,13 @@ function hintFor(f, goal) {
     return { art: ART.puff, title: 'Bonk!', text: 'It came down too fast. The parachute needs a little time to open, so open it early.' };
   }
   if (f.outcome === 'escape') return { art: ART.space, title: 'Wow, it flew away!', text: 'Your rocket is going so fast it will never come back. That is called escape speed.' };
-  if (f.outcome === 'orbit') return { art: ART.orbit, title: 'Around and around!', text: 'You are in orbit again.' };
-  if (!goal) return { art: ART.chute, title: 'Nice flight!', text: 'You have done every goal in this version. More is coming soon.' };
+  if (f.wasOrbit && !f.outcome) return { art: ART.orbit, title: 'Still going around!',
+    text: fuelLeft(f) > 0 ? 'Your rocket is still in orbit. Next time, tap Come home to fly back down.' : 'Your rocket is still in orbit. Keep some fuel next time so you can come home.' };
+  if (!goal) return { art: ART.home, title: 'Nice flight!', text: 'You have done every goal in this version. The Moon is coming soon!' };
+  if (goal.id === 'home') return { art: ART.chute, title: 'Nice flight!',
+    text: 'To come home safe: go all the way around, tap Come home, and keep the heat shield on.' };
+  if (goal.id === 'orbit') return { art: ART.chute, title: f.maxAlt > ATM_TOP ? 'So close!' : 'Nice flight!', text: orbitTip(f) };
   const frac = goal.alt ? f.maxAlt / goal.alt : 0;
-  if (goal.id === 'orbit') return { art: ART.chute, title: 'Nice flight!',
-    text: f.maxAlt < ATM_TOP ? 'To go all the way around, first get to space, then lean far over so you fly sideways really fast.'
-      : 'You went up and came back down. To go around, lean over more once you are high up, so you fly sideways faster.' };
   const name = goal.id === 'clouds' ? 'the clouds' : 'space';
   const t = frac < 0.25 ? `Your rocket ran out of fuel only a little way up toward ${name}.`
     : frac < 0.5 ? `Your rocket ran out of fuel part of the way to ${name}.`
@@ -807,9 +901,9 @@ let toastTimer = 0;
 function toast(big, small) {
   ui.toast.innerHTML = `${big}${small ? `<small>${small}</small>` : ''}`;
   ui.toast.classList.add('show'); clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 3200);
+  toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 3400);
 }
-function setGoalText() { const g = currentGoal(); ui.goalText.textContent = g ? g.title : 'Fly anywhere you like'; }
+function setGoalText() { const g = currentGoal(); ui.goalText.textContent = g ? g.title : 'Moon: coming soon'; }
 
 function refreshHangar() {
   const c = save.config;
@@ -817,15 +911,23 @@ function refreshHangar() {
   ui.vTank.textContent = TANKS[c.tank].name;
   ui.vEngine.textContent = ENGINES[c.engine].name;
   ui.pFins.hidden = !save.unlocked.fins;
-  ui.parts.classList.toggle('four', save.unlocked.fins);
   ui.vFins.textContent = c.fins ? 'On' : 'Off';
+  ui.pStages.hidden = !save.unlocked.stages;
+  ui.vStages.textContent = cfgStages() === 2 ? '2 stages' : '+ Stage';
+  ui.pShield.hidden = !save.unlocked.shield;
+  ui.vShield.textContent = c.shield ? 'On' : 'Off';
+  const n = 3 + (save.unlocked.fins ? 1 : 0) + (save.unlocked.stages ? 1 : 0) + (save.unlocked.shield ? 1 : 0);
+  ui.parts.classList.toggle('four', n === 4);
   ui.newFins.hidden = save.seen.fins !== false;
   ui.newTank.hidden = save.seen.tall !== false;
+  ui.newStages.hidden = save.seen.stages !== false;
+  ui.newShield.hidden = save.seen.shield !== false;
   ui.tip.textContent = save.flights === 0 ? 'Tap a part to change it' : '';
   ui.tip.hidden = save.flights !== 0;
-  buildRocket(c, cfgFins());
+  buildRocket(flightCfg());
   setGoalText();
   pop = 1;
+  resize();
 }
 let pop = 0;
 function cycle(list, cur) { const i = list.indexOf(cur); return list[(i + 1) % list.length]; }
@@ -839,16 +941,28 @@ $('pTank').addEventListener('click', () => {
 });
 $('pEngine').addEventListener('click', () => { save.config.engine = cycle(['small', 'big'], save.config.engine); writeSave(); refreshHangar(); tapSound(); });
 ui.pFins.addEventListener('click', () => { save.config.fins = !save.config.fins; save.seen.fins = true; writeSave(); refreshHangar(); tapSound(); });
+ui.pStages.addEventListener('click', () => {
+  save.config.stages = cfgStages() === 2 ? 1 : 2; save.seen.stages = true; writeSave(); refreshHangar(); tapSound();
+  if (save.config.stages === 2) toast('Booster added!', 'It pushes first. Drop it when it is empty.');
+});
+ui.pShield.addEventListener('click', () => { save.config.shield = !save.config.shield; save.seen.shield = true; writeSave(); refreshHangar(); tapSound(); });
 function tapSound() { sound.init(); sound.burst(0.08, 1800, 0.25); }
 
 ui.btnLaunchEl.addEventListener('click', () => { sound.init(); startFlight(); });
 $('btnHome').addEventListener('click', () => {
-  if (F && F.newGoals.length && mode === 'flight') { finishFlight(); return; }
+  if (F && (F.newGoals.length || F.wasOrbit) && mode === 'flight') { finishFlight(); return; }
   toHangar();
 });
-ui.cardBtn.addEventListener('click', toHangar);
-ui.chute.addEventListener('click', () => { if (F) openChute(F); });
-$('btnMap').addEventListener('click', () => { ui.mapWrap.hidden = false; drawMap(); });
+ui.cardBtn.addEventListener('click', () => {
+  if (mode === 'paused') { mode = 'flight'; ui.card.hidden = true; last = performance.now(); return; }
+  toHangar();
+});
+ui.cardBtn2.addEventListener('click', toHangar);
+ui.act.addEventListener('click', () => { if (F) doAction(F); });
+ui.warp.addEventListener('click', () => { save.warp = cycle(WARPS, save.warp); writeSave(); tapSound(); updateWarpLabel(); });
+function updateWarpLabel() { ui.warp.innerHTML = save.warp === 1 ? 'Speed 1x &rsaquo;' : `Speed ${save.warp}x &rsaquo;&rsaquo;`; }
+updateWarpLabel();
+$('btnMap').addEventListener('click', () => { ui.mapWrap.hidden = false; requestAnimationFrame(drawMap); drawMap(); });
 $('btnMapClose').addEventListener('click', () => { ui.mapWrap.hidden = true; });
 
 ui.btnNums.addEventListener('click', () => { save.nums = !save.nums; writeSave(); applyNums(); });
@@ -857,11 +971,12 @@ ui.btnSound.addEventListener('click', () => { save.sound = !save.sound; writeSav
 function applySound() { ui.btnSound.classList.toggle('off', !save.sound); ui.btnSound.setAttribute('aria-label', save.sound ? 'Sound on' : 'Sound off'); }
 
 // lean slider: press anywhere on the track, drag; snaps to the middle notch
+const THUMB_HALF = 38;
 {
   const tr = ui.leanTrack; let active = null;
   const setFrom = (clientX) => {
-    const r = tr.getBoundingClientRect(), half = 38;
-    let v = ((clientX - r.left - half) / (r.width - half * 2)) * 2 - 1;
+    const r = tr.getBoundingClientRect();
+    let v = ((clientX - r.left - THUMB_HALF) / (r.width - THUMB_HALF * 2)) * 2 - 1;
     v = Math.max(-1, Math.min(1, v)); if (Math.abs(v) < 0.05) v = 0; setLean(v);
   };
   tr.addEventListener('pointerdown', (e) => { active = e.pointerId; tr.setPointerCapture(e.pointerId); setFrom(e.clientX); e.preventDefault(); });
@@ -873,40 +988,99 @@ function applySound() { ui.btnSound.classList.toggle('off', !save.sound); ui.btn
     else if (e.key === 'Home' || e.key === '0') setLean(0); else return; e.preventDefault();
   });
 }
+function leanPx(v) { const r = ui.leanTrack.clientWidth; return v * (r / 2 - THUMB_HALF - 6); }
 function setLean(v) {
   lean = v;
-  const r = ui.leanTrack.clientWidth, half = 38;
-  ui.leanThumb.style.transform = `translateX(${v * (r / 2 - half - 6)}px)`;
+  ui.leanThumb.style.transform = `translateX(${leanPx(v)}px)`;
   ui.leanTrack.setAttribute('aria-valuenow', v.toFixed(2));
 }
 window.addEventListener('keydown', (e) => {
   if (mode !== 'flight') { if (mode === 'hangar' && (e.key === ' ' || e.key === 'Enter') && document.activeElement === document.body) startFlight(); return; }
   if (e.key === 'a' || e.key === 'ArrowLeft') { if (document.activeElement !== ui.leanTrack) setLean(Math.max(-1, lean - 0.1)); }
   if (e.key === 'd' || e.key === 'ArrowRight') { if (document.activeElement !== ui.leanTrack) setLean(Math.min(1, lean + 0.1)); }
-  if (e.key === 'p' && F) openChute(F);
+  if ((e.key === 'p' || e.key === ' ') && F && !ui.act.hidden) { doAction(F); e.preventDefault(); }
   if (e.key === 'm') { ui.mapWrap.hidden = !ui.mapWrap.hidden; if (!ui.mapWrap.hidden) drawMap(); }
 });
 
+// the one big button in flight changes with what is needed now
+let actKind = '';
+function pickAction(f) {
+  if (f.outcome || mode !== 'flight') return '';
+  const vr = vRadial(f);
+  if (f.needDrop) return 'drop';
+  if (f.coasting && fuelLeft(f) > 0 && (vr < 220 || f.alt > ATM_TOP + 20000) && !(vr < 0 && f.alt < ATM_TOP - 15000)) return 'burn';
+  if (f.wasOrbit && !f.retro && !f.capsuleOnly && !f.engineOn && fuelLeft(f) > 0 && inOrbit(f)) return 'home';
+  if (!f.engineOn && !f.chuteOn && f.lifted && vr < -5 && f.alt < ATM_TOP && f.plasma < 0.05 && Math.hypot(f.vx, f.vy) < 500) return 'chute';
+  return '';
+}
+const ACT_TEXT = { drop: 'Drop stage', burn: 'Burn!', home: 'Come home', chute: 'Open parachute' };
+function doAction(f) {
+  const k = pickAction(f);
+  if (k === 'drop') doDrop();
+  else if (k === 'burn') { if (resumeBurn(f)) { f.burnPressed = true; sound.burst(0.4, 900, 0.5); } }
+  else if (k === 'home') { if (startComeHome(f)) toast('Turning around...', 'The engine slows you down, then down you go.'); }
+  else if (k === 'chute') openChute(f);
+}
+function doDrop() {
+  const f = F; if (!f || !f.needDrop || !stackG.booster) return;
+  const ox = f.x, oy = f.y, h = stackG.boosterH;
+  if (!dropStage(f, h)) return;
+  shed(stackG.booster, ox, oy, f, 3); stackG.booster = null;
+  shiftStack(h, ENGINES[stage(f).engine].bellR);
+  sound.burst(0.5, 1100, 0.5);
+  toast('Stage dropped!', 'Next engine on.');
+  layoutFuel(f);
+}
+function doSeparate() {
+  const f = F; if (!f || f.capsuleOnly || !stackG.upper) return;
+  const ox = f.x, oy = f.y, h = stackG.upperH;
+  if (!separateCapsule(f, h)) return;
+  shed(stackG.upper, ox, oy, f, 2); stackG.upper = null;
+  shiftStack(h, 0.5);
+  sound.burst(0.5, 1100, 0.5);
+  layoutFuel(f);
+}
 function openChute(f) {
-  if (f.chuteOn || f.engineOn && f.fuel > 0) return;
-  f.chuteOn = true; chute.visible = true; ui.chute.hidden = true; sound.burst(0.5, 1200, 0.35);
+  if (f.chuteOn || f.engineOn && fuelLeft(f) > 0) return;
+  f.chuteOn = true; chute.visible = true; sound.burst(0.5, 1200, 0.35);
+}
+
+// fuel bar: one piece per stage, the top piece is the top stage
+function layoutFuel(f) {
+  ui.fuelTrack.innerHTML = '';
+  if (f.capsuleOnly) { ui.fuelTrack.parentElement.hidden = true; return; }
+  ui.fuelTrack.parentElement.hidden = false;
+  for (let i = f.stages.length - 1; i >= f.si; i--) {
+    const seg = document.createElement('div'); seg.className = 'fseg';
+    const fill = document.createElement('div'); fill.className = 'fuel-fill'; seg.appendChild(fill);
+    seg.dataset.i = i; ui.fuelTrack.appendChild(seg);
+  }
+}
+function updateFuel(f) {
+  for (const seg of ui.fuelTrack.children) {
+    const s = f.stages[+seg.dataset.i]; const fr = s.fuel / s.fuelMax;
+    const fill = seg.firstChild; fill.style.height = (fr * 100).toFixed(1) + '%'; fill.classList.toggle('low', fr < 0.2);
+  }
 }
 
 function startFlight() {
   if (mode !== 'hangar') return;
   F = newFlight(); mode = 'flight';
-  save.seen.fins = true; save.seen.tall = true; writeSave();
-  parts.length = 0; rocket.visible = true; chute.visible = false; chute.scale.setScalar(0.01);
+  for (const k of Object.keys(save.seen)) save.seen[k] = true; writeSave();
+  parts.length = 0; rocket.visible = true; chute.visible = false; chute.scale.setScalar(0.01); plasma.visible = false;
   setLean(0); simAcc = 0;
   ui.hangar.hidden = true; ui.flight.hidden = false; document.body.classList.add('flying');
-  ui.card.hidden = true; ui.mapWrap.hidden = true; ui.chute.hidden = true;
+  ui.card.hidden = true; ui.mapWrap.hidden = true; ui.act.hidden = true; ui.warp.hidden = true;
   ui.progGoal.style.backgroundImage = progIcon();
+  ui.prog.hidden = !currentGoal() || currentGoal().id === 'home';
+  layoutFuel(F); actKind = '';
 }
 function toHangar() {
   mode = 'hangar'; F = null; parts.length = 0;
   ui.card.hidden = true; ui.mapWrap.hidden = true; ui.flight.hidden = true; ui.hangar.hidden = false;
   document.body.classList.remove('flying');
-  rocket.visible = true; chute.visible = false; camSmooth = null;
+  rocket.visible = true; chute.visible = false; plasma.visible = false; camSmooth = null;
+  ui.heatGlow.style.opacity = 0;
   sound.engine(0, 1);
   refreshHangar();
 }
@@ -914,96 +1088,316 @@ function progIcon() {
   const g = currentGoal();
   const svg = !g || g.id === 'clouds'
     ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80"><path d="M30 66c-12 0-20-8-20-18s8-18 19-18c3-12 13-20 26-20 14 0 25 9 27 22 11 0 20 8 20 17s-8 17-19 17z" fill="#fff"/></svg>'
+    : g.id === 'orbit'
+    ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#5f9be0"/><ellipse cx="12" cy="12" rx="10.5" ry="7" fill="none" stroke="#7fd69b" stroke-width="2"/></svg>'
     : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l3 7 7 .6-5.4 4.6 1.7 7.3L12 17.6 5.7 21.5l1.7-7.3L2 9.6 9 9z" fill="#ffd36a"/></svg>';
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
-// ---------------------------------------------------------------- map (zoomed-out planet + predicted path)
-function predictPath(f) {
-  const pts = []; let x = f.x, y = f.y, vx = f.vx, vy = f.vy;
-  const o = orbitInfo(f); const span = Math.max(4000, Math.min(60, (o.apo === Infinity ? 1e6 : o.apo + R) / 2000));
-  let ang = 0, last = Math.atan2(x, y);
-  for (let i = 0; i < 1500; i++) {
-    const r = Math.hypot(x, y); if (r < R) break;
-    const dt = Math.max(1, Math.min(30, (r - R) / 2000 + 1));
-    const a = -GM / (r * r * r); vx += a * x * dt; vy += a * y * dt; x += vx * dt; y += vy * dt;
-    const na = Math.atan2(x, y); ang += Math.abs(wrapA(na - last)); last = na;
-    if (i % 2 === 0) pts.push([x, y]);
-    if (ang > Math.PI * 2.02) break;
-    if (r > R * 8) break;
-  }
-  return pts;
+// ---------------------------------------------------------------- the planet picture for the map (same land and sea as the flight view)
+function fract(x) { return x - Math.floor(x); }
+function hash13(x, y, z) {
+  x = fract(x * 0.1031); y = fract(y * 0.1031); z = fract(z * 0.1031);
+  const d = x * (z + 31.32) + y * (y + 31.32) + z * (x + 31.32);
+  x += d; y += d; z += d; return fract((x + y) * z);
 }
+function vnoise(x, y, z) {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  let fx = x - ix, fy = y - iy, fz = z - iz;
+  fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy); fz = fz * fz * (3 - 2 * fz);
+  const L = (a, b, t) => a + (b - a) * t;
+  const a = hash13(ix, iy, iz), b = hash13(ix + 1, iy, iz), c = hash13(ix, iy + 1, iz), d = hash13(ix + 1, iy + 1, iz);
+  const e = hash13(ix, iy, iz + 1), g = hash13(ix + 1, iy, iz + 1), h = hash13(ix, iy + 1, iz + 1), k = hash13(ix + 1, iy + 1, iz + 1);
+  return L(L(L(a, b, fx), L(c, d, fx), fy), L(L(e, g, fx), L(h, k, fx), fy), fz);
+}
+function fbm(x, y, z, oct) {
+  let a = 0.5, s = 0;
+  for (let i = 0; i < oct; i++) { s += a * vnoise(x, y, z); x = x * 2.03 + 1.7; y = y * 2.03 + 9.2; z = z * 2.03 + 3.1; a *= 0.5; }
+  return s;
+}
+const sstep = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+let planetImg = null;
+function makePlanetImage(N, done) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = N;
+  const g = cv.getContext('2d'); const img = g.createImageData(N, N); const px = img.data;
+  const sun = [-0.45, 0.62, 0.64]; const sl = Math.hypot(...sun); sun[0] /= sl; sun[1] /= sl; sun[2] /= sl;
+  let row = 0;
+  const work = () => {
+    const end = Math.min(N, row + 24);
+    for (; row < end; row++) {
+      for (let col = 0; col < N; col++) {
+        const u = (col + 0.5) / N * 2 - 1, v = 1 - (row + 0.5) / N * 2, rr = u * u + v * v;
+        if (rr > 1) continue;
+        const nz = Math.sqrt(1 - rr), nx = u, ny = v;
+        let c = fbm(nx * 2.6 + 3.1, ny * 2.6 + 1.7, nz * 2.6 + 5.2, 5);
+        const sd = Math.hypot(nx, ny - 1, nz) * 600000;
+        const c0 = c;
+        c = Math.max(c, c + (0.56 - c) * Math.exp(-Math.pow(sd / 90000, 2)));
+        const land = sstep(0.5, 0.512, c);
+        const m = fbm(nx * 32 + 7, ny * 32 + 7, nz * 32 + 7, 3);
+        const dryT = sstep(0.5, 0.75, m);
+        let lr = 0.08 + (0.22 - 0.08) * dryT, lg = 0.16 + (0.19 - 0.16) * dryT, lb = 0.045 + (0.11 - 0.045) * dryT;
+        const rk = sstep(0.62, 0.74, c0) * (1 - Math.exp(-Math.pow(sd / 60000, 2)));
+        lr += (0.17 - lr) * rk; lg += (0.16 - lg) * rk; lb += (0.15 - lb) * rk;
+        const st = sstep(0.44, 0.5, c);
+        const sr = 0.008 + 0.012 * st, sg = 0.03 + 0.05 * st, sb = 0.07 + 0.04 * st;
+        let r = sr + (lr - sr) * land, gg = sg + (lg - sg) * land, b = sb + (lb - sb) * land;
+        const ndl = Math.max(0, nx * sun[0] + ny * sun[1] + nz * sun[2]);
+        const light = 4.6 * ndl + 0.55;           // brighter night side than real, so the map stays readable
+        r *= light; gg *= light; b *= light;
+        // air haze toward the rim
+        const haze = Math.pow(1 - nz, 2.2) * 0.9 * (0.35 + ndl);
+        r += 0.10 * haze; gg += 0.22 * haze; b += 0.55 * haze;
+        const tm = (x) => Math.pow(1 - Math.exp(-x * 1.05), 1 / 2.2) * 255;
+        const o = (row * N + col) * 4;
+        px[o] = tm(r); px[o + 1] = tm(gg); px[o + 2] = tm(b);
+        px[o + 3] = 255 * Math.min(1, (1 - Math.sqrt(rr)) * N * 0.5);   // soft edge
+      }
+    }
+    if (row < N) setTimeout(work, 0);
+    else { g.putImageData(img, 0, 0); planetImg = cv; done && done(); }
+  };
+  work();
+}
+
+// ---------------------------------------------------------------- map (zoomed-out planet + predicted path)
+// Drawn with a plain 2D canvas (no WebGL lines), so it looks the same on every phone.
+const MAPCOL = { orbit: '#7fd69b', almost: '#ffd36a', fall: '#ff9a4d', away: '#9cc7ff' };
+function pathState(f) {
+  if (!f.lifted || f.outcome === 'landed' || f.outcome === 'crash') return { path: null, kind: 'none' };
+  const p = conicPath(f.x, f.y, f.vx, f.vy);
+  const o = orbitInfo(f);
+  let kind = 'fall';
+  if (p.escape) kind = 'away';
+  else if (p.wraps && o.peri > ATM_TOP) kind = 'orbit';
+  else if (p.wraps) kind = 'almost';
+  return { path: p, kind, o };
+}
+function drawPlanetView(g, w, h, f, opt) {
+  const { path, kind } = pathState(f);
+  const mini = !!opt.mini;
+  // framing: the whole planet once the path goes far around; otherwise zoom in on the flight so the path is big
+  const pts = [[0, R], [f.x, f.y]];
+  if (path) for (let i = 0; i < path.pts.length; i += 4) pts.push(path.pts[i]);
+  if (path && path.pts.length) pts.push(path.pts[path.pts.length - 1]);
+  for (let i = 0; i < f.track.length; i += 3) pts.push(f.track[i]);
+  let maxAng = 0, maxR = R;
+  for (const p of pts) { maxAng = Math.max(maxAng, Math.abs(Math.atan2(p[0], p[1]))); maxR = Math.max(maxR, Math.hypot(p[0], p[1])); }
+  let cx0, cy0, ext;
+  const padTop = opt.padTop || 0, padBot = opt.padBot || 0, availH = h - padTop - padBot;
+  if (mini || kind === 'orbit' || kind === 'almost' || kind === 'away' || maxAng > 0.6 || maxR > R * 1.35) {
+    cx0 = 0; cy0 = 0; ext = Math.min(R * 3.2, Math.max(R * (mini ? 1.16 : 1.22), maxR * 1.06));
+    if (mini) ext = Math.min(ext, R * 1.7);
+  } else {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const p of pts) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }
+    const half = Math.max(6000, (x1 - x0) * 0.62, (y1 - y0) * 0.62 * Math.max(1, w / availH));
+    cx0 = (x0 + x1) / 2; cy0 = (y0 + y1) / 2 - half * 0.18; ext = half;
+  }
+  const s = Math.min(w, availH) * (mini ? 0.5 : 0.44) / ext;
+  const cx = w / 2 - cx0 * s, cy = padTop + availH / 2 + cy0 * s;
+  const P = (x, y) => [cx + x * s, cy - y * s];
+  const Rpx = R * s;
+  // stars
+  if (!mini) {
+    g.fillStyle = 'rgba(255,255,255,.55)';
+    for (let i = 0; i < 70; i++) { const x = fract(Math.sin(i * 12.9898) * 43758.5) * w, y = fract(Math.sin(i * 78.233) * 12345.6) * h; g.fillRect(x, y, i % 7 ? 1 : 1.6, i % 7 ? 1 : 1.6); }
+  }
+  const zoomedIn = Rpx > 1400;
+  if (zoomedIn) {
+    // close up: a huge circle would be blocky (and risky for some browsers), so draw just the piece of ground in view
+    const ac = Math.atan2(cx0, cy0), span = Math.min(Math.PI, (Math.max(w, h) / s) / R * 1.2 + 0.002);
+    const surf = [];
+    for (let i = 0; i <= 48; i++) { const a = ac - span + 2 * span * i / 48; surf.push(P(R * Math.sin(a), R * Math.cos(a))); }
+    const deep = (Math.max(w, h) * 2) / s;
+    g.beginPath(); surf.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y));
+    for (let i = 48; i >= 0; i--) { const a = ac - span + 2 * span * i / 48; const [x, y] = P((R - deep) * Math.sin(a), (R - deep) * Math.cos(a)); g.lineTo(x, y); }
+    g.closePath();
+    const [tx, ty] = P(R * Math.sin(ac), R * Math.cos(ac)), [bx, by] = P((R - 60 / s) * Math.sin(ac), (R - 60 / s) * Math.cos(ac));
+    const gg = g.createLinearGradient(tx, ty, bx, by); gg.addColorStop(0, '#567f40'); gg.addColorStop(1, '#22391d');
+    g.fillStyle = gg; g.fill();
+    g.lineJoin = 'round';
+    g.strokeStyle = 'rgba(120,175,255,.28)'; g.lineWidth = 14; strokePoly(g, surf);
+    g.strokeStyle = 'rgba(200,230,255,.7)'; g.lineWidth = 2; strokePoly(g, surf);
+  } else {
+    // air: a thin glowing shell
+    const at = g.createRadialGradient(cx, cy, Rpx * 0.985, cx, cy, (R + ATM_TOP) * s);
+    at.addColorStop(0, 'rgba(120,175,255,.55)'); at.addColorStop(0.5, 'rgba(110,170,255,.22)'); at.addColorStop(1, 'rgba(110,170,255,0)');
+    g.fillStyle = at; g.beginPath(); g.arc(cx, cy, (R + ATM_TOP) * s, 0, Math.PI * 2); g.fill();
+  }
+  // the planet
+  if (zoomedIn) { /* drawn above */ } else if (planetImg) g.drawImage(planetImg, cx - Rpx, cy - Rpx, Rpx * 2, Rpx * 2);
+  else {
+    const pg = g.createRadialGradient(cx - Rpx * 0.4, cy - Rpx * 0.4, Rpx * 0.1, cx, cy, Rpx);
+    pg.addColorStop(0, '#4f7fb8'); pg.addColorStop(1, '#13284a');
+    g.fillStyle = pg; g.beginPath(); g.arc(cx, cy, Rpx, 0, Math.PI * 2); g.fill();
+  }
+  // where we've been
+  if (f.track.length > 1) {
+    g.strokeStyle = 'rgba(255,248,236,.6)'; g.lineWidth = mini ? 1 : 2; g.setLineDash(mini ? [2, 2] : [3, 4]); g.beginPath();
+    f.track.forEach((p, i) => { const [a, b] = P(p[0], p[1]); i ? g.lineTo(a, b) : g.moveTo(a, b); });
+    const [rx, ry] = P(f.x, f.y); g.lineTo(rx, ry); g.stroke(); g.setLineDash([]);
+  }
+  // launch site: a little flag
+  {
+    const [sx, sy] = P(0, R);
+    const fl = mini ? 7 : 16;
+    g.lineCap = 'round';
+    g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = mini ? 3 : 4; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx, sy - fl); g.stroke();
+    g.strokeStyle = '#fff8ec'; g.lineWidth = mini ? 1.4 : 2; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx, sy - fl); g.stroke();
+    g.fillStyle = '#f07a2e'; g.beginPath(); g.moveTo(sx, sy - fl); g.lineTo(sx + fl * 0.6, sy - fl * 0.8); g.lineTo(sx, sy - fl * 0.6); g.closePath(); g.fill();
+    if (!mini) label(g, 'Start', sx, sy - fl - 10, '#fff8ec');
+  }
+  // where we're going
+  let hitPx = null;
+  if (path && path.pts.length > 1) {
+    const col = MAPCOL[kind] || MAPCOL.fall;
+    const sp = path.pts.map(p => P(p[0], p[1]));
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = mini ? 3.4 : 8; strokePoly(g, sp);
+    g.strokeStyle = col; g.lineWidth = mini ? 1.8 : 4.5; strokePoly(g, sp);
+    // arrows along the path: which way you are going
+    const every = mini ? 34 : 64; let acc = every * 0.55; let arrows = 0;
+    for (let i = 1; i < sp.length; i++) {
+      const dx = sp[i][0] - sp[i - 1][0], dy = sp[i][1] - sp[i - 1][1], L = Math.hypot(dx, dy);
+      if (L < 1e-6) continue;
+      acc += L;
+      if (acc >= every && (!path.hit || i < sp.length - 2)) { acc = 0; arrows++; arrow(g, sp[i][0], sp[i][1], Math.atan2(dy, dx), mini ? 4.2 : 9, col); }
+    }
+    if (!arrows && sp.length > 2) {   // a short path still gets one arrow in its middle
+      const m = Math.floor(sp.length / 2), a0 = sp[m - 1], a1 = sp[m];
+      arrow(g, a1[0], a1[1], Math.atan2(a1[1] - a0[1], a1[0] - a0[0]), mini ? 4.2 : 9, col);
+    }
+    if (path.hit) {
+      hitPx = P(path.hit[0], path.hit[1]);
+      const [hx, hy] = hitPx, k = mini ? 3.5 : 8;
+      g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = mini ? 3.5 : 6;
+      g.beginPath(); g.moveTo(hx - k, hy - k); g.lineTo(hx + k, hy + k); g.moveTo(hx + k, hy - k); g.lineTo(hx - k, hy + k); g.stroke();
+      g.strokeStyle = '#ff6a4a'; g.lineWidth = mini ? 1.8 : 3.2;
+      g.beginPath(); g.moveTo(hx - k, hy - k); g.lineTo(hx + k, hy + k); g.moveTo(hx + k, hy - k); g.lineTo(hx - k, hy + k); g.stroke();
+      if (!mini) label(g, 'Lands here', hx, hy + 22, '#ffb49a');
+    }
+  }
+  // the rocket: a little arrowhead pointing the way it moves
+  {
+    const [rx, ry] = P(f.x, f.y);
+    const v = Math.hypot(f.vx, f.vy);
+    const ang = v > 3 ? Math.atan2(-f.vy, f.vx) : Math.atan2(-Math.cos(f.heading), Math.sin(f.heading));
+    const k = mini ? 5.5 : 11;
+    g.save(); g.translate(rx, ry); g.rotate(ang);
+    g.beginPath(); g.moveTo(k * 1.25, 0); g.lineTo(-k * 0.8, k * 0.75); g.lineTo(-k * 0.35, 0); g.lineTo(-k * 0.8, -k * 0.75); g.closePath();
+    g.fillStyle = '#fff8ec'; g.strokeStyle = 'rgba(0,0,0,.7)'; g.lineWidth = mini ? 1.2 : 2; g.fill(); g.stroke();
+    g.restore();
+    if (!mini) {
+      const pulse = 0.5 + 0.5 * Math.sin(clock * 4);
+      g.strokeStyle = `rgba(255,154,77,${0.35 + 0.4 * pulse})`; g.lineWidth = 2;
+      g.beginPath(); g.arc(rx, ry, k * 1.6 + pulse * 4, 0, Math.PI * 2); g.stroke();
+    }
+  }
+  return kind;
+}
+function strokePoly(g, sp) { g.beginPath(); g.moveTo(sp[0][0], sp[0][1]); for (let i = 1; i < sp.length; i++) g.lineTo(sp[i][0], sp[i][1]); g.stroke(); }
+function arrow(g, x, y, a, k, col) {
+  g.save(); g.translate(x, y); g.rotate(a);
+  g.beginPath(); g.moveTo(k, 0); g.lineTo(-k * 0.7, k * 0.8); g.lineTo(-k * 0.7, -k * 0.8); g.closePath();
+  g.fillStyle = col; g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 1.5; g.fill(); g.stroke(); g.restore();
+}
+function label(g, t, x, y, col) {
+  g.font = '700 14px "Atkinson Hyperlegible", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 4; g.strokeStyle = 'rgba(4,7,14,.85)'; g.strokeText(t, x, y); g.fillStyle = col; g.fillText(t, x, y);
+}
+function fitCanvas(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight, pr = Math.min(2, window.devicePixelRatio || 1);
+  if (!w || !h) return null;
+  if (cv.width !== Math.round(w * pr) || cv.height !== Math.round(h * pr)) { cv.width = Math.round(w * pr); cv.height = Math.round(h * pr); }
+  const g = cv.getContext('2d'); g.setTransform(pr, 0, 0, pr, 0, 0); g.clearRect(0, 0, w, h);
+  return { g, w, h };
+}
+const MAPCAP = {
+  pad: 'This is your planet. You start at the flag.',
+  fall: 'Your path comes back down to the ground at the X.',
+  almost: 'Almost all the way around! The air down low will slow you down.',
+  orbit: 'All the way around! The green line never touches the ground. That is an orbit.',
+  away: 'You are going so fast you will fly away from the planet!',
+};
 function drawMap() {
   if (ui.mapWrap.hidden || !F) return;
-  const cv = ui.map, w = cv.clientWidth, h = cv.clientHeight, pr = Math.min(2, window.devicePixelRatio || 1);
-  if (cv.width !== Math.round(w * pr)) { cv.width = Math.round(w * pr); cv.height = Math.round(h * pr); }
-  const g = cv.getContext('2d'); g.setTransform(pr, 0, 0, pr, 0, 0); g.clearRect(0, 0, w, h);
-  const path = predictPath(F);
-  let ext = R + Math.max(160000, F.maxAlt * 1.2);
-  for (const p of path) ext = Math.max(ext, Math.hypot(p[0], p[1]) * 1.05);
-  ext = Math.min(ext, R * 4);
-  const s = Math.min(w, h) * 0.42 / ext, cx = w / 2, cy = h / 2;
-  const P = (x, y) => [cx + x * s, cy - y * s];
-  const at = g.createRadialGradient(cx, cy, R * s, cx, cy, (R + ATM_TOP) * s);
-  at.addColorStop(0, 'rgba(110,170,255,.45)'); at.addColorStop(1, 'rgba(110,170,255,0)');
-  g.fillStyle = at; g.beginPath(); g.arc(cx, cy, (R + ATM_TOP) * s, 0, Math.PI * 2); g.fill();
-  const pg = g.createRadialGradient(cx - R * s * 0.4, cy - R * s * 0.4, R * s * 0.1, cx, cy, R * s);
-  pg.addColorStop(0, '#5f9be0'); pg.addColorStop(1, '#1d3d6e');
-  g.fillStyle = pg; g.beginPath(); g.arc(cx, cy, R * s, 0, Math.PI * 2); g.fill();
-  g.fillStyle = 'rgba(90,150,80,.8)'; g.beginPath(); g.ellipse(cx, cy - R * s * 0.6, R * s * 0.35, R * s * 0.25, 0, 0, Math.PI * 2); g.fill();
-  // where we've been
-  g.strokeStyle = 'rgba(255,248,236,.55)'; g.lineWidth = 2; g.setLineDash([3, 4]); g.beginPath();
-  F.track.forEach((p, i) => { const [a, b] = P(p[0], p[1]); i ? g.lineTo(a, b) : g.moveTo(a, b); }); g.stroke();
-  // where we're going
-  g.strokeStyle = '#f07a2e'; g.lineWidth = 3; g.setLineDash([]); g.beginPath();
-  const [sx, sy] = P(F.x, F.y); g.moveTo(sx, sy); for (const p of path) { const [a, b] = P(p[0], p[1]); g.lineTo(a, b); } g.stroke();
-  g.fillStyle = '#fff'; g.beginPath(); g.arc(sx, sy, 6, 0, Math.PI * 2); g.fill();
+  const c = fitCanvas(ui.map); if (!c) return;
+  const kind = drawPlanetView(c.g, c.w, c.h, F, { padTop: 70, padBot: 110 });
+  let cap = !F.lifted ? MAPCAP.pad : (MAPCAP[kind] || MAPCAP.fall);
+  if (F.engineOn && fuelLeft(F) > 0 && F.lifted && kind !== 'orbit') cap = 'The engine is still pushing, so your path keeps growing. ' + cap;
+  if (F.lifted && kind !== 'none') cap += ' The arrows show which way you are going.';
+  if (ui.mapCap.textContent !== cap) ui.mapCap.textContent = cap;
+}
+function drawMini() {
+  if (!F || ui.flight.hidden) return;
+  const c = fitCanvas(ui.mini); if (!c) return;
+  c.g.save(); c.g.beginPath(); c.g.arc(c.w / 2, c.h / 2, c.w / 2, 0, Math.PI * 2); c.g.clip();
+  drawPlanetView(c.g, c.w, c.h, F, { mini: true });
+  c.g.restore();
 }
 
 // ---------------------------------------------------------------- per-frame update
 const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), Z = new THREE.Vector3(0, 0, 1), Y = new THREE.Vector3(0, 1, 0);
-let numsT = 0, mapT = 0, trackT = 0;
+let numsT = 0, mapT = 0, miniT = 0, trackT = 0, hintShown = '';
+let turbo = 1;                // test hook only: run the clock faster in automated checks
 
 function update(dtReal) {
   clock += dtReal;
   if (pop > 0) pop = Math.max(0, pop - dtReal * 3);
 
-  if (mode === 'flight' || mode === 'result') {
+  if (F && (mode === 'flight' || mode === 'result' || mode === 'paused')) {
     const f = F;
-    // auto fast-forward through the slow parts (coasting, hanging under the parachute)
-    const burning = f.engineOn && f.fuel > 0;
+    const st = stage(f), burning = f.engineOn && st && st.fuel > 0;
+    const vr = vRadial(f);
+    // speed up the slow parts (coasting, going around, hanging under the parachute)
     let sp = 1;
-    if (!burning && !f.outcome) {
-      if (f.chuteOn) sp = f.alt > 60 ? 12 : 1;
-      else if (f.alt > ATM_TOP) sp = 10;
-      else if (f.alt > 4000) sp = 4;
-    } else if (burning && f.alt > 15000) sp = 2;
+    const orbiting = f.wasOrbit && !f.engineOn && !f.retro && f.alt > ATM_TOP && inOrbit(f);
+    if (burning) sp = f.retro ? 2 : (f.alt > 15000 ? 2 : 1);
+    else if (f.retro) sp = 4;
+    else if (f.needDrop) sp = 1;
+    else if (f.coasting) sp = vr < 260 ? 1 : (f.alt > 4000 ? 4 : 1);
+    else if (f.chuteOn) sp = f.alt > 60 ? 12 : 1;
+    else if (orbiting) sp = save.warp;
+    else if (f.alt > ATM_TOP) sp = 10;
+    else if (f.plasma > 0.02) sp = 2;
+    else if (f.alt > 4000) sp = 4;
     simSpeed = sp;
-    if (!f.outcome) {
-      simAcc += dtReal * sp;
+    if (mode === 'flight' && !f.outcome) {
+      simAcc += dtReal * sp * turbo;
       let n = 0;
-      while (simAcc >= STEP && n < 2000) { stepPhysics(f, STEP); simAcc -= STEP; n++; if (f.outcome) { simAcc = 0; break; } }
+      while (simAcc >= STEP && n < 3000) {
+        stepPhysics(f, STEP, lean); simAcc -= STEP; n++;
+        if (f.events.length) { handleEvents(f); if (f.outcome) { simAcc = 0; break; } }
+      }
       if (!f.lifted && burning && f.t > 5) { f.engineOn = false; f.outcome = 'heavy'; f.endIn = 1.2; }
       checkGoals(f);
+      // the empty stage drops by itself if nobody taps
+      if (f.needDrop && f.dropAuto > 0) { f.dropAuto -= dtReal; if (f.dropAuto <= 0) doDrop(); }
       // auto-open the parachute low down if nobody pressed it
-      const vr = (f.vx * f.x + f.vy * f.y) / Math.hypot(f.x, f.y);
       if (!f.engineOn && !f.chuteOn && f.lifted && vr < 0 && f.alt < 5000) openChute(f);
-      ui.chute.hidden = !( !f.engineOn && !f.chuteOn && f.lifted && vr < -5 && !f.outcome);
       trackT -= dtReal * sp; if (trackT <= 0) { f.track.push([f.x, f.y]); trackT = 2; if (f.track.length > 1500) f.track.splice(0, 2); }
-      if (f.alt > ATM_TOP && !f.spaceSeen) { f.spaceSeen = true; }
-    } else if (f.endIn > 0) {
+    } else if (f.outcome && f.endIn > 0) {
       f.endIn -= dtReal; if (f.endIn <= 0 && mode === 'flight') finishFlight();
     }
-    ui.ff.hidden = sp === 1 || !!f.outcome;
-    // fuel + progress bars
-    const fr = f.fuel / f.fuelMax;
-    ui.fuelFill.style.height = (fr * 100).toFixed(1) + '%';
-    ui.fuelFill.classList.toggle('low', fr < 0.2);
-    const g = currentGoal(); const gAlt = g && g.alt ? g.alt : (g ? 150000 : 70000);
-    const pf = Math.max(0, Math.min(1, f.alt / gAlt));
-    ui.progFill.style.height = (pf * 100) + '%'; ui.progDot.style.bottom = (pf * 100) + '%';
-    if (!ui.mapWrap.hidden) { mapT -= dtReal; if (mapT <= 0) { drawMap(); mapT = 0.25; } }
+    if (mode === 'flight') {
+      // the one action button
+      const k = pickAction(f);
+      if (k !== actKind) { actKind = k; ui.act.hidden = !k; if (k) { ui.act.textContent = ACT_TEXT[k]; ui.act.dataset.kind = k; } }
+      ui.warp.hidden = !(orbiting && !f.outcome);
+      ui.ff.hidden = sp === 1 || !!f.outcome || !ui.warp.hidden;
+      updateLeanHint(f, burning);
+      updateFuel(f);
+      // progress toward the goal: height for clouds/space, sideways speed for going around
+      const g = currentGoal();
+      let pf = 0;
+      if (g && g.alt) pf = f.alt / g.alt;
+      else if (g && g.id === 'orbit') { const r = Math.hypot(f.x, f.y), vt = Math.abs(f.x * f.vy - f.y * f.vx) / r; pf = vt / Math.sqrt(9.81 * R * R / (R + ATM_TOP + 10000)); }
+      pf = Math.max(0, Math.min(1, pf));
+      ui.progFill.style.height = (pf * 100) + '%'; ui.progDot.style.bottom = (pf * 100) + '%';
+      miniT -= dtReal; if (miniT <= 0) { drawMini(); miniT = 0.12; }
+    }
+    if (!ui.mapWrap.hidden) { mapT -= dtReal; if (mapT <= 0) { drawMap(); mapT = 0.1; } }
   }
 
   // ---- rocket transform + effects
@@ -1014,6 +1408,7 @@ function update(dtReal) {
     up = base.clone().normalize(); alt = F.alt; air = F.air;
     power = F.thr > 0 ? F.ign : 0;
     if (F.sputter > 0) { F.sputter -= dtReal; power = (Math.sin(F.sputter * 40) > 0.3 ? 0.6 : 0) * F.sputter; }
+    if (F.capsuleOnly) power = 0;
   } else {
     base = new THREE.Vector3(0, R + PAD_H, 0); dir = Y.clone(); up = Y.clone(); alt = PAD_H;
   }
@@ -1030,7 +1425,27 @@ function update(dtReal) {
   flameCoreMat.uniforms.uPower.value = power; flameCoreMat.uniforms.uVac.value = vac; flameCoreMat.uniforms.uTime.value = clock;
   flameOuter.visible = flameCore.visible = power > 0.01 && rocket.visible;
   engineLight.intensity = power * 60 * (0.85 + Math.random() * 0.3);
+  engineLight.color.setHex(0xff9a4a);
   sound.engine(mode === 'flight' ? power : 0, air);
+
+  // ---- reentry glow
+  const pl = F && mode !== 'hangar' && rocket.visible ? F.plasma : 0;
+  plasma.visible = pl > 0.01;
+  if (plasma.visible) {
+    const v = Math.hypot(F.vx, F.vy), vd = tmpDir.set(F.vx / v, F.vy / v, 0);
+    const H = rocketDims.height, c = Math.abs(vd.dot(dir));
+    const center = base.clone().addScaledVector(dir, H * 0.5);
+    const front = center.addScaledVector(vd, c * H * 0.5 + (1 - c) * 1.3 + 0.4);
+    plasma.position.copy(front);
+    plasma.quaternion.setFromUnitVectors(Y, vd);
+    const wide = 1.55 + (1 - c) * H * 0.35;
+    plasmaBow.scale.set(wide, 0.7 + pl * 0.6, wide);
+    plasmaTail.scale.set(wide * 1.05, (H + 10) * (0.6 + pl * 1.4), wide * 1.05);
+    plasmaMat.uniforms.uP.value = Math.min(1, pl * 1.3); plasmaMat.uniforms.uTime.value = clock;
+    engineLight.color.setHex(0xff7a3a); engineLight.intensity = Math.max(engineLight.intensity, pl * 90);
+  }
+  M.heat.emissive.setRGB(1.0 * pl, 0.32 * pl, 0.08 * pl);
+  ui.heatGlow.style.opacity = (pl * 0.75).toFixed(3);
 
   // smoke
   if (F && mode !== 'hangar' && power > 0.05 && air > 0.01 && rocket.visible) {
@@ -1049,7 +1464,9 @@ function update(dtReal) {
       }
     }
   }
-  updateSmoke(dtReal * (F ? simSpeed : 1), base);
+  const simDt = dtReal * (F && mode === 'flight' ? simSpeed : (mode === 'paused' ? 0 : 1));
+  updateSmoke(simDt, base);
+  updateDebris(simDt);
   updatePuffs();
 
   // ---- lights fade toward space
@@ -1058,7 +1475,7 @@ function update(dtReal) {
   hemi.color.setRGB(0.6 * airLook + 0.05, 0.75 * airLook + 0.05, 1.0 * airLook + 0.08);
   for (const m of stdMats) m.envMapIntensity = 0.25 + 0.75 * airLook;
   sunLight.position.copy(base).addScaledVector(SUN, 100); sunLight.target.position.copy(base);
-  pad.visible = alt < 6000;
+  pad.visible = Math.hypot(base.x, base.y - R) < 8000;
 
   // ---- camera
   updateCamera(dtReal, base, dir, up, alt);
@@ -1068,17 +1485,41 @@ function update(dtReal) {
   if (save.nums && numsT <= 0) { numsT = 0.1; ui.nums.textContent = numbersText(); }
 }
 
+// "lean now" help: a glowing spot on the slider shows where to hold it (from the second goal ladder step on)
+function updateLeanHint(f, burning) {
+  let show = false, target = 0, text = '';
+  const side = lean < -0.05 ? -1 : 1;
+  if (save.unlocked.stages && !f.outcome && f.lifted && !f.retro && !f.capsuleOnly) {
+    if (f.coasting && fuelLeft(f) > 0) {
+      target = 1; show = true;
+      if (Math.abs(lean) < 0.75) text = side > 0 ? 'Lean flat →' : '← Lean flat';
+      else if (pickAction(f) !== 'burn') text = 'Coasting up to the top...';
+    } else if (burning && f.alt > 8500 && f.alt < ATM_TOP + 30000) {
+      target = suggestedLean(f); show = true;
+      if (Math.abs(lean) < target - 0.22) text = side > 0 ? 'Lean now →' : '← Lean now';
+      else if (Math.abs(lean) > target + 0.3 && f.alt < 40000) text = 'Lean a little less';
+    }
+  }
+  ui.leanGhost.hidden = !show;
+  if (show) ui.leanGhost.style.transform = `translateX(${leanPx(target * side)}px)`;
+  if (text !== hintShown) { hintShown = text; ui.leanHint.textContent = text; ui.leanHint.hidden = !text; }
+}
+
 function numbersText() {
   if (mode === 'hangar' || !F) {
-    const c = save.config, m = rocketMass(c), E = ENGINES[c.engine];
-    const m0 = m.dry + m.fuel, twr = E.thrust * E.ispSL / E.ispVac / (m0 * G0);
-    const dv = E.ispVac * G0 * Math.log(m0 / m.dry);
-    return `mass   ${(m0 / 1000).toFixed(2)} t\nthrust ${(E.thrust / 1000).toFixed(0)} kN\nTWR    ${twr.toFixed(2)}\nΔv     ${(dv / 1000).toFixed(2)} km/s\nbest   ${(save.best / 1000).toFixed(1)} km`;
+    const f = physicsFlight(flightCfg());
+    let m0 = mass(f), dv = 0;
+    const twr = f.stages[0].eng.thrust * f.stages[0].eng.ispSL / f.stages[0].eng.ispVac / (m0 * G0);
+    for (let i = 0; i < f.stages.length; i++) {
+      const s = f.stages[i], m1 = m0 - s.fuel;
+      dv += s.eng.ispVac * G0 * Math.log(m0 / m1); m0 = m1 - s.dry;
+    }
+    return `mass   ${(mass(f) / 1000).toFixed(2)} t\nstages ${f.stages.length}\nthrust ${(f.stages[0].eng.thrust / 1000).toFixed(0)} kN\nTWR    ${twr.toFixed(2)}\nΔv     ${(dv / 1000).toFixed(2)} km/s\nbest   ${(save.best / 1000).toFixed(1)} km`;
   }
   const f = F, v = Math.hypot(f.vx, f.vy), r = Math.hypot(f.x, f.y), vr = (f.vx * f.x + f.vy * f.y) / r;
-  const o = orbitInfo(f);
+  const o = orbitInfo(f), st = stage(f);
   const km = (x) => Math.abs(x) >= 10000 ? (x / 1000).toFixed(1) + ' km' : x.toFixed(0) + ' m';
-  return `height ${km(f.alt)}\nspeed  ${v.toFixed(0)} m/s\nup     ${vr.toFixed(0)} m/s\nfuel   ${(100 * f.fuel / f.fuelMax).toFixed(0)} %\ntop    ${km(f.maxAlt)}\napo    ${o.escape ? 'escape' : km(o.apo)}\nperi   ${o.escape ? '-' : km(o.peri)}${simSpeed > 1 ? `\ntime   ${simSpeed}x` : ''}`;
+  return `height ${km(f.alt)}\nspeed  ${v.toFixed(0)} m/s\nup     ${vr.toFixed(0)} m/s\nfuel   ${st ? (100 * st.fuel / st.fuelMax).toFixed(0) : 0} %\nstage  ${f.capsuleOnly ? 'capsule' : (f.si + 1) + '/' + f.stages.length}\ntop    ${km(f.maxAlt)}\napo    ${o.escape ? 'escape' : km(o.apo)}\nperi   ${o.escape ? '-' : km(o.peri)}${f.plasma > 0 ? `\nheat   ${(f.heat * 100).toFixed(0)} %` : ''}${simSpeed > 1 ? `\ntime   ${simSpeed}x` : ''}`;
 }
 
 function updateSmoke(dt, base) {
@@ -1131,7 +1572,7 @@ function updateCamera(dt, base, dir, up, alt) {
   if (mode === 'hangar' || !F) {
     hangarT += dt;
     const avail = Math.max(0.35, 1 - (uiPad.top + uiPad.bottom) / Math.max(1, canvas.clientHeight));
-    dist = (H * 0.5 + 2) / (fovT * avail * 0.95);
+    dist = (H * 0.5 + 2) / (fovT * avail * 0.88);
     if (camera.aspect < 0.8) dist = Math.max(dist, (H * 0.5 + 2.5) / (fovT * avail * 0.95));
     dist = Math.max(dist, 16);
     el = 4 * DEG; az = 0.55 * Math.sin(hangarT * 0.18) + 0.25;
@@ -1211,9 +1652,12 @@ function frame(now) {
 
 // ---------------------------------------------------------------- start
 applyNums(); applySound(); refreshHangar(); resize();
+setTimeout(() => makePlanetImage(448), 600);
 requestAnimationFrame((t) => { last = t; frame(t); });
 setTimeout(() => ui.loading.classList.add('done'), 250);
 document.addEventListener('visibilitychange', () => { if (document.hidden) sound.engine(0, 1); last = performance.now(); });
 
 // test hook for automated checks (harmless for players)
-window.__rocket = { get fps() { return 1000 / frameAvg; }, get dpr() { return dpr; }, get F() { return F; }, get mode() { return mode; }, get save() { return save; }, setLean, R };
+window.__rocket = { get fps() { return 1000 / frameAvg; }, get dpr() { return dpr; }, get F() { return F; }, get mode() { return mode; }, get save() { return save; },
+  get act() { return actKind; }, get simSpeed() { return simSpeed; }, get planetReady() { return !!planetImg; }, setLean, doAction: () => F && doAction(F), setTurbo: (k) => { turbo = k; }, R };
+

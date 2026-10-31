@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0b1424" />
-<meta name="description" content="Build a rocket, launch it, touch the clouds and reach space. Real physics, made simple. Plays on a phone." />
+<meta name="description" content="Build a rocket, touch the clouds, reach space, go all the way around the planet and come home safe. Real physics, made simple. Plays on a phone." />
 <title>Heartbeat Rocket</title>
 <!-- hb:no-phone -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,6 +20,7 @@
 <body>
 <div id="app">
   <canvas id="c" aria-label="Rocket game view"></canvas>
+  <div class="heatglow" id="heatGlow" aria-hidden="true"></div>
 
   <div id="ui">
     <header class="top">
@@ -40,6 +41,8 @@
         <button class="part" id="pTank"><span class="pk">Tank</span><span class="pv" id="vTank">Short</span><span class="new" id="newTank" hidden>New</span></button>
         <button class="part" id="pEngine"><span class="pk">Engine</span><span class="pv" id="vEngine">Small</span></button>
         <button class="part" id="pFins" hidden><span class="pk">Fins</span><span class="pv" id="vFins">On</span><span class="new" id="newFins" hidden>New</span></button>
+        <button class="part" id="pStages" hidden><span class="pk">Stages</span><span class="pv" id="vStages">+ Stage</span><span class="new" id="newStages" hidden>New</span></button>
+        <button class="part" id="pShield" hidden><span class="pk">Heat shield</span><span class="pv" id="vShield">On</span><span class="new" id="newShield" hidden>New</span></button>
       </div>
       <button class="launch" id="btnLaunch">LAUNCH</button>
     </section>
@@ -50,21 +53,24 @@
         <button class="round" id="btnHome" aria-label="Back to hangar">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
         </button>
-        <button class="round wide" id="btnMap" aria-label="Map">Map</button>
+        <button class="minimap" id="btnMap" aria-label="Open the map"><canvas id="mini"></canvas><span>Map</span></button>
       </div>
-      <div class="prog" aria-hidden="true">
+      <div class="prog" id="prog" aria-hidden="true">
         <div class="prog-goal" id="progGoal"></div>
         <div class="prog-track"><div class="prog-fill" id="progFill"></div><div class="prog-dot" id="progDot"></div></div>
       </div>
       <div class="fuel" aria-label="Fuel">
-        <div class="fuel-track"><div class="fuel-fill" id="fuelFill"></div></div>
+        <div class="fuel-track" id="fuelTrack"></div>
         <span class="fuel-k">fuel</span>
       </div>
-      <button class="chute" id="btnChute" hidden>Open parachute</button>
+      <button class="act" id="btnAct" hidden>Open parachute</button>
       <div class="ff" id="ff" hidden>fast-forward &rsaquo;&rsaquo;</div>
+      <button class="warp" id="btnWarp" hidden aria-label="Time speed">Speed 10x</button>
+      <div class="lean-hint" id="leanHint" hidden aria-live="polite"></div>
       <div class="lean">
         <div class="lean-track" id="leanTrack" role="slider" aria-label="Lean" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0" tabindex="0">
           <div class="lean-notch"></div>
+          <div class="lean-ghost" id="leanGhost" hidden></div>
           <div class="lean-thumb" id="leanThumb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l-5 6 5 6M15 6l5 6-5 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         </div>
         <div class="lean-k"><span>&larr;</span><span>lean</span><span>&rarr;</span></div>
@@ -90,6 +96,7 @@
         <div class="unlock" id="cardUnlock" hidden></div>
         <div class="next" id="cardNext" hidden></div>
         <button class="btn-big" id="cardBtn">Back to hangar</button>
+        <button class="btn-ghost" id="cardBtn2" hidden>Back to hangar</button>
       </div>
     </div>
 
