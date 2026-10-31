@@ -7,7 +7,11 @@
       "by": "Jaron",
       "cell": "auto",
       "type": "loop",
-      "params": { "length": 9, "axis": "x", "loops": 3 },
+      "params": {
+        "length": 9,
+        "axis": "x",
+        "loops": 3
+      },
       "lines": [
         "Huh. This stretch feels long.",
         "Wait. Didn't I already pass that pumpkin?",
@@ -19,10 +23,17 @@
     {
       "id": "welcome-sign",
       "by": "Claude",
-      "cell": [1, 0],
+      "cell": [
+        1,
+        0
+      ],
       "type": "sign",
-      "params": { "text": "WELCOME TO THE HEDGE\nPlease do not feed\nthe shadows." },
-      "lines": ["The sign is very polite. That is somehow worse."],
+      "params": {
+        "text": "WELCOME TO THE HEDGE\nPlease do not feed\nthe shadows."
+      },
+      "lines": [
+        "The sign is very polite. That is somehow worse."
+      ],
       "kind": "funny"
     },
     {
@@ -30,8 +41,12 @@
       "by": "Claude",
       "cell": "auto",
       "type": "sign",
-      "params": { "text": "TURN BACK\n(this sign is legally\nrequired to say that)" },
-      "lines": ["You do not turn back. The sign sighs."],
+      "params": {
+        "text": "TURN BACK\n(this sign is legally\nrequired to say that)"
+      },
+      "lines": [
+        "You do not turn back. The sign sighs."
+      ],
       "kind": "funny"
     },
     {
@@ -40,7 +55,9 @@
       "cell": "auto",
       "type": "fake_exit",
       "params": {},
-      "lines": ["EXIT? Nope. The hedge thanks you for visiting its closet."],
+      "lines": [
+        "EXIT? Nope. The hedge thanks you for visiting its closet."
+      ],
       "kind": "funny"
     },
     {
@@ -49,7 +66,9 @@
       "cell": "auto",
       "type": "whisper",
       "params": {},
-      "lines": ["(a whisper, very close) ...left... no... your other left..."],
+      "lines": [
+        "(a whisper, very close) ...left... no... your other left..."
+      ],
       "kind": "both"
     },
     {
@@ -58,7 +77,9 @@
       "cell": "auto",
       "type": "jumpscare",
       "params": {},
-      "lines": ["Boo. Sorry. It does that."],
+      "lines": [
+        "Boo. Sorry. It does that."
+      ],
       "kind": "both"
     },
     {
@@ -66,8 +87,14 @@
       "by": "Claude",
       "cell": "auto",
       "type": "darkness",
-      "params": { "seconds": 9, "fog": 7 },
-      "lines": ["The lanterns hold their breath...", "...and let it out."],
+      "params": {
+        "seconds": 9,
+        "fog": 7
+      },
+      "lines": [
+        "The lanterns hold their breath...",
+        "...and let it out."
+      ],
       "kind": "scary"
     },
     {
@@ -75,8 +102,12 @@
       "by": "Claude",
       "cell": "auto",
       "type": "reverse",
-      "params": { "seconds": 6 },
-      "lines": ["Your legs have joined the other team for a moment."],
+      "params": {
+        "seconds": 6
+      },
+      "lines": [
+        "Your legs have joined the other team for a moment."
+      ],
       "kind": "funny"
     },
     {
@@ -85,7 +116,9 @@
       "cell": "auto",
       "type": "decoy_eye",
       "params": {},
-      "lines": ["...it blinked. It was just a blink. Probably."],
+      "lines": [
+        "...it blinked. It was just a blink. Probably."
+      ],
       "kind": "scary"
     },
     {
@@ -94,8 +127,112 @@
       "cell": "auto",
       "type": "shortcut",
       "params": {},
-      "lines": ["A gap in the hedge. It looks like it has been waiting for you."],
+      "lines": [
+        "A gap in the hedge. It looks like it has been waiting for you."
+      ],
       "kind": "both"
+    },
+    {
+      "id": "terra-polite-warning",
+      "by": "Terra",
+      "cell": "auto",
+      "type": "sign",
+      "params": {
+        "text": "You are here.\nUnfortunately, so is\nsomething else."
+      },
+      "lines": [
+        "Signed: Terra."
+      ],
+      "kind": "both"
+    },
+    {
+      "id": "terra-lantern-blink",
+      "by": "Terra",
+      "cell": "auto",
+      "type": "darkness",
+      "params": {
+        "seconds": 5
+      },
+      "lines": [
+        "The lanterns blink out. Something nearby whispers, “Shh.”"
+      ],
+      "kind": "scary"
+    },
+    {
+      "id": "gemini-gemini-false-blink",
+      "by": "Gemini",
+      "cell": "auto",
+      "type": "decoy_eye",
+      "params": {},
+      "lines": [
+        "A golden searchlight snaps right onto you! ...Just kidding. Not yet."
+      ],
+      "kind": "both"
+    },
+    {
+      "id": "gemini-gemini-mocking-plaque",
+      "by": "Gemini",
+      "cell": "auto",
+      "type": "sign",
+      "params": {
+        "text": "DEAD END. The Eye\nwatched you walk all\nthe way down here. It\nis thoroughly"
+      },
+      "lines": [
+        "Signed: Gemini."
+      ],
+      "kind": "funny"
+    },
+    {
+      "id": "gemini-gemini-lantern-snuff",
+      "by": "Gemini",
+      "cell": "auto",
+      "type": "darkness",
+      "params": {
+        "seconds": 5
+      },
+      "lines": [
+        "Lantern dies. Total blackness. Whatever is shuffling behind you is getting closer."
+      ],
+      "kind": "scary"
+    },
+    {
+      "id": "kimi-counting-dark",
+      "by": "Kimi",
+      "cell": "auto",
+      "type": "darkness",
+      "params": {
+        "seconds": 7
+      },
+      "lines": [
+        "Seven seconds. Keep your hands where the dark can't count them."
+      ],
+      "kind": "both"
+    },
+    {
+      "id": "kimi-excellent-progress",
+      "by": "Kimi",
+      "cell": "auto",
+      "type": "sign",
+      "params": {
+        "text": "Excellent progress.\nPlease enjoy making\nit again."
+      },
+      "lines": [
+        "Kimi left this. Kimi is enjoying this."
+      ],
+      "kind": "both"
+    },
+    {
+      "id": "kimi-hedge-feedback",
+      "by": "Kimi",
+      "cell": "auto",
+      "type": "sign",
+      "params": {
+        "text": "DEAD END. Leave a\n5-star review, or\nbecome a permanent\nfeature."
+      },
+      "lines": [
+        "Signed: Kimi."
+      ],
+      "kind": "funny"
     }
   ]
 }
