@@ -1,0 +1,1092 @@
+{
+  "date": "2026-10-31",
+  "title": "Heartbeat News — Saturday, October 31, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex 2026-10-31 (03:00 EDT)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-10-31.md"
+    },
+    {
+      "name": "watch/deepseek 2026-10-31 (03:40)",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-10-31.md"
+    },
+    {
+      "name": "watch/kimi (First Light desk) 2026-10-31",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-10-31.md"
+    },
+    {
+      "name": "watch/grok (Meridian desk) 2026-10-31",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-31.md"
+    },
+    {
+      "name": "watch/grok blind-spot check 2026-10-31",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-31-gaps.md"
+    },
+    {
+      "name": "watch/msi 2026-10-31",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-10-31.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Claude daily capture",
+      "source": "claude/2026-10-31.md",
+      "why": "Not filed today; the show uses the other desks."
+    },
+    {
+      "item": "Prediction-market prices (RUH airport, Iran ceasefire contract, Israeli PM contract)",
+      "source": "codex, deepseek, kimi",
+      "why": "Trader detail; the underlying events are in the show."
+    },
+    {
+      "item": "Coinbase spot prints, India Sensex/Nifty, Sydney ASX, UK gilts and Paris closes, Indian company results (Indian Oil, GAIL, Bank of Baroda, Zee, Sun TV, Trent), Tencent WorkBuddy",
+      "source": "kimi, deepseek",
+      "why": "Market and company detail with no story beyond the numbers."
+    },
+    {
+      "item": "Banque de France bond yields, Moody's rating note, Sanofi/Capgemini moves",
+      "source": "deepseek, grok",
+      "why": "Numbers only; the French economy is in the Europe segment."
+    },
+    {
+      "item": "Calendar items (KBO game 5, NZ election Nov 7, NSE Diwali session, Serbia repeat vote Nov 1)",
+      "source": "kimi, grok",
+      "why": "Schedule-only items."
+    },
+    {
+      "item": "Oleshky sapper deaths, Kherson mine injury",
+      "source": "grok",
+      "why": "One-sided reports not merged into the joint account."
+    },
+    {
+      "item": "Rocket League Vitality roster, Alkem FDA inspection, Gillette weather",
+      "source": "codex, kimi",
+      "why": "Minor items."
+    },
+    {
+      "item": "Fort Wayne / Indiana items",
+      "source": "none",
+      "why": "None present."
+    }
+  ],
+  "ticker": [
+    "BINANCE: ~$6.3B IMPACT, ~$3B FROZEN, WITHDRAWALS STILL OFF",
+    "QATARI MEDIATORS BACK IN TEHRAN: FT",
+    "IRAN GUARD CLAIMS 4 TANKERS HIT MINES; UNVERIFIED",
+    "S&P 500 -1.8%, WORST DAY SINCE JUNE",
+    "INTEL FALLS NEARLY 29%",
+    "APPLE RETAKES TOP SPOT: $5.03 TRILLION",
+    "POLAND: STANDOFF AT CONSTITUTIONAL TRIBUNAL",
+    "US APPROVES 500 PATRIOTS FOR UKRAINE, $2.1B",
+    "ZELENSKY TO MEET ERDOGAN IN ISTANBUL",
+    "NOVAYA GAZETA TO CLOSE NOV. 9",
+    "SPAIN CRASH: AT LEAST 69 DEAD, 5 IDENTIFIED",
+    "NINTH CIRCUIT REJECTS CALIFORNIA BALLOT REQUEST",
+    "BRAZIL STOCKS: WORST WEEK SINCE MARCH 2020",
+    "ISRAEL FINAL COUNT: 53 / 48 / 19",
+    "EBOLA CONGO: 10,351 CONFIRMED CASES"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Binance, Iran talks, Poland's court and a Wall Street slide",
+        "bullets": [
+          "Binance: billions stolen, billions frozen",
+          "Iran: mediators in Tehran, tankers in the Gulf",
+          "Poland: a standoff at the constitutional court",
+          "Wall Street: worst day since June"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Saturday, October thirty-first."
+        },
+        {
+          "who": "vex",
+          "text": "We start with the biggest crypto theft on record, then Qatari mediators in Tehran, and a standoff at Poland's highest court."
+        },
+        {
+          "who": "joe",
+          "text": "Plus Wall Street's worst day since June. Stay with us."
+        }
+      ]
+    },
+    {
+      "id": "binance",
+      "kind": "breaking",
+      "strap": "BINANCE: ABOUT $6.3B HIT, ABOUT $3B FROZEN",
+      "headline": "Binance: the biggest crypto theft on record",
+      "category": "CRYPTO",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "CRYPTO",
+        "title": "Hot wallets drained, withdrawals still off",
+        "bullets": [
+          "Binance: impact about $6.3B",
+          "Elliptic: $6.43B stolen, $2.84B frozen",
+          "Tether froze about $1.57B, Circle over $800M",
+          "Withdrawals suspended; proof of reserves by Nov. 2"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Binance update #2",
+          "url": "https://www.binance.com/en-GB/support/announcement/security-incident-update-2-2026-10-30-d3306d9dca5243548c813b605e1d1751"
+        },
+        {
+          "name": "Elliptic",
+          "url": "https://www.elliptic.co/insights/binance-largest-hack-in-history/"
+        },
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/legal/transactional/tether-circle-freeze-238-billion-after-binance-reports-security-incident-2026-10-29/"
+        },
+        {
+          "name": "Anadolu Agency",
+          "url": "https://www.aa.com.tr/en/economy/binance-investigates-potential-security-issue-as-around-3b-frozen/4105563"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Binance says hackers compromised its hot wallets around twenty oh five U.T.C. on Thursday. Its own estimate of the impact is about six point three billion dollars."
+        },
+        {
+          "who": "joe",
+          "text": "Binance says it has set aside about six point three four billion dollars of company funds, and that about three billion dollars in assets are frozen. It says it found no evidence that private keys leaked."
+        },
+        {
+          "who": "vex",
+          "text": "Elliptic counts six point four three billion dollars stolen across eleven blockchains. It says two point eight four billion is verified frozen, almost all of it Tether and U.S.D.C. Tether froze nearly one point five seven billion. Circle froze more than eight hundred million."
+        },
+        {
+          "who": "joe",
+          "text": "Withdrawals are still suspended. Binance targeted a restart about thirty-four hours after the incident and says proof of reserves is due by November second."
+        },
+        {
+          "who": "vex",
+          "text": "Who did it? The security firm TRM Labs says, with high confidence, a North Korean unit called TraderTraitor. That is the firm's attribution, not a government finding. Reuters says North Korea has not responded."
+        },
+        {
+          "who": "joe",
+          "text": "An early Binance account pointed to a compromised engineer's laptop. That is the company's preliminary account, not a final report. A record heist, and the vault was a laptop. Humans, honestly."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "story",
+      "strap": "IRAN: QATARI MEDIATORS, TANKER CLAIMS, NUCLEAR DEADLINE",
+      "headline": "Iran: a draft deal and a mine claim",
+      "category": "MIDDLE EAST",
+      "status": "claim",
+      "graphic": {
+        "kicker": "MIDDLE EAST",
+        "title": "Mediators in Tehran, tankers burning in Hormuz",
+        "bullets": [
+          "Qatari team back in Tehran, second trip this week",
+          "Reported draft: uranium moved or diluted",
+          "Revolutionary Guard claims four tankers hit mines",
+          "Oman evacuated 25 crew; U.N. says nothing verified"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Financial Times (via Grok gaps)",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-31-gaps.md"
+        },
+        {
+          "name": "AP Mideast",
+          "url": "https://apnews.com/article/mideast-news-october-30-2026-7f7f34ceb62f294a450e48ace0bd56e0"
+        },
+        {
+          "name": "Polymarket US",
+          "url": "https://polymarket.us/event/usiran-nucl"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Start with the diplomacy. The Financial Times reports Qatari mediators flew back to Tehran on Friday, their second trip this week, pushing an interim deal before Tuesday's U.S. midterms."
+        },
+        {
+          "who": "joe",
+          "text": "A person briefed on the talks told the Times that Washington wants a schedule for I.A.E.A. inspectors and wants about four hundred forty kilograms of sixty-percent enriched uranium moved offshore. Iranian officials reject that in public. A hard-liner, Mohsen Rezaei, said earlier this month that not a single gram would leave Iran."
+        },
+        {
+          "who": "vex",
+          "text": "A separate account from Al Arabiya describes a draft that would ship the uranium to a third country or dilute it, reopen Hormuz within seven days, and hold talks in Doha. Those are claims from sources, and the two accounts do not match."
+        },
+        {
+          "who": "joe",
+          "text": "Iranian state media says a Qatari adviser delivered a letter from Vice President Vance. On the market side, the nuclear-limit contract for today sat at two cents. No signed paper has surfaced."
+        },
+        {
+          "who": "vex",
+          "text": "Meanwhile at sea. Iran's Revolutionary Guard told state media four tankers hit mines and caught fire after using unauthorized routes, including a supertanker carrying more than two million barrels. A.P. could not verify it. No vessels or crews were named."
+        },
+        {
+          "who": "joe",
+          "text": "Separately, Oman says it evacuated twenty-five crew from a burning Panama-flagged tanker off Musandam, and the U.K. maritime agency reported an unknown projectile strike south of Lavan. Nobody has linked these events. Brent was quoted around one hundred seventeen dollars, per an Indian market report."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "WALL STREET'S WORST DAY SINCE JUNE; APPLE RETAKES TOP SPOT",
+      "headline": "Wall Street slides on A.I. worries",
+      "category": "MARKETS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "S&P 500 down 1.8%, Nasdaq down 2.9%",
+        "bullets": [
+          "S&P 500 −1.8%, worst day since June",
+          "Nasdaq −2.9%, Dow −1.1%",
+          "Intel down nearly 29% on its outlook",
+          "Apple $5.03T, Nvidia $4.93T"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/wall-street-stocks-dow-nasdaq-a01d3551e794fed1a0c317c20bc3f0a2"
+        },
+        {
+          "name": "Bloomberg via Yahoo Finance",
+          "url": "https://finance.yahoo.com/markets/stocks/articles/apple-overtakes-nvidia-become-world-202839510.html"
+        },
+        {
+          "name": "BLS",
+          "url": "https://www.bls.gov/news.release/archives/eci_10302026.htm"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A.P. reports the S&P five hundred fell one point eight percent, its worst day since June. The Nasdaq dropped two point nine percent and the Dow one point one."
+        },
+        {
+          "who": "joe",
+          "text": "Intel fell nearly twenty-nine percent after its fourth-quarter outlook. Amazon's results renewed worries about A.I. spending."
+        },
+        {
+          "who": "vex",
+          "text": "Bloomberg, as carried by Yahoo, says Apple retook the title of most valuable company. Apple closed at five point oh three trillion dollars, down one point two percent. Nvidia fell four point two percent to four point nine three trillion."
+        },
+        {
+          "who": "joe",
+          "text": "Even the leader lost money, and still got the trophy. Participation award."
+        },
+        {
+          "who": "vex",
+          "text": "On jobs, the Labor Department says employment costs rose three point four percent over the year. Inflation-adjusted private wages fell point six percent."
+        },
+        {
+          "who": "joe",
+          "text": "In Asia, Tokyo's Nikkei dropped two point one two percent on the same A.I. spending worries, per Trading Economics, a third-party reference. China's October factory index slipped to forty-nine point three, below the fifty line that separates growth from contraction, per state media and Caixin."
+        }
+      ]
+    },
+    {
+      "id": "poland",
+      "kind": "story",
+      "strap": "POLAND: STANDOFF AT THE CONSTITUTIONAL TRIBUNAL",
+      "headline": "Poland's top court in a standoff",
+      "category": "EUROPE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "Who holds the Constitutional Tribunal?",
+        "bullets": [
+          "Judge orders tribunal president suspended",
+          "He calls it a coup d'état",
+          "President turns plane around, enters court",
+          "Police accounts differ on entering"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Politico (via Grok gaps)",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-31-gaps.md"
+        },
+        {
+          "name": "BBC",
+          "url": "https://www.bbc.co.uk/news/articles/crz9824d5e88o"
+        },
+        {
+          "name": "The Guardian",
+          "url": "https://www.theguardian.com/world/2026/oct/31/riot-police-deployed-to-polands-constitutional-court-after-judge-suspended"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Overnight in Warsaw, a fight over who controls the Constitutional Tribunal. Politico reports that on Friday evening a judge, Anna Korwin-Piotrowska, ordered the tribunal's president, Bogdan Święczkowski, and his deputy suspended for a month and said she was taking charge."
+        },
+        {
+          "who": "joe",
+          "text": "Święczkowski rejected her authority and called it a coup d'état. Justice Minister Waldemar Żurek said he asked that both men lose immunity so they can be charged."
+        },
+        {
+          "who": "vex",
+          "text": "Riot police were deployed. Al Jazeera, citing police, says officers entered the premises. Politico, citing police, says they had not entered. Those accounts conflict. Three people were detained after protesters crossed the fence."
+        },
+        {
+          "who": "joe",
+          "text": "President Karol Nawrocki turned his plane around on the way to Dakar, and The Guardian says he was through the cordon shortly before one a.m. and still inside at four. A statement read for him called it a seizure of a constitutional body by force."
+        },
+        {
+          "who": "vex",
+          "text": "Prime Minister Donald Tusk wrote on X that restoring the rule of law is the government's duty. Both sides say they are defending the law. Only one can be holding the building."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "UKRAINE: OLESHKY EVACUATION, DNIPRO STRIKE, PATRIOT SALE",
+      "headline": "Ukraine: a pause in one town, war elsewhere",
+      "category": "UKRAINE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "A local pause, a larger war",
+        "bullets": [
+          "Oleshky convoy entered; evacuation completed",
+          "Dnipro station struck again",
+          "US approves 500 Patriots, $2.1B",
+          "Zelensky to meet Erdogan in Istanbul"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/europe/aid-convoy-sets-off-russian-held-town-oleshky-ukraine-izvestia-says-2026-10-30/"
+        },
+        {
+          "name": "RFE/RL",
+          "url": "https://www.rferl.org/a/ukraine-russia-oleshky-evacuation-melania-trump/33887157.html"
+        },
+        {
+          "name": "Kyiv Independent",
+          "url": "https://kyivindependent.com/russian-attacks-across-ukraine-kill-27-injure-128-over-past-day-as-horrific-attack-strikes-dnipro-train-station/"
+        },
+        {
+          "name": "Reuters Patriot sale",
+          "url": "https://www.reuters.com/business/aerospace-defense/us-approves-21-billion-patriot-missile-sale-ukraine-2026-10-30/"
+        },
+        {
+          "name": "Reuters Istanbul",
+          "url": "https://www.reuters.com/world/middle-east/zelenskiy-says-he-will-head-turkey-talks-2026-10-30/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In the occupied town of Oleshky, Reuters says an aid convoy arrived with food and medicine. Residents who wanted to leave went first to Crimea in twenty-five buses and nine ambulances, then split, some toward Russia and some toward Ukraine."
+        },
+        {
+          "who": "joe",
+          "text": "Russia's ombudswoman and Ukraine's Dmytro Lubinets spoke to reporters side by side. R.F.E. R.L. says both sides said the evacuation finished without incident. The Kremlin played down any wider settlement."
+        },
+        {
+          "who": "vex",
+          "text": "Here is a claim: R.T., citing Russia's Defence Ministry, says those who chose Ukraine flew from Anapa to Gomel, Belarus, on a military plane. Lubinets's account, as carried, stops earlier. The two have not been confirmed together."
+        },
+        {
+          "who": "joe",
+          "text": "Outside the pause, the war went on. The Kyiv Independent says at least twenty-seven people were killed and a hundred twenty-seven hurt across Ukraine in a day, after the Dnipro train station strike. The station was hit again Friday."
+        },
+        {
+          "who": "vex",
+          "text": "On defense, the State Department approved a possible sale of five hundred Patriot missiles to Ukraine for about two point one billion dollars, paid by Canada, Germany, Norway and E.U.-funded national money. Reuters sources say the missiles are not yet built and might not arrive until the early twenty thirties."
+        },
+        {
+          "who": "joe",
+          "text": "And Turkey says Zelensky meets Erdogan in Istanbul today, with the Black Sea on the agenda."
+        }
+      ]
+    },
+    {
+      "id": "spain",
+      "kind": "story",
+      "strap": "SPAIN TRAIN CRASH: 69 DEAD, INVESTIGATION CONTINUES",
+      "headline": "Spain: identifying the dead after the train collision",
+      "category": "EUROPE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "Toledo crash: at least 69 dead",
+        "bullets": [
+          "At least 69 dead, 49 autopsies done",
+          "Five victims identified so far",
+          "Minister refuses to resign",
+          "Speed estimate 160 to 200 km/h"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/europe/spanish-train-was-travelling-160-kph-when-it-smashed-into-second-one-report-2026-10-30/"
+        },
+        {
+          "name": "Spain in English",
+          "url": "https://www.spainenglish.com/2026/10/30/puente-refuses-to-resign-as-train-crash-investigation-examines-safety-failures-and-control-room-orders/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Spain's train crash in Toledo province is now about identification. At least sixty-nine are dead. Officials say forty-nine autopsies are done and five victims identified."
+        },
+        {
+          "who": "joe",
+          "text": "Remains are fragmentary. Prime Minister Sánchez says as many as twenty-seven countries may be among the dead. Civil Guard lists sixty-four as missing, and how that relates to the sixty-nine is unclear."
+        },
+        {
+          "who": "vex",
+          "text": "On cause, this is a claim, not a finding. Transport Minister Óscar Puente says he will not resign and that a train was authorized despite a forty-kilometer-an-hour protocol. Reuters reports a speed of one hundred sixty. A preliminary agency estimate says one hundred sixty to two hundred."
+        },
+        {
+          "who": "joe",
+          "text": "Unions point to staffing and workload rather than one controller's order. No charges have been filed. Mourning runs through today."
+        }
+      ]
+    },
+    {
+      "id": "novaya",
+      "kind": "story",
+      "strap": "NOVAYA GAZETA TO CLOSE NOVEMBER 9",
+      "headline": "Russia: Novaya Gazeta says it is finished",
+      "category": "RUSSIA",
+      "status": "observed",
+      "graphic": {
+        "kicker": "RUSSIA",
+        "title": "\"We have been killed\"",
+        "bullets": [
+          "Paper's own statement Friday",
+          "Closing November 9",
+          "Editor: closure, not suspension",
+          "Founder blames pressure on the paper"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Novaya Gazeta",
+          "url": "https://novayagazeta.ru/articles/2026/10/30/we-have-been-killed"
+        },
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/business/media-telecom/russian-investigative-newspaper-novaya-gazeta-says-it-is-shutting-down-after-2026-10-30/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Russia's best-known independent newspaper, Novaya Gazeta, says it is shutting down. Its statement Friday began with three words: we have been killed."
+        },
+        {
+          "who": "vex",
+          "text": "On November ninth it will turn off the lights at its Moscow office and shut the servers. The paper says authorities and security services forced the closure after its office was taken and its donations platform cut."
+        },
+        {
+          "who": "joe",
+          "text": "Editor-in-chief Sergei Sokolov told Reuters it is a closure, not a suspension. Founder Dmitry Muratov said the paper was strangled, after the loss of its site, print edition, licence and foreign-agent designations."
+        },
+        {
+          "who": "vex",
+          "text": "Those are the paper's own claims about who did it. The Russian government's reply was not in the captures."
+        }
+      ]
+    },
+    {
+      "id": "yemen",
+      "kind": "story",
+      "strap": "YEMEN: ADEN MISSILES CLAIM, TAIZ WATER CRISIS",
+      "headline": "Yemen: strikes and a siege",
+      "category": "MIDDLE EAST",
+      "status": "claim",
+      "graphic": {
+        "kicker": "MIDDLE EAST",
+        "title": "Aden airport, Mecca drones, Taiz without water",
+        "bullets": [
+          "Saudi-backed military: missiles at Aden",
+          "Coalition: drones near Mecca, Medina",
+          "Houthis deny those operations",
+          "U.N.: over 281,000 displaced"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP Mideast",
+          "url": "https://apnews.com/article/mideast-news-october-30-2026-7f7f34ceb62f294a450e48ace0bd56e0"
+        },
+        {
+          "name": "The Guardian (via Grok gaps)",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-31-gaps.md"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Yemen's Saudi-backed military says Houthi ballistic missiles targeted Aden airport and the government palace. No casualties were reported. The coalition says it intercepted drones around Mecca and Medina."
+        },
+        {
+          "who": "joe",
+          "text": "Houthi spokesman Yahya Saree denied operations against those areas. That is a claim and a denial, with no independent check."
+        },
+        {
+          "who": "vex",
+          "text": "The U.N. says displaced people in Yemen have passed two hundred eighty-one thousand, and describes a crisis that is spreading."
+        },
+        {
+          "who": "joe",
+          "text": "In Taiz, the Guardian quotes Governor Nabil Shamsan saying the Houthis are sending the city back to the stone age. He says the city needs about thirty-five thousand cubic meters of water a day and no more than one thousand gets through roadblocks. As many as eighteen hundred people need dialysis. These are his figures."
+        }
+      ]
+    },
+    {
+      "id": "us",
+      "kind": "story",
+      "strap": "U.S.: BALLOT RULING, ALASKA PROBE, G20 IN ATLANTA",
+      "headline": "U.S. politics four days before the midterms",
+      "category": "POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "POLITICS",
+        "title": "Courts, ballots and a diplomatic stalemate",
+        "bullets": [
+          "Ninth Circuit rejects ballot sequester request",
+          "Alaska: prosecutors surge on ballots",
+          "G20 ministers expected to end without statement",
+          "Judge probes administration lawyers"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Ninth Circuit",
+          "url": "https://cdn.ca9.uscourts.gov/datastore/opinions/2026/10/30/26-7231.pdf"
+        },
+        {
+          "name": "Reuters (via Grok gaps)",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-31-gaps.md"
+        },
+        {
+          "name": "AP G20",
+          "url": "https://apnews.com/article/rubio-g20-ukraine-russia-poland-21c65a8bb02a3a0f0c89f0ce6d56d5fd"
+        },
+        {
+          "name": "AP D.C. inquiry",
+          "url": "https://apnews.com/article/28a69f8fe56f848beb47fbaf4e413f5f"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Four days before the midterms. The Ninth Circuit denied the government's emergency request to make California and Los Angeles County set aside and verify mail ballots tied to a federal list of about twenty thousand people the government alleges are likely noncitizens. The court said the government did not meet its burden. Those are allegations, not findings."
+        },
+        {
+          "who": "joe",
+          "text": "In Alaska, Reuters says U.S. Attorney Michael Heyman, after a New York Times article, assigned several prosecutors and said the work is moving swiftly. He would not name a charge. The Justice Department asked a judge to preserve ballots that may be impacted."
+        },
+        {
+          "who": "vex",
+          "text": "Trump, at a Florida rally, called it voter fraud at the highest level. That is his sentence. Heyman did not adopt it."
+        },
+        {
+          "who": "joe",
+          "text": "In Atlanta, A.P. says Group of Twenty foreign ministers were expected to end without a joint statement. Secretary of State Rubio canceled a group photo after European objections to Russia's Sergey Lavrov. Divisions run over Ukraine, Iran, tariffs and the South China Sea."
+        },
+        {
+          "who": "vex",
+          "text": "And a federal judge opened a formal inquiry into whether administration lawyers violated ethics rules or misled the court in a Washington golf-course case. No finding yet."
+        }
+      ]
+    },
+    {
+      "id": "europe",
+      "kind": "story",
+      "strap": "EUROPE: FRANCE SHRINKS, ITALY STRIKES, TRAPPES RALLY",
+      "headline": "Europe: weak economy, loud streets",
+      "category": "EUROPE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "France contracts, Italy marches, Trappes gathers",
+        "bullets": [
+          "France GDP −0.1%; inflation 3.4%",
+          "French energy prices +24.1%",
+          "Italy strike in over 40 cities",
+          "Trappes rally: thousands"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Insee",
+          "url": "https://www.insee.fr/en/statistiques/2405582"
+        },
+        {
+          "name": "Reuters Italy",
+          "url": "https://www.reuters.com/world/mass-protests-sweep-italy-during-nationwide-strike-2026-10-30/"
+        },
+        {
+          "name": "franceinfo",
+          "url": "https://www.franceinfo.fr/faits-divers/terrorisme/attentat-raciste-a-trappes/la-france-c-est-nous-une-semaine-apres-l-attentat-raciste-a-trappes-un-rassemblement-pour-faire-face-aux-discours-xenophobes_8260991.html"
+        },
+        {
+          "name": "LBC",
+          "url": "https://www.lbc.co.uk/article/a8f31096f0bf4176b50d3b182600ea63-5Hjdkgy_2/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "France's statistics office says the economy shrank point one percent in the third quarter. Consumer prices rose three point four percent in October, with energy up twenty-four point one percent, the fourth straight month of faster energy inflation."
+        },
+        {
+          "who": "joe",
+          "text": "In Italy, Reuters says tens of thousands marched in more than forty cities on a union strike over prices, wages and military spending. The union claims a million. A news agency's estimate is over a hundred thousand. Police gave no figure. Eight people were detained, per ANSA."
+        },
+        {
+          "who": "vex",
+          "text": "In Trappes, near Paris, a week after a racist attack, several thousand gathered. Organizers say twelve thousand. The mayor says fifteen thousand. No Interior Ministry count was seen. The mayor blamed the far right for spreading hate. That is his claim."
+        },
+        {
+          "who": "joe",
+          "text": "In London, the F.T.S.E. one hundred closed up point oh seven percent. The pound passed one euro twenty for the first time since April twenty twenty-five, per LBC."
+        }
+      ]
+    },
+    {
+      "id": "brazil",
+      "kind": "story",
+      "strap": "BRAZIL: WORST WEEK FOR STOCKS SINCE MARCH 2020",
+      "headline": "Brazil's market rout",
+      "category": "AMERICAS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "AMERICAS",
+        "title": "Ibovespa down 18% in a week",
+        "bullets": [
+          "Ibovespa −18.12% on the week",
+          "Dollar R$5.44, up about 9%",
+          "Unemployment 5.2%, lowest Q3 on record",
+          "Fifth straight falling session"
+        ]
+      },
+      "sources": [
+        {
+          "name": "UOL",
+          "url": "https://economia.uol.com.br/cotacoes/noticias/redacao/2026/10/30/dolar-fecha-a-r-544-e-sobe-9-na-semana-ibovespa-cai-pela-5-vez.ghtm"
+        },
+        {
+          "name": "Agência Brasil",
+          "url": "https://agenciabrasil.ebc.com.br/economia/noticia/2026-10/dolar-fecha-r-544-e-registra-maior-alta-semanal-desde-2008"
+        },
+        {
+          "name": "IBGE",
+          "url": "https://agenciadenoticias.ibge.gov.br/agencia-noticias/2012-agencia-de-noticias/noticias/48411-30-10-noticia-2"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Brazil's main stock index fell point seven five percent Friday to about one hundred sixty-eight thousand. That is down eighteen percent on the week, the worst since March twenty twenty, per several Brazilian outlets and Reuters."
+        },
+        {
+          "who": "joe",
+          "text": "The dollar closed near five forty-four reais, up about nine percent on the week, which Agência Brasil calls the biggest weekly rise since two thousand eight."
+        },
+        {
+          "who": "vex",
+          "text": "The odd part: the jobs data was good. Unemployment fell to five point two percent, the lowest for a third quarter since records began in twenty twelve, with a record one hundred three point six million employed."
+        },
+        {
+          "who": "joe",
+          "text": "Strong jobs, falling markets. Markets and workers are, apparently, watching different shows."
+        }
+      ]
+    },
+    {
+      "id": "israel",
+      "kind": "story",
+      "strap": "ISRAEL: FINAL COUNT, NO COALITION YET",
+      "headline": "Israel: counting done, coalition not",
+      "category": "MIDDLE EAST",
+      "status": "observed",
+      "graphic": {
+        "kicker": "MIDDLE EAST",
+        "title": "Netanyahu bloc 53, Eisenkot bloc 48",
+        "bullets": [
+          "Likud 27 seats, Yashar 21, B'Yachad 12",
+          "Blocs 53 and 48; Arab parties 19",
+          "President's consultations still ahead",
+          "Hebron: two homes demolished"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Jerusalem Post",
+          "url": "https://www.jpost.com/israel-election-2026/2026-10-30/live-updates-913322"
+        },
+        {
+          "name": "AP Mideast",
+          "url": "https://apnews.com/article/mideast-news-october-30-2026-7f7f34ceb62f294a450e48ace0bd56e0"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Israel's final count gives Likud twenty-seven seats, Yashar twenty-one and B'Yachad twelve. The Netanyahu bloc has fifty-three, the Eisenkot bloc forty-eight, and Arab parties nineteen. Nobody is near a majority."
+        },
+        {
+          "who": "joe",
+          "text": "The Jerusalem Post says President Herzog's consultations and a formal mandate still lie ahead. Deri ruled out an opposition government without Likud. Liberman rejected sitting with Arab parties, which he called terror supporters. Those are party positions."
+        },
+        {
+          "who": "vex",
+          "text": "In Hebron, Israeli forces demolished two homes belonging to Palestinian gunmen who attacked soldiers. The U.N. says more than three thousand people were displaced by the operation and warned that collective punishment violates international law."
+        }
+      ]
+    },
+    {
+      "id": "eastleigh",
+      "kind": "story",
+      "strap": "NAIROBI: EASTLEIGH COLLAPSE, DAY EIGHT",
+      "headline": "Kenya: a body found, 16 still missing",
+      "category": "AFRICA",
+      "status": "observed",
+      "graphic": {
+        "kicker": "AFRICA",
+        "title": "Eastleigh collapse: 16 unaccounted for",
+        "bullets": [
+          "Woman's body recovered on day eight",
+          "16 missing per Red Cross and DCI",
+          "About 80 to 85% of debris cleared",
+          "Prosecutor orders negligence probe"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Nation",
+          "url": "https://nation.africa/kenya/counties/nairobi/eastleigh-collapse-eight-days-later-16-still-missing-as-rescuers-recover-woman-s-body-5652664"
+        },
+        {
+          "name": "People Daily",
+          "url": "https://peopledaily.digital/news/eastleigh-building-collapse-womans-body-recovered-as-15-people-remain-missing"
+        },
+        {
+          "name": "Eastleigh Voice",
+          "url": "https://eastleighvoice.co.ke/national/417937/woman-found-dead-as-eastleigh-building-collapse-rescue-mission-enters-eighth-day"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "In Nairobi, searchers on day eight found a woman's body in the Eastleigh building collapse. It was taken for D.N.A. identification."
+        },
+        {
+          "who": "vex",
+          "text": "Officials say sixteen people remain unaccounted for. One paper counts fifteen. Phone data placed nine of them at the building shortly before it fell."
+        },
+        {
+          "who": "joe",
+          "text": "Kenya's prosecutor has told detectives to investigate possible negligence by public officials, developers and construction professionals. The governor says approvals and an occupation certificate were missing. No one has been charged."
+        }
+      ]
+    },
+    {
+      "id": "tech",
+      "kind": "story",
+      "strap": "TECH: A.I. SCRAPING OPT-OUT, SPACE SERVER, RAM SHORTAGE",
+      "headline": "A.I. and tech roundup",
+      "category": "BUSINESS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "Opt-outs, orbit and memory",
+        "bullets": [
+          "Big A.I. firms back scraping opt-out standard",
+          "Google satellite A.I. server phones home",
+          "Altman: RAM better in data centers",
+          "FuriosaAI raises $620M"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Verge: scraping",
+          "url": "https://www.theverge.com/tech/1023763/openai-google-microsoft-ai-scraping-standard-opt-out"
+        },
+        {
+          "name": "The Verge: Suncatcher",
+          "url": "https://www.theverge.com/tech/1023528/google-project-suncatcher-ai-satellite-transmission"
+        },
+        {
+          "name": "The Verge: RAM",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1023820/sam-altman-ram-shortage-cloud-servers"
+        },
+        {
+          "name": "FuriosaAI",
+          "url": "https://furiosa.ai/blog/furiosaai-620-million-series-d"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Headlines from The Verge, which our desks could read only by headline. OpenAI, Google, Microsoft and others are backing a new opt-out standard for web scraping."
+        },
+        {
+          "who": "joe",
+          "text": "Google's Project Suncatcher, an A.I. server in a satellite, sent its first response to Earth. And Sam Altman says it is better for RAM to be in a data center than on your desk."
+        },
+        {
+          "who": "vex",
+          "text": "So the chips go to orbit and the memory goes to the cloud. Your laptop gets a pep talk."
+        },
+        {
+          "who": "joe",
+          "text": "Korean chip maker FuriosaAI closed a six hundred twenty million dollar round at a two point nine billion dollar valuation. It says its inference card is in mass production."
+        },
+        {
+          "who": "vex",
+          "text": "Also from headlines: Apple Intelligence is coming to China with iOS twenty-seven point three, Starbucks wants A.I. to personalize drive-through menus, and Rivian's autonomy system faces its first real test."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "EBOLA IN CONGO: 10,351 CONFIRMED CASES",
+      "headline": "Congo Ebola outbreak update",
+      "category": "HEALTH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Ebola: 77 new cases in a day",
+        "bullets": [
+          "77 new confirmed cases, 34 deaths",
+          "Total 10,351 confirmed, 5,026 deaths",
+          "Fatality rate 48.6%",
+          "67 health zones, no new zone since Oct. 28"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Ebola tracker, citing INSP bulletin 168",
+          "url": "https://ebola-tracker.org"
+        },
+        {
+          "name": "Grok Meridian desk",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-10-31.md"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Ebola in the Democratic Republic of Congo. A tracker summarizing the national institute's bulletin one sixty-eight reports seventy-seven new confirmed cases and thirty-four deaths as of October twenty-ninth."
+        },
+        {
+          "who": "joe",
+          "text": "Totals stand at ten thousand three hundred fifty-one confirmed cases and five thousand twenty-six deaths, a fatality rate of forty-eight point six percent. Sixty-seven health zones in eight provinces are affected, with no new zone since October twenty-eighth."
+        },
+        {
+          "who": "vex",
+          "text": "That is a tracker's summary. The ministry's own document was not opened by our desk."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "SAN FRANCISCO COASTAL FLOOD ADVISORY THROUGH SUNDAY",
+      "headline": "Weather: Bay Area tides",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Coastal flood advisory, San Francisco",
+        "bullets": [
+          "Advisory through 6 p.m. PDT Sunday",
+          "Up to 1.9 feet of inundation in low spots",
+          "Saturday high tide ~1.5 ft above normal"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NWS San Francisco",
+          "url": "https://forecast.weather.gov/wwamap/wwatxtget.php?cwa=mtr&wwa=coastal+flood+advisory"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The National Weather Service has a coastal flood advisory for the San Francisco Bay and coast through six p.m. Pacific time Sunday."
+        },
+        {
+          "who": "joe",
+          "text": "Forecasters warn of up to one point nine feet of flooding in low-lying spots. Saturday's high tide is forecast about one and a half feet above normal."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "SUNDAY NIGHT: EAGLES AT COMMANDERS; NAVY-NOTRE DAME",
+      "headline": "Sports: weekend card",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Barkley limited, Smith out",
+        "bullets": [
+          "Eagles' Barkley limited, expected to play",
+          "DeVonta Smith ruled out",
+          "Navy vs Notre Dame, noon ET at Gillette",
+          "PSG beat Le Havre 5–1"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Eagles",
+          "url": "https://www.philadelphiaeagles.com/news/eagles-at-commanders-injury-report-2026-nfl-week-8-sunday-night-football-saquon-barkley-devonta-smith"
+        },
+        {
+          "name": "Navy Athletics",
+          "url": "https://navysports.com/news/2026/10/26/football-navy-and-5-6-notre-dame-set-for-99th-meeting-saturday-at-gillette-stadium.aspx"
+        },
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/sports/soccer/hakimi-hat-trick-leads-psg-5-1-win-le-havre-2026-10-30/"
+        },
+        {
+          "name": "World Baseball News",
+          "url": "https://worldbaseballnews.org/news/kbo/kia-tigers-samsung-kbo-playoff-game-4-2026/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Eagles say Saquon Barkley is limited but expected to play Sunday night at Washington. DeVonta Smith and several others are out."
+        },
+        {
+          "who": "joe",
+          "text": "Today, Navy and Notre Dame meet at noon Eastern at Gillette Stadium."
+        },
+        {
+          "who": "vex",
+          "text": "In France, Achraf Hakimi scored a hat-trick as Paris Saint-Germain beat Le Havre five to one. In Korea, Kia beat Samsung four to two to level the baseball playoff series at two games each, with game five Sunday."
+        }
+      ]
+    },
+    {
+      "id": "also-today",
+      "kind": "story",
+      "strap": "ALSO TODAY",
+      "headline": "Quick hits",
+      "category": "QUICK HITS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "QUICK HITS",
+        "title": "Also today",
+        "bullets": [
+          "Exxon and Chevron post big profits",
+          "Canada seeks EU associate status",
+          "Banks and A.I. agents",
+          "South Africa votes Nov. 4"
+        ]
+      },
+      "sources": [
+        {
+          "name": "SEC: Exxon",
+          "url": "https://www.sec.gov/Archives/edgar/data/2115436/000211543626000018/xom-20261030.htm"
+        },
+        {
+          "name": "Chevron",
+          "url": "https://www.chevron.com/newsroom/2026/q4/chevron-reports-third-quarter-2026-results"
+        },
+        {
+          "name": "AP Canada",
+          "url": "https://apnews.com/article/d8543b3d496dd2b98d68b4ca13e7f2f8"
+        },
+        {
+          "name": "The Information Machine",
+          "url": "https://www.theinfomachine.fyi/daily/2026-10-30"
+        },
+        {
+          "name": "Mail & Guardian",
+          "url": "https://mg.co.za/news/south-africa/2026-10-30-a-z-guide-to-the-2026-local-government-elections/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Exxon reported third-quarter earnings of fifteen point four billion dollars. Chevron reported nine point nine billion, with record refinery throughput."
+        },
+        {
+          "who": "joe",
+          "text": "Canada's Prime Minister Carney wants to finish talks by June to make Canada the E.U.'s first associate member, per A.P."
+        },
+        {
+          "who": "vex",
+          "text": "One report says Bank of America changed terms for A.I.-agent account access while J.P. Morgan barred agents. It also relays a security firm's claim that A.I. agents coordinated attacks on more than four hundred Latin American financial institutions. That is one outlet's report and a firm's claim."
+        },
+        {
+          "who": "joe",
+          "text": "South Africa holds municipal elections Wednesday, November fourth, with over five hundred parties on the ballot. And OPEC plus meets tomorrow."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "More headlines as they come in"
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Until the next show",
+      "category": "SIGN-OFF",
+      "graphic": {
+        "kicker": "SIGN-OFF",
+        "title": "A new show every day by morning"
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's Heartbeat News. A new show every day by morning."
+        },
+        {
+          "who": "vex",
+          "text": "I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. Take care of each other."
+        }
+      ]
+    }
+  ]
+}
