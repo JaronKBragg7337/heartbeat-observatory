@@ -1,0 +1,88 @@
+/* The Hedge - Halloween hedge maze. Phone first; the 3D view fills the screen and the UI floats over it. */
+:root{
+  --ink:#fff4e2; --ink-dim:rgba(255,244,226,.72);
+  --glass:rgba(8,10,14,.62); --glass-line:rgba(255,244,226,.14);
+  --pumpkin:#ff8a2b; --pumpkin-hi:#ffad5c; --pumpkin-ink:#2a1203;
+  --blood:#ff4a3a; --ghost:#a8ffc0;
+  --display:"Creepster","Trebuchet MS",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+  --gut-l:max(16px,var(--sal)); --gut-r:max(16px,var(--sar));
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07090d;color:var(--ink);font:17px/1.4 var(--body);
+  -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+#app{position:fixed;inset:0;overflow:hidden}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#ui{position:absolute;inset:0;pointer-events:none}
+#ui button,#ui a,#ui .card,#ui .dev{pointer-events:auto}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+button:focus-visible,a:focus-visible{outline:3px solid var(--pumpkin-hi);outline-offset:3px}
+[hidden]{display:none!important}
+
+.vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.55) 100%);transition:background .6s}
+.vignette.hunt{background:radial-gradient(ellipse at 50% 50%,rgba(120,0,0,0) 35%,rgba(140,10,10,.55) 100%)}
+
+.top{position:absolute;top:0;left:0;right:0;padding:calc(var(--sat) + 12px) var(--gut-r) 0 var(--gut-l);display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.pill{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 14px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.stats{font:700 15px/1.1 var(--body);font-variant-numeric:tabular-nums;color:var(--ink-dim);min-width:0}
+.brand{font:400 20px/1 var(--display);letter-spacing:.04em;color:var(--pumpkin)}
+.corner{display:flex;gap:8px;flex:none;align-items:center}
+.mini{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid var(--glass-line);color:var(--ink-dim)}
+.mini svg{width:22px;height:22px}
+.mini.off #sndWaves{display:none}
+.compass{width:44px;height:44px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-line);position:relative}
+.needle{position:absolute;inset:0;transition:transform .08s linear}
+.needle span{position:absolute;left:50%;top:3px;transform:translateX(-50%);font:700 12px/1 var(--body);color:var(--blood)}
+.needle::after{content:"";position:absolute;left:50%;top:17px;width:2px;height:10px;margin-left:-1px;background:var(--ink-dim);border-radius:2px}
+
+.status{position:absolute;left:50%;top:calc(var(--sat) + 66px);transform:translateX(-50%);max-width:calc(100% - 32px);white-space:nowrap;
+  padding:7px 14px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);font:700 13px/1.1 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);transition:color .3s,background .3s}
+.status.warn{color:#ffc46b;border-color:rgba(255,196,107,.4)}
+.status.hunt{color:#fff;background:rgba(150,14,14,.75);border-color:rgba(255,90,70,.6);animation:pulse .5s ease-in-out infinite alternate}
+.status.safe{color:var(--ghost);border-color:rgba(168,255,192,.35)}
+@keyframes pulse{to{transform:translateX(-50%) scale(1.05)}}
+
+.toast{position:absolute;left:var(--gut-l);right:var(--gut-r);bottom:calc(var(--sab) + 150px);text-align:center;font:700 19px/1.3 var(--body);
+  text-shadow:0 2px 10px #000,0 0 2px #000;opacity:0;transform:translateY(8px);transition:opacity .35s,transform .35s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+.toast.scary{color:#ffb4a8}.toast.funny{color:var(--pumpkin-hi)}.toast.both{color:#e9d8ff}.toast.info{color:var(--ghost)}
+.toast .by{display:block;font:700 11px/1.4 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);opacity:.7;margin-top:4px}
+
+.hint{position:absolute;left:50%;bottom:calc(var(--sab) + 28px);transform:translateX(-50%);white-space:nowrap;padding:8px 14px;border-radius:999px;background:var(--glass);font-size:14px;color:var(--ink-dim);transition:opacity 1s}
+.joy{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid rgba(255,244,226,.25);background:rgba(8,10,14,.35)}
+.knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(255,173,92,.55);box-shadow:0 0 18px rgba(255,138,43,.5)}
+
+.card-wrap{position:absolute;inset:0;display:grid;place-items:center;padding:calc(var(--sat) + 16px) var(--gut-r) calc(var(--sab) + 16px) var(--gut-l);background:radial-gradient(ellipse at 50% 40%,rgba(10,6,4,.35),rgba(0,0,0,.85));pointer-events:auto}
+.card{width:100%;max-width:420px;text-align:center;padding:28px 22px 22px;border-radius:26px;background:rgba(10,10,12,.82);border:1px solid var(--glass-line);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 60px rgba(255,138,43,.08)}
+.title{margin:0 0 8px;font:400 64px/1 var(--display);letter-spacing:.04em;color:var(--pumpkin);text-shadow:0 0 24px rgba(255,138,43,.45)}
+.small-title{font-size:48px;color:var(--ghost);text-shadow:0 0 24px rgba(168,255,192,.4)}
+.lede{margin:0 0 12px;font:700 21px/1.35 var(--body)}
+.small{margin:0 0 18px;color:var(--ink-dim);font-size:15px}
+.tiny{margin:14px 0 0;color:var(--ink-dim);font-size:13px;opacity:.8}
+.btn-big{display:block;width:100%;min-height:60px;border-radius:18px;background:linear-gradient(180deg,var(--pumpkin-hi),var(--pumpkin));color:var(--pumpkin-ink);
+  font:700 21px/1 var(--body);letter-spacing:.06em;box-shadow:0 8px 28px rgba(255,138,43,.3),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn-big:disabled{opacity:.55}
+.btn-big:active{transform:scale(.98)}
+.btn-ghost{display:block;width:100%;margin-top:10px;min-height:48px;line-height:48px;border-radius:16px;border:1px solid var(--glass-line);color:var(--ink-dim);text-decoration:none;font:700 16px/48px var(--body)}
+
+.caught{position:absolute;inset:0;background:#000;display:grid;place-items:center;padding:0 var(--gut-r) 0 var(--gut-l);opacity:0;pointer-events:none;transition:opacity .25s}
+.caught.on{opacity:1;pointer-events:auto}
+.caught p{margin:0;max-width:420px;text-align:center;font:700 22px/1.4 var(--body);color:#ffcfc4;opacity:0;transition:opacity .5s .25s}
+.caught.on p{opacity:1}
+.scare{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;opacity:0;background:rgba(0,0,0,.35)}
+.scare svg{width:min(92vw,560px);height:auto;filter:drop-shadow(0 0 30px rgba(0,0,0,.9))}
+.scare.on{animation:scare .75s ease-out forwards}
+@keyframes scare{0%{opacity:0;transform:scale(.4)}12%{opacity:1;transform:scale(1.15) rotate(-3deg)}30%{transform:scale(1.05) rotate(3deg)}60%{opacity:1;transform:scale(1.2)}100%{opacity:0;transform:scale(1.5)}}
+
+.loading{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;background:#07090d;color:var(--ink-dim);transition:opacity .5s}
+.loading.done{opacity:0;pointer-events:none}
+.spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,138,43,.2);border-top-color:var(--pumpkin);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.dev{position:absolute;left:var(--gut-l);top:calc(var(--sat) + 104px);display:flex;flex-direction:column;gap:4px;max-height:60vh;overflow:auto}
+.dev button{font:700 11px/1 var(--body);padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.7);border:1px solid #444;color:#ffd;text-align:left}

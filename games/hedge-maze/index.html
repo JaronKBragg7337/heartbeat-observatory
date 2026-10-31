@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#07090d" />
+<meta name="description" content="A huge foggy hedge maze on Halloween night. A giant Eye in the sky is searching for you. If it sees you, the shadows come. Find the way out. Plays on a phone." />
+<title>The Hedge - Heartbeat Observatory</title>
+<!-- hb:no-phone -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Creepster&display=swap" />
+<link rel="stylesheet" href="./style.css" />
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<div id="app">
+  <canvas id="c" aria-label="The Hedge game view"></canvas>
+  <div class="vignette" id="vignette" aria-hidden="true"></div>
+
+  <div id="ui">
+    <header class="top" id="hud" hidden>
+      <div class="pill stats"><span class="brand">The Hedge</span><span id="stats">0:00 &middot; 0 m</span></div>
+      <div class="corner">
+        <div class="compass" id="compass" aria-hidden="true"><div class="needle" id="needle"><span>N</span></div></div>
+        <button class="mini" id="btnSound" aria-label="Sound on" title="Sound">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path id="sndWaves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="status" id="status" hidden>The Eye is searching&hellip;</div>
+    <div class="toast" id="toast" aria-live="polite"></div>
+    <div class="hint" id="hint" hidden>Left thumb: walk &middot; Right side: look around</div>
+    <div class="joy" id="joy" hidden><div class="knob" id="knob"></div></div>
+    <div class="dev" id="dev" hidden></div>
+
+    <div class="card-wrap" id="intro">
+      <div class="card" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+        <h1 id="introTitle" class="title">The Hedge</h1>
+        <p class="lede">Find the way out.<br>Don't let the Eye see you.</p>
+        <p class="small">If its light finds you, the shadows come. Hide under the leafy arches, break their line of sight, and they lose you. Lanterns you pass are checkpoints.</p>
+        <button class="btn-big" id="btnStart" disabled>Loading the maze&hellip;</button>
+        <button class="btn-ghost" id="btnNew" hidden>Start over</button>
+        <p class="tiny">Phone: left thumb walks, right side looks. Computer: WASD + mouse. Sound on for the full scare.</p>
+      </div>
+    </div>
+
+    <div class="card-wrap" id="win" hidden>
+      <div class="card" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+        <h2 id="winTitle" class="title small-title">You got out.</h2>
+        <p class="lede" id="winText"></p>
+        <p class="small" id="winBest"></p>
+        <button class="btn-big" id="btnAgain">Play again</button>
+        <a class="btn-ghost" href="/games/">More games</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="caught" id="caught" aria-live="assertive"><p id="caughtText"></p></div>
+  <div class="scare" id="scare" aria-hidden="true">
+    <svg viewBox="0 0 200 200">
+      <defs>
+        <radialGradient id="eg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6b0"/><stop offset=".45" stop-color="#ffb02e"/><stop offset="1" stop-color="#ff5a1f" stop-opacity="0"/></radialGradient>
+      </defs>
+      <g fill="#000">
+        <path d="M100 30c40 0 62 30 62 64 0 22-10 38-24 48l10 40-22-30-10 34-8-36-8 36-10-34-22 30 10-40C64 132 38 116 38 94c0-34 22-64 62-64z"/>
+        <path d="M44 86C20 70 10 48 4 30c14 16 28 30 46 38zM156 86c24-16 34-38 40-56-14 16-28 30-46 38z"/>
+      </g>
+      <circle cx="78" cy="86" r="17" fill="url(#eg)"/><circle cx="122" cy="86" r="17" fill="url(#eg)"/>
+      <circle cx="78" cy="86" r="5" fill="#1a0800"/><circle cx="122" cy="86" r="5" fill="#1a0800"/>
+      <path d="M72 116l8 8 6-8 7 9 7-9 7 9 7-9 6 8 8-8" fill="none" stroke="#ffb02e" stroke-width="3" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="loading" id="loading"><div class="spin"></div><p>Growing the hedges&hellip;</p></div>
+</div>
+<script type="module" src="./game.js"></script>
+<script defer src="/hb-editor.js"></script>
+</body>
+</html>

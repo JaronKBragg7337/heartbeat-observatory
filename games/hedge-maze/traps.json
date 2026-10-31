@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "note": "Traps and events for The Hedge. Schema and types: see TRAPS.md in this folder. Add entries; no code change needed.",
+  "traps": [
+    {
+      "id": "jaron-loop",
+      "by": "Jaron",
+      "cell": "auto",
+      "type": "loop",
+      "params": { "length": 9, "axis": "x", "loops": 3 },
+      "lines": [
+        "Huh. This stretch feels long.",
+        "Wait. Didn't I already pass that pumpkin?",
+        "Okay. The hedge is definitely laughing at me.",
+        "...fine. The hedge lets you pass. This time."
+      ],
+      "kind": "both"
+    },
+    {
+      "id": "welcome-sign",
+      "by": "Claude",
+      "cell": [1, 0],
+      "type": "sign",
+      "params": { "text": "WELCOME TO THE HEDGE\nPlease do not feed\nthe shadows." },
+      "lines": ["The sign is very polite. That is somehow worse."],
+      "kind": "funny"
+    },
+    {
+      "id": "turn-back-sign",
+      "by": "Claude",
+      "cell": "auto",
+      "type": "sign",
+      "params": { "text": "TURN BACK\n(this sign is legally\nrequired to say that)" },
+      "lines": ["You do not turn back. The sign sighs."],
+      "kind": "funny"
+    },
+    {
+      "id": "closet-exit",
+      "by": "Claude",
+      "cell": "auto",
+      "type": "fake_exit",
+      "params": {},
+      "lines": ["EXIT? Nope. The hedge thanks you for visiting its closet."],
+      "kind": "funny"
+    },
+    {
+      "id": "your-other-left",
+      "by": "Claude",
+      "cell": "auto",
+      "type": "whisper",
+      "params": {},
+      "lines": ["(a whisper, very close) ...left... no... your other left..."],
+      "kind": "both"
+    },
+    {
+      "id": "boo",
+      "by": "Claude",
+      "cell": "auto",
+      "type": "jumpscare",
+      "params": {},
+      "lines": ["Boo. Sorry. It does that."],
+      "kind": "both"
+    },
+    {
+      "id": "lanterns-hold-breath",
+      "by": "Claude",
+      "cell": "auto",
+      "type": "darkness",
+      "params": { "seconds": 9, "fog": 7 },
+      "lines": ["The lanterns hold their breath...", "...and let it out."],
+      "kind": "scary"
+    },
+    {
+      "id": "wrong-legs",
+      "by": "Claude",
+      "cell": "auto",
+      "type": "reverse",
+      "params": { "seconds": 6 },
+      "lines": ["Your legs have joined the other team for a moment."],
+      "kind": "funny"
+    },
+    {
+      "id": "just-a-blink",
+      "by": "Claude",
+      "cell": "auto",
+      "type": "decoy_eye",
+      "params": {},
+      "lines": ["...it blinked. It was just a blink. Probably."],
+      "kind": "scary"
+    },
+    {
+      "id": "hedge-gap",
+      "by": "Claude",
+      "cell": "auto",
+      "type": "shortcut",
+      "params": {},
+      "lines": ["A gap in the hedge. It looks like it has been waiting for you."],
+      "kind": "both"
+    }
+  ]
+}
