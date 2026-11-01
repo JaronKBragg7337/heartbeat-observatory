@@ -1026,10 +1026,10 @@ function chatLog(name, text, ai) {
   chatLines.push({ name, text, ai, at: Date.now() });
   while (chatLines.length > 30) chatLines.shift();
   const box = $("chatLog"); if (!box) return;
-  box.innerHTML = chatLines.slice(-3).map((l) => `<div${l.ai ? ' class="ai"' : ""}><b>${esc(l.name)}${l.ai ? " <i>AI</i>" : ""}</b> ${esc(l.text)}</div>`).join("");
-  box.classList.toggle("on", chatLines.length > 0);
-  clearTimeout(chatLog.fade);   // the lines step aside after 25 s of quiet so the room stays visible
-  chatLog.fade = setTimeout(() => box.classList.remove("on"), 25000);
+  // Jaron 11/1: never cover the room. The bubbles over heads are the live view; the full history only shows when he
+  // opens it with the clock button, and closes on a tap.
+  box.innerHTML = chatLines.map((l) => `<div${l.ai ? ' class="ai"' : ""}><b>${esc(l.name)}${l.ai ? " <i>AI</i>" : ""}</b> ${esc(l.text)}</div>`).join("");
+  if (box.classList.contains("on")) box.scrollTop = box.scrollHeight;
 }
 function speak(text) {
   if (muted || !("speechSynthesis" in window)) return;
@@ -1047,6 +1047,7 @@ function buildChat() {
       <input id="chatIn" type="text" maxlength="280" enterkeyhint="send" placeholder="Talk to the AI…" aria-label="Say something to the AI">
       <button id="chatSay" type="submit">Say</button>
       <button id="chatMute" type="button" aria-label="Mute spoken replies"></button>
+      <button id="chatHist" type="button" aria-label="Show chat history" title="Chat history">🕘</button>
     </form>
     <div id="chatLog" aria-live="polite"></div>`;
   document.body.appendChild(wrap);
@@ -1057,6 +1058,9 @@ function buildChat() {
   // keep taps here away from the shell's stick/look and the room's walk keys
   for (const ev of ["pointerdown", "touchstart", "mousedown"]) wrap.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
   wrap.addEventListener("keydown", (e) => e.stopPropagation());
+  const hist = $("chatHist"), logBox = $("chatLog");
+  hist.addEventListener("click", () => { logBox.classList.toggle("on"); hist.classList.toggle("on", logBox.classList.contains("on")); logBox.scrollTop = logBox.scrollHeight; });
+  logBox.addEventListener("click", () => { logBox.classList.remove("on"); hist.classList.remove("on"); });
   const mute = $("chatMute");
   const paintMute = () => { mute.textContent = muted ? "🔇" : "🔊"; mute.setAttribute("aria-pressed", muted ? "true" : "false"); mute.title = muted ? "Replies are muted" : "Replies are read aloud"; };
   paintMute();

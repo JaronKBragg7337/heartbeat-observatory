@@ -52,11 +52,14 @@ html,body{margin:0;height:100%;overflow:hidden;background:#2a2420;color:#f3ead8;
   -webkit-user-select:text;user-select:text;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 #chatIn::placeholder{color:#b9a98c}
 #chatIn:focus{border-color:#e8c98a;background:rgba(26,20,15,.9)}
-#chatSay,#chatMute{height:40px;min-width:44px;border-radius:20px;border:1px solid rgba(232,180,90,.4);background:rgba(232,180,90,.16);
+#chatSay,#chatMute,#chatHist{height:40px;min-width:44px;border-radius:20px;border:1px solid rgba(232,180,90,.4);background:rgba(232,180,90,.16);
   color:#e8c98a;font:600 14px system-ui,sans-serif;padding:0 12px;cursor:pointer}
 #chatSay{background:#e8c98a;color:#2a2014;border-color:#e8c98a}
-#chatMute{padding:0;width:44px;background:rgba(26,20,15,.72)}
-#chatLog{margin:6px 0 0;font:12.5px/1.35 system-ui,-apple-system,sans-serif;color:#f3ead8;text-shadow:0 1px 2px rgba(0,0,0,.8);display:none}
+#chatMute,#chatHist{padding:0;width:44px;background:rgba(26,20,15,.72)}
+#chatHist.on{background:#e8c98a}
+/* history: hidden until the clock button is tapped; a tap on it closes it (Jaron 11/1: never cover the room) */
+#chatLog{margin:6px 0 0;font:12.5px/1.35 system-ui,-apple-system,sans-serif;color:#f3ead8;display:none;pointer-events:auto;
+  max-height:38vh;overflow-y:auto;background:rgba(26,20,15,.9);border-radius:12px;padding:6px}
 #chatLog.on{display:block}
 #chatLog div{background:rgba(26,20,15,.55);border-radius:10px;padding:3px 9px;margin:0 0 3px;display:table;max-width:100%;overflow-wrap:anywhere}
 #chatLog b{color:#e8c98a;font-weight:600;margin-right:4px}
