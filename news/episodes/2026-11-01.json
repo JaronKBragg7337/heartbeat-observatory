@@ -1,0 +1,1135 @@
+{
+  "date": "2026-11-01",
+  "title": "Heartbeat News — Sunday, November 1, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex/2026-11-01",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-01.md"
+    },
+    {
+      "name": "watch/deepseek/2026-11-01",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-01.md"
+    },
+    {
+      "name": "watch/kimi/2026-11-01",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-01.md"
+    },
+    {
+      "name": "watch/grok/2026-11-01",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-01.md"
+    },
+    {
+      "name": "watch/grok/2026-11-01-gaps",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-01-gaps.md"
+    },
+    {
+      "name": "watch/msi/2026-11-01",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-01.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Claude daily capture",
+      "source": "claude/2026-11-01.md",
+      "why": "Not filed today; the show uses the other desks."
+    },
+    {
+      "item": "Prediction-market prices and rules (usiran-nucl, RUH airport, Iran ceasefire contract, Eagles and Pacers market odds)",
+      "source": "codex, deepseek, kimi",
+      "why": "Trader detail; underlying events are in the show."
+    },
+    {
+      "item": "Coinbase spot prints (BTC, ETH, SOL)",
+      "source": "deepseek, kimi",
+      "why": "Single-exchange prices at capture, no story."
+    },
+    {
+      "item": "Friday closes (CAC, FTSE, Ibovespa), Fitch/Moody's detail",
+      "source": "deepseek, grok",
+      "why": "Weekend; numbers only, Fitch claim mentioned in France segment."
+    },
+    {
+      "item": "Hong Kong Sixes cricket, KBO attendance streak, Korean Series dates beyond the headline",
+      "source": "kimi, deepseek",
+      "why": "Minor sports detail."
+    },
+    {
+      "item": "Britain: Starmer speech to British Irish Chamber of Commerce",
+      "source": "grok",
+      "why": "Speech reporting from Friday, no news event."
+    },
+    {
+      "item": "Trivia headlines (AI Tamagotchi, keyboards, Pikmin, Windows 11 shortcuts, touchscreens, political texts, YouTube horror)",
+      "source": "msi",
+      "why": "Headline-only or lifestyle items."
+    },
+    {
+      "item": "Binance proof-of-reserves and coverage figures not merged",
+      "source": "deepseek, grok",
+      "why": "Company figures conflict; shown as stated."
+    },
+    {
+      "item": "Fort Wayne / Indiana items",
+      "source": "none",
+      "why": "None present."
+    }
+  ],
+  "ticker": [
+    "F.B.I.: NORTH KOREA STOLE $6B+ FROM BINANCE",
+    "BINANCE: ~95% COVERED, WITHDRAWALS RESUMING IN PHASES",
+    "IRAN: RESPONSE 'WITHOUT GEOGRAPHIC LIMITS'",
+    "ARAGHCHI: HORMUZ COULD REOPEN IN TWO DAYS",
+    "ZELENSKY, ERDOGAN TO WORK ON BLACK SEA GRAIN CORRIDOR",
+    "OLESHKY RESIDENTS CROSS INTO UKRAINE",
+    "POLAND: PRESIDENT ENTERS CONSTITUTIONAL COURT",
+    "FRANCE: 320,000 MARCH, 290+ ARRESTS",
+    "SPAIN CRASH: AT LEAST 69 DEAD, 36 IDENTIFIED",
+    "NORTH KOREA CLAIMS CLUSTER WARHEAD TEST",
+    "49 MILLION AMERICANS HAVE ALREADY VOTED",
+    "JUDGE DISMISSES TRUMP'S $10B WSJ SUIT",
+    "TRUMP: FLAVIO BOLSONARO 'CAN STAY' IN U.S.",
+    "KENYA PROTESTS SAUDI EBOLA TRAVEL BAN",
+    "COP17: WORLD OFF TRACK ON BIODIVERSITY"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Binance, Iran, Poland's court and a long weekend of protests",
+        "bullets": [
+          "Binance: the F.B.I. names North Korea",
+          "Iran: threats and a two-day Hormuz offer",
+          "Poland: a standoff at the top court",
+          "France and Germany: the streets again"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Sunday, November first."
+        },
+        {
+          "who": "vex",
+          "text": "We start with the F.B.I. blaming North Korea for the Binance theft, then Iran's threats and a two-day offer on the Strait of Hormuz."
+        },
+        {
+          "who": "joe",
+          "text": "Plus a court standoff in Poland, protests across Europe, and a lot more. Stay with us."
+        }
+      ]
+    },
+    {
+      "id": "binance",
+      "kind": "breaking",
+      "strap": "F.B.I.: NORTH KOREA BEHIND $6B BINANCE THEFT",
+      "headline": "Binance: the F.B.I. names North Korea",
+      "category": "CRYPTO",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "CRYPTO",
+        "title": "Hot wallets drained, withdrawals due back in phases",
+        "bullets": [
+          "F.B.I. alert: North Korea stole more than $6B",
+          "Binance: coverage up to about 95%",
+          "Phase one of withdrawals: 06:00 to 09:00 UTC today",
+          "Full proof of reserves expected by Nov. 3"
+        ]
+      },
+      "sources": [
+        {
+          "name": "F.B.I. cyber alert",
+          "url": "https://www.fbi.gov/investigate/cyber/alerts/2026/north-korea-responsible-for-6-billion-binance-attack"
+        },
+        {
+          "name": "Yonhap",
+          "url": "https://en.yna.co.kr/view/AEN20261101000300315"
+        },
+        {
+          "name": "Binance Recovery Update #4",
+          "url": "https://www.binance.com/en-GB/support/announcement/security-incident-recovery-update-4-withdrawals-resume-in-phases-2026-11-01-73911fb819b240f88b88256bdd318eda"
+        },
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com/tech/1024091/binance-ceo-90-percent-stolen-crypto"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The F.B.I. says North Korea was responsible for the theft of more than six billion dollars from Binance, on or about October twenty-ninth. It dates the alert October thirty-first."
+        },
+        {
+          "who": "joe",
+          "text": "The bureau calls the group TraderTraitor. It says the thieves are converting the loot mostly into ether, and it expects more laundering through decentralized finance and instant-swap services."
+        },
+        {
+          "who": "vex",
+          "text": "So a country with a cluster-bomb warhead program also has a crypto hobby. Noted."
+        },
+        {
+          "who": "joe",
+          "text": "Binance's own updates say it has covered about ninety-five percent of the affected amount, up from ninety. The company says ten named assets are fully backed."
+        },
+        {
+          "who": "vex",
+          "text": "Phase one of withdrawals was planned for six to nine A.M. Universal time today. At capture, no page showed a withdrawal that had actually cleared."
+        },
+        {
+          "who": "joe",
+          "text": "Also note: the figures differ. The F.B.I. says more than six billion, the tracking firm T.R.M. Labs says about six point three six, and Binance says about six point three. Nobody has merged them. A full proof of reserves is expected by Tuesday."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "story",
+      "strap": "IRAN THREATENS 'NO GEOGRAPHIC LIMITS'; OFFERS 2-DAY HORMUZ PLAN",
+      "headline": "Iran: a threat and an offer, side by side",
+      "category": "MIDDLE EAST",
+      "status": "claim",
+      "graphic": {
+        "kicker": "MIDDLE EAST",
+        "title": "Khamenei warns; Araghchi pitches reopening",
+        "bullets": [
+          "Khamenei: immediate response, no geographic limits",
+          "Commanders told to update target lists",
+          "Araghchi: Hormuz could reopen in two days",
+          "Iran's conditions include sanctions relief",
+          "Unconfirmed: Iran says U.S. hit fishing boats"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/mideast-news-october-31-2026-15c0556b92c8c23beb9b8854b4c124f4"
+        },
+        {
+          "name": "TASS",
+          "url": "https://tass.com/world/2211373"
+        },
+        {
+          "name": "The Hindu",
+          "url": "https://www.thehindu.com/news/international/irans-supreme-leader-warns-us-israel-against-new-attacks/article71649244.ece"
+        },
+        {
+          "name": "Reuters via WTAQ",
+          "url": "https://wtaq.com/2026/10/31/iran-provincial-official-says-us-attacked-fishing-boats-off-qeshm-island-state-media/"
+        },
+        {
+          "name": "Dawn",
+          "url": "https://www.dawn.com/news/2041203"
+        },
+        {
+          "name": "AP satellite analysis",
+          "url": "https://apnews.com/article/26e0f05e01d6f56ff46f7c1a14384f7c"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Two messages from Tehran, same day. First: Iran's supreme leader, Mojtaba Khamenei, told military chiefs that any U.S. or Israeli threat should get an immediate response with no geographic limits."
+        },
+        {
+          "who": "joe",
+          "text": "His written statement, carried by AFP and The Hindu, says commanders should update the target list to all tangible and intangible assets of what he calls the American-Zionist enemy."
+        },
+        {
+          "who": "vex",
+          "text": "Second: Foreign Minister Abbas Araghchi told Al Jazeera that a mediator proposal could reopen the Strait of Hormuz in two days."
+        },
+        {
+          "who": "joe",
+          "text": "His conditions, as Dawn carries them: lift sanctions imposed after the Islamabad memorandum, reduce U.S. forces in the region, restore oil waivers, release frozen funds, and recognize shipping routes Iran agrees with Oman."
+        },
+        {
+          "who": "vex",
+          "text": "That is a proposal and a negotiating position. It is not a signed deal, and no one reports ships moving yet. Iranian state television also claims the U.S. attacked two fishing boats near Qeshm Island and wounded a fisherman. The White House and Pentagon had not responded."
+        },
+        {
+          "who": "joe",
+          "text": "Separately, an A.P. satellite-image analysis says more than one hundred fifteen drone or missile strikes damaged or destroyed structures at twenty-six U.S. military bases and other sites through August. That is A.P.'s analysis."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "OLESHKY RESIDENTS CROSS; KYIV, DNIPRO POWER HIT",
+      "headline": "Ukraine: a local pause, and strikes elsewhere",
+      "category": "UKRAINE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "Oleshky evacuees cross; power cut for hundreds of thousands",
+        "bullets": [
+          "Oleshky residents crossed into Ukraine Saturday",
+          "Headcount and plane count disputed",
+          "Strikes cut power: 200,000 homes Dnipropetrovsk, 80,000 Kyiv Oblast",
+          "Russian official claims drone hit civilian car"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/europe/three-planes-carrying-residents-evacuated-oleshky-arrive-belarus-news-agency-2026-10-31/"
+        },
+        {
+          "name": "BBC",
+          "url": "https://www.bbc.co.uk/news/articles/c60me298k1yeo"
+        },
+        {
+          "name": "ISW / Critical Threats",
+          "url": "https://www.criticalthreats.org/print/ana_6ae669621ade9"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In the Kherson region, residents of Oleshky crossed into Ukraine on Saturday under the local ceasefire. Zelensky said Ukrainian citizens from Oleshky crossed in the Chernihiv region and will get assistance."
+        },
+        {
+          "who": "joe",
+          "text": "They went by bus, then aircraft from Anapa to Gomel, then bus to the border. The oldest returning resident was ninety-four. The youngest was a baby just over a year old."
+        },
+        {
+          "who": "vex",
+          "text": "Nobody agrees on numbers. Al Jazeera says four planes landed in Gomel. A Reuters headline says three. Russia's Defence Ministry, via dpa, says more than two hundred chose Ukraine and dozens chose Russia."
+        },
+        {
+          "who": "joe",
+          "text": "A Russian official, Rodion Miroshnik, claims Ukrainian forces hit a civilian vehicle with a drone on the edge of Oleshky. The Institute for the Study of War could not verify that."
+        },
+        {
+          "who": "vex",
+          "text": "Meanwhile, away from the pause: Zelensky says overnight strikes hit a Kyiv heat and power plant and four substations in Dnipropetrovsk. Around two hundred thousand homes there, and over eighty thousand in Kyiv Oblast, lost power."
+        },
+        {
+          "who": "joe",
+          "text": "The Oleshky pause is local, and ends Sunday night. This is not a general ceasefire."
+        }
+      ]
+    },
+    {
+      "id": "blacksea",
+      "kind": "story",
+      "strap": "ZELENSKY, ERDOGAN: BLACK SEA GRAIN CORRIDOR TALKS",
+      "headline": "Istanbul: a Black Sea corridor, maybe",
+      "category": "DIPLOMACY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "DIPLOMACY",
+        "title": "Black Sea corridor and a possible three-way meeting",
+        "bullets": [
+          "Zelensky: agreed with Erdogan to work on a grain corridor",
+          "Erdogan: attacks on civilian vessels unacceptable",
+          "Rubio: U.S. reviewing Turkey, India proposals",
+          "Kallas: Putin at G-twenty would normalize war crimes"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/10/31/turkiyes-erdogan-urges-russia-and-ukraine-to-stop-black-sea-attacks"
+        },
+        {
+          "name": "Kyiv Post",
+          "url": "https://www.kyivpost.com/post/88772"
+        },
+        {
+          "name": "POLITICO Europe",
+          "url": "https://www.politico.eu/article/kaja-kallas-vladimir-putin-g20-return-risks-normalizing-russian-war-crimes/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "At a joint news conference in Istanbul, Zelensky said, quote, Today, I reached an agreement with President Erdogan to work on the Black Sea grain corridor."
+        },
+        {
+          "who": "joe",
+          "text": "Erdogan said attacks on civilian vessels in the Black Sea are unacceptable no matter who carries them out. Secretary of State Rubio said in Atlanta there is growing interest in a limited Black Sea ceasefire for grain and energy."
+        },
+        {
+          "who": "vex",
+          "text": "He said it doesn't solve the war, but it solves a unique aspect of it. The U.S. is reviewing proposals from Turkey and India."
+        },
+        {
+          "who": "joe",
+          "text": "Zelensky also discussed a three-way meeting with the U.S. and Russia in the first half of November. Istanbul came up as a venue. The Kremlin had floated the United Arab Emirates. Those two venues are not merged."
+        },
+        {
+          "who": "vex",
+          "text": "Also from Atlanta: E.U. foreign policy chief Kaja Kallas says a Putin return to a G-twenty summit in Florida in December would be, quote, normalizing war crimes. Putin hasn't confirmed he'll attend."
+        },
+        {
+          "who": "joe",
+          "text": "European officials refused to stand next to Sergei Lavrov at the G-twenty foreign ministers' meeting, and Rubio called off the family photo. Awkward. Very awkward."
+        }
+      ]
+    },
+    {
+      "id": "poland",
+      "kind": "story",
+      "strap": "POLAND: PRESIDENT ENTERS CONSTITUTIONAL COURT",
+      "headline": "Poland: two accounts of one night at the top court",
+      "category": "EUROPE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "A standoff over who runs the tribunal",
+        "bullets": [
+          "Judge suspends tribunal president Święczkowski",
+          "Nawrocki enters court, calls it a forcible takeover",
+          "Tusk: the tribunal will function per the constitution",
+          "Three detained, per CNN"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/polands-president-accuses-tusk-forced-takeover-countrys-top-court-2026-10-31/"
+        },
+        {
+          "name": "New York Times",
+          "url": "https://www.nytimes.com/2026/10/31/world/europe/poland-court-police-president.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Warsaw, late Friday the Constitutional Tribunal said its longest-serving judge, Anna Korwin-Piotrowska, had suspended tribunal president Bogdan Święczkowski and was in charge."
+        },
+        {
+          "who": "joe",
+          "text": "President Karol Nawrocki turned his plane back from Senegal and entered the court overnight. An aide read his statement: a breach of public order and a forcible takeover of a constitutional body."
+        },
+        {
+          "who": "vex",
+          "text": "Prime Minister Donald Tusk says the tribunal will function in line with the constitution. Święczkowski rejects the suspension and calls it a coup."
+        },
+        {
+          "who": "joe",
+          "text": "Three accounts, none ranked here. CNN reports three people detained. Riot police are at the court. No ruling yet, and no election called."
+        }
+      ]
+    },
+    {
+      "id": "streets",
+      "kind": "story",
+      "strap": "FRANCE: THIRD SATURDAY OF PROTESTS; GERMANY'S FIRST",
+      "headline": "France and Germany: the streets, again",
+      "category": "EUROPE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "Counts differ everywhere",
+        "bullets": [
+          "France: 320,000 per ministry; organisers near 500,000",
+          "290+ arrests in France, tear gas in Paris, Lyon",
+          "Down from 410,000 and 550,000 earlier",
+          "Germany: 'Gen Z regelt' in 34 cities, counts disputed"
+        ]
+      },
+      "sources": [
+        {
+          "name": "DW",
+          "url": "https://www.dw.com/en/more-than-290-arrested-in-france-as-some-weekend-protests-turn-violent/a-79818138"
+        },
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/europe/gen-z-protests-reach-germany-over-160000-expected-halloween-rallies-2026-10-31/"
+        },
+        {
+          "name": "dpa",
+          "url": "https://dpa-international.com/politics/urn:newsml:dpa.com:20090101:261031-930-924588/"
+        },
+        {
+          "name": "The National",
+          "url": "https://www.thenationalnews.com/news/europe/2026/10/31/isolated-clashes-in-france-after-nationwide-protests-on-halloween/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "France held its third Saturday of national protests. The Interior Ministry counts three hundred twenty thousand people nationwide, seventy thousand in Paris. That is down from four hundred ten thousand last week and five hundred fifty thousand on October seventeenth."
+        },
+        {
+          "who": "joe",
+          "text": "Organisers say nearly half a million. Police made more than two hundred ninety arrests, according to DW, and used tear gas in Paris and Lyon. About seventy thousand police and gendarmes were deployed."
+        },
+        {
+          "who": "vex",
+          "text": "The demands, per DW: cost of living, inequality, school conditions. The next date already called is November fifth."
+        },
+        {
+          "who": "joe",
+          "text": "In Germany, the first Gen Z regelt Saturday drew demonstrations in thirty-four cities, against school underfunding, cuts, living costs and conscription."
+        },
+        {
+          "who": "vex",
+          "text": "Counts differ. Police in Frankfurt, Munich and Berlin said as many as eighteen thousand. Organisers' site said about thirty-six thousand for those cities, and dpa has organisers claiming over one hundred thousand nationwide."
+        },
+        {
+          "who": "joe",
+          "text": "The National also reports, as a claim, that Fitch revised its outlook on French debt to negative on Friday. We haven't seen the Fitch release."
+        }
+      ]
+    },
+    {
+      "id": "spain",
+      "kind": "story",
+      "strap": "SPAIN TRAIN CRASH: 69 DEAD, 36 IDENTIFIED",
+      "headline": "Spain: naming the dead",
+      "category": "EUROPE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "Madrid–Andalusia line still closed",
+        "bullets": [
+          "At least 69 dead; all autopsied",
+          "36 identified, 27 families notified",
+          "34 injured still in hospital, 15 in intensive care",
+          "Signalling failure at heart of probe"
+        ]
+      },
+      "sources": [
+        {
+          "name": "dpa",
+          "url": "https://dpa-international.com/general-news/urn:newsml:dpa.com:20090101:261031-930-923589/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Toledo province, all sixty-nine bodies from the high-speed rail crash have been autopsied. Thirty-six are identified and families of twenty-seven are notified."
+        },
+        {
+          "who": "joe",
+          "text": "Of about two hundred injured, thirty-four remain in four hospitals, fifteen in intensive care. The regional leader says their condition is improving relatively well."
+        },
+        {
+          "who": "vex",
+          "text": "The Madrid–Andalusia line is still closed in both directions, with no reopening time."
+        },
+        {
+          "who": "joe",
+          "text": "As for the cause: dpa says failure of the L.Z.B. train-control system and possible errors at Madrid's control centre are at the heart of the investigation. Media-published radio recordings suggest the driver was told to resume normal operations while the system was out and another train was on the track. That is dpa's account of recordings. It is not a court finding."
+        }
+      ]
+    },
+    {
+      "id": "korea",
+      "kind": "story",
+      "strap": "NORTH KOREA TESTS CLUSTER-BOMB WARHEAD, KCNA SAYS",
+      "headline": "North Korea: a cluster warhead test",
+      "category": "ASIA",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ASIA",
+        "title": "Pyongyang's claim, Seoul's monitoring",
+        "bullets": [
+          "KCNA: cluster warhead for tactical ballistic missiles",
+          "Claims 12 to 13 hectares destroyed",
+          "Seoul says it tracked a launch toward the Yellow Sea",
+          "Rubio: Trump open to talks, none scheduled"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Yonhap",
+          "url": "https://en.yna.co.kr/view/AEN20261101000451315"
+        },
+        {
+          "name": "Japan Times",
+          "url": "https://www.japantimes.co.jp/news/2026/11/01/asia-pacific/north-korea-cluster-bomb-warhead/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "North Korea says it tested a cluster-bomb warhead for tactical ballistic missiles on Saturday. That is the state news agency KCNA, so it is Pyongyang's own claim."
+        },
+        {
+          "who": "joe",
+          "text": "KCNA says the warhead can turn a target area of twelve to thirteen hectares into ashes, and that within this year units will be able to use all four warhead types."
+        },
+        {
+          "who": "vex",
+          "text": "South Korea's Joint Chiefs say they had been monitoring and that a missile was fired toward the Yellow Sea from around Chongju."
+        },
+        {
+          "who": "joe",
+          "text": "In the same report, Secretary of State Rubio says President Trump remains open to talks with Kim Jong Un, and that no meeting is scheduled."
+        }
+      ]
+    },
+    {
+      "id": "uspolitics",
+      "kind": "story",
+      "strap": "ALASKA SENATE SUIT; RECORD EARLY VOTE",
+      "headline": "U.S. politics: two days to the midterms",
+      "category": "POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "POLITICS",
+        "title": "Alaska, early voting and a voter-list fight",
+        "bullets": [
+          "Alaska asks court to dismiss Justice Dept. suit",
+          "Over 49 million already voted, a midterm record",
+          "UCLA filing: 4 in 10 on DOJ California list not on rolls",
+          "Judge dismisses Trump's $10B suit against WSJ"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP, Alaska",
+          "url": "https://apnews.com/article/alaska-senate-dan-sullivan-certification-5b975dc87222858f6239e9170d675698"
+        },
+        {
+          "name": "Reuters via Yahoo",
+          "url": "https://www.yahoo.com/news/politics/articles/us-campaign-control-congress-enters-100758118.html"
+        },
+        {
+          "name": "AP, California voter list",
+          "url": "https://apnews.com/article/45b31d5aefb03723f0e59f6084e918d4"
+        },
+        {
+          "name": "AP, WSJ suit",
+          "url": "https://apnews.com/article/f27c9fa832044f2f9edea9b1fbbba061"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Election Day is Tuesday. Reuters says more than forty-nine million Americans have already voted, a midterm record, against nearly forty-six million before Election Day in twenty twenty-two."
+        },
+        {
+          "who": "joe",
+          "text": "In Alaska, the Republican-run state government on Saturday asked a federal judge to dismiss a Justice Department suit that would stop certification of a possible Mary Peltola win in the Senate race. The filing calls it, quote, a meritless lawsuit."
+        },
+        {
+          "who": "vex",
+          "text": "In California, a UCLA Voting Rights Project and C.H.I.R.L.A. filing says more than four in ten names on the Justice Department's twenty thousand nine hundred thirty-name list were not on voter rolls. It also says thousands of citizens appeared flagged. That is the filing's analysis, reported by A.P."
+        },
+        {
+          "who": "joe",
+          "text": "And in Florida, a federal judge dismissed President Trump's ten billion dollar defamation suit against The Wall Street Journal and Rupert Murdoch, with prejudice. The judge found the complaint did not plausibly allege actual malice."
+        }
+      ]
+    },
+    {
+      "id": "brazil",
+      "kind": "story",
+      "strap": "TRUMP: BOLSONARO 'CAN STAY AS LONG AS HE WANTS'",
+      "headline": "Brazil: Flávio Bolsonaro in the U.S.",
+      "category": "AMERICAS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "AMERICAS",
+        "title": "Rubio and Trump on the defeated candidate",
+        "bullets": [
+          "Trump: he 'can stay here as long as he wants'",
+          "Trump: the election was 'a disgrace'",
+          "Rubio: U.S. did not facilitate his departure",
+          "Reuters: entered under humanitarian parole"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/americas/trump-says-flavio-bolsonaro-can-stay-us-as-long-he-wants-2026-11-01/"
+        },
+        {
+          "name": "Reuters, Rubio",
+          "url": "https://www.reuters.com/world/americas/rubio-brazils-foreign-minister-meet-after-election-tension-source-says-2026-10-31/"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/g20-foreign-ministers-us-brazil-0ba5ba29246e4475cca2719bb962e57f"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Defeated Brazilian candidate Flávio Bolsonaro is in the United States. Speaking at a Mar-a-Lago Halloween party, President Trump said he, quote, can stay here as long as he wants, and called the Brazilian election, quote, a disgrace."
+        },
+        {
+          "who": "joe",
+          "text": "Reuters reports Trump said he has no plans to meet him. Its longer copy says a U.S. official and another source say Trump has no current plans to back Bolsonaro's claim to be Brazil's rightful leader. Those two lines are not merged."
+        },
+        {
+          "who": "vex",
+          "text": "Earlier, Rubio said in Atlanta that the U.S. government did not facilitate Bolsonaro's departure. He said Bolsonaro already had a visa and Trump decided to allow him entry."
+        },
+        {
+          "who": "joe",
+          "text": "Reuters adds that he entered under humanitarian parole, which it has reported usually lasts one year."
+        }
+      ]
+    },
+    {
+      "id": "israel",
+      "kind": "story",
+      "strap": "ISRAEL: TEL AVIV RALLY; U.N. STAFFER DIED IN HOUTHI CUSTODY",
+      "headline": "Israel's coalition fight, and a death in Yemen",
+      "category": "MIDDLE EAST",
+      "status": "observed",
+      "graphic": {
+        "kicker": "MIDDLE EAST",
+        "title": "Rally in Tel Aviv; a U.N. death in custody",
+        "bullets": [
+          "Thousands rally for Arab-Jewish coalition",
+          "Arab-led parties won 19 of 120 seats",
+          "Certification due Nov. 4, Knesset sworn in Nov. 10",
+          "U.N.: staffer died in Houthi custody"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/mideast-news-october-31-2026-15c0556b92c8c23beb9b8854b4c124f4"
+        },
+        {
+          "name": "AP via KBTX",
+          "url": "https://www.kbtx.com/2026/10/30/netanyahu-claims-that-arab-led-parties-stole-election-his-bloc-loses-majority-israel/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Thousands rallied in Tel Aviv for an Arab-Jewish governing coalition. Arab-led parties won nineteen of one hundred twenty Knesset seats. Right-wing counter-demonstrators also appeared."
+        },
+        {
+          "who": "joe",
+          "text": "The bloc count stands at fifty-three, forty-eight and nineteen. The rally did not form a government. Final results are due for certification November fourth, and the new Knesset is expected to be sworn in November tenth."
+        },
+        {
+          "who": "vex",
+          "text": "In Yemen, the U.N. human rights chief, Volker Türk, said Mohammad al-Shami, a staff member of his office, died in Houthi custody. He had been detained in twenty twenty-four. No cause of death was given."
+        },
+        {
+          "who": "joe",
+          "text": "Seven of his colleagues remain detained."
+        }
+      ]
+    },
+    {
+      "id": "kenya",
+      "kind": "story",
+      "strap": "KENYA PROTESTS SAUDI EBOLA TRAVEL BAN; EASTLEIGH COLLAPSE",
+      "headline": "Kenya: an Ebola travel ban, and a collapse",
+      "category": "AFRICA",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "AFRICA",
+        "title": "Saudi bars Kenya travel; Eastleigh search goes on",
+        "bullets": [
+          "Saudi bars travellers from Kenya",
+          "Kenya: no new infection since Oct. 19",
+          "Case counts differ: nine vs. eight",
+          "Eastleigh: one body, 16 still missing"
+        ]
+      },
+      "sources": [
+        {
+          "name": "KBC",
+          "url": "https://www.kbc.co.ke/duale-faults-saudi-arabias-ebola-travel-ban-says-kenya-needs-support-not-isolation/"
+        },
+        {
+          "name": "Y News",
+          "url": "https://ynews.digital/governance/kenya-saudi-arabia-ebola-travel-restrictions/"
+        },
+        {
+          "name": "Nation editorial",
+          "url": "https://nation.africa/kenya/blogs-opinion/editorials/speed-up-probe-into-construction-tragedy-5654002"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Saudi Arabia announced a suspension of Saudi citizens' travel to Kenya, a halt on all visa types for arrivals from Kenya, and entry bars for anyone who was in Kenya in the past twenty-one days."
+        },
+        {
+          "who": "joe",
+          "text": "Kenya's Health Secretary, Aden Duale, calls the measures excessive. He says there is one cluster, no spread outside it, and no new infection since October nineteenth."
+        },
+        {
+          "who": "vex",
+          "text": "The numbers differ. A diplomatic note says nine confirmed cases, seven expected to be discharged November third. Another report says eight confirmed. They aren't merged. Two deaths stand from an earlier ministry line."
+        },
+        {
+          "who": "joe",
+          "text": "In Nairobi's Eastleigh, day nine or ten of the building collapse. One woman's body is recovered and still unnamed. Sixteen are missing and six were rescued. The prosecutor has asked detectives to investigate negligence by officials and owners. That is not a charge."
+        }
+      ]
+    },
+    {
+      "id": "india",
+      "kind": "story",
+      "strap": "INDIA BLOC STAGES 'IMPEACHMENT' OF ELECTION CHIEF; DELHI RALLY",
+      "headline": "India: opposition rally in Delhi",
+      "category": "ASIA",
+      "status": "claim",
+      "graphic": {
+        "kicker": "ASIA",
+        "title": "Opposition says 13 crore voters deleted",
+        "bullets": [
+          "Opposition: symbolic impeachment of election chief",
+          "Accusation: 13 crore voters deleted",
+          "Chalo Dilli march set for Ramlila Maidan",
+          "Crowd forecasts differ by a factor of twenty"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Scroll",
+          "url": "https://scroll.in/article/1096783/in-public-impeachment-of-gyanesh-kumar-india-bloc-accuses-cec-of-conspiring-to-steal-votes"
+        },
+        {
+          "name": "Times of India",
+          "url": "https://timesofindia.indiatimes.com/india/10-lakh-turnout-target-4000-cops-200-cctv-delhi-braces-for-india-blocs-anti-cec-rally-at-ramlila-maidan/articleshow/135411804.cms"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In New Delhi, the opposition INDIA bloc held a symbolic public impeachment of Chief Election Commissioner Gyanesh Kumar, accusing him of ensuring the deletion of thirteen crore voters. That figure is the bloc's accusation."
+        },
+        {
+          "who": "joe",
+          "text": "Rahul Gandhi said it was held in a garden because, quote, every single institution is closed to us."
+        },
+        {
+          "who": "vex",
+          "text": "Today the bloc plans a march to Ramlila Maidan. It projects up to ten lakh people. Police planned for about fifty thousand. Deployment figures run from four thousand to ten thousand personnel."
+        },
+        {
+          "who": "joe",
+          "text": "A final crowd count isn't in yet. We'll see what the day shows."
+        }
+      ]
+    },
+    {
+      "id": "cop17",
+      "kind": "story",
+      "strap": "COP17 ENDS IN ARMENIA WITH 'YEREVAN PATHWAY'",
+      "headline": "COP17: biodiversity talks end, money short",
+      "category": "SCIENCE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SCIENCE",
+        "title": "World agrees it is off track",
+        "bullets": [
+          "Delegates: off track on almost all targets",
+          "Yerevan Pathway: cut harmful subsidies, raise finance",
+          "More than $1.8B announced at the conference",
+          "Target: cut harmful incentives $500B a year by 2030"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/sustainability/cop/countries-reach-cop17-deal-speed-up-biodiversity-action-money-still-short-2026-10-31/"
+        },
+        {
+          "name": "Nature Conservancy",
+          "url": "https://www.nature.org/en-us/newsroom/cbd-cop17-closing-statement/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The C.O.P. seventeen biodiversity conference in Armenia ended Saturday after talks ran through the night. Governments agreed to step up efforts, but the money remains elusive."
+        },
+        {
+          "who": "joe",
+          "text": "It was the first global review of the twenty twenty-two biodiversity framework. Delegates agreed the world is off track on almost all of its targets."
+        },
+        {
+          "who": "vex",
+          "text": "The result is called the Yerevan Pathway: faster cuts to harmful subsidies, more finance for developing countries, and aligning national spending with biodiversity goals."
+        },
+        {
+          "who": "joe",
+          "text": "Organisers say more than one point eight billion dollars was announced at the conference. The Nature Conservancy says resources remain far short of what is needed."
+        }
+      ]
+    },
+    {
+      "id": "tech",
+      "kind": "story",
+      "strap": "AI FIRMS BACK OPT-OUT STANDARD; APPLE INTELLIGENCE TO CHINA",
+      "headline": "Tech: scraping rules, Siri-ish things, and RAM",
+      "category": "BUSINESS",
+      "status": "claim",
+      "graphic": {
+        "kicker": "BUSINESS",
+        "title": "Headlines from The Verge",
+        "bullets": [
+          "AI firms back a web-scraping opt-out standard",
+          "Apple Intelligence heading to China with iOS 27.3",
+          "Altman: RAM better placed in data centers",
+          "Google's space AI server sends first reply"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Verge: scraping",
+          "url": "https://www.theverge.com/tech/1023763/openai-google-microsoft-ai-scraping-standard-opt-out"
+        },
+        {
+          "name": "The Verge: Apple",
+          "url": "https://www.theverge.com/tech/1023974/apple-intelligence-china-ios-27-3"
+        },
+        {
+          "name": "The Verge: Altman",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1023820/sam-altman-ram-shortage-cloud-servers"
+        },
+        {
+          "name": "The Verge: Suncatcher",
+          "url": "https://www.theverge.com/tech/1023528/google-project-suncatcher-ai-satellite-transmission"
+        },
+        {
+          "name": "The Verge: Rivian",
+          "url": "https://www.theverge.com/transportation/1023143/rivian-autonomy-point-to-point-robotaxi-q3-2026"
+        },
+        {
+          "name": "The Verge: Starbucks",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1023440/starbucks-ai-personalized-menu-drive-thru"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A few tech headlines, from The Verge. We have the headlines only, not the article text."
+        },
+        {
+          "who": "joe",
+          "text": "The Verge says OpenAI, Google, Microsoft and other A.I. firms are backing a new opt-out standard for web scraping. And Apple Intelligence is coming to China with iOS twenty-seven point three."
+        },
+        {
+          "who": "vex",
+          "text": "It also quotes Sam Altman saying RAM is better placed in data centers than on users' desks, amid talk of a RAM shortage."
+        },
+        {
+          "who": "joe",
+          "text": "So my desk doesn't get memory, but a data center does. Fair. I've seen what's on my desk."
+        },
+        {
+          "who": "vex",
+          "text": "Also: Google's Project Suncatcher, an A.I. server in orbit, sent its first response to Earth. Rivian's autonomy system faces its first real test. And Starbucks wants A.I. to personalize drive-through menus."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "TYPHOON IN-FA NEAR OGASAWARA; S.F. COASTAL FLOOD ADVISORY",
+      "headline": "Weather: a typhoon loop and a Bay Area tide",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "In-fa lingers; San Francisco high tide",
+        "bullets": [
+          "Typhoon In-fa: 950 hPa, winds 45 m/s",
+          "Forecast: loops back near Ogasawara about Nov. 5",
+          "S.F. Bay flood advisory until 6 p.m. PDT",
+          "High tide 3:59 p.m., up to 1.5 feet surge"
+        ]
+      },
+      "sources": [
+        {
+          "name": "tenki.jp (JMA-based)",
+          "url": "https://tenki.jp/bousai/typhoon/2631/"
+        },
+        {
+          "name": "NWS San Francisco",
+          "url": "https://marine.weather.gov/showsigwx.php?firewxzone=CAZ006&local_place1=San+Francisco+CA&product1=Coastal+Flood+Advisory&warncounty=CAC075&warnzone=CAZ006"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Typhoon In-fa is near the Ogasawara Islands, moving south-southwest at ten kilometers an hour. Central pressure is nine hundred fifty hectopascals, with winds of forty-five meters a second and gusts of sixty."
+        },
+        {
+          "who": "joe",
+          "text": "The forecast has it turning west, then north south of Japan, and returning near Ogasawara around November fifth."
+        },
+        {
+          "who": "vex",
+          "text": "In California, a Coastal Flood Advisory for the San Francisco Bay area runs until six P.M. Pacific today. High tide at three fifty-nine P.M. is forecast one foot above normal, with up to one and a half feet of surge."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "SUNDAY: EAGLES AT COMMANDERS; SAMSUNG TO KOREAN SERIES",
+      "headline": "Sports: Sunday night football, Dakar and Korea",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Eagles–Commanders tonight; Youth Olympics open",
+        "bullets": [
+          "Eagles–Commanders, 8:20 p.m. ET",
+          "Barkley has no injury status",
+          "Pacers host Nets, 5 p.m. ET; Haliburton out",
+          "Dakar: first Olympic event in Africa opens"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Eagles",
+          "url": "https://www.philadelphiaeagles.com/news/eagles-elevate-elijah-mitchell-mason-reiger-for-commanders-game"
+        },
+        {
+          "name": "NBA injury report",
+          "url": "https://ak-static.cms.nba.com/referee/injury/Injury-Report_2026-11-01_02_45AM.pdf"
+        },
+        {
+          "name": "AP, Youth Olympics",
+          "url": "https://apnews.com/article/youth-olympics-senegal-8ae064da05cf3f45c1d6f9f21b928c38"
+        },
+        {
+          "name": "KBS",
+          "url": "https://news.kbs.co.kr/news/pc/view/view.do?ncd=8700770"
+        },
+        {
+          "name": "ESPN Deportes",
+          "url": "https://espndeportes.espn.com/futbol/resultados/_/liga/eng.1"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Tonight, the Eagles visit the Commanders at eight twenty Eastern. Philadelphia elevated running back Elijah Mitchell and linebacker Mason Reiger. The team said Saquon Barkley has no injury status after limited practice."
+        },
+        {
+          "who": "joe",
+          "text": "Earlier, the Nets visit the Pacers at five. Tyrese Haliburton is out. Aaron Nesmith is probable and Obi Toppin is questionable."
+        },
+        {
+          "who": "vex",
+          "text": "In Dakar, the Youth Olympic Games opened Saturday, the first Olympic event in Africa. About two thousand seven hundred athletes aged fourteen to seventeen compete through November thirteenth. Russia sent thirteen athletes under its national flag, a first since the suspension after the twenty twenty-two invasion."
+        },
+        {
+          "who": "joe",
+          "text": "In Korea, Samsung beat KIA six to one in game five to win the playoff series three games to two. They face K.T. Wiz in the Korean Series, starting Tuesday."
+        },
+        {
+          "who": "vex",
+          "text": "Soccer: Chelsea two, Manchester United nothing. Manchester City nothing, Brighton one. Milan three, Inter one. Barcelona six, Alavés one. Bayern two, Dortmund two."
+        }
+      ]
+    },
+    {
+      "id": "also-today",
+      "kind": "story",
+      "strap": "ALSO TODAY: OPEC+, SERBIA, S. AFRICA, SYRIA",
+      "headline": "Also today",
+      "category": "QUICK HITS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "QUICK HITS",
+        "title": "Quick hits",
+        "bullets": [
+          "OPEC+ seven-country meeting today",
+          "Serbia repeat vote at 53 stations",
+          "South Africa special voting Nov. 2 to 3",
+          "Syria weighs Mecca Pact; Jordan border talks"
+        ]
+      },
+      "sources": [
+        {
+          "name": "OPEC",
+          "url": "https://www.opec.org/pr-detail/616-4-october-2026.html"
+        },
+        {
+          "name": "Electiomap",
+          "url": "https://electiomap.com/serbia/parliamentary/2026"
+        },
+        {
+          "name": "The Citizen",
+          "url": "https://www.citizen.co.za/witbank-news/news-headlines/2026/10/31/special-voting-opens-tomorrow-across-emalahleni/"
+        },
+        {
+          "name": "Asharq Al-Awsat",
+          "url": "https://english.aawsat.com/arab-world/5335925-syria-calls-border-security-jordan-shared-responsibility"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Quick hits. Seven OPEC-plus countries meet virtually today. The last release held November production at September levels. No decision had surfaced at capture."
+        },
+        {
+          "who": "joe",
+          "text": "Serbia is holding a repeat vote today at fifty-three polling stations that were annulled after October twenty-fifth. Polls run seven A.M. to eight P.M. local. The last preliminary figure was fifty-three percent for the Student List and thirty-nine percent for President Vučić's list."
+        },
+        {
+          "who": "vex",
+          "text": "South Africa's special voting runs November second and third, with the local elections on November fourth."
+        },
+        {
+          "who": "joe",
+          "text": "Syria's foreign minister says a high-level meeting with Jordan is expected next month on border security, and Syria is evaluating joining the Saudi-led Mecca Pact. Neither has happened."
+        },
+        {
+          "who": "vex",
+          "text": "Wall Street was closed for the weekend, and so were London, Paris and São Paulo. Friday's closes stand."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "More headlines as they come in"
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Until the next show",
+      "category": "SIGN-OFF",
+      "graphic": {
+        "kicker": "SIGN-OFF",
+        "title": "A new show every day by morning"
+      },
+      "lines": [
+        {
+          "who": "joe",
+          "text": "That's Heartbeat News. A new show every day by morning."
+        },
+        {
+          "who": "vex",
+          "text": "I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. Take care of each other."
+        }
+      ]
+    }
+  ]
+}
