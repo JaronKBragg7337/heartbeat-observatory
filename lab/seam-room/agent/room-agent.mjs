@@ -72,7 +72,13 @@ const SOLIDS = [
   [-4.15, 2.75, -1.85, 3.75], [-3.65, 1.34, -2.35, 2.06], [-6.03, 1.95, -5.57, 3.25], [-1.0, -3.8, -0.5, -3.2],
   [-5.9, -3.35, -5.3, -1.85], [-5.05, -2.75, -4.35, -2.05], [3.5, -3.675, 5.6, -2.825], [5.53, 1.72, 6, 3.08],
   [1.65, -2.99, 2.75, -2.81], [1.525, 2.45, 2.475, 3.35],
+  // the garage (page C, garage.js): car, workbench, tool chest, trash can, shelves, water heater
+  [5.0, 5.3, 7.0, 9.9], [2.15, 6.4, 2.85, 8.6], [2.15, 8.92, 2.74, 9.88], [3.02, 9.72, 3.58, 10.35], [7.97, 6.0, 8.45, 8.0], [7.76, 4.15, 8.45, 4.87],
 ];
+/* the floor (zones.json "walk"): room, garage, and B's doorway between them. The AI's own approach opens the door for everyone. */
+const WALK = ZDATA.walk || [{ id: "room", minX: -HX, maxX: HX, minZ: -HZ, maxZ: HZ }];
+const DOORWAYS = WALK.filter((w) => w.door).map((w) => ({ ...w, cx: (w.minX + w.maxX) / 2 }));
+const areaOf = (x, z) => { const w = WALK.find((q) => !q.door && x >= q.minX && x <= q.maxX && z >= q.minZ && z <= q.maxZ); return w ? w.id : null; };
 const PEER_COLORS = ["#4fa3ff", "#5fd38d", "#f6b45b", "#e36d7c", "#a67cff", "#47c7b8", "#f0d461", "#d987e8"];
 const MAX_TEXT = 280;
 
@@ -95,7 +101,28 @@ function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function clampToRoom(x, z) { return { x: clamp(x, -HX + R, HX - R), z: clamp(z, -HZ + R, HZ - R) }; }
+function clampToRoom(x, z) {   // nearest point on the floor (room.js clampWalk)
+  let best = null, bd = Infinity;
+  for (const w of WALK) {
+    const sz = w.shrink === "x" ? 0 : R;
+    const p = { x: clamp(x, w.minX + R, w.maxX - R), z: clamp(z, w.minZ + sz, w.maxZ - sz) }, d = (p.x - x) ** 2 + (p.z - z) ** 2;
+    if (d < bd) { bd = d; best = p; }
+  }
+  return best;
+}
+/* simple doorway routing: if the goal is in another area (room <-> garage), go to the door's near side, straight
+   through the middle of it, then on to the goal */
+function hop(from, goal) {
+  const a = areaOf(from.x, from.z), b = areaOf(goal.x, goal.z);
+  if (!a || !b || a === b) return goal;
+  const dw = DOORWAYS[0];
+  if (!dw) return goal;
+  const mid = (id) => { const w = WALK.find((q) => q.id === id && !q.door); return (w.minZ + w.maxZ) / 2; };
+  const nearSide = { x: dw.cx, z: mid(a) < (dw.minZ + dw.maxZ) / 2 ? dw.minZ + 0.15 : dw.maxZ - 0.15 };
+  const farSide = { x: dw.cx, z: nearSide.z < (dw.minZ + dw.maxZ) / 2 ? dw.maxZ - 0.15 : dw.minZ + 0.15 };
+  const lined = Math.abs(from.x - dw.cx) < 0.12 && from.z >= dw.minZ - 0.05 && from.z <= dw.maxZ + 0.05;
+  return lined ? farSide : nearSide;
+}
 function collide(x, z) {   // room.js collide(), same push-out rule
   let p = clampToRoom(x, z);
   for (const [a, b, c, d] of SOLIDS) {
@@ -375,7 +402,7 @@ async function join(args) {
   /** Walk to (x,z); resolves when there (or stuck). */
   function goTo(x, z, faceAfter) {
     if (me.arrive) me.arrive({ interrupted: true });
-    const g = clampToRoom(x, z);
+    const g = collide(x, z);
     me.follow = null; me.target = g; me.faceAfter = faceAfter || null;
     return new Promise((resolve) => { me.arrive = resolve; });
   }
@@ -395,9 +422,11 @@ async function join(args) {
       }
     }
     if (goal) {
-      const dx = goal.x - me.x, dz = goal.z - me.z, d = Math.hypot(dx, dz);
+      const aim = hop(me, goal), via = aim !== goal;   // through B's door when the goal is on the other side
+      const dx = aim.x - me.x, dz = aim.z - me.z, d = Math.hypot(dx, dz);
       const stepLen = WALK_SPEED * SEND_INTERVAL_MS / 1000;
-      if (d <= stepLen) {
+      if (via && d <= stepLen) { me.x = aim.x; me.z = aim.z; stuckTicks = 0; }
+      else if (d <= stepLen) {
         const p = collide(goal.x, goal.z); me.x = p.x; me.z = p.z;
         if (me.faceAfter) faceToward(me.faceAfter.x, me.faceAfter.z);
         me.faceAfter = null; stuckTicks = 0;
@@ -605,7 +634,8 @@ const HELP = `Seam Room character (only Jaron can talk to it)
   join --name "Claude" --page b     stay in the room (long-running; run it in the background)
   wait-chat [--timeout 600]         block until JARON says something new; print it (exit 2 on timeout)
   say "text"                        reply to Jaron (his device shows + speaks it; others see a talking dot)
-  walk-to <x> <z> | walk-to <name>  walk (x < 0 is page A, x >= 0 is page B; room is x -6..6, z -4..4)
+  walk-to <x> <z> | walk-to <name>  walk (room x -6..6, z -4..4: x < 0 is page A, x >= 0 page B; the garage,
+                                    page C, is x 2.15..8.45, z 4.15..10.35 through B's door at x 4.6, z 4)
   face <name>                       turn toward someone
   pick-up <assetId|nearest>         walk to the log/chair and pick it up
   carry-to <x> <z>                  carry it there (picks it up first if needed)

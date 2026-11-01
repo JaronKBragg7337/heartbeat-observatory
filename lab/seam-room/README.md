@@ -112,13 +112,38 @@ switching, the people counter and the AI at once. A doorway is just a small zone
    door is, and the room bounds (`W`, `D`, `clampToRoom`) widened to include it. The agent's `ROOM`/`SOLIDS`
    constants need the same change (today they are copies of room.js; one shared file would be the next clean-up).
 
+## Page C: the garage (2026-11-01, Jaron asked from inside the room)
+
+B's walnut door on the front wall (x 4.6, z 4) is a real door now, and behind it is a garage at `/lab/seam-room/c/`.
+
+- **One world, no portal.** The garage (`garage.js`, `buildGarage()`) is built in the same scene behind the wall. B's
+  front wall has a real 0.92 x 2.05 m opening. Door open: you see the garage from B and the room from the garage.
+- **The door** swings into the garage on a hinge in 0.6 s when anyone (people or the AI) is within 1.5 m, or when
+  tapped, and stays open while anyone is near. Every browser computes "near" from the shared positions; taps and
+  "I am at the door" go out as the world event `door` (`shell.send` / `shell.on`). A shut door blocks the doorway.
+- **Walking:** `zones.json` now has `walk` (the floor: room, garage, doorway). Zone B ends at z = 4; zone C is
+  x 2..8.6, z 4..10.5. Crossing the doorway flips the URL B <-> C; walls block everywhere else. Back/Forward puts you
+  just across the right door (`doors` in zones.json). The camera stops at walls and at a shut door.
+- **Inside** (6.3 x 6.2 x 2.8 m): poured concrete floor with oil stains, tyre tracks and saw-cut expansion joints;
+  painted block walls; drywall ceiling; two LED strip lights and a **light switch** by the door (tap it; synced as
+  `garage-light`); workbench with pegboard and tools; red tool chest; steel shelves with bins; water heater; trash can;
+  a "PAGE C" sign like A/B's; and a **car** made from extruded side profiles (body, glass greenhouse, roof, pillars,
+  lathed tyres, five-spoke rims, lights, mirrors, shut lines). No outside model was downloaded.
+- **The roll-up garage door** on the far wall (z = 10.35) is closed. It is the **future door to the outside** (a
+  town page next); zones.json `doors` has it as `c-outside`.
+- Few shadow casters: only the garage's ceiling, back and left walls cast (so the room's sun stays out); the shadow
+  frustum was widened to cover both. Counter reads "On A · On B · On C".
+- **The AI** (`agent/room-agent.mjs`) reads `walk` from zones.json, knows the garage furniture, and routes
+  room <-> garage through the doorway (near side, straight through, then the goal). A running character keeps its old
+  code until it is restarted.
+
 ## Not done yet (honest list)
 
 1. **Next open step: where identity and history live between pages, server-side.** Today one browser's localStorage plus
    whoever is online right now. If everyone leaves, a new visitor starts from their own copy (or `SR1-A-LOG-0001`). It
    needs a table (one row per asset ID: kind, born, visited, changes, rev), with the channel used only for live moves.
    Same lesson as Ashgrove's D6: decide this before building the 3-page road.
-2. **More than 2 zones** - `seam.js` handles N zones, but only 2 have been tested.
+2. **More than 3 zones** - three are tested (A, B, garage C). The doorway routing in the agent handles one door.
 3. **True separate-page loads with different code per zone** - both pages load the same `room.js`. A zone that needs its
    own heavy scene (a factory) would need either lazy-loading per zone or a real navigation, and the handoff then
    needs the server state from step 1.
