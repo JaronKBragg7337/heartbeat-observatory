@@ -1,27 +1,38 @@
 {
-  "about": "The Seam Room's zones. Each zone is a real page. A zone is a box on the floor (x, z in metres; a missing side is open-ended). Where two boxes touch is a seam; a doorway is just a small zone box set in a wall opening. seam.js reads this through Seam.fromData(). room.js and agent/room-agent.mjs both read it, so a new zone added here is known to the room, the URL switching and the AI character at once. `walk` is the floor you can stand on (rectangles; a rectangle with `door` is a doorway, passable only while that door is open, and it is shrunk by the walker's radius in x only).",
+  "about": "The Seam Room's zones. Each zone is a real page. A zone is a box on the floor (x, z in metres; a missing side is open-ended). Where two boxes touch is a seam; a doorway is just a small zone box set in a wall opening. seam.js reads this through Seam.fromData(). room.js and agent/room-agent.mjs both read it, so a new zone added here is known to the room, the URL switching and the AI character at once. `walk` is the floor you can stand on (rectangles; a rectangle with `door` is a doorway, passable only while that door is open, and it is shrunk by the walker's radius in x only; `links` names the two floors it joins, which the AI uses to route through doors).",
   "hysteresis": 0.3,
   "fallback": "a",
   "zones": [
     { "id": "a", "label": "A", "url": "/lab/seam-room/a/", "title": "Seam Room · Page A - Heartbeat Observatory",
-      "bounds": { "maxX": 0 }, "spawn": { "x": -3.6, "z": 1.2, "yaw": -1.5708 } },
+      "bounds": { "maxX": 0, "maxZ": 4 }, "spawn": { "x": -3.6, "z": 1.2, "yaw": -1.5708 } },
     { "id": "b", "label": "B", "url": "/lab/seam-room/b/", "title": "Seam Room · Page B - Heartbeat Observatory",
       "bounds": { "minX": 0, "maxZ": 4 }, "spawn": { "x": 3.6, "z": 1.2, "yaw": 1.5708 } },
     { "id": "c", "label": "C", "url": "/lab/seam-room/c/", "title": "Seam Room · Garage (Page C) - Heartbeat Observatory",
       "bounds": { "minX": 2, "maxX": 8.6, "minZ": 4, "maxZ": 10.5 }, "spawn": { "x": 3.9, "z": 6.6, "yaw": 3.1416 },
-      "note": "The garage behind B's walnut door. 6.3 m wide x 6.2 m deep x 2.8 m tall inside (x 2.15..8.45, z 4.15..10.35). Built by garage.js in the same scene as the room." }
+      "note": "The garage behind B's walnut door. 6.3 m wide x 6.2 m deep x 2.8 m tall inside (x 2.15..8.45, z 4.15..10.35). Built by garage.js in the same scene as the room." },
+    { "id": "d", "label": "D", "url": "/lab/seam-room/d/", "title": "Seam Room · Media Room (Page D) - Heartbeat Observatory",
+      "bounds": { "minX": -8.4, "maxX": -2, "minZ": 4, "maxZ": 9.7 }, "spawn": { "x": -4.3, "z": 6.1, "yaw": 3.1416 },
+      "note": "The media room behind A's oak door, the garage's mirror on the other side. 6.1 m wide x 5.4 m deep x 2.75 m tall inside (x -8.25..-2.15, z 4.15..9.55). Built by den.js in the same scene as the room. The computer on the desk plays today's Heartbeat News (Supabase bucket news-video, index.json)." }
   ],
   "doors": [
     { "id": "middle", "between": ["a", "b"], "kind": "open seam", "plane": { "x": 0, "minZ": -4, "maxZ": 4 },
       "note": "The whole middle line." },
     { "id": "b-c", "between": ["b", "c"], "kind": "door", "plane": { "z": 4, "minX": 4.14, "maxX": 5.06 },
       "note": "B's walnut panel door in the front wall. Swings into the garage when anyone is within 1.5 m or taps it; synced with the world event \"door\"." },
+    { "id": "a-d", "between": ["a", "d"], "kind": "door", "plane": { "z": 4, "minX": -5.06, "maxX": -4.14 },
+      "note": "A's oak panel door in the front wall. Works like B's: swings into the media room when anyone is within 1.5 m or taps it; synced with the world event \"door\" (id \"a-d\")." },
     { "id": "c-outside", "between": ["c", "outside"], "kind": "roll-up garage door (closed)", "plane": { "z": 10.35, "minX": 3.75, "maxX": 8.25 },
-      "note": "FUTURE door to the outside. The next page (a town) goes beyond z = 10.35. The roll-up door is drawn closed; the walk area stops at it." }
+      "note": "FUTURE door to the outside. The next page (a town) goes beyond z = 10.35. The roll-up door is drawn closed; the walk area stops at it." },
+    { "id": "d-side", "between": ["d", "future"], "kind": "panel door (closed, future)", "plane": { "x": -8.25, "minZ": 6.39, "maxZ": 7.31 },
+      "note": "FUTURE door: a new page goes beyond x = -8.25 (the media room's side wall, opposite the window). Drawn as a closed green panel door with a 'coming soon' plaque; a tap rattles it. No hole in the wall and no walk area yet: to make it a page, cut the opening in den.js (like A's door), add a zone + a walk rectangle with door \"d-side\", and a leaf in room.js DOORS." },
+    { "id": "d-back", "between": ["d", "future"], "kind": "panel door (closed, future)", "plane": { "z": 9.55, "minX": -3.41, "maxX": -2.49 },
+      "note": "FUTURE door: a new page goes beyond z = 9.55 (the media room's far wall, right of the desk). Same as d-side: closed, 'coming soon', blocked until a page is built behind it." }
   ],
   "walk": [
     { "id": "room", "minX": -6, "maxX": 6, "minZ": -4, "maxZ": 4, "h": 2.9 },
     { "id": "garage", "minX": 2.15, "maxX": 8.45, "minZ": 4.15, "maxZ": 10.35, "h": 2.8 },
-    { "id": "door-b-c", "door": "b-c", "minX": 4.14, "maxX": 5.06, "minZ": 3.1, "maxZ": 5.05, "h": 2.05, "shrink": "x" }
+    { "id": "door-b-c", "door": "b-c", "links": ["room", "garage"], "minX": 4.14, "maxX": 5.06, "minZ": 3.1, "maxZ": 5.05, "h": 2.05, "shrink": "x" },
+    { "id": "den", "minX": -8.25, "maxX": -2.15, "minZ": 4.15, "maxZ": 9.55, "h": 2.75 },
+    { "id": "door-a-d", "door": "a-d", "links": ["room", "den"], "minX": -5.06, "maxX": -4.14, "minZ": 3.1, "maxZ": 5.05, "h": 2.05, "shrink": "x" }
   ]
 }

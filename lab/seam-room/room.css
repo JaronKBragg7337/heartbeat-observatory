@@ -65,3 +65,5 @@ html,body{margin:0;height:100%;overflow:hidden;background:#2a2420;color:#f3ead8;
 #chatLog b{color:#e8c98a;font-weight:600;margin-right:4px}
 #chatLog i{font-style:normal;font-size:9.5px;font-weight:800;background:#e8c98a;color:#2a2014;border-radius:4px;padding:0 4px;vertical-align:1px}
 #chatLog .ai b{color:#cdb8ff}
+/* page D: only when the news video cannot play here - a small link in this panel, never over the screen */
+#newsLink{display:inline-block;margin:4px 0 0;color:#e8c98a;font:600 12px system-ui,sans-serif;pointer-events:auto}

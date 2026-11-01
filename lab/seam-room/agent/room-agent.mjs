@@ -74,10 +74,15 @@ const SOLIDS = [
   [1.65, -2.99, 2.75, -2.81], [1.525, 2.45, 2.475, 3.35],
   // the garage (page C, garage.js): car, workbench, tool chest, trash can, shelves, water heater
   [5.0, 5.3, 7.0, 9.9], [2.15, 6.4, 2.85, 8.6], [2.15, 8.92, 2.74, 9.88], [3.02, 9.72, 3.58, 10.35], [7.97, 6.0, 8.45, 8.0], [7.76, 4.15, 8.45, 4.87],
+  // the media room (page D, den.js): desk, office chair, armchair, side table, bookshelf, plant
+  [-5.42, 8.79, -3.78, 9.55], [-4.92, 8.05, -4.28, 8.69], [-7.95, 8.1, -6.75, 9.3], [-6.8, 8.95, -6.3, 9.45], [-8.25, 4.37, -7.89, 5.87], [-2.82, 4.35, -2.32, 4.85],
 ];
-/* the floor (zones.json "walk"): room, garage, and B's doorway between them. The AI's own approach opens the door for everyone. */
+/* the floor (zones.json "walk"): room, garage (behind B's door), media room (behind A's door) and the doorways between
+   them. The AI's own approach opens a door for everyone. `links` says which two floors a doorway joins. */
 const WALK = ZDATA.walk || [{ id: "room", minX: -HX, maxX: HX, minZ: -HZ, maxZ: HZ }];
-const DOORWAYS = WALK.filter((w) => w.door).map((w) => ({ ...w, cx: (w.minX + w.maxX) / 2 }));
+const touches = (d, w) => d.minX < w.maxX && d.maxX > w.minX && d.minZ < w.maxZ && d.maxZ > w.minZ;
+const DOORWAYS = WALK.filter((w) => w.door).map((w) => ({ ...w, cx: (w.minX + w.maxX) / 2,
+  links: w.links || WALK.filter((q) => !q.door && touches(w, q)).map((q) => q.id) }));
 const areaOf = (x, z) => { const w = WALK.find((q) => !q.door && x >= q.minX && x <= q.maxX && z >= q.minZ && z <= q.maxZ); return w ? w.id : null; };
 const PEER_COLORS = ["#4fa3ff", "#5fd38d", "#f6b45b", "#e36d7c", "#a67cff", "#47c7b8", "#f0d461", "#d987e8"];
 const MAX_TEXT = 280;
@@ -110,18 +115,45 @@ function clampToRoom(x, z) {   // nearest point on the floor (room.js clampWalk)
   }
   return best;
 }
-/* simple doorway routing: if the goal is in another area (room <-> garage), go to the door's near side, straight
-   through the middle of it, then on to the goal */
+/* simple doorway routing: if the goal is in another area (room <-> garage, room <-> media room), go to the door's near
+   side, straight through the middle of it, then on to the goal. Garage <-> media room goes through the room (two hops). */
 function hop(from, goal) {
   const a = areaOf(from.x, from.z), b = areaOf(goal.x, goal.z);
+  if (!a && b) {   // standing in a doorway (inside the wall): if it does not lead to the goal's floor, step out to the hub side
+    const dw = DOORWAYS.find((d) => from.x >= d.minX - 0.05 && from.x <= d.maxX + 0.05 && from.z >= d.minZ - 0.05 && from.z <= d.maxZ + 0.05);
+    if (!dw || dw.links.includes(b)) return goal;
+    const via = dw.links.find((l) => DOORWAYS.some((o) => o !== dw && o.links.includes(l) && o.links.includes(b)));
+    const w = via && WALK.find((q) => q.id === via && !q.door);
+    if (!w) return goal;
+    return { x: dw.cx, z: (w.minZ + w.maxZ) / 2 < (dw.minZ + dw.maxZ) / 2 ? dw.minZ + 0.15 : dw.maxZ - 0.15 };
+  }
   if (!a || !b || a === b) return goal;
-  const dw = DOORWAYS[0];
+  const dw = DOORWAYS.find((d) => d.links.includes(a) && d.links.includes(b)) || DOORWAYS.find((d) => d.links.includes(a));
   if (!dw) return goal;
   const mid = (id) => { const w = WALK.find((q) => q.id === id && !q.door); return (w.minZ + w.maxZ) / 2; };
   const nearSide = { x: dw.cx, z: mid(a) < (dw.minZ + dw.maxZ) / 2 ? dw.minZ + 0.15 : dw.maxZ - 0.15 };
   const farSide = { x: dw.cx, z: nearSide.z < (dw.minZ + dw.maxZ) / 2 ? dw.maxZ - 0.15 : dw.minZ + 0.15 };
   const lined = Math.abs(from.x - dw.cx) < 0.12 && from.z >= dw.minZ - 0.05 && from.z <= dw.maxZ + 0.05;
-  return lined ? farSide : nearSide;
+  if (lined) return farSide;
+  // in the room, furniture can sit between me and the door: if the straight line is blocked, use the clear lane
+  // across the middle of the room (z = HUB_Z), then walk up the door's own lane
+  if (a === "room" && !segClear(from, nearSide)) {
+    if (Math.abs(from.x - dw.cx) < 0.15) return nearSide;
+    const lane = { x: dw.cx, z: HUB_Z }, down = { x: from.x, z: HUB_Z };
+    if (Math.abs(from.z - HUB_Z) <= 0.15 || segClear(from, lane)) return lane;
+    if (segClear(from, down)) return down;
+    // boxed in (e.g. squeezed behind a chair): fall through to the straight line and let the push-out slide it
+  }
+  return nearSide;
+}
+const HUB_Z = 0.6;   // no furniture crosses the room along z = 0.6
+function segClear(p, q) {
+  const n = Math.max(1, Math.ceil(Math.hypot(q.x - p.x, q.z - p.z) / 0.1));
+  for (let i = 1; i <= n; i++) {
+    const x = p.x + (q.x - p.x) * i / n, z = p.z + (q.z - p.z) * i / n;
+    for (const [a, b, c, d] of SOLIDS) if (Math.hypot(x - clamp(x, a, c), z - clamp(z, b, d)) < R - 0.01) return false;
+  }
+  return true;
 }
 function collide(x, z) {   // room.js collide(), same push-out rule
   let p = clampToRoom(x, z);
@@ -422,7 +454,7 @@ async function join(args) {
       }
     }
     if (goal) {
-      const aim = hop(me, goal), via = aim !== goal;   // through B's door when the goal is on the other side
+      const aim = hop(me, goal), via = aim !== goal;   // through a door when the goal is on the other side
       const dx = aim.x - me.x, dz = aim.z - me.z, d = Math.hypot(dx, dz);
       const stepLen = WALK_SPEED * SEND_INTERVAL_MS / 1000;
       if (via && d <= stepLen) { me.x = aim.x; me.z = aim.z; stuckTicks = 0; }
@@ -635,7 +667,9 @@ const HELP = `Seam Room character (only Jaron can talk to it)
   wait-chat [--timeout 600]         block until JARON says something new; print it (exit 2 on timeout)
   say "text"                        reply to Jaron (his device shows + speaks it; others see a talking dot)
   walk-to <x> <z> | walk-to <name>  walk (room x -6..6, z -4..4: x < 0 is page A, x >= 0 page B; the garage,
-                                    page C, is x 2.15..8.45, z 4.15..10.35 through B's door at x 4.6, z 4)
+                                    page C, is x 2.15..8.45, z 4.15..10.35 through B's door at x 4.6, z 4; the media
+                                    room, page D, is x -8.25..-2.15, z 4.15..9.55 through A's door at x -4.6, z 4;
+                                    its news TV is on the far wall at x -4.6)
   face <name>                       turn toward someone
   pick-up <assetId|nearest>         walk to the log/chair and pick it up
   carry-to <x> <z>                  carry it there (picks it up first if needed)

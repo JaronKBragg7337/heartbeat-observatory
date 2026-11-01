@@ -34,9 +34,10 @@ first log. When the log becomes a chair, `kind` changes but the ID does not. "Re
 ## Files
 
 - `zones.json` - the zones and doors, as data. `agent/` - the AI character (see above).
+- `garage.js` - page C (the garage). `den.js` - page D (the media room) and the Heartbeat News player on its computer.
 - `seam.js` - the reusable piece. No three.js, no room, no network. Exposes `Seam.define({...})`.
-- `room.js` - this room: scene, player, peers, the object, the card, the log.
-- `room.css` - shared styles. `a/index.html`, `b/index.html` - the two real entry pages (identical apart from the letter).
+- `room.js` - this room: scene, player, peers, the object, the card, the log, the doors.
+- `room.css` - shared styles. `a/`, `b/`, `c/`, `d/` `index.html` - the real entry pages (identical apart from the letter and title).
 - `index.html` - sends `/lab/seam-room/` to `/a/`.
 - Body model: `/lab/bedroom/person.glb` (walk + idle clips), shared, not copied.
 
@@ -137,19 +138,59 @@ B's walnut door on the front wall (x 4.6, z 4) is a real door now, and behind it
   room <-> garage through the doorway (near side, straight through, then the goal). A running character keeps its old
   code until it is restarted.
 
+## Page D: the media room (2026-11-01, Jaron asked from inside the room)
+
+A's oak door on the front wall (x -4.6, z 4) is a real door now, exactly like B's, and behind it is a media room at
+`/lab/seam-room/d/`: the garage's mirror on the other side of the wall.
+
+- **One world, no portal.** `den.js` (`buildDen()`) builds it in the same scene. A's front wall has a real 0.92 x 2.05 m
+  opening; the door swings in on approach (1.5 m) or a tap, synced as the world event `door` with id `a-d`. room.js
+  now keeps both doors in `DOORS` (`b-c`, `a-d`), so a third door is one more entry there.
+- **Inside** (6.1 x 5.4 x 2.75 m, x -8.25..-2.15, z 4.15..9.55): warm limewash walls over walnut wainscot, oak boards,
+  a kilim rug, a walnut desk with a 36-inch monitor, keyboard, mouse, speakers, desk lamp, tower, an office chair, a
+  leather reading chair with a floor lamp and side table, a bookshelf (one mesh per shelf), a window with a roman
+  shade, a fig, a framed print, and the "PAGE D" sign. One warm ceiling light, no new shadow casters (only the ceiling,
+  back and left walls cast, to keep the room's sun out).
+- **Heartbeat News on the computer.** `createNewsTV()` reads `news-video/index.json` from Supabase Storage (the bucket
+  `AI-Shared/projects/news-show/pipeline/publish_video.py` publishes to), takes `latest`, shows its poster with a play
+  badge, and plays the mp4 as a three.js `VideoTexture` (`crossOrigin = "anonymous"`; Supabase sends
+  `Access-Control-Allow-Origin: *`). The same picture is on the desk monitor AND a 59-inch wall TV above the desk (one
+  material, one video), because in this third-person view your own avatar stands in front of the monitor.
+  - Entering page D starts it **muted + playsinline** (what iPhone allows without a tap). A tap on either screen, or
+    the action button by the desk ("Watch" / "Sound"), plays it; the next tap turns the sound on, then off.
+  - The sound fades with distance from the desk (a WebAudio gain, because iPhone ignores `video.volume`) and the
+    video **pauses when you leave page D**; coming back resumes it.
+  - The label under the screens says "Today's news, Nov 1, 2026" (or "Latest news, <date>" if today's is not out yet)
+    and what a tap will do. If the video cannot play, the screen keeps the poster with "Open the news", a tap opens
+    `/news/`, and the seam panel gets an "Open the news" link (never over the screen).
+- **Two future doors**, closed, green, each with a "COMING SOON" plaque: `d-side` (x = -8.25 wall) and `d-back` (far wall,
+  right of the desk). They are in zones.json `doors` with notes. A tap rattles one ("coming soon"); the wall behind is
+  solid and there is no walk area, so they lead nowhere yet. To make one a page: cut the opening in den.js like A's
+  door, add the zone + a walk rectangle with `door`/`links`, and a leaf in room.js `DOORS`.
+- **The AI** routes through any door: zones.json walk doorways name the two floors they join (`links`); den <-> garage
+  goes through the room. In the room it walks straight when the line is clear, else down to the clear lane at z = 0.6
+  and up the door's lane (A's sofa sat in the old straight line). Simulated: B -> den TV, den <-> garage, A -> garage,
+  starting inside a doorway, starting behind B's armchair - all arrive.
+
 ## Not done yet (honest list)
 
 1. **Next open step: where identity and history live between pages, server-side.** Today one browser's localStorage plus
    whoever is online right now. If everyone leaves, a new visitor starts from their own copy (or `SR1-A-LOG-0001`). It
    needs a table (one row per asset ID: kind, born, visited, changes, rev), with the channel used only for live moves.
    Same lesson as Ashgrove's D6: decide this before building the 3-page road.
-2. **More than 3 zones** - three are tested (A, B, garage C). The doorway routing in the agent handles one door.
+2. **More than 4 zones** - four are tested (A, B, garage C, media room D). The AI's routing is door-to-door through the room; a page behind a page (e.g. behind `d-back`) needs the routing to chain more hops.
 3. **True separate-page loads with different code per zone** - both pages load the same `room.js`. A zone that needs its
    own heavy scene (a factory) would need either lazy-loading per zone or a real navigation, and the handoff then
    needs the server state from step 1.
 4. No grid or debug-bubble layer yet (3D-STANDARDS asks for one in Settings). The card shows ID + coordinates for now.
 5. The AI character walks in straight lines with push-out collision (no path finding); a long trip around furniture can
    stop with "blocked". Chat history is only Jaron's table; nobody else's words exist anywhere.
+7. **The news video on a real iPhone is not verified yet.** Chrome (375 px): plays muted on entering D, taps toggle
+   sound, distance fade, pauses on leaving. Playwright's Windows WebKit plays the Supabase mp4 but refuses to draw it
+   in WebGL (cross-origin taint, even though Supabase sends `Access-Control-Allow-Origin: *` on 200 and 206), and that
+   build cannot play blob or local test videos either, so it says nothing certain about iOS. room.js checks this once
+   (draw a frame to a 2D canvas) and falls back to the poster + "Open the news" instead of erroring every frame. If
+   the iPhone shows the fallback, the fix is serving the mp4 from our own origin (a same-site path in front of the bucket).
 6. The shell's movement-state lane does not carry the object; peers draw the object in the holder's hands from the
    holder's broadcast position, so it lags by the same ~200 ms as the person.
 
