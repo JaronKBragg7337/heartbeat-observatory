@@ -2214,7 +2214,7 @@ const AP_TEXT = {
 let diyCache = { t: -1, h: null };
 // the live Do-it-yourself hint for the new moments (Moon trips, docking); null = use the old hints
 function diyLive(f, burning) {
-  if (clock - diyCache.t < 0.2 && diyCache.f === f) return diyCache.h;
+  if (clock - diyCache.t < (f.engineOn ? 0.1 : 0.2) && diyCache.f === f) return diyCache.h;
   let h = null;
   const wantsMoon = !f.payloadKind && (goalIs(...MOON_GOALS) || (save.reached.moonhome && f.legs));
   if (f.inMoon && (f.onMoon || f.moonLanded)) h = diyLeaveHint(f);
@@ -2224,13 +2224,15 @@ function diyLive(f, burning) {
     else if (f.legs) h = diyLandHint(f);
   } else if (f.moonVisited && !f.capsuleOnly && f.alt > 400000) h = diyHomeHint(f);
   else if (wantsMoon && !f.moonVisited && f.wasOrbit) {
-    const o = orbitInfo(f);
-    if (diyAimTime(f) && !f.engineOn) { const ah = diyAimHint(f, longPath(f)); if (ah.key === 'aimLow' || ah.key === 'aimHit') h = ah; }
-    else if (inOrbit(f) || f.engineOn) {
-      const fwd = leanFor(f, progradeH(f));
-      if (f.engineOn && (o.escape || o.apo + R > MOON_A - MOON_SOI * 1.6)) { const p = longPath(f); h = p.soiIn ? { lean: fwd, burn: false, key: 'moonStop' } : { lean: fwd, burn: true, key: 'moonBurn' }; }
-      else if (o.apo < 2000000) { const w = moonWindow(f); h = { lean: fwd, burn: Math.abs(w.err) < 0.06 ? true : null, key: Math.abs(w.err) < 0.06 ? 'moonGo' : 'moonWait', w }; }
-    }
+    const o = orbitInfo(f), fwd = leanFor(f, progradeH(f));
+    if (diyAimTime(f)) h = diyAimHint(f, longPath(f));                 // far out: aim the pass low over the Moon
+    else if (f.engineOn) {                                               // the big burn: keep going until the path reaches the Moon
+      if (o.escape || o.apo + R > MOON_A - MOON_SOI * 1.6) { const p = longPath(f); h = p.soiIn ? { lean: fwd, burn: false, key: 'moonStop' } : { lean: fwd, burn: true, key: 'moonBurn' }; }
+      else h = { lean: fwd, burn: true, key: 'moonBurn' };
+    } else if (inOrbit(f) && o.apo < 2000000) {
+      const w = moonWindow(f), go = Math.abs(w.err) < 0.06;
+      h = { lean: fwd, burn: go ? true : null, key: go ? 'moonGo' : 'moonWait', w };
+    } else h = { lean: null, burn: null, key: 'moonCoast' };
   } else if (f.payloadKind === 'module' && save.station && f.wasOrbit) {
     const r = relToStation(f, save.station.kep);
     if (r.d < 300000) h = diyDockHint(f, save.station.kep);
@@ -2248,7 +2250,7 @@ const DIY_TEXT = {
   moonWait: () => 'Wait until the Moon reaches the ghost (map)', moonGo: (h) => h.lean > 0 ? 'Lean flat → and tap Burn now!' : '← Lean flat and tap Burn now!',
   moonBurn: () => 'Keep burning until the path reaches the Moon', moonStop: () => 'Stop engine! Your path reaches the Moon',
   dockClose: (h) => h.burn ? 'Burn toward the station' : 'Lean toward the station', dockMatch: (h) => h.burn ? 'Burn to match its speed' : 'Lean to match its speed', dockReady: () => 'Close enough: tap Dock!',
-  aimOk: () => '', aimStuck: () => '', dockFar: () => '',
+  aimOk: () => '', aimStuck: () => '', dockFar: () => '', moonCoast: () => '',
 };
 function updateLeanHint(f, burning) {
   let show = false, target = 0, text = '';
@@ -2263,9 +2265,11 @@ function updateLeanHint(f, burning) {
     if (dl.lean !== null && dl.lean !== undefined) { show = true; target = dl.lean; }
     const fn = DIY_TEXT[dl.key]; text = fn ? fn(dl) : '';
   } else if (f.diy) {
+    const moonTrip = f.moonVisited || f.inMoon || (!f.payloadKind && (goalIs(...MOON_GOALS) || (save.reached.moonhome && f.legs)));
     if (!f.outcome && f.lifted && !f.capsuleOnly && !f.chuteOn && fuelLeft(f) > 0) {
       const back = Math.sign(f.x * f.vy - f.y * f.vx) || 1;     // the slider side that points the rocket backward
-      if (f.wasOrbit) {
+      if (f.wasOrbit && (moonTrip || f.payloadKind)) { /* the new hints (or none) cover these trips */ }
+      else if (f.wasOrbit) {
         if (inOrbit(f) || burning) { show = true; target = back; if (Math.abs(lean - back) > 0.25) text = back < 0 ? '← Point backward' : 'Point backward →'; }
       } else if (!f.engineOn && vRadial(f) > 0 && f.alt > 30000) {
         show = true; target = side; if (Math.abs(lean) < 0.75) text = side > 0 ? 'Lean flat →' : '← Lean flat';
@@ -2455,6 +2459,7 @@ function guideWatchV3(f, burning) {
     say(f, 'moon5', 'Why slower and slower? Climbing away from your planet trades speed for height, like a ball thrown up.', 'why');
     if (diy && diyAimTime(f) && !f.said.has('daim0')) { const ah = diyAimHint(f, longPath(f)); if (ah.key === 'aimLow' || ah.key === 'aimHit') say(f, 'daim0', 'Aim closer: lean the way the arrow shows and burn a little. The map shows your closest pass.', 'tip', { must: true }); }
   }
+  if (diy && f.engineOn && f.throttle < 1) say(f, 'gentle0', 'Far out in space the engine runs gently, so small taps can aim just right.', 'tip');
   // in the Moon's pull
   if (f.inMoon && !f.onMoon && !f.moonLanded) {
     if (!f.legs && !f.payloadKind) say(f, 'nolegs1', 'No landing legs, so this is a fly-by. Watch the Moon go past!', 'tip');

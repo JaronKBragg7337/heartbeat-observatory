@@ -115,7 +115,7 @@ function diyMoonTrip(label, { land }) {
     endFlight(f); return f;
   }
   H.run(f, { until: g => g.onMoon || g.outcome, tMax: 2e5, ctl: g => diyFollow(g, M.diyLandHint(g)) });
-  check(`${label}: landed on the Moon by myself`, !!f.onMoon && !f.outcome, `touchdown ${f.landSpeed?.toFixed(2)} m/s, ${f.outcome || ''} fuel ${fuelLeft(f).toFixed(0)} kg`);
+  check(`${label}: landed on the Moon by myself`, !!f.onMoon && !f.outcome, `touchdown ${(f.landSpeed ?? f.hit)?.toFixed(2)} m/s${f.outcome ? `, ${f.outcome}, tilt ${((f.tiltAt || 0) * 57.3).toFixed(0)} deg` : ''}, fuel ${fuelLeft(f).toFixed(0)} kg`);
   if (!f.onMoon) { endFlight(f); return f; }
   world.flags.push({ a: f.onMoon.a, name: 'Test DIY' });
   // fly home: up, lean the arrow's way, stop when the path comes home; fix the low point at the top if needed

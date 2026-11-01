@@ -637,7 +637,8 @@ export function diyLandHint(f) {
   const stop = vz < 0 ? vz * vz / (2 * Math.max(0.3, aM - g)) : 0;
   const lean = vh > 2 ? -sideOf(f, hx, hy) * Math.min(alt < 60 ? 0.12 : 0.35, vh / 25) : 0;   // stand up straight for touchdown
   if (f.engineOn) return { lean, burn: vz < -1.5 && !(alt > 50 && stop < alt * 0.55), key: 'landBurst', vh, vz, alt };
-  return { lean, burn: vz < -2 && stop > alt * 0.8 - 6, key: 'landFall', vh, vz, alt };
+  const lag = Math.abs(Math.min(0, vz)) * 0.9;     // the engine takes a moment to light: say "burn" a little early
+  return { lean, burn: vz < -2 && stop + lag > alt * 0.8 - 4, key: 'landFall', vh, vz, alt };
 }
 // leaving the Moon by yourself: up, then lean the way the arrow shows until the path comes home
 export function diyLeaveHint(f, cache) {
@@ -724,9 +725,13 @@ export function watchTick(f, hooks) {
   }
 }
 
+// Do it yourself, far out in space: the engine runs gently (like real rockets throttling down for fine
+// corrections), so small taps can aim a pass over the Moon or fix the way home.
+export function diyGentle(f) { return !!f.diy && !f.ap && ((!f.inMoon && f.alt > 2500000) || (f.inMoon && f.balt > 250000)); }
 // step a flight forward by dt seconds of game time
 export function advance(f, dt, lean, hooks = {}) {
   f.simAcc = (f.simAcc || 0) + dt;
+  if (f.diy && !f.ap) f.throttle = diyGentle(f) ? 0.15 : 1;
   let guard = 0;
   while (!f.outcome && guard++ < 40000) {
     const lim = coastLimit(f);
