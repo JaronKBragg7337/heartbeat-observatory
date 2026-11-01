@@ -772,7 +772,9 @@ function updateEye(dt) {
       else setStatus('The Eye is searching...', '');
     }
   }
-  // place light + cone
+  placeEye(dt);
+}
+function placeEye(dt) { // light + cone + look + blink (shared by the game and the title flight)
   const ep = eye.grp.position; tmpV.copy(eye.target).sub(ep); const len = tmpV.length(); tmpV.normalize();
   eye.light.target.position.copy(eye.target); eye.light.angle = Math.atan(POOL_R * 1.1 / len);
   eye.cone.quaternion.setFromUnitVectors(DOWN, tmpV); eye.cone.scale.set(POOL_R, len, POOL_R);
@@ -786,6 +788,42 @@ function updateEye(dt) {
   eye.blink = Math.max(0, eye.blink - dt); if (Math.random() < dt * 0.05) eye.blink = 0.25;
   eye.grp.scale.set(1, eye.blink > 0 ? 0.08 : 1, 1);
   eye.glowSprite.position.copy(ep);
+}
+
+// ---------------------------------------------------------------- title flight (11/1, Jaron's idea)
+// While the intro card shows, a slow camera drifts over the foggy maze: starts high, sinks to just above the hedge tops,
+// and the Eye sweeps its light across the hedges ahead. Nothing here can spot or hunt: updateEye/tick never run.
+const flight = { t: 0, x: W / 2, y: 30, z: W / 2, yaw: 0, pitch: -0.5, way: 0 };
+function flightPos(t, out) {
+  const a = 0.6 + t * 0.018; const r = W * 0.3 + Math.sin(t * 0.031) * W * 0.06;
+  out.x = W / 2 + Math.cos(a) * r; out.z = W / 2 + Math.sin(a) * r;
+  out.y = H + 3.2 + 2.6 * (1 - Math.cos(t * 0.09)) + 24 * Math.exp(-t / 9); // ~32 m at the start, settles 8.6-13.8 m
+  return out;
+}
+const fpA = {}, fpB = {};
+const TITLE_FOG = new THREE.Color().setRGB(0.08, 0.10, 0.14); // = the sky dome's horizon colour, so no seam from up high
+function titleTick(dt, now) {
+  flight.t += dt; const t = flight.t;
+  flightPos(t, fpA); flightPos(t + 3, fpB);
+  flight.x = fpA.x; flight.y = fpA.y; flight.z = fpA.z;
+  const dx = fpB.x - fpA.x, dz = fpB.z - fpA.z;
+  flight.yaw = Math.atan2(-dx, -dz) + Math.sin(t * 0.07) * 0.25;
+  flight.pitch = -0.3 - 0.42 * Math.exp(-t / 9) + Math.sin(t * 0.11) * 0.04;
+  // the Eye: sweep between points on the ground ahead of the camera
+  const fx = -Math.sin(flight.yaw), fz = -Math.cos(flight.yaw);
+  tmpV.copy(eye.way).sub(eye.target); tmpV.y = 0; const d = tmpV.length();
+  flight.way -= dt;
+  if (d < 1.5 || flight.way <= 0) {
+    flight.way = 5 + Math.random() * 3; const ahead = 22 + Math.random() * 22, side = (Math.random() - 0.5) * 50;
+    eye.way.set(clamp(flight.x + fx * ahead - fz * side, 6, W - 6), 0, clamp(flight.z + fz * ahead + fx * side, 6, W - 6));
+  } else eye.target.addScaledVector(tmpV, Math.min(1, 9 * dt / d));
+  eye.state = 'scan'; placeEye(dt);
+  // lanterns: the three nearest the camera carry real light; no checkpoints are touched
+  plT -= dt;
+  if (plT <= 0) { plT = 0.35; const s = lanterns.map((l) => [Math.hypot(l.x - flight.x, l.z - flight.z), l]).sort((a, b) => a[0] - b[0]); for (let i = 0; i < pls.length; i++) { const e = s[i]; pls[i].userData.l = e && e[0] < 45 ? e[1] : null; } }
+  for (const l of pls) { const ln = l.userData.l; if (!ln) { l.intensity = 0; continue; } l.position.set(ln.x, 2.45, ln.z); l.intensity = 7 * (0.85 + Math.sin(now * 0.011 + ln.seed) * 0.08); }
+  for (const ln of lanterns) ln.glow.material.opacity = 0.6 * (0.8 + Math.sin(now * 0.011 + ln.seed) * 0.1);
+  if (exitGate) exitGate.portal.material.opacity = 0.75 + Math.sin(now * 0.004) * 0.2;
 }
 
 // ---------------------------------------------------------------- traps update
@@ -858,14 +896,21 @@ let last = performance.now(), fpsAcc = 0, fpsN = 0, stepAcc = 0, rustleT = 0, be
 function frame(now) {
   requestAnimationFrame(frame);
   let dt = (now - last) / 1000; last = now; if (dt > 0.1) dt = 0.1;
-  if (game.started && !game.over) tick(dt, now);
-  // fog: thick, thicker in the loop corridor and in darkness events
-  const target = game.dark > 0 ? game.darkFog : game.inLoop ? 12 : FOG_FAR;
-  scene.fog.far += (target - scene.fog.far) * Math.min(1, dt * (game.dark > 0 ? 3 : 0.8));
-  scene.fog.near = Math.min(3, scene.fog.far * 0.2);
+  const inTitle = !game.started;
+  if (inTitle) titleTick(dt, now);
+  else if (!game.over) tick(dt, now);
+  // fog: thick, thicker in the loop corridor and in darkness events; the title flight sees further from up high
+  if (inTitle) { scene.fog.far = 46 + (flight.y - H) * 1.6; scene.fog.near = 6; scene.fog.color.copy(TITLE_FOG); }
+  else {
+    const target = game.dark > 0 ? game.darkFog : game.inLoop ? 12 : FOG_FAR;
+    scene.fog.far += (target - scene.fog.far) * Math.min(1, dt * (game.dark > 0 ? 3 : 0.8));
+    scene.fog.near = Math.min(3, scene.fog.far * 0.2);
+  }
+  const vx = inTitle ? flight.x : player.x, vz = inTitle ? flight.z : player.z;
   // cull hedge chunks hidden by fog
-  chunkT -= dt; if (chunkT <= 0) { chunkT = 0.2; const lim = scene.fog.far + 40; for (const c of chunks) { const v = Math.hypot(c.x - player.x, c.z - player.z) < lim; c.mesh.visible = v; if (c.inst) c.inst.visible = v; } }
-  camera.position.set(player.x, EYE_LEVEL + Math.sin(player.bob) * 0.045, player.z); camera.rotation.set(player.pitch, player.yaw, 0);
+  chunkT -= dt; if (chunkT <= 0) { chunkT = 0.2; const lim = scene.fog.far + (inTitle ? 25 : 40); for (const c of chunks) { const v = Math.hypot(c.x - vx, c.z - vz) < lim; c.mesh.visible = v; if (c.inst) c.inst.visible = v; } }
+  if (inTitle) { camera.position.set(flight.x, flight.y, flight.z); camera.rotation.set(flight.pitch, flight.yaw, 0); }
+  else { camera.position.set(player.x, EYE_LEVEL + Math.sin(player.bob) * 0.045, player.z); camera.rotation.set(player.pitch, player.yaw, 0); }
   const sky = scene.userData.sky; sky.position.copy(camera.position); scene.userData.stars.position.copy(camera.position);
   scene.userData.moon.position.set(camera.position.x - 160, camera.position.y + 260, camera.position.z - 120);
   renderer.render(scene, camera);
@@ -915,8 +960,20 @@ function win() {
 }
 
 // ---------------------------------------------------------------- start
-function startGame(cont) {
-  Snd.init();
+let starting = false;
+function startGame(cont) { // fade to black, hand the camera from the title flight to the player, fade back in
+  if (starting || game.started) return; starting = true;
+  Snd.init(); // inside the tap, so iPhone unlocks audio
+  const f = $('fade'); f.classList.add('on'); $('intro').classList.add('leaving');
+  setTimeout(() => {
+    beginPlay(cont);
+    scene.fog.far = FOG_FAR; scene.fog.near = 3; scene.fog.color.copy(FOG_COL); chunkT = 0; plT = 0;
+    // park the Eye's light away from the player so the first seconds are calm
+    eye.target.set(clamp(player.x + 45, 6, W - 6), 0, clamp(player.z + 45, 6, W - 6)); eye.way.copy(eye.target);
+    requestAnimationFrame(() => requestAnimationFrame(() => f.classList.remove('on')));
+  }, 380);
+}
+function beginPlay(cont) {
   $('intro').hidden = true; $('hud').hidden = false; $('status').hidden = false;
   if (isTouch) { $('hint').hidden = false; setTimeout(() => { $('hint').style.opacity = 0; }, 6000); }
   game.started = true; game.over = false;

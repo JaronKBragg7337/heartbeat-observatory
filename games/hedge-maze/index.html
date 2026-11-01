@@ -42,7 +42,7 @@
       <div class="card" role="dialog" aria-modal="true" aria-labelledby="introTitle">
         <h1 id="introTitle" class="title">The Hedge</h1>
         <p class="lede">Find the way out.<br>Don't let the Eye see you.</p>
-        <p class="small">If its light finds you, the shadows come. Hide under the leafy arches, break their line of sight, and they lose you. Lanterns you pass are checkpoints.</p>
+        <p class="small">If its light finds you, the shadows come. Hide under the leafy arches or in a hedge's shadow, break their line of sight, and they lose you. Lanterns you pass are checkpoints.</p>
         <button class="btn-big" id="btnStart" disabled>Loading the maze&hellip;</button>
         <button class="btn-ghost" id="btnNew" hidden>Start over</button>
         <p class="tiny">Phone: left thumb walks, right side looks. Computer: WASD + mouse. Sound on for the full scare.</p>
@@ -60,6 +60,7 @@
     </div>
   </div>
 
+  <div class="fade" id="fade" aria-hidden="true"></div>
   <div class="caught" id="caught" aria-live="assertive"><p id="caughtText"></p></div>
   <div class="scare" id="scare" aria-hidden="true">
     <svg viewBox="0 0 200 200">
