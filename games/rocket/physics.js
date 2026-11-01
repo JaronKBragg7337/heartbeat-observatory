@@ -20,15 +20,68 @@ export const TANKS = {
   medium:  { name: 'Medium', fuel: 3000, dry: 330, h: 5.6 },
   tall:    { name: 'Tall',   fuel: 7200, dry: 750, h: 9.6 },
   booster: { name: 'Booster', fuel: 7600, dry: 760, h: 9.6 },
+  heavy:   { name: 'Heavy', fuel: 31000, dry: 2600, h: 17 },
 };
 export const ENGINES = {
   small:   { name: 'Small', thrust: 56000,  ispSL: 230, ispVac: 270, m: 450,  bellR: 0.72, bellH: 1.35 },
   big:     { name: 'Big',   thrust: 150000, ispSL: 265, ispVac: 310, m: 1300, bellR: 1.12, bellH: 2.15 },
   // the booster under a 2-stage rocket: three bells side by side
   booster: { name: 'Booster', thrust: 300000, ispSL: 262, ispVac: 292, m: 1900, bellR: 0.6, bellH: 1.5, cluster: 3 },
+  // the giant third stage at the very bottom: five bells
+  heavy:   { name: 'Heavy', thrust: 900000, ispSL: 268, ispVac: 300, m: 3800, bellR: 0.55, bellH: 1.6, cluster: 5 },
 };
 export const FINS_M = 120, FINS_CDA = 0.15;
 export const SHIELD_M = 150;
+
+export const LEGS_M = 140;
+// what can ride on top instead of the capsule (inside a pointed fairing)
+export const PAYLOADS = {
+  weather:   { name: 'Weather sat', m: 650 },
+  relay:     { name: 'Relay sat',   m: 560 },
+  telescope: { name: 'Telescope',   m: 900 },
+  module:    { name: 'Station part', m: 1400 },
+};
+export const FAIRING_CDA = 0.95;
+
+// ---- the Moon, Kerbal-style scale with real rules: radius 200 km, surface gravity 1.63 (a sixth of the
+// planet's), 12,000 km from the planet's centre, going around once every ~38.6 hours, clockwise (the same way a
+// rocket that leans right goes around). It always shows the planet the same face (tidally locked).
+// Patched conics: inside the Moon's sphere of influence only the Moon's pull bends the path (relative to the
+// Moon); outside it only the planet's does.
+export const MOON_R = 200000, MOON_G = 1.63, MOON_GM = MOON_G * MOON_R * MOON_R, MOON_A = 12000000;
+export const MOON_N = Math.sqrt(GM / (MOON_A * MOON_A * MOON_A));
+export const MOON_DIR = -1;
+export const MOON_SOI = MOON_A * Math.pow(MOON_GM / GM, 0.4);
+export const MOON_TH0 = 2.6;
+export const MOON_SPIN = MOON_DIR * MOON_N;
+export const MOON_SAFE = 7, MOON_TIP = 14, MOON_TILT = 30 * Math.PI / 180;
+export function moonAngle(T) { return MOON_TH0 + MOON_DIR * MOON_N * T; }
+export function moonPos(T) { const a = moonAngle(T); return [MOON_A * Math.cos(a), MOON_A * Math.sin(a)]; }
+export function moonVel(T) { const a = moonAngle(T), w = MOON_DIR * MOON_N * MOON_A; return [-w * Math.sin(a), w * Math.cos(a)]; }
+export function inMoonSOI(x, y, T) { const m = moonPos(T); return Math.hypot(x - m[0], y - m[1]) < MOON_SOI; }
+// acceleration from gravity at (x, y) at world time T
+export function gravAt(x, y, T, inMoon) {
+  if (!inMoon) { const r2 = x * x + y * y, r = Math.sqrt(r2), k = -GM / (r2 * r); return [k * x, k * y]; }
+  const a = moonAngle(T), mx = MOON_A * Math.cos(a), my = MOON_A * Math.sin(a);
+  const dx = x - mx, dy = y - my, d2 = dx * dx + dy * dy, d = Math.sqrt(d2), k = -MOON_GM / (d2 * d), n2 = MOON_N * MOON_N;
+  return [k * dx - n2 * mx, k * dy - n2 * my];   // + the Moon's own fall around the planet, so relative motion is a clean conic
+}
+// position and velocity relative to the body whose pull you are in
+export function bodyRel(f) {
+  const T = f.T0 + f.t;
+  if (!f.inMoon) return { rx: f.x, ry: f.y, vx: f.vx, vy: f.vy, gm: GM, rad: R, cx: 0, cy: 0, cvx: 0, cvy: 0, moon: false };
+  const m = moonPos(T), v = moonVel(T);
+  return { rx: f.x - m[0], ry: f.y - m[1], vx: f.vx - v[0], vy: f.vy - v[1], gm: MOON_GM, rad: MOON_R, cx: m[0], cy: m[1], cvx: v[0], cvy: v[1], moon: true };
+}
+export function orbitOf(rx, ry, vx, vy, gm, rad) {
+  const r = Math.hypot(rx, ry), v2 = vx * vx + vy * vy;
+  const E = 0.5 * v2 - gm / r, hm = rx * vy - ry * vx;
+  const e = Math.sqrt(Math.max(0, 1 + 2 * E * hm * hm / (gm * gm)));
+  if (E >= 0) { const p = hm * hm / gm; return { escape: true, peri: p / (1 + e) - rad, apo: Infinity, e, h: hm }; }
+  const a = -gm / (2 * E);
+  return { escape: false, peri: a * (1 - e) - rad, apo: a * (1 + e) - rad, a, e, h: hm };
+}
+export function bodyOrbit(f) { const b = bodyRel(f); return orbitOf(b.rx, b.ry, b.vx, b.vy, b.gm, b.rad); }
 
 // reentry heating, only while coming down: grows with speed above HEAT_V once the air is thick enough to
 // matter. A fall from a plain trip to space is too slow to burn; coming home from going around is not.
@@ -36,16 +89,22 @@ export const HEAT_V = 1300, HEAT_SAFE = 0.3, HEAT_CAP = 6.0;
 
 export function wrapA(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; }
 
-// cfg: { nose, tank, engine, fins:bool, shield:bool, stages:1|2 }
+// cfg: { nose, tank, engine, fins:bool, shield:bool, stages:1|2|3, legs:bool, payload:null|kind, T0:world time }
 export function newFlight(cfg) {
-  const N = NOSES[cfg.nose];
+  const P = cfg.payload ? PAYLOADS[cfg.payload] : null;
+  const N = P ? { m: P.m, cda: FAIRING_CDA } : NOSES[cfg.nose];
   const stack = [];
-  if (cfg.stages === 2) stack.push(makeStage('booster', 'booster', true));
+  if (cfg.stages === 3) stack.push(makeStage('heavy', 'heavy', true));
+  if (cfg.stages >= 2) stack.push(makeStage('booster', 'booster', true));
   stack.push(makeStage(cfg.tank, cfg.engine, false));
   if (cfg.fins) stack[0].dry += FINS_M;
+  if (cfg.legs) stack[stack.length - 1].dry += LEGS_M;
   return {
     x: 0, y: R + PAD_H, vx: 0, vy: 0, heading: 0,
-    stages: stack, si: 0, payload: N.m + (cfg.shield ? SHIELD_M : 0),
+    stages: stack, si: 0, payload: N.m + (cfg.shield && !P ? SHIELD_M : 0),
+    payloadKind: P ? cfg.payload : null, payloadM: P ? P.m : 0, legs: !!cfg.legs,
+    T0: cfg.T0 || 0, inMoon: false, onMoon: null, moonVisited: false, moonLanded: false, balt: PAD_H,
+    throttle: 1, steer: null, ap: null,
     noseCda: N.cda, fins: !!cfg.fins, finsOn: !!cfg.fins, shield: !!cfg.shield,
     engineOn: true, ign: 0, lifted: false, t: 0, maxAlt: 0, chute: 0, chuteOn: false,
     outcome: null, leanLow: 0, wob: 0, alt: PAD_H, air: 1, q: 0, thr: 0,
@@ -138,10 +197,15 @@ export function suggestedLean(f) {
   return 0.85;
 }
 
-// one fixed physics step. lean: slider -1..1. Pushes event names into f.events.
+// one fixed physics step. lean: slider -1..1 (0 = straight up from whatever you stand on). Pushes event names
+// into f.events. Optional: f.steer (a heading the helper wants), f.throttle (0..1, only the helper uses it).
 export function stepPhysics(f, dt, lean) {
+  const T = f.T0 + f.t;
+  if (f.onMoon) { if (holdOnMoon(f, dt, T)) return; }
   const r = Math.hypot(f.x, f.y), h = r - R, ux = f.x / r, uy = f.y / r;
-  const phi = Math.atan2(f.x, f.y);
+  const B = bodyRel(f);
+  const rb = Math.hypot(B.rx, B.ry);
+  const phi = Math.atan2(B.rx, B.ry);              // "straight up" from the body you are near
   const rho = h < ATM_TOP ? RHO0 * Math.exp(-h / H_SCALE) : 0, air = rho / RHO0;
   const v2 = f.vx * f.vx + f.vy * f.vy, v = Math.sqrt(v2), q = 0.5 * rho * v2;
   const m = mass(f);
@@ -152,10 +216,12 @@ export function stepPhysics(f, dt, lean) {
   const wAmp = (f.finsOn ? 0.12 : 1) * Math.min(9, q / 2500) * DEG;
   f.wob = wAmp * (0.7 * Math.sin(f.t * 2.3) + 0.3 * Math.sin(f.t * 5.3 + 1));
 
-  const retroA = Math.atan2(-f.vx, -f.vy);
+  const retroA = Math.atan2(-B.vx, -B.vy);
   let target = null, rate = 0;
+  const thrOk = f.throttle > 0;
   const wantsBurn = f.engineOn && st && st.fuel > 0;
-  if (f.retro && wantsBurn) { target = retroA; rate = 40 * DEG; }
+  if (f.steer !== null && f.steer !== undefined) { target = f.steer; rate = 45 * DEG; }
+  else if (f.retro && wantsBurn) { target = retroA; rate = 40 * DEG; }
   else if (wantsBurn) { target = f.lifted ? phi + lean * MAX_LEAN + f.wob : phi; rate = 30 * DEG; }
   else if (f.chuteOn && v > 0.5) { target = retroA; rate = 120 * DEG * f.chute; }
   else if (f.capsuleOnly && v > 5) { target = retroA; rate = 25 * DEG; }   // heat shield first
@@ -163,17 +229,19 @@ export function stepPhysics(f, dt, lean) {
   else if (q > 30 && v > 5) { target = Math.atan2(f.vx, f.vy); rate = Math.min(50, q / 250) * DEG; }
   if (target !== null) { const dA = wrapA(target - f.heading), mx = rate * dt; f.heading += Math.max(-mx, Math.min(mx, dA)); }
   const aligned = !f.retro || Math.abs(wrapA(retroA - f.heading)) < 6 * DEG;
-  const burning = wantsBurn && aligned;
+  const burning = wantsBurn && aligned && thrOk;
 
-  let ax = -GM * ux / (r * r), ay = -GM * uy / (r * r);
+  const gr = gravAt(f.x, f.y, T, f.inMoon);
+  let ax = gr[0], ay = gr[1];
   f.thr = 0;
   if (burning) {
     f.ign = Math.min(1, f.ign + dt / 0.8);
     const isp = st.eng.ispSL * air + st.eng.ispVac * (1 - air);
-    const thrust = st.mdot * isp * G0 * f.ign;
+    const k = f.ign * Math.min(1, f.throttle);
+    const thrust = st.mdot * isp * G0 * k;
     f.thr = thrust;
     ax += thrust / m * Math.sin(f.heading); ay += thrust / m * Math.cos(f.heading);
-    st.fuel -= st.mdot * f.ign * dt;
+    st.fuel -= st.mdot * k * dt;
     if (f.lifted && h < 8000) f.leanLow = Math.max(f.leanLow, Math.abs(lean));
     if (st.fuel <= 0) {
       st.fuel = 0; f.engineOn = false;
@@ -203,32 +271,40 @@ export function stepPhysics(f, dt, lean) {
 
   f.vx += ax * dt; f.vy += ay * dt;
   const nx = f.x + f.vx * dt, ny = f.y + f.vy * dt, nr = Math.hypot(nx, ny), nh = nr - R;
-  const onPadSpot = Math.hypot(nx, ny - R) < SITE_R;
-  const floor = (!f.lifted || onPadSpot) ? PAD_H : 0;
-  if (nh <= floor) {
-    const nux = nx / nr, nuy = ny / nr;
-    if (!f.lifted) { f.vx = 0; f.vy = 0; f.x = nux * (R + PAD_H); f.y = nuy * (R + PAD_H); }
-    else {
-      f.x = nux * (R + floor); f.y = nuy * (R + floor);
-      const sp = Math.hypot(f.vx, f.vy);
-      f.engineWasOnAtHit = burning;
-      f.vx = 0; f.vy = 0; f.engineOn = false; f.hit = sp;
-      if (!f.outcome) { f.outcome = sp < SAFE_LAND ? 'landed' : 'crash'; f.events.push(f.outcome); }
-      return;
-    }
-  } else { f.x = nx; f.y = ny; }
+  if (f.inMoon) {
+    // touching the Moon
+    const T2 = T + dt, mp = moonPos(T2), rx = nx - mp[0], ry = ny - mp[1], d = Math.hypot(rx, ry);
+    if (d - MOON_R <= 0) { touchMoon(f, rx, ry, d, T2, burning); f.t += dt; return; }
+    f.x = nx; f.y = ny;
+  } else {
+    const onPadSpot = Math.hypot(nx, ny - R) < SITE_R;
+    const floor = (!f.lifted || onPadSpot) ? PAD_H : 0;
+    if (nh <= floor) {
+      const nux = nx / nr, nuy = ny / nr;
+      if (!f.lifted) { f.vx = 0; f.vy = 0; f.x = nux * (R + PAD_H); f.y = nuy * (R + PAD_H); }
+      else {
+        f.x = nux * (R + floor); f.y = nuy * (R + floor);
+        const sp = Math.hypot(f.vx, f.vy);
+        f.engineWasOnAtHit = burning;
+        f.vx = 0; f.vy = 0; f.engineOn = false; f.hit = sp;
+        if (!f.outcome) { f.outcome = sp < SAFE_LAND ? 'landed' : 'crash'; f.events.push(f.outcome); }
+        return;
+      }
+    } else { f.x = nx; f.y = ny; }
+  }
   if (nh > PAD_H + 3) f.lifted = true;
   f.t += dt;
   f.alt = nh;
   if (nh > f.maxAlt) f.maxAlt = nh;
+  afterMove(f);
 
   // the engine turns itself off once you are going all the way around (keeps the rest of the fuel)
-  if (burning && !f.retro && !f.diy && nh > ATM_TOP * 0.6) {
+  if (burning && !f.retro && !f.diy && !f.ap && !f.inMoon && nh > ATM_TOP * 0.6 && nh < ATM_TOP * 3) {
     const o = orbitInfo(f);
     if (!o.escape && o.peri > ATM_TOP + 2000) { f.engineOn = false; f.cut = true; f.events.push('orbitCut'); }
   }
   // going for orbit: once the top of the path reaches space, the engine rests until the kid taps Burn at the top
-  if (burning && f.coastAssist && !f.coastUsed && !f.retro && nh < ATM_TOP && Math.abs(lean) > 0.25) {
+  if (burning && f.coastAssist && !f.coastUsed && !f.retro && !f.ap && nh < ATM_TOP && Math.abs(lean) > 0.25) {
     const o = orbitInfo(f);
     if (o.escape || o.apo > ATM_TOP + 25000) { f.engineOn = false; f.coasting = true; f.coastUsed = true; f.events.push('coast'); }
   }
@@ -237,6 +313,91 @@ export function stepPhysics(f, dt, lean) {
     const o = orbitInfo(f);
     if (o.escape || o.peri < 30000) { f.engineOn = false; f.retro = false; f.events.push('retroDone'); }
   }
+}
+// after every move: which body's pull are we in, and how high above it
+function afterMove(f) {
+  const T = f.T0 + f.t;
+  const nowIn = inMoonSOI(f.x, f.y, T);
+  if (nowIn !== f.inMoon) { f.inMoon = nowIn; f.events.push(nowIn ? 'soiIn' : 'soiOut'); if (nowIn) f.moonVisited = true; }
+  if (f.inMoon) { const m = moonPos(T); f.balt = Math.hypot(f.x - m[0], f.y - m[1]) - MOON_R; }
+  else f.balt = f.alt;
+}
+function surfaceVel(rx, ry, T) { const mv = moonVel(T); return [mv[0] - MOON_SPIN * ry, mv[1] + MOON_SPIN * rx]; }
+function touchMoon(f, rx, ry, d, T, burning) {
+  const sv = surfaceVel(rx, ry, T);
+  const sp = Math.hypot(f.vx - sv[0], f.vy - sv[1]);
+  const up = Math.atan2(rx, ry), tilt = Math.abs(wrapA(f.heading - up));
+  const mp = moonPos(T), ux = rx / d, uy = ry / d;
+  f.x = mp[0] + ux * MOON_R; f.y = mp[1] + uy * MOON_R;
+  f.vx = sv[0]; f.vy = sv[1]; f.hit = sp; f.engineWasOnAtHit = burning; f.balt = 0;
+  if (f.outcome) return;
+  if (f.legs && sp < MOON_SAFE && tilt < MOON_TILT) {
+    f.onMoon = { a: Math.atan2(ry, rx) - moonAngle(T) };
+    f.engineOn = false; f.heading = up; f.moonLanded = true; f.landSpeed = sp;
+    f.events.push('moonLanded');
+  } else if (sp < MOON_TIP) {
+    f.engineOn = false; f.outcome = 'tipped'; f.tiltAt = tilt; f.events.push('tipped');
+  } else { f.engineOn = false; f.outcome = 'crash'; f.events.push('crash'); }
+}
+// standing on the Moon: ride along with its surface until the engine pushes harder than the Moon pulls
+function holdOnMoon(f, dt, T) {
+  const st = stage(f);
+  const a = moonAngle(T) + f.onMoon.a, ux = Math.cos(a), uy = Math.sin(a);
+  const mp = moonPos(T);
+  const up = Math.atan2(ux, uy);
+  if (f.engineOn && st && st.fuel > 0 && f.throttle > 0) {
+    const thrust = st.mdot * st.eng.ispVac * G0 * Math.min(1, f.throttle);
+    if (thrust / mass(f) > MOON_G * 1.02) { f.onMoon = null; f.events.push('moonLiftoff'); f.x = mp[0] + ux * (MOON_R + 0.3); f.y = mp[1] + uy * (MOON_R + 0.3); return false; }
+  }
+  f.heading = up;
+  f.x = mp[0] + ux * MOON_R; f.y = mp[1] + uy * MOON_R;
+  const sv = surfaceVel(ux * MOON_R, uy * MOON_R, T); f.vx = sv[0]; f.vy = sv[1];
+  f.thr = 0; f.t += dt; f.alt = Math.hypot(f.x, f.y) - R; f.balt = 0; f.air = 0; f.q = 0; f.plasma = 0;
+  return true;
+}
+
+// Coasting with the engine off in empty space: one bigger step (RK4), same gravity as stepPhysics. Used when
+// time runs fast (trips to the Moon take hours). The caller keeps steps small near the ground and the air.
+export function coastStep(f, h) {
+  const T = f.T0 + f.t, inM = f.inMoon;
+  const acc = (x, y, t) => gravAt(x, y, t, inM);
+  const x0 = f.x, y0 = f.y, vx0 = f.vx, vy0 = f.vy;
+  const a1 = acc(x0, y0, T);
+  const a2 = acc(x0 + vx0 * h / 2, y0 + vy0 * h / 2, T + h / 2);
+  const v2x = vx0 + a1[0] * h / 2, v2y = vy0 + a1[1] * h / 2;
+  const a3 = acc(x0 + v2x * h / 2, y0 + v2y * h / 2, T + h / 2);
+  const v3x = vx0 + a2[0] * h / 2, v3y = vy0 + a2[1] * h / 2;
+  const a4 = acc(x0 + v3x * h, y0 + v3y * h, T + h);
+  const v4x = vx0 + a3[0] * h, v4y = vy0 + a3[1] * h;
+  f.x = x0 + h / 6 * (vx0 + 2 * v2x + 2 * v3x + v4x);
+  f.y = y0 + h / 6 * (vy0 + 2 * v2y + 2 * v3y + v4y);
+  f.vx = vx0 + h / 6 * (a1[0] + 2 * a2[0] + 2 * a3[0] + a4[0]);
+  f.vy = vy0 + h / 6 * (a1[1] + 2 * a2[1] + 2 * a3[1] + a4[1]);
+  f.t += h; f.alt = Math.hypot(f.x, f.y) - R; if (f.alt > f.maxAlt) f.maxAlt = f.alt;
+  f.thr = 0; f.air = 0; f.q = 0; f.plasma = 0; f.heat = Math.max(0, f.heat - 0.02 * h);
+  if (f.ign > 0) f.ign = 0;
+  afterMove(f);
+  if (f.inMoon && f.balt < 0) { const m = moonPos(f.T0 + f.t); const rx = f.x - m[0], ry = f.y - m[1]; touchMoon(f, rx, ry, Math.hypot(rx, ry), f.T0 + f.t, false); }
+}
+// The biggest safe coast step from here (seconds), or 0 if we should use small steps.
+export function coastLimit(f) {
+  if (!f.lifted || f.onMoon || f.chuteOn || f.outcome) return 0;
+  if (f.engineOn && stage(f) && stage(f).fuel > 0 && f.throttle > 0) return 0;
+  if (f.alt < ATM_TOP + 500) return 0;
+  const B = bodyRel(f), rb = Math.hypot(B.rx, B.ry);
+  const alt = rb - B.rad;
+  if (alt < 2500) return 0;
+  let h = 0.006 * Math.sqrt(rb * rb * rb / B.gm);
+  const vr = (B.rx * B.vx + B.ry * B.vy) / rb;
+  if (vr < 0) h = Math.min(h, (alt - 2000) / -vr * 0.5);
+  if (!f.inMoon) {
+    const vrp = vr;
+    if (vrp < 0) h = Math.min(h, (f.alt - ATM_TOP) / -vrp * 0.5);
+    // don't jump deep into the Moon's pull in one step
+    const m = moonPos(f.T0 + f.t), dm = Math.hypot(f.x - m[0], f.y - m[1]) - MOON_SOI;
+    h = Math.min(h, Math.max(5, dm / 3000));
+  }
+  return Math.max(0, Math.min(h, 120));
 }
 function inOrbitNow(f) { const o = orbitInfo(f); return !o.escape && o.peri > ATM_TOP; }
 
