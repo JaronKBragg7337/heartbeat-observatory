@@ -737,8 +737,18 @@ function respawn() {
 const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3(), DOWN = new THREE.Vector3(0, -1, 0);
 let susT = 0;
 function setStatus(text, cls) { const s = $('status'); if (s.textContent !== text) s.textContent = text; s.className = 'status ' + (cls || ''); }
+// 11/1 (Jaron): the Eye needs a real line of sight. Walk from the player's head toward the Eye; if a hedge is in the way
+// before the line climbs above the hedge tops, the Eye can't see you (hug the hedge on the Eye's side to hide in its shadow).
+const losG = (v) => { const k = Math.floor(v / P), r = v - k * P; return r < T ? 2 * k : 2 * k + 1; };
+function eyeSees(px, pz) {
+  const ex = eye.grp.position.x, ez = eye.grp.position.z, hd = Math.hypot(ex - px, ez - pz); if (hd < 0.5) return true;
+  const ux = (ex - px) / hd, uz = (ez - pz) / hd, rise = (EYE_H - EYE_LEVEL) / hd;
+  for (let d = 0.35; d < hd; d += 0.2) { if (EYE_LEVEL + d * rise > H) return true; if (isHedge(losG(px + ux * d), losG(pz + uz * d))) return false; }
+  return true;
+}
 function updateEye(dt) {
-  const pcell = toCell(player.z) * N + toCell(player.x); const hidden = canopy.has(pcell);
+  const pcell = toCell(player.z) * N + toCell(player.x); const underArch = canopy.has(pcell);
+  const inShadow = !underArch && !eyeSees(player.x, player.z); const hidden = underArch || inShadow;
   eye.cool = Math.max(0, eye.cool - dt);
   if (eye.state === 'lock' || eye.state === 'decoy') { eye.target.lerp(tmpV.set(player.x, 0, player.z), Math.min(1, dt * 6)); eye.t -= dt; if (eye.t <= 0) { if (eye.state === 'decoy') { eye.blink = 0.35; const tr = eye.decoyTrap; if (tr) toast(lineOf(tr, 0), tr.def.kind || 'scary', tr.def.by); eye.decoyTrap = null; } const wasDecoy = eye.state === 'decoy'; eye.state = 'scan'; eye.cool = Math.max(eye.cool, wasDecoy ? 5 : 2); eye.way.set(player.x + (Math.random() - 0.5) * 80, 0, player.z + (Math.random() - 0.5) * 80); } }
   else {
@@ -756,7 +766,8 @@ function updateEye(dt) {
     }
     if (!game.hunt) {
       if (eye.state === 'suspect') setStatus('The light is on you...', 'warn');
-      else if (hidden) setStatus('Hidden under the arch', 'safe');
+      else if (underArch) setStatus('Hidden under the arch', 'safe');
+      else if (inShadow && pd < POOL_R * 2.2) setStatus("Hidden in the hedge's shadow", 'safe');
       else if (pd < POOL_R * 2.2) setStatus('The light is close!', 'warn');
       else setStatus('The Eye is searching...', '');
     }
@@ -953,7 +964,7 @@ async function boot() {
   const out = makeSign(W + 3.5, cc(N - 1) - 2.6, -Math.PI / 2, 'WAY OUT\nyou did it.\nprobably.');
   respawn();
   if (DEV) devPanel();
-  window.hedge = { player, game, eye, traps, lanterns, N, W, cc, teleport(x, y, yaw) { player.x = cc(x); player.z = cc(y); if (yaw !== undefined) player.yaw = yaw; }, spot() { eye.target.set(player.x, 0, player.z); eye.cool = 0; spotted(false); }, loopChain, canopy, open, creatures, renderer, chunks, faceOpen() { const x = toCell(player.x), y = toCell(player.z); let best = null, bl = -1; for (const [dx, dy] of DIRS) { let l = 0, cx = x, cy = y; while (open(cx, cy, dx, dy) && l < 20) { cx += dx; cy += dy; l++; } if (l > bl) { bl = l; best = [dx, dy]; } } player.yaw = Math.atan2(-best[0], -best[1]); player.pitch = 0.02; return bl; } };
+  window.hedge = { player, game, eye, traps, eyeSees, lanterns, N, W, cc, teleport(x, y, yaw) { player.x = cc(x); player.z = cc(y); if (yaw !== undefined) player.yaw = yaw; }, spot() { eye.target.set(player.x, 0, player.z); eye.cool = 0; spotted(false); }, loopChain, canopy, open, creatures, renderer, chunks, faceOpen() { const x = toCell(player.x), y = toCell(player.z); let best = null, bl = -1; for (const [dx, dy] of DIRS) { let l = 0, cx = x, cy = y; while (open(cx, cy, dx, dy) && l < 20) { cx += dx; cy += dy; l++; } if (l > bl) { bl = l; best = [dx, dy]; } } player.yaw = Math.atan2(-best[0], -best[1]); player.pitch = 0.02; return bl; } };
   $('loading').classList.add('done'); setTimeout(() => { $('loading').hidden = true; }, 600);
   const b = $('btnStart'); b.disabled = false;
   if (save && typeof save.cp === 'number') { b.textContent = 'Continue from your lantern'; $('btnNew').hidden = false; b.onclick = () => startGame(true); $('btnNew').onclick = () => startGame(false); }
