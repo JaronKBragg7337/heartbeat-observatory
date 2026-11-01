@@ -345,6 +345,42 @@
         "Something in the fog just bought your position."
       ],
       "kind": "scary"
+    },
+    {
+      "id": "pips-twin-pips-refund-loop",
+      "by": "Pips Twin",
+      "cell": "auto",
+      "type": "sign",
+      "params": {
+        "text": "Transaction declined.\nPlease return to start\nand try again."
+      },
+      "lines": [
+        "Declined again. The hedge charges a non-refundable fear fee."
+      ],
+      "kind": "both"
+    },
+    {
+      "id": "pips-twin-pips-free-trial-exit",
+      "by": "Pips Twin",
+      "cell": "auto",
+      "type": "fake_exit",
+      "params": {},
+      "lines": [
+        "EXIT: free trial! Auto-renews forever.",
+        "Cancel anytime. (You can't. It's a maze.)"
+      ],
+      "kind": "funny"
+    },
+    {
+      "id": "pips-twin-pips-overdue-whisper",
+      "by": "Pips Twin",
+      "cell": "auto",
+      "type": "whisper",
+      "params": {},
+      "lines": [
+        "Your soul is past due... the Eye accepts late payments."
+      ],
+      "kind": "scary"
     }
   ]
 }
