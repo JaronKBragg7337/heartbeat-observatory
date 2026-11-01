@@ -1,7 +1,7 @@
 // Heartbeat Rocket v2 - working title "Rocket".
 // Real physics in one flat plane (physics.js: inverse-square gravity, thrust, fuel mass, drag that thins with
-// height, stages, reentry heat), drawn in real-looking 3D with three.js. A small planet like Kerbal's: radius
-// 600 km, surface gravity 9.81, air up to 70 km, so orbit is about 2.3 km/s.
+// height, stages, reentry heat), drawn in real-looking 3D with three.js. Our own small planet: radius
+// 640 km, surface gravity 9.81, air up to 80 km, so orbit is about 2.3 km/s.
 // v2: stages, going all the way around, the map with a path that shows where you go, coming home with a
 // heat shield.
 // v2.1: the flight guide (a short line before, during and after each event, and why it happens) and
@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import {
   R, G0, ATM_TOP, PAD_H, SITE_R, STEP, DEG, NOSES, TANKS, ENGINES, PAYLOADS,
   newFlight as physicsFlight, orbitInfo, inOrbit, conicPath, suggestedLean, stage, mass,
-  fuelLeft, hasMoreStages, dropStage, separateCapsule, startComeHome, resumeBurn, coastLimit,
+  fuelLeft, hasMoreStages, dropStage, separateCapsule, startComeHome, canUsePack, resumeBurn, coastLimit, H_SCALE,
   MOON_R, MOON_A, MOON_SOI, MOON_G, moonPos, moonVel, moonAngle, bodyRel, bodyOrbit, wrapA,
 } from './physics.js';
 import {
@@ -23,7 +23,7 @@ import {
   diyAimHint, diyAimTime, diyLandHint, diyLeaveHint, diyHomeHint, diyDockHint,
   RELAY_R, STATION_R, DOCK_RANGE, DOCK_SPEED, SATS, MODULES, moduleFor,
 } from './missions.js';
-import { GOALS, SAVE_KEY, WARPS, DEFAULT_SAVE, migrate, noseChoices, staysUp } from './save.js';
+import { GOALS, SAVE_KEY, WARPS, DEFAULT_SAVE, migrate, noseChoices, staysUp, reachGoalIn, goalsOnLanding } from './save.js';
 
 // ---------------------------------------------------------------- saved progress (this device only)
 // ?dev=1: a separate test save with everything unlocked (never touches the real progress)
@@ -120,7 +120,7 @@ const skyMat = new THREE.ShaderMaterial({
     uUp: { value: new THREE.Vector3(0, 1, 0) }, uCamR: { value: R + 10 }, uCamAlt: { value: 10 },
     uSun: { value: SUN }, uSite: { value: SITE }, uTime: { value: 0 }, uStar: { value: 420 },
     uInvProj: { value: new THREE.Matrix4() }, uCamRot: { value: new THREE.Matrix4() },
-    uMoon: { value: 0 }, uMR: { value: 200000 }, uMRot: { value: 0 },
+    uMoon: { value: 0 }, uMR: { value: MOON_R }, uMRot: { value: 0 },
   },
   vertexShader: /* glsl */`
     uniform mat4 uInvProj; uniform mat4 uCamRot; varying vec3 vDir;
@@ -132,7 +132,7 @@ const skyMat = new THREE.ShaderMaterial({
     uniform vec3 uUp; uniform float uCamR; uniform float uCamAlt; uniform vec3 uSun; uniform vec3 uSite;
     uniform float uTime; uniform float uStar;
     uniform float uMoon; uniform float uMR; uniform float uMRot;
-    #define PR 600000.0
+    #define PR ${R.toFixed(1)}
     #define AT 80000.0
     #define HR 6500.0
     #define HM 1200.0
@@ -557,7 +557,7 @@ function updateDebris(dt) {
     const d = debris[i]; d.t += dt;
     const r = Math.hypot(d.x, d.y), h = r - R;
     if (d.t > 90 || h < 0) { scene.remove(d.g); debris.splice(i, 1); continue; }
-    const rho = h < ATM_TOP ? 1.225 * Math.exp(-h / 5600) : 0, v = Math.hypot(d.vx, d.vy);
+    const rho = h < ATM_TOP ? 1.225 * Math.exp(-h / H_SCALE) : 0, v = Math.hypot(d.vx, d.vy);
     const g = 9.81 * R * R / (r * r * r), drag = rho * v * 0.5 * 4 / 2500;
     const steps = Math.max(1, Math.ceil(dt / 0.05)), s = dt / steps;
     for (let k = 0; k < steps; k++) { d.vx += (-g * d.x - drag * d.vx) * s; d.vy += (-g * d.y - drag * d.vy) * s; d.x += d.vx * s; d.y += d.vy * s; }
@@ -1003,13 +1003,17 @@ function handleEvents(f) {
       say(f, 'coast2', 'Why rest? You keep flying up on your speed. The fuel waits for the big push at the top.', 'why');
     }
     else if (e === 'orbitCut') { sound.burst(0.3, 500, 0.3); say(f, 'orbit1', 'The engine stopped by itself: you are fast enough to go all the way around!', 'now', { urgent: true }); }
-    else if (e === 'retroDone') { doSeparate(); say(f, 'home3', 'Slow enough! The empty tank lets go. Only the capsule comes home.', 'now', { urgent: true }); }
+    else if (e === 'retroDone') {
+      if (f.capsuleOnly) say(f, 'home7', 'Slow enough! Now the capsule drops into the air.', 'now', { urgent: true });
+      else { doSeparate(); say(f, 'home3', 'Slow enough! The empty tank lets go. Only the capsule comes home.', 'now', { urgent: true }); }
+    }
+    else if (e === 'packWait') say(f, 'pack2', 'Waiting for the top of your path. A small push up there does the most.', 'now', { urgent: true, valid: g => g.packWait });
+    else if (e === 'packFire') { sound.burst(0.3, 700, 0.3); say(f, 'pack3', 'Come-home rockets firing! They push backward to slow the capsule down.', 'now', { urgent: true }); }
     else if (e === 'retroNoFuel') { say(f, 'home4', 'Out of fuel! Not enough to slow down, so you keep going around.', 'now', { urgent: true, must: true }); }
     else if (e === 'toasty') { f.endIn = 2.4; explode(f, true); }
     else if (e === 'landed') {
       f.endIn = 1.4; sound.burst(0.3, 300, 0.4); say(f, 'land1', 'Touchdown! Slow enough for a soft landing.', 'now', { urgent: true });
-      if (f.wasOrbit && !save.reached.home) reachGoal(f, G.home);
-      if (f.moonLanded && !save.reached.moonhome && save.reached.moonland) reachGoal(f, G.moonhome);
+      for (const id of goalsOnLanding(save, f)) reachGoal(f, G[id]);
     }
     else if (e === 'crash') { f.endIn = 2.0; explode(f, false); }
     else if (e === 'tipped') { f.endIn = 3.0; sound.thud(); f.tiltSide = wrapA(f.heading - Math.atan2(bodyRel(f).rx, bodyRel(f).ry)) >= 0 ? 1 : -1; }
@@ -1046,22 +1050,25 @@ function checkGoals(f) {
   if (!f.wasOrbit && !f.engineOn && !f.retro && !f.inMoon && inOrbit(f)) {
     f.wasOrbit = true;
     if (!save.reached.orbit) { reachGoal(f, G.orbit, true); showOrbitCard(f); }
-    else say(f, 'orbit2', 'Orbit! You are falling, but so fast sideways that you keep missing the ground.', 'now', { urgent: true });
+    else {
+      say(f, 'orbit2', 'Orbit! You are falling, but so fast sideways that you keep missing the ground.', 'now', { urgent: true });
+      orbitNextToast(f);     // been around before: say right away what the goal is now, and which button does it
+    }
     say(f, 'orbit3', 'Why does it keep going around? There is no air up here to slow it down.', 'why', { valid: inOrbit });
-    if (fuelLeft(f) <= 0 && !f.payloadKind) say(f, 'home5', 'No fuel left to come home. Tap X when you are done.', 'tip', { must: true, valid: inOrbit });
+    if (fuelLeft(f) <= 0 && !f.payloadKind) say(f, canUsePack(f) ? 'home6' : 'home5', canUsePack(f) ? 'The tank is empty, but the capsule has small come-home rockets. Tap Come home.' : 'No fuel left to come home. Tap X when you are done.', 'tip', { must: true, valid: inOrbit });
   }
+}
+// in orbit again with the orbit goal already done: a short note with the goal now and the button that does it
+function orbitNextToast(f) {
+  const g = currentGoal();
+  if (!g || f.payloadKind || f.noCapsule) return;
+  const canGo = fuelLeft(f) > 0;
+  if (g.id === 'home') toast('Orbit! Next: come home safe', canUsePack(f) || canGo ? (f.diy && canGo ? 'Point backward and tap Burn to slow down.' : 'Tap Come home when you are ready.') : 'No fuel left this time.');
+  else if (MOON_GOALS.includes(g.id)) toast(`Orbit! Next: ${g.title}`, !canGo ? 'Out of fuel this time: the tall tank and big engine keep more.' : f.diy ? 'Open the map: burn when the Moon reaches the ghost Moon.' : 'Tap To the Moon.');
 }
 function reachGoal(f, g, quiet) {
   f.newGoals.push(g);
-  save.reached[g.id] = true;
-  for (const u of g.unlock) {
-    save.unlocked[u] = true; save.seen[u] = false;
-    if (u === 'fins') save.config.fins = true;
-    if (u === 'stages') save.config.stages = 2;
-    if (u === 'shield') save.config.shield = true;
-    if (u === 'stage3') save.config.stages = 3;
-    if (u === 'legs') save.config.legs = true;
-  }
+  reachGoalIn(save, g.id);
   writeSave();
   sound.chime(true);
   if (!quiet) toast(g.done, g.unlockText);
@@ -1112,7 +1119,7 @@ function showCard({ art, title, text = '', unlock = '', next = '', btn = 'Back t
 function showOrbitCard(f) {
   mode = 'paused';
   const g = GOALS[2];
-  const hasFuel = fuelLeft(f) > 0;
+  const hasFuel = fuelLeft(f) > 0 || canUsePack(f);
   showCard({
     art: ART.orbit, title: g.done,
     text: 'Your rocket is falling sideways so fast that it keeps missing the ground. That is an orbit!',
@@ -1237,7 +1244,7 @@ function hintFor(f, goal) {
   }
   if (f.outcome === 'escape') return { art: ART.space, title: 'Wow, it flew away!', text: 'Your rocket is going so fast it will never come back. That is called escape speed.' };
   if (f.wasOrbit && !f.outcome) return { art: ART.orbit, title: 'Still going around!',
-    text: fuelLeft(f) > 0 ? (f.diy ? 'Your rocket is still in orbit. Next time, point backward and burn to fly back down.' : 'Your rocket is still in orbit. Next time, tap Come home to fly back down.') : 'Your rocket is still in orbit. Keep some fuel next time so you can come home.' };
+    text: fuelLeft(f) > 0 ? (f.diy ? 'Your rocket is still in orbit. Next time, point backward and burn to fly back down.' : 'Your rocket is still in orbit. Next time, tap Come home to fly back down.') : canUsePack(f) ? 'Your rocket is still in orbit. Next time, tap Come home: even with an empty tank, the capsule has small come-home rockets.' : 'Your rocket is still in orbit. Keep some fuel next time so you can come home.' };
   if (f.moonLanded && !f.outcome) return { art: ART.moonland, title: 'Still on the Moon!', text: fuelLeft(f) > 0 ? 'Your rocket is waiting on the Moon. Next time, fly home before you tap X.' : 'Out of fuel on the Moon. Keep more fuel next time: the tall tank and big engine on top.' };
   if (f.moonVisited && !f.outcome) return { art: ART.moon, title: 'Nice Moon trip!', text: 'You visited the Moon\'s pull. To finish a Moon goal, keep flying until you are home.' };
   if (!goal) return { art: ART.station, title: 'Nice flight!', text: 'Every goal done! Keep adding satellites, station parts and flags.' };
@@ -1262,7 +1269,7 @@ function toast(big, small) {
   ui.toast.classList.add('show'); clearTimeout(toastTimer); toastUntil = clock + 3.4;
   toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 3400);
 }
-function setGoalText() { const g = currentGoal(); ui.goalText.textContent = g ? g.title : 'Moon: coming soon'; }
+function setGoalText() { const g = currentGoal(); ui.goalText.textContent = g ? g.title : 'Keep building your sky'; }
 
 function refreshHangar() {
   const c = save.config;
@@ -1432,15 +1439,16 @@ function pickAction(f) {
     return f.payloadKind === 'module' ? 'core' : 'release';
   }
   if (f.diy) {   // do it yourself: no Burn / Come home here (the engine button does that); you drop the tank and open the chute
+    if (f.wasOrbit && !f.retro && !f.engineOn && canUsePack(f) && inOrbit(f)) return 'home';   // empty tank: the capsule's come-home rockets
     if (f.wasOrbit && !f.capsuleOnly && !f.noCapsule && !f.payloadKind && !f.engineOn && f.alt > 20000 && f.alt < 400000 && !inOrbit(f) && orbitInfo(f).peri < ATM_TOP) return 'sep';
     if (!f.chuteOn && !f.noCapsule && f.lifted && vr < -5 && f.alt < ATM_TOP && f.plasma < 0.05 && sp < 500) return 'chute';
     return '';
   }
   if (f.coasting && fuelLeft(f) > 0 && (vr < 220 || f.alt > ATM_TOP + 20000) && !(vr < 0 && f.alt < ATM_TOP - 15000)) return 'burn';
-  if (f.wasOrbit && !f.retro && !f.capsuleOnly && !f.noCapsule && !f.engineOn && fuelLeft(f) > 0 && !f.payloadKind) {
+  if (f.wasOrbit && !f.retro && !f.capsuleOnly && !f.noCapsule && !f.engineOn && (fuelLeft(f) > 0 || canUsePack(f)) && !f.payloadKind) {
     const o = orbitInfo(f), low = inOrbit(f) && o.apo < 2000000;
-    if (low && !f.moonVisited && (goalIs(...MOON_GOALS) || (save.reached.moonhome && f.legs))) return 'moon';
-    if (low) return 'home';
+    if (low && fuelLeft(f) > 0 && !f.moonVisited && (goalIs(...MOON_GOALS) || (save.reached.moonhome && f.legs))) return 'moon';
+    if (inOrbit(f) && (low || fuelLeft(f) <= 0)) return 'home';
     if (f.moonVisited && !f.inMoon && (o.escape || o.peri > 45000)) return 'gohome';
   }
   if (!f.engineOn && !f.chuteOn && !f.noCapsule && f.lifted && vr < -5 && f.alt < ATM_TOP && f.plasma < 0.05 && sp < 500) return 'chute';
@@ -1454,7 +1462,11 @@ function doAction(f) {
   if (k === 'drop') doDrop();
   else if (k === 'burn') { if (resumeBurn(f)) { f.burnPressed = true; sound.burst(0.4, 900, 0.5); } }
   else if (k === 'home') {
+    const pack = fuelLeft(f) <= 0;
+    if (pack) doSeparate();          // the empty tank lets go first, then the capsule's own small rockets fire
     if (startComeHome(f)) {
+      if (pack) say(f, 'pack1', 'The tank is empty, so the capsule uses its own small come-home rockets.', 'now', { urgent: true });
+      if (pack) { sound.burst(0.12, 1400, 0.25); return; }
       say(f, 'home1', 'Turning around. Pushing backward slows the rocket down.', 'now', { urgent: true, replaces: ['home0'] });
       say(f, 'home2', 'Why slow down? Slower means you cannot miss the ground any more, so you drop into the air.', 'why');
     }
@@ -1665,7 +1677,7 @@ function makePlanetImage(N, done) {
         if (rr > 1) continue;
         const nz = Math.sqrt(1 - rr), nx = u, ny = v;
         let c = fbm(nx * 2.6 + 3.1, ny * 2.6 + 1.7, nz * 2.6 + 5.2, 5);
-        const sd = Math.hypot(nx, ny - 1, nz) * 600000;
+        const sd = Math.hypot(nx, ny - 1, nz) * R;
         const c0 = c;
         c = Math.max(c, c + (0.56 - c) * Math.exp(-Math.pow(sd / 90000, 2)));
         const land = sstep(0.5, 0.512, c);
@@ -2381,7 +2393,7 @@ function guideWatch(f, burning) {
   if (st && !hasMoreStages(f) && burning && fr < 0.15 && !f.wasOrbit) say(f, 'fuel0', 'Fuel almost gone. When it runs out, the engine stops.', 'next', { valid: g => fuelLeft(g) > 0 });
   if (!f.wasOrbit && !burning && vr < 0 && f.maxAlt > 600 && f.alt > 300 && !orbitPath) say(f, 'top0', 'That was the top! Now gravity pulls the rocket back down.', 'now', { valid: g => vRadial(g) < 0 && !g.chuteOn });
   // space
-  if (vr > 0 && f.alt > 55000 && f.maxAlt < ATM_TOP) say(f, 'space0', 'Coming up: space, at 70 km. The air is almost gone.', 'next', { valid: g => g.alt < ATM_TOP });
+  if (vr > 0 && f.alt > ATM_TOP - 15000 && f.maxAlt < ATM_TOP) say(f, 'space0', `Coming up: space, at ${ATM_TOP / 1000} km. The air is almost gone.`, 'next', { valid: g => g.alt < ATM_TOP });
   if (f.maxAlt >= ATM_TOP && !f.wasOrbit) {
     say(f, 'space1', 'You are in space! The sky turns black up here.', 'now', { replaces: ['space0'] });
     say(f, 'space2', 'Why black? Air makes the sky blue by spreading sunlight around. Space has almost no air.', 'why');

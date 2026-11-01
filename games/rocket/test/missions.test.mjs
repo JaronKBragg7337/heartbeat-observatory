@@ -4,7 +4,7 @@
 // the buttons the game shows in that mode: Drop tank, Open parachute, Release, Plant flag, Dock).
 // Run: node games/rocket/test/missions.test.mjs
 import * as H from './harness.mjs';
-import { GOALS, DEFAULT_SAVE, migrate, currentGoal, ringNow, staysUp, noseChoices } from '../save.js';
+import { GOALS, DEFAULT_SAVE, migrate, currentGoal, ringNow, staysUp, noseChoices, reachGoalIn, goalsOnLanding, liftKep } from '../save.js';
 const { P, M } = H;
 const { R, ATM_TOP, MOON_R, orbitInfo, inOrbit, dropStage, separateCapsule, fuelLeft, bodyRel } = P;
 
@@ -265,21 +265,86 @@ function unitChecks() {
   // saves
   const v1 = { reached: { clouds: true, space: true, orbit: false, home: false }, unlocked: { fins: true }, config: { nose: 'pointy', tank: 'medium', engine: 'big', fins: true }, flights: 7, best: 80000 };
   const m1 = migrate(v1);
-  check('old save (v1) migrates: progress kept, stages given, new fields added', m1.reached.space && m1.unlocked.stages && m1.config.stages === 2 && Array.isArray(m1.sats) && m1.flights === 7 && m1.v === 3 && currentGoal(m1).id === 'orbit');
+  check('old save (v1) migrates: progress kept, stages given, new fields added', m1.reached.space && m1.unlocked.stages && m1.config.stages === 2 && Array.isArray(m1.sats) && m1.flights === 7 && m1.v === 4 && currentGoal(m1).id === 'orbit');
   const v2 = { v: 2, reached: { clouds: true, space: true, orbit: true, home: true }, unlocked: { fins: true, tall: true, stages: true, shield: true }, seen: { fins: true, tall: true, stages: true, shield: true }, config: { nose: 'capsule', tank: 'tall', engine: 'big', fins: true, stages: 2, shield: true }, diy: true, heard: { lift: 3 }, flights: 20, warp: 50 };
   const m2 = migrate(v2);
   check('v2 save (came home safe) migrates: third stage unlocked, next goal is the Moon', m2.unlocked.stage3 && m2.config.stages === 3 && m2.seen.stage3 === false && currentGoal(m2).id === 'moonfly' && m2.diy && m2.heard.lift === 3 && m2.warp === 50);
   const m3 = migrate(JSON.parse(JSON.stringify({ ...m2, sats: [{ kind: 'relay', kep: k }], flags: [{ a: 1, name: 'J' }] })));
   check('v3 save round trip keeps satellites and flags (arrays stay arrays)', Array.isArray(m3.sats) && m3.sats.length === 1 && m3.flags[0].name === 'J');
-  check('broken save falls back to a fresh one', migrate('nope').v === 3 && migrate(null).reached.clouds === false);
+  check('broken save falls back to a fresh one', migrate('nope').v === 4 && migrate(null).reached.clouds === false);
   const locked = migrate({}); locked.config.nose = 'relay';
   check('a payload you have not unlocked is not offered', !noseChoices(migrate({})).includes('relay') && migrate({ config: { nose: 'relay' } }).config.nose === 'capsule');
+  // our own planet and Moon (no copied numbers from any other game)
+  check('our planet: radius 640 km, gravity 9.81, air up to 80 km', R === 640000 && P.G0 === 9.81 && ATM_TOP === 80000 && GOALS[1].alt === ATM_TOP);
+  check('our Moon: radius 220 km, gravity 1.63, 12,600 km out', MOON_R === 220000 && P.MOON_G === 1.63 && P.MOON_A === 12600000, `goes around in ${(2 * Math.PI / P.MOON_N / 3600).toFixed(1)} h, pull reaches ${km(P.MOON_SOI)}`);
+  // a v3 save made on the old 600 km planet: things left in orbit keep their height above the ground
+  { const old = { a: 600000 + 85000, e: 0 }, oldE = { a: 600000 + (73000 + 1203000) / 2, e: (1203000 - 73000) / (2 * 600000 + 73000 + 1203000) };
+    const m4 = migrate({ ...m2, v: 3, sats: [{ kind: 'weather', kep: { ...old, w: 0, M0: 0, T0: 0, dir: 1 } }, { kind: 'relay', kep: { ...oldE, w: 0, M0: 0, T0: 0, dir: 1 } }], station: { kep: { ...old, w: 0, M0: 0, T0: 0, dir: 1 }, modules: ['core'] } });
+    const s0 = m4.sats[0].kep, s1 = m4.sats[1].kep;
+    check('v3 save on the old planet migrates: satellites and station keep their height above the air (and stay up)',
+      m4.v === 4 && Math.abs(M.kepPeri(s0) - 95000) < 1 && Math.abs(M.kepPeri(s1) - 83000) < 1 && Math.abs(M.kepApo(s1) - 1213000) < 1 && Math.abs(M.kepPeri(m4.station.kep) - 95000) < 1 && staysUp(s1),
+      `relay ${km(M.kepPeri(s1))} x ${km(M.kepApo(s1))}`);
+    check('a v4 save is not moved again', migrate(JSON.parse(JSON.stringify(m4))).sats[0].kep.a === s0.a); }
   check('goal ladder: one goal at a time, the Moon then satellites then the station', GOALS.map(g => g.id).join(',') === 'clouds,space,orbit,home,moonfly,moonland,moonhome,sat,ring,station,dock,station4');
+}
+
+// ------------------------------------------------------------ a v2-era save, played on: orbit must lead on to the Moon
+// Jaron's real v2 progress: went all the way around (orbit) but had not come home yet, flying 2 stages, the medium
+// tank and the big engine with the pointy nose. That rocket reaches orbit with very little fuel left, so the
+// come-home goal (which unlocks the third stage and the Moon) has to work even when the tank ends up empty.
+function v2Chain() {
+  const T0 = world.T;      // its own sky clock, so the missions after it start at the same time as before
+  const v2 = { v: 2, reached: { clouds: true, space: true, orbit: true, home: false }, unlocked: { fins: true, tall: true, stages: true, shield: true },
+    seen: { fins: true, tall: true, stages: true, shield: true }, config: { nose: 'pointy', tank: 'medium', engine: 'big', fins: true, stages: 2, shield: true }, flights: 12 };
+  const sv = migrate(v2);
+  check('v2 chain: the old save migrates with its goal "Come home safe"', currentGoal(sv).id === 'home' && sv.config.stages === 2 && !sv.unlocked.stage3);
+  const c = sv.config, cfg = { nose: c.nose, tank: c.tank, engine: c.engine, fins: c.fins, shield: c.shield, stages: c.stages, legs: false };
+  // 1) the same rocket, flown like a kid who uses up the whole tank going around: the capsule's own rockets bring it home
+  { const f = newFlight(cfg);
+    H.helperAscent(f);
+    check('v2 chain: that rocket reaches orbit', inOrbit(f), `pe ${km(orbitInfo(f).peri)}, fuel left ${fuelLeft(f).toFixed(0)} kg`);
+    f.wasOrbit = true;
+    // keep burning forward until the tank is empty (the worst case: the orbit gets bigger and there is nothing left)
+    f.diy = true; f.engineOn = true; f.ign = 0;           // (no automatic engine stop while it empties)
+    H.run(f, { until: g => fuelLeft(g) <= 0, tMax: 2000, ctl: () => 1 }); f.diy = false;
+    const o = orbitInfo(f);
+    check('v2 chain: tank empty, still going around', fuelLeft(f) <= 0 && inOrbit(f) && P.canUsePack(f), `orbit ${km(o.peri)} x ${km(o.apo)}, fuel ${fuelLeft(f)}, engine ${f.engineOn}, alt ${km(f.alt)}`);
+    separateCapsule(f, 5);                                  // the kid taps "Come home": the empty tank lets go...
+    const ok = P.startComeHome(f);                          // ...and the capsule's come-home rockets fire
+    H.run(f, { tMax: 6e5 });
+    check('v2 chain: came home on the capsule\'s own rockets (goal "Come home safe")', ok && f.outcome === 'landed', `outcome ${f.outcome}, rockets left ${f.pack.toFixed(0)} kg, heat ${f.heat.toFixed(2)}`);
+    const got = f.outcome === 'landed' ? goalsOnLanding(sv, f) : [];
+    for (const id of got) reachGoalIn(sv, id);
+    check('v2 chain: the goal moves on to the Moon, with the third stage', got.includes('home') && currentGoal(sv).id === 'moonfly' && sv.unlocked.stage3 && sv.config.stages === 3, `next goal ${currentGoal(sv)?.id}`);
+    endFlight(f); }
+  // 2) the next flight with the saved rocket (now 3 stages): orbit, then "To the Moon" gets into the Moon's pull
+  { const c2 = sv.config, f = newFlight({ nose: c2.nose, tank: c2.tank, engine: c2.engine, fins: c2.fins, shield: c2.shield, stages: c2.stages, legs: false });
+    H.helperAscent(f);
+    check('v2 chain: next flight (3 stages) reaches orbit with fuel for the Moon', inOrbit(f) && fuelLeft(f) > 0, `fuel ${fuelLeft(f).toFixed(0)} kg`);
+    f.wasOrbit = true; M.apStart(f, 'moon'); H.run(f, { until: g => !g.ap || g.outcome, tMax: 2e5 });
+    check('v2 chain: "To the Moon" reaches the Moon\'s pull', f.inMoon && !f.outcome);
+    endFlight(f); }
+  // 2b) a low orbit with an empty tank
+  { const f = newFlight(cfg);
+    H.helperAscent(f); f.wasOrbit = true; f.stages[f.si].fuel = 0;
+    separateCapsule(f, 5); const ok = P.startComeHome(f);
+    H.run(f, { tMax: 6e5 });
+    check('v2 chain: empty tank in a low orbit: the come-home rockets bring it home', ok && f.outcome === 'landed', `outcome ${f.outcome}, rockets left ${f.pack.toFixed(0)} kg`);
+    endFlight(f); }
+  // 3) the same come-home with fuel left in the tank (the plain path) still works
+  { const f = newFlight(cfg);
+    H.helperAscent(f); f.wasOrbit = true;
+    const ok = P.startComeHome(f); H.run(f, { tMax: 6e5 });
+    check('v2 chain: come home with fuel in the tank still works', ok && !f.packOn && f.outcome === 'landed', `outcome ${f.outcome}`);
+    endFlight(f); }
+  world.T = T0;
 }
 
 // ------------------------------------------------------------ run everything
 const t0 = Date.now();
 console.log('--- unit checks'); unitChecks();
+console.log('--- From a v2 save: orbit, then the next goal');
+v2Chain();
 console.log('--- Helpers on');
 helperMoonTrip('Helper Moon flyby (no legs)', { legs: false, land: false });
 helperMoonTrip('Helper Moon landing', { legs: true, land: true });

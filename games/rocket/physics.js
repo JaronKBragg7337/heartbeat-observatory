@@ -1,10 +1,11 @@
 // Heartbeat Rocket - physics (no drawing, no DOM). Shared by the game and by the tuning script.
 // One flat plane: inverse-square gravity, thrust with fuel mass, drag that thins with height, stages,
-// reentry heating. Small planet like Kerbal's: radius 600 km, surface gravity 9.81, air up to 70 km.
+// reentry heating. Our own small planet: radius 640 km, surface gravity 9.81 (the same pull as on Earth),
+// air up to 80 km, so going all the way around takes about 2.3 km/s.
 // Built by Claude (Opus 5.5) for Heartbeat Observatory. CC0.
 
-export const R = 600000, G0 = 9.81, GM = G0 * R * R;
-export const ATM_TOP = 70000, H_SCALE = 5600, RHO0 = 1.225;
+export const R = 640000, G0 = 9.81, GM = G0 * R * R;
+export const ATM_TOP = 80000, H_SCALE = 6400, RHO0 = 1.225;   // the air thins by e every 6.4 km
 export const PAD_H = 1.5, SITE_R = 14;
 export const STEP = 1 / 120;
 export const MAX_LEAN = Math.PI / 2;
@@ -23,12 +24,12 @@ export const TANKS = {
   heavy:   { name: 'Heavy', fuel: 31000, dry: 2600, h: 17 },
 };
 export const ENGINES = {
-  small:   { name: 'Small', thrust: 56000,  ispSL: 230, ispVac: 270, m: 450,  bellR: 0.72, bellH: 1.35 },
-  big:     { name: 'Big',   thrust: 150000, ispSL: 265, ispVac: 310, m: 1300, bellR: 1.12, bellH: 2.15 },
+  small:   { name: 'Small', thrust: 56000,  ispSL: 236, ispVac: 280, m: 450,  bellR: 0.72, bellH: 1.35 },
+  big:     { name: 'Big',   thrust: 150000, ispSL: 272, ispVac: 322, m: 1300, bellR: 1.12, bellH: 2.15 },
   // the booster under a 2-stage rocket: three bells side by side
-  booster: { name: 'Booster', thrust: 300000, ispSL: 262, ispVac: 292, m: 1900, bellR: 0.6, bellH: 1.5, cluster: 3 },
+  booster: { name: 'Booster', thrust: 300000, ispSL: 268, ispVac: 304, m: 1900, bellR: 0.6, bellH: 1.5, cluster: 3 },
   // the giant third stage at the very bottom: five bells
-  heavy:   { name: 'Heavy', thrust: 900000, ispSL: 268, ispVac: 300, m: 3800, bellR: 0.55, bellH: 1.6, cluster: 5 },
+  heavy:   { name: 'Heavy', thrust: 900000, ispSL: 274, ispVac: 312, m: 3800, bellR: 0.55, bellH: 1.6, cluster: 5 },
 };
 export const FINS_M = 120, FINS_CDA = 0.15;
 export const SHIELD_M = 150;
@@ -42,13 +43,17 @@ export const PAYLOADS = {
   module:    { name: 'Station part', m: 1400 },
 };
 export const FAIRING_CDA = 0.95;
+// the capsule's own small come-home rockets (real capsules carried a pack like this): enough push to slow down out
+// of orbit even when the big tank is empty, so going all the way around is never a dead end. Their fuel is part
+// of the capsule's weight, so it changes nothing else.
+export const PACK_FUEL = 80, PACK_THRUST = 5000, PACK_ISP = 230;
 
-// ---- the Moon, Kerbal-style scale with real rules: radius 200 km, surface gravity 1.63 (a sixth of the
-// planet's), 12,000 km from the planet's centre, going around once every ~38.6 hours, clockwise (the same way a
+// ---- the Moon, our own small one with real rules: radius 220 km, surface gravity 1.63 (a sixth of the
+// planet's, like our real Moon), 12,600 km from the planet's centre, going around once every ~39 hours, clockwise (the same way a
 // rocket that leans right goes around). It always shows the planet the same face (tidally locked).
 // Patched conics: inside the Moon's sphere of influence only the Moon's pull bends the path (relative to the
 // Moon); outside it only the planet's does.
-export const MOON_R = 200000, MOON_G = 1.63, MOON_GM = MOON_G * MOON_R * MOON_R, MOON_A = 12000000;
+export const MOON_R = 220000, MOON_G = 1.63, MOON_GM = MOON_G * MOON_R * MOON_R, MOON_A = 12600000;
 export const MOON_N = Math.sqrt(GM / (MOON_A * MOON_A * MOON_A));
 export const MOON_DIR = -1;
 export const MOON_SOI = MOON_A * Math.pow(MOON_GM / GM, 0.4);
@@ -109,6 +114,7 @@ export function newFlight(cfg) {
     engineOn: true, ign: 0, lifted: false, t: 0, maxAlt: 0, chute: 0, chuteOn: false,
     outcome: null, leanLow: 0, wob: 0, alt: PAD_H, air: 1, q: 0, thr: 0,
     heat: 0, plasma: 0, peakFlux: 0, capsuleOnly: false, retro: false, needDrop: false,
+    pack: P ? 0 : PACK_FUEL, packOn: false, packWait: false, packSawUp: false,
     cut: false, wasOrbit: false, coastAssist: !!cfg.coastAssist, coasting: false, coastUsed: false, events: [],
     diy: !!cfg.diy,   // "do it yourself": no automatic engine stops; the rocket turns where you lean even with the engine off
   };
@@ -219,7 +225,7 @@ export function stepPhysics(f, dt, lean) {
   const retroA = Math.atan2(-B.vx, -B.vy);
   let target = null, rate = 0;
   const thrOk = f.throttle > 0;
-  const wantsBurn = f.engineOn && st && st.fuel > 0;
+  const wantsBurn = f.engineOn && (f.packOn ? f.pack > 0 : !!(st && st.fuel > 0));
   if (f.steer !== null && f.steer !== undefined) { target = f.steer; rate = 45 * DEG; }
   else if (f.retro && wantsBurn) { target = retroA; rate = 40 * DEG; }
   else if (wantsBurn) { target = f.lifted ? phi + lean * MAX_LEAN + f.wob : phi; rate = 30 * DEG; }
@@ -236,8 +242,18 @@ export function stepPhysics(f, dt, lean) {
   f.thr = 0;
   if (burning) {
     f.ign = Math.min(1, f.ign + dt / 0.8);
-    const isp = st.eng.ispSL * air + st.eng.ispVac * (1 - air);
     const k = f.ign * Math.min(1, f.throttle);
+    if (f.packOn) {   // the capsule's come-home rockets
+      const thrust = PACK_THRUST * k, used = Math.min(f.pack, PACK_THRUST / (PACK_ISP * G0) * k * dt);
+      f.thr = thrust;
+      ax += thrust / m * Math.sin(f.heading); ay += thrust / m * Math.cos(f.heading);
+      f.pack -= used; f.payload -= used;
+      if (f.pack <= 1e-6) {
+        f.pack = 0; f.engineOn = false; f.packOn = false;
+        if (f.retro) { f.retro = false; f.events.push(inOrbitNow(f) ? 'retroNoFuel' : 'retroDone'); }
+      }
+    } else {
+    const isp = st.eng.ispSL * air + st.eng.ispVac * (1 - air);
     const thrust = st.mdot * isp * G0 * k;
     f.thr = thrust;
     ax += thrust / m * Math.sin(f.heading); ay += thrust / m * Math.cos(f.heading);
@@ -248,6 +264,7 @@ export function stepPhysics(f, dt, lean) {
       if (f.retro) { f.retro = false; f.events.push(inOrbitNow(f) ? 'retroNoFuel' : 'retroDone'); }
       else if (hasMoreStages(f)) { f.needDrop = true; f.events.push('stageEmpty'); }
       else f.events.push('burnout');
+    }
     }
   }
   if (rho > 0 && v > 0.01) {
@@ -311,7 +328,7 @@ export function stepPhysics(f, dt, lean) {
   // the come-home burn stops once the low point of the path is deep in the air
   if (burning && f.retro) {
     const o = orbitInfo(f);
-    if (o.escape || o.peri < 30000) { f.engineOn = false; f.retro = false; f.events.push('retroDone'); }
+    if (o.escape || o.peri < 30000) { f.engineOn = false; f.retro = false; f.packOn = false; f.events.push('retroDone'); }
   }
 }
 // after every move: which body's pull are we in, and how high above it
@@ -321,6 +338,12 @@ function afterMove(f) {
   if (nowIn !== f.inMoon) { f.inMoon = nowIn; f.events.push(nowIn ? 'soiIn' : 'soiOut'); if (nowIn) f.moonVisited = true; }
   if (f.inMoon) { const m = moonPos(T); f.balt = Math.hypot(f.x - m[0], f.y - m[1]) - MOON_R; }
   else f.balt = f.alt;
+  // waiting to fire the capsule's come-home rockets at the top of the path
+  if (f.packWait) {
+    const vr = f.x * f.vx + f.y * f.vy;
+    if (vr > 0) f.packSawUp = true;
+    else if (f.packSawUp || f.inMoon) firePack(f);
+  }
 }
 function surfaceVel(rx, ry, T) { const mv = moonVel(T); return [mv[0] - MOON_SPIN * ry, mv[1] + MOON_SPIN * rx]; }
 function touchMoon(f, rx, ry, d, T, burning) {
@@ -382,7 +405,7 @@ export function coastStep(f, h) {
 // The biggest safe coast step from here (seconds), or 0 if we should use small steps.
 export function coastLimit(f) {
   if (!f.lifted || f.onMoon || f.chuteOn || f.outcome) return 0;
-  if (f.engineOn && stage(f) && stage(f).fuel > 0 && f.throttle > 0) return 0;
+  if (f.engineOn && ((stage(f) && stage(f).fuel > 0) || (f.packOn && f.pack > 0)) && f.throttle > 0) return 0;
   if (f.alt < ATM_TOP + 500) return 0;
   const B = bodyRel(f), rb = Math.hypot(B.rx, B.ry);
   const alt = rb - B.rad;
@@ -425,7 +448,14 @@ export function resumeBurn(f) {
 }
 export function startComeHome(f) {
   const s = stage(f);
-  if (!s || s.fuel <= 0) return false;
-  f.retro = true; f.engineOn = true; f.ign = 0;
+  if (s && s.fuel > 0) { f.retro = true; f.engineOn = true; f.ign = 0; f.packOn = false; return true; }
+  if (!canUsePack(f)) return false;
+  // a small push does the most at the top of the path: on a stretched orbit, wait for the top, then fire
+  const o = orbitInfo(f);
+  if (!o.escape && o.apo - o.peri > 60000) { f.packWait = true; f.packSawUp = false; f.events.push('packWait'); return true; }
+  firePack(f);
   return true;
 }
+function firePack(f) { f.packWait = false; f.retro = true; f.engineOn = true; f.ign = 0; f.packOn = true; f.events.push('packFire'); }
+// the tank is empty, but the capsule's come-home rockets can still slow it down (only near the planet, not the Moon)
+export function canUsePack(f) { return !f.noCapsule && !f.payloadKind && f.pack > 0 && !f.packOn && !f.packWait && !f.inMoon && !f.onMoon && fuelLeft(f) <= 0; }

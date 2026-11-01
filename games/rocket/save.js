@@ -1,12 +1,12 @@
 // Heartbeat Rocket - the goal ladder and saved progress (no drawing, no DOM). Shared by the game and the test.
 // Built by Claude (Opus 5.5) for Heartbeat Observatory. CC0.
-import { NOSES, PAYLOADS } from './physics.js';
+import { NOSES, PAYLOADS, R, ATM_TOP } from './physics.js';
 import { relayRing, kepAt, kepPeri } from './missions.js';
 
 export const GOALS = [
   { id: 'clouds', alt: 2000,  title: 'Touch the clouds', done: 'You touched the clouds!', unlock: ['fins'],
     unlockText: 'New part: fins', unlockSub: 'Fins help your rocket fly straighter.' },
-  { id: 'space',  alt: 70000, title: 'Reach space', done: 'You reached space!', unlock: ['tall', 'stages'],
+  { id: 'space',  alt: ATM_TOP, title: 'Reach space', done: 'You reached space!', unlock: ['tall', 'stages'],
     unlockText: 'New parts: the tall tank and stages', unlockSub: 'A booster now stacks under your rocket. That is enough to go all the way around!' },
   { id: 'orbit',  alt: null,  title: 'Go all the way around', done: 'You went all the way around!', unlock: ['shield'],
     unlockText: 'New: the heat shield, and Do it yourself mode', unlockSub: 'Coming home from orbit is HOT. The shield keeps your capsule cool.' },
@@ -33,7 +33,7 @@ export const GOALS = [
 export const SAVE_KEY = 'hb-rocket-v1';            // same key since v1, so progress carries over
 export const WARPS = [1, 10, 50, 200];
 export const DEFAULT_SAVE = {
-  v: 3, reached: Object.fromEntries(GOALS.map(g => [g.id, false])),
+  v: 4, reached: Object.fromEntries(GOALS.map(g => [g.id, false])),
   unlocked: { fins: false, tall: false, stages: false, shield: false, stage3: false, legs: false, flag: false, weather: false, relay: false, telescope: false, module: false },
   seen: { fins: true, tall: true, stages: true, shield: true, stage3: true, legs: true, flag: true, weather: true, relay: true, telescope: true, module: true },
   config: { nose: 'capsule', tank: 'short', engine: 'small', fins: true, stages: 1, shield: true, legs: true },
@@ -70,6 +70,14 @@ export function migrate(s) {
     if (out.reached.home && !out.unlocked.stage3) { out.unlocked.stage3 = true; out.seen.stage3 = false; out.config.stages = 3; }
     out.v = 3;
   }
+  // v3 -> v4: the planet is our own size now (640 km with air to 80 km, was 600 km with air to 70 km). Things left
+  // in orbit keep their height above the top of the air: the low and high points of each saved orbit move out.
+  if (!s.v || s.v < 4) {
+    const LIFT = (R - OLD_R) + (ATM_TOP - OLD_AIR);
+    out.sats = out.sats.map(x => (x && x.kep ? { ...x, kep: liftKep(x.kep, LIFT) } : x));
+    if (out.station && out.station.kep) out.station = { ...out.station, kep: liftKep(out.station.kep, LIFT) };
+    out.v = 4;
+  }
   const c = out.config;
   if (!['short', 'medium', 'tall'].includes(c.tank) || (c.tank === 'tall' && !out.unlocked.tall)) c.tank = 'short';
   if (!noseOk(out, c.nose)) c.nose = 'capsule';
@@ -87,6 +95,13 @@ export function migrate(s) {
   return out;
 }
 const SATKINDS = ['weather', 'relay', 'telescope'];
+const OLD_R = 600000, OLD_AIR = 70000;   // the planet's radius and air top in saves before v4
+// the same orbit shape, d metres further from the centre at both its low and high point
+export function liftKep(k, d) {
+  if (!k || typeof k.a !== 'number' || typeof k.e !== 'number' || !(k.e < 1)) return k;
+  const rp = k.a * (1 - k.e) + d, ra = k.a * (1 + k.e) + d;
+  return { ...k, a: (rp + ra) / 2, e: (ra - rp) / (ra + rp) };
+}
 export function noseOk(save, n) {
   if (NOSES[n]) return true;
   if (!PAYLOADS[n]) return false;
@@ -94,6 +109,27 @@ export function noseOk(save, n) {
 }
 export function noseChoices(save) { return NOSE_LIST.filter(n => noseOk(save, n)); }
 export function currentGoal(save) { return GOALS.find(g => !save.reached[g.id]) || null; }
+// mark a goal done and hand out what it unlocks (the game and the test both use this)
+export function reachGoalIn(save, id) {
+  const g = GOALS.find(x => x.id === id);
+  save.reached[id] = true;
+  for (const u of g.unlock) {
+    save.unlocked[u] = true; save.seen[u] = false;
+    if (u === 'fins') save.config.fins = true;
+    if (u === 'stages') save.config.stages = 2;
+    if (u === 'shield') save.config.shield = true;
+    if (u === 'stage3') save.config.stages = 3;
+    if (u === 'legs') save.config.legs = true;
+  }
+  return g;
+}
+// which goals a safe landing back home finishes
+export function goalsOnLanding(save, f) {
+  const out = [];
+  if (f.wasOrbit && !save.reached.home) out.push('home');
+  if (f.moonLanded && !save.reached.moonhome && save.reached.moonland) out.push('moonhome');
+  return out;
+}
 
 // the relays in orbit right now, and whether they make a ring
 export function ringNow(save) {
@@ -102,4 +138,4 @@ export function ringNow(save) {
   return relayRing(pts);
 }
 // does a satellite released with these orbit elements stay up? (its low point is above the air)
-export function staysUp(kep) { return kepPeri(kep) > 70000 && kep.e < 1; }
+export function staysUp(kep) { return kepPeri(kep) > ATM_TOP && kep.e < 1; }
