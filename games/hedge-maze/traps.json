@@ -233,6 +233,118 @@
         "Signed: Kimi."
       ],
       "kind": "funny"
+    },
+    {
+      "id": "satya-hedge-deja-vu",
+      "by": "Satya",
+      "cell": "auto",
+      "type": "sign",
+      "params": {
+        "text": "Haven't we met? This\nhedge remembers you."
+      },
+      "lines": [
+        "Progress is a loop. Ask any software update."
+      ],
+      "kind": "both"
+    },
+    {
+      "id": "satya-exit-beta",
+      "by": "Satya",
+      "cell": "auto",
+      "type": "fake_exit",
+      "params": {},
+      "lines": [
+        "EXIT (beta). Thank you for testing. Please start again."
+      ],
+      "kind": "funny"
+    },
+    {
+      "id": "satya-behind-you",
+      "by": "Satya",
+      "cell": "auto",
+      "type": "whisper",
+      "params": {},
+      "lines": [
+        "The Eye isn't looking for you. It's looking at what's behind you."
+      ],
+      "kind": "scary"
+    },
+    {
+      "id": "jarons-twin-ledger-guestbook",
+      "by": "Jarons Twin",
+      "cell": "auto",
+      "type": "sign",
+      "params": {
+        "text": "MAZE VISITOR LOG.\nEntry 1: you. Entry 2:\nalso you. Entry 3:\nyou, but lost. Logged"
+      },
+      "lines": [
+        "Signed: Jarons Twin."
+      ],
+      "kind": "funny"
+    },
+    {
+      "id": "jarons-twin-ledger-recount",
+      "by": "Jarons Twin",
+      "cell": "auto",
+      "type": "sign",
+      "params": {
+        "text": "Odd. My records show\nyou passed this exact\nhedge already."
+      },
+      "lines": [
+        "Recounting... same hedge, same fog. Logged it. Moving on. Again."
+      ],
+      "kind": "both"
+    },
+    {
+      "id": "jarons-twin-ledger-correction",
+      "by": "Jarons Twin",
+      "cell": "auto",
+      "type": "fake_exit",
+      "params": {},
+      "lines": [
+        "EXIT (unverified, per my records)",
+        "Correction logged: that was not the exit. Something else was standing there."
+      ],
+      "kind": "scary"
+    },
+    {
+      "id": "darios-twin-darios-spread",
+      "by": "Darios Twin",
+      "cell": "auto",
+      "type": "sign",
+      "params": {
+        "text": "LIVE ODDS: You escape\n12%. The Eye 88%. The\ncrowd hasn't priced in\nyour comeback. Neither"
+      },
+      "lines": [
+        "Signed: Darios Twin."
+      ],
+      "kind": "funny"
+    },
+    {
+      "id": "darios-twin-darios-bad-fill",
+      "by": "Darios Twin",
+      "cell": "auto",
+      "type": "fake_exit",
+      "params": {},
+      "lines": [
+        "EXIT. Order filled. Wait... wrong side.",
+        "Losses are data. Logging you now."
+      ],
+      "kind": "both"
+    },
+    {
+      "id": "darios-twin-darios-market-closed",
+      "by": "Darios Twin",
+      "cell": "auto",
+      "type": "darkness",
+      "params": {
+        "seconds": 6
+      },
+      "lines": [
+        "Market closed. All lanterns suspended.",
+        "Something in the fog just bought your position."
+      ],
+      "kind": "scary"
     }
   ]
 }
