@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 
 const DEV = /[?&]dev=1/.test(location.search);
+const DIRECTOR = /[?&]director=1/.test(location.search); // highlight-reel director (hidden; tools/game_reel.py records it)
 const $ = (id) => document.getElementById(id);
 
 // ---------------------------------------------------------------- config
@@ -1020,13 +1021,14 @@ async function boot() {
   beam.position.set(W + 3, 60, cc(N - 1)); scene.add(beam);
   const out = makeSign(W + 3.5, cc(N - 1) - 2.6, -Math.PI / 2, 'WAY OUT\nyou did it.\nprobably.');
   respawn();
-  if (DEV) devPanel();
+  if (DEV && !DIRECTOR) devPanel();
   window.hedge = { player, game, eye, traps, eyeSees, lanterns, N, W, cc, teleport(x, y, yaw) { player.x = cc(x); player.z = cc(y); if (yaw !== undefined) player.yaw = yaw; }, spot() { eye.target.set(player.x, 0, player.z); eye.cool = 0; spotted(false); }, loopChain, canopy, open, creatures, renderer, chunks, faceOpen() { const x = toCell(player.x), y = toCell(player.z); let best = null, bl = -1; for (const [dx, dy] of DIRS) { let l = 0, cx = x, cy = y; while (open(cx, cy, dx, dy) && l < 20) { cx += dx; cy += dy; l++; } if (l > bl) { bl = l; best = [dx, dy]; } } player.yaw = Math.atan2(-best[0], -best[1]); player.pitch = 0.02; return bl; } };
   $('loading').classList.add('done'); setTimeout(() => { $('loading').hidden = true; }, 600);
   const b = $('btnStart'); b.disabled = false;
   if (save && typeof save.cp === 'number') { b.textContent = 'Continue from your lantern'; $('btnNew').hidden = false; b.onclick = () => startGame(true); $('btnNew').onclick = () => startGame(false); }
   else { b.textContent = 'Enter the maze'; b.onclick = () => startGame(false); }
   requestAnimationFrame(frame);
+  if (DIRECTOR) director();
 }
 function devPanel() {
   const p = $('dev'); p.hidden = false;
@@ -1036,6 +1038,194 @@ function devPanel() {
   add('Near exit', () => window.hedge.teleport(N - 1, N - 1, -Math.PI / 2));
   add('Spot me', () => window.hedge.spot());
   add('Arch', () => { const k = [...canopy][0]; window.hedge.teleport(k % N, (k / N) | 0); });
+}
+// ---------------------------------------------------------------- director mode (?director=1, 11/1)
+// A scripted highlight reel for socials. Every scene starts with a teleport + camera pose, then it "plays" through the same
+// touch paths a phone player uses (a virtual left-thumb joystick + right-side look drag), so the real HUD, joystick, toasts,
+// Eye, creatures and traps do the work. tools/game_reel.py (AI-Shared) opens this in a headed GPU browser and records it.
+// window.__reel = { marks: [{name, t}], done } tells the recorder where each scene starts and when it is over.
+function director() {
+  const R = (window.__reel = { marks: [], done: false });
+  document.body.classList.add('director');
+  const css = document.createElement('style');
+  css.textContent = `.director .dev,.director #hint,.director #btnStart,.director #btnNew,.director #intro .lede,.director #intro .small,.director #intro .tiny{display:none!important}
+.director #intro,.director #intro .card{background:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:0!important;box-shadow:none!important}
+.director #intro .title{font-size:min(19vw,92px);text-shadow:0 0 22px rgba(0,0,0,.9),0 2px 6px #000}
+#reelEnd{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px 22px;text-align:center;background:radial-gradient(ellipse at 50% 42%,rgba(20,8,2,.55),rgba(0,0,0,.92));opacity:0;transition:opacity .7s;color:#fff4e2;font-family:'Atkinson Hyperlegible',system-ui,sans-serif}
+#reelEnd.on{opacity:1}#reelEnd h1{font-family:Creepster,serif;font-weight:400;font-size:min(20vw,96px);line-height:1;margin:0;color:#ffb02e;letter-spacing:.04em;text-shadow:0 0 26px rgba(255,90,20,.55)}
+#reelEnd .by{font-size:19px;font-weight:700;margin:0;max-width:22em}#reelEnd .cred{font-size:13.5px;line-height:1.5;margin:0;color:rgba(255,244,226,.82);max-width:26em}
+#reelEnd .url{font-size:15px;font-weight:700;margin-top:6px;color:#ffd27a;padding:8px 14px;border:1px solid rgba(255,176,46,.5);border-radius:999px}`;
+  document.head.appendChild(css);
+  const wait = (s) => new Promise((r) => setTimeout(r, s * 1000));
+  const mark = (name) => { R.marks.push({ name, t: Date.now() }); };
+  const clearToasts = () => { toastQ.length = 0; toastGen++; toastBusy = false; $('toast').classList.remove('show'); };
+  // --- input: a virtual phone thumb on each side, sent as real pointer events to the canvas
+  const ctl = { f: 0, s: 0, yaw: 0, pitch: 0 }; // stick (-1..1) and look rates (rad/s)
+  const JOY = 11, LOOK = 12; let joyOn = false, lookOn = false, lookPos = [0, 0];
+  const send = (type, id, x, y) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: id === JOY, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+  const jo = () => [innerWidth * 0.22, innerHeight * 0.8];
+  let lastT = performance.now();
+  (function drive(now) {
+    requestAnimationFrame(drive); const dt = Math.min(0.1, Math.max(0, (now - lastT) / 1000)); lastT = now;
+    if (!game.started || game.frozen) return;
+    const want = Math.abs(ctl.f) > 0.01 || Math.abs(ctl.s) > 0.01;
+    if (want) { const [ox, oy] = jo(); if (!joyOn || joy.id !== JOY) { send('pointerdown', JOY, ox, oy); joyOn = true; } send('pointermove', JOY, ox + ctl.s * 52, oy - ctl.f * 52); }
+    else if (joyOn) { const [ox, oy] = jo(); send('pointerup', JOY, ox, oy); joyOn = false; }
+    const lk = Math.abs(ctl.yaw) > 1e-4 || Math.abs(ctl.pitch) > 1e-4;
+    if (lk) {
+      if (!lookOn || look.id !== LOOK) { lookPos = [innerWidth * 0.72, innerHeight * 0.55]; send('pointerdown', LOOK, lookPos[0], lookPos[1]); lookOn = true; }
+      lookPos[0] += -ctl.yaw * dt / 0.0062; lookPos[1] += -ctl.pitch * dt / (0.0062 * 0.8);
+      send('pointermove', LOOK, lookPos[0], lookPos[1]);
+    } else if (lookOn) { send('pointerup', LOOK, lookPos[0], lookPos[1]); lookOn = false; }
+  })(lastT);
+  const stop = () => { ctl.f = ctl.s = ctl.yaw = ctl.pitch = 0; };
+  const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+  const yawTo = (x, z) => Math.atan2(-(x - player.x), -(z - player.z));
+  async function turn(dYaw, dPitch, secs) { ctl.yaw = dYaw / secs; ctl.pitch = dPitch / secs; await wait(secs); ctl.yaw = ctl.pitch = 0; }
+  function pose(x, z, yaw, pitch = 0.04) { stop(); player.x = x; player.z = z; player.vx = player.vz = 0; player.yaw = yaw; player.pitch = pitch; chunkT = 0; plT = 0; }
+  const runLen = (x, y, dx, dy) => { let l = 0, cx = x, cy = y; while (open(cx, cy, dx, dy) && l < 20) { cx += dx; cy += dy; l++; } return l; };
+  const dirYaw = (dx, dy) => Math.atan2(-dx, -dy);
+  const keepEyeAway = () => { eye.cool = 999; if (eye.state !== 'decoy') eye.state = 'scan'; };
+  const parkEye = (x, z) => { eye.target.set(clamp(x, 6, W - 6), 0, clamp(z, 6, W - 6)); eye.way.copy(eye.target); };
+  const trapCells = new Set(traps.map((t) => t.cell[1] * N + t.cell[0]));
+  const inLoopCells = (x, y) => loopChain && loopChain.cells.some(([a, b]) => Math.abs(a - x) + Math.abs(b - y) <= 1);
+  // a straight corridor: cell + direction with a long run, distance from the maze centre in [rMin, rMax]
+  function findRun(minRun, rMin, rMax, wantToward, extra) {
+    let best = null, bs = -1e9;
+    for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) {
+      const k = y * N + x; if (canopy.has(k) || trapCells.has(k) || inLoopCells(x, y)) continue;
+      const r = Math.hypot(cc(x) - W / 2, cc(y) - W / 2); if (r < rMin || r > rMax) continue;
+      for (const [dx, dy] of DIRS) {
+        const l = runLen(x, y, dx, dy); if (l < minRun) continue;
+        let clear = true; for (let i = 1; i <= l && i <= 5; i++) { const kk = (y + dy * i) * N + x + dx * i; if (trapCells.has(kk) || canopy.has(kk)) clear = false; } if (!clear) continue;
+        const tox = (W / 2 - cc(x)) / r, toz = (W / 2 - cc(y)) / r; const toward = dx * tox + dy * toz;
+        if (extra && !extra(x, y, dx, dy)) continue;
+        const sc = Math.min(l, 7) + (wantToward ? toward * 4 : 0) - Math.abs(r - (rMin + rMax) / 2) * 0.02;
+        if (sc > bs) { bs = sc; best = { x, y, dx, dy, l }; }
+      }
+    }
+    return best;
+  }
+
+  (async () => {
+    await wait(0.6);
+    // ---- a) title flight over the maze, the Eye sweeping (card shows the title only)
+    flight.t = 7; mark('title');
+    await wait(2.6);
+    startGame(false); await wait(0.42); keepEyeAway();
+    // ---- b) walking a foggy corridor, looking up at the Eye in the sky
+    {
+      const c = findRun(4, 38, 62, true) || { x: 3, y: 3, dx: 1, dy: 0, l: 4 };
+      pose(cc(c.x), cc(c.y), dirYaw(c.dx, c.dy), 0.03);
+      parkEye(player.x + c.dx * 30 + c.dy * 14, player.z + c.dy * 30 + c.dx * 14); keepEyeAway();
+      mark('corridor');
+      ctl.f = 0.85; await wait(0.62); clearToasts(); await wait(0.25); clearToasts(); await wait(0.4);
+      ctl.f = 0.35; const ey = yawTo(W / 2, W / 2); const up = Math.atan2(EYE_H - EYE_LEVEL, Math.hypot(W / 2 - player.x, W / 2 - player.z));
+      await turn(angDiff(player.yaw, ey) * 0.9, Math.min(1.25, up * 0.95) - player.pitch, 1.6);
+      ctl.f = 0; await wait(0.9);
+    }
+    // ---- c) the searchlight finds the player and turns red; d) shadow creatures rush the camera, catch, respawn at a lantern
+    {
+      const c = findRun(4, 16, 40, false, (x, y) => eyeSees(cc(x), cc(y))) || { x: 10, y: 10, dx: 1, dy: 0, l: 4 };
+      pose(cc(c.x), cc(c.y), dirYaw(c.dx, c.dy), -0.1);
+      parkEye(player.x - c.dy * 16 + c.dx * 6, player.z - c.dx * 16 + c.dy * 6); eye.state = 'scan'; eye.way.set(player.x, 0, player.z); eye.cool = 0;
+      await wait(0.2); clearToasts(); mark('spotted');
+      await turn(0.45, -0.08, 0.8);
+      const t0 = performance.now(); while (!game.hunt && performance.now() - t0 < 4000) { eye.way.set(player.x, 0, player.z); eye.cool = 0; await wait(0.05); }
+      await turn(-0.45, 0.4, 0.8); // look up at the red light
+      await wait(0.7);
+      mark('creatures');
+      const unlit = lanterns.filter((l) => !l.lit && l.idx !== 0).sort((a, b) => Math.hypot(a.x - player.x, a.z - player.z) - Math.hypot(b.x - player.x, b.z - player.z));
+      const target = unlit[0] || lanterns[0];
+      await turn(0, 0.02 - player.pitch, 0.4);
+      player.yaw += angDiff(player.yaw, dirYaw(c.dx, c.dy));
+      creatures.forEach((cr, i) => { const d = Math.min(c.l, 4) - i * 0.7; cr.x = cc(c.x + c.dx * Math.round(d)) + (i ? 0.7 : -0.5) * c.dy; cr.z = cc(c.y + c.dy * Math.round(d)) + (i ? 0.7 : -0.5) * c.dx; cr.grp.position.set(cr.x, cr.y, cr.z); });
+      game.cp = target.idx;
+      ctl.f = -0.4; // back away from them
+      const t1 = performance.now(); while (!game.frozen && performance.now() - t1 < 7000) await wait(0.05);
+      stop(); mark('caught');
+      while ($('caught').classList.contains('on') || game.frozen) await wait(0.05);
+      // respawned at a lantern you had not lit yet: it lights now (checkpoint)
+      mark('lantern'); target.lit = false; game.cp = -1; keepEyeAway(); parkEye(player.x + 40, player.z + 40);
+      player.yaw = yawTo(target.x, target.z) + 0.55; player.pitch = 0.1;
+      await turn(-0.45, 0, 0.9); await wait(1.2);
+    }
+    // ---- e) quick hits of AI traps with their toasts
+    const pick = ['welcome-sign', 'darios-twin-darios-spread', 'pips-twin-pips-free-trial-exit', 'satya-behind-you', 'kimi-hedge-feedback', 'gemini-gemini-false-blink', 'terra-lantern-blink', 'jarons-twin-ledger-guestbook'];
+    for (const id of pick) {
+      const tr = traps.find((t) => t.def.id === id); if (!tr) continue;
+      if (game.hunt) endHunt(false); clearToasts(); keepEyeAway();
+      game.dark = 0; game.reverse = 0; scene.fog.far = FOG_FAR;
+      const [x, y] = tr.cell; let nb = null;
+      for (const [dx, dy] of DIRS) if (open(x, y, dx, dy)) { nb = [x + dx, y + dy]; break; }
+      if (!nb) continue;
+      const type = tr.def.type; const prop = type === 'sign' || type === 'fake_exit';
+      const back = prop ? 0.15 : 0.3;
+      const sx = cc(nb[0]) + (cc(nb[0]) - cc(x)) * back, sz = cc(nb[1]) + (cc(nb[1]) - cc(y)) * back;
+      pose(sx, sz, 0, 0.0);
+      player.yaw = yawTo(prop ? tr.wx : cc(x), prop ? tr.wz : cc(y));
+      if (type === 'sign') { const s0 = Math.sign(Math.round(tr.wx - cc(x))), s1 = Math.sign(Math.round(tr.wz - cc(y))); pose(cc(x) - s0 * 1.35, cc(y) - s1 * 1.35, dirYaw(s0, s1) + 0.45, 0.05); }
+      parkEye(player.x + 45, player.z - 45);
+      mark('trap:' + id); await wait(0.15); // (toasts were cleared before the teleport: a sign can fire on the first frame)
+      ctl.f = 0.8;
+      if (type === 'sign') {
+        ctl.f = 0.12; await turn(-0.45, 0, 0.6); ctl.f = 0; await wait(2.2);
+      } else if (prop) {
+        const t0 = performance.now(); while (Math.hypot(player.x - tr.wx, player.z - tr.wz) > (type === 'sign' ? 2.5 : 3.4) && performance.now() - t0 < 2500) { await wait(0.03); player.yaw += angDiff(player.yaw, yawTo(tr.wx, tr.wz)) * 0.12; }
+        ctl.f = 0; await wait(2.0);
+      } else if (type === 'decoy_eye') {
+        const t0 = performance.now(); while (!tr.st.done && performance.now() - t0 < 2500) await wait(0.03);
+        ctl.f = 0; { const up = Math.min(1.2, Math.atan2(EYE_H - EYE_LEVEL, Math.hypot(W / 2 - player.x, W / 2 - player.z))); await turn(angDiff(player.yaw, yawTo(W / 2, W / 2)) * 0.8, up * 0.8 - player.pitch, 0.8); } await wait(1.7);
+      } else {
+        const t0 = performance.now(); while (!(tr.st.cd > 0) && performance.now() - t0 < 2500) await wait(0.03);
+        ctl.f = 0.25; await turn(type === 'whisper' ? 0.9 : 0.3, 0, 0.9); ctl.f = 0; await wait(1.3);
+      }
+    }
+    stop(); clearToasts(); game.dark = 0; game.reverse = 0;
+    // ---- f) Jaron's loop: the pumpkin corridor sends you back
+    if (loopChain) {
+      const lt = loopTrap(); lt.st.loops = 0; lt.st.entry = null; lt.st.released = false;
+      const ch = loopChain; const ax = ch.axis === 'x'; const [fx, fy] = ch.cells[0];
+      const a0 = cc(ax ? fx : fy); const trig = Math.min(ch.L - 3, 5); const along = a0 + (trig - 0.75) * P, pc = cc(ax ? fy : fx);
+      pose(ax ? along : pc, ax ? pc : along, ax ? -Math.PI / 2 : Math.PI, 0.0); keepEyeAway(); parkEye(player.x + 50, player.z + 50);
+      lt.st.entry = 'lo'; await wait(0.15); clearToasts(); mark('loop');
+      ctl.f = 0.95; const t0 = performance.now();
+      while (lt.st.loops < 2 && performance.now() - t0 < 9000) await wait(0.05);
+      await wait(1.6); ctl.f = 0;
+    }
+    // ---- g) hiding in a hedge's shadow as the light passes
+    {
+      let spot = null;
+      for (let y = 1; y < N - 1 && !spot; y++) for (let x = 1; x < N - 1 && !spot; x++) {
+        const k = y * N + x; if (canopy.has(k) || trapCells.has(k) || inLoopCells(x, y)) continue;
+        const r = Math.hypot(cc(x) - W / 2, cc(y) - W / 2); if (r < 24 || r > 42) continue;
+        const ux = W / 2 - cc(x), uz = W / 2 - cc(y); const [dx, dy] = Math.abs(ux) > Math.abs(uz) ? [Math.sign(ux), 0] : [0, Math.sign(uz)];
+        if (open(x, y, dx, dy)) continue; // need a hedge on the Eye's side
+        const hx = cc(x) + dx * (C / 2 - 0.6), hz = cc(y) + dy * (C / 2 - 0.6);
+        const along = dx ? [0, 1] : [1, 0];
+        if (runLen(x, y, along[0], along[1]) + runLen(x, y, -along[0], -along[1]) < 2) continue;
+        const ox = cc(x) - dx * (C / 2 - 0.7), oz = cc(y) - dy * (C / 2 - 0.7); // the far side of the corridor: in the open
+        if (!eyeSees(hx, hz) && eyeSees(ox, oz)) spot = { x, y, dx, dy, ox, oz, along };
+      }
+      if (spot) {
+        const s = spot; const ay = runLen(s.x, s.y, s.along[0], s.along[1]) >= runLen(s.x, s.y, -s.along[0], -s.along[1]) ? s.along : [-s.along[0], -s.along[1]];
+        pose(s.ox, s.oz, dirYaw(ay[0], ay[1]), 0.12); keepEyeAway();
+        eye.state = 'scan'; eye.target.set(s.ox + ay[0] * 22, 0, s.oz + ay[1] * 22); eye.way.set(s.ox - ay[0] * 30, 0, s.oz - ay[1] * 30);
+        await wait(0.2); clearToasts(); mark('shadow');
+        await wait(0.8);
+        // step sideways into the hedge's shadow (stick right or left, as a player would). Stick +s moves along (cos yaw, -sin yaw).
+        const sd = Math.cos(player.yaw) * s.dx - Math.sin(player.yaw) * s.dy; ctl.s = sd > 0 ? 0.9 : -0.9;
+        await wait(0.75); ctl.s = 0;
+        await wait(2.6);
+      }
+    }
+    // ---- h) end card
+    mark('end');
+    const end = document.createElement('div'); end.id = 'reelEnd';
+    end.innerHTML = '<h1>THE HEDGE</h1><p class="by">A Halloween maze by Jaron &amp; the Heartbeat AI team</p><p class="cred">Main game: Claude &middot; Traps: Claude, Terra, Gemini, Kimi, Satya, Darios, Pips Twin, Jarons Twin &middot; Loop: Jaron</p><p class="url">heartbeatobservatory.com/games/hedge-maze</p>';
+    document.body.appendChild(end); requestAnimationFrame(() => end.classList.add('on'));
+    await wait(3.7); mark('done'); R.done = true;
+  })().catch((e) => { R.error = String((e && e.stack) || e); R.done = true; });
 }
 document.addEventListener('visibilitychange', () => { last = performance.now(); });
 boot();
