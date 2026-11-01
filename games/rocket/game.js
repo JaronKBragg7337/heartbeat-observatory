@@ -3,7 +3,10 @@
 // height, stages, reentry heat), drawn in real-looking 3D with three.js. A small planet like Kerbal's: radius
 // 600 km, surface gravity 9.81, air up to 70 km, so orbit is about 2.3 km/s.
 // v2: stages, going all the way around, the map with a path that shows where you go, coming home with a
-// heat shield. Built by Claude (Opus 5.5) for Heartbeat Observatory. CC0.
+// heat shield.
+// v3: the flight guide (a short line before, during and after each event, and why it happens) and
+// Do it yourself mode (no autopilot helpers; unlocks after going all the way around once).
+// Built by Claude (Opus 5.5) for Heartbeat Observatory. CC0.
 import * as THREE from 'three';
 import {
   R, G0, ATM_TOP, PAD_H, SITE_R, STEP, DEG, NOSES, TANKS, ENGINES,
@@ -17,7 +20,7 @@ const GOALS = [
   { id: 'space',  alt: 70000, title: 'Reach space', done: 'You reached space!', unlock: ['tall', 'stages'],
     unlockText: 'New parts: the tall tank and stages', unlockSub: 'A booster now stacks under your rocket. That is enough to go all the way around!' },
   { id: 'orbit',  alt: null,  title: 'Go all the way around', done: 'You went all the way around!', unlock: ['shield'],
-    unlockText: 'New part: the heat shield', unlockSub: 'Coming home from orbit is HOT. The shield keeps your capsule cool.' },
+    unlockText: 'New: the heat shield, and Do it yourself mode', unlockSub: 'Coming home from orbit is HOT. The shield keeps your capsule cool.' },
   { id: 'home',   alt: null,  title: 'Come home safe', done: 'You came home safe!', unlock: [],
     unlockText: 'Next: fly to the Moon', unlockSub: 'Coming soon in the next version.' },
 ];
@@ -31,6 +34,9 @@ const DEFAULT_SAVE = {
   seen: { fins: true, tall: true, stages: true, shield: true },
   config: { nose: 'capsule', tank: 'short', engine: 'small', fins: true, stages: 1, shield: true },
   nums: false, sound: true, best: 0, flights: 0, warp: 10,
+  diy: false,          // "Do it yourself": no autopilot helpers (unlocks after going all the way around once)
+  guideAll: false,     // flight guide: false = a line stops showing after 3 flights; true = every line, every flight
+  heard: {},           // how many flights each guide line has been shown in
 };
 function loadSave() {
   try {
@@ -50,6 +56,7 @@ function loadSave() {
     if (!['small', 'big'].includes(out.config.engine)) out.config.engine = 'small';
     if (out.config.stages !== 2 || !out.unlocked.stages) out.config.stages = out.unlocked.stages && out.config.stages === 2 ? 2 : 1;
     if (!WARPS.includes(out.warp)) out.warp = 10;
+    out.diy = !!(out.diy && out.reached.orbit); out.guideAll = !!out.guideAll;
     return out;
   } catch (e) { return structuredClone(DEFAULT_SAVE); }
 }
@@ -74,6 +81,8 @@ const ui = {
   card: $('card'), cardArt: $('cardArt'), cardTitle: $('cardTitle'), cardText: $('cardText'),
   cardUnlock: $('cardUnlock'), cardNext: $('cardNext'), cardBtn: $('cardBtn'), cardBtn2: $('cardBtn2'),
   mapWrap: $('mapWrap'), map: $('map'), mapCap: $('mapCap'), loading: $('loading'),
+  eng: $('btnEng'), guide: $('guide'), guideK: $('guideK'), guideT: $('guideT'),
+  opts: $('opts'), btnDiy: $('btnDiy'), vDiy: $('vDiy'), btnGuide: $('btnGuide'), vGuide: $('vGuide'),
 };
 
 // ---------------------------------------------------------------- renderer
@@ -710,13 +719,14 @@ let camSmooth = null;
 function cfgFins() { return !!(save.unlocked.fins && save.config.fins); }
 function cfgShield() { return !!(save.unlocked.shield && save.config.shield); }
 function cfgStages() { return save.unlocked.stages && save.config.stages === 2 ? 2 : 1; }
+function cfgDiy() { return !!(save.diy && save.reached.orbit); }
 function flightCfg() {
-  const c = save.config;
-  return { nose: c.nose, tank: c.tank, engine: c.engine, fins: cfgFins(), shield: cfgShield(), stages: cfgStages(), coastAssist: !!save.unlocked.stages };
+  const c = save.config, diy = cfgDiy();
+  return { nose: c.nose, tank: c.tank, engine: c.engine, fins: cfgFins(), shield: cfgShield(), stages: cfgStages(), coastAssist: !!save.unlocked.stages && !diy, diy };
 }
 function newFlight() {
   const f = physicsFlight(flightCfg());
-  Object.assign(f, { newGoals: [], endIn: -1, track: [], exploded: false, dropAuto: -1, burnPressed: false, sputter: 0, hint: '' });
+  Object.assign(f, { newGoals: [], endIn: -1, track: [], exploded: false, dropAuto: -1, burnPressed: false, sputter: 0, hint: '', said: new Set() });
   return f;
 }
 function vRadial(f) { return (f.vx * f.x + f.vy * f.y) / Math.hypot(f.x, f.y); }
@@ -737,14 +747,25 @@ function explode(f, hot) {
 // ---------------------------------------------------------------- flight events (from physics, goals, results)
 function handleEvents(f) {
   for (const e of f.events) {
-    if (e === 'stageEmpty') { f.sputter = 0.9; sound.cough(); f.dropAuto = 5; toast('Bottom tank is empty!', 'Tap Drop stage'); }
-    else if (e === 'burnout') { f.sputter = 0.9; sound.cough(); }
-    else if (e === 'coast') { sound.chime(false); toast('The top of your path is in space!', 'Engine resting. At the top: lean flat, tap Burn.'); }
-    else if (e === 'orbitCut') { sound.burst(0.3, 500, 0.3); }
-    else if (e === 'retroDone') { doSeparate(); toast('Heading home!', 'The empty tank lets go. Shield first!'); }
-    else if (e === 'retroNoFuel') { toast('Out of fuel!', 'Not enough to slow down, so you keep going around.'); }
+    if (e === 'stageEmpty') {
+      f.sputter = 0.9; sound.cough(); f.dropAuto = f.diy ? -1 : 5;
+      say(f, 'stage1', f.diy ? 'Bottom tank empty! Tap Drop stage.' : 'Bottom tank empty! Tap Drop stage, or it drops by itself.', 'now', { urgent: true, must: f.diy });
+    }
+    else if (e === 'burnout') {
+      f.sputter = 0.9; sound.cough();
+      say(f, 'fuel1', 'Out of fuel! The engine stops, but the rocket keeps moving.', 'now', { urgent: true });
+      if (vRadial(f) > 40 && !inOrbit(f)) say(f, 'fuel2', 'Why still going up? It is still fast. Gravity slows it bit by bit, like a ball thrown up.', 'why', { valid: g => vRadial(g) > 0 });
+    }
+    else if (e === 'coast') {
+      sound.chime(false);
+      say(f, 'coast1', 'The top of your path reaches space now. The engine rests to save fuel.', 'now', { urgent: true, must: true });
+      say(f, 'coast2', 'Why rest? You keep flying up on your speed. The fuel waits for the big push at the top.', 'why');
+    }
+    else if (e === 'orbitCut') { sound.burst(0.3, 500, 0.3); say(f, 'orbit1', 'The engine stopped by itself: you are fast enough to go all the way around!', 'now', { urgent: true }); }
+    else if (e === 'retroDone') { doSeparate(); say(f, 'home3', 'Slow enough! The empty tank lets go. Only the capsule comes home.', 'now', { urgent: true }); }
+    else if (e === 'retroNoFuel') { say(f, 'home4', 'Out of fuel! Not enough to slow down, so you keep going around.', 'now', { urgent: true, must: true }); }
     else if (e === 'toasty') { f.endIn = 2.4; explode(f, true); }
-    else if (e === 'landed') { f.endIn = 1.4; sound.burst(0.3, 300, 0.4); if (f.wasOrbit && !save.reached.home) reachGoal(f, GOALS[3]); }
+    else if (e === 'landed') { f.endIn = 1.4; sound.burst(0.3, 300, 0.4); say(f, 'land1', 'Touchdown! Slow enough for a soft landing.', 'now', { urgent: true }); if (f.wasOrbit && !save.reached.home) reachGoal(f, GOALS[3]); }
     else if (e === 'crash') { f.endIn = 2.0; explode(f, false); }
   }
   f.events.length = 0;
@@ -759,7 +780,9 @@ function checkGoals(f) {
   if (!f.wasOrbit && !f.engineOn && !f.retro && inOrbit(f)) {
     f.wasOrbit = true;
     if (!save.reached.orbit) { reachGoal(f, GOALS[2], true); showOrbitCard(f); }
-    else toast('All the way around!', fuelLeft(f) > 0 ? 'Tap Come home when you are ready.' : 'No fuel left to come home. Tap X when you are done.');
+    else say(f, 'orbit2', 'Orbit! You are falling, but so fast sideways that you keep missing the ground.', 'now', { urgent: true });
+    say(f, 'orbit3', 'Why does it keep going around? There is no air up here to slow it down.', 'why', { valid: inOrbit });
+    if (fuelLeft(f) <= 0) say(f, 'home5', 'No fuel left to come home. Tap X when you are done.', 'tip', { must: true, valid: inOrbit });
   }
 }
 function reachGoal(f, g, quiet) {
@@ -781,7 +804,7 @@ function reachGoal(f, g, quiet) {
 
 function finishFlight() {
   const f = F; if (!f) return;
-  mode = 'result';
+  mode = 'result'; guideClear();
   save.flights++; save.best = Math.max(save.best, f.maxAlt); writeSave();
   showResult(f);
 }
@@ -806,7 +829,7 @@ function showCard({ art, title, text = '', unlock = '', next = '', btn = 'Back t
   ui.cardBtn.textContent = btn;
   ui.cardBtn2.textContent = btn2; ui.cardBtn2.hidden = !btn2;
   ui.card.hidden = false;
-  ui.act.hidden = true; ui.ff.hidden = true; ui.warp.hidden = true; ui.leanHint.hidden = true;
+  ui.act.hidden = true; ui.ff.hidden = true; ui.warp.hidden = true; ui.leanHint.hidden = true; ui.eng.hidden = true;
   setTimeout(() => ui.cardBtn.focus({ preventScroll: true }), 50);
 }
 function showOrbitCard(f) {
@@ -817,7 +840,7 @@ function showOrbitCard(f) {
     art: ART.orbit, title: g.done,
     text: 'Your rocket is falling sideways so fast that it keeps missing the ground. That is an orbit!',
     unlock: `${g.unlockText}<small>${f.shield ? g.unlockSub : 'This rocket has no shield yet, so coming home now will get toasty! Try it, or put the shield on next time.'}</small>`,
-    next: `Next goal: <b>Come home safe</b>${hasFuel ? '. Tap <b>Come home</b> when you are ready.' : ''}`,
+    next: `Next goal: <b>Come home safe</b>${!hasFuel ? '' : f.diy ? '. Point backward and tap <b>Burn</b> to slow down.' : '. Tap <b>Come home</b> when you are ready.'}`,
     btn: 'Keep flying', btn2: 'Back to hangar',
   });
 }
@@ -841,7 +864,7 @@ function showResult(f) {
     title = top.done;
     if (top.id === 'home') text = 'All the way around the planet, through the fire, and down under the parachute. A real space trip!';
     else if (f.outcome === 'landed') text = got.length > 1 ? 'Clouds and space in one flight! And you landed safely.' : 'And your capsule landed safely.';
-    else if (f.outcome === 'crash') text = 'The landing was a bit bumpy, but you did it!';
+    else if (f.outcome === 'crash') text = f.diy && !f.chuteOn ? 'You did it! But the parachute stayed closed, so the landing went bonk. Tap Open parachute next time.' : 'The landing was a bit bumpy, but you did it!';
     else if (top.id === 'orbit') text = 'Your rocket is falling sideways so fast that it keeps missing the ground.';
     else if (got.length > 1) text = 'Clouds and space in one flight!';
     unlock = got.map(g => `${g.unlockText}<small>${g.unlockSub}</small>`).join('');
@@ -864,6 +887,10 @@ function suggestion(f) {
 }
 function orbitTip(f) {
   const c = save.config;
+  if (f.diy && cfgStages() === 2 && c.tank !== 'short' && f.maxAlt > 20000) {
+    if (f.maxAlt < ATM_TOP) return 'Lean over a little at a time after 9 km, and keep burning until the top of your path is in space.';
+    return 'Do it yourself: tap Stop engine once the top of your path is in space. Coast up, then lean flat and tap Burn at the top.';
+  }
   if (cfgStages() === 1 && save.unlocked.stages) return 'Tap + Stage in the hangar. A booster gives you lots more push.';
   if (c.tank === 'short') return 'Try the medium tank on top of the booster?';
   if (c.engine === 'small' && (c.tank === 'tall' || f.maxAlt < ATM_TOP)) return 'Try the big engine on top. The small one is too weak to push that much fuel sideways.';
@@ -876,16 +903,18 @@ function hintFor(f, goal) {
   if (f.outcome === 'heavy') return { art: ART.heavy, title: 'Too heavy to lift off!',
     text: 'The small engine can\'t push that much fuel. Try the big engine?' };
   if (f.outcome === 'crash') {
+    if (f.diy && !f.chuteOn && !f.engineWasOnAtHit) return { art: ART.puff, title: 'Bonk! No parachute',
+      text: 'In Do it yourself mode the parachute only opens when you tap it. Tap Open parachute once you are falling below the clouds.' };
     if (f.leanLow > 0.5 || f.engineWasOnAtHit) return { art: ART.puff, title: 'Bonk!',
       text: 'Leaning a lot sent your rocket sideways into the ground. Go straight up first, then lean just a little.' };
     return { art: ART.puff, title: 'Bonk!', text: 'It came down too fast. The parachute needs a little time to open, so open it early.' };
   }
   if (f.outcome === 'escape') return { art: ART.space, title: 'Wow, it flew away!', text: 'Your rocket is going so fast it will never come back. That is called escape speed.' };
   if (f.wasOrbit && !f.outcome) return { art: ART.orbit, title: 'Still going around!',
-    text: fuelLeft(f) > 0 ? 'Your rocket is still in orbit. Next time, tap Come home to fly back down.' : 'Your rocket is still in orbit. Keep some fuel next time so you can come home.' };
+    text: fuelLeft(f) > 0 ? (f.diy ? 'Your rocket is still in orbit. Next time, point backward and burn to fly back down.' : 'Your rocket is still in orbit. Next time, tap Come home to fly back down.') : 'Your rocket is still in orbit. Keep some fuel next time so you can come home.' };
   if (!goal) return { art: ART.home, title: 'Nice flight!', text: 'You have done every goal in this version. The Moon is coming soon!' };
   if (goal.id === 'home') return { art: ART.chute, title: 'Nice flight!',
-    text: 'To come home safe: go all the way around, tap Come home, and keep the heat shield on.' };
+    text: cfgDiy() ? 'To come home safe: go all the way around, point backward and burn, drop the tank, and open the parachute.' : 'To come home safe: go all the way around, tap Come home, and keep the heat shield on.' };
   if (goal.id === 'orbit') return { art: ART.chute, title: f.maxAlt > ATM_TOP ? 'So close!' : 'Nice flight!', text: orbitTip(f) };
   const frac = goal.alt ? f.maxAlt / goal.alt : 0;
   const name = goal.id === 'clouds' ? 'the clouds' : 'space';
@@ -900,7 +929,7 @@ function hintFor(f, goal) {
 let toastTimer = 0;
 function toast(big, small) {
   ui.toast.innerHTML = `${big}${small ? `<small>${small}</small>` : ''}`;
-  ui.toast.classList.add('show'); clearTimeout(toastTimer);
+  ui.toast.classList.add('show'); clearTimeout(toastTimer); toastUntil = clock + 3.4;
   toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 3400);
 }
 function setGoalText() { const g = currentGoal(); ui.goalText.textContent = g ? g.title : 'Moon: coming soon'; }
@@ -924,10 +953,17 @@ function refreshHangar() {
   ui.newShield.hidden = save.seen.shield !== false;
   ui.tip.textContent = save.flights === 0 ? 'Tap a part to change it' : '';
   ui.tip.hidden = save.flights !== 0;
+  refreshOpts();
   buildRocket(flightCfg());
   setGoalText();
   pop = 1;
   resize();
+}
+function refreshOpts() {
+  const diyOk = !!save.reached.orbit, guideOk = save.flights > 0;
+  ui.btnDiy.hidden = !diyOk; ui.btnGuide.hidden = !guideOk; ui.opts.hidden = !diyOk && !guideOk;
+  ui.btnDiy.setAttribute('aria-pressed', String(cfgDiy())); ui.vDiy.textContent = cfgDiy() ? 'Do it yourself' : 'Helpers on';
+  ui.btnGuide.setAttribute('aria-pressed', String(save.guideAll)); ui.vGuide.textContent = save.guideAll ? 'Every line' : 'New tips';
 }
 let pop = 0;
 function cycle(list, cur) { const i = list.indexOf(cur); return list[(i + 1) % list.length]; }
@@ -946,6 +982,15 @@ ui.pStages.addEventListener('click', () => {
   if (save.config.stages === 2) toast('Booster added!', 'It pushes first. Drop it when it is empty.');
 });
 ui.pShield.addEventListener('click', () => { save.config.shield = !save.config.shield; save.seen.shield = true; writeSave(); refreshHangar(); tapSound(); });
+ui.btnDiy.addEventListener('click', () => {
+  save.diy = !cfgDiy(); writeSave(); refreshHangar(); tapSound();
+  if (save.diy) toast('Do it yourself!', 'No helpers: you drop stages, burn, and open the parachute.');
+  else toast('Helpers on', 'The rocket does the tricky parts for you.');
+});
+ui.btnGuide.addEventListener('click', () => {
+  save.guideAll = !save.guideAll; writeSave(); refreshHangar(); tapSound();
+  toast(save.guideAll ? 'Guide: every line' : 'Guide: new tips', save.guideAll ? 'The guide explains everything, every flight.' : 'Lines you have seen in 3 flights are skipped.');
+});
 function tapSound() { sound.init(); sound.burst(0.08, 1800, 0.25); }
 
 ui.btnLaunchEl.addEventListener('click', () => { sound.init(); startFlight(); });
@@ -959,6 +1004,7 @@ ui.cardBtn.addEventListener('click', () => {
 });
 ui.cardBtn2.addEventListener('click', toHangar);
 ui.act.addEventListener('click', () => { if (F) doAction(F); });
+ui.eng.addEventListener('click', () => toggleEngine(F));
 ui.warp.addEventListener('click', () => { save.warp = cycle(WARPS, save.warp); writeSave(); tapSound(); updateWarpLabel(); });
 function updateWarpLabel() { ui.warp.innerHTML = save.warp === 1 ? 'Speed 1x &rsaquo;' : `Speed ${save.warp}x &rsaquo;&rsaquo;`; }
 updateWarpLabel();
@@ -999,6 +1045,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'a' || e.key === 'ArrowLeft') { if (document.activeElement !== ui.leanTrack) setLean(Math.max(-1, lean - 0.1)); }
   if (e.key === 'd' || e.key === 'ArrowRight') { if (document.activeElement !== ui.leanTrack) setLean(Math.min(1, lean + 0.1)); }
   if ((e.key === 'p' || e.key === ' ') && F && !ui.act.hidden) { doAction(F); e.preventDefault(); }
+  if (e.key === 'e' && F && F.diy) toggleEngine(F);
   if (e.key === 'm') { ui.mapWrap.hidden = !ui.mapWrap.hidden; if (!ui.mapWrap.hidden) drawMap(); }
 });
 
@@ -1008,18 +1055,39 @@ function pickAction(f) {
   if (f.outcome || mode !== 'flight') return '';
   const vr = vRadial(f);
   if (f.needDrop) return 'drop';
+  if (f.diy) {   // do it yourself: no Burn / Come home here (the engine button does that); you drop the tank and open the chute
+    if (f.wasOrbit && !f.capsuleOnly && !f.engineOn && f.alt > 20000 && !inOrbit(f) && orbitInfo(f).peri < ATM_TOP) return 'sep';
+    if (!f.chuteOn && f.lifted && vr < -5 && f.alt < ATM_TOP && f.plasma < 0.05 && Math.hypot(f.vx, f.vy) < 500) return 'chute';
+    return '';
+  }
   if (f.coasting && fuelLeft(f) > 0 && (vr < 220 || f.alt > ATM_TOP + 20000) && !(vr < 0 && f.alt < ATM_TOP - 15000)) return 'burn';
   if (f.wasOrbit && !f.retro && !f.capsuleOnly && !f.engineOn && fuelLeft(f) > 0 && inOrbit(f)) return 'home';
   if (!f.engineOn && !f.chuteOn && f.lifted && vr < -5 && f.alt < ATM_TOP && f.plasma < 0.05 && Math.hypot(f.vx, f.vy) < 500) return 'chute';
   return '';
 }
-const ACT_TEXT = { drop: 'Drop stage', burn: 'Burn!', home: 'Come home', chute: 'Open parachute' };
+const ACT_TEXT = { drop: 'Drop stage', burn: 'Burn!', home: 'Come home', chute: 'Open parachute', sep: 'Drop tank' };
 function doAction(f) {
   const k = pickAction(f);
   if (k === 'drop') doDrop();
   else if (k === 'burn') { if (resumeBurn(f)) { f.burnPressed = true; sound.burst(0.4, 900, 0.5); } }
-  else if (k === 'home') { if (startComeHome(f)) toast('Turning around...', 'The engine slows you down, then down you go.'); }
+  else if (k === 'home') {
+    if (startComeHome(f)) {
+      say(f, 'home1', 'Turning around. Pushing backward slows the rocket down.', 'now', { urgent: true, replaces: ['home0'] });
+      say(f, 'home2', 'Why slow down? Slower means you cannot miss the ground any more, so you drop into the air.', 'why');
+    }
+  }
+  else if (k === 'sep') { doSeparate(); say(f, 'sep1', 'Tank dropped. The capsule turns its heat shield to the front.', 'now', { urgent: true, replaces: ['dhome3'] }); }
   else if (k === 'chute') openChute(f);
+}
+// do it yourself: the engine button (Burn / Stop engine)
+function toggleEngine(f) {
+  if (!f || !f.diy || mode !== 'flight' || f.outcome || !f.lifted || f.capsuleOnly || f.needDrop) return;
+  if (f.engineOn) {
+    f.engineOn = false; sound.burst(0.3, 500, 0.3);
+    const o = orbitInfo(f);
+    if (!f.wasOrbit && f.alt < ATM_TOP && (o.escape || o.apo > ATM_TOP))
+      say(f, 'coast2', 'Why stop? You keep flying up on your speed. The fuel waits for the big push at the top.', 'why', { replaces: ['dcoast0'] });
+  } else if (resumeBurn(f)) { f.burnPressed = true; sound.burst(0.4, 900, 0.5); }
 }
 function doDrop() {
   const f = F; if (!f || !f.needDrop || !stackG.booster) return;
@@ -1028,7 +1096,8 @@ function doDrop() {
   shed(stackG.booster, ox, oy, f, 3); stackG.booster = null;
   shiftStack(h, ENGINES[stage(f).engine].bellR);
   sound.burst(0.5, 1100, 0.5);
-  toast('Stage dropped!', 'Next engine on.');
+  say(f, 'stage2', 'Stage dropped! The next engine lights up.', 'now', { urgent: true, replaces: ['stage0', 'stage1'] });
+  say(f, 'stage3', 'Why drop it? An empty tank is just extra weight. A lighter rocket speeds up more.', 'why');
   layoutFuel(f);
 }
 function doSeparate() {
@@ -1041,8 +1110,11 @@ function doSeparate() {
   layoutFuel(f);
 }
 function openChute(f) {
-  if (f.chuteOn || f.engineOn && fuelLeft(f) > 0) return;
+  if (f.chuteOn) return;
+  if (f.engineOn && fuelLeft(f) > 0) { if (!f.diy) return; f.engineOn = false; }
   f.chuteOn = true; chute.visible = true; sound.burst(0.5, 1200, 0.35);
+  say(f, 'chute1', 'Parachute open! The big canopy catches lots of air.', 'now', { urgent: true, replaces: ['chute0', 'dchute0', 'dchute1', 'dchute2'] });
+  say(f, 'chute2', 'Why slower? Air pushes back on the big canopy. Down low the air is thick, so it pushes hard.', 'why');
 }
 
 // fuel bar: one piece per stage, the top piece is the top stage
@@ -1074,9 +1146,10 @@ function startFlight() {
   ui.progGoal.style.backgroundImage = progIcon();
   ui.prog.hidden = !currentGoal() || currentGoal().id === 'home';
   layoutFuel(F); actKind = '';
+  guideClear(); guide.log.length = 0; ui.eng.hidden = true; ui.eng.dataset.on = ''; ui.flight.classList.remove('pair');
 }
 function toHangar() {
-  mode = 'hangar'; F = null; parts.length = 0;
+  mode = 'hangar'; F = null; parts.length = 0; guideClear();
   ui.card.hidden = true; ui.mapWrap.hidden = true; ui.flight.hidden = true; ui.hangar.hidden = false;
   document.body.classList.remove('flying');
   rocket.visible = true; chute.visible = false; plasma.visible = false; camSmooth = null;
@@ -1353,10 +1426,11 @@ function update(dtReal) {
     // speed up the slow parts (coasting, going around, hanging under the parachute)
     let sp = 1;
     const orbiting = f.wasOrbit && !f.engineOn && !f.retro && f.alt > ATM_TOP && inOrbit(f);
-    if (burning) sp = f.retro ? 2 : (f.alt > 15000 ? 2 : 1);
+    if (burning) sp = f.retro ? 2 : (f.diy && f.wasOrbit ? 1 : (f.alt > 15000 ? 2 : 1));
     else if (f.retro) sp = 4;
     else if (f.needDrop) sp = 1;
     else if (f.coasting) sp = vr < 260 ? 1 : (f.alt > 4000 ? 4 : 1);
+    else if (f.diy && !f.wasOrbit && f.lifted && vr > 0 && f.alt > 20000 && fuelLeft(f) > 0) sp = vr < 260 ? 1 : 4;   // coasting up on your own
     else if (f.chuteOn) sp = f.alt > 60 ? 12 : 1;
     else if (orbiting) sp = save.warp;
     else if (f.alt > ATM_TOP) sp = 10;
@@ -1375,7 +1449,8 @@ function update(dtReal) {
       // the empty stage drops by itself if nobody taps
       if (f.needDrop && f.dropAuto > 0) { f.dropAuto -= dtReal; if (f.dropAuto <= 0) doDrop(); }
       // auto-open the parachute low down if nobody pressed it
-      if (!f.engineOn && !f.chuteOn && f.lifted && vr < 0 && f.alt < 5000) openChute(f);
+      if (!f.diy && !f.engineOn && !f.chuteOn && f.lifted && vr < 0 && f.alt < 5000) openChute(f);
+      { const s2 = stage(f); guideWatch(f, f.engineOn && s2 && s2.fuel > 0); }
       trackT -= dtReal * sp; if (trackT <= 0) { f.track.push([f.x, f.y]); trackT = 2; if (f.track.length > 1500) f.track.splice(0, 2); }
     } else if (f.outcome && f.endIn > 0) {
       f.endIn -= dtReal; if (f.endIn <= 0 && mode === 'flight') finishFlight();
@@ -1384,6 +1459,11 @@ function update(dtReal) {
       // the one action button
       const k = pickAction(f);
       if (k !== actKind) { actKind = k; ui.act.hidden = !k; if (k) { ui.act.textContent = ACT_TEXT[k]; ui.act.dataset.kind = k; } }
+      // do it yourself: the engine button beside the action button
+      const engShow = f.diy && f.lifted && !f.outcome && !f.capsuleOnly && !f.needDrop && !f.chuteOn && fuelLeft(f) > 0;
+      ui.eng.hidden = !engShow;
+      if (engShow && ui.eng.dataset.on !== String(!!f.engineOn)) { ui.eng.dataset.on = String(!!f.engineOn); ui.eng.textContent = f.engineOn ? 'Stop engine' : 'Burn'; }
+      ui.flight.classList.toggle('pair', engShow && !ui.act.hidden);
       ui.warp.hidden = !(orbiting && !f.outcome);
       ui.ff.hidden = sp === 1 || !!f.outcome || !ui.warp.hidden;
       updateLeanHint(f, burning);
@@ -1399,6 +1479,7 @@ function update(dtReal) {
     }
     if (!ui.mapWrap.hidden) { mapT -= dtReal; if (mapT <= 0) { drawMap(); mapT = 0.1; } }
   }
+  guideTick(dtReal);
 
   // ---- rocket transform + effects
   let base, dir, up, alt, air = 1, power = 0;
@@ -1489,20 +1570,171 @@ function update(dtReal) {
 function updateLeanHint(f, burning) {
   let show = false, target = 0, text = '';
   const side = lean < -0.05 ? -1 : 1;
-  if (save.unlocked.stages && !f.outcome && f.lifted && !f.retro && !f.capsuleOnly) {
+  if (f.diy) {
+    if (!f.outcome && f.lifted && !f.capsuleOnly && !f.chuteOn && fuelLeft(f) > 0) {
+      const back = Math.sign(f.x * f.vy - f.y * f.vx) || 1;     // the slider side that points the rocket backward
+      if (f.wasOrbit) {
+        if (inOrbit(f) || burning) { show = true; target = back; if (Math.abs(lean - back) > 0.25) text = back < 0 ? '← Point backward' : 'Point backward →'; }
+      } else if (!f.engineOn && vRadial(f) > 0 && f.alt > 30000) {
+        show = true; target = side; if (Math.abs(lean) < 0.75) text = side > 0 ? 'Lean flat →' : '← Lean flat';
+      } else if (burning && f.alt > 8500 && f.alt < ATM_TOP + 30000) {
+        const sl = suggestedLean(f); show = true; target = sl * side;
+        if (Math.abs(lean) < sl - 0.22) text = side > 0 ? 'Lean now →' : '← Lean now';
+        else if (Math.abs(lean) > sl + 0.3 && f.alt < 40000) text = 'Lean a little less';
+      }
+    }
+  } else if (save.unlocked.stages && !f.outcome && f.lifted && !f.retro && !f.capsuleOnly) {
     if (f.coasting && fuelLeft(f) > 0) {
-      target = 1; show = true;
+      target = side; show = true;
       if (Math.abs(lean) < 0.75) text = side > 0 ? 'Lean flat →' : '← Lean flat';
       else if (pickAction(f) !== 'burn') text = 'Coasting up to the top...';
     } else if (burning && f.alt > 8500 && f.alt < ATM_TOP + 30000) {
-      target = suggestedLean(f); show = true;
-      if (Math.abs(lean) < target - 0.22) text = side > 0 ? 'Lean now →' : '← Lean now';
-      else if (Math.abs(lean) > target + 0.3 && f.alt < 40000) text = 'Lean a little less';
+      const sl = suggestedLean(f); target = sl * side; show = true;
+      if (Math.abs(lean) < sl - 0.22) text = side > 0 ? 'Lean now →' : '← Lean now';
+      else if (Math.abs(lean) > sl + 0.3 && f.alt < 40000) text = 'Lean a little less';
     }
   }
   ui.leanGhost.hidden = !show;
-  if (show) ui.leanGhost.style.transform = `translateX(${leanPx(target * side)}px)`;
+  if (show) ui.leanGhost.style.transform = `translateX(${leanPx(target)}px)`;
   if (text !== hintShown) { hintShown = text; ui.leanHint.textContent = text; ui.leanHint.hidden = !text; }
+}
+
+// ---------------------------------------------------------------- flight guide
+// Says what is coming up, what is happening now, and why - one short line at a time, from a queue. A line
+// that has shown in 3 flights is skipped after that (hangar "Guide: Every line" brings them all back), except
+// lines a kid needs in order to act ("must"). Lines that waited too long are dropped, so nothing comes late.
+const GUIDE_TAG = { next: 'Coming up', now: 'Now', why: 'Why?', tip: 'Tip' };
+const guide = { q: [], cur: null, t: 0, dur: 0, hideT: 0, log: [] };
+let toastUntil = 0;
+function say(f, id, text, kind = 'now', opt = {}) {
+  if (!f || !f.said || f.said.has(id)) return;
+  f.said.add(id);
+  if (opt.replaces) {
+    guide.q = guide.q.filter(l => !opt.replaces.includes(l.id));
+    if (guide.cur && opt.replaces.includes(guide.cur.id)) guide.t = Math.max(guide.t, guide.dur);
+  }
+  if (!opt.must && !save.guideAll && (save.heard[id] || 0) >= 3) return;
+  const line = { id, text, kind, must: !!opt.must, urgent: !!opt.urgent, born: clock, ttl: kind === 'why' ? 14 : 8, valid: opt.valid };
+  if (line.urgent) { let i = 0; while (i < guide.q.length && guide.q[i].urgent) i++; guide.q.splice(i, 0, line); }
+  else guide.q.push(line);
+  while (guide.q.length > 6) { const k = guide.q.findIndex(l => !l.must); if (k < 0) break; guide.q.splice(k, 1); }
+}
+function guideClear() { guide.q.length = 0; guide.cur = null; guide.hideT = 0; ui.guide.classList.remove('show'); ui.guide.hidden = true; }
+function guideTick(dt) {
+  if (mode !== 'flight' || !ui.mapWrap.hidden || clock < toastUntil) { ui.guide.classList.remove('show'); return; }  // wait, don't advance
+  if (guide.cur) {
+    ui.guide.classList.add('show');
+    guide.t += dt;
+    const cut = guide.q.length && guide.q[0].urgent && guide.t > (guide.cur.urgent ? 2.2 : 1.4);
+    if (guide.t >= guide.dur || cut) { guide.cur = null; ui.guide.classList.remove('show'); guide.hideT = 0.28; }
+  }
+  if (guide.cur) return;
+  if (guide.hideT > 0) { guide.hideT -= dt; if (guide.hideT > 0) return; }
+  while (guide.q.length) {
+    const l = guide.q.shift();
+    if (!l.must && clock - l.born > l.ttl) continue;
+    if (l.valid && F && !l.valid(F)) continue;      // its moment has passed
+    showLine(l); return;
+  }
+  ui.guide.hidden = true;
+}
+function showLine(l) {
+  guide.cur = l; guide.t = 0; guide.dur = Math.max(3.2, Math.min(5.8, 2.2 + l.text.length * 0.04));
+  ui.guide.dataset.kind = l.kind; ui.guideK.textContent = GUIDE_TAG[l.kind] || ''; ui.guideT.textContent = l.text;
+  ui.guide.hidden = false; void ui.guide.offsetWidth; ui.guide.classList.add('show');
+  save.heard[l.id] = (save.heard[l.id] || 0) + 1; writeSave();
+  guide.log.push({ id: l.id, kind: l.kind, text: l.text, alt: F ? Math.round(F.alt) : 0, t: F ? +F.t.toFixed(1) : 0 });
+  if (guide.log.length > 100) guide.log.shift();
+}
+function pointingBack(f) {
+  const v = Math.hypot(f.vx, f.vy); if (v < 50) return false;
+  return (Math.sin(f.heading) * -f.vx + Math.cos(f.heading) * -f.vy) / v > 0.96;
+}
+// watches the flight every frame and queues the right line before, during and after each event
+function guideWatch(f, burning) {
+  if (f.outcome) return;
+  const diy = f.diy, st = stage(f), fuel = fuelLeft(f), vr = vRadial(f), v = Math.hypot(f.vx, f.vy);
+  const fr = st ? st.fuel / st.fuelMax : 0;
+  const o = f.lifted ? orbitInfo(f) : null;
+  const orbitPath = o && !o.escape && o.peri > ATM_TOP;
+  // launch + liftoff
+  if (!f.lifted) {
+    if (diy) say(f, 'diy0', 'Do it yourself: no helpers. You press every button, and the guide gives tips.', 'tip', { must: true });
+    say(f, 'launch0', 'Engine starting! Liftoff comes when its push is bigger than the rocket\'s weight.', 'next');
+    if (f.t > 2.5 && burning) say(f, 'heavy0', 'Not moving... The rocket weighs more than the engine can push.', 'now', { urgent: true, must: true, replaces: ['launch0'] });
+    return;
+  }
+  say(f, 'lift', 'Liftoff! The push is bigger than the weight.', 'now', { urgent: true, replaces: ['launch0'] });
+  say(f, 'liftWhy', 'Fire shoots down, so the rocket gets pushed up. Like a balloon letting its air out.', 'why');
+  // clouds
+  if (vr > 0 && f.alt > 1100 && f.maxAlt < 2000) say(f, 'clouds0', 'Coming up: the clouds, about 2 km up.', 'next', { valid: g => g.alt < 2000 });
+  if (f.maxAlt >= 2000 && f.alt < 3500 && vr > 0) say(f, 'clouds1', 'In the clouds! Clouds are tiny drops of water floating in the air.', 'now', { replaces: ['clouds0'] });
+  // leaning over (the gravity turn), once going around is the goal
+  if (save.unlocked.stages && burning && !f.wasOrbit && !f.retro) {
+    if (f.alt > 300 && f.alt < 6000 && Math.abs(lean) > 0.35) say(f, 'lowLean', 'Tip: go straight up first. Down low, thick air tips a leaning rocket over.', 'tip', { valid: g => g.alt < 8000 });
+    if (f.alt > 6500 && f.alt < 9000) say(f, 'turn0', 'Coming up: at 9 km, start leaning over, a little at a time.', 'next', { valid: g => g.alt < 9000 });
+    if (f.alt >= 9000 && f.alt < 30000) {
+      say(f, 'turn1', 'Lean now! Hold the slider on the green glow.', 'now', { replaces: ['turn0'] });
+      say(f, 'turn2', 'Why only a little? Thick air pushes a tilted rocket over. Higher up the air is thinner.', 'why');
+      say(f, 'turn3', 'Why lean at all? Going around the planet takes sideways speed, not just height.', 'why');
+    }
+  }
+  // stages and fuel
+  if (st && hasMoreStages(f) && burning && fr < 0.2) say(f, 'stage0', 'Bottom tank almost empty. Next: drop it so the rocket gets lighter.', 'next', { valid: g => !g.needDrop && hasMoreStages(g) });
+  if (st && !hasMoreStages(f) && burning && fr < 0.15 && !f.wasOrbit) say(f, 'fuel0', 'Fuel almost gone. When it runs out, the engine stops.', 'next', { valid: g => fuelLeft(g) > 0 });
+  if (!f.wasOrbit && !burning && vr < 0 && f.maxAlt > 600 && f.alt > 300 && !orbitPath) say(f, 'top0', 'That was the top! Now gravity pulls the rocket back down.', 'now', { valid: g => vRadial(g) < 0 && !g.chuteOn });
+  // space
+  if (vr > 0 && f.alt > 55000 && f.maxAlt < ATM_TOP) say(f, 'space0', 'Coming up: space, at 70 km. The air is almost gone.', 'next', { valid: g => g.alt < ATM_TOP });
+  if (f.maxAlt >= ATM_TOP && !f.wasOrbit) {
+    say(f, 'space1', 'You are in space! The sky turns black up here.', 'now', { replaces: ['space0'] });
+    say(f, 'space2', 'Why black? Air makes the sky blue by spreading sunlight around. Space has almost no air.', 'why');
+  }
+  // the burn at the top
+  const act = actKind;
+  if (!diy && act === 'burn' && !f.burnPressed) say(f, 'burn0', 'Almost at the top! Lean flat, then tap Burn to go sideways fast.', 'now', { urgent: true, must: true, valid: () => actKind === 'burn' });
+  if (diy && !f.wasOrbit) {
+    if (burning && o && f.alt < ATM_TOP && Math.abs(lean) > 0.25 && (o.escape || o.apo > ATM_TOP + 15000) && !orbitPath)
+      say(f, 'dcoast0', 'Tip: the top of your path is in space now. Tap Stop engine and coast up to it.', 'tip', { must: true, valid: g => g.engineOn });
+    if (!f.engineOn && fuel > 0 && vr > 0 && vr < 260 && f.alt > 40000)
+      say(f, 'dcoast1', 'Almost at the top! Lean flat, then tap Burn to go sideways fast.', 'now', { urgent: true, must: true, valid: g => !g.engineOn && !g.wasOrbit });
+    if (burning && orbitPath && o.peri > ATM_TOP + 2000)
+      say(f, 'dorbit0', 'You are going all the way around! Tap Stop engine to save fuel.', 'now', { urgent: true, must: true, valid: g => g.engineOn });
+  }
+  if (f.burnPressed && burning && f.alt > 40000 && !f.wasOrbit) say(f, 'burn1', 'Why sideways? Go sideways fast enough and you fall around the planet, not into it.', 'why');
+  if (burning && !f.wasOrbit && !f.retro && o && !o.escape && o.peri > 0 && o.peri < ATM_TOP && f.alt > 40000)
+    say(f, 'orbit0', 'Almost! The low side of your path is lifting up out of the air.', 'next', { valid: g => !g.wasOrbit });
+  // coming home
+  if (!diy && act === 'home') say(f, 'home0', 'To come home, tap Come home. The rocket turns around and slows down.', 'next', { valid: () => actKind === 'home' });
+  if (diy && f.wasOrbit && !f.capsuleOnly) {
+    if (inOrbit(f) && !f.engineOn && fuel > 0) {
+      say(f, 'dhome0', 'To come home: lean all the way back, so the rocket points backward.', 'tip', { must: true, valid: g => !g.engineOn && !g.capsuleOnly && inOrbit(g) });
+      if (pointingBack(f)) say(f, 'dhome1', 'Pointing backward. Now tap Burn to slow down.', 'now', { urgent: true, must: true, valid: g => !g.engineOn && !g.capsuleOnly && inOrbit(g) });
+    }
+    if (burning && pointingBack(f)) {
+      say(f, 'home1', 'Burning backward. That slows the rocket down.', 'now', { replaces: ['dhome1'] });
+      say(f, 'home2', 'Why slow down? Slower means you cannot miss the ground any more, so you drop into the air.', 'why');
+    }
+    if (burning && o && !o.escape && o.peri < 30000) say(f, 'dhome2', 'Your path dips into the air now. Tap Stop engine!', 'now', { urgent: true, must: true, valid: g => g.engineOn });
+    if (!f.engineOn && o && o.peri < ATM_TOP && f.alt > 20000) say(f, 'dhome3', 'Tip: tap Drop tank. Only the capsule with its heat shield should meet the hot air.', 'tip', { must: true, valid: g => !g.capsuleOnly });
+  }
+  // the hot way down
+  if ((f.wasOrbit || f.maxAlt > ATM_TOP) && vr < 0) {
+    if (f.alt > ATM_TOP && f.alt < ATM_TOP + 12000 && v > 1500) say(f, 'heat0', 'Coming up: the air. Hitting it this fast makes it super hot!', 'next', { valid: g => g.plasma < 0.25 });
+    if (f.plasma > 0.25) {
+      say(f, 'heat1', 'So hot it glows! The air in front gets squeezed so hard it heats up.', 'now', { replaces: ['heat0'] });
+      if (f.shield) say(f, 'heat2', 'The heat shield faces the front and soaks up the heat. The capsule stays cool.', 'why');
+      else say(f, 'heat3', 'No heat shield! Nothing protects the capsule from this heat...', 'now', { must: true });
+    }
+  }
+  // the parachute
+  if (vr < -5 && !f.chuteOn && f.plasma < 0.05 && !burning) {
+    if (!diy && f.maxAlt > 1500 && f.alt < 11000 && f.alt > 5200) say(f, 'chute0', 'Coming up: the parachute. It opens by itself at 5 km, so it has time to slow you.', 'next', { valid: g => !g.chuteOn });
+    if (diy && f.maxAlt > 300) {
+      if (f.alt < 15000) say(f, 'dchute0', 'Get ready to tap Open parachute. In this mode it will not open by itself!', 'tip', { must: true, valid: g => !g.chuteOn });
+      if (f.alt < 3500) say(f, 'dchute1', 'Open the parachute now!', 'now', { urgent: true, must: true, valid: g => !g.chuteOn, replaces: ['dchute0'] });
+      if (f.alt < 1200) say(f, 'dchute2', 'Hurry! Tap Open parachute!', 'now', { urgent: true, must: true, valid: g => !g.chuteOn, replaces: ['dchute1'] });
+    }
+  }
 }
 
 function numbersText() {
@@ -1659,5 +1891,6 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) sound
 
 // test hook for automated checks (harmless for players)
 window.__rocket = { get fps() { return 1000 / frameAvg; }, get dpr() { return dpr; }, get F() { return F; }, get mode() { return mode; }, get save() { return save; },
-  get act() { return actKind; }, get simSpeed() { return simSpeed; }, get planetReady() { return !!planetImg; }, setLean, doAction: () => F && doAction(F), setTurbo: (k) => { turbo = k; }, R };
+  get act() { return actKind; }, get guide() { return { cur: guide.cur && guide.cur.text, q: guide.q.map(l => l.id), log: guide.log }; },
+  toggleEngine: () => F && toggleEngine(F), get simSpeed() { return simSpeed; }, get planetReady() { return !!planetImg; }, setLean, doAction: () => F && doAction(F), setTurbo: (k) => { turbo = k; }, R };
 

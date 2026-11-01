@@ -44,6 +44,10 @@
         <button class="part" id="pStages" hidden><span class="pk">Stages</span><span class="pv" id="vStages">+ Stage</span><span class="new" id="newStages" hidden>New</span></button>
         <button class="part" id="pShield" hidden><span class="pk">Heat shield</span><span class="pv" id="vShield">On</span><span class="new" id="newShield" hidden>New</span></button>
       </div>
+      <div class="opts" id="opts" hidden>
+        <button class="opt" id="btnDiy" aria-pressed="false" hidden><span class="ok">Mode</span><span id="vDiy">Helpers on</span></button>
+        <button class="opt" id="btnGuide" aria-pressed="false" hidden><span class="ok">Guide</span><span id="vGuide">New tips</span></button>
+      </div>
       <button class="launch" id="btnLaunch">LAUNCH</button>
     </section>
 
@@ -64,8 +68,12 @@
         <span class="fuel-k">fuel</span>
       </div>
       <button class="act" id="btnAct" hidden>Open parachute</button>
-      <div class="ff" id="ff" hidden>fast-forward &rsaquo;&rsaquo;</div>
-      <button class="warp" id="btnWarp" hidden aria-label="Time speed">Speed 10x</button>
+      <button class="eng" id="btnEng" hidden>Burn</button>
+      <div class="mid">
+        <div class="guide" id="guide" hidden aria-live="polite"><b class="guide-k" id="guideK"></b><span id="guideT"></span></div>
+        <div class="ff" id="ff" hidden>fast-forward &rsaquo;&rsaquo;</div>
+        <button class="warp" id="btnWarp" hidden aria-label="Time speed">Speed 10x</button>
+      </div>
       <div class="lean-hint" id="leanHint" hidden aria-live="polite"></div>
       <div class="lean">
         <div class="lean-track" id="leanTrack" role="slider" aria-label="Lean" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0" tabindex="0">

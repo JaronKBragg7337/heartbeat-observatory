@@ -51,6 +51,7 @@ export function newFlight(cfg) {
     outcome: null, leanLow: 0, wob: 0, alt: PAD_H, air: 1, q: 0, thr: 0,
     heat: 0, plasma: 0, peakFlux: 0, capsuleOnly: false, retro: false, needDrop: false,
     cut: false, wasOrbit: false, coastAssist: !!cfg.coastAssist, coasting: false, coastUsed: false, events: [],
+    diy: !!cfg.diy,   // "do it yourself": no automatic engine stops; the rocket turns where you lean even with the engine off
   };
 }
 function makeStage(tank, engine, booster) {
@@ -158,6 +159,7 @@ export function stepPhysics(f, dt, lean) {
   else if (wantsBurn) { target = f.lifted ? phi + lean * MAX_LEAN + f.wob : phi; rate = 30 * DEG; }
   else if (f.chuteOn && v > 0.5) { target = retroA; rate = 120 * DEG * f.chute; }
   else if (f.capsuleOnly && v > 5) { target = retroA; rate = 25 * DEG; }   // heat shield first
+  else if (f.diy && f.lifted && q < 30) { target = phi + lean * MAX_LEAN; rate = 30 * DEG; }   // do it yourself: point it before you burn
   else if (q > 30 && v > 5) { target = Math.atan2(f.vx, f.vy); rate = Math.min(50, q / 250) * DEG; }
   if (target !== null) { const dA = wrapA(target - f.heading), mx = rate * dt; f.heading += Math.max(-mx, Math.min(mx, dA)); }
   const aligned = !f.retro || Math.abs(wrapA(retroA - f.heading)) < 6 * DEG;
@@ -221,7 +223,7 @@ export function stepPhysics(f, dt, lean) {
   if (nh > f.maxAlt) f.maxAlt = nh;
 
   // the engine turns itself off once you are going all the way around (keeps the rest of the fuel)
-  if (burning && !f.retro && nh > ATM_TOP * 0.6) {
+  if (burning && !f.retro && !f.diy && nh > ATM_TOP * 0.6) {
     const o = orbitInfo(f);
     if (!o.escape && o.peri > ATM_TOP + 2000) { f.engineOn = false; f.cut = true; f.events.push('orbitCut'); }
   }
