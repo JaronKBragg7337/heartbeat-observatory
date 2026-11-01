@@ -18,7 +18,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#2a2420;color:#f3ead8;
 #counter b{color:#e8c98a}
 #seamLog{font:10.5px/1.45 ui-monospace,Menlo,Consolas,monospace;color:#d8ccb4;opacity:.92}
 #seamLog div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#reset{margin-top:6px;border:1px solid rgba(232,180,90,.4);background:rgba(232,180,90,.12);color:#e8c98a;border-radius:8px;
+/* right-aligned: the site's admin Edit button sits bottom-left over this panel (Jaron's iPhone, 11/1) */
+#reset{display:block;margin:6px 0 0 auto;border:1px solid rgba(232,180,90,.4);background:rgba(232,180,90,.12);color:#e8c98a;border-radius:8px;
   font:600 11px system-ui,sans-serif;padding:6px 10px;cursor:pointer;min-height:30px}
 
 /* keep the shell's prompt above the seam panel; this room has no jump or duck */
