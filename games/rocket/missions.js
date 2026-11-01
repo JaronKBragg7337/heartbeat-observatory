@@ -632,7 +632,7 @@ export function diyLandHint(f) {
   const vz = svx * ux + svy * uy, hx = svx - vz * ux, hy = svy - vz * uy, vh = Math.hypot(hx, hy);
   const o = orbitOf(B.rx, B.ry, B.vx, B.vy, B.gm, B.rad);
   const g = MOON_GM / (rb * rb), aM = accMax(f);
-  if (!(f.engineOn && vh > 12) && alt > Math.max(9000, Math.min(60000, o.peri + 6000)) && vz < 30 && !(vz < 0 && vz * vz / (2 * Math.max(0.5, aM - g)) > alt * 0.5)) return { lean: null, burn: false, key: 'landWait', vh, vz, alt };
+  if (!(f.engineOn && vh > 12 && alt < 80000) && alt > Math.max(9000, Math.min(60000, o.peri + 6000)) && vz < 30 && !(vz < 0 && vz * vz / (2 * Math.max(0.5, aM - g)) > alt * 0.5)) return { lean: null, burn: false, key: 'landWait', vh, vz, alt };
   if (vh > 12 && alt > 80) return { lean: -sideOf(f, hx, hy), burn: true, key: 'landBrake', vh, vz, alt };
   const stop = vz < 0 ? vz * vz / (2 * Math.max(0.3, aM - g)) : 0;
   const lean = vh > 2 ? -sideOf(f, hx, hy) * Math.min(alt < 60 ? 0.12 : 0.35, vh / 25) : 0;   // stand up straight for touchdown
