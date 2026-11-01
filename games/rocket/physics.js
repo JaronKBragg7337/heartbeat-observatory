@@ -102,7 +102,7 @@ export function newFlight(cfg) {
   return {
     x: 0, y: R + PAD_H, vx: 0, vy: 0, heading: 0,
     stages: stack, si: 0, payload: N.m + (cfg.shield && !P ? SHIELD_M : 0),
-    payloadKind: P ? cfg.payload : null, payloadM: P ? P.m : 0, legs: !!cfg.legs,
+    payloadKind: P ? cfg.payload : null, payloadM: P ? P.m : 0, legs: !!cfg.legs, noCapsule: !!P,
     T0: cfg.T0 || 0, inMoon: false, onMoon: null, moonVisited: false, moonLanded: false, balt: PAD_H,
     throttle: 1, steer: null, ap: null,
     noseCda: N.cda, fins: !!cfg.fins, finsOn: !!cfg.fins, shield: !!cfg.shield,
@@ -119,7 +119,7 @@ function makeStage(tank, engine, booster) {
 }
 export function stage(f) { return f.capsuleOnly ? null : f.stages[f.si]; }
 export function mass(f) {
-  let m = f.payload;
+  let m = Math.max(1, f.payload);
   if (!f.capsuleOnly) for (let i = f.si; i < f.stages.length; i++) m += f.stages[i].dry + f.stages[i].fuel;
   return m;
 }
@@ -411,7 +411,7 @@ export function dropStage(f, height) {
 }
 // let go of the last tank and engine; only the capsule (with its heat shield) comes home
 export function separateCapsule(f, height) {
-  if (f.capsuleOnly) return false;
+  if (f.capsuleOnly || f.noCapsule) return false;   // a satellite flight has no capsule to bring home
   f.x += Math.sin(f.heading) * height; f.y += Math.cos(f.heading) * height;
   f.capsuleOnly = true; f.engineOn = false; f.finsOn = false; f.needDrop = false;
   return true;

@@ -718,7 +718,7 @@ export function watchTick(f, hooks) {
   if (!f.inMoon) f.moonVr = undefined;
   if (f.diy) return;
   if (f.needDrop && (f.ap || f.moonVisited) && hooks.drop) hooks.drop(f);
-  if (f.moonVisited && !f.capsuleOnly && !f.payloadKind && !f.inMoon && f.alt < ATM_TOP + 40000 && !(f.engineOn && f.throttle > 0) && hooks.separate) {
+  if (f.moonVisited && !f.capsuleOnly && !f.noCapsule && !f.payloadKind && !f.inMoon && f.alt < ATM_TOP + 40000 && !(f.engineOn && f.throttle > 0) && hooks.separate) {
     const o = orbitInfo(f), vr = (f.x * f.vx + f.y * f.vy);
     if (vr < 0 && o.peri < ATM_TOP) hooks.separate(f);
   }

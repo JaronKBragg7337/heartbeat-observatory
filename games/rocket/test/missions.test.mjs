@@ -123,11 +123,8 @@ function diyMoonTrip(label, { land }) {
   H.run(f, { tMax: 6e5, until: g => !g.inMoon || g.outcome, ctl: g => {
     if (g.t - ct > 0.25) { cache = null; ct = g.t; }
     const h = M.diyLeaveHint(g, cache);
-    if (process.env.DBG && (g.dbgT === undefined || g.t - g.dbgT > 3) && g.t - (g.leaveT0 ??= g.t) < 60) { g.dbgT = g.t; const B = P.bodyRel(g); console.log('     ', g.t.toFixed(1), h.key, 'lean', h.lean, 'eng', g.engineOn, 'thr', g.thr.toFixed(0), 'head-phi', (P.wrapA(g.heading - Math.atan2(B.rx, B.ry)) * 57.3).toFixed(0), 'balt', g.balt.toFixed(0), 'steer', g.steer, 'ap', !!g.ap); }
-    if (process.env.DBG && h && h.key !== g.lastKey) { g.lastKey = h.key; console.log('   leave hint', h.key, H.fmt(g), h.pe); }
     return diyFollow(g, h);
   } });
-  if (process.env.DBG) console.log('   after leave', H.fmt(f));
   H.run(f, { tMax: 8e5, ctl: g => {
     diyStageTap(g); diyDropTank(g); diyChute(g);
     if (g.capsuleOnly || g.alt < 400000) { kidOff(g); return 0; }
@@ -214,21 +211,18 @@ function diyDock(label) {
     if (o.peri > o.apo - 6000) { kidOff(g); stg = 'done'; } else kidOn(g);
     return M.leanFor(g, M.progradeH(g));
   } });
-  if (process.env.DBG) console.log('   rounded', H.fmt(f));
   coastUntil(f, g => M.stationWindow(g, world.station.kep).tw < 15, 3e5);   // hint: "Burn when the station is about here"
-  if (process.env.DBG) console.log('   window', H.fmt(f), M.stationWindow(f, world.station.kep));
   const rs = Math.hypot(M.kepAt(world.station.kep, f.T0 + f.t).x, M.kepAt(world.station.kep, f.T0 + f.t).y);
   stg = 'raise';
   let minD = Infinity;
   H.run(f, { tMax: 2e5, until: g => stg === 'near' || g.outcome, ctl: g => {
     diyStageTap(g);
     const rel = M.relToStation(g, world.station.kep), s = rel.s, d = rel.d, rv = rel.rv;
-    if (stg === 'raise') { const h = M.diyRaiseHint(g, rs, 'raise'); if (!h.burn) { kidOff(g); stg = 'coast'; if (process.env.DBG) console.log('   raised', H.fmt(g), d); } return diyFollow(g, h); }
+    if (stg === 'raise') { const h = M.diyRaiseHint(g, rs, 'raise'); if (!h.burn) { kidOff(g); stg = 'coast'; } return diyFollow(g, h); }
     if (stg === 'coast') { if (M.timeToTop(g) < 8) stg = 'match'; kidOff(g); return M.leanFor(g, M.progradeH(g)); }
     if (stg === 'match') {   // hint: "Burn to match the station's speed"
       const want = Math.atan2(-rel.rvx, -rel.rvy);
-      if (process.env.DBG && !g.mt) { g.mt = 1; console.log('   match start', H.fmt(g), d, rv); }
-      if (rv < 15 || rv > (g.minRv ?? Infinity) + 2) { kidOff(g); stg = 'near'; if (process.env.DBG) console.log('   matched', d, rv); return 0; }
+      if (rv < 15 || rv > (g.minRv ?? Infinity) + 2) { kidOff(g); stg = 'near'; return 0; }
       g.minRv = Math.min(g.minRv ?? Infinity, rv);
       const l = M.leanFor(g, want), B = P.bodyRel(g), tgtH = Math.atan2(B.rx, B.ry) + l * Math.PI / 2;
       if (Math.abs(P.wrapA(g.heading - tgtH)) > 0.15) { kidOff(g); return l; }   // turn first, then burn
@@ -238,7 +232,7 @@ function diyDock(label) {
   } });
   // close the distance (hint: "Lean toward the station and burn a little") until the Dock button shows
   H.run(f, { tMax: 20000, until: g => { const h = M.diyDockHint(g, world.station.kep); return h.key === 'dockReady' || h.key === 'dockFar' || g.outcome; },
-    ctl: g => { diyStageTap(g); const h = M.diyDockHint(g, world.station.kep); if (process.env.DBG && (g.dc = (g.dc || 0) + 1) % 40 === 1 && g.dc < 1200) console.log('     dk', g.t.toFixed(0), h.key, 'd', h.d.toFixed(0), 'rv', h.rv.toFixed(1), 'lean', h.lean && h.lean.toFixed(2), 'burn', h.burn, 'eng', g.engineOn); return diyFollow(g, h); } });
+    ctl: g => { diyStageTap(g); return diyFollow(g, M.diyDockHint(g, world.station.kep)); } });
   const { d, rv } = M.relToStation(f, world.station.kep);
   check(`${label}: matched the station's orbit by myself`, d < M.DOCK_RANGE && rv < M.DOCK_SPEED, `${km(d)} away, ${rv.toFixed(1)} m/s apart`);
   if (d < M.DOCK_RANGE && rv < M.DOCK_SPEED) {

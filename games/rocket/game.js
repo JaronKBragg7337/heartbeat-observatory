@@ -214,7 +214,8 @@ const skyMat = new THREE.ShaderMaterial({
         float fine = 1.0 - smoothstep(30.0, 2500.0, t);
         if (fine > 0.0) alb *= mix(1.0, 0.8 + 0.4 * vnoise(q * uMR * 0.6), fine);
         float ndl = max(dot(n, uSun), 0.0);
-        col = vec3(0.95, 0.93, 0.9) * alb * (SUNC * ndl / 3.14159 * 1.3) + alb * vec3(0.03, 0.04, 0.06);
+        // sunlight, plus "planet-shine": the big bright planet in the sky lights the Moon's night side softly
+        col = vec3(0.95, 0.93, 0.9) * alb * (SUNC * ndl / 3.14159 * 1.3) + alb * vec3(0.75, 0.85, 1.1) * (0.55 + 0.45 * smoothstep(0.3, -0.3, dot(n, uSun)));
       } else {
         vec3 sd = d * uStar; vec3 cell = floor(sd); float hs = hash13(cell);
         if (hs > 0.9965){
@@ -691,7 +692,7 @@ const farMat = new THREE.ShaderMaterial({
   vertexShader: 'varying vec3 vN; varying vec2 vUv; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
   fragmentShader: `uniform sampler2D map; uniform vec3 uSun; varying vec3 vN; varying vec2 vUv;
     void main(){ vec3 c = texture2D(map, vUv).rgb; c = pow(c, vec3(2.2)); float l = max(dot(normalize(vN), uSun), 0.0);
-      vec3 col = c * (l * 2.2 + 0.015); col = 1.0 - exp(-col * 1.4); gl_FragColor = vec4(pow(col, vec3(1.0 / 2.2)), 1.0); }`,
+      vec3 col = c * (l * 2.2 + 0.06); col = 1.0 - exp(-col * 1.4); gl_FragColor = vec4(pow(col, vec3(1.0 / 2.2)), 1.0); }`,
 });
 const moonGeo = new THREE.SphereGeometry(1, 64, 32); moonGeo.rotateX(Math.PI / 2);   // poles along z: it turns in the flight plane
 const moonFar = new THREE.Mesh(moonGeo, farMat); moonFar.frustumCulled = false; moonFar.renderOrder = -900; scene.add(moonFar);
@@ -794,7 +795,7 @@ function flagTexture(name) {
   });
 }
 function buildFlag(name) {
-  const g = new THREE.Group();
+  const g = new THREE.Group(); g.scale.setScalar(1.5);
   const pole = new THREE.Mesh(cached('pole', () => new THREE.CylinderGeometry(0.04, 0.04, 3.2, 8)), SM.ring); pole.position.y = 1.6; g.add(pole);
   const cloth = new THREE.Mesh(cached('cloth', () => new THREE.PlaneGeometry(1.6, 1.0)), new THREE.MeshStandardMaterial({ map: flagTexture(name || 'Explorer'), side: THREE.DoubleSide, roughness: 0.8 }));
   cloth.position.set(0.82, 2.65, 0); g.add(cloth);
@@ -1095,6 +1096,7 @@ const ART = {
 
 function showCard({ art, title, text = '', unlock = '', next = '', btn = 'Back to hangar', btn2 = '', askName = false }) {
   ui.cardName.hidden = !askName;
+  ui.toast.classList.remove('show');
   if (askName) ui.nameIn.value = save.name || '';
   ui.cardArt.innerHTML = art;
   ui.cardTitle.textContent = title;
@@ -1430,18 +1432,18 @@ function pickAction(f) {
     return f.payloadKind === 'module' ? 'core' : 'release';
   }
   if (f.diy) {   // do it yourself: no Burn / Come home here (the engine button does that); you drop the tank and open the chute
-    if (f.wasOrbit && !f.capsuleOnly && !f.payloadKind && !f.engineOn && f.alt > 20000 && f.alt < 400000 && !inOrbit(f) && orbitInfo(f).peri < ATM_TOP) return 'sep';
-    if (!f.chuteOn && !f.payloadKind && f.lifted && vr < -5 && f.alt < ATM_TOP && f.plasma < 0.05 && sp < 500) return 'chute';
+    if (f.wasOrbit && !f.capsuleOnly && !f.noCapsule && !f.payloadKind && !f.engineOn && f.alt > 20000 && f.alt < 400000 && !inOrbit(f) && orbitInfo(f).peri < ATM_TOP) return 'sep';
+    if (!f.chuteOn && !f.noCapsule && f.lifted && vr < -5 && f.alt < ATM_TOP && f.plasma < 0.05 && sp < 500) return 'chute';
     return '';
   }
   if (f.coasting && fuelLeft(f) > 0 && (vr < 220 || f.alt > ATM_TOP + 20000) && !(vr < 0 && f.alt < ATM_TOP - 15000)) return 'burn';
-  if (f.wasOrbit && !f.retro && !f.capsuleOnly && !f.engineOn && fuelLeft(f) > 0 && !f.payloadKind) {
+  if (f.wasOrbit && !f.retro && !f.capsuleOnly && !f.noCapsule && !f.engineOn && fuelLeft(f) > 0 && !f.payloadKind) {
     const o = orbitInfo(f), low = inOrbit(f) && o.apo < 2000000;
     if (low && !f.moonVisited && (goalIs(...MOON_GOALS) || (save.reached.moonhome && f.legs))) return 'moon';
     if (low) return 'home';
     if (f.moonVisited && !f.inMoon && (o.escape || o.peri > 45000)) return 'gohome';
   }
-  if (!f.engineOn && !f.chuteOn && !f.payloadKind && f.lifted && vr < -5 && f.alt < ATM_TOP && f.plasma < 0.05 && sp < 500) return 'chute';
+  if (!f.engineOn && !f.chuteOn && !f.noCapsule && f.lifted && vr < -5 && f.alt < ATM_TOP && f.plasma < 0.05 && sp < 500) return 'chute';
   return '';
 }
 const ACT_TEXT = { drop: 'Drop stage', burn: 'Burn!', home: 'Come home', chute: 'Open parachute', sep: 'Drop tank',
@@ -1518,8 +1520,10 @@ function doDocked(f) {
   f.docked = true;
   const m = moduleFor(save.station.modules.length);
   save.station.modules.push(m.kind);
-  if (stackG.caps) { shed(stackG.caps, f.x, f.y, f, -0.4); stackG.caps = null; }
+  if (stackG.caps) { stackG.caps.visible = false; stackG.caps = null; }      // the part is now part of the station
   f.payload = Math.max(0, f.payload - f.payloadM); f.payloadKind = null;
+  { const st = kepAt(save.station.kep, f.T0 + f.t), dx = f.x - st.x, dy = f.y - st.y, d = Math.max(1, Math.hypot(dx, dy));
+    f.vx = st.vx + dx / d * 1.2; f.vy = st.vy + dy / d * 1.2; f.x = st.x + dx / d * 40; f.y = st.y + dy / d * 40; }   // the empty stage backs away
   sound.chime(true);
   const got = [];
   if (!save.reached.dock && save.reached.station) { reachGoal(f, G.dock, true); got.push(G.dock); }
@@ -1531,7 +1535,7 @@ function doDocked(f) {
 function plantFlag(f) {
   if (!f.onMoon || f.flagDone) return;
   f.flagDone = true;
-  save.flags.push({ a: f.onMoon.a + 7 / MOON_R, name: (save.name || 'Explorer').slice(0, 16), z: 4 });
+  save.flags.push({ a: f.onMoon.a - 6 / MOON_R, name: (save.name || 'Explorer').slice(0, 16), z: 3 });   // a few steps to the rocket's right
   writeSave(); sound.chime(true);
   say(f, 'flag1', `Your flag is planted${save.name ? ', ' + save.name : ''}! It stays on the Moon for good.`, 'now', { urgent: true });
   if (!f.diy && fuelLeft(f) > 0) say(f, 'leaveT', 'When you are ready, tap Fly home.', 'tip');
@@ -1764,7 +1768,6 @@ function drawPlanetView(g, w, h, f, opt) {
     g.strokeStyle = 'rgba(120,175,255,.28)'; g.lineWidth = 14; strokePoly(g, surf);
     g.strokeStyle = 'rgba(200,230,255,.7)'; g.lineWidth = 2; strokePoly(g, surf);
   } else drawPlanet(g, cx, cy, Rpx, s);
-  if (!mini && !zoomedIn) drawOrbiters(g, P, s, f, false);
   if (!mini && !zoomedIn && f.wasOrbit && (!f.ap || f.ap.say === 'wait' || f.ap.say === 'slot')) drawTimingGhost(g, P, s, f, mini);
   drawTrack(g, P, f, mini);
   drawStart(g, P, mini);
@@ -1775,6 +1778,7 @@ function drawPlanetView(g, w, h, f, opt) {
     drawPathLine(g, sp, col, mini, !!path.hit);
     if (path.hit) drawHit(g, P(path.hit[0], path.hit[1]), mini, 'Lands here');
   }
+  if (!mini && !zoomedIn) drawOrbiters(g, P, s, f, false);
   drawRocketMark(g, P, f, mini);
   return kind;
 }
@@ -1823,9 +1827,9 @@ function drawOrbiters(g, P, s, f, small) {
   }
   for (const sa of save.sats) {
     const p = kepAt(sa.kep, T), [x, y] = P(p.x, p.y), col = SATCOL[sa.kind] || '#fff';
-    g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 3; g.beginPath(); g.moveTo(x - 7, y); g.lineTo(x + 7, y); g.stroke();
-    g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); g.moveTo(x - 7, y); g.lineTo(x + 7, y); g.stroke();
-    g.fillStyle = col; g.strokeStyle = 'rgba(0,0,0,.7)'; g.lineWidth = 1.2; g.fillRect(x - 2.5, y - 2.5, 5, 5); g.strokeRect(x - 2.5, y - 2.5, 5, 5);
+    g.strokeStyle = 'rgba(0,0,0,.7)'; g.lineWidth = 4.5; g.beginPath(); g.moveTo(x - 9, y); g.lineTo(x + 9, y); g.stroke();
+    g.strokeStyle = col; g.lineWidth = 2.4; g.beginPath(); g.moveTo(x - 9, y); g.lineTo(x + 9, y); g.stroke();
+    g.fillStyle = col; g.strokeStyle = 'rgba(0,0,0,.8)'; g.lineWidth = 1.5; g.fillRect(x - 3.5, y - 3.5, 7, 7); g.strokeRect(x - 3.5, y - 3.5, 7, 7);
   }
   if (save.station) {
     const p = kepAt(save.station.kep, T), [x, y] = P(p.x, p.y);
@@ -2074,7 +2078,7 @@ function update(dtReal) {
       // the empty stage drops by itself if nobody taps
       if (f.needDrop && f.dropAuto > 0) { f.dropAuto -= dtReal; if (f.dropAuto <= 0) doDrop(); }
       // auto-open the parachute low down if nobody pressed it
-      if (!f.diy && !f.engineOn && !f.chuteOn && f.lifted && !f.inMoon && !f.payloadKind && vr < 0 && f.alt < 5000) openChute(f);
+      if (!f.diy && !f.engineOn && !f.chuteOn && f.lifted && !f.inMoon && !f.noCapsule && vr < 0 && f.alt < 5000) openChute(f);
       { const s2 = stage(f); guideWatch(f, f.engineOn && s2 && s2.fuel > 0); }
       trackT -= dtReal * sp; if (trackT <= 0) { f.track.push([f.x, f.y]); trackT = 2; if (f.track.length > 1500) f.track.splice(0, 2); }
     } else if (f.outcome && f.endIn > 0) {
@@ -2442,14 +2446,14 @@ function guideWatchV3(f, burning) {
     if (diy && Math.abs(moonWindow(f).err) < 0.06 && !f.engineOn) say(f, 'dmoon1', 'The Moon is in place! Lean flat forward and tap Burn.', 'now', { urgent: true, must: true, valid: g => !g.engineOn });
     if (f.legs === false && goalIs('moonland', 'moonhome')) say(f, 'nolegs0', 'Tip: no landing legs on this rocket. Turn them on in the hangar to land.', 'tip');
   }
-  if (diy && wantsMoon && f.engineOn && !f.moonVisited && o && (o.escape || o.apo + R > MOON_A - MOON_SOI * 1.6) && longPath(f).soiIn)
+  if (diy && wantsMoon && f.engineOn && !f.moonVisited && !f.said.has('dmoon2') && o && (o.escape || o.apo + R > MOON_A - MOON_SOI * 1.6) && longPath(f).soiIn)
     say(f, 'dmoon2', 'Your path reaches the Moon\'s pull! Tap Stop engine.', 'now', { urgent: true, must: true, valid: g => g.engineOn });
   if (f.ap && f.ap.kind === 'moon' && f.ap.say === 'burn') say(f, 'moon3', 'Burning forward. More speed stretches the far side of your path out to the Moon.', 'now');
   // the long trip
   if (!f.inMoon && f.alt > 1500000 && vRadial(f) > 0 && !f.moonVisited) {
     say(f, 'moon4', 'On the way! The trip takes hours, so time speeds up.', 'now');
     say(f, 'moon5', 'Why slower and slower? Climbing away from your planet trades speed for height, like a ball thrown up.', 'why');
-    if (diy && diyAimTime(f)) { const ah = diyAimHint(f, longPath(f)); if (ah.key === 'aimLow' || ah.key === 'aimHit') say(f, 'daim0', 'Aim closer: lean the way the arrow shows and burn a little. The map shows your closest pass.', 'tip', { must: true }); }
+    if (diy && diyAimTime(f) && !f.said.has('daim0')) { const ah = diyAimHint(f, longPath(f)); if (ah.key === 'aimLow' || ah.key === 'aimHit') say(f, 'daim0', 'Aim closer: lean the way the arrow shows and burn a little. The map shows your closest pass.', 'tip', { must: true }); }
   }
   // in the Moon's pull
   if (f.inMoon && !f.onMoon && !f.moonLanded) {
@@ -2584,10 +2588,14 @@ function updateCamera(dt, base, dir, up, alt, body) {
     el = (6 + 26 * smoothstep(400, 45000, alt)) * DEG;
     target = center.clone().addScaledVector(up, chuteOpen * 9);
     az = 0.12 * Math.sin(clock * 0.05);
-    // docking: frame the station too
-    if (save.station && (F.payloadKind === 'module' || F.docked)) {
-      const st = kepAt(save.station.kep, F.T0 + F.t), dd = Math.hypot(st.x - F.x, st.y - F.y);
-      if (dd < 700) { const k = smoothstep(700, 300, dd); target.lerp(tmpV.set((st.x + F.x) / 2, (st.y + F.y) / 2, 0), k * 0.5); dist = Math.max(dist, dist + k * dd * 1.1); }
+    // docking, or just let a satellite go: frame that one too
+    let near = null;
+    if (save.station && (F.payloadKind === 'module' || F.docked)) near = kepAt(save.station.kep, F.T0 + F.t);
+    else if (F.released && F.released.kind !== 'module') near = kepAt(F.released.kep, F.T0 + F.t);
+    else if (F.released) near = save.station ? kepAt(save.station.kep, F.T0 + F.t) : null;
+    if (near) {
+      const dd = Math.hypot(near.x - F.x, near.y - F.y);
+      if (dd < 700) { const k = smoothstep(700, 300, dd); target.lerp(tmpV.set((near.x + F.x) / 2, (near.y + F.y) / 2, 0), k * 0.5); dist = Math.max(dist, dist + k * dd * 1.6); }
     }
   }
   let off = new THREE.Vector3()
