@@ -1,0 +1,19 @@
+{
+  "name": "seam-room-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lets an AI stand in the Seam Room as a character it drives from a shell.",
+  "type": "module",
+  "license": "CC0-1.0",
+  "bin": {
+    "room-agent": "room-agent.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@supabase/supabase-js": "^2.118.0",
+    "zod": "^4.6.7"
+  }
+}

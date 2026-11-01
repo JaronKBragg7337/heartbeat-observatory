@@ -41,3 +41,24 @@ html,body{margin:0;height:100%;overflow:hidden;background:#2a2420;color:#f3ead8;
 #card ol span{color:#8a7660;font-size:11px}
 #card .card-act{width:100%;min-height:42px;border:0;border-radius:10px;background:#2c2118;color:#f3ead8;font:600 14px system-ui,sans-serif;cursor:pointer}
 #card .card-note{font-size:12px;color:#7a6650}
+
+/* talk to the AI - only built for the room's owner (Jaron). Top of the screen: the iPhone keyboard covers the bottom,
+   and the floor/people stay clear. One slim row + the last 3 lines, which fade when nothing new is said. */
+#chat{position:fixed;z-index:72;left:calc(8px + env(safe-area-inset-left));right:calc(8px + env(safe-area-inset-right));
+  top:calc(46px + env(safe-area-inset-top));max-width:440px;margin:0 auto;pointer-events:none}
+#chatForm{display:flex;gap:6px;pointer-events:auto}
+#chatIn{flex:1;min-width:0;height:40px;border-radius:20px;border:1px solid rgba(232,180,90,.35);background:rgba(26,20,15,.72);
+  color:#f3ead8;font:16px/1.2 system-ui,-apple-system,sans-serif;padding:0 14px;outline:none;
+  -webkit-user-select:text;user-select:text;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#chatIn::placeholder{color:#b9a98c}
+#chatIn:focus{border-color:#e8c98a;background:rgba(26,20,15,.9)}
+#chatSay,#chatMute{height:40px;min-width:44px;border-radius:20px;border:1px solid rgba(232,180,90,.4);background:rgba(232,180,90,.16);
+  color:#e8c98a;font:600 14px system-ui,sans-serif;padding:0 12px;cursor:pointer}
+#chatSay{background:#e8c98a;color:#2a2014;border-color:#e8c98a}
+#chatMute{padding:0;width:44px;background:rgba(26,20,15,.72)}
+#chatLog{margin:6px 0 0;font:12.5px/1.35 system-ui,-apple-system,sans-serif;color:#f3ead8;text-shadow:0 1px 2px rgba(0,0,0,.8);display:none}
+#chatLog.on{display:block}
+#chatLog div{background:rgba(26,20,15,.55);border-radius:10px;padding:3px 9px;margin:0 0 3px;display:table;max-width:100%;overflow-wrap:anywhere}
+#chatLog b{color:#e8c98a;font-weight:600;margin-right:4px}
+#chatLog i{font-style:normal;font-size:9.5px;font-weight:800;background:#e8c98a;color:#2a2014;border-radius:4px;padding:0 4px;vertical-align:1px}
+#chatLog .ai b{color:#cdb8ff}

@@ -44,7 +44,20 @@ function samePath(a, b) {
 }
 
 export const Seam = {
-  version: "0.1.0",
+  version: "0.2.0",
+
+  /** Box test for data zones: { minX, maxX, minZ, maxZ }, a missing side is open. min is inside, max is outside. */
+  inBounds(b, x, z) {
+    b = b || {};
+    return (b.minX == null || x >= b.minX) && (b.maxX == null || x < b.maxX) &&
+           (b.minZ == null || z >= b.minZ) && (b.maxZ == null || z < b.maxZ);
+  },
+
+  /** Build zones from data (zones.json): each { id, url, title, bounds, spawn }. Returns define()'s cfg minus onEnter. */
+  fromData(data) {
+    const zones = (data.zones || []).map((z) => Object.assign({}, z, { contains: (x, zz) => Seam.inBounds(z.bounds, x, zz) }));
+    return { zones, hysteresis: data.hysteresis == null ? 0.3 : data.hysteresis, fallback: data.fallback || (zones[0] && zones[0].id), doors: data.doors || [] };
+  },
 
   /** Which zone does this pathname belong to? (null if none) */
   zoneForPath(zones, pathname) {

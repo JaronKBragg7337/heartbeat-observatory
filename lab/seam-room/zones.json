@@ -1,0 +1,15 @@
+{
+  "about": "The Seam Room's zones. Each zone is a real page. A zone is a box on the floor (x, z in metres; a missing side is open-ended). Where two boxes touch is a seam; a doorway is just a small zone box set in a wall opening. seam.js reads this through Seam.fromData(). room.js and agent/room-agent.mjs both read it, so a new zone added here is known to the room, the URL switching and the AI character at once.",
+  "hysteresis": 0.3,
+  "fallback": "a",
+  "zones": [
+    { "id": "a", "label": "A", "url": "/lab/seam-room/a/", "title": "Seam Room · Page A - Heartbeat Observatory",
+      "bounds": { "maxX": 0 }, "spawn": { "x": -3.6, "z": 1.2, "yaw": -1.5708 } },
+    { "id": "b", "label": "B", "url": "/lab/seam-room/b/", "title": "Seam Room · Page B - Heartbeat Observatory",
+      "bounds": { "minX": 0 }, "spawn": { "x": 3.6, "z": 1.2, "yaw": 1.5708 } }
+  ],
+  "doors": [
+    { "id": "middle", "between": ["a", "b"], "kind": "open seam", "plane": { "x": 0, "minZ": -4, "maxZ": 4 },
+      "note": "The whole middle line. A real doorway would be a short plane, e.g. { \"z\": -4, \"minX\": 2, \"maxX\": 3 } in the back wall." }
+  ]
+}

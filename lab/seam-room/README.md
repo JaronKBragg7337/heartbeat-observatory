@@ -33,6 +33,7 @@ first log. When the log becomes a chair, `kind` changes but the ID does not. "Re
 
 ## Files
 
+- `zones.json` - the zones and doors, as data. `agent/` - the AI character (see above).
 - `seam.js` - the reusable piece. No three.js, no room, no network. Exposes `Seam.define({...})`.
 - `room.js` - this room: scene, player, peers, the object, the card, the log.
 - `room.css` - shared styles. `a/index.html`, `b/index.html` - the two real entry pages (identical apart from the letter).
@@ -67,6 +68,50 @@ same `world` id, so it is one match. `seam.start()` returns the zone from the UR
 `seam.goTo("blue")` for a team switch made in code (it pushes the URL). Put the team in the `place` field so everyone
 sees it.
 
+## An AI in the room (agent/, 2026-11-01)
+
+An AI (Claude first) can stand in the room as a character, walk, carry the log across the seam, shape it, and talk with
+**Jaron only**. It is visible to everyone and marked with a small "AI" tag.
+
+```sh
+cd lab/seam-room/agent && npm install            # once
+node room-agent.mjs join --name "Claude" --page b   # run in the background; stays in the room
+node room-agent.mjs wait-chat --timeout 600         # blocks until Jaron says something; prints it
+node room-agent.mjs say "On my way."                # reply
+node room-agent.mjs shape                           # fetch the log, carry it A -> B, make the chair
+node room-agent.mjs look | walk-to Jaron | face Jaron | pick-up nearest | carry-to 2 0 | drop | reset-room
+node room-agent.mjs leave
+```
+
+- **Only Jaron can talk to it** (it runs on his personal Claude plan). Enforced by the database, not the page:
+  `public.seam_room_chat` (SQL in `agent/SETUP.sql`, applied). RLS: a signed-in user may insert only a `human` row with
+  `user_id = auth.uid()`, and only if that uid is Jaron's (`seam_room_owner()`); only he can read his rows. The agent
+  reads only his rows and writes `ai` replies with the service-role key from the MSI's keys file. Broadcast chat is
+  never trusted. The chat box is built only when `seam_room_is_owner()` says yes; everyone else sees no input.
+- His device shows the reply as a bubble over the AI, in the 3-line log, and reads it aloud (`speechSynthesis`,
+  mute button, remembered per browser). Everyone else sees a "• • •" talking dot, no words.
+- The AI moves the log/chair through the same `asset` / `asset-ask` world events as people do, so everyone watches it
+  happen. It uses the room's own collision boxes (copied into the agent) and walks at 1.4 m/s.
+- Everything it hears (Jaron's lines, joins/leaves, who crossed to which page, the log's changes) goes to
+  `~/.seam-room-agent/<name>/inbox.log`.
+- MCP: `agent/mcp-server.mjs` (see `agent/MCP.md`) so other AIs can be characters too.
+
+## Zones are data (zones.json)
+
+`zones.json` lists every zone: `id`, `label`, `url`, `title`, `bounds` (a floor box; a missing side is open) and
+`spawn`, plus `doors` (the seam planes between zones; the middle line today). `seam.js` builds zones from it with
+`Seam.fromData()`; `room.js` and `agent/room-agent.mjs` both read it, so a zone added there is known to the URL
+switching, the people counter and the AI at once. A doorway is just a small zone box set in a wall opening.
+
+**Where a new zone plugs in** (e.g. "make the other side of that door a garage with a car"):
+1. `zones.json`: add the zone (`"id": "garage"`, its `url`, `bounds` beyond the door, `spawn`) and a `doors` entry.
+2. Its page: copy `a/index.html` to `<id>/index.html` and change `data-zone` and the title. Same `room.js`, same
+   shell world, so it is still one room and one channel.
+3. Its scene: `room.js` builds the room in `buildShell()`, `buildSideA()`, `buildSideB()`. A new zone needs a
+   `buildZone_<id>()` (or a lazy-loaded module per zone, see "Not done yet" 3), an opening cut in the wall where the
+   door is, and the room bounds (`W`, `D`, `clampToRoom`) widened to include it. The agent's `ROOM`/`SOLIDS`
+   constants need the same change (today they are copies of room.js; one shared file would be the next clean-up).
+
 ## Not done yet (honest list)
 
 1. **Next open step: where identity and history live between pages, server-side.** Today one browser's localStorage plus
@@ -78,7 +123,9 @@ sees it.
    own heavy scene (a factory) would need either lazy-loading per zone or a real navigation, and the handoff then
    needs the server state from step 1.
 4. No grid or debug-bubble layer yet (3D-STANDARDS asks for one in Settings). The card shows ID + coordinates for now.
-5. The shell's movement-state lane does not carry the object; peers draw the object in the holder's hands from the
+5. The AI character walks in straight lines with push-out collision (no path finding); a long trip around furniture can
+   stop with "blocked". Chat history is only Jaron's table; nobody else's words exist anywhere.
+6. The shell's movement-state lane does not carry the object; peers draw the object in the holder's hands from the
    holder's broadcast position, so it lags by the same ~200 ms as the person.
 
 ## Shell notes

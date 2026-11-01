@@ -15,7 +15,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
-import { Seam } from "/lab/seam-room/seam.js";
+import { Seam } from "/lab/seam-room/seam.js?v=2";
 
 const $ = (id) => document.getElementById(id);
 const W = 12, D = 8, H = 2.9;               // room size, metres. Seam at x = 0.
@@ -24,7 +24,15 @@ const BENCH = { x: 4.55, z: -3.25 };        // the workbench on page B
 const BLOCK = { x: -4.7, z: -2.4 };         // the chopping block on page A
 const ASSET_KEY = "seam-room:asset:";       // + id
 const CURRENT_KEY = "seam-room:current";
-const NAMES = { a: "A", b: "B" };
+/* zones are data (zones.json): add a zone there and the room, the URL switching and the AI character all know it */
+const ZDATA = await fetch("/lab/seam-room/zones.json?v=1").then((r) => r.json()).catch(() => ({
+  hysteresis: 0.3, fallback: "a",
+  zones: [
+    { id: "a", label: "A", url: "/lab/seam-room/a/", title: "Seam Room · Page A - Heartbeat Observatory", bounds: { maxX: 0 }, spawn: { x: -3.6, z: 1.2, yaw: -Math.PI / 2 } },
+    { id: "b", label: "B", url: "/lab/seam-room/b/", title: "Seam Room · Page B - Heartbeat Observatory", bounds: { minX: 0 }, spawn: { x: 3.6, z: 1.2, yaw: Math.PI / 2 } },
+  ],
+}));
+const NAMES = Object.fromEntries(ZDATA.zones.map((z) => [z.id, z.label || z.id.toUpperCase()]));
 
 /* ------------------------------------------------------------ seam log - */
 const logLines = [];
@@ -41,11 +49,9 @@ function esc(s) {
 window.__seamLog = logLines;
 
 /* ---------------------------------------------------------------- seam - */
-const ZONES = [
-  { id: "a", url: "/lab/seam-room/a/", title: "Seam Room · Page A - Heartbeat Observatory", contains: (x) => x < 0 },
-  { id: "b", url: "/lab/seam-room/b/", title: "Seam Room · Page B - Heartbeat Observatory", contains: (x) => x >= 0 },
-];
-const SPAWN = { a: { x: -3.6, z: 1.2, yaw: -Math.PI / 2 }, b: { x: 3.6, z: 1.2, yaw: Math.PI / 2 } };
+const SEAMCFG = Seam.fromData(ZDATA);
+const ZONES = SEAMCFG.zones;
+const SPAWN = Object.fromEntries(ZONES.map((z) => [z.id, z.spawn || { x: 0, z: 0, yaw: 0 }]));
 
 const player = { x: 0, z: 0, yaw: 0, body: 0, speed: 0, mx: 0, my: 0, run: false };
 const cam = { yaw: 0, pitch: 0.18 };
@@ -54,8 +60,8 @@ let shell = null;
 
 const seam = Seam.define({
   zones: ZONES,
-  hysteresis: 0.3,
-  fallback: (document.documentElement.dataset.zone || "a"),
+  hysteresis: SEAMCFG.hysteresis,
+  fallback: (document.documentElement.dataset.zone || SEAMCFG.fallback),
   onEnter(zone, from, info) {
     zoneId = zone.id;
     if (info.how === "load") {
@@ -64,7 +70,9 @@ const seam = Seam.define({
       seamLog(`spawned on page ${NAMES[zone.id]} (from URL)`);
     } else if (info.how === "popstate") {
       // Back/Forward: put the walker just across the line, on the new side
-      player.x = zone.id === "a" ? -0.7 : 0.7;
+      const sp = SPAWN[zone.id];
+      if (zone.id === "a" || zone.id === "b") player.x = zone.id === "a" ? -0.7 : 0.7;   // just across the middle line
+      else if (sp) { player.x = sp.x; player.z = sp.z; }
       seamLog(`← page ${NAMES[zone.id]} (back/forward)`);
     } else {
       seamLog(`→ page ${NAMES[zone.id]} (pushState)`);
@@ -585,7 +593,7 @@ function rebuildAssetMesh() {
 }
 rebuildAssetMesh();
 
-function zoneAt(x) { return x < 0 ? "a" : "b"; }
+function zoneAt(x, z) { const zn = ZONES.find((q) => q.contains(x, z == null ? 0 : z)); return zn ? zn.id : ZONES[0].id; }
 
 /* the object crossed the seam because its carrier did */
 function onAssetCrossed(fromId, toId, how) {
@@ -620,8 +628,8 @@ function useAction() {
     asset.holder = null; asset.holderName = ""; asset.onBlock = false;
     const p = clampToRoom(player.x + f.x * 0.6, player.z + f.z * 0.6, 0.35);
     asset.x = p.x; asset.z = p.z;
-    asset.changes.push({ what: `set down on ${NAMES[zoneAt(asset.x)]}`, at: Date.now() });
-    commit(`${tag()} set down on page ${NAMES[zoneAt(asset.x)]}`);
+    asset.changes.push({ what: `set down on ${NAMES[zoneAt(asset.x, asset.z)]}`, at: Date.now() });
+    commit(`${tag()} set down on page ${NAMES[zoneAt(asset.x, asset.z)]}`);
     return;
   }
   if (nearAsset() && !holderPresent()) {
@@ -657,7 +665,7 @@ function renderCard() {
       <dt>id</dt><dd>${esc(asset.id)}</dd>
       <dt>born on</dt><dd>page ${esc(NAMES[asset.born])}</dd>
       <dt>pages</dt><dd>${esc(pages)}</dd>
-      <dt>now on</dt><dd>page ${esc(NAMES[zoneAt(asset.x)])} · x ${asset.x.toFixed(1)}, z ${asset.z.toFixed(1)} m</dd>
+      <dt>now on</dt><dd>page ${esc(NAMES[zoneAt(asset.x, asset.z)])} · x ${asset.x.toFixed(1)}, z ${asset.z.toFixed(1)} m</dd>
       <dt>held by</dt><dd>${esc(holder)}</dd>
     </dl>
     <div class="card-sub">Changes</div><ol>${changes}</ol>
@@ -720,12 +728,18 @@ loader.load("/lab/bedroom/person.glb", (gltf) => {
 
 const peerAv = new Map();
 let lastPeers = [];
-function nameSprite(text, color) {
+function nameSprite(text, color, ai) {
   const c = document.createElement("canvas"); c.width = 320; c.height = 64;
   const g = c.getContext("2d");
   g.fillStyle = "rgba(20,16,12,.72)"; g.beginPath(); g.roundRect(4, 8, 312, 48, 24); g.fill();
   g.fillStyle = color || "#8fd0ff"; g.beginPath(); g.arc(32, 32, 9, 0, 7); g.fill();
-  g.fillStyle = "#f3ead8"; g.font = "600 26px system-ui, sans-serif"; g.textBaseline = "middle"; g.fillText(text, 52, 33);
+  let tx = 52;
+  if (ai) {   // a small "AI" tag so nobody mistakes the character for a person
+    g.fillStyle = "#e8c98a"; g.beginPath(); g.roundRect(48, 18, 46, 28, 8); g.fill();
+    g.fillStyle = "#2a2014"; g.font = "800 19px system-ui, sans-serif"; g.textBaseline = "middle"; g.fillText("AI", 59, 33);
+    tx = 104;
+  }
+  g.fillStyle = "#f3ead8"; g.font = "600 26px system-ui, sans-serif"; g.textBaseline = "middle"; g.fillText(text, tx, 33, 312 - tx - 14);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
   s.scale.set(0.9, 0.18, 1); s.position.y = 2.0; s.renderOrder = 10;
@@ -741,10 +755,12 @@ function syncPeers(list, dt) {
       e = { group: new THREE.Group(), mixer: null, px: p.x, pz: p.z, speed: 0, label: "" };
       makeAvatar(e); scene.add(e.group); peerAv.set(p.id, e);
     }
+    const ai = !!(p.appearance && p.appearance.ai);
+    e.ai = ai; e.name = p.name;
     const label = `${p.name || "Guest"} · on ${NAMES[p.place] || "?"}`;
-    if (label !== e.label) {
+    if (label + ai !== e.label) {
       if (e.sprite) e.group.remove(e.sprite);
-      e.sprite = nameSprite(label, p.color); e.group.add(e.sprite); e.label = label;
+      e.sprite = nameSprite(label, p.color, ai); e.group.add(e.sprite); e.label = label + ai;
     }
     const v = dt > 0 ? Math.hypot(p.x - e.px, p.z - e.pz) / dt : 0;
     e.speed += (Math.min(v, 4) - e.speed) * 0.2;
@@ -754,6 +770,7 @@ function syncPeers(list, dt) {
   }
   for (const [id, e] of peerAv) if (!live.has(id)) { scene.remove(e.group); peerAv.delete(id); }
   updateCounter();
+  tickBubbles();
 }
 
 let counterSig = "";
@@ -809,6 +826,7 @@ shell.on("asset-ask", () => { shell.send("asset", { state: asset }); });
 let announced = false;
 function onConnected() {
   announced = true;
+  void setupTalk();
   shell.send("asset-ask", {});
   shell.send("asset", { state: asset });
   seamLog("joined the room channel");
@@ -823,6 +841,159 @@ addEventListener("pagehide", () => {
     try { shell.send("asset", { state: asset }); } catch (_) {}
   }
 });
+
+/* ------------------------------------------------- talk: bubbles + chat - */
+/* ONLY JARON TALKS TO THE AI. The AI character runs on his personal Claude
+   plan. His lines go into public.seam_room_chat (RLS: only he can insert
+   rows as himself, only he can read his conversation). The AI reads only his
+   rows and writes its replies there, so only his device shows and speaks the
+   words. Everyone else sees a "talking" dot over whoever is speaking.
+   Broadcast chat is never trusted (anyone can forge "from"). */
+const bubbles = new Map();          // avatar id ("self" or peer id) -> { sprite, holder, until, text, dots }
+function bubbleSprite(text, dots) {
+  const c = document.createElement("canvas"); c.width = 512; c.height = 256;
+  const g = c.getContext("2d");
+  const font = dots ? "800 40px system-ui, sans-serif" : "500 30px system-ui, sans-serif";
+  g.font = font;
+  let lines = [];
+  if (dots) lines = ["• • •"];
+  else {
+    const words = String(text).split(/\s+/); let cur = "", used = 0;
+    for (const w of words) {
+      const t = cur ? cur + " " + w : w;
+      if (g.measureText(t).width > 440 && cur) { lines.push(cur); cur = w; if (lines.length === 4) break; } else cur = t;
+      used++;
+    }
+    if (lines.length < 4 && cur) lines.push(cur);
+    if (used < words.length) lines[lines.length - 1] = lines[lines.length - 1].replace(/\s*\S{0,3}$/, "") + "…";
+  }
+  const w = Math.min(492, Math.max(dots ? 120 : 140, ...lines.map((l) => g.measureText(l).width + 44)));
+  const h = 22 + lines.length * 38;
+  const x0 = (512 - w) / 2, y0 = 256 - h - 26;
+  g.fillStyle = "rgba(243,234,216,.96)"; g.beginPath(); g.roundRect(x0, y0, w, h, 22); g.fill();
+  g.beginPath(); g.moveTo(256 - 14, y0 + h - 1); g.lineTo(256, 256 - 6); g.lineTo(256 + 14, y0 + h - 1); g.fill();
+  g.fillStyle = "#2c2118"; g.font = font; g.textBaseline = "middle"; g.textAlign = "center";
+  lines.forEach((l, i) => g.fillText(l, 256, y0 + 30 + i * 38));
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
+  s.scale.set(1.2, 0.6, 1); s.renderOrder = 11;
+  return s;
+}
+function showBubble(id, text, ms, dots) {
+  const holder = id === "self" ? selfAv : peerAv.get(id);
+  if (!holder) return false;
+  const old = bubbles.get(id);
+  if (old) old.holder.group.remove(old.sprite);
+  const sprite = bubbleSprite(text, dots);
+  sprite.position.y = id === "self" ? 2.2 : 2.35;
+  holder.group.add(sprite);
+  bubbles.set(id, { sprite, holder, text: dots ? "" : text, dots: !!dots, until: performance.now() + (ms || 6000) });
+  return true;
+}
+function tickBubbles() {
+  const now = performance.now();
+  for (const [id, b] of bubbles) {
+    if (now > b.until || (id !== "self" && !peerAv.has(id))) { b.holder.group.remove(b.sprite); bubbles.delete(id); }
+  }
+}
+// everyone: someone is talking (no words travel this way). Never replace a real bubble with dots.
+shell.on("talking", (m, from) => {
+  const b = bubbles.get(from);
+  if (b && !b.dots) return;
+  showBubble(from, "", Math.min(9000, Number(m.ms) || 3000), true);
+});
+
+/* the chat box - built only for the owner */
+let canTalk = false, muted = false;
+const chatLines = [];
+try { muted = localStorage.getItem("seam-room:mute") === "1"; } catch (_) {}
+function chatLog(name, text, ai) {
+  chatLines.push({ name, text, ai, at: Date.now() });
+  while (chatLines.length > 30) chatLines.shift();
+  const box = $("chatLog"); if (!box) return;
+  box.innerHTML = chatLines.slice(-3).map((l) => `<div${l.ai ? ' class="ai"' : ""}><b>${esc(l.name)}${l.ai ? " <i>AI</i>" : ""}</b> ${esc(l.text)}</div>`).join("");
+  box.classList.toggle("on", chatLines.length > 0);
+  clearTimeout(chatLog.fade);   // the lines step aside after 25 s of quiet so the room stays visible
+  chatLog.fade = setTimeout(() => box.classList.remove("on"), 25000);
+}
+function speak(text) {
+  if (muted || !("speechSynthesis" in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    const vs = speechSynthesis.getVoices();
+    const v = vs.find((x) => /^en[-_]US/i.test(x.lang) && /Samantha|Aaron|Google US|Natural|Aria|Jenny|Guy/i.test(x.name)) || vs.find((x) => /^en/i.test(x.lang));
+    if (v) u.voice = v;
+    u.rate = 1.02; speechSynthesis.speak(u);
+  } catch (_) {}
+}
+function buildChat() {
+  const wrap = document.createElement("div"); wrap.id = "chat";
+  wrap.innerHTML = `<form id="chatForm" autocomplete="off">
+      <input id="chatIn" type="text" maxlength="280" enterkeyhint="send" placeholder="Talk to the AI…" aria-label="Say something to the AI">
+      <button id="chatSay" type="submit">Say</button>
+      <button id="chatMute" type="button" aria-label="Mute spoken replies"></button>
+    </form>
+    <div id="chatLog" aria-live="polite"></div>`;
+  document.body.appendChild(wrap);
+  // sit just under the shell's status chips, which wrap to two rows on a phone
+  const placeChat = () => { const h = document.querySelector(".hbs-hud"); wrap.style.top = Math.round((h ? h.getBoundingClientRect().bottom : 40) + 6) + "px"; };
+  placeChat(); addEventListener("resize", placeChat); setTimeout(placeChat, 1500);
+  document.body.classList.add("can-talk");
+  // keep taps here away from the shell's stick/look and the room's walk keys
+  for (const ev of ["pointerdown", "touchstart", "mousedown"]) wrap.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
+  wrap.addEventListener("keydown", (e) => e.stopPropagation());
+  const mute = $("chatMute");
+  const paintMute = () => { mute.textContent = muted ? "🔇" : "🔊"; mute.setAttribute("aria-pressed", muted ? "true" : "false"); mute.title = muted ? "Replies are muted" : "Replies are read aloud"; };
+  paintMute();
+  mute.addEventListener("click", () => {
+    muted = !muted; paintMute();
+    try { localStorage.setItem("seam-room:mute", muted ? "1" : "0"); } catch (_) {}
+    if (muted && "speechSynthesis" in window) speechSynthesis.cancel();
+    else speak("Sound on.");   // a tap also unlocks speech on iPhone
+  });
+  $("chatForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const inp = $("chatIn"), text = inp.value.trim().slice(0, 280);
+    if (!text) return;
+    // iPhone only lets a page speak after a tap; this tap counts
+    if (!muted && "speechSynthesis" in window && !speechSynthesis.speaking) { try { speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); } catch (_) {} }
+    inp.value = ""; inp.blur();
+    showBubble("self", text, 5000 + text.length * 50);
+    shell.send("talking", { ms: Math.min(9000, 1500 + text.length * 55) });
+    const { data, error } = await shell.supa.from("seam_room_chat")
+      .insert({ user_id: shell.uid, speaker: "human", body: text, place: zoneId }).select("id").single();
+    if (error) { chatLog("Not sent", /row-level security/i.test(error.message) ? "only the room's owner can talk to the AI" : error.message, false); return; }
+    seenRows.add(data.id);
+    chatLog("You", text, false);
+  });
+}
+const seenRows = new Set();
+function onChatRow(r) {
+  if (!r || seenRows.has(r.id)) return;
+  seenRows.add(r.id);
+  if (r.speaker === "ai") {
+    chatLog(r.ai_name || "AI", r.body, true);
+    showBubble(r.ai_key, r.body, 5000 + r.body.length * 60);
+    speak(r.body);
+  } else chatLog("You", r.body, false);   // a line he sent from another device
+}
+async function setupTalk() {
+  if (!shell.supa || !shell.uid) return;           // guests never get the box
+  let ok = false;
+  try { const { data } = await shell.supa.rpc("seam_room_is_owner"); ok = data === true; } catch (_) {}
+  if (!ok) return;
+  canTalk = true;
+  buildChat();
+  try {
+    const { data } = await shell.supa.from("seam_room_chat").select("*").order("id", { ascending: false }).limit(3);
+    for (const r of (data || []).reverse()) { seenRows.add(r.id); chatLog(r.speaker === "ai" ? (r.ai_name || "AI") : "You", r.body, r.speaker === "ai"); }
+  } catch (_) {}
+  shell.supa.channel("seam-chat-" + shell.uid)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "seam_room_chat", filter: `user_id=eq.${shell.uid}` }, ({ new: r }) => onChatRow(r))
+    .subscribe();
+}
+/* test handle. previewBox() only draws the box: for anyone but Jaron the database refuses what it sends. */
+window.__seamTalk = { showBubble, onChatRow, speak, previewBox: () => { if (!document.getElementById("chat")) buildChat(); }, get muted() { return muted; } };
 
 /* ------------------------------------------------------- keyboard/mouse - */
 const keys = {};
@@ -975,6 +1146,8 @@ const loading = $("loading"); if (loading) setTimeout(() => loading.classList.ad
 /* test handle: read state without reaching into closures */
 window.__seam = {
   seam, player, cam, get asset() { return asset; }, get zone() { return zoneId; }, get peers() { return lastPeers; },
-  shell: () => shell, use: useAction, reset: resetRoom, openCard,
+  shell: () => shell, use: useAction, reset: resetRoom, openCard, solids, zones: ZONES,
+  get bubbles() { return [...bubbles.entries()].map(([id, b]) => ({ id, text: b.text, dots: b.dots })); },
+  get chat() { return chatLines.slice(); }, get canTalk() { return canTalk; },
   teleport(x, z) { player.x = x; player.z = z; },
 };
