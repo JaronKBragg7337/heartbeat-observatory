@@ -603,6 +603,14 @@ canvas.addEventListener('pointermove', (e) => {
 });
 function endPtr(e) { if (e.pointerId === joy.id) { joy.id = null; joy.x = joy.y = 0; $('joy').hidden = true; } if (e.pointerId === look.id) look.id = null; }
 canvas.addEventListener('pointerup', endPtr); canvas.addEventListener('pointercancel', endPtr);
+// 11/1: stuck-joystick fix (Jaron, iPhone): if the finger's pointerup never reaches the canvas (an overlay pops up, iOS steals the touch,
+// the app loses focus), the stick stayed held and the player kept running. Release on every way a touch can end.
+function releaseAll() { joy.id = null; joy.x = joy.y = 0; look.id = null; const j = $('joy'); if (j) j.hidden = true; for (const k in keys) keys[k] = false; }
+canvas.addEventListener('lostpointercapture', endPtr);
+addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr);
+document.addEventListener('touchend', (e) => { if (!e.touches || e.touches.length === 0) releaseAll(); }, { passive: true });
+document.addEventListener('touchcancel', releaseAll, { passive: true });
+addEventListener('blur', releaseAll); document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
 function toggleMute() { const m = !prefs.muted; Snd.setMuted(m); $('btnSound').classList.toggle('off', m); $('btnSound').setAttribute('aria-label', m ? 'Sound off' : 'Sound on'); }
 $('btnSound').addEventListener('click', () => { Snd.init(); toggleMute(); });
 $('btnSound').classList.toggle('off', prefs.muted);
