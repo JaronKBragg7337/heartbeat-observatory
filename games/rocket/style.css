@@ -42,6 +42,7 @@ button:focus-visible,.lean-track:focus-visible{outline:3px solid var(--sky);outl
 .tip{margin:0;text-align:center;color:var(--ink-dim);font-size:15px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
 .parts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .parts.four{grid-template-columns:repeat(4,1fr)}
+@media (max-width:699px){ .parts:has(> .part:nth-child(7):not([hidden])){grid-template-columns:repeat(4,1fr)} .parts:has(> .part:nth-child(7):not([hidden])) .part{min-height:58px} }
 .part{position:relative;min-height:68px;border-radius:18px;background:var(--glass);border:1px solid var(--glass-line);
   -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);display:grid;align-content:center;gap:2px;padding:8px 6px;transition:transform .12s}
 .part:active{transform:scale(.96)}
@@ -130,6 +131,23 @@ button:focus-visible,.lean-track:focus-visible{outline:3px solid var(--sky);outl
 .opt .ok{font:700 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim)}
 .opt[aria-pressed="true"]{border-color:var(--flame-hi);box-shadow:inset 0 0 0 1px var(--flame-hi)}
 #btnDiy[aria-pressed="true"] .ok{color:var(--flame-hi)}
+
+/* name tags over satellites and the station */
+.tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tag{position:absolute;left:0;top:0;padding:4px 10px;border-radius:999px;background:rgba(14,20,34,.72);border:1px solid rgba(127,214,155,.55);
+  color:var(--ink);font:700 13px/1.2 var(--body);white-space:nowrap;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.tag::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:10px;margin-left:-1px;background:rgba(127,214,155,.75)}
+.tag.edge{border-style:dashed;opacity:.85}
+.tag.edge::after{display:none}
+/* the name for the flag, asked on the Moon card */
+.namebox{display:grid;gap:6px;text-align:left;font:700 13px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);pointer-events:auto}
+.namebox input{font:600 20px/1.2 var(--display);letter-spacing:0;text-transform:none;color:var(--ink);background:rgba(4,7,14,.55);border:1px solid var(--glass-line);
+  border-radius:14px;padding:12px 14px;min-height:50px;width:100%;outline:none}
+.namebox input:focus{border-color:var(--flame-hi)}
+.act[data-kind="moon"],.act[data-kind="leave"],.act[data-kind="gohome"]{background:linear-gradient(180deg,#e9e4ff,#b7a9f0);color:#1d1440}
+.act[data-kind="land"]{background:linear-gradient(180deg,#f1efe9,#c9c3b8);color:#26221c}
+.act[data-kind="flag"]{background:linear-gradient(180deg,var(--flame-hi),var(--flame));color:var(--flame-ink)}
+.act[data-kind="release"],.act[data-kind="core"],.act[data-kind="dock"],.act[data-kind="dockNow"]{background:linear-gradient(180deg,#a6ecbb,#6cc58a);color:#0c2414}
 
 /* toast */
 .toast{position:absolute;left:50%;top:calc(var(--sat) + 120px);transform:translate(-50%,-10px);max-width:calc(100% - 32px);text-align:center;

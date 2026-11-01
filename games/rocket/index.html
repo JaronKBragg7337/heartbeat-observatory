@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0b1424" />
-<meta name="description" content="Build a rocket, touch the clouds, reach space, go all the way around the planet and come home safe. Real physics, made simple. Plays on a phone." />
+<meta name="description" content="Build a rocket, reach space, go all the way around, fly to the Moon and land on it, put satellites in orbit and build a space station. Real physics, made simple. Plays on a phone." />
 <title>Heartbeat Rocket</title>
 <!-- hb:no-phone -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -37,16 +37,18 @@
     <section id="hangarUI" class="hangar">
       <p class="tip" id="hangarTip">Tap a part to change it</p>
       <div class="parts" id="parts">
-        <button class="part" id="pNose"><span class="pk">Nose</span><span class="pv" id="vNose">Capsule</span></button>
+        <button class="part" id="pNose"><span class="pk" id="kNose">Nose</span><span class="pv" id="vNose">Capsule</span><span class="new" id="newNose" hidden>New</span></button>
         <button class="part" id="pTank"><span class="pk">Tank</span><span class="pv" id="vTank">Short</span><span class="new" id="newTank" hidden>New</span></button>
         <button class="part" id="pEngine"><span class="pk">Engine</span><span class="pv" id="vEngine">Small</span></button>
         <button class="part" id="pFins" hidden><span class="pk">Fins</span><span class="pv" id="vFins">On</span><span class="new" id="newFins" hidden>New</span></button>
         <button class="part" id="pStages" hidden><span class="pk">Stages</span><span class="pv" id="vStages">+ Stage</span><span class="new" id="newStages" hidden>New</span></button>
         <button class="part" id="pShield" hidden><span class="pk">Heat shield</span><span class="pv" id="vShield">On</span><span class="new" id="newShield" hidden>New</span></button>
+        <button class="part" id="pLegs" hidden><span class="pk">Legs</span><span class="pv" id="vLegs">On</span><span class="new" id="newLegs" hidden>New</span></button>
       </div>
       <div class="opts" id="opts" hidden>
         <button class="opt" id="btnDiy" aria-pressed="false" hidden><span class="ok">Mode</span><span id="vDiy">Helpers on</span></button>
         <button class="opt" id="btnGuide" aria-pressed="false" hidden><span class="ok">Guide</span><span id="vGuide">New tips</span></button>
+        <button class="opt" id="btnFlag" hidden><span class="ok">Flag</span><span id="vFlag">Your name</span></button>
       </div>
       <button class="launch" id="btnLaunch">LAUNCH</button>
     </section>
@@ -85,6 +87,7 @@
       </div>
     </section>
 
+    <div class="tags" id="tags" aria-hidden="true"></div>
     <div class="toast" id="toast" aria-live="polite"></div>
     <div class="nums" id="nums" hidden></div>
 
@@ -103,6 +106,7 @@
         <p id="cardText"></p>
         <div class="unlock" id="cardUnlock" hidden></div>
         <div class="next" id="cardNext" hidden></div>
+        <label class="namebox" id="cardName" hidden><span>Name on your flag</span><input id="nameIn" type="text" maxlength="16" autocomplete="off" enterkeyhint="done" placeholder="Explorer" /></label>
         <button class="btn-big" id="cardBtn">Back to hangar</button>
         <button class="btn-ghost" id="cardBtn2" hidden>Back to hangar</button>
       </div>
