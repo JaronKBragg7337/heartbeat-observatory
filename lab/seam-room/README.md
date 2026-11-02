@@ -36,9 +36,10 @@ first log. When the log becomes a chair, `kind` changes but the ID does not. "Re
 - `zones.json` - the zones and doors, as data; each zone names its scene `module` (+ `v`). `agent/` - the AI character (see above).
 - `garage.js` - page C (the garage). `den.js` - page D (the media room) and the Heartbeat News player on its computer.
   `kitchen.js` - page E (the kitchen behind B's back door). `gym.js` - page F (the gym behind the media room's side door).
+  `hallway.js` - page G (the long hallway behind the media room's back door, ten numbered future doors).
 - `seam.js` - the reusable piece. No three.js, no room, no network. Exposes `Seam.define({...})`.
 - `room.js` - this room: scene, player, peers, the object, the card, the log, the doors.
-- `room.css` - shared styles. `a/` .. `f/` `index.html` - the real entry pages (identical apart from the letter and title).
+- `room.css` - shared styles. `a/` .. `g/` `index.html` - the real entry pages (identical apart from the letter and title).
 - `index.html` - sends `/lab/seam-room/` to `/a/`.
 - Body model: `/lab/bedroom/person.glb` (walk + idle clips), shared, not copied.
 
@@ -246,6 +247,42 @@ future door `d-side` (x = -8.25 wall, right next to the bookshelf) is a real map
   and without the gym). It knows the bleachers, hoop bases, benches and rack. A running character keeps its old code
   until it is restarted.
 
+## Page G: the hallway (2026-11-01, Jaron asked from inside the room)
+
+"Can you make the room by the computer a long hallway? That can be a page with many doors in it." The media room's other
+future door `d-back` (far wall, right of the desk) is a real walnut door now, and behind it is a hallway at
+`/lab/seam-room/g/`. It arrived by the hot-load like the gym: anyone standing in D sees the green door become real.
+
+- **Size:** 3 x 40 m, 2.9 m high (x -4.45..-1.45, z 9.7..49.7), straight north from the door. Clear of every zone (the
+  gym is west of x -8.4, the garage east of x 2).
+- **Ten doors, a page each later:** `g-1` .. `g-10` in zones.json, alternating walls: odd numbers on the east wall
+  (x -1.45) at z 13, 20, 27, 34, 41; even on the west wall (x -4.45) at z 16.5, 23.5, 30.5, 37.5, 44.5. Each has its own
+  finish (1 oak, 2 barn red, 3 walnut, 4 navy, 5 cherry, 6 sage, 7 maple, 8 mustard, 9 charcoal, 10 teal), a brass plate
+  with a **big number** + COMING SOON on the leaf, and a number blade standing out above the frame so you can read the
+  numbers down the hall. A tap rattles one ("door 3 (g-3): coming soon"). Each door's zones.json note says where its
+  page can go and the walk rectangle it needs (west doors 2 and 4 have only 3.8 m before the gym's wall).
+- **Making one real** ("door 3 should be a ___"): in zones.json set its `kind` to `"door"`, `between` to `["g", "<new
+  zone>"]`, add the zone (with its `module`) and a walk rectangle (`"door": "g-3"`, `"shrink": "z"`, `links`). Open rooms
+  pick it up in ~20 s: room.js hangs the real leaf (swinging into the new room: `"swing"` is already set) and calls
+  `hallway.js openDoor()`, which hides the decoration, cuts the opening in the wall (linings + threshold) and paints the
+  real leaf the door's own colour. Tested live with a bare test zone behind door 3: cut, painted, walked through.
+- **Inside:** oak boards, a 1 m wool runner (burgundy, navy and gold borders, medallions), cream panelled wainscot,
+  striped paper, crown, ten brass flush ceiling lights, ten paintings (one atlas) with brass picture lights across from
+  the doors, a console with a lamp by the way in, the "PAGE G" sign, and at the far end a 6-over-6 window onto a lawn and
+  trees, with curtains, a walnut bench and a plant.
+- **Phone budget:** ~25 draw calls looking down the hall. Static parts merged per material; the door leaves, their
+  hardware, number plates, frames and blades and the picture frames are InstancedMeshes (the plates read their number
+  from one atlas through a per-instance attribute). No shadow casters, NO new light: the fixtures glow and the light
+  pools on the floor and walls are additive decals.
+- **Rooms you cannot see:** room.js culls zone groups by open doors, but always draws the room (A and B). Looking back
+  down the hall it was all in view behind two walls (357 calls); hallway.js hides the room's static pieces (and the doors
+  you cannot see) while the camera is in the hall and the way to A is not open, and puts them back when you leave or
+  both doors open (25 calls). People, tags, lights and the log/chair are never touched. (A room.js that groups and culls
+  the room itself would make this unnecessary: a clean-up for later.)
+- **The AI** knows the hall's furniture and routes D <-> G (and on to any page). New: `walk-to door:g-3` (also
+  `door 3`, `door:d-back`) walks to 0.8 m in front of that door and faces it. Simulated: every page -> every numbered
+  door and back, 42 named trips + 400 random ones, all arrive. A running character keeps its old code until restarted.
+
 ## New rooms without a reload (2026-11-01, Jaron asked)
 
 Someone standing in the room when a new zone deploys sees it arrive, no reload. room.js fetches `zones.json`
@@ -285,7 +322,8 @@ and tracks presence once per connection (law 1). A running `join` keeps its old 
    whoever is online right now. If everyone leaves, a new visitor starts from their own copy (or `SR1-A-LOG-0001`). It
    needs a table (one row per asset ID: kind, born, visited, changes, rev), with the channel used only for live moves.
    Same lesson as Ashgrove's D6: decide this before building the 3-page road.
-2. **More zones** - six are tested (A, B, garage C, media room D, kitchen E, gym F). The AI's routing chains doors now.
+2. **More zones** - seven are tested (A, B, garage C, media room D, kitchen E, gym F, hallway G). The AI's routing chains
+   doors now. The hallway's ten numbered doors are waiting for pages.
 3. **True separate-page loads with different code per zone** - both pages load the same `room.js`. A zone that needs its
    own heavy scene (a factory) would need either lazy-loading per zone or a real navigation, and the handoff then
    needs the server state from step 1.

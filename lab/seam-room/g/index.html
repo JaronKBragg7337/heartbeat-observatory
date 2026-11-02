@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" data-zone="g">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#2a2420">
+<title>Seam Room · Hallway (Page G) - Heartbeat Observatory</title>
+<meta name="description" content="One world, seven real pages. Walk through the back door of the media room (page D), right of the desk, and the address changes. This is page G, a long hallway with ten numbered doors to future pages.">
+<link rel="stylesheet" href="/lab/seam-room/room.css?v=3">
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="loading">THE SEAM ROOM · HALLWAY · PAGE G</div>
+<div id="hudSeam" data-hb-top-in>
+  <div id="counter">You: <b>page G</b></div>
+  <div id="seamLog"></div>
+  <button id="reset" type="button">Reset room</button>
+</div>
+<div id="card" role="dialog" aria-label="Object card"></div>
+<!-- Both pages load the same code; the URL decides where you spawn. -->
+<script defer src="/shell/shell.js?v=8"></script>
+<script type="module" src="/lab/seam-room/room.js?v=7"></script>
+<script src="/lab/lab-top.js"></script>
+<script defer src="/hb-editor.js"></script>
+<script defer src="/bubble.js?v=2"></script>
+</body>
+</html>

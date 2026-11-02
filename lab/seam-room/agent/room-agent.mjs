@@ -80,7 +80,24 @@ const SOLIDS = [
   [1.13, -10.15, 5.6, -9.48], [5.48, -10.15, 6.15, -5.45], [5.35, -5.48, 6.15, -4.44], [2.2, -8.1, 4.4, -6.95], [2.45, -7.0, 4.15, -6.55], [0.15, -10.15, 0.87, -9.43],
   // the gym (page F, gym.js): bleachers on the west wall, the two hoop bases, team benches, ball rack
   [-32.4, -4.2, -28.35, 17.9], [-19.65, -9.7, -18.15, -7.45], [-19.65, 21.15, -18.15, 23.4], [-9.3, 0.1, -8.4, 4.4], [-9.3, 9.3, -8.4, 13.6], [-9.25, 19.63, -8.4, 20.87],
+  // the hallway (page G, hallway.js): the console by the way in, the bench under the far window, the plant in the corner
+  [-1.87, 10.25, -1.45, 11.65], [-3.6, 49.2, -2.3, 49.7], [-4.45, 49.15, -3.9, 49.7],
 ];
+/* "door:g-3" (or "door 3", "door:d-back"): the spot 0.8 m in front of that door, on the side of the first zone in its
+   `between` (the hallway side for g-1..g-10), so the AI can be sent to any numbered door */
+function doorSpot(q) {
+  const m = /^door[:\s#-]*([\w-]+)$/i.exec(String(q || "").trim());
+  if (!m) return null;
+  const want = m[1].toLowerCase(), doors = ZDATA.doors || [];
+  const d = doors.find((x) => x.id.toLowerCase() === want) || doors.find((x) => /^g-\d+$/.test(x.id) && x.id === `g-${want}`);
+  if (!d || !d.plane) throw new Error(`no door "${m[1]}" in zones.json (doors: ${doors.map((x) => x.id).join(", ")})`);
+  const p = d.plane, home = (d.between || [])[0];
+  const c = p.z != null ? { x: (p.minX + p.maxX) / 2, z: p.z } : { x: p.x, z: (p.minZ + p.maxZ) / 2 };
+  const sides = p.z != null ? [{ x: c.x, z: c.z - 0.8 }, { x: c.x, z: c.z + 0.8 }] : [{ x: c.x - 0.8, z: c.z }, { x: c.x + 0.8, z: c.z }];
+  const onFloor = (s) => { const f = clampToRoom(s.x, s.z); return Math.hypot(f.x - s.x, f.z - s.z) < 0.02 && areaOf(s.x, s.z); };
+  const pick = sides.find((s) => onFloor(s) && zoneAt(s.x, s.z) === home) || sides.find(onFloor) || sides[0];
+  return { door: d.id, name: d.name || d.id, x: pick.x, z: pick.z, face: c };
+}
 /* the floor (zones.json "walk"): room, garage (behind B's door), media room (behind A's door), kitchen (behind B's back
    door) and the doorways between
    them. The AI's own approach opens a door for everyone. `links` says which two floors a doorway joins. */
@@ -659,6 +676,12 @@ async function join(args) {
       return { ok: true, said: t };
     },
     "/walk-to": ({ x, z, person }) => {
+      const ds = person && doorSpot(person);
+      if (ds) {   // walk-to door:g-3
+        const g = clampToRoom(ds.x, ds.z);
+        void goTo(g.x, g.z, ds.face);
+        return { ok: true, walkingTo: `${ds.name} (${ds.door})`, at: { x: +g.x.toFixed(2), z: +g.z.toFixed(2) }, eta_s: +(Math.hypot(g.x - me.x, g.z - me.z) / WALK_SPEED).toFixed(1) };
+      }
       if (person) {
         const p = findPeer(person);
         if (!p) throw new Error(`nobody called "${person}" is here. Run look.`);
@@ -806,7 +829,11 @@ const HELP = `Seam Room character (only Jaron can talk to it)
                                     its news TV is on the far wall at x -4.6; the kitchen, page E, is x 0.15..6.15,
                                     z -10.15..-4.15 through B's back door at x 1, z -4; the gym, page F, is
                                     x -32.4..-8.4, z -10.15..23.85 through the media room's side door at x -8.25,
-                                    z 6.85 (court centre x -18.9, z 6.85; hoops at z -5.6 and 19.3))
+                                    z 6.85 (court centre x -18.9, z 6.85; hoops at z -5.6 and 19.3); the hallway, page G, is
+                                    x -4.45..-1.45, z 9.7..49.7 through the media room's back door at x -2.95, z 9.55
+  walk-to door:g-3                  walk to the front of a door (g-1..g-10 = the hallway's numbered doors, odd ones on
+                                    the east wall at z 13, 20, 27, 34, 41, even ones on the west wall at z 16.5 .. 44.5;
+                                    also door:d-back, door:a-d, ...; "door 3" works too)
   face <name>                       turn toward someone
   pick-up <assetId|nearest>         walk to the log/chair and pick it up
   carry-to <x> <z>                  carry it there (picks it up first if needed)
