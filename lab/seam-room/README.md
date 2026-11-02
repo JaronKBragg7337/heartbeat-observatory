@@ -33,7 +33,7 @@ first log. When the log becomes a chair, `kind` changes but the ID does not. "Re
 
 ## Files
 
-- `zones.json` - the zones and doors, as data. `agent/` - the AI character (see above).
+- `zones.json` - the zones and doors, as data; each zone names its scene `module` (+ `v`). `agent/` - the AI character (see above).
 - `garage.js` - page C (the garage). `den.js` - page D (the media room) and the Heartbeat News player on its computer.
   `kitchen.js` - page E (the kitchen behind B's back door).
 - `seam.js` - the reusable piece. No three.js, no room, no network. Exposes `Seam.define({...})`.
@@ -206,6 +206,39 @@ kitchen at `/lab/seam-room/e/`.
   furniture, and its "is the way clear" check also refuses lines through walls. Simulated 25 trips (B/A/C/D -> sink,
   range, behind the island, fridge; kitchen -> garage car, den TV, chopping block; garage <-> den): all arrive. A running
   character keeps its old code until it is restarted.
+
+## New rooms without a reload (2026-11-01, Jaron asked)
+
+Someone standing in the room when a new zone deploys sees it arrive, no reload. room.js fetches `zones.json`
+(`cache: "no-store"`, `?v=<time>`) every 20 s, only while the tab is visible (and once on coming back to the tab). An
+unchanged file costs one small request and one string compare. When it changed:
+
+- **A new zone:** room.js `import()`s the zone's `"module"` (each zone in zones.json names its scene file:
+  `garage.js`, `den.js`, `kitchen.js`; the module exports `buildZone`, a default, or a `build*` function), builds it
+  into the running scene in its own group, adds it to the seam (URL switching, Back/Forward), the counter and the names,
+  and writes one quiet line in the seam log: "new room: Kitchen (page E) is here". Never a popup.
+- **Its door:** a door whose `kind` says "future" is a closed green "coming soon" decoration (room.js draws it on a room
+  wall; den.js draws `d-side` / `d-back`). When its kind becomes `"door"`, the decoration goes, the real leaf is hung, and
+  the opening is cut while the room runs: every room wall half is now one shape built from the door list
+  (`buildWall`), so only that wall is rebuilt; a door in a zone's own wall is cut by that zone's `openDoor()` (den.js
+  has it for both future doors). Doors can sit in z walls or x walls now; an x-wall doorway uses `"shrink": "z"`.
+- **The floor:** `walk` is replaced (a doorway stays blocked until its door swings open).
+- **A changed zone:** bump the zone's `"v"` in zones.json when you change its module; the old zone is taken out and the
+  new one built in its place (hot-swap; garage lights and the news TV are re-attached). What it cannot apply live (a
+  zone or a real door removed or moved, a failed import) gives one quiet line: "an update is ready, reload when you like".
+- Position, people, the log/chair and the seam log are never touched. Loads at startup use the same path, so a zone
+  module never needs to know which. Cost when a zone arrives: one module fetch and one build on the main thread (a short
+  hitch), plus one shader recompile if the zone adds a light.
+- Tested (headless Chromium + WebKit, 375 px, guest kept off the live channel, zones.json served through a test route):
+  room without E -> E deployed -> it appeared in 10-16 s, door opened, walked B -> E (URL /e/), Back/Forward; kitchen
+  hot-swap (no leaked solids); two test zones behind the media room's two future doors (z wall and x wall) cut in and
+  walked through; normal loads of A-E unchanged.
+
+**The AI character and blips:** `wait-chat` no longer dies on "read ECONNRESET": any network error (reset, refused,
+empty answer, the join process restarting) is retried after 1 s, 2 s, 5 s, then every 15 s, with the same bookmark
+(the cursor only moves when lines come back), so no line is missed or repeated. Only the timeout or a real line from
+Jaron ends it. `join` replaces its room channel when it drops and realtime-js has not rejoined by itself (same backoff),
+and tracks presence once per connection (law 1). A running `join` keeps its old code until it is restarted.
 
 ## Not done yet (honest list)
 

@@ -238,11 +238,13 @@ export function resolveName(name) {
   try { return fs.readFileSync(path.join(HOME, "current"), "utf8").trim(); } catch (_) { return null; }
 }
 
+/* an error that a retry can fix (the join process is restarting, a socket was reset): e.net = true */
+const netError = (msg, code) => Object.assign(new Error(msg), { net: true, code });
 function readControl(name) {
   const n = resolveName(name);
-  if (!n) throw new Error("No character is running. Start one: node room-agent.mjs join --name \"Claude\" --page b");
+  if (!n) throw netError("No character is running. Start one: node room-agent.mjs join --name \"Claude\" --page b", "NOCHAR");
   try { return JSON.parse(fs.readFileSync(path.join(dirFor(n), "control.json"), "utf8")); }
-  catch (_) { throw new Error(`"${n}" is not running (no control file). Start it with join.`); }
+  catch (_) { throw netError(`"${n}" is not running (no control file). Start it with join.`, "NOCONTROL"); }
 }
 
 /** Talk to a running `join` process. */
@@ -257,14 +259,15 @@ export function call(name, route, body, timeoutMs) {
     }, (res) => {
       let buf = ""; res.setEncoding("utf8");
       res.on("data", (d) => (buf += d));
+      res.on("error", (e) => reject(Object.assign(e, { net: true })));   // reset mid-answer
       res.on("end", () => {
-        let j; try { j = JSON.parse(buf); } catch (_) { return reject(new Error(buf || `HTTP ${res.statusCode}`)); }
+        let j; try { j = JSON.parse(buf); } catch (_) { return reject(buf ? new Error(buf) : netError(`empty answer (HTTP ${res.statusCode})`, "EMPTY")); }
         if (res.statusCode !== 200) return reject(new Error(j.error || `HTTP ${res.statusCode}`));
         resolve(j);
       });
     });
-    req.on("timeout", () => req.destroy(new Error("timed out talking to the character")));
-    req.on("error", (e) => reject(e.code === "ECONNREFUSED" ? new Error(`"${c.name}" is not running (pid ${c.pid} gone). Start it with join.`) : e));
+    req.on("timeout", () => req.destroy(netError("timed out talking to the character", "ETIMEDOUT")));
+    req.on("error", (e) => reject(e.code === "ECONNREFUSED" ? netError(`"${c.name}" is not running (pid ${c.pid} gone). Start it with join.`, e.code) : Object.assign(e, { net: true })));
     req.end(data);
   });
 }
@@ -278,16 +281,32 @@ export function spawnJoin(name, page) {
   return child.pid;
 }
 
-/** wait-chat as a function: Jaron's new lines since the saved cursor ([] on timeout). */
-export async function waitChat(name, timeoutSec) {
+/** wait-chat as a function: Jaron's new lines since the saved cursor ([] on timeout).
+    A network blip (read ECONNRESET, socket hang up, the join process restarting) never ends it: it retries after
+    1 s, 2 s, 5 s, then every 15 s, with the SAME bookmark (the cursor only moves when lines are returned), so no line
+    is missed or repeated. Only the timeout or a real line from Jaron ends it. */
+const RETRY_MS = [1000, 2000, 5000, 15000];
+export async function waitChat(name, timeoutSec, onRetry) {
   const n = resolveName(name);
   const cursorFile = path.join(dirFor(n || "agent"), "cursor");
   let after = 0;
   try { after = Number(fs.readFileSync(cursorFile, "utf8")) || 0; } catch (_) {}
   const t = Math.max(1, Number(timeoutSec) || 600);
-  const r = await call(n, "/wait-chat", { after, timeout: t }, (t + 15) * 1000);
-  if (r.lines && r.lines.length) fs.writeFileSync(cursorFile, String(r.lines[r.lines.length - 1].seq));
-  return r;
+  const deadline = Date.now() + t * 1000;
+  for (let attempt = 0; ; attempt++) {
+    const left = Math.ceil((deadline - Date.now()) / 1000);
+    if (left < 1) return { ok: true, lines: [], timedOut: true };
+    try {
+      const r = await call(name, "/wait-chat", { after, timeout: left }, (left + 15) * 1000);
+      if (r.lines && r.lines.length) fs.writeFileSync(cursorFile, String(r.lines[r.lines.length - 1].seq));
+      return r;
+    } catch (e) {
+      if (!e.net) throw e;   // a real refusal (bad token, bad request): not a blip
+      const wait = Math.min(RETRY_MS[Math.min(attempt, RETRY_MS.length - 1)], Math.max(0, deadline - Date.now()));
+      if (onRetry) onRetry(e, wait, attempt + 1);
+      await sleep(wait);
+    }
+  }
 }
 
 export function formatLine(l) {
@@ -348,8 +367,10 @@ async function join(args) {
     }
   }
   async function poll() {
-    const { data, error } = await db.from(TABLE).select("*").eq("user_id", OWNER).gt("id", lastSeq).order("id").limit(50);
-    if (!error) takeRows(data);
+    try {
+      const { data, error } = await db.from(TABLE).select("*").eq("user_id", OWNER).gt("id", lastSeq).order("id").limit(50);
+      if (!error) takeRows(data);
+    } catch (_) {}   // a network blip: the next poll (4 s) catches up from lastSeq, so nothing is missed
   }
   { // start: remember the last few lines for `look`, then wait-chat only reports lines after this moment
     const { data, error } = await db.from(TABLE).select("*").eq("user_id", OWNER).order("id", { ascending: false }).limit(8);
@@ -364,11 +385,19 @@ async function join(args) {
 
   /* ------------------------------------------------- the room channel - */
   const supa = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false, autoRefreshToken: false }, realtime: { params: { eventsPerSecond: 24 } } });
-  const ch = supa.channel("hb-" + WORLD, { config: { presence: { key: selfKey }, broadcast: { self: false } } });
+  /* The room channel survives network blips: if it drops (CLOSED / CHANNEL_ERROR / TIMED_OUT) and realtime-js has not
+     rejoined by itself, it is replaced by a fresh one after 1 s, 2 s, 5 s, then every 15 s, with the same listeners.
+     Each time it is SUBSCRIBED again, presence is tracked ONCE, identity only (law 1); movement stays on broadcast. */
+  const CH_TOPIC = "hb-" + WORLD, CH_OPTS = { config: { presence: { key: selfKey }, broadcast: { self: false } } };
+  const wired = [];                      // [type, filter, fn]: put on every channel this process opens
+  const dead = new WeakSet();            // channels we replaced; their late status callbacks are ignored
+  let ch = supa.channel(CH_TOPIC, CH_OPTS);
+  const on = (type, filter, fn) => { wired.push([type, filter, fn]); ch.on(type, filter, fn); };
   let connected = false;
-  const send = (kind, data) => connected && ch.send({ type: "broadcast", event: "world", payload: Object.assign({ kind, from: selfKey }, data || {}) });
+  const quiet = (p) => { if (p && typeof p.catch === "function") p.catch(() => {}); };   // a send during a blip is just dropped
+  const send = (kind, data) => { if (connected) quiet(ch.send({ type: "broadcast", event: "world", payload: Object.assign({ kind, from: selfKey }, data || {}) })); };
 
-  ch.on("broadcast", { event: "state" }, ({ payload: p }) => {
+  on("broadcast", { event: "state" }, ({ payload: p }) => {
     if (!p || !p.id || p.id === selfKey) return;
     let e = peers.get(p.id);
     const isNew = !e;
@@ -399,7 +428,7 @@ async function join(args) {
   }
   function placeHeld() { if (iHold()) { asset.x = me.x + Math.sin(me.yaw) * 0.38; asset.z = me.z + Math.cos(me.yaw) * 0.38; } }
 
-  ch.on("broadcast", { event: "world" }, ({ payload: m }) => {
+  on("broadcast", { event: "world" }, ({ payload: m }) => {
     if (!m || m.from === selfKey) return;
     // NOTE: broadcast "chat" is ignored on purpose. Only the RLS table counts.
     if (m.kind === "asset" && m.state && m.state.id) {
@@ -415,15 +444,16 @@ async function join(args) {
     }
   });
 
-  ch.on("presence", { event: "join" }, ({ newPresences }) => {
+  on("presence", { event: "join" }, ({ newPresences }) => {
     for (const m of newPresences || []) {
       const k = m.id; if (!k || k === selfKey) continue;
       const nm = k === OWNER ? "Jaron" : (m.name || "Guest");
+      const known = presentNames.has(k);   // after a reconnect everyone is listed again; that is not news
       presentNames.set(k, nm);
-      if (connected) inbox("join", `${nm} joined the room`);
+      if (connected && !known) inbox("join", `${nm} joined the room`);
     }
   });
-  ch.on("presence", { event: "leave" }, ({ leftPresences }) => {
+  on("presence", { event: "leave" }, ({ leftPresences }) => {
     for (const m of leftPresences || []) {
       const k = m.id; if (!k || k === selfKey) continue;
       const p = peers.get(k);
@@ -440,10 +470,10 @@ async function join(args) {
     const now = Date.now();
     if (!force && sig === lastSig && now - lastSentAt < IDLE_KEEPALIVE_MS) return;
     lastSig = sig; lastSentAt = now;
-    ch.send({ type: "broadcast", event: "state", payload: {
+    quiet(ch.send({ type: "broadcast", event: "state", payload: {
       id: selfKey, name, appearance, color, place: me.place,
       x: +me.x.toFixed(3), y: 0, z: +me.z.toFixed(3), yaw: +me.yaw.toFixed(3), pitch: 0, stance: "stand",
-    } });
+    } }));
   }
   function updatePlace() {      // seam.js rule, from zones.json, with its hysteresis
     const before = me.place;
@@ -666,21 +696,53 @@ async function join(args) {
     fs.writeFileSync(path.join(HOME, "current"), name);
   });
 
-  ch.subscribe((status) => {
-    const was = connected;
-    connected = status === "SUBSCRIBED";
-    if (connected && !was) {
-      ch.track({ id: selfKey, name, world: WORLD, ai: true, at: Date.now() });   // law 1: once, identity only
-      send("asset-ask", {});
-      sendState(true);
-      inbox("ok", `connected; standing on page ${pageOf(me.place)} at x ${me.x.toFixed(1)} z ${me.z.toFixed(1)}`);
-      console.log(`${name} is in the Seam Room (page ${pageOf(me.place)}). pid ${process.pid}. Inbox: ${inboxFile}`);
-    } else if (!connected) inbox("net", `channel status: ${status}`);
-  });
-
-  let stopping = false;
+  let stopping = false, everConnected = false, chBackoff = 0, chRetry = null;
+  const CH_RETRY_MS = [1000, 2000, 5000, 15000];
+  function onStatus(c) {
+    return (status, err) => {
+      if (dead.has(c) || c !== ch) return;   // a channel we already replaced
+      const was = connected;
+      connected = status === "SUBSCRIBED";
+      if (connected) {
+        chBackoff = 0; if (chRetry) { clearTimeout(chRetry); chRetry = null; }
+        if (!was) {
+          quiet(c.track({ id: selfKey, name, world: WORLD, ai: true, at: Date.now() }));   // law 1: once per connection, identity only
+          send("asset-ask", {});
+          sendState(true);
+          inbox("ok", `${everConnected ? "reconnected" : "connected"}; standing on page ${pageOf(me.place)} at x ${me.x.toFixed(1)} z ${me.z.toFixed(1)}`);
+          if (!everConnected) console.log(`${name} is in the Seam Room (page ${pageOf(me.place)}). pid ${process.pid}. Inbox: ${inboxFile}`);
+          everConnected = true;
+        }
+      } else {
+        inbox("net", `channel status: ${status}${err && err.message ? " (" + err.message + ")" : ""}`);
+        reconnectLater();
+      }
+    };
+  }
+  /* realtime-js often rejoins by itself; if it has not by the time the backoff runs out, start a fresh channel */
+  function reconnectLater() {
+    if (chRetry || stopping) return;
+    const ms = CH_RETRY_MS[Math.min(chBackoff, CH_RETRY_MS.length - 1)];
+    chBackoff++;
+    chRetry = setTimeout(async () => {
+      chRetry = null;
+      if (connected || stopping) return;
+      inbox("net", `reconnecting the room channel (try ${chBackoff})`);
+      const old = ch;
+      dead.add(old);
+      try { await supa.removeChannel(old); } catch (_) {}
+      if (stopping) return;
+      ch = supa.channel(CH_TOPIC, CH_OPTS);
+      for (const [t, f, fn] of wired) ch.on(t, f, fn);
+      ch.subscribe(onStatus(ch));
+      reconnectLater();   // if this one never answers either, the next try follows (cancelled on SUBSCRIBED)
+    }, ms);
+  }
+  ch.subscribe(onStatus(ch));
+  process.on("unhandledRejection", (e) => { try { inbox("net", `ignored: ${e && e.message ? e.message : e}`); } catch (_) {} });
   async function shutdown(why) {
     if (stopping) return; stopping = true;
+    if (chRetry) { clearTimeout(chRetry); chRetry = null; }
     if (iHold()) {   // like a browser closing while carrying: set it down where I stand
       asset.holder = null; asset.holderName = "";
       asset.changes.push({ what: `set down on ${pageOf(me.place)} (left)`, at: Date.now() });
@@ -760,7 +822,7 @@ async function main() {
       return;
     }
     if (cmd === "wait-chat") {
-      const r = await waitChat(args.name, args.timeout);
+      const r = await waitChat(args.name, args.timeout, (e, ms, n) => console.error(`(network blip: ${e.code || e.message}; retry ${n} in ${ms / 1000}s, still waiting)`));
       if (!r.lines.length) { console.log("(Jaron did not say anything before the timeout)"); process.exitCode = 2; return; }
       for (const l of r.lines) console.log(formatLine(l));
       return;

@@ -1,5 +1,5 @@
 {
-  "about": "The Seam Room's zones. Each zone is a real page. A zone is a box on the floor (x, z in metres; a missing side is open-ended). Where two boxes touch is a seam; a doorway is just a small zone box set in a wall opening. seam.js reads this through Seam.fromData(). room.js and agent/room-agent.mjs both read it, so a new zone added here is known to the room, the URL switching and the AI character at once. `walk` is the floor you can stand on (rectangles; a rectangle with `door` is a doorway, passable only while that door is open, and it is shrunk by the walker's radius in x only; `links` names the two floors it joins, which the AI uses to route through doors).",
+  "about": "The Seam Room's zones. Each zone is a real page. A zone is a box on the floor (x, z in metres; a missing side is open-ended). Where two boxes touch is a seam; a doorway is just a small zone box set in a wall opening. seam.js reads this through Seam.fromData(). room.js and agent/room-agent.mjs both read it, so a new zone added here is known to the room, the URL switching and the AI character at once. `walk` is the floor you can stand on (rectangles; a rectangle with `door` is a doorway, passable only while that door is open, and it is shrunk by the walker's radius in x only; `links` names the two floors it joins, which the AI uses to route through doors). `module` is the file that builds a zone's scene (room.js import()s it); `v` is its version: bump it when you change that module. A room that is open notices a new or changed zone here within about 20 s and builds it without a reload (room.js, \"new rooms without a reload\"). A door with a \"future\" kind is a closed coming-soon decoration; change its kind to \"door\" (with its zone + walk rectangle) and it opens for real.",
   "hysteresis": 0.3,
   "fallback": "a",
   "zones": [
@@ -7,13 +7,13 @@
       "bounds": { "maxX": 0, "minZ": -4, "maxZ": 4 }, "spawn": { "x": -3.6, "z": 1.2, "yaw": -1.5708 } },
     { "id": "b", "label": "B", "url": "/lab/seam-room/b/", "title": "Seam Room · Page B - Heartbeat Observatory",
       "bounds": { "minX": 0, "minZ": -4, "maxZ": 4 }, "spawn": { "x": 3.6, "z": 1.2, "yaw": 1.5708 } },
-    { "id": "c", "label": "C", "url": "/lab/seam-room/c/", "title": "Seam Room · Garage (Page C) - Heartbeat Observatory",
+    { "id": "c", "label": "C", "name": "Garage", "module": "garage.js", "v": 1, "url": "/lab/seam-room/c/", "title": "Seam Room · Garage (Page C) - Heartbeat Observatory",
       "bounds": { "minX": 2, "maxX": 8.6, "minZ": 4, "maxZ": 10.5 }, "spawn": { "x": 3.9, "z": 6.6, "yaw": 3.1416 },
       "note": "The garage behind B's walnut door. 6.3 m wide x 6.2 m deep x 2.8 m tall inside (x 2.15..8.45, z 4.15..10.35). Built by garage.js in the same scene as the room." },
-    { "id": "d", "label": "D", "url": "/lab/seam-room/d/", "title": "Seam Room · Media Room (Page D) - Heartbeat Observatory",
+    { "id": "d", "label": "D", "name": "Media Room", "module": "den.js", "v": 2, "url": "/lab/seam-room/d/", "title": "Seam Room · Media Room (Page D) - Heartbeat Observatory",
       "bounds": { "minX": -8.4, "maxX": -2, "minZ": 4, "maxZ": 9.7 }, "spawn": { "x": -4.3, "z": 6.1, "yaw": 3.1416 },
       "note": "The media room behind A's oak door, the garage's mirror on the other side. 6.1 m wide x 5.4 m deep x 2.75 m tall inside (x -8.25..-2.15, z 4.15..9.55). Built by den.js in the same scene as the room. The computer on the desk plays today's Heartbeat News (Supabase bucket news-video, index.json)." },
-    { "id": "e", "label": "E", "url": "/lab/seam-room/e/", "title": "Seam Room · Kitchen (Page E) - Heartbeat Observatory",
+    { "id": "e", "label": "E", "name": "Kitchen", "module": "kitchen.js", "v": 1, "url": "/lab/seam-room/e/", "title": "Seam Room · Kitchen (Page E) - Heartbeat Observatory",
       "bounds": { "minX": 0, "maxX": 6.5, "minZ": -10.5, "maxZ": -4 }, "spawn": { "x": 2.0, "z": -6.3, "yaw": -0.6 },
       "note": "The kitchen behind B's back wall (new door at x 0.54..1.46). 6.0 m wide x 6.0 m deep x 2.8 m tall inside (x 0.15..6.15, z -10.15..-4.15). Built by kitchen.js in the same scene as the room. B's back window looks into it." }
   ],

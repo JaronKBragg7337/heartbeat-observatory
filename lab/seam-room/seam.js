@@ -26,6 +26,8 @@
      const start = seam.start();     // reads the URL, returns the spawn zone
      // every frame:
      seam.update(player.x, player.z);
+     // a zone that arrives later (zones.json changed while the page runs):
+     seam.addZone(Seam.zoneFromData({ id: "e", url: "/lab/seam-room/e/", bounds: {...} }));
 
    HYSTERESIS: a point only leaves the current zone when it AND every point in
    a ring of radius `hysteresis` around it are outside that zone. So standing
@@ -44,7 +46,7 @@ function samePath(a, b) {
 }
 
 export const Seam = {
-  version: "0.2.0",
+  version: "0.3.0",
 
   /** Box test for data zones: { minX, maxX, minZ, maxZ }, a missing side is open. min is inside, max is outside. */
   inBounds(b, x, z) {
@@ -54,8 +56,11 @@ export const Seam = {
   },
 
   /** Build zones from data (zones.json): each { id, url, title, bounds, spawn }. Returns define()'s cfg minus onEnter. */
+  /** One data zone -> a zone with `contains` (used by fromData, and to add a zone to a running world). */
+  zoneFromData(z) { return Object.assign({}, z, { contains: (x, zz) => Seam.inBounds(z.bounds, x, zz) }); },
+
   fromData(data) {
-    const zones = (data.zones || []).map((z) => Object.assign({}, z, { contains: (x, zz) => Seam.inBounds(z.bounds, x, zz) }));
+    const zones = (data.zones || []).map((z) => Seam.zoneFromData(z));
     return { zones, hysteresis: data.hysteresis == null ? 0.3 : data.hysteresis, fallback: data.fallback || (zones[0] && zones[0].id), doors: data.doors || [] };
   },
 
@@ -118,6 +123,15 @@ export const Seam = {
     };
 
     ctl.zone = (id) => byId[id] || null;
+
+    /** Add a zone to the running world, or replace one with the same id (new bounds/title). The URL is not touched. */
+    ctl.addZone = function (zone) {
+      const i = zones.findIndex((q) => q.id === zone.id);
+      if (i >= 0) zones[i] = zone; else zones.push(zone);
+      byId[zone.id] = zone;
+      if (ctl.current && ctl.current.id === zone.id) ctl.current = zone;
+      return zone;
+    };
 
     function onPop() {
       const zone = Seam.zoneForPath(zones, location.pathname);

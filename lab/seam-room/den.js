@@ -121,12 +121,21 @@ export function buildDen(k) {
   /* a wall from slices around its openings. u runs along the wall, v up; UVs in metres so nothing stretches.
      place(mesh, uCentre, vCentre) sets position + rotation. */
   const TILE = 2.2;
+  let into = scene;   // where slice() and wall() put their meshes (each wall gets its own group, so it can be rebuilt)
   function slice(mat, u0, u1, v0, v1, place, tile, tileV) {
     const geo = new THREE.PlaneGeometry(u1 - u0, v1 - v0), uv = geo.attributes.uv;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (u0 + uv.getX(i) * (u1 - u0)) / (tile || TILE), (v0 + uv.getY(i) * (v1 - v0)) / (tileV || tile || TILE));
-    const m = new THREE.Mesh(geo, mat); m.receiveShadow = true; place(m, (u0 + u1) / 2, (v0 + v1) / 2); scene.add(m); return m;
+    const m = new THREE.Mesh(geo, mat); m.receiveShadow = true; place(m, (u0 + u1) / 2, (v0 + v1) / 2); into.add(m); return m;
   }
+  /* a wall as data, so a future door can cut its opening later (openDoor): spec = { len, holes, place, cast } */
   function wall(len, holes, place, cast) {
+    const spec = { len, holes: holes.slice(), place, cast, group: new THREE.Group() };
+    scene.add(spec.group);
+    into = spec.group;
+    try { wallMeshes(spec); } finally { into = scene; }
+    return spec;
+  }
+  function wallMeshes({ len, holes, place, cast }) {
     const hs = holes.slice().sort((a, b) => a.u0 - b.u0);
     let u = 0;
     const out = [];
@@ -144,22 +153,22 @@ export function buildDen(k) {
       if (o.u0 - w0 > 0.05) {
         slice(wainMat, w0, o.u0, 0, 0.9, (m, uc, vc) => { place(m, uc, vc); m.translateZ(0.012); }, 0.6, 0.9);
         const rail = new THREE.Mesh(new THREE.BoxGeometry(o.u0 - w0, 0.045, 0.035), DM.darkWood);   // chair rail
-        place(rail, (w0 + o.u0) / 2, 0.92); rail.translateZ(0.02); scene.add(rail);
+        place(rail, (w0 + o.u0) / 2, 0.92); rail.translateZ(0.02); into.add(rail);
         const base = new THREE.Mesh(new THREE.BoxGeometry(o.u0 - w0, 0.12, 0.025), DM.darkWood);    // baseboard
-        place(base, (w0 + o.u0) / 2, 0.06); base.translateZ(0.025); scene.add(base);
+        place(base, (w0 + o.u0) / 2, 0.06); base.translateZ(0.025); into.add(base);
       }
       w0 = o.u1;
     }
     // crown
-    const crown = new THREE.Mesh(new THREE.BoxGeometry(len, 0.07, 0.04), DM.trim); place(crown, len / 2, D.h - 0.035); crown.translateZ(0.02); scene.add(crown);
+    const crown = new THREE.Mesh(new THREE.BoxGeometry(len, 0.07, 0.04), DM.trim); place(crown, len / 2, D.h - 0.035); crown.translateZ(0.02); into.add(crown);
   }
   // back wall z = z0 facing +z; u along +x from x0. It is shared with room A, so it casts (sun stays out).
   wall(DW, [{ u0: DOOR.x0 - D.x0, u1: DOOR.x1 - D.x0, v0: 0, v1: DOOR.h }], (m, u, v) => { m.position.set(D.x0 + u, v, D.z0); }, true);
   // far wall z = z1 facing -z; u along -x from x1
   // (the future doors are closed leaves mounted on solid wall: no hole until a page is built behind them)
-  wall(DW, [], (m, u, v) => { m.position.set(D.x1 - u, v, D.z1); m.rotation.y = Math.PI; });
+  const farWall = wall(DW, [], (m, u, v) => { m.position.set(D.x1 - u, v, D.z1); m.rotation.y = Math.PI; });
   // left wall x = x0 facing +x; u along -z from z1. Casts (the sun comes in from -x a little).
-  wall(DD, [], (m, u, v) => { m.position.set(D.x0, v, D.z1 - u); m.rotation.y = Math.PI / 2; }, true);
+  const leftWall = wall(DD, [], (m, u, v) => { m.position.set(D.x0, v, D.z1 - u); m.rotation.y = Math.PI / 2; }, true);
   // right wall x = x1 facing -x; u along +z from z0, with the window
   wall(DD, [{ u0: WIN.z0 - D.z0, u1: WIN.z1 - D.z0, v0: WIN.y0, v1: WIN.y1 }], (m, u, v) => { m.position.set(D.x1, v, D.z0 + u); m.rotation.y = -Math.PI / 2; });
 
@@ -434,6 +443,30 @@ export function buildDen(k) {
     D, DOOR, SCREEN, TVW, screen, wallScreen, screenHits: [screenHit, wallHit], screenMat, labelCanvas, labelTex, future, lights: [L],
     futureHits: future.map((f) => f.leaf),
     rattle(id) { const f = future.find((q) => q.id === id); if (f) f.rattle = 0.45; },
+    /* a future door became a real page (zones.json "kind": "door"): take the coming-soon leaf away and cut the opening
+       in that wall, with jamb linings through the 15 cm wall. room.js hangs the real leaf. Works while the room runs. */
+    openDoor(id, d) {
+      const i = future.findIndex((q) => q.id === id);
+      if (i < 0) return false;
+      const f = future[i], p = (d && d.plane) || {}, h = (d && d.h) || 2.05;
+      let spec, u0, u1;
+      if (id === "d-side") { spec = leftWall; const z0 = p.minZ != null ? p.minZ : SIDE.z0, z1 = p.maxZ != null ? p.maxZ : SIDE.z1; u0 = D.z1 - z1; u1 = D.z1 - z0;
+        for (const z of [z0 + 0.015, z1 - 0.015]) box(0.15, h, 0.03, DM.trim, D.x0 - 0.075, h / 2, z, NC);
+        box(0.15, 0.03, z1 - z0, DM.trim, D.x0 - 0.075, h - 0.015, (z0 + z1) / 2, NC);
+      } else { spec = farWall; const x0 = p.minX != null ? p.minX : BACK.x0, x1 = p.maxX != null ? p.maxX : BACK.x1; u0 = D.x1 - x1; u1 = D.x1 - x0;
+        for (const x of [x0 + 0.015, x1 - 0.015]) box(0.03, h, 0.15, DM.trim, x, h / 2, D.z1 + 0.075, NC);
+        box(x1 - x0, 0.03, 0.15, DM.trim, (x0 + x1) / 2, h - 0.015, D.z1 + 0.075, NC);
+      }
+      scene.remove(f.group); f.group.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+      future.splice(i, 1);
+      const hi = this.futureHits.indexOf(f.leaf); if (hi >= 0) this.futureHits.splice(hi, 1);
+      spec.holes.push({ u0, u1, v0: 0, v1: h });
+      scene.remove(spec.group); spec.group.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+      spec.group = new THREE.Group(); scene.add(spec.group);
+      into = spec.group;
+      try { wallMeshes(spec); } finally { into = scene; }
+      return true;
+    },
     tick(dt) {
       for (const f of future) {
         if (f.rattle <= 0) { f.leaf.rotation.y = 0; continue; }

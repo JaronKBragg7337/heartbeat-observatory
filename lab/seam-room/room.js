@@ -17,10 +17,10 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
-import { Seam } from "/lab/seam-room/seam.js?v=2";
-import { buildGarage } from "/lab/seam-room/garage.js?v=1";
-import { buildDen, createNewsTV } from "/lab/seam-room/den.js?v=1";
-import { buildKitchen } from "/lab/seam-room/kitchen.js?v=1";
+import { Seam } from "/lab/seam-room/seam.js?v=3";
+/* Zone scenes (garage.js, den.js, kitchen.js, ...) are NOT imported here: zones.json names each zone's "module" and
+   room.js import()s it, at load and again later when a new zone appears in zones.json (the hot-load, see "new rooms
+   without a reload" near the end). */
 
 const $ = (id) => document.getElementById(id);
 const W = 12, D = 8, H = 2.9;               // room size, metres. Seam at x = 0.
@@ -31,14 +31,16 @@ const PASS_B = { x0: 1.95, x1: 3.25, y0: 0.945, y1: 2.295 };   // B's back windo
 const ASSET_KEY = "seam-room:asset:";       // + id
 const CURRENT_KEY = "seam-room:current";
 /* zones are data (zones.json): add a zone there and the room, the URL switching and the AI character all know it */
-const ZDATA = await fetch("/lab/seam-room/zones.json?v=4").then((r) => r.json()).catch(() => ({
+const ZONES_URL = "/lab/seam-room/zones.json";
+let zonesText = "";   // the zones.json text last applied; the hot-load poll compares against it
+const ZDATA = await fetch(ZONES_URL + "?v=" + Date.now(), { cache: "no-store" }).then((r) => r.text()).then((t) => { const d = JSON.parse(t); zonesText = t; return d; }).catch(() => ({
   hysteresis: 0.3, fallback: "a",
   zones: [
     { id: "a", label: "A", url: "/lab/seam-room/a/", title: "Seam Room · Page A - Heartbeat Observatory", bounds: { maxX: 0, minZ: -4, maxZ: 4 }, spawn: { x: -3.6, z: 1.2, yaw: -Math.PI / 2 } },
     { id: "b", label: "B", url: "/lab/seam-room/b/", title: "Seam Room · Page B - Heartbeat Observatory", bounds: { minX: 0, minZ: -4, maxZ: 4 }, spawn: { x: 3.6, z: 1.2, yaw: Math.PI / 2 } },
-    { id: "c", label: "C", url: "/lab/seam-room/c/", title: "Seam Room · Garage (Page C) - Heartbeat Observatory", bounds: { minX: 2, maxX: 8.6, minZ: 4, maxZ: 10.5 }, spawn: { x: 3.9, z: 6.6, yaw: Math.PI } },
-    { id: "d", label: "D", url: "/lab/seam-room/d/", title: "Seam Room · Media Room (Page D) - Heartbeat Observatory", bounds: { minX: -8.4, maxX: -2, minZ: 4, maxZ: 9.7 }, spawn: { x: -4.3, z: 6.1, yaw: Math.PI } },
-    { id: "e", label: "E", url: "/lab/seam-room/e/", title: "Seam Room · Kitchen (Page E) - Heartbeat Observatory", bounds: { minX: 0, maxX: 6.5, minZ: -10.5, maxZ: -4 }, spawn: { x: 2.0, z: -6.3, yaw: -0.6 } },
+    { id: "c", label: "C", name: "Garage", module: "garage.js", url: "/lab/seam-room/c/", title: "Seam Room · Garage (Page C) - Heartbeat Observatory", bounds: { minX: 2, maxX: 8.6, minZ: 4, maxZ: 10.5 }, spawn: { x: 3.9, z: 6.6, yaw: Math.PI } },
+    { id: "d", label: "D", name: "Media Room", module: "den.js", v: 2, url: "/lab/seam-room/d/", title: "Seam Room · Media Room (Page D) - Heartbeat Observatory", bounds: { minX: -8.4, maxX: -2, minZ: 4, maxZ: 9.7 }, spawn: { x: -4.3, z: 6.1, yaw: Math.PI } },
+    { id: "e", label: "E", name: "Kitchen", module: "kitchen.js", url: "/lab/seam-room/e/", title: "Seam Room · Kitchen (Page E) - Heartbeat Observatory", bounds: { minX: 0, maxX: 6.5, minZ: -10.5, maxZ: -4 }, spawn: { x: 2.0, z: -6.3, yaw: -0.6 } },
   ],
   doors: [{ id: "middle", between: ["a", "b"], plane: { x: 0, minZ: -4, maxZ: 4 } }, { id: "b-c", between: ["b", "c"], kind: "door", name: "B's door", plane: { z: 4, minX: 4.14, maxX: 5.06 } },
     { id: "a-d", between: ["a", "d"], kind: "door", name: "A's door", plane: { z: 4, minX: -5.06, maxX: -4.14 } }, { id: "b-e", between: ["b", "e"], kind: "door", name: "B's back door", plane: { z: -4, minX: 0.54, maxX: 1.46 } }],
@@ -54,21 +56,35 @@ const ZDATA = await fetch("/lab/seam-room/zones.json?v=4").then((r) => r.json())
 }));
 /* the floor you can stand on: rectangles from zones.json. A rectangle with `door` is a doorway, open only while that door is. */
 const WALK = ZDATA.walk || [{ id: "room", minX: -HX, maxX: HX, minZ: -HZ, maxZ: HZ, h: H }];
-/* the real doors, from zones.json: every door with "kind": "door" and a z plane (front wall "b-c" to the garage,
-   "a-d" to the media room; back wall "b-e" to the kitchen). Each leaf hangs on a hinge at its minX edge and swings
-   away from the room (out = +1 into z > 4, -1 into z < -4). amt 0 = shut, 1 = open. A new door is one entry there. */
-const DOORS = Object.fromEntries((ZDATA.doors || []).filter((d) => d.kind === "door" && d.plane && d.plane.z != null).map((d) => {
-  const p = d.plane;
-  return [d.id, { id: d.id, name: d.name || `door ${d.id}`, x0: p.minX, x1: p.maxX, cx: (p.minX + p.maxX) / 2, z: p.z, out: p.z < 0 ? -1 : 1, h: d.h || 2.05, hinge: p.minX + 0.03 }];
-}));
-for (const d of Object.values(DOORS)) Object.assign(d, { leaf: null, amt: 0, open: false, tapUntil: 0, remote: new Map(), meNear: false, ping: 0 });
+/* the real doors, from zones.json: every door with "kind": "door" and a z or x plane (front wall "b-c" to the garage,
+   "a-d" to the media room; back wall "b-e" to the kitchen). Each leaf hangs on a hinge at its low edge (minX, or minZ
+   for an x-plane door) and swings away from the room it is seen from (out = +1 toward +z/+x, -1 toward -z/-x; by
+   default away from the middle of the room, "swing" in zones.json overrides). amt 0 = shut, 1 = open. A new door is
+   one entry there, and it can arrive while the room runs (doorFromData + makeDoor, used by the hot-load).
+   A door whose kind says "future" is decoration: a closed "coming soon" leaf on a solid wall, no hole, no walk. */
+const isRealDoor = (d) => !!(d && d.kind === "door" && d.plane && (d.plane.z != null || d.plane.x != null));
+const isFutureDoor = (d) => !!(d && /future/i.test(d.kind || "") && d.plane && (d.plane.z != null || d.plane.x != null));
+function doorFromData(d) {
+  const p = d.plane, ax = p.z != null ? "z" : "x";
+  const u0 = ax === "z" ? p.minX : p.minZ, u1 = ax === "z" ? p.maxX : p.maxZ, c = ax === "z" ? p.z : p.x;
+  const out = d.swing === 1 || d.swing === -1 ? d.swing : (c < 0 ? -1 : 1);
+  const cx = (u0 + u1) / 2;
+  return { id: d.id, name: d.name || `door ${d.id}`, ax, x0: u0, x1: u1, cx, z: c, c, out,
+    lo: ax === "z" ? out : -out,                           // the swing in the door frame's own axes (local +z)
+    px: ax === "z" ? cx : c + 0.07 * out, pz: ax === "z" ? c + 0.07 * out : cx,   // the "near the door" centre
+    h: d.h || 2.05, hinge: u0 + 0.03, wood: d.wood, data: d,
+    leaf: null, frame: null, amt: 0, open: false, tapUntil: 0, remote: new Map(), meNear: false, ping: 0 };
+}
+let DOORDATA = ZDATA.doors || [];
+const DOORS = Object.fromEntries(DOORDATA.filter(isRealDoor).map((d) => [d.id, doorFromData(d)]));
 const DOORWAY = DOORS["b-c"];
 const door = DOORS["b-c"];   // kept for the garage tests / old handles
 const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
 function doorPassable(id) { const d = DOORS[id]; return !d || d.amt > 0.3; }
+/* a doorway shrinks only across its door: "shrink": "x" for a door in a z wall, "z" for a door in an x wall */
 function rectClamp(w, x, z, r) {
-  const sz = w.shrink === "x" ? 0 : r;
-  return { x: clampN(x, w.minX + r, w.maxX - r), z: clampN(z, w.minZ + sz, w.maxZ - sz) };
+  const sz = w.shrink === "x" ? 0 : r, sx = w.shrink === "z" ? 0 : r;
+  return { x: clampN(x, w.minX + sx, w.maxX - sx), z: clampN(z, w.minZ + sz, w.maxZ - sz) };
 }
 /* nearest point that is on the floor (any walk rectangle, shrunk by radius r) */
 function clampWalk(x, z, r, anyDoor) {
@@ -87,12 +103,14 @@ function airFree(x, y, z, m) {
   for (const b of CAM_BLOCKS) if (x > b[0] - m && x < b[2] + m && z > b[1] - m && z < b[3] + m && y > b[4] - m && y < b[5] + m) return false;
   for (const w of WALK) {
     if (w.door && !doorPassable(w.door)) continue;
-    const sz = w.shrink === "x" ? 0 : m;
-    if (x > w.minX + m && x < w.maxX - m && z > w.minZ + sz && z < w.maxZ - sz && y > 0.25 && y < (w.h || H) - m) return true;
+    const sz = w.shrink === "x" ? 0 : m, sx = w.shrink === "z" ? 0 : m;
+    if (x > w.minX + sx && x < w.maxX - sx && z > w.minZ + sz && z < w.maxZ - sz && y > 0.25 && y < (w.h || H) - m) return true;
   }
   return false;
 }
 const NAMES = Object.fromEntries(ZDATA.zones.map((z) => [z.id, z.label || z.id.toUpperCase()]));
+/* "Kitchen" for the seam log: zones.json "name", else the word before "(Page E)" in the title */
+function roomName(z) { const m = /·\s*([^(·]+?)\s*\(Page/i.exec(z.title || ""); return z.name || (m && m[1]) || `page ${z.label || z.id.toUpperCase()}`; }
 
 /* ------------------------------------------------------------ seam log - */
 const logLines = [];
@@ -369,6 +387,136 @@ function plane(w, h, mat, x, y, z, rx, ry, parent) {
   return m;
 }
 
+/* ------------------------------------------------- walls with openings - */
+/* Each room wall half is one shape with its openings cut out (doors from DOORS, windows from WINDOWS), plus its
+   baseboard broken at the doors, all in one group, so a door that arrives later (the hot-load) cuts its opening by
+   rebuilding only that wall: buildWall(id). A wall's local +x runs along it from (ox, oz), local +z faces into the
+   room; u(x, z) is a world point's distance along it. UVs are those of the whole half (u / len, v / H). */
+const WALLS = {
+  backA:  { mat: "wallA", len: HX, ox: -HX, oz: -HZ, ry: 0,            u: (x, z) => x + HX },
+  backB:  { mat: "wallB", len: HX, ox: 0,   oz: -HZ, ry: 0,            u: (x, z) => x },
+  frontA: { mat: "wallA", len: HX, ox: 0,   oz: HZ,  ry: Math.PI,      u: (x, z) => -x },
+  frontB: { mat: "wallB", len: HX, ox: HX,  oz: HZ,  ry: Math.PI,      u: (x, z) => HX - x },
+  sideA:  { mat: "wallA", len: D,  ox: -HX, oz: HZ,  ry: Math.PI / 2,  u: (x, z) => HZ - z },
+  sideB:  { mat: "wallB", len: D,  ox: HX,  oz: -HZ, ry: -Math.PI / 2, u: (x, z) => z + HZ },
+};
+/* windows in a room wall that look INTO a zone: a real hole while that zone is built, a painted sky until then */
+const WINDOWS = [{ wall: "backB", x0: PASS_B.x0, x1: PASS_B.x1, y0: PASS_B.y0, y1: PASS_B.y1, into: "e" }];
+/* which room wall is this door in (null = a wall that belongs to a zone module) */
+function wallOf(dr) {
+  if (dr.ax === "z" && Math.abs(Math.abs(dr.c) - HZ) < 1e-6 && dr.x0 >= -HX && dr.x1 <= HX) return (dr.c < 0 ? "back" : "front") + (dr.cx < 0 ? "A" : "B");
+  if (dr.ax === "x" && Math.abs(Math.abs(dr.c) - HX) < 1e-6 && dr.x0 >= -HZ && dr.x1 <= HZ) return dr.c < 0 ? "sideA" : "sideB";
+  return null;
+}
+function doorSpan(w, dr) {   // the door's [u0, u1] along wall w
+  const a = dr.ax === "z" ? w.u(dr.x0, dr.c) : w.u(dr.c, dr.x0), b = dr.ax === "z" ? w.u(dr.x1, dr.c) : w.u(dr.c, dr.x1);
+  return { u0: Math.min(a, b), u1: Math.max(a, b), h: dr.h };
+}
+const SHARED_MATS = new Set(Object.values(M));
+function disposeTree(root) {   // geometries + this tree's own materials (never the room's shared M.*; textures are left alone)
+  root.traverse((o) => {
+    if (o.geometry) o.geometry.dispose();
+    for (const m of o.material ? [].concat(o.material) : []) if (!SHARED_MATS.has(m)) m.dispose();
+  });
+}
+const BUILT = {};   // zone id -> { key, mod, built, group, solids, camBlocks, opened, tv } (filled by buildZone)
+function buildWall(id) {
+  const w = WALLS[id];
+  if (w.group) { scene.remove(w.group); disposeTree(w.group); }
+  const g = new THREE.Group(); g.position.set(w.ox, 0, w.oz); g.rotation.y = w.ry; g.name = "wall-" + id; scene.add(g); w.group = g;
+  const doors = Object.values(DOORS).filter((d) => wallOf(d) === id).map((d) => doorSpan(w, d)).sort((a, b) => a.u0 - b.u0);
+  const sh = new THREE.Shape();
+  sh.moveTo(0, 0);
+  for (const d of doors) { sh.lineTo(d.u0, 0); sh.lineTo(d.u0, d.h); sh.lineTo(d.u1, d.h); sh.lineTo(d.u1, 0); }
+  sh.lineTo(w.len, 0); sh.lineTo(w.len, H); sh.lineTo(0, H); sh.closePath();
+  for (const win of WINDOWS.filter((q) => q.wall === id)) {
+    const a = w.u(win.x0, w.oz), b = w.u(win.x1, w.oz), u0 = Math.min(a, b), u1 = Math.max(a, b);
+    if (BUILT[win.into]) {
+      const hole = new THREE.Path(); hole.moveTo(u0, win.y0); hole.lineTo(u1, win.y0); hole.lineTo(u1, win.y1); hole.lineTo(u0, win.y1); hole.closePath();
+      sh.holes.push(hole);
+    } else plane(u1 - u0, win.y1 - win.y0, M.glass, (u0 + u1) / 2, (win.y0 + win.y1) / 2, 0.005, 0, 0, g);   // painted sky
+  }
+  const geo = new THREE.ShapeGeometry(sh), pos = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / w.len, pos.getY(i) / H);
+  const m = new THREE.Mesh(geo, M[w.mat]); m.receiveShadow = true; g.add(m);
+  // baseboard, broken at the doors
+  let u = 0;
+  for (const d of doors.concat([{ u0: w.len + 0.06, u1: w.len }])) {
+    const e = d.u0 - 0.06;
+    if (e - u > 0.02) box(e - u, 0.12, 0.02, M.trim, (u + e) / 2, 0.06, 0.01, { parent: g, cast: false });
+    u = d.u1 + 0.06;
+  }
+}
+
+/* ---------------------------------------------------------------- doors - */
+/* a door's frame group: local +x along the wall (world +x, or world +z for an x-plane door), local +z = the side the
+   leaf swings to when lo = +1 */
+function doorMount(dr) {
+  const g = new THREE.Group();
+  if (dr.ax === "z") g.position.set(0, 0, dr.c); else { g.position.set(dr.c, 0, 0); g.rotation.y = -Math.PI / 2; }
+  g.name = "door-" + dr.id; scene.add(g);
+  return g;
+}
+/* panel doors: A's oak door swings into the media room (D), B's walnut door into the garage (C), B's maple back door
+   into the kitchen (E). Any other door gets zones.json "wood" (oak, walnut, maple) or a painted leaf. */
+const DOOR_MAT = { "a-d": "oak", "b-c": "walnut", "b-e": "maple" };
+function makeDoor(dr) {
+  const mat = M[dr.wood || DOOR_MAT[dr.id]] || M.trim, lo = dr.lo, fz = -0.04 * lo;
+  const F = doorMount(dr);
+  box(1.04, 0.07, 0.07, M.trim, dr.cx, 2.08, fz, { parent: F });
+  for (const dx of [-0.49, 0.49]) box(0.07, 2.08, 0.07, M.trim, dr.cx + dx, 1.04, fz, { parent: F });
+  // a leaf on a hinge, panels and a knob on both faces
+  const leaf = dr.id === "b-c" ? doorLeaf : new THREE.Group();
+  leaf.position.set(dr.hinge, 0, -0.025 * lo); F.add(leaf);
+  const lw = dr.x1 - 0.01 - dr.hinge;   // 0.88 m
+  box(lw, 2.04, 0.045, mat, lw / 2, 1.02, 0, { parent: leaf, cast: false });
+  for (const zf of [-1, 1]) {
+    for (const y of [0.55, 1.5]) box(lw - 0.3, 0.7, 0.02, mat, lw / 2, y, zf * 0.028, { parent: leaf, cast: false });
+    cyl(0.03, 0.03, 0.05, M.brass, lw - 0.1, 1.0, zf * 0.05, { rx: Math.PI / 2, parent: leaf, cast: false });
+    cyl(0.04, 0.04, 0.008, M.brass, lw - 0.1, 1.0, zf * 0.026, { rx: Math.PI / 2, parent: leaf, cast: false });
+  }
+  for (const y of [0.25, 1.0, 1.8]) cyl(0.012, 0.012, 0.1, M.brass, 0, y, -0.03 * lo, { parent: leaf, cast: false });   // hinge knuckles
+  dr.leaf = leaf; dr.frame = F;
+  return dr;
+}
+/* a "future" door on a ROOM wall: a closed green panel door with a COMING SOON plaque on solid wall (a tap rattles it).
+   The media room draws its own two (den.js). When zones.json turns it into "kind": "door", the hot-load swaps it for
+   a real door and cuts the wall. */
+const FUTURE = {};   // id -> { id, frame, leaf, rattle }
+let futurePaint = null;
+function makeFutureDoor(d) {
+  const dr = doorFromData(d), lo = dr.lo, F = doorMount(dr), fz = -0.02 * lo;
+  futurePaint = futurePaint || new THREE.MeshStandardMaterial({ color: 0x4a5a52, roughness: 0.5 });
+  SHARED_MATS.add(futurePaint);
+  box(1.04, 0.07, 0.03, M.trim, dr.cx, 2.085, fz, { parent: F, cast: false });
+  for (const dx of [-0.495, 0.495]) box(0.07, 2.12, 0.03, M.trim, dr.cx + dx, 1.06, fz, { parent: F, cast: false });
+  const leaf = new THREE.Group(); leaf.position.set(dr.hinge, 0, -0.025 * lo); F.add(leaf);
+  const lw = dr.x1 - 0.01 - dr.hinge;
+  box(lw, 2.04, 0.04, futurePaint, lw / 2, 1.02, 0, { parent: leaf, cast: false });
+  for (const y of [0.55, 1.5]) box(lw - 0.3, 0.7, 0.012, futurePaint, lw / 2, y, -0.024 * lo, { parent: leaf, cast: false });
+  cyl(0.03, 0.03, 0.05, M.brass, lw - 0.1, 1.0, -0.045 * lo, { rx: Math.PI / 2, parent: leaf, cast: false });
+  const tex = canvasTex(320, 120, (g, w, h) => {
+    g.fillStyle = "#2c2118"; g.fillRect(0, 0, w, h);
+    g.strokeStyle = "#b8913f"; g.lineWidth = 4; g.strokeRect(6, 6, w - 12, h - 12);
+    g.fillStyle = "#e8c98a"; g.textAlign = "center";
+    g.font = "700 40px Georgia, serif"; g.fillText("COMING SOON", w / 2, 58);
+    g.font = "22px ui-monospace, Menlo, Consolas, monospace"; g.fillStyle = "#cdb88f"; g.fillText(`next page · ${d.id}`, w / 2, 94);
+  });
+  plane(0.32, 0.12, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }), lw / 2, 1.5, -0.031 * lo, 0, lo > 0 ? Math.PI : 0, leaf);
+  FUTURE[d.id] = { id: d.id, frame: F, leaf, rattle: 0 };
+}
+function removeFutureDoor(id) {
+  const f = FUTURE[id]; if (!f) return;
+  scene.remove(f.frame); disposeTree(f.frame); delete FUTURE[id];
+}
+function tickFutureDoors(dt) {
+  for (const f of Object.values(FUTURE)) {
+    if (f.rattle <= 0) { f.leaf.rotation.y = 0; continue; }
+    f.rattle = Math.max(0, f.rattle - dt);
+    f.leaf.rotation.y = -Math.sin(f.rattle * 40) * 0.025 * (f.rattle / 0.45);   // locked: it gives a little, then stops
+  }
+}
+
 function buildShell() {
   // floors (each half its own boards), with a brass threshold on the seam
   plane(HX, D, M.floorA, -HX / 2, 0, 0, -Math.PI / 2);
@@ -379,43 +527,13 @@ function buildShell() {
   // ceiling
   plane(W, D, M.ceiling, 0, H, 0, Math.PI / 2);
 
-  // walls: back (z=-4) and front (z=+4) are split at the seam; side walls are wholly A or B
-  plane(HX, H, M.wallA, -HX / 2, H / 2, -HZ, 0, 0);
-  // B's back wall has a real opening for the kitchen door (page E) and its window is a real hole into the kitchen.
-  // One shape with holes; UVs = those of the whole half (u = x / HX, v = y / H) so nothing stretches.
-  {
-    const sh = new THREE.Shape(), backDoors = Object.values(DOORS).filter((d) => d.out < 0 && d.x0 >= 0).sort((a, b) => a.x0 - b.x0);
-    sh.moveTo(0, 0);
-    for (const d of backDoors) { sh.lineTo(d.x0, 0); sh.lineTo(d.x0, d.h); sh.lineTo(d.x1, d.h); sh.lineTo(d.x1, 0); }
-    sh.lineTo(HX, 0); sh.lineTo(HX, H); sh.lineTo(0, H); sh.closePath();
-    const w = new THREE.Path(); w.moveTo(PASS_B.x0, PASS_B.y0); w.lineTo(PASS_B.x1, PASS_B.y0); w.lineTo(PASS_B.x1, PASS_B.y1); w.lineTo(PASS_B.x0, PASS_B.y1); w.closePath();
-    sh.holes.push(w);
-    const geo = new THREE.ShapeGeometry(sh), pos = geo.attributes.position, uv = geo.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / HX, pos.getY(i) / H);
-    const m = new THREE.Mesh(geo, M.wallB); m.position.set(0, 0, -HZ); m.receiveShadow = true; scene.add(m);
-  }
-  // The front wall has a real opening behind each door (2.05 m): the garage (page C) behind B's walnut door and the
-  // media room (page D) behind A's oak door. Three slices per half; UVs stay those of the whole half so nothing stretches.
-  for (const [mat, wx0, wx1, dr] of [[M.wallA, -HX, 0, DOORS["a-d"]], [M.wallB, 0, HX, DOORS["b-c"]]]) {
-    for (const [x0, x1, y0, y1] of [[wx0, dr.x0, 0, H], [dr.x1, wx1, 0, H], [dr.x0, dr.x1, dr.h, H]]) {
-      const geo = new THREE.PlaneGeometry(x1 - x0, y1 - y0), uv = geo.attributes.uv;
-      // facing -z, local +x is world -x: u = 0 at the half's right end (x = wx1)
-      for (let i = 0; i < uv.count; i++) uv.setXY(i, (wx1 - x1 + uv.getX(i) * (x1 - x0)) / HX, (y0 + uv.getY(i) * (y1 - y0)) / H);
-      const m = new THREE.Mesh(geo, mat); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, HZ); m.rotation.y = Math.PI; m.receiveShadow = true; scene.add(m);
-    }
-  }
-  plane(D, H, M.wallA, -HX, H / 2, 0, 0, Math.PI / 2);
-  plane(D, H, M.wallB, HX, H / 2, 0, 0, -Math.PI / 2);
+  // walls: back (z=-4) and front (z=+4) are split at the seam; side walls are wholly A or B. They are built (and
+  // rebuilt when a door arrives) by buildWall(), after the zones, from DOORS and WINDOWS.
 
   // baseboards and crown
   for (const z of [-HZ + 0.01, HZ - 0.01]) box(W, 0.06, 0.03, M.trim, 0, H - 0.03, z, { cast: false });
-  {   // back baseboard, broken at the back doors
-    let x0 = -HX;
-    for (const d of Object.values(DOORS).filter((q) => q.out < 0).sort((a, b) => a.x0 - b.x0)) { box(d.x0 - 0.06 - x0, 0.12, 0.02, M.trim, (x0 + d.x0 - 0.06) / 2, 0.06, -HZ + 0.01, { cast: false }); x0 = d.x1 + 0.06; }
-    box(HX - x0, 0.12, 0.02, M.trim, (x0 + HX) / 2, 0.06, -HZ + 0.01, { cast: false });
-  }
-  for (const [x0, x1] of [[-HX, DOORS["a-d"].x0 - 0.06], [DOORS["a-d"].x1 + 0.06, DOORS["b-c"].x0 - 0.06], [DOORS["b-c"].x1 + 0.06, HX]]) box(x1 - x0, 0.12, 0.02, M.trim, (x0 + x1) / 2, 0.06, HZ - 0.01, { cast: false });
-  for (const x of [-HX + 0.01, HX - 0.01]) { box(0.02, 0.12, D, M.trim, x, 0.06, 0, { cast: false }); box(0.03, 0.06, D, M.trim, x, H - 0.03, 0, { cast: false }); }
+  // (the baseboards are part of each wall, broken at its doors: buildWall)
+  for (const x of [-HX + 0.01, HX - 0.01]) box(0.03, 0.06, D, M.trim, x, H - 0.03, 0, { cast: false });
 
   // timber frame on the seam: posts on back and front walls + a ceiling beam.
   // Reads as an old house where two rooms were opened into one.
@@ -425,7 +543,8 @@ function buildShell() {
   for (const x of [-4, -2, 2, 4]) box(0.14, 0.16, D, M.timber, x, H - 0.08, 0);
 
   // windows on the back wall, one per side
-  // A's looks out at the sky; B's is a real window into the kitchen (page E): its clear pane is in kitchen.js
+  // A's looks out at the sky; B's is a real window into the kitchen (page E) while the kitchen is built (its clear pane
+  // is in kitchen.js), else a painted sky like A's (WINDOWS, buildWall)
   for (const x of [-2.6, 2.6]) {
     if (x < 0) plane(1.3, 1.35, M.glass, x, 1.62, -HZ + 0.005);
     box(1.46, 0.08, 0.1, M.trim, x, 2.33, -HZ + 0.04);
@@ -444,26 +563,7 @@ function buildShell() {
   }
   cyl(0.015, 0.015, 2.2, M.brass, -2.6, 2.48, -HZ + 0.16, { rz: Math.PI / 2 });
 
-  // panel doors, all real: A's oak door swings into the media room (D), B's walnut door into the garage (C), and B's
-  // maple back door into the kitchen (E). Any other door in zones.json gets a painted leaf.
-  const DOOR_MAT = { "a-d": M.oak, "b-c": M.walnut, "b-e": M.maple };
-  for (const dr of Object.values(DOORS)) {
-    const mat = DOOR_MAT[dr.id] || M.trim, fz = dr.z - 0.04 * dr.out;
-    box(1.04, 0.07, 0.07, M.trim, dr.cx, 2.08, fz);
-    for (const dx of [-0.49, 0.49]) box(0.07, 2.08, 0.07, M.trim, dr.cx + dx, 1.04, fz);
-    // a leaf on a hinge, panels and a knob on both faces
-    const leaf = dr.id === "b-c" ? doorLeaf : new THREE.Group();
-    dr.leaf = leaf;
-    leaf.position.set(dr.hinge, 0, dr.z - 0.025 * dr.out); scene.add(leaf);
-    const lw = dr.x1 - 0.01 - dr.hinge;   // 0.88 m
-    box(lw, 2.04, 0.045, mat, lw / 2, 1.02, 0, { parent: leaf, cast: false });
-    for (const zf of [-1, 1]) {
-      for (const y of [0.55, 1.5]) box(lw - 0.3, 0.7, 0.02, mat, lw / 2, y, zf * 0.028, { parent: leaf, cast: false });
-      cyl(0.03, 0.03, 0.05, M.brass, lw - 0.1, 1.0, zf * 0.05, { rx: Math.PI / 2, parent: leaf, cast: false });
-      cyl(0.04, 0.04, 0.008, M.brass, lw - 0.1, 1.0, zf * 0.026, { rx: Math.PI / 2, parent: leaf, cast: false });
-    }
-    for (const y of [0.25, 1.0, 1.8]) cyl(0.012, 0.012, 0.1, M.brass, 0, y, -0.03 * dr.out, { parent: leaf, cast: false });   // hinge knuckles
-  }
+  // (the panel doors are built by makeDoor / makeFutureDoor after the zones)
 
   // signs on each side wall
   for (const [letter, x, ry] of [["A", -HX + 0.03, Math.PI / 2], ["B", HX - 0.03, -Math.PI / 2]]) {
@@ -611,14 +711,88 @@ function buildLights() {
 }
 
 buildShell(); buildSideA(); buildSideB(); buildLights();
-/* page C: the garage, in the same scene behind B's door */
-const garage = buildGarage({ THREE, scene, M, box, cyl, plane, canvasTex, rnd, solids, signTex, RoundedBoxGeometry });
-/* page D: the media room behind A's door, with a computer that plays today's Heartbeat News */
-const den = buildDen({ THREE, scene, M, box, cyl, plane, canvasTex, rnd, solids, signTex, RoundedBoxGeometry });
-const tv = createNewsTV({ THREE, den, onLog: (t) => seamLog(t) });
-/* page E: the kitchen behind B's back door */
-const kitchen = buildKitchen({ THREE, scene, M, box, cyl, plane, canvasTex, rnd, solids, signTex, RoundedBoxGeometry });
-CAM_BLOCKS.push(...kitchen.camBlocks);
+
+/* ------------------------------------------------- zones from modules - */
+/* Every zone with a "module" in zones.json (garage.js = page C, den.js = page D, kitchen.js = page E, ...) is built
+   by that module's build function (its `buildZone`, default export, or first export named build*), into its own group,
+   with the room's helpers. The same path runs at load and when a zone arrives later (the hot-load), so a module
+   never needs to know which. A built zone may return: camBlocks (camera keep-outs), tick(dt), openDoor(id, door)
+   (cut an opening in ITS OWN wall for a door that just became real; return true), plus anything room.js uses by name
+   (garage: switchMesh/setLights/lightsOn; den: screenHits/future/rattle, and den.js's createNewsTV). */
+let garage = null, den = null, kitchen = null;
+const TV_OFF = { tap() {}, update() {}, near: () => false, prompt: () => "", start() {}, stop() {}, setSound() {}, get state() { return {}; } };
+let tv = TV_OFF;
+const zoneKey = (z) => (z.module ? `${z.module}?v=${z.v || 1}` : "");
+function importZone(z) {
+  if (!/^[\w-]+\.js$/.test(z.module || "")) return Promise.reject(new Error(`zone ${z.id}: bad module "${z.module}"`));
+  return import(`/lab/seam-room/${z.module}?v=${z.v || 1}`);
+}
+function buildZone(z, mod) {
+  const fn = (typeof mod.buildZone === "function" && mod.buildZone) || (typeof mod.default === "function" && mod.default)
+    || Object.values(mod).find((f) => typeof f === "function" && /^build/.test(f.name));
+  if (!fn) throw new Error(`zone ${z.id}: ${z.module} has no build function`);
+  const group = new THREE.Group(); group.name = "zone-" + z.id; scene.add(group);
+  const inGroup = (o) => (o && o.parent ? o : Object.assign({}, o, { parent: group }));
+  const s0 = solids.length;
+  let built;
+  try {
+    built = fn({ THREE, scene: group, M, canvasTex, rnd, solids, signTex, RoundedBoxGeometry,
+      box: (w, h, d, mat, x, y, zz, o) => box(w, h, d, mat, x, y, zz, inGroup(o)),
+      cyl: (r1, r2, h, mat, x, y, zz, o) => cyl(r1, r2, h, mat, x, y, zz, inGroup(o)),
+      plane: (w, h, mat, x, y, zz, rx, ry, parent) => plane(w, h, mat, x, y, zz, rx, ry, parent || group) }) || {};
+  } catch (e) { scene.remove(group); disposeTree(group); solids.splice(s0); throw e; }
+  const entry = { id: z.id, key: zoneKey(z), mod, built, group, solids: solids.slice(s0), camBlocks: built.camBlocks || [], opened: [], tv: null };
+  CAM_BLOCKS.push(...entry.camBlocks);
+  if (mod.buildGarage) garage = built;
+  if (mod.buildDen) den = built;
+  if (mod.buildKitchen) kitchen = built;
+  if (typeof mod.createNewsTV === "function") { entry.tv = tv = mod.createNewsTV({ THREE, den: built, onLog: (t) => seamLog(t) }); }
+  BUILT[z.id] = entry;
+  return entry;
+}
+/* take a built zone out of the world again (for a hot-swap): its group, its solids, its camera blocks, its TV */
+function unbuildZone(id) {
+  const e = BUILT[id]; if (!e) return null;
+  if (e.tv) { try { e.tv.stop(); } catch (_) {} if (tv === e.tv) tv = TV_OFF; }
+  scene.remove(e.group); disposeTree(e.group);
+  for (const b of e.solids) { const i = solids.indexOf(b); if (i >= 0) solids.splice(i, 1); }
+  for (const b of e.camBlocks) { const i = CAM_BLOCKS.indexOf(b); if (i >= 0) CAM_BLOCKS.splice(i, 1); }
+  if (garage === e.built) garage = null;
+  if (den === e.built) den = null;
+  if (kitchen === e.built) kitchen = null;
+  delete BUILT[id];
+  return e;
+}
+/* a door that is real now: its leaf, and the opening in whichever wall it is in (a room wall, or a zone's own wall) */
+function cutOpening(dr) {
+  const w = wallOf(dr);
+  if (w) { buildWall(w); return true; }
+  for (const e of Object.values(BUILT)) {
+    if (typeof e.built.openDoor === "function" && e.built.openDoor(dr.id, dr.data)) { if (!e.opened.includes(dr.id)) e.opened.push(dr.id); return true; }
+  }
+  return false;   // nobody owns that wall: the leaf is there, the opening is not
+}
+function openRealDoor(d) {
+  const dr = doorFromData(d);
+  DOORS[d.id] = dr;
+  removeFutureDoor(d.id);
+  makeDoor(dr);
+  return cutOpening(dr);
+}
+
+/* at load: import every zone's module (in parallel), build them in zones.json order, then the walls and the doors */
+let zonesRetry = false;
+{
+  const zs = ZDATA.zones.filter((z) => z.module);
+  const mods = await Promise.all(zs.map((z) => importZone(z).catch((e) => { console.warn("seam-room:", e); return null; })));
+  zs.forEach((z, i) => {
+    if (!mods[i]) { zonesRetry = true; return; }
+    try { buildZone(z, mods[i]); } catch (e) { console.warn("seam-room: zone", z.id, e); zonesRetry = true; }
+  });
+  for (const id of Object.keys(WALLS)) buildWall(id);
+  for (const dr of Object.values(DOORS)) { makeDoor(dr); if (!wallOf(dr)) cutOpening(dr); }
+  for (const d of DOORDATA) if (isFutureDoor(d) && !DOORS[d.id] && wallOf(doorFromData(d))) makeFutureDoor(d);
+}
 
 /* ---------------------------------------------------------- the object - */
 /* One object with one id. Its state is plain JSON so it can move between
@@ -941,7 +1115,7 @@ shell.on("asset", (msg) => {
 });
 shell.on("asset-ask", () => {
   shell.send("asset", { state: asset });
-  if (!garage.lightsOn) shell.send("garage-light", { on: false });
+  if (garage && !garage.lightsOn) shell.send("garage-light", { on: false });
   for (const d of Object.values(DOORS)) if (performance.now() < d.tapUntil) shell.send("door", { id: d.id, open: true, ms: d.tapUntil - performance.now() });
 });
 
@@ -950,7 +1124,7 @@ shell.on("asset-ask", () => {
    then closes. Everyone computes "near" from the shared positions, and taps / my own approach go out as world events
    ("door", with the door's id) so a browser whose peer list lags still agrees. */
 const DOOR_NEAR = 1.5, DOOR_TAP_MS = 8000;
-function nearDoor(x, z, d) { d = d || door; return Math.hypot(x - d.cx, z - (d.z + 0.07 * d.out)) < DOOR_NEAR; }
+function nearDoor(x, z, d) { d = d || door; return Math.hypot(x - d.px, z - d.pz) < DOOR_NEAR; }
 function anyoneNearDoor(d) {
   d = d || door;
   if (nearDoor(player.x, player.z, d)) return true;
@@ -984,11 +1158,12 @@ function stepDoor(dt) {
     d.open = anyoneNearDoor(d) || now < d.tapUntil;
     d.amt = clampN(d.amt + (d.open ? 1 : -1) * dt / 0.6, 0, 1);
     const e = d.amt * d.amt * (3 - 2 * d.amt);   // ease in-out over 0.6 s
-    d.leaf.rotation.y = -d.out * e * Math.PI / 2;
+    d.leaf.rotation.y = -d.lo * e * Math.PI / 2;
   }
 }
-shell.on("garage-light", (m) => { if (m && typeof m.on === "boolean") garage.setLights(m.on); });
+shell.on("garage-light", (m) => { if (garage && m && typeof m.on === "boolean") garage.setLights(m.on); });
 function tapSwitch() {
+  if (!garage) return;
   garage.setLights(!garage.lightsOn);
   shell.send("garage-light", { on: garage.lightsOn });
   seamLog(`garage lights ${garage.lightsOn ? "on" : "off"}`);
@@ -1195,12 +1370,13 @@ addEventListener("pointerup", (e) => {
   ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   if (assetMesh && ray.intersectObject(assetMesh, true).length) openCard();
-  else if (ray.intersectObject(garage.switchMesh, true).some((h) => h.distance < 6)) tapSwitch();
-  else if (zoneId === "d" && ray.intersectObjects(den.screenHits, false).some((h) => h.distance < 9)) tv.tap();
+  else if (garage && ray.intersectObject(garage.switchMesh, true).some((h) => h.distance < 6)) tapSwitch();
+  else if (den && zoneId === "d" && ray.intersectObjects(den.screenHits, false).some((h) => h.distance < 9)) tv.tap();
   else {
-    const fh = ray.intersectObjects(den.futureHits, true).find((h) => h.distance < 8);
+    const fh = den && ray.intersectObjects(den.futureHits, true).find((h) => h.distance < 8);
     const f = fh && den.future.find((q) => { for (let o = fh.object; o; o = o.parent) if (o === q.leaf) return true; return false; });
     if (f) { den.rattle(f.id); seamLog(`door ${f.id}: coming soon (a future page)`); return; }
+    for (const q of Object.values(FUTURE)) if (ray.intersectObject(q.leaf, true).some((h) => h.distance < 8)) { q.rattle = 0.45; seamLog(`door ${q.id}: coming soon (a future page)`); return; }
     for (const d of Object.values(DOORS)) if (ray.intersectObject(d.leaf, true).some((h) => h.distance < 8)) { tapDoor(d.id); break; }
   }
 });
@@ -1310,6 +1486,89 @@ function placeCamera(dt) {
   camera.lookAt(camLook);
 }
 
+/* ----------------------------------------- new rooms without a reload - */
+/* Jaron 11/1: someone standing in the room when a new zone deploys sees it arrive. Every ~20 s, only while the tab is
+   visible, room.js fetches zones.json (no-store + ?v=time: one small request; an unchanged file is one string compare
+   and nothing else). When the text changed it diffs against what is built:
+     - a NEW zone: import() its "module", build it into the running scene, add it to the seam (URL switching), the
+       counter, the names and spawns; one quiet line in the seam log ("new room: Kitchen (page E) is here").
+     - a door that became "kind": "door" (it was a "future" decoration, or new): the real leaf, and the opening in its
+       wall (a room wall is rebuilt alone; a zone's own wall is cut by that zone's openDoor()).
+     - walk: the floor list is replaced (a doorway stays shut until its door opens).
+     - a CHANGED zone ("module" or "v" changed; bump "v" when you change a zone's module): the old one is taken out
+       and the new one built in its place (hot-swap). Anything it cannot apply (a zone or door removed, a door moved,
+       a failed import) gives one quiet line instead: "an update is ready, reload when you like".
+   Your position, the people, the log/chair and the seam log are never touched. */
+const ZONES_POLL_MS = 20000;
+const ZRAW = Object.fromEntries(ZDATA.zones.map((z) => [z.id, JSON.stringify(z)]));
+let zonesBusy = false, zonesLastPoll = Date.now(), updateNoticed = false;
+function updateReady() { if (!updateNoticed) { updateNoticed = true; seamLog("an update is ready, reload when you like"); } }
+async function applyZones(data) {
+  let ok = true;
+  const wallsToRebuild = new Set();
+  for (const z of data.zones || []) {
+    if (!z || !z.id) continue;
+    const raw = JSON.stringify(z), known = ZONES.find((q) => q.id === z.id), had = BUILT[z.id];
+    const needBuild = !!z.module && (!had || had.key !== zoneKey(z));
+    if (known && ZRAW[z.id] === raw && !needBuild) continue;
+    try {
+      if (needBuild) {
+        const mod = await importZone(z);   // import first: if it fails, the old zone stays as it is
+        let lights = null;
+        if (had) { lights = had.built.lightsOn; unbuildZone(z.id); }
+        const e = buildZone(z, mod);
+        if (lights === false && e.built.setLights) e.built.setLights(false);
+        for (const dr of Object.values(DOORS)) if (!wallOf(dr) && had && had.opened.includes(dr.id)) cutOpening(dr);   // its doors stay open
+        for (const win of WINDOWS) if (win.into === z.id) wallsToRebuild.add(win.wall);
+      }
+      seam.addZone(Seam.zoneFromData(z));
+      NAMES[z.id] = z.label || z.id.toUpperCase();
+      SPAWN[z.id] = z.spawn || { x: 0, z: 0, yaw: 0 };
+      if (needBuild && had) seamLog(`${roomName(z)} (page ${NAMES[z.id]}) updated`);
+      else if (needBuild || !known) seamLog(`new room: ${roomName(z)} (page ${NAMES[z.id]}) is here`);
+      ZRAW[z.id] = raw;
+    } catch (e) { console.warn("seam-room: zone", z.id, e); ok = false; updateReady(); }
+  }
+  if ((data.zones || []).length < ZONES.length && ZONES.some((q) => !(data.zones || []).find((z) => z && z.id === q.id))) updateReady();   // a zone was removed
+
+  // doors: a "future" one (or a new one) that is real now gets its leaf and its opening; a new future one on a room wall is drawn
+  const newDoors = data.doors || [];
+  for (const d of newDoors) {
+    if (!d || !d.id) continue;
+    const was = DOORDATA.find((q) => q.id === d.id);
+    if (was && JSON.stringify(was) === JSON.stringify(d)) continue;
+    if (isRealDoor(d)) {
+      if (DOORS[d.id]) { updateReady(); continue; }   // a real door that moved or changed shape: that needs a reload
+      if (!openRealDoor(d)) updateReady();
+    } else if (DOORS[d.id]) updateReady();         // a real door made decoration again
+    else if (isFutureDoor(d) && !FUTURE[d.id] && wallOf(doorFromData(d))) makeFutureDoor(d);
+  }
+  for (const id of Object.keys(DOORS)) if (!newDoors.find((d) => d && d.id === id)) updateReady();   // a door was removed
+  for (const id of Object.keys(FUTURE)) if (!newDoors.find((d) => d && d.id === id && isFutureDoor(d))) removeFutureDoor(id);
+  DOORDATA = newDoors; SEAMCFG.doors = newDoors;
+  for (const w of wallsToRebuild) buildWall(w);
+  if (Array.isArray(data.walk)) WALK.splice(0, WALK.length, ...data.walk);
+  counterSig = ""; updateCounter();
+  return ok;
+}
+async function pollZones(force) {
+  if (zonesBusy || (!force && document.hidden)) return false;
+  zonesBusy = true; zonesLastPoll = Date.now();
+  try {
+    const r = await fetch(ZONES_URL + "?v=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return false;
+    const text = await r.text();
+    if (text === zonesText && !zonesRetry) return false;
+    let data;
+    try { data = JSON.parse(text); } catch (_) { return false; }   // half a deploy: try again next time
+    zonesRetry = false;
+    if (await applyZones(data)) zonesText = text; else zonesRetry = true;
+    return true;
+  } catch (_) { return false; } finally { zonesBusy = false; }
+}
+setInterval(() => { if (!document.hidden) void pollZones(); }, ZONES_POLL_MS);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - zonesLastPoll > ZONES_POLL_MS) void pollZones(); });
+
 /* --------------------------------------------------------------- loop - */
 const clock = new THREE.Clock();
 let t = 0;
@@ -1320,7 +1579,8 @@ camera.position.set(player.x + Math.sin(cam.yaw) * 2.9, 1.9, player.z + Math.cos
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05); t += dt; frameDt = dt;
   stepDoor(dt);
-  den.tick(dt);
+  for (const e of Object.values(BUILT)) if (e.built.tick) e.built.tick(dt);
+  tickFutureDoors(dt);
   step(dt);
   tv.update(player.x, player.z, zoneId === "d");
   selfAv.group.position.set(player.x, 0, player.z);
@@ -1343,5 +1603,7 @@ window.__seam = {
   get bubbles() { return [...bubbles.entries()].map(([id, b]) => ({ id, text: b.text, dots: b.dots })); },
   get chat() { return chatLines.slice(); }, get canTalk() { return canTalk; },
   teleport(x, z) { player.x = x; player.z = z; },
-  door, doors: DOORS, tapDoor, garage, tapSwitch, renderer, camera, scene, walk: WALK, den, tv, kitchen,
+  door, doors: DOORS, tapDoor, tapSwitch, renderer, camera, scene, walk: WALK, future: FUTURE, built: BUILT,
+  get garage() { return garage; }, get den() { return den; }, get tv() { return tv; }, get kitchen() { return kitchen; },
+  pollZones: (force) => pollZones(force !== false), get zonesText() { return zonesText; },
 };
