@@ -76,8 +76,11 @@ const SOLIDS = [
   [5.0, 5.3, 7.0, 9.9], [2.15, 6.4, 2.85, 8.6], [2.15, 8.92, 2.74, 9.88], [3.02, 9.72, 3.58, 10.35], [7.97, 6.0, 8.45, 8.0], [7.76, 4.15, 8.45, 4.87],
   // the media room (page D, den.js): desk, office chair, armchair, side table, bookshelf, plant
   [-5.42, 8.79, -3.78, 9.55], [-4.92, 8.05, -4.28, 8.69], [-7.95, 8.1, -6.75, 9.3], [-6.8, 8.95, -6.3, 9.45], [-8.25, 4.37, -7.89, 5.87], [-2.82, 4.35, -2.32, 4.85],
+  // the kitchen (page E, kitchen.js): back counter run, side run with the range, fridge, island, stools, plant
+  [1.13, -10.15, 5.6, -9.48], [5.48, -10.15, 6.15, -5.45], [5.35, -5.48, 6.15, -4.44], [2.2, -8.1, 4.4, -6.95], [2.45, -7.0, 4.15, -6.55], [0.15, -10.15, 0.87, -9.43],
 ];
-/* the floor (zones.json "walk"): room, garage (behind B's door), media room (behind A's door) and the doorways between
+/* the floor (zones.json "walk"): room, garage (behind B's door), media room (behind A's door), kitchen (behind B's back
+   door) and the doorways between
    them. The AI's own approach opens a door for everyone. `links` says which two floors a doorway joins. */
 const WALK = ZDATA.walk || [{ id: "room", minX: -HX, maxX: HX, minZ: -HZ, maxZ: HZ }];
 const touches = (d, w) => d.minX < w.maxX && d.maxX > w.minX && d.minZ < w.maxZ && d.maxZ > w.minZ;
@@ -127,7 +130,8 @@ function hop(from, goal) {
     if (!w) return goal;
     return { x: dw.cx, z: (w.minZ + w.maxZ) / 2 < (dw.minZ + dw.maxZ) / 2 ? dw.minZ + 0.15 : dw.maxZ - 0.15 };
   }
-  if (!a || !b || a === b) return goal;
+  if (!a || !b) return goal;
+  if (a === b) return segClear(from, goal) ? goal : (detour(from, goal) || goal);   // same floor: around furniture
   const dw = DOORWAYS.find((d) => d.links.includes(a) && d.links.includes(b)) || DOORWAYS.find((d) => d.links.includes(a));
   if (!dw) return goal;
   const mid = (id) => { const w = WALK.find((q) => q.id === id && !q.door); return (w.minZ + w.maxZ) / 2; };
@@ -135,6 +139,8 @@ function hop(from, goal) {
   const farSide = { x: dw.cx, z: nearSide.z < (dw.minZ + dw.maxZ) / 2 ? dw.maxZ - 0.15 : dw.minZ + 0.15 };
   const lined = Math.abs(from.x - dw.cx) < 0.12 && from.z >= dw.minZ - 0.05 && from.z <= dw.maxZ + 0.05;
   if (lined) return farSide;
+  // furniture between me and the door: first try an L-shaped way (both legs clear), e.g. out of the kitchen past the island
+  if (!segClear(from, nearSide)) { const c = detour(from, nearSide); if (c) return c; }
   // in the room, furniture can sit between me and the door: if the straight line is blocked, use the clear lane
   // across the middle of the room (z = HUB_Z), then walk up the door's own lane
   if (a === "room" && !segClear(from, nearSide)) {
@@ -147,11 +153,42 @@ function hop(from, goal) {
   return nearSide;
 }
 const HUB_Z = 0.6;   // no furniture crosses the room along z = 0.6
+/* an L-shaped way from p to q (x first or z first) when both legs are clear of furniture and on the floor; else null */
+function corner(p, q) {
+  for (const c of [{ x: p.x, z: q.z }, { x: q.x, z: p.z }]) {
+    const f = clampToRoom(c.x, c.z);
+    if (Math.hypot(f.x - c.x, f.z - c.z) > 0.02) continue;
+    if (Math.hypot(c.x - p.x, c.z - p.z) < 0.05) continue;
+    if (segClear(p, c) && segClear(c, q)) return c;
+  }
+  return null;
+}
+/* the next waypoint around furniture: an L-shaped way, else the shortest way past one corner of a piece of furniture
+   (then straight, or one more L). null when there is none (the push-out then slides along). */
+function detour(p, q) {
+  const c = corner(p, q);
+  if (c) return c;
+  let best = null, bl = Infinity;
+  const m = R + 0.08, len = (u, v) => Math.hypot(u.x - v.x, u.z - v.z);
+  for (const [a, b, c2, d] of SOLIDS) {
+    for (const w of [{ x: a - m, z: b - m }, { x: c2 + m, z: b - m }, { x: a - m, z: d + m }, { x: c2 + m, z: d + m }]) {
+      const f = clampToRoom(w.x, w.z);
+      if (len(f, w) > 0.02 || len(w, p) < 0.05 || !segClear(p, w)) continue;
+      const direct = segClear(w, q), cc = direct ? null : corner(w, q);
+      if (!direct && !cc) continue;
+      const L = len(p, w) + (direct ? len(w, q) : len(w, cc) + len(cc, q));
+      if (L < bl) { bl = L; best = w; }
+    }
+  }
+  return best;
+}
 function segClear(p, q) {
   const n = Math.max(1, Math.ceil(Math.hypot(q.x - p.x, q.z - p.z) / 0.1));
   for (let i = 1; i <= n; i++) {
     const x = p.x + (q.x - p.x) * i / n, z = p.z + (q.z - p.z) * i / n;
     for (const [a, b, c, d] of SOLIDS) if (Math.hypot(x - clamp(x, a, c), z - clamp(z, b, d)) < R - 0.01) return false;
+    const f = clampToRoom(x, z);   // and on the floor: never through a wall
+    if (Math.hypot(f.x - x, f.z - z) > 0.03) return false;
   }
   return true;
 }

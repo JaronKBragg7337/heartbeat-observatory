@@ -35,9 +35,10 @@ first log. When the log becomes a chair, `kind` changes but the ID does not. "Re
 
 - `zones.json` - the zones and doors, as data. `agent/` - the AI character (see above).
 - `garage.js` - page C (the garage). `den.js` - page D (the media room) and the Heartbeat News player on its computer.
+  `kitchen.js` - page E (the kitchen behind B's back door).
 - `seam.js` - the reusable piece. No three.js, no room, no network. Exposes `Seam.define({...})`.
 - `room.js` - this room: scene, player, peers, the object, the card, the log, the doors.
-- `room.css` - shared styles. `a/`, `b/`, `c/`, `d/` `index.html` - the real entry pages (identical apart from the letter and title).
+- `room.css` - shared styles. `a/` .. `e/` `index.html` - the real entry pages (identical apart from the letter and title).
 - `index.html` - sends `/lab/seam-room/` to `/a/`.
 - Body model: `/lab/bedroom/person.glb` (walk + idle clips), shared, not copied.
 
@@ -172,13 +173,47 @@ A's oak door on the front wall (x -4.6, z 4) is a real door now, exactly like B'
   and up the door's lane (A's sofa sat in the old straight line). Simulated: B -> den TV, den <-> garage, A -> garage,
   starting inside a doorway, starting behind B's armchair - all arrive.
 
+## Page E: the kitchen (2026-11-01, Jaron asked from inside the room)
+
+"Can we add a kitchen? Let's make a door in page B go to another page and it be the kitchen." B's back wall (z = -4) has a
+new maple door left of the window (x 0.54..1.46, clear of the window, the saw horse and the bench), and behind it is a
+kitchen at `/lab/seam-room/e/`.
+
+- **One world, no portal.** `kitchen.js` (`buildKitchen()`) builds it in the same scene behind the back wall (inside
+  x 0.15..6.15, z -10.15..-4.15, 2.8 m tall). B's back wall is now one shape with two real holes: the door opening and
+  **B's window, which used to show a painted sky and is now a real window into the kitchen**, so you see through it both
+  ways even with the door shut. The door swings into the kitchen on approach (1.5 m) or a tap, synced as world event
+  `door` id `b-e`.
+- **Doors are data now.** room.js builds every zones.json door with `"kind": "door"` and a z plane as a real swinging
+  door (hinge at `minX`, swings away from the room, `name` for the log). The B back-wall opening and baseboard are cut
+  from the same list. A new wall door = one zones.json entry + its walk rectangle (the wall cut for a front-wall door
+  is still the hand-built slices in `buildShell()`).
+- **Inside:** terracotta tile floor, cream plaster, cream shaker cabinets (uppers and lowers, brass pulls and knobs, toe
+  kicks, glowing under-cabinet strips), stone counters, an undermount steel sink with a gooseneck faucet under a window
+  with herbs on the sill, a stainless range with four iron grates, oven window, towel and a steel chimney hood, a French
+  door fridge with a cabinet over it, an olive island with a butcher-block top and three stools, two green enamel
+  pendants, a subway tile backsplash, a fruit bowl, a red kettle, a cutting board with a loaf, jars, a crock of spoons,
+  an open shelf with plates, a tall plant, a runner, and the "PAGE E" sign on the left wall.
+- **Phone budget:** every static kitchen part is merged per material (31 meshes for the whole kitchen, `kitchen.meshes`);
+  nothing in it casts shadows (the sun's shadow box does not reach it; soft contact shadows instead); one warm point
+  light with no shadow. Whole scene at 375 px in Chrome: about 55 draw calls looking into the kitchen.
+- **Every layer knows E:** zones.json (zone, spawn, door `b-e`, walk `kitchen` + `door-b-e`); a/b got `minZ: -4` so the
+  Back button lands on the right side of the back door; the counter and seam log read zones.json; the chat table's
+  `place` accepts any zone id; `agent/mcp-server.mjs` takes its page list from zones.json (it was hard-coded a/b); the
+  redirect page lists five pages.
+- **The AI** knows the kitchen furniture (`SOLIDS`) and routes room <-> kitchen through `b-e` (kitchen <-> garage/den via
+  the room). New: when furniture blocks the straight line it takes an L-shaped way or goes round one corner of the
+  furniture, and its "is the way clear" check also refuses lines through walls. Simulated 25 trips (B/A/C/D -> sink,
+  range, behind the island, fridge; kitchen -> garage car, den TV, chopping block; garage <-> den): all arrive. A running
+  character keeps its old code until it is restarted.
+
 ## Not done yet (honest list)
 
 1. **Next open step: where identity and history live between pages, server-side.** Today one browser's localStorage plus
    whoever is online right now. If everyone leaves, a new visitor starts from their own copy (or `SR1-A-LOG-0001`). It
    needs a table (one row per asset ID: kind, born, visited, changes, rev), with the channel used only for live moves.
    Same lesson as Ashgrove's D6: decide this before building the 3-page road.
-2. **More than 4 zones** - four are tested (A, B, garage C, media room D). The AI's routing is door-to-door through the room; a page behind a page (e.g. behind `d-back`) needs the routing to chain more hops.
+2. **More than 5 zones** - five are tested (A, B, garage C, media room D, kitchen E). The AI's routing is door-to-door through the room; a page behind a page (e.g. behind `d-back`) needs the routing to chain more hops.
 3. **True separate-page loads with different code per zone** - both pages load the same `room.js`. A zone that needs its
    own heavy scene (a factory) would need either lazy-loading per zone or a real navigation, and the handoff then
    needs the server state from step 1.

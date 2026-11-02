@@ -3,7 +3,8 @@
    ---------------------------------------------------------------------------
    One room, two real pages. x < 0 is /lab/seam-room/a/, x >= 0 is
    /lab/seam-room/b/; behind B's walnut door is the garage (/c/, garage.js),
-   behind A's oak door the media room (/d/, den.js). Every page loads this
+   behind A's oak door the media room (/d/, den.js), behind B's back door the
+   kitchen (/e/, kitchen.js). Every page loads this
    file; the URL decides where you spawn. seam.js flips the URL as you walk. The shell (HBShell) carries the
    player, input, identity and the ONE realtime channel ("hb-seam-room") that
    both pages share, which is what makes it one room.
@@ -19,40 +20,47 @@ import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import { Seam } from "/lab/seam-room/seam.js?v=2";
 import { buildGarage } from "/lab/seam-room/garage.js?v=1";
 import { buildDen, createNewsTV } from "/lab/seam-room/den.js?v=1";
+import { buildKitchen } from "/lab/seam-room/kitchen.js?v=1";
 
 const $ = (id) => document.getElementById(id);
 const W = 12, D = 8, H = 2.9;               // room size, metres. Seam at x = 0.
 const HX = W / 2, HZ = D / 2;
 const BENCH = { x: 4.55, z: -3.25 };        // the workbench on page B
 const BLOCK = { x: -4.7, z: -2.4 };         // the chopping block on page A
+const PASS_B = { x0: 1.95, x1: 3.25, y0: 0.945, y1: 2.295 };   // B's back window, a real hole into the kitchen (kitchen.js)
 const ASSET_KEY = "seam-room:asset:";       // + id
 const CURRENT_KEY = "seam-room:current";
 /* zones are data (zones.json): add a zone there and the room, the URL switching and the AI character all know it */
-const ZDATA = await fetch("/lab/seam-room/zones.json?v=3").then((r) => r.json()).catch(() => ({
+const ZDATA = await fetch("/lab/seam-room/zones.json?v=4").then((r) => r.json()).catch(() => ({
   hysteresis: 0.3, fallback: "a",
   zones: [
-    { id: "a", label: "A", url: "/lab/seam-room/a/", title: "Seam Room · Page A - Heartbeat Observatory", bounds: { maxX: 0, maxZ: 4 }, spawn: { x: -3.6, z: 1.2, yaw: -Math.PI / 2 } },
-    { id: "b", label: "B", url: "/lab/seam-room/b/", title: "Seam Room · Page B - Heartbeat Observatory", bounds: { minX: 0, maxZ: 4 }, spawn: { x: 3.6, z: 1.2, yaw: Math.PI / 2 } },
+    { id: "a", label: "A", url: "/lab/seam-room/a/", title: "Seam Room · Page A - Heartbeat Observatory", bounds: { maxX: 0, minZ: -4, maxZ: 4 }, spawn: { x: -3.6, z: 1.2, yaw: -Math.PI / 2 } },
+    { id: "b", label: "B", url: "/lab/seam-room/b/", title: "Seam Room · Page B - Heartbeat Observatory", bounds: { minX: 0, minZ: -4, maxZ: 4 }, spawn: { x: 3.6, z: 1.2, yaw: Math.PI / 2 } },
     { id: "c", label: "C", url: "/lab/seam-room/c/", title: "Seam Room · Garage (Page C) - Heartbeat Observatory", bounds: { minX: 2, maxX: 8.6, minZ: 4, maxZ: 10.5 }, spawn: { x: 3.9, z: 6.6, yaw: Math.PI } },
     { id: "d", label: "D", url: "/lab/seam-room/d/", title: "Seam Room · Media Room (Page D) - Heartbeat Observatory", bounds: { minX: -8.4, maxX: -2, minZ: 4, maxZ: 9.7 }, spawn: { x: -4.3, z: 6.1, yaw: Math.PI } },
+    { id: "e", label: "E", url: "/lab/seam-room/e/", title: "Seam Room · Kitchen (Page E) - Heartbeat Observatory", bounds: { minX: 0, maxX: 6.5, minZ: -10.5, maxZ: -4 }, spawn: { x: 2.0, z: -6.3, yaw: -0.6 } },
   ],
-  doors: [{ id: "middle", between: ["a", "b"], plane: { x: 0, minZ: -4, maxZ: 4 } }, { id: "b-c", between: ["b", "c"], plane: { z: 4, minX: 4.14, maxX: 5.06 } }, { id: "a-d", between: ["a", "d"], plane: { z: 4, minX: -5.06, maxX: -4.14 } }],
+  doors: [{ id: "middle", between: ["a", "b"], plane: { x: 0, minZ: -4, maxZ: 4 } }, { id: "b-c", between: ["b", "c"], kind: "door", name: "B's door", plane: { z: 4, minX: 4.14, maxX: 5.06 } },
+    { id: "a-d", between: ["a", "d"], kind: "door", name: "A's door", plane: { z: 4, minX: -5.06, maxX: -4.14 } }, { id: "b-e", between: ["b", "e"], kind: "door", name: "B's back door", plane: { z: -4, minX: 0.54, maxX: 1.46 } }],
   walk: [
     { id: "room", minX: -6, maxX: 6, minZ: -4, maxZ: 4, h: 2.9 },
     { id: "garage", minX: 2.15, maxX: 8.45, minZ: 4.15, maxZ: 10.35, h: 2.8 },
     { id: "door-b-c", door: "b-c", minX: 4.14, maxX: 5.06, minZ: 3.1, maxZ: 5.05, h: 2.05, shrink: "x" },
     { id: "den", minX: -8.25, maxX: -2.15, minZ: 4.15, maxZ: 9.55, h: 2.75 },
     { id: "door-a-d", door: "a-d", minX: -5.06, maxX: -4.14, minZ: 3.1, maxZ: 5.05, h: 2.05, shrink: "x" },
+    { id: "kitchen", minX: 0.15, maxX: 6.15, minZ: -10.15, maxZ: -4.15, h: 2.8 },
+    { id: "door-b-e", door: "b-e", minX: 0.54, maxX: 1.46, minZ: -5.05, maxZ: -3.1, h: 2.05, shrink: "x" },
   ],
 }));
 /* the floor you can stand on: rectangles from zones.json. A rectangle with `door` is a doorway, open only while that door is. */
 const WALK = ZDATA.walk || [{ id: "room", minX: -HX, maxX: HX, minZ: -HZ, maxZ: HZ, h: H }];
-/* the real doors in the front wall (zones.json doors "b-c" and "a-d"). Each leaf hangs on a hinge at its left edge
-   (seen from the room) and swings away from the room. amt 0 = shut, 1 = open. */
-const DOORS = {
-  "b-c": { id: "b-c", name: "B's door", x0: 4.14, x1: 5.06, cx: 4.6, z: HZ, h: 2.05, hinge: 4.17 },     // walnut, to the garage
-  "a-d": { id: "a-d", name: "A's door", x0: -5.06, x1: -4.14, cx: -4.6, z: HZ, h: 2.05, hinge: -5.03 }, // oak, to the media room
-};
+/* the real doors, from zones.json: every door with "kind": "door" and a z plane (front wall "b-c" to the garage,
+   "a-d" to the media room; back wall "b-e" to the kitchen). Each leaf hangs on a hinge at its minX edge and swings
+   away from the room (out = +1 into z > 4, -1 into z < -4). amt 0 = shut, 1 = open. A new door is one entry there. */
+const DOORS = Object.fromEntries((ZDATA.doors || []).filter((d) => d.kind === "door" && d.plane && d.plane.z != null).map((d) => {
+  const p = d.plane;
+  return [d.id, { id: d.id, name: d.name || `door ${d.id}`, x0: p.minX, x1: p.maxX, cx: (p.minX + p.maxX) / 2, z: p.z, out: p.z < 0 ? -1 : 1, h: d.h || 2.05, hinge: p.minX + 0.03 }];
+}));
 for (const d of Object.values(DOORS)) Object.assign(d, { leaf: null, amt: 0, open: false, tapUntil: 0, remote: new Map(), meNear: false, ping: 0 });
 const DOORWAY = DOORS["b-c"];
 const door = DOORS["b-c"];   // kept for the garage tests / old handles
@@ -72,8 +80,11 @@ function clampWalk(x, z, r, anyDoor) {
   }
   return best;
 }
+/* furniture the camera must not enter (tall kitchen pieces): [minX, minZ, maxX, maxZ, minY, maxY] */
+const CAM_BLOCKS = [];
 /* is this point of air inside the world (for the camera)? */
 function airFree(x, y, z, m) {
+  for (const b of CAM_BLOCKS) if (x > b[0] - m && x < b[2] + m && z > b[1] - m && z < b[3] + m && y > b[4] - m && y < b[5] + m) return false;
   for (const w of WALK) {
     if (w.door && !doorPassable(w.door)) continue;
     const sz = w.shrink === "x" ? 0 : m;
@@ -369,7 +380,20 @@ function buildShell() {
   plane(W, D, M.ceiling, 0, H, 0, Math.PI / 2);
 
   // walls: back (z=-4) and front (z=+4) are split at the seam; side walls are wholly A or B
-  for (const [mat, cx] of [[M.wallA, -HX / 2], [M.wallB, HX / 2]]) plane(HX, H, mat, cx, H / 2, -HZ, 0, 0);
+  plane(HX, H, M.wallA, -HX / 2, H / 2, -HZ, 0, 0);
+  // B's back wall has a real opening for the kitchen door (page E) and its window is a real hole into the kitchen.
+  // One shape with holes; UVs = those of the whole half (u = x / HX, v = y / H) so nothing stretches.
+  {
+    const sh = new THREE.Shape(), backDoors = Object.values(DOORS).filter((d) => d.out < 0 && d.x0 >= 0).sort((a, b) => a.x0 - b.x0);
+    sh.moveTo(0, 0);
+    for (const d of backDoors) { sh.lineTo(d.x0, 0); sh.lineTo(d.x0, d.h); sh.lineTo(d.x1, d.h); sh.lineTo(d.x1, 0); }
+    sh.lineTo(HX, 0); sh.lineTo(HX, H); sh.lineTo(0, H); sh.closePath();
+    const w = new THREE.Path(); w.moveTo(PASS_B.x0, PASS_B.y0); w.lineTo(PASS_B.x1, PASS_B.y0); w.lineTo(PASS_B.x1, PASS_B.y1); w.lineTo(PASS_B.x0, PASS_B.y1); w.closePath();
+    sh.holes.push(w);
+    const geo = new THREE.ShapeGeometry(sh), pos = geo.attributes.position, uv = geo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / HX, pos.getY(i) / H);
+    const m = new THREE.Mesh(geo, M.wallB); m.position.set(0, 0, -HZ); m.receiveShadow = true; scene.add(m);
+  }
   // The front wall has a real opening behind each door (2.05 m): the garage (page C) behind B's walnut door and the
   // media room (page D) behind A's oak door. Three slices per half; UVs stay those of the whole half so nothing stretches.
   for (const [mat, wx0, wx1, dr] of [[M.wallA, -HX, 0, DOORS["a-d"]], [M.wallB, 0, HX, DOORS["b-c"]]]) {
@@ -385,7 +409,11 @@ function buildShell() {
 
   // baseboards and crown
   for (const z of [-HZ + 0.01, HZ - 0.01]) box(W, 0.06, 0.03, M.trim, 0, H - 0.03, z, { cast: false });
-  box(W, 0.12, 0.02, M.trim, 0, 0.06, -HZ + 0.01, { cast: false });
+  {   // back baseboard, broken at the back doors
+    let x0 = -HX;
+    for (const d of Object.values(DOORS).filter((q) => q.out < 0).sort((a, b) => a.x0 - b.x0)) { box(d.x0 - 0.06 - x0, 0.12, 0.02, M.trim, (x0 + d.x0 - 0.06) / 2, 0.06, -HZ + 0.01, { cast: false }); x0 = d.x1 + 0.06; }
+    box(HX - x0, 0.12, 0.02, M.trim, (x0 + HX) / 2, 0.06, -HZ + 0.01, { cast: false });
+  }
   for (const [x0, x1] of [[-HX, DOORS["a-d"].x0 - 0.06], [DOORS["a-d"].x1 + 0.06, DOORS["b-c"].x0 - 0.06], [DOORS["b-c"].x1 + 0.06, HX]]) box(x1 - x0, 0.12, 0.02, M.trim, (x0 + x1) / 2, 0.06, HZ - 0.01, { cast: false });
   for (const x of [-HX + 0.01, HX - 0.01]) { box(0.02, 0.12, D, M.trim, x, 0.06, 0, { cast: false }); box(0.03, 0.06, D, M.trim, x, H - 0.03, 0, { cast: false }); }
 
@@ -397,8 +425,9 @@ function buildShell() {
   for (const x of [-4, -2, 2, 4]) box(0.14, 0.16, D, M.timber, x, H - 0.08, 0);
 
   // windows on the back wall, one per side
+  // A's looks out at the sky; B's is a real window into the kitchen (page E): its clear pane is in kitchen.js
   for (const x of [-2.6, 2.6]) {
-    plane(1.3, 1.35, M.glass, x, 1.62, -HZ + 0.005);
+    if (x < 0) plane(1.3, 1.35, M.glass, x, 1.62, -HZ + 0.005);
     box(1.46, 0.08, 0.1, M.trim, x, 2.33, -HZ + 0.04);
     box(1.56, 0.05, 0.18, M.trim, x, 0.92, -HZ + 0.08);
     for (const dx of [-0.69, 0.69]) box(0.08, 1.45, 0.1, M.trim, x + dx, 1.62, -HZ + 0.04);
@@ -415,14 +444,17 @@ function buildShell() {
   }
   cyl(0.015, 0.015, 2.2, M.brass, -2.6, 2.48, -HZ + 0.16, { rz: Math.PI / 2 });
 
-  // panel doors on the front wall, both real: A's oak door swings into the media room (D), B's walnut door into the garage (C)
-  for (const [dr, mat] of [[DOORS["a-d"], M.oak], [DOORS["b-c"], M.walnut]]) {
-    box(1.04, 0.07, 0.07, M.trim, dr.cx, 2.08, HZ - 0.04);
-    for (const dx of [-0.49, 0.49]) box(0.07, 2.08, 0.07, M.trim, dr.cx + dx, 1.04, HZ - 0.04);
+  // panel doors, all real: A's oak door swings into the media room (D), B's walnut door into the garage (C), and B's
+  // maple back door into the kitchen (E). Any other door in zones.json gets a painted leaf.
+  const DOOR_MAT = { "a-d": M.oak, "b-c": M.walnut, "b-e": M.maple };
+  for (const dr of Object.values(DOORS)) {
+    const mat = DOOR_MAT[dr.id] || M.trim, fz = dr.z - 0.04 * dr.out;
+    box(1.04, 0.07, 0.07, M.trim, dr.cx, 2.08, fz);
+    for (const dx of [-0.49, 0.49]) box(0.07, 2.08, 0.07, M.trim, dr.cx + dx, 1.04, fz);
     // a leaf on a hinge, panels and a knob on both faces
     const leaf = dr.id === "b-c" ? doorLeaf : new THREE.Group();
     dr.leaf = leaf;
-    leaf.position.set(dr.hinge, 0, HZ - 0.025); scene.add(leaf);
+    leaf.position.set(dr.hinge, 0, dr.z - 0.025 * dr.out); scene.add(leaf);
     const lw = dr.x1 - 0.01 - dr.hinge;   // 0.88 m
     box(lw, 2.04, 0.045, mat, lw / 2, 1.02, 0, { parent: leaf, cast: false });
     for (const zf of [-1, 1]) {
@@ -430,7 +462,7 @@ function buildShell() {
       cyl(0.03, 0.03, 0.05, M.brass, lw - 0.1, 1.0, zf * 0.05, { rx: Math.PI / 2, parent: leaf, cast: false });
       cyl(0.04, 0.04, 0.008, M.brass, lw - 0.1, 1.0, zf * 0.026, { rx: Math.PI / 2, parent: leaf, cast: false });
     }
-    for (const y of [0.25, 1.0, 1.8]) cyl(0.012, 0.012, 0.1, M.brass, 0, y, -0.03, { parent: leaf, cast: false });   // hinge knuckles
+    for (const y of [0.25, 1.0, 1.8]) cyl(0.012, 0.012, 0.1, M.brass, 0, y, -0.03 * dr.out, { parent: leaf, cast: false });   // hinge knuckles
   }
 
   // signs on each side wall
@@ -584,6 +616,9 @@ const garage = buildGarage({ THREE, scene, M, box, cyl, plane, canvasTex, rnd, s
 /* page D: the media room behind A's door, with a computer that plays today's Heartbeat News */
 const den = buildDen({ THREE, scene, M, box, cyl, plane, canvasTex, rnd, solids, signTex, RoundedBoxGeometry });
 const tv = createNewsTV({ THREE, den, onLog: (t) => seamLog(t) });
+/* page E: the kitchen behind B's back door */
+const kitchen = buildKitchen({ THREE, scene, M, box, cyl, plane, canvasTex, rnd, solids, signTex, RoundedBoxGeometry });
+CAM_BLOCKS.push(...kitchen.camBlocks);
 
 /* ---------------------------------------------------------- the object - */
 /* One object with one id. Its state is plain JSON so it can move between
@@ -915,7 +950,7 @@ shell.on("asset-ask", () => {
    then closes. Everyone computes "near" from the shared positions, and taps / my own approach go out as world events
    ("door", with the door's id) so a browser whose peer list lags still agrees. */
 const DOOR_NEAR = 1.5, DOOR_TAP_MS = 8000;
-function nearDoor(x, z, d) { d = d || door; return Math.hypot(x - d.cx, z - (d.z + 0.07)) < DOOR_NEAR; }
+function nearDoor(x, z, d) { d = d || door; return Math.hypot(x - d.cx, z - (d.z + 0.07 * d.out)) < DOOR_NEAR; }
 function anyoneNearDoor(d) {
   d = d || door;
   if (nearDoor(player.x, player.z, d)) return true;
@@ -949,7 +984,7 @@ function stepDoor(dt) {
     d.open = anyoneNearDoor(d) || now < d.tapUntil;
     d.amt = clampN(d.amt + (d.open ? 1 : -1) * dt / 0.6, 0, 1);
     const e = d.amt * d.amt * (3 - 2 * d.amt);   // ease in-out over 0.6 s
-    d.leaf.rotation.y = -e * Math.PI / 2;
+    d.leaf.rotation.y = -d.out * e * Math.PI / 2;
   }
 }
 shell.on("garage-light", (m) => { if (m && typeof m.on === "boolean") garage.setLights(m.on); });
@@ -1308,5 +1343,5 @@ window.__seam = {
   get bubbles() { return [...bubbles.entries()].map(([id, b]) => ({ id, text: b.text, dots: b.dots })); },
   get chat() { return chatLines.slice(); }, get canTalk() { return canTalk; },
   teleport(x, z) { player.x = x; player.z = z; },
-  door, doors: DOORS, tapDoor, garage, tapSwitch, renderer, camera, scene, walk: WALK, den, tv,
+  door, doors: DOORS, tapDoor, garage, tapSwitch, renderer, camera, scene, walk: WALK, den, tv, kitchen,
 };
