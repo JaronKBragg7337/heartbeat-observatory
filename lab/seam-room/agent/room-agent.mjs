@@ -78,14 +78,53 @@ const SOLIDS = [
   [-5.42, 8.79, -3.78, 9.55], [-4.92, 8.05, -4.28, 8.69], [-7.95, 8.1, -6.75, 9.3], [-6.8, 8.95, -6.3, 9.45], [-8.25, 4.37, -7.89, 5.87], [-2.82, 4.35, -2.32, 4.85],
   // the kitchen (page E, kitchen.js): back counter run, side run with the range, fridge, island, stools, plant
   [1.13, -10.15, 5.6, -9.48], [5.48, -10.15, 6.15, -5.45], [5.35, -5.48, 6.15, -4.44], [2.2, -8.1, 4.4, -6.95], [2.45, -7.0, 4.15, -6.55], [0.15, -10.15, 0.87, -9.43],
+  // the gym (page F, gym.js): bleachers on the west wall, the two hoop bases, team benches, ball rack
+  [-32.4, -4.2, -28.35, 17.9], [-19.65, -9.7, -18.15, -7.45], [-19.65, 21.15, -18.15, 23.4], [-9.3, 0.1, -8.4, 4.4], [-9.3, 9.3, -8.4, 13.6], [-9.25, 19.63, -8.4, 20.87],
 ];
 /* the floor (zones.json "walk"): room, garage (behind B's door), media room (behind A's door), kitchen (behind B's back
    door) and the doorways between
    them. The AI's own approach opens a door for everyone. `links` says which two floors a doorway joins. */
 const WALK = ZDATA.walk || [{ id: "room", minX: -HX, maxX: HX, minZ: -HZ, maxZ: HZ }];
 const touches = (d, w) => d.minX < w.maxX && d.maxX > w.minX && d.minZ < w.maxZ && d.maxZ > w.minZ;
-const DOORWAYS = WALK.filter((w) => w.door).map((w) => ({ ...w, cx: (w.minX + w.maxX) / 2,
-  links: w.links || WALK.filter((q) => !q.door && touches(w, q)).map((q) => q.id) }));
+/* a doorway in a z wall (shrink "x") is crossed along z; one in an x wall (shrink "z", e.g. the media room's side door to
+   the gym) is crossed along x. `ax` = the axis you walk along through it, `c` = its centre across that axis. */
+const DOORWAYS = WALK.filter((w) => w.door).map((w) => {
+  const ax = w.shrink === "z" ? "x" : "z";
+  return { ...w, ax, cx: (w.minX + w.maxX) / 2, cz: (w.minZ + w.maxZ) / 2,
+    links: w.links || WALK.filter((q) => !q.door && touches(w, q)).map((q) => q.id) };
+});
+/* floors joined by doorways, as a graph: the first doorway on the fewest-doors way from floor a to floor b
+   (den <-> garage = 2 doors through the room; room A <-> gym = 2 doors through the media room) */
+function firstDoorway(a, b) {
+  if (a === b) return null;
+  const prev = new Map([[a, null]]), q = [a];
+  while (q.length) {
+    const cur = q.shift();
+    if (cur === b) break;
+    for (const d of DOORWAYS) {
+      if (!d.links.includes(cur)) continue;
+      const nxt = d.links.find((l) => l !== cur);
+      if (nxt && !prev.has(nxt)) { prev.set(nxt, { from: cur, d }); q.push(nxt); }
+    }
+  }
+  if (!prev.has(b)) return null;
+  let step = prev.get(b);
+  while (step && step.from !== a) step = prev.get(step.from);
+  return step ? step.d : null;
+}
+const floorRect = (id) => WALK.find((q) => q.id === id && !q.door);
+/* the two ends of a doorway, 0.15 m inside it: the one on floor `id`'s side, and the other */
+function doorEnds(dw, id) {
+  const w = floorRect(id);
+  if (dw.ax === "z") {
+    const near = (w.minZ + w.maxZ) / 2 < dw.cz ? dw.minZ + 0.15 : dw.maxZ - 0.15, far = near < dw.cz ? dw.maxZ - 0.15 : dw.minZ + 0.15;
+    return { near: { x: dw.cx, z: near }, far: { x: dw.cx, z: far } };
+  }
+  const near = (w.minX + w.maxX) / 2 < dw.cx ? dw.minX + 0.15 : dw.maxX - 0.15, far = near < dw.cx ? dw.maxX - 0.15 : dw.minX + 0.15;
+  return { near: { x: near, z: dw.cz }, far: { x: far, z: dw.cz } };
+}
+const inDoorway = (dw, p, m) => p.x >= dw.minX - m && p.x <= dw.maxX + m && p.z >= dw.minZ - m && p.z <= dw.maxZ + m;
+const onDoorLine = (dw, p) => (dw.ax === "z" ? Math.abs(p.x - dw.cx) < 0.12 : Math.abs(p.z - dw.cz) < 0.12) && inDoorway(dw, p, 0.05);
 const areaOf = (x, z) => { const w = WALK.find((q) => !q.door && x >= q.minX && x <= q.maxX && z >= q.minZ && z <= q.maxZ); return w ? w.id : null; };
 const PEER_COLORS = ["#4fa3ff", "#5fd38d", "#f6b45b", "#e36d7c", "#a67cff", "#47c7b8", "#f0d461", "#d987e8"];
 const MAX_TEXT = 280;
@@ -109,41 +148,37 @@ function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function clampToRoom(x, z) {   // nearest point on the floor (room.js clampWalk)
+function clampToRoom(x, z) {   // nearest point on the floor (room.js clampWalk + rectClamp: a doorway shrinks only across its door)
   let best = null, bd = Infinity;
   for (const w of WALK) {
-    const sz = w.shrink === "x" ? 0 : R;
-    const p = { x: clamp(x, w.minX + R, w.maxX - R), z: clamp(z, w.minZ + sz, w.maxZ - sz) }, d = (p.x - x) ** 2 + (p.z - z) ** 2;
+    const sz = w.shrink === "x" ? 0 : R, sx = w.shrink === "z" ? 0 : R;
+    const p = { x: clamp(x, w.minX + sx, w.maxX - sx), z: clamp(z, w.minZ + sz, w.maxZ - sz) }, d = (p.x - x) ** 2 + (p.z - z) ** 2;
     if (d < bd) { bd = d; best = p; }
   }
   return best;
 }
-/* simple doorway routing: if the goal is in another area (room <-> garage, room <-> media room), go to the door's near
-   side, straight through the middle of it, then on to the goal. Garage <-> media room goes through the room (two hops). */
+/* doorway routing: if the goal is on another floor, take the first door on the fewest-doors way there (firstDoorway):
+   go to that door's near side, straight through the middle of it, then on (the next door, or the goal). Works for doors
+   in z walls (A's, B's, B's back door) and x walls (the media room's side door to the gym). */
 function hop(from, goal) {
   const a = areaOf(from.x, from.z), b = areaOf(goal.x, goal.z);
-  if (!a && b) {   // standing in a doorway (inside the wall): if it does not lead to the goal's floor, step out to the hub side
-    const dw = DOORWAYS.find((d) => from.x >= d.minX - 0.05 && from.x <= d.maxX + 0.05 && from.z >= d.minZ - 0.05 && from.z <= d.maxZ + 0.05);
+  if (!a && b) {   // standing in a doorway (inside the wall): if it does not lead to the goal's floor, step out on the side that does
+    const dw = DOORWAYS.find((d) => inDoorway(d, from, 0.05));
     if (!dw || dw.links.includes(b)) return goal;
-    const via = dw.links.find((l) => DOORWAYS.some((o) => o !== dw && o.links.includes(l) && o.links.includes(b)));
-    const w = via && WALK.find((q) => q.id === via && !q.door);
-    if (!w) return goal;
-    return { x: dw.cx, z: (w.minZ + w.maxZ) / 2 < (dw.minZ + dw.maxZ) / 2 ? dw.minZ + 0.15 : dw.maxZ - 0.15 };
+    const via = dw.links.find((l) => firstDoorway(l, b) !== dw) || dw.links[0];
+    return doorEnds(dw, via).near;
   }
   if (!a || !b) return goal;
   if (a === b) return segClear(from, goal) ? goal : (detour(from, goal) || goal);   // same floor: around furniture
-  const dw = DOORWAYS.find((d) => d.links.includes(a) && d.links.includes(b)) || DOORWAYS.find((d) => d.links.includes(a));
+  const dw = firstDoorway(a, b) || DOORWAYS.find((d) => d.links.includes(a));
   if (!dw) return goal;
-  const mid = (id) => { const w = WALK.find((q) => q.id === id && !q.door); return (w.minZ + w.maxZ) / 2; };
-  const nearSide = { x: dw.cx, z: mid(a) < (dw.minZ + dw.maxZ) / 2 ? dw.minZ + 0.15 : dw.maxZ - 0.15 };
-  const farSide = { x: dw.cx, z: nearSide.z < (dw.minZ + dw.maxZ) / 2 ? dw.maxZ - 0.15 : dw.minZ + 0.15 };
-  const lined = Math.abs(from.x - dw.cx) < 0.12 && from.z >= dw.minZ - 0.05 && from.z <= dw.maxZ + 0.05;
-  if (lined) return farSide;
+  const { near: nearSide, far: farSide } = doorEnds(dw, a);
+  if (onDoorLine(dw, from)) return farSide;
   // furniture between me and the door: first try an L-shaped way (both legs clear), e.g. out of the kitchen past the island
   if (!segClear(from, nearSide)) { const c = detour(from, nearSide); if (c) return c; }
   // in the room, furniture can sit between me and the door: if the straight line is blocked, use the clear lane
   // across the middle of the room (z = HUB_Z), then walk up the door's own lane
-  if (a === "room" && !segClear(from, nearSide)) {
+  if (a === "room" && dw.ax === "z" && !segClear(from, nearSide)) {
     if (Math.abs(from.x - dw.cx) < 0.15) return nearSide;
     const lane = { x: dw.cx, z: HUB_Z }, down = { x: from.x, z: HUB_Z };
     if (Math.abs(from.z - HUB_Z) <= 0.15 || segClear(from, lane)) return lane;
@@ -768,7 +803,10 @@ const HELP = `Seam Room character (only Jaron can talk to it)
   walk-to <x> <z> | walk-to <name>  walk (room x -6..6, z -4..4: x < 0 is page A, x >= 0 page B; the garage,
                                     page C, is x 2.15..8.45, z 4.15..10.35 through B's door at x 4.6, z 4; the media
                                     room, page D, is x -8.25..-2.15, z 4.15..9.55 through A's door at x -4.6, z 4;
-                                    its news TV is on the far wall at x -4.6)
+                                    its news TV is on the far wall at x -4.6; the kitchen, page E, is x 0.15..6.15,
+                                    z -10.15..-4.15 through B's back door at x 1, z -4; the gym, page F, is
+                                    x -32.4..-8.4, z -10.15..23.85 through the media room's side door at x -8.25,
+                                    z 6.85 (court centre x -18.9, z 6.85; hoops at z -5.6 and 19.3))
   face <name>                       turn toward someone
   pick-up <assetId|nearest>         walk to the log/chair and pick it up
   carry-to <x> <z>                  carry it there (picks it up first if needed)

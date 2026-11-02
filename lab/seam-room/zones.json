@@ -4,7 +4,8 @@
   "fallback": "a",
   "zones": [
     { "id": "a", "label": "A", "url": "/lab/seam-room/a/", "title": "Seam Room · Page A - Heartbeat Observatory",
-      "bounds": { "maxX": 0, "minZ": -4, "maxZ": 4 }, "spawn": { "x": -3.6, "z": 1.2, "yaw": -1.5708 } },
+      "bounds": { "minX": -6.5, "maxX": 0, "minZ": -4, "maxZ": 4 }, "spawn": { "x": -3.6, "z": 1.2, "yaw": -1.5708 },
+      "note": "minX -6.5 (was open): the gym (page F) lies west of x = -8.4 across these same z values." },
     { "id": "b", "label": "B", "url": "/lab/seam-room/b/", "title": "Seam Room · Page B - Heartbeat Observatory",
       "bounds": { "minX": 0, "minZ": -4, "maxZ": 4 }, "spawn": { "x": 3.6, "z": 1.2, "yaw": 1.5708 } },
     { "id": "c", "label": "C", "name": "Garage", "module": "garage.js", "v": 1, "url": "/lab/seam-room/c/", "title": "Seam Room · Garage (Page C) - Heartbeat Observatory",
@@ -15,7 +16,10 @@
       "note": "The media room behind A's oak door, the garage's mirror on the other side. 6.1 m wide x 5.4 m deep x 2.75 m tall inside (x -8.25..-2.15, z 4.15..9.55). Built by den.js in the same scene as the room. The computer on the desk plays today's Heartbeat News (Supabase bucket news-video, index.json)." },
     { "id": "e", "label": "E", "name": "Kitchen", "module": "kitchen.js", "v": 1, "url": "/lab/seam-room/e/", "title": "Seam Room · Kitchen (Page E) - Heartbeat Observatory",
       "bounds": { "minX": 0, "maxX": 6.5, "minZ": -10.5, "maxZ": -4 }, "spawn": { "x": 2.0, "z": -6.3, "yaw": -0.6 },
-      "note": "The kitchen behind B's back wall (new door at x 0.54..1.46). 6.0 m wide x 6.0 m deep x 2.8 m tall inside (x 0.15..6.15, z -10.15..-4.15). Built by kitchen.js in the same scene as the room. B's back window looks into it." }
+      "note": "The kitchen behind B's back wall (new door at x 0.54..1.46). 6.0 m wide x 6.0 m deep x 2.8 m tall inside (x 0.15..6.15, z -10.15..-4.15). Built by kitchen.js in the same scene as the room. B's back window looks into it." },
+    { "id": "f", "label": "F", "name": "Gym", "module": "gym.js", "v": 1, "url": "/lab/seam-room/f/", "title": "Seam Room · Gym (Page F) - Heartbeat Observatory",
+      "bounds": { "minX": -32.6, "maxX": -8.4, "minZ": -10.4, "maxZ": 24.1 }, "spawn": { "x": -11.2, "z": 6.85, "yaw": 1.5708 },
+      "note": "The gym behind the media room's side door (d-side, next to the bookshelf). 24 m x 34 m x 9.5 m inside (x -32.4..-8.4, z -10.15..23.85), a full 28 x 15 m court along z (centre x -18.9, z 6.85), hoops at z -5.575 and 19.275, bleachers on the west wall. Built by gym.js in the same scene as the room. The ball is synced as world events gym-ball / gym-ask." }
   ],
   "doors": [
     { "id": "middle", "between": ["a", "b"], "kind": "open seam", "plane": { "x": 0, "minZ": -4, "maxZ": 4 },
@@ -28,8 +32,8 @@
       "note": "B's maple panel door in the back wall, left of the window. Swings into the kitchen when anyone is within 1.5 m or taps it; synced with the world event \"door\" (id \"b-e\"). room.js builds every \"kind\": \"door\" entry with a z plane as a real swinging door (hinge at minX, swings away from the room)." },
     { "id": "c-outside", "between": ["c", "outside"], "kind": "roll-up garage door (closed)", "plane": { "z": 10.35, "minX": 3.75, "maxX": 8.25 },
       "note": "FUTURE door to the outside. The next page (a town) goes beyond z = 10.35. The roll-up door is drawn closed; the walk area stops at it." },
-    { "id": "d-side", "between": ["d", "future"], "kind": "panel door (closed, future)", "plane": { "x": -8.25, "minZ": 6.39, "maxZ": 7.31 },
-      "note": "FUTURE door: a new page goes beyond x = -8.25 (the media room's side wall, opposite the window). Drawn as a closed green panel door with a 'coming soon' plaque; a tap rattles it. No hole in the wall and no walk area yet: to make it a page, cut the opening in den.js (like A's door), add a zone + a walk rectangle with door \"d-side\", and a leaf in room.js DOORS." },
+    { "id": "d-side", "between": ["d", "f"], "kind": "door", "name": "the gym door", "wood": "maple", "plane": { "x": -8.25, "minZ": 6.39, "maxZ": 7.31 },
+      "note": "The media room's side door, next to the bookshelf (x = -8.25 wall). Was a green 'coming soon' door; now real: den.js openDoor() cuts the wall, the maple leaf swings into the gym (page F) within 1.5 m or on a tap, synced as world event \"door\" (id \"d-side\")." },
     { "id": "d-back", "between": ["d", "future"], "kind": "panel door (closed, future)", "plane": { "z": 9.55, "minX": -3.41, "maxX": -2.49 },
       "note": "FUTURE door: a new page goes beyond z = 9.55 (the media room's far wall, right of the desk). Same as d-side: closed, 'coming soon', blocked until a page is built behind it." }
   ],
@@ -40,6 +44,8 @@
     { "id": "den", "minX": -8.25, "maxX": -2.15, "minZ": 4.15, "maxZ": 9.55, "h": 2.75 },
     { "id": "door-a-d", "door": "a-d", "links": ["room", "den"], "minX": -5.06, "maxX": -4.14, "minZ": 3.1, "maxZ": 5.05, "h": 2.05, "shrink": "x" },
     { "id": "kitchen", "minX": 0.15, "maxX": 6.15, "minZ": -10.15, "maxZ": -4.15, "h": 2.8 },
-    { "id": "door-b-e", "door": "b-e", "links": ["room", "kitchen"], "minX": 0.54, "maxX": 1.46, "minZ": -5.05, "maxZ": -3.1, "h": 2.05, "shrink": "x" }
+    { "id": "door-b-e", "door": "b-e", "links": ["room", "kitchen"], "minX": 0.54, "maxX": 1.46, "minZ": -5.05, "maxZ": -3.1, "h": 2.05, "shrink": "x" },
+    { "id": "gym", "minX": -32.4, "maxX": -8.4, "minZ": -10.15, "maxZ": 23.85, "h": 9.5 },
+    { "id": "door-d-side", "door": "d-side", "links": ["den", "gym"], "minX": -9.35, "maxX": -7.3, "minZ": 6.39, "maxZ": 7.31, "h": 2.05, "shrink": "z" }
   ]
 }

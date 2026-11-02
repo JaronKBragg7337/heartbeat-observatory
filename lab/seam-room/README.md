@@ -35,10 +35,10 @@ first log. When the log becomes a chair, `kind` changes but the ID does not. "Re
 
 - `zones.json` - the zones and doors, as data; each zone names its scene `module` (+ `v`). `agent/` - the AI character (see above).
 - `garage.js` - page C (the garage). `den.js` - page D (the media room) and the Heartbeat News player on its computer.
-  `kitchen.js` - page E (the kitchen behind B's back door).
+  `kitchen.js` - page E (the kitchen behind B's back door). `gym.js` - page F (the gym behind the media room's side door).
 - `seam.js` - the reusable piece. No three.js, no room, no network. Exposes `Seam.define({...})`.
 - `room.js` - this room: scene, player, peers, the object, the card, the log, the doors.
-- `room.css` - shared styles. `a/` .. `e/` `index.html` - the real entry pages (identical apart from the letter and title).
+- `room.css` - shared styles. `a/` .. `f/` `index.html` - the real entry pages (identical apart from the letter and title).
 - `index.html` - sends `/lab/seam-room/` to `/a/`.
 - Body model: `/lab/bedroom/person.glb` (walk + idle clips), shared, not copied.
 
@@ -207,6 +207,45 @@ kitchen at `/lab/seam-room/e/`.
   range, behind the island, fridge; kitchen -> garage car, den TV, chopping block; garage <-> den): all arrive. A running
   character keeps its old code until it is restarted.
 
+## Page F: the gym (2026-11-01, Jaron asked from inside the room)
+
+"Can the door by the bookshelf open to a new page and that page be a giant gym? Basketball court?" The media room's
+future door `d-side` (x = -8.25 wall, right next to the bookshelf) is a real maple door now, and behind it is a gym at
+`/lab/seam-room/f/`. It was the first room to arrive by the hot-load: anyone standing in D sees the green door become real.
+
+- **Size:** 24 x 34 m inside, 9.5 m to the roof deck (x -32.4..-8.4, z -10.15..23.85), west of the media room. Zone A got
+  `minX: -6.5` in zones.json (it was open to the west, and the gym sits at the same z).
+- **The court:** a full FIBA court (28 x 15 m) along z, centre x -18.9, z 6.85. Polished maple strips, and ONE markings
+  texture (68 px per metre) with the lines, navy keys and border, both three-point lines (6.75 m arc, 0.9 m from the
+  sidelines), free-throw circles (dashed inside the key), no-charge arcs, lane marks, a gold centre circle ("PAGE F") and
+  "THE SEAM ROOM" in the border.
+- **Hoops:** two portable units (padded base, padded pole, boom and brace, 1.8 x 1.05 m glass board with white lines,
+  rim at 3.05 m, net), navy wall pads behind each on the end walls. Seven-row bleachers on the west wall (one extruded
+  stepped deck, wood benches in three sections, two aisles with half-steps and yellow nosing, rails; the seat brackets
+  are one InstancedMesh), a scoreboard above them, clerestory windows on both long walls, six skylights, steel trusses
+  and purlins, fifteen high-bay lights, eight banners (one atlas), team benches, a ball rack (instanced balls), an EXIT
+  sign over the door and the "PAGE F" sign.
+- **Phone budget:** 31 meshes for the whole gym (everything static merged per material), no shadow casters and NO new
+  light (a light big enough for the hall would shine through the walls into D and A and recompile every shader); the
+  room's hemisphere and sun light it, the fixtures, windows and skylights glow. ~25-30 draw calls inside.
+- **Rooms you cannot see are not drawn (room.js, new):** the world is one scene, so from the gym looking east the whole
+  house was in view (770 draw calls). A zone group is drawn only if it is reachable from the camera's or player's zone
+  through an open door, the A|B seam or B's window (3 rooms deep). Gym looking east: 23 calls; A looking at the den: 145
+  (was 385). gym.js does the same from its own side when the room.js it runs in is older (no `world.culls`).
+- **The ball:** tap it within 2.4 m (or Use / E) to pick it up; walking dribbles it. Tap anywhere (or Use / E) to shoot
+  at the nearer hoop: a real arc with aim error that grows with distance, then physics (floor, walls, bleacher steps,
+  boards, bases, poles, rims as a torus, net drag). Makes swish the net and count on the scoreboard (HOME = north hoop,
+  GUEST = south; 3 from beyond the arc). Synced as world events `gym-ball` (the throw's start + velocity, so every
+  browser flies the same arc; rev orders changes) and `gym-ask` (a newcomer asks). Spot + score saved per browser.
+  Simulated 40 shots per spot: layup ~85-98%, free throw ~45%, three ~20%, half court ~5%; every flight rests within
+  10 s, none leave the gym. The ball stays in the gym (carry it to the door and it is set down there).
+- **Zone kit (room.js, new):** modules now get `world` (player, camera, shell, zone, peers, asset, doors) and `log()`.
+  gym.js falls back to `window.__seam` so it also runs in a room.js opened before this.
+- **The AI** routes through doors in x walls too, and chains any number of doors (fewest-doors path over the walk
+  graph): A -> D -> F, kitchen -> B -> A -> D -> F, garage -> gym all arrive (23 named trips, 400 random trips with
+  and without the gym). It knows the bleachers, hoop bases, benches and rack. A running character keeps its old code
+  until it is restarted.
+
 ## New rooms without a reload (2026-11-01, Jaron asked)
 
 Someone standing in the room when a new zone deploys sees it arrive, no reload. room.js fetches `zones.json`
@@ -246,7 +285,7 @@ and tracks presence once per connection (law 1). A running `join` keeps its old 
    whoever is online right now. If everyone leaves, a new visitor starts from their own copy (or `SR1-A-LOG-0001`). It
    needs a table (one row per asset ID: kind, born, visited, changes, rev), with the channel used only for live moves.
    Same lesson as Ashgrove's D6: decide this before building the 3-page road.
-2. **More than 5 zones** - five are tested (A, B, garage C, media room D, kitchen E). The AI's routing is door-to-door through the room; a page behind a page (e.g. behind `d-back`) needs the routing to chain more hops.
+2. **More zones** - six are tested (A, B, garage C, media room D, kitchen E, gym F). The AI's routing chains doors now.
 3. **True separate-page loads with different code per zone** - both pages load the same `room.js`. A zone that needs its
    own heavy scene (a factory) would need either lazy-loading per zone or a real navigation, and the handoff then
    needs the server state from step 1.

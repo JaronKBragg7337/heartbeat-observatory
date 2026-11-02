@@ -4,7 +4,8 @@
    One room, two real pages. x < 0 is /lab/seam-room/a/, x >= 0 is
    /lab/seam-room/b/; behind B's walnut door is the garage (/c/, garage.js),
    behind A's oak door the media room (/d/, den.js), behind B's back door the
-   kitchen (/e/, kitchen.js). Every page loads this
+   kitchen (/e/, kitchen.js), behind the media room's side door the gym (/f/,
+   gym.js). Every page loads this
    file; the URL decides where you spawn. seam.js flips the URL as you walk. The shell (HBShell) carries the
    player, input, identity and the ONE realtime channel ("hb-seam-room") that
    both pages share, which is what makes it one room.
@@ -36,14 +37,16 @@ let zonesText = "";   // the zones.json text last applied; the hot-load poll com
 const ZDATA = await fetch(ZONES_URL + "?v=" + Date.now(), { cache: "no-store" }).then((r) => r.text()).then((t) => { const d = JSON.parse(t); zonesText = t; return d; }).catch(() => ({
   hysteresis: 0.3, fallback: "a",
   zones: [
-    { id: "a", label: "A", url: "/lab/seam-room/a/", title: "Seam Room · Page A - Heartbeat Observatory", bounds: { maxX: 0, minZ: -4, maxZ: 4 }, spawn: { x: -3.6, z: 1.2, yaw: -Math.PI / 2 } },
+    { id: "a", label: "A", url: "/lab/seam-room/a/", title: "Seam Room · Page A - Heartbeat Observatory", bounds: { minX: -6.5, maxX: 0, minZ: -4, maxZ: 4 }, spawn: { x: -3.6, z: 1.2, yaw: -Math.PI / 2 } },
     { id: "b", label: "B", url: "/lab/seam-room/b/", title: "Seam Room · Page B - Heartbeat Observatory", bounds: { minX: 0, minZ: -4, maxZ: 4 }, spawn: { x: 3.6, z: 1.2, yaw: Math.PI / 2 } },
     { id: "c", label: "C", name: "Garage", module: "garage.js", url: "/lab/seam-room/c/", title: "Seam Room · Garage (Page C) - Heartbeat Observatory", bounds: { minX: 2, maxX: 8.6, minZ: 4, maxZ: 10.5 }, spawn: { x: 3.9, z: 6.6, yaw: Math.PI } },
     { id: "d", label: "D", name: "Media Room", module: "den.js", v: 2, url: "/lab/seam-room/d/", title: "Seam Room · Media Room (Page D) - Heartbeat Observatory", bounds: { minX: -8.4, maxX: -2, minZ: 4, maxZ: 9.7 }, spawn: { x: -4.3, z: 6.1, yaw: Math.PI } },
     { id: "e", label: "E", name: "Kitchen", module: "kitchen.js", url: "/lab/seam-room/e/", title: "Seam Room · Kitchen (Page E) - Heartbeat Observatory", bounds: { minX: 0, maxX: 6.5, minZ: -10.5, maxZ: -4 }, spawn: { x: 2.0, z: -6.3, yaw: -0.6 } },
+    { id: "f", label: "F", name: "Gym", module: "gym.js", url: "/lab/seam-room/f/", title: "Seam Room · Gym (Page F) - Heartbeat Observatory", bounds: { minX: -32.6, maxX: -8.4, minZ: -10.4, maxZ: 24.1 }, spawn: { x: -11.2, z: 6.85, yaw: Math.PI / 2 } },
   ],
   doors: [{ id: "middle", between: ["a", "b"], plane: { x: 0, minZ: -4, maxZ: 4 } }, { id: "b-c", between: ["b", "c"], kind: "door", name: "B's door", plane: { z: 4, minX: 4.14, maxX: 5.06 } },
-    { id: "a-d", between: ["a", "d"], kind: "door", name: "A's door", plane: { z: 4, minX: -5.06, maxX: -4.14 } }, { id: "b-e", between: ["b", "e"], kind: "door", name: "B's back door", plane: { z: -4, minX: 0.54, maxX: 1.46 } }],
+    { id: "a-d", between: ["a", "d"], kind: "door", name: "A's door", plane: { z: 4, minX: -5.06, maxX: -4.14 } }, { id: "b-e", between: ["b", "e"], kind: "door", name: "B's back door", plane: { z: -4, minX: 0.54, maxX: 1.46 } },
+    { id: "d-side", between: ["d", "f"], kind: "door", name: "the gym door", wood: "maple", plane: { x: -8.25, minZ: 6.39, maxZ: 7.31 } }],
   walk: [
     { id: "room", minX: -6, maxX: 6, minZ: -4, maxZ: 4, h: 2.9 },
     { id: "garage", minX: 2.15, maxX: 8.45, minZ: 4.15, maxZ: 10.35, h: 2.8 },
@@ -52,6 +55,8 @@ const ZDATA = await fetch(ZONES_URL + "?v=" + Date.now(), { cache: "no-store" })
     { id: "door-a-d", door: "a-d", minX: -5.06, maxX: -4.14, minZ: 3.1, maxZ: 5.05, h: 2.05, shrink: "x" },
     { id: "kitchen", minX: 0.15, maxX: 6.15, minZ: -10.15, maxZ: -4.15, h: 2.8 },
     { id: "door-b-e", door: "b-e", minX: 0.54, maxX: 1.46, minZ: -5.05, maxZ: -3.1, h: 2.05, shrink: "x" },
+    { id: "gym", minX: -32.4, maxX: -8.4, minZ: -10.15, maxZ: 23.85, h: 9.5 },
+    { id: "door-d-side", door: "d-side", links: ["den", "gym"], minX: -9.35, maxX: -7.3, minZ: 6.39, maxZ: 7.31, h: 2.05, shrink: "z" },
   ],
 }));
 /* the floor you can stand on: rectangles from zones.json. A rectangle with `door` is a doorway, open only while that door is. */
@@ -718,11 +723,19 @@ buildShell(); buildSideA(); buildSideB(); buildLights();
    with the room's helpers. The same path runs at load and when a zone arrives later (the hot-load), so a module
    never needs to know which. A built zone may return: camBlocks (camera keep-outs), tick(dt), openDoor(id, door)
    (cut an opening in ITS OWN wall for a door that just became real; return true), plus anything room.js uses by name
-   (garage: switchMesh/setLights/lightsOn; den: screenHits/future/rattle, and den.js's createNewsTV). */
+   (garage: switchMesh/setLights/lightsOn; den: screenHits/future/rattle, and den.js's createNewsTV).
+   The kit also carries `world` (live getters: player, camera, shell, zone, peers, asset, doors; `culls` = this room.js
+   hides zones nobody can see, so a module need not) and `log(text)` (one line in the seam log). A zone that wants
+   input or world events (the gym's ball) uses those; older room.js builds had neither, so modules fall back. */
 let garage = null, den = null, kitchen = null;
 const TV_OFF = { tap() {}, update() {}, near: () => false, prompt: () => "", start() {}, stop() {}, setSound() {}, get state() { return {}; } };
 let tv = TV_OFF;
 const zoneKey = (z) => (z.module ? `${z.module}?v=${z.v || 1}` : "");
+const WORLD = {
+  culls: true, camera,
+  get player() { return player; }, get shell() { return shell; }, get zone() { return zoneId; }, get peers() { return lastPeers; },
+  get asset() { return asset; }, get doors() { return DOORS; },
+};
 function importZone(z) {
   if (!/^[\w-]+\.js$/.test(z.module || "")) return Promise.reject(new Error(`zone ${z.id}: bad module "${z.module}"`));
   return import(`/lab/seam-room/${z.module}?v=${z.v || 1}`);
@@ -736,7 +749,7 @@ function buildZone(z, mod) {
   const s0 = solids.length;
   let built;
   try {
-    built = fn({ THREE, scene: group, M, canvasTex, rnd, solids, signTex, RoundedBoxGeometry,
+    built = fn({ THREE, scene: group, M, canvasTex, rnd, solids, signTex, RoundedBoxGeometry, world: WORLD, log: (t) => seamLog(t),
       box: (w, h, d, mat, x, y, zz, o) => box(w, h, d, mat, x, y, zz, inGroup(o)),
       cyl: (r1, r2, h, mat, x, y, zz, o) => cyl(r1, r2, h, mat, x, y, zz, inGroup(o)),
       plane: (w, h, mat, x, y, zz, rx, ry, parent) => plane(w, h, mat, x, y, zz, rx, ry, parent || group) }) || {};
@@ -1569,6 +1582,36 @@ async function pollZones(force) {
 setInterval(() => { if (!document.hidden) void pollZones(); }, ZONES_POLL_MS);
 document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - zonesLastPoll > ZONES_POLL_MS) void pollZones(); });
 
+/* ------------------------------------------------ rooms you cannot see - */
+/* The world is one scene and three.js does not know walls hide things, so from the gym looking east the whole house
+   (garage, media room, room) was in view: ~770 draw calls. A zone's group is drawn only if it can be seen from where
+   the camera or the player is: through an open door (amt > 0), the open seam A|B, or a window, up to 3 rooms away.
+   The room itself (A and B, not a zone group) is always drawn. */
+function zoneLinks() {
+  const out = [];
+  for (const d of DOORDATA) {
+    if (!d || !Array.isArray(d.between) || d.between.length !== 2) continue;
+    if (/open seam/i.test(d.kind || "")) out.push([d.between[0], d.between[1], null]);
+    else if (DOORS[d.id]) out.push([d.between[0], d.between[1], DOORS[d.id]]);
+  }
+  for (const w of WINDOWS) out.push([/A$/.test(w.wall) ? "a" : "b", w.into, null]);
+  return out;
+}
+function cullZones() {
+  const links = zoneLinks();
+  const seen = new Set([zoneId, zoneAt(camera.position.x, camera.position.z)]);
+  let edge = [...seen];
+  for (let hop = 0; hop < 3 && edge.length; hop++) {
+    const next = [];
+    for (const [a, b, dr] of links) {
+      if (dr && dr.amt <= 0.001) continue;
+      for (const [u, v] of [[a, b], [b, a]]) if (edge.includes(u) && !seen.has(v)) { seen.add(v); next.push(v); }
+    }
+    edge = next;
+  }
+  for (const e of Object.values(BUILT)) e.group.visible = seen.has(e.id);
+}
+
 /* --------------------------------------------------------------- loop - */
 const clock = new THREE.Clock();
 let t = 0;
@@ -1591,6 +1634,7 @@ renderer.setAnimationLoop(() => {
   placeAsset(t);
   updatePrompt();
   placeCamera(dt);
+  cullZones();
   renderer.render(scene, camera);
 });
 
