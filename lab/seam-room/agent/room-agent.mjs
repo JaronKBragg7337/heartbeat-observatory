@@ -82,6 +82,8 @@ const SOLIDS = [
   [-32.4, -4.2, -28.35, 17.9], [-19.65, -9.7, -18.15, -7.45], [-19.65, 21.15, -18.15, 23.4], [-9.3, 0.1, -8.4, 4.4], [-9.3, 9.3, -8.4, 13.6], [-9.25, 19.63, -8.4, 20.87],
   // the hallway (page G, hallway.js): the console by the way in, the bench under the far window, the plant in the corner
   [-1.87, 10.25, -1.45, 11.65], [-3.6, 49.2, -2.3, 49.7], [-4.45, 49.15, -3.9, 49.7],
+  // the closet (page H, closet.js): the shirts (south wall), the coats (north wall), the shoe rack under the mirror, the basket
+  [-1.3, 11.5, 1.2, 12.12], [-1.3, 13.88, 1.2, 14.5], [0.86, 12.2, 1.2, 13.8], [0.2, 13.38, 0.7, 13.88],
 ];
 /* "door:g-3" (or "door 3", "door:d-back"): the spot 0.8 m in front of that door, on the side of the first zone in its
    `between` (the hallway side for g-1..g-10), so the AI can be sent to any numbered door */
@@ -153,7 +155,22 @@ const SELF_FILE = fileURLToPath(import.meta.url);
 const slug = (s) => String(s || "agent").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "agent";
 const dirFor = (name) => path.join(HOME, slug(name));
 const stamp = (d = new Date()) => { const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; };
-const pageOf = (p) => (ZONE[p] ? (ZONE[p].label || p.toUpperCase()) : "?");
+/* page letters come from zones.json itself, re-read when the file changes, so a zone added after this process started
+   (g, h, ...) still shows its letter ("Jaron on ?" was a G the running agent had never loaded) */
+const ZFILE = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "zones.json");
+const LABELS = { mtime: 0, map: Object.fromEntries(ZDATA.zones.map((zn) => [zn.id, zn.label || String(zn.id).toUpperCase()])) };
+function pageLabels() {
+  try {
+    const m = fs.statSync(ZFILE).mtimeMs;
+    if (m !== LABELS.mtime) {
+      const zd = JSON.parse(fs.readFileSync(ZFILE, "utf8"));
+      LABELS.map = Object.fromEntries((zd.zones || []).map((zn) => [zn.id, zn.label || String(zn.id).toUpperCase()]));
+      LABELS.mtime = m;
+    }
+  } catch (_) { /* keep the last good map */ }
+  return LABELS.map;
+}
+const pageOf = (p) => { if (!p) return "?"; const L = pageLabels(); return L[p] || (ZONE[p] && ZONE[p].label) || String(p).toUpperCase(); };
 const zoneAt = (x, z) => { const zn = ZONES.find((q) => q.contains(x, z == null ? 0 : z)); return zn ? zn.id : ZONES[0].id; };
 /* seam.js hysteresis: leave a zone only when you AND a ring of radius HYST around you are outside it */
 function insideWithMargin(zn, x, z) {
@@ -831,6 +848,7 @@ const HELP = `Seam Room character (only Jaron can talk to it)
                                     x -32.4..-8.4, z -10.15..23.85 through the media room's side door at x -8.25,
                                     z 6.85 (court centre x -18.9, z 6.85; hoops at z -5.6 and 19.3); the hallway, page G, is
                                     x -4.45..-1.45, z 9.7..49.7 through the media room's back door at x -2.95, z 9.55
+                                    the closet, page H, is x -1.3..1.2, z 11.5..14.5 through hallway door 1 (x -1.45, z 13)
   walk-to door:g-3                  walk to the front of a door (g-1..g-10 = the hallway's numbered doors, odd ones on
                                     the east wall at z 13, 20, 27, 34, 41, even ones on the west wall at z 16.5 .. 44.5;
                                     also door:d-back, door:a-d, ...; "door 3" works too)

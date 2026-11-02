@@ -283,6 +283,25 @@ future door `d-back` (far wall, right of the desk) is a real walnut door now, an
   `door 3`, `door:d-back`) walks to 0.8 m in front of that door and faces it. Simulated: every page -> every numbered
   door and back, 42 named trips + 400 random ones, all arrive. A running character keeps its old code until restarted.
 
+## Page H: the closet (2026-11-01, Jaron asked from the hallway)
+
+"On page G door 1 make it a closet." Hallway door `g-1` (oak, east wall, z 13) is a real door now (`between` g/h, still
+oak), and behind it is a walk-in closet at `/lab/seam-room/h/` built by `closet.js`: inside x -1.3..1.2, z 11.5..14.5
+(2.5 x 3 m), 2.6 m high, clear of the garage (x 2.15+, z up to 10.35). It arrived by the hot-load, the same path as the
+door-3 test: hallway.js `openDoor()` cuts the hall wall and paints the leaf; closet.js draws its own face of that wall.
+
+- **Inside:** shirts double-hung over trousers on the south wall, coats on the north wall, white shelves of boxes above
+  both, a two-tier chrome shoe rack under a framed mirror on the east wall, a wicker laundry basket, a porcelain
+  pull-chain bulb, the PAGE H sign over the door.
+- **Phone:** ~25-65 draw calls inside. Garments, hangers, boxes, shoes and chain beads are InstancedMeshes; static parts
+  merged per material; no shadows, NO new light (bulb glow + additive pools). The mirror is ONE cube snapshot taken the
+  first time you stand inside (people hidden for it), not a per-frame reflection. While the camera is in the closet the
+  room's (A/B) static pieces go to a camera layer that is not drawn (a layer, so it never fights hallway.js's `visible`
+  culling); looking south it was 214 calls, now ~25-40. Camera keep-outs hold the camera in the aisle.
+- **The AI:** room-agent.mjs now reads page letters from zones.json itself (re-read when the file changes), so a zone
+  added after the agent started shows its letter (the inbox said "Jaron on ?" for G). It also knows the closet's
+  furniture. A running agent keeps its old code until restarted.
+
 ## New rooms without a reload (2026-11-01, Jaron asked)
 
 Someone standing in the room when a new zone deploys sees it arrive, no reload. room.js fetches `zones.json`
