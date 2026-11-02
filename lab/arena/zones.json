@@ -1,0 +1,53 @@
+{
+  "about": "The Arena's zones, cover and rules, as data. One paintball field, 40 x 24 m (x -20..20, z -12..12), split down the middle at x = 0 by seam.js: x < 0 is page A (/lab/arena/a/, team A's base), x >= 0 is page B (/lab/arena/b/, team B's base). arena.js (browsers) and agent/arena-agent.mjs (AI players) both read this file, and field.js turns it into collision, line of sight and ball flight for both. HOT-LOAD: an open arena re-reads this file every 20 s (only while the tab is visible) and applies changes without a reload: cover added, moved or removed, rule numbers, and a bumped \"v\" re-imports the scene module (scene.js). A running agent re-reads it when the file changes. Cover kinds: block (inflatable bunker, a box), can (inflatable cylinder, r = radius), wall (low wooden wall, a box), ramp (wooden wedge you can walk up; rise = the direction it climbs toward). x, z are the centre; w is the size along x, d along z, h the height (metres). B's cover is A's turned half round (x, z -> -x, -z), so both sides are the same field.",
+  "v": 1,
+  "module": "scene.js",
+  "hysteresis": 0.3,
+  "fallback": "a",
+  "field": { "halfX": 20, "halfZ": 12, "netHeight": 5 },
+  "rules": {
+    "ballSpeed": 24,
+    "gravity": 9.81,
+    "ballRadius": 0.07,
+    "respawnS": 3,
+    "fireCooldownS": 0.25,
+    "playerRadius": 0.32,
+    "playerHeight": 1.8,
+    "runSpeed": 4.2,
+    "stepUp": 0.45
+  },
+  "teams": {
+    "a": { "name": "Team A", "color": "#f07a2b", "dark": "#a8481a" },
+    "b": { "name": "Team B", "color": "#1f9bd6", "dark": "#14608a" }
+  },
+  "zones": [
+    { "id": "a", "label": "A", "name": "Team A's half", "url": "/lab/arena/a/", "title": "The Arena · Page A - Heartbeat Observatory",
+      "bounds": { "maxX": 0 }, "spawn": { "x": -17.5, "z": 0, "yaw": 1.5708 } },
+    { "id": "b", "label": "B", "name": "Team B's half", "url": "/lab/arena/b/", "title": "The Arena · Page B - Heartbeat Observatory",
+      "bounds": { "minX": 0 }, "spawn": { "x": 17.5, "z": 0, "yaw": -1.5708 } }
+  ],
+  "doors": [
+    { "id": "middle", "between": ["a", "b"], "kind": "open seam", "plane": { "x": 0, "minZ": -12, "maxZ": 12 }, "note": "The whole centre line." }
+  ],
+  "cover": [
+    { "id": "A-block-1", "kind": "block", "x": -11,   "z": 0,    "w": 1.6, "d": 3.0, "h": 1.8 },
+    { "id": "A-can-1",   "kind": "can",   "x": -14.5, "z": 5.5,  "r": 0.7, "h": 1.6 },
+    { "id": "A-can-2",   "kind": "can",   "x": -14.5, "z": -5.5, "r": 0.7, "h": 1.6 },
+    { "id": "A-wall-1",  "kind": "wall",  "x": -8,    "z": 8,    "w": 0.4, "d": 4.0, "h": 1.0 },
+    { "id": "A-wall-2",  "kind": "wall",  "x": -8,    "z": -8.5, "w": 0.4, "d": 3.0, "h": 1.0 },
+    { "id": "A-block-2", "kind": "block", "x": -5,    "z": 3.5,  "w": 1.5, "d": 1.5, "h": 1.3 },
+    { "id": "A-block-3", "kind": "block", "x": -5.5,  "z": -4,   "w": 2.2, "d": 1.2, "h": 1.0 },
+    { "id": "A-ramp-1",  "kind": "ramp",  "x": -11,   "z": -9.5, "w": 3.6, "d": 2.0, "h": 1.1, "rise": "+x" },
+    { "id": "A-can-3",   "kind": "can",   "x": -2.2,  "z": 9,    "r": 0.6, "h": 1.5 },
+
+    { "id": "B-block-1", "kind": "block", "x": 11,    "z": 0,    "w": 1.6, "d": 3.0, "h": 1.8 },
+    { "id": "B-can-1",   "kind": "can",   "x": 14.5,  "z": -5.5, "r": 0.7, "h": 1.6 },
+    { "id": "B-can-2",   "kind": "can",   "x": 14.5,  "z": 5.5,  "r": 0.7, "h": 1.6 },
+    { "id": "B-wall-1",  "kind": "wall",  "x": 8,     "z": -8,   "w": 0.4, "d": 4.0, "h": 1.0 },
+    { "id": "B-wall-2",  "kind": "wall",  "x": 8,     "z": 8.5,  "w": 0.4, "d": 3.0, "h": 1.0 },
+    { "id": "B-block-2", "kind": "block", "x": 5,     "z": -3.5, "w": 1.5, "d": 1.5, "h": 1.3 },
+    { "id": "B-block-3", "kind": "block", "x": 5.5,   "z": 4,    "w": 2.2, "d": 1.2, "h": 1.0 },
+    { "id": "B-ramp-1",  "kind": "ramp",  "x": 11,    "z": 9.5,  "w": 3.6, "d": 2.0, "h": 1.1, "rise": "-x" },
+    { "id": "B-can-3",   "kind": "can",   "x": 2.2,   "z": -9,   "r": 0.6, "h": 1.5 }
+  ]
+}

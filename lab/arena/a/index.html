@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" data-zone="a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1d2a22">
+<title>The Arena · Page A - Heartbeat Observatory</title>
+<meta name="description" content="A paintball field split across two real pages. Load page A and you play for team A. Paintballs fly across the line from one page into the other.">
+<link rel="stylesheet" href="/lab/arena/arena.css?v=1">
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="loading">THE ARENA · PAGE A</div>
+<div id="score" aria-live="polite"></div>
+<div id="mine"></div>
+<div id="cross" aria-hidden="true"></div>
+<div id="flash" aria-live="polite"></div>
+<div id="tagged" aria-live="polite"></div>
+<div id="hudSeam" data-hb-top-in>
+  <div id="counter">You: <b>page A</b></div>
+  <div id="seamLog"></div>
+</div>
+<!-- Both pages load the same code; the URL decides your team and your spawn. -->
+<script defer src="/shell/shell.js?v=8"></script>
+<script type="module" src="/lab/arena/arena.js?v=1"></script>
+<script src="/lab/lab-top.js"></script>
+<script defer src="/hb-editor.js"></script>
+<script defer src="/bubble.js?v=2"></script>
+</body>
+</html>

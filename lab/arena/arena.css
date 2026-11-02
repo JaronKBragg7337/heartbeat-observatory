@@ -1,0 +1,43 @@
+/* The Arena - shared by /a/ and /b/. Small HUD, nothing over the middle of the screen but a crosshair. */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#1d2a22;color:#eef2ea;
+  font:13px/1.4 system-ui,-apple-system,sans-serif;overscroll-behavior:none;touch-action:none;
+  -webkit-user-select:none;user-select:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#loading{position:fixed;inset:0;z-index:100;background:#1d2a22;display:flex;align-items:center;justify-content:center;
+  font:700 13px/1.4 system-ui,sans-serif;letter-spacing:.24em;color:#f0c08a;transition:opacity .5s}
+#loading.off{opacity:0;pointer-events:none}
+
+/* top right, under the shell's phone/settings icons: the shell's chips (top left) wrap to three rows on a phone */
+#score{position:fixed;z-index:61;right:calc(8px + env(safe-area-inset-right));top:calc(62px + env(safe-area-inset-top));
+  display:flex;gap:8px;align-items:center;background:rgba(14,18,20,.7);border:1px solid rgba(255,255,255,.14);border-radius:999px;
+  padding:4px 12px;font:700 13px/1.2 system-ui,sans-serif;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#score .ta{color:#f6a56c}#score .tb{color:#7cc4ec}#score b{color:#fff;font-size:15px}#score .sep{opacity:.5}
+#mine{position:fixed;z-index:61;right:calc(10px + env(safe-area-inset-right));top:calc(94px + env(safe-area-inset-top));text-align:right;
+  font:600 10.5px/1.2 system-ui,sans-serif;color:rgba(238,242,234,.8);white-space:nowrap;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+
+/* crosshair: a thin ring and a dot */
+#cross{position:fixed;z-index:50;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.75);box-shadow:0 0 0 1px rgba(0,0,0,.25);pointer-events:none}
+#cross::after{content:"";position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px 0 0 -1.5px;border-radius:50%;background:#fff}
+#flash,#tagged{position:fixed;z-index:51;left:50%;top:calc(50% + 26px);transform:translateX(-50%);font:800 14px/1.2 system-ui,sans-serif;
+  color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+#flash.on,#tagged.on{opacity:1}
+#tagged{top:calc(50% + 46px);font-weight:700;font-size:12.5px;background:rgba(14,18,20,.6);padding:4px 10px;border-radius:8px}
+
+/* the seam panel: counter + the last 4 events (ball crossings, tags). Bottom-left, small. */
+#hudSeam{position:fixed;z-index:60;left:calc(8px + env(safe-area-inset-left));bottom:calc(10px + env(safe-area-inset-bottom));
+  max-width:min(330px,calc(100vw - 112px));background:rgba(14,18,20,.66);border:1px solid rgba(255,255,255,.14);
+  border-radius:12px;padding:6px 10px 8px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);pointer-events:none}
+#hudSeam #hb-top{min-height:34px!important;font-size:12px!important}
+#hudSeam a,#hudSeam button{pointer-events:auto}
+#counter{font-weight:600;font-size:12px;color:#eef2ea;margin:1px 0 4px}
+#counter b{color:#f0c08a}
+#seamLog{font:10.5px/1.45 ui-monospace,Menlo,Consolas,monospace;color:#d6dfd2;opacity:.95}
+#seamLog div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* the shell: the use button is the trigger ("Fire"); its prompt text is not needed; no jump or duck here */
+.hbs-prompt{display:none!important}
+.hbs-act:not(.go){display:none!important}
+body .hbs-act.go{background:rgba(240,122,43,.92);color:#1b0d04;font-size:15px}
+html[data-zone="b"] body .hbs-act.go{background:rgba(31,155,214,.92);color:#04121b}

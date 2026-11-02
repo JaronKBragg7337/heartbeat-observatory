@@ -1,0 +1,7 @@
+{
+  "name": "heartbeat-arena",
+  "private": true,
+  "type": "module",
+  "description": "Marks lab/arena/*.js as ES modules so Node (the AI players in agent/) can import field.js, the same file the browser uses.",
+  "license": "CC0-1.0"
+}
