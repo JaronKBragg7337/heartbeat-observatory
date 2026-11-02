@@ -15,7 +15,7 @@ create table if not exists public.seam_room_chat (
   speaker text not null check (speaker in ('human','ai')),
   ai_name text,                                  -- which AI said it (speaker = 'ai')
   ai_key text,                                   -- that AI's channel id, so the room puts the bubble on the right body
-  place text check (place ~ '^[a-z0-9-]{1,24}$')   -- any zone id (was a,b only; broke chat from the garage and den, 11/1),
+  place text check (place ~ '^[a-z0-9-]{1,24}$'),   -- any zone id (was a,b only; broke chat from the garage and den, 11/1)
   body text not null check (char_length(body) between 1 and 280),
   created_at timestamptz not null default now()
 );
