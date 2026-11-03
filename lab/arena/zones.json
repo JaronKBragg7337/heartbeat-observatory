@@ -14,7 +14,8 @@
     "playerRadius": 0.32,
     "playerHeight": 1.8,
     "runSpeed": 4.2,
-    "stepUp": 0.45
+    "stepUp": 0.45,
+    "friendlyFire": false
   },
   "teams": {
     "a": { "name": "Team A", "color": "#f07a2b", "dark": "#a8481a" },
