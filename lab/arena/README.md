@@ -85,6 +85,54 @@ eye view). It never mounts the shell, and the script blocks every request except
 camera **never joins the live channel** as an extra player. A shot takes about 3 s. The default output is
 `~/.arena-agent/<name>/snapshots/snap-<time>.png`, or set it with `--out`.
 
+## Team mode (Jaron + an AI teammate vs an AI hunter)
+
+The page you load is your team (`/a/` = team A, `/b/` = team B). Every player's name tag has a rim in its team colour
+and the team letter; the score is per team. **Friendly fire is off** (`"friendlyFire": false` in zones.json rules):
+a teammate's ball passes through you, and an own-team hit report from an old client changes nothing.
+
+**Orders (Jaron only).** Signed in as acsassociation7337, Jaron sees one small **Orders** pill under the score. It
+opens a narrow panel at the right edge (never over the middle of the view) with quick buttons: Follow me, Hold here,
+Go to (then tap the ground), Cover me, Flank left, Flank right, Find them, and a one-line box for anything else
+("come with me", "go to A-block-2"). The panel closes itself after each order. Orders go into the table
+`public.arena_orders` (`agent/SETUP-ORDERS.sql`): RLS lets only Jaron's auth uid insert, and only he reads. The AI
+teammate answers with one short status row (service role), shown as a bubble over the teammate on his screen only.
+Nobody else ever sees the box, the orders or the replies, and no broadcast can give an order.
+
+```sh
+# Jaron's teammate (team A). Needs SUPABASE_SERVICE_ROLE_KEY (env or ~/.secrets/keys.env), like the Seam Room's AI.
+node arena-agent.mjs join --name "Mate" --page a          # background
+node arena-agent.mjs follow-orders --name "Mate"          # background: carries out each order, answers in a bubble
+#   or drive it yourself as an AI CLI:  wait-order --name "Mate"  ->  (move-to / aim / fire ...)  ->  reply "In position." --name "Mate"
+
+# the opponent (team B): searches, prefers Jaron, takes cover, dodges. --skill 1 (slow, wild) .. 5 (quick, close)
+node arena-agent.mjs join --name "Hunter" --page b        # background
+node arena-agent.mjs hunt --name "Hunter" --skill 3       # background
+```
+
+| Skill | Reaction to a new sighting | Shot stray at 10 m | Gap between shots | Dodges | Range |
+|---|---|---|---|---|---|
+| 1 | 1.2 s | 1.6 m | 1.1 s | 15% | 18 m |
+| 2 | 0.85 s | 1.1 m | 0.8 s | 35% | 22 m |
+| 3 | 0.6 s | 0.7 m | 0.6 s | 55% | 26 m |
+| 4 | 0.4 s | 0.4 m | 0.45 s | 75% | 30 m |
+| 5 | 0.25 s | 0.15 m | 0.32 s | 90% | 32 m |
+
+**How the hunter looks for you:** it only uses what its sense gives fairly: players in line of sight (body or head over
+cover), anyone within 3 m (it hears you), and where a ball that came at it was fired from. It goes to the last place it
+saw or heard someone (20 s memory), then checks the hiding spots behind the cover round that place, then patrols the
+cover from the middle toward your base. It takes cover when shot at (skill 2+) and leads moving targets (skill 3+).
+
+**What the teammate does with each order:** follow (stays about 2 m behind you, shoots enemies it sees), hold (stays
+where it is, shoots), go to (runs there round cover, says when it is in position, then holds), cover me (stays at your
+side and shoots the enemy nearest to you), flank left/right (goes 7 m to your left or right of the line toward the
+enemy, then holds), find them (hunts like the hunter and says what it found). Anything it cannot read gets a plain
+answer and the last order stands. Before any order it follows you, quietly.
+
+**Tests (offline):** `node test/team_sim.mjs` (teammate + hunter + a scripted Jaron on a fake realtime layer and a fake
+orders table), `bash test/orders_rls.sh` (SETUP-ORDERS.sql on a throwaway local Postgres), `node
+test/team_browser_check.mjs [--three <local three@0.160.0>]` (the page at 375 px, offline).
+
 ## Play as a person
 
 Open `/lab/arena/a/` or `/lab/arena/b/`.
@@ -105,6 +153,8 @@ Open `/lab/arena/a/` or `/lab/arena/b/`.
 | `scene.js` | What it looks like, built from zones.json: cut turf with painted lines and team letters, inflatable bunkers and cans in team colours, low wooden walls, two wooden ramps, a net on posts, a gear canopy and banner at each base, a light curtain on the centre line, trees and sky. Hot-swappable. |
 | `arena.js` | The page: seam, shell, player, camera, firing, balls, splats, score, hot-load, snapshot mode. |
 | `agent/arena-agent.mjs` | The AI player (CLI). `agent/snapshot.py` is its camera. |
+| `agent/arena-brains.mjs` | Team mode: the teammate that takes Jaron's orders, and the hunter. Both drive the player only through its commands. |
+| `agent/SETUP-ORDERS.sql` | The `arena_orders` table and its owner-only RLS. |
 | `test/browser_check.py` | The phone test (below). |
 | `ISSUES.md` | Problems the players report. |
 
