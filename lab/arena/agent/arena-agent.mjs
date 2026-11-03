@@ -50,9 +50,11 @@ const HOME = process.env.ARENA_AGENT_HOME || path.join(os.homedir(), ".arena-age
 process.env.SEAM_AGENT_HOME = HOME;   // the kit's control client reads its home from here (set before importing it)
 const kit = await import(pathToFileURL(path.join(SEAM_AGENT, "room-agent.mjs")).href);
 const FD = await import(pathToFileURL(path.join(ARENA, "field.js")).href);
+const BR = await import(pathToFileURL(path.join(HERE, "arena-brains.mjs")).href);
 
 const SUPA_URL = "https://ygjpnvrwhkrowkrskftk.supabase.co";
 const SUPA_KEY = "sb_publishable_Y-duV64ayMMEvVwMs5PWuw_6kvzbOrN";   // public, same as shell.js
+const OWNER = "19689e52-05ad-4809-ad67-0d8600f02216";   // Jaron's auth uid (= public.arena_owner(), the same uid as the Seam Room)
 const WORLD = "arena";
 const ZFILE = path.join(ARENA, "zones.json");
 const ISSUES = path.join(ARENA, "ISSUES.md");
@@ -109,27 +111,35 @@ async function call(name, route, body, ms) {
 }
 
 /* ============================================================== join ===== */
-async function join(args) {
+/* deps (for the offline simulation test, test/team_sim.mjs): { createClient, selfKey, embedded }.
+   embedded = no control server, no control file, no process exit: join() returns { handlers, me, shutdown }. */
+export async function join(args, deps = {}) {
   const name = String(args.name && args.name !== true ? args.name : "Agent A").slice(0, 24);
   let F = field();
   const team = String(args.page || args.team || "a").toLowerCase() === "b" ? "b" : "a";
   const dir = dirFor(name);
   fs.mkdirSync(dir, { recursive: true });
   const inboxFile = path.join(dir, "inbox.log"), controlFile = path.join(dir, "control.json");
-  try {
+  const embedded = !!deps.embedded;
+  const timers = [];
+  const every = (fn, ms) => { const t = setInterval(fn, ms); timers.push(t); return t; };
+  if (!embedded) try {
     const old = JSON.parse(fs.readFileSync(controlFile, "utf8"));
     try { process.kill(old.pid, 0); console.error(`"${name}" is already playing (pid ${old.pid}). Run: node arena-agent.mjs leave --name "${name}"`); process.exit(1); } catch (_) {}
   } catch (_) {}
 
-  const req = createRequire(path.join(SEAM_AGENT, "package.json"));
-  const sb = await import(pathToFileURL(req.resolve("@supabase/supabase-js")).href);
-  const createClient = sb.createClient || (sb.default && sb.default.createClient);
-  const selfKey = "ai-" + slug(name) + "-" + crypto.randomBytes(3).toString("hex");
+  let createClient = deps.createClient;
+  if (!createClient) {
+    const req = createRequire(path.join(SEAM_AGENT, "package.json"));
+    const sb = await import(pathToFileURL(req.resolve("@supabase/supabase-js")).href);
+    createClient = sb.createClient || (sb.default && sb.default.createClient);
+  }
+  const selfKey = deps.selfKey || "ai-" + slug(name) + "-" + crypto.randomBytes(3).toString("hex");
   const sp = spawnOf(team);
   const me = { x: sp.x, z: sp.z + (args.z != null ? Number(args.z) : 0), y: 0, yaw: sp.yaw, team, zone: team, out: false, outUntil: 0, outBy: "",
     hits: 0, tagged: 0, lastFire: 0, goal: null, arrive: null, aimId: null, speed: 0 };
   const appearance = { body: "person", build: "regular", shirt: team === "a" ? "#f07a2b" : "#1f9bd6", skin: "#c8a07a", hair: "#2c2420", pants: "#23262b", pattern: "plain",
-    ai: true, model: args.model && args.model !== true ? String(args.model) : "", team };
+    ai: !deps.human, model: args.model && args.model !== true ? String(args.model) : "", team };
   const color = PEER_COLORS[Math.abs(hash(selfKey)) % PEER_COLORS.length];
   const peers = new Map();                // id -> { id, name, team, zone, out, ai, x, y, z, yaw, last, hist[], sight, sightAt }
   const presentNames = new Map();
@@ -149,7 +159,7 @@ async function join(args) {
   }
   fs.writeFileSync(path.join(dir, "cursor"), "0");
   inbox("start", `${name} joining hb-${WORLD} as team ${L(team)} on page ${L(team)} (${selfKey})`);
-  FIELD.onChange = (before, after) => { F = after; event("update", `the arena changed (zones.json): cover ${before.cover.length} → ${after.cover.length} pieces; rules ${JSON.stringify(before.rules) === JSON.stringify(after.rules) ? "same" : "changed"}`); };
+  if (!embedded) FIELD.onChange = (before, after) => { F = after; event("update", `the arena changed (zones.json): cover ${before.cover.length} → ${after.cover.length} pieces; rules ${JSON.stringify(before.rules) === JSON.stringify(after.rules) ? "same" : "changed"}`); };
 
   /* ------------------------------------------------- the channel - */
   const supa = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false, autoRefreshToken: false }, realtime: { params: { eventsPerSecond: 24 } } });
@@ -205,7 +215,7 @@ async function join(args) {
     const imp = FD.impactOf(F, w);
     const b = { w, born: nowS() - late, imp, cross: FD.seamCrossing(w, imp.t), crossedDone: false, lastAge: late, mine };
     balls.set(w.id, b);
-    if (!mine && !me.out) {   // will it hit me where I stand now? (a warning; the real check runs every tick)
+    if (!mine && !me.out && FD.canTag(F, w.team, me.team)) {   // will it hit me where I stand now? (a warning; the real check runs every tick)
       const ht = FD.hitTime(F, w, late, imp.t, me);
       if (ht != null) event("incoming", `ball #${w.id} from ${w.byName || peerName(w.by)} will hit you in ${r2(ht - late)} s if you stay put (it comes from bearing ${Math.round(FD.bearingDeg(w.p[0] - me.x, w.p[2] - me.z))}°)`, { ball: w.id, t: r2(ht - late) });
     }
@@ -219,7 +229,7 @@ async function join(args) {
         b.crossedDone = true;
         event("crossed", `ball #${b.w.id} crossed ${L(b.cross.from)}→${L(b.cross.to)} (fired by ${b.mine ? "you" : b.w.byName || peerName(b.w.by)})`, { ball: b.w.id, from: b.cross.from, to: b.cross.to });
       }
-      if (!b.mine && !me.out && b.w.by !== selfKey) {   // only MY hits are mine to decide
+      if (!b.mine && !me.out && b.w.by !== selfKey && FD.canTag(F, b.w.team, me.team)) {   // only MY hits are mine to decide; a teammate's ball passes through
         const to = Math.min(age, b.imp.t);
         if (to > b.lastAge) {
           const ht = FD.hitTime(F, b.w, b.lastAge, to, me);
@@ -248,6 +258,7 @@ async function join(args) {
     if (!h || !h.ball || seenHits.has(h.ball)) return;
     seenHits.add(h.ball); balls.delete(h.ball);
     const friendly = h.byTeam === h.targetTeam;
+    if (friendly && !FD.canTag(F, h.byTeam, h.targetTeam)) { inbox("ignore", `ignored an own-team hit report (ball #${h.ball}): friendly fire is off`); return; }   // an old client's report
     if (!friendly && (h.byTeam === "a" || h.byTeam === "b")) { score[h.byTeam] += 1; score.rev += 1; }
     const sc = `A ${score.a} : ${score.b} B`;
     if (h.target === selfKey) event("got-hit", `you were tagged by ${h.byName} (team ${L(h.byTeam)}) with ball #${h.ball}${friendly ? " (own team, no point)" : ""}. Out for ${F.rules.respawnS} s, then back at your base. ${sc}`, h);
@@ -356,8 +367,8 @@ async function join(args) {
     const facing = FD.bearingDeg(Math.sin(me.yaw), Math.cos(me.yaw));
     const players = live().map((p) => {
       const dx = p.x - me.x, dz = p.z - me.z, brg = FD.bearingDeg(dx, dz), v = velOf(p);
-      return { name: p.name, ai: p.ai, team: p.team, enemy: p.team !== me.team, page: p.zone, out: !!p.out, bearing_deg: Math.round(brg), relative: relWords(relOf(me.yaw, brg)),
-        distance_m: r1(Math.hypot(dx, dz)), line_of_sight: FD.sightOf(F, me, p), moving_mps: r1(Math.hypot(v.x, v.z)), x: r1(p.x), z: r1(p.z), aimed: me.aimId === p.id };
+      return { name: p.name, id: p.id, owner: p.id === OWNER, ai: p.ai, team: p.team, enemy: p.team !== me.team, page: p.zone, out: !!p.out, bearing_deg: Math.round(brg), relative: relWords(relOf(me.yaw, brg)),
+        distance_m: r1(Math.hypot(dx, dz)), line_of_sight: FD.sightOf(F, me, p), moving_mps: r1(Math.hypot(v.x, v.z)), x: r1(p.x), z: r1(p.z), facing_deg: Math.round(FD.bearingDeg(Math.sin(p.yaw), Math.cos(p.yaw))), vx: r1(v.x), vz: r1(v.z), aimed: me.aimId === p.id };
     }).sort((a, b) => a.distance_m - b.distance_m);
     const enemies = live().filter((p) => p.team !== me.team);
     const cover = F.cover.map((c) => {
@@ -367,9 +378,9 @@ async function join(args) {
         hides_me_from: enemies.filter((p) => FD.sightOf(F, p, me) !== "yes" && !FD.lineClear(F, [p.x, 1.6, p.z], [me.x, me.y + 1.1, me.z]) && segNear(c, p, me)).map((p) => p.name) };
     }).filter((c) => c.distance_m <= 9).sort((a, b) => a.distance_m - b.distance_m);
     const t = nowS();
-    const incoming = [...balls.values()].filter((b) => !b.mine && b.w.by !== selfKey).map((b) => {
+    const incoming = [...balls.values()].filter((b) => !b.mine && b.w.by !== selfKey && FD.canTag(F, b.w.team, me.team)).map((b) => {
       const age = t - b.born, ca = FD.closestApproach(F, b.w, b.imp.t, me), ht = FD.hitTime(F, b.w, Math.min(age, b.imp.t), b.imp.t, me);
-      return { ball: b.w.id, from: b.w.byName || peerName(b.w.by), team: b.w.team, time_to_impact_s: r2(Math.max(0, (ht != null ? ht : b.imp.t) - age)), will_hit_me: ht != null,
+      return { ball: b.w.id, from: b.w.byName || peerName(b.w.by), from_x: r1(b.w.p[0]), from_z: r1(b.w.p[2]), team: b.w.team, time_to_impact_s: r2(Math.max(0, (ht != null ? ht : b.imp.t) - age)), will_hit_me: ht != null,
         closest_m: r2(ca.d), breaks_on: b.imp.what + (b.imp.id && b.imp.id !== b.imp.what ? " " + b.imp.id : "") };
     }).filter((b) => b.time_to_impact_s > 0);
     return {
@@ -392,7 +403,7 @@ async function join(args) {
     return [me.x + f.x * 0.62 + r.x * 0.14, me.y + 1.26, me.z + f.z * 0.62 + r.z * 0.14];
   }
   let serial = 0;
-  async function fire({ lead, range }) {
+  async function fire({ lead, range, err }) {
     if (me.out) throw new Error(`you are out (tagged by ${me.outBy}); back in ${r1(Math.max(0, me.outUntil - nowS()))} s`);
     const wait = F.rules.fireCooldownS - (nowS() - me.lastFire);
     if (wait > 0) await sleep(wait * 1000 + 5);
@@ -407,6 +418,8 @@ async function join(args) {
           aim = [target.x + v.x * tof, target.y + 1.15, target.z + v.z * tof];
         }
       }
+      const e = Number(err) > 0 ? Math.min(4, Number(err)) : 0;   // skill: a miss of up to e metres around the target
+      if (e) { const a = Math.random() * Math.PI * 2, k = e * Math.sqrt(Math.random()); aim = [aim[0] + Math.cos(a) * k, aim[1] + (Math.random() - 0.5) * e * 0.6, aim[2] + Math.sin(a) * k]; }
       me.yaw = Math.atan2(aim[0] - me.x, aim[2] - me.z);
     } else {
       const d = Number(range) > 0 ? Number(range) : 25;
@@ -458,7 +471,7 @@ async function join(args) {
       x: +me.x.toFixed(3), y: +me.y.toFixed(3), z: +me.z.toFixed(3), yaw: +me.yaw.toFixed(3), pitch: 0, stance: me.speed > 0.3 ? "run" : "stand" } }));
   }
   let lastTick = nowS();
-  setInterval(() => {
+  every(() => {
     F = field() || F;
     const t = nowS(), dt = Math.min(0.1, t - lastTick); lastTick = t;
     for (const [id, p] of peers) {
@@ -470,8 +483,8 @@ async function join(args) {
     stepBalls();
     if (me.out && t >= me.outUntil) respawn();
   }, 20);
-  setInterval(() => sendState(false), SEND_INTERVAL_MS);
-  setInterval(sightLoop, 250);
+  every(() => sendState(false), SEND_INTERVAL_MS);
+  every(sightLoop, 250);
 
   /* --------------------------------------------------- control - */
   const token = crypto.randomBytes(16).toString("hex");
@@ -529,10 +542,10 @@ async function join(args) {
         balls: [...balls.values()].map((b) => ({ w: b.w, age: Math.min(t - b.born, b.imp.t - 0.001) })),
         splats: splats.slice(-120), score: { a: score.a, b: score.b }, log: events.slice(-3).map((e) => e.text) };
     },
-    "/whoami": () => ({ name, team: me.team, page: me.zone, x: r1(me.x), z: r1(me.z), connected }),
+    "/whoami": () => ({ name, team: me.team, page: me.zone, x: r1(me.x), z: r1(me.z), connected, selfKey }),
     "/leave": () => { setTimeout(() => shutdown("leave command"), 50); return { ok: true, bye: name }; },
   };
-  const server = http.createServer((req, res) => {
+  const server = embedded ? null : http.createServer((req, res) => {
     const reply = (code, obj) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(obj)); };
     if (req.method !== "POST" || req.headers["x-token"] !== token) return reply(403, { error: "forbidden" });
     let buf = "";
@@ -543,7 +556,7 @@ async function join(args) {
       try { reply(200, await h(buf ? JSON.parse(buf) : {})); } catch (e) { reply(400, { error: e.message }); }
     });
   });
-  server.listen(0, "127.0.0.1", () => {
+  if (server) server.listen(0, "127.0.0.1", () => {
     fs.writeFileSync(controlFile, JSON.stringify({ name, port: server.address().port, token, pid: process.pid, selfKey, team, startedAt: new Date().toISOString() }));
     fs.writeFileSync(path.join(HOME, "current"), name);
   });
@@ -563,7 +576,7 @@ async function join(args) {
           send("arena-ask", {});
           sendState(true);
           event("ok", `${everConnected ? "reconnected" : "connected"}: team ${L(me.team)}, page ${L(me.zone)}, x ${r1(me.x)} z ${r1(me.z)}`);
-          if (!everConnected) console.log(`${name} is in the Arena (team ${L(me.team)}, page ${L(me.zone)}). pid ${process.pid}. Inbox: ${inboxFile}`);
+          if (!everConnected && !embedded) console.log(`${name} is in the Arena (team ${L(me.team)}, page ${L(me.zone)}). pid ${process.pid}. Inbox: ${inboxFile}`);
           everConnected = true;
         }
       } else { inbox("net", `channel status: ${status}${err && err.message ? " (" + err.message + ")" : ""}`); reconnectLater(); }
@@ -586,20 +599,48 @@ async function join(args) {
     }, ms);
   }
   ch.subscribe(onStatus(ch));
-  process.on("unhandledRejection", (e) => { try { inbox("net", `ignored: ${e && e.message ? e.message : e}`); } catch (_) {} });
+  if (!embedded) process.on("unhandledRejection", (e) => { try { inbox("net", `ignored: ${e && e.message ? e.message : e}`); } catch (_) {} });
   async function shutdown(why) {
     if (stopping) return; stopping = true;
     if (chRetry) { clearTimeout(chRetry); chRetry = null; }
+    for (const t of timers) clearInterval(t);
     inbox("stop", `${name} leaving (${why})`);
     try { await ch.untrack(); } catch (_) {}
     try { await supa.removeAllChannels(); } catch (_) {}
+    if (embedded) return;
     try { fs.unlinkSync(controlFile); } catch (_) {}
     server.close();
     process.exit(0);
   }
+  if (embedded) return { name, selfKey, handlers, me, score, peers, shutdown, isConnected: () => connected };
   process.on("SIGINT", () => shutdown("SIGINT"));
   process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
+
+/* ============================================================ team mode === */
+async function loadCreateClient() {
+  const req = createRequire(path.join(SEAM_AGENT, "package.json"));
+  const sb = await import(pathToFileURL(req.resolve("@supabase/supabase-js")).href);
+  return sb.createClient || (sb.default && sb.default.createClient);
+}
+/** The service-role key: env first, else the MSI's keys file (same rule as room-agent.mjs). Never logged or written. */
+function serviceKey() {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) return process.env.SUPABASE_SERVICE_ROLE_KEY.trim();
+  const f = process.env.SEAM_KEYS_FILE || path.join(os.homedir(), ".secrets", "keys.env");
+  try { const m = fs.readFileSync(f, "utf8").match(/^\s*SUPABASE_SERVICE_ROLE_KEY\s*=\s*"?([^"\r\n]+)"?/m); if (m) return m[1].trim(); } catch (_) {}
+  return null;
+}
+/** the orders table for the running player `name` (it must be a teammate: its team is the one the order was sent from) */
+async function ordersFor(name) {
+  const w = await call(name, "/whoami", {}, 5000);
+  const skey = serviceKey();
+  if (!skey) throw new Error("No SUPABASE_SERVICE_ROLE_KEY (env or ~/.secrets/keys.env). The teammate needs it to read Jaron's orders (arena_orders) and answer him.");
+  const createClient = await loadCreateClient();
+  const db = createClient(SUPA_URL, skey, { auth: { persistSession: false, autoRefreshToken: false } });
+  return { w, orders: BR.ordersFromDb(db, { owner: OWNER, name: w.name, selfKey: w.selfKey, team: w.team, cursorFile: path.join(dirFor(w.name), "orders-cursor") }) };
+}
+const apiFor = (name) => (route, body) => call(name, route, body, 30000);
+const runLog = (who) => (line) => console.log(`[${stamp().slice(11)}] ${who}: ${line}`);
 
 /* ======================================================== short commands === */
 const RETRY_MS = [1000, 2000, 5000, 15000];
@@ -681,6 +722,15 @@ const HELP = `The Arena: play paintball as an AI (team = the page you join; x < 
                                  block until something happens; print it (exit 2 on timeout)
   snapshot [--out file.png] [--eye] [--w 960 --h 540]   a PNG of what your character sees (headless Chromium, a local
                                  copy of the moment: it never joins the channel)
+  TEAM MODE (the page you join is your team; friendly fire is off)
+  follow-orders [--leader Jaron] [--skill 4] [--for s]   be Jaron's teammate: carry out his orders from the arena_orders
+                                 table (follow, hold, go to a spot, cover, flank left/right, find them) and answer
+                                 with a short status he alone sees. Needs SUPABASE_SERVICE_ROLE_KEY.
+  wait-order [--timeout 120]     block until Jaron's next order; print it (exit 2 on timeout). Carry it out yourself
+                                 with the commands above, then: reply "short status"
+  reply "text"                   answer Jaron (a bubble over you, on his screen only)
+  hunt [--skill 1-5] [--target Jaron] [--for s]   the opponent: search the field, find and tag Jaron first, take
+                                 cover, dodge. skill 1 = slow and wild, 5 = quick and close (still beatable)
   report-issue "text"            add a line to lab/arena/ISSUES.md (timestamp, your name, where you stand)
   leave                          leave the arena and stop the join process
   Short commands take --name "Agent A" when more than one player runs from this machine.`;
@@ -732,6 +782,42 @@ async function main() {
       try { const w = await call(args.name, "/whoami", {}, 3000); who = w.name; where = `team ${L(w.team)}, page ${L(w.page)} at x ${w.x} z ${w.z}`; } catch (_) {}
       const line = reportIssue(who, rest.join(" "), where);
       console.log(`added to ${ISSUES}:\n${line}`);
+      return;
+    }
+    if (cmd === "hunt") {
+      const until = Number(args.for) > 0 ? Date.now() + Number(args.for) * 1000 : Infinity;
+      const w = await call(args.name, "/whoami", {}, 5000);
+      const skill = Number(args.skill) || 3, target = args.target && args.target !== true ? String(args.target) : "Jaron";
+      console.log(`${w.name} hunts (team ${L(w.team)}, skill ${skill}, target ${target} first). Ctrl+C stops.`);
+      await BR.hunt({ api: apiFor(w.name), skill, target, until, log: runLog(w.name) });
+      return;
+    }
+    if (cmd === "follow-orders") {
+      const until = Number(args.for) > 0 ? Date.now() + Number(args.for) * 1000 : Infinity;
+      const { w, orders } = await ordersFor(args.name);
+      console.log(`${w.name} takes Jaron's orders (team ${L(w.team)}). Ctrl+C stops.`);
+      await BR.followOrders({ api: apiFor(w.name), orders, leader: args.leader && args.leader !== true ? String(args.leader) : "", skill: Number(args.skill) || 4, until, log: runLog(w.name) });
+      return;
+    }
+    if (cmd === "wait-order") {
+      const { orders } = await ordersFor(args.name);
+      const deadline = Date.now() + Math.max(1, Number(args.timeout) || 120) * 1000;
+      for (;;) {
+        let rows = [];
+        try { rows = await orders.next(); } catch (e) { console.error(`(${e.message}; retrying)`); }
+        if (rows.length) {
+          for (const r of rows) { const o = BR.parseOrder(r); console.log(`order #${r.id} from Jaron: ${o.kind}${o.x != null ? ` x ${r1(o.x)} z ${r1(o.z)}` : ""}${r.body ? ` "${r.body}"` : ""}`); }
+          return;
+        }
+        if (Date.now() > deadline) { console.log("(no order before the timeout)"); process.exitCode = 2; return; }
+        await sleep(1500);
+      }
+    }
+    if (cmd === "reply") {
+      const text = rest.join(" ").trim(); if (!text) throw new Error('reply "short status for Jaron"');
+      const { orders } = await ordersFor(args.name);
+      const r = await orders.reply(text, args.to ? { id: Number(args.to) } : null);
+      console.log(`told Jaron: "${text.slice(0, 140)}" (row ${r && r.id})`);
       return;
     }
     if (cmd === "leave") { const r = await call(args.name, "/leave", {}); console.log(`${r.bye} left the arena`); return; }

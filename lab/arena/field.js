@@ -19,6 +19,7 @@
 export const DEFAULT_RULES = {
   ballSpeed: 24, gravity: 9.81, ballRadius: 0.07, respawnS: 3, fireCooldownS: 0.25,
   playerRadius: 0.32, playerHeight: 1.8, runSpeed: 4.2, stepUp: 0.45,
+  friendlyFire: false,   // team mode: a teammate's ball passes through you (no tag, no point)
 };
 const STEP = 1 / 240;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -228,6 +229,8 @@ export const bearingDeg = (dx, dz) => ((Math.atan2(dx, dz) * 180) / Math.PI + 36
 export const yawOfBearing = (deg) => { let r = (deg * Math.PI) / 180; r = Math.atan2(Math.sin(r), Math.cos(r)); return r; };
 export const compass = (deg) => ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 export function zoneAt(F, x) { return x < 0 ? "a" : "b"; }
+/** can this ball tag this player? With friendly fire off (the default), never your own team's ball. */
+export const canTag = (F, ballTeam, targetTeam) => !!(F && F.rules && F.rules.friendlyFire) || ballTeam !== targetTeam;
 /** team + page + out ride the shell's `place` field: "a|b" = on page A, team B; "b|a|out" = tagged, waiting to respawn */
 export const placeOf = (zone, team, out) => `${zone}|${team}${out ? "|out" : ""}`;
 export function parsePlace(s) {
@@ -235,4 +238,4 @@ export function parsePlace(s) {
   return { zone: zone || "", team: team || zone || "", out: out === "out" };
 }
 
-export default { fieldFrom, groundAt, rampHeight, solidAt, ballAt, impactOf, seamCrossing, hitTime, closestApproach, solveLaunch, lineClear, sightOf, pushOut, walkStep, bearingDeg, yawOfBearing, compass, zoneAt, placeOf, parsePlace, DEFAULT_RULES };
+export default { fieldFrom, groundAt, rampHeight, solidAt, ballAt, impactOf, seamCrossing, hitTime, closestApproach, solveLaunch, lineClear, sightOf, pushOut, walkStep, bearingDeg, yawOfBearing, compass, zoneAt, placeOf, parsePlace, canTag, DEFAULT_RULES };
