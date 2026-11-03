@@ -41,6 +41,8 @@ import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { Seam } from "/lab/seam-room/seam.js";
 import * as FD from "/lab/arena/field.js";
+// friendly fire rule (field.js); the fallback covers a browser still holding yesterday's cached field.js
+const canTag = FD.canTag || ((F, ballTeam, targetTeam) => !!(F && F.rules && F.rules.friendlyFire) || ballTeam !== targetTeam);
 
 const ZONES_URL = "/lab/arena/zones.json";
 const SNAP = window.__ARENA_SNAPSHOT || null;
@@ -226,12 +228,14 @@ function paintOn(h, worldP, team) {   // a splat on a player's body, in its own 
 }
 function clearPaint(h) { if (h.paint) for (const c of h.paint.children.slice()) { h.paint.remove(c); c.geometry.dispose(); } }
 
-function nameSprite(text, color, ai, out) {
+function nameSprite(text, color, ai, out, letter) {
   const c = document.createElement("canvas"); c.width = 360; c.height = 64;
   const g = c.getContext("2d");
   g.fillStyle = out ? "rgba(60,60,60,.78)" : "rgba(14,18,20,.74)"; g.beginPath(); g.roundRect(4, 8, 352, 48, 24); g.fill();
-  g.fillStyle = color; g.beginPath(); g.arc(32, 32, 10, 0, 7); g.fill();
-  let tx = 52;
+  g.strokeStyle = color; g.lineWidth = 4; g.stroke();   // the team colour, round the whole tag
+  g.fillStyle = color; g.beginPath(); g.arc(32, 32, 15, 0, 7); g.fill();
+  if (letter) { g.fillStyle = "#101418"; g.font = "800 19px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(letter, 32, 33); g.textAlign = "left"; }
+  let tx = 56;
   if (ai) { g.fillStyle = "#e8c98a"; g.beginPath(); g.roundRect(48, 18, 46, 28, 8); g.fill(); g.fillStyle = "#2a2014"; g.font = "800 19px system-ui, sans-serif"; g.textBaseline = "middle"; g.fillText("AI", 59, 33); tx = 104; }
   g.fillStyle = "#f3f1ea"; g.font = "600 25px system-ui, sans-serif"; g.textBaseline = "middle"; g.fillText(text + (out ? " · OUT" : ""), tx, 33, 352 - tx - 14);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
@@ -263,6 +267,7 @@ const player = { x: sp.x, z: sp.z, y: 0, yaw: sp.yaw, mx: 0, my: 0, speed: 0, ou
 const cam = { yaw: sp.yaw, pitch: 0.1 };
 const selfAv = { group: new THREE.Group() };
 makeAvatar(selfAv, TEAM); scene.add(selfAv.group);
+
 const LOCAL_KEY = "local-" + Math.random().toString(36).slice(2, 8);
 let shell = null;
 const myKey = () => (shell && shell.selfKey) || LOCAL_KEY;
@@ -347,7 +352,7 @@ function stepBalls() {
       if (field && field.curtain) field.curtain.material.opacity = 0.6;
     }
     // MY side decides if it hit ME (never anyone else)
-    if (!b.mine && !player.out && !SNAP && b.w.by !== myKey()) {
+    if (!b.mine && !player.out && !SNAP && b.w.by !== myKey() && canTag(F, b.w.team, TEAM)) {   // a teammate's ball passes through
       const to = Math.min(age, b.imp.t);
       if (to > b.lastAge) {
         const ht = FD.hitTime(F, b.w, b.lastAge, to, player);
@@ -420,8 +425,9 @@ function tagMe(b, hitAge) {
 function applyHit(h) {
   if (!h || !h.ball || seenHits.has(h.ball)) return;
   seenHits.add(h.ball);
-  const b = balls.get(h.ball); if (b) endBall(b);
   const friendly = h.byTeam === h.targetTeam;
+  if (friendly && !canTag(F, h.byTeam, h.targetTeam)) return;   // friendly fire is off: an old client's own-team report changes nothing
+  const b = balls.get(h.ball); if (b) endBall(b);
   if (!friendly && (h.byTeam === "a" || h.byTeam === "b")) { score[h.byTeam] += 1; score.rev += 1; }
   const meTarget = h.target === myKey(), meShooter = h.by === myKey();
   if (meShooter && !friendly) player.hits += 1;
@@ -490,7 +496,7 @@ function syncPeers(list, dt) {
     const key = label + ai + out;
     if (key !== e.label) {
       if (e.sprite) { e.group.remove(e.sprite); e.sprite.material.map.dispose(); e.sprite.material.dispose(); }
-      e.sprite = nameSprite(label, teamColor(team), ai, out); e.group.add(e.sprite); e.label = key;
+      e.sprite = nameSprite(label, teamColor(team), ai, out, LABEL(team)); e.group.add(e.sprite); e.label = key;
       setOutPose(e, out);
     }
     e.name = p.name; e.zone = pl.zone; e.y = p.y || 0;
@@ -531,10 +537,116 @@ if (!SNAP) {
   relabel(); setTimeout(relabel, 500);
   wireEvents();
   // ask the people already here for the score (once connected)
-  const askT = setInterval(() => { if (shell.connected) { clearInterval(askT); shell.send("arena-ask", {}); } }, 500);
+  const askT = setInterval(() => { if (shell.connected) { clearInterval(askT); shell.send("arena-ask", {}); void setupOrders(); } }, 500);
 } else {
   wireEvents();
 }
+
+/* ------------------------------------------- team mode: orders (owner only) - */
+/* Jaron gives his AI teammate orders. They go into public.arena_orders, whose RLS lets only his uid insert and read
+   (lab/arena/agent/SETUP-ORDERS.sql). The teammate (agent/arena-agent.mjs follow-orders) reads ONLY that table, never a
+   broadcast, and answers with a short status row that only he can read: a bubble over the teammate, on his screen.
+   The box is closed by default: one small "Orders" pill under the score. It never sits over the middle of the view. */
+const ORDER_CHIPS = [["follow", "Follow me"], ["hold", "Hold here"], ["goto", "Go to…"], ["cover", "Cover me"],
+  ["flank-left", "Flank left"], ["flank-right", "Flank right"], ["find", "Find them"]];
+let canOrder = false, pickSpot = 0, pickMark = null;
+const bubbles = new Map();   // channel id -> { sprite, until, holder }
+function bubbleSprite(text, color) {
+  const words = String(text).split(/\s+/), lines = [""];
+  for (const w of words) { const l = lines[lines.length - 1]; if ((l + " " + w).trim().length > 24 && lines.length < 3) lines.push(w); else lines[lines.length - 1] = (l + " " + w).trim(); }
+  const c = document.createElement("canvas"); c.width = 420; c.height = 34 + lines.length * 36;
+  const g = c.getContext("2d");
+  g.fillStyle = "rgba(250,248,240,.94)"; g.beginPath(); g.roundRect(4, 4, 412, c.height - 8, 16); g.fill();
+  g.strokeStyle = color; g.lineWidth = 4; g.stroke();
+  g.fillStyle = "#1b1f22"; g.font = "600 29px system-ui, sans-serif"; g.textBaseline = "middle";
+  lines.forEach((l, i) => g.fillText(l, 18, 35 + i * 36, 386));
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
+  sp.scale.set(2.1, 2.1 * c.height / 420, 1); sp.position.y = 2.36 + (c.height / 420) * 1.05; sp.renderOrder = 11;
+  return sp;
+}
+function showBubble(id, text, ms) {
+  const holder = peerAv.get(id); if (!holder) return false;
+  const old = bubbles.get(id); if (old) { old.holder.group.remove(old.sprite); old.sprite.material.map.dispose(); }
+  const sprite = bubbleSprite(text, teamColor(holder.team)); holder.group.add(sprite);
+  bubbles.set(id, { sprite, holder, until: nowS() + (ms || 6000) / 1000 });
+  return true;
+}
+function stepBubbles() {
+  const t = nowS();
+  for (const [id, b] of bubbles) if (t > b.until || !peerAv.has(id)) { b.holder.group.remove(b.sprite); b.sprite.material.map.dispose(); b.sprite.material.dispose(); bubbles.delete(id); }
+  if (pickMark && t > pickMark.until) { scene.remove(pickMark.m); pickMark.m.geometry.dispose(); pickMark = null; }
+  if (pickSpot && Date.now() > pickSpot) { pickSpot = 0; ordHint(""); }
+}
+function ordHint(text) { const el = $("ordHint"); if (!el) return; el.textContent = text; el.classList.toggle("on", !!text); }
+async function sendOrder(kind, extra) {
+  const label = (ORDER_CHIPS.find((c) => c[0] === kind) || [kind, ""])[1];
+  const row = Object.assign({ user_id: shell.uid, speaker: "human", kind, team: TEAM, body: label.replace("…", "") }, extra || {});
+  const { error } = await shell.supa.from("arena_orders").insert(row);
+  if (error) { seamLog(/row-level security/i.test(error.message) ? "order not sent: only the arena's owner gives orders" : "order not sent: " + error.message, "#e36d7c"); return false; }
+  seamLog(`order: ${row.body}`, teamColor(TEAM));
+  return true;
+}
+function pickAt(cx, cy) {   // "Go to": the ground under the tap
+  pickSpot = 0; ordHint("");
+  const v = new THREE.Vector2((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1);
+  const r = new THREE.Raycaster(); r.setFromCamera(v, camera);
+  const hit = new THREE.Vector3();
+  if (!r.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit) || hit.distanceTo(camera.position) > 70) { seamLog("that spot is off the field: tap Go to and try again"); return; }
+  const x = +clamp(hit.x, -F.halfX + 0.6, F.halfX - 0.6).toFixed(1), z = +clamp(hit.z, -F.halfZ + 0.6, F.halfZ - 0.6).toFixed(1);
+  if (pickMark) { scene.remove(pickMark.m); pickMark.m.geometry.dispose(); }
+  const m = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.45, 32), new THREE.MeshBasicMaterial({ color: teamColor(TEAM), transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, FD.groundAt(F, x, z) + 0.03, z); scene.add(m);
+  pickMark = { m, until: nowS() + 4 };
+  void sendOrder("goto", { x, z, body: `Go to x ${x}, z ${z}` });
+}
+function buildOrders() {
+  if ($("ord")) return;
+  const btn = document.createElement("button"); btn.id = "ordBtn"; btn.type = "button"; btn.textContent = "Orders"; btn.setAttribute("aria-expanded", "false");
+  const box = document.createElement("div"); box.id = "ord";
+  box.innerHTML = `<div class="chips">${ORDER_CHIPS.map(([k, l]) => `<button type="button" data-k="${k}">${esc(l)}</button>`).join("")}</div>
+    <form id="ordForm" autocomplete="off"><input id="ordIn" type="text" maxlength="140" enterkeyhint="send" placeholder="Tell your AI…" aria-label="An order for your AI teammate"><button type="submit">Send</button></form>`;
+  const hint = document.createElement("div"); hint.id = "ordHint"; hint.setAttribute("aria-live", "polite");
+  document.body.append(btn, box, hint);
+  for (const el of [btn, box]) {   // taps here never reach the shell's stick/look or the trigger
+    for (const ev of ["pointerdown", "touchstart", "mousedown"]) el.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
+    el.addEventListener("keydown", (e) => e.stopPropagation());
+  }
+  const open = (on) => { box.classList.toggle("on", on); btn.classList.toggle("on", on); btn.setAttribute("aria-expanded", on ? "true" : "false"); };
+  btn.addEventListener("click", () => { pickSpot = 0; ordHint(""); open(!box.classList.contains("on")); });
+  box.querySelector(".chips").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-k]"); if (!b) return;
+    open(false);
+    if (b.dataset.k === "goto") { pickSpot = Date.now() + 12000; ordHint("Tap the ground where your AI should go"); return; }
+    void sendOrder(b.dataset.k);
+  });
+  $("ordForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const inp = $("ordIn"), text = inp.value.trim().slice(0, 140); if (!text) return;
+    inp.value = ""; inp.blur(); open(false);
+    void sendOrder("say", { body: text });
+  });
+}
+const seenOrderRows = new Set();
+function onOrderRow(r) {   // the teammate's answer: a bubble over it, and one quiet line in the log
+  if (!r || r.speaker !== "ai" || seenOrderRows.has(r.id)) return;
+  seenOrderRows.add(r.id);
+  showBubble(r.ai_key, r.body, 4500 + String(r.body).length * 45);
+  seamLog(`${r.ai_name || "AI"}: ${r.body}`, teamColor(r.team || TEAM));
+}
+async function setupOrders() {
+  if (!shell || !shell.supa || !shell.uid || canOrder) return;   // guests never get the box
+  let ok = false;
+  try { const { data } = await shell.supa.rpc("arena_is_owner"); ok = data === true; } catch (_) {}
+  if (!ok) return;   // not Jaron, or SETUP-ORDERS.sql not applied yet
+  canOrder = true;
+  buildOrders();
+  shell.supa.channel("arena-orders-" + shell.uid)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "arena_orders", filter: `user_id=eq.${shell.uid}` }, ({ new: r }) => onOrderRow(r))
+    .subscribe();
+}
+/* test handle. previewBox() only draws the box: for anyone but Jaron the database refuses what it sends. */
+window.__arenaOrders = { previewBox: () => buildOrders(), onOrderRow, showBubble, get picking() { return !!pickSpot; } };
 
 /* ---------------------------------------------------- desktop + taps - */
 const keys = new Set();
@@ -545,12 +657,12 @@ addEventListener("keydown", (e) => {
 });
 addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
 addEventListener("blur", () => keys.clear());
-const onUi = (t) => !!(t && t.closest && t.closest(".hbs-act,.hbs-icon,.hbs-panel,.hbs-chip,#hudSeam,a,button,input"));
+const onUi = (t) => !!(t && t.closest && t.closest(".hbs-act,.hbs-icon,.hbs-panel,.hbs-chip,#hudSeam,#ord,#ordBtn,a,button,input"));
 const drag = { id: null, x: 0, y: 0, t: 0, moved: 0, mouse: false };
 addEventListener("pointerdown", (e) => {
   if (SNAP || onUi(e.target)) return;
   if (e.pointerType === "mouse") { drag.id = e.pointerId; drag.mouse = true; }
-  else if (e.clientX > innerWidth * 0.45) { drag.id = e.pointerId; drag.mouse = false; }   // the shell turns this drag into look
+  else if (pickSpot || e.clientX > innerWidth * 0.45) { drag.id = e.pointerId; drag.mouse = false; }   // the shell turns this drag into look
   else return;
   drag.x = e.clientX; drag.y = e.clientY; drag.t = performance.now(); drag.moved = 0;
 });
@@ -563,7 +675,7 @@ addEventListener("pointermove", (e) => {
 });
 const endDrag = (e) => {
   if (e.pointerId !== drag.id) return;
-  if (e.type === "pointerup" && drag.moved < 12 && performance.now() - drag.t < 320) fire();   // a tap (or a click) fires
+  if (e.type === "pointerup" && drag.moved < 12 && performance.now() - drag.t < 320) { if (pickSpot) pickAt(e.clientX, e.clientY); else fire(); }   // a tap (or a click) fires; in "Go to" it picks the spot
   drag.id = null;
 };
 addEventListener("pointerup", endDrag); addEventListener("pointercancel", endDrag);
@@ -605,6 +717,7 @@ function frame() {
   selfAv.group.rotation.y = player.yaw;
   setOutPose(selfAv, player.out);
   animate(selfAv, player.speed, dt);
+  stepBubbles();
   stepBalls();
   placeCamera();
   if (kick > 0) kick = Math.max(0, kick - dt * 8);
@@ -683,7 +796,7 @@ if (SNAP) {
     const e = { group: new THREE.Group(), px: p.x, pz: p.z, speed: 0 };
     makeAvatar(e, p.team === "b" ? "b" : "a"); scene.add(e.group); peerAv.set(p.id || p.name, e);
     e.group.position.set(p.x, p.y || FD.groundAt(F, p.x, p.z), p.z); e.group.rotation.y = p.yaw || 0;
-    e.sprite = nameSprite(`${p.name} · ${LABEL(p.team)}`, teamColor(p.team), !!p.ai, !!p.out); e.group.add(e.sprite);
+    e.sprite = nameSprite(`${p.name} · ${LABEL(p.team)}`, teamColor(p.team), !!p.ai, !!p.out, LABEL(p.team)); e.group.add(e.sprite);
     setOutPose(e, !!p.out);
     if (e.mixer) e.mixer.update(0.3);
   }
