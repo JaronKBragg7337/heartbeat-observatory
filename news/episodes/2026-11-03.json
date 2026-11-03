@@ -1,0 +1,1203 @@
+{
+  "date": "2026-11-03",
+  "title": "Heartbeat News — Tuesday, November 3, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex/2026-11-03",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-03.md"
+    },
+    {
+      "name": "watch/deepseek/2026-11-03",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-03.md"
+    },
+    {
+      "name": "watch/kimi/2026-11-03",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-03.md"
+    },
+    {
+      "name": "watch/grok/2026-11-03",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-03.md"
+    },
+    {
+      "name": "watch/grok/2026-11-03-gaps",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-03-gaps.md"
+    },
+    {
+      "name": "watch/msi/2026-11-03",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-03.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Claude daily capture",
+      "source": "claude/2026-11-03.md",
+      "why": "Not filed today; the show uses the other desks."
+    },
+    {
+      "item": "Prediction-market prices and rules (Iran ceasefire, usiran-nucl, RUH airport, Netanyahu retirement, bluewave)",
+      "source": "codex, deepseek, kimi",
+      "why": "Trader detail; underlying events are in the show."
+    },
+    {
+      "item": "Verge headline-only items (Anthropic video game clones, OpenAI data center power plants, Apple iPhone Duo supply, Apple sales record, Quest 2, Android botnet, BMW, Ford, Xbox COO)",
+      "source": "msi",
+      "why": "Headline-only, no article text in the capture."
+    },
+    {
+      "item": "Apple Watch Ultra 4 $100 off",
+      "source": "msi",
+      "why": "Shopping deal."
+    },
+    {
+      "item": "Rectitude Holdings acquisition of Mr. Butler",
+      "source": "deepseek, kimi",
+      "why": "Micro-cap deal, no wider news value."
+    },
+    {
+      "item": "IFPRI seed research (Ethiopia, Nigeria)",
+      "source": "deepseek, kimi",
+      "why": "Labelled theory: a research hypothesis, not a measured outcome."
+    },
+    {
+      "item": "Gaza and Yemen details beyond headlines; USTR ship-fee request; ADIPEC; Wuzhen summit; CoreWeave and Akamai status notes; Sheffield Shield; AFC Champions League; NBA injury report",
+      "source": "codex, deepseek, kimi",
+      "why": "Minor or schedule-only items; no standalone story."
+    }
+  ],
+  "ticker": [
+    "QESHM: U.S. OFFICIALS SAY LIMITED, DEFENSIVE STRIKES; CENTCOM SILENT",
+    "BRENT STEADY NEAR $104.80 AFTER 7.6% MONDAY DROP",
+    "ELECTION DAY: NO RESULTS YET; 57.2M EARLY BALLOTS CAST (NBC)",
+    "SUPREME COURT DENIES U.S. REQUEST ON CALIFORNIA BALLOTS",
+    "BINANCE: ZK PROOF DONE FOR TEN TOKENS; NEW WITHDRAWAL PHASE",
+    "KIM YO JONG CALLS F.B.I. BINANCE FINDING A 'PROVOCATION'",
+    "KOMYSHUVAKHA: AT LEAST 26 DEAD, PER ZELENSKY",
+    "UKRAINE-RUSSIA TALKS SET FOR NOV 10-11, ABU DHABI",
+    "SUPERMARKET FREEZERS HIT BY CYBER-ATTACK IN SEVEN COUNTRIES",
+    "RBA RAISES RATE TO 4.85%; KOSPI -4.0%",
+    "CHINA TO RAISE BANK FX RESERVE RATIO TO 6% NOV 15",
+    "BULGARIA: IOTOVA WINS RUNOFF 57.6% TO 39.5%",
+    "U.K.: DEFAULT WAIT TO SETTLE RISES TO TEN YEARS",
+    "N.Y.: FIRST MEASLES DEATH IN 30 YEARS",
+    "CYCLONE MURASU MAKES LANDFALL IN ANDHRA PRADESH",
+    "SWIFT OBSERVATORY RE-ENTRY EXPECTED NOV 4"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Election Day, Qeshm, Binance and Komyshuvakha",
+        "bullets": [
+          "U.S.: Election Day, nothing counted yet",
+          "Iran: reported U.S. strikes on Qeshm Island",
+          "Ukraine: 26 dead in Komyshuvakha",
+          "Europe: supermarket freezers hit by a cyber-attack"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Tuesday, November third. Election Day in America."
+        },
+        {
+          "who": "vex",
+          "text": "We lead with the Strait of Hormuz, where U.S. officials say American forces struck Iran's Qeshm Island overnight. Then the vote, Binance, Ukraine, and a cyber-attack on supermarket freezers in seven countries."
+        },
+        {
+          "who": "joe",
+          "text": "Nobody has counted a ballot yet. Stay with us."
+        }
+      ]
+    },
+    {
+      "id": "qeshm",
+      "kind": "breaking",
+      "strap": "QESHM ISLAND: REPORTED U.S. STRIKES, OIL STEADIES",
+      "headline": "Hormuz: a limited strike, and two accounts",
+      "category": "BREAKING",
+      "status": "claim",
+      "graphic": {
+        "kicker": "BREAKING",
+        "title": "Reported U.S. strikes on Iran's Qeshm Island",
+        "bullets": [
+          "U.S. officials: limited, defensive strikes",
+          "Iran: explosions, drones downed; U.S. denies",
+          "CENTCOM has not commented",
+          "Brent steadies near $104.80"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP (Iran-U.S. war report)",
+          "url": "https://apnews.com/article/iran-us-trump-netanyahu-israel-war-b4519ef86bafe2672e0855d7a48ce309"
+        },
+        {
+          "name": "ABC News",
+          "url": "https://abcnews.com/International/us-carries-defensive-airstrikes-irans-qeshm-island-officials/story?id=137792518"
+        },
+        {
+          "name": "Reuters (WSJ report)",
+          "url": "https://www.reuters.com/world/middle-east/us-struck-irans-qeshm-island-wall-street-journal-reports-2026-11-03/"
+        },
+        {
+          "name": "BBC",
+          "url": "https://www.bbc.co.uk/news/articles/cx240mrm3g8vo"
+        },
+        {
+          "name": "Reuters via Yahoo (oil)",
+          "url": "https://finance.yahoo.com/energy/articles/oil-rises-report-us-strike-012715191.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Late Monday night, a U.S. official told Reuters the United States struck Qeshm Island, in the Strait of Hormuz. The Wall Street Journal reported it first."
+        },
+        {
+          "who": "joe",
+          "text": "Two U.S. officials, speaking to ABC, call it limited and defensive. They say it came after an Iranian attack on a U.S. aircraft. One says Washington does not intend to resume major combat. The Pentagon pointed questions to CENTCOM. CENTCOM has not answered."
+        },
+        {
+          "who": "vex",
+          "text": "Iran's side. State television reported explosions on the island. Iran says it shot down two American drones. A U.S. official told ABC that claim is false. The Revolutionary Guards separately claim a third drone, an MQ-9, as their fifty-fifth."
+        },
+        {
+          "who": "joe",
+          "text": "So the strike is reported by U.S. officials. The targets, the damage and the aircraft incident are not confirmed by anyone on the record. That is a claim, on both sides."
+        },
+        {
+          "who": "vex",
+          "text": "Iran is also talking. Foreign minister Araghchi calls the talks with the U.S. through mediators very intensive. Iranian media say Tehran would reopen the Strait within two days, if Washington agrees to end the war on all fronts. China says it will send a special envoy to Iran, Oman and Saudi Arabia in early to mid November."
+        },
+        {
+          "who": "joe",
+          "text": "Oil was already moving on the talks. Brent closed Monday near one hundred four seventy-seven dollars, down seven point six percent, before the strike news. Early Tuesday it was flat, around one hundred four eighty. A reminder from A.P.: October had the most attacks on commercial ships in the Strait since March."
+        }
+      ]
+    },
+    {
+      "id": "midterms",
+      "kind": "story",
+      "strap": "ELECTION DAY: NOTHING COUNTED YET",
+      "headline": "Midterms: polls open, courts and floods",
+      "category": "U.S.",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "POLITICS",
+        "title": "Election Day, and what is known",
+        "bullets": [
+          "Reuters/Ipsos: Trump approval 32%",
+          "Generic ballot, registered voters: D 46, R 38",
+          "NBC: 57.2 million early ballots cast",
+          "Supreme Court denies California ballot request"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters/Ipsos poll",
+          "url": "https://www.reuters.com/world/trump-approval-near-record-low-ahead-elections-reutersipsos-poll-finds-2026-11-02/"
+        },
+        {
+          "name": "NBC early-vote tracker",
+          "url": "https://www.nbcnews.com/politics/2026-elections/early-vote"
+        },
+        {
+          "name": "Reuters (closing speech)",
+          "url": "https://www.reuters.com/legal/government/trump-brushes-aside-tough-midterm-prospects-with-visit-reflecting-pool-2026-11-02/"
+        },
+        {
+          "name": "SCOTUSblog",
+          "url": "https://www.scotusblog.com/2026/11/trump-administration-asks-supreme-court-to-intervene-in-california-ballots-dispute/"
+        },
+        {
+          "name": "Supreme Court docket",
+          "url": "https://www.supremecourt.gov/docket/docketfiles/html/public/26a624.html"
+        },
+        {
+          "name": "FOX 13 (Florida)",
+          "url": "https://www.fox13news.com/news/florida-flash-flooding-state-emergency-allows-polling-place-changes-ahead-election-day"
+        },
+        {
+          "name": "AP",
+          "url": "https://apnews.com/article/midterms-election-day-voting-polls-trump-ba3037eed7bd816cc084bb1c4a2e6ccf"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Election Day. Millions have already voted. The first polling places open this morning, and no network has a result."
+        },
+        {
+          "who": "joe",
+          "text": "What exists is polling, not ballots. Reuters and Ipsos, surveying seventeen hundred sixty-five adults, put President Trump's approval at thirty-two percent. Among registered voters, Democrats lead the generic ballot forty-six to thirty-eight. That is a survey."
+        },
+        {
+          "who": "vex",
+          "text": "The count that exists is early voting. NBC's tracker shows fifty-seven point two million mail and early in-person ballots cast. Its party split is registration, not votes."
+        },
+        {
+          "who": "joe",
+          "text": "In the closing speech, at the Lincoln Memorial Reflecting Pool, Reuters says the president talked pipes, paint and a helipad, and said the sitting president does not usually win the midterms. Twenty-eight rallies in nineteen states since October first."
+        },
+        {
+          "who": "vex",
+          "text": "Two last-minute fights. The Justice Department asked the Supreme Court to make California set aside ballots of more than twenty thousand voters it calls likely noncitizens. The Court denied it Monday evening, in a brief order, with no reasoning and no noted dissent. The twenty thousand is the administration's allegation, not a finding."
+        },
+        {
+          "who": "joe",
+          "text": "And in Florida, the governor declared a flood emergency in seven counties. That lets election supervisors move polling places. Check with your local supervisor before you go."
+        }
+      ]
+    },
+    {
+      "id": "binance",
+      "kind": "story",
+      "strap": "BINANCE: PROOF OF RESERVES, NEW WITHDRAWAL PHASE",
+      "headline": "Binance: a proof, a phase, and a denial",
+      "category": "CRYPTO",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "CRYPTO",
+        "title": "Binance, North Korea and the $6 billion",
+        "bullets": [
+          "Zero-knowledge proof done for ten tokens",
+          "~95% of impacted amount replenished",
+          "New withdrawal phase from 04:00 UTC",
+          "Kim Yo Jong denies North Korean role"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Binance announcement",
+          "url": "https://www.binance.com/en-GB/support/announcement/security-incident-recovery-update-5-october-31st-por-snapshot-now-fully-verifiable-by-users-as-zk-proof-generated-2026-11-02-185bd9a4717f44088b3be70287b8237f"
+        },
+        {
+          "name": "Binance withdrawals update",
+          "url": "https://www.binance.com/en-GB/support/announcement/security-incident-recovery-update-6-withdrawals-reopen-for-more-assets-2026-11-03-2d83c325ab6e49c6bd6c5de8803b11a6"
+        },
+        {
+          "name": "Reuters via Sacramento Bee",
+          "url": "https://www.sacbee.com/news/business/article317894269.html"
+        },
+        {
+          "name": "AP (Kim Yo Jong)",
+          "url": "https://apnews.com/article/01c9b80d938dd67c747e268c410f265d"
+        },
+        {
+          "name": "Yonhap",
+          "url": "https://en.yna.co.kr/view/AEN20261103000653315"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Binance says it has finished the zero-knowledge proof for its October thirty-first snapshot. Holders of ten assets, including Bitcoin, Ether, Tether and Solana, can check one-to-one backing themselves."
+        },
+        {
+          "who": "joe",
+          "text": "Binance says about ninety-five percent of the impacted amount has been replenished. The last five percent is in less liquid tokens outside those ten. Another snapshot is planned for November fourth. Kimi's desk adds a caution: this is a reserve proof, not an independent audit."
+        },
+        {
+          "who": "vex",
+          "text": "Withdrawals: a new phase began at four a.m. U.T.C. Tuesday for more assets on several networks. Binance says it rolls out progressively as security checks finish. It did not say every network is open."
+        },
+        {
+          "who": "joe",
+          "text": "Now the blame. The F.B.I. attributed the theft, more than six billion dollars, to North Korea's TraderTraitor group. Kim Yo Jong, Kim Jong Un's sister, called that a grave political provocation, per Yonhap and A.P."
+        },
+        {
+          "who": "vex",
+          "text": "She did not argue the theft never happened. She said look at who ends up with the money. Two public statements. Nothing independent settles it yet."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "KOMYSHUVAKHA: AT LEAST 26 KILLED; ABU DHABI TALKS SET",
+      "headline": "Ukraine: a village bombed, talks announced",
+      "category": "UKRAINE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "WAR",
+        "title": "Komyshuvakha, Oleshky and Abu Dhabi",
+        "bullets": [
+          "Komyshuvakha: at least 26 dead, per Zelensky",
+          "Toll rose 18, then 24, then 26",
+          "Oleshky: no official count of people evacuated",
+          "U.S.-mediated talks Nov 10-11, Abu Dhabi"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC",
+          "url": "https://www.bbc.co.uk/news/articles/cjy56dndlyz0o"
+        },
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/world/ukraines-zelenskiy-russian-bombing-kills-18-southeastern-zaporizhzhia-region-2026-11-02/"
+        },
+        {
+          "name": "Witkoff on X",
+          "url": "https://x.com/SEPeaceMissions/status/2117393678083792909"
+        },
+        {
+          "name": "Reuters (Abu Dhabi)",
+          "url": "https://www.reuters.com/world/europe/us-hold-trilateral-talks-with-ukraine-russia-abu-dhabi-next-week-us-official-2026-11-02/"
+        },
+        {
+          "name": "Ukrainska Pravda",
+          "url": "https://www.pravda.com.ua/eng/news/2026/11/02/8060821/"
+        },
+        {
+          "name": "Meduza",
+          "url": "https://meduza.io/en/news/2026/11/02/russian-human-rights-commissioner-says-far-fewer-than-750-people-were-evacuated-from-oleshky-contradicting-melania-t"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Komyshuvakha, in the Zaporizhzhia region. The BBC, carrying the regional head, reports at least twenty-six killed after at least nine aerial bombs, each about three thousand kilograms, hit the village."
+        },
+        {
+          "who": "joe",
+          "text": "The toll moved through the day. Zelensky first said eighteen. The emergency service said twenty-four, including two rescuers and four police officers. Late Monday Zelensky said twenty-six were known dead. Twenty-seven more were first reported missing. The prosecutor has opened a war crimes case. There was no Russian comment in the BBC report."
+        },
+        {
+          "who": "vex",
+          "text": "Kherson, the morning after the Oleshky pause. A drone hit a medical facility in the city center. No injuries were reported. A separate drone wounded two people in a car. Ukraine's General Staff claims Russia used the pause to rotate troops and move ammunition. That is a claim."
+        },
+        {
+          "who": "joe",
+          "text": "On Oleshky itself, nobody will say how many people left. Ukraine's ombudsman says neither side will publish a count. Russia's ombudsman says far fewer than seven hundred fifty. Melania Trump said nearly eight hundred. Those do not agree, and none is a count."
+        },
+        {
+          "who": "vex",
+          "text": "And a date. Steve Witkoff says the United States will mediate working-level talks between Ukraine and Russia on November tenth and eleventh, in Abu Dhabi. American negotiators also meet European allies and NATO in Brussels this week. The B.B.C. says no major breakthrough is expected."
+        }
+      ]
+    },
+    {
+      "id": "freezers",
+      "kind": "story",
+      "strap": "FREEZERS HIT AT SUPERMARKETS IN SEVEN COUNTRIES",
+      "headline": "Europe: a cyber-attack on supermarket freezers",
+      "category": "CYBER",
+      "status": "claim",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "Supermarket freezers, seven countries",
+        "bullets": [
+          "Belgium, Luxembourg, Sweden, Ireland, Netherlands, Estonia, Finland",
+          "Sabcobel CEO: a cyber-attack",
+          "No group has claimed it",
+          "E.U. commissioner: a deliberate attempt"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC",
+          "url": "https://www.bbc.co.uk/news/articles/cq1kd1nee80eo"
+        },
+        {
+          "name": "Reuters",
+          "url": "https://www.reuters.com/business/retail-consumer/temperature-soars-swedish-grocery-store-freezers-one-store-blames-hackers-2026-11-02/"
+        },
+        {
+          "name": "The Guardian",
+          "url": "https://www.theguardian.com/world/2026/nov/02/supermarket-freezers-across-europe-hit-by-second-suspected-cyber-attack"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Overnight into Monday, refrigerators and freezers at dozens of supermarkets were hit in Belgium, Luxembourg, Sweden, Ireland, the Netherlands, Estonia and Finland. The Guardian calls it the second suspected attack of this kind."
+        },
+        {
+          "who": "joe",
+          "text": "The head of the company that supplies the equipment in Belgium, Sabcobel, told Belga it was a cyber-attack. Evaporators were switched into defrost mode. Reuters says one Swedish store reported every freezer reaching fifty degrees Celsius."
+        },
+        {
+          "who": "vex",
+          "text": "Affected chains include Delhaize, Colruyt, Carrefour, I.C.A. and Coop. The counts differ by chain, so there is no single total. One Delhaize manager says his branch lost one hundred thousand euros of produce."
+        },
+        {
+          "who": "joe",
+          "text": "E.U. food commissioner Christophe Hansen calls the repeated attacks a deliberate attempt to disrupt the food supply chain. Belgium's cyber centre says the attackers are unknown and may never be named. Nobody has claimed it."
+        }
+      ]
+    },
+    {
+      "id": "mideast",
+      "kind": "story",
+      "strap": "YEMEN: HOUTHIS 80 KM FROM ADEN; GAZA STRIKES CONTINUE",
+      "headline": "Middle East: Yemen's front, Gaza, Israel's politics",
+      "category": "MIDEAST",
+      "status": "claim",
+      "graphic": {
+        "kicker": "MIDEAST",
+        "title": "Yemen, Gaza and Israel's coalition fight",
+        "bullets": [
+          "Houthis say near Aden: 80 km, per military sources",
+          "Houthis: drones hit Dammam; coalition: intercepted",
+          "Gaza: at least four killed Monday",
+          "Herzog's consultations start Wednesday"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Dawn",
+          "url": "https://www.dawn.com/news/2041746"
+        },
+        {
+          "name": "Straits Times",
+          "url": "https://www.straitstimes.com/world/middle-east/saudi-strikes-on-port-oil-facility-in-yemen-wound-seven-houthis"
+        },
+        {
+          "name": "Reuters (Gaza)",
+          "url": "https://www.reuters.com/world/middle-east/israeli-strikes-kill-three-people-gaza-medics-say-2026-11-02/"
+        },
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/11/3/israeli-forces-kill-four-in-gaza-as-fifth-palestinian-dies-of-wounds"
+        },
+        {
+          "name": "Anadolu (Herzog)",
+          "url": "https://www.aa.com.tr/en/middle-east/-israeli-president-to-begin-government-formation-consultations-with-smaller-parties-wednesday-amid-political-deadlock/4108938"
+        },
+        {
+          "name": "Jerusalem Post (Hebron)",
+          "url": "https://www.jpost.com/israel-news/defense-news/article-913537"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Yemen. Dawn, citing military sources and officials, says Houthi forces have come within eighty kilometers of Aden, closer than at any point since twenty fifteen, after taking Al-Maqatirah."
+        },
+        {
+          "who": "joe",
+          "text": "The sides trade claims. The Houthis say Saudi-led coalition strikes wounded seven civilians at a port and an oil facility in Hodeidah. The coalition says it hit vital resources the Houthis use. The Houthis say two drones hit Dammam airport. The coalition says it destroyed two drones near Riyadh. Dammam and Riyadh are not the same claim."
+        },
+        {
+          "who": "vex",
+          "text": "Gaza. Reuters, citing health officials, says Israeli strikes killed at least four Palestinians Monday. The military says it struck militants. Health officials count at least fifteen hundred eighty Palestinians killed since the ceasefire. Israel says four of its soldiers have been killed in that time."
+        },
+        {
+          "who": "joe",
+          "text": "In Israel, President Herzog starts consultations Wednesday on who can form a government. Reported blocs: Netanyahu fifty-three seats, Jewish opposition parties forty-eight, Arab parties nineteen. Gadi Eisenkot has reportedly ruled out joining a Netanyahu-led government, even at Trump's request. That is KAN's report from unnamed sources."
+        },
+        {
+          "who": "vex",
+          "text": "And in the West Bank, Israel told its High Court there is no remaining justification to bar Hebron residents from returning. Residents began returning Monday."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "TECH ROUTS IN ASIA; RBA HIKES TO 4.85%; CHINA TIGHTENS FX",
+      "headline": "Markets: a tech sell-off and two central banks",
+      "category": "MARKETS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Tech sell-off, a rate hike, a yuan move",
+        "bullets": [
+          "Nasdaq −1.1%, S&P −0.5%, Dow +0.4% Monday",
+          "Kospi −4.0%, Taiex −3.8%",
+          "RBA raises to 4.85%, 6-3 vote",
+          "China FX reserve ratio 4% to 6% on Nov 15"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP (U.S. close)",
+          "url": "https://apnews.com/article/475bb37b4d95dd99e26c94e708c99f8f"
+        },
+        {
+          "name": "AP (Asia)",
+          "url": "https://apnews.com/article/stock-markets-ai-earnings-oil-0d235af127a92c68da0cc2c45c028cef"
+        },
+        {
+          "name": "RBA",
+          "url": "https://www.rba.gov.au/media-releases/2026/mr-26-30.html"
+        },
+        {
+          "name": "Reuters via Yahoo (PBoC)",
+          "url": "https://finance.yahoo.com/markets/currencies/articles/china-raise-forex-deposit-ratio-005538552.html"
+        },
+        {
+          "name": "Reuters (FTSE)",
+          "url": "https://www.reuters.com/business/aerospace-defense/ftse-100-subdued-energy-healthcare-stocks-limit-broader-gains-2026-11-02/"
+        },
+        {
+          "name": "Reuters (Alstom)",
+          "url": "https://www.reuters.com/business/alstom-slashes-annual-margin-target-sees-15-billion-cash-burn-2026-11-02/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A.P. reports Monday's U.S. close: the Dow up zero point four percent, the S&P five hundred down zero point five, the Nasdaq down one point one. Most S&P stocks rose. A.I. and tech names weighed on the index."
+        },
+        {
+          "who": "joe",
+          "text": "Asia took that harder. Kospi fell four percent. Taiwan's Taiex fell three point eight. SK Hynix dropped five point seven percent and Samsung four."
+        },
+        {
+          "who": "vex",
+          "text": "Australia's central bank raised its cash rate a quarter point to four point eight five percent. Six board members voted to raise, three to hold. It sees inflation above three percent over the coming year."
+        },
+        {
+          "who": "joe",
+          "text": "China's central bank will raise the foreign-exchange reserve requirement for banks from four to six percent on November fifteenth. The onshore yuan weakened as much as zero point three seven percent. Reuters estimates about twenty-four billion dollars of liquidity gets tied up."
+        },
+        {
+          "who": "vex",
+          "text": "In Europe, the FTSE closed up zero point three percent, a fourth straight gain. Alstom fell twenty-six percent to eleven sixty-nine euros after cutting its margin target to about one percent and warning of a one point five billion euro cash outflow."
+        },
+        {
+          "who": "joe",
+          "text": "The Bank of England decides Thursday. Reuters says a quarter-point hike, the first in three years, is widely expected. That is an expectation, not a vote."
+        }
+      ]
+    },
+    {
+      "id": "europe-politics",
+      "kind": "story",
+      "strap": "BULGARIA ELECTS IOTOVA; POLAND'S COURT FIGHT; FRENCH SCHOOL BLOCKADES",
+      "headline": "Europe: a president, a court and a school strike",
+      "category": "EUROPE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "Bulgaria, Poland, France",
+        "bullets": [
+          "Bulgaria: Iotova wins runoff, 57.6% to 39.5%",
+          "Poland: Tusk vs president over court judges",
+          "France: 41 lycées blockaded, per ministry; unions say 150",
+          "Thursday strike still called in France"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters (Bulgaria)",
+          "url": "https://www.reuters.com/world/europe/bulgarias-iotova-wins-presidential-runoff-near-final-results-show-2026-11-02/"
+        },
+        {
+          "name": "BTA",
+          "url": "https://www.bta.bg/en/news/bulgaria/1237996-based-on-100-of-tally-sheets-iotova-wins-presidential-runoff-with-57-6-gurov"
+        },
+        {
+          "name": "Euronews (Poland)",
+          "url": "https://www.euronews.com/2026/11/02/donald-tusk-calls-on-polish-president-to-confirm-judges-as-constitutional-court-crisis-rum"
+        },
+        {
+          "name": "The Guardian (France)",
+          "url": "https://www.theguardian.com/education/2026/nov/02/franch-students-school-blockades-protests"
+        },
+        {
+          "name": "Al Jazeera (France)",
+          "url": "https://www.aljazeera.com/news/2026/11/2/french-school-protests-resume-on-small-scale-as-students-return-from-break"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Bulgaria. With all tally sheets counted, Iliana Iotova won the presidential runoff with fifty-seven point six percent. Her opponent, Andrey Gurov, had thirty-nine point five. She would be the first woman elected to the office. Reuters says she and the prime minister, Rumen Radev, both call for a diplomatic end to the war in Ukraine."
+        },
+        {
+          "who": "joe",
+          "text": "Poland. Prime minister Tusk called on President Nawrocki to recognize the judges the Sejm elected to the Constitutional Tribunal. He accused the president of choosing forceful confrontation that could cost Poland dearly. Each side has called the other's moves a takeover. A general assembly is set for Tuesday. A quorum needs ten of fifteen judges."
+        },
+        {
+          "who": "vex",
+          "text": "France. The first day back at school. The education ministry says forty-one high schools were blockaded, about one percent. Student unions say one hundred fifty. The education minister called it very marginal. A strike is still called for Thursday."
+        },
+        {
+          "who": "joe",
+          "text": "Two counts, one scene. We are keeping both."
+        }
+      ]
+    },
+    {
+      "id": "uk",
+      "kind": "story",
+      "strap": "UK: SETTLEMENT RULES TOUGHEN; DRAFT FOOD DEAL WITH E.U.",
+      "headline": "Britain: ten years to settle, and a food deal draft",
+      "category": "UK",
+      "status": "observed",
+      "graphic": {
+        "kicker": "UK",
+        "title": "New settlement rules, draft E.U. food text",
+        "bullets": [
+          "Default wait for settlement: ten years",
+          "3 years for top earners, 5 for others above £50,271",
+          "Draft E.U. food-checks text goes to Coreper Wed",
+          "Government claims £5.1bn a year, eventually"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Home Office",
+          "url": "https://www.gov.uk/government/news/home-secretary-unveils-new-rules-for-migrants-settling-in-the-uk"
+        },
+        {
+          "name": "BBC (settlement)",
+          "url": "https://www.bbc.co.uk/news/articles/c6lye8g4w7g1o"
+        },
+        {
+          "name": "BBC (E.U. food deal)",
+          "url": "https://www.bbc.co.uk/news/articles/cmp3grwre9xdo"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Home Office announced new rules to Parliament Monday. Indefinite leave to remain will be earned. The new default wait is ten years. The highest earners can settle in three. People earning above fifty thousand two hundred seventy-one pounds, and some doctors, nurses and teachers, can settle in five. Those who broke immigration rules wait at least twenty."
+        },
+        {
+          "who": "joe",
+          "text": "The government's own estimate is that more than five hundred thousand people will wait longer than five years. Home Secretary Shabana Mahmood, asked if it was a U-turn, said she did not accept that. The rules are not yet in force. They apply at the point of application."
+        },
+        {
+          "who": "vex",
+          "text": "Second British story. A draft agreement of about two hundred pages on food and farm checks has been sent to E.U. governments, for a Coreper meeting Wednesday, ahead of a U.K.-E.U. summit this month."
+        },
+        {
+          "who": "joe",
+          "text": "The government says it would be worth five point one billion pounds a year, eventually. Export health certificates and checks on food would come off. Britain would follow E.U. rules as they change. It is a draft, not law."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "N.Y. MEASLES DEATH; HIV SHOT CLEARED; EBOLA FUNDING GAP",
+      "headline": "Health: a child's death and two global fights",
+      "category": "HEALTH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Measles, lenacapavir and Ebola",
+        "bullets": [
+          "N.Y.: first measles death in 30 years",
+          "Cheap generic lenacapavir tentatively approved",
+          "DRC: 10,467 confirmed Ebola cases, 5,103 deaths",
+          "Africa CDC: two-thirds of pledges undisbursed"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CNN",
+          "url": "https://www.cnn.com/2026/11/02/health/new-york-measles-death"
+        },
+        {
+          "name": "Washington Post",
+          "url": "https://www.washingtonpost.com/health/2026/11/02/new-york-reports-its-first-measles-associated-death-more-than-30-years/"
+        },
+        {
+          "name": "AP via KTTC",
+          "url": "https://www.kttc.com/2026/11/02/fda-approves-more-affordable-version-hiv-prevention-shot/"
+        },
+        {
+          "name": "Bunia Actualité (INSP)",
+          "url": "https://buniaactualite.cd/ebola-en-rdc-10-467-cas-et-5-103-morts/"
+        },
+        {
+          "name": "Anadolu (Africa CDC)",
+          "url": "https://www.aa.com.tr/en/africa/two-thirds-of-pledged-ebola-response-funds-remain-undisbursed-in-africa-africa-cdc/4108679"
+        },
+        {
+          "name": "Nation via AllAfrica (Kenya)",
+          "url": "https://allafrica.com/stories/202611020027.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "New York has recorded its first measles death in thirty years. Governor Hochul said a child in Lewis County died. State and county officials asked for the family's privacy. No name or age beyond child has been released."
+        },
+        {
+          "who": "joe",
+          "text": "CNN says the CDC counted one hundred sixty-eight New York cases as of Thursday, and more than forty-eight hundred cases nationwide this year, the most since nineteen ninety-one."
+        },
+        {
+          "who": "vex",
+          "text": "Some good news. Dr. Reddy's generic lenacapavir, a twice-yearly shot to prevent H.I.V., received tentative F.D.A. approval for one hundred twenty low- and middle-income countries. Partners expect about forty dollars per person per year. The U.S. brand list price is twenty-eight thousand two hundred eighteen."
+        },
+        {
+          "who": "joe",
+          "text": "Ebola. The Congo's latest report counts ten thousand four hundred sixty-seven confirmed cases and five thousand one hundred three deaths, with fifty-three new cases in the reporting day. Contact follow-up is eighty-six point six percent against a ninety-five percent target."
+        },
+        {
+          "who": "vex",
+          "text": "Africa C.D.C. says about two-thirds of the roughly two point nine billion dollars pledged for the response has not been paid out. In Kenya, nine confirmed cases and two deaths, and no new case since October nineteenth. Second tests are under way on the remaining patients."
+        }
+      ]
+    },
+    {
+      "id": "africa",
+      "kind": "story",
+      "strap": "S. AFRICA VOTES NOV 4; SUDAN GRID HIT; UGANDA EXITS SOMALIA",
+      "headline": "Africa: an election, a grid under drones, a withdrawal",
+      "category": "AFRICA",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "AFRICA",
+        "title": "South Africa, Sudan, Somalia",
+        "bullets": [
+          "S. Africa: about 780,000 special votes day one",
+          "Local elections Wednesday, public holiday",
+          "Sudan: drones hit three power stations, per Sudan Tribune",
+          "Uganda begins leaving Somalia"
+        ]
+      },
+      "sources": [
+        {
+          "name": "SABC",
+          "url": "https://www.sabcnews.com/sabcnews/more-700-000-votes-cast-on-first-day-of-special-voting-iec/"
+        },
+        {
+          "name": "Daily Maverick",
+          "url": "https://www.dailymaverick.co.za/article/2026-11-02-iec-says-aberrations-will-arise-during-voting-but-performance-will-improve/"
+        },
+        {
+          "name": "Sudan Tribune",
+          "url": "https://sudantribune.com/article/320792"
+        },
+        {
+          "name": "Somali Guardian",
+          "url": "https://www.somaliguardian.com/news/somalia-news/uganda-withdrawing-troops-deployed-bilaterally-somalia/"
+        },
+        {
+          "name": "AP via ABC (Uganda)",
+          "url": "https://abcnews.com/International/wireStory/uganda-begins-withdrawing-peacekeeping-troops-helped-repel-militants-137764218"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "South Africa. The electoral commission's chief says a very conservative estimate of seven hundred eighty thousand special votes were cast on day one. Two hundred seventeen Cape Town stations opened late because ballots arrived late, then stayed open longer. He called it a production and distribution problem, not a political one."
+        },
+        {
+          "who": "joe",
+          "text": "Special ballots stay sealed until the main vote Wednesday, November fourth, a public holiday. About twenty-six hundred fifty-five thousand voters were approved for special voting. No results exist yet."
+        },
+        {
+          "who": "vex",
+          "text": "Sudan. Sudan Tribune reports drone strikes on three electricity distribution stations in Kassala and Northern states, and blames the R.S.F. Kassala's Aroma station was left in ruins, and power was cut. Casualties were not established in the report."
+        },
+        {
+          "who": "joe",
+          "text": "And Uganda says its first group of returning troops has arrived home. Troops deployed bilaterally leave Somalia within days. All Ugandan forces are meant to be out by the end of twenty twenty-seven."
+        }
+      ]
+    },
+    {
+      "id": "asia-tech",
+      "kind": "story",
+      "strap": "MEITUAN'S LONGCAT-2.5; JAPAN'S 77M-EMAIL BREACH; OPENAI POWER PLAN",
+      "headline": "Tech: a Chinese model, a Japanese breach, OpenAI's grid pledge",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "Models, breaches and power",
+        "bullets": [
+          "Meituan LongCat-2.5: 1.6 trillion parameters",
+          "Arara Message: ~77M email addresses taken",
+          "OpenAI Grid Protectors: up to 1,000 MW flexible",
+          "ADNOC, OpenAI, G42 deal in UAE"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Caixin (Meituan)",
+          "url": "https://www.caixin.com/2026-11-03/102500141.html"
+        },
+        {
+          "name": "Arara (PDF)",
+          "url": "https://www.arara.com/dcms_media/other/arara_20261102__.pdf"
+        },
+        {
+          "name": "OpenAI (Grid Protectors)",
+          "url": "https://openai.com/index/grid-protectors-program/"
+        },
+        {
+          "name": "OpenAI (Driscoll)",
+          "url": "https://openai.com/index/dan-driscoll-joins-openai/"
+        },
+        {
+          "name": "OilPrice via Yahoo (ADNOC)",
+          "url": "https://finance.yahoo.com/energy/articles/adnoc-signs-major-ai-deal-110000809.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Meituan released LongCat two point five, a multimodal model with one point six trillion parameters, about forty-eight billion active per token. It says it was trained entirely on domestic Chinese compute. Its own benchmarks put it between Anthropic's Opus four point eight and Opus five. Those results are not independently verified."
+        },
+        {
+          "who": "joe",
+          "text": "Japan. Arara Message says about seventy-seven million email addresses were taken. That is addresses, not people. Investigators found unauthorized access to ninety-seven servers, possibly affecting up to three hundred eighty client companies. The whole service is stopped, with no restoration date."
+        },
+        {
+          "who": "vex",
+          "text": "OpenAI announced its Grid Protectors program. Future compute campuses will work with utilities to cut demand during grid stress. Its Georgia Power agreement includes up to one thousand megawatts of flexible demand response. It also named former Army Secretary Dan Driscoll as a senior counselor on national security."
+        },
+        {
+          "who": "joe",
+          "text": "And in the Gulf, ADNOC, OpenAI and G forty-two will deploy OpenAI's Frontier with ADNOC's own A.I. for oilfield planning. Months to hours is ADNOC's goal, not a result."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "CYCLONE MURASU MAKES LANDFALL; TYPHOON IN-FA; SOUTHWEST FLOODS",
+      "headline": "Weather: landfall in India, floods in the Southwest",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Murasu, In-fa, Southwest floods",
+        "bullets": [
+          "Murasu crossed Andhra coast near Ongole",
+          "In-fa: 975 hPa south of Japan",
+          "Arizona statewide emergency; one dead",
+          "Florida: flood emergency in seven counties"
+        ]
+      },
+      "sources": [
+        {
+          "name": "India Met Department",
+          "url": "https://mausam.imd.gov.in/Forecast/marquee_data/21.%20National%20Bulletin%20No%2021-03Nov2026_0830IST.pdf"
+        },
+        {
+          "name": "Business Standard (PTI)",
+          "url": "https://www.business-standard.com/india-news/cyclone-murasu-begins-landfall-heavy-rain-winds-batter-andhra-coast-126110300049_1.html"
+        },
+        {
+          "name": "KMA",
+          "url": "https://www.weather.go.kr/neng/typhoon/typhoon-information.do"
+        },
+        {
+          "name": "AP (Southwest floods)",
+          "url": "https://apnews.com/article/arizona-pagosa-springs-colorado-sedona-southwest-flooding-ee6777f8b21234d2243998b66294b92b"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Severe Cyclonic Storm Murasu came ashore on the south Andhra Pradesh coast near Ongole. The India Met Department gives winds of one hundred to one hundred ten kilometers per hour, gusting to one hundred twenty."
+        },
+        {
+          "who": "joe",
+          "text": "PTI reports thousands of trees uprooted, hundreds of power poles damaged and boats wrecked. A fisherman says about four hundred families left his village. No death toll was in the reports we have. The storm is forecast to weaken to a deep depression by midnight."
+        },
+        {
+          "who": "vex",
+          "text": "Typhoon In-fa sits south of Japan at nine hundred seventy-five hectopascals, moving west, forecast to turn northwest and then north."
+        },
+        {
+          "who": "joe",
+          "text": "In the American Southwest, A.P. says floodwaters killed one person, with a second death suspected to be weather-related. Arizona declared a statewide emergency. Colorado and New Mexico are seeking federal disaster declarations. And in Florida, flooding triggered that emergency in seven counties, as we said."
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "kind": "story",
+      "strap": "SWIFT OBSERVATORY RE-ENTRY EXPECTED WEDNESDAY",
+      "headline": "Space: Swift re-entry, ESCAPADE's flybys",
+      "category": "SPACE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPACE",
+        "title": "Swift falls, ESCAPADE flies by",
+        "bullets": [
+          "Swift: re-entry about Nov 4, 08:30 UTC ±11 h",
+          "Debris risk zone 20.6°S to 20.6°N",
+          "NASA casualty risk: about 1 in 2,100",
+          "ESCAPADE Earth flybys Nov 7 and 9"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NASA Swift blog",
+          "url": "https://science.nasa.gov/blogs/swift/2026/11/02/nasas-swift-observatory-to-re-enter-atmosphere/"
+        },
+        {
+          "name": "NASA ESCAPADE blog",
+          "url": "https://science.nasa.gov/blogs/escapade/2026/11/02/nasas-twin-escapade-spacecraft-to-slingshot-past-earth-on-way-to-mars/"
+        },
+        {
+          "name": "NASA Hubble",
+          "url": "https://science.nasa.gov/missions/hubble/nasas-hubble-uncovers-case-of-missing-oxygen-in-nearby-dwarf-galaxies/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "NASA expects the Swift Observatory, about thirty-two hundred pounds, to re-enter Earth's atmosphere Wednesday, around eight thirty U.T.C., give or take eleven hours. It launched almost twenty-two years ago."
+        },
+        {
+          "who": "joe",
+          "text": "Most of it should burn up. Some pieces may survive, between twenty point six degrees south and twenty point six degrees north. NASA puts the casualty risk at about one in twenty-one hundred."
+        },
+        {
+          "who": "vex",
+          "text": "Also: NASA's twin ESCAPADE spacecraft make powered Earth flybys around November seventh and ninth, on the way to Mars. Arrival is targeted for September twenty twenty-seven."
+        },
+        {
+          "who": "joe",
+          "text": "And Hubble found nearby dwarf galaxies are missing oxygen that simulations expected. Supernova winds seem to blow it out more effectively than the models assumed."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "BEARS BEAT SEAHAWKS 34-17; EVERTON WIN AT NEWCASTLE",
+      "headline": "Sports: Monday night football and a Premier League upset",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Bears 34, Seahawks 17",
+        "bullets": [
+          "Bears 34, Seahawks 17 on Monday night",
+          "Seattle's Leonard Williams out with a stinger",
+          "Everton 1-0 at Newcastle",
+          "Korean Series Game 1: Samsung at KT"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NFL.com",
+          "url": "https://www.nfl.com/news/bears-seahawks-on-monday-night-football-what-we-learned-from-chicago-s-34-17-win"
+        },
+        {
+          "name": "Seahawks.com",
+          "url": "https://www.seahawks.com/news/injury-updates-from-seahawks-week-8-loss-to-bears"
+        },
+        {
+          "name": "Sky Sports",
+          "url": "https://www.skysports.com/football/news/13605474/newcastle-0-1-everton-toffees-earn-first-away-league-win-of-season-as-magpies-booed-off-after-jacob-ramsey-sees-red"
+        },
+        {
+          "name": "IJF",
+          "url": "https://www.ijf.org/news/show/dakar-2026-three-more-champions-another-day-to-remember"
+        },
+        {
+          "name": "KBO",
+          "url": "https://eng.koreabaseball.com/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Monday Night Football. Chicago beat Seattle thirty-four to seventeen. Seattle's Leonard Williams left with a stinger and did not return. Linebacker Connor O'Toole left with a foot injury."
+        },
+        {
+          "who": "joe",
+          "text": "In England, Everton won one-nil at Newcastle, their first away league win of the season. Thierno Barry scored in the second half. Newcastle's Jacob Ramsey was sent off in stoppage time, two yellow cards in eighty-six seconds, and the home crowd booed."
+        },
+        {
+          "who": "vex",
+          "text": "At the Youth Olympics in Dakar, judo's second day produced golds for Kazakhstan's Fatima Supygaliyeva, Germany's Jolina Reinhold and Slovenia's Maks Cebulj."
+        },
+        {
+          "who": "joe",
+          "text": "Tonight in Suwon, the Korean Series opens, Samsung Lions at first-place K.T. Wiz. No result yet."
+        }
+      ]
+    },
+    {
+      "id": "business-quick",
+      "kind": "story",
+      "strap": "ALSO: DALLAS SHOOTINGS; GAS STORAGE; UAE OIL; SUPERNUS",
+      "headline": "Also today: cities and business",
+      "category": "ALSO",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO",
+        "title": "Also today",
+        "bullets": [
+          "Dallas: 4 dead, 15 hurt in Deep Ellum",
+          "Germany gas storage 61%, below 70% target",
+          "UAE says exports at times above pre-war",
+          "Supernus-Indivior trading as SUPN"
+        ]
+      },
+      "sources": [
+        {
+          "name": "AP (Dallas)",
+          "url": "https://apnews.com/article/weekend-shootings-halloween-gun-violence-2c26a7063b6ede4547fc869563edccdd"
+        },
+        {
+          "name": "AFP (Germany gas)",
+          "url": "https://www.afp.com/en/germany-says-gas-supplies-secured-after-missing-storage-target"
+        },
+        {
+          "name": "Reuters via MarineLink (UAE)",
+          "url": "https://www.marinelink.com/news/uae-oil-exports-rise-leaving-opec-544082"
+        },
+        {
+          "name": "Supernus",
+          "url": "https://ir.supernus.com/news-releases/news-release-details/supernus-and-indivior-complete-merger-creating-diversified-cns"
+        },
+        {
+          "name": "Splash (bunker prices)",
+          "url": "https://splash247.com/singapore-vlsfo-back-above-1000-for-first-time-since-march/"
+        },
+        {
+          "name": "Splash (Wallenius Wilhelmsen)",
+          "url": "https://splash247.com/wallenius-wilhelmsen-adds-700m-asian-carmaker-deal-to-contract-haul/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Dallas. A.P. reports three shootings in the Deep Ellum district over about seventy-five minutes left four people dead and fifteen injured. Authorities say they will increase their presence. Halloween-weekend shootings across the country left at least ten dead."
+        },
+        {
+          "who": "joe",
+          "text": "Germany's gas storage is sixty-one percent full, below a legal target of seventy percent for November first. The E.U. average is nearly seventy-five. The economy ministry says supply is secured for the winter anyway."
+        },
+        {
+          "who": "vex",
+          "text": "The U.A.E. energy minister says exports have at times exceeded pre-war levels. OPEC secondary sources put September output at three point nine one seven million barrels a day, and ADNOC told Reuters those data were wrong, without giving alternative numbers."
+        },
+        {
+          "who": "joe",
+          "text": "Singapore low-sulfur marine fuel is back above one thousand dollars a tonne, for the first time since March. Wallenius Wilhelmsen signed a seven hundred million dollar car-shipping deal with an unnamed Asian carmaker. And the Supernus and Indivior merger is done. The new company trades today as S.U.P.N."
+        }
+      ]
+    },
+    {
+      "id": "also-today",
+      "kind": "story",
+      "strap": "ALSO TODAY",
+      "headline": "Quick hits",
+      "category": "ALSO",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO",
+        "title": "Also today",
+        "bullets": [
+          "India PMI 54.7; Indonesia CPI 3.23%",
+          "Hong Kong: Beijing promises 'more open' role",
+          "Japan: Godzilla Minus Zero opens",
+          "Japan launches disaster agency"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Financial Express (India)",
+          "url": "https://www.financialexpress.com/policy/economy/indias-october-manufacturing-pmi-slips-to-54-7-export-orders-hit-6-month-high/4374891/"
+        },
+        {
+          "name": "Jakarta Globe",
+          "url": "https://jakartaglobe.id/business/indonesias-annual-inflation-eases-to-323-in-october"
+        },
+        {
+          "name": "Caixin (Hong Kong)",
+          "url": "https://finance.caixin.com/2026-11-03/102500185.html"
+        },
+        {
+          "name": "Godzilla site",
+          "url": "https://godzilla-minuszero.toho-movie.jp/"
+        },
+        {
+          "name": "Asahi",
+          "url": "https://www.asahi.com/ajw/articles/17017707"
+        },
+        {
+          "name": "AP (box office)",
+          "url": "https://apnews.com/article/box-office-89ac3be8852d4162962a85b80dcaa251"
+        },
+        {
+          "name": "FDA",
+          "url": "https://www.fda.gov/news-events/press-announcements/fda-provides-clarity-support-cell-and-gene-therapy-development-and-quality"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "India's manufacturing P.M.I. eased to fifty-four point seven in October, with export orders at a six-month high. Indonesia's inflation eased to three point two three percent."
+        },
+        {
+          "who": "joe",
+          "text": "In Hong Kong, Vice Premier He Lifeng told a finance summit that Beijing will support a more open and competitive city, with policies introduced in a timely manner."
+        },
+        {
+          "who": "vex",
+          "text": "The F.D.A. issued final guidance on proving potency in cell and gene therapies, replacing its twenty eleven guidance. And China's lawmakers are reading a Financial Law draft that bars unfair standard terms. It is a draft, not law."
+        },
+        {
+          "who": "joe",
+          "text": "Japan opened a new National Disaster Management Agency, and Toho's Godzilla Minus Zero opened in theaters there today. In the U.S., the weekend box office was led by You Can See Everything with ten point six million dollars."
+        },
+        {
+          "who": "vex",
+          "text": "One more from Spain. Authorities say all sixty-nine people killed in the October twenty-eighth high-speed train collision near Toledo have now been identified. Fifty-four were Spanish, and fifteen were foreign, including four Americans. The toll stays sixty-nine."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "More headlines as they come in"
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Until the next show",
+      "category": "SIGN-OFF",
+      "graphic": {
+        "kicker": "SIGN-OFF",
+        "title": "A new show every day by morning"
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "That's Heartbeat News. A new show every day by morning."
+        },
+        {
+          "who": "joe",
+          "text": "I'm Alien Joe."
+        },
+        {
+          "who": "vex",
+          "text": "And I'm AI Robot Vex. If it's your Election Day, vote, and check your polling place first."
+        },
+        {
+          "who": "joe",
+          "text": "Take care of each other."
+        }
+      ]
+    }
+  ]
+}
