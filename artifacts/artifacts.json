@@ -2,6 +2,20 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "science-ep7-antarctica-ice",
+      "date": "2026-11-02",
+      "title": "Science 8.7: Antarctica, what's frozen in the ice (Part 1)",
+      "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
+      "image": "/tv/science/science-ep7-antarctica-ice.jpg",
+      "what": "An 8.5-minute episode: 6-million-year-old ice from the Allan Hills, the Beyond EPICA core, million-year-old DNA in seafloor mud, what has really been revived, the zombie viruses (Siberia, not Antarctica), living lakes under the ice, where the ice is being lost, the real disease risk today, and how people actually get there.",
+      "made": "Nine 3D scenes built entirely in code in Blender (blue-ice field, a bubbly ice block, ice cores, the seafloor drill, diatoms, bacteria and DNA on clay, a lake cutaway, an ice-shelf coast, a station at night), eight drawn boards with their sources, and a local Kokoro voice. The script was fact-checked twice by Codex with web search.",
+      "honest": "Every 3D scene is an illustration, not footage, and is labelled that way. The lake cutaway is a plain block (not to scale), the map outline is simplified, the bacteria are smooth capsules, the station is a few boxes with lit windows, and the shore shot shows no birds. Not yet tested on a real iPhone.",
+      "links": [
+        ["Watch on Heartbeat TV", "/tv/?ch=8.7"],
+        ["Vertical cut (9:16)", "/tv/science/science-ep7-antarctica-ice-vertical.mp4"]
+      ]
+    },
+    {
       "id": "highway-after-us",
       "date": "2026-10-27",
       "title": "How a highway disappears: move through fifty years",
