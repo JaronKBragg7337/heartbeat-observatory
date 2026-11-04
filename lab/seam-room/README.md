@@ -37,9 +37,11 @@ first log. When the log becomes a chair, `kind` changes but the ID does not. "Re
 - `garage.js` - page C (the garage). `den.js` - page D (the media room) and the Heartbeat News player on its computer.
   `kitchen.js` - page E (the kitchen behind B's back door). `gym.js` - page F (the gym behind the media room's side door).
   `hallway.js` - page G (the long hallway behind the media room's back door, ten numbered future doors).
+  `closet.js` - page H (the walk-in closet behind hallway door 1). `studio.js` - page I (the music studio behind hallway
+  door 2, with a beat machine made in WebAudio).
 - `seam.js` - the reusable piece. No three.js, no room, no network. Exposes `Seam.define({...})`.
 - `room.js` - this room: scene, player, peers, the object, the card, the log, the doors.
-- `room.css` - shared styles. `a/` .. `g/` `index.html` - the real entry pages (identical apart from the letter and title).
+- `room.css` - shared styles. `a/` .. `i/` `index.html` - the real entry pages (identical apart from the letter and title).
 - `index.html` - sends `/lab/seam-room/` to `/a/`.
 - Body model: `/lab/bedroom/person.glb` (walk + idle clips), shared, not copied.
 
@@ -302,6 +304,45 @@ door-3 test: hallway.js `openDoor()` cuts the hall wall and paints the leaf; clo
   added after the agent started shows its letter (the inbox said "Jaron on ?" for G). It also knows the closet's
   furniture. A running agent keeps its old code until restarted.
 
+## Page I: the music studio (2026-11-04, Jaron picked it)
+
+Hallway door `g-2` (barn red, west wall, z 16.5) is a real door now (`between` g/i, still barn red), and behind it is a
+home recording studio at `/lab/seam-room/i/` built by `studio.js`: inside x -8.25..-4.6, z 12.0..21.4 (3.65 x 9.4 m),
+2.7 m high, between the hall and the gym's wall (x -8.4..-8.25), clear of the media room (z up to 9.7). Jaron used to
+make beats with a producer and his song "First Light" brought that back, so the room is his: the session on the screen
+is First Light, the neon on the back wall says "first light", the record on the turntable has its label.
+
+- **Control room** (z 12.0..18.3): a walnut desk facing the booth glass with a 12-channel mixing desk (fader and knob
+  caps, two LED meters), a screen with the DAW, the pad controller, two monitor speakers on stands aimed at the chair, an
+  office chair; a cognac leather couch under two wood skyline diffusers and the neon; an acoustic guitar on its stand; a
+  walnut credenza with a turntable and a crate of records; wedge foam, two corner bass traps, a kilim rug, a floor lamp
+  and a warm LED cove under the ceiling. ON AIR over the window.
+- **Vocal booth** (z 18.42..21.4) behind a glass partition (a window, two panes) through an open doorway at its east end
+  (x -5.65..-4.6): foam on every wall, a condenser mic on a stand with a pop filter and headphones, a lyric stand, one
+  pendant. The floor is two walk rectangles (`studio`, `booth`) joined by `door-i-booth`, a doorway whose `door` id has no
+  door entry, so room.js always lets you through and the AI routes through it like any other doorway.
+- **The beat:** tap the pad controller (or the screen). A loop plays, made entirely in code with WebAudio (no samples, no
+  files): kick (a pitched sine plus a short triangle knock a phone speaker can play), a snap (three noise bursts through a
+  band-pass), closed and open hats (high-passed noise), a sawtooth + sine bass line through a swept low-pass, F minor,
+  88 BPM, two bars, the off 8ths swung, a faint vinyl crackle. Pads light in time (orange kick, pink snap, yellow hats,
+  purple bass), the meters move, the woofers pump, the record spins, the playhead runs and ON AIR lights. Tap again to
+  stop. It stops by itself when you leave page I, hide the tab or leave the page; a hot-swapped studio closes its
+  AudioContext. Local only: other people in the room do not hear it (not synced).
+- **iPhone:** the AudioContext is created and resumed inside the tap (pointerup), with a one-sample silent buffer to
+  open the audio path and a touchend fallback that resumes it again; `navigator.audioSession.type = "playback"` (Safari
+  16.4+) so it plays with the ring switch on silent, like a video would.
+- **Phone:** ~20-80 draw calls inside. Foam tiles (75), diffuser blocks (288), pads, faders, knobs, meters, woofers and
+  record sleeves are InstancedMeshes; static parts merged per material; no shadows, NO new light (lamps and the cove
+  glow, their light is additive decals). Canvas textures only. While the camera is in the studio the room's (A/B)
+  static pieces go to an undrawn camera layer, the same way and the same `closetMask` key as the closet (so the two can
+  never undo each other).
+- **The AI:** room-agent.mjs knows the studio's furniture, and `walk-to i` / `walk-to studio` / `walk-to "page i"` walk
+  to a room by its letter or name. Fixed on the way: a character standing inside a wall doorway (in the wall's
+  thickness) aimed straight at a far goal and could wedge there (door 2 to doors 8 and 10); it now steps out on the
+  goal's side first. Simulated: 47 named trips (every page to the mic and back, the booth corners, the couch, every
+  numbered door) all arrive; random trips 1337/1500 on the old floors vs 1329/1500 before (the misses are goals inside
+  furniture, the same as before).
+
 ## New rooms without a reload (2026-11-01, Jaron asked)
 
 Someone standing in the room when a new zone deploys sees it arrive, no reload. room.js fetches `zones.json`
@@ -341,8 +382,8 @@ and tracks presence once per connection (law 1). A running `join` keeps its old 
    whoever is online right now. If everyone leaves, a new visitor starts from their own copy (or `SR1-A-LOG-0001`). It
    needs a table (one row per asset ID: kind, born, visited, changes, rev), with the channel used only for live moves.
    Same lesson as Ashgrove's D6: decide this before building the 3-page road.
-2. **More zones** - seven are tested (A, B, garage C, media room D, kitchen E, gym F, hallway G). The AI's routing chains
-   doors now. The hallway's ten numbered doors are waiting for pages.
+2. **More zones** - nine are tested (A, B, garage C, media room D, kitchen E, gym F, hallway G, closet H, studio I). The
+   AI's routing chains doors now. Hallway doors 3..10 are waiting for pages.
 3. **True separate-page loads with different code per zone** - both pages load the same `room.js`. A zone that needs its
    own heavy scene (a factory) would need either lazy-loading per zone or a real navigation, and the handoff then
    needs the server state from step 1.

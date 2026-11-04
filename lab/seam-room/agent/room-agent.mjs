@@ -84,7 +84,24 @@ const SOLIDS = [
   [-1.87, 10.25, -1.45, 11.65], [-3.6, 49.2, -2.3, 49.7], [-4.45, 49.15, -3.9, 49.7],
   // the closet (page H, closet.js): the shirts (south wall), the coats (north wall), the shoe rack under the mirror, the basket
   [-1.3, 11.5, 1.2, 12.12], [-1.3, 13.88, 1.2, 14.5], [0.86, 12.2, 1.2, 13.8], [0.2, 13.38, 0.7, 13.88],
+  // the music studio (page I, studio.js): the glass partition (its doorway is x -5.65..-4.6), the desk + monitors, the
+  // chair, the couch, the corner bass traps, the guitar, the credenza, the floor lamp, the mic stand, the lyric stand
+  [-8.25, 18.3, -5.65, 18.42], [-8.25, 17.15, -5.75, 18.3], [-7.28, 16.44, -6.72, 17.0], [-7.6, 12.0, -5.6, 12.9],
+  [-8.25, 12.0, -7.87, 12.38], [-4.98, 12.0, -4.6, 12.38], [-8.25, 14.05, -7.71, 14.55], [-5.04, 13.18, -4.6, 15.42],
+  [-5.22, 12.46, -4.9, 12.78], [-6.78, 19.59, -6.46, 19.91], [-7.75, 20.1, -7.35, 20.5],
 ];
+/* "page i", "i", "studio", "music studio": a zone named by its letter or its name -> where people spawn in it. Lets the
+   AI be sent to a room without knowing its coordinates (walk-to i, walk-to studio). */
+function zoneSpot(q) {
+  const s = String(q || "").trim().toLowerCase().replace(/^the\s+/, "");
+  const m = /^(?:page\s*)?([a-z])$/.exec(s);
+  const plain = (t) => t.toLowerCase().replace(/[^a-z ]/g, "").trim();
+  const zn = (m && ZONES.find((z) => z.id === m[1])) || ZONES.find((z) => z.name && plain(z.name) === plain(s))
+    || ZONES.find((z) => z.name && plain(s).length > 2 && plain(z.name).split(" ").includes(plain(s)));   // "studio" -> Music Studio
+  if (!zn) return null;
+  const sp = zn.spawn || { x: 0, z: 0 };
+  return { zone: zn.id, name: zn.name || `page ${zn.label || zn.id.toUpperCase()}`, x: sp.x, z: sp.z };
+}
 /* "door:g-3" (or "door 3", "door:d-back"): the spot 0.8 m in front of that door, on the side of the first zone in its
    `between` (the hallway side for g-1..g-10), so the AI can be sent to any numbered door */
 function doorSpot(q) {
@@ -198,7 +215,8 @@ function hop(from, goal) {
   const a = areaOf(from.x, from.z), b = areaOf(goal.x, goal.z);
   if (!a && b) {   // standing in a doorway (inside the wall): if it does not lead to the goal's floor, step out on the side that does
     const dw = DOORWAYS.find((d) => inDoorway(d, from, 0.05));
-    if (!dw || dw.links.includes(b)) return goal;
+    if (!dw) return goal;
+    if (dw.links.includes(b)) return doorEnds(dw, b).near;   // step out on the goal's side first (a straight line to a far goal wedged in the wall)
     const via = dw.links.find((l) => firstDoorway(l, b) !== dw) || dw.links[0];
     return doorEnds(dw, via).near;
   }
@@ -699,6 +717,12 @@ async function join(args) {
         void goTo(g.x, g.z, ds.face);
         return { ok: true, walkingTo: `${ds.name} (${ds.door})`, at: { x: +g.x.toFixed(2), z: +g.z.toFixed(2) }, eta_s: +(Math.hypot(g.x - me.x, g.z - me.z) / WALK_SPEED).toFixed(1) };
       }
+      const zs = person && zoneSpot(person);
+      if (zs) {   // walk-to i, walk-to studio, walk-to "page j"
+        const g = collide(zs.x, zs.z);
+        void goTo(g.x, g.z);
+        return { ok: true, walkingTo: `${zs.name} (page ${pageOf(zs.zone)})`, at: { x: +g.x.toFixed(2), z: +g.z.toFixed(2) }, eta_s: +(Math.hypot(g.x - me.x, g.z - me.z) / WALK_SPEED).toFixed(1) };
+      }
       if (person) {
         const p = findPeer(person);
         if (!p) throw new Error(`nobody called "${person}" is here. Run look.`);
@@ -848,7 +872,11 @@ const HELP = `Seam Room character (only Jaron can talk to it)
                                     x -32.4..-8.4, z -10.15..23.85 through the media room's side door at x -8.25,
                                     z 6.85 (court centre x -18.9, z 6.85; hoops at z -5.6 and 19.3); the hallway, page G, is
                                     x -4.45..-1.45, z 9.7..49.7 through the media room's back door at x -2.95, z 9.55
-                                    the closet, page H, is x -1.3..1.2, z 11.5..14.5 through hallway door 1 (x -1.45, z 13)
+                                    the closet, page H, is x -1.3..1.2, z 11.5..14.5 through hallway door 1 (x -1.45, z 13);
+                                    the music studio, page I, is x -8.25..-4.6, z 12.0..21.4 through hallway door 2
+                                    (x -4.45, z 16.5): control room south of the glass at z 18.3, vocal booth north of
+                                    it through the doorway at x -5.1 (the mic is at x -6.6, z 19.75)
+  walk-to i | walk-to studio        walk to a room by its page letter or its name (where people spawn there)
   walk-to door:g-3                  walk to the front of a door (g-1..g-10 = the hallway's numbered doors, odd ones on
                                     the east wall at z 13, 20, 27, 34, 41, even ones on the west wall at z 16.5 .. 44.5;
                                     also door:d-back, door:a-d, ...; "door 3" works too)
