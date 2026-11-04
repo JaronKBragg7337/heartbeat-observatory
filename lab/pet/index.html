@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#2a2420">
+<title>The Pet - Heartbeat Observatory</title>
+<meta name="description" content="A little pet made of soft cells. Drop berries, it eats and grows. It is not an AI; it is just a pet.">
+<!-- hb:no-phone --><!-- hb:no-editor -->
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#2a2420;color:#f3ead8;
+  font:13px/1.4 system-ui,-apple-system,sans-serif;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:pointer}
+#gl.holding{cursor:grabbing}
+#loading{position:fixed;inset:0;z-index:100;background:#2a2420;display:flex;align-items:center;justify-content:center;
+  font:600 13px/1.4 Georgia,serif;letter-spacing:.2em;color:#e8c98a;transition:opacity .6s}
+#loading.off{opacity:0;pointer-events:none}
+
+/* the name card, top-left, small */
+#card{position:fixed;z-index:60;left:calc(10px + env(safe-area-inset-left));top:calc(10px + env(safe-area-inset-top));
+  max-width:min(300px,calc(100vw - 80px));background:rgba(26,20,15,.6);border:1px solid rgba(232,180,90,.26);border-radius:14px;
+  padding:7px 12px 9px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
+#card a,#card button{pointer-events:auto}
+#card #hb-top{min-height:30px!important;font-size:12px!important}
+#petName{font:600 19px/1.2 Georgia,'Times New Roman',serif;color:#f3ead8;letter-spacing:.01em;margin:2px 0 1px}
+#status{font-size:11.5px;color:#d8ccb4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tummyRow{display:flex;align-items:center;gap:7px;margin-top:6px;font:600 10px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#b9a98c}
+#tummyBar{flex:1;height:6px;border-radius:3px;background:rgba(243,234,216,.14);overflow:hidden;min-width:90px}
+#tummy{height:100%;width:50%;border-radius:3px;background:linear-gradient(90deg,#d9a24c,#f0cf7a);transition:width .6s}
+
+#gear{position:fixed;z-index:60;right:calc(10px + env(safe-area-inset-right));top:calc(10px + env(safe-area-inset-top));width:44px;height:44px;border-radius:22px;
+  border:1px solid rgba(232,180,90,.3);background:rgba(26,20,15,.6);color:#e8c98a;font-size:19px;cursor:pointer;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+
+#hint{position:fixed;z-index:60;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100vw - 32px);
+  background:rgba(26,20,15,.6);border:1px solid rgba(232,180,90,.26);border-radius:20px;padding:8px 14px;font-size:12.5px;color:#f3ead8;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none;transition:opacity .5s;white-space:nowrap}
+#hint.off{opacity:0}
+
+#labels{position:fixed;inset:0;z-index:55;pointer-events:none;overflow:hidden}
+.float{position:absolute;transform:translate(-50%,-50%);font:600 15px Georgia,serif;color:#fff3d6;text-shadow:0 1px 8px rgba(0,0,0,.45);animation:floatUp 1.5s ease-out forwards;white-space:nowrap}
+.float.big{font-size:18px;color:#ffe3a0}
+@keyframes floatUp{0%{opacity:0;margin-top:6px}15%{opacity:1}100%{opacity:0;margin-top:-54px}}
+
+/* the hatch screen and the settings sheet */
+.sheet{position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);width:min(340px,92vw);max-height:80vh;overflow:auto;
+  background:#f3ead8;color:#2c2118;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.5);padding:18px 18px 16px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+  font:14px/1.45 Georgia,'Times New Roman',serif;-webkit-user-select:text;user-select:text}
+.sheet.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.sheet h2{margin:0 0 4px;font:600 21px/1.2 Georgia,serif}
+.sheet p{margin:0 0 12px;color:#7a6650;font-size:13px}
+.sheet label{display:block;font:600 11px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:#7a6650;margin:10px 0 5px}
+.sheet input{width:100%;height:44px;border-radius:11px;border:1px solid #cdbda0;background:#fff;color:#2c2118;font:16px Georgia,serif;padding:0 12px;outline:none}
+.sheet input:focus{border-color:#b07d2e}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{width:40px;height:40px;border-radius:20px;border:3px solid transparent;cursor:pointer;box-shadow:inset 0 -6px 10px rgba(0,0,0,.12),0 2px 4px rgba(0,0,0,.15);padding:0}
+.swatch.on{border-color:#2c2118}
+.act{width:100%;min-height:46px;border:0;border-radius:12px;background:#2c2118;color:#f3ead8;font:600 15px system-ui,sans-serif;cursor:pointer;margin-top:14px}
+.act.soft{background:transparent;color:#7a6650;border:1px solid #cdbda0;min-height:40px;font-weight:500;margin-top:8px}
+.sheet .x{position:absolute;right:10px;top:10px;width:34px;height:34px;border-radius:17px;border:0;background:#2c2118;color:#f3ead8;font-size:17px;cursor:pointer;margin:0}
+.sheet small{display:block;color:#8a7660;font:12px system-ui,sans-serif;margin-top:10px}
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="loading">THE PET</div>
+
+<div id="card" data-hb-top-in>
+  <div id="petName">…</div>
+  <div id="status">just hatched</div>
+  <div id="tummyRow"><span>tummy</span><div id="tummyBar"><div id="tummy"></div></div></div>
+</div>
+<button id="gear" type="button" aria-label="Settings">⚙</button>
+<div id="hint" class="off"></div>
+<div id="labels"></div>
+
+<div id="hatch" class="sheet" role="dialog" aria-label="Hatch your pet">
+  <h2>A little one is hatching</h2>
+  <p>It is not an AI and it cannot talk. It is just a pet: it wanders, naps, eats what you drop, and grows.</p>
+  <label for="hatchName">Name</label>
+  <input id="hatchName" maxlength="18" autocomplete="off" spellcheck="false">
+  <label>Colour</label>
+  <div id="hatchSwatches" class="swatches"></div>
+  <button id="hatchGo" class="act" type="button">Hatch</button>
+</div>
+
+<div id="sheet" class="sheet" role="dialog" aria-label="Settings">
+  <button id="sheetClose" class="x" type="button" aria-label="Close">×</button>
+  <h2>Settings</h2>
+  <label for="renameIn">Name</label>
+  <input id="renameIn" maxlength="18" autocomplete="off" spellcheck="false">
+  <button id="renameGo" class="act" type="button">Save name</button>
+  <label>Colour</label>
+  <div id="sheetSwatches" class="swatches"></div>
+  <button id="reset" class="act soft" type="button">Start over</button>
+  <small>Saved on this phone only (localStorage). Two fingers turn the camera. Day and night follow your clock.</small>
+</div>
+
+<script type="module" src="/lab/pet/world.js?v=1"></script>
+<script src="/lab/lab-top.js"></script>
+</body>
+</html>
