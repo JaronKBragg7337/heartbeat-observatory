@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tesseract Pages</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the stage is the whole screen. A canvas draws the turning tesseract; a layer of page faces is mapped onto cell faces with matrix3d; the HUD sits top, the dock bottom. Single dark theme shared with the other tesseract pages. */
+:root{
+  --void:#08070f;
+  --ink:#12101f;
+  --fg:#ece8f6;
+  --fg-dim:#8f87ad;
+  --line:#2a2640;
+  --near:#ffb347;
+  --far:#4f5bff;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--void);color:var(--fg);font-family:var(--mono);font-size:12px;overflow:hidden;overscroll-behavior:none}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#c.dragging{cursor:grabbing}
+#faces{position:fixed;inset:0;pointer-events:none;z-index:2}
+.face{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:auto;overflow:hidden;background:var(--ink);border:1px solid var(--line);transition:opacity .9s ease;will-change:transform}
+.face.leaving{pointer-events:none;opacity:0}
+.face .card{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:10px;padding:24px;background:linear-gradient(160deg,var(--c1),var(--c2))}
+.face .card .letter{font-family:var(--display);font-weight:600;font-size:clamp(40px,12vmin,96px);line-height:1;color:rgba(255,255,255,.92)}
+.face .card h2{margin:0;font-family:var(--display);font-weight:300;font-size:clamp(13px,2.6vmin,20px);letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.95);text-wrap:balance}
+.face .card p{margin:0;color:rgba(255,255,255,.7);max-width:30ch;line-height:1.5;font-size:11px}
+.face .card a{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.6);border-radius:999px;padding:8px 14px;font-size:11px;letter-spacing:.06em;justify-self:center}
+.face .card a:hover{background:rgba(255,255,255,.12)}
+.face iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;opacity:0;transition:opacity .6s ease}
+.face iframe.ready{opacity:1}
+.hud{position:fixed;top:0;left:0;right:0;z-index:3;pointer-events:none;
+  padding-top:calc(14px + env(safe-area-inset-top,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.hud h1{margin:0;font-family:var(--display);font-weight:300;font-size:clamp(16px,2.4vw,24px);letter-spacing:.08em;text-transform:uppercase;line-height:1;text-wrap:balance}
+.hud h1 b{font-weight:600;color:var(--near)}
+.hud p{margin:6px 0 0;color:var(--fg-dim);max-width:46ch;line-height:1.5}
+.hud a{pointer-events:auto;color:var(--near);text-decoration:none;border-bottom:1px solid transparent}
+.hud a:hover{border-bottom-color:var(--near)}
+.hud a:focus-visible{outline:2px solid var(--near);outline-offset:2px}
+.zero{text-align:right;line-height:1.6;white-space:nowrap;font-variant-numeric:tabular-nums}
+.zero .label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim)}
+.zero .name{font-family:var(--display);font-weight:600;font-size:clamp(14px,2.2vw,22px);color:var(--near);letter-spacing:.04em}
+.zero .sub{color:var(--fg-dim)}
+.zero .sub span{color:var(--fg)}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:4;background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  padding-block:12px calc(14px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  transition:transform .35s cubic-bezier(.2,.8,.2,1);max-height:60vh;overflow-y:auto}
+.dock.hidden{transform:translateY(100%)}
+.dock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 28px;max-width:1240px;margin:0 auto}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+legend{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim);padding:0;margin-bottom:6px}
+.row{display:grid;grid-template-columns:7.5em 1fr 3.8em;align-items:center;gap:10px;min-width:0;padding:3px 0}
+.row label{color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row output{text-align:right;color:var(--fg-dim);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;min-width:0;accent-color:var(--near);height:22px;margin:0;background:transparent}
+input[type=range]:focus-visible{outline:2px solid var(--near);outline-offset:2px;border-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+button{font:inherit;font-size:11px;letter-spacing:.06em;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer;line-height:1}
+button:hover{border-color:var(--fg-dim)}
+button:focus-visible{outline:2px solid var(--near);outline-offset:2px}
+button[aria-pressed=true]{border-color:var(--near);color:var(--near)}
+.pill{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--ink);border-color:var(--fg-dim)}
+.hint{color:var(--fg-dim);line-height:1.5;margin:0}
+.held{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;font-variant-numeric:tabular-nums}
+.held i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.held .n{color:var(--fg-dim)}
+.held .on .n{color:var(--near)}
+.held .t{text-align:right;color:var(--fg-dim)}
+.held .on .t{color:var(--fg)}
+@media (max-width:640px){
+  .hud p{display:none}
+  .zero .sub{font-size:10px}
+  .row{grid-template-columns:6.5em 1fr 3.4em}
+}
+@media (prefers-reduced-motion:reduce){ .dock,.face,.face iframe{transition:none} }
+</style>
+</head>
+<body>
+
+<canvas id="c" aria-label="A turning tesseract. Drag anywhere outside the active page to turn it."></canvas>
+<div id="faces"></div>
+
+<header class="hud">
+  <div>
+    <h1>Tesseract <b>Pages</b></h1>
+    <p>Eight rooms live on the eight cells of a turning tesseract. You stay at ground zero. Whichever cell turns to face you is the page you are in. Drag outside the page to turn it, or let it turn on its own.</p>
+    <p><a href="index.html">Drift</a> · <a href="anatomy.html">Anatomy</a></p>
+  </div>
+  <div class="zero" aria-live="off">
+    <div class="label">Ground zero</div>
+    <div class="name" id="z-name">—</div>
+    <div class="sub">held <span id="z-held">0 s</span> · next <span id="z-next">—</span></div>
+  </div>
+</header>
+
+<button class="pill" id="toggle" aria-expanded="true" aria-controls="dock">Hide controls</button>
+
+<aside class="dock" id="dock" aria-label="Controls">
+  <div class="dock-grid">
+    <fieldset>
+      <legend>The turn</legend>
+      <div class="row"><label for="period">seconds per page</label><input type="range" id="period" min="2" max="60" step="1" value="12"><output for="period" id="o-period">12</output></div>
+      <div class="row"><label for="wobble">wander</label><input type="range" id="wobble" min="0" max="1" step="0.01" value="0.35"><output for="wobble" id="o-wobble">0.35</output></div>
+      <div class="chips">
+        <button type="button" id="turn" aria-pressed="true">Turning</button>
+        <button type="button" id="prev">◀ Previous</button>
+        <button type="button" id="next">Next ▶</button>
+      </div>
+      <p class="hint" style="margin-top:6px">Drag sideways to pull the next room in from the side, drag up or down for the rooms above and below. Let go and it coasts.</p>
+    </fieldset>
+    <fieldset>
+      <legend>View</legend>
+      <div class="row"><label for="zoom">zoom</label><input type="range" id="zoom" min="0.6" max="1.6" step="0.01" value="1"><output for="zoom" id="o-zoom">1.00</output></div>
+      <div class="row"><label for="tilt">tilt</label><input type="range" id="tilt" min="0" max="0.6" step="0.01" value="0.12"><output for="tilt" id="o-tilt">0.12</output></div>
+      <div class="row"><label for="depth">w depth</label><input type="range" id="depth" min="2.4" max="5" step="0.05" value="3"><output for="depth" id="o-depth">3.00</output></div>
+      <div class="chips">
+        <button type="button" id="wire" aria-pressed="true">Show the other cells</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Time held in each room</legend>
+      <div class="held" id="held"></div>
+    </fieldset>
+  </div>
+</aside>
+
+<script>
+(() => {
+'use strict';
+const EMBED = true;   // true: the active cell loads the real room; false: cards only (inside an artifact other sites cannot be framed)
+const $ = id => document.getElementById(id);
+const canvas = $('c'), ctx = canvas.getContext('2d', { alpha: false });
+const TAU = Math.PI * 2;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const VOID = '#08070f';
+
+/* ---------- the eight rooms, one per cell (cell order: x−, x+, y−, y+, z−, z+, w−, w+) ---------- */
+const SITE = 'https://www.heartbeatobservatory.com/lab/seam-room/';
+const ROOMS = [
+  { key: 'C', name: 'Garage',             url: SITE + 'c/', hue: 34 },
+  { key: 'D', name: 'Media Room',         url: SITE + 'd/', hue: 22 },
+  { key: 'E', name: 'Kitchen',            url: SITE + 'e/', hue: 262 },
+  { key: 'F', name: 'Gym',                url: SITE + 'f/', hue: 248 },
+  { key: 'G', name: 'Hallway',            url: SITE + 'g/', hue: 168 },
+  { key: 'H', name: 'Closet',             url: SITE + 'h/', hue: 186 },
+  { key: 'I', name: 'Music Studio',       url: SITE + 'i/', hue: 330 },
+  { key: 'J', name: "The Creature's Room", url: SITE + 'j/', hue: 350 },
+];
+const roomColor = (r, l, a) => `hsla(${r.hue},78%,${l}%,${a})`;
+
+/* ---------- tesseract ---------- */
+const V4 = [];
+for (let i = 0; i < 16; i++) V4.push([i & 1 ? 1 : -1, i & 2 ? 1 : -1, i & 4 ? 1 : -1, i & 8 ? 1 : -1]);
+const EDGES = [];
+for (let i = 0; i < 16; i++) for (let b = 0; b < 4; b++) { const j = i ^ (1 << b); if (j > i) EDGES.push([i, j]); }
+const CELLS = [];
+for (let a = 0; a < 4; a++) for (const s of [-1, 1]) {
+  const verts = []; for (let i = 0; i < 16; i++) if (V4[i][a] === s) verts.push(i);
+  const free = [0, 1, 2, 3].filter(x => x !== a);
+  // 6 faces of this cube cell, each as 4 vertex indices in cyclic order
+  const faces = [];
+  for (const fa of free) for (const fs of [-1, 1]) {
+    const o = free.filter(x => x !== fa), order = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    faces.push(order.map(([p, q]) => verts.find(i => V4[i][fa] === fs && V4[i][o[0]] === p && V4[i][o[1]] === q)));
+  }
+  CELLS.push({ a, s, verts, faces, room: ROOMS[CELLS.length], front: 0 });
+}
+function rot(p, a, b, th) { const c = Math.cos(th), s = Math.sin(th), pa = p[a], pb = p[b]; p[a] = pa * c - pb * s; p[b] = pa * s + pb * c; }
+const ang = { xw: 0.001, yw: 0.001, zw: 0 };
+const vel = { xw: 0, yw: 0 };
+const target = { xw: null, yw: null };
+
+/* ---------- view ---------- */
+let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, scale = 100;
+const P3 = V4.map(() => [0, 0, 0]), SCR = V4.map(() => [0, 0, 0]);
+function projectAll() {
+  const dw = +ui.depth.value, tilt = +ui.tilt.value, d3 = 9;
+  const cyaw = Math.cos(tilt * 0.9), syaw = Math.sin(tilt * 0.9), cp = Math.cos(tilt * 0.7), sp = Math.sin(tilt * 0.7);
+  for (let i = 0; i < 16; i++) {
+    const p = V4[i].slice();
+    rot(p, 0, 3, ang.xw); rot(p, 1, 3, ang.yw); rot(p, 2, 3, ang.zw);
+    const sw = dw / (dw - p[3]);
+    let x = p[0] * sw, y = p[1] * sw, z = p[2] * sw;
+    // small fixed tilt so a cube reads as a cube; z toward the viewer is positive
+    let x1 = x * cyaw + z * syaw, z1 = -x * syaw + z * cyaw;
+    let y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    P3[i][0] = x1; P3[i][1] = y1; P3[i][2] = z2;
+    const f = d3 / (d3 - z2);
+    SCR[i][0] = cx + x1 * f * scale; SCR[i][1] = cy + y1 * f * scale; SCR[i][2] = z2;
+  }
+}
+function cellW(c) { // w coordinate of the cell's centre after rotation
+  const p = [0, 0, 0, 0]; p[c.a] = c.s;
+  rot(p, 0, 3, ang.xw); rot(p, 1, 3, ang.yw); rot(p, 2, 3, ang.zw);
+  return p[3];
+}
+function faceScore(face) { let z = 0; for (const i of face) z += SCR[i][2]; return z / 4; }
+function orderedQuad(face) { // screen points in clockwise order starting top-left
+  const pts = face.map(i => [SCR[i][0], SCR[i][1]]);
+  const mx = pts.reduce((a, p) => a + p[0], 0) / 4, my = pts.reduce((a, p) => a + p[1], 0) / 4;
+  pts.sort((p, q) => Math.atan2(p[1] - my, p[0] - mx) - Math.atan2(q[1] - my, q[0] - mx));
+  let k = 0; for (let i = 1; i < 4; i++) if (pts[i][0] + pts[i][1] < pts[k][0] + pts[k][1]) k = i;
+  return [pts[k], pts[(k + 1) % 4], pts[(k + 2) % 4], pts[(k + 3) % 4]];
+}
+function homography(w, h, q) { // unit rect (w x h) -> quad [TL,TR,BR,BL], as a CSS matrix3d
+  const [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = q;
+  const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+  const det = dx1 * dy2 - dx2 * dy1 || 1e-9;
+  const g = (dx3 * dy2 - dx2 * dy3) / det, hh = (dx1 * dy3 - dx3 * dy1) / det;
+  const a = x1 - x0 + g * x1, b = x3 - x0 + hh * x3, d = y1 - y0 + g * y1, e = y3 - y0 + hh * y3;
+  return `matrix3d(${a / w},${d / w},0,${g / w},${b / h},${e / h},0,${hh / h},0,0,1,0,${x0},${y0},0,1)`;
+}
+
+/* ---------- page faces ---------- */
+const facesLayer = $('faces');
+const faceEls = new Map(); // cell index -> element
+function makeFace(ci) {
+  const c = CELLS[ci], r = c.room;
+  const el = document.createElement('div');
+  el.className = 'face'; el.style.setProperty('--c1', roomColor(r, 38, 1)); el.style.setProperty('--c2', roomColor(r, 18, 1));
+  el.innerHTML = `<div class="card"><span class="letter">${r.key}</span><h2>${r.name}</h2><p>${EMBED ? 'Loading the room…' : 'Rooms open in a new tab from here; the live build shows the room itself on this face.'}</p><a href="${r.url}" target="_blank" rel="noopener">Open the room ↗</a></div>`;
+  if (EMBED) {
+    const f = document.createElement('iframe'); f.src = r.url; f.title = r.name; f.loading = 'eager';
+    f.addEventListener('load', () => { f.classList.add('ready'); });
+    el.appendChild(f);
+  }
+  facesLayer.appendChild(el);
+  return el;
+}
+function placeFace(el, ci) {
+  const c = CELLS[ci];
+  let best = c.front, bestScore = faceScore(c.faces[c.front]);
+  for (let k = 0; k < 6; k++) { const s = faceScore(c.faces[k]); if (s > bestScore + 0.12) { best = k; bestScore = s; } }
+  c.front = best;
+  const q = orderedQuad(c.faces[best]);
+  const bw = Math.max(...q.map(p => p[0])) - Math.min(...q.map(p => p[0])), bh = Math.max(...q.map(p => p[1])) - Math.min(...q.map(p => p[1]));
+  const w = Math.max(320, Math.round(bw / 20) * 20), h = Math.max(320, Math.round(bh / 20) * 20);
+  if (el._w !== w || el._h !== h) { el.style.width = w + 'px'; el.style.height = h + 'px'; el._w = w; el._h = h; }
+  el.style.transform = homography(w, h, q);
+}
+
+/* ---------- ui ---------- */
+const ui = {};
+['period', 'wobble', 'zoom', 'tilt', 'depth'].forEach(id => {
+  const el = ui[id] = $(id), out = $('o-' + id);
+  const show = () => { out.textContent = id === 'period' ? el.value : (+el.value).toFixed(2); };
+  el.addEventListener('input', show); show();
+});
+const pressed = {};
+function setPressed(id, v) { pressed[id] = v; $(id).setAttribute('aria-pressed', String(v)); }
+['turn', 'wire'].forEach(id => { pressed[id] = $(id).getAttribute('aria-pressed') === 'true'; $(id).addEventListener('click', () => setPressed(id, !pressed[id])); });
+if (reduceMotion) setPressed('turn', false);
+$('turn').addEventListener('click', () => { $('turn').textContent = pressed.turn ? 'Turning' : 'Still'; });
+$('next').addEventListener('click', () => { target.xw = (target.xw ?? ang.xw) + Math.PI / 2; });
+$('prev').addEventListener('click', () => { target.xw = (target.xw ?? ang.xw) - Math.PI / 2; });
+$('toggle').addEventListener('click', () => {
+  const hidden = $('dock').classList.toggle('hidden');
+  $('toggle').textContent = hidden ? 'Show controls' : 'Hide controls';
+  $('toggle').setAttribute('aria-expanded', String(!hidden));
+});
+const heldBox = $('held'), heldRows = [];
+CELLS.forEach((c, i) => {
+  const row = document.createElement('div'); row.style.display = 'contents';
+  row.innerHTML = `<i style="background:${roomColor(c.room, 55, 1)}"></i><span class="n">${c.room.name}</span><span class="t">0 s</span>`;
+  heldBox.appendChild(row); heldRows.push(row);
+});
+const fmt = s => s < 60 ? Math.round(s) + ' s' : Math.floor(s / 60) + ' m ' + String(Math.round(s % 60)).padStart(2, '0') + ' s';
+
+/* ---------- pointer: grab the tesseract ---------- */
+const ptr = { down: false, lx: 0, ly: 0, lt: 0, vx: 0, vy: 0 };
+canvas.addEventListener('pointerdown', e => {
+  ptr.down = true; ptr.lx = e.clientX; ptr.ly = e.clientY; ptr.lt = performance.now(); ptr.vx = ptr.vy = 0;
+  canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); facesLayer.style.pointerEvents = 'none';
+  target.xw = target.yw = null;
+});
+const up = () => { if (!ptr.down) return; ptr.down = false; canvas.classList.remove('dragging'); facesLayer.style.pointerEvents = ''; vel.xw = ptr.vx; vel.yw = ptr.vy; };
+canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+canvas.addEventListener('pointermove', e => {
+  if (!ptr.down) return;
+  const now = performance.now(), dt = Math.max(1, now - ptr.lt) / 1000;
+  const dx = (e.clientX - ptr.lx) * 0.004, dy = -(e.clientY - ptr.ly) * 0.004;
+  ang.xw += dx; ang.yw += dy;
+  ptr.vx = dx / dt; ptr.vy = dy / dt;
+  ptr.lx = e.clientX; ptr.ly = e.clientY; ptr.lt = now;
+});
+
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight; cx = W / 2; cy = H / 2;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener('resize', resize);
+
+/* ---------- frame ---------- */
+let last = performance.now(), active = -1, heldNow = 0, frames = 0;
+const held = new Float64Array(8);
+let leaving = null, leavingUntil = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  scale = Math.min(W, H) * 0.19 * +ui.zoom.value;
+
+  // the turn: user's grab (with coasting), the tesseract's own rhythm, or a step toward a target
+  if (!ptr.down) {
+    const damp = Math.exp(-dt * 2.2);
+    ang.xw += vel.xw * dt; ang.yw += vel.yw * dt; vel.xw *= damp; vel.yw *= damp;
+    if (target.xw != null) { const d = target.xw - ang.xw; ang.xw += d * Math.min(1, dt * 4); if (Math.abs(d) < 0.002) { ang.xw = target.xw; target.xw = null; } }
+    else if (pressed.turn && Math.hypot(vel.xw, vel.yw) < 0.05) {
+      const rate = (Math.PI / 2) / +ui.period.value, wob = +ui.wobble.value;
+      ang.xw += rate * dt; ang.yw += rate * dt * 0.41 * wob; ang.zw += rate * dt * 0.17 * wob;
+    }
+  }
+  projectAll();
+
+  // ground zero: the cell whose centre is furthest along +w, which is the one turned toward you
+  let best = -1, bestW = -9, second = -1, secondW = -9;
+  CELLS.forEach((c, i) => { const w = cellW(c); c.w = w; if (w > bestW) { second = best; secondW = bestW; best = i; bestW = w; } else if (w > secondW) { second = i; secondW = w; } });
+  if (best !== active) {
+    if (active >= 0) {
+      const old = faceEls.get(active); if (old) { old.classList.add('leaving'); leaving = { el: old, ci: active }; leavingUntil = now + 900; faceEls.delete(active); }
+      heldRows[active].classList.remove('on');
+    }
+    active = best; heldNow = 0;
+    if (!faceEls.has(active)) faceEls.set(active, makeFace(active));
+    heldRows[active].classList.add('on');
+    $('z-name').textContent = CELLS[active].room.name;
+  }
+  held[active] += dt; heldNow += dt;
+  if (leaving) { if (now > leavingUntil) { leaving.el.remove(); leaving = null; } else placeFace(leaving.el, leaving.ci); }
+  placeFace(faceEls.get(active), active);
+
+  // draw the tesseract
+  ctx.fillStyle = VOID; ctx.fillRect(0, 0, W, H);
+  if (pressed.wire) {
+    // the other cells' faces, faint, far first
+    const polys = [];
+    CELLS.forEach((c, i) => { if (i === active) return; for (const f of c.faces) { polys.push({ f, c, z: faceScore(f) }); } });
+    polys.sort((p, q) => p.z - q.z);
+    for (const { f, c, z } of polys) {
+      const t = (c.w + 1) / 2;
+      ctx.beginPath(); f.forEach((i, k) => k ? ctx.lineTo(SCR[i][0], SCR[i][1]) : ctx.moveTo(SCR[i][0], SCR[i][1])); ctx.closePath();
+      ctx.fillStyle = roomColor(c.room, 45, 0.05 + t * 0.12); ctx.fill();
+      ctx.strokeStyle = roomColor(c.room, 60, 0.18 + t * 0.4); ctx.lineWidth = 1; ctx.stroke();
+    }
+    // labels at each cell's centre
+    ctx.font = '500 11px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    CELLS.forEach((c, i) => {
+      if (i === active) return;
+      let x = 0, y = 0; for (const v of c.verts) { x += SCR[v][0] / 8; y += SCR[v][1] / 8; }
+      const t = (c.w + 1) / 2;
+      ctx.fillStyle = `rgba(236,232,246,${0.25 + t * 0.6})`; ctx.fillText(c.room.name.toUpperCase(), x, y);
+      if (i === second) { ctx.fillStyle = 'rgba(255,179,71,0.9)'; ctx.fillText('ARRIVING', x, y + 14); }
+    });
+  }
+  // edges, warm toward you in w, cool away
+  ctx.lineWidth = 1;
+  for (const [i, j] of EDGES) {
+    const z = (SCR[i][2] + SCR[j][2]) / 2, tt = Math.max(0, Math.min(1, (z + 2) / 4));
+    ctx.strokeStyle = `rgba(${Math.round(79 + (255 - 79) * tt)},${Math.round(91 + (179 - 91) * tt)},${Math.round(255 + (71 - 255) * tt)},${0.18 + tt * 0.5})`;
+    ctx.beginPath(); ctx.moveTo(SCR[i][0], SCR[i][1]); ctx.lineTo(SCR[j][0], SCR[j][1]); ctx.stroke();
+  }
+  // ground zero marker
+  ctx.strokeStyle = 'rgba(255,179,71,0.5)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, 6, 0, TAU); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - 14, cy); ctx.lineTo(cx - 8, cy); ctx.moveTo(cx + 8, cy); ctx.lineTo(cx + 14, cy); ctx.moveTo(cx, cy - 14); ctx.lineTo(cx, cy - 8); ctx.moveTo(cx, cy + 8); ctx.lineTo(cx, cy + 14); ctx.stroke();
+
+  // readouts, a few times a second
+  if ((++frames & 7) === 0) {
+    $('z-held').textContent = fmt(heldNow);
+    $('z-next').textContent = second >= 0 ? CELLS[second].room.name : '—';
+    heldRows.forEach((r, i) => { r.lastElementChild.textContent = fmt(held[i]); });
+  }
+}
+
+resize();
+if (innerWidth < 640) $('toggle').click();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
