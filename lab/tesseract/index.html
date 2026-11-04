@@ -74,6 +74,14 @@ button:hover{border-color:var(--fg-dim)}
 button:focus-visible{outline:2px solid var(--near);outline-offset:2px}
 button[aria-pressed=true]{border-color:var(--near);color:var(--near)}
 .pill{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--ink);border-color:var(--fg-dim)}
+.strip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;align-items:center;gap:6px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;max-width:calc(100vw - 150px)}
+.strip.dragging{cursor:grabbing}
+.strip span{color:var(--fg-dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip button{border-color:transparent;font-size:14px;padding:8px 12px}
+.strip button:hover{border-color:var(--fg-dim)}
+.dock:not(.hidden) ~ .strip{display:none}
+.strip .menu{display:none}
+@media (max-width:640px){ .pill{display:none} .strip .menu{display:inline-block} .strip{max-width:calc(100vw - 32px)} }
 .hint{color:var(--fg-dim);line-height:1.5;margin:0}
 .held{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;font-variant-numeric:tabular-nums}
 .held i{width:10px;height:10px;border-radius:2px;display:inline-block}
@@ -97,7 +105,7 @@ button[aria-pressed=true]{border-color:var(--near);color:var(--near)}
 <header class="hud">
   <div>
     <h1>Tesseract <b>Pages</b></h1>
-    <p>Eight rooms live on the eight cells of a turning tesseract. You stay at ground zero. Whichever cell turns to face you is the page you are in. Drag outside the page to turn it, or let it turn on its own.</p>
+    <p>Eight rooms live on the eight cells of a turning tesseract. You stay at ground zero. Whichever cell turns to face you is the page you are in. Drag the strip below to turn it, or let it turn on its own.</p>
     <p><a href="index.html">Drift</a> · <a href="anatomy.html">Anatomy</a></p>
   </div>
   <div class="zero" aria-live="off">
@@ -120,7 +128,7 @@ button[aria-pressed=true]{border-color:var(--near);color:var(--near)}
         <button type="button" id="prev">◀ Previous</button>
         <button type="button" id="next">Next ▶</button>
       </div>
-      <p class="hint" style="margin-top:6px">Drag sideways to pull the next room in from the side, drag up or down for the rooms above and below. Let go and it coasts.</p>
+      <p class="hint" style="margin-top:6px">The page is held flat for the seconds above, then a quarter turn brings the next one. Drag the strip, or anywhere outside the page: sideways pulls the next room in from the side, up or down the rooms above and below. Let go and it settles square.</p>
     </fieldset>
     <fieldset>
       <legend>View</legend>
@@ -137,6 +145,13 @@ button[aria-pressed=true]{border-color:var(--near);color:var(--near)}
     </fieldset>
   </div>
 </aside>
+
+<div class="strip" id="strip" aria-label="Turn the tesseract">
+  <button type="button" id="prev2" aria-label="Previous room">◀</button>
+  <span>drag here to turn</span>
+  <button type="button" id="next2" aria-label="Next room">▶</button>
+  <button type="button" id="menu2" aria-label="Controls" class="menu">☰</button>
+</div>
 
 <script>
 (() => {
@@ -177,18 +192,33 @@ for (let a = 0; a < 4; a++) for (const s of [-1, 1]) {
     const o = free.filter(x => x !== fa), order = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
     faces.push(order.map(([p, q]) => verts.find(i => V4[i][fa] === fs && V4[i][o[0]] === p && V4[i][o[1]] === q)));
   }
-  CELLS.push({ a, s, verts, faces, room: ROOMS[CELLS.length], front: 0 });
+  const room = ROOMS[CELLS.length];
+  room.slug = room.name.replace(/'/g, '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
+  CELLS.push({ a, s, verts, faces, room, front: 0 });
 }
 function rot(p, a, b, th) { const c = Math.cos(th), s = Math.sin(th), pa = p[a], pb = p[b]; p[a] = pa * c - pb * s; p[b] = pa * s + pb * c; }
-const ang = { xw: 0.001, yw: 0.001, zw: 0 };
+const ang = { xw: 0, yw: 0, zw: 0 };
 const vel = { xw: 0, yw: 0 };
-const target = { xw: null, yw: null };
+const target = { plane: null, value: 0 };
+const Q = Math.PI / 2;
+const nearestRest = a => Math.round(a / Q) * Q;
+const restDistance = () => Math.max(Math.abs(ang.xw - nearestRest(ang.xw)), Math.abs(ang.yw - nearestRest(ang.yw)), Math.abs(ang.zw - nearestRest(ang.zw)));
+function setTarget(plane, dir) { const base = target.plane === plane ? target.value : nearestRest(ang[plane]); target.plane = plane; target.value = base + dir * Q; vel.xw = vel.yw = 0; }
+function aimAt(ci) { // angles that put this cell at ground zero
+  const c = CELLS[ci]; ang.xw = ang.yw = ang.zw = 0;
+  if (c.a === 3) { if (c.s < 0) ang.xw = Math.PI; } else ang[['xw', 'yw', 'zw'][c.a]] = c.s * Q;
+}
+{
+  const want = decodeURIComponent(location.hash.slice(1)).toLowerCase().replace(/[^a-z]/g, '');
+  const ci = CELLS.findIndex(c => want && (c.room.slug.replace(/-/g, '') === want || c.room.key.toLowerCase() === want));
+  if (ci >= 0) aimAt(ci);
+}
 
 /* ---------- view ---------- */
-let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, scale = 100;
+let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, scale = 100, tiltEff = 0;
 const P3 = V4.map(() => [0, 0, 0]), SCR = V4.map(() => [0, 0, 0]);
 function projectAll() {
-  const dw = +ui.depth.value, tilt = +ui.tilt.value, d3 = 9;
+  const dw = +ui.depth.value, tilt = tiltEff, d3 = 9;
   const cyaw = Math.cos(tilt * 0.9), syaw = Math.sin(tilt * 0.9), cp = Math.cos(tilt * 0.7), sp = Math.sin(tilt * 0.7);
   for (let i = 0; i < 16; i++) {
     const p = V4[i].slice();
@@ -227,7 +257,18 @@ function homography(w, h, q) { // unit rect (w x h) -> quad [TL,TR,BR,BL], as a 
 
 /* ---------- page faces ---------- */
 const facesLayer = $('faces');
-const faceEls = new Map(); // cell index -> element
+const faceEls = new Map(); // cell index -> { el, leavingAt }
+function wantFaces(set, now) {
+  for (const [ci, f] of faceEls) {
+    if (set.has(ci)) { if (f.leavingAt) { f.leavingAt = 0; f.el.classList.remove('leaving'); } }
+    else if (!f.leavingAt) { f.leavingAt = now + 900; f.el.classList.add('leaving'); }
+  }
+  for (const ci of set) if (!faceEls.has(ci)) faceEls.set(ci, { el: makeFace(ci), leavingAt: 0 });
+  for (const [ci, f] of faceEls) {
+    if (f.leavingAt && now > f.leavingAt) { f.el.remove(); faceEls.delete(ci); continue; }
+    placeFace(f.el, ci); f.el.style.zIndex = String(Math.round(100 + CELLS[ci].w * 50));
+  }
+}
 function makeFace(ci) {
   const c = CELLS[ci], r = c.room;
   const el = document.createElement('div');
@@ -264,9 +305,10 @@ const pressed = {};
 function setPressed(id, v) { pressed[id] = v; $(id).setAttribute('aria-pressed', String(v)); }
 ['turn', 'wire'].forEach(id => { pressed[id] = $(id).getAttribute('aria-pressed') === 'true'; $(id).addEventListener('click', () => setPressed(id, !pressed[id])); });
 if (reduceMotion) setPressed('turn', false);
-$('turn').addEventListener('click', () => { $('turn').textContent = pressed.turn ? 'Turning' : 'Still'; });
-$('next').addEventListener('click', () => { target.xw = (target.xw ?? ang.xw) + Math.PI / 2; });
-$('prev').addEventListener('click', () => { target.xw = (target.xw ?? ang.xw) - Math.PI / 2; });
+$('turn').addEventListener('click', () => { $('turn').textContent = pressed.turn ? 'Turning' : 'Still'; holdTimer = 0; });
+for (const id of ['next', 'next2']) $(id).addEventListener('click', () => setTarget('xw', 1));
+for (const id of ['prev', 'prev2']) $(id).addEventListener('click', () => setTarget('xw', -1));
+$('menu2').addEventListener('click', () => $('toggle').click());
 $('toggle').addEventListener('click', () => {
   const hidden = $('dock').classList.toggle('hidden');
   $('toggle').textContent = hidden ? 'Show controls' : 'Hide controls';
@@ -281,22 +323,26 @@ CELLS.forEach((c, i) => {
 const fmt = s => s < 60 ? Math.round(s) + ' s' : Math.floor(s / 60) + ' m ' + String(Math.round(s % 60)).padStart(2, '0') + ' s';
 
 /* ---------- pointer: grab the tesseract ---------- */
-const ptr = { down: false, lx: 0, ly: 0, lt: 0, vx: 0, vy: 0 };
-canvas.addEventListener('pointerdown', e => {
-  ptr.down = true; ptr.lx = e.clientX; ptr.ly = e.clientY; ptr.lt = performance.now(); ptr.vx = ptr.vy = 0;
-  canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); facesLayer.style.pointerEvents = 'none';
-  target.xw = target.yw = null;
-});
-const up = () => { if (!ptr.down) return; ptr.down = false; canvas.classList.remove('dragging'); facesLayer.style.pointerEvents = ''; vel.xw = ptr.vx; vel.yw = ptr.vy; };
-canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
-canvas.addEventListener('pointermove', e => {
-  if (!ptr.down) return;
-  const now = performance.now(), dt = Math.max(1, now - ptr.lt) / 1000;
-  const dx = (e.clientX - ptr.lx) * 0.004, dy = -(e.clientY - ptr.ly) * 0.004;
-  ang.xw += dx; ang.yw += dy;
-  ptr.vx = dx / dt; ptr.vy = dy / dt;
-  ptr.lx = e.clientX; ptr.ly = e.clientY; ptr.lt = now;
-});
+const ptr = { down: false, lx: 0, ly: 0, lt: 0, vx: 0, vy: 0, el: null };
+function bindDrag(el, gain) {
+  el.addEventListener('pointerdown', e => {
+    if (e.target.tagName === 'BUTTON') return;
+    ptr.down = true; ptr.el = el; ptr.lx = e.clientX; ptr.ly = e.clientY; ptr.lt = performance.now(); ptr.vx = ptr.vy = 0;
+    el.setPointerCapture(e.pointerId); el.classList.add('dragging'); facesLayer.style.pointerEvents = 'none';
+    target.plane = null; holdTimer = 0;
+  });
+  const up = () => { if (!ptr.down || ptr.el !== el) return; ptr.down = false; el.classList.remove('dragging'); facesLayer.style.pointerEvents = ''; vel.xw = ptr.vx; vel.yw = ptr.vy; };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  el.addEventListener('pointermove', e => {
+    if (!ptr.down || ptr.el !== el) return;
+    const now = performance.now(), dt = Math.max(1, now - ptr.lt) / 1000;
+    const dx = (e.clientX - ptr.lx) * gain, dy = -(e.clientY - ptr.ly) * gain;
+    ang.xw += dx; ang.yw += dy;
+    ptr.vx = dx / dt; ptr.vy = dy / dt;
+    ptr.lx = e.clientX; ptr.ly = e.clientY; ptr.lt = now;
+  });
+}
+bindDrag(canvas, 0.004); bindDrag($('strip'), 0.008);
 
 function resize() {
   DPR = Math.min(devicePixelRatio || 1, 2);
@@ -307,9 +353,8 @@ function resize() {
 addEventListener('resize', resize);
 
 /* ---------- frame ---------- */
-let last = performance.now(), active = -1, heldNow = 0, frames = 0;
+let last = performance.now(), active = -1, heldNow = 0, frames = 0, holdTimer = 0;
 const held = new Float64Array(8);
-let leaving = null, leavingUntil = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -319,37 +364,48 @@ function frame(now) {
   if (!ptr.down) {
     const damp = Math.exp(-dt * 2.2);
     ang.xw += vel.xw * dt; ang.yw += vel.yw * dt; vel.xw *= damp; vel.yw *= damp;
-    if (target.xw != null) { const d = target.xw - ang.xw; ang.xw += d * Math.min(1, dt * 4); if (Math.abs(d) < 0.002) { ang.xw = target.xw; target.xw = null; } }
-    else if (pressed.turn && Math.hypot(vel.xw, vel.yw) < 0.05) {
-      const rate = (Math.PI / 2) / +ui.period.value, wob = +ui.wobble.value;
-      ang.xw += rate * dt; ang.yw += rate * dt * 0.41 * wob; ang.zw += rate * dt * 0.17 * wob;
+    const coasting = Math.hypot(vel.xw, vel.yw) > 0.15;
+    if (target.plane) {
+      const d = target.value - ang[target.plane]; ang[target.plane] += d * Math.min(1, dt * 4);
+      if (Math.abs(d) < 0.002) { ang[target.plane] = target.value; target.plane = null; holdTimer = 0; }
+    } else if (!coasting) {
+      // settle so the active page sits square in front of you
+      for (const k of ['xw', 'yw', 'zw']) { const r = nearestRest(ang[k]); ang[k] += (r - ang[k]) * Math.min(1, dt * 3); }
+      // the tesseract's own rhythm: hold the page for a while, then a quarter turn
+      if (pressed.turn && restDistance() < 0.01) {
+        holdTimer += dt;
+        if (holdTimer >= +ui.period.value) {
+          const wob = +ui.wobble.value, r = Math.random();
+          setTarget(r < 1 - wob * 0.6 ? 'xw' : r < 1 - wob * 0.2 ? 'yw' : 'zw', 1);
+        }
+      }
     }
   }
+  const turning = Math.min(1, restDistance() / (Math.PI / 8));
+  tiltEff += (+ui.tilt.value * turning - tiltEff) * Math.min(1, dt * 5);
   projectAll();
 
   // ground zero: the cell whose centre is furthest along +w, which is the one turned toward you
   let best = -1, bestW = -9, second = -1, secondW = -9;
   CELLS.forEach((c, i) => { const w = cellW(c); c.w = w; if (w > bestW) { second = best; secondW = bestW; best = i; bestW = w; } else if (w > secondW) { second = i; secondW = w; } });
   if (best !== active) {
-    if (active >= 0) {
-      const old = faceEls.get(active); if (old) { old.classList.add('leaving'); leaving = { el: old, ci: active }; leavingUntil = now + 900; faceEls.delete(active); }
-      heldRows[active].classList.remove('on');
-    }
+    if (active >= 0) heldRows[active].classList.remove('on');
     active = best; heldNow = 0;
-    if (!faceEls.has(active)) faceEls.set(active, makeFace(active));
     heldRows[active].classList.add('on');
     $('z-name').textContent = CELLS[active].room.name;
+    try { history.replaceState(null, '', '#' + CELLS[active].room.slug); } catch (e) {}
   }
   held[active] += dt; heldNow += dt;
-  if (leaving) { if (now > leavingUntil) { leaving.el.remove(); leaving = null; } else placeFace(leaving.el, leaving.ci); }
-  placeFace(faceEls.get(active), active);
+  // the page on the active cell, plus the arriving one on wide screens so both rooms show during the fold
+  const want = new Set([active]); if (W >= 640 && second >= 0) want.add(second);
+  wantFaces(want, now);
 
   // draw the tesseract
   ctx.fillStyle = VOID; ctx.fillRect(0, 0, W, H);
   if (pressed.wire) {
     // the other cells' faces, faint, far first
     const polys = [];
-    CELLS.forEach((c, i) => { if (i === active) return; for (const f of c.faces) { polys.push({ f, c, z: faceScore(f) }); } });
+    CELLS.forEach((c, i) => { if (faceEls.has(i)) return; for (const f of c.faces) { polys.push({ f, c, z: faceScore(f) }); } });
     polys.sort((p, q) => p.z - q.z);
     for (const { f, c, z } of polys) {
       const t = (c.w + 1) / 2;
@@ -360,7 +416,7 @@ function frame(now) {
     // labels at each cell's centre
     ctx.font = '500 11px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     CELLS.forEach((c, i) => {
-      if (i === active) return;
+      if (faceEls.has(i)) return;
       let x = 0, y = 0; for (const v of c.verts) { x += SCR[v][0] / 8; y += SCR[v][1] / 8; }
       const t = (c.w + 1) / 2;
       ctx.fillStyle = `rgba(236,232,246,${0.25 + t * 0.6})`; ctx.fillText(c.room.name.toUpperCase(), x, y);
