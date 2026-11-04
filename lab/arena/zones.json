@@ -1,6 +1,6 @@
 {
   "about": "The Arena's zones, cover and rules, as data. One paintball field, 40 x 24 m (x -20..20, z -12..12), split down the middle at x = 0 by seam.js: x < 0 is page A (/lab/arena/a/, team A's base), x >= 0 is page B (/lab/arena/b/, team B's base). arena.js (browsers) and agent/arena-agent.mjs (AI players) both read this file, and field.js turns it into collision, line of sight and ball flight for both. HOT-LOAD: an open arena re-reads this file every 20 s (only while the tab is visible) and applies changes without a reload: cover added, moved or removed, rule numbers, and a bumped \"v\" re-imports the scene module (scene.js). A running agent re-reads it when the file changes. Cover kinds: block (inflatable bunker, a box), can (inflatable cylinder, r = radius), wall (low wooden wall, a box), ramp (wooden wedge you can walk up; rise = the direction it climbs toward). x, z are the centre; w is the size along x, d along z, h the height (metres). B's cover is A's turned half round (x, z -> -x, -z), so both sides are the same field.",
-  "v": 1,
+  "v": 2,
   "module": "scene.js",
   "hysteresis": 0.3,
   "fallback": "a",

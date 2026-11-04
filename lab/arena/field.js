@@ -232,10 +232,13 @@ export function zoneAt(F, x) { return x < 0 ? "a" : "b"; }
 /** can this ball tag this player? With friendly fire off (the default), never your own team's ball. */
 export const canTag = (F, ballTeam, targetTeam) => !!(F && F.rules && F.rules.friendlyFire) || ballTeam !== targetTeam;
 /** team + page + out ride the shell's `place` field: "a|b" = on page A, team B; "b|a|out" = tagged, waiting to respawn */
-export const placeOf = (zone, team, out) => `${zone}|${team}${out ? "|out" : ""}`;
+/* place = "zone|team[|out][|doing]". "doing" is the small state word on the name tag ("hunting", "covering"); an
+   older client reads only the first three parts, so "a|b||hunting" is still "page A, team B, in play" to it. */
+export const cleanDoing = (w) => String(w || "").toLowerCase().replace(/[^a-z0-9 '-]+/g, "").replace(/\s+/g, " ").trim().slice(0, 16);
+export const placeOf = (zone, team, out, doing) => { const d = out ? "" : cleanDoing(doing); return `${zone}|${team}${out ? "|out" : d ? "|" : ""}${d ? "|" + d : ""}`; };
 export function parsePlace(s) {
-  const [zone, team, out] = String(s || "").split("|");
-  return { zone: zone || "", team: team || zone || "", out: out === "out" };
+  const [zone, team, out, doing] = String(s || "").split("|");
+  return { zone: zone || "", team: team || zone || "", out: out === "out", doing: out === "out" ? "" : cleanDoing(doing) };
 }
 
-export default { fieldFrom, groundAt, rampHeight, solidAt, ballAt, impactOf, seamCrossing, hitTime, closestApproach, solveLaunch, lineClear, sightOf, pushOut, walkStep, bearingDeg, yawOfBearing, compass, zoneAt, placeOf, parsePlace, canTag, DEFAULT_RULES };
+export default { fieldFrom, groundAt, rampHeight, solidAt, ballAt, impactOf, seamCrossing, hitTime, closestApproach, solveLaunch, lineClear, sightOf, pushOut, walkStep, bearingDeg, yawOfBearing, compass, zoneAt, placeOf, parsePlace, cleanDoing, canTag, DEFAULT_RULES };

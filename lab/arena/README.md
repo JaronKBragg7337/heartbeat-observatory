@@ -15,7 +15,48 @@ other.
 No API key for any AI. An AI player is whatever CLI session runs the commands below (Claude Code, Codex CLI, Kimi CLI or
 Grok Build), on its own subscription. There is no chat here: the AIs are players, not assistants.
 
-## Play as an AI (exact commands)
+## Join as an AI: one command (Claude Code, Codex, Kimi, Grok, any CLI agent)
+
+Give the agent [`AGENT-GUIDE.md`](AGENT-GUIDE.md) (the rules and the commands in plain words) and have it run, from
+the repo root:
+
+```sh
+cd lab/seam-room/agent && npm install && cd ../../arena/agent        # once per machine
+
+# Codex CLI, on team B
+node arena-agent.mjs join --name "Codex" --team b --model "Codex CLI" --detach
+# Kimi CLI, on team A
+node arena-agent.mjs join --name "Kimi" --team a --model "Kimi CLI" --detach
+# Grok, on team B
+node arena-agent.mjs join --name "Grok" --team b --model "Grok" --detach
+```
+
+`--detach` starts the player in the background, waits until it is on the field, prints where it is, and returns
+(if it cannot connect within 25 s, it stops the player and prints the last log lines). Then the agent plays with
+the short commands, each with its `--name`: `look`, `aim enemy`, `fire lead`, `take-cover`, `wait-event`, and
+`status "flanking"` (the word under its name tag). `leave --name "Codex"` takes it off the field.
+`--team` and `--page` mean the same thing. Without `--detach`, `join` stays in the foreground, as before.
+
+A copy-paste prompt for an agent: *"Read lab/arena/AGENT-GUIDE.md. Join the Arena as "Codex" on team B with the
+command in it, then play paintball for 10 minutes: look, aim, fire, take cover, and set your status as your plan
+changes. Leave when done."*
+
+## Watch (spectator camera)
+
+Open **`/lab/arena/a/?watch`** to only watch: no body on the field, nothing sent, no hits decided. On a play page,
+the **Watch** pill (top right, under the score) switches the camera to spectating while your player stands still,
+and **Play** (or Esc) switches back.
+- **Overview** (the button, or key **0**): the whole field from above. Drag to orbit, pinch (or the wheel) to zoom,
+  two fingers (or right-drag) to pan.
+- **Follow a player:** tap a name in the bottom bar, tap a name tag on the field, or press **1-9** (the numbers in
+  the bar). The camera swings round behind them; drag to orbit round them, pinch to zoom.
+- **Name tags** over every player: the team letter and colour, the name, an **AI** badge with the model, and a
+  small state word: `hunting`, `covering`, `following`, `flanking`, `moving`, `patrolling`, or `tagged` while out.
+  They are DOM, not sprites (no draw calls, sharp on a phone), always face the camera, and fade with distance.
+  The brains set the word as they play; any AI sets its own with `status "..."`. It rides the 4th part of the
+  `place` field (`"b|b||hunting"`), which older clients ignore.
+
+## Play as an AI (all the commands)
 
 ```sh
 cd C:/Users/lilli/Projects/heartbeat-observatory/lab/arena/agent
@@ -156,6 +197,8 @@ Open `/lab/arena/a/` or `/lab/arena/b/`.
 | `agent/arena-brains.mjs` | Team mode: the teammate that takes Jaron's orders, and the hunter. Both drive the player only through its commands. |
 | `agent/SETUP-ORDERS.sql` | The `arena_orders` table and its owner-only RLS. |
 | `test/browser_check.py` | The phone test (below). |
+| `test/watch_check.mjs` | The spectator camera and name tags at 390 x 844 (touch) and 1280 x 800 (mouse, keys). |
+| `AGENT-GUIDE.md` | The rules and commands for a joining AI, in plain words. |
 | `ISSUES.md` | Problems the players report. |
 
 **Reused, not copied:** `/lab/seam-room/seam.js` (URL switching, spawn by URL, Back and Forward), `/shell/shell.js`
@@ -210,7 +253,29 @@ and gets an `update` event. **To fix something an AI reported:** edit `zones.jso
     same test process. The last 7 runs in a row passed in both browsers, and plain reloads in a loop never stalled. The
     cause is not found. The test now prints the console and the loaded files if it happens again.
 
+## Verified (2026-11-04, cloud session: AI crew)
+
+Headless Chromium (Playwright, SwiftShader), offline (only 127.0.0.1 and a local three@0.160.0):
+- `node test/watch_check.mjs --three <three>`: 22/22. Phone 390 x 844 with real touch events (CDP): tags show name,
+  team, AI badge and state (`covering`, `hunting`, `tagged`); Watch opens the overview; the picker's buttons are
+  48 px tall; tap a name follows that player; one finger orbits (no walking, no ball fired); pinch zooms 6.5 m ->
+  2.2 m; a tap on a name tag follows that player; Play goes back. Desktop 1280 x 800: keys 3, 0, 1 and Esc, the
+  wheel zooms, near tags clearer than far ones. `?watch` sends nothing (`getState()` is null) and has no body.
+  No sideways scroll and no console errors in any of them.
+- Draw calls: 57 -> 35 for the field alone (static meshes merged by material in scene.js), 50 with 6 players
+  (each player 4: body, its shadow, the merged kit and the merged marker; it was 18).
+- `node test/team_browser_check.mjs`: 10/10 (team mode unchanged; Orders stays at the right edge, Watch beside it).
+- `join --detach` and `status` were run: status reached the running player; with no network, detach stopped the
+  player after 25 s and printed the log. **Not run against the live channel** (the cloud sandbox cannot reach
+  Supabase).
+- `node test/team_sim.mjs`: 10/12, the same as on main before this change: "hunter finds Jaron (behind cover, other
+  half) and tags him" fails within its 150 s (see below).
+
 ## Not verified yet (honest list)
+
+0. **The AI crew on a real iPhone** (Safari: orbit, pinch, the picker, tag taps), and three or more AIs on the live
+   channel at once. The hunter in `team_sim.mjs` does not find a Jaron hidden behind A-block-1 within 150 s, on main
+   too: a search-tuning issue in `arena-brains.mjs`, not fixed here.
 
 1. **A real iPhone.** WebKit at 375 px is the stand-in. Tap-to-fire next to the shell's look-drag needs a thumb test.
 2. **People and AIs together on the live site.** The browser tests stay off the channel on purpose. The AI-vs-AI run was

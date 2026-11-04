@@ -53,6 +53,16 @@ function behind(F, c, v, extra = 0.5) {
   return FD.pushOut(F, c.x - ux * (half + F.rules.playerRadius + extra), c.z - uz * (half + F.rules.playerRadius + extra));
 }
 
+/* ------------------------------------------------------- the name tag - */
+/** the small state word under each player's name tag ("hunting", "covering", ...): what the brain is doing now.
+   It rides the player's place field ("a|b||hunting"); the running join sends it. Set only when it changes. */
+export const HUNT_WORDS = { out: "", dodge: "dodging", react: "spotted you", fire: "hunting", cover: "in cover", search: "searching", check: "searching", patrol: "patrolling" };
+export const ORDER_WORDS = { follow: "following", cover: "covering", hold: "holding", goto: "moving up", "flank-left": "flanking", "flank-right": "flanking", find: "hunting" };
+function doer(api) {
+  let last = null;
+  return async (word) => { if (word == null || word === last) return; last = word; try { await api("/doing", { word }); } catch (_) {} };
+}
+
 /* ------------------------------------------------------------ orders - */
 /** one order row -> { kind, x, z, text, id }. Free text (kind "say") is read for a few plain words. */
 export function parseOrder(row) {
@@ -235,11 +245,13 @@ export class Hunter {
 /** hunt mode: run the Hunter until `until` (ms epoch) or stop() */
 export async function hunt({ api, skill = 3, target = "Jaron", log = () => {}, tickMs = 200, until = Infinity, stop = () => false, rng }) {
   const h = new Hunter({ api, skill, target, log, rng });
+  const doing = doer(api);
   let lastWord = "";
   h.say = (what, p) => { if (what === "found") log(`found ${p.name} at x ${p.x} z ${p.z} (${p.distance_m} m)`); if (what === "tagged") log("tagged someone"); };
   while (Date.now() < until && !stop()) {
     let L; try { L = await api("/look", {}); } catch (e) { log(`look failed: ${e.message}`); await sleep(1000); continue; }
     const w = await h.step(L);
+    await doing(w in HUNT_WORDS ? HUNT_WORDS[w] : "hunting");
     if (w !== lastWord && (w === "patrol" || w === "search" || w === "check" || w === "out")) log(w);
     lastWord = w;
     await sleep(tickMs);
@@ -251,6 +263,7 @@ export async function hunt({ api, skill = 3, target = "Jaron", log = () => {}, t
 /** follow-orders mode. orders = ordersFromDb(...) (or a fake). Default before any order: follow Jaron, quietly. */
 export async function followOrders({ api, orders, log = () => {}, leader = "", tickMs = 250, pollMs = 1000, until = Infinity, stop = () => false, skill = 4, rng = Math.random }) {
   const mv = new Mover(api);
+  const doing = doer(api);
   let cur = { kind: "follow", quiet: true }, lastPoll = 0, lastShot = 0, lostSince = 0, saidLost = false, heldOut = false;
   const hunter = new Hunter({ api, skill, target: "", rng });
   const P = SKILL[Math.max(1, Math.min(5, skill))];
@@ -320,6 +333,7 @@ export async function followOrders({ api, orders, log = () => {}, leader = "", t
     if ((cur.kind === "follow" || cur.kind === "cover") && !cur.quiet && !J && Date.now() - lostSince > 6000 && !saidLost) { saidLost = true; await reply("I can't see you on the field. Holding here.", cur); }
     if (J && J.out && cur.kind === "cover" && !heldOut) { heldOut = true; await reply("You're out. I'm holding until you're back.", cur); }
     if (J && !J.out) heldOut = false;
+    await doing(ORDER_WORDS[cur.kind] || "");
     switch (cur.kind) {
       case "follow": case "cover": {
         if (J && !J.out) {

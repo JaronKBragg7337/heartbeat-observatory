@@ -39,13 +39,17 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { Seam } from "/lab/seam-room/seam.js";
-import * as FD from "/lab/arena/field.js";
+import * as FD from "/lab/arena/field.js?v=3";
 // friendly fire rule (field.js); the fallback covers a browser still holding yesterday's cached field.js
 const canTag = FD.canTag || ((F, ballTeam, targetTeam) => !!(F && F.rules && F.rules.friendlyFire) || ballTeam !== targetTeam);
 
 const ZONES_URL = "/lab/arena/zones.json";
 const SNAP = window.__ARENA_SNAPSHOT || null;
+/* WATCH ONLY (/lab/arena/a/?watch): a spectator. No body on the field, no state sent, no hits decided; just the
+   camera. A player can also watch for a while from the play page (the Watch pill, or keys 1-9 / 0). */
+const WATCH_ONLY = !SNAP && /(?:^|[?&])watch(?:=|&|$)/.test(location.search);
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -73,12 +77,13 @@ const seam = Seam.define(Object.assign({}, seamCfg, {
       player.x = zone.id === "a" ? -0.7 : 0.7;
     }
     if (from && info.how !== "load") seamLog(`you crossed to page ${LABEL(zone.id)}`);
-    if (shell) shell.setPlace(`Arena · page ${LABEL(zone.id)}`);
+    if (shell) shell.setPlace(WATCH_ONLY ? "Arena · watching" : `Arena · page ${LABEL(zone.id)}`);
     updateCounter(true);
   },
 }));
 const startZone = SNAP ? (seam.zone(SNAP.me.zone || SNAP.me.team) || seam.start()) : seam.start();
 zoneId = startZone.id;
+if (WATCH_ONLY) history.replaceState(history.state, "", location.pathname + "?watch");   // seam.start() dropped the query
 const TEAM = SNAP ? (SNAP.me.team || zoneId) : startZone.id;   // the page you loaded is your team
 
 /* ------------------------------------------------------------ renderer - */
@@ -108,7 +113,7 @@ const keyOf = (d) => JSON.stringify([d.v, d.module, d.cover, d.teams, d.field]);
 async function buildFieldNow(data) {
   const mod = await import(`/lab/arena/${/^[\w-]+\.js$/.test(data.module || "") ? data.module : "scene.js"}?v=${encodeURIComponent(data.v || 1)}`);
   const fn = mod.buildField || mod.default;
-  const built = fn({ THREE, F, data, RoundedBoxGeometry, quality });
+  const built = fn({ THREE, F, data, RoundedBoxGeometry, mergeGeometries, quality });
   if (field) { scene.remove(field.group); try { field.dispose(); } catch (_) {} }
   field = built; scene.add(field.group); fieldKey = keyOf(data);
   // splats on a piece of cover that is gone go with it
@@ -153,26 +158,52 @@ function dropSplat(s) { splatGroup.remove(s.mesh); const i = splats.indexOf(s); 
 /* -------------------------------------------------------------- people - */
 let template = null; const clips = {};
 const fallbackMat = new THREE.MeshStandardMaterial({ color: 0x7a8a99, roughness: 0.8 });
-const gearMat = { a: new THREE.MeshStandardMaterial({ color: teamColor("a"), roughness: 0.6 }), b: new THREE.MeshStandardMaterial({ color: teamColor("b"), roughness: 0.6 }) };
-const blackMat = new THREE.MeshStandardMaterial({ color: 0x1b1d20, roughness: 0.45, metalness: 0.3 });
-const lensMat = new THREE.MeshStandardMaterial({ color: 0x2a3440, roughness: 0.1, metalness: 0.7 });
 const proxyGeo = new THREE.CylinderGeometry(0.32, 0.32, 1.8, 8); proxyGeo.translate(0, 0.9, 0);
 const proxyMat = new THREE.MeshBasicMaterial({ visible: false });
 
+/* the paintball kit: vest, mask and strap as ONE merged mesh, the marker (body, barrel, hopper, tank) as another.
+   Vertex colours instead of five materials, and no shadow pass for the kit (the body's shadow covers it): a player
+   costs 4 draw calls instead of 18. */
+const gearVC = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.15 });
+const gearGeo = {};
+function partsGeo(parts) {
+  const o = new THREE.Object3D();
+  const list = parts.map(([g, color, pos, rot, scl]) => {
+    o.position.set(...(pos || [0, 0, 0])); o.rotation.set(...(rot || [0, 0, 0])); o.scale.set(...(scl || [1, 1, 1])); o.updateMatrix();
+    const q = (g.index ? g.toNonIndexed() : g).applyMatrix4(o.matrix);
+    const c = new THREE.Color(color), n = q.attributes.position.count, arr = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { arr[i * 3] = c.r; arr[i * 3 + 1] = c.g; arr[i * 3 + 2] = c.b; }
+    q.setAttribute("color", new THREE.BufferAttribute(arr, 3));
+    for (const k of Object.keys(q.attributes)) if (!["position", "normal", "uv", "color"].includes(k)) q.deleteAttribute(k);
+    return q;
+  });
+  return mergeGeometries(list, false);
+}
+function gearFor(team) {
+  if (gearGeo[team]) return gearGeo[team];
+  const tc = teamColor(team), black = 0x1b1d20, lens = 0x2a3440, steel = 0xb8bec6;
+  gearGeo[team] = {
+    torso: partsGeo([
+      [new THREE.CylinderGeometry(0.24, 0.215, 0.46, 16, 1, true), tc, [0, 1.21, 0], null, [1, 1, 0.8]],
+      [new THREE.BoxGeometry(0.17, 0.11, 0.07), black, [0, 1.6, 0.11]],
+      [new THREE.BoxGeometry(0.15, 0.045, 0.01), lens, [0, 1.625, 0.146]],
+      [new THREE.TorusGeometry(0.1, 0.012, 4, 16), tc, [0, 1.63, 0.03], [Math.PI / 2, 0, 0], [1, 1.1, 1]],
+    ]),
+    marker: partsGeo([
+      [new THREE.BoxGeometry(0.055, 0.09, 0.26), black],
+      [new THREE.CylinderGeometry(0.016, 0.016, 0.32, 10), black, [0, 0.02, 0.28], [Math.PI / 2, 0, 0]],
+      [new THREE.SphereGeometry(0.075, 12, 10), tc, [0, 0.12, 0.02], null, [0.8, 1, 1.25]],
+      [new THREE.CylinderGeometry(0.03, 0.03, 0.18, 10), steel, [0, -0.04, -0.2], [Math.PI / 2, 0, 0]],
+    ]),
+  };
+  return gearGeo[team];
+}
 function makeGear(team) {
-  const g = new THREE.Group();
-  const vest = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.215, 0.46, 16, 1, true), gearMat[team] || gearMat.a);
-  vest.position.set(0, 1.21, 0.0); vest.scale.set(1, 1, 0.8); vest.castShadow = true; g.add(vest);
-  const mask = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.11, 0.07), blackMat); mask.position.set(0, 1.6, 0.11); g.add(mask);
-  const lens = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.045, 0.01), lensMat); lens.position.set(0, 1.625, 0.146); g.add(lens);
-  const strap = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.012, 4, 16), gearMat[team] || gearMat.a); strap.rotation.x = Math.PI / 2; strap.position.set(0, 1.63, 0.03); strap.scale.set(1, 1.1, 1); g.add(strap);
-  // the marker, held at the chest, pointing forward
+  const g = new THREE.Group(), geo = gearFor(team === "b" ? "b" : "a");
+  const torso = new THREE.Mesh(geo.torso, gearVC); g.add(torso);   // no shadow of its own: the body's shadow covers it
+  // the marker, held at the chest, pointing forward (its group moves for the "I'm out" pose)
   const mk = new THREE.Group(); mk.position.set(0.14, 1.22, 0.3);
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.09, 0.26), blackMat); mk.add(body);
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.32, 10), blackMat); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.02, 0.28); mk.add(barrel);
-  const hopper = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 10), gearMat[team] || gearMat.a); hopper.scale.set(0.8, 1, 1.25); hopper.position.set(0, 0.12, 0.02); mk.add(hopper);
-  const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.18, 10), new THREE.MeshStandardMaterial({ color: 0xb8bec6, metalness: 0.8, roughness: 0.3 })); tank.rotation.x = Math.PI / 2; tank.position.set(0, -0.04, -0.2); mk.add(tank);
-  mk.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  const m = new THREE.Mesh(geo.marker, gearVC); mk.add(m);
   g.add(mk); g.userData.marker = mk;
   return g;
 }
@@ -291,12 +322,12 @@ function renderScore() {
 }
 let counterSig = "", lastPeers = [];
 function updateCounter(force) {
-  const n = { a: 0, b: 0 }; n[zoneId] = (n[zoneId] || 0) + 1;
+  const n = { a: 0, b: 0 }; if (!WATCH_ONLY) n[zoneId] = (n[zoneId] || 0) + 1;
   for (const p of lastPeers) { const z = FD.parsePlace(p.place).zone; if (n[z] != null) n[z] += 1; }
   const sig = zoneId + "|" + n.a + "|" + n.b;
   if (!force && sig === counterSig) return;
   counterSig = sig;
-  const el = $("counter"); if (el) el.innerHTML = `You: <b>page ${LABEL(zoneId)}</b> · On A: ${n.a} · On B: ${n.b}`;
+  const el = $("counter"); if (el) el.innerHTML = `${WATCH_ONLY ? "<b>Watching</b>" : `You: <b>page ${LABEL(zoneId)}</b>`} · On A: ${n.a} · On B: ${n.b}`;
   window.__arenaCount = n;
 }
 renderScore(); updateCounter(true);
@@ -352,7 +383,7 @@ function stepBalls() {
       if (field && field.curtain) field.curtain.material.opacity = 0.6;
     }
     // MY side decides if it hit ME (never anyone else)
-    if (!b.mine && !player.out && !SNAP && b.w.by !== myKey() && canTag(F, b.w.team, TEAM)) {   // a teammate's ball passes through
+    if (!b.mine && !player.out && !SNAP && !WATCH_ONLY && b.w.by !== myKey() && canTag(F, b.w.team, TEAM)) {   // a teammate's ball passes through
       const to = Math.min(age, b.imp.t);
       if (to > b.lastAge) {
         const ht = FD.hitTime(F, b.w, b.lastAge, to, player);
@@ -397,7 +428,7 @@ function muzzle() {
   return [player.x + f.x * 0.62 + r.x * 0.14, player.y + 1.26, player.z + f.z * 0.62 + r.z * 0.14];
 }
 function fire(target) {
-  if (SNAP || player.out) return null;
+  if (SNAP || WATCH_ONLY || view.on || player.out) return null;
   const t = nowS();
   if (t - player.lastFire < F.rules.fireCooldownS) return null;
   player.lastFire = t;
@@ -486,19 +517,14 @@ function syncPeers(list, dt) {
     let e = peerAv.get(p.id);
     if (!e || e.team !== team) {
       if (e) scene.remove(e.group);
-      e = { group: new THREE.Group(), px: p.x, pz: p.z, speed: 0, label: "", out: false };
+      e = { group: new THREE.Group(), px: p.x, pz: p.z, speed: 0, out: false, isOut: false };
       makeAvatar(e, team); scene.add(e.group); peerAv.set(p.id, e);
     }
     const ai = !!(p.appearance && p.appearance.ai);
     const out = pl.out || (e.out && nowS() - (e.outAt || 0) < F.rules.respawnS + 2);
     if (!pl.out && e.out && nowS() - (e.outAt || 0) > 0.6) { e.out = false; clearPaint(e); }
-    const label = `${p.name || "Guest"} · ${LABEL(team)}`;
-    const key = label + ai + out;
-    if (key !== e.label) {
-      if (e.sprite) { e.group.remove(e.sprite); e.sprite.material.map.dispose(); e.sprite.material.dispose(); }
-      e.sprite = nameSprite(label, teamColor(team), ai, out, LABEL(team)); e.group.add(e.sprite); e.label = key;
-      setOutPose(e, out);
-    }
+    if (out !== e.isOut) { e.isOut = out; setOutPose(e, out); }   // the name tag is a DOM tag (updateTags), not a sprite
+    e.ai = ai; e.doing = pl.doing || ""; e.model = ai && p.appearance && p.appearance.model ? String(p.appearance.model).slice(0, 14) : "";
     e.name = p.name; e.zone = pl.zone; e.y = p.y || 0;
     const v = dt > 0 ? Math.hypot(p.x - e.px, p.z - e.pz) / dt : 0;
     e.speed += (Math.min(v, 6) - e.speed) * 0.2;
@@ -516,11 +542,13 @@ if (!SNAP) {
     worldLabel: "The Arena",
     gateUrl: "/",
     getState() {
+      if (WATCH_ONLY) return null;   // a spectator sends nothing: no body on anyone's field
       return { x: player.x, y: player.y, z: player.z, yaw: player.yaw, pitch: cam.pitch, stance: player.speed > 0.3 ? "run" : "stand", place: FD.placeOf(zoneId, TEAM, player.out) };
     },
     onPeers() {},
-    onMove({ x, y }) { player.mx = x; player.my = y; },
+    onMove({ x, y }) { if (view.on) { player.mx = 0; player.my = 0; return; } player.mx = x; player.my = y; },
     onLook(dx, dy) {
+      if (view.on) return;   // in watch mode a drag orbits the camera (the watch section below)
       const k = 0.0042 * (shell.settings.sensitivity || 1), inv = shell.settings.invertY ? -1 : 1;
       cam.yaw += dx * k; cam.pitch = clamp(cam.pitch - dy * k * inv * 0.6, -0.5, 0.65);
     },
@@ -530,7 +558,7 @@ if (!SNAP) {
   let frameDt = 0;
   shell.opts.onPeers = (list) => syncPeers(list, frameDt);
   window.__arenaFrameDt = (d) => { frameDt = d; };
-  shell.setPlace(`Arena · page ${LABEL(zoneId)}`);
+  shell.setPlace(WATCH_ONLY ? "Arena · watching" : `Arena · page ${LABEL(zoneId)}`);
   // the shell's use button is the trigger: it only shows while a prompt is set, so set one and hide the prompt text
   shell.setPrompt("Fire");
   const relabel = () => { const b = document.querySelector(".hbs-act.go"); if (b) b.textContent = "Fire"; };
@@ -607,7 +635,8 @@ function buildOrders() {
   box.innerHTML = `<div class="chips">${ORDER_CHIPS.map(([k, l]) => `<button type="button" data-k="${k}">${esc(l)}</button>`).join("")}</div>
     <form id="ordForm" autocomplete="off"><input id="ordIn" type="text" maxlength="140" enterkeyhint="send" placeholder="Tell your AI…" aria-label="An order for your AI teammate"><button type="submit">Send</button></form>`;
   const hint = document.createElement("div"); hint.id = "ordHint"; hint.setAttribute("aria-live", "polite");
-  document.body.append(btn, box, hint);
+  const row = $("pills"); if (row) row.prepend(btn); else document.body.append(btn);   // Orders at the right edge, Watch to its left
+  document.body.append(box, hint);
   for (const el of [btn, box]) {   // taps here never reach the shell's stick/look or the trigger
     for (const ev of ["pointerdown", "touchstart", "mousedown"]) el.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
     el.addEventListener("keydown", (e) => e.stopPropagation());
@@ -652,6 +681,8 @@ window.__arenaOrders = { previewBox: () => buildOrders(), onOrderRow, showBubble
 const keys = new Set();
 addEventListener("keydown", (e) => {
   if (e.target && e.target.matches && e.target.matches("input,textarea,select")) return;
+  if (watchKey(e)) return;
+  if (view.on) return;
   keys.add(e.key.toLowerCase());
   if (e.key.toLowerCase() === "f") fire();
 });
@@ -660,7 +691,7 @@ addEventListener("blur", () => keys.clear());
 const onUi = (t) => !!(t && t.closest && t.closest(".hbs-act,.hbs-icon,.hbs-panel,.hbs-chip,#hudSeam,#ord,#ordBtn,a,button,input"));
 const drag = { id: null, x: 0, y: 0, t: 0, moved: 0, mouse: false };
 addEventListener("pointerdown", (e) => {
-  if (SNAP || onUi(e.target)) return;
+  if (SNAP || view.on || onUi(e.target)) return;
   if (e.pointerType === "mouse") { drag.id = e.pointerId; drag.mouse = true; }
   else if (pickSpot || e.clientX > innerWidth * 0.45) { drag.id = e.pointerId; drag.mouse = false; }   // the shell turns this drag into look
   else return;
@@ -675,10 +706,235 @@ addEventListener("pointermove", (e) => {
 });
 const endDrag = (e) => {
   if (e.pointerId !== drag.id) return;
+  if (view.on) { drag.id = null; return; }
   if (e.type === "pointerup" && drag.moved < 12 && performance.now() - drag.t < 320) { if (pickSpot) pickAt(e.clientX, e.clientY); else fire(); }   // a tap (or a click) fires; in "Go to" it picks the spot
   drag.id = null;
 };
 addEventListener("pointerup", endDrag); addEventListener("pointercancel", endDrag);
+
+/* ------------------------------------------- spectator camera + name tags - */
+/* WATCH: a follow/orbit camera you can put on any player (tap a name in the bar, tap a name tag, or keys 1-9) and a
+   free overview of the whole field (Overview, or key 0). Touch: one finger orbits, two fingers pinch to zoom (and pan
+   the overview). Mouse: drag orbits, wheel zooms, right-drag pans. Esc (or Play) goes back to playing.
+   NAME TAGS are DOM, not sprites: no draw calls, crisp at any pixel ratio, readable on a phone. They face the camera
+   by construction, fade with distance, and show the team colour, the name, an AI badge and a small state word
+   ("hunting", "covering", "tagged"). An AI sets its word with `arena-agent.mjs status "..."`, its brain sets it as
+   it plays; it rides the 4th part of the place field, so older clients ignore it. */
+const view = { on: false, target: null,                       // target: null = overview, "me", or a peer's channel id
+  ov: { yaw: 0, pitch: 0.95, dist: 0, cx: 0, cz: 0 },          // overview: orbit round a point on the ground
+  fo: { yaw: 0, pitch: 0.3, dist: 6.5 },                       // follow: orbit round the player, yaw relative to its facing
+  baseYaw: 0, pos: new THREE.Vector3(), look: new THREE.Vector3(), init: false, busyUntil: 0 };
+const lookT = new THREE.Vector3(), wantV = new THREE.Vector3(), tagV = new THREE.Vector3();
+const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
+function overviewDist() {   // far enough that the long side of the field fits the screen's width
+  const hf = Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect);
+  return clamp(((F.halfX || 20) + 1) / Math.tan(hf) * 0.82, 24, 70);
+}
+function watchList() {
+  const L = [];
+  if (!WATCH_ONLY) L.push({ id: "me", name: myName(), me: true, team: TEAM, out: player.out, doing: "", ai: false });
+  for (const [id, e] of peerAv) L.push({ id, name: e.name || "Guest", team: e.team, out: !!e.isOut, doing: e.doing || "", ai: !!e.ai, model: e.model || "" });
+  return L;
+}
+function targetOf(id) {
+  if (id === "me") return WATCH_ONLY ? null : { x: player.x, y: player.y, z: player.z, yaw: player.yaw };
+  const e = peerAv.get(id); if (!e) return null;
+  const p = e.group.position; return { x: p.x, y: p.y, z: p.z, yaw: e.group.rotation.y };
+}
+const tagState = (t) => (t.out ? "tagged" : t.doing || "");
+function setWatch(on) {
+  if (SNAP) return;
+  if (WATCH_ONLY) on = true;
+  const was = view.on;
+  view.on = !!on;
+  document.body.classList.toggle("arena-watch", view.on);
+  const b = $("watchBtn"); if (b) b.setAttribute("aria-pressed", view.on ? "true" : "false");
+  if (view.on && !was) {
+    view.lastT = 0;
+    player.mx = 0; player.my = 0; keys.clear();
+    view.pos.copy(camera.position); view.look.copy(camera.position).add(lookDir());
+    watchHint(isTouch ? "Drag to orbit · pinch to zoom · tap a name" : "Drag to orbit · wheel to zoom · 1-9 players · 0 overview · Esc to play");
+  }
+  if (!view.on && was) { cam.yaw = player.yaw; watchHint(""); }
+  renderPicker(true);
+}
+function pickTarget(id) {
+  view.target = id || null;
+  const tg = view.target && targetOf(view.target);
+  if (view.target && !tg) view.target = null;
+  if (tg) { view.baseYaw = tg.yaw; view.fo.yaw = 0; view.fo.pitch = 0.3; view.fo.dist = 6.5; }
+  setWatch(true);
+  renderPicker(true);
+}
+let hintT = 0;
+function watchHint(text) {
+  const el = $("watchHint"); if (!el) return;
+  el.textContent = text; el.classList.toggle("on", !!text);
+  clearTimeout(hintT); if (text) hintT = setTimeout(() => el.classList.remove("on"), 4500);
+}
+function placeWatchCamera() {
+  const t = nowS(), dt = clamp(t - (view.lastT || t), 0, 1); view.lastT = t;   // real time, so a slow frame still glides the whole way
+  const k = 1 - Math.exp(-dt * (t < view.busyUntil ? 16 : 6));
+  const tg = view.target && targetOf(view.target);
+  if (view.target && !tg) { view.target = null; renderPicker(true); }   // they left: back to the overview
+  if (tg) {
+    view.baseYaw += angDiff(view.baseYaw, tg.yaw) * (1 - Math.exp(-dt * 2.2));   // swing round behind them, gently
+    const yaw = view.baseYaw + Math.PI + view.fo.yaw, p = view.fo.pitch, d = view.fo.dist;
+    lookT.set(tg.x, tg.y + 1.25, tg.z);
+    wantV.set(tg.x + Math.sin(yaw) * Math.cos(p) * d, tg.y + 1.25 + Math.sin(p) * d, tg.z + Math.cos(yaw) * Math.cos(p) * d);
+  } else {
+    const o = view.ov; if (!o.dist) o.dist = overviewDist();
+    lookT.set(o.cx, 0, o.cz);
+    wantV.set(o.cx + Math.sin(o.yaw) * Math.cos(o.pitch) * o.dist, Math.sin(o.pitch) * o.dist, o.cz + Math.cos(o.yaw) * Math.cos(o.pitch) * o.dist);
+  }
+  if (wantV.y < 0.45) wantV.y = 0.45;
+  view.pos.lerp(wantV, k); view.look.lerp(lookT, k);
+  camera.position.copy(view.pos); camera.lookAt(view.look);
+}
+function orbitBy(dYaw, dPitch, zoom) {
+  view.busyUntil = nowS() + 0.25;
+  const o = view.target ? view.fo : view.ov;
+  if (!view.target && !o.dist) o.dist = overviewDist();
+  o.yaw += dYaw || 0;
+  o.pitch = clamp(o.pitch + (dPitch || 0), view.target ? 0.02 : 0.2, view.target ? 1.35 : 1.5);
+  if (zoom) o.dist = clamp(o.dist * zoom, view.target ? 2.2 : 8, view.target ? 24 : 85);
+}
+function panBy(dx, dy) {   // overview only: drag the ground under the fingers
+  if (view.target) return;
+  const o = view.ov, s = o.dist * 0.0022;
+  const fx = -Math.sin(o.yaw), fz = -Math.cos(o.yaw), rx = Math.cos(o.yaw), rz = -Math.sin(o.yaw);
+  o.cx = clamp(o.cx - (rx * dx - fx * dy) * s, -(F.halfX || 20) - 4, (F.halfX || 20) + 4);
+  o.cz = clamp(o.cz - (rz * dx - fz * dy) * s, -(F.halfZ || 12) - 4, (F.halfZ || 12) + 4);
+  view.busyUntil = nowS() + 0.25;
+}
+/* the gestures (watch mode only; play mode keeps the shell's stick and look) */
+const onWatchUi = (t) => !!(t && t.closest && t.closest("#watchBar,#pills,#ord,#ordBtn,.hbs-icon,.hbs-panel,.hbs-chip,.hbs-hud,a,button,input"));
+const touch = new Map();
+let gest = null;
+function gestStart() {
+  const pts = [...touch.values()];
+  if (pts.length === 1) gest = { kind: "orbit", x: pts[0].x, y: pts[0].y, t: performance.now(), moved: 0, el: pts[0].el };
+  else if (pts.length >= 2) { const [a, b] = pts; gest = { kind: "pinch", d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, moved: 99 }; }
+  else gest = null;
+}
+addEventListener("pointerdown", (e) => {
+  if (!view.on || onWatchUi(e.target)) return;
+  touch.set(e.pointerId, { x: e.clientX, y: e.clientY, el: e.target, button: e.button, shift: e.shiftKey });
+  gestStart();
+}, { passive: true });
+addEventListener("pointermove", (e) => {
+  if (!view.on || !touch.has(e.pointerId) || !gest) return;
+  const p = touch.get(e.pointerId); p.x = e.clientX; p.y = e.clientY;
+  if (gest.kind === "orbit") {
+    const dx = e.clientX - gest.x, dy = e.clientY - gest.y; gest.x = e.clientX; gest.y = e.clientY;
+    gest.moved += Math.abs(dx) + Math.abs(dy);
+    if (e.pointerType === "mouse" && (p.button === 2 || p.shift)) panBy(dx, dy);
+    else orbitBy(-dx * 0.0065, dy * 0.005, 0);
+  } else {
+    const [a, b] = [...touch.values()]; if (!b) return;
+    const d = Math.hypot(a.x - b.x, a.y - b.y) || 1, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    orbitBy(0, 0, gest.d / d);
+    panBy(mx - gest.mx, my - gest.my);
+    gest.d = d; gest.mx = mx; gest.my = my;
+  }
+}, { passive: true });
+function gestEnd(e) {
+  if (!touch.has(e.pointerId)) return;
+  const g = gest; touch.delete(e.pointerId);
+  if (e.type === "pointerup" && g && g.kind === "orbit" && g.moved < 10 && performance.now() - g.t < 400) {   // a tap on a name tag follows that player
+    const tag = g.el && g.el.closest && g.el.closest(".tag[data-id]");
+    if (tag) pickTarget(tag.dataset.id);
+  }
+  gestStart();
+}
+addEventListener("pointerup", gestEnd, { passive: true });
+addEventListener("pointercancel", gestEnd, { passive: true });
+addEventListener("wheel", (e) => { if (!view.on) return; e.preventDefault(); orbitBy(0, 0, Math.exp(clamp(e.deltaY, -200, 200) * 0.0012)); }, { passive: false });
+addEventListener("contextmenu", (e) => { if (view.on) e.preventDefault(); });
+function watchKey(e) {   // 1-9 follow a player, 0 (or o) the overview, Esc back to play. Returns true if it used the key.
+  if (SNAP) return false;
+  const k = e.key;
+  if (/^[1-9]$/.test(k)) { const t = watchList()[+k - 1]; if (t) { pickTarget(t.id); return true; } return view.on; }
+  if (k === "0" || (view.on && k.toLowerCase() === "o")) { pickTarget(null); return true; }
+  if (k === "Escape" && view.on && !WATCH_ONLY) { setWatch(false); return true; }
+  return false;
+}
+/* the player picker: one row of big buttons at the bottom (thumb-sized, scrolls sideways when many play) */
+let pickerSig = "", pickerAt = 0;
+function renderPicker(force) {
+  const bar = $("watchBar"); if (!bar) return;
+  if (!view.on) { if (pickerSig) { bar.innerHTML = ""; pickerSig = ""; } return; }
+  const L = watchList();
+  const sig = (view.target || "") + "#" + L.map((t) => [t.id, t.name, t.team, tagState(t)].join("|")).join(";");
+  if (!force && sig === pickerSig) return;
+  pickerSig = sig;
+  const btn = (id, inner, extra) => `<button type="button" data-id="${esc(id)}" class="${(view.target || "") === id ? "on" : ""} ${extra || ""}">${inner}</button>`;
+  const play = WATCH_ONLY ? `<a class="play" href="/lab/arena/${esc(zoneId)}/">Play</a>` : `<button type="button" class="play" data-act="play">Play</button>`;
+  bar.innerHTML = play + btn("", `<span class="k">0</span>Overview`) + L.map((t, i) => btn(t.id,
+    `<span class="k">${i < 9 ? i + 1 : ""}</span><span class="d" style="--tc:${teamColor(t.team)}"></span><span class="n">${esc(t.me ? "You" : t.name)}</span>${tagState(t) ? `<span class="s">${esc(tagState(t))}</span>` : ""}`, t.out ? "out" : "")).join("");
+  const on = bar.querySelector("button.on");
+  if (on && force) { const r = on.getBoundingClientRect(); if (r.left < 0 || r.right > innerWidth) bar.scrollLeft += r.left - (innerWidth - r.width) / 2; }
+}
+/* name tags */
+const tagEls = new Map();   // id -> { el, sig, tx }
+function updateTags() {
+  const box = $("tags"); if (!box) return;
+  const seen = new Set();
+  const list = watchList().filter((t) => !t.me || view.on);   // your own tag only while you watch
+  for (const t of list) {
+    const pos = t.me ? selfAv.group.position : (peerAv.get(t.id) || {}).group?.position; if (!pos) continue;
+    seen.add(t.id);
+    let r = tagEls.get(t.id);
+    if (!r) { const el = document.createElement("div"); el.className = "tag"; el.dataset.id = t.id; box.appendChild(el); r = { el, sig: "", tx: "" }; tagEls.set(t.id, r); }
+    const st = tagState(t), sel = view.on && view.target === t.id;
+    const sig = [t.name, t.team, t.ai, t.model, st, sel, t.me].join("|");
+    if (sig !== r.sig) {
+      r.sig = sig;
+      r.el.style.setProperty("--tc", teamColor(t.team));
+      r.el.classList.toggle("out", !!t.out); r.el.classList.toggle("sel", sel);
+      r.el.innerHTML = `<div class="row"><span class="tl">${LABEL(t.team)}</span><span class="nm">${esc(t.me ? "You" : t.name)}</span>${t.ai ? `<span class="ai">AI${t.model ? " · " + esc(t.model) : ""}</span>` : ""}</div>${st ? `<div class="st">${esc(st)}</div>` : ""}`;
+    }
+    tagV.set(pos.x, pos.y + 2.08, pos.z);
+    const d = camera.position.distanceTo(tagV);
+    tagV.project(camera);
+    if (tagV.z > 1 || Math.abs(tagV.x) > 1.15 || Math.abs(tagV.y) > 1.15 || d < 0.8) { if (r.tx !== "hide") { r.el.style.display = "none"; r.tx = "hide"; } continue; }
+    const x = Math.round((tagV.x * 0.5 + 0.5) * innerWidth), y = Math.round((-tagV.y * 0.5 + 0.5) * innerHeight);
+    const near = view.on && !view.target ? view.ov.dist * 0.85 : 12;   // the overview looks from far: fade past the field, not before it
+    const dd = d - (near - 12);   // distance as if seen from a follow camera
+    const op = sel ? 1 : clamp(1 - (dd - 12) / 38, 0.22, 1), sc = clamp(1.08 - (dd - 5) / 55, 0.72, 1.08);
+    const tx = `${x}|${y}|${op.toFixed(2)}|${sc.toFixed(2)}`;
+    if (tx !== r.tx) {
+      if (r.tx === "hide") r.el.style.display = "";
+      r.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%) scale(${sc.toFixed(2)})`;
+      r.el.style.opacity = op.toFixed(2); r.el.style.zIndex = String(1000 - Math.round(d * 10));
+      r.tx = tx;
+    }
+  }
+  for (const [id, r] of tagEls) if (!seen.has(id)) { r.el.remove(); tagEls.delete(id); }
+}
+function buildWatchUi() {
+  if (SNAP) return;
+  const tags = document.createElement("div"); tags.id = "tags"; tags.setAttribute("aria-hidden", "true");
+  const bar = document.createElement("div"); bar.id = "watchBar"; bar.setAttribute("role", "toolbar"); bar.setAttribute("aria-label", "Watch a player");
+  const hint = document.createElement("div"); hint.id = "watchHint"; hint.setAttribute("aria-live", "polite");
+  const pills = document.createElement("div"); pills.id = "pills";
+  document.body.append(tags, bar, hint, pills);
+  document.addEventListener("gesturestart", (e) => { if (view.on) e.preventDefault(); });   // iOS Safari: a pinch zooms the camera, not the page
+  if (!WATCH_ONLY) {
+    const wb = document.createElement("button"); wb.id = "watchBtn"; wb.type = "button"; wb.textContent = "Watch"; wb.setAttribute("aria-pressed", "false");
+    wb.addEventListener("click", () => { if (view.on) setWatch(false); else pickTarget(null); });
+    pills.append(wb);
+  }
+  for (const el of [bar, pills]) {   // taps here never reach the shell's stick/look, the trigger or the orbit
+    for (const ev of ["pointerdown", "touchstart", "mousedown"]) el.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
+  }
+  bar.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.act === "play") { setWatch(false); return; }
+    pickTarget(b.dataset.id || null);
+  });
+}
+buildWatchUi();
 
 /* --------------------------------------------------------- the frame - */
 const tmpV = new THREE.Vector3();
@@ -688,7 +944,7 @@ function frame() {
   if (window.__arenaFrameDt) window.__arenaFrameDt(dt);
   if (!SNAP) {
     // move: the stick or WASD, relative to where the camera looks
-    let mx = player.mx, my = player.my;
+    let mx = view.on ? 0 : player.mx, my = view.on ? 0 : player.my;
     if (keys.has("w") || keys.has("arrowup")) my -= 1;
     if (keys.has("s") || keys.has("arrowdown")) my += 1;
     if (keys.has("a") || keys.has("arrowleft")) mx -= 1;
@@ -706,8 +962,8 @@ function frame() {
     const gy = FD.groundAt(F, player.x, player.z);
     player.y += (gy - player.y) * Math.min(1, dt * 14);
     player.yaw = cam.yaw;
-    seam.update(player.x, player.z);
-    if (player.out && t >= player.outUntil) respawnMe();
+    if (!WATCH_ONLY) seam.update(player.x, player.z);
+    if (player.out && t >= player.outUntil && !WATCH_ONLY) respawnMe();
     const tg = $("tagged");
     if (tg) { if (player.out) { tg.textContent = `Tagged by ${player.outBy} · back in ${Math.max(0, player.outUntil - t).toFixed(1)} s`; tg.classList.add("on"); } else tg.classList.remove("on"); }
     if (flashT && t - flashT > 0.9) { flashT = 0; const el = $("flash"); if (el) el.classList.remove("on"); }
@@ -719,9 +975,11 @@ function frame() {
   animate(selfAv, player.speed, dt);
   stepBubbles();
   stepBalls();
-  placeCamera();
+  if (view.on) placeWatchCamera(); else placeCamera();
   if (kick > 0) kick = Math.max(0, kick - dt * 8);
   renderer.render(scene, camera);
+  updateTags();
+  if (t - pickerAt > 0.25) { pickerAt = t; renderPicker(); }
 }
 const camRay = new THREE.Raycaster();
 function placeCamera() {
@@ -786,6 +1044,9 @@ if (!SNAP) {
 booted = true;
 await buildFieldNow(DATA);
 
+if (WATCH_ONLY) selfAv.group.visible = false;
+setWatch(WATCH_ONLY);
+
 if (SNAP) {
   // a local copy of one moment, drawn from one player's eyes; no shell, no channel
   const m = SNAP.me || {};
@@ -835,5 +1096,8 @@ window.__arena = {
   teleport(x, z) { const p = FD.pushOut(F, x, z); player.x = p.x; player.z = p.z; seam.update(player.x, player.z); },
   inject(kind, payload) { for (const fn of handlers[kind] || []) fn(Object.assign({ kind, from: "test" }, payload || {}), "test"); },
   pollZones: (force) => pollZones(force),
+  watch: { set: (on) => setWatch(on), pick: (id) => pickTarget(id), list: () => watchList().map((t) => ({ id: t.id, name: t.name, team: t.team, doing: tagState(t) })),
+    get on() { return view.on; }, get target() { return view.target; }, get cam() { return { x: +camera.position.x.toFixed(2), y: +camera.position.y.toFixed(2), z: +camera.position.z.toFixed(2) }; },
+    orbit: (dYaw, dPitch, zoom) => orbitBy(dYaw, dPitch, zoom), tags: () => [...tagEls.entries()].map(([id, r]) => ({ id, shown: r.el.style.display !== "none", opacity: +r.el.style.opacity || 0, text: r.el.textContent })) },
   ready: true,
 };
