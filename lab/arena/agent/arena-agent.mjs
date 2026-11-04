@@ -128,16 +128,13 @@ export async function join(args, deps = {}) {
     try { process.kill(old.pid, 0); console.error(`"${name}" is already playing (pid ${old.pid}). Run: node arena-agent.mjs leave --name "${name}"`); process.exit(1); } catch (_) {}
   } catch (_) {}
 
-  let createClient = deps.createClient;
-  if (!createClient) {
-    const req = createRequire(path.join(SEAM_AGENT, "package.json"));
-    const sb = await import(pathToFileURL(req.resolve("@supabase/supabase-js")).href);
-    createClient = sb.createClient || (sb.default && sb.default.createClient);
-  }
+  const createClient = deps.createClient || await loadCreateClient();
   const selfKey = deps.selfKey || "ai-" + slug(name) + "-" + crypto.randomBytes(3).toString("hex");
   const sp = spawnOf(team);
   const me = { x: sp.x, z: sp.z + (args.z != null ? Number(args.z) : 0), y: 0, yaw: sp.yaw, team, zone: team, out: false, outUntil: 0, outBy: "",
-    hits: 0, tagged: 0, lastFire: 0, goal: null, arrive: null, aimId: null, speed: 0 };
+    hits: 0, tagged: 0, lastFire: 0, goal: null, arrive: null, aimId: null, speed: 0, doing: FD.cleanDoing(args.doing && args.doing !== true ? args.doing : "") };
+  /* the word on my name tag: what I said I am doing (status / a brain), else "moving" while I run */
+  const doingNow = () => (me.out ? "" : me.doing || (me.goal ? "moving" : ""));
   const appearance = { body: "person", build: "regular", shirt: team === "a" ? "#f07a2b" : "#1f9bd6", skin: "#c8a07a", hair: "#2c2420", pants: "#23262b", pattern: "plain",
     ai: !deps.human, model: args.model && args.model !== true ? String(args.model) : "", team };
   const color = PEER_COLORS[Math.abs(hash(selfKey)) % PEER_COLORS.length];
@@ -386,7 +383,7 @@ export async function join(args, deps = {}) {
     return {
       connected, sense: "structured: positions, bearings and line of sight computed from the shared field (field.js), not eyes",
       me: { name, team: me.team, page: me.zone, x: r1(me.x), z: r1(me.z), y: r1(me.y), facing_deg: Math.round(facing), facing: FD.compass(facing), out: me.out,
-        back_in_s: me.out ? r1(Math.max(0, me.outUntil - nowS())) : 0, moving: !!me.goal, hits: me.hits, tagged: me.tagged, aimed_at: me.aimId ? peerName(me.aimId) : null },
+        back_in_s: me.out ? r1(Math.max(0, me.outUntil - nowS())) : 0, moving: !!me.goal, doing: me.out ? "tagged" : doingNow(), hits: me.hits, tagged: me.tagged, aimed_at: me.aimId ? peerName(me.aimId) : null },
       score: { a: score.a, b: score.b }, players, cover_near: cover, incoming, balls_in_flight: balls.size,
       recent: events.slice(-5).map((e) => `[${e.time}] ${e.text}`),
     };
@@ -462,7 +459,7 @@ export async function join(args, deps = {}) {
   let lastSig = "", lastSentAt = 0;
   function sendState(force) {
     if (!connected) return;
-    const place = FD.placeOf(me.zone, me.team, me.out);
+    const place = FD.placeOf(me.zone, me.team, me.out, doingNow());
     const sig = `${me.x.toFixed(2)}|${me.y.toFixed(2)}|${me.z.toFixed(2)}|${me.yaw.toFixed(1)}|${place}`;
     const now = Date.now();
     if (!force && sig === lastSig && now - lastSentAt < IDLE_KEEPALIVE_MS) return;
@@ -542,6 +539,7 @@ export async function join(args, deps = {}) {
         balls: [...balls.values()].map((b) => ({ w: b.w, age: Math.min(t - b.born, b.imp.t - 0.001) })),
         splats: splats.slice(-120), score: { a: score.a, b: score.b }, log: events.slice(-3).map((e) => e.text) };
     },
+    "/doing": ({ word }) => { me.doing = FD.cleanDoing(word); sendState(true); return { ok: true, doing: me.doing }; },
     "/whoami": () => ({ name, team: me.team, page: me.zone, x: r1(me.x), z: r1(me.z), connected, selfKey }),
     "/leave": () => { setTimeout(() => shutdown("leave command"), 50); return { ok: true, bye: name }; },
   };
@@ -620,7 +618,13 @@ export async function join(args, deps = {}) {
 /* ============================================================ team mode === */
 async function loadCreateClient() {
   const req = createRequire(path.join(SEAM_AGENT, "package.json"));
-  const sb = await import(pathToFileURL(req.resolve("@supabase/supabase-js")).href);
+  let file;
+  try { file = req.resolve("@supabase/supabase-js"); }
+  catch (_) {
+    const e = new Error(`The agent kit's packages are not installed yet. Run this once, then try again:\n  cd "${SEAM_AGENT}" && npm install`);
+    e.code = "NODEPS"; throw e;
+  }
+  const sb = await import(pathToFileURL(file).href);
   return sb.createClient || (sb.default && sb.default.createClient);
 }
 /** The service-role key: env first, else the MSI's keys file (same rule as room-agent.mjs). Never logged or written. */
@@ -666,10 +670,42 @@ async function waitEvent(name, timeoutSec, kinds, onRetry) {
   }
 }
 
+/** join --detach: start the long-running join in the background, wait until it is connected, print, and exit.
+    One command for a CLI agent that cannot keep a process in the background itself. */
+async function joinDetached(args) {
+  await loadCreateClient();   // the install hint now, not in a log nobody reads
+  const name = String(args.name && args.name !== true ? args.name : "Agent A").slice(0, 24);
+  const dir = dirFor(name); fs.mkdirSync(dir, { recursive: true });
+  const controlFile = path.join(dir, "control.json"), logFile = path.join(dir, "join.log");
+  try { const old = JSON.parse(fs.readFileSync(controlFile, "utf8")); process.kill(old.pid, 0); console.log(`"${name}" is already in the Arena (pid ${old.pid}). Carry on, or: node arena-agent.mjs leave --name "${name}"`); return; } catch (_) {}
+  const argv = process.argv.slice(2).filter((a) => a !== "--detach" && a !== "--bg");
+  const fd = fs.openSync(logFile, "a");
+  const child = spawn(process.execPath, [SELF_FILE, ...argv], { detached: true, stdio: ["ignore", fd, fd], windowsHide: true, env: process.env });
+  child.unref(); fs.closeSync(fd);
+  const until = Date.now() + 25000;
+  while (Date.now() < until) {
+    await sleep(500);
+    let c = null; try { c = JSON.parse(fs.readFileSync(controlFile, "utf8")); } catch (_) {}
+    if (c && c.pid === child.pid) {
+      let w = null; try { w = await call(name, "/whoami", {}, 3000); } catch (_) {}
+      if (w && w.connected) {
+        console.log(`${w.name} is in the Arena: team ${L(w.team)}, page ${L(w.page)}, x ${w.x} z ${w.z} (pid ${child.pid}, log ${logFile}).`);
+        console.log(`Next: node arena-agent.mjs look --name "${w.name}"   (rules: AGENT-GUIDE.md)`);
+        return;
+      }
+    }
+    if (child.exitCode != null) break;
+  }
+  try { process.kill(child.pid, "SIGTERM"); } catch (_) {}   // do not leave a player retrying in the background
+  let tail = "";
+  for (const f of [logFile, path.join(dir, "inbox.log")]) { try { const t = fs.readFileSync(f, "utf8").trim(); if (t) tail += `\n${f}:\n` + t.split(/\r?\n/).slice(-6).join("\n"); } catch (_) {} }
+  throw new Error(`"${name}" did not get into the Arena within 25 s (no connection to the realtime server?). Stopped it.${tail}`);
+}
+
 function printLook(r) {
   const m = r.me;
   console.log(`SENSE (my own kind of vision: structured, not eyes)${r.connected ? "" : "  [NOT CONNECTED]"}`);
-  console.log(`Me: ${m.name}, team ${L(m.team)}, on page ${L(m.page)} at x ${m.x} z ${m.z}${m.y > 0.05 ? ` (up ${m.y} m on a ramp)` : ""}, facing ${m.facing_deg}° (${m.facing})${m.moving ? ", moving" : ""}${m.aimed_at ? `, aimed at ${m.aimed_at}` : ""}.`);
+  console.log(`Me: ${m.name}, team ${L(m.team)}, on page ${L(m.page)} at x ${m.x} z ${m.z}${m.y > 0.05 ? ` (up ${m.y} m on a ramp)` : ""}, facing ${m.facing_deg}° (${m.facing})${m.moving ? ", moving" : ""}${m.aimed_at ? `, aimed at ${m.aimed_at}` : ""}${m.doing ? `. Name tag: "${m.doing}"` : ""}.`);
   console.log(`Status: ${m.out ? `OUT (tagged), back in ${m.back_in_s} s` : "in play"}. Score A ${r.score.a} : ${r.score.b} B. My hits ${m.hits}, times tagged ${m.tagged}.`);
   console.log(r.players.length ? "Players:" : "Players: nobody else is here.");
   for (const p of r.players) console.log(`  - ${p.name}${p.ai ? " (AI)" : ""}, team ${L(p.team)} ${p.enemy ? "ENEMY" : "teammate"}${p.out ? " [OUT]" : ""}: bearing ${p.bearing_deg}° (${p.relative}), ${p.distance_m} m, line of sight ${p.line_of_sight === "yes" ? "YES" : p.line_of_sight === "head" ? "HEAD ONLY" : "no"}, page ${L(p.page)}, x ${p.x} z ${p.z}${p.moving_mps > 0.2 ? `, moving ${p.moving_mps} m/s` : ", still"}${p.aimed ? " <- aimed" : ""}`);
@@ -708,8 +744,11 @@ function reportIssue(name, text, where) {
   return line.trim();
 }
 
-const HELP = `The Arena: play paintball as an AI (team = the page you join; x < 0 is page A, x >= 0 is page B)
-  join --name "Agent A" --page a [--model "Claude Code"]   stay in the arena (long-running; run it in the background)
+const HELP = `The Arena: PAINTBALL for AIs and people (team a or b; x < 0 is page A, x >= 0 is page B). Rules: AGENT-GUIDE.md
+  join --name "Kimi" --team b --detach [--model "Kimi CLI"]   get in and stay in (--detach: it runs in the background
+                                 and this command returns once you are connected). Without --detach it stays in the
+                                 foreground: then run it in the background yourself. (--page b means the same as --team b)
+  status "covering"              the small word under your name tag that watchers see (empty = none)
   look [--json]                  your sense of the field: players (bearing, distance, line of sight), cover near you,
                                  incoming balls with time to impact, the score
   aim <player|bearing>           aim at a player by name ("enemy" = nearest enemy) or turn to a bearing (0 = north/+z,
@@ -740,7 +779,12 @@ async function main() {
   const cmd = args._[0], rest = args._.slice(1);
   try {
     if (!cmd || cmd === "help" || args.help) { console.log(HELP); return; }
-    if (cmd === "join") return await join(args);
+    if (cmd === "join") return (args.detach || args.bg) ? await joinDetached(args) : await join(args);
+    if (cmd === "status") {
+      const r = await call(args.name, "/doing", { word: rest.join(" ") });
+      console.log(r.doing ? `your name tag now says "${r.doing}"` : "your name tag shows no state word now");
+      return;
+    }
     if (cmd === "look") { const r = await call(args.name, "/look", {}); if (args.json) console.log(JSON.stringify(r, null, 2)); else printLook(r); return; }
     if (cmd === "aim") {
       const q = rest.join(" ").trim(); if (!q) throw new Error("aim <player name|enemy|bearing in degrees>");

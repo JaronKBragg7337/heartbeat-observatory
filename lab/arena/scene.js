@@ -13,7 +13,7 @@
    balls or the network. It only draws.
    ========================================================================== */
 
-export function buildField({ THREE, F, data, RoundedBoxGeometry, quality }) {
+export function buildField({ THREE, F, data, RoundedBoxGeometry, mergeGeometries, quality }) {
   const group = new THREE.Group();
   group.name = "arena-field";
   const aimables = [];
@@ -285,8 +285,48 @@ export function buildField({ THREE, F, data, RoundedBoxGeometry, quality }) {
   const skyMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false, fog: false }); disposables.push(skyMat);
   const sky = new THREE.Mesh(skyGeo, skyMat); sky.renderOrder = -1; group.add(sky);
 
+  /* ------------------------------------------- the phone budget: merge - */
+  /* Static meshes that share a look (same material settings, same shadow flags) become one mesh: the 18 pieces of
+     cover, the braces, the base props. The cover meshes stay in the group, hidden, so aiming, the camera's push-in
+     and splat ids still raycast against each piece (a Raycaster does not skip hidden meshes). Without
+     mergeGeometries (an older arena.js) nothing is merged. */
+  const merged = mergeStatic();
+  function mergeStatic() {
+    if (!mergeGeometries) return 0;
+    group.updateMatrixWorld(true);
+    const buckets = new Map();
+    for (const m of group.children) {
+      if (!m.isMesh || m.isInstancedMesh || m === sky || m === curtain || !m.material || m.material.transparent || Array.isArray(m.material)) continue;
+      const t = m.material;
+      const key = [t.type, t.color ? t.color.getHex() : "", t.roughness, t.metalness, t.map ? t.map.uuid : "", t.side, t.vertexColors, m.castShadow, m.receiveShadow].join("|");
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(m);
+    }
+    let n = 0;
+    for (const list of buckets.values()) {
+      if (list.length < 2) continue;
+      const geos = list.map((m) => {
+        const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+        g.applyMatrix4(m.matrixWorld);
+        for (const k of Object.keys(g.attributes)) if (k !== "position" && k !== "normal" && k !== "uv") g.deleteAttribute(k);
+        if (!g.attributes.uv) g.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+        g.morphAttributes = {};
+        return g;
+      });
+      const geo = mergeGeometries(geos, false);
+      for (const g of geos) g.dispose();
+      if (!geo) continue;
+      disposables.push(geo);
+      const one = new THREE.Mesh(geo, list[0].material);
+      one.castShadow = list[0].castShadow; one.receiveShadow = list[0].receiveShadow; one.name = "merged";
+      group.add(one); n += list.length;
+      for (const m of list) { if (aimables.includes(m)) m.visible = false; else group.remove(m); }
+    }
+    return n;
+  }
+
   return {
-    group, aimables, byId, curtain,
+    group, aimables, byId, curtain, merged,
     dispose() {
       for (const d of disposables) { try { d.dispose(); } catch (_) {} }
       posts.dispose(); trunks.dispose(); crowns.dispose();
