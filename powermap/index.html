@@ -92,21 +92,22 @@ footer b{color:var(--text)}
 <h1>Power Map</h1>
 <p class="sub">Where the country stands: who holds the seats, what officials push and block, and where words, votes and company plans collide.</p>
 
-<div class="banner"><b>Election night, Nov 3, 2026, 11:48 PM ET. Results below are PRELIMINARY.</b> They are network and AP race calls, not certified results; each state certifies on its own calendar and dates will be shown once known. <b>The current balance holds until January 2027</b>, when the new Congress is seated (governors and legislatures take office on each state's own calendar). The "Balance of power" bars further down still show who holds the seats today.</div>
+<div class="banner"><b>Morning after the election, Nov 4, 2026, 7:13 AM ET. Results below are PRELIMINARY.</b> They are network and AP race calls, not certified results; each state certifies on its own calendar and dates will be shown once known. <b>The current balance holds until January 2027</b>, when the new Congress is seated (governors and legislatures take office on each state's own calendar). The "Balance of power" bars further down still show who holds the seats today.</div>
 
 <!-- ============ ELECTION NIGHT ============ -->
 <h2>2026 midterms: called so far <span class="tag maybe" style="vertical-align:3px">PRELIMINARY</span></h2>
-<p class="sub" style="margin:0">Race calls by AP and major networks, as of the time shown on each line. Counting continues overnight and for days in some states.</p>
+<p class="sub" style="margin:0">Race calls by AP and major networks, as of the time shown on each line. Counting continues for days in some states.</p>
 <div class="card" id="election"></div>
+<div class="card" id="overnight"></div>
 
 <!-- ============ OVERALL CONTROL ============ -->
 <h2>Overall control <span style="font-size:.6em;opacity:.7">(composition index)</span></h2>
 <div class="card">
   <div class="kv" style="color:var(--muted)">Before the election (seats held today, until January 2027)</div>
   <div class="big" id="overall"></div>
-  <div class="kv" style="color:var(--muted);margin-top:10px">With calls so far <span class="tag maybe">PRELIMINARY</span> (as of 11:48 PM ET, Nov 3)</div>
+  <div class="kv" style="color:var(--muted);margin-top:10px">With calls so far <span class="tag maybe">PRELIMINARY</span> (as of 7:13 AM ET, Nov 4)</div>
   <div class="big" id="overallNew"></div>
-  <p class="why" style="margin:4px 0 10px">Method: equal-weight average of the five bodies' right-side (Republican) share. The "with calls so far" figure changes the House, Senate and governors only, using race calls made so far; <b>every seat not yet called is kept with its pre-election holder</b>. State legislatures and the Supreme Court are unchanged (no legislature counts used here). <b>Shows:</b> how much of the system each side holds, all bodies together. <b>Does not show:</b> who can actually pass a given law (the presidency's veto, the Senate filibuster and court rulings work differently; the stall map will show that).</p>
+  <p class="why" style="margin:4px 0 10px">Method: equal-weight average of the five bodies' right-side (Republican) share. The "with calls so far" figure changes the House, Senate, governors and state legislatures, using race calls and chamber flips reported so far; <b>every seat, race or chamber not yet called is kept with its pre-election holder</b>. The Supreme Court is unchanged. <b>Shows:</b> how much of the system each side holds, all bodies together. <b>Does not show:</b> who can actually pass a given law (the presidency's veto, the Senate filibuster and court rulings work differently; the stall map will show that).</p>
   <div class="kv" style="color:var(--muted)">Before the election</div>
   <div id="leanRows"></div>
   <div class="kv" style="color:var(--muted);margin-top:8px">With calls so far (PRELIMINARY)</div>
@@ -155,7 +156,7 @@ footer b{color:var(--text)}
 <footer>
   <b>Neutral by design: positions, votes and sources. No opinions.</b><br>
   Every number has a source and an "as of" date. Same standards for every party; counts are reported as found.
-  <div class="mock">Mockup v0.2, election night update Nov 3, 2026, 11:48 PM ET (PRELIMINARY). Seat counts from public trackers; a live version would pull from official APIs.</div>
+  <div class="mock">Mockup v0.3, morning election update Nov 4, 2026, 7:13 AM ET (PRELIMINARY). Seat counts from public trackers; a live version would pull from official APIs.</div>
 </footer>
 </div>
 
@@ -179,33 +180,60 @@ const BODIES = [
    src:[["supremecourt.gov, current members","https://www.supremecourt.gov/about/biographies.aspx"],["News Tribune, Alito staying (Aug 9, 2026)","https://www.newstribune.com/news/2026/aug/09/alito-says-hes-staying-on-supreme-court-for/"]], asOf:"latest source Aug 9, 2026"}
 ];
 
-// ---------------- ELECTION NIGHT (PRELIMINARY, Nov 3, 2026) ----------------
+// ---------------- ELECTION RESULTS (PRELIMINARY, morning of Nov 4, 2026) ----------------
 const S_NBC_H = ["NBC News, House results","https://www.nbcnews.com/politics/2026-elections/house-results"];
 const S_NBC_S = ["NBC News, Senate results","https://www.nbcnews.com/politics/2026-elections/senate-results"];
 const S_NBC_G = ["NBC News, governor results","https://www.nbcnews.com/politics/2026-elections/governor-results"];
+const S_NBC_NV = ["NBC News, Nevada governor","https://www.nbcnews.com/politics/2026-elections/nevada-governor-results"];
+const S_NBC_TX = ["NBC News, Texas governor","https://www.nbcnews.com/politics/2026-elections/texas-governor-results"];
 const S_CBS = ["CBS News live updates","https://www.cbsnews.com/live-updates/election-day-2026-midterms/"];
 const S_CNBC = ["CNBC live updates (AP calls)","https://www.cnbc.com/2026/11/03/midterm-elections-2026-live-updates.html"];
-const S_YAHOO = ["Yahoo News live updates (AP call times)","https://www.yahoo.com/news/politics/live/midterms-2026-live-updates-election-day-voters-head-to-the-polls-as-democrats-look-to-flip-gop-control-of-the-house-and-senate-110000715.html"];
+const S_PBS_H = ["PBS NewsHour (AP), Democrats win control of the House","https://www.pbs.org/newshour/politics/democrats-win-control-of-the-u-s-house"];
+const S_TIME = ["TIME (AP), Democrats win control of both chambers","https://time.com/article/2026/11/04/democrats-win-control-of-senate-in-blue-wave-election/"];
+const S_NCSL = ["NCSL, 2026 state legislative results","https://www.ncsl.org/state-legislatures-news/details/2026-state-legislative-elections-the-results-and-what-they-mean"];
+const S_SPA = ["Spotlight PA, Pennsylvania Senate","https://www.spotlightpa.org/news/2026/11/pennsylvania-house-election-results-legislature-control-elections/"];
+const S_MFP = ["Mississippi Free Press, Senate count","https://www.mississippifreepress.org/democrat-scott-colom-leads-mississippi-us-senate-race-by-28-votes-against-republican-cindy-hyde-smith/"];
 const ELECTION = [
-  {body:"U.S. House", called:"273 of 435 called: 177 D, 96 R. 162 still counting.",
-   control:"Democratic majority projected by NBC News and CBS News (CBS at 10:15 PM ET). AP control call not found as of this update. 218 seats is a majority.",
-   flips:"NBC News reports a net Democratic gain of 19 seats among races called so far. Named flips to D include NC-11 (Jamie Ager), NJ-7 (Rebecca Bennett over Tom Kean), KY-6 (Zach Dembo), PA-7 (Bob Brooks over Ryan Mackenzie), PA-8 (Paige Cognetti over Rob Bresnahan), OH-15 (Don Leonard), all AP calls; and a Texas district won by Bobby Pulido (NBC). Some seats were redrawn before this election, so a few flips are in changed districts.",
-   src:[S_NBC_H,S_CBS,S_CNBC], asOf:"NBC 11:47 PM ET, CBS 11:44 PM ET, CNBC 11:42 PM ET"},
-  {body:"U.S. Senate", called:"26 of 35 races on the ballot called: 17 D, 9 R. 9 still counting (AK, ID, LA, ME, MI, MN, MS, MT, NE).",
-   control:"Democratic control projected by NBC News and CBS News (CBS shortly after 11:30 PM ET). Secured so far, counting seats not on the ballot: 51 D (including King and Sanders, who caucus with Democrats), 40 R. If every uncalled seat stays with its current holder: 53 D, 47 R.",
-   flips:"6 flips, all R to D: Texas (James Talarico over Ken Paxton, AP 11:03 PM ET), Ohio special (Sherrod Brown over Sen. Jon Husted, AP 11:10 PM ET), Kansas (Adam Hamilton over Sen. Roger Marshall, AP 11:24 PM ET), North Carolina (Roy Cooper over Michael Whatley, AP), South Carolina (Annie Andrews, AP), Iowa (Josh Turek over Ashley Hinson). No D to R flips called.",
-   src:[S_NBC_S,S_CBS,S_YAHOO,S_CNBC], asOf:"NBC 11:48 PM ET"},
-  {body:"Governors", called:"Too early for a full count: at least 7 of 36 called in the sources checked (D: GA, IA, OH, PA, TX, WI; R: FL). AZ, MI and NV listed as too early to call; the rest not confirmed either way.",
-   control:"If every uncalled race stays with its current party: 28 D, 22 R (was 24 D, 26 R).",
-   flips:"4 flips, all R to D: Georgia (Keisha Lance Bottoms over Rick Jackson, AP 9:24 PM ET), Ohio (Amy Acton over Vivek Ramaswamy, AP 10:49 PM ET), Texas (Gina Hinojosa over Gov. Greg Abbott, AP shortly after 11 PM ET), Iowa (Rob Sand over Zach Lahn, AP). Florida held R (Byron Donalds, AP).",
-   src:[S_NBC_G,S_YAHOO,S_CNBC,S_CBS], asOf:"NBC 11:48 PM ET"}
+  {body:"U.S. House", called:"375 of 435 called: 231 D, 144 R. 60 still counting (most in California 11, Texas 7, Arizona 5, Florida 5, New York 5). These are NBC's per-seat called totals.",
+   control:"AP has called House control for Democrats (early Wednesday; PBS NewsHour published the AP call at 1:27 AM ET). NBC News and CBS News (10:15 PM ET Nov 3) also project a Democratic majority. 218 seats is a majority; Democrats have 231 called.",
+   flips:"NBC News reports a net Democratic gain of 29 seats among races called so far (gross flips by party not shown). Named flips to D include NC-11 (Jamie Ager), NJ-7 (Rebecca Bennett over Tom Kean), KY-6 (Zach Dembo), PA-7 (Bob Brooks over Ryan Mackenzie), PA-8 (Paige Cognetti over Rob Bresnahan), OH-15 (Don Leonard), PA-1 (Bob Harvie over Brian Fitzpatrick, CBS 12:50 AM ET), OH-7 (Brian Poindexter over Max Miller, CBS 1:28 AM ET), TX-15 (Bobby Pulido over Monica De La Cruz, CBS 12:42 AM ET), IA-1, IA-2 and IA-3 (CBS 12:27 AM ET); CNBC also lists IN-5, TX-23, TX-35, WI-1, WI-3, MO-2, NE-2 and VA-2. Some seats were redrawn before this election, so a few flips are in changed districts.",
+   src:[S_NBC_H,S_PBS_H,S_TIME,S_CBS,S_CNBC], asOf:"NBC 7:12 AM ET Nov 4; CBS 4:19 AM ET Nov 4"},
+  {body:"U.S. Senate", called:"33 of 35 races called. Still counting: Alaska (Sullivan R 48.5%, Peltola D 47.7%, 72% in) and Mississippi (Hyde-Smith R and Colom D each 48.9%, 96% in).",
+   control:"AP has called Senate control for Democrats (late Nov 3, per TIME). NBC News and CBS News (11:35 PM ET Nov 3) also project Democratic control. Called so far: 54 D (King and Sanders, who caucus with Democrats, counted as D), 44 R. If both uncalled seats stay with their current holder (both R): 54 D, 46 R.",
+   flips:"7 flips, all R to D: Texas (James Talarico over Ken Paxton), Ohio special (Sherrod Brown over Sen. Jon Husted), Kansas (Adam Hamilton over Sen. Roger Marshall), North Carolina (Roy Cooper over Michael Whatley), South Carolina (Annie Andrews over the Republican incumbent, Graham), Iowa (Josh Turek over Ashley Hinson), Maine (Troy Jackson over Sen. Susan Collins, CBS 12:52 AM ET). No D to R flips. Holds called overnight: Michigan D (Abdul El-Sayed over Mike Rogers, CBS 2:30 AM ET), Minnesota D (Peggy Flanagan, CBS 12:19 AM ET), Nebraska R (Sen. Pete Ricketts over independent Dan Osborn, CBS 4:01 AM ET); Idaho, Louisiana and Montana held R in NBC's tally.",
+   src:[S_NBC_S,S_TIME,S_CBS,S_CNBC], asOf:"NBC 7:12 AM ET Nov 4; CBS 4:20 AM ET Nov 4"},
+  {body:"Governors", called:"At least 11 of 36 called in the sources checked. D: Arizona (Katie Hobbs), California (Xavier Becerra), Georgia, Iowa, Michigan (Jocelyn Benson), Nevada, Ohio, Pennsylvania (Josh Shapiro), Texas, Wisconsin (David Crowley). R: Florida (Byron Donalds). Kansas (D-held; Cindy Holscher D leads) and Alaska (R-held; Scott Kreiss-Tomkins D leads) not called; other races not confirmed either way.",
+   control:"NBC News headline: Democrats hold a majority of governorships for the first time in 16 years. If every uncalled race stays with its current party: 29 D, 21 R (was 24 D, 26 R).",
+   flips:"5 flips, all R to D: Georgia (Keisha Lance Bottoms over Rick Jackson), Ohio (Amy Acton over Vivek Ramaswamy), Texas (Gina Hinojosa over Gov. Greg Abbott), Iowa (Rob Sand over Zach Lahn), Nevada (Aaron Ford over Gov. Joe Lombardo, NBC projection, 87% in). No D to R flips called.",
+   src:[S_NBC_G,S_NBC_NV,S_NBC_TX,S_CBS,S_CNBC], asOf:"NBC 7:13 AM ET Nov 4"},
+  {body:"State legislatures", called:"Chamber flips reported by NCSL (unofficial, several races uncalled): Wisconsin Senate and Assembly (R to D), Michigan House (R to D), Minnesota House (tied to D), Georgia House (R to D), North Carolina House (R to D), Pennsylvania Senate (R to D; see note). Texas House: too early to call. Arizona Senate: Democrats lead, not confirmed.",
+   control:"State control after these flips: Michigan, Minnesota and Wisconsin become fully D; Georgia and North Carolina become split. Count used in the index: 21 fully D, 25 fully R, 4 split (was 18 D, 28 R, 4 split).",
+   flips:"Pennsylvania Senate is kept as pending (state stays split in the count): Democrats say they flipped four seats and lost one for a 26-24 majority, but AP had not called two of those four seats as of Wednesday morning (Spotlight PA).",
+   src:[S_NCSL,S_SPA], asOf:"NCSL and Spotlight PA, morning Nov 4"}
+];
+// Pending: recounts, runoffs, disputes. PRELIMINARY until certified.
+const PENDING = [
+  {t:"Mississippi Senate: about a 28-vote margin out of nearly 1 million cast as of midnight, thousands of affidavit ballots still to count. No runoff: a regular general election needs only the most votes. A recount request is possible; none reported yet.", src:[S_MFP,S_NBC_S]},
+  {t:"Alaska Senate: count continues (72% in). PBS NewsHour reports a lawsuit seeking to block certification if Sen. Dan Sullivan loses, citing a second candidate named Dan Sullivan on the ballot.", src:[S_NBC_S,S_PBS_H]},
+  {t:"House: 60 seats still counting, including 2 in Louisiana. Whether any Louisiana seat goes to a runoff is not confirmed in the sources checked. No Georgia runoffs found.", src:[S_NBC_H]},
+  {t:"Pennsylvania Senate (state legislature): control depends on two seats AP had not called.", src:[S_SPA]}
+];
+const OVERNIGHT = [
+  "AP called the House for Democrats (early Wednesday), after calling the Senate late Tuesday.",
+  "House called seats went from 273 (177 D, 96 R) to 375 (231 D, 144 R); NBC's net Democratic gain went from 19 to 29.",
+  "Senate: Maine flipped to D (Troy Jackson over Sen. Susan Collins). Michigan and Minnesota held D; Nebraska, Idaho, Louisiana and Montana held R. Called: 54 D, 44 R; only Alaska and Mississippi remain.",
+  "Governors: Nevada flipped to D (Aaron Ford over Gov. Joe Lombardo). Arizona, California, Michigan, Pennsylvania and Wisconsin called D. Flips now 5, all R to D.",
+  "State legislatures: NCSL reports 7 chamber flips to D; the Pennsylvania Senate one is still pending. Legislatures now enter the index.",
+  "Composition index: 52.9% R last night, 50.6% R now (pre-election 56.6% R)."
 ];
 // Seat counts used for the "with calls so far" index. Uncalled seats keep their pre-election holder.
 const NEW_COUNTS = {
-  "U.S. House": {d:233, r:200, note:"pre-election 214 D, 219 R (incl. Kiley) plus the NBC net D gain of 19 among called races; 2 vacancies left out"},
-  "U.S. Senate": {d:53, r:47, note:"51 D / 40 R secured plus 9 uncalled seats kept with holders (7 R, 2 D)"},
-  "Governors": {d:28, r:22, note:"4 called R to D flips"}
+  "U.S. House": {d:243, r:190, note:"Called per seat: 231 D, 144 R (NBC 7:12 AM ET). The 60 uncalled seats are kept with their holders using NBC's net gain: pre-election 214 D, 219 R (incl. Kiley) plus net D gain of 29 = 243 D, 190 R; 2 seats vacant before the election left out. Approximate, since some districts were redrawn."},
+  "U.S. Senate": {d:54, r:46, note:"54 D / 44 R called plus Alaska and Mississippi kept with holders (both R)"},
+  "Governors": {d:29, r:21, note:"5 called R to D flips (GA, IA, NV, OH, TX)"},
+  "State legislatures": {d:21, r:25, note:"NCSL-reported flips: MI, MN, WI now fully D; GA, NC now split; PA kept split (Senate pending); 4 split states left out"}
 };
+const LAST_NIGHT_INDEX = 52.9; // composition index at the 11:48 PM ET Nov 3 update
 
 const TOPICS = ["AI","Crypto","Energy","Spending"];
 const PEOPLE = [
@@ -340,7 +368,7 @@ document.getElementById("leanRowsNew").innerHTML = BODIES.map(b=>{
     <span class="lnum">${dd} D / ${rr} R</span></div>${nc?`<div class="src" style="margin:-4px 0 6px">${esc(nc.note)}</div>`:""}`;
 }).join("");
 const overallN = rsumN/BODIES.length;
-document.getElementById("overallNew").innerHTML = `${fmt(overallN)} Republican <small>/ ${fmt(100-overallN)} Democratic &middot; change ${(overallN-overall).toFixed(1)} points from ${fmt(overall)} R</small>`;
+document.getElementById("overallNew").innerHTML = `${fmt(overallN)} Republican <small>/ ${fmt(100-overallN)} Democratic &middot; change ${(overallN-overall).toFixed(1)} points from ${fmt(overall)} R before the election, ${(overallN-LAST_NIGHT_INDEX).toFixed(1)} points from ${LAST_NIGHT_INDEX.toFixed(1)}% R last night (11:48 PM ET)</small>`;
 
 document.getElementById("election").innerHTML = ELECTION.map(e=>`
   <div class="body-row">
@@ -348,8 +376,9 @@ document.getElementById("election").innerHTML = ELECTION.map(e=>`
     <div class="kv"><b>Called:</b> ${esc(e.called)}</div>
     <div class="kv"><b>Control:</b> ${esc(e.control)}</div>
     <div class="kv"><b>Flips:</b> ${esc(e.flips)}</div>
-    <div class="src">Source: ${links(e.src)} &middot; as of ${esc(e.asOf)}, Nov 3, 2026 &middot; PRELIMINARY until certified</div>
-  </div>`).join("") + `<p class="why" style="margin:12px 0 0">State legislatures: no chamber results gathered yet; shown unchanged. Supreme Court: not on the ballot.</p>`;
+    <div class="src">Source: ${links(e.src)} &middot; as of ${esc(e.asOf)} &middot; PRELIMINARY until certified</div>
+  </div>`).join("") + `<div class="body-row"><div class="body-name">Pending: recounts, runoffs, disputes</div>${PENDING.map(p=>`<div class="kv">${esc(p.t)} <span class="src">Source: ${links(p.src)}</span></div>`).join("")}</div><p class="why" style="margin:12px 0 0">Supreme Court: not on the ballot. Certification dates will be added per state once known.</p>`;
+document.getElementById("overnight").innerHTML = `<div class="body-name">Overnight changes (since 11:48 PM ET, Nov 3)</div><ul style="margin:6px 0 0;padding-left:20px">${OVERNIGHT.map(o=>`<li class="kv">${esc(o)}</li>`).join("")}</ul>`;
 
 // people
 let topic = "AI";
