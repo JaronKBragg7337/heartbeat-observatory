@@ -117,6 +117,8 @@ let grass;
     col[i * 3] = k; col[i * 3 + 1] = k; col[i * 3 + 2] = k;
   }
   g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  // every blade is lit like the lawn it stands on (normals straight up), so no blade turns black when it faces away from the sun
+  { const nrm = g.attributes.normal; for (let i = 0; i < nrm.count; i++) nrm.setXYZ(i, 0, 1, 0); }
   const mat = new THREE.MeshStandardMaterial({ color: 0x86bf52, roughness: 0.9, side: THREE.DoubleSide, vertexColors: true, emissive: 0x2a4a10, emissiveIntensity: 0.18 });
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = grassU.uTime;
@@ -126,8 +128,10 @@ let grass;
         { vec2 ip = vec2(instanceMatrix[3][0], instanceMatrix[3][2]);
           float w = sin(uTime * 1.6 + ip.x * 1.4 + ip.y * 1.1) * 0.5 + sin(uTime * 2.7 + ip.y * 2.3) * 0.25;
           transformed.x += w * 0.16 * uv.y * uv.y; transformed.z += w * 0.05 * uv.y * uv.y; }`);
+    // double-sided blades must not flip their normal on the back face: both sides are "the lawn"
+    sh.fragmentShader = sh.fragmentShader.replace("#include <normal_fragment_begin>", "#include <normal_fragment_begin>\nnormal = normalize(vNormal);");
   };
-  mat.customProgramCacheKey = () => "hb-pet-grass-1";
+  mat.customProgramCacheKey = () => "hb-pet-grass-2";
   grass = new THREE.InstancedMesh(g, mat, COUNT);
   grass.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(COUNT * 3), 3);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), v = new THREE.Vector3(), e = new THREE.Euler();
@@ -212,9 +216,9 @@ scene.add(props);
   const base = lid.clone(); base.position.y = 0.23 + 0.018; base.scale.y = 0.6;
   const handle = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.004, 6, 16, Math.PI), lid.material); handle.position.y = lid.position.y + 0.012;
   stump.add(glass, lid, base, handle);
-  stump.position.set(2.4, 0, -2.3);
+  stump.position.set(1.7, 0, -2.0);
   props.add(stump);
-  lantern.position.set(2.4, 0.33, -2.3);
+  lantern.position.set(1.7, 0.33, -2.0);
   props.userData.lanternGlass = glass;
 
   // the name sign
@@ -225,8 +229,8 @@ scene.add(props);
   const plankMat = new THREE.MeshStandardMaterial({ map: plankTex, roughness: 0.85 });
   const plank = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.21, 0.03), [wood, wood, wood, wood, plankMat, wood]); plank.position.y = 0.44; plank.castShadow = true;
   sign.add(post, plank);
-  sign.position.set(-2.55, 0, -2.0);
-  sign.rotation.y = 0.55;
+  sign.position.set(-1.8, 0, -1.9);
+  sign.rotation.y = 0.45;
   props.add(sign);
   props.userData.drawSign = (name) => {
     const c = plankCanvas.getContext("2d");

@@ -268,7 +268,7 @@ export class PetSim {
       cell.vx += (dx / d) * 1.1; cell.vz += (dz / d) * 1.1;
     }
     this.events.push("poke");
-    if (this.state !== "eat") this.setState("poked");
+    if (this.state !== "eat" && this.state !== "follow") this.setState("poked");
   }
 
   /* hold a point (ground x,z) to lead it; null when the finger lifts */
@@ -277,7 +277,7 @@ export class PetSim {
       this.followPoint = { x: point.x, z: point.z };
       this.lastTouch = this.time;
       if (this.state === "sleep") this.wake();
-      if (this.state !== "follow" && this.state !== "poked") this.setState("follow");
+      if (this.state !== "follow") this.setState("follow");   // a held finger beats a wiggle or a berry
     } else {
       this.followPoint = null;
       if (this.state === "follow") this.setState("idle");

@@ -89,7 +89,6 @@ async function run(label, { width, height, dpr, query = "", storage = null }) {
   ok(await page.evaluate(() => window.HBPet.pet.sim.pokeT > 0 || window.HBPet.pet.state === "poked"), "a tap on the pet pokes it");
   await page.screenshot({ path: join(OUT, `${label}-poke.png`) });
   // lead: hold a finger on the grass for 3 s on the far side
-  const start = await page.evaluate(() => ({ x: window.HBPet.pet.center.x, z: window.HBPet.pet.center.z }));
   // a spot ~1.4 m from the pet that is on screen and on the patch (the camera yaw decides which side that is)
   const lead = await page.evaluate(() => {
     for (let k = 0; k < 12; k++) {
@@ -102,15 +101,24 @@ async function run(label, { width, height, dpr, query = "", storage = null }) {
   });
   const cdp = await ctx.newCDPSession(page);
   await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: lead.x, y: lead.y }] });
-  await page.waitForTimeout(1300);   // the poke wiggle (0.9 s) ends first, then it follows
+  await page.waitForFunction(() => window.HBPet.pet.state === "follow", null, { timeout: 4000 }).catch(() => {});
   ok(await page.evaluate(() => window.HBPet.pet.state === "follow"), "holding a finger makes it follow");
-  await page.waitForTimeout(2600);
+  const start = await page.evaluate(() => ({ x: window.HBPet.pet.center.x, z: window.HBPet.pet.center.z }));
+  await page.waitForTimeout(3000);
   await page.screenshot({ path: join(OUT, `${label}-lead.png`) });
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   const end = await page.evaluate(() => ({ x: window.HBPet.pet.center.x, z: window.HBPet.pet.center.z, state: window.HBPet.pet.state }));
   ok(Math.hypot(end.x - start.x, end.z - start.z) > 0.4, `it moved toward the finger (${Math.hypot(end.x - start.x, end.z - start.z).toFixed(2)} m)`);
   await page.waitForTimeout(300);
   ok(await page.evaluate(() => window.HBPet.pet.state !== "follow"), "lets go when the finger lifts");
+  // a look at it hungry and asleep (screenshots only)
+  await page.evaluate(() => { window.HBPet.pet.sim.hunger = 0.05; });
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: join(OUT, `${label}-hungry.png`) });
+  await page.evaluate(() => { window.HBPet.pet.sim.hunger = 0.9; window.HBPet.pet.sim.setState("sleep"); });
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: join(OUT, `${label}-sleep.png`) });
+  ok(await page.evaluate(() => window.HBPet.pet.state === "sleep"), "it can sleep");
   // layout at phone width
   const layout = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, card: document.getElementById("card").getBoundingClientRect().width, gear: document.getElementById("gear").getBoundingClientRect() }));
   ok(layout.sw <= layout.iw, `no sideways scroll (${layout.sw} <= ${layout.iw})`);

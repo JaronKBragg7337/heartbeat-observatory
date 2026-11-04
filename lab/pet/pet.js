@@ -57,7 +57,7 @@ function makeCellMaterial(cols) {
       .replace("#include <color_fragment>", `#include <color_fragment>
         { vec3 nrmA = normalize(vNormal); vec3 vdA = normalize(vViewPosition); float ndvA = clamp(dot(nrmA, vdA), 0.0, 1.0);
           // the middle of each cell reads deeper and more saturated, like light coming through jelly
-          diffuseColor.rgb = mix(diffuseColor.rgb, uDeep, 0.38 * pow(ndvA, 1.5)); }`)
+          diffuseColor.rgb = mix(diffuseColor.rgb, uDeep, 0.5 * pow(ndvA, 1.5)); }`)
       .replace("#include <opaque_fragment>", `{ vec3 nrmB = normalize(vNormal); vec3 vdB = normalize(vViewPosition); float ndvB = clamp(dot(nrmB, vdB), 0.0, 1.0);
           float fr = pow(1.0 - ndvB, 2.8);
           outgoingLight += uRim * fr * 0.5;                              // the light edge of every cell
@@ -157,17 +157,24 @@ export function createPet(scene, options = {}) {
 
   function worldToGroup(v) { return group.worldToLocal(v); }
 
-  /* where the body ends along a direction from the centre: the plane that touches the furthest cell that way.
-     Nothing of the body sticks out past that plane along `dir`, so a face put there is never hidden by a cell. */
+  /* where the body surface is along a direction from the centre. Two answers blended: the plane that touches the
+     furthest cell that way (nothing sticks out past it, so a face there is never buried) and the real exit point of
+     the ray (so it hugs the body instead of floating when the body is wide and flat). */
   function surfaceAlong(dir, out, normalOut) {
-    let best = 0;
+    let plane = 0, ray = -1;
     const cx = sim.center.x, cy = sim.center.y, cz = sim.center.z;
     for (const c of sim.cells) {
-      const t = (c.x - cx) * dir.x + (c.y - cy) * dir.y + (c.z - cz) * dir.z + c.r;
-      if (t > best) best = t;
+      const ox = c.x - cx, oy = c.y - cy, oz = c.z - cz;
+      const along = ox * dir.x + oy * dir.y + oz * dir.z;
+      if (along + c.r > plane) plane = along + c.r;
+      const cc = ox * ox + oy * oy + oz * oz - c.r * c.r;
+      const disc = along * along - cc;
+      if (disc >= 0) { const t = along + Math.sqrt(disc); if (t > ray) ray = t; }
     }
-    if (best <= 0) best = sim.R;
-    out.set(cx + dir.x * best, cy + dir.y * best, cz + dir.z * best);
+    if (ray < 0) ray = plane > 0 ? plane : sim.R;
+    if (plane <= 0) plane = sim.R;
+    const d = ray * 0.65 + plane * 0.35;
+    out.set(cx + dir.x * d, cy + dir.y * d, cz + dir.z * d);
     if (normalOut) normalOut.copy(dir);
     return out;
   }
@@ -197,7 +204,7 @@ export function createPet(scene, options = {}) {
       const dir = _v.set(0, 0, 0).addScaledVector(side, sign * 0.4).addScaledVector(Y_UP, 0.4 - 0.12 * droop).addScaledVector(forward, 0.82).normalize();
       const n = _v2;
       surfaceAlong(dir, e.group.position, n);
-      e.group.position.addScaledVector(n, -eyeR * 0.3);   // sunk a little into the jelly
+      e.group.position.addScaledVector(n, eyeR * 0.05);   // sits on the jelly, just proud of it
       _m.lookAt(_s.set(0, 0, 0), _v4.copy(n).negate(), Y_UP);
       e.group.quaternion.setFromRotationMatrix(_m);
       // the pupil slides toward what it looks at
