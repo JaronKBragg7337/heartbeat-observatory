@@ -2,6 +2,28 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
+      "source": "/powermap",
+      "missing": [
+        {
+          "type": "host",
+          "value": "powermap.heartbeatobservatory.com"
+        }
+      ],
+      "destination": "https://powermap.heartbeatobservatory.com/",
+      "permanent": false
+    },
+    {
+      "source": "/powermap/:path*",
+      "missing": [
+        {
+          "type": "host",
+          "value": "powermap.heartbeatobservatory.com"
+        }
+      ],
+      "destination": "https://powermap.heartbeatobservatory.com/:path*",
+      "permanent": false
+    },
+    {
       "source": "/engine/world",
       "destination": "/engine",
       "permanent": false
@@ -45,6 +67,26 @@
   ],
   "rewrites": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "powermap.heartbeatobservatory.com"
+        }
+      ],
+      "destination": "/powermap/index.html"
+    },
+    {
+      "source": "/:path((?!powermap/).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "powermap.heartbeatobservatory.com"
+        }
+      ],
+      "destination": "/powermap/:path"
+    },
+    {
       "source": "/school/:fly(school-[a-z0-9-]+)",
       "destination": "/live-systems/flies/school/live/index.html?fly=:fly"
     },
@@ -53,11 +95,25 @@
       "destination": "/live-systems/flies/school/live/index.html?fly=:fly"
     }
   ],
-  "headers": [{"source":"/games/the-cosmos/:path*","headers":[
-    {"key":"Cache-Control","value":"public, max-age=0, must-revalidate"},
-    {"key":"CDN-Cache-Control","value":"no-store"},
-    {"key":"Vercel-CDN-Cache-Control","value":"no-store"}
-  ]}],
+  "headers": [
+    {
+      "source": "/games/the-cosmos/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "CDN-Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "Vercel-CDN-Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ],
   "buildCommand": "node tools/stamp-shared.mjs && node tools/stamp-cosmos-build.mjs",
   "outputDirectory": "."
 }

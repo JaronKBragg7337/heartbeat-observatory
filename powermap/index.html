@@ -1,0 +1,335 @@
+<!-- hb:no-phone --><!-- hb:no-editor -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power Map</title>
+<meta name="description" content="Neutral status board of who holds U.S. seats, what officials push and block, and where stated positions collide with votes or company plans. Mockup, as of Nov 3, 2026.">
+<style>
+:root{
+  --bg:#17130f; --panel:#211b15; --panel2:#2a231b; --line:#3a3127;
+  --text:#f3e9d6; --muted:#b9ab93; --faint:#8a7d68;
+  --dem:#6f9fd8; --rep:#d9745f; --ind:#c9b37a; --vac:#4a4034;
+  --accent:#e6c27a; --ok:#9cc49a;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f7f0e2; --panel:#fffaf0; --panel2:#f1e7d4; --line:#ddd0b8;
+    --text:#2a2118; --muted:#6b5c47; --faint:#8d7d66;
+    --dem:#3f72b0; --rep:#b9503b; --ind:#9a7e36; --vac:#d2c4ab; --accent:#9a6a12; --ok:#3f7a3c;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17130f; --panel:#211b15; --panel2:#2a231b; --line:#3a3127;
+  --text:#f3e9d6; --muted:#b9ab93; --faint:#8a7d68;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding:16px 16px 40px}
+a{color:var(--accent)}
+h1{font-size:26px;margin:4px 0 2px;letter-spacing:-.01em}
+h2{font-size:18px;margin:30px 0 4px}
+.sub{color:var(--muted);margin:0 0 12px}
+.banner{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:14px}
+.banner b{color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);margin:8px 0 2px}
+.sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.body-row{margin:14px 0 4px}
+.body-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.body-name{font-weight:650}
+.body-num{font-size:13px;color:var(--muted);text-align:right}
+.bar{position:relative;display:flex;height:22px;border-radius:6px;overflow:hidden;margin-top:5px;background:var(--vac)}
+.bar span{display:block;height:100%}
+.bar .mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--text);opacity:.75}
+.src{font-size:12px;color:var(--faint);margin-top:3px}
+.src a{color:var(--faint)}
+.lrow{display:grid;grid-template-columns:118px 1fr 92px;gap:8px;align-items:center;font-size:13px;margin:7px 0}
+.lbar{position:relative;height:12px;border-radius:6px;overflow:hidden;display:flex}
+.lbar .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--text);opacity:.75}
+.big{font-size:24px;font-weight:700}
+.big small{font-size:14px;font-weight:400;color:var(--muted)}
+.lnum{text-align:right;color:var(--muted)}
+.rules ul{margin:0;padding-left:18px;font-size:13.5px}
+.rules li{margin:5px 0}
+.rules b{color:var(--text)}
+.tag.ok{border-color:var(--ok);color:var(--ok)}
+.tag.maybe{border-color:var(--accent);color:var(--accent)}
+.context{font-size:13px;margin-top:6px;border-left:3px solid var(--line);padding-left:8px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.tab{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;min-height:34px}
+.tab[aria-pressed="true"]{background:var(--accent);color:#1b150f;border-color:var(--accent)}
+.person{display:grid;grid-template-columns:1fr;gap:4px}
+.pname{font-weight:650}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin-right:4px;white-space:nowrap}
+.tag.d{border-color:var(--dem);color:var(--dem)}
+.tag.r{border-color:var(--rep);color:var(--rep)}
+.tag.x{border-color:var(--ind);color:var(--ind)}
+.kv{font-size:13px}
+.kv b{color:var(--muted);font-weight:600}
+.pair{display:grid;grid-template-columns:1fr;gap:8px;margin:10px 0}
+@media(min-width:560px){.pair{grid-template-columns:1fr 1fr}}
+.side{background:var(--panel2);border-radius:8px;padding:9px 10px;font-size:13.5px}
+.side h4{margin:0 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ctitle{font-weight:650;font-size:15.5px;margin:6px 0 0}
+.why{font-size:13px;color:var(--muted)}
+.srcs{font-size:12px;margin-top:8px;color:var(--faint)}
+.srcs a{word-break:break-word}
+.count{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center}
+footer b{color:var(--text)}
+.mock{font-size:12px;color:var(--faint);text-align:center;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Power Map</h1>
+<p class="sub">Where the country stands: who holds the seats, what officials push and block, and where words, votes and company plans collide.</p>
+
+<div class="banner"><b>As of Nov 3, 2026, before midterm results.</b> Today is Election Day. Tonight's results will change these numbers. New results will be marked <b>PRELIMINARY</b> until officially certified, with the certification date shown once known. New members are seated in January 2027 (governors and legislatures on each state's own calendar).</div>
+
+<!-- ============ OVERALL CONTROL ============ -->
+<h2>Overall control <span style="font-size:.6em;opacity:.7">(composition index)</span></h2>
+<div class="card">
+  <div class="big" id="overall"></div>
+  <p class="why" style="margin:4px 0 10px">Method: equal-weight average of the five bodies' right-side (Republican) share. <b>Shows:</b> how much of the system each side holds, all bodies together. <b>Does not show:</b> who can actually pass a given law (the presidency's veto, the Senate filibuster and court rulings work differently; the stall map will show that).</p>
+  <div id="leanRows"></div>
+  <p class="why" style="margin:8px 0 0">Independents who caucus with a party are counted with that party. Vacancies and split legislatures are left out of each share. The Supreme Court is counted by the party of the appointing president, which is not the same as how a justice votes.</p>
+</div>
+
+<!-- ============ 1. BALANCE OF POWER ============ -->
+<h2>Balance of power</h2>
+<div class="legend">
+  <span><i class="sw" style="background:var(--dem)"></i>Democratic</span>
+  <span><i class="sw" style="background:var(--ind)"></i>Independent / split</span>
+  <span><i class="sw" style="background:var(--vac)"></i>Vacant / other</span>
+  <span><i class="sw" style="background:var(--rep)"></i>Republican</span>
+  <span>| line = 50%</span>
+</div>
+<div class="card" id="bodies"></div>
+
+<!-- ============ HOW WE JUDGE ============ -->
+<h2>How we judge</h2>
+<div class="card rules">
+  <ul>
+    <li><b>Facts only.</b> Seat counts, recorded votes, bill text, signed orders, dated quotes. No adjectives, no predictions.</li>
+    <li><b>Every claim has a source and an "as of" date.</b> No source, not shown.</li>
+    <li><b>A disagreement is not a contradiction.</b> A card needs a documented statement or plan on one side and a documented vote, action or law on the other.</li>
+    <li><b>Three card types:</b> <i>word vs vote</i> (an official's statement against their own vote or signature), <i>policy reversal</i> (an official or government changing a documented position), <i>law vs company plan</i> (a law, bill or order against a company's public plan). A law that conflicts with a company plan is a market fact, not proof of hypocrisy.</li>
+    <li><b>Confidence:</b> <i>verified</i> means both sides are documented with sources. <i>possible</i> means one side or the link between them needs more evidence.</li>
+    <li><b>Every card carries context:</b> why it may not be hypocrisy (a changed bill, new information, a compromise, a procedural choice).</li>
+    <li><b>Same standards for every party.</b> Counts per party are reported as found, never forced to be equal.</li>
+    <li><b>Election results are PRELIMINARY until officially certified.</b> Each result shows its certification date once known.</li>
+  </ul>
+</div>
+
+<!-- ============ 3. PEOPLE BY TOPIC ============ -->
+<h2>People by topic</h2>
+<p class="sub" style="margin:0">Example rows. Each line is a recorded vote, sponsorship, signature or public statement, with its source. Pick a topic.</p>
+<div class="tabs" id="tabs"></div>
+<div id="people"></div>
+
+<!-- ============ 4. CONTRADICTIONS ============ -->
+<h2>Contradictions</h2>
+<p class="sub" style="margin:0">Cards that pass the rules in "How we judge". Each shows its type, its confidence and context for why it may not be hypocrisy. Counts are what the evidence found so far, not a target per party.</p>
+<div class="count" id="ccount" style="margin-top:8px"></div>
+<div id="cards"></div>
+
+<footer>
+  <b>Neutral by design: positions, votes and sources. No opinions.</b><br>
+  Every number has a source and an "as of" date. Same standards for every party; counts are reported as found.
+  <div class="mock">Mockup v0.1, built Nov 3, 2026. Seat counts from public trackers; a live version would pull from official APIs.</div>
+</footer>
+</div>
+
+<script>
+// ---------------- DATA (as of Nov 3, 2026, pre-results) ----------------
+const BODIES = [
+  {name:"U.S. House", unit:"seats", total:435, d:214, i:1, iNote:"Kevin Kiley (CA), left GOP Mar 2026, caucuses with Republicans", iWith:"r", v:2, r:218,
+   note:"218 R, 214 D, 1 independent, 2 vacant. Press Gallery updates only when departures are read on the floor, so it can lag.",
+   src:[["House Press Gallery, party breakdown","https://pressgallery.house.gov/member-data/party-breakdown"],["CBS, Kiley leaves GOP (Mar 2026)","https://www.cbsnews.com/news/kevin-kiley-leaves-republican-party-becomes-independent"]], asOf:"checked Nov 3, 2026"},
+  {name:"U.S. Senate", unit:"seats", total:100, d:45, i:2, iNote:"King (ME) and Sanders (VT) caucus with Democrats", iWith:"d", v:0, r:53,
+   note:"53 R, 45 D, 2 independents who caucus with Democrats.",
+   src:[["Senate Periodical Press Gallery, Senate facts","https://www.periodicalpress.senate.gov/?p=58025"],["270toWin, Fox News power rankings (Jul 21, 2026)","https://www.270towin.com/2026-senate-election/fox-news-2026-senate-power-rankings"]], asOf:"latest dated source Jul 21, 2026"},
+  {name:"Governors", unit:"states", total:50, d:24, i:0, v:0, r:26,
+   note:"26 R, 24 D (Virginia moved to D after the Nov 2025 election). 36 governor races are on today's ballot.",
+   src:[["MultiState, 2026 state partisan control","https://www.multistate.us/resources/deck-key-takeaways-from-the-2025-elections-and-2026-state-partisan-control"],["Ballotpedia, gubernatorial elections 2026","https://ballotpedia.org/Gubernatorial_elections,_2026"]], asOf:"source updated Nov 6, 2025"},
+  {name:"State legislatures", unit:"states", total:50, d:18, i:4, iNote:"split control between chambers (or tied)", iWith:null, v:0, r:28,
+   note:"28 fully R, 18 fully D, 4 split. Trifectas (governor + both chambers): 23 R, 16 D, 11 divided (Ballotpedia, Apr 1, 2026).",
+   src:[["MultiState, 2026 state partisan control","https://www.multistate.us/resources/deck-key-takeaways-from-the-2025-elections-and-2026-state-partisan-control"],["Ballotpedia, state government trifectas","https://ballotpedia.org/Current_state_government_trifectas"]], asOf:"sources Nov 2025 / Apr 2026"},
+  {name:"Supreme Court", unit:"justices", total:9, d:3, i:0, v:0, r:6,
+   note:"By party of the appointing president: 6 Republican-appointed, 3 Democratic-appointed. No vacancy announced in sources found (latest: Aug 2026, Alito said he plans to stay at least another term).",
+   src:[["supremecourt.gov, current members","https://www.supremecourt.gov/about/biographies.aspx"],["News Tribune, Alito staying (Aug 9, 2026)","https://www.newstribune.com/news/2026/aug/09/alito-says-hes-staying-on-supreme-court-for/"]], asOf:"latest source Aug 9, 2026"}
+];
+
+const TOPICS = ["AI","Crypto","Energy","Spending"];
+const PEOPLE = [
+  {topic:"AI", name:"Ted Cruz", role:"U.S. Senator, Texas", party:"r",
+   pushes:"Federal limits on state AI rules; drafted the Senate version of the state-AI-law moratorium in the 2025 budget bill.",
+   blocks:"State-by-state AI regulation (stated aim of the moratorium).",
+   src:[["Senate Commerce, 99-1 vote release (Jul 1, 2025)","https://www.commerce.senate.gov/2025/7/senate-strikes-ai-moratorium-from-budget-reconciliation-bill-in-overwhelming-99-1-vote/"]], asOf:"Jul 1, 2025"},
+  {topic:"AI", name:"Marsha Blackburn", role:"U.S. Senator, Tennessee", party:"r",
+   pushes:"Offered the amendment that removed the state-AI-law moratorium (adopted 99-1).",
+   blocks:"The 10-year moratorium; earlier agreed a 5-year compromise with Cruz, then withdrew from it.",
+   src:[["Senate Commerce release","https://www.commerce.senate.gov/2025/7/senate-strikes-ai-moratorium-from-budget-reconciliation-bill-in-overwhelming-99-1-vote/"],["Route Fifty (Jul 2025)","https://www.route-fifty.com/artificial-intelligence/2025/07/senate-overwhelmingly-passes-amendment-removing-state-ai-moratorium/406469"]], asOf:"Jul 1, 2025"},
+  {topic:"AI", name:"Maria Cantwell", role:"U.S. Senator, Washington", party:"d",
+   pushes:"Co-filed the amendment to strike the moratorium with Blackburn, Collins and Markey.",
+   blocks:"Preempting state AI laws through the budget bill.",
+   src:[["Senate Commerce release","https://www.commerce.senate.gov/2025/7/senate-strikes-ai-moratorium-from-budget-reconciliation-bill-in-overwhelming-99-1-vote/"]], asOf:"Jul 1, 2025"},
+  {topic:"AI", name:"Jared Polis", role:"Governor, Colorado", party:"d",
+   pushes:"Signed the Colorado AI Act (SB 24-205, May 17, 2024); signed its delay to Jun 30, 2026 (SB 25B-004).",
+   blocks:"Asked lawmakers in a signing letter to \"fine tune\" the law to protect innovation.",
+   src:[["Epstein Becker Green, Colorado AI Act","https://www.ebglaw.com/health-law-advisor/will-colorados-historic-ai-law-go-live-in-2026-its-fate-hangs-in-the-balance-in-2025"],["Greenberg Traurig, delay (Sep 2025)","https://www.gtlaw.com/en/insights/2025/9/colorado-delays-comprehensive-ai-law-with-further-changes-anticipated"]], asOf:"Aug 28, 2025"},
+  {topic:"Crypto", name:"Bill Hagerty", role:"U.S. Senator, Tennessee", party:"r",
+   pushes:"Lead sponsor of the GENIUS Act (S.1582, stablecoin rules). Passed Senate 68-30, Jun 17, 2025; signed into law Jul 2025.",
+   blocks:"Stablecoin issuers paying interest or yield to holders (a GENIUS Act provision).",
+   src:[["Congress.gov, S.1582","https://www.congress.gov/bill/119th-congress/senate-bill/1582"],["American Banker (Jun 2025)","https://www.americanbanker.com/news/senate-stablecoin-bill-passes-with-bipartisan-support"]], asOf:"Jul 2025"},
+  {topic:"Crypto", name:"Kirsten Gillibrand", role:"U.S. Senator, New York", party:"d",
+   pushes:"Original co-sponsor of the GENIUS Act.",
+   blocks:"(No block recorded in this mockup.)",
+   src:[["Congress.gov, S.1582 cosponsors","https://www.congress.gov/bill/119th-congress/senate-bill/1582/cosponsors"]], asOf:"2025"},
+  {topic:"Crypto", name:"Elizabeth Warren", role:"U.S. Senator, Massachusetts", party:"d",
+   pushes:"Amendments and limits on stablecoin issuers, including conflict-of-interest rules.",
+   blocks:"Led Democratic opposition to the GENIUS Act. Final-passage vote: not verified in this mockup (check Senate roll call).",
+   src:[["Wikipedia, GENIUS Act (vote history)","https://en.wikipedia.org/wiki/GENIUS_Act"]], asOf:"Jun 2025"},
+  {topic:"Energy", name:"Interior Dept. / BOEM", role:"Federal agency (executive branch)", party:"r",
+   pushes:"Review of offshore wind projects in federal waters.",
+   blocks:"Issued a stop-work order on Revolution Wind (Aug 22, 2025); the order was later reversed.",
+   src:[["gCaptain (Aug 2025)","https://gcaptain.com/orsteds-revolution-wind-project-hit-with-federal-stop-work-order-at-80-completion"]], asOf:"Aug 22, 2025"},
+  {topic:"Spending", name:"Chuck Schumer", role:"U.S. Senator, New York; Minority Leader", party:"d",
+   pushes:"A short-term funding bill written by Democrats (Mar 2025).",
+   blocks:"Said Republicans lacked the votes for the House funding bill; then voted to advance it.",
+   src:[["Congressional Record, Mar 12, 2025","https://www.govinfo.gov/content/pkg/CREC-2025-03-12/html/CREC-2025-03-12-pt1-PgS1690-5.htm"]], asOf:"Mar 14, 2025"},
+  {topic:"Spending", name:"Marjorie Taylor Greene", role:"U.S. Representative, Georgia (at the time)", party:"r",
+   pushes:"Voted yes on the House budget bill (H.R.1), May 22, 2025.",
+   blocks:"Then said she opposed its state-AI-law moratorium and would vote no if it stayed.",
+   src:[["Congress.gov, H.R.1","https://www.congress.gov/bill/119th-congress/house-bill/1"],["FOX 9 (Jun 2025)","https://www.fox9.com/news/mtg-says-again-she-will-oppose-trumps-big-beautiful-bill-over-ai-provision"]], asOf:"Jun 3, 2025"}
+];
+
+const CONTRA = [
+  {type:"word vs vote", conf:"verified", side:"r", topic:"AI",
+   context:"Her statement says she did not know the provision was in a 1,000+ page bill; she then said she would oppose the bill if it stayed. A vote cast on incomplete reading is different from a deliberate reversal.",
+   title:"Voted for the budget bill, then said she would have voted no",
+   who:"Rep. Marjorie Taylor Greene (R-GA)",
+   said:"Jun 3, 2025, on X: she did not know the bill contained a 10-year ban on state AI laws and would have voted no had she known; said she would oppose it if the provision stayed.",
+   did:"May 22, 2025: voted yes on H.R.1 in the House, with the provision in the text.",
+   matters:"Shows how a single provision in a large bill can split a lawmaker's vote from their stated position. The Senate later removed the provision 99-1.",
+   src:[["FOX 9","https://www.fox9.com/news/mtg-says-again-she-will-oppose-trumps-big-beautiful-bill-over-ai-provision"],["Congress.gov, H.R.1 actions","https://www.congress.gov/bill/119th-congress/house-bill/1/all-actions"],["Senate Commerce, 99-1 vote","https://www.commerce.senate.gov/2025/7/senate-strikes-ai-moratorium-from-budget-reconciliation-bill-in-overwhelming-99-1-vote/"]],
+   asOf:"Jun 3, 2025"},
+  {type:"word vs vote", conf:"verified", side:"d", topic:"Spending",
+   context:"His Mar 12 line was a vote count, not a pledge. On Mar 13 he said a shutdown would be worse than the bill and he would vote to advance it. A tactical choice between two options he opposed is not the same as changing his view of the bill.",
+   title:"Said the funding bill lacked the votes, then supplied a vote for it",
+   who:"Sen. Chuck Schumer (D-NY), Minority Leader",
+   said:"Mar 12, 2025, Senate floor: \"Republicans do not have the votes in the Senate to invoke cloture on the House CR.\"",
+   did:"Mar 14, 2025: voted yes on cloture; it passed 62-38 with Schumer and nine other Democrats. Final passage 54-46.",
+   matters:"Government-funding deadlines move markets (shutdown risk). The stated position and the vote pointed in opposite directions two days apart.",
+   src:[["Congressional Record, Mar 12, 2025","https://www.govinfo.gov/content/pkg/CREC-2025-03-12/html/CREC-2025-03-12-pt1-PgS1690-5.htm"],["Washington Times, Mar 14, 2025","https://m.washingtontimes.com/news/2025/mar/14/gop-wins-shutdown-showdown-senate-democrats-ending-filibuster/"],["Roll Call, Mar 13, 2025 (shutdown much worse)","https://rollcall.com/2025/03/13/senate-democrats-relent-on-six-month-stopgap-funding-bill/"]],
+   asOf:"Mar 14, 2025"},
+  {type:"law vs company plan", conf:"verified", side:"r", topic:"Energy",
+   context:"The agency cited a national-security review; the reasons were not made public in the letter. A government reviewing permits it inherited is not hypocrisy, and the order was reversed. This card records a conflict between a federal action and a company's plan.",
+   title:"Federal stop-work order versus a permitted, 80% built wind farm",
+   who:"Interior Dept. (BOEM) versus Ørsted (Revolution Wind, RI/CT)",
+   said:"Ørsted: project 80% complete, all foundations and 45 of 65 turbines installed; permits approved Nov 17, 2023 after a nine-year review.",
+   did:"Aug 22, 2025: BOEM ordered work stopped, citing unspecified national-security concerns from its review. The order was reversed the following month.",
+   matters:"Federal action against an already-permitted project changes the risk on every permit holder in that sector (Ørsted shares, offshore wind suppliers, state power contracts).",
+   src:[["gCaptain","https://gcaptain.com/orsteds-revolution-wind-project-hit-with-federal-stop-work-order-at-80-completion"],["Maritime Executive","https://maritime-executive.com/article/trump-administration-orders-stop-work-on-80-complete-offshore-wind-farm"]],
+   asOf:"Aug 22, 2025 (order); reversed Sep 2025"},
+  {type:"word vs vote", conf:"possible", side:"d", topic:"AI",
+   context:"Governors often sign a bill and in the same letter ask for fixes; the signature and the reservations can both be sincere. Marked possible because the 2026 repeal-and-reenact comes from one source so far.",
+   title:"Signed a state AI law while writing that it needed changing",
+   who:"Gov. Jared Polis (D-CO), Colorado AI Act (SB 24-205)",
+   said:"May 17, 2024, same-day signing letter to the legislature: stated reservations and asked lawmakers to \"fine tune\" the law over two years to protect innovation.",
+   did:"Signed it into law the same day. Aug 28, 2025: signed a delay (SB 25B-004) moving the start from Feb 1 to Jun 30, 2026. Apr 27, 2026: a federal magistrate judge stayed enforcement. One source reports a 2026 repeal-and-reenact (SB 26-189, May 14, 2026); not yet verified against the official record.",
+   matters:"Companies deploying AI in hiring, lending, housing or health in Colorado face a moving start date and changing duties.",
+   src:[["Epstein Becker Green","https://www.ebglaw.com/health-law-advisor/will-colorados-historic-ai-law-go-live-in-2026-its-fate-hangs-in-the-balance-in-2025"],["Greenberg Traurig","https://www.gtlaw.com/en/insights/2025/9/colorado-delays-comprehensive-ai-law-with-further-changes-anticipated"],["Mondaq (2026 status)","https://www.mondaq.com/unitedstates/new-technology/1785378/the-colorado-ai-act-hits-a-wall-litigation-legislative-uncertainty-and-an-enforcement-standstill"]],
+   asOf:"May 2026 (partly unverified)"},
+  {type:"law vs company plan", conf:"verified", side:"both", topic:"Crypto",
+   context:"This was a draft under negotiation, not a law. Both the bill text and Coinbase's position may have changed after Jan 2026 (not checked). A company opposing a draft that hits its product is lobbying, not a contradiction by either side.",
+   title:"Senate crypto bill's stablecoin-yield ban versus Coinbase's rewards product",
+   who:"Senate Banking draft market-structure bill (bipartisan talks) versus Coinbase",
+   said:"Coinbase CEO Brian Armstrong, Jan 2026: Coinbase \"can't support the bill as written\"; pulled support hours before markup. Coinbase offers rewards to users who hold USDC.",
+   did:"The draft banned crypto firms from paying yield on stablecoin holdings, while allowing rewards tied to activity such as payments. Banks pushed amendments to tighten it. Markup was postponed with no new date.",
+   matters:"Stablecoin rewards are a revenue line for exchanges and a deposit-competition issue for banks; the bill's fate moves both groups.",
+   src:[["Decrypt, Coinbase pulls support","https://decrypt.co/354668/coinbase-pulls-support-crypto-market-structure-bill-senate-vote"],["Decrypt, path forward","https://decrypt.co/354769/coinbase-reversal-crypto-senate-bill-delay-path-forward"]],
+   asOf:"Jan 2026 (later status not checked)"}
+];
+
+// ---------------- RENDER ----------------
+const pct = (n,t)=> (100*n/t);
+const fmt = n => n.toFixed(1)+"%";
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const links = arr => arr.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(" &middot; ");
+
+const bodiesEl = document.getElementById("bodies");
+bodiesEl.innerHTML = BODIES.map(b=>{
+  const seg = (n,col)=> n? `<span style="width:${pct(n,b.total)}%;background:var(${col})" title="${n}"></span>`:"";
+  return `<div class="body-row">
+    <div class="body-head"><span class="body-name">${b.name}</span>
+      <span class="body-num"><span style="color:var(--dem)">D ${b.d}</span>${b.i?` &middot; <span style="color:var(--ind)">${b.iWith?"I":"Split"} ${b.i}</span>`:""}${b.v?` &middot; Vacant ${b.v}`:""} &middot; <span style="color:var(--rep)">R ${b.r}</span> <span style="color:var(--faint)">/ ${b.total} ${b.unit}</span></span></div>
+    <div class="bar" role="img" aria-label="${esc(b.name)}: ${b.d} Democratic, ${b.r} Republican of ${b.total}">
+      ${seg(b.d,"--dem")}${seg(b.i,"--ind")}${seg(b.v,"--vac")}${seg(b.r,"--rep")}<i class="mid"></i></div>
+    <div class="src">${esc(b.note)}${b.iNote?" Independent/split: "+esc(b.iNote)+".":""}<br>Source: ${links(b.src)} &middot; ${esc(b.asOf)}</div>
+  </div>`;
+}).join("");
+
+// overall control + per body
+let rsum=0;
+document.getElementById("leanRows").innerHTML = BODIES.map(b=>{
+  const rr = b.r + (b.iWith==="r"?b.i:0), dd = b.d + (b.iWith==="d"?b.i:0);
+  const rs = pct(rr, rr+dd), ds = 100-rs; rsum+=rs;
+  return `<div class="lrow"><span>${b.name}</span>
+    <div class="lbar" role="img" aria-label="${esc(b.name)}: ${fmt(ds)} D, ${fmt(rs)} R"><span style="width:${ds}%;background:var(--dem)"></span><span style="width:${rs}%;background:var(--rep)"></span><i class="mid"></i></div>
+    <span class="lnum">${dd} D / ${rr} R</span></div>`;
+}).join("");
+const overall = rsum/BODIES.length;
+document.getElementById("overall").innerHTML = `${fmt(overall)} Republican <small>/ ${fmt(100-overall)} Democratic</small>`;
+
+// people
+let topic = "AI";
+const tabsEl = document.getElementById("tabs");
+function drawTabs(){
+  tabsEl.innerHTML = TOPICS.map(t=>`<button class="tab" aria-pressed="${t===topic}" data-t="${t}">${t}</button>`).join("")
+   + `<span class="tab" style="opacity:.55;cursor:default">Privacy, Business, more: planned</span>`;
+  tabsEl.querySelectorAll("button").forEach(b=>b.onclick=()=>{topic=b.dataset.t;drawTabs();drawPeople();});
+}
+const ptag = p => p==="d"?`<span class="tag d">Democrat</span>`:p==="r"?`<span class="tag r">Republican</span>`:`<span class="tag x">Both / other</span>`;
+function drawPeople(){
+  document.getElementById("people").innerHTML = PEOPLE.filter(p=>p.topic===topic).map(p=>`
+   <div class="card person">
+     <div><span class="pname">${esc(p.name)}</span> ${ptag(p.party)}</div>
+     <div class="kv" style="color:var(--muted)">${esc(p.role)}</div>
+     <div class="kv"><b>Pushes for:</b> ${esc(p.pushes)}</div>
+     <div class="kv"><b>Tries to block:</b> ${esc(p.blocks)}</div>
+     <div class="srcs">Source: ${links(p.src)} &middot; as of ${esc(p.asOf)}</div>
+   </div>`).join("");
+}
+drawTabs(); drawPeople();
+
+// contradictions
+const isCo = c => c.type==="law vs company plan";
+const n = f => CONTRA.filter(f).length;
+document.getElementById("ccount").innerHTML =
+  `<span>Found so far:</span><span class="tag r">Republican-side ${n(c=>c.side==="r")}</span><span class="tag d">Democratic-side ${n(c=>c.side==="d")}</span><span class="tag x">Bipartisan ${n(c=>c.side==="both")}</span>
+   <span class="tag ok">Verified ${n(c=>c.conf==="verified")}</span><span class="tag maybe">Possible ${n(c=>c.conf==="possible")}</span>`;
+document.getElementById("cards").innerHTML = CONTRA.map(c=>`
+  <div class="card">
+    <div><span class="tag ${c.conf==="verified"?"ok":"maybe"}">${c.conf}</span><span class="tag">${c.type}</span>${ptag(c.side)}<span class="tag">${c.topic}</span></div>
+    <div class="ctitle">${esc(c.title)}</div>
+    <div class="kv" style="color:var(--muted)">${esc(c.who)}</div>
+    <div class="pair">
+      <div class="side"><h4>${isCo(c)?"Company / project says":"Said"}</h4>${esc(c.said)}</div>
+      <div class="side"><h4>${isCo(c)?"Law / order does":"Did"}</h4>${esc(c.did)}</div>
+    </div>
+    <div class="context"><b>Context, why it may not be hypocrisy:</b> ${esc(c.context)}</div>
+    <div class="why" style="margin-top:6px"><b>Why it can matter for markets:</b> ${esc(c.matters)}</div>
+    <div class="srcs">Sources: ${links(c.src)} &middot; as of ${esc(c.asOf)}</div>
+  </div>`).join("");
+</script>
+</body>
+</html>
