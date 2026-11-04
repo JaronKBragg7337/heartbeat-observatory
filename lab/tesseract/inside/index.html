@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tesseract Inside</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one first-person canvas filling the screen; a thin HUD at the top; a turn strip and a walk pad at the bottom; a dock of room chips and settings that slides up. Single dark theme shared with the other tesseract pages. */
+:root{
+  --void:#08070f;
+  --ink:#12101f;
+  --fg:#ece8f6;
+  --fg-dim:#8f87ad;
+  --line:#2a2640;
+  --near:#ffb347;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--void);color:var(--fg);font-family:var(--mono);font-size:12px;overflow:hidden;overscroll-behavior:none}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#c.dragging{cursor:grabbing}
+.hud{position:fixed;top:0;left:0;right:0;z-index:3;pointer-events:none;text-shadow:0 1px 2px rgba(8,7,15,.9),0 0 12px rgba(8,7,15,.8);background:linear-gradient(rgba(8,7,15,.55),rgba(8,7,15,0));padding-bottom:28px;
+  padding-top:calc(12px + env(safe-area-inset-top,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.hud h1{margin:0;font-family:var(--display);font-weight:300;font-size:clamp(14px,2.2vw,22px);letter-spacing:.08em;text-transform:uppercase;line-height:1;text-wrap:balance}
+.hud h1 b{font-weight:600;color:var(--near)}
+.hud p{margin:6px 0 0;color:var(--fg-dim);max-width:46ch;line-height:1.5}
+.hud a{pointer-events:auto;color:var(--near);text-decoration:none;border-bottom:1px solid transparent}
+.hud a:hover{border-bottom-color:var(--near)}
+.ahead{text-align:right;line-height:1.5;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ahead .label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim)}
+.ahead .name{font-family:var(--display);font-weight:600;font-size:clamp(14px,2.2vw,22px);letter-spacing:.04em}
+.ahead .sub{color:var(--fg-dim)}
+.ahead .sub span{color:var(--fg)}
+.strip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--ink) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;max-width:calc(100vw - 32px)}
+.strip.dragging{cursor:grabbing}
+.strip span{color:var(--fg-dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip button{border-color:transparent;font-size:13px;padding:8px 10px}
+.strip button:hover{border-color:var(--fg-dim)}
+.pad{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:5;width:84px;height:84px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 70%,transparent);touch-action:none;display:none}
+.pad i{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--fg-dim);opacity:.8}
+.pad small{position:absolute;left:0;right:0;top:-18px;text-align:center;color:var(--fg-dim);font-size:9px;letter-spacing:.14em;text-transform:uppercase}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:4;background:color-mix(in srgb,var(--ink) 90%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  padding-block:12px calc(14px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  transition:transform .35s cubic-bezier(.2,.8,.2,1);max-height:62vh;overflow-y:auto}
+.dock.hidden{transform:translateY(100%)}
+.dock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 28px;max-width:1240px;margin:0 auto}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+legend{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim);padding:0;margin-bottom:6px}
+.row{display:grid;grid-template-columns:7.5em 1fr 3.8em;align-items:center;gap:10px;min-width:0;padding:3px 0}
+.row label{color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row output{text-align:right;color:var(--fg-dim);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;min-width:0;accent-color:var(--near);height:22px;margin:0;background:transparent}
+input[type=range]:focus-visible{outline:2px solid var(--near);outline-offset:2px;border-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+button{font:inherit;font-size:11px;letter-spacing:.06em;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer;line-height:1}
+button:hover{border-color:var(--fg-dim)}
+button:focus-visible{outline:2px solid var(--near);outline-offset:2px}
+button[aria-pressed=true]{border-color:var(--near);color:var(--near)}
+button.room{display:inline-flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+button.room i{width:10px;height:10px;border-radius:2px;display:inline-block;background:var(--sw)}
+button.room small{color:var(--fg-dim)}
+button.room.here{border-color:var(--sw)}
+.hint{color:var(--fg-dim);line-height:1.5;margin:0}
+.pill{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--ink);border-color:var(--fg-dim)}
+.dock:not(.hidden) ~ .strip,.dock:not(.hidden) ~ .pad{display:none!important}
+.strip .menu{display:none}
+@media (max-width:640px){
+  .hud p{display:none}
+  .ahead .sub{font-size:10px}
+  .pill{display:none}
+  .strip .menu{display:inline-block}
+  .strip{left:auto;right:max(12px,env(safe-area-inset-right,0px));transform:none;max-width:calc(100vw - 120px)}
+  .row{grid-template-columns:6.5em 1fr 3.4em}
+}
+@media (pointer:coarse){ .pad{display:block} }
+@media (prefers-reduced-motion:reduce){ .dock{transition:none} }
+</style>
+</head>
+<body>
+
+<canvas id="c" aria-label="First-person view from inside a turning tesseract. Drag to look around."></canvas>
+
+<header class="hud">
+  <div>
+    <h1>Tesseract <b>Inside</b></h1>
+    <p>You stand at ground zero inside a tesseract. Your space is a slice through it, so the room around you is bounded by its cells: every wall, the floor and the ceiling is a door into another room. The tesseract turns through the fourth direction and the rooms slide through you. Drag to look, drag the strip to turn it.</p>
+    <p><a href="index.html">Drift</a> · <a href="anatomy.html">Anatomy</a> · <a href="pages.html">Pages</a></p>
+  </div>
+  <div class="ahead" aria-live="off">
+    <div class="label">Ahead</div>
+    <div class="name" id="a-name">—</div>
+    <div class="sub">w <span id="a-w">0.00</span> · <span id="a-walls">6</span> walls around you · <span id="a-turn">still</span></div>
+  </div>
+</header>
+
+<button class="pill" id="toggle" aria-expanded="false" aria-controls="dock">Rooms &amp; settings</button>
+
+<aside class="dock hidden" id="dock" aria-label="Rooms and settings">
+  <div class="dock-grid">
+    <fieldset>
+      <legend>Steer a room to the front</legend>
+      <div class="chips" id="rooms"></div>
+      <p class="hint" style="margin-top:8px">The number is each room's distance along the fourth direction. 0 means its wall is solid in your space; near 1 means it is almost entirely elsewhere and see-through.</p>
+    </fieldset>
+    <fieldset>
+      <legend>The turn</legend>
+      <div class="row"><label for="speed">own turn</label><input type="range" id="speed" min="0" max="1" step="0.01" value="0.25"><output for="speed" id="o-speed">0.25</output></div>
+      <div class="row"><label for="fade">fade by w</label><input type="range" id="fade" min="0" max="1" step="0.01" value="0.8"><output for="fade" id="o-fade">0.80</output></div>
+      <div class="row"><label for="ghost">ghost rooms</label><input type="range" id="ghost" min="0" max="1" step="0.01" value="0.5"><output for="ghost" id="o-ghost">0.50</output></div>
+      <div class="row"><label for="fov">field of view</label><input type="range" id="fov" min="50" max="110" step="1" value="80"><output for="fov" id="o-fov">80°</output></div>
+      <div class="chips">
+        <button type="button" id="turn" aria-pressed="true">Turning on its own</button>
+        <button type="button" id="door">Through the door ahead</button>
+        <button type="button" id="reset">Reset</button>
+        <button type="button" id="gyro" hidden>Use phone tilt to look</button>
+      </div>
+      <p class="hint" style="margin-top:8px">Strip: drag sideways to swap the room on your right through the fourth direction, up or down for the ceiling and floor. The arrows do a quarter turn. Desktop: WASD walks.</p>
+    </fieldset>
+  </div>
+</aside>
+
+<div class="strip" id="strip" aria-label="Turn the tesseract">
+  <button type="button" id="left" aria-label="Quarter turn, right wall through w">◀</button>
+  <span>drag to turn</span>
+  <button type="button" id="right" aria-label="Quarter turn, left wall through w">▶</button>
+  <button type="button" id="menu2" aria-label="Rooms and settings" class="menu">☰</button>
+</div>
+<div class="pad" id="pad" aria-label="Walk"><small>walk</small><i id="padknob"></i></div>
+
+<script>
+(() => {
+'use strict';
+const GYRO = true;
+const $ = id => document.getElementById(id);
+const canvas = $('c'), ctx = canvas.getContext('2d', { alpha: false });
+const TAU = Math.PI * 2, DEG = Math.PI / 180, Q = Math.PI / 2;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const VOID = '#08070f';
+
+/* ---------- eight plain rooms, one per cell (cell order x−, x+, y−, y+, z−, z+, w−, w+) ---------- */
+const ROOMS = [
+  { name: 'Red room',     hue: 0 },
+  { name: 'Orange room',  hue: 28 },
+  { name: 'Yellow room',  hue: 52 },
+  { name: 'Green room',   hue: 130 },
+  { name: 'Teal room',    hue: 175 },
+  { name: 'Blue room',    hue: 220 },
+  { name: 'Violet room',  hue: 270 },
+  { name: 'Magenta room', hue: 315 },
+];
+const col = (r, l, a) => `hsla(${r.hue},72%,${l}%,${a})`;
+
+/* ---------- tesseract ---------- */
+const V4 = [];
+for (let i = 0; i < 16; i++) V4.push([i & 1 ? 1 : -1, i & 2 ? 1 : -1, i & 4 ? 1 : -1, i & 8 ? 1 : -1]);
+const EDGES = [];
+for (let i = 0; i < 16; i++) for (let b = 0; b < 4; b++) { const j = i ^ (1 << b); if (j > i) EDGES.push([i, j]); }
+const AXIS = ['x', 'y', 'z', 'w'];
+const CELLS = [];
+for (let a = 0; a < 4; a++) for (const s of [-1, 1]) {
+  const edges = []; EDGES.forEach((e, k) => { if (V4[e[0]][a] === s && V4[e[1]][a] === s) edges.push(k); });
+  const centre = [0, 0, 0, 0]; centre[a] = s;
+  CELLS.push({ a, s, edges, centre, room: ROOMS[CELLS.length], label: AXIS[a] + (s > 0 ? '+' : '−'), w: 0 });
+}
+
+/* ---------- 4D orientation as a matrix (row-major 4x4) ---------- */
+const I4 = () => [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+let R = I4();
+const mul = (A, B) => { const C = new Array(16).fill(0); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { let s = 0; for (let k = 0; k < 4; k++) s += A[i*4+k] * B[k*4+j]; C[i*4+j] = s; } return C; };
+const apply = (A, v) => [0,1,2,3].map(i => A[i*4]*v[0] + A[i*4+1]*v[1] + A[i*4+2]*v[2] + A[i*4+3]*v[3]);
+const dot4 = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
+const norm4 = v => { const l = Math.hypot(...v) || 1; return v.map(x => x / l); };
+// rotation by th in the plane spanned by orthonormal a and b (a turns toward b)
+function planeRot(a, b, th) {
+  const c = Math.cos(th) - 1, s = Math.sin(th), M = I4();
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) M[i*4+j] += c * (a[i]*a[j] + b[i]*b[j]) + s * (b[i]*a[j] - a[i]*b[j]);
+  return M;
+}
+const E = k => { const v = [0,0,0,0]; v[k] = 1; return v; };
+function turn(a, b, th) { R = mul(planeRot(a, b, th), R); }
+
+/* ---------- camera ---------- */
+const cam = { pos: [0, 0, 0], yaw: 0, pitch: 0 };
+let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, focal = 400;
+let f3 = [0, 0, 1], r3 = [1, 0, 0], u3 = [0, 1, 0];
+function basis() {
+  const cy_ = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  f3 = [sy * cp, sp, cy_ * cp]; r3 = [cy_, 0, -sy]; u3 = [-sy * sp, cp, -cy_ * sp];
+}
+function toCam(p) { const d = [p[0] - cam.pos[0], p[1] - cam.pos[1], p[2] - cam.pos[2]]; return [d[0]*r3[0] + d[1]*r3[1] + d[2]*r3[2], d[0]*u3[0] + d[1]*u3[1] + d[2]*u3[2], d[0]*f3[0] + d[1]*f3[1] + d[2]*f3[2]]; }
+const NEAR = 0.03;
+function clipNear(poly) { // Sutherland-Hodgman against z >= NEAR, in camera space
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length], ina = a[2] >= NEAR, inb = b[2] >= NEAR;
+    if (ina) out.push(a);
+    if (ina !== inb) { const t = (NEAR - a[2]) / (b[2] - a[2]); out.push([a[0] + (b[0]-a[0])*t, a[1] + (b[1]-a[1])*t, NEAR]); }
+  }
+  return out;
+}
+const proj = v => [cx + v[0] / v[2] * focal, cy - v[1] / v[2] * focal];
+
+/* ---------- the slice: where our 3D space (w = 0) cuts each cell ---------- */
+const vsub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const dot3 = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+const norm3 = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0]/l, v[1]/l, v[2]/l]; };
+let RV = V4.map(() => [0,0,0,0]);
+function slice() {
+  RV = V4.map(v => apply(R, v));
+  const hit = new Array(32).fill(null);
+  EDGES.forEach((e, k) => {
+    const P = RV[e[0]], Qv = RV[e[1]];
+    if ((P[3] < 0) !== (Qv[3] < 0)) { const t = P[3] / (P[3] - Qv[3]); hit[k] = [P[0] + t*(Qv[0]-P[0]), P[1] + t*(Qv[1]-P[1]), P[2] + t*(Qv[2]-P[2])]; }
+  });
+  const walls = [];
+  for (const c of CELLS) {
+    c.w = apply(R, c.centre)[3];
+    const pts = c.edges.map(k => hit[k]).filter(Boolean);
+    if (pts.length < 3) { c.wall = null; continue; }
+    const cen = [0,0,0]; pts.forEach(p => { cen[0] += p[0]/pts.length; cen[1] += p[1]/pts.length; cen[2] += p[2]/pts.length; });
+    let n = null;
+    for (let i = 1; i < pts.length && !n; i++) { const t = cross(vsub(pts[0], cen), vsub(pts[i], cen)); if (Math.hypot(...t) > 1e-6) n = norm3(t); }
+    if (!n) { c.wall = null; continue; }
+    const u = norm3(vsub(pts[0], cen)), v = cross(n, u);
+    pts.sort((p, q) => Math.atan2(dot3(vsub(p, cen), v), dot3(vsub(p, cen), u)) - Math.atan2(dot3(vsub(q, cen), v), dot3(vsub(q, cen), u)));
+    c.wall = { pts, cen, n }; walls.push(c);
+  }
+  return walls;
+}
+
+/* ---------- ui ---------- */
+const ui = {};
+['speed', 'fade', 'ghost', 'fov'].forEach(id => {
+  const el = ui[id] = $(id), out = $('o-' + id);
+  const show = () => { out.textContent = id === 'fov' ? el.value + '°' : (+el.value).toFixed(2); };
+  el.addEventListener('input', show); show();
+});
+const pressed = { turn: !reduceMotion };
+$('turn').setAttribute('aria-pressed', String(pressed.turn));
+$('turn').addEventListener('click', () => { pressed.turn = !pressed.turn; $('turn').setAttribute('aria-pressed', String(pressed.turn)); });
+const chips = [];
+CELLS.forEach((c, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'room'; b.style.setProperty('--sw', col(c.room, 55, 1));
+  b.innerHTML = `<i></i>${c.room.name} <small>${c.label} · <span>0.00</span></small>`;
+  b.addEventListener('click', () => { steer = i; pending = null; });
+  $('rooms').appendChild(b); chips.push(b);
+});
+let steer = -1, pending = null; // pending: { a, b, left }
+function queue(a, b, th) { pending = { a, b, left: th }; steer = -1; }
+$('left').addEventListener('click', () => queue([r3[0], r3[1], r3[2], 0], E(3), Q));
+$('right').addEventListener('click', () => queue([r3[0], r3[1], r3[2], 0], E(3), -Q));
+$('door').addEventListener('click', () => queue([f3[0], f3[1], f3[2], 0], E(3), Q));
+$('reset').addEventListener('click', () => { R = I4(); cam.pos = [0,0,0]; cam.yaw = 0; cam.pitch = 0; pending = null; steer = -1; });
+$('menu2').addEventListener('click', () => $('toggle').click());
+$('toggle').addEventListener('click', () => {
+  const hidden = $('dock').classList.toggle('hidden');
+  $('toggle').setAttribute('aria-expanded', String(!hidden));
+});
+if (GYRO && 'DeviceOrientationEvent' in window) {
+  $('gyro').hidden = false;
+  let on = false, base = null;
+  const handler = e => { if (e.alpha == null) return; if (base == null) base = e.alpha; cam.yaw = -(e.alpha - base) * DEG; cam.pitch = Math.max(-1.4, Math.min(1.4, (90 - e.beta) * DEG)); };
+  $('gyro').addEventListener('click', async () => {
+    try {
+      if (!on) {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') { const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') return; }
+        addEventListener('deviceorientation', handler); on = true; base = null;
+      } else { removeEventListener('deviceorientation', handler); on = false; }
+      $('gyro').setAttribute('aria-pressed', String(on));
+    } catch (e) { /* not available here */ }
+  });
+}
+
+/* ---------- pointer: look (canvas), turn (strip), walk (pad, keys) ---------- */
+const look = { down: false, lx: 0, ly: 0 };
+canvas.addEventListener('pointerdown', e => { look.down = true; look.lx = e.clientX; look.ly = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); });
+const lookUp = () => { look.down = false; canvas.classList.remove('dragging'); };
+canvas.addEventListener('pointerup', lookUp); canvas.addEventListener('pointercancel', lookUp);
+canvas.addEventListener('pointermove', e => {
+  if (!look.down) return;
+  cam.yaw += (e.clientX - look.lx) * 0.005; cam.pitch += (e.clientY - look.ly) * 0.005;
+  cam.pitch = Math.max(-1.4, Math.min(1.4, cam.pitch));
+  look.lx = e.clientX; look.ly = e.clientY;
+});
+const strip = $('strip'), st = { down: false, lx: 0, ly: 0 };
+strip.addEventListener('pointerdown', e => { if (e.target.tagName === 'BUTTON') return; st.down = true; st.lx = e.clientX; st.ly = e.clientY; strip.setPointerCapture(e.pointerId); strip.classList.add('dragging'); pending = null; steer = -1; });
+const stUp = () => { st.down = false; strip.classList.remove('dragging'); };
+strip.addEventListener('pointerup', stUp); strip.addEventListener('pointercancel', stUp);
+strip.addEventListener('pointermove', e => {
+  if (!st.down) return;
+  const dx = (e.clientX - st.lx) * 0.006, dy = (e.clientY - st.ly) * 0.006;
+  if (dx) turn([r3[0], r3[1], r3[2], 0], E(3), -dx);
+  if (dy) turn([u3[0], u3[1], u3[2], 0], E(3), dy);
+  st.lx = e.clientX; st.ly = e.clientY;
+});
+const pad = $('pad'), knob = $('padknob'), walk = { x: 0, y: 0, down: false };
+pad.addEventListener('pointerdown', e => { walk.down = true; pad.setPointerCapture(e.pointerId); padMove(e); });
+const padUp = () => { walk.down = false; walk.x = walk.y = 0; knob.style.transform = ''; };
+pad.addEventListener('pointerup', padUp); pad.addEventListener('pointercancel', padUp);
+function padMove(e) { if (!walk.down) return; const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left - r.width/2) / (r.width/2), y = (e.clientY - r.top - r.height/2) / (r.height/2); const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } walk.x = x; walk.y = -y; knob.style.transform = `translate(${x*26}px,${y*26}px)`; }
+pad.addEventListener('pointermove', padMove);
+const keys = new Set();
+addEventListener('keydown', e => { keys.add(e.key.toLowerCase()); if (e.key === 'Escape') $('dock').classList.add('hidden'); });
+addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight; cx = W / 2; cy = H / 2;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener('resize', resize);
+
+/* ---------- frame ---------- */
+let last = performance.now(), frames = 0, time = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; time += dt;
+  basis();
+  focal = (H / 2) / Math.tan(+ui.fov.value * DEG / 2);
+
+  // walking (small, clamped: the slice always contains the ball of radius 1 around the centre)
+  let mx = walk.x, mz = walk.y;
+  if (keys.has('w') || keys.has('arrowup')) mz += 1; if (keys.has('s') || keys.has('arrowdown')) mz -= 1;
+  if (keys.has('d') || keys.has('arrowright')) mx += 1; if (keys.has('a') || keys.has('arrowleft')) mx -= 1;
+  if (mx || mz) {
+    const fl = norm3([f3[0], 0, f3[2]]), rl = [fl[2], 0, -fl[0]];
+    for (let k = 0; k < 3; k++) cam.pos[k] += (fl[k] * mz + rl[k] * mx) * dt * 0.8;
+    const l = Math.hypot(...cam.pos); if (l > 0.6) cam.pos = cam.pos.map(x => x / l * 0.6);
+  }
+
+  // the turn: a queued quarter turn, steering a chosen room to the front, or its own slow rhythm
+  let turning = 'still';
+  if (pending) {
+    const step = Math.min(Math.abs(pending.left), dt * 1.6) * Math.sign(pending.left);
+    turn(pending.a, pending.b, step); pending.left -= step; if (Math.abs(pending.left) < 1e-4) pending = null; turning = 'quarter turn';
+  } else if (steer >= 0) {
+    const c = norm4(apply(R, CELLS[steer].centre)), t = [f3[0], f3[1], f3[2], 0];
+    const d = Math.max(-1, Math.min(1, dot4(c, t))), phi = Math.acos(d);
+    if (phi < 0.004) steer = -1;
+    else { let b = t.map((x, i) => x - d * c[i]); b = norm4(b); turn(c, b, Math.min(phi, dt * 1.4)); turning = 'steering ' + CELLS[steer].room.name; }
+  } else if (pressed.turn && +ui.speed.value > 0) {
+    const sp = +ui.speed.value * 0.35;
+    turn(E(0), E(3), dt * sp * 0.61); turn(E(1), E(3), dt * sp * 0.37); turn(E(2), E(3), dt * sp * 0.23);
+    turning = 'turning';
+  }
+
+  const walls = slice();
+  const fade = +ui.fade.value, ghost = +ui.ghost.value;
+
+  ctx.fillStyle = VOID; ctx.fillRect(0, 0, W, H);
+
+  // ghost rooms: every cell's edges with w dropped, fading with distance along w
+  if (ghost > 0) {
+    ctx.lineWidth = 1;
+    for (const c of CELLS) {
+      const a = Math.max(0, 1 - Math.abs(c.w)) * ghost * 0.5;
+      if (a < 0.02) continue;
+      ctx.strokeStyle = col(c.room, 65, a);
+      ctx.beginPath();
+      for (const k of c.edges) {
+        const [i, j] = EDGES[k], P = toCam(RV[i]), Qv = toCam(RV[j]);
+        const seg = clipNear([P, Qv]); if (seg.length < 2) continue;
+        const s0 = proj(seg[0]), s1 = proj(seg[1]); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // walls: the cells cut by our space, far first, each a doorway
+  const drawn = [];
+  for (const c of walls) {
+    const camPts = c.wall.pts.map(toCam), clipped = clipNear(camPts);
+    if (clipped.length < 3) continue;
+    const depth = camPts.reduce((s, p) => s + p[2], 0) / camPts.length;
+    const toEye = norm3(vsub(cam.pos, c.wall.cen));
+    const light = 0.45 + 0.55 * Math.abs(dot3(c.wall.n, toEye));
+    const alpha = 0.12 + 0.88 * Math.pow(Math.max(0, 1 - Math.abs(c.w)), fade * 1.6);
+    drawn.push({ c, scr: clipped.map(proj), depth, light, alpha, cen: toCam(c.wall.cen) });
+  }
+  drawn.sort((a, b) => b.depth - a.depth);
+  const inset = (pts, cen, k) => pts.map(p => [cen[0] + (p[0]-cen[0])*k, cen[1] + (p[1]-cen[1])*k, cen[2] + (p[2]-cen[2])*k]);
+  const path = scr => { ctx.beginPath(); scr.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); };
+  for (const d of drawn) {
+    path(d.scr);
+    ctx.fillStyle = col(d.c.room, 30 + 30 * d.light, d.alpha); ctx.fill();
+    ctx.strokeStyle = col(d.c.room, 80, Math.min(1, d.alpha + 0.2)); ctx.lineWidth = 1.5; ctx.stroke();
+    // depth lines: two insets and spokes to the corners, so the wall reads as a surface with a doorway in it
+    const w = d.c.wall, camPts = w.pts.map(toCam), cenC = toCam(w.cen);
+    ctx.lineWidth = 1;
+    for (const k of [0.82, 0.62]) {
+      const ring = clipNear(inset(camPts, cenC, k)); if (ring.length < 3) continue;
+      path(ring.map(proj)); ctx.strokeStyle = col(d.c.room, 85, d.alpha * (k === 0.62 ? 0.7 : 0.35)); ctx.stroke();
+      if (k === 0.62) { ctx.fillStyle = col(d.c.room, 22 + 22 * d.light, d.alpha * 0.9); ctx.fill(); }
+    }
+    ctx.strokeStyle = col(d.c.room, 85, d.alpha * 0.3); ctx.beginPath();
+    for (const p of camPts) { const q = [cenC[0] + (p[0]-cenC[0])*0.62, cenC[1] + (p[1]-cenC[1])*0.62, cenC[2] + (p[2]-cenC[2])*0.62]; const seg = clipNear([p, q]); if (seg.length < 2) continue; const a = proj(seg[0]), b = proj(seg[1]); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+    ctx.stroke();
+  }
+  // labels on every wall
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const d of drawn) {
+    if (d.cen[2] < NEAR) continue;
+    const s = proj(d.cen), size = Math.max(10, Math.min(26, 18 / d.cen[2]));
+    ctx.font = `500 ${size}px "IBM Plex Mono", monospace`;
+    ctx.fillStyle = `rgba(236,232,246,${Math.min(1, d.alpha + 0.25)})`; ctx.fillText(d.c.room.name.toUpperCase(), s[0], s[1]);
+    ctx.font = `400 ${size * 0.7}px "IBM Plex Mono", monospace`;
+    ctx.fillStyle = `rgba(236,232,246,${Math.min(0.8, d.alpha + 0.1)})`; ctx.fillText(`${d.c.label}  w ${Math.abs(d.c.w).toFixed(2)}`, s[0], s[1] + size * 1.1);
+  }
+  // ground zero reticle
+  ctx.strokeStyle = 'rgba(236,232,246,0.5)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, 4, 0, TAU); ctx.stroke();
+
+  // what is ahead: the wall whose centre is closest to the view direction
+  if ((++frames & 7) === 0) {
+    let best = null, bd = -2;
+    for (const d of drawn) { const v = norm3(d.cen); if (v[2] > bd) { bd = v[2]; best = d; } }
+    $('a-name').textContent = best ? best.c.room.name : '—';
+    $('a-name').style.color = best ? col(best.c.room, 65, 1) : '';
+    $('a-w').textContent = best ? Math.abs(best.c.w).toFixed(2) : '—';
+    $('a-walls').textContent = String(walls.length);
+    $('a-turn').textContent = turning;
+    CELLS.forEach((c, i) => { chips[i].querySelector('span').textContent = Math.abs(c.w).toFixed(2); chips[i].classList.toggle('here', !!c.wall && Math.abs(c.w) < 0.3); });
+  }
+}
+
+resize();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
