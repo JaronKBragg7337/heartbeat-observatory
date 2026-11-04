@@ -89,6 +89,8 @@ const SOLIDS = [
   [-8.25, 18.3, -5.65, 18.42], [-8.25, 17.15, -5.75, 18.3], [-7.28, 16.44, -6.72, 17.0], [-7.6, 12.0, -5.6, 12.9],
   [-8.25, 12.0, -7.87, 12.38], [-4.98, 12.0, -4.6, 12.38], [-8.25, 14.05, -7.71, 14.55], [-5.04, 13.18, -4.6, 15.42],
   [-5.22, 12.46, -4.9, 12.78], [-6.78, 19.59, -6.46, 19.91], [-7.75, 20.1, -7.35, 20.5],
+  // the creature's room (page J, creature-room.js): the teepee, the blocks + ring stacker, the plant, the pet's bed
+  [2.65, 16.4, 3.9, 17.5], [-0.74, 22.66, 0.07, 23.4], [3.28, 22.78, 3.9, 23.4], [1.88, 21.58, 3.12, 22.82],
 ];
 /* "page i", "i", "studio", "music studio": a zone named by its letter or its name -> where people spawn in it. Lets the
    AI be sent to a room without knowing its coordinates (walk-to i, walk-to studio). */
@@ -876,6 +878,8 @@ const HELP = `Seam Room character (only Jaron can talk to it)
                                     the music studio, page I, is x -8.25..-4.6, z 12.0..21.4 through hallway door 2
                                     (x -4.45, z 16.5): control room south of the glass at z 18.3, vocal booth north of
                                     it through the doorway at x -5.1 (the mic is at x -6.6, z 19.75)
+                                    the creature's room, page J, is x -1.3..3.9, z 16.2..23.4 through hallway door 3
+                                    (x -1.45, z 20); its bed is at x 2.5, z 22.2, its bowl at x 0.15, z 17.35
   walk-to i | walk-to studio        walk to a room by its page letter or its name (where people spawn there)
   walk-to door:g-3                  walk to the front of a door (g-1..g-10 = the hallway's numbered doors, odd ones on
                                     the east wall at z 13, 20, 27, 34, 41, even ones on the west wall at z 16.5 .. 44.5;

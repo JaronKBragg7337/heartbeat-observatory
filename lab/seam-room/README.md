@@ -38,10 +38,11 @@ first log. When the log becomes a chair, `kind` changes but the ID does not. "Re
   `kitchen.js` - page E (the kitchen behind B's back door). `gym.js` - page F (the gym behind the media room's side door).
   `hallway.js` - page G (the long hallway behind the media room's back door, ten numbered future doors).
   `closet.js` - page H (the walk-in closet behind hallway door 1). `studio.js` - page I (the music studio behind hallway
-  door 2, with a beat machine made in WebAudio).
+  door 2, with a beat machine made in WebAudio). `creature-room.js` - page J (the creature's room behind hallway door 3,
+  with the growing pet from `/lab/pet/`).
 - `seam.js` - the reusable piece. No three.js, no room, no network. Exposes `Seam.define({...})`.
 - `room.js` - this room: scene, player, peers, the object, the card, the log, the doors.
-- `room.css` - shared styles. `a/` .. `i/` `index.html` - the real entry pages (identical apart from the letter and title).
+- `room.css` - shared styles. `a/` .. `j/` `index.html` - the real entry pages (identical apart from the letter and title).
 - `index.html` - sends `/lab/seam-room/` to `/a/`.
 - Body model: `/lab/bedroom/person.glb` (walk + idle clips), shared, not copied.
 
@@ -343,6 +344,34 @@ is First Light, the neon on the back wall says "first light", the record on the 
   numbered door) all arrive; random trips 1337/1500 on the old floors vs 1329/1500 before (the misses are goals inside
   furniture, the same as before).
 
+## Page J: the creature's room (2026-11-04, Jaron picked it)
+
+Hallway door `g-3` (walnut, east wall, z 20) is a real door now (`between` g/j), and behind it is a cozy room for the
+creature, the growing pet from `/lab/pet/` (the script-driven pet only: `createPet` from `pet.js`), at
+`/lab/seam-room/j/`, built by `creature-room.js`: inside x -1.3..3.9, z 16.2..23.4 (5.2 x 7.2 m), 2.6 m high, clear
+of the closet (z up to 14.65) and leaving door 5's page room (z 27).
+
+- **The room:** light oak boards, a big round cream rug, sage beadboard under a starry paper, a window with a garden
+  view and curtains, a paper lantern and three swags of fairy lights, a woven bed with a cushion, a knitted blanket and
+  a name plaque, a food bowl and a water bowl on a mat, a teepee with bunting, wooden blocks, a ring stacker, a plant, a
+  growth chart and a crayon drawing of the creature, a ball, PAGE J over the door.
+- **The creature:** it lives in its own group at the middle of the room (`worldRadius` 2.85), stepped exactly the way
+  `/lab/pet/world.js` steps it (`update` + `facePerson`), so it has the same bounce walk. The room keeps its cells off
+  the walls, the teepee, the blocks and the plant, and off you while it potters about (not while it goes to food or
+  bed). When it gets sleepy it hops to its bed first (follow, up to 10 s, at most once a minute) and naps there, with
+  little z's. Tap it: a squish plus a happy double bounce and hearts. Tap the bowl: a berry drops in and it hops over
+  to eat it. Tap the ball (or walk into it, or the creature bumps it): it rolls. It only thinks while its room can be
+  seen.
+- **Its save:** if the phone already has a pet from `/lab/pet/` (localStorage `hb-pet:v1`), the room shows THAT pet
+  (name on the plaque and the drawing, colour, size) and saves it back (every 15 s while you are there, when you leave
+  the room, on pagehide), so what it eats here counts there. With no saved pet it is a fresh peach one and the room
+  never writes a save (the hatch screen on `/lab/pet/` stays the first meeting). Two tabs on both pages at once: the
+  last save wins.
+- **Phone:** ~25-70 draw calls inside. Static parts merged per material, the blocks/rings/bunting merged into one
+  vertex-coloured mesh, the fairy bulbs one InstancedMesh, the pet's body one InstancedMesh (its shadow is a decal, it
+  does not cast); no new light; room A/B hidden by camera layer while the camera is inside (same way as H and I).
+- **The AI:** knows the teepee, the blocks, the plant and the bed; `walk-to j` / `walk-to "creature's room"` work.
+
 ## New rooms without a reload (2026-11-01, Jaron asked)
 
 Someone standing in the room when a new zone deploys sees it arrive, no reload. room.js fetches `zones.json`
@@ -382,8 +411,8 @@ and tracks presence once per connection (law 1). A running `join` keeps its old 
    whoever is online right now. If everyone leaves, a new visitor starts from their own copy (or `SR1-A-LOG-0001`). It
    needs a table (one row per asset ID: kind, born, visited, changes, rev), with the channel used only for live moves.
    Same lesson as Ashgrove's D6: decide this before building the 3-page road.
-2. **More zones** - nine are tested (A, B, garage C, media room D, kitchen E, gym F, hallway G, closet H, studio I). The
-   AI's routing chains doors now. Hallway doors 3..10 are waiting for pages.
+2. **More zones** - ten are tested (A, B, garage C, media room D, kitchen E, gym F, hallway G, closet H, studio I,
+   creature's room J). The AI's routing chains doors now. Hallway doors 4..10 are waiting for pages.
 3. **True separate-page loads with different code per zone** - both pages load the same `room.js`. A zone that needs its
    own heavy scene (a factory) would need either lazy-loading per zone or a real navigation, and the handoff then
    needs the server state from step 1.
