@@ -2,6 +2,17 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "powermap.heartbeatobservatory.com"
+        }
+      ],
+      "destination": "/map",
+      "permanent": false
+    },
+    {
       "source": "/powermap",
       "missing": [
         {
@@ -67,7 +78,7 @@
   ],
   "rewrites": [
     {
-      "source": "/",
+      "source": "/map",
       "has": [
         {
           "type": "host",
@@ -75,16 +86,6 @@
         }
       ],
       "destination": "/powermap/index.html"
-    },
-    {
-      "source": "/:path((?!powermap/).*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "powermap.heartbeatobservatory.com"
-        }
-      ],
-      "destination": "/powermap/:path"
     },
     {
       "source": "/school/:fly(school-[a-z0-9-]+)",
