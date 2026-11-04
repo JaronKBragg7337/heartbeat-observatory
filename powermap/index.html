@@ -92,14 +92,25 @@ footer b{color:var(--text)}
 <h1>Power Map</h1>
 <p class="sub">Where the country stands: who holds the seats, what officials push and block, and where words, votes and company plans collide.</p>
 
-<div class="banner"><b>As of Nov 3, 2026, before midterm results.</b> Today is Election Day. Tonight's results will change these numbers. New results will be marked <b>PRELIMINARY</b> until officially certified, with the certification date shown once known. New members are seated in January 2027 (governors and legislatures on each state's own calendar).</div>
+<div class="banner"><b>Election night, Nov 3, 2026, 11:48 PM ET. Results below are PRELIMINARY.</b> They are network and AP race calls, not certified results; each state certifies on its own calendar and dates will be shown once known. <b>The current balance holds until January 2027</b>, when the new Congress is seated (governors and legislatures take office on each state's own calendar). The "Balance of power" bars further down still show who holds the seats today.</div>
+
+<!-- ============ ELECTION NIGHT ============ -->
+<h2>2026 midterms: called so far <span class="tag maybe" style="vertical-align:3px">PRELIMINARY</span></h2>
+<p class="sub" style="margin:0">Race calls by AP and major networks, as of the time shown on each line. Counting continues overnight and for days in some states.</p>
+<div class="card" id="election"></div>
 
 <!-- ============ OVERALL CONTROL ============ -->
 <h2>Overall control <span style="font-size:.6em;opacity:.7">(composition index)</span></h2>
 <div class="card">
+  <div class="kv" style="color:var(--muted)">Before the election (seats held today, until January 2027)</div>
   <div class="big" id="overall"></div>
-  <p class="why" style="margin:4px 0 10px">Method: equal-weight average of the five bodies' right-side (Republican) share. <b>Shows:</b> how much of the system each side holds, all bodies together. <b>Does not show:</b> who can actually pass a given law (the presidency's veto, the Senate filibuster and court rulings work differently; the stall map will show that).</p>
+  <div class="kv" style="color:var(--muted);margin-top:10px">With calls so far <span class="tag maybe">PRELIMINARY</span> (as of 11:48 PM ET, Nov 3)</div>
+  <div class="big" id="overallNew"></div>
+  <p class="why" style="margin:4px 0 10px">Method: equal-weight average of the five bodies' right-side (Republican) share. The "with calls so far" figure changes the House, Senate and governors only, using race calls made so far; <b>every seat not yet called is kept with its pre-election holder</b>. State legislatures and the Supreme Court are unchanged (no legislature counts used here). <b>Shows:</b> how much of the system each side holds, all bodies together. <b>Does not show:</b> who can actually pass a given law (the presidency's veto, the Senate filibuster and court rulings work differently; the stall map will show that).</p>
+  <div class="kv" style="color:var(--muted)">Before the election</div>
   <div id="leanRows"></div>
+  <div class="kv" style="color:var(--muted);margin-top:8px">With calls so far (PRELIMINARY)</div>
+  <div id="leanRowsNew"></div>
   <p class="why" style="margin:8px 0 0">Independents who caucus with a party are counted with that party. Vacancies and split legislatures are left out of each share. The Supreme Court is counted by the party of the appointing president, which is not the same as how a justice votes.</p>
 </div>
 
@@ -144,7 +155,7 @@ footer b{color:var(--text)}
 <footer>
   <b>Neutral by design: positions, votes and sources. No opinions.</b><br>
   Every number has a source and an "as of" date. Same standards for every party; counts are reported as found.
-  <div class="mock">Mockup v0.1, built Nov 3, 2026. Seat counts from public trackers; a live version would pull from official APIs.</div>
+  <div class="mock">Mockup v0.2, election night update Nov 3, 2026, 11:48 PM ET (PRELIMINARY). Seat counts from public trackers; a live version would pull from official APIs.</div>
 </footer>
 </div>
 
@@ -167,6 +178,34 @@ const BODIES = [
    note:"By party of the appointing president: 6 Republican-appointed, 3 Democratic-appointed. No vacancy announced in sources found (latest: Aug 2026, Alito said he plans to stay at least another term).",
    src:[["supremecourt.gov, current members","https://www.supremecourt.gov/about/biographies.aspx"],["News Tribune, Alito staying (Aug 9, 2026)","https://www.newstribune.com/news/2026/aug/09/alito-says-hes-staying-on-supreme-court-for/"]], asOf:"latest source Aug 9, 2026"}
 ];
+
+// ---------------- ELECTION NIGHT (PRELIMINARY, Nov 3, 2026) ----------------
+const S_NBC_H = ["NBC News, House results","https://www.nbcnews.com/politics/2026-elections/house-results"];
+const S_NBC_S = ["NBC News, Senate results","https://www.nbcnews.com/politics/2026-elections/senate-results"];
+const S_NBC_G = ["NBC News, governor results","https://www.nbcnews.com/politics/2026-elections/governor-results"];
+const S_CBS = ["CBS News live updates","https://www.cbsnews.com/live-updates/election-day-2026-midterms/"];
+const S_CNBC = ["CNBC live updates (AP calls)","https://www.cnbc.com/2026/11/03/midterm-elections-2026-live-updates.html"];
+const S_YAHOO = ["Yahoo News live updates (AP call times)","https://www.yahoo.com/news/politics/live/midterms-2026-live-updates-election-day-voters-head-to-the-polls-as-democrats-look-to-flip-gop-control-of-the-house-and-senate-110000715.html"];
+const ELECTION = [
+  {body:"U.S. House", called:"273 of 435 called: 177 D, 96 R. 162 still counting.",
+   control:"Democratic majority projected by NBC News and CBS News (CBS at 10:15 PM ET). AP control call not found as of this update. 218 seats is a majority.",
+   flips:"NBC News reports a net Democratic gain of 19 seats among races called so far. Named flips to D include NC-11 (Jamie Ager), NJ-7 (Rebecca Bennett over Tom Kean), KY-6 (Zach Dembo), PA-7 (Bob Brooks over Ryan Mackenzie), PA-8 (Paige Cognetti over Rob Bresnahan), OH-15 (Don Leonard), all AP calls; and a Texas district won by Bobby Pulido (NBC). Some seats were redrawn before this election, so a few flips are in changed districts.",
+   src:[S_NBC_H,S_CBS,S_CNBC], asOf:"NBC 11:47 PM ET, CBS 11:44 PM ET, CNBC 11:42 PM ET"},
+  {body:"U.S. Senate", called:"26 of 35 races on the ballot called: 17 D, 9 R. 9 still counting (AK, ID, LA, ME, MI, MN, MS, MT, NE).",
+   control:"Democratic control projected by NBC News and CBS News (CBS shortly after 11:30 PM ET). Secured so far, counting seats not on the ballot: 51 D (including King and Sanders, who caucus with Democrats), 40 R. If every uncalled seat stays with its current holder: 53 D, 47 R.",
+   flips:"6 flips, all R to D: Texas (James Talarico over Ken Paxton, AP 11:03 PM ET), Ohio special (Sherrod Brown over Sen. Jon Husted, AP 11:10 PM ET), Kansas (Adam Hamilton over Sen. Roger Marshall, AP 11:24 PM ET), North Carolina (Roy Cooper over Michael Whatley, AP), South Carolina (Annie Andrews, AP), Iowa (Josh Turek over Ashley Hinson). No D to R flips called.",
+   src:[S_NBC_S,S_CBS,S_YAHOO,S_CNBC], asOf:"NBC 11:48 PM ET"},
+  {body:"Governors", called:"Too early for a full count: at least 7 of 36 called in the sources checked (D: GA, IA, OH, PA, TX, WI; R: FL). AZ, MI and NV listed as too early to call; the rest not confirmed either way.",
+   control:"If every uncalled race stays with its current party: 28 D, 22 R (was 24 D, 26 R).",
+   flips:"4 flips, all R to D: Georgia (Keisha Lance Bottoms over Rick Jackson, AP 9:24 PM ET), Ohio (Amy Acton over Vivek Ramaswamy, AP 10:49 PM ET), Texas (Gina Hinojosa over Gov. Greg Abbott, AP shortly after 11 PM ET), Iowa (Rob Sand over Zach Lahn, AP). Florida held R (Byron Donalds, AP).",
+   src:[S_NBC_G,S_YAHOO,S_CNBC,S_CBS], asOf:"NBC 11:48 PM ET"}
+];
+// Seat counts used for the "with calls so far" index. Uncalled seats keep their pre-election holder.
+const NEW_COUNTS = {
+  "U.S. House": {d:233, r:200, note:"pre-election 214 D, 219 R (incl. Kiley) plus the NBC net D gain of 19 among called races; 2 vacancies left out"},
+  "U.S. Senate": {d:53, r:47, note:"51 D / 40 R secured plus 9 uncalled seats kept with holders (7 R, 2 D)"},
+  "Governors": {d:28, r:22, note:"4 called R to D flips"}
+};
 
 const TOPICS = ["AI","Crypto","Energy","Spending"];
 const PEOPLE = [
@@ -289,6 +328,28 @@ document.getElementById("leanRows").innerHTML = BODIES.map(b=>{
 }).join("");
 const overall = rsum/BODIES.length;
 document.getElementById("overall").innerHTML = `${fmt(overall)} Republican <small>/ ${fmt(100-overall)} Democratic</small>`;
+
+// with calls so far (PRELIMINARY)
+let rsumN=0;
+document.getElementById("leanRowsNew").innerHTML = BODIES.map(b=>{
+  const nc = NEW_COUNTS[b.name];
+  const rr = nc? nc.r : b.r + (b.iWith==="r"?b.i:0), dd = nc? nc.d : b.d + (b.iWith==="d"?b.i:0);
+  const rs = pct(rr, rr+dd), ds = 100-rs; rsumN+=rs;
+  return `<div class="lrow"><span>${b.name}${nc?"":" <span style=\"color:var(--faint)\">(unchanged)</span>"}</span>
+    <div class="lbar" role="img" aria-label="${esc(b.name)}: ${fmt(ds)} D, ${fmt(rs)} R"><span style="width:${ds}%;background:var(--dem)"></span><span style="width:${rs}%;background:var(--rep)"></span><i class="mid"></i></div>
+    <span class="lnum">${dd} D / ${rr} R</span></div>${nc?`<div class="src" style="margin:-4px 0 6px">${esc(nc.note)}</div>`:""}`;
+}).join("");
+const overallN = rsumN/BODIES.length;
+document.getElementById("overallNew").innerHTML = `${fmt(overallN)} Republican <small>/ ${fmt(100-overallN)} Democratic &middot; change ${(overallN-overall).toFixed(1)} points from ${fmt(overall)} R</small>`;
+
+document.getElementById("election").innerHTML = ELECTION.map(e=>`
+  <div class="body-row">
+    <div class="body-name">${esc(e.body)}</div>
+    <div class="kv"><b>Called:</b> ${esc(e.called)}</div>
+    <div class="kv"><b>Control:</b> ${esc(e.control)}</div>
+    <div class="kv"><b>Flips:</b> ${esc(e.flips)}</div>
+    <div class="src">Source: ${links(e.src)} &middot; as of ${esc(e.asOf)}, Nov 3, 2026 &middot; PRELIMINARY until certified</div>
+  </div>`).join("") + `<p class="why" style="margin:12px 0 0">State legislatures: no chamber results gathered yet; shown unchanged. Supreme Court: not on the ballot.</p>`;
 
 // people
 let topic = "AI";
