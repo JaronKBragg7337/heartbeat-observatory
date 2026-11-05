@@ -6,8 +6,8 @@ WORLD2-PLAN.md (June) still holds the laws this world runs on: multiplayer, clai
 
 ## Where it stands (Phase 1 shipped 2026-11-05, not pushed yet)
 
-**Not there yet (read first):** no people walk the streets yet, there is no city sound, shops can't be entered,
-there is no level-of-detail system, and **nobody has tested it on a real iPhone**. Everything below was tested
+**Not there yet (read first):** shops can't be entered, and **nobody has tested it on a real iPhone**. (Phase 2,
+on branch `cloud/world2-phase2`, adds people, buses, city sound and LOD; see "Phase 2 as built".) Everything below was tested
 in Playwright on the MSI.
 
 What changed, by the tester's complaints:
@@ -100,7 +100,7 @@ fewer cast shadows.
 
 ### Phase 1: the real downtown (DONE tonight, see above)
 
-### Phase 2: street life + the performance floor
+### Phase 2: street life + the performance floor (cloud build 2026-11-05, PR `cloud/world2-phase2`; see "Phase 2 as built" below)
 - **People on the sidewalks:**
   - Far away: an instanced crowd of simple animated figures (vertex-animated walk cycle, 1 draw call per outfit set).
   - Near the player: 6-10 MetaHumans from the Loft roster, swapped in within ~25 m.
@@ -115,6 +115,83 @@ fewer cast shadows.
   - KTX2/Basis textures;
   - only walls cast shadows.
 - Budget: +60 calls at most, +80k triangles, +6 MB. Test: crowd density versus frame time on the phone; no NPC inside a wall or road after 10 minutes.
+
+#### Phase 2 as built (cloud, 2026-11-05 night; PR `cloud/world2-phase2`, not merged: check on a phone first)
+New file `world2/life.js` (the crowd + the city sound); `city.js` got the bus, the LOD index split, pedestrian yielding
+and fewer shadow casters; `main.js` wires them in; `index.html` has the Sound button. Stamp: `2026-11-05-phase2` on
+BUILD, the main.js `?v=`, and the `city.js?v=` / `life.js?v=` imports (life.js imports city.js with the **same** `?v=`,
+or the browser loads city.js twice).
+
+- **People.** One shared human figure (tapered thighs and shins, shoes, hips, a lathe-shaped torso, upper arms and
+  forearms, hands, neck, head with a nose, hair; optional long hair, coat or skirt) whose walk runs in the vertex shader:
+  hip swing, knee fold in the swing phase, counter-swinging arms, body bob and sway. The shadow pass walks too
+  (custom depth material). Outfits are per-instance colours (8 skin tones, 9 hair, 14 tops, 9 bottoms, sleeves).
+  - 2 draw calls (+1 shadow): a near mesh inside 38 m (1,106 triangles each, casts shadows) and a far mesh to 175 m
+    (447 triangles, no shadows). People outside the view frustum are not drawn.
+  - 150 people on desktop, 96 on phones, 60 on the lite tier. The crowd stays near you: anyone over 92 m from the
+    camera steps back in at a corner 22-85 m away, out of view when possible, so the streets around you hold someone
+    every ~13 m (desktop) and nobody pops in on screen. A teleport (map walk, door) refills the streets at once.
+  - They walk a graph of block corners at 7.4 m (±0.12) from the street centre lines, which is between the lamp/tree line
+    and the benches. They cross only on the painted crosswalks, wait on red at signalled corners (the walk light is the
+    parallel traffic light), look both ways for 0.6-2.2 s at unsignalled ones, and walk 1.1-1.5 m/s.
+  - **Cars and buses yield to anyone on a crosswalk** (`city.crossers`).
+  - Not done: MetaHumans swapped in near the player, and sitting on benches (see "left for later").
+- **Buses.** The Downtown Loop: two 12 m buses on a two-block loop (Harrison-Clinton x Jefferson-Lewis) whose Jefferson
+  edge runs past Union Station. They pull up at the station's stop (a glass shelter with a bench and a BUS · LOOP 1 blade),
+  wait 9 s, and go. They obey the signals, keep their 12 m length clear of cars, and parked cars are cleared from the stop.
+- **Sound.** One WebAudio graph, created on the first tap/click/key after you enter (the "Walk the world" click counts),
+  never in the gate preview. Quiet by default (master 0.32). There is a 🔊 Sound / 🔇 Sound off button under the minimap,
+  and the choice is remembered (`localStorage w2-sound`). Layers: a traffic hum by distance to the nearest street plus
+  nearby moving cars, the river near the promenade, your footsteps (one per ~0.7 m on the ground), birds by day, crickets
+  after dark, and crosswalk signals (a locator tick near a signalled corner, a chirp burst when a light turns green).
+  Night halves the city layers. All synthesized: 0 bytes downloaded.
+- **Performance floor.**
+  - Far-chunk LOD without extra draw calls: detail pieces (sills, lintels, mullions, storefront mullions and transom bars, door
+    recess sides, cornice under-bands, rooftop units, tanks) go to the end of each chunk batch's index buffer. Beyond 95 m
+    (camera to the chunk box) the mesh draws only its main range (`city.lodUpdate`, 4x a second).
+  - Small `metal` and `dark` kit batches no longer cast shadows (lamp posts, trees, walls, glass and cars still do).
+  - **KTX2 was not done, on purpose:** every city texture is drawn on a canvas at load (0 bytes downloaded). KTX2 would
+    mean shipping ~4-5 MB of files plus a ~250 KB Basis transcoder to save GPU memory we are well under budget on (~18 MB
+    of 40). Do it with Phase 6, when the baked textures arrive as files anyway.
+
+Measured (cloud container: Playwright, Chromium with SwiftShader software GL and WebKit, no GPU). Frame times from
+software GL say nothing about a phone, so only draw calls and triangles are comparable with the MSI numbers above:
+
+Both builds were run in the same container, in the same session (`fast.cjs`), with the crowd and buses on in "after".
+Calls and triangles include the shadow pass. Street view = the spawn on Berry St; aerial = over the south-west.
+
+| | Phase 1 (before) | Phase 2 (after: +crowd, +2 buses, +shelter, LOD, fewer casters) |
+|---|---|---|
+| Phone 390x844, street, day / night | 111 / 113 calls, 341k tris | 112 / 114 calls, 339k tris |
+| Phone 390x844, aerial, day / night | 152 / 154 calls, 352k tris | 156 / 158 calls, 352-354k tris |
+| Desktop 1280x800, street, day / night | 130 / 132 calls, 342k tris | 132 / 134 calls, 351-353k tris |
+| Desktop 1280x800, aerial, day / night | 215 / 217 calls, 361k tris | 219 / 221 calls, 353k / 386k tris |
+| City texture memory | 17.9 MB | 17.9 MB (the crowd, bus and sound add 0 textures and 0 downloads) |
+| Cold first frame (software GL, noisy) | 5.8-11.5 s | 9.2-12.8 s |
+
+- What Phase 2 spent: +1 to +4 draw calls, and between -2k and +25k triangles. The budget allowed +60 calls and +80k triangles.
+- The LOD and the dropped shadow casters paid for most of the new crowd and buses.
+- The highest number is the desktop night aerial at 386k triangles. That is under the 400k mobile-high limit, but phones there get 60-96 people, not 150.
+- Software-GL frame times (12-290 ms) jump around with container load and say nothing about a GPU, so they are left out. The MSI and iPhone numbers are still owed.
+
+Checks, all PASS (Chromium 1280x800 by day, Chromium 390x844 at night). **WebKit could not run in the cloud container (its download is blocked), so run `func.cjs webkit 390 844 0.78` on the MSI.**
+- one click enters, one tap walks;
+- all 8 doors show their prompt; the Arcade walk-in works; Lot 1 shows its prompt;
+- the minimap opens the full map (21 places);
+- the Sound button toggles and remembers; sound runs only after a gesture;
+- the gate preview (`?preview=1`) loads;
+- zero console errors;
+- **crowd audit:** 600 s fast-forwarded with the signals cycling, nobody in the street off a crosswalk, and nobody inside a
+  building, lamp, tree, bench or the shelter (`W2.life.simulate(600)` returns `[]`);
+- **bus audit:** 240 s fast-forwarded, both buses stop at Union Station 4-5 times each, within 1 cm of the stop, and all
+  16 cars keep moving (no gridlock).
+
+Test handles (`?dev=1`): `W2.life.stats()` (crowd near/far/waiting/crossing, LOD, buses, sound levels), `W2.life.simulate(s)`,
+`W2.life.crowd`, `W2.life.sound`, `W2.life.bus()`. Scripts used: `func.cjs`, `measure.cjs`, `views.cjs`, `close.cjs` (in
+`AI-Shared/scratch/world2-remake/phase2/scripts/`; they route three.js from a local copy because the cloud can't reach jsdelivr).
+
+Left for later (Phase 2b): MetaHumans near the player (desktop only; +5-6 MB and ~6 calls each), people sitting on benches
+and standing at shop windows, more car models (pickup, van, delivery truck), and **Jaron's iPhone check**.
 
 ### Phase 3: shops and jobs (things to DO)
 - **Shops:**
