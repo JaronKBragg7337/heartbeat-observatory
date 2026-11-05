@@ -52,6 +52,7 @@
       #minimap { width:112px; height:112px; border-radius:14px; border:1px solid rgba(200,220,235,.35); background:#2f3b2c; box-shadow:0 4px 18px rgba(0,0,0,.35); cursor:pointer; touch-action:manipulation; }
       #placeLabel { max-width:150px; padding:4px 10px; border-radius:999px; background:var(--panel-bg); border:1px solid var(--panel-border); font-size:11.5px; font-weight:700; color:#e8eef4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
       #placeLabel:empty { display:none; }
+      #soundBtn { padding:4px 10px; border-radius:999px; background:var(--panel-bg); border:1px solid var(--panel-border); font-size:11.5px; font-weight:700; color:#e8eef4; cursor:pointer; touch-action:manipulation; }
       body:not(.entered) #mapWrap { display:none; }
       #mapOverlay { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:14px; background:rgba(4,7,11,.72); }
       #mapOverlay .map-card { width:min(560px, 96vw); max-height:94vh; overflow-y:auto; padding:14px; border-radius:16px; border:1px solid var(--panel-border); background:var(--panel-bg); display:flex; flex-direction:column; align-items:center; gap:10px; }
@@ -118,7 +119,7 @@
 
     <button id="doorPrompt" class="hidden" type="button"><span id="doorPromptText">Press E</span></button>
     <a id="gateLink" href="/world2/gate/" aria-label="Back to the gate">&#8962; Gate</a>
-    <div id="mapWrap"><canvas id="minimap" width="112" height="112" role="button" aria-label="City map - open the full map"></canvas><div id="placeLabel"></div></div>
+    <div id="mapWrap"><canvas id="minimap" width="112" height="112" role="button" aria-label="City map - open the full map"></canvas><div id="placeLabel"></div><button id="soundBtn" type="button" aria-label="City sound on or off">&#128266; Sound</button></div>
     <div id="mapOverlay" class="hidden" role="dialog" aria-label="City map">
       <div class="map-card">
         <div class="map-head"><b>The city</b><button id="mapClose" type="button">Close</button></div>
@@ -143,7 +144,7 @@
 
 
     <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js" } }</script>
-    <script type="module" src="/world2/main.js?v=2026-11-05-walk2"></script>
+    <script type="module" src="/world2/main.js?v=2026-11-05-p2walk"></script>
   <script defer src="/hb-editor.js"></script>
   </body>
 </html>

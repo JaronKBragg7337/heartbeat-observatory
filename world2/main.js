@@ -14,12 +14,13 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 // people loaders are imported LAZILY, after the city is on screen - the old static imports were most of the
 // 40-second blank first load the 10/28 tester hit.
 import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05b";   // the invisible floating stick (shared with Real City)
-import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-walk2";
+import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-p2walk";
+import { buildCrowd, createCitySound } from "./life.js?v=2026-11-05-p2walk";   // Phase 2: people on the sidewalks + city sound
 const SUPA_ESM = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 const GLTF_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 const SKEL_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 
-const BUILD = "2026-11-05-walk2";
+const BUILD = "2026-11-05-p2walk";
 const QS = new URLSearchParams(location.search);
 const PREVIEW = QS.get("preview") === "1";
 const DEV = QS.get("dev") === "1";                       // test handle: window.W2 (state, renderer, camera override, tap)
@@ -88,6 +89,7 @@ const DOOR_ACTS = {
   town: { type: "page", path: "/engine" }, ashgrove: { type: "page", path: "/world3/gate/" },
 };
 let city = null;                // handle from buildCity()
+let crowd = null, citySound = null, lifeNight = 0, lodTimer = 0;   // Phase 2 (world2/life.js)
 let guide = null, guideTimer = 0, walkMarker = null, guideBeacon = null;   // map "show me the way": a route + a beacon, YOU walk it (Jaron 11/5: no tap-to-walk)
 const ROOM = { theater: { x: 620, z: -160 }, arcade: { x: 620, z: -45 }, library: { x: 620, z: 70 } };
 let inInterior = null;          // interior id or null
@@ -527,6 +529,9 @@ async function buildWorld() {
   city = await buildCity(scene, { progress, yieldFrame, leafGeo: leafShell, leafMat: foliage.leaf, waterNormal });
   for (const c of city.colliders) buildingColliders.push(c);
   for (const d of city.doors) doors.push({ id: d.id, label: d.label, x: d.x, z: d.z, hw: d.hw, hd: d.hd, act: DOOR_ACTS[d.id] || { type: "page", path: "/" } });
+  // Phase 2: the sidewalk crowd (2 draw calls) and the city sound (silent until a tap)
+  crowd = buildCrowd(scene, city, { tier: window.HBDevice?.tier === "desktop" ? "desktop" : (window.HBDevice?.quality?.allowShadows === false ? "lite" : "phone") });
+  if (!PREVIEW) citySound = createCitySound();
   for (const pl of city.plots) plotPads.push({ plot: pl.plot, x: pl.fx, z: pl.fz, cx: pl.x, cz: pl.z, box: pl.box, claimed: false, row: null });
   progress(0.97, "Opening the doors");
   buildInteriors();
@@ -1473,7 +1478,8 @@ function updateDayNight() {
   if (stars) stars.material.opacity = nightF * 0.95;
 
   // the night-city moment: windows, shop fronts, signs and lamps come on exactly as the sky darkens
-  if (city) city.setNight(Math.min(1, Math.pow(1 - day, 1.3) * 1.05), day);
+  lifeNight = Math.min(1, Math.pow(1 - day, 1.3) * 1.05);
+  if (city) city.setNight(lifeNight, day);
   if (fireflies) {
     fireflies.visible = nightF > 0.04;
     fireflies.material.opacity = nightF * 0.9;
@@ -1726,6 +1732,9 @@ function animate() {
   if (city) city.update(dt, performance.now() / 1000, hasEntered && !inInterior ? state : null);
   updateCamera(dt);
   updateGuide(dt);
+  if (crowd && city) { camera.updateMatrixWorld(); crowd.update(dt, camera, city.signals); }
+  if (city && (lodTimer -= dt) <= 0) { lodTimer = 0.25; city.lodUpdate(camera); }   // Phase 2: far chunks drop their detail
+  if (citySound) citySound.update(dt, hasEntered && !inInterior ? state : null, city ? city.traffic.movers : [], lifeNight, motion.onGround, city && city.signals);
   sendState();
   renderer.render(scene, camera);
   frameNo++;
@@ -1744,6 +1753,7 @@ function enterWorld() {
   document.body.classList.add("entered");
   mapDirty = true;
   if (isTouch) goFullscreen();
+  kickSound();   // this click is a user gesture: the city sound can start now
   // No pointer lock: it swallowed the first click and was half of the "double-click to walk" problem.
   // Look = drag; walk = WASD/arrows or the left stick. A tap/click only USES things (doors, mats, lots).
 }
@@ -1956,12 +1966,22 @@ if (bigmap) bigmap.addEventListener("click", (e) => {
   toggleMap(false); guideTo(x, z);
 });
 
+// ---- city sound (Phase 2): the WebAudio graph starts on the first tap/key after you enter (iOS needs a gesture).
+// Quiet by default; the speaker button mutes it and the choice is remembered.
+const soundBtn = document.getElementById("soundBtn");
+function paintSoundBtn() { if (!soundBtn || !citySound) return; const off = citySound.muted; soundBtn.textContent = off ? "\u{1F507} Sound off" : "\u{1F50A} Sound"; soundBtn.setAttribute("aria-pressed", off ? "false" : "true"); }
+function kickSound() { if (citySound && hasEntered && !citySound.muted) citySound.start(); paintSoundBtn(); }
+for (const ev of ["pointerup", "touchend", "keydown"]) window.addEventListener(ev, kickSound, { passive: true });
+if (soundBtn) soundBtn.addEventListener("click", (e) => { e.stopPropagation(); if (!citySound) return; citySound.setMuted(!citySound.muted); if (!citySound.muted) citySound.start(); paintSoundBtn(); });
+
 // ---- BOOT (end of file by design: every const/let above is initialized before these run — TDZ law) ----
 if (DEV) window.W2 = {
   BUILD, state, renderer, scene, camera, get city() { return city; }, doors, plotPads, buildingColliders,
   enter: () => enterWorld(), tap: (x, y) => useAt(x, y), guideTo: (x, z, n) => guideTo(x, z, n), clearGuide: () => clearGuide(), get guide() { return guide && { name: guide.name, x: guide.x, z: guide.z }; }, path: () => guide && guide.path && guide.path.map((p) => p.map((v) => Math.round(v))), stick,
   activeDoor: () => activeDoor && activeDoor.label, activePlot: () => activePlot && activePlot.plot, enterActive: () => enterActive(), inInterior: () => inInterior,
   remotes: () => remotes.size, connected: () => connected,
+  life: { stats: () => Object.assign({}, crowd && crowd.stats(), city && city.lodUpdate(camera), { buses: city && city.traffic.buses.map((b) => ({ x: +b.x.toFixed(1), z: +b.z.toFixed(1), v: +b.v.toFixed(2), dwell: +b.dwell.toFixed(1) })), sound: citySound && { running: citySound.running, muted: citySound.muted, levels: citySound.levels() } }),
+    get crowd() { return crowd; }, get sound() { return citySound; }, simulate: (sec) => crowd.simulate(sec, city.signals, city.colliders), bus: () => city.bus },
   tris() {   // static triangle count by kind (instanced meshes multiplied out) - for the phone budget
     const out = {};
     scene.traverse((o) => {
