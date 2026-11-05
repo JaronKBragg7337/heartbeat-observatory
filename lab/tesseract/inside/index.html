@@ -75,6 +75,21 @@ button.room.here{border-color:var(--sw)}
 .hint{color:var(--fg-dim);line-height:1.5;margin:0}
 .pill{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--ink);border-color:var(--fg-dim)}
 .dock:not(.hidden) ~ .strip,.dock:not(.hidden) ~ .pad{display:none!important}
+/* entering a room: a soft wash of the new room's colour and its name fading up big in the middle, then away */
+.enter{position:fixed;inset:0;z-index:2;pointer-events:none}
+.enter .wash{position:absolute;inset:0;background:var(--wash,transparent);opacity:0}
+.enter .name{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;opacity:0;padding:0 16px}
+.enter .name small{display:block;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--fg);opacity:.75;margin-bottom:12px}
+.enter .name b{display:block;font-family:var(--display);font-weight:600;font-size:clamp(30px,9vw,76px);letter-spacing:.02em;line-height:1.05;color:var(--wash-fg,var(--fg));text-shadow:0 2px 6px rgba(8,7,15,.8),0 0 40px rgba(8,7,15,.6);text-wrap:balance}
+.enter.go .wash{animation:wash 1.2s ease-out forwards}
+.enter.go .name{animation:arrive 2.1s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes wash{0%{opacity:.42}100%{opacity:0}}
+@keyframes arrive{0%{opacity:0;transform:translateY(-50%) scale(.94)}16%{opacity:1;transform:translateY(-50%) scale(1)}62%{opacity:1;transform:translateY(-50%) scale(1.02)}100%{opacity:0;transform:translateY(-50%) scale(1.05)}}
+@media (prefers-reduced-motion:reduce){
+  .enter.go .wash{animation:wash .8s ease-out forwards}
+  .enter.go .name{animation:arrivecalm 1.8s ease forwards}
+  @keyframes arrivecalm{0%{opacity:0}20%{opacity:1}65%{opacity:1}100%{opacity:0}}
+}
 .strip .menu{display:none}
 @media (max-width:640px){
   .hud p{display:none}
@@ -91,11 +106,12 @@ button.room.here{border-color:var(--sw)}
 <body>
 
 <canvas id="c" aria-label="First-person view from inside one room of a turning tesseract. Drag to look around."></canvas>
+<div class="enter" id="enter" aria-hidden="true"><div class="wash"></div><div class="name"><small>you are in the</small><b id="e-name"></b></div></div>
 
 <header class="hud">
   <div>
     <h1>Tesseract <b>Inside</b></h1>
-    <p>You stand inside a tesseract, in one of its eight rooms. Every face of your room is an open doorway into a neighbouring room with its own depth and floor, and the eighth room wraps around everything. When the tesseract turns through the fourth direction, your room shrinks away while a neighbour swells around you, until you are standing somewhere else without taking a step. Drag to look, drag the strip to turn it.</p>
+    <p>You stand inside a tesseract, in one of its eight rooms. Every face of your room is an open doorway into a neighbouring room with its own depth and floor, and the eighth room wraps around everything. When the tesseract turns through the fourth direction, your room shrinks away while a neighbour swells around you, until you are standing somewhere else without taking a step. Left alone it rests in a room for a while, then makes one clean move to the next. Drag to look, drag the strip to turn it, walk up to a doorway to see in.</p>
     <p><a href="index.html">Drift</a> · <a href="anatomy.html">Anatomy</a> · <a href="pages.html">Pages</a></p>
   </div>
   <div class="ahead" aria-live="off">
@@ -116,18 +132,20 @@ button.room.here{border-color:var(--sw)}
     </fieldset>
     <fieldset>
       <legend>The turn</legend>
-      <div class="row"><label for="speed">own turn</label><input type="range" id="speed" min="0" max="1" step="0.01" value="0.25"><output for="speed" id="o-speed">0.25</output></div>
+      <div class="row"><label for="hold">hold for</label><input type="range" id="hold" min="2" max="30" step="1" value="8"><output for="hold" id="o-hold">8 s</output></div>
+      <div class="row"><label for="speed">move takes</label><input type="range" id="speed" min="0.8" max="6" step="0.1" value="2.4"><output for="speed" id="o-speed">2.4 s</output></div>
       <div class="row"><label for="fade">fade by w</label><input type="range" id="fade" min="0" max="1" step="0.01" value="0.8"><output for="fade" id="o-fade">0.80</output></div>
       <div class="row"><label for="depth">w depth</label><input type="range" id="depth" min="2.2" max="6" step="0.05" value="3"><output for="depth" id="o-depth">3.00</output></div>
-      <div class="row"><label for="doorsize">doorway size</label><input type="range" id="doorsize" min="0.3" max="0.9" step="0.01" value="0.62"><output for="doorsize" id="o-doorsize">0.62</output></div>
-      <div class="row"><label for="fov">field of view</label><input type="range" id="fov" min="50" max="110" step="1" value="80"><output for="fov" id="o-fov">80°</output></div>
+      <div class="row"><label for="doorsize">door size</label><input type="range" id="doorsize" min="0.3" max="0.9" step="0.01" value="0.7"><output for="doorsize" id="o-doorsize">0.70</output></div>
+      <div class="row"><label for="fov">field of view</label><input type="range" id="fov" min="50" max="110" step="1" value="72"><output for="fov" id="o-fov">72°</output></div>
       <div class="chips">
         <button type="button" id="turn" aria-pressed="true">Turning on its own</button>
+        <button type="button" id="sound" aria-pressed="true">Chime on arrival</button>
         <button type="button" id="door">Walk through the door ahead</button>
         <button type="button" id="reset">Reset</button>
         <button type="button" id="gyro" hidden>Use phone tilt to look</button>
       </div>
-      <p class="hint" style="margin-top:8px">Strip: drag sideways and the room on that side swells around you; drag up or down for the rooms above and below. The arrows do a full room change. Desktop: WASD walks a little inside the room.</p>
+      <p class="hint" style="margin-top:8px">On its own it holds still inside one room for the hold time, then makes one clean move to a neighbour it has not visited for a while. Strip: drag sideways and the room on that side swells around you; drag up or down for the rooms above and below. The arrows and the door button each make one clean room change. Walk (WASD, arrows or the pad) anywhere inside your room, up to the doorways, to look into the rooms next door. The chime starts after your first tap; on iPhone it follows the ring/silent switch.</p>
     </fieldset>
   </div>
 </aside>
@@ -225,9 +243,10 @@ function insideCell(c, p) { // is point p inside this cell's projected hexahedro
 }
 
 /* ---------- camera ---------- */
-// the eye stands at floor height, not at the room's exact centre: from the centre every wedge room's side walls are
-// radial planes through the eye and vanish edge-on. Standing height gives them surface and perspective.
-const EYE = [0, -0.36, 0];
+// the eye stands at floor height and a little off the room's middle, not at its exact centre: from the centre every
+// wedge room's side walls are radial planes through the eye and vanish edge-on, so the neighbours read as flat door
+// frames. Standing height and a step to one side give every doorway a visible wall and floor beyond it.
+const EYE = [0.2, -0.36, -0.12];
 const cam = { pos: EYE.slice(), yaw: 0, pitch: 0 };
 let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, focal = 400;
 let f3 = [0, 0, 1], r3 = [1, 0, 0], u3 = [0, 1, 0];
@@ -251,29 +270,96 @@ const path = scr => { scr.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.mov
 
 /* ---------- ui ---------- */
 const ui = {};
-['speed', 'fade', 'depth', 'doorsize', 'fov'].forEach(id => {
+['speed', 'hold', 'fade', 'depth', 'doorsize', 'fov'].forEach(id => {
   const el = ui[id] = $(id), out = $('o-' + id);
-  const show = () => { out.textContent = id === 'fov' ? el.value + '°' : (+el.value).toFixed(2); };
+  const show = () => { out.textContent = id === 'fov' ? el.value + '°' : id === 'hold' ? el.value + ' s' : id === 'speed' ? (+el.value).toFixed(1) + ' s' : (+el.value).toFixed(2); };
   el.addEventListener('input', show); show();
 });
-const pressed = { turn: !reduceMotion };
+const pressed = { turn: !reduceMotion, sound: true };
 $('turn').setAttribute('aria-pressed', String(pressed.turn));
-$('turn').addEventListener('click', () => { pressed.turn = !pressed.turn; $('turn').setAttribute('aria-pressed', String(pressed.turn)); });
+$('turn').addEventListener('click', () => { pressed.turn = !pressed.turn; $('turn').setAttribute('aria-pressed', String(pressed.turn)); holdLeft = +ui.hold.value; });
+$('sound').addEventListener('click', () => { pressed.sound = !pressed.sound; $('sound').setAttribute('aria-pressed', String(pressed.sound)); if (pressed.sound) unlockAudio(); });
+ui.hold.addEventListener('input', () => { holdLeft = +ui.hold.value; });
+const v4 = v => [v[0], v[1], v[2], 0];
+
+/* ---------- one clean move: the chosen room's centre swings to −w (the inner cube is the cell at w = −1) along the
+   shortest arc, in one plane, eased. Everything that changes rooms on purpose goes through here. ---------- */
+let move = null, holdLeft = 8, mine = 6;
+const visited = new Array(8).fill(0);
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function bring(i, dur) {
+  if (i < 0) return;
+  const c = norm4(apply(R, CELLS[i].centre)), t = [0, 0, 0, -1];
+  const d = Math.max(-1, Math.min(1, dot4(c, t))), phi = Math.acos(d);
+  if (phi < 0.004) { move = null; return; }
+  let b = t.map((x, k) => x - d * c[k]);
+  if (Math.hypot(...b) < 1e-6) { const f = v4(f3); b = f.map((x, k) => x - dot4(f, c) * c[k]); } // exactly opposite: come in from ahead
+  move = { a: c, b: norm4(b), phi, done: 0, dur: dur || +ui.speed.value, to: i };
+}
+// the neighbour most in a 3D direction as you see it: what the arrows and the door button bring around you
+function roomToward(dir) {
+  const d4 = v4(dir); let best = -1, bd = -2;
+  CELLS.forEach((c, i) => { if (c.a === CELLS[mine].a) return; const s = dot4(norm4(apply(R, c.centre)), d4); if (s > bd) { bd = s; best = i; } });
+  return best;
+}
+// on its own: the neighbour it has not visited for the longest (never the room you are in or the one wrapping around everything)
+function nextRoom() {
+  let best = -1, bt = Infinity;
+  CELLS.forEach((c, i) => { if (c.a === CELLS[mine].a) return; const t = visited[i] + Math.random() * 1500; if (t < bt) { bt = t; best = i; } });
+  return best;
+}
+const manual = () => { move = null; holdLeft = +ui.hold.value; };
 const chips = [];
 CELLS.forEach((c, i) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'room'; b.style.setProperty('--sw', col(c.room, 55, 1));
   b.innerHTML = `<i></i>${c.room.name} <small>${c.label} · <span>0.00</span></small>`;
-  b.addEventListener('click', () => { steer = i; pending = null; });
+  b.addEventListener('click', () => { manual(); bring(i); });
   $('rooms').appendChild(b); chips.push(b);
 });
-let steer = -1, pending = null;
-function queue(a, b, th) { pending = { a, b, left: th }; steer = -1; }
-const v4 = v => [v[0], v[1], v[2], 0];
-// a room in direction d comes around you when d turns to −w (the inner cube is the cell at w = −1)
-$('left').addEventListener('click', () => queue(v4(r3), E(3), Q));
-$('right').addEventListener('click', () => queue(v4(r3), E(3), -Q));
-$('door').addEventListener('click', () => queue(v4(f3), E(3), -Q));
-$('reset').addEventListener('click', () => { R = I4(); cam.pos = EYE.slice(); cam.yaw = 0; cam.pitch = 0; pending = null; steer = -1; });
+$('left').addEventListener('click', () => { manual(); bring(roomToward(r3.map(x => -x))); });
+$('right').addEventListener('click', () => { manual(); bring(roomToward(r3)); });
+$('door').addEventListener('click', () => { manual(); bring(roomToward(f3)); });
+$('reset').addEventListener('click', () => { R = I4(); cam.pos = EYE.slice(); cam.yaw = 0; cam.pitch = 0; manual(); });
+
+/* ---------- the chime: made in code with WebAudio, unlocked by the first tap (iOS will not start sound before one) ---------- */
+let AC = null;
+function unlockAudio() {
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+  } catch (e) { AC = null; }
+}
+['pointerup', 'touchend', 'keydown'].forEach(ev => addEventListener(ev, unlockAudio, { capture: true, passive: true }));
+const PENTA = [0, 2, 4, 7, 9, 12, 14, 16]; // one note per room, up a major pentatonic
+function chime(i) {
+  if (!pressed.sound || !AC || AC.state !== 'running') return;
+  const t0 = AC.currentTime + 0.02, root = 523.25 * Math.pow(2, PENTA[i] / 12);
+  const out = AC.createGain(), lp = AC.createBiquadFilter();
+  out.gain.value = 0.11; lp.type = 'lowpass'; lp.frequency.value = 2600; lp.Q.value = 0.4;
+  out.connect(lp); lp.connect(AC.destination);
+  const voice = (f, at, g, dur) => {
+    for (const [mult, gm] of [[1, 1], [2, 0.3], [3, 0.1]]) {
+      const o = AC.createOscillator(), e = AC.createGain(); o.type = 'sine'; o.frequency.value = f * mult;
+      e.gain.setValueAtTime(0, at); e.gain.linearRampToValueAtTime(g * gm, at + 0.025); e.gain.exponentialRampToValueAtTime(0.0005, at + dur);
+      o.connect(e); e.connect(out); o.start(at); o.stop(at + dur + 0.05);
+    }
+  };
+  voice(root, t0, 0.5, 1.6);               // the room's own note
+  voice(root * 1.5, t0 + 0.16, 0.28, 1.9); // a fifth above, a breath later: arrival
+  setTimeout(() => { try { out.disconnect(); lp.disconnect(); } catch (e) { /* already gone */ } }, 2500);
+}
+
+/* ---------- entering a room is an event: the chime, a wash of the room's colour, its name up big then away ---------- */
+const enter = $('enter'), eName = $('e-name');
+let announced = -1;
+function arrive(i) {
+  announced = i; visited[i] = performance.now(); holdLeft = +ui.hold.value;
+  const r = CELLS[i].room;
+  enter.style.setProperty('--wash', col(r, 55, 1)); enter.style.setProperty('--wash-fg', col(r, 84, 1));
+  eName.textContent = r.name;
+  enter.classList.remove('go'); void enter.offsetWidth; enter.classList.add('go');
+  chime(i);
+}
 $('menu2').addEventListener('click', () => $('toggle').click());
 $('toggle').addEventListener('click', () => {
   const hidden = $('dock').classList.toggle('hidden');
@@ -306,7 +392,7 @@ canvas.addEventListener('pointermove', e => {
   look.lx = e.clientX; look.ly = e.clientY;
 });
 const strip = $('strip'), st = { down: false, lx: 0, ly: 0 };
-strip.addEventListener('pointerdown', e => { if (e.target.tagName === 'BUTTON') return; st.down = true; st.lx = e.clientX; st.ly = e.clientY; strip.setPointerCapture(e.pointerId); strip.classList.add('dragging'); pending = null; steer = -1; });
+strip.addEventListener('pointerdown', e => { if (e.target.tagName === 'BUTTON') return; st.down = true; st.lx = e.clientX; st.ly = e.clientY; strip.setPointerCapture(e.pointerId); strip.classList.add('dragging'); manual(); });
 const stUp = () => { st.down = false; strip.classList.remove('dragging'); };
 strip.addEventListener('pointerup', stUp); strip.addEventListener('pointercancel', stUp);
 strip.addEventListener('pointermove', e => {
@@ -314,7 +400,7 @@ strip.addEventListener('pointermove', e => {
   const dx = (e.clientX - st.lx) * 0.006, dy = (e.clientY - st.ly) * 0.006;
   if (dx) turn(v4(r3), E(3), dx);      // drag right: the room on the left comes around you
   if (dy) turn(v4(u3), E(3), dy);      // drag up: the room above comes down around you
-  st.lx = e.clientX; st.ly = e.clientY;
+  st.lx = e.clientX; st.ly = e.clientY; holdLeft = +ui.hold.value;
 });
 const pad = $('pad'), knob = $('padknob'), walk = { x: 0, y: 0, down: false };
 pad.addEventListener('pointerdown', e => { walk.down = true; pad.setPointerCapture(e.pointerId); padMove(e); });
@@ -335,49 +421,62 @@ function resize() {
 addEventListener('resize', resize);
 
 /* ---------- frame ---------- */
-let last = performance.now(), frames = 0, mine = 6, LIGHT = norm3([0.3, 1, 0.2]);
+let last = performance.now(), frames = 0, LIGHT = norm3([0.3, 1, 0.2]), cand = -1, candSince = 0, breath = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   basis();
-  focal = (H / 2) / Math.tan(+ui.fov.value * DEG / 2);
+  focal = (Math.min(W, H) / 2) / Math.tan(+ui.fov.value * DEG / 2); // the field of view spans the shorter side, so a phone held upright still sees 72° across
 
-  // a little walking inside the room (the room is always at least 0.55 wide around the centre at the default depth)
+  // walking inside the room: anywhere up to a hand's breadth from its walls, so you can stand in a doorway and look
+  // into the room next door. Slide along a wall rather than stop dead. (The room changes are still the tesseract's.)
   let mx = walk.x, mz = walk.y;
   if (keys.has('w') || keys.has('arrowup')) mz += 1; if (keys.has('s') || keys.has('arrowdown')) mz -= 1;
   if (keys.has('d') || keys.has('arrowright')) mx += 1; if (keys.has('a') || keys.has('arrowleft')) mx -= 1;
-  if (mx || mz) {
-    const fl = norm3([f3[0], 0, f3[2]]), rl = [fl[2], 0, -fl[0]];
-    for (let k = 0; k < 3; k++) cam.pos[k] += (fl[k] * mz + rl[k] * mx) * dt * 0.6;
-    const off = vsub(cam.pos, EYE), l = Math.hypot(...off); if (l > 0.3) cam.pos = EYE.map((e, k) => e + off[k] / l * 0.3);
+  if ((mx || mz) && frames) {
+    const fl = norm3([f3[0], 0, f3[2]]), rl = [fl[2], 0, -fl[0]], here = CELLS[mine];
+    const step = k => (fl[k] * mz + rl[k] * mx) * dt * 0.8;
+    const fits = p => insideCell(here, [0, 1, 2].map(k => here.c3[k] + (p[k] - here.c3[k]) / 0.86));
+    const full = [cam.pos[0] + step(0), cam.pos[1], cam.pos[2] + step(2)];
+    if (fits(full)) cam.pos = full;
+    else { const px = [full[0], cam.pos[1], cam.pos[2]], pz = [cam.pos[0], cam.pos[1], full[2]]; if (fits(px)) cam.pos = px; else if (fits(pz)) cam.pos = pz; }
   }
 
-  // the turn: a queued room change, steering a chosen room around you, or its own slow rhythm
+  // the turn: one clean move (yours or its own), a strip drag, or resting inside a room until the hold is up
   let turning = 'still';
-  if (pending) {
-    const step = Math.min(Math.abs(pending.left), dt * 1.2) * Math.sign(pending.left);
-    turn(pending.a, pending.b, step); pending.left -= step; if (Math.abs(pending.left) < 1e-4) pending = null; turning = 'changing room';
-  } else if (steer >= 0) {
-    const c = norm4(apply(R, CELLS[steer].centre)), t = [0, 0, 0, -1];
-    const d = Math.max(-1, Math.min(1, dot4(c, t))), phi = Math.acos(d);
-    if (phi < 0.004) steer = -1;
-    else {
-      let b = t.map((x, i) => x - d * c[i]);
-      if (Math.hypot(...b) < 1e-6) { const f = v4(f3); b = f.map((x, i) => x - dot4(f, c) * c[i]); } // exactly opposite: come in from ahead
-      turn(c, norm4(b), Math.min(phi, dt * 1.1)); turning = 'bringing ' + CELLS[steer].room.name;
-    }
-  } else if (pressed.turn && +ui.speed.value > 0) {
-    const sp = +ui.speed.value * 0.3;
-    turn(E(0), E(3), dt * sp * 0.61); turn(E(1), E(3), dt * sp * 0.37); turn(E(2), E(3), dt * sp * 0.23);
+  if (move) {
+    const t0 = move.done / move.dur, t1 = Math.min(1, (move.done + dt) / move.dur);
+    turn(move.a, move.b, (ease(t1) - ease(t0)) * move.phi); move.done += dt;
+    turning = 'changing room';
+    if (t1 >= 1) { move = null; holdLeft = +ui.hold.value; }
+  } else if (st.down) {
     turning = 'turning';
+  } else if (pressed.turn) {
+    holdLeft -= dt;
+    if (holdLeft <= 0) { bring(nextRoom()); holdLeft = +ui.hold.value; turning = 'changing room'; }
+    else {
+      turning = 'resting ' + Math.ceil(holdLeft) + ' s';
+      if (!reduceMotion) { // a slow breath while it rests: tiny and zero-mean, so it never carries you out of the room
+        const b0 = breath; breath += dt;
+        turn(E(0), E(3), 0.014 * (Math.sin(b0 * 0.9 + dt * 0.9) - Math.sin(b0 * 0.9)));
+        turn(E(1), E(3), 0.010 * (Math.sin(b0 * 0.6 + dt * 0.6) - Math.sin(b0 * 0.6)));
+      }
+    }
   }
+  // while the tesseract turns, it carries you back to the middle of the room, so the swelling neighbour takes you cleanly
+  if (move || st.down) cam.pos = lerp3(cam.pos, EYE, 1 - Math.exp(-dt * 3));
 
   project4();
   // which room am I in: the cell whose projected shape contains the camera
-  // (the room that wraps around everything contains you too, so take the innermost one: lowest w)
+  // (the room that wraps around everything contains you too, so take the innermost one: lowest w).
+  // A new room has to hold you for a moment before it counts, so a shape brushing past is not an arrival.
   let found = -1, fw = 9;
   for (let i = 0; i < 8; i++) if (CELLS[i].w < fw && insideCell(CELLS[i], cam.pos)) { found = i; fw = CELLS[i].w; }
-  if (found >= 0) mine = found;
+  if (found >= 0 && found !== mine) {
+    if (found !== cand) { cand = found; candSince = now; }
+    if (now - candSince > 120) mine = found;
+  } else cand = -1;
+  if (mine !== announced) { if (announced < 0) { announced = mine; visited[mine] = now; } else arrive(mine); }
   const my = CELLS[mine];
   for (const c of CELLS) c.dw = Math.abs(c.w - my.w);
   // the next room: the one closest to you in the fourth direction, other than yours
