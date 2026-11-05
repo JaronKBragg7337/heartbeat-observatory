@@ -47,6 +47,11 @@ const pick = (R, arr) => arr[Math.floor(R() * arr.length) % arr.length];
 const CHUNK = 104;
 function chunkKey(x, z) { return Math.floor((x + 208) / CHUNK) + "_" + Math.floor((z + 208) / CHUNK); }
 let batches = new Map();
+// Phase 2 LOD: while DET is on, triangles go to a batch's DETAIL index list (sills, lintels, mullions, rooftop units,
+// tanks, door recesses, cornice under-bands). flush() puts them after the main triangles, so a far chunk draws the same
+// mesh with a shorter drawRange: same draw calls, fewer triangles. lodUpdate() picks the range by distance.
+let DET = false;
+const detail = (fn) => { const was = DET; DET = true; try { fn(); } finally { DET = was; } };
 function batch(mat, ck) {
   const k = mat + "|" + ck; let b = batches.get(k);
   if (!b) { b = { mat, p: [], n: [], u: [], c: [], i: [], v: 0 }; batches.set(k, b); }
@@ -68,8 +73,9 @@ function quad(mat, p0, p1, p2, p3, n, uv, col) {
   b.p.push(a[0], a[1], a[2], bb[0], bb[1], bb[2], c[0], c[1], c[2], d[0], d[1], d[2]);
   for (let k = 0; k < 4; k++) { b.n.push(nn[0], nn[1], nn[2]); b.c.push(col[0], col[1], col[2]); }
   b.u.push(uv[0], uv[1], uv[2], uv[3], uv[4], uv[5], uv[6], uv[7]);
-  if (!flip) b.i.push(base, base + 1, base + 2, base, base + 2, base + 3);
-  else b.i.push(base, base + 2, base + 1, base, base + 3, base + 2);
+  const I = DET ? (b.d || (b.d = [])) : b.i;
+  if (!flip) I.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  else I.push(base, base + 2, base + 1, base, base + 3, base + 2);
   b.v += 4;
 }
 
@@ -95,8 +101,9 @@ function addGeo(mat, geo, matrix, col) {
     _v.fromBufferAttribute(nor, k).applyMatrix3(_m3).normalize(); b.n.push(_v.x, _v.y, _v.z);
     b.u.push(uv ? uv.getX(k) * 2 : 0, uv ? uv.getY(k) * 2 : 0); b.c.push(col[0], col[1], col[2]);
   }
-  if (g.index) for (let k = 0; k < g.index.count; k++) b.i.push(base + g.index.getX(k));
-  else for (let k = 0; k < pos.count; k++) b.i.push(base + k);
+  const I = DET ? (b.d || (b.d = [])) : b.i;
+  if (g.index) for (let k = 0; k < g.index.count; k++) I.push(base + g.index.getX(k));
+  else for (let k = 0; k < pos.count; k++) I.push(base + k);
   b.v += pos.count;
 }
 
@@ -109,10 +116,13 @@ function flush(group, mats, noShadow) {
     g.setAttribute("normal", new THREE.Float32BufferAttribute(b.n, 3));
     g.setAttribute("uv", new THREE.Float32BufferAttribute(b.u, 2));
     g.setAttribute("color", new THREE.Float32BufferAttribute(b.c, 3));
-    g.setIndex(b.v > 65000 ? new THREE.Uint32BufferAttribute(b.i, 1) : new THREE.Uint16BufferAttribute(b.i, 1));
-    g.computeBoundingSphere();
+    const idx = b.d ? b.i.concat(b.d) : b.i;
+    g.setIndex(b.v > 65000 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
+    g.computeBoundingSphere(); g.computeBoundingBox();
     const m = new THREE.Mesh(g, mats[b.mat]);
-    m.castShadow = !(noShadow && noShadow.has(b.mat)); m.receiveShadow = true; m.userData.kit = b.mat;
+    // Phase 2: only walls, glass and big masses cast shadows; small metal/dark trim does not (it was a third of the shadow pass)
+    m.castShadow = !(noShadow && noShadow.has(b.mat)) && b.mat !== "metal" && b.mat !== "dark"; m.receiveShadow = true; m.userData.kit = b.mat;
+    m.userData.lod = b.d && b.d.length ? { main: b.i.length, all: idx.length, far: false } : null;
     group.add(m); meshes.push(m);
   }
   batches = new Map();
@@ -165,7 +175,7 @@ const SHOPS = ["CALHOUN COFFEE", "SUMMIT CITY RECORDS", "THREE RIVERS DINER", "B
   "ST. MARYS BREWING", "COLUMBIA CAMERA", "GOLDEN LANTERN NOODLES", "PEARL ST TACOS", "CORNER DELI", "BLUE HERON BAR", "LITTLE RIVER TOYS",
   "SUMMIT SHOES", "HOPE THRIFT", "THE PRINT SHOP", "LAFAYETTE LAUNDRY", "BARR ST GROCER", "WELLS ST BIKES", "NORTHSIDE NAILS", "RADIO REPAIR",
   "CITY LOCKSMITH", "KEY CITY ICE CREAM", "HALF MOON BOOKS", "FIRST BANK"];
-const CIVIC_SIGNS = { arcade: "ARCADE", social: "SOCIAL HALL", projects: "PROJECTS", news: "WHB NEWS", library: "PUBLIC LIBRARY", station: "UNION STATION", theater: "GRAND PALACE", parking: "PARKING", court: "COURTHOUSE", onair: "ON AIR" };
+const CIVIC_SIGNS = { arcade: "ARCADE", social: "SOCIAL HALL", projects: "PROJECTS", news: "WHB NEWS", library: "PUBLIC LIBRARY", station: "UNION STATION", theater: "GRAND PALACE", parking: "PARKING", court: "COURTHOUSE", onair: "ON AIR", bus: "BUS · LOOP 1" };
 const SIGN_INDEX = {};
 
 function cv(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return [c, c.getContext("2d")]; }
@@ -308,7 +318,7 @@ function texSigns() {
     const st = id === "arcade" ? { bg: "#0b0614", fg: "#ff5fd2", font: "800 %px system-ui, sans-serif", neon: 1 }
       : id === "onair" ? { bg: "#2a0606", fg: "#ff3b3b", font: "900 %px system-ui, sans-serif", neon: 1 }
       : id === "news" ? { bg: "#0d1b2e", fg: "#ffffff", font: "900 %px system-ui, sans-serif" }
-      : id === "parking" ? { bg: "#1a4d8f", fg: "#ffffff", font: "900 %px system-ui, sans-serif" }
+      : id === "parking" || id === "bus" ? { bg: "#1a4d8f", fg: "#ffffff", font: "900 %px system-ui, sans-serif" }
       : { bg: "#d9cfb8", fg: "#3a3226", font: "700 %px Georgia, serif" };
     put("civic_" + id, t, st);
   }
@@ -409,8 +419,10 @@ function punchedFloors(F, y0, floors, st, mat, col, R, opts = {}) {
       fside(F, s0, a, b, 0, rv, true, mat, jc); fside(F, s1, a, b, 0, rv, false, mat, jc);
       fhoriz(F, s0, s1, b, 0, rv, false, mat, mulc(col, 0.6)); fhoriz(F, s0, s1, a, 0, rv, true, mat, mulc(col, 0.95));
       frect(F, s0, s1, a, b, rv, "glass", opts.tint || WHITE, cellUV(GLASS.cols, GLASS.rows, glassCell(R, set)));
+      DET = true;
       if (st.sills) fbox(F, s0 - 0.08, s1 + 0.08, a - 0.13, a, -0.1, 0, "trim", sillC, "ftlr");
       if (st.lintel) fbox(F, s0 - 0.1, s1 + 0.1, b, b + 0.3, -0.06, 0, "trim", sillC, "fd");
+      DET = false;
       s = s1;
     }
     frect(F, s, L, a, b, 0, mat, col);
@@ -423,7 +435,7 @@ function ribbonFloors(F, y0, floors, st, panelCol, R) {
     fbox(F, 0, L, y, a, -0.08, 0, "trim", panelCol, "f");
     fhoriz(F, 0, L, a, -0.08, 0.12, true, "trim", mulc(panelCol, 0.9)); fhoriz(F, 0, L, y, -0.08, 0.12, false, "trim", mulc(panelCol, 0.6));
     for (let k = 0; k < n; k++) frect(F, k * bw, (k + 1) * bw, a, top, 0.12, "glass", WHITE, cellUV(GLASS.cols, GLASS.rows, glassCell(R, "office")));
-    for (let k = 0; k <= n; k++) fbox(F, k * bw - 0.05, k * bw + 0.05, a, top, -0.02, 0.12, "metal", METAL, "flr");
+    detail(() => { for (let k = 0; k <= n; k++) fbox(F, k * bw - 0.05, k * bw + 0.05, a, top, -0.02, 0.12, "metal", METAL, "flr"); });
   }
 }
 function curtainFloors(F, y0, floors, st, R, tint) {
@@ -434,7 +446,7 @@ function curtainFloors(F, y0, floors, st, R, tint) {
       frect(F, k * bw, (k + 1) * bw, y, y + 0.9, 0.06, "glass", tint, cellUV(GLASS.cols, GLASS.rows, glassCell(R, "spandrel")));
       frect(F, k * bw, (k + 1) * bw, y + 0.9, y + st.fh, 0.06, "glass", tint, cellUV(GLASS.cols, GLASS.rows, glassCell(R, "office")));
     }
-    fbox(F, 0, L, y + 0.86, y + 0.94, -0.06, 0.06, "metal", METAL, "ftd");
+    detail(() => fbox(F, 0, L, y + 0.86, y + 0.94, -0.06, 0.06, "metal", METAL, "ftd"));
   }
   for (let k = 0; k <= n; k++) fbox(F, k * bw - 0.06, k * bw + 0.06, y0, yTop, -0.14, 0.06, "metal", METAL, "flr");
 }
@@ -467,7 +479,7 @@ function groundFloor(F, gh, mat, col, R, o) {
   const segs = [];
   if (doorS != null) { const d0 = Math.max(pil + 0.1, doorS - doorW / 2), d1 = Math.min(L - pil - 0.1, d0 + doorW); segs.push([pil, d0]); segs.push([d1, L - pil]);
     const dp = 1.35;   // recessed entry
-    fside(F, d0, 0, gl, 0.28, dp, true, "trim", lin(0x8a8478)); fside(F, d1, 0, gl, 0.28, dp, false, "trim", lin(0x8a8478));
+    detail(() => { fside(F, d0, 0, gl, 0.28, dp, true, "trim", lin(0x8a8478)); fside(F, d1, 0, gl, 0.28, dp, false, "trim", lin(0x8a8478)); });
     fhoriz(F, d0, d1, gl, 0.28, dp, false, "trim", lin(0x57534c));
     frect(F, d0, d1, 0, gl - 0.45, dp, "store", WHITE, cellUV(STORE.cols, STORE.rows, STORE.door));
     frect(F, d0, d1, gl - 0.45, gl, dp, "glass", WHITE, cellUV(GLASS.cols, GLASS.rows, glassCell(R, "transom")));
@@ -482,9 +494,9 @@ function groundFloor(F, gh, mat, col, R, o) {
       const cell = o.lobby ? STORE.lobby[0] + (k % 2) : o.closed ? STORE.closed : o.shopCell;
       frect(F, a + k * pw, a + (k + 1) * pw, bh, gl - 0.5, 0.28, "store", WHITE, cellUV(STORE.cols, STORE.rows, cell));
       frect(F, a + k * pw, a + (k + 1) * pw, gl - 0.5, gl, 0.28, "glass", WHITE, cellUV(GLASS.cols, GLASS.rows, glassCell(R, "transom")));
-      if (k > 0) fbox(F, a + k * pw - 0.04, a + k * pw + 0.04, bh, gl, 0.2, 0.28, "metal", METAL, "f");
+      if (k > 0) detail(() => fbox(F, a + k * pw - 0.04, a + k * pw + 0.04, bh, gl, 0.2, 0.28, "metal", METAL, "f"));
     }
-    fbox(F, a, b, gl - 0.54, gl - 0.46, 0.2, 0.28, "metal", METAL, "ft");
+    detail(() => fbox(F, a, b, gl - 0.54, gl - 0.46, 0.2, 0.28, "metal", METAL, "ft"));
   }
   if (o.awning) {   // canvas awning across the storefront: slope, valance, end pieces, darker underside
     const ac = o.awning, a = pil + 0.05, b = L - pil - 0.05, y1 = gl - 0.05, y2 = gl - 0.75, out = -1.6;
@@ -497,7 +509,7 @@ function groundFloor(F, gh, mat, col, R, o) {
 function cornice(F, H, depth, col, wrapL, wrapR) {
   const a = wrapL ? -depth : 0, b = F.L + (wrapR ? depth : 0);
   fbox(F, a, b, H - 0.95, H - 0.55, -depth, 0, "trim", col, "ftdlr");
-  fbox(F, a + 0.1, b - 0.1, H - 1.35, H - 0.95, -depth * 0.35, 0, "trim", mulc(col, 0.9), "fd");
+  detail(() => fbox(F, a + 0.1, b - 0.1, H - 1.35, H - 0.95, -depth * 0.35, 0, "trim", mulc(col, 0.9), "fd"));
 }
 
 function roofAndTop(x0, z0, x1, z1, H, R, o = {}) {
@@ -507,6 +519,7 @@ function roofAndTop(x0, z0, x1, z1, H, R, o = {}) {
   box("trim", x0, yb, z0, x0 + t, H, z1, pc, "tr"); box("trim", x1 - t, yb, z0, x1, H, z1, pc, "tl");
   box(wm, x0, yb, z0, x1, H, z1, wc, "fblr");
   const w = x1 - x0, d = z1 - z0, units = 1 + Math.floor(R() * 3);
+  const wasDet = DET; DET = true;   // everything on the roof below is detail (gone beyond the LOD distance)
   for (let u = 0; u < units && w > 5 && d > 5; u++) {
     const uw = 1.2 + R() * 2.2, ud = 1.0 + R() * 1.8, uh = 0.8 + R() * 1.2, ux = x0 + 1 + R() * (w - uw - 2), uz = z0 + 1.5 + R() * (d - ud - 3);
     box("metal", ux, H - 0.5, uz, ux + uw, H - 0.5 + uh, uz + ud, lin(R() < 0.5 ? 0x9aa0a6 : 0x7d8186), "fblrt");
@@ -518,6 +531,7 @@ function roofAndTop(x0, z0, x1, z1, H, R, o = {}) {
     m.makeTranslation(p[0], p[1] + 1.75, p[2]); addGeo("roof", TANK_CAP, m, lin(0x4a4a48));
     for (const [lx, lz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) box("metal", tx + lx * 1.1 - 0.08, H - 0.5, tz + lz * 1.1 - 0.08, tx + lx * 1.1 + 0.08, H + 2.6, tz + lz * 1.1 + 0.08, METAL, "fblr");
   }
+  DET = wasDet;
   if (o.penthouse && w > 7 && d > 7) box(o.penthouse, x0 + w * 0.55, H - 0.5, z0 + d * 0.45, x0 + w * 0.55 + 3.2, H + 2.8, z0 + d * 0.45 + 3.6, o.pcol || WHITE, "fblrt");
 }
 const TANK_GEO = new THREE.CylinderGeometry(1.45, 1.45, 3.0, 12, 1, true);
@@ -926,7 +940,13 @@ export async function buildCity(scene, ctx) {
     if (zi === 0 && side < 0) continue;
     for (let x = xs[i] + 13; x < xs[i + 1] - 13; x += 6.6) if (R() < 0.45) parked.push({ x: x + R() * 0.6, z: zs[zi] + side * PARK, yaw: side > 0 ? Math.PI / 2 : -Math.PI / 2, y: 0 });
   }
-  const traffic = buildTraffic(group, parked, signals);
+  // ---- Phase 2: the Downtown Loop bus. Its loop runs past Union Station's door; parked cars clear out of the stop.
+  const tA = doors.find((d) => d.id === "town"), tB = doors.find((d) => d.id === "ashgrove");   // Union Station's two doors
+  const bus = tA && tB ? busRouteFor({ front: [(tA.front[0] + tB.front[0]) / 2, (tA.front[1] + tB.front[1]) / 2] }) : null;
+  if (bus) for (let k = parked.length - 1; k >= 0; k--) { const p = parked[k]; if (Math.hypot(p.x - bus.stopX, p.z - bus.stopZ) < 11 && !p.y) parked.splice(k, 1); }
+  if (bus) { buildBusStop(bus); landmarks.push({ name: "Bus stop · Union Station", x: bus.shelterX, z: bus.shelterZ, kind: "bus" }); colliders.push({ x: bus.shelterX + bus.out[0] * 0.1, z: bus.shelterZ + bus.out[1] * 0.1, width: bus.alongX ? 4.2 : 1.1, depth: bus.alongX ? 1.1 : 4.2, h: 2.6 }); }
+  const traffic = buildTraffic(group, parked, signals, bus);
+  const crossers = [];   // pedestrians on a crosswalk right now (life.js fills it); cars yield to them like they do to you
   for (const p of parked) colliders.push({ x: p.x, z: p.z, width: Math.abs(Math.sin(p.yaw)) > 0.5 ? 4.6 : 1.9, depth: Math.abs(Math.sin(p.yaw)) > 0.5 ? 1.9 : 4.6, h: 1.5 });
 
   // ---- flush the kit
@@ -941,7 +961,7 @@ export async function buildCity(scene, ctx) {
   return {
     group, meshes, colliders, doors, plots, landmarks, firefly, exits,
     update(dt, t, player) {
-      signals.update(t); traffic.update(dt, player, signals);
+      signals.update(t); traffic.update(dt, player, signals, crossers);
       anim.update(dt, t, nightNow);
       water.material.normalMap && (water.material.normalMap.offset.x = t * 0.012, water.material.normalMap.offset.y = t * 0.004);
     },
@@ -956,6 +976,16 @@ export async function buildCity(scene, ctx) {
       traffic.setNight(nightF); signals.setNight(nightF);
     },
     claimPlot(plotIndex, row) { return claimPlotBuilding(group, plots.find((p) => p.plot === plotIndex), row); },
+    signals, traffic, crossers, bus,
+    // Phase 2 LOD: chunks beyond LOD_DIST draw only their main triangles (no sills, mullions, rooftop units...)
+    lodUpdate(cam) {
+      let main = 0, all = 0;
+      for (const m of meshes) { const L = m.userData.lod; if (!L) continue;
+        const far = m.geometry.boundingBox.distanceToPoint(cam.position) > LOD_DIST;
+        if (far !== L.far) { L.far = far; m.geometry.setDrawRange(0, far ? L.main : L.all); }
+        all++; if (far) main++; }
+      return { lodMeshes: all, lodFar: main };
+    },
     stats() { return { kitMeshes: meshes.length, colliders: colliders.length, parked: parked.length, lamps: lampSpots.length, trees: treeSpots.length, textureBytes: textureBytes() }; },
   };
 }
@@ -1138,20 +1168,75 @@ function carGeometries(kind) {
   return { paint: toGeo(P), dark: toGeo(D), lights: toGeo(Lt) };
 }
 
+const LOD_DIST = 95;   // metres from the camera to a chunk's box before its detail triangles drop
+
+// The bus loop: a two-block rectangle whose edge runs along the station's street on the station's side (right-hand
+// traffic, same lane rules as the car loops: the loops run clockwise, so the curb is always on the bus's right).
+function busRouteFor(door) {
+  if (!door) return null;
+  const xs = GRID.xs, zs = GRID.zs, dx = door.front[0], dz = door.front[1];
+  const nx = nearestLine(dx, xs), nz = nearestLine(dz, zs), alongX = Math.abs(dz - nz) < Math.abs(dx - nx);   // alongX: the street is E-W
+  const clampI = (i, n) => Math.max(0, Math.min(n - 3, i));
+  let a, b, c, d;
+  if (alongX) { const zi = zs.indexOf(nz); const xi = clampI(xs.findIndex((x) => x > dx) - 2, xs.length); a = xi; b = xi + 2;
+    if (dz > nz) { c = zi; d = Math.min(zs.length - 1, zi + 2); } else { c = Math.max(0, zi - 2); d = zi; } }
+  else { const xi = xs.indexOf(nx); const zi = clampI(zs.findIndex((z) => z > dz) - 2, zs.length); c = zi; d = zi + 2;
+    if (dx > nx) { a = xi; b = Math.min(xs.length - 1, xi + 2); } else { a = Math.max(0, xi - 2); b = xi; } }
+  const xa = xs[a] + LANE, xb = xs[b] - LANE, za = zs[c] + LANE, zb = zs[d] - LANE;
+  const pts = [[xa, za], [xb, za], [xb, zb], [xa, zb]], len = 2 * (xb - xa) + 2 * (zb - za);
+  // arc length of the stop (the point on the loop nearest the door)
+  let best = 0, bd = Infinity, acc = 0;
+  for (let e = 0; e < 4; e++) { const A = pts[e], B = pts[(e + 1) % 4], l = Math.abs(B[0] - A[0]) + Math.abs(B[1] - A[1]);
+    for (let u = 0; u <= l; u += 0.5) { const x = A[0] + (B[0] - A[0]) * u / l, z = A[1] + (B[1] - A[1]) * u / l, q = Math.hypot(x - dx, z - dz); if (q < bd) { bd = q; best = acc + u; } }
+    acc += l; }
+  const out = alongX ? [0, Math.sign(dz - nz)] : [Math.sign(dx - nx), 0];   // from the street toward the station (curb side)
+  const sx = alongX ? dx : nx + out[0] * LANE, sz = alongX ? nz + out[1] * LANE : dz;
+  return { pts, len, stopS: best, out, alongX, stopX: alongX ? dx : nx + out[0] * PARK, stopZ: alongX ? nz + out[1] * PARK : dz,
+    shelterX: alongX ? dx - 7 : nx + out[0] * (ROAD + 2.8), shelterZ: alongX ? nz + out[1] * (ROAD + 2.8) : dz - 7, laneX: sx, laneZ: sz };
+}
+function buildBusStop(bus) {   // a glass shelter with a bench and a BUS blade, on the station's sidewalk
+  const fx = bus.out[0], fz = bus.out[1];   // shelter faces the street: its local front (-z) points back at the road
+  setFrame(bus.shelterX, CURB, bus.shelterZ, -fx, -fz);
+  box("metal", -2, 0, 0.55, 2, 2.4, 0.62, METAL, "fb"); box("metal", -2.05, 2.4, -0.45, 2.05, 2.52, 0.65, lin(0x1d2f55), "fbtdlr");
+  for (const x of [-2, 2]) box("metal", x - 0.06, 0, -0.4, x + 0.06, 2.4, 0.62, METAL, "fblr");
+  box("glass", -1.98, 0.3, 0.5, 1.98, 2.3, 0.53, lin(0x9fb8c8), "fb");
+  box("trim", -1.5, 0.42, 0.05, 1.5, 0.48, 0.45, lin(0x7a5236), "ftbd");
+  box("metal", 2.6, 0, -0.24, 2.68, 2.9, -0.16, METAL, "fblr");
+  quad("sign", [3.15, 2.35, -0.26], [2.15, 2.35, -0.26], [2.15, 2.85, -0.26], [3.15, 2.85, -0.26], [0, 0, -1], signUV("civic_bus"), WHITE);
+  quad("sign", [2.15, 2.35, -0.14], [3.15, 2.35, -0.14], [3.15, 2.85, -0.14], [2.15, 2.85, -0.14], [0, 0, 1], signUV("civic_bus"), WHITE);
+}
+function busGeometries() {   // forward = +z, 12 m long, 2.55 m wide: paint body, dark glass band + wheels, lights + destination sign
+  const merge = (list) => {
+    const P = [], N = [], C = [], I = []; let v = 0;
+    for (const [g, col] of list) { const p = g.attributes.position, n = g.attributes.normal;
+      for (let k = 0; k < p.count; k++) { P.push(p.getX(k), p.getY(k), p.getZ(k)); N.push(n.getX(k), n.getY(k), n.getZ(k)); C.push(...(col || WHITE)); }
+      for (let k = 0; k < g.index.count; k++) I.push(v + g.index.getX(k)); v += p.count; }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(N, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(C, 3)); g.setIndex(I); g.computeBoundingSphere(); return g;
+  };
+  const B = (w, h, l, x, y, z) => new THREE.BoxGeometry(w, h, l).translate(x, y, z);
+  const wheel = (x, z) => new THREE.CylinderGeometry(0.5, 0.5, 0.3, 12).rotateZ(Math.PI / 2).translate(x, 0.5, z);
+  const paint = merge([[B(2.55, 0.95, 12, 0, 0.85, 0)], [B(2.55, 0.35, 12, 0, 2.95, 0)], [B(2.3, 0.18, 9.5, 0, 3.18, -0.6)], [B(0.12, 1.65, 0.3, 1.22, 2.05, 2.5)], [B(0.12, 1.65, 0.3, -1.22, 2.05, 0)], [B(0.12, 1.65, 0.3, -1.22, 2.05, -3)], [B(0.12, 1.65, 0.3, 1.22, 2.05, -1.5)]]);
+  const dark = merge([[B(2.5, 1.65, 11.8, 0, 2.05, 0)], [B(2.4, 0.3, 0.1, 0, 0.45, 6.02)], [B(2.4, 0.3, 0.1, 0, 0.45, -6.02)], [wheel(-1.12, 3.9)], [wheel(1.12, 3.9)], [wheel(-1.12, -3.6)], [wheel(1.12, -3.6)]]);
+  const lights = merge([[B(0.4, 0.18, 0.06, -0.9, 0.75, 6.02), [1, 0.95, 0.85]], [B(0.4, 0.18, 0.06, 0.9, 0.75, 6.02), [1, 0.95, 0.85]], [B(0.3, 0.3, 0.06, -1.0, 0.9, -6.02), [1, 0.08, 0.05]], [B(0.3, 0.3, 0.06, 1.0, 0.9, -6.02), [1, 0.08, 0.05]], [B(1.9, 0.32, 0.06, 0, 2.95, 6.03), [1.0, 0.62, 0.12]]]);
+  return { paint, dark, lights };
+}
+
 const LOOPS = [[2, 4, 1, 3], [1, 3, 0, 2], [3, 5, 2, 4], [1, 3, 2, 4], [3, 5, 0, 2], [0, 6, 1, 4], [2, 3, 0, 4], [4, 5, 1, 5]];
-function buildTraffic(group, parked, signals) {
+function buildTraffic(group, parked, signals, bus) {
   const R = rng(31337);
   const movers = [];
   for (const [a, b, c, d] of LOOPS) {
     const xa = GRID.xs[a] + LANE, xb = GRID.xs[b] - LANE, za = GRID.zs[c] + LANE, zb = GRID.zs[d] - LANE;
     const pts = [[xa, za], [xb, za], [xb, zb], [xa, zb]]; const len = 2 * (xb - xa) + 2 * (zb - za);
-    for (let k = 0; k < 2; k++) movers.push({ pts, len, s: (k * 0.5 + R() * 0.2) * len, v: 0, vmax: 8 + R() * 3, x: 0, z: 0, yaw: 0, dir: [1, 0] });
+    for (let k = 0; k < 2; k++) movers.push({ pts, len, s: (k * 0.5 + R() * 0.2) * len, v: 0, vmax: 8 + R() * 3, x: 0, z: 0, yaw: 0, dir: [1, 0], half: 2.4 });
   }
+  const buses = [];
+  if (bus) for (let k = 0; k < 2; k++) { const b = { pts: bus.pts, len: bus.len, s: (bus.stopS + 20 + k * bus.len / 2) % bus.len, v: 0, vmax: 7.5, x: 0, z: 0, yaw: 0, dir: [1, 0], half: 6.1, bus: true, dwell: 0, served: false, slot: k }; buses.push(b); movers.push(b); }
   const kinds = ["sedan", "suv"]; const geos = { sedan: carGeometries("sedan"), suv: carGeometries("suv") };
   const paintMat = new THREE.MeshStandardMaterial({ roughness: 0.32, metalness: 0.55, envMapIntensity: 1.1 });
   const darkMat = new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.18, metalness: 0.6 });
   const lightMat = new THREE.MeshBasicMaterial({ vertexColors: true, color: 0x777777 });
-  const all = parked.map((p) => ({ parked: true, ...p })).concat(movers);
+  const all = parked.map((p) => ({ parked: true, ...p })).concat(movers.filter((m) => !m.bus));
   const byKind = { sedan: [], suv: [] }; all.forEach((c, k) => { c.kind = kinds[(k * 7 + 3) % 5 < 3 ? 0 : 1]; c.slot = byKind[c.kind].length; byKind[c.kind].push(c); });
   const meshes = {};
   const palette = [0xeeeeee, 0x111214, 0xa0a4a8, 0x8a1c1c, 0x1f3e6e, 0x55595e, 0x274d36, 0xc8b89a, 0x6e1f3a, 0xd9d9d9];
@@ -1162,21 +1247,41 @@ function buildTraffic(group, parked, signals) {
     byKind[k].forEach((c, i) => { col.setHex(palette[Math.floor(R() * palette.length)]); meshes[k].paint.setColorAt(i, col); });
     for (const mm of Object.values(meshes[k])) { mm.castShadow = mm !== meshes[k].lights; mm.receiveShadow = true; mm.count = byKind[k].length; group.add(mm); }
   }
-  const place = (c) => { q.setFromAxisAngle(up, c.yaw); m4.compose(v.set(c.x, c.y || 0, c.z), q, one); const M = meshes[c.kind]; M.paint.setMatrixAt(c.slot, m4); M.dark.setMatrixAt(c.slot, m4); M.lights.setMatrixAt(c.slot, m4); };
+  let busMesh = null;
+  if (buses.length) {
+    const g = busGeometries();
+    const busPaint = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xf2f2ee, roughness: 0.35, metalness: 0.3 });
+    const busLights = new THREE.MeshBasicMaterial({ vertexColors: true, color: 0x777777 });
+    busMesh = { paint: new THREE.InstancedMesh(g.paint, busPaint, buses.length), dark: new THREE.InstancedMesh(g.dark, darkMat, buses.length), lights: new THREE.InstancedMesh(g.lights, busLights, buses.length) };
+    // a stripe colour per bus (the Downtown Loop livery: white with a band)
+    busMesh.paint.setColorAt(0, col.setHex(0xffffff)); if (buses.length > 1) busMesh.paint.setColorAt(1, col.setHex(0xf4f0e6));
+    for (const mm of Object.values(busMesh)) { mm.castShadow = mm !== busMesh.lights; mm.receiveShadow = true; group.add(mm); }
+    busMesh.lightMat = busLights;
+  }
+  const placeBus = (c) => { q.setFromAxisAngle(up, c.yaw); m4.compose(v.set(c.x, 0, c.z), q, one); busMesh.paint.setMatrixAt(c.slot, m4); busMesh.dark.setMatrixAt(c.slot, m4); busMesh.lights.setMatrixAt(c.slot, m4); };
+  const place = (c) => { if (c.bus) return placeBus(c); q.setFromAxisAngle(up, c.yaw); m4.compose(v.set(c.x, c.y || 0, c.z), q, one); const M = meshes[c.kind]; M.paint.setMatrixAt(c.slot, m4); M.dark.setMatrixAt(c.slot, m4); M.lights.setMatrixAt(c.slot, m4); };
   const posAt = (c) => {
     let s = ((c.s % c.len) + c.len) % c.len;
     for (let e = 0; e < 4; e++) { const a = c.pts[e], b = c.pts[(e + 1) % 4], l = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]); if (s <= l) { const t = s / l; c.x = a[0] + (b[0] - a[0]) * t; c.z = a[1] + (b[1] - a[1]) * t; c.dir = [Math.sign(b[0] - a[0]), Math.sign(b[1] - a[1])]; return; } s -= l; }
   };
   for (const c of all) { if (!c.parked) { posAt(c); c.yaw = Math.atan2(c.dir[0], c.dir[1]); } place(c); }
   return {
-    update(dt, player, sig) {
+    update(dt, player, sig, crossers) {
       for (const c of movers) {
         let target = c.vmax;
         const along = (x, z) => (x - c.x) * c.dir[0] + (z - c.z) * c.dir[1], lat = (x, z) => Math.abs((x - c.x) * c.dir[1] - (z - c.z) * c.dir[0]);
-        if (player) { const a = along(player.x, player.z); if (a > 0 && a < 11 && lat(player.x, player.z) < 2.4) target = Math.min(target, Math.max(0, (a - 4.5) * 1.6)); }
-        for (const o of movers) { if (o === c) continue; const a = along(o.x, o.z); if (a > 0 && a < 12 && lat(o.x, o.z) < 1.5) target = Math.min(target, Math.max(0, (a - 6.5) * 1.5)); }
+        const nose = c.half - 2.4;   // a bus's nose is further ahead than a car's
+        if (player) { const a = along(player.x, player.z) - nose; if (a > 0 && a < 11 && lat(player.x, player.z) < 2.4) target = Math.min(target, Math.max(0, (a - 4.5) * 1.6)); }
+        if (crossers) for (let k = 0; k < crossers.length; k++) { const p = crossers[k], a = along(p.x, p.z) - nose; if (a > -1 && a < 12 && lat(p.x, p.z) < 3.2) target = Math.min(target, Math.max(0, (a - 4.5) * 1.6)); }
+        for (const o of movers) { if (o === c) continue; const gap = c.half + o.half + 1.7, a = along(o.x, o.z); if (a > 0 && a < gap + 5.5 && lat(o.x, o.z) < 1.5) target = Math.min(target, Math.max(0, (a - gap) * 1.5)); }
+        if (c.bus) {   // pull up at Union Station, wait, go
+          const toStop = ((bus.stopS - c.s) % c.len + c.len) % c.len;
+          if (c.dwell > 0) { c.dwell -= dt; target = 0; if (c.dwell <= 0) c.served = true; }
+          else if (!c.served && toStop < 30) { target = Math.min(target, Math.max(0, toStop * 0.9)); if (toStop < 0.6 && c.v < 0.8) c.dwell = 9; }
+          if (c.served && toStop > 40 && toStop < c.len - 40) c.served = false;
+        }
         // signals: the next crossing street along our heading
-        const lines = c.dir[0] !== 0 ? GRID.xs : GRID.zs, pos = c.dir[0] !== 0 ? c.x : c.z, sgn = c.dir[0] !== 0 ? c.dir[0] : c.dir[1];
+        const lines = c.dir[0] !== 0 ? GRID.xs : GRID.zs, pos = (c.dir[0] !== 0 ? c.x : c.z) + (c.dir[0] !== 0 ? c.dir[0] : c.dir[1]) * (c.half - 2.4), sgn = c.dir[0] !== 0 ? c.dir[0] : c.dir[1];
         for (const Lc of lines) { const dist = (Lc - pos) * sgn; if (dist > 8.5 && dist < 30) { const ix = c.dir[0] !== 0 ? Lc : c.x, iz = c.dir[0] !== 0 ? c.z : Lc; if (sig.isSignal(ix, iz)) { const light = c.dir[0] !== 0 ? sig.state.ew : sig.state.ns; if (light !== "g") target = Math.min(target, Math.max(0, (dist - 10.2) * 1.4)); } break; } }
         c.v += Math.max(-9 * dt, Math.min(3.2 * dt, target - c.v));
         c.s += c.v * dt; posAt(c);
@@ -1184,8 +1289,10 @@ function buildTraffic(group, parked, signals) {
         place(c);
       }
       for (const k of kinds) for (const mm of Object.values(meshes[k])) mm.instanceMatrix.needsUpdate = true;
+      if (busMesh) { busMesh.paint.instanceMatrix.needsUpdate = busMesh.dark.instanceMatrix.needsUpdate = busMesh.lights.instanceMatrix.needsUpdate = true; }
     },
-    setNight(n) { lightMat.color.setScalar(0.35 + n * 0.65); },
+    setNight(n) { lightMat.color.setScalar(0.35 + n * 0.65); if (busMesh) busMesh.lightMat.color.setScalar(0.45 + n * 0.55); },
+    buses,
     movers,
   };
 }
