@@ -88,6 +88,14 @@
       "destination": "/powermap/index.html"
     },
     {
+      "source": "/tv/:ch(news|shows|movies|comedy|music|aislop|history|science|openquestions|stillunknown|spacenow|aiexplained|earth|animals|lostplaces)",
+      "destination": "/tv/index.html?ch=:ch"
+    },
+    {
+      "source": "/tv/:ch(news|shows|movies|comedy|music|aislop|history|science|openquestions|stillunknown|spacenow|aiexplained|earth|animals|lostplaces)/",
+      "destination": "/tv/index.html?ch=:ch"
+    },
+    {
       "source": "/school/:fly(school-[a-z0-9-]+)",
       "destination": "/live-systems/flies/school/live/index.html?fly=:fly"
     },
