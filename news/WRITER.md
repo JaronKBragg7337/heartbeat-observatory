@@ -9,7 +9,7 @@ at the next story break; until then it keeps looping the last show.
 ## Steps
 1. Today's date in America/Indiana/Indianapolis = `D` (YYYY-MM-DD).
 2. Read the day's captures from the public watch repo: `git clone --depth 5 https://github.com/JaronKBragg7337/watch`
-   then `codex/D.md`, `deepseek/D.md`, `claude/D.md`, `msi/D.md`, `kimi/D.md`, `grok/D.md`, `perplexity/D.md` and `grok/D-gaps.md` (whichever exist; Claude's daily capture lands about 3:05, so a
+   then `codex/D.md`, `deepseek/D.md`, `claude/D.md`, `msi/D.md`, `kimi/D.md`, `grok/D.md`, `perplexity/D.md`, `wire/D.md` and `grok/D-gaps.md` (whichever exist; Claude's daily capture lands about 3:05, so a
    3:45 run usually has Codex, Claude and DeepSeek). Also read `FORMAT.md` once so the labels make sense.
    Also read `msi/D.md` (headlines fetched from the MSI) as an extra source; cite its links.
    `kimi/D.md` is **First Light**, the Eastern Hemisphere desk (Kimi, 3:00 AM): Asia, the Middle East, Russia and Central Asia,
@@ -18,7 +18,7 @@ at the next story break; until then it keeps looping the last show.
    Africa. Same weight as the rest; on air "from the Meridian desk". Added 10/18 after every desk missed the 10/17 France riots.
    `perplexity/D.md` is the **Perplexity scout** (3:10 AM, live web search, every line has its own source). Added 11/5 after a
    spot-check found it had 4 stories every desk missed, including a major-outlet WMD report two days running. Same weight as the rest.
-   `grok/D-gaps.md` is the **blind-spot check** (Grok, 3:35 AM): big world events NO capture covered. Treat its items as real
+   `wire/D.md` is the **rolling wire** (added 11/5): an hourly, deduplicated list of new stories from ~20 free feeds plus a Perplexity\n   question every 3 hours, each item stamped with when the wire first saw it. Also read yesterday's `wire/` file, but only items first\n   seen after 06:00 yesterday (after the last show). It exists because one night the internet dropped and most desks never wrote: if the\n   desks are thin or missing, build the show from the wire. Same labels and weight as the captures; its safety-word items go to Satya separately.\n   `grok/D-gaps.md` is the **blind-spot check** (Grok, 3:35 AM): big world events NO capture covered. Treat its items as real
    captures (same labels and sources) - if it lists something, the show covers it.
    If none of them exist for `D`, stop: write nothing, push nothing. The page keeps looping the last show.
 3. Write `news/episodes/D.json` in this repo. Copy the shape of the newest file in `news/episodes/` exactly.
