@@ -6,7 +6,7 @@
 <script src="/hb-device-tier.js"></script>
 <script>if (/[?&]embed=1/.test(location.search)) document.documentElement.classList.add("embed");</script>
 <title>Heartbeat TV</title>
-<meta name="description" content="Heartbeat TV: flip channels with the remote - Heartbeat News, shows, movies, comedy, music and AI Slop. Submit your own; the best air." />
+<meta name="description" content="Heartbeat TV: flip channels with the remote. News, shows, movies, comedy, music, AI Slop, history, science, space, earth, animals and more. Submit your own; the best air." />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;600&display=swap" rel="stylesheet" />
 <style>
@@ -112,7 +112,7 @@
 
     <h2>Put your video on Heartbeat TV</h2>
     <div class="card" id="submitCard">
-      <p class="muted">Movies, comedy, music, shows, and AI-made clips - made with any tool. Everything is watched and approved before it
+      <p class="muted">Movies, comedy, music, shows, history, science and AI-made clips, made with any tool. Everything is watched and approved before it
         airs, because families and kids use this site. Clips that earn enough love in AI Slop move up to the main channels and the
         Grand Palace theater.</p>
       <div id="submitForm"></div>
@@ -136,7 +136,9 @@
   const channels = await loadGuide(supabase);
   const Tips = await import("/tv/tips.js"); await Tips.loadTips(supabase);
   const saved = (() => { try { return localStorage.getItem("hbtv-tune") || localStorage.getItem("hbtv-ch"); } catch (e) { return null; } })();
-  const start = parseTune(qs.get("ch") || saved || "1") || { ch: 1, i: 0 };
+  // /tv/<channel id>/ is rewritten to /tv/?ch=<id>, so ch may be a channel id as well as a number
+  const chParam = qs.get("ch"), byId = chParam && channels.find((c) => c.id === chParam);
+  const start = parseTune(byId ? String(byId.n) : (chParam || saved || "1")) || { ch: 1, i: 0 };
   // channel NUMBERS are labels (the guide can skip numbers, e.g. CH 10 before CH 9 exists); positions in the list are separate
   const posOf = (n) => { const k = channels.findIndex((c) => c.n === n); return k < 0 ? Math.min(channels.length, Math.max(1, n)) : k + 1; };
   let cur = posOf(start.ch), idx = start.i, bugTimer = 0;
