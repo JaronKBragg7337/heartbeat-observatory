@@ -2,7 +2,7 @@
 // Near tiles: full detail (storefronts, cornices, rooftop units, paint, crosswalks, street signs, lamps).
 // Mid tiles: same buildings + streets, no signs/lamps/paint. Far: one instanced skyline of every building in the city.
 import * as THREE from "three";
-import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05a";
+import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05b";
 import { buildTile, buildDome, makeMaterials, shared, inside, distSeg, abbrev } from "./build.js?v=2026-11-05a";
 
 const Q = new URLSearchParams(location.search);

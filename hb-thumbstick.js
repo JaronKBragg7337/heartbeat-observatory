@@ -113,8 +113,8 @@ export function createThumbstick(surface, opts = {}) {
 
   // iPhone Safari: no page bounce, pinch-zoom or double-tap zoom while two thumbs are on the glass
   surface.style.touchAction = "none";
-  surface.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
-  for (const ev of ["gesturestart", "gesturechange"]) document.addEventListener(ev, (e) => { if (o.enabled()) e.preventDefault(); }, { passive: false });
+  surface.addEventListener("touchmove", (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  for (const ev of ["gesturestart", "gesturechange"]) document.addEventListener(ev, (e) => { if (o.enabled() && e.cancelable) e.preventDefault(); }, { passive: false });
   window.addEventListener("blur", reset);
   document.addEventListener("visibilitychange", () => { if (document.hidden) reset(); });
 
