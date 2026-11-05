@@ -333,8 +333,13 @@ function hookDoors() {
     return use.apply(this, arguments);
   };
 }
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", hookDoors);
-else setTimeout(hookDoors, 0);
+/* destinations.js loads after this file, and deferred scripts run while the
+   page is already "interactive", so wait until it is really there (11/5 fix:
+   a single setTimeout could fire first and the doors were never hooked). */
+(function waitForDestinations(n) {
+  if (T.Destinations) hookDoors();
+  else if (n < 600) setTimeout(() => waitForDestinations(n + 1), 50);
+})(0);
 
 T.GrandPalace = { FX, ZC, DOOR, RESERVE, url: SEATS_URL };
 })();

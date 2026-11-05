@@ -33,10 +33,19 @@ const DESTINATIONS = {
   library: {
     label: "the shelves",
     verb: "Read the shelves",
-    blurb: "Open knowledge, the same shelves as the Town Square library.",
-    kind: "link",
-    url: "https://en.wikipedia.org",
-    external: true,
+    blurb: "Pages written here on the Observatory, and the open shelves of the world: the same eight as the Town Square library.",
+    kind: "list",
+    rows: [
+      { name: "Written Here", url: "/library/", note: "the Observatory's own library" },
+      { name: "Project Gutenberg", url: "https://www.gutenberg.org", note: "free classic books", external: true },
+      { name: "Open Library", url: "https://openlibrary.org", note: "borrow and read", external: true },
+      { name: "Standard Ebooks", url: "https://standardebooks.org", note: "beautiful free ebooks", external: true },
+      { name: "LibriVox", url: "https://librivox.org", note: "free audiobooks", external: true },
+      { name: "Wikipedia", url: "https://www.wikipedia.org", note: "the encyclopedia", external: true },
+      { name: "Wikisource", url: "https://wikisource.org", note: "original texts", external: true },
+      { name: "Khan Academy", url: "https://www.khanacademy.org", note: "free lessons", external: true },
+      { name: "OpenStax", url: "https://openstax.org", note: "free textbooks", external: true },
+    ],
   },
   postOffice: {
     label: "the counter",
@@ -110,6 +119,9 @@ function show(dest) {
     rows = WORLDS.map((w) => w.here
       ? `<span class="row here"><span>${w.name}</span><small>${w.note}</small></span>`
       : `<a class="row" href="${w.url}"><span>${w.name}</span><small>${w.note} &rarr;</small></a>`).join("");
+  } else if (dest.kind === "list") {
+    rows = dest.rows.map((r) => `<a class="row" href="${r.url}"${r.external ? ' target="_blank" rel="noopener noreferrer"' : ""}>
+      <span>${r.name}</span><small>${r.note}${r.external ? " &nearr;" : " &rarr;"}</small></a>`).join("");
   } else if (dest.kind === "link") {
     rows = `<a class="row" href="${dest.url}"${dest.external ? ' target="_blank" rel="noopener noreferrer"' : ""}>
       <span>${dest.url.replace(/^https?:\/\//, "")}</span><small>${dest.external ? "opens a new tab" : "same site"} &rarr;</small></a>`;
@@ -128,6 +140,8 @@ function show(dest) {
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 /* --------------------------------------------------------------- public - */
+D.show = show;   // eastside.js opens its Arcade card with the same look
+
 /* What, if anything, the building the player is standing in offers. */
 D.here = function () {
   const b = T.Player && T.Player.building;
