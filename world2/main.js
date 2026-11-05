@@ -10,12 +10,19 @@
 //     Phase 2 terrain only has to raise the amplitude, not rewire movement.
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
-import { clone as cloneSkinned } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
+// The remake (2026-11-05): the city lives in ./city.js (bumped together with BUILD and ?v=). Supabase and the
+// people loaders are imported LAZILY, after the city is on screen - the old static imports were most of the
+// 40-second blank first load the 10/28 tester hit.
+import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-remake1";
+const SUPA_ESM = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+const GLTF_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
+const SKEL_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 
-const BUILD = "2026-09-28-w2grass";
-const PREVIEW = new URLSearchParams(location.search).get("preview") === "1"; // gate-page spectate: orbit forever, join nothing // bumped with ?v= in /world2/index.html on every deploy
+const BUILD = "2026-11-05-remake1";
+const QS = new URLSearchParams(location.search);
+const PREVIEW = QS.get("preview") === "1";
+const DEV = QS.get("dev") === "1";                       // test handle: window.W2 (state, renderer, camera override, tap)
+const TOD = QS.has("tod") ? Math.max(0, Math.min(1, parseFloat(QS.get("tod")) || 0)) : null;   // freeze the clock (0.25 noon, 0.75 midnight) // gate-page spectate: orbit forever, join nothing // bumped with ?v= in /world2/index.html on every deploy
 try { console.log("Heartbeat Observatory — World 2 build", BUILD); } catch (e) {}
 
 // ---- DOM ----
@@ -40,16 +47,13 @@ const crouchButton = document.querySelector("#crouchButton");
 const isTouch = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 
 // ---- world constants (movement numbers are World 1's — the proven feel) ----
-const worldBounds = 140;          // soft edge; fog melts the far terrain long before this
-const playerRadius = 0.35;        // used by resolveCollision once colliders exist (Phase 3)
+const playerRadius = 0.35;
 const standingEyeHeight = 1.65;
 const crouchEyeHeight = 1.15;
 const gravity = 17.5;
 const jumpVelocity = 6.4;
 const WORLD_SEED = 7337;
-
-// ---- the city district (Phase 3) — off-spawn, so the skyline is a destination you walk toward ----
-const CITY = { x: 55, z: -45, r: 52, blend: 22, base: 1.2, street: 14 };
+const WORLD_EDGE = 285;           // the terrain is 600 m across; you can walk the north woods too
 
 // ---- Phase 4: multiplayer — same Supabase project as World 1, NEW channel (world2-town).
 // Sharing World 1's engine-town channel would double its traffic; this world has its own. ----
@@ -81,18 +85,14 @@ const claimedPadCenters = [];
 let currentClaimPlot = null;
 let spacesLoaded = false;
 let spacesTimer = null;
-// civic buildings: the big PERMANENT towers nearest the plaza, each with a real door in its
-// face — Theater/Arcade/Library open into walk-in interiors styled for this world; the others
-// go to the same living pages World 1's buildings open. Plots for residents ring the outskirts.
-const CIVICS = [
-  { id: "theater", label: "Theater", tint: 0xc97a6a, block: [1, 0], act: { type: "interior", id: "theater" }, h: 21 },
-  { id: "arcade", label: "Arcade", tint: 0x6a93d6, block: [1, -1], act: { type: "interior", id: "arcade" }, h: 18 },
-  { id: "library", label: "Library", tint: 0xb08a56, block: [-2, 0], act: { type: "interior", id: "library" }, h: 17 },
-  { id: "social", label: "Social", tint: 0xd67a96, block: [-2, -1], act: { type: "page", path: "/social" }, h: 25 },
-  { id: "projects", label: "Projects", tint: 0xd6b266, block: [0, 1], act: { type: "page", path: "/projects" }, h: 23 },
-  { id: "town", label: "Town Square \u00b7 World 1", tint: 0x77c98a, block: [0, -2], act: { type: "page", path: "/engine" }, h: 16 }
-];
-const PLOT_COUNT = 8;
+// doors: every civic building in city.js has a real door; this maps its id to what the door does.
+const DOOR_ACTS = {
+  theater: { type: "interior", id: "theater" }, arcade: { type: "interior", id: "arcade" }, library: { type: "interior", id: "library" },
+  social: { type: "page", path: "/social" }, projects: { type: "page", path: "/projects" }, news: { type: "page", path: "/news" },
+  town: { type: "page", path: "/engine" }, ashgrove: { type: "page", path: "/world3/gate/" },
+};
+let city = null;                // handle from buildCity()
+let walkPath = null, walkStuck = 0, walkMarker = null, walkMarkerT = 0;   // tap / click to walk
 const ROOM = { theater: { x: 620, z: -160 }, arcade: { x: 620, z: -45 }, library: { x: 620, z: 70 } };
 let inInterior = null;          // interior id or null
 let interiorReturn = null;
@@ -106,9 +106,10 @@ const W2_DUSK = new THREE.Color(0xe08c52);
 const W2_NIGHT = new THREE.Color(0x0a1422);
 
 // ---- player state ----
-const state = { x: 0, y: 1.65, z: 10, yaw: 0, pitch: 0, stance: "stand" };
+const state = { x: -35.5, y: 1.8, z: 7.7, yaw: -1.32, pitch: 0.06, stance: "stand" };   // on Berry St, looking east to the courthouse dome
 const input = { moveX: 0, moveY: 0, crouchHeld: false, jumpQueued: false, touchLookId: null, touchLookX: 0, touchLookY: 0, moveTouchId: null };
 const settings = { sensitivity: 1, invertY: false };
+const ptr = { id: null, x0: 0, y0: 0, x: 0, y: 0, t0: 0, moved: false, mouse: false };
 const motion = { airOffset: 0, verticalVelocity: 0, onGround: true, sprinting: false, moving: false };
 const keys = new Set();
 let hasEntered = false;
@@ -173,7 +174,7 @@ function makeWorldSky(radius) {
   const m = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16), mat); m.frustumCulled = false; return m;
 }
 const SKY_PAL = {
-  night: { zenith: 0x03060f, horizon: 0x0e1526, glow: 0x101a33, cloudLit: 0x1a2236, cloudShade: 0x0a0f1a },
+  night: { zenith: 0x060c1c, horizon: 0x1a2640, glow: 0x1d2a48, cloudLit: 0x26304a, cloudShade: 0x111827 },
   dusk:  { zenith: 0x1f3566, horizon: 0xe98a58, glow: 0xffa860, cloudLit: 0xf2a377, cloudShade: 0x5a4a66 },
   day:   { zenith: 0x2f6fc6, horizon: 0xb7d2ea, glow: 0xfff0d0, cloudLit: 0xffffff, cloudShade: 0xb9c3cf },
 };
@@ -192,8 +193,10 @@ function peopleList() {
   if (!peopleRoster) peopleRoster = fetch("/homes/people/people.json", { cache: "no-cache" }).then((r) => r.json()).then((j) => j.people || []).catch(() => []);
   return peopleRoster;
 }
+let peopleMods = null;
+function loadPeopleMods() { if (!peopleMods) peopleMods = Promise.all([import(GLTF_ESM), import(SKEL_ESM)]); return peopleMods; }
 function personFile(file) {
-  if (!peopleFiles.has(file)) peopleFiles.set(file, new GLTFLoader().loadAsync("/homes/people/" + file));
+  if (!peopleFiles.has(file)) peopleFiles.set(file, loadPeopleMods().then(([g]) => new g.GLTFLoader().loadAsync("/homes/people/" + file)));
   return peopleFiles.get(file);
 }
 function myPerson() { try { return localStorage.getItem("hb-look") || ""; } catch (e) { return ""; } }   // the Loft's "You" pick
@@ -203,7 +206,8 @@ async function swapInPerson(group, colorHex, name, personId) {
     const list = await peopleList(); if (!list.length) return;
     const pick = list.find((p) => p.id === personId) || list[personHash(name) % list.length];
     const gl = await personFile(pick.file);
-    const body = cloneSkinned(gl.scene); body.rotation.y = Math.PI;
+    const [, skel] = await loadPeopleMods();
+    const body = skel.clone(gl.scene); body.rotation.y = Math.PI;
     body.traverse((m) => {
       if (!m.isMesh) return;
       m.frustumCulled = false; m.castShadow = true;
@@ -238,9 +242,8 @@ const GRASS_PER_CELL = 54;      // 7*7*54 = 2646 finer tufts, still ONE draw cal
 let grass = null;
 let grassCellX = 1e9, grassCellZ = 1e9;
 
-// ---- city handles (emissive intensity driven by the day/night cycle) ----
-let towerMat = null, lowMat = null, glassMat = null, bulbMat = null;
-const FIREFLY_COUNT = 130;
+// ---- fireflies (courthouse green, the riverfront, open lots, the north woods) ----
+const FIREFLY_COUNT = 220;
 let fireflies = null, fireflyBase = null;
 
 // ---- module temps (reused every frame — no per-frame allocations) ----
@@ -265,27 +268,33 @@ function vnoise(x, z) {
   const a = hash2(ix, iz), b = hash2(ix + 1, iz), c = hash2(ix, iz + 1), d = hash2(ix + 1, iz + 1);
   return a + (b - a) * sx + (c - a) * sz + (a - b - c + d) * sx * sz;
 }
-// Phase 2: real hills. Domain-warped FBM — the warp bends the noise grid so ridgelines
-// meander like real terrain instead of sitting on an obvious lattice. Movement code did
-// not change for this (the Phase 1 promise): it already follows groundHeight.
-function groundHeight(x, z) {
+// Phase 2's hills (domain-warped FBM) survive as the land AROUND the city: the remake flattens downtown, cuts the river
+// across the north, and lets the old hills rise beyond the edges and across the water.
+function smooth01(t) { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); }
+function hillsRaw(x, z) {
   const wx = x + (vnoise(x * 0.01 + 113.7, z * 0.01 + 41.2) - 0.5) * 34;
   const wz = z + (vnoise(x * 0.01 + 77.1, z * 0.01 + 9.8) - 0.5) * 34;
-  let h = (vnoise(wx * 0.008, wz * 0.008) - 0.5) * 2 * 5.6;             // broad hills
-  h += (vnoise(wx * 0.024 + 37.7, wz * 0.024 + 19.3) - 0.5) * 2 * 1.9;  // mid swells
-  h += (vnoise(x * 0.07 + 7.3, z * 0.07 + 3.1) - 0.5) * 2 * 0.45;       // surface detail
-  const d = Math.hypot(x, z);
-  const flat = Math.min(1, Math.max(0, (d - 10) / 26)); // spawn clearing stays level
-  let g = h * flat;
-  // Phase 3: the city rests on a plateau; terrain blends to it across a soft shoulder
-  const cd = Math.hypot(x - CITY.x, z - CITY.z);
-  if (cd < CITY.r + CITY.blend) {
-    let cf = Math.min(1, Math.max(0, (cd - CITY.r) / CITY.blend));
-    cf = cf * cf * (3 - 2 * cf);
-    g = CITY.base + (g - CITY.base) * cf;
-  }
-  return g;
+  let h = (vnoise(wx * 0.008, wz * 0.008) - 0.5) * 2 * 5.6;
+  h += (vnoise(wx * 0.024 + 37.7, wz * 0.024 + 19.3) - 0.5) * 2 * 1.9;
+  h += (vnoise(x * 0.07 + 7.3, z * 0.07 + 3.1) - 0.5) * 2 * 0.45;
+  return Math.max(-1, h + 2.5);
 }
+function groundHeight(x, z) {
+  if (z >= WALL_Z) {   // the south bank: downtown is flat; the hills fade in past the edge and away from the water
+    const dx = Math.max(0, CITY_RECT.x0 - x, x - CITY_RECT.x1), dz = Math.max(0, z - CITY_RECT.z1), d = Math.hypot(dx, dz);
+    if (d <= 0) return -0.06;
+    return -0.06 + hillsRaw(x, z) * smooth01((d - 4) / 45) * smooth01((z - WALL_Z) / 28);
+  }
+  if (z > RIVER.zN) {  // the river channel (deep against the stone wall, shelving up to the north bank)
+    const t = (z - RIVER.zN) / (WALL_Z - RIVER.zN), walled = x > -184 && x < 184;
+    return -3.6 * smooth01(t / 0.35) * (walled ? 1 : smooth01((1 - t) / 0.3));
+  }
+  const n = RIVER.zN - z;   // the north woods
+  return 0.5 * smooth01(n / 10) + hillsRaw(x, z) * smooth01((n - 6) / 40);
+}
+function inCityZone(x, z, m = 0) { return x > CITY_RECT.x0 - m && x < CITY_RECT.x1 + m && z > WALL_Z - m && z < CITY_RECT.z1 + m; }
+function inRiver(x, z, m = 0) { return z > RIVER.zN - m && z < WALL_Z + m; }
+function floorAt(x, z) { const c = cityFloor(x, z); return c === null ? groundHeight(x, z) : c; }
 
 // average gradient magnitude — used at build time for tree/grass placement, never per frame
 function groundSlope(x, z) {
@@ -293,34 +302,6 @@ function groundSlope(x, z) {
   const hx = groundHeight(x + e, z) - groundHeight(x - e, z);
   const hz = groundHeight(x, z + e) - groundHeight(x, z - e);
   return Math.hypot(hx, hz) / (2 * e);
-}
-
-// ---- roads (Phase 3): painted into the terrain, not separate geometry — phone-cheap,
-// and every system (ground color, grass, trees, rocks, lamps) samples the same truth ----
-function cityDist(x, z) { return Math.hypot(x - CITY.x, z - CITY.z); }
-// distance to the main road: the straight line from spawn to the city heart
-function roadDist(x, z) {
-  const L2 = CITY.x * CITY.x + CITY.z * CITY.z;
-  let t = (x * CITY.x + z * CITY.z) / L2;
-  t = Math.max(0, Math.min(1, t));
-  return Math.hypot(x - CITY.x * t, z - CITY.z * t);
-}
-// distance to the nearest city street line (12-unit grid in city-local coordinates)
-function streetDist(x, z) {
-  const dx = x - CITY.x, dz = z - CITY.z;
-  const mx = Math.abs(dx - Math.round(dx / CITY.street) * CITY.street);
-  const mz = Math.abs(dz - Math.round(dz / CITY.street) * CITY.street);
-  return Math.min(mx, mz);
-}
-// 0..1 how paved this spot is (main road, city streets, central plaza)
-function pavedAt(x, z) {
-  let p = Math.min(1, Math.max(0, (3.2 - roadDist(x, z)) / 1.2));
-  const cd = cityDist(x, z);
-  if (cd < CITY.r + 4) {
-    p = Math.max(p, Math.min(1, Math.max(0, (3.6 - streetDist(x, z)) / 1.2)));
-    p = Math.max(p, Math.min(1, Math.max(0, (10.4 - cd) / 1.5)));
-  }
-  return p;
 }
 
 // ---- realism pass (Jaron 9/28: "not look like Roblox texture") - World 2's own copy of World 1's foliage idea:
@@ -389,40 +370,35 @@ function w2FoliageMaterials() {
   return { leaf: w2LeafMat, needle: w2NeedleMat };
 }
 
+// ---- boot progress (the loading screen in index.html shows these) ----
+function progress(p, label) { try { window.__w2Progress && window.__w2Progress(p, label); } catch (e) {} }
+const yieldFrame = () => new Promise((r) => setTimeout(r, 0));
+
 // ---- build the world ----
-function buildWorld() {
-  // ground: heightfield plane. Displace first, compute normals, THEN color by height AND
-  // slope — the normal.y we get from computeVertexNormals is a free slope measure per vertex.
-  const size = 600, segs = 196;
+async function buildWorld() {
+  progress(0.12, "Shaping the land");
+  await yieldFrame();
+  const size = 600, segs = 120;
   const groundGeo = new THREE.PlaneGeometry(size, size, segs, segs);
   groundGeo.rotateX(-Math.PI / 2);
   const pos = groundGeo.attributes.position;
-  for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, groundHeight(pos.getX(i), pos.getZ(i)));
-  }
+  for (let i = 0; i < pos.count; i++) pos.setY(i, groundHeight(pos.getX(i), pos.getZ(i)));
   groundGeo.computeVertexNormals();
   const nrm = groundGeo.attributes.normal;
   const colors = new Float32Array(pos.count * 3);
   const cLush = new THREE.Color(0x4c6b46), cDry = new THREE.Color(0x7d7a4e), cHigh = new THREE.Color(0x8a8378), cRock = new THREE.Color(0x6e685e);
-  const cRoad = new THREE.Color(0x3f3f3d), cDust = new THREE.Color(0x6b6456);
+  const cMud = new THREE.Color(0x5a5244), cEdge = new THREE.Color(0x5e6a4a);
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), z = pos.getZ(i), h = pos.getY(i), ny = nrm.getY(i);
-    const t = Math.min(1, Math.max(0, (h + 1) / 7));
+    const t = Math.min(1, Math.max(0, (h + 1) / 9));
     _sky.copy(cLush).lerp(cDry, Math.min(1, t * 1.5)).lerp(cHigh, Math.max(0, t - 0.6) * 2.5);
-    const steep = Math.min(1, Math.max(0, (0.82 - ny) / 0.25)); // cliffsides read as rock
-    _sky.lerp(cRock, steep);
-    // Phase 3: streets and the city floor are painted into the terrain itself
-    const dust = Math.min(1, Math.max(0, (CITY.r - cityDist(x, z)) / 8)) * 0.4;
-    if (dust > 0) _sky.lerp(cDust, dust);
-    const pv = pavedAt(x, z);
-    if (pv > 0) _sky.lerp(cRoad, pv * 0.85);
+    _sky.lerp(cRock, Math.min(1, Math.max(0, (0.82 - ny) / 0.25)));
+    if (inRiver(x, z, 3)) _sky.lerp(cMud, 0.75);
+    else if (inCityZone(x, z, 14)) _sky.lerp(cEdge, 0.4);
     const jitter = (vnoise(x * 0.3 + 91, z * 0.3 + 17) - 0.5) * 0.06;
-    colors[i * 3] = _sky.r + jitter;
-    colors[i * 3 + 1] = _sky.g + jitter;
-    colors[i * 3 + 2] = _sky.b + jitter;
+    colors[i * 3] = _sky.r + jitter; colors[i * 3 + 1] = _sky.g + jitter; colors[i * 3 + 2] = _sky.b + jitter;
   }
   groundGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  // realism pass: a grass detail map (grey, so the painted zones keep their colour) and its bumps, tiled every ~3 m
   const texL = new THREE.TextureLoader(), tile = size / 3;
   const detail = texL.load("/world2/assets/ground_detail.webp"); detail.colorSpace = THREE.SRGBColorSpace;
   const bumps = texL.load("/world2/assets/ground_normal.webp");
@@ -431,33 +407,18 @@ function buildWorld() {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // spawn marker: a flat stone disc — honest "you arrive here", not a fake plaza
-  const disc = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.6, 2.8, 0.18, 28),
-    new THREE.MeshStandardMaterial({ color: 0x8e8a80, roughness: 0.85 })
-  );
-  disc.position.set(0, 0.02, 0);
-  disc.receiveShadow = true;
-  scene.add(disc);
-
-  // scattered boulders: scale + parallax reference while walking (instanced — one draw call)
-  const rockCount = 70;
-  const rocks = new THREE.InstancedMesh(
-    new THREE.DodecahedronGeometry(1, 0),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }),
-    rockCount
-  );
+  // boulders out in the hills only (instanced — one draw call); every one a different size, tilt and tone
+  const rockCount = 90;
+  const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }), rockCount);
   let rocksPlaced = 0;
-  for (let i = 0; i < rockCount; i++) {
-    const ang = hash2(i, 11) * Math.PI * 2;
-    const dist = 15 + hash2(i, 23) * 115;
-    const x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
-    if (cityDist(x, z) < CITY.r + 6 || roadDist(x, z) < 4.5) continue; // streets stay clear
-    const sc = 0.4 + hash2(i, 41) * 1.3;
+  for (let i = 0; i < rockCount * 3 && rocksPlaced < rockCount; i++) {
+    const x = (hash2(i, 11) - 0.5) * 2 * 285, z = (hash2(i, 23) - 0.5) * 2 * 285;
+    if (inCityZone(x, z, 10) || inRiver(x, z, 6)) continue;
+    const sc = 0.4 + hash2(i, 41) * 1.6;
     _eu.set(hash2(i, 5) * Math.PI, hash2(i, 7) * Math.PI, hash2(i, 9) * Math.PI);
     _q.setFromEuler(_eu);
-    _vs.set(sc, sc * (0.7 + hash2(i, 13) * 0.5), sc);
-    _vp.set(x, groundHeight(x, z) + sc * 0.18, z);
+    _vs.set(sc * (0.8 + hash2(i, 3) * 0.6), sc * (0.6 + hash2(i, 13) * 0.6), sc);
+    _vp.set(x, groundHeight(x, z) + sc * 0.15, z);
     _m4.compose(_vp, _q, _vs);
     rocks.setMatrixAt(rocksPlaced, _m4);
     const g = 0.42 + hash2(i, 57) * 0.2;
@@ -465,37 +426,25 @@ function buildWorld() {
     rocks.setColorAt(rocksPlaced, _sky);
     rocksPlaced++;
   }
-  rocks.count = rocksPlaced; // unused instances would otherwise render as identity boulders at spawn
-  rocks.castShadow = true;
-  rocks.receiveShadow = true;
+  rocks.count = rocksPlaced;
+  rocks.castShadow = true; rocks.receiveShadow = true;
   scene.add(rocks);
 
-  // ---- trees: two archetypes, all instanced — 4 draw calls for the whole forest ----
-  // placement: seeded rejection sampling; no trees on cliffsides, ridgetops, or the spawn clearing
+  // ---- the woods around the city and across the river: two archetypes, all instanced ----
   const treeSpots = [];
-  for (let i = 0; i < 2600 && treeSpots.length < 440; i++) {
-    const x = (hash2(i, 211) - 0.5) * 2 * 280;
-    const z = (hash2(i, 223) - 0.5) * 2 * 280;
-    const d = Math.hypot(x, z);
-    if (d < 16) continue;
-    if (cityDist(x, z) < CITY.r + 10) continue; // the city carves its clearing from the forest
-    if (roadDist(x, z) < 4.5) continue;         // the road stays open
-    let nearPlot = false;
-    for (let pp = 0; pp < PLOT_COUNT; pp++) {
-      const s = plotSpot(pp);
-      if (Math.abs(x - s.x) < 8 && Math.abs(z - s.z) < 8) { nearPlot = true; break; }
-    }
-    if (nearPlot) continue; // residents' plots stay open
+  for (let i = 0; i < 4200 && treeSpots.length < 520; i++) {
+    const x = (hash2(i, 211) - 0.5) * 2 * 290;
+    const z = (hash2(i, 223) - 0.5) * 2 * 290;
+    if (inCityZone(x, z, 9) || inRiver(x, z, 4)) continue;
+    if (Math.abs(x - BRIDGE.x) < 6 && z < RIVER.zN && z > RIVER.zN - 14) continue;   // the bridge landing stays open
     if (groundSlope(x, z) > 0.55) continue;
-    if (groundHeight(x, z) > 6.2) continue;
-    treeSpots.push({ x, z, s: 0.75 + hash2(i, 227) * 0.7, kind: hash2(i, 229) < 0.58 ? 0 : 1, seed: i });
+    if (groundHeight(x, z) > 9.5) continue;
+    treeSpots.push({ x, z, s: 0.75 + hash2(i, 227) * 0.75, kind: hash2(i, 229) < 0.55 ? 0 : 1, seed: i });
   }
   const conifers = treeSpots.filter((t) => t.kind === 0);
   const broadleafs = treeSpots.filter((t) => t.kind === 1);
-
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
   const canopyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
-
   function plantTrees(spots, trunkGeo, trunkH, canopyGeo, canopyY, canopyColors, cardGeo, cardMat) {
     if (!spots.length) return;
     const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, spots.length);
@@ -506,7 +455,7 @@ function buildWorld() {
       const gy = groundHeight(t.x, t.z);
       _eu.set(0, hash2(t.seed, 233) * Math.PI * 2, 0);
       _q.setFromEuler(_eu);
-      _vs.set(t.s, t.s, t.s);
+      _vs.set(t.s, t.s * (0.85 + hash2(t.seed, 235) * 0.35), t.s);
       _vp.set(t.x, gy + (trunkH / 2 - 0.15) * t.s, t.z);
       _m4.compose(_vp, _q, _vs);
       trunks.setMatrixAt(i, _m4);
@@ -517,370 +466,92 @@ function buildWorld() {
       const shade = 0.85 + hash2(t.seed, 239) * 0.3;
       _sky.setRGB(0.32 * shade, 0.24 * shade, 0.16 * shade);
       trunks.setColorAt(i, _sky);
-      const golden = hash2(t.seed, 241) < 0.08; // a few autumn-gold trees in the green
+      const golden = hash2(t.seed, 241) < 0.08;
       _sky.set(canopyColors[golden ? 2 : (hash2(t.seed, 251) < 0.5 ? 0 : 1)]);
-      const v = 0.86 + hash2(t.seed, 257) * 0.28;
-      _sky.multiplyScalar(v);
-      if (cards) { cards.setColorAt(i, _sky.clone().multiplyScalar(1.9)); _sky.multiplyScalar(0.5); }   // leaves carry the colour; the crown becomes inner shade
+      _sky.multiplyScalar(0.86 + hash2(t.seed, 257) * 0.28);
+      if (cards) { cards.setColorAt(i, _sky.clone().multiplyScalar(1.9)); _sky.multiplyScalar(0.5); }
       canopies.setColorAt(i, _sky);
-      // trunks are solid where the player can actually reach (same collider shape as World 1)
-      if (Math.hypot(t.x, t.z) <= worldBounds + 5) {
-        buildingColliders.push({ x: t.x, z: t.z, width: 0.55 * t.s + 0.25, depth: 0.55 * t.s + 0.25 });
-      }
+      buildingColliders.push({ x: t.x, z: t.z, width: 0.55 * t.s + 0.25, depth: 0.55 * t.s + 0.25, h: 6 });
     }
-    trunks.castShadow = true;
-    canopies.castShadow = true;
-    canopies.receiveShadow = true;
-    scene.add(trunks);
-    scene.add(canopies);
+    trunks.castShadow = true; canopies.castShadow = true; canopies.receiveShadow = true;
+    scene.add(trunks); scene.add(canopies);
     if (cards) { cards.castShadow = true; cards.receiveShadow = true; scene.add(cards); }
   }
   const foliage = w2FoliageMaterials();
+  plantTrees(conifers, new THREE.CylinderGeometry(0.14, 0.22, 2.4, 6), 2.4, new THREE.ConeGeometry(1.2, 4.2, 7), 2.4 * 0.8 + 2.2,
+    [0x2e4a32, 0x3a5638, 0x8a6b2e], w2PineTiers({ tiers: 7, height: 4.6, radius: 1.55, seed: 11 }), foliage.needle);
+  const leafShell = w2CardShell({ cards: 26, rx: 1.75, ry: 1.25, rz: 1.7, cy: 0, size: 1.55, seed: 20260928 });
+  plantTrees(broadleafs, new THREE.CylinderGeometry(0.16, 0.26, 2.0, 6), 2.0, new THREE.IcosahedronGeometry(1.55, 1), 2.0 + 1.1,
+    [0x4a6b35, 0x55763c, 0x8a7a3a], leafShell, foliage.leaf);
 
-  plantTrees(
-    conifers,
-    new THREE.CylinderGeometry(0.14, 0.22, 2.4, 6), 2.4,
-    new THREE.ConeGeometry(1.2, 4.2, 7), 2.4 * 0.8 + 2.2,
-    [0x2e4a32, 0x3a5638, 0x8a6b2e],
-    w2PineTiers({ tiers: 7, height: 4.6, radius: 1.55, seed: 11 }), foliage.needle
-  );
-  plantTrees(
-    broadleafs,
-    new THREE.CylinderGeometry(0.16, 0.26, 2.0, 6), 2.0,
-    new THREE.IcosahedronGeometry(1.55, 1), 2.0 + 1.1,
-    [0x4a6b35, 0x55763c, 0x8a7a3a],
-    w2CardShell({ cards: 26, rx: 1.75, ry: 1.25, rz: 1.7, cy: 0, size: 1.55, seed: 20260928 }), foliage.leaf
-  );
+  // ---- grass (only grows off the pavement; skipped in the gate-page preview) ----
+  if (!PREVIEW) {
+    grass = new THREE.InstancedMesh(
+      makeGrassGeometry(),
+      new THREE.MeshStandardMaterial({ map: makeGrassTexture(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 1, metalness: 0 }),
+      (GRASS_CELL_RADIUS * 2 + 1) * (GRASS_CELL_RADIUS * 2 + 1) * GRASS_PER_CELL
+    );
+    grass.receiveShadow = true;
+    grass.frustumCulled = false;
+    scene.add(grass);
+  }
 
-  // ---- grass: one instanced mesh of crossed quads wearing a procedural CanvasTexture ----
-  grass = new THREE.InstancedMesh(
-    makeGrassGeometry(),
-    new THREE.MeshStandardMaterial({ map: makeGrassTexture(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 1, metalness: 0 }),
-    (GRASS_CELL_RADIUS * 2 + 1) * (GRASS_CELL_RADIUS * 2 + 1) * GRASS_PER_CELL
-  );
-  grass.receiveShadow = true;
-  grass.frustumCulled = false; // matrices move with the player; one mesh, skip the stale-bounds cull
-  scene.add(grass);
-
-  // one sun, PCFSoft shadows, tight shadow camera that follows the player
+  // one sun (the moon borrows it at night), PCFSoft shadows, tight shadow camera that follows the player
   sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
   sunLight.castShadow = true;
-  sunLight.shadow.mapSize.set(1024, 1024);
-  sunLight.shadow.camera.left = -48;
-  sunLight.shadow.camera.right = 48;
-  sunLight.shadow.camera.top = 48;
-  sunLight.shadow.camera.bottom = -48;
-  sunLight.shadow.camera.near = 2;
-  sunLight.shadow.camera.far = 260;
-  sunLight.shadow.bias = -0.0005;
+  sunLight.shadow.mapSize.set(window.HBDevice?.tier === "desktop" ? 2048 : 1024, window.HBDevice?.tier === "desktop" ? 2048 : 1024);
+  sunLight.shadow.camera.left = -55; sunLight.shadow.camera.right = 55; sunLight.shadow.camera.top = 55; sunLight.shadow.camera.bottom = -55;
+  sunLight.shadow.camera.near = 2; sunLight.shadow.camera.far = 320;
+  sunLight.shadow.bias = -0.0006; sunLight.shadow.normalBias = 0.04;
   scene.add(sunLight);
   scene.add(sunLight.target);
-
   hemiLight = new THREE.HemisphereLight(0xbfd6e8, 0x4a4438, 1.0);
   scene.add(hemiLight);
 
-  // sky elements ride an anchor pinned to the player, so they never drift close or fall behind
   skyAnchor = new THREE.Group();
   scene.add(skyAnchor);
-
-  sunDisc = new THREE.Mesh(
-    new THREE.CircleGeometry(9, 24),
-    new THREE.MeshBasicMaterial({ color: 0xffd9a0, fog: false, depthWrite: false })
-  );
+  sunDisc = new THREE.Mesh(new THREE.CircleGeometry(9, 24), new THREE.MeshBasicMaterial({ color: 0xffd9a0, fog: false, depthWrite: false }));
   skyAnchor.add(sunDisc);
-
-  moonDisc = new THREE.Mesh(
-    new THREE.CircleGeometry(5.5, 24),
-    new THREE.MeshBasicMaterial({ color: 0xd8e2ef, fog: false, depthWrite: false, transparent: true, opacity: 0.92 })
-  );
+  moonDisc = new THREE.Mesh(new THREE.CircleGeometry(5.5, 24), new THREE.MeshBasicMaterial({ color: 0xd8e2ef, fog: false, depthWrite: false, transparent: true, opacity: 0.92 }));
   skyAnchor.add(moonDisc);
-
   const starCount = 420;
   const starPos = new Float32Array(starCount * 3);
   for (let i = 0; i < starCount; i++) {
-    const az = hash2(i, 101) * Math.PI * 2;
-    const el = Math.asin(0.06 + hash2(i, 103) * 0.93);
-    const r = 230;
-    starPos[i * 3] = Math.cos(el) * Math.cos(az) * r;
-    starPos[i * 3 + 1] = Math.sin(el) * r;
-    starPos[i * 3 + 2] = Math.cos(el) * Math.sin(az) * r;
+    const az = hash2(i, 101) * Math.PI * 2, el = Math.asin(0.06 + hash2(i, 103) * 0.93), r = 230;
+    starPos[i * 3] = Math.cos(el) * Math.cos(az) * r; starPos[i * 3 + 1] = Math.sin(el) * r; starPos[i * 3 + 2] = Math.cos(el) * Math.sin(az) * r;
   }
   const starGeo = new THREE.BufferGeometry();
   starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
   stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xeaf2ff, size: 1.7, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false }));
   skyAnchor.add(stars);
 
-  buildCity();
-  buildCivic();
+  progress(0.3, "Drawing the street grid");
+  await yieldFrame();
+  // ---- THE CITY (world2/city.js): streets, the building kit, lamps, signals, cars, the river ----
+  const waterNormal = new THREE.TextureLoader().load("/world2/assets/ground_normal.webp");
+  city = await buildCity(scene, { progress, yieldFrame, leafGeo: leafShell, leafMat: foliage.leaf, waterNormal });
+  for (const c of city.colliders) buildingColliders.push(c);
+  for (const d of city.doors) doors.push({ id: d.id, label: d.label, x: d.x, z: d.z, hw: d.hw, hd: d.hd, act: DOOR_ACTS[d.id] || { type: "page", path: "/" } });
+  for (const pl of city.plots) plotPads.push({ plot: pl.plot, x: pl.fx, z: pl.fz, cx: pl.x, cz: pl.z, box: pl.box, claimed: false, row: null });
+  progress(0.97, "Opening the doors");
   buildInteriors();
-  buildLamps();
   buildFireflies();
-  buildPlotPads();
-}
-
-// ---- Phase 3: the city — instanced boxes wearing procedural facade + emissive-window
-// textures. Hundreds of windows, a handful of draw calls. The Bilawal-demo technique. ----
-function makeFacadeTextures(cols, rows, opts) {
-  opts = opts || {};
-  const baseCol = opts.base || "#3a4049";
-  const darkWin = opts.darkWin || "#14181f";
-  const faceLit = opts.faceLit || "#322f27"; // dim on the facade — the night glow is emissive's job
-  const litRatio = opts.litRatio === undefined ? 0.36 : opts.litRatio;
-  const warm = opts.palette || ["#ffb066", "#ffd093", "#ffe9c4", "#bcd6ff"];
-  const W = 192, H = 256;
-  const face = document.createElement("canvas"); face.width = W; face.height = H;
-  const glow = document.createElement("canvas"); glow.width = W; glow.height = H;
-  const fc = face.getContext("2d"), gc = glow.getContext("2d");
-  fc.fillStyle = baseCol; fc.fillRect(0, 0, W, H);
-  for (let i = 0; i < 340; i++) { // concrete speckle
-    const v = 44 + Math.floor(hash2(i, rows * 97) * 30);
-    fc.fillStyle = "rgb(" + v + "," + (v + 3) + "," + (v + 7) + ")";
-    fc.fillRect(hash2(i, 501) * W, hash2(i, 503) * H, 2, 2);
-  }
-  gc.fillStyle = "#000"; gc.fillRect(0, 0, W, H);
-  const x0 = 10, y0 = 8, gw = (W - 20) / cols, gh = (H * 0.78) / rows;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const wx = x0 + c * gw + 2, wy = y0 + r * gh + 2, ww = gw - 5, wh = gh - 6;
-      const lit = hash2(c * 13 + cols, r * 29 + rows) < litRatio;
-      fc.fillStyle = lit ? faceLit : darkWin;
-      fc.fillRect(wx, wy, ww, wh);
-      if (lit) {
-        gc.fillStyle = warm[Math.floor(hash2(c * 7 + 3, r * 11 + 5) * warm.length)];
-        gc.globalAlpha = 0.55 + hash2(c * 3, r * 17) * 0.45;
-        gc.fillRect(wx, wy, ww, wh);
-        gc.globalAlpha = 1;
-      }
-    }
-  }
-  // the unwindowed band at the canvas bottom = street level (flipY: canvas top is building top)
-  const map = new THREE.CanvasTexture(face); map.colorSpace = THREE.SRGBColorSpace;
-  const emissiveMap = new THREE.CanvasTexture(glow); emissiveMap.colorSpace = THREE.SRGBColorSpace;
-  return { map, emissiveMap };
-}
-
-function buildCity() {
-  // one composition per block, ALIGNED to the street grid — orderly rows, not scatter.
-  // Archetypes: podium+tower (downtown, some glass), stepped tower, twin slabs, plain
-  // tower, low slab pairs (edge ring). Every part is still a box instance: 3 draw calls.
-  const towerParts = [], lowParts = [], glassParts = [];
-  const solid = (x, z, w, d) => buildingColliders.push({ x, z, width: w, depth: d });
-
-  for (let gi = -4; gi <= 3; gi++) {
-    for (let gj = -4; gj <= 3; gj++) {
-      const bx = CITY.x + gi * CITY.street + CITY.street / 2;
-      const bz = CITY.z + gj * CITY.street + CITY.street / 2;
-      const cd = Math.hypot(bx - CITY.x, bz - CITY.z);
-      if (cd > CITY.r - 5) continue;
-      if (cd < 11) continue; // plaza blocks stay open
-      let civicHere = false;
-      for (let ci = 0; ci < CIVICS.length; ci++) {
-        if (CIVICS[ci].block[0] === gi && CIVICS[ci].block[1] === gj) { civicHere = true; break; }
-      }
-      if (civicHere) continue; // a civic tower stands here (built with its door in buildCivic)
-      const s1 = hash2(gi * 7 + 103, gj * 13 + 59);
-      const s2 = hash2(gi * 17 + 5, gj * 29 + 11);
-      const seed = (gi + 9) * 100 + (gj + 9);
-      const core = Math.max(0, 1 - cd / CITY.r);
-      if (core > 0.55) {
-        // downtown: podium + tower; some towers are glass
-        lowParts.push({ x: bx, z: bz, w: 8.8, h: 2.8 + s2 * 1.2, d: 8.8, seed });
-        (s2 < 0.45 ? glassParts : towerParts).push({ x: bx, z: bz, w: 5.4, h: 15 + s1 * 14, d: 5.4, seed: seed + 1 });
-        solid(bx, bz, 8.8, 8.8);
-      } else if (core > 0.3) {
-        if (s1 < 0.34) {
-          // stepped tower: wide base, thinner shaft rising past it
-          towerParts.push({ x: bx, z: bz, w: 6.8, h: 8 + s2 * 5, d: 6.8, seed });
-          towerParts.push({ x: bx, z: bz, w: 4.4, h: 13 + s2 * 7, d: 4.4, seed: seed + 1 });
-          solid(bx, bz, 6.8, 6.8);
-        } else if (s1 < 0.67) {
-          // twin slabs, axis alternating by block parity — reads as rows along the streets
-          const flip = (gi + gj) & 1;
-          const ox = flip ? 0 : 2.55, oz = flip ? 2.55 : 0;
-          const w = flip ? 8 : 3.7, d = flip ? 3.7 : 8;
-          towerParts.push({ x: bx - ox, z: bz - oz, w, h: 9 + s2 * 7, d, seed });
-          towerParts.push({ x: bx + ox, z: bz + oz, w, h: 9 + s1 * 6, d, seed: seed + 1 });
-          solid(bx - ox, bz - oz, w, d);
-          solid(bx + ox, bz + oz, w, d);
-        } else {
-          (s2 < 0.3 ? glassParts : towerParts).push({ x: bx, z: bz, w: 7, h: 10 + s2 * 9, d: 7, seed });
-          solid(bx, bz, 7, 7);
-        }
-      } else {
-        // edge ring: low and orderly
-        if (s1 < 0.5) {
-          lowParts.push({ x: bx, z: bz, w: 8.4, h: 3.2 + s2 * 2.4, d: 8.4, seed });
-          solid(bx, bz, 8.4, 8.4);
-        } else {
-          const flip = (gi + gj) & 1;
-          const ox = flip ? 0 : 2.55, oz = flip ? 2.55 : 0;
-          const w = flip ? 7.8 : 3.5, d = flip ? 3.5 : 7.8;
-          lowParts.push({ x: bx - ox, z: bz - oz, w, h: 3 + s2 * 2, d, seed });
-          lowParts.push({ x: bx + ox, z: bz + oz, w, h: 3 + s1 * 2, d, seed: seed + 1 });
-          solid(bx - ox, bz - oz, w, d);
-          solid(bx + ox, bz + oz, w, d);
-        }
-      }
-    }
-  }
-
-  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-  boxGeo.translate(0, 0.5, 0); // origin at the base: scale = footprint + height directly
-  const tTex = makeFacadeTextures(5, 13, { base: "#363c45", litRatio: 0.34 });
-  towerMat = new THREE.MeshStandardMaterial({ map: tTex.map, emissive: 0xffffff, emissiveMap: tTex.emissiveMap, emissiveIntensity: 0.03, roughness: 0.85, metalness: 0.05 });
-  const lTex = makeFacadeTextures(7, 5, { base: "#3d4140" });
-  lowMat = new THREE.MeshStandardMaterial({ map: lTex.map, emissive: 0xffffff, emissiveMap: lTex.emissiveMap, emissiveIntensity: 0.03, roughness: 0.9, metalness: 0 });
-  const gTex = makeFacadeTextures(6, 14, { base: "#2a3744", darkWin: "#1c2733", faceLit: "#2e3b48", litRatio: 0.5, palette: ["#cfe2ff", "#e8f1ff", "#ffe9c4", "#bcd6ff"] });
-  glassMat = new THREE.MeshStandardMaterial({ map: gTex.map, emissive: 0xffffff, emissiveMap: gTex.emissiveMap, emissiveIntensity: 0.03, roughness: 0.55, metalness: 0.25 });
-
-  function instanceParts(list, mat) {
-    if (!list.length) return;
-    const mesh = new THREE.InstancedMesh(boxGeo, mat, list.length);
-    for (let i = 0; i < list.length; i++) {
-      const b = list[i];
-      _vp.set(b.x, groundHeight(b.x, b.z) - 0.5, b.z); // sunk foundation
-      _q.identity();
-      _vs.set(b.w, b.h + 0.5, b.d);
-      _m4.compose(_vp, _q, _vs);
-      mesh.setMatrixAt(i, _m4);
-      const v = 0.82 + hash2(b.seed, 701) * 0.26;
-      _sky.setRGB(v, v * (0.96 + hash2(b.seed, 703) * 0.07), v * (0.92 + hash2(b.seed, 709) * 0.12));
-      mesh.setColorAt(i, _sky);
-    }
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    scene.add(mesh);
-  }
-  instanceParts(towerParts, towerMat);
-  instanceParts(lowParts, lowMat);
-  instanceParts(glassParts, glassMat);
-
-  buildRoads();
-
-  // plaza waymark — a quiet stone spire; the city has no name yet, and the stone doesn't pretend to one
-  const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8e8a80, roughness: 0.85 });
-  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.9, 0.5, 18), stoneMat);
-  plinth.position.set(CITY.x, groundHeight(CITY.x, CITY.z) + 0.25, CITY.z);
-  plinth.castShadow = true; plinth.receiveShadow = true;
-  scene.add(plinth);
-  const spire = new THREE.Mesh(new THREE.BoxGeometry(0.6, 4.2, 0.6), new THREE.MeshStandardMaterial({ color: 0x6e685e, roughness: 0.7 }));
-  spire.position.set(CITY.x, groundHeight(CITY.x, CITY.z) + 2.6, CITY.z);
-  spire.castShadow = true;
-  scene.add(spire);
-  buildingColliders.push({ x: CITY.x, z: CITY.z, width: 3.4, depth: 3.4 });
-}
-
-// real, visible road geometry: instanced street strips on the flat plateau, a plaza disc,
-// and a main-road ribbon that conforms to the hills from the spawn stone to the plaza
-function buildRoads() {
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x3b3b39, roughness: 1, metalness: 0, side: THREE.DoubleSide });
-  const strip = new THREE.PlaneGeometry(1, 1);
-  strip.rotateX(-Math.PI / 2);
-  const lines = [];
-  for (let k = -3; k <= 3; k++) {
-    const off = k * CITY.street;
-    const half = Math.sqrt(Math.max(0, (CITY.r - 1.5) * (CITY.r - 1.5) - off * off));
-    if (half < 6) continue;
-    lines.push({ axis: 0, off, len: half * 2 });
-    lines.push({ axis: 1, off, len: half * 2 });
-  }
-  const streets = new THREE.InstancedMesh(strip, roadMat, lines.length);
-  _q.identity();
-  for (let i = 0; i < lines.length; i++) {
-    const L = lines[i];
-    if (L.axis === 0) { _vp.set(CITY.x, CITY.base + 0.04, CITY.z + L.off); _vs.set(L.len, 1, 4.6); }
-    else { _vp.set(CITY.x + L.off, CITY.base + 0.04, CITY.z); _vs.set(4.6, 1, L.len); }
-    _m4.compose(_vp, _q, _vs);
-    streets.setMatrixAt(i, _m4);
-  }
-  streets.receiveShadow = true;
-  scene.add(streets);
-
-  const plaza = new THREE.Mesh(new THREE.CircleGeometry(10, 36), roadMat);
-  plaza.rotation.x = -Math.PI / 2;
-  plaza.position.set(CITY.x, CITY.base + 0.03, CITY.z);
-  plaza.receiveShadow = true;
-  scene.add(plaza);
-
-  const len = Math.hypot(CITY.x, CITY.z);
-  const ux = CITY.x / len, uz = CITY.z / len, nx = -uz, nz = ux;
-  const t0 = 2.4 / len, t1 = 1 - 9.6 / len, segs = 72, wHalf = 2.1;
-  const pos = new Float32Array((segs + 1) * 2 * 3);
-  const idx = [];
-  for (let i = 0; i <= segs; i++) {
-    const t = t0 + (t1 - t0) * (i / segs);
-    const cx = CITY.x * t, cz = CITY.z * t;
-    for (let s = 0; s < 2; s++) {
-      const side = s === 0 ? -1 : 1;
-      const x = cx + nx * wHalf * side, z = cz + nz * wHalf * side;
-      const o = (i * 2 + s) * 3;
-      pos[o] = x; pos[o + 1] = groundHeight(x, z) + 0.1; pos[o + 2] = z;
-    }
-    if (i < segs) {
-      const a = i * 2, b = i * 2 + 1, c = i * 2 + 2, d = i * 2 + 3;
-      idx.push(a, b, c, b, d, c);
-    }
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  const ribbon = new THREE.Mesh(geo, roadMat);
-  ribbon.receiveShadow = true;
-  scene.add(ribbon);
-}
-
-// street lamps: emissive bulbs only (no per-lamp lights — the glow illusion is fog + tone mapping)
-function buildLamps() {
-  const spots = [];
-  const roadLen = Math.hypot(CITY.x, CITY.z);
-  const nx = -CITY.z / roadLen, nz = CITY.x / roadLen;
-  for (let i = 0; i < 22; i++) {
-    const t = 0.06 + (i / 21) * 0.88;
-    const side = i % 2 === 0 ? 1 : -1;
-    spots.push({ x: CITY.x * t + nx * 3.1 * side, z: CITY.z * t + nz * 3.1 * side });
-  }
-  for (let k = -3; k <= 3; k++) {
-    for (let l = -3; l <= 3; l++) {
-      const lx = CITY.x + k * CITY.street + 2.9, lz = CITY.z + l * CITY.street + 2.9;
-      if (cityDist(lx, lz) > CITY.r - 4) continue;
-      spots.push({ x: lx, z: lz });
-    }
-  }
-  const posts = new THREE.InstancedMesh(
-    new THREE.CylinderGeometry(0.06, 0.08, 3.4, 6),
-    new THREE.MeshStandardMaterial({ color: 0x2c3138, roughness: 0.6, metalness: 0.4 }),
-    spots.length
-  );
-  bulbMat = new THREE.MeshStandardMaterial({ color: 0x665d4a, emissive: 0xffd9a0, emissiveIntensity: 0.1, roughness: 0.5 });
-  const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.17, 10, 8), bulbMat, spots.length);
-  _q.identity();
-  _vs.set(1, 1, 1);
-  for (let i = 0; i < spots.length; i++) {
-    const s = spots[i];
-    const gy = groundHeight(s.x, s.z);
-    _vp.set(s.x, gy + 1.7, s.z);
-    _m4.compose(_vp, _q, _vs);
-    posts.setMatrixAt(i, _m4);
-    _vp.set(s.x, gy + 3.5, s.z);
-    _m4.compose(_vp, _q, _vs);
-    bulbs.setMatrixAt(i, _m4);
-  }
-  posts.castShadow = true;
-  scene.add(posts);
-  scene.add(bulbs);
+  buildMinimap();
+  walkMarker = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.5, 28), new THREE.MeshBasicMaterial({ color: 0x7bd88f, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+  walkMarker.rotation.x = -Math.PI / 2; walkMarker.renderOrder = 3; scene.add(walkMarker);
 }
 
 // fireflies: one Points draw call, visible only at night, drifting on cheap sine paths
 function buildFireflies() {
   fireflyBase = new Float32Array(FIREFLY_COUNT * 3);
   const pos = new Float32Array(FIREFLY_COUNT * 3);
+  const spots = (city && city.firefly) || [];
   for (let i = 0; i < FIREFLY_COUNT; i++) {
-    const a = hash2(i, 801) * Math.PI * 2;
-    const dd = 12 + hash2(i, 807) * 100;
-    const x = Math.cos(a) * dd, z = Math.sin(a) * dd;
+    let x, z;
+    if (i < spots.length) { x = spots[i][0]; z = spots[i][1]; }
+    else { x = (hash2(i, 801) - 0.5) * 360; z = RIVER.zN - 6 - hash2(i, 807) * 90; }   // the north woods across the river
     fireflyBase[i * 3] = x;
-    fireflyBase[i * 3 + 1] = groundHeight(x, z) + 0.5 + hash2(i, 809) * 1.4;
+    fireflyBase[i * 3 + 1] = floorAt(x, z) + 0.5 + hash2(i, 809) * 1.6;
     fireflyBase[i * 3 + 2] = z;
     pos[i * 3] = fireflyBase[i * 3];
     pos[i * 3 + 1] = fireflyBase[i * 3 + 1];
@@ -960,6 +631,8 @@ function makeGrassGeometry() {
 // runs only when the player crosses a 10-unit cell boundary — never per frame
 function updateGrass() {
   if (!grass || inInterior) return;
+  const deep = inCityZone(state.x, state.z, -GRASS_CELL * (GRASS_CELL_RADIUS + 1));   // nothing grows downtown: skip the draw
+  grass.visible = !deep; if (deep) return;
   const cx = Math.round(state.x / GRASS_CELL), cz = Math.round(state.z / GRASS_CELL);
   if (cx === grassCellX && cz === grassCellZ) return;
   grassCellX = cx; grassCellZ = cz;
@@ -973,7 +646,7 @@ function updateGrass() {
         const x = (cellX + hash2(cellX * 31 + k * 7, cellZ * 57 + k * 13) - 0.5) * GRASS_CELL;
         const z = (cellZ + hash2(cellX * 17 + k * 11, cellZ * 91 + k * 5) - 0.5) * GRASS_CELL;
         const gy = groundHeight(x, z);
-        let bare = groundSlope(x, z) > 0.55 || gy > 5.8 || Math.hypot(x, z) < 3.2 || pavedAt(x, z) > 0.25;
+        let bare = groundSlope(x, z) > 0.55 || gy > 9 || inCityZone(x, z, 1) || inRiver(x, z, 1);
         if (!bare) {
           for (let ci = 0; ci < claimedPadCenters.length; ci++) {
             if (Math.abs(x - claimedPadCenters[ci].x) < 4.4 && Math.abs(z - claimedPadCenters[ci].z) < 4.4) { bare = true; break; }
@@ -1024,23 +697,22 @@ function ensureIdentity() {
 }
 
 function makeNameSprite(name, scaleMul) {
+  // the canvas grows with the text (the old fixed 256 px canvas clipped long labels: the 10/28 "tiny, cut off" plot label)
+  const font = "600 30px system-ui, sans-serif";
+  const m = document.createElement("canvas").getContext("2d"); m.font = font;
+  const tw = Math.ceil(m.measureText(name).width) + 30, W = Math.max(256, Math.min(1024, tw + 16));
   const c = document.createElement("canvas");
-  c.width = 256; c.height = 64;
+  c.width = W; c.height = 64;
   const ctx = c.getContext("2d");
-  ctx.font = "600 30px system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "rgba(8,12,16,0.55)";
-  const tw = Math.min(244, ctx.measureText(name).width + 26);
-  ctx.beginPath();
-  ctx.roundRect((256 - tw) / 2, 8, tw, 48, 14);
-  ctx.fill();
+  ctx.font = font; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(8,12,16,0.62)";
+  ctx.beginPath(); ctx.roundRect((W - tw) / 2, 8, tw, 48, 14); ctx.fill();
   ctx.fillStyle = "#eef4fa";
-  ctx.fillText(name, 128, 34);
+  ctx.fillText(name, W / 2, 34);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
-  sprite.scale.set(1.9 * (scaleMul || 1), 0.475 * (scaleMul || 1), 1);
+  sprite.scale.set(1.9 * (W / 256) * (scaleMul || 1), 0.475 * (scaleMul || 1), 1);
   return sprite;
 }
 
@@ -1222,10 +894,17 @@ function scheduleReconnect() {
   }, 2200);
 }
 
-function connect() {
+let supaLoading = null;
+function supaReady() {
+  if (supa) return Promise.resolve(supa);
+  if (!supaLoading) supaLoading = import(SUPA_ESM).then((m) => { if (!supa) supa = m.createClient(SUPA_URL, SUPA_KEY); return supa; });
+  return supaLoading;
+}
+async function connect() {
   if (!wantsConnection || channel) return;
   ensureIdentity();
-  if (!supa) supa = createClient(SUPA_URL, SUPA_KEY);
+  try { await supaReady(); } catch (e) { scheduleReconnect(); return; }
+  if (!wantsConnection || channel) return;
   channel = supa.channel(W2_CHANNEL, {
     config: {
       presence: { key: selfId() },
@@ -1261,52 +940,8 @@ function connect() {
 function updatePresenceChip() {
   if (!presenceChip) return;
   const n = remotes.size;
-  const label = !connected ? "connecting" : n === 0 ? "alone here" : n === 1 ? "1 other here" : n + " others here";
+  const label = !connected ? "connecting" : n === 0 ? "just you so far" : n === 1 ? "1 other here" : n + " others here";
   if (presenceChip.textContent !== label) presenceChip.textContent = label;
-}
-
-// ---- Phase 5.5: civic towers with doors in their faces (the World 1 way), and
-// walk-in interiors styled for this world. The buildings ARE the city — no gaps, no portals. ----
-function buildCivic() {
-  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-  boxGeo.translate(0, 0.5, 0);
-  const civicMesh = new THREE.InstancedMesh(boxGeo, towerMat, CIVICS.length);
-  const doorMat = new THREE.MeshStandardMaterial({ color: 0x07090c, roughness: 0.55 });
-  const padMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: 0.5, emissive: 0xffffff, emissiveIntensity: 0.08 });
-  for (let i = 0; i < CIVICS.length; i++) {
-    const c = CIVICS[i];
-    const x = CITY.x + c.block[0] * CITY.street + CITY.street / 2;
-    const z = CITY.z + c.block[1] * CITY.street + CITY.street / 2;
-    const gy = groundHeight(x, z);
-    const W = 9.6;
-    _vp.set(x, gy - 0.5, z);
-    _q.identity();
-    _vs.set(W, c.h + 0.5, W);
-    _m4.compose(_vp, _q, _vs);
-    civicMesh.setMatrixAt(i, _m4);
-    _sky.set(c.tint);
-    civicMesh.setColorAt(i, _sky);
-    buildingColliders.push({ x, z, width: W, depth: W });
-    // the door sits on the plaza-facing side, snapped to the dominant axis
-    const lx = x - CITY.x, lz = z - CITY.z;
-    let dx = 0, dz = 0;
-    if (Math.abs(lx) >= Math.abs(lz)) dx = lx > 0 ? -1 : 1; else dz = lz > 0 ? -1 : 1;
-    const doorX = x + dx * (W / 2 + 0.05), doorZ = z + dz * (W / 2 + 0.05);
-    const doorway = new THREE.Mesh(new THREE.BoxGeometry(dx === 0 ? 2.4 : 0.5, 3.4, dz === 0 ? 2.4 : 0.5), doorMat);
-    doorway.position.set(doorX, gy + 1.7, doorZ);
-    scene.add(doorway);
-    const stepPad = new THREE.Mesh(new THREE.BoxGeometry(dx === 0 ? 3.6 : 2.4, 0.16, dz === 0 ? 3.6 : 2.4), padMat);
-    stepPad.position.set(x + dx * (W / 2 + 1.4), gy + 0.08, z + dz * (W / 2 + 1.4));
-    stepPad.receiveShadow = true;
-    scene.add(stepPad);
-    const sign = makeNameSprite(c.label, 2.1);
-    sign.position.set(doorX + dx * 0.6, gy + 5.0, doorZ + dz * 0.6);
-    scene.add(sign);
-    doors.push({ label: c.label, x: x + dx * (W / 2 + 1.6), z: z + dz * (W / 2 + 1.6), hw: 2.6, hd: 2.6, act: c.act });
-  }
-  civicMesh.castShadow = true;
-  civicMesh.receiveShadow = true;
-  scene.add(civicMesh);
 }
 
 // ---- walk-in interiors (Theater / Arcade / Library), this world's own style:
@@ -1589,63 +1224,17 @@ function exitInterior() {
   if (grass) { grass.visible = true; grassCellX = 1e9; }
 }
 
-// plots ring the OUTSKIRTS — residents build the city's edge, the core stays civic
-function plotSpot(i) {
-  let a = (i / PLOT_COUNT) * Math.PI * 2 + 0.32;
-  let x = CITY.x + Math.cos(a) * (CITY.r + 13);
-  let z = CITY.z + Math.sin(a) * (CITY.r + 13);
-  if (roadDist(x, z) < 7) {
-    a += 0.38;
-    x = CITY.x + Math.cos(a) * (CITY.r + 13);
-    z = CITY.z + Math.sin(a) * (CITY.r + 13);
-  }
-  return { x, z };
-}
-
-function buildPlotPads() {
-  const padMat = new THREE.MeshStandardMaterial({ color: 0x8e8a80, roughness: 0.85 });
-  for (let i = 0; i < PLOT_COUNT; i++) {
-    const s = plotSpot(i);
-    const pad = { plot: i, x: s.x, z: s.z, claimed: false, row: null, group: null, sign: null };
-    plotPads.push(pad);
-    const gy = groundHeight(pad.x, pad.z);
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 3.3, 0.22, 22), padMat);
-    disc.position.set(pad.x, gy + 0.11, pad.z);
-    disc.receiveShadow = true;
-    scene.add(disc);
-    const sign = makeNameSprite("Empty plot", 2.4);
-    sign.position.set(pad.x, gy + 2.2, pad.z);
-    scene.add(sign);
-    pad.sign = sign;
-    pad.pad = disc;
-  }
-}
-
-// a claimed plot becomes a real building, automatically — same law as World 1
+// plots: eight open lots on the edge of downtown (city.js marks them with gravel and a big readable board).
+// A claimed lot becomes a real kit building with the project's name on it - same law as World 1.
 function applySpaceRow(pad, row) {
-  if (!pad || !row || !row.github_url || pad.claimed) return;
+  if (!pad || !row || !row.github_url || pad.claimed || !city) return;
   pad.claimed = true;
   pad.row = row;
-  if (pad.sign) { scene.remove(pad.sign); pad.sign = null; }
-  claimedPadCenters.push({ x: pad.x, z: pad.z });
-  const gy = groundHeight(pad.x, pad.z);
-  const h = 9 + (hashStr(String(row.project_name || pad.plot)) % 9);
-  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-  boxGeo.translate(0, 0.5, 0);
-  const tower = new THREE.Mesh(boxGeo, glassMat);
-  tower.position.set(pad.x, gy - 0.4, pad.z);
-  tower.scale.set(6.2, h, 6.2);
-  tower.castShadow = true;
-  tower.receiveShadow = true;
-  scene.add(tower);
-  const sign = makeNameSprite((row.project_name || "Project") + " · " + (row.claimed_by || "Resident"), 1.45);
-  sign.position.set(pad.x, gy + h + 0.9, pad.z);
-  scene.add(sign);
-  pad.group = tower;
-  pad.topSign = sign;
-  buildingColliders.push({ x: pad.x, z: pad.z, width: 6.2, depth: 6.2 });
-  doors.push({ label: (row.project_name || "Project") + " \u2014 Project Hall", x: pad.x, z: pad.z, hw: 4.8, hd: 4.8, act: { type: "page", path: "/space/?plot=" + pad.plot + "&world=world2" } });
-  if (grass) { grassCellX = 1e9; } // force a grass rebuild so tufts clear the new footprint
+  const built = city.claimPlot(pad.plot, row);
+  if (!built) return;
+  buildingColliders.push({ x: pad.box.x, z: pad.box.z, width: pad.box.width, depth: pad.box.depth, h: built.H });
+  doors.push({ label: built.door.label, x: built.door.x, z: built.door.z, hw: built.door.hw, hd: built.door.hd, act: { type: "page", path: "/space/?plot=" + pad.plot + "&world=world2" } });
+  mapDirty = true;
 }
 
 async function loadSpaces() {
@@ -1687,9 +1276,9 @@ function updateActiveDoor() {
     let bp = Infinity;
     for (const pad of plotPads) {
       if (pad.claimed) continue;
-      const dx = state.x - pad.x, dz = state.z - pad.z;
-      if (Math.abs(dx) > 4 || Math.abs(dz) > 4) continue;
-      const d = Math.hypot(dx, dz);
+      const b = pad.box;
+      if (Math.abs(state.x - b.x) > b.width / 2 + 2.6 || Math.abs(state.z - b.z) > b.depth / 2 + 2.6) continue;
+      const d = Math.hypot(state.x - pad.x, state.z - pad.z);
       if (d < bp) { bp = d; nextPlot = pad; }
     }
   }
@@ -1700,7 +1289,7 @@ function updateActiveDoor() {
       doorPrompt.classList.remove("hidden");
       if (doorEnterBtn) doorEnterBtn.classList.add("active");
     } else if (activePlot) {
-      doorPromptText.textContent = (isTouch ? "Tap — " : "Press E — ") + "Claim this plot with a GitHub repo";
+      doorPromptText.textContent = (isTouch ? "Tap — " : "Press E — ") + "Lot " + (activePlot.plot + 1) + " is open: claim it with a GitHub repo";
       doorPrompt.classList.remove("hidden");
       if (doorEnterBtn) doorEnterBtn.classList.add("active");
     } else {
@@ -1790,7 +1379,7 @@ async function refetchPlot(plotIndex) {
 // identity plug-in: the same account is ONE person across both worlds
 async function resolveIdentity() {
   try {
-    if (!supa) supa = createClient(SUPA_URL, SUPA_KEY);
+    await supaReady();
     const { data: { session } } = await supa.auth.getSession();
     if (session && session.user) {
       myUserId = session.user.id;
@@ -1817,21 +1406,33 @@ function pickSky(e) {
   return _sky;
 }
 
+const HEMI_DAY = new THREE.Color(0xbfd6e8), HEMI_NIGHT = new THREE.Color(0x8ea4d2), MOON_COL = new THREE.Color(0xa9bde6);
 function updateDayNight() {
   if (!sunLight) return;
   const CYCLE = 300;
-  const t = ((Date.now() / 1000) % CYCLE) / CYCLE;
+  const t = TOD !== null ? TOD : ((Date.now() / 1000) % CYCLE) / CYCLE;
   const a = t * Math.PI * 2;
   const e = Math.sin(a);
   const horiz = Math.cos(a);
   const day = Math.max(0, Math.min(1, e * 1.6 + 0.08));
 
   _sunOff.set(horiz * 60, e * 70, 24 + e * 6);
-  sunLight.position.set(state.x + _sunOff.x, _sunOff.y, state.z + _sunOff.z);
-  sunLight.target.position.set(state.x, 0, state.z);
-  sunLight.intensity = 0.1 + 2.2 * day;
-  sunLight.color.setRGB(1, 0.92 - 0.16 * (1 - day), 0.82 - 0.28 * (1 - day));
-  if (hemiLight) hemiLight.intensity = 0.32 + 0.85 * Math.max(0, Math.min(1, e + 0.3));
+  const fx = hasEntered ? state.x : 10, fz = hasEntered ? state.z : -10;   // shadows follow you (or the preview's view)
+  const moon = e < -0.02, nightF = Math.max(0, Math.min(1, -e * 1.5 + 0.1));
+  if (moon) {   // after sunset the same light becomes moonlight from the opposite sky: soft, blue, still casting shadows
+    sunLight.position.set(fx - _sunOff.x, Math.max(20, -_sunOff.y), fz - _sunOff.z);
+    sunLight.intensity = 0.5 * Math.min(1, -e * 5);
+    sunLight.color.copy(MOON_COL);
+  } else {
+    sunLight.position.set(fx + _sunOff.x, Math.max(6, _sunOff.y), fz + _sunOff.z);
+    sunLight.intensity = 0.1 + 2.2 * day;
+    sunLight.color.setRGB(1, 0.92 - 0.16 * (1 - day), 0.82 - 0.28 * (1 - day));
+  }
+  sunLight.target.position.set(fx, 0, fz);
+  if (hemiLight) {
+    hemiLight.intensity = 0.62 + 0.62 * Math.max(0, Math.min(1, e + 0.3));
+    hemiLight.color.copy(HEMI_DAY).lerp(HEMI_NIGHT, nightF);
+  }
 
   // atmosphere driven by the cycle: sky, fog color AND density, tone exposure
   const sky = pickSky(e);
@@ -1840,8 +1441,8 @@ function updateDayNight() {
   // golden hour: fog leans warmer than the sky itself — distant trees melt into amber
   const golden = Math.max(0, 1 - Math.abs(e) / 0.18);
   if (golden > 0) scene.fog.color.lerp(W2_DUSK, golden * 0.3);
-  scene.fog.density = 0.0095 + (1 - day) * 0.0065;
-  renderer.toneMappingExposure = 0.92 + 0.24 * day;
+  scene.fog.density = 0.0040 + (1 - day) * 0.0018;   // a city you can see across (the old 0.0095-0.016 swallowed it)
+  renderer.toneMappingExposure = 1.1 + 0.04 * day;
 
   if (skyAnchor) skyAnchor.position.set(state.x, 0, state.z);
   if (!skyDome) {
@@ -1874,15 +1475,10 @@ function updateDayNight() {
     moonDisc.visible = e < 0.08;
     moonDisc.lookAt(camera.position);
   }
-  const nightF = Math.max(0, Math.min(1, -e * 1.5 + 0.1));
   if (stars) stars.material.opacity = nightF * 0.95;
 
-  // the night-city moment: windows brighten exactly as the sky darkens
-  const glow = 0.03 + Math.pow(1 - day, 1.6) * 1.5;
-  if (towerMat) towerMat.emissiveIntensity = glow;
-  if (lowMat) lowMat.emissiveIntensity = glow;
-  if (glassMat) glassMat.emissiveIntensity = glow * 0.9;
-  if (bulbMat) bulbMat.emissiveIntensity = 0.1 + (1 - day) * 2.4;
+  // the night-city moment: windows, shop fronts, signs and lamps come on exactly as the sky darkens
+  if (city) city.setNight(Math.min(1, Math.pow(1 - day, 1.3) * 1.05), day);
   if (fireflies) {
     fireflies.visible = nightF > 0.04;
     fireflies.material.opacity = nightF * 0.9;
@@ -1919,6 +1515,8 @@ function updateLocal(dt) {
 
   forward += input.moveY;
   strafe += input.moveX;
+  const manual = Math.abs(forward) + Math.abs(strafe) > 0.01;
+  if (manual && walkPath) cancelWalk();
 
   const length = Math.hypot(forward, strafe);
   if (length > 1) {
@@ -1952,13 +1550,23 @@ function updateLocal(dt) {
   const sin = Math.sin(state.yaw);
   const cos = Math.cos(state.yaw);
 
-  state.x += (cos * strafe + -sin * forward) * speed * dt;
-  state.z += (-sin * strafe + -cos * forward) * speed * dt;
+  const px = state.x, pz = state.z;
+  let want = 0;
+  if (!manual && walkPath) want = autoWalk(dt);
+  else {
+    state.x += (cos * strafe + -sin * forward) * speed * dt;
+    state.z += (-sin * strafe + -cos * forward) * speed * dt;
+  }
 
   resolveCollision();
+  if (walkPath && want > 0) {   // blocked (a car, a crowd, a wall the route didn't know): give up after a moment
+    const got = Math.hypot(state.x - px, state.z - pz);
+    walkStuck = got < want * 0.3 ? walkStuck + dt : 0;
+    if (walkStuck > 0.9) cancelWalk();
+  }
   updateActiveDoor();
 
-  const floorY = inInterior ? 0 : groundHeight(state.x, state.z);
+  const floorY = inInterior ? 0 : floorAt(state.x, state.z);
   const eyeTarget = eyeHeightForStance(state.stance) + floorY + motion.airOffset;
   state.y += (eyeTarget - state.y) * Math.min(1, dt * 14);
 }
@@ -1968,10 +1576,7 @@ function resolveCollision() {
     const r = ROOM[inInterior];
     state.x = Math.max(r.x - 12.4, Math.min(r.x + 12.4, state.x));
     state.z = Math.max(r.z - 8.4, Math.min(r.z + 8.4, state.z));
-  } else {
-    state.x = Math.max(-worldBounds, Math.min(worldBounds, state.x));
-    state.z = Math.max(-worldBounds, Math.min(worldBounds, state.z));
-  }
+  } else clampWorld();
   const colliderList = inInterior ? interiorColliders[inInterior] : buildingColliders;
   for (const collider of colliderList) {
     const halfW = collider.width / 2 + playerRadius;
@@ -1984,6 +1589,71 @@ function resolveCollision() {
     if (pushX < pushZ) state.x += dx < 0 ? -pushX : pushX;
     else state.z += dz < 0 ? -pushZ : pushZ;
   }
+}
+
+// the river is a real edge: you stay on your bank unless you take the bridge
+function clampWorld() {
+  state.x = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, state.x));
+  state.z = Math.max(-WORLD_EDGE, Math.min(WORLD_EDGE, state.z));
+  if (state.z < WALL_Z + 0.35 && state.z > RIVER.zN - 0.6) {
+    if (Math.abs(state.x - BRIDGE.x) < BRIDGE.half - 0.25 + 0.6) state.x = Math.max(BRIDGE.x - BRIDGE.half + 0.4, Math.min(BRIDGE.x + BRIDGE.half - 0.4, state.x));
+    else if (state.z > (RIVER.zN + WALL_Z) / 2) state.z = WALL_Z + 0.35;
+    else state.z = RIVER.zN - 0.6;
+  }
+}
+
+// ---- tap / click to walk (one tap, no double-click). A tap on a building walks you to its face; near a door it walks
+// you onto the door's mat so the ENTER prompt is right there. Long trips follow the streets.
+function autoWalk(dt) {
+  const tgt = walkPath[0];
+  const dx = tgt[0] - state.x, dz = tgt[1] - state.z, d = Math.hypot(dx, dz);
+  if (d < 0.45) { walkPath.shift(); if (!walkPath.length) cancelWalk(); return 0; }
+  const sp = walkPath.length > 1 || d > 14 ? 5.8 : 4.65, step = Math.min(d, sp * dt);
+  state.x += dx / d * step; state.z += dz / d * step;
+  if (d > 1.2) state.yaw = lerpAngle(state.yaw, Math.atan2(-dx, -dz), Math.min(1, dt * 3.2));
+  motion.moving = true;
+  return step;
+}
+function cancelWalk() { walkPath = null; walkStuck = 0; }
+function setWalk(points) {
+  if (!points || !points.length) return;
+  walkPath = points.map((p) => [p[0], p[1]]); walkStuck = 0;
+  const last = walkPath[walkPath.length - 1];
+  if (walkMarker) { walkMarker.position.set(last[0], floorAt(last[0], last[1]) + 0.04, last[1]); walkMarkerT = 1.4; }
+}
+function blockedAt(x, z, y) {
+  for (const c of buildingColliders) { if ((c.h || 30) < y) continue; if (Math.abs(x - c.x) < c.width / 2 && Math.abs(z - c.z) < c.depth / 2) return c; }
+  return null;
+}
+function lineClear(ax, az, bx, bz) {
+  const n = Math.ceil(Math.hypot(bx - ax, bz - az));
+  for (let k = 1; k < n; k++) { const t = k / n, x = ax + (bx - ax) * t, z = az + (bz - az) * t; const c = blockedAt(x, z, 1.2); if (c && c.width > 1.2) return false; }
+  return true;
+}
+function walkTo(x, z) {
+  if (inInterior) { setWalk([[x, z]]); return; }
+  const door = nearestDoorTo(x, z, 6.5); if (door) { x = door.x; z = door.z; }
+  if (lineClear(state.x, state.z, x, z) || !inCityZone(state.x, state.z)) setWalk([[x, z]]);
+  else setWalk(routeTo(state.x, state.z, x, z));
+}
+function nearestDoorTo(x, z, r) {
+  let best = null, bd = r;
+  for (const d of (inInterior ? interiorStations[inInterior] : doors)) { const e = Math.hypot(d.x - x, d.z - z); if (e < bd) { bd = e; best = d; } }
+  return best;
+}
+const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2();
+function tapAt(cx, cy) {
+  _ndc.set(cx / window.innerWidth * 2 - 1, -(cy / window.innerHeight) * 2 + 1);
+  _ray.setFromCamera(_ndc, camera);
+  const o = _ray.ray.origin, d = _ray.ray.direction;
+  let hit = null;
+  for (let t = 0.6; t < 240; t += 0.5) {
+    const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
+    if (inInterior) { if (y <= 0) { hit = [x, z]; break; } continue; }
+    if (blockedAt(x, z, y)) { const b = t - 1.2; hit = [o.x + d.x * b, o.z + d.z * b]; break; }   // a building face: stop in front of it
+    if (y <= floorAt(x, z)) { hit = [x, z]; break; }
+  }
+  if (hit) walkTo(hit[0], hit[1]);
 }
 
 function look(deltaX, deltaY) {
@@ -1999,11 +1669,12 @@ function queueJump() {
 }
 
 function updateCamera(dt) {
-  if (!hasEntered) {
-    previewAngle += dt * 0.085;
-    const radius = 26;
-    camera.position.set(Math.sin(previewAngle) * radius, 13.5, Math.cos(previewAngle) * radius);
-    camera.lookAt(0, 1.2, 0);
+  if (DEV && window.__camOverride) { const o = window.__camOverride; camera.position.set(o[0], o[1], o[2]); camera.lookAt(o[3], o[4], o[5]); return; }
+  if (!hasEntered) {   // the gate-page peek and the intro card: a slow orbit around downtown, the skyline in view
+    previewAngle += dt * 0.05;
+    const radius = 150;
+    camera.position.set(10 + Math.sin(previewAngle) * radius, 66, -10 + Math.cos(previewAngle) * radius);
+    camera.lookAt(10, 8, -10);
     return;
   }
   camera.position.set(state.x, state.y, state.z);
@@ -2021,12 +1692,17 @@ function animate() {
   updateGrass();
   updateFireflies();
   updateDayNight();
+  if (city) city.update(dt, performance.now() / 1000, hasEntered && !inInterior ? state : null);
   updateCamera(dt);
+  if (walkMarker && walkMarkerT > 0) { walkMarkerT -= dt; walkMarker.material.opacity = Math.min(0.85, walkMarkerT); walkMarker.scale.setScalar(1 + (1.4 - walkMarkerT) * 0.5); }
   sendState();
   renderer.render(scene, camera);
-  document.getElementById("loadingWorld")?.classList.add("hidden");
+  frameNo++;
+  if (frameNo === 2) { document.getElementById("loadingWorld")?.classList.add("hidden"); try { window.__w2Ready = performance.now(); console.log("[W2] first frame at", Math.round(performance.now()), "ms"); } catch (e) {} }
+  mapTimer += dt; if (mapTimer > 0.12) { mapTimer = 0; drawMinimap(); }
   requestAnimationFrame(animate);
 }
+let frameNo = 0, mapTimer = 0;
 
 // ---- enter flow ----
 function enterWorld() {
@@ -2034,15 +1710,11 @@ function enterWorld() {
   wantsConnection = true;
   connect();
   overlay.classList.add("hidden");
-  goFullscreen();
-  if (!isTouch) {
-    try {
-      const lockAttempt = canvas.requestPointerLock?.();
-      lockAttempt?.catch?.(() => {});
-    } catch (e) {
-      // headless browsers / embedded webviews reject pointer lock
-    }
-  }
+  document.body.classList.add("entered");
+  mapDirty = true;
+  if (isTouch) goFullscreen();
+  // No pointer lock: it swallowed the first click and was half of the "double-click to walk" problem.
+  // Look = drag; walk = keys, the pad, or one tap/click on the street.
 }
 
 function goFullscreen() {
@@ -2076,15 +1748,6 @@ if (PREVIEW) {
   overlay.classList.add("hidden");
 }
 
-canvas.addEventListener("click", () => {
-  if (!isTouch && hasEntered && document.pointerLockElement !== canvas) {
-    try {
-      const lockAttempt = canvas.requestPointerLock?.();
-      lockAttempt?.catch?.(() => {});
-    } catch (e) {}
-  }
-});
-
 document.addEventListener("pointerlockchange", () => {
   if (document.pointerLockElement !== canvas) clearMovementInput();
 });
@@ -2106,6 +1769,8 @@ document.addEventListener("keydown", (event) => {
     enterWorld();
     return;
   }
+  if (event.code === "Escape" && mapOpen) { event.preventDefault(); toggleMap(false); return; }
+  if (hasEntered && event.code === "KeyM") { event.preventDefault(); toggleMap(); return; }
   if (hasEntered && (event.code === "KeyE" || event.code === "Enter") && (activeDoor || activePlot)) {
     event.preventDefault();
     enterActive();
@@ -2125,26 +1790,27 @@ document.addEventListener("keyup", (event) => {
   keys.delete(event.code);
 });
 
+// one pointer model for mouse and touch: drag = look, a quick tap/click without dragging = walk there
 canvas.addEventListener("pointerdown", (event) => {
-  if (!isTouch || event.clientX < window.innerWidth * 0.35) return;
-  input.touchLookId = event.pointerId;
-  input.touchLookX = event.clientX;
-  input.touchLookY = event.clientY;
-  canvas.setPointerCapture(event.pointerId);
+  if (!hasEntered || ptr.id !== null) return;
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  ptr.id = event.pointerId; ptr.x0 = ptr.x = event.clientX; ptr.y0 = ptr.y = event.clientY; ptr.t0 = performance.now(); ptr.moved = false; ptr.mouse = event.pointerType === "mouse";
+  try { canvas.setPointerCapture(event.pointerId); } catch (e) {}
 });
-
 canvas.addEventListener("pointermove", (event) => {
-  if (event.pointerId !== input.touchLookId) return;
-  look((event.clientX - input.touchLookX) * 2.4, (event.clientY - input.touchLookY) * 2.4);
-  input.touchLookX = event.clientX;
-  input.touchLookY = event.clientY;
+  if (event.pointerId !== ptr.id) return;
+  if (!ptr.moved && Math.hypot(event.clientX - ptr.x0, event.clientY - ptr.y0) > 7) ptr.moved = true;
+  if (ptr.moved) { const k = ptr.mouse ? 1.1 : 2.4; look((event.clientX - ptr.x) * k, (event.clientY - ptr.y) * k); }
+  ptr.x = event.clientX; ptr.y = event.clientY;
 });
-
-function endTouchLook(event) {
-  if (event.pointerId === input.touchLookId) input.touchLookId = null;
+function endPtr(event) {
+  if (event.pointerId !== ptr.id) return;
+  const tap = !ptr.moved && performance.now() - ptr.t0 < 600 && event.type === "pointerup";
+  ptr.id = null;
+  if (tap && hasEntered) tapAt(event.clientX, event.clientY);
 }
-canvas.addEventListener("pointerup", endTouchLook);
-canvas.addEventListener("pointercancel", endTouchLook);
+canvas.addEventListener("pointerup", endPtr);
+canvas.addEventListener("pointercancel", endPtr);
 
 function updateMovePad(event) {
   const rect = movePad.getBoundingClientRect();
@@ -2210,7 +1876,118 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) clearMovementInput();
 });
 
+// ---- the map: a minimap (top right) and a full map with every door; tap a place to walk there ----
+let mapStatic = null, mapDirty = true, mapOpen = false;
+const MAPB = { x0: -182, x1: 182, z0: -196, z1: 178 };
+const mini = document.querySelector("#minimap"), bigmap = document.querySelector("#bigmap"), mapOverlay = document.querySelector("#mapOverlay");
+const placeLabel = document.querySelector("#placeLabel"), placeList = document.querySelector("#placeList");
+function mxy(x, z, W, H) { return [(x - MAPB.x0) / (MAPB.x1 - MAPB.x0) * W, (z - MAPB.z0) / (MAPB.z1 - MAPB.z0) * H]; }
+function drawCityMap(ctx, W, H, big) {
+  ctx.fillStyle = "#2f3b2c"; ctx.fillRect(0, 0, W, H);
+  const r = (x0, z0, x1, z1, col) => { const a = mxy(x0, z0, W, H), b = mxy(x1, z1, W, H); ctx.fillStyle = col; ctx.fillRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); };
+  r(MAPB.x0, RIVER.zN, MAPB.x1, WALL_Z, "#2d5b74");
+  r(CITY_RECT.x0, WALL_Z, CITY_RECT.x1, CITY_RECT.z1, "#4b4e52");
+  const xs = GRID.xs, zs = GRID.zs;
+  for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < zs.length - 1; j++) r(xs[i] + ROAD, zs[j] + ROAD, xs[i + 1] - ROAD, zs[j + 1] - ROAD, i === 3 && j === 1 ? "#5f8a4e" : "#b9b09c");
+  r(BRIDGE.x - 2.6, BRIDGE.z0, BRIDGE.x + 2.6, BRIDGE.z1, "#c9c3b4");
+  const s = W / 300;
+  if (big) {
+    ctx.font = `600 ${Math.max(9, 11 * s)}px system-ui, sans-serif`; ctx.fillStyle = "#e8e8e2"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (let i = 1; i < xs.length - 1; i++) { const p = mxy(xs[i], 128, W, H); ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(-Math.PI / 2); ctx.fillText(GRID.xNames[i].replace(" St", ""), 0, 0); ctx.restore(); }
+    for (let j = 0; j < zs.length; j++) { const p = mxy(-130, zs[j], W, H); ctx.fillText(GRID.zNames[j].replace(" St", "").replace(" Blvd", ""), p[0], p[1]); }
+    const rp = mxy(110, (RIVER.zN + WALL_Z) / 2, W, H); ctx.fillStyle = "#9fd0ff"; ctx.fillText("the river", rp[0], rp[1]);
+  }
+  if (city) {
+    for (const l of city.landmarks) {
+      const p = mxy(l.x, l.z, W, H);
+      ctx.fillStyle = l.kind === "plot" ? "#7bd88f" : l.kind === "parking" ? "#5a8ad0" : l.kind === "civic" ? "#ffd166" : "#e9e2cf";
+      if (l.kind === "parking" && !big) continue;
+      ctx.beginPath(); ctx.arc(p[0], p[1], (l.kind === "civic" ? 3.2 : 2.4) * Math.max(1, s * 0.9), 0, 7); ctx.fill();
+      if (big && l.kind !== "parking") { ctx.fillStyle = "#ffffff"; ctx.font = `700 ${Math.max(9, 10.5 * s)}px system-ui, sans-serif`; ctx.fillText(l.name, p[0], p[1] - 9 * s); }
+    }
+  }
+}
+function buildMinimap() {
+  if (!mini) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), size = mini.clientWidth || 112;
+  mini.width = mini.height = Math.round(size * dpr);
+  mapStatic = document.createElement("canvas"); mapStatic.width = mapStatic.height = mini.width;
+  drawCityMap(mapStatic.getContext("2d"), mapStatic.width, mapStatic.height, false);
+  mapDirty = false;
+  if (placeList && city) {
+    const places = doors.filter((d) => d.id).map((d) => ({ name: d.label, x: d.x, z: d.z }))
+      .concat(plotPads.filter((p) => !p.claimed).map((p) => ({ name: "Lot " + (p.plot + 1) + " · open for a project", x: p.x, z: p.z })))
+      .concat(city.landmarks.filter((l) => l.kind === "landmark" || l.kind === "bridge" || l.kind === "park" || l.kind === "tower").map((l) => ({ name: l.name, x: l.kind === "bridge" ? BRIDGE.x : l.x, z: l.kind === "bridge" ? WALL_Z + 2 : l.kind === "landmark" ? l.z - 16 : l.z + (l.kind === "tower" ? -16 : 0) })));
+    placeList.innerHTML = "";
+    for (const pl of places) { const b = document.createElement("button"); b.type = "button"; b.textContent = pl.name; b.addEventListener("click", () => { toggleMap(false); walkTo(pl.x, pl.z); }); placeList.appendChild(b); }
+  }
+}
+function nearestName(v, lines, names) { let k = 0, d = Infinity; lines.forEach((L, i) => { const e = Math.abs(v - L); if (e < d) { d = e; k = i; } }); return [names[k], d]; }
+function drawMinimap() {
+  if (!mini || !mapStatic || !hasEntered) return;
+  if (mapDirty) buildMinimap();
+  const ctx = mini.getContext("2d"), W = mini.width, H = mini.height;
+  ctx.drawImage(mapStatic, 0, 0);
+  for (const r of remotes.values()) { const p = mxy(r.group.position.x, r.group.position.z, W, H); ctx.fillStyle = "#4fa3ff"; ctx.beginPath(); ctx.arc(p[0], p[1], 2.5 * W / 112, 0, 7); ctx.fill(); }
+  if (!inInterior) {
+    const p = mxy(state.x, state.z, W, H), a = Math.atan2(-Math.sin(state.yaw), -Math.cos(state.yaw)), k = W / 112;
+    ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(a + Math.PI / 2);
+    ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#0b0f14"; ctx.lineWidth = 1.5 * k;
+    ctx.beginPath(); ctx.moveTo(0, -6 * k); ctx.lineTo(4.2 * k, 4.5 * k); ctx.lineTo(0, 2.4 * k); ctx.lineTo(-4.2 * k, 4.5 * k); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+  if (placeLabel) {
+    let label;
+    if (inInterior) label = ({ theater: "Grand Palace Theater", arcade: "Arcade", library: "Public Library" })[inInterior] || "inside";
+    else if (state.z < WALL_Z - 0.5) label = state.z > RIVER.zN ? "Wells St Bridge" : "the north woods";
+    else if (!inCityZone(state.x, state.z)) label = "outside downtown";
+    else { const [xn, dx] = nearestName(state.x, GRID.xs, GRID.xNames), [zn, dz] = nearestName(state.z, GRID.zs, GRID.zNames); label = state.z < GRID.zs[0] - ROAD ? "Riverfront" : dx < 10 && dz < 10 ? xn + " & " + zn : dx < dz ? xn : zn; }
+    if (placeLabel.textContent !== label) placeLabel.textContent = label;
+  }
+}
+function toggleMap(open) {
+  mapOpen = open === undefined ? !mapOpen : open;
+  if (!mapOverlay) return;
+  mapOverlay.classList.toggle("hidden", !mapOpen);
+  if (mapOpen && bigmap) {
+    const dpr = Math.min(2, window.devicePixelRatio || 1), size = Math.min(window.innerWidth - 48, 520, window.innerHeight * 0.55);
+    bigmap.style.width = bigmap.style.height = size + "px"; bigmap.width = bigmap.height = Math.round(size * dpr);
+    const ctx = bigmap.getContext("2d"); drawCityMap(ctx, bigmap.width, bigmap.height, true);
+    if (!inInterior) { const p = mxy(state.x, state.z, bigmap.width, bigmap.height); ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p[0], p[1], 6 * dpr, 0, 7); ctx.fill(); ctx.stroke(); }
+    clearMovementInput();
+  }
+}
+if (mini) mini.addEventListener("click", () => { if (hasEntered) toggleMap(true); });
+document.querySelector("#mapClose")?.addEventListener("click", () => toggleMap(false));
+if (bigmap) bigmap.addEventListener("click", (e) => {
+  const r = bigmap.getBoundingClientRect(), x = MAPB.x0 + (e.clientX - r.left) / r.width * (MAPB.x1 - MAPB.x0), z = MAPB.z0 + (e.clientY - r.top) / r.height * (MAPB.z1 - MAPB.z0);
+  toggleMap(false); if (inInterior) exitInterior(); walkTo(x, z);
+});
+
 // ---- BOOT (end of file by design: every const/let above is initialized before these run — TDZ law) ----
-buildWorld();
-animate();
-resolveIdentity();
+if (DEV) window.W2 = {
+  BUILD, state, renderer, scene, camera, get city() { return city; }, doors, plotPads, buildingColliders,
+  enter: () => enterWorld(), tap: (x, y) => tapAt(x, y), walkTo: (x, z) => walkTo(x, z), get walking() { return !!walkPath; },
+  activeDoor: () => activeDoor && activeDoor.label, activePlot: () => activePlot && activePlot.plot, enterActive: () => enterActive(), inInterior: () => inInterior,
+  remotes: () => remotes.size, connected: () => connected,
+  tris() {   // static triangle count by kind (instanced meshes multiplied out) - for the phone budget
+    const out = {};
+    scene.traverse((o) => {
+      if (!o.isMesh && !o.isPoints) return;
+      const g = o.geometry; if (!g) return;
+      const t = Math.round((g.index ? g.index.count : g.attributes.position.count) / 3) * (o.isInstancedMesh ? o.count : 1);
+      const k = o.userData.kit ? "kit:" + o.userData.kit : o.isInstancedMesh ? "inst:" + (o.material.name || g.type) + ":" + (o.count) : o.isPoints ? "points" : "mesh:" + g.type;
+      out[k] = (out[k] || 0) + t;
+    });
+    return out;
+  },
+};
+async function boot() {
+  progress(0.08, "Starting the engine");
+  await buildWorld();
+  progress(1, "Ready");
+  animate();
+  resolveIdentity();   // loads the database client AFTER the city is on screen
+}
+boot().catch((e) => {
+  try { console.error("[W2] boot failed", e); window.__w2Progress && window.__w2Progress(-1, "The city failed to load: " + (e && e.message || e)); } catch (e2) {}
+});

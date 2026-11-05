@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <script src="/hb-device-tier.js"></script>
     <title>Heartbeat Observatory — World 2</title>
-    <meta name="description" content="The second world of Heartbeat Observatory — being built in the open. A city of lit towers — walk inside the Theater, Arcade and Library; claim a plot on the edge.">
+    <meta name="description" content="World 2 of Heartbeat Observatory: a downtown being built in the open. Real streets, storefronts, a river and a bridge; walk into the Grand Palace theater, the Arcade and the Library, and claim an open lot for your project.">
     <style>
       :root { --text:#e8eef4; --muted:#9fb0bd; --panel-bg:rgba(10,14,18,.88); --panel-border:rgba(120,150,170,.25); }
       * { box-sizing:border-box; }
@@ -13,11 +13,16 @@
       body { font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--text); -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
       #game { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
       .hidden { display:none !important; }
-      #loadingWorld { position:fixed; inset:0; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:#0b0d1c; color:#e9e7f4; text-align:center; padding:20px; }
-      #loadingWorld p { margin:0; }
-      #loadingWorld .spinner { width:32px; height:32px; border:3px solid #3d405e; border-top-color:#7bd88f; border-radius:50%; animation:loading-spin 1s linear infinite; }
-      @keyframes loading-spin { to { transform:rotate(360deg); } }
-      @media (prefers-reduced-motion:reduce) { #loadingWorld .spinner { animation:none; } }
+      #loadingWorld { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; background:radial-gradient(900px 500px at 50% 0%, #2a2035 0%, #0b0d1c 60%); color:#e9e7f4; text-align:center; padding:20px; }
+      #loadingWorld .load-card { width:min(360px, 92vw); display:flex; flex-direction:column; gap:12px; }
+      #loadingWorld .load-title { font-size:20px; font-weight:800; letter-spacing:.02em; }
+      #loadingWorld .load-title span { color:#e8b86a; font-weight:600; }
+      #loadingWorld .load-bar { height:8px; border-radius:99px; background:#262a44; overflow:hidden; }
+      #loadingWorld .load-bar i { display:block; height:100%; width:4%; background:linear-gradient(90deg,#7bd88f,#e8b86a); border-radius:99px; transition:width .35s ease; }
+      #loadingWorld p { margin:0; font-size:14px; color:#cfcbe6; min-height:1.5em; }
+      #loadingWorld small { color:#8f8ab0; font-size:12px; line-height:1.45; }
+      #loadingWorld.failed .load-bar i { background:#e07a6a; }
+      @media (prefers-reduced-motion:reduce) { #loadingWorld .load-bar i { transition:none; } }
 
       #overlay { position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; padding:18px; background:radial-gradient(ellipse at center, rgba(6,9,14,.55), rgba(6,9,14,.92)); }
       .overlay-card { display:flex; flex-direction:column; align-items:center; gap:12px; max-width:min(480px,94vw); max-height:92vh; overflow-y:auto; padding:26px 22px; border:1px solid var(--panel-border); border-radius:16px; background:var(--panel-bg); text-align:center; }
@@ -43,7 +48,21 @@
       #doorEnterBtn { width:74px; height:74px; background:rgba(36,84,56,.6); border-color:rgba(123,216,143,.45); }
       #doorEnterBtn.active { background:rgba(63,158,96,.85); border-color:#7bd88f; color:#08130c; }
       #gateLink { position:fixed; top:calc(env(safe-area-inset-top) + 14px); right:calc(env(safe-area-inset-right) + 14px); z-index:40; padding:8px 14px; border-radius:999px; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); text-decoration:none; font-size:12px; font-weight:700; letter-spacing:.06em; }
-      body.preview #movePad, body.preview .pad-buttons, body.preview #doorPrompt, body.preview #gateLink, body.preview #overlay { display:none !important; }
+      body.preview #movePad, body.preview .pad-buttons, body.preview #doorPrompt, body.preview #gateLink, body.preview #overlay, body.preview #mapWrap, body.preview #mapOverlay, body.preview #hud { display:none !important; }
+      #mapWrap { position:fixed; top:calc(env(safe-area-inset-top) + 56px); right:calc(env(safe-area-inset-right) + 12px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+      #minimap { width:112px; height:112px; border-radius:14px; border:1px solid rgba(200,220,235,.35); background:#2f3b2c; box-shadow:0 4px 18px rgba(0,0,0,.35); cursor:pointer; touch-action:manipulation; }
+      #placeLabel { max-width:150px; padding:4px 10px; border-radius:999px; background:var(--panel-bg); border:1px solid var(--panel-border); font-size:11.5px; font-weight:700; color:#e8eef4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      #placeLabel:empty { display:none; }
+      body:not(.entered) #mapWrap { display:none; }
+      #mapOverlay { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:14px; background:rgba(4,7,11,.72); }
+      #mapOverlay .map-card { width:min(560px, 96vw); max-height:94vh; overflow-y:auto; padding:14px; border-radius:16px; border:1px solid var(--panel-border); background:var(--panel-bg); display:flex; flex-direction:column; align-items:center; gap:10px; }
+      #mapOverlay .map-head { width:100%; display:flex; justify-content:space-between; align-items:center; font-size:16px; }
+      #mapOverlay .map-head button { padding:8px 14px; border-radius:999px; border:1px solid var(--panel-border); background:transparent; color:var(--text); font-weight:700; }
+      #bigmap { border-radius:12px; touch-action:manipulation; cursor:crosshair; }
+      #mapOverlay .map-hint { margin:0; font-size:12.5px; color:var(--muted); }
+      #placeList { width:100%; display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:7px; }
+      #placeList button { padding:10px 10px; border-radius:10px; border:1px solid var(--panel-border); background:rgba(255,255,255,.04); color:var(--text); font-size:13px; text-align:left; }
+      #placeList button:active { background:rgba(123,216,143,.2); }
       @media (pointer: coarse) { #movePad, .pad-buttons { display:flex; } #movePad { display:block; } }
 
       #doorPrompt { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 110px); transform:translateX(-50%); z-index:32; padding:11px 22px; border-radius:999px; border:1px solid rgba(123,216,143,.55); background:rgba(10,16,18,.88); color:#cdebd9; font:600 14px/1 system-ui,sans-serif; letter-spacing:.04em; cursor:pointer; }
@@ -61,7 +80,23 @@
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
   <body>
-    <div id="loadingWorld" role="status"><div class="spinner" aria-hidden="true"></div><p>Loading World 2…<br><small>The city can take a little while to appear.</small></p></div>
+    <div id="loadingWorld" role="status" aria-live="polite"><div class="load-card">
+      <div class="load-title">World 2 <span>&middot; the city</span></div>
+      <div class="load-bar" aria-hidden="true"><i id="loadBar"></i></div>
+      <p id="loadText">Fetching the 3D engine&hellip;</p>
+      <small>The first visit downloads the engine (about 1 MB); after that it comes from your phone&#39;s cache.</small>
+    </div></div>
+    <script>
+      // progress for the loading screen: main.js calls this as it builds the city (p = 0..1, or -1 for a failure)
+      (function () {
+        var bar = document.getElementById("loadBar"), txt = document.getElementById("loadText"), box = document.getElementById("loadingWorld"), last = 0;
+        window.__w2Progress = function (p, label) {
+          if (p < 0) { box.classList.add("failed"); txt.textContent = label + " - reload to try again."; return; }
+          last = Math.max(last, p); bar.style.width = Math.round(4 + last * 96) + "%"; if (label) txt.textContent = label + "\u2026";
+        };
+        setTimeout(function () { if (last < 0.1) txt.textContent = "Still fetching the engine - a slow connection can take a little longer\u2026"; }, 9000);
+      })();
+    </script>
     <canvas id="game"></canvas>
 
     <div id="hud" aria-live="polite">
@@ -74,10 +109,10 @@
       <div class="overlay-card">
         <h1>World 2</h1>
         <p class="tagline">The second world of Heartbeat Observatory.</p>
-        <p class="phase-note"><b>Being built in the open.</b> The big towers around the plaza are the real places now: Theater, Arcade and Library have doors you walk THROUGH into their own halls; Social, Projects and the Town Square door carry you to the rest of the Observatory. Eight plots on the city&#39;s edge wait for residents — claim one with a GitHub repo and it becomes your building, with a Project Hall of its own. Multiplayer is live. Same accounts, same places, different world. This page describes the city as it exists so far.</p>
+        <p class="phase-note"><b>Being built in the open.</b> A downtown on a river: real streets with sidewalks, crosswalks, lamps, signals and traffic, storefronts and the courthouse green. Doors with a green mat are real: the Grand Palace, the Arcade and the Library open into their halls; Social Hall, Projects, WHB News and Union Station (trains to Town Square and Ashgrove) carry you to the rest of the Observatory. Eight open lots wait for residents &mdash; claim one with a GitHub repo and it becomes your building. Shops, jobs and the news studio come in later builds. Multiplayer is live.</p>
         <div class="controls">
-          <div class="ctl ctl-desktop"><b>Move</b> WASD or arrows · <b>Look</b> mouse · <b>Sprint</b> Shift · <b>Jump</b> Space · <b>Crouch</b> C or Ctrl</div>
-          <div class="ctl ctl-touch"><b>Move</b> left pad · <b>Look</b> drag the right side · <b>Jump / Crouch</b> right buttons</div>
+          <div class="ctl ctl-desktop"><b>Walk</b> click the street, or WASD · <b>Look</b> drag · <b>Sprint</b> Shift · <b>Map</b> M · <b>Enter a door</b> E</div>
+          <div class="ctl ctl-touch"><b>Walk</b> tap where you want to go, or the left pad · <b>Look</b> drag · <b>Map</b> tap the little map</div>
         </div>
         <button id="enterButton" type="button">Walk the world</button>
       </div>
@@ -85,6 +120,15 @@
 
     <button id="doorPrompt" class="hidden" type="button"><span id="doorPromptText">Press E</span></button>
     <a id="gateLink" href="/world2/gate/" aria-label="Back to the gate">&#8962; Gate</a>
+    <div id="mapWrap"><canvas id="minimap" width="112" height="112" role="button" aria-label="City map - open the full map"></canvas><div id="placeLabel"></div></div>
+    <div id="mapOverlay" class="hidden" role="dialog" aria-label="City map">
+      <div class="map-card">
+        <div class="map-head"><b>The city</b><button id="mapClose" type="button">Close</button></div>
+        <canvas id="bigmap"></canvas>
+        <p class="map-hint">Tap the map, or a place below, and you walk there.</p>
+        <div id="placeList"></div>
+      </div>
+    </div>
 
     <div id="claimOverlay">
       <div class="claim-card">
@@ -107,7 +151,7 @@
     </div>
 
     <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js" } }</script>
-    <script type="module" src="/world2/main.js?v=2026-10-28-loading-label"></script>
+    <script type="module" src="/world2/main.js?v=2026-11-05-remake1"></script>
   <script defer src="/hb-editor.js"></script>
   </body>
 </html>
