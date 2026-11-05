@@ -1,0 +1,43 @@
+{
+  "fort-wayne": {
+    "name": "Fort Wayne, Indiana",
+    "bbox": [
+      41.066,
+      -85.158,
+      41.093,
+      -85.121
+    ],
+    "origin": [
+      41.07983,
+      -85.13936
+    ],
+    "spawn": {
+      "x": -31,
+      "z": 76,
+      "lookX": 0,
+      "lookZ": 0,
+      "pitch": 0.3,
+      "note": "SW corner of Calhoun St and Berry St, looking up at the courthouse dome"
+    },
+    "landmarks": [
+      {
+        "id": "courthouse",
+        "osm": 30853157,
+        "name": "Allen County Courthouse",
+        "kind": "dome",
+        "note": "1902 Beaux-Arts, limestone; central dome with a statue on top. Dome height estimated, not from OSM."
+      }
+    ],
+    "hooks": [
+      {
+        "id": "courthouse-door",
+        "kind": "door",
+        "label": "Allen County Courthouse",
+        "x": -27,
+        "z": -1,
+        "href": null,
+        "note": "Interior + court role-play come later"
+      }
+    ]
+  }
+}
