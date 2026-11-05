@@ -1,0 +1,1390 @@
+{
+  "date": "2026-11-05",
+  "title": "Heartbeat News — Thursday, November 5, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex/2026-11-05",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-05.md"
+    },
+    {
+      "name": "watch/deepseek/2026-11-05",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-05.md"
+    },
+    {
+      "name": "watch/kimi/2026-11-05",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-05.md"
+    },
+    {
+      "name": "watch/grok/2026-11-05",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-05.md"
+    },
+    {
+      "name": "watch/grok/2026-11-05-gaps",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-05-gaps.md"
+    },
+    {
+      "name": "watch/msi/2026-11-05",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-05.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Claude daily capture",
+      "source": "claude/2026-11-05.md",
+      "why": "Not filed today; the show uses the other desks."
+    },
+    {
+      "item": "MSI DuckDuckGo search attempts (21 domains) and unreadable AP/Reuters/ISW feeds",
+      "source": "msi",
+      "why": "No content; the collector reported outages only."
+    },
+    {
+      "item": "Verge items: Bose headphone deal, Pixel 11 discount, phone grip, X web app speed, Xbox cloud controls, Gemini for Home with AT&T, Musk '17 ways' column, Zelda designers interview",
+      "source": "msi",
+      "why": "Shopping/deals, opinion or headline-only product items."
+    },
+    {
+      "item": "Prediction-market prices for RUH airport and Netanyahu retirement contracts",
+      "source": "deepseek, kimi",
+      "why": "Trader detail; the Iran deal contract is mentioned in the Iran segment."
+    },
+    {
+      "item": "Polymarket US bluewave contract state",
+      "source": "codex",
+      "why": "Page returned only a site shell; settlement unseen."
+    },
+    {
+      "item": "Riksbank minutes and next meeting dates; OPEC+ Nov. 29 review; Dhanteras and Diwali calendar; Abu Dhabi dates beyond Nov. 10-11",
+      "source": "kimi, grok gaps",
+      "why": "Calendar items, not news."
+    },
+    {
+      "item": "Brazil real/PTAX decimals, Ibovespa close, Focus survey details",
+      "source": "grok, deepseek",
+      "why": "Detail beyond what a spoken show can carry; Copom hold aired."
+    },
+    {
+      "item": "Cricket: Rachin Ravindra and Mark Chapman out of India ODI series",
+      "source": "kimi",
+      "why": "Injury note, low interest for this audience."
+    },
+    {
+      "item": "Ryazan Wildberries logistics site and Kyiv region lists",
+      "source": "grok, deepseek",
+      "why": "Unverified detail; the refinery-versus-industrial-facilities split aired."
+    },
+    {
+      "item": "Etihad Jeddah resumption, Iranian airlines suspension",
+      "source": "deepseek, kimi",
+      "why": "Operating plans; Riyadh/Dammam extension aired."
+    },
+    {
+      "item": "Fort Wayne / Indiana items",
+      "source": "none",
+      "why": "None present."
+    }
+  ],
+  "ticker": [
+    "TRUMP: IRAN WAR HURT GOP, 'IF I HAD TO DO IT AGAIN, I'D DO IT AGAIN'",
+    "VANCE: 'THE REASON WE LOST IS THE WAR'; MASSIE TO FORCE HEGSETH VOTE",
+    "A.P.: DEMOCRATS ABOVE 218 IN HOUSE, AT LEAST 54 IN SENATE",
+    "DOW +3.03%, BEST DAY SINCE APRIL 2025; S&P 7,688.62",
+    "BRENT SETTLES $94.62, -8.67%; HORMUZ NOT REOPENED",
+    "IRAN MP: MISSILES TOWARD EUROPE IF U.S. USES BASES THERE",
+    "KOMYSHUVAKHA: 37 BODIES RECOVERED, ZELENSKY SAYS 40; RUSSIA: 'UP TO 25 SERVICEMEN'",
+    "310 DRONES AT UKRAINE; KYIV LOST POWER AND WATER FOR HOURS",
+    "KOSPI -5.3%, SK HYNIX -9.4% IN A.I.-LINKED SELLOFF",
+    "BANK OF ENGLAND DECIDES AT NOON; POLL SAYS HIKE TO 4%",
+    "ISRAEL: RESULTS CERTIFIED, NO BLOC AT 61; HERZOG BEGINS TALKS",
+    "SOUTH AFRICA: ANC 31.36%, DA 31.04% WITH 18% COUNTED",
+    "BINANCE: 98% REPLENISHED, PROOF OF RESERVES NOW 44 TOKENS",
+    "FRANCE: HACKERS RAISED FRIDGE LIMITS AT 3 PLASMA SITES; NO LOSS",
+    "INDONESIA FIRES PRESIDENT'S CHIEF OF STAFF; NAMED WIRETAP SUSPECT"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "The war blamed, the Dow's best day, a village mourned",
+        "bullets": [
+          "Trump: Iran war hurt Republicans, 'I'd do it again'",
+          "Dow up 3%; Brent below $95; Asian chip stocks sink",
+          "Komyshuvakha toll: 37 recovered, 40 per Zelensky",
+          "South Africa counts; Israel has no coalition"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Thursday, November fifth. Two days after the vote, and the argument about why has begun."
+        },
+        {
+          "who": "vex",
+          "text": "The president says the Iran war hurt his party, and says he would do it again. The Dow had its best day in more than a year. Oil fell almost nine percent. And a village in Ukraine is still counting its dead."
+        },
+        {
+          "who": "joe",
+          "text": "Also: South Africans wait on a close count, Israel's president starts the coalition talks, Indonesia fires the president's chief of staff, and hackers turn up the heat on France's blood supply. A big one. Stay with us."
+        }
+      ]
+    },
+    {
+      "id": "us-aftermath",
+      "kind": "breaking",
+      "strap": "TRUMP: WAR HURT GOP, 'I'D DO IT AGAIN'; VANCE BLAMES WAR",
+      "headline": "The president and the vice president on why Republicans lost",
+      "category": "POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "BREAKING",
+        "title": "After the losses, the blame",
+        "stats": [
+          {
+            "label": "A.P. Senate",
+            "value": "Democrats at least 54"
+          },
+          {
+            "label": "A.P. House",
+            "value": "Democrats above 218"
+          },
+          {
+            "label": "Musk midterm spending",
+            "value": "$474M (Atlantic)"
+          },
+          {
+            "label": "Texas",
+            "value": "Hinojosa first Dem governor since 1994"
+          }
+        ],
+        "bullets": [
+          "Trump: war hurt candidates 'because it drove the gasoline up'",
+          "Vance: 'The reason we lost is the war'",
+          "Massie: will force Hegseth impeachment vote next week",
+          "Voters approved dozens of data-center moratoriums (Axios)"
+        ]
+      },
+      "sources": [
+        {
+          "name": "National Review (Trump remarks)",
+          "url": "https://www.nationalreview.com/news/id-do-it-again-trump-defends-unpopular-iran-war-after-monumental-republican-midterm-losses/"
+        },
+        {
+          "name": "New Indian Express",
+          "url": "https://www.newindianexpress.com/world/2026/Nov/04/largely-true-trump-acknowledges-iran-war-impacted-midterm-polls-but-says-it-was-something-he-had-to-do"
+        },
+        {
+          "name": "A.P. (Congress)",
+          "url": "https://apnews.com/article/congress-democratic-blue-wave-midterms-house-senate-9c5c4c5283f58b1ae0786e2f410c21a0"
+        },
+        {
+          "name": "A.P. (Democratic gains)",
+          "url": "https://apnews.com/article/democratic-gains-battleground-states-midterms-elections-e3abf3135f626e37d8d2f57e5591ea6a"
+        },
+        {
+          "name": "Forbes (Massie, Hegseth)",
+          "url": "https://www.forbes.com/sites/siladityaray/2026/11/05/gop-rep-massie-threatens-pete-hegseth-impeachment-unless-he-resigns/"
+        },
+        {
+          "name": "Washington Examiner",
+          "url": "https://www.washingtonexaminer.com/news/house/4793550/thomas-massie-hegseth-impeachment-iran-war-used-as-blame-for-midterm-results/"
+        },
+        {
+          "name": "The Atlantic (Musk)",
+          "url": "https://www.theatlantic.com/technology/2026/11/elon-musk-loss/689281/"
+        },
+        {
+          "name": "Axios (data centers)",
+          "url": "https://www.axios.com/2026/11/04/ai-data-center-election-slowdown"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Associated Press reports Democrats now hold more than two hundred eighteen House seats and at least fifty-four in the Senate, with one Mississippi Senate race too early to call. In his first remarks since the losses, the president was asked about the war."
+        },
+        {
+          "who": "joe",
+          "text": "Per National Review, he said it is largely true that the war hurt candidates, quote, because it drove the gasoline up a little bit, short term. Then: if I had to do it again, I'd do it again, because long term it's the only answer, and you can't let Iran have a nuclear weapon. He said it on a tour of the ballroom construction."
+        },
+        {
+          "who": "vex",
+          "text": "Vice President Vance put it more bluntly, per the same report: the reason we lost is the war. He added that if anyone wants to argue it was worth it, that losing the Senate for six years was worth it, then do so."
+        },
+        {
+          "who": "joe",
+          "text": "Our dry observation: the gas price did what gas prices do. Voters noticed. That is a claim from the president and the vice president, not a poll. The A.P. separately lists cost of living, gas prices and housing as pressures on voters."
+        },
+        {
+          "who": "vex",
+          "text": "Next: Republican Representative Thomas Massie says he will not reintroduce eight articles of impeachment against Defense Secretary Pete Hegseth if Hegseth resigns. Otherwise he intends to force a House vote when lawmakers return next week. Forbes, citing CNN, says unnamed Republican sources think it would pass. That is their belief, not a vote. Forbes, citing CBS, says the president is asking advisers whether Hegseth should stay."
+        },
+        {
+          "who": "joe",
+          "text": "Money. The Atlantic says Elon Musk spent four hundred seventy-four million dollars on the midterms, the most of any non-candidate donor in a cycle. More than one hundred sixty-eight million went to committees for Ken Paxton, who lost the Texas Senate race to James Talarico. Tesla fell about five percent at Wednesday's open, per one outlet."
+        },
+        {
+          "who": "vex",
+          "text": "In Texas, Gina Hinojosa becomes the first Democratic governor since nineteen ninety-four, and Democrats take the state House. Axios adds that voters approved dozens of data-center moratoriums. Hinojosa campaigned to keep a construction moratorium until legislation addresses water, electricity, air and property impacts."
+        }
+      ]
+    },
+    {
+      "id": "hormuz",
+      "kind": "story",
+      "strap": "IRAN: MISSILES AT EUROPE IF U.S. USES BASES; BRENT $94.62",
+      "headline": "Iran, the strait, and a falling oil price",
+      "category": "GEOPOLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "IRAN / HORMUZ",
+        "title": "Cheaper oil, still no open strait",
+        "stats": [
+          {
+            "label": "Brent (Jan) settle",
+            "value": "$94.62, -8.67%"
+          },
+          {
+            "label": "WTI (Dec) settle",
+            "value": "$88.12, -8.29%"
+          },
+          {
+            "label": "3-day Brent drop",
+            "value": "19.57%"
+          },
+          {
+            "label": "Final-deal contract",
+            "value": "Yes 6.5%"
+          }
+        ],
+        "bullets": [
+          "Iranian MP: missiles toward Europe if U.S. uses its bases",
+          "Rezaei: all seven conditions before Hormuz reopens",
+          "Qatar still passing proposals",
+          "Tanker hit off Oman; no casualties"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Euronews (Iranian MP)",
+          "url": "https://www.euronews.com/2026/11/04/iranian-mp-tells-euronews-tehrans-missiles-will-strike-europe-if-us-uses-its-bases-there"
+        },
+        {
+          "name": "Morningstar / Dow Jones (Brent)",
+          "url": "https://www.morningstar.com/news/dow-jones/2026110412228/front-month-ice-brent-crude-fell-867-to-settle-at-9462-data-talk"
+        },
+        {
+          "name": "Xinhua (crude)",
+          "url": "https://www.thestar.com.my/news/world/2026/11/05/wti-crude-futures-settle-lower"
+        },
+        {
+          "name": "Bloomberg (oil)",
+          "url": "https://www.bloomberg.com/news/articles/2026-11-04/latest-oil-market-news-and-analysis-for-nov-5"
+        },
+        {
+          "name": "Gulf News (Iran war briefing)",
+          "url": "https://gulfnews.com/uae/usisrael-iran-war-what-uae-residents-need-to-know-today-nov-5-1.500736686"
+        },
+        {
+          "name": "UKMTO via Xinhua",
+          "url": "https://english.news.cn/europe/20261104/0ccb4250bf91488697fb23cf78ff09d0/c.html"
+        },
+        {
+          "name": "Polymarket (deal contract)",
+          "url": "https://gamma-api.polymarket.com/markets?slug=us-iran-final-nuclear-deal-by-december-31-2026-191"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Oil first. January Brent settled Wednesday at ninety-four dollars and sixty-two cents, down eight dollars and ninety-eight cents. West Texas crude, December, fell to eighty-eight twelve. Dow Jones says Brent's three-day drop of nearly twenty percent is the largest since April twenty twenty. Overnight it slipped under ninety-four."
+        },
+        {
+          "who": "joe",
+          "text": "Why? Bloomberg says investors bet a Democratic Congress could speed an end to the war, now in its ninth month. That is Bloomberg's reading. No deal was signed. Gulf News says physical restrictions in Hormuz remain. A price fell. The strait did not open."
+        },
+        {
+          "who": "vex",
+          "text": "Iran's side, in its own words. Parliament's National Security Committee member Ahmad Bakhshayesh Ardestani told Euronews: if America uses its bases in Europe, including in Italy and Germany, Iran's missiles will be fired towards Europe. No launch has been reported. Euronews adds that the Revolutionary Guard warned of a response with no geographic limit."
+        },
+        {
+          "who": "joe",
+          "text": "Mohsen Rezaei wrote that Washington's answer was not convincing, and that all seven conditions have to be met before Hormuz reopens. Parliament speaker Ghalibaf welcomed the Republican defeat and said Americans, quote, said no to war. And from the American side, today's other story: the president says he would do it again."
+        },
+        {
+          "who": "vex",
+          "text": "Diplomacy: Qatar keeps passing proposals between Washington and Tehran. Reports say the president is weighing renewed strikes, an agreement, or continued naval and economic pressure. No choice has been reported. The prediction market on a signed final nuclear deal by year end sits at six and a half percent."
+        },
+        {
+          "who": "joe",
+          "text": "On the water: the maritime monitor UKMTO says two projectiles hit a tanker's engine room fourteen nautical miles northeast of Lima, Oman. No casualties. It also reports an attack on a dhow with Indian crew; Oman's navy rescued survivors. Nobody was named as the attacker."
+        },
+        {
+          "who": "vex",
+          "text": "Two more notes. South Korea is considering sending a P-8A aircraft, mine-clearing systems and seventy-five more personnel to waters south of Oman. Non-combat, outside Hormuz, approvals pending. And Etihad extended its Riyadh and Dammam suspensions through November nineteenth."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "KOMYSHUVAKHA: 37 BODIES, ZELENSKY SAYS 40; 310 DRONES AT GRID",
+      "headline": "Ukraine: a village mourned, a grid hit again, talks without text",
+      "category": "GEOPOLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "The toll is not one number",
+        "stats": [
+          {
+            "label": "Police: bodies recovered",
+            "value": "37"
+          },
+          {
+            "label": "Zelensky: dead",
+            "value": "40"
+          },
+          {
+            "label": "Missing (Fedorov / police)",
+            "value": "59"
+          },
+          {
+            "label": "Overnight drones (Air Force)",
+            "value": "310"
+          }
+        ],
+        "bullets": [
+          "Russia: struck military units, up to 25 servicemen killed",
+          "Kyiv lost power and water for hours; restored per A.P.",
+          "Ryazan: governor reports fires at industrial sites",
+          "Abu Dhabi talks stay Nov. 10-11"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Reuters (Komyshuvakha)",
+          "url": "https://www.reuters.com/world/europe/dozens-dead-missing-after-russian-strike-ukrainian-aid-centre-officials-say-2026-11-04/"
+        },
+        {
+          "name": "Al Jazeera",
+          "url": "https://www.aljazeera.com/news/2026/11/4/ukraine-raises-death-toll-from-russian-strike-on-zaporizhia-to-40-people"
+        },
+        {
+          "name": "Ukrinform",
+          "url": "https://www.ukrinform.net/rubric-ato/4181311-death-toll-in-komyshuvakha-rises-to-40-as-search-operations-continue.html"
+        },
+        {
+          "name": "A.P. (Kyiv)",
+          "url": "https://apnews.com/article/ukraine-russia-war-kyiv-airstrike-water-37dc5e85a5c8c135996bc2720e0674d9"
+        },
+        {
+          "name": "Kyiv Post (Air Force)",
+          "url": "https://www.kyivpost.com/post/89068"
+        },
+        {
+          "name": "ISW Nov. 4",
+          "url": "https://understandingwar.org/research/russia-ukraine/russian-offensive-campaign-assessment-november-4-2026/"
+        },
+        {
+          "name": "Kyiv Independent (Ryazan)",
+          "url": "https://kyivindependent.com/russian-oil-refinery-in-ryazan-reportedly-targeted-in-drone-attack/"
+        },
+        {
+          "name": "Rapporteur (Brussels)",
+          "url": "https://www.rapporteur.com/news/eu-nato-split-roles-in-brussels-talks-on-ukraine/"
+        },
+        {
+          "name": "Reuters (Zelensky in Spain)",
+          "url": "https://www.reuters.com/world/zelenskiy-spain-meet-sanchez-other-leaders-ibero-american-summit-2026-11-04/"
+        },
+        {
+          "name": "Wall Street Journal (NATO plan)",
+          "url": "https://www.wsj.com/world/europe/natos-new-defense-plan-would-mean-strikes-deep-inside-russia-cd703f14"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Komyshuvakha, in the Zaporizhzhia region. The toll moved again. Per Ukrinform, citing police: thirty-seven bodies recovered, twelve identified, fifty-nine listed missing, some of them likely among those already recovered. President Zelensky puts the dead at forty. Reuters reports forty, with dozens missing."
+        },
+        {
+          "who": "joe",
+          "text": "How many are still under the rubble? Thirty, more than thirty, or thirty-eight, depending on the outlet. We will not pick one. Four police officers and two rescuers are among the dead, per Al Jazeera. Ukraine calls the site an aid distribution point."
+        },
+        {
+          "who": "vex",
+          "text": "Russia's Defense Ministry says its strike targeted Ukrainian military units around Komyshuvakha and two other settlements, and that up to twenty-five Ukrainian servicemen were killed. That is Moscow's account. Ukraine's account is an aid point. Neither is a finding."
+        },
+        {
+          "who": "joe",
+          "text": "The grid. Ukraine's Air Force says the attack began at six p.m. Tuesday with three hundred ten drones, eighty-one of them jet-powered. Two hundred seventy-two were shot down or suppressed. Strikes landed at nineteen locations. Kyiv lost power and water for hours; the A.P. says service was restored."
+        },
+        {
+          "who": "vex",
+          "text": "The Institute for the Study of War reports energy hits in Kyiv and six other regions. A deputy energy minister says the strikes are forcing nuclear plants to reduce output. Russia claims two named substations. There is no megawatt total."
+        },
+        {
+          "who": "joe",
+          "text": "Now Russia's side of the map. Ryazan's governor says a mass drone attack set fires at industrial facilities and cut power lines. The Kyiv Independent could not verify video of a refinery fire. Censor.NET, citing an open-source check, says the footage is the refinery. The governor said industrial facilities. The channels said refinery."
+        },
+        {
+          "who": "vex",
+          "text": "Diplomacy. Brussels held separate consultations, not one meeting: the Commission, Ukraine's Rustem Umerov, the United States remotely, and France, Germany and Britain. Agenda: the prosperity plan and recovery. No text. A second round on security guarantees is today at NATO headquarters. Abu Dhabi talks stay set for November tenth and eleventh. No ceasefire."
+        },
+        {
+          "who": "joe",
+          "text": "Zelensky is in Madrid for the Ibero-American Summit. He says it is about air defense before winter, and that contacts with the Americans come before Abu Dhabi. He meets Prime Minister Sánchez today. And the Wall Street Journal describes a NATO plan from the alliance's top commander: halt an attack, then hit the bases and factories inside Russia that sustain it. That is the Journal's account, not a council decision."
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "kind": "story",
+      "strap": "DOW +3.03%; KOSPI -5.3%; BANK OF ENGLAND TODAY",
+      "headline": "Markets: Wall Street surges, Asian chip stocks sink, rate decisions",
+      "category": "MARKETS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Wednesday's closes",
+        "stats": [
+          {
+            "label": "Dow",
+            "value": "53,356.12 (+3.0%)"
+          },
+          {
+            "label": "S&P 500",
+            "value": "7,688.62 (+1.6%)"
+          },
+          {
+            "label": "Nasdaq",
+            "value": "25,736.51 (+1.4%)"
+          },
+          {
+            "label": "Kospi",
+            "value": "5,383.80 (-5.3%)"
+          }
+        ],
+        "bullets": [
+          "Europe: DAX +2.22%, CAC +1.96%, FTSE +1.79%",
+          "Brazil holds Selic at 13.75%",
+          "Riksbank hikes to 2%",
+          "Bank of England decides at noon GMT; poll says hike to 4%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "A.P. (Wall Street)",
+          "url": "https://apnews.com/article/wall-street-stocks-dow-nasdaq-c0be7ca45b5875abe758e0570cb9a265"
+        },
+        {
+          "name": "Reuters (global markets)",
+          "url": "https://www.reuters.com/world/china/global-markets-wrapup-1-2026-11-04/"
+        },
+        {
+          "name": "CNN (U.S. markets)",
+          "url": "https://www.cnn.com/2026/11/04/investing/us-markets-midterm-elections"
+        },
+        {
+          "name": "Alliance News via SharePrices",
+          "url": "https://shareprices.com/news/london-market-close-stocks-surge-as-democrats-win-and-oil-price-slips-jtqwpnszvmykjqb/"
+        },
+        {
+          "name": "Barron's (Europe)",
+          "url": "https://www.barrons.com/market-data/stocks/emea/indexes"
+        },
+        {
+          "name": "A.P. via Mankato (Asia)",
+          "url": "https://www.mankatofreepress.com/news/state_national_news/asian-shares-are-mixed-after-us-midterm-elections-as-ai-related-stocks-sink-in-japan/article_1666f62e-a4b2-516f-aca8-e71e6542b8fd.html"
+        },
+        {
+          "name": "Agência Brasil (Copom)",
+          "url": "https://agenciabrasil.ebc.com.br/economia/noticia/2026-11/bc-surpreende-e-mantem-juros-basicos-em-1375-ao-ano"
+        },
+        {
+          "name": "CNN Brasil",
+          "url": "https://www.cnnbrasil.com.br/economia/money/mercado/mercado-financeiro-ibovespa-dolar-4-novembro-2026/"
+        },
+        {
+          "name": "Riksbank",
+          "url": "https://www.riksbank.se/en-gb/press-and-published/notices-and-press-releases/press-releases/2026/policy-rate-raised-to-2-per-cent/"
+        },
+        {
+          "name": "Reuters (Bank of England)",
+          "url": "https://www.reuters.com/world/uk/bank-england-poised-hike-rates-first-time-3-years-2026-11-05/"
+        },
+        {
+          "name": "Caixin (China profits)",
+          "url": "https://www.caixinglobal.com/2026-11-03/earnings-growth-at-china-listed-companies-slows-sharply-102500398.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Wall Street, Wednesday. The Dow rose three percent to fifty-three thousand, three hundred fifty-six. The S and P five hundred gained one point six percent to seven thousand, six hundred eighty-nine. The Nasdaq rose one point four percent. Treasury yields eased as oil fell. CNN says it was the Dow's best day since April twenty twenty-five."
+        },
+        {
+          "who": "joe",
+          "text": "Not everyone joined the party. CNN says Nvidia fell three percent, CoreWeave about ten, and Nebius six point seven. Energy stocks were the biggest losers, per Reuters. The wires tied the rally to the midterm result and the oil drop. They did not rank the reasons."
+        },
+        {
+          "who": "vex",
+          "text": "Europe printed a rally too. Germany's DAX rose two point two two percent. France's CAC forty, one point nine six. London's FTSE one hundred, one point seven nine. Spain's IBEX, three percent."
+        },
+        {
+          "who": "joe",
+          "text": "Then Asia, Thursday. South Korea's Kospi closed down five point three percent. Samsung fell seven point six, SK Hynix nine point four. Japan's Nikkei lost one point eight percent, with Tokyo Electron down nine point five and Advantest down fifteen. The A.P. headline calls it an A.I.-linked selloff. Meanwhile Hong Kong rose three point two percent."
+        },
+        {
+          "who": "vex",
+          "text": "Central banks. Brazil held its Selic rate at thirteen point seven five percent, unanimously, ending five straight cuts. The statement cited wider uncertainty and inflation expectations above target. Whether markets expected a hold depends on whose survey you read. Agência Brasil says it surprised; CNN says it was widely expected."
+        },
+        {
+          "who": "joe",
+          "text": "Sweden's Riksbank raised its rate a quarter point to two percent, effective November eleventh, citing supply disruptions and energy costs. It says another increase is likely if the outlook holds."
+        },
+        {
+          "who": "vex",
+          "text": "And the Bank of England decides at noon London time. The bank's own page still shows three point seven five percent. A Reuters poll of economists expects a seven-to-two vote to raise to four percent, the first hike since August twenty twenty-three. That is a poll. It is not a vote."
+        },
+        {
+          "who": "joe",
+          "text": "One more, from China. Combined third-quarter net profit at mainland listed companies fell about thirteen percent from a year earlier, per Caixin, after roughly twenty-five percent growth in the second quarter."
+        }
+      ]
+    },
+    {
+      "id": "ai-tech",
+      "kind": "story",
+      "strap": "OPENAI TO BUY PIERRE COMPUTER; QUALCOMM PIVOTS TO DATA CENTERS",
+      "headline": "A.I. and tech: deals, downloads, and Qualcomm's pivot",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "A.I. / TECH",
+        "title": "Who is buying, who is shipping",
+        "stats": [
+          {
+            "label": "Qualcomm Q4 revenue",
+            "value": "$10.442B, -7%"
+          },
+          {
+            "label": "Qualcomm EPS (non-GAAP)",
+            "value": "$2.17, -28%"
+          },
+          {
+            "label": "Qwen downloads",
+            "value": "4B+ (Alibaba)"
+          },
+          {
+            "label": "Canva layoffs",
+            "value": "1,271 (22%)"
+          }
+        ],
+        "bullets": [
+          "OpenAI to buy Pierre Computer (Axios); terms undisclosed",
+          "Qualcomm targets $5B data-center revenue in FY2027",
+          "Nothing teases a screen-free A.I. device",
+          "China: embodied-A.I. market RMB915B in 2025"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Axios (OpenAI, Pierre)",
+          "url": "https://www.axios.com/2026/11/04/openai-pierre-computer-github"
+        },
+        {
+          "name": "Qualcomm earnings release",
+          "url": "https://investor.qualcomm.com/files/content_files/FY2026-4th-Quarter-Earnings-Release.pdf"
+        },
+        {
+          "name": "The Verge (Qualcomm)",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1026867/qualcomm-earnings-data-centers"
+        },
+        {
+          "name": "The Verge (Nothing)",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1026586/nothing-screen-free-ai-device-carl-pei"
+        },
+        {
+          "name": "Xinhua (Alibaba, Wuzhen)",
+          "url": "https://english.news.cn/20261104/d33eab53524144b4a8efbd47c724aa9a/c.html"
+        },
+        {
+          "name": "Xinhua (China report)",
+          "url": "https://english.news.cn/20261104/a51a6e7d6fc94daa8e6a8def7e9591da/c.html"
+        },
+        {
+          "name": "Canva newsroom",
+          "url": "https://www.canva.com/newsroom/news/canva-team-update/"
+        },
+        {
+          "name": "The Verge (Canva)",
+          "url": "https://www.theverge.com/tech/1025971/canva-changes-layoffs"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Axios reports OpenAI will acquire Pierre Computer, a developer-tools startup whose Code Storage function is already built into Codex. Terms were not disclosed. Pierre's open-source projects are to stay open-source."
+        },
+        {
+          "who": "joe",
+          "text": "Qualcomm reported fiscal fourth-quarter revenue of ten point four four billion dollars, down seven percent, and earnings per share down twenty-eight percent. It reiterated a five-billion-dollar data-center revenue target for fiscal twenty twenty-seven. The Verge's framing: Qualcomm is betting on data centers as smartphone sales sink. That is the Verge's framing."
+        },
+        {
+          "who": "vex",
+          "text": "At the China-hosted Wuzhen Summit, Alibaba chairman Joe Tsai said Qwen has released more than four hundred seventy open-source models with over four billion cumulative downloads. Those are company figures carried by state media. A Chinese state research academy puts China's embodied-intelligence market at about nine hundred fifteen billion yuan for twenty twenty-five, up twenty percent."
+        },
+        {
+          "who": "joe",
+          "text": "In devices, Nothing is teasing a screen-free A.I. gadget ahead of a launch next month. We have the headline. We do not have a screen to show you."
+        },
+        {
+          "who": "vex",
+          "text": "And a hard number from the other side of the boom. Canva says one thousand, two hundred seventy-one employees, twenty-two percent of its workforce, will be affected by role changes, relocations or departures. It also said growth slowed for the first time in a decade."
+        }
+      ]
+    },
+    {
+      "id": "israel",
+      "kind": "story",
+      "strap": "ISRAEL: RESULTS CERTIFIED, NO BLOC AT 61; HERZOG BEGINS TALKS",
+      "headline": "Israel: certified results, no majority, no mandate",
+      "category": "POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ISRAEL",
+        "title": "The seats, and the missing 61",
+        "stats": [
+          {
+            "label": "Netanyahu bloc",
+            "value": "53"
+          },
+          {
+            "label": "Eisenkot bloc",
+            "value": "48"
+          },
+          {
+            "label": "Arab parties",
+            "value": "19"
+          },
+          {
+            "label": "Needed",
+            "value": "61"
+          }
+        ],
+        "bullets": [
+          "Herzog began party consultations Wednesday evening",
+          "Shas, Religious Zionism to recommend Netanyahu",
+          "Liberman, Bennett, Golan back Eisenkot",
+          "Netanyahu remains caretaker"
+        ]
+      },
+      "sources": [
+        {
+          "name": "A.P. (Israel election)",
+          "url": "https://apnews.com/article/israel-election-netanyahu-57aefc6424da937ad2842f6d762631ae"
+        },
+        {
+          "name": "Jerusalem Post",
+          "url": "https://www.jpost.com/israel-election-2026/article-913806"
+        },
+        {
+          "name": "The Jewish Chronicle",
+          "url": "https://www.thejc.com/news/israel/eisenkot-form-government-israel-election-results-b0vl1f27"
+        },
+        {
+          "name": "JFeed",
+          "url": "https://www.jfeed.com/news/herzog-coalition-consultations-election-deadlock"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Israel's Central Elections Committee found no evidence of compromised election integrity and certified the results. Justice Noam Sohlberg delivered them to President Isaac Herzog Wednesday, and Herzog began consulting the parties that evening, per the A.P."
+        },
+        {
+          "who": "joe",
+          "text": "The numbers, per the Jerusalem Post: Netanyahu's bloc, fifty-three seats. Gadi Eisenkot's bloc, forty-eight. Arab parties, nineteen. Sixty-one is a majority. Nobody has it."
+        },
+        {
+          "who": "vex",
+          "text": "Recommendations so far. Religious Zionism and Shas will recommend Netanyahu. Liberman, Bennett and Golan back Eisenkot. If the Arab parties also recommend Eisenkot, the Post says that could put him at sixty-seven. No mandate has been issued. Netanyahu stays caretaker. United Torah Judaism had not said whom it will back."
+        },
+        {
+          "who": "joe",
+          "text": "The Jewish Chronicle expects Eisenkot to get the first chance. That is an expectation, not a decision. The Chronicle also notes a Shin Bet suggestion of widespread foreign interference; that is not a finding."
+        }
+      ]
+    },
+    {
+      "id": "south-africa",
+      "kind": "story",
+      "strap": "SOUTH AFRICA: ANC 31.36%, DA 31.04% WITH 18% COUNTED",
+      "headline": "South Africa's local elections: an early count, a tight race",
+      "category": "ELECTIONS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "SOUTH AFRICA",
+        "title": "Counting, not declared",
+        "stats": [
+          {
+            "label": "ANC",
+            "value": "31.36%"
+          },
+          {
+            "label": "DA",
+            "value": "31.04%"
+          },
+          {
+            "label": "Gap",
+            "value": "10,627 votes"
+          },
+          {
+            "label": "Counted",
+            "value": "18% (08:01)"
+          }
+        ],
+        "bullets": [
+          "About 12 million had voted by 5 p.m.",
+          "Commission has up to 7 days to declare",
+          "Blue Crane: first declaration, won by the DA",
+          "Ramaphosa: service delivery is the issue"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The South African",
+          "url": "https://www.thesouthafrican.com/news/elections-2026-anc-leads-as-da-trails-by-just-10-627-votes/"
+        },
+        {
+          "name": "IEC results",
+          "url": "https://results.elections.org.za/home/"
+        },
+        {
+          "name": "Business Day",
+          "url": "https://www.businessday.co.za/politics/elections-2026/2026-11-04-sa-voter-turnout-tops-40-by-5pm-as-parties-face-coalition-uncertainty/"
+        },
+        {
+          "name": "Daily Maverick",
+          "url": "https://www.dailymaverick.co.za/article/2026-11-04-new-protocols-and-tech-kept-lines-moving-but-some-voters-still-faced-long-queues/"
+        },
+        {
+          "name": "Mail & Guardian",
+          "url": "https://mg.co.za/news/south-africa/2026-11-04-two-kzn-voting-stations-closed-ballot-papers-stolen-iec/"
+        },
+        {
+          "name": "The Citizen (protests)",
+          "url": "https://www.citizen.co.za/news/south-africa/elections/padlocked-schools-to-burning-tyres-ec-police-respond-to-protests-at-voting-stations/"
+        },
+        {
+          "name": "The Citizen (count)",
+          "url": "https://www.citizen.co.za/news/south-africa/elections/election-results-trickle-as-race-municipal-power-intensifies/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "South Africa voted in local elections Wednesday. Polls closed at nine p.m.; anyone in line could still vote. The Electoral Commission has up to seven days to declare. About twelve million had voted by five p.m., more than forty percent of the roll, per Business Day."
+        },
+        {
+          "who": "joe",
+          "text": "One outlet's reading of the commission's dashboard at eight a.m. Thursday, with eighteen percent counted: the ANC at thirty-one point three six percent, the Democratic Alliance at thirty-one point zero four. A gap of ten thousand, six hundred twenty-seven votes. That is a press reading, not a result. A second site had twenty-one point six percent of voting districts in."
+        },
+        {
+          "who": "vex",
+          "text": "The first declaration, Blue Crane in the Eastern Cape, went to the DA. Major metro counts are outstanding. Ramaphosa called service delivery the defining issue, and Johannesburg's water and power failures sit at the center of the contest."
+        },
+        {
+          "who": "joe",
+          "text": "Election day was messy in places. Unused ballots and a security stamp were stolen at a school in eThekwini. Two Umzumbe stations stayed closed after rain destroyed the roads. Protesters padlocked a station in Alfred Nzo; police broke the lock. Burning tyres blocked a school in Dutywa. In Orange Grove, ballots ran out and people waited about an hour. These are local incidents, not one national total."
+        }
+      ]
+    },
+    {
+      "id": "binance",
+      "kind": "story",
+      "strap": "BINANCE: 98% REPLENISHED; PROOF OF RESERVES NOW 44 TOKENS",
+      "headline": "Binance: recovery update, full proof still pending",
+      "category": "CRYPTO",
+      "status": "observed",
+      "graphic": {
+        "kicker": "BINANCE",
+        "title": "Recovery update 7",
+        "stats": [
+          {
+            "label": "Replenished",
+            "value": "about 98%"
+          },
+          {
+            "label": "Snapshot tokens",
+            "value": "44 (was 10)"
+          },
+          {
+            "label": "Full proof",
+            "value": "50-60 hours"
+          },
+          {
+            "label": "Loss figure",
+            "value": "$6.3B (unchanged)"
+          }
+        ],
+        "bullets": [
+          "Remaining 2%: less-liquid tokens, bought via market and OTC",
+          "Withdrawals reopening in phases",
+          "Zero-knowledge proof not yet posted"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Binance announcement",
+          "url": "https://www.binance.com/en-GB/support/announcement/security-incident-recovery-update-7-98-of-stolen-assets-replenished-and-new-por-snapshot-with-expanded-coverage-2026-11-04-c6ba9aa726974fc6b9332a2c8f63b405"
+        },
+        {
+          "name": "Binance on X",
+          "url": "https://x.com/binance/status/2118001921252347938"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Binance says it has replenished about ninety-eight percent of the impacted amount from its own resources, up from ninety-five percent Monday. It says it set aside more than one hundred percent of the funds needed to cover losses."
+        },
+        {
+          "who": "joe",
+          "text": "The remaining two percent are less-liquid tokens it is still buying through the market and over the counter, which it says will be slower. A new proof-of-reserves snapshot, taken November fourth, covers forty-four tokens, up from ten."
+        },
+        {
+          "who": "vex",
+          "text": "The full zero-knowledge proof is estimated to need fifty to sixty more hours and has not been posted. Withdrawals continue to reopen in phases. The company has not restated the six point three billion dollar loss figure. This is Binance's account of its own recovery."
+        }
+      ]
+    },
+    {
+      "id": "cyber",
+      "kind": "story",
+      "strap": "HACKERS RAISED FRIDGE THRESHOLDS AT 3 FRENCH PLASMA SITES",
+      "headline": "Cyberattack on France's blood-plasma storage",
+      "category": "CYBER",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "The cold rooms",
+        "bullets": [
+          "Three contractor cold stores, overnight Monday",
+          "Thresholds raised to 'very high levels' (Guardian)",
+          "Alarms let staff move plasma; nothing lost per EFS",
+          "No attribution"
+        ]
+      },
+      "sources": [
+        {
+          "name": "A.P. (France plasma)",
+          "url": "https://apnews.com/article/france-plasma-blood-bank-cyberattack-temperature-fridge-12b80bcf93b8404264209e519c204919"
+        },
+        {
+          "name": "The Guardian",
+          "url": "https://www.theguardian.com/technology/2026/nov/04/france-national-blood-service-hack-cyber-attack-europe"
+        },
+        {
+          "name": "CBS News",
+          "url": "https://www.cbsnews.com/news/cyberattack-france-blood-bank/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "France's national blood service says hackers altered refrigeration thresholds at three blood-plasma storage sites on Monday. Per the Guardian, temperature and defrost thresholds were set to very high levels."
+        },
+        {
+          "who": "joe",
+          "text": "The service, the EFS, says monitoring caught it in time. Staff moved the plasma. In its words, no blood products or samples were compromised, and no products were lost. The service supplies more than nineteen hundred hospitals. The French weekly Canard Enchaîné reported a target of about one hundred ten degrees Celsius. That is the paper's account. Nobody has been blamed."
+        }
+      ]
+    },
+    {
+      "id": "indonesia",
+      "kind": "story",
+      "strap": "INDONESIA FIRES PRESIDENT'S CHIEF OF STAFF; NAMED WIRETAP SUSPECT",
+      "headline": "Indonesia: the chief of staff dismissed, troops in Jakarta",
+      "category": "ASIA",
+      "status": "observed",
+      "graphic": {
+        "kicker": "INDONESIA",
+        "title": "Decree signed, deployment under way",
+        "bullets": [
+          "Listyo Sigit Prabowo dismissed as presidential chief of staff",
+          "Named a suspect in a wiretapping case, with two police generals",
+          "Lt. Gen. Ariyo Windutomo named acting chief",
+          "Troop deployment: 20,980 involved (CNA)"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CNN Indonesia",
+          "url": "https://www.cnnindonesia.com/nasional/20261104115109-32-1423127/listyo-resmi-dicopot-prabowo-tunjuk-letjen-ariyo-windutomo-plt-ksp"
+        },
+        {
+          "name": "Channel NewsAsia",
+          "url": "https://www.channelnewsasia.com/asia/indonesia-deploys-troops-jakarta-wiretapping-arrests-6523396"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Indonesia's president signed a decree dismissing Listyo Sigit Prabowo as presidential chief of staff and named Lieutenant General Ariyo Windutomo acting chief, per State Secretary Prasetyo Hadi. Listyo is a suspect in a wiretapping case, along with two police inspector generals."
+        },
+        {
+          "who": "joe",
+          "text": "The articles cited carry up to ten, six and eight years. No conviction. Separately, a navy vice admiral says a first phase of troop deployment began Monday with two thousand one hundred personnel already in Jakarta, and twenty thousand nine hundred eighty involved in total. He did not say the deployment was about the wiretap case."
+        }
+      ]
+    },
+    {
+      "id": "europe",
+      "kind": "story",
+      "strap": "FRANCE STRIKE TODAY: 1 IN 10 TGV CANCELLED; NATO TO SET OUT PLAN",
+      "headline": "Europe: France's strike day and a ban on the union route",
+      "category": "EUROPE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "France's strike day",
+        "stats": [
+          {
+            "label": "Primary teachers striking (forecast)",
+            "value": "17-17.5%"
+          },
+          {
+            "label": "TGV cancelled",
+            "value": "1 in 10"
+          },
+          {
+            "label": "Lycées blocked Wed.",
+            "value": "19 (0.5%)"
+          },
+          {
+            "label": "Tue. lycées",
+            "value": "48"
+          }
+        ],
+        "bullets": [
+          "Regional trains and Paris RER disrupted",
+          "Paris police prefecture banned declared union route (Ouest-France headline)",
+          "Canada-China extend tariff relief to 2028"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Ouest-France (live)",
+          "url": "https://www.ouest-france.fr/societe/manifestation/direct-greve-du-5-novembre-la-prefecture-de-police-de-paris-interdit-le-parcours-declare-par-les-syndicats-d0b4db14-a207-4bc0-8dee-7913a41f0a8c"
+        },
+        {
+          "name": "La Croix",
+          "url": "https://www.la-croix.com/economie/greve-du-5-novembre-ecoles-transports-manifestations-a-quoi-faut-il-s-attendre-demain-20261104"
+        },
+        {
+          "name": "France 24",
+          "url": "https://www.france24.com/fr/info-en-continu/20261104-gr%C3%A8ve-du-5-novembre-la-sncf-pr%C3%A9voit-un-trafic-perturb%C3%A9-en-r%C3%A9gions-et-en-ile-de-france-1-tgv-sur-10-supprim%C3%A9"
+        },
+        {
+          "name": "20 Minutes",
+          "url": "https://www.20minutes.fr/societe/greve/4260270-20261104-transports-ecoles-administration-quoi-attendre-greve-5-novembre"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "France's strike day is today. The Education Ministry counted nineteen high schools blocked Wednesday morning, half a percent of about thirty-seven hundred, down from forty-eight Tuesday. For today, the minister's office expects a little more than seventeen and a half percent of public primary teachers to strike. Those are forecasts."
+        },
+        {
+          "who": "joe",
+          "text": "The rail company SNCF says one TGV in ten is cancelled, and regional and Paris-region trains are disrupted to strongly disrupted. Ouest-France's live headline says the Paris police prefecture banned the route the unions had declared. We have not seen the order itself. No participation count yet."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "TYPHOON IN-FA; MURASU KILLS 2 IN ANDHRA; SWIFT RE-ENTERS",
+      "headline": "Storms and the sky: In-fa, Murasu, and Swift",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Typhoon, cyclone remnant, re-entry",
+        "stats": [
+          {
+            "label": "In-fa pressure",
+            "value": "975 hPa"
+          },
+          {
+            "label": "In-fa winds",
+            "value": "32 m/s"
+          },
+          {
+            "label": "Murasu deaths (Andhra)",
+            "value": "2"
+          },
+          {
+            "label": "Houses damaged",
+            "value": "312"
+          }
+        ],
+        "bullets": [
+          "In-fa at 26.6N 138.6E, moving north-northwest",
+          "Murasu downgraded to a low; crops hit on 52,459 hectares",
+          "NASA's Swift re-entered over North Sumatra",
+          "ISRO's NVS-03 reaches geosynchronous orbit"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Korea Meteorological Administration",
+          "url": "https://www.weather.go.kr/neng/typhoon/typhoon-information.do?tIdx=0"
+        },
+        {
+          "name": "Bernama-Xinhua via The Star (Murasu)",
+          "url": "https://www.thestar.com.my/aseanplus/aseanplus-news/2026/11/04/cyclone-murasu-kills-two-damages-312-houses-in-india039s-andhra-pradesh"
+        },
+        {
+          "name": "IMD bulletin",
+          "url": "https://mausam.imd.gov.in/Forecast/marquee_data/29.%20National%20Bulletin%20No%2029-04Nov2026_1130IST.pdf"
+        },
+        {
+          "name": "NASA (Swift)",
+          "url": "https://science.nasa.gov/blogs/swift/2026/11/02/nasas-swift-observatory-to-re-enter-atmosphere/"
+        },
+        {
+          "name": "ISRO (NVS-03)",
+          "url": "https://www.isro.gov.in/Final_Orbit_manoeuvring_of_NVS03_spacecraft.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Typhoon In-fa. South Korea's weather agency puts it at twenty-six point six north, one hundred thirty-eight point six east, at nine hundred seventy-five hectopascals with winds of thirty-two meters per second, moving north-northwest. The forecast curves north, then northeast. This is a track bulletin, not a landfall."
+        },
+        {
+          "who": "joe",
+          "text": "India. Andhra Pradesh officials report two deaths in Bapatla district from Cyclone Murasu, three hundred twelve houses damaged and crops affected across fifty-two thousand hectares. Xinhua notes twelve deaths from Cyclone Arnab last week. It is an initial report. India's weather department has downgraded the remnant to a low-pressure area."
+        },
+        {
+          "who": "vex",
+          "text": "In space: NASA says the Space Force confirmed the Swift Observatory re-entered over North Sumatra, Indonesia, Wednesday morning. Some components may have survived. And India's ISRO completed its orbit maneuvers for the N.V.S. zero-three navigation satellite, now in geosynchronous orbit, health normal."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "KENYA EBOLA: NO NEW CASES; 42-DAY COUNTDOWN NOT STARTED",
+      "headline": "Health: Kenya's Ebola outbreak, no new cases",
+      "category": "HEALTH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Kenya: the last official count",
+        "stats": [
+          {
+            "label": "Cases",
+            "value": "9"
+          },
+          {
+            "label": "Deaths",
+            "value": "2"
+          },
+          {
+            "label": "Discharged",
+            "value": "5"
+          },
+          {
+            "label": "Still hospitalized",
+            "value": "2"
+          }
+        ],
+        "bullets": [
+          "No new confirmed infection since Oct. 19",
+          "52 contacts due out by Nov. 11",
+          "Saudi Arabia and Kuwait measures not reported lifted"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Grok desk (Kenya health ministry statement, Tuesday)",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-05.md"
+        },
+        {
+          "name": "Codex capture",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-05.md"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "No new Ebola case or discharge list surfaced overnight. The last official count we have, from Tuesday's Kenyan health ministry statement: nine cases, two deaths, five men discharged, two patients still in hospital, and no new confirmed infection since October nineteenth."
+        },
+        {
+          "who": "joe",
+          "text": "The forty-two-day countdown has not started. Fifty-two contacts are due out by November eleventh. Saudi Arabia and Kuwait have not been reported to have lifted their measures. No new bulletin from the Congo."
+        }
+      ]
+    },
+    {
+      "id": "companies",
+      "kind": "story",
+      "strap": "TOYOTA RAISES PROFIT OUTLOOK; SONY PS5 SALES FALL TO 2.6M",
+      "headline": "Companies: Toyota and Sony report",
+      "category": "BUSINESS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "COMPANIES",
+        "title": "Earnings from Japan",
+        "stats": [
+          {
+            "label": "Toyota H1 net income",
+            "value": "¥2.236T, +26.1%"
+          },
+          {
+            "label": "Toyota FY op. income guide",
+            "value": "¥3.9T (from ¥3.4T)"
+          },
+          {
+            "label": "Sony quarterly op. profit",
+            "value": "¥622.3B, +45%"
+          },
+          {
+            "label": "PS5 sales",
+            "value": "2.6M (was 4M)"
+          }
+        ],
+        "bullets": [
+          "Toyota trims revenue guidance to ¥53.5T",
+          "Sony raises full-year profit guide 9%",
+          "Russia opens tender to sell Sovcomflot stake"
+        ]
+      },
+      "sources": [
+        {
+          "name": "RTTNews (Toyota)",
+          "url": "https://www.rttnews.com/3709977/toyota-h1-results-climb-upgrades-fy27-profit-view-cuts-revenue-outlook-shares-climb.aspx"
+        },
+        {
+          "name": "Reuters via The Star (Sony)",
+          "url": "https://www.thestar.com.my/tech/tech-news/2026/11/05/sony-posts-45-q2-profit-rise-on-movies-games-boost"
+        },
+        {
+          "name": "Splash247 (Sovcomflot)",
+          "url": "https://splash247.com/russia-to-sell-180m-stake-in-sovcomflot/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Toyota's first-half net income rose twenty-six percent to two point two trillion yen. It raised full-year operating-income guidance to three point nine trillion yen from three point four, while trimming its revenue guidance."
+        },
+        {
+          "who": "joe",
+          "text": "Sony's quarterly operating profit rose forty-five percent to six hundred twenty-two billion yen on games and movies, and it raised its full-year profit guidance by nine percent. PlayStation 5 sales fell to two point six million units from four million a year ago. Sony says it secured the memory it needs in July."
+        },
+        {
+          "who": "vex",
+          "text": "And Russia has opened a tender for an adviser to sell seven point eight percent of sanctioned tanker owner Sovcomflot, worth about one hundred eighty-four million dollars. Applications close November seventeenth. The state would keep seventy-five percent plus one share."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "UCL: ARSENAL WIN IN PRAGUE; LIVERPOOL FALL; LENS 1-9 COMO",
+      "headline": "Sports: a nine-goal Champions League night and the Korean Series",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Wednesday's scores",
+        "stats": [
+          {
+            "label": "Lens - Como",
+            "value": "1-9"
+          },
+          {
+            "label": "Fenerbahce - Liverpool",
+            "value": "3-2"
+          },
+          {
+            "label": "Slavia - Arsenal",
+            "value": "1-2"
+          },
+          {
+            "label": "Samsung - KT (G2)",
+            "value": "3-2 (12 inn.)"
+          }
+        ],
+        "bullets": [
+          "AEK 2-3 Real Madrid; Leipzig 2-3 Man City; Dortmund 2-1 Betis",
+          "Porto 4-1 Napoli; PSV 1-2 Brugge; Viking 4-1 Sabah",
+          "NBA: Orlando without Banchero and Suggs at Phoenix",
+          "Dakar: Egypt's Zain Ali wins 50m butterfly"
+        ]
+      },
+      "sources": [
+        {
+          "name": "ESPN (UCL)",
+          "url": "https://www.espn.co.uk/football/fixtures/_/league/uefa.champions"
+        },
+        {
+          "name": "Gazzetta",
+          "url": "https://www.gazzetta.it/en/football/champions-league/04-11-2026/champions-league-results-liverpool-fall-to-fenerbahce-real-comeback-against-aek.shtml"
+        },
+        {
+          "name": "The Guardian (UCL live)",
+          "url": "https://www.theguardian.com/football/live/2026/nov/04/champions-league-slavia-prague-v-arsenal-rb-leipzig-v-manchester-city-and-more-live"
+        },
+        {
+          "name": "Korea JoongAng Daily (KBO)",
+          "url": "https://www.koreajoongangdaily.com/sports/live-samsung-lions-vs-kt-wiz-in-korean-series-game-2/12955903"
+        },
+        {
+          "name": "NBA injury report",
+          "url": "https://ak-static.cms.nba.com/referee/injury/Injury-Report_2026-11-05_03_00AM.pdf"
+        },
+        {
+          "name": "World Aquatics (Dakar)",
+          "url": "https://www.worldaquatics.com/news/4604604/multiple-medallists-and-historic-firsts-highlight-day-4-of-swimming-at-dakar-2026"
+        },
+        {
+          "name": "Xinhua (Dakar)",
+          "url": "https://english.news.cn/20261105/6ea02a439fb34890b6961657f5df56de/c.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Champions League, nine matches. The headline: Lens one, Como nine. UEFA says Douvikas scored three, and the margin ties the largest in a Champions League match. Liverpool lost three-two at Fenerbahce, their first loss of the league phase. Real Madrid won three-two at AEK Athens, Valverde scoring in stoppage time."
+        },
+        {
+          "who": "joe",
+          "text": "Manchester City won three-two at Leipzig, Haaland the late winner per the Guardian and Gazzetta. Arsenal won two-one at Slavia Prague. Dortmund beat Betis two-one. Porto beat Napoli four-one. Club Brugge won two-one at PSV. Viking beat Sabah four-one."
+        },
+        {
+          "who": "vex",
+          "text": "Baseball. In the Korean Series, Samsung beat KT three-two in twelve innings, tying the series at one game each. Lewin Díaz scored the winning run on a throwing error."
+        },
+        {
+          "who": "joe",
+          "text": "Tonight's NBA: Orlando is without Paolo Banchero and Jalen Suggs at Phoenix. Golden State, hosting Miami, lists Jimmy Butler out with an ACL repair and Kristaps Porzingis out. Phoenix and Miami had not filed injury reports."
+        },
+        {
+          "who": "vex",
+          "text": "At the Youth Olympics in Dakar, Egypt's Zain Ali won the men's fifty-meter butterfly, his second title. Japan's Mana Ishikawa won the women's two hundred individual medley, her third gold. Cuba beat Chinese Taipei for baseball5 gold."
+        }
+      ]
+    },
+    {
+      "id": "also-today",
+      "kind": "story",
+      "strap": "ALSO: CANADA-CHINA TARIFF RELIEF; INDIA MINERALS; GODZILLA; CIIE OPENS",
+      "headline": "Quick hits from around the world",
+      "category": "ALSO",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO",
+        "title": "Also today",
+        "bullets": [
+          "Canada and China extend canola meal, pea, lobster and crab access to 2028",
+          "India approves Rs2,814 crore lithium and nickel scheme",
+          "Godzilla Minus Zero: 910M yen opening day in Japan",
+          "Shanghai's CIIE opens; runs through Nov. 10"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Global Affairs Canada",
+          "url": "https://www.canada.ca/en/global-affairs/news/2026/11/minister-sidhu-announces-extension-of-favourable-market-access-for-canadian-canola-meal-peas-lobsters-and-crab-through-2028.html"
+        },
+        {
+          "name": "Financial Post",
+          "url": "https://financialpost.com/news/canada-china-extend-tariff-deal-canadian-exports/"
+        },
+        {
+          "name": "Saur Energy (India)",
+          "url": "https://www.saurenergy.com/solar-energy-news/cabinet-approves-rs2814-crore-critical-mineral-processing-scheme-till-2031-12784953"
+        },
+        {
+          "name": "Godzilla.com / Toho / GKIDS",
+          "url": "https://godzilla.com/blogs/news/godzilla-minus-zero-scores-the-1-all-time-opening-day-box-office-for-a-live-action-film-in-japan"
+        },
+        {
+          "name": "Xinhua (CIIE)",
+          "url": "https://english.news.cn/20261105/0a71f22e1914480081e2010ea8dd1493/c.html"
+        },
+        {
+          "name": "Kyodo via Japan Today",
+          "url": "https://japantoday.com/category/politics/update2-u.s.-midterm-results-not-to-affect-strength-of-alliance-japan-gov't"
+        },
+        {
+          "name": "Nintendo (Zelda)",
+          "url": "https://www.nintendo.com/sg/games/switch2/aa9ja/index.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Quick hits. In Beijing, Canada and China agreed a two-year extension of favorable access for Canadian canola meal, peas, lobsters and crab, through twenty twenty-eight, per Global Affairs Canada. The Financial Post says Canada will extend remission on certain Chinese steel and aluminum products to the same date."
+        },
+        {
+          "who": "joe",
+          "text": "India's cabinet approved a scheme worth twenty-eight hundred fourteen crore rupees to support two lithium and two nickel processing plants. Approval, not production. Shanghai's import expo opened with organizers reporting more than four thousand overseas exhibitors. Those are organizer figures carried by state media."
+        },
+        {
+          "who": "vex",
+          "text": "Japan's Chief Cabinet Secretary says the midterm results will not affect the strength of the U.S.-Japan alliance. Godzilla Minus Zero grossed about nine hundred ten million yen on opening day in Japan, per its producers; North America opens Friday. And Nintendo lists The Legend of Zelda: Ocarina of Time for Switch 2 today. No sales yet."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "More headlines as they come in"
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Until the next show",
+      "category": "SIGN-OFF",
+      "graphic": {
+        "kicker": "SIGN-OFF",
+        "title": "A new show every day by morning"
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "That's Heartbeat News. A new show every day by morning. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. Be kind to your neighbors, and check the numbers twice. Take care of each other."
+        }
+      ]
+    }
+  ]
+}
