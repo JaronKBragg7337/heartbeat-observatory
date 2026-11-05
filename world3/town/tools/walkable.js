@@ -280,4 +280,6 @@ function main() {
      that cries wolf gets ignored. */
   if (check && nStruct) process.exit(1);
 }
-main();
+if (require.main === module) main();
+/* tools/inspector reuses the exact same walk instead of keeping a copy */
+module.exports = { boot, floodBuilding, roomsReached, checkBuilding, STEP_M };

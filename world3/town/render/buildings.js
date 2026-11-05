@@ -339,9 +339,20 @@ Building.prototype.emitExterior = function (b, dt) {
       b.endId();
     }
     /* band board between storeys (secondary form, reads in silhouette) */
-    if (lv.level > 0)
-      b.box(-0.05, lv.y - 0.22, -0.05, def.w + 0.10, 0.16, def.d + 0.10, trimMat,
-            { tint: t.trim, bevel: 0.01 });
+    /* It used to be ONE box the size of the whole footprint, so its top and
+       bottom faces were a solid slab across every room at the floor line —
+       invisible above the ceilings, but it capped the stairwell. That slab
+       was the "object blocking the view up and down the stairs" (Jaron,
+       twice). tools/inspector measured it as 0.12 m of headroom over the top
+       treads. Four perimeter strips read the same from outside and leave the
+       inside open. */
+    if (lv.level > 0) {
+      const bw = 0.15, by = lv.y - 0.22, bo = { tint: t.trim, bevel: 0.01 };
+      b.box(-0.05, by, -0.05, def.w + 0.10, 0.16, bw, trimMat, bo);
+      b.box(-0.05, by, def.d + 0.05 - bw, def.w + 0.10, 0.16, bw, trimMat, bo);
+      b.box(-0.05, by, -0.05 + bw, bw, 0.16, def.d + 0.10 - bw * 2, trimMat, bo);
+      b.box(def.w + 0.05 - bw, by, -0.05 + bw, bw, 0.16, def.d + 0.10 - bw * 2, trimMat, bo);
+    }
 
     /* windows: casing, sill, glass, muntins, drip cap, shutters */
     for (const wn of lv.windows) {
@@ -499,6 +510,23 @@ Building.prototype.emitRoof = function (b, dt, topY) {
     R = rf.hipRoof(0, wallTop, 0, def.w, def.d, pitch, over, roofMat, ro);
   } else if (def.roof === "shed") {
     R = rf.shedRoof(0, wallTop, 0, def.w, def.d, pitch, over, roofMat, ro);
+    /* A shed roof rises toward +z, so between the wall tops and the roof
+       there is a wedge at each side and a strip along the high back. Nothing
+       closed them: you could see straight through the roof cavity of every
+       split-level and the diner (tools/inspector: 30–78 m² per building). */
+    {
+      const th = 0.09, sw = M()[def.wallMat || "siding"], so2 = { tint: def.gableTint || t.wall, uvOff: uv };
+      const e0 = wallTop + over * pitch - th - 0.01, e1 = wallTop + (def.d + over) * pitch - th - 0.01;
+      for (const [gx, dir] of [[0, -1], [def.w, 1]]) {
+        if (e0 > wallTop + 0.02)
+          b._out([[gx, wallTop, 0], [gx, e0, 0], [gx, e1, def.d], [gx, wallTop, def.d]], [dir, 0, 0], sw, so2);
+        else
+          b._out([[gx, wallTop, 0], [gx, e1, def.d], [gx, wallTop, def.d]], [dir, 0, 0], sw, so2);
+      }
+      b._out([[0, wallTop, def.d], [0, e1, def.d], [def.w, e1, def.d], [def.w, wallTop, def.d]], [0, 0, 1], sw, so2);
+      if (e0 > wallTop + 0.02)
+        b._out([[0, wallTop, 0], [0, e0, 0], [def.w, e0, 0], [def.w, wallTop, 0]], [0, 0, -1], sw, so2);
+    }
   } else if (def.roof === "flat") {
     rf.box(-over, wallTop, -over, def.w + over * 2, 0.10, def.d + over * 2, roofMat, ro);
     const pw = 0.16, ph = 0.55;                                    // parapet + coping
@@ -533,8 +561,17 @@ Building.prototype.emitRoof = function (b, dt, topY) {
     const rise = (def.d / 2) * pitch;
     const gw = M()[def.wallMat || "siding"];
     const go = { tint: def.gableTint || t.wall, uvOff: uv };
-    b._out([[0, wallTop, 0], [0, wallTop + rise, def.d / 2], [0, wallTop, def.d]], [-1, 0, 0], gw, go);
-    b._out([[def.w, wallTop, 0], [def.w, wallTop + rise, def.d / 2], [def.w, wallTop, def.d]], [1, 0, 0], gw, go);
+    /* ...and they have to reach the UNDERSIDE of the roof, not the wall-top
+       pitch line. The roof planes start `over` metres outside the wall, so at
+       the gable they sit over*pitch above where the old triangle stopped:
+       a see-through wedge up both rakes of every gable (tools/inspector:
+       0.5–2 m² per end). Pentagon = wall top, up to the soffit at each eave,
+       up to the ridge underside. */
+    const gE = wallTop + Math.max(0.02, over * pitch - R.th - 0.01), gA = R.ridgeY - R.th - 0.01;
+    for (const [gx, dir] of [[0, -1], [def.w, 1]]) {
+      b._out([[gx, wallTop, 0], [gx, gE, 0], [gx, gA, def.d / 2], [gx, wallTop, def.d / 2]], [dir, 0, 0], gw, go);
+      b._out([[gx, wallTop, def.d / 2], [gx, gA, def.d / 2], [gx, gE, def.d], [gx, wallTop, def.d]], [dir, 0, 0], gw, go);
+    }
     /* rake boards down both slopes of both ends, plus the gable vent */
     for (const [x, dir] of [[-0.02, -1], [def.w - 0.14, 1]])
       for (const zEnd of [-over, def.d + over]) {

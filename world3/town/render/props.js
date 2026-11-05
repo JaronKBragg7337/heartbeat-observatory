@@ -52,7 +52,12 @@ T.Extras = function (b, dt, B) {
   if (def.steeple) {
     const cx = def.w / 2 - 0.9, y = B.top + (def.d / 2 + 0.45) * (def.pitch || 1);
     b.id(`${B.id}-SPR`, "steeple");
-    b.box(cx, B.floorY, 0.4, 1.80, y - B.floorY + 0.6, 1.80, M().siding, { tint: t.wall, uvOff: B.uvOff });
+    /* The tower used to stand on the floor INSIDE the nave, right behind the
+       front door: its collider made the chapel impossible to enter
+       (tools/walkable.js: "front door opens onto something solid"). It now
+       rises out of the roof from the wall tops, the way a roof-mounted
+       steeple is framed, and the nave floor is clear. */
+    b.box(cx, B.top - 0.05, 0.4, 1.80, y - B.top + 0.65, 1.80, M().siding, { tint: t.wall, uvOff: B.uvOff });
     b.box(cx - 0.12, y + 0.6, 0.28, 2.04, 0.16, 2.04, paint, { tint: t.trim, bevel: 0.012 });
     b.box(cx + 0.10, y + 0.76, 0.5, 1.40, 1.55, 1.40, M().siding, { tint: t.wall });
     for (const [ox, oz, sw, sd] of [[0.2, -0.02, 1.0, 0.06], [0.2, 1.36, 1.0, 0.06], [-0.02, 0.2, 0.06, 1.0], [1.36, 0.2, 0.06, 1.0]])
@@ -68,7 +73,7 @@ T.Extras = function (b, dt, B) {
     dt.cyl(sx, sy + 3.4, sz, 0.03, 0.03, 0.55, 6, metal, { tint: [.8, .78, .6] });
     dt.box(sx - 0.18, sy + 3.75, sz - 0.02, 0.36, 0.05, 0.04, metal, { tint: [.8, .78, .6], bevel: 0.006 });
     b.endId();
-    B.solid(cx, 0.4, cx + 1.8, 2.2, 0, y, `${B.id}-SPR`, "steeple");
+    B.solid(cx, 0.4, cx + 1.8, 2.2, B.top - 0.05, y, `${B.id}-SPR`, "steeple");
   }
 
   /* --- portico (town hall, library) ------------------------------------- */
