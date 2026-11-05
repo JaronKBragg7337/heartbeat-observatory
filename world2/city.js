@@ -169,13 +169,14 @@ function cellUV(cols, rows, k, inset = 0.004) {
 }
 const GLASS = { cols: 8, rows: 8, home: [0, 40], office: [40, 56], spandrel: [56, 60], transom: [60, 64] };
 const STORE = { cols: 4, rows: 4, shops: [0, 12], lobby: [12, 14], door: 14, closed: 15 };
-const SIGN = { cols: 4, rows: 16 };
+const SIGN = { cols: 4, rows: 17 };   // 17th row (11/5): the TV, Studio and Sparks doors
 const SHOPS = ["CALHOUN COFFEE", "SUMMIT CITY RECORDS", "THREE RIVERS DINER", "BERRY ST BOOKS", "OLD FORT OUTFITTERS", "LANDING PIZZA",
   "HARRISON HARDWARE", "MAIN ST BARBER", "RIVERGREEN FLORIST", "ALLEN DRUG CO.", "WAYNE BAKERY", "JEFFERSON TAILORS", "MAUMEE MARKET",
   "ST. MARYS BREWING", "COLUMBIA CAMERA", "GOLDEN LANTERN NOODLES", "PEARL ST TACOS", "CORNER DELI", "BLUE HERON BAR", "LITTLE RIVER TOYS",
   "SUMMIT SHOES", "HOPE THRIFT", "THE PRINT SHOP", "LAFAYETTE LAUNDRY", "BARR ST GROCER", "WELLS ST BIKES", "NORTHSIDE NAILS", "RADIO REPAIR",
   "CITY LOCKSMITH", "KEY CITY ICE CREAM", "HALF MOON BOOKS", "FIRST BANK"];
-const CIVIC_SIGNS = { arcade: "ARCADE", social: "SOCIAL HALL", projects: "PROJECTS", news: "WHB NEWS", library: "PUBLIC LIBRARY", station: "UNION STATION", theater: "GRAND PALACE", parking: "PARKING", court: "COURTHOUSE", onair: "ON AIR", bus: "BUS · LOOP 1" };
+const CIVIC_SIGNS = { arcade: "ARCADE", social: "SOCIAL HALL", projects: "PROJECTS", news: "WHB NEWS", library: "PUBLIC LIBRARY", station: "UNION STATION", theater: "GRAND PALACE", parking: "PARKING", court: "COURTHOUSE", onair: "ON AIR", bus: "BUS · LOOP 1",
+  tv: "HEARTBEAT TV", studio: "STUDIO", sparks: "SPARKS" };
 const SIGN_INDEX = {};
 
 function cv(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return [c, c.getContext("2d")]; }
@@ -302,7 +303,7 @@ const SIGN_STYLES = [
   { bg: "#efe6d2", fg: "#2b2b2b", font: "800 %px system-ui, sans-serif" }, { bg: "#7a3e1d", fg: "#fff1d6", font: "700 %px system-ui, sans-serif" },
 ];
 function texSigns() {
-  const [c, g] = cv(1024, 1024); g.fillStyle = "#000"; g.fillRect(0, 0, 1024, 1024);
+  const [c, g] = cv(1024, SIGN.rows * 64); g.fillStyle = "#000"; g.fillRect(0, 0, 1024, SIGN.rows * 64);
   let k = 0;
   const put = (key, text, style, street) => {
     const x = (k % 4) * 256, y = Math.floor(k / 4) * 64; SIGN_INDEX[key] = k; k++;
@@ -318,6 +319,9 @@ function texSigns() {
     const st = id === "arcade" ? { bg: "#0b0614", fg: "#ff5fd2", font: "800 %px system-ui, sans-serif", neon: 1 }
       : id === "onair" ? { bg: "#2a0606", fg: "#ff3b3b", font: "900 %px system-ui, sans-serif", neon: 1 }
       : id === "news" ? { bg: "#0d1b2e", fg: "#ffffff", font: "900 %px system-ui, sans-serif" }
+      : id === "tv" ? { bg: "#06121c", fg: "#5fe6ff", font: "900 %px system-ui, sans-serif", neon: 1 }
+      : id === "studio" ? { bg: "#141414", fg: "#f2f2f2", font: "800 %px system-ui, sans-serif" }
+      : id === "sparks" ? { bg: "#1b2340", fg: "#f3cf6b", font: "700 %px Georgia, serif" }
       : id === "parking" || id === "bus" ? { bg: "#1a4d8f", fg: "#ffffff", font: "900 %px system-ui, sans-serif" }
       : { bg: "#d9cfb8", fg: "#3a3226", font: "700 %px Georgia, serif" };
     put("civic_" + id, t, st);
@@ -620,10 +624,10 @@ const PLANS = {
   "3,1": { type: "courthouse" },
   "2,1": { tower: { style: "stone", floors: 20, podium: 2, inset: [3, 2.5, 3, 3], steps: [0.55, 0.3, 1], spire: 9, label: "Lincoln Tower" }, fixed: { S: [{ at: 4, w: 12, tag: "arcade" }] } },
   "2,2": { fixed: { N: [{ at: 21, w: 13, tag: "social" }] } },
-  "3,2": { fixed: { N: [{ at: 9, w: 15, tag: "projects" }] } },
+  "3,2": { fixed: { N: [{ at: 9, w: 15, tag: "projects" }], S: [{ at: 9, w: 17, tag: "tv" }] } },
   "3,0": { fixed: { S: [{ at: 9, w: 16, tag: "news" }] } },
-  "2,3": { fixed: { S: [{ at: 7, w: 20, tag: "theater" }] } },
-  "1,2": { fixed: { S: [{ at: 4, w: 26, tag: "library" }] } },
+  "2,3": { fixed: { N: [{ at: 11, w: 14, tag: "sparks" }], S: [{ at: 7, w: 20, tag: "theater" }] } },
+  "1,2": { fixed: { N: [{ at: 12, w: 12, tag: "studio" }], S: [{ at: 4, w: 26, tag: "library" }] } },   // studio: not at spawn (-35.5, 6.5)
   "3,4": { fixed: { N: [{ at: 2, w: 30, tag: "station" }] } },
   "4,1": { tower: { style: "curtain", floors: 26, podium: 2, inset: [3, 3, 3, 3], steps: [1], label: "Summit Tower" } },
   "2,0": { tower: { style: "ribbon", floors: 14, podium: 1, inset: [2.5, 2.5, 2.5, 2.5], steps: [1] } },
@@ -887,6 +891,8 @@ export async function buildCity(scene, ctx) {
   });
   posts.castShadow = true; pools.renderOrder = 2; group.add(posts, globes, pools);
 
+  // keep every real door in sight from the street: no street tree right in front of a door (11/5)
+  for (let k = treeSpots.length - 1; k >= 0; k--) if (doors.some((d) => Math.hypot(d.front[0] - treeSpots[k][0], d.front[1] - treeSpots[k][1]) < 6)) treeSpots.splice(k, 1);
   if (leafGeo && treeSpots.length) {
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.17, 3.0, 6), new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.95 }), treeSpots.length);
     const crowns = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1.15, 1), new THREE.MeshStandardMaterial({ color: 0x46622f, roughness: 0.9 }), treeSpots.length);
@@ -1017,6 +1023,20 @@ function buildCivic(lot, R, doors, landmarks) {
   else if (tag === "social") { H = building(lot, { style: "brick", floors: 3, mat: "brick", signKey: "civic_social", doorS: w / 2, awning: lin(0x7a1f24), corniceCol: lin(0xe8dcc4) }, R); doors.push(doorAt(lot, w / 2, "Social Hall", "social")); L("Social Hall"); }
   else if (tag === "projects") { H = building(lot, { style: "curtain", floors: 7, mat: "stone", lobby: true, signKey: "civic_projects", doorS: w / 2, doorW: 3, gh: 5.4, awning: false, tint: lin(0xc8e0e8), set: "office" }, R); doors.push(doorAt(lot, w / 2, "Projects", "projects")); L("Projects"); }
   else if (tag === "news") { H = building(lot, { style: "ribbon", floors: 5, mat: "trim", col: lin(0xe2ded6), lobby: true, signKey: "civic_news", doorS: w * 0.3, doorW: 2.6, gh: 5.0, awning: false, panel: lin(0x1d2f55) }, R); doors.push(doorAt(lot, w * 0.3, "WHB News · Vex & Joe", "news")); L("WHB News", "civic"); }
+  // 11/5: Heartbeat TV (a broadcast house: a big screen on the front, a mast on the roof), the Studio (a recording studio
+  // with a red RECORDING light) and Sparks (a small stone hall in gold). Each door opens its page.
+  else if (tag === "tv") {
+    H = building(lot, { style: "ribbon", floors: 4, mat: "trim", col: lin(0x2a3140), lobby: true, signKey: "civic_tv", doorS: w * 0.25, doorW: 2.8, gh: 5.0, awning: false, panel: lin(0x141a24) }, R);
+    setFrame(lot.ox, CURB, lot.oz, lot.fx, lot.fz);   // broadcast mast on the roof (merged into the city meshes)
+    const mp = wp([w * 0.7, H, lot.d * 0.5]); const m = new THREE.Matrix4();
+    m.makeTranslation(mp[0], mp[1] + 7, mp[2]); addGeo("metal", new THREE.CylinderGeometry(0.18, 0.4, 14, 6), m, lin(0xb8bcc4));
+    for (const [yy, rr] of [[4, 1.6], [8, 1.1], [11.5, 0.7]]) { m.makeTranslation(mp[0], mp[1] + yy, mp[2]); addGeo("metal", new THREE.CylinderGeometry(rr, rr, 0.12, 8), m, lin(0xc8ccd4)); }
+    m.makeTranslation(mp[0], mp[1] + 14.4, mp[2]); addGeo("metal", new THREE.SphereGeometry(0.35, 6, 4), m, lin(0xff4040));
+    H += 14;
+    doors.push(doorAt(lot, w * 0.25, "Heartbeat TV", "tv")); L("Heartbeat TV");
+  }
+  else if (tag === "studio") { H = building(lot, { style: "brick", floors: 2, mat: "brickB", col: lin(0x5a5a5e), lobby: true, signKey: "civic_studio", doorS: w / 2, doorW: 2.4, gh: 4.6, awning: lin(0x1a1a1a), corniceCol: lin(0x2a2a2a) }, R); doors.push(doorAt(lot, w / 2, "Studio · make music and videos", "studio")); L("Studio"); }
+  else if (tag === "sparks") { H = building(lot, { style: "stone", floors: 2, mat: "stone", col: lin(0xe6dcc6), lobby: true, signKey: "civic_sparks", doorS: w / 2, doorW: 3.0, gh: 5.2, awning: false, corniceCol: lin(0xd8b45a) }, R); doors.push(doorAt(lot, w / 2, "Sparks · people who light the way", "sparks")); L("Sparks"); }
   else if (tag === "theater") { H = building(lot, { style: "brick", floors: 4, mat: "brickB", col: lin(0xe9dcc6), signKey: null, lobby: true, doorS: w / 2, doorW: 4.4, gh: 6.2, awning: false, corniceCol: lin(0xc9b48a) }, R); doors.push(doorAt(lot, w / 2, "Grand Palace Theater", "theater")); L("Grand Palace Theater"); }
   else if (tag === "library") {
     H = building(lot, { style: "stone", floors: 3, mat: "stone", col: lin(0xe8e2d4), lobby: true, signKey: "civic_library", doorS: w / 2, doorW: 3.4, gh: 5.4, awning: false, corniceCol: lin(0xf2f0ea) }, R);
@@ -1348,6 +1368,37 @@ function buildAnimatedSigns(group, lots) {
     const [oc, og] = cv(256, 96); og.fillStyle = "#200404"; og.fillRect(0, 0, 256, 96); og.shadowColor = "#ff3030"; og.shadowBlur = 16; og.fillStyle = "#ff4646"; og.font = "900 56px system-ui, sans-serif"; og.textAlign = "center"; og.textBaseline = "middle"; og.fillText("ON AIR", 128, 50);
     const otex = texOf(oc); const omat = new THREE.MeshStandardMaterial({ map: otex, emissive: 0xffffff, emissiveMap: otex, emissiveIntensity: 1.2 }); plane(2.4, 0.9, omat, nw, nw.w * 0.8, 2.3, -0.35);
     items.push({ blink: omat });
+  }
+  const tvl = lots.tv;
+  if (tvl) {   // the big screen on the TV house: flips through the channels like a remote (redrawn every 2.5 s)
+    const [c, g] = cv(512, 256); const tex = texOf(c);
+    const CH = [["CH 1", "NEWS", "#ff4646"], ["CH 2", "SHOWS", "#5fe6ff"], ["CH 3", "MOVIES", "#ffd27a"], ["CH 4", "MUSIC", "#ff7bd8"], ["CH 5", "SCIENCE", "#7bd88f"], ["CH 6", "SPACE", "#9fb8ff"]];
+    const draw = (k) => {
+      const [n, name, col] = CH[k % CH.length];
+      g.fillStyle = "#04070c"; g.fillRect(0, 0, 512, 256); g.fillStyle = col; g.globalAlpha = 0.18; g.fillRect(0, 0, 512, 256); g.globalAlpha = 1;
+      g.fillStyle = "#ffffff"; g.font = "800 34px system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText("HEARTBEAT TV", 26, 40);
+      g.fillStyle = col; g.font = "900 30px system-ui, sans-serif"; g.textAlign = "right"; g.fillText(n, 486, 40);
+      g.fillStyle = col; g.font = "900 96px system-ui, sans-serif"; g.textAlign = "center"; g.fillText(name, 256, 140);
+      g.fillStyle = "#cfd8e3"; g.font = "600 26px system-ui, sans-serif"; g.fillText("WALK IN TO WATCH", 256, 218);
+    };
+    draw(0);
+    const mat = new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.9, roughness: 0.35 });
+    plane(8, 4, mat, tvl, tvl.w * 0.64, 8.6, -0.25);
+    items.push({ redraw: draw, tex, every: 2.5, t: 0, phase: 0 });
+  }
+  const sto = lots.studio;
+  if (sto) {   // the red RECORDING light over the studio door
+    const [rc, rg] = cv(256, 64); rg.fillStyle = "#1a0303"; rg.fillRect(0, 0, 256, 64); rg.shadowColor = "#ff3030"; rg.shadowBlur = 12; rg.fillStyle = "#ff4a4a"; rg.font = "900 38px system-ui, sans-serif"; rg.textAlign = "center"; rg.textBaseline = "middle"; rg.fillText("RECORDING", 128, 34);
+    const rtex = texOf(rc); const rmat = new THREE.MeshStandardMaterial({ map: rtex, emissive: 0xffffff, emissiveMap: rtex, emissiveIntensity: 1.1 });
+    plane(2.2, 0.55, rmat, sto, sto.w / 2, 3.55, -0.3); items.push({ blink: rmat });
+  }
+  const spk = lots.sparks;
+  if (spk) {   // a gold blade sign, the way old halls of fame hang theirs
+    const [bc, bg] = cv(128, 512); bg.fillStyle = "#1b2340"; bg.fillRect(0, 0, 128, 512); bg.strokeStyle = "#f3cf6b"; bg.lineWidth = 6; bg.strokeRect(8, 8, 112, 496);
+    bg.fillStyle = "#f6dc8a"; bg.font = "700 62px Georgia, serif"; bg.textAlign = "center"; bg.textBaseline = "middle"; "SPARKS".split("").forEach((ch, k) => bg.fillText(ch, 64, 58 + k * 79));
+    const btex = texOf(bc); const bmat = new THREE.MeshStandardMaterial({ map: btex, emissive: 0xffffff, emissiveMap: btex, emissiveIntensity: 0.3, roughness: 0.5, side: THREE.DoubleSide }); glowMats.push([bmat, 0.3, 1.3]);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.35, 6.4, 1.5), [bmat, bmat, new THREE.MeshStandardMaterial({ color: 0x141a30 }), new THREE.MeshStandardMaterial({ color: 0x141a30 }), new THREE.MeshStandardMaterial({ color: 0x1b2340 }), new THREE.MeshStandardMaterial({ color: 0x1b2340 })]);
+    const bp = lotPoint(spk, 1.6, -0.9); blade.position.set(bp[0], CURB + 7.6, bp[1]); blade.rotation.y = Math.atan2(spk.fx, spk.fz); group.add(blade);
   }
   const stn = lots.station;
   if (stn) {

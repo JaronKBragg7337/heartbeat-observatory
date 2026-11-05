@@ -14,13 +14,13 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 // people loaders are imported LAZILY, after the city is on screen - the old static imports were most of the
 // 40-second blank first load the 10/28 tester hit.
 import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05b";   // the invisible floating stick (shared with Real City)
-import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-p2walk";
-import { buildCrowd, createCitySound } from "./life.js?v=2026-11-05-p2walk";   // Phase 2: people on the sidewalks + city sound
+import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-doors";
+import { buildCrowd, createCitySound } from "./life.js?v=2026-11-05-doors";   // Phase 2: people on the sidewalks + city sound
 const SUPA_ESM = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 const GLTF_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 const SKEL_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 
-const BUILD = "2026-11-05-p2walk";
+const BUILD = "2026-11-05-doors";
 const QS = new URLSearchParams(location.search);
 const PREVIEW = QS.get("preview") === "1";
 const DEV = QS.get("dev") === "1";                       // test handle: window.W2 (state, renderer, camera override, tap)
@@ -86,6 +86,7 @@ let spacesTimer = null;
 const DOOR_ACTS = {
   theater: { type: "interior", id: "theater" }, arcade: { type: "interior", id: "arcade" }, library: { type: "interior", id: "library" },
   social: { type: "page", path: "/social" }, projects: { type: "page", path: "/projects" }, news: { type: "page", path: "/news" },
+  tv: { type: "page", path: "/tv/" }, studio: { type: "page", path: "/studio/" }, sparks: { type: "page", path: "/sparks/" },
   town: { type: "page", path: "/engine" }, ashgrove: { type: "page", path: "/world3/gate/" },
 };
 let city = null;                // handle from buildCity()
@@ -1123,7 +1124,8 @@ function buildInteriors() {
   scene.add(backs);
   interiorStations.theater.push({ label: "Grand Palace \u00b7 take your seat", x: tr.x + 9.5, z: tr.z + 5.5, hw: 2, hd: 2, act: { type: "page", path: "/video/3d/?start=seats&from=world2" } });
 
-  // ARCADE — neon dark, one REAL cabinet (President Sim lives on the Games page), honest shells.
+  // ARCADE — neon dark, five REAL cabinets (each opens its own game, all self-hosted on the site) + an "all games" board.
+  // Jaron 11/5: every world has its own arcade; the cabinets are things you walk up to and use, never tap-to-walk.
   roomShell("arcade", 11, 8, 0x171c26);
   const ar = ROOM.arcade;
   const neon = new THREE.Mesh(new THREE.BoxGeometry(21, 0.18, 0.18), new THREE.MeshStandardMaterial({ color: 0x0a0f14, emissive: 0x57d8c4, emissiveIntensity: 1.4 }));
@@ -1132,21 +1134,45 @@ function buildInteriors() {
   const cabGeo = new THREE.BoxGeometry(1.5, 2.4, 1.1);
   cabGeo.translate(0, 1.2, 0);
   const cabMat = new THREE.MeshStandardMaterial({ color: 0x10141c, roughness: 0.7 });
-  const cabs = [[-6, "PRESIDENT SIM", true], [-2, "coming soon", false], [2, "coming soon", false], [6, "coming soon", false]];
-  for (const [ox, label, live] of cabs) {
-    const cab = new THREE.Mesh(cabGeo, cabMat);
-    cab.position.set(ar.x + ox, 0, ar.z - 6.6);
-    cab.castShadow = true;
-    scene.add(cab);
-    const screenP = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.85), new THREE.MeshStandardMaterial({ color: 0x05140c, emissive: live ? 0x6fe89a : 0x111418, emissiveIntensity: live ? 1.1 : 0.15 }));
+  const ARCADE_GAMES = [
+    [-7.2, "PRESIDENT SIM", "President Sim", "/games/president-sim/", 0x6fe89a],
+    [-3.6, "ROCKET", "Rocket", "/games/rocket/", 0xffb347],
+    [0, "THE HEDGE", "The Hedge", "/games/hedge-maze/", 0x9b7bff],
+    [3.6, "SYL", "SYL", "/games/syl/", 0x57c8ff],
+    [7.2, "FABLE SURVIVAL", "Fable Survival", "/games/fable-survival/", 0xff6b6b],
+  ];
+  const cabs = new THREE.InstancedMesh(cabGeo, cabMat, ARCADE_GAMES.length);
+  const _cm = new THREE.Matrix4();
+  ARCADE_GAMES.forEach(([ox, label, name, path, glow], k) => {
+    _cm.makeTranslation(ar.x + ox, 0, ar.z - 6.6); cabs.setMatrixAt(k, _cm);
+    // a little title screen per cabinet (256x192 canvas): the game's name and "walk up to play"
+    const sc = document.createElement("canvas"); sc.width = 256; sc.height = 192; const sg = sc.getContext("2d");
+    const hex = "#" + glow.toString(16).padStart(6, "0");
+    const grd = sg.createLinearGradient(0, 0, 0, 192); grd.addColorStop(0, "#05070c"); grd.addColorStop(1, hex); sg.fillStyle = grd; sg.fillRect(0, 0, 256, 192);
+    sg.fillStyle = "rgba(255,255,255,.07)"; for (let y = 0; y < 192; y += 4) sg.fillRect(0, y, 256, 1);
+    sg.fillStyle = "#ffffff"; sg.textAlign = "center"; sg.textBaseline = "middle"; let fs = 40; sg.font = "900 " + fs + "px system-ui, sans-serif";
+    while (sg.measureText(label).width > 236 && fs > 18) { fs -= 2; sg.font = "900 " + fs + "px system-ui, sans-serif"; }
+    sg.fillText(label, 128, 80); sg.font = "700 18px system-ui, sans-serif"; sg.fillStyle = "#e8f4ff"; sg.fillText("WALK UP TO PLAY", 128, 150);
+    const stex = new THREE.CanvasTexture(sc); stex.colorSpace = THREE.SRGBColorSpace;
+    const screenP = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.85), new THREE.MeshBasicMaterial({ map: stex }));
     screenP.position.set(ar.x + ox, 1.55, ar.z - 6.04);
     scene.add(screenP);
-    const cs = makeNameSprite(label, live ? 1.2 : 0.95);
+    const cs = makeNameSprite(label, 1.1);
     cs.position.set(ar.x + ox, 2.95, ar.z - 6.2);
     scene.add(cs);
     interiorColliders.arcade.push({ x: ar.x + ox, z: ar.z - 6.6, width: 1.5, depth: 1.1 });
-    if (live) interiorStations.arcade.push({ label: "Play President Sim \u00b7 Games page", x: ar.x + ox, z: ar.z - 5.2, hw: 1.6, hd: 1.4, act: { type: "page", path: "/games" } });
-  }
+    interiorStations.arcade.push({ label: "Play " + name, x: ar.x + ox, z: ar.z - 5.2, hw: 1.5, hd: 1.4, act: { type: "page", path } });
+  });
+  cabs.castShadow = true;
+  scene.add(cabs);
+  // the "all games" board on the east wall: every game on the site
+  const board = new THREE.Mesh(new THREE.BoxGeometry(0.25, 2.2, 3.4), new THREE.MeshStandardMaterial({ color: 0x0b0614, emissive: 0xff5fd2, emissiveIntensity: 0.55 }));
+  board.position.set(ar.x + 10.65, 2.2, ar.z + 0.5);
+  scene.add(board);
+  const bs = makeNameSprite("ALL GAMES", 1.1);
+  bs.position.set(ar.x + 10.2, 3.75, ar.z + 0.5);
+  scene.add(bs);
+  interiorStations.arcade.push({ label: "Every game · Games page", x: ar.x + 9.3, z: ar.z + 0.5, hw: 1.5, hd: 1.8, act: { type: "page", path: "/games/" } });
 
   // LIBRARY — shelves of real free knowledge (the same eight sources World 1's hall opens) + the writing desk.
   roomShell("library", 13, 9, 0x2a2118);
