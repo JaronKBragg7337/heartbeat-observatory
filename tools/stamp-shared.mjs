@@ -11,9 +11,12 @@
 //                e.g. Ashgrove's shell phone, are skipped automatically)
 //   homescreen - manifest + iPhone home-screen app metas + opaque apple-touch-icon (brand/apple-touch-icon.png)  opt out: <!-- hb:no-homescreen -->
 //   icon       - the H-heartbeat tab icon (/brand)            opt out: <!-- hb:no-icon -->  (pages with their own icon keep it)
+//
+// Also warns (never fails) when the home share card no longer matches index.html - see tools/og-card/check.mjs + README.md.
 import { readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkCard } from "./og-card/check.mjs";
 
 const root = join(fileURLToPath(import.meta.url), "..", "..");
 const CHECK = process.argv.includes("--check");
@@ -61,3 +64,10 @@ for (const file of pages(root)) {
 console.log(`${CHECK ? "missing" : "stamped"}: ${missing.length} piece(s)${CHECK ? "" : ` across ${changed} page(s)`}`);
 for (const m of missing) console.log("  " + m);
 if (CHECK && missing.length) process.exitCode = 1;
+
+// The share card (og:image) must match the home page (Jaron, 2026-11-05). Warnings only - a drift never blocks a deploy.
+try {
+  const drift = checkCard(root);
+  if (drift.length) { console.log(`share card WARNING: ${drift.length} drift(s) - edit tools/og-card/card.json, then python tools/og-card/render.py`); for (const d of drift) console.log("  " + d); }
+  else console.log("share card: matches the home page");
+} catch (e) { console.log("share card check skipped: " + e.message); }
