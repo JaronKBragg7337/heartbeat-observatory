@@ -4,7 +4,7 @@ Jaron, 10/18: "make it THE REAL CITY" (Ashgrove is the green town). Picked as th
 The tester's notes from 10/28 are the bug list (research/site-tester/2026-10-28-jarons-twin.md in AI-Shared).
 WORLD2-PLAN.md (June) still holds the laws this world runs on: multiplayer, claims, the BUILD/?v= stamp, and TDZ.
 
-## Where it stands (Phase 1 shipped 2026-11-05, not pushed yet)
+## Where it stands (Phase 1 live 2026-11-05 12:15 AM; Phase 2 live 11:22 AM)
 
 **Not there yet (read first):** shops can't be entered, and **nobody has tested it on a real iPhone**. (Phase 2,
 on branch `cloud/world2-phase2`, adds people, buses, city sound and LOD; see "Phase 2 as built".) Everything below was tested
