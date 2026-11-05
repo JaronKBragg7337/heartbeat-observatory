@@ -2,6 +2,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/DRACOLoader.js";
 import { clone as cloneSkinned } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
+import { mergeGeometries } from "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/BufferGeometryUtils.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 // Aliased: main.js already has its own loadSurfaces(), which queries the
 // Supabase "surfaces" table for door status and is unrelated to materials.
@@ -87,7 +88,7 @@ let lastSentSig = "";   // idle-send guard: signature of the last broadcast stat
 let lastSentAt = 0;     // idle-send guard: timestamp of the last broadcast (keepalive clock)
 let propsReconcileTimer = null; // ground-truth props refetch loop (started by loadProps)
 const repoDoors = []; // claimed project buildings - walking up shows an Enter prompt that opens the repo
-const BUILD = "2026-10-30-phone-ui"; // matches the main.js version in hub HTML
+const BUILD = "2026-11-05-doors"; // matches the main.js version in hub HTML
 try { console.log("Heartbeat Observatory build", BUILD); } catch (e) {}
 let hasEntered = false;
 // Declared up here, not beside installWindowAssemblies(): updateDayNight() runs
@@ -403,6 +404,74 @@ const doors = [
     roof: 0x32503f,
     sign: 0xeafff4,
     front: "south"
+  },
+  // 11/5 (Jaron: every world gets news, TV, studio and sparks doors). The Workshop was a building with
+  // no door; it is now the Town Crier, the square's newsroom. The art kit already draws the building,
+  // so only a new sign goes on (buildTownSquareSigns). TV, Studio and Sparks are new buildings in the
+  // square's own brick-and-slate look (buildOwnDoorBuildings): merged per material, a few draw calls.
+  {
+    id: "news",
+    surface: "news",
+    label: "Town Crier \u00b7 News",
+    path: "/news/",
+    x: 16,
+    z: 10,
+    width: 5.2,
+    depth: 4.3,
+    height: 3.05,
+    body: 0x6e65a8,
+    roof: 0x3f345f,
+    sign: 0xf2d98a,
+    front: "north",
+    newSign: { row: 0 }
+  },
+  {
+    id: "tv",
+    surface: "tv",
+    label: "Heartbeat TV",
+    path: "/tv/",
+    x: 19.5,
+    z: -20.5,
+    width: 5.0,
+    depth: 4.0,
+    height: 3.3,
+    sign: 0x8fdcff,
+    front: "south",
+    body: 0x8a5a4a,
+    roof: 0x3a3f44,
+    own: { wall: "brick", mast: true, row: 1 }
+  },
+  {
+    id: "studio",
+    surface: "studio",
+    label: "Studio",
+    path: "/studio/",
+    x: 19,
+    z: 22,
+    width: 5.0,
+    depth: 4.0,
+    height: 3.0,
+    sign: 0xff8a7a,
+    front: "north",
+    body: 0x8a5a4a,
+    roof: 0x3a3f44,
+    own: { wall: "brickDark", rec: true, row: 2 }
+  },
+  {
+    id: "sparks",
+    surface: "sparks",
+    label: "Sparks",
+    path: "/sparks/",
+    x: -20,
+    z: -20.5,
+    width: 5.0,
+    depth: 4.0,
+    height: 3.2,
+    sign: 0xf3cf6b,
+    front: "south",
+    body: 0x8a5a4a,
+    roof: 0x3a3f44,
+    own: { wall: "limestone", row: 3 }
   }
 ];
 
@@ -422,7 +491,6 @@ const plots = [
 ];
 
 const structures = [
-  { id: "workshop", label: "Workshop", x: 16, z: 10, width: 5.2, depth: 4.3, height: 3.05, body: 0x6e65a8, roof: 0x3f345f, windows: false, face: "north" },
   { id: "apt-w", label: "Apartments", x: -25, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "east", room: true },
   { id: "apt-e", label: "Apartments", x: 25, z: 0, width: 3.8, depth: 6.6, height: 5.0, body: 0x7d8a93, roof: 0x495159, windows: true, face: "west", room: true }
 ];
@@ -4285,7 +4353,7 @@ function loadTownArtKit() {
 function installWindowAssemblies() {
   if (HB_LEGACY || !townArtRoot || windowGroup) return;
   try {
-    const buildings = doors.concat(structures);
+    const buildings = doors.filter((d) => !d.own).concat(structures);   // own-built doors (11/5) carry their own windows
     const materials = {
       // Painted joinery — dark enough to read as a frame against brick without
       // becoming a black hole. Not photographic: at 55 mm section a texture is
@@ -4538,6 +4606,7 @@ function buildTown() {
   for (const door of doors) {
     buildDoorBuilding(door);
   }
+  try { buildOwnDoorBuildings(doors.filter((d) => d.own)); buildTownSquareSigns(); } catch (e) { console.warn("town square: new door buildings", e); }
 
   for (const structure of structures) {
     buildStructure(structure);
@@ -4764,6 +4833,121 @@ function buildDoorBuilding(door) {
     depth: door.depth
   });
   solidBlockers.push({ x: door.x, z: door.z, width: door.width, depth: door.depth, top: door.height });
+}
+
+// ---- 11/5: Heartbeat TV, Studio and Sparks buildings + the Town Crier sign -------------------------------
+// Built in world coordinates and merged per material (walls, trim, roof, glass, signs, lights), so the three
+// buildings cost about eight draw calls together. Walls and roofs use the same photographic surface cards as
+// the art kit (brick, dark brick, limestone, slate), so they sit in the square's look.
+// function + var, not const/let: buildTown() runs near the top of the file, before these lines (TDZ).
+function townSignRows() { return ["TOWN CRIER · NEWS", "HEARTBEAT TV", "STUDIO", "SPARKS"]; }
+var townSignTex = null;
+function townSigns() {
+  if (townSignTex) return townSignTex;
+  const c = document.createElement("canvas"); c.width = 1024; c.height = 512; const g = c.getContext("2d");
+  townSignRows().forEach((text, k) => {
+    const y = k * 128;
+    g.fillStyle = "#111c24"; g.fillRect(0, y, 1024, 128);
+    g.strokeStyle = "#c9a85a"; g.lineWidth = 5; g.strokeRect(8, y + 8, 1008, 112);
+    g.fillStyle = "#f0d38c"; g.textAlign = "center"; g.textBaseline = "middle";
+    let fs = 76; g.font = "700 " + fs + "px Georgia, serif";
+    while (g.measureText(text).width > 940 && fs > 30) { fs -= 4; g.font = "700 " + fs + "px Georgia, serif"; }
+    g.fillText(text, 512, y + 68);
+  });
+  townSignTex = new THREE.CanvasTexture(c); townSignTex.colorSpace = THREE.SRGBColorSpace; townSignTex.anisotropy = 4;
+  return townSignTex;
+}
+function signPlane(w, h, row, x, y, z, rotY) {
+  const g = new THREE.PlaneGeometry(w, h); const uv = g.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - (row + 1 - uv.getY(i)) / 4);
+  g.rotateY(rotY); g.translate(x, y, z); return g;
+}
+function townSignMaterial() {
+  return new THREE.MeshStandardMaterial({ map: townSigns(), emissive: 0xffffff, emissiveMap: townSigns(), emissiveIntensity: 0.35, roughness: 0.5 });
+}
+function buildOwnDoorBuildings(list) {
+  const geo = { brick: [], brickDark: [], limestone: [], trim: [], roof: [], glass: [], sign: [], lamp: [], red: [], door: [], sill: [] };
+  const box = (key, x, y, z, w, h, d) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); geo[key].push(g); };
+  const tri = (key, pts) => {   // flat triangles (roof slopes, gable ends) with simple uvs
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(new Array(pts.length / 3 * 2).fill(0.5), 2));
+    g.computeVertexNormals(); geo[key].push(g);
+  };
+  for (const door of list) {
+    const o = door.own, x = door.x, z = door.z, w = door.width, d = door.depth, h = door.height;
+    const f = door.front === "south" ? 1 : -1, rotY = f > 0 ? 0 : Math.PI, fz = z + f * d / 2;
+    box("trim", x, 0.14, z, w + 0.36, 0.28, d + 0.36);                                  // plinth
+    box(o.wall, x, h / 2, z, w, h, d);                                                    // walls
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box("trim", x + sx * w / 2, h / 2, z + sz * d / 2, 0.3, h, 0.3);
+    box("trim", x, h + 0.12, z, w + 0.4, 0.24, d + 0.4);                                 // cornice
+    // slate gable roof, ridge along x (both slopes as two triangles each, wound outward)
+    const y0 = h + 0.24, rh = 1.25, ox = w / 2 + 0.3, oz = d / 2 + 0.3;
+    const A = [x - ox, y0, z - oz], B = [x + ox, y0, z - oz], C = [x + ox, y0 + rh, z], D = [x - ox, y0 + rh, z], E = [x - ox, y0, z + oz], F = [x + ox, y0, z + oz];
+    tri("roof", [...A, ...D, ...C, ...A, ...C, ...B]);
+    tri("roof", [...E, ...F, ...C, ...E, ...C, ...D]);
+    const gh = rh * (d / 2) / oz;   // gable ends in the wall material
+    tri(o.wall, [x - w / 2, y0, z + d / 2, x - w / 2, y0 + gh, z, x - w / 2, y0, z - d / 2]);
+    tri(o.wall, [x + w / 2, y0, z - d / 2, x + w / 2, y0 + gh, z, x + w / 2, y0, z + d / 2]);
+    // front: door, glass, two windows with sills, side windows, awning, lamps, sign board
+    box("door", x, 1.0, fz + f * 0.04, 1.1, 2.0, 0.08);                                  // a wooden door in a dark frame
+    box("trim", x, 2.03, fz + f * 0.06, 1.3, 0.08, 0.1); for (const ex of [-0.6, 0.6]) box("trim", x + ex, 1.0, fz + f * 0.06, 0.08, 2.0, 0.1);
+    box("glass", x, 1.5, fz + f * 0.09, 0.6, 0.5, 0.02);
+    for (const sx of [-1, 1]) {   // two framed front windows with a mullion and a stone-coloured sill
+      const wx = x + sx * 1.6;
+      box("glass", wx, 1.5, fz + f * 0.03, 1.0, 1.0, 0.04);
+      box("trim", wx, 2.04, fz + f * 0.06, 1.12, 0.07, 0.08); box("trim", wx, 1.5, fz + f * 0.06, 0.05, 1.0, 0.08);
+      for (const ex of [-0.53, 0.53]) box("trim", wx + ex, 1.5, fz + f * 0.06, 0.06, 1.08, 0.08);
+      box("sill", wx, 0.95, fz + f * 0.08, 1.22, 0.07, 0.16);
+    }
+    for (const sx of [-1, 1]) for (const dz of [-0.8, 0.8]) {   // side windows
+      const gx = x + sx * (w / 2 + 0.02);
+      box("glass", gx, 1.55, z + dz, 0.04, 0.9, 0.8); box("sill", gx + sx * 0.05, 1.07, z + dz, 0.12, 0.06, 0.95);
+    }
+    box("trim", x, 2.25, fz + f * 0.45, 1.9, 0.1, 0.9);
+    for (const lx of [-0.8, 0.8]) box("lamp", x + lx, 1.95, fz + f * 0.1, 0.12, 0.22, 0.12);
+    box("trim", x, h - 0.45, fz + f * 0.05, 3.5, 0.6, 0.08);
+    geo.sign.push(signPlane(3.3, 3.3 / 8, o.row, x, h - 0.45, fz + f * 0.1, rotY));
+    if (o.mast) {   // TV: a mast with rings and a red beacon
+      const mx = x + 1.3, my = y0 + rh * 0.4;
+      const m = new THREE.CylinderGeometry(0.06, 0.14, 4.2, 6); m.translate(mx, my + 2.1, z); geo.trim.push(m);
+      for (const [yy, r] of [[1.2, 0.55], [2.2, 0.38], [3.1, 0.24]]) { const ring = new THREE.CylinderGeometry(r, r, 0.05, 8); ring.translate(mx, my + yy, z); geo.trim.push(ring); }
+      const bulb = new THREE.SphereGeometry(0.13, 8, 6); bulb.translate(mx, my + 4.3, z); geo.red.push(bulb);
+    }
+    if (o.rec) box("red", x, 2.14, fz + f * 0.13, 0.9, 0.12, 0.06);                      // Studio: the red RECORDING bar
+  }
+  const mats = {
+    brick: hbSurface("brickRed", { grimeHeight: 1.4, grime: 0.5 }),
+    brickDark: hbSurface("brickRed", { color: 0x9c968f, grime: 0.5, grimeHeight: 1.5, gamma: 0.86, gain: 1.05 }),
+    limestone: hbSurface("limestone", { grime: 0.4, grimeHeight: 1.3, tile: [1.6, 1.6] }),
+    roof: hbSurface("roof", { grime: 0, dust: 0.55, macro: 0.6 }),
+    trim: new THREE.MeshStandardMaterial({ color: 0x1d262b, roughness: 0.7 }),
+    door: hbSurface("wood", { grime: 0.35, grimeHeight: 0.9 }),
+    sill: hbSurface("limestone", { tile: [1.2, 1.2], grime: 0.5, grimeHeight: 0.5, dust: 0.5 }),
+    glass: new THREE.MeshStandardMaterial({ color: 0x0e1a22, roughness: 0.25, metalness: 0.1, emissive: 0x2a4b5e, emissiveIntensity: 0.35 }),
+    sign: townSignMaterial(),
+    lamp: new THREE.MeshStandardMaterial({ color: 0xffe9bd, emissive: 0xffd98a, emissiveIntensity: 0.8, roughness: 0.4 }),
+    red: new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff3a2a, emissiveIntensity: 1.2, roughness: 0.4 }),
+  };
+  for (const [k, parts] of Object.entries(geo)) {
+    if (!parts.length) continue;
+    const merged = mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false);
+    if (!merged) continue;
+    const mesh = new THREE.Mesh(merged, mats[k]);
+    mesh.castShadow = k !== "sign" && k !== "glass"; mesh.receiveShadow = true; mesh.name = "TownSquareNewDoors_" + k;
+    scene.add(mesh);
+  }
+}
+// A new sign over an art-kit building's own board (the Workshop's read WORKSHOP, upside down).
+function buildTownSquareSigns() {
+  for (const door of doors) {
+    if (!door.newSign) continue;
+    const f = door.front === "south" ? 1 : -1, fz = door.z + f * (door.depth / 2 + 0.42);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.72, 0.3), new THREE.MeshStandardMaterial({ color: 0x111c24, roughness: 0.6 }));
+    back.position.set(door.x, 2.5, fz - f * 0.16); scene.add(back);
+    const m = new THREE.Mesh(signPlane(3.25, 3.25 / 8, door.newSign.row, door.x, 2.5, fz + f * 0.005, f > 0 ? 0 : Math.PI), townSignMaterial());
+    m.name = "TownSquareSign_" + door.id; scene.add(m);
+  }
 }
 
 function buildStructure(b) {
