@@ -18,8 +18,8 @@ What changed, by the tester's complaints:
 | Identical boxy towers on an empty lawn | A downtown street grid at the centre of the world. Buildings come from a kit: window reveals and sills, storefronts with recessed doors, awnings, sign boards, cornices, parapets, setback towers, water tanks and rooftop units. Five facade families (brick, limestone, mid-century ribbon, glass curtain wall, parking garage) plus hand-placed landmarks. |
 | Trees and rocks repeat | The forest and rocks now sit only outside the city and across the river. Street trees vary in size, colour and turn. |
 | Plot label tiny and cut off | The eight lots are real gravel lots, each with a big "LOT n · OPEN" board facing the street. Name plates now grow with their text. |
-| Double-click to walk | One tap or click on the street walks you there. A tap on a building takes you to its face, or onto the door mat if a door is near. Drag looks around. Pointer lock is gone, because it swallowed the first click. |
-| No minimap or signposts | Street-name blades on every corner, a minimap with your corner ("Calhoun St & Berry St"), and a full map listing every door and lot that walks you there along the streets. |
+| Double-click to walk | **You walk; you never tap to walk (Jaron 11/5: "I don't want to tap to walk. I want to walk.").** Phone: an invisible floating thumbstick (`/hb-thumbstick.js`, shared with Real City): a thumb on the left half becomes the stick where it lands, follows it, is gone on release; analog speed, push to the rim to run. The right half drags the view; both thumbs work at once. No permanent buttons on screen. Desktop: WASD / arrows, mouse drag looks, Shift runs, Space jumps, E uses a door. A tap or click USES what it touches (a door, its green mat, an open lot); the ground does nothing. Pointer lock is gone, because it swallowed the first click. |
+| No minimap or signposts | Street-name blades on every corner, a minimap with your corner ("Calhoun St & Berry St"), and a full map listing every door and lot. Picking one shows the way: a green route on the minimap along the streets, a light column over the place, and a chip with the distance (tap it to clear). It never walks you. |
 | Promised doors not found | Every real door has the same glowing green mat, and all are on the map. There are 8 doors: Grand Palace, Arcade and Library (walk-in halls); Social Hall, Projects, WHB News (/news); and Union Station with trains to Town Square (/engine) and to Ashgrove (/world3/gate/). |
 | Night too dark | After sunset the sun becomes blue moonlight that still casts shadows. Night also brings a blue sky light, light pools under the lamps, lit shop fronts, lit signs and headlights. The fog is thinner, so the skyline reads. |
 
@@ -37,7 +37,7 @@ three interiors, and the gate-page live preview.
 
 ### Files
 - `world2/city.js` is new. It holds the layout, the building kit, street furniture, signals, traffic, the river and the animated signs. Its import in main.js carries its own `?v=`, so **bump it together with BUILD and the main.js `?v=`**.
-- `world2/main.js` holds the ground (flat downtown, the river channel, the hills outside), boot with progress, lazy loading, tap-to-walk, the map, night lighting and the `?dev=1` test handle.
+- `world2/main.js` holds the ground (flat downtown, the river channel, the hills outside), boot with progress, lazy loading, walking (keys + the floating stick), tap-to-use, the map route, night lighting and the `?dev=1` test handle.
 - `world2/index.html` holds the loading screen, map, controls text and the phone HUD.
 - `world2/gate/index.html` has only a text change.
 - URLs and links are unchanged: /world2/, /world2/gate/, ?preview=1, and /space/?plot=N&world=world2.
@@ -73,12 +73,12 @@ output is D3D shader-compiler warnings from three.js, not errors.
 Screenshots: `AI-Shared/scratch/world2-remake/before/` and `.../after/`.
 
 ## How every phase is tested
-1. `?dev=1` exposes `window.W2`: state, tris breakdown, tap(), walkTo(), doors, plots, and a camera override.
+1. `?dev=1` exposes `window.W2`: state, tris breakdown, tap() (= use what is under that screen point), guideTo(), guide, stick, doors, plots, and a camera override.
    `?tod=0.3` freezes daylight and `?tod=0.78` freezes night.
 2. Playwright, Chromium (real GPU: `--use-angle=d3d11`) and WebKit, at 390x844 and 1280x800, checks:
    - cold load;
    - console errors by day and by night;
-   - one-tap walking, doors in and out, the plot claim card and the map routes;
+   - walking with the stick (every direction, two thumbs at once) and keys, a tap on the ground NOT moving you, doors in and out by tap, the plot claim card and the map routes (`AI-Shared/scratch/walk-controls/test.cjs`);
    - draw calls, triangles, and median/p95 frame time at fixed street and aerial views;
    - the gate page.
    The scripts used tonight are `test.cjs`, `views.cjs` and `mp.cjs`. **They should move into `tools/playtester`**, which has only ever covered The Cosmos.

@@ -41,14 +41,12 @@
       #hud .chip { padding:6px 12px; border-radius:999px; border:1px solid var(--panel-border); background:var(--panel-bg); font-size:12px; font-weight:600; letter-spacing:.05em; color:var(--muted); }
       #hud .chip b { color:var(--text); }
 
-      #movePad { position:fixed; left:calc(env(safe-area-inset-left) + 18px); bottom:calc(env(safe-area-inset-bottom) + 22px); z-index:30; width:124px; height:124px; border-radius:50%; border:1px solid rgba(140,170,190,.35); background:rgba(12,18,24,.45); display:none; touch-action:none; }
-      #moveKnob { position:absolute; left:50%; top:50%; width:52px; height:52px; border-radius:50%; background:rgba(190,215,230,.32); border:1px solid rgba(200,225,240,.4); transform:translate(-50%,-50%); pointer-events:none; }
-      .pad-buttons { position:fixed; right:calc(env(safe-area-inset-right) + 18px); bottom:calc(env(safe-area-inset-bottom) + 26px); z-index:30; display:none; flex-direction:column; gap:12px; }
-      .pad-buttons button { width:62px; height:62px; border-radius:50%; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); font-size:12px; font-weight:700; letter-spacing:.04em; touch-action:none; }
-      #doorEnterBtn { width:74px; height:74px; background:rgba(36,84,56,.6); border-color:rgba(123,216,143,.45); }
-      #doorEnterBtn.active { background:rgba(63,158,96,.85); border-color:#7bd88f; color:#08130c; }
+      #guideChip { max-width:170px; padding:4px 10px; border-radius:999px; background:rgba(29,107,58,.92); border:1px solid rgba(123,216,143,.8); font:700 11.5px system-ui,sans-serif; color:#eafff0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; touch-action:manipulation; }
+      #guideChip.hidden { display:none; }
+      #tapHint { position:fixed; left:50%; top:calc(env(safe-area-inset-top) + 60px); transform:translateX(-50%); z-index:33; max-width:calc(100vw - 32px); padding:9px 16px; border-radius:999px; background:rgba(10,16,18,.9); border:1px solid rgba(140,170,190,.4); color:#e8eef4; font:600 13px system-ui,sans-serif; opacity:0; pointer-events:none; transition:opacity .25s; }
+      #tapHint.show { opacity:1; }
       #gateLink { position:fixed; top:calc(env(safe-area-inset-top) + 14px); right:calc(env(safe-area-inset-right) + 14px); z-index:40; padding:8px 14px; border-radius:999px; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); text-decoration:none; font-size:12px; font-weight:700; letter-spacing:.06em; }
-      body.preview #movePad, body.preview .pad-buttons, body.preview #doorPrompt, body.preview #gateLink, body.preview #overlay, body.preview #mapWrap, body.preview #mapOverlay, body.preview #hud { display:none !important; }
+      body.preview .hb-stick, body.preview #doorPrompt, body.preview #gateLink, body.preview #overlay, body.preview #mapWrap, body.preview #mapOverlay, body.preview #hud { display:none !important; }
       @media (max-width: 440px) { #hud .chip:first-child { display:none; } #hud .chip { padding:6px 10px; } }
       #mapWrap { position:fixed; top:calc(env(safe-area-inset-top) + 56px); right:calc(env(safe-area-inset-right) + 12px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
       #minimap { width:112px; height:112px; border-radius:14px; border:1px solid rgba(200,220,235,.35); background:#2f3b2c; box-shadow:0 4px 18px rgba(0,0,0,.35); cursor:pointer; touch-action:manipulation; }
@@ -64,7 +62,6 @@
       #placeList { width:100%; display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:7px; }
       #placeList button { padding:10px 10px; border-radius:10px; border:1px solid var(--panel-border); background:rgba(255,255,255,.04); color:var(--text); font-size:13px; text-align:left; }
       #placeList button:active { background:rgba(123,216,143,.2); }
-      @media (pointer: coarse) { #movePad, .pad-buttons { display:flex; } #movePad { display:block; } }
 
       #doorPrompt { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 110px); transform:translateX(-50%); z-index:32; padding:11px 22px; border-radius:999px; border:1px solid rgba(123,216,143,.55); background:rgba(10,16,18,.88); color:#cdebd9; font:600 14px/1 system-ui,sans-serif; letter-spacing:.04em; cursor:pointer; }
       #claimOverlay { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(4,7,11,.72); }
@@ -112,8 +109,8 @@
         <p class="tagline">The second world of Heartbeat Observatory.</p>
         <p class="phase-note"><b>Being built in the open.</b> A downtown on a river: real streets with sidewalks, crosswalks, lamps, signals and traffic, storefronts and the courthouse green. Doors with a green mat are real: the Grand Palace, the Arcade and the Library open into their halls; Social Hall, Projects, WHB News and Union Station (trains to Town Square and Ashgrove) carry you to the rest of the Observatory. Eight open lots wait for residents &mdash; claim one with a GitHub repo and it becomes your building. Shops, jobs and the news studio come in later builds. Multiplayer is live.</p>
         <div class="controls">
-          <div class="ctl ctl-desktop"><b>Walk</b> click the street, or WASD · <b>Look</b> drag · <b>Sprint</b> Shift · <b>Map</b> M · <b>Enter a door</b> E</div>
-          <div class="ctl ctl-touch"><b>Walk</b> tap where you want to go, or the left pad · <b>Look</b> drag · <b>Map</b> tap the little map</div>
+          <div class="ctl ctl-desktop"><b>Walk</b> WASD or arrow keys · <b>Look</b> drag the mouse · <b>Run</b> Shift · <b>Jump</b> Space · <b>Map</b> M · <b>Use a door</b> E or click it</div>
+          <div class="ctl ctl-touch"><b>Walk</b> put your thumb anywhere on the left half and slide it (push to the edge to run) · <b>Look</b> drag on the right half · <b>Doors</b> tap them · <b>Map</b> tap the little map</div>
         </div>
         <button id="enterButton" type="button">Walk the world</button>
       </div>
@@ -126,7 +123,7 @@
       <div class="map-card">
         <div class="map-head"><b>The city</b><button id="mapClose" type="button">Close</button></div>
         <canvas id="bigmap"></canvas>
-        <p class="map-hint">Tap the map, or a place below, and you walk there.</p>
+        <p class="map-hint">Tap the map, or a place below: a green route and a light show you the way.</p>
         <div id="placeList"></div>
       </div>
     </div>
@@ -144,15 +141,9 @@
       </div>
     </div>
 
-    <div id="movePad"><div id="moveKnob"></div></div>
-    <div class="pad-buttons">
-      <button id="jumpButton" type="button" aria-label="Jump">JUMP</button>
-      <button id="crouchButton" type="button" aria-label="Crouch">DUCK</button>
-      <button id="doorEnterBtn" type="button" aria-label="Enter">ENTER</button>
-    </div>
 
     <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js" } }</script>
-    <script type="module" src="/world2/main.js?v=2026-11-05-remake1"></script>
+    <script type="module" src="/world2/main.js?v=2026-11-05-walk1"></script>
   <script defer src="/hb-editor.js"></script>
   </body>
 </html>

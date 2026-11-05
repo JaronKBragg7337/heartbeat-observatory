@@ -13,12 +13,13 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 // The remake (2026-11-05): the city lives in ./city.js (bumped together with BUILD and ?v=). Supabase and the
 // people loaders are imported LAZILY, after the city is on screen - the old static imports were most of the
 // 40-second blank first load the 10/28 tester hit.
-import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-remake1";
+import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05a";   // the invisible floating stick (shared with Real City)
+import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-walk1";
 const SUPA_ESM = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 const GLTF_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 const SKEL_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 
-const BUILD = "2026-11-05-remake1";
+const BUILD = "2026-11-05-walk1";
 const QS = new URLSearchParams(location.search);
 const PREVIEW = QS.get("preview") === "1";
 const DEV = QS.get("dev") === "1";                       // test handle: window.W2 (state, renderer, camera override, tap)
@@ -33,16 +34,11 @@ const timeChip = document.querySelector("#timeChip");
 const presenceChip = document.querySelector("#presenceChip");
 const doorPrompt = document.querySelector("#doorPrompt");
 const doorPromptText = document.querySelector("#doorPromptText");
-const doorEnterBtn = document.querySelector("#doorEnterBtn"); // phone ENTER - World 1 muscle memory
 const claimOverlay = document.querySelector("#claimOverlay");
 const claimInput = document.querySelector("#claimInput");
 const claimError = document.querySelector("#claimError");
 const claimSubmit = document.querySelector("#claimSubmit");
 const claimCancel = document.querySelector("#claimCancel");
-const movePad = document.querySelector("#movePad");
-const moveKnob = document.querySelector("#moveKnob");
-const jumpButton = document.querySelector("#jumpButton");
-const crouchButton = document.querySelector("#crouchButton");
 
 const isTouch = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 
@@ -92,7 +88,7 @@ const DOOR_ACTS = {
   town: { type: "page", path: "/engine" }, ashgrove: { type: "page", path: "/world3/gate/" },
 };
 let city = null;                // handle from buildCity()
-let walkPath = null, walkStuck = 0, walkMarker = null, walkMarkerT = 0;   // tap / click to walk
+let guide = null, guideTimer = 0, walkMarker = null, guideBeacon = null;   // map "show me the way": a route + a beacon, YOU walk it (Jaron 11/5: no tap-to-walk)
 const ROOM = { theater: { x: 620, z: -160 }, arcade: { x: 620, z: -45 }, library: { x: 620, z: 70 } };
 let inInterior = null;          // interior id or null
 let interiorReturn = null;
@@ -107,9 +103,8 @@ const W2_NIGHT = new THREE.Color(0x0a1422);
 
 // ---- player state ----
 const state = { x: -35.5, y: 1.8, z: 6.5, yaw: -1.36, pitch: 0.07, stance: "stand" };   // on Berry St, looking east to the courthouse dome
-const input = { moveX: 0, moveY: 0, crouchHeld: false, jumpQueued: false, touchLookId: null, touchLookX: 0, touchLookY: 0, moveTouchId: null };
+const input = { crouchHeld: false, jumpQueued: false };   // walking input = keys + the floating stick (stick.x / stick.y)
 const settings = { sensitivity: 1, invertY: false };
-const ptr = { id: null, x0: 0, y0: 0, x: 0, y: 0, t0: 0, moved: false, mouse: false };
 const motion = { airOffset: 0, verticalVelocity: 0, onGround: true, sprinting: false, moving: false };
 const keys = new Set();
 let hasEntered = false;
@@ -539,6 +534,9 @@ async function buildWorld() {
   buildMinimap();
   walkMarker = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.5, 28), new THREE.MeshBasicMaterial({ color: 0x7bd88f, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
   walkMarker.rotation.x = -Math.PI / 2; walkMarker.renderOrder = 3; scene.add(walkMarker);
+  // the map's beacon: a tall soft green light column over the place you picked (you walk to it; it never walks you)
+  guideBeacon = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 60, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0x7bd88f, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  guideBeacon.visible = false; guideBeacon.renderOrder = 3; scene.add(guideBeacon);
 }
 
 // fireflies: one Points draw call, visible only at night, drifting on cheap sine paths
@@ -1287,14 +1285,11 @@ function updateActiveDoor() {
     if (activeDoor) {
       doorPromptText.textContent = (isTouch ? "Tap — " : "Press E — ") + activeDoor.label;
       doorPrompt.classList.remove("hidden");
-      if (doorEnterBtn) doorEnterBtn.classList.add("active");
     } else if (activePlot) {
       doorPromptText.textContent = (isTouch ? "Tap — " : "Press E — ") + "Lot " + (activePlot.plot + 1) + " is open: claim it with a GitHub repo";
       doorPrompt.classList.remove("hidden");
-      if (doorEnterBtn) doorEnterBtn.classList.add("active");
     } else {
       doorPrompt.classList.add("hidden");
-      if (doorEnterBtn) doorEnterBtn.classList.remove("active");
     }
   }
 }
@@ -1513,10 +1508,8 @@ function updateLocal(dt) {
   if (keys.has("KeyA") || keys.has("ArrowLeft")) strafe -= 1;
   if (keys.has("KeyD") || keys.has("ArrowRight")) strafe += 1;
 
-  forward += input.moveY;
-  strafe += input.moveX;
-  const manual = Math.abs(forward) + Math.abs(strafe) > 0.01;
-  if (manual && walkPath) cancelWalk();
+  forward += stick.y;   // the floating stick is analog: half a push is half speed, the rim runs
+  strafe += stick.x;
 
   const length = Math.hypot(forward, strafe);
   if (length > 1) {
@@ -1542,7 +1535,7 @@ function updateLocal(dt) {
     }
   }
 
-  const wantsSprint = (keys.has("ShiftLeft") || keys.has("ShiftRight")) && forward > 0 && !crouching && motion.onGround;
+  const wantsSprint = (keys.has("ShiftLeft") || keys.has("ShiftRight") || stick.running) && forward > 0 && !crouching && motion.onGround;
   motion.sprinting = wantsSprint;
   motion.moving = Math.abs(forward) + Math.abs(strafe) > 0.01;
 
@@ -1550,20 +1543,10 @@ function updateLocal(dt) {
   const sin = Math.sin(state.yaw);
   const cos = Math.cos(state.yaw);
 
-  const px = state.x, pz = state.z;
-  let want = 0;
-  if (!manual && walkPath) want = autoWalk(dt);
-  else {
-    state.x += (cos * strafe + -sin * forward) * speed * dt;
-    state.z += (-sin * strafe + -cos * forward) * speed * dt;
-  }
+  state.x += (cos * strafe + -sin * forward) * speed * dt;
+  state.z += (-sin * strafe + -cos * forward) * speed * dt;
 
   resolveCollision();
-  if (walkPath && want > 0) {   // blocked (a car, a crowd, a wall the route didn't know): give up after a moment
-    const got = Math.hypot(state.x - px, state.z - pz);
-    walkStuck = got < want * 0.3 ? walkStuck + dt : 0;
-    if (walkStuck > 0.9) cancelWalk();
-  }
   updateActiveDoor();
 
   const floorY = inInterior ? 0 : floorAt(state.x, state.z);
@@ -1602,25 +1585,9 @@ function clampWorld() {
   }
 }
 
-// ---- tap / click to walk (one tap, no double-click). A tap on a building walks you to its face; near a door it walks
-// you onto the door's mat so the ENTER prompt is right there. Long trips follow the streets.
-function autoWalk(dt) {
-  const tgt = walkPath[0];
-  const dx = tgt[0] - state.x, dz = tgt[1] - state.z, d = Math.hypot(dx, dz);
-  if (d < 0.45) { walkPath.shift(); if (!walkPath.length) cancelWalk(); return 0; }
-  const sp = walkPath.length > 1 || d > 14 ? 5.8 : 4.65, step = Math.min(d, sp * dt);
-  state.x += dx / d * step; state.z += dz / d * step;
-  if (d > 1.2) state.yaw = lerpAngle(state.yaw, Math.atan2(-dx, -dz), Math.min(1, dt * 3.2));
-  motion.moving = true;
-  return step;
-}
-function cancelWalk() { walkPath = null; walkStuck = 0; }
-function setWalk(points) {
-  if (!points || !points.length) return;
-  walkPath = points.map((p) => [p[0], p[1]]); walkStuck = 0;
-  const last = walkPath[walkPath.length - 1];
-  if (walkMarker) { walkMarker.position.set(last[0], floorAt(last[0], last[1]) + 0.04, last[1]); walkMarkerT = 1.4; }
-}
+// ---- NO tap-to-walk (Jaron 11/5: "I don't want to tap to walk. I want to walk."). You walk with the stick or the keys.
+// A tap/click is for USING things: a door, its green mat, an open lot. The map shows the way (a route on the minimap,
+// a green beacon at the place); it never walks you.
 function blockedAt(x, z, y) {
   for (const c of buildingColliders) { if ((c.h || 30) < y) continue; if (Math.abs(x - c.x) < c.width / 2 && Math.abs(z - c.z) < c.depth / 2) return c; }
   return null;
@@ -1630,30 +1597,94 @@ function lineClear(ax, az, bx, bz) {
   for (let k = 1; k < n; k++) { const t = k / n, x = ax + (bx - ax) * t, z = az + (bz - az) * t; const c = blockedAt(x, z, 1.2); if (c && c.width > 1.2) return false; }
   return true;
 }
-function walkTo(x, z) {
-  if (inInterior) { setWalk([[x, z]]); return; }
-  const door = nearestDoorTo(x, z, 6.5); if (door) { x = door.x; z = door.z; }
-  if (lineClear(state.x, state.z, x, z) || !inCityZone(state.x, state.z)) setWalk([[x, z]]);
-  else setWalk(routeTo(state.x, state.z, x, z));
-}
-function nearestDoorTo(x, z, r) {
+function nearestDoorTo(x, z, r, list) {
   let best = null, bd = r;
-  for (const d of (inInterior ? interiorStations[inInterior] : doors)) { const e = Math.hypot(d.x - x, d.z - z); if (e < bd) { bd = e; best = d; } }
+  for (const d of (list || (inInterior ? interiorStations[inInterior] : doors))) { const e = Math.hypot(d.x - x, d.z - z); if (e < bd) { bd = e; best = d; } }
   return best;
 }
+
+// the map's "show me the way": a street route on the minimap + a green beacon at the place. Arrive and it clears.
+function guideTo(x, z, name) {
+  const door = nearestDoorTo(x, z, 6.5, doors); if (door) { x = door.x; z = door.z; name = name || door.label; }
+  guide = { x, z, name: name || "the marked spot", path: null };
+  guideTimer = 0;
+  refreshGuidePath();
+  if (walkMarker) { walkMarker.position.set(x, floorAt(x, z) + 0.05, z); walkMarker.material.opacity = 0.85; }
+  if (guideBeacon) guideBeacon.position.set(x, floorAt(x, z) + 30, z);
+  paintGuideChip();
+}
+function clearGuide() {
+  guide = null;
+  if (walkMarker) walkMarker.material.opacity = 0;
+  if (guideBeacon) guideBeacon.visible = false;
+  paintGuideChip();
+}
+function refreshGuidePath() {
+  if (!guide) return;
+  guide.path = lineClear(state.x, state.z, guide.x, guide.z) || !inCityZone(state.x, state.z) ? [[guide.x, guide.z]] : routeTo(state.x, state.z, guide.x, guide.z);
+}
+function updateGuide(dt) {
+  if (!guide) return;
+  const out = !inInterior;
+  if (guideBeacon) guideBeacon.visible = out && hasEntered;
+  if (walkMarker) { walkMarker.visible = out; const k = 0.5 + 0.5 * Math.sin(performance.now() / 260); walkMarker.material.opacity = 0.55 + 0.3 * k; walkMarker.scale.setScalar(1.6 + 0.5 * k); }
+  if (!out) return;
+  const d = Math.hypot(guide.x - state.x, guide.z - state.z);
+  if (d < 2.6) { showHint("You're at " + guide.name); clearGuide(); return; }
+  if ((guideTimer -= dt) <= 0) { guideTimer = 0.5; refreshGuidePath(); paintGuideChip(d); }
+}
+let guideChip = null, hintEl = null, hintTimer = 0;
+function paintGuideChip(dist) {
+  if (!guideChip) {
+    const wrap = document.querySelector("#mapWrap"); if (!wrap) return;
+    guideChip = document.createElement("button"); guideChip.type = "button"; guideChip.id = "guideChip";
+    guideChip.setAttribute("aria-label", "Route on the map - tap to clear it");
+    guideChip.addEventListener("click", (e) => { e.stopPropagation(); clearGuide(); });
+    wrap.appendChild(guideChip);
+  }
+  if (!guide) { guideChip.classList.add("hidden"); return; }
+  const d = dist != null ? dist : Math.hypot(guide.x - state.x, guide.z - state.z);
+  guideChip.textContent = "→ " + guide.name + " · " + Math.round(d) + " m  ✕";
+  guideChip.classList.remove("hidden");
+}
+function showHint(text) {
+  if (!hintEl) { hintEl = document.createElement("div"); hintEl.id = "tapHint"; hintEl.setAttribute("role", "status"); document.body.appendChild(hintEl); }
+  hintEl.textContent = text; hintEl.classList.add("show");
+  clearTimeout(hintTimer); hintTimer = setTimeout(() => hintEl.classList.remove("show"), 2600);
+}
+
+// a tap/click on the world USES what it touches (a door, a green mat, an open lot). The ground does nothing.
+const USE_REACH = 9;   // metres: close enough to reach out and use it
 const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2();
-function tapAt(cx, cy) {
+function worldPointAt(cx, cy) {
   _ndc.set(cx / window.innerWidth * 2 - 1, -(cy / window.innerHeight) * 2 + 1);
   _ray.setFromCamera(_ndc, camera);
   const o = _ray.ray.origin, d = _ray.ray.direction;
-  let hit = null;
   for (let t = 0.6; t < 240; t += 0.5) {
     const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
-    if (inInterior) { if (y <= 0) { hit = [x, z]; break; } continue; }
-    if (blockedAt(x, z, y)) { const b = t - 1.2; hit = [o.x + d.x * b, o.z + d.z * b]; break; }   // a building face: stop in front of it
-    if (y <= floorAt(x, z)) { hit = [x, z]; break; }
+    if (inInterior) { if (y <= 0) return [x, z]; continue; }
+    if (blockedAt(x, z, y)) { const b = t - 1.2; return [o.x + d.x * b, o.z + d.z * b]; }   // a building face: the point just in front of it
+    if (y <= floorAt(x, z)) return [x, z];
   }
-  if (hit) walkTo(hit[0], hit[1]);
+  return null;
+}
+function useAt(cx, cy) {
+  const hit = worldPointAt(cx, cy); if (!hit) return false;
+  const door = nearestDoorTo(hit[0], hit[1], 3.5);
+  if (door) {
+    if (Math.hypot(door.x - state.x, door.z - state.z) <= USE_REACH) { activeDoor = door; enterActive(); }
+    else showHint(door.label + " - walk to the green mat to go in");
+    return true;
+  }
+  if (!inInterior) for (const pad of plotPads) {
+    if (pad.claimed) continue;
+    const b = pad.box;
+    if (Math.abs(hit[0] - b.x) > b.width / 2 + 1.5 || Math.abs(hit[1] - b.z) > b.depth / 2 + 1.5) continue;
+    if (Math.hypot(pad.x - state.x, pad.z - state.z) <= USE_REACH + 6) openClaim(pad);
+    else showHint("Lot " + (pad.plot + 1) + " is open - walk over to claim it");
+    return true;
+  }
+  return false;
 }
 
 function look(deltaX, deltaY) {
@@ -1694,7 +1725,7 @@ function animate() {
   updateDayNight();
   if (city) city.update(dt, performance.now() / 1000, hasEntered && !inInterior ? state : null);
   updateCamera(dt);
-  if (walkMarker && walkMarkerT > 0) { walkMarkerT -= dt; walkMarker.material.opacity = Math.min(0.85, walkMarkerT); walkMarker.scale.setScalar(1 + (1.4 - walkMarkerT) * 0.5); }
+  updateGuide(dt);
   sendState();
   renderer.render(scene, camera);
   frameNo++;
@@ -1714,7 +1745,7 @@ function enterWorld() {
   mapDirty = true;
   if (isTouch) goFullscreen();
   // No pointer lock: it swallowed the first click and was half of the "double-click to walk" problem.
-  // Look = drag; walk = keys, the pad, or one tap/click on the street.
+  // Look = drag; walk = WASD/arrows or the left stick. A tap/click only USES things (doors, mats, lots).
 }
 
 function goFullscreen() {
@@ -1730,13 +1761,9 @@ function goFullscreen() {
 
 function clearMovementInput() {
   keys.clear();
-  input.moveX = 0;
-  input.moveY = 0;
   input.crouchHeld = false;
   input.jumpQueued = false;
-  input.moveTouchId = null;
-  input.touchLookId = null;
-  if (moveKnob) moveKnob.style.transform = "translate(-50%, -50%)";
+  if (stick) stick.reset();
 }
 
 // ---- input wiring ----
@@ -1790,73 +1817,14 @@ document.addEventListener("keyup", (event) => {
   keys.delete(event.code);
 });
 
-// one pointer model for mouse and touch: drag = look, a quick tap/click without dragging = walk there
-canvas.addEventListener("pointerdown", (event) => {
-  if (!hasEntered || ptr.id !== null) return;
-  if (event.pointerType === "mouse" && event.button !== 0) return;
-  ptr.id = event.pointerId; ptr.x0 = ptr.x = event.clientX; ptr.y0 = ptr.y = event.clientY; ptr.t0 = performance.now(); ptr.moved = false; ptr.mouse = event.pointerType === "mouse";
-  try { canvas.setPointerCapture(event.pointerId); } catch (e) {}
+// ---- touch + mouse: the invisible floating stick (/hb-thumbstick.js). Nothing on screen until a thumb lands on the
+// left half; the stick appears under it, follows it, and is gone on release. The right half drags the view. Both at once.
+// Mouse: drag looks. A quick tap/click anywhere USES what it touches (a door, a green mat, an open lot) - never walks.
+const stick = createThumbstick(canvas, {
+  enabled: () => hasEntered && !mapOpen,
+  onLook: (dx, dy, kind) => { const k = kind === "mouse" ? 1.1 : 2.4; look(dx * k, dy * k); },
+  onTap: (x, y) => { if (hasEntered) useAt(x, y); },
 });
-canvas.addEventListener("pointermove", (event) => {
-  if (event.pointerId !== ptr.id) return;
-  if (!ptr.moved && Math.hypot(event.clientX - ptr.x0, event.clientY - ptr.y0) > 7) ptr.moved = true;
-  if (ptr.moved) { const k = ptr.mouse ? 1.1 : 2.4; look((event.clientX - ptr.x) * k, (event.clientY - ptr.y) * k); }
-  ptr.x = event.clientX; ptr.y = event.clientY;
-});
-function endPtr(event) {
-  if (event.pointerId !== ptr.id) return;
-  const tap = !ptr.moved && performance.now() - ptr.t0 < 600 && event.type === "pointerup";
-  ptr.id = null;
-  if (tap && hasEntered) tapAt(event.clientX, event.clientY);
-}
-canvas.addEventListener("pointerup", endPtr);
-canvas.addEventListener("pointercancel", endPtr);
-
-function updateMovePad(event) {
-  const rect = movePad.getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-  const maxRadius = rect.width * 0.36;
-  const dx = event.clientX - centerX;
-  const dy = event.clientY - centerY;
-  const length = Math.min(maxRadius, Math.hypot(dx, dy));
-  const angle = Math.atan2(dy, dx);
-  const knobX = Math.cos(angle) * length;
-  const knobY = Math.sin(angle) * length;
-  input.moveX = knobX / maxRadius;
-  input.moveY = -knobY / maxRadius;
-  moveKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
-}
-
-function resetMovePad(event) {
-  if (event.pointerId !== input.moveTouchId) return;
-  input.moveTouchId = null;
-  input.moveX = 0;
-  input.moveY = 0;
-  moveKnob.style.transform = "translate(-50%, -50%)";
-}
-
-movePad.addEventListener("pointerdown", (event) => {
-  input.moveTouchId = event.pointerId;
-  movePad.setPointerCapture(event.pointerId);
-  updateMovePad(event);
-});
-movePad.addEventListener("pointermove", (event) => {
-  if (event.pointerId === input.moveTouchId) updateMovePad(event);
-});
-movePad.addEventListener("pointerup", resetMovePad);
-movePad.addEventListener("pointercancel", resetMovePad);
-
-jumpButton.addEventListener("pointerdown", (event) => {
-  event.preventDefault();
-  queueJump();
-});
-crouchButton.addEventListener("pointerdown", (event) => {
-  event.preventDefault();
-  input.crouchHeld = true;
-});
-crouchButton.addEventListener("pointerup", () => { input.crouchHeld = false; });
-crouchButton.addEventListener("pointercancel", () => { input.crouchHeld = false; });
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -1865,7 +1833,6 @@ window.addEventListener("resize", () => {
 });
 
 doorPrompt.addEventListener("click", () => enterActive());
-if (doorEnterBtn) doorEnterBtn.addEventListener("click", (e) => { e.preventDefault(); enterActive(); });
 claimSubmit.addEventListener("click", submitClaim);
 claimCancel.addEventListener("click", closeClaim);
 claimInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitClaim(); } });
@@ -1876,7 +1843,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) clearMovementInput();
 });
 
-// ---- the map: a minimap (top right) and a full map with every door; tap a place to walk there ----
+// ---- the map: a minimap (top right) and a full map with every door; tap a place and it shows you the way ----
 let mapStatic = null, mapDirty = true, mapOpen = false;
 const MAPB = { x0: -182, x1: 182, z0: -196, z1: 178 };
 const mini = document.querySelector("#minimap"), bigmap = document.querySelector("#bigmap"), mapOverlay = document.querySelector("#mapOverlay");
@@ -1930,7 +1897,7 @@ function buildMinimap() {
       .concat(plotPads.filter((p) => !p.claimed).map((p) => ({ name: "Lot " + (p.plot + 1) + " · open for a project", x: p.x, z: p.z })))
       .concat(city.landmarks.filter((l) => l.kind === "landmark" || l.kind === "bridge" || l.kind === "park" || l.kind === "tower").map((l) => ({ name: l.name, x: l.kind === "bridge" ? BRIDGE.x : l.x, z: l.kind === "bridge" ? WALL_Z + 2 : l.kind === "landmark" ? l.z - 16 : l.z + (l.kind === "tower" ? -16 : 0) })));
     placeList.innerHTML = "";
-    for (const pl of places) { const b = document.createElement("button"); b.type = "button"; b.textContent = pl.name; b.addEventListener("click", () => { toggleMap(false); walkTo(pl.x, pl.z); }); placeList.appendChild(b); }
+    for (const pl of places) { const b = document.createElement("button"); b.type = "button"; b.textContent = pl.name; b.addEventListener("click", () => { toggleMap(false); guideTo(pl.x, pl.z, pl.name.split(" · ")[0]); }); placeList.appendChild(b); }
   }
 }
 function nearestName(v, lines, names) { let k = 0, d = Infinity; lines.forEach((L, i) => { const e = Math.abs(v - L); if (e < d) { d = e; k = i; } }); return [names[k], d]; }
@@ -1940,6 +1907,7 @@ function drawMinimap() {
   const ctx = mini.getContext("2d"), W = mini.width, H = mini.height;
   ctx.drawImage(mapStatic, 0, 0);
   for (const r of remotes.values()) { const p = mxy(r.group.position.x, r.group.position.z, W, H); ctx.fillStyle = "#4fa3ff"; ctx.beginPath(); ctx.arc(p[0], p[1], 2.5 * W / 112, 0, 7); ctx.fill(); }
+  if (guide && !inInterior) drawGuide(ctx, W, H, W / 112);
   if (!inInterior) {
     const p = mxy(state.x, state.z, W, H), a = Math.atan2(-Math.sin(state.yaw), -Math.cos(state.yaw)), k = W / 112;
     ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(a + Math.PI / 2);
@@ -1955,6 +1923,19 @@ function drawMinimap() {
     if (placeLabel.textContent !== label) placeLabel.textContent = label;
   }
 }
+// the route from you to the place you picked, drawn on a map canvas (minimap and full map)
+function drawGuide(ctx, W, H, k) {
+  if (!guide) return;
+  ctx.save(); ctx.lineJoin = ctx.lineCap = "round";
+  const pts = [[state.x, state.z]].concat(guide.path || [[guide.x, guide.z]]);
+  for (const pass of [["rgba(8,19,12,.85)", 4.2], ["#7bd88f", 2.2]]) {
+    ctx.strokeStyle = pass[0]; ctx.lineWidth = pass[1] * k; ctx.beginPath();
+    pts.forEach((q, i) => { const m = mxy(q[0], q[1], W, H); if (i) ctx.lineTo(m[0], m[1]); else ctx.moveTo(m[0], m[1]); });
+    ctx.stroke();
+  }
+  const e = mxy(guide.x, guide.z, W, H); ctx.fillStyle = "#7bd88f"; ctx.strokeStyle = "#08130c"; ctx.lineWidth = 1.5 * k;
+  ctx.beginPath(); ctx.arc(e[0], e[1], 4 * k, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore();
+}
 function toggleMap(open) {
   mapOpen = open === undefined ? !mapOpen : open;
   if (!mapOverlay) return;
@@ -1963,6 +1944,7 @@ function toggleMap(open) {
     const dpr = Math.min(2, window.devicePixelRatio || 1), size = Math.min(window.innerWidth - 48, 520, window.innerHeight * 0.55);
     bigmap.style.width = bigmap.style.height = size + "px"; bigmap.width = bigmap.height = Math.round(size * dpr);
     const ctx = bigmap.getContext("2d"); drawCityMap(ctx, bigmap.width, bigmap.height, true);
+    if (guide && !inInterior) drawGuide(ctx, bigmap.width, bigmap.height, bigmap.width / 300);
     if (!inInterior) { const p = mxy(state.x, state.z, bigmap.width, bigmap.height); ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p[0], p[1], 6 * dpr, 0, 7); ctx.fill(); ctx.stroke(); }
     clearMovementInput();
   }
@@ -1971,13 +1953,13 @@ if (mini) mini.addEventListener("click", () => { if (hasEntered) toggleMap(true)
 document.querySelector("#mapClose")?.addEventListener("click", () => toggleMap(false));
 if (bigmap) bigmap.addEventListener("click", (e) => {
   const r = bigmap.getBoundingClientRect(), x = MAPB.x0 + (e.clientX - r.left) / r.width * (MAPB.x1 - MAPB.x0), z = MAPB.z0 + (e.clientY - r.top) / r.height * (MAPB.z1 - MAPB.z0);
-  toggleMap(false); if (inInterior) exitInterior(); walkTo(x, z);
+  toggleMap(false); guideTo(x, z);
 });
 
 // ---- BOOT (end of file by design: every const/let above is initialized before these run — TDZ law) ----
 if (DEV) window.W2 = {
   BUILD, state, renderer, scene, camera, get city() { return city; }, doors, plotPads, buildingColliders,
-  enter: () => enterWorld(), tap: (x, y) => tapAt(x, y), walkTo: (x, z) => walkTo(x, z), get walking() { return !!walkPath; }, cancelWalk: () => cancelWalk(), path: () => walkPath && walkPath.map((p) => p.map((v) => Math.round(v))),
+  enter: () => enterWorld(), tap: (x, y) => useAt(x, y), guideTo: (x, z, n) => guideTo(x, z, n), clearGuide: () => clearGuide(), get guide() { return guide && { name: guide.name, x: guide.x, z: guide.z }; }, path: () => guide && guide.path && guide.path.map((p) => p.map((v) => Math.round(v))), stick,
   activeDoor: () => activeDoor && activeDoor.label, activePlot: () => activePlot && activePlot.plot, enterActive: () => enterActive(), inInterior: () => inInterior,
   remotes: () => remotes.size, connected: () => connected,
   tris() {   // static triangle count by kind (instanced meshes multiplied out) - for the phone budget
