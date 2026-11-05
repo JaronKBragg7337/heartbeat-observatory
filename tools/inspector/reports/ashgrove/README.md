@@ -73,3 +73,9 @@ Generated 2026-11-05T06:29:48.409Z by `node tools/inspector/inspect.js ashgrove`
 | [B49 Split Level](B49.md) | 1 room(s) cramped (<35% walkable floor): L0-R07 Bedroom 8%; 1 clipping pair(s): L0-R06-F02↔L0-W10 |
 
 Inventory (built / planned / in files but never shown): [INVENTORY.md](INVENTORY.md)
+
+## Evidence (before → after, measured end elevations)
+
+![B47 Split Level](evidence/B47-before-after.png)
+![B27 Bungalow](evidence/B27-before-after.png)
+![B31 A-Frame](evidence/B31-before-after.png)

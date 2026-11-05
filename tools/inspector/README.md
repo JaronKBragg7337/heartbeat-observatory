@@ -11,7 +11,7 @@ node tools/inspector/inspect.js ashgrove          # world3/town: full checks, ~2
 node tools/inspector/inspect.js ashgrove --check  # exit 1 if any building has a problem
 node tools/inspector/inspect.js world2            # /world2/: browser, read-only, roof holes + floating parts
 node tools/inspector/inspect.js townsquare        # /engine/hub/: same
-node tools/inspector/shoot.js <siteRoot> <outDir> # Ashgrove evidence shots + console-error check (1280 and 390x844)
+node tools/inspector/elevation.js <outDir> [--render-dir <old render/>] B27 B47  # measured end elevations, before/after
 ```
 
 Reports go to `tools/inspector/reports/<world>/`: `README.md` (summary),
@@ -58,4 +58,11 @@ adapter like `ashgrove.js` that reads the world's own lot/building data.
 - Interior doors count as openable, because a player can open them.
 - The stair checks use the plan's stair record. A stair built some other way
   (a prop, a ramp) isn't seen.
-- SwiftShader screenshots are real renders, but their frame times mean nothing.
+- Evidence images (`reports/ashgrove/evidence/*-before-after.png`) are orthographic
+  end elevations painted from the measured triangles, not camera screenshots.
+  In the cloud box, the town's camera rig at SwiftShader frame rates never framed
+  a building reliably, so the drawings are what's comparable.
+- 2026-11-05: in the cloud sandbox, `world2` and `townsquare` loaded but never
+  reached their first `renderer.render` within 3 minutes (SwiftShader, CDN blocked
+  apart from the local three). They are untested there. Run them on a machine with a
+  GPU and network access.
