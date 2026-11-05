@@ -66,18 +66,23 @@ async function main() {
       await page.evaluate(([id, preset, dyaw]) => {
         const T = window.TOWN, b = T.Town.buildings.find((x) => x.id === id);
         document.querySelectorAll(".panel,.overlay,#intro,#help").forEach((e) => (e.style.display = "none"));
-        T.Cam.orbit(b, preset); T.Cam.spin = 0;
-        /* place the orbit camera outright: with SwiftShader at a few fps the
-           preset's own ease would still be inside the wall at shutter time */
+        /* a free (noclip) camera placed outside the building and aimed at it:
+           the orbit rig eases toward its preset over many frames, and at
+           SwiftShader's few fps it is still somewhere odd at shutter time */
+        T.Cam.exit();
         const bb = b.bounds, cx = (bb[0] + bb[3]) / 2, cz = (bb[2] + bb[5]) / 2;
         const top = b.top + (b.def.roof === "flat" ? 0.8 : b.def.d * 0.5 * (b.def.pitch || 0.5));
-        const diag = Math.hypot(bb[3] - bb[0], bb[5] - bb[2], top);
-        const yawFront = { FRONT: 0, SIDE: Math.PI / 2, AERIAL: 0.7 }[preset];
-        T.Cam.target = [cx, top * 0.45, cz];
-        T.Cam.dist = diag * (preset === "AERIAL" ? 1.25 : 1.05);
-        T.Cam.oPitch = preset === "AERIAL" ? 0.55 : 0.12;
-        T.Cam.oYaw = b.yaw + yawFront + dyaw;
-        T.Cam.applyOrbit();
+        const diag = Math.hypot(bb[3] - bb[0], bb[5] - bb[2]);
+        const lx = [b.c, -b.s], lz = [b.s, b.c];                 // local +x and +z in world
+        let dir = preset === "SIDE" ? [lx[0], lx[1]] : preset === "FRONT" ? [-lz[0], -lz[1]] : [lx[0] - lz[0], lx[1] - lz[1]];
+        if (dyaw) dir = [-dir[0], -dir[1]];
+        const n = Math.hypot(dir[0], dir[1]); dir = [dir[0] / n, dir[1] / n];
+        const D = diag * (preset === "AERIAL" ? 1.3 : 1.05), ey = preset === "AERIAL" ? top * 1.6 : top * 0.75;
+        const ex = cx + dir[0] * D, ez = cz + dir[1] * D;
+        T.Player.noclip = true; T.Player.vel = [0, 0, 0];
+        T.Player.pos = [ex, ey - 1.66, ez];
+        const dx = cx - ex, dz = cz - ez, dy = top * 0.55 - ey;
+        T.Player.yaw = Math.atan2(-dx, -dz); T.Player.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       }, [id, preset, dyaw]);
       await page.waitForTimeout(2500);
       await page.screenshot({ path: path.join(out, `${name}.png`), timeout: 180000 });
@@ -85,7 +90,7 @@ async function main() {
     /* inside: stand at the foot of the Tudor stair and look up the well */
     await page.evaluate(() => {
       const T = window.TOWN, b = T.Town.buildings.find((x) => x.id === "B12");
-      T.Cam.exit();
+      T.Cam.exit(); T.Player.noclip = false;
       const s = b.plan.levels[0].stairs.world;
       /* stand 0.6 m in front of the first step (or where it would be), face up the run */
       const lo = s.wAxis === "x" ? s.x0 : s.z0, hi = s.wAxis === "x" ? s.x1 : s.z1;

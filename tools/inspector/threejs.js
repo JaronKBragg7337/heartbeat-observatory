@@ -76,8 +76,12 @@ async function capture(worldKey) {
     return route.fulfill({ status: 200, contentType: "text/javascript", body });
   });
   /* everything else off-box (analytics, supabase, fonts): refuse quickly */
-  await page.route(/^https?:\/\/(?!127\.0\.0\.1)/, (route) => route.abort());
+  /* (Playwright tries the LAST registered route first, so this pattern has to
+     leave the three.js CDN path alone itself) */
+  await page.route(/^https?:\/\/(?!127\.0\.0\.1|cdn\.jsdelivr\.net\/npm\/three@0\.182\.0\/)/, (route) => route.abort());
   await page.goto(base + W.page, { waitUntil: "load", timeout: 120000 });
+  await page.waitForTimeout(3000);
+  await page.evaluate(() => { const b = document.querySelector("#enterButton, #enter, button.enter"); if (b) b.click(); });
   await page.waitForFunction(() => !!globalThis.__INSP_SCENE, null, { timeout: 180000 });
   await page.waitForTimeout(W.settle);
   const dump = await page.evaluate(() => {
