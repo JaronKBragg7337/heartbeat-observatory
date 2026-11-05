@@ -106,7 +106,7 @@ const W2_DUSK = new THREE.Color(0xe08c52);
 const W2_NIGHT = new THREE.Color(0x0a1422);
 
 // ---- player state ----
-const state = { x: -35.5, y: 1.8, z: 7.7, yaw: -1.32, pitch: 0.06, stance: "stand" };   // on Berry St, looking east to the courthouse dome
+const state = { x: -35.5, y: 1.8, z: 6.5, yaw: -1.36, pitch: 0.07, stance: "stand" };   // on Berry St, looking east to the courthouse dome
 const input = { moveX: 0, moveY: 0, crouchHeld: false, jumpQueued: false, touchLookId: null, touchLookX: 0, touchLookY: 0, moveTouchId: null };
 const settings = { sensitivity: 1, invertY: false };
 const ptr = { id: null, x0: 0, y0: 0, x: 0, y: 0, t0: 0, moved: false, mouse: false };
@@ -1893,8 +1893,12 @@ function drawCityMap(ctx, W, H, big) {
   const s = W / 300;
   if (big) {
     ctx.font = `600 ${Math.max(9, 11 * s)}px system-ui, sans-serif`; ctx.fillStyle = "#e8e8e2"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    for (let i = 1; i < xs.length - 1; i++) { const p = mxy(xs[i], 128, W, H); ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(-Math.PI / 2); ctx.fillText(GRID.xNames[i].replace(" St", ""), 0, 0); ctx.restore(); }
-    for (let j = 0; j < zs.length; j++) { const p = mxy(-130, zs[j], W, H); ctx.fillText(GRID.zNames[j].replace(" St", "").replace(" Blvd", ""), p[0], p[1]); }
+    // street names sit in the margins (bottom for north-south streets, left edge for east-west) so they never sit on a place label
+    ctx.fillStyle = "#cfd6dc";
+    for (let i = 0; i < xs.length; i++) { const p = mxy(xs[i], 174, W, H); ctx.fillText(GRID.xNames[i].replace(" St", ""), p[0], p[1]); }
+    ctx.textAlign = "left";
+    for (let j = 0; j < zs.length; j++) { const p = mxy(-181, zs[j], W, H); ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText(GRID.zNames[j].replace(" St", "").replace(" Blvd", ""), 0, 4 * s); ctx.restore(); }
+    ctx.textAlign = "center";
     const rp = mxy(110, (RIVER.zN + WALL_Z) / 2, W, H); ctx.fillStyle = "#9fd0ff"; ctx.fillText("the river", rp[0], rp[1]);
   }
   if (city) {
@@ -1902,8 +1906,15 @@ function drawCityMap(ctx, W, H, big) {
       const p = mxy(l.x, l.z, W, H);
       ctx.fillStyle = l.kind === "plot" ? "#7bd88f" : l.kind === "parking" ? "#5a8ad0" : l.kind === "civic" ? "#ffd166" : "#e9e2cf";
       if (l.kind === "parking" && !big) continue;
-      ctx.beginPath(); ctx.arc(p[0], p[1], (l.kind === "civic" ? 3.2 : 2.4) * Math.max(1, s * 0.9), 0, 7); ctx.fill();
-      if (big && l.kind !== "parking") { ctx.fillStyle = "#ffffff"; ctx.font = `700 ${Math.max(9, 10.5 * s)}px system-ui, sans-serif`; ctx.fillText(l.name, p[0], p[1] - 9 * s); }
+      ctx.beginPath(); ctx.arc(p[0], p[1], (l.kind === "civic" ? 3.2 : l.kind === "plot" && big ? 5 : 2.4) * Math.max(1, s * 0.9), 0, 7); ctx.fill();
+      if (big && l.kind === "plot") { ctx.fillStyle = "#08130c"; ctx.font = `800 ${Math.max(8, 8 * s)}px system-ui, sans-serif`; ctx.fillText(l.name.replace("Lot ", ""), p[0], p[1] + 0.5); }
+      else if (big && (l.kind === "civic" || l.kind === "landmark" || l.kind === "bridge" || l.kind === "park")) {
+        const short = { "Grand Palace Theater": "Theater", "Social Hall": "Social", "Public Library": "Library", "Union Station": "Station", "Wells St Bridge": "Bridge" }[l.name] || l.name;
+        const below = l.name === "Social Hall" || l.name === "Arcade" || l.name === "Courthouse";
+        ctx.font = `700 ${Math.max(9, 10 * s)}px system-ui, sans-serif`; const tw = ctx.measureText(short).width, ty = p[1] + (below ? 11 : -11) * s;
+        ctx.fillStyle = "rgba(10,14,18,0.72)"; ctx.fillRect(p[0] - tw / 2 - 3, ty - 7 * s, tw + 6, 14 * s);
+        ctx.fillStyle = "#ffffff"; ctx.fillText(short, p[0], ty);
+      }
     }
   }
 }
@@ -1966,7 +1977,7 @@ if (bigmap) bigmap.addEventListener("click", (e) => {
 // ---- BOOT (end of file by design: every const/let above is initialized before these run — TDZ law) ----
 if (DEV) window.W2 = {
   BUILD, state, renderer, scene, camera, get city() { return city; }, doors, plotPads, buildingColliders,
-  enter: () => enterWorld(), tap: (x, y) => tapAt(x, y), walkTo: (x, z) => walkTo(x, z), get walking() { return !!walkPath; },
+  enter: () => enterWorld(), tap: (x, y) => tapAt(x, y), walkTo: (x, z) => walkTo(x, z), get walking() { return !!walkPath; }, cancelWalk: () => cancelWalk(), path: () => walkPath && walkPath.map((p) => p.map((v) => Math.round(v))),
   activeDoor: () => activeDoor && activeDoor.label, activePlot: () => activePlot && activePlot.plot, enterActive: () => enterActive(), inInterior: () => inInterior,
   remotes: () => remotes.size, connected: () => connected,
   tris() {   // static triangle count by kind (instanced meshes multiplied out) - for the phone budget

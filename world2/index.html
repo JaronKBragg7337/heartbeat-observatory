@@ -49,6 +49,7 @@
       #doorEnterBtn.active { background:rgba(63,158,96,.85); border-color:#7bd88f; color:#08130c; }
       #gateLink { position:fixed; top:calc(env(safe-area-inset-top) + 14px); right:calc(env(safe-area-inset-right) + 14px); z-index:40; padding:8px 14px; border-radius:999px; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); text-decoration:none; font-size:12px; font-weight:700; letter-spacing:.06em; }
       body.preview #movePad, body.preview .pad-buttons, body.preview #doorPrompt, body.preview #gateLink, body.preview #overlay, body.preview #mapWrap, body.preview #mapOverlay, body.preview #hud { display:none !important; }
+      @media (max-width: 440px) { #hud .chip:first-child { display:none; } #hud .chip { padding:6px 10px; } }
       #mapWrap { position:fixed; top:calc(env(safe-area-inset-top) + 56px); right:calc(env(safe-area-inset-right) + 12px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
       #minimap { width:112px; height:112px; border-radius:14px; border:1px solid rgba(200,220,235,.35); background:#2f3b2c; box-shadow:0 4px 18px rgba(0,0,0,.35); cursor:pointer; touch-action:manipulation; }
       #placeLabel { max-width:150px; padding:4px 10px; border-radius:999px; background:var(--panel-bg); border:1px solid var(--panel-border); font-size:11.5px; font-weight:700; color:#e8eef4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
