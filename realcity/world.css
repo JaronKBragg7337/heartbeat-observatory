@@ -12,6 +12,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0f14; col
 #overlay h1 { margin: 0; font-size: 22px; } .tag { margin: 0; color: #a9b6c2; font-size: 14px; }
 .ctl { text-align: left; padding: 8px 12px; border-radius: 9px; border: 1px solid rgba(140,165,185,.2); color: #a9b6c2; font-size: 13.5px; } .ctl b { color: #e8eef4; margin-right: 6px; }
 @media (pointer: coarse) { .ctl-desk { display: none; } }
+@media (pointer: fine) { .ctl-touch { display: none; } }
 .note { margin: 2px 0 0; font-size: 12.5px; color: #8f9caa; }
 #enterButton { margin-top: 6px; align-self: center; padding: 13px 34px; border: 0; border-radius: 999px; background: #7bd88f; color: #0d1a12; font-size: 16px; font-weight: 800; cursor: pointer; }
 #hud { position: fixed; top: calc(env(safe-area-inset-top) + 10px); left: calc(env(safe-area-inset-left) + 10px); z-index: 20; display: flex; gap: 6px; }

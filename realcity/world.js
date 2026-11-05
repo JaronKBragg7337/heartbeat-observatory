@@ -2,6 +2,7 @@
 // Near tiles: full detail (storefronts, cornices, rooftop units, paint, crosswalks, street signs, lamps).
 // Mid tiles: same buildings + streets, no signs/lamps/paint. Far: one instanced skyline of every building in the city.
 import * as THREE from "three";
+import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05a";
 import { buildTile, buildDome, makeMaterials, shared, inside, distSeg, abbrev } from "./build.js?v=2026-11-05a";
 
 const Q = new URLSearchParams(location.search);
@@ -161,31 +162,44 @@ function moveBy(dx, dz) {
 }
 function pushOut(x, z) { if (!blocked(x, z)) return [x, z]; for (let r = 1; r < 60; r += 1) for (let a = 0; a < 16; a++) { const px = x + Math.cos(a / 16 * 6.283) * r, pz = z + Math.sin(a / 16 * 6.283) * r; if (!blocked(px, pz)) return [px, pz]; } return [x, z]; }
 
-// ---------------------------------------------------------------------------------------------- input: one tap walks, drag looks
-let walkTarget = null, stuckT = 0;
-const ptr = { id: null, x0: 0, y0: 0, x: 0, y: 0, moved: false, t0: 0 };
+// ---------------------------------------------------------------------------------------------- input: you WALK, drag looks, a tap USES things
+// Jaron 11/5: "I don't want to tap to walk. I want to walk." Phone: the invisible floating stick (/hb-thumbstick.js, shared
+// with World 2) - a thumb on the left half becomes the stick right where it lands; the right half drags the view; both at
+// once; nothing on screen otherwise. Desktop: WASD / arrow keys + mouse drag, Shift runs. A tap on a door mat uses it, a tap
+// on a building shows what it is, a tap on the ground does nothing.
 const keys = new Set();
 const ray = new THREE.Raycaster(), v2 = new THREE.Vector2();
-canvas.addEventListener("pointerdown", (e) => { if (ptr.id !== null) return; ptr.id = e.pointerId; ptr.x0 = ptr.x = e.clientX; ptr.y0 = ptr.y = e.clientY; ptr.moved = false; ptr.t0 = performance.now(); canvas.setPointerCapture(e.pointerId); });
-canvas.addEventListener("pointermove", (e) => { if (e.pointerId !== ptr.id) return; const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y; ptr.x = e.clientX; ptr.y = e.clientY; if (Math.hypot(ptr.x - ptr.x0, ptr.y - ptr.y0) > 8) ptr.moved = true; if (ptr.moved) { const s = (e.pointerType === "touch" ? 0.006 : 0.004); state.yaw -= dx * s; state.pitch = THREE.MathUtils.clamp(state.pitch - dy * s, -1.35, 1.2); } });
-const endPtr = (e) => { if (e.pointerId !== ptr.id) return; ptr.id = null; if (!ptr.moved && performance.now() - ptr.t0 < 600) tap(e.clientX, e.clientY); };
-canvas.addEventListener("pointerup", endPtr); canvas.addEventListener("pointercancel", (e) => { if (e.pointerId === ptr.id) ptr.id = null; });
-addEventListener("keydown", (e) => { keys.add(e.code); if (e.code === "KeyN") toggleNight(); }); addEventListener("keyup", (e) => keys.delete(e.code));
+const WALK_SPEED = 4.65, RUN_SPEED = 9;   // m/s: World 1/2's walk; the run is quicker than theirs because a real city is big
+const USE_REACH = 9;                      // metres: close enough to reach out and use a door mat
+const stick = createThumbstick(canvas, {
+  enabled: () => entered && !bigOpen,
+  onLook: (dx, dy, kind) => { const s = kind === "mouse" ? 0.0025 : 0.0055; state.yaw -= dx * s; state.pitch = THREE.MathUtils.clamp(state.pitch - dy * s, -1.35, 1.2); },
+  onTap: (x, y) => tap(x, y),
+});
+const isTyping = (t) => t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+addEventListener("keydown", (e) => {
+  if (isTyping(e.target)) return;
+  if (entered && /^Arrow|^Space$/.test(e.code)) e.preventDefault();
+  if (entered && (e.code === "KeyE" || e.code === "Enter") && nearHook) { e.preventDefault(); useHook(nearHook); return; }
+  keys.add(e.code); if (e.code === "KeyN") toggleNight();
+});
+addEventListener("keyup", (e) => keys.delete(e.code));
+addEventListener("blur", () => keys.clear());
+document.addEventListener("visibilitychange", () => { if (document.hidden) keys.clear(); });
 function pickables() { const o = []; for (const t of builtTiles()) for (const m of t.built.group.children) if (m.name === "buildings" || m.name === "ground" || m.name === "water") o.push(m); for (const h of hooks) if (h.mesh) o.push(h.mesh); return o; }
 function buildingFromHit(hit) { const own = hit.object.userData.owner; if (!own) return null; const idx = hit.faceIndex * 3; let lo = 0, hi = own.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (own[mid][0] <= idx) lo = mid; else hi = mid - 1; } for (const t of builtTiles()) if (t.built.bMesh === hit.object) return t.built.buildings[own[lo][1]]; return null; }
 function tap(cx, cy) {
   if (!entered) return;
   v2.set((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1); ray.setFromCamera(v2, camera); ray.far = 600;
-  const hit = ray.intersectObjects(pickables(), false)[0]; if (!hit) return;
-  const hk = hooks.find((h) => h.mesh === hit.object); if (hk) { walkTarget = [hk.x, hk.z]; return; }
-  let tx = hit.point.x, tz = hit.point.z;
-  if (hit.object.name === "buildings") {
-    const b = buildingFromHit(hit); if (b) showInfo(b);
-    const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld); n.y = 0; if (n.lengthSq() < 0.01) { n.set(state.x - tx, 0, state.z - tz); } n.normalize(); tx += n.x * 1.2; tz += n.z * 1.2;
-  } else hideInfo();
-  walkTarget = [tx, tz]; stuckT = 0;
+  const hit = ray.intersectObjects(pickables(), false)[0]; if (!hit) { hideInfo(); return; }
+  // a door mat: use it when you are close enough to reach it; from further away, say where it is
+  const hk = hooks.find((h) => h.mesh === hit.object) || hooks.find((h) => h.mesh && Math.hypot(h.x - hit.point.x, h.z - hit.point.z) < 2.5);
+  if (hk) { if (Math.hypot(hk.x - state.x, hk.z - state.z) <= USE_REACH) useHook(hk); else showNote(hk.label, "Walk to the green mat to go in."); return; }
+  if (hit.object.name === "buildings") { const b = buildingFromHit(hit); if (b) showInfo(b); }
+  else hideInfo();   // the ground: nothing happens (no tap-to-walk)
 }
-// joystick-free on purpose: one tap walks. Desktop also has WASD.
+function useHook(h) { if (h.onEnter) h.onEnter(h); else if (h.href) location.href = h.href; else showNote(h.label, "Inside comes later."); }
+function showNote(title, line) { const el = $("info"); el.textContent = ""; const b = document.createElement("b"); b.textContent = title; const s = document.createElement("span"); s.textContent = line; el.append(b, s); el.classList.remove("hidden"); clearTimeout(showInfo.t); showInfo.t = setTimeout(hideInfo, 3500); }
 
 // ---------------------------------------------------------------------------------------------- hooks: site pages live inside the world (doors, cabinets, shelves). register() is the API.
 function registerHook(h) {
@@ -206,10 +220,12 @@ function placeHookMeshes() {
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.6).rotateX(-Math.PI / 2), M.mat); mesh.position.set(h.x, groundAt(h.x, h.z) + 0.03, h.z); mesh.rotation.y = Math.atan2(dx, dz); mesh.name = "hook " + h.id; scene.add(mesh); h.mesh = mesh;
   }
 }
+let nearHook = null;
 function checkHooks() {
   let near = null; for (const h of hooks) if (h.mesh && Math.hypot(h.x - state.x, h.z - state.z) < 2.2) near = h;
+  nearHook = near;
   const el = $("doorPrompt");
-  if (near) { el.classList.remove("hidden"); el.textContent = near.href ? "Enter " + near.label : near.label + " - inside comes later"; el.onclick = () => { if (near.onEnter) near.onEnter(near); else if (near.href) location.href = near.href; }; }
+  if (near) { el.classList.remove("hidden"); el.textContent = near.href ? (phone ? "Tap: enter " : "E: enter ") + near.label : near.label + " - inside comes later"; el.onclick = () => useHook(near); }
   else el.classList.add("hidden");
 }
 
@@ -253,7 +269,7 @@ $("bigmap").addEventListener("click", (e) => { const r = e.target.getBoundingCli
 $("toCourt").addEventListener("click", () => { bigOpen = false; $("mapOverlay").classList.add("hidden"); goSpawn(); });
 function toggleNight() { const e = Math.sin((tod - 0.25) * Math.PI * 2); todTarget = e > 0 ? 0.83 : 0.32; }
 $("nightBtn").addEventListener("click", toggleNight);
-async function teleport(x, z) { walkTarget = null; state.x = x; state.z = z; for (let i = 0; i < 40; i++) { await stream(3); const k = Math.floor(x / city.tile) + "_" + Math.floor(z / city.tile); const t = tiles.get(k); if (!t || t.built || t.state === "error") break; await new Promise((r) => setTimeout(r, 60)); } [state.x, state.z] = pushOut(x, z); state.y = groundAt(state.x, state.z) + EYE; }
+async function teleport(x, z) { state.x = x; state.z = z; for (let i = 0; i < 40; i++) { await stream(3); const k = Math.floor(x / city.tile) + "_" + Math.floor(z / city.tile); const t = tiles.get(k); if (!t || t.built || t.state === "error") break; await new Promise((r) => setTimeout(r, 60)); } [state.x, state.z] = pushOut(x, z); state.y = groundAt(state.x, state.z) + EYE; }
 function spawnXZ() { const s = city.spawn || { lat: city.origin[0], lon: city.origin[1], lookLat: city.origin[0] + 0.001, lookLon: city.origin[1] }; return s.x != null ? [s.x, s.z, s.lookX, s.lookZ] : [...toXZ(s.lat, s.lon), ...toXZ(s.lookLat, s.lookLon)]; }
 function goSpawn() { const [x, z, lx, lz] = spawnXZ(); state.yaw = Math.atan2(-(lx - x), -(lz - z)); state.pitch = city.spawn?.pitch ?? 0.12; return teleport(x, z); }
 
@@ -262,15 +278,17 @@ let entered = false, frames = 0, lastMap = 0, lastStream = 0, lastHud = 0;
 const fwd = new THREE.Vector3();
 function step(dt) {
   if (todTarget != null) { tod += Math.sign(todTarget - tod) * Math.min(Math.abs(todTarget - tod), dt * 0.25); if (Math.abs(todTarget - tod) < 1e-3) { tod = todTarget; todTarget = null; } applyTod(); }
+  // walking: keys (WASD / arrows, like World 2) + the analog floating stick; Shift or the stick's rim runs
   let mx = 0, mz = 0;
-  const sp = (keys.has("ShiftLeft") ? 9 : 4.2) * dt;
-  if (keys.has("KeyW") || keys.has("ArrowUp")) mz -= 1; if (keys.has("KeyS") || keys.has("ArrowDown")) mz += 1; if (keys.has("KeyA")) mx -= 1; if (keys.has("KeyD")) mx += 1;
-  if (keys.has("ArrowLeft")) state.yaw += dt * 1.8; if (keys.has("ArrowRight")) state.yaw -= dt * 1.8;
-  if (mx || mz) { walkTarget = null; const l = Math.hypot(mx, mz); const s = Math.sin(state.yaw), c = Math.cos(state.yaw); moveBy((mx * c + mz * s) / l * sp, (-mx * s + mz * c) / l * sp); }
-  else if (walkTarget) {
-    const dx = walkTarget[0] - state.x, dz = walkTarget[1] - state.z, d = Math.hypot(dx, dz);
-    if (d < 0.25) walkTarget = null;
-    else { const s = Math.min(d, (d > 25 ? 7 : 4.2) * dt); if (!moveBy(dx / d * s, dz / d * s)) { stuckT += dt; if (stuckT > 0.4) walkTarget = null; } else stuckT = 0; const ty = Math.atan2(-dx, -dz); let dy = ty - state.yaw; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; if (!ptr.moved || ptr.id === null) state.yaw += dy * Math.min(1, dt * 3); }
+  if (entered) {
+    if (keys.has("KeyW") || keys.has("ArrowUp")) mz -= 1; if (keys.has("KeyS") || keys.has("ArrowDown")) mz += 1;
+    if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1; if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1;
+    mx += stick.x; mz -= stick.y;
+  }
+  const l = Math.hypot(mx, mz);
+  if (l > 0.02) {
+    const n = Math.max(1, l), sp = ((keys.has("ShiftLeft") || keys.has("ShiftRight") || stick.running) ? RUN_SPEED : WALK_SPEED) * dt;
+    const s = Math.sin(state.yaw), c = Math.cos(state.yaw); moveBy((mx * c + mz * s) / n * sp, (-mx * s + mz * c) / n * sp);
   }
   const gy = groundAt(state.x, state.z) + EYE; state.y += (gy - state.y) * Math.min(1, dt * 10);
   if (!DEV || !window.RC?.camOverride) { camera.position.set(state.x, state.y, state.z); camera.rotation.set(state.pitch, state.yaw, 0); }
@@ -322,7 +340,7 @@ $("enterButton").addEventListener("click", () => { entered = true; $("overlay").
 // dev handle: ?dev=1
 window.RC = {
   state, tiles, hooks, registerHook, teleport, goSpawn, renderer, camera, scene, toXZ: (a, b) => toXZ(a, b), get city() { return city; },
-  tap: (x, y) => tap(x, y), get walking() { return !!walkTarget; }, walkTo: (x, z) => { walkTarget = [x, z]; },
+  tap: (x, y) => tap(x, y), stick, useHook, get nearHook() { return nearHook && nearHook.label; },
   setTod: (v) => { tod = v; todTarget = null; applyTod(); }, camOverride: false, groundAt, nearestStreet, blocked,
   stats: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, tilesBuilt: builtTiles().length, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures }),
 };

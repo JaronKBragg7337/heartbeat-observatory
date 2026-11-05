@@ -6,7 +6,7 @@
 <script src="/hb-device-tier.js"></script>
 <title>Fort Wayne - Real City - Heartbeat Observatory</title>
 <meta name="description" content="A real city, walkable in your browser: real streets with their names, real building footprints at their real heights, rivers, parks and rail, built from OpenStreetMap. First city: downtown Fort Wayne, Indiana.">
-<link rel="stylesheet" href="/realcity/world.css?v=2026-11-05a">
+<link rel="stylesheet" href="/realcity/world.css?v=2026-11-05b">
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js" } }</script>
 </head>
 <body>
@@ -16,9 +16,10 @@
 <div id="overlay"><div class="card">
   <h1 id="cityName">Real City</h1>
   <p class="tag">The real map, at real size. You start at the Allen County Courthouse.</p>
-  <div class="ctl"><b>Tap</b> a street or a building to walk there</div>
-  <div class="ctl"><b>Drag</b> to look around</div>
-  <div class="ctl ctl-desk"><b>WASD</b> walk, Shift runs, N day/night</div>
+  <div class="ctl ctl-touch"><b>Walk</b> put your thumb anywhere on the left half and slide it; push to the edge to run</div>
+  <div class="ctl ctl-touch"><b>Look</b> drag on the right half</div>
+  <div class="ctl ctl-desk"><b>WASD</b> or arrow keys walk, <b>drag</b> the mouse to look, Shift runs, N day/night</div>
+  <div class="ctl"><b>Tap</b> a building to see what it is, a green mat to go in</div>
   <div class="ctl"><b>Map</b> (top right): tap anywhere in the city to go there</div>
   <p class="note">Heights come from the map where people tagged them; the rest are guessed from the building type (tap a building to see which). Inside the buildings comes later.</p>
   <button id="enterButton">Walk the city</button>
@@ -29,6 +30,6 @@
 <button id="doorPrompt" class="hidden"></button>
 <div id="mapOverlay" class="hidden"><div class="mcard"><div class="mhead"><b>Tap the map to go there</b><span><button id="toCourt">Courthouse</button> <button id="mapClose">Close</button></span></div><canvas id="bigmap"></canvas></div></div>
 <div id="attr"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><span id="attrElev"> · Elevation: <a href="https://www.usgs.gov/3d-elevation-program" target="_blank" rel="noopener">USGS 3DEP</a></span></div>
-<script type="module" src="/realcity/world.js?v=2026-11-05a"></script>
+<script type="module" src="/realcity/world.js?v=2026-11-05b"></script>
 </body>
 </html>

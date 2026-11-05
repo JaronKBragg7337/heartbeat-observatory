@@ -105,4 +105,13 @@ node serve.cjs 8124
 node test.cjs chromium|webkit phone|desk
 ```
 
-The test checks cold load, console errors, tap-to-walk, drag-look, streaming while walking, the map, the attribution, draw calls and frame time. It saves screenshots: courthouse by day and night, aerial, street sign. `?dev=1` exposes `window.RC`, `?tod=0.3|0.85` freezes the time of day, and `?noshadow` turns shadows off.
+The test checks cold load, console errors, walking, drag-look, streaming while walking, the map, the attribution, draw calls and frame time. It saves screenshots: courthouse by day and night, aerial, street sign. `?dev=1` exposes `window.RC`, `?tod=0.3|0.85` freezes the time of day, and `?noshadow` turns shadows off.
+
+## Controls (Jaron 11/5: "I don't want to tap to walk. I want to walk.")
+- Phone: the invisible floating thumbstick (`/hb-thumbstick.js`, shared with World 2). A thumb on the left half becomes the
+  stick right where it lands, follows it, and is gone on release; analog speed, push to the rim to run. The right half drags
+  the view; both thumbs at once. No permanent control buttons over the world.
+- Desktop: WASD or arrow keys, mouse drag to look, Shift runs, E uses a door mat you stand on, N day/night.
+- A tap USES things: a door mat (within 9 m) or a building (its info card). A tap on the ground does nothing.
+- The stick exposes analog `x`/`y`/`mag`, so the same stick can steer and throttle when driving comes.
+- Controls test: `AI-Shared/scratch/walk-controls/test.cjs`.
