@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<script src="/hb-device-tier.js"></script>
+<title>Real City - Heartbeat Observatory</title>
+<meta name="description" content="A real city, walkable in your browser: real streets with their names, real building footprints at their real heights, rivers, parks and rail, built from OpenStreetMap. First city: downtown Fort Wayne, Indiana.">
+<link rel="stylesheet" href="/realcity/world.css?v=2026-11-05a">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js" } }</script>
+</head>
+<body>
+<!--CITY-->
+<canvas id="game"></canvas>
+<div id="loading"><div class="card"><div class="t">Real City <span id="loadCity"></span></div><div class="bar"><i id="loadBar"></i></div><p id="loadMsg">Starting...</p><small>Real streets and buildings from OpenStreetMap.</small></div></div>
+<div id="overlay"><div class="card">
+  <h1 id="cityName">Real City</h1>
+  <p class="tag">The real map, at real size. You start at the Allen County Courthouse.</p>
+  <div class="ctl"><b>Tap</b> a street or a building to walk there</div>
+  <div class="ctl"><b>Drag</b> to look around</div>
+  <div class="ctl ctl-desk"><b>WASD</b> walk, Shift runs, N day/night</div>
+  <div class="ctl"><b>Map</b> (top right): tap anywhere in the city to go there</div>
+  <p class="note">Heights come from the map where people tagged them; the rest are guessed from the building type (tap a building to see which). Inside the buildings comes later.</p>
+  <button id="enterButton">Walk the city</button>
+</div></div>
+<div id="hud"><a href="/" class="chip" id="homeLink">Home</a><button class="chip" id="nightBtn">Day / Night</button></div>
+<div id="mapWrap"><canvas id="minimap" width="240" height="240"></canvas><div id="placeLabel"></div></div>
+<div id="info" class="hidden"></div>
+<button id="doorPrompt" class="hidden"></button>
+<div id="mapOverlay" class="hidden"><div class="mcard"><div class="mhead"><b>Tap the map to go there</b><span><button id="toCourt">Courthouse</button> <button id="mapClose">Close</button></span></div><canvas id="bigmap"></canvas></div></div>
+<div id="attr"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a><span id="attrElev"> · Elevation: <a href="https://www.usgs.gov/3d-elevation-program" target="_blank" rel="noopener">USGS 3DEP</a></span></div>
+<script type="module" src="/realcity/world.js?v=2026-11-05a"></script>
+</body>
+</html>
