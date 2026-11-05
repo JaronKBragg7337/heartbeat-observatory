@@ -683,7 +683,21 @@ function emitOutskirts(rnd) {
   /* boundary fences along the back of the perimeter blocks */
   for (let i = 0; i < ROADS_X.length - 1; i++) {
     const ch = Town.chunkAt((ROADS_X[i] + ROADS_X[i + 1]) / 2, ROADS_Z[0] + 40);
-    P.fence(ch.base, ROADS_X[i] + WALK_OUT, ROADS_Z[0] + 40, ROADS_X[i + 1] - WALK_OUT, ROADS_Z[0] + 40, [.92, .91, .88]);
+    /* The fence line is straight, the lots behind it are not all shallow:
+       it used to run clean through any house deep enough to cross it — the
+       living room of B38 and the middle of B11 (tools/inspector: doorways
+       "blocked by FENCE0001/0002", rooms with no way in). Break the run
+       around every building it would cut, with a little clearance. */
+    const fz = ROADS_Z[0] + 40, fx0 = ROADS_X[i] + WALK_OUT, fx1 = ROADS_X[i + 1] - WALK_OUT;
+    const cuts = Town.buildings
+      .filter((B) => B.outer[2] - 0.8 < fz && B.outer[5] + 0.8 > fz && B.outer[3] > fx0 && B.outer[0] < fx1)
+      .map((B) => [B.outer[0] - 0.8, B.outer[3] + 0.8]).sort((a, b) => a[0] - b[0]);
+    let fx = fx0;
+    for (const [c0, c1] of cuts) {
+      if (c0 - fx > 1.0) P.fence(ch.base, fx, fz, c0, fz, [.92, .91, .88]);
+      fx = Math.max(fx, c1);
+    }
+    if (fx1 - fx > 1.0) P.fence(ch.base, fx, fz, fx1, fz, [.92, .91, .88]);
   }
 }
 })();

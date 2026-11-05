@@ -392,6 +392,71 @@ function solveLevel(L, w, d, spec, issues, lid) {
 }
 
 /* ------------------------------------------------------------------------ */
+
+/* A stair used to start 0.1 m from the hall's end wall: the first step was
+   AT the wall, so the only way onto it was sideways across the treads (and
+   any door on the run's long side opened onto the stair, or upstairs into the
+   stairwell). Slide the run along its own wall until (a) there is a full
+   landing in front of the first step and past the last one and (b) no door on
+   either storey opens onto the side of the run. If no position satisfies
+   both, the run stays where it was and tools/inspector keeps reporting it. */
+const STAIR_LAND = 0.95;
+function relocateStair(s, lv, up) {
+  const host = lv.rooms.find((r) => r.id === s.room);
+  if (!host) return;
+  const ax = s.axis, lo = (ax === "x" ? host.x0 : host.z0) + 0.1, hi = (ax === "x" ? host.x1 : host.z1) - 0.1;
+  const c0 = ax === "x" ? s.z0 : s.x0, c1 = c0 + s.w;
+  const blocks = [];
+  for (const L of [lv, up]) for (const dr of L ? L.doors : []) {
+    const fixed = ax === "x" ? dr.z : dr.x, along = ax === "x" ? dr.x : dr.z;
+    if (dr.axis !== ax || fixed < c0 - 0.3 || fixed > c1 + 0.3) continue;
+    blocks.push([along - dr.w / 2 - 0.15, along + dr.w / 2 + 0.15]);
+  }
+  const fits = (a) => blocks.every(([b0, b1]) => b1 <= a || b0 >= a + s.len);
+  const cur = ax === "x" ? s.x0 : s.z0;
+  if (cur - lo >= STAIR_LAND - 0.1 + 1e-6 && fits(cur)) return;
+  for (let a = lo + STAIR_LAND; a + s.len + STAIR_LAND <= hi + 1e-6; a += 0.05) {
+    if (!fits(a)) continue;
+    if (ax === "x") s.x0 = a; else s.z0 = a;
+    s.moved = true;
+    return;
+  }
+  /* Short halls (Townhouse: 7.26 m) cannot fit landing + run + landing
+     between the doors. Then keep the foot landing and slide the interior
+     doors that would open onto the side of the run along their own wall,
+     onto the foot landing or past the top — never an exterior door. */
+  const a = lo + STAIR_LAND;
+  if (a + s.len + 0.3 > hi) return;
+  const moves = [];
+  for (const L of [lv, up]) for (const dr of L ? L.doors : []) {
+    const fixed = ax === "x" ? dr.z : dr.x, along = ax === "x" ? dr.x : dr.z;
+    if (dr.axis !== ax || fixed < c0 - 0.3 || fixed > c1 + 0.3) continue;
+    if (along + dr.w / 2 + 0.15 <= a || along - dr.w / 2 - 0.15 >= a + s.len) continue;
+    if (dr.ext) return;
+    const ra = L.rooms.find((r) => r.id === dr.a), rb = L.rooms.find((r) => r.id === dr.b);
+    const wl = L.walls.find((w) => w.id === dr.wall);
+    const op = wl && wl.openings.find((o) => o.ref === dr.id);
+    if (!ra || !rb || !op) return;
+    const s0 = Math.max(ax === "x" ? ra.x0 : ra.z0, ax === "x" ? rb.x0 : rb.z0) + 0.12 + dr.w / 2;
+    const s1 = Math.min(ax === "x" ? ra.x1 : ra.z1, ax === "x" ? rb.x1 : rb.z1) - 0.12 - dr.w / 2;
+    const others = wl.openings.filter((o) => o !== op);
+    const wl0 = ax === "x" ? Math.min(wl.x1, wl.x2) : Math.min(wl.z1, wl.z2);
+    const free = (c) => others.every((o) => wl0 + o.x + o.w + 0.1 <= c - dr.w / 2 || wl0 + o.x - 0.1 >= c + dr.w / 2);
+    const cands = [Math.min(s1, a - 0.15 - dr.w / 2), Math.max(s0, a + s.len + 0.15 + dr.w / 2)]
+      .filter((c) => c >= s0 - 1e-6 && c <= s1 + 1e-6 && free(c) &&
+                     (c + dr.w / 2 + 0.15 <= a || c - dr.w / 2 - 0.15 >= a + s.len));
+    if (!cands.length) return;
+    moves.push({ dr, op, c: cands[0], wl0 });
+  }
+  for (const m of moves) {
+    if (ax === "x") m.dr.x = m.c; else m.dr.z = m.c;
+    m.dr.along = m.c - m.wl0; m.op.x = m.dr.along - m.dr.w / 2;
+    m.dr.movedForStair = true;
+  }
+  if (ax === "x") s.x0 = a; else s.z0 = a;
+  s.moved = true;
+}
+
 T.makePlan = function (spec) {
   const issues = [];
   const levels = [];
@@ -414,7 +479,8 @@ T.makePlan = function (spec) {
     const s = levels[L].stairs;
     if (!s) { issues.push({ sev: "bad", id: `L${L}`, msg: `storey ${L + 1} exists with no stair from level ${L}` }); continue; }
     const up = levels[L + 1];
-    const sx1 = s.x0 + (s.axis === "x" ? s.len : s.w), sz1 = s.z0 + (s.axis === "z" ? s.len : s.w);
+    relocateStair(s, levels[L], up);
+    let sx1 = s.x0 + (s.axis === "x" ? s.len : s.w), sz1 = s.z0 + (s.axis === "z" ? s.len : s.w);
     /* the landing is the room with the LARGEST share of the stair footprint,
        not merely the first one it clips — that misread put stairs in beds */
     let land = null, bestA = 0;
@@ -423,7 +489,14 @@ T.makePlan = function (spec) {
                 Math.max(0, Math.min(sz1, r.z1) - Math.max(s.z0, r.z0));
       if (a > bestA) { bestA = a; land = r; }
     }
-    s.hole = { x0: s.x0 - 0.05, z0: s.z0 - 0.05, x1: sx1 + 0.05, z1: sz1 + 0.05 };
+    /* the run always climbs toward +axis, so its TOP end is sx1 (x runs) or
+       sz1 (z runs). The hole used to overshoot that end by 0.05 m too: a slot
+       of nothing between the last tread and the upstairs floor, which a
+       player standing on its centre point falls through — the whole upper
+       floor of every Cape Cod and Townhouse was unreachable through it
+       (tools/walkable.js). The sides and the foot keep their margin. */
+    s.hole = { x0: s.x0 - 0.05, z0: s.z0 - 0.05,
+               x1: sx1 + (s.axis === "x" ? 0 : 0.05), z1: sz1 + (s.axis === "z" ? 0 : 0.05) };
     if (!land) { issues.push({ sev: "bad", id: `L${L}`, msg: `stair from L${L} lands outside any L${L + 1} room` }); continue; }
     s.landing = land.id;
     if (land.t !== "hall" && land.t !== "foyer")

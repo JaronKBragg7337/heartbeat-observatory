@@ -42,16 +42,16 @@ const EXPECTED = {
   minGapM: 2.00,
   twoStorey: 22,
   twoStoreyWalkable: 22,
-  assets: 4284,
+  assets: 4288,          // 2026-11-05: +4 fence runs (boundary fence now breaks around houses, tools/inspector)
   items: 1414,
   /* Went 3110 -> 3421 on 2026-08-06 when stair runs were given per-step
      colliders, and back to 3110 the same day when tools/walkable.js showed
      those colliders sealed the upper floor in 18 of 22 houses. See the note in
      render/buildings.js: making a staircase solid needs the run to have a
      landing at its foot and a gap in its railing first. */
-  colliders: 3110,
+  colliders: 3114,       // 2026-11-05: same +4 fence runs
   degenerate: 0,
-  staticTris: 863160,
+  staticTris: 861018,    // 2026-11-05: band board = 4 strips, not a full-footprint slab; gable/shed closures added
   houseTypes: 13,
   civicTypes: 10,
 };
