@@ -256,6 +256,11 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = window.HBDevice?.quality?.allowShadows !== false;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// 11/5 perf: on phones the shadow map is redrawn every other frame instead of every frame (the sun moves over an hour;
+// a person's shadow trailing by one frame at 60 fps can't be seen). Halves the shadow pass, ~450 draws a frame.
+const SHADOW_EVERY = isTouch ? 2 : 1;
+let shadowFrame = 0;
+if (SHADOW_EVERY > 1) renderer.shadowMap.autoUpdate = false;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
 
@@ -2318,6 +2323,7 @@ function animate() {
   updateHud();
   sendState();
 
+  if (SHADOW_EVERY > 1 && (shadowFrame++ % SHADOW_EVERY) === 0) renderer.shadowMap.needsUpdate = true;
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
@@ -5383,6 +5389,17 @@ async function swapInPerson(group, look, name, ghost) {
     });
     for (const c of [...group.children]) if (!c.isSprite && !c.userData?.heldTag) group.remove(c);   // keep the name tag and anything held
     group.add(body);
+    // 11/5 perf: people used to be drawn even when behind you (frustumCulled off, ~250 draws a frame on a phone).
+    // Give each skinned part a real bounding sphere from its own posed vertices, padded for arm/leg swing, and let
+    // three.js cull it like everything else. If anything goes wrong the part simply stays always-drawn, as before.
+    try {
+      group.updateMatrixWorld(true);
+      body.traverse((m) => {
+        if (!m.isSkinnedMesh || typeof m.computeBoundingSphere !== "function") return;
+        m.computeBoundingSphere();
+        if (m.boundingSphere && Number.isFinite(m.boundingSphere.radius) && m.boundingSphere.radius > 0) { m.boundingSphere.radius *= 1.6; m.frustumCulled = true; }
+      });
+    } catch (e) {}
     const mixer = new THREE.AnimationMixer(body), acts = {};
     for (const clip of gl.animations) acts[clip.name] = mixer.clipAction(clip);
     group.userData.rigParts = null;
