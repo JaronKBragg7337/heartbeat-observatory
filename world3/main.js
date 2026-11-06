@@ -26,19 +26,7 @@
 const T = window.TOWN;
 if (!T) { console.warn("world3: the town did not load"); return; }
 
-/* Desktop look follows a drag on the world, leaving the pointer free for HUD controls. */
 const canvas = document.getElementById("gl");
-let mouseLook = false;
-canvas.addEventListener("pointerdown", (e) => { if (e.pointerType === "mouse" && e.button === 0) mouseLook = true; });
-window.addEventListener("pointerup", () => { mouseLook = false; });
-window.addEventListener("blur", () => { mouseLook = false; });
-window.addEventListener("pointermove", (e) => {
-  if (mouseLook && T.Player) {
-    const k = 0.0022 * ((T.Settings && T.Settings.sens) || 1);
-    T.Player.yaw -= e.movementX * k;
-    T.Player.pitch = T.clamp(T.Player.pitch - e.movementY * k * ((T.Settings && T.Settings.invertY) ? -1 : 1), -1.52, 1.52);
-  }
-});
 
 /* ------------------------------------------------------------------------ *
    2. Peer avatars. town/render/npcs.js receives the renderer's private
@@ -135,6 +123,8 @@ const shell = window.HBShell.mount({
   world: "world3",
   worldLabel: "Ashgrove",
   gateUrl: "/world3/gate/",
+  chrome: "clean",   // Jaron 11/5: a clean screen. Only the gear, the map button, and the door prompt when you're at one.
+  input: false,      // walking + looking come from the shared invisible stick below (/hb-thumbstick.js), as in World 2
 
   getState() {
     const P = T.Player;
@@ -168,9 +158,14 @@ const shell = window.HBShell.mount({
     P.pitch = T.clamp(P.pitch - dy * k * inv, -1.52, 1.52);
   },
 
-  onAction(name) {
+  onAction(name, source) {
     const P = T.Player;
     if (!P) return;
+    /* E on a keyboard: the town's own key handler (town/render/player.js)
+       already swung the door on this same keypress. Using it again here shut
+       it straight back (11/5 fix: E at a house door did nothing on desktop). */
+    if (source === "key" && name === "use" && P.nearDoor) return;
+    if (source === "key" && name === "jump") return;   // the town reads Space itself
     if (name === "use") {
       /* One offer at a time, in this order: the door under your hand, then
          whatever the building you are standing in leads to, then the person
@@ -204,6 +199,54 @@ const shell = window.HBShell.mount({
     }
   },
 });
+
+/* ------------------------------------------------------------------------ *
+   3a. Walking: the shared invisible floating thumbstick (/hb-thumbstick.js),
+   the same one World 2 uses. Nothing on screen until a thumb lands on the
+   left half; the stick appears under it and is gone on release. The right
+   half drags the view, both at once. Mouse: drag looks. A tap never walks.
+   Desktop keys (WASD / arrows, Shift runs, Space jumps, E uses) stay the
+   town's own (town/render/player.js).
+ * ------------------------------------------------------------------------ */
+let stick = null, stickWas = false;
+function inputAllowed() {
+  if (!T.Player || !T.Player.pos) return false;
+  const load = document.getElementById("load");
+  if (load && getComputedStyle(load).display !== "none" && +getComputedStyle(load).opacity > 0.05) return false;
+  if (shell.isPanelOpen && shell.isPanelOpen()) return false;
+  if (T.PlaceMap && T.PlaceMap.isOpen) return false;
+  if (T.Destinations && T.Destinations.open) return false;
+  if (document.body.classList.contains("orbiting") || (T.Edit && T.Edit.on) || (T.Tour && T.Tour.on)) return false;
+  if (T.Cam && T.Cam.mode && T.Cam.mode !== "fps") return false;
+  return true;
+}
+import("/hb-thumbstick.js?v=2026-11-05b").then(({ createThumbstick }) => {
+  stick = createThumbstick(canvas, {
+    enabled: inputAllowed,
+    onLook(dx, dy, kind) {
+      const P = T.Player; if (!P) return;
+      const sens = shell.settings.sensitivity || 1, inv = shell.settings.invertY ? -1 : 1;
+      const k = kind === "mouse" ? 0.0024 * sens : 0.0132 * sens;   // touch: same feel as before (2.2 x 0.006)
+      P.yaw -= dx * k;
+      P.pitch = T.clamp(P.pitch - dy * k * inv, -1.52, 1.52);
+    },
+    onTap() { /* tapping the ground never walks; doors are used from the prompt (tap it) or E */ },
+  });
+  T.Stick = stick;
+}).catch((e) => console.error("world3: the thumbstick did not load", e));
+
+/* The town reads its keys every frame (P.readKeys). While a thumb is on the
+   stick, the stick drives instead; when it lifts, movement stops at once. */
+const originalReadKeys = T.Player.readKeys;
+T.Player.readKeys = function () {
+  const P = T.Player;
+  if (stick && stick.active) {
+    P.move[0] = stick.x; P.move[1] = stick.y; P.sprint = stick.running;
+    stickWas = true; return;
+  }
+  if (stickWas) { P.move[0] = P.move[1] = 0; P.sprint = false; stickWas = false; }
+  return originalReadKeys.call(P);
+};
 
 /* ------------------------------------------------------------------------ *
    3b. Doors are shared.

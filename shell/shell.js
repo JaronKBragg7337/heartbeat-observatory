@@ -88,6 +88,10 @@ body.hbs-touch .hbs-actions{display:flex}
   background:rgba(14,20,23,.92);border:1px solid #2c3a42;color:#e6edf1;border-radius:10px;padding:9px 14px;
   font:600 13px/1.3 system-ui,sans-serif;display:none;max-width:min(420px,92vw);text-align:center}
 .hbs-prompt.on{display:block}
+.hbs-prompt.tap{cursor:pointer;bottom:calc(110px + env(safe-area-inset-bottom));border-radius:999px;padding:11px 20px;
+  border-color:rgba(123,216,143,.55);color:#dff3e4;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.hbs-prompt.tap:active{background:rgba(40,70,50,.95)}
+body.hbs-clean .hbs-top-right .hbs-icon{width:40px;height:40px;font-size:18px;border-radius:12px;background:rgba(28,24,20,.82);border-color:rgba(255,236,206,.24);color:#f6ead6}
 
 .hbs-panel{position:fixed;z-index:90001;display:none;flex-direction:column;overflow:hidden;background:#0e1417;
   border:1px solid #243036;color:#e6edf1;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.55);
@@ -147,14 +151,24 @@ HBShell.mount = function mount(options) {
     onAction: () => {},            // ("use"|"jump"|"duck-down"|"duck-up"|"run-down"|"run-up") -> void
     onMove: () => {},              // ({x, y, active}) -> void, normalised -1..1
     onLook: () => {},              // (dx, dy) -> void, pixels
+    /* "clean" (Jaron 11/5): nothing permanent on screen but a small settings
+       gear; no status chips, no phone button (the site phone has its own tab),
+       no Jump/Duck/Enter buttons. The prompt itself becomes the button you tap
+       to use a door. Default "full" keeps the old HUD for the labs. */
+    chrome: "full",
+    /* false = the world brings its own touch/mouse input (the shared
+       /hb-thumbstick.js); the shell only keeps the keyboard E/Space keys. */
+    input: true,
   }, options || {});
+  const clean = opts.chrome === "clean";
 
   const style = document.createElement("style");
   style.textContent = CSS;
   document.head.appendChild(style);
 
   const isTouch = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
-  if (isTouch) document.body.classList.add("hbs-touch");
+  if (isTouch && !clean) document.body.classList.add("hbs-touch");
+  if (clean) document.body.classList.add("hbs-clean");
 
   const shell = {
     opts, isTouch,
@@ -177,19 +191,21 @@ HBShell.mount = function mount(options) {
 
   const topRight = el("div", "hbs-top-right");
   const bPhone = el("button", "hbs-icon"); bPhone.textContent = "▣"; bPhone.setAttribute("aria-label", "Phone");
-  const bMenu = el("button", "hbs-icon wide"); bMenu.textContent = "⚙ Settings"; bMenu.setAttribute("aria-label", "Settings"); bMenu.title = "Settings";
-  topRight.append(bPhone, bMenu);
+  const bMenu = el("button", clean ? "hbs-icon" : "hbs-icon wide"); bMenu.textContent = clean ? "⚙" : "⚙ Settings"; bMenu.setAttribute("aria-label", "Settings"); bMenu.title = "Settings";
+  if (clean) topRight.append(bMenu); else topRight.append(bPhone, bMenu);
 
   const stick = el("div", "hbs-stick"); stick.appendChild(document.createElement("i"));
   const actions = el("div", "hbs-actions");
   const aUse  = act("Enter", "go hide"), aJump = act("Jump", "ghost"), aDuck = act("Duck", "");
   actions.append(aUse, aJump, aDuck);
 
-  const prompt = el("div", "hbs-prompt");
+  const prompt = el(clean ? "button" : "div", "hbs-prompt");
+  if (clean) { prompt.type = "button"; prompt.classList.add("tap"); }
   const phone = el("div", "hbs-panel");
   const menu  = el("div", "hbs-panel");
 
-  document.body.append(hud, topRight, stick, actions, prompt, phone, menu);
+  if (clean) document.body.append(topRight, prompt, phone, menu);
+  else document.body.append(hud, topRight, stick, actions, prompt, phone, menu);
 
   function el(tag, cls) { const n = document.createElement(tag); if (cls) n.className = cls; return n; }
   function chip(text, extra) { const n = el("span", "hbs-chip" + (extra ? " " + extra : "")); n.textContent = text; return n; }
@@ -236,7 +252,7 @@ HBShell.mount = function mount(options) {
     return !!(t && typeof t.closest === "function" && t.closest(".hbs-act,.hbs-icon,.hbs-panel,.hbs-chip.count"));
   }
 
-  addEventListener("pointerdown", (e) => {
+  if (opts.input) addEventListener("pointerdown", (e) => {
     if (isPanelOpen() || onChrome(e)) return;
     if (stickDown(e)) return;
     if (isTouch && e.clientX > window.innerWidth * 0.45) {
@@ -244,7 +260,7 @@ HBShell.mount = function mount(options) {
     }
   }, { passive: true });
 
-  addEventListener("pointermove", (e) => {
+  if (opts.input) addEventListener("pointermove", (e) => {
     if (e.pointerId === input.moveId) return stickMove(e);
     if (e.pointerId === input.lookId) {
       opts.onLook((e.clientX - input.lx) * 2.2, (e.clientY - input.ly) * 2.2);
@@ -259,6 +275,11 @@ HBShell.mount = function mount(options) {
   addEventListener("pointerup", releasePointer, { passive: true });
   addEventListener("pointercancel", releasePointer, { passive: true });
 
+  if (clean) {
+    /* the prompt is the button: tap "Open the door" and the door opens */
+    prompt.addEventListener("pointerdown", (e) => e.stopPropagation());
+    prompt.addEventListener("click", (e) => { e.preventDefault(); opts.onAction("use"); });
+  }
   bind(aUse, "use"); bind(aJump, "jump");
   aDuck.addEventListener("pointerdown", (e) => { e.preventDefault(); opts.onAction("duck-down"); });
   aDuck.addEventListener("pointerup", () => opts.onAction("duck-up"));
@@ -272,9 +293,11 @@ HBShell.mount = function mount(options) {
   cCount.addEventListener("click", () => { closeMenu(); openPhone("people"); });
 
   /* --------------------------------------------------------- the prompt - */
+  shell.isPanelOpen = isPanelOpen;
   shell.setPrompt = function (text) {
     if (!text) { prompt.classList.remove("on"); aUse.classList.add("hide"); return; }
-    prompt.textContent = text;
+    if (clean) text = (isTouch ? "Tap · " : "E · ") + text;
+    if (prompt.textContent !== text) prompt.textContent = text;
     prompt.classList.add("on");
     aUse.classList.remove("hide");
   };
@@ -737,8 +760,8 @@ HBShell.mount = function mount(options) {
     if (e.key === "Escape") { closePhone(); closeMenu(); return; }
     if (e.target.matches && e.target.matches("input,textarea,select")) return;
     const k = e.key.toLowerCase();
-    if (k === "e") opts.onAction("use");
-    else if (k === " ") opts.onAction("jump");
+    if (k === "e") opts.onAction("use", "key");
+    else if (k === " ") opts.onAction("jump", "key");
   });
 
   void connect().catch(() => { cStatus.textContent = "offline"; });
