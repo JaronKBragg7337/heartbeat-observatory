@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <script src="/hb-device-tier.js"></script>
     <title>Heartbeat Observatory Town</title>
-    <link rel="stylesheet" href="/engine/hub/styles.css?v=2026-11-05-placemap">
+    <link rel="stylesheet" href="/engine/hub/styles.css?v=2026-11-05-clean">
     <style>
       /* onboarding: device-adaptive controls in the welcome overlay */
       .controls { display:grid; gap:8px; width:min(440px,92vw); margin-top:2px; }
@@ -77,7 +77,7 @@
         </label>
         <label class="toggle-row">
           <span>Roster</span>
-          <input id="rosterToggle" type="checkbox" checked>
+          <input id="rosterToggle" type="checkbox">
         </label>
         <div class="settings-group" aria-label="Character">
           <div class="settings-label">Character</div>
@@ -178,17 +178,16 @@
     </div>
 
     <div id="touchControls" aria-hidden="true">
-      <div id="movePad"><div id="moveKnob"></div></div>
-      <button id="jumpButton" type="button">Jump</button>
-      <button id="crouchButton" type="button">Duck</button>
-      <button id="actionButton" type="button">Enter</button>
+      <!-- 11/5 clean screen: walking is the invisible floating stick (/hb-thumbstick.js); doors use the prompt's Enter.
+           The Throw button shows only in the paint arena (body.ts-arena). -->
+      <button id="actionButton" type="button" hidden>Enter</button>
       <button id="throwButton" type="button">Throw</button>
     </div>
 
     <script type="importmap">
       {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js"}}
     </script>
-    <script type="module" src="/engine/hub/main.js?v=2026-11-05-placemap"></script>
+    <script type="module" src="/engine/hub/main.js?v=2026-11-05-clean"></script>
   <script defer src="/bubble.js"></script>
   <div id="buildPanel" class="hidden" aria-label="Build mode">
     <div class="build-row" id="buildPalette">

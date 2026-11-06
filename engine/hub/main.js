@@ -17,6 +17,7 @@ import {
 } from "./surface.js?v=2026-08-03-surface5";
 import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface5";
 import { createPlaceMap } from "/hb-placemap.js?v=2026-11-05-placemap";   // the shared place map (all three worlds)
+import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05b";   // the invisible floating stick (same as World 2 and Ashgrove)
 import { buildCanopy, canopyGeometry, leafMaterial } from "./foliage.js?v=2026-08-03-surface5";
 
 const canvas = document.querySelector("#game");
@@ -49,11 +50,7 @@ const skinSwatches = document.querySelector("#skinSwatches");
 const hairSwatches = document.querySelector("#hairSwatches");
 const pantsSwatches = document.querySelector("#pantsSwatches");
 const appearanceStatus = document.querySelector("#appearanceStatus");
-const movePad = document.querySelector("#movePad");
-const moveKnob = document.querySelector("#moveKnob");
 const actionButton = document.querySelector("#actionButton");
-const jumpButton = document.querySelector("#jumpButton");
-const crouchButton = document.querySelector("#crouchButton");
 const throwButton = document.querySelector("#throwButton");
 const welcomeName = document.querySelector("#welcomeName");
 
@@ -222,14 +219,15 @@ const input = {
   touchLookId: null,
   touchLookX: 0,
   touchLookY: 0,
-  moveTouchId: null
+  moveTouchId: null,
+  stick: null          // the shared invisible thumbstick, made below (kept here so the render loop can read it from frame one)
 };
 
 const settings = {
   sensitivity: 1,
   fov: 74,
   invertY: false,
-  showRoster: true
+  showRoster: false    // 11/5 clean screen: the people list is a setting, off until you turn it on
 };
 
 const motion = {
@@ -606,11 +604,9 @@ fsBtn.className = "icon-button";
 fsBtn.type = "button";
 fsBtn.setAttribute("aria-label", "Full screen");
 fsBtn.textContent = "\u26F6";
-fsBtn.style.position = "fixed";
-fsBtn.style.top = "max(14px, env(safe-area-inset-top))";
-fsBtn.style.right = "calc(max(14px, env(safe-area-inset-right)) + 48px)";
-fsBtn.style.zIndex = "35";
-document.body.appendChild(fsBtn);
+// 11/5 clean screen: full screen lives in the settings panel, not on the world
+fsBtn.className = "secondary-button"; fsBtn.textContent = "⛶ Full screen";
+leaveTownButton.before(fsBtn);
 fsBtn.addEventListener("click", () => {
   if (document.fullscreenElement) {
     try { document.exitFullscreen(); } catch (e) {}
@@ -918,59 +914,19 @@ document.addEventListener("keyup", (event) => {
   keys.delete(event.code);
 });
 
+// ---- touch + mouse: the shared invisible floating stick (/hb-thumbstick.js), as in World 2 and Ashgrove (Jaron 11/5).
+// Nothing on screen until a thumb lands on the left half; the stick appears under it, follows it, and is gone on release.
+// The right half drags the view, both at once. Mouse: drag looks. A tap never walks; a tap on the bandstand's note bars plays them.
 canvas.addEventListener("pointerdown", (event) => {
-  if (settingsOpen || document.pointerLockElement === canvas || event.button !== 0) return;
-  if (isTouch && event.clientX < window.innerWidth * 0.35) return;
-  if (!hasEntered) enterTown(false);
-  input.touchLookId = event.pointerId;
-  input.touchLookX = event.clientX;
-  input.touchLookY = event.clientY;
-  canvas.setPointerCapture(event.pointerId);
+  if (!hasEntered && !settingsOpen && event.button === 0 && !document.documentElement.classList.contains("preview")) enterTown(false);
 });
-
-canvas.addEventListener("pointermove", (event) => {
-  if (event.pointerId !== input.touchLookId) return;
-  const scale = event.pointerType === "touch" ? 2.4 : 1;
-  look((event.clientX - input.touchLookX) * scale, (event.clientY - input.touchLookY) * scale);
-  input.touchLookX = event.clientX;
-  input.touchLookY = event.clientY;
+input.stick = createThumbstick(canvas, {
+  enabled: () => hasEntered && !settingsOpen && document.pointerLockElement !== canvas && !tsPlaceMap.isOpen
+    && !(claimOverlay && claimOverlay.style.display === "flex") && !(askOverlay && askOverlay.style.display === "flex"),
+  onLook: (dx, dy, kind) => { const k = kind === "mouse" ? 1 : 2.4; look(dx * k, dy * k); },
+  onTap: (x, y) => tryPlayBarAt(x, y),
 });
-
-canvas.addEventListener("pointerup", endTouchLook);
-canvas.addEventListener("pointercancel", endTouchLook);
-canvas.addEventListener("lostpointercapture", endTouchLook);
 window.addEventListener("blur", clearMovementInput);
-
-movePad.addEventListener("pointerdown", (event) => {
-  input.moveTouchId = event.pointerId;
-  movePad.setPointerCapture(event.pointerId);
-  updateMovePad(event);
-});
-
-movePad.addEventListener("pointermove", (event) => {
-  if (event.pointerId === input.moveTouchId) updateMovePad(event);
-});
-
-movePad.addEventListener("pointerup", resetMovePad);
-movePad.addEventListener("pointercancel", resetMovePad);
-
-jumpButton.addEventListener("pointerdown", (event) => {
-  event.preventDefault();
-  queueJump();
-});
-
-crouchButton.addEventListener("pointerdown", (event) => {
-  event.preventDefault();
-  input.crouchHeld = true;
-});
-
-crouchButton.addEventListener("pointerup", () => {
-  input.crouchHeld = false;
-});
-
-crouchButton.addEventListener("pointercancel", () => {
-  input.crouchHeld = false;
-});
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -1941,12 +1897,6 @@ function tryPlayBarAt(cx, cy) {
   const hits = rc.intersectObjects(noteBars);
   if (hits.length) playBar(hits[0].object.userData.noteIndex, true, 1);
 }
-let _tapSX = 0, _tapSY = 0;
-canvas.addEventListener("pointerdown", (e) => { _tapSX = e.clientX; _tapSY = e.clientY; });
-canvas.addEventListener("pointerup", (e) => {
-  if (Math.hypot(e.clientX - _tapSX, e.clientY - _tapSY) > 10) return;
-  tryPlayBarAt(e.clientX, e.clientY);
-});
 document.addEventListener("keydown", (e) => {
   if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
   const k = parseInt(e.key, 10);
@@ -2337,6 +2287,7 @@ function updateArenaZone() {
   const now = hasEntered && state.z > 31.5 && state.z < 55 && Math.abs(state.x) < 17;
   if (now === inArena) return;
   inArena = now;
+  document.body.classList.toggle("ts-arena", inArena);   // phones: the Throw button shows only in the arena
   flashGear();
   if (inArena) { preArenaHeld = heldItem; setHeld("paintgun"); }
   else { setHeld(preArenaHeld); preArenaHeld = null; }
@@ -2390,6 +2341,7 @@ function updateLocal(dt) {
   if (keys.has("KeyA") || keys.has("ArrowLeft")) strafe -= 1;
   if (keys.has("KeyD") || keys.has("ArrowRight")) strafe += 1;
 
+  if (input.stick) { input.moveX = input.stick.x; input.moveY = input.stick.y; }
   forward += input.moveY;
   strafe += input.moveX;
 
@@ -2425,7 +2377,7 @@ function updateLocal(dt) {
     }
   }
 
-  const wantsSprint = (keys.has("ShiftLeft") || keys.has("ShiftRight")) && forward > 0 && !crouching && motion.onGround;
+  const wantsSprint = (keys.has("ShiftLeft") || keys.has("ShiftRight") || !!(input.stick && input.stick.running)) && forward > 0 && !crouching && motion.onGround;
   motion.sprinting = wantsSprint;
   motion.moving = Math.abs(forward) + Math.abs(strafe) > 0.01;
 
@@ -2792,7 +2744,9 @@ function showNudge(kind, text) {
   if (!nudgeEl) {
     nudgeEl = document.createElement("div");
     nudgeEl.id = "nudgeToast";
-    nudgeEl.style.cssText = "position:fixed;left:50%;bottom:104px;transform:translateX(-50%) translateY(8px);max-width:min(86vw,430px);background:rgba(10,15,18,0.93);color:#eef3f6;border:1px solid #2c3940;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.42;z-index:99990;box-shadow:0 10px 34px rgba(0,0,0,0.45);opacity:0;transition:opacity .25s ease, transform .25s ease;cursor:pointer;text-align:center;";
+    // 11/5: at the TOP, not over the thumb zone, and no hit box while it's faded out (it used to sit invisible at the
+    // bottom after fading and swallow every touch there, so the stick stopped working under it).
+    nudgeEl.style.cssText = "position:fixed;left:50%;top:calc(max(14px, env(safe-area-inset-top)) + 104px);pointer-events:none;transform:translateX(-50%) translateY(8px);max-width:min(86vw,430px);background:rgba(10,15,18,0.93);color:#eef3f6;border:1px solid #2c3940;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.42;z-index:99990;box-shadow:0 10px 34px rgba(0,0,0,0.45);opacity:0;transition:opacity .25s ease, transform .25s ease;cursor:pointer;text-align:center;";
     nudgeEl.addEventListener("click", hideNudge);
     document.body.appendChild(nudgeEl);
   }
@@ -2800,6 +2754,7 @@ function showNudge(kind, text) {
   requestAnimationFrame(() => {
     if (!nudgeEl) return;
     nudgeEl.style.opacity = "1";
+    nudgeEl.style.pointerEvents = "auto";
     nudgeEl.style.transform = "translateX(-50%) translateY(0)";
   });
   clearTimeout(nudgeTimer);
@@ -2808,6 +2763,7 @@ function showNudge(kind, text) {
 function hideNudge() {
   if (!nudgeEl) return;
   nudgeEl.style.opacity = "0";
+  nudgeEl.style.pointerEvents = "none";
   nudgeEl.style.transform = "translateX(-50%) translateY(8px)";
 }
 
@@ -3790,7 +3746,9 @@ askSend.addEventListener("click", sendAsk);
 askInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendAsk(); } });
 askOverlay.addEventListener("click", (e) => { if (e.target === askOverlay) closeAsk(); });
 const _askEnterBtn = document.querySelector("#enterButton");
-if (_askEnterBtn) _askEnterBtn.addEventListener("click", () => { if (askLaunch) askLaunch.style.display = "flex"; });
+if (_askEnterBtn) _askEnterBtn.addEventListener("click", () => { if (askLaunch) askLaunch.style.display = ""; });
+// 11/5 clean screen: "Ask Claude" is a row in the settings panel, not a button floating over the world
+if (askLaunch) { askLaunch.removeAttribute("style"); askLaunch.style.display = "none"; askLaunch.className = "secondary-button"; leaveTownButton.before(askLaunch); }
 
 
 function parseRepoName(url) {
@@ -5626,31 +5584,6 @@ function resolveCollision() {
   }
 }
 
-function updateMovePad(event) {
-  const rect = movePad.getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-  const maxRadius = rect.width * 0.36;
-  const dx = event.clientX - centerX;
-  const dy = event.clientY - centerY;
-  const length = Math.min(maxRadius, Math.hypot(dx, dy));
-  const angle = Math.atan2(dy, dx);
-  const knobX = Math.cos(angle) * length;
-  const knobY = Math.sin(angle) * length;
-
-  input.moveX = knobX / maxRadius;
-  input.moveY = -knobY / maxRadius;
-  moveKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
-}
-
-function resetMovePad(event) {
-  if (event.pointerId !== input.moveTouchId) return;
-  input.moveTouchId = null;
-  input.moveX = 0;
-  input.moveY = 0;
-  moveKnob.style.transform = "translate(-50%, -50%)";
-}
-
 function clearMovementInput() {
   keys.clear();
   input.moveX = 0;
@@ -5659,7 +5592,7 @@ function clearMovementInput() {
   input.jumpQueued = false;
   input.moveTouchId = null;
   input.touchLookId = null;
-  moveKnob.style.transform = "translate(-50%, -50%)";
+  if (input.stick) input.stick.reset();
   motion.sprinting = false;
   motion.moving = false;
 }
@@ -5838,7 +5771,7 @@ const tsFrontOf = (d) => {   // the spot in front of a door: where its trigger i
 const tsPlaceMap = createPlaceMap({
   world: "Town Square",
   bounds: { x0: -31, x1: 31, z0: -31, z1: 58 },
-  buttonPos: { top: "calc(max(14px, env(safe-area-inset-top)) + 96px)", right: "max(14px, env(safe-area-inset-right))" },
+  buttonPos: { top: "calc(max(14px, env(safe-area-inset-top)) + 48px)", right: "max(14px, env(safe-area-inset-right))" },
   enabled: () => hasEntered && !document.documentElement.classList.contains("preview"),
   player: () => (inInterior || inRoom || !hasEntered ? null : { x: state.x, z: state.z, yaw: state.yaw }),
   places: () => {

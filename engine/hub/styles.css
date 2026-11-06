@@ -91,3 +91,12 @@ button:disabled { cursor: default; opacity: 0.45; }
   #hbpmButton svg { width: 22px; height: 22px; }
   #hbpmChip { top: max(13px, env(safe-area-inset-top)) !important; right: calc(max(14px, env(safe-area-inset-right)) + 144px) !important; }
 }
+
+/* ---- 11/5 clean screen (Jaron): nothing permanent over the world but the menu and the map buttons.
+   Walking is the invisible floating stick (/hb-thumbstick.js); a door shows its prompt only when you're at it.
+   The status chips are gone (the people list is a setting); Throw shows only inside the paint arena. ---- */
+#hud { display: none !important; }
+#actionButton { display: none !important; }
+#throwButton { display: none; }
+body.ts-arena #throwButton { display: block; bottom: calc(max(34px, env(safe-area-inset-bottom)) + 24px); right: max(24px, env(safe-area-inset-right)); width: 76px; height: 76px; }
+#settingsPanel #fsButton, #settingsPanel #askLaunch { width: 100%; }
