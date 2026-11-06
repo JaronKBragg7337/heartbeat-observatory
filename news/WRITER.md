@@ -18,8 +18,20 @@ at the next story break; until then it keeps looping the last show.
    Africa. Same weight as the rest; on air "from the Meridian desk". Added 10/18 after every desk missed the 10/17 France riots.
    `perplexity/D.md` is the **Perplexity scout** (3:10 AM, live web search, every line has its own source). Added 11/5 after a
    spot-check found it had 4 stories every desk missed, including a major-outlet WMD report two days running. Same weight as the rest.
-   `wire/D.md` is the **rolling wire** (added 11/5): an hourly, deduplicated list of new stories from ~20 free feeds plus a Perplexity\n   question every 3 hours, each item stamped with when the wire first saw it. Also read yesterday's `wire/` file, but only items first\n   seen after 06:00 yesterday (after the last show). It exists because one night the internet dropped and most desks never wrote: if the\n   desks are thin or missing, build the show from the wire. Same labels and weight as the captures; its safety-word items go to Satya separately.\n   `grok/D-gaps.md` is the **blind-spot check** (Grok, 3:35 AM): big world events NO capture covered. Treat its items as real
+   `wire/D.md` is the **rolling wire** (added 11/5): an hourly, deduplicated list of new stories from ~20 free feeds plus a Perplexity
+   question every 3 hours, each item stamped with when the wire first saw it. Also read yesterday's `wire/` file, but only items first
+   seen after 06:00 yesterday (after the last show). It exists because one night the internet dropped and most desks never wrote: if the
+   desks are thin or missing, build the show from the wire. Same labels and weight as the captures; its safety-word items go to Satya separately.
+   `grok/D-gaps.md` is the **blind-spot check** (Grok, 3:35 AM): big world events NO capture covered. Treat its items as real
    captures (same labels and sources) - if it lists something, the show covers it.
+   **`wire/D-top.md` is the MUST-COVER list. Read it FIRST** (added 11/6 after the show skipped Newsom's 548 commutations, Russell Brand's
+   conviction, Dhillon's exit, Indonesia's troops and Rubio's denial, all carried by 3 to 7 outlets, because 660 raw wire lines were too
+   many to sort). A script groups the day's wire and scout lines into stories and counts distinct outlets. **Every MUST AIR story (3+
+   outlets, or a safety word) gets covered in the show, briefly if it is small** (a line in Quick Hits or a bullet in its region segment is
+   enough; the big ones get a real spot). SHOULD AIR (2 outlets) stories get a line when there is room. Bigger news days make a longer show
+   (Jaron's rule): do not cut MUST AIR stories to keep the length. The honesty rules do not change: label claims as claims, use the
+   sources on each line, invent nothing. If you judge a MUST AIR story truly unfit for air, list it in `skipped` with the reason. The
+   8:20 AM missed-story check compares the episode with this same list and buzzes Jaron about any MUST AIR story missing.
    If none of them exist for `D`, stop: write nothing, push nothing. The page keeps looping the last show.
 3. Write `news/episodes/D.json` in this repo. Copy the shape of the newest file in `news/episodes/` exactly.
 4. Update `news/episodes/index.json`: `latest` = `D`, and add `D` to the front of `episodes`.
