@@ -514,7 +514,7 @@ async function setupPeople() {
     return;
   }
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) { $("sub").innerHTML = `Model loft · <a href="/admin" style="color:inherit">sign in</a> to get your own + invite friends`; return; }
+  if (!session) { $("sub").innerHTML = `Model loft: explore and watch TV. <a href="/admin" style="color:inherit">Sign in</a> for your own loft and invites.`; return; }
   const { data: home, error } = await supabase.rpc("my_home", { p_name: ident.name });
   if (error || !home) { $("sub").textContent = "Heartbeat Homes"; return; }
   $("title").firstChild.textContent = `${home.owner_name || "Your"}'s Loft`; $("sub").textContent = "Your home";
