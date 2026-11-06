@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>How today's show was picked - Heartbeat News</title>
+<meta name="description" content="The news desk's daily lists: stories that must air, stories that should air, which ones made the show, and which were missed. Read live from the public watch repo." />
+<meta property="og:title" content="How today's show was picked - Heartbeat News" />
+<meta property="og:description" content="The must-air and should-air lists, and what the show aired or missed, every day." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.heartbeatobservatory.com/news/desk/" />
+<meta name="theme-color" content="#0d0b09" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --room: #0d0b09;
+  --panel: rgba(255, 236, 210, 0.045);
+  --panel-2: rgba(255, 236, 210, 0.08);
+  --ink: #f1ebe2;
+  --ink-soft: #bdb3a5;
+  --ink-faint: #8c8274;
+  --line: rgba(255, 236, 210, 0.13);
+  --red: #e11d2e;
+  --link: #9cc2ff;
+  --ok: #7fe0a8; --ok-bg: rgba(60, 180, 110, 0.17);
+  --bad: #ff9a8f; --bad-bg: rgba(225, 29, 46, 0.2);
+  --meh: #cfc6b8; --meh-bg: rgba(255, 236, 210, 0.09);
+  --gold: #f5cf5a; --gold-bg: rgba(242, 180, 0, 0.16);
+  --cond: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+  --sans: "Barlow", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --w: min(860px, calc(100% - 32px));
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--room); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; min-width: 320px; color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.5;
+  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(190, 120, 50, 0.16), transparent 70%), var(--room);
+  -webkit-font-smoothing: antialiased; overflow-wrap: anywhere;
+}
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font: inherit; color: inherit; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: var(--w); margin: 0 auto; padding: 14px 0; }
+.back { color: var(--ink-soft); font-size: 15px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; font: 800 20px var(--cond); letter-spacing: 0.02em; }
+.brand:hover { text-decoration: none; }
+.brand svg { width: 30px; height: 30px; }
+.red { color: var(--red); }
+.hero, .wrap { width: var(--w); margin: 0 auto; }
+.hero { margin-top: 14px; }
+.eyebrow { display: flex; align-items: center; gap: 10px; margin: 0; font: 700 13px var(--cond); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-soft); }
+.eyebrow .bar { width: 28px; height: 4px; background: var(--red); }
+h1 { margin: 6px 0 8px; font: 800 clamp(34px, 9vw, 56px)/1 var(--cond); text-transform: uppercase; }
+.lede { margin: 0; color: var(--ink-soft); }
+
+.daybar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 18px auto 14px; width: var(--w); }
+.daybar button { flex: 0 0 auto; min-width: 48px; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); font-size: 22px; line-height: 1; cursor: pointer; }
+.daybar button:disabled { opacity: 0.3; cursor: default; }
+.daybar .day { flex: 1 1 auto; text-align: center; font: 700 24px/1.1 var(--cond); letter-spacing: 0.02em; }
+.daybar .day small { display: block; margin-top: 2px; font: 500 14px var(--sans); color: var(--ink-faint); letter-spacing: 0; }
+
+.summary { padding: 14px 16px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+.summary .big { margin: 0; font: 800 clamp(24px, 6.5vw, 32px)/1.15 var(--cond); }
+.summary .big .a { color: var(--ok); } .summary .big .m { color: var(--bad); }
+.summary p { margin: 6px 0 0; color: var(--ink-soft); font-size: 15px; }
+
+h2 { margin: 26px 0 4px; font: 800 28px/1.1 var(--cond); text-transform: uppercase; letter-spacing: 0.01em; }
+h2 .n { color: var(--ink-faint); font-weight: 600; }
+.explain { margin: 0 0 12px; color: var(--ink-soft); font-size: 15px; }
+
+.story { margin: 0 0 10px; padding: 13px 14px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); border-left-width: 5px; }
+.story.aired { border-left-color: var(--ok); }
+.story.missed { border-left-color: var(--red); }
+.story.unk { border-left-color: var(--ink-faint); }
+.story .top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 6px; }
+.badge { display: inline-block; padding: 2px 9px; border-radius: 6px; font: 700 14px/1.5 var(--cond); letter-spacing: 0.08em; text-transform: uppercase; background: var(--meh-bg); color: var(--meh); }
+.badge.aired { background: var(--ok-bg); color: var(--ok); }
+.badge.missed { background: var(--bad-bg); color: var(--bad); }
+.badge.safety { background: var(--gold-bg); color: var(--gold); }
+.count { font-size: 15px; color: var(--ink-soft); }
+.story h3 { margin: 0; font: 600 19px/1.3 var(--sans); }
+.story h3 a { color: var(--ink); }
+.story .note { margin: 6px 0 0; font-size: 14px; color: var(--ink-faint); font-style: italic; }
+.srcs { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.srcs a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); font-size: 15px; }
+
+details { margin: 24px 0 0; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+summary { list-style: none; cursor: pointer; padding: 14px 16px; min-height: 52px; font: 800 24px/1.2 var(--cond); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-size: 28px; color: var(--ink-soft); }
+details[open] summary::after { content: "\2212"; }
+details .inner { padding: 0 16px 14px; }
+details h4 { margin: 16px 0 6px; font: 700 15px var(--cond); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.scout { margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font-size: 16px; }
+.scout:last-child { border-bottom: 0; }
+.scout .lab { margin-right: 6px; }
+.lab { display: inline-block; padding: 0 7px; border-radius: 5px; font: 700 13px/1.6 var(--cond); letter-spacing: 0.08em; text-transform: uppercase; background: var(--meh-bg); color: var(--meh); }
+.lab.observed { background: var(--ok-bg); color: var(--ok); }
+.lab.claim { background: var(--gold-bg); color: var(--gold); }
+.scout a { font-size: 14px; white-space: nowrap; }
+.empty { margin: 20px 0; padding: 18px 16px; border-radius: 14px; background: var(--panel); border: 1px dashed var(--line); color: var(--ink-soft); }
+.empty b { color: var(--ink); }
+.foot { width: var(--w); margin: 34px auto 40px; color: var(--ink-faint); font-size: 14px; }
+.foot a { color: var(--ink-soft); text-decoration: underline; }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="hbn" viewBox="0 0 100 100">
+      <rect x="2" y="2" width="96" height="96" rx="18" fill="#0b1f4d" stroke="#fff" stroke-width="3.5" />
+      <text x="50" y="36" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, Arial, sans-serif" font-weight="800" font-size="30" fill="#fff">HBN</text>
+      <polyline points="8,66 30,66 38,54 47,87 58,45 66,66 92,66" fill="none" stroke="#e11d2e" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" />
+    </symbol>
+  </svg>
+
+  <header class="topbar">
+    <a class="back" href="/news/">&larr; Watch the show</a>
+    <a class="brand" href="/news/"><svg aria-hidden="true"><use href="#hbn" /></svg>HEARTBEAT <span class="red">NEWS</span></a>
+  </header>
+
+  <div class="hero">
+    <p class="eyebrow"><span class="bar"></span>The news desk</p>
+    <h1>How today's show was picked.</h1>
+    <p class="lede">Every morning the desk lists the stories the show has to cover, then checks the finished show against that list. Here are both lists, nothing edited.</p>
+  </div>
+
+  <div class="daybar">
+    <button id="prev" type="button" aria-label="Previous day">&larr;</button>
+    <div class="day" id="dayLabel">Loading...</div>
+    <button id="next" type="button" aria-label="Next day">&rarr;</button>
+  </div>
+
+  <main class="wrap" id="main" aria-live="polite"></main>
+
+  <p class="foot">Read live from the public <a href="https://github.com/JaronKBragg7337/watch" target="_blank" rel="noopener">watch repo</a>. An outlet counts once, however many articles it ran. Stories are matched to the show by shared links and key words, so a paraphrase can fool the check: a MISSED story is a lead, not a verdict. <a href="/news/archive/">Every story, every source</a>.</p>
+
+<script>
+(function () {
+  var RAW = "https://raw.githubusercontent.com/JaronKBragg7337/watch/master/";
+  var main = document.getElementById("main"), label = document.getElementById("dayLabel");
+  var prevB = document.getElementById("prev"), nextB = document.getElementById("next");
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "#"; }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function today() {
+    try {
+      var p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+      if (/^\d{4}-\d{2}-\d{2}$/.test(p)) return p;
+    } catch (e) {}
+    var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+  function shift(day, n) { var d = new Date(day + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  function pretty(day) {
+    return new Date(day + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+  }
+  function fetchText(path) {
+    return fetch(RAW + path, { cache: "no-cache" }).then(function (r) { return r.ok ? r.text() : null; }).catch(function () { return null; });
+  }
+
+  // ---- parsing ----
+  function parseSources(s) {
+    var out = [], m, re = /([A-Za-z0-9._-]+) (https?:\/\/\S+)/g;
+    while ((m = re.exec(s))) out.push({ outlet: m[1], url: m[2] });
+    return out;
+  }
+  // "- [7 outlets] Title <em dash> bbc https://... · guardian https://... (note)"  (top list)
+  function parseTop(md) {
+    var res = { must: [], should: [], builtAt: "" };
+    var bt = md.match(/^Built (\d\d:\d\d)/m); if (bt) res.builtAt = bt[1];
+    var cur = null;
+    md.split("\n").forEach(function (ln) {
+      var h = ln.match(/^## (MUST|SHOULD) AIR/); if (h) { cur = h[1] === "MUST" ? res.must : res.should; return; }
+      if (/^## /.test(ln)) { cur = null; return; }
+      if (!cur) return;
+      var m = ln.match(/^- \[(\d+) outlets?\] (.*?) \u2014 ([A-Za-z0-9._-]+ https?:\/\/.*)$/);
+      if (!m) return;
+      var rest = m[3], note = "", safety = "";
+      var sm = rest.match(/\s+SAFETY WORDS?:?\s*([^()]*?)\.?\s*$/); if (sm) { safety = sm[1].trim() || "safety word"; rest = rest.slice(0, sm.index); }
+      var nm = rest.match(/\s+\(([^()]*)\)\s*$/); if (nm) { note = nm[1]; rest = rest.slice(0, nm.index); }
+      cur.push({ n: +m[1], title: m[2], sources: parseSources(rest), note: note, safety: safety });
+    });
+    return res;
+  }
+  // "- Title (7 outlets; best overlap ...) bbc https://... · ..." (missed report)
+  function parseMissed(md) {
+    var res = { missed: [], aired: [], head: null, ranAt: "" };
+    var h = md.match(/MUST AIR stories[^:]*:\s*(\d+), aired (\d+), MISSED (\d+)\.\s*SHOULD AIR[^:]*:\s*(\d+), aired (\d+)/);
+    if (h) res.head = { must: +h[1], aired: +h[2], missed: +h[3], should: +h[4], shouldAired: +h[5] };
+    var run = md.match(/Run at (\d\d:\d\d)/); if (run) res.ranAt = run[1];
+    var sec = null;
+    md.split("\n").forEach(function (ln) {
+      var hh = ln.match(/^## (.*)/);
+      if (hh) { sec = /^MUST AIR stories that were MISSED/.test(hh[1]) ? "missed" : /^(MUST|SHOULD) AIR stories that aired/.test(hh[1]) ? "aired" : null; return; }
+      if (!sec) return;
+      var m = ln.match(/^- (.*?) \((\d+) outlets?[^)]*\) (.*)$/); if (!m) return;
+      res[sec].push({ title: m[1], sources: parseSources(m[3]) });
+    });
+    return res;
+  }
+  // perplexity: "- [Nov 6] observed official TEXT - URL - money: none"
+  function parseScout(md) {
+    var groups = [], cur = null;
+    md.split("\n").forEach(function (ln) {
+      var h = ln.match(/^## (.*)/);
+      if (h) { cur = /could not see/i.test(h[1]) ? null : { name: h[1].replace(/^\d+\s+/, ""), items: [] }; if (cur) groups.push(cur); return; }
+      if (!cur) return;
+      var m = ln.match(/^- \[[^\]]*\]\s+(observed|claim|theory)\s+\w+\s+(.*?)\s+-\s+(https?:\/\/\S+)(?:\s+-\s+money:.*)?$/i);
+      if (m) cur.items.push({ lab: m[1].toLowerCase(), text: m[2], url: m[3] });
+    });
+    return groups.filter(function (g) { return g.items.length; });
+  }
+
+  function normTitle(t) { return t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
+  function indexList(list) {
+    var urls = {}, titles = {};
+    list.forEach(function (s) { titles[normTitle(s.title)] = 1; s.sources.forEach(function (x) { urls[x.url] = 1; }); });
+    return { has: function (st) { return titles[normTitle(st.title)] || st.sources.some(function (x) { return urls[x.url]; }); } };
+  }
+
+  // ---- rendering ----
+  function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
+  function storyHtml(s) {
+    var first = s.sources[0] ? safeUrl(s.sources[0].url) : "";
+    var cls = s.status || "unk";
+    var badge = s.status === "aired" ? '<span class="badge aired">Aired</span>' : s.status === "missed" ? '<span class="badge missed">Missed</span>' : "";
+    if (s.safety) badge += ' <span class="badge safety">Safety word: ' + esc(s.safety) + "</span>";
+    var t = first ? '<a href="' + esc(first) + '" target="_blank" rel="noopener">' + esc(s.title) + "</a>" : esc(s.title);
+    var srcs = s.sources.slice(0, 6).map(function (x) { return '<a href="' + esc(safeUrl(x.url)) + '" target="_blank" rel="noopener">' + esc(x.outlet) + "</a>"; }).join("");
+    return '<article class="story ' + cls + '"><div class="top">' + badge + '<span class="count">' + esc(plural(s.n, "outlet") + " carried this") + "</span></div><h3>" + t + "</h3>" +
+      (s.note ? '<p class="note">' + esc(s.note) + "</p>" : "") + (srcs ? '<div class="srcs">' + srcs + "</div>" : "") + "</article>";
+  }
+
+  function render(day, top, missed, scout) {
+    var h = "";
+    if (!top) {
+      h += '<div class="empty"><b>Not built yet today.</b><br>' + (day === today() ? "The must-air list is built early each morning (about 3:30 AM Eastern) and again as the day goes. Check back soon, or use the left arrow for yesterday." : "There is no must-air list for this day.") + "</div>";
+    } else {
+      var P = missed ? parseMissed(missed) : null;
+      if (P && !P.head && !P.missed.length && !P.aired.length) P = null; // e.g. "no episode file" report
+      var mi = P ? indexList(P.missed) : null, ai = P ? indexList(P.aired) : null;
+      [top.must, top.should].forEach(function (l) {
+        l.forEach(function (s) { s.status = !P ? "" : mi.has(s) ? "missed" : ai.has(s) ? "aired" : ""; });
+      });
+      var mustAired = top.must.filter(function (s) { return s.status === "aired"; }).length;
+      var mustMissed = top.must.filter(function (s) { return s.status === "missed"; }).length;
+      var newer = top.must.length - mustAired - mustMissed;
+      h += '<section class="summary">';
+      if (P && P.head) {
+        h += '<p class="big">' + P.head.must + ' must-air stories, <span class="a">' + P.head.aired + ' aired</span>, <span class="m">' + P.head.missed + " missed</span></p>";
+        h += "<p>That is the check made at " + esc(P.ranAt || "morning") + ", on stories in the news up to 4 AM. " + (newer > 0 ? "The list below was built later and also holds " + newer + " must-air stories that came in after the check or were grouped differently, so they have no mark. " : "") + "Should-air: " + P.head.should + " stories, " + P.head.shouldAired + " aired.</p>";
+      } else {
+        h += '<p class="big">' + top.must.length + " must-air stories, " + top.should.length + " should-air</p>";
+        h += "<p>The finished show has not been checked against this list yet" + (day === today() ? " (the check runs around 8:20 AM Eastern)" : "") + ", so nothing is marked aired or missed.</p>";
+      }
+      h += "</section>";
+
+      h += '<h2>Must air <span class="n">' + top.must.length + "</span></h2>";
+      h += '<p class="explain">Three or more different outlets carried the story, or it has a safety word (like chemical, nuclear or attack on US soil). The show is supposed to cover every one, even if briefly.</p>';
+      h += top.must.map(storyHtml).join("") || '<div class="empty">None today.</div>';
+      h += '<h2>Should air <span class="n">' + top.should.length + "</span></h2>";
+      h += '<p class="explain">Two outlets carried it. It gets a line or a spot in Quick Hits when there is room.</p>';
+      h += top.should.map(storyHtml).join("") || '<div class="empty">None today.</div>';
+      if (top.builtAt) h += '<p class="explain">List built at ' + esc(top.builtAt) + " Eastern.</p>";
+    }
+
+    h += "<details><summary>Perplexity scout</summary><div class=\"inner\">";
+    if (!scout) h += '<p class="explain">' + (day === today() ? "Not built yet today." : "No scout file for this day.") + " The scout runs at about 3:10 AM Eastern.</p>";
+    else if (!scout.length) h += '<p class="explain">The scout found nothing to list.</p>';
+    else {
+      h += '<p class="explain">A live web search each morning, a second pair of eyes on the day. Each line says whether it was seen first-hand (observed) or reported as a claim.</p>';
+      scout.forEach(function (g) {
+        h += "<h4>" + esc(g.name) + "</h4>";
+        g.items.forEach(function (it) {
+          h += '<p class="scout"><span class="lab ' + esc(it.lab) + '">' + esc(it.lab) + "</span>" + esc(it.text) + ' <a href="' + esc(safeUrl(it.url)) + '" target="_blank" rel="noopener">source</a></p>';
+        });
+      });
+    }
+    h += "</div></details>";
+    main.innerHTML = h;
+  }
+
+  // ---- load ----
+  var tday = today(), cur = tday, seq = 0;
+  (function () { var m = location.search.match(/[?&]d=(\d{4}-\d{2}-\d{2})/); if (m && m[1] <= tday) cur = m[1]; })();
+  function load(day) {
+    cur = day; var my = ++seq;
+    label.innerHTML = esc(pretty(day)) + (day === tday ? "<small>Today</small>" : "<small>&nbsp;</small>");
+    nextB.disabled = day >= tday;
+    main.innerHTML = '<div class="empty">Loading...</div>';
+    try { history.replaceState(null, "", day === tday ? location.pathname : location.pathname + "?d=" + day); } catch (e) {}
+    Promise.all([fetchText("wire/" + day + "-top.md"), fetchText("news-missed/" + day + ".md"), fetchText("perplexity/" + day + ".md")]).then(function (r) {
+      if (my !== seq) return;
+      render(day, r[0] ? parseTop(r[0]) : null, r[1], r[2] ? parseScout(r[2]) : null);
+    }).catch(function () {
+      if (my === seq) main.innerHTML = '<div class="empty"><b>Could not load.</b><br>Check your connection and try again.</div>';
+    });
+  }
+  prevB.addEventListener("click", function () { load(shift(cur, -1)); });
+  nextB.addEventListener("click", function () { if (cur < tday) load(shift(cur, 1)); });
+  load(cur);
+})();
+</script>
+</body>
+</html>
