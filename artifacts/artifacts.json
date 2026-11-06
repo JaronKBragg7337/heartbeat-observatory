@@ -2,6 +2,26 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "science-ep9-one-way-only",
+      "date": "2026-11-05",
+      "title": "Science 8.9: Every one-way-only is a story",
+      "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
+      "image": "/tv/science/science-ep9-one-way-only.jpg",
+      "what": "A 4.5-minute episode about things designed around mistakes: diesel and gas nozzles, the disputed story of Murphy's Law, Shigeo Shingo's poka-yoke (two springs in a dish), the brake-to-shift interlock, microwave door interlocks, the SIM card's cut corner, and USB-C, which makes every way right instead.",
+      "made": "Eight small 3D sets built entirely in code in Blender (a fuel pump, a filler neck, a desert rocket-sled track, springs in a dish, a shifter, a microwave, a nano SIM, a USB-C plug), four drawn boards with their sources, and a local Kokoro voice. Script fact-checked by Codex with web search.",
+      "honest": "Every 3D scene is an illustration of a generic object, not a real product or footage, and is labelled that way. The sled track is not the real 1949 track, the nozzles are simplified, and the nozzle-size board draws the filler opening only to show the idea. Not yet tested on a real iPhone.",
+      "links": [
+        [
+          "Watch on Heartbeat TV",
+          "/tv/?ch=8.9"
+        ],
+        [
+          "Vertical cut (9:16)",
+          "/tv/science/science-ep9-one-way-only-vertical.mp4"
+        ]
+      ]
+    },
+    {
       "id": "science-ep8-is-space-cold",
       "date": "2026-11-05",
       "title": "Science 8.8: Is space cold?",
