@@ -16,7 +16,7 @@ import {
   CARDS as HB_CARDS,
 } from "./surface.js?v=2026-08-03-surface5";
 import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface5";
-import { createPlaceMap } from "/hb-placemap.js?v=2026-11-05-placemap";   // the shared place map (all three worlds)
+import { createPlaceMap, threeGroundPath } from "/hb-placemap.js?v=2026-11-05-route";   // the shared place map (all three worlds)
 import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05b";   // the invisible floating stick (same as World 2 and Ashgrove)
 import { buildCanopy, canopyGeometry, leafMaterial } from "./foliage.js?v=2026-08-03-surface5";
 
@@ -5773,7 +5773,7 @@ function sanitizeDisplayName(value) {
 // ---- the place map (/hb-placemap.js, shared with World 2 and Ashgrove). One small button; the places are read from the
 // same lists the doors, rooms, lots and the bandstand use (doors, structures, plotList, BANDSTAND), so a new door is on
 // the map by itself. "Show me the way" draws a route and a light at the place; you walk there yourself.
-let tsBeacon = null;
+let tsBeacon = null, tsGround = null;
 function tsBeaconMesh() {
   if (tsBeacon) return tsBeacon;
   tsBeacon = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 40, 16, 1, true),
@@ -5825,5 +5825,7 @@ const tsPlaceMap = createPlaceMap({
   },
   onGuide: (g) => { const m = tsBeaconMesh(); m.position.set(g.x, 20, g.z); m.material.opacity = 0.34; },
   onGuideEnd: () => { if (tsBeacon) tsBeacon.material.opacity = 0; },
+  // the route on the ground too: small soft-green arrowheads from your feet to the place (one mesh)
+  groundPath: (pts) => { if (!tsGround) { if (!pts) return; tsGround = threeGroundPath(THREE, scene, { y: (x, z) => supportHeightAt(x, z, 0), lift: 0.05, spacing: 1.8, size: 0.8 }); } tsGround(pts); },
   onOpen: () => { try { clearMovementInput(); } catch (e) {} },
 });

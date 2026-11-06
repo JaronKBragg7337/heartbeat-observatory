@@ -14,14 +14,14 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 // people loaders are imported LAZILY, after the city is on screen - the old static imports were most of the
 // 40-second blank first load the 10/28 tester hit.
 import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05b";   // the invisible floating stick (shared with Real City)
-import { createPlaceMap } from "/hb-placemap.js?v=2026-11-05-placemap";   // the shared place map (all three worlds)
-import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-placemap";
-import { buildCrowd, createCitySound } from "./life.js?v=2026-11-05-placemap";   // Phase 2: people on the sidewalks + city sound
+import { createPlaceMap, threeGroundPath } from "/hb-placemap.js?v=2026-11-05-route";   // the shared place map (all three worlds)
+import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-route";
+import { buildCrowd, createCitySound } from "./life.js?v=2026-11-05-route";   // Phase 2: people on the sidewalks + city sound
 const SUPA_ESM = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 const GLTF_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 const SKEL_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 
-const BUILD = "2026-11-05-placemap";
+const BUILD = "2026-11-05-route";
 const QS = new URLSearchParams(location.search);
 const PREVIEW = QS.get("preview") === "1";
 const DEV = QS.get("dev") === "1";                       // test handle: window.W2 (state, renderer, camera override, tap)
@@ -100,7 +100,7 @@ const DOOR_ACTS = {
 };
 let city = null;                // handle from buildCity()
 let crowd = null, citySound = null, lifeNight = 0, lodTimer = 0;   // Phase 2 (world2/life.js)
-let guide = null, walkMarker = null, guideBeacon = null;   // map "show me the way": a route + a beacon, YOU walk it (Jaron 11/5: no tap-to-walk)
+let guide = null, walkMarker = null, guideBeacon = null, groundPath = null;   // map "show me the way": a route + a beacon, YOU walk it (Jaron 11/5: no tap-to-walk)
 const ROOM = { theater: { x: 620, z: -160 }, arcade: { x: 620, z: -45 }, library: { x: 620, z: 70 } };
 let inInterior = null;          // interior id or null
 let interiorReturn = null;
@@ -1945,7 +1945,7 @@ function drawMinimap() {
 function drawGuide(ctx, W, H, k) {
   if (!guide) return;
   ctx.save(); ctx.lineJoin = ctx.lineCap = "round";
-  const pts = [[state.x, state.z]].concat(guide.path || [[guide.x, guide.z]]);
+  const pts = guide.ahead || [[state.x, state.z]].concat(guide.path || [[guide.x, guide.z]]);   // what is still ahead of you
   for (const pass of [["rgba(8,19,12,.85)", 4.2], ["#7bd88f", 2.2]]) {
     ctx.strokeStyle = pass[0]; ctx.lineWidth = pass[1] * k; ctx.beginPath();
     pts.forEach((q, i) => { const m = mxy(q[0], q[1], W, H); if (i) ctx.lineTo(m[0], m[1]); else ctx.moveTo(m[0], m[1]); });
@@ -2001,6 +2001,8 @@ const placeMap = createPlaceMap({
     }
   },
   onGuide: onGuideStart, onGuideEnd: onGuideEnd,
+  // the route on the ground too: small soft-green arrowheads from your feet to the place (one mesh)
+  groundPath: (pts) => { if (!groundPath) { if (!pts) return; groundPath = threeGroundPath(THREE, scene, { y: floorAt, lift: 0.07 }); } groundPath(pts); },
   onOpen: () => clearMovementInput(),
 });
 
