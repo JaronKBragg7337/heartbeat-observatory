@@ -162,7 +162,7 @@ export class CrewUI {
     this._speakPanel(m);
     const def = m.def, c = this.crew, ship = this.ship;
     const skill=m.status==='worker'?'':` · skill ${Math.round(def.skill*100)}%`;
-    let h = `<div class="hd"><img src="/homes/people/${m.personId}.jpg" alt=""><div><b>${esc(m.name)}</b><span>${esc(def.title)}${skill}</span></div><button class="cbtn x" data-a="close">✕</button></div>`;
+    let h = `<div class="hd">${m.personId?`<img src="/homes/people/${m.personId}.jpg" alt="" onerror="this.style.visibility='hidden'">`:'<img alt="" style="visibility:hidden">'}<div><b>${esc(m.name)}</b><span>${esc(def.title)}${skill}</span></div><button class="cbtn x" data-a="close">✕</button></div>`;
     if (this.reply) h += `<div class="say">${esc(this.reply)}</div>`;
     if (m.status === 'worker') {
       const jw = c.world && c.world.remote && c.world.snapshot ? c.world : null, jf = this.ship.space && this.ship.space.frameId;
