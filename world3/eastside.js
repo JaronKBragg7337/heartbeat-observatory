@@ -13,10 +13,13 @@
      Ashgrove TV -> /tv/
      Studio      -> /studio/
      Sparks Hall -> /sparks/
+     Projects    -> /projects/  (11/5 later: the last Classics door Ashgrove
+                    lacked; south of the Grand Palace, between the cross
+                    street at z = 24 and the cinema)
    They are closed buildings (you use the door from the porch), like the
    cinema. Trees that would stand on their ground are planted into a scratch
    builder and thrown away, so no other tree, lamp or car in the town moves.
-   One chunk, one sign texture: a handful of draw calls for all five.
+   One chunk, one sign texture: a handful of draw calls for all six.
    ========================================================================== */
 (function () {
 "use strict";
@@ -47,6 +50,8 @@ const SHOPS = [
     dest: { label: "the Studio", verb: "Go in to the Studio — make music and videos", blurb: "The Studio.", kind: "go", url: "/studio/" } },
   { id: "ASH-SPARKS", icon: "sparks", key: "sparks", z0: 183.0, z1: 195.0, d: 10, h: 4.8, wall: [0.96, 0.95, 0.91], mat: "siding", trim: [0.80, 0.64, 0.28], roof: [0.22, 0.26, 0.40], sign: 4,
     dest: { label: "Sparks Hall", verb: "Go in to Sparks Hall", blurb: "People who light the way.", kind: "go", url: "/sparks/" } },
+  { id: "ASH-PROJECTS", icon: "projects", key: "projects", z0: 30.5, z1: 41.0, d: 10, h: 4.4, wall: [0.62, 0.70, 0.52], mat: "siding", trim: [0.96, 0.95, 0.90], roof: [0.28, 0.30, 0.26], sign: 6,
+    dest: { label: "the Projects office", verb: "Go in to Projects — what people are building", blurb: "The projects people are building.", kind: "go", url: "/projects/" } },
 ];
 const SIGN_ROWS = [
   ["ASHGROVE ARCADE", "#1f3b2d", "#f2e3b3"],
@@ -55,6 +60,7 @@ const SIGN_ROWS = [
   ["STUDIO", "#1a1a1a", "#f2f2f2"],
   ["SPARKS HALL", "#1b2340", "#f3cf6b"],
   ["RECORDING", "#2a0505", "#ff5a4a"],
+  ["ASHGROVE PROJECTS", "#2c3a24", "#f1ead2"],
 ];
 const reserveOf = (s) => ({ x0: KERB, x1: FX + s.d + 3, z0: s.z0 - 2, z1: s.z1 + 2 });
 const doorOf = (s) => { const zc = (s.z0 + s.z1) / 2; return { x0: FX - 3.4, x1: FX, z0: zc - 2.2, z1: zc + 2.2, zc }; };
