@@ -14,13 +14,14 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 // people loaders are imported LAZILY, after the city is on screen - the old static imports were most of the
 // 40-second blank first load the 10/28 tester hit.
 import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05b";   // the invisible floating stick (shared with Real City)
-import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-doors";
-import { buildCrowd, createCitySound } from "./life.js?v=2026-11-05-doors";   // Phase 2: people on the sidewalks + city sound
+import { createPlaceMap } from "/hb-placemap.js?v=2026-11-05-placemap";   // the shared place map (all three worlds)
+import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-placemap";
+import { buildCrowd, createCitySound } from "./life.js?v=2026-11-05-placemap";   // Phase 2: people on the sidewalks + city sound
 const SUPA_ESM = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 const GLTF_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 const SKEL_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 
-const BUILD = "2026-11-05-doors";
+const BUILD = "2026-11-05-placemap";
 const QS = new URLSearchParams(location.search);
 const PREVIEW = QS.get("preview") === "1";
 const DEV = QS.get("dev") === "1";                       // test handle: window.W2 (state, renderer, camera override, tap)
@@ -83,15 +84,23 @@ let currentClaimPlot = null;
 let spacesLoaded = false;
 let spacesTimer = null;
 // doors: every civic building in city.js has a real door; this maps its id to what the door does.
+// icon + blurb + "Open now" live here too: the place map reads this same table, so a new door is on the map by itself.
 const DOOR_ACTS = {
-  theater: { type: "interior", id: "theater" }, arcade: { type: "interior", id: "arcade" }, library: { type: "interior", id: "library" },
-  social: { type: "page", path: "/social" }, projects: { type: "page", path: "/projects" }, news: { type: "page", path: "/news" },
-  tv: { type: "page", path: "/tv/" }, studio: { type: "page", path: "/studio/" }, sparks: { type: "page", path: "/sparks/" },
-  town: { type: "page", path: "/engine" }, ashgrove: { type: "page", path: "/world3/gate/" },
+  theater: { type: "interior", id: "theater", icon: "theater", blurb: "Films on the big screen, and seats in the 3D Grand Palace.", open: "/video/3d/?start=seats&from=world2" },
+  arcade: { type: "interior", id: "arcade", icon: "arcade", blurb: "Real game cabinets: President Sim, Rocket, The Hedge, SYL, Fable Survival.", open: "/games/" },
+  library: { type: "interior", id: "library", icon: "library", blurb: "Written Here, and eight shelves of free books and lessons.", open: "/library/" },
+  social: { type: "page", path: "/social", icon: "social", blurb: "What people in the Observatory are posting." },
+  projects: { type: "page", path: "/projects", icon: "projects", blurb: "The projects people are building." },
+  news: { type: "page", path: "/news", icon: "news", blurb: "Today's news." },
+  tv: { type: "page", path: "/tv/", icon: "tv", blurb: "Heartbeat TV: flip the channels." },
+  studio: { type: "page", path: "/studio/", icon: "studio", blurb: "Make music and videos." },
+  sparks: { type: "page", path: "/sparks/", icon: "sparks", blurb: "People who light the way." },
+  town: { type: "page", path: "/engine", icon: "station", blurb: "Union Station: the train to Town Square, World 1.", short: "To Town Square" },
+  ashgrove: { type: "page", path: "/world3/gate/", icon: "station", blurb: "Union Station: the train to Ashgrove, World 3.", short: "To Ashgrove" },
 };
 let city = null;                // handle from buildCity()
 let crowd = null, citySound = null, lifeNight = 0, lodTimer = 0;   // Phase 2 (world2/life.js)
-let guide = null, guideTimer = 0, walkMarker = null, guideBeacon = null;   // map "show me the way": a route + a beacon, YOU walk it (Jaron 11/5: no tap-to-walk)
+let guide = null, walkMarker = null, guideBeacon = null;   // map "show me the way": a route + a beacon, YOU walk it (Jaron 11/5: no tap-to-walk)
 const ROOM = { theater: { x: 620, z: -160 }, arcade: { x: 620, z: -45 }, library: { x: 620, z: 70 } };
 let inInterior = null;          // interior id or null
 let interiorReturn = null;
@@ -1635,50 +1644,31 @@ function nearestDoorTo(x, z, r, list) {
   return best;
 }
 
-// the map's "show me the way": a street route on the minimap + a green beacon at the place. Arrive and it clears.
-function guideTo(x, z, name) {
-  const door = nearestDoorTo(x, z, 6.5, doors); if (door) { x = door.x; z = door.z; name = name || door.label; }
-  guide = { x, z, name: name || "the marked spot", path: null };
-  guideTimer = 0;
-  refreshGuidePath();
-  if (walkMarker) { walkMarker.position.set(x, floorAt(x, z) + 0.05, z); walkMarker.material.opacity = 0.85; }
-  if (guideBeacon) guideBeacon.position.set(x, floorAt(x, z) + 30, z);
-  paintGuideChip();
+// the map's "show me the way" lives in the shared place map (/hb-placemap.js): it owns the route, the arrow chip and the
+// arrival. World 2 adds its own touches: the route on the minimap, a green ring and a tall light at the place.
+function guideTo(x, z, name) {   // dev/test helper: guide to a spot (snaps to a door when one is close)
+  const door = nearestDoorTo(x, z, 6.5, doors);
+  if (door) { x = door.x; z = door.z; name = name || door.label; }
+  placeMap?.guideTo({ id: "spot", icon: "place", name: name || "the marked spot", x, z });
 }
-function clearGuide() {
+function clearGuide() { placeMap?.clearGuide(); }
+function onGuideStart(g) {
+  guide = g;   // the place map keeps g.path fresh as you walk
+  if (walkMarker) { walkMarker.position.set(g.x, floorAt(g.x, g.z) + 0.05, g.z); walkMarker.material.opacity = 0.85; }
+  if (guideBeacon) guideBeacon.position.set(g.x, floorAt(g.x, g.z) + 30, g.z);
+}
+function onGuideEnd() {
   guide = null;
   if (walkMarker) walkMarker.material.opacity = 0;
   if (guideBeacon) guideBeacon.visible = false;
-  paintGuideChip();
-}
-function refreshGuidePath() {
-  if (!guide) return;
-  guide.path = lineClear(state.x, state.z, guide.x, guide.z) || !inCityZone(state.x, state.z) ? [[guide.x, guide.z]] : routeTo(state.x, state.z, guide.x, guide.z);
 }
 function updateGuide(dt) {
   if (!guide) return;
   const out = !inInterior;
   if (guideBeacon) guideBeacon.visible = out && hasEntered;
   if (walkMarker) { walkMarker.visible = out; const k = 0.5 + 0.5 * Math.sin(performance.now() / 260); walkMarker.material.opacity = 0.55 + 0.3 * k; walkMarker.scale.setScalar(1.6 + 0.5 * k); }
-  if (!out) return;
-  const d = Math.hypot(guide.x - state.x, guide.z - state.z);
-  if (d < 2.6) { showHint("You're at " + guide.name); clearGuide(); return; }
-  if ((guideTimer -= dt) <= 0) { guideTimer = 0.5; refreshGuidePath(); paintGuideChip(d); }
 }
-let guideChip = null, hintEl = null, hintTimer = 0;
-function paintGuideChip(dist) {
-  if (!guideChip) {
-    const wrap = document.querySelector("#mapWrap"); if (!wrap) return;
-    guideChip = document.createElement("button"); guideChip.type = "button"; guideChip.id = "guideChip";
-    guideChip.setAttribute("aria-label", "Route on the map - tap to clear it");
-    guideChip.addEventListener("click", (e) => { e.stopPropagation(); clearGuide(); });
-    wrap.appendChild(guideChip);
-  }
-  if (!guide) { guideChip.classList.add("hidden"); return; }
-  const d = dist != null ? dist : Math.hypot(guide.x - state.x, guide.z - state.z);
-  guideChip.textContent = "→ " + guide.name + " · " + Math.round(d) + " m  ✕";
-  guideChip.classList.remove("hidden");
-}
+let hintEl = null, hintTimer = 0;
 function showHint(text) {
   if (!hintEl) { hintEl = document.createElement("div"); hintEl.id = "tapHint"; hintEl.setAttribute("role", "status"); document.body.appendChild(hintEl); }
   hintEl.textContent = text; hintEl.classList.add("show");
@@ -1832,8 +1822,7 @@ document.addEventListener("keydown", (event) => {
     enterWorld();
     return;
   }
-  if (event.code === "Escape" && mapOpen) { event.preventDefault(); toggleMap(false); return; }
-  if (hasEntered && event.code === "KeyM") { event.preventDefault(); toggleMap(); return; }
+  if (hasEntered && event.code === "KeyM") { event.preventDefault(); placeMap.isOpen ? placeMap.close() : placeMap.open(); return; }
   if (hasEntered && (event.code === "KeyE" || event.code === "Enter") && (activeDoor || activePlot)) {
     event.preventDefault();
     enterActive();
@@ -1857,7 +1846,7 @@ document.addEventListener("keyup", (event) => {
 // left half; the stick appears under it, follows it, and is gone on release. The right half drags the view. Both at once.
 // Mouse: drag looks. A quick tap/click anywhere USES what it touches (a door, a green mat, an open lot) - never walks.
 const stick = createThumbstick(canvas, {
-  enabled: () => hasEntered && !mapOpen,
+  enabled: () => hasEntered && !placeMap.isOpen,
   onLook: (dx, dy, kind) => { const k = kind === "mouse" ? 1.1 : 2.4; look(dx * k, dy * k); },
   onTap: (x, y) => { if (hasEntered) useAt(x, y); },
 });
@@ -1880,10 +1869,10 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ---- the map: a minimap (top right) and a full map with every door; tap a place and it shows you the way ----
-let mapStatic = null, mapDirty = true, mapOpen = false;
+let mapStatic = null, mapDirty = true;
 const MAPB = { x0: -182, x1: 182, z0: -196, z1: 178 };
-const mini = document.querySelector("#minimap"), bigmap = document.querySelector("#bigmap"), mapOverlay = document.querySelector("#mapOverlay");
-const placeLabel = document.querySelector("#placeLabel"), placeList = document.querySelector("#placeList");
+const mini = document.querySelector("#minimap");
+const placeLabel = document.querySelector("#placeLabel");
 function mxy(x, z, W, H) { return [(x - MAPB.x0) / (MAPB.x1 - MAPB.x0) * W, (z - MAPB.z0) / (MAPB.z1 - MAPB.z0) * H]; }
 function drawCityMap(ctx, W, H, big) {
   ctx.fillStyle = "#2f3b2c"; ctx.fillRect(0, 0, W, H);
@@ -1928,13 +1917,6 @@ function buildMinimap() {
   mapStatic = document.createElement("canvas"); mapStatic.width = mapStatic.height = mini.width;
   drawCityMap(mapStatic.getContext("2d"), mapStatic.width, mapStatic.height, false);
   mapDirty = false;
-  if (placeList && city) {
-    const places = doors.filter((d) => d.id).map((d) => ({ name: d.label, x: d.x, z: d.z }))
-      .concat(plotPads.filter((p) => !p.claimed).map((p) => ({ name: "Lot " + (p.plot + 1) + " · open for a project", x: p.x, z: p.z })))
-      .concat(city.landmarks.filter((l) => l.kind === "landmark" || l.kind === "bridge" || l.kind === "park" || l.kind === "tower").map((l) => ({ name: l.name, x: l.kind === "bridge" ? BRIDGE.x : l.x, z: l.kind === "bridge" ? WALL_Z + 2 : l.kind === "landmark" ? l.z - 16 : l.z + (l.kind === "tower" ? -16 : 0) })));
-    placeList.innerHTML = "";
-    for (const pl of places) { const b = document.createElement("button"); b.type = "button"; b.textContent = pl.name; b.addEventListener("click", () => { toggleMap(false); guideTo(pl.x, pl.z, pl.name.split(" · ")[0]); }); placeList.appendChild(b); }
-  }
 }
 function nearestName(v, lines, names) { let k = 0, d = Infinity; lines.forEach((L, i) => { const e = Math.abs(v - L); if (e < d) { d = e; k = i; } }); return [names[k], d]; }
 function drawMinimap() {
@@ -1972,24 +1954,54 @@ function drawGuide(ctx, W, H, k) {
   const e = mxy(guide.x, guide.z, W, H); ctx.fillStyle = "#7bd88f"; ctx.strokeStyle = "#08130c"; ctx.lineWidth = 1.5 * k;
   ctx.beginPath(); ctx.arc(e[0], e[1], 4 * k, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore();
 }
-function toggleMap(open) {
-  mapOpen = open === undefined ? !mapOpen : open;
-  if (!mapOverlay) return;
-  mapOverlay.classList.toggle("hidden", !mapOpen);
-  if (mapOpen && bigmap) {
-    const dpr = Math.min(2, window.devicePixelRatio || 1), size = Math.min(window.innerWidth - 48, 520, window.innerHeight * 0.55);
-    bigmap.style.width = bigmap.style.height = size + "px"; bigmap.width = bigmap.height = Math.round(size * dpr);
-    const ctx = bigmap.getContext("2d"); drawCityMap(ctx, bigmap.width, bigmap.height, true);
-    if (guide && !inInterior) drawGuide(ctx, bigmap.width, bigmap.height, bigmap.width / 300);
-    if (!inInterior) { const p = mxy(state.x, state.z, bigmap.width, bigmap.height); ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p[0], p[1], 6 * dpr, 0, 7); ctx.fill(); ctx.stroke(); }
-    clearMovementInput();
-  }
-}
-if (mini) mini.addEventListener("click", () => { if (hasEntered) toggleMap(true); });
-document.querySelector("#mapClose")?.addEventListener("click", () => toggleMap(false));
-if (bigmap) bigmap.addEventListener("click", (e) => {
-  const r = bigmap.getBoundingClientRect(), x = MAPB.x0 + (e.clientX - r.left) / r.width * (MAPB.x1 - MAPB.x0), z = MAPB.z0 + (e.clientY - r.top) / r.height * (MAPB.z1 - MAPB.z0);
-  toggleMap(false); guideTo(x, z);
+// the full map: the shared place map (/hb-placemap.js). The minimap is its button. Places come from the doors (DOOR_ACTS)
+// and the lots, the same lists the doors and lots use, so nothing is copied by hand.
+const placeMap = createPlaceMap({
+  world: "World 2 · the city",
+  bounds: MAPB,
+  trigger: mini,
+  chipParent: document.querySelector("#mapWrap"), chipPos: { position: "static" },
+  enabled: () => hasEntered && !PREVIEW,
+  player: () => (inInterior || !hasEntered ? null : { x: state.x, z: state.z, yaw: state.yaw }),
+  route: (ax, az, bx, bz) => (lineClear(ax, az, bx, bz) || !inCityZone(ax, az) ? [[bx, bz]] : routeTo(ax, az, bx, bz)),
+  places: () => {
+    const out = [];
+    for (const d of doors) {
+      if (d.id) { const a = DOOR_ACTS[d.id] || {}; out.push({ id: d.id, icon: a.icon || "place", name: d.label.split(" · ")[0], short: a.short, blurb: a.blurb || "", x: d.x, z: d.z, open: a.open || a.path || null }); }
+      else if (d.act && /^\/space\//.test(d.act.path || "")) out.push({ icon: "projects", name: d.label, blurb: "A project space someone claimed here.", x: d.x, z: d.z, open: d.act.path });
+    }
+    for (const p of plotPads) if (!p.claimed) out.push({ id: "lot" + p.plot, icon: "lot", small: true, name: "Lot " + (p.plot + 1) + " · open", short: "Lot " + (p.plot + 1), blurb: "An open lot. Walk up to it to claim it for a project.", x: p.x, z: p.z, open: null });
+    return out;
+  },
+  drawBase(ctx, px, k, C) {
+    const r = (x0, z0, x1, z1, col) => { const a = px(x0, z0), b = px(x1, z1); ctx.fillStyle = col; ctx.fillRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); };
+    r(MAPB.x0, MAPB.z0, MAPB.x1, WALL_Z, C.grass);
+    r(MAPB.x0, RIVER.zN, MAPB.x1, WALL_Z, C.water);
+    r(CITY_RECT.x0, WALL_Z, CITY_RECT.x1, CITY_RECT.z1, C.road);
+    const xs = GRID.xs, zs = GRID.zs;
+    for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < zs.length - 1; j++) r(xs[i] + ROAD - 2.5, zs[j] + ROAD - 2.5, xs[i + 1] - ROAD + 2.5, zs[j + 1] - ROAD + 2.5, C.walk);
+    for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < zs.length - 1; j++) r(xs[i] + ROAD, zs[j] + ROAD, xs[i + 1] - ROAD, zs[j + 1] - ROAD, i === 3 && j === 1 ? C.park : C.block);
+    r(BRIDGE.x - 2.6, BRIDGE.z0, BRIDGE.x + 2.6, BRIDGE.z1, C.walk);
+    // building footprints (the city's own colliders)
+    for (const c of buildingColliders) {
+      if (c.width < 3 || c.depth < 3 || Math.abs(c.x) > 400) continue;
+      const a = px(c.x - c.width / 2, c.z - c.depth / 2), w = c.width * k, h = c.depth * k;
+      ctx.fillStyle = C.shadow; ctx.fillRect(a[0] + 2, a[1] + 2, w, h);
+      ctx.fillStyle = C.building; ctx.fillRect(a[0], a[1], w, h);
+      ctx.strokeStyle = C.buildingEdge; ctx.lineWidth = Math.max(1, k * 0.3); ctx.strokeRect(a[0], a[1], w, h);
+    }
+    // street names in the road, landmarks as small text
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = `600 ${Math.max(10, 3.4 * k)}px system-ui, sans-serif`; ctx.fillStyle = C.labelDim;
+    for (let i = 0; i < xs.length; i++) { const p = px(xs[i], (zs[zs.length - 1] + CITY_RECT.z1) / 2 + 4); ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(-Math.PI / 2); ctx.fillText(GRID.xNames[i], 0, 0); ctx.restore(); }
+    for (let j = 0; j < zs.length; j++) { const p = px((xs[0] + xs[1]) / 2, zs[j]); ctx.fillText(GRID.zNames[j], p[0], p[1]); }
+    ctx.font = `italic 600 ${Math.max(11, 4 * k)}px system-ui, sans-serif`; ctx.fillStyle = "#cfe6f5";
+    const rp = px(110, (RIVER.zN + WALL_Z) / 2); ctx.fillText("the river", rp[0], rp[1]);
+    if (city) for (const l of city.landmarks) if (l.kind === "landmark" || l.kind === "park" || l.kind === "bridge") {
+      const p = px(l.x, l.kind === "bridge" ? (BRIDGE.z0 + BRIDGE.z1) / 2 : l.z); ctx.font = `700 ${Math.max(10, 3.2 * k)}px system-ui, sans-serif`; ctx.fillStyle = "#3a3226"; ctx.fillText(l.name, p[0], p[1]);
+    }
+  },
+  onGuide: onGuideStart, onGuideEnd: onGuideEnd,
+  onOpen: () => clearMovementInput(),
 });
 
 // ---- city sound (Phase 2): the WebAudio graph starts on the first tap/key after you enter (iOS needs a gesture).
@@ -2003,7 +2015,7 @@ if (soundBtn) soundBtn.addEventListener("click", (e) => { e.stopPropagation(); i
 // ---- BOOT (end of file by design: every const/let above is initialized before these run — TDZ law) ----
 if (DEV) window.W2 = {
   BUILD, state, renderer, scene, camera, get city() { return city; }, doors, plotPads, buildingColliders,
-  enter: () => enterWorld(), tap: (x, y) => useAt(x, y), guideTo: (x, z, n) => guideTo(x, z, n), clearGuide: () => clearGuide(), get guide() { return guide && { name: guide.name, x: guide.x, z: guide.z }; }, path: () => guide && guide.path && guide.path.map((p) => p.map((v) => Math.round(v))), stick,
+  enter: () => enterWorld(), tap: (x, y) => useAt(x, y), guideTo: (x, z, n) => guideTo(x, z, n), clearGuide: () => clearGuide(), get guide() { return guide && { name: guide.name, x: guide.x, z: guide.z }; }, placeMap, path: () => guide && guide.path && guide.path.map((p) => p.map((v) => Math.round(v))), stick,
   activeDoor: () => activeDoor && activeDoor.label, activePlot: () => activePlot && activePlot.plot, enterActive: () => enterActive(), inInterior: () => inInterior,
   remotes: () => remotes.size, connected: () => connected,
   life: { stats: () => Object.assign({}, crowd && crowd.stats(), city && city.lodUpdate(camera), { buses: city && city.traffic.buses.map((b) => ({ x: +b.x.toFixed(1), z: +b.z.toFixed(1), v: +b.v.toFixed(2), dwell: +b.dwell.toFixed(1) })), sound: citySound && { running: citySound.running, muted: citySound.muted, levels: citySound.levels() } }),

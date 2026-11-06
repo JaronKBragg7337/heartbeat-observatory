@@ -341,5 +341,11 @@ function hookDoors() {
   else if (n < 600) setTimeout(() => waitForDestinations(n + 1), 50);
 })(0);
 
+/* on the place map (world3/placemap.js) */
+(T.PlaceSources = T.PlaceSources || []).push(function () {
+  return [{ id: "GRANDPALACE", icon: "theater", name: "Grand Palace Cinema", blurb: "Take your seat in the Grand Palace and watch a film.",
+    x: (DOOR.x0 + DOOR.x1) / 2, z: (DOOR.z0 + DOOR.z1) / 2, open: SEATS_URL }];
+});
+
 T.GrandPalace = { FX, ZC, DOOR, RESERVE, url: SEATS_URL };
 })();

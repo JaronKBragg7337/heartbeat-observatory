@@ -37,15 +37,15 @@ const GAMES = [
 ];
 /* z0..z1 = frontage along the avenue; d = depth east; wall/trim/roof tints; sign row in the atlas */
 const SHOPS = [
-  { id: "ASH-ARCADE", key: "arcade", z0: 107.5, z1: 120.5, d: 11, h: 4.6, wall: [0.70, 0.30, 0.26], mat: "brick", trim: [0.95, 0.93, 0.88], roof: [0.30, 0.32, 0.30], sign: 0,
+  { id: "ASH-ARCADE", icon: "arcade", key: "arcade", z0: 107.5, z1: 120.5, d: 11, h: 4.6, wall: [0.70, 0.30, 0.26], mat: "brick", trim: [0.95, 0.93, 0.88], roof: [0.30, 0.32, 0.30], sign: 0,
     dest: { label: "the Ashgrove Arcade", verb: "Enter the Arcade — pick a game", blurb: "Real games on the site. Pick one and play.", kind: "list", rows: GAMES } },
-  { id: "ASH-GAZETTE", key: "gazette", z0: 123.5, z1: 135.5, d: 10, h: 4.4, wall: [0.93, 0.92, 0.88], mat: "siding", trim: [0.20, 0.30, 0.24], roof: [0.26, 0.28, 0.30], sign: 1,
+  { id: "ASH-GAZETTE", icon: "news", key: "gazette", z0: 123.5, z1: 135.5, d: 10, h: 4.4, wall: [0.93, 0.92, 0.88], mat: "siding", trim: [0.20, 0.30, 0.24], roof: [0.26, 0.28, 0.30], sign: 1,
     dest: { label: "the Ashgrove Gazette", verb: "Open the Gazette — today's news", blurb: "Today's news.", kind: "go", url: "/news/" } },
-  { id: "ASH-TV", key: "tv", z0: 138.5, z1: 151.5, d: 11, h: 5.0, wall: [0.55, 0.66, 0.74], mat: "siding", trim: [0.96, 0.96, 0.94], roof: [0.24, 0.26, 0.30], sign: 2, mast: true,
+  { id: "ASH-TV", icon: "tv", key: "tv", z0: 138.5, z1: 151.5, d: 11, h: 5.0, wall: [0.55, 0.66, 0.74], mat: "siding", trim: [0.96, 0.96, 0.94], roof: [0.24, 0.26, 0.30], sign: 2, mast: true,
     dest: { label: "Ashgrove TV", verb: "Go in to Ashgrove TV — watch", blurb: "Heartbeat TV: flip the channels.", kind: "go", url: "/tv/" } },
-  { id: "ASH-STUDIO", key: "studio", z0: 154.5, z1: 166.0, d: 10, h: 4.4, wall: [0.36, 0.36, 0.38], mat: "siding", trim: [0.92, 0.90, 0.86], roof: [0.20, 0.20, 0.22], sign: 3, rec: true,
+  { id: "ASH-STUDIO", icon: "studio", key: "studio", z0: 154.5, z1: 166.0, d: 10, h: 4.4, wall: [0.36, 0.36, 0.38], mat: "siding", trim: [0.92, 0.90, 0.86], roof: [0.20, 0.20, 0.22], sign: 3, rec: true,
     dest: { label: "the Studio", verb: "Go in to the Studio — make music and videos", blurb: "The Studio.", kind: "go", url: "/studio/" } },
-  { id: "ASH-SPARKS", key: "sparks", z0: 183.0, z1: 195.0, d: 10, h: 4.8, wall: [0.96, 0.95, 0.91], mat: "siding", trim: [0.80, 0.64, 0.28], roof: [0.22, 0.26, 0.40], sign: 4,
+  { id: "ASH-SPARKS", icon: "sparks", key: "sparks", z0: 183.0, z1: 195.0, d: 10, h: 4.8, wall: [0.96, 0.95, 0.91], mat: "siding", trim: [0.80, 0.64, 0.28], roof: [0.22, 0.26, 0.40], sign: 4,
     dest: { label: "Sparks Hall", verb: "Go in to Sparks Hall", blurb: "People who light the way.", kind: "go", url: "/sparks/" } },
 ];
 const SIGN_ROWS = [
@@ -212,6 +212,15 @@ function hookDoors() {
   if (T.Destinations) hookDoors();
   else if (n < 600) setTimeout(() => waitForDestinations(n + 1), 50);
 })(0);
+
+/* on the place map (world3/placemap.js), straight from SHOPS: a new shop here is on the map by itself */
+(T.PlaceSources = T.PlaceSources || []).push(function () {
+  return SHOPS.map((s) => {
+    const d = doorOf(s), name = s.dest.label.replace(/^the /, "");
+    return { id: s.id, icon: s.icon || "place", name: name.charAt(0).toUpperCase() + name.slice(1), blurb: s.dest.blurb, x: d.x0 - 0.6, z: d.zc,
+      open: s.dest.kind === "go" ? s.dest.url : () => T.Destinations && T.Destinations.show && T.Destinations.show(Object.assign({ buildingId: s.id }, s.dest)) };
+  });
+});
 
 T.EastSide = { FX, SHOPS, doorOf, games: GAMES };
 })();

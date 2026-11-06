@@ -16,6 +16,7 @@ import {
   CARDS as HB_CARDS,
 } from "./surface.js?v=2026-08-03-surface5";
 import { buildOpenings, stripGlassQuads } from "./openings.js?v=2026-08-03-surface5";
+import { createPlaceMap } from "/hb-placemap.js?v=2026-11-05-placemap";   // the shared place map (all three worlds)
 import { buildCanopy, canopyGeometry, leafMaterial } from "./foliage.js?v=2026-08-03-surface5";
 
 const canvas = document.querySelector("#game");
@@ -327,6 +328,8 @@ const placedProps = [];
 const doors = [
   {
     id: "social",
+    icon: "social",   // place map icon (/hb-placemap.js reads this same list)
+    blurb: "What people in the Observatory are posting.",
     surface: "social",
     label: "Social",
     path: "/social",
@@ -342,6 +345,8 @@ const doors = [
   },
   {
     id: "projects",
+    icon: "projects",   // place map icon (/hb-placemap.js reads this same list)
+    blurb: "The projects people are building.",
     surface: "host",
     label: "Projects",
     path: "/projects",
@@ -357,6 +362,8 @@ const doors = [
   },
   {
     id: "games",
+    icon: "arcade",   // place map icon (/hb-placemap.js reads this same list)
+    blurb: "Walk-in arcade: President Sim, SYL, Fable Survival and every game.",
     surface: "games",
     label: "Games",
     path: "/games",
@@ -373,6 +380,8 @@ const doors = [
   },
   {
     id: "library",
+    icon: "library",   // place map icon (/hb-placemap.js reads this same list)
+    blurb: "Walk-in hall: eight shelves of free books, and the Written Here desk.",
     surface: "library",
     label: "Library",
     path: "/library",
@@ -389,6 +398,8 @@ const doors = [
   },
   {
     id: "video",
+    icon: "theater",   // place map icon (/hb-placemap.js reads this same list)
+    blurb: "The Grand Palace: take a seat in the 3D theater.",
     surface: "video",
     label: "Theater",
     // 2026-09-24, Jaron: the door leads to the Grand Palace, the 3D theater with real seats.
@@ -411,6 +422,8 @@ const doors = [
   // square's own brick-and-slate look (buildOwnDoorBuildings): merged per material, a few draw calls.
   {
     id: "news",
+    icon: "news",   // place map icon (/hb-placemap.js reads this same list)
+    blurb: "The Town Crier: today's news.",
     surface: "news",
     label: "Town Crier \u00b7 News",
     path: "/news/",
@@ -427,6 +440,8 @@ const doors = [
   },
   {
     id: "tv",
+    icon: "tv",   // place map icon (/hb-placemap.js reads this same list)
+    blurb: "Heartbeat TV: flip the channels.",
     surface: "tv",
     label: "Heartbeat TV",
     path: "/tv/",
@@ -443,6 +458,8 @@ const doors = [
   },
   {
     id: "studio",
+    icon: "studio",   // place map icon (/hb-placemap.js reads this same list)
+    blurb: "Make music and videos.",
     surface: "studio",
     label: "Studio",
     path: "/studio/",
@@ -459,6 +476,8 @@ const doors = [
   },
   {
     id: "sparks",
+    icon: "sparks",   // place map icon (/hb-placemap.js reads this same list)
+    blurb: "People who light the way.",
     surface: "sparks",
     label: "Sparks",
     path: "/sparks/",
@@ -854,7 +873,12 @@ document.addEventListener("mousemove", (event) => {
 document.addEventListener("keydown", (event) => {
   const _t = event.target;
   if (_t && (_t.tagName === "INPUT" || _t.tagName === "TEXTAREA" || _t.tagName === "SELECT" || _t.isContentEditable)) return;
-  if (event.code === "KeyP" || event.code === "KeyM") {
+  if (event.code === "KeyM" && hasEntered && !settingsOpen) {   // M = the place map (11/5; P still opens settings)
+    event.preventDefault();
+    tsPlaceMap.open();
+    return;
+  }
+  if (event.code === "KeyP") {
     event.preventDefault();
     toggleSettings(!settingsOpen);
     return;
@@ -5795,3 +5819,61 @@ function sanitizeDisplayName(value) {
   const visible = normalized.replace(/[^\p{L}\p{N} _.'-]/gu, "").slice(0, 16).trim();
   return visible || "Guest";
 }
+
+// ---- the place map (/hb-placemap.js, shared with World 2 and Ashgrove). One small button; the places are read from the
+// same lists the doors, rooms, lots and the bandstand use (doors, structures, plotList, BANDSTAND), so a new door is on
+// the map by itself. "Show me the way" draws a route and a light at the place; you walk there yourself.
+let tsBeacon = null;
+function tsBeaconMesh() {
+  if (tsBeacon) return tsBeacon;
+  tsBeacon = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 40, 16, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0x84d698, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  tsBeacon.renderOrder = 3; tsBeacon.name = "PlaceMapBeacon"; scene.add(tsBeacon);
+  return tsBeacon;
+}
+const tsFrontOf = (d) => {   // the spot in front of a door: where its trigger is
+  const f = d.front === "south" ? 1 : d.front === "north" ? -1 : 0, e = d.face === "east" ? 1 : d.face === "west" ? -1 : 0;
+  return [d.x + e * (d.width / 2 + 1.1), d.z + f * (d.depth / 2 + 1.1)];
+};
+const tsPlaceMap = createPlaceMap({
+  world: "Town Square",
+  bounds: { x0: -31, x1: 31, z0: -31, z1: 58 },
+  buttonPos: { top: "calc(max(14px, env(safe-area-inset-top)) + 96px)", right: "max(14px, env(safe-area-inset-right))" },
+  enabled: () => hasEntered && !document.documentElement.classList.contains("preview"),
+  player: () => (inInterior || inRoom || !hasEntered ? null : { x: state.x, z: state.z, yaw: state.yaw }),
+  places: () => {
+    const out = [];
+    for (const d of doors) {
+      if (doorStatus(d) === "coming_soon" || doorStatus(d) === "hidden") continue;
+      const [x, z] = tsFrontOf(d);
+      out.push({ id: d.id, icon: d.icon || "place", name: d.label.replace(" · News", ""), blurb: d.blurb || "", x, z, open: d.path || null });
+    }
+    for (const st of structures) if (st.room) { const [x, z] = tsFrontOf(st); out.push({ id: st.id, icon: "home", name: st.label, blurb: "Your own room: decorate it and invite friends.", x, z, open: null }); }
+    out.push({ id: "bandstand", icon: "music", name: "The Bandstand", blurb: "Play the note bars; everyone nearby hears you.", x: BANDSTAND.x, z: BANDSTAND.z + 3.4, open: null });
+    for (const ps of plotList) {
+      if (!ps) continue;
+      if (ps.repoDoor) out.push({ id: "plot" + ps.index, icon: "projects", name: ps.repoDoor.label || "Project space", blurb: "A project someone claimed here.", x: ps.x, z: ps.z, open: "/space/?plot=" + ps.index });
+      else if (ps.claimed) out.push({ id: "plot" + ps.index, icon: "home", name: "A home", blurb: "Someone made their home here.", x: ps.x, z: ps.z, open: null });
+      else out.push({ id: "plot" + ps.index, icon: "lot", small: true, name: "Lot " + (ps.index + 1) + " · open", short: "Lot " + (ps.index + 1), blurb: "An open lot. Walk up to it to claim it for a project or a home.", x: ps.x, z: ps.z, open: null });
+    }
+    return out;
+  },
+  drawBase(ctx, px, k, C) {
+    const rect = (x, z, w, d, col) => { const a = px(x - w / 2, z - d / 2); ctx.fillStyle = col; ctx.fillRect(a[0], a[1], w * k, d * k); };
+    rect(0, 13.5, 62, 89, C.grass);
+    rect(0, 0, 6, 60, C.walk); rect(0, 0, 60, 6, C.walk); rect(0, -23.4, 46, 3.2, C.walk); rect(0, 0, 11, 11, C.plaza);
+    rect(0, 43, 38, 28, "#33402f");   // the paintball arena
+    const c = px(0, 0); ctx.fillStyle = C.water; ctx.strokeStyle = "#e9e0cc"; ctx.lineWidth = 0.35 * k; ctx.beginPath(); ctx.arc(c[0], c[1], 1.45 * k, 0, 7); ctx.fill(); ctx.stroke();
+    for (const p of plots) { const a = px(p.x - p.width / 2, p.z - p.depth / 2); ctx.strokeStyle = "#e6c46a"; ctx.lineWidth = 0.18 * k; ctx.setLineDash([0.5 * k, 0.4 * k]); ctx.strokeRect(a[0], a[1], p.width * k, p.depth * k); ctx.setLineDash([]); }
+    const bld = (x, z, w, d) => { const a = px(x - w / 2, z - d / 2); ctx.fillStyle = C.shadow; ctx.fillRect(a[0] + 0.3 * k, a[1] + 0.3 * k, w * k, d * k); ctx.fillStyle = C.building; ctx.fillRect(a[0], a[1], w * k, d * k); ctx.strokeStyle = C.buildingEdge; ctx.lineWidth = 0.12 * k; ctx.strokeRect(a[0], a[1], w * k, d * k); };
+    for (const d of doors) bld(d.x, d.z, d.width, d.depth);
+    for (const st of structures) bld(st.x, st.z, st.width, st.depth);
+    const b = px(BANDSTAND.x, BANDSTAND.z); ctx.fillStyle = C.building; ctx.beginPath(); ctx.arc(b[0], b[1], 2.4 * k, 0, 7); ctx.fill(); ctx.strokeStyle = C.buildingEdge; ctx.stroke();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = C.labelDim; ctx.font = `700 ${Math.max(11, 1.1 * k)}px system-ui, sans-serif`;
+    let t = px(0, 33); ctx.fillText("Paintball arena", t[0], t[1]);
+    t = px(0, -21.2); ctx.fillStyle = "#3a3226"; ctx.fillText("The Neighborhood", t[0], t[1]);
+  },
+  onGuide: (g) => { const m = tsBeaconMesh(); m.position.set(g.x, 20, g.z); m.material.opacity = 0.34; },
+  onGuideEnd: () => { if (tsBeacon) tsBeacon.material.opacity = 0; },
+  onOpen: () => { try { clearMovementInput(); } catch (e) {} },
+});

@@ -250,6 +250,7 @@ T.Player.useDoor = function () {
   return handled;
 };
 
+T.Shell = shell;   // the place map opens the phone (post office, diner) through this
 shell.on("door", (msg) => setDoor(msg.door, msg.open));
 
 /* a late arrival asks the room what is already open */

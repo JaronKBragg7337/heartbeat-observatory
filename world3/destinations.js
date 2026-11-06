@@ -25,12 +25,14 @@ if (!T) return;
    regenerated, growing, or renumbering its ids. */
 const DESTINATIONS = {
   townHall: {
+    icon: "worlds",   // the place map icon (/hb-placemap.js; same icon in every world)
     label: "the noticeboard",
     verb: "Read the noticeboard",
     blurb: "Every world in the Observatory, and the way back.",
     kind: "worlds",
   },
   library: {
+    icon: "library",   // the place map icon (/hb-placemap.js; same icon in every world)
     label: "the shelves",
     verb: "Read the shelves",
     blurb: "Pages written here on the Observatory, and the open shelves of the world: the same eight as the Town Square library.",
@@ -48,12 +50,14 @@ const DESTINATIONS = {
     ],
   },
   postOffice: {
+    icon: "post",   // the place map icon (/hb-placemap.js; same icon in every world)
     label: "the counter",
     verb: "Collect your post",
     blurb: "Your messages — the same inbox the phone carries.",
     kind: "phone-messages",
   },
   school: {
+    icon: "school",   // the place map icon (/hb-placemap.js; same icon in every world)
     label: "the reading corner",
     verb: "Open a book",
     blurb: "Project Gutenberg — public-domain books, free to read.",
@@ -62,6 +66,7 @@ const DESTINATIONS = {
     external: true,
   },
   store: {
+    icon: "social",   // the place map icon (/hb-placemap.js; same icon in every world)
     label: "the notice wall",
     verb: "Read the notice wall",
     blurb: "What people in the Observatory are posting.",
@@ -70,6 +75,7 @@ const DESTINATIONS = {
     external: false,
   },
   diner: {
+    icon: "diner",   // the place map icon (/hb-placemap.js; same icon in every world)
     label: "the booth",
     verb: "Sit at the booth",
     blurb: "Who else is in Ashgrove right now.",
@@ -83,7 +89,25 @@ const WORLDS = [
   { name: "Ashgrove", url: "/world3/", note: "you are here", here: true },
 ];
 
-const D = (T.Destinations = { current: null, open: false });
+const D = (T.Destinations = { current: null, open: false, table: DESTINATIONS });
+
+/* The place map (world3/placemap.js) reads every place from T.PlaceSources: each file that makes a door adds its own
+   list there, built from the same table its doors use, so a new destination shows up on the map by itself. */
+(T.PlaceSources = T.PlaceSources || []).push(function () {
+  const out = [];
+  for (const b of (T.Town && T.Town.buildings) || []) {
+    const dest = DESTINATIONS[b.key];
+    if (!dest) continue;
+    const back = b.def.porch ? -(b.def.porch.depth || 2.2) - 1.6 : b.def.portico ? -4.2 : -2.6;   // just outside the front door
+    const open = dest.kind === "link" ? dest.url
+      : dest.kind === "phone-messages" || dest.kind === "phone-people"
+        ? (T.Shell && T.Shell.openPhone ? () => T.Shell.openPhone(dest.kind === "phone-people" ? "people" : "messages") : null)
+        : () => show(Object.assign({ buildingId: b.id }, dest));
+    out.push({ id: "ash-" + b.id, icon: dest.icon || "place", name: b.def.label, blurb: dest.blurb, x: b.tx(b.def.w / 2, back), z: b.tz(b.def.w / 2, back),
+      open, external: !!dest.external });
+  }
+  return out;
+});
 
 /* ------------------------------------------------------------------ css - */
 const style = document.createElement("style");

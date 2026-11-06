@@ -13,7 +13,7 @@
 // promenade, footsteps while you walk, birds by day, crickets by night, everything quieter after dark.
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
-import { GRID, ROAD, CURB, cityFloor } from "./city.js?v=2026-11-05-doors";
+import { GRID, ROAD, CURB, cityFloor } from "./city.js?v=2026-11-05-placemap";
 
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
