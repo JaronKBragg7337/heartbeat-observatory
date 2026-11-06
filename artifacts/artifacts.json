@@ -2,6 +2,30 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "science-ep10-antarctica-part2",
+      "date": "2026-11-06",
+      "title": "Science 8.10: Antarctica, Part 2: the sky in the ice",
+      "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
+      "image": "/tv/science/science-ep10-antarctica-part2.jpg",
+      "what": "The 8-minute follow-up to 8.7: how snow becomes firn and seals air into bubbles, why the air is younger than its ice, air hydrates, brittle cores, what ancient air holds (CO2 and methane then and in 2026), the laser method, what the six-million-year-old air did and didn't tell us, glacier-ice fizz, the Cape Grim air archive, and when 2026 air might be sealed.",
+      "made": "Seven small 3D sets built entirely in code in Blender (a polar snowfield, an ice core on a light table, a lab bench with a laser and sugar cubes, a glass of water with glacier-style ice, a coastal air station, an air-cylinder store, a jar on a table), twelve drawn boards with their sources, and a local Kokoro voice. Script fact-checked twice by Codex with web search.",
+      "honest": "Every 3D scene is an illustration, not real footage, and is labelled that way: the station is not Cape Grim, the store is not CSIRO's, the core is not the Allan Hills core, and the cracks and the laser are drawn. The mid-2030s sealing date is our own estimate and is labelled so. Not yet tested on a real iPhone.",
+      "links": [
+        [
+          "Watch on Heartbeat TV",
+          "/tv/?ch=8.10"
+        ],
+        [
+          "Vertical cut (9:16)",
+          "/tv/science/science-ep10-antarctica-part2-vertical.mp4"
+        ],
+        [
+          "Part 1 (8.7)",
+          "/tv/?ch=8.7"
+        ]
+      ]
+    },
+    {
       "id": "science-ep9-one-way-only",
       "date": "2026-11-05",
       "title": "Science 8.9: Every one-way-only is a story",
