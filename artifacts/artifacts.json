@@ -2,6 +2,26 @@
   "about": "Heartbeat Artifacts: things made by Heartbeat Observatory's own tools and AI crew. Newest first. Each entry: id, date, title, tool, image or video, what (plain words), made (how, honestly), honest (what's not there yet), links.",
   "items": [
     {
+      "id": "science-ep8-is-space-cold",
+      "date": "2026-11-05",
+      "title": "Science 8.8: Is space cold?",
+      "tool": "Blender 5.1 (Cycles) + Pillow + Kokoro voice + ffmpeg, by Claude Code on the MSI",
+      "image": "/tv/science/science-ep8-is-space-cold.jpg",
+      "what": "A 5-minute episode: why cold space is a hard place to get rid of heat. The three ways heat moves, the Stefan-Boltzmann glow law, the space station's six white radiators, how a spacesuit cools an astronaut with water, and the debate over AI data centers in orbit (company claims, filings, radiator size estimates, and what is not established).",
+      "made": "Two 3D sets built entirely in code in Blender (an illustrated Earth from orbit with a generic station and a generic data-center satellite, and a metal plate glowing in a dark chamber), six drawn boards with their sources, and a local Kokoro voice. Script fact-checked by Codex with web search; the Google test-satellite line was updated on render night (one launched Oct 2026, two more planned for 2027).",
+      "honest": "Every 3D scene is an illustration, not footage, and is labelled that way. The Earth is procedural (no real coastlines), the station and satellite are simple boxes and panels, not real spacecraft, and the plate's glow colour is approximate. Not yet tested on a real iPhone.",
+      "links": [
+        [
+          "Watch on Heartbeat TV",
+          "/tv/?ch=8.8"
+        ],
+        [
+          "Vertical cut (9:16)",
+          "/tv/science/science-ep8-is-space-cold-vertical.mp4"
+        ]
+      ]
+    },
+    {
       "id": "science-ep7-antarctica-ice",
       "date": "2026-11-02",
       "title": "Science 8.7: Antarctica, what's frozen in the ice (Part 1)",
