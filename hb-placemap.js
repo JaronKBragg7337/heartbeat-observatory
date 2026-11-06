@@ -21,9 +21,20 @@
 //     trigger: element,                           // optional: use this element (World 2's minimap) instead of a button
 //     buttonPos: { top: "64px", right: "8px" },   // where the button and the route chip sit
 //     onGuide(g) {}, onGuideEnd() {},              // optional: put/remove a beacon in the 3D world
+//     groundPath(pts) {},                         // optional: draw the route on the ground ([[x, z], ...] from you to the
+//                                                 //   place, or null to hide it). threeGroundPath() below does it for three.js.
+//     content: { x0, x1, z0, z1 },                // optional: where the town really is (the map opens fitted to it and
+//                                                 //   never zooms out past it); default = bounds
+//     outside: "#15120e",                         // optional: what shows past the edge of the drawn map
 //     onOpen() {}, onClose() {},                  // optional: stop walking input while the map is up
 //   });
 //   pm.open(), pm.close(), pm.guideTo(place), pm.clearGuide(), pm.guide -> { id, name, x, z, path } | null
+//
+// The route chip reads like directions (Jaron 11/5: "the arrow wants me to go to random corners"):
+//   close to the place (under ~35 m) or in plain sight -> the arrow points straight at the place: "Sparks Hall · 43 m"
+//   otherwise -> "Turn left at the corner" / "Turn right at the corner" (or "Go straight, then turn left" while that
+//   corner is still far down the street), the arrow at that corner, and the distance always to the PLACE, never the corner.
+//   The route you are walking is kept (not re-picked every half second), so the corner ahead does not jump about.
 
 const CSS = `
 .hbpm-btn{position:fixed;z-index:80;width:48px;height:48px;border-radius:14px;border:1px solid rgba(255,236,206,.28);
@@ -33,14 +44,17 @@ const CSS = `
 .hbpm-btn.on{display:flex}
 .hbpm-btn svg{width:26px;height:26px}
 .hbpm-btn:active{background:rgba(70,58,44,.92)}
-.hbpm-chip{position:fixed;z-index:80;display:none;align-items:center;gap:0;max-width:min(260px,calc(100vw - 24px));height:40px;
+.hbpm-chip{position:fixed;z-index:80;display:none;align-items:center;gap:0;max-width:min(310px,calc(100vw - 24px));height:40px;
   border-radius:999px;background:rgba(28,24,20,.9);border:1px solid rgba(132,214,152,.75);color:#eafbe9;
   font:700 13px/1 system-ui,-apple-system,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.35);overflow:hidden;
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .hbpm-chip.on{display:flex}
-.hbpm-chip button{all:unset;cursor:pointer;height:40px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
+.hbpm-chip.two{height:46px;border-radius:23px}
+.hbpm-chip button{all:unset;cursor:pointer;height:100%;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
 .hbpm-chip .go{gap:8px;padding:0 6px 0 10px;min-width:0}
 .hbpm-chip .go span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbpm-chip .go span b{display:block;font-weight:800;font-size:13.5px;line-height:1.15;overflow:hidden;text-overflow:ellipsis}
+.hbpm-chip .go span small{display:block;font-weight:600;font-size:12px;line-height:1.2;color:#c6e8cc;overflow:hidden;text-overflow:ellipsis}
 .hbpm-chip .arrow{width:22px;height:22px;flex:none;transition:transform .2s linear}
 .hbpm-chip .x{width:40px;justify-content:center;border-left:1px solid rgba(255,255,255,.14);font-size:16px;color:#cfe7d2}
 .hbpm{position:fixed;inset:0;z-index:95000;display:none;flex-direction:column;background:#1b1712;color:#f6ead6;
@@ -160,9 +174,11 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": 
 
 export function createPlaceMap(cfg) {
   const o = Object.assign({ world: "Map", arrive: 3.2, buttonPos: { top: "calc(env(safe-area-inset-top) + 64px)", right: "calc(env(safe-area-inset-right) + 10px)" },
-    enabled: () => true, player: () => null, places: () => [], route: null, maxZoom: 6 }, cfg);
+    enabled: () => true, player: () => null, places: () => [], route: null, maxZoom: 6, near: 35, outside: "#15120e" }, cfg);
   if (!document.getElementById("hbpm-css")) { const st = document.createElement("style"); st.id = "hbpm-css"; st.textContent = CSS; document.head.appendChild(st); }
   const B = o.bounds, bw = B.x1 - B.x0, bh = B.z1 - B.z0;
+  // the part of the map that is really the town: the map opens fitted to it and never zooms out past it
+  const CB = o.content || B, cw = CB.x1 - CB.x0, ch = CB.z1 - CB.z0;
 
   // ---- the button (or the world's own trigger, e.g. World 2's minimap) + the route chip ----
   let btn = o.trigger || null;
@@ -222,13 +238,14 @@ export function createPlaceMap(cfg) {
     const toPx = (x, z) => [(x - B.x0) * baseRes, (z - B.z0) * baseRes];
     try { o.drawBase && o.drawBase(ctx, toPx, baseRes, PALETTE); } catch (e) { console.warn("[placemap] base", e); }
   }
-  function fitScale() { return Math.min((W || innerWidth) / bw, (H || innerHeight * 0.8) / bh) * 0.94; }
+  // the whole town on screen (a small margin), measured on the town itself, not the empty land around it
+  function fitScale() { return Math.min((W || innerWidth) / cw, (H || innerHeight * 0.8) / ch) * 0.94; }
   const toScr = (x, z) => [(x - view.cx) * view.s + W / 2, (z - view.cz) * view.s + H / 2];
   function clampView() {
-    const fit = fitScale(); view.s = Math.max(fit * 0.9, Math.min(fit * o.maxZoom, view.s));
+    const fit = fitScale(); view.s = Math.max(fit, Math.min(fit * o.maxZoom, view.s));
     const hw = W / 2 / view.s, hh = H / 2 / view.s;
-    view.cx = bw / 2 < hw ? (B.x0 + B.x1) / 2 : Math.max(B.x0 + hw, Math.min(B.x1 - hw, view.cx));
-    view.cz = bh / 2 < hh ? (B.z0 + B.z1) / 2 : Math.max(B.z0 + hh, Math.min(B.z1 - hh, view.cz));
+    view.cx = cw / 2 < hw ? (CB.x0 + CB.x1) / 2 : Math.max(CB.x0 + hw, Math.min(CB.x1 - hw, view.cx));
+    view.cz = ch / 2 < hh ? (CB.z0 + CB.z1) / 2 : Math.max(CB.z0 + hh, Math.min(CB.z1 - hh, view.cz));
   }
   function resize() {
     const r = body.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -313,6 +330,7 @@ export function createPlaceMap(cfg) {
     return path && path.length ? path : [[g.x, g.z]];
   }
   function guideTo(p) {
+    if (guide) clearGuide(false);
     guide = { id: p.id, name: p.name, icon: p.icon, x: p.x, z: p.z, path: null };
     guide.path = routeFor(guide);
     try { o.onGuide && o.onGuide(guide); } catch (e) {}
@@ -320,32 +338,127 @@ export function createPlaceMap(cfg) {
   }
   function clearGuide(arrived) {
     if (!guide) return;
-    const g = guide; guide = null; chip.classList.remove("on");
+    const g = guide; guide = null; chip.classList.remove("on"); setGround(null);
     try { o.onGuideEnd && o.onGuideEnd(g, !!arrived); } catch (e) {}
   }
-  function paintChip() {
-    if (!guide) { chip.classList.remove("on"); return; }
-    const me = o.player(), span = chip.querySelector(".go span"), ar = chip.querySelector(".arrow");
-    if (!me) { span.textContent = guide.name; ar.style.transform = ""; chip.classList.add("on"); return; }
+  // where you stand on the route: the leg you are walking (or null when you are off it), the next corner, the turn there.
+  // The route is a list of street corners ending at the place; it is re-made from where you stand every half second.
+  const ON_LEG = 10, AT_CORNER = 6, STRAIGHT = 30 * Math.PI / 180;
+  // keep the route you are walking. A fresh one replaces it only when you have left it, when the place comes into plain
+  // sight (a one-point route), or when the fresh one is clearly shorter. So the corner ahead never jumps about.
+  function remaining(path, me) {
+    let leg = -1, best = ON_LEG, foot = null;
+    for (let i = 0; i + 1 < path.length; i++) { const s = segDist(me.x, me.z, path[i], path[i + 1]); if (s[0] <= best + 0.5) { best = Math.min(best, s[0]); leg = i; foot = [s[1], s[2]]; } }
+    if (leg < 0) return Infinity;
+    let L = Math.hypot(path[leg + 1][0] - foot[0], path[leg + 1][1] - foot[1]);
+    for (let i = leg + 1; i + 1 < path.length; i++) L += Math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1]);
+    return L;
+  }
+  function refreshRoute(me) {
+    const fresh = routeFor(guide), old = guide.path;
+    if (!old || fresh.length <= 1 || old.length <= 1) { guide.path = fresh; return; }
+    const keep = remaining(old, me);
+    if (keep === Infinity) { guide.path = fresh; guide.passed = []; return; }
+    let fl = Math.hypot(fresh[0][0] - me.x, fresh[0][1] - me.z);
+    for (let i = 0; i + 1 < fresh.length; i++) fl += Math.hypot(fresh[i + 1][0] - fresh[i][0], fresh[i + 1][1] - fresh[i][1]);
+    if (fl < keep - 15) { guide.path = fresh; guide.passed = []; }
+  }
+  function segDist(px, pz, a, b) {
+    const vx = b[0] - a[0], vz = b[1] - a[1], L2 = vx * vx + vz * vz || 1;
+    const t = Math.max(0, Math.min(1, ((px - a[0]) * vx + (pz - a[1]) * vz) / L2));
+    return [Math.hypot(px - a[0] - vx * t, pz - a[1] - vz * t), a[0] + vx * t, a[1] + vz * t];
+  }
+  const turnAt = (a, c, n) => {   // signed turn at c going a -> c -> n; x to the right, z down the map: positive = right
+    const ax = c[0] - a[0], az = c[1] - a[1], bx = n[0] - c[0], bz = n[1] - c[1];
+    return Math.atan2(ax * bz - az * bx, ax * bx + az * bz);
+  };
+  // a route as a person reads it: only real corners. A short jog (crossing at a corner, a few metres) becomes one corner,
+  // and points on a straight line (every junction you walk straight through) are dropped.
+  function simplify(src) {
+    const p = src.map((q) => [q[0], q[1]]);
+    for (let i = 1; i + 2 < p.length;) {
+      if (Math.hypot(p[i + 1][0] - p[i][0], p[i + 1][1] - p[i][1]) < 8) p.splice(i, 2, [(p[i][0] + p[i + 1][0]) / 2, (p[i][1] + p[i + 1][1]) / 2]);
+      else i++;
+    }
+    for (let i = 1; i + 1 < p.length;) {
+      if (Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]) < 0.3 || Math.abs(turnAt(p[i - 1], p[i], p[i + 1])) < STRAIGHT * 0.67) p.splice(i, 1);
+      else i++;
+    }
+    return p;
+  }
+  function steer(me) {
+    const raw = (guide.path && guide.path.length ? guide.path : [[guide.x, guide.z]]).slice();
+    const end = raw[raw.length - 1];
+    if (Math.hypot(end[0] - guide.x, end[1] - guide.z) > 0.5) raw.push([guide.x, guide.z]);
+    const path = simplify(raw);
     const d = Math.hypot(guide.x - me.x, guide.z - me.z);
-    // aim at the next corner of the route that is a few metres off, relative to where you face
-    let t = [guide.x, guide.z];
-    for (const q of guide.path || []) if (Math.hypot(q[0] - me.x, q[1] - me.z) > 4) { t = q; break; }
-    const dx = t[0] - me.x, dz = t[1] - me.z, s = Math.sin(me.yaw || 0), c = Math.cos(me.yaw || 0);
+    // close (with a little give so it does not flicker at 35 m), or the route is one straight line: aim at the place
+    const near = d < (guide.direct ? o.near + 5 : o.near);
+    let leg = -1, foot = null, best = ON_LEG;
+    for (let i = 0; i + 1 < path.length; i++) { const s = segDist(me.x, me.z, path[i], path[i + 1]); if (s[0] <= best + 0.5) { best = Math.min(best, s[0]); leg = i; foot = [s[1], s[2]]; } }
+    // the corner ahead: the end of the leg you are on (or the first point when you are off the route); skip one you are standing at
+    let ci = leg >= 0 ? leg + 1 : 0;
+    // a corner you have reached counts as passed (so wandering a step back does not flip the words); forget it 25 m on
+    const passed = guide.passed || (guide.passed = []);
+    for (let k = passed.length - 1; k >= 0; k--) if (Math.hypot(passed[k][0] - me.x, passed[k][1] - me.z) > 25) passed.splice(k, 1);
+    while (ci < path.length - 1) {
+      const q = path[ci];
+      if (Math.hypot(q[0] - me.x, q[1] - me.z) < AT_CORNER) { passed.push([q[0], q[1]]); ci++; continue; }
+      if (passed.some((r) => Math.hypot(q[0] - r[0], q[1] - r[1]) < 7)) { ci++; continue; }
+      break;
+    }
+    const ground = [[me.x, me.z]].concat(leg >= 0 && foot && Math.hypot(foot[0] - me.x, foot[1] - me.z) > 1.5 ? [foot] : [], path.slice(ci));
+    if (near || ci >= path.length - 1) return { mode: "place", aim: [guide.x, guide.z], d, ground };
+    const c = path[ci], nx = path[ci + 1];
+    let from = ci > 0 ? path[ci - 1] : [me.x, me.z];
+    if (Math.hypot(c[0] - from[0], c[1] - from[1]) < 0.5) from = [me.x, me.z];
+    const ang = turnAt(from, c, nx);
+    const mode = Math.abs(ang) < STRAIGHT ? "straight" : ang > 0 ? "right" : "left";
+    // a turn far down the street reads "Go straight, then turn left"; close to it, "Turn left at the corner"
+    const far = mode !== "straight" && Math.hypot(c[0] - me.x, c[1] - me.z) > o.near + 10;
+    return { mode, far, aim: c, d, ground };
+  }
+  let groundSent = null;
+  function setGround(pts) {
+    if (!o.groundPath) return;
+    if (!pts) { if (groundSent) { groundSent = null; try { o.groundPath(null); } catch (e) {} } return; }
+    // only re-send when you have moved a metre or the route changed (the world rebuilds one small mesh)
+    if (groundSent && groundSent.length === pts.length && pts.every((q, i) => Math.abs(q[0] - groundSent[i][0]) + Math.abs(q[1] - groundSent[i][1]) < (i ? 0.3 : 1))) return;
+    groundSent = pts.map((q) => [q[0], q[1]]);
+    if (guide) guide.ahead = groundSent;   // the worlds' own minimaps draw this (what is still ahead of you)
+    try { o.groundPath(groundSent); } catch (e) { console.warn("[placemap] ground path", e); }
+  }
+  const TURN_TEXT = { left: "Turn left at the corner", right: "Turn right at the corner", straight: "Go straight" };
+  function paintChip() {
+    if (!guide) { chip.classList.remove("on"); setGround(null); return; }
+    const me = o.player(), span = chip.querySelector(".go span"), ar = chip.querySelector(".arrow");
+    if (!me) { span.textContent = guide.name; ar.style.transform = ""; chip.classList.remove("two"); chip.classList.add("on"); guide.step = null; setGround(null); return; }
+    const st = steer(me), dm = Math.round(st.d) + " m";
+    guide.direct = st.mode === "place"; guide.step = st.mode; guide.aim = st.aim;
+    const dx = st.aim[0] - me.x, dz = st.aim[1] - me.z, s = Math.sin(me.yaw || 0), c = Math.cos(me.yaw || 0);
     const f = -dx * s - dz * c, r = dx * c - dz * s;
     ar.style.transform = `rotate(${Math.atan2(r, f)}rad)`;
-    span.textContent = guide.name + " · " + Math.round(d) + " m";
+    const words = st.mode === "place" ? "" : st.far ? "Go straight, then turn " + st.mode : TURN_TEXT[st.mode];
+    guide.words = words;
+    const text = st.mode === "place" ? guide.name + " · " + dm : words + " · " + guide.name + " " + dm;
+    if (chip.dataset.text !== text) {
+      chip.dataset.text = text;
+      if (st.mode === "place") { span.textContent = guide.name + " · " + dm; chip.classList.remove("two"); }
+      else { span.innerHTML = `<b>${esc(words)}</b><small>${esc(guide.name)} · ${dm}</small>`; chip.classList.add("two"); }
+      chip.querySelector(".go").setAttribute("aria-label", text + ". Open the map with your route");
+    }
     chip.classList.add("on");
+    setGround(st.ground);
   }
   let tick = 0;
   setInterval(() => {
     const en = !!o.enabled();
     if (!o.trigger) btn.classList.toggle("on", en && !isOpen);
     if (!guide) return;
-    if (!en) { chip.classList.remove("on"); return; }
+    if (!en) { chip.classList.remove("on"); setGround(null); return; }
     const me = o.player();
     if (me && Math.hypot(guide.x - me.x, guide.z - me.z) < o.arrive) { const name = guide.name; clearGuide(true); toast("You're at " + name); return; }
-    if (me && ++tick % 2 === 0) guide.path = routeFor(guide);
+    if (me && ++tick % 2 === 0) refreshRoute(me);
     paintChip();
   }, 250);
   let toastEl = null, toastT = 0;
@@ -366,14 +479,14 @@ export function createPlaceMap(cfg) {
   function drawNow() {
     const ctx = cv.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = "#15120e"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = o.outside; ctx.fillRect(0, 0, W, H);
     const a = toScr(B.x0, B.z0);
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(base, a[0], a[1], bw * view.s, bh * view.s);
     // the route
     const me = o.player();
     if (guide) {
-      const pts = (me ? [[me.x, me.z]] : []).concat(guide.path || [[guide.x, guide.z]]);
+      const pts = (me && groundSent) || (me ? [[me.x, me.z]] : []).concat(guide.path || [[guide.x, guide.z]]);   // the part still ahead of you
       ctx.lineJoin = ctx.lineCap = "round";
       for (const [col, w] of [[PALETTE.routeEdge, 8], [PALETTE.route, 4.5]]) {
         ctx.strokeStyle = col; ctx.lineWidth = w; ctx.setLineDash(col === PALETTE.route ? [] : []); ctx.beginPath();
@@ -404,7 +517,30 @@ export function createPlaceMap(cfg) {
       p._t = s; p._s = [s[0], s[1]]; p._el.style.display = on ? "" : "none";
       if (on) vis.push(p);
     }
-    for (let it = 0; it < 8; it++) {
+    // a bunch of doors close together (Ashgrove's east avenue): lay that bunch out as a neat little grid around its middle,
+    // in map order (top to bottom, then left to right), so every icon is tappable; a leader line marks each real door
+    const R = (p) => (p.small ? 14 : 19);
+    const grp = vis.map((_, i) => i), root = (i) => (grp[i] === i ? i : (grp[i] = root(grp[i])));
+    for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
+      const a = vis[i], b = vis[j];
+      if (Math.hypot(a._t[0] - b._t[0], a._t[1] - b._t[1]) < R(a) + R(b)) grp[root(i)] = root(j);
+    }
+    const bunches = new Map();
+    vis.forEach((p, i) => { const r = root(i); if (!bunches.has(r)) bunches.set(r, []); bunches.get(r).push(p); });
+    for (const list of bunches.values()) {
+      if (list.length < 3) continue;
+      let mx = 0, my = 0, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const p of list) { mx += p._t[0]; my += p._t[1]; x0 = Math.min(x0, p._t[0]); x1 = Math.max(x1, p._t[0]); y0 = Math.min(y0, p._t[1]); y1 = Math.max(y1, p._t[1]); }
+      mx /= list.length; my /= list.length;
+      const n = list.length, tall = y1 - y0 >= x1 - x0;
+      const cols = tall ? Math.min(n, Math.max(2, Math.round(Math.sqrt(n / 1.5)))) : Math.ceil(Math.sqrt(n * 1.5)), rows = Math.ceil(n / cols), gap = 44;
+      const sorted = list.slice().sort((a, b) => (tall ? a._t[1] - b._t[1] || a._t[0] - b._t[0] : a._t[0] - b._t[0] || a._t[1] - b._t[1]));
+      sorted.forEach((p, k) => {
+        const r = tall ? Math.floor(k / cols) : k % rows, c = tall ? k % cols : Math.floor(k / rows);
+        p._s = [mx + (c - (cols - 1) / 2) * gap, my + (r - (rows - 1) / 2) * gap];
+      });
+    }
+    for (let it = 0; it < 24; it++) {
       let any = false;
       for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
         const a = vis[i], b = vis[j], need = (a.small ? 14 : 19) + (b.small ? 14 : 19);
@@ -502,9 +638,12 @@ export function createPlaceMap(cfg) {
     if (!base) buildBase();
     places = readPlaces(); buildIcons();
     const me = o.player();
-    view = { s: fitScale(), cx: (B.x0 + B.x1) / 2, cz: (B.z0 + B.z1) / 2 };
-    // big worlds open zoomed in around you (still showing a lot); small ones open whole
-    if (me && Math.max(bw, bh) > 200 && W < 700) { view.s = Math.max(fitScale() * 1.6, Math.min(W / bw, H / bh, fitScale() * o.maxZoom) * 1.02, Math.max(W / bw, H / bh) * 1.02); view.cx = me.x; view.cz = me.z; }
+    // open fitted to the town itself. When the town's shape is close to the screen's, fill the screen with it (no
+    // empty border); a wide town on a tall phone opens filling the height, around you; small worlds open whole.
+    const fit = fitScale(), cover = Math.max(W / cw, H / ch) * 1.01;
+    view = { s: fit, cx: (CB.x0 + CB.x1) / 2, cz: (CB.z0 + CB.z1) / 2 };
+    if (cover / fit < 1.6) { view.s = cover; if (me) { view.cx = me.x; view.cz = me.z; } }
+    if (me && Math.max(cw, ch) > 200 && W < 700) { view.s = Math.max(fit * 1.6, cover); view.cx = me.x; view.cz = me.z; }
     clampView();
     select(null); showList(false);
     if (guide) {   // a route is on: show you and the place together, the card open
@@ -529,7 +668,7 @@ export function createPlaceMap(cfg) {
 
   const api = {
     open, close, guideTo, clearGuide: () => clearGuide(false),
-    get isOpen() { return isOpen; }, get guide() { return guide && { id: guide.id, name: guide.name, x: guide.x, z: guide.z, path: guide.path }; },
+    get isOpen() { return isOpen; }, get guide() { return guide && { id: guide.id, name: guide.name, x: guide.x, z: guide.z, path: guide.path, step: guide.step || null, aim: guide.aim || null, words: guide.words || "", ground: groundSent }; },
     places: () => readPlaces().map((p) => ({ id: p.id, icon: p.icon, name: p.name, blurb: p.blurb, x: p.x, z: p.z, open: typeof p.open === "function" ? "fn" : p.open || null })),
     select: (id) => { const p = places.find((q) => q.id === id); if (p) select(p, true); return !!p; },
     rebuildBase: () => { base = null; },
@@ -539,4 +678,49 @@ export function createPlaceMap(cfg) {
   return api;
 }
 
-if (typeof window !== "undefined") window.HBPlaceMap = { create: createPlaceMap, PALETTE, iconSVG, iconColor };
+// ---- the route on the ground: a line of small soft-green arrowheads, every couple of metres from your feet to the place.
+// One mesh, one draw call, a fixed-size buffer (no allocation while you walk). The arrowheads are spaced from the PLACE
+// backwards, so the ones ahead of you stay put as you walk instead of sliding along with you.
+// groundDarts(pts, opt) -> Float32Array of triangles (x, y, z per vertex, 6 vertices per arrowhead) + the count.
+export function groundDarts(pts, opt = {}) {
+  const yAt = opt.y || (() => 0), lift = opt.lift == null ? 0.06 : opt.lift, sp = opt.spacing || 2.4, max = opt.max || 320;
+  const size = opt.size || 1, skip = opt.skip == null ? 1.6 : opt.skip;
+  const out = opt.out || new Float32Array(max * 18);
+  if (!pts || pts.length < 2) return { data: out, count: 0 };
+  let L = 0; const seg = [];
+  for (let i = 0; i + 1 < pts.length; i++) { const l = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]); seg.push(l); L += l; }
+  let n = 0, s = L % sp, i = 0, acc = 0;
+  if (s < skip) s += sp * Math.ceil((skip - s) / sp);
+  const tip = 0.42 * size, back = 0.28 * size, wing = 0.42 * size, notch = 0.05 * size;
+  for (; s < L - 0.8 && n < max; s += sp) {
+    while (i < seg.length - 1 && acc + seg[i] < s) { acc += seg[i]; i++; }
+    const l = seg[i] || 1, t = (s - acc) / l, a = pts[i], b = pts[i + 1];
+    const ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l, nx = -uz, nz = ux;
+    const cx = a[0] + (b[0] - a[0]) * t, cz = a[1] + (b[1] - a[1]) * t, y = yAt(cx, cz) + lift;
+    const T0 = [cx + ux * tip, cz + uz * tip], L0 = [cx - ux * back + nx * wing, cz - uz * back + nz * wing];
+    const R0 = [cx - ux * back - nx * wing, cz - uz * back - nz * wing], N0 = [cx - ux * notch, cz - uz * notch];
+    const tri = [T0, L0, N0, T0, N0, R0], o = n * 18;
+    for (let k = 0; k < 6; k++) { out[o + k * 3] = tri[k][0]; out[o + k * 3 + 1] = y; out[o + k * 3 + 2] = tri[k][1]; }
+    n++;
+  }
+  return { data: out, count: n };
+}
+// the same for a three.js world: pass THREE (the world's own copy), its scene and its ground height
+export function threeGroundPath(THREE, scene, opt = {}) {
+  const max = opt.max || 320, buf = new Float32Array(max * 18);
+  const geo = new THREE.BufferGeometry(), attr = new THREE.BufferAttribute(buf, 3);
+  attr.setUsage && attr.setUsage(THREE.DynamicDrawUsage); geo.setAttribute("position", attr); geo.setDrawRange(0, 0);
+  const mat = new THREE.MeshBasicMaterial({ color: opt.color || 0x84d698, transparent: true, opacity: opt.opacity || 0.6, depthWrite: false,
+    side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, toneMapped: false });
+  const mesh = new THREE.Mesh(geo, mat); mesh.frustumCulled = false; mesh.renderOrder = 3; mesh.visible = false; mesh.name = "PlaceMapGroundPath";
+  scene.add(mesh);
+  const fn = (pts) => {
+    if (!pts) { mesh.visible = false; geo.setDrawRange(0, 0); return; }
+    const r = groundDarts(pts, Object.assign({}, opt, { max, out: buf }));
+    geo.setDrawRange(0, r.count * 6); attr.needsUpdate = true; mesh.visible = r.count > 0;
+  };
+  fn.mesh = mesh;
+  return fn;
+}
+
+if (typeof window !== "undefined") window.HBPlaceMap = { create: createPlaceMap, PALETTE, iconSVG, iconColor, groundDarts, threeGroundPath };
