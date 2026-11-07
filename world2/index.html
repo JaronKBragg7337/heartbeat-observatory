@@ -50,7 +50,8 @@
       #minimap { width:112px; height:112px; border-radius:14px; border:1px solid rgba(200,220,235,.35); background:#2f3b2c; box-shadow:0 4px 18px rgba(0,0,0,.35); cursor:pointer; touch-action:manipulation; }
       #placeLabel { max-width:150px; padding:4px 10px; border-radius:999px; background:var(--panel-bg); border:1px solid var(--panel-border); font-size:11.5px; font-weight:700; color:#e8eef4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
       #placeLabel:empty { display:none; }
-      #soundBtn { padding:4px 10px; border-radius:999px; background:var(--panel-bg); border:1px solid var(--panel-border); font-size:11.5px; font-weight:700; color:#e8eef4; cursor:pointer; touch-action:manipulation; }
+      #soundBtn { position:relative; padding:4px 10px; border-radius:999px; background:var(--panel-bg); border:1px solid var(--panel-border); font-size:11.5px; font-weight:700; color:#e8eef4; cursor:pointer; touch-action:manipulation; }
+      #soundBtn::after { content:""; position:absolute; inset:-10px -4px; }
       body:not(.entered) #mapWrap { display:none; }
 
       #doorPrompt { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 110px); transform:translateX(-50%); z-index:32; padding:11px 22px; border-radius:999px; border:1px solid rgba(123,216,143,.55); background:rgba(10,16,18,.88); color:#cdebd9; font:600 14px/1 system-ui,sans-serif; letter-spacing:.04em; cursor:pointer; }
