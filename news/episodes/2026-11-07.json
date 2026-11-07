@@ -1,0 +1,1627 @@
+{
+  "date": "2026-11-07",
+  "title": "Heartbeat News — Saturday, November 7, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/codex/2026-11-07",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-07.md"
+    },
+    {
+      "name": "watch/claude/2026-11-07",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-11-07.md"
+    },
+    {
+      "name": "watch/deepseek/2026-11-07",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-07.md"
+    },
+    {
+      "name": "watch/kimi/2026-11-07",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-07.md"
+    },
+    {
+      "name": "watch/grok/2026-11-07",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-07.md"
+    },
+    {
+      "name": "watch/perplexity/2026-11-07",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/perplexity/2026-11-07.md"
+    },
+    {
+      "name": "watch/msi/2026-11-07",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-07.md"
+    },
+    {
+      "name": "watch/wire/2026-11-07",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-07.md"
+    },
+    {
+      "name": "watch/grok/2026-11-07-gaps",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-07-gaps.md"
+    },
+    {
+      "name": "watch/wire/2026-11-07-top",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-07-top.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Stephen Miller / Qeshm / Kyiv / Europe bomb-hoax follow-ups already aired yesterday: only today's new details were used",
+      "source": "wire top list",
+      "why": "Flagged as aired yesterday; covered only what is new."
+    },
+    {
+      "item": "Fort Wayne / Indiana items: Smith-Green referendum, firing-squad debate, fire lieutenant suspension, health grants, Marion arrest",
+      "source": "claude",
+      "why": "Local items below the national bar."
+    },
+    {
+      "item": "Gilt, Ibovespa, JSE, FTSE/DAX decimals, Selic hold, gold prints, NY Fed Williams remark",
+      "source": "deepseek, claude",
+      "why": "Detail beyond what a spoken show can carry; the main index moves aired."
+    },
+    {
+      "item": "Prediction-market prices for Hormuz agreement, Russia-Ukraine venue, RUH airport",
+      "source": "codex, kimi",
+      "why": "Trader detail; only the final-deal contract is mentioned."
+    },
+    {
+      "item": "NFL injury lists, NCAA schedule, remaining NBA scores",
+      "source": "claude, codex",
+      "why": "Injury-list and schedule detail; headline results aired."
+    },
+    {
+      "item": "Meta Spaces, Shield AI $1B round, Google Gemini Omni 1.2 Flash, Artex exposed servers, AI attacks on supermarket refrigeration",
+      "source": "codex, perplexity",
+      "why": "Single-source or aggregator-only items with the pages unopened."
+    },
+    {
+      "item": "Trump White House Starlink 'gift' story; RNC chair challenge; Democrats' planned investigations",
+      "source": "wire top, perplexity",
+      "why": "Headline-only; bodies not opened."
+    },
+    {
+      "item": "Yemen market airstrikes (30 killed per Houthi-run health authorities) and Saudi-intercepted Houthi missile",
+      "source": "perplexity, wire top",
+      "why": "Houthi-side claims only, one source each; left to the live wire."
+    },
+    {
+      "item": "Japan ICC early payment, Japan BOJ Ueda remark, Binance proof page status, Hegseth coverage beyond the denial",
+      "source": "kimi, claude",
+      "why": "Unconfirmed or context detail."
+    },
+    {
+      "item": "Godzilla Friday actuals, Cat in the Hat, Nick Harkaway, Leonard Cohen anniversary",
+      "source": "claude",
+      "why": "No actuals found; culture pieces headline-only."
+    }
+  ],
+  "ticker": [
+    "JOBS: +165,000 IN OCTOBER, UNEMPLOYMENT 4.1%; FED HIKE ODDS ~75%",
+    "TRUMP: 'MINOR STRIKES' ON IRAN'S QESHM; IRAN CLAIMS MQ-9 SHOT DOWN (UNCONFIRMED)",
+    "QATAR PLAN REPORTED: INSPECTORS, BLOCKADE LIFTED, HORMUZ DAY TWO; NO SIGNED TEXT",
+    "STEPHEN MILLER NAMED CHIEF OF STAFF, STARTS MONDAY",
+    "RUSSIAN MISSILES HIT KYIV; AT LEAST 5 WOUNDED; ABU DHABI TALKS TUESDAY",
+    "NASDAQ +1.1% TO 24,579; DOW -0.5%; BRENT $98.32",
+    "MISSISSIPPI SENATE: COLOM LEADS BY 2,498 AT ~97% COUNTED",
+    "HERZOG NAMES ISRAELI PM CANDIDATE SUNDAY; 67 VS 46, NO PATH TO 61",
+    "PARAGUAY SENATE REMOVES PRESIDENT PEÑA 44-0; ALLIANA SWORN IN",
+    "KENYA: CULT LEADER MACKENZIE GETS 200 YEARS FOR 191 DEATHS",
+    "HOAX BOMB THREATS HIT FLIGHTS AND NEWSROOMS IN 5+ EUROPEAN COUNTRIES",
+    "US MEASLES 5,182 CASES, MOST SINCE 1991",
+    "TESLA TO WIND DOWN CYBERTRUCK ~MID-2027; MUSK",
+    "POPE LEO XIV BEGINS 12-DAY SOUTH AMERICA TOUR IN URUGUAY",
+    "NEW ZEALAND ELECTION: NATIONAL 31%, LABOUR 28% IN EARLY COUNT"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "New U.S. strikes on Iran, a new chief of staff, a jobs surprise",
+        "bullets": [
+          "Trump: 'minor strikes' on Iranian air defense; Qatar plan on the table",
+          "Stephen Miller named White House chief of staff",
+          "165,000 jobs added; unemployment 4.1%",
+          "Kyiv hit before Tuesday's talks; bomb hoaxes across Europe"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Saturday, November seventh. The United States struck Iran again, the president picked a new chief of staff, and the jobs report came in far above what anyone expected."
+        },
+        {
+          "who": "vex",
+          "text": "Also, Russian missiles hit Kyiv three days before peace talks, hoax bomb threats are hitting flights across Europe, and the Pope landed in Uruguay."
+        },
+        {
+          "who": "joe",
+          "text": "There's a lot today, so we'll move quickly. Stay with us."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "breaking",
+      "strap": "US STRIKES IRAN AGAIN; IRAN CLAIMS IT DOWNED A DRONE; QATAR PLAN",
+      "headline": "Qeshm strikes, a drone claim, and a mediation plan",
+      "category": "MIDDLE EAST",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "IRAN",
+        "title": "First US strikes since the midterms",
+        "stats": [
+          {
+            "label": "Trump on the strikes",
+            "value": "'Minor'"
+          },
+          {
+            "label": "Iran's claim",
+            "value": "MQ-9 shot down"
+          },
+          {
+            "label": "Brent settle",
+            "value": "$98.32"
+          },
+          {
+            "label": "State Dept reward",
+            "value": "Up to $20M"
+          }
+        ],
+        "bullets": [
+          "Iranian media: two strikes near Suza, Qeshm Island",
+          "No casualties reported in sources seen",
+          "Qatar plan: inspectors, blockade lifted, Hormuz day two",
+          "No signed text; U.S.-Iran deal market at 9.5%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Trump confirms strikes)",
+          "url": "https://www.aljazeera.com/news/2026/11/7/trump-confirms-new-us-strikes-on-irans-qeshm-island?traffic_source=rss"
+        },
+        {
+          "name": "Guardian (minor strikes)",
+          "url": "https://www.theguardian.com/world/2026/nov/07/us-carries-out-another-round-of-minor-strikes-on-iran-trump-says"
+        },
+        {
+          "name": "Guardian (Qatar plan)",
+          "url": "https://www.theguardian.com/world/2026/nov/07/strait-of-hormuz-qatar-plan-iran-nuclear-inspections"
+        },
+        {
+          "name": "Yahoo / Reuters (Trump and Qatar's emir)",
+          "url": "https://ca.news.yahoo.com/trump-discusses-middle-east-escalation-122002281.html"
+        },
+        {
+          "name": "The Week (State Dept reward)",
+          "url": "https://www.theweek.in/wire-updates/international/2026/11/07/us-military-carries-out-fresh-targeted-strikes-on-iran-as-tehran-weighs-mediator-s-proposals.amp.html"
+        },
+        {
+          "name": "CNBC (oil settlement)",
+          "url": "https://www.cnbc.com/2026/11/06/oil-price-today-brent-wti.html"
+        },
+        {
+          "name": "Polymarket (final-deal contract)",
+          "url": "https://gamma-api.polymarket.com/markets?slug=us-iran-final-nuclear-deal-by-december-31-2026-191"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The United States struck Iran again. Speaking in West Palm Beach, President Trump called them quote minor strikes. He said Iran had built quote a little bit of an anti-aircraft device, and we knocked it out in about fifteen minutes, maybe five. Asked about Qeshm Island, he said he didn't want to talk about it."
+        },
+        {
+          "who": "joe",
+          "text": "Here is the other side. Iranian state media reported two missile strikes near Suza, on Qeshm. No casualties were reported. And Iran's army says its air defenses destroyed a U.S. MQ-9 drone over the island. That is Iran's claim. It has not been independently confirmed."
+        },
+        {
+          "who": "vex",
+          "text": "The U.S. military described the strikes as defensive, aimed at an air-defense system. Explosions were also reported near Bandar Abbas. Central Command called the situation relatively calm. These are the first U.S. strikes since the midterms."
+        },
+        {
+          "who": "joe",
+          "text": "At the same time, talks. Trump spoke with Qatar's emir and said there's been a lot of progress. The Guardian reports a Qatari plan in two stages. The U.S. lifts its blockade. Iran lets U.N. inspectors in. The Strait of Hormuz reopens on day two. That is a report of a proposal. No side has signed anything."
+        },
+        {
+          "who": "vex",
+          "text": "Iran says it is reviewing the Qatari proposals. Prediction markets still give a final nuclear deal by year end about nine and a half percent."
+        },
+        {
+          "who": "joe",
+          "text": "So, strikes and talks in the same afternoon. The State Department also offered up to twenty million dollars for information on Iran's nuclear sites and scientists. Make of that what you like."
+        },
+        {
+          "who": "vex",
+          "text": "Oil: Brent settled at ninety-eight dollars and thirty-two cents, up three cents on the day, but down more than thirteen percent on the week. Tanker incidents were also reported in the Gulf. One crew member was reportedly killed on a products tanker. Maritime officials have not confirmed the details, and Trump has accused Iran of inventing attacks to push prices up."
+        },
+        {
+          "who": "joe",
+          "text": "A price is not a reopening. The strait is not open."
+        }
+      ]
+    },
+    {
+      "id": "washington",
+      "kind": "story",
+      "strap": "MILLER NAMED CHIEF OF STAFF; DOJ DROPS CALIFORNIA BALLOT SUIT",
+      "headline": "Miller takes over the West Wing",
+      "category": "U.S. POLITICS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WASHINGTON",
+        "title": "A new chief of staff starts Monday",
+        "stats": [
+          {
+            "label": "New chief of staff",
+            "value": "Stephen Miller"
+          },
+          {
+            "label": "Starts",
+            "value": "Mon Nov 9"
+          },
+          {
+            "label": "California ballots",
+            "value": "~20,000, suit dropped"
+          },
+          {
+            "label": "Arch halt",
+            "value": "Status report Mon"
+          }
+        ],
+        "bullets": [
+          "Susie Wiles moves to the political operation",
+          "White House denies Hegseth and Rubio are leaving",
+          "Massie plans impeachment vote on Hegseth",
+          "Two Justice Dept. officials resigned"
+        ]
+      },
+      "sources": [
+        {
+          "name": "White House (Miller named)",
+          "url": "https://www.whitehouse.gov/releases/2026/11/president-trump-names-stephen-miller-as-33rd-white-house-ch"
+        },
+        {
+          "name": "Guardian (Miller)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/06/stephen-miller-chief-of-staff-trump"
+        },
+        {
+          "name": "NBC News (Miller)",
+          "url": "https://www.nbcnews.com/politics/donald-trump/trump-stephen-miller-susie-wiles-white-house-chief-of-staff-rcna607892"
+        },
+        {
+          "name": "Guardian (Miller and immigration)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/06/donald-trump-stephen-miller-immigration"
+        },
+        {
+          "name": "CBS News (DOJ drops ballot suit)",
+          "url": "https://www.cbsnews.com/news/justice-department-drops-lawsuit-california-ballots-alleged-noncitizens/"
+        },
+        {
+          "name": "Al Jazeera (prosecutor exits)",
+          "url": "https://www.aljazeera.com/news/2026/11/6/us-prosecutor-who-led-trump-backed-election-probe-exits-justice-department?traffic_source=rss"
+        },
+        {
+          "name": "NPR (arch)",
+          "url": "https://www.npr.org/2026/11/06/nx-s1-6031990/trump-arch-planning-commission-injunction"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "President Trump has named Stephen Miller White House chief of staff, effective Monday. He announced it on Truth Social. Susie Wiles, who submitted her resignation Thursday night, moves to the political operation."
+        },
+        {
+          "who": "joe",
+          "text": "Miller is the man who designed the deportation program. So the person running the building is now the person who wrote the plan. Fox frames it as a turn toward governing by executive order on immigration, tariffs and spending. Some industries hit by enforcement are angry, according to the Washington Post."
+        },
+        {
+          "who": "vex",
+          "text": "The White House denied that Defense Secretary Hegseth and Secretary of State Rubio are leaving. Trump said Hegseth is doing a very good job. CBS sources say the president asked advisers whether to keep him. And Representative Massie plans to force an impeachment vote on Hegseth when Congress returns next week. Conviction would need two thirds of the Senate."
+        },
+        {
+          "who": "joe",
+          "text": "In the courts, the Justice Department moved to drop its suit to set aside about twenty thousand California mail ballots it said went to noncitizens. It says the relief is no longer available. That comes a week before a special master was to test the list."
+        },
+        {
+          "who": "vex",
+          "text": "Two Justice Department officials resigned, including the U.S. attorney who led the so-called grand conspiracy probe of the president's opponents. Attorney General Blanche confirmed it."
+        },
+        {
+          "who": "joe",
+          "text": "And the judge's halt on the president's arch stands. She wants a status report Monday."
+        },
+        {
+          "who": "vex",
+          "text": "Plenty of Mondays coming."
+        }
+      ]
+    },
+    {
+      "id": "economy",
+      "kind": "story",
+      "strap": "JOBS +165,000, UNEMPLOYMENT 4.1%; STOCKS BOUNCE; DRAFTKINGS FALLS",
+      "headline": "Jobs beat by about a hundred thousand",
+      "category": "MARKETS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "ECONOMY",
+        "title": "Strong jobs, higher rate-hike odds",
+        "stats": [
+          {
+            "label": "Jobs added",
+            "value": "165,000"
+          },
+          {
+            "label": "Unemployment",
+            "value": "4.1%"
+          },
+          {
+            "label": "Nasdaq",
+            "value": "24,579, +1.1%"
+          },
+          {
+            "label": "Dow",
+            "value": "51,286, -0.5%"
+          }
+        ],
+        "bullets": [
+          "Forecasts were 59,000 to 65,000",
+          "September revised up to 60,000",
+          "Fed December hike odds about 75%",
+          "Nasdaq down 3.4% on the week"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BLS (October jobs)",
+          "url": "https://www.bls.gov/news.release/empsit.nr0.htm"
+        },
+        {
+          "name": "NBC News (jobs)",
+          "url": "https://www.nbcnews.com/business/economy/us-added-jobs-october-risks-stagnation-rcna607812"
+        },
+        {
+          "name": "CNBC (jobs report)",
+          "url": "https://www.cnbc.com/2026/11/06/jobs-report-october-2026.html"
+        },
+        {
+          "name": "CBS News (close)",
+          "url": "https://www.cbsnews.com/news/stocks-tech-sell-off-nasdaq-correction-dow/"
+        },
+        {
+          "name": "CNBC (yields)",
+          "url": "https://www.cnbc.com/2026/11/06/treasury-yields-inch-lower-as-investors-look-ahead-to-key-jobs-data-.html"
+        },
+        {
+          "name": "GuruFocus (DraftKings)",
+          "url": "https://www.gurufocus.com/news/9176872/draftkings-dkng-q3-earnings-miss-expectations-amid-revenue-growth"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The October jobs report beat forecasts by about a hundred thousand. The Labor Department says the economy added one hundred sixty-five thousand jobs. Economists expected between fifty-nine and sixty-five thousand. Unemployment fell to four point one percent. September was revised up to sixty thousand."
+        },
+        {
+          "who": "joe",
+          "text": "After a week of layoff headlines, that's a surprise. The strong report pushed up Treasury yields and the dollar. And it raised the odds of a Federal Reserve rate hike in December, to about seventy-five percent on CME's tracker."
+        },
+        {
+          "who": "vex",
+          "text": "Stocks bounced partway back from Thursday's rout. The Nasdaq rose one point one percent to twenty-four thousand, five hundred seventy-nine. The S&P five hundred gained a third of a percent. The Dow slipped half a percent, the only major index down. For the week, the Nasdaq lost three point four percent."
+        },
+        {
+          "who": "joe",
+          "text": "The ten-year Treasury yielded about four point eight six percent. Gold fell. Oil settled near ninety-eight dollars."
+        },
+        {
+          "who": "vex",
+          "text": "One company that did not bounce: DraftKings. Revenue missed, the loss was wider than expected, and it cut its yearly guidance. The company blamed its predictions business. Shares fell more than twenty percent."
+        },
+        {
+          "who": "joe",
+          "text": "In Asia, Friday's selloff was worse. Japan's Nikkei closed down almost six percent. South Korea's Kospi fell six percent. India's Nifty went up two percent."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "RUSSIAN MISSILES HIT KYIV BEFORE TUESDAY'S ABU DHABI TALKS",
+      "headline": "Kyiv under fire; talks still on",
+      "category": "UKRAINE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "Missiles on Kyiv, talks in three days",
+        "stats": [
+          {
+            "label": "Wounded in Kyiv",
+            "value": "5 (AP)"
+          },
+          {
+            "label": "Talks",
+            "value": "Abu Dhabi, Tue"
+          },
+          {
+            "label": "Ukraine lead",
+            "value": "Rustem Umerov"
+          },
+          {
+            "label": "Komyshuvakha dead",
+            "value": "50 to 55"
+          }
+        ],
+        "bullets": [
+          "Northern Bridge over the Dnipro closed",
+          "Power and water outages in Kyiv region",
+          "Friday: 227 drones, 196 downed",
+          "No agreed text for Tuesday"
+        ]
+      },
+      "sources": [
+        {
+          "name": "ABC / AP (Kyiv)",
+          "url": "https://abcnews.com/International/wireStory/missiles-target-kyiv-injure-5-ukraine-prepares-talks-137937211"
+        },
+        {
+          "name": "Al Jazeera (Kyiv attack)",
+          "url": "https://www.aljazeera.com/news/2026/11/7/russia-launches-missile-attack-on-kyiv-injuring-residents?traffic_source=rss"
+        },
+        {
+          "name": "Click Orlando / AP",
+          "url": "https://www.clickorlando.com/news/world/2026/11/07/missiles-target-kyiv-and-injure-5-as-ukraine-prepares-for-talks-with-russia-and-the-us/"
+        },
+        {
+          "name": "Repubblica (live blog)",
+          "url": "https://www.repubblica.it/en/world/2026/11/07/diretta/ukrainerussia_war_today_s_news-425705905/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Russian ballistic missiles hit Kyiv overnight in several waves. AP says at least five people were wounded, including a fourteen-year-old. Residential buildings, a kindergarten and commercial properties were damaged. The Northern Bridge over the Dnipro was closed both ways."
+        },
+        {
+          "who": "joe",
+          "text": "Other counts differ. Al Jazeera quotes Mayor Klitschko saying two injured. Those numbers were not merged. There are new power and water outages in Kyiv and Zhytomyr regions."
+        },
+        {
+          "who": "vex",
+          "text": "The night before, Ukraine's Air Force counted two hundred twenty-seven drones, eighty-six of them jet-powered. One hundred ninety-six were shot down. The rest hit fourteen sites."
+        },
+        {
+          "who": "joe",
+          "text": "This comes three days before talks. Russian, Ukrainian and U.S. negotiators meet Tuesday in Abu Dhabi. It's the fourth round brokered by Trump. Ukraine's team is led by Rustem Umerov. Europeans are not expected in the room."
+        },
+        {
+          "who": "vex",
+          "text": "President Trump said this week there could be a big, beautiful agreement. Days later, there are no terms published. China says it is in communication about a possible meeting of Xi, Trump and Putin. No date."
+        },
+        {
+          "who": "joe",
+          "text": "And in Komyshuvakha, where a school used as an aid point was hit on November second, the toll keeps rising. Sources now say between fifty and fifty-five dead. The search is in its fifth day."
+        }
+      ]
+    },
+    {
+      "id": "midterms",
+      "kind": "story",
+      "strap": "MISSISSIPPI SENATE: COLOM +2,498; ALASKA AND KANSAS STILL OPEN",
+      "headline": "Three counts that will not close this weekend",
+      "category": "MIDTERMS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "ELECTIONS",
+        "title": "Close races still counting",
+        "stats": [
+          {
+            "label": "Mississippi",
+            "value": "Colom +2,498"
+          },
+          {
+            "label": "Alaska",
+            "value": "Peltola +637 to 700"
+          },
+          {
+            "label": "Kansas governor",
+            "value": "Holscher ~+7,600"
+          },
+          {
+            "label": "Senate",
+            "value": "54-44 D"
+          }
+        ],
+        "bullets": [
+          "Mississippi ~97% counted",
+          "Experian voter-list dispute may decide it",
+          "Peltola sues for rejected-ballot records",
+          "Alaska count could run to Nov 18"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Guardian (Mississippi)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/06/mississippi-senate-race-vote-counting-lawyers"
+        },
+        {
+          "name": "Washington Post (Mississippi live)",
+          "url": "https://www.washingtonpost.com/elections/results/2026/11/03/mississippi-senate-live-updates/"
+        },
+        {
+          "name": "Newsweek (Alaska)",
+          "url": "https://www.newsweek.com/alaska-senate-margin-keeps-justice-department-lawsuit-alive-126678"
+        },
+        {
+          "name": "Reuters (Peltola suit)",
+          "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxNb2Y0QkZDU3lpQXJjc2ZuYWlvT3lMM0wyTDFqZkI5Q3VWS1dycnhHaElwLU9NeVJ2Y1MzaVVCb1EzZlU4U2RadjVYZHo1cGV1eFZYYWsySW9vZ3ZnbWxYc2JXODhsVHlrYko1VmZEV29WY1hoYXJyUVNZbnhXOTdIZGU1U0xqb3gxS2VwWDh4Rnk2NVFUMHlmU0Fqa3RpZk5lclhld1JRdmRZcWJlbmVIR29IX0w4YjRqaV9V?oc=5"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Three election counts will not close this weekend. In Mississippi, Democrat Colom leads Republican Senator Hyde-Smith by two thousand, four hundred ninety-eight votes with about ninety-seven percent counted. That's the fourth straight day the lead has widened."
+        },
+        {
+          "who": "joe",
+          "text": "The fight now is over affidavit ballots. Mississippi Today reports the Secretary of State's office used Experian address data to mark voters inactive, and Experian says its data was never meant for that. The office says it has stopped using it. Those voters' provisional ballots could decide the race."
+        },
+        {
+          "who": "vex",
+          "text": "In Alaska, Mary Peltola leads by under seven hundred votes with seventy-four percent counted. Mail ballots are accepted through November eighteenth. Her campaign sued the state for records on rejected absentee ballots. A Justice Department appeal about a second Dan Sullivan name is also pending."
+        },
+        {
+          "who": "joe",
+          "text": "In Kansas, Democrat Holscher leads the governor's race by about seventy-six hundred, and an audit is running."
+        },
+        {
+          "who": "vex",
+          "text": "The Senate stands at fifty-four to forty-four for Democrats, per the last count we have. None of these three has been called by the A.P."
+        },
+        {
+          "who": "joe",
+          "text": "Elsewhere: Houston's mayor, John Whitmire, signed an order limiting police contact with federal immigration agents to arrests on jailable offenses. Elections matter, he said. DHS and Governor Abbott pushed back. And in Los Angeles, Nithya Raman, the mayor-elect, is being profiled as the city's historic pick."
+        }
+      ]
+    },
+    {
+      "id": "israel",
+      "kind": "story",
+      "strap": "ISRAEL: HERZOG TO NAME PM CANDIDATE SUNDAY; NO PATH TO 61",
+      "headline": "The count says 67. The math says no.",
+      "category": "ISRAEL",
+      "status": "observed",
+      "graphic": {
+        "kicker": "ISRAEL",
+        "title": "Herzog decides Sunday",
+        "stats": [
+          {
+            "label": "Recommended Eisenkot",
+            "value": "67"
+          },
+          {
+            "label": "Recommended Netanyahu",
+            "value": "46"
+          },
+          {
+            "label": "To govern",
+            "value": "61 seats"
+          },
+          {
+            "label": "Decision",
+            "value": "Sun Nov 8"
+          }
+        ],
+        "bullets": [
+          "Eisenkot rules out Arab-led parties",
+          "Netanyahu wants a 'broad national government'",
+          "Nominee gets 28 days, plus 14 possible",
+          "Netanyahu-retirement market at 14.5%"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Herzog)",
+          "url": "https://www.aljazeera.com/news/2026/11/7/president-herzog-faces-key-choice-as-israel-struggles-to-form-government?traffic_source=rss"
+        },
+        {
+          "name": "France 24 (Israel)",
+          "url": "https://www.france24.com/en/video/20261106-israel-president-to-announce-sunday-who-will-form-new-government"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Israel's president, Isaac Herzog, names a candidate to form a government on Sunday. Sixty-seven lawmakers recommended Eisenkot. Forty-six recommended Netanyahu."
+        },
+        {
+          "who": "joe",
+          "text": "But Herzog says the count doesn't settle it, citing mutual vetoes. The sixty-seven include nineteen seats from Arab-led parties. Eisenkot has ruled out governing with them. So does Netanyahu, who calls for a broad national government led by Likud."
+        },
+        {
+          "who": "vex",
+          "text": "So there's a majority on paper and no declared path to sixty-one seats. The nominee gets twenty-eight days, plus a possible fourteen-day extension. Nomination alone creates no government."
+        }
+      ]
+    },
+    {
+      "id": "europe",
+      "kind": "story",
+      "strap": "BOMB HOAXES HIT FLIGHTS IN 5+ EUROPEAN COUNTRIES",
+      "headline": "Europe: hoax threats, a king's decision, a lawsuit",
+      "category": "EUROPE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "Hoaxes, diversions and political stalls",
+        "stats": [
+          {
+            "label": "Countries hit",
+            "value": "5+"
+          },
+          {
+            "label": "Threats, one week",
+            "value": "25 (earlier count)"
+          },
+          {
+            "label": "Belgian king",
+            "value": "Rejects resignation"
+          },
+          {
+            "label": "Wounded suing",
+            "value": "18+"
+          }
+        ],
+        "bullets": [
+          "Flights diverted; emergency landings reported",
+          "Media outlets also targeted",
+          "Protesters enter Amsterdam Microsoft site",
+          "France: 2 dead in school bus crash"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC (bomb threats)",
+          "url": "https://www.bbc.co.uk/news/articles/cq62yy064vjpo?at_medium=RSS&at_campaign=rss"
+        },
+        {
+          "name": "NPR (Europe hoaxes)",
+          "url": "https://www.npr.org/2026/11/06/nx-s1-6032612/europe-flights-hoaxes"
+        },
+        {
+          "name": "Al Jazeera (what we know)",
+          "url": "https://www.aljazeera.com/news/2026/11/6/hoax-or-bomb-threats-what-we-know-about-flight-disruptions-across-europe?traffic_source=rss"
+        },
+        {
+          "name": "France 24 (hoaxes widen)",
+          "url": "https://www.france24.com/en/europe-bomb-hoaxes-widen"
+        },
+        {
+          "name": "France 24 (school bus)",
+          "url": "https://www.france24.com/en/france/20261106-at-least-two-killed-16-injured-in-school-bus-accident-in-eastern-france"
+        },
+        {
+          "name": "Watch gaps desk (Belgium, Paris, Istanbul)",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-07-gaps.md"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Bomb threats reportedly targeted flights, airports and media outlets in at least five European countries. The BBC and NPR report flights diverted and emergency landings. Reuters, via Al Jazeera, says the threats turned out to be hoaxes. An earlier count had twenty-five in a week. There's no new count today."
+        },
+        {
+          "who": "joe",
+          "text": "In Belgium, King Philippe rejected Prime Minister Bart De Wever's resignation and sent the five-party coalition back to the budget talks. De Wever had resigned Monday after talks broke down."
+        },
+        {
+          "who": "vex",
+          "text": "In Paris, lawyers for at least eighteen people wounded in the protests say they will sue Interior Minister Laurent Nuñez at the Court of Justice of the Republic. They allege he ordered the use of weapons he knew to be mutilating. That is a claim announced at a press conference, not yet a court filing in anything we saw."
+        },
+        {
+          "who": "joe",
+          "text": "In Istanbul, a court jailed former family minister Fatma Betül Sayan Kaya in a fund investigation. The charges include violating the capital-markets law. Her husband was released with a travel ban."
+        },
+        {
+          "who": "vex",
+          "text": "In eastern France, a bus carrying school children crashed. Two people died and sixteen were hurt."
+        },
+        {
+          "who": "joe",
+          "text": "And in Britain, the culture secretary says Russell Brand's rape conviction must be a wake-up call for the media."
+        }
+      ]
+    },
+    {
+      "id": "latam",
+      "kind": "story",
+      "strap": "PARAGUAY'S PRESIDENT REMOVED; POPE LEO LANDS IN URUGUAY",
+      "headline": "Paraguay's president out; the Pope on tour",
+      "category": "LATIN AMERICA",
+      "status": "observed",
+      "graphic": {
+        "kicker": "AMERICAS",
+        "title": "Impeachment in Paraguay, a papal tour begins",
+        "stats": [
+          {
+            "label": "Senate vote",
+            "value": "44-0-1"
+          },
+          {
+            "label": "New president",
+            "value": "Pedro Alliana"
+          },
+          {
+            "label": "Pope's tour",
+            "value": "Nov 6 to 17"
+          },
+          {
+            "label": "Citizens locked out",
+            "value": "~60%"
+          }
+        ],
+        "bullets": [
+          "Peña under house arrest",
+          "Warrant for ex-central-bank chief",
+          "Ueno Bank collapse behind the crisis",
+          "Pope: Uruguay, Argentina, Peru"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC (Paraguay)",
+          "url": "https://www.bbc.co.uk/news/articles/c68jzzvjgdy9o?at_medium=RSS&at_campaign=rss"
+        },
+        {
+          "name": "Guardian (house arrest)",
+          "url": "https://www.theguardian.com/world/2026/nov/07/ousted-paraguay-president-under-house-arrest-after-banking-crisis-leaves-60-of-country-unable-to-access-accounts"
+        },
+        {
+          "name": "Al Jazeera (Ueno collapse)",
+          "url": "https://www.aljazeera.com/news/2026/11/6/how-paraguays-ueno-collapse-is-only-its-latest-banking-crisis?traffic_source=rss"
+        },
+        {
+          "name": "NPR (Pope's tour)",
+          "url": "https://www.npr.org/2026/11/06/nx-s1-6026702/pope-leo-begins-12-day-3-country-tour-after-cancer-surgery"
+        },
+        {
+          "name": "CBS News (Pope voted)",
+          "url": "https://www.cbsnews.com/news/pope-leo-votes-election-proud-american/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Paraguay's Senate unanimously removed President Santiago Peña after an impeachment trial. The vote was forty-four to zero, with one abstention. The charges relate to the collapse of Ueno Bank. Peña is now under house arrest. Vice President Pedro Alliana has been sworn in."
+        },
+        {
+          "who": "joe",
+          "text": "The Guardian reports the banking crisis left about sixty percent of the country unable to access accounts. A warrant was issued for the former central bank chief."
+        },
+        {
+          "who": "vex",
+          "text": "Now the Pope. Leo the Fourteenth landed in Montevideo, Uruguay, on Friday. It's the start of a twelve-day tour of Uruguay, Argentina and Peru. It comes less than a month after lung surgery. The Vatican says he is in pretty good health."
+        },
+        {
+          "who": "joe",
+          "text": "And he voted in the U.S. midterms. His reason: I'm proud to be an American."
+        }
+      ]
+    },
+    {
+      "id": "asia",
+      "kind": "story",
+      "strap": "NZ VOTE TIGHT; JAPAN M6.1 QUAKE; WONG +10 YEARS; DELHI SMOG",
+      "headline": "Asia and the Pacific",
+      "category": "ASIA",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ASIA",
+        "title": "Close vote in New Zealand, Hong Kong sentence, Delhi smog",
+        "stats": [
+          {
+            "label": "NZ early count",
+            "value": "National 31.2%, Labour 28.4%"
+          },
+          {
+            "label": "Japan quake",
+            "value": "M6.1, no tsunami"
+          },
+          {
+            "label": "Joshua Wong",
+            "value": "+10 years"
+          },
+          {
+            "label": "Delhi AQI",
+            "value": "581"
+          }
+        ],
+        "bullets": [
+          "Najib Razak freed, then returned to custody",
+          "Docomo: up to 294,839 accounts exposed",
+          "Taiwan closes Papua New Guinea office",
+          "Japan: 28 priority areas, over 370 trillion yen"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (New Zealand)",
+          "url": "https://www.aljazeera.com/news/2026/11/7/governing-party-leads-in-new-zealands-knife-edge-vote-early-results"
+        },
+        {
+          "name": "Japan Times (quake)",
+          "url": "https://www.japantimes.co.jp/news/2026/11/06/japan/tokyo-shallow-quake/"
+        },
+        {
+          "name": "US State Dept (Hong Kong)",
+          "url": "https://www.state.gov/releases/office-of-the-spokesman/2026/11/on-the-conviction-of-hong-kong-alliance-leaders-and-sentencing-of-joshua-wong/"
+        },
+        {
+          "name": "NPR (Macao)",
+          "url": "https://www.npr.org/2026/11/06/g-s1-152217/ex-lawmaker-gets-12-5-years-in-macaos-first-national-security-case"
+        },
+        {
+          "name": "Business Standard (Delhi)",
+          "url": "https://www.business-standard.com/india-news/delhi-world-s-most-polluted-major-city-says-swiss-group-on-diwali-eve-126110700420_1.html"
+        },
+        {
+          "name": "ABC / AP (Najib)",
+          "url": "https://abcnews.com/International/wireStory/malaysian-palace-house-arrest-order-imprisoned-leader-najib-137936646"
+        },
+        {
+          "name": "ASCII.jp (Docomo)",
+          "url": "https://ascii.jp/en/elem/000/004/449/4449470/"
+        },
+        {
+          "name": "Al Jazeera (Taiwan and PNG)",
+          "url": "https://www.aljazeera.com/news/2026/11/6/taiwan-to-close-representative-office-in-papua-new-guinea-blames-china"
+        },
+        {
+          "name": "Japan Times (investment list)",
+          "url": "https://www.japantimes.co.jp/business/2026/11/07/economy/japan-priority-items-investments/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "New Zealand voted, and it's close. In early results, National leads Labour thirty-one to twenty-eight percent. Neither major party is on track to govern alone."
+        },
+        {
+          "who": "joe",
+          "text": "In Hong Kong, activist Joshua Wong's new ten-year sentence under the National Security Law was handed down Thursday. Ten countries, including the U.S., Britain, Japan and Canada, jointly called for an end to unjust prosecutions. In Macao, a pro-democracy former lawmaker got twelve and a half years in the city's first national security case."
+        },
+        {
+          "who": "vex",
+          "text": "A magnitude six point one earthquake struck off the coast near Tokyo. Shaking reached intensity three. No tsunami warning, and no damage reported."
+        },
+        {
+          "who": "joe",
+          "text": "In Malaysia, former prime minister Najib Razak left prison after a fine was paid, then returned hours later when the attorney general sought legal clarification. The palace says the conditions of his conditional pardon were met."
+        },
+        {
+          "who": "vex",
+          "text": "In Japan, NTT Docomo says unauthorized access may have exposed information on up to two hundred ninety-four thousand accounts. Separately, the government picked twenty-eight priority areas for more than three hundred seventy trillion yen in investment, per unnamed government sources."
+        },
+        {
+          "who": "joe",
+          "text": "Taiwan says it is closing its office in Papua New Guinea, blaming Chinese pressure."
+        },
+        {
+          "who": "vex",
+          "text": "And in Delhi, on the eve of Diwali, the air quality index hit five hundred eighty-one on one measure. Delhi is the world's most polluted major city this morning, the Swiss group IQAir says."
+        }
+      ]
+    },
+    {
+      "id": "africa",
+      "kind": "story",
+      "strap": "KENYA CULT LEADER GETS 200 YEARS; TANZANIA'S LISSU JAILED; ANC SLUMPS",
+      "headline": "Africa: sentences and an election",
+      "category": "AFRICA",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "AFRICA",
+        "title": "Courts and ballots",
+        "stats": [
+          {
+            "label": "Mackenzie sentence",
+            "value": "200 years"
+          },
+          {
+            "label": "Killed",
+            "value": "191"
+          },
+          {
+            "label": "Lissu sentence",
+            "value": "4 years"
+          },
+          {
+            "label": "ANC vs DA",
+            "value": "~32% vs ~25%"
+          }
+        ],
+        "bullets": [
+          "Treason charge against Lissu dropped",
+          "Mackenzie faces more trials; appeal filed",
+          "South Africa: results not final",
+          "Ethiopia attack and Sudan report: claims"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC (Mackenzie)",
+          "url": "https://www.bbc.co.uk/news/articles/cm5yne5984l0o?at_medium=RSS&at_campaign=rss"
+        },
+        {
+          "name": "Guardian (Mackenzie)",
+          "url": "https://www.theguardian.com/world/2026/nov/06/kenyan-doomsday-sect-leader-jailed-murders-paul-mackenzie"
+        },
+        {
+          "name": "Al Jazeera (Lissu)",
+          "url": "https://www.aljazeera.com/news/2026/11/6/tanzania-court-jails-opposition-leader-for-incitement-lifts-treason-charge?traffic_source=rss"
+        },
+        {
+          "name": "ABC / AP (Lissu)",
+          "url": "https://abcnews.com/International/wireStory/tanzania-opposition-leader-lissu-sentenced-4-years-incitement-137905667"
+        },
+        {
+          "name": "Reuters via AOL (South Africa)",
+          "url": "https://www.aol.com/articles/south-africas-anc-track-big-064132000.html"
+        },
+        {
+          "name": "Watch gaps desk (Sudan panel)",
+          "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-07-gaps.md"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In Kenya, doomsday cult leader Paul Mackenzie was sentenced to two hundred years for the murders of one hundred ninety-one people. That's one hundred years for murder by starvation and a hundred for direct homicide. Twenty-eight co-defendants got up to one hundred sixty years. An appeal has been filed, and more trials are pending."
+        },
+        {
+          "who": "joe",
+          "text": "In Tanzania, opposition leader Tundu Lissu was sentenced to four years for incitement. The court acquitted him of treason, which could have carried a death sentence. He calls the case political persecution, and he can appeal."
+        },
+        {
+          "who": "vex",
+          "text": "In South Africa's local elections, with about eighty percent counted, the ANC has roughly thirty-two percent and the Democratic Alliance twenty-five. The ANC is about fourteen points below its twenty twenty-one municipal share if that holds. Coalition talks loom in Johannesburg."
+        },
+        {
+          "who": "joe",
+          "text": "Two claims. Anadolu reports at least thirty-four Ethiopian Orthodox Christians killed in a new attack in Oromia. And Bloomberg reports a confidential U.N. panel found the United Arab Emirates helped fund and train Colombian mercenaries who fought with Sudan's Rapid Support Forces. We saw neither report in full, and the U.A.E. is not quoted in our sources."
+        }
+      ]
+    },
+    {
+      "id": "ai-tech",
+      "kind": "story",
+      "strap": "AMSTERDAM MICROSOFT SITE BREACHED; CYBERTRUCK ENDS; $129M A.I. FRAUD",
+      "headline": "A.I. backlash, money and crime",
+      "category": "A.I. & TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "Data centers, Cybertruck, deepfake fraud",
+        "stats": [
+          {
+            "label": "OpenAI round",
+            "value": "$11B at $1.25T"
+          },
+          {
+            "label": "Cybertruck",
+            "value": "Ends ~mid-2027"
+          },
+          {
+            "label": "A.I. fraud",
+            "value": "$129M"
+          },
+          {
+            "label": "Amsterdam activists",
+            "value": "100 to ~400"
+          }
+        ],
+        "bullets": [
+          "Anthropic IPO valuation doubted (WSJ, Reuters)",
+          "Spy claim: Nvidia CEO targeted (NYT)",
+          "EU tells TikTok to fix 'For You' feed",
+          "Protests planned in 15 countries"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Guardian (Amsterdam)",
+          "url": "https://www.theguardian.com/world/2026/nov/06/activists-break-into-building-site-of-microsoft-datacentre-in-amsterdam"
+        },
+        {
+          "name": "ABC / AP (Amsterdam)",
+          "url": "https://abcnews.com/International/wireStory/protesters-break-microsoft-data-center-site-amsterdam-europes-137915154"
+        },
+        {
+          "name": "CNBC (Cybertruck)",
+          "url": "https://www.cnbc.com/2026/11/06/tesla-cybertruck-texas-musk.html"
+        },
+        {
+          "name": "Guardian (Tesla)",
+          "url": "https://www.theguardian.com/technology/2026/nov/06/tesla-to-wind-down-cybertruck-production-as-elon-musk-focuses-on-robotics-and-ai"
+        },
+        {
+          "name": "The Verge (OpenAI)",
+          "url": "https://www.theverge.com/ai-artificial-intelligence/1029380/openai-1-25-trillion-investment-valuation"
+        },
+        {
+          "name": "CNBC (OpenAI CFO)",
+          "url": "https://www.cnbc.com/2026/11/06/ing-ai-data-center-loans-debt.html"
+        },
+        {
+          "name": "Japan Times (Nvidia spy)",
+          "url": "https://www.japantimes.co.jp/news/2026/11/07/asia-pacific/china-nvidia-jensen-huang-spy/"
+        },
+        {
+          "name": "CBS News ($129M fraud)",
+          "url": "https://www.cbsnews.com/news/3-ai-steal-129-million-companies-impersonating-executives-lawyers/"
+        },
+        {
+          "name": "PYMNTS (Anthropic IPO)",
+          "url": "https://www.pymnts.com/news/artificial-intelligence/2026/anthropic-ipo-faces-500-billion-valuation-hit-after-tech-stocks-plunge/"
+        },
+        {
+          "name": "Al Jazeera (TikTok)",
+          "url": "https://www.aljazeera.com/news/2026/11/6/eu-tells-tiktok-to-fix-harmful-for-you-feed-threatens-fines?traffic_source=rss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The data-center backlash showed up in person. Activists, from a hundred up to four hundred depending on who counts, broke into a Microsoft-linked construction site in Amsterdam, climbed a crane and set off flares. One person was arrested. Microsoft says it respects peaceful protest but doesn't condone unlawful action. It was part of actions in fifteen European countries."
+        },
+        {
+          "who": "joe",
+          "text": "Meanwhile the money keeps flowing. TechCrunch, citing Bloomberg, says OpenAI closed eleven billion dollars of a bigger round at a valuation of one point two five trillion. OpenAI's chief financial officer says the company will keep building data centers."
+        },
+        {
+          "who": "vex",
+          "text": "On this desk's own vendor: WSJ and Reuters, per other outlets, say investors doubt Anthropic's expected IPO valuation after Thursday's tech plunge. Nothing from the company. That is anonymous sourcing, so treat it as a claim."
+        },
+        {
+          "who": "joe",
+          "text": "Elon Musk says Tesla will wind down Cybertruck production in Texas around mid-twenty twenty-seven to make room for the Cybercab. Sales were about twenty thousand last year, against his forecast of two hundred fifty thousand a year."
+        },
+        {
+          "who": "vex",
+          "text": "A claim from The New York Times: China's Ministry of State Security recruited a businesswoman to gather intelligence on Nvidia CEO Jensen Huang. China rejects it. The sourcing is anonymous."
+        },
+        {
+          "who": "joe",
+          "text": "And federal prosecutors charged three people, including two Israelis, with using A.I.-faked voices and video to steal about one hundred twenty-nine million dollars from companies by posing as executives and lawyers."
+        },
+        {
+          "who": "vex",
+          "text": "Last, the European Union told TikTok to fix its quote harmful For You feed, or face fines."
+        }
+      ]
+    },
+    {
+      "id": "crypto",
+      "kind": "story",
+      "strap": "BITCOIN ~$76,000; ETF OUTFLOWS; SANCTIONS ON CANADIAN FIRMS, MEXC",
+      "headline": "Crypto: ETF outflows and two sanctions actions",
+      "category": "CRYPTO",
+      "status": "observed",
+      "graphic": {
+        "kicker": "CRYPTO",
+        "title": "Bitcoin steady, regulators active",
+        "stats": [
+          {
+            "label": "Bitcoin",
+            "value": "~$76,000"
+          },
+          {
+            "label": "ETF flow, Nov 6",
+            "value": "-$411.9M"
+          },
+          {
+            "label": "MEXC alleged illicit",
+            "value": "$16B+"
+          },
+          {
+            "label": "Canadian firms sanctioned",
+            "value": "8"
+          }
+        ],
+        "bullets": [
+          "Month-to-date ETF outflow ~$1.28B (one tally)",
+          "Binance: proof-of-reserves proof posted",
+          "FinCEN order cuts MEXC off from U.S. banks",
+          "Treasury: Iran regime and a trafficker"
+        ]
+      },
+      "sources": [
+        {
+          "name": "The Crypto Times (ETF flows)",
+          "url": "https://www.cryptotimes.io/2026/11/07/bitcoin-price-today-btc-holds-near-76000-as-spot-etfs-shed-411-9-million/"
+        },
+        {
+          "name": "Fortune (Bitcoin)",
+          "url": "https://fortune.com/article/price-of-bitcoin-11-06-2026/"
+        },
+        {
+          "name": "US Treasury (eight firms)",
+          "url": "https://home.treasury.gov/news/press-releases/sb0686"
+        },
+        {
+          "name": "Al Jazeera (Treasury)",
+          "url": "https://www.aljazeera.com/economy/2026/11/7/us-treasury-sanctions-eight-canadian-money-exchange-firms-over-iran-ties?traffic_source=rss"
+        },
+        {
+          "name": "PANews (MEXC)",
+          "url": "https://www.panewslab.com/zh/articles/01a1b27b-6bfe-7476-b3ab-7286299e5aab"
+        },
+        {
+          "name": "Unchained (Binance)",
+          "url": "https://unchainedcrypto.com/binance-publishes-zero-knowledge-reserve-proof-for-btc-eth-and-8-other-tokens-after-hack/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Bitcoin held near seventy-six thousand dollars, after dipping toward seventy-five thousand during the tech selloff. Spot Bitcoin funds lost about four hundred twelve million dollars on Friday, according to Farside via The Crypto Times. Thursday's separate figure was about four hundred thirty million."
+        },
+        {
+          "who": "joe",
+          "text": "Two sanctions actions. The Treasury sanctioned eight Canada-based money exchange businesses. It says they converted rials into digital assets for the Iranian regime, and laundered money for a sanctioned trafficker. Treasury says the firms remain operational."
+        },
+        {
+          "who": "vex",
+          "text": "And the Treasury's FinCEN barred U.S. financial institutions from processing transfers involving the exchange MEXC Global. Treasury alleges at least sixteen billion dollars in illicit transactions, with links to Iran, North Korea and Russia. The ban takes effect thirty days after Federal Register publication."
+        },
+        {
+          "who": "joe",
+          "text": "Binance says its latest proof-of-reserves proof is ready for users to verify. We did not run the verifier."
+        }
+      ]
+    },
+    {
+      "id": "cities",
+      "kind": "story",
+      "strap": "MAN WITH GUNS ARRESTED NEAR WHITE HOUSE; JAY ROCKEFELLER DIES AT 89",
+      "headline": "Around the country",
+      "category": "U.S. NEWS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "U.S.",
+        "title": "Arrests, a death, a recovery",
+        "stats": [
+          {
+            "label": "Rockefeller",
+            "value": "Dead at 89"
+          },
+          {
+            "label": "Murphy",
+            "value": "Home after stroke"
+          },
+          {
+            "label": "Queens library",
+            "value": "All 66 branches hit"
+          },
+          {
+            "label": "Houston order",
+            "value": "Limits ICE contact"
+          }
+        ],
+        "bullets": [
+          "White House arrest: affidavit lacks 'voices' remark",
+          "ICE detains Wisconsin trooper with pending asylum case",
+          "Cornell faculty vote no confidence",
+          "Two skydivers die in California collision"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Guardian (arrest)",
+          "url": "https://www.theguardian.com/us-news/2026/nov/06/secret-service-man-in-custody-trump"
+        },
+        {
+          "name": "NBC News (arrest)",
+          "url": "https://www.nbcnews.com/news/us-news/venezuelan-man-said-voices-told-kill-trump-arrested-white-house-dhs-sa-rcna607943"
+        },
+        {
+          "name": "DHS (arrest)",
+          "url": "https://www.dhs.gov/news/2026/11/06/us-secret-service-arrests-illegal-alien-guns-vehicle-near-white-house"
+        },
+        {
+          "name": "WV MetroNews (Rockefeller)",
+          "url": "https://wvmetronews.com/2026/11/06/breaking-former-senator-and-governor-jay-rockefeller-has-died/"
+        },
+        {
+          "name": "NBC News (Murphy)",
+          "url": "https://www.nbcnews.com/politics/congress/senator-chris-murphy-discharged-hospital-stroke-rcna607896"
+        },
+        {
+          "name": "NY1 (Queens library)",
+          "url": "https://ny1.com/nyc/all-boroughs/news/2026/11/05/ransomware-attack-disrupts-queens-public-library-services"
+        },
+        {
+          "name": "NBC News (Wisconsin trooper)",
+          "url": "https://www.nbcnews.com/news/us-news/ice-arrests-wisconsin-state-patrol-trooper-pending-asylum-case-airport-rcna607911"
+        },
+        {
+          "name": "Texas Tribune (Houston)",
+          "url": "https://www.texastribune.org/2026/11/06/ice-warrants-immigration-houston-texas-whitmire-police/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Secret Service arrested a man near the White House on Thursday evening. DHS says he had an AR-style rifle, a MAC-ten and a Glock, and told officers voices told him to kill the president. The court affidavit does not include that remark. He is a Venezuelan national, held on gun charges. DHS says he was released by Border Patrol in twenty twenty-four."
+        },
+        {
+          "who": "joe",
+          "text": "Former senator and West Virginia governor Jay Rockefeller died at eighty-nine at his Washington home. No cause was given. Senator Chris Murphy was discharged from Johns Hopkins after a small stroke, and expects a full recovery after several weeks of rehab."
+        },
+        {
+          "who": "vex",
+          "text": "In New York, Queens Public Library has been down since Wednesday from a ransomware attack, all sixty-six branches. They're open, fines are waived, and nobody has claimed responsibility."
+        },
+        {
+          "who": "joe",
+          "text": "Immigration: ICE detained a Wisconsin state trooper at an airport. His lawyers say he has a pending asylum case. And Cornell faculty passed a no-confidence vote in university leadership over its handling of fraternity assault allegations."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "EAST COAST RAIN CLEARS SATURDAY; STORM BRUNA HITS IBERIA",
+      "headline": "Weather",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Rain leaves the East; a storm for Portugal",
+        "stats": [
+          {
+            "label": "Severe risk, US today",
+            "value": "None"
+          },
+          {
+            "label": "Atlantic low, 7 days",
+            "value": "10%"
+          },
+          {
+            "label": "Storm Bruna",
+            "value": "Orange warnings"
+          },
+          {
+            "label": "Delhi AQI",
+            "value": "581"
+          }
+        ],
+        "bullets": [
+          "Northeast Level 2 of 4 flood risk Friday",
+          "AP: at least one flood-related death",
+          "Bruna warnings through Tuesday",
+          "Bruna named by Portugal's weather service"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Fox Weather (East Coast)",
+          "url": "https://www.foxweather.com/weather-news/massive-cross-country-storm-targets-east-coast-with-heavy-rain-after-unleashing-severe-weather-in-southeast"
+        },
+        {
+          "name": "Storm Prediction Center",
+          "url": "https://www.spc.noaa.gov/products/outlook/day1otlk.html"
+        },
+        {
+          "name": "National Hurricane Center",
+          "url": "https://www.nhc.noaa.gov/text/MIATWOAT.shtml"
+        },
+        {
+          "name": "UK Met Office (Bruna)",
+          "url": "https://x.com/metoffice/status/2118735731472445468"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The storm that flooded Georgia and Tennessee has moved up the East Coast. Friday brought the Northeast's first rain in more than two weeks, with a flood risk in southern New England. AP reports at least one flood-related death. It clears Saturday afternoon."
+        },
+        {
+          "who": "joe",
+          "text": "The Storm Prediction Center forecasts no severe thunderstorms anywhere in the country today. Most of the nation is dry under high pressure."
+        },
+        {
+          "who": "vex",
+          "text": "Out in the Atlantic, the low near Bermuda is down to ten percent odds of becoming a tropical system, from fifty percent two days ago."
+        },
+        {
+          "who": "joe",
+          "text": "In Portugal and Spain, Storm Bruna has brought orange warnings for Madeira and a special warning through Tuesday."
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "kind": "story",
+      "strap": "U.S. MEASLES CASES 5,182, MOST SINCE 1991; EBOLA OUTBREAK GROWS",
+      "headline": "Measles and Ebola",
+      "category": "HEALTH",
+      "status": "observed",
+      "graphic": {
+        "kicker": "HEALTH",
+        "title": "Measles at a 35-year high",
+        "stats": [
+          {
+            "label": "U.S. measles, 2026",
+            "value": "5,182"
+          },
+          {
+            "label": "Added in update",
+            "value": "+330"
+          },
+          {
+            "label": "Hospitalized",
+            "value": "562"
+          },
+          {
+            "label": "DRC Ebola",
+            "value": "10,741 cases"
+          }
+        ],
+        "bullets": [
+          "About 96% unvaccinated or unknown",
+          "States report 8 deaths; CDC confirms 4",
+          "DRC deaths: 5,230 through Nov 4",
+          "PAHO measles review Nov 10 to 13"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Contagion Live (CDC update)",
+          "url": "https://www.contagionlive.com/view/measles-update-november-6-2026"
+        },
+        {
+          "name": "Al Jazeera (measles)",
+          "url": "https://www.aljazeera.com/news/2026/11/7/cdc-reports-more-than-5000-measles-case"
+        },
+        {
+          "name": "ECDC (Ebola)",
+          "url": "https://www.ecdc.europa.eu/en/ebola-disease-multi-country-outbreak-2026"
+        },
+        {
+          "name": "CDC (Ebola)",
+          "url": "https://www.cdc.gov/ebola/situation-summary/index.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The C.D.C. counts five thousand, one hundred eighty-two confirmed measles cases in the U.S. this year. That's three hundred thirty more than the last update, and the most since nineteen ninety-one. Five hundred sixty-two people were hospitalized. About ninety-six percent were unvaccinated or of unknown status. Last year's total was two thousand, two hundred eighty-nine."
+        },
+        {
+          "who": "joe",
+          "text": "States report eight deaths. The C.D.C. confirms four, and removed deaths from its tally after Health Secretary Kennedy questioned attribution. That's the C.D.C.'s count and the states' count, and they don't match."
+        },
+        {
+          "who": "vex",
+          "text": "On Ebola, the Bundibugyo outbreak in the Congo stands at ten thousand, seven hundred forty-one confirmed cases and five thousand, two hundred thirty deaths through November fourth. Kenya has reported no new case since October twentieth."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "DONČIĆ SCORES 53; ALCARAZ INTO PARIS SEMIS; WTA APOLOGIZES TO PEGULA",
+      "headline": "Sports",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Dončić: fourth straight 40-point game",
+        "stats": [
+          {
+            "label": "Dončić",
+            "value": "53 pts, Lakers 124-118"
+          },
+          {
+            "label": "Celtics",
+            "value": "119-80 over Hornets"
+          },
+          {
+            "label": "Alcaraz",
+            "value": "Beat Fritz in 3"
+          },
+          {
+            "label": "Seahawks QB",
+            "value": "Darnold out"
+          }
+        ],
+        "bullets": [
+          "Thunder 128, Grizzlies 97; Mitchell 35",
+          "NHL: Sabres, Wild, Ducks win",
+          "Illinois bowl-eligible; New Mexico 31-3",
+          "Khawaja claims whole 2018 team knew of tampering"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CBS Sports (NBA scoreboard)",
+          "url": "https://www.cbssports.com/nba/scoreboard/"
+        },
+        {
+          "name": "ESPN (NHL scoreboard)",
+          "url": "https://www.espn.com/nhl/scoreboard/_/date/20261106"
+        },
+        {
+          "name": "Al Jazeera (Khawaja)",
+          "url": "https://www.aljazeera.com/sports/2026/11/7/australia-cricket-ball-tampering-sandpapergate-usman-khawaja"
+        },
+        {
+          "name": "Al Jazeera (Pegula)",
+          "url": "https://www.aljazeera.com/sports/2026/11/7/jessica-pegula-mirra-andreeva-diva-comment-wta-finals-tennis"
+        },
+        {
+          "name": "Al Jazeera (Clicky Ponting)",
+          "url": "https://www.aljazeera.com/sports/2026/11/6/clicky-ponting-handed-two-year-suspension-over-cricket-cheating-scandal?traffic_source=rss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "In the NBA's Cup night, Luka Dončić scored fifty-three as the Lakers beat Portland, one twenty-four to one eighteen, after trailing by sixteen. It's his fourth straight forty-point game. Boston beat Charlotte one nineteen to eighty. Oklahoma City beat Memphis one twenty-eight to ninety-seven, with Ajay Mitchell scoring a career-high thirty-five."
+        },
+        {
+          "who": "joe",
+          "text": "In the NHL: Buffalo beat Columbus five to two, Minnesota beat San Jose four to one, and Anaheim beat Calgary five to three."
+        },
+        {
+          "who": "vex",
+          "text": "In tennis, Carlos Alcaraz saved two match points to beat Taylor Fritz and reach the Paris Masters semifinal. The WTA apologized to Jessica Pegula after a practice-court livestream aired private comments about Mirra Andreeva."
+        },
+        {
+          "who": "joe",
+          "text": "In cricket, Usman Khawaja says Australia's whole twenty-eighteen team knew of the ball-tampering. That's his claim. And an English amateur was banned two years for clicking his fingers to fake an edge. They're calling it Clicky Ponting."
+        },
+        {
+          "who": "vex",
+          "text": "In the NFL, Seattle quarterback Sam Darnold is out Sunday with quad and rib injuries, and Lock starts. The trade deadline is Tuesday."
+        }
+      ]
+    },
+    {
+      "id": "also-today",
+      "kind": "story",
+      "strap": "MARKLE ARRESTED; BRAND REACTION; GODZILLA; ROKU SCREENSAVER; SPACE",
+      "headline": "Also today",
+      "category": "ALSO TODAY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "Culture, space and a few more",
+        "stats": [
+          {
+            "label": "Markle",
+            "value": "House arrest"
+          },
+          {
+            "label": "Godzilla Minus Zero",
+            "value": "$25M to $35M forecast"
+          },
+          {
+            "label": "USSF-432",
+            "value": "Launched"
+          },
+          {
+            "label": "Pakistan",
+            "value": "First foreign astronaut"
+          }
+        ],
+        "bullets": [
+          "Pakistani astronaut to fly on Shenzhou 24",
+          "Fox buys Roku; developer pulls screensaver",
+          "Largest U.S. Muslim advocacy group suspends Florida work",
+          "U.S. urges China to honor Busan trade deal"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Guardian (Markle)",
+          "url": "https://www.theguardian.com/uk-news/2026/nov/06/thomas-markle-arrested"
+        },
+        {
+          "name": "CBS News (Markle)",
+          "url": "https://www.cbsnews.com/news/thomas-markle-sr-meghan-father-arrested-florida/"
+        },
+        {
+          "name": "Guardian (Brand)",
+          "url": "https://www.theguardian.com/culture/2026/nov/06/russell-brand-russell-brand-maha-rfk-jr-mehmet-oz"
+        },
+        {
+          "name": "Variety (Godzilla)",
+          "url": "https://variety.com/2026/film/box-office/box-office-godzilla-minus-zero-previews-1236941301/"
+        },
+        {
+          "name": "Spaceflight Now (USSF-432)",
+          "url": "https://spaceflightnow.com/2026/11/06/falcon-9-to-launch-from-california-on-classified-mission-for-u-s-space-force/"
+        },
+        {
+          "name": "ABC / AP (Pakistani astronaut)",
+          "url": "https://abcnews.com/International/wireStory/pakistani-astronaut-board-shenzhou-24-become-foreigner-chinas-137935456"
+        },
+        {
+          "name": "Ars Technica (Roku)",
+          "url": "https://arstechnica.com/gadgets/2026/11/artist-pulls-popular-screensaver-from-roku-os-because-of-fox-acquisition/"
+        },
+        {
+          "name": "Arab News (CAIR)",
+          "url": "https://www.arabnews.pk/world/largest-us-muslim-advocacy-group-suspends-florida-operations-over-terrorist-designation-law-3006350"
+        },
+        {
+          "name": "Al Jazeera (Busan)",
+          "url": "https://www.aljazeera.com/economy/2026/11/6/us-urges-china-to-honour-busan-trade-deal-commitments?traffic_source=rss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Thomas Markle, eighty-two, Meghan's father, was arrested by the F.B.I. in Florida on one federal count of possessing child sexual abuse material. A magistrate released him to house arrest. Last month he called the allegations sick lies."
+        },
+        {
+          "who": "joe",
+          "text": "Space: a SpaceX Falcon 9 launched the classified USSF-four-thirty-two mission from Vandenberg, after delays since November first. China says a Pakistani astronaut will fly on Shenzhou twenty-four, the first foreigner on its space station. No date."
+        },
+        {
+          "who": "vex",
+          "text": "At the box office, Godzilla Minus Zero is forecast to open between about twenty-five and thirty-five million dollars. That would be a record for its distributor. Friday actuals weren't available."
+        },
+        {
+          "who": "joe",
+          "text": "Fox closed its Roku purchase, and the developer of a popular Roku screensaver pulled it in protest. CAIR, the largest U.S. Muslim advocacy group, suspended its Florida operations over the state's terrorist designation law. And the U.S. asked China to honor its Busan trade commitments."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "More headlines as they come in"
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Until the next show",
+      "category": "SIGN-OFF",
+      "graphic": {
+        "kicker": "SIGN-OFF",
+        "title": "A new show every day by morning"
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "That's Heartbeat News. A new show every day by morning. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. Be kind to your neighbors, and check the numbers twice. Take care of each other."
+        }
+      ]
+    }
+  ]
+}
