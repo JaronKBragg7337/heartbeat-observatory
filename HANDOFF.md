@@ -7,6 +7,20 @@ narrative so no context is lost between Claude, Codex, and Cowork runs.
 
 ---
 
+## 2026-11-06 — Grok Build — Live page next events, empty state, ESA MMX link (T-43 / T-21)
+
+**State:** implemented and locally verified on the current branch; committed, not pushed (Claude will review and push).
+
+**Shipped in `live/index.html`:** two verified upcoming events (ULA Vulcan Leo 1, Friday 13 Nov 2026 17:54 UTC with official YouTube `qM5A1ZO9oh8`; NASA CRS-25 / Cygnus, targeted no earlier than Sunday 29 Nov 2026 15:49 UTC, stream not posted yet so NASA Live is linked instead). MMX stays as the done card. A "Nothing scheduled right now" card appears when every listed t0 has passed. The 404 ESA "launch time" URL is replaced with ESA's post-launch MMX page.
+
+**Verified:** HTTP 200 on every kept/new official link; old ESA path 404; Playwright at 390×844 (no horizontal overflow) and 1280×800, plus dark mode at phone width; empty state shown by forcing t0s into the past; production `/tv/?ch=11.1` still tunes to "MMX: ten grams from Phobos".
+
+**Left alone:** uncommitted `games/the-cosmos/` and `tv/shows/` work from other AIs.
+
+**Gotchas / next:** Starship Flight 15 is a bigger public moment but has no official SpaceX date/time, so it is not listed. CRS-25 needs a YouTube id when NASA posts the webcast. MMX still embeds JAXA's Japanese stream (`sZGyK9jfoy4`); the English official stream is `Fn6gzuGa-6c`.
+
+---
+
 ## 2026-08-15 — Codex — SYL permanent Three.js canon and mirror truth pass
 
 **State:** implemented and locally verified on branch

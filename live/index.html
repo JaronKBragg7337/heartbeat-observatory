@@ -9,7 +9,8 @@
 <style>
   /* 10/19 (Jaron): "we don't have a live page that shows things around the world events like that". First event: MMX.
      Add an event = one object in EVENTS below (time in UTC, the official stream's YouTube id). Never call a result before a
-     real source confirms it - after T-0 the card says "liftoff time passed" until someone edits in the outcome. */
+     real source confirms it - after T-0 the card says "liftoff time passed" until someone edits in the outcome.
+     When every listed t0 has passed, #none (the empty card) shows so the page is never a blank list. */
   body { background: var(--paper, #f6f1e7); }
   .lv-wrap { max-width: 900px; margin: 0 auto; padding: 28px 16px 80px; }
   .lv-back { color: var(--accent); text-decoration: none; font-weight: 650; font-size: 15px; }
@@ -31,6 +32,8 @@
   .ev p.what { color: var(--ink); font-size: 16px; line-height: 1.6; margin: 14px 0 6px; }
   .ev .links { font-size: 14px; color: var(--ink-faint); line-height: 1.6; word-break: break-word; }
   .ev .links a { color: var(--ink-soft); }
+  .ev.empty h2 { margin-bottom: 4px; }
+  .ev.empty .what { margin-top: 8px; }
   .note { font-size: 14px; color: var(--ink-faint); margin-top: 30px; line-height: 1.5; }
   @media (prefers-color-scheme: dark) {
     body { background: #1b1611; }
@@ -56,6 +59,28 @@
 <script>
 const EVENTS = [
   {
+    id: "vulcan-leo-1",
+    tag: "Space · United States",
+    title: "Vulcan launches Amazon Leo satellites",
+    t0: "2026-11-13T17:54:00Z",            // 12:54 PM EST Nov 13 (ULA)
+    streamStart: "2026-11-13T17:34:00Z",   // ULA YouTube scheduled start
+    youtube: "qM5A1ZO9oh8",
+    streamNote: "ULA's official broadcast.",
+    what: "United Launch Alliance's Vulcan rocket lifts off from Cape Canaveral with 40 Amazon Leo broadband satellites. This is Vulcan's first flight with six solid boosters, and the first of 38 Vulcan launches Amazon has booked.",
+    links: [["ULA: Vulcan Leo 1", "https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1"], ["Watch on YouTube", "https://www.youtube.com/watch?v=qM5A1ZO9oh8"]],
+    result: ""
+  },
+  {
+    id: "crs-25",
+    tag: "Space · ISS",
+    title: "Cygnus flies supplies to the space station",
+    t0: "2026-11-29T15:49:00Z",            // 10:49 AM EST Nov 29 (NASA, no earlier than)
+    whenLabel: "Targeted liftoff (no earlier than)",
+    what: "A Northrop Grumman Cygnus XL spacecraft rides a SpaceX Falcon 9 from Cape Canaveral to the International Space Station. NASA's CRS-25 flight carries food, equipment, and experiments, including work on drug delivery, cancer spread, muscle loss, and crew radiation sensors. NASA will post the official stream closer to launch.",
+    links: [["NASA: CRS-25", "https://www.nasa.gov/mission/nasas-northrop-grumman-crs-25/"], ["NASA: launch time", "https://www.nasa.gov/news-release/nasa-invites-media-to-northrop-grumman-crs-25-station-resupply-launch/"], ["NASA Live", "https://www.nasa.gov/live"]],
+    result: ""
+  },
+  {
     id: "mmx",
     tag: "Space · Japan",
     title: "MMX launches to the moons of Mars",
@@ -64,29 +89,46 @@ const EVENTS = [
     youtube: "sZGyK9jfoy4",
     streamNote: "JAXA's official broadcast, in Japanese.",
     what: "Japan's H3 rocket carries MMX from Tanegashima. It reaches Mars in 2027, lands on the moon Phobos, and brings at least 10 grams of it home in 2031: the first sample ever from a Martian moon.",
-    links: [["Our episode: MMX, ten grams from Phobos", "/tv/?ch=11.1"], ["ESA: launch time", "https://www.esa.int/Science_Exploration/Space_Science/Mars_moon_lander_set_to_launch_on_19_October"], ["JAXA: initial operations complete", "https://www.jaxa.jp/press/2026/10/20261021-1_j.html"], ["JAXA MMX", "https://www.mmx.jaxa.jp/en/"]],
+    links: [["Our episode: MMX, ten grams from Phobos", "/tv/?ch=11.1"], ["ESA: MMX lifts off", "https://www.esa.int/media/about-us/directorates/science/space-science/mmx-lifts-off-to-mars-s-moon-phobos"], ["JAXA: initial operations complete", "https://www.jaxa.jp/press/2026/10/20261021-1_j.html"], ["JAXA MMX", "https://www.mmx.jaxa.jp/en/"]],
     result: "MMX lifted off on October 19 at 3:41 PM ET and separated from its rocket. On October 21, JAXA confirmed that critical initial operations succeeded and the spacecraft was healthy. Next stop: Mars, planned for August 2027."
   }
 ];
 const pad = n => String(n).padStart(2, "0");
 const fmt = d => d.toLocaleString(undefined, { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
 const box = document.getElementById("events");
-box.innerHTML = EVENTS.map(e => `
+const nowMs = () => Date.now();
+const upcomingFirst = () => {
+  const t = nowMs();
+  const up = EVENTS.filter(e => +new Date(e.t0) > t).sort((a, b) => +new Date(a.t0) - +new Date(b.t0));
+  const past = EVENTS.filter(e => +new Date(e.t0) <= t).sort((a, b) => +new Date(b.t0) - +new Date(a.t0));
+  return [...up, ...past];
+};
+const streamLine = e => {
+  const bits = [];
+  if (e.streamNote) bits.push(e.streamNote);
+  if (e.streamStart) bits.push(`Stream starts ${new Date(e.streamStart).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}.`);
+  return bits.length ? `<p class="links">${bits.join(" ")}</p>` : "";
+};
+box.innerHTML = `
+  <article class="ev empty" id="none" hidden>
+    <div class="tag">Live</div>
+    <h2>Nothing scheduled right now</h2>
+    <p class="what">When the next launch, landing, or world event has a real date, it shows up here with a countdown and the official stream.</p>
+  </article>` + upcomingFirst().map(e => `
   <article class="ev" id="${e.id}">
     <div class="tag">${e.tag} <span class="state" data-state></span></div>
     <h2>${e.title}</h2>
-    <p class="when">Liftoff: ${fmt(new Date(e.t0))}</p>
+    <p class="when">${e.whenLabel || "Liftoff"}: ${fmt(new Date(e.t0))}</p>
     <div class="count" data-count></div>
-    ${e.youtube ? `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${e.youtube}" title="${e.title} - live stream" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>
-    <p class="links">${e.streamNote} Stream starts ${new Date(e.streamStart).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}.</p>` : ""}
+    ${e.youtube ? `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${e.youtube}" title="${e.title} - live stream" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>${streamLine(e)}` : ""}
     <p class="what">${e.what}</p>
     <p class="links">${e.links.map(([t, u]) => `<a href="${u}">${t}</a>`).join(" · ")}</p>
   </article>`).join("");
 function tick() {
-  const now = Date.now();
+  const now = nowMs();
   for (const e of EVENTS) {
     const el = document.getElementById(e.id), c = el.querySelector("[data-count]"), s = el.querySelector("[data-state]");
-    const left = new Date(e.t0) - now, streaming = now >= new Date(e.streamStart);
+    const left = new Date(e.t0) - now, streaming = e.streamStart && now >= new Date(e.streamStart);
     if (left > 0) {
       const d = Math.floor(left / 864e5), h = Math.floor(left / 36e5) % 24, m = Math.floor(left / 6e4) % 60, sec = Math.floor(left / 1e3) % 60;
       c.className = "count";
@@ -94,10 +136,11 @@ function tick() {
       s.textContent = streaming ? "Live now" : "Coming up"; s.className = "state" + (streaming ? " live" : "");
     } else {
       c.className = "count done";
-      c.textContent = e.result || "Liftoff time has passed. Watch the stream for what happened; we add the result here once it is confirmed.";
+      c.textContent = e.result || "The listed time has passed. Watch the stream for what happened; we add the result here once it is confirmed.";
       s.textContent = now - new Date(e.t0) < 3 * 36e5 ? "Live now" : "Done"; s.className = "state" + (s.textContent === "Live now" ? " live" : "");
     }
   }
+  document.getElementById("none").hidden = EVENTS.some(e => +new Date(e.t0) > now);
 }
 tick(); setInterval(tick, 1000);
 </script>
