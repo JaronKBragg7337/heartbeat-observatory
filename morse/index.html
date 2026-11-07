@@ -34,7 +34,7 @@
 <div class="card"><div class="quiz-layout"><div><label class="field-label" for="quiz-mode">Practice</label><select id="quiz-mode"><option value="letter">Letters</option><option value="word">Short words</option></select><p class="small">Choose a mode, then play a signal to begin.</p><div class="actions"><button class="button" id="quiz-play" type="button">Play a signal</button><button class="button secondary" id="quiz-replay" type="button" disabled>Play again</button></div></div><div><form id="quiz-form"><label class="field-label" for="quiz-answer">Your answer</label><input id="quiz-answer" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Type what you hear" disabled><div class="actions" style="margin-top:10px"><button class="button secondary" id="quiz-check" type="submit" disabled>Check answer</button></div></form><p id="quiz-status" class="status" aria-live="polite">Ready when you are.</p></div></div><p id="quiz-progress" class="note"></p><button class="button secondary" id="reset-progress" type="button">Reset quiz progress</button><p id="storage-note" class="note">Quiz progress stays on this device.</p></div></section>
 <section id="translate"><div class="section-head"><p class="eyebrow">04 / Both ways</p><h2>Translate</h2><p>Use letters and numbers. In Morse, separate letters with spaces and words with a slash.</p></div>
 <div class="card"><div class="field"><label class="field-label" for="plain">Text</label><textarea id="plain" placeholder="Type a message"></textarea></div><div class="actions"><button class="button" id="to-morse" type="button">Text to Morse</button><button class="button secondary" id="play-translation" type="button">Play text</button><button class="button secondary" id="stop" type="button">Stop playback</button></div><div class="field"><label class="field-label" for="morse">Morse code</label><textarea id="morse" class="code" placeholder="... --- ... / .... . .-.. .--."></textarea></div><div class="actions"><button class="button secondary" id="to-text" type="button">Morse to text</button></div><p id="translate-status" class="status" aria-live="polite">Dots, dashes, spaces, and slashes are supported.</p></div></section>
-</main><footer><div class="wrap">Made for practice. This page works without a connection while it stays open after loading. Quiz progress is stored locally when available.</div></footer>
+</main><footer><div class="wrap">Made for practice. After your first online visit, this page can also reload without a connection. Quiz progress is stored locally when available.</div></footer>
 <script>
 (() => {
 'use strict';
@@ -72,6 +72,11 @@ function translateText(){const input=cleanText(),bad=[...new Set([...input].filt
 $('to-morse').addEventListener('click',translateText);$('play-translation').addEventListener('click',()=>{const text=translateText();if(text)play(text)});
 $('to-text').addEventListener('click',()=>{const input=$('morse').value.trim();if(!input){$('translate-status').textContent='Paste or type Morse code first.';return}const parts=input.split(/\s*\/\s*/);if(parts.some(part=>!part.trim())){$('translate-status').textContent='Put a word on each side of a slash.';return}const unknown=[];const result=parts.map(word=>word.trim().split(/\s+/).map(code=>{if(!reverse[code]){unknown.push(code);return '?'}return reverse[code]}).join('')).join(' ');$('plain').value=result;$('translate-status').textContent=unknown.length?'Unrecognized code: '+[...new Set(unknown)].join(', ')+'. Use dots and dashes.':'Morse translated to text.'});
 })();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+}
 </script>
 </body>
 </html>
