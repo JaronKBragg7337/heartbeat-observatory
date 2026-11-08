@@ -47,11 +47,72 @@ const STYLES = {
     kick: ["x..x..x...x.x...", "x..x..x.x...x...", "x..x....x.x.x...", "x.....x..x..x...", "x..x..x...x...x."],
     snare: ["....x.......x...", "....x.....x.x...", "....x..x....x...", "..x...x...x...x."], hat: "..x...x...x...x.", melRhythm: [[0, 3, 6, 8, 11], [2, 4, 7, 10, 12, 14], [0, 2, 6, 9, 12]],
     bass: "log", keys: "pluck", lead: "pluck", kit: "hard", snareSound: "rim", rolls: false, slides: 0, shaker: true, perc: true, mood: "bright", keysRhythm: "off" },
-  rock: { hats: ["x.x.x.x.x.x.x.x."], kits: ["hard"], bassPool: ["round"], keysPool: ["keys"], leadPool: ["pluck"], bassModes: ["kick"], name: "Rock", tag: "A steady backbeat and distorted power chords.", bpm: [90, 150, 120], swing: 0.5, bars: [4, 16, 8, 16, 8, 4], sevenths: false,
-    kick: ["x.......x......."], snare: ["....x.......x..."], hat: "x.x.x.x.x.x.x.x.", melRhythm: [[0, 4, 8, 12]], bass: "round", keys: "keys", lead: "pluck", kit: "hard", snareSound: "snare", rolls: false, slides: 0, mood: "bright", moodFree: false, keysRhythm: "stabs" },
-  country: { hats: ["x.x.x.x.x.x.x.x."], kits: ["soft"], bassPool: ["round"], keysPool: ["keys"], leadPool: ["pluck"], bassModes: ["walk"], name: "Country", tag: "A bouncing beat, walking bass and acoustic strums.", bpm: [85, 145, 110], swing: 0.62, bars: [4, 16, 8, 16, 8, 4], sevenths: false,
-    kick: ["x.......x......."], snare: ["....x.......x..."], hat: "x.x.x.x.x.x.x.x.", melRhythm: [[0, 4, 8, 12]], bass: "round", keys: "keys", lead: "pluck", kit: "soft", snareSound: "snare", rolls: false, slides: 0, mood: "bright", moodFree: false, keysRhythm: "stabs" },
+  // Rock + Country (11/7, tuned by Claude after Terra's first pass): a live drum kit, two guitar takes panned left and right,
+  // rock = palm-muted verse chugs that open up in the hook, bass on driving eighths; country = boom-chick (bass on 1 and 3,
+  // root then fifth, walk-ups into the next chord), cross-stick verse, full snare hook, a light eighth-note shuffle.
+  rock: { hats: ["x.x.x.x.x.x.x.x."], kits: ["live"], bassPool: ["round"], keysPool: ["pad"], leadPool: ["guitar"], bassModes: ["eighths"], name: "Rock", tag: "A big live backbeat, two distorted guitars: palm-muted verses, open power chords in the hook.", bpm: [90, 150, 120], swing: 0.5, bars: [4, 16, 8, 16, 8, 4], sevenths: false,
+    kick: ["x.......x.......", "x.......x.x.....", "x.....x.x.......", "x.......x.....x."], snare: ["....x.......x...", "....x.......x..x"], hat: "x.x.x.x.x.x.x.x.", melRhythm: [[0, 4, 8, 12], [0, 6, 8, 12], [0, 3, 6, 8, 12]], bass: "round", keys: "pad", lead: "guitar", kit: "live", snareSound: "snare", rolls: false, slides: 0, mood: "bright", moodFree: false, keysRhythm: "stabs", live: true },
+  country: { hats: ["x.x.x.x.x.x.x.x."], kits: ["live"], bassPool: ["round"], keysPool: ["pad"], leadPool: ["guitar"], bassModes: ["boom"], name: "Country", tag: "Boom-chick bass, a light shuffle and two strummed acoustic guitars.", bpm: [85, 145, 110], swing: 0.56, bars: [4, 16, 8, 16, 8, 4], sevenths: false,
+    kick: ["x.......x.......", "x.......x.....x."], snare: ["....x.......x..."], hat: "x.x.x.x.x.x.x.x.", melRhythm: [[0, 4, 8, 12], [0, 6, 8, 14], [2, 6, 8, 12]], bass: "round", keys: "pad", lead: "guitar", kit: "live", snareSound: "snare", rolls: false, slides: 0, mood: "bright", moodFree: false, keysRhythm: "stabs", live: true, swing8: true },
 };
+// ---------- guitar: real chord shapes, the way a player holds them ----------
+// Open shapes (low E string first, -1 = not played). A country player capos so most chords are open shapes; the rest are barre shapes.
+const STD_TUNING = [40, 45, 50, 55, 59, 64], NASHVILLE = [52, 57, 62, 67, 59, 64];   // Nashville = the low four strings an octave up (the classic second acoustic)
+const OPEN_SHAPES = { "0": [-1, 3, 2, 0, 1, 0], "2": [-1, -1, 0, 2, 3, 2], "4": [0, 2, 2, 1, 0, 0], "7": [3, 2, 0, 0, 3, 3], "9": [-1, 0, 2, 2, 2, 0], "9m": [-1, 0, 2, 2, 1, 0], "4m": [0, 2, 2, 0, 0, 0], "2m": [-1, -1, 0, 2, 3, 1] };
+function barreShape(rel, q) {        // rel = the chord's pitch class counted from the capo
+  const fe = (rel + 8) % 12, fa = (rel + 3) % 12, e = fe <= fa, f = e ? fe : fa;
+  if (q === "dim") return e ? [f, f + 1, f + 2, f, -1, -1] : [-1, f, f + 1, f + 2, f + 1, -1];
+  if (q === "m") return e ? [f, f + 2, f + 2, f, f, f] : [-1, f, f + 2, f + 2, f + 1, f];
+  return e ? [f, f + 2, f + 2, f + 1, f, f] : [-1, f, f + 2, f + 2, f + 2, f];
+}
+function guitarVoicing(chords) {
+  const openKey = (ch, capo) => { const rel = (ch.pc - capo + 12) % 12; return ch.q === "dim" ? null : OPEN_SHAPES[rel + (ch.q === "m" ? "m" : "")]; };
+  let capo = 0, best = -1e9;
+  for (let c = 0; c <= 7; c++) { let s = -0.35 * c; for (const ch of chords) { const rel = (ch.pc - c + 12) % 12; s += openKey(ch, c) ? 2 : Math.min((rel + 8) % 12, (rel + 3) % 12) <= 5 ? 0 : -1; } if (s > best) { best = s; capo = c; } }
+  let prev = null;
+  return { capo, chords: chords.map((ch) => {
+    const frets = openKey(ch, capo) || barreShape((ch.pc - capo + 12) % 12, ch.q);
+    let pr = 40 + ((ch.pc + 8) % 12); if (prev != null && pr + 12 <= 55 && Math.abs(pr + 12 - prev) < Math.abs(pr - prev)) pr += 12; prev = pr;   // power chord root: low E or A string, the shortest move
+    return { frets, power: pr };
+  }) };
+}
+// Karplus-Strong string with the parts a plain one lacks: a softened pick burst, a pick-position comb (where the pick hits the
+// string shapes the tone), an allpass for exact tuning, a decay time per string, and extra damping for palm mutes.
+export function pluckString(sr, m, p, seed) {
+  const f = hz(m), N = sr / f, S = p.S, md = p.mute || 0, extra = md ? md / (1 - md) : 0;
+  const L = Math.max(2, Math.floor(N - S - extra - 0.1)), D = N - S - extra - L, eta = (1 - D) / (1 + D);
+  const r = rng(seed), ex = new Float32Array(L), buf = new Float32Array(L);
+  let lp = 0; for (let i = 0; i < L; i++) { lp = lp * p.soft + (r() * 2 - 1) * (1 - p.soft); ex[i] = lp; }
+  const P = Math.max(1, Math.round(L * p.pick)); let mean = 0, e = 0;
+  for (let i = 0; i < L; i++) { buf[i] = ex[i] - 0.92 * ex[(i - P + L) % L]; mean += buf[i]; }
+  mean /= L; for (let i = 0; i < L; i++) { buf[i] -= mean; e += buf[i] * buf[i]; }
+  const norm = 0.5 / Math.sqrt(e / L + 1e-12); for (let i = 0; i < L; i++) buf[i] *= norm;
+  const t60 = typeof p.t60 === "function" ? p.t60(m) : p.t60, g = Math.pow(10, -3 / (t60 * f));
+  const len = Math.ceil(p.len * sr), out = new Float32Array(len); let k = 0, xp = 0, ax = 0, ay = 0, ml = 0;
+  for (let n = 0; n < len; n++) {
+    const x = buf[k]; out[n] = x;
+    const lf = (1 - S) * x + S * xp; xp = x;
+    const ap = eta * lf + ax - eta * ay; ax = lf; ay = ap;
+    let y = ap * g; if (md) { ml = md * ml + (1 - md) * y; y = ml; }
+    buf[k] = y; if (++k === L) k = 0;
+  }
+  const fl = Math.min(len, Math.floor(sr * 0.02)); for (let n = 0; n < fl; n++) out[len - 1 - n] *= n / fl;
+  return out;
+}
+const STRING_TYPES = {
+  a: { soft: 0.3, pick: 0.14, S: 0.42, len: 2.6, t60: (m) => 1.6 + 2.4 * Math.max(0, Math.min(1, (70 - m) / 30)) },   // steel acoustic, flat pick
+  f: { soft: 0.45, pick: 0.21, S: 0.45, len: 2.6, t60: (m) => 1.8 + 2.4 * Math.max(0, Math.min(1, (70 - m) / 30)) },  // fingers
+  q: { soft: 0.42, pick: 0.14, S: 0.5, len: 0.36, t60: 0.3, mute: 0.5 },                                              // acoustic palm mute
+  e: { soft: 0.5, pick: 0.2, S: 0.4, len: 2.6, t60: (m) => 3 + 2 * Math.max(0, Math.min(1, (70 - m) / 30)) },     // electric, bridge pickup
+  t: { soft: 0.22, pick: 0.11, S: 0.3, len: 2.6, t60: (m) => 2 + 1.5 * Math.max(0, Math.min(1, (80 - m) / 30)) },    // clean lead, bright "twang"
+  p: { soft: 0.55, pick: 0.2, S: 0.5, len: 0.4, t60: 0.32, mute: 0.55 },                                              // electric palm mute
+};
+let GTR_CACHE = null, GTR_USERS = 0;   // one render's string recordings, reused across its 4-bar pieces (a strum reuses the same few strings)
+function stringBuffer(type, m, variant) {
+  const k = type + m + "." + variant; let b = GTR_CACHE.get(k); if (b) return b;
+  const data = pluckString(44100, m, STRING_TYPES[type], (m * 7919 + variant * 104729 + type.charCodeAt(0) * 15485863) >>> 0);
+  b = new AudioBuffer({ length: data.length, numberOfChannels: 1, sampleRate: 44100 }); b.copyToChannel(data, 0); GTR_CACHE.set(k, b); return b;
+}
 const SECTIONS = ["Intro", "Verse", "Hook", "Verse", "Hook", "Outro"];
 
 // ---------- the rules: turn choices into notes ----------
@@ -69,7 +130,7 @@ export function compose(o) {
     const third = (sc[(d + 2) % 7] - sc[d % 7] + 12) % 12, fifth = (sc[(d + 4) % 7] - sc[d % 7] + 12) % 12;
     const q = third === 3 ? (fifth === 6 ? "dim" : "m") : "";
     let root = deg(d, -1); while (root > 40) root -= 12; while (root < 28) root += 12;
-    return { d, root, tones, name: NOTE[deg(d) % 12] + q, roman: q ? ROMAN[d].toLowerCase() + (q === "dim" ? "°" : "") : ROMAN[d] };
+    return { d, root, tones, pc: deg(d) % 12, q, name: NOTE[deg(d) % 12] + q, roman: q ? ROMAN[d].toLowerCase() + (q === "dim" ? "°" : "") : ROMAN[d] };
   });
   // voicing: first chord in a random inversion, every next chord takes the inversion that moves the least (smooth, like a keys player)
   let prevAvg = null;
@@ -103,7 +164,17 @@ export function compose(o) {
   // arrangement choices for this beat (seeded by the drums): which verse phrases get the tune, hook octave lift, double-time hats
   const ra = rng(o.seeds.drums + 17), arr = { versePhrase: ra() < 0.5 ? 1 : 0, octaveUp: ra() < 0.7, doubleHats: ra() < 0.5, introTune: ra() < 0.6, stabs: pick(ra, [[0, 6, 10], [0, 4, 8, 12], [0, 7, 10], [2, 6, 10, 14], [0, 3, 8, 11]]) };
   const bassRhythm = drums.kick;                                   // bass locks to the kick (the rule producers use)
-  return { st, chords, drums, motif, bassRhythm, rhythm, shape, bassMode, arr, slideSeed: o.seeds.bass };
+  return { st, chords, drums, motif, bassRhythm, rhythm, shape, bassMode, arr, slideSeed: o.seeds.bass, gtr: guitarVoicing(chords) };
+}
+// What picking a style sets up (the page and the test renders share this).
+export function styleDefaults(o, k) {
+  if (k === "rock" || k === "country") {
+    o.guitarOn = true; o.guitarSound = k === "rock" ? "electric" : "acoustic";
+    o.guitarPattern = k === "rock" ? "riff" : "strum";
+    o.guitarProgression = k === "rock" ? "oneFiveSixFour" : "oneFourFive";
+    o.brushSnare = false;
+  } else o.brushSnare = false;
+  return o;
 }
 // The dice: a new beat inside the chosen style. Everything that can differ, differs: key, moves, drums, sounds, tempo, bounce, energy.
 export function roll(o, seed) {
@@ -141,6 +212,12 @@ function kitFor(c, rnd) {   // rnd = seeded, so the same recipe renders the same
   return {
     kick(t, out, kit, v = 1) {
       // body (sub sweep) + knock (mid tone that a phone can play) + click
+      if (kit === "live") {          // a miked rock/country kick: short round body, a knock and the beater click, no long 808 tail
+        tone(t, "sine", 125, 54, 0.045, v * 0.95, 0.24, out);
+        tone(t, "triangle", 210, 105, 0.025, v * 0.3, 0.05, out);
+        ns(t, 0.012, "bandpass", 3200, 0.8, 0.5 * v, out); ns(t, 0.03, "lowpass", 600, 0.7, 0.25 * v, out);
+        return;
+      }
       const soft = kit === "soft", boom = kit === "boom";
       tone(t, "sine", soft ? 130 : 185, soft ? 44 : 50, soft ? 0.09 : 0.055, v * (soft ? 0.75 : 1), boom ? 0.55 : soft ? 0.3 : 0.26, out);
       tone(t, "triangle", soft ? 160 : 240, soft ? 85 : 95, 0.03, v * (soft ? 0.18 : 0.38), soft ? 0.05 : 0.07, out);
@@ -148,6 +225,11 @@ function kitFor(c, rnd) {   // rnd = seeded, so the same recipe renders the same
       if (kit === "dusty") ns(t, 0.06, "lowpass", 900, 0.7, 0.3 * v, out);
     },
     snare(t, out, kit, v = 1) {
+      if (kit === "live") {          // shell tone + a longer bed of snare wires + the stick crack
+        tone(t, "triangle", 235, 185, 0.03, 0.55 * v, 0.11, out); tone(t, "sine", 345, 330, 0.01, 0.2 * v, 0.07, out);
+        ns(t, 0.24, "bandpass", 2600, 0.45, 0.8 * v, out); ns(t, 0.09, "highpass", 5000, 0.7, 0.4 * v, out); ns(t, 0.012, "bandpass", 1200, 1, 0.5 * v, out);
+        return;
+      }
       const dusty = kit === "dusty", soft = kit === "soft";
       ns(t, dusty ? 0.2 : soft ? 0.14 : 0.16, "bandpass", dusty ? 1300 : 1900, 0.6, (soft ? 0.6 : 0.85) * v, out);     // body noise
       ns(t, 0.07, "highpass", soft ? 4500 : 3800, 0.7, (soft ? 0.35 : 0.6) * v, out);                                  // snap (phone hears this)
@@ -166,6 +248,7 @@ function kitFor(c, rnd) {   // rnd = seeded, so the same recipe renders the same
     shaker(t, out, v = 1) { ns(t, 0.05, "bandpass", 5200, 1.1, 0.42 * v, out, -0.3, 4200); },
     rim(t, out, v = 1) { tone(t, "sine", 520, 480, 0.01, 0.45 * v, 0.035, out, -0.15); tone(t, "triangle", 1700, 1700, 0.01, 0.2 * v, 0.02, out, -0.15); ns(t, 0.025, "bandpass", 3200, 1, 0.3 * v, out, -0.15); },
     perc(t, out, v = 1, hi = false) { tone(t, "sine", hi ? 420 : 260, hi ? 300 : 170, 0.06, 0.4 * v, 0.12, out, hi ? 0.35 : -0.35); ns(t, 0.015, "highpass", 2000, 0.7, 0.15 * v, out, hi ? 0.35 : -0.35); },
+    tom(t, out, f, v = 1) { tone(t, "sine", f * 1.5, f, 0.06, 0.7 * v, 0.3, out, f > 120 ? 0.2 : -0.2); ns(t, 0.02, "lowpass", 1500, 0.7, 0.2 * v, out); },
     crash(t, out, v = 1) { ns(t, 0.9, "bandpass", 6500, 0.5, 0.45 * v, out, 0, 3500); ns(t, 0.5, "highpass", 8000, 0.7, 0.3 * v, out); },
     riser(t, dur, out, v = 1) {        // noise swell into the hook
       const s = c.createBufferSource(); s.buffer = noise; s.loop = true; const fl = c.createBiquadFilter(); fl.type = "bandpass"; fl.Q.value = 1.4;
@@ -220,29 +303,6 @@ function kitFor(c, rnd) {   // rnd = seeded, so the same recipe renders the same
       const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 5.5; lg.gain.value = 7; l.connect(lg); l.start(t); l.stop(t + dur + 0.5);
       for (const det of [-9, 9]) { const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.value = hz(m); o.detune.value = det; lg.connect(o.detune); o.connect(fl); o.start(t); o.stop(t + dur + 0.5); }
     },
-    // Karplus-Strong: a noise burst circulates through a tuned fractional delay.
-    // The two-point lowpass in the feedback loop loses half a sample of phase;
-    // subtract that from the delay to keep the fundamental close to the target pitch.
-    guitar(t, m, dur, out, v = 1, muted = false) {
-      const sr = c.sampleRate, length = Math.ceil(sr * dur), delay = sr / hz(m) - 0.5;
-      const size = Math.ceil(delay) + 2, ring = new Float32Array(size);
-      const random = rng((Math.round(t * sr) ^ (m * 2654435761)) >>> 0);
-      for (let i = 0; i < size; i++) ring[i] = random() * 2 - 1;
-      const buffer = c.createBuffer(1, length, sr), data = buffer.getChannelData(0);
-      const feedback = Math.pow(0.001, 1 / (hz(m) * (muted ? 0.16 : 1.5)));
-      let write = 0, previous = 0;
-      for (let i = 0; i < length; i++) {
-        let read = write - delay; while (read < 0) read += size;
-        const a = Math.floor(read), frac = read - a;
-        const sample = ring[a] * (1 - frac) + ring[(a + 1) % size] * frac;
-        const filtered = (sample + previous) * 0.5; previous = sample;
-        ring[write] = filtered * feedback; write = (write + 1) % size;
-        // A short end fade avoids clicks when a chord is cut off.
-        data[i] = sample * Math.min(1, (length - i) / (sr * 0.025));
-      }
-      const source = c.createBufferSource(), gain = c.createGain(); source.buffer = buffer; gain.gain.value = 0.17 * v;
-      source.connect(gain); gain.connect(out); source.start(t);
-    },
     pad(t, m, dur, out, v = 1) {
       const fl = c.createBiquadFilter(), g = c.createGain(); fl.type = "lowpass"; fl.frequency.value = 1400;
       g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.035 * v, t + 0.5); g.gain.setValueAtTime(0.035 * v, t + dur); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.6);
@@ -263,6 +323,139 @@ function plan(o, song) {
   });
   return bars;
 }
+// ---------- guitar rig: takes -> body or amp -> pan -> guitar bus (+ a small room) ----------
+const biq = (c, type, f, q, gain) => { const b = c.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; if (gain != null) b.gain.value = gain; return b; };
+const chain = (...n) => { for (let i = 0; i < n.length - 1; i++) n[i].connect(n[i + 1]); return n[n.length - 1]; };
+function guitarRig(c, o, only, master, verb) {
+  const r = rng(0x6a17e5), sr = c.sampleRate, electric = o.guitarSound === "electric", pat = o.guitarPattern || "strum", clean = pat === "pick";
+  const bus = c.createGain(); bus.gain.value = only && only !== "guitar" ? 0 : (o.mute.guitar ? 0 : (o.vol.guitar == null ? 1 : o.vol.guitar)); bus.connect(master);
+  const send = c.createGain(); send.gain.value = clean ? 0.3 : electric ? 0.09 : 0.12; bus.connect(send); send.connect(verb);
+  // two short reflections (left 11 ms, right 17 ms, darkened): a touch of room so the two takes sound like one band in one space
+  const er = c.createGain(); er.gain.value = 0.16; const erf = biq(c, "lowpass", 3500, 0.7); bus.connect(erf); erf.connect(er);
+  [[0.011, -0.6], [0.017, 0.6]].forEach(([t, pn]) => { const dl = c.createDelay(0.05); dl.delayTime.value = t; er.connect(dl); if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = pn; dl.connect(p); p.connect(master); } else dl.connect(master); });
+  // acoustic body: the wood and the air inside the box ring at a few low frequencies (modal impulse response)
+  let bodyIR = null;
+  if (!electric) {
+    const bn = Math.floor(sr * 0.12); bodyIR = c.createBuffer(1, bn, sr); const d = bodyIR.getChannelData(0); let e = 0;
+    const modes = [[102, 0.05, 1], [196, 0.04, 0.8], [285, 0.03, 0.45], [410, 0.022, 0.35], [580, 0.016, 0.3], [860, 0.01, 0.25], [1250, 0.007, 0.2], [2100, 0.004, 0.15]];
+    for (let i = 0; i < bn; i++) { const t = i / sr; let x = (r() * 2 - 1) * 0.4 * Math.exp(-t / 0.004); for (const [f, tau, a] of modes) x += a * Math.exp(-t / tau) * Math.sin(2 * Math.PI * f * t); d[i] = x; e += x * x; }
+    const k = 1 / Math.sqrt(e); for (let i = 0; i < bn; i++) d[i] *= k;
+  }
+  // amp: tighten the lows, push the mids, then clip (asymmetric, like a tube); speaker cab = steep roll-off above 5 kHz with a mid bump
+  const curve = new Float32Array(2048); let cm = 0;
+  for (let i = 0; i < curve.length; i++) { const x = i / 1023.5 - 1; curve[i] = clean ? Math.tanh(1.6 * x) : Math.tanh(5 * (x + 0.1)) - Math.tanh(0.5); cm = Math.max(cm, Math.abs(curve[i])); }
+  for (let i = 0; i < curve.length; i++) curve[i] /= cm;
+  const n = clean ? 1 : 2, takes = [];
+  for (let i = 0; i < n; i++) {
+    const inp = c.createGain(), out = c.createGain(); let last;
+    if (electric) {
+      const pre = chain(inp, biq(c, "highpass", clean ? 80 : 90, 0.7), biq(c, "peaking", 400, 0.7, clean ? 0 : 3), biq(c, "lowpass", clean ? 6500 : 3400, 0.7));
+      const drv = c.createGain(); drv.gain.value = clean ? 0.9 : 2.4; const sh = c.createWaveShaper(); sh.curve = curve; sh.oversample = "4x"; pre.connect(drv); drv.connect(sh);
+      last = chain(sh, biq(c, "highpass", 70, 0.7), biq(c, "lowshelf", 160, 0.7, 6), biq(c, "peaking", 300, 0.8, 4), biq(c, "peaking", 1700, 0.9, i ? 1 : 2), biq(c, "highshelf", 2600, 0.7, -5),
+        biq(c, "lowpass", i ? 3900 : 4500, 0.8), biq(c, "lowpass", i ? 4800 : 5400, 0.6), out);
+      out.gain.value = clean ? 0.9 : 0.21;
+    } else {
+      const hp = biq(c, "highpass", clean ? 150 : 75, 0.7), dry = c.createGain(), body = c.createConvolver(), bg = c.createGain(), sum = c.createGain();
+      dry.gain.value = 0.6; body.normalize = false; body.buffer = bodyIR; bg.gain.value = 0.85;
+      inp.connect(hp); hp.connect(dry); dry.connect(sum); hp.connect(body); body.connect(bg); bg.connect(sum);
+      last = chain(sum, biq(c, "peaking", 470, 1.1, -3), biq(c, "peaking", 2900, 0.9, 2.5), biq(c, "highshelf", 7500, 0.7, -4.5), out);
+      out.gain.value = 3.5;
+    }
+    if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = n === 1 ? 0.1 : i ? 0.8 : -0.8; last.connect(p); p.connect(bus); } else last.connect(bus);
+    takes.push(inp);
+  }
+  const nb = c.createBuffer(1, Math.floor(sr * 0.05), sr), nd = nb.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = r() * 2 - 1;
+  return { takes, electric, clean, pat,
+    play(take, buf, t, end, v, rate = 1) {          // one string: rings until the player stops it (next stroke on that string, or the chord change)
+      const s = c.createBufferSource(), g = c.createGain(); s.buffer = buf; if (rate !== 1) s.playbackRate.value = rate;
+      const natural = t + buf.duration / rate; g.gain.setValueAtTime(v, t);
+      if (end + 0.04 < natural) { g.gain.setValueAtTime(v, Math.max(t, end)); g.gain.linearRampToValueAtTime(0, Math.max(t, end) + 0.04); }
+      s.connect(g); g.connect(takes[take]); s.start(t); s.stop(Math.min(natural, Math.max(t, end) + 0.05));
+    },
+    click(take, t, dur, v) {                       // the pick scraping across the strings
+      const s = c.createBufferSource(), f = biq(c, "bandpass", 3600, 0.7), g = c.createGain(); s.buffer = nb;
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); s.connect(f); f.connect(g); g.connect(takes[take]); s.start(t); s.stop(t + dur + 0.01);
+    } };
+}
+// Lead guitar for the tune: overdriven with vibrato and a bend into phrase starts (rock), or clean and twangy (country and the rest).
+function leadRig(c, o, out) {
+  const drive = o.style === "rock" || (o.guitarOn && o.guitarSound === "electric" && o.guitarPattern !== "pick");
+  const curve = new Float32Array(2048); let cm = 0;
+  for (let i = 0; i < curve.length; i++) { const x = i / 1023.5 - 1; curve[i] = drive ? Math.tanh(4 * (x + 0.05)) - Math.tanh(0.2) : Math.tanh(1.8 * x); cm = Math.max(cm, Math.abs(curve[i])); }
+  for (let i = 0; i < curve.length; i++) curve[i] /= cm;
+  const inp = c.createGain(), drv = c.createGain(), sh = c.createWaveShaper(), g = c.createGain(); drv.gain.value = drive ? 2 : 1; sh.curve = curve; sh.oversample = "4x";
+  chain(inp, biq(c, "highpass", 180, 0.7), biq(c, "peaking", drive ? 900 : 1300, 0.8, drive ? 5 : 3), biq(c, "lowpass", drive ? 4000 : 7500, 0.7), drv, sh);
+  chain(sh, biq(c, "highpass", 120, 0.7), biq(c, "peaking", 2200, 1, 2), biq(c, "lowpass", drive ? 5000 : 7500, 0.8), biq(c, "lowpass", drive ? 6000 : 9000, 0.6), g, out);
+  g.gain.value = drive ? 0.045 : 0.19;
+  return { play(t, m, dur, v, bend) {
+    while (m > 84) m -= 12;
+    const b = stringBuffer(drive ? "e" : "t", m, Math.round(t * 1000) % 2), s = c.createBufferSource(), a = c.createGain(); s.buffer = b;
+    const end = Math.min(t + b.duration, t + dur + 0.08);
+    if (bend && drive) { s.playbackRate.setValueAtTime(0.8909, t); s.playbackRate.linearRampToValueAtTime(1, t + 0.09); }   // a whole-step bend up into the note
+    if (dur > 0.3) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 5.6; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(drive ? 0.006 : 0.003, t + Math.min(0.4, dur)); l.connect(lg); lg.connect(s.playbackRate); l.start(t); l.stop(end + 0.05); }
+    a.gain.setValueAtTime(v * 0.5, t); a.gain.setValueAtTime(v * 0.5, end); a.gain.linearRampToValueAtTime(0, end + 0.05);
+    s.connect(a); a.connect(inp); s.start(t); s.stop(end + 0.06);
+  } };
+}
+// One bar of guitar, played like a session player: pattern per section, real strum timing, strings damped by the next stroke.
+function guitarBar(o, song, G, bd, t0, T) {
+  const { bar, sec, b, nb, nth, next } = bd, R = G.gtr, beat = 60 / o.bpm, step = beat / 4, barEnd = t0 + 16 * step;
+  const gv = song.gtr.chords[bar % 4], capo = song.gtr.capo, r = rng(((song.slideSeed ^ 0x51ed27) + bar * 104729) >>> 0);
+  const hook = sec === "Hook", verse = sec === "Verse", intro = sec === "Intro", outro = sec === "Outro";
+  const lastBar = b === nb - 1, intoHook = next === "Hook" && lastBar, breakdown = verse && nth === 2 && b < 4, finalBar = outro && lastBar;
+  const pat = R.pat, electric = R.electric, power = electric && pat !== "pick";
+  const lvl = hook ? 1 : intro ? 0.72 : outro ? 0.85 * (1 - 0.5 * b / nb) : 0.8;
+  const S = [], add = (s, k, v, x) => S.push({ s, k, v, x });
+  const eighths = (k, vOn, vOff) => { for (let s = 0; s < 16; s += 2) add(s, s % 4 ? (k === "D" ? "U" : k) : k === "U" ? "D" : k, s % 4 ? vOff : s % 8 ? vOn * 0.88 : vOn); };
+  if (finalBar || (breakdown && pat !== "pick")) add(0, "R", 0.9);
+  else if (pat === "pick") { const seq = [0, -3, -2, -1, 1, -2, -1, -3]; seq.forEach((x, i) => add(i * 2, "P", i === 0 ? 1 : i === 4 ? 0.85 : 0.68, x)); if (hook) add(15, "P", 0.5, -1); }
+  else if (pat === "boom") { add(0, "B", 0.95); add(4, "d", 0.8); add(6, "U", 0.5); add(8, "A", 0.9); add(12, "d", 0.8); add(14, "U", 0.5); if (hook) add(10, "U", 0.45); }
+  else if (pat === "riff") {
+    if (intro) { add(0, "R", 0.95); if (lastBar) for (const s of [8, 10, 12, 14]) add(s, "M", 0.8); }
+    else if (hook) for (let s = 0; s < 16; s += 2) add(s, "D", s % 4 ? 0.82 : 1);
+    else if (intoHook) { add(0, "D", 0.95); for (const s of [2, 4, 6]) add(s, "M", 0.8); for (const s of [8, 10, 12, 14]) add(s, "D", 0.92 + s / 160); }
+    else { add(0, "D", 1); for (let s = 2; s < 16; s += 2) if (!(b % 2 && s >= 12)) add(s, "M", s === 8 ? 0.9 : 0.74); if (b % 2) { add(12, "D", 0.9); add(14, "D", 0.9); } }
+  } else if (pat === "steady") {
+    if (hook || intoHook) for (let s = 0; s < 16; s += 2) add(s, "D", s % 4 ? 0.7 : 1);
+    else for (const s of [0, 4, 8, 12]) add(s, "D", s ? 0.82 : 1);
+  } else {                                                                                     // down and up
+    if (hook) eighths("D", 1, 0.58);
+    else if (intoHook) for (const s of [0, 4, 8, 10, 12, 14]) add(s, "D", 0.85 + s / 100);
+    else { add(0, "D", 1); add(4, "D", 0.78); add(6, "U", 0.55); add(10, "U", 0.6); add(12, "D", 0.8); add(14, "U", 0.55); }
+  }
+  // the strings each stroke hits
+  const shape = (tun) => power ? [gv.power, gv.power + 7, gv.power + 12] : gv.frets.map((f, i) => (f < 0 ? null : tun[i] + capo + f));
+  const strike = (k, x, tun) => {
+    const sh = shape(tun), idx = sh.map((m, i) => (m == null ? -1 : i)).filter((i) => i >= 0), at = (j) => idx[j < 0 ? idx.length + j : Math.min(j, idx.length - 1)];
+    if (k === "D" || k === "R") return idx.map((i) => [i, sh[i]]);
+    if (k === "d") return idx.slice(-4).map((i) => [i, sh[i]]);
+    if (k === "U") return idx.slice(power ? -2 : -3).reverse().map((i) => [i, sh[i]]);
+    if (k === "M") return idx.slice(0, power ? 2 : 4).map((i) => [i, sh[i]]);
+    if (k === "B") return [[idx[0], sh[idx[0]]]];
+    if (k === "A") { const root = sh[idx[0]], lo = idx[0] > 0 && root - 5 >= tun[0] + capo; return [[lo ? idx[0] - 1 : idx[0] + 1, lo ? root - 5 : root + 7]]; }
+    const i = at(x); return [[i, sh[i]]];
+  };
+  const nash = o.style === "country" && !electric && (pat === "strum" || pat === "steady" || pat === "riff");
+  for (let take = 0; take < R.takes.length; take++) {
+    const tun = take && nash ? NASHVILLE : STD_TUNING, rate = take ? 1.00173 : 1, ev = [];
+    for (const st of S) {
+      if (take && (st.k === "B" || st.k === "A")) continue;                                   // the second guitar only strums
+      const v = st.v * lvl, ts = Math.max(0, T(st.s) + (r() - 0.5) * (take ? 0.012 : 0.006) + (take ? 0.004 : 0));
+      const notes = strike(st.k, st.x, tun), single = st.k === "B" || st.k === "A" || st.k === "P";
+      const gap = single ? 0 : (electric ? 0.0042 : 0.0058) * (1.25 - 0.4 * st.v) * (st.k === "U" ? 0.75 : 1);
+      const type = st.k === "M" ? (electric ? "p" : "q") : st.k === "P" ? (electric ? "e" : "f") : electric ? "e" : "a";
+      notes.forEach(([si, m], j) => ev.push({ si, m, t: ts + j * (gap + r() * 0.0012), v: v * (0.88 + r() * 0.24), type, ring: st.k === "R", mute: st.k === "M" }));
+      if (!electric && !single) R.click(take, ts, gap * notes.length + 0.012, 0.035 * v);
+    }
+    ev.sort((a, c2) => a.si - c2.si || a.t - c2.t);
+    ev.forEach((e, i) => {
+      const nx = ev[i + 1] && ev[i + 1].si === e.si ? ev[i + 1].t : barEnd + 0.01;
+      const end = finalBar ? e.t + 3 : e.mute ? Math.min(nx, e.t + 0.3) : nx;
+      const base = (electric ? (R.clean ? 0.16 : 0.32) : 0.11) * (e.type === "f" || (R.clean && e.type === "e") ? 2 : 1);   // single picked notes vs six-string strums
+      R.play(take, stringBuffer(e.type, e.m, take * 2 + (r() < 0.5 ? 0 : 1)), e.t, end, e.v * base, rate);
+    });
+  }
+}
 function graph(c, o, only) {
   const rnd = rng(0x5eed1234), K = kitFor(c, rnd), master = c.createGain(); master.gain.value = 0.8;
   const tilt = c.createBiquadFilter(); tilt.type = "peaking"; tilt.frequency.value = 3200; tilt.Q.value = 0.7; tilt.gain.value = 2.5;   // presence: phone speakers live here
@@ -273,14 +466,8 @@ function graph(c, o, only) {
   verb.buffer = ir; const vg = c.createGain(); vg.gain.value = 0.25; verb.connect(vg); vg.connect(master);
   const bus = (name, send) => { const g = c.createGain(); g.gain.value = only && only !== name ? 0 : (o.mute[name] ? 0 : o.vol[name]); g.connect(master); if (send) { const s = c.createGain(); s.gain.value = send; g.connect(s); s.connect(verb); } return g; };
   const B = { drums: bus("drums", 0.07), bass: bus("bass"), keys: bus("keys", 0.5), melody: bus("melody", 0.55) };
-  // Separate bus preserves individual guitar stems; old recipes have no guitar part.
-  const guitarBus = c.createGain(); guitarBus.gain.value = only && only !== "guitar" ? 0 : (o.mute.guitar ? 0 : (o.vol.guitar == null ? 1 : o.vol.guitar));
-  guitarBus.connect(master); const guitarSend = c.createGain(); guitarSend.gain.value = 0.14; guitarBus.connect(guitarSend); guitarSend.connect(verb);
-  const guitarAcoustic = c.createGain(); guitarAcoustic.connect(guitarBus);
-  const guitarElectric = c.createGain(), drive = c.createGain(), guitarShaper = c.createWaveShaper(), cabinet = c.createBiquadFilter(), cabLow = c.createBiquadFilter();
-  drive.gain.value = 5; const guitarCurve = new Float32Array(1024); for (let i = 0; i < guitarCurve.length; i++) guitarCurve[i] = Math.tanh(2.2 * (i / 511.5 - 1));
-  guitarShaper.curve = guitarCurve; guitarShaper.oversample = "2x"; cabinet.type = "lowpass"; cabinet.frequency.value = 3800; cabLow.type = "highpass"; cabLow.frequency.value = 90;
-  guitarElectric.connect(drive); drive.connect(guitarShaper); guitarShaper.connect(cabinet); cabinet.connect(cabLow); cabLow.connect(guitarBus);
+  // Guitar: its own bus (its own stem). Built only when the guitar is on, so beats without guitar render exactly as before.
+  const gtr = o.guitarOn ? guitarRig(c, o, only, master, verb) : null;
   // drums: gentle saturation + a high shelf so the snap survives a phone speaker
   const dsh = c.createWaveShaper(), dc = new Float32Array(1024); for (let i = 0; i < 1024; i++) { const x = i / 512 - 1; dc[i] = Math.tanh(1.3 * x) / Math.tanh(1.3); }
   dsh.curve = dc; const shelf = c.createBiquadFilter(); shelf.type = "highshelf"; shelf.frequency.value = 4500; shelf.gain.value = 3;
@@ -294,44 +481,28 @@ function graph(c, o, only) {
   const melIn = c.createGain(); melIn.connect(B.melody); melIn.connect(dl); dl.connect(dfl); dfl.connect(fb); fb.connect(dl);
   if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = -0.3; dfl.connect(p); p.connect(dg); } else dfl.connect(dg);
   dg.connect(B.melody);
-  return { K, B, bassIn, drumsIn, melIn, guitarAcoustic, guitarElectric, only };
+  const lead = o.leadSound === "guitar" ? leadRig(c, o, melIn) : null;
+  return { K, B, bassIn, drumsIn, melIn, gtr, lead, only };
 }
 function schedBar(o, song, G, bd, t0) {
   const { bar, sec, b, nb, nth, next } = bd, st = song.st, { K, B, bassIn, drumsIn, melIn } = G, beat = 60 / o.bpm, step = beat / 4, energy = o.energy, rs = rng(song.slideSeed + bar * 7919);
   const ci = bar % 4, ch = song.chords[ci], nextCh = song.chords[(ci + 1) % 4];
   const hum = () => rs() * 0.006, vel = (base) => base * (0.92 + rs() * 0.16);           // humanize: a few ms, a few percent
-  const T = (s) => t0 + s * step + (s % 2 ? (o.swing - 0.5) * beat / 2 : 0);
+  const T = st.swing8 ? (s) => t0 + s * step + (s % 4 === 2 ? (o.swing - 0.5) * beat : 0)          // country: the eighth notes shuffle (the guitar strums on eighths)
+    : (s) => t0 + s * step + (s % 2 ? (o.swing - 0.5) * beat / 2 : 0);
   const hook = sec === "Hook", verse = sec === "Verse", lastBar = b === nb - 1, intoHook = next === "Hook" && b >= nb - 2;
   const breakdown = verse && nth === 2 && b < 4;                                                 // verse 2 opens stripped back, then the beat comes back
   const fade = sec === "Outro" ? 1 - b / nb : verse ? 0.7 : 1;                                   // verse sits back, hook lifts
-  // Guitar runs in every section. Up strokes reverse the order of the strings.
-  if (o.guitarOn && (!G.only || G.only === "guitar") && !o.mute.guitar) {
-    const electric = o.guitarSound === "electric", out = electric ? G.guitarElectric : G.guitarAcoustic;
-    const root = ch.root + 12;
-    const classes = [ch.d, ch.d + 2, ch.d + 4].map((d) => (o.key + SCALE[o.mood][d % 7]) % 12);
-    const strings = electric ? [root, root + 7, root + 12] : [40, 45, 50, 55, 59, 64].map((open) => {
-      for (let fret = 0; fret <= 5; fret++) if (classes.includes((open + fret) % 12)) return open + fret;
-      return open;
-    });
-    const patterns = { steady: [[0, 1], [4, 1], [8, 1], [12, 1]],
-      strum: [[0, 1], [6, -1], [8, 1], [10, -1], [14, -1]],
-      riff: [[0, 1], [2, 1], [4, 1], [8, 1], [10, 1], [12, 1]] };
-    const strokes = patterns[o.guitarPattern] || patterns.strum;
-    for (const [s, direction] of strokes) {
-      const notes = direction < 0 ? [...strings].reverse() : strings;
-      const muted = electric && o.guitarPattern === "riff" && (s === 2 || s === 10);
-      for (const [i, m] of notes.entries()) K.guitar(T(s) + i * (electric ? 0.005 : 0.012), m, muted ? 0.22 : Math.min(1.2, 2 * beat), out, fade * (electric ? 0.7 : 0.8), muted);
-    }
-  }
+  // Guitar runs in every section (its own rules in guitarBar).
+  if (G.gtr && (!G.only || G.only === "guitar") && !o.mute.guitar) guitarBar(o, song, G, bd, t0, T);
   // chords
-  const kv = (breakdown ? 0.55 : 1) * fade;
+  const kv = (breakdown ? 0.55 : 1) * fade * (o.guitarOn ? (st.live ? 1 : 0.75) : 1);              // with a guitar playing the chords, the keys step back
   if (o.keysSound === "pad") for (const m of ch.tones) K.pad(t0, m, 4 * beat, B.keys, kv);
   else if (st.keysRhythm === "off") for (const s of [0, 3, 6, 10, 13]) for (const [j, m] of ch.tones.entries()) K[o.keysSound](T(s) + j * 0.008, m, step * 1.5, B.keys, (s ? 0.75 : 0.95) * kv);
   else for (const s of song.arr.stabs) for (const [j, m] of ch.tones.entries()) K[o.keysSound](T(s) + j * 0.01, m, beat * (s ? 0.9 : 1.4), B.keys, (s ? 0.6 : 0.9) * kv, st.wobble ? 1 : 0);
   if (st.crackle) K.crackle(t0, 4 * beat, drumsIn, rs);
-  const tune = (v, up = 0) => { for (const n of song.motif) if (n.bar === ci) K[o.leadSound](T(n.step) + hum(), n.m + up, n.len * step, melIn, vel(v)); };
+  const tune = (v, up = 0) => { for (const n of song.motif) if (n.bar === ci) { if (G.lead) G.lead.play(T(n.step) + hum(), n.m + up, n.len * step, vel(v), n.step % 8 === 0 && n.len >= 2); else K[o.leadSound](T(n.step) + hum(), n.m + up, n.len * step, melIn, vel(v)); } };
   if (sec === "Intro" || sec === "Outro") {
-    if (sec === "Intro" && b === 0 && o.style === "rock") K.crash(t0, drumsIn, 0.8);
     if (sec === "Intro" && b >= nb - 2 && song.arr.introTune) tune(0.5);
     if (sec === "Intro" && b === nb - 2) K.riser(t0, 8 * beat - 0.02, drumsIn, 0.6);
     if (sec === "Outro" && b < 2) { tune(0.5); if (b === 0) K.crash(t0, drumsIn, 0.6); }
@@ -340,21 +511,26 @@ function schedBar(o, song, G, bd, t0) {
   // drums
   const breathe = lastBar && !st.perc && !(next === "Hook");                                   // the last bar before a change drops out for a beat (let it breathe)
   [...song.drums.kick].forEach((x, s) => { if (x === "x" && !(breathe && s >= 12) && !(intoHook && lastBar && s >= 8)) K.kick(T(s), drumsIn, o.kit, vel(1)); });
-  const snareHit = (t, v = 1) => o.brushSnare ? K.brush(t, drumsIn, v) : st.snareSound === "clap" ? K.clap(t, drumsIn, v) : st.snareSound === "rim" ? K.rim(t, drumsIn, v) : K.snare(t, drumsIn, o.kit, v);
+  const crossStick = o.style === "country" && !hook && !o.brushSnare;                              // country verses: cross-stick on the rim, the full snare comes in on the hook
+  const snareHit = (t, v = 1) => o.brushSnare ? K.brush(t, drumsIn, v) : crossStick ? K.rim(t, drumsIn, 0.9 * v) : st.snareSound === "clap" ? K.clap(t, drumsIn, v) : st.snareSound === "rim" ? K.rim(t, drumsIn, v) : K.snare(t, drumsIn, o.kit, v);
   [...song.drums.snare].forEach((x, s) => {
     if (x !== "x") return;
     if (intoHook && lastBar && s >= 8) return;
     snareHit(T(s) + hum(), vel(1)); if (hook && o.style !== "rock" && o.style !== "country" && st.snareSound !== "clap") K.clap(T(s), drumsIn, 0.4); if (hook && st.snareSound === "clap" && s === 12) K.snare(T(s), drumsIn, "hard", 0.35);
   });
-  if (intoHook && lastBar) for (let k = 0; k < 8; k++) snareHit(T(8) + k * step, 0.45 + k * 0.07);          // snare roll into the hook
+  if (intoHook && lastBar && st.live) {                                                            // a drummer's fill: snare, then down the toms
+    const sn = (t, v) => o.brushSnare ? K.brush(t, drumsIn, v) : K.snare(t, drumsIn, o.kit, v);
+    sn(T(8), 0.75); sn(T(10), 0.85); K.tom(T(12), drumsIn, 165, 0.85); K.tom(T(13), drumsIn, 165, 0.75); K.tom(T(14), drumsIn, 98, 0.95); K.tom(T(15), drumsIn, 98, 0.85);
+  } else if (intoHook && lastBar) for (let k = 0; k < 8; k++) snareHit(T(8) + k * step, 0.45 + k * 0.07);          // snare roll into the hook
   if (intoHook && b === nb - 2) K.riser(t0, 8 * beat - 0.02, drumsIn, 0.5);
-  if ((hook && b === 0) || (o.style === "rock" && b % 4 === 0)) K.crash(t0, drumsIn, 0.8);
+  if ((hook && b === 0) || (st.live && hook && b % 4 === 0) || (st.live && verse && b === 0 && !breakdown)) K.crash(t0, drumsIn, b === 0 ? 0.8 : 0.6);
   const roll = song.drums.rolls && bar % 2 === 1 && !intoHook && rs() < 0.4 + energy * 0.5, rollN = rs() < 0.5 ? 6 : 8;   // hat roll at the end of every other bar
   const hatV = breakdown ? 0.6 : 1;
   [...song.drums.hat].forEach((x, s) => {
     if (x !== "x") return;
     if (roll && s >= 12) { if (s === 12) for (let k = 0; k < rollN; k++) K.hat(T(12) + k * (4 * step / rollN), drumsIn, (0.5 + k * 0.06) * hatV); return; }
     if (st.hatSkip && s % 8 === 6 && rs() < 0.5) return;                                         // drill: skipped hat
+    if (o.style === "rock" && hook) { K.hat(T(s) + hum(), drumsIn, vel(s % 4 === 0 ? 0.42 : 0.32), true); return; }   // rock hook: the hats open up and wash
     K.hat(T(s) + hum(), drumsIn, vel(s % 4 === 0 ? 0.9 : 0.6) * hatV);
     if (o.style !== "rock" && o.style !== "country" && energy > 0.5 && ((hook && song.arr.doubleHats) || st.hatSkip) && s % 4 === 2 && rs() < (hook ? 0.9 : 0.4)) K.hat(T(s + 1), drumsIn, 0.45 * hatV);
     if (o.style !== "rock" && o.style !== "country" && energy > 0.75 && hook && s === 10) for (let k = 1; k < 4; k++) K.hat(T(s) + k * step / 4, drumsIn, 0.35);
@@ -367,6 +543,10 @@ function schedBar(o, song, G, bd, t0) {
   if (song.bassMode === "half") hits = hits.filter((s, i) => i === 0 || (s >= 8 && hits[i - 1] < 8));                 // one note per half bar
   else if (song.bassMode === "synco") hits = [...new Set([hits[0], 6, 11, 14].filter((s) => s >= 0))].sort((a, b) => a - b);  // off-beat line
   else if (song.bassMode === "walk") hits = [...new Set(hits.concat(b % 2 ? [10, 14] : [12]))].sort((a, b) => a - b);
+  else if (song.bassMode === "eighths") hits = [0, 2, 4, 6, 8, 10, 12, 14];                                            // rock: driving eighths on the root
+  else if (song.bassMode === "boom") hits = nextCh.root !== ch.root && b % 2 ? [0, 8, 12, 14] : [0, 8];                 // country boom-chick, walk-up into a new chord
+  const sc = SCALE[o.mood], up = nextCh.root > ch.root;                                     // walk-up: the scale notes leading into the next chord's root
+  const walkTo = (k) => { let m = nextCh.root, d = nextCh.d; for (let j = 0; j < k; j++) { const d2 = up ? d - 1 : d + 1, a = sc[((d % 7) + 7) % 7], c2 = sc[((d2 % 7) + 7) % 7]; m += up ? -((a - c2 + 12) % 12) : (c2 - a + 12) % 12; d = d2; } return m; };
   const slideHit = st.slides && hits.length > 1 && rs() < (o.style === "drill" ? 0.6 : 0.3) ? hits[1 + Math.floor(rs() * (hits.length - 1))] : -1;
   if (!breakdown) hits.forEach((s, i) => {
     if (intoHook && lastBar && s >= 8) return;
@@ -374,11 +554,13 @@ function schedBar(o, song, G, bd, t0) {
     let m = ch.root; const fifth = ch.root + 7 > 43 ? ch.root - 5 : ch.root + 7;
     if ((o.bassSound === "log" || song.bassMode === "synco") && i % 2 === 1) m = fifth;                                    // bounce root / fifth
     if (song.bassMode === "walk" && s >= 10 && !song.bassRhythm.startsWith("x", s)) m = s === 14 ? nextCh.root + (nextCh.root > ch.root ? -1 : 1) : fifth;   // walk toward the next chord
+    if (song.bassMode === "boom") m = s === 8 ? fifth : s >= 12 ? walkTo(s === 12 ? 2 : 1) : ch.root;
     if (o.bassSound === "808") K.b808(T(s), m, d, bassIn, s === slideHit ? (rs() < 0.5 ? m - 5 : m + 7) : null, 1, st.slides || 0.12);
     else if (o.bassSound === "log") K.log(T(s), m, d, bassIn);
+    else if (song.bassMode === "boom" || song.bassMode === "eighths") K.round(T(s), m, Math.min(d, song.bassMode === "boom" ? beat * 0.8 : step * 1.8), bassIn, song.bassMode === "eighths" ? (s % 4 ? 0.8 : 0.95) * (hook ? 1 : 0.85) : s >= 12 ? 0.8 : 1);
     else K.round(T(s), m, d, bassIn);
     if (o.bassSound === "808" && i === hits.length - 1 && end - s > 2 && lastBar && !intoHook) K.b808(T(14), nextCh.root, 2 * step, bassIn, ch.root, 1, st.slides || 0.12);   // slide into the next chord
-    if (o.bassSound === "round" && i === hits.length - 1 && end - s > 3 && b % 2 === 0) K.round(T(14), ch.root + 7 > 43 ? ch.root - 5 : ch.root + 7, 2 * step, bassIn, 0.6);    // walk to the fifth
+    if (o.bassSound === "round" && song.bassMode !== "boom" && song.bassMode !== "eighths" && i === hits.length - 1 && end - s > 3 && b % 2 === 0) K.round(T(14), ch.root + 7 > 43 ? ch.root - 5 : ch.root + 7, 2 * step, bassIn, 0.6);    // walk to the fifth
   });
   if (intoHook && lastBar && o.bassSound === "808") K.b808(T(8), nextCh.root, 8 * step, bassIn, ch.root - 5, 1, 0.5);   // long 808 slide into the hook
   // the tune: full in the hook (an octave up in its second half), every other phrase in the verse (room for the vocal)
@@ -411,7 +593,7 @@ function master(L, R, total, sr) {
   for (let i = Math.max(0, total - W); i < total; i++) mn[i] = need[dq[h]];
   let acc = W; for (let i = 0; i < total; i++) { acc += mn[i] - (i >= W ? mn[i - W] : 1); const gm = acc / W; L[i] *= gm; R[i] *= gm; }   // mean over the last W = the ramp
 }
-export async function render(o, song, only = null, onProgress) {
+export async function render(o, song, only = null, onProgress, raw = false) {   // raw = skip the master (test renders that compare part levels)
   const bars = plan(o, song), barS = 4 * 60 / o.bpm, sr = 44100, tail = 2.5, CH = 4, pad = 0.05;
   const total = Math.ceil((bars.length * barS + tail + pad) * sr), L = new Float32Array(total), R = new Float32Array(total);
   const pieces = []; for (let i = 0; i < bars.length; i += CH) pieces.push(bars.slice(i, i + CH));
@@ -426,8 +608,9 @@ export async function render(o, song, only = null, onProgress) {
   // Guitar makes many short string buffers. Render one piece at a time to keep
   // peak memory down on phones; existing guitar-free beats keep their old batching.
   const parallel = o.guitarOn && (!only || only === "guitar") ? 1 : 3;
-  for (let i = 0; i < pieces.length; i += parallel) await Promise.all(pieces.slice(i, i + parallel).map(one));
-  master(L, R, total, sr);
+  GTR_USERS++; if (!GTR_CACHE) GTR_CACHE = new Map();
+  try { for (let i = 0; i < pieces.length; i += parallel) await Promise.all(pieces.slice(i, i + parallel).map(one)); } finally { if (--GTR_USERS === 0) GTR_CACHE = null; }
+  if (!raw) master(L, R, total, sr);
   const buf = new AudioBuffer({ length: total, numberOfChannels: 2, sampleRate: sr });
   buf.copyToChannel(L, 0); buf.copyToChannel(R, 1);
   return buf;
@@ -465,16 +648,7 @@ export function mount(root, { getCtx, onUse, wav }) {
       <p class="muted" style="margin:4px 0 8px">Every roll and edit is saved on this phone. Tap one to reopen it exactly. Tap the star to keep it for good.</p><div id="blMine"></div></div>
     <p class="muted">Made by Heartbeat's own beat engine: music-theory rules plus your choices. No AI model makes the track, the same way a drum machine works. Nobody else gets your exact beat unless you share it. Mixed for phone speakers; headphones hear the full bass.</p>`;
   const chip = (label, on, fn, title) => { const b = document.createElement("button"); b.textContent = label; if (on) b.className = "on"; if (title) b.title = title; b.onclick = fn; return b; };
-  const setStyle = (k) => {
-    o.style = k; roll(o, seed());
-    if (k === "rock" || k === "country") {
-      o.guitarOn = true; o.guitarSound = k === "rock" ? "electric" : "acoustic";
-      o.guitarPattern = k === "rock" ? "riff" : "strum";
-      o.guitarProgression = k === "rock" ? "oneFiveSixFour" : "oneFourFive";
-      o.brushSnare = k === "country";
-    } else o.brushSnare = false;
-    remake();
-  };
+  const setStyle = (k) => { o.style = k; roll(o, seed()); styleDefaults(o, k); remake(); };
   function drawTop() {
     const st = STYLES[o.style];
     $("#blStyle").replaceChildren(...Object.entries(STYLES).map(([k, s]) => chip(s.name, o.style === k, () => setStyle(k), s.tag)));
@@ -514,15 +688,15 @@ export function mount(root, { getCtx, onUse, wav }) {
       });
       grid.append(line);
     }
-    part("drums", "Drums", "Tap squares to add or remove hits (4 squares = 1 beat). The bass follows the kick. Fills and rolls are added by the rules.", [["hard", "Hard"], ["dusty", "Dusty"], ["soft", "Soft"], ["boom", "Boomy"]], o.kit, (v) => (o.kit = v),
+    part("drums", "Drums", "Tap squares to add or remove hits (4 squares = 1 beat). The bass follows the kick. Fills and rolls are added by the rules.", [["hard", "Hard"], ["dusty", "Dusty"], ["soft", "Soft"], ["boom", "Boomy"]].concat(song.st.live || o.kit === "live" ? [["live", "Live kit"]] : []), o.kit, (v) => (o.kit = v),
       () => { o.seeds.drums = seed(); o.drums = null; remake(); }, grid);
-    part("bass", "Bass", `Plays the root of each chord: ${ch.map((c) => nn(c.root)).join(" · ")}` + ({ half: " (one long note per half bar)", synco: " (off-beat line, root and fifth)", walk: " (walks to the next chord)" }[song.bassMode] || " (locked to the kick)") + (o.bassSound === "808" ? ". Slides into the hook." : o.bassSound === "log" ? ". Bounces root and fifth." : ""), [["808", "808 (slides)"], ["round", "Round bass"], ["log", "Log drum"]], o.bassSound, (v) => (o.bassSound = v),
+    part("bass", "Bass", `Plays the root of each chord: ${ch.map((c) => nn(c.root)).join(" · ")}` + ({ half: " (one long note per half bar)", synco: " (off-beat line, root and fifth)", walk: " (walks to the next chord)", eighths: " (driving eighth notes)", boom: " (boom-chick: root on 1, fifth on 3, walks up into the next chord)" }[song.bassMode] || " (locked to the kick)") + (o.bassSound === "808" ? ". Slides into the hook." : o.bassSound === "log" ? ". Bounces root and fifth." : ""), [["808", "808 (slides)"], ["round", "Round bass"], ["log", "Log drum"]], o.bassSound, (v) => (o.bassSound = v),
       () => { o.seeds.bass = seed(); remake(); });
-    part("keys", "Chords", `${ch.map((c) => c.name).join(" → ")} &nbsp;(${ch.map((c) => c.roman).join(" – ")} in ${NOTE[o.key]} ${o.mood === "dark" ? "minor" : "major"})`, [["pad", "Warm pad"], ["keys", "Electric piano"], ["pluck", "Plucked"]], o.keysSound, (v) => (o.keysSound = v),
+    part("keys", "Chords", `${ch.map((c) => c.name).join(" → ")} &nbsp;(${ch.map((c) => c.roman).join(" - ")} in ${NOTE[o.key]} ${o.mood === "dark" ? "minor" : "major"})`, [["pad", "Warm pad"], ["keys", "Electric piano"], ["pluck", "Plucked"]], o.keysSound, (v) => (o.keysSound = v),
       () => { o.seeds.chords = seed(); o.melody = null; remake(); });
     const guitar = document.createElement("div"); guitar.className = "card"; guitar.style.cssText = "margin:10px 0;background:var(--panel2)";
     guitar.innerHTML = `<div class="row" style="justify-content:space-between"><b>Guitar</b><button id="blGuitarToggle" class="${o.guitarOn ? "on" : ""}" aria-label="Guitar" aria-pressed="${!!o.guitarOn}">${o.guitarOn ? "On" : "Off"}</button></div><p class="muted" style="margin:6px 0">Add a guitar loop to any style.</p><div id="blGuitarChoices"></div>`;
-    guitar.querySelector("#blGuitarToggle").onclick = () => { o.guitarOn = !o.guitarOn; remake(); };
+    guitar.querySelector("#blGuitarToggle").onclick = () => { o.guitarOn = !o.guitarOn; if (o.guitarOn && !STYLES[o.style].live) o.guitarPattern = "pick"; remake(); };   // over a hip hop beat, a picked loop is the record sound
     if (o.guitarOn) {
       const choices = guitar.querySelector("#blGuitarChoices");
       const picker = (label, key, options) => {
@@ -533,7 +707,7 @@ export function mount(root, { getCtx, onUse, wav }) {
         select.value = o[key]; select.onchange = () => { o[key] = select.value; remake(); }; wrap.append(text, select); choices.append(wrap);
       };
       picker("Sound", "guitarSound", [["acoustic", "Acoustic"], ["electric", "Electric"]]);
-      picker("Pattern", "guitarPattern", [["strum", "Down and up"], ["steady", "Steady down"], ["riff", "Rock riff with palm mute"]]);
+      picker("Pattern", "guitarPattern", [["strum", "Down and up strums"], ["steady", "Steady down strums"], ["riff", "Rock riff with palm mute"], ["pick", "Fingerpicked (one note at a time)"], ["boom", "Bass note and strum (country)"]]);
       picker("Chords", "guitarProgression", [["song", "Follow the beat"], ["oneFourFive", o.mood === "dark" ? "i - iv - v" : "I - IV - V"], ["oneFiveSixFour", o.mood === "dark" ? "i - v - VI - iv" : "I - V - vi - IV"]]);
       const note = document.createElement("p"); note.className = "muted"; note.style.margin = "6px 0 0";
       note.textContent = "Choosing chords changes them for the whole beat."; choices.append(note);
@@ -546,7 +720,7 @@ export function mount(root, { getCtx, onUse, wav }) {
     const notes = song.motif.map((n) => nn(n.m)).join(" ");
     const vt = document.createElement("label"); vt.className = "inline"; vt.style.marginTop = "8px"; vt.innerHTML = `<input type="checkbox" ${o.verseMelody ? "checked" : ""}> Melody in the verses too (off = more room to rap)`;
     vt.querySelector("input").onchange = (e) => { o.verseMelody = e.target.checked; buf = null; };
-    part("melody", "Melody", `The tune (4 bars): ${notes}. Full in the hook, an octave up in its second half, with a soft echo.`, [["bell", "Bell"], ["keys", "Electric piano"], ["pluck", "Pluck"], ["dark", "Dark synth"]], o.leadSound, (v) => (o.leadSound = v),
+    part("melody", "Melody", `The tune (4 bars): ${notes}. Full in the hook, an octave up in its second half, with a soft echo.`, [["bell", "Bell"], ["keys", "Electric piano"], ["pluck", "Pluck"], ["dark", "Dark synth"], ["guitar", "Lead guitar"]], o.leadSound, (v) => (o.leadSound = v),
       () => { o.seeds.melody = seed(); o.melody = null; remake(); }, vt);
     msg();
   }
