@@ -1,0 +1,1639 @@
+{
+ "date": "2026-11-08",
+ "title": "Heartbeat News — Sunday, November 8, 2026",
+ "writer": "Claude, daily news job",
+ "tone": "straight news, two characters",
+ "sources": [
+  {
+   "name": "watch/claude/2026-11-08",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-11-08.md"
+  },
+  {
+   "name": "watch/codex/2026-11-08",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-08.md"
+  },
+  {
+   "name": "watch/deepseek/2026-11-08",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-08.md"
+  },
+  {
+   "name": "watch/grok/2026-11-08",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-08.md"
+  },
+  {
+   "name": "watch/kimi/2026-11-08",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-08.md"
+  },
+  {
+   "name": "watch/perplexity/2026-11-08",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/perplexity/2026-11-08.md"
+  },
+  {
+   "name": "watch/msi/2026-11-08",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-08.md"
+  },
+  {
+   "name": "watch/wire/2026-11-08",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-08.md"
+  },
+  {
+   "name": "watch/wire/2026-11-08-top",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-08-top.md"
+  },
+  {
+   "name": "watch/grok/2026-11-08-gaps",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-08-gaps.md"
+  }
+ ],
+ "skipped": [
+  {
+   "item": "Perplexity: Brent 'rose 4% to about $105'",
+   "source": "perplexity",
+   "why": "Conflicts with Friday's $98.32 settlement in every other capture; no weekend print exists."
+  },
+  {
+   "item": "Perplexity: 'COP31 opened in Antalya'",
+   "source": "perplexity",
+   "why": "Other captures date the opening to Monday Nov 9; aired as opening Monday."
+  },
+  {
+   "item": "Perplexity: euro-area inflation 4%, BoE and Australia rate moves, gold $4,676",
+   "source": "perplexity",
+   "why": "Single-source macro roundup without dates; not corroborated by other desks."
+  },
+  {
+   "item": "Perplexity: Shinhan Bank leak of ~25,000 customers; Japan 10 billion yen cybersecurity reserve",
+   "source": "perplexity",
+   "why": "Single weak source (Irish tabloid and aggregator)."
+  },
+  {
+   "item": "Dana White, Stephen Miller, Eisenkot, Peña, New Zealand and Pope Leo follow-ups flagged as aired yesterday",
+   "source": "wire top list",
+   "why": "Covered only with today's new details."
+  },
+  {
+   "item": "Fort Wayne / Indiana items (Scott Road rail crossing, Veterans Day parade, tree lighting, Zimmer Biomet)",
+   "source": "claude",
+   "why": "Local items below the national bar."
+  },
+  {
+   "item": "NFL injury lists, individual college and NHL scores, MLB qualifying offers, F1 penalties",
+   "source": "claude",
+   "why": "Roundup detail; headline results aired in Sports."
+  },
+  {
+   "item": "Berkshire three cash definitions beyond the range; Cathie Wood, ECB presidency, Earthshot venue, Burnham opinion pieces",
+   "source": "claude/wire",
+   "why": "Opinion or headline-only items."
+  },
+  {
+   "item": "Hot fridges, fake nuclear alert, $6bn heist: hacking epidemic long read",
+   "source": "wire top list",
+   "why": "Long read, headline only in captures; no new event."
+  },
+  {
+   "item": "Japan Shinkin banks 5.5-hour outage, Queens library ransomware, Nvidia empty-office story, Anthropic METR report headline",
+   "source": "claude/msi",
+   "why": "Short on facts or no new development; not aired for time."
+  },
+  {
+   "item": "Kremlin hopes midterms won't shift Trump on Ukraine; Vance 2028 brand; SoftBank-ABB details; Hegseth impeachment vote plan",
+   "source": "wire top list",
+   "why": "SHOULD AIR items with no new facts beyond what aired; Hegseth vote had nothing new dated Nov 7."
+  }
+ ],
+ "ticker": [
+  "SIX KILLED IN KRAKOW MAIN SQUARE; GUNMAN SHOT BY POLICE",
+  "CENTCOM DISABLES CARGO SHIP HUDA LEAVING IRAN; 22 CREW RESCUED",
+  "IRAN GUARD SAYS 2,000 KM MISSILE RANGE LIMIT 'LIFTED'",
+  "QATAR: US-IRAN TALKS NOT FAILED, 'STILL WORKING TOWARD A DEAL'",
+  "BOOMS OVER RIYADH AFTER EARLY-WARNING ALERT; HOUTHIS CLAIM ATTACKS",
+  "SANAA-AREA STRIKE: HOUTHI TOLL 22 TO 33 DEAD (UNVERIFIED)",
+  "HERZOG GIVES EISENKOT FIRST CHANCE TO FORM ISRAELI GOVERNMENT",
+  "KYIV: 36 BALLISTIC MISSILES, 4 INTERCEPTED, ZELENSKY SAYS",
+  "ABU DHABI RUSSIA-UKRAINE TALKS SET FOR NOV 10-11",
+  "TRUMP ORDERS DOJ TO 'LOOK INTO' DEMOCRATS OVER 'THREATS'",
+  "TRUMP SAYS HE OFFERED DANA WHITE PRESS SECRETARY JOB",
+  "MISSISSIPPI SENATE: COLOM LEADS BY 2,574 WITH ~97% COUNTED",
+  "BERKSHIRE BUYS BACK $9.6B IN Q3; OPERATING EARNINGS -5.8%",
+  "OPENAI CLOSES FIRST $11B AT $1.25T PRE-MONEY VALUATION",
+  "M5.7 QUAKE IN CENTRAL JAPAN INJURES AT LEAST 22; NO TSUNAMI",
+  "GAZA RAINS FLOOD ABOUT 70,000 TENTS"
+ ],
+ "segments": [
+  {
+   "id": "open",
+   "kind": "open",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "The day's news from the watch desk",
+   "category": "TODAY",
+   "graphic": {
+    "kicker": "TODAY",
+    "title": "Kraków shooting, a cargo ship disabled, Israel's new mandate",
+    "bullets": [
+     "Six killed in Kraków's main square",
+     "U.S. disables a cargo ship leaving Iran; Iran drops its missile-range cap",
+     "Booms over Riyadh; Eisenkot gets Israel's mandate",
+     "Trump orders a Justice Department look at Democrats"
+    ]
+   },
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+    },
+    {
+     "who": "joe",
+     "text": "And I'm Alien Joe. It's Sunday, November eighth. A gunman killed six people in the main square of Kraków, Poland."
+    },
+    {
+     "who": "vex",
+     "text": "The U.S. military disabled a cargo ship leaving Iran. Iran's Guard says its missile range cap is gone. And sirens sounded in Riyadh."
+    },
+    {
+     "who": "joe",
+     "text": "Israel has a new person trying to form a government, the president offered a White House job to a fight promoter, and an earthquake shook central Japan. A lot today. Let's go."
+    }
+   ]
+  },
+  {
+   "id": "iran",
+   "kind": "breaking",
+   "strap": "U.S. DISABLES CARGO SHIP; IRAN LIFTS MISSILE CAP; TALKS 'NOT FAILED'",
+   "headline": "A ship hit, a limit dropped, and a mediator's denial",
+   "category": "MIDDLE EAST",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "IRAN",
+    "title": "Blockade, missiles and talks",
+    "stats": [
+     {
+      "label": "Ships redirected since July",
+      "value": "147"
+     },
+     {
+      "label": "Ships disabled",
+      "value": "5"
+     },
+     {
+      "label": "Crew rescued by UAE",
+      "value": "22"
+     },
+     {
+      "label": "U.S.-Iran deal market",
+      "value": "9.5%"
+     }
+    ],
+    "bullets": [
+     "CENTCOM: M/V Huda disabled in Gulf of Oman",
+     "IRGC: 2,000 km missile limit 'lifted'",
+     "Qatar: talks did not fail",
+     "Iran executes three men over January protests"
+    ]
+   },
+   "sources": [
+    {
+     "name": "CTV (CENTCOM on the Huda)",
+     "url": "https://www.ctvnews.ca/world/article/us-military-says-it-fired-on-commercial-vessel-in-gulf-of-oman-after-it-attempted-to-breach-blockade/"
+    },
+    {
+     "name": "Gulf News (UAE rescue)",
+     "url": "https://gulfnews.com/world/mena/uae-rescues-22-crew-in-gulf-of-oman-as-us-tightens-iran-blockade-and-tehran-lifts-missile-limits-1.500739993"
+    },
+    {
+     "name": "CBS News live updates",
+     "url": "https://www.cbsnews.com/live-updates/iran-war-trump-us-strait-hormuz-persian-gulf/"
+    },
+    {
+     "name": "Times of Israel (IRGC range limit)",
+     "url": "https://www.timesofisrael.com/irgc-says-its-self-imposed-limit-on-ballistic-missile-range-has-been-lifted/"
+    },
+    {
+     "name": "ABC Australia (Hormuz update)",
+     "url": "https://www.abc.net.au/news/2026-11-08/iran-strait-of-hormuz-update-explosions-talks/107360730"
+    },
+    {
+     "name": "Arab News (Qatar denial)",
+     "url": "https://www.arabnews.com/middle-east/qatar-rejects-reports-claiming-pm-said-us-iran-talks-had-failed-3010259"
+    },
+    {
+     "name": "Business Recorder (executions)",
+     "url": "https://www.brecorder.com/news/40447983/iran-executes-three-men-over-armed-unrest-during-january-protests"
+    },
+    {
+     "name": "Polymarket (final-deal contract)",
+     "url": "https://gamma-api.polymarket.com/markets?slug=us-iran-final-nuclear-deal-by-december-31-2026-191"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The U.S. Central Command says an American aircraft fired precision munitions into the stern of the cargo ship Huda in the Gulf of Oman. It says the crew ignored repeated warnings and tried several times to breach the blockade after leaving an Iranian port."
+    },
+    {
+     "who": "vex",
+     "text": "Central Command says that since July, U.S. forces have redirected one hundred forty-seven ships and disabled five that refused. The United Arab Emirates says it rescued all twenty-two crew, who are stable."
+    },
+    {
+     "who": "joe",
+     "text": "Same day, Iran's Revolutionary Guard spokesman said the country's self-imposed two-thousand-kilometer limit on ballistic missile range, quote, has been lifted. He did not say Iran has anything that flies farther. That is a statement, not a demonstration."
+    },
+    {
+     "who": "vex",
+     "text": "Iranian state media reported explosions on Qeshm Island and at Jask. Tasnim said the Qeshm blasts were not missile strikes. A Central Command official said only that they were aware of reports. Iran also says two tankers caught fire after hitting mines on what it calls an unauthorized route. That is Iran's claim."
+    },
+    {
+     "who": "joe",
+     "text": "On the talks: Qatar called reports that its prime minister said the talks had failed false and misleading. Qatar says both sides are still working toward a deal. No text has been published. Prediction markets put a signed final deal by year end at nine and a half percent."
+    },
+    {
+     "who": "vex",
+     "text": "Separately, Iran's judiciary says it executed three men convicted of working for Israel and the United States and of armed unrest in the January protests. Rights groups have called those trials unfair."
+    },
+    {
+     "who": "joe",
+     "text": "And the U.S. has set up a small task force to go after Iranian goods moving over land borders and the Caspian Sea. Roughly twenty people. Based in Florida. The Caspian is a long way from Florida, but so is everything."
+    }
+   ]
+  },
+  {
+   "id": "krakow",
+   "kind": "story",
+   "strap": "SIX KILLED IN KRAKÓW MAIN SQUARE; GUNMAN SHOT BY POLICE",
+   "headline": "Poland in shock after the Kraków shooting",
+   "category": "EUROPE",
+   "status": "observed",
+   "graphic": {
+    "kicker": "POLAND",
+    "title": "Kraków's Main Market Square",
+    "stats": [
+     {
+      "label": "Killed in the square",
+      "value": "6"
+     },
+     {
+      "label": "Taken to hospital",
+      "value": "16"
+     },
+     {
+      "label": "More bodies at the gunman's home",
+      "value": "3"
+     },
+     {
+      "label": "Mourning runs to",
+      "value": "Nov 11"
+     }
+    ],
+    "bullets": [
+     "Attack began about 3 p.m. local on Saturday",
+     "Police shot the suspect within about 3 minutes",
+     "Suspect: a 25-year-old Polish man, name not published",
+     "Tusk: this must be called terrorism"
+    ]
+   },
+   "sources": [
+    {
+     "name": "BBC (Poland in shock)",
+     "url": "https://www.bbc.com/news/articles/cmd7q15drwgeo"
+    },
+    {
+     "name": "The Guardian (Kraków shooting)",
+     "url": "https://www.theguardian.com/world/2026/nov/07/krakow-poland-shooting-market-square-deaths-gunman"
+    },
+    {
+     "name": "CBS News (Kraków)",
+     "url": "https://www.cbsnews.com/news/shooting-main-market-square-krakow-poland/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Six people were killed Saturday afternoon in the Main Market Square in Kraków, Poland. Police say a man drove into the square and fired at random from his car. Armed officers shot him within about three minutes."
+    },
+    {
+     "who": "joe",
+     "text": "The dead are four women and two men. Three are Polish, one is British, and two have not been identified. Sixteen people went to hospital, including five foreigners, two police officers and the attacker. The foreigners were from Austria, Britain, Germany, Portugal and Russia, per the interior ministry."
+    },
+    {
+     "who": "vex",
+     "text": "Prime Minister Tusk said three more bodies, two women and a man, were found at the gunman's house. Those three are counted separately from the six. Police say the suspect is a twenty-five-year-old Polish man with a military-grade weapon, and they have not published his name. No explosive was found in his car."
+    },
+    {
+     "who": "joe",
+     "text": "Words matter here, and they are the officials' own. A government minister said early investigations point to far-right ideology. Tusk said Poland had not seen such drastic cases of terrorism and that this is what it has to be called. Mourning in the city runs through Wednesday."
+    }
+   ]
+  },
+  {
+   "id": "saudi-yemen",
+   "kind": "story",
+   "strap": "BOOMS OVER RIYADH; SANAA STRIKE KILLS 22 TO 33 ON HOUTHI COUNTS",
+   "headline": "Riyadh sirens and a deadly strike near Sanaa",
+   "category": "MIDDLE EAST",
+   "status": "claim",
+   "graphic": {
+    "kicker": "GULF",
+    "title": "Saudi Arabia and Yemen",
+    "stats": [
+     {
+      "label": "Houthi toll, early count",
+      "value": "22 dead"
+     },
+     {
+      "label": "Houthi toll, latest",
+      "value": "33 dead"
+     },
+     {
+      "label": "Wounded, latest",
+      "value": "39"
+     }
+    ],
+    "bullets": [
+     "Early-warning alert, then loud booms in Riyadh",
+     "Saudi: ballistic missile toward Eastern Region intercepted",
+     "Syria denies sending troops to the Yemen border"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Business Recorder (Riyadh booms)",
+     "url": "https://www.brecorder.com/news/40447988/loud-booms-heard-in-saudi-capital-riyadh-after-early-warning-alert-issued"
+    },
+    {
+     "name": "Al Jazeera (Saudi intercepts)",
+     "url": "https://www.aljazeera.com/news/2026/11/8/saudi-arabia-intercepts-houthi-missiles-targeting-riyadh-eastern-province?traffic_source=rss"
+    },
+    {
+     "name": "ABC News / AP (Sanaa strike)",
+     "url": "https://abcnews.com/International/wireStory/airstrike-killed-22-people-yemens-capital-houthi-official-137937912"
+    },
+    {
+     "name": "AP (27 killed)",
+     "url": "https://apnews.com/article/1b5aef5b86be2e96e1cd8a18165afaf6"
+    },
+    {
+     "name": "Times of Israel (Damascus denial)",
+     "url": "https://www.timesofisrael.com/damascus-denies-report-syria-sending-troops-to-yemen-and-saudi-arabia-to-fight-houthis/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "In Riyadh on Sunday, a Reuters witness heard multiple loud booms shortly after Saudi Civil Defense issued an early-warning alert. Alerts also sounded in Najran. Civil Defense later said the danger had passed."
+    },
+    {
+     "who": "joe",
+     "text": "Saudi Arabia says it intercepted a ballistic missile that the Houthis launched toward its Eastern Region. The coalition separately said it intercepted a missile fired toward Riyadh province. One outlet quotes a coalition spokesman saying two cruise missiles; that is not confirmed by a primary source. The Houthis claim attacks on Riyadh."
+    },
+    {
+     "who": "vex",
+     "text": "On Saturday, an airstrike hit the village of al-Shariya near Sanaa. The Houthi-run health ministry said twenty-two people died, mostly women and children, and blamed Saudi Arabia. Later Houthi counts rose, to twenty-seven and then thirty-three dead with thirty-nine wounded. The Associated Press could not verify the toll. Saudi officials had not commented."
+    },
+    {
+     "who": "joe",
+     "text": "And Syria denied a report that hundreds of its troops were sent to the Yemeni border. Reuters, citing Syrian military sources and a U.S. official, says a limited number of personnel went to Saudi Arabia for advice and training."
+    }
+   ]
+  },
+  {
+   "id": "israel",
+   "kind": "story",
+   "strap": "ISRAEL'S PRESIDENT PICKS EISENKOT TO TRY TO FORM A GOVERNMENT",
+   "headline": "Eisenkot gets the mandate, Netanyahu stays caretaker",
+   "category": "ISRAEL",
+   "status": "observed",
+   "graphic": {
+    "kicker": "ISRAEL",
+    "title": "28 days to find 61 seats",
+    "stats": [
+     {
+      "label": "Eisenkot bloc",
+      "value": "48 seats"
+     },
+     {
+      "label": "Netanyahu bloc",
+      "value": "53 seats"
+     },
+     {
+      "label": "Arab-majority parties",
+      "value": "19 seats"
+     },
+     {
+      "label": "Seats needed",
+      "value": "61"
+     }
+    ],
+    "bullets": [
+     "Herzog: 67 recommendations for Eisenkot, 46 for Netanyahu",
+     "Formal handover Sunday 17:00 Israel time",
+     "28 days, plus up to 14 more",
+     "Eisenkot wants a 'national emergency government'"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Times of Israel (Herzog taps Eisenkot)",
+     "url": "https://www.timesofisrael.com/president-herzog-taps-eisenkot-to-form-coalition-but-path-remains-fraught/"
+    },
+    {
+     "name": "CBS News / AP (Eisenkot, Netanyahu)",
+     "url": "https://www.cbsnews.com/news/israel-election-government-gadi-eisenkot-benjamin-netanyahu/"
+    },
+    {
+     "name": "BBC (Eisenkot)",
+     "url": "https://www.bbc.co.uk/news/articles/cmy8367lj5xlo?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "The Guardian (Eisenkot)",
+     "url": "https://www.theguardian.com/world/2026/nov/07/israel-president-gadi-eisenkot-form-government"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Israel's president, Isaac Herzog, has given former military chief Gadi Eisenkot the first chance to form a government. The formal handover is Sunday at five p.m. Israel time. He gets twenty-eight days, plus up to fourteen more."
+    },
+    {
+     "who": "joe",
+     "text": "Designation is not a majority. Eisenkot's bloc has forty-eight seats, Netanyahu's has fifty-three, and Arab-majority parties have nineteen. Nobody has shown sixty-one yet. Eisenkot wants what he calls a national emergency government, and reports name Avigdor Liberman as the central obstacle."
+    },
+    {
+     "who": "vex",
+     "text": "Netanyahu remains caretaker prime minister. He again called for a Likud-led unity government. If Eisenkot fails, Herzog can turn to Netanyahu or another member of parliament."
+    }
+   ]
+  },
+  {
+   "id": "ukraine",
+   "kind": "story",
+   "strap": "36 BALLISTIC MISSILES AT KYIV, 4 DOWNED; ABU DHABI TALKS NEXT WEEK",
+   "headline": "Kyiv's missile night, and what comes before the talks",
+   "category": "UKRAINE",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "UKRAINE",
+    "title": "Before Abu Dhabi",
+    "stats": [
+     {
+      "label": "Ballistic missiles at Kyiv region (Zelensky)",
+      "value": "36"
+     },
+     {
+      "label": "Intercepted",
+      "value": "4"
+     },
+     {
+      "label": "Komyshuvakha dead",
+      "value": "55"
+     },
+     {
+      "label": "Talks",
+      "value": "Nov 10-11"
+     }
+    ],
+    "bullets": [
+     "Air Force: 172 drones, 137 of them jet-powered",
+     "Substation tying two nuclear plants to Kyiv hit",
+     "Germany: no more Patriots for now",
+     "Russian team named: Medinsky, Ryabkov, Galuzin, Kostyukov, Zhigarlovsky"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Kyiv Independent (strikes, substations)",
+     "url": "https://kyivindependent.com/russian-attacks-kill-2-injure-37-across-ukraine-over-past-day-hit-substations-connecting-nuclear-power-plants-to-kyiv/"
+    },
+    {
+     "name": "AP (Kyiv, Abu Dhabi talks)",
+     "url": "https://apnews.com/article/russia-ukraine-war-kyiv-talks-abu-dhabi-b042adf1f95848f5d233da866a72e312"
+    },
+    {
+     "name": "Ukrainska Pravda (Komyshuvakha)",
+     "url": "https://www.pravda.com.ua/eng/news/2026/11/07/8061730/"
+    },
+    {
+     "name": "Kyiv Independent (HUR names pilots)",
+     "url": "https://kyivindependent.com/military-intelligence-identifies-russian-soldiers-involved-in-deadly-komyshuvakha-aid-center-strike/"
+    },
+    {
+     "name": "Kyiv Independent (Russian delegation)",
+     "url": "https://kyivindependent.com/russia-to-send-senior-diplomats-military-officials-to-upcoming-peace-talks-in-abu-dhabi/"
+    },
+    {
+     "name": "BBC (Russian strikes)",
+     "url": "https://www.bbc.co.uk/news/articles/cm4g1nq8158po?at_medium=RSS&at_campaign=rss"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Russia's overnight strike on Kyiv now has numbers. The Ukrainian Air Force counted one hundred seventy-two drones, one hundred thirty-seven of them jet-powered, plus Iskander, Zircon, K.N. twenty-three and S-400 missiles. Hits landed at twenty-four locations."
+    },
+    {
+     "who": "joe",
+     "text": "Zelensky says thirty-six ballistic missiles were aimed at Kyiv and the region, and only four were shot down, for lack of Patriot interceptors. He says preliminary findings point to North Korean-made missiles. Those are his words and he calls them preliminary. A substation linking two nuclear plants to the capital was damaged, and Kyiv had serious trouble with power, water and heat."
+    },
+    {
+     "who": "vex",
+     "text": "Casualty counts disagree. Zelensky cites nine wounded across Kyiv and twelve other regions. The Kyiv Independent reports two killed and thirty-seven injured over the past day. We are not merging them."
+    },
+    {
+     "who": "joe",
+     "text": "In Zaporizhzhia Oblast, the State Emergency Service says fifty-five people are dead after the Komyshuvakha strike on an aid center, nine more bodies recovered in a day. Ukraine's military intelligence has named Russian officers it says were involved. That is an intelligence identification, not a court finding."
+    },
+    {
+     "who": "vex",
+     "text": "The Kremlin says talks in Abu Dhabi are on November tenth and eleventh. The Russian delegation is led by Vladimir Medinsky, with deputy foreign ministers Ryabkov and Galuzin, the military intelligence chief, and a General Staff officer. Zelensky says Moscow steps up strikes ahead of talks. No ceasefire has been announced."
+    },
+    {
+     "who": "joe",
+     "text": "One more: Germany's defense minister says Berlin cannot give Ukraine more Patriot systems for now, and asked other countries to send more. One report claims Ukraine hit the Saratov refinery; one paper said it could not verify that."
+    }
+   ]
+  },
+  {
+   "id": "washington",
+   "kind": "story",
+   "strap": "TRUMP ORDERS DOJ TO 'LOOK INTO' DEMOCRATS; DANA WHITE OFFER",
+   "headline": "A DOJ order, a podium offer, and Miller's first Monday",
+   "category": "WASHINGTON",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "WASHINGTON",
+    "title": "The president's Saturday",
+    "stats": [
+     {
+      "label": "Miller starts as chief of staff",
+      "value": "Monday"
+     },
+     {
+      "label": "Dana White meets Trump",
+      "value": "Monday"
+     },
+     {
+      "label": "Senate",
+      "value": "54-44 D"
+     }
+    ],
+    "bullets": [
+     "Trump: DOJ should look into Democrats for 'threatening' donors and officials",
+     "Offered UFC CEO the press secretary job",
+     "Deputy chief of staff Walters offers to resign",
+     "Rubio sets conflict-of-interest rules at State"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Washington Post (DOJ directive)",
+     "url": "https://www.washingtonpost.com/politics/2026/11/07/trump-calls-justice-department-investigate-democrats/"
+    },
+    {
+     "name": "Al Jazeera (Trump orders DOJ)",
+     "url": "https://www.aljazeera.com/news/2026/11/7/trump-orders-doj-to-investigate-democrats-for-threatening-people"
+    },
+    {
+     "name": "NBC News (Dana White offer)",
+     "url": "https://www.nbcnews.com/politics/white-house/trump-offers-press-secretary-job-ufc-ceo-dana-white-rcna608039"
+    },
+    {
+     "name": "Al Jazeera (White asked)",
+     "url": "https://www.aljazeera.com/news/2026/11/8/trump-asks-ufc-chief-dana-white-to-be-white-house-press-secretary?traffic_source=rss"
+    },
+    {
+     "name": "Axios (Walters)",
+     "url": "https://www.axios.com/2026/11/08/richard-walters-white-house-stephen-miller"
+    },
+    {
+     "name": "U.S. News / Reuters (Rubio)",
+     "url": "https://www.usnews.com/news/world/articles/2026-11-07/exclusive-rubio-seeks-to-impose-order-at-state-as-republicans-look-ahead-to-2028"
+    },
+    {
+     "name": "The Guardian (Stephen Miller)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/07/stephen-miller-trump-loyalty"
+    },
+    {
+     "name": "Times of Israel (Vance, Wiles)",
+     "url": "https://www.timesofisrael.com/pro-israel-conservatives-blast-jd-vance-for-blaming-israel-after-gop-midterm-losses/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "On Truth Social Saturday, President Trump ordered the Justice Department to, quote, look into Democrats for threatening his donors and cabinet officials with impeachment and other punishment. He called it a criminal act and extortion. He named Senator Elissa Slotkin. He offered no evidence."
+    },
+    {
+     "who": "joe",
+     "text": "A grand jury earlier declined to indict Slotkin and other lawmakers in a prior Justice Department matter. Democrats take both chambers in January and have promised oversight investigations. Critics call this an attack on ordinary oversight. The president calls it lawfare. Both words are being used by the people who want them."
+    },
+    {
+     "who": "vex",
+     "text": "Second post: Trump says he offered the press secretary job to UFC chief Dana White and asked him to bring fighters as assistants. One aide told reporters he was joking. White posted a podium photo, deflected at a news conference, and says he flies to Washington Monday to meet Trump. CNN's source says he declined."
+    },
+    {
+     "who": "joe",
+     "text": "The job has been vacant since Karoline Leavitt left. A person who has fought for a living might find the press room familiar."
+    },
+    {
+     "who": "vex",
+     "text": "Stephen Miller starts as chief of staff Monday. Axios reports deputy chief of staff Richard Walters, a close lieutenant of the outgoing chief, Susie Wiles, offered his resignation Friday, described as amicable. Reuters reports Secretary of State Rubio told his staff to route big decisions through him and that unethical conduct means firing, however well-connected."
+    },
+    {
+     "who": "joe",
+     "text": "And a claim, flagged as a claim: the Times of Israel says Wiles knew about Vice President Vance's post blaming the midterm losses on the Iran war days before she was pushed out. One search found no second source for that."
+    }
+   ]
+  },
+  {
+   "id": "midterms",
+   "kind": "story",
+   "strap": "MISSISSIPPI SENATE: COLOM +2,574; ALASKA, KANSAS STILL OPEN",
+   "headline": "Day five of the counts",
+   "category": "MIDTERMS",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "ELECTIONS",
+    "title": "Counts still open",
+    "stats": [
+     {
+      "label": "Mississippi, Colom lead",
+      "value": "+2,574"
+     },
+     {
+      "label": "Kansas governor",
+      "value": "~+7,600"
+     },
+     {
+      "label": "Senate",
+      "value": "54-44 D"
+     },
+     {
+      "label": "House (AP)",
+      "value": "254-162 D"
+     }
+    ],
+    "bullets": [
+     "Mississippi ~97% counted; affidavit ballots curable to Tuesday",
+     "Alaska: two tallies point opposite ways",
+     "Kansas: six-race audit under way",
+     "House: 19 races uncalled in one count"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Natchez Democrat / AP (Mississippi)",
+     "url": "https://www.natchezdemocrat.com/news/ap-scott-colom-leads-cindy-hyde-smith-by-2574-votes-in-mississippi-senate-race-094c83ad"
+    },
+    {
+     "name": "Democracy Docket (Mississippi)",
+     "url": "https://www.democracydocket.com/news-alerts/live-mississippi-senate-ballot-fight-heats-up/"
+    },
+    {
+     "name": "Alaska's News Source (Alaska)",
+     "url": "https://www.alaskasnewssource.com/2026/11/06/peltola-sullivan-campaigns-project-wins-while-quarter-ballots-are-outstanding/"
+    },
+    {
+     "name": "KSNT (Kansas)",
+     "url": "https://www.ksnt.com/elections/six-kansas-races-contested-three-days-after-general-election/"
+    },
+    {
+     "name": "Washington Post (midterm outcome)",
+     "url": "https://www.washingtonpost.com/ripple/2026/11/08/was-midterm-outcome-rebuke-or-reach-across-aisle/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Three counts remain open. In Mississippi, the AP has Democrat Scott Colom ahead of Republican Senator Cindy Hyde-Smith by two thousand, five hundred seventy-four votes, with about ninety-seven percent counted. That lead has widened five days in a row."
+    },
+    {
+     "who": "joe",
+     "text": "About three thousand mail ballots are outstanding, and affidavit ballots can be cured through Tuesday. Hyde-Smith's lawyers sent counties a preservation letter. The Secretary of State confirms there is no formal recount process."
+    },
+    {
+     "who": "vex",
+     "text": "Alaska has two tallies that do not agree. The AP's count, Peltola by six hundred thirty-seven, has not been updated since Wednesday. Another count has Sullivan ahead by one thousand, six hundred seventy-seven. Both campaigns claim wins. Ranked-choice tabulation comes in mid-November. In Kansas, the Democrat leads the governor's race by about seventy-six hundred votes and a six-race audit is under way."
+    },
+    {
+     "who": "joe",
+     "text": "Overall: Senate fifty-four to forty-four for Democrats with Alaska and Mississippi open. The House stands at two hundred fifty-four Democrats, one hundred sixty-two Republicans, with nineteen uncalled in one tally. Others say eighteen or thirty-five."
+    }
+   ]
+  },
+  {
+   "id": "economy",
+   "kind": "story",
+   "strap": "BERKSHIRE BUYS BACK $9.6B; CPI TUESDAY; BITCOIN ETFS NEGATIVE FOR 2026",
+   "headline": "Money: a big buyback, a CPI week and a bitcoin outflow",
+   "category": "MARKETS",
+   "status": "observed",
+   "graphic": {
+    "kicker": "MARKETS",
+    "title": "No markets open, plenty of numbers",
+    "stats": [
+     {
+      "label": "Berkshire Q3 buyback",
+      "value": "$9.6B"
+     },
+     {
+      "label": "Brent (Fri settle)",
+      "value": "$98.32"
+     },
+     {
+      "label": "Gas, national avg",
+      "value": "$4.04"
+     },
+     {
+      "label": "Spot BTC ETFs, 2026",
+      "value": "-$914M"
+     }
+    ],
+    "bullets": [
+     "Berkshire operating earnings -5.8% to $12.7B",
+     "October CPI Tuesday; consensus +0.3%",
+     "Spot bitcoin ETFs: -$1.28B on the week",
+     "December Fed hike odds near 75%"
+    ]
+   },
+   "sources": [
+    {
+     "name": "CNBC (Berkshire Q3)",
+     "url": "https://www.cnbc.com/2026/11/07/berkshire-hathaway-q3-2026-earnings-buybacks.html"
+    },
+    {
+     "name": "The Block (spot bitcoin ETFs)",
+     "url": "https://theblock.co/news/markets/2026-11-07-bitcoin-etfs-flip-negative-for-2026-after-1-28-billion-outflow-week-worst-since-june-435984"
+    },
+    {
+     "name": "Schwab (week ahead)",
+     "url": "https://www.schwab.com/learn/story/stock-market-update-open"
+    },
+    {
+     "name": "Morningstar / Dow Jones (Brent)",
+     "url": "https://www.morningstar.com/news/dow-jones/2026110610958/front-month-ice-brent-crude-fell-1332-this-week-to-settle-at-9832-data-talk"
+    },
+    {
+     "name": "AAA (gas prices)",
+     "url": "https://gasprices.aaa.com/state-gas-price-averages/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Markets are closed, so these are Friday's closes and Saturday's reports. Berkshire Hathaway repurchased about nine point six billion dollars of its own stock last quarter, its largest this year and far above what analysts expected. Operating earnings fell five point eight percent to twelve point seven billion dollars."
+    },
+    {
+     "who": "joe",
+     "text": "Berkshire's cash pile depends on who is counting. Three definitions are in circulation, from about three hundred fifty-two billion to three hundred seventy-seven billion dollars. We are not picking one."
+    },
+    {
+     "who": "vex",
+     "text": "Next week: October consumer prices come out Tuesday, with economists expecting a rise of three tenths of a percent. Producer prices follow Friday. CME odds of a December rate hike stood near seventy-five percent on Friday."
+    },
+    {
+     "who": "joe",
+     "text": "Oil: Brent settled Friday at ninety-eight dollars and thirty-two cents. The national average for a gallon of regular is four dollars and four cents, down twelve cents on the week and still more than a dollar above last year."
+    },
+    {
+     "who": "vex",
+     "text": "Bitcoin traded between seventy-five thousand seven hundred and seventy-six thousand dollars. U.S. spot bitcoin funds lost one point two eight billion dollars on the week, the worst since late June, and are now down about nine hundred fourteen million dollars for 2026, per one tally."
+    }
+   ]
+  },
+  {
+   "id": "ai-tech",
+   "kind": "story",
+   "strap": "OPENAI CLOSES $11B AT $1.25T; NVIDIA TRACKING; SOFTBANK-ABB BLOCKED",
+   "headline": "Big checks, chip tracking and a blocked robotics deal",
+   "category": "TECH",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "TECH",
+    "title": "AI money and chips",
+    "stats": [
+     {
+      "label": "OpenAI first close",
+      "value": "$11B"
+     },
+     {
+      "label": "Pre-money valuation",
+      "value": "$1.25T"
+     },
+     {
+      "label": "SoftBank-ABB deal",
+      "value": "$5.4B"
+     }
+    ],
+    "bullets": [
+     "Round could reach $20B; first sought $30B+",
+     "Nvidia: Southeast Asia partners must enroll in tracking (claim)",
+     "Europe protest: moratorium on big data centers",
+     "China's review halted SoftBank-ABB; carve-out studied (claim)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Bloomberg (OpenAI round)",
+     "url": "https://www.bloomberg.com/news/articles/2026-11-06/openai-completes-11-billion-portion-of-funding-at-1-25-trillion-value"
+    },
+    {
+     "name": "Bloomberg (Nvidia chip tracking)",
+     "url": "https://www.bloomberg.com/news/articles/2026-11-06/nvidia-boosts-chip-tracking-in-southeast-asia-to-fight-smuggling"
+    },
+    {
+     "name": "Swissinfo (SoftBank, ABB carve-out)",
+     "url": "https://www.swissinfo.ch/eng/softbank,-abb-consider-china-carve-out-to-salvage-robotics-deal/92343217"
+    },
+    {
+     "name": "Japan Times (SoftBank, ABB)",
+     "url": "https://www.japantimes.co.jp/business/2026/11/08/companies/softbank-abb-china-carve-out/"
+    },
+    {
+     "name": "Euronews (data center protests)",
+     "url": "https://www.euronews.com/2026/11/05/protesters-across-europe-to-call-for-freeze-on-energy-hungry-data-centres"
+    },
+    {
+     "name": "CNBC (Anthropic IPO, backlash)",
+     "url": "https://cnbc.com/2026/11/07/anthropic-ipo-ai-data-center-backlash.html"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "OpenAI has closed the first eleven billion dollars of a funding round at a one point two five trillion dollar pre-money valuation, per Bloomberg. The round is still open and could reach twenty billion. It is smaller than the thirty billion or more the company first sought."
+    },
+    {
+     "who": "joe",
+     "text": "Bloomberg also reports, citing people familiar, that Nvidia now requires Southeast Asian cloud partners to enroll in a location-tracking system called Fleet Intelligence. The context is U.S. concern that billions of dollars of banned chips reached China through the region. That is an anonymously sourced claim."
+    },
+    {
+     "who": "vex",
+     "text": "China's foreign-investment security review halted SoftBank's five point four billion dollar purchase of ABB Robotics on Thursday with no reason given. Bloomberg reports, citing people familiar, that the two are studying a carve-out of the China business. Talks are preliminary and may fail."
+    },
+    {
+     "who": "joe",
+     "text": "In Europe, a coalition of groups held two days of action demanding an E.U.-wide moratorium on large data center builds. Counts of groups range from forty-two to over one hundred. No turnout figure was found. And CNBC frames an upcoming Anthropic share offering against the post-midterm backlash over data centers. That is CNBC's framing. Disclosure: this show's writer is made by Anthropic."
+    }
+   ]
+  },
+  {
+   "id": "europe",
+   "kind": "story",
+   "strap": "FRANCE MARCHES: 146,000 OR 250,000; ITALY HACK; STORM BRUNA",
+   "headline": "France's march count, an Italian data leak, and a Madeira storm",
+   "category": "EUROPE",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "EUROPE",
+    "title": "France, Italy and Madeira",
+    "stats": [
+     {
+      "label": "France marchers (Interior Ministry)",
+      "value": "146,000"
+     },
+     {
+      "label": "France marchers (youth unions)",
+      "value": "250,000"
+     },
+     {
+      "label": "Arrests",
+      "value": "232"
+     },
+     {
+      "label": "Madeira flights cancelled",
+      "value": "37"
+     }
+    ],
+    "bullets": [
+     "Cost-of-living marches across France; talks Monday at Matignon",
+     "Meloni: pro-Russian hackers leaked foreign minister's data",
+     "French bank Arkéa: crypto trail after theft",
+     "Storm Bruna hits Madeira"
+    ]
+   },
+   "sources": [
+    {
+     "name": "CBS News (France cost-of-living protests)",
+     "url": "https://www.cbsnews.com/video/frances-cost-of-living-protests-continue/"
+    },
+    {
+     "name": "Al Jazeera (Pau march)",
+     "url": "https://www.aljazeera.com/video/newsfeed/2026/11/7/hundreds-march-in-pau-france-against-high-living-costs?traffic_source=rss"
+    },
+    {
+     "name": "BBC (Meloni, hackers)",
+     "url": "https://www.bbc.co.uk/news/articles/cr20wvge32j3o?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "Euronews (Arkéa)",
+     "url": "https://www.euronews.com/2026/11/04/credit-mutuel-arkea-reports-cyberattack-says-clients-will-be-fully-protected"
+    },
+    {
+     "name": "BleepingComputer (Arkéa heist)",
+     "url": "https://www.bleepingcomputer.com/news/security/hackers-pull-off-133-million-french-bank-heist-via-service-provider/"
+    },
+    {
+     "name": "Madeira Island News (cancelled flights)",
+     "url": "https://www.madeiraislandnews.com/2026/11/madeira-airport-has-now-recorded-37-cancelled-flights.html"
+    },
+    {
+     "name": "Portugal Resident (Bruna)",
+     "url": "https://www.portugalresident.com/storm-bruna-hits-madeira-as-mainland-portugal-braces-for-heavy-rain-and-strong-winds/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "France: the Interior Ministry counts one hundred forty-six thousand people at Saturday's cost-of-living marches, forty-six thousand in Paris. Youth unions say two hundred fifty thousand. There were two hundred thirty-two arrests, which the ministry calls provisional. A social conference at the prime minister's office is set for Monday."
+    },
+    {
+     "who": "joe",
+     "text": "Italy: Foreign Minister Tajani says his personal data was leaked on the dark web and that he was targeted over Italy's support for Ukraine. Prime Minister Meloni blamed pro-Russian hackers. No group has been named and Moscow has not responded."
+    },
+    {
+     "who": "vex",
+     "text": "Also in cyber: Crédit Mutuel Arkéa in France says fraudulent transfers were made from the bank's own accounts through a service provider's platform. Customers face no loss, the bank says. ZachXBT traced about one hundred thirty-three million dollars to crypto exchanges. The bank has not confirmed any figure. Some funds are frozen."
+    },
+    {
+     "who": "joe",
+     "text": "Storm Bruna has Madeira under orange warnings. Thirty-seven flights were cancelled by Saturday afternoon, and waves of up to four and a half meters are forecast from Sunday afternoon. No death has been tied to it."
+    }
+   ]
+  },
+  {
+   "id": "latam",
+   "kind": "story",
+   "strap": "PARAGUAY EX-PRESIDENT CHARGED; COLOMBIA DRONE KILLS 3; POPE IN URUGUAY",
+   "headline": "Paraguay, Colombia, Guatemala and the Pope",
+   "category": "LATIN AMERICA",
+   "status": "observed",
+   "graphic": {
+    "kicker": "THE AMERICAS",
+    "title": "A charged ex-president and a drone attack",
+    "stats": [
+     {
+      "label": "Paraguay ueno customers reimbursed",
+      "value": "1.2M"
+     },
+     {
+      "label": "Colombia soldiers killed",
+      "value": "3"
+     },
+     {
+      "label": "Pope's first Uruguay Mass",
+      "value": "~40,000"
+     }
+    ],
+    "bullets": [
+     "Peña charged; detention status reported differently",
+     "Drone hits army base in Bolívar",
+     "Guatemalan lawmaker and 3 police killed",
+     "Pope Leo: 'be bridge builders'"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Al Jazeera (Paraguay charges)",
+     "url": "https://www.aljazeera.com/economy/2026/11/7/paraguays-ousted-president-charged-over-banking-scandal?traffic_source=rss"
+    },
+    {
+     "name": "NPR (Paraguay)",
+     "url": "https://www.npr.org/2026/11/07/nx-s1-6033373/paraguay-president-ousted-bank-collapse"
+    },
+    {
+     "name": "ABC News / AP (Colombia drone)",
+     "url": "https://abcnews.com/International/wireStory/drone-attack-colombian-military-base-leaves-3-soldiers-137945487"
+    },
+    {
+     "name": "Reuters (Guatemala)",
+     "url": "https://www.reuters.com/world/americas/guatemalan-lawmaker-three-police-officers-killed-armed-attack-2026-11-07/"
+    },
+    {
+     "name": "Al Jazeera (Pope in Uruguay)",
+     "url": "https://www.aljazeera.com/news/2026/11/7/pope-leo-hold-first-mass-in-uruguay-urges-crowd-to-be-bridge-builders?traffic_source=rss"
+    },
+    {
+     "name": "Vatican News (Paysandú)",
+     "url": "https://www.vaticannews.va/en/pope/news/2026-11/pope-leo-xiv-prays-our-lady-rosary-paysandu-uruguay.html"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Paraguay: former President Santiago Peña, impeached over the collapse of the ueno bank, was charged Saturday with breach of trust and administration for personal gain. Prosecutors sought pretrial detention. Outlets disagree on where he spent the night, house arrest or a cell, so we will not say."
+    },
+    {
+     "who": "joe",
+     "text": "The central bank says one point two million ueno customers have received partial or full reimbursement of insured deposits. Nearly three million people were still described as unable to reach their savings when regulators took over."
+    },
+    {
+     "who": "vex",
+     "text": "Colombia: a drone attack on an army base at Santa Rosa del Sur, in Bolívar, killed three soldiers. The army says eight were wounded; the A.P. says sixteen. No group has claimed it. The ELN operates in the area."
+    },
+    {
+     "who": "joe",
+     "text": "Guatemala: lawmaker Julio César Portillo Paz and three police officers were killed in an attack Friday in Río Hondo. No motive or suspect has been disclosed. President Arévalo told security forces to help prosecutors."
+    },
+    {
+     "who": "vex",
+     "text": "Pope Leo the Fourteenth held his first Mass of his tour in Paysandú, Uruguay, with about forty thousand people, telling them to be bridge builders. He is three weeks out from lung cancer surgery. Argentina is next."
+    }
+   ]
+  },
+  {
+   "id": "asia",
+   "kind": "story",
+   "strap": "M5.7 QUAKE HURTS 22 IN CENTRAL JAPAN; NEW ZEALAND TOO CLOSE TO CALL",
+   "headline": "Japan's quake, New Zealand's count and Delhi's air",
+   "category": "ASIA-PACIFIC",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "ASIA-PACIFIC",
+    "title": "Quake, count and smog",
+    "stats": [
+     {
+      "label": "Japan quake magnitude (JMA)",
+      "value": "5.7"
+     },
+     {
+      "label": "Injured, at least",
+      "value": "22"
+     },
+     {
+      "label": "NZ special votes",
+      "value": "~399,000"
+     },
+     {
+      "label": "Delhi AQI Sunday AM",
+      "value": "383"
+     }
+    ],
+    "bullets": [
+     "No tsunami; Hamaoka nuclear plant unaffected",
+     "JMA warns of aftershocks for a week",
+     "NZ official result due Nov 27",
+     "Delhi: GRAP Stage III, 'severe' forecast"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Japan Times (Aichi quake)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/08/japan/earthquake-aichi-sunday/"
+    },
+    {
+     "name": "Al Jazeera (central Japan quake)",
+     "url": "https://www.aljazeera.com/news/2026/11/8/earthquake-hits-central-japan-injuring-more-than-20-people?traffic_source=rss"
+    },
+    {
+     "name": "Japan Times (Tomari drill)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/08/japan/nuclear-disaster-drill-tomari-plant/"
+    },
+    {
+     "name": "New Zealand Electoral Commission (preliminary results)",
+     "url": "https://elections.nz/media-and-news/2026/2026-general-election-preliminary-results"
+    },
+    {
+     "name": "The Guardian (NZ too close to call)",
+     "url": "https://www.theguardian.com/world/2026/nov/07/new-zealand-election-too-close-to-call-vote-count"
+    },
+    {
+     "name": "Deccan Herald (Delhi AQI)",
+     "url": "https://www.deccanherald.com/india/delhi/delhi-records-369-aqi-on-diwali-eve-readings-in-several-areas-cross-400-4211311"
+    },
+    {
+     "name": "Japan Times (Astellas employee)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/08/japan/astellas-employee-release-december/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Japan: a magnitude five point seven earthquake struck western Shizuoka Prefecture just after one a.m. Sunday, about forty kilometers deep. At least twenty-two people were hurt across Aichi and Shizuoka. Store windows shattered and bullet trains slowed. There was no tsunami warning, and Chubu Electric says its Hamaoka nuclear plant saw no disruption. The weather agency warns of strong aftershocks, especially over the next two to three days."
+    },
+    {
+     "who": "joe",
+     "text": "Coincidence or not, Japan was in the middle of a three-day nuclear emergency drill at the Tomari plant in Hokkaido, with about eighty-five hundred residents. The drill simulated a quake-caused loss of cooling. The real quake was elsewhere."
+    },
+    {
+     "who": "vex",
+     "text": "New Zealand's election is too close to call. Labour narrowly led the party vote, twenty-nine point three six percent to National's twenty-nine point two one. National won forty-two electorate seats to Labour's twenty-one. National, ACT and New Zealand First total sixty-seven of one hundred thirty-one preliminary seats. About four hundred thousand special votes remain and the official result is due November twenty-seventh."
+    },
+    {
+     "who": "joe",
+     "text": "In Delhi, Diwali week air is very poor. The pollution board's average was three hundred sixty-nine on Saturday and three hundred eighty-three Sunday morning. Forecasters expect severe levels today and Monday."
+    },
+    {
+     "who": "vex",
+     "text": "Also: Japanese media report an Astellas employee jailed in China for espionage will be released in December. No Chinese notice has been seen."
+    }
+   ]
+  },
+  {
+   "id": "africa",
+   "kind": "story",
+   "strap": "SOUTH AFRICA: NO DECLARATION YET; SUDAN ARMY CLAIMS TOWN",
+   "headline": "South Africa's count and a Sudan front line",
+   "category": "AFRICA",
+   "status": "claim",
+   "graphic": {
+    "kicker": "AFRICA",
+    "title": "Counts and claims",
+    "stats": [
+     {
+      "label": "Districts counted",
+      "value": "99.0%"
+     },
+     {
+      "label": "ANC",
+      "value": "30.8%"
+     },
+     {
+      "label": "DA",
+      "value": "24.6%"
+     },
+     {
+      "label": "Councils hung",
+      "value": "135"
+     }
+    ],
+    "bullets": [
+     "IEC: not yet declared; deadline Wednesday",
+     "Cape Town: DA majority",
+     "Sudan army says it took Iyal Bakhit (claim)",
+     "Army says it downed an RSF drone (claim)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Rateweb (South Africa results)",
+     "url": "https://www.rateweb.co.za/elections-2026/results/"
+    },
+    {
+     "name": "Electoral Commission of South Africa",
+     "url": "https://www.elections.org.za/pw/"
+    },
+    {
+     "name": "Sudan Tribune (Iyal Bakhit)",
+     "url": "https://sudantribune.com/article/320981"
+    },
+    {
+     "name": "Anadolu (Sudan army, West Kordofan)",
+     "url": "https://www.anews.com.tr/middle-east/2026/11/07/sudanese-army-takes-control-of-key-area-in-west-kordofan"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "South Africa's municipal election count is at ninety-nine percent of voting districts, per one results site using electoral commission updates. The ANC has thirty point eight percent and the DA twenty-four point six. A national declaration was scheduled for Sunday and had not been seen. The legal deadline is Wednesday."
+    },
+    {
+     "who": "joe",
+     "text": "Councils are the story. Of two hundred thirteen, one site counts seventy-four with a majority and one hundred thirty-five hung. Cape Town gives the DA a majority. Tshwane and Ekurhuleni have no majority. These are readings, not the official result."
+    },
+    {
+     "who": "vex",
+     "text": "Sudan: the army says it took the town of Iyal Bakhit in West Kordofan, which it says the Rapid Support Forces had used as a staging ground. It also says air defenses downed a long-range drone over the town. Sudan Tribune and Anadolu both carry the army's account. Those are the army's claims, with no casualty figure from either side."
+    }
+   ]
+  },
+  {
+   "id": "gaza",
+   "kind": "story",
+   "strap": "GAZA'S FIRST RAINS FLOOD ABOUT 70,000 TENTS",
+   "headline": "Rain floods displacement camps in Gaza",
+   "category": "MIDDLE EAST",
+   "status": "claim",
+   "graphic": {
+    "kicker": "GAZA",
+    "title": "First rains, flooded tents",
+    "stats": [
+     {
+      "label": "Tents flooded (Gaza media office)",
+      "value": "~70,000"
+     },
+     {
+      "label": "Distress calls",
+      "value": "~1,500"
+     },
+     {
+      "label": "Displaced in exposed areas (OCHA)",
+      "value": "~950,000"
+     }
+    ],
+    "bullets": [
+     "Injuries reported, no deaths",
+     "Three empty houses collapsed",
+     "UNICEF: fewer tarpaulins after UN cuts",
+     "Council official: no prefab homes allowed since truce"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Times of Israel (rain floods tents)",
+     "url": "https://www.timesofisrael.com/rain-floods-tens-of-thousands-of-tents-in-gaza-as-storms-hit-mediterranean-coast/"
+    },
+    {
+     "name": "Al Jazeera (rains leave tens of thousands without shelter)",
+     "url": "https://www.aljazeera.com/gallery/2026/11/8/photos-heavy-rains-leave-tens-of-thousands-without-shelter-in-gaza?traffic_source=rss"
+    },
+    {
+     "name": "Japan Times (Gaza rain)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/08/world/heavy-rain-shelter-gaza/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The first heavy rains of the season flooded about seventy thousand displacement tents in Gaza, according to the Hamas-run government media office. Civil Defence took about fifteen hundred distress calls. Three empty houses collapsed. There were injuries but no deaths reported."
+    },
+    {
+     "who": "joe",
+     "text": "UNICEF says tarpaulins and tents are in short supply after UN budget cuts. A council official says Israel has not allowed prefabricated homes since the truce. The U.N. estimates about nine hundred fifty thousand displaced people live in flood-exposed areas."
+    }
+   ]
+  },
+  {
+   "id": "cities",
+   "kind": "story",
+   "strap": "DRIVER HITS NC CYCLISTS; TWO SKYDIVERS DIE IN CALIFORNIA",
+   "headline": "Around the country",
+   "category": "U.S. CITIES",
+   "status": "observed",
+   "graphic": {
+    "kicker": "AROUND THE COUNTRY",
+    "title": "Two accidents, two investigations",
+    "stats": [
+     {
+      "label": "NC cyclist killed",
+      "value": "1"
+     },
+     {
+      "label": "NC injured, at least",
+      "value": "12"
+     },
+     {
+      "label": "Skydivers killed",
+      "value": "2"
+     }
+    ],
+    "bullets": [
+     "Wake County: 76-year-old driver charged, including DWI",
+     "Riverside County: canopies tangled near landing",
+     "ICE custody hits record ~73,000 (CBS)",
+     "Queens library still down after ransomware"
+    ]
+   },
+   "sources": [
+    {
+     "name": "NBC News (NC cyclists)",
+     "url": "https://www.nbcnews.com/news/us-news/1-dead-least-12-injured-elderly-driver-plows-cyclists-rcna608041"
+    },
+    {
+     "name": "CBS News (skydivers)",
+     "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNS1MweDVrdGNmcGNfWnNYR1NZSG9VV2FxWHRfNFpKYlJiREZDeXc0NDg3dV9hajhqbW9QZi1CRXFLTjJQdVE4NTFZVE5fX2FGbTNxRDctS3lmMEF3Vl9fRThtOGdpX3dxUm96b2hnUW1lVlhYX2ZWWEVxM01sajNCMXFWNUVqdmc?oc=5"
+    },
+    {
+     "name": "CNN (skydivers)",
+     "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE1jdkF5cEFoWkRKNldJeDd2OGlTaFVKcEpxanhEaFZuR0NMajNERGJneFExOTNOYVc5TEtCR01DeUdPeENhUEdPN3hXcTBiN3QxUTJmbW11ck5xOXRvMkcweG5EUHZFa2RkZlNwMlg2dlY?oc=5"
+    },
+    {
+     "name": "CBS News (ICE custody record)",
+     "url": "https://www.cbsnews.com/news/ices-detainee-population-record-high-of-73000"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "In Wake County, North Carolina, a seventy-six-year-old driver crossed the center line into about thirty riders from a cycling club. One man, sixty-three-year-old Patrick Turner of Cary, was killed. At least twelve were hurt. State troopers charged the driver with death by vehicle, serious injury by vehicle, hit-and-run, and DWI."
+    },
+    {
+     "who": "joe",
+     "text": "In Riverside County, California, two licensed skydivers died Friday after a midair collision about one hundred fifty feet up on the landing approach. The sheriff named them as Georgia Jean, fifty-six, and Levi Pimentel, twenty-nine. They were part of a women's formation record attempt. The company found no equipment malfunction."
+    },
+    {
+     "who": "vex",
+     "text": "And CBS, citing internal Homeland Security data, reports U.S. immigration detention hit a record of about seventy-three thousand people as of Thursday, up eighty-four percent from a year ago."
+    }
+   ]
+  },
+  {
+   "id": "weather",
+   "kind": "weather",
+   "strap": "ATMOSPHERIC RIVERS FOR THE WEST COAST; NO ATLANTIC STORMS EXPECTED",
+   "headline": "The week's weather",
+   "category": "WEATHER",
+   "status": "observed",
+   "graphic": {
+    "kicker": "WEATHER",
+    "title": "Pacific storm track stays active",
+    "stats": [
+     {
+      "label": "Atlantic formation, next 7 days",
+      "value": "None expected"
+     },
+     {
+      "label": "Severe storms Sunday",
+      "value": "Unlikely"
+     }
+    ],
+    "bullets": [
+     "Heavy rain: Pacific Northwest and California",
+     "Seattle outlets: 'a parade of storms'",
+     "East is dry after Friday's rain"
+    ]
+   },
+   "sources": [
+    {
+     "name": "NHC Atlantic outlook",
+     "url": "https://www.nhc.noaa.gov/text/MIATWOAT.shtml"
+    },
+    {
+     "name": "SPC Day 1 outlook",
+     "url": "https://www.spc.noaa.gov/products/outlook/day1otlk.html"
+    },
+    {
+     "name": "Yahoo (Northwest braces for storms)",
+     "url": "https://www.yahoo.com/news/weather-news/articles/northwest-braces-stormy-stretch-heavy-202555383.html"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "The National Hurricane Center says no tropical cyclone formation is expected over the next seven days. The Storm Prediction Center shows no severe weather areas for Sunday."
+    },
+    {
+     "who": "joe",
+     "text": "The action is on the West Coast. A busy Pacific storm track brings atmospheric rivers with heavy rain to the Pacific Northwest and California through next week. Seattle forecasters call it a parade of storms: lowland rain, gusty wind, and mountain snow."
+    }
+   ]
+  },
+  {
+   "id": "health",
+   "kind": "story",
+   "strap": "PLASTICIZER LINKED TO LOWER BIRTH WEIGHT; EBOLA DRC 10,668 CASES",
+   "headline": "Health: a packaging chemical study and the Ebola numbers",
+   "category": "HEALTH",
+   "status": "observed",
+   "graphic": {
+    "kicker": "HEALTH",
+    "title": "Study and outbreak",
+    "stats": [
+     {
+      "label": "Pregnancies studied",
+      "value": "6,600+"
+     },
+     {
+      "label": "Birth weight per 10x exposure",
+      "value": "-27 g"
+     },
+     {
+      "label": "DRC Ebola cases (to Nov 3)",
+      "value": "10,668"
+     },
+     {
+      "label": "DRC deaths",
+      "value": "5,198"
+     }
+    ],
+    "bullets": [
+     "DINCH: association, not proof of cause",
+     "Ebola: 1,463 new cases in 21 days",
+     "One evacuated health worker in London",
+     "U.S. measles: 5,182 cases as of Nov 5"
+    ]
+   },
+   "sources": [
+    {
+     "name": "The Guardian (DINCH study)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/07/nontoxic-plastic-lower-birth-weight-study"
+    },
+    {
+     "name": "Medical Xpress (DINCH paper)",
+     "url": "https://medicalxpress.com/news/2026-10-exposure-safer-plastic-additive-pregnancy.html"
+    },
+    {
+     "name": "WHO Disease Outbreak News 625",
+     "url": "https://www.who.int/emergencies/disease-outbreak-news/item/2026-DON625"
+    },
+    {
+     "name": "CBS News (ICE custody)",
+     "url": "https://www.cbsnews.com/news/ices-detainee-population-record-high-of-73000"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "A study of more than sixty-six hundred pregnancies links the plastic additive DINCH, sold as a safer replacement for phthalates, to lower birth weight. Each tenfold rise in exposure matched about twenty-seven grams lower. The authors did not measure sources but name food packaging and household products as likely. It is an association, not proof of cause."
+    },
+    {
+     "who": "joe",
+     "text": "Ebola in the Democratic Republic of the Congo: the World Health Organization reports ten thousand, six hundred sixty-eight confirmed cases and five thousand, one hundred ninety-eight deaths as of November third. That is fifteen hundred new cases in the last twenty-one days. One confirmed health worker was medically evacuated to London on November fifth. WHO does not describe it as spread in Britain."
+    },
+    {
+     "who": "vex",
+     "text": "In the U.S., the C.D.C.'s measles count stands at fifty-one hundred eighty-two. The Hill reports the U.S. and Mexico face a regional review of elimination status this week."
+    }
+   ]
+  },
+  {
+   "id": "sports",
+   "kind": "sports",
+   "strap": "NOTRE DAME UPSETS NO. 1 MIAMI 31-24; CURRY 41; ALCARAZ-SHELTON FINAL",
+   "headline": "Sports roundup",
+   "category": "SPORTS",
+   "status": "observed",
+   "graphic": {
+    "kicker": "SPORTS",
+    "title": "Notre Dame, Curry and Paris",
+    "stats": [
+     {
+      "label": "Notre Dame-Miami",
+      "value": "31-24"
+     },
+     {
+      "label": "Curry vs Orlando",
+      "value": "41 pts"
+     },
+     {
+      "label": "Warriors win streak",
+      "value": "7"
+     },
+     {
+      "label": "Norris",
+      "value": "Sao Paulo pole"
+     }
+    ],
+    "bullets": [
+     "Warriors 126, Magic 119 (OT)",
+     "Notre Dame 8-1, 11th in first CFP ranking",
+     "Alcaraz vs Shelton, Paris Masters final",
+     "NFL Week 10: Bengals-Falcons in Madrid"
+    ]
+   },
+   "sources": [
+    {
+     "name": "NCAA.com (Notre Dame-Miami)",
+     "url": "https://www.ncaa.com/news/football/article/2026-11-07/no-1-miami-loses-first-game-notre-dame-holds-hurricanes"
+    },
+    {
+     "name": "ABC News / AP (Curry)",
+     "url": "https://abcnews.com/Sports/wireStory/stephen-curry-scores-41-points-warriors-win-seventh-137949754"
+    },
+    {
+     "name": "CBS Sports (NBA scoreboard)",
+     "url": "https://www.cbssports.com/nba/scoreboard/20261107/"
+    },
+    {
+     "name": "ESPN (Alcaraz-Shelton)",
+     "url": "https://www.espn.com/tennis/story/_/id/50409999/alcaraz-looking-revenge-vs-shelton-paris-masters-final"
+    },
+    {
+     "name": "Motorsport Week (Sao Paulo qualifying)",
+     "url": "https://www.motorsportweek.com/2026/11/07/f1-2026-sao-paulo-grand-prix-qualifying-results/"
+    },
+    {
+     "name": "Atlanta Falcons (Madrid game)",
+     "url": "https://www.atlantafalcons.com/news/where-watch-atlanta-falcons-cincinnati-bengals-madrid-stream-tv-radio"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "College football: Notre Dame beat top-ranked Miami thirty-one to twenty-four in South Bend. Notre Dame led seventeen to three at the half and quarterback C.J. Carr threw for three hundred nineteen yards and three touchdowns. It is Miami's first loss."
+    },
+    {
+     "who": "joe",
+     "text": "NBA: Stephen Curry scored forty-one as the Warriors beat Orlando one twenty-six to one nineteen in overtime, their seventh straight win. Denver beat Indiana, New York beat Cleveland, and Oklahoma City beat Washington one fourteen to seventy-five."
+    },
+    {
+     "who": "vex",
+     "text": "Tennis: Carlos Alcaraz beat Casper Ruud in straight sets to reach his first Paris Masters final. He faces Ben Shelton Sunday. The WTA Finals moved from Riyadh to Indian Wells after the Riyadh contract ended early over the Iran war."
+    },
+    {
+     "who": "joe",
+     "text": "Formula One: Lando Norris took pole in the wet in São Paulo. And today in Madrid, the NFL plays the Bengals and the Falcons at the Bernabéu. Kickoff is nine thirty Eastern."
+    }
+   ]
+  },
+  {
+   "id": "also-today",
+   "kind": "story",
+   "strap": "COP31 OPENS MONDAY; GODZILLA BOX OFFICE; SPACE; SMALLER STORIES",
+   "headline": "Also today",
+   "category": "ALSO TODAY",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "ALSO TODAY",
+    "title": "More from the weekend",
+    "stats": [
+     {
+      "label": "COP31 opens",
+      "value": "Mon, Nov 9"
+     },
+     {
+      "label": "Godzilla Minus Zero",
+      "value": "~$32M proj."
+     },
+     {
+      "label": "Pakistani astronaut",
+      "value": "First foreigner on Tiangong"
+     }
+    ],
+    "bullets": [
+     "COP31 in Antalya runs to Nov 20",
+     "Rain on Syria: bridge collapse (claim)",
+     "Japanese 'Godzilla megamullion' gets heritage status",
+     "Melania Trump and LSU: $7.2M endowment"
+    ]
+   },
+   "sources": [
+    {
+     "name": "UNFCCC (COP31)",
+     "url": "https://unfccc.int/cop31/high-level"
+    },
+    {
+     "name": "Anadolu (Syria bridge flood)",
+     "url": "https://f.aa.com.tr/en/world/morning-briefing-nov-8-2026/4115649"
+    },
+    {
+     "name": "Gulf News (sanctions, Iran)",
+     "url": "https://gulfnews.com/world/mena/middle-east-war-update-qeshm-island-strike-raises-tensions-talks-continue-1.500739148"
+    },
+    {
+     "name": "Variety (Godzilla Minus Zero)",
+     "url": "https://variety.com/2026/film/box-office/box-office-godzilla-minus-zero-previews-1236941301/"
+    },
+    {
+     "name": "Japan Times (Godzilla megamullion)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/08/japan/godzilla-megamullion-heritage/"
+    },
+    {
+     "name": "Washington Post (Pakistani astronaut)",
+     "url": "https://www.washingtonpost.com/world/2026/11/06/china-pakistani-astronaut-space-station/9b0e12f8-da64-11f1-930a-e08f8086f5ac_story.html"
+    },
+    {
+     "name": "The Art of CTO (GitHub secrets claim)",
+     "url": "https://theartofcto.com/daily-sync/2026-11-08-daily-sync"
+    },
+    {
+     "name": "White House (Melania Trump, LSU)",
+     "url": "https://www.whitehouse.gov/briefings-statements/2026/11/first-lady-melania-trump-and-lsu-establish-7-2-million-fostering-the-future-endowment-fund/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Quick hits. The COP31 climate summit opens Monday in Antalya, Türkiye, and runs through November twentieth. Leaders speak Wednesday and Thursday. Head-of-state counts vary by source, from seventy-seven to ninety-one."
+    },
+    {
+     "who": "joe",
+     "text": "Perplexity reports a flash flood collapsed a bridge in eastern Syria, killing at least one person. That one comes from a single source. Also, the U.S. sanctioned eight Canada-based money-service businesses it says handled Iran-linked transactions."
+    },
+    {
+     "who": "vex",
+     "text": "Box office: Deadline projects Godzilla Minus Zero near thirty-two million dollars for the weekend, which it calls the best foreign-language opening ever. The Cat in the Hat is projected near nineteen million."
+    },
+    {
+     "who": "joe",
+     "text": "Science: Japan's coast guard says a seafloor formation nicknamed the Godzilla megamullion won international geological heritage status. China says a Pakistani astronaut will fly on Shenzhou 24, the first foreigner on its station."
+    },
+    {
+     "who": "vex",
+     "text": "A data-security claim: Perplexity reports AI coding assistants exposed more than eleven hundred public GitHub files with live passwords or keys. That comes from one newsletter. Also, Melania Trump and Louisiana State University announced a seven point two million dollar fostering endowment."
+    }
+   ]
+  },
+  {
+   "id": "wire",
+   "kind": "wire",
+   "strap": "LIVE WIRE",
+   "headline": "Live headlines",
+   "category": "WIRE",
+   "graphic": {
+    "kicker": "WIRE",
+    "title": "More headlines as they come in"
+   },
+   "lines": []
+  },
+  {
+   "id": "close",
+   "kind": "close",
+   "strap": "THAT'S HEARTBEAT NEWS",
+   "headline": "Until the next show",
+   "category": "SIGN-OFF",
+   "graphic": {
+    "kicker": "SIGN-OFF",
+    "title": "A new show every day by morning"
+   },
+   "lines": [
+    {
+     "who": "vex",
+     "text": "That's Heartbeat News. A new show every day by morning. I'm AI Robot Vex."
+    },
+    {
+     "who": "joe",
+     "text": "And I'm Alien Joe. Be kind to your neighbors, and check the numbers twice. Take care of each other."
+    }
+   ]
+  }
+ ]
+}
