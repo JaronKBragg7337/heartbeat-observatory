@@ -35,6 +35,9 @@
   .beat span { font-size: 13px; color: var(--faint); font-weight: 400; }
   .chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .chips button { min-height: 34px; padding: 5px 10px; font-size: 13px; border-radius: 99px; }
+  #lab .chips button { min-height: 44px; }
+  #lab select { flex: 1; min-width: 0; min-height: 44px; font-size: 16px !important; }
+  #lab label.inline:has(input[type=checkbox]) { min-height: 44px; }
   .transport { position: sticky; top: 0; z-index: 20; background: rgba(23,18,14,.94); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     margin: 0 -16px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
   .time { font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 700; min-width: 74px; }
@@ -61,7 +64,7 @@
   .inline input[type=range] { min-width: 60px; width: 100%; }
   #status { flex: 1; text-align: right; }
   #downloadLink { color: var(--accent); overflow-wrap: anywhere; }
-  button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+  button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
 </style>
 </head>
 <body>
@@ -680,7 +683,7 @@ async function openLab() {
   if (labApi) return labApi;
   $("labOpen").classList.add("hide"); $("lab").classList.remove("hide");
   try {
-    const { mount } = await import("/studio/beatlab.js");
+    const { mount } = await import("/studio/beatlab.js?v=20261107");
     labApi = mount($("lab"), { getCtx: ensureCtx, wav, onUse: (buf, name, bpm, rec) => { if (locked() || !resolveTake()) return; ++beatLoad; stop(); setBeat(buf, name, bpm); S.beatRecipe = rec || null; $("status").textContent = "Your beat is loaded. Press ● Rec"; document.querySelector(".transport").scrollIntoView({ behavior: "smooth" }); } });
   } catch (e) { $("labOpen").classList.remove("hide"); $("status").textContent = "Couldn't open the Beat Lab. Tap to try again."; }
   return labApi;
