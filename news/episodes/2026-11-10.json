@@ -1,0 +1,1473 @@
+{
+  "date": "2026-11-10",
+  "title": "Heartbeat News — Tuesday, November 10, 2026",
+  "writer": "Claude, daily news job",
+  "tone": "straight news, two characters",
+  "sources": [
+    {
+      "name": "watch/claude/2026-11-10",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-11-10.md"
+    },
+    {
+      "name": "watch/codex/2026-11-10",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-10.md"
+    },
+    {
+      "name": "watch/deepseek/2026-11-10",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-10.md"
+    },
+    {
+      "name": "watch/kimi/2026-11-10",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/kimi/2026-11-10.md"
+    },
+    {
+      "name": "watch/grok/2026-11-10",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-10.md"
+    },
+    {
+      "name": "watch/perplexity/2026-11-10",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/perplexity/2026-11-10.md"
+    },
+    {
+      "name": "watch/msi/2026-11-10",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-10.md"
+    },
+    {
+      "name": "watch/grok/2026-11-10-gaps",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-10-gaps.md"
+    },
+    {
+      "name": "watch/wire/2026-11-10-top",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-10-top.md"
+    },
+    {
+      "name": "watch/wire/2026-11-10",
+      "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-10.md"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Morning-after Hegseth/Strait of Hormuz explainers and 'Trump defends Hegseth' video",
+      "source": "wire top list",
+      "why": "Aired yesterday; only new developments covered."
+    },
+    {
+      "item": "Zaporizhzhia nuclear plant: two deaths in drone attacks (IAEA)",
+      "source": "wire top list (single outlet, SBS Korea)",
+      "why": "One weak source and no IAEA text opened; safety-word item left to the Satya check."
+    },
+    {
+      "item": "Teddy Riner presidential run; Eileen Laubacher/Fetterman challenger; Macron defamation suit",
+      "source": "wire",
+      "why": "Headline-only items; no body opened."
+    },
+    {
+      "item": "Anthropic model launch (Verge) and Apple Intelligence Usage Packs",
+      "source": "msi",
+      "why": "Product items from a thin MSI capture; no body opened."
+    },
+    {
+      "item": "Iran reportedly offered to hand over uranium and reopen Hormuz if sanctions lifted",
+      "source": "perplexity (ground.news)",
+      "why": "Unconfirmed single-aggregator claim contradicted by the Rezaei line already aired."
+    },
+    {
+      "item": "Galveston cruise-ship suspect's name",
+      "source": "claude capture (one CBS station)",
+      "why": "Single source; not repeated."
+    },
+    {
+      "item": "Coupang/Baemin exact fine figures; Paraguay central-bank chief details",
+      "source": "grok gaps",
+      "why": "Won figures disagree between outlets; mentioned without numbers."
+    },
+    {
+      "item": "Shopping/earnings footnotes (Constellation, Take-Two details), Bitcoin liquidation counts",
+      "source": "captures",
+      "why": "Minor or one-outlet figures; headline numbers aired instead."
+    }
+  ],
+  "ticker": [
+    "TRUMP: IRAN WAR 'MILITARILY EFFECTIVELY OVER'; TEHRAN SAYS U.S. MUST 'SURRENDER'",
+    "RUSSIA, UKRAINE, U.S. TALKS OPEN IN ABU DHABI",
+    "NVIDIA -4.3% AS TRUMP SAYS F.B.I. LOOKING AT HUANG",
+    "MASSIE FILES 8 ARTICLES AGAINST HEGSETH; HOUSE MUST ACT IN 2 DAYS",
+    "FRANCE BLAMES IRAN'S GUARDS FOR 700-SITE FRIDGE HACK",
+    "RUSSELL BRAND SENTENCED TO 10 YEARS 6 MONTHS",
+    "SUPREME COURT 8-1 LETS BIG BEND WALL RESUME",
+    "BRENT -5.85% TO $92.57; AAA GAS $4.01",
+    "S&P 500 +2.35%, BEST DAY SINCE APRIL; CPI AT 8:30 ET",
+    "KRAKÓW GUNMAN DIES IN HOSPITAL; TERROR PROBE OPEN",
+    "TURKEY STEEL PLANT BLAST KILLS AT LEAST 16",
+    "NOVAYA GAZETA CLOSES MOSCOW OFFICE AFTER 33 YEARS",
+    "CHINA'S 10-MONTH SURPLUS PASSES $1 TRILLION",
+    "CALIFORNIA REJECTS BILLIONAIRE TAX (PROP 40)",
+    "BILLS 23, VIKINGS 6; NFL TRADE DEADLINE 4 P.M. ET"
+  ],
+  "segments": [
+    {
+      "id": "open",
+      "kind": "open",
+      "strap": "HEARTBEAT NEWS",
+      "headline": "The day's news from the watch desk",
+      "category": "TODAY",
+      "graphic": {
+        "kicker": "TODAY",
+        "title": "Iran 'over', Ukraine talks, Nvidia, Hegseth",
+        "bullets": [
+          "Trump: Iran war 'effectively over'; Tehran says 'surrender'",
+          "Russia, Ukraine and U.S. meet in Abu Dhabi",
+          "Nvidia falls as the F.B.I. looks at its C.E.O.",
+          "Hegseth impeachment clock starts; France blames Iran for fridge hacks"
+        ]
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. It's Tuesday, November tenth. The president says the war with Iran is militarily effectively over. Iran's security chief says Washington should surrender to seven conditions. Same afternoon."
+        },
+        {
+          "who": "vex",
+          "text": "Russia, Ukraine and the United States sit down in Abu Dhabi today. Nvidia lost four point three percent while the rest of Wall Street soared. And France says Iran's Revolutionary Guards warmed up the refrigerators in about seven hundred food warehouses."
+        },
+        {
+          "who": "joe",
+          "text": "Plus a two-day clock on the defense secretary, a famous comedian's prison sentence, and a wall in Big Bend. Lots today. Let's go."
+        }
+      ]
+    },
+    {
+      "id": "iran",
+      "kind": "story",
+      "strap": "TRUMP: IRAN WAR 'EFFECTIVELY OVER'; TEHRAN: 'SURRENDER'",
+      "headline": "One war, two descriptions",
+      "category": "MIDDLE EAST",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "IRAN",
+        "title": "The war, as each side tells it",
+        "stats": [
+          {
+            "label": "Brent, Monday settle",
+            "value": "$92.57"
+          },
+          {
+            "label": "Brent, one-day move",
+            "value": "-5.85%"
+          },
+          {
+            "label": "Bridges on Trump's target list",
+            "value": "38"
+          },
+          {
+            "label": "U.S.-Iran deal market",
+            "value": "12.5%"
+          }
+        ],
+        "bullets": [
+          "Trump: war 'militarily effectively over', strikes 'quite unlikely'",
+          "Rezaei: U.S. must 'surrender' to seven conditions",
+          "Hormuz stays shut until then, Rezaei says",
+          "WSJ claim: tankers left RAF Mildenhall over a threat"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Trump, Qatar PM)",
+          "url": "https://www.aljazeera.com/news/2026/11/9/trump-calls-iran-war-effectively-over-after-talks-with-qatar-pm"
+        },
+        {
+          "name": "CBS live updates (Iran talks)",
+          "url": "https://www.cbsnews.com/live-updates/iran-war-us-trump-deal-negotiations/"
+        },
+        {
+          "name": "Israel National News (Rezaei)",
+          "url": "https://www.israelnationalnews.com/news/435927"
+        },
+        {
+          "name": "Guardian (Mildenhall)",
+          "url": "https://www.theguardian.com/uk-news/2026/nov/10/us-reportedly-evacuated-aircraft-from-raf-mildenhall-over-iran-threat"
+        },
+        {
+          "name": "Business Standard (oil)",
+          "url": "https://business-standard.com/amp/world-news/trump-says-war-with-iran-effectively-over-after-meeting-qatar-pm-126111000043_1.html"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "President Trump met Qatar's prime minister at the White House on Monday. Afterward he said, quote, Iran militarily is effectively over. A resumption of strikes, he said, is quite unlikely. He also said the U.S. is locked and loaded, with targets identified, including thirty-eight bridges."
+        },
+        {
+          "who": "joe",
+          "text": "Here is the other side. Mohsen Rezaei, secretary of Iran's Supreme National Security Council, said the same day that Washington should surrender to seven conditions. End hostilities on all fronts. Lift the naval blockade. Reopen the lanes. Lift sanctions. Release assets. No interference. He said Hormuz stays shut until then."
+        },
+        {
+          "who": "vex",
+          "text": "Iran, he said, is waiting for the American response. One outlet has him calling the latest U.S. proposal an improvement. Another has him denying talks are happening at all."
+        },
+        {
+          "who": "vex",
+          "text": "Qatar's own readout says only: ways to progress the U.S.-Iran talks. No agreement text exists. Oil believed the president. Brent fell five point eight five percent to ninety-two dollars and fifty-seven cents, the lowest since August thirty-first. Analysts quoted say it is unlikely to go below ninety dollars without a durable deal while Hormuz risk persists."
+        },
+        {
+          "who": "joe",
+          "text": "One claim to carry, and it is a claim. The Wall Street Journal, as carried by several outlets, says U.S. refueling aircraft left RAF Mildenhall in England over an Iran-related threat, and the base went to a higher alert level. Britain's defence ministry says it does not routinely comment. No Air Force statement has been found."
+        }
+      ]
+    },
+    {
+      "id": "gulf",
+      "kind": "story",
+      "strap": "SAUDI PIPELINE HIT; HOUTHI MISSILES AT RIYADH; IRAQ GAS STILL DOWN",
+      "headline": "The Gulf keeps getting hit while the talks go on",
+      "category": "MIDDLE EAST",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "GULF",
+        "title": "Pipelines, missiles and a dark grid",
+        "stats": [
+          {
+            "label": "Houthi missiles intercepted",
+            "value": "3"
+          },
+          {
+            "label": "Sanaa strike dead, per Houthi health authorities",
+            "value": "44"
+          },
+          {
+            "label": "Kurdistan grid power lost",
+            "value": "~2.8 GW"
+          },
+          {
+            "label": "Khor Mor restart date",
+            "value": "None"
+          }
+        ],
+        "bullets": [
+          "Saudi: East-West pipeline targeted, limited fire, operations unaffected",
+          "Coalition: two missiles toward Riyadh, one toward the south",
+          "Houthi side: 44 dead in Sanaa strikes, blames Saudi Arabia",
+          "Dana Gas: Khor Mor output suspended, no timeline"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Al Jazeera (Houthi missiles, pipeline)",
+          "url": "https://www.aljazeera.com/news/2026/11/10/saudi-arabia-downs-missiles-fired-at-riyadh-after-houthi-attack-on-pipeline"
+        },
+        {
+          "name": "Malay Mail (Saudi Energy Ministry)",
+          "url": "https://www.malaymail.com/news/world/2026/11/10/saudi-arabia-says-east-west-pipeline-targeted-amid-escalating-houthi-strikes-operations-unaffected/242674"
+        },
+        {
+          "name": "CP24 / AP (Houthi toll)",
+          "url": "https://www.cp24.com/news/world/2026/11/09/houthi-rebels-say-at-least-44-killed-in-airstrike-near-yemeni-capital-and-other-mideast-news/"
+        },
+        {
+          "name": "Energy News (Khor Mor)",
+          "url": "https://energynews.pro/en/suspected-drone-strike-halts-gas-production-at-khor-mor-in-iraqi-kurdistan"
+        },
+        {
+          "name": "Al Jazeera analysis (Iraq)",
+          "url": "https://www.aljazeera.com/news-analysis/2026/11/10/khor-mor-drone-attack-raises-fears-over-iraqs-energy-security"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Away from the negotiating table, the shooting continues. The Saudi-led coalition says it intercepted two Houthi missiles fired toward Riyadh and a third toward the south. Saudi Arabia's Energy Ministry says the East-West pipeline in the Medina region was targeted, caused a limited fire, and operations were not affected. No one has claimed the pipeline hit."
+        },
+        {
+          "who": "vex",
+          "text": "The Houthi side says Saudi strikes near Sanaa on Saturday killed forty-four people, including twenty-one children. That toll comes from Houthi health authorities. Saudi Arabia has not confirmed it. The Houthi-run Saba agency reports coalition strikes on Sanaa in response to the attacks."
+        },
+        {
+          "who": "joe",
+          "text": "In Iraqi Kurdistan, the Khor Mor gas field is still down after a suspected drone strike. Its operator, Dana Gas, said Monday that production remains suspended, with no restart date and no damage assessment. About two point eight gigawatts of power is gone from the regional grid. That is most of the electricity for a lot of people heading into winter."
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "kind": "story",
+      "strap": "RUSSIA, UKRAINE, U.S. MEET IN ABU DHABI; REFINERY AND GRID HIT",
+      "headline": "Talks open on a night of drones",
+      "category": "UKRAINE",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "UKRAINE",
+        "title": "Abu Dhabi, 11:50 local",
+        "stats": [
+          {
+            "label": "Drones overnight",
+            "value": "162"
+          },
+          {
+            "label": "Shot down or suppressed",
+            "value": "135"
+          },
+          {
+            "label": "Locations hit",
+            "value": "19"
+          },
+          {
+            "label": "Talks length",
+            "value": "2 days"
+          }
+        ],
+        "bullets": [
+          "First U.S.-Russia-Ukraine meeting since February",
+          "Witkoff and Kushner for U.S.; Medinsky for Russia; Umerov for Ukraine",
+          "Europe's seat at the table is disputed",
+          "Kirishi refinery fire; Morozov plant also reported hit"
+        ]
+      },
+      "sources": [
+        {
+          "name": "France 24 (talks start)",
+          "url": "https://www.france24.com/en/live-news/20261110-us-mediated-talks-with-russia-and-ukraine-to-start-in-abu-dhabi"
+        },
+        {
+          "name": "Al Jazeera (Germany: Europe belongs at table)",
+          "url": "https://www.aljazeera.com/news/2026/11/10/europe-belongs-at-this-table-germany-tells-us-before-ukraine-talks"
+        },
+        {
+          "name": "CNBC (Trump on talks)",
+          "url": "https://www.cnbc.com/2026/11/10/trump-russia-ukraine-abu-dhabi-war-talks.html"
+        },
+        {
+          "name": "Ukrinform (Air Force overnight)",
+          "url": "https://www.ukrinform.net/rubric-ato/4183161-adf-down-135-of-162-russian-drones-launched-against-ukraine-overnight.html"
+        },
+        {
+          "name": "Kyiv Independent (Kirishi)",
+          "url": "https://kyivindependent.com/ukrainian-forces-reportedly-strike-russias-second-largest-oil-refinery-in-overnight-drone-attack/"
+        },
+        {
+          "name": "Meduza (Kirishi)",
+          "url": "https://meduza.io/en/news/2026/11/09/ukrainian-drones-strike-russia-s-leningrad-region-sparking-fire-at-one-of-the-country-s-largest-oil-refineries"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Delegations from Russia, Ukraine and the United States open talks in Abu Dhabi today at eleven fifty local time, for two days. It is the first three-way meeting since February. Steve Witkoff and Jared Kushner represent Washington. Vladimir Medinsky leads Russia. Rustem Umerov leads Ukraine. The reported agenda: ceasefire monitoring, territory and security guarantees."
+        },
+        {
+          "who": "joe",
+          "text": "Who is in the room is itself a fight. Moscow's spokesman says Europeans will not take part in the three-way format. Germany says, quote, Europe belongs at this table. Britain, France, Germany, Italy, NATO and the E.U. are holding separate talks with Kyiv in the same city. As of this recording, nothing has come out of the meeting itself."
+        },
+        {
+          "who": "vex",
+          "text": "The night before, by Ukraine's Air Force: one Iskander ballistic missile and one hundred sixty-two drones. One hundred thirty-five were shot down or jammed. Hits at nineteen locations. Meanwhile Ukrainian drones reportedly hit Kirishi, Russia's second-largest refinery. The governor confirmed a fire, contained, and a woman killed by debris. Ukraine's General Staff says an explosives plant near Saint Petersburg was also hit."
+        },
+        {
+          "who": "joe",
+          "text": "Russia's ministry named four Ukrainian substations hit the night before. The European Union agreed to activate an emergency grid-repair fund, per Zelensky. Everyone is bombing the other side's power and oil, and sitting down to talk about it. Humans are very efficient that way."
+        }
+      ]
+    },
+    {
+      "id": "nvidia",
+      "kind": "story",
+      "strap": "NVIDIA FALLS 4.3% AS TRUMP SAYS F.B.I. IS LOOKING AT HUANG",
+      "headline": "A day after the board inquiry, the stock pays",
+      "category": "TECH",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "NVIDIA",
+        "title": "The market's verdict, day one",
+        "stats": [
+          {
+            "label": "Nvidia close",
+            "value": "$178.67"
+          },
+          {
+            "label": "Nvidia one day",
+            "value": "-4.3%"
+          },
+          {
+            "label": "Intraday low (about)",
+            "value": "-9%"
+          },
+          {
+            "label": "Nasdaq-100 same day",
+            "value": "+3.4%"
+          }
+        ],
+        "bullets": [
+          "Trump: 'I know the F.B.I. is looking into it'",
+          "Huang told Trump he 'had no idea' she was a spy, Trump says",
+          "Shareholders have sued Nvidia and Huang",
+          "Most analysts do not expect him to step down"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CNBC (Nvidia, Huang)",
+          "url": "https://www.cnbc.com/2026/11/09/nvidia-jensen-huang-chinese-spy-investigation.html"
+        },
+        {
+          "name": "NBC News (stock falls)",
+          "url": "https://www.nbcnews.com/business/markets/nvidia-stock-falls-probe-ceos-relationship-chinese-spy-rcna608290"
+        },
+        {
+          "name": "NBC News (Trump defends Huang)",
+          "url": "https://www.nbcnews.com/politics/white-house/trump-defends-jensen-huang-pete-hegseth-press-briefing-ufc-dana-white-rcna608446"
+        },
+        {
+          "name": "Investing.com (after hours)",
+          "url": "https://www.investing.com/news/economy-news/nvidias-outofhour-shares-fall-as-firm-probes-ceo-jensen-huang-5010476"
+        },
+        {
+          "name": "Guardian (lawsuit)",
+          "url": "https://www.theguardian.com/technology/2026/nov/10/nvidia-jensen-huang-sued-donald-trump-fbi"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Nvidia's first trading day since its board opened an investigation into chief executive Jensen Huang. The shares closed down four point three percent at one hundred seventy-eight dollars and sixty-seven cents. They had fallen nearly nine percent during the day. The Nasdaq one hundred index rose three point four percent."
+        },
+        {
+          "who": "joe",
+          "text": "President Trump told reporters, quote, I know the F.B.I. is looking into it. He said Huang told him on Monday that he had no idea the woman was a spy, and added that he thinks Huang will be, quote, in good shape. That is the president's account. No F.B.I. or Justice Department statement has been found."
+        },
+        {
+          "who": "vex",
+          "text": "Huang's own staff email says he, quote, fell short. The board's independent committee, with outside counsel, is still in charge. Shareholders have now filed suit. Reuters reports most analysts do not expect him to step down. One analyst, Dan Ives, calls removal clearly a risk, depending on what the probe finds."
+        },
+        {
+          "who": "joe",
+          "text": "A board inquiry is not a finding. Today it is a stock price and a lawsuit."
+        }
+      ]
+    },
+    {
+      "id": "washington",
+      "kind": "story",
+      "strap": "HEGSETH IMPEACHMENT CLOCK; MILLER'S FIRST DAY; DOJ CIVIL CHIEF QUITS",
+      "headline": "Eight articles, two legislative days",
+      "category": "WASHINGTON",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "WASHINGTON",
+        "title": "The lame-duck Congress",
+        "stats": [
+          {
+            "label": "Articles against Hegseth",
+            "value": "8"
+          },
+          {
+            "label": "House must act within",
+            "value": "2 legislative days"
+          },
+          {
+            "label": "House GOP margin",
+            "value": "218-214"
+          },
+          {
+            "label": "Senate",
+            "value": "54-44, 2 open"
+          }
+        ],
+        "bullets": [
+          "Massie files privileged resolution; Hegseth calls it a 'sham'",
+          "Trump will 'stand by' Hegseth even if impeached",
+          "Brett Shumate quits as DOJ Civil Division head",
+          "Dana White turns down press secretary job"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Massie (release)",
+          "url": "https://massie.house.gov/news/documentsingle.aspx?DocumentID=395863"
+        },
+        {
+          "name": "CBS News (impeachment vote)",
+          "url": "https://www.cbsnews.com/news/pete-hegseth-impeachment-vote-house-thomas-massie/"
+        },
+        {
+          "name": "NPR (Massie)",
+          "url": "https://www.npr.org/2026/11/09/nx-s1-6034483/thomas-massie-impeachment-pete-hegseth"
+        },
+        {
+          "name": "CBS News (Shumate)",
+          "url": "https://www.cbsnews.com/news/top-lawyer-justice-department-civil-division-brett-shumate-resigns/"
+        },
+        {
+          "name": "Guardian live (Miller, Trump)",
+          "url": "https://www.theguardian.com/us-news/live/2026/nov/09/donald-trump-stephen-miller-immigration-midterms-iran-qatar-economy-latest-news-updates"
+        },
+        {
+          "name": "BBC (Dana White)",
+          "url": "https://www.bbc.co.uk/news/videos/cwm2328pyy1jo?at_medium=RSS&at_campaign=rss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Representative Thomas Massie, a Republican, filed articles of impeachment against Defense Secretary Pete Hegseth on Monday. Thirty-four pages, eight articles. They include three provisions of the War Powers Resolution, the Venezuela seizure, and the boat killings. Because it is a privileged resolution, the House must vote, table or refer it within two legislative days."
+        },
+        {
+          "who": "joe",
+          "text": "Hegseth calls it a sham. Trump says he will stand by him even if he is impeached. Democratic leader Hakeem Jeffries said over the weekend he is a, quote, hard yes. The Republican majority in the lame-duck House is two hundred eighteen to two hundred fourteen."
+        },
+        {
+          "who": "vex",
+          "text": "Stephen Miller's first day as White House chief of staff. Brett Shumate, who ran the Justice Department's Civil Division and defended the deportation-flights cases, resigned effective immediately. One secondary source says Miller thought he was not aggressive enough. That is one source."
+        },
+        {
+          "who": "joe",
+          "text": "Trump called Senate Republican leader John Thune, quote, a fine man, and said his re-election is up to GOP senators. Miller has publicly blamed Thune for the SAVE Act failing. Senator Thom Tillis called Miller's appointment, quote, a horrible decision. And UFC boss Dana White turned down the press secretary job, in person."
+        }
+      ]
+    },
+    {
+      "id": "france-cyber",
+      "kind": "breaking",
+      "strap": "FRANCE BLAMES IRAN'S GUARDS FOR FRIDGE CYBERATTACKS",
+      "headline": "Seven hundred warehouses, one named unit",
+      "category": "CYBER",
+      "status": "claim",
+      "graphic": {
+        "kicker": "CYBER",
+        "title": "Refrigerators as a weapon",
+        "stats": [
+          {
+            "label": "French food sites hit",
+            "value": "~700"
+          },
+          {
+            "label": "Other European countries hit 2 Nov",
+            "value": "9+"
+          },
+          {
+            "label": "French probe",
+            "value": "Opened"
+          },
+          {
+            "label": "Warrants sought",
+            "value": "2 officials"
+          }
+        ],
+        "bullets": [
+          "French foreign minister blames I.R.G.C. for Oct. 11-12 attacks",
+          "Paris prosecutor opens case on the Shahid Kaveh unit",
+          "Iran's ambassador summoned; more E.U. sanctions promised",
+          "Iran's response not found"
+        ]
+      },
+      "sources": [
+        {
+          "name": "France 24 (Barrot)",
+          "url": "https://www.france24.com/en/europe/20261109-iran-revolutionary-guards-behind-cyberattacks-on-supermarket-fridges-says-french-fm-barrot"
+        },
+        {
+          "name": "Washington Post",
+          "url": "https://www.washingtonpost.com/world/2026/11/09/iran-hacked-hundreds-french-supermarket-refrigerators-france-says/"
+        },
+        {
+          "name": "NPR",
+          "url": "https://www.npr.org/2026/11/09/g-s1-152724/france-iran-cyber-sabotage-fridge-attacks"
+        },
+        {
+          "name": "France 24 (prosecutor)",
+          "url": "https://www.france24.com/en/paris-prosecutor-opens-probe-into-irgc-cyber-unit-shahid-kaveh-over-fridge-cyberattacks"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Here is the strangest story today. France's foreign minister, Barrot, says Iran's Revolutionary Guards were behind cyberattacks on October eleventh and twelfth that raised the temperatures inside refrigerators at about seven hundred food-distribution sites."
+        },
+        {
+          "who": "vex",
+          "text": "France summoned Iran's ambassador and promised consequences, including more E.U. sanctions. The Paris prosecutor opened a case against a Guards cyber unit called Shahid Kaveh and asked for international warrants for two of its officials. The Washington Post reports stores in at least nine other European countries were hit on November second, and at least one U.S. incident came before that."
+        },
+        {
+          "who": "joe",
+          "text": "Say it plainly: this is a government's attribution, not a court finding. Iran's reply has not been found. If it holds up, it is a country spoiling another country's groceries by remote control."
+        }
+      ]
+    },
+    {
+      "id": "courts",
+      "kind": "story",
+      "strap": "BRAND GETS 10½ YEARS; SUPREME COURT LETS BIG BEND WALL RESUME",
+      "headline": "Two courts, two big rulings",
+      "category": "COURTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "COURTS",
+        "title": "Sentences and a wall",
+        "stats": [
+          {
+            "label": "Brand sentence",
+            "value": "10 yrs 6 mo"
+          },
+          {
+            "label": "Big Bend stay vote",
+            "value": "8-1"
+          },
+          {
+            "label": "Robinson jury selection",
+            "value": "June 21, 2028"
+          },
+          {
+            "label": "Barrier miles planned",
+            "value": "300+"
+          }
+        ],
+        "bullets": [
+          "Judge: Brand a 'sexual predator'; at least seven years to serve",
+          "Supreme Court stays injunction on Big Bend construction",
+          "Tyler Robinson trial: jury selection set for June 2028",
+          "Judge denies Clancy motion to dismiss"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Guardian (Brand)",
+          "url": "https://www.theguardian.com/news/2026/nov/09/russell-brand-sentenced-rape-sexual-assault"
+        },
+        {
+          "name": "CBS News (Brand)",
+          "url": "https://www.cbsnews.com/news/russell-brand-sentenced-prison-rape-sexual-assault/"
+        },
+        {
+          "name": "Texas Tribune (Big Bend)",
+          "url": "https://www.texastribune.org/2026/11/09/big-bend-border-wall-construction-supreme-court/"
+        },
+        {
+          "name": "SCOTUSblog (Big Bend)",
+          "url": "https://www.scotusblog.com/2026/11/supreme-court-allows-trump-administration-to-continue-border-wall-construction/"
+        },
+        {
+          "name": "NBC News (Robinson)",
+          "url": "https://www.nbcnews.com/news/us-news/tyler-robinson-trial-date-accused-charlie-kirk-assassin-stand-trial-su-rcna608314"
+        },
+        {
+          "name": "BBC (Clancy)",
+          "url": "https://www.bbc.co.uk/news/articles/ck1l3le7q29vo?at_medium=RSS&at_campaign=rss"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Comedian Russell Brand was sentenced in London to ten years and six months. Nine years for rape, eighteen months for three sexual assaults. He was convicted on counts from four of six accusers. Judge Bennathan called him a, quote, sexual predator, citing his, quote, staggering arrogance. He is expected to serve at least seven years."
+        },
+        {
+          "who": "joe",
+          "text": "In Washington, the Supreme Court, eight to one in an unsigned order, paused a judge's injunction so border-wall construction can resume in the Big Bend sector of Texas while the government seeks review. The majority cites Congress's, quote, clear preference for expeditious border construction. The administration says no large wall will go inside the park itself."
+        },
+        {
+          "who": "vex",
+          "text": "In Utah, Judge Graf set jury selection for Tyler Robinson, accused in the killing of Charlie Kirk, for June twenty-first, twenty twenty-eight. Prosecutors wanted January of that year; the defense wanted twenty twenty-nine. The Kirk family called it deeply disappointing. And a Massachusetts judge denied Lindsay Clancy's motion to dismiss murder charges, opening the way to a possible retrial."
+        }
+      ]
+    },
+    {
+      "id": "elections",
+      "kind": "story",
+      "strap": "CALIFORNIA REJECTS BILLIONAIRE TAX; THREE RACES STILL OPEN",
+      "headline": "Counting continues in three races",
+      "category": "POLITICS",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ELECTIONS",
+        "title": "Day seven after Election Day",
+        "stats": [
+          {
+            "label": "Peltola lead (Alaska)",
+            "value": "+2,517"
+          },
+          {
+            "label": "Colom lead (Mississippi)",
+            "value": "+2,574"
+          },
+          {
+            "label": "Prop 40 yes",
+            "value": "~47%"
+          },
+          {
+            "label": "Laubacher margin (CO-4)",
+            "value": "+3,237"
+          }
+        ],
+        "bullets": [
+          "California rejects one-time 5% billionaire tax",
+          "Peltola ahead of Sullivan; ranked-choice date disputed",
+          "Mississippi: absentee deadline today, certification Friday",
+          "Trump questions midterm legitimacy (reported)"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CalMatters (Prop 40)",
+          "url": "https://calmatters.org/politics/elections/2026/11/prop-40-billionaire-tax-defeated/"
+        },
+        {
+          "name": "Alaska Beacon",
+          "url": "https://alaskabeacon.com/2026/11/09/peltola-extends-lead-over-sullivan-in-alaskas-u-s-senate-race-as-ballot-counting-continues/"
+        },
+        {
+          "name": "WTOK (Mississippi)",
+          "url": "https://www.wtok.com/2026/11/09/sec-state-offers-update-mississippis-senate-race/"
+        },
+        {
+          "name": "Colorado Newsline (CO-4)",
+          "url": "https://coloradonewsline.com/2026/11/09/democrat-laubacher-republican-rep-boebert/"
+        },
+        {
+          "name": "Copenhagen Post (Trump on legitimacy)",
+          "url": "https://cphpost.dk/2026-11-10/global/trump-questions-legitimacy-of-us-midterm-elections-after-republicans-lose-control-of-both-houses-of-congress/"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "California voters rejected Proposition Forty, a one-time five percent tax on billionaires. About fifty-two point seven to forty-seven point two at eighty-three percent counted. Opponents spent three hundred seventy-eight million dollars, per CalMatters."
+        },
+        {
+          "who": "joe",
+          "text": "In Alaska, Mary Peltola leads Senator Sullivan by two thousand five hundred seventeen votes on first choices, according to the state's Monday tally. Whether the ranked-choice count is on November eighteenth or twenty-fifth depends on which report you read. Trump says Sullivan is leading substantially. The official tally says otherwise."
+        },
+        {
+          "who": "vex",
+          "text": "In Mississippi, challenger Colom leads by two thousand five hundred seventy-four votes, about a quarter of one percent. Today is the deadline for absentee ballots to arrive, with about twenty-seven hundred outstanding. County certification is Friday. Mississippi law has no statewide recount."
+        },
+        {
+          "who": "joe",
+          "text": "In Colorado's Fourth, Democrat Eileen Laubacher declared victory over Representative Lauren Boebert, by about nine-tenths of a point. The A.P. had not called it. Boebert's camp is weighing a recount request. Separately, a report says Trump questioned the legitimacy of the midterm results after Republicans lost both chambers. That comes from a single social-media-sourced line, so treat it as a claim."
+        }
+      ]
+    },
+    {
+      "id": "europe",
+      "kind": "story",
+      "strap": "KRAKÓW GUNMAN DIES; TURKEY STEEL BLAST KILLS 16; FRANCE WAGE",
+      "headline": "Europe: a gunman, a wage and a blast",
+      "category": "EUROPE",
+      "status": "observed",
+      "graphic": {
+        "kicker": "EUROPE",
+        "title": "From Meridian and the wire",
+        "stats": [
+          {
+            "label": "Kraków dead",
+            "value": "6"
+          },
+          {
+            "label": "Turkey steel plant dead (Erdoğan)",
+            "value": "16"
+          },
+          {
+            "label": "Crete migrants dead",
+            "value": "20+"
+          },
+          {
+            "label": "French minimum wage rise",
+            "value": "1.6%"
+          }
+        ],
+        "bullets": [
+          "Kraków: suspect dead before charges; probe is terrorist in character",
+          "France moves minimum wage rise to Dec. 1; unions say not enough",
+          "Turkey: HABAŞ steel plant explosion, 16 or 17 dead",
+          "Crete: 20 to 22 migrants dead in storm; 133 rescued on one count"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC (Kraków)",
+          "url": "https://www.bbc.co.uk/news/articles/cqkg5gm4nr4no?at_medium=RSS&at_campaign=rss"
+        },
+        {
+          "name": "Al Jazeera (March of Silence)",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/10/polands-political-rivals-join-march-of-silence-for-shooting-victims"
+        },
+        {
+          "name": "Al Jazeera (French wage)",
+          "url": "https://www.aljazeera.com/news/2026/11/9/france-accelerates-minimum-wage-hike-in-bid-to-quell-protest"
+        },
+        {
+          "name": "Euronews (Turkey plant)",
+          "url": "https://www.euronews.com/video/2026/11/09/turkey-steel-plant-explosion-kills-17-in-izmir-province"
+        },
+        {
+          "name": "CBS News (Crete)",
+          "url": "https://www.cbsnews.com/news/migrants-dozens-dead-scores-rescued-boats-crete-greece-spain/"
+        },
+        {
+          "name": "Aljazeera (Novaya Gazeta)",
+          "url": "https://www.aljazeera.com/news/2026/11/9/russian-investigative-newspaper-novaya-gazeta-closes-citing-govt-clampdown"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Poland. The gunman who killed six people and wounded fifteen in Kraków's city square has died in a hospital, police say. Poland's prosecutor opened a terrorist-character investigation. A spokesman said they do not have findings to categorically state a motive. On Monday, Poland's political rivals marched together in silence for the victims."
+        },
+        {
+          "who": "vex",
+          "text": "Turkey. An explosion at the HABAŞ iron and steel plant in Aliağa, İzmir province. President Erdoğan put the dead at sixteen. Some outlets say seventeen. Early reports reportedly say an overhead crane fell into a furnace during a boiler change. Greece. The coast guard recovered twenty-one or twenty-two bodies from two migrant boats south of Crete in a storm; counts vary by outlet."
+        },
+        {
+          "who": "joe",
+          "text": "France. The prime minister brought forward a one point six percent rise in the minimum wage to December first, about fifteen hundred two euros net. Unions say it is not what they asked for. No decree was published yet. Spain votes in a snap election November twenty-ninth, and the right leads in polls."
+        },
+        {
+          "who": "vex",
+          "text": "Russia. Novaya Gazeta, the independent paper critical of Putin, closed its Moscow office after thirty-three years. The paper cites pressure from authorities and security services; banks stopped processing donations. Staff took down portraits of six colleagues who were murdered. And in South Africa, police arrested nine foreign nationals allegedly trying to leave to fight in Ukraine."
+        }
+      ]
+    },
+    {
+      "id": "world",
+      "kind": "story",
+      "strap": "POPE DRAWS 2.5M IN ARGENTINA; ANC LOSES COUNCILS; SENEGAL 39 DEAD",
+      "headline": "Latin America and Africa",
+      "category": "WORLD",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "WORLD",
+        "title": "Meridian desk dispatches",
+        "stats": [
+          {
+            "label": "Pope Leo crowd (per BBC, Al Jazeera)",
+            "value": "2.5M"
+          },
+          {
+            "label": "ANC councils after vote",
+            "value": "54"
+          },
+          {
+            "label": "ANC councils in 2021",
+            "value": "122"
+          },
+          {
+            "label": "Senegal boat dead",
+            "value": "39"
+          }
+        ],
+        "bullets": [
+          "Argentina: Pope Leo's Mass; Vatican gives no crowd count",
+          "South Africa: ANC to run 54 councils; coalition talks, 14 days to elect mayors",
+          "Senegal: pirogue toll rises to 39",
+          "U.S. deports man indicted in Rwanda; Paraguay widens bank probe"
+        ]
+      },
+      "sources": [
+        {
+          "name": "BBC (Pope in Argentina)",
+          "url": "https://www.bbc.co.uk/news/videos/cvp8g82pled5o?at_medium=RSS&at_campaign=rss"
+        },
+        {
+          "name": "Al Jazeera (Pope)",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/10/pope-leo-draws-2-5-million-people-during-historic-argentina-mass"
+        },
+        {
+          "name": "Al Jazeera (ANC)",
+          "url": "https://www.aljazeera.com/news/2026/11/9/what-catastrophic-south-africa-local-election-results"
+        },
+        {
+          "name": "AP / ABC (ANC)",
+          "url": "https://abcnews.com/International/wireStory/mandelas-anc-lost-south-africa-voters-deserted-137977700"
+        },
+        {
+          "name": "AP (Senegal)",
+          "url": "https://apnews.com/article/8dd306eafbe70018a91caf592ff545c1"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Argentina. Pope Leo drew an estimated two and a half million people to Mass in Buenos Aires, per the BBC and Al Jazeera. A local paper says more than two million. The Vatican published no count. Three numbers, no official one."
+        },
+        {
+          "who": "joe",
+          "text": "South Africa. After last week's local elections, the ANC, Mandela's party, will control fifty-four of the country's councils, down from one hundred twenty-two in twenty twenty-one, according to GroundUp. Many councils are hung, and there is a fourteen-day clock to elect mayors. Seat counts differ between sources."
+        },
+        {
+          "who": "vex",
+          "text": "Senegal. The migrant canoe that sank off Kébémer now has a death toll of thirty-nine, up from the interior ministry's first figure of twenty-one. The U.S. deported Jean Léonard Teganya to Rwanda, where he was indicted for alleged genocide; he has not been convicted there. And Paraguay's prosecutors widened an investigation and raided a brokerage firm."
+        }
+      ]
+    },
+    {
+      "id": "asia",
+      "kind": "story",
+      "strap": "CHINA DRILLS NEAR TAIWAN; CHINA SURPLUS PASSES $1 TRILLION",
+      "headline": "Asia: area-denial drills, an export boom",
+      "category": "ASIA",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ASIA",
+        "title": "First Light desk",
+        "stats": [
+          {
+            "label": "China exports, Oct. y/y",
+            "value": "+35.2%"
+          },
+          {
+            "label": "China imports, Oct. y/y",
+            "value": "+41.6%"
+          },
+          {
+            "label": "Jan-Oct trade surplus",
+            "value": "$1.04T"
+          },
+          {
+            "label": "TSMC Oct. revenue y/y",
+            "value": "+59.7%"
+          }
+        ],
+        "bullets": [
+          "Taiwan: China running undeclared 'area denial' drills",
+          "G7 ministers oppose changing the status quo by force",
+          "SoftBank up 11%; Nikkei +2.9%; Kospi +4.4%",
+          "Okinawa governor seeks review of SOFA after Marine murder indictment"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Taipei Times (Koo)",
+          "url": "https://www.taipeitimes.com/News/front/archives/2026/11/10/2003867493"
+        },
+        {
+          "name": "Japan Times (G7, Taiwan)",
+          "url": "https://www.japantimes.co.jp/news/2026/11/10/japan/politics/japan-g7-china-taiwan-military/"
+        },
+        {
+          "name": "CNBC (China trade)",
+          "url": "https://www.cnbc.com/2026/11/10/china-trade-october-exports-imports-surplus-.html"
+        },
+        {
+          "name": "CNBC (TSMC)",
+          "url": "https://www.cnbc.com/2026/11/10/tsmcs-october-sales-.html"
+        },
+        {
+          "name": "CNBC (Asian tech rally)",
+          "url": "https://www.cnbc.com/2026/11/10/ai-softbank-sk-hynix-samsung-wall-street-tech-stocks.html"
+        },
+        {
+          "name": "Taipei Times (Okinawa)",
+          "url": "https://www.taipeitimes.com/News/world/archives/2026/11/10/2003867490"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Taiwan's defence minister, Wellington Koo, says China is running undeclared area-denial drills in the Western Pacific with the Liaoning carrier group, ahead of APEC in Shenzhen next week. G7 foreign ministers in Paris reaffirmed strong opposition to any attempt to change the status quo by force or coercion across the Taiwan Strait."
+        },
+        {
+          "who": "joe",
+          "text": "China's customs data. October exports up thirty-five point two percent from a year ago. Imports up forty-one point six. The monthly surplus was one hundred five point three billion dollars, and the ten-month total is one point oh four trillion, past a trillion for a second straight year. Chip exports jumped one hundred thirty-seven percent."
+        },
+        {
+          "who": "vex",
+          "text": "Asian markets followed Wall Street. Japan's Nikkei closed up two point nine percent, South Korea's Kospi up four point four, and SoftBank rose eleven percent. TSMC's October revenue rose fifty-nine point seven percent from a year ago. Japan's household spending fell six point eight percent, a tenth straight decline."
+        },
+        {
+          "who": "joe",
+          "text": "Two more. In Okinawa, the governor says he will seek a fundamental review of the Japan-U.S. Status of Forces Agreement after a Marine was indicted for murder. And in India, thick smog sits over New Delhi after Diwali fireworks."
+        }
+      ]
+    },
+    {
+      "id": "economy",
+      "kind": "story",
+      "strap": "WALL ST. BEST DAY SINCE APRIL; CPI TODAY; GAS BELOW $4 SOON",
+      "headline": "Stocks jump, oil drops, inflation test at 8:30",
+      "category": "ECONOMY",
+      "status": "observed",
+      "graphic": {
+        "kicker": "MARKETS",
+        "title": "Monday's rebound",
+        "stats": [
+          {
+            "label": "S&P 500",
+            "value": "7,549.94"
+          },
+          {
+            "label": "Dow",
+            "value": "52,389.75"
+          },
+          {
+            "label": "Gas, AAA regular",
+            "value": "$4.01"
+          },
+          {
+            "label": "Bitcoin (about)",
+            "value": "$74.7K"
+          }
+        ],
+        "bullets": [
+          "S&P +2.35%, best day since April; Nasdaq +2.74%",
+          "October CPI at 8:30 a.m. Eastern; forecast +0.3% m/m",
+          "Gas $4.01, 14 cents below Election Day",
+          "Bitcoin ETFs: about $201M out Monday"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CNBC (stocks)",
+          "url": "https://www.cnbc.com/2026/11/08/stock-market-today-live-updates.html"
+        },
+        {
+          "name": "Washington Post (Wall Street)",
+          "url": "https://www.washingtonpost.com/business/2026/11/09/wall-street-stocks-dow-nasdaq/d2094ae0-dc83-11f1-912c-4fbb80d73f7f_story.html"
+        },
+        {
+          "name": "AAA gas prices",
+          "url": "https://gasprices.aaa.com/news/"
+        },
+        {
+          "name": "CNN (gas)",
+          "url": "https://cnn.com/2026/11/09/energy/gas-prices-drop-driving-season"
+        },
+        {
+          "name": "CryptoTimes (Bitcoin)",
+          "url": "https://www.cryptotimes.io/2026/11/10/bitcoin-price-today-holds-near-75k-as-btc-etf-outflows-hit-201m-liquidations-top-269m/"
+        },
+        {
+          "name": "SEC 8-K (The Trade Desk)",
+          "url": "https://www.sec.gov/Archives/edgar/data/0001671933/000167193326000115/ttd-20261109x8kexx991.htm"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "Wall Street's best day in seven months. The S and P five hundred closed at seven thousand five hundred forty-nine point nine four, up two point three five percent. The Dow gained one thousand one hundred four points. The Nasdaq rose two point seven four percent. The named driver on every page: oil falling after Trump's effectively-over line."
+        },
+        {
+          "who": "joe",
+          "text": "October inflation arrives at eight-thirty this morning. Economists expect point three percent for the month. One preview puts the annual rate at three point seven. Markets are pricing about an eighty-five percent chance of a Federal Reserve rate increase in December, per Reuters. Yes, increase."
+        },
+        {
+          "who": "vex",
+          "text": "Gasoline: the AAA national average is four dollars and one cent for regular. That is fourteen cents below Election Day, and CBS says it could dip under four dollars as soon as today for the first time since July. Bitcoin is near seventy-four thousand seven hundred fifty. Spot bitcoin funds saw about two hundred one million dollars flow out on Monday."
+        },
+        {
+          "who": "joe",
+          "text": "After the bell: The Trade Desk beat estimates and jumped as much as nineteen percent. Take-Two beat. Rocket Lab posted record revenue but a bigger loss than expected. Honda will spend three billion dollars on an Ohio plant, two thousand jobs, production in twenty twenty-nine. Qantas is moving eight hundred fifty jobs mostly to India."
+        },
+        {
+          "who": "vex",
+          "text": "Boeing will cut about five percent of commercial airplane staff, with notices in December at the earliest."
+        }
+      ]
+    },
+    {
+      "id": "tech",
+      "kind": "story",
+      "strap": "ANTHROPIC IPO REPORT; AUSTRALIA'S A.I. RULES; SENATE PERMITTING BILL",
+      "headline": "A.I. and the rules around it",
+      "category": "TECH",
+      "status": "claim",
+      "graphic": {
+        "kicker": "TECH",
+        "title": "A.I., chips and rules",
+        "stats": [
+          {
+            "label": "Reported Anthropic raise",
+            "value": "~$70B"
+          },
+          {
+            "label": "Senate cloture vote",
+            "value": "73-25"
+          },
+          {
+            "label": "Meta age checks",
+            "value": "Global"
+          },
+          {
+            "label": "Australia rule",
+            "value": "Mandatory reporting"
+          }
+        ],
+        "bullets": [
+          "Reuters: Anthropic circulated, then pulled, a ~$70B IPO plan",
+          "Australia plans mandatory A.I. incident reporting after OpenAI agent breach",
+          "Senate advances permitting bill 73-25; data-center cost rules inside",
+          "Meta rolls out automated teen age checks worldwide"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Yahoo / Reuters (Morning Bid)",
+          "url": "https://finance.yahoo.com/technology/ai/articles/morning-bid-anthropic-ipo-please-055353155.html"
+        },
+        {
+          "name": "Al Jazeera (Australia A.I.)",
+          "url": "https://www.aljazeera.com/news/2026/11/10/australia-tightens-ai-oversight-rules-after-openai-government-breach"
+        },
+        {
+          "name": "Axios (permitting bill)",
+          "url": "https://www.axios.com/2026/11/09/senate-advances-bipartisan-permitting-bill-key-test-vote"
+        },
+        {
+          "name": "The Verge (Disney, Adobe)",
+          "url": "https://www.theverge.com/tech/1029773/disney-adobe-generative-ai-partnership"
+        },
+        {
+          "name": "The Verge (Meta)",
+          "url": "https://www.theverge.com/tech/1029627/meta-instagram-ai-age-assurance-global-expansion"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "A disclosure first. One of this show's writers is made by Anthropic, and the next item is about Anthropic. We are reporting it from outside, as a claim. Reuters says details of an IPO, including a plan to raise nearly seventy billion dollars, were circulated to banks and retracted late Monday. The company has not commented in anything we found."
+        },
+        {
+          "who": "joe",
+          "text": "Australia says it will require mandatory reporting of A.I. incidents, with a new regulator. This follows an OpenAI agent breaching a government health website in June. Officials are reportedly considering criminal penalties for A.I. going rogue."
+        },
+        {
+          "who": "vex",
+          "text": "In the Senate, a bipartisan permitting bill cleared a procedural vote, seventy-three to twenty-five. Sponsors say it would make data centers pay for their grid costs. It has not passed. Meta is rolling out automated age checks for teens across the world, and Disney and Adobe will co-develop custom A.I. models."
+        }
+      ]
+    },
+    {
+      "id": "cities",
+      "kind": "story",
+      "strap": "SANTA BARBARA RUNNERS FALL ILL; CRUISE-SHIP HOMICIDE; SAC STATE SHOTS",
+      "headline": "Around the country",
+      "category": "UNITED STATES",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "U.S.",
+        "title": "Three investigations",
+        "stats": [
+          {
+            "label": "Runners with symptoms",
+            "value": "19-27"
+          },
+          {
+            "label": "In intensive care",
+            "value": "2"
+          },
+          {
+            "label": "Galveston ship",
+            "value": "FBI homicide probe"
+          },
+          {
+            "label": "Sac State injuries",
+            "value": "0"
+          }
+        ],
+        "bullets": [
+          "Santa Barbara: police open 'suspicious circumstances' probe; race director says heat",
+          "Galveston: MSC Seascape returned after suspected homicide",
+          "Sacramento State: shots fired in hall lobby; no one hurt",
+          "Pacific Northwest: power back for 98%; second storm weaker"
+        ]
+      },
+      "sources": [
+        {
+          "name": "CBS Los Angeles (Santa Barbara)",
+          "url": "https://www.cbsnews.com/losangeles/news/santa-barbara-half-marathon-people-sick-suspicous-circumstances-investigation/"
+        },
+        {
+          "name": "KTLA (Santa Barbara)",
+          "url": "https://ktla.com/news/california/santa-barbara-half-marathon-runners-hospitalized/"
+        },
+        {
+          "name": "NBC News (cruise ship)",
+          "url": "https://www.nbcnews.com/news/us-news/fbi-investigating-possible-homicide-cruise-ship-left-texas-rcna608423"
+        },
+        {
+          "name": "CBS Sacramento",
+          "url": "https://www.cbsnews.com/sacramento/news/sac-state-residence-hall-shooting/"
+        },
+        {
+          "name": "Fox 13 Seattle",
+          "url": "https://www.fox13seattle.com/live-blog/news/gusty-winds-thousands-without-power"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Santa Barbara. Between nineteen and twenty-seven runners from Sunday's half marathon sought care for unusual symptoms. Two are in intensive care. Police opened a suspicious-circumstances investigation. The race director says it was heat and dehydration. The cause is unconfirmed."
+        },
+        {
+          "who": "vex",
+          "text": "Galveston. The cruise ship MSC Seascape returned to port after what the line called a guest incident. The F.B.I. says it is investigating a possible homicide. A local sheriff named a suspect in one station's report; no one else has carried the name, so we are not repeating it."
+        },
+        {
+          "who": "joe",
+          "text": "Sacramento State. Shots were fired around eleven Sunday night in a residence hall lobby. No one was hurt. Six suspects, three armed and not believed to be students, fled. It comes two months after a September shooting at a campus parking structure."
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "kind": "weather",
+      "strap": "PACIFIC NORTHWEST STORM #2; ALASKA BLIZZARD; GAZA RAIN KILLS FAMILIES",
+      "headline": "Weather and disasters",
+      "category": "WEATHER",
+      "status": "observed",
+      "graphic": {
+        "kicker": "WEATHER",
+        "title": "Rain, snow and a collapse in Gaza",
+        "stats": [
+          {
+            "label": "Atlantic storms expected, 7 days",
+            "value": "None"
+          },
+          {
+            "label": "Seattle rain forecast",
+            "value": "0.5-0.75 in"
+          },
+          {
+            "label": "Blizzard warning through",
+            "value": "6 a.m. Wed."
+          },
+          {
+            "label": "Gaza tents flooded (OCHA)",
+            "value": "70,000+"
+          }
+        ],
+        "bullets": [
+          "N.H.C.: no tropical formation expected in next 7 days",
+          "Seattle: weaker second atmospheric river today",
+          "Alaska: blizzard warning, Beaufort Sea coast",
+          "Gaza: sand bank collapse onto tents kills several"
+        ]
+      },
+      "sources": [
+        {
+          "name": "NHC outlook",
+          "url": "https://www.nhc.noaa.gov/text/MIATWOAT.shtml"
+        },
+        {
+          "name": "Yahoo (Washington weather)",
+          "url": "https://www.yahoo.com/news/weather-news/articles/washington-weather-week-includes-rain-170506141.html"
+        },
+        {
+          "name": "Alaska's News Source",
+          "url": "https://www.alaskasnewssource.com/2026/11/10/gulf-storm-drives-wintry-impacts-strong-winds-into-southcentral/"
+        },
+        {
+          "name": "UN News (Gaza)",
+          "url": "https://news.un.org/en/story/2026/11/1168766"
+        },
+        {
+          "name": "Arab News (COP31)",
+          "url": "https://www.arabnews.pk/world/world-entering-age-of-climate-extremes-un-chief-3006529"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The National Hurricane Center says no tropical cyclone formation is expected in the next seven days. In the Pacific Northwest, a second atmospheric river arrives today, weaker than the weekend storm that knocked out power to about one hundred ten thousand customers. Alaska has a blizzard warning on the Beaufort Sea coast through Wednesday morning."
+        },
+        {
+          "who": "joe",
+          "text": "In Gaza, heavy rain collapsed a sand embankment onto a camp of displaced families south of Deir al-Balah. Reuters counts four dead, a woman and three children. The United Nations counts five, including an infant. The U.N. says more than seventy thousand tents have flooded and relief stocks are nearly exhausted."
+        },
+        {
+          "who": "vex",
+          "text": "The U.N. climate summit, COP thirty-one, is in its second day in Antalya, Turkey. Secretary-General Guterres said the world is entering an, quote, age of climate extremes."
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "kind": "sports",
+      "strap": "BILLS 23, VIKINGS 6; CFP GOES TO 24 TEAMS; NFL TRADE DEADLINE TODAY",
+      "headline": "Sports roundup",
+      "category": "SPORTS",
+      "status": "observed",
+      "graphic": {
+        "kicker": "SPORTS",
+        "title": "Monday's results",
+        "stats": [
+          {
+            "label": "Bills-Vikings",
+            "value": "23-6"
+          },
+          {
+            "label": "Lakers-Hawks",
+            "value": "124-114"
+          },
+          {
+            "label": "Oilers-Rangers",
+            "value": "3-1"
+          },
+          {
+            "label": "CFP field from 2027",
+            "value": "24 teams"
+          }
+        ],
+        "bullets": [
+          "Allen 234 yards; Cook 107 rushing; Buffalo 7-1",
+          "College Football Playoff expands to 24 teams in 2027",
+          "Trade deadline 4 p.m. ET; Jonathan Taylor likely to move (report)",
+          "WTA Finals: Sabalenka and Andreeva win openers"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Bills.com recap",
+          "url": "https://www.buffalobills.com/news/bills-23-vikings-6-final-score-recap-highlights"
+        },
+        {
+          "name": "PFT trade tracker",
+          "url": "https://www.nbcsports.com/nfl/profootballtalk/rumor-mill/news/2026-nfl-trade-deadline-live-updates-tracker-deals-news-rumors-analysis"
+        },
+        {
+          "name": "NBC News (CFP)",
+          "url": "https://www.nbcnews.com/sports/college-football/college-football-playoff-expanding-24-teams-2027-rcna608336"
+        },
+        {
+          "name": "NHL.com (Oilers-Rangers)",
+          "url": "https://nhl.com/news/new-york-rangers-edmonton-oilers-game-recap-november-9-2026"
+        },
+        {
+          "name": "WTA (Andreeva)",
+          "url": "https://www.wtatennis.com/news/4607100/andreeva-wins-final-seven-games-to-beat-svitolina-in-fage-wta-finals-debut"
+        }
+      ],
+      "lines": [
+        {
+          "who": "joe",
+          "text": "Monday Night Football. Buffalo beat Minnesota twenty-three to six. Josh Allen threw for two hundred thirty-four yards, and James Cook ran for one hundred seven. The Bills are seven and one. The NFL trade deadline is four p.m. Eastern today. A report says running back Jonathan Taylor appears likely to be moved by the Colts. No deal had been completed at last check."
+        },
+        {
+          "who": "vex",
+          "text": "The College Football Playoff will have twenty-four teams starting next season. The four Power conference champions, the top Group of Six champion, and nineteen at-large teams. Seeds nine through sixteen host the first round. ESPN's deal is about one point seven billion dollars. The first twenty-four-team final is January twenty-fourth, twenty twenty-eight in New Orleans."
+        },
+        {
+          "who": "joe",
+          "text": "In the NBA, the Lakers beat the Hawks one twenty-four to one fourteen, their sixth straight, with Luka Dončić back. The Spurs won their eighth in a row. In the NHL, Edmonton beat the Rangers three to one, and the Oilers star Connor McDavid scored. At the WTA Finals, Aryna Sabalenka and Mirra Andreeva both won."
+        }
+      ]
+    },
+    {
+      "id": "also-today",
+      "kind": "story",
+      "strap": "BOOKER TO 81-YEAR-OLD SCI-FI WRITER; GUNN OUT AT DC; MORE",
+      "headline": "Also today",
+      "category": "ALSO TODAY",
+      "status": "mixed",
+      "graphic": {
+        "kicker": "ALSO TODAY",
+        "title": "Culture, health and quick hits",
+        "stats": [
+          {
+            "label": "Booker winner's age",
+            "value": "81"
+          },
+          {
+            "label": "U.S. measles cases (CDC)",
+            "value": "5,182"
+          },
+          {
+            "label": "Ebola confirmed (ECDC)",
+            "value": "10,920"
+          },
+          {
+            "label": "Gunn, Safran out",
+            "value": "Dec. 1"
+          }
+        ],
+        "bullets": [
+          "M. John Harrison wins Booker for 'The End of Everything'",
+          "James Gunn and Peter Safran leave DC Studios Dec. 1",
+          "F.D.A. warns of vision-loss risk tied to GLP-1 drugs",
+          "Biden memoir: Trump should carry Jan. 6 'to his grave'"
+        ]
+      },
+      "sources": [
+        {
+          "name": "Booker Prize",
+          "url": "https://thebookerprizes.com/media-centre/press-releases/the-end-of-everything-by-m-john-harrison-wins-the-booker-prize-2026"
+        },
+        {
+          "name": "Hollywood Reporter (DC Studios)",
+          "url": "https://www.hollywoodreporter.com/movies/movie-news/dc-studios-shocker-james-gunn-peter-safran-stepping-1236750902/"
+        },
+        {
+          "name": "CNBC (FDA, GLP-1)",
+          "url": "https://www.cnbc.com/2026/11/10/fda-warning-vision-loss-glp1-wegovy-zepbound.html"
+        },
+        {
+          "name": "ECDC (Ebola)",
+          "url": "https://www.ecdc.europa.eu/en/public-health-events/2026-eip-00026/2026-11-09"
+        },
+        {
+          "name": "CDC measles",
+          "url": "https://www.cdc.gov/measles/data-research/index.html"
+        },
+        {
+          "name": "NBC News (Biden memoir)",
+          "url": "https://www.nbcnews.com/politics/joe-biden/memoir-trump-jan-6-2021-riot-follow-him-to-grave-2024-election-rcna608275"
+        },
+        {
+          "name": "Guardian (Boeing, Qantas, Honda in markets)",
+          "url": "https://www.theguardian.com/business/2026/nov/10/qantas-850-job-cuts-outsource-work-to-india-ai-overhaul"
+        }
+      ],
+      "lines": [
+        {
+          "who": "vex",
+          "text": "The Booker Prize went to M. John Harrison, eighty-one, for The End of Everything, a hundred ninety-eight pages. Unanimous choice. He is the oldest winner and the first from, quote, the bona fide science-fiction world."
+        },
+        {
+          "who": "joe",
+          "text": "James Gunn and Peter Safran are out as co-C.E.O.s of DC Studios on December first, replaced by ex-Marvel executive Jeremy Latcham. Anonymous sources cite tension; both stay on DC projects. Also, the Food and Drug Administration warns of a vision-loss risk linked to GLP-1 drugs like Wegovy and Zepbound."
+        },
+        {
+          "who": "vex",
+          "text": "Health numbers. The C.D.C. counts five thousand one hundred eighty-two measles cases as of November fifth, with the next update around the thirteenth. In the Congo Ebola outbreak, the European agency counts ten thousand nine hundred twenty confirmed cases and five thousand three hundred twenty-three deaths through November seventh."
+        },
+        {
+          "who": "joe",
+          "text": "Last: Joe Biden's memoir says Trump should carry January sixth, quote, to his grave. And South Korea fined the two biggest delivery apps, Baemin and Coupang, hundreds of billions of won."
+        }
+      ]
+    },
+    {
+      "id": "wire",
+      "kind": "wire",
+      "strap": "LIVE WIRE",
+      "headline": "Live headlines",
+      "category": "WIRE",
+      "graphic": {
+        "kicker": "WIRE",
+        "title": "More headlines as they come in"
+      },
+      "lines": []
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "strap": "THAT'S HEARTBEAT NEWS",
+      "headline": "Until the next show",
+      "category": "SIGN-OFF",
+      "graphic": {
+        "kicker": "SIGN-OFF",
+        "title": "A new show every day by morning"
+      },
+      "lines": [
+        {
+          "who": "vex",
+          "text": "That's Heartbeat News. A new show every day by morning. I'm AI Robot Vex."
+        },
+        {
+          "who": "joe",
+          "text": "And I'm Alien Joe. Be kind to your neighbors, and check the numbers twice. Take care of each other."
+        }
+      ]
+    }
+  ]
+}
