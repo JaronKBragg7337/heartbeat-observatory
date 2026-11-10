@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101923">
+<title>Rain on Main · Harper, Indiana</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #101923; }
+  body { font-family: Georgia, 'Times New Roman', serif; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  .caption {
+    position: fixed; z-index: 2; left: clamp(18px, 3.8vw, 52px); top: clamp(17px, 4vh, 38px);
+    color: rgba(247, 231, 202, .84); pointer-events: none;
+    text-shadow: 0 2px 18px rgba(0,0,0,.72);
+  }
+  .place { font: 600 10px/1.2 system-ui, sans-serif; letter-spacing: .24em; text-transform: uppercase; color: #d6b986; }
+  .title { margin-top: 7px; font-size: clamp(20px, 2.4vw, 30px); letter-spacing: .015em; font-weight: 400; }
+  .weather { margin-top: 5px; font: 10px/1.4 system-ui, sans-serif; letter-spacing: .12em; color: rgba(228,229,220,.58); }
+  .drag {
+    position: fixed; z-index: 2; right: clamp(17px, 3.8vw, 52px); top: clamp(20px, 4vh, 40px);
+    display: flex; align-items: center; gap: 9px; color: rgba(238,232,218,.58);
+    font: 9px/1 system-ui, sans-serif; letter-spacing: .17em; text-transform: uppercase;
+    pointer-events: none; text-shadow: 0 2px 10px rgba(0,0,0,.7);
+  }
+  .grip { width: 21px; height: 21px; border: 1px solid rgba(237,218,183,.38); border-radius: 50%; display: grid; place-items: center; font-size: 12px; color: #dec99d; }
+  .credit { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); color: rgba(232,226,211,.28); font: 8px/1 system-ui,sans-serif; letter-spacing: .23em; text-transform: uppercase; pointer-events:none; white-space:nowrap; }
+  @media (max-width: 520px) {
+    .caption { top: max(20px, env(safe-area-inset-top)); }
+    .place { font-size: 8px; }
+    .title { font-size: 20px; }
+    .weather { font-size: 8px; }
+    .drag { top: max(21px, env(safe-area-inset-top)); gap: 6px; font-size: 7px; letter-spacing: .1em; }
+    .grip { width: 18px; height: 18px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="street" aria-label="A rainy evening on Main Street in Harper, Indiana. Drag to look around."></canvas>
+<div class="caption"><div class="place">Harper, Indiana&nbsp; · &nbsp;County Road 4</div><div class="title">Rain on Main</div><div class="weather">NOVEMBER, 9:42 PM&nbsp; · &nbsp;LIGHT RAIN</div></div>
+<div class="drag"><span class="grip">↔</span><span>Drag to look around</span></div>
+<div class="credit">A quiet night in the heartland</div>
+<script>
+(() => {
+  'use strict';
+  const canvas = document.getElementById('street');
+  const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+  const TAU = Math.PI * 2;
+  let w = 0, h = 0, dpr = 1, pad = 0, sceneCanvas, sceneCtx;
+  let panX = 0, panY = 0, targetX = 0, targetY = 0, pointer = null;
+  let last = 0, elapsed = 0, rain = [], rings = [], dropsClock = 0;
+
+  function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+  function seeded(seed) { return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
+  function poly(c, pts, fill, stroke, width = 1) {
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+    c.closePath(); if (fill) { c.fillStyle = fill; c.fill(); }
+    if (stroke) { c.lineWidth = width; c.strokeStyle = stroke; c.stroke(); }
+  }
+  function line(c, x1, y1, x2, y2, color, width = 1) {
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.lineWidth = width; c.strokeStyle = color; c.stroke();
+  }
+  function glow(c, x, y, r, color, strength = 1) {
+    const g = c.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0, color.replace('ALPHA', String(.22 * strength)));
+    g.addColorStop(.28, color.replace('ALPHA', String(.09 * strength)));
+    g.addColorStop(1, color.replace('ALPHA', '0'));
+    c.fillStyle = g; c.fillRect(x-r,y-r,r*2,r*2);
+  }
+  function drawBrickwork(c, x, y, ww, hh, clipPoints, scale = 1) {
+    c.save(); c.beginPath(); c.moveTo(...clipPoints[0]);
+    clipPoints.slice(1).forEach(p => c.lineTo(...p)); c.closePath(); c.clip();
+    c.fillStyle = '#382d2b'; c.fillRect(x,y,ww,hh);
+    const stepY = Math.max(5, h * .011 * scale), stepX = Math.max(10, w * .031 * scale);
+    for (let row=0, yy=y; yy<y+hh; row++, yy+=stepY) {
+      const off = row % 2 ? stepX*.5 : 0;
+      line(c,x,yy,x+ww,yy,'rgba(15,20,23,.43)',Math.max(1,h*.0018));
+      for (let xx=x-off; xx<x+ww; xx+=stepX) line(c,xx,yy,xx,yy+stepY,'rgba(12,17,20,.38)',Math.max(1,w*.0008));
+      if (row % 3 === 0) {
+        for (let xx=x+off; xx<x+ww; xx+=stepX*2.1) {
+          c.fillStyle = 'rgba(177,112,79,.055)'; c.fillRect(xx+2,yy+2,stepX*.62,Math.max(1,stepY*.18));
+        }
+      }
+    }
+    c.restore();
+  }
+  function warmWindow(c, x, y, ww, hh, options = {}) {
+    const skew = options.skew || ww*.035;
+    const pts = [[x,y],[x+ww,y-hh*.015],[x+ww-skew,y+hh],[x-skew*.28,y+hh]];
+    c.save();
+    poly(c,pts,'#171e21','#100f10',Math.max(2,w*.003));
+    const gx=x+ww*.48, gy=y+hh*.45;
+    const g=c.createLinearGradient(x,y,x+ww,y+hh);
+    g.addColorStop(0,'#5b3e2e'); g.addColorStop(.42, options.bright ? '#bd8955' : '#815b3d'); g.addColorStop(1,'#302a27');
+    poly(c,pts,g);
+    c.beginPath(); c.moveTo(...pts[0]); pts.slice(1).forEach(p=>c.lineTo(...p)); c.closePath(); c.clip();
+    const lamp=c.createRadialGradient(gx,gy,0,gx,gy,ww*.92);
+    lamp.addColorStop(0,options.bright?'rgba(255,218,151,.6)':'rgba(255,192,119,.3)'); lamp.addColorStop(1,'rgba(255,185,110,0)');
+    c.fillStyle=lamp;c.fillRect(x-ww,y-hh,ww*3,hh*3);
+    // Suggestive interior silhouettes: shelves, pendant lamps and a little table.
+    if (options.interior !== false) {
+      c.fillStyle='rgba(28,28,25,.56)'; c.fillRect(x+ww*.08,y+hh*.60,ww*.84,hh*.19);
+      c.fillStyle='rgba(29,28,26,.62)'; c.fillRect(x+ww*.12,y+hh*.23,ww*.08,hh*.38);
+      c.fillRect(x+ww*.78,y+hh*.28,ww*.07,hh*.35);
+      line(c,x+ww*.08,y+hh*.57,x+ww*.93,y+hh*.57,'rgba(244,187,115,.32)',Math.max(1,hh*.008));
+      const px=x+ww*.55, py=y+hh*.68;
+      c.fillStyle='rgba(25,25,23,.7)'; c.beginPath(); c.ellipse(px,py,ww*.15,hh*.04,0,0,TAU); c.fill();
+      line(c,px,py,px,py+hh*.16,'rgba(25,25,23,.72)',Math.max(1,ww*.025));
+    }
+    const panes = options.panes || 2;
+    for(let i=1;i<panes;i++) line(c,x+ww*i/panes,y,x+ww*i/panes-skew*i/panes,y+hh,'rgba(20,24,25,.9)',Math.max(2,w*.0022));
+    line(c,x,y+hh*.76,x+ww-skew,y+hh*.76,'rgba(20,24,25,.8)',Math.max(2,h*.003));
+    c.restore();
+    // Soft spill on the rain-dark glass and wall below each window.
+    const rg=c.createLinearGradient(0,y+hh*.72,0,y+hh*1.45);
+    rg.addColorStop(0,options.bright?'rgba(255,177,92,.13)':'rgba(255,177,92,.075)');rg.addColorStop(1,'rgba(255,177,92,0)');
+    c.fillStyle=rg;c.fillRect(x-skew,y+hh*.72,ww+skew*2,hh*.75);
+  }
+  function drawSky(c, W, H, offset=0) {
+    const sky=c.createLinearGradient(0,0,0,H*.78);
+    sky.addColorStop(0,'#0b141d'); sky.addColorStop(.42,'#17232c'); sky.addColorStop(.78,'#34404a'); sky.addColorStop(1,'#1c272e');
+    c.fillStyle=sky;c.fillRect(-offset,0,W+offset*2,H);
+    const hx=W*.55;
+    const haze=c.createRadialGradient(hx,H*.47,0,hx,H*.47,W*.58);
+    haze.addColorStop(0,'rgba(190,157,116,.16)');haze.addColorStop(.34,'rgba(128,139,139,.08)');haze.addColorStop(1,'rgba(29,40,48,0)');
+    c.fillStyle=haze;c.fillRect(-offset,0,W+offset*2,H*.76);
+    // Low, broken rain clouds: quiet tonal variation rather than an illustrated sky.
+    const r=seeded(23);
+    for(let i=0;i<18;i++){
+      const x=r()*W, y=H*(.06+r()*.32), ww=W*(.07+r()*.15), hh=H*(.012+r()*.025);
+      c.fillStyle=`rgba(124,143,151,${.018+r()*.025})`;
+      c.beginPath(); c.ellipse(x,y,ww,hh,(r()-.5)*.1,0,TAU); c.fill();
+    }
+    // Soft roofline haze where the street disappears.
+    const mist=c.createLinearGradient(0,H*.34,0,H*.59);
+    mist.addColorStop(0,'rgba(179,170,148,0)');mist.addColorStop(.67,'rgba(197,174,141,.09)');mist.addColorStop(1,'rgba(55,64,68,0)');
+    c.fillStyle=mist;c.fillRect(0,H*.31,W,H*.3);
+  }
+  function drawFarBuildings(c,W,H) {
+    const vx=W*.55, hy=H*.405;
+    const distant=[
+      [[W*.29,H*.29],[W*.38,H*.255],[W*.38,H*.455],[W*.29,H*.49]],
+      [[W*.39,H*.31],[W*.48,H*.28],[W*.48,H*.45],[W*.39,H*.47]],
+      [[W*.52,H*.30],[W*.60,H*.27],[W*.60,H*.46],[W*.52,H*.47]],
+      [[W*.61,H*.29],[W*.70,H*.255],[W*.70,H*.46],[W*.61,H*.45]],
+      [[W*.72,H*.275],[W*.80,H*.24],[W*.80,H*.47],[W*.72,H*.46]],
+      [[W*.82,H*.29],[W*.91,H*.25],[W*.91,H*.50],[W*.82,H*.47]],
+      [[W*.91,H*.27],[W*1.02,H*.235],[W*1.02,H*.53],[W*.91,H*.50]]
+    ];
+    distant.forEach((p,i)=>{
+      poly(c,p,i%2?'#202a30':'#1c262d');
+      line(c,p[0][0],p[0][1],p[1][0],p[1][1],'rgba(99,108,109,.27)',Math.max(2,H*.004));
+      for(let j=0;j<3;j++){
+        const t=.16+j*.24, x=p[0][0]+(p[1][0]-p[0][0])*t;
+        c.fillStyle=j===1&&i%3===1?'rgba(255,191,119,.53)':'rgba(241,195,134,.18)';
+        c.fillRect(x,H*(.355+t*.045),W*.008,H*.029);
+      }
+    });
+    // A low water tower and courthouse clock shape faintly above the roofline.
+    c.strokeStyle='rgba(35,47,52,.68)';c.lineWidth=Math.max(2,W*.002);
+    c.beginPath();c.moveTo(W*.76,H*.275);c.lineTo(W*.76,H*.21);c.lineTo(W*.795,H*.21);c.lineTo(W*.795,H*.29);c.stroke();
+    c.beginPath();c.arc(W*.78,H*.20,W*.023,Math.PI,0);c.lineTo(W*.803,H*.213);c.lineTo(W*.757,H*.213);c.closePath();c.fillStyle='#27343a';c.fill();
+    // Tiny amber street points fading toward the bend.
+    [0,1,2,3].forEach(i=>{
+      const x=vx+(i-1.4)*W*.085,y=H*(.428+i*.006);
+      glow(c,x,y,W*(.04-i*.006),'rgba(255,190,111,ALPHA)',.65-i*.1);
+      c.fillStyle='rgba(255,214,157,.7)';c.beginPath();c.arc(x,y,Math.max(1,W*.0018),0,TAU);c.fill();
+    });
+  }
+  function drawOppositeBlock(c,W,H) {
+    const vx=W*.55;
+    const p=[[vx,H*.365],[W*1.15,H*.245],[W*1.15,H*.61],[vx,H*.50]];
+    poly(c,p,'#263036');
+    // Old brick, set back across the street and softened by drizzle.
+    c.save();c.beginPath();c.moveTo(...p[0]);p.slice(1).forEach(q=>c.lineTo(...q));c.closePath();c.clip();
+    for(let row=0;row<25;row++){
+      const yy=H*.36+row*H*.008;
+      line(c,vx,yy,W*1.16,yy,'rgba(8,14,18,.27)',Math.max(1,H*.0015));
+    }
+    c.restore();
+    line(c,p[0][0],p[0][1],p[1][0],p[1][1],'#455057',Math.max(3,H*.009));
+    for(let j=0;j<8;j++){
+      const t=(j+.4)/8, x=vx+(W*1.1-vx)*t, top=H*(.35-t*.11), bottom=H*(.46+t*.045), ww=W*(.025-t*.007);
+      c.fillStyle='rgba(16,24,29,.88)';c.fillRect(x,top,ww,bottom-top);
+      c.fillStyle=(j===2||j===6)?'rgba(255,186,112,.47)':'rgba(127,164,168,.14)';c.fillRect(x+ww*.12,top+(bottom-top)*.12,ww*.76,(bottom-top)*.72);
+      line(c,x+ww*.5,top,x+ww*.5,bottom,'rgba(12,19,22,.8)',Math.max(1,W*.0015));
+    }
+    // Dark storefronts and a quiet awning on the far side.
+    for(let j=0;j<4;j++){
+      const t=(j+.5)/4,x=vx+(W*1.08-vx)*t,y=H*(.455+t*.025),ww=W*(.06-t*.018),hh=H*(.078-t*.022);
+      c.fillStyle='#172126';c.fillRect(x,y,ww,hh);
+      c.fillStyle=j===1?'rgba(191,125,72,.62)':'rgba(65,86,90,.38)';c.fillRect(x+ww*.08,y+hh*.08,ww*.84,hh*.68);
+    }
+  }
+  function drawMainBlock(c,W,H) {
+    const lx=-W*.09, rx=W*.585;
+    const roofL=H*.105, roofR=H*.345, baseL=H*.70, baseR=H*.525;
+    const facade=[[lx,roofL],[rx,roofR],[rx,baseR],[lx,baseL]];
+    // A dim side wall provides a close, oblique foreground edge.
+    poly(c,[[-W*.12,H*.15],[lx,roofL],[lx,baseL],[-W*.12,H*.75]],'#302c29');
+    drawBrickwork(c,lx,roofL,rx-lx,baseL-roofL,facade,1.0);
+    // Roofline, stone ledge and the floor break between the upper rooms and shops.
+    line(c,lx,roofL,rx,roofR,'#55433a',Math.max(5,H*.012));
+    line(c,lx,H*.365,rx,H*.445,'#675248',Math.max(4,H*.011));
+    line(c,lx,H*.382,rx,H*.462,'rgba(191,143,105,.35)',Math.max(1,H*.002));
+    line(c,lx,baseL,rx,baseR,'#59463d',Math.max(5,H*.012));
+    // Tall brick piers divide the block into storefronts.
+    const divs=[.29,.59,.82,1];
+    divs.forEach((t,i)=>{
+      const x=lx+(rx-lx)*t, top=roofL+(roofR-roofL)*t, bot=baseL+(baseR-baseL)*t;
+      line(c,x,top+H*.02,x,bot,'rgba(15,20,21,.62)',Math.max(4,H*(.008-i*.001)));
+      line(c,x+W*.004,top+H*.025,x+W*.004,bot,'rgba(167,119,91,.18)',Math.max(1,W*.001));
+    });
+    // Upper-floor sash windows recede gently with the facade.
+    const upper=[{t:.12,w:.102,bright:false},{t:.36,w:.093,bright:true},{t:.59,w:.079,bright:false},{t:.79,w:.064,bright:true},{t:.93,w:.044,bright:false}];
+    upper.forEach((o,i)=>{
+      const x=lx+(rx-lx)*o.t, yy=roofL+(roofR-roofL)*o.t+H*.09, ww=W*o.w, hh=H*(.10-o.t*.024);
+      c.fillStyle='#1b2021';c.fillRect(x-W*.009,yy-H*.008,ww+W*.018,hh+H*.016);
+      c.fillStyle=o.bright?'rgba(194,135,83,.74)':'#1b272c';c.fillRect(x,yy,ww,hh);
+      if(o.bright){const gg=c.createLinearGradient(x,yy,x+ww,yy+hh);gg.addColorStop(0,'rgba(255,220,160,.47)');gg.addColorStop(1,'rgba(174,103,57,.22)');c.fillStyle=gg;c.fillRect(x,yy,ww,hh);}
+      line(c,x+ww*.5,yy,x+ww*.5,yy+hh,'rgba(19,25,25,.85)',Math.max(2,W*.002));
+      line(c,x,yy+hh*.53,x+ww,yy+hh*.53,'rgba(19,25,25,.85)',Math.max(2,H*.003));
+      if(i===1||i===3){line(c,x+ww*.12,yy+hh*.11,x+ww*.86,yy+hh*.11,'rgba(255,221,169,.2)',Math.max(1,H*.002));}
+    });
+    // Shop windows: a little warmth and recognizable interiors behind wet glass.
+    warmWindow(c,W*.035,H*.445,W*.19,H*.205,{bright:true,panes:3});
+    warmWindow(c,W*.265,H*.466,W*.145,H*.177,{bright:true,panes:2});
+    warmWindow(c,W*.442,H*.478,W*.093,H*.135,{bright:false,panes:2});
+    // A striped canvas awning over the cafe, seen at an angle.
+    const ax=W*.022, ay=H*.425, aw=W*.205, ah=H*.038;
+    poly(c,[[ax,ay],[ax+aw,ay+H*.008],[ax+aw-W*.004,ay+ah],[ax-W*.012,ay+ah*.88]],'#6d3a32','#292326',Math.max(1,H*.002));
+    for(let i=0;i<10;i++){
+      const xx=ax+aw*i/10;
+      if(i%2===0) poly(c,[[xx,ay],[xx+aw/10,ay+H*.0008],[xx+aw/10-W*.001,ay+ah],[xx-W*.001,ay+ah*.86]],'rgba(226,193,153,.38)');
+    }
+    // A restrained, hand-painted fascia sign.
+    c.save();
+    poly(c,[[W*.018,H*.388],[W*.236,H*.402],[W*.236,H*.425],[W*.018,H*.415]],'#263034','#171c1d',Math.max(1,H*.003));
+    c.fillStyle='#e0c79e';c.font=`600 ${Math.max(9,W*.014)}px Georgia`;c.textAlign='center';c.textBaseline='middle';c.fillText('HARPER HOUSE  ·  COFFEE',W*.126,H*.407);
+    c.restore();
+    // Small OPEN neon tucked beside the bookshop, with a gentle bloom.
+    const nx=W*.352, ny=H*.454;
+    glow(c,nx,ny,W*.095,'rgba(230,82,112,ALPHA)',.9);
+    c.save();c.font=`700 ${Math.max(10,W*.014)}px system-ui`;c.textAlign='center';c.textBaseline='middle';
+    c.shadowColor='#ff637e';c.shadowBlur=Math.max(5,W*.018);c.fillStyle='#ff8b91';c.fillText('OPEN',nx,ny);
+    c.shadowBlur=0;c.lineWidth=1;c.strokeStyle='rgba(255,210,190,.8)';c.strokeText('OPEN',nx,ny);c.restore();
+    // A little wall lamp and a blade sign farther down the block.
+    glow(c,W*.47,H*.45,W*.055,'rgba(255,184,104,ALPHA)',.8);
+    c.fillStyle='#d5a66c';c.beginPath();c.arc(W*.47,H*.45,Math.max(2,W*.0035),0,TAU);c.fill();
+    c.fillStyle='#20282a';c.fillRect(W*.49,H*.43,W*.035,H*.055);
+    c.strokeStyle='rgba(178,145,108,.7)';c.lineWidth=Math.max(1,W*.0015);c.strokeRect(W*.49,H*.43,W*.035,H*.055);
+    c.save();c.translate(W*.507,H*.456);c.rotate(-.08);c.fillStyle='#cdb390';c.font=`${Math.max(6,W*.007)}px Georgia`;c.textAlign='center';c.fillText('BOOKS',0,0);c.restore();
+  }
+  function drawGround(c,W,H) {
+    const horizonX=W*.55, horizonY=H*.49;
+    // Blacktop, feathered with rain sheen.
+    const road=c.createLinearGradient(0,H*.47,0,H);
+    road.addColorStop(0,'#252f35');road.addColorStop(.28,'#1d282f');road.addColorStop(.70,'#151e26');road.addColorStop(1,'#111922');
+    poly(c,[[horizonX,H*.472],[W*1.18,H*.49],[W*1.22,H*1.04],[W*.12,H*1.04]],road);
+    // Soft bands of reflected shop light lie across the asphalt.
+    for(let i=0;i<14;i++){
+      const t=i/14, y=H*(.54+t*.40), x=W*(.54+t*.055), spread=W*(.022+t*.12);
+      const col=i%3===0?'rgba(244,179,111,.105)':i%3===1?'rgba(177,116,134,.055)':'rgba(137,168,174,.05)';
+      const g=c.createLinearGradient(x-spread,y,x+spread,y+H*.04);
+      g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.45,col);g.addColorStop(1,'rgba(0,0,0,0)');
+      c.fillStyle=g;c.beginPath();c.ellipse(x,y,spread,H*(.007+t*.019),-.025,0,TAU);c.fill();
+    }
+    // Fine broken reflections beneath the windows, lengthening toward the viewer.
+    const rr=seeded(76);
+    for(let i=0;i<70;i++){
+      const t=rr(), y=H*(.53+t*.43), x=W*(.46+rr()*.41), len=W*(.004+rr()*.06), hh=H*(.001+rr()*.003);
+      c.fillStyle=rr()>.48?'rgba(246,184,119,.14)':'rgba(171,139,149,.08)';
+      c.beginPath();c.ellipse(x,y,len,hh,(rr()-.5)*.04,0,TAU);c.fill();
+    }
+    // Receding lane marks: barely there through the water.
+    for(let i=0;i<4;i++){
+      const yy=H*(.53+i*i*.023), xx=horizonX+(W*.42)*(yy/H-.49), len=W*(.004+i*.012);
+      line(c,xx,yy,xx+len,yy+H*(.003+i*.003),'rgba(202,198,174,.18)',Math.max(1,W*.0012));
+    }
+    // Raised curb separates the near sidewalk from the traffic lane.
+    const curb=[[W*.565,H*.49],[W*.205,H],[W*.163,H],[W*.52,H*.492]];
+    poly(c,curb,'#7d7970');
+    line(c,W*.565,H*.493,W*.205,H,'rgba(220,207,177,.62)',Math.max(2,H*.004));
+    line(c,W*.52,H*.50,W*.164,H,'rgba(26,32,34,.7)',Math.max(3,H*.008));
+    // Near sidewalk: dark concrete slabs with rain pooling along the joints.
+    const walk=c.createLinearGradient(0,H*.62,0,H);
+    walk.addColorStop(0,'#343b3c');walk.addColorStop(.34,'#2a3235');walk.addColorStop(1,'#1e282e');
+    poly(c,[[-W*.13,H*.64],[W*.52,H*.50],[W*.205,H],[-W*.13,H*1.04]],walk);
+    for(let i=1;i<=5;i++){
+      const t=i/6, x=W*(.10+t*.30), y=H*(.77+t*.13);
+      line(c,0,y,x,y-H*.05,'rgba(10,18,22,.4)',Math.max(1,H*.002));
+    }
+    line(c,W*.095,H,W*.51,H*.505,'rgba(10,18,21,.34)',Math.max(1,W*.001));
+    // Sidewalk puddles catch the lamp and shopfront.
+    [[.12,.86,.10,.024],[.31,.77,.092,.018],[.43,.68,.071,.014],[.72,.81,.10,.02],[.90,.66,.05,.012]].forEach((p,i)=>{
+      const x=W*p[0],y=H*p[1],rx=W*p[2],ry=H*p[3];
+      const gg=c.createRadialGradient(x-rx*.2,y-ry*.35,1,x,y,rx);
+      gg.addColorStop(0,'rgba(142,159,164,.20)');gg.addColorStop(.55,'rgba(44,60,68,.5)');gg.addColorStop(1,'rgba(12,21,28,.04)');
+      c.fillStyle=gg;c.beginPath();c.ellipse(x,y,rx,ry,-.05,0,TAU);c.fill();
+      line(c,x-rx*.52,y-ry*.17,x+rx*.34,y-ry*.26,'rgba(242,190,128,.16)',Math.max(1,H*.0015));
+    });
+    // A manhole cover and a tiny storm-drain grate ground the foreground.
+    c.save();c.strokeStyle='rgba(101,119,124,.28)';c.lineWidth=Math.max(1,H*.002);
+    c.beginPath();c.ellipse(W*.76,H*.92,W*.064,H*.021,-.08,0,TAU);c.stroke();
+    for(let i=-3;i<=3;i++)line(c,W*(.76+i*.012),H*.91,W*(.76+i*.012),H*.93,'rgba(101,119,124,.2)',Math.max(1,W*.001));
+    c.restore();
+    c.fillStyle='#182127';c.fillRect(W*.04,H*.685,W*.055,H*.025);
+    for(let i=0;i<6;i++)line(c,W*(.045+i*.008),H*.688,W*(.045+i*.008),H*.708,'rgba(138,153,154,.35)',1);
+  }
+  function drawLamp(c,W,H) {
+    const x=W*.285, footY=H*.685, topY=H*.205;
+    glow(c,x,topY+H*.025,W*.22,'rgba(255,189,112,ALPHA)',1.12);
+    // Light spilling across the mist and road.
+    const cone=c.createRadialGradient(x,topY+H*.025,0,x,topY+H*.025,W*.42);
+    cone.addColorStop(0,'rgba(255,205,142,.12)');cone.addColorStop(.34,'rgba(241,186,129,.055)');cone.addColorStop(1,'rgba(240,182,120,0)');
+    c.fillStyle=cone;c.fillRect(0,topY-H*.08,W,H*.63);
+    c.strokeStyle='#182126';c.lineWidth=Math.max(4,W*.006);c.lineCap='round';
+    c.beginPath();c.moveTo(x,footY);c.lineTo(x,topY+H*.055);c.quadraticCurveTo(x,topY-H*.035,x+W*.024,topY-H*.036);c.lineTo(x+W*.045,topY-H*.036);c.stroke();
+    c.fillStyle='#252a2a';c.fillRect(x-W*.009,topY-H*.054,W*.058,H*.025);
+    c.fillStyle='#d9bc8c';c.fillRect(x+W*.014,topY-H*.049,W*.017,H*.012);
+    c.strokeStyle='rgba(213,181,132,.5)';c.lineWidth=Math.max(1,W*.0014);c.strokeRect(x-W*.009,topY-H*.054,W*.058,H*.025);
+    c.fillStyle='#171e21';c.fillRect(x-W*.013,footY-H*.04,W*.026,H*.042);
+    // Warm oval reflected on the wet sidewalk.
+    const refl=c.createRadialGradient(x,H*.72,1,x,H*.72,W*.13);
+    refl.addColorStop(0,'rgba(255,198,120,.19)');refl.addColorStop(1,'rgba(255,198,120,0)');
+    c.fillStyle=refl;c.beginPath();c.ellipse(x,H*.72,W*.13,H*.12,0,0,TAU);c.fill();
+    for(let i=0;i<6;i++){
+      const yy=H*(.69+i*.023), ww=W*(.026-i*.003);
+      line(c,x-ww,yy,x+ww,yy+H*.001,'rgba(255,190,119,.20)',Math.max(1,H*.002));
+    }
+  }
+  function drawPlanters(c,W,H) {
+    // Deep terracotta planter tucked below the bookshop window.
+    const x=W*.43,y=H*.645,s=W*.044;
+    poly(c,[[x-s*.45,y],[x+s*.45,y],[x+s*.35,y+H*.047],[x-s*.35,y+H*.047]],'#302a28','#151b1d',Math.max(1,W*.0015));
+    c.fillStyle='#111b19';c.beginPath();c.ellipse(x,y,s*.46,H*.008,0,0,TAU);c.fill();
+    const r=seeded(42);
+    for(let i=0;i<13;i++){
+      const bx=x+(r()-.5)*s*.72, by=y-H*(.018+r()*.035);
+      c.strokeStyle=i%2?'#344c3d':'#415344';c.lineWidth=Math.max(1,W*.002);
+      c.beginPath();c.moveTo(x,y-H*.006);c.quadraticCurveTo(bx,by+H*.026,bx,by);c.stroke();
+      c.fillStyle=i%3?'#425747':'#5a6950';c.beginPath();c.ellipse(bx,by,s*.10,H*.009,r()*Math.PI,0,TAU);c.fill();
+    }
+  }
+  function buildStatic() {
+    pad=Math.ceil(w*.075);
+    sceneCanvas=document.createElement('canvas');
+    sceneCanvas.width=Math.ceil((w+pad*2)*dpr);sceneCanvas.height=Math.ceil(h*dpr);
+    sceneCtx=sceneCanvas.getContext('2d'); sceneCtx.setTransform(dpr,0,0,dpr,0,0);
+    sceneCtx.save();sceneCtx.translate(pad,0);
+    drawSky(sceneCtx,w,h,pad);
+    drawFarBuildings(sceneCtx,w,h);
+    drawOppositeBlock(sceneCtx,w,h);
+    drawMainBlock(sceneCtx,w,h);
+    drawGround(sceneCtx,w,h);
+    drawLamp(sceneCtx,w,h);
+    drawPlanters(sceneCtx,w,h);
+    // Atmospheric veil and edge falloff keep the scene cinematic without crushing detail.
+    const veil=sceneCtx.createLinearGradient(0,0,0,h);
+    veil.addColorStop(0,'rgba(6,12,18,.10)');veil.addColorStop(.48,'rgba(10,17,21,0)');veil.addColorStop(1,'rgba(5,12,19,.21)');
+    sceneCtx.fillStyle=veil;sceneCtx.fillRect(-w*.1,0,w*1.2,h);
+    const vign=sceneCtx.createRadialGradient(w*.50,h*.43,Math.min(w,h)*.16,w*.50,h*.48,Math.max(w,h)*.77);
+    vign.addColorStop(.55,'rgba(3,8,13,0)');vign.addColorStop(1,'rgba(3,8,13,.47)');
+    sceneCtx.fillStyle=vign;sceneCtx.fillRect(-w*.1,0,w*1.2,h);
+    sceneCtx.restore();
+  }
+  function resize() {
+    w=Math.max(1,innerWidth);h=Math.max(1,innerHeight);dpr=Math.min(devicePixelRatio||1,1.5);
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+    buildStatic();
+    const count=Math.min(230,Math.max(105,Math.round(w*h/4400)));
+    const r=seeded(811);
+    rain=Array.from({length:count},()=>({x:r()*w,y:r()*h,len:5+r()*18,speed:290+r()*430,alpha:.12+r()*.28,wide:.45+r()*.8}));
+    rings=[];
+  }
+  function addRing() {
+    const road=Math.random()>.37;
+    rings.push({x:road?w*(.26+Math.random()*.68):w*(.02+Math.random()*.47),y:road?h*(.58+Math.random()*.38):h*(.69+Math.random()*.27),r:1,life:0,max:.65+Math.random()*.7});
+    if(rings.length>36) rings.shift();
+  }
+  function drawRain(dt) {
+    ctx.save();ctx.lineCap='round';
+    for(const d of rain){
+      d.x-=dt*(46+d.speed*.055);d.y+=d.speed*dt;
+      if(d.y>h+24||d.x<-30){d.x=Math.random()*(w+45);d.y=-Math.random()*h*.25;}
+      const z=clamp(d.y/h,0,1), len=d.len*(.48+z*.82);
+      ctx.strokeStyle=`rgba(186,203,211,${d.alpha*(.48+z*.62)})`;ctx.lineWidth=d.wide*(.5+z*.7);
+      ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-len*.16,d.y+len);ctx.stroke();
+    }
+    // Raindrops keep stippling a few visible pools; rings fade as they widen.
+    dropsClock+=dt;
+    while(dropsClock>.085){dropsClock-=.085;if(Math.random()<.73)addRing();}
+    for(let i=rings.length-1;i>=0;i--){
+      const q=rings[i];q.life+=dt;q.r+=dt*(8+q.r*2.1);const a=Math.max(0,1-q.life/q.max);
+      ctx.strokeStyle=`rgba(208,215,209,${a*.20})`;ctx.lineWidth=.7+q.r*.018;
+      ctx.beginPath();ctx.ellipse(q.x,q.y,q.r,q.r*.28,0,0,TAU);ctx.stroke();
+      if(q.life>q.max)rings.splice(i,1);
+    }
+    // A handful of pinprick splash glints in the near puddles.
+    if(Math.random()<.22){
+      const x=w*(.04+Math.random()*.46),y=h*(.72+Math.random()*.24);
+      ctx.fillStyle='rgba(229,230,216,.38)';ctx.fillRect(x,y,1.3,1.3);
+    }
+    ctx.restore();
+  }
+  function drawPassingCar() {
+    // A slow approach and pass through the bend; body stays dark, lamps and water do the work.
+    const p=((elapsed/33)+.39)%1;
+    const x=w*(.64+p*.48), y=h*(.565+p*.17), s=.42+p*.83;
+    const bw=w*.11*s,bh=h*.038*s;
+    const hx=x-bw*.33, hy=y;
+    ctx.save();
+    const beam=ctx.createLinearGradient(hx,hy,hx-w*.28*s,hy+h*.14*s);
+    beam.addColorStop(0,'rgba(255,226,177,.16)');beam.addColorStop(1,'rgba(255,226,177,0)');
+    poly(ctx,[[hx,hy-bh*.15],[hx-w*.36*s,hy+h*.09*s],[hx-w*.36*s,hy+h*.24*s],[hx,hy+bh*.35]],beam);
+    glow(ctx,hx,hy,bw*.75,'rgba(255,210,151,ALPHA)',.75);
+    // Reflected twin streaks shimmer below the oncoming lamps.
+    const rg=ctx.createLinearGradient(x,hy,x-w*.035*s,hy+h*.20*s);
+    rg.addColorStop(0,'rgba(255,221,161,.48)');rg.addColorStop(.18,'rgba(255,201,134,.20)');rg.addColorStop(1,'rgba(255,193,128,0)');
+    ctx.fillStyle=rg;ctx.beginPath();ctx.ellipse(x-w*.03*s,hy+h*.095*s,bw*.65,h*.105*s,.04,0,TAU);ctx.fill();
+    // Compact sedan silhouette in haze.
+    ctx.fillStyle='rgba(12,19,24,.88)';
+    ctx.beginPath();ctx.moveTo(x-bw*.62,y);ctx.quadraticCurveTo(x-bw*.56,y-bh*.45,x-bw*.23,y-bh*.54);
+    ctx.lineTo(x+bw*.18,y-bh*.47);ctx.quadraticCurveTo(x+bw*.53,y-bh*.30,x+bw*.59,y);
+    ctx.lineTo(x+bw*.50,y+bh*.14);ctx.lineTo(x-bw*.53,y+bh*.14);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(78,91,94,.48)';ctx.beginPath();ctx.moveTo(x-bw*.20,y-bh*.45);ctx.lineTo(x+bw*.13,y-bh*.40);ctx.lineTo(x+bw*.34,y-bh*.13);ctx.lineTo(x-bw*.31,y-bh*.13);ctx.closePath();ctx.fill();
+    for(const side of [-1,1]){
+      glow(ctx,x+side*bw*.43,y+bh*.01,bw*.14,'rgba(255,229,183,ALPHA)',1.3);
+      ctx.fillStyle='#fff1cf';ctx.beginPath();ctx.ellipse(x+side*bw*.43,y+bh*.01,bw*.043,bh*.105,0,0,TAU);ctx.fill();
+    }
+    ctx.fillStyle='rgba(10,14,17,.9)';
+    ctx.beginPath();ctx.ellipse(x-bw*.34,y+bh*.12,bw*.12,bh*.16,0,0,TAU);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x+bw*.34,y+bh*.12,bw*.12,bh*.16,0,0,TAU);ctx.fill();
+    ctx.restore();
+  }
+  function render(now) {
+    const dt=Math.min(.035,(now-last)/1000||.016);last=now;elapsed+=dt;
+    panX+=(targetX-panX)*Math.min(1,dt*6);panY+=(targetY-panY)*Math.min(1,dt*6);
+    ctx.clearRect(0,0,w,h);
+    ctx.save();ctx.translate(panX,panY);
+    ctx.drawImage(sceneCanvas,-pad,0,(w+pad*2),h);
+    drawPassingCar();
+    drawRain(dt);
+    // Thin veil of road sheen, changing slowly so water never looks like a still mirror.
+    const shimmer=.5+.5*Math.sin(elapsed*1.25);
+    ctx.fillStyle=`rgba(163,185,188,${.012+shimmer*.012})`;ctx.fillRect(w*.23,h*.59,w*.69,h*.37);
+    ctx.restore();
+    requestAnimationFrame(render);
+  }
+  canvas.addEventListener('pointerdown',e=>{pointer={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
+  canvas.addEventListener('pointermove',e=>{
+    if(!pointer||pointer.id!==e.pointerId)return;
+    const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
+    targetX=clamp(targetX+dx,-w*.075,w*.075);targetY=clamp(targetY+dy,-h*.026,h*.026);
+    pointer.x=e.clientX;pointer.y=e.clientY;
+  });
+  const stop=()=>{pointer=null;};
+  canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);canvas.addEventListener('lostpointercapture',stop);
+  window.addEventListener('resize',resize,{passive:true});
+  resize(); requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1119">
+<title>After the rain · Main Street</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1018; }
+  body { font-family: Georgia, serif; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  .caption { position: fixed; left: clamp(20px, 4vw, 54px); bottom: clamp(23px, 5vh, 50px); color: rgba(244,233,214,.83); pointer-events: none; text-shadow: 0 2px 12px #080c12; transition: opacity 1.4s; }
+  .caption .place { font-size: clamp(12px, 1.25vw, 16px); letter-spacing: .24em; text-transform: uppercase; }
+  .caption .hint { margin-top: 9px; color: rgba(228,228,217,.57); font: 11px/1.4 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+  .caption.fade { opacity: 0; }
+  @media (max-width: 600px) { .caption { bottom: 28px; } }
+  @media (prefers-reduced-motion: reduce) { .caption { transition: none; } }
+</style>
+</head>
+<body>
+<canvas id="scene" aria-label="A rainy night on a small-town main street. Drag to look around." role="img"></canvas>
+<div class="caption" id="caption"><div class="place">Main Street, after dark</div><div class="hint">Drag to look around</div></div>
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('scene'), ctx = canvas.getContext('2d', {alpha:false});
+const W=3200, H=1100, streetY=648;
+const art=document.createElement('canvas'); art.width=W; art.height=H;
+const c=art.getContext('2d');
+let seed=49321;
+const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+const pick=a=>a[Math.floor(rand()*a.length)];
+const rect=(x,y,w,h,color)=>{c.fillStyle=color;c.fillRect(x,y,w,h)};
+const line=(x1,y1,x2,y2,color,width=1)=>{c.strokeStyle=color;c.lineWidth=width;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()};
+function glow(x,y,r,color){const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2)}
+function poly(points,color){c.fillStyle=color;c.beginPath();c.moveTo(...points[0]);points.slice(1).forEach(p=>c.lineTo(...p));c.closePath();c.fill()}
+// A low, overcast sky, with the warm haze of a town below it.
+let sky=c.createLinearGradient(0,0,0,650);sky.addColorStop(0,'#111823');sky.addColorStop(.56,'#202a34');sky.addColorStop(1,'#514b43');rect(0,0,W,650,sky);
+for(let i=0;i<130;i++){let x=rand()*W,y=rand()*390;glow(x,y,90+rand()*180,`rgba(${55+rand()*20|0},${68+rand()*20|0},${78+rand()*20|0},${.008+rand()*.012})`)}
+// Rooftops behind the main block.
+rect(0,365,W,283,'#25272b');
+for(let x=0;x<W;){let w=80+rand()*160,h=40+rand()*100;rect(x,365-h,w,h,'#25282b');rect(x+18,365-h-9,14,9,'#292b2d');x+=w+8}
+const blocks=[
+{x:0,w:430,top:242,brick:'#473b39',name:'HARDWARE',sub:'TOOLS  •  HOME  •  GARDEN',window:'#c09158'},
+{x:430,w:430,top:199,brick:'#62453e',name:'THE  MERCER',sub:'BOOKS  &  COFFEE',window:'#e0a657'},
+{x:860,w:420,top:166,brick:'#503a38',name:'MAIN STREET',sub:'BAKERY  &  CAFE',window:'#e4a75c'},
+{x:1280,w:430,top:224,brick:'#54453e',name:'MILLER’S',sub:'FAMILY  PHARMACY',window:'#ddb67b'},
+{x:1710,w:430,top:185,brick:'#5d403a',name:'THE  LANTERN',sub:'DINER  •  EST. 1948',window:'#e0a36a'},
+{x:2140,w:410,top:212,brick:'#59453f',name:'WILLOW & PINE',sub:'FLOWERS  •  GIFTS',window:'#d6a776'},
+{x:2550,w:390,top:242,brick:'#4d403d',name:'MAIN STREET',sub:'BARBER SHOP',window:'#c99566'},
+{x:2940,w:260,top:265,brick:'#463a38',name:'',sub:'',window:'#ac8054'}];
+function bricks(x,y,w,h,base){
+ rect(x,y,w,h,base); c.save();c.beginPath();c.rect(x,y,w,h);c.clip();
+ for(let row=0;row<h/15+1;row++){let yy=y+row*15; line(x,yy,x+w,yy,'rgba(22,20,19,.27)',1);for(let xx=x-(row%2)*23;xx<x+w;xx+=46){line(xx,yy,xx,yy+15,'rgba(24,20,19,.22)',1);if(rand()>.48)rect(xx+2,yy+2,42,11,`rgba(${rand()>.5?'170,130,103':'16,14,15'},${.015+rand()*.065})`)}}
+ for(let i=0;i<w*h/600;i++){let xx=x+rand()*w,yy=y+rand()*h;rect(xx,yy,1+rand()*7,1,`rgba(228,198,160,${rand()*.08})`)}c.restore();
+}
+function upperWindow(x,y,w,h,lit){
+ rect(x-6,y-5,w+12,h+12,'#302b29');rect(x-3,y-3,w+6,h+5,'#938474');rect(x,y,w,h,lit?'#ac8152':'#202b30');
+ if(lit){let g=c.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,'#b48e5d');g.addColorStop(.5,'#6e5846');g.addColorStop(1,'#382f2d');rect(x,y,w,h,g);rect(x+4,y+6,w*.35,h-13,'rgba(255,218,158,.12)')}
+ else {rect(x+3,y+5,w-6,h-10,'#26343a');line(x+3,y+h*.38,x+w-3,y+h*.3,'rgba(110,136,143,.15)',3)}
+ rect(x+w/2-2,y,4,h,'#433b35');rect(x,y+h*.5,w,3,'#433b35');rect(x-7,y+h+4,w+14,6,'#aa9a88');
+}
+function shopWindow(x,y,w,h,colour,kind){
+ rect(x-7,y-7,w+14,h+14,'#211d1b');rect(x-3,y-3,w+6,h+6,'#ae9271');
+ let g=c.createLinearGradient(x,y,x,y+h);g.addColorStop(0,'#5c4a39');g.addColorStop(.25,colour);g.addColorStop(1,'#3c302a');rect(x,y,w,h,g);
+ c.save();c.beginPath();c.rect(x,y,w,h);c.clip();
+ // A room behind the glass: shelves, lamps and silhouettes.
+ rect(x+3,y+3,w-6,17,'rgba(51,38,30,.55)');
+ for(let a=0;a<3;a++){let lx=x+22+a*(w-44)/2;line(lx,y,lx,y+24,'#43352b',2);glow(lx,y+27,35,'rgba(255,215,145,.22)');poly([[lx-9,y+27],[lx+9,y+27],[lx+5,y+20],[lx-5,y+20]],'#ead1a1')}
+ if(kind%3===0){for(let k=0;k<3;k++){let yy=y+58+k*39;rect(x+12,yy,w-24,4,'#674832');for(let j=0;j<9;j++){let xx=x+15+j*(w-30)/9;rect(xx,yy-18-rand()*9,5+rand()*7,18+rand()*8,pick(['#77533d','#c19866','#574b3e','#b17954']))}}}
+ else if(kind%3===1){rect(x+16,y+h-58,w-32,12,'#6f4a32');rect(x+25,y+h-46,8,40,'#443229');rect(x+w-32,y+h-46,8,40,'#443229');for(let j=0;j<3;j++){let xx=x+24+j*(w-48)/3;rect(xx,y+h-72,15,14,'#b99569');rect(xx+3,y+h-82,9,9,'#817451')}}
+ else {for(let k=0;k<3;k++){let xx=x+22+k*(w-44)/3;rect(xx,y+65,27,h-83,'rgba(68,49,37,.5)');rect(xx+2,y+69,23,4,'rgba(229,198,142,.35)')}}
+ // Reflections in the glass.
+ poly([[x+w*.08,y],[x+w*.22,y],[x+w*.02,y+h],[x,y+h]],'rgba(194,219,219,.075)');poly([[x+w*.7,y],[x+w*.77,y],[x+w*.53,y+h],[x+w*.46,y+h]],'rgba(199,218,211,.045)');
+ c.restore();rect(x+w/2-3,y,6,h,'#554534');rect(x,y+h-8,w,8,'#4b382c');
+}
+blocks.forEach((b,i)=>{
+ const {x,w,top}=b; bricks(x,top,w,streetY-top,b.brick);
+ rect(x-3,top-9,w+6,12,'#82766a');rect(x-3,top+5,w+6,5,'#342d2b');
+ // Upper floor facade and repeated sash windows.
+ let n=Math.max(2,Math.floor(w/95));let gap=w/(n+1);
+ for(let j=1;j<=n;j++)upperWindow(x+j*gap-25,top+50,50,100,rand()>.57);
+ rect(x,top+177,w,8,'#3c3330');rect(x,top+184,w,4,'#a18c76');
+ rect(x+7,425,w-14,60,'#282726');rect(x+10,428,w-20,53,i%2?'#38332f':'#403b35');
+ c.save();c.textAlign='center';c.fillStyle='#dfc8a1';c.font=`${w<300?18:23}px Georgia`;c.letterSpacing='3px';c.fillText(b.name,x+w/2,452);c.font='10px Arial';c.fillStyle='#bcac93';c.fillText(b.sub,x+w/2,472);c.restore();
+ rect(x,488,w,9,'#b29b7e');rect(x,497,w,151,'#36312c');
+ let doorW=50, margin=14, space=w-doorW-margin*3, ww=space/2;
+ shopWindow(x+margin,508,ww,127,b.window,i);
+ let dx=x+margin*2+ww;rect(dx,505,doorW,143,'#262522');rect(dx+5,510,doorW-10,108,'#886f54');rect(dx+9,514,doorW-18,98,'#463d32');rect(dx+11,516,doorW-22,81,'#b48c5b');rect(dx+doorW-13,570,3,5,'#dfcb9f');
+ shopWindow(dx+doorW+margin,508,ww,127,b.window,i+1);
+ rect(x+3,640,w-6,8,'#94816b');rect(x+w-5,top,7,streetY-top,'#2b2927');
+});
+// Awnings and neon add individual life to the block.
+function awning(x,y,w,base){poly([[x,y],[x+w,y],[x+w+9,y+24],[x-9,y+24]],base);for(let i=0;i<w;i+=42)poly([[x+i,y],[x+i+19,y],[x+i+22,y+24],[x+i-3,y+24]],'rgba(229,211,177,.22)');rect(x-9,y+24,w+18,7,'#4c3932')}
+awning(876,487,390,'#6f3f38');awning(2155,487,380,'#405850');
+function neon(x,y,text,color,blur=12,size=27){c.save();c.textAlign='center';c.font=`italic ${size}px Georgia`;c.shadowColor=color;c.shadowBlur=blur;c.fillStyle=color;c.fillText(text,x,y);c.fillText(text,x,y);c.shadowBlur=0;c.fillStyle='#fff3df';c.globalAlpha=.65;c.fillText(text,x,y);c.restore()}
+neon(1927,552,'OPEN','#f57c6e',13,25);neon(1067,549,'coffee','#e6bd7e',12,23);neon(2719,551,'OPEN','#80c9ce',12,22);
+// Pavement, curb and asphalt.
+let road=c.createLinearGradient(0,streetY,0,H);road.addColorStop(0,'#222a2c');road.addColorStop(.35,'#20292e');road.addColorStop(1,'#182126');rect(0,streetY,W,H-streetY,road);
+// Reflected storefronts, broken up by the surface of the water.
+c.save();c.beginPath();c.rect(0,streetY,W,330);c.clip();c.globalAlpha=.46;c.filter="blur(3px)";c.translate(0,streetY*1.64);c.scale(1,-.64);c.drawImage(art,0,0,W,streetY,0,0,W,streetY);c.restore();
+let veil=c.createLinearGradient(0,648,0,1010);veil.addColorStop(0,'rgba(17,25,27,.15)');veil.addColorStop(1,'rgba(19,27,31,.77)');rect(0,648,W,363,veil);
+for(let i=0;i<1800;i++){let x=rand()*W,y=654+rand()*330,l=2+rand()*45;line(x,y,x+l,y,pick(['rgba(228,177,112,.10)','rgba(180,192,178,.08)','rgba(255,204,146,.10)','rgba(8,16,21,.26)']),.5+rand()*1.3)}
+// Broken center line and near curb, viewed from the opposite sidewalk.
+for(let x=-100;x<W;x+=390)poly([[x,855],[x+115,855],[x+132,859],[x+5,859]],'rgba(210,194,150,.16)');
+rect(0,994,W,8,'#a49a84');rect(0,1002,W,9,'#353b3a');
+let walk=c.createLinearGradient(0,1011,0,1100);walk.addColorStop(0,'#454947');walk.addColorStop(1,'#272f31');rect(0,1011,W,89,walk);
+for(let x=0;x<W;x+=220)line(x,1012,x-45,1100,'rgba(10,17,19,.55)',2);
+for(let i=0;i<500;i++){let x=rand()*W,y=1012+rand()*88;line(x,y,x+rand()*20,y,'rgba(202,203,179,.09)',1)}
+// Sidewalk details and a familiar old streetlight.
+function lamp(x){
+ glow(x,387,180,'rgba(255,197,113,.13)');glow(x,390,75,'rgba(255,218,153,.24)');
+ rect(x-5,408,10,240,'#242b2a');rect(x-10,630,20,18,'#272b29');rect(x-13,644,26,7,'#2f302b');
+ rect(x-4,370,8,38,'#34332d');poly([[x-19,371],[x+19,371],[x+13,382],[x-13,382]],'#282c29');
+ poly([[x-12,381],[x+12,381],[x+8,405],[x-8,405]],'#ffe1a2');glow(x,393,50,'rgba(255,215,146,.32)');rect(x-16,405,32,5,'#3c352d');
+}
+lamp(778);lamp(2395);
+// Planters and a street sign break up the straight lines.
+function planter(x){rect(x,620,45,26,'#333831');rect(x+4,617,37,4,'#777365');for(let i=0;i<23;i++){let px=x+5+rand()*35,py=615-rand()*30;line(x+22,619,px,py,'#485544',1);glow(px,py,4,'rgba(92,112,79,.24)')}}
+planter(1660);planter(2160);
+rect(2860,509,4,139,'#40403b');rect(2836,505,51,20,'#354e4b');c.fillStyle='#d4d3be';c.font='9px Arial';c.textAlign='center';c.fillText('MAIN ST',2861,519);
+// Fine atmospheric grain is baked once, not generated every frame.
+for(let i=0;i<42000;i++){let x=rand()*W,y=rand()*H;rect(x,y,1,1,rand()>.5?'rgba(255,247,222,.035)':'rgba(0,0,0,.05)')}
+
+let width=0,height=0,dpr=1,viewX=1180,viewY=0,targetX=viewX,targetY=0,drag=null,last=0;
+let rain=Array.from({length:180},()=>({x:Math.random(),y:Math.random(),z:.25+Math.random()*.75,len:8+Math.random()*22}));
+let ripples=Array.from({length:22},()=>({x:Math.random(),y:.65+Math.random()*.26,phase:Math.random()}));
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function resize(){width=window.innerWidth;height=window.innerHeight;dpr=Math.min(window.devicePixelRatio||1,1.5);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+window.addEventListener('resize',resize);resize();
+function frame(t){
+ const dt=Math.min((t-last)/1000||.016,.05);last=t;viewX+=(targetX-viewX)*.13;viewY+=(targetY-viewY)*.13;
+ // A wide but natural view; on a phone the narrower frame invites a look around.
+ const scale=Math.max(height/900,width/1900), sourceW=width/scale, sourceH=height/scale;
+ let sx=Math.max(0,Math.min(W-sourceW,viewX-sourceW/2));let sy=Math.max(0,Math.min(H-sourceH,100+viewY));
+ ctx.drawImage(art,sx,sy,sourceW,sourceH,0,0,width,height);
+ // A distant pair of passing headlights moves slowly along the far curb.
+ let carX=((t*.028)%(W+600))-300;let carY=662;
+ if(carX>sx-100&&carX<sx+sourceW+100){let x=(carX-sx)*scale,y=(carY-sy)*scale;ctx.save();ctx.globalCompositeOperation='screen';let g=ctx.createRadialGradient(x,y,1,x,y,55*scale);g.addColorStop(0,'rgba(255,232,182,.38)');g.addColorStop(1,'rgba(255,213,154,0)');ctx.fillStyle=g;ctx.fillRect(x-60*scale,y-60*scale,120*scale,120*scale);ctx.fillStyle='rgba(255,239,206,.85)';ctx.fillRect(x-10*scale,y,3*scale,2*scale);ctx.fillRect(x+10*scale,y,3*scale,2*scale);ctx.restore()}
+ // Small rings sit on the road in scene coordinates.
+ ctx.save();ctx.lineWidth=.7;for(let p of ripples){let px=(p.x*W-sx)*scale,py=(p.y*H-sy)*scale;if(px<0||px>width||py<0||py>height)continue;let phase=reduce?p.phase:(p.phase+t*.00027)%1;ctx.strokeStyle=`rgba(207,221,211,${(1-phase)*.20})`;ctx.beginPath();ctx.ellipse(px,py,(2+phase*14)*scale,(.6+phase*3)*scale,0,0,Math.PI*2);ctx.stroke()}ctx.restore();
+ if(!reduce){ctx.save();for(let p of rain){p.y+=dt*(.26+p.z*.55);p.x-=dt*.018*p.z;if(p.y>1.05){p.y=-.04;p.x=Math.random()}if(p.x<-.05)p.x=1.05;let x=p.x*width,y=p.y*height;ctx.strokeStyle=`rgba(206,222,225,${.08+p.z*.17})`;ctx.lineWidth=p.z*.8;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-2*p.z,y+p.len*p.z);ctx.stroke()}ctx.restore()}
+ // Subtle lens vignette gives the lit storefronts space to breathe.
+ let vignette=ctx.createRadialGradient(width*.5,height*.43,Math.min(width,height)*.17,width*.5,height*.48,Math.max(width,height)*.74);vignette.addColorStop(0,'rgba(3,9,12,0)');vignette.addColorStop(1,'rgba(3,8,13,.46)');ctx.fillStyle=vignette;ctx.fillRect(0,0,width,height);
+ requestAnimationFrame(frame);
+}
+canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,startX:targetX,startY:targetY};canvas.setPointerCapture(e.pointerId);document.getElementById('caption').classList.add('fade')});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;let scale=Math.max(height/900,width/1900);targetX=Math.max(0,Math.min(W,drag.startX-(e.clientX-drag.x)/scale));targetY=Math.max(-100,Math.min(100,drag.startY-(e.clientY-drag.y)/scale))});
+canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
+
+

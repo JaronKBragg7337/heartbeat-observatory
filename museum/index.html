@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rainy Main Street Face-off</title>
+<style>
+:root {
+  /* Model Museum, Round 1: a dark gallery, one warm accent, one card per model, no ranking. */
+  --bg: #15130f; --card: #211d18; --ink: #efe6d6; --muted: #b3a690; --rule: #3a342b; --accent: #e08a4f;
+  --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--body); }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 20px; }
+header { display: grid; gap: 6px; max-width: 65ch; }
+h1 { font-size: 1.7rem; margin: 0; text-wrap: balance; }
+p { margin: 0; color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+.body { padding: 14px 16px; display: grid; gap: 8px; align-content: start; }
+.tag { color: var(--accent); font-weight: 600; font-size: .9rem; }
+h2 { font-size: 1.08rem; margin: 0; }
+a.open { display: block; text-align: center; background: var(--accent); color: #15130f; font-weight: 700; text-decoration: none; padding: 11px 14px; border-radius: 10px; margin-top: 4px; }
+a.open:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+footer { color: var(--muted); font-size: .88rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Rainy Main Street Face-off</h1>
+    <p>Round 1, November 9, 2026. Ten AI models got the same prompt: a rainy night on a small-town Midwest main street. No winner. Each one is a live 3D scene; tap to step inside and drag to look around.</p>
+  </header>
+  <section class="grid" id="grid"></section>
+  <footer>Snapshot kept as made. Later rounds will run the same prompt on new models. Built by Heartbeat Observatory. <a href="/" style="color:inherit">Back to the site</a></footer>
+</main>
+<script>
+const M = [
+  ["fable52","Fable 5.2","Anthropic, new today, ~40 min","DINER and ROXY neon, string lights, a true mirror street."],
+  ["opus","Opus 5.5","Anthropic, ~11 min","Shop windows with whole rooms inside, the LYRIC theater, rain sounds."],
+  ["sonnet","Sonnet 5.5","Anthropic, ~22 min","Bright glowing sidewalk, a pedestrian with an umbrella, a traffic light."],
+  ["fable","Fable 5.1","Anthropic, ~30 min","The long view down the block, Rosie's Diner, a car that drives through."],
+  ["terra","Codex Terra 6.1","OpenAI","A clean row of storefronts, almost a painting: The Mercer, Miller's, The Lantern."],
+  ["sol","Codex Sol 6.1","OpenAI","Warm diner and bookshop windows, 'After hours' title card."],
+  ["astra","Codex Astra 6","OpenAI","Moody and deep, Miller's and Elm & Ivy, finished without running out."],
+  ["luna","Codex Luna 6","OpenAI","A softer, flatter storybook style: Harper House Coffee."],
+  ["grok","Grok Build","xAI","A close, tall street-level view: DINER neon, lamps, rain on the curb."],
+  ["kimi","Kimi K3.1 Pro","Moonshot AI, ~19 min","Maple Street: Hart & Son, a passing van, rain-warped reflections."]
+];
+document.getElementById("grid").innerHTML = M.map(([f,n,who,what]) => `
+  <article class="card">
+    <img src="round-1/${f}.png" alt="${n}'s rainy Main Street scene" loading="lazy">
+    <div class="body">
+      <span class="tag">${n} · ${who}</span>
+      <p>${what}</p>
+      <a class="open" href="round-1/${f}.html">Step into this street</a>
+    </div>
+  </article>`).join("");
+</script>
+</body>
+</html>
