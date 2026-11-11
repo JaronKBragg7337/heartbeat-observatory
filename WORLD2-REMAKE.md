@@ -6,9 +6,9 @@ WORLD2-PLAN.md (June) still holds the laws this world runs on: multiplayer, clai
 
 ## Where it stands (Phase 1 live 2026-11-05 12:15 AM; Phase 2 live 11:22 AM)
 
-**Not there yet (read first):** shops can't be entered, and **nobody has tested it on a real iPhone**. (Phase 2,
-on branch `cloud/world2-phase2`, adds people, buses, city sound and LOD; see "Phase 2 as built".) Everything below was tested
-in Playwright on the MSI.
+**Not there yet (read first):** **nobody has tested it on a real iPhone**. (Phase 2 added people, buses, city sound
+and LOD; see "Phase 2 as built". Phase 3, on branch `fable52/world2-phase3` and not merged yet, makes every shop enterable
+and adds four jobs and a play-money ledger; see "Phase 3 as built".) Everything below was tested in Playwright on the MSI.
 
 What changed, by the tester's complaints:
 
@@ -39,6 +39,10 @@ three interiors, and the gate-page live preview.
 - `world2/city.js` is new. It holds the layout, the building kit, street furniture, signals, traffic, the river and the animated signs. Its import in main.js carries its own `?v=`, so **bump it together with BUILD and the main.js `?v=`**.
 - `world2/main.js` holds the ground (flat downtown, the river channel, the hills outside), boot with progress, lazy loading, walking (keys + the floating stick), tap-to-use, the map route, night lighting and the `?dev=1` test handle.
 - `world2/index.html` holds the loading screen, map, controls text and the phone HUD.
+- Phase 3 adds `world2/shops.json` (the shop and job table: the one file to edit to add a shop), `world2/shops.js` (the
+  shop-interior kit), `world2/jobs.js` (the jobs, the ledger and their HUD) and `world2/SHOPS.md` (how to add a shop, a kind or a job).
+  **The stamp now lives in seven places, all bumped together:** `BUILD` and the four `?v=` imports in main.js (city, life,
+  shops, jobs), the `city.js?v=` import in life.js, and `main.js?v=` in index.html. `shops.json` is fetched with `?v=BUILD`.
 - `world2/gate/index.html` has only a text change.
 - URLs and links are unchanged: /world2/, /world2/gate/, ?preview=1, and /space/?plot=N&world=world2.
 
@@ -201,6 +205,100 @@ and standing at shop windows, more car models (pickup, van, delivery truck), and
 - **Jobs:** short timed tasks with a visible ledger, e.g. newsstand seller, bike courier between doors, barista at Calhoun Coffee, usher at the Grand Palace.
 - **Policy check (flag):** the business policy says Heartbeat Observatory doesn't sell food, water or land. Any in-world shop that touches real money must respect that. Food shops stay atmosphere or play-money only.
 - Budget: interiors load on entry (one at a time, ≤ 30 calls, ≤ 60k triangles). Test: enter and leave every shop; a job loop completes on the phone.
+
+#### Phase 3 as built (Fable 5.2, 2026-11-11; branch `fable52/world2-phase3`, not merged: check on a phone first)
+Stamp `2026-11-11-phase3`. New files: `world2/shops.json`, `world2/shops.js`, `world2/jobs.js`, `world2/SHOPS.md`.
+
+- **The shop table.** `world2/shops.json` holds 64 shops, 40 kinds and 4 jobs. A new row gets a storefront, a sign and an
+  interior with no code (`world2/SHOPS.md` is the how-to). The city used to pick a sign at random for each building; now
+  every storefront is recorded as it is built and the names are dealt out afterwards: rows that ask for a street first
+  (Calhoun Coffee is on the corner of Calhoun and Berry, Wells St Bikes on Superior by the bridge), then one storefront per
+  row, then second locations as far from the first as the city allows. Result: **114 shops, 5 empty storefronts that read
+  FOR LEASE**, no name more than twice. The building kit's random stream is untouched, so the city looks the same as before.
+- **Doors.** Every shop door has a red OPEN sign and a green strip on the threshold (the same green as the door mats).
+  Both are written into the existing city meshes: 0 extra draw calls. Walk up and the prompt names the shop; tap it, tap
+  the door, or press E. Office lobbies and the towers are still not enterable.
+- **One shared interior kit, dressed from data.** Three layouts (cafe, retail, service), each a shell (floor, two-tone
+  walls, glass front with the door, back partition, back room with stock), a counter with a till and the shopkeeper, a back
+  shelf, lamps, then what the kind asks for: 24 kinds of goods for shelves, and pieces such as an espresso machine, a pastry
+  case, booths, record bins, clothes racks, bikes, flower buckets, barber chairs, washers, a workbench, teller windows and a
+  vault door. The room is as wide as the building (5.6 to 10.5 m) and the door is where it is on the facade.
+  A shop is built when you walk in (the screen dips to black for 0.2 s) and thrown away when you leave: one at a time.
+- **The street through the window is the real street.** In the black moment before you step in, the street is drawn three
+  times (left, ahead, right) into strips of the canvas and copied into one texture; inside, a hollow box the size of the
+  street carries that picture. It uses the shaders the city is already drawn with, so nothing compiles. It is a still
+  picture: day or night as it was when you walked in.
+- **Jobs** (play money only; walk with the stick or keys, tap to use things):
+  - **Barista at Calhoun Coffee** (90 s): customers come to the counter; walk the back bar and use the machines in the
+    order on the ticket (cups, espresso, milk, hot water, chocolate, tea), then hand the cup over at the counter.
+  - **Newsstand seller** (75 s): a green kiosk on the courthouse green facing Berry St. Step in behind the counter, tap the
+    stack each customer asks for (The Observer, Sports, Comics, Puzzles), hand it over. The front of the stand opens /news.
+  - **Bike courier** (3 runs): take the bike outside Wells St Bikes. Ride to a pickup door, then to the drop-off before the
+    clock runs out. The place map shows the way; the bike is the same stick, faster (8.2 m/s, 11.5 at the rim).
+  - **Usher at the Grand Palace** (90 s): guests wait at the doors with a seat on their ticket; walk up, they follow you,
+    walk them to the seat and tap it. Every seat now has a number plate (A1 to D6).
+- **The ledger.** A coin under the map shows your beats; tap it (or L) for the balance, where the work is (with "Show me
+  the way"), and what you earned and spent. Every shop sells one thing at the till for a few beats. The ledger is kept on
+  the device (`localStorage w2-ledger`), not on the account yet.
+- **Policy.** No real money anywhere. Food is "pretend" and priced in beats. The line "Heartbeat Observatory never sells
+  food, water or land, and nothing in World 2 costs real money" is in the ledger, and every shop has a PLAY MONEY ONLY
+  notice by the till. The currency name and the policy line are data in `shops.json`.
+- **Multiplayer.** Every shop interior shares one place in space, so each state message now says which shop you are in and
+  you only see people in the same shop. Checked with two clients on the live channel. Jobs are your own: other players do
+  not see your customers.
+
+Budget (Playwright, MSI, Chromium on the Intel UHD GPU through ANGLE/D3D11; both builds measured in one session):
+
+| | Limit | Before Phase 3 | Phase 3 |
+|---|---|---|---|
+| Inside a shop: draw calls | ≤ 30 | - | **14** in every one of the 114 shops (12 kit meshes, the street, the people) |
+| Inside a shop: triangles | ≤ 60k | - | 9k to 36k (heaviest: yarn, florist, grocer). No shadow pass; the city is not drawn |
+| City, phone, street day / night | ≤ 250 calls, ≤ 400k tris | 114 / 116 calls, 343k | 114 / 116 calls, 343-344k |
+| City, phone, aerial day / night | ≤ 300 calls | 164 / 166 calls, 331k | 164 / 166 calls, 332-333k |
+| City, desktop, street day / night | | 133 / 135 calls, 350-351k | 133 / 135 calls, 351-352k |
+| City, desktop, aerial day / night | | 227 / 229 calls, 357-358k | 227 / 229 calls, 358-359k |
+| City textures | ≤ 40 MB with everything | 18.2 MB | 21.7 MB (the sign sheet grew from 32 to 64 shop names, plus the papers) |
+| Shop kit textures (kept once made) | | - | about 6 MB (floors, wood, goods sheet, the shop's own sign sheet) |
+| Street picture (only while inside) | | - | 3 to 5 MB |
+| Frame time median / p95 | | 16.6 / 18.1 ms | 16.7 / 18.1 ms (vsync-locked; says nothing about a phone) |
+
+- What Phase 3 spent outdoors: 0 to +1 draw calls and about +1k triangles. Indoors it is a fraction of the street.
+- **Texture memory is now the tight one:** about 22 + 4 (ground, foliage) + 6 + 5 = 37 MB of the 40 MB limit while you
+  stand in a shop. More shop names cost about 0.35 MB per four. KTX2 (Phase 6) or a smaller sign cell would buy room.
+- Two fixes to older code that pay for themselves: the Grand Palace's two house lights were lit all the time, so every
+  pixel of the city shaded two extra point lights (now they only burn inside the theater); and inside the three halls
+  the city was still being drawn whenever you faced west (measured: 82-97 calls and 265k triangles; now 6-13 calls and
+  1-2k triangles).
+- You used to walk into the theater, the arcade and the library **facing the exit door**. Fixed.
+
+Checks, all PASS: Chromium at 390x844 (touch) and 1280x800 (mouse and keys), WebKit at 390x844; `test3.cjs`.
+- every one of the 114 shops: the door prompt names it, in, the budget, every station and the back room can be walked to
+  (a flood fill of the floor with your body width), out, back on the sidewalk facing the street;
+- each of the four jobs worked for a whole shift at phone size with real touches: the stick to walk, taps on the machines,
+  stacks and seats or on the prompt; a wrong machine and a wrong seat are refused; the pay lands in the ledger;
+- buy at the till, the ledger card, a poster that opens a page of the site, the map (Calhoun Coffee, Wells St Bikes and
+  the Newsstand are on it; the other shops are not, they would bury the real places);
+- a shop visited 12 times leaves nothing behind (geometries, textures and scene objects unchanged);
+- Phase 2's crowd audit is still clean with the kiosk and the bike on the sidewalk, all Phase 1 doors still prompt, the
+  gate preview still loads, zero console errors by day and by night.
+
+Test handles (`?dev=1`): `W2.city.shops`, `W2.enterShop(id)`, `W2.leaveShop()`, `W2.shops.stats()`, `W2.shopNow`,
+`W2.jobs` (`.start(id)`, `.state`, `.ledger()`), `W2.interiorStations`. Scripts: `AI-Shared/scratch/world2-remake/phase3/scripts/`
+(`serve.cjs`, `test3.cjs`, `gallery.cjs`, `measure3.cjs`, `mp3.cjs`); they serve three.js from a local copy so a CDN
+hiccup cannot stall a run.
+
+Left for later, and things the plan did not see:
+- **Jaron's iPhone check.** Most likely to differ on a real iPhone: the street picture in the window (it copies the
+  canvas into a texture; it works in Chromium and in WebKit on Windows), and how a shift feels with a thumb.
+- **The ledger belongs on the account** (one account across the worlds). That needs a table and a server-side function so
+  beats cannot be forged; left out on purpose, nothing here changes the database.
+- **Shops only face the east-west streets.** The kit never builds on Calhoun, Harrison, Clinton and the other north-south
+  streets (the leftover strip is half a metre too short for a lot), so those streets are side walls. Corner shops could
+  get a second door, or the rows could be made shallower.
+- 50 more rows in the table would give every storefront its own name. Office lobbies and towers need their own kit.
+- The five FOR LEASE storefronts are the natural place for "a building can be claimed as a business" (WORLDS-MODEL).
+- Shopkeepers and customers are the sidewalk figure with a face added; up close they are plain. MetaHumans (Phase 2b).
+- The Grand Palace interior is still the old box room; the usher job will carry over to the real auditorium in Phase 4.
 
 ### Phase 4: the theater and the WHB News studio
 - **Grand Palace:**

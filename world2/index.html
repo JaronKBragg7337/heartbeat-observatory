@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <script src="/hb-device-tier.js"></script>
     <title>Heartbeat Observatory — World 2</title>
-    <meta name="description" content="World 2 of Heartbeat Observatory: a downtown being built in the open. Real streets, storefronts, a river and a bridge; walk into the Grand Palace theater, the Arcade and the Library, and claim an open lot for your project.">
+    <meta name="description" content="World 2 of Heartbeat Observatory: a downtown being built in the open. Real streets, a river and a bridge; walk into the shops, the Grand Palace theater, the Arcade and the Library, take a job for play money, and claim an open lot for your project.">
     <style>
       :root { --text:#e8eef4; --muted:#9fb0bd; --panel-bg:rgba(10,14,18,.88); --panel-border:rgba(120,150,170,.25); }
       * { box-sizing:border-box; }
@@ -43,6 +43,8 @@
 
       #tapHint { position:fixed; left:50%; top:calc(env(safe-area-inset-top) + 60px); transform:translateX(-50%); z-index:33; max-width:calc(100vw - 32px); padding:9px 16px; border-radius:999px; background:rgba(10,16,18,.9); border:1px solid rgba(140,170,190,.4); color:#e8eef4; font:600 13px system-ui,sans-serif; opacity:0; pointer-events:none; transition:opacity .25s; }
       #tapHint.show { opacity:1; }
+      /* phones: a hint sits on the left under the chips, beside the map column, and long ones wrap into a card (Phase 3: shopkeepers talk) */
+      @media (max-width: 520px) { #tapHint { left:10px; transform:none; top:calc(env(safe-area-inset-top) + 50px); max-width:calc(100vw - 152px); border-radius:16px; line-height:1.35; } }
       #gateLink { position:fixed; top:calc(env(safe-area-inset-top) + 14px); right:calc(env(safe-area-inset-right) + 14px); z-index:40; padding:8px 14px; border-radius:999px; border:1px solid rgba(140,170,190,.4); background:rgba(12,18,24,.55); color:var(--text); text-decoration:none; font-size:12px; font-weight:700; letter-spacing:.06em; }
       body.preview .hb-stick, body.preview #doorPrompt, body.preview #gateLink, body.preview #overlay, body.preview #mapWrap, body.preview #hud { display:none !important; }
       @media (max-width: 440px) { #hud .chip:first-child { display:none; } #hud .chip { padding:6px 10px; } }
@@ -98,10 +100,10 @@
       <div class="overlay-card">
         <h1>World 2</h1>
         <p class="tagline">The second world of Heartbeat Observatory.</p>
-        <p class="phase-note"><b>Being built in the open.</b> A downtown on a river: real streets with sidewalks, crosswalks, lamps, signals and traffic, storefronts and the courthouse green. Doors with a green mat are real: the Grand Palace, the Arcade and the Library open into their halls; Social Hall, Projects, WHB News, Heartbeat TV, the Studio, Sparks and Union Station (trains to Town Square and Ashgrove) carry you to the rest of the Observatory. The Arcade has five real games. Eight open lots wait for residents &mdash; claim one with a GitHub repo and it becomes your building. Shops, jobs and the news studio come in later builds. Multiplayer is live.</p>
+        <p class="phase-note"><b>Being built in the open.</b> A downtown on a river: real streets with sidewalks, crosswalks, lamps, signals and traffic, storefronts and the courthouse green. Doors with a green mat are real: the Grand Palace, the Arcade and the Library open into their halls; Social Hall, Projects, WHB News, Heartbeat TV, the Studio, Sparks and Union Station (trains to Town Square and Ashgrove) carry you to the rest of the Observatory. The Arcade has five real games. <b>Every shop with an OPEN sign can be walked into</b>, and there is work: barista at Calhoun Coffee, the newsstand on the courthouse green, the courier bike at Wells St Bikes, usher at the Grand Palace. Jobs pay beats, which are play money (nothing here costs real money). Eight open lots wait for residents &mdash; claim one with a GitHub repo and it becomes your building. The news studio comes in a later build. Multiplayer is live.</p>
         <div class="controls">
-          <div class="ctl ctl-desktop"><b>Walk</b> WASD or arrow keys · <b>Look</b> drag the mouse · <b>Run</b> Shift · <b>Jump</b> Space · <b>Map</b> M · <b>Use a door</b> E or click it</div>
-          <div class="ctl ctl-touch"><b>Walk</b> put your thumb anywhere on the left half and slide it (push to the edge to run) · <b>Look</b> drag on the right half · <b>Doors</b> tap them · <b>Map</b> tap the little map: every place, the way there, or open it now</div>
+          <div class="ctl ctl-desktop"><b>Walk</b> WASD or arrow keys · <b>Look</b> drag the mouse · <b>Run</b> Shift · <b>Jump</b> Space · <b>Map</b> M · <b>Ledger</b> L · <b>Use a door or a thing</b> E or click it</div>
+          <div class="ctl ctl-touch"><b>Walk</b> put your thumb anywhere on the left half and slide it (push to the edge to run) · <b>Look</b> drag on the right half · <b>Doors and things</b> tap them · <b>Map</b> tap the little map: every place, the way there, or open it now · <b>Ledger</b> the coin under the map</div>
         </div>
         <button id="enterButton" type="button">Walk the world</button>
       </div>
@@ -125,7 +127,7 @@
 
 
     <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js" } }</script>
-    <script type="module" src="/world2/main.js?v=2026-11-05-route"></script>
+    <script type="module" src="/world2/main.js?v=2026-11-11-phase3"></script>
   <script defer src="/hb-editor.js"></script>
   </body>
 </html>

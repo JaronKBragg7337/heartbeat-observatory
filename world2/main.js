@@ -15,13 +15,15 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.m
 // 40-second blank first load the 10/28 tester hit.
 import { createThumbstick } from "/hb-thumbstick.js?v=2026-11-05b";   // the invisible floating stick (shared with Real City)
 import { createPlaceMap, threeGroundPath } from "/hb-placemap.js?v=2026-11-05-route";   // the shared place map (all three worlds)
-import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-05-route";
-import { buildCrowd, createCitySound } from "./life.js?v=2026-11-05-route";   // Phase 2: people on the sidewalks + city sound
+import { buildCity, cityFloor, routeTo, GRID, CITY_RECT, WALL_Z, RIVER, BRIDGE, ROAD } from "./city.js?v=2026-11-11-phase3";
+import { buildCrowd, createCitySound, makeFigures } from "./life.js?v=2026-11-11-phase3";   // Phase 2: people on the sidewalks + city sound
+import { createShops, SHOP_ROOM } from "./shops.js?v=2026-11-11-phase3";   // Phase 3: the shop-interior kit (one shop at a time, built on entry)
+import { createJobs } from "./jobs.js?v=2026-11-11-phase3";                // Phase 3: jobs + the play-money ledger
 const SUPA_ESM = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 const GLTF_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/loaders/GLTFLoader.js";
 const SKEL_ESM = "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/utils/SkeletonUtils.js";
 
-const BUILD = "2026-11-05-route";
+const BUILD = "2026-11-11-phase3";
 const QS = new URLSearchParams(location.search);
 const PREVIEW = QS.get("preview") === "1";
 const DEV = QS.get("dev") === "1";                       // test handle: window.W2 (state, renderer, camera override, tap)
@@ -97,15 +99,22 @@ const DOOR_ACTS = {
   sparks: { type: "page", path: "/sparks/", icon: "sparks", blurb: "People who light the way." },
   town: { type: "page", path: "/engine", icon: "station", blurb: "Union Station: the train to Town Square, World 1.", short: "To Town Square" },
   ashgrove: { type: "page", path: "/world3/gate/", icon: "station", blurb: "Union Station: the train to Ashgrove, World 3.", short: "To Ashgrove" },
+  newsstand: { type: "page", path: "/news", icon: "news", blurb: "Today's paper. Or step behind the counter and sell papers for a shift.", short: "Newsstand" },
 };
+// ---- Phase 3: shops and jobs. The shop table (world2/shops.json) is fetched at boot and handed to the city, the
+// shop kit and the jobs. One shop interior exists at a time; it is built when you walk in.
+let shopTable = null, shops = null, jobs = null, figures = null, shopNow = null, shopBusy = false, fadeEl = null;
+let outdoorObjs = [], theaterLights = [], bikeRig = null, bikeOn = false;
+const theaterSeats = [];
+const nice = (s) => String(s).toLowerCase().replace(/(^|[\s.&-])([a-z])/g, (m, a, b) => a + b.toUpperCase());
 let city = null;                // handle from buildCity()
 let crowd = null, citySound = null, lifeNight = 0, lodTimer = 0;   // Phase 2 (world2/life.js)
 let guide = null, walkMarker = null, guideBeacon = null, groundPath = null;   // map "show me the way": a route + a beacon, YOU walk it (Jaron 11/5: no tap-to-walk)
-const ROOM = { theater: { x: 620, z: -160 }, arcade: { x: 620, z: -45 }, library: { x: 620, z: 70 } };
+const ROOM = { theater: { x: 620, z: -160 }, arcade: { x: 620, z: -45 }, library: { x: 620, z: 70 }, shop: { x: SHOP_ROOM.x, z: SHOP_ROOM.z, hw: 5, hd: 6 } };
 let inInterior = null;          // interior id or null
 let interiorReturn = null;
-const interiorColliders = { theater: [], arcade: [], library: [] };
-const interiorStations = { theater: [], arcade: [], library: [] };
+const interiorColliders = { theater: [], arcade: [], library: [], shop: [] };
+const interiorStations = { theater: [], arcade: [], library: [], shop: [] };
 let cineOnLeave = null; // theater screening cleanup (pause reel + house lights up) — called by exitInterior()
 
 // ---- day/night palette (World 2's own — warmer dusk, deeper night than the town) ----
@@ -536,15 +545,42 @@ async function buildWorld() {
   await yieldFrame();
   // ---- THE CITY (world2/city.js): streets, the building kit, lamps, signals, cars, the river ----
   const waterNormal = new THREE.TextureLoader().load("/world2/assets/ground_normal.webp");
-  city = await buildCity(scene, { progress, yieldFrame, leafGeo: leafShell, leafMat: foliage.leaf, waterNormal });
+  city = await buildCity(scene, { progress, yieldFrame, leafGeo: leafShell, leafMat: foliage.leaf, waterNormal, shopTable });
   for (const c of city.colliders) buildingColliders.push(c);
   for (const d of city.doors) doors.push({ id: d.id, label: d.label, x: d.x, z: d.z, hw: d.hw, hd: d.hd, act: DOOR_ACTS[d.id] || { type: "page", path: "/" } });
+  // Phase 3: every storefront is a door now (an OPEN sign and a green strip mark them), plus the newsstand and the courier's bike
+  for (const s of city.shops) doors.push({ shop: s, label: nice(s.name), x: s.x, z: s.z, hw: s.hw, hd: s.hd, reach: 5, act: { type: "shop" } });
+  if (city.newsstand) doors.push({ id: "newsstand", label: "Newsstand \u00b7 today's paper", x: city.newsstand.front.x, z: city.newsstand.front.z, hw: 1.6, hd: 0.7, reach: 5, act: DOOR_ACTS.newsstand });
+  if (city.courier && shopTable && (shopTable.jobs || []).some((j) => j.id === "courier")) doors.push({ job: true, startsJob: true, label: "Courier bike \u00b7 take a delivery run", x: city.courier.x, z: city.courier.z, hw: city.courier.hw, hd: city.courier.hd, reach: 5, act: { type: "fn", fn: () => { if (jobs) jobs.start("courier"); } } });
   // Phase 2: the sidewalk crowd (2 draw calls) and the city sound (silent until a tap)
   crowd = buildCrowd(scene, city, { tier: window.HBDevice?.tier === "desktop" ? "desktop" : (window.HBDevice?.quality?.allowShadows === false ? "lite" : "phone") });
   if (!PREVIEW) citySound = createCitySound();
   for (const pl of city.plots) plotPads.push({ plot: pl.plot, x: pl.fx, z: pl.fz, cx: pl.x, cz: pl.z, box: pl.box, claimed: false, row: null });
   progress(0.97, "Opening the doors");
+  // everything in the scene so far is outdoors: it is switched off while you are inside a hall or a shop
+  outdoorObjs = scene.children.filter((o) => !o.isLight);
   buildInteriors();
+  if (!PREVIEW) {
+    figures = makeFigures(16); scene.add(figures.mesh);
+    shops = createShops(scene, renderer, shopTable || { shops: [], kinds: {}, jobs: [] });
+    jobs = createJobs({
+      table: shopTable || {}, scene, state, figures,
+      hint: (t, ms) => showHint(t, ms), blip: (k) => { if (citySound) citySound.blip(k); },
+      guideTo: (p) => placeMap.guideTo(p), clearGuide: () => placeMap.clearGuide(),
+      shops: () => city.shops, newsstand: city.newsstand, indoors: () => inInterior,
+      setBike: (on) => setBike(on), onCard: () => clearMovementInput(),
+      theater: { seats: theaterSeats, entry: { x: ROOM.theater.x, z: ROOM.theater.z + 7.3 }, post: { x: ROOM.theater.x - 9.5, z: ROOM.theater.z + 5.5 } },
+      addStation: (where, st) => (where === "street" ? doors : interiorStations[where]).push(st),
+      sprite: (text, x, y, z, k) => { const s = makeNameSprite(text, k || 1.2); s.position.set(x, y, z); scene.add(s); return s; },
+      site: (def) => {
+        if (def.at === "NEWSSTAND") return city.newsstand && { name: "Newsstand", icon: "news", x: city.newsstand.front.x, z: city.newsstand.front.z };
+        if (def.at === "theater") { const d = doors.find((q) => q.id === "theater"); return d && { name: "Grand Palace Theater", icon: "theater", x: d.x, z: d.z }; }
+        if (def.kind === "courier" && city.courier) return { name: nice(city.courier.shop) + " \u00b7 the bike out front", icon: "post", x: city.courier.x, z: city.courier.z };
+        const s = city.shops.find((q) => q.row.job === def.id); return s && { name: nice(s.name), icon: "diner", x: s.x, z: s.z };
+      },
+    });
+    jobs.theaterReady();
+  }
   buildFireflies();
   buildMinimap();
   walkMarker = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.5, 28), new THREE.MeshBasicMaterial({ color: 0x7bd88f, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
@@ -796,6 +832,7 @@ function applyPeerState(player) {
   remote.target.set(player.x, remoteFootY(player), player.z);
   remote.targetYaw = player.yaw;
   remote.targetScaleY = player.stance === "crouch" ? 0.72 : 1;
+  remote.shop = typeof player.shop === "number" ? player.shop : -1;
   remote.lastUpdate = performance.now();
   remote.buf.push({ t: remote.lastUpdate, x: player.x, y: remoteFootY(player), z: player.z, yaw: player.yaw });
   if (remote.buf.length > 10) remote.buf.shift();
@@ -813,8 +850,10 @@ function updateRemotes(dt) {
   // LAW: interpolation delay >= 2x the send interval (250ms at 10Hz). Less and network jitter
   // makes this flap between the buffered path and the chase fallback — that flap IS teleporting.
   const renderT = performance.now() - 250;
+  const myShop = shopNow ? shopNow.slot.id : -1;
   for (const [id, remote] of remotes) {
     if (performance.now() - remote.lastUpdate > 20000) { removeRemote(id); updatePresenceChip(); continue; }
+    remote.group.visible = (remote.shop === undefined ? -1 : remote.shop) === myShop;
     const buf = remote.buf;
     if (buf && buf.length >= 2 && buf[buf.length - 1].t >= renderT) {
       while (buf.length > 2 && buf[1].t <= renderT) buf.shift();
@@ -869,7 +908,7 @@ function sendState(force = false) {
   channel.send({
     type: "broadcast",
     event: "state",
-    payload: { id: selfId(), name: displayName, color: myColor, person: myPerson(), x: state.x, y: state.y, z: state.z, yaw: state.yaw, pitch: state.pitch, stance: state.stance }
+    payload: { id: selfId(), name: displayName, color: myColor, person: myPerson(), x: state.x, y: state.y, z: state.z, yaw: state.yaw, pitch: state.pitch, stance: state.stance, shop: shopNow ? shopNow.slot.id : -1 }
   });
 }
 
@@ -1056,6 +1095,7 @@ function buildInteriors() {
     l.position.set(pl[0], 5.6, pl[1]); l.userData = { up: 1.4, down: 0.2 };
     scene.add(l); houseLights.push(l);
   });
+  theaterLights = houseLights; for (const l of houseLights) l.visible = false;   // Phase 3: two point lights were being shaded on every pixel of the city
   const padMats = [];
   const setHouse = (bright) => {
     houseLights.forEach((l) => { l.intensity = bright ? l.userData.up : l.userData.down; });
@@ -1122,6 +1162,7 @@ function buildInteriors() {
     for (let col = 0; col < 6; col++) {
       _vp.set(tr.x - 5 + col * 2 + (row % 2) * 0.5, 0, tr.z - 3.6 + row * 2.2);
       _m4.compose(_vp, _q, _vs);
+      theaterSeats.push({ row, col, x: _vp.x, z: _vp.z });
       cushions.setMatrixAt(si, _m4);
       backs.setMatrixAt(si, _m4);
       si++;
@@ -1247,12 +1288,101 @@ function enterInterior(id) {
   inInterior = id;
   state.x = ROOM[id].x;
   state.z = ROOM[id].z + 6.2;
-  state.yaw = Math.PI; // face into the room
-  if (grass) grass.visible = false;
+  state.yaw = 0; // face into the room (it was PI: you walked in facing the exit door)
+  setIndoor(true, id);
+}
+
+// Indoors nothing outdoors is drawn (the halls are 450 m east of downtown, but half the city was still inside the
+// camera's range). A shop also swaps the sun and sky light for its own lamps.
+function setIndoor(on, id) {
+  for (const o of outdoorObjs) o.visible = !on;
+  const shop = on && id === "shop";
+  if (skyDome) skyDome.visible = !shop;
+  for (const l of theaterLights) l.visible = on && id === "theater";
+  if (sunLight) sunLight.visible = !shop;
+  if (hemiLight) hemiLight.visible = !shop;
+  if (!on && grass) grassCellX = 1e9;
+}
+function fade(on) {
+  if (!fadeEl) { fadeEl = document.createElement("div"); fadeEl.style.cssText = "position:fixed;inset:0;z-index:45;background:#05070a;opacity:0;pointer-events:none;transition:opacity .16s ease"; document.body.appendChild(fadeEl); fadeEl.getBoundingClientRect(); }
+  fadeEl.style.opacity = on ? "1" : "0";
+  return new Promise((r) => setTimeout(r, 190));
+}
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+
+// Phase 3: walk into a shop. The screen dips to black for a moment; in that moment the street outside is captured
+// (it becomes the view through the shop window) and the interior is built from the shop's row in the table.
+async function enterShop(door) {
+  if (shopBusy || !shops || !door || !door.shop) return;
+  shopBusy = true; clearMovementInput();
+  try {
+    await fade(true);
+    const s = door.shop;
+    interiorReturn = { x: s.x + s.face[0] * 0.9, z: s.z + s.face[1] * 0.9, yaw: Math.atan2(-s.face[0], -s.face[1]) };   // you come back out facing the street
+    shopNow = shops.open(s, { night: lifeNight, floorY: 0.15, sky: scene.background.getHex() });
+    ROOM.shop = { x: shopNow.bounds.x, z: shopNow.bounds.z, hw: shopNow.bounds.hw, hd: shopNow.bounds.hd };
+    interiorColliders.shop = shopNow.colliders; interiorStations.shop = shopNow.stations;
+    for (const st of shopNow.stations) {
+      if (st.kind === "exit") { st.act = { type: "exit" }; st.label = "Out to " + s.streets[0]; }
+      else if (st.kind === "link") st.act = { type: "page", path: st.link.path };
+    }
+    inInterior = "shop"; setIndoor(true, "shop");
+    state.x = shopNow.spawn.x; state.z = shopNow.spawn.z; state.yaw = shopNow.spawn.yaw; state.pitch = 0; activeDoor = null;
+    if (jobs) jobs.shopOpened(shopNow);
+    if (citySound) citySound.blip("door");
+    await nextFrame(); await nextFrame();
+  } catch (e) {
+    try { console.error("[W2] shop", e); } catch (e2) {}
+    try { shops.close(); } catch (e2) {}
+    shopNow = null; if (inInterior === "shop") { inInterior = null; setIndoor(false); }
+  }
+  await fade(false); shopBusy = false;
+}
+async function leaveShop() {
+  if (shopBusy || inInterior !== "shop") return;
+  shopBusy = true; clearMovementInput();
+  await fade(true);
+  try { if (jobs) jobs.shopClosing(); } catch (e) {}
+  try { shops.close(); } catch (e) {}
+  shopNow = null; inInterior = null; interiorColliders.shop = []; interiorStations.shop = []; activeDoor = null;
+  setIndoor(false);
+  if (interiorReturn) { state.x = interiorReturn.x; state.z = interiorReturn.z; state.yaw = interiorReturn.yaw; state.pitch = 0; }
+  if (citySound) citySound.blip("door");
+  await nextFrame();
+  await fade(false); shopBusy = false;
+}
+
+// the courier's bike: handlebars and a crate in front of you while you ride (you steer with the same stick, faster)
+function setBike(on) {
+  bikeOn = !!on;
+  if (on && !bikeRig) {
+    bikeRig = new THREE.Group();
+    const steel = new THREE.MeshStandardMaterial({ color: 0xb8bcc4, metalness: 0.8, roughness: 0.35 }), dark = new THREE.MeshStandardMaterial({ color: 0x17181b, roughness: 0.7 });
+    const wood = new THREE.MeshStandardMaterial({ color: 0x8a6a44, roughness: 0.85 }), card = new THREE.MeshStandardMaterial({ color: 0xc9a56a, roughness: 0.9 });
+    const add = (geo, mat, x, y, z, rz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (rz) m.rotation.z = rz; bikeRig.add(m); return m; };
+    add(new THREE.CylinderGeometry(0.014, 0.014, 0.6, 8), steel, 0, 1.18, -0.85, Math.PI / 2);
+    for (const s of [-1, 1]) add(new THREE.CylinderGeometry(0.02, 0.02, 0.13, 8), dark, s * 0.3, 1.18, -0.85, Math.PI / 2);
+    add(new THREE.CylinderGeometry(0.016, 0.016, 0.3, 8), steel, 0, 1.04, -0.87);
+    add(new THREE.BoxGeometry(0.4, 0.18, 0.3), wood, 0, 0.9, -1.22);
+    bikeRig.userData.parcel = add(new THREE.BoxGeometry(0.26, 0.13, 0.2), card, 0, 1.02, -1.22);
+    scene.add(bikeRig);
+  }
+  if (bikeRig) bikeRig.visible = bikeOn;
+}
+function updateBike() {
+  if (!bikeRig) return;
+  bikeRig.visible = bikeOn && hasEntered && !inInterior;
+  if (!bikeRig.visible) return;
+  bikeRig.position.set(state.x, state.y - standingEyeHeight, state.z); bikeRig.rotation.y = state.yaw;
+  bikeRig.userData.parcel.visible = !!(jobs && jobs.carrying);
 }
 
 function exitInterior() {
+  if (inInterior === "shop") { leaveShop(); return; }
+  const was = inInterior;
   try { if (cineOnLeave) cineOnLeave(); } catch (e) {}
+  try { if (jobs) jobs.leftInterior(was); } catch (e) {}
+  setIndoor(false);
   inInterior = null;
   if (interiorReturn) {
     state.x = interiorReturn.x;
@@ -1301,8 +1431,10 @@ async function loadSpaces() {
 function updateActiveDoor() {
   if (!hasEntered) { activeDoor = null; activePlot = null; return; }
   const list = inInterior ? interiorStations[inInterior] : doors;
+  const riding = !inInterior && jobs && jobs.kind === "courier";   // on a delivery run the doors are for parcels, not for going in
   let next = null, best = Infinity;
   for (const door of list) {
+    if (door.off || (riding && !door.job) || (door.startsJob && jobs && jobs.active)) continue;
     const dx = state.x - door.x, dz = state.z - door.z;
     if (Math.abs(dx) > door.hw || Math.abs(dz) > door.hd) continue;
     const d = Math.hypot(dx, dz);
@@ -1310,7 +1442,7 @@ function updateActiveDoor() {
   }
   activeDoor = next;
   let nextPlot = null;
-  if (!next && !inInterior) {
+  if (!next && !inInterior && !riding) {
     let bp = Infinity;
     for (const pad of plotPads) {
       if (pad.claimed) continue;
@@ -1336,9 +1468,11 @@ function updateActiveDoor() {
 
 function enterActive() {
   if (claimOverlay && claimOverlay.style.display === "flex") return;
+  if (shopBusy || (jobs && jobs.cardOpen)) return;
   if (activeDoor) {
     const act = activeDoor.act || { type: "page", path: activeDoor.path };
-    if (act.type === "interior") enterInterior(act.id);
+    if (act.type === "shop") enterShop(activeDoor);
+    else if (act.type === "interior") enterInterior(act.id);
     else if (act.type === "exit") exitInterior();
     else if (act.type === "ext") { try { window.open(act.url, "_blank", "noopener"); } catch (e) {} }
     else if (act.type === "fn") { try { act.fn(); } catch (e) {} }
@@ -1516,7 +1650,7 @@ function updateDayNight() {
   lifeNight = Math.min(1, Math.pow(1 - day, 1.3) * 1.05);
   if (city) city.setNight(lifeNight, day);
   if (fireflies) {
-    fireflies.visible = nightF > 0.04;
+    fireflies.visible = nightF > 0.04 && !inInterior;
     fireflies.material.opacity = nightF * 0.9;
   }
 
@@ -1551,6 +1685,7 @@ function updateLocal(dt) {
 
   forward += stick.y;   // the floating stick is analog: half a push is half speed, the rim runs
   strafe += stick.x;
+  if (shopBusy || (jobs && jobs.cardOpen)) { forward = 0; strafe = 0; }
 
   const length = Math.hypot(forward, strafe);
   if (length > 1) {
@@ -1580,7 +1715,8 @@ function updateLocal(dt) {
   motion.sprinting = wantsSprint;
   motion.moving = Math.abs(forward) + Math.abs(strafe) > 0.01;
 
-  const speed = crouching ? 2.45 : wantsSprint ? 7.2 : 4.65;
+  const riding = bikeOn && !inInterior;   // the courier's bike
+  const speed = crouching ? 2.45 : wantsSprint ? (riding ? 11.5 : 7.2) : (riding ? 8.2 : 4.65);
   const sin = Math.sin(state.yaw);
   const cos = Math.cos(state.yaw);
 
@@ -1597,9 +1733,9 @@ function updateLocal(dt) {
 
 function resolveCollision() {
   if (inInterior) {
-    const r = ROOM[inInterior];
-    state.x = Math.max(r.x - 12.4, Math.min(r.x + 12.4, state.x));
-    state.z = Math.max(r.z - 8.4, Math.min(r.z + 8.4, state.z));
+    const r = ROOM[inInterior], hw = r.hw || 12.4, hd = r.hd || 8.4;
+    state.x = Math.max(r.x - hw, Math.min(r.x + hw, state.x));
+    state.z = Math.max(r.z - hd, Math.min(r.z + hd, state.z));
   } else clampWorld();
   const colliderList = inInterior ? interiorColliders[inInterior] : buildingColliders;
   for (const collider of colliderList) {
@@ -1669,10 +1805,10 @@ function updateGuide(dt) {
   if (walkMarker) { walkMarker.visible = out; const k = 0.5 + 0.5 * Math.sin(performance.now() / 260); walkMarker.material.opacity = 0.55 + 0.3 * k; walkMarker.scale.setScalar(1.6 + 0.5 * k); }
 }
 let hintEl = null, hintTimer = 0;
-function showHint(text) {
+function showHint(text, ms) {
   if (!hintEl) { hintEl = document.createElement("div"); hintEl.id = "tapHint"; hintEl.setAttribute("role", "status"); document.body.appendChild(hintEl); }
   hintEl.textContent = text; hintEl.classList.add("show");
-  clearTimeout(hintTimer); hintTimer = setTimeout(() => hintEl.classList.remove("show"), 2600);
+  clearTimeout(hintTimer); hintTimer = setTimeout(() => hintEl.classList.remove("show"), ms || 2600);
 }
 
 // a tap/click on the world USES what it touches (a door, a green mat, an open lot). The ground does nothing.
@@ -1690,12 +1826,32 @@ function worldPointAt(cx, cy) {
   }
   return null;
 }
+function rayPick(list) {   // the nearest thing whose tap point (tx, y, tz) the ray passes within r of
+  const o = _ray.ray.origin, d = _ray.ray.direction; let best = null, bt = Infinity;
+  for (const s of list) {
+    if (s.off || s.tx === undefined) continue;
+    const vx = s.tx - o.x, vy = (s.y || 1) - o.y, vz = s.tz - o.z, t = vx * d.x + vy * d.y + vz * d.z; if (t < 0.15 || t > 14 || t >= bt) continue;
+    if (Math.hypot(vx - d.x * t, vy - d.y * t, vz - d.z * t) < (s.r || 0.6)) { best = s; bt = t; }
+  }
+  return best;
+}
 function useAt(cx, cy) {
+  if (shopBusy) return false;
+  _ndc.set(cx / window.innerWidth * 2 - 1, -(cy / window.innerHeight) * 2 + 1);
+  _ray.setFromCamera(_ndc, camera);
+  const riding = !inInterior && jobs && jobs.kind === "courier";
+  const thing = rayPick(inInterior ? interiorStations[inInterior] : doors);
+  if (thing) {
+    if (Math.hypot(thing.tx - state.x, thing.tz - state.z) <= (thing.reach || 3.2)) { activeDoor = thing; enterActive(); }
+    else showHint(thing.label + ": walk closer");
+    return true;
+  }
   const hit = worldPointAt(cx, cy); if (!hit) return false;
   const door = nearestDoorTo(hit[0], hit[1], 3.5);
-  if (door) {
-    if (Math.hypot(door.x - state.x, door.z - state.z) <= USE_REACH) { activeDoor = door; enterActive(); }
-    else showHint(door.label + " - walk to the green mat to go in");
+  if (door && !door.off && !(door.tx !== undefined)) {
+    if (riding && !door.job) { showHint("Finish the delivery first, or stop the job with the \u2715."); return true; }
+    if (Math.hypot(door.x - state.x, door.z - state.z) <= (door.reach || USE_REACH)) { activeDoor = door; enterActive(); }
+    else showHint(door.label + (door.shop ? " - walk up to the door to go in" : " - walk to the green mat to go in"));
     return true;
   }
   if (!inInterior) for (const pad of plotPads) {
@@ -1751,6 +1907,9 @@ function animate() {
   if (crowd && city) { camera.updateMatrixWorld(); crowd.update(dt, camera, city.signals); }
   if (city && (lodTimer -= dt) <= 0) { lodTimer = 0.25; city.lodUpdate(camera); }   // Phase 2: far chunks drop their detail
   if (citySound) citySound.update(dt, hasEntered && !inInterior ? state : null, city ? city.traffic.movers : [], lifeNight, motion.onGround, city && city.signals);
+  if (jobs) jobs.update(dt);
+  if (shopNow) shops.light(lifeNight);
+  updateBike();
   sendState();
   renderer.render(scene, camera);
   frameNo++;
@@ -1822,7 +1981,9 @@ document.addEventListener("keydown", (event) => {
     enterWorld();
     return;
   }
+  if (jobs && jobs.cardOpen) { if (event.code === "Escape" || event.code === "Enter") { event.preventDefault(); jobs.closeCard(); } return; }
   if (hasEntered && event.code === "KeyM") { event.preventDefault(); placeMap.isOpen ? placeMap.close() : placeMap.open(); return; }
+  if (hasEntered && event.code === "KeyL" && jobs) { event.preventDefault(); clearMovementInput(); jobs.openLedger(); return; }
   if (hasEntered && (event.code === "KeyE" || event.code === "Enter") && (activeDoor || activePlot)) {
     event.preventDefault();
     enterActive();
@@ -1846,7 +2007,7 @@ document.addEventListener("keyup", (event) => {
 // left half; the stick appears under it, follows it, and is gone on release. The right half drags the view. Both at once.
 // Mouse: drag looks. A quick tap/click anywhere USES what it touches (a door, a green mat, an open lot) - never walks.
 const stick = createThumbstick(canvas, {
-  enabled: () => hasEntered && !placeMap.isOpen,
+  enabled: () => hasEntered && !placeMap.isOpen && !(jobs && jobs.cardOpen),
   onLook: (dx, dy, kind) => { const k = kind === "mouse" ? 1.1 : 2.4; look(dx * k, dy * k); },
   onTap: (x, y) => { if (hasEntered) useAt(x, y); },
 });
@@ -1934,7 +2095,8 @@ function drawMinimap() {
   }
   if (placeLabel) {
     let label;
-    if (inInterior) label = ({ theater: "Grand Palace Theater", arcade: "Arcade", library: "Public Library" })[inInterior] || "inside";
+    if (inInterior === "shop" && shopNow) label = nice(shopNow.row.name);
+    else if (inInterior) label = ({ theater: "Grand Palace Theater", arcade: "Arcade", library: "Public Library" })[inInterior] || "inside";
     else if (state.z < WALL_Z - 0.5) label = state.z > RIVER.zN ? "Wells St Bridge" : "the north woods";
     else if (!inCityZone(state.x, state.z)) label = "outside downtown";
     else { const [xn, dx] = nearestName(state.x, GRID.xs, GRID.xNames), [zn, dz] = nearestName(state.z, GRID.zs, GRID.zNames); label = state.z < GRID.zs[0] - ROAD ? "Riverfront" : dx < 10 && dz < 10 ? xn + " & " + zn : dx < dz ? xn : zn; }
@@ -1969,6 +2131,8 @@ const placeMap = createPlaceMap({
     for (const d of doors) {
       if (d.id) { const a = DOOR_ACTS[d.id] || {}; out.push({ id: d.id, icon: a.icon || "place", name: d.label.split(" · ")[0], short: a.short, blurb: a.blurb || "", x: d.x, z: d.z, open: a.open || a.path || null }); }
       else if (d.act && /^\/space\//.test(d.act.path || "")) out.push({ icon: "projects", name: d.label, blurb: "A project space someone claimed here.", x: d.x, z: d.z, open: d.act.path });
+      else if (d.shop && (d.shop.row.map || d.shop.row.job) && d.shop.copy === 0) { const k = (shopTable && shopTable.kinds && shopTable.kinds[d.shop.row.kind]) || {}, j = d.shop.row.job && jobs && jobs.defs.find((q) => q.id === d.shop.row.job);
+        out.push({ id: "shop" + d.shop.id, icon: k.icon || "store", name: d.label, blurb: j ? "Work here: " + j.title + ". Paid in play money." : (d.shop.row.hello || "A shop."), x: d.x, z: d.z, open: null }); }
     }
     for (const p of plotPads) if (!p.claimed) out.push({ id: "lot" + p.plot, icon: "lot", small: true, name: "Lot " + (p.plot + 1) + " · open", short: "Lot " + (p.plot + 1), blurb: "An open lot. Walk up to it to claim it for a project.", x: p.x, z: p.z, open: null });
     return out;
@@ -2020,6 +2184,8 @@ if (DEV) window.W2 = {
   enter: () => enterWorld(), tap: (x, y) => useAt(x, y), guideTo: (x, z, n) => guideTo(x, z, n), clearGuide: () => clearGuide(), get guide() { return guide && { name: guide.name, x: guide.x, z: guide.z }; }, placeMap, path: () => guide && guide.path && guide.path.map((p) => p.map((v) => Math.round(v))), stick,
   activeDoor: () => activeDoor && activeDoor.label, activePlot: () => activePlot && activePlot.plot, enterActive: () => enterActive(), inInterior: () => inInterior,
   remotes: () => remotes.size, connected: () => connected,
+  get shops() { return shops; }, get jobs() { return jobs; }, get shopNow() { return shopNow; }, get figures() { return figures; }, interiorStations, shopBusy: () => shopBusy,
+  enterShop: (id) => enterShop(doors.find((d) => d.shop && d.shop.id === id)), leaveShop: () => leaveShop(), use: (st) => { activeDoor = st; enterActive(); },
   life: { stats: () => Object.assign({}, crowd && crowd.stats(), city && city.lodUpdate(camera), { buses: city && city.traffic.buses.map((b) => ({ x: +b.x.toFixed(1), z: +b.z.toFixed(1), v: +b.v.toFixed(2), dwell: +b.dwell.toFixed(1) })), sound: citySound && { running: citySound.running, muted: citySound.muted, levels: citySound.levels() } }),
     get crowd() { return crowd; }, get sound() { return citySound; }, simulate: (sec) => crowd.simulate(sec, city.signals, city.colliders), bus: () => city.bus },
   tris() {   // static triangle count by kind (instanced meshes multiplied out) - for the phone budget
@@ -2036,6 +2202,8 @@ if (DEV) window.W2 = {
 };
 async function boot() {
   progress(0.08, "Starting the engine");
+  // the shop table (a few KB). If it cannot be fetched the city still builds, with plain general stores.
+  try { const r = await fetch("/world2/shops.json?v=" + BUILD, { cache: "no-cache" }); if (r.ok) shopTable = await r.json(); } catch (e) { shopTable = null; }
   await buildWorld();
   progress(1, "Ready");
   animate();
