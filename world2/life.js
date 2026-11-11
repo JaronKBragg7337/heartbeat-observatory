@@ -13,7 +13,7 @@
 // promenade, footsteps while you walk, birds by day, crickets by night, everything quieter after dark.
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js";
-import { GRID, ROAD, CURB, cityFloor } from "./city.js?v=2026-11-05-route";
+import { GRID, ROAD, CURB, cityFloor } from "./city.js?v=2026-11-11-phase3";
 
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
@@ -21,7 +21,7 @@ function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0
 // the figure: built facing +z, feet at y = 0, about 1.72 m tall. aPart: 0 body, 1/2 left/right leg, 3/4 left/right arm.
 // aSlot: 0 skin, 1 top, 2 bottom, 3 hair, 4 shoes, 5 sleeve (top or skin, per person)
 // ---------------------------------------------------------------------------------------------------------------
-function figureGeometry(lo) {
+function figureGeometry(lo, face) {
   const P = [], N = [], A = [], S = [], K = [], I = []; let v = 0;
   // mask: 0 always, 1 long hair, 2 coat, 3 skirt (per-person style flags collapse the pieces they don't wear)
   const add = (g, part, slot, mask = 0) => {
@@ -48,6 +48,11 @@ function figureGeometry(lo) {
   add(cyl(0.048, 0.052, 0.1, 1.47, 0), 0, 0);                      // neck
   const head = new THREE.SphereGeometry(0.1, lo ? 7 : 12, lo ? 5 : 9); head.scale(0.92, 1.14, 1.0); head.translate(0, 1.655, 0.008); add(head, 0, 0);
   if (!lo) { const nose = new THREE.ConeGeometry(0.018, 0.04, 4); nose.rotateX(Math.PI / 2); nose.translate(0, 1.64, 0.105); add(nose, 0, 0); }
+  if (face) {   // Phase 3: the people you stand a metre from (shopkeepers, customers) get eyes, brows and a mouth
+    for (const s of [-1, 1]) { const eye = new THREE.SphereGeometry(0.0115, 6, 4); eye.scale(1.15, 0.85, 0.6); eye.translate(s * 0.036, 1.668, 0.097); add(eye, 0, 4);
+      const brow = new THREE.BoxGeometry(0.034, 0.006, 0.006); brow.rotateZ(-s * 0.12); brow.translate(s * 0.037, 1.692, 0.098); add(brow, 0, 3); }
+    const mouth = new THREE.BoxGeometry(0.04, 0.007, 0.006); mouth.translate(0, 1.607, 0.097); add(mouth, 0, 6);
+  }
   { const lh = new THREE.CylinderGeometry(0.104, 0.09, 0.3, lo ? 5 : 9, 1, true, Math.PI / 2, Math.PI); lh.scale(1, 1, 0.9); lh.translate(0, 1.56, -0.012); add(lh, 0, 3, 1); }   // long hair down the back
   { const coat = new THREE.CylinderGeometry(0.182, 0.2, 0.52, lo ? 6 : 10, 1, true); coat.scale(1, 1, 0.72); coat.translate(0, 0.8, 0); add(coat, 0, 6, 2); }   // coat skirt to mid-thigh
   { const sk = new THREE.CylinderGeometry(0.17, 0.235, 0.4, lo ? 6 : 10, 1, true); sk.scale(1, 1, 0.78); sk.translate(0, 0.72, 0); add(sk, 0, 2, 3); }   // skirt
@@ -264,6 +269,43 @@ export function buildCrowd(scene, city, opts = {}) {
     stats: () => stat,
   };
 }
+// ---------------------------------------------------------------------------------------------------------------
+// Phase 3: a small pool of the same figure for the people you deal with (shopkeepers, customers, theater guests).
+// One instanced mesh = one draw call wherever they stand. They use the crowd's shader, so they walk the same way.
+// ---------------------------------------------------------------------------------------------------------------
+export function makeFigures(n) {
+  const geo = figureGeometry(false, true), { mat, depth } = crowdMaterial();
+  const mesh = new THREE.InstancedMesh(geo, mat, n);
+  for (const [k, w] of [["iSkin", 3], ["iTop", 3], ["iBottom", 3], ["iHair", 3], ["iAnim", 4], ["iStyle", 3]]) { const a = new THREE.InstancedBufferAttribute(new Float32Array(n * w), w); a.setUsage(THREE.DynamicDrawUsage); geo.setAttribute(k, a); }
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); mesh.frustumCulled = false; mesh.count = 0; mesh.name = "npcs";
+  mesh.castShadow = true; mesh.receiveShadow = true; mesh.customDepthMaterial = depth;
+  const used = new Array(n).fill(false), col = new THREE.Color(), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), pos = new THREE.Vector3(), scl = new THREE.Vector3();
+  const zero = new THREE.Matrix4().makeScale(0, 0, 0), A = geo.attributes;
+  const lin3 = (hex) => { col.set(hex); return [col.r, col.g, col.b]; };
+  const dirty = () => { mesh.instanceMatrix.needsUpdate = true; for (const k of ["iSkin", "iTop", "iBottom", "iHair", "iAnim", "iStyle"]) A[k].needsUpdate = true; };
+  const recount = () => { let c = 0; for (let k = 0; k < n; k++) if (used[k]) c = k + 1; mesh.count = c; };
+  return {
+    mesh,
+    // look: { top: "#hex" } pins the shirt (a shopkeeper's apron colour); everything else comes from the seed
+    alloc(seed, look = {}) {
+      const i = used.indexOf(false); if (i < 0) return -1; used[i] = true; recount();
+      const R = rng((seed >>> 0) + 17);
+      A.iSkin.array.set(lin3(SKIN[Math.floor(R() * SKIN.length)]), i * 3); A.iHair.array.set(lin3(HAIR[Math.floor(R() * HAIR.length)]), i * 3);
+      A.iTop.array.set(lin3(look.top || TOPS[Math.floor(R() * TOPS.length)]), i * 3); A.iBottom.array.set(lin3(BOTTOMS[Math.floor(R() * BOTTOMS.length)]), i * 3);
+      const r = R(); A.iStyle.array.set([R() < 0.4 ? 1 : 0, 0, r > 0.86 ? 1 : 0], i * 3);
+      A.iAnim.array.set([R() * 6.28, 0, 0, R() < 0.6 ? 1 : 0], i * 4);
+      mesh.setMatrixAt(i, zero); dirty(); return i;
+    },
+    free(i) { if (i < 0 || i >= n) return; used[i] = false; mesh.setMatrixAt(i, zero); recount(); dirty(); },
+    // amp 0 = standing, 1 = walking; phase advances with the distance walked
+    set(i, x, y, z, yaw, amp = 0, phase, scale = 1) {
+      if (i < 0) return; q.setFromAxisAngle(up, yaw); m4.compose(pos.set(x, y, z), q, scl.set(scale, scale, scale)); mesh.setMatrixAt(i, m4);
+      if (phase !== undefined) A.iAnim.array[i * 4] = phase; A.iAnim.array[i * 4 + 2] = amp; dirty();
+    },
+    get inUse() { return used.filter(Boolean).length; }, tris: geo.index.count / 3,
+  };
+}
+
 function angDiff(a, b) { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -333,8 +375,24 @@ export function createCitySound() {
     if ((locT -= dt) <= 0) { locT = 1.0; tick(v * 0.5, 880, 0.03); }
   }
   const set = (g, v) => g.gain.setTargetAtTime(v, ac.currentTime, 0.4);
+  // Phase 3: small job sounds (a sale, a mistake, a door bell, a bike bell). Nothing plays before the first tap.
+  function note(f, t0, len, vol, type) {
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + t0; o.type = type || "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0008, t + len);
+    o.connect(g).connect(master); o.start(t); o.stop(t + len + 0.03);
+  }
+  function blip(kind) {
+    if (!ac || ac.state !== "running" || muted) return;
+    if (kind === "ok") { note(880, 0, 0.12, 0.16); note(1320, 0.07, 0.16, 0.14); }
+    else if (kind === "coin") { note(1568, 0, 0.09, 0.16); note(2093, 0.08, 0.28, 0.16); }
+    else if (kind === "bad") { note(196, 0, 0.2, 0.12, "sawtooth"); }
+    else if (kind === "bell") { note(2637, 0, 0.5, 0.14); note(3322, 0.0, 0.4, 0.07); note(2637, 0.16, 0.6, 0.12); }
+    else if (kind === "door") { note(1760, 0, 0.5, 0.1); note(1319, 0.12, 0.7, 0.09); }
+    else if (kind === "done") { note(784, 0, 0.18, 0.15); note(988, 0.14, 0.18, 0.15); note(1175, 0.28, 0.2, 0.15); note(1568, 0.42, 0.5, 0.15); }
+    else note(1200, 0, 0.06, 0.1);
+  }
   return {
-    start,
+    start, blip,
     get muted() { return muted; }, get running() { return !!(ac && ac.state === "running"); },
     setMuted(m) {
       muted = !!m; try { localStorage.setItem("w2-sound", muted ? "off" : "on"); } catch (e) {}

@@ -169,14 +169,21 @@ function cellUV(cols, rows, k, inset = 0.004) {
 }
 const GLASS = { cols: 8, rows: 8, home: [0, 40], office: [40, 56], spandrel: [56, 60], transom: [60, 64] };
 const STORE = { cols: 4, rows: 4, shops: [0, 12], lobby: [12, 14], door: 14, closed: 15 };
-const SIGN = { cols: 4, rows: 17 };   // 17th row (11/5): the TV, Studio and Sparks doors
-const SHOPS = ["CALHOUN COFFEE", "SUMMIT CITY RECORDS", "THREE RIVERS DINER", "BERRY ST BOOKS", "OLD FORT OUTFITTERS", "LANDING PIZZA",
+const SIGN = { cols: 4, rows: 17 };   // rows are counted in texSigns(): the atlas grows with the shop table (Phase 3)
+// Phase 3: the shop names come from world2/shops.json (main.js passes it in as ctx.shopTable). This list is only the
+// fallback when that file can't be fetched: every name still gets a storefront and a plain general-store interior.
+let SHOP_ROWS = null;
+let SHOPS = ["CALHOUN COFFEE", "SUMMIT CITY RECORDS", "THREE RIVERS DINER", "BERRY ST BOOKS", "OLD FORT OUTFITTERS", "LANDING PIZZA",
   "HARRISON HARDWARE", "MAIN ST BARBER", "RIVERGREEN FLORIST", "ALLEN DRUG CO.", "WAYNE BAKERY", "JEFFERSON TAILORS", "MAUMEE MARKET",
   "ST. MARYS BREWING", "COLUMBIA CAMERA", "GOLDEN LANTERN NOODLES", "PEARL ST TACOS", "CORNER DELI", "BLUE HERON BAR", "LITTLE RIVER TOYS",
   "SUMMIT SHOES", "HOPE THRIFT", "THE PRINT SHOP", "LAFAYETTE LAUNDRY", "BARR ST GROCER", "WELLS ST BIKES", "NORTHSIDE NAILS", "RADIO REPAIR",
   "CITY LOCKSMITH", "KEY CITY ICE CREAM", "HALF MOON BOOKS", "FIRST BANK"];
 const CIVIC_SIGNS = { arcade: "ARCADE", social: "SOCIAL HALL", projects: "PROJECTS", news: "WHB NEWS", library: "PUBLIC LIBRARY", station: "UNION STATION", theater: "GRAND PALACE", parking: "PARKING", court: "COURTHOUSE", onair: "ON AIR", bus: "BUS · LOOP 1",
-  tv: "HEARTBEAT TV", studio: "STUDIO", sparks: "SPARKS" };
+  tv: "HEARTBEAT TV", studio: "STUDIO", sparks: "SPARKS", newsstand: "NEWSSTAND" };
+// Phase 3 extras in the sign atlas: the OPEN sign on every shop door, FOR LEASE on the empty storefronts, the green
+// threshold strip (same green as the door mats: "you can go in here"), and the four papers the newsstand sells.
+const PAPERS = [["news", "THE OBSERVER", "#f4efe2", "#1a1a1a", "900 %px Georgia, serif"], ["sports", "SPORTS", "#1d4f8f", "#ffffff", "900 %px system-ui, sans-serif"],
+  ["comics", "COMICS", "#f2c230", "#b0201a", "900 %px system-ui, sans-serif"], ["puzzles", "PUZZLES", "#2f6b4a", "#ffffff", "800 %px Georgia, serif"]];
 const SIGN_INDEX = {};
 
 function cv(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return [c, c.getContext("2d")]; }
@@ -303,6 +310,7 @@ const SIGN_STYLES = [
   { bg: "#efe6d2", fg: "#2b2b2b", font: "800 %px system-ui, sans-serif" }, { bg: "#7a3e1d", fg: "#fff1d6", font: "700 %px system-ui, sans-serif" },
 ];
 function texSigns() {
+  SIGN.rows = Math.ceil((SHOPS.length + Object.keys(CIVIC_SIGNS).length + GRID.xNames.length + GRID.zNames.length + 8 + 3 + PAPERS.length) / SIGN.cols);
   const [c, g] = cv(1024, SIGN.rows * 64); g.fillStyle = "#000"; g.fillRect(0, 0, 1024, SIGN.rows * 64);
   let k = 0;
   const put = (key, text, style, street) => {
@@ -314,7 +322,8 @@ function texSigns() {
     if (style.neon) { g.shadowColor = style.fg; g.shadowBlur = 14; }
     fitText(g, text, 226, street ? 32 : 30, style.font); g.fillText(text, x + 128, y + 34); g.shadowBlur = 0;
   };
-  SHOPS.forEach((s, i) => put("shop" + i, s, SIGN_STYLES[i % SIGN_STYLES.length]));
+  SHOPS.forEach((s, i) => { const o = SHOP_ROWS && SHOP_ROWS[i] && SHOP_ROWS[i].sign, st = SIGN_STYLES[i % SIGN_STYLES.length];
+    put("shop" + i, s, o ? { bg: o.bg || st.bg, fg: o.fg || st.fg, font: o.serif ? "700 %px Georgia, serif" : o.serif === false ? "800 %px system-ui, sans-serif" : st.font } : st); });
   for (const [id, t] of Object.entries(CIVIC_SIGNS)) {
     const st = id === "arcade" ? { bg: "#0b0614", fg: "#ff5fd2", font: "800 %px system-ui, sans-serif", neon: 1 }
       : id === "onair" ? { bg: "#2a0606", fg: "#ff3b3b", font: "900 %px system-ui, sans-serif", neon: 1 }
@@ -328,6 +337,10 @@ function texSigns() {
   }
   [...GRID.xNames, ...GRID.zNames].forEach((n) => put("street_" + n, n.toUpperCase(), { bg: "#1d6b3a", fg: "#ffffff", font: "700 %px system-ui, sans-serif" }, true));
   for (let p = 0; p < 8; p++) put("lot" + p, "LOT " + (p + 1) + " · OPEN", { bg: "#f4f1e8", fg: "#1f6b3a", font: "800 %px system-ui, sans-serif" });
+  put("open", "OPEN", { bg: "#160808", fg: "#ff5a4a", font: "900 %px system-ui, sans-serif", neon: 1 });
+  put("forlease", "FOR LEASE", { bg: "#e9e4d6", fg: "#8a2a22", font: "800 %px system-ui, sans-serif" });
+  { const x = (k % 4) * 256, y = Math.floor(k / 4) * 64; SIGN_INDEX.green = k; k++; g.fillStyle = "#58c274"; g.fillRect(x, y, 256, 64); }
+  for (const [id, t, bg, fg, font] of PAPERS) put("paper_" + id, t, { bg, fg, font });
   return c;
 }
 function signUV(key) { return cellUV(SIGN.cols, SIGN.rows, SIGN_INDEX[key] ?? 0, 0.002); }
@@ -476,12 +489,14 @@ function groundFloor(F, gh, mat, col, R, o) {
   if (o.signKey && L > 3.2) {
     const sh = o.signH || 0.62, sw = Math.min(L - 2 * pil - 0.5, sh * 4.3), mid = L / 2;
     frect(F, pil + 0.15, L - pil - 0.15, gl + 0.2, gl + 0.36 + sh, -0.03, "trim", o.board || lin(0x2a2622));
+    if (o.rec) { const sb = batch("sign", X.ck); o.rec.refs.push([sb, sb.u.length]); }
     frect(F, mid - sw / 2, mid + sw / 2, gl + 0.28, gl + 0.28 + sh, -0.06, "sign", WHITE, signUV(o.signKey));
   }
   fbox(F, 0, L, gh - 0.32, gh, -0.32, 0, "trim", o.cornice || lin(0xe8dcc4), "ftdlr");
   const doorW = o.doorW || 1.9, doorS = o.doorS;
   const segs = [];
   if (doorS != null) { const d0 = Math.max(pil + 0.1, doorS - doorW / 2), d1 = Math.min(L - pil - 0.1, d0 + doorW); segs.push([pil, d0]); segs.push([d1, L - pil]);
+    if (o.rec) o.rec.door = (d0 + d1) / 2;
     const dp = 1.35;   // recessed entry
     detail(() => { fside(F, d0, 0, gl, 0.28, dp, true, "trim", lin(0x8a8478)); fside(F, d1, 0, gl, 0.28, dp, false, "trim", lin(0x8a8478)); });
     fhoriz(F, d0, d1, gl, 0.28, dp, false, "trim", lin(0x57534c));
@@ -561,7 +576,7 @@ function mass(x0, z0, x1, z1, y0, floors, st, mat, col, R, o) {
 }
 
 // a whole building on a lot. lot = { ox, oz, fx, fz, w, d, cornerL, cornerR }, spec from pickSpec / civic table
-function building(lot, spec, R) {
+function building(lot, spec, R, rec) {
   setFrame(lot.ox, CURB, lot.oz, lot.fx, lot.fz);
   const st = STYLES[spec.style], w = lot.w, d = lot.d;
   const mat = spec.mat || (spec.style === "stone" ? "stone" : spec.style === "brick" ? (R() < 0.7 ? "brick" : "brickB") : "trim");
@@ -574,6 +589,7 @@ function building(lot, spec, R) {
   const shopCell = STORE.shops[0] + Math.floor(R() * (STORE.shops[1] - STORE.shops[0]));
   const signKey = spec.signKey !== undefined ? spec.signKey : (spec.lobby ? null : "shop" + Math.floor(R() * SHOPS.length));
   const go = { signKey, signH: spec.signH, lobby: spec.lobby, shopCell, closed: R() < 0.08, cornice: corniceCol, awning: spec.awning === false ? null : (spec.awning || (!spec.lobby && R() < 0.55 ? pick(R, AWNING_COLS) : null)) };
+  if (rec) { rec.closed = go.closed; rec.lobby = !!spec.lobby; go.rec = rec; }
   groundFloor(F.f, gh, mat, col, R, Object.assign({}, go, { doorS: spec.doorS != null ? spec.doorS : (w > 5 ? (R() < 0.5 ? w * 0.25 : w * 0.72) : null), doorW: spec.doorW }));
   for (const sd of ["l", "r", "b"]) if (faces.includes(sd)) groundFloor(F[sd], gh, mat, col, R, Object.assign({}, go, { doorS: null, signKey: sd === "b" ? null : go.signKey, awning: null }));
   for (const sd of ["l", "r", "b"]) if (!faces.includes(sd)) frect(F[sd], 0, F[sd].L, 0, gh, 0, mat, mulc(col, 0.88));
@@ -706,6 +722,9 @@ function pickSpec(lot, R) {
 export async function buildCity(scene, ctx) {
   const progress = ctx.progress || (() => {}), yieldFrame = ctx.yieldFrame || (() => Promise.resolve());
   const leafGeo = ctx.leafGeo, leafMat = ctx.leafMat;
+  const table = ctx.shopTable && Array.isArray(ctx.shopTable.shops) && ctx.shopTable.shops.length ? ctx.shopTable : null;
+  if (table) { SHOP_ROWS = table.shops.filter((r) => r && r.name); SHOPS = SHOP_ROWS.map((r) => String(r.name).toUpperCase()); }
+  else SHOP_ROWS = SHOPS.map((name) => ({ name, kind: "general" }));
   makeMaterials();
   const group = new THREE.Group(); group.name = "city"; scene.add(group);
   const colliders = [], doors = [], plots = [], landmarks = [], firefly = [], benches = [], lampSpots = [], treeSpots = [];
@@ -764,6 +783,7 @@ export async function buildCity(scene, ctx) {
 
   // ---- blocks and buildings
   const civicLots = {}; const parkingLots = []; let blockN = 0;
+  const fronts = [];   // Phase 3: every storefront with a sign and a door (its shop is picked after all of them exist)
   const blockKeys = []; for (let j = 0; j < zs.length - 1; j++) for (let i = 0; i < xs.length - 1; i++) blockKeys.push([i, j]);
   for (const [i, j] of blockKeys) {
     const plan = PLANS[i + "," + j] || {}; const R = rng(7337 + i * 101 + j * 1009);
@@ -794,10 +814,27 @@ export async function buildCity(scene, ctx) {
       if (lot.tag) { const H = buildCivic(lot, R, doors, landmarks); civicLots[lot.tag] = lot; solid(bb, H); continue; }
       const spec = pickSpec(lot, R);
       if (spec.parking) { parkingLots.push(lot); continue; }
-      const H = building(lot, spec, R); solid(bb, H);
+      const rec = { refs: [], door: null };
+      const H = building(lot, spec, R, rec); solid(bb, H);
+      if (!rec.lobby && rec.door != null && rec.refs.length) fronts.push({ lot, rec, bb });
     }
     if (blockN % 3 === 0) { progress(0.36 + 0.4 * blockN / blockKeys.length, "Raising the buildings"); await yieldFrame(); }
   }
+
+  // ---- Phase 3: shops. Each storefront gets a row of the shop table; its sign, an OPEN sign on the door and a green
+  // threshold strip are written into the kit batches (0 extra draw calls). Empty storefronts read FOR LEASE.
+  const shopSlots = assignShops(fronts, SHOP_ROWS);
+  for (const f of fronts) {
+    const uv = signUV(f.slot ? "shop" + f.slot.rowIndex : "forlease");
+    for (const [sb, off] of f.rec.refs) for (let k = 0; k < 8; k++) sb.u[off + k] = uv[k];
+    if (!f.slot) continue;
+    const lot = f.lot, c = f.rec.door; setFrame(lot.ox, CURB, lot.oz, lot.fx, lot.fz);
+    const F = frames(0, 0, lot.w, lot.d).f;
+    frect(F, c - 0.34, c + 0.34, 2.5, 2.76, 1.325, "sign", WHITE, signUV("open"));
+    quad("sign", F.M(c - 0.8, 0.012, -0.55), F.M(c + 0.8, 0.012, -0.55), F.M(c + 0.8, 0.012, 0.27), F.M(c - 0.8, 0.012, 0.27), [0, 1, 0], signUV("green"), WHITE);
+  }
+  const newsstand = buildNewsstand(colliders, landmarks);
+  const courier = buildCourierBike(shopSlots.find((s) => s.row.job === "courier") || shopSlots[0], colliders);
 
   // ---- surface parking lots (painted stalls, a sign) + empty plots (gravel, open-lot board)
   const parked = [];
@@ -892,7 +929,7 @@ export async function buildCity(scene, ctx) {
   posts.castShadow = true; pools.renderOrder = 2; group.add(posts, globes, pools);
 
   // keep every real door in sight from the street: no street tree right in front of a door (11/5)
-  for (let k = treeSpots.length - 1; k >= 0; k--) if (doors.some((d) => Math.hypot(d.front[0] - treeSpots[k][0], d.front[1] - treeSpots[k][1]) < 6)) treeSpots.splice(k, 1);
+  for (let k = treeSpots.length - 1; k >= 0; k--) if (doors.some((d) => Math.hypot(d.front[0] - treeSpots[k][0], d.front[1] - treeSpots[k][1]) < 6) || (newsstand && Math.hypot(newsstand.front.x - treeSpots[k][0], newsstand.front.z - treeSpots[k][1]) < 5)) treeSpots.splice(k, 1);
   if (leafGeo && treeSpots.length) {
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.17, 3.0, 6), new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.95 }), treeSpots.length);
     const crowns = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1.15, 1), new THREE.MeshStandardMaterial({ color: 0x46622f, roughness: 0.9 }), treeSpots.length);
@@ -983,6 +1020,7 @@ export async function buildCity(scene, ctx) {
     },
     claimPlot(plotIndex, row) { return claimPlotBuilding(group, plots.find((p) => p.plot === plotIndex), row); },
     signals, traffic, crossers, bus,
+    shops: shopSlots, newsstand, courier, forLease: fronts.length - shopSlots.length,   // Phase 3
     // Phase 2 LOD: chunks beyond LOD_DIST draw only their main triangles (no sills, mullions, rooftop units...)
     lodUpdate(cam) {
       let main = 0, all = 0;
@@ -1446,6 +1484,106 @@ function claimPlotBuilding(group, p, row) {
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(lot.w - 1.5, 9), 1.0), mat); const sp = lotPoint(lot, lot.w / 2, -0.12);
   sign.position.set(sp[0], CURB + 4.0, sp[1]); sign.rotation.y = Math.atan2(lot.fx, lot.fz); sub.add(sign);
   return { group: sub, H, door: { label: (row.project_name || "Project") + " — Project Hall", x: p.fx, z: p.fz, hw: 2.2, hd: 2.2 } };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Phase 3: shops. Which shop goes behind which storefront, the newsstand kiosk and the courier bike.
+// ---------------------------------------------------------------------------------------------------------------
+// A row can ask for a street ("street", and "cross" for the corner it should be near). Every row gets one storefront
+// before any row gets a second, and copies of the same shop are kept as far apart as the city allows. "max" caps the
+// copies (a row with a street has one shop unless it says otherwise). Storefronts the kit drew with dark windows stay
+// empty (FOR LEASE).
+function assignShops(fronts, rows) {
+  const xN = GRID.xNames, zN = GRID.zNames, slots = [];
+  for (const f of fronts) {
+    const l = f.lot;
+    f.streets = [l.row === "N" ? zN[l.j] : zN[l.j + 1]];
+    if (l.cornerL) f.streets.push(l.row === "N" ? xN[l.i] : xN[l.i + 1]);
+    if (l.cornerR) f.streets.push(l.row === "N" ? xN[l.i + 1] : xN[l.i]);
+    const p = lotPoint(l, l.w - f.rec.door, -0.7); f.x = p[0]; f.z = p[1]; f.slot = null;
+  }
+  const open = fronts.filter((f) => !f.rec.closed), used = rows.map(() => []), R = rng(20261111);
+  const give = (f, ri) => {
+    const l = f.lot, row = rows[ri], cap = lotPoint(l, l.w / 2, -0.45);
+    const s = { id: slots.length, rowIndex: ri, row, name: SHOPS[ri], x: f.x, z: f.z, hw: 1.15, hd: 0.75, face: [l.fx, l.fz], w: l.w, d: l.d, doorS: f.rec.door,
+      cap: [cap[0], cap[1]], streets: f.streets, seed: ((Math.round(f.x * 13) * 73856093) ^ (Math.round(f.z * 13) * 19349663)) >>> 0, copy: used[ri].length };
+    f.slot = s; used[ri].push(f); slots.push(s);
+  };
+  rows.forEach((row, ri) => {   // rows that ask for a street go first
+    if (!row.street) return;
+    const xi = xN.indexOf(row.street), zi = zN.indexOf(row.street), ci = row.cross ? xN.indexOf(row.cross) : -1, cj = row.cross ? zN.indexOf(row.cross) : -1;
+    const tx = xi >= 0 ? GRID.xs[xi] : ci >= 0 ? GRID.xs[ci] : 10, tz = zi >= 0 ? GRID.zs[zi] : cj >= 0 ? GRID.zs[cj] : -20;
+    let best = null, bd = Infinity;
+    for (const f of open) { if (f.slot || !f.streets.includes(row.street)) continue; const d = Math.hypot(f.x - tx, f.z - tz) + (row.cross && !f.streets.includes(row.cross) ? 40 : 0); if (d < bd) { bd = d; best = f; } }
+    if (best) give(best, ri);
+  });
+  const rest = open.filter((f) => !f.slot); for (let k = rest.length - 1; k > 0; k--) { const j = Math.floor(R() * (k + 1)); [rest[k], rest[j]] = [rest[j], rest[k]]; }
+  for (const f of rest) {
+    let best = -1, bs = -Infinity;
+    rows.forEach((row, ri) => {
+      const n = used[ri].length; if (n >= (row.max || (row.street ? 1 : 99))) return;
+      let near = 400; for (const o of used[ri]) near = Math.min(near, Math.hypot(o.x - f.x, o.z - f.z));
+      const score = -n * 1000 + near + R() * 30; if (score > bs) { bs = score; best = ri; }
+    });
+    if (best >= 0) give(f, best);
+  }
+  return slots;
+}
+
+// The newsstand: a green kiosk on the courthouse green, facing Berry St. Open on its east side so the seller walks in
+// behind the counter. All of it is merged into the kit batches.
+function buildNewsstand(colliders, landmarks) {
+  const W = 3.4, D = 2.4, ox = 19.2, oz = -9.25, oy = CURB + 0.06, G = lin(0x1f4d3a), G2 = lin(0x18402f), wood = lin(0x6e5238);
+  setFrame(ox, oy, oz, 0, 1);
+  box("sidewalk", -1.0, 0, -0.1, W + 0.25, 0.02, D + 0.25, WHITE, "tfblr");
+  box("trim", 0, 0, D - 0.1, W, 2.6, D, G, "fblr"); box("trim", W - 0.1, 0, 0, W, 2.6, D, G, "fblr"); box("trim", 0, 0, 0, 0.12, 2.6, 0.5, G, "fblr");
+  box("trim", 0.1, 0, 0, W - 0.1, 0.95, 0.12, G2, "fb"); box("trim", -0.02, 0.95, -0.28, W, 1.0, 0.52, wood, "fbtdlr");
+  box("trim", 0, 2.2, -0.04, W, 2.66, 0.1, G, "fbd"); box("roof", -0.3, 2.62, -0.35, W + 0.3, 2.74, D + 0.2, lin(0x3a3d3a), "fbtdlr");
+  quad("sign", [W - 0.5, 2.26, -0.05], [0.5, 2.26, -0.05], [0.5, 2.6, -0.05], [W - 0.5, 2.6, -0.05], [0, 0, -1], signUV("civic_newsstand"), WHITE);
+  quad("awning", [0, 2.22, -0.04], [W, 2.22, -0.04], [W, 1.98, -0.95], [0, 1.98, -0.95], [0, 0.8, 0], [0, 0, W, 0, W, 1, 0, 1], lin(0x1f4d3a));
+  quad("awning", [0, 1.98, -0.95], [W, 1.98, -0.95], [W, 1.8, -0.95], [0, 1.8, -0.95], [0, 0, -1], [0, 0, W, 0, W, 0.2, 0, 0.2], lin(0x1b4434));
+  const stacks = {}, ids = PAPERS.map((p) => p[0]);
+  ids.forEach((id, k) => {
+    const sx = W / 2 + 1.05 - k * 0.7, uv = signUV("paper_" + id);
+    box("trim", sx - 0.22, 1.0, 0.0, sx + 0.22, 1.13, 0.32, lin(0xe9e4d6), "fblr");
+    quad("sign", [sx - 0.22, 1.131, 0.32], [sx + 0.22, 1.131, 0.32], [sx + 0.22, 1.131, 0.0], [sx - 0.22, 1.131, 0.0], [0, 1, 0], uv, WHITE);   // reads the right way up for the seller
+    quad("sign", [sx + 0.3, 0.2, -0.01], [sx - 0.3, 0.2, -0.01], [sx - 0.3, 0.82, -0.01], [sx + 0.3, 0.82, -0.01], [0, 0, -1], uv, WHITE);   // the rack on the front
+    for (let r = 0; r < 2; r++) quad("sign", [sx + 0.3, 1.25 + r * 0.5, D - 0.11], [sx - 0.3, 1.25 + r * 0.5, D - 0.11], [sx - 0.3, 1.65 + r * 0.5, D - 0.11], [sx + 0.3, 1.65 + r * 0.5, D - 0.11], [0, 0, -1], signUV("paper_" + ids[(k + r + 1) % ids.length]), WHITE);
+    const p = wp([sx, 1.14, 0.16]); stacks[id] = { x: p[0], y: p[1], z: p[2] };
+  });
+  const wb = (x0, z0, x1, z1, h) => { const a = wp([x0, 0, z0]), b = wp([x1, 0, z1]); colliders.push({ x: (a[0] + b[0]) / 2, z: (a[2] + b[2]) / 2, width: Math.abs(a[0] - b[0]), depth: Math.abs(a[2] - b[2]), h }); };
+  wb(0, D - 0.12, W, D, 2.7); wb(W - 0.12, 0, W, D, 2.7); wb(0, -0.2, W, 0.45, 1.1);
+  const pt = (x, z) => { const p = wp([x, 0, z]); return { x: p[0], z: p[2] }; };
+  const centre = pt(W / 2, D / 2); landmarks.push({ name: "Newsstand", x: centre.x, z: centre.z, kind: "civic", id: "newsstand" });
+  return { stacks, seller: pt(W / 2, 1.25), front: pt(W / 2, -1.3), face: [0, 1], customers: [pt(W / 2 - 0.85, -0.8), pt(W / 2, -0.85), pt(W / 2 + 0.85, -0.8)],
+    from: [pt(W / 2 + 11, -1.75), pt(W / 2 - 11, -1.75)], centre, y: CURB };
+}
+
+// The courier's bike, on the sidewalk by the bike shop's window: a real frame (two wheels, tubes, bars, a crate).
+function bikeInto(mat, M, col, crate) {
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), a = new THREE.Vector3(), b = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
+  const tube = (p0, p1, t, c) => { a.set(...p0); b.set(...p1); const len = a.distanceTo(b); q.setFromUnitVectors(up, b.clone().sub(a).normalize());
+    m.compose(a.clone().add(b).multiplyScalar(0.5), q, one).premultiply(M); addGeo(mat, new THREE.BoxGeometry(t, len, t), m, c || col); };
+  const wheel = new THREE.TorusGeometry(0.33, 0.022, 5, 18); wheel.rotateY(Math.PI / 2);
+  for (const z of [-0.52, 0.52]) { m.makeTranslation(0, 0.35, z).premultiply(M); addGeo(mat, wheel, m, DARK); }
+  const bb = [0, 0.33, -0.08], seat = [0, 0.86, -0.22], head = [0, 0.84, 0.36], axF = [0, 0.35, 0.52], axR = [0, 0.35, -0.52];
+  tube(bb, seat, 0.035); tube(seat, head, 0.035); tube(bb, head, 0.04); tube(bb, axR, 0.028); tube(seat, axR, 0.024); tube(head, axF, 0.03);
+  tube([0, 0.84, 0.36], [0, 1.0, 0.33], 0.028, METAL); tube([-0.27, 1.0, 0.33], [0.27, 1.0, 0.33], 0.026, METAL); tube(seat, [0, 0.95, -0.24], 0.026, METAL);
+  m.makeTranslation(0, 0.97, -0.25).premultiply(M); addGeo(mat, new THREE.BoxGeometry(0.15, 0.05, 0.27), m, DARK);
+  if (crate) { m.makeTranslation(0, 0.9, 0.62).premultiply(M); addGeo("trim", new THREE.BoxGeometry(0.42, 0.26, 0.32), m, lin(0x8a6a44)); }
+}
+function buildCourierBike(slot, colliders) {
+  if (!slot) return null;
+  const s = slot.doorS + (slot.doorS + 2.5 < slot.w - 1.2 ? 2.4 : -2.4);   // beside the door, under the window
+  const right = [slot.face[1], -slot.face[0]], base = [slot.x - right[0] * slot.doorS - slot.face[0] * 0.7, slot.z - right[1] * slot.doorS - slot.face[1] * 0.7];   // the facade's left end
+  const at = (along, out) => [base[0] + right[0] * along + slot.face[0] * out, base[1] + right[1] * along + slot.face[1] * out];
+  const yaw = Math.atan2(right[0], right[1]), M = new THREE.Matrix4();
+  detail(() => {
+    const p = at(s, 0.5); M.makeRotationY(yaw).setPosition(p[0], CURB, p[1]); bikeInto("metal", M, lin(0xd0562a), true);
+  });
+  const c = at(s, 0.4), spot = at(s, 1.45);
+  colliders.push({ x: c[0], z: c[1], width: Math.abs(right[0]) > 0.5 ? 1.9 : 0.7, depth: Math.abs(right[0]) > 0.5 ? 0.7 : 1.9, h: 1.1 });
+  return { x: spot[0], z: spot[1], hw: 1.3, hd: 1.0, shop: slot.name, slot: slot.id };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
