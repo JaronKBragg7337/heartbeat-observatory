@@ -89,10 +89,25 @@ fs.writeFileSync(path.join(OUT, "settings.json"), JSON.stringify(await evaluate(
 
 const list = await lines(), manifest = [];
 for (const l of list) {
-  const r = args.input
-    ? await evaluate(`window.__processWav(${JSON.stringify(l.who)}, ${JSON.stringify(fs.readFileSync(path.join(path.resolve(args.input), l.file)).toString("base64"))})`)
-    : await evaluate(`window.__renderLine(${JSON.stringify(l.who)}, ${JSON.stringify(l.text)})`);
-  fs.writeFileSync(path.join(OUT, l.file), Buffer.from(r.b64, "base64"));
+  // 11/12/2026 (Claude): resume + retry. The voice worker sometimes throws "Invalid array length" at a random line
+  // (4:07 AM run died after 34_00, the 7:03 rerun after 38_01), which killed the whole news render. Lines already
+  // rendered for this date are kept (only when this run is not using --input), and a failing line is retried 3 times.
+  const outFile = path.join(OUT, l.file);
+  if (!args.input && process.env.VOICES_RESUME !== "0" && fs.existsSync(outFile) && fs.statSync(outFile).size > 44) {
+    const sec = (fs.statSync(outFile).size - 44) / 2 / 48000;
+    manifest.push({ ...l, seconds: +sec.toFixed(3) }); console.log(l.file, sec.toFixed(2) + "s (kept)"); continue;
+  }
+  let r, lastErr;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      r = args.input
+        ? await evaluate(`window.__processWav(${JSON.stringify(l.who)}, ${JSON.stringify(fs.readFileSync(path.join(path.resolve(args.input), l.file)).toString("base64"))})`)
+        : await evaluate(`window.__renderLine(${JSON.stringify(l.who)}, ${JSON.stringify(l.text)})`);
+      break;
+    } catch (e) { lastErr = e; console.log(l.file, `attempt ${attempt} failed: ${e.message}`); await new Promise((res) => setTimeout(res, 1500 * attempt)); }
+  }
+  if (!r) throw lastErr;
+  fs.writeFileSync(outFile, Buffer.from(r.b64, "base64"));
   manifest.push({ ...l, seconds: +r.seconds.toFixed(3) }); console.log(l.file, r.seconds.toFixed(2) + "s");
 }
 fs.writeFileSync(path.join(OUT, `manifest_${WHO}.json`), JSON.stringify(manifest, null, 1));
