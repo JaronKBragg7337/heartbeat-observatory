@@ -216,7 +216,7 @@ function itemHTML(it, { terms, context } = {}) {
   const lab = it.label ? `<span class="lab ${it.label}">${esc(it.label)}</span>` : "";
   const cls = it.cls ? `<span class="cls">${esc(it.cls)}</span>` : "";
   const tm = it.time ? `<span class="tm">${esc(it.time)}</span>` : "";
-  const links = it.urls.slice(0, 6).map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(host(u))}</a>`).join("");
+  const links = it.urls.slice(0, 6).map((u) => /^https?:\/\//i.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(host(u))}</a>` : `<span class="src-name">${esc(u)}</span>`).join("");
   const money = it.money && !/^none\b/i.test(it.money) ? `<span class="money" title="What market or asset it touches">${hl(it.money, terms)}</span>` : "";
   const ctx = context ? `<div class="ctx">${context}</div>` : "";
   const plain = !it.label && !it.urls.length;
