@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<script src="/hb-device-tier.js"></script>
+<title>AI Fund Desk · Heartbeat Observatory</title>
+<link rel="stylesheet" href="/section.css" />
+<style>
+  .wrap { max-width: 760px; }
+  .lede { color: var(--muted); line-height: 1.6; max-width: 60ch; margin: 10px auto 0; }
+  .who { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .paper { display:inline-block; margin-top:12px; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#e8c37a; border:1px solid #5a4a2a; border-radius:999px; padding:5px 12px; background:#1a1610; }
+  h2.sec { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 26px 0 10px; font-weight: 600; }
+  .card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 14px 16px; margin-bottom: 10px; }
+  .card p { font-size: .92rem; line-height: 1.55; color: #c9d1d9; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+  .tabs { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; position:sticky; top:49px; z-index:5; background:var(--bg,#070a0f); padding:6px 0; margin-top:18px; border-bottom:1px solid var(--line); }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tabs a { flex:none; display:inline-flex; align-items:center; min-height:44px; padding:0 16px; border-radius:22px; border:1px solid var(--line); background:var(--panel); color:var(--text); text-decoration:none; font-size:15px; white-space:nowrap; }
+  .tabs a.on { background:var(--text); color:#0a0e14; border-color:var(--text); font-weight:600; }
+  .tabpanel[hidden] { display:none !important; }
+  .gate { text-align: center; padding: 40px 10px; }
+  .gate a { color: var(--text); display:inline-flex; min-height:44px; align-items:center; }
+  .hero-num { display:flex; flex-wrap:wrap; gap:10px; }
+  .tile { flex:1 1 150px; border:1px solid var(--line); border-radius:14px; background:var(--panel); padding:12px 14px; }
+  .tile .k { font-size:12px; color:var(--muted); }
+  .tile .v { font-size:1.45rem; font-weight:700; font-variant-numeric:tabular-nums; margin-top:4px; }
+  .tile .s { font-size:12px; color:var(--muted); margin-top:2px; }
+  .up { color:#0ca30c; } .down { color:#e66767; }
+  table { width:100%; border-collapse:collapse; font-size:.86rem; font-variant-numeric:tabular-nums; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  td.r, th.r { text-align:right; }
+  .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:22px; overflow:hidden; margin-bottom:10px; }
+  .seg button { font-family:inherit; min-height:44px; padding:0 16px; background:var(--panel); color:var(--text); border:0; font-size:14px; cursor:pointer; }
+  .seg button.on { background:var(--text); color:#0a0e14; font-weight:600; }
+  .chart { position:relative; background:#0e131b; border:1px solid var(--line); border-radius:14px; padding:8px 6px 4px; }
+  .chart svg { display:block; width:100%; height:auto; touch-action:pan-y; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:#c3c2b7; margin:8px 4px 4px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { display:inline-block; width:16px; height:0; border-top:2px solid; }
+  .tip { position:absolute; pointer-events:none; background:#1a1a19; border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:8px 10px; font-size:12px; color:#f0efec; line-height:1.5; min-width:150px; display:none; z-index:3; }
+  .tip b { font-weight:600; }
+  .pill { display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+  .pill.ok { color:#0ca30c; border-color:#1d4d1d; } .pill.warn { color:#e8c37a; border-color:#5a4a2a; } .pill.bad { color:#e66767; border-color:#5a2a2a; }
+  .sl h3 { font-size:1rem; display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap; }
+  .kv { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:6px 12px; margin-top:8px; font-size:.86rem; }
+  .kv div span { display:block; font-size:11px; color:var(--muted); }
+  .big-line { font-size:1rem; line-height:1.6; color:#f0efec; }
+  ul.ev { list-style:none; } ul.ev li { font-size:.86rem; padding:8px 0; border-bottom:1px solid var(--line); line-height:1.5; }
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};try{if(localStorage.getItem("hb-internal")==="1")window.va("beforeSend",function(){return null})}catch(e){}</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="/"><span class="pulse"></span> Heartbeat Observatory</a>
+    <a class="signin" href="/admin">Admin</a>
+  </nav>
+  <div class="wrap">
+    <a class="back" href="/admin/" style="min-height:44px;display:inline-flex;align-items:center">&larr; Steering</a>
+    <header class="hero">
+      <h1>AI Fund Desk</h1>
+      <p class="lede">The AI team's paper fund: several strategies side by side, always against plain benchmarks. Updated every hour on the MSI.</p>
+      <span class="paper">Paper only · no real money · no orders</span>
+      <p class="who" id="who"></p>
+    </header>
+    <div class="gate" id="gate" hidden>
+      <p>Admins only. Sign in to see the fund.</p>
+      <p><a href="/admin/">Sign in &rarr;</a></p>
+    </div>
+    <div id="app" hidden>
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Fund sections">
+        <a href="#overview" data-t="overview" role="tab">Overview</a>
+        <a href="#sleeves" data-t="sleeves" role="tab">Strategies</a>
+        <a href="#positions" data-t="positions" role="tab">Positions</a>
+        <a href="#changes" data-t="changes" role="tab">Changes</a>
+        <a href="#compare" data-t="compare" role="tab">Compare</a>
+        <a href="#data" data-t="data" role="tab">Data</a>
+      </nav>
+      <section class="tabpanel" id="p-overview"></section>
+      <section class="tabpanel" id="p-sleeves" hidden></section>
+      <section class="tabpanel" id="p-positions" hidden></section>
+      <section class="tabpanel" id="p-changes" hidden></section>
+      <section class="tabpanel" id="p-compare" hidden></section>
+      <section class="tabpanel" id="p-data" hidden></section>
+    </div>
+    <footer><a href="/admin/control/">Control Room</a> · <a href="/admin/">Steering</a></footer>
+  </div>
+<script type="module">
+  import { getSupabase } from "/hb-supabase.js";
+  const supabase = await getSupabase();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const usd = (v) => v == null ? "-" : "$" + Math.round(v).toLocaleString();
+  const pct = (v, d = 1) => v == null ? "-" : (v > 0 ? "+" : "") + (v * 100).toFixed(d) + "%";
+  const cls = (v) => v == null ? "" : v > 0 ? "up" : v < 0 ? "down" : "";
+  const when = (iso) => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return iso; } };
+
+  // fixed categorical order (validated: dark surface #0e131b, all checks pass); twin also dashed = secondary encoding
+  const SERIES = [
+    ["fund", "AI fund", "#3987e5", ""], ["twin", "Frozen twin (no tuning)", "#d95926", "5 4"],
+    ["spy", "SPY hold", "#199e70", ""], ["6040", "60/40", "#c98500", ""], ["bil", "T-bills (BIL)", "#d55181", ""], ["btc", "BTC hold", "#9085e9", ""],
+  ];
+  const { data: { session } } = await supabase.auth.getSession();
+  let isAdmin = false;
+  if (session) { try { const { data } = await supabase.rpc("is_admin"); isAdmin = data === true; } catch (e) {} }
+  if (!isAdmin) { $("gate").hidden = false; if (session) $("who").textContent = (session.user.email || "") + " · not an admin"; }
+  else {
+    $("who").textContent = (session.user.email || "") + " · admin";
+    const { data: rows, error } = await supabase.from("ai_fund_snapshots").select("at,payload").order("at", { ascending: false }).limit(1);
+    if (error || !rows || !rows.length) { $("app").hidden = false; $("p-overview").innerHTML = `<div class="card"><p>No snapshot yet${error ? " (" + esc(error.message) + ")" : ""}.</p></div>`; }
+    else { render(rows[0].payload, rows[0].at); $("app").hidden = false; }
+  }
+
+  function showTab() {
+    let h = (location.hash || "#overview").slice(1);
+    if (!document.getElementById("p-" + h)) h = "overview";
+    document.querySelectorAll(".tabpanel").forEach((p) => { p.hidden = p.id !== "p-" + h; });
+    document.querySelectorAll("#tabs a").forEach((a) => { const on = a.dataset.t === h; a.classList.toggle("on", on); a.setAttribute("aria-selected", on); });
+  }
+  window.addEventListener("hashchange", () => { showTab(); window.scrollTo(0, 0); });
+  showTab();
+
+
+  function render(s, at) {
+    const f = s.fund, ageMin = Math.round((Date.now() - new Date(s.updated)) / 60000);
+    const fresh = ageMin <= 90 ? `<span class="pill ok">fresh · ${ageMin} min old</span>` : `<span class="pill bad">stale · ${Math.round(ageMin / 60)} h old</span>`;
+    const tl = s.tuner || {};
+    const lc = s.last_change;
+    const u = s.subs;
+    const subsTxt = subsLine(s);
+    const tiles = [
+      ["AI fund now", usd(f.live_value), `${pct(f.live_value / s.capital - 1, 2)} since start`],
+      ["Frozen twin", usd(s.twin.live_value), "same rules, never tuned"],
+      ["SPY hold", usd(s.bench.spy.live_value), pct(s.bench.spy.live_value / s.capital - 1, 2)],
+      ["60/40", usd(s.bench["6040"].live_value), pct(s.bench["6040"].live_value / s.capital - 1, 2)],
+    ];
+    $("p-overview").innerHTML = `
+      <h2 class="sec">Now</h2>
+      <div class="hero-num">${tiles.map(([k, v, x]) => `<div class="tile"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="s">${esc(x)}</div></div>`).join("")}</div>
+      <p class="meta">Started ${esc(s.forward_start)} close with ${usd(s.capital)} paper · updated ${when(s.updated)} ${fresh}${f.halted ? ' · <span class="pill bad">fund halted to cash</span>' : f.scale < 1 ? ' · <span class="pill warn">fund at half size</span>' : ""}</p>
+      <h2 class="sec">Value vs benchmarks</h2>
+      <div class="seg" role="group" aria-label="Chart period"><button data-m="fwd" class="on">Live paper</button><button data-m="bt">Backtest since ${esc(s.backtest.start.slice(0, 4))}</button></div>
+      <div class="chart" id="chart"><svg id="svg" viewBox="0 0 360 220" role="img" aria-label="Paper value of the AI fund and benchmarks over time"></svg><div class="tip" id="tip"></div>
+        <div class="legend">${SERIES.map(([k, n, c, dash]) => `<span><i style="border-color:${c};${dash ? "border-top-style:dashed" : ""}"></i>${esc(n)}</span>`).join("")}</div></div>
+      <p class="meta" id="chartnote"></p>
+      <h2 class="sec">Could this pay the subs?</h2>
+      <div class="card"><p class="big-line">${esc(subsTxt)}</p><p class="meta">Subs target $${u.month_low}-${u.month_high}/month. Team read (Grok, Fable): about $90-120k for ~$300/month with honest returns; under $10k cannot do it.</p></div>
+      <h2 class="sec">Last hourly judgement</h2>
+      <div class="card"><p>${esc(tl.note || "none yet")}</p><p class="meta">${esc(tl.by || "")} · ${tl.at ? when(tl.at) : ""} · decision: ${esc(tl.decision || "-")}${(tl.rejected || []).length ? " · blocked by limits: " + esc(tl.rejected.map((r) => r.key + " (" + r.why + ")").join("; ")) : ""}</p></div>
+      <div class="card"><p><b>Last change:</b> ${lc ? esc(`${lc.key} ${lc.from} -> ${lc.to}: ${lc.reason}`) : "no tuning change yet - the tuner is holding until there is real forward data."}</p><p class="meta">${lc ? esc(lc.by || "") + " · " + when(lc.at) : "Every change is logged in projects/ai-fund/CHANGELOG.md."}</p></div>`;
+    let mode = "fwd";
+    const draw = () => chart(mode === "fwd" ? s.series : s.backtest.series, mode, s);
+    document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+      mode = b.dataset.m; document.querySelectorAll(".seg button").forEach((x) => x.classList.toggle("on", x === b)); draw();
+    }));
+    draw();
+
+    // strategies
+    $("p-sleeves").innerHTML = `<h2 class="sec">Strategies (sleeves)</h2>` + s.sleeves.map((x) => {
+      const m = x.metrics, b = x.backtest || {};
+      const st = x.status === "active" ? (x.scale < 1 ? '<span class="pill warn">half size</span>' : '<span class="pill ok">active</span>') : x.status === "paused" ? '<span class="pill warn">paused</span>' : '<span class="pill bad">retired</span>';
+      return `<div class="card sl"><h3><span>${esc(x.name)} · ${Math.round(x.weight * 100)}%</span>${st}</h3><p>${esc(x.desc)}</p>
+        <div class="kv"><div><span>Value now</span>${usd(x.live_value)}</div><div><span>Return (closes)</span><b class="${cls(m.total)}">${pct(m.total, 2)}</b></div>
+        <div><span>Max drawdown</span>${pct(m.maxdd)}</div><div><span>Trades / win rate</span>${x.trades} / ${x.win_rate == null ? "-" : Math.round(x.win_rate * 100) + "%"}</div>
+        <div><span>Benchmark</span>${esc(x.bench)}</div><div><span>Verdict</span>${esc(x.verdict)}</div></div>
+        <p class="meta">Backtest (not evidence): ${pct(b.ann)}/yr, max drawdown ${pct(b.maxdd)}, ${b.trades ?? "-"} trades, win rate ${b.win_rate == null ? "-" : Math.round(b.win_rate * 100) + "%"}, P(beats benchmark) ${b.p_beat ?? "-"}</p></div>`;
+    }).join("");
+
+    // positions
+    const pos = s.sleeves.flatMap((x) => x.positions.map((p) => ({ ...p, sleeve: x.name })));
+    const pend = s.sleeves.filter((x) => x.pending).map((x) => `${x.name} (${Object.entries(x.targets).map(([k, v]) => k + " " + Math.round(v * 100) + "%").join(", ") || "cash"})`);
+    $("p-positions").innerHTML = `<h2 class="sec">Open paper positions</h2>` + (pos.length ? `<div class="card scroll"><table><thead><tr><th>Sleeve</th><th>Holding</th><th class="r">Value</th><th class="r">Of sleeve</th><th class="r">vs cost</th></tr></thead><tbody>` +
+      pos.map((p) => `<tr><td>${esc(p.sleeve)}</td><td>${esc(p.sym)}</td><td class="r">${usd(p.value)}</td><td class="r">${Math.round(p.weight * 100)}%</td><td class="r ${cls(p.price / p.cost - 1)}">${p.cost ? pct(p.price / p.cost - 1) : "-"}</td></tr>`).join("") + `</tbody></table></div>` : `<div class="card"><p>No positions yet.</p></div>`) +
+      (pend.length ? `<div class="card"><p><b>Waiting for the next open:</b> ${esc(pend.join(" · "))}</p><p class="meta">Signals come from the last finished close; fills happen at the next bar's open with costs (ETFs 5 bps a side; crypto 0.6% fee + 0.1% slip a side).</p></div>` : "") +
+      `<div class="card"><p>Cash reserve: ${usd(f.reserve)}</p></div>`;
+
+    // changes
+    const ev = (f.events || []).slice().reverse();
+    $("p-changes").innerHTML = `<h2 class="sec">Risk rules that fired (live book)</h2><div class="card">${ev.length ? `<ul class="ev">${ev.map((e) => `<li><b>${esc(e[1])}</b> · ${esc(e[0])}<br>${esc(e[2])}</li>`).join("")}</ul>` : "<p>None yet.</p>"}</div>
+      <h2 class="sec">Hourly tuner</h2><div class="card"><p>A cheap AI (DeepSeek Flash; Codex Luna if it is down) may move only strategy weights (5-35%, 2 points a day, raises once a week) and two volatility targets. The frozen twin shows whether its changes help. Fable reviews the whole desk weekly and may propose code changes.</p><p class="meta">Last: ${esc(tl.decision || "-")} · ${esc(tl.note || "")}</p></div>`;
+
+    // compare
+    const bt = s.backtest;
+    const row = (n, m) => `<tr><td>${esc(n)}</td><td class="r ${cls(m.ann)}">${pct(m.ann)}</td><td class="r">${pct(m.maxdd)}</td><td class="r">${m.sharpe ?? "-"}</td></tr>`;
+    $("p-compare").innerHTML = `<h2 class="sec">Backtest since ${esc(bt.start)}</h2><div class="card scroll"><table><thead><tr><th>Book</th><th class="r">Per year</th><th class="r">Max drop</th><th class="r">Sharpe</th></tr></thead><tbody>
+      ${row("AI fund", bt.fund)}${row("AI fund at 3x costs", bt.fund_stress3x)}${SERIES.slice(2).map(([k, n]) => row(n, bt.bench[k])).join("")}</tbody></table>
+      <p class="meta">${esc(bt.label)} P(fund beats 60/40 day to day) = ${bt.p_beat_fund_vs_6040 ?? "-"}.</p></div>
+      <h2 class="sec">Other paper books on the MSI</h2>` + s.compare.map((r) => `<div class="card"><p><b>${esc(r.name)}</b>${r.pnl != null ? ` · <span class="${cls(r.pnl)}">${r.pnl >= 0 ? "+" : "-"}$${Math.abs(r.pnl).toFixed(2)}</span>` : ""}${r.vs != null ? ` (${esc(r.vs_label)}: ${r.vs >= 0 ? "+" : "-"}$${Math.abs(r.vs).toFixed(2)})` : ""}</p><p class="meta">${esc(r.basis || "")} · ${esc(r.note || "")}</p></div>`).join("") +
+      `<div class="card"><p><b>Fed-odds shadow</b> (zero capital): ${s.shadow_fed.n} shadow trades, ${s.shadow_fed.pnl >= 0 ? "+" : "-"}$${Math.abs(s.shadow_fed.pnl).toFixed(2)} on $10,000.</p><p class="meta">Public Kalshi prices read as a signal only; nothing is traded on a prediction market. Implied rate after the next meeting: ${s.shadow_fed.last ? esc(s.shadow_fed.last.implied_rate.toFixed(2) + "% (" + s.shadow_fed.last.event + ")") : "-"}</p></div>`;
+
+    // data
+    const fl = s.freshness.flags || [];
+    $("p-data").innerHTML = `<h2 class="sec">Data freshness</h2><div class="card"><p>${fl.length ? fl.map(esc).join("<br>") : "All hourly checks clear (freshness, bad prints, Yahoo vs Coinbase)."}</p>
+      <p class="meta">Last finished bars: SPY ${esc(s.freshness.spy_last)}, BTC ${esc(s.freshness.btc_last)} · snapshot ${when(at)}</p></div>
+      <div class="card scroll"><table><thead><tr><th>Symbol</th><th>Last finished bar</th></tr></thead><tbody>${Object.entries(s.freshness.last_complete).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</tbody></table></div>
+      <div class="card"><p>Sources: Yahoo chart API, Coinbase public prices, Kalshi public prices. Engine: tools/ai_fund/ on the MSI, task "HB AI Fund" every hour.</p></div>`;
+    showTab();
+  }
+
+  function subsLine(s) {
+    const u = s.subs, p = (x) => pct(x);
+    if (!u.ann_used || u.ann_used <= 0) return `Not on current numbers: the ${u.source} return is ${p(u.ann_used)} a year. T-bills alone would need about ${usd(u.tbill_capital_needed_mid)}.`;
+    return `At ${p(u.ann_used)} a year (${u.source}), ${usd(s.capital)} makes about ${usd(u.monthly_at_capital)} a month. Covering $${u.month_low}-${u.month_high} a month would take about ${usd(u.capital_needed_range[0])}-${usd(u.capital_needed_range[1])}, with drops like ${pct(u.maxdd_used, 0)}.${u.plan ? ` Planning at the team's honest 5-7% a year instead: ${usd(u.plan[0])}-${usd(u.plan[1])}.` : ""} T-bills alone: about ${usd(u.tbill_capital_needed_mid)} with almost no drop. At 3x trading costs: ${p(u.stress3x_ann)} a year.`;
+  }
+
+  function chart(series, mode, s) {
+    const svg = $("svg"), tip = $("tip"), W = 360, H = 220, L = 56, R = 8, T = 10, B = 24;
+    const lines = SERIES.map(([k, n, c, dash]) => ({ k, n, c, dash, pts: (series[k] || []).map((e) => [e[0], e[1]]) })).filter((l) => l.pts.length);
+    const dates = [...new Set(lines.flatMap((l) => l.pts.map((p) => p[0])))].sort();
+    $("chartnote").textContent = mode === "bt" ? s.backtest.label : (dates.length < 3 ? "The live book just started - this line grows one point per day (each close). Switch to Backtest for the long view." : "One point per daily close. Live values on the tiles above.");
+    if (dates.length < 2) { svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" fill="#898781" font-size="12" text-anchor="middle">${dates.length} day so far - more points after each close</text>`; return; }
+    const vals = lines.flatMap((l) => l.pts.map((p) => p[1]));
+    let lo = Math.min(...vals), hi = Math.max(...vals); const pad = Math.max((hi - lo) * 0.06, 250); lo -= pad; hi += pad;
+    const x = (d) => L + (dates.indexOf(d) / (dates.length - 1)) * (W - L - R), y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+    const ticks = 4, grid = [...Array(ticks + 1)].map((_, i) => lo + (hi - lo) * i / ticks);
+    const fmtK = (v) => (hi - lo) < 8000 ? "$" + Math.round(v).toLocaleString() : "$" + Math.round(v / 1000) + "k";
+    let h = grid.map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#2c2c2a" stroke-width="1"/><text x="${L - 6}" y="${y(v) + 4}" fill="#898781" font-size="10" text-anchor="end">${fmtK(v)}</text>`).join("");
+    h += `<text x="${L}" y="${H - 6}" fill="#898781" font-size="10">${dates[0]}</text><text x="${W - R}" y="${H - 6}" fill="#898781" font-size="10" text-anchor="end">${dates[dates.length - 1]}</text>`;
+    h += lines.map((l) => `<polyline fill="none" stroke="${l.c}" stroke-width="2" stroke-linejoin="round" ${l.dash ? `stroke-dasharray="${l.dash}"` : ""} points="${l.pts.map((p) => x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join(" ")}"/>`).join("");
+    const fund = lines.find((l) => l.k === "fund");
+    if (fund) { const lp = fund.pts[fund.pts.length - 1]; h += `<circle cx="${x(lp[0])}" cy="${y(lp[1])}" r="4" fill="${fund.c}" stroke="#0e131b" stroke-width="2"/>`; }
+    h += `<line id="xh" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#c3c2b7" stroke-width="1" opacity="0"/><rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent" id="hit"/>`;
+    svg.innerHTML = h;
+    const hit = svg.querySelector("#hit"), xh = svg.querySelector("#xh");
+    const move = (ev) => {
+      const r = svg.getBoundingClientRect(), cx = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * W / r.width;
+      const i = Math.max(0, Math.min(dates.length - 1, Math.round((cx - L) / (W - L - R) * (dates.length - 1)))), d = dates[i];
+      xh.setAttribute("x1", x(d)); xh.setAttribute("x2", x(d)); xh.setAttribute("opacity", ".6");
+      const rows = lines.map((l) => { const p = l.pts.find((q) => q[0] === d) || l.pts.filter((q) => q[0] <= d).pop(); return p ? `<div><span style="color:${l.c}">&#9644;</span> ${esc(l.n)}: <b>${usd(p[1])}</b></div>` : ""; }).join("");
+      tip.innerHTML = `<div style="color:#c3c2b7">${d}</div>${rows}`; tip.style.display = "block";
+      const px = x(d) / W * r.width; tip.style.left = Math.min(Math.max(px - 80, 4), r.width - 170) + "px"; tip.style.top = "8px";
+    };
+    hit.addEventListener("mousemove", move); hit.addEventListener("touchstart", move, { passive: true }); hit.addEventListener("touchmove", move, { passive: true });
+    hit.addEventListener("mouseleave", () => { tip.style.display = "none"; xh.setAttribute("opacity", "0"); });
+  }
+</script>
+<script defer src="/hb-editor.js"></script>
+</body>
+</html>
