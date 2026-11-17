@@ -1167,7 +1167,7 @@
   {
    "id": "asia",
    "kind": "story",
-   "strap": "TRUMP TO MANILA, THEN XI AND PUTIN; 'MAY MEET KIM'; RUSSIAN JETS OVER JAPAN",
+   "strap": "TRUMP TO MANILA, THEN XI AND PUTIN; 'MAY MEET KIM'; RUSSIAN JETS",
    "headline": "The President flies to Asia as Russian aircraft cross into Japanese airspace for the first time in two years",
    "category": "WORLD",
    "status": "mixed",
@@ -1401,7 +1401,7 @@
   {
    "id": "israel",
    "kind": "story",
-   "strap": "LAPID: 'ATTEMPTED COUP'; SPEAKER VOTE 9 AM ET; 3.5M PHOTOS ON AMAZON CLOUD",
+   "strap": "LAPID: 'ATTEMPTED COUP'; SPEAKER VOTE 9 AM ET; 3.5M PHOTOS ON AMAZON",
    "headline": "The opposition's word is coup, the vote is this morning, and an investigation into facial recognition",
    "category": "WORLD",
    "status": "mixed",
@@ -1506,7 +1506,7 @@
   {
    "id": "washington",
    "kind": "story",
-   "strap": "WH: NO TESTIMONY WITHOUT SIGNOFF; FDA PICK IN DOUBT; PENTAGON FAILS AUDIT",
+   "strap": "WH: NO TESTIMONY WITHOUT SIGNOFF; FDA PICK IN DOUBT; PENTAGON AUDIT",
    "headline": "The executive answers the new majority with a memo, and a nominee wobbles",
    "category": "POLITICS",
    "status": "mixed",
@@ -1704,7 +1704,7 @@
   {
    "id": "nyc",
    "kind": "story",
-   "strap": "MAMDANI DISBANDS NYPD STRATEGIC RESPONSE GROUP; 2 CO-OP CITY OFFICERS SHOT",
+   "strap": "MAMDANI DISBANDS NYPD PROTEST UNIT; 2 CO-OP CITY OFFICERS SHOT",
    "headline": "New York takes apart the unit that met the protests; a wellness check turns into a shooting in the Bronx",
    "category": "NATION",
    "status": "observed",
@@ -1780,7 +1780,7 @@
   {
    "id": "courts",
    "kind": "story",
-   "strap": "SCOTUS LEAVES MARYLAND GUN LIMITS; CLANCY RETRIAL MAR. 29; EPSTEIN DISPUTE",
+   "strap": "SCOTUS LEAVES MARYLAND GUN LIMITS; CLANCY RETRIAL MAR. 29; EPSTEIN",
    "headline": "Denials, dates and a dispute over a death: Monday in the courts",
    "category": "LAW",
    "status": "mixed",
@@ -2119,7 +2119,7 @@
   {
    "id": "africa-latam",
    "kind": "story",
-   "strap": "S. AFRICA: 17 DEAD IN 2 SHOOTINGS; SUDAN STRIKE; POPE HOME; PEÑA JAILED",
+   "strap": "S. AFRICA: 17 DEAD IN 2 SHOOTINGS; SUDAN STRIKE; POPE HOME; PEÑA",
    "headline": "From the Meridian desk: two massacres, an air strike, a pope's landing, a presidency moved to a cell",
    "category": "WORLD",
    "status": "mixed",
@@ -2248,7 +2248,7 @@
   {
    "id": "health",
    "kind": "story",
-   "strap": "PAHO RULES ON U.S. MEASLES TODAY; 13 BABIES BORN WITH MEASLES; BANGLADESH",
+   "strap": "PAHO RULES ON U.S. MEASLES TODAY; 13 BABIES BORN WITH MEASLES",
    "headline": "The measles verdict is today; the CDC count has not moved in four days; Bangladesh counts four more children",
    "category": "HEALTH",
    "status": "mixed",
@@ -2438,7 +2438,7 @@
   {
    "id": "weather",
    "kind": "weather",
-   "strap": "SIERRA: 2-4 FT OF SNOW, 80 MPH GUSTS WED-FRI; SF BAY WATERSPOUTS; COP31",
+   "strap": "SIERRA: 2-4 FT OF SNOW, 80 MPH GUSTS WED-FRI; SF BAY WATERSPOUTS",
    "headline": "A stronger storm for California, a wild Monday on the Bay, and a climate draft that gives up on 1.5",
    "category": "WEATHER",
    "status": "observed",
@@ -2539,7 +2539,7 @@
   {
    "id": "sports",
    "kind": "sports",
-   "strap": "CHARGERS 23, RAVENS 20; HUTCHINSON OUT FOR YEAR; GERMANY 5, NETHERLANDS 0",
+   "strap": "CHARGERS 23, RAVENS 20; HUTCHINSON OUT; GERMANY 5, NETHERLANDS 0",
    "headline": "Monday night in Baltimore, a torn ACL in Detroit, and a rout in Berlin",
    "category": "SPORTS",
    "status": "observed",
@@ -2672,7 +2672,7 @@
   {
    "id": "culture",
    "kind": "story",
-   "strap": "PATTINSON IS BOND; RAYE LEADS GRAMMYS WITH 11; GLENN CLOSE'S FIRST OSCAR",
+   "strap": "PATTINSON IS BOND; RAYE LEADS GRAMMYS WITH 11; GLENN CLOSE'S OSCAR",
    "headline": "Identity confirmed: the seventh Bond, a record-tying Grammy haul, and a letter under two hundred fifty words",
    "category": "CULTURE",
    "status": "observed",
@@ -2785,7 +2785,7 @@
   {
    "id": "also",
    "kind": "story",
-   "strap": "ALSO: TRUMP'S NVIDIA TRADES; DOORDASH-INSTACART; INTEL SUED; HIPPO ATE A HAT",
+   "strap": "ALSO: TRUMP'S NVIDIA TRADES; DOORDASH-INSTACART; INTEL SUED; A HIPPO",
    "headline": "Quick hits: the headlines our desks saw and did not open",
    "category": "ALSO",
    "status": "claim",
