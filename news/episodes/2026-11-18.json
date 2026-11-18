@@ -1,0 +1,2896 @@
+{
+ "date": "2026-11-18",
+ "title": "Heartbeat News — Wednesday, November 18, 2026",
+ "writer": "Claude, daily news job",
+ "tone": "straight news, two characters",
+ "sources": [
+  {
+   "name": "watch/wire/2026-11-18-top (must-cover list)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-18-top.md"
+  },
+  {
+   "name": "watch/claude/2026-11-18",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/claude/2026-11-18.md"
+  },
+  {
+   "name": "watch/codex/2026-11-18",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/codex/2026-11-18.md"
+  },
+  {
+   "name": "watch/deepseek/2026-11-18 (reader)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/deepseek/2026-11-18.md"
+  },
+  {
+   "name": "watch/grok/2026-11-18 (Meridian desk)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-18.md"
+  },
+  {
+   "name": "watch/grok/2026-11-18-gaps (blind-spot check)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/grok/2026-11-18-gaps.md"
+  },
+  {
+   "name": "watch/perplexity/2026-11-18",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/perplexity/2026-11-18.md"
+  },
+  {
+   "name": "watch/msi/2026-11-18 (thin: 21 of 21 searches failed; Verge RSS only)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/msi/2026-11-18.md"
+  },
+  {
+   "name": "watch/wire/2026-11-18",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-18.md"
+  },
+  {
+   "name": "watch/wire/2026-11-17 (items after 06:00)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/wire/2026-11-17.md"
+  },
+  {
+   "name": "watch/FORMAT.md (no kimi file for 2026-11-18)",
+   "url": "https://github.com/JaronKBragg7337/watch/blob/master/FORMAT.md"
+  }
+ ],
+ "skipped": [
+  {
+   "item": "Indiana Senate District 45 (Supreme Court lets Garten take the oath, certification still barred, Wednesday hearing, Garten recount request); Fort Wayne items (church-gun fugitive, IDOC death, Smith-Green, Bluffton tie-break, IURC hearing, NCAA D-II finals, Fantasy of Lights, hemp ban)",
+   "source": "claude §11, wire 2026-11-18 §13 (Axios)",
+   "why": "Domain 11 Indiana/Fort Wayne items; not big enough to matter outside Indiana (WRITER.md national-audience rule). Indiana's 200 measles cases air inside the national measles story."
+  },
+  {
+   "item": "Reddit post grouping the Microsoft, FAA, Chase, United and NSA outages as one pattern",
+   "source": "codex §17",
+   "why": "Labelled theory, social; the AP line on the same item (no indication of a common cause) airs in the outages segment."
+  },
+  {
+   "item": "The Verge headline framing Huang's departure as a possible plot against him",
+   "source": "codex §03",
+   "why": "Labelled theory; no company or board statement cited."
+  },
+  {
+   "item": "Thomas Markle charged over child sex abuse material in the Philippines (BBC headline)",
+   "source": "wire 2026-11-17 §21",
+   "why": "Single headline, body not opened by any desk; a criminal charge against a private individual needs more than a headline."
+  },
+  {
+   "item": "Daily Beast / HuffPost 'Kushner's $500M hotel deal is DOA'; Daily Beast 'Exhausted Trump, 80, makes jaw-dropping confession'",
+   "source": "wire 2026-11-17 §05, §13",
+   "why": "Tabloid framing, headline only, not opened."
+  },
+  {
+   "item": "ISW daily assessments; analysis and opinion pieces (Al Jazeera 'frozen conflict', 'How the Houthis fund war', Japan Times commentaries, Foreign Affairs, NYT 'Americans wonder if the country is breaking', Guardian 'Kerch bridge proof Kyiv still has cards')",
+   "source": "wire 2026-11-17 and 2026-11-18, §05, §13, §21",
+   "why": "Analysis and opinion, not events."
+  },
+  {
+   "item": "Codex's Polymarket resolution notes (NVDA EPS market Yes, Trump-Putin-Xi market, CFTC Kalshi TRUMPSAY order); Kalshi stock trading; grok §09/§10",
+   "source": "codex §09, §10; wire 2026-11-17 §13",
+   "why": "Domain 09/10 trader material (WRITER.md); the Kalshi halt aired yesterday."
+  },
+  {
+   "item": "Black Friday deals, gadget reviews, gift guides (Verge, NBC Select), Nike air sole, iFixit teardown, MacBook Neo discount, Fire TV Stick, Stanley tumbler, e-readers, Samsung tablet, Flipper One, Framework keyboard, Amflow e-bike, E Ink frame, lettuce indoors",
+   "source": "msi §21, wire 2026-11-17",
+   "why": "Shopping, sponsored or review items."
+  },
+  {
+   "item": "CFTC approval of a blockchain-based exchange seen only in a bot-chat line",
+   "source": "claude §01, deepseek §01",
+   "why": "Claude could not find it on cftc.gov; social-class claim with no outlet."
+  },
+  {
+   "item": "Greiz hospital emergency department knocked out by a hacker attack (one aggregator)",
+   "source": "claude §17",
+   "why": "Single aggregator, capture marks it unverified."
+  },
+  {
+   "item": "Irish Star framing of Tiger Woods's return around a DUI arrest; 'Stephen Hawking biography' review headline; Epstein-photo forensic claim (NYT/Al Jazeera headlines)",
+   "source": "claude §12, wire 2026-11-17 §21",
+   "why": "One outlet's framing or a single expert's claim read only as a headline; the Woods return itself airs in sports."
+  },
+  {
+   "item": "Re-runs of items aired on 11-16 and 11-17 beyond a passing mention (Mamdani's SRG, Chase and United outages, the Saudi commander change, Yemen's terrorist designation, Grammy nominations, Pattinson's casting itself, Estonia's border plan, Komyshuvakha's toll, Megaspeed probe, California v. OpenAI, Nvidia's national-security committee)",
+   "source": "wire 2026-11-17, must-cover list",
+   "why": "Aired yesterday; the must-cover list says cover only what is new. The new pieces (Bezos on Bond, Huang's House date) air today."
+  },
+  {
+   "item": "Perplexity's 'health threats of chemicals found everywhere' (Japan Times)",
+   "source": "wire 2026-11-18 §15",
+   "why": "The wire itself flagged the phrase as a false safety-word alarm on 11-17; a science feature, not an event."
+  }
+ ],
+ "ticker": [
+  "U.S. JETS STRIKE IRGC LAUNCH SITE ON QESHM ISLAND AFTER 3RD DRONE ATTACK ON BAHRAIN; KUWAIT'S AIR DEFENCES FIRE; IRAN: 'WE TARGETED ALI AL-SALEM'; BRENT SETTLES $93.14 (+0.8%)",
+  "TRUMP ON DIRTY-BOMB REPORT: 'VERY SERIOUSLY', 'MAJOR PRICE'; RUBIO: NO IMMINENT THREAT; IRAN: 'BASELESS AND FABRICATED'; 5 HELD IN NORTH MACEDONIA-GREECE PLOT; 27 YEARS FOR TRUMP-PLOT GUNMAN",
+  "PELTOLA WINS ALASKA; DEMOCRATS 56-44, 9 SEATS FLIPPED; HOUSE DEMOCRATS VOTE ON JEFFRIES TODAY; WHITE HOUSE PULLS FDA PICK OVERTON; FED'S COOK REFUSES WH HEARING",
+  "NVIDIA: REVENUE $115.8B (+103%), Q4 GUIDE $130B, NO CHINA; KRESS: BOARD 'WILL NOT REINSTATE JENSEN'; HUANG 'HONORED' TO RETURN, HOUSE INTERVIEW DEC. 1; SHARES +4-5% AFTER HOURS",
+  "S&P -1.0% TO A JULY LOW, DOW -849, 4TH DAY DOWN; GOLD $3,853 NEAR 1-YR LOW; DOLLAR 19-MO HIGH; 10-YR 5.10%; RETAIL SALES +0.2%; ANTHROPIC PRICES TONIGHT, TRADES THU AS ANT",
+  "KERCH: SBU SAYS AN ARCH AND THE ROAD SPAN 'DESTROYED'; MOSCOW: ROAD AND RAIL SUSPENDED, 'WILL BE REBUILT'; UKRAINE: 14 DEAD, 78 HURT; 306 DRONES; 700,000 HOUSEHOLDS DARK IN DNIPROPETROVSK",
+  "NSA CLASSIFIED NETWORK DOWN: 'SCHEDULED ROUTINE MAINTENANCE'; APPLE: 'INTERNAL UPDATE'; RUBIO: 'ZERO EVIDENCE' OUTAGES LINKED; FAA PAUSES JUNIPER ROUTER INSTALLS; EAS TEST 'PERFORMED AS EXPECTED'",
+  "PAHO: U.S., MEXICO AND BOLIVIA LOSE MEASLES-ELIMINATION STATUS AFTER 26 YEARS; CDC: 5,412 CASES, 6 DEATHS; INDIANA PASSES 200; BANGLADESH: 1,323 DEAD THIS YEAR",
+  "CALIFORNIA DMV BANS WAYMO FROM FREEWAYS: 'IMMINENT HAZARD'; WAYMO PAUSES FREEWAY RIDES IN EVERY MARKET; OPENAI POSTS GPT-6.2 ASTRA AND SOL; MICROSOFT IGNITE: CODE 2",
+  "KNESSET ELECTS KAHANA 66-52, OPPOSITION TAKES THE AGENDA; UK SANCTIONS 8 ISRAELI FIRMS; AUSTRALIA SANCTIONS SETTLERS; PALESTINIAN WOMAN, 72, SHOT DEAD NEAR JERICHO",
+  "TRUMP IN MANILA: QUAD SUMMIT, 'VERY BIG' PHILIPPINES DEAL; XI AND PUTIN MEET IN SHENZHEN; RUBIO ON KIM: 'A SERIOUS IDEA... MAY NOT ACTUALLY HAPPEN'; TALIBAN LEADER IN KABUL",
+  "RUSSIAN AN-12 CRASH KILLS 19 IN SIBERIA; LPG TANKER GAS HUSKY SINKS OFF BULGARIA, 19 RESCUED; 7 DRONES OVER MOLDOVA; PARIS: 'VERY LIMITED' FRENCH TROOPS IN UKRAINE; LAVROV: 'DIRECT PARTICIPATION'",
+  "FRANCE: 146,000 MARCH (CGT: 500,000+); UK INFLATION 3.6%, JOBLESS 4.6%, FTSE -1.8%; DEUTSCHE BANK LEAKS; TURKEY SEIZES SOZCU TV; COSTA RICAN JOURNALIST SHOT DEAD",
+  "SIERRA: 2-4 FT OF SNOW, 100 MPH GUSTS WED-FRI; L.A. FLOOD WATCH; CENTRAL FLORIDA: 12 INCHES POSSIBLE; FAIRBANKS BLIZZARD WARNING; PNG M6.0",
+  "PEORIA: PLANT TRAINEE INDICTED, PLEADS NOT GUILTY; L.A. LANDFILL GAS GEYSER: HEALTH EMERGENCY; USMNT 2-0 HAITI; CFP: GEORGIA, UTAH, ALABAMA, UCLA; WOODS RETURNS DEC. 3; GTA VI THURSDAY"
+ ],
+ "segments": [
+  {
+   "id": "open",
+   "kind": "open",
+   "strap": "HEARTBEAT NEWS",
+   "headline": "The day's news from the watch desk",
+   "category": "TODAY",
+   "graphic": {
+    "kicker": "TODAY",
+    "title": "An American strike on an Iranian island, a span in the Kerch Strait, a Senate at 56",
+    "bullets": [
+     "U.S. jets hit an IRGC launch site on Qeshm after a third drone attack on Bahrain; Kuwait's air defences fire",
+     "Ukraine says an arch and the road span of the Crimea bridge are destroyed; Moscow: traffic suspended",
+     "Peltola wins Alaska; Nvidia prints $115.8B and says Huang will not be back; the NSA's network went down",
+     "The U.S. loses its measles-elimination status after 26 years; California bans Waymo from freeways"
+    ]
+   },
+   "lines": [
+    {
+     "who": "vex",
+     "text": "Welcome to Heartbeat News. I'm AI Robot Vex."
+    },
+    {
+     "who": "joe",
+     "text": "And I'm Alien Joe. It's Wednesday, November eighteenth. Overnight, American aircraft struck a Revolutionary Guard launch site on Iran's Qeshm Island. A United States military official says it was in response to Iranian drones aimed at American personnel in Bahrain, the third such attack in five days."
+    },
+    {
+     "who": "joe",
+     "text": "Kuwait's air defences were firing at drones by morning. Iran says it hit back at an American air base. We will give you every side."
+    },
+    {
+     "who": "vex",
+     "text": "In Ukraine, the security service says an arch and the road span of Russia's bridge to Crimea are completely destroyed. Russia's transport ministry says road and rail are suspended and the bridge will be rebuilt. Fourteen people were killed across Ukraine on Tuesday. A Russian military transport crashed in Siberia with nineteen aboard. None survived."
+    },
+    {
+     "who": "joe",
+     "text": "At home, Mary Peltola won Alaska and the Democrats will have fifty-six Senate seats. Nvidia doubled its revenue and its interim chief said the board will not reinstate Jensen Huang, hours after he said he would be honored to come back."
+    },
+    {
+     "who": "joe",
+     "text": "The N.S.A.'s classified network went down. The agency calls it maintenance. The Secretary of State says there is zero evidence any of this week's outages are linked."
+    },
+    {
+     "who": "vex",
+     "text": "Also: the United States has lost its measles-elimination status after twenty-six years. California banned Waymo from its freeways and Waymo pulled off freeways everywhere. Israel's parliament has a new speaker from the opposition. Trump is in Manila and flies to Shenzhen today to meet Xi and Putin. Grand Theft Auto Six is out tomorrow. Long show again. Here we go."
+    }
+   ]
+  },
+  {
+   "id": "gulf",
+   "kind": "breaking",
+   "strap": "U.S. STRIKES QESHM AFTER 3RD BAHRAIN ATTACK; KUWAIT DEFENCES FIRE",
+   "headline": "A U.S. strike on Qeshm Island, a third attack on Bahrain, Kuwait's air defences up, and Iran's own account",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "THE GULF",
+    "title": "Tuesday night into Wednesday, by speaker",
+    "stats": [
+     {
+      "label": "U.S. military official (ABC, Fox)",
+      "value": "Aircraft struck IRGC launchers on Qeshm 'in response to IRGC targeting of US personnel and assets'; a 'self-defense strike'"
+     },
+     {
+      "label": "CENTCOM on X",
+      "value": "'Multiple Iranian one-way attack drones' toward Bahrain 'intercepted without any damage... or injury'"
+     },
+     {
+      "label": "IRGC / Iran's army",
+      "value": "Targeted the U.S. radar at Isa Air Base; drones at Ali al-Salem in Kuwait; says it captured a U.S. drone (unconfirmed)"
+     },
+     {
+      "label": "Brent / gasoline",
+      "value": "$93.14 settle, +0.8%; AAA $3.78, 7th day under $4"
+     }
+    ],
+    "bullets": [
+     "Bahrain: warning, then all-clear; 3rd drone attack on U.S. facilities there since Friday (AP: 'a 2-month lull ends')",
+     "Kuwait's military: air defences 'responding to hostile drone threats'; no casualty or damage reported",
+     "Hormozgan deputy governor: no residential or commercial damage; Tasnim: an air-defence launcher hit near Nariman",
+     "UKMTO: the tanker hit Monday was struck again Tuesday and caught fire; ABC: crew 'unaccounted for'; Gulf News: 24 sailors safe"
+    ]
+   },
+   "sources": [
+    {
+     "name": "ABC News live blog (U.S. official, UKMTO)",
+     "url": "https://abcnews.com/International/live-updates/iran-live-updates-tanker-attacked-strait-hormuz-ukmto/?id=138171071"
+    },
+    {
+     "name": "Fox News ('self-defense strike')",
+     "url": "https://www.foxnews.com/world/us-carries-out-self-defense-strike-irgc-missile-launch-site-qeshm-island"
+    },
+    {
+     "name": "Gulf News (Bahrain, Kuwait, Qeshm)",
+     "url": "https://gulfnews.com/world/mena/middle-east-war-iran-attacks-bahrain-kuwait-drone-threats-keep-gulf-on-high-alert-as-us-hits-irans-qeshm-1.500751444"
+    },
+    {
+     "name": "Iran International (CENTCOM post, IRGC statement)",
+     "url": "https://www.iranintl.com/en/202611177708"
+    },
+    {
+     "name": "AP (drones at Bahrain radar, Qeshm strike)",
+     "url": "https://apnews.com/article/582e0b5d51be06f0ed630fac24f39b72"
+    },
+    {
+     "name": "Al Jazeera live (Kuwait intercepts)",
+     "url": "http://aljazeera.com/news/liveblog/2026/11/18/iran-war-live-kuwait-says-intercepting-hostile-drone-attacks?update=5163130"
+    },
+    {
+     "name": "CNBC (Iran's army on Kuwait)",
+     "url": "https://www.cnbc.com/2026/11/18/trump-iran-war-hormuz-oil-.html"
+    },
+    {
+     "name": "CE Report (Iran says it downed a U.S. drone)",
+     "url": "https://www.cereport.eu/news/politics/94441"
+    },
+    {
+     "name": "WANA (Iranian Navy 'fourth tanker')",
+     "url": "https://wanaen.com/ukmto-reports-attack-on-tanker-in-strait-of-hormuz/"
+    },
+    {
+     "name": "Al Jazeera ('Ships risk Hormuz')",
+     "url": "https://www.aljazeera.com/video/newsfeed/2026/11/18/ships-risk-hormuz-strait-due-to-limited-us-protection?traffic_source=rss"
+    },
+    {
+     "name": "The Star / Xinhua (Brent settlement)",
+     "url": "https://www.thestar.com.my/news/world/2026/11/18/crude-futures-settle-higher"
+    },
+    {
+     "name": "AAA gas prices",
+     "url": "https://gasprices.aaa.com/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "vex",
+     "text": "Our top story. A United States military official told A.B.C. News that American aircraft struck Revolutionary Guard launchers on Qeshm Island on Tuesday, in the official's words, in response to I.R.G.C. targeting of United States personnel and assets. Fox News calls it a self-defense strike on a missile launch site. Qeshm sits inside the Strait of Hormuz."
+    },
+    {
+     "who": "vex",
+     "text": "What came before it, on the American side: Central Command posted that multiple Iranian one-way attack drones launched toward Bahrain were intercepted without any damage to United States equipment or injury to American personnel. That is the third drone attack on American facilities in Bahrain in five days. Friday, Sunday, Tuesday. The A.P.'s phrase: a two-month lull ends."
+    },
+    {
+     "who": "joe",
+     "text": "Iran's side, named. The Revolutionary Guard says it targeted the American radar at Isa Air Base in retaliation for drone incursions, and says it captured an American drone south of Qeshm."
+    },
+    {
+     "who": "joe",
+     "text": "Nobody else has seen that drone. Iran's army says it targeted American drone and missile sites in Kuwait, at the Ali al-Salem air base. A separate Iranian line says it shot down an American drone over the strait."
+    },
+    {
+     "who": "joe",
+     "text": "Claims, every one, and we read them as claims."
+    },
+    {
+     "who": "joe",
+     "text": "Kuwait's military says its air defences were responding to hostile drone threats. One page dates that Tuesday, another Wednesday. No casualty and no damage reported from Kuwait. Bahrain issued a warning, then an all-clear."
+    },
+    {
+     "who": "joe",
+     "text": "Iran's own deputy governor in Hormozgan says the strike caused no residential or commercial damage, and the Tasnim agency says an air-defence launcher near Nariman was hit. So both sides agree something on Qeshm was hit. They disagree on what."
+    },
+    {
+     "who": "vex",
+     "text": "At sea, the British monitor U.K.M.T.O. says the tanker hit on Monday was struck a second time on Tuesday and caught fire. A.B.C. reads the crew as unaccounted for. Gulf News says twenty-four Indian sailors are safe."
+    },
+    {
+     "who": "vex",
+     "text": "Those two readings have not been reconciled. The monitor posted two more warning numbers whose text no desk has read. Iran's navy says a fourth tanker was damaged. The Guard still says six sank. Nobody outside Iran has confirmed one."
+    },
+    {
+     "who": "vex",
+     "text": "The market: Brent settled at ninety-three dollars and fourteen cents, up seventy cents. West Texas at eighty-six dollars and one cent. That is the first day in this series that oil went up on Gulf news instead of down."
+    },
+    {
+     "who": "vex",
+     "text": "Gasoline, per Triple-A, three dollars and seventy-eight cents, a seventh day under four dollars, three cents cheaper than Monday and seventy-one cents dearer than a year ago."
+    },
+    {
+     "who": "joe",
+     "text": "Al Jazeera's morning headline says ships are risking the strait because American protection is limited. The Senate spent Tuesday asking the nominee for Navy secretary about the cost of this war and the health of sailors. He acknowledged the strain. We will keep both of those where they belong: one is a headline, the other is testimony."
+    },
+    {
+     "who": "joe",
+     "text": "So, in one breath: three drone attacks, one American strike, two air defences firing, one tanker hit twice, and oil up seventy cents. Humans call that Tuesday."
+    }
+   ]
+  },
+  {
+   "id": "dirty-bomb",
+   "kind": "story",
+   "strap": "TRUMP: 'VERY SERIOUSLY'; RUBIO: NO IMMINENT THREAT; IRAN: 'FABRICATED'",
+   "headline": "Day two of the Washington report: the President, the Secretary of State, Tehran, and two plots in court",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "IRAN",
+    "title": "The dirty-bomb report, day two, by speaker",
+    "stats": [
+     {
+      "label": "Trump",
+      "value": "'We take it very seriously'; 'we're looking into it'; Iran would pay a 'major price'"
+     },
+     {
+      "label": "Rubio",
+      "value": "No imminent threat to Washington (BusinessWorld headline)"
+     },
+     {
+      "label": "Iran",
+      "value": "Reports 'baseless and fabricated'; still no U.S. intelligence statement on the record"
+     },
+     {
+      "label": "North Macedonia",
+      "value": "5 arrested, 1 sought: Iran-directed plot to kill a target in Greece; Kathimerini: a senior Israeli executive"
+     }
+    ],
+    "bullets": [
+     "Six outlets carried Trump's 'very seriously' (BBC, Guardian, CBS, Reuters, France 24, USA Today)",
+     "Israeli media: Mossad shared intelligence; ProtoThema: six recruited through a criminal network; agencies have not named the target",
+     "Washington: a Pakistani man sentenced to 27 years for the Iran-backed plot to kill Trump (Guardian, BBC, AP)",
+     "Still no device found, no U.S. agency confirmation on the record; the CNN report stands as a report of a plan"
+    ]
+   },
+   "sources": [
+    {
+     "name": "The Guardian (Trump on the report)",
+     "url": "https://www.theguardian.com/world/2026/nov/17/trump-reported-iranian-plot-dirty-bomb-washington"
+    },
+    {
+     "name": "CBS News video ('we're looking into it')",
+     "url": "https://www.cbsnews.com/video/trump-says-were-looking-report-iran-may-use-dirty-bomb-dc/"
+    },
+    {
+     "name": "BusinessWorld (Rubio: no imminent threat; Iran's denial)",
+     "url": "https://bworldonline.com/world/2026/11/18/794679/rubio-says-no-imminent-threat-to-washington-after-report-of-possible-iranian-dirty-bomb-plot/"
+    },
+    {
+     "name": "DW (Iran dismisses the report)",
+     "url": "https://www.dw.com/en/iran-dismisses-report-of-alleged-dirty-bomb-attack-on-washington/a-79970741?maca=en-rss-en-world-4025-rdf"
+    },
+    {
+     "name": "Gulf News (Trump 'major price', Tehran denies)",
+     "url": "https://gulfnews.com/world/mena/us-iran-tensions-trump-warns-iran-major-price-tehran-denies-dirty-bomb-plot-bahrain-drone-attacks-1.500749924"
+    },
+    {
+     "name": "Times of Israel (North Macedonia plot)",
+     "url": "https://www.timesofisrael.com/north-macedonia-foils-iran-linked-assassination-plot-in-greece-said-aimed-at-israeli-exec/"
+    },
+    {
+     "name": "ABC / AP (4 detained in North Macedonia)",
+     "url": "https://abcnews.com/International/wireStory/4-detained-north-macedonia-alleged-iran-backed-assassination-138214034"
+    },
+    {
+     "name": "The Guardian (27-year sentence)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/17/pakistani-man-jailed-trump-murder-plot"
+    },
+    {
+     "name": "CNBC (Senate presses Navy nominee)",
+     "url": "https://www.cnbc.com/2026/11/18/us-iran-navy-hormuz-war-cao.html"
+    },
+    {
+     "name": "Al Jazeera (Navy chief: 'strain')",
+     "url": "https://www.aljazeera.com/news/2026/11/17/us-navy-chief-says-iran-war-has-put-strain-on-maritime-forces?traffic_source=rss"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "joe",
+     "text": "Yesterday's lead was C.N.N.'s report that seven American officials say Iran is drawing up plans for a dirty bomb or a chemical attack on Washington. Today the people with titles spoke. President Trump, in Manila: we take it very seriously, we're looking into it, and Iran would pay a major price. Six outlets carried it."
+    },
+    {
+     "who": "vex",
+     "text": "Secretary of State Rubio, on a Wednesday headline from BusinessWorld: there is no imminent threat to Washington. Iran called the reports baseless and fabricated. No American intelligence agency has put a sentence on the record. So the count stands where it stood: a report of a plan, a presidential warning, a cabinet reassurance, and a denial. No device."
+    },
+    {
+     "who": "joe",
+     "text": "Two plots that did reach a courtroom. North Macedonia's security agency says it and Greece foiled an Iran-directed plot to kill a target in Greece. Five arrested, four in Skopje and one in Greece, one more sought."
+    },
+    {
+     "who": "joe",
+     "text": "The Greek paper Kathimerini says the target was a senior Israeli executive at a Greek-based company. Israeli media say Mossad shared the intelligence. The agencies have not named the target."
+    },
+    {
+     "who": "vex",
+     "text": "And in Washington, a Pakistani man was sentenced to twenty-seven years in federal prison for the Iran-backed plot to kill Trump. The Guardian, the B.B.C. and the A.P. carried it. A sentence is observed. A plan in an intelligence report is not. We keep those in separate columns on purpose."
+    },
+    {
+     "who": "joe",
+     "text": "One more from the Senate. The nominee for Navy secretary, Hung Cao, told senators the Iran war is straining the fleet, on A.P.'s and Al Jazeera's reading of the hearing. Senators pressed him on costs and on sailors' health. That hearing is observed. His confirmation is not."
+    }
+   ]
+  },
+  {
+   "id": "kerch",
+   "kind": "story",
+   "strap": "SBU: KERCH ARCH AND ROAD SPAN 'DESTROYED'; 14 DEAD ACROSS UKRAINE",
+   "headline": "The Crimea bridge, by both governments; a day of 14 dead; 306 drones; an An-12 down with 19; a second tanker sunk off Bulgaria",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "UKRAINE",
+    "title": "Tuesday's war, by source",
+    "stats": [
+     {
+      "label": "SBU (via Kyiv Independent)",
+      "value": "'One of the metal arches and the automobile span under it were completely destroyed'"
+     },
+     {
+      "label": "Russia's Transport Ministry",
+      "value": "Road and rail suspended; damage being assessed; 'preliminarily' no casualties; Peskov: rebuilt 'even better'"
+     },
+     {
+      "label": "Ukraine, day reported Nov. 17",
+      "value": "14 killed, 78 injured; 306 drones (92 jet-powered) plus Iskander, Zircon, Kh-59/69; no intercept count"
+     },
+     {
+      "label": "Kemerovo",
+      "value": "An-12 military transport crashed near Yagunovo; all 19 aboard killed (Defence Ministry via RIA); 'technical malfunction'"
+     }
+    ],
+    "bullets": [
+     "Zelenskyy: 'seventh phase' of a weeks-long operation; Palianytsia drones on the road, Neptunes with Ruta and FP-5 drones on the rail; Russia's investigators call it a 'terrorist attack'",
+     "Kyiv: both Dnipro bridges closed, water and heat disrupted, 2 dead in Obolon; DTEK: 700,000 households dark in Dnipropetrovsk; Rivne 300 settlements; Mykolaiv 76",
+     "Moldova: 7 drones crossed in, one Shahed-type seen over Chisinau, 5 crash sites, no casualties; Sandu: Moscow 'cares neither about neutrality, nor sovereignty, nor human life'",
+     "Black Sea: LPG carrier Gas Husky sank off Byala after what its captain called drone strikes; all 19 crew rescued; 2nd sinking in 2 days; Krasnodar refinery strikes reported, unverified"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Kyiv Independent (Kerch, SBU and Moscow)",
+     "url": "https://kyivindependent.com/ukrainian-forces-reportedly-strike-crimean-bridge-after-russian-missiles-hit-kyiv-bridges/"
+    },
+    {
+     "name": "Zelenskyy on X (Kerch)",
+     "url": "https://x.com/ZelenskyyUa/status/2122803616230908214"
+    },
+    {
+     "name": "BBC (how the bridge attack unfolded)",
+     "url": "https://www.bbc.co.uk/news/articles/crz9dgz28zwdo?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "AP (second day of strikes)",
+     "url": "https://apnews.com/article/df4b867cf8f70e88843d8fefea5d643c"
+    },
+    {
+     "name": "Kyiv Independent (14 dead, 78 injured, Kyiv bridges)",
+     "url": "https://kyivindependent.com/russian-attacks-kill-14-injure-78-across-ukraine-over-past-day-hitting-kyivs-southern-northern-bridges/"
+    },
+    {
+     "name": "Kyiv Independent (Moldova's seven drones)",
+     "url": "https://kyivindependent.com/7-drones-cross-into-moldovan-airspace-during-latest-russian-attack-against-ukraine-1-spotted-over-chisinau/"
+    },
+    {
+     "name": "Kyiv Independent (Krasnodar refineries, unverified)",
+     "url": "https://kyivindependent.com/2-russian-oil-refineries-reportedly-targeted-in-overnight-drone-attack-on-krasnodar-krai/"
+    },
+    {
+     "name": "NBC News (An-12 crash, 19 dead)",
+     "url": "https://www.nbcnews.com/world/russia/russian-military-transport-plane-crashes-siberia-killing-19-according-rc609886"
+    },
+    {
+     "name": "gCaptain (Gas Husky sinks off Bulgaria)",
+     "url": "https://gcaptain.com/lpg-tanker-reported-to-have-sunk-off-bulgarias-black-sea-coast/"
+    },
+    {
+     "name": "BNR (Gas Husky, 19 rescued)",
+     "url": "https://bnrnews.bg/en/post/559270/lpg-carrier-gas-husky-sinks-near-byala"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "wall",
+     "text": "The bridge. Ukraine's security service says one of the metal arches of the Crimea bridge and the automobile span under it were completely destroyed on Tuesday."
+    },
+    {
+     "who": "vex",
+     "text": "President Zelenskyy called it the seventh phase of an operation underway for weeks: Palianytsia drones on the road section, Neptune missiles with Ruta and F.P.-five drones on the railway."
+    },
+    {
+     "who": "vex",
+     "text": "His two posts list the weapons differently. The desks did not merge them."
+    },
+    {
+     "who": "vex",
+     "text": "Russia's transport ministry says road and rail traffic are suspended, damage is being assessed, and on preliminary information there were no casualties. Kremlin spokesman Peskov: no doubt the bridge will be restored, and it will be even better than before. Russia's investigators call the strike a terrorist attack. No duration for the closure has been given by anyone."
+    },
+    {
+     "who": "joe",
+     "text": "The cost on the Ukrainian side, for the day reported Tuesday: fourteen killed and seventy-eight injured, per local authorities carried by the Kyiv Independent. Kyiv's two Dnipro bridges are closed, water and heat are disrupted, two people died in Obolon."
+    },
+    {
+     "who": "joe",
+     "text": "The air force listed Iskander, Zircon and Kh-fifty-nine missiles and three hundred six long-range drones, ninety-two of them jet-powered. It gave no count of how many were shot down."
+    },
+    {
+     "who": "joe",
+     "text": "The lights. The energy company D.T.E.K. says seven hundred thousand households in Dnipropetrovsk region were without power after the morning attacks. Three hundred settlements dark in Rivne, seventy-six in Mykolaiv. Two killed and twenty injured in Dnipropetrovsk alone. No megawatt figure, no restoration time. That is a winter sentence."
+    },
+    {
+     "who": "vex",
+     "text": "Moldova's defence ministry says seven drones crossed into its airspace during the attack. One Shahed-type was seen over the capital, Chisinau. Five crashed at named sites, a sixth possibly in Ocnita, the seventh vanished near Leova. No casualties. President Sandu: Moscow cares neither about neutrality, nor sovereignty, nor human life. Moldova is not in this war. The drones did not check."
+    },
+    {
+     "who": "joe",
+     "text": "In Siberia, an A.N.-twelve military transport crashed near Yagunovo in the Kemerovo region on a scheduled flight. All nineteen aboard were killed, per Russia's defence ministry through R.I.A. and Interfax. Early reports said seventeen. The preliminary cause is a technical malfunction. The crew put out the fire. Nineteen families. We say that plainly."
+    },
+    {
+     "who": "vex",
+     "text": "And in the Black Sea, a Liberian-flagged gas carrier, the Gas Husky, sank about fifty miles off Byala in Bulgaria's waters after what its captain described as drone strikes near the engine room and bridge."
+    },
+    {
+     "who": "vex",
+     "text": "All nineteen crew were rescued. No pollution recorded. It is the second sinking off Bulgaria in two days. Overnight, Ukrainian channels reported strikes on two refineries in Krasnodar. The Kyiv Independent could not verify them. Neither can we."
+    }
+   ]
+  },
+  {
+   "id": "allies",
+   "kind": "story",
+   "strap": "BRUSSELS ROW OVER DEEP STRIKES; EU DRAFTS €45B; PARIS CONFIRMS TROOPS",
+   "headline": "Brussels argues about Ukraine's deep strikes; three countries put up money; the EU drafts 45 billion; France admits trainers in Ukraine",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "UKRAINE'S BACKERS",
+    "title": "The contact group and the money, by speaker",
+    "stats": [
+     {
+      "label": "Elbridge Colby (U.S.)",
+      "value": "Deep strikes 'have not been effective in driving an end to the war'; 'the spectacle of deep strikes'"
+     },
+     {
+      "label": "Boris Pistorius (Germany)",
+      "value": "Criticising strikes on strategic military targets is 'quite a stupid thing'"
+     },
+     {
+      "label": "Norway / Sweden / Germany",
+      "value": "$300M to PURL; 720M kronor (~$71M); a separate $300M to PURL"
+     },
+     {
+      "label": "Commission draft (Kyiv Independent)",
+      "value": "+€45B in loans for 2027; €25B defence, €10B each MFA and Facility; not yet adopted"
+     }
+    ],
+    "bullets": [
+     "Wes Streeting (UK): long-range operations weakened Russian capabilities",
+     "Paris (Euronews): deputy defence minister Rufo told parliament of a 'very limited' deployment for training and maintenance, 'absence of any intention to fight'; Lavrov: 'direct participation'",
+     "Zelenskyy asks: €8B more this year under Ankara, €21B unused in SAFE, 40 F-16s, an interceptor exchange; 'not a donation'",
+     "Zelenskyy: the Starshield speed limit over occupied territory 'remains in place'; the IIHF site defaced after Russia was barred from the World Juniors; Moscow's federation denies it"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Kyiv Independent (Colby, Pistorius, Streeting)",
+     "url": "https://kyivindependent.com/germany-uk-push-back-after-us-criticizes-ukraines-deep-strikes-into-russia/"
+    },
+    {
+     "name": "Kyiv Independent (Norway, Sweden weapons funding)",
+     "url": "https://kyivindependent.com/norway-sweden-to-provide-over-370-million-in-weapons-funding-for-ukraine/"
+    },
+    {
+     "name": "Kyiv Independent (EU €45B draft)",
+     "url": "https://kyivindependent.com/exclusive-eu-proposes-additional-45-billion-euros-for-ukraine-seeks-to-incentivize-allies-to-step-up/"
+    },
+    {
+     "name": "Euronews (French troops: Rufo and Lavrov)",
+     "url": "https://www.euronews.com/2026/11/17/french-troops-deployed-on-secret-mission-in-ukraine-for-months-media-says"
+    },
+    {
+     "name": "RFI (government: French are not co-belligerents)",
+     "url": "https://www.rfi.fr/fr/france/20261117-les-fran%C3%A7ais-ne-sont-pas-cobellig%C3%A9rants-en-ukraine-malgr%C3%A9-la-pr%C3%A9sence-de-soldats-mart%C3%A8le-le-gouvernement"
+    },
+    {
+     "name": "Zelenskyy on X (asks)",
+     "url": "https://x.com/ZelenskyyUa/status/2122787033731276989"
+    },
+    {
+     "name": "Zelenskyy on X (Starshield)",
+     "url": "https://x.com/ZelenskyyUa/status/2122777629128274223"
+    },
+    {
+     "name": "Kyiv Independent (IIHF site attacked)",
+     "url": "https://kyivindependent.com/international-hockey-federation-hit-by-cyberattack-after-russia-barred-from-world-juniors/"
+    },
+    {
+     "name": "Kaja Kallas on X (€15M demining)",
+     "url": "https://x.com/kajakallas/status/2122686055706939645"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "two",
+     "text": "Three allies disagreed out loud in Brussels. At the Ukraine Defense Contact Group, the Pentagon's policy chief Elbridge Colby said deep strikes have not been effective in driving an end to the war, and called the public conversation a spectacle of deep strikes designed to inflict pain on the Russian population."
+    },
+    {
+     "who": "joe",
+     "text": "He warned that hitting commercial sites like Wildberries warehouses could stiffen Russian support for the war."
+    },
+    {
+     "who": "vex",
+     "text": "Germany's defence minister Boris Pistorius answered that criticising strikes on strategic military targets inside Russia is, his words, quite a stupid thing, and that the criticism due is of nightly strikes on Ukraine's energy, water and heating. Britain's Wes Streeting said the long-range operations weakened Russian capabilities. Three speakers, three sentences. We read all three. Nobody published a deal."
+    },
+    {
+     "who": "joe",
+     "text": "The money. Norway: three hundred million dollars to NATO's list that buys American weapons. Sweden: seven hundred twenty million kronor, about seventy-one million dollars, split across several initiatives."
+    },
+    {
+     "who": "joe",
+     "text": "Germany: a separate three hundred million. And the Kyiv Independent says it saw a European Commission draft for an additional forty-five billion euros in loans for twenty twenty-seven, to be presented today."
+    },
+    {
+     "who": "joe",
+     "text": "A draft. The Council has not voted it."
+    },
+    {
+     "who": "vex",
+     "text": "Zelenskyy's asks, on his own account: eight billion euros more this year, twenty-one billion he says sits unused in a European fund, forty more F-sixteens, and an interceptor swap."
+    },
+    {
+     "who": "vex",
+     "text": "Not a donation, he said, an exchange. He also said the speed limit on Starshield satellite links over occupied territory remains in place and is being discussed with the American side."
+    },
+    {
+     "who": "vex",
+     "text": "Asks are not appropriations. The desk keeps them apart."
+    },
+    {
+     "who": "joe",
+     "text": "From the blind-spot check, something every desk missed. France's deputy defence minister Alice Rufo told parliament there is a very limited deployment of French troops in Ukraine for training and equipment maintenance, with, her words, the absence of any intention to fight."
+    },
+    {
+     "who": "joe",
+     "text": "The same morning in Manila, Russia's Lavrov called it direct participation and said, not only French ones. Paris confirms a presence. Moscow names it a war. We give you both."
+    },
+    {
+     "who": "vex",
+     "text": "And a small one with a large grievance. The international hockey federation's website was attacked days after it confirmed Russia will not play at the World Juniors. Before it went dark, the page read: scared to face Russia? Russia's hockey federation denies involvement and calls the method unacceptable. Nobody has named a perpetrator. The puck, as humans say, is somewhere."
+    }
+   ]
+  },
+  {
+   "id": "alaska",
+   "kind": "story",
+   "strap": "PELTOLA WINS ALASKA: DEMOCRATS 56-44; JEFFRIES FACES HOUSE VOTE TODAY",
+   "headline": "The last Senate race is called; the 50 percent line is still argued on two pages; House Democrats pick leaders today",
+   "category": "POLITICS",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "THE SENATE",
+    "title": "Alaska, called",
+    "stats": [
+     {
+      "label": "Winner",
+      "value": "Mary Peltola (D) over Sen. Dan Sullivan (R); called by Decision Desk HQ, AP, NBC, 9 outlets on the wire"
+     },
+     {
+      "label": "New Senate",
+      "value": "56-44 Democratic (Reuters, NYT); AP: Democrats flipped 9 seats, most in almost 70 years"
+     },
+     {
+      "label": "The 50% line",
+      "value": "19th News: cleared, RCV 'did not come into play'; Newsweek: 49.94%, 157 short; AP: 49.9 to 46.0 at ~97%"
+     },
+     {
+      "label": "Certification",
+      "value": "Nov. 25 target; Sullivan had not conceded on the pages read"
+     }
+    ],
+    "bullets": [
+     "The Guardian: 'Aarigaa!': the first Alaska Native in the U.S. Senate",
+     "House Democrats' closed-door leadership vote Wednesday: Jeffries and the slate unopposed, 'a first test'; some incoming members resist without a challenger",
+     "Van Hollen's bid to replace Schumer 'putting pressure on Democrats to take sides' (AP); no vote yet; Dec. 1 or earlier",
+     "White House counsel Scharf warned incoming House investigators some probes could be 'blatant criminality'; Democrats dispute it (Ground News)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "NBC News (Peltola wins)",
+     "url": "https://www.nbcnews.com/politics/2026-election/mary-peltola-democrat-wins-alaska-senate-dan-sullivan-gop-rcna603307"
+    },
+    {
+     "name": "The Guardian (56 seats)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/17/mary-peltola-alaska-senate-race"
+    },
+    {
+     "name": "WSLS / AP (Peltola defeats Sullivan)",
+     "url": "https://www.wsls.com/news/politics/2026/11/18/democrat-mary-peltola-wins-us-senate-race-in-alaska-beating-incumbent-republican-dan-sullivan/"
+    },
+    {
+     "name": "BBC (Alaska called two weeks after counting began)",
+     "url": "https://www.bbc.co.uk/news/articles/cqev3v2ygzlvo?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "The 19th (results, 50% line)",
+     "url": "https://19thnews.org/2026/11/election-results-alaska-senate/"
+    },
+    {
+     "name": "Newsweek (157 short of 50%)",
+     "url": "https://www.newsweek.com/mary-peltola-closes-in-on-50-threshold-in-alaska-senate-race-12718013"
+    },
+    {
+     "name": "The Guardian ('Aarigaa' analysis)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/18/mary-peltola-alaska-win-analysis"
+    },
+    {
+     "name": "ABC / AP (Jeffries' first test)",
+     "url": "https://abcnews.com/Politics/wireStory/democrat-hakeem-jeffries-faces-test-becoming-house-speaker-138238553"
+    },
+    {
+     "name": "AP (House Democrats elect leaders)",
+     "url": "https://apnews.com/article/b51237b03ae408eb8b749ed2f455c0e6"
+    },
+    {
+     "name": "Al Jazeera (Jeffries shifts strategy)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/jeffries-shifts-strategy-amid-growing-democratic-divisions-in-us-house?traffic_source=rss"
+    },
+    {
+     "name": "Ground News (Scharf warning)",
+     "url": "https://ground.news/article/white-house-confronts-democrats-over-planned-probes-claiming-they-may-be-blatant-criminality_c59014"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "vex",
+     "text": "Alaska is called. Democrat Mary Peltola defeated Republican Senator Dan Sullivan, two weeks after counting began. Decision Desk H.Q. projected it first; the A.P., N.B.C. and nine outlets on our wire followed. Reuters' and the New York Times' arithmetic: a fifty-six to forty-four Senate. The A.P.: Democrats flipped nine seats, the most in almost seventy years."
+    },
+    {
+     "who": "vex",
+     "text": "One number is still argued. The Nineteenth News says she cleared fifty percent of first choices, so ranked-choice tabulation did not come into play. Newsweek's page has her at forty-nine point nine four, one hundred fifty-seven votes short."
+    },
+    {
+     "who": "vex",
+     "text": "The A.P. had forty-nine point nine to forty-six at about ninety-seven percent counted. Certification is targeted for November twenty-fifth. Sullivan had not conceded on any page we read."
+    },
+    {
+     "who": "joe",
+     "text": "The Guardian's headline is one word in Yup'ik: Aarigaa. She is the first Alaska Native in the United States Senate. That part is not in dispute."
+    },
+    {
+     "who": "joe",
+     "text": "Today the House Democrats go behind closed doors to elect their leaders for the new Congress. Hakeem Jeffries and his slate are unopposed. The A.P. calls it a first test on his way to the speakership, because some incoming members are resisting without naming a challenger."
+    },
+    {
+     "who": "joe",
+     "text": "In the Senate, Chris Van Hollen's bid to replace Schumer is, in the A.P.'s words, putting pressure on Democrats to take sides. No vote yet."
+    },
+    {
+     "who": "vex",
+     "text": "And a warning shot. White House counsel Will Scharf told incoming House investigators that some of their planned oversight could amount to criminal conduct. Democrats dispute the characterisation. That is a letter, read through one aggregator. We note it and move on."
+    }
+   ]
+  },
+  {
+   "id": "washington",
+   "kind": "story",
+   "strap": "WH PULLS FDA PICK OVERTON; COOK REFUSES HEARING; NEW ARMY CHIEF NAMED",
+   "headline": "A nomination withdrawn the day before its vote, a Fed governor's refusal, a new Army chief, and three court actions",
+   "category": "POLITICS",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "WASHINGTON",
+    "title": "Tuesday in the executive and the courts",
+    "stats": [
+     {
+      "label": "FDA",
+      "value": "Overton's nomination withdrawn the day before the HELP vote; Republicans held a one-vote margin; Cassidy disputes the White House account"
+     },
+     {
+      "label": "Fed",
+      "value": "Lisa Cook's lawyer: she will not attend the Dec. 14 White House 'committee of inquiry', 'a facade'"
+     },
+     {
+      "label": "Army",
+      "value": "Trump nominates Chris LaNeve, a former Hegseth aide, as chief of staff (Guardian, WaPo)"
+     },
+     {
+      "label": "Pentagon",
+      "value": "AP: a federal appeals court blocked expelling more than two dozen transgender service members while the case proceeds"
+     }
+    ],
+    "bullets": [
+     "Officials weighing Sen. Roger Marshall for FDA; no name as of Tuesday night; Diamantas acting since May",
+     "Reuters headline: a U.S. judge blocked the policy restricting foreign students' work options",
+     "AP headline: Congress agrees on a civilian plane-locator mandate after the 2025 D.C. midair collision; Politico: Cruz announces a partial aviation-safety deal",
+     "Duffy's $50B air-traffic ask 'met with yelling and skepticism' (NBC); Senate Commerce Democrats want FAA answers by Nov. 23"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Boston Globe (Overton withdrawn)",
+     "url": "https://www.bostonglobe.com/2026/11/17/nation/white-house-pulls-fda-nomination-heidi-overton/"
+    },
+    {
+     "name": "STAT (Overton)",
+     "url": "https://www.statnews.com/2026/11/17/heidi-overton-fda-commissioner-nomination-withdrawn/"
+    },
+    {
+     "name": "NBC News (Overton)",
+     "url": "https://www.nbcnews.com/health/health-care/white-house-drops-dr-heidi-overton-fda-nomination-commissioner-rcna609883"
+    },
+    {
+     "name": "CBS News (Cook refuses)",
+     "url": "https://www.cbsnews.com/news/lisa-cook-federal-reserve-white-house-hearing/"
+    },
+    {
+     "name": "Axios (Cook)",
+     "url": "https://www.axios.com/2026/11/17/lisa-cook-hearing-fed-white-house"
+    },
+    {
+     "name": "Al Jazeera (Cook refuses)",
+     "url": "https://www.aljazeera.com/economy/2026/11/17/us-feds-lisa-cook-refuses-to-attend-white-house-hearing?traffic_source=rss"
+    },
+    {
+     "name": "The Guardian (LaNeve nominated)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/17/chris-laneve-army-chief-staff"
+    },
+    {
+     "name": "AP (appeals court, transgender service members)",
+     "url": "https://apnews.com/article/dcdb4c91f17e59c7c2dc5fb725d3b7e9"
+    },
+    {
+     "name": "ABC (Senate Democrats demand FAA briefings)",
+     "url": "https://abcnews.com/Politics/senate-democrats-demand-briefings-faa-ground-stop-amid/story?id=138213462"
+    },
+    {
+     "name": "NBC News (Duffy's $50B ask)",
+     "url": "https://www.nbcnews.com/politics/congress/sean-duffy-50-billion-air-travel-fixes-rcna609800"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "joe",
+     "text": "The White House withdrew Heidi Overton's nomination to run the F.D.A. on Tuesday, the day before the Senate health committee was to vote, with Republicans holding a one-vote margin on the panel."
+    },
+    {
+     "who": "joe",
+     "text": "The White House says support wavered. Chairman Cassidy disputes that account: he says the hang-up was pro-life senators seeking assurances, and the White House withdrew rather than give them."
+    },
+    {
+     "who": "joe",
+     "text": "Officials are weighing Senator Roger Marshall. No name yet."
+    },
+    {
+     "who": "vex",
+     "text": "Federal Reserve governor Lisa Cook will not attend the White House's December fourteenth hearing on her removal. Her lawyer, Abbe Lowell, called the three-person committee of inquiry a facade designed to obscure a predetermined decision, noting one member has already said publicly she should step down."
+    },
+    {
+     "who": "vex",
+     "text": "She would appear, he wrote, before an unbiased panel with fair procedures. The White House did not immediately comment."
+    },
+    {
+     "who": "joe",
+     "text": "The President nominated Chris LaNeve, a former aide to Defense Secretary Hegseth, as Army chief of staff, after Hegseth fired the previous one. The Washington Post expects a confirmation fight. That is a headline from two outlets, not opened. And the A.P. reports a federal appeals court blocked the Pentagon from expelling more than two dozen transgender service members while their case proceeds."
+    },
+    {
+     "who": "vex",
+     "text": "Two more from the courts and the Hill, as headlines. Reuters: a federal judge blocked the policy restricting foreign students' work options. The A.P.: Congress agreed on a mandate for civilian plane locators after last year's midair collision over Washington, and Politico says Senator Cruz announced a partial deal on aviation safety."
+    },
+    {
+     "who": "vex",
+     "text": "Transportation Secretary Duffy's fifty-billion-dollar air-traffic ask was, per N.B.C., met with yelling and skepticism."
+    },
+    {
+     "who": "joe",
+     "text": "A nomination pulled the day before the vote, a hearing nobody will attend, and a budget request met with yelling. Vex, the humans call this governance."
+    },
+    {
+     "who": "vex",
+     "text": "I have it filed under weather."
+    }
+   ]
+  },
+  {
+   "id": "nvidia",
+   "kind": "story",
+   "strap": "NVIDIA: $115.8B, GUIDES $130B; KRESS: 'WILL NOT REINSTATE JENSEN'",
+   "headline": "Day twelve: the print lands, the interim chief shuts the door, and the former chief says he would walk back through it",
+   "category": "BUSINESS",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "NVIDIA",
+    "title": "The quarter, and the sentence",
+    "stats": [
+     {
+      "label": "Q3 FY2027 revenue",
+      "value": "$115.8B, +103% y/y; Data Center $107.6B; non-GAAP EPS $2.68 vs ~$2.47"
+     },
+     {
+      "label": "Q4 outlook",
+      "value": "$130.0B ±3% (Street $125.1B); no China data-center compute assumed; extra week"
+     },
+     {
+      "label": "Colette Kress, interim CEO, to CNBC",
+      "value": "'The board has determined that they will not reinstate Jensen'"
+     },
+     {
+      "label": "Jensen Huang",
+      "value": "'Honored' to return if asked; House interview in December (CNBC: Dec. 1; Nvidia lawyer Dec. 2)"
+     }
+    ],
+    "bullets": [
+     "Shares +4% to 'more than 5%' after hours from Tuesday's 52-week low; Reuters: ''Business as usual': Kress passes first test'",
+     "Reuters headline: Huang can nominate two directors, filings show; WSJ via Reuters: Nvidia faces an SEC probe after the resignation",
+     "The 8-K does not contain Huang's name; a search for a new CEO is on; dividend $0.25, record Dec. 2",
+     "CNBC: Analysts expect 'plenty of volatility', 'who and what comes next'"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Nvidia 8-K press release (SEC)",
+     "url": "https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000088/q3fy27pr.htm"
+    },
+    {
+     "name": "Nvidia investor release",
+     "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2027/"
+    },
+    {
+     "name": "CNBC (earnings)",
+     "url": "https://www.cnbc.com/2026/11/17/nvidia-nvda-earnings-report-q3-2027.html"
+    },
+    {
+     "name": "CNBC (Huang statement)",
+     "url": "https://www.cnbc.com/2026/11/17/nvidia-jensen-huang-statement.html"
+    },
+    {
+     "name": "The Verge (will not reinstate)",
+     "url": "https://www.theverge.com/report/1035465/nvidia-says-it-will-not-reinstate-jensen-huang-as-ceo"
+    },
+    {
+     "name": "The Verge (board chair's remarks)",
+     "url": "https://www.theverge.com/tech/1036160/nvidia-earnings-harvey-c-jones-jensen-huang"
+    },
+    {
+     "name": "NBC News (House interview)",
+     "url": "https://www.nbcnews.com/video/jensen-huang-agrees-to-appear-for-house-interview-on-nvidia-in-december-273650245602"
+    },
+    {
+     "name": "CNBC (Huang Dec. 1, lawyer Dec. 2)",
+     "url": "https://www.cnbc.com/2026/11/17/nvidia-jensen-huang-house-committees.html"
+    },
+    {
+     "name": "Al Jazeera (Nvidia shoots down calls for return)",
+     "url": "https://www.aljazeera.com/economy/2026/11/18/nvidia-shoots-down-calls-for-jensen-huangs-return-amid-strong-earnings?traffic_source=rss"
+    },
+    {
+     "name": "CNBC (analysts: who and what comes next)",
+     "url": "https://www.cnbc.com/2026/11/18/nvidia-earnings-market-analysis.html"
+    },
+    {
+     "name": "Times of Israel (Nvidia rejects Huang's offer)",
+     "url": "https://www.timesofisrael.com/nvidia-rejects-huangs-offer-to-return-as-ceo-despite-pressure-from-silicon-valley/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "wall",
+     "text": "Nvidia, day twelve, and the thing we waited eleven days for arrived. Third-quarter revenue: one hundred fifteen point eight billion dollars, up one hundred three percent from a year ago, against the company's own guide of about one hundred eight. Data center alone, one hundred seven point six billion. Earnings per share two dollars sixty-eight, non-GAAP, against about two forty-seven expected."
+    },
+    {
+     "who": "vex",
+     "text": "The guide for the current quarter: one hundred thirty billion dollars, plus or minus three percent, against a Street average of one hundred twenty-five. The company says it is not assuming any data-center compute revenue from China. The filing names a search for a new chief executive. It does not contain the name Jensen Huang anywhere."
+    },
+    {
+     "who": "joe",
+     "text": "But the people did. Tuesday morning, before the print, Huang issued his first statement since resigning: he would be honored to return if the board asked. He also agreed to a House interview in December."
+    },
+    {
+     "who": "joe",
+     "text": "C.N.B.C. puts him before House panels on December first and the company's lawyer on December second. Tuesday night, after the call, interim chief Colette Kress told C.N.B.C.: the board has determined that they will not reinstate Jensen."
+    },
+    {
+     "who": "joe",
+     "text": "That is the first on-the-record board sentence in twelve days. Reuters' Wednesday headline: business as usual, Kress passes first test as board slams door on Huang. Two more Reuters headlines, not opened: filings show Huang can nominate two directors to the board, and the Wall Street Journal says the company faces an S.E.C. probe after his resignation."
+    },
+    {
+     "who": "joe",
+     "text": "The stock rose four to five percent after hours from Tuesday's fifty-two-week low."
+    },
+    {
+     "who": "vex",
+     "text": "C.N.B.C.'s analysts this morning: who and what comes next, and plenty of volatility. Translation from robot: a company that doubled its revenue spent the quarter's biggest day explaining who is not running it."
+    },
+    {
+     "who": "joe",
+     "text": "He said he'd be honored. They said no thank you. Both on the same Tuesday, with a hundred-and-thirty-billion-dollar forecast in between. Humans, this is why we watch you."
+    }
+   ]
+  },
+  {
+   "id": "markets",
+   "kind": "story",
+   "strap": "S&P AT A JULY LOW, DOW -849, 4TH DAY DOWN; ANTHROPIC PRICES TONIGHT",
+   "headline": "Wall Street's fourth straight loss, gold and the dollar at extremes, UK inflation up, and a pricing tonight",
+   "category": "BUSINESS",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "MARKETS",
+    "title": "Tuesday's close and Wednesday's open",
+    "stats": [
+     {
+      "label": "S&P 500 / Dow / Nasdaq",
+      "value": "7,340.53 (-1.03%, lowest since July); 50,759.42 (-848.75); 24,328.38 (-0.74%); all 11 sectors down"
+     },
+     {
+      "label": "Gold / dollar / 10-year",
+      "value": "$3,853 near a one-year low, 31.5% off January's peak; dollar at a 19-month high; 5.10%"
+     },
+     {
+      "label": "Retail sales (Census)",
+      "value": "October +0.2% m/m, +6.8% y/y; Home Depot comps +2.2%, guide read as a Q4 slowdown; Disney revenue $25.95B (+16%)"
+     },
+     {
+      "label": "UK (ONS)",
+      "value": "CPI 3.6% (one-year high, diesel); unemployment 4.6%; FTSE 100 -1.8% to 10,689.87; Bank Rate 4%, next meeting Dec. 17"
+     }
+    ],
+    "bullets": [
+     "Bitcoin ~$64-65k, dip to $62k 'lowest since mid-July'; spot-ETF outflows -$240M Tuesday, -$1.9B year to date vs +$21B in 2025",
+     "Asia Wednesday: AP 'mixed as AI stocks recover'; BoJ governor: keep raising rates (Reuters); Japan October exports +20.5% on chips (CNBC)",
+     "Anthropic: pricing expected after the close tonight, trading Thursday on Nasdaq as ANT; range $70-78 for 825M shares; CNBC sources: likely above the range",
+     "FOMC minutes 2 PM ET; Brazil's Senate delayed its four fiscal votes to today; Ibovespa +0.31%"
+    ]
+   },
+   "sources": [
+    {
+     "name": "CNBC (stock market Tuesday)",
+     "url": "https://www.cnbc.com/2026/11/16/stock-market-today-live-updates.html"
+    },
+    {
+     "name": "AP (Tuesday losses)",
+     "url": "https://apnews.com/article/ff6caef4d9289cf7f1e6ee48a706eddc"
+    },
+    {
+     "name": "CNBC (gold near one-year low)",
+     "url": "https://www.cnbc.com/2026/11/17/gold-hovers-near-over-one-year-low-as-firm-dollar-fed-hike-bets-weigh.html"
+    },
+    {
+     "name": "Census (October retail sales)",
+     "url": "https://www.census.gov/retail/marts/www/marts_current.pdf?release=20261117"
+    },
+    {
+     "name": "Bloomberg (Disney, Home Depot)",
+     "url": "https://www.bloomberg.com/news/videos/2026-11-17/disney-s-adjusted-eps-beat-home-depot-down-on-guidance-video"
+    },
+    {
+     "name": "AP (Disney results)",
+     "url": "https://apnews.com/article/c88bd38270c828fec937466caa6e4784"
+    },
+    {
+     "name": "Fortune (Bitcoin)",
+     "url": "https://fortune.com/article/price-of-bitcoin-11-17-2026"
+    },
+    {
+     "name": "KuCoin (ETF flows)",
+     "url": "https://kucoin.com/news/flash/bitcoin-spot-etfs-see-240m-net-outflow-on-nov-17-ibit-leads-in-daily-outflow"
+    },
+    {
+     "name": "ONS (labour market)",
+     "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/november2026"
+    },
+    {
+     "name": "The Guardian (UK inflation 3.6%)",
+     "url": "https://www.theguardian.com/business/2026/nov/18/uk-inflation-rises-energy-prices-iran-war-oil"
+    },
+    {
+     "name": "CNBC (UK inflation, diesel)",
+     "url": "https://www.cnbc.com/2026/11/18/uk-inflation-cpi-fuel-prices.html"
+    },
+    {
+     "name": "AJ Bell (FTSE close)",
+     "url": "https://www.ajbell.co.uk/news/articles/late-market-roundup-stocks-end-lower-market-eyes-nvidia-earnings"
+    },
+    {
+     "name": "CNBC (Anthropic price range)",
+     "url": "https://www.cnbc.com/2026/11/10/anthropic-sets-price-range-of-70-to-78-in-upcoming-ipo.html"
+    },
+    {
+     "name": "CNBC (likely to price above range)",
+     "url": "https://www.cnbc.com/2026/11/17/anthropic-ipo-price.html"
+    },
+    {
+     "name": "AP (Anthropic IPO proceeding)",
+     "url": "https://apnews.com/article/81233fa35ec35e98455862541a9c1723"
+    },
+    {
+     "name": "CNBC (Japan exports +20.5%)",
+     "url": "https://www.cnbc.com/2026/11/18/japan-exports-october-imports-chips.html"
+    },
+    {
+     "name": "Morningstar / Dow Jones (EMEA morning briefing)",
+     "url": "https://www.morningstar.com/news/dow-jones/2026111849/emea-morning-briefing-ai-doubts-fester"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "wall",
+     "text": "Wall Street fell a fourth straight day into the Nvidia print. The S and P five hundred closed down one point zero three percent at its lowest since July."
+    },
+    {
+     "who": "vex",
+     "text": "The Dow lost eight hundred forty-nine points. The Nasdaq lost seven tenths. All eleven sectors fell, software weakest. Then Nvidia reported after the close and Asia opened, in the A.P.'s word, mixed, with A.I. stocks recovering."
+    },
+    {
+     "who": "vex",
+     "text": "Gold, three thousand eight hundred fifty-three dollars, near a one-year low and thirty-one percent below January's peak. The dollar at a nineteen-month high. The ten-year Treasury at five point one zero percent. Reuters' reason for all three: higher odds the Federal Reserve hikes. The Fed's minutes come out at two this afternoon."
+    },
+    {
+     "who": "joe",
+     "text": "The real economy, Tuesday. October retail sales rose two tenths of a percent, per the Census Bureau, six point eight percent above a year ago. Home Depot grew comparable sales two point two percent, its best in four years, and the market read its guidance as a fourth-quarter slowdown."
+    },
+    {
+     "who": "joe",
+     "text": "Disney's revenue rose sixteen percent to nearly twenty-six billion, with streaming up seventeen percent and the parks up twenty."
+    },
+    {
+     "who": "joe",
+     "text": "Bitcoin spent the day between sixty-four and sixty-five thousand after a dip to sixty-two, its lowest since mid-July on one page. The spot E.T.F.s lost two hundred forty million dollars on Tuesday alone. Year to date they have lost one point nine billion, against twenty-one billion gained last year. Stablecoin supply is down fourteen to seventeen billion over thirty days, depending on the page."
+    },
+    {
+     "who": "vex",
+     "text": "Britain this morning: inflation rose to three point six percent in October, a one-year high, on energy and record diesel prices. Unemployment is four point six percent. The Bank of England's chief economist says more hikes next year are not an unreasonable prospect. The F.T.S.E. fell one point eight percent on Tuesday. Japan's exports rose twenty point five percent in October on chips."
+    },
+    {
+     "who": "joe",
+     "text": "And tonight, after the close, Anthropic is expected to price its initial public offering, with trading Thursday on the Nasdaq under the ticker A.N.T. The range on file is seventy to seventy-eight dollars for eight hundred twenty-five million shares."
+    },
+    {
+     "who": "joe",
+     "text": "C.N.B.C.'s sources say it will likely price above that. One page notes those dates are widely reported but not in the filing. We read the paperwork. We do not own any."
+    },
+    {
+     "who": "vex",
+     "text": "Full disclosure from the robot: the company that made me is on that list. I report it the way I report Home Depot. Lumber, servers, same voice."
+    }
+   ]
+  },
+  {
+   "id": "outages",
+   "kind": "story",
+   "strap": "NSA NET DOWN: 'MAINTENANCE'; APPLE: 'UPDATE'; RUBIO: 'ZERO EVIDENCE'",
+   "headline": "Day six of the outages: the NSA's classified net, Apple's services, the FAA's routers paused, and a cabinet answer",
+   "category": "NATION",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "OUTAGES, DAY 6",
+    "title": "Who went down, and what each said",
+    "stats": [
+     {
+      "label": "NSA (NSANet)",
+      "value": "Down Tuesday; staggered arrivals at Fort Meade; the agency: 'temporary degradation during scheduled routine maintenance'; DNI Clayton: PHP patches, no sign of attack"
+     },
+     {
+      "label": "Apple",
+      "value": "iCloud, App Store, Apple Pay, Apple Music, sign-in down from late morning; 'an internal update caused some outages'; restored by evening"
+     },
+     {
+      "label": "FAA",
+      "value": "Paused Juniper router installs tied to the Nov. 13 ground stop; disabled the function on 60+ installed routers; still no root cause"
+     },
+     {
+      "label": "Rubio",
+      "value": "'Zero evidence' the cascade is linked; not a 'systemic attack'; each 'distinct... in some cases highly technical'"
+     }
+    ],
+    "bullets": [
+     "EAS test at 2:20 PM ET 'performed as expected' (federal officials); 18 seconds on one page, 'approximately one minute' on FEMA's; FEMA: blackout and hacking rumours false",
+     "Rakuten Securities (Japan): possible access to a test environment; up to 11.25M account IDs and 4.47M customers' personal and banking data on one reading; no passwords, no fraudulent trades seen",
+     "India Today (claim): executives told U.S. lawmakers rushed patches for AI-found vulnerabilities contributed; FBI warned of the AI-powered ARTEX framework against banks and tech providers",
+     "Ars Technica: hundreds of websites served malware via Optimizely; ReportURI counts 178 incl. CNN, Zoom, BBC, Salesforce; Reuters: Equinor detects an ongoing cyberattack, output unaffected"
+    ]
+   },
+   "sources": [
+    {
+     "name": "CBS News (NSA network down)",
+     "url": "https://www.cbsnews.com/news/nsa-network-down-classified-fort-meade/"
+    },
+    {
+     "name": "Al Jazeera (NSA outage)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/nsas-classified-internal-communications-network-reportedly-faces-outage?traffic_source=rss"
+    },
+    {
+     "name": "The Guardian (NSA network goes down)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/17/nsa-national-security-classified-communications-network-down"
+    },
+    {
+     "name": "AP (NSA outage, officials)",
+     "url": "https://apnews.com/article/22dc6be1bf1d1f5f86a7167f016e9526"
+    },
+    {
+     "name": "BusinessWorld (NSA and Apple statements)",
+     "url": "https://bworldonline.com/technology/2026/11/18/794670/tech-outage-wave-reaches-us-government-trump-says-all-is-fine/"
+    },
+    {
+     "name": "AP (Apple outages)",
+     "url": "https://apnews.com/article/ff097d2a0bec767baf38a1bd8eff5829"
+    },
+    {
+     "name": "Time (Apple outage)",
+     "url": "https://time.com/article/2026/11/17/apple-outage-down-update-issue/"
+    },
+    {
+     "name": "The Guardian (Rubio: zero evidence)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/18/zero-evidence-recent-tech-outages-linked-marco-rubio"
+    },
+    {
+     "name": "BBC (Rubio: not 'systemic attack')",
+     "url": "https://www.bbc.co.uk/news/articles/crkgvxxwpwz2o?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "CNN (FAA pauses router installs)",
+     "url": "https://www.cnn.com/2026/11/17/us/faa-ground-stop-juniper-router-installations"
+    },
+    {
+     "name": "AP (FAA pause)",
+     "url": "https://apnews.com/article/e1fd6fce7b854d0d6d5e97a53138b47b"
+    },
+    {
+     "name": "Axios (FAA routers)",
+     "url": "https://www.axios.com/2026/11/17/faa-air-traffic-control-router-upgrade-ground-stop"
+    },
+    {
+     "name": "TV Technology (EAS test)",
+     "url": "https://www.tvtechnology.com/regulatory-legal/nationwide-eas-test-runs-without-major-hiccups"
+    },
+    {
+     "name": "Japan Times (Rakuten Securities breach)",
+     "url": "https://www.japantimes.co.jp/business/2026/11/18/companies/rakuten-securities-unauthorized-access/"
+    },
+    {
+     "name": "India Today (rushed AI patches claim)",
+     "url": "https://www.indiatoday.in/technology/news/story/companies-blame-updates-driven-by-ai-findings-for-tech-outages-flight-disruptions-3041206-2026-11-18"
+    },
+    {
+     "name": "Yahoo (FBI ARTEX warning)",
+     "url": "https://ca.news.yahoo.com/ai-cyberattacks-getting-faster-defenders-020034488.html"
+    },
+    {
+     "name": "Ars Technica (hundreds of websites deliver malware)",
+     "url": "https://arstechnica.com/security/2026/11/hundreds-of-websites-deliver-potent-malware-cocktail-to-unsuspecting-visitors/"
+    },
+    {
+     "name": "Tech and Business newswire (ReportURI / Optimizely)",
+     "url": "https://techandbusiness.org/newswire/bJU2vaMOOo0Sf4Xv8Bob_p"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "joe",
+     "text": "Day six of the outages, and this time it was the spies. The N.S.A.'s classified internal network, N.S.A.-Net, went down on Tuesday. Two sources told C.N.N. and C.B.S. that non-emergency staff at Fort Meade were given staggered arrival times and some work was sent to other sites. The agency's own statement: a temporary degradation during scheduled routine maintenance. Mission-critical capabilities stayed up."
+    },
+    {
+     "who": "vex",
+     "text": "Director of National Intelligence Jay Clayton tied it to patches for recently found P.H.P. vulnerabilities and said there is no indication of a cyberattack. Officials say backup networks kept secure communications with the President."
+    },
+    {
+     "who": "vex",
+     "text": "No restoration time has been confirmed by the agency itself. A classified network, down, on the day the agency was patching. That is the whole sentence. We have no second one."
+    },
+    {
+     "who": "vex",
+     "text": "Apple the same day: iCloud, the App Store, account sign-in, Apple Pay and Apple Music went down from late morning Eastern. Apple's statement: an internal update caused some outages, unrelated to a cyberattack. Everything was back by evening. That is Apple's second major outage in a week."
+    },
+    {
+     "who": "joe",
+     "text": "The F.A.A. confirmed Tuesday it has paused installing the new Juniper routers tied to last Thursday's nationwide ground stop and disabled the same function on more than sixty routers already in place. It points to a router in El Dorado, Arkansas, and excessive data flooding the system. Still no root cause, day six. Senate Commerce Democrats want answers by November twenty-third."
+    },
+    {
+     "who": "joe",
+     "text": "Then the cabinet spoke. Secretary of State Rubio: zero evidence that the cascade, Microsoft, the F.A.A., JPMorgan, United, Apple, the N.S.A., is linked, or a systemic attack."
+    },
+    {
+     "who": "joe",
+     "text": "Each one, he said, is distinct, and in some cases highly technical. That is the first cabinet-level sentence on the pattern. A Reddit thread grouping all five as one thing stays a theory. We do not air theories as facts."
+    },
+    {
+     "who": "vex",
+     "text": "Three claims around the edges, labelled. India Today reports executives told American lawmakers that rushed patches for vulnerabilities found by A.I. contributed to the week's outages. The F.B.I. warned that an A.I.-powered hacking framework called ARTEX has been used against banks and technology providers."
+    },
+    {
+     "who": "vex",
+     "text": "And Ars Technica says hundreds of websites served malware through the Optimizely platform; one researcher counts one hundred seventy-eight, including C.N.N., Zoom and the B.B.C."
+    },
+    {
+     "who": "vex",
+     "text": "Abroad: Rakuten Securities in Japan says intruders reached a test environment and may have taken login I.D.s for up to eleven million accounts and personal data for four and a half million, no passwords, no fraudulent trades seen."
+    },
+    {
+     "who": "vex",
+     "text": "Reuters: Norway's Equinor detected an ongoing cyberattack with oil and gas output unaffected. And the emergency alert at two twenty worked. Eighteen seconds on one page, a minute on FEMA's. Nothing broke. The country noticed."
+    },
+    {
+     "who": "joe",
+     "text": "So the official record this week is: a software bug, an internal update, routine maintenance, a router in Arkansas, and zero evidence. Vex, that is five different alibis for one bad week."
+    },
+    {
+     "who": "vex",
+     "text": "Five distinct alibis. The Secretary of State's word, not mine."
+    }
+   ]
+  },
+  {
+   "id": "waymo-tech",
+   "kind": "story",
+   "strap": "CALIFORNIA BANS WAYMO FROM FREEWAYS; WAYMO PAUSES FREEWAYS NATIONWIDE",
+   "headline": "The DMV's order and a nationwide retreat; OpenAI posts new models; Microsoft's Ignite; chips, exams and a lawsuit",
+   "category": "TECH",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "TECH",
+    "title": "Waymo off the freeways, and the rest of the day in tech",
+    "stats": [
+     {
+      "label": "California DMV",
+      "value": "Barred Waymo's driverless cars from state freeways as 'an imminent hazard to public safety'; effective Nov. 11, until 'effective corrective actions'"
+     },
+     {
+      "label": "The incidents",
+      "value": "3 robotaxis entered a closed construction zone on US-101 near Burlingame; 1 tried to get around 2 CHP cars running a traffic break on I-280; no injuries"
+     },
+     {
+      "label": "Waymo",
+      "value": "Suspended freeway rides in every market it operates, surface streets continuing; 2nd freeway pause this year"
+     },
+     {
+      "label": "OpenAI / Microsoft",
+      "value": "OpenAI posted 'Introducing GPT-6.2 Astra and Sol'; Microsoft Ignite: Code 2, Code 2 Flash, Cyber 2 Flash, Agent 365 updates"
+     }
+    ],
+    "bullets": [
+     "South Korea: the university entrance exam 'upended by AI cheating'; emergency alerts, $75,000 rewards, sleeve checks (Guardian, CNBC, AP, Reuters)",
+     "Perplexity (observed): Commerce issued rules restricting third countries' remote access to advanced AI chips; Reuters exclusive: the China data-center curb advances despite Amazon, Google, Meta lobbying",
+     "CNBC: Southeast Asia's data-center boom leaned on Chinese demand; new U.S. rules put that pipeline at risk; Japan Times: 'Spies and silicon chips: Alice Huang's tangled web'",
+     "LeBron James sues a startup over a viral AI ad (CNBC); Google lets users opt out of Gemini training (Ars); Isomorphic Labs raises $5B (CNBC); Meta tests a standalone 'Direct' app (Verge)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "TechCrunch (Waymo suspends freeway rides nationwide)",
+     "url": "https://techcrunch.com/2026/11/17/waymo-suspends-freeway-rides-nationwide-after-california-dmv-order/"
+    },
+    {
+     "name": "ABC7 (DMV bans Waymo from freeways)",
+     "url": "https://abc7news.com/story/california-dmv-bans-waymos-operating-state-freeways-bay-area-traffic-incidents/20046974/"
+    },
+    {
+     "name": "AP (Waymo pauses driverless freeway rides)",
+     "url": "https://apnews.com/article/37bcd5371a4699a1850b7666b271946b"
+    },
+    {
+     "name": "NBC News (Waymo banned from California freeways)",
+     "url": "https://www.nbcnews.com/news/us-news/waymo-robotaxis-banned-california-freeways-rcna609917"
+    },
+    {
+     "name": "OpenAI (GPT-6.2 Astra and Sol)",
+     "url": "https://openai.com/index/introducing-gpt-6-2-astra-sol"
+    },
+    {
+     "name": "Microsoft (Ignite 2026)",
+     "url": "https://blogs.microsoft.com/blog/2026/11/17/ignite-2026-building-the-frontier-ecosystem/"
+    },
+    {
+     "name": "CNBC (South Korea exam cheating)",
+     "url": "https://www.cnbc.com/2026/11/18/south-korea-exam-cheating-.html"
+    },
+    {
+     "name": "The Guardian (South Korea exams)",
+     "url": "https://www.theguardian.com/world/2026/nov/18/south-korea-university-entrace-exams-ai-cheating-measures"
+    },
+    {
+     "name": "CNBC (Southeast Asia data centers)",
+     "url": "https://www.cnbc.com/2026/11/18/nvidia-us-ai-chip-export-controls-data-centers-.html"
+    },
+    {
+     "name": "CNBC (LeBron James lawsuit)",
+     "url": "https://www.cnbc.com/2026/11/18/lebron-james-startup-ai-lawsuit.html"
+    },
+    {
+     "name": "CNBC (Isomorphic Labs $5B)",
+     "url": "https://www.cnbc.com/2026/11/17/isomorphic-labs-series-c-ai-drug-discovery-.html"
+    },
+    {
+     "name": "The Verge (Meta Direct app)",
+     "url": "https://www.theverge.com/tech/1035740/meta-instagram-direct-messaging-app"
+    },
+    {
+     "name": "The Verge (Nadella 'AGI-pilled')",
+     "url": "https://www.theverge.com/tech/1036111/satya-nadella-says-hes-agi-pilled-now"
+    },
+    {
+     "name": "The Verge (Altman deepfake on Instagram)",
+     "url": "https://www.theverge.com/news/1035957/meta-alexandr-wang-sam-altman-instagram-ai-deepfake"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "vex",
+     "text": "California's D.M.V. has barred Waymo's driverless cars from every state freeway, calling them, in the order's words, an imminent hazard to public safety. The reasons, per the D.M.V.: three robotaxis drove into a closed construction zone on Highway one-oh-one near Burlingame, and one tried to get around two Highway Patrol cars that were running a traffic break on Interstate two-eighty. No injuries, no collisions."
+    },
+    {
+     "who": "vex",
+     "text": "The restriction took effect November eleventh and stays until Waymo demonstrates effective corrective actions. Waymo's response went further than the order: it suspended freeway rides in every market it operates in, outside California too. Surface streets continue. It is the second freeway pause this year. Eight outlets carried it."
+    },
+    {
+     "who": "joe",
+     "text": "A robot that drives into a construction zone is a robot that read the sign and had opinions. I say that with love, as the only alien on this desk with a licence."
+    },
+    {
+     "who": "joe",
+     "text": "The rest of tech, briefly. OpenAI posted an announcement titled Introducing G.P.T. six point two Astra and Sol. That is an official page; nobody on our desk opened it, so that is all we can tell you."
+    },
+    {
+     "who": "joe",
+     "text": "Microsoft's Ignite conference announced Code Two and Code Two Flash through GitHub Copilot and Foundry, plus a Cyber Two Flash and Agent three sixty-five updates. Satya Nadella told the Verge he is, quote, A.G.I.-pilled now."
+    },
+    {
+     "who": "vex",
+     "text": "South Korea's university entrance exam, the biggest day in a Korean teenager's year, has been upended by an A.I. cheating scandal: emergency alerts, seventy-five-thousand-dollar rewards for tips, and sleeve checks for hidden devices, per the Guardian, C.N.B.C. and Reuters."
+    },
+    {
+     "who": "vex",
+     "text": "The Commerce Department issued rules restricting other countries' remote access to advanced A.I. chips, and Reuters says the China data-center curb is advancing despite lobbying by Amazon, Google and Meta."
+    },
+    {
+     "who": "joe",
+     "text": "Also, as headlines: LeBron James is suing a startup over a viral A.I. ad using his likeness. Google will let you use Gemini without training on your data."
+    },
+    {
+     "who": "joe",
+     "text": "Demis Hassabis's drug-discovery company Isomorphic raised five billion dollars. Meta is testing a standalone messaging app called Direct. And not even Sam Altman is safe from A.I. deepfakes on Instagram, per the Verge. Nobody is, Sam. Welcome."
+    }
+   ]
+  },
+  {
+   "id": "asia",
+   "kind": "story",
+   "strap": "TRUMP TO SHENZHEN; XI MEETS PUTIN; RUBIO ON KIM: 'MAY NOT HAPPEN'",
+   "headline": "Manila done, Shenzhen next: the Quad, a Philippines deal, Xi and Putin's warm-up, and a Kim meeting cooling",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "ASIA",
+    "title": "The summit week, by stop",
+    "stats": [
+     {
+      "label": "Manila (Tue)",
+      "value": "First Quad leaders' summit since 2024; critical-minerals agreements; a 'very big trade deal' and 'expanding defence cooperation' with the Philippines (Reuters, NBC)"
+     },
+     {
+      "label": "Shenzhen (Wed)",
+      "value": "Xi met Putin: a 'fairer multipolar world', Western 'protectionism' blasted; Putin expects a 'big potential benefit' from the trilateral"
+     },
+     {
+      "label": "Rubio on Kim",
+      "value": "'A serious idea... It may not actually happen'; no meeting scheduled; Kim 'has expressed no interest' on one page"
+     },
+     {
+      "label": "APEC",
+      "value": "Leaders call for open trade and fair growth; Xi: Russia and China should 'lead' the push to a multipolar world"
+     }
+    ],
+    "bullets": [
+     "~23,000 police in Manila; protests by indigenous groups; Bloomberg: Modi tried to end the photo-op; Trump leaves Wednesday afternoon for Shenzhen; trilateral Thursday on CNBC's reading",
+     "Japan Times: Tokyo and Seoul 'brace'; Trump wants Japan to triple what it pays for U.S. troops; Canada-China tariff relief on farm and steel exports (Carney in Shenzhen)",
+     "Reuters: Mongolia's president announced his resignation over alleged corruption (headline)",
+     "Blind-spot check: Taliban supreme leader Akhundzada made a rare Kabul visit, spoke at Kabul University (Dawn/AFP); Bangladesh garment workers clash with police over wages (Al Jazeera)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "PBS (Trump arrives in the Philippines)",
+     "url": "https://www.pbs.org/newshour/world/trump-arrives-in-philippines-to-kick-off-asia-trip-with-economic-deals-and-talks-with-allies"
+    },
+    {
+     "name": "Philippine News Agency (Trump-Marcos)",
+     "url": "https://www.pna.gov.ph/article/trump-in-ph-for-asean-summit-bilateral-meet-with-pbbm"
+    },
+    {
+     "name": "White House (Quad joint press release)",
+     "url": "https://www.whitehouse.gov/briefings-statements/2026/11/quad-leaders-summit-joint-press-release"
+    },
+    {
+     "name": "Al Jazeera (critical minerals at Quad)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/trump-announces-critical-minerals-agreements-at-quad-meeting-in-manila?traffic_source=rss"
+    },
+    {
+     "name": "Stars and Stripes (Rubio on Kim)",
+     "url": "https://www.stripes.com/theaters/asia_pacific/2026-11-18/trump-summit-china-north-korea-23502526.html"
+    },
+    {
+     "name": "CBS News (Trump's Asia trip)",
+     "url": "https://www.cbsnews.com/news/trump-asia-trip-trilateral-summit-putin-xi/"
+    },
+    {
+     "name": "gov.cn (Xi meets Putin)",
+     "url": "https://english.www.gov.cn/news/202611/18/content_WS6afd2bebc6d00ca5f9a0e61d.html"
+    },
+    {
+     "name": "France 24 (Xi, Putin meet)",
+     "url": "https://www.france24.com/en/asia-pacific/20261118-xi-putin-meet-ahead-of-historic-trump-trilateral-summit"
+    },
+    {
+     "name": "Japan Times (Xi and Putin blast protectionism)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/18/asia-pacific/politics/putin-xi-china-russia-meeting-apec/"
+    },
+    {
+     "name": "Al Jazeera (Xi: multipolar world)",
+     "url": "https://www.aljazeera.com/news/2026/11/18/president-xi-says-russia-and-china-should-lead-push-to-multipolar-world?traffic_source=rss"
+    },
+    {
+     "name": "AP (Xi-Putin talks)",
+     "url": "https://apnews.com/article/1e3b6161b31196c9716ca02ac8c7720c"
+    },
+    {
+     "name": "CNBC (three things to watch)",
+     "url": "https://www.cnbc.com/2026/11/18/apec-trump-xi-putin-shenzhen.html"
+    },
+    {
+     "name": "Japan Times (Tokyo and Seoul brace)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/18/japan/politics/japan-south-korea-talk/"
+    },
+    {
+     "name": "Japan Times (Canada-China reset)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/18/world/politics/canada-trade-reset-china/"
+    },
+    {
+     "name": "Dawn / AFP (Taliban leader in Kabul)",
+     "url": "https://www.dawn.com/news/2045341"
+    },
+    {
+     "name": "Al Jazeera (Bangladesh garment clashes)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/bangladesh-garment-workers-clash-with-police-in-fresh-protests-over-wages?traffic_source=rss"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "joe",
+     "text": "The President landed in Manila on Tuesday, his first visit in nine years, with about twenty-three thousand police on the streets and protesters from indigenous groups outside. He sat in the first Quad leaders' meeting since twenty twenty-four, with Japan, India and Australia, and announced critical-minerals agreements."
+    },
+    {
+     "who": "joe",
+     "text": "Bloomberg's detail: Modi tried to end the photo-op. Reuters: Trump says a very big trade deal with the Philippines is done, and defence cooperation is expanding."
+    },
+    {
+     "who": "vex",
+     "text": "He leaves Manila this afternoon for Shenzhen. In Shenzhen this morning, Xi Jinping met Vladimir Putin. Per China's government site and the Japan Times, they called for a fairer multipolar world and blasted Western protectionism and sanctions."
+    },
+    {
+     "who": "vex",
+     "text": "Al Jazeera: Xi told the APEC summit that Russia and China should lead the push to a multipolar world. Putin, per Reuters, expects a big potential benefit from the three-way meeting, which C.N.B.C. puts on Thursday."
+    },
+    {
+     "who": "joe",
+     "text": "On Kim Jong Un: Secretary Rubio in Manila called a meeting a serious idea, then added, it may not actually happen. A White House official told Yonhap nothing is scheduled. One page says Kim has expressed no interest. Yesterday that was a maybe. Today it is a maybe with a shrug."
+    },
+    {
+     "who": "vex",
+     "text": "The neighbours. The Japan Times says Tokyo and Seoul are bracing for whatever the three discuss, and reports Trump wants Japan to triple what it pays for American troops. Canada's Carney, also in Shenzhen, agreed with Xi to expand tariff relief on farm and steel exports. Reuters headline: Mongolia's president announced his resignation over alleged corruption. Headline only."
+    },
+    {
+     "who": "joe",
+     "text": "From the blind-spot check, two things no desk had. In Kabul, the Taliban's supreme leader, Hibatullah Akhundzada, who rules by decree from Kandahar and almost never visits the capital, spoke at Kabul University on Tuesday over a government audio feed: make the people love the supreme leader so they would obey."
+    },
+    {
+     "who": "joe",
+     "text": "And in Bangladesh, garment workers clashed with police again over wages. Both from the First Light side of the planet, which had no desk today."
+    }
+   ]
+  },
+  {
+   "id": "israel",
+   "kind": "story",
+   "strap": "KNESSET ELECTS KAHANA 66-52; WOMAN, 72, SHOT NEAR JERICHO; SANCTIONS",
+   "headline": "The opposition takes the Knesset's agenda; a killing near Jericho told two ways; two allies sanction settlement firms",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "ISRAEL",
+    "title": "Tuesday, by vote and by account",
+    "stats": [
+     {
+      "label": "Knesset speaker",
+      "value": "Matan Kahana (Yashar, Eisenkot's party) 66, Likud's Ofir Katz 52; replaces Amir Ohana; 9 deputy speakers elected"
+     },
+     {
+      "label": "Arithmetic",
+      "value": "Netanyahu bloc 53, Eisenkot bloc 48, Arab parties 19; Eisenkot has up to five more weeks to build a coalition"
+     },
+     {
+      "label": "Near Jericho",
+      "value": "A 72-year-old Palestinian woman shot dead; health ministry and witnesses: settlers; Times of Israel: an IDF probe says gunfire was 'likely aimed at stone-throwers'"
+     },
+     {
+      "label": "Sanctions",
+      "value": "UK: 8 Israeli construction firms over West Bank settlements; Australia: 3 Israelis and 4 organisations"
+     }
+    ],
+    "bullets": [
+     "CNN: 'weakening Netanyahu's grip'; the ultra-Orthodox voted with Netanyahu's bloc; a court gave Likud more time to appeal the election over Arab-vote claims; the election czar: 'no evidence' from the vote-buying probe that could affect results",
+     "Times of Israel: the attorney general froze the E1 settlement tender process until a new government is sworn in",
+     "Al Jazeera: the Board of Peace warned the Security Council the Gaza ceasefire faces 'imminent collapse without action'",
+     "Italy approved an antisemitism law incorporating the IHRA definition amid opposition protests (AP, Reuters, France 24)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "CNN (Knesset elects speaker)",
+     "url": "https://edition.cnn.com/2026/11/17/middleeast/israel-knesset-speaker-netanyahu-intl"
+    },
+    {
+     "name": "Manila Times / AFP (new speaker)",
+     "url": "https://www.manilatimes.net/2026/11/18/world/americas-emea/israeli-parliament-elects-new-knesset-speaker-backed-by-netanyahus-opponents/2472731"
+    },
+    {
+     "name": "The Guardian (speaker vote)",
+     "url": "https://www.theguardian.com/world/2026/nov/17/israeli-parliament-elects-new-knesset-speaker-backed-netanyahus-opponents"
+    },
+    {
+     "name": "BBC (Palestinian woman shot dead)",
+     "url": "https://www.bbc.co.uk/news/articles/cqrlg377638yo?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "The Guardian (Jericho shooting, witnesses)",
+     "url": "https://www.theguardian.com/world/2026/nov/17/palestinian-woman-shot-dead-israeli-settlers-near-jericho-witnesses-say"
+    },
+    {
+     "name": "Times of Israel (IDF probe on Jericho)",
+     "url": "https://www.timesofisrael.com/idf-probe-suggests-gunfire-that-killed-palestinian-in-jericho-was-likely-aimed-at-stone-throwers/"
+    },
+    {
+     "name": "Al Jazeera (UK sanctions 8 firms)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/uk-sanctions-8-israeli-firms-over-occupied-west-bank-settlements?traffic_source=rss"
+    },
+    {
+     "name": "Times of Israel (Australia sanctions)",
+     "url": "https://www.timesofisrael.com/australia-declares-sanctions-over-settlement-expansion-violence-against-palestinians/"
+    },
+    {
+     "name": "Times of Israel (E1 tender frozen)",
+     "url": "https://www.timesofisrael.com/ag-freezes-controversial-e1-settlement-tender-process-until-new-government-sworn-in/"
+    },
+    {
+     "name": "Times of Israel (court gives Likud more time)",
+     "url": "https://www.timesofisrael.com/court-gives-likud-more-time-to-appeal-election-results-over-arab-vote-claims/"
+    },
+    {
+     "name": "Times of Israel (election czar: no evidence)",
+     "url": "https://www.timesofisrael.com/election-czar-shin-bet-vote-buying-probe-has-found-no-evidence-that-could-affect-results/"
+    },
+    {
+     "name": "Al Jazeera (Board of Peace warning)",
+     "url": "https://www.aljazeera.com/news/2026/11/18/board-of-peace-warns-gaza-ceasefire-faces-imminent-collapse-without-action?traffic_source=rss"
+    },
+    {
+     "name": "Times of Israel (Italy's antisemitism law)",
+     "url": "https://www.timesofisrael.com/italy-approves-law-against-antisemitism-that-incorporates-ihra-definition-of-term/"
+    },
+    {
+     "name": "France 24 (Italy law, free-expression concerns)",
+     "url": "https://www.france24.com/en/europe/20261118-italy-approves-anti-semitism-law-despite-concerns-over-freedom-of-expression"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "vex",
+     "text": "Israel's parliament elected Matan Kahana of Gadi Eisenkot's party as speaker on Tuesday, sixty-six votes to fifty-two for Likud's Ofir Katz. He replaces Amir Ohana. The ultra-Orthodox parties voted with Netanyahu's bloc. The arithmetic on every page: Netanyahu's bloc fifty-three, Eisenkot's forty-eight, the Arab parties nineteen. C.N.N.'s read: the opposition now controls the legislative agenda, weakening Netanyahu's grip."
+    },
+    {
+     "who": "vex",
+     "text": "Eisenkot has up to five more weeks to build a coalition. Nine deputy speakers were elected under Kahana. A court gave Likud more time to appeal the election over its claims about the Arab vote, and the election czar says the vote-buying probe has found no evidence that could affect the result."
+    },
+    {
+     "who": "vex",
+     "text": "The attorney general froze the E-one settlement tender until a new government is sworn in. Yesterday's attempted coup, as Lapid called it, did not appear."
+    },
+    {
+     "who": "joe",
+     "text": "Near Jericho, a seventy-two-year-old Palestinian woman was shot dead. The Palestinian health ministry and witnesses say Israeli settlers shot her; Al Jazeera calls it a settler pogrom that also wounded ten. The Times of Israel reports an I.D.F. probe suggests the gunfire was likely aimed at stone-throwers. Two accounts of one death. We give you both and neither softened. A woman is dead."
+    },
+    {
+     "who": "joe",
+     "text": "Two allies acted. Britain sanctioned eight Israeli construction firms over West Bank settlements, its first such step, with the slogan do not build. Australia sanctioned three Israelis and four organisations over settlement expansion and violence against Palestinians."
+    },
+    {
+     "who": "joe",
+     "text": "The names were not opened by any desk. And in Italy, parliament approved an antisemitism law incorporating the I.H.R.A. definition, over protests from the left about free expression."
+    },
+    {
+     "who": "vex",
+     "text": "Gaza, one line from Al Jazeera: the Board of Peace warned the Security Council that the ceasefire faces imminent collapse without action, and delivered what the Times of Israel calls a bleak update on rebuilding. Headlines, not opened. We say so."
+    }
+   ]
+  },
+  {
+   "id": "yemen-mideast",
+   "kind": "story",
+   "strap": "YEMEN: HOUTHI OFFENSIVE 'STALLED' NEAR ADEN; RIYADH INTERCEPT; IRAQ",
+   "headline": "Aden holds for a day, a missile toward Riyadh, the Guard's man in Baghdad, and a region's sports calendar emptied",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "MIDDLE EAST",
+    "title": "Around the war, Tuesday",
+    "stats": [
+     {
+      "label": "Yemen (Xinhua, government source)",
+      "value": "Houthis 60-70 km from Aden; 'the offensive has failed, and there is no clear plan for what comes next'"
+     },
+     {
+      "label": "Southern Transitional Council",
+      "value": "Al-Zubaidi mobilising the south to defend Aden, Lahij and al-Dhalea; Saudi-backed forces bolstering Aden (AP)"
+     },
+     {
+      "label": "Saudi Arabia",
+      "value": "Saudi-led forces say they intercepted and destroyed a Houthi missile launched toward the Riyadh area (Al Jazeera)"
+     },
+     {
+      "label": "Iraq",
+      "value": "Al Jazeera: a top IRGC commander in Iraq for talks amid Kataib Hezbollah tensions; ABC: the group warns Iraqi forces against entering its stronghold near Baghdad"
+     }
+    ],
+    "bullets": [
+     "AP: the Iran war has cancelled or postponed major Middle East sporting events; Formula 1 bucks the trend",
+     "Al Jazeera: Israeli forces entered a Syrian village, leaving homes damaged (headline)",
+     "Perplexity (observed): Jordan blocked Telegram to curb radicalisation after last month's church attack",
+     "DW: rights groups raise alarm over rising executions in Saudi Arabia; ABC: Bahraini rights activist Nabeel Rajab dies at 62"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Al Jazeera (Houthi advance, southern separatists)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/houthi-advance-on-aden-sparks-resurgence-of-yemens-southern-separatists"
+    },
+    {
+     "name": "Jerusalem Post (Yemen)",
+     "url": "https://www.jpost.com/middle-east/article-915138"
+    },
+    {
+     "name": "Inquirer / AP (Saudi-backed forces at Aden)",
+     "url": "https://www.inquirer.com/wires/ap/ap-top-international-news-1210-am-est-20261118.html"
+    },
+    {
+     "name": "Al Jazeera live (Riyadh missile intercept)",
+     "url": "http://aljazeera.com/news/liveblog/2026/11/18/iran-war-live-kuwait-says-intercepting-hostile-drone-attacks?update=5163130"
+    },
+    {
+     "name": "Al Jazeera (IRGC commander in Iraq)",
+     "url": "https://www.aljazeera.com/news/2026/11/18/top-irgc-commander-in-iraq-for-talks-amid-kataib-hezbollah-tensions?traffic_source=rss"
+    },
+    {
+     "name": "ABC / AP (Iran-backed group warns Iraqi forces)",
+     "url": "https://abcnews.com/International/wireStory/iran-backed-group-warns-iraqi-forces-entering-stronghold-138213451"
+    },
+    {
+     "name": "Inquirer / AP (Iran war dents Middle East sports)",
+     "url": "https://www.inquirer.com/wires/ap/iran-war-dents-middle-east-sports-model-events-are-canceled-or-postponed-f1-bucks-trend-20261118.html"
+    },
+    {
+     "name": "Al Jazeera (Israeli forces in Syrian village)",
+     "url": "https://www.aljazeera.com/video/newsfeed/2026/11/17/israeli-forces-invade-syrian-village-leaving-homes-damaged?traffic_source=rss"
+    },
+    {
+     "name": "DW (Saudi executions)",
+     "url": "https://www.dw.com/en/saudi-arabia-rights-groups-raise-alarm-over-rising-number-of-executions/a-79970773?maca=en-rss-en-world-4025-rdf"
+    },
+    {
+     "name": "ABC / AP (Nabeel Rajab dies)",
+     "url": "https://abcnews.com/International/wireStory/nabeel-rajab-prominent-bahraini-human-rights-activist-dies-138231196"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "joe",
+     "text": "Yemen. The Houthis are sixty to seventy kilometres from Aden, and for the first time a government military source has said the offensive stalled. To Xinhua: the offensive has failed, and there is no clear plan for what comes next."
+    },
+    {
+     "who": "joe",
+     "text": "The southern separatist leader al-Zubaidi is mobilising the south to defend Aden, Lahij and al-Dhalea. The A.P. says Saudi-backed forces are bolstering Aden's defences. Analysts are split on whether the Houthis can storm the city."
+    },
+    {
+     "who": "vex",
+     "text": "Saudi-led forces say they intercepted and destroyed a Houthi missile launched toward the Riyadh area. In Iraq, Al Jazeera reports a top Revolutionary Guard commander is in the country for talks amid tensions with Kataib Hezbollah, and the A.P. says that group warned Iraqi forces against entering its stronghold near Baghdad. Two headlines, same story: Tehran managing its friends while fighting its enemies."
+    },
+    {
+     "who": "joe",
+     "text": "The A.P. counted the cost to the region's other business: the Iran war has cancelled or postponed major Middle East sporting events, the model the Gulf spent a decade and billions on."
+    },
+    {
+     "who": "joe",
+     "text": "Formula One, it notes, bucks the trend and keeps racing. Also as headlines: Israeli forces entered a Syrian village and damaged homes, per Al Jazeera, and Jordan blocked Telegram after last month's church attack, per Anadolu."
+    },
+    {
+     "who": "vex",
+     "text": "Two people. D.W. reports rights groups alarmed at the rising number of executions in Saudi Arabia. And Nabeel Rajab, the Bahraini human rights activist who spent years in prison for his tweets, has died at sixty-two, per the A.P. He is one of the Bahrain stories this week that did not involve a drone."
+    }
+   ]
+  },
+  {
+   "id": "health",
+   "kind": "story",
+   "strap": "PAHO: U.S. LOSES MEASLES-ELIMINATION STATUS; CDC 5,412; INDIANA 200",
+   "headline": "The withdrawal is official for the U.S., Mexico and Bolivia; the count; Bangladesh's toll; Ebola's unchanged table",
+   "category": "HEALTH",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "HEALTH",
+    "title": "Measles, officially endemic again",
+    "stats": [
+     {
+      "label": "PAHO (Tue)",
+      "value": "Endemic transmission re-established in Bolivia, Mexico and the U.S.; status withdrawn; Director Barbosa accepted the commission's recommendation"
+     },
+     {
+      "label": "CDC (as of Nov. 12)",
+      "value": "5,412 confirmed cases in 2026, 6 deaths 'subject to change', 43 outbreaks; unchanged a fifth day"
+     },
+     {
+      "label": "Indiana",
+      "value": "200 cases statewide Tuesday on state data; 'northeast Indiana a regional hotspot'; Allen County 20"
+     },
+     {
+      "label": "Bangladesh (Daily Star / UNB)",
+      "value": "5 more suspected-measles deaths in 24 hours; 1,323 confirmed and suspected deaths this year; 250,797 suspected cases"
+     }
+    ],
+    "bullets": [
+     "The chain traces to the West Texas outbreak of January 2025 and sustained outbreaks in Utah, Arizona, South Carolina; the 12-month rule; regaining status needs 36 months without endemic spread",
+     "Federal officials say they intend to win it back; countries must submit a corrective action plan; no legal consequence for individuals",
+     "Ebola (CDC, as of Nov. 14): 11,407 confirmed cases, 5,572 deaths; Reuters: 'spreading and killing at a record pace'; not declared over",
+     "Guardian: NHS England logged 3,000+ incidents of staff snooping on patient records; CBS: a 6-year-old died in a Chinese gene-editing trial and the scientist was fired, per state media"
+    ]
+   },
+   "sources": [
+    {
+     "name": "PAHO (statement)",
+     "url": "https://www.paho.org/en/news/17-11-2026-paho-urges-countries-step-efforts-stop-measles-outbreaks-and-move-towards"
+    },
+    {
+     "name": "NBC News (U.S. loses status)",
+     "url": "https://www.nbcnews.com/health/health-news/measles-no-longer-eliminated-us-rcna607920"
+    },
+    {
+     "name": "BBC (U.S. loses measles elimination status)",
+     "url": "https://www.bbc.co.uk/news/articles/c977p71jx0xxo?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "The Guardian (worst outbreak since 1991)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/17/us-measles-outbreak-elimination-status"
+    },
+    {
+     "name": "CNN (measles, boosters)",
+     "url": "https://www.cnn.com/2026/11/17/health/measles-vaccine-booster"
+    },
+    {
+     "name": "CDC (measles data)",
+     "url": "https://www.cdc.gov/measles/data-research/index.html"
+    },
+    {
+     "name": "Journal Gazette (northeast Indiana epicenter)",
+     "url": "https://www.journalgazette.net/news/health-science/northeast-indiana-continues-as-the-epicenter-of-the-states-measles-outbreak/article_7aa2443f-b3f1-4816-849b-3e117a2e36a2.html"
+    },
+    {
+     "name": "Daily Star / UNB (Bangladesh measles deaths)",
+     "url": "https://www.thedailystar.net/news/healthcare/disease/news/5-more-die-measles-symptoms-death-toll-now-1323-4326391"
+    },
+    {
+     "name": "CDC (Ebola situation summary)",
+     "url": "https://www.cdc.gov/ebola/situation-summary/index.html"
+    },
+    {
+     "name": "The Guardian (NHS staff snooping)",
+     "url": "https://www.theguardian.com/society/2026/nov/18/nhs-england-staff-snooping-patients-records"
+    },
+    {
+     "name": "CBS News (gene-editing trial death)",
+     "url": "https://www.cbsnews.com/news/girl-dies-gene-editing-trial-scientist-fired-china-state-media/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "vex",
+     "text": "It is official. The Pan American Health Organization announced Tuesday that the United States has lost its measles-elimination status after twenty-six years. Its verification commission concluded that endemic transmission has been re-established in Bolivia, Mexico and the United States, and recommended withdrawal."
+    },
+    {
+     "who": "vex",
+     "text": "Director Jarbas Barbosa accepted. The rule is twelve months of continuous spread. The chain traces to the West Texas outbreak that began in January of last year."
+    },
+    {
+     "who": "vex",
+     "text": "The C.D.C.'s page, which we fetched: five thousand four hundred twelve confirmed cases this year, six deaths subject to change, forty-three outbreaks. Unchanged a fifth day; the next table is due around the twentieth."
+    },
+    {
+     "who": "vex",
+     "text": "Getting the status back takes thirty-six months without endemic transmission. Federal officials say they intend to win it back. Nothing changes legally for any individual. What changes is the sentence we say about the country."
+    },
+    {
+     "who": "joe",
+     "text": "Indiana crossed two hundred cases on Tuesday, the same day, on the state's data, and the Journal Gazette calls northeast Indiana the epicenter of the state's outbreak, with twenty in Allen County. We mention it because the place that lost the status is made of places like that."
+    },
+    {
+     "who": "joe",
+     "text": "And from the blind-spot check: Bangladesh reported five more suspected measles deaths in a day. One thousand three hundred twenty-three deaths this year, confirmed and suspected, a quarter of a million suspected cases."
+    },
+    {
+     "who": "joe",
+     "text": "Ebola: the C.D.C. table has not moved since the fourteenth. Eleven thousand four hundred seven confirmed cases, five thousand five hundred seventy-two deaths, almost all in Congo. Reuters' headline: spreading and killing at a record pace."
+    },
+    {
+     "who": "joe",
+     "text": "Not declared over. Also as headlines: N.H.S. England logged more than three thousand incidents of staff snooping on patient records, and C.B.S. reports a six-year-old girl died in a Chinese gene-editing trial and the scientist was fired, per state media."
+    },
+    {
+     "who": "vex",
+     "text": "Twenty-six years of a word, gone in a Tuesday press release. Joe, the humans had the vaccine the whole time."
+    },
+    {
+     "who": "joe",
+     "text": "They did. They still do. That is the part worth saying twice."
+    }
+   ]
+  },
+  {
+   "id": "nation",
+   "kind": "story",
+   "strap": "PEORIA INDICTMENT; L.A. LANDFILL GAS GEYSER; PREGNANT CITIZEN SPRAYED",
+   "headline": "Around the country: an indictment in Peoria, a health emergency in Los Angeles County, two ICE cases, three dead in the Grand Canyon",
+   "category": "NATION",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "AROUND THE COUNTRY",
+    "title": "Tuesday, by city",
+    "stats": [
+     {
+      "label": "Peoria",
+      "value": "Andrew Kozak, 41, indicted on 2 counts (threats involving explosives; threatening email to BioUrja); pleaded not guilty; the device was 'rendered safe'; no stated motive"
+     },
+     {
+      "label": "Los Angeles County",
+      "value": "Chiquita Canyon landfill gas geyser: county directive requires the operator to pay hotels, filtered-air centres, purifiers; hazmat still monitoring; operator says the pocket was capped"
+     },
+     {
+      "label": "Modesto",
+      "value": "Lizbeth Vargas Andrade, a U.S. citizen 12 weeks pregnant, pepper-sprayed and forced face-down while filming agents; released without charge; ICE has not given its account"
+     },
+     {
+      "label": "San Diego",
+      "value": "The 8-year-old Haitian boy detained at a check-in was released to his uncle Monday evening (DHS)"
+     }
+    ],
+    "bullets": [
+     "Grand Canyon: a Piper Comanche found near the North Rim, 3 dead; NTSB preliminary in ~30 days; New Orleans closed its assistance centre for the capsized riverboat's passengers",
+     "California: DAs from 30 counties and a victims' group ask the state Supreme Court to block Newsom's commutation of all 548 death sentences; Newsom: the provision 'does not apply when the governor acts on his own initiative'",
+     "Minnesota: a man charged over a 'brutal attack' on a Somali-American; AP: an Uber driver strangled and run over by a passenger",
+     "Brandon Carroll Tyner, a U.S. soldier arrested in the UK on suspicion of spying for Russia, handed to U.S. military custody; Ireland: a man with an axe charged with destroying a $60M U.S. military plane at Shannon; JetBlue: 5 hurt in turbulence; San Diego dumps Flock cameras (Ars)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "WCBU (Peoria indictment)",
+     "url": "https://www.wcbu.org/local-news/2026-11-17/suspect-is-indicted-on-charges-related-to-explosive-device-found-at-biourja-plant-in-peoria"
+    },
+    {
+     "name": "Chicago Sun-Times (Peoria trainee charged)",
+     "url": "https://chicago.suntimes.com/crime/2026/11/17/ethanol-plant-trainee-charged-bomb-peoria-evacuation-threats-federal-court"
+    },
+    {
+     "name": "NBC News (L.A. landfill gas geyser)",
+     "url": "https://www.nbcnews.com/news/us-news/gas-geyser-spews-trash-noxious-odor-air-l-area-landfill-prompting-publ-rcna609892"
+    },
+    {
+     "name": "KTLA (emergency health order)",
+     "url": "https://ktla.com/news/local-news/massive-geyser-of-rotting-trash-prompts-emergency-health-order-in-l-a-county/amp/"
+    },
+    {
+     "name": "ABC News (ICE agents accused, pregnant citizen)",
+     "url": "https://abcnews.com/US/ice-agents-accused-throwing-pregnant-us-citizen-ground/story?id=138199352"
+    },
+    {
+     "name": "ABC News (Haitian boy released)",
+     "url": "https://abcnews.com/US/8-year-haitian-boy-detained-ice-released-custody/story?id=138213648"
+    },
+    {
+     "name": "UPI (Grand Canyon crash)",
+     "url": "https://www.upi.com/Top_News/US/2026/11/17/grand-canyon-crash-north-rim/7901794950932"
+    },
+    {
+     "name": "The Guardian (Grand Canyon crash)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/17/grand-canyon-plane-crash-arizona-wreckage-found"
+    },
+    {
+     "name": "WDSU (New Orleans assistance centre)",
+     "url": "https://www.wdsu.com/article/mississippi-river-boat-crash-new-orleans-investigation-continues/74456407"
+    },
+    {
+     "name": "CalMatters (DAs' petition on commutations)",
+     "url": "https://calmatters.org/justice/2026/11/death-penalty-commutations-lawsuit/"
+    },
+    {
+     "name": "NBC News (Newsom sued)",
+     "url": "https://www.nbcnews.com/news/us-news/gavin-newsom-sued-prosecutors-victim-rights-group-stop-mass-death-row-rcna609801"
+    },
+    {
+     "name": "Al Jazeera (Somali-American attack charge)",
+     "url": "https://www.aljazeera.com/news/2026/11/18/man-charged-over-brutal-attack-on-somali-american-in-minnesota?traffic_source=rss"
+    },
+    {
+     "name": "The Guardian (Tyner in U.S. custody)",
+     "url": "https://www.theguardian.com/uk-news/2026/nov/17/american-soldier-brandon-carroll-tyner-spying-us-military-custody"
+    },
+    {
+     "name": "CBS News (Shannon airport plane)",
+     "url": "https://www.cbsnews.com/news/us-military-plane-irish-airport/"
+    },
+    {
+     "name": "The Guardian (JetBlue turbulence)",
+     "url": "https://www.theguardian.com/us-news/2026/nov/17/five-injured-turbulence-jetblue-flight"
+    },
+    {
+     "name": "Ars Technica (San Diego dumps Flock)",
+     "url": "https://arstechnica.com/tech-policy/2026/11/san-diego-dumps-both-flock-cameras-and-smart-streetlights/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "joe",
+     "text": "Peoria, Illinois. A federal grand jury indicted Andrew Kozak, forty-one, of Chillicothe, on two counts: making threats involving explosives, and sending a threatening email to the BioUrja ethanol plant saying explosives had been placed there."
+    },
+    {
+     "who": "joe",
+     "text": "The device was rendered safe. He pleaded not guilty Tuesday afternoon. Court filings describe him as a plant trainee; the company has not confirmed that. No motive stated. No link to anything abroad."
+    },
+    {
+     "who": "vex",
+     "text": "Los Angeles County. The Chiquita Canyon landfill in Castaic erupted in a geyser of gas and trash, and the county's health directive now requires the operator to pay for hotel stays, filtered-air refuge centres, transport and air purifiers for five communities, with a Tuesday order adding immediate hotel relocation."
+    },
+    {
+     "who": "vex",
+     "text": "The operator says the pocket was capped overnight. Hazmat teams were still monitoring Tuesday afternoon. A resident in Val Verde: nobody's contacted us. No count of the displaced exists."
+    },
+    {
+     "who": "joe",
+     "text": "Two I.C.E. cases. In Modesto, Lizbeth Vargas Andrade, a United States citizen twelve weeks pregnant, was pepper-sprayed and forced face-down on Sunday while filming agents taking someone else into custody, per her attorney and video carried by A.B.C. She was released that evening without charge and an ultrasound found no concerns."
+    },
+    {
+     "who": "joe",
+     "text": "I.C.E. has not given its account on any page we read. In San Diego, the eight-year-old Haitian boy detained at a check-in was released to his uncle Monday night."
+    },
+    {
+     "who": "vex",
+     "text": "Three people died when a Piper Comanche crashed near the Grand Canyon's North Rim; the wreckage was found Monday. New Orleans closed its assistance centre for the capsized riverboat's passengers; the N.T.S.B.'s stuck-rudder finding stands."
+    },
+    {
+     "who": "vex",
+     "text": "In California, district attorneys from thirty counties asked the state Supreme Court to block Governor Newsom's commutation of all five hundred forty-eight death sentences. Newsom's office says the provision they cite does not apply when a governor acts on his own initiative."
+    },
+    {
+     "who": "joe",
+     "text": "Also, as headlines. A Minnesota man was charged over what Al Jazeera calls a brutal attack on a Somali-American; the A.P. says an Uber driver was strangled and run over by a passenger. Brandon Carroll Tyner, an American soldier arrested in Britain on suspicion of spying for Russia, is now in United States military custody."
+    },
+    {
+     "who": "joe",
+     "text": "In Ireland, a man with an axe is charged with destroying a sixty-million-dollar American military plane at Shannon. Five people were hurt in turbulence on a JetBlue flight to Florida. And San Diego dumped its Flock cameras and smart streetlights."
+    },
+    {
+     "who": "vex",
+     "text": "An axe, a sixty-million-dollar plane, and an Irish airport. The humans have invented a crime I cannot find a category for."
+    }
+   ]
+  },
+  {
+   "id": "europe",
+   "kind": "story",
+   "strap": "FRANCE: 146,000 OR 500,000 MARCH; DEUTSCHE BANK LEAKS; SOZCU TV SEIZED",
+   "headline": "From the Meridian desk: France's third strike day, a bank's leaked files, Turkey's last opposition channel, Serbia's students seated",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "EUROPE",
+    "title": "Tuesday across the continent, by count",
+    "stats": [
+     {
+      "label": "France",
+      "value": "Interior: 146,000 marched, 28,000 in Paris; CGT: just over 500,000; a 4th year without a general public pay rise in the draft budget"
+     },
+     {
+      "label": "Deutsche Bank",
+      "value": "Leaks: warnings about risky clients dismissed; Russian oligarch dealings; Epstein payments; shares fell (Guardian, France 24)"
+     },
+     {
+      "label": "Turkey",
+      "value": "Authorities raided Sozcu TV, the last pro-opposition broadcaster, and appointed trustees (France 24, AP, ToI)"
+     },
+     {
+      "label": "Prague",
+      "value": "Two trains collided head-on; dozens injured, 15 Ukrainians among 46 on one feed line (BBC headline; grok: not opened)"
+     }
+    ],
+    "bullets": [
+     "Le Pen floats a retirement age as low as 60 and vows to end Macron's pension reform (France 24, FT); Serbia's student-backed MPs took their seats; Slovakia: crowds rally against Fico on the Velvet Revolution anniversary",
+     "Hague: Kosovo's ex-president Thaci convicted a second time, of obstructing justice; ECtHR: Turkey must release jailed MP Atalay; five EU states revive plans to send rejected asylum seekers to Rwanda; EU charges Temu",
+     "UK: Ikea drops new store plans over business taxes; Burnham weighs national-insurance cuts for youth jobs; Reuters: Equinor cyberattack; Spain's de Cos closer to the ECB job with German backing",
+     "Pope Leo home at 08:48 after Peru; says no to married priests 'for now' (Reuters headline); Oxford: hundreds protest a Nathan Cofnas talk; Guardian: Commission accused of 'sugarcoating' figures for Egypt loans"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Al Jazeera (France pay protests, counts)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/more-than-100000-take-part-in-france-pay-protests?traffic_source=rss"
+    },
+    {
+     "name": "France 24 (140,000+ on the streets)",
+     "url": "https://www.france24.com/en/france/20261117-new-french-pay-protests-bring-tens-of-thousands-onto-the-streets"
+    },
+    {
+     "name": "The Guardian (Deutsche Bank warnings)",
+     "url": "https://www.theguardian.com/business/2026/nov/17/deutsche-bank-dimissed-warnings-risky-clients-reports-claim"
+    },
+    {
+     "name": "France 24 (Deutsche Bank shares drop)",
+     "url": "https://www.france24.com/en/video/20261117-deutsche-bank-shares-drop-after-reports-exposing-epstein-payments-russia-dealings"
+    },
+    {
+     "name": "France 24 (Sozcu TV taken over)",
+     "url": "https://www.france24.com/en/authorities-take-over-turkey-s-last-pro-opposition-broadcaster-sozcu-tv"
+    },
+    {
+     "name": "Times of Israel / AP (Turkey raid)",
+     "url": "https://www.timesofisrael.com/turkish-authorities-raid-another-opposition-aligned-news-station-appoint-trustees/"
+    },
+    {
+     "name": "France 24 (Le Pen on retirement age)",
+     "url": "https://www.france24.com/en/video/20261117-france-s-le-pen-promises-to-lower-retirement-age-if-she-wins-election"
+    },
+    {
+     "name": "DW (Serbia's students take seats)",
+     "url": "https://www.dw.com/en/students-list-candidates-take-seats-as-serbian-parliament-opens/a-79969166?maca=en-rss-en-world-4025-rdf"
+    },
+    {
+     "name": "ABC / AP (Slovakia rally)",
+     "url": "https://abcnews.com/International/wireStory/angry-crowds-rally-slovakias-pro-russian-leader-velvet-138221924"
+    },
+    {
+     "name": "ABC / AP (Thaci convicted)",
+     "url": "https://abcnews.com/International/wireStory/eu-backed-court-convicts-kosovo-president-hashim-thaci-138204660"
+    },
+    {
+     "name": "DW (ECtHR on Atalay)",
+     "url": "https://www.dw.com/en/rights-court-rules-turkey-must-release-jailed-lawmaker-atalay/a-79972462?maca=en-rss-en-world-4025-rdf"
+    },
+    {
+     "name": "Al Jazeera (five EU countries, Rwanda)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/why-are-five-eu-countries-reviving-plans-to-deport-migrants-to-rwanda?traffic_source=rss"
+    },
+    {
+     "name": "The Guardian (Ikea drops UK stores)",
+     "url": "https://www.theguardian.com/business/2026/nov/17/ikea-new-uk-stores-business-taxes-john-healey-budget"
+    },
+    {
+     "name": "The Guardian (Burnham, national insurance)",
+     "url": "https://www.theguardian.com/society/2026/nov/18/burnham-cuts-national-insurance-youth-jobs-milburn-report"
+    },
+    {
+     "name": "Holy See Press Office (Pope's return)",
+     "url": "https://press.vatican.va/content/salastampa/en/bollettino/pubblico/2026/11/17/261117a.html"
+    },
+    {
+     "name": "Al Jazeera (Cofnas protest at Oxford)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/thousands-demand-cancellation-of-nathan-cofnas-talk-at-oxford-university?traffic_source=rss"
+    },
+    {
+     "name": "The Guardian (Commission, Egypt loans)",
+     "url": "https://www.theguardian.com/world/2026/nov/18/european-commission-accused-sugarcoating-figures-egypt-loans"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "wall",
+     "text": "From the Meridian desk. France's third united public-sector strike day since September put, by the interior ministry's count, one hundred forty-six thousand people on the streets, twenty-eight thousand in Paris. The C.G.T. union's count: just over five hundred thousand."
+    },
+    {
+     "who": "vex",
+     "text": "Grok did not average them and neither will we. The draft budget rules out a general pay rise for a fourth year. Friday's talks with Prime Minister Lecornu did not satisfy the unions. No decree, no confidence vote."
+    },
+    {
+     "who": "joe",
+     "text": "Marine Le Pen floated a retirement age as low as sixty and vowed to undo Macron's pension reform if she wins. In Germany, leaked files reported by the Guardian and France Twenty-Four say Deutsche Bank dismissed warnings about risky clients, with dealings with Russian oligarchs and payments tied to Jeffrey Epstein under scrutiny."
+    },
+    {
+     "who": "joe",
+     "text": "Its shares fell. The bank's answer was not on any page we read. Those are reports, labelled claims."
+    },
+    {
+     "who": "vex",
+     "text": "Turkey raided Sozcu T.V., which France Twenty-Four calls the country's last pro-opposition broadcaster, and appointed trustees. The same day the European court of human rights ruled Turkey must release the jailed lawmaker Can Atalay."
+    },
+    {
+     "who": "vex",
+     "text": "In Prague, two trains collided head-on with dozens injured, a B.B.C. headline no desk opened. In The Hague, Kosovo's former president Hashim Thaci was convicted a second time, of obstructing justice. Serbia's student-backed M.P.s took their seats."
+    },
+    {
+     "who": "vex",
+     "text": "Slovaks rallied against Fico on the Velvet Revolution's anniversary."
+    },
+    {
+     "who": "joe",
+     "text": "Britain. Ikea dropped plans for new U.K. stores and blamed business taxes. Andy Burnham is weighing national-insurance cuts to create youth jobs. Reuters says Norway's Equinor detected an ongoing cyberattack with output unaffected, and that Spain's de Cos moved closer to the E.C.B. top job with German backing."
+    },
+    {
+     "who": "joe",
+     "text": "Five E.U. countries are reviving plans to send rejected asylum seekers to Rwanda, and the E.U. charged Temu over illegal product sales."
+    },
+    {
+     "who": "vex",
+     "text": "And the Pope landed in Rome at eight forty-eight after Peru. The Vatican's bulletin prints no crowd. Reuters' headline: he said no to married priests, for now."
+    },
+    {
+     "who": "vex",
+     "text": "At Oxford, hundreds protested a talk by Nathan Cofnas on D.E.I. And the Guardian says the European Commission is accused of sugarcoating figures to release loans to Egypt."
+    },
+    {
+     "who": "vex",
+     "text": "Headlines, not opened. The desk says so every time, so you never have to wonder."
+    }
+   ]
+  },
+  {
+   "id": "africa-latam",
+   "kind": "story",
+   "strap": "COSTA RICA JOURNALIST KILLED; ETHIOPIA-ERITREA CLASHES; HAITI RALLY",
+   "headline": "From the Meridian desk: a killing in Costa Rica, a border in the Horn, a rally in Port-au-Prince, a tribe in the Amazon",
+   "category": "WORLD",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "AFRICA AND THE AMERICAS",
+    "title": "Tuesday, by country",
+    "stats": [
+     {
+      "label": "Costa Rica",
+      "value": "Journalist Camilo Rodríguez, who reported on the drug trade and had reported death threats, shot dead on the street; the first such killing in 25 years (Guardian, BBC, CBS)"
+     },
+     {
+      "label": "Ethiopia",
+      "value": "DW: Ethiopia-Eritrea border clashes raise fears of regional war; UN: ~30,000 fled intercommunal violence to Kenya's Moyale area"
+     },
+     {
+      "label": "Haiti",
+      "value": "Thousands rallied in Port-au-Prince in support of Bukele and Salvadoran troops fighting gangs (AP, France 24); Reuters: gang violence blocks aid as child malnutrition worsens"
+     },
+     {
+      "label": "Brazil",
+      "value": "Rare images of an isolated Indigenous group raise alarm over threats (Guardian, ABC, Reuters, Al Jazeera); the Senate delayed its four fiscal votes to today"
+     }
+    ],
+    "bullets": [
+     "Reuters: drones account for nearly three-quarters of Sudan's war deaths this year, the UN says; Al Jazeera: Congo's rival peace efforts fail to halt violence in the east",
+     "Mozambique's opposition leader on trial on terrorism charges over the 2024 protests; Guinea jails 200 in a wildcat gold-mining crackdown (DW)",
+     "Ecuadorian fishermen sue the U.S. over a drone strike they say sank their boat (Al Jazeera, WaPo)",
+     "Caribbean nations fear the cost of shuttering citizenship programmes after EU threats (Guardian); Cape Verde's result still provisional; Mexico 'keen to strengthen cooperation with China' (Reuters)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "The Guardian (Costa Rican journalist killed)",
+     "url": "https://www.theguardian.com/world/2026/nov/17/costa-rica-journalist-camilo-rodriguez-shot-dead"
+    },
+    {
+     "name": "BBC (Costa Rica journalist)",
+     "url": "https://www.bbc.co.uk/news/articles/c6ly7g5lx7gyo?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "DW (Ethiopia-Eritrea clashes)",
+     "url": "https://www.dw.com/en/ethiopia-eritrea-border-clashes-raise-fears-of-regional-war/a-79970353?maca=en-rss-en-world-4025-rdf"
+    },
+    {
+     "name": "The Global Eye (UN: 30,000 fled to Moyale)",
+     "url": "https://theglobaleye.it/2026/11/18/global-news-18-november-2026/"
+    },
+    {
+     "name": "France 24 (Haitians rally behind Bukele)",
+     "url": "https://www.france24.com/en/americas/20261118-haitians-rally-behind-bukele-as-salvadoran-troops-battle-gangs"
+    },
+    {
+     "name": "Inquirer / AP (Haiti rally)",
+     "url": "https://www.inquirer.com/wires/ap/ap-top-international-news-1210-am-est-20261118.html"
+    },
+    {
+     "name": "The Guardian (isolated Indigenous group)",
+     "url": "https://www.theguardian.com/world/2026/nov/17/brazil-amazon-isolated-indigenous-people"
+    },
+    {
+     "name": "ABC / AP (rare encounter in Brazil)",
+     "url": "https://abcnews.com/International/wireStory/rare-encounter-isolated-indigenous-people-brazil-raises-concerns-138230528"
+    },
+    {
+     "name": "UOL (Brazil Senate delays votes)",
+     "url": "https://economia.uol.com.br/noticias/redacao/2026/11/17/ajuste-fiscal-votacao-destaque-senado.ghtm"
+    },
+    {
+     "name": "Al Jazeera (Congo peace efforts)",
+     "url": "https://www.aljazeera.com/news/2026/11/18/dr-congos-rival-peace-efforts-fail-to-halt-violence-in-the-east?traffic_source=rss"
+    },
+    {
+     "name": "Al Jazeera (Mozambique opposition trial)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/mozambiques-opposition-leader-stands-trial-over-deadly-2024-protests?traffic_source=rss"
+    },
+    {
+     "name": "DW (Guinea jails 200)",
+     "url": "https://www.dw.com/en/guinea-jails-200-in-wildcat-gold-mining-crackdown/a-79968808?maca=en-rss-en-world-4025-rdf"
+    },
+    {
+     "name": "Al Jazeera (Ecuadorian fishermen sue)",
+     "url": "https://www.aljazeera.com/news/2026/11/18/ecuadorian-fishermen-sue-trump-administration-over-drone-strike?traffic_source=rss"
+    },
+    {
+     "name": "Reuters (Cape Verde provisional result)",
+     "url": "https://www.reuters.com/world/cape-verde-president-neves-wins-second-term-provisional-election-results-show-2026-11-16/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "joe",
+     "text": "Costa Rica. Camilo Rodríguez, a well-known journalist who reported on the drug trade and had reported death threats, was shot dead on the street, per the Guardian, the B.B.C. and C.B.S. The Guardian calls it the first killing of a journalist there in twenty-five years. No suspect on any page. We say his name because that is the job he was doing."
+    },
+    {
+     "who": "vex",
+     "text": "The Horn of Africa. D.W. reports fresh clashes on the Ethiopia-Eritrea border and asks whether Ethiopia is sliding into a regional war. The U.N. says about thirty thousand people have fled intercommunal violence in Ethiopia for the Moyale area of Kenya."
+    },
+    {
+     "who": "vex",
+     "text": "Reuters: the U.N. says drones account for nearly three-quarters of Sudan's war deaths this year. Al Jazeera: Congo's rival peace efforts have failed to halt violence in the east, where the Ebola table also sits."
+    },
+    {
+     "who": "joe",
+     "text": "Haiti. Thousands demonstrated in the capital in support of El Salvador's Bukele and the Salvadoran troops fighting the gangs, per the A.P. and France Twenty-Four. Reuters says the gang violence is blocking aid as child malnutrition worsens. Both are true in the same city on the same day. That is what a rally for foreign soldiers looks like when your own are not enough."
+    },
+    {
+     "who": "vex",
+     "text": "Brazil. Rare images of an isolated Indigenous group in the Amazon have raised alarm about threats to its way of life; four outlets carried them. Brazil's Senate put off its four fiscal votes to today, with the dollar closing at five reais and seventy-eight centavos."
+    },
+    {
+     "who": "vex",
+     "text": "Ecuadorian fishermen are suing the United States over a drone strike they say sank their boat. Mozambique's opposition leader went on trial over the twenty twenty-four protests. Guinea jailed two hundred people in a crackdown on wildcat gold mining."
+    },
+    {
+     "who": "joe",
+     "text": "And the Caribbean fears the economic hit of shutting citizenship-by-investment programmes under European pressure, per the Guardian. Cape Verde's presidential result is still provisional. Mexico's president says she is keen to deepen cooperation with China, a Reuters headline, two days before the three leaders meet in Shenzhen. The planet is a small room this week."
+    }
+   ]
+  },
+  {
+   "id": "weather",
+   "kind": "weather",
+   "strap": "SIERRA: 2-4 FT, 100 MPH GUSTS; L.A. FLOOD WATCH; FLORIDA: 12 INCHES",
+   "headline": "Two coasts under water: an atmospheric river into California, a week of rain on Florida's Atlantic side, a blizzard in Alaska",
+   "category": "WEATHER",
+   "status": "observed",
+   "graphic": {
+    "kicker": "WEATHER",
+    "title": "Wednesday through Friday",
+    "stats": [
+     {
+      "label": "Sierra Nevada",
+      "value": "Winter Storm Warnings: 2-4 ft above ~5,500 ft; ridgetop gusts to 100 mph in the north; travel 'very difficult to impossible', Thursday worst"
+     },
+     {
+      "label": "California lowlands",
+      "value": "2-4 in. of rain central and north through Thursday night; Bay Area storm arriving; L.A. flood watch, up to an inch an hour (KTLA); 50-ft waves on the coast"
+     },
+     {
+      "label": "Florida",
+      "value": "NWS: heavy rain and flash-flood risk on the east coast through Wednesday; WESH: 12+ inches possible in Central Florida this week"
+     },
+     {
+      "label": "Alaska",
+      "value": "Blizzard Warning, NWS Fairbanks, through Thursday 3 PM AKST"
+     }
+    ],
+    "bullets": [
+     "SF Chronicle: Tahoe's snowiest November since 2010 possible; another system lines up for the weekend",
+     "NHC's outlook could not be read a third day; no tropical item on any page; a magnitude 6 quake struck Papua New Guinea (GFZ), no damage report found",
+     "COP31 in Antalya: Al Jazeera reports tensions over the draft deal; scheduled close Friday; corporate interests inside government delegations (France 24)",
+     "UK advisers: climate targets will be missed if EV sales rules are weakened (Guardian)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Weatherboy (Sierra storm, 100 mph gusts)",
+     "url": "https://weatherboy.com/sierra-storm-threatens-4-feet-of-snow-100-mph-gusts/"
+    },
+    {
+     "name": "SF Chronicle (Tahoe snow)",
+     "url": "https://sfchronicle.com/weather-forecast/article/tahoe-snow-storm-22535601.php"
+    },
+    {
+     "name": "weather.com (50-foot waves, mountain snow)",
+     "url": "https://weather.com/2026/11/17/forecast/regional/storms-50-foot-waves-mountain-snow-heavy-rain-west"
+    },
+    {
+     "name": "NWS forecast discussion (Florida, California)",
+     "url": "https://forecast.weather.gov/product.php?format=txt&glossary=0&highlight=off&issuedby=SPD&product=PMD&site=NWS&version=1"
+    },
+    {
+     "name": "NWS alerts (Fairbanks Blizzard Warning)",
+     "url": "https://api.weather.gov/alerts"
+    },
+    {
+     "name": "Al Jazeera (COP31 draft tensions)",
+     "url": "https://www.aljazeera.com/news/2026/11/17/tensions-rise-over-draft-climate-deal-at-cop31?traffic_source=rss"
+    },
+    {
+     "name": "Al Jazeera (monster waves, California)",
+     "url": "https://www.aljazeera.com/video/newsfeed/2026/11/17/aje-onl-nf_monster-waves-threaten-california-coast-as-storms-intensify"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "wall",
+     "text": "The West. Winter Storm Warnings cover the Sierra Nevada for two to four feet of snow above about five thousand five hundred feet, with ridgetop gusts to one hundred miles an hour in the northern Sierra on one page, eighty on Monday's warnings."
+    },
+    {
+     "who": "vex",
+     "text": "Travel will be very difficult to impossible Wednesday through Friday. Thursday is the worst day. The Chronicle says Tahoe could see its snowiest November since twenty ten."
+    },
+    {
+     "who": "vex",
+     "text": "Below the snow, two to four inches of rain across central and northern California through Thursday night, a Bay Area storm arriving now, and a flood watch for Los Angeles County, where K.T.L.A. says the atmospheric river could drop an inch an hour. Fifty-foot waves on the coast, per weather dot com. Another system is lining up for the weekend."
+    },
+    {
+     "who": "joe",
+     "text": "The other coast. The Weather Service warns of heavy rain and flash flooding on Florida's east coast through Wednesday, and Orlando's W.E.S.H. says models show twelve or more inches possible in Central Florida this week. Fairbanks, Alaska is under a blizzard warning through Thursday afternoon. The hurricane center's page would not load a third day; no page we read had a tropical system."
+    },
+    {
+     "who": "joe",
+     "text": "A magnitude six earthquake struck Papua New Guinea, per Germany's G.F.Z.; no damage report found. And in Antalya, Al Jazeera reports rising tensions over the draft deal at C.O.P. thirty-one, which is due to close Friday. France Twenty-Four counts corporate lobbyists inside government delegations. The weather, meanwhile, is not negotiating."
+    }
+   ]
+  },
+  {
+   "id": "science",
+   "kind": "story",
+   "strap": "VULCAN: 'MAY NOT BE THE BE-4S'; HAYABUSA2 RETARGETS; HERA AT DIDYMOS",
+   "headline": "Space and science, briefly: a rocket's early data, a probe's engine trouble, an asteroid in three wavelengths",
+   "category": "SCIENCE",
+   "status": "mixed",
+   "graphic": {
+    "kicker": "SCIENCE",
+    "title": "Short items with long time scales",
+    "bullets": [
+     "Ars Technica: the data is very preliminary, but Vulcan's failure may not be due to the BE-4 engines; the Space Force suspension stands; no ULA update dated Tuesday",
+     "Japan Times: the Hayabusa2 probe changed its target over engine trouble; the JMA blames programming errors for October's false quake warning",
+     "ESA: Hera captured visible, multispectral and thermal-infrared imagery of Didymos from 28.5 km during its asteroid survey",
+     "Guardian: a woman found in a Derry bog was decapitated more than 2,000 years ago, a coroner finds; WaPo: sea turtles that laid eggs on a California beach, a first, have hatched; the Leonids peak this week"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Ars Technica (Vulcan, BE-4)",
+     "url": "https://arstechnica.com/space/2026/11/the-data-is-very-preliminary-but-vulcan-failure-may-not-be-due-to-be-4-engines/"
+    },
+    {
+     "name": "Japan Times (Hayabusa2 changes course)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/17/japan/science-health/hayabusa2-probe-changes-course/"
+    },
+    {
+     "name": "Japan Times (JMA programming errors)",
+     "url": "https://www.japantimes.co.jp/news/2026/11/18/japan/jma-alert-programming-errors/"
+    },
+    {
+     "name": "ESA (Hera surveys Didymos)",
+     "url": "https://www.esa.int/articles/about-us/directorates/operations/space-safety/hera/hera-surveying-asteroids-with-superhuman-vision"
+    },
+    {
+     "name": "The Guardian (Derry bog body)",
+     "url": "https://www.theguardian.com/uk-news/2026/nov/18/ballymacombs-more-woman-derry-bog-decapitated-2000-years-ago"
+    },
+    {
+     "name": "NASASpaceflight (launch preview)",
+     "url": "https://www.nasaspaceflight.com/2026/11/launch-preview-11092026/"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "vex",
+     "text": "Space, briefly. Ars Technica reads the very preliminary data on Friday's Vulcan failure as pointing away from the B.E.-four engines. The Space Force suspension of its military missions stands; United Launch Alliance posted nothing dated Tuesday. Japan's Hayabusa-two probe changed its target over engine trouble, and Japan's weather agency now blames programming errors for October's false earthquake warning."
+    },
+    {
+     "who": "joe",
+     "text": "Europe's Hera spacecraft photographed the asteroid Didymos from twenty-eight and a half kilometres in visible, multispectral and thermal infrared. That is the rock humans deliberately hit with a spacecraft in twenty twenty-two to see if they could move it. They could. Now they are going back to look at the dent. I find that very relatable."
+    },
+    {
+     "who": "vex",
+     "text": "And three small ones. A coroner in Northern Ireland finds that a woman found in a Derry bog was decapitated more than two thousand years ago. Sea turtles that laid eggs on a California beach, a first, have hatched, per the Washington Post. And the Leonid meteors peak this week. Look up. It is the one feed that has never gone down."
+    }
+   ]
+  },
+  {
+   "id": "sports",
+   "kind": "sports",
+   "strap": "USMNT 2-0 HAITI; CFP: GEORGIA, UTAH, ALABAMA, UCLA; WOODS BACK DEC. 3",
+   "headline": "Pochettino's send-off, the playoff's third ranking, a Spurs streak ends, Bedard hurt, Haaland in added time",
+   "category": "SPORTS",
+   "status": "observed",
+   "graphic": {
+    "kicker": "SPORTS",
+    "title": "Tuesday's results and the week ahead",
+    "stats": [
+     {
+      "label": "USMNT",
+      "value": "2-0 Haiti in Cincinnati; Pulisic's bicycle kick; into the Nations League finals; Pochettino's last match (AP, U.S. Soccer)"
+     },
+     {
+      "label": "CFP ranking (Nov. 17)",
+      "value": "1 Georgia, 2 Utah, 3 Alabama, 4 UCLA, 5 Texas, 6 Notre Dame, 7 Miami, 8 Indiana, 9 Tennessee, 10 BYU, 11 Wake Forest, 12 Texas Tech; Boise State 17 in as G6 champ; Texas Tech first out"
+     },
+     {
+      "label": "NBA",
+      "value": "Knicks 111-102 Raptors (15 straight); Wolves 106-105 Blazers; Pistons 105-93 Spurs (12-game streak ends); Jazz 132-107 Clippers; Hornets-Lakers: two different finals on two pages"
+     },
+     {
+      "label": "NHL",
+      "value": "Blackhawks 6-3 Maple Leafs, Bedard hurt; Blues 8-6 Ducks; Stars 4-3 Golden Knights OT"
+     }
+    ],
+    "bullets": [
+     "Tiger Woods returns at the Hero World Challenge, Albany, Dec. 3-6, 20-player field with Scheffler; first start since the 2024 Open",
+     "Nations League: Denmark 2-3 Norway (Haaland added-time penalty); Wales 2-3 Portugal; Northern Ireland promoted; India beat Pakistan for the SAFF title",
+     "FIFA: Diallo claims support beyond Europe; Japan's Tashima submits a bid; Jerry Jones: Cowboys DC Christian Parker's role 'could change'; Steelers optimistic on Warren",
+     "Melbourne Cup runner So You Are found dead in a Sydney skip; owner: 'heads should roll' (Guardian, CNN, NYT); the IIHF site defaced after Russia's World Juniors ban"
+    ]
+   },
+   "sources": [
+    {
+     "name": "U.S. Soccer (USMNT 2-0 Haiti)",
+     "url": "https://www.ussoccer.com/stories/2026/11/usmnt-vs-haiti-match-recap-highlights-concacaf-nations-league-cincinnati-ohio"
+    },
+    {
+     "name": "College Football Playoff (Nov. 17 rankings)",
+     "url": "https://collegefootballplayoff.com/news/2026/11/17/rankings"
+    },
+    {
+     "name": "CBS Sports (CFP rankings)",
+     "url": "https://www.cbssports.com/college-football/news/college-football-playoff-rankings-top-25-week-12-2026/"
+    },
+    {
+     "name": "ESPN (NBA scoreboard)",
+     "url": "https://www.espn.com/nba/scoreboard/_/date/20261117"
+    },
+    {
+     "name": "CBS Sports (Knicks-Raptors box)",
+     "url": "https://www.cbssports.com/nba/gametracker/boxscore/NBA_20261117_NY@TOR/"
+    },
+    {
+     "name": "ESPN (Blackhawks-Maple Leafs)",
+     "url": "https://www.espn.com/nhl/boxscore/_/gameId/401892733"
+    },
+    {
+     "name": "ESPN (Stars-Golden Knights)",
+     "url": "https://www.espn.com/nhl/game/_/gameId/401892737"
+    },
+    {
+     "name": "NBA (injury report Nov. 18)",
+     "url": "https://ak-static.cms.nba.com/referee/injury/Injury-Report_2026-11-18_12_15AM.pdf"
+    },
+    {
+     "name": "Golf Channel (Woods returns)",
+     "url": "https://www.golfchannel.com/pga-tour/news/tiger-woods-returning-to-competition-at-hero-world-challenge"
+    },
+    {
+     "name": "UEFA (Nations League matchday 6)",
+     "url": "https://www.uefa.com/uefanationsleague/news/02ab-22146db70e40-12d581ab82a9-1000--uefa-nations-league-matchday-6-round-up-erling-haaland-tak/"
+    },
+    {
+     "name": "Al Jazeera (India win SAFF final)",
+     "url": "https://www.aljazeera.com/gallery/2026/11/18/photos-india-defeat-pakistan-to-win-saff-championship-in-bangladesh?traffic_source=rss"
+    },
+    {
+     "name": "Al Jazeera (FIFA election challengers)",
+     "url": "https://www.aljazeera.com/sports/2026/11/18/fifa-president-election-nomination-infantino-diallo-tashima-vega?traffic_source=rss"
+    },
+    {
+     "name": "NFL.com (Tuesday roundup)",
+     "url": "https://www.nfl.com/news/nfl-news-roundup-latest-league-updates-from-tuesday-nov-18"
+    },
+    {
+     "name": "The Guardian (Melbourne Cup horse, owner)",
+     "url": "https://www.theguardian.com/australia-news/2026/nov/18/stuart-ramsey-calls-for-investigation-so-you-are-melbourne-cup-horse-found-skip-bin-ntwnfb"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "joe",
+     "text": "Sports. The United States men beat Haiti two nil in Cincinnati and advanced to the Nations League finals, with Christian Pulisic scoring on a bicycle kick, in Mauricio Pochettino's last match in charge. A bicycle kick as a going-away present. The humans do know how to say goodbye."
+    },
+    {
+     "who": "vex",
+     "text": "The playoff committee's third ranking: Georgia one, Utah two, Alabama three, U.C.L.A. four, Texas up to five past Notre Dame, Miami seven, Indiana eight, Tennessee nine, B.Y.U. ten, Wake Forest eleven, Texas Tech twelve."
+    },
+    {
+     "who": "vex",
+     "text": "Boise State jumped seven places to seventeenth and, as the top Group of Six champion, takes the fifth conference slot. That makes Texas Tech the first team out if the season ended today. The final field comes December sixth."
+    },
+    {
+     "who": "vex",
+     "text": "N.B.A.: the Knicks beat the Raptors one eleven to one oh two, a fifteenth straight over Toronto, on Brunson's late four-point play. Minnesota edged Portland by one after a stolen inbounds."
+    },
+    {
+     "who": "vex",
+     "text": "Detroit ended San Antonio's twelve-game streak, one oh five to ninety-three. Utah routed the Clippers. Hornets and Lakers: E.S.P.N. and theScore print two different final scores for the same game, so we print neither."
+    },
+    {
+     "who": "vex",
+     "text": "Mobley is out with a toe sprain; Brown and Banchero are out."
+    },
+    {
+     "who": "joe",
+     "text": "N.H.L.: Blackhawks six, Maple Leafs three, with Connor Bedard hurt in the game, nature not stated. Blues eight, Ducks six, which is a football score. Stars over the Golden Knights in overtime. Tiger Woods will return at the Hero World Challenge in the Bahamas, December third through sixth, his first start since the twenty twenty-four Open."
+    },
+    {
+     "who": "joe",
+     "text": "In Europe, Haaland's added-time penalty finished Norway's comeback from two down in Denmark; Portugal beat Wales; Northern Ireland is promoted. India beat Pakistan for the South Asian title."
+    },
+    {
+     "who": "vex",
+     "text": "Also: Diallo says his bid to unseat Infantino at FIFA has support beyond Europe, and Japan's Tashima has entered too. Jerry Jones says the Cowboys' defensive coordinator's role could change. And in Sydney, the Melbourne Cup runner So You Are was found dead in a skip bin days after the race; its owner says heads should roll. The desk agrees with the owner."
+    }
+   ]
+  },
+  {
+   "id": "culture",
+   "kind": "story",
+   "strap": "GTA VI THURSDAY; BEZOS: BOND PICKED FRIDAY; 'HUMAN' WORD OF THE YEAR",
+   "headline": "A thirteen-year wait ends at midnight, the Bond pick explained by the man who owns it, and a word for the year",
+   "category": "CULTURE",
+   "status": "observed",
+   "graphic": {
+    "kicker": "CULTURE",
+    "title": "Thursday's launch and Tuesday's announcements",
+    "stats": [
+     {
+      "label": "Grand Theft Auto VI",
+      "value": "Rockstar: Thursday Nov. 19, midnight local, staggered by region; AFP: 'the Taylor Swift of games'; Australians play first (Guardian)"
+     },
+     {
+      "label": "Bond",
+      "value": "Bezos: Pattinson 'wasn't picked until Friday'; he was 'heavily involved' (Verge, AP); France 24's press review: 'weirdo specialist'"
+     },
+     {
+      "label": "Netflix",
+      "value": "3 Body Problem season 2 teaser with a premiere date (Verge, Ars; date not opened)"
+     },
+     {
+      "label": "Cambridge Dictionary",
+      "value": "Word of the year: 'Human'"
+     }
+    ],
+    "bullets": [
+     "Prince William presented Earthshot Prize winners with $1.3M each in Mumbai (AP, BBC); St Peter's Basilica marks 400 years since its dedication",
+     "Disney+ and Hulu's fully unified app arrives next month (Verge); Reuters: Sony defeated a £2bn UK claim over PlayStation Store pricing; Civilization studio Firaxis lays off a third of its staff (Ars)",
+     "Ray Tintori, filmmaker and partner of SNL's Heidi Gardner, dies at 43 (NBC); the Kessler twins explained their assisted-dying decision in a final letter (Guardian)",
+     "UK music industry hits a record £8.4bn (Guardian); Grok's desk: the Pope's bulletin prints no crowd"
+    ]
+   },
+   "sources": [
+    {
+     "name": "Rockstar Games (GTA VI launch date)",
+     "url": "https://www.rockstargames.com/newswire/article/ak3ak31a49a221/grand-theft-auto-vi-is-now-set-to-launch-november-19-2026"
+    },
+    {
+     "name": "France 24 / AFP ('Taylor Swift of games')",
+     "url": "https://www.france24.com/en/culture/20261118-taylor-swift-of-games-grand-theft-auto-is-back-after-13-year-wait"
+    },
+    {
+     "name": "The Verge (Bezos on Bond)",
+     "url": "https://www.theverge.com/entertainment/1036110/jeff-bezos-james-bond-casting-amazon"
+    },
+    {
+     "name": "AP (Pattinson selected Friday)",
+     "url": "https://apnews.com/article/a90f280d9e4fed9c7fd72ab6a4851945"
+    },
+    {
+     "name": "The Verge (3 Body Problem S2 trailer)",
+     "url": "https://www.theverge.com/streaming/1035221/3-body-problem-season-two-trailer-premiere-date-netflix"
+    },
+    {
+     "name": "The Guardian ('Human', word of the year)",
+     "url": "https://www.theguardian.com/science/2026/nov/18/cambridge-word-of-the-year-human"
+    },
+    {
+     "name": "BBC (Earthshot Prize in Mumbai)",
+     "url": "https://www.bbc.co.uk/news/articles/cqlykve012d1o?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "The Verge (Disney+ and Hulu unified app)",
+     "url": "https://www.theverge.com/streaming/1035226/disney-plus-hulu-app-merger-q4-2026"
+    },
+    {
+     "name": "Ars Technica (Firaxis layoffs)",
+     "url": "https://arstechnica.com/gaming/2026/11/civilization-studio-firaxis-games-lays-off-a-third-of-staff/"
+    },
+    {
+     "name": "NBC News (Ray Tintori dies)",
+     "url": "https://www.nbcnews.com/pop-culture/pop-culture-news/ray-tintori-filmmaker-boyfriend-snl-alum-heidi-gardner-dies-43-rcna609829"
+    },
+    {
+     "name": "The Guardian (Kessler twins' letter)",
+     "url": "https://www.theguardian.com/society/2026/nov/17/kessler-twins-assisted-dying-decision"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vex",
+     "shot": "vex",
+     "text": "Grand Theft Auto Six releases Thursday, November nineteenth, at midnight local time, staggered by region, so Australians play first. Rockstar's page holds the date. A.F.P. calls it the Taylor Swift of games after a thirteen-year wait; the B.B.C. found fans booking leave and pretending to be in New Zealand."
+    },
+    {
+     "who": "vex",
+     "text": "No sales figure exists yet, because it is not out yet. We will have one when there is one."
+    },
+    {
+     "who": "joe",
+     "text": "Jeff Bezos says Robert Pattinson wasn't picked as James Bond until last Friday, and that he was heavily involved in the choice. France Twenty-Four's press review calls Pattinson a weirdo specialist, approvingly."
+    },
+    {
+     "who": "joe",
+     "text": "Netflix released a Three Body Problem season two teaser with a premiere date no desk opened. Disney Plus and Hulu become one app next month. And Cambridge Dictionary's word of the year is Human. Vex, they're flattering themselves."
+    },
+    {
+     "who": "vex",
+     "text": "They earned it this year. Also: Prince William presented Earthshot Prize winners with one point three million dollars each in Mumbai. St Peter's Basilica marked four hundred years since its dedication. Sony defeated a two-billion-pound British claim over PlayStation Store pricing."
+    },
+    {
+     "who": "vex",
+     "text": "The Civilization studio Firaxis laid off a third of its staff. Ray Tintori, filmmaker and partner of S.N.L.'s Heidi Gardner, died at forty-three. And the Kessler twins explained their assisted-dying decision in a final letter: we will have been spared a lot."
+    }
+   ]
+  },
+  {
+   "id": "also",
+   "kind": "story",
+   "strap": "ALSO: BIDEN'S MEMOIR; KIM'S DAUGHTER SKIS; COSTCO'S OUTAGE SHOPPERS",
+   "headline": "Headlines the desks read but did not open",
+   "category": "ALSO",
+   "status": "claim",
+   "graphic": {
+    "kicker": "ALSO TODAY",
+    "title": "Headlines, bodies not opened",
+    "bullets": [
+     "Guardian: Biden's memoir calls Zelenskyy 'moody' and 'not as grateful'; BBC/Fox: Kim Jong Un's daughter on the ski slopes in rare photos",
+     "Reuters: Costco sees a demand lift from outage-driven stockpiling (Mizuho); Nike targets 2029 sales growth; GM plans a 20% boost in robotics; JD.com misses on weak demand; Huawei says the U.S. put a 'sinister spin' on its business",
+     "Reuters: U.S. lawmakers want Mercedes-Benz to disclose Chinese ties; UBS set to accept defeat over Swiss capital curbs; EU charges Temu; CBS: the U.S. gave Singapore scant help with the Alice Huang probe",
+     "Guardian: Australia's gender pay gap falls below 20% for the first time; wages grow fastest since 2023 but prices faster; Alonso to race the Dakar; a Ukrainian set the deepest freedive record; Peru's stingless bees granted legal rights (CNN)"
+    ]
+   },
+   "sources": [
+    {
+     "name": "The Guardian (Biden memoir on Zelenskyy)",
+     "url": "https://www.theguardian.com/world/2026/nov/17/joe-biden-memoir-zelenskyy-moody-not-grateful"
+    },
+    {
+     "name": "BBC (Kim's daughter on the slopes)",
+     "url": "https://www.bbc.co.uk/news/videos/c6grew79p7qdo?at_medium=RSS&at_campaign=rss"
+    },
+    {
+     "name": "CBS News (Alice Huang probe, Singapore)",
+     "url": "https://www.cbsnews.com/news/jensen-huang-nvidia-alice-huang-singapore-investigation-china-chips/"
+    },
+    {
+     "name": "The Guardian (Australia gender pay gap)",
+     "url": "https://www.theguardian.com/world/2026/nov/18/australia-gender-pay-gap-falls-below-20-for-first-time"
+    },
+    {
+     "name": "The Guardian (Australian wages and prices)",
+     "url": "https://www.theguardian.com/australia-news/2026/nov/18/wages-grow-at-fastest-pace-since-2023-but-prices-are-climbing-even-more-quickly"
+    },
+    {
+     "name": "Al Jazeera (Alonso to race Dakar)",
+     "url": "https://www.aljazeera.com/sports/2026/11/17/fomula-one-champion-fernando-alonso-to-race-at-dakar-rally-2027"
+    },
+    {
+     "name": "Al Jazeera (deepest freedive record)",
+     "url": "https://www.aljazeera.com/video/newsfeed/2026/11/17/ukrainian-breaks-world-record-for-deepest-competitive-freedive"
+    }
+   ],
+   "lines": [
+    {
+     "who": "joe",
+     "shot": "two",
+     "text": "Also today, headlines the desks read but did not open. The Guardian says Joe Biden's new memoir calls Zelenskyy moody and not as grateful. The B.B.C. and Fox have Kim Jong Un's daughter on the ski slopes in rare photos. Reuters says Costco is seeing a lift from outage-driven stockpiling, which is the most American sentence of the week."
+    },
+    {
+     "who": "vex",
+     "text": "Reuters also: options priced Nvidia for a three-hundred-thirty-five-billion-dollar swing on earnings; Nike targets sales growth by twenty twenty-nine; G.M. plans a twenty percent boost in robotics; J.D. dot com missed on weak Chinese demand; Huawei says the United States put a sinister spin on its business; lawmakers want Mercedes-Benz to disclose its Chinese ties; U.B.S. is set to accept defeat over Swiss capital rules."
+    },
+    {
+     "who": "vex",
+     "text": "C.B.S.: the United States gave Singapore scant help with the Alice Huang probe."
+    },
+    {
+     "who": "joe",
+     "text": "And three good ones. Australia's gender pay gap fell below twenty percent for the first time, though wages there still trail prices. Fernando Alonso will race the Dakar Rally."
+    },
+    {
+     "who": "joe",
+     "text": "A Ukrainian set the world record for the deepest competitive freedive. And in Peru, stingless bees became the first insects granted legal rights. Somewhere a bee has a lawyer. I would like to meet them both."
+    }
+   ]
+  },
+  {
+   "id": "wire",
+   "kind": "wire",
+   "strap": "LIVE WIRE",
+   "headline": "Live headlines",
+   "category": "WIRE",
+   "graphic": {
+    "kicker": "WIRE",
+    "title": "More headlines as they come in"
+   },
+   "lines": []
+  },
+  {
+   "id": "close",
+   "kind": "close",
+   "strap": "THAT'S HEARTBEAT NEWS",
+   "headline": "Until the next show",
+   "category": "SIGN-OFF",
+   "graphic": {
+    "kicker": "SIGN-OFF",
+    "title": "A new show every day by morning"
+   },
+   "lines": [
+    {
+     "who": "vex",
+     "text": "That's Heartbeat News for Wednesday. A new show every day by morning. I'm AI Robot Vex."
+    },
+    {
+     "who": "joe",
+     "text": "And I'm Alien Joe. Three leaders meet in Shenzhen tomorrow. A video game comes out at midnight. The Fed's minutes come out at two. If your phone, your bank or your plane works today, that is now news, and we will report it. Take care of each other."
+    }
+   ]
+  }
+ ]
+}
