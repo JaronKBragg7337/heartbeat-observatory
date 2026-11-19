@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../../lib/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from '../../lib/examples/jsm/utils/SkeletonUtils.js';
+import { mergeGeometries } from '../../lib/examples/jsm/utils/BufferGeometryUtils.js';
 
 /** The live site serves the people at /homes/people/; the local dev server (server.js) routes the same path. */
 export const PEOPLE_BASE = '/homes/people/';
@@ -101,8 +102,9 @@ export class Person {
     this.pose = null;
     this.play(this._want, 0);
     this.mixer.update(0);
-    this._lookKey=null;
+    this._lookKey=null;this._phone=!!phone;
     if (this._pendingLook) this.dress(this._pendingLook);
+    if (this._suitWant) { const w=this._suitWant; this._suitWant=null; this.setSuit(true,w.look,w.opts); }
   }
 
   /**
@@ -118,6 +120,29 @@ export class Person {
     if (this._lookKey === key) return;
     applyPersonLook(this.group, look);
     this._lookKey = key;
+  }
+
+  /**
+   * SUITS (2026-11-19): a pressure suit and helmet for anyone standing outside on a world with no air to breathe.
+   * The suit is rigid pieces bound to this person's own bones (one draw call + the visor), so it walks and sits with them.
+   * The clothes and body under it are hidden while it is on; the face stays, behind the visor.
+   * `look.cloth` (the faction or crew colour) becomes the suit's stripes. `opts.gait`: 'lope' = the slow low-gravity bound.
+   * Safe-mode silhouettes are already a suit and are left alone.
+   */
+  setSuit(on, look, opts) {
+    on = !!on;
+    this.gait = on && opts && opts.gait ? opts.gait : null;
+    if (!this.loaded || !this.body || this.safe) { this._suitWant = on ? { look, opts } : null; return; }
+    const accent = look && look.cloth != null ? look.cloth : (this._pendingLook && this._pendingLook.cloth != null ? this._pendingLook.cloth : 0xb8412c);
+    if (on && this.suit && this.suit.accent === accent) return;
+    if (this.suit) {
+      for (const m of this.suit.meshes) { m.removeFromParent(); m.geometry.dispose(); m.material.dispose(); }
+      for (const [m, v] of this.suit.hidden) m.visible = v;
+      this.suit = null;
+    }
+    if (!on) return;
+    const built = buildSuit(this.body, accent, this._phone);
+    if (built) this.suit = built;
   }
 
   // Avoid bone float textures and GLSL 3 texelFetch in the vendored renderer's
@@ -172,11 +197,140 @@ export class Person {
       this.safeLegs.forEach((m,i)=>{m.rotation.x=sitting?-Math.PI/2:walking?Math.sin(this.phase+i*Math.PI)*.45:0;m.position.y=sitting?.6:.37;m.position.z=sitting?.28:0;});
       this.safeArms.forEach((m,i)=>m.rotation.x=walking?-Math.sin(this.phase+i*Math.PI)*.35:0);return;}
     if (!this.mixer) return;
-    if (this.pose === 'Walk' && this.acts.Walk) this.acts.Walk.timeScale = Math.max(0.4, Math.min(2.2, speed / WALK_CLIP_SPEED));
+    if (this.pose === 'Walk' && this.acts.Walk) this.acts.Walk.timeScale = this.gait === 'lope' ? LOPE.clipRate : Math.max(0.4, Math.min(2.2, speed / WALK_CLIP_SPEED));
     this.mixer.update(dt);
+    // the low-gravity bound: each slow step leaves the ground and floats back (a visual lift of the body; the feet's truth is the walker's)
+    if (this.body && (this.gait === 'lope' || this._lope)) {
+      const walking = this.gait === 'lope' && this.pose === 'Walk';
+      this._lope = (this._lope || 0) + ((walking ? 1 : 0) - (this._lope || 0)) * Math.min(1, dt * 3);
+      if (this._lope < 0.002) this._lope = 0;
+      const d = (this.acts.Walk && this.acts.Walk.getClip().duration) || 1, ph = this.acts.Walk ? ((this.acts.Walk.time / d) * 2) % 1 : 0;      // two steps per cycle
+      this.body.position.y = this._lope * LOPE.lift * 4 * ph * (1 - ph);
+      this.body.rotation.x = this._lope * LOPE.lean;
+    }
   }
 
   dispose() { if (this.group.parent) this.group.parent.remove(this.group); }
+}
+
+/** The low-gravity bound: the Walk clip at this rate, each step lifting the body this many metres, leaning this far forward. */
+export const LOPE = { clipRate: 0.42, lift: 0.34, lean: 0.14 };
+
+const SUIT_COL = { cloth: 0xd9d6cd, soft: 0xbfbcb2, joint: 0x8b8e92, dark: 0x2c3034, sole: 0x45474a, pack: 0xc9c6bc, lamp: 0xfff2cf };
+
+/**
+ * Build the suit on a person's body. Everything is laid out in metres in the person's own frame (x = their left, y = up, z = front,
+ * origin on the ground under the pelvis), read from the skeleton's bind pose, then bound rigidly: every piece follows exactly one bone.
+ */
+function buildSuit(body, accent, phone) {
+  let sk = null;
+  body.traverse((o) => { if (!sk && o.isSkinnedMesh && o.skeleton) sk = o; });
+  if (!sk) return null;
+  const J = {}, idx = {};
+  sk.skeleton.bones.forEach((b, i) => { J[b.name] = new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().copy(sk.skeleton.boneInverses[i]).invert()); idx[b.name] = i; });
+  const sides = ['l', 'r'];
+  const need = ['pelvis', 'spine_02', 'spine_03', 'spine_05', 'neck_01', 'head', ...sides.flatMap((s) => ['upperarm_', 'lowerarm_', 'hand_', 'middle_01_', 'thigh_', 'calf_', 'foot_', 'ball_'].map((n) => n + s))];
+  if (need.some((n) => !J[n])) return null;
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const U = J.head.clone().sub(J.pelvis).normalize();
+  const F = J.ball_l.clone().sub(J.foot_l).add(J.ball_r).sub(J.foot_r); F.addScaledVector(U, -F.dot(U)).normalize();
+  const L = new THREE.Vector3().crossVectors(U, F).normalize();
+  const k = J.head.distanceTo(J.pelvis) > 5 ? 100 : 1;                                   // the rig may be in centimetres
+  const ground = Math.min(J.ball_l.dot(U), J.ball_r.dot(U)) - 0.02 * k;
+  const O = J.pelvis.clone().addScaledVector(U, ground - J.pelvis.dot(U));
+  const c = {};
+  for (const n in J) { const d = J[n].clone().sub(O); c[n] = V(d.dot(L) / k, d.dot(U) / k, d.dot(F) / k); }
+
+  const parts = [], Q0 = new THREE.Quaternion(), ONE = V(1, 1, 1), UP = V(0, 1, 0);
+  const put = (geo, bone, color, m) => {
+    if (m) geo.applyMatrix4(m);
+    if (geo.index) geo = geo.toNonIndexed();
+    geo.deleteAttribute('uv');
+    const n = geo.attributes.position.count, col = new Float32Array(n * 3), si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), cc = new THREE.Color(color);
+    for (let i = 0; i < n; i++) { col[i * 3] = cc.r; col[i * 3 + 1] = cc.g; col[i * 3 + 2] = cc.b; si[i * 4] = idx[bone]; sw[i * 4] = 1; }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4));
+    geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
+    parts.push(geo);
+  };
+  const rs = phone ? 8 : 12;
+  const along = (a, b) => new THREE.Quaternion().setFromUnitVectors(UP, b.clone().sub(a).normalize());
+  const seg = (a, b, r, bone, color) => put(new THREE.CapsuleGeometry(r, a.distanceTo(b), 3, rs), bone, color, new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), along(a, b), ONE));
+  const ball = (p, r, bone, color, sc = ONE) => put(new THREE.SphereGeometry(r, rs, Math.max(6, rs - 4)), bone, color, new THREE.Matrix4().compose(p, Q0, sc));
+  const box = (p, w, h, d, bone, color, q = Q0) => put(new THREE.BoxGeometry(w, h, d), bone, color, new THREE.Matrix4().compose(p, q, ONE));
+  const ring = (a, b, t, r, tube, bone, color) => {                                        // a band round a limb, t of the way from a to b
+    put(new THREE.CylinderGeometry(r, r, tube, rs, 1, true), bone, color, new THREE.Matrix4().compose(a.clone().lerp(b, t), along(a, b), ONE));
+  };
+
+  for (const s of sides) {
+    const sh = c['upperarm_' + s], el = c['lowerarm_' + s], wr = c['hand_' + s], kn = c['calf_' + s], hip = c['thigh_' + s], an = c['foot_' + s], toe = c['ball_' + s];
+    const fing = wr.clone().add(c['middle_01_' + s].clone().sub(wr).multiplyScalar(1.55));
+    ball(sh, 0.092, 'upperarm_' + s, SUIT_COL.cloth);
+    seg(sh, el, 0.066, 'upperarm_' + s, SUIT_COL.cloth);
+    ring(sh, el, 0.45, 0.0685, 0.045, 'upperarm_' + s, accent);
+    ball(el, 0.07, 'lowerarm_' + s, SUIT_COL.soft);
+    seg(el, wr, 0.058, 'lowerarm_' + s, SUIT_COL.cloth);
+    ring(el, wr, 0.9, 0.062, 0.03, 'lowerarm_' + s, SUIT_COL.joint);
+    seg(wr, fing, 0.047, 'hand_' + s, SUIT_COL.dark);
+    seg(hip, kn, 0.1, 'thigh_' + s, SUIT_COL.cloth);
+    ring(hip, kn, 0.55, 0.1025, 0.05, 'thigh_' + s, accent);
+    ball(kn, 0.092, 'calf_' + s, SUIT_COL.soft);
+    seg(kn, an, 0.082, 'calf_' + s, SUIT_COL.cloth);
+    ring(kn, an, 0.82, 0.088, 0.05, 'calf_' + s, SUIT_COL.joint);
+    // the boot: ankle, a long upper over the foot, and a flat sole on the ground
+    const heel = V(an.x, 0, an.z - 0.07), tip = V(toe.x, 0, toe.z + 0.09), yaw = new THREE.Quaternion().setFromUnitVectors(V(0, 0, 1), tip.clone().sub(heel).normalize());
+    ball(an, 0.085, 'foot_' + s, SUIT_COL.soft);
+    seg(V(an.x, 0.07, an.z - 0.02), V(toe.x, 0.058, toe.z + 0.035), 0.06, 'foot_' + s, SUIT_COL.joint);
+    seg(V(an.x, 0.03, an.z - 0.035), V(toe.x, 0.03, toe.z + 0.05), 0.045, 'foot_' + s, SUIT_COL.sole);
+  }
+  // trunk: hips, the hard upper torso, the life-support pack, the chest controls, the neck ring
+  const waist = c.spine_02, chest = c.spine_03.clone().lerp(c.spine_05, 0.5), neck = c.neck_01, shY = (c.upperarm_l.y + c.upperarm_r.y) / 2;
+  ball(V(0, c.pelvis.y - 0.02, c.pelvis.z), 0.16, 'pelvis', SUIT_COL.cloth, V(1.22, 0.95, 0.95));
+  ball(V(0, (waist.y + c.pelvis.y) / 2 + 0.04, waist.z), 0.15, 'spine_02', SUIT_COL.soft, V(1.16, 1.0, 0.92));
+  ball(V(0, chest.y - 0.02, chest.z + 0.005), 0.2, 'spine_03', SUIT_COL.cloth, V(1.1, 1.12, 0.84));
+  ball(V(0, shY - 0.035, chest.z), 0.12, 'spine_05', SUIT_COL.cloth, V(1.62, 0.6, 0.98));       // the shoulder yoke
+  box(V(0, chest.y - 0.01, chest.z - 0.18), 0.36, 0.52, 0.15, 'spine_03', SUIT_COL.pack);
+  box(V(0, chest.y + 0.262, chest.z - 0.18), 0.3, 0.03, 0.12, 'spine_03', SUIT_COL.joint);
+  box(V(0, chest.y - 0.05, chest.z - 0.258), 0.26, 0.3, 0.012, 'spine_03', SUIT_COL.soft);
+  box(V(0, chest.y - 0.02, chest.z + 0.175), 0.21, 0.13, 0.06, 'spine_03', SUIT_COL.joint);
+  box(V(-0.055, chest.y + 0.0, chest.z + 0.207), 0.05, 0.03, 0.006, 'spine_03', accent);
+  box(V(0.05, chest.y + 0.0, chest.z + 0.207), 0.06, 0.05, 0.006, 'spine_03', SUIT_COL.dark);
+  put(new THREE.CylinderGeometry(0.128, 0.14, 0.05, rs + 4, 1, false), 'spine_05', SUIT_COL.joint, new THREE.Matrix4().compose(V(0, neck.y + 0.035, neck.z + 0.005), Q0, ONE));
+
+  // helmet: a white shell open at the face (three patches of one sphere), a brow lamp either side
+  const hc = V(0, c.head.y + 0.055, c.head.z + 0.012), HR = 0.19, P0 = Math.PI / 2 - 1.12, PL = 2.24, T0 = 0.86, T1 = 2.02;
+  const patch = (p0, pl, t0, tl, r = HR) => new THREE.SphereGeometry(r, Math.max(6, Math.round(rs * 1.6 * pl / 6.3)), Math.max(4, Math.round(rs * tl / 3.2 * 1.2)), p0, pl, t0, tl);
+  const at = new THREE.Matrix4().makeTranslation(hc.x, hc.y, hc.z);
+  put(patch(P0 + PL, Math.PI * 2 - PL, 0, Math.PI), 'head', SUIT_COL.cloth, at);
+  put(patch(P0, PL, 0, T0), 'head', SUIT_COL.cloth, at);
+  put(patch(P0, PL, T1, Math.PI - T1), 'head', SUIT_COL.cloth, at);
+  for (const sx of [-1, 1]) box(V(hc.x + sx * 0.165, hc.y + 0.085, hc.z + 0.075), 0.035, 0.035, 0.05, 'head', SUIT_COL.lamp);
+
+  const basis = new THREE.Matrix4().makeBasis(L.clone().multiplyScalar(k), U.clone().multiplyScalar(k), F.clone().multiplyScalar(k)).setPosition(O);
+  const toMesh = new THREE.Matrix4().copy(sk.bindMatrix).invert().multiply(basis);
+  const finish = (geo, mat, name) => {
+    geo.applyMatrix4(toMesh);
+    const m = new THREE.SkinnedMesh(geo, mat);
+    m.name = name; m.frustumCulled = false; m.castShadow = !phone; m.receiveShadow = !phone;
+    sk.parent.add(m); m.bind(sk.skeleton, sk.bindMatrix);
+    return m;
+  };
+  const suitMesh = finish(mergeGeometries(parts, false), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0.02, side: THREE.DoubleSide }), 'suit-body');
+  parts.length = 0;
+  put(patch(P0 + 0.02, PL - 0.04, T0 + 0.01, T1 - T0 - 0.02, HR - 0.004), 'head', 0xffffff, at);
+  const visor = finish(parts[0], new THREE.MeshStandardMaterial({ color: 0x9a7a34, roughness: 0.12, metalness: 0.35, emissive: 0x2a1f08, transparent: true, opacity: 0.62, depthWrite: false }), 'suit-visor');
+  visor.castShadow = false; visor.renderOrder = 3;
+
+  // under the suit: only the face shows
+  const hidden = [];
+  body.traverse((o) => {
+    if (!o.isMesh || o === suitMesh || o === visor) return;
+    if (o.name && o.name.startsWith('helmet-')) { hidden.push([o, o.visible]); o.visible = false; return; }
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    if (mats.some((mt) => mt && /^(Skin_Face|Teeth|Eye|HairCard|Hair)/.test(mt.name || ''))) return;
+    hidden.push([o, o.visible]); o.visible = false;
+  });
+  return { meshes: [suitMesh, visor], hidden, accent };
 }
 
 /**

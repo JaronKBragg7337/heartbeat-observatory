@@ -29,6 +29,7 @@ export class OutpostPeople {
       person.group.rotation.y = { south: 0, east: Math.PI / 2, north: Math.PI, west: -Math.PI / 2 }[w.face] || 0;
       person.play(w.pose === 'seated' ? 'Sit' : 'Idle', 0);
       person.dress({ personId: w.personId, cloth: LOOKS[w.id] ?? 0xd9772b, helmet: true, visorTint: 0x3a2a14, visorOpacity: 0.55 });
+      person.setSuit(!w.indoor, { cloth: LOOKS[w.id] ?? 0xd9772b });      // SUITS: Ceres has no air
       this.root.add(person.group);
       this.members.push({ ...w, y: 0, status: 'worker', def: { title: w.title }, person, line: w.line, world: true,
         talk: (view, e) => this._talk(w, view, e), act: (a, ds, ui) => this._act(w, a, ds, ui),

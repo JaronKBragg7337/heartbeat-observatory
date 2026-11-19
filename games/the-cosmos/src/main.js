@@ -13,6 +13,7 @@
 // query, so the ground is always there whether or not it has been drawn yet.
 // ============================================================================
 
+import { dressForWorld } from './crew/suitPolicy.js';
 import * as THREE from 'three';
 import { watchBuild, BUILD_VERSION } from './core/buildHandshake.js';
 watchBuild();
@@ -1033,7 +1034,9 @@ engine.addUpdater((dt) => {
   const filming = !!(cinema && cinema.playing);
   if (filming) cinema.preFrame();
   if (freeCam.active && !filming) {
-    suitGroup.visible = false;
+    // review shots may keep the player's body in view (freeCam.showPlayer = true), dressed for the world and standing where the walker is
+    suitGroup.visible = !!freeCam.showPlayer && !(ship.ready && ship.aboard);
+    if (suitGroup.visible) { poseSuit(); if (playerPerson.loaded) { dressForWorld(playerPerson, walker.body, null); playerPerson.play(freeCam.pose || 'Idle'); playerPerson.update(dt, 1.2); } }
     Object.assign(engine.cameraWorldPos, freeCam.eye);
     const l = Math.hypot(freeCam.eye.x, freeCam.eye.y, freeCam.eye.z) || 1;
     engine.camera.up.set(freeCam.eye.x / l, freeCam.eye.y / l, freeCam.eye.z / l);
@@ -1123,6 +1126,7 @@ engine.addUpdater((dt) => {
   if (suitGroup.visible && playerPerson.loaded) {
     // the body stands or walks with what the legs are doing
     const v = walker.velocity, sp = Math.hypot(v.x, v.y, v.z);
+    dressForWorld(playerPerson, walker.body, null);      // SUITS: a pressure suit outside on any world without air to breathe; a slow bound in low gravity
     playerPerson.play(walker.grounded && sp > 0.35 ? 'Walk' : 'Idle');
     playerPerson.update(dt, sp);
   }

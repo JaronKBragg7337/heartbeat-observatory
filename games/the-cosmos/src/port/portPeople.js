@@ -1,4 +1,8 @@
 // Workers use the same cached Loft GLBs and the same Talk UI as the ship crew.
+import { dressForWorld } from '../crew/suitPolicy.js';
+const MARS_AIR={atmosphere:{surfacePressure:610},surfaceGravity:3.72076};
+/** The stripe on each worker's suit: the port's rust, amber for the depot and reception, teal for the traders. */
+const SUIT_STRIPE={'depot-clerk':0xe5ac6c,'reception-clerk':0xe5ac6c,'arrival-guide':0x67c4cf};
 import { NPC_SPOTS, TOWER_SPOTS } from './portSpec.js';
 import { personVisible } from '../crew/personVisibility.js';
 import { Person } from '../crew/personRig.js';
@@ -40,6 +44,8 @@ export class PortPeople {
       person.group.position.set(s.x,(s.y||0)+(s.pose==='seated'?.51:.02),s.z);
       person.group.rotation.y={south:0,east:Math.PI/2,north:Math.PI,west:-Math.PI/2}[s.face]||0;
       person.play(s.pose==='seated'?'Sit':'Idle',0);
+      // SUITS: Mars's air is 0.6 percent of Earth's. Anyone standing out on the apron is in a suit; the tower crew (up in the cab) are indoors.
+      dressForWorld(person,MARS_AIR,{cloth:SUIT_STRIPE[s.id]??0xb5694a},(s.y||0)>2||!!s.indoor);
       this.port.root.add(person.group);this.members.push(m);
     }
     await Promise.all(this.members.map(m=>m.person.ready));

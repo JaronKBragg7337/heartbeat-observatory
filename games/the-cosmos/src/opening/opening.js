@@ -201,7 +201,7 @@ export class Opening {
   _roomAt(x, z) { for (const r of this.linerDef.layout.rooms) if (x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1) return r.id; return null; }
   _buildPortPeople() {
     this.portPeople = [];
-    const mk = (spec, x, z, face, look) => { const p = this._person(spec.person); if (look) p.dress(look); p.group.position.set(x, 0.02, z); p.group.rotation.y = { south: 0, east: Math.PI / 2, north: Math.PI, west: -Math.PI / 2 }[face] || 0; p.play('Idle', 0); this.portRoot.add(p.group); return p; };
+    const mk = (spec, x, z, face, look) => { const p = this._person(spec.person); if (look) p.dress(look); p.setSuit(true, look);      /* SUITS: out on the Mars apron */ p.group.position.set(x, 0.02, z); p.group.rotation.y = { south: 0, east: Math.PI / 2, north: Math.PI, west: -Math.PI / 2 }[face] || 0; p.play('Idle', 0); this.portRoot.add(p.group); return p; };
     this.guide = mk(D.GUIDE, GUIDE_SPOT.x, GUIDE_SPOT.z, GUIDE_SPOT.face, factionLook('mars', 3, 'worker'));
     const g = kestrelGate(shipDef(KESTREL.type));
     this.gate = mk(D.GATE, g.x + 1.4, g.z, 'west', factionLook('mars', 5, 'officer'));
@@ -241,7 +241,7 @@ export class Opening {
     this._buildLocker();
     // the driver (the rover's), and the recruiter of the other side who waits at the port
     this._dressDriver();
-    if (this.counterInfo) { this.counterPerson = this._person(this.counterInfo.person); this.counterPerson.dress(this._look(this.counterInfo.faction, 9)); this.counterPerson.group.position.set(-2594, m.height(-2594, -352), -352); this.counterPerson.group.rotation.y = Math.PI * -.5 - .5; this.root.add(this.counterPerson.group); this.counterPerson.play('Idle', 0); }
+    if (this.counterInfo) { this.counterPerson = this._person(this.counterInfo.person); this.counterPerson.dress(this._look(this.counterInfo.faction, 9)); this.counterPerson.setSuit(this.worldId !== 'earth', this._look(this.counterInfo.faction, 9)); this.counterPerson.group.position.set(-2594, m.height(-2594, -352), -352); this.counterPerson.group.rotation.y = Math.PI * -.5 - .5; this.root.add(this.counterPerson.group); this.counterPerson.play('Idle', 0); }
     this.cabinEmitters = []; this.cabin.root.traverse((o) => { if (o.isMesh && o.name.endsWith(':glow')) { o.material = o.material.clone(); this.cabinEmitters.push(o.material); } });
     this.wreckHemi = this.hemi; this.wreckSun = this.sun;
     this.lamp = new THREE.PointLight(0xff5133, this.low ? 15 : 32, 22, 1.5); this.lamp.position.set(0, 2.7, 3); this.cabin.root.add(this.lamp);
@@ -280,6 +280,7 @@ export class Opening {
     if (this.driver) { this.rover.root.remove(this.driver.group); }
     this.driver = this._person(d.person);
     this.driver.dress(d.faction ? this._look(d.faction, 2) : factionLook('mars', 4, 'worker'));
+    this.driver.setSuit(this.worldId !== 'earth', d.faction ? this._look(d.faction, 2) : factionLook('mars', 4, 'worker'));      // SUITS
     this.driver.group.position.set(this.rover.driverSeat.x, this.rover.driverSeat.y - .42, this.rover.driverSeat.z); this.driver.group.rotation.y = Math.PI; this.driver.play('Sit');
     this.rover.root.add(this.driver.group);
     this.driver.ready.then((p) => { if (!p.loaded || !this.rover) return; if (p.safe) { p.group.position.y = (this.rover.driverHead || 2) - 1.61; return; }

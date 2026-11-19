@@ -49,6 +49,7 @@ export class MoonPeople {
       const look = { ...factionLook(w.faction, seq++, w.role), personId: w.body };
       if (w.helmet) { const st = factionStyle(w.faction); Object.assign(look, { helmet: true, shell: look.shell ?? st.palette.primary, helmetTrim: st.palette.accent, visorTint: look.visorTint ?? 0x20262e, visorOpacity: look.visorOpacity ?? 0.7 }); }
       person.dress(look);
+      person.setSuit(!w.indoor, look);      // SUITS: the Moon has no air; the stripes are the faction's cloth
       this.root.add(person.group);
       this.members.push({ ...w, personId: w.body, y: 0, status: 'worker', def: { title: w.title }, person, line: w.line, world: true,
         talk: (view, e) => this._talk(w, view, e), act: (a, ds, ui) => this._act(w, a, ds, ui),

@@ -372,6 +372,7 @@ class CampPeople {
       const look = { ...factionLook(w.faction, seq++, w.role), personId: w.body };
       Object.assign(look, { helmet: true, shell: st.palette.primary, helmetTrim: st.palette.accent, visorTint: 0x20262e, visorOpacity: 0.7 });
       person.dress(look);
+      person.setSuit(!w.indoor, look);      // SUITS: Callisto has no air
       person.play('Idle', 0);
       if (w.site === 'port' && this.portPi) {
         const wp = outpostToFrame(this.padPi, w.x, 0, w.z);

@@ -1,3 +1,4 @@
+import { dressForWorld } from '../crew/suitPolicy.js';
 import { rolesPanel } from '../roles/rolesView.js';   // F5
 import { frameWorldIds } from '../worlds/registry.js';
 import { hullPush, mayBoard } from '../ship/hullCollision.js';
@@ -249,6 +250,7 @@ export class MultiplayerView {
       else{const geo=cartesianToGeodetic(this.walker.body,pos.x,pos.y,pos.z),frame=localFrame(geo.lat,geo.lon),up=new THREE.Vector3().copy(frame.up),
         forward=new THREE.Vector3().copy(frame.north).multiplyScalar(Math.cos(rendered?.yaw??p.pose.yaw)).addScaledVector(new THREE.Vector3().copy(frame.east),Math.sin(rendered?.yaw??p.pose.yaw)),right=new THREE.Vector3().crossVectors(up,forward).normalize();
         q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,forward));}
+      dressForWorld(b.person,this.walker.body,b.wantLook||null,!!p.aboardShipId);      // SUITS: another player outside wears one too (bodies only show in the frame you share)
       this.placeBody(b,pos,q,p.frameId,(p.pose.seat||p.vehicleSeat)?'Sit':p.animation||'Idle',dt);}
     for(const c of Object.values(s.pool)){if(c.retired||c.status==='reserved')continue;
       // Crew hired onto a ship that is not in the world (its owner is parked, the ship is kept off the pads) are not in the world either: no body, no pose to ask for.
