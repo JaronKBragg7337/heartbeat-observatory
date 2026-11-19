@@ -309,7 +309,10 @@ export class SpaceSky {
       // Now it is the two real things. From above: Marsshine, a few percent of sunlight when Mars is full, next to nothing when it is dark,
       // so a shadow on the ground is near black. From below: sunlight thrown back by the lit ground, which is what lets you see the shaded
       // side of a person or a hull (it is why the Apollo crews' shadow sides are not black). It goes out with the Sun.
-      const sh = 0.03 + 0.2 * big * lit, gb = 0.26 * vis;
+      // NIGHT (11/19): with the Sun gone your eyes open up. Marsshine (and a floor of starlight) counts for several times as much then, so a night
+      // under a full Mars is a dim rust-lit landscape you can walk in, not a black screen; a night under a dark Mars is starlight and your lamp.
+      const adapt = 1 + 5 * (1 - vis);
+      const sh = (0.03 + 0.2 * big * lit) * adapt, gb = 0.26 * vis;
       this.hemi.color.setRGB(0.72 * sh, 0.45 * sh, 0.34 * sh);
       this.hemi.groundColor.setRGB(0.95 * gb, 0.92 * gb, 0.88 * gb);
       this.hemi.intensity = 1;
@@ -321,7 +324,7 @@ export class SpaceSky {
     {
       const d = Math.max(r, 1), cosPhase = (camA.x * this.sunWorld.x + camA.y * this.sunWorld.y + camA.z * this.sunWorld.z) / d;
       const big = Math.min(1, (MARS_RADIUS_M / d) * (MARS_RADIUS_M / d) * 6), lit = sstep(-0.2, 0.7, cosPhase);
-      this.shine.intensity = space > 0.5 ? (extra.marsShine ? 0.62 : 0.34) * big * lit : 0;
+      this.shine.intensity = space > 0.5 ? (extra.marsShine ? 0.62 * (1 + 2.5 * (1 - vis)) : 0.34) * big * lit : 0;      // NIGHT: the eye's adaptation, as above
       this.shine.position.set(tm.x / d * 10, tm.y / d * 10, tm.z / d * 10);        // the light sits toward Mars, shining out at the camera
     }
 

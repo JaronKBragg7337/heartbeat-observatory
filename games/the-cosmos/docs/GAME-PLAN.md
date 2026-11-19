@@ -71,28 +71,34 @@ Game 2, later, is the exact-real one.
   disasters, the main story arc, licenses and labels, player-versus-player rules, world currencies, walking in open space,
   work machines (digger, hauler truck, compactor), public transport, the Earth lifter.
 
-## What comes next (in this order)
+## The parts, in the order a new player meets them
 
-Looks first, because looks are what people notice. Then full worlds. Then the story, because Jaron decided (10/3) that missions
-and story come after there is a full world to put them in.
+Changed 11/19 (Jaron, 1:59 PM): the target is a production-ready full game, built in whole parts, not a string of small fixes.
+Each part is a complete stretch of the game: built, wired, tested on a phone and a desktop, and shipped as one piece.
+The story still comes after the worlds it happens in (Jaron, 10/3).
 
-1. ~~Suits and low-gravity walking.~~ Done 11/19 (first version). Still to do: suits come off inside buildings and domes; crew walking to a ship.
-2. ~~Airless worlds look airless.~~ Done 11/19 for the light, shadows and small craters on every airless world. Still to do: real boulders.
-3. **A plan for night.** Mars-shine, a real helmet beam, lit pads. Night becomes a mood, not a black screen.
-4. **The view from space.** No square patch. Mars big and bright in Phobos's sky. No stars in Mars's daytime sky.
-5. **Ships look like metal.** Hull plates instead of "bricks", dark glossy engine bells.
-6. **The first hour reads clearly.** Play the opening as a new player on a phone and fix every spot where it is not clear what to do.
-7. **The opening for every start world.** The Moon, Earth and Callisto are still "coming" on the board.
-8. **Repeating work.** A freight board on every world: pick up here, deliver there, paid on arrival.
-9. **Upkeep that matters.** Fuel and repairs priced (needs one number from Jaron, see open questions).
-10. **Earth finished.** The Earth lifter and launch sites so a small ship can leave, a shop, a first Homeguard building.
-11. **Caves you can see and walk.**
-12. **Stations and docking.** One station over Mars first (the peacekeepers' work).
-13. **The rest of the map.** The Belt (Vesta, Psyche), the Long Walk, Corsair's Refuge, each faction's capital, then the giants and their moons.
-14. **Seasons, licenses and switching, fighting rules.** The 90-day clock, what carries over, one switch a season, where players may fight.
-15. **Building.** Bases and stations assembled from parts by drones. Work machines.
-16. **Weather and disasters.** Dust storms, meteors, solar storms.
-17. **The main story arc.** The first crossing, Callisto, Europa, the ship seen up close.
+**Every part must pass the same bar before it counts as done:**
+a stranger understands it with no help; nothing is lost on a refresh or a dropped connection; it holds a steady frame rate on a
+phone and does not grow in memory over a long session; no errors; it still works when the game server is down; it reads at 375 px
+wide and on a big screen; it plays with touch, mouse/keyboard and a gamepad, with nothing tied to one platform; it plays fully as the home-screen app (no browser bars, the notch and safe areas, rotation, a fast return from the
+background); the key actions have sound and feedback; it looks right in a screenshot; and it has had a full test pass (the normal path
+and the odd ones, phone and desktop).
+
+| # | Part | What "done" means | State |
+|---|---|---|---|
+| 0 | **Looks groundwork** | Suits outside, airless light and shadows, a night you can walk in, Mars bright in a moon's sky. | Shipped 11/19 (first version) |
+| 1 | **The first hour** | First launch to your own flying ship: liner, port, board, crash, dig out, ride, fit the lifeboat, first take-off. Clear at every step on a phone, with sound, and it resumes anywhere. | Built; needs the production pass. NEXT |
+| 2 | **Mars and its moons, a finished region** | Marineris Port, the open desert, Phobos and Deimos: jobs, shops, a reason to visit each, boulders and landmarks, clean views from orbit to ground, day and night. | Built; thin in places |
+| 3 | **Work and money, end to end** | Jobs as a real ladder with rewards, a repeating freight board on every world, trade between worlds, fuel and repairs that cost, buying a bigger ship, hiring crew. A goal to save for. | Pieces built; no loop yet |
+| 4 | **The game shell** | Every platform we can reach: phone first (iOS and Android), PC (mouse/keyboard and gamepad), the home-screen app, consoles later through the gamepad layer. One input layer, UI from 375 px to a TV. Settings (sound, controls, quality), quality tiers, save and resume that never loses anything, a clear message and solo play when the server is down, long-session memory, loading that explains itself. | Partly built |
+| 5 | **The crossing and the other worlds** | The long-range drive, then the Moon, Ceres, Earth and Callisto each finished like part 2: opening start, shop, a way to leave, both sides' homes. | First passes built |
+| 6 | **Sides, seats and seasons** | Joining and switching, licenses and labels, seats and votes, the balance you can see in the place, the 90-day season. | First pass of seats and balance |
+| 7 | **Stations, the Belt, the station factions** | Docking, a station over Mars, Vesta and Psyche, the Long Walk, Corsair's Refuge. | Not built |
+| 8 | **Building, machines, weather** | Bases and stations built by drones, work machines, storms and disasters, caves you can see. | Not built |
+| 9 | **The main story** | The first crossing, Callisto, Europa, the ship seen up close. An ending one player can reach in a season. | Not built |
+
+Small things still open from part 0: suits come off inside buildings and domes; hired crew walking to a ship; real boulders;
+the square patch on Phobos seen from space; ships' hulls read as bricks; at Mars dusk the ground takes the sky's blue.
 
 ## "Full game" checklist
 
@@ -107,6 +113,10 @@ NPC staff, the opening running end to end, the balance moving, seasons ticking. 
 - [x] Crew you can hire
 - [x] A shared world that saves
 - [x] Works on a phone
+- [ ] Plays well on phone (iOS + Android), PC (mouse/keyboard + gamepad), home-screen app; console-ready input and UI for later
+  (full screen, notch and safe areas, rotation, fast return from the background; one input layer for touch, mouse/keyboard
+  and gamepad; UI that scales from a 375 px phone to a TV at 10 feet; quality tiers from phone to desktop GPU)
+- [ ] Production bar met on every part (see the parts table)
 - [x] Seats held by NPCs, a balance and home strength per world (first pass)
 - [x] Everyone dressed right for where they stand (suits outside; first version)
 - [ ] Every world looks like itself in day and at night
@@ -160,6 +170,7 @@ assisted flying with an expert switch (decided 10/3, partly built); private base
 | Date | What |
 |---|---|
 | 11/19 | Helmet lamp no longer stuck on in sunlight on moons (it washed the ground tan). |
+| 11/19 | A night you can walk in on airless worlds: Mars lit and bright in a moon's sky (it went black), Marsshine on the ground, a white helmet beam where you look. |
 | 11/19 | Airless worlds look airless: near-black hard shadows, darker ground, small craters everywhere, no more wind ripples on Phobos, no checkerboard on sunlit slopes. A moon inside Mars's shadow now goes dark (it stayed sunlit). |
 | 11/19 | Pressure suits and helmets on everyone outside (you, port workers, the Moon, Ceres, Callisto, other players). A slow floating bound in low gravity. |
 

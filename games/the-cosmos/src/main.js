@@ -114,6 +114,20 @@ let vehicles = null;
 const shell = buildGlobalShell(body, { segments: safeGraphics ? 64 : (new URLSearchParams(location.search).get('tier') === 'low' || (('ontouchstart' in window) && new URLSearchParams(location.search).get('tier') !== 'high')) ? 192 : 288 });   // finer than the old 128: from orbit the limb is the shell's silhouette
 const shellEntry = engine.track({ worldPos: { x: 0, y: 0, z: 0 }, object3d: shell });
 engine.scene.add(shell);
+// NIGHT (11/19): Mars seen from somewhere the Sun is not shining on the camera (a moon's night side, a moon inside Mars's shadow, the port
+// at night looking at the lit limb). The key light follows the camera and is off there, so the planet went black in the sky although the
+// Sun was shining on it. This adds the Sun's own diffuse light to the whole-planet shell, from the Sun's true direction, at whatever
+// strength the key light is missing (updateSun sets both). Same idea as the moons' own `_sunFill` (space/moonWorld.js).
+const marsFill = { dir: { value: new THREE.Vector3(0, 1, 0) }, k: { value: 0 } };
+{ const prior = shell.material.onBeforeCompile, priorKey = shell.material.customProgramCacheKey();
+  shell.material.onBeforeCompile = function (sh, renderer) {
+    prior.call(this, sh, renderer);
+    sh.uniforms.uFillDir = marsFill.dir; sh.uniforms.uFillK = marsFill.k;
+    sh.fragmentShader = `uniform vec3 uFillDir; uniform float uFillK;
+` + sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+ reflectedLight.directDiffuse += diffuseColor.rgb * uFillK * max(dot(normal, normalize((viewMatrix * vec4(uFillDir, 0.0)).xyz)), 0.0);`);
+  };
+  shell.material.customProgramCacheKey = () => priorKey + '|marsSunFill'; }
 registry.register({
   id: `COS-MARS-TER-0001`, bodyId: 'mars', type: 'TER',
   name: 'Mars global shell', position: { x: 0, y: 0, z: 0 },
@@ -591,6 +605,11 @@ engine.scene.add(sun, sun.target);
 // have depth and the strata read. It rides at the eye, which is the origin of render space.
 const suitLamp = new THREE.PointLight(0xffe6c8, 0, 24, 1.5);
 engine.scene.add(suitLamp);
+// NIGHT (11/19): the helmet's beam. On an airless world at night (or in Mars's shadow) the warm pool alone lit a few metres of black ground and
+// nothing else. This is a white beam from the head along where you look, reaching tens of metres, so there is somewhere to walk to.
+const suitBeam = new THREE.SpotLight(0xf2f5ff, 0, 0, 0.42, 0.55, 2);
+suitBeam.castShadow = false;
+engine.scene.add(suitBeam, suitBeam.target);
 const sky = new THREE.HemisphereLight(
   body.atmosphere.skyColor, MATERIALS.regolith.color, 0.85);
 engine.scene.add(sky);
@@ -769,7 +788,24 @@ function updateSun(f) {
     ? Math.max(Math.max(0, Math.min(1, (-Math.asin(Math.max(-1, Math.min(1, sunDir.dot(up)))) * 180 / Math.PI - 2) / 8)), 1 - Math.max(0, Math.min(1, SUN.space.sky.state.vis ?? 1)))
     : SUN.space && SUN.space.sky ? Math.max(0, Math.min(1, (-SUN.space.sky.state.elev - 2) / 8)) * (SUN.space.sky.state.s > 0.5 ? 1 : 0) : 0;
   suitLamp.intensity = 9 * Math.max(Math.min(1, Math.max(0, (below - 0.8) / 1.2)), 0.7 * night);
+  // the beam: from the head (the camera in first person, the body's head in third), along the view
+  { const dark = moonNow ? Math.max(night, Math.min(1, Math.max(0, (below - 0.8) / 1.2))) : 0;
+    suitBeam.intensity = 420 * dark;
+    if (dark > 0) {
+      const third = view.mode === 'third' && suitGroup.visible, c = engine.cameraWorldPos, w = walker.worldPos;
+      if (third) suitBeam.position.set(w.x - c.x + up.x * 1.62, w.y - c.y + up.y * 1.62, w.z - c.z + up.z * 1.62); else suitBeam.position.set(0, 0, 0);
+      const d = engine.camera.getWorldDirection(_beamDir);
+      if (third) { d.addScaledVector(up, -d.dot(up)); if (d.lengthSq() < 1e-6) d.copy(north); d.normalize().addScaledVector(up, -0.16).normalize(); }      // third person looks down at the player; the lamp points where the player faces, a little down
+      suitBeam.target.position.copy(suitBeam.position).addScaledVector(d, 10);
+      if (third) suitLamp.position.copy(suitBeam.position);
+    } }
+  // Mars in the sky keeps the Sun's light when the camera's own key light is off (see marsFill above)
+  { const st = SUN.space && SUN.space.sky ? SUN.space.sky.state : null, live = SUN.space && SUN.space.skyMode !== 'fixed';
+    const away = !!moonNow || Math.hypot(cw.x, cw.y, cw.z) > body.radiusMean + 30_000;      // only from off Mars's own ground: down there the local tiers and the port's lamps own the night
+    marsFill.k.value = live && st && away ? 2.4 * 1.3 * (1 - Math.max(0, Math.min(1, st.vis ?? 1))) : 0;
+    if (live && SUN.space.sunLocal) marsFill.dir.value.copy(SUN.space.sunLocal); }
 }
+const _beamDir = new THREE.Vector3();
 let ambientDepth = 0;
 
 // ---------------------------------------------------------------------------
@@ -1365,7 +1401,7 @@ if (devMode) window.cosmos = {
   multiplayer, vehicles, voice, get chat() { return chat; },
   world, worldBridge, economyUI,
   port, portTour, portPeople, space,
-  setSkyShift, skyShiftFor, worldTimeS,                    // F2: review shots move the clock (cosmos.setSkyShift(seconds)) and ask for a named hour
+  marsFill, setSkyShift, skyShiftFor, worldTimeS,                    // F2: review shots move the clock (cosmos.setSkyShift(seconds)) and ask for a named hour
   depthBits: (() => { try { const g = engine.renderer.getContext(); return g.getParameter(g.DEPTH_BITS); } catch (e) { return null; } })(), depthEmulated: depthEmulation,
   auditGaps: (rooms, o) => auditGaps(engine, ship, rooms, o),
   drones: () => ship.drones,
